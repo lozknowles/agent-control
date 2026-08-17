@@ -1,4 +1,4 @@
-import type { CapabilityScore, ModelCandidate, ModelRecipe } from "./types";
+import type { CapabilityScore, ModelCandidate, ModelRecipe } from "./types.js";
 
 export interface TrialResult {
   recipeId: string;
