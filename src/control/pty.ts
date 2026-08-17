@@ -1,4 +1,4 @@
-import type { PtyAccess, PtySession, SessionRecovery } from "./types";
+import type { PtyAccess, PtySession, SessionRecovery } from "./types.js";
 
 export interface PtyDiscovery {
   id: string;
