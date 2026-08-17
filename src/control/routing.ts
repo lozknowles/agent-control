@@ -1,0 +1,4 @@
+import type{AgentHandoff,ModelCandidate,RoutingPolicy,TaskContract}from"./types.js";
+export function approvalRequired(c:TaskContract,h:AgentHandoff){return h.requiresApproval||c.risk==="high"||(h.requestedAccess==="own"&&c.risk!=="low");}
+export function chooseCandidate(cap:string,cs:ModelCandidate[],p:RoutingPolicy){const id=p.championByCapability[cap],preferred=cs.find(c=>c.recipe.id===id&&["active","preferred"].includes(c.stage));if(preferred)return preferred;return cs.filter(c=>["candidate","active","preferred"].includes(c.stage)).map(candidate=>({candidate,score:candidate.capabilities.find(x=>x.capability===cap)?.score??0})).sort((a,b)=>b.score-a.score)[0]?.candidate;}
+export function handoffAllowed(mode:"auto"|"manual",c:TaskContract,h:AgentHandoff){return mode!=="manual"&&!approvalRequired(c,h);}
