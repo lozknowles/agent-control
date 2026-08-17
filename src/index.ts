@@ -1,214 +1,70 @@
 import blessed from 'blessed';
+import { appendEvent, batonHealth, checkpoint, loadWorkspace, saveWorkspace, touchBaton, type LaneState, type WorkspaceState } from './state.js';
 
-type LaneStatus = 'working' | 'idle' | 'waiting' | 'error';
+const now = () => new Date().toISOString();
+function lane(id: number, name: string, cwd: string, model: string, reasoning: string): LaneState {
+  return {
+    id, name, status: 'idle', model, reasoning, context: '0', lines: ['Lane restored/created.', 'Waiting for a command…'],
+    contract: { version: 1, laneId: id, goal: 'Await task', constraints: [], cwd, priority: 1, mode: 'auto', modelLock: null, sharedTaskIds: [], updatedAt: now() },
+    baton: { version: 1, laneId: id, revision: 1, status: 'Await task', progress: [], hypothesis: '', evidence: [], changes: [], nextAction: 'Await command', openQuestions: [], model, reasoning, updatedAt: now() },
+    lease: { laneId: id, holder: null, acquiredAt: null, expiresAt: null },
+  };
+}
 
-type Lane = {
-  id: number;
-  name: string;
-  task: string;
-  model: string;
-  reasoning: string;
-  context: string;
-  status: LaneStatus;
-  cwd: string;
-  lines: string[];
-};
+const initial: WorkspaceState = { version: 1, paused: false, lastRestorePoint: null, lanes: [
+  lane(1, 'LocalWalks', '/fast/repos/LocalWalks', 'Qwen 3.8 27B', 'medium'),
+  lane(2, 'Research', '/fast/research', 'Qwen 3.8 27B', 'low'),
+  lane(3, 'Systems', '~/ops', 'Qwen 3B', 'low'),
+] };
+const state = loadWorkspace(initial);
+const lanes = state.lanes;
 
-const lanes: Lane[] = [
-  {
-    id: 1,
-    name: 'LocalWalks',
-    task: 'Ready for a coding task',
-    model: 'Qwen 3.8 27B',
-    reasoning: 'medium',
-    context: '0',
-    status: 'idle',
-    cwd: '/fast/repos/LocalWalks',
-    lines: ['Agent Control lane created.', 'Waiting for a command…'],
-  },
-  {
-    id: 2,
-    name: 'Research',
-    task: 'Ready for research',
-    model: 'Qwen 3.8 27B',
-    reasoning: 'low',
-    context: '0',
-    status: 'idle',
-    cwd: '/fast/research',
-    lines: ['Independent transcript and scrollback.', 'Waiting for a command…'],
-  },
-  {
-    id: 3,
-    name: 'Systems',
-    task: 'Ready for infrastructure work',
-    model: 'Qwen 3.8 27B',
-    reasoning: 'low',
-    context: '0',
-    status: 'idle',
-    cwd: '~/ops',
-    lines: ['System lane ready.', 'Waiting for a command…'],
-  },
-];
-
-const screen = blessed.screen({ smartCSR: true, fullUnicode: true, title: 'Agent Control' });
+const screen = blessed.screen({ smartCSR: true, fullUnicode: true, title: 'Agent Control', mouse: true });
 let active = 0;
 let zoomed = false;
+const header = blessed.box({ top: 0, left: 0, width: '100%', height: 3, tags: true, border: 'line' }); screen.append(header);
+const laneBoxes = lanes.map((_, i) => { const b = blessed.box({ top: 3, left: `${i * (100 / lanes.length)}%`, width: `${100 / lanes.length}%`, height: '66%-3', border: 'line', tags: true, scrollable: true, alwaysScroll: true, mouse: true, keys: true, vi: true, scrollbar: { ch: '│' } }); screen.append(b); return b; });
+const activity = blessed.log({ top: '66%', left: 0, width: '67%', height: '22%-1', border: 'line', tags: true, scrollable: true, mouse: true, label: ' AGENT ACTIVITY / CONTRACT EVENTS ' }); screen.append(activity);
+const metrics = blessed.box({ top: '66%', left: '67%', width: '33%', height: '22%-1', border: 'line', tags: true, label: ' ACTIVE LANE / BATON ' }); screen.append(metrics);
+const input = blessed.textbox({ bottom: 1, left: 0, width: '100%', height: 3, border: 'line', inputOnFocus: true, mouse: true, keys: true, prompt: '> ' }); screen.append(input);
+const footer = blessed.box({ bottom: 0, left: 0, width: '100%', height: 1, tags: true, content: ' Tab lane │ +/- priority │ A auto │ M manual │ L model lock │ B baton │ P pause/checkpoint │ Z zoom │ I input │ Q quit ' }); screen.append(footer);
 
-const header = blessed.box({
-  top: 0,
-  left: 0,
-  width: '100%',
-  height: 3,
-  tags: true,
-  border: 'line',
-  content: ' {bold}LOCAL AGENT CONTROL{/bold}   {green-fg}multi-lane mission control{/green-fg}',
-});
-screen.append(header);
-
-const laneBoxes = lanes.map((lane, index) => {
-  const box = blessed.box({
-    top: 3,
-    left: `${index * 33.333}%`,
-    width: index === 2 ? '34%' : '33.333%',
-    height: '70%-3',
-    border: 'line',
-    tags: true,
-    scrollable: true,
-    alwaysScroll: true,
-    mouse: true,
-    keys: true,
-    vi: true,
-    scrollbar: { ch: '│', track: { ch: ' ' } },
-  });
-  screen.append(box);
-  return box;
-});
-
-const activity = blessed.log({
-  top: '70%',
-  left: 0,
-  width: '67%',
-  height: '20%-1',
-  border: 'line',
-  tags: true,
-  scrollable: true,
-  mouse: true,
-  label: ' AGENT ACTIVITY ',
-});
-screen.append(activity);
-
-const metrics = blessed.box({
-  top: '70%',
-  left: '67%',
-  width: '33%',
-  height: '20%-1',
-  border: 'line',
-  tags: true,
-  label: ' ACTIVE LANE ',
-});
-screen.append(metrics);
-
-const input = blessed.textbox({
-  bottom: 1,
-  left: 0,
-  width: '100%',
-  height: 3,
-  border: 'line',
-  inputOnFocus: true,
-  mouse: true,
-  keys: true,
-  prompt: '> ',
-});
-screen.append(input);
-
-const footer = blessed.box({
-  bottom: 0,
-  left: 0,
-  width: '100%',
-  height: 1,
-  tags: true,
-  content: ' Tab lane  PgUp/PgDn scroll  Z zoom  N new  X stop  Enter command  Q quit ',
-});
-screen.append(footer);
-
-function statusText(status: LaneStatus) {
-  if (status === 'working') return '{green-fg}● WORKING{/green-fg}';
-  if (status === 'error') return '{red-fg}● ERROR{/red-fg}';
-  if (status === 'waiting') return '{yellow-fg}○ WAITING{/yellow-fg}';
-  return '{gray-fg}○ IDLE{/gray-fg}';
-}
-
+function status(s: string) { return s === 'working' ? '{green-fg}● WORKING{/green-fg}' : s === 'error' ? '{red-fg}● ERROR{/red-fg}' : s === 'paused' ? '{yellow-fg}Ⅱ PAUSED{/yellow-fg}' : s === 'waiting' ? '{yellow-fg}○ WAITING{/yellow-fg}' : '{gray-fg}○ IDLE{/gray-fg}'; }
+function age(ms: number) { return ms < 1000 ? 'now' : ms < 60000 ? `${Math.floor(ms / 1000)}s` : `${Math.floor(ms / 60000)}m`; }
 function render() {
-  lanes.forEach((lane, i) => {
-    const selected = i === active ? '{bold}{cyan-fg}' : '';
-    const selectedEnd = i === active ? '{/cyan-fg}{/bold}' : '';
-    laneBoxes[i].setLabel(` ${selected}${lane.id} ${lane.name}${selectedEnd} `);
+  const a = lanes[active];
+  header.setContent(` {bold}AGENT CONTROL{/bold}   ${state.paused ? '{yellow-fg}Ⅱ PAUSED{/yellow-fg}' : '{green-fg}● LIVE{/green-fg}'}   lanes ${lanes.length}   restore ${state.lastRestorePoint ?? 'none'}   {gray-fg}contracts → events → batons → leases → checkpoints{/gray-fg}`);
+  lanes.forEach((l, i) => {
+    const h = batonHealth(l.baton); const focus = i === active ? '{cyan-fg}{bold}' : ''; const end = i === active ? '{/bold}{/cyan-fg}' : '';
+    laneBoxes[i].setLabel(` ${focus}${'★'.repeat(l.contract.priority)} ${l.id} ${l.name}${end} `);
     laneBoxes[i].setContent([
-      `${statusText(lane.status)}  ${lane.task}`,
-      `{gray-fg}${lane.model} │ ${lane.reasoning} │ ctx ${lane.context}{/gray-fg}`,
-      `{gray-fg}${lane.cwd}{/gray-fg}`,
-      '',
-      ...lane.lines,
-      '',
-      '{gray-fg}↕ independent scrollback{/gray-fg}',
-    ].join('\n'));
+      `${status(l.status)}   ${l.contract.mode.toUpperCase()} ${l.contract.modelLock ? '🔒' : ''}`,
+      `{bold}${l.contract.goal}{/bold}`,
+      `{gray-fg}${l.model} │ ${l.reasoning} │ ctx ${l.context}{/gray-fg}`,
+      `{gray-fg}${l.contract.cwd}{/gray-fg}`,
+      `Baton r${l.baton.revision} ${h.icon} ${h.label} ${age(h.age)}`,
+      l.contract.sharedTaskIds.length ? `{cyan-fg}🔗 ${l.contract.sharedTaskIds.join(', ')}{/cyan-fg}` : '', '', ...l.lines, '', '{gray-fg}↕ independent scrollback{/gray-fg}'
+    ].filter(Boolean).join('\n'));
   });
-  const lane = lanes[active];
-  metrics.setContent([
-    `{bold}${lane.name}{/bold}`,
-    `Status: ${statusText(lane.status)}`,
-    `Model: ${lane.model}`,
-    `Reasoning: ${lane.reasoning}`,
-    `Context: ${lane.context}`,
-    `Working dir: ${lane.cwd}`,
-  ].join('\n'));
+  const h = batonHealth(a.baton);
+  metrics.setContent([`{bold}${a.name}{/bold}`, `Status: ${status(a.status)}`, `Mode: ${a.contract.mode.toUpperCase()}`, `Priority: ${'★'.repeat(a.contract.priority)}`, `Model: ${a.model}${a.contract.modelLock ? ' 🔒' : ''}`, `Reasoning: ${a.reasoning}`, '', `{bold}BATON r${a.baton.revision}{/bold} ${h.label} ${age(h.age)}`, `Status: ${a.baton.status}`, `Next: ${a.baton.nextAction}`, `Lease: ${a.lease.holder ?? 'free'}`].join('\n'));
   screen.render();
 }
+function persist(event: string, payload: unknown = {}) { appendEvent(event, payload); saveWorkspace(state); render(); }
+function focusLane(i: number) { active = (i + lanes.length) % lanes.length; laneBoxes[active].focus(); render(); }
 
-function focusLane(index: number) {
-  active = (index + lanes.length) % lanes.length;
-  laneBoxes[active].focus();
-  render();
-}
-
-screen.key(['tab'], () => focusLane(active + 1));
-screen.key(['S-tab'], () => focusLane(active - 1));
-screen.key(['1', '2', '3'], (_ch, key) => focusLane(Number(key.full) - 1));
-screen.key(['q', 'C-c'], () => process.exit(0));
-
-screen.key(['z'], () => {
-  zoomed = !zoomed;
-  laneBoxes.forEach((box, i) => {
-    box.hidden = zoomed && i !== active;
-    if (zoomed && i === active) {
-      box.top = 3; box.left = 0; box.width = '100%'; box.height = '87%-3';
-    } else if (!zoomed) {
-      box.top = 3; box.left = `${i * 33.333}%`; box.width = i === 2 ? '34%' : '33.333%'; box.height = '70%-3';
-    }
-  });
-  activity.hidden = zoomed;
-  metrics.hidden = zoomed;
-  render();
-});
-
+screen.key(['tab'], () => focusLane(active + 1)); screen.key(['S-tab'], () => focusLane(active - 1));
+screen.key(['1','2','3','4','5','6','7','8','9'], (_c, k) => { const i = Number(k.full) - 1; if (i < lanes.length) focusLane(i); });
+screen.key(['q','C-c'], () => { saveWorkspace(state); process.exit(0); });
+screen.key(['+','='], () => { const l=lanes[active]; l.contract.priority=Math.min(3,l.contract.priority+1); l.contract.updatedAt=now(); persist('contract.priority',{laneId:l.id,priority:l.contract.priority}); });
+screen.key(['-'], () => { const l=lanes[active]; l.contract.priority=Math.max(1,l.contract.priority-1); l.contract.updatedAt=now(); persist('contract.priority',{laneId:l.id,priority:l.contract.priority}); });
+screen.key(['a'], () => { const l=lanes[active]; l.contract.mode='auto'; l.contract.updatedAt=now(); persist('contract.mode',{laneId:l.id,mode:'auto'}); });
+screen.key(['m'], () => { const l=lanes[active]; l.contract.mode='manual'; l.contract.updatedAt=now(); persist('contract.mode',{laneId:l.id,mode:'manual'}); });
+screen.key(['l'], () => { const l=lanes[active]; l.contract.modelLock=l.contract.modelLock ? null : l.model; l.contract.updatedAt=now(); persist('contract.modelLock',{laneId:l.id,modelLock:l.contract.modelLock}); });
+screen.key(['b'], () => { const l=lanes[active]; l.lines.push(`{cyan-fg}BATON r${l.baton.revision}{/cyan-fg} status=${l.baton.status} next=${l.baton.nextAction}`); render(); });
+screen.key(['p'], () => { state.paused=!state.paused; for (const l of lanes) { l.status=state.paused?'paused':'idle'; touchBaton(l,{status:state.paused?'Paused at safe boundary':'Restored; awaiting scheduling',nextAction:state.paused?'Resume from checkpoint':'Await scheduler'}); } const id=checkpoint(state,state.paused?'pause-all':'resume-all'); activity.log(`${state.paused?'PAUSE':'RESUME'} checkpoint ${id}`); render(); });
+screen.key(['z'], () => { zoomed=!zoomed; laneBoxes.forEach((b,i)=>{ b.hidden=zoomed&&i!==active; if(zoomed&&i===active){b.top=3;b.left=0;b.width='100%';b.height='85%-3';}else if(!zoomed){b.top=3;b.left=`${i*(100/lanes.length)}%`;b.width=`${100/lanes.length}%`;b.height='66%-3';}}); activity.hidden=zoomed; metrics.hidden=zoomed; render(); });
 screen.key(['i'], () => input.focus());
-
-input.on('submit', (value) => {
-  const text = value.trim();
-  if (text) {
-    const lane = lanes[active];
-    lane.lines.push(`{cyan-fg}> ${text}{/cyan-fg}`);
-    lane.lines.push('{yellow-fg}[agent adapter not connected yet]{/yellow-fg}');
-    lane.task = text;
-    lane.status = 'waiting';
-    activity.log(`[lane ${lane.id}] ${text}`);
-  }
-  input.clearValue();
-  laneBoxes[active].focus();
-  render();
-});
-
-laneBoxes.forEach((box, i) => box.on('focus', () => { active = i; render(); }));
-
-render();
-focusLane(0);
+input.on('submit',(value)=>{ const text=value.trim(); if(text){ const l=lanes[active]; l.lines.push(`{cyan-fg}> ${text}{/cyan-fg}`,'{yellow-fg}[agent adapter not connected yet]{/yellow-fg}'); l.contract.goal=text; l.contract.updatedAt=now(); l.status='waiting'; touchBaton(l,{status:'Task accepted; awaiting agent adapter',nextAction:'Acquire model lease and start task'}); persist('task.assigned',{laneId:l.id,goal:text}); activity.log(`[lane ${l.id}] task: ${text}`); } input.clearValue(); laneBoxes[active].focus(); render(); });
+laneBoxes.forEach((b,i)=>b.on('focus',()=>{active=i;render();}));
+render(); focusLane(0);
