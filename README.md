@@ -1,20 +1,21 @@
 # Agent Control
 
-A multi-lane terminal mission-control UI for local AI agents.
+A multi-lane terminal mission-control and control plane for local AI agents.
 
-## v0.1
+## Current v0.1 foundation
 
-The first scaffold provides:
+- independently scrollable work lanes, keyboard/mouse focus and zoom
+- AUTO/MANUAL policy, lane priority and model lock
+- durable hard contracts plus revisioned soft-state batons
+- one-holder lane leases
+- append-only event log and atomic persistence
+- pause/resume checkpoints and restore-point identity
+- control-plane primitives for baton **handoff** and **clone**
+- explicit shared-task membership and structured shared entries
+- scheduler primitive that selects waiting AUTO lanes by priority/age
+- replaceable `AgentAdapter` boundary so Pi, llama.cpp or another harness can be wired without changing durable state
 
-- three independently scrollable work lanes
-- mouse and keyboard scrolling
-- lane switching with Tab / Shift-Tab or 1-3
-- active-lane command input
-- zoom/unzoom of the selected lane with `z`
-- activity log and active-lane metrics panel
-- separate per-lane model, reasoning, context and working-directory state
-
-The initial UI uses `blessed` deliberately to get the interaction model running quickly. The agent adapter is separated conceptually from the UI; the next step is to connect each lane to a real Pi/Qwen session and then decide whether to retain Blessed or migrate the rendering layer to Pi TUI/Ratatui.
+See `ARCHITECTURE.md` for the frozen invariants.
 
 ## Run
 
@@ -23,22 +24,41 @@ npm install
 npm start
 ```
 
-## Keys
+State is persisted under `.agent-control/` by default. Override with `AGENT_CONTROL_STATE_DIR`.
+
+## TUI keys
 
 - `Tab` / `Shift-Tab`: next/previous lane
-- `1`, `2`, `3`: jump to lane
+- `1`–`9`: jump to lane
 - `PgUp` / `PgDn`, arrows, mouse wheel: scroll focused lane
+- `+` / `-`: change lane priority
+- `a`: AUTO mode
+- `m`: MANUAL mode
+- `l`: toggle model lock
+- `b`: show current baton summary in lane
+- `p`: transactional pause/resume checkpoint
 - `z`: zoom/unzoom selected lane
 - `i`: focus command input
-- `q` / `Ctrl-C`: quit
+- `q` / `Ctrl-C`: persist and quit
 
-## Architecture direction
+## Architecture
 
 ```text
-Agent Control TUI
-  ├── Lane 1 ── agent adapter ── router ── Qwen/local/API
-  ├── Lane 2 ── agent adapter ── router ── Qwen/local/API
-  └── Lane 3 ── agent adapter ── router ── Qwen/local/API
+TUI
+  │
+CONTROL PLANE
+  ├── scheduler / priorities / model locks
+  ├── leases
+  ├── shared task context
+  ├── handoff / clone
+  └── checkpoints
+        │
+   AgentAdapter
+    ├── Pi
+    ├── llama.cpp/router
+    └── future adapters
+        │
+      models
 ```
 
-Each lane will remain a persistent unit of work with its own session, transcript, working directory, reasoning level and model selection.
+The lane owns the task. Models are temporary workers. A model can disappear, be swapped, or be handed a baton in another free lane without making the conversation transcript the authoritative state.
