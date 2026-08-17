@@ -1,5 +1,5 @@
-import type { ModelRecipe } from "./types";
-import type { TrialResult } from "./qualification";
+import type { ModelRecipe } from "./types.js";
+import type { TrialResult } from "./qualification.js";
 
 export type ExperimentStage = "cheap" | "capability" | "replay" | "holdout" | "shadow";
 
