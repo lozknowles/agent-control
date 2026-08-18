@@ -1,12 +1,13 @@
 {
   "name": "agent-control",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "Multi-lane terminal mission control for local AI agents",
   "scripts": {
     "start": "tsx src/index.ts",
     "dev": "tsx watch src/index.ts",
+    "test": "node --test --import tsx src/*.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
