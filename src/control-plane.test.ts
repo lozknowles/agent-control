@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { ControlPlane } from './control-plane.js';
-import type { LaneState, WorkspaceState } from './state.js';
+import { defaultCapabilities, type LaneState, type WorkspaceState } from './state.js';
 
 const now=()=>new Date().toISOString();
-function lane(id:number,priority=1):LaneState{return {id,name:`Lane ${id}`,status:'waiting',model:'qwen',reasoning:'low',context:'0',lines:[],contract:{version:1,laneId:id,goal:`goal-${id}`,constraints:[],cwd:'/tmp',priority,mode:'auto',modelLock:null,sharedTaskIds:[],updatedAt:now()},baton:{version:1,laneId:id,revision:1,status:'working',progress:['one'],hypothesis:'h',evidence:['e'],changes:[],nextAction:'next',openQuestions:[],model:'qwen',reasoning:'low',updatedAt:now()},lease:{laneId:id,holder:null,acquiredAt:null,expiresAt:null}};}
+function lane(id:number,priority=1):LaneState{return {id,name:`Lane ${id}`,status:'waiting',model:'qwen',reasoning:'low',context:'0',lines:[],contract:{version:2,laneId:id,goal:`goal-${id}`,constraints:[],cwd:'/tmp',priority,mode:'auto',capabilities:defaultCapabilities(),resourceLocks:{},modelLock:null,sharedTaskIds:[],updatedAt:now()},baton:{version:1,laneId:id,revision:1,status:'working',progress:['one'],hypothesis:'h',evidence:['e'],changes:[],nextAction:'next',openQuestions:[],model:'qwen',reasoning:'low',updatedAt:now()},lease:{laneId:id,holder:null,acquiredAt:null,expiresAt:null}};}
 function workspace():WorkspaceState{return {version:1,paused:false,lastRestorePoint:null,lanes:[lane(1,3),lane(2,1),lane(3,2)]};}
 
 test('scheduler chooses highest priority waiting AUTO lane',()=>{const s=workspace();const cp=new ControlPlane(s);assert.equal(cp.chooseNextLane()?.id,1);s.lanes[0].contract.mode='manual';assert.equal(cp.chooseNextLane()?.id,3);});
