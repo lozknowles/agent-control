@@ -1,6 +1,6 @@
 {
   "name":"agent-control","version":"2.0.0","private":true,"type":"module","description":"Capability-agnostic distributed agent control plane",
-  "scripts":{"start":"tsx src/index.ts","dev":"tsx watch src/index.ts","test":"node --import tsx --test src/*.test.ts src/control/*.test.ts","typecheck":"tsc --noEmit","check":"npm run typecheck && npm test"},
+  "scripts":{"start":"tsx src/index.ts","dev":"tsx watch src/index.ts","test":"node --import tsx --test src/*.test.ts src/control/*.test.ts","typecheck":"tsc --noEmit","check":"npm run typecheck && npm test","qualify:all":"node scripts/qualify-all.mjs"},
   "dependencies":{"blessed":"^0.1.81"},
   "devDependencies":{"@types/blessed":"^0.1.25","@types/node":"^24.0.0","tsx":"^4.20.0","typescript":"^5.9.0"}
 }
