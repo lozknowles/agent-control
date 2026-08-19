@@ -1,6 +1,7 @@
 node_modules/
 .agent-control/
 qualification-results/
+package-lock.json
 *.log
 .env
 .env.*
