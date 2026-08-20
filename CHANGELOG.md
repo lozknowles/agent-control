@@ -2,6 +2,44 @@
 
 All notable Agent Control changes are recorded here. The project is still pre-stable; entries describe qualified development milestones rather than implying production readiness.
 
+## [2.0.0 development] — 2026-08-20
+
+### Added
+
+- Restrained btop/Rethink-inspired semantic colour system for the control-room TUI.
+- Workload-class queue meters: cyan interactive, magenta priority, yellow background and green batch.
+- Separate capacity/resource utilisation meters that may graduate green/yellow/red with utilisation.
+- Compact Work Queue and Resources rendering for narrow terminals.
+- Numeric lane context percentage plus compact context meter.
+- Explicit `PTY ASSIGNED n/total` header semantics.
+- Clear `PIXEL RECOVERY MANUAL/AUTO` presentation separate from Pixel health.
+- Isolated synthetic `demo:*` workload covering interactive, priority, background, batch, dependency-blocked, checkpointed and human-review states.
+- Idempotent demo injection and tests proving demo cleanup/preservation boundaries.
+- Terminal-safe Blessed Activity logging wrapper to prevent legacy/non-ASCII status text corrupting terminal rendering.
+- Theme tests covering semantic workload colours, capacity warning colours and terminal-safe text.
+
+### Changed
+
+- Narrow control-room panels now use compact labels and bounded/truncated details instead of hard-wrapping status words.
+- Idle/waiting lane presentation is deliberately compact while preserving selected-lane identity accents.
+- Queue magnitude no longer turns red merely because a batch is large; red remains a danger/failure semantic.
+- Batch-group meters use workload semantics rather than capacity-warning semantics.
+- README updated to describe the qualified semantic-colour TUI, demo workload and physical Pixel visual smoke test.
+
+### Fixed
+
+- Mid-word wrapping in Work Queue, provider and lane-summary panels.
+- Misleading red full-batch bars that visually implied failure.
+- Legacy Unicode/control-room text corruption in the Activity panel by sanitising at the Blessed log boundary.
+- TypeScript typing of the terminal-safe Blessed log wrapper.
+- UI tests updated to assert semantic content independently of Blessed colour tags while also explicitly testing colour behaviour.
+
+### Qualified evidence
+
+- Core/control/UI automated suite had reached **66/66 passing tests** before the final three theme tests were added; the current checkpoint target is **69 tests** and must be re-run locally after pulling the terminal-safe wrapper typing fix.
+- The compact semantic-colour TUI was visually smoke-tested from the physical Pixel terminal on 2026-08-20. Activity text rendered cleanly and workload bars retained class colours.
+- Pixel-terminal smoke testing also demonstrated useful degraded-state presentation (`Pixel OFFLINE / Tailscale unreachable`) when the resource path was genuinely unavailable from that execution context.
+
 ## [2.0.0 development] — 2026-08-19
 
 ### Added
