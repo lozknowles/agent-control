@@ -4,7 +4,7 @@ Agent Control is a terminal mission-control UI and durable control plane for run
 
 The core idea is simple: **the lane owns the work; models are replaceable workers**. Each lane keeps a durable contract and revisioned baton so work can pause, hand off, resume after restart, delegate, clone, or substitute providers without losing authoritative state.
 
-> **2.0 development status:** the control plane, capability resolver, contracts/batons, leases, PTY discovery/ownership model, provider registry, durable Work Queue, batching/preemption/persistence, queue telemetry, cross-platform qualification harness, Work Queue TUI and allow-listed Pixel Android node recovery are implemented. Physical Pixel recovery has been fault-injection qualified. Raw PTY write attachment and general-purpose execution adapters remain intentionally incomplete.
+> **2.0 development status:** the control plane, capability resolver, contracts/batons, leases, PTY discovery/ownership model, provider registry, durable Work Queue, batching/preemption/persistence, queue telemetry, cross-platform qualification harness, semantic-colour Work Queue TUI, isolated synthetic workload and allow-listed Pixel Android node recovery are implemented. Physical Pixel recovery has been fault-injection qualified. The current TUI iteration has also been smoke-tested from the physical Pixel. Raw PTY write attachment and general-purpose execution adapters remain intentionally incomplete.
 
 ## Quick start
 
@@ -30,14 +30,16 @@ State is persisted beneath `.agent-control/` by default. Runtime state, qualific
 
 The Blessed TUI currently presents:
 
-- independently scrollable work lanes with contracts and baton health;
-- Agent Activity Log;
+- independently scrollable work lanes with contracts, numeric context utilisation and baton health;
+- semantic status colours with restrained lane identity accents;
+- terminal-safe Agent Activity Log output;
 - Lane Overview and active baton;
-- **Work Queue** backlog, ready/review/retry counts, workload classes, oldest age, throughput/drain estimate and batch groups;
-- resource/provider status including Pixel lifecycle;
-- live Linux PTY discovery;
+- **Work Queue** ready/review/retry counts, workload classes, oldest age, throughput/drain estimate, semantic workload meters and batch groups;
+- resource/provider status including Pixel lifecycle and capacity-style utilisation meters;
+- live Linux PTY discovery with explicit assigned/total semantics;
 - provider health and deterministic ChatGPT Window proof;
-- queue detail showing work state, batch identity, resource claims and checkpoints.
+- queue detail showing work state, batch identity, resource claims and checkpoints;
+- an isolated `demo:*` workload for exercising queue states without mutating real work.
 
 Current footer keys are authoritative. Important 2.0 controls include:
 
@@ -49,6 +51,7 @@ Current footer keys are authoritative. Important 2.0 controls include:
 | `G` | Probe providers |
 | `Y` | Prove ChatGPT Window Responses roundtrip |
 | `W` | Work Queue detail |
+| `D` | Inject the idempotent isolated demo workload |
 | `X` | Probe Pixel lifecycle |
 | `Z` | Ensure/recover Pixel node using the allow-listed recovery recipe |
 | `A` | Toggle Pixel recovery MANUAL/AUTO mode |
@@ -76,9 +79,13 @@ Agent Control separates interactive lane work from repetitive/background work. T
 
 The scheduler selects work and resources before mutating queue state, avoiding double-claim/accounting behavior during batch formation.
 
+The isolated demo workload intentionally exercises interactive, priority, background, batch, dependency-blocked, checkpointed and human-review states. Re-injection is idempotent and all demo work is namespaced under `demo:` so it can remain separate from real work.
+
 ## Queue observability and latency telemetry
 
 The control plane emits traceable queue snapshots and coordinator decisions. Metrics include backlog by class/status, ready count, oldest queued age, review/retry counts, batch sizes, resource utilisation, observed throughput and estimated drain time.
+
+Queue magnitude meters retain their workload-class colour; red is reserved for genuine failure/danger state rather than merely indicating a large batch. Capacity/resource utilisation meters may still graduate green to yellow to red as utilisation increases.
 
 Provider and transport telemetry records latency distributions rather than treating latency as a binary health result. This lets routing distinguish **healthy-but-slow** from unavailable.
 
@@ -112,6 +119,8 @@ Recovery is deliberately narrow. Agent Control may execute only the known Pixel 
 Recovery is health-authoritative and idempotent: requesting recovery while healthy is a no-op; if the node is absent it is started detached from the SSH session; Pixel-local and forwarded health are then independently verified. A surviving forward is reused.
 
 On 2026-08-19 this path was qualified on a physical Pixel 8 Pro by deliberately killing the healthy node, observing `NODE-DEGRADED`, recovering through the TUI, obtaining a new node PID, reusing the existing SSH forward, restoring `/health`, and restoring authenticated `/v2/resource` capability advertisement. See `docs/evidence/pixel-self-recovery-qualified-20260819.md`.
+
+The compact/semantic-colour TUI was subsequently viewed from the physical Pixel terminal as an additional smoke test. Small mobile terminals are not the primary desktop control-room target, but this establishes a useful future responsive-TUI test case.
 
 ## Cross-platform qualification
 
@@ -181,7 +190,7 @@ npm run check
 npm run qualify
 ```
 
-For TUI changes, require both automated checks and a real terminal visual/control smoke test. For physical recovery, use the bounded procedure in `TEST-TONIGHT.md` and preserve evidence without credentials.
+For TUI changes, require both automated checks and a real terminal visual/control smoke test. The current semantic-colour/terminal-safe TUI iteration passed that visual smoke test on the physical Pixel after the automated suite was extended with demo and theme coverage. For physical recovery, use the bounded procedure in `TEST-TONIGHT.md` and preserve evidence without credentials.
 
 ## Further documentation
 
