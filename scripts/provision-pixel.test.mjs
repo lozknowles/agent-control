@@ -19,3 +19,10 @@ test('ADB installation trusts a fresh observed postcondition after helper exit',
   assert.match(source, /const installed=await this\.detectAdb\(\); if\(installed\)return\{installed:true\}/);
   assert.match(source, /helper failed and adb remains absent/);
 });
+
+test('Termux Boot installation has a device-aware timeout and observed postcondition', () => {
+  const source = fs.readFileSync(path.resolve('scripts/provision-pixel.mjs'), 'utf8');
+  assert.match(source, /AGENT_CONTROL_APK_INSTALL_TIMEOUT_MS \|\| 300000/);
+  assert.match(source, /const observed=await this\.verifyTermuxBootPackage\(packageName\); if\(observed\.installed\)return\{installed:true\}/);
+  assert.match(source, /DEVICE INSTALL INCOMPLETE/);
+});
