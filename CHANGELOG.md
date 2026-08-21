@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Changed Pixel ADB privilege handling from terminal failure to a durable resumable human-review gate. The approved path now invokes only a fixed root-owned helper through non-interactive sudo; the helper accepts only `install-adb` and runs only the allow-listed `apt-get install adb`. No password is captured or persisted, and pairing remains a separate review gate after fresh ADB observation.
 - Added the canonical `npm run provision:pixel` durable Work Queue/Work Executor entrypoint, idempotent graph restoration, explicit `adb` detection, fail-closed allow-listed `apt install adb` authority, Android Wireless Debugging human approval, approval resumption, capability-gated ADB qualification, GitHub Termux:Boot artifact/hash verification, package and boot-hook verification, and modeled unattended-recovery qualification.
 - Added explicit human-review approval resumption and bootstrap reconciliation for stale/dead or duplicate owned Pixel-forward records.
 - Fixed Pixel provisioning dependency semantics: pairing review is created only after the allow-listed install completes and ADB is observed; failed install/privilege prerequisites durably block pairing and every downstream node. The command now reports only the provisioning subgraph, preserving unrelated demo queue items in storage, and emits explicit `NEEDS AUTHORITY`/`NEEDS PRIVILEGE` failures.

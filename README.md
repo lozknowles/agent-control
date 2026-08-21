@@ -22,11 +22,19 @@ To start or resume the durable Pixel provisioning graph from hpubuntu:
 npm run provision:pixel
 ```
 
-If ADB is absent, the command fails closed unless the operator explicitly supplies `AGENT_CONTROL_ALLOW_ADB_INSTALL=1`; it then uses non-interactive, already-authorized `sudo` for only `apt install adb`. Missing authority or passwordless privilege is reported as a terminal `NEEDS AUTHORITY` or `NEEDS PRIVILEGE` state. Pairing is not reported as actionable until installation completed and a fresh `adb` detection observes the tool. Unrelated `demo:*` queue items remain stored but are excluded from provisioning progress output. When the graph reaches Android Wireless Debugging it persists `HUMAN REVIEW` and exits. Approve pairing on the Pixel, then resume the same queue with:
+If ADB is absent, the command persists `NEEDS PRIVILEGE` until a one-time host setup grants the invoking user non-interactive sudo access to a root-owned helper accepting only `install-adb`; the helper runs only `apt-get install -y --no-install-recommends adb`. Set `AGENT_CONTROL_ALLOW_ADB_INSTALL=1` and resume with `--approve-install`. Agent Control never reads, prompts for, stores, or logs a sudo password. If the helper is unavailable or denied, the item remains safely resumable. Pairing is not reported as actionable until installation completed and a fresh `adb` detection observes the tool. Unrelated `demo:*` queue items remain stored but are excluded from provisioning progress output. When the graph reaches Android Wireless Debugging it persists `HUMAN REVIEW` and exits. Approve pairing on the Pixel, then resume the same queue with:
 
 ```bash
 npm run provision:pixel -- --approve-pairing
 ```
+
+The host helper must be installed by an administrator as `/usr/local/libexec/agent-control-privileged`, mode `0755`, owner `root:root`, from `scripts/agent-control-privileged`. The corresponding sudoers rule should grant only the exact helper path, for example:
+
+```text
+<operator> ALL=(root) NOPASSWD: /usr/local/libexec/agent-control-privileged
+```
+
+Do not grant `NOPASSWD: apt`, a shell, or general sudo. Validate with `sudo -n /usr/local/libexec/agent-control-privileged install-adb`; the command must not accept any other argument.
 
 The command does not claim physical qualification. Termux:Boot installation and reboot recovery remain modeled gates until their evidence is observed on the Pixel.
 
