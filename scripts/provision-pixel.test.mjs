@@ -25,4 +25,6 @@ test('Termux Boot installation has a device-aware timeout and observed postcondi
   assert.match(source, /AGENT_CONTROL_APK_INSTALL_TIMEOUT_MS \|\| 300000/);
   assert.match(source, /const observed=await this\.verifyTermuxBootPackage\(packageName\); if\(observed\.installed\)return\{installed:true\}/);
   assert.match(source, /DEVICE INSTALL INCOMPLETE/);
+  assert.match(source, /termux_boot_artifact_hash_changed_after_verification/);
+  assert.match(source, /ops\.artifact=restoredArtifact/);
 });

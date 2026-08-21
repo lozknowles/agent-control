@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Restored the persisted, verified Termux:Boot artifact across provisioning process restarts and rechecks its SHA-256 immediately before device installation.
 - Gave the Termux:Boot device installation a dedicated five-minute timeout and fresh package postcondition, and made incomplete device installation resumable instead of consuming both retries under the generic 30-second command limit.
 - Changed transient ADB transport qualification failure from a terminal node into a durable resumable review state; a later invocation performs a fresh observation and can complete the same qualification node without repeating pairing approval.
 - Fixed the ADB helper postcondition: package installation now has a dedicated five-minute timeout and a fresh observed `adb` takes precedence over a helper process error, preventing successful installs from being mislabeled as privilege denial.
