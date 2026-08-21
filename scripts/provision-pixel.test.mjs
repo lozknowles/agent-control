@@ -12,3 +12,10 @@ test('privileged Pixel install path cannot capture or pass a password', () => {
   assert.doesNotMatch(helper, /\$@|\$\*|sudo|sh -c|bash -c/);
   assert.match(helper, /apt-get install -y --no-install-recommends adb/);
 });
+
+test('ADB installation trusts a fresh observed postcondition after helper exit', () => {
+  const source = fs.readFileSync(path.resolve('scripts/provision-pixel.mjs'), 'utf8');
+  assert.match(source, /AGENT_CONTROL_PACKAGE_TIMEOUT_MS \|\| 300000/);
+  assert.match(source, /const installed=await this\.detectAdb\(\); if\(installed\)return\{installed:true\}/);
+  assert.match(source, /helper failed and adb remains absent/);
+});
