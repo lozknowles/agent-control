@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Changed transient ADB transport qualification failure from a terminal node into a durable resumable review state; a later invocation performs a fresh observation and can complete the same qualification node without repeating pairing approval.
 - Fixed the ADB helper postcondition: package installation now has a dedicated five-minute timeout and a fresh observed `adb` takes precedence over a helper process error, preventing successful installs from being mislabeled as privilege denial.
 - Migrated persisted pre-helper `NEEDS PRIVILEGE` failures into the resumable install review gate and fixed dependency reconciliation so blocked provisioning nodes can unlock after a recovered prerequisite completes.
 - Changed Pixel ADB privilege handling from terminal failure to a durable resumable human-review gate. The approved path now invokes only a fixed root-owned helper through non-interactive sudo; the helper accepts only `install-adb` and runs only the allow-listed `apt-get install adb`. No password is captured or persisted, and pairing remains a separate review gate after fresh ADB observation.
