@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Migrated persisted pre-helper `NEEDS PRIVILEGE` failures into the resumable install review gate and fixed dependency reconciliation so blocked provisioning nodes can unlock after a recovered prerequisite completes.
 - Changed Pixel ADB privilege handling from terminal failure to a durable resumable human-review gate. The approved path now invokes only a fixed root-owned helper through non-interactive sudo; the helper accepts only `install-adb` and runs only the allow-listed `apt-get install adb`. No password is captured or persisted, and pairing remains a separate review gate after fresh ADB observation.
 - Added the canonical `npm run provision:pixel` durable Work Queue/Work Executor entrypoint, idempotent graph restoration, explicit `adb` detection, fail-closed allow-listed `apt install adb` authority, Android Wireless Debugging human approval, approval resumption, capability-gated ADB qualification, GitHub Termux:Boot artifact/hash verification, package and boot-hook verification, and modeled unattended-recovery qualification.
 - Added explicit human-review approval resumption and bootstrap reconciliation for stale/dead or duplicate owned Pixel-forward records.
