@@ -4,6 +4,8 @@
 
 - Added the canonical `npm run provision:pixel` durable Work Queue/Work Executor entrypoint, idempotent graph restoration, explicit `adb` detection, fail-closed allow-listed `apt install adb` authority, Android Wireless Debugging human approval, approval resumption, capability-gated ADB qualification, GitHub Termux:Boot artifact/hash verification, package and boot-hook verification, and modeled unattended-recovery qualification.
 - Added explicit human-review approval resumption and bootstrap reconciliation for stale/dead or duplicate owned Pixel-forward records.
+- Fixed Pixel provisioning dependency semantics: pairing review is created only after the allow-listed install completes and ADB is observed; failed install/privilege prerequisites durably block pairing and every downstream node. The command now reports only the provisioning subgraph, preserving unrelated demo queue items in storage, and emits explicit `NEEDS AUTHORITY`/`NEEDS PRIVILEGE` failures.
+- Added regression coverage for failed-prerequisite blocking, terminal privilege failure, observed ADB transition, durable resume, and mission-scoped output.
 - Physical Android/ADB, Termux:Boot hook, and reboot qualification remain outstanding; implementation and automated coverage do not claim device qualification. The live command stops at the durable pairing review gate until the user explicitly resumes it.
 
 All notable Agent Control changes are recorded here. The project is still pre-stable; entries describe qualified development milestones rather than implying production readiness.

@@ -22,7 +22,7 @@ To start or resume the durable Pixel provisioning graph from hpubuntu:
 npm run provision:pixel
 ```
 
-If ADB is absent, the command fails closed unless the operator explicitly supplies `AGENT_CONTROL_ALLOW_ADB_INSTALL=1`; it then uses non-interactive `sudo` for only `apt install adb`. When the graph reaches Android Wireless Debugging it persists `HUMAN REVIEW` and exits. Approve pairing on the Pixel, then resume the same queue with:
+If ADB is absent, the command fails closed unless the operator explicitly supplies `AGENT_CONTROL_ALLOW_ADB_INSTALL=1`; it then uses non-interactive, already-authorized `sudo` for only `apt install adb`. Missing authority or passwordless privilege is reported as a terminal `NEEDS AUTHORITY` or `NEEDS PRIVILEGE` state. Pairing is not reported as actionable until installation completed and a fresh `adb` detection observes the tool. Unrelated `demo:*` queue items remain stored but are excluded from provisioning progress output. When the graph reaches Android Wireless Debugging it persists `HUMAN REVIEW` and exits. Approve pairing on the Pixel, then resume the same queue with:
 
 ```bash
 npm run provision:pixel -- --approve-pairing
@@ -192,7 +192,7 @@ The current live qualification harness can prove:
 - ChatGPT Window latency classification;
 - Sentinel remote resource reachability.
 
-The current automated core/control/UI suite is **80/80 passing** at the Pixel provisioning entrypoint checkpoint. That includes persistent loop evidence, item-by-item batch execution, idempotent mission restoration, and approval resumption. Bootstrap scripts are now syntax-checked by the canonical `npm run check` gate as well.
+The current automated core/control/UI suite is **83/83 passing** at the Pixel provisioning entrypoint checkpoint. That includes failed-prerequisite blocking, explicit privilege failure, observed-ADB gating, durable mission restoration, item-by-item batch execution, idempotent mission restoration, and approval resumption. Bootstrap scripts are now syntax-checked by the canonical `npm run check` gate as well.
 
 ## Core architecture
 
