@@ -1,6 +1,6 @@
 {
   "name":"agent-control","version":"2.0.0","private":true,"type":"module","description":"Capability-agnostic distributed agent control plane",
-  "scripts":{"start":"tsx src/index.ts","dev":"tsx watch src/index.ts","test":"node --import tsx --test src/*.test.ts src/control/*.test.ts src/ui/*.test.ts","typecheck":"tsc --noEmit","check:bootstrap":"node --check scripts/control-plane.mjs && bash -n android/start-node.sh android/install-boot.sh android/termux-boot-agent-control.sh","check":"npm run typecheck && npm run check:bootstrap && npm test","qualify":"node scripts/qualify-all.mjs","qualify:all":"npm run qualify","up":"node scripts/control-plane.mjs up","status":"node scripts/control-plane.mjs status","down":"node scripts/control-plane.mjs down"},
+  "scripts":{"start":"tsx src/index.ts","dev":"tsx watch src/index.ts","test":"node --import tsx --test src/*.test.ts src/control/*.test.ts src/ui/*.test.ts scripts/*.test.mjs","typecheck":"tsc --noEmit","check:bootstrap":"node --check scripts/control-plane.mjs && bash -n android/start-node.sh android/install-boot.sh android/termux-boot-agent-control.sh","check":"npm run typecheck && npm run check:bootstrap && npm test","qualify":"node scripts/qualify-all.mjs","qualify:all":"npm run qualify","up":"node scripts/control-plane.mjs up","status":"node scripts/control-plane.mjs status","down":"node scripts/control-plane.mjs down"},
   "dependencies":{"blessed":"^0.1.81"},
   "devDependencies":{"@types/blessed":"^0.1.25","@types/node":"^24.0.0","tsx":"^4.20.0","typescript":"^5.9.0"}
 }

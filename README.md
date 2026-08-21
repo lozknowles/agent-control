@@ -26,6 +26,12 @@ Qualification separates provider correctness from latency. A correct but slow Ch
 
 State is persisted beneath `.agent-control/` by default. Runtime state, qualification output, credentials and node modules are excluded from source control.
 
+## Android self-provisioning mission
+
+The Work Queue now contains an explicit Pixel provisioning mission. It detects `adb`, permits only the allow-listed hpubuntu package operation `apt install adb`, then pauses in a human-review gate for Android Wireless Debugging pairing. After that approval, later work remains capability-gated: ADB transport and Android package installation must be independently advertised before the mission can qualify them, retrieve and verify the official GitHub Termux:Boot artifact, install and verify the package, install and verify the existing Agent Control Termux boot hook, and model unattended reboot recovery.
+
+This is implemented and covered by automated tests. It has not been physically qualified on Android in this release; no capability is granted by queue completion alone.
+
 ## Single-command control-plane bootstrap
 
 The current operational target is that normal startup should not require a sequence of manual curls, SSH forwards and service starts.
