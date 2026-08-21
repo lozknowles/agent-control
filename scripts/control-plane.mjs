@@ -271,12 +271,12 @@ async function up() {
 async function down() {
   const list = owned();
   const actions = [];
-  for (const process of list) {
+  for (const entry of list) {
     try {
-      process.kill(-process.pid, 'SIGTERM');
-      actions.push({ id: process.id, pid: process.pid, action: 'stopped' });
+      process.kill(-entry.pid, 'SIGTERM');
+      actions.push({ id: entry.id, pid: entry.pid, action: 'stopped' });
     } catch {
-      actions.push({ id: process.id, pid: process.pid, action: 'already-gone' });
+      actions.push({ id: entry.id, pid: entry.pid, action: 'already-gone' });
     }
   }
   save([]);
