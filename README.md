@@ -4,7 +4,7 @@ Agent Control is a terminal mission-control UI and durable control plane for run
 
 The core idea is simple: **the lane owns the work; models are replaceable workers**. Each lane keeps a durable contract and revisioned baton so work can pause, hand off, resume after restart, delegate, clone, or substitute providers without losing authoritative state.
 
-> **2.0 development status:** the control plane, capability resolver, contracts/batons, leases, PTY discovery/ownership model, provider registry, durable Work Queue, batching/preemption/persistence, queue telemetry, continuous Work Executor, cross-platform qualification harness, semantic-colour Work Queue TUI, isolated synthetic workload, single-command bootstrap and allow-listed Pixel Android node recovery are implemented. Physical Pixel recovery has been fault-injection qualified. The current TUI iteration has also been smoke-tested from the physical Pixel. Raw PTY write attachment and general-purpose execution adapters remain intentionally incomplete.
+> **2.0 development status:** the control plane, capability resolver, contracts/batons, leases, PTY discovery/ownership model, provider registry, durable Work Queue, batching/preemption/persistence, queue telemetry, continuous Work Executor, cross-platform qualification harness, semantic-colour Work Queue TUI, isolated synthetic workload, single-command bootstrap, allow-listed Pixel Android node recovery, and the durable Pixel self-provisioning entrypoint are implemented. The provisioning command is automated-test qualified only: physical Android pairing, ADB, package, boot-hook, and reboot qualification remain untested. Raw PTY write attachment and general-purpose execution adapters remain intentionally incomplete.
 
 ## Quick start
 
@@ -15,6 +15,20 @@ npm start
 ```
 
 `npm run check` runs TypeScript validation, bootstrap-script syntax validation, and core/control/UI tests.
+
+To start or resume the durable Pixel provisioning graph from hpubuntu:
+
+```bash
+npm run provision:pixel
+```
+
+If ADB is absent, the command fails closed unless the operator explicitly supplies `AGENT_CONTROL_ALLOW_ADB_INSTALL=1`; it then uses non-interactive `sudo` for only `apt install adb`. When the graph reaches Android Wireless Debugging it persists `HUMAN REVIEW` and exits. Approve pairing on the Pixel, then resume the same queue with:
+
+```bash
+npm run provision:pixel -- --approve-pairing
+```
+
+The command does not claim physical qualification. Termux:Boot installation and reboot recovery remain modeled gates until their evidence is observed on the Pixel.
 
 For the live distributed qualification matrix:
 
@@ -178,7 +192,7 @@ The current live qualification harness can prove:
 - ChatGPT Window latency classification;
 - Sentinel remote resource reachability.
 
-The current automated core/control/UI suite is **75/75 passing** at the Executor Phase 1 checkpoint. That includes persistent loop evidence and item-by-item batch execution. Bootstrap scripts are now syntax-checked by the canonical `npm run check` gate as well.
+The current automated core/control/UI suite is **80/80 passing** at the Pixel provisioning entrypoint checkpoint. That includes persistent loop evidence, item-by-item batch execution, idempotent mission restoration, and approval resumption. Bootstrap scripts are now syntax-checked by the canonical `npm run check` gate as well.
 
 ## Core architecture
 
