@@ -2,6 +2,49 @@
 
 All notable Agent Control changes are recorded here. The project is still pre-stable; entries describe qualified development milestones rather than implying production readiness.
 
+## [2.0.0 development] — 2026-08-21
+
+### Added
+
+- Continuous Work Executor layered on top of the durable Work Queue.
+- Dependency-driven graph progression after completion.
+- Compact task-specific execution context instead of replaying full workspace/conversation history.
+- Bounded retry handling and semantic outcome fingerprints.
+- Automatic repeated-outcome loop escalation to human review.
+- Persisted per-work-item outcome history so loop evidence survives queue-store restart.
+- Real homogeneous batch execution item by item rather than stopping at batch-lease creation.
+- Single-command control-plane lifecycle commands: `npm run up`, `npm run status`, and `npm run down`.
+- Health-first discovery/start of the existing hpubuntu llama systemd user services for ports `8080` and `8081`.
+- Reuse semantics for healthy ChatGPT Window bridge/adapter services on `8766`/`8767`.
+- Pixel bootstrap recovery from SSH-ready state through the known node-start recipe and hpubuntu `18788 -> Pixel:8788` forward.
+- Explicit Pixel bootstrap state `SSH-OFFLINE` for the observed case where Tailscale is reachable but Termux SSH `:8022` is not listening.
+- One-time Pixel transport-persistence installer `android/install-boot.sh`.
+- Termux:Boot hook `android/termux-boot-agent-control.sh` to restore `sshd` after Android reboot and optionally restore the Pixel node when a deliberate Pixel-local token is present.
+- Canonical bootstrap-script syntax gate `npm run check:bootstrap`.
+
+### Changed
+
+- `npm run check` now validates TypeScript, control-plane JavaScript syntax and Android shell-script syntax before running the automated test suite.
+- The bootstrap status schema is now `agent-control.bootstrap/v3` and reports a structured Pixel lifecycle rather than only a boolean reachability flag.
+- Pixel recovery no longer misclassifies an unavailable SSH transport as a failed node-start command.
+- `npm run down` remains authority-bounded: it stops only process groups explicitly recorded as Agent-Control-owned.
+- `README.md` and `android/README.md` now document the single-command bootstrap and one-time Pixel transport persistence setup.
+
+### Qualified evidence
+
+- Executor Phase 1 reached **75/75 passing automated tests**.
+- Restart-persistent loop detection and two-item homogeneous batch execution are covered by the canonical suite.
+- Bootstrap test from a partially cold state successfully discovered/started `llama-server.service` and `llama-coder.service`, reused the already healthy ChatGPT Window bridge/adapter, kept Sentinel reachable, and exposed Pixel as the only degraded dependency.
+- The physical Pixel failure was correctly narrowed to **Tailscale reachable / SSH `:8022` connection refused**, establishing the transport-persistence requirement now represented explicitly in the lifecycle.
+- The next release gate is a one-time Termux:Boot install followed by `npm run up`; expected progression is `SSH-OFFLINE -> NODE-DEGRADED/NODE-READY -> FORWARD-READY -> READY 5/5` without manual hpubuntu recovery commands.
+
+### Safety / authority notes
+
+- Boot persistence restores a known transport and optionally the known Pixel node; it does not expose arbitrary Android control.
+- The installer never invents or regenerates the Agent Control node token.
+- Occupied-but-unhealthy local ports are still left alone rather than killed or replaced.
+- Healthy external ChatGPT Window services are reused rather than claimed as Agent-Control-owned.
+
 ## [2.0.0 development] — 2026-08-20
 
 ### Added
@@ -36,9 +79,9 @@ All notable Agent Control changes are recorded here. The project is still pre-st
 
 ### Qualified evidence
 
-- Core/control/UI automated suite had reached **66/66 passing tests** before the final three theme tests were added; the current checkpoint target is **69 tests** and must be re-run locally after pulling the terminal-safe wrapper typing fix.
+- The semantic-colour/terminal-safe TUI checkpoint reached **69/69 passing tests**.
 - The compact semantic-colour TUI was visually smoke-tested from the physical Pixel terminal on 2026-08-20. Activity text rendered cleanly and workload bars retained class colours.
-- Pixel-terminal smoke testing also demonstrated useful degraded-state presentation (`Pixel OFFLINE / Tailscale unreachable`) when the resource path was genuinely unavailable from that execution context.
+- Pixel-terminal smoke testing also demonstrated useful degraded-state presentation when the resource path was genuinely unavailable from that execution context.
 
 ## [2.0.0 development] — 2026-08-19
 
