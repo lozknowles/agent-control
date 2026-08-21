@@ -4,7 +4,7 @@ Agent Control is a terminal mission-control UI and durable control plane for run
 
 The core idea is simple: **the lane owns the work; models are replaceable workers**. Each lane keeps a durable contract and revisioned baton so work can pause, hand off, resume after restart, delegate, clone, or substitute providers without losing authoritative state.
 
-> **2.0 development status:** the control plane, capability resolver, contracts/batons, leases, PTY discovery/ownership model, provider registry, durable Work Queue, batching/preemption/persistence, queue telemetry, cross-platform qualification harness, semantic-colour Work Queue TUI, isolated synthetic workload and allow-listed Pixel Android node recovery are implemented. Physical Pixel recovery has been fault-injection qualified. The current TUI iteration has also been smoke-tested from the physical Pixel. Raw PTY write attachment and general-purpose execution adapters remain intentionally incomplete.
+> **2.0 development status:** the control plane, capability resolver, contracts/batons, leases, PTY discovery/ownership model, provider registry, durable Work Queue, batching/preemption/persistence, queue telemetry, continuous Work Executor, cross-platform qualification harness, semantic-colour Work Queue TUI, isolated synthetic workload, single-command bootstrap and allow-listed Pixel Android node recovery are implemented. Physical Pixel recovery has been fault-injection qualified. The current TUI iteration has also been smoke-tested from the physical Pixel. Raw PTY write attachment and general-purpose execution adapters remain intentionally incomplete.
 
 ## Quick start
 
@@ -14,7 +14,7 @@ npm run check
 npm start
 ```
 
-`npm run check` runs TypeScript validation plus core, control and UI tests.
+`npm run check` runs TypeScript validation, bootstrap-script syntax validation, and core/control/UI tests.
 
 For the live distributed qualification matrix:
 
@@ -25,6 +25,47 @@ npm run qualify
 Qualification separates provider correctness from latency. A correct but slow ChatGPT Window response is reported as a latency observation rather than falsely marking the provider unavailable.
 
 State is persisted beneath `.agent-control/` by default. Runtime state, qualification output, credentials and node modules are excluded from source control.
+
+## Single-command control-plane bootstrap
+
+The current operational target is that normal startup should not require a sequence of manual curls, SSH forwards and service starts.
+
+```bash
+npm run status
+npm run up
+npm run down
+```
+
+`npm run up` is health-first and idempotent:
+
+- discovers the existing hpubuntu systemd user services whose unit definitions actually reference ports `8080` and `8081`, and starts only those when absent;
+- reuses healthy ChatGPT Window bridge/adapter listeners on `8766` and `8767`;
+- distinguishes Pixel transport states instead of collapsing them into one recovery failure;
+- when Pixel SSH is available, reuses or recovers the allow-listed node on `8788` and creates the hpubuntu `18788 -> Pixel:8788` forward;
+- records only processes Agent Control itself starts so `npm run down` cannot indiscriminately stop unrelated services;
+- reports an explicit `RESULT READY` or `RESULT DEGRADED` summary.
+
+The bootstrap lifecycle currently exposes the important Pixel boundary:
+
+```text
+OFFLINE
+SSH-OFFLINE       Tailscale reachable; Termux sshd :8022 unavailable
+NODE-DEGRADED     SSH ready; Pixel node :8788 unavailable
+NODE-READY        Pixel node ready; hpubuntu forward unavailable
+FORWARD-READY     hpubuntu :18788 responds
+CAPABILITY-READY  authenticated resource capability validated
+```
+
+A 2026-08-21 bootstrap test successfully discovered and started the two llama systemd services and reused both ChatGPT Window services, while correctly exposing the remaining Pixel condition as Tailscale-reachable but SSH-offline. Pixel transport persistence is therefore a one-time device prerequisite, not something hpubuntu can repair when no remote command transport exists.
+
+The repository now provides:
+
+```text
+android/install-boot.sh
+android/termux-boot-agent-control.sh
+```
+
+for a one-time Termux:Boot setup. See `android/README.md`. The boot hook restores `sshd`; if a Pixel-local node token is deliberately present it can also restore the Agent Control node. Otherwise hpubuntu recovers the node after SSH returns using the existing credential.
 
 ## Control-room TUI
 
@@ -59,7 +100,7 @@ Current footer keys are authoritative. Important 2.0 controls include:
 | `P` | Pause/resume checkpoint |
 | `Q` / `Ctrl-C` | Persist and quit |
 
-## Durable work and scheduling
+## Durable work and execution
 
 Agent Control separates interactive lane work from repetitive/background work. The Work Queue supports:
 
@@ -76,6 +117,15 @@ Agent Control separates interactive lane work from repetitive/background work. T
 - interactive preemption of preemptible background work;
 - retry limits;
 - low-confidence routing to human review.
+
+The continuous Work Executor now adds:
+
+- dependency-driven graph progression after each completed item;
+- compact task-specific context rather than whole-workspace conversation replay;
+- bounded retry handling;
+- semantic outcome fingerprints and loop escalation to human review;
+- persisted outcome history so loop detection survives queue-store restart;
+- real homogeneous batch execution item by item rather than stopping at lease formation.
 
 The scheduler selects work and resources before mutating queue state, avoiding double-claim/accounting behavior during batch formation.
 
@@ -101,20 +151,7 @@ harness.codex
 observe.android.logcat
 ```
 
-The lifecycle model distinguishes:
-
-```text
-OFFLINE
-REACHABLE
-SSH-READY
-NODE-DEGRADED
-NODE-READY / forward reconnecting
-FORWARD-READY
-CAPABILITY-READY
-RECOVERY-FAILED
-```
-
-Recovery is deliberately narrow. Agent Control may execute only the known Pixel node-start recipe over the authenticated SSH path. It does **not** expose arbitrary shell execution, regenerate credentials, or recreate a healthy SSH forward.
+Recovery is deliberately narrow. Agent Control may execute only the known Pixel node-start recipe over the authenticated SSH path. It does **not** expose arbitrary shell execution, regenerate credentials, or overwrite a healthy SSH forward.
 
 Recovery is health-authoritative and idempotent: requesting recovery while healthy is a no-op; if the node is absent it is started detached from the SSH session; Pixel-local and forwarded health are then independently verified. A surviving forward is reused.
 
@@ -135,7 +172,7 @@ The current live qualification harness can prove:
 - ChatGPT Window latency classification;
 - Sentinel remote resource reachability.
 
-A post-recovery seven-gate qualification passed on 2026-08-19. Earlier 2.0 qualification evidence and later physical recovery evidence are retained under `docs/evidence/`.
+The current automated core/control/UI suite is **75/75 passing** at the Executor Phase 1 checkpoint. That includes persistent loop evidence and item-by-item batch execution. Bootstrap scripts are now syntax-checked by the canonical `npm run check` gate as well.
 
 ## Core architecture
 
@@ -147,6 +184,8 @@ LANE -> CONTRACT -> BATON -> CAPABILITY REQUEST
                 Work Queue          direct lane work
                     |
               Coordinator
+                    |
+               Executor
                     |
           Capability Resolver
                     |
@@ -178,6 +217,8 @@ Agent Control remains conservative around authority:
 - high-risk routing remains approval-gated;
 - Pixel recovery is allow-listed and fails closed;
 - existing credentials are reused, never generated by recovery;
+- bootstrap leaves occupied-but-unhealthy ports alone rather than killing unknown listeners;
+- `npm run down` stops only processes recorded as Agent-Control-owned;
 - runtime/qualification evidence containing secrets must not be committed;
 - benchmark promotion must be reproducible and reversible.
 
@@ -185,16 +226,20 @@ Agent Control remains conservative around authority:
 
 ```bash
 npm run typecheck
+npm run check:bootstrap
 npm test
 npm run check
 npm run qualify
+npm run status
+npm run up
+npm run down
 ```
 
-For TUI changes, require both automated checks and a real terminal visual/control smoke test. The current semantic-colour/terminal-safe TUI iteration passed that visual smoke test on the physical Pixel after the automated suite was extended with demo and theme coverage. For physical recovery, use the bounded procedure in `TEST-TONIGHT.md` and preserve evidence without credentials.
+For TUI changes, require both automated checks and a real terminal visual/control smoke test. For physical recovery, preserve evidence without credentials. For bootstrap testing, do not manually repair a failed component before capturing `npm run up` output: the controller should expose the missing lifecycle boundary itself.
 
 ## Further documentation
 
-See `ARCHITECTURE.md`, `docs/architecture-v2.md`, `docs/ui-target.md`, `TODO.md`, `TEST-TONIGHT.md`, and `docs/evidence/`.
+See `ARCHITECTURE.md`, `docs/architecture-v2.md`, `docs/ui-target.md`, `TODO.md`, `TEST-TONIGHT.md`, `android/README.md`, and `docs/evidence/`.
 
 ## Design principle
 
