@@ -28,3 +28,11 @@ test('Termux Boot installation has a device-aware timeout and observed postcondi
   assert.match(source, /termux_boot_artifact_hash_changed_after_verification/);
   assert.match(source, /ops\.artifact=restoredArtifact/);
 });
+
+test('boot hook uses only scoped Termux ownership and verifies the installed hash', () => {
+  const source = fs.readFileSync(path.resolve('scripts/provision-pixel.mjs'), 'utf8');
+  assert.match(source, /'run-as','com\.termux'/);
+  assert.match(source, /\.\/android\/install-boot\.sh/);
+  assert.match(source, /sha256sum.*TERMUX_HOOK_SOURCE/);
+  assert.doesNotMatch(source, /adb\(\['shell',\s*'su'/);
+});
