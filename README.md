@@ -4,7 +4,7 @@ Agent Control is a terminal mission-control UI and durable control plane for run
 
 The core idea is simple: **the lane owns the work; models are replaceable workers**. Each lane keeps a durable contract and revisioned baton so work can pause, hand off, resume after restart, delegate, clone, or substitute providers without losing authoritative state.
 
-> **2.0 development status:** the control plane, capability resolver, contracts/batons, leases, PTY discovery/ownership model, provider registry, durable Work Queue, batching/preemption/persistence, queue telemetry, continuous Work Executor, cross-platform qualification harness, semantic-colour Work Queue TUI, isolated synthetic workload, single-command bootstrap, allow-listed Pixel Android node recovery, and the durable Pixel self-provisioning entrypoint are implemented. The provisioning command is automated-test qualified only: physical Android pairing, ADB, package, boot-hook, and reboot qualification remain untested. Raw PTY write attachment and general-purpose execution adapters remain intentionally incomplete.
+> **2.0 development status:** the control plane, capability resolver, contracts/batons, leases, PTY discovery/ownership model, provider registry, durable Work Queue, batching/preemption/persistence, queue telemetry, continuous Work Executor, cross-platform qualification harness, semantic-colour Work Queue TUI, isolated synthetic workload, single-command bootstrap, allow-listed Pixel Android node recovery, and the durable Pixel self-provisioning entrypoint are implemented. Physical Pixel 8 Pro evidence now covers Wireless Debugging pairing, ADB transport, the GitHub Termux:Boot package, and the hash-verified Termux boot hook. Reboot recovery is not yet qualified. Raw PTY write attachment and general-purpose execution adapters remain intentionally incomplete.
 
 ## Quick start
 
@@ -36,7 +36,13 @@ The host helper must be installed by an administrator as `/usr/local/libexec/age
 
 Do not grant `NOPASSWD: apt`, a shell, or general sudo. Validate with `sudo -n /usr/local/libexec/agent-control-privileged install-adb`; the command must not accept any other argument.
 
-The command does not claim physical qualification. Termux:Boot installation and reboot recovery remain modeled gates until their evidence is observed on the Pixel.
+The final reboot is never implicit. Once the hook is installed and verified, the graph persists `NEEDS REBOOT APPROVAL`. When ready for a deliberate physical reboot, run:
+
+```bash
+npm run provision:pixel -- --approve-reboot-test
+```
+
+That command reboots through the already-qualified ADB transport and waits up to three minutes for keyed Termux SSH to return. Denial, omission, or failure remains durable and resumable. Do not claim unattended reboot recovery until this live test completes.
 
 For the live distributed qualification matrix:
 
@@ -200,7 +206,7 @@ The current live qualification harness can prove:
 - ChatGPT Window latency classification;
 - Sentinel remote resource reachability.
 
-The current automated core/control/UI suite is **83/83 passing** at the Pixel provisioning entrypoint checkpoint. That includes failed-prerequisite blocking, explicit privilege failure, observed-ADB gating, durable mission restoration, item-by-item batch execution, idempotent mission restoration, and approval resumption. Bootstrap scripts are now syntax-checked by the canonical `npm run check` gate as well.
+The current automated core/control/UI suite is **99/99 passing** at the Pixel provisioning entrypoint checkpoint. That includes failed-prerequisite blocking, explicit privilege and reboot gates, observed-ADB gating, durable mission restoration, item-by-item batch execution, idempotent mission restoration, and approval resumption. Bootstrap scripts are syntax-checked by the canonical `npm run check` gate as well.
 
 ## Core architecture
 

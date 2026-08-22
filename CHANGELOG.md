@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Put physical reboot qualification behind an explicit durable `--approve-reboot-test` gate; an approved test reboots through ADB and requires keyed Termux SSH to return before qualification.
 - Wired boot-hook installation through Android's scoped `run-as com.termux` bridge to the existing fixed installer, and require the installed executable hook to match the repository source SHA-256 before completion.
 - Restored the persisted, verified Termux:Boot artifact across provisioning process restarts and rechecks its SHA-256 immediately before device installation.
 - Gave the Termux:Boot device installation a dedicated five-minute timeout and fresh package postcondition, and made incomplete device installation resumable instead of consuming both retries under the generic 30-second command limit.

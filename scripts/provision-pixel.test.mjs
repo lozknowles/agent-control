@@ -37,3 +37,11 @@ test('boot hook uses only scoped Termux ownership and verifies the installed has
   assert.match(source, /sha256sum.*TERMUX_HOOK_SOURCE/);
   assert.doesNotMatch(source, /adb\(\['shell',\s*'su'/);
 });
+
+test('reboot qualification requires an explicit flag and uses only keyed Termux SSH', () => {
+  const source = fs.readFileSync(path.resolve('scripts/provision-pixel.mjs'), 'utf8');
+  assert.match(source, /--approve-reboot-test/);
+  assert.match(source, /PasswordAuthentication=no/);
+  assert.match(source, /BatchMode=yes/);
+  assert.match(source, /await adb\(\['reboot'\]/);
+});
