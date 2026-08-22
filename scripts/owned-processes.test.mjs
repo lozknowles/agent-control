@@ -1,0 +1,3 @@
+import assert from 'node:assert/strict';import test from 'node:test';import{reconcileOwnedEntries}from'./owned-processes.mjs';
+test('owned-process reconciliation drops dead records and keeps one Pixel forward',()=>{const terminated=[];const entries=[{id:'pixel-forward',pid:10},{id:'pixel-forward',pid:11},{id:'llama-8080',pid:12},{id:'stale',pid:13}];const result=reconcileOwnedEntries(entries,{isAlive:pid=>pid!==13,terminate:pid=>terminated.push(pid)});assert.deepEqual(result,[entries[0],entries[2]]);assert.deepEqual(terminated,[11]);});
+
