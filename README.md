@@ -22,6 +22,18 @@ To start or resume the durable Pixel provisioning graph from hpubuntu:
 npm run provision:pixel
 ```
 
+### Read-only Collingham Facebook event observation
+
+With the Pixel unlocked, Facebook already logged in, and exactly one qualified ADB device connected, hpubuntu can perform the fixed read-only journey `Facebook -> Groups -> Your groups`. It inspects only displayed group titles containing the whole word `Collingham`, treats only posts with a visible publication age/date within seven days as eligible, and returns event-like posts as review candidates rather than facts:
+
+```bash
+npm run observe:facebook-collingham -- --approve-readonly-navigation
+```
+
+The adapter is fixed to `com.facebook.katana`. It can launch the resolved Facebook activity, tap exact semantic navigation labels, scroll, read the Android UI hierarchy, capture screenshots, and run local OCR. It has no text-entry, reaction, comment, post, join, or messaging operation. Ambiguous timestamps fail closed; overlapping screenshots are deduplicated; email addresses and phone numbers are redacted from JSON. Candidate screenshots and JSON remain under ignored `.agent-control/facebook-collingham-events/` state on hpubuntu and require human review before any downstream use.
+
+A physical Pixel 8 Pro pass on 2026-08-22 inspected eight qualifying group titles and produced four reviewed candidates from posts displayed as 22 hours, 12 hours, four days, and six days old. The initial pass took about nine and a half minutes. This proves the post-unlock read-only use case, not unattended cold-boot recovery or automatic event publication.
+
 If ADB is absent, the command persists `NEEDS PRIVILEGE` until a one-time host setup grants the invoking user non-interactive sudo access to a root-owned helper accepting only `install-adb`; the helper runs only `apt-get install -y --no-install-recommends adb`. Set `AGENT_CONTROL_ALLOW_ADB_INSTALL=1` and resume with `--approve-install`. Agent Control never reads, prompts for, stores, or logs a sudo password. If the helper is unavailable or denied, the item remains safely resumable. Pairing is not reported as actionable until installation completed and a fresh `adb` detection observes the tool. Unrelated `demo:*` queue items remain stored but are excluded from provisioning progress output. When the graph reaches Android Wireless Debugging it persists `HUMAN REVIEW` and exits. Approve pairing on the Pixel, then resume the same queue with:
 
 ```bash
@@ -206,7 +218,7 @@ The current live qualification harness can prove:
 - ChatGPT Window latency classification;
 - Sentinel remote resource reachability.
 
-The current automated core/control/UI suite is **99/99 passing** at the Pixel provisioning entrypoint checkpoint. That includes failed-prerequisite blocking, explicit privilege and reboot gates, observed-ADB gating, durable mission restoration, item-by-item batch execution, idempotent mission restoration, and approval resumption. Bootstrap scripts are syntax-checked by the canonical `npm run check` gate as well.
+The current automated core/control/UI suite is **110/110 passing** at the Pixel provisioning and read-only Facebook observation checkpoint. That includes failed-prerequisite blocking, explicit privilege and reboot gates, observed-ADB gating, durable mission restoration, fixed-package read-only navigation, timestamp filtering, candidate deduplication, contact redaction, and approval resumption. Bootstrap scripts are syntax-checked by the canonical `npm run check` gate as well.
 
 ## Core architecture
 

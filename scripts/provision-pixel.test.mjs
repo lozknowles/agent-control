@@ -45,3 +45,10 @@ test('reboot qualification requires an explicit flag and uses only keyed Termux 
   assert.match(source, /BatchMode=yes/);
   assert.match(source, /await adb\(\['reboot'\]/);
 });
+
+test('Facebook observer is fixed to read-only navigation and the Facebook package', () => {
+  const source = fs.readFileSync(path.resolve('scripts/observe-facebook-collingham.mjs'), 'utf8');
+  assert.match(source, /--approve-readonly-navigation/);
+  assert.match(source, /FACEBOOK_PACKAGE/);
+  assert.doesNotMatch(source, /monkey|input','text|LIKE|COMMENT|POST|MESSAGE/);
+});

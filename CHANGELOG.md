@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Added an explicitly approved, read-only hpubuntu ADB observer for Facebook `Your groups`: it inspects only whole-word Collingham group titles, limits candidate posts to visible timestamps within seven days, preserves local screenshot provenance, rejects ambiguous timestamps, deduplicates overlapping screens, and redacts contact details from JSON.
 - Put physical reboot qualification behind an explicit durable `--approve-reboot-test` gate; an approved test reboots through ADB and requires keyed Termux SSH to return before qualification.
 - Wired boot-hook installation through Android's scoped `run-as com.termux` bridge to the existing fixed installer, and require the installed executable hook to match the repository source SHA-256 before completion.
 - Restored the persisted, verified Termux:Boot artifact across provisioning process restarts and rechecks its SHA-256 immediately before device installation.

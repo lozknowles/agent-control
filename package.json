@@ -16,7 +16,8 @@
     "up": "node scripts/control-plane.mjs up",
     "status": "node scripts/control-plane.mjs status",
     "down": "node scripts/control-plane.mjs down",
-    "provision:pixel": "node --import tsx scripts/provision-pixel.mjs"
+    "provision:pixel": "node --import tsx scripts/provision-pixel.mjs",
+    "observe:facebook-collingham": "node --import tsx scripts/observe-facebook-collingham.mjs"
   },
   "dependencies": {
     "blessed": "^0.1.81"
