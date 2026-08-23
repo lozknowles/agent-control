@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-08-23T19:53:56.667Z",
+  "provider": "openai_chatkit",
+  "contract": "GET /v1/chatkit/threads/{thread_id}/items",
+  "verdict": "SUPPORTED+UNQUALIFIED",
+  "persistedSecret": false,
+  "authority": "bounded read-only context; no scheduling, lease, ownership, PTY, takeover or baton mutation path",
+  "blocker": "no_accessible_chatkit_thread"
+}

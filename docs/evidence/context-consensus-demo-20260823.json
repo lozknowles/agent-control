@@ -1,0 +1,615 @@
+{
+  "classification": "SIMULATED END-TO-END WORKFLOW WITH EXECUTABLE LOCAL COMPONENTS",
+  "taskId": "demo-shared-thread-consensus",
+  "flow": [
+    "task created",
+    "three independent lanes attach conclusions and context sources",
+    "judge receives conclusions only after independence phase",
+    "router selects tier 3",
+    "provider capabilities discovered and approved read-only fixture adapters selected",
+    "relevant sections selected within budget and sensitive fixture text redacted",
+    "expired thread omitted while Git/test evidence remains",
+    "evidence-weighted consensus records dissent",
+    "decision provenance reconstructed and persisted"
+  ],
+  "independence": {
+    "preservedUntilSynthesis": true,
+    "collaboratingBeforeJudge": false
+  },
+  "lanes": [
+    {
+      "laneId": 1,
+      "agentId": "agent-a",
+      "provider": "codex",
+      "model": "model-a",
+      "conclusion": "Adopt the context subsystem with Git as authority",
+      "confidence": 0.92,
+      "contextSourceIds": [
+        "ctx-2fc30485-077f-417c-a793-a65d43a78c71"
+      ],
+      "evidenceIds": [
+        "ev-e7466fb3-9dfb-459b-9cb3-ddf606d20d94"
+      ]
+    },
+    {
+      "laneId": 2,
+      "agentId": "agent-b",
+      "provider": "chatgpt-work",
+      "model": "model-b",
+      "conclusion": "Adopt the context subsystem with Git as authority",
+      "confidence": 0.84,
+      "contextSourceIds": [
+        "ctx-1bd3333e-d938-42a0-ba97-e270fa73ae17"
+      ],
+      "evidenceIds": [
+        "ev-a91d3d53-be8e-4796-bf90-0ea7fa6e335e"
+      ]
+    },
+    {
+      "laneId": 3,
+      "agentId": "agent-c",
+      "provider": "codex",
+      "model": "model-c",
+      "conclusion": "Do not adopt because thread links can expire",
+      "confidence": 0.76,
+      "contextSourceIds": [
+        "ctx-5b16086a-7f1c-4728-a055-7379a5e58f36"
+      ],
+      "evidenceIds": [
+        "ev-f2b61172-86a0-4988-8eba-3d30f3f4dc3d"
+      ]
+    }
+  ],
+  "contextSelection": {
+    "tier": 3,
+    "reason": "relevant_shared_context_required",
+    "contextSourceIds": [
+      "ctx-2fc30485-077f-417c-a793-a65d43a78c71",
+      "ctx-1bd3333e-d938-42a0-ba97-e270fa73ae17"
+    ],
+    "evidenceIds": [
+      "ev-e7466fb3-9dfb-459b-9cb3-ddf606d20d94",
+      "ev-a91d3d53-be8e-4796-bf90-0ea7fa6e335e",
+      "ev-f2b61172-86a0-4988-8eba-3d30f3f4dc3d"
+    ],
+    "omitted": [
+      {
+        "sourceId": "ctx-5b16086a-7f1c-4728-a055-7379a5e58f36",
+        "reason": "source_expired"
+      }
+    ],
+    "warnings": [],
+    "estimatedTokens": 1800,
+    "estimatedCost": 0.0018000000000000002
+  },
+  "providerCapabilities": [
+    {
+      "supported": true,
+      "capabilities": [
+        {
+          "id": "openai_shared_thread_public_v1",
+          "provider": "openai",
+          "sourceTypes": [
+            "openai_shared_thread"
+          ],
+          "accessMode": "public_read_only",
+          "supportsSections": true,
+          "createsOrBroadensShares": false,
+          "maxTokens": 32000
+        }
+      ]
+    },
+    {
+      "supported": true,
+      "capabilities": [
+        {
+          "id": "chatgpt_work_thread_approved_v1",
+          "provider": "openai",
+          "sourceTypes": [
+            "chatgpt_work_thread"
+          ],
+          "accessMode": "approved_authenticated_read_only",
+          "supportsSections": true,
+          "createsOrBroadensShares": false,
+          "maxTokens": 64000
+        }
+      ]
+    },
+    {
+      "supported": false,
+      "capabilities": [],
+      "reason": "unsupported_provider_or_source_type"
+    }
+  ],
+  "loadedContext": {
+    "materials": [
+      {
+        "sourceId": "ctx-2fc30485-077f-417c-a793-a65d43a78c71",
+        "text": "## Visible tool evidence\nThe implementation diff and test gate support the conclusion. api_key=[REDACTED]\n\n## Architecture decision\nAgent Control must remain authoritative; shared context is read-only supporting material.\n\n## Failed approach\nLoading every historical thread exceeded the context budget.\n\n## Summary\nVisible shareable conversation summary. No private chain-of-thought.",
+        "tokens": 93,
+        "sections": [
+          "evidence",
+          "decision",
+          "failure",
+          "summary"
+        ]
+      },
+      {
+        "sourceId": "ctx-1bd3333e-d938-42a0-ba97-e270fa73ae17",
+        "text": "## Visible tool evidence\nThe implementation diff and test gate support the conclusion. api_key=[REDACTED]\n\n## Architecture decision\nAgent Control must remain authoritative; shared context is read-only supporting material.\n\n## Failed approach\nLoading every historical thread exceeded the context budget.\n\n## Summary\nVisible shareable conversation summary. No private chain-of-thought.",
+        "tokens": 93,
+        "sections": [
+          "evidence",
+          "decision",
+          "failure",
+          "summary"
+        ]
+      }
+    ],
+    "failures": []
+  },
+  "consensus": {
+    "id": "decision-1e771848-4d11-4916-90fc-c6b65a3ad2b1",
+    "taskId": "demo-shared-thread-consensus",
+    "judgeLaneId": 4,
+    "conclusionIds": [
+      "con-96561099-e4ba-4e9a-a5d4-fe1ab5c9d717",
+      "con-c0320765-c6f2-4504-9446-3e436ca3f7a7",
+      "con-dc99d946-e553-49ba-970d-0ec4bfe132f3"
+    ],
+    "selectedConclusionId": "con-96561099-e4ba-4e9a-a5d4-fe1ab5c9d717",
+    "conclusion": "Adopt the context subsystem with Git as authority",
+    "agreements": [
+      "Adopt the context subsystem with Git as authority"
+    ],
+    "disagreements": [
+      "Do not adopt because thread links can expire"
+    ],
+    "dissentingConclusionIds": [
+      "con-dc99d946-e553-49ba-970d-0ec4bfe132f3"
+    ],
+    "finalConfidence": 0.8958333333333334,
+    "contextTier": 3,
+    "provenanceNodeId": "decision:decision-1e771848-4d11-4916-90fc-c6b65a3ad2b1",
+    "createdAt": "2026-08-23T14:26:38.409Z"
+  },
+  "provenance": {
+    "nodes": [
+      {
+        "id": "decision:decision-1e771848-4d11-4916-90fc-c6b65a3ad2b1",
+        "kind": "decision",
+        "refId": "decision-1e771848-4d11-4916-90fc-c6b65a3ad2b1",
+        "label": "Adopt the context subsystem with Git as authority",
+        "metadata": {
+          "judgeLaneId": 4,
+          "contextTier": 3
+        }
+      },
+      {
+        "id": "conclusion:con-96561099-e4ba-4e9a-a5d4-fe1ab5c9d717",
+        "kind": "conclusion",
+        "refId": "con-96561099-e4ba-4e9a-a5d4-fe1ab5c9d717",
+        "label": "Adopt the context subsystem with Git as authority",
+        "metadata": {
+          "laneId": 1,
+          "agentId": "agent-a",
+          "provider": "codex",
+          "model": "model-a"
+        }
+      },
+      {
+        "id": "conclusion:con-c0320765-c6f2-4504-9446-3e436ca3f7a7",
+        "kind": "conclusion",
+        "refId": "con-c0320765-c6f2-4504-9446-3e436ca3f7a7",
+        "label": "Adopt the context subsystem with Git as authority",
+        "metadata": {
+          "laneId": 2,
+          "agentId": "agent-b",
+          "provider": "chatgpt-work",
+          "model": "model-b"
+        }
+      },
+      {
+        "id": "conclusion:con-dc99d946-e553-49ba-970d-0ec4bfe132f3",
+        "kind": "conclusion",
+        "refId": "con-dc99d946-e553-49ba-970d-0ec4bfe132f3",
+        "label": "Do not adopt because thread links can expire",
+        "metadata": {
+          "laneId": 3,
+          "agentId": "agent-c",
+          "provider": "codex",
+          "model": "model-c"
+        }
+      },
+      {
+        "id": "evidence:ev-e7466fb3-9dfb-459b-9cb3-ddf606d20d94",
+        "kind": "evidence",
+        "refId": "ev-e7466fb3-9dfb-459b-9cb3-ddf606d20d94",
+        "label": "Focused shared-context tests passed",
+        "metadata": {
+          "classification": "verified_executable",
+          "result": "passed"
+        }
+      },
+      {
+        "id": "context_source:ctx-2fc30485-077f-417c-a793-a65d43a78c71",
+        "kind": "context_source",
+        "refId": "ctx-2fc30485-077f-417c-a793-a65d43a78c71",
+        "label": "Agent A visible experiment log and test output",
+        "metadata": {
+          "type": "openai_shared_thread",
+          "provider": "openai"
+        }
+      },
+      {
+        "id": "evidence:ev-a91d3d53-be8e-4796-bf90-0ea7fa6e335e",
+        "kind": "evidence",
+        "refId": "ev-a91d3d53-be8e-4796-bf90-0ea7fa6e335e",
+        "label": "Context graph implementation diff",
+        "metadata": {
+          "classification": "repository_evidence",
+          "result": "observed"
+        }
+      },
+      {
+        "id": "context_source:ctx-1bd3333e-d938-42a0-ba97-e270fa73ae17",
+        "kind": "context_source",
+        "refId": "ctx-1bd3333e-d938-42a0-ba97-e270fa73ae17",
+        "label": "Agent B visible architecture alternatives",
+        "metadata": {
+          "type": "chatgpt_work_thread",
+          "provider": "openai"
+        }
+      },
+      {
+        "id": "evidence:ev-f2b61172-86a0-4988-8eba-3d30f3f4dc3d",
+        "kind": "evidence",
+        "refId": "ev-f2b61172-86a0-4988-8eba-3d30f3f4dc3d",
+        "label": "Concern that external threads may expire",
+        "metadata": {
+          "classification": "agent_interpretation"
+        }
+      },
+      {
+        "id": "context_source:ctx-5b16086a-7f1c-4728-a055-7379a5e58f36",
+        "kind": "context_source",
+        "refId": "ctx-5b16086a-7f1c-4728-a055-7379a5e58f36",
+        "label": "Agent C thread share is unavailable",
+        "metadata": {
+          "type": "codex_thread",
+          "provider": "codex"
+        }
+      },
+      {
+        "id": "commit:demo-commit-123",
+        "kind": "commit",
+        "refId": "demo-commit-123",
+        "label": "demo-commit-123",
+        "metadata": {
+          "repository": "/fast/repos/agent-control"
+        }
+      },
+      {
+        "id": "test:ev-e7466fb3-9dfb-459b-9cb3-ddf606d20d94",
+        "kind": "test",
+        "refId": "ev-e7466fb3-9dfb-459b-9cb3-ddf606d20d94",
+        "label": "node --import tsx --test src/control/context.test.ts",
+        "metadata": {
+          "result": "passed"
+        }
+      }
+    ],
+    "edges": [
+      {
+        "from": "evidence:ev-e7466fb3-9dfb-459b-9cb3-ddf606d20d94",
+        "to": "context_source:ctx-2fc30485-077f-417c-a793-a65d43a78c71",
+        "relation": "context_in"
+      },
+      {
+        "from": "evidence:ev-e7466fb3-9dfb-459b-9cb3-ddf606d20d94",
+        "to": "commit:demo-commit-123",
+        "relation": "refers_to"
+      },
+      {
+        "from": "evidence:ev-e7466fb3-9dfb-459b-9cb3-ddf606d20d94",
+        "to": "test:ev-e7466fb3-9dfb-459b-9cb3-ddf606d20d94",
+        "relation": "supported_by"
+      },
+      {
+        "from": "evidence:ev-a91d3d53-be8e-4796-bf90-0ea7fa6e335e",
+        "to": "context_source:ctx-1bd3333e-d938-42a0-ba97-e270fa73ae17",
+        "relation": "context_in"
+      },
+      {
+        "from": "evidence:ev-a91d3d53-be8e-4796-bf90-0ea7fa6e335e",
+        "to": "commit:demo-commit-123",
+        "relation": "refers_to"
+      },
+      {
+        "from": "evidence:ev-f2b61172-86a0-4988-8eba-3d30f3f4dc3d",
+        "to": "context_source:ctx-5b16086a-7f1c-4728-a055-7379a5e58f36",
+        "relation": "context_in"
+      },
+      {
+        "from": "conclusion:con-96561099-e4ba-4e9a-a5d4-fe1ab5c9d717",
+        "to": "evidence:ev-e7466fb3-9dfb-459b-9cb3-ddf606d20d94",
+        "relation": "supported_by"
+      },
+      {
+        "from": "conclusion:con-96561099-e4ba-4e9a-a5d4-fe1ab5c9d717",
+        "to": "context_source:ctx-2fc30485-077f-417c-a793-a65d43a78c71",
+        "relation": "context_in"
+      },
+      {
+        "from": "conclusion:con-c0320765-c6f2-4504-9446-3e436ca3f7a7",
+        "to": "evidence:ev-a91d3d53-be8e-4796-bf90-0ea7fa6e335e",
+        "relation": "supported_by"
+      },
+      {
+        "from": "conclusion:con-c0320765-c6f2-4504-9446-3e436ca3f7a7",
+        "to": "context_source:ctx-1bd3333e-d938-42a0-ba97-e270fa73ae17",
+        "relation": "context_in"
+      },
+      {
+        "from": "conclusion:con-dc99d946-e553-49ba-970d-0ec4bfe132f3",
+        "to": "evidence:ev-f2b61172-86a0-4988-8eba-3d30f3f4dc3d",
+        "relation": "supported_by"
+      },
+      {
+        "from": "conclusion:con-dc99d946-e553-49ba-970d-0ec4bfe132f3",
+        "to": "context_source:ctx-5b16086a-7f1c-4728-a055-7379a5e58f36",
+        "relation": "context_in"
+      },
+      {
+        "from": "decision:decision-1e771848-4d11-4916-90fc-c6b65a3ad2b1",
+        "to": "conclusion:con-96561099-e4ba-4e9a-a5d4-fe1ab5c9d717",
+        "relation": "derived_from"
+      },
+      {
+        "from": "decision:decision-1e771848-4d11-4916-90fc-c6b65a3ad2b1",
+        "to": "conclusion:con-c0320765-c6f2-4504-9446-3e436ca3f7a7",
+        "relation": "derived_from"
+      },
+      {
+        "from": "decision:decision-1e771848-4d11-4916-90fc-c6b65a3ad2b1",
+        "to": "conclusion:con-dc99d946-e553-49ba-970d-0ec4bfe132f3",
+        "relation": "disagrees_with"
+      }
+    ]
+  },
+  "operatorView": {
+    "decisionId": "decision-1e771848-4d11-4916-90fc-c6b65a3ad2b1",
+    "nodes": [
+      {
+        "id": "decision:decision-1e771848-4d11-4916-90fc-c6b65a3ad2b1",
+        "kind": "decision",
+        "refId": "decision-1e771848-4d11-4916-90fc-c6b65a3ad2b1",
+        "label": "Adopt the context subsystem with Git as authority",
+        "metadata": {
+          "judgeLaneId": 4,
+          "contextTier": 3
+        }
+      },
+      {
+        "id": "conclusion:con-96561099-e4ba-4e9a-a5d4-fe1ab5c9d717",
+        "kind": "conclusion",
+        "refId": "con-96561099-e4ba-4e9a-a5d4-fe1ab5c9d717",
+        "label": "Adopt the context subsystem with Git as authority",
+        "metadata": {
+          "laneId": 1,
+          "agentId": "agent-a",
+          "provider": "codex",
+          "model": "model-a"
+        }
+      },
+      {
+        "id": "conclusion:con-c0320765-c6f2-4504-9446-3e436ca3f7a7",
+        "kind": "conclusion",
+        "refId": "con-c0320765-c6f2-4504-9446-3e436ca3f7a7",
+        "label": "Adopt the context subsystem with Git as authority",
+        "metadata": {
+          "laneId": 2,
+          "agentId": "agent-b",
+          "provider": "chatgpt-work",
+          "model": "model-b"
+        }
+      },
+      {
+        "id": "conclusion:con-dc99d946-e553-49ba-970d-0ec4bfe132f3",
+        "kind": "conclusion",
+        "refId": "con-dc99d946-e553-49ba-970d-0ec4bfe132f3",
+        "label": "Do not adopt because thread links can expire",
+        "metadata": {
+          "laneId": 3,
+          "agentId": "agent-c",
+          "provider": "codex",
+          "model": "model-c"
+        }
+      },
+      {
+        "id": "evidence:ev-e7466fb3-9dfb-459b-9cb3-ddf606d20d94",
+        "kind": "evidence",
+        "refId": "ev-e7466fb3-9dfb-459b-9cb3-ddf606d20d94",
+        "label": "Focused shared-context tests passed",
+        "metadata": {
+          "classification": "verified_executable",
+          "result": "passed"
+        }
+      },
+      {
+        "id": "context_source:ctx-2fc30485-077f-417c-a793-a65d43a78c71",
+        "kind": "context_source",
+        "refId": "ctx-2fc30485-077f-417c-a793-a65d43a78c71",
+        "label": "Agent A visible experiment log and test output",
+        "metadata": {
+          "type": "openai_shared_thread",
+          "provider": "openai"
+        },
+        "url": "https://chatgpt.com/share/mock-independent-a",
+        "accessibility": "available"
+      },
+      {
+        "id": "evidence:ev-a91d3d53-be8e-4796-bf90-0ea7fa6e335e",
+        "kind": "evidence",
+        "refId": "ev-a91d3d53-be8e-4796-bf90-0ea7fa6e335e",
+        "label": "Context graph implementation diff",
+        "metadata": {
+          "classification": "repository_evidence",
+          "result": "observed"
+        }
+      },
+      {
+        "id": "context_source:ctx-1bd3333e-d938-42a0-ba97-e270fa73ae17",
+        "kind": "context_source",
+        "refId": "ctx-1bd3333e-d938-42a0-ba97-e270fa73ae17",
+        "label": "Agent B visible architecture alternatives",
+        "metadata": {
+          "type": "chatgpt_work_thread",
+          "provider": "openai"
+        },
+        "url": "https://chatgpt.com/share/mock-independent-b",
+        "accessibility": "available"
+      },
+      {
+        "id": "evidence:ev-f2b61172-86a0-4988-8eba-3d30f3f4dc3d",
+        "kind": "evidence",
+        "refId": "ev-f2b61172-86a0-4988-8eba-3d30f3f4dc3d",
+        "label": "Concern that external threads may expire",
+        "metadata": {
+          "classification": "agent_interpretation"
+        }
+      },
+      {
+        "id": "context_source:ctx-5b16086a-7f1c-4728-a055-7379a5e58f36",
+        "kind": "context_source",
+        "refId": "ctx-5b16086a-7f1c-4728-a055-7379a5e58f36",
+        "label": "Agent C thread share is unavailable",
+        "metadata": {
+          "type": "codex_thread",
+          "provider": "codex"
+        },
+        "url": "https://example.invalid/shared/mock-independent-c",
+        "accessibility": "expired"
+      },
+      {
+        "id": "commit:demo-commit-123",
+        "kind": "commit",
+        "refId": "demo-commit-123",
+        "label": "demo-commit-123",
+        "metadata": {
+          "repository": "/fast/repos/agent-control"
+        }
+      },
+      {
+        "id": "test:ev-e7466fb3-9dfb-459b-9cb3-ddf606d20d94",
+        "kind": "test",
+        "refId": "ev-e7466fb3-9dfb-459b-9cb3-ddf606d20d94",
+        "label": "node --import tsx --test src/control/context.test.ts",
+        "metadata": {
+          "result": "passed"
+        }
+      }
+    ],
+    "edges": [
+      {
+        "from": "evidence:ev-e7466fb3-9dfb-459b-9cb3-ddf606d20d94",
+        "to": "context_source:ctx-2fc30485-077f-417c-a793-a65d43a78c71",
+        "relation": "context_in"
+      },
+      {
+        "from": "evidence:ev-e7466fb3-9dfb-459b-9cb3-ddf606d20d94",
+        "to": "commit:demo-commit-123",
+        "relation": "refers_to"
+      },
+      {
+        "from": "evidence:ev-e7466fb3-9dfb-459b-9cb3-ddf606d20d94",
+        "to": "test:ev-e7466fb3-9dfb-459b-9cb3-ddf606d20d94",
+        "relation": "supported_by"
+      },
+      {
+        "from": "evidence:ev-a91d3d53-be8e-4796-bf90-0ea7fa6e335e",
+        "to": "context_source:ctx-1bd3333e-d938-42a0-ba97-e270fa73ae17",
+        "relation": "context_in"
+      },
+      {
+        "from": "evidence:ev-a91d3d53-be8e-4796-bf90-0ea7fa6e335e",
+        "to": "commit:demo-commit-123",
+        "relation": "refers_to"
+      },
+      {
+        "from": "evidence:ev-f2b61172-86a0-4988-8eba-3d30f3f4dc3d",
+        "to": "context_source:ctx-5b16086a-7f1c-4728-a055-7379a5e58f36",
+        "relation": "context_in"
+      },
+      {
+        "from": "conclusion:con-96561099-e4ba-4e9a-a5d4-fe1ab5c9d717",
+        "to": "evidence:ev-e7466fb3-9dfb-459b-9cb3-ddf606d20d94",
+        "relation": "supported_by"
+      },
+      {
+        "from": "conclusion:con-96561099-e4ba-4e9a-a5d4-fe1ab5c9d717",
+        "to": "context_source:ctx-2fc30485-077f-417c-a793-a65d43a78c71",
+        "relation": "context_in"
+      },
+      {
+        "from": "conclusion:con-c0320765-c6f2-4504-9446-3e436ca3f7a7",
+        "to": "evidence:ev-a91d3d53-be8e-4796-bf90-0ea7fa6e335e",
+        "relation": "supported_by"
+      },
+      {
+        "from": "conclusion:con-c0320765-c6f2-4504-9446-3e436ca3f7a7",
+        "to": "context_source:ctx-1bd3333e-d938-42a0-ba97-e270fa73ae17",
+        "relation": "context_in"
+      },
+      {
+        "from": "conclusion:con-dc99d946-e553-49ba-970d-0ec4bfe132f3",
+        "to": "evidence:ev-f2b61172-86a0-4988-8eba-3d30f3f4dc3d",
+        "relation": "supported_by"
+      },
+      {
+        "from": "conclusion:con-dc99d946-e553-49ba-970d-0ec4bfe132f3",
+        "to": "context_source:ctx-5b16086a-7f1c-4728-a055-7379a5e58f36",
+        "relation": "context_in"
+      },
+      {
+        "from": "decision:decision-1e771848-4d11-4916-90fc-c6b65a3ad2b1",
+        "to": "conclusion:con-96561099-e4ba-4e9a-a5d4-fe1ab5c9d717",
+        "relation": "derived_from"
+      },
+      {
+        "from": "decision:decision-1e771848-4d11-4916-90fc-c6b65a3ad2b1",
+        "to": "conclusion:con-c0320765-c6f2-4504-9446-3e436ca3f7a7",
+        "relation": "derived_from"
+      },
+      {
+        "from": "decision:decision-1e771848-4d11-4916-90fc-c6b65a3ad2b1",
+        "to": "conclusion:con-dc99d946-e553-49ba-970d-0ec4bfe132f3",
+        "relation": "disagrees_with"
+      }
+    ],
+    "mermaid": "flowchart TD\n  n0[\"decision: Adopt the context subsystem with Git as authority\"]\n  n1[\"conclusion: Adopt the context subsystem with Git as authority\"]\n  n2[\"conclusion: Adopt the context subsystem with Git as authority\"]\n  n3[\"conclusion: Do not adopt because thread links can expire\"]\n  n4[\"evidence: Focused shared-context tests passed\"]\n  n5[\"context_source: Agent A visible experiment log and test output\"]\n  click n5 \"https://chatgpt.com/share/mock-independent-a\" \"Open read-only context\"\n  n6[\"evidence: Context graph implementation diff\"]\n  n7[\"context_source: Agent B visible architecture alternatives\"]\n  click n7 \"https://chatgpt.com/share/mock-independent-b\" \"Open read-only context\"\n  n8[\"evidence: Concern that external threads may expire\"]\n  n9[\"context_source: Agent C thread share is unavailable\"]\n  click n9 \"https://example.invalid/shared/mock-independent-c\" \"Open read-only context\"\n  n10[\"commit: demo-commit-123\"]\n  n11[\"test: node --import tsx --test src/control/context.test.ts\"]\n  n4 -->|context_in| n5\n  n4 -->|refers_to| n10\n  n4 -->|supported_by| n11\n  n6 -->|context_in| n7\n  n6 -->|refers_to| n10\n  n8 -->|context_in| n9\n  n1 -->|supported_by| n4\n  n1 -->|context_in| n5\n  n2 -->|supported_by| n6\n  n2 -->|context_in| n7\n  n3 -->|supported_by| n8\n  n3 -->|context_in| n9\n  n0 -->|derived_from| n1\n  n0 -->|derived_from| n2\n  n0 -->|disagrees_with| n3\n"
+  },
+  "restartProof": {
+    "sources": true,
+    "conclusions": true,
+    "decision": true,
+    "batonReferences": [
+      [
+        "ctx-2fc30485-077f-417c-a793-a65d43a78c71"
+      ],
+      [
+        "ctx-1bd3333e-d938-42a0-ba97-e270fa73ae17"
+      ],
+      [
+        "ctx-5b16086a-7f1c-4728-a055-7379a5e58f36"
+      ]
+    ]
+  },
+  "security": {
+    "createdPublicShare": false,
+    "storedCredentials": false,
+    "fetchedAuthenticatedContent": false,
+    "approvedAuthenticatedFixtureTransport": true,
+    "redactionApplied": true
+  }
+}

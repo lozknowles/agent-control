@@ -1,0 +1,130 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-08-23T19:51:47.7938760Z",
+  "worktree": "C:/Users/Loz/Documents/Codex/2026-08-23/priority-0-orca-agent-control-3/agent-control-integration-local",
+  "authorityBoundary": "External context may inform policy or reasoning only and cannot schedule, mutate leases or ownership, write PTYs, interfere with human takeover, create or broaden shares, commit, push, or deploy.",
+  "providers": [
+    {
+      "provider": "OpenAI ChatKit threads",
+      "officialCapabilities": [
+        "GET /v1/chatkit/threads",
+        "GET /v1/chatkit/threads/{thread_id}",
+        "GET /v1/chatkit/threads/{thread_id}/items",
+        "POST /v1/chatkit/sessions requires an existing workflow id"
+      ],
+      "authentication": "OpenAI project API key plus OpenAI-Beta: chatkit_beta=v1",
+      "status": "SUPPORTED+UNQUALIFIED",
+      "liveEvidence": {
+        "listWithoutBetaHeader": {"httpStatus": 400, "errorCode": "invalid_beta"},
+        "listWithBetaHeader": {"httpStatus": 200, "accessibleThreads": 0, "hasMore": false},
+        "approvedDiscoveryHarness": {
+          "recordedAt": "2026-08-23T19:53:56.667Z",
+          "verdict": "SUPPORTED+UNQUALIFIED",
+          "blocker": "no_accessible_chatkit_thread",
+          "persistedSecret": false,
+          "evidenceFile": "docs/evidence/openai-chatkit-live-run-20260823.json"
+        },
+        "validCredentialMissingThread": {"httpStatus": 404},
+        "ephemeralInvalidCredential": {"httpStatus": 401},
+        "authenticatedList": {
+          "recordedAt": "2026-08-23T19:51:37.3094770Z",
+          "httpStatus": 200,
+          "accessibleThreads": 0,
+          "hasMore": false,
+          "responseSha256": "eb1116719781d1499b8f07a4c2e6a9880ed22eb87479a425f36644e69e9f2941",
+          "requestId": "0870c4b6-d2b2-4e1a-9e20-611dd1ecf220"
+        },
+        "platformUi": {
+          "project": "Default project",
+          "authenticated": true,
+          "existingWorkflowsObserved": 0,
+          "createOutcome": "blocked before configuration or publication",
+          "gate": "Payment method needed",
+          "workflowId": null,
+          "threadId": null
+        }
+      },
+      "blocker": "The authenticated project contains no ChatKit thread or published workflow, and the official Agent Builder UI requires a payment method before the first workflow can be configured or published.",
+      "minimumMissingItem": "Enable billing by adding a payment method to the same OpenAI project.",
+      "adapterDecision": "Retain GET-only official adapter and discovery harness; do not claim qualification until a real cthr_ target returns and validates."
+    },
+    {
+      "provider": "ChatGPT Work/shared context",
+      "officialCapabilities": ["Codex app host read_thread capability for ChatGPT conversations"],
+      "authentication": "Existing Codex app session; credentials remain outside Agent Control",
+      "status": "SUPPORTED+QUALIFIED",
+      "scope": "Codex host-injected transport only",
+      "liveEvidence": {
+        "threadId": "6a8b1d64-2150-83eb-9213-632f6cd3d69f",
+        "kind": "chatgpt",
+        "schemaVersion": 1,
+        "read": "successful",
+        "pagination": "cursor contract available"
+      },
+      "limitations": "No documented standalone ChatGPT Work conversation-history API was found. This is an injected Codex host capability, not a portable provider HTTP adapter.",
+      "adapterDecision": "Retain approval-gated injected transport; standalone ChatGPT Work sources remain reference-only."
+    },
+    {
+      "provider": "Codex task context",
+      "officialCapabilities": ["Codex app host list_threads and read_thread capabilities"],
+      "authentication": "Existing Codex app session; credentials remain outside Agent Control",
+      "status": "SUPPORTED+QUALIFIED",
+      "scope": "Codex host-injected transport only",
+      "liveEvidence": {
+        "threadId": "01a02f6e-4f68-7170-a2ac-356c2d620aae",
+        "hostId": "local",
+        "kind": "codex",
+        "schemaVersion": 1,
+        "read": "successful",
+        "pagination": "cursor contract exercised by response"
+      },
+      "limitations": "No documented standalone Codex task-history HTTP API was found. The capability is supplied by the Codex host.",
+      "adapterDecision": "Retain approval-gated injected transport; external Codex links without a host transport remain reference-only."
+    }
+  ],
+  "failClosedEvidence": {
+    "focusedTests": 34,
+    "covered": [
+      "capability discovery",
+      "authenticated-read approval",
+      "auth failure",
+      "access denial",
+      "missing or deleted source",
+      "provider error",
+      "source and thread identity mismatch",
+      "document identity validation",
+      "section selection",
+      "token budget enforcement",
+      "redaction",
+      "retention expiry and reference-only handling",
+      "provenance recording",
+      "provider unavailability with repository evidence retained",
+      "unconditional human PTY takeover",
+      "provider failure authority invariance"
+    ]
+  },
+  "repositoryGate": {
+    "platform": "hpubuntu",
+    "typescript": "PASS",
+    "nodeBootstrapSyntax": "PASS",
+    "shellBootstrapSyntax": "PASS",
+    "serial": true,
+    "testsPassed": 151,
+    "testsFailed": 0
+  },
+  "officialSources": [
+    {
+      "url": "https://platform.openai.com/docs/guides/chatkit",
+      "retrievedAt": "2026-08-23T19:51:47.3712355Z",
+      "httpStatus": 200,
+      "sha256": "a27f3ab1475a716271416e87149d71a36ce147c20deab4fd42edfc0a6779f31c"
+    },
+    {
+      "url": "https://platform.openai.com/docs/guides/agent-builder",
+      "retrievedAt": "2026-08-23T19:51:47.7938760Z",
+      "httpStatus": 200,
+      "sha256": "6c17c8490128cd6fcd2aa409f7dc2dc36089350cb34fd180d028f35f9d49a898"
+    }
+  ],
+  "nonActions": ["no billing change", "no browser scraping", "no DOM extraction", "no session-cookie access", "no share creation", "no production deploy", "no Agent Control authority mutation"]
+}
