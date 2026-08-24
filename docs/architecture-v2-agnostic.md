@@ -1,4 +1,6 @@
-# Infrastructure-neutral architecture
+# Infrastructure-neutral configuration appendix
+
+> Historical/configuration appendix. The authoritative current system and adaptive-harness boundary is [`../ARCHITECTURE.md`](../ARCHITECTURE.md); current terminology is in [`concepts.md`](concepts.md). This document remains useful for the infrastructure-neutral resource/configuration model and does not define the complete 3.0.x product identity.
 
 ## Boundary
 

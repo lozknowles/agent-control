@@ -1,6 +1,8 @@
-# Agent Control 3.0.1
+# Agent Control 3.0.x
 
-Agent Control is an infrastructure-neutral control plane for durable, multi-agent work. A lane owns its task; execution providers and models are replaceable workers. Agent Control remains authoritative for scheduling, priorities, leases, ownership, human takeover, batons, handoffs, clones, shared tasks, provider qualification, confidence routing, approvals, recovery validation and conflict policy.
+Agent Control is an infrastructure-neutral, policy-controlled adaptive harness for durable work by heterogeneous agents and models. Its executable harness core composes a task-appropriate worker, provider/model route, prompt profile, minimum qualified skills, restricted tools, context strategy, runtime settings, authority snapshot, resource limits and verification/escalation policy into a fingerprinted execution recipe.
+
+A lane owns its task; recipes, agents, models, skills, tools and execution providers are replaceable and remain below the control boundary. Agent Control remains authoritative for scheduling, priorities, leases, ownership, unconditional human takeover, batons, handoffs, clones, shared tasks, provider qualification, routing, approvals, recovery validation and conflict policy. The recipe builder and economic router are integrated as an experimental 3.0.x core; automatic scheduler-to-recipe-to-provider dispatch and the skill lifecycle are 3.1 work, not released 3.0.1 claims.
 
 Orca is available behind a narrow execution-provider contract. Orca may execute processes, terminals and worktrees, but it does not receive Agent Control policy authority.
 
@@ -52,13 +54,28 @@ The versioned JSON schema has four independent collections:
 
 Resource identity is separate from transport. A resource may be local, SSH, HTTP or Orca-backed. An SSH hostname is transport metadata, not the resource ID. Ports are configurable numbers. Optional unavailable services do not make an otherwise valid zero-provider installation fail.
 
-See [`config/agent-control.example.json`](config/agent-control.example.json) and [`docs/architecture-v2-agnostic.md`](docs/architecture-v2-agnostic.md).
+See [`config/agent-control.example.json`](config/agent-control.example.json), [`ARCHITECTURE.md`](ARCHITECTURE.md), and [`docs/concepts.md`](docs/concepts.md). The older [`docs/architecture-v2-agnostic.md`](docs/architecture-v2-agnostic.md) remains a configuration-neutrality appendix.
+
+## Adaptive harness
+
+`AdaptiveHarness` assembles an execution recipe from policy-approved components. `SkillCatalog` selects only qualified skills with qualification evidence. `ToolPolicy` produces an explicit minimum grant and revalidates the lane, lease generation, ownership generation and human-owner fence at tool use. `EconomicRouter` rejects unhealthy, unqualified, incapable, over-budget, low-confidence or unapproved routes before comparing effective monetary, latency, occupancy, contention, failure/retry and quality costs.
+
+The same task can therefore receive different scaffolding. A strongly qualified model may use a direct prompt with no extra skill; a smaller model may use a guided profile, a qualified task skill, narrower context and fewer tools. Both remain subject to the same Agent Control authority and verification policy.
+
+Current limits are intentional:
+
+- the catalog selects already-qualified skills but does not create, qualify or approve new ones;
+- the general tool gate is executable, but every execution adapter must still be wired to use it before end-to-end enforcement can be claimed;
+- the 3.0.x scheduler does not automatically persist or dispatch the new recipe;
+- model qualification and successive-halving operate on recipe fingerprints, but automated learning into a durable recipe catalog remains 3.1 work.
 
 ## Durable work and evidence
 
 Agent Control persists hard contracts, revisioned batons, append-only events, checkpoints, Work Queue state and shared context metadata. Handoffs may include a compact baton, Git/test evidence and selected provider-neutral context sources. Git and independently reproducible tests remain authoritative; shared threads are optional read-only context and never required for recovery.
 
 The Work Queue supports interactive, priority, background and batch work, dependencies, capability selection, data locality, quiet periods, maintenance windows, homogeneous batch leases, item-by-item commit, checkpoints, retries and low-confidence human review.
+
+Model/provider qualification already records complete model recipes including runtime, context size, chat template, prompt version, skill/tool snapshots and inference parameters. Overnight experiments use successive halving across those fingerprints. The adaptive recipe adds worker, provider, context, authority, limits, verification and escalation around that existing qualification unit.
 
 ## Authority and safety
 
@@ -97,6 +114,8 @@ The neutrality guard rejects private topology identifiers in distributable runti
 - Reboot recovery is qualified only per explicitly tested environment; source support is not a universal live qualification claim.
 - OpenAI ChatKit access uses official supported APIs and remains qualified only for the exact tested project/thread state recorded in provider evidence.
 - ChatGPT Work and Codex shared task context remain host/reference-only unless an official read API is available.
+- Skill proposal, security review, sandbox qualification, approval and promotion are planned for 3.1; an unqualified proposal cannot be selected by the current catalog.
+- Automatic Job/Scheduler execution-recipe construction, a formal worker registry, run ledger and web dashboard are 3.1 boundaries.
 - No production deployment is performed by this repository release process.
 
 The complete operator guide is published at `assets/releases/3.0.1/Agent-Control-3.0.1-Operator-Guide.pdf`.
