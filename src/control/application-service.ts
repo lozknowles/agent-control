@@ -25,6 +25,7 @@ export type ControlEventType =
   | 'job.run_created'
   | 'job.run_cancelled'
   | 'job.run_retried'
+  | 'job.run_approved'
   | 'job.schedule_changed'
   | 'job.run_changed'
   | 'failure';
@@ -142,13 +143,13 @@ export class AgentControlService {
   createJobRun(id: string, parameters: Record<string, unknown>, actor: string) { const job = this.job(id); const run = this.mustJobRuntime().createRun(`${job.metadata.id}@${job.metadata.version}`, parameters, {type: 'manual', actor}); this.events.emit('job.run_created', {runId: run.id, jobId: run.jobId, trigger: 'manual'}, undefined, actor); return run; }
   cancelJobRun(id: string, actor: string) { const run = this.mustJobRuntime().cancel(id, `cancelled_by:${actor}`); this.events.emit('job.run_cancelled', {runId: id}, undefined, actor); return run; }
   retryJobRun(id: string, actor: string) { const run = this.mustJobRuntime().retry(id); this.events.emit('job.run_retried', {sourceRunId: id, runId: run.id}, undefined, actor); return run; }
-  approveJobRun(id: string, policy: string, actor: string) { const run = this.mustJobRuntime().approve(id, policy); this.events.emit('job.run_created', {runId: id, approval: policy}, undefined, actor); return run; }
+  approveJobRun(id: string, policy: string, actor: string) { if (!policy.trim()) throw new Error('approval_policy_required'); const run = this.mustJobRuntime().approve(id, policy); this.events.emit('job.run_approved', {runId: id, approval: policy}, undefined, actor); return run; }
   schedules() { return this.mustJobRuntime().catalog.listSchedules().map(schedule => ({...schedule, state: this.mustJobRuntime().ledger.schedule(schedule.metadata.id)})); }
   setScheduleEnabled(id: string, enabled: boolean, actor: string) { const state = this.mustJobRuntime().setScheduleEnabled(id, enabled); this.events.emit('job.schedule_changed', {scheduleId: id, enabled}, undefined, actor); return state; }
   jobQueue() { return this.mustJobRuntime().queueProjection(); }
   workers() { return this.mustJobRuntime().workers.list(); }
   resourceLocks() { return this.mustJobRuntime().locks.list(); }
-  artifacts(runId?: string) { return this.mustJobRuntime().artifacts.list(runId); }
+  artifacts(runId?: string) { return this.mustJobRuntime().artifacts.list(runId).map(value => { const {storageRef: _storageRef, ...metadata} = value; return {...metadata, storage: 'agent-control-managed'}; }); }
   artifact(id: string) { const value = this.mustJobRuntime().artifacts.get(id); if (!value) throw new Error('artifact_missing'); const {storageRef: _storageRef, ...metadata} = value; return {...metadata, storage: 'agent-control-managed'}; }
 
   lane(id: number) { return this.projectLane(this.mustLane(id)); }

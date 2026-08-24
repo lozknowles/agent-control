@@ -56,7 +56,11 @@
   <main id="jobs-workspace" class="jobs-shell">
     <aside class="panel jobs-catalog"><div class="panel-heading"><div><span class="eyebrow">Reusable workflows</span><h1>Jobs</h1></div><span id="job-count" class="count">0</span></div><div id="job-list" class="job-list"></div></aside>
     <section class="panel job-detail"><div id="job-empty" class="empty-state"><div class="empty-icon">◇</div><h2>No Job selected</h2><p>Select a catalog item to inspect its authoritative definition and history.</p></div><div id="job-detail" hidden></div></section>
-    <aside class="operations-column"><section class="panel"><div class="panel-heading"><div><span class="eyebrow">Scheduler</span><h2>Queue</h2></div><span id="queue-count" class="count">0</span></div><div id="job-queue" class="compact-list"></div></section><section class="panel"><div class="panel-heading"><div><span class="eyebrow">Durable ledger</span><h2>Recent Runs</h2></div></div><div id="run-history" class="compact-list"></div></section></aside>
+    <aside class="operations-column">
+      <section class="panel"><div class="panel-heading"><div><span class="eyebrow">Scheduler</span><h2>Queue</h2></div><span id="queue-count" class="count">0</span></div><div id="job-queue" class="compact-list"></div></section>
+      <section class="panel"><div class="panel-heading run-history-heading"><div><span class="eyebrow">Durable ledger</span><h2>Run History</h2></div><input id="run-search" class="compact-input" type="search" aria-label="Search run history" placeholder="Search runs"></div><div id="run-history" class="compact-list"></div></section>
+      <section class="panel"><div class="panel-heading"><div><span class="eyebrow">Capability placement</span><h2>Workers &amp; Locks</h2></div></div><div id="worker-list" class="compact-list"></div><div id="resource-locks" class="compact-list resource-locks"></div></section>
+    </aside>
   </main>
 
   <dialog id="operator-dialog">

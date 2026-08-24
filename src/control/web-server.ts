@@ -8,6 +8,10 @@ import type {AgentControlService, ControlEvent} from './application-service.js';
 export interface WebServerOptions {host?: string; port?: number; operatorToken?: string; allowedOrigins?: string[]; assetsDir?: string;}
 const MAX_BODY = 64 * 1024;
 const SECRET_KEY = /token|secret|password|credential|authorization|cookie|api[-_]?key/i;
+const DOMAIN_STATUS = new Map<string, number>([
+  ['approval_policy_required', 400], ['approval_policy_not_waiting', 409], ['run_not_retryable', 409], ['job_disabled', 409],
+  ['job_missing', 404], ['run_missing', 404], ['schedule_missing', 404], ['artifact_missing', 404],
+]);
 
 export function startWebDashboard(service: AgentControlService, options: WebServerOptions = {}) {
   const host = options.host ?? '127.0.0.1', port = options.port ?? 4310;
@@ -37,6 +41,7 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   if (method === 'GET' && url.pathname === '/api/queue') return json(response, 200, service.jobQueue());
   if (method === 'GET' && url.pathname === '/api/workers') return json(response, 200, service.workers());
   if (method === 'GET' && url.pathname === '/api/resources') return json(response, 200, service.resourceLocks());
+  if (method === 'GET' && url.pathname === '/api/artifacts') return json(response, 200, service.artifacts(url.searchParams.get('runId') ?? undefined));
   const jobMatch = url.pathname.match(/^\/api\/jobs\/([^/]+)(?:\/(runs|run))?$/), runMatch = url.pathname.match(/^\/api\/runs\/([^/]+)(?:\/(cancel|retry|approve))?$/), scheduleMatch = url.pathname.match(/^\/api\/schedules\/([^/]+)\/(enable|disable)$/), artifactMatch = url.pathname.match(/^\/api\/artifacts\/([^/]+)$/);
   if (method === 'GET' && jobMatch && !jobMatch[2]) return json(response, 200, service.job(decodeURIComponent(jobMatch[1])));
   if (method === 'GET' && jobMatch?.[2] === 'runs') return json(response, 200, service.runs(decodeURIComponent(jobMatch[1])));
@@ -120,7 +125,7 @@ function serveAsset(response: ServerResponse, assetsDir: string, pathname: strin
 }
 
 function json(response: ServerResponse, status: number, value: unknown) { response.writeHead(status, {'Content-Type': 'application/json; charset=utf-8'}); response.end(`${JSON.stringify(redact(value))}\n`); }
-function replyError(response: ServerResponse, error: unknown) { const item = error as Error & {status?: number}; json(response, item.status ?? 500, {error: item.status ? item.message : 'internal_error'}); }
+function replyError(response: ServerResponse, error: unknown) { const item = error as Error & {status?: number}, knownDomain = DOMAIN_STATUS.has(item.message), status = item.status ?? DOMAIN_STATUS.get(item.message) ?? 500; json(response, status, {error: item.status || knownDomain ? item.message : 'internal_error'}); }
 function httpError(status: number, message: string) { return Object.assign(new Error(message), {status}); }
 function secretEqual(left: string, right: string) { const a = createHash('sha256').update(left).digest(), b = createHash('sha256').update(right).digest(); return timingSafeEqual(a, b); }
 function redact(value: unknown, key = ''): unknown {

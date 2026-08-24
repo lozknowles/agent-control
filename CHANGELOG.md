@@ -15,6 +15,8 @@
 - Capability-advertising worker placement with visible selection/rejection rationale, expiring capabilities and no machine names in Jobs.
 - Durable semantic resource locks plus typed, checksummed, provenance-bearing artifact handoff across workers.
 - Jobs, Queue, live step progress, schedules and Run history in the web dashboard, plus a shared TUI Jobs view.
+- Expanded operational Job detail with searchable Run history, queue age/reasons, worker capability/capacity, resource locks, artifact checksums/provenance and policy-bound cancel/retry/approval controls.
+- Fail-closed named approvals now require a matching waiting step and emit a distinct typed `job.run_approved` audit event; browser artifact projections no longer expose managed storage paths.
 - A disabled twice-daily Europe/London reference Schedule and safe non-production events workflow qualification.
 
 ### Changed

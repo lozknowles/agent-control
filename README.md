@@ -51,7 +51,7 @@ Enter that token using **Observer mode** in the dashboard. It is retained only i
 
 Monitor either interface for the same authoritative lanes, scheduler projection, providers, resources, PTY ownership, routing rationale and claim/evidence/verification state. The web terminal panel is observer-only; it never receives a PTY write primitive. Qualification writes timestamped JSON beneath ignored `qualification-results/`.
 
-The dashboard opens on the **Jobs** catalog. A Job can be started manually from the dashboard, requested through the authenticated API, or created by a timezone-aware Schedule; every trigger calls the same `createRun` path. Use **Lanes** for interactive agent work. Press `J` in the TUI for the same Job/Schedule/Run projection.
+The dashboard opens on the **Jobs** catalog. A Job can be started manually from the dashboard, requested through the authenticated API, or created by a timezone-aware Schedule; every trigger calls the same `createRun` path. Job detail includes schedule state, structured step progress, verification, placement, immutable artifact metadata and provenance. Queue inspection exposes age, priority, waiting reason, missing capabilities, eligible workers and resource locks; searchable Run history exposes duration and selected workers. Safe cancel, retry and named-approval controls still enter through `AgentControlService`. Use **Lanes** for interactive agent work. Press `J` in the TUI for the same authoritative Job/Schedule/Run projection.
 
 ## Jobs and schedules
 
@@ -129,4 +129,4 @@ The neutrality guard rejects private topology identifiers in distributable runti
 - No production deployment is performed by this repository release process.
 - The events workflow is qualified only against a safe fixture target; authenticated Facebook discovery and the existing LocalWalks production publisher are not invoked or production-qualified by this source change.
 
-The 3.0.1 infrastructure-neutral operator guide remains available at `assets/releases/3.0.1/Agent-Control-3.0.1-Operator-Guide.pdf`. See [`docs/web-dashboard.md`](docs/web-dashboard.md), [`docs/conceptual-integrity.md`](docs/conceptual-integrity.md) and [`docs/release-notes-3.1.0-draft.md`](docs/release-notes-3.1.0-draft.md) for the 3.1 additions.
+The 3.0.1 infrastructure-neutral operator guide remains available at `assets/releases/3.0.1/Agent-Control-3.0.1-Operator-Guide.pdf`. See [`docs/web-dashboard.md`](docs/web-dashboard.md), [`docs/jobs-and-scheduler.md`](docs/jobs-and-scheduler.md), [`docs/dashboard-3.1-boundary-review.md`](docs/dashboard-3.1-boundary-review.md), [`docs/conceptual-integrity.md`](docs/conceptual-integrity.md) and [`docs/release-notes-3.1.0-draft.md`](docs/release-notes-3.1.0-draft.md) for the 3.1 additions and qualification boundary.

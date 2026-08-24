@@ -97,7 +97,7 @@ Artifacts contain Run/step IDs, MIME-like type, schema, version, time, byte size
 
 Start Agent Control with `npm start` or `npm run web`. The Job catalog is read-only in the UI; review and commit manifests through normal Git workflow. Configure `AGENT_CONTROL_JOB_DIR` only when a different reviewed catalog is required. Operator mutations require `AGENT_CONTROL_WEB_OPERATOR_TOKEN`.
 
-The dashboard shows Jobs, Queue reasons and Run history. Run Now, enable/disable, cancel, retry and approve all cross the application-service policy boundary. Press `J` in the TUI for the same projection. Structured runtime files live under `.agent-control/jobs/`; run one authoritative process per state directory.
+The dashboard shows Jobs, schedule state, Queue reasons/age/eligibility, searchable Run history, worker capacity, resource locks, verification, artifact checksums and provenance. Run Now, enable/disable, cancel, whole-Run retry and exact named approval all cross the application-service policy boundary. Approval is legal only for a matching step already in `WAITING_FOR_APPROVAL`. Press `J` in the TUI for the same projection. Structured runtime files live under `.agent-control/jobs/`; run one authoritative process per state directory.
 
 Qualification:
 
