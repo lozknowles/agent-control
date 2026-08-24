@@ -19,7 +19,7 @@ test('model-backed Job Action follows the harness, tool gateway, evidence and ve
     const dispatcher = new HarnessDispatcher(new AdaptiveHarness(new SkillCatalog(), toolPolicy), toolPolicy, tools, () => ({authority: {...authority}, workerId: 'model-worker', availableToolIds: ['qualification.inspect'], approvedRisks: ['read']}), store);
     const provider = new StructuredChatProviderFactory({
       provider: {id: 'local-qwen', name: 'Local Qwen', kind: 'local', baseUrl: 'http://127.0.0.1:18081/v1', requiresAuth: false, parallelism: 1, costClass: 'free', capabilities: ['structured-output', 'tool-request']},
-      workerId: 'model-worker', modelId: 'qwen-test', workerCapabilities: ['model.execute'], modelCapabilities: ['structured-output', 'tool-request'], availableToolIds: ['qualification.inspect'], qualificationEvidence: ['fixture-live-proof'],
+      workerId: 'model-worker', modelId: 'qwen-test', workerCapabilities: ['model.execute'], modelCapabilities: ['structured-output', 'tool-request'], availableToolIds: ['qualification.inspect'], qualificationEvidence: ['fixture-live-proof'], health: 'healthy',
       fetch: async () => new Response(JSON.stringify({id: 'chatcmpl-job', model: 'qwen-test', choices: [{message: {content: '{"tool":"qualification.inspect","input":{"target":"fixture"}}'}}], usage: {total_tokens: 41}}), {status: 200}),
     });
     const actions = new ActionRegistry();

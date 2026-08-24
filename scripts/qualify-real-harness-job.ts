@@ -36,7 +36,7 @@ const dispatchStore = new MemoryRecipeDispatchStore();
 const dispatcher = new HarnessDispatcher(new AdaptiveHarness(new SkillCatalog(), policy), policy, handlers, () => ({authority: {...liveAuthority}, workerId, availableToolIds: ['qualification.inspect', 'qualification.denied'], approvedRisks: ['read']}), dispatchStore, event => audits.push(event));
 const provider = new StructuredChatProviderFactory({
   provider: {id: 'local-openai-compatible', name: 'Qualification local model', kind: 'local', baseUrl, requiresAuth: false, parallelism: 1, costClass: 'free', capabilities: ['structured-output', 'tool-request']},
-  workerId, modelId, workerCapabilities: ['model.execute'], modelCapabilities: ['structured-output', 'tool-request'], availableToolIds: ['qualification.inspect'], qualificationEvidence: [`models-http-${modelsResponse.status}`, `models-sha256-${modelListHash}`],
+  workerId, modelId, workerCapabilities: ['model.execute'], modelCapabilities: ['structured-output', 'tool-request'], availableToolIds: ['qualification.inspect'], qualificationEvidence: [`models-http-${modelsResponse.status}`, `models-sha256-${modelListHash}`], health: 'healthy', timeoutMs: 30_000,
 });
 
 const actions = new ActionRegistry();

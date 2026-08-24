@@ -14,6 +14,8 @@ export interface StructuredChatProviderOptions {
   promptProfile?: {id: string; version: string; description: string};
   runtime?: Record<string, string | number | boolean>;
   qualificationEvidence: string[];
+  health: 'healthy' | 'degraded' | 'offline';
+  timeoutMs?: number;
   authorization?: () => string | undefined;
   fetch?: typeof globalThis.fetch;
 }
@@ -48,7 +50,7 @@ export class StructuredChatProviderFactory {
         modelId: this.options.modelId,
         workerId: this.options.workerId,
         local: provider.kind === 'local',
-        health: 'healthy',
+        health: this.options.health,
         qualified: true,
         qualificationReason: `qualified:${this.options.qualificationEvidence.join(',')}`,
         capabilities: [...provider.capabilities],
@@ -65,10 +67,10 @@ export class StructuredChatProviderFactory {
   }
 
   executor(instruction: string): RecipeExecutor {
-    return {execute: (recipe, tools) => this.execute(instruction, recipe.tools.map(tool => tool.id), tools)};
+    return {execute: (recipe, tools) => this.execute(instruction, recipe.tools.map(tool => tool.id), tools, Math.min(recipe.resourceLimits.maximumLatencyMs ?? this.options.timeoutMs ?? 30_000, this.options.timeoutMs ?? 30_000))};
   }
 
-  private async execute(instruction: string, grantedToolIds: string[], tools: ToolInvocationGateway) {
+  private async execute(instruction: string, grantedToolIds: string[], tools: ToolInvocationGateway, timeoutMs: number) {
     const fetcher = this.options.fetch ?? globalThis.fetch;
     const authorization = this.options.authorization?.();
     const response = await fetcher(this.endpoint, {
@@ -82,6 +84,7 @@ export class StructuredChatProviderFactory {
         ],
         response_format: {type: 'json_object'}, temperature: 0, max_tokens: 256, stream: false,
       }),
+      signal: AbortSignal.timeout(Math.max(1, timeoutMs)),
     });
     const body = await response.json() as ChatResponse;
     if (!response.ok) throw new Error(`provider_http_error:${response.status}:${body.error?.message ?? 'unknown'}`);

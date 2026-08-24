@@ -16,8 +16,8 @@ This qualification is deliberately narrow. It proves one model-backed Job Action
 - Second model: `qwen2.5-3b-instruct-q4_k_m.gguf`, same Job and provider factory through a different qualified recipe.
 - Both model discovery requests returned HTTP 200 and matched the configured model identity before candidate construction.
 - Both Jobs reached `SUCCEEDED`, produced one typed `qualification-result/v1` artifact, passed `real-model-tool-evidence`, and recorded `step.verifying` with status `VERIFYING` before policy acceptance.
-- The primary model response ID was `chatcmpl-rKzU4EWdFfRRkA1PAQNQTx2Rw5oqS31i`; response SHA-256 was `2ccc7b43eaeb5f5acbcc5d24dc9105066b6f504d4f4cb48e2ab464c2e8c42d92`.
-- The second model response ID was `chatcmpl-3T48eQpV6tSZxujr0oOkEXxeum6MrQs3`; response SHA-256 was `3e0c1da5fa3981e8966c41964854cac471e1d985229704a7f1aed0393e3af4a8`.
+- The final primary model response ID was `chatcmpl-Oh4ovCkHiRQarzC4OaPdoWanZHUsGObg`; response SHA-256 was `2ccc7b43eaeb5f5acbcc5d24dc9105066b6f504d4f4cb48e2ab464c2e8c42d92`.
+- The final second-model response ID was `chatcmpl-D84XFqx2UOk3mdjsLtuuNDx7cDlGLDAy`; response SHA-256 was `3e0c1da5fa3981e8966c41964854cac471e1d985229704a7f1aed0393e3af4a8`.
 - Tool-policy audit allowed exactly one `qualification.inspect` request in each successful Job.
 - `qualification.denied` was rejected as `tool_not_granted` and its raw handler was never called.
 - Changed lease generation was rejected as `stale_lease_generation`.
@@ -72,6 +72,8 @@ Ignored raw qualification records were retained locally and were not committed b
 | Initial coder attempt | Failed closed: `provider_tool_request_invalid_json`; no tool audit or artifact | `89402c0b829cb3e34d3b2afbcf28fb92c8805efa513da39f93be74e9ac1c8764` |
 | Coder retry after bounded single-fence normalization | Qualified | `2786ad4964f2d9085318677db40aa28013b3935c787cb9cbfc8a7435cf7801e3` |
 | General instruction model substitution | Qualified | `c909e9a44ab069d5130728b5d4aad29b8b04631aa42aa45af29defcbc7fc175e` |
+| Final timeout/health-hardened coder run | Qualified | `663460df0955e0804b4619ae152c91cc2fa9da9cb818358125d0d848a1a9d981` |
+| Final timeout/health-hardened general run | Qualified | `0b50ac83bcb9ee0d1a931f13f84ee65d20386df15e6cd629bba76c80c5086e8b` |
 
 The first failure is evidence, not a pass: the provider returned HTTP 200 but wrapped the JSON document in a single Markdown JSON fence. The adapter was changed to normalize only one isolated JSON fence. Surrounding prose, malformed JSON and unknown top-level fields still fail before the gateway.
 

@@ -7,7 +7,7 @@ const provider = {id: 'local-qwen', name: 'Local Qwen', kind: 'local' as const, 
 test('structured chat factory creates a qualified candidate and mediates its JSON tool request', async () => {
   let endpoint = '', rawBody = '', invocations = 0;
   const factory = new StructuredChatProviderFactory({
-    provider, workerId: 'worker-1', modelId: 'qwen-test', workerCapabilities: ['model.local'], modelCapabilities: ['structured-output'], availableToolIds: ['qualification.inspect'], qualificationEvidence: ['fixture-live-proof'],
+    provider, workerId: 'worker-1', modelId: 'qwen-test', workerCapabilities: ['model.local'], modelCapabilities: ['structured-output'], availableToolIds: ['qualification.inspect'], qualificationEvidence: ['fixture-live-proof'], health: 'healthy',
     fetch: async (input, init) => {
       endpoint = String(input); rawBody = String(init?.body);
       return new Response(JSON.stringify({id: 'chatcmpl-test', model: 'qwen-test', choices: [{finish_reason: 'stop', message: {content: '{"tool":"qualification.inspect","input":{"target":"fixture"}}'}}], usage: {total_tokens: 42}}), {status: 200, headers: {'content-type': 'application/json'}});
@@ -16,7 +16,7 @@ test('structured chat factory creates a qualified candidate and mediates its JSO
   const candidate = factory.candidate();
   assert.equal(candidate.route.qualified, true);
   assert.match(candidate.route.qualificationReason, /fixture-live-proof/);
-  const result = await factory.executor('Inspect the safe fixture').execute({tools: [{id: 'qualification.inspect'}]} as never, {invoke: async (id, input) => { invocations++; assert.equal(id, 'qualification.inspect'); assert.deepEqual(input, {target: 'fixture'}); return {marker: 'SAFE'}; }});
+  const result = await factory.executor('Inspect the safe fixture').execute({tools: [{id: 'qualification.inspect'}], resourceLimits: {}} as never, {invoke: async (id, input) => { invocations++; assert.equal(id, 'qualification.inspect'); assert.deepEqual(input, {target: 'fixture'}); return {marker: 'SAFE'}; }});
   assert.equal(endpoint, 'http://127.0.0.1:18081/v1/chat/completions');
   assert.match(rawBody, /Do not claim the tool ran/);
   assert.equal(invocations, 1);
@@ -26,20 +26,20 @@ test('structured chat factory creates a qualified candidate and mediates its JSO
 
 test('structured chat executor rejects malformed or expanded model output before the gateway', async () => {
   let invocations = 0;
-  const factory = new StructuredChatProviderFactory({provider, workerId: 'worker-1', modelId: 'qwen-test', workerCapabilities: [], modelCapabilities: [], availableToolIds: ['qualification.inspect'], qualificationEvidence: ['fixture-live-proof'], fetch: async () => new Response(JSON.stringify({choices: [{message: {content: '{"tool":"qualification.inspect","input":{},"grant":"more"}'}}]}), {status: 200})});
-  await assert.rejects(() => factory.executor('test').execute({tools: []} as never, {invoke: async () => { invocations++; }}), /provider_tool_request_unknown_field/);
+  const factory = new StructuredChatProviderFactory({provider, workerId: 'worker-1', modelId: 'qwen-test', workerCapabilities: [], modelCapabilities: [], availableToolIds: ['qualification.inspect'], qualificationEvidence: ['fixture-live-proof'], health: 'healthy', fetch: async () => new Response(JSON.stringify({choices: [{message: {content: '{"tool":"qualification.inspect","input":{},"grant":"more"}'}}]}), {status: 200})});
+  await assert.rejects(() => factory.executor('test').execute({tools: [], resourceLimits: {}} as never, {invoke: async () => { invocations++; }}), /provider_tool_request_unknown_field/);
   assert.equal(invocations, 0);
 });
 
 test('structured chat executor accepts one isolated JSON code fence but no surrounding prose', async () => {
-  const factory = new StructuredChatProviderFactory({provider, workerId: 'worker-1', modelId: 'qwen-test', workerCapabilities: [], modelCapabilities: [], availableToolIds: ['qualification.inspect'], qualificationEvidence: ['fixture-live-proof'], fetch: async () => new Response(JSON.stringify({choices: [{message: {content: '```json\n{"tool":"qualification.inspect","input":{"target":"fixture"}}\n```'}}]}), {status: 200})});
-  const result = await factory.executor('test').execute({tools: []} as never, {invoke: async () => 'SAFE'});
+  const factory = new StructuredChatProviderFactory({provider, workerId: 'worker-1', modelId: 'qwen-test', workerCapabilities: [], modelCapabilities: [], availableToolIds: ['qualification.inspect'], qualificationEvidence: ['fixture-live-proof'], health: 'healthy', fetch: async () => new Response(JSON.stringify({choices: [{message: {content: '```json\n{"tool":"qualification.inspect","input":{"target":"fixture"}}\n```'}}]}), {status: 200})});
+  const result = await factory.executor('test').execute({tools: [], resourceLimits: {}} as never, {invoke: async () => 'SAFE'});
   assert.match(result.resultRef ?? '', /SAFE/);
-  const prose = new StructuredChatProviderFactory({provider, workerId: 'worker-1', modelId: 'qwen-test', workerCapabilities: [], modelCapabilities: [], availableToolIds: ['qualification.inspect'], qualificationEvidence: ['fixture-live-proof'], fetch: async () => new Response(JSON.stringify({choices: [{message: {content: 'Here is JSON: ```json\n{"tool":"qualification.inspect"}\n```'}}]}), {status: 200})});
-  await assert.rejects(() => prose.executor('test').execute({tools: []} as never, {invoke: async () => 'unsafe'}), /invalid_json/);
+  const prose = new StructuredChatProviderFactory({provider, workerId: 'worker-1', modelId: 'qwen-test', workerCapabilities: [], modelCapabilities: [], availableToolIds: ['qualification.inspect'], qualificationEvidence: ['fixture-live-proof'], health: 'healthy', fetch: async () => new Response(JSON.stringify({choices: [{message: {content: 'Here is JSON: ```json\n{"tool":"qualification.inspect"}\n```'}}]}), {status: 200})});
+  await assert.rejects(() => prose.executor('test').execute({tools: [], resourceLimits: {}} as never, {invoke: async () => 'unsafe'}), /invalid_json/);
 });
 
 test('structured chat factory refuses credentialed URLs and unqualified candidates', () => {
-  assert.throws(() => new StructuredChatProviderFactory({provider: {...provider, baseUrl: 'https://user:secret@example.test/v1'}, workerId: 'w', modelId: 'm', workerCapabilities: [], modelCapabilities: [], availableToolIds: [], qualificationEvidence: ['proof']}), /base_url_invalid/);
-  assert.throws(() => new StructuredChatProviderFactory({provider, workerId: 'w', modelId: 'm', workerCapabilities: [], modelCapabilities: [], availableToolIds: [], qualificationEvidence: []}), /qualification_evidence_required/);
+  assert.throws(() => new StructuredChatProviderFactory({provider: {...provider, baseUrl: 'https://user:secret@example.test/v1'}, workerId: 'w', modelId: 'm', workerCapabilities: [], modelCapabilities: [], availableToolIds: [], qualificationEvidence: ['proof'], health: 'healthy'}), /base_url_invalid/);
+  assert.throws(() => new StructuredChatProviderFactory({provider, workerId: 'w', modelId: 'm', workerCapabilities: [], modelCapabilities: [], availableToolIds: [], qualificationEvidence: [], health: 'healthy'}), /qualification_evidence_required/);
 });
