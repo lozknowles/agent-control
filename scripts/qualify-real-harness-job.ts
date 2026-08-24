@@ -12,7 +12,8 @@ const baseUrl = required('AGENT_CONTROL_QUALIFICATION_BASE_URL');
 const modelId = required('AGENT_CONTROL_QUALIFICATION_MODEL');
 const resultFile = path.resolve(process.env.AGENT_CONTROL_QUALIFICATION_RESULT || 'qualification-results/real-harness-job.json');
 const endpoint = new URL(baseUrl);
-if (!['127.0.0.1', 'localhost', '::1'].includes(endpoint.hostname)) throw new Error('qualification_endpoint_must_be_loopback');
+const loopback = ['127.0.0.1', 'localhost', '::1'].includes(endpoint.hostname);
+if (!loopback && process.env.AGENT_CONTROL_QUALIFICATION_ALLOW_REMOTE !== 'true') throw new Error('qualification_endpoint_must_be_loopback_or_explicitly_approved');
 
 const startedAt = new Date().toISOString();
 const modelsResponse = await fetch(`${baseUrl.replace(/\/$/, '')}/models`);
@@ -66,7 +67,7 @@ try {
   const denials = await qualifyDenials(provider.candidate());
   const output = {
     schema: 'agent-control.real-harness-qualification/v1', startedAt, completedAt: new Date().toISOString(), host: os.hostname(), branch: process.env.AGENT_CONTROL_QUALIFICATION_BRANCH,
-    provider: {id: 'local-openai-compatible', transport: 'OpenAI-compatible chat/completions', baseUrl: `${endpoint.protocol}//${endpoint.hostname}:${endpoint.port || 'default'}/v1`, modelId, modelListHttpStatus: modelsResponse.status, modelListSha256: modelListHash},
+    provider: {id: 'local-openai-compatible', transport: 'OpenAI-compatible chat/completions', endpointScope: loopback ? 'loopback' : 'explicit-private-remote', baseUrl: `${endpoint.protocol}//${endpoint.hostname}:${endpoint.port || 'default'}/v1`, modelId, modelListHttpStatus: modelsResponse.status, modelListSha256: modelListHash},
     job: {id: run.jobId, version: run.jobVersion, action: run.steps[0].action, actionKind: actions.kind(run.steps[0].action), runId: run.id, status: run.status, stepStatus: run.steps[0].status, verification: run.steps[0].verification},
     path: ['Job', 'HarnessJobAgentAction', 'HarnessDispatcher', 'AdaptiveHarness', 'ExecutionRecipe', 'real-model-provider', 'structured-tool-request', 'ToolInvocationGateway', 'ToolPolicy', 'tool-handler', 'evidence', 'VERIFYING', 'verified-result'],
     recipe: dispatchStore.list()[0], audits, artifact: artifact ? {id: artifact.id, sha256: artifact.sha256, schema: artifact.schema, version: artifact.version} : null,

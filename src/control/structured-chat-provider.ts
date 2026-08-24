@@ -101,7 +101,8 @@ export class StructuredChatProviderFactory {
 
 function parseToolRequest(content: string): ToolRequest {
   let parsed: unknown;
-  try { parsed = JSON.parse(content); } catch { throw new Error('provider_tool_request_invalid_json'); }
+  const normalized = content.trim().match(/^```json\s*([\s\S]*?)\s*```$/i)?.[1] ?? content;
+  try { parsed = JSON.parse(normalized); } catch { throw new Error('provider_tool_request_invalid_json'); }
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('provider_tool_request_invalid');
   const request = parsed as Record<string, unknown>;
   if (typeof request.tool !== 'string' || !request.tool.trim()) throw new Error('provider_tool_request_missing_tool');

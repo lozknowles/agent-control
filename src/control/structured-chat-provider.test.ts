@@ -31,6 +31,14 @@ test('structured chat executor rejects malformed or expanded model output before
   assert.equal(invocations, 0);
 });
 
+test('structured chat executor accepts one isolated JSON code fence but no surrounding prose', async () => {
+  const factory = new StructuredChatProviderFactory({provider, workerId: 'worker-1', modelId: 'qwen-test', workerCapabilities: [], modelCapabilities: [], availableToolIds: ['qualification.inspect'], qualificationEvidence: ['fixture-live-proof'], fetch: async () => new Response(JSON.stringify({choices: [{message: {content: '```json\n{"tool":"qualification.inspect","input":{"target":"fixture"}}\n```'}}]}), {status: 200})});
+  const result = await factory.executor('test').execute({tools: []} as never, {invoke: async () => 'SAFE'});
+  assert.match(result.resultRef ?? '', /SAFE/);
+  const prose = new StructuredChatProviderFactory({provider, workerId: 'worker-1', modelId: 'qwen-test', workerCapabilities: [], modelCapabilities: [], availableToolIds: ['qualification.inspect'], qualificationEvidence: ['fixture-live-proof'], fetch: async () => new Response(JSON.stringify({choices: [{message: {content: 'Here is JSON: ```json\n{"tool":"qualification.inspect"}\n```'}}]}), {status: 200})});
+  await assert.rejects(() => prose.executor('test').execute({tools: []} as never, {invoke: async () => 'unsafe'}), /invalid_json/);
+});
+
 test('structured chat factory refuses credentialed URLs and unqualified candidates', () => {
   assert.throws(() => new StructuredChatProviderFactory({provider: {...provider, baseUrl: 'https://user:secret@example.test/v1'}, workerId: 'w', modelId: 'm', workerCapabilities: [], modelCapabilities: [], availableToolIds: [], qualificationEvidence: ['proof']}), /base_url_invalid/);
   assert.throws(() => new StructuredChatProviderFactory({provider, workerId: 'w', modelId: 'm', workerCapabilities: [], modelCapabilities: [], availableToolIds: [], qualificationEvidence: []}), /qualification_evidence_required/);
