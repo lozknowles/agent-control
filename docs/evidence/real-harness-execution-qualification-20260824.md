@@ -94,9 +94,9 @@ npm run qualify:harness-real
 git diff --check
 ```
 
-Windows results at the evidence point: typecheck PASS; focused 13/13 PASS; serial suite 231/231 PASS; dashboard syntax PASS; neutrality 3/3 PASS; tracked-env scan clean; credential scan clean.
+Windows results at the evidence point: typecheck PASS; focused 13/13 PASS; final serial suite 232/232 PASS; dashboard syntax PASS; neutrality 3/3 PASS; tracked-env scan clean; credential scan clean.
 
-The complete Linux `npm run check` result is recorded in the final branch commit once the isolated Linux test transport is available. It is not inferred from Windows results.
+Linux result: an isolated clean clone at `c7ef80b8acaad81dda96ed4d6591039a36c4548d` ran the literal `npm run check`: typecheck PASS; JavaScript and Bash bootstrap syntax PASS; dashboard syntax PASS; neutrality 3/3 PASS; serial suite 232/232 PASS. `npm ci` was not applicable because the repository intentionally does not track a lockfile; dependencies were installed with `npm install --no-package-lock` in the disposable clone. No canonical checkout or running service was changed.
 
 ## Authority and opaque executors
 
