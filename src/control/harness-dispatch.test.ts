@@ -68,7 +68,7 @@ test('tool omitted from recipe cannot reach its raw handler', async () => {
 
 test('live ownership change immediately fences a retained recipe gateway', async () => {
   const policy = toolPolicy();
-  let live = {...authority};
+  let live: RecipeRequest['authority'] = {...authority};
   let calls = 0;
   const handlers = new ToolHandlerRegistry().register('repository.read', async () => ++calls);
   const dispatcher = new HarnessDispatcher(new AdaptiveHarness(new SkillCatalog(), policy), policy, handlers, () => ({authority: {...live}, workerId: 'worker-1'}));
@@ -77,7 +77,7 @@ test('live ownership change immediately fences a retained recipe gateway', async
     live = {...live, ownershipGeneration: 9, owner: 'human'};
     await tools.invoke('repository.read');
     return {};
-  }}), /tool_policy_denied:stale_ownership_generation/);
+  }}), /tool_policy_denied:human_owns_execution/);
   assert.equal(calls, 1);
 });
 

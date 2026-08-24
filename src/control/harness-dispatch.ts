@@ -72,7 +72,7 @@ export interface RecipeDispatchRecord {
   workerPlacement: {workerId: string; reason: string};
   route: {providerId: string; modelId: string; reason: string};
   promptProfile: {id: string; version: string};
-  context: {tier: string; sourceIds: string[]; evidenceIds: string[]; estimatedTokens: number};
+  context: {tier: number; sourceIds: string[]; evidenceIds: string[]; estimatedTokens: number};
   skillIds: string[];
   toolIds: string[];
   runtime: Record<string, string | number | boolean>;
@@ -185,7 +185,7 @@ export class HarnessDispatcher {
     if (!placedCandidates.length) throw new HarnessPolicyDeniedError(['worker_placement_unavailable']);
     const built = this.harness.build(plan.request, placedCandidates);
     if (!built.recipe) {
-      const reasons = [...built.rejected.flatMap(item => item.reasons), ...built.route.rejected.flatMap(item => item.reasons)];
+      const reasons = [...built.rejected.flatMap(item => item.reasons), ...built.route.assessments.flatMap(item => item.rejectionReasons)];
       throw new HarnessPolicyDeniedError([...new Set(reasons)]);
     }
     const recipe = built.recipe;

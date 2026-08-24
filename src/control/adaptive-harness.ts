@@ -163,9 +163,9 @@ export class ToolPolicy {
     if (!tool) return {allowed: false, reason: 'tool_unknown'};
     if (recipe.authority.owner !== 'agent') return {allowed: false, reason: 'recipe_not_agent_owned'};
     if (authority.laneId !== recipe.authority.laneId) return {allowed: false, reason: 'lane_identity_mismatch'};
+    if (authority.owner !== 'agent') return {allowed: false, reason: 'human_owns_execution'};
     if (authority.leaseGeneration !== recipe.authority.leaseGeneration) return {allowed: false, reason: 'stale_lease_generation'};
     if (authority.ownershipGeneration !== recipe.authority.ownershipGeneration) return {allowed: false, reason: 'stale_ownership_generation'};
-    if (authority.owner !== 'agent') return {allowed: false, reason: 'human_owns_execution'};
     if (!recipe.tools.some(tool => tool.id === toolId)) return {allowed: false, reason: 'tool_not_granted'};
     if (context.revokedToolIds?.includes(toolId)) return {allowed: false, reason: 'tool_revoked'};
     if (context.availableToolIds && !context.availableToolIds.includes(toolId)) return {allowed: false, reason: 'capability_unavailable'};
