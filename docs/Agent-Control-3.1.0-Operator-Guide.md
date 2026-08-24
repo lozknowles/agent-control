@@ -128,7 +128,12 @@ Recipe execution ends in `verification-pending`; use the evidence/verification w
 
 ## Windows OpenAI return-data example
 
-Agent Control can run on Windows and use the official OpenAI Responses API as a model provider. This is an API integration, not automation of the ChatGPT desktop window. A ChatGPT subscription and OpenAI API quota are separate; the Windows desktop session is never scraped and its cookies or session tokens are never reused.
+Agent Control can run on Windows and select between two official OpenAI execution paths:
+
+- `api-key`: the OpenAI Responses API, billed against API quota;
+- `chatgpt-plan`: official `codex exec`, reusing the Codex client's saved ChatGPT sign-in and included plan allowance.
+
+The default `OPENAI_AUTH_MODE=auto` chooses the API path when a non-empty `OPENAI_API_KEY` is available and otherwise chooses the ChatGPT-plan path. Set `OPENAI_AUTH_MODE=api-key` or `OPENAI_AUTH_MODE=chatgpt-plan` to force a route during qualification. Forced API mode fails closed when the key is absent. This is not automation of the ChatGPT desktop window: Agent Control never scrapes the UI or reuses browser cookies/session tokens.
 
 Add a provider to the operator-owned configuration. The credential stays outside this file:
 
@@ -145,28 +150,44 @@ Add a provider to the operator-owned configuration. The credential stays outside
 }
 ```
 
-Load `OPENAI_API_KEY` from an approved Windows secret manager, select an API model available to that project, and run the explicit qualification:
+For automatic selection, make an official Codex CLI executable available on `PATH` (or set `CODEX_COMMAND`) and authenticate it once with ChatGPT:
 
 ```powershell
-$env:OPENAI_QUALIFICATION_MODEL = "gpt-4o-mini"
+codex login
+codex login status
+$env:OPENAI_AUTH_MODE = "auto"
 npm run qualify:openai-windows
-Remove-Item Env:OPENAI_API_KEY, Env:OPENAI_QUALIFICATION_MODEL
+Remove-Item Env:OPENAI_AUTH_MODE
+```
+
+The package command reads an ignored `.env.local` when present. If it contains `OPENAI_API_KEY`, `auto` uses the Responses API. Without that key it runs `codex exec --ephemeral --json --sandbox read-only --ignore-user-config`, confirms that the saved login is ChatGPT-managed, and requests schema-constrained return data. API-key variables are removed from the Codex child environment so the fallback cannot silently become API-billed. Optional model selectors are `OPENAI_API_MODEL` and `CODEX_CHATGPT_MODEL`.
+
+To bypass a present but quota-depleted API key and deliberately use the ChatGPT plan:
+
+```powershell
+$env:OPENAI_AUTH_MODE = "chatgpt-plan"
+$env:CODEX_CHATGPT_MODEL = "gpt-5.6-terra"
+npm run qualify:openai-windows
+Remove-Item Env:OPENAI_AUTH_MODE, Env:CODEX_CHATGPT_MODEL
 ```
 
 The qualification follows this path:
 
 ```text
 Job -> HarnessJobAgentAction -> HarnessDispatcher -> AdaptiveHarness
-    -> ExecutionRecipe -> OpenAI Responses API -> function_call
+    -> ExecutionRecipe -> Responses API function_call
+                       or Codex schema-constrained return request
     -> ToolInvocationGateway -> ToolPolicy -> tool handler
     -> typed checksummed artifact -> verification
 ```
 
-The model receives function schemas, not raw handlers. Its function call is only a request. Agent Control rechecks the recipe grant, live worker, lease generation, ownership generation, risk approval and human ownership before invoking the handler. The Action declares the output schema; `ArtifactStore` persists the returned JSON with SHA-256 and provenance. Execution remains distinct from verification and acceptance.
+The model receives a bounded request contract, not raw Agent Control handlers. Its function call or structured return is only a request. Agent Control rechecks the recipe grant, live worker, lease generation, ownership generation, risk approval and human ownership before invoking the handler. The Action declares the output schema; `ArtifactStore` persists the returned JSON with SHA-256 and provenance. Execution remains distinct from verification and acceptance.
 
-The 24 August 2026 live Windows request reached `POST /v1/responses` but received HTTP 429 for unavailable project quota. Therefore the official API route is `SUPPORTED+UNQUALIFIED`, not a live pass, until an authorised project with quota reruns the command and produces `WINDOWS_OPENAI_RETURN_DATA_QUALIFIED`. Deterministic contract tests do prove the complete Job-to-artifact path and its fail-closed tool boundary.
+Both switchable routes are `SUPPORTED+QUALIFIED`. A real Responses API run with the existing ignored key and `gpt-4o-mini` returned a function call through `ToolInvocationGateway`, produced a checksummed artifact and reached verified Run success. A separate real Windows `auto` run with no API key selected official Codex/ChatGPT authentication and passed the same authority and verification boundaries. See `docs/evidence/windows-openai-harness-qualification-20260824.md`.
 
-An operator-supplied local Windows bridge may instead be configured as `kind: "browser-bridge"`, `wireApi: "responses"` on loopback. That bridge must be independently approved and qualified. Cleartext non-loopback bridge endpoints are rejected. Agent Control does not ship a ChatGPT desktop bridge, and the desktop UI path is `NOT TESTED`.
+Codex is an opaque CLI execution family. Its built-in operations are constrained by an ephemeral read-only process envelope and user-configured MCP tools are disabled for this path; they are not falsely claimed as individually mediated by Agent Control. Any returned Agent Control tool request still passes through the central live `ToolPolicy` gate, so stale authority or human ownership prevents the requested handler from running.
+
+An operator-supplied local Windows bridge may instead be configured as `kind: "browser-bridge"`, `wireApi: "responses"` on loopback. That bridge must be independently approved and qualified. Cleartext non-loopback bridge endpoints are rejected. Agent Control does not ship a ChatGPT desktop-window bridge; the qualified subscription path is official Codex non-interactive execution, and desktop UI automation remains `NOT TESTED`.
 
 ## Jobs, Actions and Runs
 

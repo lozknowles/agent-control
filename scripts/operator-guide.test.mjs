@@ -17,8 +17,10 @@ test('3.1 operator guide covers the dashboard and scheduler authority boundary',
   assert.match(source, /^## Windows OpenAI return-data example$/m);
   assert.match(source, /ToolInvocationGateway/);
   assert.match(source, /verification-pending/);
-  assert.match(source, /SUPPORTED\+UNQUALIFIED/);
-  assert.match(source, /Agent Control does not ship a ChatGPT desktop bridge/);
+  assert.match(source, /SUPPORTED\+QUALIFIED/);
+  assert.match(source, /Both switchable routes are `SUPPORTED\+QUALIFIED`/);
+  assert.match(source, /OPENAI_AUTH_MODE=auto/);
+  assert.match(source, /Agent Control does not ship a ChatGPT desktop-window bridge/);
   assert.match(source, /npm run qualify:openai-windows/);
   assert.match(source, /The dashboard requests; Agent Control authorises/);
   assert.match(source, /OS cron and the browser are not authoritative schedulers/);
