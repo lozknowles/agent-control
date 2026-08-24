@@ -98,6 +98,21 @@ test('unconditional human takeover fences every recipe tool immediately', () => 
   assert.equal(humanOwned.recipe, undefined);
 });
 
+test('live capability, policy, worker and privilege changes fence retained recipes', () => {
+  const policy = new ToolPolicy(tools), recipe = new AdaptiveHarness(new SkillCatalog(skills), policy).build(request('ECONOMY'), [small]).recipe!;
+  assert.equal(policy.authorize(recipe, 'repository.read', {authority: recipe.authority, revokedToolIds: ['repository.read']}).reason, 'tool_revoked');
+  assert.equal(policy.authorize(recipe, 'repository.read', {authority: recipe.authority, availableToolIds: []}).reason, 'capability_unavailable');
+  assert.equal(policy.authorize(recipe, 'repository.read', {authority: recipe.authority, workerId: 'different-worker'}).reason, 'worker_incompatible');
+  assert.equal(policy.authorize(recipe, 'repository.read', {authority: recipe.authority, policyDeniedToolIds: ['repository.read']}).reason, 'policy_restricted');
+  assert.equal(policy.authorize(recipe, 'repository.edit', {authority: recipe.authority, approvedRisks: ['read']}).reason, 'privilege_not_approved');
+});
+
+test('secret-like runtime settings fail closed before recipe fingerprinting', () => {
+  const unsafe = harness().build(request('ECONOMY'), [{...small, runtime: {...small.runtime, api_key: 'must-not-enter-recipe'}}]);
+  assert.equal(unsafe.recipe, undefined);
+  assert.equal(unsafe.rejected[0].reasons.includes('secret_like_runtime_key:api_key'), true);
+});
+
 test('recipe fingerprint changes with prompt, context, skills, tools or runtime settings', () => {
   const base = harness().build(request('ECONOMY'), [small]).recipe!;
   const changed = harness().build({...request('ECONOMY'), context: {...request('ECONOMY').context, tier: 3}}, [small]).recipe!;

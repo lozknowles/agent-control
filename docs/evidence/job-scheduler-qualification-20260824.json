@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 1,
+  "qualification": "Agent Control 3.1 Job Catalog and Scheduler",
+  "generatedAt": "2026-08-24T07:05:40.653Z",
+  "sourceCommit": "9a6f91f561a5c3cd10ac740447f1c744e66c8800",
+  "gitMetadataAvailable": false,
+  "workingTreeDirty": false,
+  "safety": {
+    "target": "non-production-fixture",
+    "externalNetworkUsed": false,
+    "publicationAttempted": false,
+    "scheduleEnabled": false
+  },
+  "waitingProof": {
+    "runId": "run-2e422b42-f6ab-461d-a212-1fda1622d982",
+    "runStatus": "RUNNING",
+    "discoveryStatus": "SUCCEEDED",
+    "downstreamStatus": "WAITING_FOR_WORKER",
+    "reason": "No worker satisfies localwalks.publisher",
+    "artifact": {
+      "id": "artifact-89d99ba7-2d88-451f-aa39-7d55508063c5",
+      "sha256": "63b14c7b65b3212cab1013539044462eff7e1216e01617128f2cf869e7cbf3d7",
+      "type": "application/vnd.agent-control.events+json",
+      "schema": "events/v3"
+    }
+  },
+  "completionProof": {
+    "status": "SUCCEEDED",
+    "steps": [
+      {
+        "id": "discover",
+        "status": "SUCCEEDED",
+        "worker": "qualification-mobile",
+        "attempts": 1,
+        "verification": {"required": ["events-schema-v3"], "passed": ["events-schema-v3"], "failed": []}
+      },
+      {
+        "id": "reconcile",
+        "status": "SUCCEEDED",
+        "worker": "qualification-publisher",
+        "attempts": 1,
+        "verification": {"required": ["reconciliation-preserves-existing"], "passed": ["reconciliation-preserves-existing"], "failed": []}
+      },
+      {
+        "id": "build",
+        "status": "SUCCEEDED",
+        "worker": "qualification-publisher",
+        "attempts": 1,
+        "verification": {"required": ["build-passed"], "passed": ["build-passed"], "failed": []}
+      },
+      {
+        "id": "publish",
+        "status": "SUCCEEDED",
+        "worker": "qualification-publisher",
+        "attempts": 1,
+        "verification": {"required": ["publication-policy-respected"], "passed": ["publication-policy-respected"], "failed": []}
+      },
+      {
+        "id": "verify",
+        "status": "SUCCEEDED",
+        "worker": "qualification-observer",
+        "attempts": 1,
+        "verification": {"required": ["target-verified"], "passed": ["target-verified"], "failed": []}
+      }
+    ],
+    "selectedWorkers": ["qualification-mobile", "qualification-publisher", "qualification-observer"],
+    "artifacts": [
+      {"id": "artifact-89d99ba7-2d88-451f-aa39-7d55508063c5", "stepId": "discover", "type": "application/vnd.agent-control.events+json", "schema": "events/v3", "sha256": "63b14c7b65b3212cab1013539044462eff7e1216e01617128f2cf869e7cbf3d7"},
+      {"id": "artifact-fb5f848f-3395-4891-8460-9682d70a13c9", "stepId": "reconcile", "type": "application/vnd.agent-control.events-reconciled+json", "schema": "events-reconciled/v1", "sha256": "cf6dd3238e0cf6d28fcfbc6c6d1959daab1bc389572577b6ca0ef70f6b36c501"},
+      {"id": "artifact-82f16d16-a1e9-49a6-99ab-191165b0e291", "stepId": "build", "type": "application/vnd.agent-control.test-report+json", "schema": "build-report/v1", "sha256": "d92ca390ee73991cdfdc41f66cd10dcac81a01ea42e3f628f5a8393c6ff5dfc6"},
+      {"id": "artifact-42c2c364-fb71-4c08-b369-87fffd368e71", "stepId": "publish", "type": "application/vnd.agent-control.release+json", "schema": "release/v1", "sha256": "3b75dd891be3381e802784476b9cad61e668fe421ef27548d0cb1d721a4c91d8"},
+      {"id": "artifact-b1e657ef-7f65-4a93-9ac6-551ac29c8176", "stepId": "verify", "type": "application/vnd.agent-control.verification+json", "schema": "verification/v1", "sha256": "41d03d4760697dfa2a9f24cfa8c77628824c4aa5495af6b975c78eb4e487de75"}
+    ],
+    "provenance": [
+      {"type": "trigger", "at": "2026-08-24T07:05:40.629Z", "detail": "manual:qualification"},
+      {"type": "evidence", "at": "2026-08-24T07:05:40.633Z", "detail": "Fixture discovery executed without external publication"},
+      {"type": "evidence", "at": "2026-08-24T07:05:40.639Z", "detail": "Reconciled 2 fixture events; preserved 3 existing records"},
+      {"type": "evidence", "at": "2026-08-24T07:05:40.643Z", "detail": "Non-production fixture build validation passed"},
+      {"type": "evidence", "at": "2026-08-24T07:05:40.646Z", "detail": "Publish step exercised in non-production no-op mode"},
+      {"type": "evidence", "at": "2026-08-24T07:05:40.650Z", "detail": "Fixture target independently verified"}
+    ]
+  },
+  "schedulingProof": {
+    "definitionEnabled": false,
+    "runtimeEnabled": false,
+    "londonSummerNext": "2026-08-24T06:00:00.000Z",
+    "londonWinterNext": "2026-12-24T07:00:00.000Z"
+  },
+  "authorityProof": {
+    "before": {
+      "lease": {"laneId": 1, "holder": "agent-a", "acquiredAt": "2026-08-24T07:05:40.628Z", "expiresAt": "2026-08-24T07:06:40.628Z"},
+      "baton": {"version": 1, "laneId": 1, "revision": 1, "status": "unchanged", "progress": [], "hypothesis": "", "evidence": [], "changes": [], "nextAction": "unchanged", "openQuestions": [], "model": "unchanged", "reasoning": "medium", "updatedAt": "2026-08-24T07:05:40.628Z"},
+      "status": "waiting",
+      "owner": "agent-a"
+    },
+    "after": {
+      "lease": {"laneId": 1, "holder": "agent-a", "acquiredAt": "2026-08-24T07:05:40.628Z", "expiresAt": "2026-08-24T07:06:40.628Z"},
+      "baton": {"version": 1, "laneId": 1, "revision": 1, "status": "unchanged", "progress": [], "hypothesis": "", "evidence": [], "changes": [], "nextAction": "unchanged", "openQuestions": [], "model": "unchanged", "reasoning": "medium", "updatedAt": "2026-08-24T07:05:40.628Z"},
+      "status": "waiting",
+      "owner": "agent-a"
+    },
+    "unchanged": true,
+    "schedulerHasPtyWritePrimitive": false,
+    "manifestCanGrantCapability": false
+  },
+  "verdict": "PASS_SAFE_NON_PRODUCTION"
+}

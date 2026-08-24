@@ -1,8 +1,8 @@
-# Agent Control 3.0.x
+# Agent Control 3.1.0 development baseline
 
 Agent Control is an infrastructure-neutral, policy-controlled adaptive harness for durable work by heterogeneous agents and models. Its executable harness core composes a task-appropriate worker, provider/model route, prompt profile, minimum qualified skills, restricted tools, context strategy, runtime settings, authority snapshot, resource limits and verification/escalation policy into a fingerprinted execution recipe.
 
-A lane owns its task; recipes, agents, models, skills, tools and execution providers are replaceable and remain below the control boundary. Agent Control remains authoritative for scheduling, priorities, leases, ownership, unconditional human takeover, batons, handoffs, clones, shared tasks, provider qualification, routing, approvals, recovery validation and conflict policy. The recipe builder and economic router are integrated as an experimental 3.0.x core; automatic scheduler-to-recipe-to-provider dispatch and the skill lifecycle are 3.1 work, not released 3.0.1 claims.
+A lane owns its task; recipes, agents, models, skills, tools, execution providers and operator interfaces are replaceable and remain below the control boundary. Agent Control remains authoritative for scheduling, priorities, leases, ownership, unconditional human takeover, batons, handoffs, clones, shared tasks, provider qualification, routing, approvals, recovery validation, verification and conflict policy. In the 3.1 development baseline, ordinary `WorkExecutor` agent work can no longer accept a raw handler: it builds and records an `ExecutionRecipe`, dispatches it through `AdaptiveHarness`, and exposes only a live-authority `ToolPolicy` gateway.
 
 Orca is available behind a narrow execution-provider contract. Orca may execute processes, terminals and worktrees, but it does not receive Agent Control policy authority.
 
@@ -34,14 +34,36 @@ With no configuration file, Agent Control starts with a safe local lane and repo
 
 ```bash
 npm start
+npm run web
 npm run status
 npm run up
 npm run qualify
 ```
 
-`npm start` opens the control-room TUI. `status` performs read-only health inspection. `up` starts only explicitly configured services/processes and records ownership. `down` stops only processes that the same Agent Control state directory recorded as owned.
+`npm start` opens the control-room TUI and its embedded web client. `npm run web` runs the same control service and web dashboard without the TUI for a headless operator host; run one authoritative control-plane process per state directory. `status` performs read-only health inspection. `up` starts only explicitly configured services/processes and records ownership. `down` stops only processes that the same Agent Control state directory recorded as owned.
 
-Monitor the TUI for lanes, work queue, providers, resources, PTY ownership, context/evidence and Android status. Qualification writes timestamped JSON beneath ignored `qualification-results/`.
+The TUI also starts the web dashboard on `http://127.0.0.1:4310` by default. The browser is an observer unless an operator token is explicitly configured:
+
+```bash
+export AGENT_CONTROL_WEB_OPERATOR_TOKEN="$(openssl rand -hex 32)"
+npm start
+```
+
+Enter that token using **Observer mode** in the dashboard. It is retained only in the browser tab's session storage and sent as a bearer header; Agent Control does not create a browser authority cookie. Use `AGENT_CONTROL_WEB_ENABLED=0` to disable the dashboard or `AGENT_CONTROL_WEB_PORT` to select another port. Binding beyond localhost is an explicit security decision and should be placed behind authenticated TLS with a matching `AGENT_CONTROL_WEB_ALLOWED_ORIGINS` allowlist.
+
+Monitor either interface for the same authoritative lanes, scheduler projection, providers, resources, PTY ownership, routing rationale and claim/evidence/verification state. The web terminal panel is observer-only; it never receives a PTY write primitive. Qualification writes timestamped JSON beneath ignored `qualification-results/`.
+
+The dashboard opens on the **Jobs** catalog. A Job can be started manually from the dashboard, requested through the authenticated API, or created by a timezone-aware Schedule; every trigger calls the same `createRun` path. Job detail includes schedule state, structured step progress, verification, placement, immutable artifact metadata and provenance. Queue inspection exposes age, priority, waiting reason, missing capabilities, eligible workers and resource locks; searchable Run history exposes duration and selected workers. Safe cancel, retry and named-approval controls still enter through `AgentControlService`. Use **Lanes** for interactive agent work. Press `J` in the TUI for the same authoritative Job/Schedule/Run projection.
+
+## Jobs and schedules
+
+Repository-managed YAML manifests beneath `config/jobs/` define versioned Jobs and separate Schedules. JSON Schema validation, typed parameters, dependency checks and Action registration fail closed at load time. Jobs request semantic capabilities and resources; they never name a host. Configured resources become workers by advertising those capabilities, and Agent Control records why each worker was selected or rejected.
+
+```bash
+npm run qualify:jobs
+```
+
+The qualification Job is deliberately non-production and its twice-daily `07:00/19:00 Europe/London` Schedule is disabled. Enabling a Schedule does not grant a requested capability or approval. See [`docs/jobs-and-scheduler.md`](docs/jobs-and-scheduler.md) for the manifest contract, custom-Job example, Run states, artifact handoff, locks, retries and operator procedure.
 
 ## Configuration model
 
@@ -62,18 +84,24 @@ See [`config/agent-control.example.json`](config/agent-control.example.json), [`
 
 The same task can therefore receive different scaffolding. A strongly qualified model may use a direct prompt with no extra skill; a smaller model may use a guided profile, a qualified task skill, narrower context and fewer tools. Both remain subject to the same Agent Control authority and verification policy.
 
-Current limits are intentional:
+Current boundaries are intentional:
 
 - the catalog selects already-qualified skills but does not create, qualify or approve new ones;
-- the general tool gate is executable, but every execution adapter must still be wired to use it before end-to-end enforcement can be claimed;
-- the 3.0.x scheduler does not automatically persist or dispatch the new recipe;
-- model qualification and successive-halving operate on recipe fingerprints, but automated learning into a durable recipe catalog remains 3.1 work.
+- normal Work Queue agent dispatch is recipe-backed, persisted/inspectable and stops at `verification-pending` rather than accepting process completion;
+- named control operations such as Android provisioning are explicit, scope-checked exceptions and cannot become a legacy agent fallback;
+- the generic `AgentAdapter` receives only the recipe and policy gateway, but Orca/SSH CLI-internal tools are opaque to Agent Control and are not yet qualified as universally moderated tool calls;
+- current Job Actions are registered control-owned handlers; any future agent/model Action must enter through the harness dispatcher rather than `ActionRegistry` directly;
+- model qualification and successive halving operate on recipe fingerprints, but governed skill generation and automated recipe learning remain follow-on 3.1 work.
 
 ## Durable work and evidence
 
 Agent Control persists hard contracts, revisioned batons, append-only events, checkpoints, Work Queue state and shared context metadata. Handoffs may include a compact baton, Git/test evidence and selected provider-neutral context sources. Git and independently reproducible tests remain authoritative; shared threads are optional read-only context and never required for recovery.
 
-The Work Queue supports interactive, priority, background and batch work, dependencies, capability selection, data locality, quiet periods, maintenance windows, homogeneous batch leases, item-by-item commit, checkpoints, retries and low-confidence human review.
+The Work Queue supports interactive, priority, background and batch work, dependencies, capability selection, data locality, quiet periods, maintenance windows, homogeneous batch leases, item-by-item commit, checkpoints, retries and low-confidence human review. The Job runtime adds reusable multi-step workflows above those atomic scheduling concepts: a durable Run ledger, timezone-aware triggers, step dependencies, resource locks, typed artifacts, bounded retries, approval waits and verification gates.
+
+Agent completion is modeled as `CLAIMED -> EVIDENCE_COLLECTED -> VERIFIED -> ACCEPTED`. A claim cannot satisfy a verification-required task. Lane policy can require minimum-sufficient evidence such as a Git commit, diff, test/build result, file hash, API result, UI evidence, benchmark, external source or human approval. Failed required evidence blocks verification, and acceptance remains a separate explicit action.
+
+Routing is capability-qualified and fail closed. Eligible routes may be compared using capability, provider health, reliability, monetary cost, latency, expected duration, context/tool requirements, privacy, local/GPU availability, priority, urgency and operator preference. The selected route, alternatives and plain-language rationale are stored with the lane.
 
 Model/provider qualification already records complete model recipes including runtime, context size, chat template, prompt version, skill/tool snapshots and inference parameters. Overnight experiments use successive halving across those fingerprints. The adaptive recipe adds worker, provider, context, authority, limits, verification and escalation around that existing qualification unit.
 
@@ -86,6 +114,8 @@ Model/provider qualification already records complete model recipes including ru
 - Recovery uses explicit configured recipes and existing credentials.
 - Agent Control never stores secret material in product configuration.
 - Shared URLs are attached only when already explicitly shared; creating/broadening sharing requires separate approval.
+- The browser has no direct lease, scheduler, persistence or PTY-input endpoint.
+- External context and provider adapters remain non-authoritative regardless of interface.
 
 ## Orca execution boundary
 
@@ -103,6 +133,7 @@ npm run check:bootstrap
 npm run check:neutrality
 npm test
 npm run check
+npm run qualify:jobs
 git diff --check
 ```
 
@@ -114,8 +145,9 @@ The neutrality guard rejects private topology identifiers in distributable runti
 - Reboot recovery is qualified only per explicitly tested environment; source support is not a universal live qualification claim.
 - OpenAI ChatKit access uses official supported APIs and remains qualified only for the exact tested project/thread state recorded in provider evidence.
 - ChatGPT Work and Codex shared task context remain host/reference-only unless an official read API is available.
-- Skill proposal, security review, sandbox qualification, approval and promotion are planned for 3.1; an unqualified proposal cannot be selected by the current catalog.
-- Automatic Job/Scheduler execution-recipe construction, a formal worker registry, run ledger and web dashboard are 3.1 boundaries.
+- Skill proposal, security review, sandbox qualification, approval and promotion remain follow-on 3.1 work; an unqualified proposal cannot be selected by the current catalog.
+- The Job Catalog, Worker Registry, Run Ledger and web dashboard are implemented on this unreleased 3.1 branch. Job Actions that invoke agents/models still require the recipe-backed adapter migration before 3.1 acceptance.
 - No production deployment is performed by this repository release process.
+- The events workflow is qualified only against a safe fixture target; authenticated Facebook discovery and the existing LocalWalks production publisher are not invoked or production-qualified by this source change.
 
-The complete operator guide is published at `assets/releases/3.0.1/Agent-Control-3.0.1-Operator-Guide.pdf`.
+The current guide is [`docs/Agent-Control-3.1.0-Operator-Guide.md`](docs/Agent-Control-3.1.0-Operator-Guide.md), with the release PDF at `assets/releases/3.1.0/Agent-Control-3.1.0-Operator-Guide.pdf`. The historical 3.0.1 guide remains under `assets/releases/3.0.1/`. See [`ARCHITECTURE.md`](ARCHITECTURE.md), [`docs/web-dashboard.md`](docs/web-dashboard.md), [`docs/jobs-and-scheduler.md`](docs/jobs-and-scheduler.md), [`docs/dashboard-3.1-boundary-review.md`](docs/dashboard-3.1-boundary-review.md), [`docs/conceptual-integrity.md`](docs/conceptual-integrity.md) and [`docs/release-notes-3.1.0-draft.md`](docs/release-notes-3.1.0-draft.md) for the 3.1 boundary and evidence.

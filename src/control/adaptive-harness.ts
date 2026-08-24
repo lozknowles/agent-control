@@ -21,6 +21,18 @@ export interface ToolDefinition {
   capabilities: string[];
 }
 
+/** Extension point only: agents may request a capability, but cannot qualify it. */
+export interface SkillProposalRequest {
+  taskId: string;
+  requiredCapability: string;
+  requestedBy: string;
+  reason: string;
+}
+
+export interface SkillProposalPort {
+  propose(request: SkillProposalRequest): Promise<{proposalId: string}>;
+}
+
 export interface PromptProfile {
   id: string;
   version: string;
@@ -144,15 +156,33 @@ export class ToolPolicy {
     return {granted, reasons};
   }
 
-  authorize(recipe: ExecutionRecipe, toolId: string, authority: ExecutionAuthority) {
+  authorize(recipe: ExecutionRecipe, toolId: string, live: ExecutionAuthority | LiveToolAuthorization) {
+    const context: LiveToolAuthorization = 'authority' in live ? live : {authority: live};
+    const authority = context.authority;
+    const tool = this.tools.get(toolId);
+    if (!tool) return {allowed: false, reason: 'tool_unknown'};
     if (recipe.authority.owner !== 'agent') return {allowed: false, reason: 'recipe_not_agent_owned'};
     if (authority.laneId !== recipe.authority.laneId) return {allowed: false, reason: 'lane_identity_mismatch'};
+    if (authority.owner !== 'agent') return {allowed: false, reason: 'human_owns_execution'};
     if (authority.leaseGeneration !== recipe.authority.leaseGeneration) return {allowed: false, reason: 'stale_lease_generation'};
     if (authority.ownershipGeneration !== recipe.authority.ownershipGeneration) return {allowed: false, reason: 'stale_ownership_generation'};
-    if (authority.owner !== 'agent') return {allowed: false, reason: 'human_owns_execution'};
     if (!recipe.tools.some(tool => tool.id === toolId)) return {allowed: false, reason: 'tool_not_granted'};
+    if (context.revokedToolIds?.includes(toolId)) return {allowed: false, reason: 'tool_revoked'};
+    if (context.availableToolIds && !context.availableToolIds.includes(toolId)) return {allowed: false, reason: 'capability_unavailable'};
+    if (context.workerId && context.workerId !== recipe.workerId) return {allowed: false, reason: 'worker_incompatible'};
+    if (context.policyDeniedToolIds?.includes(toolId)) return {allowed: false, reason: 'policy_restricted'};
+    if (context.approvedRisks && !context.approvedRisks.includes(tool.risk)) return {allowed: false, reason: 'privilege_not_approved'};
     return {allowed: true};
   }
+}
+
+export interface LiveToolAuthorization {
+  authority: ExecutionAuthority;
+  availableToolIds?: string[];
+  revokedToolIds?: string[];
+  workerId?: string;
+  policyDeniedToolIds?: string[];
+  approvedRisks?: ToolRisk[];
 }
 
 interface Composition {
@@ -225,6 +255,7 @@ export class AdaptiveHarness {
     const reasons: string[] = [];
     if (request.authority.owner !== 'agent') reasons.push('authority_not_agent_owned');
     if (!prompt) reasons.push('prompt_profile_unavailable');
+    reasons.push(...unsafeRuntimeSettings(candidate.runtime));
     const provided = [...candidate.route.capabilities, ...candidate.workerCapabilities, ...candidate.modelCapabilities];
     const skillResult = this.skillCatalog.select(request.requiredCapabilities, provided, candidate.availableSkillIds);
     if (skillResult.missing.length) reasons.push(`capabilities_unresolved:${skillResult.missing.join(',')}`);
@@ -233,6 +264,17 @@ export class AdaptiveHarness {
     reasons.push(...toolResult.reasons);
     return {candidate, prompt, skills: skillResult.selected, tools: toolResult.granted, reasons};
   }
+}
+
+const SECRET_LIKE_RUNTIME_KEY = /(?:^|[_.-])(token|secret|password|credential|api[-_]?key|private[-_]?key)(?:$|[_.-])/i;
+
+function unsafeRuntimeSettings(runtime: Record<string, string | number | boolean>): string[] {
+  const reasons: string[] = [];
+  for (const [key, value] of Object.entries(runtime)) {
+    if (SECRET_LIKE_RUNTIME_KEY.test(key)) reasons.push(`secret_like_runtime_key:${key}`);
+    if (typeof value === 'string' && /:\/\/[^/@\s]+:[^/@\s]+@/.test(value)) reasons.push(`credentialed_runtime_url:${key}`);
+  }
+  return reasons;
 }
 
 function stableJson(value: unknown): string {

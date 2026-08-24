@@ -1,6 +1,52 @@
 # Changelog
 
-## Unreleased — adaptive-harness recovery
+## [3.1.0] — Unreleased
+
+### Added
+
+- Default adaptive-harness dispatch for normal Work Queue agent executions, with durable/inspectable recipe identity and separate worker-placement/model-routing rationale.
+- A central `ToolInvocationGateway` that reauthorises every model-originated tool call against recipe grants, live capability/policy state, lease generation, ownership generation and human takeover.
+- Explicit named control operations for non-agent maintenance work; a control handler cannot act as an unrestricted legacy agent fallback.
+- A durable `verification-pending` Work Queue state separating process completion from verified acceptance.
+- A responsive localhost web dashboard with system, lane, provider, typed-event, Git, PTY-observer and verification/evidence views.
+- A narrow `AgentControlService` application boundary shared by the TUI and HTTP API, with typed control events over Server-Sent Events.
+- Observer/operator separation: browser mutations require an explicitly configured bearer token, JSON requests and origin validation.
+- A persisted claim/evidence/verification/acceptance state machine with task-specific evidence policy.
+- Capability, health, reliability, cost, latency, duration, privacy, context, tool and resource-aware route selection with durable rationale.
+- An executable conceptual-integrity assessment that rejects duplicate state, second control paths, interface-owned authority and provider-owned policy.
+- A JSON-Schema-validated, YAML-authored, versioned Job and Schedule catalog with typed parameters and DAG validation.
+- An authoritative durable Run ledger with explicit step states, bounded classified retries, approval waits, cancellation, fail-closed restart recovery and immutable effective definitions.
+- Capability-advertising worker placement with visible selection/rejection rationale, expiring capabilities and no machine names in Jobs.
+- Durable semantic resource locks plus typed, checksummed, provenance-bearing artifact handoff across workers.
+- Jobs, Queue, live step progress, schedules and Run history in the web dashboard, plus a shared TUI Jobs view.
+- Expanded operational Job detail with searchable Run history, queue age/reasons, worker capability/capacity, resource locks, artifact checksums/provenance and policy-bound cancel/retry/approval controls.
+- Fail-closed named approvals now require a matching waiting step and emit a distinct typed `job.run_approved` audit event; browser artifact projections no longer expose managed storage paths.
+- A versioned Agent Control 3.1.0 Operator Guide covering installation, deployment patterns, the dashboard, Job scheduler operation, monitoring and recovery, with a rendered PDF under the 3.1.0 release assets.
+- A disabled twice-daily Europe/London reference Schedule and safe non-production events workflow qualification.
+
+### Changed
+
+- TUI task submission, reroute and pause/resume now call the shared application service rather than mutating workspace state directly.
+- Routing and verification projections are first-class lane state and survive persistence/reload.
+- The full test gate is serialised to prevent persistence-focused tests from contaminating one another.
+- Manual, scheduled and future trigger adapters now converge on the same `JobRuntime.createRun` path through `AgentControlService`.
+
+### Security and authority
+
+- Harness construction cannot claim queue work, mutate placement, acquire authority, write a PTY or accept completion.
+- Secret-like runtime settings and credentialed runtime URLs fail closed before recipe fingerprinting or persistence.
+- The dashboard binds to `127.0.0.1` by default and is read-only when no operator token is configured.
+- No web endpoint can directly mutate leases, scheduling internals or PTY input.
+- Human takeover uses the existing unconditional PTY fence; autonomous resume is rejected while a human owns the terminal.
+- External context and provider adapters remain non-authoritative and cannot verify or accept completion.
+- Job manifests cannot grant capabilities, approvals, leases, PTY ownership or production authority; cancellation retains resource locks until execution returns.
+
+### Compatibility
+
+- 3.1 is based on tagged 3.0.1 and retains its infrastructure-neutral configuration, TUI, provider adapters, execution fallback, context store and persisted lane format.
+- Existing state migrates additively: missing verification state defaults to `unclaimed`, and missing routing rationale remains absent until a route is selected.
+
+## 3.0.x adaptive-harness recovery — merged baseline
 
 ### Added
 

@@ -2,7 +2,7 @@
 
 Agent Control is an infrastructure-neutral policy control plane with an executable adaptive-harness core. It governs durable work by heterogeneous agents and models, assembles task-appropriate execution recipes, and keeps authority, evidence and human control outside every replaceable worker or execution substrate.
 
-The 3.0.x code already implements the durable lane/control model, capability and provider qualification primitives, adaptive recipe construction, qualified-skill selection, explicit tool grants, context selection, evidence/provenance, successive halving, PTY authority and replaceable execution providers. Some connections remain experimental: the scheduler does not yet automatically persist and dispatch an adaptive recipe, and every provider adapter is not yet wired through the general tool gate. Job Catalog, formal worker/skill lifecycle, run ledger and web dashboard are 3.1 concepts.
+The 3.0.x baseline implements the durable lane/control model, capability and provider qualification primitives, adaptive recipe construction, qualified-skill selection, explicit tool grants, context selection, evidence/provenance, successive halving, PTY authority and replaceable execution providers. The unreleased 3.1 branch adds the Job Catalog, Worker Registry, Run Ledger, dashboard, verification service and a default recipe-backed Work Queue dispatch. Every supported gateway tool is reauthorised against live lease/ownership state; opaque tools run internally by external CLI agents and future model-backed Job Actions remain unqualified integration gaps.
 
 ## Agent Control
 
@@ -14,7 +14,7 @@ The policy-controlled environment assembled around an agent or model. It include
 
 ## Lane
 
-A durable ownership boundary for a stream of work. A lane has a hard contract, baton, lease, mode, priority, model state and evidence. Processes, models, sessions and hosts may change while lane identity continues.
+A durable ownership boundary for a stream of work. A lane has a hard contract, baton, lease, mode, priority, model state and evidence. Processes, models, recipes, sessions and hosts may change while lane identity continues.
 
 ## Task
 
@@ -34,7 +34,7 @@ A time- and generation-bounded Agent Control grant to act for a lane. Stale leas
 
 ## Worker
 
-A resource capable of satisfying part of an execution recipe: a host, remote node, provider endpoint or other runtime placement. In 3.0.x workers are represented by configured resources and capabilities. A formal dynamic Worker Registry is planned for 3.1.
+A resource capable of satisfying part of an execution recipe: a host, remote node, provider endpoint or other runtime placement. In 3.0.x workers are represented by configured resources and capabilities. The 3.1 branch adds a formal capability-advertising Worker Registry for Job placement; worker placement remains distinct from provider/model routing.
 
 ## Provider
 
@@ -54,7 +54,7 @@ A versioned, bounded piece of task scaffolding that can add a qualified capabili
 
 ## Tool
 
-An enforceable operation exposed to an execution, such as repository read, edit or test. Tools have risk classifications. The recipe receives a minimum explicit grant; missing, denied, unavailable and unapproved-risk tools fail closed. Prompt text is not a tool security boundary.
+An enforceable operation exposed to an execution, such as repository read, edit or test. Tools have risk classifications. The recipe receives a minimum explicit grant. Unknown, omitted, denied, revoked, unavailable, worker-incompatible, policy-restricted and unapproved-risk tools fail closed. Each invocation checks live lane, lease, ownership and human-takeover state. Prompt text is not a tool security boundary.
 
 ## Execution recipe
 
@@ -122,9 +122,9 @@ agent claim -> evidence -> verification -> accepted result
 
 An agent saying “done” is not verification. A majority repeating an unsupported assertion does not outweigh reproducible evidence.
 
-## Planned 3.1 concepts
+## 3.1 concepts
 
-The following have an architectural place but are not released 3.0.1 features.
+The following are implemented on the unreleased 3.1 branch; they are not released 3.0.1 features. Governed skill creation and model-backed Job Action integration remain follow-on work.
 
 ### Job
 
@@ -132,7 +132,7 @@ A reusable declaration of outcomes, actions, dependencies and required capabilit
 
 ### Action
 
-One step of a Job. Each action may produce a different execution recipe.
+One step of a Job. Each Action is a registered, versioned control-owned handler. A future Action that delegates to an agent/model must produce a recipe through the adaptive dispatcher; current deterministic fixture Actions do not impersonate agent execution.
 
 ### Schedule
 
