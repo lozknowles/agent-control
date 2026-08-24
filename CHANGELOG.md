@@ -40,6 +40,33 @@
 - 3.1 is based on tagged 3.0.1 and retains its infrastructure-neutral configuration, TUI, provider adapters, execution fallback, context store and persisted lane format.
 - Existing state migrates additively: missing verification state defaults to `unclaimed`, and missing routing rationale remains absent until a route is selected.
 
+## 3.0.x adaptive-harness recovery — merged baseline
+
+### Added
+
+- Added an experimental, infrastructure-neutral `AdaptiveHarness` that composes worker, provider/model, prompt profile, selected context, qualified skills, restricted tools, runtime settings, authority generations, resource limits, verification policy and escalation policy into a deterministic execution recipe.
+- Added a qualified-only `SkillCatalog`; proposed and revoked skills cannot be selected and therefore cannot self-grant capability.
+- Added an enforceable `ToolPolicy` that rejects unknown, denied, unavailable or unapproved-risk tools and fails closed on stale lease/ownership generations or human ownership.
+- Recovered the provider-economic routing core from local commit `2b187705ca9c0bff3bfd8374c0596c040c47ba3c`, generalized its currency and resource identities, and retained health, qualification, capability, confidence, quality, approval, spend and latency gates.
+- Added deterministic tests proving that one task can receive different qualified harness recipes and that a smaller model fixture is unroutable raw but routable with qualified scaffolding.
+- Added `docs/concepts.md` and an implementation-matrix evidence report distinguishing implemented, experimental and planned 3.1 capabilities.
+
+### Changed
+
+- Reframed the README and authoritative architecture around the implemented policy-controlled adaptive-harness boundary without changing the immutable 3.0.1 tag.
+- Clarified that PTY, Orca, SSH, browser/mobile, local runtimes and API providers are execution substrates below Agent Control policy.
+
+### Not yet implemented
+
+- Dynamic skill creation, security/sandbox qualification, approval and catalog promotion.
+- Default scheduler-to-recipe-to-provider dispatch and end-to-end use of the general tool gate by every adapter.
+- Durable learned recipe catalog, formal worker registry and universal task-type verification service; these remain 3.1 work.
+
+### Safety
+
+- No production deployment, service, lease, PTY, release tag or external infrastructure was changed.
+- The existing execution path remains available; no historical branch was merged wholesale.
+
 ## [3.0.1] — 2026-08-24
 
 ### Changed

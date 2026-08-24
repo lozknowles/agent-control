@@ -1,6 +1,10 @@
-# Agent Control 3.1.0 architecture
+# Agent Control 3.1.0 development architecture
 
-This is the authoritative architecture boundary for 3.1.0. The 3.0.1 infrastructure-neutral resource and provider model remains the base.
+This is the authoritative development boundary for 3.1.0. The tagged 3.0.1 infrastructure-neutral resource/provider model and the merged 3.0.x adaptive-harness recovery are the base. Status labels matter:
+
+- **implemented** means executable code and automated tests exist in this branch;
+- **experimental** means executable code exists but is not yet the default end-to-end dispatch path;
+- **planned 3.1** means the concept has a defined place but must not be presented as implemented or released functionality.
 
 ## Invariants
 
@@ -18,33 +22,92 @@ This is the authoritative architecture boundary for 3.1.0. The 3.0.1 infrastruct
 12. An Action is a versioned executable capability; a Job is a declarative workflow; a Trigger creates a durable Run through one authoritative path.
 13. Job manifests can request capabilities, resources and approvals but cannot confer them.
 14. Process completion, collected evidence, verification and Run success are separate states.
+15. An agent may request or propose capability; only Agent Control policy may qualify and grant it.
+16. A recipe constructs an execution environment but cannot schedule work, acquire authority, write a PTY or accept a result.
 
-## System boundary
+## System boundary and adaptive harness
 
 ```text
-        Operator interfaces (non-authoritative)
-             TUI              Web / HTTP / SSE
-               \              /
-                \            /
+          OPERATOR INTERFACES (non-authoritative)
+             TUI                 Web / HTTP / SSE
+               \                 /
+                \               /
                  AgentControlService
-                 CONTROL / POLICY BOUNDARY
-                    |       |       |
-                    |       |       +-- verification / provenance
-                    |       +---------- router / qualification
-                    +------------------ scheduler / leases / ownership
-                                      |
-                    Job Catalog -> JobRuntime -> Run Ledger
-                         |             |          |
-                    Schedules      Worker/locks  Artifacts
-                                      |
-                           ExecutionProvider contract
-                              |                |
-                       built-in fallback   Orca adapter
-                                              |
-                               process / PTY / worktree / SSH
+                         |
+                POLICY / AUTHORITY
+       lanes / leases / ownership / approvals
+       scheduler / handoffs / takeover / conflicts
+                         |
+                 SCHEDULER / QUEUE
+                         |
+                  ADAPTIVE HARNESS
+          capability analysis / recipe construction
+                         |
+                  EXECUTION RECIPE
+      +------------------+-------------------+
+      |        |         |         |         |
+    worker   model/    prompt    context   skills
+            provider   profile   strategy     |
+      |        |         |         |        tools
+      +--------+---------+---------+----------+
+                         |
+        runtime / limits / authority snapshot
+        verification / escalation requirements
+                         |
+                  TOOL POLICY GATE
+                         |
+                EXECUTION SUBSTRATES
+       PTY / Orca / SSH / browser / mobile /
+            local runtime / API provider
+                         |
+                 evidence / provenance
+                         |
+                    verification
+                         |
+                  accepted result
+
+   Job Catalog -> Schedule / Run Now -> Run Ledger
+                         |
+                         +---- invokes Scheduler / Queue
 ```
 
-Orca may execute, but Agent Control always decides. The browser may request, but Agent Control authorises. Neither Orca nor an operator interface schedules lanes, issues leases, transfers ownership, resolves handoffs, selects experiment winners, verifies a claim or overrides approval/security policy.
+Orca, PTYs, SSH, browsers, mobile nodes, local runtimes and API providers are substrates or adapters. They are not the harness and receive no control-plane authority. Orca may execute, but Agent Control always decides.
+
+## Execution recipe
+
+The experimental `AdaptiveHarness` constructs a fingerprinted `ExecutionRecipe` from:
+
+- worker, provider and model identity;
+- prompt profile;
+- minimum qualified skill selection;
+- explicit tool grants;
+- selected context and evidence references;
+- runtime/inference settings;
+- lane, lease and ownership generations;
+- latency/spend limits;
+- verification and escalation policy.
+
+The older `ModelRecipe` remains the model-qualification fingerprint: model artifact, runtime, context size, template, prompt, skill/tool snapshots and parameters. It is a component of the broader execution recipe rather than a competing abstraction.
+
+Recipe construction is pure policy work. It neither claims a queue item nor acquires a lease, owns a PTY, sends input or accepts a result. Those mutations remain in their existing authoritative services.
+
+## Skills and tools
+
+The implemented `SkillCatalog` selects only entries marked `qualified` that carry qualification evidence. Proposed or revoked skills are not selectable. The implemented `ToolPolicy` calculates an explicit minimum grant and rejects unknown, denied, unavailable or unapproved-risk tools.
+
+Tool authorization fails closed for a lane mismatch, stale lease generation, stale ownership generation, human ownership or a tool absent from the recipe. This is an executable control boundary, not a prompt instruction. End-to-end adapter wiring remains experimental; adapters that do not call the gate are not yet qualified as tool-moderated harness paths.
+
+Dynamic skill proposal, static/security review, sandbox qualification, human approval and promotion into the catalog are **planned 3.1**. No model can currently create and self-grant a privileged skill.
+
+## Routing and qualification
+
+The current line has three complementary implemented layers:
+
+1. `CapabilityResolver` matches requirements to healthy, infrastructure-neutral resources.
+2. Provider/model qualification records capability scores and promotes challengers only with adequate evidence.
+3. The recovered `EconomicRouter` rejects routes that fail health, qualification, capability, confidence, quality, approval, spend or latency gates, then compares monetary cost, latency, local occupancy, contention, failure/retry risk and quality.
+
+`DynamicEscalationRouter` can re-evaluate after failure, low confidence or latency pressure while carrying context/checkpoint references. Default scheduler integration and durable route telemetry are 3.1 implementation work; the historical branch's machine-specific UI/bootstrap changes were deliberately not imported.
 
 ## Durable state
 
@@ -77,7 +140,9 @@ Configuration rejects embedded secret-like fields and credentialed URLs. Credent
 
 ## Scheduling and execution
 
-The scheduler selects capabilities, placement, priority and provider before queue mutation. It supports AUTO/MANUAL lanes, dependencies, shared tasks, batons, handoffs, cloning, batch leases, checkpoint/yield, quiet periods, resource budgets, maintenance windows, confidence routing, approval gates and successive-halving experiments.
+The scheduler selects capabilities, placement and priority before queue mutation. It supports AUTO/MANUAL lanes, dependencies, shared tasks, batons, handoffs, cloning, batch leases, checkpoint/yield, quiet periods, resource budgets, maintenance windows, confidence routing, approval gates and successive-halving experiments.
+
+The adaptive recipe builder is available to construct what should run after policy selection, but is not yet the default scheduler dispatch path. This distinction prevents an experimental recipe from silently acquiring scheduling authority.
 
 `JobRuntime` is the workflow-level extension of that scheduler, not a parallel policy engine. It discovers due Schedule definitions, calls one `createRun` path, evaluates a Run DAG, resolves every step against the worker capability registry, acquires semantic resource locks, dispatches a registered Action, stores typed artifacts and requires declared verification before success. Model/provider routing remains a separate decision from worker placement. All dashboard/TUI mutations enter through `AgentControlService`.
 
@@ -122,6 +187,40 @@ Baton
 
 Independent agents remain isolated until synthesis. A judge compares evidence quality, records disagreement and links decisions to agents, repository state, tests and optional thread sources. Reproducible tests outrank repeated unsupported assertions.
 
+Context is informative, not authoritative. A context provider cannot mutate a lease, lane, schedule, PTY or acceptance result. The recipe includes only selected source/evidence IDs and a token estimate; inaccessible context degrades gracefully to baton/repository evidence.
+
+## Verification
+
+3.0.x implements evidence records, evidence-weighted consensus, provenance reconstruction and recipe-level verification requirements. It does not yet have a universal task-type verification executor wired to every lane. The richer persisted claim/evidence/verified/accepted service exists on the 3.1 integration branch and remains a 3.1 improvement rather than a retroactive 3.0.1 claim.
+
+The invariant is already binding: `agent says done` is a claim, not accepted completion. Git/test evidence remains independently authoritative for code work.
+
+## Successive halving and learning
+
+`ModelRecipe` fingerprints include prompt, skills, tools, context/runtime characteristics and inference parameters. `planOvernight` and `advanceStage` implement cheap-to-capability-to-replay-to-holdout-to-shadow successive halving. The recovered economic router adds cost/latency/confidence-aware selection and escalation.
+
+Persisting winners as a governed execution-recipe catalog and feeding run-ledger results back into qualification are **planned 3.1**.
+
+## 3.1 forward boundary
+
+```text
+Job Catalog [3.1]
+       |
+Schedule / Run Now [3.1]
+       |
+      Run [3.1 ledger]
+       |
+Agent Control policy and authority
+       |
+Adaptive Harness
+       |
+execution recipe per Job action
+       |
+worker / model / skills / tools / substrate
+```
+
+Jobs declare outcomes, dependencies and required capabilities. They do not name a personal machine or bypass the harness. Different actions in one Job may produce different recipes. The scheduler invokes the harness; it does not replace it. The web dashboard is an operator projection/control client, never authoritative state.
+
 ## Bootstrap and monitoring
 
 Bootstrap is configuration-driven, health-first and idempotent. `up` may start only configured recipes; `down` may stop only recorded owned processes. Occupied/unhealthy unknown services are never killed. With no configuration, status/up return `UNCONFIGURED` without network discovery or external mutation.
@@ -138,4 +237,4 @@ New capabilities are classified into policy/authority, scheduling, execution sub
 
 ## Release boundary
 
-3.1.0 is based on the tagged 3.0.1 agnostic release. The source release does not deploy services, expose the dashboard remotely, create credentials, broaden sharing, enable the bundled Schedule, or claim live qualification for infrastructure that was not tested. The TUI and existing execution implementation remain first-class fallback paths.
+3.0.1 remains an immutable source release. This unreleased 3.1 development branch is based on tagged 3.0.1 plus the merged adaptive-harness recovery; it does not move a release tag, deploy services, expose the dashboard remotely, create credentials, broaden sharing, enable the bundled Schedule or claim live model improvement from deterministic fixtures. The existing execution implementation remains a named rollback/fallback path while universal recipe dispatch and adapter enforcement are qualified.

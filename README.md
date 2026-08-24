@@ -1,6 +1,8 @@
-# Agent Control 3.1.0
+# Agent Control 3.1.0 development baseline
 
-Agent Control is an infrastructure-neutral control plane for durable, multi-agent work. A lane owns its task; execution providers, models and operator interfaces are replaceable clients. Agent Control remains authoritative for scheduling, priorities, leases, ownership, human takeover, batons, handoffs, clones, shared tasks, provider qualification, confidence routing, approvals, recovery validation, verification and conflict policy.
+Agent Control is an infrastructure-neutral, policy-controlled adaptive harness for durable work by heterogeneous agents and models. Its executable harness core composes a task-appropriate worker, provider/model route, prompt profile, minimum qualified skills, restricted tools, context strategy, runtime settings, authority snapshot, resource limits and verification/escalation policy into a fingerprinted execution recipe.
+
+A lane owns its task; recipes, agents, models, skills, tools, execution providers and operator interfaces are replaceable and remain below the control boundary. Agent Control remains authoritative for scheduling, priorities, leases, ownership, unconditional human takeover, batons, handoffs, clones, shared tasks, provider qualification, routing, approvals, recovery validation, verification and conflict policy. The recovered recipe builder and economic router are integrated; universal scheduler-to-recipe dispatch and tool-policy enforcement are explicit 3.1 acceptance work until their executable gates pass.
 
 Orca is available behind a narrow execution-provider contract. Orca may execute processes, terminals and worktrees, but it does not receive Agent Control policy authority.
 
@@ -74,7 +76,20 @@ The versioned JSON schema has four independent collections:
 
 Resource identity is separate from transport. A resource may be local, SSH, HTTP or Orca-backed. An SSH hostname is transport metadata, not the resource ID. Ports are configurable numbers. Optional unavailable services do not make an otherwise valid zero-provider installation fail.
 
-See [`config/agent-control.example.json`](config/agent-control.example.json) and [`docs/architecture-v2-agnostic.md`](docs/architecture-v2-agnostic.md).
+See [`config/agent-control.example.json`](config/agent-control.example.json), [`ARCHITECTURE.md`](ARCHITECTURE.md), and [`docs/concepts.md`](docs/concepts.md). The older [`docs/architecture-v2-agnostic.md`](docs/architecture-v2-agnostic.md) remains a configuration-neutrality appendix.
+
+## Adaptive harness
+
+`AdaptiveHarness` assembles an execution recipe from policy-approved components. `SkillCatalog` selects only qualified skills with qualification evidence. `ToolPolicy` produces an explicit minimum grant and revalidates the lane, lease generation, ownership generation and human-owner fence at tool use. `EconomicRouter` rejects unhealthy, unqualified, incapable, over-budget, low-confidence or unapproved routes before comparing effective monetary, latency, occupancy, contention, failure/retry and quality costs.
+
+The same task can therefore receive different scaffolding. A strongly qualified model may use a direct prompt with no extra skill; a smaller model may use a guided profile, a qualified task skill, narrower context and fewer tools. Both remain subject to the same Agent Control authority and verification policy.
+
+Current limits are intentional:
+
+- the catalog selects already-qualified skills but does not create, qualify or approve new ones;
+- the general tool gate is executable, but every execution adapter must still be wired to use it before end-to-end enforcement can be claimed;
+- the 3.0.x scheduler does not automatically persist or dispatch the new recipe;
+- model qualification and successive-halving operate on recipe fingerprints, but automated learning into a durable recipe catalog remains 3.1 work.
 
 ## Durable work and evidence
 
@@ -85,6 +100,8 @@ The Work Queue supports interactive, priority, background and batch work, depend
 Agent completion is modeled as `CLAIMED -> EVIDENCE_COLLECTED -> VERIFIED -> ACCEPTED`. A claim cannot satisfy a verification-required task. Lane policy can require minimum-sufficient evidence such as a Git commit, diff, test/build result, file hash, API result, UI evidence, benchmark, external source or human approval. Failed required evidence blocks verification, and acceptance remains a separate explicit action.
 
 Routing is capability-qualified and fail closed. Eligible routes may be compared using capability, provider health, reliability, monetary cost, latency, expected duration, context/tool requirements, privacy, local/GPU availability, priority, urgency and operator preference. The selected route, alternatives and plain-language rationale are stored with the lane.
+
+Model/provider qualification already records complete model recipes including runtime, context size, chat template, prompt version, skill/tool snapshots and inference parameters. Overnight experiments use successive halving across those fingerprints. The adaptive recipe adds worker, provider, context, authority, limits, verification and escalation around that existing qualification unit.
 
 ## Authority and safety
 
@@ -126,6 +143,8 @@ The neutrality guard rejects private topology identifiers in distributable runti
 - Reboot recovery is qualified only per explicitly tested environment; source support is not a universal live qualification claim.
 - OpenAI ChatKit access uses official supported APIs and remains qualified only for the exact tested project/thread state recorded in provider evidence.
 - ChatGPT Work and Codex shared task context remain host/reference-only unless an official read API is available.
+- Skill proposal, security review, sandbox qualification, approval and promotion are planned for 3.1; an unqualified proposal cannot be selected by the current catalog.
+- Automatic Job/Scheduler execution-recipe construction, a formal worker registry, run ledger and web dashboard are 3.1 boundaries.
 - No production deployment is performed by this repository release process.
 - The events workflow is qualified only against a safe fixture target; authenticated Facebook discovery and the existing LocalWalks production publisher are not invoked or production-qualified by this source change.
 
