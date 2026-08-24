@@ -3,7 +3,7 @@
   "version": "3.0.1",
   "private": true,
   "type": "module",
-  "description": "Capability-agnostic distributed agent control plane",
+  "description": "Infrastructure-neutral policy control plane and adaptive agent harness",
   "scripts": {
     "start": "tsx src/index.ts",
     "dev": "tsx watch src/index.ts",
