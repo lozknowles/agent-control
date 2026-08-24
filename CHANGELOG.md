@@ -4,6 +4,10 @@
 
 ### Added
 
+- Default adaptive-harness dispatch for normal Work Queue agent executions, with durable/inspectable recipe identity and separate worker-placement/model-routing rationale.
+- A central `ToolInvocationGateway` that reauthorises every model-originated tool call against recipe grants, live capability/policy state, lease generation, ownership generation and human takeover.
+- Explicit named control operations for non-agent maintenance work; a control handler cannot act as an unrestricted legacy agent fallback.
+- A durable `verification-pending` Work Queue state separating process completion from verified acceptance.
 - A responsive localhost web dashboard with system, lane, provider, typed-event, Git, PTY-observer and verification/evidence views.
 - A narrow `AgentControlService` application boundary shared by the TUI and HTTP API, with typed control events over Server-Sent Events.
 - Observer/operator separation: browser mutations require an explicitly configured bearer token, JSON requests and origin validation.
@@ -29,6 +33,8 @@
 
 ### Security and authority
 
+- Harness construction cannot claim queue work, mutate placement, acquire authority, write a PTY or accept completion.
+- Secret-like runtime settings and credentialed runtime URLs fail closed before recipe fingerprinting or persistence.
 - The dashboard binds to `127.0.0.1` by default and is read-only when no operator token is configured.
 - No web endpoint can directly mutate leases, scheduling internals or PTY input.
 - Human takeover uses the existing unconditional PTY fence; autonomous resume is rejected while a human owns the terminal.

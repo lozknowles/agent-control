@@ -118,9 +118,19 @@ The **Lanes** view shows the same lane, provider, baton, routing, Git, PTY owner
 
 The TUI and web UI are clients of one control service. Neither contains scheduling, lease, ownership or verification authority.
 
+## Adaptive harness execution
+
+For normal Work Queue agent work, `WorkExecutor` first uses scheduler-selected worker placement and asks `AdaptiveHarness` to build a fingerprinted `ExecutionRecipe`. The recipe records provider/model routing, prompt profile, selected context, qualified skills, granted tools, safe runtime settings, authority generations and verification/escalation requirements. Recipe construction does not claim work, alter placement, acquire a lease, write a PTY or accept a result.
+
+The executor receives only a `ToolInvocationGateway`. Each invocation is checked against the recipe grant and current capability, privilege, worker, lease, ownership and human-takeover state. Policy denial fails closed and never falls back to a raw handler. Non-agent maintenance such as Android provisioning uses an explicitly named and scope-checked control operation.
+
+Recipe execution ends in `verification-pending`; use the evidence/verification workflow before acceptance. The recipe-dispatch store is an inspectable bridge to the Run Ledger and must remain on operator-only durable storage. It contains identities and policy metadata, never API keys or credentials.
+
 ## Jobs, Actions and Runs
 
 An Action is a versioned executable capability. A Job is a declarative DAG of Actions. A separate Schedule decides when to create a Run. Manual and scheduled triggers call the same `createRun` path.
+
+Current registered Actions are control-owned handlers. A new Action that invokes an agent or model must delegate through `HarnessDispatcher`; Action registration does not qualify a model, grant tools or confer authority. Tools used opaquely inside an external CLI are not yet claimed as individually moderated.
 
 Jobs request capabilities and semantic resources, never machine names. Credentials are represented as approved capability bindings or secret references and are never embedded in manifests. Historical Runs retain the effective Job version, parameters, trigger, selected workers, attempts, artifacts, verification and provenance.
 
@@ -190,6 +200,8 @@ The bundled node is loopback-bound by default and exposes only its allow-listed 
 - execution `DISCONNECTED` or `UNKNOWN`: do not resume automatically; validate identity evidence.
 - dashboard mutation denied: configure the token and allowed origin; do not weaken authentication.
 - context unavailable: continue from baton, Git and tests and record the accessibility failure.
+- harness policy denied: inspect missing qualification, capability, tool/risk approval and live authority; do not substitute an unrestricted legacy handler.
+- recipe is stale after takeover or lease change: build a new policy-authorised recipe after ownership is deliberately returned and revalidated.
 
 ## Release validation
 

@@ -43,6 +43,24 @@ Use the repository vocabulary: policy/authority, scheduling, execution substrate
 - Treating three matching agent claims as verified evidence
 - Letting an external thread approve an action
 - Adding a PTY WebSocket writer that bypasses ownership generations
+- Passing a raw agent handler to `WorkExecutor` or treating a named control operation as a legacy agent fallback
+
+## 3.1 adaptive dispatch assessment
+
+| Question | Answer |
+|---|---|
+| Domain | Adaptive harness / execution boundary |
+| Authority | Existing scheduler, lane lease and PTY ownership services |
+| Recipe role | Pure construction and inspectable identity; cannot claim work or accept results |
+| Default agent path | `WorkExecutor` requires an `adaptive-harness` dispatch |
+| Raw-handler exception | Named, scope-checked control operations only |
+| Tool path | Executor receives only `ToolInvocationGateway`; every call revalidates live policy/authority |
+| Placement versus routing | Scheduler selects worker; harness routes a provider/model only among that worker's candidates |
+| Human takeover | Live human owner rejects every retained recipe gateway immediately |
+| Completion | Recipe execution stops at `verification-pending`; acceptance is separate |
+| Durable identity | Recipe fingerprint and dispatch record contain no credential material |
+| Remaining gap | Opaque CLI-internal tools and future model-backed Job Actions are not yet universally moderated |
+| Evidence | `adaptive-harness.test.ts`, `harness-dispatch.test.ts`, `work-executor.test.ts`, full serial suite |
 
 ## 3.1 Job runtime assessment
 

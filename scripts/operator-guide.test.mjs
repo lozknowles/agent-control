@@ -11,6 +11,9 @@ test('3.1 operator guide covers the dashboard and scheduler authority boundary',
   assert.match(source, /^# Agent Control 3\.1\.0 Operator Guide/m);
   assert.match(source, /^## Web dashboard$/m);
   assert.match(source, /^## Scheduler operation$/m);
+  assert.match(source, /^## Adaptive harness execution$/m);
+  assert.match(source, /ToolInvocationGateway/);
+  assert.match(source, /verification-pending/);
   assert.match(source, /The dashboard requests; Agent Control authorises/);
   assert.match(source, /OS cron and the browser are not authoritative schedulers/);
   assert.match(architecture, /default Jobs workspace is an operational projection, not an additional scheduler/);

@@ -2,7 +2,7 @@
 
 Agent Control is an infrastructure-neutral, policy-controlled adaptive harness for durable work by heterogeneous agents and models. Its executable harness core composes a task-appropriate worker, provider/model route, prompt profile, minimum qualified skills, restricted tools, context strategy, runtime settings, authority snapshot, resource limits and verification/escalation policy into a fingerprinted execution recipe.
 
-A lane owns its task; recipes, agents, models, skills, tools, execution providers and operator interfaces are replaceable and remain below the control boundary. Agent Control remains authoritative for scheduling, priorities, leases, ownership, unconditional human takeover, batons, handoffs, clones, shared tasks, provider qualification, routing, approvals, recovery validation, verification and conflict policy. The recovered recipe builder and economic router are integrated; universal scheduler-to-recipe dispatch and tool-policy enforcement are explicit 3.1 acceptance work until their executable gates pass.
+A lane owns its task; recipes, agents, models, skills, tools, execution providers and operator interfaces are replaceable and remain below the control boundary. Agent Control remains authoritative for scheduling, priorities, leases, ownership, unconditional human takeover, batons, handoffs, clones, shared tasks, provider qualification, routing, approvals, recovery validation, verification and conflict policy. In the 3.1 development baseline, ordinary `WorkExecutor` agent work can no longer accept a raw handler: it builds and records an `ExecutionRecipe`, dispatches it through `AdaptiveHarness`, and exposes only a live-authority `ToolPolicy` gateway.
 
 Orca is available behind a narrow execution-provider contract. Orca may execute processes, terminals and worktrees, but it does not receive Agent Control policy authority.
 
@@ -84,12 +84,14 @@ See [`config/agent-control.example.json`](config/agent-control.example.json), [`
 
 The same task can therefore receive different scaffolding. A strongly qualified model may use a direct prompt with no extra skill; a smaller model may use a guided profile, a qualified task skill, narrower context and fewer tools. Both remain subject to the same Agent Control authority and verification policy.
 
-Current limits are intentional:
+Current boundaries are intentional:
 
 - the catalog selects already-qualified skills but does not create, qualify or approve new ones;
-- the general tool gate is executable, but every execution adapter must still be wired to use it before end-to-end enforcement can be claimed;
-- the 3.0.x scheduler does not automatically persist or dispatch the new recipe;
-- model qualification and successive-halving operate on recipe fingerprints, but automated learning into a durable recipe catalog remains 3.1 work.
+- normal Work Queue agent dispatch is recipe-backed, persisted/inspectable and stops at `verification-pending` rather than accepting process completion;
+- named control operations such as Android provisioning are explicit, scope-checked exceptions and cannot become a legacy agent fallback;
+- the generic `AgentAdapter` receives only the recipe and policy gateway, but Orca/SSH CLI-internal tools are opaque to Agent Control and are not yet qualified as universally moderated tool calls;
+- current Job Actions are registered control-owned handlers; any future agent/model Action must enter through the harness dispatcher rather than `ActionRegistry` directly;
+- model qualification and successive halving operate on recipe fingerprints, but governed skill generation and automated recipe learning remain follow-on 3.1 work.
 
 ## Durable work and evidence
 
@@ -143,8 +145,8 @@ The neutrality guard rejects private topology identifiers in distributable runti
 - Reboot recovery is qualified only per explicitly tested environment; source support is not a universal live qualification claim.
 - OpenAI ChatKit access uses official supported APIs and remains qualified only for the exact tested project/thread state recorded in provider evidence.
 - ChatGPT Work and Codex shared task context remain host/reference-only unless an official read API is available.
-- Skill proposal, security review, sandbox qualification, approval and promotion are planned for 3.1; an unqualified proposal cannot be selected by the current catalog.
-- Automatic Job/Scheduler execution-recipe construction, a formal worker registry, run ledger and web dashboard are 3.1 boundaries.
+- Skill proposal, security review, sandbox qualification, approval and promotion remain follow-on 3.1 work; an unqualified proposal cannot be selected by the current catalog.
+- The Job Catalog, Worker Registry, Run Ledger and web dashboard are implemented on this unreleased 3.1 branch. Job Actions that invoke agents/models still require the recipe-backed adapter migration before 3.1 acceptance.
 - No production deployment is performed by this repository release process.
 - The events workflow is qualified only against a safe fixture target; authenticated Facebook discovery and the existing LocalWalks production publisher are not invoked or production-qualified by this source change.
 

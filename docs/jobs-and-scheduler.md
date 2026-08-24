@@ -53,7 +53,7 @@ spec:
       verification: [tests-passed]
 ```
 
-Adding a personal workflow normally requires registering an Action in an adapter package and adding a manifest. Do not edit `JobRuntime`. Action handlers receive bounded parameters, explicit input artifact metadata, a checksum-validating artifact reader, selected worker identity and an abort signal. They return only declared artifacts, evidence and named verification observations.
+Adding a personal workflow normally requires registering an Action in an adapter package and adding a manifest. Do not edit `JobRuntime`. Action handlers receive bounded parameters, explicit input artifact metadata, a checksum-validating artifact reader, selected worker identity and an abort signal. They return only declared artifacts, evidence and named verification observations. Current Actions are explicit control-owned handlers. An Action that asks an agent/model to perform work must delegate through `HarnessDispatcher`; registration alone cannot grant a model a raw handler or tool authority.
 
 Sensitive parameters use an environment-variable **reference name** with `secretRef: true`; the manifest and persisted Run never contain the credential. A Job requesting `production-access` still waits unless Agent Control has an authorised healthy worker advertising that capability. A manifest cannot confer authority.
 
@@ -116,3 +116,4 @@ The bundled `events-refresh-qualification` workflow proves mobile/publisher/obse
 - Worker liveness beyond local configured resources must be fed by the existing health/remote-resource layer; a configured worker is not automatically healthy.
 - In-flight Action reattachment is fail-closed rather than automatic because execution identity handshakes are Action/execution-provider specific.
 - Per-step retry from the UI currently retries the whole historical Run; safe selective step retry remains future work.
+- Model-backed Actions are not yet universally wired to `HarnessDispatcher`; the current reference workflow uses deterministic control-owned fixture Actions. Opaque tools used inside an external CLI are not claimed as per-tool moderated.
