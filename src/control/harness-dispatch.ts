@@ -11,6 +11,7 @@ import {
 import type {Resource} from './capabilities.js';
 import type {WorkContextView, WorkDispatch, WorkExecutionResult} from './work-executor.js';
 import type {WorkItem} from './work-queue.js';
+import type {ActionContext, ActionOutput, AgentActionHandler} from './job-types.js';
 
 export interface RecipeExecutionResult {
   resultRef?: string;
@@ -140,6 +141,29 @@ export class HarnessPolicyDeniedError extends Error {
 export interface WorkRecipeFactoryResult {
   plan: RecipeDispatchPlan;
   executor: RecipeExecutor;
+}
+
+export interface JobRecipeFactoryResult extends WorkRecipeFactoryResult {
+  toActionOutput?: (result: RecipeDispatchResult) => Omit<ActionOutput, 'executionState'>;
+}
+
+export type JobRecipeFactory = (context: ActionContext) => JobRecipeFactoryResult | Promise<JobRecipeFactoryResult>;
+
+/** The sole model-backed Job Action bridge: Job policy places work, then the harness builds and dispatches it. */
+export class HarnessJobAgentAction implements AgentActionHandler {
+  readonly path = 'adaptive-harness' as const;
+  constructor(private readonly dispatcher: HarnessDispatcher, private readonly factory: JobRecipeFactory) {}
+
+  async execute(context: ActionContext): Promise<ActionOutput> {
+    const prepared = await this.factory(context);
+    if (prepared.plan.placement.workerId !== context.worker.id) throw new HarnessPolicyDeniedError(['worker_placement_mismatch']);
+    const result = await this.dispatcher.dispatch(prepared.plan, prepared.executor);
+    const mapped = prepared.toActionOutput?.(result) ?? {
+      evidence: result.execution.evidence,
+      detail: result.execution.resultRef ?? `recipe ${result.recipe.id} executed`,
+    };
+    return {...mapped, executionState: 'verification-pending'};
+  }
 }
 
 export type WorkRecipeFactory = (

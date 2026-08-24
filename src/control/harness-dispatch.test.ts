@@ -97,6 +97,15 @@ test('recipe identity survives store restart without granting stale authority', 
   }
 });
 
+test('stale ownership generation denies the retained live recipe before its handler', async () => {
+  const policy = toolPolicy();
+  let calls = 0;
+  const handlers = new ToolHandlerRegistry().register('repository.read', async () => ++calls);
+  const dispatcher = new HarnessDispatcher(new AdaptiveHarness(new SkillCatalog(), policy), policy, handlers, () => ({authority: {...authority, ownershipGeneration: authority.ownershipGeneration + 1}, workerId: 'worker-1'}));
+  await assert.rejects(() => dispatcher.dispatch(plan(), {execute: async (_recipe, tools) => ({resultRef: String(await tools.invoke('repository.read'))})}), /tool_policy_denied:stale_ownership_generation/);
+  assert.equal(calls, 0);
+});
+
 test('WorkExecutor normal agent path requires AdaptiveHarness and stops at verification', async () => {
   const policy = toolPolicy(), handlers = new ToolHandlerRegistry().register('repository.read', async () => 'read');
   const dispatcher = new HarnessDispatcher(new AdaptiveHarness(new SkillCatalog(), policy), policy, handlers, () => ({authority: {...authority}, workerId: 'worker-1'}));

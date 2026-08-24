@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type {ResourceConfig} from './config.js';
 import {effectiveParameters, nextCronOccurrence, type JobCatalog} from './job-catalog.js';
-import {jobPriorityRank, type ActionFailureClass, type ActionHandler, type ActionOutput, type ArtifactRecord, type PlacementRationale, type RunRecord, type RunStatus, type ScheduleState, type StepAttempt, type StepStatus, type WorkerRegistration} from './job-types.js';
+import {jobPriorityRank, type ActionFailureClass, type ActionHandler, type ActionOutput, type AgentActionHandler, type ArtifactRecord, type PlacementRationale, type RunRecord, type RunStatus, type ScheduleState, type StepAttempt, type StepStatus, type WorkerRegistration} from './job-types.js';
 
 function writeJsonAtomic(file: string, value: unknown) { fs.mkdirSync(path.dirname(file), {recursive: true}); const temporary = `${file}.tmp`; fs.writeFileSync(temporary, `${JSON.stringify(value, null, 2)}\n`, {mode: 0o600}); fs.renameSync(temporary, file); }
 function now() { return new Date().toISOString(); }
@@ -12,11 +12,18 @@ const TERMINAL_STEPS: StepStatus[] = ['SUCCEEDED', 'FAILED', 'CANCELLED'];
 
 export class ActionFailure extends Error {constructor(message: string, readonly failureClass: ActionFailureClass, readonly retryable = false) { super(message); this.name = 'ActionFailure'; }}
 export class ActionRegistry {
-  private readonly handlers = new Map<string, ActionHandler>();
-  register(id: string, handler: ActionHandler) { if (!/^[a-z0-9][a-z0-9._-]*@\d+\.\d+\.\d+$/.test(id)) throw new Error('invalid_action_id'); if (this.handlers.has(id)) throw new Error('action_exists'); this.handlers.set(id, handler); return this; }
-  has(id: string) { return this.handlers.has(id); }
-  ids() { return new Set(this.handlers.keys()); }
-  handler(id: string) { const handler = this.handlers.get(id); if (!handler) throw new ActionFailure(`action_not_registered:${id}`, 'configuration'); return handler; }
+  private readonly actions = new Map<string, {kind: 'control'; handler: ActionHandler} | {kind: 'agent'; handler: AgentActionHandler}>();
+  /** Existing deterministic/control-plane Actions remain explicitly outside model execution. */
+  register(id: string, handler: ActionHandler) { return this.registerControl(id, handler); }
+  registerControl(id: string, handler: ActionHandler) { this.assertRegistration(id); this.actions.set(id, {kind: 'control', handler}); return this; }
+  /** Model-backed Actions can only be registered through an adaptive-harness handler. */
+  registerAgent(id: string, handler: AgentActionHandler) { this.assertRegistration(id); if (handler.path !== 'adaptive-harness') throw new Error('agent_action_must_use_adaptive_harness'); this.actions.set(id, {kind: 'agent', handler}); return this; }
+  has(id: string) { return this.actions.has(id); }
+  ids() { return new Set(this.actions.keys()); }
+  kind(id: string) { return this.resolve(id).kind; }
+  resolve(id: string) { const action = this.actions.get(id); if (!action) throw new ActionFailure(`action_not_registered:${id}`, 'configuration'); return action; }
+  handler(id: string): ActionHandler { const action = this.resolve(id); return action.kind === 'control' ? action.handler : context => action.handler.execute(context); }
+  private assertRegistration(id: string) { if (!/^[a-z0-9][a-z0-9._-]*@\d+\.\d+\.\d+$/.test(id)) throw new Error('invalid_action_id'); if (this.actions.has(id)) throw new Error('action_exists'); }
 }
 
 export class WorkerRegistry {
@@ -160,7 +167,11 @@ export class JobRuntime {
     if (!resolution.worker) { step.status = 'WAITING_FOR_WORKER'; step.waitingReason = `No worker satisfies ${required.join(', ')}`; this.locks.release(run.id, step.id); this.ledger.update(run, 'step.waiting_worker'); return; }
     const worker = resolution.worker, controller = new AbortController(); this.controllers.set(run.id, controller); this.workers.claim(worker.id); step.status = 'RUNNING'; step.startedAt ??= this.clock().toISOString(); run.startedAt ??= step.startedAt; run.status = 'RUNNING'; if (!run.selectedWorkers.includes(worker.id)) run.selectedWorkers.push(worker.id); const attempt: StepAttempt = {attempt: step.attempts.length + 1, startedAt: this.clock().toISOString(), workerId: worker.id}; step.attempts.push(attempt); this.ledger.update(run, 'step.dispatched');
     try {
-      const inputs = this.inputArtifacts(run, step.id), output = await this.actions.handler(step.action)({run: structuredClone(run), step: structuredClone(step), worker, parameters: structuredClone(run.parameters), inputArtifacts: inputs, readArtifact: id => this.artifacts.read(id), signal: controller.signal});
+      const inputs = this.inputArtifacts(run, step.id), action = this.actions.resolve(step.action);
+      run.provenance.push({type: 'action-dispatch', at: this.clock().toISOString(), detail: `${action.kind}:${step.action}${action.kind === 'agent' ? ':adaptive-harness' : ''}`});
+      const actionContext = {run: structuredClone(run), step: structuredClone(step), worker, parameters: structuredClone(run.parameters), inputArtifacts: inputs, readArtifact: (id: string) => this.artifacts.read(id), signal: controller.signal};
+      const output = action.kind === 'control' ? await action.handler(actionContext) : await action.handler.execute(actionContext);
+      if (action.kind === 'agent' && output.executionState !== 'verification-pending') throw new ActionFailure('agent_action_missing_verification_boundary', 'verification');
       if (controller.signal.aborted) throw new ActionFailure('execution_cancelled', 'execution');
       this.recordActionOutput(run, step.id, worker.id, output); step.status = 'VERIFYING'; run.status = 'VERIFYING'; this.ledger.update(run, 'step.verifying');
       const requiredVerification = step.verification?.required ?? [], passed = new Set(output.verification ?? []); step.verification!.passed = requiredVerification.filter(item => passed.has(item)); step.verification!.failed = requiredVerification.filter(item => !passed.has(item));

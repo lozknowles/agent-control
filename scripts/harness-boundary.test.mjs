@@ -31,9 +31,10 @@ test('production WorkExecutor construction has no raw agent-handler bypass', () 
 
 test('raw tool registry stays inside the central harness dispatch module', () => {
   const importers = sourceFiles(sourceRoot)
-    .filter(file => fs.readFileSync(file, 'utf8').includes('harness-dispatch.js'))
+    .filter(file => path.basename(file) !== 'harness-dispatch.ts')
+    .filter(file => /\bToolHandlerRegistry\b/.test(fs.readFileSync(file, 'utf8')))
     .map(file => path.relative(root, file).replaceAll('\\', '/'));
-  assert.deepEqual(importers, ['src/adapter.ts']);
+  assert.deepEqual(importers, []);
   const adapter = fs.readFileSync(path.join(sourceRoot, 'adapter.ts'), 'utf8');
   assert.match(adapter, /tools: ToolInvocationGateway/);
   assert.doesNotMatch(adapter, /ToolHandlerRegistry/);

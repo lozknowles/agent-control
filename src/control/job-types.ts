@@ -66,7 +66,8 @@ export interface RunRecord {
   effectiveJob: JobDefinition; selectedWorkers: string[]; approvals: string[]; provenance: Array<{type: string; at: string; detail: string}>;
 }
 export interface ActionContext {run: RunRecord; step: RunStep; worker: WorkerRegistration; parameters: Record<string, unknown>; inputArtifacts: ArtifactRecord[]; readArtifact: (id: string) => unknown; signal: AbortSignal;}
-export interface ActionOutput {artifacts?: Array<{name: string; value: unknown; type?: string; schema?: string; version?: string; retention?: string}>; evidence?: string[]; verification?: string[]; detail?: string;}
+export interface ActionOutput {artifacts?: Array<{name: string; value: unknown; type?: string; schema?: string; version?: string; retention?: string}>; evidence?: string[]; verification?: string[]; detail?: string; executionState?: 'verification-pending';}
 export type ActionHandler = (context: ActionContext) => Promise<ActionOutput>;
+export interface AgentActionHandler {readonly path: 'adaptive-harness'; execute(context: ActionContext): Promise<ActionOutput>;}
 
 export const jobPriorityRank: Record<JobPriority, number> = {background: 1, low: 2, normal: 3, high: 4, urgent: 5};
