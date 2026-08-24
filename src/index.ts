@@ -1,9 +1,9 @@
 import blessed from 'blessed';
 import path from 'node:path';
-import {appendEvent, batonHealth, checkpoint, defaultCapabilities, loadWorkspace, saveWorkspace, touchBaton, type LaneState, type WorkspaceState} from './state.js';
+import {appendEvent, batonHealth, defaultCapabilities, loadWorkspace, saveWorkspace, type LaneState, type WorkspaceState} from './state.js';
 import {loadConfig} from './control/config.js';
 import {PtyRegistry} from './control/pty.js';
-import {buildPtyRows, requestSelfRoute} from './control/dashboard.js';
+import {buildPtyRows} from './control/dashboard.js';
 import {discoverLinuxPtys, toPtyDiscoveries} from './control/linux-pty.js';
 import {laneAccent, meter, compactPath, tag, statusColor} from './ui/theme.js';
 import {ProviderRegistry, providersFromConfig} from './control/providers.js';
@@ -14,6 +14,9 @@ import {workQueueMetrics} from './control/work-observability.js';
 import {injectDemoWork} from './control/work-demo.js';
 import {controlRoomView} from './ui/control-room.js';
 import {AndroidRecovery, type AndroidRecoveryState} from './control/android-recovery.js';
+import {AgentControlService} from './control/application-service.js';
+import {startWebDashboard} from './control/web-server.js';
+import {ContextStore} from './control/context.js';
 
 const now = () => new Date().toISOString();
 const config = loadConfig();
@@ -33,6 +36,11 @@ const state = loadWorkspace(initial), lanes = state.lanes, ptys = new PtyRegistr
 for (const provider of providersFromConfig(config.providers)) providers.register(provider);
 const queueStore = new WorkQueueStore();
 let workQueue = queueStore.load();
+const control = new AgentControlService(state, ptys, providers).configureProjection({
+  approvalCount: () => workQueueMetrics(workQueue).humanReview,
+  resources: config.resources.map(resource => ({id: resource.id, name: resource.name ?? resource.id, platform: resource.platform, transport: resource.transport.type, capabilities: [...resource.capabilities]})),
+  contextStore: ContextStore.load(),
+});
 const androidResource = config.resources.find(resource => resource.platform === 'android' && resource.android);
 let androidState: AndroidRecoveryState | undefined = androidResource ? {resourceId: androidResource.id, state: 'offline', detail: 'not probed', recovered: false} : undefined;
 let androidAuto = false;
@@ -56,7 +64,18 @@ function refreshPtys() {
 }
 refreshPtys();
 
-const screen = blessed.screen({smartCSR: true, fullUnicode: true, title: 'Agent Control 3.0.1', mouse: true});
+if (process.env.AGENT_CONTROL_WEB_ENABLED !== '0') {
+  const web = startWebDashboard(control, {
+    host: process.env.AGENT_CONTROL_WEB_HOST ?? '127.0.0.1',
+    port: Number(process.env.AGENT_CONTROL_WEB_PORT ?? 4310),
+    operatorToken: process.env.AGENT_CONTROL_WEB_OPERATOR_TOKEN,
+    allowedOrigins: process.env.AGENT_CONTROL_WEB_ALLOWED_ORIGINS?.split(',').map(value => value.trim()).filter(Boolean),
+  });
+  web.on('listening', () => appendEvent('web.listening', {host: process.env.AGENT_CONTROL_WEB_HOST ?? '127.0.0.1', port: Number(process.env.AGENT_CONTROL_WEB_PORT ?? 4310), mutations: process.env.AGENT_CONTROL_WEB_OPERATOR_TOKEN ? 'operator-authenticated' : 'disabled'}));
+  web.on('error', error => appendEvent('web.failure', {message: error.message}));
+}
+
+const screen = blessed.screen({smartCSR: true, fullUnicode: true, title: 'Agent Control 3.1.0', mouse: true});
 let active = 0;
 const box = (options: any) => { const value = blessed.box({tags: true, border: 'line', style: {border: {fg: 'gray'}}, ...options}); screen.append(value); return value; };
 const header = box({top: 0, left: 0, width: '100%', height: 4});
@@ -74,7 +93,7 @@ const short = (value: string, size: number) => value.length <= size ? value : `$
 function render() {
   const selected = lanes[active], unassigned = ptys.list().filter(item => item.laneId === null).length, total = ptys.list().length;
   const metrics = workQueueMetrics(workQueue), view = controlRoomView(metrics, androidState), activeCount = lanes.filter(item => item.status === 'working').length, waiting = lanes.filter(item => item.status === 'waiting').length;
-  header.setContent(` {cyan-fg}{bold}AGENT CONTROL 3.0.1{/bold}{/cyan-fg}   ${tag(activeCount ? 'running' : 'ready', `${activeCount} ACTIVE`)}   ${tag(waiting ? 'waiting' : 'ready', `${waiting} WAITING`)}   |   ${tag(metrics.humanReview ? 'review' : 'ready', `${metrics.ready} READY / ${metrics.humanReview} REVIEW`)}   |   {gray-fg}PTY ASSIGNED ${total - unassigned}/${total}{/gray-fg}`);
+  header.setContent(` {cyan-fg}{bold}AGENT CONTROL 3.1.0{/bold}{/cyan-fg}   ${tag(activeCount ? 'running' : 'ready', `${activeCount} ACTIVE`)}   ${tag(waiting ? 'waiting' : 'ready', `${waiting} WAITING`)}   |   ${tag(metrics.humanReview ? 'review' : 'ready', `${metrics.ready} READY / ${metrics.humanReview} REVIEW`)}   |   {gray-fg}PTY ASSIGNED ${total - unassigned}/${total}{/gray-fg}`);
   lanes.forEach((item, index) => {
     const color = laneAccent(index), health = batonHealth(item.baton), laneColor = statusColor(item.status), healthColor = statusColor(health.label), context = Math.max(0, Math.min(100, Number.parseFloat(item.context) || 0));
     laneBoxes[index].style.border.fg = index === active ? color : 'gray';
@@ -97,7 +116,7 @@ function render() {
 async function refreshProviders() {
   if (!providers.list().length) { activity.log('Providers: UNCONFIGURED'); return; }
   activity.log('Provider probes started');
-  await Promise.all(providers.list().map(async provider => { providers.setHealth(provider.id, 'unknown', 'PROBING'); render(); const result = await probeProvider(provider); providers.setHealth(provider.id, result.health, `${result.detail} ${result.latencyMs}ms`); activity.log(`${provider.name}: ${result.health} ${result.detail} ${result.latencyMs}ms`); render(); }));
+  await Promise.all(providers.list().map(async provider => { providers.setHealth(provider.id, 'unknown', 'PROBING'); render(); const result = await probeProvider(provider); providers.setHealth(provider.id, result.health, `${result.detail} ${result.latencyMs}ms`); control.events.emit('provider.health_changed', {providerId: provider.id, health: result.health, detail: result.detail, latencyMs: result.latencyMs}, undefined, 'provider-probe'); activity.log(`${provider.name}: ${result.health} ${result.detail} ${result.latencyMs}ms`); render(); }));
 }
 function probeAndroid() {
   const controller = androidController(false);
@@ -128,8 +147,8 @@ screen.key(['g'], () => void refreshProviders());
 screen.key(['y'], () => void proveResponses());
 screen.key(['t'], ptyPopup); screen.key(['w'], queuePopup); screen.key(['d'], demoQueue); screen.key(['x'], probeAndroid); screen.key(['z'], recoverAndroid);
 screen.key(['a'], () => { androidAuto = !androidAuto; activity.log(`Android recovery mode: ${androidAuto ? 'AUTO' : 'MANUAL'}`); appendEvent('resource.android.recovery-mode', {auto: androidAuto}); if (androidAuto) { const controller = androidController(true); if (controller) { androidState = controller.probe(); if (androidState.state === 'node-degraded') androidState = controller.recover(); } } render(); });
-screen.key(['r'], () => { const selected = lanes[active], request = requestSelfRoute(selected.id, 'substitute', `Capability re-resolution requested from current ${selected.model}`, 0.8); touchBaton(selected, {status: 'SUBSTITUTE requested', nextAction: 'Resolve required capabilities onto replacement resources'}); appendEvent('agent.self-route', request); render(); });
-screen.key(['p'], () => { state.paused = !state.paused; for (const item of lanes) item.status = state.paused ? 'paused' : 'idle'; checkpoint(state, state.paused ? 'pause-all' : 'resume-all'); render(); });
-input.on('submit', value => { const text = value.trim(); if (text) { const selected = lanes[active]; selected.contract.goal = text; selected.status = 'waiting'; selected.lines.push(`> ${text}`); touchBaton(selected, {status: 'Task accepted; capability resolution pending', nextAction: 'Resolve capabilities and acquire resource leases'}); saveWorkspace(state); } input.clearValue(); render(); });
+screen.key(['r'], () => { const selected = lanes[active]; control.requestReroute(selected.id, 'tui-operator', `Capability re-resolution requested from current ${selected.model}`, .8); render(); });
+screen.key(['p'], () => { control.setSystemPaused(!state.paused, 'tui-operator'); render(); });
+input.on('submit', value => { const text = value.trim(); if (text) control.submitTask(lanes[active].id, text, 'tui-operator'); input.clearValue(); render(); });
 
 render(); laneBoxes[0].focus(); probeAndroid(); void refreshProviders();

@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Agent Control</title>
+  <link rel="stylesheet" href="/dashboard.css">
+  <link rel="stylesheet" href="/dashboard-fixes.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">AC</span><div><strong>Agent Control</strong><small id="version">connecting</small></div></div>
+    <div class="topbar-status"><span id="stream-state" class="status-pill neutral">CONNECTING</span><span id="health" class="status-pill neutral">UNKNOWN</span><button id="operator-button" class="button secondary">Observer mode</button></div>
+  </header>
+  <main class="shell">
+    <aside class="lanes-panel panel">
+      <div class="panel-heading"><div><span class="eyebrow">Control plane</span><h1>Lanes</h1></div><span id="lane-count" class="count">0</span></div>
+      <div id="lane-list" class="lane-list" aria-live="polite"></div>
+    </aside>
+
+    <section class="workspace panel">
+      <div id="empty-state" class="empty-state"><div class="empty-icon">◎</div><h2>No lane selected</h2><p>Select a lane to inspect its authoritative state.</p></div>
+      <div id="lane-detail" hidden>
+        <div class="lane-header">
+          <div><span id="lane-kicker" class="eyebrow"></span><h2 id="lane-title"></h2><p id="lane-task" class="lane-task"></p></div>
+          <div id="lane-status" class="status-pill"></div>
+        </div>
+        <div class="metrics" id="lane-metrics"></div>
+        <div class="control-strip" aria-label="Lane controls">
+          <button class="button" data-action="pause">Pause</button>
+          <button class="button" data-action="resume">Resume</button>
+          <button class="button secondary" data-action="reroute">Re-evaluate route</button>
+          <button class="button warning" data-action="takeover">Human takeover</button>
+          <button class="button danger" data-action="cancel">Cancel</button>
+        </div>
+        <nav class="tabs" aria-label="Lane detail views">
+          <button class="tab active" data-tab="activity">Activity</button><button class="tab" data-tab="terminal">Terminal</button><button class="tab" data-tab="git">Git</button><button class="tab" data-tab="evidence">Evidence</button>
+        </nav>
+        <div id="tab-activity" class="tab-panel active"></div>
+        <div id="tab-terminal" class="tab-panel"></div>
+        <div id="tab-git" class="tab-panel"></div>
+        <div id="tab-evidence" class="tab-panel"></div>
+      </div>
+    </section>
+
+    <aside class="system-panel">
+      <section class="panel summary-card"><div class="panel-heading"><div><span class="eyebrow">Runtime</span><h2>System</h2></div></div><div id="system-summary"></div></section>
+      <section class="panel"><div class="panel-heading"><div><span class="eyebrow">Qualified routes</span><h2>Providers</h2></div></div><div id="providers" class="provider-list"></div></section>
+      <section class="panel event-card"><div class="panel-heading"><div><span class="eyebrow">Typed stream</span><h2>Events</h2></div><button id="clear-events" class="text-button">Clear</button></div><ol id="event-list" class="event-list"></ol></section>
+    </aside>
+  </main>
+
+  <dialog id="operator-dialog">
+    <form method="dialog" id="operator-form">
+      <span class="eyebrow">Elevated capability</span><h2>Enable operator controls</h2>
+      <p>The token stays in this browser tab and is sent only as an Authorization header. Agent Control does not use browser cookies for authority.</p>
+      <label>Operator token<input id="operator-token" type="password" autocomplete="off" required></label>
+      <div class="dialog-actions"><button value="cancel" class="button secondary">Cancel</button><button value="save" class="button">Enable</button></div>
+    </form>
+  </dialog>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <script src="/dashboard.js" defer></script>
+  <script src="/dashboard-enhancements.js" defer></script>
+</body>
+</html>
