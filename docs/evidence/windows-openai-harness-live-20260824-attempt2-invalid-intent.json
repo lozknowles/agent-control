@@ -1,0 +1,67 @@
+{
+  "schema": "agent-control.openai-windows-qualification/v1",
+  "startedAt": "2026-08-24T14:49:05.068Z",
+  "completedAt": "2026-08-24T14:49:05.085Z",
+  "platform": "win32",
+  "hostHash": "f936c64eb2f99967d11cb14160b66ebfd6ce719a7ced875dcfc425e0b7c6aa0a",
+  "provider": {
+    "id": "openai-responses",
+    "transport": "POST https://api.openai.com/v1/responses",
+    "authentication": "Bearer API key supplied outside persisted state",
+    "modelId": "gpt-4o-mini"
+  },
+  "job": {
+    "id": "openai-windows-return-data",
+    "version": "1.0.0",
+    "action": "qualification.openai-windows-return@1.0.0",
+    "kind": "agent",
+    "runId": "run-329cad52-be47-43da-bf0e-0006075a7857",
+    "status": "FAILED",
+    "stepStatus": "FAILED",
+    "error": "Cannot read properties of undefined (reading 'targetCompletionMs')",
+    "errors": [
+      "model:execution:Cannot read properties of undefined (reading 'targetCompletionMs')"
+    ],
+    "verification": {
+      "required": [
+        "windows-openai-return-data"
+      ],
+      "passed": [],
+      "failed": []
+    }
+  },
+  "path": [
+    "Job",
+    "HarnessJobAgentAction",
+    "HarnessDispatcher",
+    "AdaptiveHarness",
+    "ExecutionRecipe",
+    "OpenAI Responses API",
+    "function_call",
+    "ToolInvocationGateway",
+    "ToolPolicy",
+    "tool-handler",
+    "typed artifact",
+    "verification"
+  ],
+  "audits": [],
+  "provenance": [
+    {
+      "type": "trigger",
+      "at": "2026-08-24T14:49:05.073Z",
+      "detail": "manual:qualification"
+    },
+    {
+      "type": "action-dispatch",
+      "at": "2026-08-24T14:49:05.082Z",
+      "detail": "agent:qualification.openai-windows-return@1.0.0:adaptive-harness"
+    }
+  ],
+  "artifact": null,
+  "desktopUi": {
+    "qualified": false,
+    "status": "NOT_TESTED",
+    "reason": "No documented desktop automation API or approved local bridge; no scraping or session harvesting performed"
+  },
+  "verdict": "WINDOWS_OPENAI_RETURN_DATA_FAILED"
+}

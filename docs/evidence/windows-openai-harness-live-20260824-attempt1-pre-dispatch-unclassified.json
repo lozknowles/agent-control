@@ -1,0 +1,51 @@
+{
+  "schema": "agent-control.openai-windows-qualification/v1",
+  "startedAt": "2026-08-24T14:48:11.809Z",
+  "completedAt": "2026-08-24T14:48:11.822Z",
+  "platform": "win32",
+  "hostHash": "f936c64eb2f99967d11cb14160b66ebfd6ce719a7ced875dcfc425e0b7c6aa0a",
+  "provider": {
+    "id": "openai-responses",
+    "transport": "POST https://api.openai.com/v1/responses",
+    "authentication": "Bearer API key supplied outside persisted state",
+    "modelId": "gpt-4o-mini"
+  },
+  "job": {
+    "id": "openai-windows-return-data",
+    "version": "1.0.0",
+    "action": "qualification.openai-windows-return@1.0.0",
+    "kind": "agent",
+    "runId": "run-8e5ad36b-9d8f-47a7-bbcb-0d778ea03c37",
+    "status": "FAILED",
+    "stepStatus": "FAILED",
+    "verification": {
+      "required": [
+        "windows-openai-return-data"
+      ],
+      "passed": [],
+      "failed": []
+    }
+  },
+  "path": [
+    "Job",
+    "HarnessJobAgentAction",
+    "HarnessDispatcher",
+    "AdaptiveHarness",
+    "ExecutionRecipe",
+    "OpenAI Responses API",
+    "function_call",
+    "ToolInvocationGateway",
+    "ToolPolicy",
+    "tool-handler",
+    "typed artifact",
+    "verification"
+  ],
+  "audits": [],
+  "artifact": null,
+  "desktopUi": {
+    "qualified": false,
+    "status": "NOT_TESTED",
+    "reason": "No documented desktop automation API or approved local bridge; no scraping or session harvesting performed"
+  },
+  "verdict": "WINDOWS_OPENAI_RETURN_DATA_FAILED"
+}

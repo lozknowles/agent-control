@@ -23,6 +23,7 @@
 - Fail-closed named approvals now require a matching waiting step and emit a distinct typed `job.run_approved` audit event; browser artifact projections no longer expose managed storage paths.
 - A versioned Agent Control 3.1.0 Operator Guide covering installation, deployment patterns, the dashboard, Job scheduler operation, monitoring and recovery, with a rendered PDF under the 3.1.0 release assets.
 - A disabled twice-daily Europe/London reference Schedule and safe non-production events workflow qualification.
+- An official OpenAI Responses provider factory and Windows return-data qualification example, with model function calls mediated through `ToolPolicy` and returned as typed artifacts. The live API remains `SUPPORTED+UNQUALIFIED` because the tested project returned HTTP 429 for unavailable quota; no desktop-window automation is claimed.
 
 ### Changed
 

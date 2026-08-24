@@ -145,8 +145,9 @@ The neutrality guard rejects private topology identifiers in distributable runti
 - Reboot recovery is qualified only per explicitly tested environment; source support is not a universal live qualification claim.
 - OpenAI ChatKit access uses official supported APIs and remains qualified only for the exact tested project/thread state recorded in provider evidence.
 - ChatGPT Work and Codex shared task context remain host/reference-only unless an official read API is available.
+- Windows-hosted official OpenAI Responses execution now has a policy-gated provider and return-artifact example. Its real API qualification is `SUPPORTED+UNQUALIFIED` because the tested project returned HTTP 429 for unavailable quota; ChatGPT desktop-window automation remains unimplemented and untested.
 - Skill proposal, security review, sandbox qualification, approval and promotion remain follow-on 3.1 work; an unqualified proposal cannot be selected by the current catalog.
-- The Job Catalog, Worker Registry, Run Ledger and web dashboard are implemented on this unreleased 3.1 branch. Job Actions that invoke agents/models still require the recipe-backed adapter migration before 3.1 acceptance.
+- The Job Catalog, Worker Registry, Run Ledger and web dashboard are implemented on this unreleased 3.1 branch. Model-backed Job Actions enter through `HarnessJobAgentAction`; each production provider still requires its own live qualification.
 - No production deployment is performed by this repository release process.
 - The events workflow is qualified only against a safe fixture target; authenticated Facebook discovery and the existing LocalWalks production publisher are not invoked or production-qualified by this source change.
 
