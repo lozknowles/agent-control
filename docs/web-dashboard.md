@@ -2,6 +2,8 @@
 
 The web dashboard is an operator interface over `AgentControlService`. It is not a web scheduler and does not own lane, lease, PTY, verification or provider state.
 
+The default **Jobs** view shows the versioned catalog, Schedules, last/next Run, current structured step progress, Queue reasons, worker placement, artifacts, verification and provenance. The **Lanes** view retains the interactive multi-agent control room. Neither view parses terminal text for Run state.
+
 ## Start
 
 `npm start` starts the TUI and the embedded dashboard on `http://127.0.0.1:4310`. `npm run web` runs the same control service and dashboard without Blessed for a headless operator host. Run one authoritative control-plane process per state directory. Set `AGENT_CONTROL_WEB_ENABLED=0` to disable the embedded dashboard or `AGENT_CONTROL_WEB_PORT` to select another port.
@@ -27,6 +29,12 @@ Read projections:
 - `GET /api/router`
 - `GET /api/evidence`
 - `GET /api/events` (SSE)
+- `GET /api/jobs`, `GET /api/jobs/:id`, `GET /api/jobs/:id/runs`
+- `GET /api/schedules`, `GET /api/runs`, `GET /api/runs/:id`
+- `GET /api/queue`, `GET /api/workers`, `GET /api/resources`
+- `GET /api/artifacts/:id` (metadata and checksum, not secret content)
+
+Authenticated Job requests are `POST /api/jobs/:id/run`, schedule `enable`/`disable`, and Run `cancel`, `retry` and `approve`. They call `AgentControlService`, which delegates to the one authoritative `JobRuntime`. The HTTP layer cannot register a worker, grant a capability, edit a manifest, acquire a resource lock, dispatch an Action or write a PTY.
 
 Operator requests under `/api/lanes/:id/` include `pause`, `resume`, `priority`, `mode`, `task`, `reroute`, `handoff`, `clone`, `cancel`, `takeover`, `return-ownership` and verification transitions. These endpoints call application-service methods. There is deliberately no direct lease, scheduler-state, persistence, terminal-input or execution-provider endpoint.
 

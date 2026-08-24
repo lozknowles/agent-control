@@ -10,12 +10,19 @@
 - A persisted claim/evidence/verification/acceptance state machine with task-specific evidence policy.
 - Capability, health, reliability, cost, latency, duration, privacy, context, tool and resource-aware route selection with durable rationale.
 - An executable conceptual-integrity assessment that rejects duplicate state, second control paths, interface-owned authority and provider-owned policy.
+- A JSON-Schema-validated, YAML-authored, versioned Job and Schedule catalog with typed parameters and DAG validation.
+- An authoritative durable Run ledger with explicit step states, bounded classified retries, approval waits, cancellation, fail-closed restart recovery and immutable effective definitions.
+- Capability-advertising worker placement with visible selection/rejection rationale, expiring capabilities and no machine names in Jobs.
+- Durable semantic resource locks plus typed, checksummed, provenance-bearing artifact handoff across workers.
+- Jobs, Queue, live step progress, schedules and Run history in the web dashboard, plus a shared TUI Jobs view.
+- A disabled twice-daily Europe/London reference Schedule and safe non-production events workflow qualification.
 
 ### Changed
 
 - TUI task submission, reroute and pause/resume now call the shared application service rather than mutating workspace state directly.
 - Routing and verification projections are first-class lane state and survive persistence/reload.
 - The full test gate is serialised to prevent persistence-focused tests from contaminating one another.
+- Manual, scheduled and future trigger adapters now converge on the same `JobRuntime.createRun` path through `AgentControlService`.
 
 ### Security and authority
 
@@ -23,6 +30,7 @@
 - No web endpoint can directly mutate leases, scheduling internals or PTY input.
 - Human takeover uses the existing unconditional PTY fence; autonomous resume is rejected while a human owns the terminal.
 - External context and provider adapters remain non-authoritative and cannot verify or accept completion.
+- Job manifests cannot grant capabilities, approvals, leases, PTY ownership or production authority; cancellation retains resource locks until execution returns.
 
 ### Compatibility
 

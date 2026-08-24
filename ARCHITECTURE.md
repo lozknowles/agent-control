@@ -15,6 +15,9 @@ This is the authoritative architecture boundary for 3.1.0. The 3.0.1 infrastruct
 9. The TUI and web dashboard are clients of one `AgentControlService`; neither owns scheduler, lease, ownership or PTY state.
 10. An agent claim, collected evidence, verification and acceptance are distinct durable states.
 11. Every material routing decision is capability-qualified, fail closed and inspectable.
+12. An Action is a versioned executable capability; a Job is a declarative workflow; a Trigger creates a durable Run through one authoritative path.
+13. Job manifests can request capabilities, resources and approvals but cannot confer them.
+14. Process completion, collected evidence, verification and Run success are separate states.
 
 ## System boundary
 
@@ -29,6 +32,10 @@ This is the authoritative architecture boundary for 3.1.0. The 3.0.1 infrastruct
                     |       |       +-- verification / provenance
                     |       +---------- router / qualification
                     +------------------ scheduler / leases / ownership
+                                      |
+                    Job Catalog -> JobRuntime -> Run Ledger
+                         |             |          |
+                    Schedules      Worker/locks  Artifacts
                                       |
                            ExecutionProvider contract
                               |                |
@@ -53,6 +60,9 @@ Workspace
     Latest routing decision and rationale
   Shared tasks
   Work Queue and checkpoints
+  Versioned Job/Schedule catalog references
+  Run ledger, step attempts and placement rationale
+  Artifact metadata/checksums and durable resource locks
   Evidence and provenance graph
   Append-only events
 ```
@@ -68,6 +78,10 @@ Configuration rejects embedded secret-like fields and credentialed URLs. Credent
 ## Scheduling and execution
 
 The scheduler selects capabilities, placement, priority and provider before queue mutation. It supports AUTO/MANUAL lanes, dependencies, shared tasks, batons, handoffs, cloning, batch leases, checkpoint/yield, quiet periods, resource budgets, maintenance windows, confidence routing, approval gates and successive-halving experiments.
+
+`JobRuntime` is the workflow-level extension of that scheduler, not a parallel policy engine. It discovers due Schedule definitions, calls one `createRun` path, evaluates a Run DAG, resolves every step against the worker capability registry, acquires semantic resource locks, dispatches a registered Action, stores typed artifacts and requires declared verification before success. Model/provider routing remains a separate decision from worker placement. All dashboard/TUI mutations enter through `AgentControlService`.
+
+The append-oriented Run ledger retains the effective Job version, parameters, trigger, worker assignments, retries, artifacts, evidence, errors and provenance. A restart never assumes a live Action survived: an in-flight step becomes `DISCONNECTED`/identity-unproven and its durable resource lock remains held for manual reconciliation. PID alone is not recovery evidence.
 
 The narrow execution-provider API exposes only start, status, reconnect, input, pause, resume, cancel, output, diff and cleanup. Orca-specific concepts remain inside the adapter so another substrate can replace it.
 

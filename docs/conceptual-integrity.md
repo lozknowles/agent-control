@@ -44,4 +44,19 @@ Use the repository vocabulary: policy/authority, scheduling, execution substrate
 - Letting an external thread approve an action
 - Adding a PTY WebSocket writer that bypasses ownership generations
 
+## 3.1 Job runtime assessment
+
+| Question | Answer |
+|---|---|
+| Domain | Scheduling / persistence |
+| Authority | `JobRuntime` behind `AgentControlService` |
+| Extended abstraction | Existing Work Queue capability placement, priorities and policy boundary |
+| Duplicate scheduler | No; the Job runtime owns workflow/DAG state and reuses the existing capability/resource vocabulary for atomic placement |
+| Presentation state | None; TUI and web read the same catalog, ledger, registry and locks |
+| Provider routing | Separate; worker placement cannot substitute a model/provider |
+| Manifest authority | None; a Job requests capabilities/approvals but cannot grant them |
+| Takeover | Unchanged and unconditional; the runtime has no PTY write primitive |
+| Failure mode | Visible wait/degraded/disconnected state; restart identity uncertainty fails closed |
+| Evidence | Schema, scheduler, artifact, lock, API, authority and full regression tests plus safe reference qualification |
+
 Redesign these through the existing control, evidence or execution contracts instead.

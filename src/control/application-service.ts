@@ -6,6 +6,7 @@ import type {PtyRegistry} from './pty.js';
 import {VerificationService} from './verification.js';
 import type {RouteDecision} from './routing.js';
 import type {ContextStore} from './context.js';
+import type {JobRuntime} from './job-runtime.js';
 
 export type ControlEventType =
   | 'system.snapshot'
@@ -21,6 +22,11 @@ export type ControlEventType =
   | 'verification.changed'
   | 'provider.health_changed'
   | 'system.paused_changed'
+  | 'job.run_created'
+  | 'job.run_cancelled'
+  | 'job.run_retried'
+  | 'job.schedule_changed'
+  | 'job.run_changed'
   | 'failure';
 
 export interface ControlEvent {id: number; at: string; type: ControlEventType; laneId?: number; actor?: string; payload: Record<string, unknown>;}
@@ -61,6 +67,7 @@ export interface SystemProjection {
   outstandingApprovals: number;
   lastRestorePoint: string | null;
   observedAt: string;
+  jobs: {total: number; enabled: number; queued: number; running: number; failed: number; succeeded: number; schedulesEnabled: number;};
 }
 
 export class ControlEventBus {
@@ -87,6 +94,7 @@ export class AgentControlService {
   private approvalCount: () => number = () => 0;
   private resourceRows: SystemProjection['resources'] = [];
   private contextStore?: ContextStore;
+  private jobRuntime?: JobRuntime;
 
   constructor(
     readonly state: WorkspaceState,
@@ -99,10 +107,11 @@ export class AgentControlService {
     this.verification = new VerificationService(state, persist);
   }
 
-  configureProjection(extras: {approvalCount?: () => number; resources?: SystemProjection['resources']; contextStore?: ContextStore}) {
+  configureProjection(extras: {approvalCount?: () => number; resources?: SystemProjection['resources']; contextStore?: ContextStore; jobRuntime?: JobRuntime}) {
     if (extras.approvalCount) this.approvalCount = extras.approvalCount;
     if (extras.resources) this.resourceRows = structuredClone(extras.resources);
     if (extras.contextStore) this.contextStore = extras.contextStore;
+    if (extras.jobRuntime) this.jobRuntime = extras.jobRuntime;
     return this;
   }
 
@@ -110,6 +119,7 @@ export class AgentControlService {
     const lanes = this.state.lanes.map(lane => this.projectLane(lane));
     const providerRows = this.providers?.list().map(provider => ({id: provider.id, name: provider.name, kind: provider.kind, health: this.providers?.health(provider.id)?.health ?? 'unknown', capabilities: [...provider.capabilities]})) ?? [];
     const degraded = this.state.lanes.some(lane => lane.status === 'error') || providerRows.some(provider => provider.health === 'offline');
+    const jobRuns = this.jobRuntime?.ledger.list() ?? [], jobDefinitions = this.jobRuntime?.catalog.listJobs() ?? [], schedules = this.jobRuntime?.catalog.listSchedules() ?? [];
     return {
       version: this.version,
       health: degraded ? 'degraded' : 'healthy',
@@ -121,8 +131,25 @@ export class AgentControlService {
       outstandingApprovals: this.approvalCount(),
       lastRestorePoint: this.state.lastRestorePoint,
       observedAt: new Date().toISOString(),
+      jobs: {total: jobDefinitions.length, enabled: jobDefinitions.filter(job => job.spec.enabled !== false).length, queued: jobRuns.filter(run => run.status === 'QUEUED').length, running: jobRuns.filter(run => ['RUNNING', 'VERIFYING'].includes(run.status)).length, failed: jobRuns.filter(run => ['FAILED', 'DEGRADED', 'DISCONNECTED'].includes(run.status)).length, succeeded: jobRuns.filter(run => run.status === 'SUCCEEDED').length, schedulesEnabled: schedules.filter(schedule => this.jobRuntime?.ledger.schedule(schedule.metadata.id)?.enabled).length},
     };
   }
+
+  jobs() { return this.mustJobRuntime().jobsProjection(); }
+  job(id: string) { const values = this.jobs().filter(job => job.metadata.id === id); if (!values.length) throw new Error('job_missing'); return values.sort((a, b) => b.metadata.version.localeCompare(a.metadata.version))[0]; }
+  runs(jobId?: string) { return this.mustJobRuntime().ledger.list(jobId); }
+  run(id: string) { const value = this.mustJobRuntime().ledger.get(id); if (!value) throw new Error('run_missing'); return value; }
+  createJobRun(id: string, parameters: Record<string, unknown>, actor: string) { const job = this.job(id); const run = this.mustJobRuntime().createRun(`${job.metadata.id}@${job.metadata.version}`, parameters, {type: 'manual', actor}); this.events.emit('job.run_created', {runId: run.id, jobId: run.jobId, trigger: 'manual'}, undefined, actor); return run; }
+  cancelJobRun(id: string, actor: string) { const run = this.mustJobRuntime().cancel(id, `cancelled_by:${actor}`); this.events.emit('job.run_cancelled', {runId: id}, undefined, actor); return run; }
+  retryJobRun(id: string, actor: string) { const run = this.mustJobRuntime().retry(id); this.events.emit('job.run_retried', {sourceRunId: id, runId: run.id}, undefined, actor); return run; }
+  approveJobRun(id: string, policy: string, actor: string) { const run = this.mustJobRuntime().approve(id, policy); this.events.emit('job.run_created', {runId: id, approval: policy}, undefined, actor); return run; }
+  schedules() { return this.mustJobRuntime().catalog.listSchedules().map(schedule => ({...schedule, state: this.mustJobRuntime().ledger.schedule(schedule.metadata.id)})); }
+  setScheduleEnabled(id: string, enabled: boolean, actor: string) { const state = this.mustJobRuntime().setScheduleEnabled(id, enabled); this.events.emit('job.schedule_changed', {scheduleId: id, enabled}, undefined, actor); return state; }
+  jobQueue() { return this.mustJobRuntime().queueProjection(); }
+  workers() { return this.mustJobRuntime().workers.list(); }
+  resourceLocks() { return this.mustJobRuntime().locks.list(); }
+  artifacts(runId?: string) { return this.mustJobRuntime().artifacts.list(runId); }
+  artifact(id: string) { const value = this.mustJobRuntime().artifacts.get(id); if (!value) throw new Error('artifact_missing'); const {storageRef: _storageRef, ...metadata} = value; return {...metadata, storage: 'agent-control-managed'}; }
 
   lane(id: number) { return this.projectLane(this.mustLane(id)); }
   latestRoute(id: number) { return this.routeDecisions.get(id) ?? this.mustLane(id).routing; }
@@ -276,4 +303,5 @@ export class AgentControlService {
     });
   }
   private mustLane(id: number) { const lane = this.state.lanes.find(item => item.id === id); if (!lane) throw new Error('lane_missing'); return lane; }
+  private mustJobRuntime() { if (!this.jobRuntime) throw new Error('job_runtime_unconfigured'); return this.jobRuntime; }
 }

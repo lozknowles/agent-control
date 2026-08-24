@@ -15,3 +15,8 @@ test('conceptual integrity rejects provider adapters that claim scheduler or own
   const result = assessConceptualIntegrity({...dashboard, domain: 'provider_model_adapter', authoritativeComponent: 'OrcaAdapter'});
   assert.ok(result.violations.includes('provider_adapter_cannot_own_policy'));
 });
+
+test('Job runtime extends the scheduler through the shared control boundary', () => {
+  const result = assessConceptualIntegrity({name: 'Job catalog and runtime', domain: 'scheduling', authoritativeComponent: 'JobRuntime via AgentControlService', extendsAbstraction: 'WorkScheduler capability placement and persisted Agent Control state', createsDuplicateState: false, createsSecondControlPath: false, throughControlBoundary: true, effects: {scheduler: true}, failureMode: 'Run remains queued, waiting, degraded or disconnected with a durable reason', verificationEvidence: ['Job schema, runtime, API, takeover and full regression tests']});
+  assert.equal(result.accepted, true);
+});

@@ -7,13 +7,15 @@
   <title>Agent Control</title>
   <link rel="stylesheet" href="/dashboard.css">
   <link rel="stylesheet" href="/dashboard-fixes.css">
+  <link rel="stylesheet" href="/dashboard-jobs.css">
 </head>
 <body>
   <header class="topbar">
     <div class="brand"><span class="brand-mark" aria-hidden="true">AC</span><div><strong>Agent Control</strong><small id="version">connecting</small></div></div>
+    <nav class="primary-nav" aria-label="Control views"><button class="primary-tab active" data-view="jobs">Jobs</button><button class="primary-tab" data-view="lanes">Lanes</button></nav>
     <div class="topbar-status"><span id="stream-state" class="status-pill neutral">CONNECTING</span><span id="health" class="status-pill neutral">UNKNOWN</span><button id="operator-button" class="button secondary">Observer mode</button></div>
   </header>
-  <main class="shell">
+  <main id="lanes-workspace" class="shell" hidden>
     <aside class="lanes-panel panel">
       <div class="panel-heading"><div><span class="eyebrow">Control plane</span><h1>Lanes</h1></div><span id="lane-count" class="count">0</span></div>
       <div id="lane-list" class="lane-list" aria-live="polite"></div>
@@ -49,6 +51,12 @@
       <section class="panel"><div class="panel-heading"><div><span class="eyebrow">Qualified routes</span><h2>Providers</h2></div></div><div id="providers" class="provider-list"></div></section>
       <section class="panel event-card"><div class="panel-heading"><div><span class="eyebrow">Typed stream</span><h2>Events</h2></div><button id="clear-events" class="text-button">Clear</button></div><ol id="event-list" class="event-list"></ol></section>
     </aside>
+  </main>
+
+  <main id="jobs-workspace" class="jobs-shell">
+    <aside class="panel jobs-catalog"><div class="panel-heading"><div><span class="eyebrow">Reusable workflows</span><h1>Jobs</h1></div><span id="job-count" class="count">0</span></div><div id="job-list" class="job-list"></div></aside>
+    <section class="panel job-detail"><div id="job-empty" class="empty-state"><div class="empty-icon">◇</div><h2>No Job selected</h2><p>Select a catalog item to inspect its authoritative definition and history.</p></div><div id="job-detail" hidden></div></section>
+    <aside class="operations-column"><section class="panel"><div class="panel-heading"><div><span class="eyebrow">Scheduler</span><h2>Queue</h2></div><span id="queue-count" class="count">0</span></div><div id="job-queue" class="compact-list"></div></section><section class="panel"><div class="panel-heading"><div><span class="eyebrow">Durable ledger</span><h2>Recent Runs</h2></div></div><div id="run-history" class="compact-list"></div></section></aside>
   </main>
 
   <dialog id="operator-dialog">

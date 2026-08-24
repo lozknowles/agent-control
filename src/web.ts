@@ -9,6 +9,7 @@ import {ContextStore} from './control/context.js';
 import {WorkQueueStore} from './control/work-queue-store.js';
 import {workQueueMetrics} from './control/work-observability.js';
 import {defaultCapabilities, loadWorkspace, type LaneState, type WorkspaceState} from './state.js';
+import {buildJobRuntime, startJobScheduler} from './control/job-bootstrap.js';
 
 const now = () => new Date().toISOString();
 const config = loadConfig();
@@ -21,11 +22,14 @@ const state = loadWorkspace(initial), ptys = new PtyRegistry(), providers = new 
 for (const provider of providersFromConfig(config.providers)) providers.register(provider);
 if (process.platform === 'linux') for (const discovery of toPtyDiscoveries(discoverLinuxPtys())) { const lane = state.lanes.find(item => discovery.cwd === item.contract.cwd || discovery.cwd.startsWith(`${item.contract.cwd}/`)); ptys.upsert(discovery, lane ? String(lane.id) : null); }
 const queue = new WorkQueueStore().load();
+const jobRuntime = buildJobRuntime(config);
 const service = new AgentControlService(state, ptys, providers).configureProjection({
   approvalCount: () => workQueueMetrics(queue).humanReview,
   resources: config.resources.map(resource => ({id: resource.id, name: resource.name ?? resource.id, platform: resource.platform, transport: resource.transport.type, capabilities: [...resource.capabilities]})),
   contextStore: ContextStore.load(),
+  jobRuntime,
 });
+startJobScheduler(jobRuntime, (runId, status) => service.events.emit('job.run_changed', {runId, status}, undefined, 'job-scheduler'));
 const host = process.env.AGENT_CONTROL_WEB_HOST ?? '127.0.0.1', port = Number(process.env.AGENT_CONTROL_WEB_PORT ?? 4310);
 const server = startWebDashboard(service, {host, port, operatorToken: process.env.AGENT_CONTROL_WEB_OPERATOR_TOKEN, allowedOrigins: process.env.AGENT_CONTROL_WEB_ALLOWED_ORIGINS?.split(',').map(value => value.trim()).filter(Boolean)});
 server.on('listening', () => process.stdout.write(`Agent Control ${service.version} web dashboard: http://${host}:${port} (${process.env.AGENT_CONTROL_WEB_OPERATOR_TOKEN ? 'operator authenticated' : 'observer only'})\n`));

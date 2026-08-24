@@ -31,14 +31,31 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   if (method === 'GET' && url.pathname === '/api/router') return json(response, 200, service.allRoutes());
   if (method === 'GET' && url.pathname === '/api/evidence') return json(response, 200, service.snapshot().lanes.map(lane => ({laneId: lane.id, task: lane.task, verification: lane.verification, batonEvidence: lane.baton.evidence, contextSourceIds: lane.baton.contextSourceIds})));
   if (method === 'GET' && url.pathname === '/api/events') return eventStream(service, request, response);
+  if (method === 'GET' && url.pathname === '/api/jobs') return json(response, 200, service.jobs());
+  if (method === 'GET' && url.pathname === '/api/schedules') return json(response, 200, service.schedules());
+  if (method === 'GET' && url.pathname === '/api/runs') return json(response, 200, service.runs(url.searchParams.get('jobId') ?? undefined));
+  if (method === 'GET' && url.pathname === '/api/queue') return json(response, 200, service.jobQueue());
+  if (method === 'GET' && url.pathname === '/api/workers') return json(response, 200, service.workers());
+  if (method === 'GET' && url.pathname === '/api/resources') return json(response, 200, service.resourceLocks());
+  const jobMatch = url.pathname.match(/^\/api\/jobs\/([^/]+)(?:\/(runs|run))?$/), runMatch = url.pathname.match(/^\/api\/runs\/([^/]+)(?:\/(cancel|retry|approve))?$/), scheduleMatch = url.pathname.match(/^\/api\/schedules\/([^/]+)\/(enable|disable)$/), artifactMatch = url.pathname.match(/^\/api\/artifacts\/([^/]+)$/);
+  if (method === 'GET' && jobMatch && !jobMatch[2]) return json(response, 200, service.job(decodeURIComponent(jobMatch[1])));
+  if (method === 'GET' && jobMatch?.[2] === 'runs') return json(response, 200, service.runs(decodeURIComponent(jobMatch[1])));
+  if (method === 'GET' && runMatch && !runMatch[2]) return json(response, 200, service.run(decodeURIComponent(runMatch[1])));
+  if (method === 'GET' && artifactMatch) return json(response, 200, service.artifact(decodeURIComponent(artifactMatch[1])));
   const laneMatch = url.pathname.match(/^\/api\/lanes\/(\d+)(?:\/(.+))?$/);
   if (method === 'GET' && laneMatch && !laneMatch[2]) return json(response, 200, service.lane(Number(laneMatch[1])));
   if (method === 'GET' && laneMatch?.[2] === 'router') return json(response, 200, service.latestRoute(Number(laneMatch[1])) ?? null);
 
   if (method === 'POST') {
     validateMutationRequest(request, options);
+    const body = await readJson(request), actor = typeof body.actor === 'string' && body.actor.trim() ? body.actor.trim() : 'web-operator';
+    if (jobMatch?.[2] === 'run') return json(response, 201, service.createJobRun(decodeURIComponent(jobMatch[1]), body.parameters && typeof body.parameters === 'object' && !Array.isArray(body.parameters) ? body.parameters as Record<string, unknown> : {}, actor));
+    if (runMatch?.[2] === 'cancel') return json(response, 202, service.cancelJobRun(decodeURIComponent(runMatch[1]), actor));
+    if (runMatch?.[2] === 'retry') return json(response, 201, service.retryJobRun(decodeURIComponent(runMatch[1]), actor));
+    if (runMatch?.[2] === 'approve') return json(response, 200, service.approveJobRun(decodeURIComponent(runMatch[1]), String(body.policy ?? ''), actor));
+    if (scheduleMatch) return json(response, 200, service.setScheduleEnabled(decodeURIComponent(scheduleMatch[1]), scheduleMatch[2] === 'enable', actor));
     if (!laneMatch?.[2]) throw httpError(404, 'route_not_found');
-    const laneId = Number(laneMatch[1]), action = laneMatch[2], body = await readJson(request), actor = typeof body.actor === 'string' && body.actor.trim() ? body.actor.trim() : 'web-operator';
+    const laneId = Number(laneMatch[1]), action = laneMatch[2];
     switch (action) {
       case 'pause': return json(response, 200, service.pauseLane(laneId, actor));
       case 'resume': return json(response, 200, service.resumeLane(laneId, actor));
@@ -95,7 +112,7 @@ function eventStream(service: AgentControlService, request: IncomingMessage, res
 
 function serveAsset(response: ServerResponse, assetsDir: string, pathname: string) {
   const asset = pathname === '/' ? 'index.html' : pathname.replace(/^\//, '');
-  if (!['index.html', 'dashboard.css', 'dashboard-fixes.css', 'dashboard.js', 'dashboard-enhancements.js'].includes(asset)) throw httpError(404, 'not_found');
+  if (!['index.html', 'dashboard.css', 'dashboard-fixes.css', 'dashboard-jobs.css', 'dashboard.js', 'dashboard-enhancements.js'].includes(asset)) throw httpError(404, 'not_found');
   const file = path.join(assetsDir, asset);
   if (!fs.existsSync(file)) throw httpError(404, 'dashboard_asset_missing');
   const type = asset.endsWith('.html') ? 'text/html; charset=utf-8' : asset.endsWith('.css') ? 'text/css; charset=utf-8' : 'text/javascript; charset=utf-8';
