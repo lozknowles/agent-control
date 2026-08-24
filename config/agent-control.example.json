@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "resources": [
+    {
+      "id": "controller",
+      "name": "Controller",
+      "platform": "linux",
+      "transport": {"type": "local"},
+      "capabilities": ["control-plane", "repositories"]
+    },
+    {
+      "id": "worker-1",
+      "name": "Remote worker",
+      "platform": "linux",
+      "transport": {"type": "ssh", "host": "worker-1.example", "port": 22, "user": "operator", "identityFile": "~/.ssh/worker-1"},
+      "capabilities": ["harness.codex"]
+    },
+    {
+      "id": "android-1",
+      "name": "Android resource",
+      "platform": "android",
+      "transport": {"type": "ssh", "host": "android-1.example", "port": 8022, "user": "termux", "identityFile": "~/.ssh/android-1"},
+      "healthUrl": "http://127.0.0.1:18088/health",
+      "capabilities": ["platform.android", "device.physical"],
+      "android": {
+        "localHealthUrl": "http://127.0.0.1:18088/health",
+        "remoteHealthUrl": "http://127.0.0.1:8788/health",
+        "remoteDirectory": "~/agent-control",
+        "startCommand": "./android/start-node.sh",
+        "credentialEnv": "AGENT_CONTROL_NODE_TOKEN"
+      },
+      "metadata": {"model": "example-only"}
+    }
+  ],
+  "providers": [
+    {
+      "id": "local-model",
+      "name": "Local OpenAI-compatible model",
+      "kind": "local",
+      "baseUrl": "http://127.0.0.1:19090/v1",
+      "qualificationModel": "example-model",
+      "requiresAuth": false,
+      "parallelism": 1,
+      "costClass": "free",
+      "capabilities": ["text", "tools"]
+    }
+  ],
+  "services": [
+    {
+      "id": "local-model-service",
+      "healthUrl": "http://127.0.0.1:19090/health",
+      "optional": true,
+      "start": {"type": "systemd-user", "unit": "example-model.service"}
+    }
+  ],
+  "lanes": [
+    {"id": 1, "name": "Primary", "cwd": ".", "priority": 1, "mode": "auto"},
+    {"id": 2, "name": "Review", "cwd": ".", "priority": 1, "mode": "manual"}
+  ]
+}

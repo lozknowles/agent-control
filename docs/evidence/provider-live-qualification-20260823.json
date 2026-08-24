@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "recordedAt": "2026-08-23T19:51:47.7938760Z",
-  "worktree": "C:/Users/Loz/Documents/Codex/2026-08-23/priority-0-orca-agent-control-3/agent-control-integration-local",
+  "worktree": "C:/Users/operator/Documents/Codex/2026-08-23/priority-0-orca-agent-control-3/agent-control-integration-local",
   "authorityBoundary": "External context may inform policy or reasoning only and cannot schedule, mutate leases or ownership, write PTYs, interfere with human takeover, create or broaden shares, commit, push, or deploy.",
   "providers": [
     {
@@ -104,7 +104,7 @@
     ]
   },
   "repositoryGate": {
-    "platform": "hpubuntu",
+    "platform": "controller",
     "typescript": "PASS",
     "nodeBootstrapSyntax": "PASS",
     "shellBootstrapSyntax": "PASS",

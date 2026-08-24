@@ -2,12 +2,13 @@
 set -u
 
 LOG="$HOME/.agent-control-boot.log"
-REPO="$HOME/agent-control-2"
-TOKEN_FILE="$HOME/.config/agent-control/pixel-node-token"
+REPO="${AGENT_CONTROL_ANDROID_REPOSITORY:-$HOME/agent-control}"
+TOKEN_FILE="$HOME/.config/agent-control/android-node-token"
+NODE_PORT="${AGENT_CONTROL_NODE_PORT:-8788}"
 
 mkdir -p "$HOME/.config/agent-control"
 exec >>"$LOG" 2>&1
-printf '\n[%s] Agent Control Pixel boot hook\n' "$(date -Iseconds 2>/dev/null || date)"
+printf '\n[%s] Agent Control Android boot hook\n' "$(date -Iseconds 2>/dev/null || date)"
 
 if command -v termux-wake-lock >/dev/null 2>&1; then
   termux-wake-lock || true
@@ -24,14 +25,14 @@ else
 fi
 
 if [ -d "$REPO" ] && [ -r "$TOKEN_FILE" ]; then
-  if curl -fsS --max-time 2 http://127.0.0.1:8788/health >/dev/null 2>&1; then
-    echo "Pixel node already healthy"
+  if curl -fsS --max-time 2 "http://127.0.0.1:${NODE_PORT}/health" >/dev/null 2>&1; then
+    echo "Android node already healthy"
   else
     export AGENT_CONTROL_NODE_TOKEN="$(tr -d '\r\n' < "$TOKEN_FILE")"
     cd "$REPO" || exit 0
-    setsid ./android/start-node.sh > "$HOME/.agent-control-pixel-node.log" 2>&1 < /dev/null &
-    echo "Pixel node start sent"
+    setsid ./android/start-node.sh > "$HOME/.agent-control-android-node.log" 2>&1 < /dev/null &
+    echo "Android node start sent"
   fi
 else
-  echo "Pixel node boot start skipped; repo/token not available"
+  echo "Android node boot start skipped; repository/token not available"
 fi

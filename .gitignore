@@ -3,6 +3,7 @@ node_modules/
 qualification-results/
 package-lock.json
 *.log
+.pdf-review/
 .env
 .env.*
 !.env.example

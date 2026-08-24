@@ -286,7 +286,7 @@
         "refId": "demo-commit-123",
         "label": "demo-commit-123",
         "metadata": {
-          "repository": "/fast/repos/agent-control"
+          "repository": "/srv/agent-control"
         }
       },
       {
@@ -497,7 +497,7 @@
         "refId": "demo-commit-123",
         "label": "demo-commit-123",
         "metadata": {
-          "repository": "/fast/repos/agent-control"
+          "repository": "/srv/agent-control"
         }
       },
       {

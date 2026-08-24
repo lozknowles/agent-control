@@ -1,59 +1,26 @@
-# Agent Control 2.0 Qualification
+# Qualification
 
-Run the release qualification from the core host (`hpubuntu`). The harness is fail-closed for tests it attempts and writes timestamped JSON evidence under `qualification-results/`.
-
-## Baseline
+Run the local release gate first:
 
 ```bash
-npm run qualify:all
+npm run check
+npm run qualify
 ```
 
-Always tests:
+The harness always runs the local gate. It then reads the same configuration used by the control plane and performs only non-mutating health checks for configured services, resources and providers. Missing configuration is recorded as `SKIP configured-infrastructure`, not replaced by private defaults.
 
-- TypeScript + complete local unit suite
-- Linux Codex presence/version on hpubuntu
-
-## Pixel live qualification
-
-First establish the qualified loopback forward from hpubuntu to the Pixel node, then set the current node credential without printing it:
+Optional SSH checks are explicit:
 
 ```bash
-export AGENT_CONTROL_NODE_TOKEN='...'
-export PIXEL_NODE_URL=http://127.0.0.1:18788
+AGENT_CONTROL_REMOTE_CHECKS='worker-a|operator@worker-a.example|echo AGENT-CONTROL-REMOTE-PASS' npm run qualify
 ```
 
-The harness then tests Pixel node health and performs the live capability-resolution proof (`platform.android`, `device.physical`, `harness.codex`, `observe.android.logcat`) followed by the authorised observation job.
+Results are timestamped JSON in ignored `qualification-results/`. A configured endpoint is not considered functionally qualified unless the relevant live proof has run and its exact identity/evidence is retained. Source support, configured availability and live qualification are separate claims.
 
-## Windows ChatGPT bridge
-
-When the hpubuntu `chatgpt-window` Responses adapter is running and four-green, set:
+Android capability resolution requires an Android resource with a health URL plus its configured credential environment variable:
 
 ```bash
-export CHATGPT_WINDOW_URL=http://127.0.0.1:8767
+npx tsx scripts/prove-android-resolution.ts
 ```
 
-The harness sends the deterministic sentinel prompt and requires `AGENT-CONTROL-CHATGPT-OK` in the returned Responses payload.
-
-## Other remote platforms
-
-Optional SSH checks can cover Sentinel, MSI SSH endpoints, or later nodes without hard-coding machines into the harness:
-
-```bash
-export AGENT_CONTROL_REMOTE_CHECKS='sentinel|sentinel|echo AGENT-CONTROL-REMOTE-PASS,other|user@host|echo AGENT-CONTROL-REMOTE-PASS'
-```
-
-Each entry is `label|ssh-target|command`. The command must return `AGENT-CONTROL-REMOTE-PASS`.
-
-## Full current topology example
-
-```bash
-export AGENT_CONTROL_NODE_TOKEN='...'
-export PIXEL_NODE_URL=http://127.0.0.1:18788
-export CHATGPT_WINDOW_URL=http://127.0.0.1:8767
-export AGENT_CONTROL_REMOTE_CHECKS='sentinel|sentinel|echo AGENT-CONTROL-REMOTE-PASS'
-npm run qualify:all
-```
-
-## Release rule
-
-A stable release must not be declared from a partial run. Any skipped platform is explicitly recorded as skipped in JSON evidence and must have either a fresh live PASS or an accepted immutable qualification attestation bound to the exact release commit. Do not turn missing infrastructure into a synthetic PASS.
+The proof is read-only and accepts only the bundled Android log-observation operation.

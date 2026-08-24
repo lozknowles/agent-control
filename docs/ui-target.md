@@ -11,7 +11,7 @@ The supplied Local Agent Control mockup is the visual direction for the terminal
 5. Lower-right tools/working-directory/context/model metrics panel.
 6. Full-width command input and compact keyboard-help footer.
 
-The Blessed implementation cannot reproduce browser CSS, rounded corners or pixel graphs exactly. It should reproduce the information hierarchy, density, accents, borders, scrolling and focus behaviour rather than imitate unsupported decoration.
+The Blessed implementation cannot reproduce browser CSS, rounded corners or pixel-level graphs exactly. It should reproduce the information hierarchy, density, accents, borders, scrolling and focus behaviour rather than imitate unsupported decoration.
 
 ## New control surfaces
 
