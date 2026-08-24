@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import test from 'node:test';
 
 const source = fs.readFileSync('docs/Agent-Control-3.1.0-Operator-Guide.md', 'utf8');
+const releaseMarkdown = fs.readFileSync('assets/releases/3.1.0/Agent-Control-3.1.0-Operator-Guide.md', 'utf8');
 const architecture = fs.readFileSync('ARCHITECTURE.md', 'utf8');
 const pdf = fs.readFileSync('assets/releases/3.1.0/Agent-Control-3.1.0-Operator-Guide.pdf');
 const pdfText = pdf.toString('latin1');
@@ -24,4 +25,8 @@ test('3.1 release PDF is a non-empty versioned operator guide artifact', () => {
   assert.ok(pdf.length > 10_000);
   assert.match(pdfText, /\/Title \(Agent Control 3\.1\.0 Operator Guide\)/);
   assert.match(pdfText, /%%EOF\s*$/);
+});
+
+test('3.1 release assets include the canonical Markdown operator guide', () => {
+  assert.equal(releaseMarkdown, source);
 });

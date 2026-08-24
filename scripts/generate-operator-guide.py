@@ -156,13 +156,17 @@ def main():
     if len(sys.argv) != 3:
         raise SystemExit("usage: generate-operator-guide.py SOURCE.md OUTPUT.pdf")
     source, output = map(Path, sys.argv[1:])
-    markdown = source.read_text(encoding="utf-8")
+    source_bytes = source.read_bytes()
+    markdown = source_bytes.decode("utf-8")
     heading = next((line[2:].strip() for line in markdown.splitlines() if line.startswith("# ")), "Agent Control Operator Guide")
     match = re.search(r"Agent Control\s+([0-9]+(?:\.[0-9]+)+)", heading)
     version = match.group(1) if match else "current"
     output.parent.mkdir(parents=True, exist_ok=True)
+    markdown_output = output.with_suffix(".md")
+    markdown_output.write_bytes(source_bytes)
     document = GuideDoc(str(output), heading, version)
     document.build(parse_markdown(markdown, styles(), version))
+    print(markdown_output)
     print(output)
 
 
