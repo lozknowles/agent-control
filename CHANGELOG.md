@@ -1,5 +1,34 @@
 # Changelog
 
+## [3.1.0] — Unreleased
+
+### Added
+
+- A responsive localhost web dashboard with system, lane, provider, typed-event, Git, PTY-observer and verification/evidence views.
+- A narrow `AgentControlService` application boundary shared by the TUI and HTTP API, with typed control events over Server-Sent Events.
+- Observer/operator separation: browser mutations require an explicitly configured bearer token, JSON requests and origin validation.
+- A persisted claim/evidence/verification/acceptance state machine with task-specific evidence policy.
+- Capability, health, reliability, cost, latency, duration, privacy, context, tool and resource-aware route selection with durable rationale.
+- An executable conceptual-integrity assessment that rejects duplicate state, second control paths, interface-owned authority and provider-owned policy.
+
+### Changed
+
+- TUI task submission, reroute and pause/resume now call the shared application service rather than mutating workspace state directly.
+- Routing and verification projections are first-class lane state and survive persistence/reload.
+- The full test gate is serialised to prevent persistence-focused tests from contaminating one another.
+
+### Security and authority
+
+- The dashboard binds to `127.0.0.1` by default and is read-only when no operator token is configured.
+- No web endpoint can directly mutate leases, scheduling internals or PTY input.
+- Human takeover uses the existing unconditional PTY fence; autonomous resume is rejected while a human owns the terminal.
+- External context and provider adapters remain non-authoritative and cannot verify or accept completion.
+
+### Compatibility
+
+- 3.1 is based on tagged 3.0.1 and retains its infrastructure-neutral configuration, TUI, provider adapters, execution fallback, context store and persisted lane format.
+- Existing state migrates additively: missing verification state defaults to `unclaimed`, and missing routing rationale remains absent until a route is selected.
+
 ## [3.0.1] — 2026-08-24
 
 ### Changed

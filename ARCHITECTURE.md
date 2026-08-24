@@ -1,6 +1,6 @@
-# Agent Control 3.0.1 architecture
+# Agent Control 3.1.0 architecture
 
-This is the authoritative architecture boundary for 3.0.1.
+This is the authoritative architecture boundary for 3.1.0. The 3.0.1 infrastructure-neutral resource and provider model remains the base.
 
 ## Invariants
 
@@ -12,32 +12,32 @@ This is the authoritative architecture boundary for 3.0.1.
 6. Shared context augments Git/test evidence and cannot replace it.
 7. Infrastructure identity, transport, provider and capability are configured separately.
 8. Missing configuration fails closed to `UNCONFIGURED`, never to private defaults.
+9. The TUI and web dashboard are clients of one `AgentControlService`; neither owns scheduler, lease, ownership or PTY state.
+10. An agent claim, collected evidence, verification and acceptance are distinct durable states.
+11. Every material routing decision is capability-qualified, fail closed and inspectable.
 
 ## System boundary
 
 ```text
-                 Human operator
-                       |
-             unconditional takeover
-                       |
-             AGENT CONTROL POLICY
-      +----------------+----------------+
-      |                |                |
- lanes/scheduler   evidence/context  experiments/judges
- leases/ownership  batons/provenance  confidence/halving
- approvals/fences  Git/tests/threads  provider routing
-      |
-      v
-       replaceable ExecutionProvider contract
-      |                         |
- built-in fallback       optional Orca adapter
-                                |
-                     process / PTY / worktree / SSH
-                                |
-                         configured CLI agent
+        Operator interfaces (non-authoritative)
+             TUI              Web / HTTP / SSE
+               \              /
+                \            /
+                 AgentControlService
+                 CONTROL / POLICY BOUNDARY
+                    |       |       |
+                    |       |       +-- verification / provenance
+                    |       +---------- router / qualification
+                    +------------------ scheduler / leases / ownership
+                                      |
+                           ExecutionProvider contract
+                              |                |
+                       built-in fallback   Orca adapter
+                                              |
+                               process / PTY / worktree / SSH
 ```
 
-Orca may execute, but Agent Control always decides. Orca does not schedule lanes, issue leases, transfer ownership, resolve handoffs, select experiment winners or override approval/security policy.
+Orca may execute, but Agent Control always decides. The browser may request, but Agent Control authorises. Neither Orca nor an operator interface schedules lanes, issues leases, transfers ownership, resolves handoffs, selects experiment winners, verifies a claim or overrides approval/security policy.
 
 ## Durable state
 
@@ -49,6 +49,8 @@ Workspace
     Lease and ownership generations
     Execution identity and recovery state
     Context-source references
+    Verification policy, claim, evidence and phase
+    Latest routing decision and rationale
   Shared tasks
   Work Queue and checkpoints
   Evidence and provenance graph
@@ -68,6 +70,24 @@ Configuration rejects embedded secret-like fields and credentialed URLs. Credent
 The scheduler selects capabilities, placement, priority and provider before queue mutation. It supports AUTO/MANUAL lanes, dependencies, shared tasks, batons, handoffs, cloning, batch leases, checkpoint/yield, quiet periods, resource budgets, maintenance windows, confidence routing, approval gates and successive-halving experiments.
 
 The narrow execution-provider API exposes only start, status, reconnect, input, pause, resume, cancel, output, diff and cleanup. Orca-specific concepts remain inside the adapter so another substrate can replace it.
+
+## Shared control service and operator interfaces
+
+`AgentControlService` is the application boundary consumed by both the TUI and web server. It projects lane, scheduler, provider, PTY, Git, baton, routing and verification state without transferring ownership of that state. Commands such as pause, resume, priority, mode, reroute, handoff, clone, cancel and takeover enter through typed service methods. The web server never receives direct persistence, scheduler mutation or PTY-input access.
+
+The HTTP API is read-only by default. Mutation requires a configured bearer token, JSON content type and an allowed browser origin. The default listener is localhost. Server-Sent Events carry typed state-change notifications; clients do not parse terminal text to infer authority.
+
+Human takeover calls the existing PTY registry fence. A human-owned lane cannot resume autonomous execution until ownership is deliberately returned and the scheduler revalidates execution. There is no weaker web-only ownership model.
+
+## Verification and provenance
+
+The lane verification record distinguishes `unclaimed`, `claimed`, `evidence_collected`, `verified` and `accepted`. Policy names the evidence types required for that task. Verification fails when a required type is absent, has no passing observation, or any failed evidence remains. Acceptance is separately attributed to an actor. Every transition is persisted and appended to the event journal.
+
+Context evidence remains non-authoritative. Git/test evidence and provider-neutral context can support a claim, but only the verification service can move the lane to `verified`; only explicit acceptance can move it to `accepted`.
+
+## Intelligent routing
+
+The route planner first rejects unavailable, unhealthy, unqualified, tool-incompatible, context-incompatible, privacy-incompatible and resource-incompatible options. It then compares eligible options across capability, reliability, startup latency, expected duration, monetary cost, urgency, priority, privacy/locality and stated operator preference. The scores are ordering aids rather than fabricated precision. The durable decision contains the selected option, rejected/eligible alternatives and human-readable factors.
 
 ## PTY authority
 
@@ -90,12 +110,16 @@ Independent agents remain isolated until synthesis. A judge compares evidence qu
 
 Bootstrap is configuration-driven, health-first and idempotent. `up` may start only configured recipes; `down` may stop only recorded owned processes. Occupied/unhealthy unknown services are never killed. With no configuration, status/up return `UNCONFIGURED` without network discovery or external mutation.
 
-The TUI presents lanes, batons, queue state, resources, providers, PTY assignment, context/evidence and optional Android recovery. Qualification evidence is written outside the tracked tree by default.
+The TUI presents lanes, batons, queue state, resources, providers, PTY assignment, context/evidence and optional Android recovery. The web dashboard presents the same core projection plus typed live events, Git and verification detail. Qualification evidence is written outside the tracked tree by default.
 
 ## Optional Android resource
 
 Android support is device-neutral. The node ID, transport, port, repository and credential environment are configured. The bundled node advertises observed capabilities and exposes only an allow-listed read-only log operation. Provisioning requires explicit privilege, pairing and reboot approvals.
 
+## Conceptual-integrity gate
+
+New capabilities are classified into policy/authority, scheduling, execution substrate, provider/model adapter, routing, context/evidence, verification/provenance, operator interface, persistence or observability. `assessConceptualIntegrity` rejects duplicate authoritative state, a second control path, interface-owned authority, provider-owned policy and capabilities without a failure mode or durable verification evidence. The operator checklist is in `docs/conceptual-integrity.md`.
+
 ## Release boundary
 
-3.0.1 is a source release. It does not deploy services, change external machines, create credentials, broaden sharing, or claim live qualification for infrastructure that was not tested. The existing execution implementation remains a rollback/fallback path while Orca integration continues qualification.
+3.1.0 is developed on the tagged 3.0.1 agnostic base. It does not deploy services, expose the dashboard remotely, create credentials, broaden sharing, or claim live qualification for infrastructure that was not tested. The TUI and existing execution implementation remain first-class fallback paths.

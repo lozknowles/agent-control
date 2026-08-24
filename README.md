@@ -1,6 +1,6 @@
-# Agent Control 3.0.1
+# Agent Control 3.1.0
 
-Agent Control is an infrastructure-neutral control plane for durable, multi-agent work. A lane owns its task; execution providers and models are replaceable workers. Agent Control remains authoritative for scheduling, priorities, leases, ownership, human takeover, batons, handoffs, clones, shared tasks, provider qualification, confidence routing, approvals, recovery validation and conflict policy.
+Agent Control is an infrastructure-neutral control plane for durable, multi-agent work. A lane owns its task; execution providers, models and operator interfaces are replaceable clients. Agent Control remains authoritative for scheduling, priorities, leases, ownership, human takeover, batons, handoffs, clones, shared tasks, provider qualification, confidence routing, approvals, recovery validation, verification and conflict policy.
 
 Orca is available behind a narrow execution-provider contract. Orca may execute processes, terminals and worktrees, but it does not receive Agent Control policy authority.
 
@@ -32,14 +32,24 @@ With no configuration file, Agent Control starts with a safe local lane and repo
 
 ```bash
 npm start
+npm run web
 npm run status
 npm run up
 npm run qualify
 ```
 
-`npm start` opens the control-room TUI. `status` performs read-only health inspection. `up` starts only explicitly configured services/processes and records ownership. `down` stops only processes that the same Agent Control state directory recorded as owned.
+`npm start` opens the control-room TUI and its embedded web client. `npm run web` runs the same control service and web dashboard without the TUI for a headless operator host; run one authoritative control-plane process per state directory. `status` performs read-only health inspection. `up` starts only explicitly configured services/processes and records ownership. `down` stops only processes that the same Agent Control state directory recorded as owned.
 
-Monitor the TUI for lanes, work queue, providers, resources, PTY ownership, context/evidence and Android status. Qualification writes timestamped JSON beneath ignored `qualification-results/`.
+The TUI also starts the web dashboard on `http://127.0.0.1:4310` by default. The browser is an observer unless an operator token is explicitly configured:
+
+```bash
+export AGENT_CONTROL_WEB_OPERATOR_TOKEN="$(openssl rand -hex 32)"
+npm start
+```
+
+Enter that token using **Observer mode** in the dashboard. It is retained only in the browser tab's session storage and sent as a bearer header; Agent Control does not create a browser authority cookie. Use `AGENT_CONTROL_WEB_ENABLED=0` to disable the dashboard or `AGENT_CONTROL_WEB_PORT` to select another port. Binding beyond localhost is an explicit security decision and should be placed behind authenticated TLS with a matching `AGENT_CONTROL_WEB_ALLOWED_ORIGINS` allowlist.
+
+Monitor either interface for the same authoritative lanes, scheduler projection, providers, resources, PTY ownership, routing rationale and claim/evidence/verification state. The web terminal panel is observer-only; it never receives a PTY write primitive. Qualification writes timestamped JSON beneath ignored `qualification-results/`.
 
 ## Configuration model
 
@@ -60,6 +70,10 @@ Agent Control persists hard contracts, revisioned batons, append-only events, ch
 
 The Work Queue supports interactive, priority, background and batch work, dependencies, capability selection, data locality, quiet periods, maintenance windows, homogeneous batch leases, item-by-item commit, checkpoints, retries and low-confidence human review.
 
+Agent completion is modeled as `CLAIMED -> EVIDENCE_COLLECTED -> VERIFIED -> ACCEPTED`. A claim cannot satisfy a verification-required task. Lane policy can require minimum-sufficient evidence such as a Git commit, diff, test/build result, file hash, API result, UI evidence, benchmark, external source or human approval. Failed required evidence blocks verification, and acceptance remains a separate explicit action.
+
+Routing is capability-qualified and fail closed. Eligible routes may be compared using capability, provider health, reliability, monetary cost, latency, expected duration, context/tool requirements, privacy, local/GPU availability, priority, urgency and operator preference. The selected route, alternatives and plain-language rationale are stored with the lane.
+
 ## Authority and safety
 
 - Human takeover is unconditional and fences agent input.
@@ -69,6 +83,8 @@ The Work Queue supports interactive, priority, background and batch work, depend
 - Recovery uses explicit configured recipes and existing credentials.
 - Agent Control never stores secret material in product configuration.
 - Shared URLs are attached only when already explicitly shared; creating/broadening sharing requires separate approval.
+- The browser has no direct lease, scheduler, persistence or PTY-input endpoint.
+- External context and provider adapters remain non-authoritative regardless of interface.
 
 ## Orca execution boundary
 
@@ -99,4 +115,4 @@ The neutrality guard rejects private topology identifiers in distributable runti
 - ChatGPT Work and Codex shared task context remain host/reference-only unless an official read API is available.
 - No production deployment is performed by this repository release process.
 
-The complete operator guide is published at `assets/releases/3.0.1/Agent-Control-3.0.1-Operator-Guide.pdf`.
+The 3.0.1 infrastructure-neutral operator guide remains available at `assets/releases/3.0.1/Agent-Control-3.0.1-Operator-Guide.pdf`. See [`docs/web-dashboard.md`](docs/web-dashboard.md), [`docs/conceptual-integrity.md`](docs/conceptual-integrity.md) and [`docs/release-notes-3.1.0-draft.md`](docs/release-notes-3.1.0-draft.md) for the 3.1 additions.
