@@ -17,6 +17,7 @@
 - Jobs, Queue, live step progress, schedules and Run history in the web dashboard, plus a shared TUI Jobs view.
 - Expanded operational Job detail with searchable Run history, queue age/reasons, worker capability/capacity, resource locks, artifact checksums/provenance and policy-bound cancel/retry/approval controls.
 - Fail-closed named approvals now require a matching waiting step and emit a distinct typed `job.run_approved` audit event; browser artifact projections no longer expose managed storage paths.
+- A versioned Agent Control 3.1.0 Operator Guide covering installation, deployment patterns, the dashboard, Job scheduler operation, monitoring and recovery, with a rendered PDF under the 3.1.0 release assets.
 - A disabled twice-daily Europe/London reference Schedule and safe non-production events workflow qualification.
 
 ### Changed

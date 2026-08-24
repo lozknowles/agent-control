@@ -12,4 +12,6 @@ Security defaults remain conservative: localhost binding, observer-only operatio
 
 This is a source release. It does not deploy Agent Control, expose a dashboard remotely, create credentials, alter production services, or weaken the 3.0.1 infrastructure-neutral boundary.
 
+Installation, dashboard operation, scheduler policy, monitoring, recovery and rollback are documented in the versioned 3.1.0 Operator Guide distributed as both Markdown and a release PDF.
+
 The events reference workflow is qualified against a harmless non-production fixture. Its `07:00/19:00 Europe/London` Schedule is shipped disabled. This release does not enable unattended publication, access Facebook, or bypass the existing LocalWalks reconciliation/release safeguards.

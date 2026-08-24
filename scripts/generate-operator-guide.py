@@ -43,8 +43,9 @@ def inline(text: str) -> str:
 
 
 class GuideDoc(BaseDocTemplate):
-    def __init__(self, filename: str):
-        super().__init__(filename, pagesize=A4, leftMargin=19 * mm, rightMargin=19 * mm, topMargin=19 * mm, bottomMargin=18 * mm, title="Agent Control 3.0.1 Operator Guide", author="Agent Control Project")
+    def __init__(self, filename: str, title: str, version: str):
+        self.guide_version = version
+        super().__init__(filename, pagesize=A4, leftMargin=19 * mm, rightMargin=19 * mm, topMargin=19 * mm, bottomMargin=18 * mm, title=title, author="Agent Control Project")
         frame = Frame(self.leftMargin, self.bottomMargin, self.width, self.height, id="normal")
         self.addPageTemplates(PageTemplate(id="guide", frames=frame, onPage=self.decorate))
 
@@ -61,7 +62,7 @@ class GuideDoc(BaseDocTemplate):
             canvas.line(19 * mm, 14 * mm, width - 19 * mm, 14 * mm)
             canvas.setFont("Helvetica", 8)
             canvas.setFillColor(MUTED)
-            canvas.drawString(19 * mm, 9 * mm, "AGENT CONTROL 3.0.1 · OPERATOR GUIDE")
+            canvas.drawString(19 * mm, 9 * mm, f"AGENT CONTROL {self.guide_version} - OPERATOR GUIDE")
             canvas.drawRightString(width - 19 * mm, 9 * mm, str(doc.page))
         canvas.restoreState()
 
@@ -81,7 +82,7 @@ def styles():
     }
 
 
-def parse_markdown(source: str, style):
+def parse_markdown(source: str, style, version: str):
     lines = source.splitlines()
     story = []
     paragraph = []
@@ -128,7 +129,7 @@ def parse_markdown(source: str, style):
         elif line.startswith("# "):
             flush_paragraph()
             if not seen_title:
-                story.extend([Spacer(1, 50 * mm), Paragraph(inline(line[2:]), style["cover_title"]), Paragraph("Infrastructure-neutral installation, operation, monitoring and recovery", style["cover_sub"]), Spacer(1, 20 * mm), Paragraph("<b>Release 3.0.1</b><br/>24 August 2026<br/><br/>Execution may be delegated. Authority is not.", style["cover_sub"]), PageBreak()])
+                story.extend([Spacer(1, 50 * mm), Paragraph(inline(line[2:]), style["cover_title"]), Paragraph("Infrastructure-neutral installation, dashboard, scheduling, operation and recovery", style["cover_sub"]), Spacer(1, 20 * mm), Paragraph(f"<b>Release {version}</b><br/>24 August 2026<br/><br/>Execution may be delegated. Authority is not.", style["cover_sub"]), PageBreak()])
                 seen_title = True
             else:
                 story.append(Paragraph(inline(line[2:]), style["h1"]))
@@ -155,9 +156,13 @@ def main():
     if len(sys.argv) != 3:
         raise SystemExit("usage: generate-operator-guide.py SOURCE.md OUTPUT.pdf")
     source, output = map(Path, sys.argv[1:])
+    markdown = source.read_text(encoding="utf-8")
+    heading = next((line[2:].strip() for line in markdown.splitlines() if line.startswith("# ")), "Agent Control Operator Guide")
+    match = re.search(r"Agent Control\s+([0-9]+(?:\.[0-9]+)+)", heading)
+    version = match.group(1) if match else "current"
     output.parent.mkdir(parents=True, exist_ok=True)
-    document = GuideDoc(str(output))
-    document.build(parse_markdown(source.read_text(encoding="utf-8"), styles()))
+    document = GuideDoc(str(output), heading, version)
+    document.build(parse_markdown(markdown, styles(), version))
     print(output)
 
 

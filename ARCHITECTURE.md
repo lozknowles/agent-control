@@ -93,6 +93,8 @@ The HTTP API is read-only by default. Mutation requires a configured bearer toke
 
 Human takeover calls the existing PTY registry fence. A human-owned lane cannot resume autonomous execution until ownership is deliberately returned and the scheduler revalidates execution. There is no weaker web-only ownership model.
 
+The dashboard's default Jobs workspace is an operational projection, not an additional scheduler. It reads catalog definitions, Schedule state, queue reasons, worker capability/capacity, resource locks, Run history, step verification and artifact provenance from `JobRuntime` through `AgentControlService`. Run, schedule enable/disable, cancel, whole-Run retry and exact named approval commands return through authenticated service methods. Artifact projections expose identity, checksum and provenance but not managed storage paths. A named approval is legal only while a matching step is authoritatively `WAITING_FOR_APPROVAL`.
+
 ## Verification and provenance
 
 The lane verification record distinguishes `unclaimed`, `claimed`, `evidence_collected`, `verified` and `accepted`. Policy names the evidence types required for that task. Verification fails when a required type is absent, has no passing observation, or any failed evidence remains. Acceptance is separately attributed to an actor. Every transition is persisted and appended to the event journal.
@@ -136,4 +138,4 @@ New capabilities are classified into policy/authority, scheduling, execution sub
 
 ## Release boundary
 
-3.1.0 is developed on the tagged 3.0.1 agnostic base. It does not deploy services, expose the dashboard remotely, create credentials, broaden sharing, or claim live qualification for infrastructure that was not tested. The TUI and existing execution implementation remain first-class fallback paths.
+3.1.0 is based on the tagged 3.0.1 agnostic release. The source release does not deploy services, expose the dashboard remotely, create credentials, broaden sharing, enable the bundled Schedule, or claim live qualification for infrastructure that was not tested. The TUI and existing execution implementation remain first-class fallback paths.
