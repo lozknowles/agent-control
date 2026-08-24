@@ -126,6 +126,48 @@ The executor receives only a `ToolInvocationGateway`. Each invocation is checked
 
 Recipe execution ends in `verification-pending`; use the evidence/verification workflow before acceptance. The recipe-dispatch store is an inspectable bridge to the Run Ledger and must remain on operator-only durable storage. It contains identities and policy metadata, never API keys or credentials.
 
+## Windows OpenAI return-data example
+
+Agent Control can run on Windows and use the official OpenAI Responses API as a model provider. This is an API integration, not automation of the ChatGPT desktop window. A ChatGPT subscription and OpenAI API quota are separate; the Windows desktop session is never scraped and its cookies or session tokens are never reused.
+
+Add a provider to the operator-owned configuration. The credential stays outside this file:
+
+```json
+{
+  "id": "openai-responses",
+  "name": "OpenAI Responses API",
+  "kind": "responses",
+  "baseUrl": "https://api.openai.com/v1",
+  "wireApi": "responses",
+  "requiresAuth": true,
+  "costClass": "metered",
+  "capabilities": ["structured-output", "tool-request"]
+}
+```
+
+Load `OPENAI_API_KEY` from an approved Windows secret manager, select an API model available to that project, and run the explicit qualification:
+
+```powershell
+$env:OPENAI_QUALIFICATION_MODEL = "gpt-4o-mini"
+npm run qualify:openai-windows
+Remove-Item Env:OPENAI_API_KEY, Env:OPENAI_QUALIFICATION_MODEL
+```
+
+The qualification follows this path:
+
+```text
+Job -> HarnessJobAgentAction -> HarnessDispatcher -> AdaptiveHarness
+    -> ExecutionRecipe -> OpenAI Responses API -> function_call
+    -> ToolInvocationGateway -> ToolPolicy -> tool handler
+    -> typed checksummed artifact -> verification
+```
+
+The model receives function schemas, not raw handlers. Its function call is only a request. Agent Control rechecks the recipe grant, live worker, lease generation, ownership generation, risk approval and human ownership before invoking the handler. The Action declares the output schema; `ArtifactStore` persists the returned JSON with SHA-256 and provenance. Execution remains distinct from verification and acceptance.
+
+The 24 August 2026 live Windows request reached `POST /v1/responses` but received HTTP 429 for unavailable project quota. Therefore the official API route is `SUPPORTED+UNQUALIFIED`, not a live pass, until an authorised project with quota reruns the command and produces `WINDOWS_OPENAI_RETURN_DATA_QUALIFIED`. Deterministic contract tests do prove the complete Job-to-artifact path and its fail-closed tool boundary.
+
+An operator-supplied local Windows bridge may instead be configured as `kind: "browser-bridge"`, `wireApi: "responses"` on loopback. That bridge must be independently approved and qualified. Cleartext non-loopback bridge endpoints are rejected. Agent Control does not ship a ChatGPT desktop bridge, and the desktop UI path is `NOT TESTED`.
+
 ## Jobs, Actions and Runs
 
 An Action is a versioned executable capability. A Job is a declarative DAG of Actions. A separate Schedule decides when to create a Run. Manual and scheduled triggers call the same `createRun` path.
@@ -214,6 +256,7 @@ npm run check:neutrality
 npm test
 npm run check
 npm run qualify:jobs
+npm run qualify:openai-windows
 git diff --check
 ```
 

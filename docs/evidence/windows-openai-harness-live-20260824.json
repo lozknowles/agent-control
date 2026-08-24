@@ -1,0 +1,116 @@
+{
+  "schema": "agent-control.openai-windows-qualification/v1",
+  "startedAt": "2026-08-24T14:49:44.460Z",
+  "completedAt": "2026-08-24T14:49:53.185Z",
+  "platform": "win32",
+  "hostHash": "f936c64eb2f99967d11cb14160b66ebfd6ce719a7ced875dcfc425e0b7c6aa0a",
+  "provider": {
+    "id": "openai-responses",
+    "transport": "POST https://api.openai.com/v1/responses",
+    "authentication": "Bearer API key supplied outside persisted state",
+    "modelId": "gpt-4o-mini"
+  },
+  "job": {
+    "id": "openai-windows-return-data",
+    "version": "1.0.0",
+    "action": "qualification.openai-windows-return@1.0.0",
+    "kind": "agent",
+    "runId": "run-d04c28b7-19d5-48ad-abf1-6c2ad4251f0b",
+    "status": "FAILED",
+    "stepStatus": "FAILED",
+    "error": "responses_provider_http_error:429:You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.",
+    "errors": [
+      "model:execution:responses_provider_http_error:429:You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors."
+    ],
+    "verification": {
+      "required": [
+        "windows-openai-return-data"
+      ],
+      "passed": [],
+      "failed": []
+    }
+  },
+  "path": [
+    "Job",
+    "HarnessJobAgentAction",
+    "HarnessDispatcher",
+    "AdaptiveHarness",
+    "ExecutionRecipe",
+    "OpenAI Responses API",
+    "function_call",
+    "ToolInvocationGateway",
+    "ToolPolicy",
+    "tool-handler",
+    "typed artifact",
+    "verification"
+  ],
+  "recipe": {
+    "recipeId": "recipe-9c8968bc8492ba81",
+    "fingerprint": "9c8968bc8492ba81de79aeccac8c730df4a786614ebdc4ceeef8820b7f9f80f3",
+    "taskId": "run-d04c28b7-19d5-48ad-abf1-6c2ad4251f0b:model",
+    "workerPlacement": {
+      "workerId": "windows-api-worker",
+      "reason": "Windows worker satisfies platform and model execution capabilities"
+    },
+    "route": {
+      "providerId": "openai-responses",
+      "modelId": "gpt-4o-mini",
+      "reason": "selected:openai-responses:gpt-4o-mini:windows-api-worker;intent:NORMAL;evidence:configured;effective_cost:0.5340"
+    },
+    "promptProfile": {
+      "id": "responses-function-call",
+      "version": "1"
+    },
+    "context": {
+      "tier": 1,
+      "sourceIds": [],
+      "evidenceIds": [],
+      "estimatedTokens": 24
+    },
+    "skillIds": [],
+    "toolIds": [
+      "qualification.return-data"
+    ],
+    "runtime": {},
+    "authority": {
+      "laneId": "windows-api-qualification",
+      "leaseGeneration": 23,
+      "ownershipGeneration": 31,
+      "owner": "agent"
+    },
+    "verification": {
+      "requiredEvidence": [
+        "windows-openai-return-data"
+      ],
+      "requireIndependentCheck": true
+    },
+    "escalation": {
+      "minimumConfidence": 0.7,
+      "maximumAttempts": 1,
+      "onFailure": "review"
+    },
+    "phase": "FAILED",
+    "updatedAt": "2026-08-24T14:49:53.180Z",
+    "detail": "responses_provider_http_error:429:You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors."
+  },
+  "audits": [],
+  "provenance": [
+    {
+      "type": "trigger",
+      "at": "2026-08-24T14:49:44.464Z",
+      "detail": "manual:qualification"
+    },
+    {
+      "type": "action-dispatch",
+      "at": "2026-08-24T14:49:44.473Z",
+      "detail": "agent:qualification.openai-windows-return@1.0.0:adaptive-harness"
+    }
+  ],
+  "artifact": null,
+  "desktopUi": {
+    "qualified": false,
+    "status": "NOT_TESTED",
+    "reason": "No documented desktop automation API or approved local bridge; no scraping or session harvesting performed"
+  },
+  "verdict": "WINDOWS_OPENAI_RETURN_DATA_FAILED"
+}
