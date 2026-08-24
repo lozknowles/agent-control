@@ -4,7 +4,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 BOOT_DIR="$HOME/.termux/boot"
 BOOT_FILE="$BOOT_DIR/agent-control.sh"
-TOKEN_FILE="$HOME/.config/agent-control/pixel-node-token"
+TOKEN_FILE="$HOME/.config/agent-control/android-node-token"
 
 if ! command -v sshd >/dev/null 2>&1; then
   echo "Installing openssh in Termux..."
@@ -21,10 +21,10 @@ if [ -n "${AGENT_CONTROL_NODE_TOKEN:-}" ]; then
   chmod 600 "$TOKEN_FILE"
   echo "Stored existing Agent Control node token for boot recovery."
 elif [ -r "$TOKEN_FILE" ]; then
-  echo "Existing Pixel node token retained."
+  echo "Existing Android node token retained."
 else
-  echo "No Pixel-local node token configured; sshd will still persist at boot."
-  echo "Agent Control on hpubuntu can recover the node after SSH becomes available."
+  echo "No Android-local node token configured; sshd will still persist at boot."
+  echo "A configured Agent Control controller can recover the node after SSH becomes available."
 fi
 
 if pgrep -f "$PREFIX/bin/sshd" >/dev/null 2>&1; then
@@ -37,4 +37,4 @@ fi
 echo
 printf 'Installed Termux boot hook: %s\n' "$BOOT_FILE"
 echo "IMPORTANT: Termux:Boot must be installed and opened once on Android for boot hooks to run."
-echo "After that, reboot testing should begin from hpubuntu with: npm run up"
+echo "After that, reboot testing should begin from the configured controller with: npm run up"

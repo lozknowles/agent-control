@@ -1,6 +1,45 @@
-export type ProviderKind='local'|'responses'|'cli'|'browser-bridge';export type ProviderHealth='unknown'|'healthy'|'degraded'|'offline';
-export interface ProviderDefinition{id:string;name:string;kind:ProviderKind;baseUrl?:string;wireApi?:'responses';requiresAuth:boolean;parallelism:number;costClass:'free'|'included'|'metered';capabilities:string[];}
-export interface ProviderState{providerId:string;health:ProviderHealth;detail?:string;checkedAt:string;}
-export interface AgentRecipe{id:string;providerId:string;model:string;profile:string;reasoning:'off'|'low'|'medium'|'high';promptVersion:string;tools:string[];skills:string[];}
-export class ProviderRegistry{private defs=new Map<string,ProviderDefinition>();private states=new Map<string,ProviderState>();register(d:ProviderDefinition){this.defs.set(d.id,d);if(!this.states.has(d.id))this.states.set(d.id,{providerId:d.id,health:'unknown',checkedAt:new Date(0).toISOString()});return d;}get(id:string){return this.defs.get(id);}list(){return[...this.defs.values()];}setHealth(providerId:string,health:ProviderHealth,detail?:string){if(!this.defs.has(providerId))throw new Error(`provider ${providerId} not registered`);const s={providerId,health,detail,checkedAt:new Date().toISOString()};this.states.set(providerId,s);return s;}health(id:string){return this.states.get(id);}canRun(recipe:AgentRecipe){const d=this.defs.get(recipe.providerId),s=this.states.get(recipe.providerId);return Boolean(d&&s&&s.health==='healthy');}}
-export const builtinProviders:ProviderDefinition[]=[{id:'llama-local',name:'llama.cpp local',kind:'local',baseUrl:'http://127.0.0.1:8080',requiresAuth:false,parallelism:2,costClass:'free',capabilities:['text','tools']},{id:'chatgpt-window',name:'ChatGPT Window',kind:'browser-bridge',baseUrl:'http://127.0.0.1:8767/v1',wireApi:'responses',requiresAuth:false,parallelism:1,costClass:'included',capabilities:['text','stream','images','files','tools','reasoning']}];
+import type {ProviderConfig} from './config.js';
+
+export type ProviderKind = 'local' | 'responses' | 'cli' | 'browser-bridge';
+export type ProviderHealth = 'unconfigured' | 'unknown' | 'healthy' | 'degraded' | 'offline';
+export interface ProviderDefinition {id: string; name: string; kind: ProviderKind; baseUrl?: string; wireApi?: 'responses'; requiresAuth: boolean; parallelism: number; costClass: 'free' | 'included' | 'metered'; capabilities: string[]; qualificationModel?: string;}
+export interface ProviderState {providerId: string; health: ProviderHealth; detail?: string; checkedAt: string;}
+export interface AgentRecipe {id: string; providerId: string; model: string; profile: string; reasoning: 'off' | 'low' | 'medium' | 'high'; promptVersion: string; tools: string[]; skills: string[];}
+
+export class ProviderRegistry {
+  private defs = new Map<string, ProviderDefinition>();
+  private states = new Map<string, ProviderState>();
+  register(definition: ProviderDefinition) {
+    this.defs.set(definition.id, definition);
+    if (!this.states.has(definition.id)) this.states.set(definition.id, {providerId: definition.id, health: 'unknown', checkedAt: new Date(0).toISOString()});
+    return definition;
+  }
+  get(id: string) { return this.defs.get(id); }
+  list() { return [...this.defs.values()]; }
+  setHealth(providerId: string, health: ProviderHealth, detail?: string) {
+    if (!this.defs.has(providerId)) throw new Error(`provider ${providerId} not registered`);
+    const state = {providerId, health, detail, checkedAt: new Date().toISOString()};
+    this.states.set(providerId, state);
+    return state;
+  }
+  health(id: string) { return this.states.get(id); }
+  canRun(recipe: AgentRecipe) {
+    const definition = this.defs.get(recipe.providerId), state = this.states.get(recipe.providerId);
+    return Boolean(definition && state?.health === 'healthy');
+  }
+}
+
+export function providersFromConfig(configured: ProviderConfig[]): ProviderDefinition[] {
+  return configured.map(provider => ({
+    id: provider.id,
+    name: provider.name ?? provider.id,
+    kind: provider.kind,
+    baseUrl: provider.baseUrl,
+    wireApi: provider.wireApi,
+    requiresAuth: provider.requiresAuth ?? false,
+    parallelism: provider.parallelism ?? 1,
+    costClass: provider.costClass ?? 'metered',
+    capabilities: [...(provider.capabilities ?? [])],
+    qualificationModel: provider.qualificationModel,
+  }));
+}

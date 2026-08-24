@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-ROOT="${AGENT_CONTROL_ROOT:-/fast/repos/agent-control}"
+ROOT="${AGENT_CONTROL_ROOT:-$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)}"
 cd "$ROOT"
 
 # Deliberately no secrets are accepted as command-line arguments. Optional

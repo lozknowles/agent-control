@@ -1,6 +1,35 @@
 # Changelog
 
-## Unreleased
+## [3.0.1] — 2026-08-24
+
+### Changed
+
+- Replaced the private development-fleet bootstrap with a versioned configuration model for arbitrary resources, transports, providers, services and lanes.
+- Separated logical resource identity from local, SSH, HTTP and Orca transports; removed required hostnames, provider ports, hardware models, absolute paths and overlay-network assumptions.
+- Made zero-resource, zero-provider and missing-configuration installations fail closed to an explicit `UNCONFIGURED` state.
+- Generalized Android resource discovery, recovery, provisioning, node identity, repository path and boot persistence; hardware model is optional observed metadata only.
+- Updated the README, architecture, qualification guidance and Android instructions for the infrastructure-neutral boundary.
+- Replaced private raw fleet evidence in the distributable tree with a redacted historical qualification summary; immutable `v3.0.0` retains the original authorized record.
+- Updated and bundled the Agent Control 3.0.1 Operator Guide PDF under release assets.
+
+### Added
+
+- Configuration validation that rejects duplicate identities, embedded secret material and credentialed URLs.
+- Configuration-driven bootstrap and qualification tests covering alternate names/ports, optional unavailable services and safe unconfigured behavior.
+- A tracked-tree infrastructure-neutrality regression guard.
+- A durable P0 audit ledger with pre-change findings, remediation mapping, retained-constant rationale and post-change evidence.
+
+### Removed
+
+- Product-specific social-media observation code and private-fleet runbooks that were not generic Agent Control responsibilities.
+- Built-in provider registrations and machine/device-specific lifecycle defaults.
+
+### Safety
+
+- Agent Control authority semantics are unchanged: scheduling, leases, ownership, takeover fencing, handoffs, clones, shared tasks, approvals and recovery validation remain in Agent Control.
+- No production service, machine, deployment, credential or sharing scope is changed by this source release.
+
+## Historical unreleased development notes (pre-3.0.0)
 
 - Added an explicitly approved, read-only hpubuntu ADB observer for Facebook `Your groups`: it inspects only whole-word Collingham group titles, limits candidate posts to visible timestamps within seven days, preserves local screenshot provenance, rejects ambiguous timestamps, deduplicates overlapping screens, and redacts contact details from JSON.
 - Put physical reboot qualification behind an explicit durable `--approve-reboot-test` gate; an approved test reboots through ADB and requires keyed Termux SSH to return before qualification.

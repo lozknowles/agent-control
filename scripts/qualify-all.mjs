@@ -1,1 +1,56 @@
-import{spawnSync}from'node:child_process';import fs from'node:fs';import{randomUUID}from'node:crypto';const out=[],qualificationTraceId=randomUUID();function run(name,cmd,args=[],opts={}){const t=Date.now(),r=spawnSync(cmd,args,{encoding:'utf8',timeout:opts.timeout??90000,env:{...process.env,AGENT_CONTROL_QUALIFICATION_TRACE_ID:qualificationTraceId,...opts.env}}),text=(r.stdout||'')+(r.stderr||''),ok=r.status===0&&(!opts.expect||opts.expect.test(text));out.push({name,ok,status:r.status,signal:r.signal??null,ms:Date.now()-t,stdout:(r.stdout||'').slice(-8000),stderr:(r.stderr||'').slice(-4000)});console.log(`${ok?'PASS':'FAIL'} ${name}`);return ok;}function http(name,url,{method='GET',body,expect,timeout=90000}={}){const marker='__AGENT_CONTROL_HTTP__',args=['-sS','--max-time',String(Math.ceil(timeout/1000)),'-o','-','-w',`\n${marker}%{http_code} %{time_total}`];if(method!=='GET')args.push('-X',method);if(body!==undefined)args.push('-H','content-type: application/json','-d',body);args.push(url);const t=Date.now(),r=spawnSync('curl',args,{encoding:'utf8',timeout:timeout+1000,env:{...process.env,AGENT_CONTROL_QUALIFICATION_TRACE_ID:qualificationTraceId}}),raw=r.stdout||'',i=raw.lastIndexOf(`\n${marker}`),responseBody=i>=0?raw.slice(0,i):raw,meta=i>=0?raw.slice(i+1).trim().split(/\s+/):[],httpStatus=Number(meta[0]?.replace(marker,''))||null,httpSeconds=Number(meta[1])||null,ok=r.status===0&&httpStatus!==null&&httpStatus>=200&&httpStatus<300&&(!expect||expect.test(responseBody));out.push({name,ok,status:r.status,signal:r.signal??null,ms:Date.now()-t,httpStatus,httpSeconds,responseBody:responseBody.slice(-8000),stderr:(r.stderr||'').slice(-4000),traceId:qualificationTraceId});console.log(`${ok?'PASS':'FAIL'} ${name}${httpStatus?` http=${httpStatus}`:''}${httpSeconds!==null?` seconds=${httpSeconds.toFixed(3)}`:''}`);return{ok,httpStatus,httpSeconds,responseBody};}run('local-types-and-tests','npm',['run','check'],{timeout:120000});run('hpubuntu-codex-present','bash',['-lc','command -v codex && codex --version'],{expect:/codex/i});if(process.env.AGENT_CONTROL_NODE_TOKEN){http('pixel-node-health',`${process.env.PIXEL_NODE_URL??'http://127.0.0.1:18788'}/health`,{expect:/"status":"ok"/,timeout:5000});run('pixel-capability-resolution','npx',['tsx','scripts/prove-pixel-resolution.ts'],{expect:/AGENT-CONTROL-PIXEL-RESOLUTION-PASS/,timeout:90000});}else out.push({name:'pixel-live',ok:false,skipped:true,reason:'AGENT_CONTROL_NODE_TOKEN not set'});if(process.env.CHATGPT_WINDOW_URL){const base=process.env.CHATGPT_WINDOW_URL.replace(/\/$/,''),advertised=http('windows-chatgpt-advertised-health',`${base}/health`,{expect:/"adapter":true/,timeout:3000});if(advertised.ok){const body=JSON.stringify({model:'chatgpt-window',input:'Reply exactly: AGENT-CONTROL-CHATGPT-OK',stream:false}),timeout=Number(process.env.AGENT_CONTROL_FUNCTIONAL_TIMEOUT_MS??60000),functional=http('windows-chatgpt-functional-roundtrip',`${base}/v1/responses`,{method:'POST',body,expect:/AGENT-CONTROL-CHATGPT-OK/,timeout});if(functional.ok&&functional.httpSeconds!==null){const warnMs=Number(process.env.AGENT_CONTROL_LATENCY_WARN_MS??10000),latencyMs=functional.httpSeconds*1000;out.push({name:'windows-chatgpt-latency-observation',ok:true,diagnostic:true,latencyMs,warnMs,classification:latencyMs>warnMs?'slow':'normal'});console.log(`INFO windows-chatgpt-latency ${latencyMs.toFixed(0)}ms ${latencyMs>warnMs?'SLOW':'NORMAL'}`);}if(!functional.ok)out.push({name:'windows-chatgpt-provider-state',ok:false,diagnostic:true,reason:'advertised attachment is not functional readiness; scheduler must treat provider degraded/unavailable',advertisedHealth:advertised.responseBody,functionalHttpStatus:functional.httpStatus,functionalSeconds:functional.httpSeconds});}}else out.push({name:'windows-chatgpt-responses',ok:false,skipped:true,reason:'CHATGPT_WINDOW_URL not set'});for(const target of(process.env.AGENT_CONTROL_REMOTE_CHECKS??'').split(',').filter(Boolean)){const[name,host,command]=target.split('|');run(`remote-${name}`,'ssh',[host,command||'echo AGENT-CONTROL-REMOTE-PASS'],{expect:/AGENT-CONTROL-REMOTE-PASS/,timeout:30000});}fs.mkdirSync('qualification-results',{recursive:true});const file=`qualification-results/qualification-${new Date().toISOString().replace(/[:.]/g,'-')}.json`;fs.writeFileSync(file,JSON.stringify({at:new Date().toISOString(),host:process.env.HOSTNAME??'',traceId:qualificationTraceId,functionalTimeoutMs:Number(process.env.AGENT_CONTROL_FUNCTIONAL_TIMEOUT_MS??60000),latencyWarnMs:Number(process.env.AGENT_CONTROL_LATENCY_WARN_MS??10000),results:out},null,2)+'\n');const failed=out.filter(x=>!x.ok&&!x.skipped&&!x.diagnostic),skipped=out.filter(x=>x.skipped);console.log(`RESULT ${failed.length?'FAIL':'PASS'} passed=${out.filter(x=>x.ok&&!x.diagnostic).length} failed=${failed.length} skipped=${skipped.length} trace=${qualificationTraceId} evidence=${file}`);if(failed.length)process.exit(1);
+import {randomUUID} from 'node:crypto';
+import {spawnSync} from 'node:child_process';
+import fs from 'node:fs';
+import {loadConfig} from './config.mjs';
+
+const results = [];
+const traceId = randomUUID();
+const {config, configured, file: configFile} = loadConfig();
+
+function record(result) {
+  results.push(result);
+  console.log(`${result.ok ? 'PASS' : result.skipped ? 'SKIP' : 'FAIL'} ${result.name}`);
+  return result;
+}
+
+function run(name, command, args = [], options = {}) {
+  const started = Date.now();
+  const result = spawnSync(command, args, {encoding: 'utf8', timeout: options.timeout ?? 120000, env: {...process.env, AGENT_CONTROL_QUALIFICATION_TRACE_ID: traceId}});
+  const text = `${result.stdout ?? ''}${result.stderr ?? ''}`;
+  return record({name, ok: result.status === 0 && (!options.expect || options.expect.test(text)), status: result.status, signal: result.signal ?? null, ms: Date.now() - started, stdout: (result.stdout ?? '').slice(-8000), stderr: (result.stderr ?? '').slice(-4000)});
+}
+
+async function health(name, url) {
+  const started = Date.now();
+  try {
+    const response = await fetch(url, {signal: AbortSignal.timeout(5000)});
+    const body = await response.text();
+    return record({name, ok: response.ok, httpStatus: response.status, ms: Date.now() - started, responseBody: body.slice(-8000)});
+  } catch (error) {
+    return record({name, ok: false, ms: Date.now() - started, error: error instanceof Error ? error.message : String(error)});
+  }
+}
+
+run('local-release-gate', 'npm', ['run', 'check']);
+if (!configured) record({name: 'configured-infrastructure', ok: false, skipped: true, reason: `no configuration file at ${configFile}`});
+for (const service of config.services) await health(`service-${service.id}`, service.healthUrl);
+for (const resource of config.resources) {
+  if (resource.transport.type === 'local') record({name: `resource-${resource.id}`, ok: true, evidence: 'configured local resource'});
+  else if (resource.healthUrl) await health(`resource-${resource.id}`, resource.healthUrl);
+  else record({name: `resource-${resource.id}`, ok: false, skipped: true, reason: 'no non-mutating health URL configured'});
+}
+for (const provider of config.providers) {
+  if (!provider.baseUrl) record({name: `provider-${provider.id}`, ok: false, skipped: true, reason: 'no base URL configured'});
+  else await health(`provider-${provider.id}`, `${provider.baseUrl.replace(/\/v1\/?$/, '')}/health`);
+}
+for (const target of (process.env.AGENT_CONTROL_REMOTE_CHECKS ?? '').split(',').filter(Boolean)) {
+  const [name, host, command] = target.split('|');
+  run(`remote-${name}`, 'ssh', [host, command || 'echo AGENT-CONTROL-REMOTE-PASS'], {expect: /AGENT-CONTROL-REMOTE-PASS/, timeout: 30000});
+}
+
+fs.mkdirSync('qualification-results', {recursive: true});
+const evidenceFile = `qualification-results/qualification-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+const failed = results.filter(result => !result.ok && !result.skipped);
+fs.writeFileSync(evidenceFile, `${JSON.stringify({at: new Date().toISOString(), traceId, configFile, configured, results}, null, 2)}\n`);
+console.log(`RESULT ${failed.length ? 'FAIL' : 'PASS'} passed=${results.filter(result => result.ok).length} failed=${failed.length} skipped=${results.filter(result => result.skipped).length} trace=${traceId} evidence=${evidenceFile}`);
+if (failed.length) process.exitCode = 1;

@@ -37,7 +37,7 @@ class FakeOrca implements OrcaRuntimePort {
 
 const agent = (lease = 1, ownership = 1): ExecutionAuthority => ({laneId: 'lane-a', leaseGeneration: lease, ownershipGeneration: ownership, owner: 'agent'});
 const human = (lease = 2, ownership = 2): ExecutionAuthority => ({laneId: 'lane-a', leaseGeneration: lease, ownershipGeneration: ownership, owner: 'human'});
-const request = (taskId = 'task-a'): StartExecutionRequest => ({taskId, host: 'hpubuntu', repository: '/repo', branch: `ac/${taskId}`, command: 'agent run', authority: agent()});
+const request = (taskId = 'task-a'): StartExecutionRequest => ({taskId, host: 'controller', repository: '/repo', branch: `ac/${taskId}`, command: 'agent run', authority: agent()});
 
 test('Orca-backed execution supports start, status, output, diff, pause, resume, cancel and cleanup', async () => {
   const runtime = new FakeOrca(), store = new MemoryStore(), provider = new OrcaExecutionProvider(runtime, store);
@@ -73,6 +73,16 @@ test('failed reconnect and stale execution identity fail closed as UNKNOWN', asy
   runtime.identity = {...runtime.identity!, creationNonce: 'stale'};
   status = await provider.reconnect('task-a', agent());
   assert.equal(status.receipt.state, 'UNKNOWN');
+});
+
+test('a stale transport hostname cannot grant execution authority', async () => {
+  const runtime = new FakeOrca(), store = new MemoryStore(), provider = new OrcaExecutionProvider(runtime, store);
+  await provider.start(request());
+  runtime.identity = {...runtime.identity!, host: 'reassigned-host.example'};
+  const status = await provider.reconnect('task-a', agent());
+  assert.equal(status.provenOriginal, false);
+  assert.equal(status.receipt.state, 'UNKNOWN');
+  assert.deepEqual(await provider.sendInput('task-a', 'blocked', agent()), {accepted: false, reason: 'execution_not_proven'});
 });
 
 test('stale lease and ownership generations cannot write or cancel', async () => {

@@ -63,7 +63,7 @@ const testEvidence = store.addEvidence({
   classification: 'verified_executable',
   description: 'Focused shared-context tests passed',
   sourceId: threadA.id,
-  repository: '/fast/repos/agent-control',
+  repository: '/srv/agent-control',
   commitSha: 'demo-commit-123',
   testName: 'node --import tsx --test src/control/context.test.ts',
   result: 'passed',
@@ -73,7 +73,7 @@ const repositoryEvidence = store.addEvidence({
   classification: 'repository_evidence',
   description: 'Context graph implementation diff',
   sourceId: threadB.id,
-  repository: '/fast/repos/agent-control',
+  repository: '/srv/agent-control',
   commitSha: 'demo-commit-123',
   result: 'observed',
 })
@@ -176,7 +176,7 @@ console.log(JSON.stringify({output, taskId, selectedTier: selection.tier, loaded
 function source(overrides) {
   return {
     taskId,
-    repository: '/fast/repos/agent-control',
+    repository: '/srv/agent-control',
     branch: 'research/shared-thread-context',
     commitSha: 'demo-commit-123',
     description: 'Shared context',
