@@ -34,7 +34,7 @@ The adapter is fixed to `com.facebook.katana`. It can launch the resolved Facebo
 
 A physical Pixel 8 Pro pass on 2026-08-22 inspected eight qualifying group titles and produced four reviewed candidates from posts displayed as 22 hours, 12 hours, four days, and six days old. The initial pass took about nine and a half minutes. This proves the post-unlock read-only use case, not unattended cold-boot recovery or automatic event publication.
 
-If ADB is absent, the command persists `NEEDS PRIVILEGE` until a one-time host setup grants the invoking user non-interactive sudo access to a root-owned helper accepting only `install-adb`; the helper runs only `apt-get install -y --no-install-recommends adb`. Set `AGENT_CONTROL_ALLOW_ADB_INSTALL=1` and resume with `--approve-install`. Agent Control never reads, prompts for, stores, or logs a sudo password. If the helper is unavailable or denied, the item remains safely resumable. Pairing is not reported as actionable until installation completed and a fresh `adb` detection observes the tool. Unrelated `demo:*` queue items remain stored but are excluded from provisioning progress output. When the graph reaches Android Wireless Debugging it persists `HUMAN REVIEW` and exits. Approve pairing on the Pixel, then resume the same queue with:
+If the ADB host tool is absent, the command persists `NEEDS PRIVILEGE` until a one-time host setup grants the invoking user non-interactive sudo access to a root-owned helper accepting only `install-adb`; the helper runs only `apt-get install -y --no-install-recommends adb`. Set `AGENT_CONTROL_ALLOW_ADB_INSTALL=1` and resume with `--approve-install`. Agent Control never reads, prompts for, stores, or logs a sudo password. If the helper is unavailable or denied, the item remains safely resumable. Pairing is not reported as actionable until installation completed and a fresh host-tool check observes `adb`. This proves only that the executable exists; `transport.adb` is advertised separately and only while `adb devices -l` identifies one unambiguous connected device (or the configured expected serial). Unrelated `demo:*` queue items remain stored but are excluded from provisioning progress output. When the graph reaches Android Wireless Debugging it persists `HUMAN REVIEW` and exits. Approve pairing on the Pixel, then resume the same queue with:
 
 ```bash
 npm run provision:pixel -- --approve-pairing
@@ -48,13 +48,30 @@ The host helper must be installed by an administrator as `/usr/local/libexec/age
 
 Do not grant `NOPASSWD: apt`, a shell, or general sudo. Validate with `sudo -n /usr/local/libexec/agent-control-privileged install-adb`; the command must not accept any other argument.
 
-The final reboot is never implicit. Once the hook is installed and verified, the graph persists `NEEDS REBOOT APPROVAL`. When ready for a deliberate physical reboot, run:
+The final reboot is never implicit. Once the hook is installed and verified, the graph persists `NEEDS REBOOT APPROVAL`. When ready for one deliberate physical reboot, run:
 
 ```bash
 npm run provision:pixel -- --approve-reboot-test
 ```
 
-That command reboots through the already-qualified ADB transport and waits up to three minutes for keyed Termux SSH to return. Denial, omission, or failure remains durable and resumable. Do not claim unattended reboot recovery until this live test completes.
+The one-shot approval is stored durably. Before dispatch, Agent Control freshly proves both the selected ADB device and keyed, noninteractive Termux SSH; the reboot operation repeats those proofs immediately before `adb reboot`. If either transport is absent, the item becomes `NEEDS TRANSPORT`, consumes neither the approval nor an execution attempt, and resumes through the same queue when both proofs later succeed. It does not request a pairing endpoint, a manual `adb connect`, Termux startup, or repeated approval.
+
+After a successful reboot command, Agent Control waits up to three minutes for keyed Termux SSH to return. Only that post-reboot proof qualifies unattended recovery. A post-reboot timeout consumes the one-shot approval and is reported separately from a reboot that was never initiated.
+
+The command emits explicit `reboot:preflight-qualified`, `reboot:reboot-initiated`, `reboot:waiting-for-ssh`, and terminal qualification/timeout events. The terminal phase, detail, initiation flag, and observation time are also stored on the durable reboot work item.
+
+The evidence boundaries are explicit:
+
+- **ADB installed** — the host executable responds; no phone transport is implied.
+- **Wireless Debugging paired** — Android retains a pairing relationship; no current connection is implied.
+- **ADB connected** — a fresh, unambiguous `adb devices -l` row is in `device` state.
+- **Tailscale reachable** — the private network reaches the Pixel; no command transport is implied.
+- **SSH live** — the existing key completes a bounded, password-disabled Termux SSH proof.
+- **Reboot authorised** — one pending approval is persisted; the reboot has not necessarily started.
+- **Reboot initiated** — the qualified ADB client accepted the reboot command.
+- **Reboot recovery qualified** — keyed SSH returned after that initiated reboot.
+
+When more than one ADB device may be visible, set `AGENT_CONTROL_PIXEL_ADB_SERIAL` (or the standard `ANDROID_SERIAL`) to the expected Pixel serial. Qualification then requires that exact device, and every install, shell, and reboot command is issued with `adb -s` for the same serial. Without an expected serial, multiple device rows fail closed.
 
 For the live distributed qualification matrix:
 
@@ -68,9 +85,9 @@ State is persisted beneath `.agent-control/` by default. Runtime state, qualific
 
 ## Android self-provisioning mission
 
-The Work Queue now contains an explicit Pixel provisioning mission. It detects `adb`, permits only the allow-listed hpubuntu package operation `apt install adb`, then pauses in a human-review gate for Android Wireless Debugging pairing. After that approval, later work remains capability-gated: ADB transport and Android package installation must be independently advertised before the mission can qualify them, retrieve and verify the official GitHub Termux:Boot artifact, install and verify the package, install and verify the existing Agent Control Termux boot hook, and model unattended reboot recovery.
+The Work Queue now contains an explicit Pixel provisioning mission. It detects the ADB host tool, permits only the allow-listed hpubuntu package operation `apt install adb`, then pauses in a human-review gate for Android Wireless Debugging pairing. After that approval, later work remains capability-gated: fresh ADB device transport and keyed SSH transport are observed independently from tool installation, historical pairing, and Tailscale reachability. Those live capabilities gate artifact installation, hook verification, and reboot dispatch.
 
-This is implemented and covered by automated tests. It has not been physically qualified on Android in this release; no capability is granted by queue completion alone.
+This is implemented and covered by automated tests. The live-transport reboot gate and durable approval migration have not themselves requalified a physical reboot in this release; no capability is granted by queue completion or historical evidence alone.
 
 ## Single-command control-plane bootstrap
 
@@ -218,7 +235,7 @@ The current live qualification harness can prove:
 - ChatGPT Window latency classification;
 - Sentinel remote resource reachability.
 
-The current automated core/control/UI suite is **110/110 passing** at the Pixel provisioning and read-only Facebook observation checkpoint. That includes failed-prerequisite blocking, explicit privilege and reboot gates, observed-ADB gating, durable mission restoration, fixed-package read-only navigation, timestamp filtering, candidate deduplication, contact redaction, and approval resumption. Bootstrap scripts are syntax-checked by the canonical `npm run check` gate as well.
+The current automated core/control/UI suite is **133/133 passing** at the live-transport reboot gate and read-only Facebook observation checkpoint. That includes failed-prerequisite blocking, mission-scoped dispatch that preserves unrelated queued work, separate ADB-tool/device/SSH/Tailscale evidence, durable one-shot reboot authority, non-consuming transport waits, persisted failure migration, final reboot preflight, post-reboot timeout classification, fixed-package read-only navigation, timestamp filtering, candidate deduplication, contact redaction, and approval resumption. Bootstrap scripts are syntax-checked by the canonical `npm run check` gate as well.
 
 ## Core architecture
 

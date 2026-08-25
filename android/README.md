@@ -33,6 +33,8 @@ chmod +x android/*.sh
 
 The hpubuntu single-command bootstrap can recover the Pixel node only after Termux SSH is listening. A physical test on 2026-08-21 demonstrated the useful intermediate state `Tailscale reachable / SSH :8022 offline`, so transport persistence is now explicit rather than being treated as a generic node failure.
 
+These states are deliberately independent. An installed `adb` executable is only a host tool. A saved Wireless Debugging pairing is historical authority, not a current connection. `transport.adb` requires a fresh, unambiguous `adb devices -l` result in `device` state. `transport.ssh` requires a fresh password-disabled proof with the existing Agent Control key. Tailscale reachability proves only network reachability and cannot substitute for either command transport.
+
 One-time Pixel setup:
 
 1. Install **Termux:Boot** from the same trusted source as Termux and open Termux:Boot once so Android enables its boot receiver.
@@ -53,6 +55,20 @@ chmod +x android/*.sh
 - optionally preserves an existing Pixel-local node token when one already exists or is explicitly provided in `AGENT_CONTROL_NODE_TOKEN`.
 
 The boot hook always attempts to restore `sshd`. If a Pixel-local node token is available it can also restore the Agent Control node; otherwise hpubuntu will recover the node through the now-persistent SSH transport using its existing credential.
+
+## Reboot qualification
+
+The final provisioning item uses a durable one-shot approval. Approval and execution are separate states:
+
+1. `NEEDS REBOOT APPROVAL` means no reboot authority is stored.
+2. `NEEDS TRANSPORT` means approval is stored but fresh ADB and keyed SSH proofs are not both available. This state does not consume an execution attempt or repeat the approval request.
+3. `reboot initiated` means the freshly qualified ADB client accepted `adb reboot`.
+4. `waiting for SSH after reboot` lasts for at most three minutes.
+5. `reboot recovery qualified` requires keyed Termux SSH to return after that initiated reboot.
+
+The reboot operation performs its own final ADB and SSH preflight to close the gap between scheduling and execution. A failure such as `no devices/emulators found` means the reboot did not start; Agent Control retains the approval and returns to `NEEDS TRANSPORT`. A genuine post-reboot SSH timeout is reported separately and consumes the one-shot approval before any further reboot can occur.
+
+When both ADB and Termux SSH are unavailable, Tailscale alone provides no host-to-phone execution mechanism. Agent Control waits durably and does not ask for a pairing endpoint, a manual `adb connect`, opening Termux, or manually starting `sshd`. A future Pixel-local watchdog would be a separate, currently unimplemented capability.
 
 After installing the hook, normal orchestration returns to hpubuntu:
 
