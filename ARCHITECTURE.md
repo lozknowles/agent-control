@@ -238,7 +238,7 @@ Jobs declare outcomes, dependencies and required capabilities. They do not name 
 9. Skills extend qualified competence but cannot extend authority by themselves.
 10. Core Jobs and recipes require capabilities, not infrastructure-specific identities.
 
-Invariant 1 is enforced in `WorkExecutor`; invariant 2 is enforced for gateway-based adapters. Opaque tools performed inside an external CLI and future model-backed Job Actions remain explicitly unqualified until their adapters expose policy-mediated operations or a separately approved sandbox capability boundary.
+Invariant 1 is enforced in `WorkExecutor`; invariant 2 is enforced for gateway-based adapters and the qualified `HarnessJobAgentAction` bridge. Opaque tools performed inside an external CLI remain explicitly unqualified until their adapters expose policy-mediated operations or a separately approved, immediately fenced sandbox capability boundary.
 
 ## Bootstrap and monitoring
 

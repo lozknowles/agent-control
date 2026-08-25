@@ -22,9 +22,11 @@ No host, device, provider, port, GPU, overlay network or absolute repository pat
 git clone https://github.com/lozknowles/agent-control.git
 cd agent-control
 npm install
-cp config/agent-control.example.json .agent-control/config.json
+npm run init
 npm run check
 ```
+
+`npm run init` creates only a schema-valid empty `.agent-control/config.json`. It is idempotent, never discovers infrastructure and never overwrites existing operator configuration. Use `config/agent-control.example.json` only as an illustrative reference after replacing every example endpoint, path and command.
 
 Edit `.agent-control/config.json` for the installation. Runtime state and credentials remain ignored. A different path can be selected with `AGENT_CONTROL_CONFIG`. Do not put credentials in JSON; configuration names only the environment variable that supplies a credential.
 
@@ -90,7 +92,7 @@ Current boundaries are intentional:
 - normal Work Queue agent dispatch is recipe-backed, persisted/inspectable and stops at `verification-pending` rather than accepting process completion;
 - named control operations such as Android provisioning are explicit, scope-checked exceptions and cannot become a legacy agent fallback;
 - the generic `AgentAdapter` receives only the recipe and policy gateway, but Orca/SSH CLI-internal tools are opaque to Agent Control and are not yet qualified as universally moderated tool calls;
-- current Job Actions are registered control-owned handlers; any future agent/model Action must enter through the harness dispatcher rather than `ActionRegistry` directly;
+- model-backed Job Actions are qualified through the sole `HarnessJobAgentAction` bridge; they enter through `HarnessDispatcher`, receive only policy-gated tools and stop at verification rather than treating model completion as acceptance;
 - model qualification and successive halving operate on recipe fingerprints, but governed skill generation and automated recipe learning remain follow-on 3.1 work.
 
 ## Durable work and evidence
@@ -147,6 +149,7 @@ The neutrality guard rejects private topology identifiers in distributable runti
 - ChatGPT Work and Codex shared task context remain host/reference-only unless an official read API is available.
 - Windows OpenAI execution is switchable: `auto` prefers a configured Responses API key and otherwise uses official Codex non-interactive execution with the saved ChatGPT-plan login. Both the Responses API and ChatGPT-plan routes are live `SUPPORTED+QUALIFIED` through the adaptive harness and central tool gate; ChatGPT desktop-window automation remains unimplemented and untested.
 - Skill proposal, security review, sandbox qualification, approval and promotion remain follow-on 3.1 work; an unqualified proposal cannot be selected by the current catalog.
+- `config/implementation-status.json` is the machine-readable implementation boundary. `npm run status:implementation` renders it for inspection and `npm run check:status` fails when the generated [`docs/implementation-status.md`](docs/implementation-status.md) projection or its evidence paths are stale.
 - The Job Catalog, Worker Registry, Run Ledger and web dashboard are implemented on this unreleased 3.1 branch. Model-backed Job Actions enter through `HarnessJobAgentAction`; each production provider still requires its own live qualification.
 - No production deployment is performed by this repository release process.
 - The events workflow is qualified only against a safe fixture target; authenticated Facebook discovery and the existing LocalWalks production publisher are not invoked or production-qualified by this source change.

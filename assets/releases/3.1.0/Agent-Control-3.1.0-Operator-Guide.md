@@ -25,8 +25,7 @@ No host, device, provider, port, GPU, repository path or network overlay is buil
 git clone https://github.com/lozknowles/agent-control.git
 cd agent-control
 npm install
-mkdir -p .agent-control
-cp config/agent-control.example.json .agent-control/config.json
+npm run init
 npm run check
 ```
 
@@ -36,12 +35,13 @@ Windows PowerShell:
 git clone https://github.com/lozknowles/agent-control.git
 Set-Location agent-control
 npm install
-New-Item -ItemType Directory -Force .agent-control
-Copy-Item config/agent-control.example.json .agent-control/config.json
+npm run init
 npm run check
 ```
 
 Never put credentials in repository configuration. Use the named environment variable or an approved operating-system secret manager.
+
+`npm run init` creates a schema-valid empty configuration only when none exists. It never discovers infrastructure, starts services or overwrites an existing valid configuration; an invalid existing file fails closed. The command reports only its result and file path, not operator configuration content. `config/agent-control.example.json` is illustrative and is not copied automatically.
 
 ## Configure
 
@@ -193,7 +193,7 @@ An operator-supplied local Windows bridge may instead be configured as `kind: "b
 
 An Action is a versioned executable capability. A Job is a declarative DAG of Actions. A separate Schedule decides when to create a Run. Manual and scheduled triggers call the same `createRun` path.
 
-Current registered Actions are control-owned handlers. A new Action that invokes an agent or model must delegate through `HarnessDispatcher`; Action registration does not qualify a model, grant tools or confer authority. Tools used opaquely inside an external CLI are not yet claimed as individually moderated.
+Control Actions are explicit control-owned handlers. The qualified `HarnessJobAgentAction` is the sole model-backed Job bridge and delegates through `HarnessDispatcher`; registering another Action does not qualify a model, grant tools or confer authority. Tools used opaquely inside an external CLI are not yet claimed as individually moderated.
 
 Jobs request capabilities and semantic resources, never machine names. Credentials are represented as approved capability bindings or secret references and are never embedded in manifests. Historical Runs retain the effective Job version, parameters, trigger, selected workers, attempts, artifacts, verification and provenance.
 
@@ -221,11 +221,14 @@ Process exit is not success. A declared verification observation must be present
 npm run status
 npm run qualify
 npm run qualify:jobs
+npm run status:implementation
 ```
 
 Monitor lane status, baton health, queue age, Job/Run state, outstanding approvals, worker health/capacity, locks, artifact provenance, provider qualification, PTY owner, execution recovery and verification phase. Qualification output is written beneath ignored `qualification-results/`; review it for credentials and private topology before preserving selected evidence.
 
 Healthy transport is not proof of original execution identity. After restart/reconnect, autonomous continuation requires the persisted task/session/resource/repository/worktree/branch/nonce plus current lease and ownership generations as applicable. PID alone is insufficient.
+
+`config/implementation-status.json` is the machine-readable implementation/qualification registry. `docs/implementation-status.md` is generated from it. Use `npm run check:status` to fail when the projection is stale or required source/test/evidence references are missing; use `npm run status:implementation` for a readable current projection. The registry distinguishes `IMPLEMENTED`, `QUALIFIED`, `PARTIAL`, `PLANNED` and `NOT_IMPLEMENTED` and therefore prevents planned work from being presented as live functionality.
 
 ## Human takeover and recovery
 
@@ -274,6 +277,7 @@ npm run typecheck
 npm run check:bootstrap
 npm run check:dashboard
 npm run check:neutrality
+npm run check:status
 npm test
 npm run check
 npm run qualify:jobs

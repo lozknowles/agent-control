@@ -2,7 +2,7 @@
 
 Agent Control is an infrastructure-neutral policy control plane with an executable adaptive-harness core. It governs durable work by heterogeneous agents and models, assembles task-appropriate execution recipes, and keeps authority, evidence and human control outside every replaceable worker or execution substrate.
 
-The 3.0.x baseline implements the durable lane/control model, capability and provider qualification primitives, adaptive recipe construction, qualified-skill selection, explicit tool grants, context selection, evidence/provenance, successive halving, PTY authority and replaceable execution providers. The unreleased 3.1 branch adds the Job Catalog, Worker Registry, Run Ledger, dashboard, verification service and a default recipe-backed Work Queue dispatch. Every supported gateway tool is reauthorised against live lease/ownership state; opaque tools run internally by external CLI agents and future model-backed Job Actions remain unqualified integration gaps.
+The 3.0.x baseline implements the durable lane/control model, capability and provider qualification primitives, adaptive recipe construction, qualified-skill selection, explicit tool grants, context selection, evidence/provenance, successive halving, PTY authority and replaceable execution providers. The unreleased 3.1 branch adds the Job Catalog, Worker Registry, Run Ledger, dashboard, verification service, default recipe-backed Work Queue dispatch and a qualified model-backed Job Action bridge. Every supported gateway tool is reauthorised against live lease/ownership state; tools run internally by opaque external CLI agents remain an explicit mediation gap.
 
 ## Agent Control
 
@@ -124,7 +124,7 @@ An agent saying “done” is not verification. A majority repeating an unsuppor
 
 ## 3.1 concepts
 
-The following are implemented on the unreleased 3.1 branch; they are not released 3.0.1 features. Governed skill creation and model-backed Job Action integration remain follow-on work.
+The following are implemented on the unreleased 3.1 branch; they are not released 3.0.1 features. Governed skill creation, universal adapter verification and automated recipe learning remain follow-on work. The authoritative machine-readable boundary and its evidence links are in [`config/implementation-status.json`](../config/implementation-status.json), projected as [`docs/implementation-status.md`](implementation-status.md).
 
 ### Job
 
@@ -132,7 +132,7 @@ A reusable declaration of outcomes, actions, dependencies and required capabilit
 
 ### Action
 
-One step of a Job. Each Action is a registered, versioned control-owned handler. A future Action that delegates to an agent/model must produce a recipe through the adaptive dispatcher; current deterministic fixture Actions do not impersonate agent execution.
+One step of a Job. Each Action is registered and versioned. Control Actions remain explicit control-owned handlers. A model-backed Agent Action delegates through `HarnessJobAgentAction`, produces an execution recipe through `HarnessDispatcher`, receives only the live ToolPolicy gateway and stops at the verification boundary. Action registration alone never qualifies a model or grants authority.
 
 ### Schedule
 

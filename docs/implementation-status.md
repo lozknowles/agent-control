@@ -1,0 +1,92 @@
+# Implementation status
+
+Release boundary: **3.1.0-development**. Registry updated: **2026-08-25**.
+
+This document is generated from `config/implementation-status.json`. Update the registry and run `npm run status:implementation -- --write`; do not edit this projection directly. `IMPLEMENTED` means executable source and focused tests exist. `QUALIFIED` additionally requires recorded real evidence. `PARTIAL`, `PLANNED` and `NOT_IMPLEMENTED` remain explicit gaps.
+
+| Capability | Status | Executable truth | Remaining boundary |
+| --- | --- | --- | --- |
+| Safe empty-configuration bootstrap (`bootstrap.safe-empty-config`) | **IMPLEMENTED** | An idempotent initializer creates a schema-valid empty configuration without discovering infrastructure or overwriting operator state. | None recorded. |
+| Default adaptive-harness dispatch (`harness.default-work-dispatch`) | **IMPLEMENTED** | Normal WorkExecutor agent work builds and records an ExecutionRecipe and receives only a live policy gateway. | None recorded. |
+| Central live ToolPolicy gateway (`tools.central-live-policy`) | **IMPLEMENTED** | Gateway tools are checked against recipe grants, worker compatibility, live lease and ownership generations, approvals and human ownership. | None recorded. |
+| Job Catalog, scheduler and Run Ledger (`jobs.catalog-scheduler-ledger`) | **IMPLEMENTED** | Versioned Jobs and Schedules produce durable Runs with capability placement, locks, retries, artifacts, approvals and recovery. | None recorded. |
+| Capability-advertising Worker Registry (`workers.capability-registry`) | **IMPLEMENTED** | Workers advertise semantic capabilities and health separately from provider/model routing. | None recorded. |
+| Model-backed Job Action bridge (`jobs.model-backed-action`) | **QUALIFIED** | Agent Actions delegate through HarnessDispatcher, return tool requests through ToolPolicy and stop at the verification boundary. | None recorded. |
+| OpenAI Responses API execution (`providers.openai-responses`) | **QUALIFIED** | A real Responses API Job returned a policy-gated function call and a verified checksummed artifact. | None recorded. |
+| Codex execution with ChatGPT-plan authentication (`providers.openai-codex-chatgpt-plan`) | **QUALIFIED** | A real Codex Job used saved ChatGPT authentication, a read-only process envelope and the central return-data tool gateway. | None recorded. |
+| Universal verification-to-acceptance coverage (`verification.universal-adapter-coverage`) | **PARTIAL** | Claim, evidence, verification and acceptance are distinct and model-backed Jobs are gated, but every adapter and task type is not yet universally covered. | Add task-specific verification policies and enforce them across every adapter and Action family. |
+| Opaque CLI internal-tool mediation (`executors.opaque-cli-internal-tools`) | **PARTIAL** | CLI processes can be constrained by an approved capability envelope, but their internal tools are not individually authorised by ToolPolicy. | Add authoritative process supervision and immediate termination or suspension when live authority changes. |
+| Qualified skill selection (`skills.qualified-selection`) | **IMPLEMENTED** | Only qualified, evidence-carrying skills may satisfy recipe capability requirements and skills cannot expand tool authority. | None recorded. |
+| Governed skill proposal and promotion (`skills.governed-lifecycle`) | **PLANNED** | Agents may eventually propose skills, but Agent Control must statically check, sandbox-test, qualify, approve and grant them. | No proposal, security-review, sandbox-qualification or promotion workflow is implemented. |
+| Automatic governed recipe learning (`recipes.automatic-learning`) | **PLANNED** | Successive halving exists, but winners are not automatically promoted into a durable governed recipe catalog. | Persist qualification evidence and require policy approval before learned recipes influence routing. |
+
+## Evidence map
+
+### Safe empty-configuration bootstrap
+
+- Source: [`scripts/config.mjs`](../scripts/config.mjs), [`scripts/init-config.mjs`](../scripts/init-config.mjs)
+- Tests: [`scripts/init-config.test.mjs`](../scripts/init-config.test.mjs)
+- Qualification evidence: [`docs/evidence/truthful-bootstrap-status-20260825.md`](../docs/evidence/truthful-bootstrap-status-20260825.md)
+
+### Default adaptive-harness dispatch
+
+- Source: [`src/control/adaptive-harness.ts`](../src/control/adaptive-harness.ts), [`src/control/harness-dispatch.ts`](../src/control/harness-dispatch.ts), [`src/control/work-executor.ts`](../src/control/work-executor.ts)
+- Tests: [`src/control/harness-dispatch.test.ts`](../src/control/harness-dispatch.test.ts), [`src/control/work-executor.test.ts`](../src/control/work-executor.test.ts)
+
+### Central live ToolPolicy gateway
+
+- Source: [`src/control/adaptive-harness.ts`](../src/control/adaptive-harness.ts), [`src/control/harness-dispatch.ts`](../src/control/harness-dispatch.ts)
+- Tests: [`src/control/adaptive-harness.test.ts`](../src/control/adaptive-harness.test.ts), [`src/control/harness-dispatch.test.ts`](../src/control/harness-dispatch.test.ts)
+
+### Job Catalog, scheduler and Run Ledger
+
+- Source: [`src/control/job-catalog.ts`](../src/control/job-catalog.ts), [`src/control/job-runtime.ts`](../src/control/job-runtime.ts)
+- Tests: [`src/control/job-catalog.test.ts`](../src/control/job-catalog.test.ts), [`src/control/job-runtime.test.ts`](../src/control/job-runtime.test.ts)
+
+### Capability-advertising Worker Registry
+
+- Source: [`src/control/job-runtime.ts`](../src/control/job-runtime.ts), [`src/control/job-bootstrap.ts`](../src/control/job-bootstrap.ts)
+- Tests: [`src/control/job-runtime.test.ts`](../src/control/job-runtime.test.ts)
+
+### Model-backed Job Action bridge
+
+- Source: [`src/control/harness-dispatch.ts`](../src/control/harness-dispatch.ts)
+- Tests: [`src/control/harness-job-action.test.ts`](../src/control/harness-job-action.test.ts), [`src/control/responses-provider-job.test.ts`](../src/control/responses-provider-job.test.ts)
+- Qualification evidence: [`docs/evidence/windows-openai-harness-qualification-20260824.md`](../docs/evidence/windows-openai-harness-qualification-20260824.md)
+
+### OpenAI Responses API execution
+
+- Source: [`src/control/responses-provider.ts`](../src/control/responses-provider.ts)
+- Tests: [`src/control/responses-provider.test.ts`](../src/control/responses-provider.test.ts), [`src/control/responses-provider-job.test.ts`](../src/control/responses-provider-job.test.ts)
+- Qualification evidence: [`docs/evidence/windows-openai-responses-live-20260824.json`](../docs/evidence/windows-openai-responses-live-20260824.json)
+
+### Codex execution with ChatGPT-plan authentication
+
+- Source: [`src/control/codex-exec-provider.ts`](../src/control/codex-exec-provider.ts), [`src/control/openai-provider-selector.ts`](../src/control/openai-provider-selector.ts)
+- Tests: [`src/control/codex-exec-provider.test.ts`](../src/control/codex-exec-provider.test.ts), [`src/control/openai-provider-selector.test.ts`](../src/control/openai-provider-selector.test.ts)
+- Qualification evidence: [`docs/evidence/windows-openai-chatgpt-plan-live-20260824.json`](../docs/evidence/windows-openai-chatgpt-plan-live-20260824.json)
+
+### Universal verification-to-acceptance coverage
+
+- Source: [`src/control/verification.ts`](../src/control/verification.ts), [`src/control/job-runtime.ts`](../src/control/job-runtime.ts)
+- Tests: [`src/control/verification.test.ts`](../src/control/verification.test.ts), [`src/control/harness-job-action.test.ts`](../src/control/harness-job-action.test.ts)
+
+### Opaque CLI internal-tool mediation
+
+- Source: [`src/control/codex-exec-provider.ts`](../src/control/codex-exec-provider.ts), [`src/control/execution-provider.ts`](../src/control/execution-provider.ts)
+- Tests: [`src/control/codex-exec-provider.test.ts`](../src/control/codex-exec-provider.test.ts), [`src/control/orca-execution-provider.test.ts`](../src/control/orca-execution-provider.test.ts)
+
+### Qualified skill selection
+
+- Source: [`src/control/adaptive-harness.ts`](../src/control/adaptive-harness.ts)
+- Tests: [`src/control/adaptive-harness.test.ts`](../src/control/adaptive-harness.test.ts)
+
+### Governed skill proposal and promotion
+
+- Source: not implemented
+- Tests: [`src/control/adaptive-harness.test.ts`](../src/control/adaptive-harness.test.ts)
+
+### Automatic governed recipe learning
+
+- Source: [`src/control/experiments.ts`](../src/control/experiments.ts)
+- Tests: [`src/control/control.test.ts`](../src/control/control.test.ts)

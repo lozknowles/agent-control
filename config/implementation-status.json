@@ -1,0 +1,119 @@
+{
+  "schema": "agent-control.implementation-status/v1",
+  "release": "3.1.0-development",
+  "updated": "2026-08-25",
+  "capabilities": [
+    {
+      "id": "bootstrap.safe-empty-config",
+      "title": "Safe empty-configuration bootstrap",
+      "status": "IMPLEMENTED",
+      "summary": "An idempotent initializer creates a schema-valid empty configuration without discovering infrastructure or overwriting operator state.",
+      "sources": ["scripts/config.mjs", "scripts/init-config.mjs"],
+      "tests": ["scripts/init-config.test.mjs"],
+      "evidence": ["docs/evidence/truthful-bootstrap-status-20260825.md"]
+    },
+    {
+      "id": "harness.default-work-dispatch",
+      "title": "Default adaptive-harness dispatch",
+      "status": "IMPLEMENTED",
+      "summary": "Normal WorkExecutor agent work builds and records an ExecutionRecipe and receives only a live policy gateway.",
+      "sources": ["src/control/adaptive-harness.ts", "src/control/harness-dispatch.ts", "src/control/work-executor.ts"],
+      "tests": ["src/control/harness-dispatch.test.ts", "src/control/work-executor.test.ts"]
+    },
+    {
+      "id": "tools.central-live-policy",
+      "title": "Central live ToolPolicy gateway",
+      "status": "IMPLEMENTED",
+      "summary": "Gateway tools are checked against recipe grants, worker compatibility, live lease and ownership generations, approvals and human ownership.",
+      "sources": ["src/control/adaptive-harness.ts", "src/control/harness-dispatch.ts"],
+      "tests": ["src/control/adaptive-harness.test.ts", "src/control/harness-dispatch.test.ts"]
+    },
+    {
+      "id": "jobs.catalog-scheduler-ledger",
+      "title": "Job Catalog, scheduler and Run Ledger",
+      "status": "IMPLEMENTED",
+      "summary": "Versioned Jobs and Schedules produce durable Runs with capability placement, locks, retries, artifacts, approvals and recovery.",
+      "sources": ["src/control/job-catalog.ts", "src/control/job-runtime.ts"],
+      "tests": ["src/control/job-catalog.test.ts", "src/control/job-runtime.test.ts"]
+    },
+    {
+      "id": "workers.capability-registry",
+      "title": "Capability-advertising Worker Registry",
+      "status": "IMPLEMENTED",
+      "summary": "Workers advertise semantic capabilities and health separately from provider/model routing.",
+      "sources": ["src/control/job-runtime.ts", "src/control/job-bootstrap.ts"],
+      "tests": ["src/control/job-runtime.test.ts"]
+    },
+    {
+      "id": "jobs.model-backed-action",
+      "title": "Model-backed Job Action bridge",
+      "status": "QUALIFIED",
+      "summary": "Agent Actions delegate through HarnessDispatcher, return tool requests through ToolPolicy and stop at the verification boundary.",
+      "sources": ["src/control/harness-dispatch.ts"],
+      "tests": ["src/control/harness-job-action.test.ts", "src/control/responses-provider-job.test.ts"],
+      "evidence": ["docs/evidence/windows-openai-harness-qualification-20260824.md"]
+    },
+    {
+      "id": "providers.openai-responses",
+      "title": "OpenAI Responses API execution",
+      "status": "QUALIFIED",
+      "summary": "A real Responses API Job returned a policy-gated function call and a verified checksummed artifact.",
+      "sources": ["src/control/responses-provider.ts"],
+      "tests": ["src/control/responses-provider.test.ts", "src/control/responses-provider-job.test.ts"],
+      "evidence": ["docs/evidence/windows-openai-responses-live-20260824.json"]
+    },
+    {
+      "id": "providers.openai-codex-chatgpt-plan",
+      "title": "Codex execution with ChatGPT-plan authentication",
+      "status": "QUALIFIED",
+      "summary": "A real Codex Job used saved ChatGPT authentication, a read-only process envelope and the central return-data tool gateway.",
+      "sources": ["src/control/codex-exec-provider.ts", "src/control/openai-provider-selector.ts"],
+      "tests": ["src/control/codex-exec-provider.test.ts", "src/control/openai-provider-selector.test.ts"],
+      "evidence": ["docs/evidence/windows-openai-chatgpt-plan-live-20260824.json"]
+    },
+    {
+      "id": "verification.universal-adapter-coverage",
+      "title": "Universal verification-to-acceptance coverage",
+      "status": "PARTIAL",
+      "summary": "Claim, evidence, verification and acceptance are distinct and model-backed Jobs are gated, but every adapter and task type is not yet universally covered.",
+      "sources": ["src/control/verification.ts", "src/control/job-runtime.ts"],
+      "tests": ["src/control/verification.test.ts", "src/control/harness-job-action.test.ts"],
+      "limitation": "Add task-specific verification policies and enforce them across every adapter and Action family."
+    },
+    {
+      "id": "executors.opaque-cli-internal-tools",
+      "title": "Opaque CLI internal-tool mediation",
+      "status": "PARTIAL",
+      "summary": "CLI processes can be constrained by an approved capability envelope, but their internal tools are not individually authorised by ToolPolicy.",
+      "sources": ["src/control/codex-exec-provider.ts", "src/control/execution-provider.ts"],
+      "tests": ["src/control/codex-exec-provider.test.ts", "src/control/orca-execution-provider.test.ts"],
+      "limitation": "Add authoritative process supervision and immediate termination or suspension when live authority changes."
+    },
+    {
+      "id": "skills.qualified-selection",
+      "title": "Qualified skill selection",
+      "status": "IMPLEMENTED",
+      "summary": "Only qualified, evidence-carrying skills may satisfy recipe capability requirements and skills cannot expand tool authority.",
+      "sources": ["src/control/adaptive-harness.ts"],
+      "tests": ["src/control/adaptive-harness.test.ts"]
+    },
+    {
+      "id": "skills.governed-lifecycle",
+      "title": "Governed skill proposal and promotion",
+      "status": "PLANNED",
+      "summary": "Agents may eventually propose skills, but Agent Control must statically check, sandbox-test, qualify, approve and grant them.",
+      "sources": [],
+      "tests": ["src/control/adaptive-harness.test.ts"],
+      "limitation": "No proposal, security-review, sandbox-qualification or promotion workflow is implemented."
+    },
+    {
+      "id": "recipes.automatic-learning",
+      "title": "Automatic governed recipe learning",
+      "status": "PLANNED",
+      "summary": "Successive halving exists, but winners are not automatically promoted into a durable governed recipe catalog.",
+      "sources": ["src/control/experiments.ts"],
+      "tests": ["src/control/control.test.ts"],
+      "limitation": "Persist qualification evidence and require policy approval before learned recipes influence routing."
+    }
+  ]
+}

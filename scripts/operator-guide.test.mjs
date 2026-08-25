@@ -24,6 +24,12 @@ test('3.1 operator guide covers the dashboard and scheduler authority boundary',
   assert.match(source, /npm run qualify:openai-windows/);
   assert.match(source, /The dashboard requests; Agent Control authorises/);
   assert.match(source, /OS cron and the browser are not authoritative schedulers/);
+  assert.match(source, /`npm run init` creates a schema-valid empty configuration only when none exists/);
+  assert.match(source, /config\/implementation-status\.json/);
+  assert.match(source, /npm run check:status/);
+  assert.match(source, /qualified `HarnessJobAgentAction` is the sole model-backed Job bridge/);
+  assert.doesNotMatch(source, /cp config\/agent-control\.example\.json/);
+  assert.doesNotMatch(source, /Copy-Item config\/agent-control\.example\.json/);
   assert.match(architecture, /default Jobs workspace is an operational projection, not an additional scheduler/);
 });
 

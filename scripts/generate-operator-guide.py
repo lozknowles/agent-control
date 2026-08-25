@@ -75,7 +75,8 @@ def styles():
         "h1": ParagraphStyle("h1", parent=base["Heading1"], fontName="Helvetica-Bold", fontSize=19, leading=23, textColor=NAVY, spaceBefore=5 * mm, spaceAfter=3 * mm, keepWithNext=True),
         "h2": ParagraphStyle("h2", parent=base["Heading2"], fontName="Helvetica-Bold", fontSize=13.5, leading=17, textColor=colors.HexColor("#0b7285"), spaceBefore=4 * mm, spaceAfter=2 * mm, keepWithNext=True),
         "body": ParagraphStyle("body", parent=base["BodyText"], fontName="Helvetica", fontSize=9.7, leading=14.3, textColor=INK, spaceAfter=2.2 * mm),
-        "bullet": ParagraphStyle("bullet", parent=base["BodyText"], fontName="Helvetica", fontSize=9.5, leading=13.5, textColor=INK, leftIndent=6 * mm, firstLineIndent=-3.5 * mm, bulletIndent=1.2 * mm, spaceAfter=1.2 * mm),
+        "table_head": ParagraphStyle("table_head", parent=base["BodyText"], fontName="Helvetica-Bold", fontSize=9.7, leading=14.3, textColor=colors.white, spaceAfter=0),
+        "bullet": ParagraphStyle("bullet", parent=base["BodyText"], fontName="Helvetica", fontSize=9.5, leading=13.5, textColor=INK, leftIndent=6 * mm, bulletIndent=1.2 * mm, bulletFontName="Helvetica", bulletFontSize=9.5, spaceAfter=1.2 * mm),
         "code": ParagraphStyle("code", parent=base["Code"], fontName="Courier", fontSize=7.6, leading=10.4, textColor=colors.HexColor("#243444"), backColor=CODE, borderColor=colors.HexColor("#d6dde3"), borderWidth=0.5, borderPadding=5, spaceBefore=1.5 * mm, spaceAfter=3 * mm),
         "callout": ParagraphStyle("callout", parent=base["BodyText"], fontName="Helvetica-Bold", fontSize=10, leading=15, textColor=NAVY, backColor=PALE, borderColor=CYAN, borderWidth=0.8, borderPadding=8, spaceBefore=2 * mm, spaceAfter=4 * mm),
         "toc": ParagraphStyle("toc", parent=base["BodyText"], fontName="Helvetica", fontSize=10.5, leading=17, textColor=INK, leftIndent=4 * mm),
@@ -100,7 +101,11 @@ def parse_markdown(source: str, style, version: str):
     def flush_table():
         if not table:
             return
-        rows = [[Paragraph(inline(cell.strip()), style["body"]) for cell in row.strip().strip("|").split("|")] for row in table if not re.match(r"^\s*\|?\s*:?-+", row)]
+        raw_rows = [row for row in table if not re.match(r"^\s*\|?\s*:?-+", row)]
+        rows = [
+            [Paragraph(inline(cell.strip()), style["table_head"] if index == 0 else style["body"]) for cell in row.strip().strip("|").split("|")]
+            for index, row in enumerate(raw_rows)
+        ]
         if rows:
             widths = [38 * mm, 132 * mm] if len(rows[0]) == 2 else None
             value = Table(rows, colWidths=widths, repeatRows=1, hAlign="LEFT")
@@ -141,7 +146,7 @@ def parse_markdown(source: str, style, version: str):
             story.append(Paragraph(inline(line[4:]), style["h2"]))
         elif line.startswith("- "):
             flush_paragraph()
-            story.append(Paragraph(f"• {inline(line[2:])}", style["bullet"]))
+            story.append(Paragraph(inline(line[2:]), style["bullet"], bulletText="-"))
         elif re.match(r"^\d+\. ", line):
             flush_paragraph()
             story.append(Paragraph(inline(line), style["bullet"]))

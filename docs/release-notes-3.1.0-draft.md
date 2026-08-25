@@ -10,7 +10,9 @@ The release adds an executable conceptual-integrity gate so cheap feature creati
 
 Normal Work Queue agent execution now requires an adaptive execution recipe. Worker placement remains a scheduler decision; provider/model routing and scaffolding are separately inspectable. The execution receives only a central tool-policy gateway, and each invocation is revalidated against the recipe grant, current capability/privilege policy, lease generation, ownership generation and human takeover. Process completion stops at verification pending rather than accepted.
 
-This does not yet make opaque CLI-internal tools individually visible to Agent Control, and current deterministic Job Actions remain control-owned handlers. Model-backed Actions and real external adapters must qualify their harness/gateway integration before the universal tool-policy acceptance criterion can be claimed.
+This does not make opaque CLI-internal tools individually visible to Agent Control. The qualified `HarnessJobAgentAction` is the sole model-backed Job bridge: it enters `HarnessDispatcher`, constructs a policy-bound recipe, mediates returned Agent Control tool requests and stops at verification pending. Other model-backed Actions and external adapters must independently qualify that same harness/gateway integration before universal adapter coverage can be claimed.
+
+Bootstrap and status reporting are deliberately fail closed. `npm run init` creates only an empty schema-valid configuration when none exists and never overwrites existing operator state. A machine-readable implementation-status registry, generated Markdown projection and `npm run check:status` gate distinguish implemented, qualified, partial and planned capabilities so documentation claims cannot silently drift ahead of executable evidence.
 
 Security defaults remain conservative: localhost binding, observer-only operation without a configured token, bearer-authenticated JSON mutations, origin validation, secret redaction, no authority cookies and no direct web route for leases, scheduler internals or PTY input. Human takeover remains unconditional.
 

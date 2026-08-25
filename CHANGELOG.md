@@ -24,6 +24,8 @@
 - A versioned Agent Control 3.1.0 Operator Guide covering installation, deployment patterns, the dashboard, Job scheduler operation, monitoring and recovery, with a rendered PDF under the 3.1.0 release assets.
 - A disabled twice-daily Europe/London reference Schedule and safe non-production events workflow qualification.
 - A switchable Windows OpenAI provider selection: `auto` prefers a configured Responses API key and otherwise uses official `codex exec` with saved ChatGPT-plan authentication. Both routes are live `SUPPORTED+QUALIFIED`. Returned Agent Control tool requests remain mediated through `ToolPolicy`; no desktop-window automation is claimed.
+- A safe, idempotent `npm run init` bootstrap that creates only an empty schema-valid configuration, preserves existing operator state byte-for-byte and fails closed on invalid state.
+- A machine-readable implementation/qualification registry with generated Markdown projection and a stale-claim gate in `npm run check`.
 
 ### Changed
 

@@ -2,6 +2,8 @@
 
 Date: 2026-08-24 (Europe/London)
 
+Updated: 2026-08-25 (Europe/London)
+
 ## Source verified
 
 - `README.md` documents installation, dashboard access, Jobs/Schedules, monitoring, safety and the current guide location.
@@ -13,12 +15,12 @@ Date: 2026-08-24 (Europe/London)
 ## Experimentally verified
 
 - The 3.1.0 Markdown source was packaged byte-for-byte as `assets/releases/3.1.0/Agent-Control-3.1.0-Operator-Guide.md` and rendered with ReportLab into the companion PDF.
-- Markdown SHA-256: `4eca4576779bc588c0a264767a0c9acbf7252867f99c9652954a9ce4f5078a28`.
+- Markdown SHA-256: `a774f72faa9a57f7c85ee88ae09443732b4e280c289645a08c223967fed18935`.
 - The updated guide contains eight A4 pages. Text extraction confirmed the adaptive-harness, `ToolInvocationGateway`, `verification-pending`, Windows OpenAI return-data, explicit qualification status and Job sections.
 - All eight pages were rendered to PNG with Poppler and visually inspected at readable resolution. No clipped text, overlap, broken table, unreadable code block or footer defect was observed.
-- PDF SHA-256: `d5351b177b77abca2ab6a7338f29f9c685ed5f7fd19e0139060a27ae4d1f0941`.
+- PDF SHA-256: `2aa71d288cb52ee63f9760e98bd6b27d66b1ca238284f1389a74944f5c038411`.
 - Repository tests assert that the release Markdown equals the canonical source, contains the dashboard/scheduler authority boundary, and that the versioned PDF is a non-empty PDF with the expected title and EOF marker.
-- Current adaptive-harness branch gate: 246/246 tests passed, 0 failed, 0 skipped; TypeScript, dashboard syntax, bootstrap JavaScript syntax and infrastructure neutrality also passed. The complete `npm run check` reached Bash syntax after TypeScript passed, but this Windows host has neither Git Bash nor an installed WSL distribution; all platform-independent gates were therefore rerun separately and passed.
+- Current adaptive-harness branch gate: 253/253 tests passed, 0 failed, 0 skipped; TypeScript, dashboard syntax, bootstrap/status JavaScript syntax, implementation-status validation and infrastructure neutrality also passed. This Windows host has neither Git Bash nor an installed WSL distribution; all platform-independent gates were therefore run directly and passed. No shell file changed in the truthful-bootstrap update.
 - Windows OpenAI return-data supports automatic authentication selection: a present `OPENAI_API_KEY` selects the Responses API, while an absent key selects the saved ChatGPT-plan Codex login. Both routes completed real model-backed Jobs, centrally authorised their returned tool requests and produced verified artifacts. The earlier Responses HTTP 429 is retained as failed-attempt evidence rather than overwritten.
 - Safe Job qualification: `PASS_SAFE_NON_PRODUCTION`, Run `run-d3e3ef69-9e35-446c-912d-7b733edfdfb8`, evidence SHA-256 `f9d77fe583eea1ee3de6333408bf0d31ebeb33847b0be46e0dc1ed053fefaf34`.
 
