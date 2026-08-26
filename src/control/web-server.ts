@@ -40,6 +40,7 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   if (method === 'GET' && url.pathname === '/api/runs') return json(response, 200, service.runs(url.searchParams.get('jobId') ?? undefined));
   if (method === 'GET' && url.pathname === '/api/queue') return json(response, 200, service.jobQueue());
   if (method === 'GET' && url.pathname === '/api/workers') return json(response, 200, service.workers());
+  if (method === 'GET' && url.pathname === '/api/nodes') return json(response, 200, service.nodes());
   if (method === 'GET' && url.pathname === '/api/resources') return json(response, 200, service.resourceLocks());
   if (method === 'GET' && url.pathname === '/api/artifacts') return json(response, 200, service.artifacts(url.searchParams.get('runId') ?? undefined));
   const jobMatch = url.pathname.match(/^\/api\/jobs\/([^/]+)(?:\/(runs|run))?$/), runMatch = url.pathname.match(/^\/api\/runs\/([^/]+)(?:\/(cancel|retry|approve))?$/), scheduleMatch = url.pathname.match(/^\/api\/schedules\/([^/]+)\/(enable|disable)$/), artifactMatch = url.pathname.match(/^\/api\/artifacts\/([^/]+)$/);

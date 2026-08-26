@@ -1,7 +1,7 @@
 {
   "schema": "agent-control.implementation-status/v1",
   "release": "3.1.0-development",
-  "updated": "2026-08-25",
+  "updated": "2026-08-26",
   "capabilities": [
     {
       "id": "bootstrap.safe-empty-config",
@@ -11,6 +11,23 @@
       "sources": ["scripts/config.mjs", "scripts/init-config.mjs"],
       "tests": ["scripts/init-config.test.mjs"],
       "evidence": ["docs/evidence/truthful-bootstrap-status-20260825.md"]
+    },
+    {
+      "id": "status.universal-authoritative-command",
+      "title": "Universal authoritative status command",
+      "status": "IMPLEMENTED",
+      "summary": "The same agent-control status command reads the versioned AgentControlService projection used by the web dashboard, locally or through one fixed read-only localhost request over SSH.",
+      "sources": ["scripts/agent-control.mjs", "scripts/status-client.mjs", "src/control/application-service.ts"],
+      "tests": ["scripts/agent-control.test.mjs", "scripts/status-client.test.mjs", "src/control/application-service.test.ts", "src/control/web-server.test.ts"]
+    },
+    {
+      "id": "nodes.generic-linux-management",
+      "title": "Generic managed Linux nodes",
+      "status": "QUALIFIED",
+      "summary": "Authorised Linux/SSH resources receive fixed read-only discovery, heartbeat and workload projection plus typed governed inspection and maintenance Actions without an arbitrary remote-command path.",
+      "sources": ["src/control/managed-node.ts", "src/control/managed-node-ssh.ts", "src/control/managed-node-actions.ts"],
+      "tests": ["src/control/managed-node.test.ts", "src/control/managed-node-ssh.test.ts", "src/control/managed-node-actions.test.ts"],
+      "evidence": ["docs/evidence/macubuntu-managed-node-qualification-20260826.md"]
     },
     {
       "id": "harness.default-work-dispatch",

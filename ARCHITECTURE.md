@@ -24,6 +24,8 @@ This is the authoritative development boundary for 3.1.0. The tagged 3.0.1 infra
 14. Process completion, collected evidence, verification and Run success are separate states.
 15. An agent may request or propose capability; only Agent Control policy may qualify and grant it.
 16. A recipe constructs an execution environment but cannot schedule work, acquire authority, write a PTY or accept a result.
+17. A managed node is a configured resource plus discovered capabilities; its hostname, transport, hardware and workload identity never become control-plane policy.
+18. Remote maintenance is a typed Action with approval and evidence, never an arbitrary SSH command string.
 
 ## System boundary and adaptive harness
 
@@ -136,6 +138,10 @@ Recovery distinguishes starting, running, paused, human-owned, completed, failed
 
 The versioned configuration contains resources, providers, services and lanes. A resource has a stable logical ID plus an independent transport (`local`, `ssh`, `http` or `orca`). Hardware details are optional metadata, not product identity. No provider or managed service is registered unless configured.
 
+An authorised Linux/SSH resource may opt into the generic managed-node adapter. The adapter sends a fixed, versioned read-only probe over its existing SSH transport, projects heartbeat/inventory/workload state and synchronises observed capabilities into the Worker Registry. Declarative workload detectors and approved-service allowlists remain configuration; hostnames, secure-overlay addresses, usernames, device names and credentials are never product constants. Probe loss preserves the last observation as degraded before expiring offline, and later complete evidence recovers it.
+
+Managed-node execution is split into read-only inspection and typed maintenance Actions. The controller validates operation, parameter form, service allowlist, runtime target, current heartbeat and approvals before streaming one reviewed action script. The remote script validates its typed operands again. It never receives `sh -c` or an operator-provided command. An active protected workload marks the node BUSY, blocks configured disruptive/competing scheduling capabilities and requires the stronger protected-workload override for maintenance. Job leases, locks, approval waits, cancellation, verification, artifacts and provenance remain in the existing control plane.
+
 Configuration rejects embedded secret-like fields and credentialed URLs. Credentials are supplied through separately named environment variables. State defaults to `.agent-control/`; the path is overrideable.
 
 ## Scheduling and execution
@@ -163,6 +169,8 @@ The HTTP API is read-only by default. Mutation requires a configured bearer toke
 Human takeover calls the existing PTY registry fence. A human-owned lane cannot resume autonomous execution until ownership is deliberately returned and the scheduler revalidates execution. There is no weaker web-only ownership model.
 
 The dashboard's default Jobs workspace is an operational projection, not an additional scheduler. It reads catalog definitions, Schedule state, queue reasons, worker capability/capacity, resource locks, Run history, step verification and artifact provenance from `JobRuntime` through `AgentControlService`. Run, schedule enable/disable, cancel, whole-Run retry and exact named approval commands return through authenticated service methods. Artifact projections expose identity, checksum and provenance but not managed storage paths. A named approval is legal only while a matching step is authoritatively `WAITING_FOR_APPROVAL`.
+
+Managed-node snapshots are another `AgentControlService` resource projection, exposed through the shared system status and `GET /api/nodes`. The web dashboard, TUI and universal status command render that same versioned state; none probes hosts or owns heartbeat/workload policy independently.
 
 ## Verification and provenance
 

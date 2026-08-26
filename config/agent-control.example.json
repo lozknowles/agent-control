@@ -13,7 +13,32 @@
       "name": "Remote worker",
       "platform": "linux",
       "transport": {"type": "ssh", "host": "worker-1.example", "port": 22, "user": "operator", "identityFile": "~/.ssh/worker-1"},
-      "capabilities": ["harness.codex"]
+      "capabilities": ["harness.codex"],
+      "managedNode": {
+        "enabled": true,
+        "probeIntervalSeconds": 30,
+        "offlineAfterSeconds": 90,
+        "approvedServices": ["example-workload.service"],
+        "connectivity": [
+          {
+            "id": "private-overlay",
+            "label": "Private overlay",
+            "capability": "transport.secure-overlay",
+            "serviceUnit": "overlay-agent.service",
+            "interfaceName": "overlay0"
+          }
+        ],
+        "workloads": [
+          {
+            "id": "media-copy",
+            "capability": "workload.media-copy",
+            "protected": true,
+            "systemdUnit": "example-workload.service",
+            "processExecutables": ["media-copy-worker"],
+            "opticalAccess": true
+          }
+        ]
+      }
     },
     {
       "id": "android-1",

@@ -14,6 +14,8 @@ This does not make opaque CLI-internal tools individually visible to Agent Contr
 
 Bootstrap and status reporting are deliberately fail closed. `npm run init` creates only an empty schema-valid configuration when none exists and never overwrites existing operator state. A machine-readable implementation-status registry, generated Markdown projection and `npm run check:status` gate distinguish implemented, qualified, partial and planned capabilities so documentation claims cannot silently drift ahead of executable evidence.
 
+Generic Linux machines can now be registered as agentless managed nodes through an existing authorised SSH transport. Fixed discovery projects heartbeat, inventory, capabilities and protected workloads into the shared Worker Registry and dashboard/status surfaces. Typed inspection and maintenance Actions retain scheduler placement, locks, named approvals, checksummed artifacts and provenance; an active protected workload marks the node BUSY and fences disruptive or competing work. No arbitrary SSH command API is introduced.
+
 Security defaults remain conservative: localhost binding, observer-only operation without a configured token, bearer-authenticated JSON mutations, origin validation, secret redaction, no authority cookies and no direct web route for leases, scheduler internals or PTY input. Human takeover remains unconditional.
 
 This is a source release. It does not deploy Agent Control, expose a dashboard remotely, create credentials, alter production services, or weaken the 3.0.1 infrastructure-neutral boundary.

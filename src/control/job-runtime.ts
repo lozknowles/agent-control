@@ -39,6 +39,7 @@ export class WorkerRegistry {
       if (worker.health !== 'healthy') reasons.push(`health:${worker.health}`);
       if (worker.active >= worker.capacity) reasons.push('capacity_exhausted');
       for (const capability of required) {
+        if (worker.blockedCapabilities?.includes(capability)) reasons.push(`workload_blocked:${capability}`);
         if (!worker.capabilities.includes(capability)) reasons.push(`missing:${capability}`);
         const expiry = worker.capabilityExpiresAt?.[capability]; if (expiry && Date.parse(expiry) <= at.getTime()) reasons.push(`expired:${capability}`);
       }

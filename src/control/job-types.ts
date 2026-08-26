@@ -43,6 +43,7 @@ export interface WorkerRegistration {
   capacity: number;
   active: number;
   labels?: Record<string, string>;
+  blockedCapabilities?: string[];
   capabilityExpiresAt?: Record<string, string>;
   observedAt: string;
 }

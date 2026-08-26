@@ -4,6 +4,12 @@
 
 ### Added
 
+- Generic agentless Linux managed nodes over existing non-interactive SSH, with fixed read-only discovery, versioned heartbeat/inventory projections and no arbitrary remote-command path.
+- Managed-node `ONLINE`/`IDLE`/`BUSY`/`DEGRADED`/`OFFLINE` state, discovered capabilities, protected-workload detection, maintenance state, shared dashboard/TUI/API/status visibility and worker-registry synchronisation.
+- Typed, audited inspection and maintenance Job Actions with capability placement, service allowlists, named approvals, BUSY workload fencing, checksummed result artifacts and provenance.
+- A read-only managed-node qualification command and real generic-boundary qualification of an Ubuntu DVD worker without altering its workload.
+- One cross-platform `agent-control status` command that reads the versioned `AgentControlService` projection used by the web dashboard, either controller-local or through a fixed read-only localhost request over SSH from a configured worker node.
+- A non-secret, node-scoped status-client configuration and `--json` mode for the exact dashboard projection.
 - Default adaptive-harness dispatch for normal Work Queue agent executions, with durable/inspectable recipe identity and separate worker-placement/model-routing rationale.
 - A central `ToolInvocationGateway` that reauthorises every model-originated tool call against recipe grants, live capability/policy state, lease generation, ownership generation and human takeover.
 - Explicit named control operations for non-agent maintenance work; a control handler cannot act as an unrestricted legacy agent fallback.
@@ -29,6 +35,7 @@
 
 ### Changed
 
+- `npm run status` now uses the authoritative dashboard projection; the separate configured service/resource bootstrap probe remains available as `npm run status:bootstrap`.
 - TUI task submission, reroute and pause/resume now call the shared application service rather than mutating workspace state directly.
 - Routing and verification projections are first-class lane state and survive persistence/reload.
 - The full test gate is serialised to prevent persistence-focused tests from contaminating one another.
@@ -36,6 +43,8 @@
 
 ### Security and authority
 
+- Managed-node SSH uses one reviewed streamed script, batch public-key authentication, disabled forwarding, bounded output/time and separately validated typed arguments; no Job or approval can supply an arbitrary shell command.
+- Protected active workloads block power, optical, package/service mutation, destructive storage and configured competing capabilities unless the exact protected-workload override has been approved.
 - Harness construction cannot claim queue work, mutate placement, acquire authority, write a PTY or accept completion.
 - Secret-like runtime settings and credentialed runtime URLs fail closed before recipe fingerprinting or persistence.
 - The dashboard binds to `127.0.0.1` by default and is read-only when no operator token is configured.

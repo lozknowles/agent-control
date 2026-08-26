@@ -21,6 +21,34 @@ export interface AndroidNodeConfig {
   credentialEnv?: string;
 }
 
+export interface ManagedWorkloadConfig {
+  id: string;
+  capability: string;
+  protected?: boolean;
+  systemdUnit?: string;
+  processExecutables?: string[];
+  opticalAccess?: boolean;
+}
+
+export interface ManagedConnectivityConfig {
+  id: string;
+  label?: string;
+  capability: string;
+  serviceUnit?: string;
+  interfaceName?: string;
+}
+
+export interface ManagedNodeConfig {
+  enabled?: boolean;
+  probeIntervalSeconds?: number;
+  offlineAfterSeconds?: number;
+  workloads?: ManagedWorkloadConfig[];
+  connectivity?: ManagedConnectivityConfig[];
+  approvedServices?: string[];
+  busyBlockedCapabilities?: string[];
+  runtime?: {directory: string; branch: string};
+}
+
 export interface ResourceConfig {
   id: string;
   name?: string;
@@ -31,6 +59,7 @@ export interface ResourceConfig {
   controller?: boolean;
   healthUrl?: string;
   android?: AndroidNodeConfig;
+  managedNode?: ManagedNodeConfig;
   metadata?: Record<string, string | number | boolean>;
 }
 
@@ -95,6 +124,16 @@ function assertUrl(value: unknown, label: string) {
   }
 }
 
+function assertStringList(value: unknown, label: string, pattern: RegExp) {
+  if (value === undefined) return;
+  if (!Array.isArray(value) || value.some(item => typeof item !== 'string' || !pattern.test(item))) throw new Error(`invalid_${label}`);
+}
+
+function assertIntegerRange(value: unknown, label: string, minimum: number, maximum: number) {
+  if (value === undefined) return;
+  if (!Number.isSafeInteger(value) || Number(value) < minimum || Number(value) > maximum) throw new Error(`invalid_${label}`);
+}
+
 function rejectSecrets(value: unknown, trail = 'config') {
   if (!value || typeof value !== 'object') return;
   for (const [key, child] of Object.entries(value)) {
@@ -128,9 +167,50 @@ export function validateConfig(raw: unknown): AgentControlConfig {
     if (!['linux', 'windows', 'android', 'macos', 'remote', 'unknown'].includes(resource.platform)) throw new Error(`invalid_platform:${resource.id}`);
     if (!resource.transport || !['local', 'ssh', 'http', 'orca'].includes(resource.transport.type)) throw new Error(`invalid_transport:${resource.id}`);
     if (resource.transport.type === 'ssh' && !resource.transport.host) throw new Error(`ssh_host_required:${resource.id}`);
+    if (resource.transport.type === 'ssh') {
+      if (!/^[a-z0-9][a-z0-9._:%-]{0,252}$/i.test(resource.transport.host!)) throw new Error(`invalid_ssh_host:${resource.id}`);
+      if (resource.transport.user && !/^[a-z0-9._-]+$/i.test(resource.transport.user)) throw new Error(`invalid_ssh_user:${resource.id}`);
+      if (resource.transport.port !== undefined && (!Number.isSafeInteger(resource.transport.port) || resource.transport.port < 1 || resource.transport.port > 65535)) throw new Error(`invalid_ssh_port:${resource.id}`);
+    }
     if (resource.transport.type === 'http') assertUrl(resource.transport.baseUrl, `transport_${resource.id}`);
     if (resource.healthUrl) assertUrl(resource.healthUrl, `resource_${resource.id}`);
     if (!Array.isArray(resource.capabilities)) throw new Error(`invalid_capabilities:${resource.id}`);
+    if (resource.managedNode) {
+      if (resource.platform !== 'linux') throw new Error(`managed_node_linux_required:${resource.id}`);
+      if (resource.transport.type !== 'ssh') throw new Error(`managed_node_ssh_required:${resource.id}`);
+      assertIntegerRange(resource.managedNode.probeIntervalSeconds, `managed_node_probe_interval:${resource.id}`, 5, 3600);
+      assertIntegerRange(resource.managedNode.offlineAfterSeconds, `managed_node_offline_after:${resource.id}`, 10, 86400);
+      if (resource.managedNode.probeIntervalSeconds && resource.managedNode.offlineAfterSeconds && resource.managedNode.offlineAfterSeconds <= resource.managedNode.probeIntervalSeconds) throw new Error(`managed_node_offline_after_probe:${resource.id}`);
+      assertStringList(resource.managedNode.approvedServices, `managed_node_services:${resource.id}`, /^[a-z0-9@_.:-]+\.(?:service|timer|socket)$/i);
+      assertStringList(resource.managedNode.busyBlockedCapabilities, `managed_node_blocked_capabilities:${resource.id}`, /^[a-z0-9][a-z0-9._-]{0,127}$/i);
+      if (resource.managedNode.connectivity !== undefined && !Array.isArray(resource.managedNode.connectivity)) throw new Error(`invalid_managed_node_connectivity:${resource.id}`);
+      const connectivityIds = new Set<string>();
+      for (const detector of resource.managedNode.connectivity ?? []) {
+        assertId(detector.id, 'connectivity');
+        if (connectivityIds.has(detector.id)) throw new Error(`duplicate_connectivity:${resource.id}:${detector.id}`);
+        connectivityIds.add(detector.id);
+        if (detector.label !== undefined && (typeof detector.label !== 'string' || !/^[a-z0-9][a-z0-9 ._-]{0,63}$/i.test(detector.label))) throw new Error(`invalid_connectivity_label:${resource.id}:${detector.id}`);
+        if (typeof detector.capability !== 'string' || !/^[a-z0-9][a-z0-9._-]{0,127}$/i.test(detector.capability)) throw new Error(`invalid_connectivity_capability:${resource.id}:${detector.id}`);
+        if (detector.serviceUnit && !/^[a-z0-9@_.:-]+\.service$/i.test(detector.serviceUnit)) throw new Error(`invalid_connectivity_unit:${resource.id}:${detector.id}`);
+        if (detector.interfaceName && !/^[a-z0-9][a-z0-9_.:-]{0,31}$/i.test(detector.interfaceName)) throw new Error(`invalid_connectivity_interface:${resource.id}:${detector.id}`);
+        if (!detector.serviceUnit && !detector.interfaceName) throw new Error(`connectivity_detector_required:${resource.id}:${detector.id}`);
+      }
+      if (resource.managedNode.workloads !== undefined && !Array.isArray(resource.managedNode.workloads)) throw new Error(`invalid_managed_node_workloads:${resource.id}`);
+      const workloadIds = new Set<string>();
+      for (const workload of resource.managedNode.workloads ?? []) {
+        assertId(workload.id, 'workload');
+        if (workloadIds.has(workload.id)) throw new Error(`duplicate_workload:${resource.id}:${workload.id}`);
+        workloadIds.add(workload.id);
+        if (typeof workload.capability !== 'string' || !/^[a-z0-9][a-z0-9._-]{0,127}$/i.test(workload.capability)) throw new Error(`invalid_workload_capability:${resource.id}:${workload.id}`);
+        if (workload.systemdUnit && !/^[a-z0-9@_.:-]+\.service$/i.test(workload.systemdUnit)) throw new Error(`invalid_workload_unit:${resource.id}:${workload.id}`);
+        assertStringList(workload.processExecutables, `workload_processes:${resource.id}:${workload.id}`, /^[a-z0-9][a-z0-9+._-]{0,127}$/i);
+      }
+      if (resource.managedNode.runtime) {
+        const runtime = resource.managedNode.runtime;
+        if (!/^\/[a-z0-9._/-]+$/i.test(runtime.directory) || runtime.directory === '/') throw new Error(`invalid_managed_node_runtime_directory:${resource.id}`);
+        if (!/^[a-z0-9][a-z0-9._/-]{0,127}$/i.test(runtime.branch)) throw new Error(`invalid_managed_node_runtime_branch:${resource.id}`);
+      }
+    }
   }
   for (const provider of config.providers) {
     assertId(provider.id, 'provider');

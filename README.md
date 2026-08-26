@@ -37,12 +37,14 @@ With no configuration file, Agent Control starts with a safe local lane and repo
 ```bash
 npm start
 npm run web
-npm run status
+agent-control status
 npm run up
 npm run qualify
 ```
 
-`npm start` opens the control-room TUI and its embedded web client. `npm run web` runs the same control service and web dashboard without the TUI for a headless operator host; run one authoritative control-plane process per state directory. `status` performs read-only health inspection. `up` starts only explicitly configured services/processes and records ownership. `down` stops only processes that the same Agent Control state directory recorded as owned.
+Run `npm link` once per installed node to expose the cross-platform `agent-control` package command. `agent-control status` (also available as `npm run status` inside the checkout) reads the same versioned `AgentControlService` projection as the web dashboard. A controller reads its localhost API; a worker uses a node-scoped SSH client configuration to perform one fixed read-only request against that same localhost API without exposing the dashboard listener. See [`docs/status-command.md`](docs/status-command.md). The older configured service/resource bootstrap inspection is retained as `npm run status:bootstrap`.
+
+`npm start` opens the control-room TUI and its embedded web client. `npm run web` runs the same control service and web dashboard without the TUI for a headless operator host; run one authoritative control-plane process per state directory. `agent-control status` is read-only. `up` starts only explicitly configured services/processes and records ownership. `down` stops only processes that the same Agent Control state directory recorded as owned.
 
 The TUI also starts the web dashboard on `http://127.0.0.1:4310` by default. The browser is an observer unless an operator token is explicitly configured:
 
@@ -54,6 +56,10 @@ npm start
 Enter that token using **Observer mode** in the dashboard. It is retained only in the browser tab's session storage and sent as a bearer header; Agent Control does not create a browser authority cookie. Use `AGENT_CONTROL_WEB_ENABLED=0` to disable the dashboard or `AGENT_CONTROL_WEB_PORT` to select another port. Binding beyond localhost is an explicit security decision and should be placed behind authenticated TLS with a matching `AGENT_CONTROL_WEB_ALLOWED_ORIGINS` allowlist.
 
 Monitor either interface for the same authoritative lanes, scheduler projection, providers, resources, PTY ownership, routing rationale and claim/evidence/verification state. The web terminal panel is observer-only; it never receives a PTY write primitive. Qualification writes timestamped JSON beneath ignored `qualification-results/`.
+
+Configured Linux/SSH resources can opt into the generic `managedNode` policy. Agent Control then streams a fixed read-only inventory probe over the existing non-interactive SSH route, synchronises discovered capabilities and workload state into the Worker Registry, and shows the same heartbeat, `IDLE`/`BUSY`/`DEGRADED`/`OFFLINE` state, load, memory, storage, current workload and maintenance status in the dashboard, TUI, API and `agent-control status`. It installs no daemon and exposes no arbitrary SSH command surface.
+
+Managed-node inspection and maintenance are typed Job Actions. Package/service/runtime/power operations require a named approval; an active protected workload additionally requires `managed-node.protected-workload-override`, and configured disruptive or competing capabilities are unavailable for placement while BUSY. See [`docs/managed-nodes.md`](docs/managed-nodes.md) for generic onboarding, discovery, operation and failure behavior.
 
 The dashboard opens on the **Jobs** catalog. A Job can be started manually from the dashboard, requested through the authenticated API, or created by a timezone-aware Schedule; every trigger calls the same `createRun` path. Job detail includes schedule state, structured step progress, verification, placement, immutable artifact metadata and provenance. Queue inspection exposes age, priority, waiting reason, missing capabilities, eligible workers and resource locks; searchable Run history exposes duration and selected workers. Safe cancel, retry and named-approval controls still enter through `AgentControlService`. Use **Lanes** for interactive agent work. Press `J` in the TUI for the same authoritative Job/Schedule/Run projection.
 
@@ -77,6 +83,8 @@ The versioned JSON schema has four independent collections:
 - `lanes`: lane identity, working directory, priority and AUTO/MANUAL mode.
 
 Resource identity is separate from transport. A resource may be local, SSH, HTTP or Orca-backed. An SSH hostname is transport metadata, not the resource ID. Ports are configurable numbers. Optional unavailable services do not make an otherwise valid zero-provider installation fail.
+
+For a managed Linux resource, `managedNode` adds polling/heartbeat policy, declarative protected-workload detectors, approved services, BUSY capability fences and an optional operator-reviewed runtime update target. Hardware, package tools, filesystems, optical devices, secure-overlay state and operational capabilities are discovered rather than assumed. Real endpoints and workload identifiers remain operator configuration, never core defaults.
 
 See [`config/agent-control.example.json`](config/agent-control.example.json), [`ARCHITECTURE.md`](ARCHITECTURE.md), and [`docs/concepts.md`](docs/concepts.md). The older [`docs/architecture-v2-agnostic.md`](docs/architecture-v2-agnostic.md) remains a configuration-neutrality appendix.
 

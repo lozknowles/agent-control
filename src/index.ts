@@ -17,7 +17,7 @@ import {AndroidRecovery, type AndroidRecoveryState} from './control/android-reco
 import {AgentControlService} from './control/application-service.js';
 import {startWebDashboard} from './control/web-server.js';
 import {ContextStore} from './control/context.js';
-import {buildJobRuntime, startJobScheduler} from './control/job-bootstrap.js';
+import {buildJobRuntime, startJobScheduler, startManagedNodeMonitoring} from './control/job-bootstrap.js';
 
 const now = () => new Date().toISOString();
 const config = loadConfig();
@@ -43,7 +43,9 @@ const control = new AgentControlService(state, ptys, providers).configureProject
   resources: config.resources.map(resource => ({id: resource.id, name: resource.name ?? resource.id, platform: resource.platform, transport: resource.transport.type, capabilities: [...resource.capabilities]})),
   contextStore: ContextStore.load(),
   jobRuntime,
+  managedNodes: jobRuntime.managedNodes,
 });
+startManagedNodeMonitoring(jobRuntime, snapshot => control.events.emit('resource.node_changed', {resourceId: snapshot.resourceId, state: snapshot.state, health: snapshot.health, currentWorkload: snapshot.currentWorkload}, undefined, 'managed-node-monitor'));
 startJobScheduler(jobRuntime, (runId, status) => control.events.emit('job.run_changed', {runId, status}, undefined, 'job-scheduler'));
 const androidResource = config.resources.find(resource => resource.platform === 'android' && resource.android);
 let androidState: AndroidRecoveryState | undefined = androidResource ? {resourceId: androidResource.id, state: 'offline', detail: 'not probed', recovered: false} : undefined;
@@ -113,7 +115,8 @@ function render() {
   const jobRuns = jobRuntime.ledger.list(), jobQueued = jobRuntime.queueProjection();
   workPanel.setContent(`${view.queue}\n\n{cyan-fg}JOBS{/cyan-fg} ${jobRuntime.catalog.listJobs().length}  {yellow-fg}Q ${jobQueued.length}{/yellow-fg}  {green-fg}OK ${jobRuns.filter(run => run.status === 'SUCCEEDED').length}{/green-fg}\n${jobRuns.slice(0, 2).map(run => ` ${short(run.jobId, 13).padEnd(13)} ${tag(run.status, run.status)}`).join('\n')}`);
   const providerRows = providers.list().map(provider => { const status = providers.health(provider.id); return `${icon(status?.health)} ${short(provider.name, 13)} ${tag(status?.health ?? 'unknown', status?.health ?? 'unknown')}\n  {gray-fg}${short(status?.detail ?? '', 24)}{/gray-fg}`; });
-  tools.setContent([`{cyan-fg}ANDROID RECOVERY{/cyan-fg} ${androidAuto ? '{magenta-fg}AUTO{/magenta-fg}' : '{gray-fg}MANUAL{/gray-fg}'}`, view.resources, '', `{cyan-fg}PROVIDERS{/cyan-fg}`, ...(providerRows.length ? providerRows : ['{gray-fg}UNCONFIGURED{/gray-fg}'])].join('\n'));
+  const nodeRows = control.snapshot().resources.filter(resource => resource.node).map(resource => `${icon(resource.health)} ${short(resource.name, 12)} ${tag(resource.node!.state, resource.node!.state)}\n  {gray-fg}${short(resource.node!.currentWorkload ?? `load ${resource.node!.cpu?.load.one ?? '--'}`, 24)}{/gray-fg}`);
+  tools.setContent([`{cyan-fg}MANAGED NODES{/cyan-fg}`, ...(nodeRows.length ? nodeRows : ['{gray-fg}UNCONFIGURED{/gray-fg}']), '', `{cyan-fg}ANDROID RECOVERY{/cyan-fg} ${androidAuto ? '{magenta-fg}AUTO{/magenta-fg}' : '{gray-fg}MANUAL{/gray-fg}'}`, view.resources, '', `{cyan-fg}PROVIDERS{/cyan-fg}`, ...(providerRows.length ? providerRows : ['{gray-fg}UNCONFIGURED{/gray-fg}'])].join('\n'));
   footer.setContent(' Tab Lane  I Command  T PTYs  J Jobs  W Queue  G Providers  X Android  P Pause  Q Quit');
   screen.render();
 }

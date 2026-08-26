@@ -32,11 +32,14 @@ Read projections:
 - `GET /api/jobs`, `GET /api/jobs/:id`, `GET /api/jobs/:id/runs`
 - `GET /api/schedules`, `GET /api/runs`, `GET /api/runs/:id`
 - `GET /api/queue`, `GET /api/workers`, `GET /api/resources`
+- `GET /api/nodes` (managed-node heartbeat, inventory, workload and maintenance projection)
 - `GET /api/artifacts/:id` (metadata and checksum, not secret content)
 
 Authenticated Job requests are `POST /api/jobs/:id/run`, schedule `enable`/`disable`, and Run `cancel`, `retry` and `approve`. They call `AgentControlService`, which delegates to the one authoritative `JobRuntime`. The HTTP layer cannot register a worker, grant a capability, edit a manifest, acquire a resource lock, dispatch an Action or write a PTY.
 
 Operator requests under `/api/lanes/:id/` include `pause`, `resume`, `priority`, `mode`, `task`, `reroute`, `handoff`, `clone`, `cancel`, `takeover`, `return-ownership` and verification transitions. These endpoints call application-service methods. There is deliberately no direct lease, scheduler-state, persistence, terminal-input or execution-provider endpoint.
+
+The prominent **Managed Nodes** panel renders the same resource-attached snapshot returned by `/api/status` and `/api/nodes`: state, OS/kernel, heartbeat, uptime, load, memory, workload, maintenance state, secure-overlay connectivity, storage and capabilities. It is an observation panel, not a remote shell. Node operations are created as governed Jobs through the existing scheduler and approval path.
 
 ## Security model
 

@@ -1,12 +1,14 @@
 # Implementation status
 
-Release boundary: **3.1.0-development**. Registry updated: **2026-08-25**.
+Release boundary: **3.1.0-development**. Registry updated: **2026-08-26**.
 
 This document is generated from `config/implementation-status.json`. Update the registry and run `npm run status:implementation -- --write`; do not edit this projection directly. `IMPLEMENTED` means executable source and focused tests exist. `QUALIFIED` additionally requires recorded real evidence. `PARTIAL`, `PLANNED` and `NOT_IMPLEMENTED` remain explicit gaps.
 
 | Capability | Status | Executable truth | Remaining boundary |
 | --- | --- | --- | --- |
 | Safe empty-configuration bootstrap (`bootstrap.safe-empty-config`) | **IMPLEMENTED** | An idempotent initializer creates a schema-valid empty configuration without discovering infrastructure or overwriting operator state. | None recorded. |
+| Universal authoritative status command (`status.universal-authoritative-command`) | **IMPLEMENTED** | The same agent-control status command reads the versioned AgentControlService projection used by the web dashboard, locally or through one fixed read-only localhost request over SSH. | None recorded. |
+| Generic managed Linux nodes (`nodes.generic-linux-management`) | **QUALIFIED** | Authorised Linux/SSH resources receive fixed read-only discovery, heartbeat and workload projection plus typed governed inspection and maintenance Actions without an arbitrary remote-command path. | None recorded. |
 | Default adaptive-harness dispatch (`harness.default-work-dispatch`) | **IMPLEMENTED** | Normal WorkExecutor agent work builds and records an ExecutionRecipe and receives only a live policy gateway. | None recorded. |
 | Central live ToolPolicy gateway (`tools.central-live-policy`) | **IMPLEMENTED** | Gateway tools are checked against recipe grants, worker compatibility, live lease and ownership generations, approvals and human ownership. | None recorded. |
 | Job Catalog, scheduler and Run Ledger (`jobs.catalog-scheduler-ledger`) | **IMPLEMENTED** | Versioned Jobs and Schedules produce durable Runs with capability placement, locks, retries, artifacts, approvals and recovery. | None recorded. |
@@ -27,6 +29,17 @@ This document is generated from `config/implementation-status.json`. Update the 
 - Source: [`scripts/config.mjs`](../scripts/config.mjs), [`scripts/init-config.mjs`](../scripts/init-config.mjs)
 - Tests: [`scripts/init-config.test.mjs`](../scripts/init-config.test.mjs)
 - Qualification evidence: [`docs/evidence/truthful-bootstrap-status-20260825.md`](../docs/evidence/truthful-bootstrap-status-20260825.md)
+
+### Universal authoritative status command
+
+- Source: [`scripts/agent-control.mjs`](../scripts/agent-control.mjs), [`scripts/status-client.mjs`](../scripts/status-client.mjs), [`src/control/application-service.ts`](../src/control/application-service.ts)
+- Tests: [`scripts/agent-control.test.mjs`](../scripts/agent-control.test.mjs), [`scripts/status-client.test.mjs`](../scripts/status-client.test.mjs), [`src/control/application-service.test.ts`](../src/control/application-service.test.ts), [`src/control/web-server.test.ts`](../src/control/web-server.test.ts)
+
+### Generic managed Linux nodes
+
+- Source: [`src/control/managed-node.ts`](../src/control/managed-node.ts), [`src/control/managed-node-ssh.ts`](../src/control/managed-node-ssh.ts), [`src/control/managed-node-actions.ts`](../src/control/managed-node-actions.ts)
+- Tests: [`src/control/managed-node.test.ts`](../src/control/managed-node.test.ts), [`src/control/managed-node-ssh.test.ts`](../src/control/managed-node-ssh.test.ts), [`src/control/managed-node-actions.test.ts`](../src/control/managed-node-actions.test.ts)
+- Qualification evidence: [`docs/evidence/macubuntu-managed-node-qualification-20260826.md`](../docs/evidence/macubuntu-managed-node-qualification-20260826.md)
 
 ### Default adaptive-harness dispatch
 

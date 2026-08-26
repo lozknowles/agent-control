@@ -7,6 +7,7 @@ import {VerificationService} from './verification.js';
 import type {RouteDecision} from './routing.js';
 import type {ContextStore} from './context.js';
 import type {JobRuntime} from './job-runtime.js';
+import type {ManagedNodeManager, ManagedNodeSnapshot} from './managed-node.js';
 
 export type ControlEventType =
   | 'system.snapshot'
@@ -21,6 +22,7 @@ export type ControlEventType =
   | 'ownership.returned'
   | 'verification.changed'
   | 'provider.health_changed'
+  | 'resource.node_changed'
   | 'system.paused_changed'
   | 'job.run_created'
   | 'job.run_cancelled'
@@ -58,13 +60,15 @@ export interface LaneProjection {
 }
 
 export interface SystemProjection {
+  schema: 'agent-control.system-status/v1';
+  authority: 'AgentControlService';
   version: string;
   health: 'healthy' | 'degraded';
   paused: boolean;
   scheduler: {nextLaneId: number | null; waiting: number; active: number; paused: number};
   lanes: LaneProjection[];
   providers: Array<{id: string; name: string; kind: string; health: string; capabilities: string[]}>;
-  resources: Array<{id: string; name: string; platform: string; transport: string; capabilities: string[]}>;
+  resources: Array<{id: string; name: string; platform: string; transport: string; capabilities: string[]; health: 'unknown' | 'healthy' | 'degraded' | 'offline'; capacity?: number; active?: number; observedAt: string | null; node?: ManagedNodeSnapshot}>;
   outstandingApprovals: number;
   lastRestorePoint: string | null;
   observedAt: string;
@@ -93,9 +97,10 @@ export class AgentControlService {
   readonly events = new ControlEventBus();
   private readonly routeDecisions = new Map<number, RouteDecision>();
   private approvalCount: () => number = () => 0;
-  private resourceRows: SystemProjection['resources'] = [];
+  private resourceRows: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>> = [];
   private contextStore?: ContextStore;
   private jobRuntime?: JobRuntime;
+  private managedNodes?: ManagedNodeManager;
 
   constructor(
     readonly state: WorkspaceState,
@@ -108,27 +113,32 @@ export class AgentControlService {
     this.verification = new VerificationService(state, persist);
   }
 
-  configureProjection(extras: {approvalCount?: () => number; resources?: SystemProjection['resources']; contextStore?: ContextStore; jobRuntime?: JobRuntime}) {
+  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager}) {
     if (extras.approvalCount) this.approvalCount = extras.approvalCount;
     if (extras.resources) this.resourceRows = structuredClone(extras.resources);
     if (extras.contextStore) this.contextStore = extras.contextStore;
     if (extras.jobRuntime) this.jobRuntime = extras.jobRuntime;
+    if (extras.managedNodes) this.managedNodes = extras.managedNodes;
     return this;
   }
 
   snapshot(): SystemProjection {
     const lanes = this.state.lanes.map(lane => this.projectLane(lane));
     const providerRows = this.providers?.list().map(provider => ({id: provider.id, name: provider.name, kind: provider.kind, health: this.providers?.health(provider.id)?.health ?? 'unknown', capabilities: [...provider.capabilities]})) ?? [];
-    const degraded = this.state.lanes.some(lane => lane.status === 'error') || providerRows.some(provider => provider.health === 'offline');
+    const workers = new Map((this.jobRuntime?.workers.list() ?? []).map(worker => [worker.id, worker]));
+    const resourceRows = this.resourceRows.map(resource => { const worker = workers.get(resource.id), node = this.managedNodes?.get(resource.id); return {...resource, capabilities: node?.capabilities ?? resource.capabilities, health: node?.health ?? worker?.health ?? 'unknown', capacity: worker?.capacity, active: worker?.active, observedAt: node?.lastProbeAt ?? worker?.observedAt ?? null, ...(node ? {node} : {})}; });
+    const degraded = this.state.lanes.some(lane => lane.status === 'error') || providerRows.some(provider => provider.health === 'offline') || resourceRows.some(resource => ['degraded', 'offline'].includes(resource.health));
     const jobRuns = this.jobRuntime?.ledger.list() ?? [], jobDefinitions = this.jobRuntime?.catalog.listJobs() ?? [], schedules = this.jobRuntime?.catalog.listSchedules() ?? [];
     return {
+      schema: 'agent-control.system-status/v1',
+      authority: 'AgentControlService',
       version: this.version,
       health: degraded ? 'degraded' : 'healthy',
       paused: this.state.paused,
       scheduler: {nextLaneId: this.plane.chooseNextLane()?.id ?? null, waiting: lanes.filter(lane => lane.status === 'waiting').length, active: lanes.filter(lane => lane.status === 'working').length, paused: lanes.filter(lane => lane.status === 'paused').length},
       lanes,
       providers: providerRows,
-      resources: structuredClone(this.resourceRows),
+      resources: structuredClone(resourceRows),
       outstandingApprovals: this.approvalCount(),
       lastRestorePoint: this.state.lastRestorePoint,
       observedAt: new Date().toISOString(),
@@ -148,6 +158,7 @@ export class AgentControlService {
   setScheduleEnabled(id: string, enabled: boolean, actor: string) { const state = this.mustJobRuntime().setScheduleEnabled(id, enabled); this.events.emit('job.schedule_changed', {scheduleId: id, enabled}, undefined, actor); return state; }
   jobQueue() { return this.mustJobRuntime().queueProjection(); }
   workers() { return this.mustJobRuntime().workers.list(); }
+  nodes() { return this.managedNodes?.list() ?? []; }
   resourceLocks() { return this.mustJobRuntime().locks.list(); }
   artifacts(runId?: string) { return this.mustJobRuntime().artifacts.list(runId).map(value => { const {storageRef: _storageRef, ...metadata} = value; return {...metadata, storage: 'agent-control-managed'}; }); }
   artifact(id: string) { const value = this.mustJobRuntime().artifacts.get(id); if (!value) throw new Error('artifact_missing'); const {storageRef: _storageRef, ...metadata} = value; return {...metadata, storage: 'agent-control-managed'}; }

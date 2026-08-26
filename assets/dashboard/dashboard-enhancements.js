@@ -1,4 +1,4 @@
-const jobState = {jobs: [], runs: [], queue: [], workers: [], locks: [], artifacts: [], selectedJob: null, selectedRun: null, search: ''};
+const jobState = {jobs: [], runs: [], queue: [], workers: [], resources: [], locks: [], artifacts: [], selectedJob: null, selectedRun: null, search: ''};
 const terminalRunStatuses = new Set(['SUCCEEDED', 'FAILED', 'DEGRADED', 'CANCELLED', 'MISSED', 'DISCONNECTED']);
 const retryableRunStatuses = new Set(['FAILED', 'DEGRADED', 'CANCELLED', 'DISCONNECTED']);
 const baseRefresh = refresh;
@@ -11,7 +11,7 @@ refresh = async () => {
     if (!response.ok) throw new Error(`${url} ${response.status}`);
     return response.json();
   }));
-  Object.assign(jobState, {jobs, runs, queue, workers, locks, artifacts});
+  Object.assign(jobState, {jobs, runs, queue, workers, resources: state.snapshot?.resources || [], locks, artifacts});
   if (!jobState.selectedJob && jobs.length) jobState.selectedJob = jobs[0].metadata.id;
   if (jobState.selectedJob && !jobs.some(job => job.metadata.id === jobState.selectedJob)) jobState.selectedJob = jobs[0]?.metadata.id ?? null;
   renderJobs();
@@ -44,7 +44,7 @@ function safeHref(value) {
   catch { return null; }
 }
 function scheduleLabel(job) { return job.schedules.length ? job.schedules.map(item => `${item.spec.cron} ${item.spec.timezone}`).join(' · ') : 'Manual'; }
-function statusClass(status) { return ['FAILED', 'DEGRADED', 'DISCONNECTED'].includes(status) ? 'error' : ['QUEUED', 'WAITING_FOR_WORKER', 'WAITING_FOR_DEPENDENCY', 'WAITING_FOR_RESOURCE', 'WAITING_FOR_APPROVAL', 'RETRY_PENDING'].includes(status) ? 'waiting' : ''; }
+function statusClass(status) { return ['FAILED', 'DEGRADED', 'DISCONNECTED', 'OFFLINE'].includes(status) ? 'error' : ['BUSY', 'QUEUED', 'WAITING_FOR_WORKER', 'WAITING_FOR_DEPENDENCY', 'WAITING_FOR_RESOURCE', 'WAITING_FOR_APPROVAL', 'RETRY_PENDING'].includes(status) ? 'waiting' : ''; }
 function timeLabel(value, fallback = '--') { return value ? new Date(value).toLocaleString() : fallback; }
 function durationLabel(start, end) { if (!start) return 'Not started'; const milliseconds = Math.max(0, Date.parse(end || new Date().toISOString()) - Date.parse(start)); return milliseconds < 1000 ? `${milliseconds}ms` : `${Math.round(milliseconds / 1000)}s`; }
 function ageLabel(value) { if (!value) return '--'; const seconds = Math.max(0, Math.floor((Date.now() - Date.parse(value)) / 1000)); return seconds < 60 ? `${seconds}s` : seconds < 3600 ? `${Math.floor(seconds / 60)}m` : `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m`; }
@@ -57,8 +57,31 @@ function renderJobs() {
   renderJobDetail(selected);
   renderQueue();
   renderRunHistory();
+  renderManagedNodes();
   renderWorkersAndLocks();
   bindRunLinks();
+}
+
+function byteLabel(value) {
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']; let number = Number(value), unit = 0;
+  if (!Number.isFinite(number)) return '--';
+  while (number >= 1000 && unit < units.length - 1) { number /= 1000; unit++; }
+  return `${number.toFixed(unit > 1 ? 1 : 0)}${units[unit]}`;
+}
+
+function uptimeLabel(value) {
+  const seconds = Number(value); if (!Number.isFinite(seconds)) return '--';
+  const days = Math.floor(seconds / 86400), hours = Math.floor(seconds % 86400 / 3600), minutes = Math.floor(seconds % 3600 / 60);
+  return days ? `${days}d ${hours}h` : hours ? `${hours}h ${minutes}m` : `${minutes}m`;
+}
+
+function renderManagedNodes() {
+  const rows = jobState.resources.filter(resource => resource.node);
+  document.querySelector('#managed-node-list').innerHTML = rows.length ? rows.map(resource => {
+    const node = resource.node, memory = node.memory, busiest = [...(node.storage || [])].sort((a, b) => b.usedPercent - a.usedPercent)[0], load = node.cpu?.load;
+    const links = (node.connectivity || []).map(item => `${item.label} ${item.state}`).join(', ') || 'not configured';
+    return `<div class="compact-row worker-row managed-node-card"><strong>${esc(resource.name)}</strong><span class="status-pill ${statusClass(node.state)}">${esc(node.state)}</span><small>${esc(node.os?.name || resource.platform)} · ${esc(node.os?.kernel || 'kernel unknown')} · uptime ${esc(uptimeLabel(node.uptimeSeconds))}</small><small>Heartbeat ${esc(timeLabel(node.lastHeartbeatAt))} · load ${esc(load ? `${load.one}/${load.five}/${load.fifteen}` : '--')} · memory ${esc(memory ? `${byteLabel(memory.availableBytes)} free / ${byteLabel(memory.totalBytes)}` : '--')}</small><small>Workload ${esc(node.currentWorkload || 'none')} · maintenance ${esc(node.maintenance.state)} · connectivity ${esc(links)}${busiest ? ` · ${esc(busiest.mount)} ${esc(byteLabel(busiest.availableBytes))} free` : ''}</small><small>${esc(node.capabilities.join(', ') || 'No discovered capabilities')}</small></div>`;
+  }).join('') : '<div class="compact-empty">No managed nodes configured</div>';
 }
 
 function renderJobDetail(job) {

@@ -62,3 +62,13 @@ test('two Android models use one schema without becoming identity defaults', () 
   ], providers: [], services: [], lanes: []});
   assert.deepEqual(config.resources.map(resource => resource.metadata?.model), ['Vendor One', 'Vendor Two']);
 });
+
+test('generic managed Linux node policy is configuration and validates workload boundaries', () => {
+  const config = validateConfig({schemaVersion: 1, resources: [{id: 'linux-any', platform: 'linux', transport: {type: 'ssh', host: 'linux-any.example', user: 'operator'}, capabilities: [], managedNode: {enabled: true, probeIntervalSeconds: 15, offlineAfterSeconds: 45, approvedServices: ['disc-watch.service'], connectivity: [{id: 'private-overlay', label: 'Private overlay', capability: 'transport.secure-overlay', serviceUnit: 'overlay-agent.service', interfaceName: 'overlay0'}], workloads: [{id: 'disc-copy', capability: 'workload.dvd-rip', systemdUnit: 'disc-watch.service', processExecutables: ['disc-copy'], opticalAccess: true}], runtime: {directory: '/opt/agent-control', branch: 'integration/3.1'}}}], providers: [], services: [], lanes: []});
+  assert.equal(config.resources[0].managedNode?.workloads?.[0].id, 'disc-copy');
+  assert.equal(config.resources[0].managedNode?.connectivity?.[0].capability, 'transport.secure-overlay');
+  assert.throws(() => validateConfig({schemaVersion: 1, resources: [{id: 'bad', platform: 'linux', transport: {type: 'ssh', host: '-oProxyCommand=bad'}, capabilities: [], managedNode: {enabled: true}}], providers: [], services: [], lanes: []}), /invalid_ssh_host/);
+  assert.throws(() => validateConfig({schemaVersion: 1, resources: [{id: 'bad', platform: 'linux', transport: {type: 'local'}, capabilities: [], managedNode: {enabled: true}}], providers: [], services: [], lanes: []}), /managed_node_ssh_required/);
+  assert.throws(() => validateConfig({schemaVersion: 1, resources: [{id: 'bad', platform: 'linux', transport: {type: 'ssh', host: 'safe.example'}, capabilities: [], managedNode: {enabled: true, runtime: {directory: '/tmp/x;reboot', branch: 'main'}}}], providers: [], services: [], lanes: []}), /runtime_directory/);
+  assert.throws(() => validateConfig({schemaVersion: 1, resources: [{id: 'bad', platform: 'linux', transport: {type: 'ssh', host: 'safe.example'}, capabilities: [], managedNode: {enabled: true, connectivity: [{id: 'overlay', capability: 'transport.secure-overlay', interfaceName: '-oBad'}]}}], providers: [], services: [], lanes: []}), /connectivity_interface/);
+});

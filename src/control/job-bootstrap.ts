@@ -3,12 +3,17 @@ import type {AgentControlConfig} from './config.js';
 import {JobCatalog} from './job-catalog.js';
 import {createJobRuntime, WorkerRegistry} from './job-runtime.js';
 import {registerReferenceActions} from './reference-actions.js';
+import {ManagedNodeManager, type ManagedNodeSnapshot} from './managed-node.js';
+import {registerManagedNodeActions} from './managed-node-actions.js';
+import {SshManagedNodeTransport} from './managed-node-ssh.js';
 
 export function buildJobRuntime(config: AgentControlConfig, stateRoot = process.env.AGENT_CONTROL_STATE_DIR || path.resolve('.agent-control'), manifestDir = process.env.AGENT_CONTROL_JOB_DIR || path.resolve('config/jobs')) {
-  const actions = registerReferenceActions(), catalog = new JobCatalog(actions.ids()).loadDirectory(manifestDir), workers = WorkerRegistry.fromConfig(config.resources);
+  const workers = WorkerRegistry.fromConfig(config.resources), managedNodes = new ManagedNodeManager(config.resources, workers, new SshManagedNodeTransport()), actions = registerManagedNodeActions(managedNodes, registerReferenceActions()), catalog = new JobCatalog(actions.ids()).loadDirectory(manifestDir);
   for (const resource of config.resources) if (resource.transport.type === 'local') workers.setHealth(resource.id, 'healthy');
-  return createJobRuntime(stateRoot, catalog, actions, workers);
+  return Object.assign(createJobRuntime(stateRoot, catalog, actions, workers), {managedNodes});
 }
+
+export function startManagedNodeMonitoring(runtime: ReturnType<typeof buildJobRuntime>, onChange?: (snapshot: ManagedNodeSnapshot) => void) { return runtime.managedNodes.start(onChange); }
 
 export function startJobScheduler(runtime: ReturnType<typeof buildJobRuntime>, onChange?: (runId: string, status: string) => void, intervalMs = 1000) {
   let busy = false;
