@@ -1,6 +1,6 @@
 # Implementation status
 
-Release boundary: **3.1.0-development**. Registry updated: **2026-08-25**.
+Release boundary: **3.1.0-development**. Registry updated: **2026-08-26**.
 
 This document is generated from `config/implementation-status.json`. Update the registry and run `npm run status:implementation -- --write`; do not edit this projection directly. `IMPLEMENTED` means executable source and focused tests exist. `QUALIFIED` additionally requires recorded real evidence. `PARTIAL`, `PLANNED` and `NOT_IMPLEMENTED` remain explicit gaps.
 
@@ -19,6 +19,7 @@ This document is generated from `config/implementation-status.json`. Update the 
 | Qualified skill selection (`skills.qualified-selection`) | **IMPLEMENTED** | Only qualified, evidence-carrying skills may satisfy recipe capability requirements and skills cannot expand tool authority. | None recorded. |
 | Governed skill proposal and promotion (`skills.governed-lifecycle`) | **PLANNED** | Agents may eventually propose skills, but Agent Control must statically check, sandbox-test, qualify, approve and grant them. | No proposal, security-review, sandbox-qualification or promotion workflow is implemented. |
 | Automatic governed recipe learning (`recipes.automatic-learning`) | **PLANNED** | Successive halving exists, but winners are not automatically promoted into a durable governed recipe catalog. | Persist qualification evidence and require policy approval before learned recipes influence routing. |
+| Optional governed OpenVoice V2 synthesis (`audio.openvoice-v2-governed`) | **PARTIAL** | A manual-only Job provides fixed preflight, approved installation, CPU-first qualification, bounded GPU qualification, comparison and repository-hygiene Actions without enabling a resident service. | The capability is not advertised by default. Synthetic-fixture evidence does not prove subjective similarity or audible quality for a real authorised speaker. |
 
 ## Evidence map
 
@@ -90,3 +91,9 @@ This document is generated from `config/implementation-status.json`. Update the 
 
 - Source: [`src/control/experiments.ts`](../src/control/experiments.ts)
 - Tests: [`src/control/control.test.ts`](../src/control/control.test.ts)
+
+### Optional governed OpenVoice V2 synthesis
+
+- Source: [`src/control/openvoice-actions.ts`](../src/control/openvoice-actions.ts), [`config/jobs/openvoice-v2-install-qualify.job.yaml`](../config/jobs/openvoice-v2-install-qualify.job.yaml)
+- Tests: [`src/control/openvoice-actions.test.ts`](../src/control/openvoice-actions.test.ts)
+- Qualification evidence: [`docs/evidence/openvoice-v2-local-qualification-20260826.md`](../docs/evidence/openvoice-v2-local-qualification-20260826.md)

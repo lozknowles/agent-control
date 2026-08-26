@@ -1,7 +1,7 @@
 {
   "schema": "agent-control.implementation-status/v1",
   "release": "3.1.0-development",
-  "updated": "2026-08-25",
+  "updated": "2026-08-26",
   "capabilities": [
     {
       "id": "bootstrap.safe-empty-config",
@@ -114,6 +114,16 @@
       "sources": ["src/control/experiments.ts"],
       "tests": ["src/control/control.test.ts"],
       "limitation": "Persist qualification evidence and require policy approval before learned recipes influence routing."
+    },
+    {
+      "id": "audio.openvoice-v2-governed",
+      "title": "Optional governed OpenVoice V2 synthesis",
+      "status": "PARTIAL",
+      "summary": "A manual-only Job provides fixed preflight, approved installation, CPU-first qualification, bounded GPU qualification, comparison and repository-hygiene Actions without enabling a resident service.",
+      "sources": ["src/control/openvoice-actions.ts", "config/jobs/openvoice-v2-install-qualify.job.yaml"],
+      "tests": ["src/control/openvoice-actions.test.ts"],
+      "evidence": ["docs/evidence/openvoice-v2-local-qualification-20260826.md"],
+      "limitation": "The capability is not advertised by default. Synthetic-fixture evidence does not prove subjective similarity or audible quality for a real authorised speaker."
     }
   ]
 }

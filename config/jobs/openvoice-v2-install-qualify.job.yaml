@@ -1,0 +1,97 @@
+apiVersion: agent-control/v1
+kind: Job
+metadata:
+  id: openvoice-v2-install-qualify
+  name: OpenVoice V2 Install and Qualification
+  version: 1.0.0
+  description: Manual-only consent-gated installation, CPU-first qualification and bounded GPU evidence.
+spec:
+  enabled: true
+  priority: normal
+  concurrency: no-overlap
+  retry:
+    attempts: 0
+    backoffSeconds: 0
+  steps:
+    - id: preflight
+      name: Protected workload and hardware preflight
+      action: openvoice.v2.preflight@1.0.0
+      requires: [audio.openvoice-v2.governed]
+      resources: [repository/openvoice-v2]
+      outputs:
+        - name: report
+          type: application/vnd.agent-control.openvoice-preflight+json
+          schema: openvoice-v2.resource-snapshot/v1
+          version: 1.0.0
+      verification: [openvoice-preflight-safe]
+    - id: install
+      name: Isolated Python and model installation
+      action: openvoice.v2.install@1.0.0
+      requires: [audio.openvoice-v2.governed]
+      resources: [repository/openvoice-v2, python-environment/openvoice-v2, models/openvoice-v2]
+      dependsOn: [preflight]
+      approval: openvoice-v2-install
+      inputs:
+        preflight: preflight.report
+      outputs:
+        - name: report
+          type: application/vnd.agent-control.openvoice-install+json
+          schema: openvoice-v2.agent-control-install-action/v1
+          version: 1.0.0
+      verification: [openvoice-install-verified]
+    - id: cpu
+      name: CPU-first British English smoke
+      action: openvoice.v2.cpu-qualify@1.0.0
+      requires: [audio.openvoice-v2.governed]
+      resources: [repository/openvoice-v2, cpu/openvoice-v2-qualification]
+      dependsOn: [install]
+      inputs:
+        installation: install.report
+      outputs:
+        - name: report
+          type: application/vnd.agent-control.openvoice-qualification+json
+          schema: openvoice-v2.agent-control-qualification-action/v1
+          version: 1.0.0
+      verification: [openvoice-cpu-smoke-pass]
+    - id: gpu
+      name: Bounded Pascal GPU qualification or safe skip
+      action: openvoice.v2.gpu-qualify@1.0.0
+      requires: [audio.openvoice-v2.governed]
+      resources: [repository/openvoice-v2, gpu/openvoice-v2-qualification]
+      dependsOn: [cpu]
+      inputs:
+        cpu: cpu.report
+      outputs:
+        - name: report
+          type: application/vnd.agent-control.openvoice-qualification+json
+          schema: openvoice-v2.agent-control-qualification-action/v1
+          version: 1.0.0
+      verification: [openvoice-gpu-qualified-or-safely-skipped]
+    - id: compare
+      name: CPU and GPU comparison
+      action: openvoice.v2.compare@1.0.0
+      requires: [audio.openvoice-v2.governed]
+      dependsOn: [cpu, gpu]
+      inputs:
+        cpu: cpu.report
+        gpu: gpu.report
+      outputs:
+        - name: report
+          type: application/vnd.agent-control.openvoice-comparison+json
+          schema: openvoice-v2.cpu-gpu-comparison/v1
+          version: 1.0.0
+      verification: [openvoice-comparison-recorded]
+    - id: hygiene
+      name: Repository privacy and exposure gate
+      action: openvoice.v2.hygiene@1.0.0
+      requires: [audio.openvoice-v2.governed]
+      resources: [repository/openvoice-v2]
+      dependsOn: [compare]
+      inputs:
+        comparison: compare.report
+      outputs:
+        - name: report
+          type: application/vnd.agent-control.openvoice-hygiene+json
+          schema: openvoice-v2.repository-hygiene/v1
+          version: 1.0.0
+      verification: [openvoice-repository-hygiene-pass]

@@ -25,6 +25,7 @@
     "provision:android": "node --import tsx scripts/provision-android.mjs",
     "demo:context": "node --import tsx scripts/demo-context-consensus.mjs",
     "qualify:jobs": "node --import tsx scripts/qualify-jobs.ts",
+    "qualify:openvoice": "node --import tsx scripts/run-openvoice-v2-job.ts",
     "qualify:harness-real": "node --import tsx scripts/qualify-real-harness-job.ts",
     "qualify:openai-chatkit": "node --env-file=.env.local --import tsx scripts/qualify-openai-chatkit.mjs",
     "qualify:openai-windows": "node --env-file-if-exists=.env.local --import tsx scripts/qualify-openai-windows-harness.ts"
