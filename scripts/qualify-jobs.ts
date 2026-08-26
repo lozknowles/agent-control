@@ -13,7 +13,9 @@ import {defaultCapabilities, type LaneState, type WorkspaceState} from '../src/s
 const outputFile = path.resolve(process.argv[2] ?? path.join('qualification-results', `jobs-${new Date().toISOString().replace(/[:.]/g, '-')}.json`));
 function git(args: string[], fallback: string) { try { return execFileSync('git', args, {encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore']}).trim(); } catch { return fallback; } }
 const discoveredCommit = git(['rev-parse', 'HEAD'], 'unavailable-in-exported-tree'), discoveredStatus = git(['status', '--porcelain'], '');
-const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-job-qualification-')), actions = registerReferenceActions(), catalog = new JobCatalog(actions.ids()).loadDirectory(path.resolve('config/jobs')), workers = new WorkerRegistry();
+const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-job-qualification-')), actions = registerReferenceActions();
+for (const id of ['managed-node.inspect@1.0.0', 'managed-node.maintain@1.0.0', 'android-node.diagnostic@1.0.0', 'android-node.nfc-inspect@1.0.0']) actions.register(id, async () => ({}));
+const catalog = new JobCatalog(actions.ids()).loadDirectory(path.resolve('config/jobs')), workers = new WorkerRegistry();
 const observedAt = new Date().toISOString();
 workers.register({id: 'qualification-mobile', capabilities: ['browser.mobile', 'facebook.authenticated'], health: 'healthy', capacity: 1, active: 0, observedAt});
 workers.register({id: 'qualification-publisher', capabilities: ['localwalks.publisher', 'node', 'git', 'production-access'], health: 'offline', capacity: 1, active: 0, observedAt});

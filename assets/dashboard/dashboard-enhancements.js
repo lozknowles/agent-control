@@ -44,7 +44,7 @@ function safeHref(value) {
   catch { return null; }
 }
 function scheduleLabel(job) { return job.schedules.length ? job.schedules.map(item => `${item.spec.cron} ${item.spec.timezone}`).join(' · ') : 'Manual'; }
-function statusClass(status) { return ['FAILED', 'DEGRADED', 'DISCONNECTED', 'OFFLINE'].includes(status) ? 'error' : ['BUSY', 'QUEUED', 'WAITING_FOR_WORKER', 'WAITING_FOR_DEPENDENCY', 'WAITING_FOR_RESOURCE', 'WAITING_FOR_APPROVAL', 'RETRY_PENDING'].includes(status) ? 'waiting' : ''; }
+function statusClass(status) { return ['FAILED', 'DEGRADED', 'DISCONNECTED', 'OFFLINE'].includes(status) ? 'error' : ['BUSY', 'QUEUED', 'WAITING_FOR_WORKER', 'WAITING_FOR_DEPENDENCY', 'WAITING_FOR_RESOURCE', 'WAITING_FOR_APPROVAL', 'WAITING_FOR_CARD', 'RETRY_PENDING'].includes(status) ? 'waiting' : ''; }
 function timeLabel(value, fallback = '--') { return value ? new Date(value).toLocaleString() : fallback; }
 function durationLabel(start, end) { if (!start) return 'Not started'; const milliseconds = Math.max(0, Date.parse(end || new Date().toISOString()) - Date.parse(start)); return milliseconds < 1000 ? `${milliseconds}ms` : `${Math.round(milliseconds / 1000)}s`; }
 function ageLabel(value) { if (!value) return '--'; const seconds = Math.max(0, Math.floor((Date.now() - Date.parse(value)) / 1000)); return seconds < 60 ? `${seconds}s` : seconds < 3600 ? `${Math.floor(seconds / 60)}m` : `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m`; }

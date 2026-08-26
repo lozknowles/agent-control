@@ -21,6 +21,20 @@ export interface AndroidNodeConfig {
   credentialEnv?: string;
 }
 
+export interface AndroidDiscoveryConfig {
+  enabled?: boolean;
+  credentialEnv: string;
+  endpointPort?: number;
+  endpointProtocol?: 'http' | 'https';
+  probeIntervalSeconds?: number;
+  staleAfterSeconds?: number;
+  jobTimeoutSeconds?: number;
+  secureOverlay: {
+    adapter: string;
+    command?: string;
+  };
+}
+
 export interface ManagedWorkloadConfig {
   id: string;
   capability: string;
@@ -99,6 +113,7 @@ export interface AgentControlConfig {
   providers: ProviderConfig[];
   services: ServiceConfig[];
   lanes: LaneConfig[];
+  androidDiscovery?: AndroidDiscoveryConfig;
 }
 
 export const emptyConfig = (): AgentControlConfig => ({
@@ -211,6 +226,21 @@ export function validateConfig(raw: unknown): AgentControlConfig {
         if (!/^[a-z0-9][a-z0-9._/-]{0,127}$/i.test(runtime.branch)) throw new Error(`invalid_managed_node_runtime_branch:${resource.id}`);
       }
     }
+  }
+  if (input.androidDiscovery !== undefined) {
+    const discovery = input.androidDiscovery;
+    if (!discovery || typeof discovery !== 'object') throw new Error('invalid_android_discovery');
+    if (typeof discovery.credentialEnv !== 'string' || !/^[A-Z][A-Z0-9_]{1,127}$/.test(discovery.credentialEnv)) throw new Error('invalid_android_discovery_credential_env');
+    if (!discovery.secureOverlay || typeof discovery.secureOverlay !== 'object') throw new Error('android_discovery_secure_overlay_required');
+    if (typeof discovery.secureOverlay.adapter !== 'string' || !/^[a-z0-9][a-z0-9._-]{0,63}$/i.test(discovery.secureOverlay.adapter)) throw new Error('invalid_android_discovery_overlay_adapter');
+    if (discovery.secureOverlay.command !== undefined && (typeof discovery.secureOverlay.command !== 'string' || !/^[a-z0-9][a-z0-9._-]{0,63}$/i.test(discovery.secureOverlay.command))) throw new Error('invalid_android_discovery_overlay_command');
+    if (discovery.endpointProtocol !== undefined && !['http', 'https'].includes(discovery.endpointProtocol)) throw new Error('invalid_android_discovery_endpoint_protocol');
+    assertIntegerRange(discovery.endpointPort, 'android_discovery_endpoint_port', 1024, 65535);
+    assertIntegerRange(discovery.probeIntervalSeconds, 'android_discovery_probe_interval', 5, 3600);
+    assertIntegerRange(discovery.staleAfterSeconds, 'android_discovery_stale_after', 10, 86400);
+    assertIntegerRange(discovery.jobTimeoutSeconds, 'android_discovery_job_timeout', 5, 600);
+    if (discovery.probeIntervalSeconds && discovery.staleAfterSeconds && discovery.staleAfterSeconds <= discovery.probeIntervalSeconds) throw new Error('android_discovery_stale_after_probe');
+    config.androidDiscovery = structuredClone(discovery);
   }
   for (const provider of config.providers) {
     assertId(provider.id, 'provider');

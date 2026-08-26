@@ -4,6 +4,12 @@
 
 ### Added
 
+- Dynamic generic Android peer discovery through a secure-overlay adapter, with separately observable overlay, endpoint and authenticated Agent Control capability states.
+- A DERP-aware Tailscale integration using structured peer status and `ping --until-direct=false`, so relayed peers remain reachable without being mistaken for executable nodes.
+- An authenticated typed Android node contract with persistent self-identity, allowlisted capability registration, job create/status/cancel, replay protection, bounded payloads/output/time, provenance, stale-capability fencing and unconditional local disable.
+- A native Android foreground NFC adapter and approval-gated `nfc.inspect_tag` Job that preserve raw tag-ID bytes plus forward/reversed hexadecimal and collect only discovery-time read-only metadata.
+- Visible `WAITING_FOR_CARD` Job progress, action timeout enforcement and cancellation propagation for human-presented device work.
+- Capability, architecture, operator and threat-model documentation plus native Gradle build/static-policy qualification.
 - Generic agentless Linux managed nodes over existing non-interactive SSH, with fixed read-only discovery, versioned heartbeat/inventory projections and no arbitrary remote-command path.
 - Managed-node `ONLINE`/`IDLE`/`BUSY`/`DEGRADED`/`OFFLINE` state, discovered capabilities, protected-workload detection, maintenance state, shared dashboard/TUI/API/status visibility and worker-registry synchronisation.
 - Typed, audited inspection and maintenance Job Actions with capability placement, service allowlists, named approvals, BUSY workload fencing, checksummed result artifacts and provenance.
@@ -35,6 +41,8 @@
 
 ### Changed
 
+- Extended the existing Termux Android observation node to the shared typed-node protocol; it retains bounded diagnostic/log jobs and deliberately does not advertise NFC.
+- Android resources are registered from authenticated live capability advertisements rather than manual node insertion or device/model assumptions.
 - `npm run status` now uses the authoritative dashboard projection; the separate configured service/resource bootstrap probe remains available as `npm run status:bootstrap`.
 - TUI task submission, reroute and pause/resume now call the shared application service rather than mutating workspace state directly.
 - Routing and verification projections are first-class lane state and survive persistence/reload.
@@ -43,6 +51,8 @@
 
 ### Security and authority
 
+- Android nodes are executor-only: bearer authentication, constant-time comparison, mutation nonce/timestamp checks, controller capability allowlisting and named NFC approval prevent an external node from granting itself scheduling or policy authority.
+- The NFC source and result policies prohibit connect/transceive, arbitrary APDU, authentication, protected-sector access, write/format, cloning and card emulation; reader mode is one-shot and stops on timeout, cancellation, lifecycle pause or human takeover.
 - Managed-node SSH uses one reviewed streamed script, batch public-key authentication, disabled forwarding, bounded output/time and separately validated typed arguments; no Job or approval can supply an arbitrary shell command.
 - Protected active workloads block power, optical, package/service mutation, destructive storage and configured competing capabilities unless the exact protected-workload override has been approved.
 - Harness construction cannot claim queue work, mutate placement, acquire authority, write a PTY or accept completion.

@@ -142,6 +142,10 @@ An authorised Linux/SSH resource may opt into the generic managed-node adapter. 
 
 Managed-node execution is split into read-only inspection and typed maintenance Actions. The controller validates operation, parameter form, service allowlist, runtime target, current heartbeat and approvals before streaming one reviewed action script. The remote script validates its typed operands again. It never receives `sh -c` or an operator-provided command. An active protected workload marks the node BUSY, blocks configured disruptive/competing scheduling capabilities and requires the stronger protected-workload override for maintenance. Job leases, locks, approval waits, cancellation, verification, artifacts and provenance remain in the existing control plane.
 
+Android discovery is another adapter below the same resource/Worker Registry boundary. A secure-overlay integration discovers peers by observed platform and reports network reachability separately from endpoint health. For Tailscale, structured status supplies identity/platform/current route while `ping --until-direct=false` treats a successful DERP path as reachable. Agent Control registers no worker until the typed endpoint health responds and an authenticated `agent-control-executor-only` advertisement passes the controller capability allowlist. Failed or missed probes immediately fence placement and expiry makes the observation offline.
+
+The existing Termux observation node and the native NFC app implement one endpoint contract rather than independent control paths. Both accept only typed jobs. The native app advertises NFC reader capabilities only while the foreground activity and Android NFC service are ready; `nfc.inspect_tag` then requires a named read-only approval and exposes a visible `WAITING_FOR_CARD` state. The Android node returns evidence but cannot mutate schedules, leases, approvals, ownership or other workers. Detailed contracts and threat analysis are in `docs/android-node-adapter.md` and `docs/android-node-security.md`.
+
 Configuration rejects embedded secret-like fields and credentialed URLs. Credentials are supplied through separately named environment variables. State defaults to `.agent-control/`; the path is overrideable.
 
 ## Scheduling and execution
@@ -154,7 +158,7 @@ The scheduler selects capabilities, placement and priority before queue mutation
 
 Windows OpenAI execution uses an explicit authentication selector below this boundary. `auto` chooses the qualified Responses provider when an API key is configured and otherwise chooses official Codex non-interactive execution with ChatGPT-managed authentication. The Codex process receives an ephemeral read-only capability envelope with user-configured MCP tools disabled; its schema-constrained returned request still enters `ToolInvocationGateway`. Authentication choice never changes lease, ownership, scheduling, verification or takeover authority.
 
-`JobRuntime` is the workflow-level extension of that scheduler, not a parallel policy engine. It discovers due Schedule definitions, calls one `createRun` path, evaluates a Run DAG, resolves every step against the worker capability registry, acquires semantic resource locks, dispatches a registered Action, stores typed artifacts and requires declared verification before success. Model/provider routing remains a separate decision from worker placement. All dashboard/TUI mutations enter through `AgentControlService`.
+`JobRuntime` is the workflow-level extension of that scheduler, not a parallel policy engine. It discovers due Schedule definitions, calls one `createRun` path, evaluates a Run DAG, resolves every step against the worker capability registry, acquires semantic resource locks, dispatches a registered Action, stores typed artifacts and requires declared verification before success. Actions may report bounded domain progress such as `WAITING_FOR_CARD`; this is persisted and projected without transferring scheduler authority to the worker. Step timeouts abort execution and request adapter cancellation. Model/provider routing remains a separate decision from worker placement. All dashboard/TUI mutations enter through `AgentControlService`.
 
 The append-oriented Run ledger retains the effective Job version, parameters, trigger, worker assignments, retries, artifacts, evidence, errors and provenance. A restart never assumes a live Action survived: an in-flight step becomes `DISCONNECTED`/identity-unproven and its durable resource lock remains held for manual reconciliation. PID alone is not recovery evidence.
 
@@ -256,7 +260,9 @@ The TUI presents lanes, batons, queue state, resources, providers, PTY assignmen
 
 ## Optional Android resource
 
-Android support is device-neutral. The node ID, transport, port, repository and credential environment are configured. The bundled node advertises observed capabilities and exposes only an allow-listed read-only log operation. Provisioning requires explicit privilege, pairing and reboot approvals.
+Android support is device-neutral and capability-driven. The controller configures a discovery adapter, endpoint policy and credential environment reference; the node establishes its own stable identity and advertises observed Android/version/capability evidence. `OFFLINE`, direct/DERP overlay reachability, endpoint reachability and authenticated Agent Control capability are distinct states.
+
+The shared typed-node contract exposes health, authenticated resource advertisement, allowlisted job creation/status/cancellation, bounded results and per-job provenance. The Termux implementation provides system/log observation. The native implementation provides system inspection and, only when currently ready, an approval-gated `nfc.inspect_tag` operation that reads discovery metadata without connect, transceive, authentication, protected-sector access or write operations. Human disable remains unconditional. Provisioning/installing either implementation is a separate approved action; source support never implies live device qualification.
 
 ## Conceptual-integrity gate
 

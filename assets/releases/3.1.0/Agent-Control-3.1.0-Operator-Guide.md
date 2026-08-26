@@ -254,7 +254,11 @@ Android is an optional device-neutral resource. Provisioning uses explicit privi
 npm run provision:android
 ```
 
-The bundled node is loopback-bound by default and exposes only its allow-listed read-only operation.
+The existing Termux node and native app implement one authenticated typed-node protocol. Configure `androidDiscovery` with a credential environment reference and secure-overlay adapter; never put the token, peer address, hostname, serial or model into a Job. Agent Control reports Tailscale direct/DERP reachability separately from endpoint and authenticated capability state. A reachable overlay peer is not a Worker until its advertisement validates.
+
+The native app adds only `android.system.inspect` and the approval-gated `nfc.inspect_tag`. NFC capability exists only while the foreground activity and NFC service are ready. An inspection reports `WAITING_FOR_CARD`, reads one authorised card's discovery metadata, then disables reader mode. Timeout, cancellation, activity pause and **Disable / human takeover** also stop reader mode. The adapter provides no shell, APDU, authentication, protected-sector, write, clone or emulation primitive.
+
+Run `npm run qualify:android-node` for discovery and the harmless diagnostic. Use `--arm-nfc` only after current NFC capabilities are genuinely advertised and a human has authorised physical presentation. A successful Gradle build or Tailscale ping is not a live Android execution/card-read qualification. See `docs/android-node-adapter.md` and `docs/android-node-security.md`.
 
 ## Troubleshooting
 

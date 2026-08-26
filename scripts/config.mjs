@@ -37,6 +37,19 @@ export function validateConfig(raw) {
     if (resource.transport.type === 'http') validateUrl(resource.transport.baseUrl, `transport_${resource.id}`);
     if (resource.healthUrl) validateUrl(resource.healthUrl, `resource_${resource.id}`);
   }
+  if (config.androidDiscovery !== undefined) {
+    const discovery = config.androidDiscovery;
+    if (!discovery || typeof discovery !== 'object') throw new Error('invalid_android_discovery');
+    if (!/^[A-Z][A-Z0-9_]{1,127}$/.test(discovery.credentialEnv ?? '')) throw new Error('invalid_android_discovery_credential_env');
+    if (!discovery.secureOverlay || !/^[a-z0-9][a-z0-9._-]{0,63}$/i.test(discovery.secureOverlay.adapter ?? '')) throw new Error('invalid_android_discovery_overlay_adapter');
+    if (discovery.secureOverlay.command !== undefined && !/^[a-z0-9][a-z0-9._-]{0,63}$/i.test(discovery.secureOverlay.command)) throw new Error('invalid_android_discovery_overlay_command');
+    if (discovery.endpointProtocol !== undefined && !['http', 'https'].includes(discovery.endpointProtocol)) throw new Error('invalid_android_discovery_endpoint_protocol');
+    for (const [key, minimum, maximum] of [['endpointPort', 1024, 65535], ['probeIntervalSeconds', 5, 3600], ['staleAfterSeconds', 10, 86400], ['jobTimeoutSeconds', 5, 600]]) {
+      const value = discovery[key];
+      if (value !== undefined && (!Number.isSafeInteger(value) || value < minimum || value > maximum)) throw new Error(`invalid_android_discovery_${key}`);
+    }
+    if (discovery.probeIntervalSeconds && discovery.staleAfterSeconds && discovery.staleAfterSeconds <= discovery.probeIntervalSeconds) throw new Error('android_discovery_stale_after_probe');
+  }
   for (const provider of config.providers) if (provider.baseUrl) validateUrl(provider.baseUrl, `provider_${provider.id}`);
   for (const service of config.services) validateUrl(service.healthUrl, `service_${service.id}`);
   return config;

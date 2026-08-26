@@ -17,7 +17,7 @@ import {AndroidRecovery, type AndroidRecoveryState} from './control/android-reco
 import {AgentControlService} from './control/application-service.js';
 import {startWebDashboard} from './control/web-server.js';
 import {ContextStore} from './control/context.js';
-import {buildJobRuntime, startJobScheduler, startManagedNodeMonitoring} from './control/job-bootstrap.js';
+import {buildJobRuntime, startAndroidNodeMonitoring, startJobScheduler, startManagedNodeMonitoring} from './control/job-bootstrap.js';
 
 const now = () => new Date().toISOString();
 const config = loadConfig();
@@ -44,8 +44,10 @@ const control = new AgentControlService(state, ptys, providers).configureProject
   contextStore: ContextStore.load(),
   jobRuntime,
   managedNodes: jobRuntime.managedNodes,
+  androidNodes: jobRuntime.androidNodes,
 });
 startManagedNodeMonitoring(jobRuntime, snapshot => control.events.emit('resource.node_changed', {resourceId: snapshot.resourceId, state: snapshot.state, health: snapshot.health, currentWorkload: snapshot.currentWorkload}, undefined, 'managed-node-monitor'));
+startAndroidNodeMonitoring(jobRuntime, snapshot => control.events.emit('resource.node_changed', {resourceId: snapshot.resourceId, peerId: snapshot.peerId, state: snapshot.state, health: snapshot.health, route: snapshot.route}, undefined, 'android-node-monitor'));
 startJobScheduler(jobRuntime, (runId, status) => control.events.emit('job.run_changed', {runId, status}, undefined, 'job-scheduler'));
 const androidResource = config.resources.find(resource => resource.platform === 'android' && resource.android);
 let androidState: AndroidRecoveryState | undefined = androidResource ? {resourceId: androidResource.id, state: 'offline', detail: 'not probed', recovered: false} : undefined;

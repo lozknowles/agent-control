@@ -86,6 +86,8 @@ Resource identity is separate from transport. A resource may be local, SSH, HTTP
 
 For a managed Linux resource, `managedNode` adds polling/heartbeat policy, declarative protected-workload detectors, approved services, BUSY capability fences and an optional operator-reviewed runtime update target. Hardware, package tools, filesystems, optical devices, secure-overlay state and operational capabilities are discovered rather than assumed. Real endpoints and workload identifiers remain operator configuration, never core defaults.
 
+`androidDiscovery` is a separate optional dynamic resource source. Its generic secure-overlay adapter discovers Android peers, classifies direct/relay reachability, validates an authenticated typed-node advertisement and then registers only allowlisted current capabilities. A network-reachable peer is never made schedulable merely because an overlay ping succeeds.
+
 See [`config/agent-control.example.json`](config/agent-control.example.json), [`ARCHITECTURE.md`](ARCHITECTURE.md), and [`docs/concepts.md`](docs/concepts.md). The older [`docs/architecture-v2-agnostic.md`](docs/architecture-v2-agnostic.md) remains a configuration-neutrality appendix.
 
 ## Adaptive harness
@@ -133,7 +135,9 @@ The execution contract is intentionally replaceable: start, status, reconnect, i
 
 ## Android
 
-Android is one optional resource type, not a named device. The bundled Termux node advertises observed capabilities and accepts only the allow-listed read-only log observation job. Provisioning has explicit privilege, wireless-pairing and reboot approval gates. See [`android/README.md`](android/README.md).
+Android is an optional dynamically discovered resource, not a named device. The existing Termux node now supports authenticated typed diagnostics and bounded log observation. The native adapter adds an explicitly approved, one-shot `nfc.inspect_tag` job using Android foreground reader mode and discovery metadata only; it exposes no shell, transceive, APDU, authentication, write, cloning or emulation primitive.
+
+DERP-relayed Tailscale reachability is healthy network evidence, but remains distinct from `AGENT_CONTROL_REACHABLE` and authenticated `AGENT_CONTROL_CAPABLE`. NFC routing additionally requires current `device.nfc.reader` and `nfc.inspect.read_only` capabilities, so non-NFC Android nodes are rejected without using names or models. See [`android/README.md`](android/README.md), [`docs/android-node-adapter.md`](docs/android-node-adapter.md), [`docs/android-node-security.md`](docs/android-node-security.md) and [`docs/capabilities.md`](docs/capabilities.md).
 
 ## Validation
 
@@ -147,12 +151,15 @@ npm run qualify:jobs
 git diff --check
 ```
 
+When an Android SDK is available, also run `cd android/native-adapter && ./gradlew testDebugUnitTest assembleDebug`. This builds a debug qualification artifact; it is not an installation or physical-device result.
+
 The neutrality guard rejects private topology identifiers in distributable runtime, tests, documentation, filenames and examples. The audit ledger and changelog are explicit historical exceptions.
 
 ## Current limitations
 
 - Orca remains optional and the existing execution path remains available as fallback.
 - Reboot recovery is qualified only per explicitly tested environment; source support is not a universal live qualification claim.
+- Android source/build qualification is distinct from a live authenticated adapter. Until the native app is deliberately installed, enabled and rediscovered, a Tailscale-reachable phone remains network-only and NFC Jobs cannot be armed.
 - OpenAI ChatKit access uses official supported APIs and remains qualified only for the exact tested project/thread state recorded in provider evidence.
 - ChatGPT Work and Codex shared task context remain host/reference-only unless an official read API is available.
 - Windows OpenAI execution is switchable: `auto` prefers a configured Responses API key and otherwise uses official Codex non-interactive execution with the saved ChatGPT-plan login. Both the Responses API and ChatGPT-plan routes are live `SUPPORTED+QUALIFIED` through the adaptive harness and central tool gate; ChatGPT desktop-window automation remains unimplemented and untested.

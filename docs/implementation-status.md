@@ -9,6 +9,9 @@ This document is generated from `config/implementation-status.json`. Update the 
 | Safe empty-configuration bootstrap (`bootstrap.safe-empty-config`) | **IMPLEMENTED** | An idempotent initializer creates a schema-valid empty configuration without discovering infrastructure or overwriting operator state. | None recorded. |
 | Universal authoritative status command (`status.universal-authoritative-command`) | **IMPLEMENTED** | The same agent-control status command reads the versioned AgentControlService projection used by the web dashboard, locally or through one fixed read-only localhost request over SSH. | None recorded. |
 | Generic managed Linux nodes (`nodes.generic-linux-management`) | **QUALIFIED** | Authorised Linux/SSH resources receive fixed read-only discovery, heartbeat and workload projection plus typed governed inspection and maintenance Actions without an arbitrary remote-command path. | None recorded. |
+| DERP-aware Android secure-overlay discovery (`network.android-secure-overlay-discovery`) | **QUALIFIED** | Structured Tailscale peer discovery and supported non-direct-only ping semantics distinguish offline, DERP relay and direct routes without treating relay as failure. | None recorded. |
+| Generic typed Android node adapter (`nodes.android-typed-adapter`) | **PARTIAL** | A generic authenticated executor-only Android contract, dynamic capability registration and typed diagnostic dispatch are implemented and automatically tested. | The observed remote Android peer has not yet installed and enabled the adapter, so no live authenticated typed diagnostic was dispatched. |
+| Read-only Android NFC inspection (`android.nfc-read-only-inspection`) | **PARTIAL** | The native adapter and Job runtime implement approval-gated one-shot NFC metadata inspection with visible human wait, cancellation, timeout, raw bytes and normalized identifiers. | No live NFC capability advertisement, WAITING_FOR_CARD state or authorised physical card read has yet been observed. |
 | Default adaptive-harness dispatch (`harness.default-work-dispatch`) | **IMPLEMENTED** | Normal WorkExecutor agent work builds and records an ExecutionRecipe and receives only a live policy gateway. | None recorded. |
 | Central live ToolPolicy gateway (`tools.central-live-policy`) | **IMPLEMENTED** | Gateway tools are checked against recipe grants, worker compatibility, live lease and ownership generations, approvals and human ownership. | None recorded. |
 | Job Catalog, scheduler and Run Ledger (`jobs.catalog-scheduler-ledger`) | **IMPLEMENTED** | Versioned Jobs and Schedules produce durable Runs with capability placement, locks, retries, artifacts, approvals and recovery. | None recorded. |
@@ -40,6 +43,24 @@ This document is generated from `config/implementation-status.json`. Update the 
 - Source: [`src/control/managed-node.ts`](../src/control/managed-node.ts), [`src/control/managed-node-ssh.ts`](../src/control/managed-node-ssh.ts), [`src/control/managed-node-actions.ts`](../src/control/managed-node-actions.ts)
 - Tests: [`src/control/managed-node.test.ts`](../src/control/managed-node.test.ts), [`src/control/managed-node-ssh.test.ts`](../src/control/managed-node-ssh.test.ts), [`src/control/managed-node-actions.test.ts`](../src/control/managed-node-actions.test.ts)
 - Qualification evidence: [`docs/evidence/macubuntu-managed-node-qualification-20260826.md`](../docs/evidence/macubuntu-managed-node-qualification-20260826.md)
+
+### DERP-aware Android secure-overlay discovery
+
+- Source: [`src/control/secure-overlay.ts`](../src/control/secure-overlay.ts), [`src/integrations/secure-overlay.ts`](../src/integrations/secure-overlay.ts), [`src/control/android-node.ts`](../src/control/android-node.ts)
+- Tests: [`src/integrations/secure-overlay.test.ts`](../src/integrations/secure-overlay.test.ts), [`src/control/android-node.test.ts`](../src/control/android-node.test.ts)
+- Qualification evidence: [`docs/evidence/android-node-adapter-qualification-20260826.md`](../docs/evidence/android-node-adapter-qualification-20260826.md)
+
+### Generic typed Android node adapter
+
+- Source: [`src/control/android-node.ts`](../src/control/android-node.ts), [`src/control/node-client.ts`](../src/control/node-client.ts), [`android/node-server.mjs`](../android/node-server.mjs), [`android/native-adapter/app/src/main/java/org/agentcontrol/android/adapter/AdapterServer.java`](../android/native-adapter/app/src/main/java/org/agentcontrol/android/adapter/AdapterServer.java)
+- Tests: [`src/control/android-node.test.ts`](../src/control/android-node.test.ts), [`src/control/node-client.test.ts`](../src/control/node-client.test.ts), [`scripts/android-node-server.test.mjs`](../scripts/android-node-server.test.mjs), [`scripts/android-native-policy.test.mjs`](../scripts/android-native-policy.test.mjs)
+- Qualification evidence: [`docs/evidence/android-node-adapter-qualification-20260826.md`](../docs/evidence/android-node-adapter-qualification-20260826.md)
+
+### Read-only Android NFC inspection
+
+- Source: [`src/control/android-node-actions.ts`](../src/control/android-node-actions.ts), [`config/jobs/android-nfc-inspection.job.yaml`](../config/jobs/android-nfc-inspection.job.yaml), [`android/native-adapter/app/src/main/java/org/agentcontrol/android/adapter/NfcMetadata.java`](../android/native-adapter/app/src/main/java/org/agentcontrol/android/adapter/NfcMetadata.java), [`android/native-adapter/app/src/main/java/org/agentcontrol/android/adapter/MainActivity.java`](../android/native-adapter/app/src/main/java/org/agentcontrol/android/adapter/MainActivity.java)
+- Tests: [`src/control/android-node-actions.test.ts`](../src/control/android-node-actions.test.ts), [`src/control/job-runtime.test.ts`](../src/control/job-runtime.test.ts), [`scripts/android-native-policy.test.mjs`](../scripts/android-native-policy.test.mjs), [`android/native-adapter/app/src/test/java/org/agentcontrol/android/adapter/HexCodecTest.java`](../android/native-adapter/app/src/test/java/org/agentcontrol/android/adapter/HexCodecTest.java)
+- Qualification evidence: [`docs/evidence/android-node-adapter-qualification-20260826.md`](../docs/evidence/android-node-adapter-qualification-20260826.md)
 
 ### Default adaptive-harness dispatch
 

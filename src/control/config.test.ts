@@ -63,6 +63,17 @@ test('two Android models use one schema without becoming identity defaults', () 
   assert.deepEqual(config.resources.map(resource => resource.metadata?.model), ['Vendor One', 'Vendor Two']);
 });
 
+test('generic Android discovery config contains no device, peer or topology identity', () => {
+  const config = validateConfig({schemaVersion: 1, resources: [], providers: [], services: [], lanes: [], androidDiscovery: {enabled: true, credentialEnv: 'AGENT_CONTROL_ANDROID_NODE_TOKEN', endpointPort: 8788, endpointProtocol: 'http', probeIntervalSeconds: 15, staleAfterSeconds: 45, jobTimeoutSeconds: 120, secureOverlay: {adapter: 'tailscale', command: 'tailscale'}}});
+  assert.equal(config.androidDiscovery?.secureOverlay.adapter, 'tailscale');
+  assert.equal(config.androidDiscovery?.endpointPort, 8788);
+  assert.equal(Object.hasOwn(config.androidDiscovery ?? {}, 'host'), false);
+  assert.throws(() => validateConfig({schemaVersion: 1, resources: [], providers: [], services: [], lanes: [], androidDiscovery: {credentialEnv: 'bad-name', secureOverlay: {adapter: 'tailscale'}}}), /credential_env/);
+  assert.throws(() => validateConfig({schemaVersion: 1, resources: [], providers: [], services: [], lanes: [], androidDiscovery: {credentialEnv: 'VALID_TOKEN_REF', token: 'embedded', secureOverlay: {adapter: 'tailscale'}}}), /secret_material_forbidden/);
+  assert.throws(() => validateConfig({schemaVersion: 1, resources: [], providers: [], services: [], lanes: [], androidDiscovery: {credentialEnv: 'VALID_TOKEN_REF', probeIntervalSeconds: 30, staleAfterSeconds: 20, secureOverlay: {adapter: 'tailscale'}}}), /stale_after_probe/);
+  assert.throws(() => validateConfig({schemaVersion: 1, resources: [], providers: [], services: [], lanes: [], androidDiscovery: {credentialEnv: 'VALID_TOKEN_REF', endpointPort: 80, secureOverlay: {adapter: 'tailscale'}}}), /endpoint_port/);
+});
+
 test('generic managed Linux node policy is configuration and validates workload boundaries', () => {
   const config = validateConfig({schemaVersion: 1, resources: [{id: 'linux-any', platform: 'linux', transport: {type: 'ssh', host: 'linux-any.example', user: 'operator'}, capabilities: [], managedNode: {enabled: true, probeIntervalSeconds: 15, offlineAfterSeconds: 45, approvedServices: ['disc-watch.service'], connectivity: [{id: 'private-overlay', label: 'Private overlay', capability: 'transport.secure-overlay', serviceUnit: 'overlay-agent.service', interfaceName: 'overlay0'}], workloads: [{id: 'disc-copy', capability: 'workload.dvd-rip', systemdUnit: 'disc-watch.service', processExecutables: ['disc-copy'], opticalAccess: true}], runtime: {directory: '/opt/agent-control', branch: 'integration/3.1'}}}], providers: [], services: [], lanes: []});
   assert.equal(config.resources[0].managedNode?.workloads?.[0].id, 'disc-copy');

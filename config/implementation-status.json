@@ -30,6 +30,35 @@
       "evidence": ["docs/evidence/macubuntu-managed-node-qualification-20260826.md"]
     },
     {
+      "id": "network.android-secure-overlay-discovery",
+      "title": "DERP-aware Android secure-overlay discovery",
+      "status": "QUALIFIED",
+      "summary": "Structured Tailscale peer discovery and supported non-direct-only ping semantics distinguish offline, DERP relay and direct routes without treating relay as failure.",
+      "sources": ["src/control/secure-overlay.ts", "src/integrations/secure-overlay.ts", "src/control/android-node.ts"],
+      "tests": ["src/integrations/secure-overlay.test.ts", "src/control/android-node.test.ts"],
+      "evidence": ["docs/evidence/android-node-adapter-qualification-20260826.md"]
+    },
+    {
+      "id": "nodes.android-typed-adapter",
+      "title": "Generic typed Android node adapter",
+      "status": "PARTIAL",
+      "summary": "A generic authenticated executor-only Android contract, dynamic capability registration and typed diagnostic dispatch are implemented and automatically tested.",
+      "sources": ["src/control/android-node.ts", "src/control/node-client.ts", "android/node-server.mjs", "android/native-adapter/app/src/main/java/org/agentcontrol/android/adapter/AdapterServer.java"],
+      "tests": ["src/control/android-node.test.ts", "src/control/node-client.test.ts", "scripts/android-node-server.test.mjs", "scripts/android-native-policy.test.mjs"],
+      "evidence": ["docs/evidence/android-node-adapter-qualification-20260826.md"],
+      "limitation": "The observed remote Android peer has not yet installed and enabled the adapter, so no live authenticated typed diagnostic was dispatched."
+    },
+    {
+      "id": "android.nfc-read-only-inspection",
+      "title": "Read-only Android NFC inspection",
+      "status": "PARTIAL",
+      "summary": "The native adapter and Job runtime implement approval-gated one-shot NFC metadata inspection with visible human wait, cancellation, timeout, raw bytes and normalized identifiers.",
+      "sources": ["src/control/android-node-actions.ts", "config/jobs/android-nfc-inspection.job.yaml", "android/native-adapter/app/src/main/java/org/agentcontrol/android/adapter/NfcMetadata.java", "android/native-adapter/app/src/main/java/org/agentcontrol/android/adapter/MainActivity.java"],
+      "tests": ["src/control/android-node-actions.test.ts", "src/control/job-runtime.test.ts", "scripts/android-native-policy.test.mjs", "android/native-adapter/app/src/test/java/org/agentcontrol/android/adapter/HexCodecTest.java"],
+      "evidence": ["docs/evidence/android-node-adapter-qualification-20260826.md"],
+      "limitation": "No live NFC capability advertisement, WAITING_FOR_CARD state or authorised physical card read has yet been observed."
+    },
+    {
       "id": "harness.default-work-dispatch",
       "title": "Default adaptive-harness dispatch",
       "status": "IMPLEMENTED",

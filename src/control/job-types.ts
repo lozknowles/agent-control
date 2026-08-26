@@ -4,7 +4,7 @@ export type JobPriority = 'background' | 'low' | 'normal' | 'high' | 'urgent';
 export type ConcurrencyPolicy = 'allow' | 'no-overlap' | 'replace-running' | 'queue';
 export type MissedRunPolicy = 'skip' | 'run-next-available' | 'run-once-immediately';
 export type RunStatus = 'SCHEDULED' | 'QUEUED' | 'RUNNING' | 'VERIFYING' | 'SUCCEEDED' | 'FAILED' | 'DEGRADED' | 'CANCELLED' | 'MISSED' | 'DISCONNECTED';
-export type StepStatus = 'QUEUED' | 'WAITING_FOR_WORKER' | 'WAITING_FOR_DEPENDENCY' | 'WAITING_FOR_RESOURCE' | 'WAITING_FOR_APPROVAL' | 'DISPATCHED' | 'RUNNING' | 'VERIFYING' | 'RETRY_PENDING' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED';
+export type StepStatus = 'QUEUED' | 'WAITING_FOR_WORKER' | 'WAITING_FOR_DEPENDENCY' | 'WAITING_FOR_RESOURCE' | 'WAITING_FOR_APPROVAL' | 'WAITING_FOR_CARD' | 'DISPATCHED' | 'RUNNING' | 'VERIFYING' | 'RETRY_PENDING' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED';
 
 export interface RetryPolicy {attempts: number; backoffSeconds: number;}
 export interface ParameterDefinition {type: 'string' | 'integer' | 'number' | 'boolean'; default?: unknown; required?: boolean; secretRef?: boolean; minimum?: number; maximum?: number; enum?: unknown[];}
@@ -59,6 +59,7 @@ export interface RunStep {
   id: string; action: string; status: StepStatus; dependsOn: string[]; capabilityRequest: CapabilityRequest; resources: string[];
   attempts: StepAttempt[]; artifactIds: string[]; placement?: PlacementRationale; waitingReason?: string; approval?: string;
   startedAt?: string; endedAt?: string; nextAttemptAt?: string; error?: string; verification?: {required: string[]; passed: string[]; failed: string[]};
+  progress?: {state: string; detail?: string; at: string};
 }
 export interface RunRecord {
   id: string; jobId: string; jobVersion: string; trigger: {type: 'manual' | 'schedule' | 'retry'; id?: string; actor: string};
@@ -66,7 +67,7 @@ export interface RunRecord {
   concurrency: ConcurrencyPolicy; parameters: Record<string, unknown>; steps: RunStep[]; artifacts: string[]; errors: string[];
   effectiveJob: JobDefinition; selectedWorkers: string[]; approvals: string[]; provenance: Array<{type: string; at: string; detail: string}>;
 }
-export interface ActionContext {run: RunRecord; step: RunStep; worker: WorkerRegistration; parameters: Record<string, unknown>; inputArtifacts: ArtifactRecord[]; readArtifact: (id: string) => unknown; signal: AbortSignal;}
+export interface ActionContext {run: RunRecord; step: RunStep; worker: WorkerRegistration; parameters: Record<string, unknown>; inputArtifacts: ArtifactRecord[]; readArtifact: (id: string) => unknown; signal: AbortSignal; reportProgress: (state: string, detail?: string) => void;}
 export interface ActionOutput {artifacts?: Array<{name: string; value: unknown; type?: string; schema?: string; version?: string; retention?: string}>; evidence?: string[]; verification?: string[]; detail?: string; executionState?: 'verification-pending';}
 export type ActionHandler = (context: ActionContext) => Promise<ActionOutput>;
 export interface AgentActionHandler {readonly path: 'adaptive-harness'; execute(context: ActionContext): Promise<ActionOutput>;}

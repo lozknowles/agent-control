@@ -1,0 +1,24 @@
+apiVersion: agent-control/v1
+kind: Job
+metadata:
+  id: android-node-diagnostic
+  name: Android typed-node diagnostic
+  version: 1.0.0
+  description: Run the harmless system-inspection job on a capability-advertising Android node.
+spec:
+  enabled: true
+  priority: normal
+  concurrency: queue
+  steps:
+    - id: inspect
+      name: Typed Android system inspection
+      action: android-node.diagnostic@1.0.0
+      requires: [platform.android, execution.android.typed_jobs, android.system.inspect]
+      timeoutSeconds: 20
+      outputs:
+        - name: result
+          type: application/json
+          schema: agent-control.android-diagnostic/v1
+          version: 1.0.0
+          retention: run-history
+      verification: [android-typed-job-result-v1]

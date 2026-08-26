@@ -79,9 +79,9 @@ Concurrency is `allow`, `no-overlap`, `replace-running` or `queue`. The conserva
 
 ## Run and step states
 
-Runs use `SCHEDULED`, `QUEUED`, `RUNNING`, `VERIFYING`, `SUCCEEDED`, `FAILED`, `DEGRADED`, `CANCELLED`, `MISSED` and `DISCONNECTED`. Steps additionally distinguish `WAITING_FOR_WORKER`, `WAITING_FOR_DEPENDENCY`, `WAITING_FOR_RESOURCE`, `WAITING_FOR_APPROVAL`, `DISPATCHED` and `RETRY_PENDING`. The dashboard reads these structures; terminal text is supplementary only.
+Runs use `SCHEDULED`, `QUEUED`, `RUNNING`, `VERIFYING`, `SUCCEEDED`, `FAILED`, `DEGRADED`, `CANCELLED`, `MISSED` and `DISCONNECTED`. Steps additionally distinguish `WAITING_FOR_WORKER`, `WAITING_FOR_DEPENDENCY`, `WAITING_FOR_RESOURCE`, `WAITING_FOR_APPROVAL`, `WAITING_FOR_CARD`, `DISPATCHED` and `RETRY_PENDING`. `WAITING_FOR_CARD` is bounded human-presentation progress reported by an already dispatched typed Action; it neither grants approval nor releases the worker/resource lock. The dashboard reads these structures; terminal text is supplementary only.
 
-Legal progression is queue/wait -> running -> verifying -> succeeded, or queue/running -> bounded retry -> running. Policy/configuration/authentication and verification failures are classified separately. A zero process exit is insufficient: every declared verification name must be observed before a step succeeds. An upstream failure cancels dependent steps.
+Legal progression is queue/wait -> running -> verifying -> succeeded, or queue/running -> bounded retry -> running. Policy/configuration/authentication and verification failures are classified separately. A declared step timeout aborts the Action and requests adapter cancellation; operator cancellation remains visible while the exclusive lock is retained until execution returns. A zero process exit is insufficient: every declared verification name must be observed before a step succeeds. An upstream failure cancels dependent steps.
 
 On restart, an in-flight execution is not assumed alive. The ledger marks it `DISCONNECTED` with `execution_identity_unproven_after_restart`; durable locks remain held until an operator reconciles or cancels it. Completed artifacts, Git state and ledger history remain available. PID is never sufficient recovery identity.
 

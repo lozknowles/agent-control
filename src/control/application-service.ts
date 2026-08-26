@@ -8,6 +8,7 @@ import type {RouteDecision} from './routing.js';
 import type {ContextStore} from './context.js';
 import type {JobRuntime} from './job-runtime.js';
 import type {ManagedNodeManager, ManagedNodeSnapshot} from './managed-node.js';
+import type {AndroidNodeManager, AndroidNodeSnapshot} from './android-node.js';
 
 export type ControlEventType =
   | 'system.snapshot'
@@ -68,7 +69,8 @@ export interface SystemProjection {
   scheduler: {nextLaneId: number | null; waiting: number; active: number; paused: number};
   lanes: LaneProjection[];
   providers: Array<{id: string; name: string; kind: string; health: string; capabilities: string[]}>;
-  resources: Array<{id: string; name: string; platform: string; transport: string; capabilities: string[]; health: 'unknown' | 'healthy' | 'degraded' | 'offline'; capacity?: number; active?: number; observedAt: string | null; node?: ManagedNodeSnapshot}>;
+  resources: Array<{id: string; name: string; platform: string; transport: string; capabilities: string[]; health: 'unknown' | 'healthy' | 'degraded' | 'offline'; capacity?: number; active?: number; observedAt: string | null; node?: ManagedNodeSnapshot; androidNode?: AndroidNodeSnapshot}>;
+  androidNodes: AndroidNodeSnapshot[];
   outstandingApprovals: number;
   lastRestorePoint: string | null;
   observedAt: string;
@@ -97,10 +99,11 @@ export class AgentControlService {
   readonly events = new ControlEventBus();
   private readonly routeDecisions = new Map<number, RouteDecision>();
   private approvalCount: () => number = () => 0;
-  private resourceRows: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>> = [];
+  private resourceRows: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node' | 'androidNode'>> = [];
   private contextStore?: ContextStore;
   private jobRuntime?: JobRuntime;
   private managedNodes?: ManagedNodeManager;
+  private androidNodes?: AndroidNodeManager;
 
   constructor(
     readonly state: WorkspaceState,
@@ -113,12 +116,13 @@ export class AgentControlService {
     this.verification = new VerificationService(state, persist);
   }
 
-  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager}) {
+  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node' | 'androidNode'>>; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; androidNodes?: AndroidNodeManager}) {
     if (extras.approvalCount) this.approvalCount = extras.approvalCount;
     if (extras.resources) this.resourceRows = structuredClone(extras.resources);
     if (extras.contextStore) this.contextStore = extras.contextStore;
     if (extras.jobRuntime) this.jobRuntime = extras.jobRuntime;
     if (extras.managedNodes) this.managedNodes = extras.managedNodes;
+    if (extras.androidNodes) this.androidNodes = extras.androidNodes;
     return this;
   }
 
@@ -126,7 +130,10 @@ export class AgentControlService {
     const lanes = this.state.lanes.map(lane => this.projectLane(lane));
     const providerRows = this.providers?.list().map(provider => ({id: provider.id, name: provider.name, kind: provider.kind, health: this.providers?.health(provider.id)?.health ?? 'unknown', capabilities: [...provider.capabilities]})) ?? [];
     const workers = new Map((this.jobRuntime?.workers.list() ?? []).map(worker => [worker.id, worker]));
-    const resourceRows = this.resourceRows.map(resource => { const worker = workers.get(resource.id), node = this.managedNodes?.get(resource.id); return {...resource, capabilities: node?.capabilities ?? resource.capabilities, health: node?.health ?? worker?.health ?? 'unknown', capacity: worker?.capacity, active: worker?.active, observedAt: node?.lastProbeAt ?? worker?.observedAt ?? null, ...(node ? {node} : {})}; });
+    const androidNodes = this.androidNodes?.list() ?? [], androidByResource = new Map(androidNodes.filter(node => node.resourceId).map(node => [node.resourceId!, node]));
+    const resourceRows = this.resourceRows.map(resource => { const worker = workers.get(resource.id), node = this.managedNodes?.get(resource.id), androidNode = androidByResource.get(resource.id); return {...resource, capabilities: node?.capabilities ?? androidNode?.capabilities ?? resource.capabilities, health: node?.health ?? androidNode?.health ?? worker?.health ?? 'unknown', capacity: worker?.capacity, active: worker?.active, observedAt: node?.lastProbeAt ?? androidNode?.lastProbeAt ?? worker?.observedAt ?? null, ...(node ? {node} : {}), ...(androidNode ? {androidNode} : {})}; });
+    const configuredIds = new Set(resourceRows.map(resource => resource.id));
+    for (const androidNode of androidNodes) if (androidNode.resourceId && !configuredIds.has(androidNode.resourceId)) { const worker = workers.get(androidNode.resourceId); resourceRows.push({id: androidNode.resourceId, name: androidNode.resourceId, platform: 'android', transport: 'secure-overlay', capabilities: [...androidNode.capabilities], health: androidNode.health, capacity: worker?.capacity, active: worker?.active, observedAt: androidNode.lastProbeAt, androidNode}); }
     const degraded = this.state.lanes.some(lane => lane.status === 'error') || providerRows.some(provider => provider.health === 'offline') || resourceRows.some(resource => ['degraded', 'offline'].includes(resource.health));
     const jobRuns = this.jobRuntime?.ledger.list() ?? [], jobDefinitions = this.jobRuntime?.catalog.listJobs() ?? [], schedules = this.jobRuntime?.catalog.listSchedules() ?? [];
     return {
@@ -139,6 +146,7 @@ export class AgentControlService {
       lanes,
       providers: providerRows,
       resources: structuredClone(resourceRows),
+      androidNodes: structuredClone(androidNodes),
       outstandingApprovals: this.approvalCount(),
       lastRestorePoint: this.state.lastRestorePoint,
       observedAt: new Date().toISOString(),
@@ -158,7 +166,7 @@ export class AgentControlService {
   setScheduleEnabled(id: string, enabled: boolean, actor: string) { const state = this.mustJobRuntime().setScheduleEnabled(id, enabled); this.events.emit('job.schedule_changed', {scheduleId: id, enabled}, undefined, actor); return state; }
   jobQueue() { return this.mustJobRuntime().queueProjection(); }
   workers() { return this.mustJobRuntime().workers.list(); }
-  nodes() { return this.managedNodes?.list() ?? []; }
+  nodes() { return [...(this.managedNodes?.list() ?? []), ...(this.androidNodes?.list() ?? [])]; }
   resourceLocks() { return this.mustJobRuntime().locks.list(); }
   artifacts(runId?: string) { return this.mustJobRuntime().artifacts.list(runId).map(value => { const {storageRef: _storageRef, ...metadata} = value; return {...metadata, storage: 'agent-control-managed'}; }); }
   artifact(id: string) { const value = this.mustJobRuntime().artifacts.get(id); if (!value) throw new Error('artifact_missing'); const {storageRef: _storageRef, ...metadata} = value; return {...metadata, storage: 'agent-control-managed'}; }

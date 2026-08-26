@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "androidDiscovery": {
+    "enabled": true,
+    "credentialEnv": "AGENT_CONTROL_ANDROID_NODE_TOKEN",
+    "endpointPort": 8788,
+    "endpointProtocol": "http",
+    "probeIntervalSeconds": 30,
+    "staleAfterSeconds": 90,
+    "jobTimeoutSeconds": 130,
+    "secureOverlay": {
+      "adapter": "tailscale",
+      "command": "tailscale"
+    }
+  },
+  "resources": [],
+  "providers": [],
+  "services": [],
+  "lanes": []
+}

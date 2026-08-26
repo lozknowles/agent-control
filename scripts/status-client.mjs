@@ -127,6 +127,7 @@ function parseSnapshot(text) {
   catch { throw new StatusClientError('INVALID_STATUS_RESPONSE', 'controller returned invalid JSON'); }
   if (!value || typeof value !== 'object' || value.schema !== STATUS_SCHEMA || value.authority !== 'AgentControlService') throw new StatusClientError('INVALID_STATUS_RESPONSE', `controller did not return ${STATUS_SCHEMA}`);
   if (!['healthy', 'degraded'].includes(value.health) || !value.scheduler || !Array.isArray(value.lanes) || !Array.isArray(value.providers) || !Array.isArray(value.resources) || !value.jobs) throw new StatusClientError('INVALID_STATUS_RESPONSE', 'controller status projection is incomplete');
+  if (value.androidNodes !== undefined && !Array.isArray(value.androidNodes)) throw new StatusClientError('INVALID_STATUS_RESPONSE', 'controller Android-node projection is invalid');
   return value;
 }
 
@@ -196,6 +197,14 @@ function resourceLines(resource) {
   return [headline, `  ${clip(metrics, 116)}`, `  ${clip(workload, 116)}`];
 }
 
+function androidNodeLines(node) {
+  const identity = node.resourceId ?? `peer:${clip(node.peerId, 16)}`, path = node.route === 'relay' ? `relay${node.relay ? `:${node.relay}` : ''}` : node.route;
+  const first = `${state(node.state).padEnd(28)} ${clip(identity, 26).padEnd(26)} ${path}${Number.isFinite(node.latencyMs) ? ` ${Number(node.latencyMs).toFixed(1)}ms` : ''}`;
+  const capability = node.agentControlCapable ? `CAPABLE ${clip((node.capabilities || []).join(', '), 70)}` : node.endpointReachable ? 'ENDPOINT REACHABLE; CAPABILITY AUTHENTICATION/VALIDATION INCOMPLETE' : 'NO AGENT CONTROL ENDPOINT';
+  const failures = (node.failures || []).length ? `  ${clip(node.failures.join('; '), 116)}` : undefined;
+  return [first, `  ${capability}`, ...(failures ? [failures] : [])];
+}
+
 export function formatAuthoritativeStatus(snapshot, source) {
   const lines = [
     `AGENT CONTROL ${snapshot.version}  ${state(snapshot.health)}`,
@@ -212,6 +221,9 @@ export function formatAuthoritativeStatus(snapshot, source) {
     '',
     'RESOURCES',
     ...(snapshot.resources.length ? snapshot.resources.flatMap(resourceLines) : ['NONE CONFIGURED']),
+    '',
+    'ANDROID DISCOVERY',
+    ...((snapshot.androidNodes ?? []).length ? snapshot.androidNodes.flatMap(androidNodeLines) : ['UNCONFIGURED OR NO ANDROID PEERS OBSERVED']),
   ];
   return `${lines.join('\n')}\n`;
 }

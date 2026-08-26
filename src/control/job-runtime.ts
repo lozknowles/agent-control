@@ -9,6 +9,7 @@ function writeJsonAtomic(file: string, value: unknown) { fs.mkdirSync(path.dirna
 function now() { return new Date().toISOString(); }
 const ACTIVE_RUNS: RunStatus[] = ['SCHEDULED', 'QUEUED', 'RUNNING', 'VERIFYING', 'DISCONNECTED'];
 const TERMINAL_STEPS: StepStatus[] = ['SUCCEEDED', 'FAILED', 'CANCELLED'];
+const ACTION_CANCELLATION_GRACE_MS = 1000;
 
 export class ActionFailure extends Error {constructor(message: string, readonly failureClass: ActionFailureClass, readonly retryable = false) { super(message); this.name = 'ActionFailure'; }}
 export class ActionRegistry {
@@ -29,7 +30,7 @@ export class ActionRegistry {
 export class WorkerRegistry {
   private readonly workers = new Map<string, WorkerRegistration>();
   register(worker: WorkerRegistration) { if (this.workers.has(worker.id)) throw new Error('worker_exists'); this.workers.set(worker.id, structuredClone(worker)); return this; }
-  upsert(worker: WorkerRegistration) { this.workers.set(worker.id, structuredClone(worker)); return this; }
+  upsert(worker: WorkerRegistration) { const previous = this.workers.get(worker.id); this.workers.set(worker.id, structuredClone({...worker, active: previous?.active ?? worker.active})); return this; }
   list() { return [...this.workers.values()].map(worker => structuredClone(worker)); }
   setHealth(id: string, health: WorkerRegistration['health']) { const worker = this.workers.get(id); if (!worker) throw new Error('worker_missing'); worker.health = health; worker.observedAt = now(); }
   resolve(required: string[], at = new Date()): {worker?: WorkerRegistration; rationale: PlacementRationale} {
@@ -94,7 +95,7 @@ export class RunLedger {
   schedule(id: string) { const state = this.schedules.get(id); return state ? structuredClone(state) : undefined; }
   saveSchedule(state: ScheduleState) { this.schedules.set(state.scheduleId, structuredClone(state)); this.save(); return this.schedule(state.scheduleId)!; }
   scheduleStates() { return [...this.schedules.values()].map(state => structuredClone(state)); }
-  recoverFailClosed() { const changed: string[] = []; for (const run of this.runs.values()) { let dirty = false; for (const step of run.steps) if (['DISPATCHED', 'RUNNING', 'VERIFYING'].includes(step.status)) { step.status = 'FAILED'; step.error = 'execution_identity_unproven_after_restart'; step.endedAt = now(); dirty = true; } if (dirty || ['RUNNING', 'VERIFYING'].includes(run.status)) { run.status = 'DISCONNECTED'; run.errors.push('execution_identity_unproven_after_restart'); run.provenance.push({type: 'recovery', at: now(), detail: 'Fail closed: original execution identity not proven'}); changed.push(run.id); } } if (changed.length) this.save(); return changed; }
+  recoverFailClosed() { const changed: string[] = []; for (const run of this.runs.values()) { let dirty = false; for (const step of run.steps) if (['DISPATCHED', 'RUNNING', 'WAITING_FOR_CARD', 'VERIFYING'].includes(step.status)) { step.status = 'FAILED'; step.error = 'execution_identity_unproven_after_restart'; step.endedAt = now(); dirty = true; } if (dirty || ['RUNNING', 'VERIFYING'].includes(run.status)) { run.status = 'DISCONNECTED'; run.errors.push('execution_identity_unproven_after_restart'); run.provenance.push({type: 'recovery', at: now(), detail: 'Fail closed: original execution identity not proven'}); changed.push(run.id); } } if (changed.length) this.save(); return changed; }
   private record(runId: string, type: string, status: string) { fs.mkdirSync(path.dirname(this.file), {recursive: true}); fs.appendFileSync(this.eventsFile, `${JSON.stringify({at: now(), runId, type, status})}\n`, {mode: 0o600}); this.save(); }
   private save() { writeJsonAtomic(this.file, {version: 1, runs: this.list(), schedules: this.scheduleStates()} satisfies LedgerSnapshot); }
 }
@@ -144,12 +145,12 @@ export class JobRuntime {
   cancel(runId: string, reason = 'operator_cancelled') { const run = this.mustRun(runId), controller = this.controllers.get(runId); controller?.abort(reason); for (const step of run.steps) if (!TERMINAL_STEPS.includes(step.status)) { step.status = 'CANCELLED'; step.endedAt = now(); } run.status = 'CANCELLED'; run.endedAt = now(); run.errors.push(reason); if (!controller) this.locks.release(run.id); else run.provenance.push({type: 'cancellation', at: now(), detail: 'Execution abort requested; resource lock retained until handler returns'}); return this.ledger.update(run, 'run.cancelled'); }
   retry(runId: string) { const source = this.mustRun(runId); if (!['FAILED', 'DEGRADED', 'CANCELLED', 'DISCONNECTED'].includes(source.status)) throw new Error('run_not_retryable'); return this.createRun(`${source.jobId}@${source.jobVersion}`, source.parameters, {type: 'retry', id: source.id, actor: 'operator'}); }
   jobsProjection() { return this.catalog.listJobs().map(job => { const runs = this.ledger.list(job.metadata.id), latest = runs[0], schedules = this.catalog.listSchedules().filter(schedule => schedule.spec.job === `${job.metadata.id}@${job.metadata.version}`).map(schedule => ({...schedule, state: this.ledger.schedule(schedule.metadata.id)})); return {...job, latestRun: latest, schedules}; }); }
-  queueProjection() { return this.ledger.list().flatMap(run => run.steps.filter(step => ['QUEUED', 'WAITING_FOR_WORKER', 'WAITING_FOR_DEPENDENCY', 'WAITING_FOR_RESOURCE', 'WAITING_FOR_APPROVAL', 'RETRY_PENDING'].includes(step.status)).map(step => ({runId: run.id, jobId: run.jobId, priority: run.priority, stepId: step.id, status: step.status, reason: step.waitingReason, eligibleWorkers: step.placement?.eligible ?? [], missingCapabilities: step.placement?.rejected.flatMap(item => item.reasons.filter(reason => reason.startsWith('missing:'))) ?? [], scheduledAt: run.scheduledAt, queuedAt: run.requestedAt})) ); }
+  queueProjection() { return this.ledger.list().flatMap(run => run.steps.filter(step => ['QUEUED', 'WAITING_FOR_WORKER', 'WAITING_FOR_DEPENDENCY', 'WAITING_FOR_RESOURCE', 'WAITING_FOR_APPROVAL', 'WAITING_FOR_CARD', 'RETRY_PENDING'].includes(step.status)).map(step => ({runId: run.id, jobId: run.jobId, priority: run.priority, stepId: step.id, status: step.status, reason: step.waitingReason, eligibleWorkers: step.placement?.eligible ?? [], missingCapabilities: step.placement?.rejected.flatMap(item => item.reasons.filter(reason => reason.startsWith('missing:'))) ?? [], scheduledAt: run.scheduledAt, queuedAt: run.requestedAt})) ); }
 
   private nextRunnableStep(run: RunRecord) {
     for (const step of run.steps) {
       if (TERMINAL_STEPS.includes(step.status)) continue;
-      if (['DISPATCHED', 'RUNNING', 'VERIFYING'].includes(step.status)) return undefined;
+      if (['DISPATCHED', 'RUNNING', 'WAITING_FOR_CARD', 'VERIFYING'].includes(step.status)) return undefined;
       const dependencies = step.dependsOn.map(id => run.steps.find(candidate => candidate.id === id));
       if (dependencies.some(dependency => dependency?.status === 'FAILED' || dependency?.status === 'CANCELLED')) { step.status = 'CANCELLED'; step.error = 'upstream_failed'; continue; }
       if (!dependencies.every(dependency => dependency?.status === 'SUCCEEDED')) { step.status = 'WAITING_FOR_DEPENDENCY'; step.waitingReason = `Waiting for ${dependencies.filter(item => item?.status !== 'SUCCEEDED').map(item => item?.id).join(', ')}`; continue; }
@@ -166,25 +167,45 @@ export class JobRuntime {
     if (!lock.ok) { step.status = 'WAITING_FOR_RESOURCE'; step.waitingReason = `Held by ${lock.blocked.map(item => `${item.resource}:${item.runId}`).join(', ')}`; this.ledger.update(run, 'step.waiting_resource'); return; }
     const required = step.capabilityRequest.requires.map(item => item.id), resolution = this.workers.resolve(required, this.clock()); step.placement = resolution.rationale;
     if (!resolution.worker) { step.status = 'WAITING_FOR_WORKER'; step.waitingReason = `No worker satisfies ${required.join(', ')}`; this.locks.release(run.id, step.id); this.ledger.update(run, 'step.waiting_worker'); return; }
-    const worker = resolution.worker, controller = new AbortController(); this.controllers.set(run.id, controller); this.workers.claim(worker.id); step.status = 'RUNNING'; step.startedAt ??= this.clock().toISOString(); run.startedAt ??= step.startedAt; run.status = 'RUNNING'; if (!run.selectedWorkers.includes(worker.id)) run.selectedWorkers.push(worker.id); const attempt: StepAttempt = {attempt: step.attempts.length + 1, startedAt: this.clock().toISOString(), workerId: worker.id}; step.attempts.push(attempt); this.ledger.update(run, 'step.dispatched');
+    const worker = resolution.worker, controller = new AbortController(); let executionUnconfirmed = false, executionSettled = false, execute: Promise<ActionOutput> | undefined; this.controllers.set(run.id, controller); this.workers.claim(worker.id); step.status = 'RUNNING'; step.startedAt ??= this.clock().toISOString(); run.startedAt ??= step.startedAt; run.status = 'RUNNING'; if (!run.selectedWorkers.includes(worker.id)) run.selectedWorkers.push(worker.id); const attempt: StepAttempt = {attempt: step.attempts.length + 1, startedAt: this.clock().toISOString(), workerId: worker.id}; step.attempts.push(attempt); this.ledger.update(run, 'step.dispatched');
     try {
       const inputs = this.inputArtifacts(run, step.id), action = this.actions.resolve(step.action);
       run.provenance.push({type: 'action-dispatch', at: this.clock().toISOString(), detail: `${action.kind}:${step.action}${action.kind === 'agent' ? ':adaptive-harness' : ''}`});
-      const actionContext = {run: structuredClone(run), step: structuredClone(step), worker, parameters: structuredClone(run.parameters), inputArtifacts: inputs, readArtifact: (id: string) => this.artifacts.read(id), signal: controller.signal};
-      const output = action.kind === 'control' ? await action.handler(actionContext) : await action.handler.execute(actionContext);
+      const reportProgress = (state: string, detail?: string) => {
+        if (!/^[A-Z][A-Z0-9_]{0,63}$/.test(state)) throw new ActionFailure('action_progress_state_invalid', 'verification');
+        const safeDetail = detail?.replace(/[\r\n\0]+/g, ' ').slice(0, 240);
+        step.progress = {state, detail: safeDetail, at: this.clock().toISOString()};
+        if (state === 'WAITING_FOR_CARD') { step.status = 'WAITING_FOR_CARD'; step.waitingReason = safeDetail ?? 'Waiting for authorised card presentation'; }
+        run.provenance.push({type: 'action-progress', at: step.progress.at, detail: `${step.action}:${state}`});
+        this.ledger.update(run, 'step.progress');
+      };
+      const actionContext = {run: structuredClone(run), step: structuredClone(step), worker, parameters: structuredClone(run.parameters), inputArtifacts: inputs, readArtifact: (id: string) => this.artifacts.read(id), signal: controller.signal, reportProgress};
+      let timeoutExpired = false;
+      execute = Promise.resolve(action.kind === 'control' ? action.handler(actionContext) : action.handler.execute(actionContext)).finally(() => { executionSettled = true; });
+      const definition = run.effectiveJob.spec.steps.find(item => item.id === step.id)!;
+      let timeout: NodeJS.Timeout | undefined;
+      const output = definition.timeoutSeconds ? await Promise.race([execute, new Promise<never>((_, reject) => { timeout = setTimeout(() => { timeoutExpired = true; controller.abort('step_timeout'); reject(new ActionFailure('action_timeout', 'execution')); }, definition.timeoutSeconds! * 1000); })]).finally(() => { if (timeout) clearTimeout(timeout); }) : await execute;
+      if (timeoutExpired) throw new ActionFailure('action_timeout', 'execution');
       if (action.kind === 'agent' && output.executionState !== 'verification-pending') throw new ActionFailure('agent_action_missing_verification_boundary', 'verification');
       if (controller.signal.aborted) throw new ActionFailure('execution_cancelled', 'execution');
-      this.recordActionOutput(run, step.id, worker.id, output); step.status = 'VERIFYING'; run.status = 'VERIFYING'; this.ledger.update(run, 'step.verifying');
+      this.recordActionOutput(run, step.id, worker.id, output); step.status = 'VERIFYING'; step.waitingReason = undefined; run.status = 'VERIFYING'; this.ledger.update(run, 'step.verifying');
       const requiredVerification = step.verification?.required ?? [], passed = new Set(output.verification ?? []); step.verification!.passed = requiredVerification.filter(item => passed.has(item)); step.verification!.failed = requiredVerification.filter(item => !passed.has(item));
       if (step.verification!.failed.length) throw new ActionFailure(`verification_failed:${step.verification!.failed.join(',')}`, 'verification');
       step.status = 'SUCCEEDED'; step.endedAt = this.clock().toISOString(); attempt.endedAt = step.endedAt; attempt.outcome = output.detail ?? 'completed_and_verified'; run.provenance.push(...(output.evidence ?? []).map(detail => ({type: 'evidence', at: now(), detail}))); this.locks.release(run.id, step.id); this.ledger.update(run, 'step.succeeded'); this.finalizeRun(run);
     } catch (error) {
-      if (controller.signal.aborted) { step.status = 'CANCELLED'; step.endedAt = this.clock().toISOString(); attempt.endedAt = step.endedAt; attempt.outcome = 'execution_cancelled'; run.status = 'CANCELLED'; run.endedAt = step.endedAt; run.errors.push('execution_cancelled'); this.locks.release(run.id, step.id); this.ledger.update(run, 'run.cancellation_confirmed'); return; }
+      if (controller.signal.aborted && controller.signal.reason !== 'step_timeout') { step.status = 'CANCELLED'; step.endedAt = this.clock().toISOString(); attempt.endedAt = step.endedAt; attempt.outcome = 'execution_cancelled'; run.status = 'CANCELLED'; run.endedAt = step.endedAt; run.errors.push('execution_cancelled'); this.locks.release(run.id, step.id); this.ledger.update(run, 'run.cancellation_confirmed'); return; }
+      if (controller.signal.reason === 'step_timeout') {
+        const settled = executionSettled || await Promise.race([execute!.then(() => true, () => true), new Promise<boolean>(resolve => setTimeout(() => resolve(false), ACTION_CANCELLATION_GRACE_MS))]);
+        if (!settled) {
+          executionUnconfirmed = true; step.status = 'FAILED'; step.error = 'action_timeout_execution_unconfirmed'; attempt.outcome = step.error; attempt.errorClass = 'execution'; attempt.retryable = false; this.cancelDependents(run, step.id); run.status = 'DISCONNECTED'; run.errors.push(`${step.id}:execution:${step.error}`); run.provenance.push({type: 'timeout', at: this.clock().toISOString(), detail: 'Execution did not confirm cancellation; worker capacity and resource locks retained'}); this.ledger.update(run, 'step.timeout_unconfirmed'); return;
+        }
+        error = new ActionFailure('action_timeout', 'execution');
+      }
       const failure = error instanceof ActionFailure ? error : new ActionFailure(error instanceof Error ? error.message : String(error), 'execution', true), definition = run.effectiveJob.spec.steps.find(item => item.id === step.id)!, retry = definition.retry ?? run.effectiveJob.spec.retry ?? {attempts: 0, backoffSeconds: 0};
       attempt.endedAt = this.clock().toISOString(); attempt.outcome = failure.message; attempt.retryable = failure.retryable; attempt.errorClass = failure.failureClass; step.error = failure.message; this.locks.release(run.id, step.id);
       if (failure.retryable && step.attempts.length <= retry.attempts) { step.status = 'RETRY_PENDING'; step.nextAttemptAt = new Date(this.clock().getTime() + retry.backoffSeconds * 1000).toISOString(); step.waitingReason = `${failure.failureClass}; retry ${step.attempts.length}/${retry.attempts}`; run.status = 'QUEUED'; this.ledger.update(run, 'step.retry_pending'); }
       else { step.status = 'FAILED'; step.endedAt = this.clock().toISOString(); this.cancelDependents(run, step.id); run.errors.push(`${step.id}:${failure.failureClass}:${failure.message}`); run.status = failure.failureClass === 'verification' ? 'DEGRADED' : 'FAILED'; run.endedAt = step.endedAt; this.ledger.update(run, 'step.failed'); }
-    } finally { this.workers.release(worker.id); this.controllers.delete(run.id); }
+    } finally { if (!executionUnconfirmed) { this.workers.release(worker.id); this.controllers.delete(run.id); } }
   }
 
   private inputArtifacts(run: RunRecord, stepId: string) { const definition = run.effectiveJob.spec.steps.find(step => step.id === stepId)!; return Object.values(definition.inputs ?? {}).map(reference => { const [sourceStep, artifactName] = reference.split('.'); const source = run.steps.find(step => step.id === sourceStep); const record = source?.artifactIds.map(id => this.artifacts.get(id)).find(item => item?.name === artifactName); if (!record) throw new ActionFailure(`input_artifact_missing:${reference}`, 'configuration'); this.artifacts.read(record.id); return record; }); }

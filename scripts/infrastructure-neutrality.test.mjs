@@ -18,7 +18,7 @@ function sourceFiles(directory = '.') {
   return result;
 }
 let tracked;
-try { tracked = execFileSync('git', ['ls-files', '-z'], {encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore']}).split('\0').filter(Boolean); }
+try { tracked = [...new Set([...execFileSync('git', ['ls-files', '-z'], {encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore']}).split('\0').filter(Boolean), ...sourceFiles()])].sort(); }
 catch { tracked = sourceFiles(); }
 const forbidden = [
   ['hpub', 'untu'].join(''),
@@ -47,8 +47,12 @@ test('distributable text contains no private topology identifiers', () => {
   assert.deepEqual(violations, []);
 });
 
-test('runtime does not require a named secure-overlay product', () => {
-  const runtime = tracked.filter(file => /^(src|scripts|android)\//.test(file) && textExtensions.test(file) && fs.existsSync(file));
+test('named secure-overlay support remains confined to its optional integration adapter', () => {
+  const runtime = tracked.filter(file => /^(src|scripts|android)\//.test(file) && !/\.test\.(?:ts|mjs|js)$/.test(file) && textExtensions.test(file) && fs.existsSync(file));
   const vendorName = ['tail', 'scale'].join('');
-  assert.deepEqual(runtime.filter(file => fs.readFileSync(file, 'utf8').toLowerCase().includes(vendorName)), []);
+  const references = runtime.filter(file => fs.readFileSync(file, 'utf8').toLowerCase().includes(vendorName));
+  assert.deepEqual(references, ['src/integrations/secure-overlay.ts']);
+  const adapter = fs.readFileSync('src/integrations/secure-overlay.ts', 'utf8');
+  assert.match(adapter, /--until-direct=false/);
+  assert.doesNotMatch(adapter, /100\.\d+\.\d+\.\d+|pixel|newark|home network/i);
 });

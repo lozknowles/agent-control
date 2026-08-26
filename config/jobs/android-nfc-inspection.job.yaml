@@ -1,0 +1,31 @@
+apiVersion: agent-control/v1
+kind: Job
+metadata:
+  id: android-nfc-inspection
+  name: Android read-only NFC inspection
+  version: 1.0.0
+  description: Arm one capability-selected Android reader for one authorised physical card and return only discovery metadata.
+spec:
+  enabled: true
+  priority: high
+  concurrency: no-overlap
+  parameters:
+    timeoutMs:
+      type: integer
+      default: 60000
+      minimum: 5000
+      maximum: 120000
+  steps:
+    - id: inspect
+      name: Wait for one authorised card and collect safe metadata
+      action: android-node.nfc-inspect@1.0.0
+      requires: [platform.android, execution.android.typed_jobs, device.nfc.reader, nfc.inspect.read_only]
+      approval: android.nfc.read-only
+      timeoutSeconds: 125
+      outputs:
+        - name: result
+          type: application/json
+          schema: agent-control.nfc-inspection/v1
+          version: 1.0.0
+          retention: operator-controlled
+      verification: [android-nfc-read-only-v1]
