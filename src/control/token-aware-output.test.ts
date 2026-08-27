@@ -206,7 +206,9 @@ test('stale lease or ownership scope cannot expand a handle', () => {
 test('local command cancellation is explicit and preserves captured output', async () => {
   const controller = new AbortController(), executor = new LocalCommandExecutor();
   const pending = executor.execute({command: process.execPath, args: ['-e', 'process.stdout.write("started\\n");setTimeout(()=>{},10000)'], cwd: process.cwd(), timeoutMs: 5_000, maxCaptureBytesPerStream: 10_000, signal: controller.signal});
-  setTimeout(() => controller.abort(), 50);
+  // Preserve the stronger assertion that pre-cancellation output survives, while
+  // allowing slower process creation on Windows and loaded CI hosts.
+  setTimeout(() => controller.abort(), 500);
   const captured = await pending;
   assert.equal(captured.cancelled, true);
   assert.equal(captured.exitCode, 130);
