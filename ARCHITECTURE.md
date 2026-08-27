@@ -101,6 +101,30 @@ Tool authorization fails closed for an unknown, omitted, revoked, unavailable or
 
 Dynamic skill proposal, static/security review, sandbox qualification, human approval and promotion into the catalog are **planned 3.1**. No model can currently create and self-grant a privileged skill.
 
+## Token-aware result boundary
+
+Potentially large command results are intercepted at `ToolHandlerRegistry`, after `ToolPolicy` has revalidated the recipe, worker, lease, ownership and approval state and before the result becomes model context. The interceptor accepts one transport-neutral command-result envelope, so local, SSH, managed-node and future backends share the same policy. It does not add a scheduler or a general shell.
+
+```text
+authorised command tool
+       |
+local / remote executor
+       |
+authoritative command-result artifact (stdout, stderr, status, hash, scope)
+       +-- level 0 summary
+       +-- level 1 semantic index
+       +-- level 2 selected captured context
+       +-- level 3 full artifact
+                    |
+               model context
+```
+
+`TokenAwareOutputService` stores the authoritative result and derives an explicitly labelled `COMPLETE`, `COMPACTED`, `TRUNCATED` or `ARTIFACT_ONLY` view. The source hash, byte/line/token counts, expiry and scope accompany every derived representation. `ContextRouter.selectProgressive` chooses the minimum representation capable of discovery, match location, selected inspection or complete verification and reports when that representation exceeds remaining context.
+
+The first specialised adapter is typed ripgrep search. `RipgrepSearchRunner` uses shell-free structured output and an execution-backend-owned workspace boundary; a remote repository path need not exist on the controller. `repository.search.ripgrep` accepts only a bounded query, paths, globs and read options. `command.output.expand` selects only records captured by the original result. Exact task, lane, worker, lease generation and ownership generation must still match, so a handle cannot become a filesystem-read or replay primitive. stderr, non-zero exit status, timeout and cancellation are orthogonal to stdout compaction and remain visible.
+
+Other command families currently use a labelled generic head/tail fallback. Their full retained result remains authoritative. New semantic adapters can be added below the same interception, artifact, context, telemetry and expansion contracts.
+
 ## Routing and qualification
 
 The current line has three complementary implemented layers:

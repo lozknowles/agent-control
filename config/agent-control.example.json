@@ -1,5 +1,22 @@
 {
   "schemaVersion": 1,
+  "tokenAwareOutput": {
+    "completeMaxLines": 48,
+    "completeMaxBytes": 12288,
+    "completeMaxTokens": 4096,
+    "completeMaxMatches": 40,
+    "completeMaxFiles": 8,
+    "indexMaxFiles": 160,
+    "indexMaxLinesPerFile": 120,
+    "genericHeadLines": 20,
+    "genericTailLines": 20,
+    "artifactOnlyAboveReturnedTokens": 16384,
+    "maxCaptureBytesPerStream": 67108864,
+    "retentionSeconds": 3600,
+    "contextBudgetFraction": 0.5,
+    "minimumCompleteTokens": 512,
+    "maximumExpansionContextLines": 10
+  },
   "resources": [
     {
       "id": "controller",

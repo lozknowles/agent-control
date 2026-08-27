@@ -8,6 +8,7 @@ import type {RouteDecision} from './routing.js';
 import type {ContextStore} from './context.js';
 import type {JobRuntime} from './job-runtime.js';
 import type {ManagedNodeManager, ManagedNodeSnapshot} from './managed-node.js';
+import type {OutputAuthorityScope, OutputExpansionRequest, TokenAwareOutputMetrics, TokenAwareOutputService} from './token-aware-output.js';
 
 export type ControlEventType =
   | 'system.snapshot'
@@ -73,6 +74,7 @@ export interface SystemProjection {
   lastRestorePoint: string | null;
   observedAt: string;
   jobs: {total: number; enabled: number; queued: number; running: number; failed: number; succeeded: number; schedulesEnabled: number;};
+  tokenAwareOutput: TokenAwareOutputMetrics;
 }
 
 export class ControlEventBus {
@@ -101,6 +103,7 @@ export class AgentControlService {
   private contextStore?: ContextStore;
   private jobRuntime?: JobRuntime;
   private managedNodes?: ManagedNodeManager;
+  private tokenAwareOutput?: TokenAwareOutputService;
 
   constructor(
     readonly state: WorkspaceState,
@@ -113,12 +116,13 @@ export class AgentControlService {
     this.verification = new VerificationService(state, persist);
   }
 
-  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager}) {
+  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService}) {
     if (extras.approvalCount) this.approvalCount = extras.approvalCount;
     if (extras.resources) this.resourceRows = structuredClone(extras.resources);
     if (extras.contextStore) this.contextStore = extras.contextStore;
     if (extras.jobRuntime) this.jobRuntime = extras.jobRuntime;
     if (extras.managedNodes) this.managedNodes = extras.managedNodes;
+    if (extras.tokenAwareOutput) this.tokenAwareOutput = extras.tokenAwareOutput;
     return this;
   }
 
@@ -143,6 +147,7 @@ export class AgentControlService {
       lastRestorePoint: this.state.lastRestorePoint,
       observedAt: new Date().toISOString(),
       jobs: {total: jobDefinitions.length, enabled: jobDefinitions.filter(job => job.spec.enabled !== false).length, queued: jobRuns.filter(run => run.status === 'QUEUED').length, running: jobRuns.filter(run => ['RUNNING', 'VERIFYING'].includes(run.status)).length, failed: jobRuns.filter(run => ['FAILED', 'DEGRADED', 'DISCONNECTED'].includes(run.status)).length, succeeded: jobRuns.filter(run => run.status === 'SUCCEEDED').length, schedulesEnabled: schedules.filter(schedule => this.jobRuntime?.ledger.schedule(schedule.metadata.id)?.enabled).length},
+      tokenAwareOutput: this.commandOutputMetrics(),
     };
   }
 
@@ -162,6 +167,9 @@ export class AgentControlService {
   resourceLocks() { return this.mustJobRuntime().locks.list(); }
   artifacts(runId?: string) { return this.mustJobRuntime().artifacts.list(runId).map(value => { const {storageRef: _storageRef, ...metadata} = value; return {...metadata, storage: 'agent-control-managed'}; }); }
   artifact(id: string) { const value = this.mustJobRuntime().artifacts.get(id); if (!value) throw new Error('artifact_missing'); const {storageRef: _storageRef, ...metadata} = value; return {...metadata, storage: 'agent-control-managed'}; }
+  commandOutputs() { return this.tokenAwareOutput?.list() ?? []; }
+  commandOutputMetrics(): TokenAwareOutputMetrics { return this.tokenAwareOutput?.metrics() ?? {commandsObserved: 0, commandsCompacted: 0, rgSearchesCompacted: 0, originalOutputBytes: 0, returnedOutputBytes: 0, estimatedTokensOriginal: 0, estimatedTokensReturned: 0, estimatedTokensSaved: 0, contextTokensAvoided: 0, expansionRequests: 0, fullResultRequests: 0, expansionTokensReturned: 0, byJob: {}, byLane: {}, byAgentModel: {}}; }
+  expandCommandOutput(handle: string, request: OutputExpansionRequest, scope: OutputAuthorityScope) { return this.mustTokenAwareOutput().expand(handle, request, scope); }
 
   lane(id: number) { return this.projectLane(this.mustLane(id)); }
   latestRoute(id: number) { return this.routeDecisions.get(id) ?? this.mustLane(id).routing; }
@@ -316,4 +324,5 @@ export class AgentControlService {
   }
   private mustLane(id: number) { const lane = this.state.lanes.find(item => item.id === id); if (!lane) throw new Error('lane_missing'); return lane; }
   private mustJobRuntime() { if (!this.jobRuntime) throw new Error('job_runtime_unconfigured'); return this.jobRuntime; }
+  private mustTokenAwareOutput() { if (!this.tokenAwareOutput) throw new Error('token_aware_output_unconfigured'); return this.tokenAwareOutput; }
 }

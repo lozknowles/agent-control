@@ -32,7 +32,8 @@
     "qualify:managed-node": "node --import tsx scripts/qualify-managed-node.ts",
     "qualify:harness-real": "node --import tsx scripts/qualify-real-harness-job.ts",
     "qualify:openai-chatkit": "node --env-file=.env.local --import tsx scripts/qualify-openai-chatkit.mjs",
-    "qualify:openai-windows": "node --env-file-if-exists=.env.local --import tsx scripts/qualify-openai-windows-harness.ts"
+    "qualify:openai-windows": "node --env-file-if-exists=.env.local --import tsx scripts/qualify-openai-windows-harness.ts",
+    "benchmark:token-output": "node --import tsx scripts/benchmark-token-aware-output.ts"
   },
   "dependencies": {
     "ajv": "^8.17.1",

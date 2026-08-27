@@ -1,6 +1,6 @@
 # Implementation status
 
-Release boundary: **3.1.0-development**. Registry updated: **2026-08-26**.
+Release boundary: **3.1.0-development**. Registry updated: **2026-08-27**.
 
 This document is generated from `config/implementation-status.json`. Update the registry and run `npm run status:implementation -- --write`; do not edit this projection directly. `IMPLEMENTED` means executable source and focused tests exist. `QUALIFIED` additionally requires recorded real evidence. `PARTIAL`, `PLANNED` and `NOT_IMPLEMENTED` remain explicit gaps.
 
@@ -11,6 +11,7 @@ This document is generated from `config/implementation-status.json`. Update the 
 | Generic managed Linux nodes (`nodes.generic-linux-management`) | **QUALIFIED** | Authorised Linux/SSH resources receive fixed read-only discovery, heartbeat and workload projection plus typed governed inspection and maintenance Actions without an arbitrary remote-command path. | None recorded. |
 | Default adaptive-harness dispatch (`harness.default-work-dispatch`) | **IMPLEMENTED** | Normal WorkExecutor agent work builds and records an ExecutionRecipe and receives only a live policy gateway. | None recorded. |
 | Central live ToolPolicy gateway (`tools.central-live-policy`) | **IMPLEMENTED** | Gateway tools are checked against recipe grants, worker compatibility, live lease and ownership generations, approvals and human ownership. | None recorded. |
+| Token-aware command output and ripgrep expansion (`output.token-aware-command-results`) | **QUALIFIED** | Authoritative local or remote command results can be represented as complete, compacted, truncated or artifact-only context with scoped progressive expansion, provenance and token accounting; ripgrep has a structured semantic index. | None recorded. |
 | Job Catalog, scheduler and Run Ledger (`jobs.catalog-scheduler-ledger`) | **IMPLEMENTED** | Versioned Jobs and Schedules produce durable Runs with capability placement, locks, retries, artifacts, approvals and recovery. | None recorded. |
 | Capability-advertising Worker Registry (`workers.capability-registry`) | **IMPLEMENTED** | Workers advertise semantic capabilities and health separately from provider/model routing. | None recorded. |
 | Model-backed Job Action bridge (`jobs.model-backed-action`) | **QUALIFIED** | Agent Actions delegate through HarnessDispatcher, return tool requests through ToolPolicy and stop at the verification boundary. | None recorded. |
@@ -50,6 +51,12 @@ This document is generated from `config/implementation-status.json`. Update the 
 
 - Source: [`src/control/adaptive-harness.ts`](../src/control/adaptive-harness.ts), [`src/control/harness-dispatch.ts`](../src/control/harness-dispatch.ts)
 - Tests: [`src/control/adaptive-harness.test.ts`](../src/control/adaptive-harness.test.ts), [`src/control/harness-dispatch.test.ts`](../src/control/harness-dispatch.test.ts)
+
+### Token-aware command output and ripgrep expansion
+
+- Source: [`src/control/token-aware-output.ts`](../src/control/token-aware-output.ts), [`src/control/repository-search.ts`](../src/control/repository-search.ts), [`src/control/context.ts`](../src/control/context.ts), [`src/control/harness-dispatch.ts`](../src/control/harness-dispatch.ts)
+- Tests: [`src/control/token-aware-output.test.ts`](../src/control/token-aware-output.test.ts), [`src/control/token-aware-context.test.ts`](../src/control/token-aware-context.test.ts), [`src/control/web-server.test.ts`](../src/control/web-server.test.ts)
+- Qualification evidence: [`docs/evidence/token-aware-output-benchmark-20260827.json`](../docs/evidence/token-aware-output-benchmark-20260827.json)
 
 ### Job Catalog, scheduler and Run Ledger
 

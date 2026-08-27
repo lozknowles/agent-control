@@ -4,6 +4,9 @@
 
 ### Added
 
+- A provider-neutral token-aware command-result layer at the existing live ToolPolicy gateway, with authoritative result artifacts, explicit completeness states, scoped expiring handles, deterministic token estimates, provenance and context-budget-aware initial views.
+- Typed read-only ripgrep search and expansion tools supporting summary, file/line index, selected captured matches/files/ranges/context and exact full-result recovery without an unrestricted shell or handle-based filesystem reads.
+- A generic oversized-stdout head/tail fallback, API/dashboard context-token telemetry, configurable thresholds and a deterministic 240-file semantic-recovery benchmark.
 - Generic agentless Linux managed nodes over existing non-interactive SSH, with fixed read-only discovery, versioned heartbeat/inventory projections and no arbitrary remote-command path.
 - Managed-node `ONLINE`/`IDLE`/`BUSY`/`DEGRADED`/`OFFLINE` state, discovered capabilities, protected-workload detection, maintenance state, shared dashboard/TUI/API/status visibility and worker-registry synchronisation.
 - Typed, audited inspection and maintenance Job Actions with capability placement, service allowlists, named approvals, BUSY workload fencing, checksummed result artifacts and provenance.

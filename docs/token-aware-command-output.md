@@ -34,8 +34,8 @@ Expansion is a separately allowlisted read operation. A handle is bound to the t
 
 - `TokenAwareOutputService` classifies, stores, compacts, expands, and accounts for command output.
 - `CommandResultStore` retains authoritative artifacts and handle metadata with bounded lifetimes.
-- `RipgrepOutputAdapter` consumes ripgrep JSON output, preserving raw match data while deriving file, line, and match indexes.
-- `TokenAwareToolResultInterceptor` plugs into `ToolHandlerRegistry` without exposing raw handlers to agents.
+- `RipgrepSearchRunner` produces and consumes ripgrep JSON output, preserving raw match data while deriving file, line, and match indexes.
+- `createTokenAwareToolResultInterceptor` plugs into `ToolHandlerRegistry` without exposing raw handlers to agents.
 - Typed tools provide repository search and expansion. They do not provide an unrestricted shell.
 - `ContextRouter` selects among advertised progressive representations using the current request and available token budget.
 - API and dashboard projections expose safe metadata and token-avoidance telemetry; they do not expose managed storage paths.
@@ -54,9 +54,13 @@ Defaults are deliberately based on output size, not command name alone:
 
 Every threshold is configurable, and a known remaining model-context budget can lower the initial representation. Small output remains complete even when produced by ripgrep.
 
+`estimatedOriginalTokens` applies to captured stdout/stderr. `estimatedReturnedTokens` conservatively accounts for the structured model-facing envelope, including its bounded index, result identity, authority scope and provenance; it is not limited to the visible `stdout` field. Expansion accounting uses the same rule.
+
 ## ripgrep execution
 
 Repository search is a typed, read-only operation. It accepts a query, bounded workspace-relative paths and glob filters, and a bounded captured-context setting. It invokes ripgrep without a shell and requests JSON output for structured paths, line numbers, Unicode, binary-file notices, and summary statistics. The original JSON stream is retained. The model initially receives full output for a small search or a compact index for a larger search.
+
+The execution backend supplies the workspace boundary. Local boundaries canonicalise real paths and reject escapes; a remote backend can authorise its own repository root without requiring that path to exist on the controller.
 
 Selected expansion is reconstructed from captured match/context records. Full expansion returns the exact retained stdout. If requested surrounding lines were not part of the authorised original result, the service reports that they are unavailable instead of reading arbitrary files.
 
@@ -74,6 +78,22 @@ Any existing authorised backend can return the neutral command-result envelope. 
 - handles contain no host paths or credentials and API projections omit storage locations.
 - provenance links every derived representation to the authoritative result hash and execution scope.
 
+## Threat model
+
+| Threat | Control |
+| --- | --- |
+| Handle guessing or replay | Random temporary handle plus exact task, lane, worker, lease-generation and ownership-generation match; expired or stale scope fails closed. |
+| Arbitrary repository/file read | Expansion selectors are checked against paths and match lines already captured in the result. Remote/local workspace boundaries are authorised by the execution backend. |
+| Tool or approval bypass | Both search and expansion are `read` tools granted by `ToolPolicy`; the gateway rechecks current worker, capability, revocation, lease, ownership and human takeover before the raw handler. |
+| Result tampering | SHA-256 covers the retained command envelope; the file store uses private state files and validates handle/object identity when loading. |
+| Output/context exhaustion | Per-stream capture, complete/index/artifact thresholds, expansion-context, selector-count, timeout and request-body limits are bounded and configurable. Crossing the capture boundary becomes explicit `TRUNCATED`, never silent completeness. |
+| Hidden error or failed command | stderr, exit status, timeout and cancellation are independent fields and remain visible when stdout is compacted. |
+| Compromised remote worker gaining authority | Remote backends return data only. They cannot mint a matching Agent Control scope, grant capabilities, alter leases or change output policy. |
+| Offline/reconnect ambiguity | A retained result may be expanded without re-execution until expiry. Expansion neither reconnects nor assumes the remote process still exists. |
+| Credential leakage | The typed ripgrep tool accepts no credential field or shell arguments. Artifact files are private to the Agent Control state directory and safe API projections omit arguments, stdout/stderr and storage paths. Existing generic command handlers remain responsible for never putting credentials in command arguments. |
+
+An authenticated dashboard operator still supplies the retained scope for expansion; operator authentication alone does not erase the result's ownership boundary. Human takeover changes ownership generation, so an agent's prior handle stops expanding through its stale recipe.
+
 ## Agent workflow
 
 Agents use `Inspect -> Expand -> Read`:
@@ -84,9 +104,12 @@ Agents use `Inspect -> Expand -> Read`:
 
 This workflow is exposed by typed capability, not prompt convention alone.
 
+Canonical capabilities are `repository.search`, `command.output.progressive` and `command.output.expand`. The corresponding read tools are `repository.search.ripgrep` and `command.output.expand`; recipes must grant the tools as usual.
+
 ## Limitations
 
 - Token estimates are provider-neutral approximations, not provider billing counts.
 - Selected surrounding context is limited to context captured by the authorised search.
 - Results above the configured artifact limit are explicitly truncated and cannot be fully expanded.
 - The first semantic adapter is ripgrep; other command families use the generic fallback until an adapter is added.
+- Structured JSON carries overhead for a tiny typed search. Such output remains complete rather than being compacted; an already captured conventional small `rg -n` result passes through byte-for-byte.

@@ -10,6 +10,8 @@ import {WorkQueueStore} from './control/work-queue-store.js';
 import {workQueueMetrics} from './control/work-observability.js';
 import {defaultCapabilities, loadWorkspace, type LaneState, type WorkspaceState} from './state.js';
 import {buildJobRuntime, startJobScheduler, startManagedNodeMonitoring} from './control/job-bootstrap.js';
+import {FileCommandResultStore, TokenAwareOutputService} from './control/token-aware-output.js';
+import {Trace} from './control/telemetry.js';
 
 const now = () => new Date().toISOString();
 const config = loadConfig();
@@ -23,12 +25,18 @@ for (const provider of providersFromConfig(config.providers)) providers.register
 if (process.platform === 'linux') for (const discovery of toPtyDiscoveries(discoverLinuxPtys())) { const lane = state.lanes.find(item => discovery.cwd === item.contract.cwd || discovery.cwd.startsWith(`${item.contract.cwd}/`)); ptys.upsert(discovery, lane ? String(lane.id) : null); }
 const queue = new WorkQueueStore().load();
 const jobRuntime = buildJobRuntime(config);
+const commandOutputRoot = path.resolve(process.env.AGENT_CONTROL_STATE_DIR || '.agent-control', 'command-output');
+const tokenAwareOutput = new TokenAwareOutputService(new FileCommandResultStore(commandOutputRoot), {
+  policy: config.tokenAwareOutput,
+  telemetry: event => { const span = new Trace().span(event.name, {attributes: event.attributes}); span.end(true, event.attributes); },
+});
 const service = new AgentControlService(state, ptys, providers).configureProjection({
   approvalCount: () => workQueueMetrics(queue).humanReview,
   resources: config.resources.map(resource => ({id: resource.id, name: resource.name ?? resource.id, platform: resource.platform, transport: resource.transport.type, capabilities: [...resource.capabilities]})),
   contextStore: ContextStore.load(),
   jobRuntime,
   managedNodes: jobRuntime.managedNodes,
+  tokenAwareOutput,
 });
 startManagedNodeMonitoring(jobRuntime, snapshot => service.events.emit('resource.node_changed', {resourceId: snapshot.resourceId, state: snapshot.state, health: snapshot.health, currentWorkload: snapshot.currentWorkload}, undefined, 'managed-node-monitor'));
 startJobScheduler(jobRuntime, (runId, status) => service.events.emit('job.run_changed', {runId, status}, undefined, 'job-scheduler'));

@@ -12,7 +12,7 @@ Orca is available behind a narrow execution-provider contract. Orca may execute 
 - npm
 - Git
 - Bash for shell-script validation and Android helpers
-- Optional: Orca, SSH, Android/Termux, and provider services when configured
+- Optional: ripgrep for typed repository search, Orca, SSH, Android/Termux, and provider services when configured
 
 No host, device, provider, port, GPU, overlay network or absolute repository path is built in.
 
@@ -61,6 +61,14 @@ Configured Linux/SSH resources can opt into the generic `managedNode` policy. Ag
 
 Managed-node inspection and maintenance are typed Job Actions. Package/service/runtime/power operations require a named approval; an active protected workload additionally requires `managed-node.protected-workload-override`, and configured disruptive or competing capabilities are unavailable for placement while BUSY. See [`docs/managed-nodes.md`](docs/managed-nodes.md) for generic onboarding, discovery, operation and failure behavior.
 
+## Token-aware command output
+
+Agent Control can retain a command's authoritative stdout, stderr, exit status and provenance while presenting a much smaller derived view to a model. Command-shaped tool results cross this layer inside the existing `ToolHandlerRegistry`, after live tool/lease/ownership checks and before model context. Small results remain `COMPLETE`; larger results are explicitly `COMPACTED`, `TRUNCATED` or `ARTIFACT_ONLY` and receive a scoped, expiring handle.
+
+The first semantic adapter is the read-only `repository.search.ripgrep` tool. It uses structured ripgrep output to return a summary or file/line match index, while `command.output.expand` can retrieve selected captured matches, files, ranges, context or the exact retained result. Expansion is bound to the original task, lane, worker and authority generations and cannot read arbitrary repository paths. Generic oversized command stdout uses a labelled head/tail view with the same full-result recovery path.
+
+Agents use **Inspect -> Expand -> Read**. The context router selects summary, index, selected context or full artifact according to purpose and budget. The API and dashboard report per-command and cumulative **Context tokens avoided** without claiming provider billing savings. Configure thresholds with the optional `tokenAwareOutput` object shown in [`config/agent-control.example.json`](config/agent-control.example.json). See [`docs/token-aware-command-output.md`](docs/token-aware-command-output.md) for architecture, tool contracts, defaults, provenance and limitations.
+
 The dashboard opens on the **Jobs** catalog. A Job can be started manually from the dashboard, requested through the authenticated API, or created by a timezone-aware Schedule; every trigger calls the same `createRun` path. Job detail includes schedule state, structured step progress, verification, placement, immutable artifact metadata and provenance. Queue inspection exposes age, priority, waiting reason, missing capabilities, eligible workers and resource locks; searchable Run history exposes duration and selected workers. Safe cancel, retry and named-approval controls still enter through `AgentControlService`. Use **Lanes** for interactive agent work. Press `J` in the TUI for the same authoritative Job/Schedule/Run projection.
 
 ## Jobs and schedules
@@ -75,12 +83,13 @@ The qualification Job is deliberately non-production and its twice-daily `07:00/
 
 ## Configuration model
 
-The versioned JSON schema has four independent collections:
+The versioned JSON schema has four independent collections plus one optional output policy:
 
 - `resources`: identity, platform, transport and semantic capabilities;
 - `providers`: provider identity, API endpoint, qualification model, cost and capabilities;
 - `services`: health endpoint and optional explicit start recipe;
 - `lanes`: lane identity, working directory, priority and AUTO/MANUAL mode.
+- `tokenAwareOutput`: provider-neutral completeness, index, artifact, retention and context-budget thresholds.
 
 Resource identity is separate from transport. A resource may be local, SSH, HTTP or Orca-backed. An SSH hostname is transport metadata, not the resource ID. Ports are configurable numbers. Optional unavailable services do not make an otherwise valid zero-provider installation fail.
 
@@ -144,6 +153,7 @@ npm run check:neutrality
 npm test
 npm run check
 npm run qualify:jobs
+npm run benchmark:token-output
 git diff --check
 ```
 
@@ -161,5 +171,6 @@ The neutrality guard rejects private topology identifiers in distributable runti
 - The Job Catalog, Worker Registry, Run Ledger and web dashboard are implemented on this unreleased 3.1 branch. Model-backed Job Actions enter through `HarnessJobAgentAction`; each production provider still requires its own live qualification.
 - No production deployment is performed by this repository release process.
 - The events workflow is qualified only against a safe fixture target; authenticated Facebook discovery and the existing LocalWalks production publisher are not invoked or production-qualified by this source change.
+- Ripgrep is the only semantic command-output adapter in this change. Other oversized command families use the generic labelled fallback until a specialised index is added. A tiny typed ripgrep request retains its structured authoritative stream and therefore can be larger than normal human-formatted `rg`; it is not compacted merely because it came from ripgrep.
 
-The current guide is [`docs/Agent-Control-3.1.0-Operator-Guide.md`](docs/Agent-Control-3.1.0-Operator-Guide.md). Release assets include both the [Markdown guide](assets/releases/3.1.0/Agent-Control-3.1.0-Operator-Guide.md) and the [PDF guide](assets/releases/3.1.0/Agent-Control-3.1.0-Operator-Guide.pdf). The historical 3.0.1 guide remains under `assets/releases/3.0.1/`. See [`ARCHITECTURE.md`](ARCHITECTURE.md), [`docs/web-dashboard.md`](docs/web-dashboard.md), [`docs/jobs-and-scheduler.md`](docs/jobs-and-scheduler.md), [`docs/dashboard-3.1-boundary-review.md`](docs/dashboard-3.1-boundary-review.md), [`docs/conceptual-integrity.md`](docs/conceptual-integrity.md) and [`docs/release-notes-3.1.0-draft.md`](docs/release-notes-3.1.0-draft.md) for the 3.1 boundary and evidence.
+The current guide is [`docs/Agent-Control-3.1.0-Operator-Guide.md`](docs/Agent-Control-3.1.0-Operator-Guide.md). Release assets include both the [Markdown guide](assets/releases/3.1.0/Agent-Control-3.1.0-Operator-Guide.md) and the [PDF guide](assets/releases/3.1.0/Agent-Control-3.1.0-Operator-Guide.pdf). The historical 3.0.1 guide remains under `assets/releases/3.0.1/`. See [`ARCHITECTURE.md`](ARCHITECTURE.md), [`docs/token-aware-command-output.md`](docs/token-aware-command-output.md), [`docs/web-dashboard.md`](docs/web-dashboard.md), [`docs/jobs-and-scheduler.md`](docs/jobs-and-scheduler.md), [`docs/dashboard-3.1-boundary-review.md`](docs/dashboard-3.1-boundary-review.md), [`docs/conceptual-integrity.md`](docs/conceptual-integrity.md) and [`docs/release-notes-3.1.0-draft.md`](docs/release-notes-3.1.0-draft.md) for the 3.1 boundary and evidence.

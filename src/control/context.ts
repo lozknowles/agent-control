@@ -378,6 +378,27 @@ export interface ContextSelection {
   estimatedCost: number;
 }
 
+export type ProgressiveContextPurpose = 'discover' | 'locate_matches' | 'inspect_selected' | 'verify_complete';
+export interface ProgressiveContextRepresentation {
+  level: 0 | 1 | 2 | 3;
+  kind: 'summary' | 'index' | 'selected_context' | 'full_artifact';
+  estimatedTokens: number;
+  available: boolean;
+  authoritative: boolean;
+}
+export interface ProgressiveContextRequest {
+  handle: string;
+  purpose: ProgressiveContextPurpose;
+  remainingContextTokens: number;
+  representations: ProgressiveContextRepresentation[];
+}
+export interface ProgressiveContextSelection {
+  handle: string;
+  representation: ProgressiveContextRepresentation;
+  fitsBudget: boolean;
+  reason: string;
+}
+
 export class ContextRouter {
   constructor(readonly store: ContextStore) {}
 
@@ -420,6 +441,23 @@ export class ContextRouter {
   escalate(previous: ContextSelection, reason: string): ContextSelection {
     const tier = Math.min(4, previous.tier + 1) as ContextTier;
     return {...previous, tier, reason: `escalated:${reason}`};
+  }
+
+  /** Selects a derived command-result view without changing the authoritative artifact. */
+  selectProgressive(request: ProgressiveContextRequest): ProgressiveContextSelection {
+    if (!request.handle.trim() || !Number.isSafeInteger(request.remainingContextTokens) || request.remainingContextTokens < 0) throw new Error('progressive_context_request_invalid');
+    const requiredLevel: Record<ProgressiveContextPurpose, 0 | 1 | 2 | 3> = {discover: 0, locate_matches: 1, inspect_selected: 2, verify_complete: 3};
+    const level = requiredLevel[request.purpose];
+    const eligible = request.representations.filter(item => item.available && item.level >= level).sort((left, right) => left.level - right.level || left.estimatedTokens - right.estimatedTokens);
+    const selected = eligible[0];
+    if (!selected) throw new Error('progressive_context_representation_unavailable');
+    const fitsBudget = selected.estimatedTokens <= request.remainingContextTokens;
+    return {
+      handle: request.handle,
+      representation: structuredClone(selected),
+      fitsBudget,
+      reason: fitsBudget ? `minimum_sufficient_${selected.kind}` : `${selected.kind}_exceeds_context_budget_use_artifact_reference`,
+    };
   }
 }
 

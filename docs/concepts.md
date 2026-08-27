@@ -84,6 +84,10 @@ A versioned instruction style selected for a task/model combination. A smaller m
 
 Selected, minimum-sufficient information supplied to an execution: baton, repository evidence, previous runs, approved documents, shared threads or external sources. Context routing accounts for confidence, complexity, token capacity, cost and latency. Context is informative, not authoritative.
 
+## Token-aware command output
+
+A command result can have one authoritative artifact and several derived context representations: summary, semantic index, selected captured context and complete result. `COMPLETE`, `COMPACTED`, `TRUNCATED` and `ARTIFACT_ONLY` describe what the consumer received; they are never inferred from prompt wording. A scoped handle lets an authorised execution move progressively from **Inspect -> Expand -> Read** without rerunning a search or paying the full initial context cost. Derived views retain a hash link to the artifact and never outrank it as evidence.
+
 ## Evidence
 
 An observation or artifact that supports or contradicts a claim. Evidence has a trust class: executable/test results and repository state outrank agent interpretation and unsupported assertion.

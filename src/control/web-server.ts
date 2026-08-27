@@ -4,13 +4,21 @@ import http, {type IncomingMessage, type ServerResponse} from 'node:http';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import type {AgentControlService, ControlEvent} from './application-service.js';
+import {parseOutputAuthorityScope, parseOutputExpansionRequest} from './token-aware-output.js';
 
 export interface WebServerOptions {host?: string; port?: number; operatorToken?: string; allowedOrigins?: string[]; assetsDir?: string;}
 const MAX_BODY = 64 * 1024;
 const SECRET_KEY = /token|secret|password|credential|authorization|cookie|api[-_]?key/i;
+const SAFE_TOKEN_ACCOUNTING_KEY = /^(?:tokenAwareOutput|contextTokensAvoided|estimatedTokensOriginal|estimatedTokensReturned|estimatedTokensSaved|estimatedOriginalTokens|estimatedReturnedTokens|estimatedTokensAvoided|expansionTokensReturned)$/;
 const DOMAIN_STATUS = new Map<string, number>([
   ['approval_policy_required', 400], ['approval_policy_not_waiting', 409], ['run_not_retryable', 409], ['job_disabled', 409],
   ['job_missing', 404], ['run_missing', 404], ['schedule_missing', 404], ['artifact_missing', 404],
+  ['output_handle_invalid', 404], ['output_handle_expired', 410], ['output_handle_scope_denied', 403],
+  ['output_expansion_request_invalid', 400], ['output_expansion_mode_invalid', 400], ['token_aware_output_unconfigured', 503],
+  ['output_expansion_unknown_field', 400], ['output_expansion_context_invalid', 400], ['output_expansion_file_required', 400],
+  ['output_expansion_files_invalid', 400], ['output_expansion_lines_invalid', 400], ['output_expansion_range_invalid', 400],
+  ['output_expansion_selector_unsupported', 400], ['output_expansion_selector_outside_result', 403],
+  ['output_scope_invalid', 400], ['output_scope_unknown_field', 400], ['output_scope_identity_missing', 400], ['output_scope_generation_invalid', 400],
 ]);
 
 export function startWebDashboard(service: AgentControlService, options: WebServerOptions = {}) {
@@ -43,7 +51,9 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   if (method === 'GET' && url.pathname === '/api/nodes') return json(response, 200, service.nodes());
   if (method === 'GET' && url.pathname === '/api/resources') return json(response, 200, service.resourceLocks());
   if (method === 'GET' && url.pathname === '/api/artifacts') return json(response, 200, service.artifacts(url.searchParams.get('runId') ?? undefined));
-  const jobMatch = url.pathname.match(/^\/api\/jobs\/([^/]+)(?:\/(runs|run))?$/), runMatch = url.pathname.match(/^\/api\/runs\/([^/]+)(?:\/(cancel|retry|approve))?$/), scheduleMatch = url.pathname.match(/^\/api\/schedules\/([^/]+)\/(enable|disable)$/), artifactMatch = url.pathname.match(/^\/api\/artifacts\/([^/]+)$/);
+  if (method === 'GET' && url.pathname === '/api/command-output') return json(response, 200, service.commandOutputs());
+  if (method === 'GET' && url.pathname === '/api/command-output/metrics') return json(response, 200, service.commandOutputMetrics());
+  const jobMatch = url.pathname.match(/^\/api\/jobs\/([^/]+)(?:\/(runs|run))?$/), runMatch = url.pathname.match(/^\/api\/runs\/([^/]+)(?:\/(cancel|retry|approve))?$/), scheduleMatch = url.pathname.match(/^\/api\/schedules\/([^/]+)\/(enable|disable)$/), artifactMatch = url.pathname.match(/^\/api\/artifacts\/([^/]+)$/), outputExpansionMatch = url.pathname.match(/^\/api\/command-output\/([^/]+)\/expand$/);
   if (method === 'GET' && jobMatch && !jobMatch[2]) return json(response, 200, service.job(decodeURIComponent(jobMatch[1])));
   if (method === 'GET' && jobMatch?.[2] === 'runs') return json(response, 200, service.runs(decodeURIComponent(jobMatch[1])));
   if (method === 'GET' && runMatch && !runMatch[2]) return json(response, 200, service.run(decodeURIComponent(runMatch[1])));
@@ -60,6 +70,11 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
     if (runMatch?.[2] === 'retry') return json(response, 201, service.retryJobRun(decodeURIComponent(runMatch[1]), actor));
     if (runMatch?.[2] === 'approve') return json(response, 200, service.approveJobRun(decodeURIComponent(runMatch[1]), String(body.policy ?? ''), actor));
     if (scheduleMatch) return json(response, 200, service.setScheduleEnabled(decodeURIComponent(scheduleMatch[1]), scheduleMatch[2] === 'enable', actor));
+    if (outputExpansionMatch) {
+      const scope = parseOutputAuthorityScope(body.scope);
+      const expansion = parseOutputExpansionRequest(body.expansion);
+      return json(response, 200, service.expandCommandOutput(decodeURIComponent(outputExpansionMatch[1]), expansion, scope));
+    }
     if (!laneMatch?.[2]) throw httpError(404, 'route_not_found');
     const laneId = Number(laneMatch[1]), action = laneMatch[2];
     switch (action) {
@@ -130,7 +145,7 @@ function replyError(response: ServerResponse, error: unknown) { const item = err
 function httpError(status: number, message: string) { return Object.assign(new Error(message), {status}); }
 function secretEqual(left: string, right: string) { const a = createHash('sha256').update(left).digest(), b = createHash('sha256').update(right).digest(); return timingSafeEqual(a, b); }
 function redact(value: unknown, key = ''): unknown {
-  if (SECRET_KEY.test(key)) return '[REDACTED]';
+  if (SECRET_KEY.test(key) && !SAFE_TOKEN_ACCOUNTING_KEY.test(key)) return '[REDACTED]';
   if (typeof value === 'string') return value.replace(/\b(?:sk|rk|pk)-[A-Za-z0-9_-]{12,}\b/g, '[REDACTED]');
   if (Array.isArray(value)) return value.map(item => redact(item));
   if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([name, item]) => [name, redact(item, name)]));

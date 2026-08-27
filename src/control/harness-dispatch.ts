@@ -26,6 +26,16 @@ export interface RawToolHandler {
   (input: unknown, recipe: ExecutionRecipe): Promise<unknown>;
 }
 
+export interface ToolResultInterceptorContext {
+  toolId: string;
+  input: unknown;
+  recipe: ExecutionRecipe;
+  result: unknown;
+}
+
+/** Runs inside the control plane after a raw handler and before its value becomes model-visible. */
+export type ToolResultInterceptor = (context: ToolResultInterceptorContext) => unknown | Promise<unknown>;
+
 export interface ToolInvocationGateway {
   invoke(toolId: string, input?: unknown): Promise<unknown>;
 }
@@ -50,6 +60,16 @@ export type ToolPolicyAuditSink = (event: ToolPolicyAuditEvent) => void;
 /** Raw handlers are retained by the control plane and are never passed to an agent executor. */
 export class ToolHandlerRegistry {
   private readonly handlers = new Map<string, RawToolHandler>();
+  private readonly interceptors: ToolResultInterceptor[];
+
+  constructor(interceptors: ToolResultInterceptor[] = []) {
+    this.interceptors = [...interceptors];
+  }
+
+  use(interceptor: ToolResultInterceptor): this {
+    this.interceptors.push(interceptor);
+    return this;
+  }
 
   register(toolId: string, handler: RawToolHandler): this {
     if (this.handlers.has(toolId)) throw new Error(`tool_handler_exists:${toolId}`);
@@ -60,7 +80,9 @@ export class ToolHandlerRegistry {
   async invoke(toolId: string, input: unknown, recipe: ExecutionRecipe): Promise<unknown> {
     const handler = this.handlers.get(toolId);
     if (!handler) throw new Error(`tool_handler_missing:${toolId}`);
-    return handler(input, recipe);
+    let result = await handler(input, recipe);
+    for (const interceptor of this.interceptors) result = await interceptor({toolId, input, recipe, result});
+    return result;
   }
 }
 

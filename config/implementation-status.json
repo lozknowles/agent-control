@@ -1,7 +1,7 @@
 {
   "schema": "agent-control.implementation-status/v1",
   "release": "3.1.0-development",
-  "updated": "2026-08-26",
+  "updated": "2026-08-27",
   "capabilities": [
     {
       "id": "bootstrap.safe-empty-config",
@@ -44,6 +44,15 @@
       "summary": "Gateway tools are checked against recipe grants, worker compatibility, live lease and ownership generations, approvals and human ownership.",
       "sources": ["src/control/adaptive-harness.ts", "src/control/harness-dispatch.ts"],
       "tests": ["src/control/adaptive-harness.test.ts", "src/control/harness-dispatch.test.ts"]
+    },
+    {
+      "id": "output.token-aware-command-results",
+      "title": "Token-aware command output and ripgrep expansion",
+      "status": "QUALIFIED",
+      "summary": "Authoritative local or remote command results can be represented as complete, compacted, truncated or artifact-only context with scoped progressive expansion, provenance and token accounting; ripgrep has a structured semantic index.",
+      "sources": ["src/control/token-aware-output.ts", "src/control/repository-search.ts", "src/control/context.ts", "src/control/harness-dispatch.ts"],
+      "tests": ["src/control/token-aware-output.test.ts", "src/control/token-aware-context.test.ts", "src/control/web-server.test.ts"],
+      "evidence": ["docs/evidence/token-aware-output-benchmark-20260827.json"]
     },
     {
       "id": "jobs.catalog-scheduler-ledger",

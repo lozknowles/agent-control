@@ -93,12 +93,31 @@ export interface LaneConfig {
   mode?: 'auto' | 'manual';
 }
 
+export interface TokenAwareOutputConfig {
+  completeMaxLines?: number;
+  completeMaxBytes?: number;
+  completeMaxTokens?: number;
+  completeMaxMatches?: number;
+  completeMaxFiles?: number;
+  indexMaxFiles?: number;
+  indexMaxLinesPerFile?: number;
+  genericHeadLines?: number;
+  genericTailLines?: number;
+  artifactOnlyAboveReturnedTokens?: number;
+  maxCaptureBytesPerStream?: number;
+  retentionSeconds?: number;
+  contextBudgetFraction?: number;
+  minimumCompleteTokens?: number;
+  maximumExpansionContextLines?: number;
+}
+
 export interface AgentControlConfig {
   schemaVersion: 1;
   resources: ResourceConfig[];
   providers: ProviderConfig[];
   services: ServiceConfig[];
   lanes: LaneConfig[];
+  tokenAwareOutput?: TokenAwareOutputConfig;
 }
 
 export const emptyConfig = (): AgentControlConfig => ({
@@ -136,8 +155,9 @@ function assertIntegerRange(value: unknown, label: string, minimum: number, maxi
 
 function rejectSecrets(value: unknown, trail = 'config') {
   if (!value || typeof value !== 'object') return;
+  const safeTokenAccountingKeys = new Set(['tokenAwareOutput', 'completeMaxTokens', 'artifactOnlyAboveReturnedTokens', 'minimumCompleteTokens']);
   for (const [key, child] of Object.entries(value)) {
-    if (/token|password|secret|api.?key/i.test(key) && key !== 'credentialEnv') {
+    if (/token|password|secret|api.?key/i.test(key) && key !== 'credentialEnv' && !safeTokenAccountingKeys.has(key)) {
       throw new Error(`secret_material_forbidden:${trail}.${key}`);
     }
     rejectSecrets(child, `${trail}.${key}`);
@@ -155,6 +175,7 @@ export function validateConfig(raw: unknown): AgentControlConfig {
     providers: input.providers ?? [],
     services: input.services ?? [],
     lanes: input.lanes ?? [],
+    tokenAwareOutput: input.tokenAwareOutput,
   };
   for (const key of ['resources', 'providers', 'services', 'lanes'] as const) {
     if (!Array.isArray(config[key])) throw new Error(`invalid_config_${key}`);
@@ -231,6 +252,18 @@ export function validateConfig(raw: unknown): AgentControlConfig {
     if (!Number.isSafeInteger(lane.id) || lane.id < 1 || laneIds.has(lane.id)) throw new Error('invalid_lane_id');
     laneIds.add(lane.id);
     if (!lane.name?.trim()) throw new Error(`lane_name_required:${lane.id}`);
+  }
+  if (config.tokenAwareOutput !== undefined) {
+    if (!config.tokenAwareOutput || typeof config.tokenAwareOutput !== 'object' || Array.isArray(config.tokenAwareOutput)) throw new Error('invalid_token_aware_output');
+    const integerLimits: Array<[keyof TokenAwareOutputConfig, number, number]> = [
+      ['completeMaxLines', 0, 1_000_000], ['completeMaxBytes', 0, 1_073_741_824], ['completeMaxTokens', 0, 100_000_000],
+      ['completeMaxMatches', 0, 10_000_000], ['completeMaxFiles', 0, 1_000_000], ['indexMaxFiles', 1, 1_000_000],
+      ['indexMaxLinesPerFile', 1, 1_000_000], ['genericHeadLines', 0, 100_000], ['genericTailLines', 0, 100_000],
+      ['artifactOnlyAboveReturnedTokens', 1, 100_000_000], ['maxCaptureBytesPerStream', 1024, 1_073_741_824],
+      ['retentionSeconds', 60, 2_592_000], ['minimumCompleteTokens', 0, 100_000_000], ['maximumExpansionContextLines', 0, 1_000],
+    ];
+    for (const [key, minimum, maximum] of integerLimits) assertIntegerRange(config.tokenAwareOutput[key], `token_aware_output_${key}`, minimum, maximum);
+    if (config.tokenAwareOutput.contextBudgetFraction !== undefined && (!(config.tokenAwareOutput.contextBudgetFraction > 0) || config.tokenAwareOutput.contextBudgetFraction > 1)) throw new Error('invalid_token_aware_output_context_budget_fraction');
   }
   return config;
 }

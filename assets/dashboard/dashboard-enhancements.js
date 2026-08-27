@@ -1,24 +1,24 @@
-const jobState = {jobs: [], runs: [], queue: [], workers: [], resources: [], locks: [], artifacts: [], selectedJob: null, selectedRun: null, search: ''};
+const jobState = {jobs: [], runs: [], queue: [], workers: [], resources: [], locks: [], artifacts: [], outputMetrics: null, selectedJob: null, selectedRun: null, search: ''};
 const terminalRunStatuses = new Set(['SUCCEEDED', 'FAILED', 'DEGRADED', 'CANCELLED', 'MISSED', 'DISCONNECTED']);
 const retryableRunStatuses = new Set(['FAILED', 'DEGRADED', 'CANCELLED', 'DISCONNECTED']);
 const baseRefresh = refresh;
 
 refresh = async () => {
   await baseRefresh();
-  const endpoints = ['/api/jobs', '/api/runs', '/api/queue', '/api/workers', '/api/resources', '/api/artifacts'];
-  const [jobs, runs, queue, workers, locks, artifacts] = await Promise.all(endpoints.map(async url => {
+  const endpoints = ['/api/jobs', '/api/runs', '/api/queue', '/api/workers', '/api/resources', '/api/artifacts', '/api/command-output/metrics'];
+  const [jobs, runs, queue, workers, locks, artifacts, outputMetrics] = await Promise.all(endpoints.map(async url => {
     const response = await fetch(url);
     if (!response.ok) throw new Error(`${url} ${response.status}`);
     return response.json();
   }));
-  Object.assign(jobState, {jobs, runs, queue, workers, resources: state.snapshot?.resources || [], locks, artifacts});
+  Object.assign(jobState, {jobs, runs, queue, workers, resources: state.snapshot?.resources || [], locks, artifacts, outputMetrics});
   if (!jobState.selectedJob && jobs.length) jobState.selectedJob = jobs[0].metadata.id;
   if (jobState.selectedJob && !jobs.some(job => job.metadata.id === jobState.selectedJob)) jobState.selectedJob = jobs[0]?.metadata.id ?? null;
   renderJobs();
 };
 
 renderSystem = snapshot => {
-  const items = [['Scheduler', snapshot.paused ? 'PAUSED' : 'ACTIVE'], ['Job runs', snapshot.jobs.running], ['Queued', snapshot.jobs.queued], ['Jobs', snapshot.jobs.total], ['Approvals', snapshot.outstandingApprovals], ['Resources', snapshot.resources.length]];
+  const items = [['Scheduler', snapshot.paused ? 'PAUSED' : 'ACTIVE'], ['Job runs', snapshot.jobs.running], ['Queued', snapshot.jobs.queued], ['Jobs', snapshot.jobs.total], ['Approvals', snapshot.outstandingApprovals], ['Context tokens avoided', snapshot.tokenAwareOutput?.contextTokensAvoided || 0], ['Resources', snapshot.resources.length]];
   document.querySelector('#system-summary').innerHTML = `<div class="summary-grid">${items.map(([label, value]) => `<div class="summary-item"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`).join('')}</div>`;
 };
 
@@ -59,6 +59,7 @@ function renderJobs() {
   renderRunHistory();
   renderManagedNodes();
   renderWorkersAndLocks();
+  renderCommandOutputMetrics();
   bindRunLinks();
 }
 
@@ -152,6 +153,14 @@ function renderWorkersAndLocks() {
   const workers = jobState.workers;
   document.querySelector('#worker-list').innerHTML = workers.length ? workers.map(worker => `<div class="compact-row worker-row"><strong>${esc(worker.id)}</strong><span class="status-pill ${statusClass(worker.health === 'offline' ? 'FAILED' : worker.health.toUpperCase())}">${esc(worker.health)}</span><small>Capacity ${esc(worker.active)}/${esc(worker.capacity)} · observed ${esc(timeLabel(worker.observedAt))}</small><small>${esc(worker.capabilities.join(', ') || 'No capabilities')}</small></div>`).join('') : '<div class="compact-empty">No workers registered</div>';
   document.querySelector('#resource-locks').innerHTML = jobState.locks.length ? `<span class="subheading">Active resource locks</span>${jobState.locks.map(lock => `<button class="compact-row" data-run="${esc(lock.runId)}"><strong>${esc(lock.resource)}</strong><span class="status-pill waiting">HELD</span><small>${esc(lock.runId)} · step ${esc(lock.stepId)} · since ${esc(timeLabel(lock.acquiredAt))}</small></button>`).join('')}` : '<div class="compact-empty">No resource locks held</div>';
+}
+
+function renderCommandOutputMetrics() {
+  const metrics = jobState.outputMetrics;
+  const element = document.querySelector('#command-output-metrics');
+  if (!metrics || !metrics.commandsObserved) { element.innerHTML = '<div class="compact-empty">No command output observed this session</div>'; return; }
+  const reduction = metrics.estimatedTokensOriginal ? Math.max(0, Math.round(metrics.contextTokensAvoided / metrics.estimatedTokensOriginal * 100)) : 0;
+  element.innerHTML = `<div class="compact-row worker-row"><strong>Context tokens avoided</strong><span class="status-pill">${esc(metrics.contextTokensAvoided)}</span><small>${esc(reduction)}% effective reduction after expansions</small><small>${esc(metrics.commandsCompacted)} compacted / ${esc(metrics.commandsObserved)} observed · ${esc(metrics.expansionRequests)} expansions · ${esc(metrics.fullResultRequests)} full-result requests</small><small>${esc(byteLabel(metrics.originalOutputBytes))} authoritative → ${esc(byteLabel(metrics.returnedOutputBytes))} model-facing</small></div>`;
 }
 
 function bindRunLinks() {

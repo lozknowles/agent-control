@@ -72,3 +72,16 @@ test('generic managed Linux node policy is configuration and validates workload 
   assert.throws(() => validateConfig({schemaVersion: 1, resources: [{id: 'bad', platform: 'linux', transport: {type: 'ssh', host: 'safe.example'}, capabilities: [], managedNode: {enabled: true, runtime: {directory: '/tmp/x;reboot', branch: 'main'}}}], providers: [], services: [], lanes: []}), /runtime_directory/);
   assert.throws(() => validateConfig({schemaVersion: 1, resources: [{id: 'bad', platform: 'linux', transport: {type: 'ssh', host: 'safe.example'}, capabilities: [], managedNode: {enabled: true, connectivity: [{id: 'overlay', capability: 'transport.secure-overlay', interfaceName: '-oBad'}]}}], providers: [], services: [], lanes: []}), /connectivity_interface/);
 });
+
+test('token-aware output thresholds are optional machine-neutral configuration', () => {
+  const config = validateConfig({schemaVersion: 1, resources: [], providers: [], services: [], lanes: [], tokenAwareOutput: {completeMaxLines: 25, completeMaxBytes: 8192, completeMaxTokens: 2048, completeMaxMatches: 20, completeMaxFiles: 4, indexMaxFiles: 80, maxCaptureBytesPerStream: 1048576, retentionSeconds: 600, contextBudgetFraction: .4}});
+  assert.equal(config.tokenAwareOutput?.completeMaxLines, 25);
+  assert.equal(config.tokenAwareOutput?.contextBudgetFraction, .4);
+});
+
+test('token-aware output configuration rejects unsafe or nonsensical limits', () => {
+  const base = {schemaVersion: 1, resources: [], providers: [], services: [], lanes: []};
+  assert.throws(() => validateConfig({...base, tokenAwareOutput: {maxCaptureBytesPerStream: 1}}), /maxCaptureBytesPerStream/);
+  assert.throws(() => validateConfig({...base, tokenAwareOutput: {retentionSeconds: 0}}), /retentionSeconds/);
+  assert.throws(() => validateConfig({...base, tokenAwareOutput: {contextBudgetFraction: 1.1}}), /context_budget_fraction/);
+});

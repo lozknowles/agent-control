@@ -34,8 +34,10 @@ Read projections:
 - `GET /api/queue`, `GET /api/workers`, `GET /api/resources`
 - `GET /api/nodes` (managed-node heartbeat, inventory, workload and maintenance projection)
 - `GET /api/artifacts/:id` (metadata and checksum, not secret content)
+- `GET /api/command-output` (safe handle metadata; no managed storage path or command content)
+- `GET /api/command-output/metrics` (bytes, estimated tokens, expansions and context tokens avoided)
 
-Authenticated Job requests are `POST /api/jobs/:id/run`, schedule `enable`/`disable`, and Run `cancel`, `retry` and `approve`. They call `AgentControlService`, which delegates to the one authoritative `JobRuntime`. The HTTP layer cannot register a worker, grant a capability, edit a manifest, acquire a resource lock, dispatch an Action or write a PTY.
+Authenticated Job requests are `POST /api/jobs/:id/run`, schedule `enable`/`disable`, and Run `cancel`, `retry` and `approve`. Scoped command-result expansion is `POST /api/command-output/:handle/expand`; operator authentication is necessary but not sufficient, because the supplied task/lane/worker/lease/ownership scope must exactly match the retained result. These calls enter `AgentControlService`. The HTTP layer cannot register a worker, grant a capability, edit a manifest, acquire a resource lock, dispatch an Action or write a PTY.
 
 Operator requests under `/api/lanes/:id/` include `pause`, `resume`, `priority`, `mode`, `task`, `reroute`, `handoff`, `clone`, `cancel`, `takeover`, `return-ownership` and verification transitions. These endpoints call application-service methods. There is deliberately no direct lease, scheduler-state, persistence, terminal-input or execution-provider endpoint.
 
@@ -49,6 +51,7 @@ The prominent **Managed Nodes** panel renders the same resource-attached snapsho
 - Browser token retention: current tab only; no cookie and no server-side browser session.
 - Response protection: no-store, CSP, frame denial, referrer suppression and secret-like key/value redaction.
 - Audit: accepted service commands append typed records to the Agent Control event journal.
+- Output handles: random, expiring, authority-scoped references that select only data captured by the original result; they are not file paths or repository readers.
 
 Remote binding is not a turnkey security boundary. If explicitly enabled, place the listener behind authenticated TLS, restrict network reachability, set an exact `AGENT_CONTROL_WEB_ALLOWED_ORIGINS` list, rotate the operator token, and verify the reverse proxy does not buffer SSE. Never publish it directly to the public internet.
 
