@@ -9,6 +9,7 @@ import type {ContextStore} from './context.js';
 import type {JobRuntime} from './job-runtime.js';
 import type {ManagedNodeManager, ManagedNodeSnapshot} from './managed-node.js';
 import type {OutputAuthorityScope, OutputExpansionRequest, TokenAwareOutputMetrics, TokenAwareOutputService} from './token-aware-output.js';
+import {MemoryHarnessEfficiencyLedger, type HarnessEfficiencyLedgerPort, type HarnessEfficiencyMetrics} from './harness-efficiency.js';
 
 export type ControlEventType =
   | 'system.snapshot'
@@ -75,6 +76,7 @@ export interface SystemProjection {
   observedAt: string;
   jobs: {total: number; enabled: number; queued: number; running: number; failed: number; succeeded: number; schedulesEnabled: number;};
   tokenAwareOutput: TokenAwareOutputMetrics;
+  harnessEfficiency: HarnessEfficiencyMetrics;
 }
 
 export class ControlEventBus {
@@ -104,6 +106,7 @@ export class AgentControlService {
   private jobRuntime?: JobRuntime;
   private managedNodes?: ManagedNodeManager;
   private tokenAwareOutput?: TokenAwareOutputService;
+  private harnessEfficiency?: HarnessEfficiencyLedgerPort;
 
   constructor(
     readonly state: WorkspaceState,
@@ -116,13 +119,14 @@ export class AgentControlService {
     this.verification = new VerificationService(state, persist);
   }
 
-  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService}) {
+  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService; harnessEfficiency?: HarnessEfficiencyLedgerPort}) {
     if (extras.approvalCount) this.approvalCount = extras.approvalCount;
     if (extras.resources) this.resourceRows = structuredClone(extras.resources);
     if (extras.contextStore) this.contextStore = extras.contextStore;
     if (extras.jobRuntime) this.jobRuntime = extras.jobRuntime;
     if (extras.managedNodes) this.managedNodes = extras.managedNodes;
     if (extras.tokenAwareOutput) this.tokenAwareOutput = extras.tokenAwareOutput;
+    if (extras.harnessEfficiency) this.harnessEfficiency = extras.harnessEfficiency;
     return this;
   }
 
@@ -148,6 +152,7 @@ export class AgentControlService {
       observedAt: new Date().toISOString(),
       jobs: {total: jobDefinitions.length, enabled: jobDefinitions.filter(job => job.spec.enabled !== false).length, queued: jobRuns.filter(run => run.status === 'QUEUED').length, running: jobRuns.filter(run => ['RUNNING', 'VERIFYING'].includes(run.status)).length, failed: jobRuns.filter(run => ['FAILED', 'DEGRADED', 'DISCONNECTED'].includes(run.status)).length, succeeded: jobRuns.filter(run => run.status === 'SUCCEEDED').length, schedulesEnabled: schedules.filter(schedule => this.jobRuntime?.ledger.schedule(schedule.metadata.id)?.enabled).length},
       tokenAwareOutput: this.commandOutputMetrics(),
+      harnessEfficiency: this.harnessEfficiencyMetrics(),
     };
   }
 
@@ -169,6 +174,12 @@ export class AgentControlService {
   artifact(id: string) { const value = this.mustJobRuntime().artifacts.get(id); if (!value) throw new Error('artifact_missing'); const {storageRef: _storageRef, ...metadata} = value; return {...metadata, storage: 'agent-control-managed'}; }
   commandOutputs() { return this.tokenAwareOutput?.list() ?? []; }
   commandOutputMetrics(): TokenAwareOutputMetrics { return this.tokenAwareOutput?.metrics() ?? {commandsObserved: 0, commandsCompacted: 0, rgSearchesCompacted: 0, originalOutputBytes: 0, returnedOutputBytes: 0, estimatedTokensOriginal: 0, estimatedTokensReturned: 0, estimatedTokensSaved: 0, contextTokensAvoided: 0, expansionRequests: 0, fullResultRequests: 0, expansionTokensReturned: 0, byJob: {}, byLane: {}, byAgentModel: {}}; }
+  harnessEfficiencyMetrics(): HarnessEfficiencyMetrics { return this.harnessEfficiency?.metrics() ?? new MemoryHarnessEfficiencyLedger().metrics(); }
+  modelInvocations(options: {limit?: number; runId?: string; jobId?: string} = {}) {
+    const limit = Math.min(1_000, Math.max(1, Number.isSafeInteger(options.limit) ? options.limit! : 200));
+    const records = (this.harnessEfficiency?.list() ?? []).filter(record => (!options.runId || record.runId === options.runId) && (!options.jobId || record.jobId === options.jobId));
+    return records.slice(-limit);
+  }
   expandCommandOutput(handle: string, request: OutputExpansionRequest, scope: OutputAuthorityScope) { return this.mustTokenAwareOutput().expand(handle, request, scope); }
 
   lane(id: number) { return this.projectLane(this.mustLane(id)); }

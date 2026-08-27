@@ -85,3 +85,16 @@ test('token-aware output configuration rejects unsafe or nonsensical limits', ()
   assert.throws(() => validateConfig({...base, tokenAwareOutput: {retentionSeconds: 0}}), /retentionSeconds/);
   assert.throws(() => validateConfig({...base, tokenAwareOutput: {contextBudgetFraction: 1.1}}), /context_budget_fraction/);
 });
+
+test('harness efficiency profiles are configurable without provider or machine identity', () => {
+  const config = validateConfig({schemaVersion: 1, resources: [], providers: [], services: [], lanes: [], harnessEfficiency: {routingMode: 'observe', minimumVerifiedRuns: 12, minimumSuccessRate: .95, minimumSameModelControlledRuns: 10, profiles: {THIN: {maximumInitialContextTokens: 3000, maximumSources: 10, maximumOptionalSkills: 1, maximumTools: 5, maximumTurns: 2, allowBroadRepositoryContext: false, allowSharedContext: false}}}});
+  assert.equal(config.harnessEfficiency?.routingMode, 'observe');
+  assert.equal(config.harnessEfficiency?.profiles?.THIN?.maximumInitialContextTokens, 3000);
+});
+
+test('harness efficiency configuration rejects unsafe automatic-routing thresholds', () => {
+  const base = {schemaVersion: 1, resources: [], providers: [], services: [], lanes: []};
+  assert.throws(() => validateConfig({...base, harnessEfficiency: {routingMode: 'automatic'}}), /routing_mode/);
+  assert.throws(() => validateConfig({...base, harnessEfficiency: {minimumSuccessRate: 0}}), /minimum_success_rate/);
+  assert.throws(() => validateConfig({...base, harnessEfficiency: {profiles: {THIN: {maximumInitialContextTokens: 1}}}}), /harness_efficiency_context/);
+});

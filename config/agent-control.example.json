@@ -17,6 +17,17 @@
     "minimumCompleteTokens": 512,
     "maximumExpansionContextLines": 10
   },
+  "harnessEfficiency": {
+    "routingMode": "observe",
+    "minimumVerifiedRuns": 10,
+    "minimumSuccessRate": 0.9,
+    "minimumSameModelControlledRuns": 10,
+    "profiles": {
+      "THIN": {"maximumInitialContextTokens": 4096, "maximumSources": 12, "maximumOptionalSkills": 1, "maximumTools": 6, "maximumTurns": 3, "allowBroadRepositoryContext": false, "allowSharedContext": false},
+      "STANDARD": {"maximumInitialContextTokens": 16384, "maximumSources": 48, "maximumOptionalSkills": 4, "maximumTools": 24, "maximumTurns": 10, "allowBroadRepositoryContext": false, "allowSharedContext": true},
+      "DEEP": {"maximumInitialContextTokens": 65536, "maximumSources": 192, "maximumOptionalSkills": 16, "maximumTools": 64, "maximumTurns": 32, "allowBroadRepositoryContext": true, "allowSharedContext": true}
+    }
+  },
   "resources": [
     {
       "id": "controller",

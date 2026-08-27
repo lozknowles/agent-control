@@ -52,6 +52,7 @@ const control = new AgentControlService(state, ptys, providers).configureProject
   jobRuntime,
   managedNodes: jobRuntime.managedNodes,
   tokenAwareOutput,
+  harnessEfficiency: jobRuntime.harnessEfficiency,
 });
 startManagedNodeMonitoring(jobRuntime, snapshot => control.events.emit('resource.node_changed', {resourceId: snapshot.resourceId, state: snapshot.state, health: snapshot.health, currentWorkload: snapshot.currentWorkload}, undefined, 'managed-node-monitor'));
 startJobScheduler(jobRuntime, (runId, status) => control.events.emit('job.run_changed', {runId, status}, undefined, 'job-scheduler'));

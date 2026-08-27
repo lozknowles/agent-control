@@ -111,6 +111,24 @@ export interface TokenAwareOutputConfig {
   maximumExpansionContextLines?: number;
 }
 
+export interface HarnessProfileConfig {
+  maximumInitialContextTokens?: number;
+  maximumSources?: number;
+  maximumOptionalSkills?: number;
+  maximumTools?: number;
+  maximumTurns?: number;
+  allowBroadRepositoryContext?: boolean;
+  allowSharedContext?: boolean;
+}
+
+export interface HarnessEfficiencyConfig {
+  routingMode?: 'observe' | 'enforce';
+  minimumVerifiedRuns?: number;
+  minimumSuccessRate?: number;
+  minimumSameModelControlledRuns?: number;
+  profiles?: Partial<Record<'THIN' | 'STANDARD' | 'DEEP', HarnessProfileConfig>>;
+}
+
 export interface AgentControlConfig {
   schemaVersion: 1;
   resources: ResourceConfig[];
@@ -118,6 +136,7 @@ export interface AgentControlConfig {
   services: ServiceConfig[];
   lanes: LaneConfig[];
   tokenAwareOutput?: TokenAwareOutputConfig;
+  harnessEfficiency?: HarnessEfficiencyConfig;
 }
 
 export const emptyConfig = (): AgentControlConfig => ({
@@ -155,7 +174,7 @@ function assertIntegerRange(value: unknown, label: string, minimum: number, maxi
 
 function rejectSecrets(value: unknown, trail = 'config') {
   if (!value || typeof value !== 'object') return;
-  const safeTokenAccountingKeys = new Set(['tokenAwareOutput', 'completeMaxTokens', 'artifactOnlyAboveReturnedTokens', 'minimumCompleteTokens']);
+  const safeTokenAccountingKeys = new Set(['tokenAwareOutput', 'completeMaxTokens', 'artifactOnlyAboveReturnedTokens', 'minimumCompleteTokens', 'harnessEfficiency', 'maximumInitialContextTokens']);
   for (const [key, child] of Object.entries(value)) {
     if (/token|password|secret|api.?key/i.test(key) && key !== 'credentialEnv' && !safeTokenAccountingKeys.has(key)) {
       throw new Error(`secret_material_forbidden:${trail}.${key}`);
@@ -176,6 +195,7 @@ export function validateConfig(raw: unknown): AgentControlConfig {
     services: input.services ?? [],
     lanes: input.lanes ?? [],
     tokenAwareOutput: input.tokenAwareOutput,
+    harnessEfficiency: input.harnessEfficiency,
   };
   for (const key of ['resources', 'providers', 'services', 'lanes'] as const) {
     if (!Array.isArray(config[key])) throw new Error(`invalid_config_${key}`);
@@ -264,6 +284,25 @@ export function validateConfig(raw: unknown): AgentControlConfig {
     ];
     for (const [key, minimum, maximum] of integerLimits) assertIntegerRange(config.tokenAwareOutput[key], `token_aware_output_${key}`, minimum, maximum);
     if (config.tokenAwareOutput.contextBudgetFraction !== undefined && (!(config.tokenAwareOutput.contextBudgetFraction > 0) || config.tokenAwareOutput.contextBudgetFraction > 1)) throw new Error('invalid_token_aware_output_context_budget_fraction');
+  }
+  if (config.harnessEfficiency !== undefined) {
+    const efficiency = config.harnessEfficiency;
+    if (!efficiency || typeof efficiency !== 'object' || Array.isArray(efficiency)) throw new Error('invalid_harness_efficiency');
+    if (efficiency.routingMode !== undefined && !['observe', 'enforce'].includes(efficiency.routingMode)) throw new Error('invalid_harness_efficiency_routing_mode');
+    assertIntegerRange(efficiency.minimumVerifiedRuns, 'harness_efficiency_minimum_verified_runs', 1, 100_000);
+    assertIntegerRange(efficiency.minimumSameModelControlledRuns, 'harness_efficiency_minimum_same_model_controlled_runs', 1, 100_000);
+    if (efficiency.minimumSuccessRate !== undefined && (!(efficiency.minimumSuccessRate > 0) || efficiency.minimumSuccessRate > 1)) throw new Error('invalid_harness_efficiency_minimum_success_rate');
+    if (efficiency.profiles !== undefined && (!efficiency.profiles || typeof efficiency.profiles !== 'object' || Array.isArray(efficiency.profiles))) throw new Error('invalid_harness_efficiency_profiles');
+    for (const [name, profile] of Object.entries(efficiency.profiles ?? {})) {
+      if (!['THIN', 'STANDARD', 'DEEP'].includes(name) || !profile || typeof profile !== 'object' || Array.isArray(profile)) throw new Error(`invalid_harness_efficiency_profile:${name}`);
+      assertIntegerRange(profile.maximumInitialContextTokens, `harness_efficiency_context:${name}`, 256, 10_000_000);
+      assertIntegerRange(profile.maximumSources, `harness_efficiency_sources:${name}`, 1, 1_000_000);
+      assertIntegerRange(profile.maximumOptionalSkills, `harness_efficiency_skills:${name}`, 0, 100_000);
+      assertIntegerRange(profile.maximumTools, `harness_efficiency_tools:${name}`, 1, 100_000);
+      assertIntegerRange(profile.maximumTurns, `harness_efficiency_turns:${name}`, 1, 10_000);
+      if (profile.allowBroadRepositoryContext !== undefined && typeof profile.allowBroadRepositoryContext !== 'boolean') throw new Error(`invalid_harness_efficiency_broad_context:${name}`);
+      if (profile.allowSharedContext !== undefined && typeof profile.allowSharedContext !== 'boolean') throw new Error(`invalid_harness_efficiency_shared_context:${name}`);
+    }
   }
   return config;
 }

@@ -22,6 +22,8 @@ test('structured chat factory creates a qualified candidate and mediates its JSO
   assert.equal(invocations, 1);
   assert.deepEqual(result.evidence?.slice(-1), ['tool_executed:qualification.inspect']);
   assert.match(result.resultRef ?? '', /SAFE/);
+  assert.equal(result.invocations?.[0].usage.totalProcessedTokens, 42);
+  assert.equal(result.invocations?.[0].provider, 'local-qwen');
 });
 
 test('structured chat executor rejects malformed or expanded model output before the gateway', async () => {

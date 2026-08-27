@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {AdaptiveHarness, SkillCatalog, ToolPolicy, type HarnessCandidate, type RecipeRequest, type SkillDefinition, type ToolDefinition} from './adaptive-harness.js';
 import type {RouteCandidate} from './economic-routing.js';
+import {configuredHarnessProfiles, ContextPacketBuilder, HarnessProfileRouter} from './harness-efficiency.js';
 
 const skills: SkillDefinition[] = [
   {id: 'typescript-debugging', version: '1', status: 'qualified', capabilities: ['typescript.integration-debug'], requiredTools: ['repository.read', 'repository.edit', 'test.run'], qualificationEvidence: ['suite:skill-typescript-debugging-v1']},
@@ -118,4 +119,35 @@ test('recipe fingerprint changes with prompt, context, skills, tools or runtime 
   const changed = harness().build({...request('ECONOMY'), context: {...request('ECONOMY').context, tier: 3}}, [small]).recipe!;
   assert.notEqual(base.fingerprint, changed.fingerprint);
   assert.match(base.id, /^recipe-[0-9a-f]{16}$/);
+});
+
+test('qualified harness profile and context packet become inspectable recipe identity', () => {
+  const profileRouter = new HarnessProfileRouter({mode: 'ENFORCE', minimumVerifiedRuns: 5, minimumSuccessRate: .9, minimumSameModelControlledRuns: 5});
+  const adaptive = new AdaptiveHarness(new SkillCatalog(skills), new ToolPolicy(tools), undefined, profileRouter);
+  const contextPacket = new ContextPacketBuilder().build('THIN', [
+    {id: 'policy', kind: 'agent_control_instructions', content: 'retain approvals and verification', required: true, persistent: true, relevance: 1, provenanceIds: ['policy:v1']},
+    {id: 'target', kind: 'task_context', content: 'src/exact.ts:12', required: true, relevance: 1, provenanceIds: ['source:target']},
+  ]);
+  const result = adaptive.build({...request('ECONOMY'), contextPacket, contextStrategyId: 'exact-symbol', harnessRouting: {taskId: 'task-debug-1', complexity: .2, risk: 'low', knownExactTargets: true, estimatedFiles: 1, deterministicVerifier: true, ambiguity: .1, architectural: false, evidence: {THIN: {verifiedRuns: 8, verifiedSuccessRate: 1, sameModelControlledRuns: 8, productionQualified: true}}}}, [{...small, supportedHarnessProfiles: ['THIN', 'STANDARD']}]);
+  assert.equal(result.recipe?.harness?.profile, 'THIN');
+  assert.equal(result.recipe?.harness?.maximumTurns, 3);
+  assert.equal(result.recipe?.harness?.contextStrategyId, 'exact-symbol');
+  assert.equal(result.recipe?.context.packetId, contextPacket.id);
+  assert.deepEqual(result.recipe?.context.provenanceIds, ['policy:v1', 'source:target']);
+});
+
+test('candidate lacking the selected harness capability is rejected', () => {
+  const profileRouter = new HarnessProfileRouter({mode: 'ENFORCE', minimumVerifiedRuns: 1, minimumSuccessRate: .8, minimumSameModelControlledRuns: 1});
+  const adaptive = new AdaptiveHarness(new SkillCatalog(skills), new ToolPolicy(tools), undefined, profileRouter);
+  const result = adaptive.build({...request('ECONOMY'), harnessRouting: {taskId: 'task-debug-1', complexity: .2, risk: 'low', knownExactTargets: true, estimatedFiles: 1, deterministicVerifier: true, ambiguity: .1, architectural: false, evidence: {THIN: {verifiedRuns: 2, verifiedSuccessRate: 1, sameModelControlledRuns: 2, productionQualified: true}}}}, [{...small, supportedHarnessProfiles: ['STANDARD']}]);
+  assert.equal(result.recipe, undefined);
+  assert.ok(result.rejected[0].reasons.includes('harness_profile_unsupported:THIN'));
+});
+
+test('AdaptiveHarness enforces configured profile budgets instead of default ceilings', () => {
+  const profiles = configuredHarnessProfiles({profiles: {STANDARD: {maximumInitialContextTokens: 1_000}}});
+  const adaptive = new AdaptiveHarness(new SkillCatalog(skills), new ToolPolicy(tools), undefined, new HarnessProfileRouter(), profiles);
+  const result = adaptive.build({...request('ECONOMY'), harnessRouting: {taskId: 'configured-budget', complexity: .5, risk: 'medium', knownExactTargets: false, estimatedFiles: 3, deterministicVerifier: true, ambiguity: .4, architectural: false}}, [small]);
+  assert.equal(result.recipe, undefined);
+  assert.ok(result.rejected[0].reasons.includes('harness_context_budget_exceeded:1200:1000'));
 });

@@ -69,6 +69,14 @@ The first semantic adapter is the read-only `repository.search.ripgrep` tool. It
 
 Agents use **Inspect -> Expand -> Read**. The context router selects summary, index, selected context or full artifact according to purpose and budget. The API and dashboard report per-command and cumulative **Context tokens avoided** without claiming provider billing savings. Configure thresholds with the optional `tokenAwareOutput` object shown in [`config/agent-control.example.json`](config/agent-control.example.json). See [`docs/token-aware-command-output.md`](docs/token-aware-command-output.md) for architecture, tool contracts, defaults, provenance and limitations.
 
+## Harness efficiency and context budgets
+
+Agent Control now records execution as a strategy, not just a model choice: model, provider, harness profile, context packet, tools, turns, cache observations and verifier outcome. The main process persists prompt-free invocation metadata in its protected state directory and shares that ledger with Job verification and dashboard projections. Provider usage is normalised into fresh, cached, cache-write, output, reasoning and total tokens where exposed; unavailable measurements and costs remain explicit `null` values. The dashboard's **Harness Efficiency** diagnostic reports token composition, cache effectiveness, escalation and cost per verified outcome without rewarding an unverified cheap run.
+
+`ContextPacketBuilder` ranks exact evidence and keeps its provenance while recording every omitted source. `THIN` provides only bounded targeted context and required tools, `STANDARD` is the compatibility default, and `DEEP` permits wider graph/context retrieval for justified complexity. `HarnessProfileRouter` is observational by default: it can recommend a profile, but applies `STANDARD` until same-model, verifier-backed evidence is explicitly production-qualified. Escalation advances `THIN -> STANDARD -> DEEP` once and preserves packet/checkpoint references.
+
+`ContextGraph` is a provider- and database-neutral port; its initial in-memory adapter proves queries, relationships, compact evidence and verified write-back without introducing a graph service. See [`docs/harness-efficiency-architecture.md`](docs/harness-efficiency-architecture.md) and the explicitly deterministic [`docs/harness-efficiency-report.md`](docs/harness-efficiency-report.md). Run the frozen 20-job experiment with `npm run benchmark:harness-efficiency`; its JSON counterpart is [`artifacts/harness-efficiency-report.json`](artifacts/harness-efficiency-report.json).
+
 The dashboard opens on the **Jobs** catalog. A Job can be started manually from the dashboard, requested through the authenticated API, or created by a timezone-aware Schedule; every trigger calls the same `createRun` path. Job detail includes schedule state, structured step progress, verification, placement, immutable artifact metadata and provenance. Queue inspection exposes age, priority, waiting reason, missing capabilities, eligible workers and resource locks; searchable Run history exposes duration and selected workers. Safe cancel, retry and named-approval controls still enter through `AgentControlService`. Use **Lanes** for interactive agent work. Press `J` in the TUI for the same authoritative Job/Schedule/Run projection.
 
 ## Jobs and schedules
@@ -83,13 +91,14 @@ The qualification Job is deliberately non-production and its twice-daily `07:00/
 
 ## Configuration model
 
-The versioned JSON schema has four independent collections plus one optional output policy:
+The versioned JSON schema has four independent collections plus optional output and harness-efficiency policies:
 
 - `resources`: identity, platform, transport and semantic capabilities;
 - `providers`: provider identity, API endpoint, qualification model, cost and capabilities;
 - `services`: health endpoint and optional explicit start recipe;
 - `lanes`: lane identity, working directory, priority and AUTO/MANUAL mode.
 - `tokenAwareOutput`: provider-neutral completeness, index, artifact, retention and context-budget thresholds.
+- `harnessEfficiency`: observational/enforced routing mode, verifier-evidence thresholds and configurable THIN/STANDARD/DEEP budgets. `observe` is the safe default.
 
 Resource identity is separate from transport. A resource may be local, SSH, HTTP or Orca-backed. An SSH hostname is transport metadata, not the resource ID. Ports are configurable numbers. Optional unavailable services do not make an otherwise valid zero-provider installation fail.
 
@@ -99,7 +108,7 @@ See [`config/agent-control.example.json`](config/agent-control.example.json), [`
 
 ## Adaptive harness
 
-`AdaptiveHarness` assembles an execution recipe from policy-approved components. `SkillCatalog` selects only qualified skills with qualification evidence. `ToolPolicy` produces an explicit minimum grant and revalidates the lane, lease generation, ownership generation and human-owner fence at tool use. `EconomicRouter` rejects unhealthy, unqualified, incapable, over-budget, low-confidence or unapproved routes before comparing effective monetary, latency, occupancy, contention, failure/retry and quality costs.
+`AdaptiveHarness` assembles an execution recipe from policy-approved components. The fingerprint now includes harness profile and context strategy alongside model/provider identity. `SkillCatalog` selects only qualified skills with qualification evidence. `ToolPolicy` produces an explicit minimum grant and revalidates the lane, lease generation, ownership generation and human-owner fence at tool use. `EconomicRouter` rejects unhealthy, unqualified, incapable, over-budget, low-confidence or unapproved routes before comparing effective monetary, latency, occupancy, contention, failure/retry and quality costs.
 
 The same task can therefore receive different scaffolding. A strongly qualified model may use a direct prompt with no extra skill; a smaller model may use a guided profile, a qualified task skill, narrower context and fewer tools. Both remain subject to the same Agent Control authority and verification policy.
 
@@ -122,7 +131,7 @@ Agent completion is modeled as `CLAIMED -> EVIDENCE_COLLECTED -> VERIFIED -> ACC
 
 Routing is capability-qualified and fail closed. Eligible routes may be compared using capability, provider health, reliability, monetary cost, latency, expected duration, context/tool requirements, privacy, local/GPU availability, priority, urgency and operator preference. The selected route, alternatives and plain-language rationale are stored with the lane.
 
-Model/provider qualification already records complete model recipes including runtime, context size, chat template, prompt version, skill/tool snapshots and inference parameters. Overnight experiments use successive halving across those fingerprints. The adaptive recipe adds worker, provider, context, authority, limits, verification and escalation around that existing qualification unit.
+Model/provider qualification already records complete model recipes including runtime, context size, chat template, prompt version, skill/tool snapshots and inference parameters. Overnight experiments use successive halving across strategy fingerprints that can also identify provider, harness profile and context strategy. A challenger must preserve verifier-gated quality before cost or fresh-token efficiency can break a tie; fewer tokens alone never promote it.
 
 ## Authority and safety
 
@@ -154,6 +163,7 @@ npm test
 npm run check
 npm run qualify:jobs
 npm run benchmark:token-output
+npm run benchmark:harness-efficiency
 git diff --check
 ```
 
@@ -172,5 +182,6 @@ The neutrality guard rejects private topology identifiers in distributable runti
 - No production deployment is performed by this repository release process.
 - The events workflow is qualified only against a safe fixture target; authenticated Facebook discovery and the existing LocalWalks production publisher are not invoked or production-qualified by this source change.
 - Ripgrep is the only semantic command-output adapter in this change. Other oversized command families use the generic labelled fallback until a specialised index is added. A tiny typed ripgrep request retains its structured authoritative stream and therefore can be larger than normal human-formatted `rg`; it is not compacted merely because it came from ripgrep.
+- Harness-profile routing remains observational. The frozen suite proves deterministic packet/routing/verifier behaviour, not live same-model success, provider cache behaviour, latency or cost. These missing measurements remain `null`, and no profile is production-qualified by the benchmark.
 
-The current guide is [`docs/Agent-Control-3.1.0-Operator-Guide.md`](docs/Agent-Control-3.1.0-Operator-Guide.md). Release assets include both the [Markdown guide](assets/releases/3.1.0/Agent-Control-3.1.0-Operator-Guide.md) and the [PDF guide](assets/releases/3.1.0/Agent-Control-3.1.0-Operator-Guide.pdf). The historical 3.0.1 guide remains under `assets/releases/3.0.1/`. See [`ARCHITECTURE.md`](ARCHITECTURE.md), [`docs/token-aware-command-output.md`](docs/token-aware-command-output.md), [`docs/web-dashboard.md`](docs/web-dashboard.md), [`docs/jobs-and-scheduler.md`](docs/jobs-and-scheduler.md), [`docs/dashboard-3.1-boundary-review.md`](docs/dashboard-3.1-boundary-review.md), [`docs/conceptual-integrity.md`](docs/conceptual-integrity.md) and [`docs/release-notes-3.1.0-draft.md`](docs/release-notes-3.1.0-draft.md) for the 3.1 boundary and evidence.
+The current guide is [`docs/Agent-Control-3.1.0-Operator-Guide.md`](docs/Agent-Control-3.1.0-Operator-Guide.md). Release assets include both the [Markdown guide](assets/releases/3.1.0/Agent-Control-3.1.0-Operator-Guide.md) and the [PDF guide](assets/releases/3.1.0/Agent-Control-3.1.0-Operator-Guide.pdf). The historical 3.0.1 guide remains under `assets/releases/3.0.1/`. See [`ARCHITECTURE.md`](ARCHITECTURE.md), [`docs/harness-efficiency.md`](docs/harness-efficiency.md), [`docs/token-aware-command-output.md`](docs/token-aware-command-output.md), [`docs/web-dashboard.md`](docs/web-dashboard.md), [`docs/jobs-and-scheduler.md`](docs/jobs-and-scheduler.md), [`docs/dashboard-3.1-boundary-review.md`](docs/dashboard-3.1-boundary-review.md), [`docs/conceptual-integrity.md`](docs/conceptual-integrity.md) and [`docs/release-notes-3.1.0-draft.md`](docs/release-notes-3.1.0-draft.md) for the 3.1 boundary and evidence.

@@ -12,6 +12,7 @@ import os from 'node:os';
 import {JobCatalog} from './job-catalog.js';
 import {ActionRegistry, ArtifactStore, JobRuntime, ResourceLockManager, RunLedger, WorkerRegistry} from './job-runtime.js';
 import {COMMAND_RESULT_SCHEMA, MemoryCommandResultStore, TokenAwareOutputService, type OutputAuthorityScope} from './token-aware-output.js';
+import {MemoryHarnessEfficiencyLedger, createInvocationObservation} from './harness-efficiency.js';
 
 const now = () => new Date().toISOString();
 function service() { const lane: LaneState = {id: 1, name: 'Primary', status: 'waiting', model: 'model-a', reasoning: 'medium', context: '0', lines: [], contract: {version: 2, laneId: 1, goal: 'safe task', constraints: [], cwd: '/tmp', priority: 1, mode: 'auto', capabilities: defaultCapabilities(), resourceLocks: {}, modelLock: null, sharedTaskIds: [], updatedAt: now()}, baton: {version: 1, laneId: 1, revision: 1, status: 'waiting', progress: [], hypothesis: '', evidence: [], changes: [], nextAction: 'schedule', openQuestions: [], model: 'model-a', reasoning: 'medium', updatedAt: now()}, lease: {laneId: 1, holder: null, acquiredAt: null, expiresAt: null}}; return new AgentControlService({version: 1, paused: false, lastRestorePoint: null, lanes: [lane]}, new PtyRegistry(), undefined, '3.1.0-test', () => {}); }
@@ -41,4 +42,15 @@ test('token-aware metrics are readable while expansion remains authenticated and
   const records = await (await fetch(`${base}/api/command-output`)).json(); assert.equal(records[0].handle, captured.handle); assert.equal('storageRef' in records[0], false);
   const denied = await fetch(`${base}/api/command-output/${encodeURIComponent(captured.handle)}/expand`, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}'}); assert.equal(denied.status, 401);
   const allowed = await fetch(`${base}/api/command-output/${encodeURIComponent(captured.handle)}/expand`, {method: 'POST', headers: {'Content-Type': 'application/json', Authorization: 'Bearer test-token'}, body: JSON.stringify({scope, expansion: {mode: 'all'}})}); assert.equal(allowed.status, 200); assert.equal((await allowed.json()).disposition, 'COMPLETE');
+});
+
+test('harness efficiency metrics and redacted invocation telemetry are projected read-only', async t => {
+  const control = service(), ledger = new MemoryHarnessEfficiencyLedger();
+  const item = createInvocationObservation({id: 'inv-web', jobId: 'job-web', runId: 'run-web', taskId: 'task-web', laneId: '1', model: 'model-a', provider: 'provider-a', harnessProfile: 'THIN', executionStrategy: 'fixture', startedAt: '2026-08-27T10:00:00.000Z', completedAt: '2026-08-27T10:00:01.000Z', rawUsage: {input_tokens: 100, input_tokens_details: {cached_tokens: 75}, output_tokens: 20, total_tokens: 120}, recipeFingerprint: 'recipe-web'});
+  ledger.record(item); ledger.markVerification([item.id], 'PASS', 'SUCCEEDED'); control.configureProjection({harnessEfficiency: ledger});
+  const server = startWebDashboard(control, {host: '127.0.0.1', port: 0, assetsDir: path.resolve('assets/dashboard')}); await once(server, 'listening'); t.after(() => server.close()); const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+  const metrics = await (await fetch(`${base}/api/efficiency`)).json(); assert.equal(metrics.overall.verifiedSuccesses, 1); assert.equal(metrics.overall.cachedInputTokens, 75);
+  const invocations = await (await fetch(`${base}/api/efficiency/invocations`)).json(); assert.equal(invocations[0].usage.freshInputTokens, 25); assert.equal(invocations[0].harnessProfile, 'THIN'); assert.equal(typeof invocations[0].startup.components[0].estimatedTokens, 'number');
+  assert.equal((await (await fetch(`${base}/api/efficiency/invocations?limit=1&runId=run-web`)).json()).length, 1);
+  const html = await (await fetch(base)).text(); assert.match(html, /Harness Efficiency/);
 });

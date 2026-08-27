@@ -4,6 +4,10 @@
 
 ### Added
 
+- Provider-neutral model-invocation telemetry with explicit unknown values for unavailable fresh/cached/cache-write/output/reasoning tokens, provider/calculated cost, startup component estimates, turns, elapsed time, tools, context sources, provenance, verifier result and final Job outcome.
+- Configurable THIN, STANDARD and DEEP harness profiles, a conservative observational-by-default profile router, monotonic reason-coded escalation, and profile/context identity in adaptive recipe fingerprints.
+- A provenance-preserving `ContextPacketBuilder`, neutral `ContextGraph` interface with an in-memory adapter, verifier-gated cost-per-verified-outcome aggregation and dashboard/API efficiency diagnostics.
+- A frozen 20-job same-model-identity benchmark framework plus Markdown/JSON efficiency reports. The deterministic run is explicitly not live model, billing, cache or latency evidence and cannot production-qualify automatic routing.
 - A provider-neutral token-aware command-result layer at the existing live ToolPolicy gateway, with authoritative result artifacts, explicit completeness states, scoped expiring handles, deterministic token estimates, provenance and context-budget-aware initial views.
 - Typed read-only ripgrep search and expansion tools supporting summary, file/line index, selected captured matches/files/ranges/context and exact full-result recovery without an unrestricted shell or handle-based filesystem reads.
 - A generic oversized-stdout head/tail fallback, API/dashboard context-token telemetry, configurable thresholds and a deterministic 240-file semantic-recovery benchmark.
@@ -38,6 +42,7 @@
 
 ### Changed
 
+- Champion/challenger fingerprints can include provider, harness profile and context strategy; verified correctness remains the promotion gate and cost/fresh-token efficiency can only break an otherwise qualified tie.
 - `npm run status` now uses the authoritative dashboard projection; the separate configured service/resource bootstrap probe remains available as `npm run status:bootstrap`.
 - TUI task submission, reroute and pause/resume now call the shared application service rather than mutating workspace state directly.
 - Routing and verification projections are first-class lane state and survive persistence/reload.

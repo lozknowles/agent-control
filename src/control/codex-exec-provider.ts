@@ -6,6 +6,7 @@ import path from 'node:path';
 import type {HarnessCandidate} from './adaptive-harness.js';
 import type {RecipeExecutor, ToolInvocationGateway} from './harness-dispatch.js';
 import type {ProviderDefinition} from './providers.js';
+import {createInvocationObservation, type ContextPacketSource} from './harness-efficiency.js';
 
 export interface CodexExecRequest {
   command: string;
@@ -19,7 +20,7 @@ export interface CodexExecRequest {
 export interface CodexExecResult {
   threadId?: string;
   finalMessage: string;
-  usage?: Record<string, number>;
+  usage?: Record<string, unknown>;
   observedItemTypes: string[];
 }
 
@@ -85,23 +86,36 @@ export class CodexExecProviderFactory {
   }
 
   executor(instruction: string): RecipeExecutor {
-    return {execute: (recipe, tools) => this.execute(instruction, recipe.tools.map(tool => tool.id), tools, Math.min(recipe.resourceLimits.maximumLatencyMs ?? this.options.timeoutMs ?? 60_000, this.options.timeoutMs ?? 60_000))};
+    return {execute: (recipe, tools) => this.execute(instruction, recipe, tools, Math.min(recipe.resourceLimits.maximumLatencyMs ?? this.options.timeoutMs ?? 60_000, this.options.timeoutMs ?? 60_000))};
   }
 
-  private async execute(instruction: string, grantedToolIds: string[], tools: ToolInvocationGateway, timeoutMs: number) {
+  private async execute(instruction: string, recipe: Parameters<RecipeExecutor['execute']>[0], tools: ToolInvocationGateway, timeoutMs: number) {
+    const grantedToolIds = recipe.tools.map(tool => tool.id);
     if (!grantedToolIds.length) throw new Error('codex_exec_no_granted_tools');
     const command = this.options.command ?? process.env.CODEX_COMMAND ?? 'codex';
     await (this.options.authProbe ?? probeCodexChatGptAuth)(command, this.options.cwd, timeoutMs);
+    const startedAt = new Date().toISOString();
     const run = await (this.options.runner ?? runCodexExec)({command, cwd: this.options.cwd, modelId: this.options.modelId, instruction, grantedToolIds, timeoutMs});
+    const providerCompletedAt = new Date().toISOString();
     if (run.observedItemTypes.includes('file_change')) throw new Error('codex_exec_capability_envelope_violation:file_change');
     const request = parseToolRequest(run.finalMessage);
     const output = await tools.invoke(request.tool, request.input);
     const responseHash = createHash('sha256').update(run.finalMessage).digest('hex');
     const result = {providerId: this.options.provider.id, modelId: this.options.modelId, authMode: 'chatgpt', threadId: run.threadId, requestedTool: request.tool, toolOutput: output, responseHash, usage: run.usage, capabilityEnvelope: 'read-only'};
+    const startupSources: ContextPacketSource[] = [
+      {id: `${recipe.id ?? 'unattributed'}:codex-system`, kind: 'system_instructions', content: 'Return one schema-constrained Agent Control tool request. Do not modify files.', required: true, persistent: true, relevance: 1, provenanceIds: [recipe.fingerprint ?? 'unattributed-recipe']},
+      {id: `${recipe.id ?? 'unattributed'}:codex-control`, kind: 'agent_control_instructions', content: 'The requested tool remains subject to the live Agent Control policy gateway.', required: true, persistent: true, relevance: 1, provenanceIds: [recipe.fingerprint ?? 'unattributed-recipe']},
+      {id: `${recipe.id ?? 'unattributed'}:codex-tools`, kind: 'tool_schemas', content: JSON.stringify(codexToolRequestSchema(grantedToolIds)), required: true, persistent: true, relevance: 1, provenanceIds: [recipe.fingerprint ?? 'unattributed-recipe']},
+      {id: `${recipe.id ?? 'unattributed'}:codex-skills`, kind: 'skills', estimatedTokens: 0, persistent: true, relevance: .8, provenanceIds: (recipe.skills ?? []).flatMap(skill => skill.qualificationEvidence)},
+      {id: `${recipe.id ?? 'unattributed'}:codex-task`, kind: 'task_context', content: instruction, required: true, persistent: false, relevance: 1, provenanceIds: recipe.context?.provenanceIds ?? recipe.context?.evidenceIds ?? []},
+    ];
+    const taskId = recipe.taskId ?? 'unattributed-task';
+    const invocation = createInvocationObservation({jobId: recipe.jobId ?? taskId, runId: recipe.runId, taskId, laneId: recipe.authority?.laneId ?? 'unattributed-lane', model: this.options.modelId, provider: this.options.provider.id, harnessProfile: recipe.harness?.profile ?? 'STANDARD', executionStrategy: 'cli.typed-read-only', startedAt, completedAt: providerCompletedAt, startupSources, rawUsage: run.usage, toolIds: [request.tool], contextSourceIds: recipe.context?.sourceIds ?? [], recipeFingerprint: recipe.fingerprint ?? 'unattributed-recipe', contextPacketId: recipe.harness?.contextPacketId, evidenceIds: [`provider_response_sha256:${responseHash}`]});
     return {
       resultRef: JSON.stringify(result), confidence: .8,
       fingerprint: createHash('sha256').update(JSON.stringify(result)).digest('hex'),
       evidence: [`codex_thread:${run.threadId ?? responseHash.slice(0, 16)}`, `provider_response_sha256:${responseHash}`, 'auth_mode:chatgpt', 'capability_envelope:read-only', `tool_executed:${request.tool}`],
+      invocations: [invocation],
     };
   }
 }
@@ -116,7 +130,7 @@ export async function runCodexExec(request: CodexExecRequest): Promise<CodexExec
   const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-codex-schema-'));
   const schemaFile = path.join(temporary, 'tool-request.schema.json');
   try {
-    fs.writeFileSync(schemaFile, JSON.stringify({type: 'object', properties: {tool: {type: 'string', enum: request.grantedToolIds}, input_json: {type: 'string'}}, required: ['tool', 'input_json'], additionalProperties: false}), {mode: 0o600});
+    fs.writeFileSync(schemaFile, JSON.stringify(codexToolRequestSchema(request.grantedToolIds)), {mode: 0o600});
     const prompt = `Return one Agent Control tool request as schema-constrained JSON. Put the tool input in input_json as a JSON-encoded string. Do not claim the tool ran. Do not modify files.\n\n${request.instruction}`;
     const result = await captureProcess(request.command, ['exec', '--ephemeral', '--json', '--sandbox', 'read-only', '--ignore-user-config', '--model', request.modelId, '--output-schema', schemaFile, prompt], request.cwd, request.timeoutMs);
     if (result.code !== 0) throw new Error(`codex_exec_failed:${result.code}`);
@@ -132,12 +146,23 @@ export async function runCodexExec(request: CodexExecRequest): Promise<CodexExec
     const started = events.find(event => event.type === 'thread.started');
     const observedItemTypes = [...new Set(events.map(event => event.item).filter((item): item is Record<string, unknown> => Boolean(item && typeof item === 'object' && !Array.isArray(item))).map(item => String(item.type ?? 'unknown')))];
     const rawUsage = completed.usage;
-    const usage = rawUsage && typeof rawUsage === 'object' && !Array.isArray(rawUsage) ? Object.fromEntries(Object.entries(rawUsage).filter((entry): entry is [string, number] => typeof entry[1] === 'number')) : undefined;
+    const usage = rawUsage && typeof rawUsage === 'object' && !Array.isArray(rawUsage) ? sanitizeUsage(rawUsage as Record<string, unknown>) : undefined;
     return {threadId: typeof started?.thread_id === 'string' ? started.thread_id : undefined, finalMessage, usage, observedItemTypes};
   } finally {
     fs.rmSync(temporary, {recursive: true, force: true});
   }
 }
+
+function sanitizeUsage(value: Record<string, unknown>): Record<string, unknown> {
+  const sanitized: Record<string, unknown> = {};
+  for (const [key, item] of Object.entries(value)) {
+    if (typeof item === 'number' && Number.isFinite(item) && item >= 0) sanitized[key] = item;
+    else if (item && typeof item === 'object' && !Array.isArray(item)) sanitized[key] = sanitizeUsage(item as Record<string, unknown>);
+  }
+  return sanitized;
+}
+
+function codexToolRequestSchema(grantedToolIds: string[]) { return {type: 'object', properties: {tool: {type: 'string', enum: grantedToolIds}, input_json: {type: 'string'}}, required: ['tool', 'input_json'], additionalProperties: false}; }
 
 async function captureProcess(command: string, args: string[], cwd: string, timeoutMs: number): Promise<{code: number; stdout: string; stderr: string}> {
   return new Promise((resolve, reject) => {

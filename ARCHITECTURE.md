@@ -80,6 +80,7 @@ Orca, PTYs, SSH, browsers, mobile nodes, local runtimes and API providers are su
 The implemented `AdaptiveHarness` constructs a fingerprinted `ExecutionRecipe` from:
 
 - worker, provider and model identity;
+- harness profile and context-strategy identity;
 - prompt profile;
 - minimum qualified skill selection;
 - explicit tool grants;
@@ -90,6 +91,8 @@ The implemented `AdaptiveHarness` constructs a fingerprinted `ExecutionRecipe` f
 - verification and escalation policy.
 
 The older `ModelRecipe` remains the model-qualification fingerprint: model artifact, runtime, context size, template, prompt, skill/tool snapshots and parameters. It is a component of the broader execution recipe rather than a competing abstraction.
+
+Persisted recipes from before profile support are interpreted as `STANDARD`; every newly built recipe carries an explicit profile. This additive compatibility rule does not qualify a legacy recipe for THIN or DEEP routing.
 
 Recipe construction is pure policy work. It neither claims a queue item nor acquires a lease, owns a PTY, sends input or accepts a result. Those mutations remain in their existing authoritative services.
 
@@ -125,13 +128,24 @@ The first specialised adapter is typed ripgrep search. `RipgrepSearchRunner` use
 
 Other command families currently use a labelled generic head/tail fallback. Their full retained result remains authoritative. New semantic adapters can be added below the same interception, artifact, context, telemetry and expansion contracts.
 
+## Harness efficiency boundary
+
+`HarnessProfileRouter` classifies profile need before the existing model/provider route. THIN, STANDARD and DEEP alter context/tool/turn budgets, not authority. In observational mode the recommendation is recorded while STANDARD is applied. Enforced selection requires profile-specific, same-model, verifier-backed production evidence; deterministic benchmark evidence cannot satisfy that gate.
+
+`ContextPacketBuilder` accepts ranked sources and returns an immutable derived packet containing hashes, token estimates, included source/provenance IDs and named omissions. Required evidence that exceeds a profile budget fails closed. The neutral `ContextGraph` port supports node search, relationship traversal, neighbourhoods, ranking, compact evidence and verified write-back without selecting a database implementation.
+
+Provider adapters emit a versioned model-invocation observation. Provider usage remains authoritative; local prompt-component counts are deterministic estimates. `HarnessDispatcher` records the observation before returning, and `JobRuntime` changes its verifier/final-result fields only across the existing verification and Run-finalisation transitions. Aggregates count tokens, turns, time and cost against distinct verifier-passed successful jobs. Unknown cache, reasoning, price or cost fields remain null.
+
+Profile escalation is monotonic (`THIN -> STANDARD -> DEEP`), reason-coded and reference-preserving. It never repeats a strategy, expands policy authority or bypasses scheduler retry/review controls. The complete decision and measurement contract is in [`docs/harness-efficiency-architecture.md`](docs/harness-efficiency-architecture.md).
+
 ## Routing and qualification
 
 The current line has three complementary implemented layers:
 
 1. `CapabilityResolver` matches requirements to healthy, infrastructure-neutral resources.
 2. Provider/model qualification records capability scores and promotes challengers only with adequate evidence.
-3. The recovered `EconomicRouter` rejects routes that fail health, qualification, capability, confidence, quality, approval, spend or latency gates, then compares monetary cost, latency, local occupancy, contention, failure/retry risk and quality.
+3. `HarnessProfileRouter` recommends a qualified context/tool/turn profile and defaults to STANDARD when evidence is insufficient.
+4. The recovered `EconomicRouter` rejects routes that fail health, qualification, capability, confidence, quality, approval, spend or latency gates, then compares monetary cost, latency, local occupancy, contention, failure/retry risk and quality.
 
 `DynamicEscalationRouter` can re-evaluate after failure, low confidence or latency pressure while carrying context/checkpoint references. `RecipeDispatchRecord` separately records scheduler-selected worker placement and provider/model routing, plus prompt, context, skills, tools, safe runtime settings, authority generations, verification and escalation. The historical branch's machine-specific UI/bootstrap changes were deliberately not imported.
 

@@ -55,6 +55,15 @@
       "evidence": ["docs/evidence/token-aware-output-benchmark-20260827.json"]
     },
     {
+      "id": "harness.efficiency-context-routing",
+      "title": "Harness efficiency telemetry and context profiles",
+      "status": "PARTIAL",
+      "summary": "Provider-neutral invocation telemetry, THIN/STANDARD/DEEP profiles, provenance-preserving context packets, a neutral context-graph port, monotonic escalation, verifier-gated efficiency metrics and dashboard/API projections are executable; routing stays observational by default.",
+      "sources": ["src/control/harness-efficiency.ts", "src/control/harness-efficiency-benchmark.ts", "src/control/adaptive-harness.ts", "src/control/harness-dispatch.ts", "src/control/job-runtime.ts", "src/control/job-bootstrap.ts"],
+      "tests": ["src/control/harness-efficiency.test.ts", "src/control/harness-efficiency-benchmark.test.ts", "src/control/adaptive-harness.test.ts", "src/control/harness-dispatch.test.ts", "src/control/harness-job-action.test.ts", "src/control/job-bootstrap.test.ts", "src/control/web-server.test.ts"],
+      "limitation": "Run same-model live profile trials with provider usage and pricing evidence before marking any non-STANDARD profile production-qualified or claiming cache rate and cost per verified outcome."
+    },
+    {
       "id": "jobs.catalog-scheduler-ledger",
       "title": "Job Catalog, scheduler and Run Ledger",
       "status": "IMPLEMENTED",
