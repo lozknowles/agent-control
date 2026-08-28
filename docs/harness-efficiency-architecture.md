@@ -36,6 +36,8 @@ The startup floor is the persistent material present before task-specific contex
 
 The router runs in observational mode by default. It may recommend THIN or DEEP, while the applied profile remains STANDARD until the relevant profile evidence is explicitly marked production-qualified. This prevents synthetic benchmark results from becoming routing authority.
 
+Controlled same-model comparisons use an explicit `EXPERIMENT` mode. That mode applies only an explicitly requested profile, records `controlled_experiment_profile_applied`, and leaves `evidenceQualified` false. Production configuration accepts only `observe` or `enforce`, so benchmark profile forcing cannot silently become runtime routing policy.
+
 ## Context packet and graph
 
 `ContextPacketBuilder` selects the smallest ranked packet that satisfies required evidence within the selected profile budget. Every included item retains source and provenance identifiers. Every omitted item is named with a reason. Required evidence that cannot fit fails closed instead of being silently dropped.
@@ -53,3 +55,5 @@ Escalation moves only forward (`THIN -> STANDARD -> DEEP`) and records a typed r
 ## Security and compatibility
 
 Profiles filter context and tools but cannot expand authority. Lease, baton, ownership, approvals, tool allowlists, protected workloads, cancellation, recovery and verifier gates remain unchanged. Context graph handles are not file-read capabilities. The types contain no provider, model, host, username or repository-name conditionals.
+
+The live benchmark remains on this same path. It performs endpoint health and model-identity checks, creates a normal recipe and context packet, dispatches through the existing provider and live tool gateway, and marks ledger observations only after its independent marker verifier runs. Its report deliberately distinguishes controlled context retrieval from repository mutation and keeps automatic routing observational.

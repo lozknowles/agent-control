@@ -81,3 +81,19 @@ The suite freezes twenty tasks, one model identity and parameters, and one deter
 - `artifacts/harness-efficiency-report.json`
 
 The current suite is a deterministic harness simulation. It proves packet construction, profile differences, verifier gating and report reproducibility. It does not invoke a live model and therefore cannot establish real success rate, cache percentage, latency, provider cost or cost per verified outcome. Those values remain null and automatic routing remains observational.
+
+### Controlled live same-model benchmark
+
+The live runner uses the same frozen task classifications but measures a controlled context-retrieval contract through the real `AdaptiveHarness`, `HarnessDispatcher`, provider adapter, live `ToolPolicy` gateway and independent verifier. It deliberately does not edit a repository. Profile evidence is gated so a task's immutable marker is present only at or above its frozen minimum profile; a lower profile must declare `INSUFFICIENT_CONTEXT` and fail verification.
+
+```bash
+AGENT_CONTROL_HARNESS_LIVE_BASE_URL=http://127.0.0.1:PORT/v1 \
+AGENT_CONTROL_HARNESS_LIVE_MODEL=qualified-model-id \
+AGENT_CONTROL_HARNESS_LIVE_CONTEXT_TOKENS=30000 \
+AGENT_CONTROL_HARNESS_LIVE_TIMEOUT_MS=300000 \
+npm run benchmark:harness-efficiency:live
+```
+
+Non-loopback endpoints require `AGENT_CONTROL_HARNESS_LIVE_ALLOW_REMOTE=true`. An optional bearer credential is read only from `AGENT_CONTROL_HARNESS_LIVE_BEARER_TOKEN` and is never written to the report. The endpoint must pass health and model-identity checks. The context allowance and latency budget are explicit resource limits rather than bypasses; their defaults are 30,000 tokens and 300,000 ms per request. Runs are sequential, use one allowlisted read-only submission tool, and write `docs/harness-efficiency-live-report.md` plus `artifacts/harness-efficiency-live-report.json`.
+
+The explicit `EXPERIMENT` routing mode exists only for controlled, requested-profile comparisons. It cannot be selected from production configuration, does not claim profile qualification, and does not alter the observational production default. The committed live report shows 60 same-model task runs with no unexpected result, but it is context-retrieval evidence rather than coding or repository-mutation evidence. Monetary cost remains unknown unless the endpoint exposes billing data or an explicit complete pricing schedule is supplied.

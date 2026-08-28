@@ -1,10 +1,10 @@
 # Harness efficiency report
 
-Generated: 2026-08-27T21:59:17.232Z
+Generated: 2026-08-28T05:59:11.863Z
 
 Classification: **DETERMINISTIC_HARNESS_SIMULATION_NOT_LIVE_MODEL_EVIDENCE**. This is a deterministic context-and-routing experiment using one frozen model identity; it is not live model, billing, latency or cache evidence.
 
-Local packet-build and report overhead: **24.5 ms** (LOCAL_HARNESS_OVERHEAD_NOT_MODEL_LATENCY).
+Local packet-build and report overhead: **40.3 ms** (LOCAL_HARNESS_OVERHEAD_NOT_MODEL_LATENCY).
 
 ## Harness startup tax
 
@@ -104,4 +104,4 @@ Task-selected repository context dominates DEEP workloads. Persistent workspace/
 
 ## Limitations
 
-No provider exposed fresh/cached/cache-write/reasoning tokens or price data in this run, so cache percentage and cost per verified outcome are null in the authoritative JSON. Same-model live trials are still required before any profile can be marked production-qualified.
+No provider was invoked in this deterministic run, so fresh/cached/cache-write/reasoning tokens, price data and cost per verified outcome are null in its authoritative JSON. The companion controlled live report records real same-model token, cache and latency evidence, but it is not repository-mutation evidence and therefore does not production-qualify automatic routing.

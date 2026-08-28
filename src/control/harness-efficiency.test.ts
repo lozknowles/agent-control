@@ -90,6 +90,17 @@ test('enforced THIN requires verifier-backed same-model production evidence', ()
   assert.equal(router.route({...thinSignals, evidence: {THIN: qualified}}).appliedProfile, 'THIN');
 });
 
+test('controlled experiment mode applies only an explicitly requested profile without claiming qualification', () => {
+  const router = new HarnessProfileRouter({mode: 'EXPERIMENT', minimumVerifiedRuns: 10, minimumSuccessRate: .9, minimumSameModelControlledRuns: 10});
+  const requested = router.route({...thinSignals, requestedProfile: 'THIN'});
+  assert.equal(requested.appliedProfile, 'THIN');
+  assert.equal(requested.evidenceQualified, false);
+  assert.ok(requested.reasons.includes('controlled_experiment_profile_applied'));
+  const inferred = router.route(thinSignals);
+  assert.equal(inferred.appliedProfile, 'STANDARD');
+  assert.equal(inferred.reasons.includes('controlled_experiment_profile_applied'), false);
+});
+
 test('architectural, ambiguous and high-risk work recommends DEEP', () => {
   const decision = new HarnessProfileRouter().route({...thinSignals, complexity: .85, risk: 'high', architectural: true});
   assert.equal(decision.recommendedProfile, 'DEEP');

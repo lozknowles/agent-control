@@ -67,11 +67,12 @@ export class StructuredChatProviderFactory {
     };
   }
 
-  executor(instruction: string): RecipeExecutor {
-    return {execute: (recipe, tools) => this.execute(instruction, recipe, tools, Math.min(recipe.resourceLimits.maximumLatencyMs ?? this.options.timeoutMs ?? 30_000, this.options.timeoutMs ?? 30_000))};
+  executor(instruction: string, contextSources: ContextPacketSource[] = []): RecipeExecutor {
+    const retainedSources = contextSources.map(source => structuredClone(source));
+    return {execute: (recipe, tools) => this.execute(instruction, retainedSources, recipe, tools, Math.min(recipe.resourceLimits.maximumLatencyMs ?? this.options.timeoutMs ?? 30_000, this.options.timeoutMs ?? 30_000))};
   }
 
-  private async execute(instruction: string, recipe: Parameters<RecipeExecutor['execute']>[0], tools: ToolInvocationGateway, timeoutMs: number) {
+  private async execute(instruction: string, contextSources: ContextPacketSource[], recipe: Parameters<RecipeExecutor['execute']>[0], tools: ToolInvocationGateway, timeoutMs: number) {
     const grantedToolIds = recipe.tools.map(tool => tool.id);
     const fetcher = this.options.fetch ?? globalThis.fetch;
     const authorization = this.options.authorization?.();
@@ -105,7 +106,7 @@ export class StructuredChatProviderFactory {
       {id: `${recipe.id ?? 'unattributed'}:chat-control`, kind: 'agent_control_instructions', content: agentControlInstructions, required: true, persistent: true, relevance: 1, provenanceIds: [recipe.fingerprint ?? 'unattributed-recipe']},
       {id: `${recipe.id ?? 'unattributed'}:chat-tools`, kind: 'tool_schemas', content: JSON.stringify(grantedToolIds), required: true, persistent: true, relevance: 1, provenanceIds: [recipe.fingerprint ?? 'unattributed-recipe']},
       {id: `${recipe.id ?? 'unattributed'}:chat-skills`, kind: 'skills', estimatedTokens: 0, persistent: true, relevance: .8, provenanceIds: (recipe.skills ?? []).flatMap(skill => skill.qualificationEvidence)},
-      {id: `${recipe.id ?? 'unattributed'}:chat-task`, kind: 'task_context', content: instruction, required: true, persistent: false, relevance: 1, provenanceIds: recipe.context?.provenanceIds ?? recipe.context?.evidenceIds ?? []},
+      ...(contextSources.length ? contextSources : [{id: `${recipe.id ?? 'unattributed'}:chat-task`, kind: 'task_context' as const, content: instruction, required: true, persistent: false, relevance: 1, provenanceIds: recipe.context?.provenanceIds ?? recipe.context?.evidenceIds ?? []}]),
     ];
     const taskId = recipe.taskId ?? 'unattributed-task';
     const invocation = createInvocationObservation({jobId: recipe.jobId ?? taskId, runId: recipe.runId, taskId, laneId: recipe.authority?.laneId ?? 'unattributed-lane', model: body.model ?? this.options.modelId, provider: this.options.provider.id, harnessProfile: recipe.harness?.profile ?? 'STANDARD', executionStrategy: 'structured-chat.json-tool-request', startedAt, completedAt: providerCompletedAt, startupSources, rawUsage: body.usage, toolIds: [request.tool], contextSourceIds: recipe.context?.sourceIds ?? [], recipeFingerprint: recipe.fingerprint ?? 'unattributed-recipe', contextPacketId: recipe.harness?.contextPacketId, evidenceIds: [`provider_response_sha256:${responseHash}`]});

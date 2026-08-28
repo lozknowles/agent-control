@@ -26,6 +26,23 @@ test('structured chat factory creates a qualified candidate and mediates its JSO
   assert.equal(result.invocations?.[0].provider, 'local-qwen');
 });
 
+test('structured chat telemetry attributes an explicitly supplied context packet without changing dispatch', async () => {
+  const factory = new StructuredChatProviderFactory({
+    provider, workerId: 'worker-1', modelId: 'qwen-test', workerCapabilities: [], modelCapabilities: [], availableToolIds: ['qualification.inspect'], qualificationEvidence: ['fixture-live-proof'], health: 'healthy',
+    fetch: async () => new Response(JSON.stringify({choices: [{message: {content: '{"tool":"qualification.inspect","input":{}}'}}], usage: {prompt_tokens: 120, prompt_tokens_details: {cached_tokens: 20}, completion_tokens: 8, total_tokens: 128}}), {status: 200}),
+  });
+  const contextSources = [
+    {id: 'packet-memory', kind: 'memory_shared_context' as const, content: 'verified historical evidence', persistent: true, relevance: 1, provenanceIds: ['evidence:memory']},
+    {id: 'packet-task', kind: 'task_context' as const, content: 'bounded task', required: true, persistent: false, relevance: 1, provenanceIds: ['evidence:task']},
+  ];
+  const result = await factory.executor('rendered packet', contextSources).execute({tools: [{id: 'qualification.inspect'}], resourceLimits: {}} as never, {invoke: async () => 'SAFE'});
+  const observation = result.invocations?.[0];
+  assert.equal(observation?.usage.freshInputTokens, 100);
+  assert.equal(observation?.usage.cachedInputTokens, 20);
+  assert.ok((observation?.startup.components.find(component => component.name === 'memory_shared_context')?.estimatedTokens ?? 0) > 0);
+  assert.ok(observation?.startup.taskContextTokens);
+});
+
 test('structured chat executor rejects malformed or expanded model output before the gateway', async () => {
   let invocations = 0;
   const factory = new StructuredChatProviderFactory({provider, workerId: 'worker-1', modelId: 'qwen-test', workerCapabilities: [], modelCapabilities: [], availableToolIds: ['qualification.inspect'], qualificationEvidence: ['fixture-live-proof'], health: 'healthy', fetch: async () => new Response(JSON.stringify({choices: [{message: {content: '{"tool":"qualification.inspect","input":{},"grant":"more"}'}}]}), {status: 200})});

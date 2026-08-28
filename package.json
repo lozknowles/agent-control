@@ -34,7 +34,8 @@
     "qualify:openai-chatkit": "node --env-file=.env.local --import tsx scripts/qualify-openai-chatkit.mjs",
     "qualify:openai-windows": "node --env-file-if-exists=.env.local --import tsx scripts/qualify-openai-windows-harness.ts",
     "benchmark:token-output": "node --import tsx scripts/benchmark-token-aware-output.ts",
-    "benchmark:harness-efficiency": "node --import tsx scripts/benchmark-harness-efficiency.ts"
+    "benchmark:harness-efficiency": "node --import tsx scripts/benchmark-harness-efficiency.ts",
+    "benchmark:harness-efficiency:live": "node --import tsx scripts/benchmark-harness-efficiency-live.ts"
   },
   "dependencies": {
     "ajv": "^8.17.1",

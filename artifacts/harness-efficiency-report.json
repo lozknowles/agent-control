@@ -2,7 +2,7 @@
   "schema": "agent-control.harness-efficiency-report/v1",
   "benchmarkId": "b45f494fe91395f7189dbe626aa358ee9c38a4562c21f762219ef9fb771aabf9",
   "suiteId": "harness-efficiency-20-v1",
-  "generatedAt": "2026-08-27T21:59:17.232Z",
+  "generatedAt": "2026-08-28T05:59:11.863Z",
   "classification": "DETERMINISTIC_HARNESS_SIMULATION_NOT_LIVE_MODEL_EVIDENCE",
   "modelControl": {
     "model": "same-model-fixture",
@@ -21,7 +21,7 @@
     "cacheMetricsAvailable": false
   },
   "frameworkLatency": {
-    "packetBuildAndReportMs": 24.491268000000005,
+    "packetBuildAndReportMs": 40.259704,
     "classification": "LOCAL_HARNESS_OVERHEAD_NOT_MODEL_LATENCY"
   },
   "startupTax": {

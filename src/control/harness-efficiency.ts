@@ -6,7 +6,7 @@ import {estimateTokens} from './token-aware-output.js';
 import type {HarnessEfficiencyConfig} from './config.js';
 
 export type HarnessProfileName = 'THIN' | 'STANDARD' | 'DEEP';
-export type HarnessRoutingMode = 'OBSERVE' | 'ENFORCE';
+export type HarnessRoutingMode = 'OBSERVE' | 'ENFORCE' | 'EXPERIMENT';
 
 export interface HarnessProfilePolicy {
   name: HarnessProfileName;
@@ -276,8 +276,10 @@ export class HarnessProfileRouter {
     else { recommended = 'STANDARD'; reasons.push('insufficient_evidence_for_specialised_profile'); }
     const evidence = signals.evidence?.[recommended];
     const evidenceQualified = recommended === 'STANDARD' || Boolean(evidence?.productionQualified && evidence.verifiedRuns >= this.policy.minimumVerifiedRuns && evidence.verifiedSuccessRate >= this.policy.minimumSuccessRate && evidence.sameModelControlledRuns >= this.policy.minimumSameModelControlledRuns);
-    const applied = this.policy.mode === 'ENFORCE' && evidenceQualified ? recommended : 'STANDARD';
-    if (applied !== recommended) reasons.push(this.policy.mode === 'OBSERVE' ? 'observational_mode_standard_applied' : 'profile_evidence_not_qualified');
+    const controlledExperiment = this.policy.mode === 'EXPERIMENT' && Boolean(signals.requestedProfile);
+    const applied = controlledExperiment || (this.policy.mode === 'ENFORCE' && evidenceQualified) ? recommended : 'STANDARD';
+    if (controlledExperiment) reasons.push('controlled_experiment_profile_applied');
+    else if (applied !== recommended) reasons.push(this.policy.mode === 'OBSERVE' ? 'observational_mode_standard_applied' : 'profile_evidence_not_qualified');
     return {recommendedProfile: recommended, appliedProfile: applied, mode: this.policy.mode, evidenceQualified, reasons};
   }
 }
