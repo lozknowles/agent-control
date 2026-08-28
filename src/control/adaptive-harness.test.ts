@@ -130,7 +130,7 @@ test('qualified harness profile and context packet become inspectable recipe ide
   ]);
   const result = adaptive.build({...request('ECONOMY'), contextPacket, contextStrategyId: 'exact-symbol', harnessRouting: {taskId: 'task-debug-1', complexity: .2, risk: 'low', knownExactTargets: true, estimatedFiles: 1, deterministicVerifier: true, ambiguity: .1, architectural: false, evidence: {THIN: {verifiedRuns: 8, verifiedSuccessRate: 1, sameModelControlledRuns: 8, productionQualified: true}}}}, [{...small, supportedHarnessProfiles: ['THIN', 'STANDARD']}]);
   assert.equal(result.recipe?.harness?.profile, 'THIN');
-  assert.equal(result.recipe?.harness?.maximumTurns, 3);
+  assert.equal(result.recipe?.harness?.maximumTurns, 6);
   assert.equal(result.recipe?.harness?.contextStrategyId, 'exact-symbol');
   assert.equal(result.recipe?.context.packetId, contextPacket.id);
   assert.deepEqual(result.recipe?.context.provenanceIds, ['policy:v1', 'source:target']);

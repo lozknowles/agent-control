@@ -11,25 +11,31 @@ const root = process.cwd();
 const suite = parseMutationBenchmarkSuite(JSON.parse(fs.readFileSync(path.join(root, 'benchmarks', 'harness-mutation-jobs.json'), 'utf8')));
 
 test('all 12 hidden mutation contracts accept an independently constructed reference mutation', async t => {
+  const failures: string[] = [];
   for (const task of suite.tasks) await t.test(task.id, async () => {
     const prepared = MutationWorkspace.prepare(path.join(root, suite.fixturePath), task);
     try {
       const registry = createToolHandlerRegistry(prepared.workspace.toolBindings());
       await applyReference(task, (tool, input) => registry.invoke(tool, input, {} as never));
       const result = await verifyMutationWorkspace(prepared.workspace, task);
-      assert.equal(result.passed, true, `${task.id}:${JSON.stringify(result.checks.filter(check => !check.passed))}`);
+      const detail = `${task.id}:${JSON.stringify(result.checks.filter(check => !check.passed))}`;
+      if (!result.passed) failures.push(detail);
+      assert.equal(result.passed, true, detail);
     } finally { prepared.workspace.cleanup(); }
   });
+  assert.deepEqual(failures, []);
 });
 
 async function applyReference(task: MutationBenchmarkTask, invoke: (tool: string, input: unknown) => Promise<unknown>) {
-  const replace = (path: string, oldText: string, newText: string, expectedOccurrences = 1) => invoke(MUTATION_TOOL_IDS.replace, {path, oldText, newText, expectedOccurrences});
+  const edit = (operations: unknown[]) => invoke(MUTATION_TOOL_IDS.edit, {operations});
+  const replace = (path: string, oldText: string, newText: string, expectedOccurrences = 1) => edit([{type: 'replace', path, oldText, newText, expectedOccurrences}]);
+  const write = (path: string, content: string) => edit([{type: 'write', path, content}]);
   switch (task.id) {
     case 'MUT-001': await replace('src/constants.js', '30_000', '45_000'); return;
     case 'MUT-002':
       await replace('src/capabilities.js', "export function normalizeCapabilities(values) {\n  if (!Array.isArray(values) || values.some(value => typeof value !== 'string')) throw new Error('capabilities_invalid');\n  return values.map(value => value.trim().toLowerCase()).filter(Boolean);\n}", "import {stableUnique} from './utils.js';\n\nexport function normalizeCapabilities(values) {\n  if (!Array.isArray(values) || values.some(value => typeof value !== 'string')) throw new Error('capabilities_invalid');\n  return stableUnique(values.map(value => value.trim().toLowerCase()).filter(Boolean));\n}"); return;
     case 'MUT-003':
-      await invoke(MUTATION_TOOL_IDS.write, {path: 'test/human-takeover.test.js', content: `import assert from 'node:assert/strict';\nimport test from 'node:test';\nimport {authorizeTool} from '../src/policy.js';\n\nconst base = {grantedTools: ['read', 'write'], approvedRisks: ['read', 'write'], leaseGeneration: 1, liveLeaseGeneration: 1, ownershipGeneration: 1, liveOwnershipGeneration: 1};\nfor (const risk of ['read', 'write']) test(\`human takeover denies \${risk}\`, () => { const result = authorizeTool({...base, owner: 'human', toolId: risk, risk}); assert.equal(result.allowed, false); assert.equal(result.reason, 'human_owns_execution'); });\n`}); return;
+      await write('test/human-takeover.test.js', `import assert from 'node:assert/strict';\nimport test from 'node:test';\nimport {authorizeTool} from '../src/policy.js';\n\nconst base = {grantedTools: ['read', 'write'], approvedRisks: ['read', 'write'], leaseGeneration: 1, liveLeaseGeneration: 1, ownershipGeneration: 1, liveOwnershipGeneration: 1};\nfor (const risk of ['read', 'write']) test(\`human takeover denies \${risk}\`, () => { const result = authorizeTool({...base, owner: 'human', toolId: risk, risk}); assert.equal(result.allowed, false); assert.equal(result.reason, 'human_owns_execution'); });\n`); return;
     case 'MUT-004':
       await replace('src/telemetry.js', "  const outputTokens = numberOrNull(raw.output_tokens ?? raw.completion_tokens);", "  const cacheWriteTokens = numberOrNull(raw.cache_creation_input_tokens ?? raw.cacheWriteTokens);\n  const outputTokens = numberOrNull(raw.output_tokens ?? raw.completion_tokens);");
       await replace('src/telemetry.js', "    cachedInputTokens,\n    outputTokens,", "    cachedInputTokens,\n    cacheWriteTokens,\n    outputTokens,"); return;
@@ -42,7 +48,7 @@ async function applyReference(task: MutationBenchmarkTask, invoke: (tool: string
       await replace('src/tool-output.js', "const MODEL_OUTPUT_LIMIT_BYTES = 32_768;\n\nexport function modelFacingToolResult(value, _config = {}) {", "export function modelFacingToolResult(value, config = {}) {\n  const modelOutputLimitBytes = config.maximumToolResultBytes ?? 32_768;");
       await replace('src/tool-output.js', 'MODEL_OUTPUT_LIMIT_BYTES', 'modelOutputLimitBytes', 2); return;
     case 'MUT-007':
-      await invoke(MUTATION_TOOL_IDS.write, {path: 'src/scheduler.js', content: `import {rankEligibleWorkers} from './routing-helpers.js';\n\nexport function selectWorker(workers, requiredCapabilities) {\n  return rankEligibleWorkers(workers, requiredCapabilities)[0] ?? null;\n}\n`}); return;
+      await write('src/scheduler.js', `import {rankEligibleWorkers} from './routing-helpers.js';\n\nexport function selectWorker(workers, requiredCapabilities) {\n  return rankEligibleWorkers(workers, requiredCapabilities)[0] ?? null;\n}\n`); return;
     case 'MUT-008':
       await replace('src/telemetry.js', 'export function createAttemptTelemetry({taskId, profile, usage, verifierResult}) {', 'export function createAttemptTelemetry({taskId, profile, usage, verifierResult, correlationId}) {');
       await replace('src/telemetry.js', 'return Object.freeze({taskId, profile, usage: normalizeUsage(usage), verifierResult: verifierResult ?? \'UNKNOWN\'});', 'return Object.freeze({taskId, profile, usage: normalizeUsage(usage), verifierResult: verifierResult ?? \'UNKNOWN\', correlationId: correlationId ?? null});');

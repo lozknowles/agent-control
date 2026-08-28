@@ -30,7 +30,12 @@ test('tool policy fences stale leases and unapproved risks', () => {
 });
 
 test('unknown usage remains null', () => {
-  assert.deepEqual(normalizeUsage({}), {inputTokens: null, freshInputTokens: null, cachedInputTokens: null, outputTokens: null, monetaryCost: null});
+  const usage = normalizeUsage({});
+  assert.equal(usage.inputTokens, null);
+  assert.equal(usage.freshInputTokens, null);
+  assert.equal(usage.cachedInputTokens, null);
+  assert.equal(usage.outputTokens, null);
+  assert.equal(usage.monetaryCost, null);
 });
 
 test('scheduler selects the least-loaded capable online worker', () => {

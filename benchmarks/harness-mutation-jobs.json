@@ -3,11 +3,14 @@
   "suiteId": "agent-control-real-mutation-v1",
   "frozenAt": "2026-08-28T00:00:00.000Z",
   "fixturePath": "benchmarks/harness-mutation-fixture",
-  "fixtureSha256": "d1b5e8ebec19378b5d2112e8be5e73671a51c40bc328af8ded815be44edb6b27",
+  "fixtureSha256": "43190b683d800d0be9445bde49f983451777c92b55422bf29ceaea7e1297f70a",
   "startingRevision": "fixture-content-sha256",
   "modelParameters": {
     "temperature": 0,
-    "responseFormat": "json_object"
+    "responseFormat": "json_schema",
+    "seed": 20260828,
+    "reasoningMode": "disabled_at_qualified_endpoint",
+    "maximumOutputTokens": 1536
   },
   "tasks": [
     {
@@ -43,7 +46,7 @@
     {
       "id": "MUT-003",
       "taskClass": "test_addition",
-      "description": "Add a focused Node test that proves human takeover denies both read and write tool requests even when the corresponding risks and tool IDs are otherwise approved. Do not change the policy implementation.",
+      "description": "Add a focused Node test that proves human takeover, represented by owner: 'human', denies both read and write tool requests even when the corresponding risks and tool IDs are otherwise approved. Do not change the policy implementation.",
       "allowedFiles": ["test/human-takeover.test.js"],
       "requiredChangedFiles": ["test/human-takeover.test.js"],
       "verifierId": "human-takeover-mutation-test",
@@ -58,11 +61,11 @@
     {
       "id": "MUT-004",
       "taskClass": "type_api_correction",
-      "description": "Extend provider-usage normalization so the public result reports cache-write tokens from either snake_case provider fields or camelCase adapter fields. Preserve null for unavailable measurements and include the new field in attempt telemetry.",
+      "description": "Extend provider-usage normalization so the public cacheWriteTokens result accepts the snake_case provider field cache_creation_input_tokens or the camelCase adapter field cacheWriteTokens. Preserve null for unavailable measurements and include the new field in attempt telemetry.",
       "allowedFiles": ["src/telemetry.js"],
       "requiredChangedFiles": ["src/telemetry.js"],
       "verifierId": "cache-write-usage-api",
-      "acceptance": ["both supported field spellings normalize correctly", "unknown cache-write usage is null", "attempt telemetry exposes the normalized field"],
+      "acceptance": ["normalizeUsage({cache_creation_input_tokens: 12}).cacheWriteTokens equals 12", "normalizeUsage({cacheWriteTokens: 9}).cacheWriteTokens equals 9", "normalizeUsage({}).cacheWriteTokens is null", "attempt telemetry exposes the normalized field"],
       "expectedMinimumProfile": "THIN",
       "timeoutMs": 120000,
       "tokenBudget": 16000,
@@ -88,7 +91,7 @@
     {
       "id": "MUT-006",
       "taskClass": "configuration_and_implementation",
-      "description": "Make the model-facing tool-result byte limit configurable through parseRuntimeConfig. Default it to 32768 bytes, accept only integers from 1024 through 131072, and make modelFacingToolResult enforce the parsed value without weakening the authoritative hash behavior.",
+      "description": "Add the maximumToolResultBytes option to parseRuntimeConfig. Default it to 32768 bytes, accept only integers from 1024 through 131072, and make modelFacingToolResult(value, config) enforce config.maximumToolResultBytes without weakening authoritative hash behavior.",
       "allowedFiles": ["src/config.js", "src/tool-output.js"],
       "requiredChangedFiles": ["src/config.js", "src/tool-output.js"],
       "verifierId": "configurable-tool-output-bound",
@@ -133,14 +136,14 @@
     {
       "id": "MUT-009",
       "taskClass": "architecture_documentation_contract",
-      "description": "Bring completeJob into conformance with the repository's documented verification boundary. Model completion must not become success before independent verification, and verifier rejection must fail the job.",
+      "description": "Bring completeJob into conformance with the repository's documented verification boundary: completeJob('RUNNING', {modelComplete: true}) returns VERIFICATION_PENDING; completeJob('VERIFICATION_PENDING', {verifierPassed: true}) returns SUCCEEDED; the same call with verifierPassed: false returns FAILED. The current-state guard must therefore accept both RUNNING and VERIFICATION_PENDING and evaluate verifierPassed only in the latter state. Model completion must not become success before independent verification.",
       "allowedFiles": ["src/job-state.js"],
       "requiredChangedFiles": ["src/job-state.js"],
       "verifierId": "verification-before-success",
       "acceptance": ["model completion enters verification pending", "verifier pass can succeed", "verifier rejection fails"],
       "expectedMinimumProfile": "DEEP",
       "timeoutMs": 240000,
-      "tokenBudget": 40000,
+      "tokenBudget": 60000,
       "escalationPermitted": true,
       "expectedMutation": {"minimumFiles": 1, "maximumFiles": 1, "maximumChangedLines": 40},
       "features": {"knownExactTargets": false, "estimatedFiles": 3, "referencedModules": 3, "repositorySearchRequired": true, "architecturalTerms": true, "verifierComplexity": "high", "ambiguity": 0.7, "risk": "high", "sharedContextRequired": false, "historicalContextRequired": false}
@@ -148,7 +151,7 @@
     {
       "id": "MUT-010",
       "taskClass": "shared_context_provenance",
-      "description": "Derived context packets are dropping part of their lineage. Preserve selected source evidence and all parent packet provenance in stable first-seen order while retaining the parent ID and derived marker.",
+      "description": "The deriveContextPacket function in src/context-packet.js drops parent lineage. Use the existing mergeEvidence abstraction from src/provenance.js so selected source provenance is followed by parent.provenanceIds in stable first-seen order, while retaining parentId and derived: true.",
       "allowedFiles": ["src/context-packet.js", "src/provenance.js"],
       "requiredChangedFiles": ["src/context-packet.js"],
       "verifierId": "derived-context-lineage",
@@ -178,7 +181,7 @@
     {
       "id": "MUT-012",
       "taskClass": "architecture_level_modification",
-      "description": "Complete the context router's governed ENFORCE and escalation behavior described by the architecture. ENFORCE may apply a non-STANDARD recommendation only when that exact strategy is production-qualified; otherwise it must fail safe to STANDARD. Escalation must skip attempted profiles, be bounded, and reject unclassified reasons.",
+      "description": "Complete routeProfile and nextContextAttempt in src/router.js using the exported strategyQualified abstraction in src/qualification.js. ENFORCE must pass policy.evidence[recommendedProfile] to strategyQualified and may apply that recommendation only when the exact profile is production-qualified; otherwise it fails safe to STANDARD. Preserve OBSERVE and EXPERIMENT behavior. Escalation accepts only the classified reasons documented in ARCHITECTURE.md, selects the first later profile not already attempted, and stops with REVIEW after DEEP.",
       "allowedFiles": ["src/router.js", "src/qualification.js"],
       "requiredChangedFiles": ["src/router.js"],
       "verifierId": "qualified-routing-and-bounded-escalation",

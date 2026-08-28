@@ -23,7 +23,7 @@ test('deterministic verifier accepts the bounded timeout mutation and emits stru
   const task = suite.tasks[0], prepared = MutationWorkspace.prepare(path.join(root, suite.fixturePath), task);
   try {
     const registry = createToolHandlerRegistry(prepared.workspace.toolBindings());
-    await registry.invoke(MUTATION_TOOL_IDS.replace, {path: 'src/constants.js', oldText: '30_000', newText: '45_000'}, {} as never);
+    await registry.invoke(MUTATION_TOOL_IDS.edit, {operations: [{type: 'replace', path: 'src/constants.js', oldText: '30_000', newText: '45_000'}]}, {} as never);
     const result = await verifyMutationWorkspace(prepared.workspace, task);
     assert.equal(result.passed, true, JSON.stringify(result.checks));
     assert.equal(result.failureClass, 'NONE');
@@ -37,7 +37,7 @@ test('test-addition verifier uses a policy mutant rather than a file-existence m
   try {
     const registry = createToolHandlerRegistry(prepared.workspace.toolBindings());
     const meaningful = `import assert from 'node:assert/strict';\nimport test from 'node:test';\nimport {authorizeTool} from '../src/policy.js';\n\nconst base = {toolId: 'read', grantedTools: ['read', 'write'], approvedRisks: ['read', 'write'], leaseGeneration: 1, liveLeaseGeneration: 1, ownershipGeneration: 1, liveOwnershipGeneration: 1};\nfor (const risk of ['read', 'write']) test(\`human takeover denies \${risk}\`, () => { const result = authorizeTool({...base, owner: 'human', toolId: risk, risk}); assert.equal(result.allowed, false); assert.equal(result.reason, 'human_owns_execution'); });\n`;
-    await registry.invoke(MUTATION_TOOL_IDS.write, {path: 'test/human-takeover.test.js', content: meaningful}, {} as never);
+    await registry.invoke(MUTATION_TOOL_IDS.edit, {operations: [{type: 'write', path: 'test/human-takeover.test.js', content: meaningful}]}, {} as never);
     const result = await verifyMutationWorkspace(prepared.workspace, task);
     assert.equal(result.passed, true, JSON.stringify(result.checks));
     assert.match(result.checks.find(check => check.id.startsWith('hidden_verifier:'))?.detail ?? '', /mutant/);

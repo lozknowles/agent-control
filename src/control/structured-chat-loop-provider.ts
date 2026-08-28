@@ -24,6 +24,8 @@ export interface StructuredChatLoopOptions {
   timeoutMs?: number;
   maximumOutputTokens?: number;
   maximumToolResultBytes?: number;
+  responseFormat?: 'json_object' | 'json_schema';
+  seed?: number;
   executionStrategy?: string;
   authorization?: () => string | undefined;
   signalForRecipe?: (recipe: ExecutionRecipe) => AbortSignal | undefined;
@@ -57,6 +59,7 @@ export class StructuredChatLoopProvider {
     if (!['http:', 'https:'].includes(parsed.protocol) || parsed.username || parsed.password) throw new Error('structured_chat_loop_base_url_invalid');
     if (!options.providerId.trim() || !options.modelId.trim()) throw new Error('structured_chat_loop_identity_required');
     if (!options.finishToolId.trim()) throw new Error('structured_chat_loop_finish_tool_required');
+    if (options.seed !== undefined && (!Number.isSafeInteger(options.seed) || options.seed < 0 || options.seed > 2_147_483_647)) throw new Error('structured_chat_loop_seed_invalid');
     if (!options.toolSchemas.some(tool => tool.id === options.finishToolId)) throw new Error('structured_chat_loop_finish_schema_missing');
     if (new Set(options.toolSchemas.map(tool => tool.id)).size !== options.toolSchemas.length) throw new Error('structured_chat_loop_duplicate_tool_schema');
     for (const schema of options.toolSchemas) {
@@ -98,7 +101,7 @@ export class StructuredChatLoopProvider {
       if (remainingMs <= 0) return failed('structured_chat_loop_timeout', observations, evidence);
       const startedAt = new Date().toISOString();
       let response: {body: ChatResponse};
-      try { response = await this.request(messages, Math.max(1, remainingMs), externalSignal); }
+      try { response = await this.request(messages, schemas, Math.max(1, remainingMs), externalSignal); }
       catch (error) {
         const detail = boundedError(error);
         return failed(detail, observations, evidence, detail.includes('cancelled') ? 'CANCELLED' : 'FAILED');
@@ -110,8 +113,16 @@ export class StructuredChatLoopProvider {
       let request: ToolRequest;
       try { request = parseToolRequest(content); }
       catch (error) {
-        observations.push(this.observation(recipe, contextSources, messages, turn, startedAt, completedAt, response.body, [], responseHash, boundedError(error)));
-        return failed(boundedError(error), observations, [...evidence, `provider_response_sha256:${responseHash}`]);
+        const detail = boundedError(error);
+        observations.push(this.observation(recipe, contextSources, messages, turn, startedAt, completedAt, response.body, [], responseHash, detail));
+        evidence.push(`provider_response:${response.body.id ?? responseHash.slice(0, 16)}`, `provider_response_sha256:${responseHash}`, `tool_request_rejected:${detail}`);
+        messages.push({role: 'assistant', content});
+        const maximumProcessedTokens = typeof recipe.runtime.maximumProcessedTokens === 'number' ? recipe.runtime.maximumProcessedTokens : undefined;
+        const observedProcessedTokens = observations.reduce((sum, item) => sum + (item.usage.totalProcessedTokens ?? item.usage.inputTokens ?? 0), 0);
+        if (maximumProcessedTokens !== undefined && observedProcessedTokens >= maximumProcessedTokens) return boundedStop(`structured_chat_loop_token_budget:${observedProcessedTokens}:${maximumProcessedTokens}`, observations, evidence, toolTranscript, this.options.providerId, this.options.modelId);
+        if (turn === maximumTurns) return failed(detail, observations, evidence);
+        messages.push({role: 'user', content: `TOOL REQUEST REJECTED (nothing executed): ${detail}. Return exactly one valid JSON object matching a granted tool schema.`});
+        continue;
       }
       observations.push(this.observation(recipe, contextSources, messages, turn, startedAt, completedAt, response.body, [request.tool], responseHash));
       evidence.push(`provider_response:${response.body.id ?? responseHash.slice(0, 16)}`, `provider_response_sha256:${responseHash}`);
@@ -127,7 +138,7 @@ export class StructuredChatLoopProvider {
       const resultHash = createHash('sha256').update(serialized).digest('hex');
       toolTranscript.push({turn, tool: request.tool, resultHash});
       evidence.push(`tool_executed:${request.tool}`, `tool_result_sha256:${resultHash}`);
-      if (request.tool === this.options.finishToolId) {
+      if (request.tool === this.options.finishToolId && toolStopped(output)) {
         const result = {providerId: this.options.providerId, modelId: response.body.model ?? this.options.modelId, turns: turn, finishTool: request.tool, finishResult: output, toolTranscript};
         return {
           resultRef: JSON.stringify(result), confidence: .5,
@@ -137,13 +148,13 @@ export class StructuredChatLoopProvider {
       }
       const maximumProcessedTokens = typeof recipe.runtime.maximumProcessedTokens === 'number' ? recipe.runtime.maximumProcessedTokens : undefined;
       const observedProcessedTokens = observations.reduce((sum, item) => sum + (item.usage.totalProcessedTokens ?? item.usage.inputTokens ?? 0), 0);
-      if (maximumProcessedTokens !== undefined && observedProcessedTokens >= maximumProcessedTokens) return failed(`structured_chat_loop_token_budget:${observedProcessedTokens}:${maximumProcessedTokens}`, observations, evidence);
-      messages.push({role: 'user', content: `TOOL RESULT (authoritative, bounded)\n${serialized}\nContinue with exactly one JSON tool request.`});
+      if (maximumProcessedTokens !== undefined && observedProcessedTokens >= maximumProcessedTokens) return boundedStop(`structured_chat_loop_token_budget:${observedProcessedTokens}:${maximumProcessedTokens}`, observations, evidence, toolTranscript, this.options.providerId, response.body.model ?? this.options.modelId);
+      messages.push({role: 'user', content: `TOOL RESULT (authoritative, bounded)\n${serialized}\n${toolGuidance(request.tool, output)}\nContinue with exactly one JSON tool request.`});
     }
-    return failed(`structured_chat_loop_turn_limit:${maximumTurns}`, observations, evidence);
+    return boundedStop(`structured_chat_loop_turn_limit:${maximumTurns}`, observations, evidence, toolTranscript, this.options.providerId, this.options.modelId);
   }
 
-  private async request(messages: ChatMessage[], timeoutMs: number, externalSignal?: AbortSignal) {
+  private async request(messages: ChatMessage[], schemas: StructuredChatToolSchema[], timeoutMs: number, externalSignal?: AbortSignal) {
     const fetcher = this.options.fetch ?? globalThis.fetch;
     const timeout = AbortSignal.timeout(timeoutMs);
     const signal = externalSignal ? AbortSignal.any([timeout, externalSignal]) : timeout;
@@ -153,7 +164,7 @@ export class StructuredChatLoopProvider {
       response = await fetcher(this.endpoint, {
         method: 'POST',
         headers: {'content-type': 'application/json', ...(authorization ? {authorization: `Bearer ${authorization}`} : {})},
-        body: JSON.stringify({model: this.options.modelId, messages, response_format: {type: 'json_object'}, temperature: 0, max_tokens: this.options.maximumOutputTokens ?? 768, stream: false}),
+        body: JSON.stringify({model: this.options.modelId, messages, response_format: responseFormat(this.options.responseFormat ?? 'json_object', schemas), temperature: 0, ...(this.options.seed === undefined ? {} : {seed: this.options.seed}), max_tokens: this.options.maximumOutputTokens ?? 768, stream: false}),
         signal,
       });
     } catch (error) {
@@ -195,11 +206,26 @@ export class StructuredChatLoopProvider {
 }
 
 function renderSystemInstructions(schemas: StructuredChatToolSchema[], finishToolId: string): string {
-  return `You are a bounded implementation worker. Return only one JSON object with shape {"tool":"<granted id>","input":{...}} and no prose. Inspect before editing. Use typed tools only. Run the available verifier-facing test tool before finishing when practical. Request ${finishToolId} only after work is complete or when safely blocked. Granted tools:\n${JSON.stringify(schemas)}`;
+  return `You are a bounded implementation worker. Return only one JSON object with shape {"tool":"<granted id>","input":{...}} and no prose. Treat every task acceptance criterion as a checklist and preserve behavior not named by the task. Choose the single next tool that makes measurable progress. Inspect relevant source before editing. Tests must use the repository's existing framework and real exported functions. If a tool or test fails, inspect current state and repair it; never repeat an unchanged failed request. Use typed tools only. After a successful verifier-facing test, request ${finishToolId}; a finish request stops work but never proves success. Granted tools:\n${JSON.stringify(schemas)}`;
 }
 
+function toolGuidance(tool: string, output: unknown): string {
+  if (output && typeof output === 'object' && !Array.isArray(output)) {
+    const value = output as Record<string, unknown>;
+    if (value.error === 'successful_preflight_required_before_finish') return 'The current mutation has not passed preflight. Run the authorised verifier-facing test, repair any reported failure, rerun it successfully, and only then finish.';
+    if (value.ok === false) return 'The tool made no authorised change. Do not repeat the same request; read current state or choose a corrected operation.';
+    if (tool.endsWith('.test') && value.passed === false) {
+      if (value.phase === 'git_diff_check') return 'Patch preflight failed. Remove the reported whitespace or patch-structure defect, rerun preflight, and do not finish yet.';
+      return 'Tests failed. Use the reported file, line and assertion evidence to repair the implementation before finishing. For a test-addition task, ensure each assertion expects the behavior required by the task rather than the opposite behavior.';
+    }
+  }
+  return 'Recheck the task checklist and current repository state before choosing the next operation.';
+}
+
+function toolStopped(output: unknown) { return Boolean(output && typeof output === 'object' && !Array.isArray(output) && (output as Record<string, unknown>).stopped === true); }
+
 function parseToolRequest(content: string): ToolRequest {
-  const normalized = content.trim().match(/^```json\s*([\s\S]*?)\s*```$/i)?.[1] ?? content;
+  const normalized = firstJsonObject(content);
   let parsed: unknown;
   try { parsed = JSON.parse(normalized); } catch { throw new Error('provider_tool_request_invalid_json'); }
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('provider_tool_request_invalid');
@@ -207,6 +233,42 @@ function parseToolRequest(content: string): ToolRequest {
   if (typeof request.tool !== 'string' || !request.tool.trim()) throw new Error('provider_tool_request_missing_tool');
   if (Object.keys(request).some(key => !['tool', 'input'].includes(key))) throw new Error('provider_tool_request_unknown_field');
   return {tool: request.tool, input: request.input};
+}
+
+function firstJsonObject(content: string): string {
+  const start = content.indexOf('{');
+  if (start < 0) return content;
+  let depth = 0, quoted = false, escaped = false;
+  for (let index = start; index < content.length; index++) {
+    const character = content[index];
+    if (quoted) {
+      if (escaped) escaped = false;
+      else if (character === '\\') escaped = true;
+      else if (character === '"') quoted = false;
+      continue;
+    }
+    if (character === '"') quoted = true;
+    else if (character === '{') depth++;
+    else if (character === '}' && --depth === 0) return content.slice(start, index + 1);
+  }
+  return content;
+}
+
+function responseFormat(mode: 'json_object' | 'json_schema', schemas: StructuredChatToolSchema[]) {
+  if (mode === 'json_object') return {type: 'json_object'};
+  return {
+    type: 'json_schema',
+    json_schema: {
+      name: 'agent_control_tool_request', strict: true,
+      schema: {
+        anyOf: schemas.map(tool => ({
+          type: 'object',
+          properties: {tool: {type: 'string', const: tool.id}, input: structuredClone(tool.inputSchema)},
+          required: ['tool', 'input'], additionalProperties: false,
+        })),
+      },
+    },
+  };
 }
 
 function boundedJson(value: unknown, maximumBytes: number): string {
@@ -218,6 +280,15 @@ function boundedJson(value: unknown, maximumBytes: number): string {
 
 function failed(error: string, invocations: ModelInvocationObservation[], evidence: string[], outcome: 'FAILED' | 'CANCELLED' = 'FAILED'): RecipeExecutionResult {
   return {error, retryable: outcome !== 'CANCELLED', evidence: [...new Set(evidence)], invocations};
+}
+
+function boundedStop(reason: string, invocations: ModelInvocationObservation[], evidence: string[], toolTranscript: Array<{turn: number; tool: string; resultHash: string}>, providerId: string, modelId: string): RecipeExecutionResult {
+  const result = {providerId, modelId, boundedStop: reason, toolTranscript};
+  return {
+    resultRef: JSON.stringify(result), confidence: 0,
+    fingerprint: createHash('sha256').update(stableJson(result)).digest('hex'),
+    evidence: [...new Set([...evidence, `bounded_stop:${reason}`])], invocations,
+  };
 }
 
 function withObservations(error: unknown, invocations: ModelInvocationObservation[], evidence: string[]) {

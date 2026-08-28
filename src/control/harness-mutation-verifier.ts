@@ -134,9 +134,9 @@ async function hiddenVerifier(root: string, task: MutationBenchmarkTask): Promis
     }
     case 'MUT-009': {
       const value = await load<{completeJob(current: string, result: any): string}>('src/job-state.js');
-      assert(value.completeJob('RUNNING', {modelComplete: true}) === 'VERIFICATION_PENDING', 'model_completion_claimed_success');
-      assert(value.completeJob('VERIFICATION_PENDING', {verifierPassed: true}) === 'SUCCEEDED', 'verifier_pass_not_accepted');
-      assert(value.completeJob('VERIFICATION_PENDING', {verifierPassed: false}) === 'FAILED', 'verifier_rejection_not_failed');
+      callEqual(() => value.completeJob('RUNNING', {modelComplete: true}), 'VERIFICATION_PENDING', 'completeJob_RUNNING_modelComplete_true');
+      callEqual(() => value.completeJob('VERIFICATION_PENDING', {verifierPassed: true}), 'SUCCEEDED', 'completeJob_VERIFICATION_PENDING_verifierPassed_true');
+      callEqual(() => value.completeJob('VERIFICATION_PENDING', {verifierPassed: false}), 'FAILED', 'completeJob_VERIFICATION_PENDING_verifierPassed_false');
       return 'independent verification is the sole success boundary';
     }
     case 'MUT-010': {
@@ -158,10 +158,10 @@ async function hiddenVerifier(root: string, task: MutationBenchmarkTask): Promis
       const value = await load<{routeProfile(signals: any, policy: any): any; nextContextAttempt(current: string, attempted: string[], reason: string): any}>('src/router.js');
       const signals = {requestedProfile: 'THIN', knownExactTargets: true, estimatedFiles: 1, risk: 'low', deterministicVerifier: true, ambiguity: .1};
       const qualified = {productionQualified: true, verifiedRuns: 25, successRate: .96, sameModelRuns: 25};
-      assert(value.routeProfile(signals, {mode: 'OBSERVE', evidence: {THIN: qualified}}).appliedProfile === 'STANDARD', 'observe_did_not_fallback');
-      assert(value.routeProfile(signals, {mode: 'EXPERIMENT'}).appliedProfile === 'THIN', 'experiment_override_broken');
-      assert(value.routeProfile(signals, {mode: 'ENFORCE', evidence: {THIN: {productionQualified: false, verifiedRuns: 100, successRate: 1, sameModelRuns: 100}}}).appliedProfile === 'STANDARD', 'unqualified_enforce_applied');
-      assert(value.routeProfile(signals, {mode: 'ENFORCE', evidence: {THIN: qualified}}).appliedProfile === 'THIN', 'qualified_enforce_not_applied');
+      callEqual(() => value.routeProfile(signals, {mode: 'OBSERVE', evidence: {THIN: qualified}}).appliedProfile, 'STANDARD', 'routeProfile_OBSERVE');
+      callEqual(() => value.routeProfile(signals, {mode: 'EXPERIMENT'}).appliedProfile, 'THIN', 'routeProfile_EXPERIMENT');
+      callEqual(() => value.routeProfile(signals, {mode: 'ENFORCE', evidence: {THIN: {productionQualified: false, verifiedRuns: 100, successRate: 1, sameModelRuns: 100}}}).appliedProfile, 'STANDARD', 'routeProfile_ENFORCE_unqualified_THIN');
+      callEqual(() => value.routeProfile(signals, {mode: 'ENFORCE', evidence: {THIN: qualified}}).appliedProfile, 'THIN', 'routeProfile_ENFORCE_qualified_THIN');
       const escalated = value.nextContextAttempt('THIN', ['THIN', 'STANDARD'], 'missing_context');
       assert(escalated.action === 'ESCALATE' && escalated.to === 'DEEP', 'attempted_profile_not_skipped');
       let denied = false; try { value.nextContextAttempt('THIN', ['THIN'], 'anything'); } catch { denied = true; }
@@ -237,4 +237,10 @@ function parseNumstat(value: string) { return value.split(/\r?\n/).filter(Boolea
 function walk(root: string): string[] { return fs.readdirSync(root, {withFileTypes: true}).flatMap(entry => { const child = path.join(root, entry.name); return entry.isDirectory() ? walk(child) : entry.isFile() ? [child] : []; }); }
 function assert(condition: unknown, message: string): asserts condition { if (!condition) throw new Error(message); }
 function equal(actual: unknown, expected: unknown, message: string) { if (JSON.stringify(actual) !== JSON.stringify(expected)) throw new Error(`${message}:${JSON.stringify(actual)}`); }
+function callEqual(action: () => unknown, expected: unknown, label: string) {
+  let actual: unknown;
+  try { actual = action(); }
+  catch (error) { throw new Error(`${label}:threw:${error instanceof Error ? error.message : String(error)}`); }
+  if (JSON.stringify(actual) !== JSON.stringify(expected)) throw new Error(`${label}:expected=${JSON.stringify(expected)}:actual=${JSON.stringify(actual)}`);
+}
 function bounded(value: string) { const normalized = value.replace(/[\r\n]+/g, ' ').trim(); return normalized.length <= 1_000 ? normalized : `${normalized.slice(0, 997)}...`; }

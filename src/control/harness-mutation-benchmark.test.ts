@@ -8,6 +8,7 @@ import {
   aggregateInvocationUsage,
   classifyMutationEscalation,
   createMutationQualificationReport,
+  decideMutationVerifierRepair,
   parseMutationBenchmarkSuite,
   predictMutationContextProfile,
   type MutationAttemptResult,
@@ -43,6 +44,19 @@ test('escalation classification fails closed for policy/scope errors and classif
   assert.equal(classifyMutationEscalation(suite.tasks[0], 'THIN', verifier(true, 'NONE'), 'structured_chat_loop_turn_limit:3'), 'tool_limitation');
   assert.equal(classifyMutationEscalation(task, 'THIN', verifier(false, 'SCOPE_VIOLATION'), 'mutation_scope_violation:x'), null);
   assert.equal(classifyMutationEscalation(task, 'THIN', verifier(false, 'EXECUTION'), 'tool_policy_denied:human_owns_execution'), null);
+});
+
+test('verifier repair is single-pass, budgeted and excludes governance boundaries', () => {
+  const hidden = verifier(false, 'HIDDEN_VERIFIER');
+  assert.deepEqual(decideMutationVerifierRepair({verifier: hidden, repairPasses: 0, remainingLatencyMs: 30_000, remainingProcessedTokens: 8_000}), {
+    repair: true, reason: 'verifier_guided_repair', detail: 'One bounded repair is authorised for HIDDEN_VERIFIER.',
+  });
+  assert.equal(decideMutationVerifierRepair({verifier: hidden, repairPasses: 1, remainingLatencyMs: 30_000, remainingProcessedTokens: 8_000}).reason, 'repair_limit_reached');
+  assert.equal(decideMutationVerifierRepair({verifier: hidden, executionError: 'tool_policy_denied', repairPasses: 0, remainingLatencyMs: 30_000, remainingProcessedTokens: 8_000}).reason, 'execution_boundary');
+  assert.equal(decideMutationVerifierRepair({verifier: verifier(false, 'SECURITY'), repairPasses: 0, remainingLatencyMs: 30_000, remainingProcessedTokens: 8_000}).reason, 'non_repairable_failure');
+  assert.equal(decideMutationVerifierRepair({verifier: hidden, repairPasses: 0, remainingLatencyMs: 14_999, remainingProcessedTokens: 8_000}).reason, 'insufficient_budget');
+  assert.equal(decideMutationVerifierRepair({verifier: hidden, repairPasses: 0, remainingLatencyMs: 30_000, remainingProcessedTokens: 4_095}).reason, 'insufficient_budget');
+  assert.equal(decideMutationVerifierRepair({verifier: hidden, repairPasses: 0, remainingLatencyMs: 30_000, remainingProcessedTokens: null}).reason, 'insufficient_budget');
 });
 
 test('usage aggregation is deterministic and propagates unknown provider measurements', () => {

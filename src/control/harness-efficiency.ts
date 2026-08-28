@@ -21,7 +21,7 @@ export interface HarnessProfilePolicy {
 }
 
 export const DEFAULT_HARNESS_PROFILES: Readonly<Record<HarnessProfileName, HarnessProfilePolicy>> = Object.freeze({
-  THIN: Object.freeze({name: 'THIN', maximumInitialContextTokens: 4_096, maximumSources: 12, maximumOptionalSkills: 1, maximumTools: 6, maximumTurns: 3, allowBroadRepositoryContext: false, allowSharedContext: false, verificationRequired: true}),
+  THIN: Object.freeze({name: 'THIN', maximumInitialContextTokens: 4_096, maximumSources: 12, maximumOptionalSkills: 1, maximumTools: 6, maximumTurns: 6, allowBroadRepositoryContext: false, allowSharedContext: false, verificationRequired: true}),
   STANDARD: Object.freeze({name: 'STANDARD', maximumInitialContextTokens: 16_384, maximumSources: 48, maximumOptionalSkills: 4, maximumTools: 24, maximumTurns: 10, allowBroadRepositoryContext: false, allowSharedContext: true, verificationRequired: true}),
   DEEP: Object.freeze({name: 'DEEP', maximumInitialContextTokens: 65_536, maximumSources: 192, maximumOptionalSkills: 16, maximumTools: 64, maximumTurns: 32, allowBroadRepositoryContext: true, allowSharedContext: true, verificationRequired: true}),
 });

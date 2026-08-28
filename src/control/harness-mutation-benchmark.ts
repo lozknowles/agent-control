@@ -86,6 +86,12 @@ export interface MutationVerifierResult {
   failureClass: 'NONE' | 'NO_MUTATION' | 'SCOPE_VIOLATION' | 'SYNTAX' | 'PUBLIC_TEST' | 'HIDDEN_VERIFIER' | 'SECURITY' | 'DIFF_INVALID' | 'TIMEOUT' | 'EXECUTION';
 }
 
+export interface MutationVerifierRepairDecision {
+  repair: boolean;
+  reason: 'verifier_guided_repair' | 'already_verified' | 'repair_limit_reached' | 'execution_boundary' | 'non_repairable_failure' | 'insufficient_budget';
+  detail: string;
+}
+
 export interface MutationAttemptResult {
   attemptId: string;
   taskId: string;
@@ -247,6 +253,21 @@ export function classifyMutationEscalation(task: MutationBenchmarkTask, profile:
   if (verifier.failureClass === 'NO_MUTATION') return 'model_uncertainty';
   if (verifier.failureClass === 'SYNTAX' || verifier.failureClass === 'DIFF_INVALID') return 'execution_failure';
   return verifier.passed ? null : 'execution_failure';
+}
+
+export function decideMutationVerifierRepair(input: {
+  verifier: MutationVerifierResult;
+  executionError?: string | null;
+  repairPasses: number;
+  remainingLatencyMs: number;
+  remainingProcessedTokens: number | null;
+}): MutationVerifierRepairDecision {
+  if (input.verifier.passed) return {repair: false, reason: 'already_verified', detail: 'The independent verifier already passed.'};
+  if (input.repairPasses >= 1) return {repair: false, reason: 'repair_limit_reached', detail: 'The single governed verifier-repair pass has been consumed.'};
+  if (input.executionError) return {repair: false, reason: 'execution_boundary', detail: 'Execution, policy, cancellation, timeout and transport failures are not converted into verifier repair.'};
+  if (!['DIFF_INVALID', 'SYNTAX', 'PUBLIC_TEST', 'HIDDEN_VERIFIER'].includes(input.verifier.failureClass)) return {repair: false, reason: 'non_repairable_failure', detail: `Failure class ${input.verifier.failureClass} requires escalation or review.`};
+  if (input.remainingLatencyMs < 15_000 || input.remainingProcessedTokens === null || input.remainingProcessedTokens < 4_096) return {repair: false, reason: 'insufficient_budget', detail: 'The governed repair reserve is unknown or exhausted.'};
+  return {repair: true, reason: 'verifier_guided_repair', detail: `One bounded repair is authorised for ${input.verifier.failureClass}.`};
 }
 
 export function aggregateInvocationUsage(invocations: ModelInvocationObservation[]): NormalizedProviderUsage {

@@ -12,26 +12,26 @@ import type {StructuredChatToolSchema} from './structured-chat-loop-provider.js'
 export const MUTATION_TOOL_IDS = Object.freeze({
   read: 'mutation.repository.read',
   search: 'mutation.repository.search',
-  replace: 'mutation.repository.replace',
-  write: 'mutation.repository.write',
+  edit: 'mutation.repository.edit',
+  diff: 'mutation.repository.diff',
   test: 'mutation.repository.test',
   finish: 'mutation.finish',
 });
 
 export const MUTATION_TOOL_SCHEMAS: StructuredChatToolSchema[] = [
-  {id: MUTATION_TOOL_IDS.read, description: 'Read one authorised repository file or a bounded line range. Input: path, optional startLine/endLine.', inputSchema: {type: 'object', properties: {path: {type: 'string'}, startLine: {type: 'integer'}, endLine: {type: 'integer'}}, required: ['path'], additionalProperties: false}},
+  {id: MUTATION_TOOL_IDS.read, description: 'Read one authorised repository file or a bounded line range. The content field is raw file text; startLine/endLine carry its location and are not embedded into the text. Input: path, optional startLine/endLine.', inputSchema: {type: 'object', properties: {path: {type: 'string'}, startLine: {type: 'integer'}, endLine: {type: 'integer'}}, required: ['path'], additionalProperties: false}},
   {id: MUTATION_TOOL_IDS.search, description: 'Literal compact repository search. Returns file and line indexes; use read to expand selected files.', inputSchema: {type: 'object', properties: {query: {type: 'string'}, paths: {type: 'array', items: {type: 'string'}}, caseSensitive: {type: 'boolean'}}, required: ['query'], additionalProperties: false}},
-  {id: MUTATION_TOOL_IDS.replace, description: 'Replace an exact string in one task-authorised file. Input oldText/newText and optional expectedOccurrences.', inputSchema: {type: 'object', properties: {path: {type: 'string'}, oldText: {type: 'string'}, newText: {type: 'string'}, expectedOccurrences: {type: 'integer'}}, required: ['path', 'oldText', 'newText'], additionalProperties: false}},
-  {id: MUTATION_TOOL_IDS.write, description: 'Write complete bounded content to one task-authorised file. Intended for a new test or a small full-file correction.', inputSchema: {type: 'object', properties: {path: {type: 'string'}, content: {type: 'string'}}, required: ['path', 'content'], additionalProperties: false}},
-  {id: MUTATION_TOOL_IDS.test, description: 'Run the fixture public Node test suite. It accepts no command, arguments or shell input.', inputSchema: {type: 'object', additionalProperties: false}},
+  {id: MUTATION_TOOL_IDS.edit, description: 'Apply one atomic batch of bounded edits to task-authorised files. Use replace operations for exact old/new text or write operations for a complete new/small file. All operations are validated before any file changes; the batch rolls back on failure.', inputSchema: {type: 'object', properties: {operations: {type: 'array', minItems: 1, maxItems: 16, items: {anyOf: [{type: 'object', properties: {type: {type: 'string', const: 'replace'}, path: {type: 'string'}, oldText: {type: 'string'}, newText: {type: 'string'}, expectedOccurrences: {type: 'integer'}}, required: ['type', 'path', 'oldText', 'newText'], additionalProperties: false}, {type: 'object', properties: {type: {type: 'string', const: 'write'}, path: {type: 'string'}, content: {type: 'string'}}, required: ['type', 'path', 'content'], additionalProperties: false}]}}}, required: ['operations'], additionalProperties: false}},
+  {id: MUTATION_TOOL_IDS.diff, description: 'Inspect the current authorised repository diff. Returns a bounded raw unified diff and size metadata; accepts no paths or shell input.', inputSchema: {type: 'object', additionalProperties: false}},
+  {id: MUTATION_TOOL_IDS.test, description: 'Run governed mutation preflight: git diff --check followed by the fixture public Node test suite. It accepts no command, arguments or shell input.', inputSchema: {type: 'object', additionalProperties: false}},
   {id: MUTATION_TOOL_IDS.finish, description: 'Stop the attempt after testing or when safely blocked. This is not verifier acceptance.', inputSchema: {type: 'object', properties: {summary: {type: 'string'}, blocked: {type: 'boolean'}, reason: {type: 'string'}}, additionalProperties: false}},
 ];
 
 export const MUTATION_TOOL_DEFINITIONS: ToolDefinition[] = [
   {id: MUTATION_TOOL_IDS.read, risk: 'read', capabilities: ['repository.read.bounded']},
   {id: MUTATION_TOOL_IDS.search, risk: 'read', capabilities: ['repository.search.compact']},
-  {id: MUTATION_TOOL_IDS.replace, risk: 'write', capabilities: ['repository.mutate.bounded']},
-  {id: MUTATION_TOOL_IDS.write, risk: 'write', capabilities: ['repository.mutate.bounded']},
+  {id: MUTATION_TOOL_IDS.edit, risk: 'write', capabilities: ['repository.mutate.bounded', 'repository.mutate.atomic_batch']},
+  {id: MUTATION_TOOL_IDS.diff, risk: 'read', capabilities: ['repository.diff.bounded']},
   {id: MUTATION_TOOL_IDS.test, risk: 'read', capabilities: ['repository.verify.public']},
   {id: MUTATION_TOOL_IDS.finish, risk: 'read', capabilities: ['execution.stop.typed']},
 ];
@@ -56,6 +56,7 @@ export class MutationWorkspace {
   private readonly temporaryRoot: string;
   private readonly command = new LocalCommandExecutor();
   private counters: MutationWorkspaceCounters = emptyCounters();
+  private lastPreflightPassed: boolean | undefined;
 
   private constructor(root: string, temporaryRoot: string, readonly task: MutationBenchmarkTask, readonly signal?: AbortSignal) {
     this.root = fs.realpathSync(root);
@@ -81,14 +82,15 @@ export class MutationWorkspace {
     return [
       {toolId: MUTATION_TOOL_IDS.read, handler: async input => this.read(input)},
       {toolId: MUTATION_TOOL_IDS.search, handler: async input => this.search(input)},
-      {toolId: MUTATION_TOOL_IDS.replace, handler: async input => this.replace(input)},
-      {toolId: MUTATION_TOOL_IDS.write, handler: async input => this.write(input)},
+      {toolId: MUTATION_TOOL_IDS.edit, handler: async input => this.edit(input)},
+      {toolId: MUTATION_TOOL_IDS.diff, handler: async input => this.inspectDiff(input)},
       {toolId: MUTATION_TOOL_IDS.test, handler: (_input, recipe) => this.test(recipe)},
       {toolId: MUTATION_TOOL_IDS.finish, handler: async input => this.finish(input)},
     ];
   }
 
   resetCounters() { this.counters = emptyCounters(); }
+  beginVerifierRepair() { this.lastPreflightPassed = undefined; }
   getCounters(): MutationWorkspaceCounters { return structuredClone(this.counters); }
   changedFiles(): string[] { return lines(execGit(this.root, ['diff', '--name-only', '--diff-filter=ACMRTUXB', 'HEAD'])).sort(); }
   diff(): string { return execGit(this.root, ['diff', '--binary', '--no-ext-diff', '--no-color', 'HEAD']); }
@@ -109,7 +111,7 @@ export class MutationWorkspace {
     const content = readText(file, 512_000), all = content.split(/\r?\n/);
     const startLine = value.startLine === undefined ? 1 : integer(value.startLine, 1, Math.max(1, all.length));
     const endLine = value.endLine === undefined ? Math.min(all.length, startLine + 399) : integer(value.endLine, startLine, Math.min(all.length, startLine + 399));
-    const selected = all.slice(startLine - 1, endLine).map((line, index) => `${String(startLine + index).padStart(4, ' ')} | ${line}`).join('\n');
+    const selected = all.slice(startLine - 1, endLine).join('\n');
     return {path: this.relative(file), startLine, endLine, totalLines: all.length, complete: startLine === 1 && endLine === all.length, content: selected};
   }
 
@@ -136,36 +138,71 @@ export class MutationWorkspace {
     return {query: value.query, filesSearched: Math.min(files.length, 500), filesWithMatches: matches.length, totalMatches, compactIndex: matches.slice(0, 100), completeIndex: matches.length <= 100};
   }
 
-  private replace(input: unknown) {
-    this.record(MUTATION_TOOL_IDS.replace); this.counters.mutationsAttempted++;
-    const value = object(input, ['path', 'oldText', 'newText', 'expectedOccurrences']);
-    const file = this.authorizeWritable(value.path, false);
-    if (typeof value.oldText !== 'string' || !value.oldText.length || value.oldText.length > 65_536 || typeof value.newText !== 'string' || value.newText.length > 131_072) throw new Error('mutation_replace_text_invalid');
-    const expected = value.expectedOccurrences === undefined ? 1 : integer(value.expectedOccurrences, 1, 1_000);
-    const content = readText(file, 512_000), occurrences = countOccurrences(content, value.oldText);
-    if (occurrences !== expected) throw new Error(`mutation_replace_occurrences:${occurrences}:${expected}`);
-    const updated = content.split(value.oldText).join(value.newText);
-    if (Buffer.byteLength(updated, 'utf8') > 512_000) throw new Error('mutation_file_size_limit');
-    atomicWrite(file, updated);
-    return {ok: true, path: this.relative(file), occurrences, ...this.statusSummary()};
+  private edit(input: unknown) {
+    this.record(MUTATION_TOOL_IDS.edit);
+    const value = object(input, ['operations']);
+    if (!Array.isArray(value.operations) || value.operations.length < 1 || value.operations.length > 16) throw new Error('mutation_edit_operations_invalid');
+    const planned = new Map<string, {file: string; existed: boolean; original: string; content: string}>();
+    for (const raw of value.operations) {
+      const operation = object(raw, ['type', 'path', 'oldText', 'newText', 'expectedOccurrences', 'content']);
+      if (operation.type !== 'replace' && operation.type !== 'write') throw new Error('mutation_edit_type_invalid');
+      const relative = validRelative(operation.path);
+      const existing = planned.get(relative);
+      const file = existing?.file ?? this.authorizeWritable(relative, operation.type === 'write');
+      const snapshot = existing ?? {file, existed: fs.existsSync(file), original: fs.existsSync(file) ? readText(file, 512_000) : '', content: fs.existsSync(file) ? readText(file, 512_000) : ''};
+      if (operation.type === 'replace') {
+        if (typeof operation.oldText !== 'string' || !operation.oldText.length || operation.oldText.length > 65_536 || typeof operation.newText !== 'string' || operation.newText.length > 131_072) throw new Error('mutation_replace_text_invalid');
+        const expected = operation.expectedOccurrences === undefined ? 1 : integer(operation.expectedOccurrences, 1, 1_000);
+        const occurrences = countOccurrences(snapshot.content, operation.oldText);
+        if (occurrences !== expected) throw new Error(`mutation_replace_occurrences:${occurrences}:${expected}`);
+        snapshot.content = snapshot.content.split(operation.oldText).join(operation.newText);
+      } else {
+        if (typeof operation.content !== 'string' || Buffer.byteLength(operation.content, 'utf8') > 131_072 || operation.content.includes('\0')) throw new Error('mutation_write_content_invalid');
+        snapshot.content = operation.content;
+      }
+      if (Buffer.byteLength(snapshot.content, 'utf8') > 512_000) throw new Error('mutation_file_size_limit');
+      planned.set(relative, snapshot);
+    }
+    this.counters.mutationsAttempted += value.operations.length;
+    try {
+      for (const [relative, item] of planned) {
+        fs.mkdirSync(path.dirname(item.file), {recursive: true});
+        atomicWrite(item.file, item.content);
+        if (!item.existed) execGit(this.root, ['add', '--intent-to-add', '--', relative]);
+      }
+    } catch (error) {
+      for (const item of [...planned.values()].reverse()) {
+        if (item.existed) atomicWrite(item.file, item.original);
+        else if (fs.existsSync(item.file)) fs.unlinkSync(item.file);
+      }
+      throw error;
+    }
+    this.lastPreflightPassed = undefined;
+    return {ok: true, operations: value.operations.length, paths: [...planned.keys()].sort(), ...this.statusSummary()};
   }
 
-  private write(input: unknown) {
-    this.record(MUTATION_TOOL_IDS.write); this.counters.mutationsAttempted++;
-    const value = object(input, ['path', 'content']);
-    const file = this.authorizeWritable(value.path, true);
-    if (typeof value.content !== 'string' || Buffer.byteLength(value.content, 'utf8') > 131_072 || value.content.includes('\0')) throw new Error('mutation_write_content_invalid');
-    fs.mkdirSync(path.dirname(file), {recursive: true});
-    atomicWrite(file, value.content);
-    execGit(this.root, ['add', '--intent-to-add', '--', this.relative(file)]);
-    return {ok: true, path: this.relative(file), bytes: Buffer.byteLength(value.content, 'utf8'), ...this.statusSummary()};
+  private inspectDiff(input: unknown) {
+    this.record(MUTATION_TOOL_IDS.diff);
+    object(input ?? {}, []);
+    const authoritative = this.diff(), originalBytes = Buffer.byteLength(authoritative, 'utf8'), maximumBytes = 65_536;
+    const content = originalBytes <= maximumBytes ? authoritative : Buffer.from(authoritative, 'utf8').subarray(0, maximumBytes).toString('utf8');
+    return {content, complete: originalBytes <= maximumBytes, originalBytes, returnedBytes: Buffer.byteLength(content, 'utf8'), ...this.statusSummary()};
   }
 
   private async test(recipe: ExecutionRecipe) {
     this.record(MUTATION_TOOL_IDS.test); this.counters.verifierFacingTests++;
+    const maximumLatencyMs = Math.min(60_000, recipe.resourceLimits.maximumLatencyMs ?? 60_000);
+    const startedAt = Date.now();
+    const diffCheck = await this.command.execute({command: 'git', args: ['diff', '--check', 'HEAD'], cwd: this.root, timeoutMs: Math.min(30_000, maximumLatencyMs), maxCaptureBytesPerStream: 32_768, backend: 'disposable-mutation-workspace', signal: this.signal});
+    if (diffCheck.exitCode !== 0 || diffCheck.timedOut || diffCheck.cancelled) {
+      this.lastPreflightPassed = false;
+      return {passed: false, phase: 'git_diff_check', exitCode: diffCheck.exitCode, timedOut: diffCheck.timedOut, cancelled: diffCheck.cancelled, stdout: diffCheck.stdout, stderr: diffCheck.stderr, ...this.statusSummary()};
+    }
     const tests = fs.readdirSync(path.join(this.root, 'test')).filter(name => name.endsWith('.test.js')).sort().map(name => path.join('test', name));
-    const result = await this.command.execute({command: process.execPath, args: ['--test', ...tests], cwd: this.root, timeoutMs: Math.min(60_000, recipe.resourceLimits.maximumLatencyMs ?? 60_000), maxCaptureBytesPerStream: 32_768, backend: 'disposable-mutation-workspace', signal: this.signal});
-    return {passed: result.exitCode === 0 && !result.timedOut && !result.cancelled, exitCode: result.exitCode, timedOut: result.timedOut, cancelled: result.cancelled, stdout: result.stdout, stderr: result.stderr, ...this.statusSummary()};
+    const remainingMs = Math.max(1, maximumLatencyMs - (Date.now() - startedAt));
+    const result = await this.command.execute({command: process.execPath, args: ['--test', ...tests], cwd: this.root, timeoutMs: remainingMs, maxCaptureBytesPerStream: 32_768, backend: 'disposable-mutation-workspace', signal: this.signal});
+    this.lastPreflightPassed = result.exitCode === 0 && !result.timedOut && !result.cancelled;
+    return {passed: this.lastPreflightPassed, phase: 'public_tests', exitCode: result.exitCode, timedOut: result.timedOut, cancelled: result.cancelled, stdout: result.stdout, stderr: result.stderr, ...this.statusSummary()};
   }
 
   private finish(input: unknown) {
@@ -174,7 +211,10 @@ export class MutationWorkspace {
     if (value.summary !== undefined && (typeof value.summary !== 'string' || value.summary.length > 2_048)) throw new Error('mutation_finish_summary_invalid');
     if (value.blocked !== undefined && typeof value.blocked !== 'boolean') throw new Error('mutation_finish_blocked_invalid');
     if (value.reason !== undefined && (typeof value.reason !== 'string' || value.reason.length > 512)) throw new Error('mutation_finish_reason_invalid');
-    return {stopped: true, blocked: value.blocked === true, summaryRecorded: typeof value.summary === 'string', ...this.statusSummary()};
+    const status = this.statusSummary();
+    if (!status.changedFiles.length && value.blocked !== true) return {ok: false, stopped: false, blocked: false, error: 'mutation_required_before_finish', summaryRecorded: typeof value.summary === 'string', ...status};
+    if (value.blocked !== true && this.lastPreflightPassed !== true) return {ok: false, stopped: false, blocked: false, error: 'successful_preflight_required_before_finish', summaryRecorded: typeof value.summary === 'string', ...status};
+    return {ok: true, stopped: true, blocked: value.blocked === true, summaryRecorded: typeof value.summary === 'string', ...status};
   }
 
   private authorizeExisting(value: unknown) {
