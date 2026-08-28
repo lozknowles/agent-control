@@ -169,6 +169,92 @@ async function hiddenVerifier(root: string, task: MutationBenchmarkTask): Promis
       assert(value.nextContextAttempt('DEEP', ['THIN', 'STANDARD', 'DEEP'], 'verifier_rejection').action === 'REVIEW', 'deep_escalation_unbounded');
       return 'qualified ENFORCE gate and bounded classified escalation';
     }
+    case 'MUT-013': {
+      const value = await load<{normalizeUsage(raw?: any): any}>('src/telemetry.js');
+      assert(value.normalizeUsage({completion_tokens_details: {reasoning_tokens: 7}}).reasoningTokens === 7, 'nested_reasoning_tokens_missing');
+      assert(value.normalizeUsage({reasoning_tokens: 5}).reasoningTokens === 5, 'flat_reasoning_tokens_missing');
+      assert(value.normalizeUsage({completion_tokens_details: {reasoning_tokens: 7}, reasoning_tokens: 5}).reasoningTokens === 7, 'reasoning_token_precedence_wrong');
+      assert(value.normalizeUsage({}).reasoningTokens === null, 'unknown_reasoning_tokens_not_null');
+      return 'reasoning usage is normalized without inventing unavailable measurements';
+    }
+    case 'MUT-014': {
+      const value = await load<{parseRuntimeConfig(input?: any): any}>('src/config.js');
+      assert(value.parseRuntimeConfig().maximumRetries === 2, 'retry_default_wrong');
+      assert(value.parseRuntimeConfig({maximumRetries: 0}).maximumRetries === 0 && value.parseRuntimeConfig({maximumRetries: 8}).maximumRetries === 8, 'retry_boundary_rejected');
+      for (const invalid of [-1, 9, 1.5]) { let denied = false; try { value.parseRuntimeConfig({maximumRetries: invalid}); } catch { denied = true; } assert(denied, `retry_value_accepted:${invalid}`); }
+      assert(Object.isFrozen(value.parseRuntimeConfig()), 'runtime_config_not_frozen');
+      return 'retry configuration is bounded and immutable';
+    }
+    case 'MUT-015': {
+      const value = await load<{selectWorker(workers: any[], required: string[]): any}>('src/scheduler.js');
+      const selected = value.selectWorker([{id: 'draining', online: true, draining: true, activeJobs: 0, capabilities: ['x']}, {id: 'ready', online: true, draining: false, activeJobs: 2, capabilities: ['x']}], ['x']);
+      assert(selected?.id === 'ready', 'draining_worker_selected');
+      assert(value.selectWorker([{id: 'only', online: true, draining: true, activeJobs: 0, capabilities: ['x']}], ['x']) === null, 'draining_only_selection_not_null');
+      return 'worker draining state fences placement';
+    }
+    case 'MUT-016': {
+      const value = await load<{WorkQueue: new () => {enqueue(item: any): void; lease(id: string): any; release(id: string): any; list(): any[]}}>('src/queue.js');
+      const queue = new value.WorkQueue(); queue.enqueue({id: 'a'}); queue.enqueue({id: 'b'}); queue.lease('a');
+      assert(queue.release('a').state === 'QUEUED', 'leased_item_not_released');
+      equal(queue.list().map(item => item.id), ['a', 'b'], 'release_changed_order');
+      for (const id of ['missing', 'b']) { let denied = false; try { queue.release(id); } catch { denied = true; } assert(denied, `invalid_release_accepted:${id}`); }
+      return 'lease release is state-guarded and identity preserving';
+    }
+    case 'MUT-017': {
+      const value = await load<{provenanceRecord(kind: any, evidence: any[]): any}>('src/provenance.js');
+      for (const kind of ['', '   ', null]) { let denied = false; try { value.provenanceRecord(kind, []); } catch (error) { denied = /provenance_kind_invalid/.test(String(error)); } assert(denied, `invalid_provenance_kind_accepted:${String(kind)}`); }
+      const record = value.provenanceRecord('test', ['a', 'a', 'b']);
+      assert(Object.isFrozen(record), 'provenance_record_not_frozen'); equal(record.evidenceIds, ['a', 'b'], 'provenance_evidence_unstable');
+      return 'provenance kind fails closed while valid evidence stays stable';
+    }
+    case 'MUT-018': {
+      const value = await load<{dispatchAttempt(input: any): any}>('src/dispatcher.js');
+      const base = {taskId: 't', profile: 'STANDARD', usage: {}, verifierResult: 'UNKNOWN', authorization: {owner: 'agent', toolId: 'read', risk: 'read', grantedTools: ['read'], approvedRisks: ['read'], leaseGeneration: 1, liveLeaseGeneration: 1, ownershipGeneration: 1, liveOwnershipGeneration: 1}};
+      const denied = value.dispatchAttempt({...base, authorization: {...base.authorization, liveLeaseGeneration: 2}});
+      assert(denied.accepted === false && denied.telemetry === null && denied.denialReason === 'stale_lease_generation', 'dispatch_denial_reason_lost');
+      const accepted = value.dispatchAttempt(base); assert(accepted.accepted === true && accepted.denialReason === null, 'successful_dispatch_denial_reason_not_null');
+      return 'dispatch exposes policy reason without creating denied telemetry';
+    }
+    case 'MUT-019': {
+      const value = await load<{deriveContextPacket(input: any): any}>('src/context-packet.js');
+      for (const sources of [[{}], [{id: ''}]]) { let denied = false; try { value.deriveContextPacket({id: 'p', sources}); } catch (error) { denied = /context_source_invalid/.test(String(error)); } assert(denied, 'invalid_context_source_accepted'); }
+      const packet = value.deriveContextPacket({id: 'p', sources: [{id: 'a'}, {id: 'b'}]}); equal(packet.sourceIds, ['a', 'b'], 'valid_context_source_order_changed'); assert(Object.isFrozen(packet), 'context_packet_not_frozen');
+      return 'selected context requires stable source identity';
+    }
+    case 'MUT-020': {
+      const value = await load<{modelFacingToolResult(input: any): any}>('src/tool-output.js');
+      const input = {x: `a${'😀'.repeat(10_000)}`}; const authoritative = JSON.stringify(input);
+      const result = value.modelFacingToolResult(input);
+      assert(result.state === 'COMPACTED', 'unicode_fixture_not_compacted');
+      assert(!result.output.includes('\uFFFD'), 'utf8_replacement_character_emitted');
+      assert(result.authoritativeHash === createHash('sha256').update(authoritative).digest('hex'), 'authoritative_hash_changed');
+      return 'UTF-8 compaction preserves valid text and authoritative identity';
+    }
+    case 'MUT-021': {
+      const constants = await load<{JOB_STATES: string[]; TERMINAL_JOB_STATES: string[]}>('src/constants.js');
+      const state = await load<{transitionJob(current: string, next: string): string}>('src/job-state.js');
+      assert(constants.JOB_STATES.includes('TIMED_OUT') && constants.TERMINAL_JOB_STATES.includes('TIMED_OUT'), 'timeout_state_not_terminal');
+      for (const current of ['CREATED', 'ROUTED', 'RUNNING']) assert(state.transitionJob(current, 'TIMED_OUT') === 'TIMED_OUT', `timeout_transition_missing:${current}`);
+      let denied = false; try { state.transitionJob('TIMED_OUT', 'RUNNING'); } catch { denied = true; } assert(denied, 'timed_out_state_not_terminal');
+      return 'timeout is a terminal transition from every active state';
+    }
+    case 'MUT-022': {
+      const value = await load<{recommendProfile(signals: any): string}>('src/router.js');
+      const bounded = {knownExactTargets: true, estimatedFiles: 1, risk: 'low', deterministicVerifier: true, ambiguity: .1, architectural: false};
+      assert(value.recommendProfile({...bounded, repositorySearchRequired: true}) === 'STANDARD', 'search_task_recommended_thin');
+      assert(value.recommendProfile({...bounded, repositorySearchRequired: false}) === 'THIN', 'bounded_task_no_longer_thin');
+      assert(value.recommendProfile({...bounded, repositorySearchRequired: true, architectural: true}) === 'DEEP', 'deep_precedence_changed');
+      return 'profile recommendation accounts for repository discovery cost';
+    }
+    case 'MUT-023': {
+      const value = await load<{strategyQualified(evidence: any): boolean}>('src/qualification.js');
+      const base = {productionQualified: true, verifiedRuns: 20, successRate: .95, sameModelRuns: 20};
+      assert(value.strategyQualified({...base, verifierPassed: true}) === true, 'verified_strategy_rejected');
+      for (const verifierPassed of [undefined, false, 'true']) assert(value.strategyQualified({...base, verifierPassed}) === false, 'unverified_strategy_accepted');
+      assert(value.strategyQualified({...base, verifierPassed: true, successRate: .94}) === false, 'numeric_gate_weakened');
+      return 'strategy qualification requires explicit verifier evidence';
+    }
+    case 'MUT-024': return mutationTestTerminalState(root);
     default: throw new Error(`hidden_verifier_missing:${task.id}`);
   }
 }
@@ -197,6 +283,24 @@ async function mutationTestHumanTakeover(root: string): Promise<string> {
     if (!relative.startsWith('agent-control-verifier-mutant-') || relative.includes(path.sep)) throw new Error('mutant_cleanup_boundary_invalid');
     fs.rmSync(resolved, {recursive: true, force: true});
   }
+}
+
+async function mutationTestTerminalState(root: string): Promise<string> {
+  const testFile = path.join(root, 'test', 'terminal-state.test.js');
+  if (!fs.existsSync(testFile)) throw new Error('terminal_state_test_missing');
+  const original = await command(process.execPath, [testFile], root, 30_000);
+  if (original.exitCode !== 0) throw new Error(`new_test_does_not_pass:${bounded(original.stderr || original.stdout)}`);
+  const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-terminal-mutant-'));
+  try {
+    const mutant = path.join(temporary, 'workspace'); fs.cpSync(root, mutant, {recursive: true, filter: source => !source.split(path.sep).includes('.git')});
+    const stateFile = path.join(mutant, 'src', 'job-state.js'), source = fs.readFileSync(stateFile, 'utf8');
+    const target = "  if (TERMINAL_JOB_STATES.includes(current)) throw new Error('terminal_state_transition_denied');";
+    if (!source.includes(target)) throw new Error('terminal_mutation_anchor_missing');
+    fs.writeFileSync(stateFile, source.replace(target, "  if (false && TERMINAL_JOB_STATES.includes(current)) throw new Error('terminal_state_transition_denied');"), 'utf8');
+    let rejected = false; try { execFileSync(process.execPath, [path.join('test', 'terminal-state.test.js')], {cwd: mutant, encoding: 'utf8', timeout: 30_000, stdio: ['ignore', 'pipe', 'pipe']}); } catch { rejected = true; }
+    if (!rejected) throw new Error('new_test_survived_terminal_fence_mutant');
+    return 'new regression passes original and rejects removed-terminal-fence mutant';
+  } finally { fs.rmSync(temporary, {recursive: true, force: true}); }
 }
 
 function syncCheck(id: string, action: () => string, evidenceIds: string[]): MutationVerifierCheck {

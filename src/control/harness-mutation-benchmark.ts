@@ -30,6 +30,7 @@ export interface MutationTaskFeatures {
 
 export interface MutationBenchmarkTask {
   id: string;
+  partition: 'development' | 'held_out';
   taskClass: MutationTaskClass;
   description: string;
   allowedFiles: string[];
@@ -342,16 +343,16 @@ export function renderMutationQualificationReport(report: MutationQualificationR
 
 function parseTask(input: unknown): MutationBenchmarkTask {
   if (!isObject(input)) throw new Error('mutation_task_invalid');
-  const allowed = new Set(['id', 'taskClass', 'description', 'allowedFiles', 'requiredChangedFiles', 'verifierId', 'acceptance', 'expectedMinimumProfile', 'timeoutMs', 'tokenBudget', 'escalationPermitted', 'expectedMutation', 'features']);
+  const allowed = new Set(['id', 'partition', 'taskClass', 'description', 'allowedFiles', 'requiredChangedFiles', 'verifierId', 'acceptance', 'expectedMinimumProfile', 'timeoutMs', 'tokenBudget', 'escalationPermitted', 'expectedMutation', 'features']);
   if (Object.keys(input).some(key => !allowed.has(key))) throw new Error('mutation_task_unknown_field');
-  if (!string(input.id, 64) || !TASK_CLASSES.has(input.taskClass as MutationTaskClass) || !string(input.description, 4096) || !string(input.verifierId, 128)) throw new Error('mutation_task_identity_invalid');
+  if (!string(input.id, 64) || !['development', 'held_out'].includes(String(input.partition)) || !TASK_CLASSES.has(input.taskClass as MutationTaskClass) || !string(input.description, 4096) || !string(input.verifierId, 128)) throw new Error('mutation_task_identity_invalid');
   const allowedFiles = paths(input.allowedFiles), requiredChangedFiles = paths(input.requiredChangedFiles);
   if (!requiredChangedFiles.every(value => allowedFiles.includes(value))) throw new Error('mutation_task_required_scope_invalid');
   if (!Array.isArray(input.acceptance) || !input.acceptance.length || input.acceptance.some(item => !string(item, 512)) || !PROFILES.has(input.expectedMinimumProfile as HarnessProfileName)) throw new Error('mutation_task_acceptance_invalid');
   if (!integer(input.timeoutMs, 1_000, 600_000) || !integer(input.tokenBudget, 1_000, 1_000_000) || typeof input.escalationPermitted !== 'boolean') throw new Error('mutation_task_budget_invalid');
   if (!isObject(input.expectedMutation) || !integer(input.expectedMutation.minimumFiles, 1, 100) || !integer(input.expectedMutation.maximumFiles, input.expectedMutation.minimumFiles as number, 100) || !integer(input.expectedMutation.maximumChangedLines, 1, 100_000)) throw new Error('mutation_task_expected_mutation_invalid');
   const features = parseFeatures(input.features);
-  return {id: input.id, taskClass: input.taskClass as MutationTaskClass, description: input.description, allowedFiles, requiredChangedFiles, verifierId: input.verifierId, acceptance: [...input.acceptance] as string[], expectedMinimumProfile: input.expectedMinimumProfile as HarnessProfileName, timeoutMs: input.timeoutMs, tokenBudget: input.tokenBudget, escalationPermitted: input.escalationPermitted, expectedMutation: structuredClone(input.expectedMutation as MutationBenchmarkTask['expectedMutation']), features};
+  return {id: input.id, partition: input.partition as 'development' | 'held_out', taskClass: input.taskClass as MutationTaskClass, description: input.description, allowedFiles, requiredChangedFiles, verifierId: input.verifierId, acceptance: [...input.acceptance] as string[], expectedMinimumProfile: input.expectedMinimumProfile as HarnessProfileName, timeoutMs: input.timeoutMs, tokenBudget: input.tokenBudget, escalationPermitted: input.escalationPermitted, expectedMutation: structuredClone(input.expectedMutation as MutationBenchmarkTask['expectedMutation']), features};
 }
 
 function parseFeatures(input: unknown): MutationTaskFeatures {

@@ -22,9 +22,11 @@ import {fixtureContentSha256} from './harness-mutation-workspace.js';
 const root = process.cwd();
 const suite = parseMutationBenchmarkSuite(JSON.parse(fs.readFileSync(path.join(root, 'benchmarks', 'harness-mutation-jobs.json'), 'utf8')));
 
-test('frozen mutation suite has 12 distinct real mutation classes and an exact fixture hash', () => {
-  assert.equal(suite.tasks.length, 12);
+test('frozen mutation suite has 24 real mutations, a sealed development/held-out split and an exact fixture hash', () => {
+  assert.equal(suite.tasks.length, 24);
   assert.equal(new Set(suite.tasks.map(task => task.taskClass)).size, 12);
+  assert.equal(suite.tasks.filter(task => task.partition === 'development').length, 15);
+  assert.equal(suite.tasks.filter(task => task.partition === 'held_out').length, 9);
   assert.equal(fixtureContentSha256(path.join(root, suite.fixturePath)), suite.fixtureSha256);
   assert.ok(suite.tasks.every(task => task.requiredChangedFiles.every(file => task.allowedFiles.includes(file))));
 });
@@ -71,8 +73,9 @@ test('usage aggregation is deterministic and propagates unknown provider measure
 
 test('production routing gate rejects an undersized mutation sample while preserving STANDARD fallback', () => {
   const strategies: MutationStrategy[] = ['THIN_ONLY', 'STANDARD_ONLY', 'DEEP_ONLY', 'ADAPTIVE_THIN_STANDARD_DEEP'];
-  const outcomes = strategies.flatMap(strategy => suite.tasks.map(task => outcome(task, strategy)));
-  const report = createMutationQualificationReport({suite, generatedAt: '2026-08-28T02:00:00.000Z', model: 'same-model', provider: 'same-provider', outcomes, safety: {toolPolicy: true, staleLease: true, staleOwnership: true, humanTakeover: true, fallback: true, neutrality: true}});
+  const undersized = {...suite, tasks: suite.tasks.slice(0, 12)};
+  const outcomes = strategies.flatMap(strategy => undersized.tasks.map(task => outcome(task, strategy)));
+  const report = createMutationQualificationReport({suite: undersized, generatedAt: '2026-08-28T02:00:00.000Z', model: 'same-model', provider: 'same-provider', outcomes, safety: {toolPolicy: true, staleLease: true, staleOwnership: true, humanTakeover: true, fallback: true, neutrality: true}});
   assert.equal(report.productionRoutingGate.qualified, false);
   assert.equal(report.productionRoutingGate.criteria.find(item => item.id === 'deterministic_real_mutation_sample')?.passed, false);
   assert.equal(report.productionRoutingGate.appliedProductionMode, 'OBSERVATIONAL_STANDARD_FALLBACK');
@@ -85,6 +88,8 @@ test('suite parser rejects path traversal, duplicate tasks and unsealed fixture 
   assert.throws(() => parseMutationBenchmarkSuite({...raw, fixtureSha256: 'pending'}), /identity_invalid/);
   const escaped = structuredClone(raw); escaped.tasks[0].allowedFiles = ['../escape'];
   assert.throws(() => parseMutationBenchmarkSuite(escaped), /paths_invalid/);
+  const unpartitioned = structuredClone(raw); delete unpartitioned.tasks[0].partition;
+  assert.throws(() => parseMutationBenchmarkSuite(unpartitioned), /identity_invalid/);
   assert.throws(() => parseMutationBenchmarkSuite({...raw, tasks: [raw.tasks[0], raw.tasks[0]]}), /duplicate_task/);
 });
 
