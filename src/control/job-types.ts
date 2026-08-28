@@ -43,6 +43,7 @@ export interface WorkerRegistration {
   capacity: number;
   active: number;
   labels?: Record<string, string>;
+  blockedCapabilities?: string[];
   capabilityExpiresAt?: Record<string, string>;
   observedAt: string;
 }
@@ -52,7 +53,7 @@ export interface ArtifactRecord {
   createdAt: string; size: number; sha256: string; storageRef: string; retention: string;
   provenance: {jobId: string; jobVersion: string; action: string; workerId: string};
 }
-export interface StepAttempt {attempt: number; startedAt: string; endedAt?: string; workerId?: string; outcome?: string; retryable?: boolean; errorClass?: ActionFailureClass;}
+export interface StepAttempt {attempt: number; startedAt: string; endedAt?: string; workerId?: string; outcome?: string; retryable?: boolean; errorClass?: ActionFailureClass; efficiencyInvocationIds?: string[];}
 export type ActionFailureClass = 'execution' | 'capability_unavailable' | 'authentication' | 'policy_rejection' | 'verification' | 'configuration';
 export interface RunStep {
   id: string; action: string; status: StepStatus; dependsOn: string[]; capabilityRequest: CapabilityRequest; resources: string[];
@@ -66,7 +67,7 @@ export interface RunRecord {
   effectiveJob: JobDefinition; selectedWorkers: string[]; approvals: string[]; provenance: Array<{type: string; at: string; detail: string}>;
 }
 export interface ActionContext {run: RunRecord; step: RunStep; worker: WorkerRegistration; parameters: Record<string, unknown>; inputArtifacts: ArtifactRecord[]; readArtifact: (id: string) => unknown; signal: AbortSignal;}
-export interface ActionOutput {artifacts?: Array<{name: string; value: unknown; type?: string; schema?: string; version?: string; retention?: string}>; evidence?: string[]; verification?: string[]; detail?: string; executionState?: 'verification-pending';}
+export interface ActionOutput {artifacts?: Array<{name: string; value: unknown; type?: string; schema?: string; version?: string; retention?: string}>; evidence?: string[]; verification?: string[]; detail?: string; efficiencyInvocationIds?: string[]; executionState?: 'verification-pending';}
 export type ActionHandler = (context: ActionContext) => Promise<ActionOutput>;
 export interface AgentActionHandler {readonly path: 'adaptive-harness'; execute(context: ActionContext): Promise<ActionOutput>;}
 

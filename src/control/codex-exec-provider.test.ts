@@ -17,7 +17,16 @@ test('Codex ChatGPT-plan factory returns data only through the ToolPolicy gatewa
   assert.match(result.resultRef ?? '', /CODEX-CHATGPT-OK/);
   assert.ok(result.evidence?.includes('auth_mode:chatgpt'));
   assert.ok(result.evidence?.includes('capability_envelope:read-only'));
+  assert.equal(result.invocations?.[0].usage.inputTokens, 10);
+  assert.equal(result.invocations?.[0].usage.freshInputTokens, null);
   assert.deepEqual(factory().candidate().runtime, {sandbox: 'read-only', ephemeral: true});
+});
+
+test('Codex usage retains nested cache and reasoning details for normalisation', async () => {
+  const result = await factory({runner: async request => ({threadId: 'thr_nested', finalMessage: JSON.stringify({tool: request.grantedToolIds[0], input_json: '{}'}), usage: {input_tokens: 100, input_tokens_details: {cached_tokens: 70}, output_tokens: 20, output_tokens_details: {reasoning_tokens: 8}, total_tokens: 120}, observedItemTypes: ['agent_message']})}).executor('Return safe data').execute({tools: [{id: 'qualification.return-data'}], resourceLimits: {}} as never, {invoke: async () => ({marker: 'SAFE'})});
+  assert.equal(result.invocations?.[0].usage.freshInputTokens, 30);
+  assert.equal(result.invocations?.[0].usage.cachedInputTokens, 70);
+  assert.equal(result.invocations?.[0].usage.reasoningTokens, 8);
 });
 
 test('Codex fallback fails closed for missing ChatGPT auth and opaque file changes', async () => {

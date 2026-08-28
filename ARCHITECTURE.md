@@ -1,10 +1,10 @@
-# Agent Control 3.1.0 development architecture
+# Agent Control 3.1.0 architecture
 
-This is the authoritative development boundary for 3.1.0. The tagged 3.0.1 infrastructure-neutral resource/provider model and the merged 3.0.x adaptive-harness recovery are the base. Status labels matter:
+This is the authoritative source boundary for 3.1.0. The tagged 3.0.1 infrastructure-neutral resource/provider model and the merged 3.0.x adaptive-harness recovery are the base. Status labels matter:
 
 - **implemented** means executable code and automated tests exist in this branch;
 - **experimental** means executable code exists but has not been qualified across every external substrate;
-- **planned 3.1** means the concept has a defined place but must not be presented as implemented or released functionality.
+- **planned** means the concept has a defined place but must not be presented as implemented or released functionality.
 
 ## Invariants
 
@@ -24,6 +24,8 @@ This is the authoritative development boundary for 3.1.0. The tagged 3.0.1 infra
 14. Process completion, collected evidence, verification and Run success are separate states.
 15. An agent may request or propose capability; only Agent Control policy may qualify and grant it.
 16. A recipe constructs an execution environment but cannot schedule work, acquire authority, write a PTY or accept a result.
+17. A managed node is a configured resource plus discovered capabilities; its hostname, transport, hardware and workload identity never become control-plane policy.
+18. Remote maintenance is a typed Action with approval and evidence, never an arbitrary SSH command string.
 
 ## System boundary and adaptive harness
 
@@ -78,6 +80,7 @@ Orca, PTYs, SSH, browsers, mobile nodes, local runtimes and API providers are su
 The implemented `AdaptiveHarness` constructs a fingerprinted `ExecutionRecipe` from:
 
 - worker, provider and model identity;
+- harness profile and context-strategy identity;
 - prompt profile;
 - minimum qualified skill selection;
 - explicit tool grants;
@@ -89,6 +92,8 @@ The implemented `AdaptiveHarness` constructs a fingerprinted `ExecutionRecipe` f
 
 The older `ModelRecipe` remains the model-qualification fingerprint: model artifact, runtime, context size, template, prompt, skill/tool snapshots and parameters. It is a component of the broader execution recipe rather than a competing abstraction.
 
+Persisted recipes from before profile support are interpreted as `STANDARD`; every newly built recipe carries an explicit profile. This additive compatibility rule does not qualify a legacy recipe for THIN or DEEP routing.
+
 Recipe construction is pure policy work. It neither claims a queue item nor acquires a lease, owns a PTY, sends input or accepts a result. Those mutations remain in their existing authoritative services.
 
 ## Skills and tools
@@ -99,13 +104,52 @@ Tool authorization fails closed for an unknown, omitted, revoked, unavailable or
 
 Dynamic skill proposal, static/security review, sandbox qualification, human approval and promotion into the catalog are **planned 3.1**. No model can currently create and self-grant a privileged skill.
 
+## Token-aware result boundary
+
+Potentially large command results are intercepted at `ToolHandlerRegistry`, after `ToolPolicy` has revalidated the recipe, worker, lease, ownership and approval state and before the result becomes model context. The interceptor accepts one transport-neutral command-result envelope, so local, SSH, managed-node and future backends share the same policy. It does not add a scheduler or a general shell.
+
+```text
+authorised command tool
+       |
+local / remote executor
+       |
+authoritative command-result artifact (stdout, stderr, status, hash, scope)
+       +-- level 0 summary
+       +-- level 1 semantic index
+       +-- level 2 selected captured context
+       +-- level 3 full artifact
+                    |
+               model context
+```
+
+`TokenAwareOutputService` stores the authoritative result and derives an explicitly labelled `COMPLETE`, `COMPACTED`, `TRUNCATED` or `ARTIFACT_ONLY` view. The source hash, byte/line/token counts, expiry and scope accompany every derived representation. `ContextRouter.selectProgressive` chooses the minimum representation capable of discovery, match location, selected inspection or complete verification and reports when that representation exceeds remaining context.
+
+The first specialised adapter is typed ripgrep search. `RipgrepSearchRunner` uses shell-free structured output and an execution-backend-owned workspace boundary; a remote repository path need not exist on the controller. `repository.search.ripgrep` accepts only a bounded query, paths, globs and read options. `command.output.expand` selects only records captured by the original result. Exact task, lane, worker, lease generation and ownership generation must still match, so a handle cannot become a filesystem-read or replay primitive. stderr, non-zero exit status, timeout and cancellation are orthogonal to stdout compaction and remain visible.
+
+Other command families currently use a labelled generic head/tail fallback. Their full retained result remains authoritative. New semantic adapters can be added below the same interception, artifact, context, telemetry and expansion contracts.
+
+## Harness efficiency boundary
+
+`HarnessProfileRouter` classifies profile need before the existing model/provider route. THIN, STANDARD and DEEP alter context/tool/turn budgets, not authority. In observational mode the recommendation is recorded while STANDARD is applied. Enforced selection requires profile-specific, same-model, verifier-backed production evidence; deterministic benchmark evidence cannot satisfy that gate.
+
+`ContextPacketBuilder` accepts ranked sources and returns an immutable derived packet containing hashes, token estimates, included source/provenance IDs and named omissions. Required evidence that exceeds a profile budget fails closed. The neutral `ContextGraph` port supports node search, relationship traversal, neighbourhoods, ranking, compact evidence and verified write-back without selecting a database implementation.
+
+Provider adapters emit a versioned model-invocation observation. Provider usage remains authoritative; local prompt-component counts are deterministic estimates. `HarnessDispatcher` records the observation before returning, and `JobRuntime` changes its verifier/final-result fields only across the existing verification and Run-finalisation transitions. Aggregates count tokens, turns, time and cost against distinct verifier-passed successful jobs. Unknown cache, reasoning, price or cost fields remain null.
+
+Profile escalation is monotonic (`THIN -> STANDARD -> DEEP`), reason-coded and reference-preserving. It never repeats a strategy, expands policy authority or bypasses scheduler retry/review controls. The complete decision and measurement contract is in [`docs/harness-efficiency-architecture.md`](docs/harness-efficiency-architecture.md).
+
+Real-mutation qualification reuses this path rather than introducing a second scheduler or executor. A frozen task is copied into a disposable Git workspace, `HarnessDispatcher` provides a bounded structured tool loop through the existing `ToolPolicy`, and an independent verifier evaluates the resulting diff. The outcome ledger links prediction, context packet, attempts, escalations, provider usage, tool observations, patches and verifier checks. Cumulative metrics include every failed precursor attempt.
+
+This evidence is not routing authority. The production gate requires a sufficient deterministic task sample, no verified-success regression against STANDARD, bounded classified escalation, a measured cumulative-resource improvement and all existing policy/fencing checks. The first recorded mutation run fails the sample-size and resource-improvement criteria, so production applies the observational STANDARD fallback; no production profile-selection code path is enabled by the experiment.
+
 ## Routing and qualification
 
 The current line has three complementary implemented layers:
 
 1. `CapabilityResolver` matches requirements to healthy, infrastructure-neutral resources.
 2. Provider/model qualification records capability scores and promotes challengers only with adequate evidence.
-3. The recovered `EconomicRouter` rejects routes that fail health, qualification, capability, confidence, quality, approval, spend or latency gates, then compares monetary cost, latency, local occupancy, contention, failure/retry risk and quality.
+3. `HarnessProfileRouter` recommends a qualified context/tool/turn profile and defaults to STANDARD when evidence is insufficient.
+4. The recovered `EconomicRouter` rejects routes that fail health, qualification, capability, confidence, quality, approval, spend or latency gates, then compares monetary cost, latency, local occupancy, contention, failure/retry risk and quality.
 
 `DynamicEscalationRouter` can re-evaluate after failure, low confidence or latency pressure while carrying context/checkpoint references. `RecipeDispatchRecord` separately records scheduler-selected worker placement and provider/model routing, plus prompt, context, skills, tools, safe runtime settings, authority generations, verification and escalation. The historical branch's machine-specific UI/bootstrap changes were deliberately not imported.
 
@@ -136,6 +180,10 @@ Recovery distinguishes starting, running, paused, human-owned, completed, failed
 
 The versioned configuration contains resources, providers, services and lanes. A resource has a stable logical ID plus an independent transport (`local`, `ssh`, `http` or `orca`). Hardware details are optional metadata, not product identity. No provider or managed service is registered unless configured.
 
+An authorised Linux/SSH resource may opt into the generic managed-node adapter. The adapter sends a fixed, versioned read-only probe over its existing SSH transport, projects heartbeat/inventory/workload state and synchronises observed capabilities into the Worker Registry. Declarative workload detectors and approved-service allowlists remain configuration; hostnames, secure-overlay addresses, usernames, device names and credentials are never product constants. Probe loss preserves the last observation as degraded before expiring offline, and later complete evidence recovers it.
+
+Managed-node execution is split into read-only inspection and typed maintenance Actions. The controller validates operation, parameter form, service allowlist, runtime target, current heartbeat and approvals before streaming one reviewed action script. The remote script validates its typed operands again. It never receives `sh -c` or an operator-provided command. An active protected workload marks the node BUSY, blocks configured disruptive/competing scheduling capabilities and requires the stronger protected-workload override for maintenance. Job leases, locks, approval waits, cancellation, verification, artifacts and provenance remain in the existing control plane.
+
 Configuration rejects embedded secret-like fields and credentialed URLs. Credentials are supplied through separately named environment variables. State defaults to `.agent-control/`; the path is overrideable.
 
 ## Scheduling and execution
@@ -163,6 +211,8 @@ The HTTP API is read-only by default. Mutation requires a configured bearer toke
 Human takeover calls the existing PTY registry fence. A human-owned lane cannot resume autonomous execution until ownership is deliberately returned and the scheduler revalidates execution. There is no weaker web-only ownership model.
 
 The dashboard's default Jobs workspace is an operational projection, not an additional scheduler. It reads catalog definitions, Schedule state, queue reasons, worker capability/capacity, resource locks, Run history, step verification and artifact provenance from `JobRuntime` through `AgentControlService`. Run, schedule enable/disable, cancel, whole-Run retry and exact named approval commands return through authenticated service methods. Artifact projections expose identity, checksum and provenance but not managed storage paths. A named approval is legal only while a matching step is authoritatively `WAITING_FOR_APPROVAL`.
+
+Managed-node snapshots are another `AgentControlService` resource projection, exposed through the shared system status and `GET /api/nodes`. The web dashboard, TUI and universal status command render that same versioned state; none probes hosts or owns heartbeat/workload policy independently.
 
 ## Verification and provenance
 
@@ -256,4 +306,4 @@ New capabilities are classified into policy/authority, scheduling, execution sub
 
 ## Release boundary
 
-3.0.1 remains an immutable source release. This unreleased 3.1 development branch is based on tagged 3.0.1 plus the merged adaptive-harness recovery; it does not move a release tag, deploy services, expose the dashboard remotely, create credentials, broaden sharing, enable the bundled Schedule or claim live model improvement from deterministic fixtures. The existing execution implementation remains a named rollback/fallback path while universal recipe dispatch and adapter enforcement are qualified.
+3.0.1 remains an immutable source release and 3.1.0 is the current source boundary. Releasing source does not deploy services, expose the dashboard remotely, create credentials, broaden sharing or enable the bundled Schedule. STANDARD remains the applied harness-profile fallback because real-mutation evidence did not qualify automatic profile routing; opaque CLI mediation and universal adapter verification remain explicit gaps.

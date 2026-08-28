@@ -1,14 +1,18 @@
 # Implementation status
 
-Release boundary: **3.1.0-development**. Registry updated: **2026-08-25**.
+Release boundary: **3.1.0**. Registry updated: **2026-08-28**.
 
 This document is generated from `config/implementation-status.json`. Update the registry and run `npm run status:implementation -- --write`; do not edit this projection directly. `IMPLEMENTED` means executable source and focused tests exist. `QUALIFIED` additionally requires recorded real evidence. `PARTIAL`, `PLANNED` and `NOT_IMPLEMENTED` remain explicit gaps.
 
 | Capability | Status | Executable truth | Remaining boundary |
 | --- | --- | --- | --- |
 | Safe empty-configuration bootstrap (`bootstrap.safe-empty-config`) | **IMPLEMENTED** | An idempotent initializer creates a schema-valid empty configuration without discovering infrastructure or overwriting operator state. | None recorded. |
+| Universal authoritative status command (`status.universal-authoritative-command`) | **IMPLEMENTED** | The same agent-control status command reads the versioned AgentControlService projection used by the web dashboard, locally or through one fixed read-only localhost request over SSH. | None recorded. |
+| Generic managed Linux nodes (`nodes.generic-linux-management`) | **QUALIFIED** | Authorised Linux/SSH resources receive fixed read-only discovery, heartbeat and workload projection plus typed governed inspection and maintenance Actions without an arbitrary remote-command path. | None recorded. |
 | Default adaptive-harness dispatch (`harness.default-work-dispatch`) | **IMPLEMENTED** | Normal WorkExecutor agent work builds and records an ExecutionRecipe and receives only a live policy gateway. | None recorded. |
 | Central live ToolPolicy gateway (`tools.central-live-policy`) | **IMPLEMENTED** | Gateway tools are checked against recipe grants, worker compatibility, live lease and ownership generations, approvals and human ownership. | None recorded. |
+| Token-aware command output and ripgrep expansion (`output.token-aware-command-results`) | **QUALIFIED** | Authoritative local or remote command results can be represented as complete, compacted, truncated or artifact-only context with scoped progressive expansion, provenance and token accounting; ripgrep has a structured semantic index. | None recorded. |
+| Harness efficiency telemetry and context profiles (`harness.efficiency-context-routing`) | **PARTIAL** | Provider-neutral invocation telemetry, THIN/STANDARD/DEEP profiles, context packets, a neutral context-graph port, bounded structured mutation execution, deterministic diff verification, cumulative escalation outcomes and dashboard/API projections are executable; routing stays observational with STANDARD applied. | The 12-task same-model real-mutation run did not qualify THIN, immediate DEEP selection or adaptive escalation: only 2/12 STANDARD outcomes verified and adaptive fresh tokens per verified outcome were materially higher. Keep production routing observational with STANDARD applied until a larger deterministic suite demonstrates success non-regression and cumulative-resource improvement. |
 | Job Catalog, scheduler and Run Ledger (`jobs.catalog-scheduler-ledger`) | **IMPLEMENTED** | Versioned Jobs and Schedules produce durable Runs with capability placement, locks, retries, artifacts, approvals and recovery. | None recorded. |
 | Capability-advertising Worker Registry (`workers.capability-registry`) | **IMPLEMENTED** | Workers advertise semantic capabilities and health separately from provider/model routing. | None recorded. |
 | Model-backed Job Action bridge (`jobs.model-backed-action`) | **QUALIFIED** | Agent Actions delegate through HarnessDispatcher, return tool requests through ToolPolicy and stop at the verification boundary. | None recorded. |
@@ -28,6 +32,17 @@ This document is generated from `config/implementation-status.json`. Update the 
 - Tests: [`scripts/init-config.test.mjs`](../scripts/init-config.test.mjs)
 - Qualification evidence: [`docs/evidence/truthful-bootstrap-status-20260825.md`](../docs/evidence/truthful-bootstrap-status-20260825.md)
 
+### Universal authoritative status command
+
+- Source: [`scripts/agent-control.mjs`](../scripts/agent-control.mjs), [`scripts/status-client.mjs`](../scripts/status-client.mjs), [`src/control/application-service.ts`](../src/control/application-service.ts)
+- Tests: [`scripts/agent-control.test.mjs`](../scripts/agent-control.test.mjs), [`scripts/status-client.test.mjs`](../scripts/status-client.test.mjs), [`src/control/application-service.test.ts`](../src/control/application-service.test.ts), [`src/control/web-server.test.ts`](../src/control/web-server.test.ts)
+
+### Generic managed Linux nodes
+
+- Source: [`src/control/managed-node.ts`](../src/control/managed-node.ts), [`src/control/managed-node-ssh.ts`](../src/control/managed-node-ssh.ts), [`src/control/managed-node-actions.ts`](../src/control/managed-node-actions.ts)
+- Tests: [`src/control/managed-node.test.ts`](../src/control/managed-node.test.ts), [`src/control/managed-node-ssh.test.ts`](../src/control/managed-node-ssh.test.ts), [`src/control/managed-node-actions.test.ts`](../src/control/managed-node-actions.test.ts)
+- Qualification evidence: [`docs/evidence/macubuntu-managed-node-qualification-20260826.md`](../docs/evidence/macubuntu-managed-node-qualification-20260826.md)
+
 ### Default adaptive-harness dispatch
 
 - Source: [`src/control/adaptive-harness.ts`](../src/control/adaptive-harness.ts), [`src/control/harness-dispatch.ts`](../src/control/harness-dispatch.ts), [`src/control/work-executor.ts`](../src/control/work-executor.ts)
@@ -38,10 +53,22 @@ This document is generated from `config/implementation-status.json`. Update the 
 - Source: [`src/control/adaptive-harness.ts`](../src/control/adaptive-harness.ts), [`src/control/harness-dispatch.ts`](../src/control/harness-dispatch.ts)
 - Tests: [`src/control/adaptive-harness.test.ts`](../src/control/adaptive-harness.test.ts), [`src/control/harness-dispatch.test.ts`](../src/control/harness-dispatch.test.ts)
 
+### Token-aware command output and ripgrep expansion
+
+- Source: [`src/control/token-aware-output.ts`](../src/control/token-aware-output.ts), [`src/control/repository-search.ts`](../src/control/repository-search.ts), [`src/control/context.ts`](../src/control/context.ts), [`src/control/harness-dispatch.ts`](../src/control/harness-dispatch.ts)
+- Tests: [`src/control/token-aware-output.test.ts`](../src/control/token-aware-output.test.ts), [`src/control/token-aware-context.test.ts`](../src/control/token-aware-context.test.ts), [`src/control/web-server.test.ts`](../src/control/web-server.test.ts)
+- Qualification evidence: [`docs/evidence/token-aware-output-benchmark-20260827.json`](../docs/evidence/token-aware-output-benchmark-20260827.json)
+
+### Harness efficiency telemetry and context profiles
+
+- Source: [`src/control/harness-efficiency.ts`](../src/control/harness-efficiency.ts), [`src/control/harness-efficiency-benchmark.ts`](../src/control/harness-efficiency-benchmark.ts), [`src/control/harness-mutation-benchmark.ts`](../src/control/harness-mutation-benchmark.ts), [`src/control/harness-mutation-context.ts`](../src/control/harness-mutation-context.ts), [`src/control/harness-mutation-workspace.ts`](../src/control/harness-mutation-workspace.ts), [`src/control/harness-mutation-verifier.ts`](../src/control/harness-mutation-verifier.ts), [`src/control/structured-chat-loop-provider.ts`](../src/control/structured-chat-loop-provider.ts), [`src/control/adaptive-harness.ts`](../src/control/adaptive-harness.ts), [`src/control/harness-dispatch.ts`](../src/control/harness-dispatch.ts), [`src/control/job-runtime.ts`](../src/control/job-runtime.ts), [`src/control/job-bootstrap.ts`](../src/control/job-bootstrap.ts)
+- Tests: [`src/control/harness-efficiency.test.ts`](../src/control/harness-efficiency.test.ts), [`src/control/harness-efficiency-benchmark.test.ts`](../src/control/harness-efficiency-benchmark.test.ts), [`src/control/harness-mutation-benchmark.test.ts`](../src/control/harness-mutation-benchmark.test.ts), [`src/control/harness-mutation-workspace.test.ts`](../src/control/harness-mutation-workspace.test.ts), [`src/control/harness-mutation-verifier.test.ts`](../src/control/harness-mutation-verifier.test.ts), [`src/control/harness-mutation-reference-verifier.test.ts`](../src/control/harness-mutation-reference-verifier.test.ts), [`src/control/structured-chat-loop-provider.test.ts`](../src/control/structured-chat-loop-provider.test.ts), [`src/control/adaptive-harness.test.ts`](../src/control/adaptive-harness.test.ts), [`src/control/harness-dispatch.test.ts`](../src/control/harness-dispatch.test.ts), [`src/control/harness-job-action.test.ts`](../src/control/harness-job-action.test.ts), [`src/control/job-bootstrap.test.ts`](../src/control/job-bootstrap.test.ts), [`src/control/web-server.test.ts`](../src/control/web-server.test.ts)
+- Qualification evidence: [`docs/harness-mutation-report.md`](../docs/harness-mutation-report.md), [`artifacts/harness-mutation-report.json`](../artifacts/harness-mutation-report.json)
+
 ### Job Catalog, scheduler and Run Ledger
 
-- Source: [`src/control/job-catalog.ts`](../src/control/job-catalog.ts), [`src/control/job-runtime.ts`](../src/control/job-runtime.ts)
-- Tests: [`src/control/job-catalog.test.ts`](../src/control/job-catalog.test.ts), [`src/control/job-runtime.test.ts`](../src/control/job-runtime.test.ts)
+- Source: [`src/control/job-catalog.ts`](../src/control/job-catalog.ts), [`src/control/job-runtime.ts`](../src/control/job-runtime.ts), [`src/control/job-bootstrap.ts`](../src/control/job-bootstrap.ts), [`scripts/qualify-jobs.ts`](../scripts/qualify-jobs.ts)
+- Tests: [`src/control/job-catalog.test.ts`](../src/control/job-catalog.test.ts), [`src/control/job-runtime.test.ts`](../src/control/job-runtime.test.ts), [`scripts/qualify-jobs.test.mjs`](../scripts/qualify-jobs.test.mjs)
 
 ### Capability-advertising Worker Registry
 

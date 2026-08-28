@@ -15,6 +15,7 @@ import {
 } from './harness-dispatch.js';
 import {WorkExecutor} from './work-executor.js';
 import {WorkQueue, type WorkItem} from './work-queue.js';
+import {configuredHarnessProfiles, createInvocationObservation, MemoryHarnessEfficiencyLedger} from './harness-efficiency.js';
 
 const toolDefinitions: ToolDefinition[] = [
   {id: 'repository.read', risk: 'read', capabilities: ['repository.read']},
@@ -104,6 +105,16 @@ test('stale ownership generation denies the retained live recipe before its hand
   const dispatcher = new HarnessDispatcher(new AdaptiveHarness(new SkillCatalog(), policy), policy, handlers, () => ({authority: {...authority, ownershipGeneration: authority.ownershipGeneration + 1}, workerId: 'worker-1'}));
   await assert.rejects(() => dispatcher.dispatch(plan(), {execute: async (_recipe, tools) => ({resultRef: String(await tools.invoke('repository.read'))})}), /tool_policy_denied:stale_ownership_generation/);
   assert.equal(calls, 0);
+});
+
+test('dispatch fails closed when an executor exceeds the configured turn budget', async () => {
+  const policy = toolPolicy(), store = new MemoryRecipeDispatchStore(), efficiency = new MemoryHarnessEfficiencyLedger();
+  const profiles = configuredHarnessProfiles({profiles: {STANDARD: {maximumTurns: 1}}});
+  const dispatcher = new HarnessDispatcher(new AdaptiveHarness(new SkillCatalog(), policy, undefined, undefined, profiles), policy, new ToolHandlerRegistry(), () => ({authority: {...authority}, workerId: 'worker-1'}), store, undefined, undefined, efficiency);
+  const invocation = (id: string) => createInvocationObservation({id, jobId: 'job-turn-budget', taskId: 'task-1', laneId: 'lane-1', model: 'model-1', provider: 'provider-1', harnessProfile: 'STANDARD', executionStrategy: 'fixture', startedAt: '2026-08-27T10:00:00.000Z', completedAt: '2026-08-27T10:00:01.000Z', recipeFingerprint: 'recipe-turn-budget'});
+  await assert.rejects(() => dispatcher.dispatch(plan(), {execute: async () => ({invocations: [invocation('turn-1'), invocation('turn-2')]})}), /harness_turn_budget_exceeded:2:1/);
+  assert.equal(efficiency.list().length, 2);
+  assert.equal(store.list()[0].phase, 'FAILED');
 });
 
 test('WorkExecutor normal agent path requires AdaptiveHarness and stops at verification', async () => {

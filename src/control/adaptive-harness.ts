@@ -2,6 +2,15 @@ import {createHash} from 'node:crypto';
 import type {ContextTier} from './context.js';
 import {EconomicRouter, type ExecutionIntent, type RouteCandidate, type RouteDecision} from './economic-routing.js';
 import type {ExecutionAuthority} from './execution-provider.js';
+import {
+  DEFAULT_HARNESS_PROFILES,
+  HarnessProfileRouter,
+  type ContextPacket,
+  type HarnessProfileDecision,
+  type HarnessProfileName,
+  type HarnessProfilePolicy,
+  type HarnessRoutingSignals,
+} from './harness-efficiency.js';
 
 export type SkillStatus = 'proposed' | 'qualified' | 'revoked';
 export type ToolRisk = 'read' | 'write' | 'privileged' | 'destructive';
@@ -47,6 +56,7 @@ export interface HarnessCandidate {
   availableSkillIds: string[];
   availableToolIds: string[];
   runtime: Record<string, string | number | boolean>;
+  supportedHarnessProfiles?: HarnessProfileName[];
 }
 
 export interface VerificationPolicy {
@@ -65,15 +75,33 @@ export interface ContextStrategy {
   sourceIds: string[];
   evidenceIds: string[];
   estimatedTokens: number;
+  packetId?: string;
+  omittedSourceIds?: string[];
+  provenanceIds?: string[];
+}
+
+export interface HarnessExecutionStrategy {
+  profile: HarnessProfileName;
+  recommendedProfile: HarnessProfileName;
+  routingMode: HarnessProfileDecision['mode'];
+  evidenceQualified: boolean;
+  decisionReasons: string[];
+  contextStrategyId: string;
+  maximumTurns: number;
+  contextPacketId?: string;
 }
 
 export interface ExecutionRecipe {
   id: string;
   taskId: string;
+  jobId?: string;
+  runId?: string;
   workerId: string;
   providerId: string;
   modelId: string;
   promptProfile: PromptProfile;
+  /** Absent only on pre-profile persisted/fixture recipes; interpreted as STANDARD. */
+  harness?: HarnessExecutionStrategy;
   context: ContextStrategy;
   skills: SkillDefinition[];
   tools: ToolDefinition[];
@@ -88,6 +116,8 @@ export interface ExecutionRecipe {
 
 export interface RecipeRequest {
   taskId: string;
+  jobId?: string;
+  runId?: string;
   taskType: string;
   requiredCapabilities: string[];
   requiredTools: string[];
@@ -104,6 +134,9 @@ export interface RecipeRequest {
   authority: ExecutionAuthority;
   verification: VerificationPolicy;
   escalation: EscalationPolicy;
+  harnessRouting?: HarnessRoutingSignals;
+  contextPacket?: ContextPacket;
+  contextStrategyId?: string;
 }
 
 export interface RecipeBuildResult {
@@ -198,10 +231,17 @@ export class AdaptiveHarness {
     readonly skillCatalog: SkillCatalog,
     readonly toolPolicy: ToolPolicy,
     readonly router = new EconomicRouter(),
+    readonly profileRouter = new HarnessProfileRouter(),
+    readonly profiles: Readonly<Record<HarnessProfileName, HarnessProfilePolicy>> = DEFAULT_HARNESS_PROFILES,
   ) {}
 
   build(request: RecipeRequest, candidates: HarnessCandidate[]): RecipeBuildResult {
-    const compositions = candidates.map(candidate => this.compose(request, candidate));
+    const profileDecision = this.profileRouter.route(request.harnessRouting ?? {
+      taskId: request.taskId, complexity: .5, risk: 'medium', knownExactTargets: false, estimatedFiles: 0,
+      deterministicVerifier: request.verification.requiredEvidence.length > 0, ambiguity: .5, architectural: false,
+    });
+    if (request.contextPacket && request.contextPacket.profile !== profileDecision.appliedProfile) throw new Error('context_packet_profile_mismatch');
+    const compositions = candidates.map(candidate => this.compose(request, candidate, profileDecision));
     const routeCandidates = compositions.map(composition => ({
       ...composition.candidate.route,
       capabilities: [...new Set([
@@ -228,13 +268,31 @@ export class AdaptiveHarness {
     const rejected = compositions.filter(composition => composition.reasons.length).map(composition => ({candidateId: composition.candidate.route.id, reasons: composition.reasons}));
     if (!route.selected) return {route, rejected};
     const composition = compositions.find(item => item.candidate.route.id === route.selected?.candidate.id)!;
+    const context: ContextStrategy = request.contextPacket ? {
+      ...structuredClone(request.context), sourceIds: [...request.contextPacket.sourceIds], estimatedTokens: request.contextPacket.estimatedTokens,
+      packetId: request.contextPacket.id, omittedSourceIds: request.contextPacket.omitted.map(item => item.id), provenanceIds: [...request.contextPacket.provenanceIds],
+    } : structuredClone(request.context);
+    const profilePolicy = this.profiles[profileDecision.appliedProfile];
+    const harness: HarnessExecutionStrategy = {
+      profile: profileDecision.appliedProfile,
+      recommendedProfile: profileDecision.recommendedProfile,
+      routingMode: profileDecision.mode,
+      evidenceQualified: profileDecision.evidenceQualified,
+      decisionReasons: [...profileDecision.reasons],
+      contextStrategyId: request.contextStrategyId ?? `tier-${context.tier}`,
+      maximumTurns: profilePolicy.maximumTurns,
+      ...(request.contextPacket ? {contextPacketId: request.contextPacket.id} : {}),
+    };
     const draft = {
       taskId: request.taskId,
+      ...(request.jobId ? {jobId: request.jobId} : {}),
+      ...(request.runId ? {runId: request.runId} : {}),
       workerId: composition.candidate.route.workerId,
       providerId: composition.candidate.route.providerId,
       modelId: composition.candidate.route.modelId,
       promptProfile: composition.prompt!,
-      context: structuredClone(request.context),
+      harness,
+      context,
       skills: composition.skills,
       tools: composition.tools,
       runtime: structuredClone(composition.candidate.runtime),
@@ -248,13 +306,14 @@ export class AdaptiveHarness {
     return {recipe: {...draft, id: `recipe-${fingerprint.slice(0, 16)}`, fingerprint}, route, rejected};
   }
 
-  private compose(request: RecipeRequest, candidate: HarnessCandidate): Composition {
+  private compose(request: RecipeRequest, candidate: HarnessCandidate, profileDecision: HarnessProfileDecision): Composition {
     const prompt = request.preferredPromptProfile
       ? candidate.promptProfiles.find(profile => profile.id === request.preferredPromptProfile)
       : candidate.promptProfiles[0];
     const reasons: string[] = [];
     if (request.authority.owner !== 'agent') reasons.push('authority_not_agent_owned');
     if (!prompt) reasons.push('prompt_profile_unavailable');
+    if (candidate.supportedHarnessProfiles && !candidate.supportedHarnessProfiles.includes(profileDecision.appliedProfile)) reasons.push(`harness_profile_unsupported:${profileDecision.appliedProfile}`);
     reasons.push(...unsafeRuntimeSettings(candidate.runtime));
     const provided = [...candidate.route.capabilities, ...candidate.workerCapabilities, ...candidate.modelCapabilities];
     const skillResult = this.skillCatalog.select(request.requiredCapabilities, provided, candidate.availableSkillIds);
@@ -262,6 +321,13 @@ export class AdaptiveHarness {
     const requiredTools = [...request.requiredTools, ...skillResult.selected.flatMap(skill => skill.requiredTools)];
     const toolResult = this.toolPolicy.grant(requiredTools, candidate.availableToolIds, request.deniedTools, request.approvedRisks);
     reasons.push(...toolResult.reasons);
+    if (request.harnessRouting) {
+      const policy = this.profiles[profileDecision.appliedProfile];
+      const contextTokens = request.contextPacket?.estimatedTokens ?? request.context.estimatedTokens;
+      if (contextTokens > policy.maximumInitialContextTokens) reasons.push(`harness_context_budget_exceeded:${contextTokens}:${policy.maximumInitialContextTokens}`);
+      if (toolResult.granted.length > policy.maximumTools) reasons.push(`harness_tool_budget_exceeded:${toolResult.granted.length}:${policy.maximumTools}`);
+      if (skillResult.selected.length > policy.maximumOptionalSkills) reasons.push(`harness_skill_budget_exceeded:${skillResult.selected.length}:${policy.maximumOptionalSkills}`);
+    }
     return {candidate, prompt, skills: skillResult.selected, tools: toolResult.granted, reasons};
   }
 }

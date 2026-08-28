@@ -1,5 +1,33 @@
 {
   "schemaVersion": 1,
+  "tokenAwareOutput": {
+    "completeMaxLines": 48,
+    "completeMaxBytes": 12288,
+    "completeMaxTokens": 4096,
+    "completeMaxMatches": 40,
+    "completeMaxFiles": 8,
+    "indexMaxFiles": 160,
+    "indexMaxLinesPerFile": 120,
+    "genericHeadLines": 20,
+    "genericTailLines": 20,
+    "artifactOnlyAboveReturnedTokens": 16384,
+    "maxCaptureBytesPerStream": 67108864,
+    "retentionSeconds": 3600,
+    "contextBudgetFraction": 0.5,
+    "minimumCompleteTokens": 512,
+    "maximumExpansionContextLines": 10
+  },
+  "harnessEfficiency": {
+    "routingMode": "observe",
+    "minimumVerifiedRuns": 10,
+    "minimumSuccessRate": 0.9,
+    "minimumSameModelControlledRuns": 10,
+    "profiles": {
+      "THIN": {"maximumInitialContextTokens": 4096, "maximumSources": 12, "maximumOptionalSkills": 1, "maximumTools": 6, "maximumTurns": 3, "allowBroadRepositoryContext": false, "allowSharedContext": false},
+      "STANDARD": {"maximumInitialContextTokens": 16384, "maximumSources": 48, "maximumOptionalSkills": 4, "maximumTools": 24, "maximumTurns": 10, "allowBroadRepositoryContext": false, "allowSharedContext": true},
+      "DEEP": {"maximumInitialContextTokens": 65536, "maximumSources": 192, "maximumOptionalSkills": 16, "maximumTools": 64, "maximumTurns": 32, "allowBroadRepositoryContext": true, "allowSharedContext": true}
+    }
+  },
   "resources": [
     {
       "id": "controller",
@@ -13,7 +41,32 @@
       "name": "Remote worker",
       "platform": "linux",
       "transport": {"type": "ssh", "host": "worker-1.example", "port": 22, "user": "operator", "identityFile": "~/.ssh/worker-1"},
-      "capabilities": ["harness.codex"]
+      "capabilities": ["harness.codex"],
+      "managedNode": {
+        "enabled": true,
+        "probeIntervalSeconds": 30,
+        "offlineAfterSeconds": 90,
+        "approvedServices": ["example-workload.service"],
+        "connectivity": [
+          {
+            "id": "private-overlay",
+            "label": "Private overlay",
+            "capability": "transport.secure-overlay",
+            "serviceUnit": "overlay-agent.service",
+            "interfaceName": "overlay0"
+          }
+        ],
+        "workloads": [
+          {
+            "id": "media-copy",
+            "capability": "workload.media-copy",
+            "protected": true,
+            "systemdUnit": "example-workload.service",
+            "processExecutables": ["media-copy-worker"],
+            "opticalAccess": true
+          }
+        ]
+      }
     },
     {
       "id": "android-1",

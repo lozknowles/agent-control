@@ -21,6 +21,9 @@ test('Responses factory mediates an official function call and returns tool data
   assert.equal(invocations, 1);
   assert.match(result.resultRef ?? '', /WINDOWS-OPENAI-OK/);
   assert.deepEqual(result.evidence?.slice(-1), ['tool_executed:qualification.return-data']);
+  assert.equal(result.invocations?.[0].usage.totalProcessedTokens, 31);
+  assert.equal(result.invocations?.[0].usage.freshInputTokens, null);
+  assert.equal(result.invocations?.[0].harnessProfile, 'STANDARD');
 });
 
 test('Responses factory fails closed before any tool for missing auth or invalid output', async () => {

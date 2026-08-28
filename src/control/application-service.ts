@@ -7,6 +7,9 @@ import {VerificationService} from './verification.js';
 import type {RouteDecision} from './routing.js';
 import type {ContextStore} from './context.js';
 import type {JobRuntime} from './job-runtime.js';
+import type {ManagedNodeManager, ManagedNodeSnapshot} from './managed-node.js';
+import type {OutputAuthorityScope, OutputExpansionRequest, TokenAwareOutputMetrics, TokenAwareOutputService} from './token-aware-output.js';
+import {MemoryHarnessEfficiencyLedger, type HarnessEfficiencyLedgerPort, type HarnessEfficiencyMetrics} from './harness-efficiency.js';
 
 export type ControlEventType =
   | 'system.snapshot'
@@ -21,6 +24,7 @@ export type ControlEventType =
   | 'ownership.returned'
   | 'verification.changed'
   | 'provider.health_changed'
+  | 'resource.node_changed'
   | 'system.paused_changed'
   | 'job.run_created'
   | 'job.run_cancelled'
@@ -58,17 +62,21 @@ export interface LaneProjection {
 }
 
 export interface SystemProjection {
+  schema: 'agent-control.system-status/v1';
+  authority: 'AgentControlService';
   version: string;
   health: 'healthy' | 'degraded';
   paused: boolean;
   scheduler: {nextLaneId: number | null; waiting: number; active: number; paused: number};
   lanes: LaneProjection[];
   providers: Array<{id: string; name: string; kind: string; health: string; capabilities: string[]}>;
-  resources: Array<{id: string; name: string; platform: string; transport: string; capabilities: string[]}>;
+  resources: Array<{id: string; name: string; platform: string; transport: string; capabilities: string[]; health: 'unknown' | 'healthy' | 'degraded' | 'offline'; capacity?: number; active?: number; observedAt: string | null; node?: ManagedNodeSnapshot}>;
   outstandingApprovals: number;
   lastRestorePoint: string | null;
   observedAt: string;
   jobs: {total: number; enabled: number; queued: number; running: number; failed: number; succeeded: number; schedulesEnabled: number;};
+  tokenAwareOutput: TokenAwareOutputMetrics;
+  harnessEfficiency: HarnessEfficiencyMetrics;
 }
 
 export class ControlEventBus {
@@ -93,9 +101,12 @@ export class AgentControlService {
   readonly events = new ControlEventBus();
   private readonly routeDecisions = new Map<number, RouteDecision>();
   private approvalCount: () => number = () => 0;
-  private resourceRows: SystemProjection['resources'] = [];
+  private resourceRows: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>> = [];
   private contextStore?: ContextStore;
   private jobRuntime?: JobRuntime;
+  private managedNodes?: ManagedNodeManager;
+  private tokenAwareOutput?: TokenAwareOutputService;
+  private harnessEfficiency?: HarnessEfficiencyLedgerPort;
 
   constructor(
     readonly state: WorkspaceState,
@@ -108,31 +119,40 @@ export class AgentControlService {
     this.verification = new VerificationService(state, persist);
   }
 
-  configureProjection(extras: {approvalCount?: () => number; resources?: SystemProjection['resources']; contextStore?: ContextStore; jobRuntime?: JobRuntime}) {
+  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService; harnessEfficiency?: HarnessEfficiencyLedgerPort}) {
     if (extras.approvalCount) this.approvalCount = extras.approvalCount;
     if (extras.resources) this.resourceRows = structuredClone(extras.resources);
     if (extras.contextStore) this.contextStore = extras.contextStore;
     if (extras.jobRuntime) this.jobRuntime = extras.jobRuntime;
+    if (extras.managedNodes) this.managedNodes = extras.managedNodes;
+    if (extras.tokenAwareOutput) this.tokenAwareOutput = extras.tokenAwareOutput;
+    if (extras.harnessEfficiency) this.harnessEfficiency = extras.harnessEfficiency;
     return this;
   }
 
   snapshot(): SystemProjection {
     const lanes = this.state.lanes.map(lane => this.projectLane(lane));
     const providerRows = this.providers?.list().map(provider => ({id: provider.id, name: provider.name, kind: provider.kind, health: this.providers?.health(provider.id)?.health ?? 'unknown', capabilities: [...provider.capabilities]})) ?? [];
-    const degraded = this.state.lanes.some(lane => lane.status === 'error') || providerRows.some(provider => provider.health === 'offline');
+    const workers = new Map((this.jobRuntime?.workers.list() ?? []).map(worker => [worker.id, worker]));
+    const resourceRows = this.resourceRows.map(resource => { const worker = workers.get(resource.id), node = this.managedNodes?.get(resource.id); return {...resource, capabilities: node?.capabilities ?? resource.capabilities, health: node?.health ?? worker?.health ?? 'unknown', capacity: worker?.capacity, active: worker?.active, observedAt: node?.lastProbeAt ?? worker?.observedAt ?? null, ...(node ? {node} : {})}; });
+    const degraded = this.state.lanes.some(lane => lane.status === 'error') || providerRows.some(provider => provider.health === 'offline') || resourceRows.some(resource => ['degraded', 'offline'].includes(resource.health));
     const jobRuns = this.jobRuntime?.ledger.list() ?? [], jobDefinitions = this.jobRuntime?.catalog.listJobs() ?? [], schedules = this.jobRuntime?.catalog.listSchedules() ?? [];
     return {
+      schema: 'agent-control.system-status/v1',
+      authority: 'AgentControlService',
       version: this.version,
       health: degraded ? 'degraded' : 'healthy',
       paused: this.state.paused,
       scheduler: {nextLaneId: this.plane.chooseNextLane()?.id ?? null, waiting: lanes.filter(lane => lane.status === 'waiting').length, active: lanes.filter(lane => lane.status === 'working').length, paused: lanes.filter(lane => lane.status === 'paused').length},
       lanes,
       providers: providerRows,
-      resources: structuredClone(this.resourceRows),
+      resources: structuredClone(resourceRows),
       outstandingApprovals: this.approvalCount(),
       lastRestorePoint: this.state.lastRestorePoint,
       observedAt: new Date().toISOString(),
       jobs: {total: jobDefinitions.length, enabled: jobDefinitions.filter(job => job.spec.enabled !== false).length, queued: jobRuns.filter(run => run.status === 'QUEUED').length, running: jobRuns.filter(run => ['RUNNING', 'VERIFYING'].includes(run.status)).length, failed: jobRuns.filter(run => ['FAILED', 'DEGRADED', 'DISCONNECTED'].includes(run.status)).length, succeeded: jobRuns.filter(run => run.status === 'SUCCEEDED').length, schedulesEnabled: schedules.filter(schedule => this.jobRuntime?.ledger.schedule(schedule.metadata.id)?.enabled).length},
+      tokenAwareOutput: this.commandOutputMetrics(),
+      harnessEfficiency: this.harnessEfficiencyMetrics(),
     };
   }
 
@@ -148,9 +168,19 @@ export class AgentControlService {
   setScheduleEnabled(id: string, enabled: boolean, actor: string) { const state = this.mustJobRuntime().setScheduleEnabled(id, enabled); this.events.emit('job.schedule_changed', {scheduleId: id, enabled}, undefined, actor); return state; }
   jobQueue() { return this.mustJobRuntime().queueProjection(); }
   workers() { return this.mustJobRuntime().workers.list(); }
+  nodes() { return this.managedNodes?.list() ?? []; }
   resourceLocks() { return this.mustJobRuntime().locks.list(); }
   artifacts(runId?: string) { return this.mustJobRuntime().artifacts.list(runId).map(value => { const {storageRef: _storageRef, ...metadata} = value; return {...metadata, storage: 'agent-control-managed'}; }); }
   artifact(id: string) { const value = this.mustJobRuntime().artifacts.get(id); if (!value) throw new Error('artifact_missing'); const {storageRef: _storageRef, ...metadata} = value; return {...metadata, storage: 'agent-control-managed'}; }
+  commandOutputs() { return this.tokenAwareOutput?.list() ?? []; }
+  commandOutputMetrics(): TokenAwareOutputMetrics { return this.tokenAwareOutput?.metrics() ?? {commandsObserved: 0, commandsCompacted: 0, rgSearchesCompacted: 0, originalOutputBytes: 0, returnedOutputBytes: 0, estimatedTokensOriginal: 0, estimatedTokensReturned: 0, estimatedTokensSaved: 0, contextTokensAvoided: 0, expansionRequests: 0, fullResultRequests: 0, expansionTokensReturned: 0, byJob: {}, byLane: {}, byAgentModel: {}}; }
+  harnessEfficiencyMetrics(): HarnessEfficiencyMetrics { return this.harnessEfficiency?.metrics() ?? new MemoryHarnessEfficiencyLedger().metrics(); }
+  modelInvocations(options: {limit?: number; runId?: string; jobId?: string} = {}) {
+    const limit = Math.min(1_000, Math.max(1, Number.isSafeInteger(options.limit) ? options.limit! : 200));
+    const records = (this.harnessEfficiency?.list() ?? []).filter(record => (!options.runId || record.runId === options.runId) && (!options.jobId || record.jobId === options.jobId));
+    return records.slice(-limit);
+  }
+  expandCommandOutput(handle: string, request: OutputExpansionRequest, scope: OutputAuthorityScope) { return this.mustTokenAwareOutput().expand(handle, request, scope); }
 
   lane(id: number) { return this.projectLane(this.mustLane(id)); }
   latestRoute(id: number) { return this.routeDecisions.get(id) ?? this.mustLane(id).routing; }
@@ -305,4 +335,5 @@ export class AgentControlService {
   }
   private mustLane(id: number) { const lane = this.state.lanes.find(item => item.id === id); if (!lane) throw new Error('lane_missing'); return lane; }
   private mustJobRuntime() { if (!this.jobRuntime) throw new Error('job_runtime_unconfigured'); return this.jobRuntime; }
+  private mustTokenAwareOutput() { if (!this.tokenAwareOutput) throw new Error('token_aware_output_unconfigured'); return this.tokenAwareOutput; }
 }

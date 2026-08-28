@@ -2,6 +2,7 @@ import {createHash} from 'node:crypto';
 import type {HarnessCandidate} from './adaptive-harness.js';
 import type {RecipeExecutor, ToolInvocationGateway} from './harness-dispatch.js';
 import type {ProviderDefinition} from './providers.js';
+import {createInvocationObservation, type ContextPacketSource} from './harness-efficiency.js';
 
 export interface StructuredChatProviderOptions {
   provider: ProviderDefinition;
@@ -24,7 +25,7 @@ interface ChatResponse {
   id?: string;
   model?: string;
   choices?: Array<{finish_reason?: string; message?: {content?: string | null}}>;
-  usage?: {prompt_tokens?: number; completion_tokens?: number; total_tokens?: number};
+  usage?: Record<string, unknown>;
   error?: {message?: string};
 }
 
@@ -66,20 +67,25 @@ export class StructuredChatProviderFactory {
     };
   }
 
-  executor(instruction: string): RecipeExecutor {
-    return {execute: (recipe, tools) => this.execute(instruction, recipe.tools.map(tool => tool.id), tools, Math.min(recipe.resourceLimits.maximumLatencyMs ?? this.options.timeoutMs ?? 30_000, this.options.timeoutMs ?? 30_000))};
+  executor(instruction: string, contextSources: ContextPacketSource[] = []): RecipeExecutor {
+    const retainedSources = contextSources.map(source => structuredClone(source));
+    return {execute: (recipe, tools) => this.execute(instruction, retainedSources, recipe, tools, Math.min(recipe.resourceLimits.maximumLatencyMs ?? this.options.timeoutMs ?? 30_000, this.options.timeoutMs ?? 30_000))};
   }
 
-  private async execute(instruction: string, grantedToolIds: string[], tools: ToolInvocationGateway, timeoutMs: number) {
+  private async execute(instruction: string, contextSources: ContextPacketSource[], recipe: Parameters<RecipeExecutor['execute']>[0], tools: ToolInvocationGateway, timeoutMs: number) {
+    const grantedToolIds = recipe.tools.map(tool => tool.id);
     const fetcher = this.options.fetch ?? globalThis.fetch;
     const authorization = this.options.authorization?.();
+    const systemInstructions = `Return only JSON with shape {"tool":"<id>","input":{...}}. Choose exactly one granted tool. Granted tool ids: ${grantedToolIds.join(', ')}.`;
+    const agentControlInstructions = 'Do not claim the tool ran.';
+    const startedAt = new Date().toISOString();
     const response = await fetcher(this.endpoint, {
       method: 'POST',
       headers: {'content-type': 'application/json', ...(authorization ? {authorization: `Bearer ${authorization}`} : {})},
       body: JSON.stringify({
         model: this.options.modelId,
         messages: [
-          {role: 'system', content: `Return only JSON with shape {"tool":"<id>","input":{...}}. Choose exactly one granted tool. Granted tool ids: ${grantedToolIds.join(', ')}. Do not claim the tool ran.`},
+          {role: 'system', content: `${systemInstructions} ${agentControlInstructions}`},
           {role: 'user', content: instruction},
         ],
         response_format: {type: 'json_object'}, temperature: 0, max_tokens: 256, stream: false,
@@ -87,6 +93,7 @@ export class StructuredChatProviderFactory {
       signal: AbortSignal.timeout(Math.max(1, timeoutMs)),
     });
     const body = await response.json() as ChatResponse;
+    const providerCompletedAt = new Date().toISOString();
     if (!response.ok) throw new Error(`provider_http_error:${response.status}:${body.error?.message ?? 'unknown'}`);
     const content = body.choices?.[0]?.message?.content;
     if (!content) throw new Error('provider_missing_tool_request');
@@ -94,10 +101,20 @@ export class StructuredChatProviderFactory {
     const output = await tools.invoke(request.tool, request.input);
     const responseHash = createHash('sha256').update(content).digest('hex');
     const result = {providerId: this.options.provider.id, modelId: body.model ?? this.options.modelId, providerResponseId: body.id, requestedTool: request.tool, toolOutput: output, responseHash, usage: body.usage};
+    const startupSources: ContextPacketSource[] = [
+      {id: `${recipe.id ?? 'unattributed'}:chat-system`, kind: 'system_instructions', content: systemInstructions, required: true, persistent: true, relevance: 1, provenanceIds: [recipe.fingerprint ?? 'unattributed-recipe']},
+      {id: `${recipe.id ?? 'unattributed'}:chat-control`, kind: 'agent_control_instructions', content: agentControlInstructions, required: true, persistent: true, relevance: 1, provenanceIds: [recipe.fingerprint ?? 'unattributed-recipe']},
+      {id: `${recipe.id ?? 'unattributed'}:chat-tools`, kind: 'tool_schemas', content: JSON.stringify(grantedToolIds), required: true, persistent: true, relevance: 1, provenanceIds: [recipe.fingerprint ?? 'unattributed-recipe']},
+      {id: `${recipe.id ?? 'unattributed'}:chat-skills`, kind: 'skills', estimatedTokens: 0, persistent: true, relevance: .8, provenanceIds: (recipe.skills ?? []).flatMap(skill => skill.qualificationEvidence)},
+      ...(contextSources.length ? contextSources : [{id: `${recipe.id ?? 'unattributed'}:chat-task`, kind: 'task_context' as const, content: instruction, required: true, persistent: false, relevance: 1, provenanceIds: recipe.context?.provenanceIds ?? recipe.context?.evidenceIds ?? []}]),
+    ];
+    const taskId = recipe.taskId ?? 'unattributed-task';
+    const invocation = createInvocationObservation({jobId: recipe.jobId ?? taskId, runId: recipe.runId, taskId, laneId: recipe.authority?.laneId ?? 'unattributed-lane', model: body.model ?? this.options.modelId, provider: this.options.provider.id, harnessProfile: recipe.harness?.profile ?? 'STANDARD', executionStrategy: 'structured-chat.json-tool-request', startedAt, completedAt: providerCompletedAt, startupSources, rawUsage: body.usage, toolIds: [request.tool], contextSourceIds: recipe.context?.sourceIds ?? [], recipeFingerprint: recipe.fingerprint ?? 'unattributed-recipe', contextPacketId: recipe.harness?.contextPacketId, evidenceIds: [`provider_response_sha256:${responseHash}`]});
     return {
       resultRef: JSON.stringify(result), confidence: .8,
       fingerprint: createHash('sha256').update(JSON.stringify(result)).digest('hex'),
       evidence: [`provider_response:${body.id ?? responseHash.slice(0, 16)}`, `provider_response_sha256:${responseHash}`, `tool_executed:${request.tool}`],
+      invocations: [invocation],
     };
   }
 }

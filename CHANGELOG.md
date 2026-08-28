@@ -1,9 +1,25 @@
 # Changelog
 
-## [3.1.0] — Unreleased
+## [3.1.0] — 2026-08-28
 
 ### Added
 
+- Provider-neutral model-invocation telemetry with explicit unknown values for unavailable fresh/cached/cache-write/output/reasoning tokens, provider/calculated cost, startup component estimates, turns, elapsed time, tools, context sources, provenance, verifier result and final Job outcome.
+- Configurable THIN, STANDARD and DEEP harness profiles, a conservative observational-by-default profile router, monotonic reason-coded escalation, and profile/context identity in adaptive recipe fingerprints.
+- A provenance-preserving `ContextPacketBuilder`, neutral `ContextGraph` interface with an in-memory adapter, verifier-gated cost-per-verified-outcome aggregation and dashboard/API efficiency diagnostics.
+- A frozen 20-job same-model-identity benchmark framework plus Markdown/JSON efficiency reports. The deterministic run is explicitly not live model, billing, cache or latency evidence and cannot production-qualify automatic routing.
+- A controlled live same-model harness benchmark with explicit experiment-only profile selection, endpoint/model qualification, typed submission through the existing tool-policy gateway, verifier-gated outcomes, provider token/cache/latency measurement and Markdown/JSON evidence. It cannot be enabled by production configuration and does not treat context retrieval as repository-mutation success.
+- A frozen 12-task real repository-mutation suite covering bounded edits through architecture-level changes, with disposable Git workspaces, scoped typed tools, compact repository search, hidden deterministic verifiers, mutation-tested test-addition acceptance, patch evidence and machine-readable provenance.
+- EXPERIMENT-only THIN, STANDARD, DEEP and cumulative THIN-to-STANDARD-to-DEEP mutation strategies, an explainable profile predictor, explicit classified escalation reasons and a production-routing qualification gate. The recorded live run leaves automatic routing disabled: adaptive execution matched STANDARD's 2/12 verified outcomes but used materially more cumulative tokens.
+- A provider-neutral token-aware command-result layer at the existing live ToolPolicy gateway, with authoritative result artifacts, explicit completeness states, scoped expiring handles, deterministic token estimates, provenance and context-budget-aware initial views.
+- Typed read-only ripgrep search and expansion tools supporting summary, file/line index, selected captured matches/files/ranges/context and exact full-result recovery without an unrestricted shell or handle-based filesystem reads.
+- A generic oversized-stdout head/tail fallback, API/dashboard context-token telemetry, configurable thresholds and a deterministic 240-file semantic-recovery benchmark.
+- Generic agentless Linux managed nodes over existing non-interactive SSH, with fixed read-only discovery, versioned heartbeat/inventory projections and no arbitrary remote-command path.
+- Managed-node `ONLINE`/`IDLE`/`BUSY`/`DEGRADED`/`OFFLINE` state, discovered capabilities, protected-workload detection, maintenance state, shared dashboard/TUI/API/status visibility and worker-registry synchronisation.
+- Typed, audited inspection and maintenance Job Actions with capability placement, service allowlists, named approvals, BUSY workload fencing, checksummed result artifacts and provenance.
+- A read-only managed-node qualification command and real generic-boundary qualification of an Ubuntu DVD worker without altering its workload.
+- One cross-platform `agent-control status` command that reads the versioned `AgentControlService` projection used by the web dashboard, either controller-local or through a fixed read-only localhost request over SSH from a configured worker node.
+- A non-secret, node-scoped status-client configuration and `--json` mode for the exact dashboard projection.
 - Default adaptive-harness dispatch for normal Work Queue agent executions, with durable/inspectable recipe identity and separate worker-placement/model-routing rationale.
 - A central `ToolInvocationGateway` that reauthorises every model-originated tool call against recipe grants, live capability/policy state, lease generation, ownership generation and human takeover.
 - Explicit named control operations for non-agent maintenance work; a control handler cannot act as an unrestricted legacy agent fallback.
@@ -29,13 +45,18 @@
 
 ### Changed
 
+- Champion/challenger fingerprints can include provider, harness profile and context strategy; verified correctness remains the promotion gate and cost/fresh-token efficiency can only break an otherwise qualified tie.
+- `npm run status` now uses the authoritative dashboard projection; the separate configured service/resource bootstrap probe remains available as `npm run status:bootstrap`.
 - TUI task submission, reroute and pause/resume now call the shared application service rather than mutating workspace state directly.
 - Routing and verification projections are first-class lane state and survive persistence/reload.
 - The full test gate is serialised to prevent persistence-focused tests from contaminating one another.
 - Manual, scheduled and future trigger adapters now converge on the same `JobRuntime.createRun` path through `AgentControlService`.
+- The harmless Job qualification now constructs the complete current manifest/action catalog through the production bootstrap, preventing newer typed Action manifests from silently drifting beyond the release smoke.
 
 ### Security and authority
 
+- Managed-node SSH uses one reviewed streamed script, batch public-key authentication, disabled forwarding, bounded output/time and separately validated typed arguments; no Job or approval can supply an arbitrary shell command.
+- Protected active workloads block power, optical, package/service mutation, destructive storage and configured competing capabilities unless the exact protected-workload override has been approved.
 - Harness construction cannot claim queue work, mutate placement, acquire authority, write a PTY or accept completion.
 - Secret-like runtime settings and credentialed runtime URLs fail closed before recipe fingerprinting or persistence.
 - The dashboard binds to `127.0.0.1` by default and is read-only when no operator token is configured.

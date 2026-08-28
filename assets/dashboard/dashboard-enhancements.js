@@ -1,24 +1,24 @@
-const jobState = {jobs: [], runs: [], queue: [], workers: [], locks: [], artifacts: [], selectedJob: null, selectedRun: null, search: ''};
+const jobState = {jobs: [], runs: [], queue: [], workers: [], resources: [], locks: [], artifacts: [], outputMetrics: null, efficiencyMetrics: null, invocations: [], selectedJob: null, selectedRun: null, search: ''};
 const terminalRunStatuses = new Set(['SUCCEEDED', 'FAILED', 'DEGRADED', 'CANCELLED', 'MISSED', 'DISCONNECTED']);
 const retryableRunStatuses = new Set(['FAILED', 'DEGRADED', 'CANCELLED', 'DISCONNECTED']);
 const baseRefresh = refresh;
 
 refresh = async () => {
   await baseRefresh();
-  const endpoints = ['/api/jobs', '/api/runs', '/api/queue', '/api/workers', '/api/resources', '/api/artifacts'];
-  const [jobs, runs, queue, workers, locks, artifacts] = await Promise.all(endpoints.map(async url => {
+  const endpoints = ['/api/jobs', '/api/runs', '/api/queue', '/api/workers', '/api/resources', '/api/artifacts', '/api/command-output/metrics', '/api/efficiency', '/api/efficiency/invocations?limit=500'];
+  const [jobs, runs, queue, workers, locks, artifacts, outputMetrics, efficiencyMetrics, invocations] = await Promise.all(endpoints.map(async url => {
     const response = await fetch(url);
     if (!response.ok) throw new Error(`${url} ${response.status}`);
     return response.json();
   }));
-  Object.assign(jobState, {jobs, runs, queue, workers, locks, artifacts});
+  Object.assign(jobState, {jobs, runs, queue, workers, resources: state.snapshot?.resources || [], locks, artifacts, outputMetrics, efficiencyMetrics, invocations});
   if (!jobState.selectedJob && jobs.length) jobState.selectedJob = jobs[0].metadata.id;
   if (jobState.selectedJob && !jobs.some(job => job.metadata.id === jobState.selectedJob)) jobState.selectedJob = jobs[0]?.metadata.id ?? null;
   renderJobs();
 };
 
 renderSystem = snapshot => {
-  const items = [['Scheduler', snapshot.paused ? 'PAUSED' : 'ACTIVE'], ['Job runs', snapshot.jobs.running], ['Queued', snapshot.jobs.queued], ['Jobs', snapshot.jobs.total], ['Approvals', snapshot.outstandingApprovals], ['Resources', snapshot.resources.length]];
+  const items = [['Scheduler', snapshot.paused ? 'PAUSED' : 'ACTIVE'], ['Job runs', snapshot.jobs.running], ['Queued', snapshot.jobs.queued], ['Jobs', snapshot.jobs.total], ['Approvals', snapshot.outstandingApprovals], ['Context tokens avoided', snapshot.tokenAwareOutput?.contextTokensAvoided || 0], ['Resources', snapshot.resources.length]];
   document.querySelector('#system-summary').innerHTML = `<div class="summary-grid">${items.map(([label, value]) => `<div class="summary-item"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`).join('')}</div>`;
 };
 
@@ -44,7 +44,7 @@ function safeHref(value) {
   catch { return null; }
 }
 function scheduleLabel(job) { return job.schedules.length ? job.schedules.map(item => `${item.spec.cron} ${item.spec.timezone}`).join(' · ') : 'Manual'; }
-function statusClass(status) { return ['FAILED', 'DEGRADED', 'DISCONNECTED'].includes(status) ? 'error' : ['QUEUED', 'WAITING_FOR_WORKER', 'WAITING_FOR_DEPENDENCY', 'WAITING_FOR_RESOURCE', 'WAITING_FOR_APPROVAL', 'RETRY_PENDING'].includes(status) ? 'waiting' : ''; }
+function statusClass(status) { return ['FAILED', 'DEGRADED', 'DISCONNECTED', 'OFFLINE'].includes(status) ? 'error' : ['BUSY', 'QUEUED', 'WAITING_FOR_WORKER', 'WAITING_FOR_DEPENDENCY', 'WAITING_FOR_RESOURCE', 'WAITING_FOR_APPROVAL', 'RETRY_PENDING'].includes(status) ? 'waiting' : ''; }
 function timeLabel(value, fallback = '--') { return value ? new Date(value).toLocaleString() : fallback; }
 function durationLabel(start, end) { if (!start) return 'Not started'; const milliseconds = Math.max(0, Date.parse(end || new Date().toISOString()) - Date.parse(start)); return milliseconds < 1000 ? `${milliseconds}ms` : `${Math.round(milliseconds / 1000)}s`; }
 function ageLabel(value) { if (!value) return '--'; const seconds = Math.max(0, Math.floor((Date.now() - Date.parse(value)) / 1000)); return seconds < 60 ? `${seconds}s` : seconds < 3600 ? `${Math.floor(seconds / 60)}m` : `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m`; }
@@ -57,8 +57,33 @@ function renderJobs() {
   renderJobDetail(selected);
   renderQueue();
   renderRunHistory();
+  renderManagedNodes();
   renderWorkersAndLocks();
+  renderCommandOutputMetrics();
+  renderHarnessEfficiencyMetrics();
   bindRunLinks();
+}
+
+function byteLabel(value) {
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']; let number = Number(value), unit = 0;
+  if (!Number.isFinite(number)) return '--';
+  while (number >= 1000 && unit < units.length - 1) { number /= 1000; unit++; }
+  return `${number.toFixed(unit > 1 ? 1 : 0)}${units[unit]}`;
+}
+
+function uptimeLabel(value) {
+  const seconds = Number(value); if (!Number.isFinite(seconds)) return '--';
+  const days = Math.floor(seconds / 86400), hours = Math.floor(seconds % 86400 / 3600), minutes = Math.floor(seconds % 3600 / 60);
+  return days ? `${days}d ${hours}h` : hours ? `${hours}h ${minutes}m` : `${minutes}m`;
+}
+
+function renderManagedNodes() {
+  const rows = jobState.resources.filter(resource => resource.node);
+  document.querySelector('#managed-node-list').innerHTML = rows.length ? rows.map(resource => {
+    const node = resource.node, memory = node.memory, busiest = [...(node.storage || [])].sort((a, b) => b.usedPercent - a.usedPercent)[0], load = node.cpu?.load;
+    const links = (node.connectivity || []).map(item => `${item.label} ${item.state}`).join(', ') || 'not configured';
+    return `<div class="compact-row worker-row managed-node-card"><strong>${esc(resource.name)}</strong><span class="status-pill ${statusClass(node.state)}">${esc(node.state)}</span><small>${esc(node.os?.name || resource.platform)} · ${esc(node.os?.kernel || 'kernel unknown')} · uptime ${esc(uptimeLabel(node.uptimeSeconds))}</small><small>Heartbeat ${esc(timeLabel(node.lastHeartbeatAt))} · load ${esc(load ? `${load.one}/${load.five}/${load.fifteen}` : '--')} · memory ${esc(memory ? `${byteLabel(memory.availableBytes)} free / ${byteLabel(memory.totalBytes)}` : '--')}</small><small>Workload ${esc(node.currentWorkload || 'none')} · maintenance ${esc(node.maintenance.state)} · connectivity ${esc(links)}${busiest ? ` · ${esc(busiest.mount)} ${esc(byteLabel(busiest.availableBytes))} free` : ''}</small><small>${esc(node.capabilities.join(', ') || 'No discovered capabilities')}</small></div>`;
+  }).join('') : '<div class="compact-empty">No managed nodes configured</div>';
 }
 
 function renderJobDetail(job) {
@@ -70,7 +95,7 @@ function renderJobDetail(job) {
   const steps = (selectedRun?.steps || job.spec.steps).map(step => renderStep(step)).join('');
   const schedules = job.schedules.map(schedule => `<div class="schedule-row"><span><strong>${esc(schedule.metadata.name)}</strong><small>${esc(schedule.spec.cron)} · ${esc(schedule.spec.timezone)} · ${esc(schedule.spec.missedRunPolicy)}</small></span><span class="status-pill ${schedule.state?.enabled ? '' : 'neutral'}">${schedule.state?.enabled ? 'ENABLED' : 'DISABLED'}</span><small>Previous ${esc(timeLabel(schedule.state?.previousScheduledAt))} · Next ${esc(timeLabel(schedule.state?.nextScheduledAt))}</small></div>`).join('');
   const nextRun = job.schedules.map(schedule => schedule.state?.nextScheduledAt).filter(Boolean).sort()[0];
-  detail.innerHTML = `<div class="authority-note"><strong>3.1 authority boundary</strong><span>The dashboard requests work. Agent Control owns scheduling, policy, placement, approvals and cancellation. Model routing remains separate from worker placement.</span></div><div class="job-header"><div><span class="eyebrow">${esc(job.metadata.id)} · v${esc(job.metadata.version)}</span><h2>${esc(job.metadata.name)}</h2><p>${esc(job.metadata.description || '')}</p></div><span class="status-pill ${job.spec.enabled === false ? 'neutral' : ''}">${job.spec.enabled === false ? 'DISABLED' : 'ENABLED'}</span></div><div class="metrics"><div class="metric"><span>Next run</span><strong>${esc(timeLabel(nextRun, 'Manual / disabled'))}</strong></div><div class="metric"><span>Last run</span><strong>${esc(timeLabel(job.latestRun?.requestedAt, 'Never'))}</strong></div><div class="metric"><span>Priority</span><strong>${esc(job.spec.priority)}</strong></div><div class="metric"><span>Concurrency</span><strong>${esc(job.spec.concurrency)}</strong></div></div><div class="control-strip"><button class="button" id="run-job">Run now</button>${job.schedules.map(schedule => `<button class="button secondary" data-schedule-command="${schedule.state?.enabled ? 'disable' : 'enable'}" data-schedule="${esc(schedule.metadata.id)}">${schedule.state?.enabled ? 'Disable' : 'Enable'} ${esc(schedule.metadata.name)}</button>`).join('')}</div>${schedules ? `<div class="schedule-list">${schedules}</div>` : ''}<div class="job-run-heading"><div><span class="eyebrow">${selectedRun ? `Run ${esc(selectedRun.id)}` : 'Definition'}</span><h3>Steps</h3></div>${selectedRun ? `<small>${esc(selectedRun.trigger.type)} · ${esc(selectedRun.trigger.actor)} · ${esc(durationLabel(selectedRun.startedAt, selectedRun.endedAt))}</small>` : ''}</div><div class="job-steps">${steps}</div>${selectedRun ? renderRunControls(selectedRun) + renderRunEvidence(selectedRun) : ''}`;
+  detail.innerHTML = `<div class="authority-note"><strong>3.1 authority boundary</strong><span>The dashboard requests work. Agent Control owns scheduling, policy, placement, approvals and cancellation. Model routing remains separate from worker placement.</span></div><div class="job-header"><div><span class="eyebrow">${esc(job.metadata.id)} · v${esc(job.metadata.version)}</span><h2>${esc(job.metadata.name)}</h2><p>${esc(job.metadata.description || '')}</p></div><span class="status-pill ${job.spec.enabled === false ? 'neutral' : ''}">${job.spec.enabled === false ? 'DISABLED' : 'ENABLED'}</span></div><div class="metrics"><div class="metric"><span>Next run</span><strong>${esc(timeLabel(nextRun, 'Manual / disabled'))}</strong></div><div class="metric"><span>Last run</span><strong>${esc(timeLabel(job.latestRun?.requestedAt, 'Never'))}</strong></div><div class="metric"><span>Priority</span><strong>${esc(job.spec.priority)}</strong></div><div class="metric"><span>Concurrency</span><strong>${esc(job.spec.concurrency)}</strong></div></div>${selectedRun ? renderRunEfficiency(selectedRun) : ''}<div class="control-strip"><button class="button" id="run-job">Run now</button>${job.schedules.map(schedule => `<button class="button secondary" data-schedule-command="${schedule.state?.enabled ? 'disable' : 'enable'}" data-schedule="${esc(schedule.metadata.id)}">${schedule.state?.enabled ? 'Disable' : 'Enable'} ${esc(schedule.metadata.name)}</button>`).join('')}</div>${schedules ? `<div class="schedule-list">${schedules}</div>` : ''}<div class="job-run-heading"><div><span class="eyebrow">${selectedRun ? `Run ${esc(selectedRun.id)}` : 'Definition'}</span><h3>Steps</h3></div>${selectedRun ? `<small>${esc(selectedRun.trigger.type)} · ${esc(selectedRun.trigger.actor)} · ${esc(durationLabel(selectedRun.startedAt, selectedRun.endedAt))}</small>` : ''}</div><div class="job-steps">${steps}</div>${selectedRun ? renderRunControls(selectedRun) + renderRunEvidence(selectedRun) : ''}`;
   document.querySelector('#run-job').addEventListener('click', () => jobCommand(`/api/jobs/${encodeURIComponent(job.metadata.id)}/run`, {}).catch(showError));
   document.querySelectorAll('[data-schedule]').forEach(button => button.addEventListener('click', () => jobCommand(`/api/schedules/${encodeURIComponent(button.dataset.schedule)}/${button.dataset.scheduleCommand}`, {}).catch(showError)));
   bindRunCommands(selectedRun);
@@ -129,6 +154,31 @@ function renderWorkersAndLocks() {
   const workers = jobState.workers;
   document.querySelector('#worker-list').innerHTML = workers.length ? workers.map(worker => `<div class="compact-row worker-row"><strong>${esc(worker.id)}</strong><span class="status-pill ${statusClass(worker.health === 'offline' ? 'FAILED' : worker.health.toUpperCase())}">${esc(worker.health)}</span><small>Capacity ${esc(worker.active)}/${esc(worker.capacity)} · observed ${esc(timeLabel(worker.observedAt))}</small><small>${esc(worker.capabilities.join(', ') || 'No capabilities')}</small></div>`).join('') : '<div class="compact-empty">No workers registered</div>';
   document.querySelector('#resource-locks').innerHTML = jobState.locks.length ? `<span class="subheading">Active resource locks</span>${jobState.locks.map(lock => `<button class="compact-row" data-run="${esc(lock.runId)}"><strong>${esc(lock.resource)}</strong><span class="status-pill waiting">HELD</span><small>${esc(lock.runId)} · step ${esc(lock.stepId)} · since ${esc(timeLabel(lock.acquiredAt))}</small></button>`).join('')}` : '<div class="compact-empty">No resource locks held</div>';
+}
+
+function renderCommandOutputMetrics() {
+  const metrics = jobState.outputMetrics;
+  const element = document.querySelector('#command-output-metrics');
+  if (!metrics || !metrics.commandsObserved) { element.innerHTML = '<div class="compact-empty">No command output observed this session</div>'; return; }
+  const reduction = metrics.estimatedTokensOriginal ? Math.max(0, Math.round(metrics.contextTokensAvoided / metrics.estimatedTokensOriginal * 100)) : 0;
+  element.innerHTML = `<div class="compact-row worker-row"><strong>Context tokens avoided</strong><span class="status-pill">${esc(metrics.contextTokensAvoided)}</span><small>${esc(reduction)}% effective reduction after expansions</small><small>${esc(metrics.commandsCompacted)} compacted / ${esc(metrics.commandsObserved)} observed · ${esc(metrics.expansionRequests)} expansions · ${esc(metrics.fullResultRequests)} full-result requests</small><small>${esc(byteLabel(metrics.originalOutputBytes))} authoritative → ${esc(byteLabel(metrics.returnedOutputBytes))} model-facing</small></div>`;
+}
+
+function renderRunEfficiency(run) {
+  const values = jobState.invocations.filter(item => item.runId === run.id || item.jobId === run.id);
+  if (!values.length) return '<div class="authority-note"><strong>Harness telemetry</strong><span>No model invocation was recorded for this run.</span></div>';
+  const latest = values[values.length - 1], known = selector => values.every(item => selector(item) !== null), sum = selector => values.reduce((total, item) => total + (selector(item) || 0), 0);
+  const fresh = known(item => item.usage.freshInputTokens) ? sum(item => item.usage.freshInputTokens) : null, cached = known(item => item.usage.cachedInputTokens) ? sum(item => item.usage.cachedInputTokens) : null, output = known(item => item.usage.outputTokens) ? sum(item => item.usage.outputTokens) : null;
+  const cost = values.every(item => item.providerReportedCost !== null) ? sum(item => item.providerReportedCost) : values.every(item => item.calculatedCost !== null) ? sum(item => item.calculatedCost) : null;
+  return `<div class="metrics"><div class="metric"><span>Harness</span><strong>${esc(latest.harnessProfile)}</strong></div><div class="metric"><span>Turns</span><strong>${esc(values.length)}</strong></div><div class="metric"><span>Fresh / cached</span><strong>${esc(fresh ?? 'unknown')} / ${esc(cached ?? 'unknown')}</strong></div><div class="metric"><span>Output / cost</span><strong>${esc(output ?? 'unknown')} / ${esc(cost === null ? 'unknown' : cost)}</strong></div><div class="metric"><span>Verifier</span><strong>${esc(latest.verifierResult)}</strong></div></div>`;
+}
+
+function renderHarnessEfficiencyMetrics() {
+  const element = document.querySelector('#harness-efficiency-metrics'), metrics = jobState.efficiencyMetrics, overall = metrics?.overall;
+  if (!overall?.invocations) { element.innerHTML = '<div class="compact-empty">No model invocation telemetry recorded</div>'; return; }
+  const cache = overall.cacheEffectiveness === null ? 'unknown' : `${Math.round(overall.cacheEffectiveness * 100)}%`;
+  const cpvo = overall.costPerVerifiedOutcome === null ? 'unknown' : `${overall.currency || ''} ${overall.costPerVerifiedOutcome.toFixed(4)}`.trim();
+  element.innerHTML = `<div class="compact-row worker-row"><strong>Cost per verified outcome</strong><span class="status-pill">${esc(cpvo)}</span><small>${esc(overall.verifiedSuccesses)} verified successes / ${esc(overall.jobs)} jobs · ${esc(overall.modelTurns)} turns</small><small>Fresh ${esc(overall.freshInputTokens ?? 'unknown')} · cached ${esc(overall.cachedInputTokens ?? 'unknown')} · output ${esc(overall.outputTokens ?? 'unknown')}</small><small>Cache effectiveness ${esc(cache)} · escalation ${esc(metrics.escalationRate === null ? 'unknown' : `${Math.round(metrics.escalationRate * 100)}%`)}</small></div>`;
 }
 
 function bindRunLinks() {

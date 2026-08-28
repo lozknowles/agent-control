@@ -2,7 +2,7 @@
 
 Agent Control is an infrastructure-neutral policy control plane with an executable adaptive-harness core. It governs durable work by heterogeneous agents and models, assembles task-appropriate execution recipes, and keeps authority, evidence and human control outside every replaceable worker or execution substrate.
 
-The 3.0.x baseline implements the durable lane/control model, capability and provider qualification primitives, adaptive recipe construction, qualified-skill selection, explicit tool grants, context selection, evidence/provenance, successive halving, PTY authority and replaceable execution providers. The unreleased 3.1 branch adds the Job Catalog, Worker Registry, Run Ledger, dashboard, verification service, default recipe-backed Work Queue dispatch and a qualified model-backed Job Action bridge. Every supported gateway tool is reauthorised against live lease/ownership state; tools run internally by opaque external CLI agents remain an explicit mediation gap.
+The 3.0.x baseline implements the durable lane/control model, capability and provider qualification primitives, adaptive recipe construction, qualified-skill selection, explicit tool grants, context selection, evidence/provenance, successive halving, PTY authority and replaceable execution providers. Release 3.1.0 adds the Job Catalog, Worker Registry, Run Ledger, dashboard, verification service, default recipe-backed Work Queue dispatch and a qualified model-backed Job Action bridge. Every supported gateway tool is reauthorised against live lease/ownership state; tools run internally by opaque external CLI agents remain an explicit mediation gap.
 
 ## Agent Control
 
@@ -84,6 +84,10 @@ A versioned instruction style selected for a task/model combination. A smaller m
 
 Selected, minimum-sufficient information supplied to an execution: baton, repository evidence, previous runs, approved documents, shared threads or external sources. Context routing accounts for confidence, complexity, token capacity, cost and latency. Context is informative, not authoritative.
 
+## Token-aware command output
+
+A command result can have one authoritative artifact and several derived context representations: summary, semantic index, selected captured context and complete result. `COMPLETE`, `COMPACTED`, `TRUNCATED` and `ARTIFACT_ONLY` describe what the consumer received; they are never inferred from prompt wording. A scoped handle lets an authorised execution move progressively from **Inspect -> Expand -> Read** without rerunning a search or paying the full initial context cost. Derived views retain a hash link to the artifact and never outrank it as evidence.
+
 ## Evidence
 
 An observation or artifact that supports or contradicts a claim. Evidence has a trust class: executable/test results and repository state outrank agent interpretation and unsupported assertion.
@@ -124,7 +128,7 @@ An agent saying “done” is not verification. A majority repeating an unsuppor
 
 ## 3.1 concepts
 
-The following are implemented on the unreleased 3.1 branch; they are not released 3.0.1 features. Governed skill creation, universal adapter verification and automated recipe learning remain follow-on work. The authoritative machine-readable boundary and its evidence links are in [`config/implementation-status.json`](../config/implementation-status.json), projected as [`docs/implementation-status.md`](implementation-status.md).
+The following are implemented in 3.1.0; they are not features of the immutable 3.0.1 release. Governed skill creation, universal adapter verification and automated recipe learning remain follow-on work. The authoritative machine-readable boundary and its evidence links are in [`config/implementation-status.json`](../config/implementation-status.json), projected as [`docs/implementation-status.md`](implementation-status.md).
 
 ### Job
 

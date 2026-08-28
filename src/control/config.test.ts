@@ -62,3 +62,39 @@ test('two Android models use one schema without becoming identity defaults', () 
   ], providers: [], services: [], lanes: []});
   assert.deepEqual(config.resources.map(resource => resource.metadata?.model), ['Vendor One', 'Vendor Two']);
 });
+
+test('generic managed Linux node policy is configuration and validates workload boundaries', () => {
+  const config = validateConfig({schemaVersion: 1, resources: [{id: 'linux-any', platform: 'linux', transport: {type: 'ssh', host: 'linux-any.example', user: 'operator'}, capabilities: [], managedNode: {enabled: true, probeIntervalSeconds: 15, offlineAfterSeconds: 45, approvedServices: ['disc-watch.service'], connectivity: [{id: 'private-overlay', label: 'Private overlay', capability: 'transport.secure-overlay', serviceUnit: 'overlay-agent.service', interfaceName: 'overlay0'}], workloads: [{id: 'disc-copy', capability: 'workload.dvd-rip', systemdUnit: 'disc-watch.service', processExecutables: ['disc-copy'], opticalAccess: true}], runtime: {directory: '/opt/agent-control', branch: 'integration/3.1'}}}], providers: [], services: [], lanes: []});
+  assert.equal(config.resources[0].managedNode?.workloads?.[0].id, 'disc-copy');
+  assert.equal(config.resources[0].managedNode?.connectivity?.[0].capability, 'transport.secure-overlay');
+  assert.throws(() => validateConfig({schemaVersion: 1, resources: [{id: 'bad', platform: 'linux', transport: {type: 'ssh', host: '-oProxyCommand=bad'}, capabilities: [], managedNode: {enabled: true}}], providers: [], services: [], lanes: []}), /invalid_ssh_host/);
+  assert.throws(() => validateConfig({schemaVersion: 1, resources: [{id: 'bad', platform: 'linux', transport: {type: 'local'}, capabilities: [], managedNode: {enabled: true}}], providers: [], services: [], lanes: []}), /managed_node_ssh_required/);
+  assert.throws(() => validateConfig({schemaVersion: 1, resources: [{id: 'bad', platform: 'linux', transport: {type: 'ssh', host: 'safe.example'}, capabilities: [], managedNode: {enabled: true, runtime: {directory: '/tmp/x;reboot', branch: 'main'}}}], providers: [], services: [], lanes: []}), /runtime_directory/);
+  assert.throws(() => validateConfig({schemaVersion: 1, resources: [{id: 'bad', platform: 'linux', transport: {type: 'ssh', host: 'safe.example'}, capabilities: [], managedNode: {enabled: true, connectivity: [{id: 'overlay', capability: 'transport.secure-overlay', interfaceName: '-oBad'}]}}], providers: [], services: [], lanes: []}), /connectivity_interface/);
+});
+
+test('token-aware output thresholds are optional machine-neutral configuration', () => {
+  const config = validateConfig({schemaVersion: 1, resources: [], providers: [], services: [], lanes: [], tokenAwareOutput: {completeMaxLines: 25, completeMaxBytes: 8192, completeMaxTokens: 2048, completeMaxMatches: 20, completeMaxFiles: 4, indexMaxFiles: 80, maxCaptureBytesPerStream: 1048576, retentionSeconds: 600, contextBudgetFraction: .4}});
+  assert.equal(config.tokenAwareOutput?.completeMaxLines, 25);
+  assert.equal(config.tokenAwareOutput?.contextBudgetFraction, .4);
+});
+
+test('token-aware output configuration rejects unsafe or nonsensical limits', () => {
+  const base = {schemaVersion: 1, resources: [], providers: [], services: [], lanes: []};
+  assert.throws(() => validateConfig({...base, tokenAwareOutput: {maxCaptureBytesPerStream: 1}}), /maxCaptureBytesPerStream/);
+  assert.throws(() => validateConfig({...base, tokenAwareOutput: {retentionSeconds: 0}}), /retentionSeconds/);
+  assert.throws(() => validateConfig({...base, tokenAwareOutput: {contextBudgetFraction: 1.1}}), /context_budget_fraction/);
+});
+
+test('harness efficiency profiles are configurable without provider or machine identity', () => {
+  const config = validateConfig({schemaVersion: 1, resources: [], providers: [], services: [], lanes: [], harnessEfficiency: {routingMode: 'observe', minimumVerifiedRuns: 12, minimumSuccessRate: .95, minimumSameModelControlledRuns: 10, profiles: {THIN: {maximumInitialContextTokens: 3000, maximumSources: 10, maximumOptionalSkills: 1, maximumTools: 5, maximumTurns: 2, allowBroadRepositoryContext: false, allowSharedContext: false}}}});
+  assert.equal(config.harnessEfficiency?.routingMode, 'observe');
+  assert.equal(config.harnessEfficiency?.profiles?.THIN?.maximumInitialContextTokens, 3000);
+});
+
+test('harness efficiency configuration rejects unsafe automatic-routing thresholds', () => {
+  const base = {schemaVersion: 1, resources: [], providers: [], services: [], lanes: []};
+  assert.throws(() => validateConfig({...base, harnessEfficiency: {routingMode: 'automatic'}}), /routing_mode/);
+  assert.throws(() => validateConfig({...base, harnessEfficiency: {minimumSuccessRate: 0}}), /minimum_success_rate/);
+  assert.throws(() => validateConfig({...base, harnessEfficiency: {profiles: {THIN: {maximumInitialContextTokens: 1}}}}), /harness_efficiency_context/);
+});

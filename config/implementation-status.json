@@ -1,7 +1,7 @@
 {
   "schema": "agent-control.implementation-status/v1",
-  "release": "3.1.0-development",
-  "updated": "2026-08-25",
+  "release": "3.1.0",
+  "updated": "2026-08-28",
   "capabilities": [
     {
       "id": "bootstrap.safe-empty-config",
@@ -11,6 +11,23 @@
       "sources": ["scripts/config.mjs", "scripts/init-config.mjs"],
       "tests": ["scripts/init-config.test.mjs"],
       "evidence": ["docs/evidence/truthful-bootstrap-status-20260825.md"]
+    },
+    {
+      "id": "status.universal-authoritative-command",
+      "title": "Universal authoritative status command",
+      "status": "IMPLEMENTED",
+      "summary": "The same agent-control status command reads the versioned AgentControlService projection used by the web dashboard, locally or through one fixed read-only localhost request over SSH.",
+      "sources": ["scripts/agent-control.mjs", "scripts/status-client.mjs", "src/control/application-service.ts"],
+      "tests": ["scripts/agent-control.test.mjs", "scripts/status-client.test.mjs", "src/control/application-service.test.ts", "src/control/web-server.test.ts"]
+    },
+    {
+      "id": "nodes.generic-linux-management",
+      "title": "Generic managed Linux nodes",
+      "status": "QUALIFIED",
+      "summary": "Authorised Linux/SSH resources receive fixed read-only discovery, heartbeat and workload projection plus typed governed inspection and maintenance Actions without an arbitrary remote-command path.",
+      "sources": ["src/control/managed-node.ts", "src/control/managed-node-ssh.ts", "src/control/managed-node-actions.ts"],
+      "tests": ["src/control/managed-node.test.ts", "src/control/managed-node-ssh.test.ts", "src/control/managed-node-actions.test.ts"],
+      "evidence": ["docs/evidence/macubuntu-managed-node-qualification-20260826.md"]
     },
     {
       "id": "harness.default-work-dispatch",
@@ -29,12 +46,31 @@
       "tests": ["src/control/adaptive-harness.test.ts", "src/control/harness-dispatch.test.ts"]
     },
     {
+      "id": "output.token-aware-command-results",
+      "title": "Token-aware command output and ripgrep expansion",
+      "status": "QUALIFIED",
+      "summary": "Authoritative local or remote command results can be represented as complete, compacted, truncated or artifact-only context with scoped progressive expansion, provenance and token accounting; ripgrep has a structured semantic index.",
+      "sources": ["src/control/token-aware-output.ts", "src/control/repository-search.ts", "src/control/context.ts", "src/control/harness-dispatch.ts"],
+      "tests": ["src/control/token-aware-output.test.ts", "src/control/token-aware-context.test.ts", "src/control/web-server.test.ts"],
+      "evidence": ["docs/evidence/token-aware-output-benchmark-20260827.json"]
+    },
+    {
+      "id": "harness.efficiency-context-routing",
+      "title": "Harness efficiency telemetry and context profiles",
+      "status": "PARTIAL",
+      "summary": "Provider-neutral invocation telemetry, THIN/STANDARD/DEEP profiles, context packets, a neutral context-graph port, bounded structured mutation execution, deterministic diff verification, cumulative escalation outcomes and dashboard/API projections are executable; routing stays observational with STANDARD applied.",
+      "sources": ["src/control/harness-efficiency.ts", "src/control/harness-efficiency-benchmark.ts", "src/control/harness-mutation-benchmark.ts", "src/control/harness-mutation-context.ts", "src/control/harness-mutation-workspace.ts", "src/control/harness-mutation-verifier.ts", "src/control/structured-chat-loop-provider.ts", "src/control/adaptive-harness.ts", "src/control/harness-dispatch.ts", "src/control/job-runtime.ts", "src/control/job-bootstrap.ts"],
+      "tests": ["src/control/harness-efficiency.test.ts", "src/control/harness-efficiency-benchmark.test.ts", "src/control/harness-mutation-benchmark.test.ts", "src/control/harness-mutation-workspace.test.ts", "src/control/harness-mutation-verifier.test.ts", "src/control/harness-mutation-reference-verifier.test.ts", "src/control/structured-chat-loop-provider.test.ts", "src/control/adaptive-harness.test.ts", "src/control/harness-dispatch.test.ts", "src/control/harness-job-action.test.ts", "src/control/job-bootstrap.test.ts", "src/control/web-server.test.ts"],
+      "evidence": ["docs/harness-mutation-report.md", "artifacts/harness-mutation-report.json"],
+      "limitation": "The 12-task same-model real-mutation run did not qualify THIN, immediate DEEP selection or adaptive escalation: only 2/12 STANDARD outcomes verified and adaptive fresh tokens per verified outcome were materially higher. Keep production routing observational with STANDARD applied until a larger deterministic suite demonstrates success non-regression and cumulative-resource improvement."
+    },
+    {
       "id": "jobs.catalog-scheduler-ledger",
       "title": "Job Catalog, scheduler and Run Ledger",
       "status": "IMPLEMENTED",
       "summary": "Versioned Jobs and Schedules produce durable Runs with capability placement, locks, retries, artifacts, approvals and recovery.",
-      "sources": ["src/control/job-catalog.ts", "src/control/job-runtime.ts"],
-      "tests": ["src/control/job-catalog.test.ts", "src/control/job-runtime.test.ts"]
+      "sources": ["src/control/job-catalog.ts", "src/control/job-runtime.ts", "src/control/job-bootstrap.ts", "scripts/qualify-jobs.ts"],
+      "tests": ["src/control/job-catalog.test.ts", "src/control/job-runtime.test.ts", "scripts/qualify-jobs.test.mjs"]
     },
     {
       "id": "workers.capability-registry",

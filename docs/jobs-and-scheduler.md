@@ -89,6 +89,8 @@ On restart, an in-flight execution is not assumed alive. The ledger marks it `DI
 
 Workers advertise capabilities, health, capacity, load and optional expiry timestamps. Placement requires every requested capability on one healthy available worker. The Run records eligible workers, rejection reasons and the selection rationale without fabricated scoring precision.
 
+Generic managed Linux nodes feed discovered heartbeat, capabilities and workload blocks into this same registry. A BUSY protected-workload node retains safe inspection capability but rejects configured disruptive or excessive requirements with a visible `workload_blocked:<capability>` reason. The bundled `managed-node-inspection` and `managed-node-maintenance` Jobs demonstrate typed remote Actions; the latter always waits for the exact protected-workload override approval. See [`managed-nodes.md`](managed-nodes.md).
+
 Resource IDs such as `repository/project` or `browser-session` are semantic locks, not hostnames. Contention produces `WAITING_FOR_RESOURCE` with the holder and acquisition time. Locks persist across restart and release after confirmed success/failure/cancellation.
 
 Artifacts contain Run/step IDs, MIME-like type, schema, version, time, byte size, SHA-256, retention, storage reference and provenance (Job/Action/worker). The store verifies the checksum on every read. Downstream steps consume `step-name.artifact-name`; no shared worker path is assumed.
@@ -104,6 +106,7 @@ Qualification:
 ```bash
 npm run check
 npm run qualify:jobs
+npm run qualify:managed-node -- --resource linux-worker-a
 git diff --check
 ```
 

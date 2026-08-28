@@ -1,8 +1,9 @@
-node_modules/
+node_modules
 .agent-control/
 qualification-results/
 package-lock.json
 *.log
+artifacts/harness-mutation-partial.json
 .pdf-review/
 .env
 .env.*
