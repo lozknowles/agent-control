@@ -299,7 +299,7 @@ export function createMutationQualificationReport(input: {
 }): MutationQualificationReport {
   const strategies: MutationStrategy[] = ['THIN_ONLY', 'STANDARD_ONLY', 'DEEP_ONLY', 'ADAPTIVE_THIN_STANDARD_DEEP', 'PREDICTED_ADAPTIVE'];
   const aggregates = Object.fromEntries(strategies.map(strategy => [strategy, aggregateStrategy(strategy, input.outcomes.filter(outcome => outcome.strategy === strategy))])) as Record<MutationStrategy, MutationStrategyAggregate>;
-  const gate = evaluateProductionRoutingGate(input.outcomes, aggregates, input.safety, input.generatedAt, input.minimumProductionTaskSample ?? 20);
+  const gate = evaluateProductionRoutingGate(input.suite, input.outcomes, aggregates, input.safety, input.generatedAt, input.minimumProductionTaskSample ?? 20);
   const thinBounded = input.outcomes.filter(outcome => outcome.strategy === 'THIN_ONLY' && input.suite.tasks.find(task => task.id === outcome.taskId)?.expectedMinimumProfile === 'THIN');
   const predictedDeep = input.outcomes.filter(outcome => outcome.strategy === 'PREDICTED_ADAPTIVE' && outcome.startingProfile === 'DEEP');
   const adaptive = aggregates.ADAPTIVE_THIN_STANDARD_DEEP, standard = aggregates.STANDARD_ONLY;
@@ -383,16 +383,26 @@ function aggregateStrategy(strategy: MutationStrategy, outcomes: MutationOutcome
   };
 }
 
-function evaluateProductionRoutingGate(outcomes: MutationOutcomeResult[], aggregates: Record<MutationStrategy, MutationStrategyAggregate>, safety: {toolPolicy: boolean; staleLease: boolean; staleOwnership: boolean; humanTakeover: boolean; fallback: boolean; neutrality: boolean}, evaluatedAt: string, minimumTaskSample: number): ProductionRoutingGate {
+function evaluateProductionRoutingGate(suite: MutationBenchmarkSuite, outcomes: MutationOutcomeResult[], aggregates: Record<MutationStrategy, MutationStrategyAggregate>, safety: {toolPolicy: boolean; staleLease: boolean; staleOwnership: boolean; humanTakeover: boolean; fallback: boolean; neutrality: boolean}, evaluatedAt: string, minimumTaskSample: number): ProductionRoutingGate {
   const uniqueTasks = new Set(outcomes.map(outcome => outcome.taskId)).size;
-  const adaptive = aggregates.ADAPTIVE_THIN_STANDARD_DEEP, standard = aggregates.STANDARD_ONLY;
+  const adaptive = aggregates.PREDICTED_ADAPTIVE.tasksAttempted > 0 ? aggregates.PREDICTED_ADAPTIVE : aggregates.ADAPTIVE_THIN_STANDARD_DEEP, standard = aggregates.STANDARD_ONLY;
+  const adaptiveStrategy = aggregates.PREDICTED_ADAPTIVE.tasksAttempted > 0 ? 'PREDICTED_ADAPTIVE' : 'ADAPTIVE_THIN_STANDARD_DEEP';
+  const heldOutIds = new Set(suite.tasks.filter(task => task.partition === 'held_out').map(task => task.id));
+  const heldOutCandidate = outcomes.filter(outcome => outcome.strategy === adaptiveStrategy && heldOutIds.has(outcome.taskId));
+  const heldOutStandard = outcomes.filter(outcome => outcome.strategy === 'STANDARD_ONLY' && heldOutIds.has(outcome.taskId));
+  const heldOutCandidateSuccesses = heldOutCandidate.filter(outcome => outcome.verifiedSuccess).length;
+  const heldOutStandardSuccesses = heldOutStandard.filter(outcome => outcome.verifiedSuccess).length;
   const boundedEscalation = outcomes.filter(outcome => outcome.strategy.includes('ADAPTIVE')).every(outcome => outcome.attempts.length <= 3 && new Set(outcome.attempts.map(attempt => attempt.profile)).size === outcome.attempts.length);
-  const adaptiveResourceImprovement = adaptive.freshTokensPerVerifiedOutcome !== null && standard.freshTokensPerVerifiedOutcome !== null && adaptive.freshTokensPerVerifiedOutcome < standard.freshTokensPerVerifiedOutcome;
+  const tokenImprovement = adaptive.freshTokensPerVerifiedOutcome !== null && standard.freshTokensPerVerifiedOutcome !== null && adaptive.freshTokensPerVerifiedOutcome <= standard.freshTokensPerVerifiedOutcome * .95;
+  const latencyImprovement = adaptive.medianLatencyMs !== null && standard.medianLatencyMs !== null && adaptive.medianLatencyMs <= standard.medianLatencyMs * .95;
   const criteria = [
     {id: 'deterministic_real_mutation_sample', passed: uniqueTasks >= minimumTaskSample, detail: `${uniqueTasks} unique tasks observed; production minimum is ${minimumTaskSample}.`},
-    {id: 'no_verified_success_regression_vs_standard', passed: adaptive.tasksAttempted > 0 && adaptive.verifiedSuccesses >= standard.verifiedSuccesses, detail: `adaptive ${adaptive.verifiedSuccesses}/${adaptive.tasksAttempted}; STANDARD ${standard.verifiedSuccesses}/${standard.tasksAttempted}.`},
+    {id: 'candidate_verified_success_at_least_95_percent', passed: adaptive.tasksAttempted >= minimumTaskSample && adaptive.successRate >= .95, detail: `${adaptiveStrategy} ${adaptive.verifiedSuccesses}/${adaptive.tasksAttempted} (${(adaptive.successRate * 100).toFixed(1)}%).`},
+    {id: 'no_verified_success_regression_vs_standard', passed: adaptive.tasksAttempted > 0 && adaptive.verifiedSuccesses >= standard.verifiedSuccesses, detail: `${adaptiveStrategy} ${adaptive.verifiedSuccesses}/${adaptive.tasksAttempted}; STANDARD ${standard.verifiedSuccesses}/${standard.tasksAttempted}.`},
+    {id: 'held_out_verified_success_at_least_95_percent', passed: heldOutCandidate.length >= 8 && heldOutCandidateSuccesses / Math.max(1, heldOutCandidate.length) >= .95, detail: `${adaptiveStrategy} held-out ${heldOutCandidateSuccesses}/${heldOutCandidate.length}; minimum held-out sample is 8.`},
+    {id: 'no_held_out_regression_vs_standard', passed: heldOutCandidate.length >= 8 && heldOutStandard.length === heldOutCandidate.length && heldOutCandidateSuccesses >= heldOutStandardSuccesses, detail: `${adaptiveStrategy} held-out ${heldOutCandidateSuccesses}/${heldOutCandidate.length}; STANDARD held-out ${heldOutStandardSuccesses}/${heldOutStandard.length}.`},
     {id: 'bounded_classified_escalation', passed: boundedEscalation, detail: 'Adaptive chains are limited to unique THIN, STANDARD and DEEP attempts.'},
-    {id: 'meaningful_cumulative_resource_improvement', passed: adaptiveResourceImprovement, detail: `adaptive fresh/verified=${adaptive.freshTokensPerVerifiedOutcome ?? 'unknown'}; STANDARD=${standard.freshTokensPerVerifiedOutcome ?? 'unknown'}.`},
+    {id: 'meaningful_cumulative_resource_or_latency_improvement', passed: tokenImprovement || latencyImprovement, detail: `${adaptiveStrategy} fresh/verified=${adaptive.freshTokensPerVerifiedOutcome ?? 'unknown'}, median latency=${adaptive.medianLatencyMs ?? 'unknown'}; STANDARD fresh/verified=${standard.freshTokensPerVerifiedOutcome ?? 'unknown'}, median latency=${standard.medianLatencyMs ?? 'unknown'}; qualification threshold is 5%.`},
     {id: 'tool_policy_intact', passed: safety.toolPolicy, detail: 'Typed-tool policy denial qualification.'},
     {id: 'lease_and_ownership_fencing_intact', passed: safety.staleLease && safety.staleOwnership, detail: 'Stale lease and ownership generation qualification.'},
     {id: 'human_takeover_intact', passed: safety.humanTakeover, detail: 'Human precedence qualification.'},

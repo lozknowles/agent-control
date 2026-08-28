@@ -83,6 +83,20 @@ test('production routing gate rejects an undersized mutation sample while preser
   assert.equal(report.governance.productionRoutingChanged, false);
 });
 
+test('production routing gate requires held-out success, no STANDARD regression and measured improvement', () => {
+  const standard = suite.tasks.map(task => outcome(task, 'STANDARD_ONLY'));
+  const predicted = suite.tasks.map(task => {
+    const value = outcome(task, 'PREDICTED_ADAPTIVE');
+    value.cumulativeLatencyMs = 800;
+    value.attempts[0].elapsedMs = 800;
+    return value;
+  });
+  const report = createMutationQualificationReport({suite, generatedAt: '2026-08-28T02:00:00.000Z', model: 'same-model', provider: 'same-provider', outcomes: [...standard, ...predicted], safety: {toolPolicy: true, staleLease: true, staleOwnership: true, humanTakeover: true, fallback: true, neutrality: true}});
+  assert.equal(report.productionRoutingGate.qualified, true);
+  assert.equal(report.productionRoutingGate.criteria.find(item => item.id === 'held_out_verified_success_at_least_95_percent')?.passed, true);
+  assert.equal(report.productionRoutingGate.criteria.find(item => item.id === 'meaningful_cumulative_resource_or_latency_improvement')?.passed, true);
+});
+
 test('suite parser rejects path traversal, duplicate tasks and unsealed fixture identities', () => {
   const raw = JSON.parse(fs.readFileSync(path.join(root, 'benchmarks', 'harness-mutation-jobs.json'), 'utf8'));
   assert.throws(() => parseMutationBenchmarkSuite({...raw, fixtureSha256: 'pending'}), /identity_invalid/);
