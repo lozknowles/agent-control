@@ -1,4 +1,4 @@
-# Agent Control 3.1.0 release notes (draft)
+# Agent Control 3.1.0 release notes
 
 Agent Control 3.1 introduces one coherent control plane across the existing TUI and a new responsive web dashboard. The browser observes the same lane, scheduler, provider, PTY, baton, Git, routing and verification projection; authenticated commands enter through the same policy boundary.
 

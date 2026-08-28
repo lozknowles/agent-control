@@ -1,10 +1,10 @@
-# Agent Control 3.1.0 development architecture
+# Agent Control 3.1.0 architecture
 
-This is the authoritative development boundary for 3.1.0. The tagged 3.0.1 infrastructure-neutral resource/provider model and the merged 3.0.x adaptive-harness recovery are the base. Status labels matter:
+This is the authoritative source boundary for 3.1.0. The tagged 3.0.1 infrastructure-neutral resource/provider model and the merged 3.0.x adaptive-harness recovery are the base. Status labels matter:
 
 - **implemented** means executable code and automated tests exist in this branch;
 - **experimental** means executable code exists but has not been qualified across every external substrate;
-- **planned 3.1** means the concept has a defined place but must not be presented as implemented or released functionality.
+- **planned** means the concept has a defined place but must not be presented as implemented or released functionality.
 
 ## Invariants
 
@@ -306,4 +306,4 @@ New capabilities are classified into policy/authority, scheduling, execution sub
 
 ## Release boundary
 
-3.0.1 remains an immutable source release. This unreleased 3.1 development branch is based on tagged 3.0.1 plus the merged adaptive-harness recovery; it does not move a release tag, deploy services, expose the dashboard remotely, create credentials, broaden sharing, enable the bundled Schedule or claim live model improvement from deterministic fixtures. The existing execution implementation remains a named rollback/fallback path while universal recipe dispatch and adapter enforcement are qualified.
+3.0.1 remains an immutable source release and 3.1.0 is the current source boundary. Releasing source does not deploy services, expose the dashboard remotely, create credentials, broaden sharing or enable the bundled Schedule. STANDARD remains the applied harness-profile fallback because real-mutation evidence did not qualify automatic profile routing; opaque CLI mediation and universal adapter verification remain explicit gaps.
