@@ -1,0 +1,32 @@
+{
+  "schema": "agent-control.real-mutation-routing-qualification/v1",
+  "generatedAt": "2026-08-28T17:29:11.836Z",
+  "verdict": "PARTIAL",
+  "releaseCreated": false,
+  "automaticProductionRoutingEnabled": false,
+  "appliedProductionMode": "OBSERVATIONAL_STANDARD_FALLBACK",
+  "identities": {
+    "baselineCommit": "eaa1d4904b6d91b0149ee36f693499c2c663276f",
+    "harnessFreezeCommit": "bfd48963deddee7c6fa5b9683221ea507ed09af6",
+    "qualificationFreezeCommit": "0087fe19fda09de7a6ce2477e62f835de1acee29",
+    "fixtureSha256": "628e659cb1f1151b50c38319d0747857b030514235bcaf02d823353a696635a1",
+    "suiteSha256": "b102de69d4f9a50a0f1f741513e89cd0d22920600b3e6707659daa765774f5fc",
+    "fullReportSha256": "25b12fc173e811d493ef2e032037d5c80641bd1897cfdf686bc02a5cf1e488c8"
+  },
+  "suite": {"tasks": 24, "developmentTasks": 15, "heldOutTasks": 9, "referenceMutationsPassed": 24, "nonSatisfyingMutationsRejected": 24},
+  "modelControl": {"model": "gpt-5.4", "provider": "governed-mutation-codex-chatgpt-plan", "sameModel": true, "typedEditOnly": true, "minimumCandidateConfidence": 0.7, "measuredInputTokensPerSecond": 500},
+  "strategies": {
+    "STANDARD_ONLY": {"tasksAttempted": 24, "verifiedSuccesses": 24, "heldOutAttempted": 9, "heldOutVerifiedSuccesses": 9, "freshInputTokens": 111012, "cachedInputTokens": 207872, "outputTokens": 13089, "totalProcessedTokens": 331973, "tokensPerVerifiedOutcome": 13832.208333333334, "medianLatencyMs": 14407.367219999975, "escalations": 0, "verifierFailures": 0, "timeouts": 0, "cacheEffectiveness": 0.6518734085121862},
+    "PREDICTED_ADAPTIVE": {"tasksAttempted": 24, "verifiedSuccesses": 24, "heldOutAttempted": 9, "heldOutVerifiedSuccesses": 9, "freshInputTokens": null, "cachedInputTokens": null, "outputTokens": null, "totalProcessedTokens": null, "tokensPerVerifiedOutcome": null, "medianLatencyMs": 14233.976969500014, "escalations": 1, "verifierFailures": 1, "timeouts": 1, "cacheEffectiveness": null}
+  },
+  "productionGate": {
+    "qualified": false,
+    "latencyImprovementFraction": 0.012034299193843,
+    "requiredImprovementFraction": 0.05,
+    "failedCriteria": ["meaningful_cumulative_resource_or_latency_improvement"],
+    "reason": "Predicted routing preserved 100% overall and held-out verified success, but median latency improved only 1.2% and cumulative token usage is unknown because one timed-out invocation reported no usage."
+  },
+  "monetaryCostPerVerifiedOutcome": null,
+  "monetaryCostReason": "No authoritative per-run monetary price was exposed by the provider.",
+  "authoritativeIgnoredEvidence": {"json": "qualification-results/final-production-routing-v2.json", "markdown": "qualification-results/final-production-routing-v2.md", "patchDirectory": "qualification-results/final-production-routing-v2-evidence"}
+}

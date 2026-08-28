@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Expanded real-repository mutation qualification to 24 sealed, independently satisfiable tasks with a 15-task development partition and nine-task held-out partition.
+- Added typed edit-only ChatGPT-plan CLI mutation qualification, configurable measured provider-performance evidence, bounded verifier-guided repair, stricter current-preflight fencing, and explicit held-out production gates.
+- Final same-model evidence verified 24/24 STANDARD and 24/24 predicted outcomes, including 9/9 held-out for each. Production automatic profile routing remains disabled because candidate latency improved only 1.2% and one recovered timeout left cumulative candidate token use unknown.
+- No release version or tag is assigned to this unreleased evidence branch.
+
 ## [3.1.0] — 2026-08-28
 
 ### Added
