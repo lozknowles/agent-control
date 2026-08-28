@@ -4,16 +4,18 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {AgentControlService} from '../src/control/application-service.js';
-import {JobCatalog, nextCronOccurrence} from '../src/control/job-catalog.js';
-import {ArtifactStore, JobRuntime, ResourceLockManager, RunLedger, WorkerRegistry} from '../src/control/job-runtime.js';
+import {emptyConfig} from '../src/control/config.js';
+import {nextCronOccurrence} from '../src/control/job-catalog.js';
+import {buildJobRuntimeDefinition} from '../src/control/job-bootstrap.js';
+import {ArtifactStore, JobRuntime, ResourceLockManager, RunLedger} from '../src/control/job-runtime.js';
 import {PtyRegistry} from '../src/control/pty.js';
-import {registerReferenceActions} from '../src/control/reference-actions.js';
 import {defaultCapabilities, type LaneState, type WorkspaceState} from '../src/state.js';
 
 const outputFile = path.resolve(process.argv[2] ?? path.join('qualification-results', `jobs-${new Date().toISOString().replace(/[:.]/g, '-')}.json`));
 function git(args: string[], fallback: string) { try { return execFileSync('git', args, {encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore']}).trim(); } catch { return fallback; } }
 const discoveredCommit = git(['rev-parse', 'HEAD'], 'unavailable-in-exported-tree'), discoveredStatus = git(['status', '--porcelain'], '');
-const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-job-qualification-')), actions = registerReferenceActions(), catalog = new JobCatalog(actions.ids()).loadDirectory(path.resolve('config/jobs')), workers = new WorkerRegistry();
+const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-job-qualification-'));
+const {catalog, actions, workers} = buildJobRuntimeDefinition(emptyConfig(), path.resolve('config/jobs'));
 const observedAt = new Date().toISOString();
 workers.register({id: 'qualification-mobile', capabilities: ['browser.mobile', 'facebook.authenticated'], health: 'healthy', capacity: 1, active: 0, observedAt});
 workers.register({id: 'qualification-publisher', capabilities: ['localwalks.publisher', 'node', 'git', 'production-access'], health: 'offline', capacity: 1, active: 0, observedAt});

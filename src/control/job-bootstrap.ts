@@ -8,8 +8,14 @@ import {registerManagedNodeActions} from './managed-node-actions.js';
 import {SshManagedNodeTransport} from './managed-node-ssh.js';
 import {configuredHarnessProfileRouter, configuredHarnessProfiles, ContextPacketBuilder, FileHarnessEfficiencyLedger} from './harness-efficiency.js';
 
-export function buildJobRuntime(config: AgentControlConfig, stateRoot = process.env.AGENT_CONTROL_STATE_DIR || path.resolve('.agent-control'), manifestDir = process.env.AGENT_CONTROL_JOB_DIR || path.resolve('config/jobs')) {
+/** Shared production definition path so qualification cannot drift from registered typed Actions. */
+export function buildJobRuntimeDefinition(config: AgentControlConfig, manifestDir = process.env.AGENT_CONTROL_JOB_DIR || path.resolve('config/jobs')) {
   const workers = WorkerRegistry.fromConfig(config.resources), managedNodes = new ManagedNodeManager(config.resources, workers, new SshManagedNodeTransport()), actions = registerManagedNodeActions(managedNodes, registerReferenceActions()), catalog = new JobCatalog(actions.ids()).loadDirectory(manifestDir);
+  return {workers, managedNodes, actions, catalog};
+}
+
+export function buildJobRuntime(config: AgentControlConfig, stateRoot = process.env.AGENT_CONTROL_STATE_DIR || path.resolve('.agent-control'), manifestDir = process.env.AGENT_CONTROL_JOB_DIR || path.resolve('config/jobs')) {
+  const {workers, managedNodes, actions, catalog} = buildJobRuntimeDefinition(config, manifestDir);
   const harnessProfiles = configuredHarnessProfiles(config.harnessEfficiency), harnessProfileRouter = configuredHarnessProfileRouter(config.harnessEfficiency), contextPacketBuilder = new ContextPacketBuilder(harnessProfiles);
   const harnessEfficiency = new FileHarnessEfficiencyLedger(path.join(stateRoot, 'harness-efficiency', 'model-invocations.json'));
   for (const resource of config.resources) if (resource.transport.type === 'local') workers.setHealth(resource.id, 'healthy');

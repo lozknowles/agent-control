@@ -138,6 +138,10 @@ Provider adapters emit a versioned model-invocation observation. Provider usage 
 
 Profile escalation is monotonic (`THIN -> STANDARD -> DEEP`), reason-coded and reference-preserving. It never repeats a strategy, expands policy authority or bypasses scheduler retry/review controls. The complete decision and measurement contract is in [`docs/harness-efficiency-architecture.md`](docs/harness-efficiency-architecture.md).
 
+Real-mutation qualification reuses this path rather than introducing a second scheduler or executor. A frozen task is copied into a disposable Git workspace, `HarnessDispatcher` provides a bounded structured tool loop through the existing `ToolPolicy`, and an independent verifier evaluates the resulting diff. The outcome ledger links prediction, context packet, attempts, escalations, provider usage, tool observations, patches and verifier checks. Cumulative metrics include every failed precursor attempt.
+
+This evidence is not routing authority. The production gate requires a sufficient deterministic task sample, no verified-success regression against STANDARD, bounded classified escalation, a measured cumulative-resource improvement and all existing policy/fencing checks. The first recorded mutation run fails the sample-size and resource-improvement criteria, so production applies the observational STANDARD fallback; no production profile-selection code path is enabled by the experiment.
+
 ## Routing and qualification
 
 The current line has three complementary implemented layers:

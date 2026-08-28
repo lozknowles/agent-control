@@ -16,6 +16,10 @@ Bootstrap and status reporting are deliberately fail closed. `npm run init` crea
 
 Generic Linux machines can now be registered as agentless managed nodes through an existing authorised SSH transport. Fixed discovery projects heartbeat, inventory, capabilities and protected workloads into the shared Worker Registry and dashboard/status surfaces. Typed inspection and maintenance Actions retain scheduler placement, locks, named approvals, checksummed artifacts and provenance; an active protected workload marks the node BUSY and fences disruptive or competing work. No arbitrary SSH command API is introduced.
 
+Harness efficiency is now measurable across provider token composition, startup context, cache observations, tool turns, context provenance and verifier-gated outcomes. THIN, STANDARD and DEEP profiles remain governed context/tool budgets rather than authority levels. A frozen real-mutation benchmark uses disposable Git fixtures, six typed repository operations and independent hidden verifiers to compare fixed profiles and cumulative escalation with one live model.
+
+That evidence is deliberately negative for automatic routing: THIN verified 0/12 tasks; STANDARD and DEEP each verified 2/12; adaptive THIN-to-STANDARD-to-DEEP also verified 2/12 while consuming materially more cumulative tokens. The implementation therefore ships benchmark, telemetry, prediction and production-gate infrastructure, but production routing stays observational and applies STANDARD. No monetary saving is claimed because authoritative provider pricing was unavailable.
+
 Security defaults remain conservative: localhost binding, observer-only operation without a configured token, bearer-authenticated JSON mutations, origin validation, secret redaction, no authority cookies and no direct web route for leases, scheduler internals or PTY input. Human takeover remains unconditional.
 
 This is a source release. It does not deploy Agent Control, expose a dashboard remotely, create credentials, alter production services, or weaken the 3.0.1 infrastructure-neutral boundary.

@@ -57,3 +57,24 @@ Escalation moves only forward (`THIN -> STANDARD -> DEEP`) and records a typed r
 Profiles filter context and tools but cannot expand authority. Lease, baton, ownership, approvals, tool allowlists, protected workloads, cancellation, recovery and verifier gates remain unchanged. Context graph handles are not file-read capabilities. The types contain no provider, model, host, username or repository-name conditionals.
 
 The live benchmark remains on this same path. It performs endpoint health and model-identity checks, creates a normal recipe and context packet, dispatches through the existing provider and live tool gateway, and marks ledger observations only after its independent marker verifier runs. Its report deliberately distinguishes controlled context retrieval from repository mutation and keeps automatic routing observational.
+
+## Real-mutation experiment boundary
+
+```text
+frozen task + fixture hash
+  -> disposable Git workspace
+  -> explainable profile prediction
+  -> ContextPacketBuilder
+  -> HarnessDispatcher + live ToolPolicy
+  -> bounded structured model/tool turns
+  -> candidate diff + checksummed patch evidence
+  -> independent deterministic verifier
+  -> outcome ledger (all attempts and escalations)
+  -> production-routing qualification gate
+```
+
+The six mutation tools are typed operations: bounded file read, compact search, scoped replace, scoped write, one fixed public-test command and finish. Workspace-relative allowlists, symlink/path traversal checks, payload limits, cancellation and per-attempt budgets apply before mutation. The model cannot select an arbitrary command, test process or repository path. A finish claim is necessary for a completed model turn but never substitutes for the independent verifier.
+
+Each outcome records the task prediction, starting profile, every attempt, explicit escalation reason, context and recipe identities, provider invocation IDs, token composition, reads/searches/mutations/tool calls, verifier result, patch hash and evidence IDs. An adaptive outcome sums every precursor attempt; a successful final DEEP attempt cannot hide the cost of failed THIN or STANDARD attempts.
+
+The predictor is an explainable rule layer over frozen task features, not a learned router. Its output is telemetry. Production selection remains disabled unless the versioned gate passes adequate sample size, success non-regression, bounded escalation, cumulative-resource improvement, ToolPolicy, lease/ownership, human-takeover, fallback and neutrality criteria. The recorded run fails that gate, so the architecture remains observational with STANDARD applied.

@@ -34,6 +34,11 @@ export interface RawToolHandler {
   (input: unknown, recipe: ExecutionRecipe): Promise<unknown>;
 }
 
+export interface ToolHandlerBinding {
+  toolId: string;
+  handler: RawToolHandler;
+}
+
 export interface ToolResultInterceptorContext {
   toolId: string;
   input: unknown;
@@ -92,6 +97,13 @@ export class ToolHandlerRegistry {
     for (const interceptor of this.interceptors) result = await interceptor({toolId, input, recipe, result});
     return result;
   }
+}
+
+/** Constructs the raw registry at the central dispatch boundary from typed control-owned bindings. */
+export function createToolHandlerRegistry(bindings: readonly ToolHandlerBinding[], interceptors: ToolResultInterceptor[] = []): ToolHandlerRegistry {
+  const registry = new ToolHandlerRegistry(interceptors);
+  for (const binding of bindings) registry.register(binding.toolId, binding.handler);
+  return registry;
 }
 
 export type RecipeDispatchPhase = 'BUILT' | 'DISPATCHING' | 'EXECUTED' | 'FAILED';
@@ -283,7 +295,10 @@ export class HarnessDispatcher {
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error);
       const retainedInvocationIds = invocationIdsFromError(error);
-      const invocationIds = retainedInvocationIds.length ? retainedInvocationIds : this.recordInvocations([this.fallbackObservation(recipe, invocationStartedAt, this.clock(), invokedToolIds, detail)]);
+      const retainedObservations = observationsFromError(error);
+      const invocationIds = retainedInvocationIds.length
+        ? retainedInvocationIds
+        : this.recordInvocations(retainedObservations.length ? retainedObservations : [this.fallbackObservation(recipe, invocationStartedAt, this.clock(), invokedToolIds, detail)]);
       if (error && typeof error === 'object') Object.assign(error, {efficiencyInvocationIds: invocationIds});
       this.store.save({...record, phase: 'FAILED', updatedAt: this.clock(), detail});
       throw error;
@@ -334,3 +349,4 @@ export class HarnessDispatcher {
 }
 
 function invocationIdsFromError(error: unknown): string[] { const value = error as {efficiencyInvocationIds?: unknown}; return Array.isArray(value?.efficiencyInvocationIds) ? value.efficiencyInvocationIds.filter((item): item is string => typeof item === 'string') : []; }
+function observationsFromError(error: unknown): ModelInvocationObservation[] { const value = error as {efficiencyObservations?: unknown}; return Array.isArray(value?.efficiencyObservations) ? value.efficiencyObservations.filter((item): item is ModelInvocationObservation => Boolean(item && typeof item === 'object' && (item as {schema?: unknown}).schema === 'agent-control.model-invocation/v1')) : []; }

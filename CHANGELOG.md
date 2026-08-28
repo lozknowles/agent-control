@@ -9,6 +9,8 @@
 - A provenance-preserving `ContextPacketBuilder`, neutral `ContextGraph` interface with an in-memory adapter, verifier-gated cost-per-verified-outcome aggregation and dashboard/API efficiency diagnostics.
 - A frozen 20-job same-model-identity benchmark framework plus Markdown/JSON efficiency reports. The deterministic run is explicitly not live model, billing, cache or latency evidence and cannot production-qualify automatic routing.
 - A controlled live same-model harness benchmark with explicit experiment-only profile selection, endpoint/model qualification, typed submission through the existing tool-policy gateway, verifier-gated outcomes, provider token/cache/latency measurement and Markdown/JSON evidence. It cannot be enabled by production configuration and does not treat context retrieval as repository-mutation success.
+- A frozen 12-task real repository-mutation suite covering bounded edits through architecture-level changes, with disposable Git workspaces, scoped typed tools, compact repository search, hidden deterministic verifiers, mutation-tested test-addition acceptance, patch evidence and machine-readable provenance.
+- EXPERIMENT-only THIN, STANDARD, DEEP and cumulative THIN-to-STANDARD-to-DEEP mutation strategies, an explainable profile predictor, explicit classified escalation reasons and a production-routing qualification gate. The recorded live run leaves automatic routing disabled: adaptive execution matched STANDARD's 2/12 verified outcomes but used materially more cumulative tokens.
 - A provider-neutral token-aware command-result layer at the existing live ToolPolicy gateway, with authoritative result artifacts, explicit completeness states, scoped expiring handles, deterministic token estimates, provenance and context-budget-aware initial views.
 - Typed read-only ripgrep search and expansion tools supporting summary, file/line index, selected captured matches/files/ranges/context and exact full-result recovery without an unrestricted shell or handle-based filesystem reads.
 - A generic oversized-stdout head/tail fallback, API/dashboard context-token telemetry, configurable thresholds and a deterministic 240-file semantic-recovery benchmark.
@@ -49,6 +51,7 @@
 - Routing and verification projections are first-class lane state and survive persistence/reload.
 - The full test gate is serialised to prevent persistence-focused tests from contaminating one another.
 - Manual, scheduled and future trigger adapters now converge on the same `JobRuntime.createRun` path through `AgentControlService`.
+- The harmless Job qualification now constructs the complete current manifest/action catalog through the production bootstrap, preventing newer typed Action manifests from silently drifting beyond the release smoke.
 
 ### Security and authority
 
