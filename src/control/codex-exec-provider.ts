@@ -41,6 +41,7 @@ export interface CodexExecProviderOptions {
   runtime?: Record<string, string | number | boolean>;
   qualificationEvidence: string[];
   health: 'healthy' | 'degraded' | 'offline';
+  performance?: HarnessCandidate['route']['performance'];
   timeoutMs?: number;
   command?: string;
   authProbe?: (command: string, cwd: string, timeoutMs: number) => Promise<CodexChatGptAuth>;
@@ -74,7 +75,7 @@ export class CodexExecProviderFactory {
         qualificationReason: `qualified:${this.options.qualificationEvidence.join(',')}`,
         capabilities: [...provider.capabilities],
         pricing: {currency: 'USD', billing: 'included', inputPerMillionTokens: 0, outputPerMillionTokens: 0, fixedPerRequest: 0, effectiveFrom: '2026-08-24', source: 'ChatGPT plan allowance'},
-        performance: {startupLatencyMs: 1_000, inputTokensPerSecond: 50, outputTokensPerSecond: 25, historicalSuccessRate: .8, expectedQuality: .8, confidence: .7, contextLimitTokens: 32768, source: 'configured', sampleSize: 1},
+        performance: this.options.performance ?? {startupLatencyMs: 1_000, inputTokensPerSecond: 50, outputTokensPerSecond: 25, historicalSuccessRate: .8, expectedQuality: .8, confidence: .7, contextLimitTokens: 32768, source: 'configured', sampleSize: 1},
       },
       workerCapabilities: [...this.options.workerCapabilities],
       modelCapabilities: [...this.options.modelCapabilities],

@@ -65,6 +65,7 @@ const strategies = selectedStrategies(process.env.AGENT_CONTROL_HARNESS_MUTATION
 const resume = process.env.AGENT_CONTROL_HARNESS_MUTATION_RESUME === 'true';
 const maximumContextTokens = optionalInteger('AGENT_CONTROL_HARNESS_MUTATION_CONTEXT_TOKENS', 1_024, 1_000_000) ?? 48_000;
 const minimumCandidateConfidence = optionalNumber('AGENT_CONTROL_HARNESS_MUTATION_MINIMUM_CONFIDENCE', 0, 1) ?? .8;
+const measuredProviderInputTokensPerSecond = optionalNumber('AGENT_CONTROL_HARNESS_MUTATION_INPUT_TOKENS_PER_SECOND', .1, 1_000_000);
 const configuredMaximumOutputTokens = boundedModelParameter(suite.modelParameters.maximumOutputTokens, 'maximum_output_tokens', 64, 4_096);
 const requestedMaximumOutputTokens = optionalInteger('AGENT_CONTROL_HARNESS_MUTATION_OUTPUT_TOKENS', 64, 4_096);
 if (requestedMaximumOutputTokens !== undefined && requestedMaximumOutputTokens !== configuredMaximumOutputTokens) throw new Error('mutation_benchmark_output_tokens_mismatch');
@@ -97,6 +98,7 @@ const codexProviderFactory = providerMode === 'codex-chatgpt-plan' ? new CodexEx
   workerId, modelId, cwd: root,
   workerCapabilities: ['model.execute', 'repository.mutation.typed', 'repository.verify.public'], modelCapabilities: ['structured-output', 'tool-request'],
   availableToolIds: [MUTATION_TOOL_IDS.edit], qualificationEvidence: ['official-codex-exec-contract', 'chatgpt-auth-probed-per-invocation', 'typed-edit-only'], health: 'healthy', timeoutMs: 300_000,
+  performance: measuredProviderInputTokensPerSecond === undefined ? undefined : {startupLatencyMs: 1_000, inputTokensPerSecond: measuredProviderInputTokensPerSecond, outputTokensPerSecond: 25, historicalSuccessRate: .8, expectedQuality: .8, confidence: .7, contextLimitTokens: 32_768, source: 'measured', sampleSize: 4},
 }) : null;
 const responseFormat = suite.modelParameters.responseFormat === 'json_schema' ? 'json_schema' : 'json_object';
 const seed = deterministicSeed(suite.modelParameters.seed);

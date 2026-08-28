@@ -29,6 +29,12 @@ test('Codex usage retains nested cache and reasoning details for normalisation',
   assert.equal(result.invocations?.[0].usage.reasoningTokens, 8);
 });
 
+test('measured provider performance can replace conservative configured routing estimates', () => {
+  const performance = {startupLatencyMs: 500, inputTokensPerSecond: 500, outputTokensPerSecond: 40, historicalSuccessRate: .9, expectedQuality: .9, confidence: .8, contextLimitTokens: 64_000, source: 'measured' as const, sampleSize: 20};
+  assert.deepEqual(factory({performance}).candidate().route.performance, performance);
+  assert.equal(factory().candidate().route.performance.source, 'configured');
+});
+
 test('Codex fallback fails closed for missing ChatGPT auth and opaque file changes', async () => {
   let invoked = false;
   const noAuth = factory({authProbe: async () => { throw new Error('codex_chatgpt_auth_required'); }});
