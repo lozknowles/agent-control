@@ -3,7 +3,7 @@
   "suiteId": "agent-control-real-mutation-v1",
   "frozenAt": "2026-08-28T00:00:00.000Z",
   "fixturePath": "benchmarks/harness-mutation-fixture",
-  "fixtureSha256": "43190b683d800d0be9445bde49f983451777c92b55422bf29ceaea7e1297f70a",
+  "fixtureSha256": "628e659cb1f1151b50c38319d0747857b030514235bcaf02d823353a696635a1",
   "startingRevision": "fixture-content-sha256",
   "modelParameters": {
     "temperature": 0,

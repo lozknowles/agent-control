@@ -8,6 +8,7 @@ import {
   HarnessEscalationController,
   HarnessProfileRouter,
   MemoryHarnessEfficiencyLedger,
+  type ContextPacketSource,
   type HarnessProfileName,
   type ModelInvocationObservation,
 } from '../src/control/harness-efficiency.js';
@@ -37,11 +38,14 @@ import {verifyMutationWorkspace} from '../src/control/harness-mutation-verifier.
 import {MUTATION_TOOL_DEFINITIONS, MUTATION_TOOL_IDS, MUTATION_TOOL_SCHEMAS, MutationWorkspace, fixtureContentSha256} from '../src/control/harness-mutation-workspace.js';
 import {StructuredChatLoopProvider} from '../src/control/structured-chat-loop-provider.js';
 import {StructuredChatProviderFactory} from '../src/control/structured-chat-provider.js';
+import {CodexExecProviderFactory} from '../src/control/codex-exec-provider.js';
 
-const baseUrl = required('AGENT_CONTROL_HARNESS_MUTATION_BASE_URL').replace(/\/$/, '');
+const providerMode = process.env.AGENT_CONTROL_HARNESS_MUTATION_PROVIDER ?? 'structured-chat';
+if (!['structured-chat', 'codex-chatgpt-plan'].includes(providerMode)) throw new Error('mutation_benchmark_provider_invalid');
+const baseUrl = providerMode === 'structured-chat' ? required('AGENT_CONTROL_HARNESS_MUTATION_BASE_URL').replace(/\/$/, '') : null;
 const modelId = required('AGENT_CONTROL_HARNESS_MUTATION_MODEL');
-const endpoint = new URL(baseUrl);
-const loopback = ['127.0.0.1', 'localhost', '::1'].includes(endpoint.hostname);
+const endpoint = baseUrl ? new URL(baseUrl) : null;
+const loopback = endpoint ? ['127.0.0.1', 'localhost', '::1'].includes(endpoint.hostname) : true;
 if (!loopback && process.env.AGENT_CONTROL_HARNESS_MUTATION_ALLOW_REMOTE !== 'true') throw new Error('mutation_benchmark_endpoint_must_be_loopback_or_explicitly_approved');
 const root = process.cwd();
 const suiteFile = path.resolve(process.env.AGENT_CONTROL_HARNESS_MUTATION_SUITE || path.join(root, 'benchmarks', 'harness-mutation-jobs.json'));
@@ -60,31 +64,43 @@ const defaultStrategies: MutationStrategy[] = ['THIN_ONLY', 'STANDARD_ONLY', 'DE
 const strategies = selectedStrategies(process.env.AGENT_CONTROL_HARNESS_MUTATION_STRATEGIES, defaultStrategies);
 const resume = process.env.AGENT_CONTROL_HARNESS_MUTATION_RESUME === 'true';
 const maximumContextTokens = optionalInteger('AGENT_CONTROL_HARNESS_MUTATION_CONTEXT_TOKENS', 1_024, 1_000_000) ?? 48_000;
+const minimumCandidateConfidence = optionalNumber('AGENT_CONTROL_HARNESS_MUTATION_MINIMUM_CONFIDENCE', 0, 1) ?? .8;
 const configuredMaximumOutputTokens = boundedModelParameter(suite.modelParameters.maximumOutputTokens, 'maximum_output_tokens', 64, 4_096);
 const requestedMaximumOutputTokens = optionalInteger('AGENT_CONTROL_HARNESS_MUTATION_OUTPUT_TOKENS', 64, 4_096);
 if (requestedMaximumOutputTokens !== undefined && requestedMaximumOutputTokens !== configuredMaximumOutputTokens) throw new Error('mutation_benchmark_output_tokens_mismatch');
 const maximumOutputTokens = configuredMaximumOutputTokens;
 const bearerToken = process.env.AGENT_CONTROL_HARNESS_MUTATION_BEARER_TOKEN;
 
-await requireHealthyEndpoint();
-const modelsResponse = await fetch(`${baseUrl}/models`, {headers: authorizationHeaders(), signal: AbortSignal.timeout(10_000)});
-const modelsBody = await modelsResponse.json() as {data?: Array<{id?: string}>};
-if (!modelsResponse.ok) throw new Error(`mutation_model_discovery_failed:${modelsResponse.status}`);
-if (!modelsBody.data?.some(model => model.id === modelId)) throw new Error('mutation_model_identity_mismatch');
-const modelListSha256 = createHash('sha256').update(JSON.stringify(modelsBody)).digest('hex');
+let modelListSha256: string;
+if (providerMode === 'structured-chat') {
+  await requireHealthyEndpoint();
+  const modelsResponse = await fetch(`${baseUrl}/models`, {headers: authorizationHeaders(), signal: AbortSignal.timeout(10_000)});
+  const modelsBody = await modelsResponse.json() as {data?: Array<{id?: string}>};
+  if (!modelsResponse.ok) throw new Error(`mutation_model_discovery_failed:${modelsResponse.status}`);
+  if (!modelsBody.data?.some(model => model.id === modelId)) throw new Error('mutation_model_identity_mismatch');
+  modelListSha256 = createHash('sha256').update(JSON.stringify(modelsBody)).digest('hex');
+} else {
+  modelListSha256 = createHash('sha256').update(JSON.stringify({providerMode, modelId, auth: 'chatgpt-status-probed-per-invocation'})).digest('hex');
+}
 
-const providerId = 'governed-mutation-openai-compatible';
+const providerId = providerMode === 'structured-chat' ? 'governed-mutation-openai-compatible' : 'governed-mutation-codex-chatgpt-plan';
 const workerId = 'disposable-mutation-worker';
-const providerFactory = new StructuredChatProviderFactory({
+const structuredProviderFactory = providerMode === 'structured-chat' ? new StructuredChatProviderFactory({
   provider: {id: providerId, name: 'Governed mutation benchmark provider', kind: 'local', baseUrl, requiresAuth: Boolean(bearerToken), parallelism: 1, costClass: 'included', capabilities: ['structured-output', 'tool-request']},
   workerId, modelId,
   workerCapabilities: ['model.execute', 'repository.mutation.typed', 'repository.verify.public'],
   modelCapabilities: ['structured-output', 'tool-request'], availableToolIds: MUTATION_TOOL_DEFINITIONS.map(tool => tool.id),
   qualificationEvidence: [`models-http-${modelsResponse.status}`, `models-sha256-${modelListSha256}`], health: 'healthy',
-});
+}) : null;
+const codexProviderFactory = providerMode === 'codex-chatgpt-plan' ? new CodexExecProviderFactory({
+  provider: {id: providerId, name: 'Governed mutation benchmark CLI provider', kind: 'cli', requiresAuth: true, parallelism: 1, costClass: 'included', capabilities: ['structured-output', 'tool-request']},
+  workerId, modelId, cwd: root,
+  workerCapabilities: ['model.execute', 'repository.mutation.typed', 'repository.verify.public'], modelCapabilities: ['structured-output', 'tool-request'],
+  availableToolIds: [MUTATION_TOOL_IDS.edit], qualificationEvidence: ['official-codex-exec-contract', 'chatgpt-auth-probed-per-invocation', 'typed-edit-only'], health: 'healthy', timeoutMs: 300_000,
+}) : null;
 const responseFormat = suite.modelParameters.responseFormat === 'json_schema' ? 'json_schema' : 'json_object';
 const seed = deterministicSeed(suite.modelParameters.seed);
-const loop = new StructuredChatLoopProvider({providerId, modelId, baseUrl, toolSchemas: MUTATION_TOOL_SCHEMAS, finishToolId: MUTATION_TOOL_IDS.finish, maximumOutputTokens, responseFormat, seed, authorization: () => bearerToken, executionStrategy: 'real-repository-mutation.bounded-json-tools'});
+const loop = baseUrl ? new StructuredChatLoopProvider({providerId, modelId, baseUrl, toolSchemas: MUTATION_TOOL_SCHEMAS, finishToolId: MUTATION_TOOL_IDS.finish, maximumOutputTokens, responseFormat, seed, authorization: () => bearerToken, executionStrategy: 'real-repository-mutation.bounded-json-tools'}) : null;
 const toolPolicy = new ToolPolicy(MUTATION_TOOL_DEFINITIONS);
 const profileRouter = new HarnessProfileRouter({mode: 'EXPERIMENT', minimumVerifiedRuns: 20, minimumSuccessRate: .95, minimumSameModelControlledRuns: 20});
 const harness = new AdaptiveHarness(new SkillCatalog(), toolPolicy, undefined, profileRouter);
@@ -158,7 +174,7 @@ async function runAttempt(task: MutationBenchmarkTask, strategy: MutationStrateg
   const prediction = predictMutationContextProfile(task);
   const availableContextTokens = Math.min(maximumContextTokens, Math.max(1_024, Math.floor(task.tokenBudget * .7)));
   const signals = {taskId: task.id, complexity: complexity(task), risk: task.features.risk, knownExactTargets: task.features.knownExactTargets, estimatedFiles: task.features.estimatedFiles, deterministicVerifier: true, ambiguity: task.features.ambiguity, architectural: task.features.architecturalTerms, requestedProfile: profile};
-  const baseCandidate = providerFactory.candidate();
+  const baseCandidate = (structuredProviderFactory ?? codexProviderFactory)!.candidate();
   const startedAt = new Date().toISOString(), started = performance.now();
   workspace.resetCounters();
   let recipeId: string | null = null, invocationIds: string[] = [], executionError: string | null = null, executionEvidence: string[] = [];
@@ -177,19 +193,23 @@ async function runAttempt(task: MutationBenchmarkTask, strategy: MutationStrateg
     packet.sourceIds.forEach(id => contextSourceIds.add(id));
     packet.omitted.forEach(item => omittedContextSourceIds.add(item.id));
     const phaseId = repairPasses === 0 ? attemptId : `${attemptId}:verifier-repair-${repairPasses}`;
+    const requiredTools = providerMode === 'codex-chatgpt-plan' ? [MUTATION_TOOL_IDS.edit] : MUTATION_TOOL_DEFINITIONS.map(tool => tool.id);
     const request: RecipeRequest = {
       taskId: phaseId, jobId, runId: phaseId, taskType: task.taskClass,
-      requiredCapabilities: ['model.execute', 'structured-output', 'tool-request', 'repository.mutation.typed'], requiredTools: MUTATION_TOOL_DEFINITIONS.map(tool => tool.id), approvedRisks: ['read', 'write'],
+      requiredCapabilities: ['model.execute', 'structured-output', 'tool-request', 'repository.mutation.typed'], requiredTools, approvedRisks: ['read', 'write'],
       intent: 'ECONOMY', inputTokens: packet.estimatedTokens, outputTokens: maximumOutputTokens, maximumLatencyMs: remainingLatencyMs,
       context: {tier: {THIN: 0, STANDARD: 1, DEEP: 2}[profile], sourceIds: packet.sourceIds, evidenceIds: packet.provenanceIds, estimatedTokens: packet.estimatedTokens, packetId: packet.id, omittedSourceIds: packet.omitted.map(item => item.id), provenanceIds: packet.provenanceIds},
       contextPacket: packet, contextStrategyId: `mutation-${profile.toLowerCase()}-v1`, authority,
       verification: {requiredEvidence: [`hidden_verifier:${task.verifierId}`, 'public-tests', 'git-diff-check'], requireIndependentCheck: true},
-      escalation: {minimumConfidence: .8, maximumAttempts: 1, onFailure: 'review'}, harnessRouting: signals,
+      escalation: {minimumConfidence: minimumCandidateConfidence, maximumAttempts: 1, onFailure: 'review'}, harnessRouting: signals,
     };
     const candidate: HarnessCandidate = {...baseCandidate, supportedHarnessProfiles: ['THIN', 'STANDARD', 'DEEP'], runtime: {...baseCandidate.runtime, executionStrategy: repairPasses === 0 ? 'real-repository-mutation.bounded-json-tools' : 'real-repository-mutation.verifier-guided-repair', maximumProcessedTokens: remainingProcessedTokens ?? task.tokenBudget, remainingContextTokens: availableContextTokens}};
     let phaseInvocationIds: string[] = [], phaseExecutionError: string | null = null;
     try {
-      const result = await dispatcher.dispatch({request, candidates: [candidate], placement: {workerId, reason: repairPasses === 0 ? 'capability_match:model.execute+repository.mutation.typed' : 'bounded_verifier_repair'}}, loop.executor(renderMutationInstruction(task, profile, phaseCheckpoint), selected));
+      const executor = providerMode === 'structured-chat'
+        ? loop!.executor(renderMutationInstruction(task, profile, phaseCheckpoint), selected)
+        : codexProviderFactory!.executor(renderTypedEditInstruction(task, profile, selected, phaseCheckpoint));
+      const result = await dispatcher.dispatch({request, candidates: [candidate], placement: {workerId, reason: repairPasses === 0 ? 'capability_match:model.execute+repository.mutation.typed' : 'bounded_verifier_repair'}}, executor);
       recipeId = result.recipe.id; phaseInvocationIds = result.invocationIds; executionEvidence.push(...(result.execution.evidence ?? [])); phaseExecutionError = result.execution.error ?? null;
     } catch (error) {
       phaseExecutionError = boundedError(error);
@@ -248,6 +268,11 @@ function qualifySafetyBoundaries() {
   return {toolPolicy: allowed.allowed && !human.allowed, staleLease: !staleLease.allowed && staleLease.reason === 'stale_lease_generation', staleOwnership: !staleOwnership.allowed && staleOwnership.reason === 'stale_ownership_generation', humanTakeover: !human.allowed && human.reason === 'human_owns_execution', fallback: fallback.appliedProfile === 'STANDARD', neutrality};
 }
 
+function renderTypedEditInstruction(task: MutationBenchmarkTask, profile: HarnessProfileName, sources: ContextPacketSource[], checkpoint?: MutationCheckpointContext) {
+  const evidence = sources.map(source => `--- ${source.id} (${source.kind}) ---\n${source.content ?? `[estimated tokens: ${source.estimatedTokens ?? 0}]`}`).join('\n\n');
+  return `You are the qualified reasoning component inside a governed real-repository mutation attempt. Use only the supplied evidence. Return exactly one Agent Control tool request for mutation.edit. The input_json string must encode {"operations":[...]}. Each operation is either {"type":"replace","path":"relative/path","oldText":"exact existing text","newText":"replacement","expectedOccurrences":1} or {"type":"write","path":"relative/path","content":"complete file content"}. Use forward-slash paths, edit only allowlisted files, make the smallest complete implementation, and never include credentials, machine identities, addresses, provider/model conditionals or unrelated changes. Do not claim verification and do not request shell, file-write, APDU or any other tool. Profile: ${profile}. Task: ${task.id}. ${checkpoint ? `This is the single verifier-guided repair pass; correct the reported failures without discarding valid prior work.` : 'This is the initial mutation pass.'}\n\n${evidence}`;
+}
+
 function readPartial(file: string, suiteId: string, model: string, provider: string): MutationOutcomeResult[] {
   if (!fs.existsSync(file)) return [];
   const value = JSON.parse(fs.readFileSync(file, 'utf8')) as {schema?: string; suiteId?: string; model?: string; provider?: string; outcomes?: MutationOutcomeResult[]};
@@ -297,12 +322,13 @@ function selectedTasks(all: MutationBenchmarkTask[], limit: number | undefined, 
   return all.filter(task => selected.has(task.id));
 }
 function complexity(task: MutationBenchmarkTask) { return Math.min(1, task.features.estimatedFiles / 8 * .35 + task.features.referencedModules / 8 * .25 + task.features.ambiguity * .25 + (task.features.architecturalTerms ? .15 : 0)); }
-async function requireHealthyEndpoint() { const response = await fetch(new URL('/health', endpoint), {headers: authorizationHeaders(), signal: AbortSignal.timeout(10_000)}); if (!response.ok) throw new Error(`mutation_benchmark_endpoint_unhealthy:${response.status}`); }
+async function requireHealthyEndpoint() { if (!endpoint) return; const response = await fetch(new URL('/health', endpoint), {headers: authorizationHeaders(), signal: AbortSignal.timeout(10_000)}); if (!response.ok) throw new Error(`mutation_benchmark_endpoint_unhealthy:${response.status}`); }
 function authorizationHeaders(): HeadersInit { return bearerToken ? {authorization: `Bearer ${bearerToken}`} : {}; }
 function required(name: string) { const value = process.env[name]; if (!value) throw new Error(`missing_${name.toLowerCase()}`); return value; }
 function deterministicSeed(value: unknown) { if (!Number.isSafeInteger(value) || Number(value) < 0 || Number(value) > 2_147_483_647) throw new Error('mutation_benchmark_seed_invalid'); return Number(value); }
 function boundedModelParameter(value: unknown, name: string, minimum: number, maximum: number) { if (!Number.isSafeInteger(value) || Number(value) < minimum || Number(value) > maximum) throw new Error(`mutation_benchmark_${name}_invalid`); return Number(value); }
 function optionalInteger(name: string, minimum: number, maximum: number) { const raw = process.env[name]; if (raw === undefined) return undefined; const value = Number(raw); if (!Number.isSafeInteger(value) || value < minimum || value > maximum) throw new Error(`invalid_${name.toLowerCase()}`); return value; }
+function optionalNumber(name: string, minimum: number, maximum: number) { const raw = process.env[name]; if (raw === undefined) return undefined; const value = Number(raw); if (!Number.isFinite(value) || value < minimum || value > maximum) throw new Error(`invalid_${name.toLowerCase()}`); return value; }
 function assertProjectOutput(value: string) { const relative = path.relative(root, value); if (relative.startsWith('..') || path.isAbsolute(relative)) throw new Error('mutation_output_outside_project'); }
 function writePatchEvidence(file: string, patch: string | Buffer, expectedSha256: string) {
   const content = Buffer.isBuffer(patch) ? patch : Buffer.from(patch, 'utf8');

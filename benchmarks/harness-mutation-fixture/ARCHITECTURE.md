@@ -6,7 +6,7 @@ The scheduler owns placement, leases and ownership generations. Tool authorizati
 
 ## Context routing
 
-Context availability and execution authority are separate dimensions. OBSERVE records a recommendation but applies STANDARD. EXPERIMENT may apply an explicit requested profile to a controlled run. ENFORCE may apply a recommendation only when evidence for that exact strategy is production-qualified; otherwise it applies STANDARD. Escalation is bounded and moves only THIN to STANDARD to DEEP for an explicit classified reason. It never retries an already attempted profile.
+Context availability and execution authority are separate dimensions. OBSERVE records a recommendation but applies STANDARD. EXPERIMENT may apply an explicit requested profile to a controlled run. ENFORCE may apply a recommendation only when evidence for that exact strategy is production-qualified; otherwise it applies STANDARD. Escalation is bounded and moves only THIN to STANDARD to DEEP for an explicit classified reason. It never retries an already attempted profile. The classified reasons are `missing_context`, `test_failure`, `ambiguous_repository_state`, `unexpected_dependency`, `model_uncertainty`, `verifier_rejection`, `tool_limitation`, and `execution_failure`.
 
 ## Provenance and telemetry
 
