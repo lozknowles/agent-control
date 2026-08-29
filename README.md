@@ -1,10 +1,16 @@
-# Agent Control 3.1.0
+# Agent Control 3.2.0
 
 Agent Control is an infrastructure-neutral, policy-controlled adaptive harness for durable work by heterogeneous agents and models. Its executable harness core composes a task-appropriate worker, provider/model route, prompt profile, minimum qualified skills, restricted tools, context strategy, runtime settings, authority snapshot, resource limits and verification/escalation policy into a fingerprinted execution recipe.
 
 A lane owns its task; recipes, agents, models, skills, tools, execution providers and operator interfaces are replaceable and remain below the control boundary. Agent Control remains authoritative for scheduling, priorities, leases, ownership, unconditional human takeover, batons, handoffs, clones, shared tasks, provider qualification, routing, approvals, recovery validation, verification and conflict policy. In 3.1.0, ordinary `WorkExecutor` agent work can no longer accept a raw handler: it builds and records an `ExecutionRecipe`, dispatches it through `AdaptiveHarness`, and exposes only a live-authority `ToolPolicy` gateway.
 
 Orca is available behind a narrow execution-provider contract. Orca may execute processes, terminals and worktrees, but it does not receive Agent Control policy authority.
+
+## Persistent Teammates
+
+Agent Control 3.2 adds durable named teammates without turning names, roles or remembered context into authority. Profiles retain bounded instructions, preferred semantic capabilities, verifier-backed working-context summaries and explicitly saved or verified routines. Controlled conversations permit agent-to-agent delegation, while a Coordinator can assign work to two or more specialists and synthesize only their verifier-passed results.
+
+Every specialist assignment and coordinator synthesis remains an ordinary Agent Control Job. Worker placement, provider/model selection, THIN/STANDARD/DEEP context routing, tool policy, token/cost telemetry, typed artifacts, verification and escalation all remain underneath the teammate layer. Initialize the five example profiles with `npm run init:teammates` and run the non-production two-specialist proof with `npm run demo:teammates`. See [`docs/persistent-teammates.md`](docs/persistent-teammates.md).
 
 ## Requirements
 

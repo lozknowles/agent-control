@@ -1,5 +1,21 @@
 # Changelog
 
+## [3.2.0] — 2026-08-29
+
+### Added
+
+- Durable provider/model-neutral teammate profiles with roles, bounded instructions, preferred capability requirements, verifier-backed retained working context and reusable operator-saved or verified-run routines.
+- Explicit-participant teammate conversations, independently governed specialist delegations and a Coordinator that synthesizes only after at least two specialist Runs verify.
+- `JobRuntimeTeammateExecutor`, which represents every specialist assignment and coordinator synthesis as an ordinary capability-placed Job with typed artifacts, Run provenance, linked model-invocation IDs, normalized token/cost telemetry and existing verifier/final-result marking.
+- Initial Ask Collingham Engineer, Infrastructure Operator, Independent Auditor, Researcher and Coordinator profiles plus safe `npm run init:teammates` state initialization.
+- A deterministic `npm run demo:teammates` proof that delegates to Researcher and Independent Auditor and returns a separately verified Coordinator synthesis across three real Runs.
+
+### Authority and compatibility
+
+- Teammate capability preferences are requirements, never grants; production execution requires a registered model-backed Agent Action below the existing HarnessDispatcher, AdaptiveHarness, ToolPolicy, lease/ownership and verification boundaries.
+- Any non-PASS specialist or synthesis result stops the conversation at `REVIEW_REQUIRED`; teammates cannot self-register Actions, choose providers, grant tools, approve risks, verify outputs or accept results.
+- Existing providers, lanes, Jobs, schedules, persisted workspace state, and observational THIN/STANDARD/DEEP routing remain unchanged.
+
 ## [3.1.0] — 2026-08-28
 
 ### Added

@@ -1,6 +1,6 @@
 {
   "name": "agent-control",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "private": true,
   "type": "module",
   "description": "Infrastructure-neutral policy control plane and adaptive agent harness",
@@ -12,6 +12,7 @@
     "web": "tsx src/web.ts",
     "dev": "tsx watch src/index.ts",
     "init": "node scripts/init-config.mjs",
+    "init:teammates": "node --import tsx scripts/init-teammates.ts",
     "test": "node --import tsx --test --test-concurrency=1 src/*.test.ts src/control/*.test.ts src/ui/*.test.ts scripts/*.test.mjs",
     "typecheck": "tsc --noEmit",
     "check:bootstrap": "node --check scripts/agent-control.mjs scripts/status-client.mjs scripts/control-plane.mjs scripts/config.mjs scripts/qualify-all.mjs && bash -n android/resource-agent.sh android/start-node.sh android/install-boot.sh android/termux-boot-agent-control.sh scripts/qualify-remote.sh scripts/managed-node-probe.sh scripts/managed-node-action.sh",
@@ -28,6 +29,7 @@
     "down": "node scripts/control-plane.mjs down",
     "provision:android": "node --import tsx scripts/provision-android.mjs",
     "demo:context": "node --import tsx scripts/demo-context-consensus.mjs",
+    "demo:teammates": "node --import tsx scripts/demo-persistent-teammates.ts",
     "qualify:jobs": "node --import tsx scripts/qualify-jobs.ts",
     "qualify:managed-node": "node --import tsx scripts/qualify-managed-node.ts",
     "qualify:harness-real": "node --import tsx scripts/qualify-real-harness-job.ts",

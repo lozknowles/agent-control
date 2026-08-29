@@ -1,8 +1,17 @@
 {
   "schema": "agent-control.implementation-status/v1",
-  "release": "3.1.0",
-  "updated": "2026-08-28",
+  "release": "3.2.0",
+  "updated": "2026-08-29",
   "capabilities": [
+    {
+      "id": "teammates.persistent-coordination",
+      "title": "Persistent Teammates and verified coordination",
+      "status": "QUALIFIED",
+      "summary": "Named teammates retain bounded instructions, evidence-backed context and routines; controlled conversations delegate specialist and synthesis work through ordinary capability-placed Jobs with telemetry and verifier gates.",
+      "sources": ["src/control/teammates.ts", "src/control/teammates-demo.ts", "config/teammates.initial.json", "scripts/init-teammates.ts", "scripts/demo-persistent-teammates.ts"],
+      "tests": ["src/control/teammates.test.ts"],
+      "evidence": ["docs/evidence/persistent-teammates-3.2.0-verification.md"]
+    },
     {
       "id": "bootstrap.safe-empty-config",
       "title": "Safe empty-configuration bootstrap",
