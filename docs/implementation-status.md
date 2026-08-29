@@ -1,11 +1,12 @@
 # Implementation status
 
-Release boundary: **3.1.0**. Registry updated: **2026-08-28**.
+Release boundary: **3.2.0**. Registry updated: **2026-08-29**.
 
 This document is generated from `config/implementation-status.json`. Update the registry and run `npm run status:implementation -- --write`; do not edit this projection directly. `IMPLEMENTED` means executable source and focused tests exist. `QUALIFIED` additionally requires recorded real evidence. `PARTIAL`, `PLANNED` and `NOT_IMPLEMENTED` remain explicit gaps.
 
 | Capability | Status | Executable truth | Remaining boundary |
 | --- | --- | --- | --- |
+| Persistent Teammates and verified coordination (`teammates.persistent-coordination`) | **QUALIFIED** | Named teammates retain bounded instructions, evidence-backed context and routines; controlled conversations delegate specialist and synthesis work through ordinary capability-placed Jobs with telemetry and verifier gates. | None recorded. |
 | Safe empty-configuration bootstrap (`bootstrap.safe-empty-config`) | **IMPLEMENTED** | An idempotent initializer creates a schema-valid empty configuration without discovering infrastructure or overwriting operator state. | None recorded. |
 | Universal authoritative status command (`status.universal-authoritative-command`) | **IMPLEMENTED** | The same agent-control status command reads the versioned AgentControlService projection used by the web dashboard, locally or through one fixed read-only localhost request over SSH. | None recorded. |
 | Generic managed Linux nodes (`nodes.generic-linux-management`) | **QUALIFIED** | Authorised Linux/SSH resources receive fixed read-only discovery, heartbeat and workload projection plus typed governed inspection and maintenance Actions without an arbitrary remote-command path. | None recorded. |
@@ -25,6 +26,12 @@ This document is generated from `config/implementation-status.json`. Update the 
 | Automatic governed recipe learning (`recipes.automatic-learning`) | **PLANNED** | Successive halving exists, but winners are not automatically promoted into a durable governed recipe catalog. | Persist qualification evidence and require policy approval before learned recipes influence routing. |
 
 ## Evidence map
+
+### Persistent Teammates and verified coordination
+
+- Source: [`src/control/teammates.ts`](../src/control/teammates.ts), [`src/control/teammates-demo.ts`](../src/control/teammates-demo.ts), [`config/teammates.initial.json`](../config/teammates.initial.json), [`scripts/init-teammates.ts`](../scripts/init-teammates.ts), [`scripts/demo-persistent-teammates.ts`](../scripts/demo-persistent-teammates.ts)
+- Tests: [`src/control/teammates.test.ts`](../src/control/teammates.test.ts)
+- Qualification evidence: [`docs/evidence/persistent-teammates-3.2.0-verification.md`](../docs/evidence/persistent-teammates-3.2.0-verification.md)
 
 ### Safe empty-configuration bootstrap
 
