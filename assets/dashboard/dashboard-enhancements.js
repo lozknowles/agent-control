@@ -1,20 +1,24 @@
-const jobState = {jobs: [], parcels: [], runs: [], queue: [], workers: [], resources: [], locks: [], artifacts: [], outputMetrics: null, efficiencyMetrics: null, invocations: [], selectedJob: null, selectedRun: null, search: ''};
+const jobState = {jobs: [], parcels: [], runs: [], queue: [], workers: [], resources: [], systems: [], locks: [], artifacts: [], outputMetrics: null, efficiencyMetrics: null, invocations: [], selectedJob: null, selectedRun: null, selectedSystem: null, search: ''};
 const terminalRunStatuses = new Set(['SUCCEEDED', 'FAILED', 'DEGRADED', 'CANCELLED', 'MISSED', 'DISCONNECTED']);
 const retryableRunStatuses = new Set(['FAILED', 'DEGRADED', 'CANCELLED', 'DISCONNECTED']);
 const baseRefresh = refresh;
 
 refresh = async () => {
   await baseRefresh();
-  const endpoints = ['/api/jobs', '/api/parcels', '/api/runs', '/api/queue', '/api/workers', '/api/resources', '/api/artifacts', '/api/command-output/metrics', '/api/efficiency', '/api/efficiency/invocations?limit=500'];
-  const [jobs, parcels, runs, queue, workers, locks, artifacts, outputMetrics, efficiencyMetrics, invocations] = await Promise.all(endpoints.map(async url => {
+  const endpoints = ['/api/jobs', '/api/parcels', '/api/runs', '/api/queue', '/api/workers', '/api/resources', '/api/systems', '/api/artifacts', '/api/command-output/metrics', '/api/efficiency', '/api/efficiency/invocations?limit=500'];
+  const [jobs, parcels, runs, queue, workers, locks, systems, artifacts, outputMetrics, efficiencyMetrics, invocations] = await Promise.all(endpoints.map(async url => {
     const response = await fetch(url);
     if (!response.ok) throw new Error(`${url} ${response.status}`);
     return response.json();
   }));
-  Object.assign(jobState, {jobs, parcels, runs, queue, workers, resources: state.snapshot?.resources || [], locks, artifacts, outputMetrics, efficiencyMetrics, invocations});
+  Object.assign(jobState, {jobs, parcels, runs, queue, workers, resources: state.snapshot?.resources || [], locks, systems, artifacts, outputMetrics, efficiencyMetrics, invocations});
   if (!jobState.selectedJob && jobs.length) jobState.selectedJob = jobs[0].metadata.id;
   if (jobState.selectedJob && !jobs.some(job => job.metadata.id === jobState.selectedJob)) jobState.selectedJob = jobs[0]?.metadata.id ?? null;
+  if (!jobState.selectedSystem && systems.length) jobState.selectedSystem = systems[0].id;
+  if (jobState.selectedSystem && !systems.some(system => system.id === jobState.selectedSystem)) jobState.selectedSystem = systems[0]?.id ?? null;
   renderJobs();
+  renderJobRunLanes();
+  renderSystems();
 };
 
 renderSystem = snapshot => {
@@ -159,12 +163,13 @@ function renderJobDetail(job) {
   const steps = (selectedRun?.steps || job.spec.steps).map(step => renderStep(step)).join('');
   const schedules = job.schedules.map(schedule => `<div class="schedule-row"><span><strong>${esc(schedule.metadata.name)}</strong><small>${esc(schedule.spec.cron)} · ${esc(schedule.spec.timezone)} · ${esc(schedule.spec.missedRunPolicy)}</small></span><span class="status-pill ${schedule.state?.enabled ? '' : 'neutral'}">${schedule.state?.enabled ? 'ENABLED' : 'DISABLED'}</span><small>Previous ${esc(timeLabel(schedule.state?.previousScheduledAt))} · Next ${esc(timeLabel(schedule.state?.nextScheduledAt))}</small></div>`).join('');
   const nextRun = job.schedules.map(schedule => schedule.state?.nextScheduledAt).filter(Boolean).sort()[0];
-  detail.innerHTML = `<div class="authority-note"><strong>3.3 authority boundary</strong><span>The dashboard requests work. Agent Control owns scheduling, policy, placement, approvals and cancellation. Model routing remains separate from worker placement.</span></div><div class="job-header"><div><span class="eyebrow">${esc(job.metadata.id)} · v${esc(job.metadata.version)}</span><h2>${esc(job.metadata.name)}</h2><p>${esc(job.metadata.description || '')}</p></div><span class="status-pill ${job.spec.enabled === false ? 'neutral' : ''}">${job.spec.enabled === false ? 'DISABLED' : 'ENABLED'}</span></div><div class="metrics"><div class="metric"><span>Next run</span><strong>${esc(timeLabel(nextRun, 'Manual / disabled'))}</strong></div><div class="metric"><span>Last run</span><strong>${esc(timeLabel(job.latestRun?.requestedAt, 'Never'))}</strong></div><div class="metric"><span>Priority</span><strong>${esc(job.spec.priority)}</strong></div><div class="metric"><span>Concurrency</span><strong>${esc(job.spec.concurrency)}</strong></div></div>${selectedRun ? renderRunEfficiency(selectedRun) : ''}<form id="run-parameters" class="data-grid">${Object.entries(job.spec.parameters || {}).map(([name, definition]) => renderParameterField(name, definition)).join('')}</form><div class="control-strip"><button class="button" id="run-job">Run now</button><button class="button secondary" id="reset-job-parameters">Reset parameters</button>${job.schedules.map(schedule => `<button class="button secondary" data-schedule-command="${schedule.state?.enabled ? 'disable' : 'enable'}" data-schedule="${esc(schedule.metadata.id)}">${schedule.state?.enabled ? 'Disable' : 'Enable'} ${esc(schedule.metadata.name)}</button>`).join('')}</div>${schedules ? `<div class="schedule-list">${schedules}</div>` : ''}<div class="job-run-heading"><div><span class="eyebrow">${selectedRun ? `Run ${esc(selectedRun.id)}` : 'Definition'}</span><h3>Steps</h3></div>${selectedRun ? `<small>${esc(selectedRun.trigger.type)} · ${esc(selectedRun.trigger.actor)} · ${esc(durationLabel(selectedRun.startedAt, selectedRun.endedAt))}</small>` : ''}</div><div class="job-steps">${steps}</div>${selectedRun ? renderRunControls(selectedRun) + renderRunEvidence(selectedRun) : ''}`;
+  const submitted = selectedRun ? `<section class="run-evidence"><div class="data-card full-width"><label>Immutable submitted parameters for ${esc(selectedRun.id)}</label>${Object.entries(selectedRun.parameters || {}).map(([name, value]) => `<p><strong>${esc(name)}</strong></p><pre>${esc(typeof value === 'string' ? value : JSON.stringify(value, null, 2))}</pre>`).join('') || '<p>No submitted parameters.</p>'}</div></section>` : '';
+  detail.innerHTML = `<div class="authority-note"><strong>3.3 authority boundary</strong><span>The dashboard requests work. Agent Control owns scheduling, policy, placement, approvals and cancellation. Model routing remains separate from worker placement.</span></div><div class="job-header"><div><span class="eyebrow">${esc(job.metadata.id)} · v${esc(job.metadata.version)}</span><h2>${esc(job.metadata.name)}</h2><p>${esc(job.metadata.description || '')}</p></div><span class="status-pill ${job.spec.enabled === false ? 'neutral' : ''}">${job.spec.enabled === false ? 'DISABLED' : 'ENABLED'}</span></div><div class="metrics"><div class="metric"><span>Next run</span><strong>${esc(timeLabel(nextRun, 'Manual / disabled'))}</strong></div><div class="metric"><span>Last run</span><strong>${esc(timeLabel(job.latestRun?.requestedAt, 'Never'))}</strong></div><div class="metric"><span>Priority</span><strong>${esc(job.spec.priority)}</strong></div><div class="metric"><span>Concurrency</span><strong>${esc(job.spec.concurrency)}</strong></div></div>${selectedRun ? renderRunEfficiency(selectedRun) : ''}${submitted}<div class="job-run-heading"><div><span class="eyebrow">New attempt</span><h3>Run parameters</h3></div><small>Edits below affect only a new run, never the selected historical result.</small></div><form id="run-parameters" class="data-grid">${Object.entries(job.spec.parameters || {}).map(([name, definition]) => renderParameterField(name, definition)).join('')}</form><div class="control-strip"><button class="button" id="run-job">Run now</button><button class="button secondary" id="reset-job-parameters">Reset parameters</button>${job.schedules.map(schedule => `<button class="button secondary" data-schedule-command="${schedule.state?.enabled ? 'disable' : 'enable'}" data-schedule="${esc(schedule.metadata.id)}">${schedule.state?.enabled ? 'Disable' : 'Enable'} ${esc(schedule.metadata.name)}</button>`).join('')}</div>${schedules ? `<div class="schedule-list">${schedules}</div>` : ''}<div class="job-run-heading"><div><span class="eyebrow">${selectedRun ? `Run ${esc(selectedRun.id)}` : 'Definition'}</span><h3>Steps</h3></div>${selectedRun ? `<small>${esc(selectedRun.trigger.type)} · ${esc(selectedRun.trigger.actor)} · ${esc(durationLabel(selectedRun.startedAt, selectedRun.endedAt))}</small>` : ''}</div><div class="job-steps">${steps}</div>${selectedRun ? renderRunControls(selectedRun) + renderRunLineage(selectedRun) + renderRunEvidence(selectedRun) : ''}`;
   if (selectedRun) detail.insertAdjacentHTML('beforeend', renderInvocationHistory(selectedRun));
   const parameterForm = document.querySelector('#run-parameters');
   window.AgentControlDashboardParameters.bind(job.metadata.id, parameterForm);
   document.querySelector('#reset-job-parameters').addEventListener('click', () => { window.AgentControlDashboardParameters.clear(job.metadata.id, parameterForm); renderJobs(); });
-  document.querySelector('#run-job').addEventListener('click', () => { const form = document.querySelector('#run-parameters'); if (!form.reportValidity()) return; let parameters; try { parameters = window.AgentControlDashboardParameters.collect(job.spec.parameters || {}, form); } catch (error) { showError(error); return; } jobCommand(`/api/jobs/${encodeURIComponent(job.metadata.id)}/run`, {parameters}).then(() => { window.AgentControlDashboardParameters.clear(job.metadata.id, form); renderJobs(); }).catch(showError); });
+  document.querySelector('#run-job').addEventListener('click', () => { const form = document.querySelector('#run-parameters'); if (!form.reportValidity()) return; let parameters; try { parameters = window.AgentControlDashboardParameters.collect(job.spec.parameters || {}, form); } catch (error) { showError(error); return; } jobCommand(`/api/jobs/${encodeURIComponent(job.metadata.id)}/run`, {parameters}).then(result => { window.AgentControlDashboardParameters.clear(job.metadata.id, form); jobState.selectedRun = result.id; renderJobs(); }).catch(showError); });
   document.querySelectorAll('[data-schedule]').forEach(button => button.addEventListener('click', () => jobCommand(`/api/schedules/${encodeURIComponent(button.dataset.schedule)}/${button.dataset.scheduleCommand}`, {}).catch(showError)));
   bindRunCommands(selectedRun);
 }
@@ -173,6 +178,7 @@ function renderParameterField(name, definition) {
   const required = definition.required ? ' required' : '', limits = `${definition.minimum === undefined ? '' : ` min="${esc(definition.minimum)}"`}${definition.maximum === undefined ? '' : ` max="${esc(definition.maximum)}"`}`;
   if (definition.type === 'boolean') return `<label class="data-card"><span>${esc(name)}</span><input type="checkbox" data-job-parameter="${esc(name)}"${definition.default ? ' checked' : ''}></label>`;
   if (definition.enum) return `<label class="data-card"><span>${esc(name)}</span><select data-job-parameter="${esc(name)}"${required}>${definition.enum.map(value => `<option value="${esc(value)}"${Object.is(value, definition.default) ? ' selected' : ''}>${esc(value)}</option>`).join('')}</select></label>`;
+  if (definition.type === 'string' && /prompt/i.test(name)) return `<label class="data-card full-width"><span>${esc(name)}</span><textarea rows="12" data-job-parameter="${esc(name)}"${required}>${esc(definition.default ?? '')}</textarea></label>`;
   const numeric = ['integer', 'number'].includes(definition.type), value = definition.default === undefined ? '' : definition.default;
   return `<label class="data-card"><span>${esc(name)}</span><input type="${numeric ? 'number' : 'text'}"${numeric ? ` step="${definition.type === 'integer' ? '1' : 'any'}"` : ''}${limits} value="${esc(value)}" data-job-parameter="${esc(name)}"${required}></label>`;
 }
@@ -198,8 +204,22 @@ function bindRunCommands(run) {
     const commandName = button.dataset.runCommand;
     if (commandName === 'cancel' && !confirm(`Cancel ${run.id}?`)) return;
     const body = commandName === 'approve' ? {policy: button.dataset.policy} : {};
-    jobCommand(`/api/runs/${encodeURIComponent(run.id)}/${commandName}`, body).catch(showError);
+    jobCommand(`/api/runs/${encodeURIComponent(run.id)}/${commandName}`, body).then(result => { if (commandName === 'retry' && result?.id) { jobState.selectedJob = result.jobId; jobState.selectedRun = result.id; renderJobs(); } }).catch(showError);
   }));
+}
+
+function renderRunLineage(run) {
+  const links = [['Replaces', run.lineage?.replacesRunId], ['Replaced by', run.lineage?.replacedByRunId], ['Retry of', run.lineage?.retryOfRunId], ['Retried by', run.lineage?.retriedByRunId]].filter(([, id]) => id);
+  return links.length ? `<section class="run-evidence"><div class="data-card full-width"><label>Replacement / retry lineage</label>${links.map(([label, id]) => `<button class="button secondary" data-run="${esc(id)}">${esc(label)} ${esc(id)}</button>`).join(' ')}</div></section>` : '';
+}
+
+function renderJobRunLanes() {
+  const list = document.querySelector('#lane-list'); if (!list) return;
+  const active = jobState.runs.filter(run => !terminalRunStatuses.has(run.status));
+  const recentTerminal = jobState.runs.filter(run => terminalRunStatuses.has(run.status) && (run.lineage?.replacedByRunId || run.lineage?.retriedByRunId)).slice(0, 8);
+  const cards = [...active, ...recentTerminal].map(run => { const invocation = jobState.invocations.filter(item => item.runId === run.id).at(-1); const phase = invocation?.phase || run.steps.find(step => !['SUCCEEDED', 'FAILED', 'TIMED_OUT', 'CANCELLED'].includes(step.status))?.status || run.status; const relation = run.lineage?.replacesRunId ? `replacement for ${run.lineage.replacesRunId}` : run.lineage?.retryOfRunId ? `retry of ${run.lineage.retryOfRunId}` : run.lineage?.replacedByRunId ? `replaced by ${run.lineage.replacedByRunId}` : run.lineage?.retriedByRunId ? `retried by ${run.lineage.retriedByRunId}` : 'original attempt'; return `<button class="lane-card job-run-lane ${runningClass(run)}" data-run="${esc(run.id)}"><span class="lane-card-top"><span><span class="dot ${esc(statusClass(run.status))}"></span> <span class="lane-name">${esc(run.jobId)}</span></span><span class="status-pill ${statusClass(run.status)}">${esc(run.status)}</span></span><span class="lane-task-compact">${esc(phase)} · ${esc(relation)}</span><span class="lane-meta"><span>${esc(run.id)}</span><span>${esc(invocation ? `${invocation.provider}/${invocation.model}` : 'provider pending')}</span></span></button>`; }).join('');
+  if (cards) list.insertAdjacentHTML('afterbegin', `<div class="eyebrow">Governed Job lanes</div>${cards}`);
+  bindRunLinks();
 }
 
 function renderRunEvidence(run) {
@@ -260,7 +280,10 @@ function renderInvocationHistory(run) {
     const cost = item.costSource === 'reported' ? `${item.currency || ''} ${item.providerReportedCost}`.trim() + ' reported' : item.costSource === 'estimated' ? `${item.currency || ''} ${item.calculatedCost}`.trim() + ' estimated' : 'cost unavailable';
     return `<tr><td><code>${esc(item.id)}</code><br><small>${esc(item.laneId)} · ${esc(item.stepId || item.taskId)}</small></td><td>${esc(item.provider)}<br><small>${esc(item.model)}</small></td><td>${esc(item.state)}<br><small>${esc(item.phase)}</small></td><td>${esc(timeLabel(item.startedAt))}<br><small>${esc(durationLabel(item.startedAt, item.completedAt))}</small></td><td>${esc(usage)}<br><small>${esc(item.usageSource)}</small></td><td>${esc(cost)}</td><td>${esc(item.outcome)}<br><small>verification ${esc(item.verifierResult)}</small></td></tr>`;
   }).join('') : '<tr><td colspan="7">No provider invocation recorded for this run.</td></tr>';
-  return `<section class="run-evidence"><div class="data-card full-width"><label>Invocation history</label><div class="audit-table-wrap"><table><thead><tr><th>Invocation / lane / step</th><th>Provider / model</th><th>State / phase</th><th>Started / duration</th><th>Usage</th><th>Cost</th><th>Outcome</th></tr></thead><tbody>${rows}</tbody></table></div></div></section>`;
+  const phases = ['QUEUED', 'DISPATCHED', 'waiting for provider', 'processing', 'verification', terminalRunStatuses.has(run.status) ? run.status : 'terminal outcome'];
+  const reached = new Set(['QUEUED', ...(run.startedAt ? ['DISPATCHED'] : []), ...values.flatMap(item => item.phase === 'complete' ? ['waiting for provider', 'processing', 'verification', 'complete'] : item.phase === 'verification' ? ['waiting for provider', 'processing', 'verification'] : item.phase === 'processing' ? ['waiting for provider', 'processing'] : item.phase === 'waiting for provider' ? ['waiting for provider'] : []), ...(terminalRunStatuses.has(run.status) ? [run.status] : [])]);
+  const lifecycle = `<div class="phase-track">${phases.map((phase, index) => `<span class="phase ${reached.has(phase) ? 'done' : ''}">${esc(phase)}</span>${index < phases.length - 1 ? '<span class="phase-arrow">→</span>' : ''}`).join('')}</div>`;
+  return `<section class="run-evidence"><div class="data-card full-width"><label>Invocation lifecycle</label>${lifecycle}<div class="audit-table-wrap"><table><thead><tr><th>Invocation / lane / step</th><th>Provider / model</th><th>State / phase</th><th>Started / duration</th><th>Usage</th><th>Cost</th><th>Outcome</th></tr></thead><tbody>${rows}</tbody></table></div></div></section>`;
 }
 
 function executionRouteSummary(step) {
@@ -286,10 +309,24 @@ function bindRunLinks() {
   }));
 }
 
+function readinessClass(value) { return value === 'AVAILABLE' ? 'available' : value === 'BUSY' || value === 'AUTH REQUIRED' ? 'waiting' : value === 'OFFLINE' || value === 'DEGRADED' ? 'error' : 'neutral'; }
+function bytes(value) { if (!Number.isFinite(value)) return '--'; const units=['B','KiB','MiB','GiB','TiB']; let size=value,index=0; while(size>=1024&&index<units.length-1){size/=1024;index++;} return `${size.toFixed(index>1?1:0)} ${units[index]}`; }
+function renderSystems() {
+  const list=document.querySelector('#systems-list'), detail=document.querySelector('#system-detail'), empty=document.querySelector('#system-detail-empty'); if(!list)return;
+  document.querySelector('#system-count').textContent=jobState.systems.length;
+  list.innerHTML=jobState.systems.length?jobState.systems.map(system=>`<button class="system-card ${system.id===jobState.selectedSystem?'active':''}" data-system="${esc(system.id)}"><span><strong>${esc(system.name)}</strong><small>${esc(system.type)} · ${esc(system.transport||'transport not reported')}</small></span><span class="status-pill ${readinessClass(system.execution)}">${esc(system.execution)}</span><span class="system-scan"><b>Reachable</b> ${esc(system.reachable)} · <b>Auth</b> ${esc(system.authentication)} · <b>Capacity</b> ${esc(system.active??'--')}/${esc(system.capacity??'--')}</span>${system.blockingReason?`<small class="system-blocker">${esc(system.blockingReason)}</small>`:''}</button>`).join(''):'<div class="compact-empty">No registered systems</div>';
+  document.querySelectorAll('[data-system]').forEach(button=>button.addEventListener('click',()=>{jobState.selectedSystem=button.dataset.system;renderSystems()}));
+  const system=jobState.systems.find(item=>item.id===jobState.selectedSystem); empty.hidden=Boolean(system); detail.hidden=!system; if(!system)return;
+  const node=system.node, storage=node?.storage||[], workloads=node?.workloads||[], invocation=system.recentInvocation;
+  detail.innerHTML=`<header class="system-detail-header"><div><span class="eyebrow">${esc(system.type)} · ${esc(system.id)}</span><h2>${esc(system.name)}</h2><p>${esc(system.blockingReason||'Agent Control currently has sufficient readiness evidence for dispatch.')}</p></div><span class="status-pill ${readinessClass(system.execution)}">${esc(system.execution)}</span></header><div class="control-strip"><button class="button" data-check-system="${esc(system.id)}" ${state.operatorAuth==='authenticated'?'':'disabled'}>Check now</button><small>Lightweight, non-destructive canonical probe</small></div><section class="system-detail-grid">${[['Registered','yes'],['Reachable',system.reachable],['Authentication',system.authentication],['Execution',system.execution],['Platform',system.platform||'--'],['Transport',system.transport||'--'],['Capacity',`${system.active??'--'} / ${system.capacity??'--'}`],['Last check',timeLabel(system.lastCheckAt)],['Last successful probe',timeLabel(system.lastSuccessfulProbeAt)],['Last successful Job',timeLabel(system.lastSuccessfulJobAt)],['Latency',system.latencyMs===null?'--':`${system.latencyMs}ms`],['Qualification',system.qualification||'--']].map(([label,value])=>`<div class="data-card"><label>${esc(label)}</label><p>${esc(value)}</p></div>`).join('')}</section>${node?`<section class="system-section"><h3>Identity & resources</h3><div class="system-detail-grid">${[['Hostname',node.hostname||'--'],['OS',[node.os?.name,node.os?.version].filter(Boolean).join(' ')||'--'],['Architecture',node.os?.architecture||'--'],['CPU',`${node.cpu?.logical??'--'} logical · load ${node.cpu?.load?.one??'--'}`],['RAM available',`${bytes(node.memory?.availableBytes)} / ${bytes(node.memory?.totalBytes)}`],['Current workload',node.currentWorkload||'none']].map(([label,value])=>`<div class="data-card"><label>${esc(label)}</label><p>${esc(value)}</p></div>`).join('')}</div>${storage.map(item=>`<div class="system-storage"><strong>${esc(item.mount)}</strong><span>${esc(bytes(item.availableBytes))} free / ${esc(bytes(item.totalBytes))} · ${esc(item.usedPercent)}% used</span></div>`).join('')}</section>`:''}<section class="system-section"><h3>Agent Control & governance</h3><div class="data-card"><label>Capabilities</label><p>${esc(system.capabilities.join(', ')||'none reported')}</p></div>${workloads.map(item=>`<div class="data-card"><label>${esc(item.id)}</label><p>${esc(item.state)} · ${item.protected?'protected':'unprotected'} · ${esc(item.evidence.join(', '))}</p></div>`).join('')}<div class="data-card"><label>Last error</label><p>${esc(system.lastError||'none recorded')}</p></div></section>${invocation?`<section class="system-section"><h3>Recent provider invocation</h3><div class="system-detail-grid"><div class="data-card"><label>Observed</label><p>${esc(timeLabel(invocation.at))}</p></div><div class="data-card"><label>Latency</label><p>${esc(invocation.latencyMs===null?'--':`${invocation.latencyMs}ms`)}</p></div><div class="data-card"><label>Tokens</label><p>${esc(invocation.totalTokens??'not reported')}</p></div><div class="data-card"><label>Cost</label><p>${esc(invocation.cost===null?'not reported':`${invocation.cost} ${invocation.currency||''}`)}</p></div></div></section>`:''}`;
+  detail.querySelector('[data-check-system]')?.addEventListener('click',event=>{event.currentTarget.disabled=true;jobCommand(`/api/systems/${encodeURIComponent(system.id)}/check`,{}).catch(showError)});
+}
+
 async function jobCommand(url, body) {
-  if (!state.token) { openOperator(); throw new Error('Operator token required'); }
+  if (state.operatorAuth !== 'authenticated') { openOperator(); throw new Error('Operator authentication required'); }
   const response = await fetch(url, {method: 'POST', headers: {'Content-Type': 'application/json', Authorization: `Bearer ${state.token}`}, body: JSON.stringify({...body, actor: 'web-operator'})});
   const result = await response.json();
+  if (response.status === 401) { authenticationExpired(); throw new Error('Operator authentication required'); }
   if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
   toast('Job command accepted by Agent Control');
   await refresh();
@@ -300,10 +337,12 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelector('#natural-task-form').addEventListener('submit', event => { event.preventDefault(); const prompt = document.querySelector('#natural-task-prompt').value; jobCommand('/api/parcels', {prompt}).then(() => { document.querySelector('#natural-task-prompt').value = ''; }).catch(showError); });
   document.querySelectorAll('[data-view]').forEach(button => button.addEventListener('click', () => {
     document.querySelectorAll('[data-view]').forEach(item => item.classList.toggle('active', item === button));
-    const jobs = button.dataset.view === 'jobs';
-    document.querySelector('#jobs-workspace').hidden = !jobs;
-    document.querySelector('#lanes-workspace').hidden = jobs;
+    const view = button.dataset.view;
+    document.querySelector('#jobs-workspace').hidden = view !== 'jobs';
+    document.querySelector('#lanes-workspace').hidden = view !== 'lanes';
+    document.querySelector('#systems-workspace').hidden = view !== 'systems';
   }));
+  document.querySelector('#health').addEventListener('click',()=>document.querySelector('[data-view="systems"]').click());
   document.querySelector('#run-search').addEventListener('input', event => { jobState.search = event.target.value; renderRunHistory(); bindRunLinks(); });
   setInterval(() => { document.querySelectorAll('[data-live-start]').forEach(node => { node.textContent = durationLabel(node.dataset.liveStart); }); document.querySelectorAll('[data-live-activity]').forEach(node => { node.textContent = `${ageLabel(node.dataset.liveActivity)} ago`; }); document.querySelectorAll('[data-live-liveness]').forEach(node => { const live = window.AgentControlRunningState.liveness(node.dataset.liveState, node.dataset.liveLiveness); node.textContent = live.label; node.closest('.parcel-live, .active-run-telemetry')?.classList.toggle('is-stale', live.stale); }); }, 1000);
   setInterval(() => refresh().catch(showError), 5000);

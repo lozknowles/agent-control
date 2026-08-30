@@ -1,6 +1,13 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import test from 'node:test';
-import {isCompleteLargeContextReview} from './operator-review-actions.js';
+import {isCompleteLargeContextReview, registerOperatorReviewActions} from './operator-review-actions.js';
+import {JobCatalog} from './job-catalog.js';
+import {ArtifactStore, JobRuntime, ResourceLockManager, RunLedger, WorkerRegistry} from './job-runtime.js';
+import {MemoryHarnessEfficiencyLedger} from './harness-efficiency.js';
+import type {AgentControlConfig} from './config.js';
 
 const sections = ['What I would delete or simplify', 'CURRENT', 'PROPOSED', 'Quick wins', 'Structural improvements', 'Experimental ideas'].join('\n');
 
@@ -13,4 +20,34 @@ test('large-context review gate requires substantial complete architecture outpu
 test('large-context review gate rejects a provider-completed role-confusion refusal', () => {
   const refusal = `# Ox Invocation Gate: FAIL — Review Not Performed\n${sections}\n${'I cannot invoke Ox. '.repeat(500)}`;
   assert.equal(isCompleteLargeContextReview(refusal), false);
+});
+
+test('incomplete provider response retains immutable prompt usage cost response and canonical maximumOutputTokens', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-review-incomplete-'));
+  const previous = {enabled: process.env.AGENT_CONTROL_ENABLE_OPERATOR_REVIEW, provider: process.env.AGENT_CONTROL_OPERATOR_REVIEW_PROVIDER, reviewRoot: process.env.AGENT_CONTROL_REVIEW_ROOT, credential: process.env.AGENT_CONTROL_TEST_REVIEW_KEY};
+  const originalFetch = globalThis.fetch;
+  try {
+    const contextFile = path.join(root, 'context.txt'); fs.writeFileSync(contextFile, 'immutable repository snapshot');
+    process.env.AGENT_CONTROL_ENABLE_OPERATOR_REVIEW = 'true'; process.env.AGENT_CONTROL_OPERATOR_REVIEW_PROVIDER = 'review-route'; process.env.AGENT_CONTROL_REVIEW_ROOT = root; process.env.AGENT_CONTROL_TEST_REVIEW_KEY = 'test-only-credential';
+    let requestBody: Record<string, unknown> = {};
+    globalThis.fetch = async (_input, init) => { requestBody = JSON.parse(String(init?.body)); return new Response(JSON.stringify({id: 'response-partial', model: 'returned-model', status: 'incomplete', output_text: 'partial provider response retained', usage: {input_tokens: 100, output_tokens: 20, total_tokens: 120, cost: .012}}), {status: 200, headers: {'content-type': 'application/json'}}); };
+    const config: AgentControlConfig = {schemaVersion: 1, resources: [], services: [], lanes: [], providers: [{id: 'review-route', kind: 'responses', baseUrl: 'https://provider.example/v1', wireApi: 'responses', credentialEnv: 'AGENT_CONTROL_TEST_REVIEW_KEY', qualificationModel: 'configured-model', capabilities: ['repository.review', 'large-context'], qualification: {status: 'qualified', advertisedContextLimitTokens: 1_000_000}, pricing: {currency: 'USD', billing: 'metered', inputPerMillionTokens: .1, outputPerMillionTokens: .2, fixedPerRequest: 0, effectiveFrom: '2026-08-30', source: 'operator-config:test-catalog'}}]};
+    const efficiency = new MemoryHarnessEfficiencyLedger(), actions = registerOperatorReviewActions(config, undefined, efficiency), catalog = new JobCatalog(actions.ids()).loadDirectory(path.resolve('config/operator-jobs'));
+    const workers = new WorkerRegistry().register({id: 'controller', capabilities: ['model.execute', 'network.read', 'repository.review', 'large-context'], health: 'healthy', capacity: 1, active: 0, observedAt: new Date().toISOString()});
+    const runtime = new JobRuntime(catalog, actions, workers, new RunLedger(path.join(root, 'ledger.json')), new ArtifactStore(path.join(root, 'artifacts')), new ResourceLockManager(path.join(root, 'locks.json')), {efficiency});
+    const submittedPrompt = `Review the exact immutable candidate and retain all telemetry. ${'evidence '.repeat(30)}`;
+    const parameters = {reviewPrompt: submittedPrompt, contextFile, maximumOutputTokens: 12345};
+    const run = runtime.createRun('agent-control-whole-repository-ox-review@1.0.0', parameters, {type: 'manual', actor: 'test'}); parameters.reviewPrompt = 'edited after submission';
+    await runtime.tick();
+    const retainedRun = runtime.ledger.get(run.id)!, invocation = efficiency.list()[0], artifact = runtime.artifacts.list(run.id)[0], value = runtime.artifacts.read(artifact.id) as {submittedPrompt: string; responseText: string; providerStatus: string};
+    assert.equal(retainedRun.parameters.reviewPrompt, submittedPrompt);
+    assert.equal(requestBody.max_output_tokens, 12345);
+    assert.equal(requestBody.model, 'configured-model');
+    assert.equal(value.submittedPrompt, submittedPrompt); assert.equal(value.responseText, 'partial provider response retained'); assert.equal(value.providerStatus, 'incomplete');
+    assert.equal(invocation.model, 'returned-model'); assert.equal(invocation.provider, 'review-route'); assert.equal(invocation.usage.totalProcessedTokens, 120); assert.equal(invocation.providerReportedCost, .012); assert.equal(invocation.state, 'FAILED'); assert.equal(invocation.verifierResult, 'FAIL'); assert.equal(invocation.finalJobResult, 'FAILED');
+  } finally {
+    globalThis.fetch = originalFetch;
+    for (const [key, value] of Object.entries({AGENT_CONTROL_ENABLE_OPERATOR_REVIEW: previous.enabled, AGENT_CONTROL_OPERATOR_REVIEW_PROVIDER: previous.provider, AGENT_CONTROL_REVIEW_ROOT: previous.reviewRoot, AGENT_CONTROL_TEST_REVIEW_KEY: previous.credential})) { if (value === undefined) delete process.env[key]; else process.env[key] = value; }
+    fs.rmSync(root, {recursive: true, force: true});
+  }
 });

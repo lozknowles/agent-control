@@ -47,7 +47,9 @@ test('dirty fields survive repeated refresh while untouched defaults remain serv
 test('job detail source renders live pending state and canonical invocation history', () => {
   const source = fs.readFileSync(path.resolve('assets/dashboard/dashboard-enhancements.js'), 'utf8');
   assert.match(source, /awaiting completion/);
-  assert.match(source, /Invocation history/);
+  assert.match(source, /Invocation lifecycle/);
+  assert.match(source, /Immutable submitted parameters/);
+  assert.match(source, /Replacement \/ retry lineage/);
   assert.match(source, /usage unavailable/);
   assert.match(source, /costSource === 'reported'/);
   assert.match(source, /costSource === 'estimated'/);

@@ -76,6 +76,15 @@ export interface ProviderConfig {
   costClass?: 'free' | 'included' | 'metered';
   capabilities?: string[];
   qualificationModel?: string;
+  pricing?: {
+    currency: string;
+    billing: 'free' | 'included' | 'metered';
+    inputPerMillionTokens: number;
+    outputPerMillionTokens: number;
+    fixedPerRequest?: number;
+    effectiveFrom: string;
+    source: string;
+  };
   qualification?: {
     status?: 'unqualified' | 'historically-qualified' | 'qualified';
     advertisedContextLimitTokens?: number;
@@ -184,7 +193,7 @@ function assertIntegerRange(value: unknown, label: string, minimum: number, maxi
 
 function rejectSecrets(value: unknown, trail = 'config') {
   if (!value || typeof value !== 'object') return;
-  const safeTokenAccountingKeys = new Set(['tokenAwareOutput', 'completeMaxTokens', 'artifactOnlyAboveReturnedTokens', 'minimumCompleteTokens', 'harnessEfficiency', 'maximumInitialContextTokens', 'advertisedContextLimitTokens', 'maximumObservedInputTokens']);
+  const safeTokenAccountingKeys = new Set(['tokenAwareOutput', 'completeMaxTokens', 'artifactOnlyAboveReturnedTokens', 'minimumCompleteTokens', 'harnessEfficiency', 'maximumInitialContextTokens', 'advertisedContextLimitTokens', 'maximumObservedInputTokens', 'inputPerMillionTokens', 'outputPerMillionTokens']);
   for (const [key, child] of Object.entries(value)) {
     if (/token|password|secret|api.?key/i.test(key) && !['credentialEnv', 'credentialFileEnv'].includes(key) && !safeTokenAccountingKeys.has(key)) {
       throw new Error(`secret_material_forbidden:${trail}.${key}`);
@@ -276,6 +285,11 @@ export function validateConfig(raw: unknown): AgentControlConfig {
       assertIntegerRange(provider.qualification.maximumObservedInputTokens, `provider_observed_input:${provider.id}`, 1, 100_000_000);
       assertStringList(provider.qualification.evidence, `provider_qualification_evidence:${provider.id}`, /^[a-z0-9][a-z0-9:._/-]+$/i);
       if (provider.qualification.lastSuccessfulAt && Number.isNaN(Date.parse(provider.qualification.lastSuccessfulAt))) throw new Error(`invalid_provider_qualification_timestamp:${provider.id}`);
+    }
+    if (provider.pricing) {
+      if (!/^[A-Z]{3}$/.test(provider.pricing.currency) || !['free', 'included', 'metered'].includes(provider.pricing.billing)) throw new Error(`invalid_provider_pricing:${provider.id}`);
+      for (const value of [provider.pricing.inputPerMillionTokens, provider.pricing.outputPerMillionTokens, provider.pricing.fixedPerRequest ?? 0]) if (!Number.isFinite(value) || value < 0) throw new Error(`invalid_provider_pricing:${provider.id}`);
+      if (!provider.pricing.source?.trim() || Number.isNaN(Date.parse(provider.pricing.effectiveFrom))) throw new Error(`invalid_provider_pricing_provenance:${provider.id}`);
     }
   }
   for (const service of config.services) {

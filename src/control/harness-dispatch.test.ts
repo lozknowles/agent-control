@@ -9,6 +9,7 @@ import {
   AdaptiveWorkDispatch,
   FileRecipeDispatchStore,
   HarnessDispatcher,
+  HarnessJobAgentAction,
   MemoryRecipeDispatchStore,
   ToolHandlerRegistry,
   type ToolPolicyAuditEvent,
@@ -121,7 +122,7 @@ test('non-streaming dispatch exposes canonical provider identity while pending a
   const policy = toolPolicy(), efficiency = new MemoryHarnessEfficiencyLedger();
   const dispatcher = new HarnessDispatcher(new AdaptiveHarness(new SkillCatalog(), policy), policy, new ToolHandlerRegistry(), () => ({authority: {...authority}, workerId: 'worker-1'}), undefined, undefined, undefined, efficiency);
   let complete!: (value: {invocations: ReturnType<typeof createInvocationObservation>[]}) => void;
-  const pending = dispatcher.dispatch({...plan(), request: {...request(), jobId: 'job-live', runId: 'run-live', taskId: 'run-live:review'}}, {execute: async () => new Promise(resolve => { complete = resolve; })});
+  const pending = dispatcher.dispatch({...plan(), request: {...request(), jobId: 'job-live', runId: 'run-live', stepId: 'review', taskId: 'run-live:review'}}, {execute: async (_recipe, tools) => { tools.lifecycle?.('waiting for provider'); return new Promise(resolve => { complete = resolve; }); }});
   await new Promise(resolve => setImmediate(resolve));
   const running = efficiency.list()[0];
   assert.equal(running.state, 'RUNNING');
@@ -143,6 +144,24 @@ test('non-streaming dispatch exposes canonical provider identity while pending a
   assert.equal(completed.costSource, 'reported');
 });
 
+test('multi-turn executor exposes PROCESSING before provider completion', async () => {
+  const policy = toolPolicy(), efficiency = new MemoryHarnessEfficiencyLedger();
+  const dispatcher = new HarnessDispatcher(new AdaptiveHarness(new SkillCatalog(), policy), policy, new ToolHandlerRegistry(), () => ({authority: {...authority}, workerId: 'worker-1'}), undefined, undefined, undefined, efficiency);
+  let finish!: () => void;
+  const pending = dispatcher.dispatch({...plan(), request: {...request(), jobId: 'job-two-turn', runId: 'run-two-turn', stepId: 'review'}}, {execute: async (recipe, tools) => {
+    tools.lifecycle?.('waiting for provider');
+    await Promise.resolve();
+    tools.lifecycle?.('processing');
+    await new Promise<void>(resolve => { finish = resolve; });
+    const startedAt = efficiency.list()[0].startedAt;
+    return {invocations: [createInvocationObservation({jobId: 'job-two-turn', runId: 'run-two-turn', stepId: 'review', taskId: recipe.taskId, laneId: recipe.authority.laneId, model: recipe.modelId, provider: recipe.providerId, harnessProfile: 'STANDARD', executionStrategy: 'two-turn-fixture', startedAt, completedAt: new Date(Date.parse(startedAt) + 1000).toISOString(), phase: 'processing', recipeFingerprint: recipe.fingerprint})]};
+  }});
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(efficiency.list()[0].phase, 'processing');
+  finish(); await pending;
+  assert.equal(efficiency.list()[0].state, 'COMPLETE');
+});
+
 test('WorkExecutor normal agent path requires AdaptiveHarness and stops at verification', async () => {
   const policy = toolPolicy(), handlers = new ToolHandlerRegistry().register('repository.read', async () => 'read');
   const dispatcher = new HarnessDispatcher(new AdaptiveHarness(new SkillCatalog(), policy), policy, handlers, () => ({authority: {...authority}, workerId: 'worker-1'}));
@@ -158,4 +177,11 @@ test('WorkExecutor normal agent path requires AdaptiveHarness and stops at verif
   const event = await executor.step([resource], [{resourceId: 'worker-1', busy: 0, capacity: 1}]);
   assert.equal(event.kind, 'verification');
   assert.equal(queue.get(work.id)?.status, 'verification-pending');
+});
+
+test('independent-check policy rejects model action self-attestation', async () => {
+  const policy = toolPolicy(), dispatcher = new HarnessDispatcher(new AdaptiveHarness(new SkillCatalog(), policy), policy, new ToolHandlerRegistry(), () => ({authority: {...authority}, workerId: 'worker-1'}));
+  const action = new HarnessJobAgentAction(dispatcher, async () => ({plan: plan(), executor: {execute: async () => ({resultRef: 'model output'})}, toActionOutput: () => ({verification: ['test_result']})}));
+  const context = {run: {id: 'run-independent', jobId: 'job-independent'}, step: {id: 'review'}, worker: {id: 'worker-1'}, parameters: {}, inputArtifacts: []} as never;
+  await assert.rejects(action.execute(context), /independent_check_required:agent_action_cannot_self_attest/);
 });

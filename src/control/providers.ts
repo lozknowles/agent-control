@@ -2,8 +2,8 @@ import type {ProviderConfig} from './config.js';
 
 export type ProviderKind = 'local' | 'responses' | 'cli' | 'browser-bridge';
 export type ProviderHealth = 'unconfigured' | 'unknown' | 'healthy' | 'degraded' | 'offline';
-export interface ProviderDefinition {id: string; name: string; kind: ProviderKind; baseUrl?: string; wireApi?: 'responses'; requiresAuth: boolean; parallelism: number; costClass: 'free' | 'included' | 'metered'; capabilities: string[]; qualificationModel?: string;}
-export interface ProviderState {providerId: string; health: ProviderHealth; detail?: string; checkedAt: string;}
+export interface ProviderDefinition {id: string; name: string; kind: ProviderKind; baseUrl?: string; wireApi?: 'responses'; requiresAuth: boolean; credentialConfigured?: boolean; parallelism: number; costClass: 'free' | 'included' | 'metered'; capabilities: string[]; qualificationModel?: string; qualification?: ProviderConfig['qualification'];}
+export interface ProviderState {providerId: string; health: ProviderHealth; detail?: string; checkedAt: string; lastSuccessAt?: string; latencyMs?: number;}
 export interface AgentRecipe {id: string; providerId: string; model: string; profile: string; reasoning: 'off' | 'low' | 'medium' | 'high'; promptVersion: string; tools: string[]; skills: string[];}
 
 export class ProviderRegistry {
@@ -16,9 +16,10 @@ export class ProviderRegistry {
   }
   get(id: string) { return this.defs.get(id); }
   list() { return [...this.defs.values()]; }
-  setHealth(providerId: string, health: ProviderHealth, detail?: string) {
+  setHealth(providerId: string, health: ProviderHealth, detail?: string, latencyMs?: number) {
     if (!this.defs.has(providerId)) throw new Error(`provider ${providerId} not registered`);
-    const state = {providerId, health, detail, checkedAt: new Date().toISOString()};
+    const previous = this.states.get(providerId), checkedAt = new Date().toISOString();
+    const state = {providerId, health, detail, checkedAt, ...(health === 'healthy' ? {lastSuccessAt: checkedAt} : previous?.lastSuccessAt ? {lastSuccessAt: previous.lastSuccessAt} : {}), ...(latencyMs === undefined ? {} : {latencyMs})};
     this.states.set(providerId, state);
     return state;
   }
@@ -37,9 +38,11 @@ export function providersFromConfig(configured: ProviderConfig[]): ProviderDefin
     baseUrl: provider.baseUrl,
     wireApi: provider.wireApi,
     requiresAuth: provider.requiresAuth ?? false,
+    credentialConfigured: !(provider.requiresAuth ?? false) || Boolean((provider.credentialEnv && process.env[provider.credentialEnv]) || (provider.credentialFileEnv && process.env[provider.credentialFileEnv])),
     parallelism: provider.parallelism ?? 1,
     costClass: provider.costClass ?? 'metered',
     capabilities: [...(provider.capabilities ?? [])],
     qualificationModel: provider.qualificationModel,
+    qualification: provider.qualification ? structuredClone(provider.qualification) : undefined,
   }));
 }

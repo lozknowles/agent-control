@@ -372,6 +372,7 @@ export function calculateInvocationCost(usage: NormalizedProviderUsage, pricing?
 
 export type InvocationVerifierResult = 'UNKNOWN' | 'PASS' | 'FAIL';
 export type InvocationFinalResult = 'UNKNOWN' | 'SUCCEEDED' | 'FAILED' | 'DEGRADED' | 'CANCELLED' | 'DISCONNECTED';
+export type InvocationPhase = 'provider selected' | 'request sent' | 'waiting for provider' | 'response received' | 'processing' | 'verification' | 'complete';
 
 export interface ModelInvocationObservation {
   schema: 'agent-control.model-invocation/v1';
@@ -391,7 +392,7 @@ export interface ModelInvocationObservation {
   completedAt: string | null;
   elapsedMs: number | null;
   state: 'RUNNING' | 'COMPLETE' | 'FAILED' | 'CANCELLED' | 'TIMED_OUT';
-  phase: 'provider selected' | 'request sent' | 'waiting for provider' | 'response received' | 'processing' | 'verification' | 'complete';
+  phase: InvocationPhase;
   startup: StartupContextBreakdown;
   usage: NormalizedProviderUsage;
   providerReportedCost: number | null;
@@ -446,6 +447,7 @@ export interface InvocationObservationInput {
   contextPacketId?: string;
   evidenceIds?: string[];
   finishReason?: string;
+  phase?: InvocationPhase;
 }
 
 export function createInvocationObservation(input: InvocationObservationInput): ModelInvocationObservation {
@@ -457,7 +459,7 @@ export function createInvocationObservation(input: InvocationObservationInput): 
   return {
     schema: 'agent-control.model-invocation/v1', id: input.id ?? `inv-${randomUUID()}`, jobId: input.jobId, runId: input.runId ?? null, stepId: input.stepId ?? null, taskId: input.taskId, laneId: input.laneId,
     model: input.model, provider: input.provider, harnessProfile: input.harnessProfile, harnessId: input.harnessId ?? 'adaptive-harness', executionStrategy: input.executionStrategy, turnNumber,
-    startedAt: input.startedAt, completedAt: input.completedAt, elapsedMs: completed - started, state: input.outcome === 'CANCELLED' || /cancel/i.test(input.error ?? '') ? 'CANCELLED' : /timeout|timed out/i.test(input.error ?? '') ? 'TIMED_OUT' : input.outcome === 'FAILED' ? 'FAILED' : 'COMPLETE', phase: 'complete',
+    startedAt: input.startedAt, completedAt: input.completedAt, elapsedMs: completed - started, state: input.outcome === 'CANCELLED' || /cancel/i.test(input.error ?? '') ? 'CANCELLED' : /timeout|timed out/i.test(input.error ?? '') ? 'TIMED_OUT' : input.outcome === 'FAILED' ? 'FAILED' : 'COMPLETE', phase: input.phase ?? 'complete',
     startup, usage,
     providerReportedCost: input.providerReportedCost ?? null,
     calculatedCost: calculateInvocationCost(usage, input.pricing), currency: input.pricing?.currency ?? null,
@@ -480,7 +482,7 @@ export function createInvocationStart(input: InvocationStartInput): ModelInvocat
   return {
     schema: 'agent-control.model-invocation/v1', id: input.id ?? `inv-${randomUUID()}`, jobId: input.jobId, runId: input.runId ?? null, stepId: input.stepId ?? null,
     taskId: input.taskId, laneId: input.laneId, model: input.model, provider: input.provider, harnessProfile: input.harnessProfile, harnessId: 'adaptive-harness', executionStrategy: input.executionStrategy,
-    turnNumber: 1, startedAt: input.startedAt, completedAt: null, elapsedMs: null, state: 'RUNNING', phase: 'waiting for provider', startup: measureStartupContext([], 1), usage: normalizeProviderUsage(undefined),
+    turnNumber: 1, startedAt: input.startedAt, completedAt: null, elapsedMs: null, state: 'RUNNING', phase: 'request sent', startup: measureStartupContext([], 1), usage: normalizeProviderUsage(undefined),
     providerReportedCost: null, calculatedCost: null, currency: null, usageSource: 'unknown', costSource: 'unknown', finishReason: null, toolCalls: 0, toolIds: [], agentId: null,
     filesContextSupplied: null, contextSourceIds: [], retrievedContextTokens: null, repositoryContextTokens: null, conversationHistoryTokens: 0, verifierResult: 'UNKNOWN', finalJobResult: 'UNKNOWN',
     outcome: 'RUNNING', error: null, provenance: {recipeFingerprint: input.recipeFingerprint, ...(input.contextPacketId ? {contextPacketId: input.contextPacketId} : {}), evidenceIds: []},
@@ -536,6 +538,8 @@ export interface HarnessEfficiencyMetrics {
 export interface HarnessEfficiencyLedgerPort {
   record(observation: ModelInvocationObservation): string;
   complete(id: string, observation: ModelInvocationObservation): string;
+  setPhase(ids: string[], phase: Exclude<InvocationPhase, 'complete'>): void;
+  finalizePending(ids: string[], outcome: 'FAILED' | 'CANCELLED', error: string, finishReason: string, completedAt?: string): void;
   markVerification(ids: string[], result: Exclude<InvocationVerifierResult, 'UNKNOWN'>, finalResult?: InvocationFinalResult): void;
   markFinalResult(ids: string[], finalResult: Exclude<InvocationFinalResult, 'UNKNOWN'>): void;
   list(): ModelInvocationObservation[];
@@ -550,8 +554,10 @@ export class MemoryHarnessEfficiencyLedger implements HarnessEfficiencyLedgerPor
     const elapsedMs = observation.completedAt === null ? observation.elapsedMs : Math.max(0, Date.parse(observation.completedAt) - Date.parse(current.startedAt));
     this.records.set(id, structuredClone({...observation, id, jobId: current.jobId, runId: current.runId, stepId: observation.stepId ?? current.stepId, taskId: current.taskId, laneId: current.laneId, startedAt: current.startedAt, elapsedMs})); return id;
   }
-  markVerification(ids: string[], result: Exclude<InvocationVerifierResult, 'UNKNOWN'>, finalResult: InvocationFinalResult = 'UNKNOWN'): void { for (const id of ids) { const current = this.records.get(id); if (!current) throw new Error(`invocation_missing:${id}`); this.records.set(id, {...current, verifierResult: result, finalJobResult: finalResult}); } }
-  markFinalResult(ids: string[], finalResult: Exclude<InvocationFinalResult, 'UNKNOWN'>): void { for (const id of ids) { const current = this.records.get(id); if (!current) throw new Error(`invocation_missing:${id}`); this.records.set(id, {...current, finalJobResult: finalResult}); } }
+  setPhase(ids: string[], phase: Exclude<InvocationPhase, 'complete'>): void { for (const id of ids) { const current = this.records.get(id); if (!current) throw new Error(`invocation_missing:${id}`); if (current.phase !== 'complete') this.records.set(id, {...current, phase}); } }
+  finalizePending(ids: string[], outcome: 'FAILED' | 'CANCELLED', error: string, finishReason: string, completedAt = new Date().toISOString()): void { for (const id of ids) { const current = this.records.get(id); if (!current) throw new Error(`invocation_missing:${id}`); if (current.state !== 'RUNNING') continue; const elapsedMs = Math.max(0, Date.parse(completedAt) - Date.parse(current.startedAt)); this.records.set(id, {...current, completedAt, elapsedMs, state: outcome === 'CANCELLED' ? 'CANCELLED' : /timeout|timed out/i.test(error) ? 'TIMED_OUT' : 'FAILED', phase: 'complete', outcome, error: boundedRedactedError(error), finishReason}); } }
+  markVerification(ids: string[], result: Exclude<InvocationVerifierResult, 'UNKNOWN'>, finalResult: InvocationFinalResult = 'UNKNOWN'): void { for (const id of ids) { const current = this.records.get(id); if (!current) throw new Error(`invocation_missing:${id}`); this.records.set(id, {...current, phase: finalResult === 'UNKNOWN' ? 'verification' : 'complete', verifierResult: result, finalJobResult: finalResult}); } }
+  markFinalResult(ids: string[], finalResult: Exclude<InvocationFinalResult, 'UNKNOWN'>): void { for (const id of ids) { const current = this.records.get(id); if (!current) throw new Error(`invocation_missing:${id}`); this.records.set(id, {...current, phase: 'complete', finalJobResult: finalResult}); } }
   list(): ModelInvocationObservation[] { return [...this.records.values()].map(record => structuredClone(record)); }
   metrics(): HarnessEfficiencyMetrics {
     const records = this.list();
@@ -574,6 +580,8 @@ export class FileHarnessEfficiencyLedger extends MemoryHarnessEfficiencyLedger {
   }
   override record(observation: ModelInvocationObservation): string { const id = super.record(observation); this.save(); return id; }
   override complete(id: string, observation: ModelInvocationObservation): string { const result = super.complete(id, observation); this.save(); return result; }
+  override setPhase(ids: string[], phase: Exclude<InvocationPhase, 'complete'>): void { super.setPhase(ids, phase); this.save(); }
+  override finalizePending(ids: string[], outcome: 'FAILED' | 'CANCELLED', error: string, finishReason: string, completedAt?: string): void { super.finalizePending(ids, outcome, error, finishReason, completedAt); this.save(); }
   override markVerification(ids: string[], result: Exclude<InvocationVerifierResult, 'UNKNOWN'>, finalResult: InvocationFinalResult = 'UNKNOWN'): void { super.markVerification(ids, result, finalResult); this.save(); }
   override markFinalResult(ids: string[], finalResult: Exclude<InvocationFinalResult, 'UNKNOWN'>): void { super.markFinalResult(ids, finalResult); this.save(); }
   private save() { fs.mkdirSync(path.dirname(this.file), {recursive: true}); const temporary = `${this.file}.tmp`; fs.writeFileSync(temporary, `${JSON.stringify({schema: 'agent-control.harness-efficiency-ledger/v1', records: this.list()}, null, 2)}\n`, {mode: 0o600}); fs.renameSync(temporary, this.file); }

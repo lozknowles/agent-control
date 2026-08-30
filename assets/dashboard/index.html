@@ -12,8 +12,8 @@
 <body>
   <header class="topbar">
     <div class="brand"><span class="brand-mark" aria-hidden="true">AC</span><div><strong>Agent Control</strong><small id="version">connecting</small></div></div>
-    <nav class="primary-nav" aria-label="Control views"><button class="primary-tab active" data-view="jobs">Jobs</button><button class="primary-tab" data-view="lanes">Lanes</button></nav>
-    <div class="topbar-status"><span id="stream-state" class="status-pill neutral">CONNECTING</span><span id="health" class="status-pill neutral">UNKNOWN</span><button id="operator-button" class="button secondary">Observer mode</button></div>
+    <nav class="primary-nav" aria-label="Control views"><button class="primary-tab active" data-view="jobs">Jobs</button><button class="primary-tab" data-view="lanes">Lanes</button><button class="primary-tab" data-view="systems">Systems</button></nav>
+    <div class="topbar-status"><span id="stream-state" class="status-pill neutral">CONNECTING</span><button id="health" class="status-pill neutral" title="Agent Control health; open downstream Systems readiness">UNKNOWN</button><button id="operator-button" class="button secondary">Operator authentication required</button></div>
   </header>
   <main id="lanes-workspace" class="shell" hidden>
     <aside class="lanes-panel panel">
@@ -55,7 +55,7 @@
 
   <main id="jobs-workspace" class="jobs-shell">
     <aside class="panel jobs-catalog"><div class="panel-heading"><div><span class="eyebrow">Reusable workflows</span><h1>Jobs</h1></div><span id="job-count" class="count">0</span></div><div id="job-list" class="job-list"></div></aside>
-    <section class="parcel-and-job"><section class="panel natural-task"><form id="natural-task-form"><label for="natural-task-prompt"><span class="eyebrow">Natural-language task entry</span><strong>What should Agent Control do?</strong></label><textarea id="natural-task-prompt" rows="5" required placeholder="Describe the objective, constraints and evidence you need. Agent Control will plan, route, execute and verify it."></textarea><div class="natural-task-actions"><small>The prompt is retained verbatim. Proposed stages must validate against registered Jobs before execution.</small><button class="button" type="submit">Run with Agent Control</button></div></form></section><section class="panel parcel-panel"><div class="panel-heading"><div><span class="eyebrow">Top-level work</span><h2>Work Parcels</h2></div><span id="parcel-count" class="count">0</span></div><div id="parcel-list" class="parcel-list"></div></section><section class="panel job-detail"><div id="job-empty" class="empty-state"><div class="empty-icon">◇</div><h2>No Job selected</h2><p>Select a catalog item to inspect its authoritative definition and history.</p></div><div id="job-detail" hidden></div></section></section>
+    <section class="parcel-and-job"><section class="panel natural-task"><form id="natural-task-form"><label for="natural-task-prompt"><span class="eyebrow">Natural-language task entry</span><strong>What should Agent Control do?</strong></label><div id="operator-auth-state" class="operator-auth-state" role="status" aria-live="polite">Checking operator authentication…</div><textarea id="natural-task-prompt" rows="5" required placeholder="Describe the objective, constraints and evidence you need. Agent Control will plan, route, execute and verify it."></textarea><div class="natural-task-actions"><small>The prompt is retained verbatim. Proposed stages must validate against registered Jobs before execution.</small><button id="natural-task-submit" class="button" type="submit" disabled>Run with Agent Control</button></div></form></section><section class="panel parcel-panel"><div class="panel-heading"><div><span class="eyebrow">Top-level work</span><h2>Work Parcels</h2></div><span id="parcel-count" class="count">0</span></div><div id="parcel-list" class="parcel-list"></div></section><section class="panel job-detail"><div id="job-empty" class="empty-state"><div class="empty-icon">◇</div><h2>No Job selected</h2><p>Select a catalog item to inspect its authoritative definition and history.</p></div><div id="job-detail" hidden></div></section></section>
     <aside class="operations-column">
       <section class="panel"><div class="panel-heading"><div><span class="eyebrow">Heartbeat and workload safety</span><h2>Managed Nodes</h2></div></div><div id="managed-node-list" class="compact-list managed-node-list"></div></section>
       <section class="panel"><div class="panel-heading"><div><span class="eyebrow">Scheduler</span><h2>Queue</h2></div><span id="queue-count" class="count">0</span></div><div id="job-queue" class="compact-list"></div></section>
@@ -65,13 +65,18 @@
       <section class="panel"><div class="panel-heading"><div><span class="eyebrow">Verified-outcome diagnostics</span><h2>Harness Efficiency</h2></div></div><div id="harness-efficiency-metrics" class="compact-list"></div></section>
     </aside>
   </main>
+  <main id="systems-workspace" class="systems-shell" hidden>
+    <aside class="panel systems-list-panel"><div class="panel-heading"><div><span class="eyebrow">Execution inventory</span><h1>Systems</h1></div><span id="system-count" class="count">0</span></div><p class="systems-health-note">Global HEALTHY describes Agent Control itself. Each downstream system is assessed independently for dispatch readiness.</p><div id="systems-list" class="systems-list"></div></aside>
+    <section class="panel system-detail-panel"><div id="system-detail-empty" class="empty-state"><div class="empty-icon">◉</div><h2>No system selected</h2><p>Select a machine, provider, model or service to inspect its canonical readiness.</p></div><div id="system-detail" hidden></div></section>
+  </main>
 
   <dialog id="operator-dialog">
-    <form method="dialog" id="operator-form">
-      <span class="eyebrow">Elevated capability</span><h2>Enable operator controls</h2>
+    <form id="operator-form">
+      <span class="eyebrow">Elevated capability</span><h2>Authenticate operator session</h2>
       <p>The token stays in this browser tab and is sent only as an Authorization header. Agent Control does not use browser cookies for authority.</p>
       <label>Operator token<input id="operator-token" type="password" autocomplete="off" required></label>
-      <div class="dialog-actions"><button value="cancel" class="button secondary" formnovalidate>Cancel</button><button value="save" class="button">Enable</button></div>
+      <div id="operator-auth-error" class="operator-auth-error" role="alert" hidden></div>
+      <div class="dialog-actions"><button id="operator-cancel" type="button" class="button secondary">Cancel</button><button type="submit" class="button">Authenticate</button></div>
     </form>
   </dialog>
   <div id="toast" role="status" aria-live="polite"></div>

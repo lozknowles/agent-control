@@ -4,8 +4,9 @@ import path from 'node:path';
 import type {HarnessEfficiencyLedgerPort, ModelInvocationObservation} from './harness-efficiency.js';
 import type {JobRuntime} from './job-runtime.js';
 import type {RunRecord} from './job-types.js';
+import type {SystemReadiness} from './system-readiness.js';
 
-export type ParcelStatus = 'QUEUED' | 'RUNNING' | 'WAITING' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED';
+export type ParcelStatus = 'PLANNING' | 'QUEUED' | 'RUNNING' | 'WAITING' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED';
 export type ParcelStageStatus = 'QUEUED' | 'BLOCKED' | 'RUNNING' | 'WAITING' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED';
 export interface WorkParcelPlanStage {
   id: string; name: string; job: string; dependsOn?: string[]; parameters?: Record<string, unknown>;
@@ -21,7 +22,7 @@ export interface WorkParcelStage extends WorkParcelPlanStage {
 export interface WorkParcelTelemetry {freshInputTokens: number | null; cachedInputTokens: number | null; outputTokens: number | null; reasoningTokens: number | null; totalTokens: number | null; cost: number | null; currency: string | null; elapsedMs: number;}
 export interface WorkParcelDecision {outcome: 'IN_PROGRESS' | 'COMPLETE' | 'FAIL_CLOSED' | 'CANCELLED'; title: string; summary: string; evidence: string[]; blockedStages: string[]; authority: 'Agent Control';}
 export interface WorkParcelInvocationAudit {id: string; stageId: string; runId: string | null; route: string; provider: string; model: string; node: string | null; profile: string; startedAt: string; completedAt: string | null; elapsedMs: number | null; freshInputTokens: number | null; cachedInputTokens: number | null; outputTokens: number | null; reasoningTokens: number | null; totalTokens: number | null; providerReportedCost: number | null; calculatedCost: number | null; costBasis: 'provider-reported' | 'calculated' | 'unavailable'; currency: string | null; verifierResult: string; outcome: string;}
-export interface WorkParcelAuditEvent {id: string; at: string; type: 'task.received' | 'task.classified' | 'plan.selected' | 'route.requested' | 'stage.dispatched' | 'route.resolved' | 'invocation.completed' | 'route.changed' | 'verification.completed'; stageId?: string; summary: string; detail: string;}
+export interface WorkParcelAuditEvent {id: string; at: string; type: 'task.received' | 'task.classified' | 'target.resolving' | 'target.found' | 'readiness.checked' | 'planning.started' | 'planning.failed' | 'plan.selected' | 'route.requested' | 'stage.dispatched' | 'route.resolved' | 'invocation.completed' | 'route.changed' | 'verification.completed'; stageId?: string; summary: string; detail: string;}
 export interface WorkParcelAudit {schema: 'agent-control.work-parcel-audit/v1'; recordedAt: string; classification: string; selectedExecution: 'Work Parcel'; planningRationale: string; planner: {kind: string; provider: string | null; model: string | null}; alternatives: Array<{stageId: string; candidate: string; eligible: boolean; reasons: string[]}>; timeline: WorkParcelAuditEvent[]; invocations: WorkParcelInvocationAudit[]; totals: {models: string[]; invocations: number; freshInputTokens: number | null; cachedInputTokens: number | null; outputTokens: number | null; reasoningTokens: number | null; totalTokens: number | null; providerReportedCost: number | null; calculatedCost: number | null; cost: number | null; costBasis: 'provider-reported' | 'calculated' | 'unavailable'; currency: string | null; modelExecutionMs: number; wallClockMs: number};}
 export interface WorkParcel {id: string; prompt: string; objective: string; actor: string; status: ParcelStatus; planner: WorkParcelPlan['planner']; stages: WorkParcelStage[]; createdAt: string; updatedAt: string; endedAt?: string; telemetry: WorkParcelTelemetry; decision?: WorkParcelDecision; audit: WorkParcelAudit; provenance: Array<{at: string; type: string; detail: string}>;}
 export interface WorkParcelPlanner {plan(prompt: string): Promise<WorkParcelPlan> | WorkParcelPlan;}
@@ -78,22 +79,45 @@ export function validateWorkParcelPlan(plan: WorkParcelPlan, runtime: JobRuntime
 }
 
 export class WorkParcelCoordinator {
+  private readonly planning = new Set<string>();
   constructor(readonly runtime: JobRuntime, readonly store: WorkParcelStore, readonly planner: WorkParcelPlanner, private readonly efficiency?: HarnessEfficiencyLedgerPort) {}
   async submit(prompt: string, actor: string) {
     const plan = validateWorkParcelPlan(await this.planner.plan(prompt), this.runtime), at = now();
     return this.store.add({id: `parcel-${randomUUID()}`, prompt, objective: plan.objective, actor, status: 'QUEUED', planner: plan.planner, stages: plan.stages.map(stage => ({...stage, dependsOn: [...(stage.dependsOn ?? [])], parameters: structuredClone(stage.parameters ?? {}), status: 'QUEUED'})), createdAt: at, updatedAt: at, telemetry: emptyTelemetry(), audit: createDecisionAudit(prompt, plan, this.runtime, at), provenance: [{at, type: 'submitted', detail: `Natural-language request accepted; planner=${plan.planner.kind}`} ]});
   }
+  accept(prompt: string, actor: string, systems: SystemReadiness[] = []) {
+    if (!prompt.trim()) throw new Error('work_parcel_prompt_required');
+    const at = now(), target = systems.find(system => new RegExp(`\\b${escapeRegExp(system.id)}\\b`, 'i').test(prompt) || new RegExp(`\\b${escapeRegExp(system.name)}\\b`, 'i').test(prompt));
+    const timeline: WorkParcelAuditEvent[] = [event(at, 'task.received', 'Natural-language task accepted', 'Verbatim prompt retained before planning'), event(at, 'task.classified', 'Task queued for governed planning', 'Registered Job selection remains authoritative')];
+    if (target) timeline.push(event(at, 'target.resolving', `Resolving target: ${target.name}`, target.id), event(at, 'target.found', 'Target found', `${target.type}:${target.id}`), event(at, 'readiness.checked', `Execution state: ${target.execution}`, `Reachability: ${target.reachable}; Authentication: ${target.authentication}; Capabilities: ${target.capabilities.join(', ') || 'none reported'}`));
+    timeline.push(event(at, 'planning.started', 'Selecting registered Job', 'Planner may only select Jobs present in the canonical catalog'));
+    const blocked = target && ['AUTH REQUIRED','OFFLINE','DEGRADED','UNKNOWN'].includes(target.execution) ? `BLOCKED — ${target.name} ${target.blockingReason ?? target.execution.toLowerCase()}` : null;
+    const parcel = this.store.add({id: `parcel-${randomUUID()}`, prompt, objective: prompt, actor, status: blocked ? 'FAILED' : 'PLANNING', planner: {kind: 'deterministic', reason: blocked ?? 'Planning pending'}, stages: [], createdAt: at, updatedAt: at, ...(blocked ? {endedAt: at} : {}), telemetry: emptyTelemetry(), audit: planningAudit(at, timeline, blocked), provenance: [{at, type: 'submitted', detail: 'Natural-language request durably accepted before planning'}, ...(blocked ? [{at, type: 'readiness.blocked', detail: blocked}] : [])]});
+    if (!blocked) this.startPlanning(parcel.id);
+    return parcel;
+  }
   get(id: string) { let value = this.store.get(id); if (!value) throw new Error('work_parcel_missing'); if (this.captureLiveRoutes(value)) value = this.store.update(value); return this.withTelemetry(value); }
   list() { return this.store.list().map(value => { if (this.captureLiveRoutes(value)) value = this.store.update(value); return this.withTelemetry(value); }); }
   cancel(id: string, actor: string) { const parcel = this.get(id); for (const stage of parcel.stages) if (stage.runId && !['SUCCEEDED','FAILED','CANCELLED'].includes(stage.status)) this.runtime.cancel(stage.runId, `parcel_cancelled_by:${actor}`); for (const stage of parcel.stages) if (!['SUCCEEDED','FAILED'].includes(stage.status)) stage.status = 'CANCELLED'; parcel.status = 'CANCELLED'; parcel.endedAt = now(); parcel.provenance.push({at: now(), type: 'cancelled', detail: actor}); return this.store.update(parcel); }
   async tick() {
-    for (const stored of this.store.list().filter(parcel => ['QUEUED','RUNNING','WAITING'].includes(parcel.status)).reverse()) {
+    for (const stored of this.store.list().filter(parcel => ['PLANNING','QUEUED','RUNNING','WAITING'].includes(parcel.status)).reverse()) {
+      if (stored.status === 'PLANNING') { this.startPlanning(stored.id); return this.get(stored.id); }
       const before = JSON.stringify({status: stored.status, stages: stored.stages.map(stage => [stage.status, stage.runId, stage.waitingReason, stage.error])}), parcel = this.reconcile(stored); if (['SUCCEEDED','FAILED','CANCELLED'].includes(parcel.status)) { this.store.update(parcel); return this.get(parcel.id); }
       const ready = parcel.stages.find(stage => stage.status === 'QUEUED' && stage.dependsOn.every(id => parcel.stages.find(item => item.id === id)?.status === 'SUCCEEDED'));
       if (ready) { const run = this.runtime.createRun(ready.job, ready.parameters, {type: 'manual', actor: `work-parcel:${parcel.id}`}); ready.runId = run.id; ready.status = 'RUNNING'; ready.startedAt = now(); parcel.status = 'RUNNING'; parcel.provenance.push({at: now(), type: 'stage.started', detail: `${ready.id}:${run.id}`}); appendAudit(parcel, {at: ready.startedAt, type: 'stage.dispatched', stageId: ready.id, summary: `${ready.name} dispatched`, detail: `Job ${ready.job}; Run ${run.id}; requested route ${routeRequestLabel(ready)}`}); this.store.update(parcel); return this.get(parcel.id); }
       this.store.update(parcel); if (before !== JSON.stringify({status: parcel.status, stages: parcel.stages.map(stage => [stage.status, stage.runId, stage.waitingReason, stage.error])})) return this.get(parcel.id);
     }
     return undefined;
+  }
+  private startPlanning(id: string) { if (this.planning.has(id)) return; this.planning.add(id); void this.completePlanning(id).finally(() => this.planning.delete(id)); }
+  private async completePlanning(id: string) {
+    const pending = this.store.get(id); if (!pending || pending.status !== 'PLANNING') return;
+    try {
+      const plan = validateWorkParcelPlan(await this.planner.plan(pending.prompt), this.runtime), decided = createDecisionAudit(pending.prompt, plan, this.runtime, now());
+      pending.objective = plan.objective; pending.planner = plan.planner; pending.stages = plan.stages.map(stage => ({...stage, dependsOn: [...(stage.dependsOn ?? [])], parameters: structuredClone(stage.parameters ?? {}), status: 'QUEUED'})); pending.status = 'QUEUED'; pending.audit = {...decided, timeline: [...pending.audit.timeline, ...decided.timeline.filter(item => !['task.received','task.classified'].includes(item.type))]}; pending.provenance.push({at: now(), type: 'planned', detail: `Registered stages selected; planner=${plan.planner.kind}`}); this.store.update(pending);
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error); pending.status = 'FAILED'; pending.endedAt = now(); pending.provenance.push({at: pending.endedAt, type: 'planning.failed', detail}); pending.audit.timeline.push(event(pending.endedAt, 'planning.failed', 'Planning failed closed', detail)); this.store.update(pending);
+    }
   }
   private reconcile(parcel: WorkParcel) {
     for (const stage of parcel.stages) if (stage.runId && !['SUCCEEDED','FAILED','CANCELLED'].includes(stage.status)) {
@@ -165,6 +189,9 @@ function legacyAudit(parcel: WorkParcel): WorkParcelAudit {
 }
 
 function appendAudit(parcel: WorkParcel, event: Omit<WorkParcelAuditEvent, 'id'>) { parcel.audit.timeline.push({id: `audit-${randomUUID()}`, ...event}); }
+function event(at: string, type: WorkParcelAuditEvent['type'], summary: string, detail: string): WorkParcelAuditEvent { return {id: `audit-${randomUUID()}`, at, type, summary, detail}; }
+function planningAudit(at: string, timeline: WorkParcelAuditEvent[], blocked: string | null): WorkParcelAudit { return {schema: 'agent-control.work-parcel-audit/v1', recordedAt: at, classification: blocked ? 'Target readiness blocked before dispatch' : 'Planning in progress', selectedExecution: 'Work Parcel', planningRationale: blocked ?? 'Resolving registered Jobs and governed execution readiness', planner: {kind: 'pending', provider: null, model: null}, alternatives: [], timeline, invocations: [], totals: auditTotals([], at, blocked ? at : undefined)}; }
+function escapeRegExp(value: string) { return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 function routeRequestLabel(stage: WorkParcelPlanStage) { const route = stage.requestedRoute; return route ? `Requested provider ${route.provider ?? 'policy-selected'}; model ${route.model ?? 'policy-selected'}; profile ${route.profile ?? 'policy-selected'}; ${route.reason}` : 'Normal Agent Control placement and routing policy'; }
 function actualRouteLabel(stage: WorkParcelStage) { const route = stage.actualRoute; return route ? `Workers ${route.workers.join(', ') || 'none'}; provider ${route.provider ?? 'no model'}; model ${route.model ?? 'no model'}; profile ${route.profile ?? 'control action'}; ${route.reason}` : 'Actual route not reported'; }
 function invocationAudit(stage: WorkParcelStage, record: ModelInvocationObservation): WorkParcelInvocationAudit { return {id: record.id, stageId: stage.id, runId: record.runId, route: record.executionStrategy, provider: record.provider, model: record.model, node: stage.actualRoute?.workers[0] ?? null, profile: record.harnessProfile, startedAt: record.startedAt, completedAt: record.completedAt, elapsedMs: record.elapsedMs, freshInputTokens: record.usage.freshInputTokens, cachedInputTokens: record.usage.cachedInputTokens, outputTokens: record.usage.outputTokens, reasoningTokens: record.usage.reasoningTokens, totalTokens: record.usage.totalProcessedTokens, providerReportedCost: record.providerReportedCost, calculatedCost: record.calculatedCost, costBasis: record.providerReportedCost !== null ? 'provider-reported' : record.calculatedCost !== null ? 'calculated' : 'unavailable', currency: record.currency, verifierResult: record.verifierResult, outcome: record.outcome}; }
@@ -184,6 +211,8 @@ export function explainParcelDecision(parcel: WorkParcel): WorkParcelDecision {
   }
   if (parcel.status === 'SUCCEEDED') return {outcome: 'COMPLETE', title: 'Why Agent Control completed', summary: 'Every planned Job completed through the normal Agent Control verification boundary.', evidence: parcel.stages.map(stage => `${stage.name}: ${stage.status}`), blockedStages: [], authority: 'Agent Control'};
   if (parcel.status === 'CANCELLED') return {outcome: 'CANCELLED', title: 'Why Agent Control stopped', summary: 'The parcel was cancelled through the Agent Control operator boundary.', evidence: parcel.provenance.filter(item => item.type === 'cancelled').map(item => item.detail), blockedStages: blocked, authority: 'Agent Control'};
+  if (parcel.status === 'FAILED') { const detail = [...parcel.provenance].reverse().find(item => ['planning.failed','readiness.blocked'].includes(item.type))?.detail ?? [...parcel.audit.timeline].reverse().find(item => item.type === 'planning.failed')?.detail ?? 'Planning failed before a registered Job could be dispatched'; return {outcome: 'FAIL_CLOSED', title: 'Why Agent Control stopped', summary: 'Agent Control retained the request and stopped before dispatch because planning or target readiness failed.', evidence: [detail], blockedStages: blocked, authority: 'Agent Control'}; }
+  if (parcel.status === 'PLANNING') return {outcome: 'IN_PROGRESS', title: 'What Agent Control is doing', summary: 'Resolving targets, readiness and registered Jobs before dispatch.', evidence: parcel.audit.timeline.slice(-3).map(item => item.summary), blockedStages: blocked, authority: 'Agent Control'};
   const active = parcel.stages.find(stage => ['RUNNING','WAITING'].includes(stage.status)); return {outcome: 'IN_PROGRESS', title: 'What Agent Control is doing', summary: active ? `${active.name} is ${active.status.toLowerCase()}.` : 'The parcel is waiting for its next eligible Job.', evidence: active?.waitingReason ? [active.waitingReason] : [], blockedStages: blocked, authority: 'Agent Control'};
 }
 

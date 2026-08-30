@@ -8,6 +8,7 @@ import {ActionFailure, ActionRegistry, ArtifactStore, JobRuntime, ResourceLockMa
 import type {JobDefinition} from './job-types.js';
 import {createInvocationObservation, MemoryHarnessEfficiencyLedger} from './harness-efficiency.js';
 import {CatalogNaturalLanguagePlanner, explainParcelDecision, ReasoningModelWorkParcelPlanner, validateWorkParcelPlan, WorkParcelCoordinator, WorkParcelStore, type WorkParcel, type WorkParcelPlan} from './work-parcels.js';
+import type {SystemReadiness} from './system-readiness.js';
 
 const job = (id: string, action: string, output = true): JobDefinition => ({apiVersion: 'agent-control/v1', kind: 'Job', metadata: {id, name: id, version: '1.0.0'}, spec: {priority: 'normal', concurrency: 'queue', steps: [{id: 'work', action, requires: ['qualification.local'], outputs: output ? [{name: 'result', type: 'application/json', schema: `${id}/v1`, version: '1.0.0'}] : undefined, verification: output ? ['passed'] : []}]}});
 function setup(failSecond = false, blockFirst = false) {
@@ -30,6 +31,11 @@ test('natural-language parcel runs dependent Jobs sequentially and retains typed
   for (let count = 0; count < 3; count++) { await coordinator.tick(); await runtime.tick(); await coordinator.tick(); }
   const result = coordinator.get(parcel.id); assert.equal(result.status, 'SUCCEEDED'); assert.deepEqual(result.stages.map(stage => stage.status), ['SUCCEEDED','SUCCEEDED','SUCCEEDED']);
   assert.ok(result.stages.every(stage => stage.baton?.schema === 'agent-control.work-parcel-baton/v1' && stage.baton.artifactIds.length === 1)); assert.equal(result.prompt, 'do the test');
+});
+
+test('blocked named target still creates an auditable parcel with readiness evidence', () => {
+  const {coordinator}=setup(), system: SystemReadiness={id:'node-alpha',name:'Node Alpha',type:'machine',registered:true,reachable:'no',authentication:'unknown',execution:'OFFLINE',blockingReason:'is offline',transport:'ssh',platform:'linux',capabilities:['remote.inspect'],capacity:1,active:0,lastCheckAt:null,lastSuccessfulProbeAt:null,lastSuccessfulJobAt:null,lastError:'connection refused',latencyMs:null};
+  const prompt='perform a hostname check on node-alpha and report its free disk space', parcel=coordinator.accept(prompt,'operator',[system]); assert.equal(parcel.status,'FAILED'); assert.equal(parcel.prompt,prompt); assert.match(parcel.provenance.at(-1)?.detail??'',/BLOCKED.*Node Alpha.*offline/i); assert.deepEqual(parcel.audit.timeline.slice(2,5).map(item=>item.type),['target.resolving','target.found','readiness.checked']); assert.equal(coordinator.get(parcel.id).decision?.outcome,'FAIL_CLOSED');
 });
 
 test('actual worker route becomes durable while execution is still running', async () => {

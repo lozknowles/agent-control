@@ -96,6 +96,7 @@ export interface ExecutionRecipe {
   taskId: string;
   jobId?: string;
   runId?: string;
+  stepId?: string;
   workerId: string;
   providerId: string;
   modelId: string;
@@ -118,6 +119,7 @@ export interface RecipeRequest {
   taskId: string;
   jobId?: string;
   runId?: string;
+  stepId?: string;
   taskType: string;
   requiredCapabilities: string[];
   requiredTools: string[];
@@ -287,6 +289,7 @@ export class AdaptiveHarness {
       taskId: request.taskId,
       ...(request.jobId ? {jobId: request.jobId} : {}),
       ...(request.runId ? {runId: request.runId} : {}),
+      ...(request.stepId ? {stepId: request.stepId} : {}),
       workerId: composition.candidate.route.workerId,
       providerId: composition.candidate.route.providerId,
       modelId: composition.candidate.route.modelId,

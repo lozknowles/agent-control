@@ -18,6 +18,7 @@ import {
   DEFAULT_HARNESS_PROFILES,
   type ContextPacketSource,
   type HarnessEfficiencyLedgerPort,
+  type InvocationPhase,
   type ModelInvocationObservation,
 } from './harness-efficiency.js';
 
@@ -52,6 +53,7 @@ export type ToolResultInterceptor = (context: ToolResultInterceptorContext) => u
 
 export interface ToolInvocationGateway {
   invoke(toolId: string, input?: unknown): Promise<unknown>;
+  lifecycle?(phase: Extract<InvocationPhase, 'waiting for provider' | 'response received' | 'processing'>): void;
 }
 
 export interface RecipeExecutor {
@@ -201,13 +203,18 @@ export class HarnessJobAgentAction implements AgentActionHandler {
 
   async execute(context: ActionContext): Promise<ActionOutput> {
     const prepared = await this.factory(context);
-    const plan = {...prepared.plan, request: {...prepared.plan.request, jobId: prepared.plan.request.jobId ?? context.run.jobId, runId: prepared.plan.request.runId ?? context.run.id}};
+    const plan = {...prepared.plan, request: {...prepared.plan.request, jobId: prepared.plan.request.jobId ?? context.run.jobId, runId: prepared.plan.request.runId ?? context.run.id, stepId: prepared.plan.request.stepId ?? context.step.id}};
     if (plan.placement.workerId !== context.worker.id) throw new HarnessPolicyDeniedError(['worker_placement_mismatch']);
     const result = await this.dispatcher.dispatch(plan, prepared.executor);
     const mapped = prepared.toActionOutput?.(result) ?? {
       evidence: result.execution.evidence,
       detail: result.execution.resultRef ?? `recipe ${result.recipe.id} executed`,
     };
+    if (plan.request.verification.requireIndependentCheck && mapped.verification?.length) {
+      const error = new Error('independent_check_required:agent_action_cannot_self_attest');
+      Object.assign(error, {efficiencyInvocationIds: result.invocationIds});
+      throw error;
+    }
     return {...mapped, efficiencyInvocationIds: result.invocationIds, executionState: 'verification-pending'};
   }
 }
@@ -268,6 +275,7 @@ export class HarnessDispatcher {
     record = {...record, phase: 'DISPATCHING', updatedAt: this.clock()};
     this.store.save(record);
     const gateway: ToolInvocationGateway = {
+      lifecycle: phase => { if (pendingInvocationId) this.efficiency?.setPhase([pendingInvocationId], phase); },
       invoke: async (toolId, input) => {
         const live = this.currentAuthorization(recipe);
         const decision = this.toolPolicy.authorize(recipe, toolId, live);
@@ -331,7 +339,7 @@ export class HarnessDispatcher {
   private startInvocation(recipe: ExecutionRecipe, startedAt: string) {
     if (!this.efficiency) return undefined;
     return this.efficiency.record(createInvocationStart({
-      jobId: recipe.jobId ?? recipe.taskId, runId: recipe.runId, stepId: recipe.taskId.split(':').at(-1), taskId: recipe.taskId, laneId: recipe.authority.laneId,
+      jobId: recipe.jobId ?? recipe.taskId, runId: recipe.runId, stepId: recipe.stepId, taskId: recipe.taskId, laneId: recipe.authority.laneId,
       model: recipe.modelId, provider: recipe.providerId, harnessProfile: recipe.harness?.profile ?? 'STANDARD', executionStrategy: typeof recipe.runtime.executionStrategy === 'string' ? recipe.runtime.executionStrategy : 'adaptive-harness',
       startedAt, recipeFingerprint: recipe.fingerprint, contextPacketId: recipe.harness?.contextPacketId,
     }));
@@ -351,7 +359,7 @@ export class HarnessDispatcher {
       {id: `${recipe.id}:context`, kind: 'task_context', estimatedTokens: recipe.context.estimatedTokens, required: true, persistent: false, relevance: 1, provenanceIds: recipe.context.provenanceIds ?? recipe.context.evidenceIds},
     ];
     return createInvocationObservation({
-      jobId: recipe.jobId ?? recipe.taskId, runId: recipe.runId, stepId: recipe.taskId.split(':').at(-1), taskId: recipe.taskId, laneId: recipe.authority.laneId,
+      jobId: recipe.jobId ?? recipe.taskId, runId: recipe.runId, stepId: recipe.stepId, taskId: recipe.taskId, laneId: recipe.authority.laneId,
       model: recipe.modelId, provider: recipe.providerId, harnessProfile: recipe.harness?.profile ?? 'STANDARD', executionStrategy: typeof recipe.runtime.executionStrategy === 'string' ? recipe.runtime.executionStrategy : 'adaptive-harness',
       startedAt, completedAt, startupSources, toolIds, contextSourceIds: recipe.context.sourceIds, outcome: error ? 'FAILED' : 'COMPLETE', error,
       recipeFingerprint: recipe.fingerprint, contextPacketId: recipe.harness?.contextPacketId, evidenceIds,

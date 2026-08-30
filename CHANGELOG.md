@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.1] — Unreleased
+
+- Remediates the v3.3.0 REVIEW_REQUIRED findings for terminal invocation finalization, late cancellation, observable execution phases, provider-neutral review configuration, independent verification and queue transition validation.
+- Preserves partial provider telemetry and immutable retry/replacement history, including canonical `maximumOutputTokens` handling.
+- Adds server-validated operator session states and fail-closed natural-language submission with immediate, auditable Work Parcel intake.
+- Adds the first-class Systems execution-readiness dashboard backed by canonical node, provider, worker, run and invocation sources.
+
 ## [3.3.0] — 2026-08-30
 
 ### Added

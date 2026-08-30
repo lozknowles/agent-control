@@ -12,6 +12,8 @@ import type {OutputAuthorityScope, OutputExpansionRequest, TokenAwareOutputMetri
 import {MemoryHarnessEfficiencyLedger, type HarnessEfficiencyLedgerPort, type HarnessEfficiencyMetrics} from './harness-efficiency.js';
 import {AGENT_CONTROL_VERSION} from '../version.js';
 import type {WorkParcelCoordinator} from './work-parcels.js';
+import {probeProvider} from './provider-health.js';
+import {deriveSystemReadiness, type SystemReadiness} from './system-readiness.js';
 
 export type ControlEventType =
   | 'system.snapshot'
@@ -186,9 +188,17 @@ export class AgentControlService {
     const records = (this.harnessEfficiency?.list() ?? []).filter(record => (!options.runId || record.runId === options.runId) && (!options.jobId || record.jobId === options.jobId));
     return records.slice(-limit);
   }
+  systems(): SystemReadiness[] { return deriveSystemReadiness({providers: this.providers, resources: this.resourceRows, managedNodes: this.managedNodes, workers: this.jobRuntime?.workers.list() ?? [], runs: this.jobRuntime?.ledger.list() ?? [], invocations: this.harnessEfficiency?.list() ?? []}); }
+  system(id: string) { const value = this.systems().find(item => item.id === id); if (!value) throw new Error('system_missing'); return value; }
+  async checkSystem(id: string, actor: string) {
+    if (this.managedNodes?.resource(id)) { const snapshot = await this.managedNodes.poll(id); this.events.emit('resource.node_changed', {resourceId: id, state: snapshot.state, health: snapshot.health, currentWorkload: snapshot.currentWorkload}, undefined, actor); return this.system(id); }
+    const provider = this.providers?.get(id); if (provider) { const result = await probeProvider(provider); this.providers!.setHealth(id, result.health, result.detail, result.latencyMs); this.events.emit('provider.health_changed', {providerId: id, health: result.health, detail: result.detail, latencyMs: result.latencyMs}, undefined, actor); return this.system(id); }
+    if (this.resourceRows.some(item => item.id === id)) throw new Error('system_check_unavailable');
+    throw new Error('system_missing');
+  }
   parcels() { return this.mustWorkParcels().list(); }
   parcel(id: string) { return this.mustWorkParcels().get(id); }
-  async submitNaturalTask(prompt: string, actor: string) { const parcel = await this.mustWorkParcels().submit(prompt, actor); this.events.emit('work.parcel_created', {parcelId: parcel.id, status: parcel.status}, undefined, actor); return parcel; }
+  async submitNaturalTask(prompt: string, actor: string) { const parcel = this.mustWorkParcels().accept(prompt, actor, this.systems()); this.events.emit('work.parcel_created', {parcelId: parcel.id, status: parcel.status}, undefined, actor); return parcel; }
   cancelParcel(id: string, actor: string) { const parcel = this.mustWorkParcels().cancel(id, actor); this.events.emit('work.parcel_changed', {parcelId: id, status: parcel.status}, undefined, actor); return parcel; }
   expandCommandOutput(handle: string, request: OutputExpansionRequest, scope: OutputAuthorityScope) { return this.mustTokenAwareOutput().expand(handle, request, scope); }
 
