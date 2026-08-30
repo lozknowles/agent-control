@@ -1,0 +1,16 @@
+✔ scheduler overlaps two independent Jobs when worker capacity is two (145.302773ms)
+ℹ {"windows":{"one":{"start":1788102073369,"end":1788102073488},"two":{"start":1788102073369,"end":1788102073495}},"overlapMs":119,"maximumActive":2,"capacity":2}
+✔ step dependencies remain serialized inside one Job (108.268082ms)
+✔ no-overlap serializes runs of the same Job (184.651704ms)
+ℹ {"windows":[{"start":1788102073623,"end":1788102073703},{"start":1788102073712,"end":1788102073793}],"overlapMs":0,"maximumActive":1,"policy":"no-overlap"}
+✔ configured worker capacity is a hard scheduler bound (212.669947ms)
+✔ one Job failure does not prevent an independent Job succeeding (81.11166ms)
+✔ a timed-out Job releases a capacity-one slot for the next Job (1019.119372ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2158.681655

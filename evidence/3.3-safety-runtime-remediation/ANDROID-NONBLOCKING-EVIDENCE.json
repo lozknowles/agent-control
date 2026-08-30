@@ -1,0 +1,13 @@
+{
+  "schema": "agent-control.safety-runtime.android-nonblocking/v1",
+  "recordedAt": "2026-08-30T16:00:00+01:00",
+  "commit": "4c93080a9709ff7c9f1476842617a0616a7a08c6",
+  "eventLoop": {"controlCallbackBeforeRecoveryCompletion": true, "testDurationMs": 114.57248, "passed": true},
+  "scheduler": {"independentJobSucceededBeforeRecoveryCompletion": true, "testDurationMs": 262.398398, "passed": true},
+  "totalTimeout": {"configuredMs": 40, "observedTestDurationMs": 41.807901, "terminalState": "recovery-failed", "activeCommandsAfter": 0, "passed": true},
+  "cancellation": {"propagated": true, "activeCommandsAfter": 0, "eventLoopResponsiveAfter": true, "passed": true},
+  "blockingPrimitivesRemoved": ["spawnSync", "Atomics.wait"],
+  "ownedProcessExecution": true,
+  "credentialHandling": {"rawTokenInArguments": false, "base64TokenInArguments": false, "transport": "ssh stdin to fixed sh -s command", "realCredentialUsedInTest": false, "passed": true},
+  "source": "raw/final-focused.txt"
+}

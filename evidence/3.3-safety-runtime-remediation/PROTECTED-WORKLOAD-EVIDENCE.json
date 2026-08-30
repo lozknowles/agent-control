@@ -1,0 +1,11 @@
+{
+  "schema": "agent-control.safety-runtime.protected-workload/v1",
+  "recordedAt": "2026-08-30T16:00:00+01:00",
+  "commit": "4c93080a9709ff7c9f1476842617a0616a7a08c6",
+  "staysIdle": {"initialState": "IDLE", "finalState": "IDLE", "probeCount": 2, "executeCount": 1, "passed": true},
+  "becomesActive": {"initialState": "IDLE", "finalState": "BUSY", "newProtectedWorkloads": ["disc-copy"], "operation": "system.reboot", "executeCount": 0, "overrideCouldBypass": false, "passed": true},
+  "audit": {"job": "FAILED", "stepErrorContains": "managed_node_protected_workload_changed", "runErrorContains": "managed_node_protected_workload_changed", "passed": true},
+  "safeReadOnlyWork": {"operation": "system.identity", "extraProbe": false, "executeCount": 1, "passed": true},
+  "finalGateLocation": "ManagedNodeManager.execute after initial authorize and immediately before transport.execute",
+  "source": "raw/final-focused.txt"
+}

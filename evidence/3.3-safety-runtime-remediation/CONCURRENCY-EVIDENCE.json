@@ -1,0 +1,21 @@
+{
+  "schema": "agent-control.safety-runtime.concurrency/v1",
+  "recordedAt": "2026-08-30T15:01:13.495Z",
+  "commit": "4c93080a9709ff7c9f1476842617a0616a7a08c6",
+  "productionSchedulerBeforeMs": 0,
+  "independentJobs": {
+    "capacity": 2,
+    "maximumActive": 2,
+    "overlapMs": 119,
+    "windows": {
+      "one": {"start": "2026-08-30T15:01:13.369Z", "end": "2026-08-30T15:01:13.488Z"},
+      "two": {"start": "2026-08-30T15:01:13.369Z", "end": "2026-08-30T15:01:13.495Z"}
+    }
+  },
+  "dependencyOrder": {"passed": true, "sequence": ["first:start", "first:end", "second:start"]},
+  "explicitNoOverlap": {"overlapMs": 0, "maximumActive": 1, "passed": true},
+  "capacityThreeRunnable": {"configuredCapacity": 2, "maximumActive": 2, "passed": true},
+  "failureIsolation": {"failedJob": "FAILED", "independentJob": "SUCCEEDED", "passed": true},
+  "timeoutSlotReuse": {"timedOutStep": "TIMED_OUT", "followingJob": "SUCCEEDED", "workerActiveAfter": 0, "passed": true},
+  "source": "raw/concurrency-measurement.txt"
+}

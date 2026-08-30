@@ -1,0 +1,15 @@
+{
+  "schema": "agent-control.safety-runtime.timeout/v1",
+  "recordedAt": "2026-08-30T16:00:00+01:00",
+  "commit": "4c93080a9709ff7c9f1476842617a0616a7a08c6",
+  "declaredTimeoutSeconds": 1,
+  "fastSuccess": {"passed": true, "durationMs": 2.881985, "terminalState": "SUCCEEDED"},
+  "directChild": {"passed": true, "testDurationMs": 1211.177971, "childAliveAfter": false},
+  "descendantTree": {"passed": true, "testDurationMs": 1203.228763, "parentAliveAfter": false, "grandchildAliveAfter": false},
+  "terminal": {"step": "TIMED_OUT", "job": "FAILED", "workerActiveAfter": 0, "locksAfter": 0},
+  "auditFieldsAsserted": ["jobId", "runId", "stepId", "timeoutSeconds", "elapsedMs", "terminalReason"],
+  "terminalReason": "step_timeout",
+  "postTimeoutReuse": {"followingJob": "SUCCEEDED", "passed": true},
+  "ownership": {"linux": "tracked detached process group", "windows": "exact PID process tree", "patternKill": false},
+  "source": "raw/final-focused.txt"
+}

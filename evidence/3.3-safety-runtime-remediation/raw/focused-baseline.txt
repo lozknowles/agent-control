@@ -1,0 +1,43 @@
+2026-08-30T15:41:20,630050236+01:00
+✔ two differently named Android devices use the same capability logic (1.537673ms)
+✔ non-SSH Android transport is represented honestly (8.778804ms)
+✔ production bootstrap wires persistent telemetry and configured harness policy (29.637038ms)
+✔ scheduler boundary reports an unexpected tick failure and remains callable (0.975238ms)
+✔ manual Run uses capability placement, typed artifact handoff and verified completion (13.577024ms)
+✔ incapable, offline and expired workers are rejected with visible rationale (1.803673ms)
+✔ identical worker waits do not churn and resume when capacity is available (4.034435ms)
+✔ resource contention is durable, visible and released after failure (3.322617ms)
+✔ identical resource waits are transition-driven and resume without ledger churn (3.352172ms)
+✔ retry policy is bounded and every attempt is recorded (4.239846ms)
+✔ verification failure is distinct from process completion (2.244234ms)
+✔ upstream failure cancels dependent steps without dispatching them (2.317511ms)
+✔ approval requirement remains a visible wait until explicitly granted (5.931885ms)
+✔ approval waits are reported as WAITING and repeated ticks do not duplicate events (4.131928ms)
+✔ cancellation aborts execution and retains the exclusive lock until the handler returns (11.741202ms)
+✔ scheduled and manual triggers share createRun and missed skip is visible without backfill (39.441386ms)
+✔ a due schedule creates exactly one Run and its next time survives ledger restart (10.991833ms)
+✔ one invalid due schedule is contained and does not block another due schedule (16.964871ms)
+✔ a disabled scheduled job records failure and advances instead of rejecting (9.140455ms)
+✔ artifact store detects post-write corruption before downstream consumption (1.683388ms)
+✔ restart recovery fails closed and retains Git-independent ledger identity and locks (1.425963ms)
+✔ worker registry explains protected-workload capability fencing without hiding safe inspection (0.219768ms)
+✔ reference workflow retains discovery artifact while publisher is unavailable then resumes across workers (46.465466ms)
+✔ fixed probe records parse without trusting host-provided framing (3.028696ms)
+✔ arbitrarily named Linux resources use the same discovered capability and state logic (1.23881ms)
+✔ configured connectivity and workload availability are discovered instead of assumed (0.234358ms)
+✔ healthy reachability without a discovered workload projects ONLINE (0.221928ms)
+✔ active optical workload marks node BUSY and fences disruptive scheduler capabilities (1.118512ms)
+✔ managed-node observations preserve active scheduler claims (0.703322ms)
+✔ managed-node monitor contains and reports a throwing observer callback (0.627669ms)
+✔ heartbeat failure degrades, expires offline, and recovers from a later successful probe (1.249411ms)
+✔ typed maintenance requires approval and an additional protected-workload override while busy (0.912084ms)
+✔ package and approved-service inspection use typed parameters and reject an SSH escape payload (1.003304ms)
+ℹ tests 33
+ℹ suites 0
+ℹ pass 33
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1796.538863
+2026-08-30T15:41:22,472548930+01:00
