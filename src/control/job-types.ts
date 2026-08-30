@@ -1,10 +1,11 @@
 import type {CapabilityRequest} from './capabilities.js';
+import type {OwnedExecution} from './owned-process.js';
 
 export type JobPriority = 'background' | 'low' | 'normal' | 'high' | 'urgent';
 export type ConcurrencyPolicy = 'allow' | 'no-overlap' | 'replace-running' | 'queue';
 export type MissedRunPolicy = 'skip' | 'run-next-available' | 'run-once-immediately';
 export type RunStatus = 'SCHEDULED' | 'QUEUED' | 'WAITING' | 'RUNNING' | 'VERIFYING' | 'SUCCEEDED' | 'FAILED' | 'DEGRADED' | 'CANCELLED' | 'MISSED' | 'DISCONNECTED';
-export type StepStatus = 'QUEUED' | 'WAITING_FOR_WORKER' | 'WAITING_FOR_DEPENDENCY' | 'WAITING_FOR_RESOURCE' | 'WAITING_FOR_APPROVAL' | 'DISPATCHED' | 'RUNNING' | 'VERIFYING' | 'RETRY_PENDING' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED';
+export type StepStatus = 'QUEUED' | 'WAITING_FOR_WORKER' | 'WAITING_FOR_DEPENDENCY' | 'WAITING_FOR_RESOURCE' | 'WAITING_FOR_APPROVAL' | 'DISPATCHED' | 'RUNNING' | 'VERIFYING' | 'RETRY_PENDING' | 'SUCCEEDED' | 'FAILED' | 'TIMED_OUT' | 'CANCELLED';
 
 export interface RetryPolicy {attempts: number; backoffSeconds: number;}
 export interface ParameterDefinition {type: 'string' | 'integer' | 'number' | 'boolean'; default?: unknown; required?: boolean; secretRef?: boolean; minimum?: number; maximum?: number; enum?: unknown[];}
@@ -53,7 +54,7 @@ export interface ArtifactRecord {
   createdAt: string; size: number; sha256: string; storageRef: string; retention: string;
   provenance: {jobId: string; jobVersion: string; action: string; workerId: string};
 }
-export interface StepAttempt {attempt: number; startedAt: string; endedAt?: string; workerId?: string; outcome?: string; retryable?: boolean; errorClass?: ActionFailureClass; efficiencyInvocationIds?: string[];}
+export interface StepAttempt {attempt: number; startedAt: string; endedAt?: string; workerId?: string; outcome?: string; retryable?: boolean; errorClass?: ActionFailureClass; efficiencyInvocationIds?: string[]; timeoutSeconds?: number; elapsedMs?: number; terminalReason?: string;}
 export type ActionFailureClass = 'execution' | 'capability_unavailable' | 'authentication' | 'policy_rejection' | 'verification' | 'configuration';
 export interface RunStep {
   id: string; action: string; status: StepStatus; dependsOn: string[]; capabilityRequest: CapabilityRequest; resources: string[];
@@ -66,7 +67,7 @@ export interface RunRecord {
   concurrency: ConcurrencyPolicy; parameters: Record<string, unknown>; steps: RunStep[]; artifacts: string[]; errors: string[];
   effectiveJob: JobDefinition; selectedWorkers: string[]; approvals: string[]; provenance: Array<{type: string; at: string; detail: string}>;
 }
-export interface ActionContext {run: RunRecord; step: RunStep; worker: WorkerRegistration; parameters: Record<string, unknown>; inputArtifacts: ArtifactRecord[]; readArtifact: (id: string) => unknown; signal: AbortSignal;}
+export interface ActionContext {run: RunRecord; step: RunStep; worker: WorkerRegistration; parameters: Record<string, unknown>; inputArtifacts: ArtifactRecord[]; readArtifact: (id: string) => unknown; signal: AbortSignal; ownedExecution: OwnedExecution;}
 export interface ActionOutput {artifacts?: Array<{name: string; value: unknown; type?: string; schema?: string; version?: string; retention?: string}>; evidence?: string[]; verification?: string[]; detail?: string; efficiencyInvocationIds?: string[]; executionState?: 'verification-pending';}
 export type ActionHandler = (context: ActionContext) => Promise<ActionOutput>;
 export interface AgentActionHandler {readonly path: 'adaptive-harness'; execute(context: ActionContext): Promise<ActionOutput>;}

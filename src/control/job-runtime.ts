@@ -5,13 +5,15 @@ import type {ResourceConfig} from './config.js';
 import {effectiveParameters, nextCronOccurrence, type JobCatalog} from './job-catalog.js';
 import {jobPriorityRank, type ActionFailureClass, type ActionHandler, type ActionOutput, type AgentActionHandler, type ArtifactRecord, type PlacementRationale, type RunRecord, type RunStatus, type ScheduleState, type StepAttempt, type StepStatus, type WorkerRegistration} from './job-types.js';
 import type {HarnessEfficiencyLedgerPort, InvocationFinalResult} from './harness-efficiency.js';
+import {OwnedProcessManager} from './owned-process.js';
 
 function writeJsonAtomic(file: string, value: unknown) { fs.mkdirSync(path.dirname(file), {recursive: true}); const temporary = `${file}.tmp`; fs.writeFileSync(temporary, `${JSON.stringify(value, null, 2)}\n`, {mode: 0o600}); fs.renameSync(temporary, file); }
 function now() { return new Date().toISOString(); }
 const ACTIVE_RUNS: RunStatus[] = ['SCHEDULED', 'QUEUED', 'WAITING', 'RUNNING', 'VERIFYING', 'DISCONNECTED'];
-const TERMINAL_STEPS: StepStatus[] = ['SUCCEEDED', 'FAILED', 'CANCELLED'];
+const TERMINAL_STEPS: StepStatus[] = ['SUCCEEDED', 'FAILED', 'TIMED_OUT', 'CANCELLED'];
 
 export class ActionFailure extends Error {constructor(message: string, readonly failureClass: ActionFailureClass, readonly retryable = false) { super(message); this.name = 'ActionFailure'; }}
+class StepTimeoutError extends Error { constructor(readonly timeoutSeconds: number, readonly elapsedMs: number) { super(`step_timeout:${timeoutSeconds}s:${elapsedMs}ms`); this.name = 'StepTimeoutError'; } }
 export class ActionRegistry {
   private readonly actions = new Map<string, {kind: 'control'; handler: ActionHandler} | {kind: 'agent'; handler: AgentActionHandler}>();
   /** Existing deterministic/control-plane Actions remain explicitly outside model execution. */
@@ -90,14 +92,14 @@ export class RunLedger {
   private readonly runs = new Map<string, RunRecord>(); private readonly schedules = new Map<string, ScheduleState>(); private readonly eventsFile: string;
   constructor(readonly file: string) { this.eventsFile = path.join(path.dirname(file), 'run-events.jsonl'); if (fs.existsSync(file)) { const snapshot = JSON.parse(fs.readFileSync(file, 'utf8')) as LedgerSnapshot; if (snapshot.version !== 1) throw new Error('unsupported_run_ledger'); for (const run of snapshot.runs) this.runs.set(run.id, run); for (const schedule of snapshot.schedules ?? []) this.schedules.set(schedule.scheduleId, schedule); } }
   add(run: RunRecord) { if (this.runs.has(run.id)) throw new Error('run_exists'); run.updatedAt = run.requestedAt; this.runs.set(run.id, structuredClone(run)); this.record(run.id, 'run.created', run.status); return this.get(run.id)!; }
-  update(run: RunRecord, event = 'run.updated') { if (!this.runs.has(run.id)) throw new Error('run_missing'); run.updatedAt = now(); this.runs.set(run.id, structuredClone(run)); this.record(run.id, event, run.status); return this.get(run.id)!; }
+  update(run: RunRecord, event = 'run.updated', evidence?: Record<string, unknown>) { if (!this.runs.has(run.id)) throw new Error('run_missing'); run.updatedAt = now(); this.runs.set(run.id, structuredClone(run)); this.record(run.id, event, run.status, evidence); return this.get(run.id)!; }
   get(id: string) { const run = this.runs.get(id); return run ? structuredClone(run) : undefined; }
   list(jobId?: string) { return [...this.runs.values()].filter(run => !jobId || run.jobId === jobId).sort((a, b) => Date.parse(b.requestedAt) - Date.parse(a.requestedAt)).map(run => structuredClone(run)); }
   schedule(id: string) { const state = this.schedules.get(id); return state ? structuredClone(state) : undefined; }
   saveSchedule(state: ScheduleState) { this.schedules.set(state.scheduleId, structuredClone(state)); this.save(); return this.schedule(state.scheduleId)!; }
   scheduleStates() { return [...this.schedules.values()].map(state => structuredClone(state)); }
   recoverFailClosed() { const changed: string[] = []; for (const run of this.runs.values()) { let dirty = false; for (const step of run.steps) if (['DISPATCHED', 'RUNNING', 'VERIFYING'].includes(step.status)) { step.status = 'FAILED'; step.error = 'execution_identity_unproven_after_restart'; step.endedAt = now(); dirty = true; } if (dirty || ['RUNNING', 'VERIFYING'].includes(run.status)) { run.status = 'DISCONNECTED'; run.errors.push('execution_identity_unproven_after_restart'); run.provenance.push({type: 'recovery', at: now(), detail: 'Fail closed: original execution identity not proven'}); changed.push(run.id); } } if (changed.length) this.save(); return changed; }
-  private record(runId: string, type: string, status: string) { fs.mkdirSync(path.dirname(this.file), {recursive: true}); fs.appendFileSync(this.eventsFile, `${JSON.stringify({at: now(), runId, type, status})}\n`, {mode: 0o600}); this.save(); }
+  private record(runId: string, type: string, status: string, evidence?: Record<string, unknown>) { fs.mkdirSync(path.dirname(this.file), {recursive: true}); fs.appendFileSync(this.eventsFile, `${JSON.stringify({at: now(), runId, type, status, ...(evidence ? {evidence} : {})})}\n`, {mode: 0o600}); this.save(); }
   private save() { writeJsonAtomic(this.file, {version: 1, runs: this.list(), schedules: this.scheduleStates()} satisfies LedgerSnapshot); }
 }
 
@@ -177,12 +179,28 @@ export class JobRuntime {
     if (!lock.ok) { const reason = `Held by ${lock.blocked.map(item => `${item.resource}:${item.runId}`).join(', ')}`, changed = step.status !== 'WAITING_FOR_RESOURCE' || step.waitingReason !== reason || run.status !== 'WAITING'; step.status = 'WAITING_FOR_RESOURCE'; step.waitingReason = reason; run.status = 'WAITING'; if (changed) this.ledger.update(run, 'step.waiting_resource'); return; }
     const required = step.capabilityRequest.requires.map(item => item.id), resolution = this.workers.resolve(required, this.clock()), previousPlacement = JSON.stringify(step.placement); step.placement = resolution.rationale;
     if (!resolution.worker) { const reason = `No worker satisfies ${required.join(', ')}`, changed = step.status !== 'WAITING_FOR_WORKER' || step.waitingReason !== reason || run.status !== 'WAITING' || previousPlacement !== JSON.stringify(resolution.rationale); step.status = 'WAITING_FOR_WORKER'; step.waitingReason = reason; run.status = 'WAITING'; this.locks.release(run.id, step.id); if (changed) this.ledger.update(run, 'step.waiting_worker'); return; }
-    const worker = resolution.worker, controller = new AbortController(); this.controllers.set(run.id, controller); this.workers.claim(worker.id); step.status = 'RUNNING'; step.startedAt ??= this.clock().toISOString(); run.startedAt ??= step.startedAt; run.status = 'RUNNING'; if (!run.selectedWorkers.includes(worker.id)) run.selectedWorkers.push(worker.id); const attempt: StepAttempt = {attempt: step.attempts.length + 1, startedAt: this.clock().toISOString(), workerId: worker.id}; step.attempts.push(attempt); this.ledger.update(run, 'step.dispatched');
+    const worker = resolution.worker, controller = new AbortController(), ownedExecution = new OwnedProcessManager(); this.controllers.set(run.id, controller); this.workers.claim(worker.id); step.status = 'RUNNING'; step.startedAt ??= this.clock().toISOString(); run.startedAt ??= step.startedAt; run.status = 'RUNNING'; if (!run.selectedWorkers.includes(worker.id)) run.selectedWorkers.push(worker.id); const attempt: StepAttempt = {attempt: step.attempts.length + 1, startedAt: this.clock().toISOString(), workerId: worker.id}; step.attempts.push(attempt); this.ledger.update(run, 'step.dispatched');
+    const definition = run.effectiveJob.spec.steps.find(item => item.id === step.id)!, timeoutSeconds = definition.timeoutSeconds, wallStartedAt = Date.now();
+    let timeoutTimer: NodeJS.Timeout | undefined, timedOut = false;
     try {
       const inputs = this.inputArtifacts(run, step.id), action = this.actions.resolve(step.action);
       run.provenance.push({type: 'action-dispatch', at: this.clock().toISOString(), detail: `${action.kind}:${step.action}${action.kind === 'agent' ? ':adaptive-harness' : ''}`});
-      const actionContext = {run: structuredClone(run), step: structuredClone(step), worker, parameters: structuredClone(run.parameters), inputArtifacts: inputs, readArtifact: (id: string) => this.artifacts.read(id), signal: controller.signal};
-      const output = action.kind === 'control' ? await action.handler(actionContext) : await action.handler.execute(actionContext);
+      const actionContext = {run: structuredClone(run), step: structuredClone(step), worker, parameters: structuredClone(run.parameters), inputArtifacts: inputs, readArtifact: (id: string) => this.artifacts.read(id), signal: controller.signal, ownedExecution};
+      const invocation = Promise.resolve().then(() => action.kind === 'control' ? action.handler(actionContext) : action.handler.execute(actionContext)).then(
+        output => timedOut ? new Promise<never>(() => undefined) : output,
+        error => timedOut ? new Promise<never>(() => undefined) : Promise.reject(error),
+      );
+      const output = timeoutSeconds === undefined ? await invocation : await Promise.race([
+        invocation,
+        new Promise<never>((_resolve, reject) => {
+          timeoutTimer = setTimeout(() => {
+            timedOut = true;
+            const error = new StepTimeoutError(timeoutSeconds, Date.now() - wallStartedAt);
+            controller.abort(error);
+            reject(error);
+          }, timeoutSeconds * 1000);
+        }),
+      ]);
       attempt.efficiencyInvocationIds = [...(output.efficiencyInvocationIds ?? [])];
       if (action.kind === 'agent' && output.executionState !== 'verification-pending') throw new ActionFailure('agent_action_missing_verification_boundary', 'verification');
       if (controller.signal.aborted) throw new ActionFailure('execution_cancelled', 'execution');
@@ -193,12 +211,20 @@ export class JobRuntime {
       step.status = 'SUCCEEDED'; step.endedAt = this.clock().toISOString(); attempt.endedAt = step.endedAt; attempt.outcome = output.detail ?? 'completed_and_verified'; run.provenance.push(...(output.evidence ?? []).map(detail => ({type: 'evidence', at: now(), detail}))); this.locks.release(run.id, step.id); this.ledger.update(run, 'step.succeeded'); this.finalizeRun(run);
     } catch (error) {
       const errorInvocationIds = efficiencyInvocationIds(error); if (!attempt.efficiencyInvocationIds?.length && errorInvocationIds.length) attempt.efficiencyInvocationIds = errorInvocationIds;
+      if (error instanceof StepTimeoutError) {
+        await ownedExecution.terminateAll('step_timeout');
+        const endedAt = this.clock().toISOString(), terminalReason = 'step_timeout';
+        step.status = 'TIMED_OUT'; step.endedAt = endedAt; step.error = `${terminalReason}:${error.timeoutSeconds}s`; attempt.endedAt = endedAt; attempt.outcome = step.error; attempt.retryable = false; attempt.errorClass = 'execution'; attempt.timeoutSeconds = error.timeoutSeconds; attempt.elapsedMs = error.elapsedMs; attempt.terminalReason = terminalReason;
+        this.cancelDependents(run, step.id); run.status = 'FAILED'; run.endedAt = endedAt; run.errors.push(`${step.id}:execution:${step.error}`);
+        const timeoutEvidence = {jobId: run.jobId, runId: run.id, stepId: step.id, timeoutSeconds: error.timeoutSeconds, elapsedMs: error.elapsedMs, terminalReason};
+        run.provenance.push({type: 'step-timeout', at: endedAt, detail: JSON.stringify(timeoutEvidence)}); this.locks.release(run.id, step.id); this.ledger.update(run, 'step.timed_out', timeoutEvidence); return;
+      }
       if (controller.signal.aborted) { step.status = 'CANCELLED'; step.endedAt = this.clock().toISOString(); attempt.endedAt = step.endedAt; attempt.outcome = 'execution_cancelled'; run.status = 'CANCELLED'; run.endedAt = step.endedAt; run.errors.push('execution_cancelled'); if (attempt.efficiencyInvocationIds?.length) { this.efficiency?.markVerification(attempt.efficiencyInvocationIds, 'FAIL', 'CANCELLED'); } this.locks.release(run.id, step.id); this.ledger.update(run, 'run.cancellation_confirmed'); return; }
-      const failure = error instanceof ActionFailure ? error : new ActionFailure(error instanceof Error ? error.message : String(error), 'execution', true), definition = run.effectiveJob.spec.steps.find(item => item.id === step.id)!, retry = definition.retry ?? run.effectiveJob.spec.retry ?? {attempts: 0, backoffSeconds: 0};
+      const failure = error instanceof ActionFailure ? error : new ActionFailure(error instanceof Error ? error.message : String(error), 'execution', true), retry = definition.retry ?? run.effectiveJob.spec.retry ?? {attempts: 0, backoffSeconds: 0};
       attempt.endedAt = this.clock().toISOString(); attempt.outcome = failure.message; attempt.retryable = failure.retryable; attempt.errorClass = failure.failureClass; step.error = failure.message; this.locks.release(run.id, step.id);
       if (failure.retryable && step.attempts.length <= retry.attempts) { step.status = 'RETRY_PENDING'; step.nextAttemptAt = new Date(this.clock().getTime() + retry.backoffSeconds * 1000).toISOString(); step.waitingReason = `${failure.failureClass}; retry ${step.attempts.length}/${retry.attempts}`; run.status = 'QUEUED'; this.ledger.update(run, 'step.retry_pending'); }
       else { step.status = 'FAILED'; step.endedAt = this.clock().toISOString(); this.cancelDependents(run, step.id); run.errors.push(`${step.id}:${failure.failureClass}:${failure.message}`); run.status = failure.failureClass === 'verification' ? 'DEGRADED' : 'FAILED'; run.endedAt = step.endedAt; if (attempt.efficiencyInvocationIds?.length) this.efficiency?.markVerification(attempt.efficiencyInvocationIds, 'FAIL', run.status); this.ledger.update(run, 'step.failed'); }
-    } finally { this.workers.release(worker.id); this.controllers.delete(run.id); }
+    } finally { if (timeoutTimer) clearTimeout(timeoutTimer); if (controller.signal.aborted) await ownedExecution.terminateAll('execution_aborted'); this.workers.release(worker.id); this.controllers.delete(run.id); }
   }
 
   private inputArtifacts(run: RunRecord, stepId: string) { const definition = run.effectiveJob.spec.steps.find(step => step.id === stepId)!; return Object.values(definition.inputs ?? {}).map(reference => { const [sourceStep, artifactName] = reference.split('.'); const source = run.steps.find(step => step.id === sourceStep); const record = source?.artifactIds.map(id => this.artifacts.get(id)).find(item => item?.name === artifactName); if (!record) throw new ActionFailure(`input_artifact_missing:${reference}`, 'configuration'); this.artifacts.read(record.id); return record; }); }

@@ -30,6 +30,45 @@ test('one invalid due schedule is contained and does not block another due sched
 test('a disabled scheduled job records failure and advances instead of rejecting', async () => { const instant = new Date('2026-08-24T07:00:00Z'), schedule: ScheduleDefinition = {apiVersion: 'agent-control/v1', kind: 'Schedule', metadata: {id: 'disabled', name: 'Disabled'}, spec: {enabled: true, job: 'job@1.0.0', cron: '0 7 * * *', timezone: 'Europe/London', missedRunPolicy: 'run-once-immediately'}}, setup = runtime(job([{id: 'one', action: 'one@1.0.0', requires: []}], {enabled: false}), actions => actions.register('one@1.0.0', async () => ({})), [worker('worker', [])], schedule, () => instant); setup.runtime.ledger.saveSchedule({scheduleId: 'disabled', enabled: true, nextScheduledAt: instant.toISOString(), missedCount: 0, updatedAt: instant.toISOString()}); assert.deepEqual(await setup.runtime.tickSchedules(instant), []); const state = setup.runtime.ledger.schedule('disabled')!; assert.equal(state.lastError, 'job_disabled'); assert.notEqual(state.nextScheduledAt, instant.toISOString()); });
 test('artifact store detects post-write corruption before downstream consumption', () => { const setup = runtime(job([{id: 'one', action: 'one@1.0.0', requires: []}]), actions => actions.register('one@1.0.0', async () => ({})), [worker('worker', [])]), run = setup.runtime.createRun('job@1.0.0', {}, {type: 'manual', actor: 'test'}), artifact = setup.runtime.artifacts.create(run, 'one', 'worker', {name: 'data', type: 'application/json', schema: 'data/v1', version: '1.0.0'}, {safe: true}); fs.writeFileSync(artifact.storageRef, '{}'); assert.throws(() => setup.runtime.artifacts.read(artifact.id), /artifact_checksum_mismatch/); });
 test('restart recovery fails closed and retains Git-independent ledger identity and locks', () => { const setup = runtime(job([{id: 'one', action: 'one@1.0.0', requires: ['run'], resources: ['repo']}]), actions => actions.register('one@1.0.0', async () => ({})), [worker('worker', ['run'])]); const run = setup.runtime.createRun('job@1.0.0', {}, {type: 'manual', actor: 'test'}), changed = setup.runtime.ledger.get(run.id)!; changed.status = 'RUNNING'; changed.steps[0].status = 'RUNNING'; setup.runtime.ledger.update(changed); setup.runtime.locks.acquire(['repo'], run.id, 'one'); const restored = new RunLedger(path.join(setup.root, 'ledger.json')); assert.deepEqual(restored.recoverFailClosed(), [run.id]); assert.equal(restored.get(run.id)?.status, 'DISCONNECTED'); assert.equal(new ResourceLockManager(path.join(setup.root, 'locks.json')).list()[0].runId, run.id); });
+
+function processAlive(pid: number) { try { process.kill(pid, 0); return true; } catch { return false; } }
+async function waitForProcessExit(pid: number, timeoutMs = 2500) { const deadline = Date.now() + timeoutMs; while (Date.now() < deadline && processAlive(pid)) await new Promise(resolve => setTimeout(resolve, 25)); return !processAlive(pid); }
+
+test('step timeout permits fast success without erroneous termination', async () => {
+  const setup = runtime(job([{id: 'fast', action: 'fast@1.0.0', requires: ['run'], timeoutSeconds: 1}]), actions => actions.register('fast@1.0.0', async () => ({detail: 'fast-success'})), [worker('worker', ['run'])]);
+  const run = setup.runtime.createRun('job@1.0.0', {}, {type: 'manual', actor: 'test'}); await setup.runtime.tick();
+  const result = setup.runtime.ledger.get(run.id)!; assert.equal(result.status, 'SUCCEEDED'); assert.equal(result.steps[0].status, 'SUCCEEDED'); assert.equal(result.steps[0].attempts[0].terminalReason, undefined); assert.equal(setup.workers.list()[0].active, 0);
+});
+
+test('step timeout terminates its direct child, records evidence, releases resources and permits lane reuse', async () => {
+  const pidFile = path.join(os.tmpdir(), `agent-control-owned-child-${process.pid}.txt`); let calls = 0;
+  const setup = runtime(job([{id: 'owned', action: 'owned@1.0.0', requires: ['run'], resources: ['exclusive'], timeoutSeconds: 1}], {concurrency: 'allow'}), actions => actions.register('owned@1.0.0', async context => {
+    calls++; if (calls > 1) return {detail: 'lane-reused'};
+    await context.ownedExecution.runProcess({command: process.execPath, args: ['-e', `require('node:fs').writeFileSync(${JSON.stringify(pidFile)},String(process.pid));setInterval(()=>{},1000)`]}, context.signal);
+    return {};
+  }), [worker('worker', ['run'])]);
+  try {
+    const started = Date.now(), run = setup.runtime.createRun('job@1.0.0', {}, {type: 'manual', actor: 'test'}); await setup.runtime.tick(); const elapsed = Date.now() - started;
+    const result = setup.runtime.ledger.get(run.id)!, attempt = result.steps[0].attempts[0], childPid = Number(fs.readFileSync(pidFile, 'utf8'));
+    assert.equal(result.status, 'FAILED'); assert.equal(result.steps[0].status, 'TIMED_OUT'); assert.equal(attempt.timeoutSeconds, 1); assert.equal(attempt.terminalReason, 'step_timeout'); assert.ok((attempt.elapsedMs ?? 0) >= 900); assert.ok(elapsed < 4000); assert.equal(await waitForProcessExit(childPid), true);
+    assert.equal(setup.workers.list()[0].active, 0); assert.equal(setup.runtime.locks.list().length, 0);
+    const events = fs.readFileSync(path.join(setup.root, 'run-events.jsonl'), 'utf8').trim().split('\n').map(line => JSON.parse(line));
+    const timeout = events.find(event => event.type === 'step.timed_out'); assert.deepEqual({jobId: timeout.evidence.jobId, stepId: timeout.evidence.stepId, timeoutSeconds: timeout.evidence.timeoutSeconds, terminalReason: timeout.evidence.terminalReason}, {jobId: 'job', stepId: 'owned', timeoutSeconds: 1, terminalReason: 'step_timeout'}); assert.ok(timeout.evidence.elapsedMs >= 900);
+    const retry = setup.runtime.createRun('job@1.0.0', {}, {type: 'manual', actor: 'test'}); await setup.runtime.tick(); assert.equal(setup.runtime.ledger.get(retry.id)?.status, 'SUCCEEDED'); assert.equal(setup.workers.list()[0].active, 0); assert.equal(setup.runtime.locks.list().length, 0);
+  } finally { fs.rmSync(pidFile, {force: true}); }
+});
+
+test('step timeout terminates the owned process group including descendants', {skip: process.platform === 'win32'}, async () => {
+  const pidFile = path.join(os.tmpdir(), `agent-control-owned-tree-${process.pid}.txt`);
+  const setup = runtime(job([{id: 'tree', action: 'tree@1.0.0', requires: ['run'], timeoutSeconds: 1}]), actions => actions.register('tree@1.0.0', async context => {
+    const script = '(sleep 30) & grandchild=$!; printf "%s %s" "$$" "$grandchild" > "$1"; wait "$grandchild"';
+    await context.ownedExecution.runProcess({command: 'bash', args: ['-c', script, 'owned-tree', pidFile]}, context.signal); return {};
+  }), [worker('worker', ['run'])]);
+  try {
+    const run = setup.runtime.createRun('job@1.0.0', {}, {type: 'manual', actor: 'test'}); await setup.runtime.tick();
+    const [parentPid, grandchildPid] = fs.readFileSync(pidFile, 'utf8').split(' ').map(Number); assert.equal(setup.runtime.ledger.get(run.id)?.steps[0].status, 'TIMED_OUT'); assert.equal(await waitForProcessExit(parentPid), true); assert.equal(await waitForProcessExit(grandchildPid), true);
+  } finally { fs.rmSync(pidFile, {force: true}); }
+});
 test('worker registry explains protected-workload capability fencing without hiding safe inspection', () => { const registry = new WorkerRegistry(); registry.register(worker('managed', ['compute.intensive', 'managed-node.inspect'], 'healthy', {blockedCapabilities: ['compute.intensive']})); assert.match(registry.resolve(['compute.intensive']).rationale.rejected[0].reasons.join(','), /workload_blocked:compute\.intensive/); assert.equal(registry.resolve(['managed-node.inspect']).worker?.id, 'managed'); });
 test('reference workflow retains discovery artifact while publisher is unavailable then resumes across workers', async () => {
   const actions = registerReferenceActions(); registerBrowserActions(actions);
