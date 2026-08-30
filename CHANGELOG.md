@@ -1,5 +1,25 @@
 # Changelog
 
+## [3.3.0] — 2026-08-30
+
+### Added
+
+- Added natural-language Work Parcels with governed multi-stage Jobs, durable routing rationale, execution timelines, verification outcomes, and invocation-to-Job-to-stage accounting.
+- Added governed browser and ChatGPT UI capability routes, independently qualified headless browsing, and fail-closed separation between public, authenticated web, and Android UI sessions.
+- Added canonical provider/model invocation lifecycle records before provider completion, including Run, step, lane, phase, duration, usage, cost, outcome, and verification attribution.
+- Added per-Run invocation history and multi-invocation aggregation to Job details.
+
+### Fixed
+
+- Preserved operator-edited dashboard parameters across background refresh while allowing untouched defaults and other live state to update.
+- Reconciled provider-reported usage and cost after non-streaming completion while preserving explicit estimated and unknown states; unavailable values are never converted to zero.
+- Enforced Job timeouts and owned-process cleanup, final protected-workload revalidation, bounded scheduler concurrency, and nonblocking Android recovery.
+- Removed private host/device identifiers and a machine-specific operator context-file default, and extended distributable-text neutrality scanning to YAML.
+
+### Verification
+
+- Retained the complete TypeScript, bootstrap, dashboard, implementation-status, infrastructure-neutrality, telemetry, safety/runtime, packaging, and repository test gates.
+
 ## [3.2.1] — 2026-08-30
 
 ### Fixed
