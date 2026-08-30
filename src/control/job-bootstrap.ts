@@ -42,8 +42,22 @@ export async function runJobSchedulerTick(runtime: Pick<ReturnType<typeof buildJ
 export async function runWorkParcelTick(runtime: Pick<ReturnType<typeof buildJobRuntime>, 'workParcels'>, onChange?: (parcelId: string, status: string) => void, onError?: (error: Error) => void) { try { const changed = await runtime.workParcels.tick(); if (changed) onChange?.(changed.id, changed.status); } catch (error) { const failure = error instanceof Error ? error : new Error(String(error)); if (onError) onError(failure); else throw failure; } }
 
 export function startJobScheduler(runtime: ReturnType<typeof buildJobRuntime>, onChange?: (runId: string, status: string) => void, intervalMs = 1000, onError?: (error: Error) => void) {
-  let busy = false;
+  let scheduling = false, stopped = false;
+  const inFlight = new Set<Promise<unknown>>();
   const report = onError ?? (error => process.emitWarning(`job scheduler failure: ${error.message}`));
-  const tick = async () => { if (busy) return; busy = true; try { await runJobSchedulerTick(runtime, onChange, report); await runWorkParcelTick(runtime, onChange, report); } finally { busy = false; } };
-  const timer = setInterval(() => void tick(), intervalMs); timer.unref(); void tick(); return () => clearInterval(timer);
+  const schedule = async () => {
+    if (scheduling || stopped) return;
+    scheduling = true;
+    try {
+      const created = await runtime.tickSchedules(); for (const run of created) onChange?.(run.id, run.status);
+      await runWorkParcelTick(runtime, onChange, report);
+      while (!stopped && inFlight.size < runtime.schedulerConcurrencyLimit()) {
+        const dispatched = runtime.dispatch(); if (!dispatched) break;
+        const completion = dispatched.completion.then(changed => { if (changed) onChange?.(changed.id, changed.status); }).catch(error => report(error instanceof Error ? error : new Error(String(error)))).finally(() => { inFlight.delete(completion); queueMicrotask(() => void schedule()); });
+        inFlight.add(completion);
+      }
+    } catch (error) { report(error instanceof Error ? error : new Error(String(error))); }
+    finally { scheduling = false; }
+  };
+  const timer = setInterval(() => void schedule(), intervalMs); timer.unref(); void schedule(); return () => { stopped = true; clearInterval(timer); };
 }

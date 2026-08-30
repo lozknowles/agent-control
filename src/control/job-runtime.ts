@@ -55,6 +55,7 @@ export class WorkerRegistry {
   }
   claim(id: string) { const worker = this.workers.get(id); if (!worker || worker.health !== 'healthy' || worker.active >= worker.capacity) throw new Error('worker_not_claimable'); worker.active++; }
   release(id: string) { const worker = this.workers.get(id); if (worker) worker.active = Math.max(0, worker.active - 1); }
+  schedulerCapacity() { return Math.max(1, Math.min(32, [...this.workers.values()].filter(worker => worker.health === 'healthy').reduce((total, worker) => total + worker.capacity, 0))); }
   static fromConfig(resources: ResourceConfig[]) { const registry = new WorkerRegistry(); for (const resource of resources) registry.register({id: resource.id, capabilities: [...resource.capabilities], health: 'unknown', capacity: Number(resource.metadata?.capacity ?? 1), active: 0, labels: Object.fromEntries(Object.entries(resource.metadata ?? {}).map(([key, value]) => [key, String(value)])), observedAt: now()}); return registry; }
 }
 
@@ -104,6 +105,7 @@ export class RunLedger {
 }
 
 export interface JobRuntimeOptions {now?: () => Date; approval?: (policy: string, run: RunRecord) => boolean; efficiency?: HarnessEfficiencyLedgerPort;}
+export interface JobDispatch {runId: string; completion: Promise<RunRecord | undefined>;}
 export class JobRuntime {
   private readonly controllers = new Map<string, AbortController>();
   private readonly clock: () => Date;
@@ -121,12 +123,18 @@ export class JobRuntime {
   }
 
   async tick() {
+    return (this.dispatch()?.completion ?? Promise.resolve(undefined));
+  }
+
+  schedulerConcurrencyLimit() { return this.workers.schedulerCapacity(); }
+
+  dispatch(): JobDispatch | undefined {
     const runs = this.ledger.list().filter(run => ['QUEUED', 'WAITING', 'RUNNING'].includes(run.status)).sort((a, b) => jobPriorityRank[b.priority] - jobPriorityRank[a.priority] || Date.parse(a.requestedAt) - Date.parse(b.requestedAt));
     for (const run of runs) {
       const activeSibling = this.ledger.list(run.jobId).find(other => other.id !== run.id && ['RUNNING', 'VERIFYING'].includes(other.status));
       if (activeSibling && ['no-overlap', 'queue'].includes(run.concurrency)) continue;
       const step = this.nextRunnableStep(run); if (!step) { this.finalizeRun(run); continue; }
-      await this.executeStep(run, step.id); return this.ledger.get(run.id)!;
+      return {runId: run.id, completion: this.executeStep(run, step.id).then(() => this.ledger.get(run.id))};
     }
     return undefined;
   }
