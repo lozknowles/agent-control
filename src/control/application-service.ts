@@ -10,6 +10,7 @@ import type {JobRuntime} from './job-runtime.js';
 import type {ManagedNodeManager, ManagedNodeSnapshot} from './managed-node.js';
 import type {OutputAuthorityScope, OutputExpansionRequest, TokenAwareOutputMetrics, TokenAwareOutputService} from './token-aware-output.js';
 import {MemoryHarnessEfficiencyLedger, type HarnessEfficiencyLedgerPort, type HarnessEfficiencyMetrics} from './harness-efficiency.js';
+import {AGENT_CONTROL_VERSION} from '../version.js';
 
 export type ControlEventType =
   | 'system.snapshot'
@@ -74,7 +75,7 @@ export interface SystemProjection {
   outstandingApprovals: number;
   lastRestorePoint: string | null;
   observedAt: string;
-  jobs: {total: number; enabled: number; queued: number; running: number; failed: number; succeeded: number; schedulesEnabled: number;};
+  jobs: {total: number; enabled: number; queued: number; waiting: number; running: number; failed: number; succeeded: number; schedulesEnabled: number;};
   tokenAwareOutput: TokenAwareOutputMetrics;
   harnessEfficiency: HarnessEfficiencyMetrics;
 }
@@ -112,7 +113,7 @@ export class AgentControlService {
     readonly state: WorkspaceState,
     readonly ptys: PtyRegistry,
     readonly providers?: ProviderRegistry,
-    readonly version = '3.1.0',
+    readonly version = AGENT_CONTROL_VERSION,
     private readonly persist: (state: WorkspaceState) => void = saveWorkspace,
   ) {
     this.plane = new ControlPlane(state);
@@ -150,7 +151,7 @@ export class AgentControlService {
       outstandingApprovals: this.approvalCount(),
       lastRestorePoint: this.state.lastRestorePoint,
       observedAt: new Date().toISOString(),
-      jobs: {total: jobDefinitions.length, enabled: jobDefinitions.filter(job => job.spec.enabled !== false).length, queued: jobRuns.filter(run => run.status === 'QUEUED').length, running: jobRuns.filter(run => ['RUNNING', 'VERIFYING'].includes(run.status)).length, failed: jobRuns.filter(run => ['FAILED', 'DEGRADED', 'DISCONNECTED'].includes(run.status)).length, succeeded: jobRuns.filter(run => run.status === 'SUCCEEDED').length, schedulesEnabled: schedules.filter(schedule => this.jobRuntime?.ledger.schedule(schedule.metadata.id)?.enabled).length},
+      jobs: {total: jobDefinitions.length, enabled: jobDefinitions.filter(job => job.spec.enabled !== false).length, queued: jobRuns.filter(run => run.status === 'QUEUED').length, waiting: jobRuns.filter(run => run.status === 'WAITING').length, running: jobRuns.filter(run => ['RUNNING', 'VERIFYING'].includes(run.status)).length, failed: jobRuns.filter(run => ['FAILED', 'DEGRADED', 'DISCONNECTED'].includes(run.status)).length, succeeded: jobRuns.filter(run => run.status === 'SUCCEEDED').length, schedulesEnabled: schedules.filter(schedule => this.jobRuntime?.ledger.schedule(schedule.metadata.id)?.enabled).length},
       tokenAwareOutput: this.commandOutputMetrics(),
       harnessEfficiency: this.harnessEfficiencyMetrics(),
     };
@@ -302,8 +303,13 @@ export class AgentControlService {
   }
 
   setSystemPaused(paused: boolean, actor: string) {
+    if (paused && !this.state.paused) for (const lane of this.state.lanes) { lane.statusBeforeSystemPause = lane.status; lane.status = 'paused'; }
+    if (!paused && this.state.paused) for (const lane of this.state.lanes) {
+      const humanOwnsPty = this.ptys.list().filter(session => session.laneId === String(lane.id)).some(session => this.ptys.attached(session.id).some(attachment => attachment.access === 'own' && attachment.actorId.startsWith('human:')));
+      if (!['cancelled', 'error'].includes(lane.status)) lane.status = humanOwnsPty ? 'paused' : lane.statusBeforeSystemPause ?? 'paused';
+      lane.statusBeforeSystemPause = undefined;
+    }
     this.state.paused = paused;
-    for (const lane of this.state.lanes) lane.status = paused ? 'paused' : 'idle';
     checkpoint(this.state, paused ? 'pause-all' : 'resume-all');
     this.events.emit('system.paused_changed', {paused}, undefined, actor);
     return this.snapshot();

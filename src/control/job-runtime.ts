@@ -8,7 +8,7 @@ import type {HarnessEfficiencyLedgerPort, InvocationFinalResult} from './harness
 
 function writeJsonAtomic(file: string, value: unknown) { fs.mkdirSync(path.dirname(file), {recursive: true}); const temporary = `${file}.tmp`; fs.writeFileSync(temporary, `${JSON.stringify(value, null, 2)}\n`, {mode: 0o600}); fs.renameSync(temporary, file); }
 function now() { return new Date().toISOString(); }
-const ACTIVE_RUNS: RunStatus[] = ['SCHEDULED', 'QUEUED', 'RUNNING', 'VERIFYING', 'DISCONNECTED'];
+const ACTIVE_RUNS: RunStatus[] = ['SCHEDULED', 'QUEUED', 'WAITING', 'RUNNING', 'VERIFYING', 'DISCONNECTED'];
 const TERMINAL_STEPS: StepStatus[] = ['SUCCEEDED', 'FAILED', 'CANCELLED'];
 
 export class ActionFailure extends Error {constructor(message: string, readonly failureClass: ActionFailureClass, readonly retryable = false) { super(message); this.name = 'ActionFailure'; }}
@@ -31,6 +31,7 @@ export class WorkerRegistry {
   private readonly workers = new Map<string, WorkerRegistration>();
   register(worker: WorkerRegistration) { if (this.workers.has(worker.id)) throw new Error('worker_exists'); this.workers.set(worker.id, structuredClone(worker)); return this; }
   upsert(worker: WorkerRegistration) { this.workers.set(worker.id, structuredClone(worker)); return this; }
+  observe(worker: Omit<WorkerRegistration, 'active'>) { const current = this.workers.get(worker.id); this.workers.set(worker.id, structuredClone({...worker, active: current?.active ?? 0})); return this; }
   list() { return [...this.workers.values()].map(worker => structuredClone(worker)); }
   setHealth(id: string, health: WorkerRegistration['health']) { const worker = this.workers.get(id); if (!worker) throw new Error('worker_missing'); worker.health = health; worker.observedAt = now(); }
   resolve(required: string[], at = new Date()): {worker?: WorkerRegistration; rationale: PlacementRationale} {
@@ -88,8 +89,8 @@ interface LedgerSnapshot {version: 1; runs: RunRecord[]; schedules: ScheduleStat
 export class RunLedger {
   private readonly runs = new Map<string, RunRecord>(); private readonly schedules = new Map<string, ScheduleState>(); private readonly eventsFile: string;
   constructor(readonly file: string) { this.eventsFile = path.join(path.dirname(file), 'run-events.jsonl'); if (fs.existsSync(file)) { const snapshot = JSON.parse(fs.readFileSync(file, 'utf8')) as LedgerSnapshot; if (snapshot.version !== 1) throw new Error('unsupported_run_ledger'); for (const run of snapshot.runs) this.runs.set(run.id, run); for (const schedule of snapshot.schedules ?? []) this.schedules.set(schedule.scheduleId, schedule); } }
-  add(run: RunRecord) { if (this.runs.has(run.id)) throw new Error('run_exists'); this.runs.set(run.id, structuredClone(run)); this.record(run.id, 'run.created', run.status); return this.get(run.id)!; }
-  update(run: RunRecord, event = 'run.updated') { if (!this.runs.has(run.id)) throw new Error('run_missing'); this.runs.set(run.id, structuredClone(run)); this.record(run.id, event, run.status); return this.get(run.id)!; }
+  add(run: RunRecord) { if (this.runs.has(run.id)) throw new Error('run_exists'); run.updatedAt = run.requestedAt; this.runs.set(run.id, structuredClone(run)); this.record(run.id, 'run.created', run.status); return this.get(run.id)!; }
+  update(run: RunRecord, event = 'run.updated') { if (!this.runs.has(run.id)) throw new Error('run_missing'); run.updatedAt = now(); this.runs.set(run.id, structuredClone(run)); this.record(run.id, event, run.status); return this.get(run.id)!; }
   get(id: string) { const run = this.runs.get(id); return run ? structuredClone(run) : undefined; }
   list(jobId?: string) { return [...this.runs.values()].filter(run => !jobId || run.jobId === jobId).sort((a, b) => Date.parse(b.requestedAt) - Date.parse(a.requestedAt)).map(run => structuredClone(run)); }
   schedule(id: string) { const state = this.schedules.get(id); return state ? structuredClone(state) : undefined; }
@@ -118,7 +119,7 @@ export class JobRuntime {
   }
 
   async tick() {
-    const runs = this.ledger.list().filter(run => ['QUEUED', 'RUNNING'].includes(run.status)).sort((a, b) => jobPriorityRank[b.priority] - jobPriorityRank[a.priority] || Date.parse(a.requestedAt) - Date.parse(b.requestedAt));
+    const runs = this.ledger.list().filter(run => ['QUEUED', 'WAITING', 'RUNNING'].includes(run.status)).sort((a, b) => jobPriorityRank[b.priority] - jobPriorityRank[a.priority] || Date.parse(a.requestedAt) - Date.parse(b.requestedAt));
     for (const run of runs) {
       const activeSibling = this.ledger.list(run.jobId).find(other => other.id !== run.id && ['RUNNING', 'VERIFYING'].includes(other.status));
       if (activeSibling && ['no-overlap', 'queue'].includes(run.concurrency)) continue;
@@ -132,42 +133,50 @@ export class JobRuntime {
     const created: RunRecord[] = [];
     for (const schedule of this.catalog.listSchedules()) {
       let state = this.ledger.schedule(schedule.metadata.id) ?? {scheduleId: schedule.metadata.id, enabled: schedule.spec.enabled ?? false, missedCount: 0, updatedAt: at.toISOString()};
-      if (!state.nextScheduledAt) state.nextScheduledAt = nextCronOccurrence(schedule.spec.cron, schedule.spec.timezone, new Date(at.getTime() - 60000)).toISOString();
-      if (!state.enabled || Date.parse(state.nextScheduledAt) > at.getTime()) { state.updatedAt = at.toISOString(); this.ledger.saveSchedule(state); continue; }
+      if (!state.nextScheduledAt) { state.nextScheduledAt = nextCronOccurrence(schedule.spec.cron, schedule.spec.timezone, new Date(at.getTime() - 60000)).toISOString(); state.updatedAt = at.toISOString(); this.ledger.saveSchedule(state); }
+      if (!state.enabled || Date.parse(state.nextScheduledAt) > at.getTime()) continue;
       const scheduledAt = state.nextScheduledAt, lag = at.getTime() - Date.parse(scheduledAt);
-      if (lag > 60000 && schedule.spec.missedRunPolicy === 'skip') { const missed = this.createRun(schedule.spec.job, schedule.spec.parameters ?? {}, {type: 'schedule', id: schedule.metadata.id, actor: 'agent-control-scheduler'}, scheduledAt); missed.status = 'MISSED'; missed.endedAt = at.toISOString(); missed.errors.push('missed_schedule_policy:skip'); missed.provenance.push({type: 'schedule', at: at.toISOString(), detail: 'Occurrence recorded but skipped by missed-run policy'}); this.ledger.update(missed, 'run.missed'); state.missedCount++; state.lastRunId = missed.id; state.previousScheduledAt = scheduledAt; state.nextScheduledAt = nextCronOccurrence(schedule.spec.cron, schedule.spec.timezone, at).toISOString(); state.updatedAt = at.toISOString(); this.ledger.saveSchedule(state); continue; }
-      const run = this.createRun(schedule.spec.job, schedule.spec.parameters ?? {}, {type: 'schedule', id: schedule.metadata.id, actor: 'agent-control-scheduler'}, scheduledAt); created.push(run); state.lastRunId = run.id; state.previousScheduledAt = scheduledAt; state.nextScheduledAt = nextCronOccurrence(schedule.spec.cron, schedule.spec.timezone, at).toISOString(); state.updatedAt = at.toISOString(); this.ledger.saveSchedule(state);
+      try {
+        if (lag > 60000 && schedule.spec.missedRunPolicy === 'skip') { const missed = this.createRun(schedule.spec.job, schedule.spec.parameters ?? {}, {type: 'schedule', id: schedule.metadata.id, actor: 'agent-control-scheduler'}, scheduledAt); missed.status = 'MISSED'; missed.endedAt = at.toISOString(); missed.errors.push('missed_schedule_policy:skip'); missed.provenance.push({type: 'schedule', at: at.toISOString(), detail: 'Occurrence recorded but skipped by missed-run policy'}); this.ledger.update(missed, 'run.missed'); state.missedCount++; state.lastRunId = missed.id; state.lastError = undefined; }
+        else { const run = this.createRun(schedule.spec.job, schedule.spec.parameters ?? {}, {type: 'schedule', id: schedule.metadata.id, actor: 'agent-control-scheduler'}, scheduledAt); created.push(run); state.lastRunId = run.id; state.lastError = undefined; }
+      } catch (error) { state.lastFailureAt = at.toISOString(); state.lastError = error instanceof Error ? error.message : String(error); }
+      state.previousScheduledAt = scheduledAt; state.nextScheduledAt = nextCronOccurrence(schedule.spec.cron, schedule.spec.timezone, at).toISOString(); state.updatedAt = at.toISOString(); this.ledger.saveSchedule(state);
     }
     return created;
   }
 
-  setScheduleEnabled(id: string, enabled: boolean) { const definition = this.catalog.schedule(id); if (!definition) throw new Error('schedule_missing'); const at = this.clock(), current = this.ledger.schedule(id); return this.ledger.saveSchedule({scheduleId: id, enabled, previousScheduledAt: current?.previousScheduledAt, nextScheduledAt: enabled ? nextCronOccurrence(definition.spec.cron, definition.spec.timezone, at).toISOString() : current?.nextScheduledAt, lastRunId: current?.lastRunId, lastSuccessAt: current?.lastSuccessAt, lastFailureAt: current?.lastFailureAt, missedCount: current?.missedCount ?? 0, updatedAt: at.toISOString()}); }
+  setScheduleEnabled(id: string, enabled: boolean) { const definition = this.catalog.schedule(id); if (!definition) throw new Error('schedule_missing'); const at = this.clock(), current = this.ledger.schedule(id); return this.ledger.saveSchedule({scheduleId: id, enabled, previousScheduledAt: current?.previousScheduledAt, nextScheduledAt: enabled ? nextCronOccurrence(definition.spec.cron, definition.spec.timezone, at).toISOString() : current?.nextScheduledAt, lastRunId: current?.lastRunId, lastSuccessAt: current?.lastSuccessAt, lastFailureAt: current?.lastFailureAt, lastError: current?.lastError, missedCount: current?.missedCount ?? 0, updatedAt: at.toISOString()}); }
   approve(runId: string, policy: string) { const run = this.mustRun(runId), waiting = run.steps.filter(step => step.status === 'WAITING_FOR_APPROVAL' && step.approval === policy); if (!waiting.length) throw new Error('approval_policy_not_waiting'); if (!run.approvals.includes(policy)) run.approvals.push(policy); for (const step of waiting) { step.status = 'QUEUED'; step.waitingReason = undefined; } return this.ledger.update(run, 'run.approved'); }
   cancel(runId: string, reason = 'operator_cancelled') { const run = this.mustRun(runId), controller = this.controllers.get(runId); controller?.abort(reason); for (const step of run.steps) if (!TERMINAL_STEPS.includes(step.status)) { step.status = 'CANCELLED'; step.endedAt = now(); } run.status = 'CANCELLED'; run.endedAt = now(); run.errors.push(reason); if (!controller) this.locks.release(run.id); else run.provenance.push({type: 'cancellation', at: now(), detail: 'Execution abort requested; resource lock retained until handler returns'}); return this.ledger.update(run, 'run.cancelled'); }
-  retry(runId: string) { const source = this.mustRun(runId); if (!['FAILED', 'DEGRADED', 'CANCELLED', 'DISCONNECTED'].includes(source.status)) throw new Error('run_not_retryable'); return this.createRun(`${source.jobId}@${source.jobVersion}`, source.parameters, {type: 'retry', id: source.id, actor: 'operator'}); }
+  retry(runId: string) { const source = this.mustRun(runId); if (!['FAILED', 'DEGRADED', 'CANCELLED', 'DISCONNECTED'].includes(source.status)) throw new Error('run_not_retryable'); const reference = `${source.jobId}@${source.jobVersion}`; if (!this.catalog.job(reference)) this.catalog.addJob(source.effectiveJob); return this.createRun(reference, source.parameters, {type: 'retry', id: source.id, actor: 'operator'}); }
   jobsProjection() { return this.catalog.listJobs().map(job => { const runs = this.ledger.list(job.metadata.id), latest = runs[0], schedules = this.catalog.listSchedules().filter(schedule => schedule.spec.job === `${job.metadata.id}@${job.metadata.version}`).map(schedule => ({...schedule, state: this.ledger.schedule(schedule.metadata.id)})); return {...job, latestRun: latest, schedules}; }); }
   queueProjection() { return this.ledger.list().flatMap(run => run.steps.filter(step => ['QUEUED', 'WAITING_FOR_WORKER', 'WAITING_FOR_DEPENDENCY', 'WAITING_FOR_RESOURCE', 'WAITING_FOR_APPROVAL', 'RETRY_PENDING'].includes(step.status)).map(step => ({runId: run.id, jobId: run.jobId, priority: run.priority, stepId: step.id, status: step.status, reason: step.waitingReason, eligibleWorkers: step.placement?.eligible ?? [], missingCapabilities: step.placement?.rejected.flatMap(item => item.reasons.filter(reason => reason.startsWith('missing:'))) ?? [], scheduledAt: run.scheduledAt, queuedAt: run.requestedAt})) ); }
 
   private nextRunnableStep(run: RunRecord) {
+    let changed = false;
+    const wait = (step: RunRecord['steps'][number], status: StepStatus, reason: string) => { if (step.status !== status || step.waitingReason !== reason) { step.status = status; step.waitingReason = reason; changed = true; } };
     for (const step of run.steps) {
       if (TERMINAL_STEPS.includes(step.status)) continue;
       if (['DISPATCHED', 'RUNNING', 'VERIFYING'].includes(step.status)) return undefined;
       const dependencies = step.dependsOn.map(id => run.steps.find(candidate => candidate.id === id));
-      if (dependencies.some(dependency => dependency?.status === 'FAILED' || dependency?.status === 'CANCELLED')) { step.status = 'CANCELLED'; step.error = 'upstream_failed'; continue; }
-      if (!dependencies.every(dependency => dependency?.status === 'SUCCEEDED')) { step.status = 'WAITING_FOR_DEPENDENCY'; step.waitingReason = `Waiting for ${dependencies.filter(item => item?.status !== 'SUCCEEDED').map(item => item?.id).join(', ')}`; continue; }
+      if (dependencies.some(dependency => dependency?.status === 'FAILED' || dependency?.status === 'CANCELLED')) { if (step.status !== 'CANCELLED' || step.error !== 'upstream_failed') { step.status = 'CANCELLED'; step.error = 'upstream_failed'; changed = true; } continue; }
+      if (!dependencies.every(dependency => dependency?.status === 'SUCCEEDED')) { wait(step, 'WAITING_FOR_DEPENDENCY', `Waiting for ${dependencies.filter(item => item?.status !== 'SUCCEEDED').map(item => item?.id).join(', ')}`); continue; }
       if (step.status === 'RETRY_PENDING' && Date.parse(step.nextAttemptAt ?? '') > this.clock().getTime()) continue;
-      if (step.approval && !run.approvals.includes(step.approval) && !this.approval(step.approval, run)) { step.status = 'WAITING_FOR_APPROVAL'; step.waitingReason = `Approval required: ${step.approval}`; continue; }
-      step.status = 'QUEUED'; step.waitingReason = undefined; return step;
+      if (step.approval && !run.approvals.includes(step.approval) && !this.approval(step.approval, run)) { wait(step, 'WAITING_FOR_APPROVAL', `Approval required: ${step.approval}`); continue; }
+      if (!['WAITING_FOR_RESOURCE', 'WAITING_FOR_WORKER'].includes(step.status)) { if (step.status !== 'QUEUED' || step.waitingReason !== undefined) changed = true; step.status = 'QUEUED'; step.waitingReason = undefined; }
+      if (changed) this.ledger.update(run, 'run.dependencies_reconciled');
+      return step;
     }
-    this.ledger.update(run, 'run.dependencies_reconciled'); return undefined;
+    if (changed) { run.status = 'WAITING'; this.ledger.update(run, 'run.waiting'); }
+    return undefined;
   }
 
   private async executeStep(run: RunRecord, stepId: string) {
     const step = run.steps.find(item => item.id === stepId)!;
     const lock = this.locks.acquire(step.resources, run.id, step.id);
-    if (!lock.ok) { step.status = 'WAITING_FOR_RESOURCE'; step.waitingReason = `Held by ${lock.blocked.map(item => `${item.resource}:${item.runId}`).join(', ')}`; this.ledger.update(run, 'step.waiting_resource'); return; }
-    const required = step.capabilityRequest.requires.map(item => item.id), resolution = this.workers.resolve(required, this.clock()); step.placement = resolution.rationale;
-    if (!resolution.worker) { step.status = 'WAITING_FOR_WORKER'; step.waitingReason = `No worker satisfies ${required.join(', ')}`; this.locks.release(run.id, step.id); this.ledger.update(run, 'step.waiting_worker'); return; }
+    if (!lock.ok) { const reason = `Held by ${lock.blocked.map(item => `${item.resource}:${item.runId}`).join(', ')}`, changed = step.status !== 'WAITING_FOR_RESOURCE' || step.waitingReason !== reason || run.status !== 'WAITING'; step.status = 'WAITING_FOR_RESOURCE'; step.waitingReason = reason; run.status = 'WAITING'; if (changed) this.ledger.update(run, 'step.waiting_resource'); return; }
+    const required = step.capabilityRequest.requires.map(item => item.id), resolution = this.workers.resolve(required, this.clock()), previousPlacement = JSON.stringify(step.placement); step.placement = resolution.rationale;
+    if (!resolution.worker) { const reason = `No worker satisfies ${required.join(', ')}`, changed = step.status !== 'WAITING_FOR_WORKER' || step.waitingReason !== reason || run.status !== 'WAITING' || previousPlacement !== JSON.stringify(resolution.rationale); step.status = 'WAITING_FOR_WORKER'; step.waitingReason = reason; run.status = 'WAITING'; this.locks.release(run.id, step.id); if (changed) this.ledger.update(run, 'step.waiting_worker'); return; }
     const worker = resolution.worker, controller = new AbortController(); this.controllers.set(run.id, controller); this.workers.claim(worker.id); step.status = 'RUNNING'; step.startedAt ??= this.clock().toISOString(); run.startedAt ??= step.startedAt; run.status = 'RUNNING'; if (!run.selectedWorkers.includes(worker.id)) run.selectedWorkers.push(worker.id); const attempt: StepAttempt = {attempt: step.attempts.length + 1, startedAt: this.clock().toISOString(), workerId: worker.id}; step.attempts.push(attempt); this.ledger.update(run, 'step.dispatched');
     try {
       const inputs = this.inputArtifacts(run, step.id), action = this.actions.resolve(step.action);
@@ -195,7 +204,7 @@ export class JobRuntime {
   private inputArtifacts(run: RunRecord, stepId: string) { const definition = run.effectiveJob.spec.steps.find(step => step.id === stepId)!; return Object.values(definition.inputs ?? {}).map(reference => { const [sourceStep, artifactName] = reference.split('.'); const source = run.steps.find(step => step.id === sourceStep); const record = source?.artifactIds.map(id => this.artifacts.get(id)).find(item => item?.name === artifactName); if (!record) throw new ActionFailure(`input_artifact_missing:${reference}`, 'configuration'); this.artifacts.read(record.id); return record; }); }
   private recordActionOutput(run: RunRecord, stepId: string, workerId: string, output: ActionOutput) { const definition = run.effectiveJob.spec.steps.find(step => step.id === stepId)!, step = run.steps.find(item => item.id === stepId)!; for (const produced of output.artifacts ?? []) { const declaration = definition.outputs?.find(item => item.name === produced.name); if (!declaration) throw new ActionFailure(`undeclared_artifact:${produced.name}`, 'configuration'); if (produced.type && produced.type !== declaration.type || produced.schema && produced.schema !== declaration.schema || produced.version && produced.version !== declaration.version) throw new ActionFailure(`artifact_contract_mismatch:${produced.name}`, 'verification'); const artifact = this.artifacts.create(run, stepId, workerId, {...declaration, retention: produced.retention ?? declaration.retention}, produced.value); step.artifactIds.push(artifact.id); run.artifacts.push(artifact.id); } }
   private cancelDependents(run: RunRecord, failedStepId: string) { const blocked = new Set([failedStepId]); let changed = true; while (changed) { changed = false; for (const step of run.steps) if (!TERMINAL_STEPS.includes(step.status) && step.dependsOn.some(id => blocked.has(id))) { step.status = 'CANCELLED'; step.error = 'upstream_failed'; step.endedAt = this.clock().toISOString(); blocked.add(step.id); changed = true; } } }
-  private finalizeRun(run: RunRecord) { if (run.steps.some(step => step.status === 'FAILED')) return; if (run.steps.some(step => !TERMINAL_STEPS.includes(step.status))) { run.status = 'RUNNING'; this.ledger.update(run, 'run.continuing'); return; } run.status = run.steps.every(step => step.status === 'SUCCEEDED') ? 'SUCCEEDED' : 'DEGRADED'; run.endedAt = this.clock().toISOString(); const ids = run.steps.flatMap(step => step.attempts.flatMap(attempt => attempt.efficiencyInvocationIds ?? [])); if (ids.length) this.efficiency?.markFinalResult(ids, run.status as Exclude<InvocationFinalResult, 'UNKNOWN'>); this.locks.release(run.id); if (run.trigger.type === 'schedule' && run.trigger.id) { const state = this.ledger.schedule(run.trigger.id); if (state) { if (run.status === 'SUCCEEDED') state.lastSuccessAt = run.endedAt; else state.lastFailureAt = run.endedAt; state.updatedAt = run.endedAt; this.ledger.saveSchedule(state); } } this.ledger.update(run, 'run.finished'); }
+  private finalizeRun(run: RunRecord) { if (run.steps.some(step => step.status === 'FAILED')) return; if (run.steps.some(step => !TERMINAL_STEPS.includes(step.status))) { const status: RunStatus = run.steps.some(step => ['WAITING_FOR_WORKER', 'WAITING_FOR_DEPENDENCY', 'WAITING_FOR_RESOURCE', 'WAITING_FOR_APPROVAL', 'RETRY_PENDING'].includes(step.status)) ? 'WAITING' : 'RUNNING'; if (run.status !== status) { run.status = status; this.ledger.update(run, status === 'WAITING' ? 'run.waiting' : 'run.continuing'); } return; } run.status = run.steps.every(step => step.status === 'SUCCEEDED') ? 'SUCCEEDED' : 'DEGRADED'; run.endedAt = this.clock().toISOString(); const ids = run.steps.flatMap(step => step.attempts.flatMap(attempt => attempt.efficiencyInvocationIds ?? [])); if (ids.length) this.efficiency?.markFinalResult(ids, run.status as Exclude<InvocationFinalResult, 'UNKNOWN'>); this.locks.release(run.id); if (run.trigger.type === 'schedule' && run.trigger.id) { const state = this.ledger.schedule(run.trigger.id); if (state) { if (run.status === 'SUCCEEDED') state.lastSuccessAt = run.endedAt; else state.lastFailureAt = run.endedAt; state.updatedAt = run.endedAt; this.ledger.saveSchedule(state); } } this.ledger.update(run, 'run.finished'); }
   private mustRun(id: string) { const run = this.ledger.get(id); if (!run) throw new Error('run_missing'); return run; }
 }
 

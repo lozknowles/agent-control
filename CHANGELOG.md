@@ -1,5 +1,21 @@
 # Changelog
 
+## [3.2.1] — 2026-08-30
+
+### Fixed
+
+- Added governed ACCEPT/REJECT completion for Work Queue items in `verification-pending`, including bounded retry, human-review and failure dispositions.
+- Preserved lane state across global pause/resume, including human PTY ownership and cancelled/error terminal fences.
+- Preserved active worker claims when managed-node observations refresh capability and health data.
+- Added run-level `WAITING` state and transition-only persistence for resource, worker, approval and dependency waits.
+- Made Persistent Teammate execution jobs stable per profile and retryable from their persisted effective definition after restart; coordinator profiles cannot be specialist delegates.
+- Contained scheduler and managed-node observer failures, persisted schedule failure detail, advanced failed occurrences and emitted typed control-plane failure events.
+- Added schema-typed dashboard Run parameters with safe validation responses and honest live execution state, elapsed/activity age, provider/model, usage, cost and verification telemetry.
+
+### Verification
+
+- Added deterministic regressions for every accepted Ox/GLM finding and retained the complete TypeScript, bootstrap, dashboard, neutrality, implementation-status and repository test gates.
+
 ## [3.2.0] — 2026-08-29
 
 ### Added

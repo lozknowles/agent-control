@@ -161,6 +161,7 @@ export class PersistentTeammateCoordinator {
   constructor(readonly store: PersistentTeammateStore, readonly executor: GovernedTeammateExecutor) {}
   async coordinate(input: {coordinatorId: string; task: string; assignments: Array<{teammateId: string; task: string}>}) {
     if (new Set(input.assignments.map(value => value.teammateId)).size < 2) throw new Error('two_specialists_required');
+    for (const assignment of input.assignments) if (this.store.profile(assignment.teammateId).coordinator) throw new Error('coordinator_cannot_be_specialist');
     const conversation = this.store.createConversation(input.coordinatorId, input.assignments.map(value => value.teammateId), input.task), verified: Array<{teammateId: string; result: string; runId: string; evidenceIds: string[]}> = [];
     for (const assignment of input.assignments) {
       const teammate = this.store.profile(assignment.teammateId), delegation = this.store.createDelegation({conversationId: conversation.id, coordinatorId: input.coordinatorId, teammateId: teammate.id, phase: 'specialist', task: assignment.task});
@@ -182,17 +183,18 @@ export class TeammateEscalationError extends Error { constructor(readonly conver
 function accepted(value: GovernedTeammateResult) { return value.runStatus === 'SUCCEEDED' && value.verifierResult === 'PASS' && value.evidenceIds.length > 0 && value.telemetry.invocationIds.length > 0; }
 
 export class JobRuntimeTeammateExecutor implements GovernedTeammateExecutor {
-  private sequence = 0;
   constructor(readonly runtime: JobRuntime, readonly catalog: JobCatalog, readonly actionId: string, readonly telemetry: HarnessEfficiencyLedgerPort, readonly options: {allowControlActionForDemo?: boolean; maximumTicks?: number} = {}) {
     const kind = runtime.actions.kind(actionId); if (kind !== 'agent' && !options.allowControlActionForDemo) throw new Error('teammate_action_must_be_agent_action');
   }
   async execute(request: GovernedTeammateRequest): Promise<GovernedTeammateResult> {
-    const jobId = `teammate-${request.teammate.id}-${++this.sequence}`, outputName = 'teammate-result';
-    const job: JobDefinition = {apiVersion: 'agent-control/v1', kind: 'Job', metadata: {id: jobId, name: `${request.teammate.name} ${request.phase}`, version: '1.0.0', description: 'Persistent Teammate delegation governed by Agent Control'}, spec: {enabled: true, priority: request.phase === 'synthesis' ? 'high' : 'normal', concurrency: 'queue', parameters: {teammateId: {type: 'string', required: true}, role: {type: 'string', required: true}, instructions: {type: 'string', required: true}, task: {type: 'string', required: true}, phase: {type: 'string', required: true}, context: {type: 'string', required: true}}, steps: [{id: 'execute', name: `${request.teammate.name} governed execution`, action: this.actionId, requires: [...request.teammate.preferredCapabilities], outputs: [{name: outputName, type: 'application/vnd.agent-control.teammate-result+json', schema: 'agent-control.teammate-result/v1', version: '1.0.0'}], verification: ['teammate-output-verified']}]}};
-    this.catalog.addJob(job);
+    const jobId = `teammate-${request.teammate.id}-${request.phase}`, outputName = 'teammate-result';
+    const job: JobDefinition = {apiVersion: 'agent-control/v1', kind: 'Job', metadata: {id: jobId, name: `${request.teammate.name} governed ${request.phase}`, version: '1.0.0', description: 'Persistent Teammate delegation governed by Agent Control'}, spec: {enabled: true, priority: request.phase === 'synthesis' ? 'high' : 'normal', concurrency: 'queue', parameters: {teammateId: {type: 'string', required: true}, conversationId: {type: 'string', required: true}, delegationId: {type: 'string', required: true}, role: {type: 'string', required: true}, instructions: {type: 'string', required: true}, task: {type: 'string', required: true}, phase: {type: 'string', required: true}, context: {type: 'string', required: true}}, steps: [{id: 'execute', name: `${request.teammate.name} governed execution`, action: this.actionId, requires: [...request.teammate.preferredCapabilities], outputs: [{name: outputName, type: 'application/vnd.agent-control.teammate-result+json', schema: 'agent-control.teammate-result/v1', version: '1.0.0'}], verification: ['teammate-output-verified']}]}};
+    const existing = this.catalog.job(`${jobId}@1.0.0`);
+    if (!existing) this.catalog.addJob(job);
+    else if (existing.spec.steps[0]?.action !== this.actionId || JSON.stringify(existing.spec.steps[0]?.requires ?? []) !== JSON.stringify(request.teammate.preferredCapabilities)) throw new Error('teammate_job_definition_changed');
     const instructions = [request.teammate.instructions, ...request.teammate.routines.map(value => `Routine ${value.name}: ${value.instructions}`)].join('\n\n');
     const context = JSON.stringify({retainedContext: request.teammate.retainedContext, priorResults: request.priorResults});
-    const run = this.runtime.createRun(`${jobId}@1.0.0`, {teammateId: request.teammate.id, role: request.teammate.role, instructions, task: request.task, phase: request.phase, context}, {type: 'manual', actor: `teammate-coordinator:${request.conversationId}`});
+    const run = this.runtime.createRun(`${jobId}@1.0.0`, {teammateId: request.teammate.id, conversationId: request.conversationId, delegationId: request.delegationId, role: request.teammate.role, instructions, task: request.task, phase: request.phase, context}, {type: 'manual', actor: `teammate-coordinator:${request.conversationId}`});
     for (let count = 0; count < (this.options.maximumTicks ?? 20); count++) { const current = this.runtime.ledger.get(run.id)!; if (TERMINAL.has(current.status)) break; await this.runtime.tick(); }
     const completed = this.runtime.ledger.get(run.id)!; if (!TERMINAL.has(completed.status)) throw new Error('teammate_run_did_not_terminate');
     const step = completed.steps[0], artifact = step.artifactIds.map(id => this.runtime.artifacts.get(id)).find(value => value?.name === outputName); const value = artifact ? this.runtime.artifacts.read(artifact.id) as {result?: unknown} : undefined;

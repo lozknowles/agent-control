@@ -3,7 +3,7 @@ import type {CapabilityRequest} from './capabilities.js';
 export type JobPriority = 'background' | 'low' | 'normal' | 'high' | 'urgent';
 export type ConcurrencyPolicy = 'allow' | 'no-overlap' | 'replace-running' | 'queue';
 export type MissedRunPolicy = 'skip' | 'run-next-available' | 'run-once-immediately';
-export type RunStatus = 'SCHEDULED' | 'QUEUED' | 'RUNNING' | 'VERIFYING' | 'SUCCEEDED' | 'FAILED' | 'DEGRADED' | 'CANCELLED' | 'MISSED' | 'DISCONNECTED';
+export type RunStatus = 'SCHEDULED' | 'QUEUED' | 'WAITING' | 'RUNNING' | 'VERIFYING' | 'SUCCEEDED' | 'FAILED' | 'DEGRADED' | 'CANCELLED' | 'MISSED' | 'DISCONNECTED';
 export type StepStatus = 'QUEUED' | 'WAITING_FOR_WORKER' | 'WAITING_FOR_DEPENDENCY' | 'WAITING_FOR_RESOURCE' | 'WAITING_FOR_APPROVAL' | 'DISPATCHED' | 'RUNNING' | 'VERIFYING' | 'RETRY_PENDING' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED';
 
 export interface RetryPolicy {attempts: number; backoffSeconds: number;}
@@ -35,7 +35,7 @@ export interface ScheduleDefinition {
   metadata: {id: string; name: string};
   spec: {enabled?: boolean; job: string; cron: string; timezone: string; missedRunPolicy: MissedRunPolicy; parameters?: Record<string, unknown>};
 }
-export interface ScheduleState {scheduleId: string; enabled: boolean; previousScheduledAt?: string; nextScheduledAt?: string; lastRunId?: string; lastSuccessAt?: string; lastFailureAt?: string; missedCount: number; updatedAt: string;}
+export interface ScheduleState {scheduleId: string; enabled: boolean; previousScheduledAt?: string; nextScheduledAt?: string; lastRunId?: string; lastSuccessAt?: string; lastFailureAt?: string; lastError?: string; missedCount: number; updatedAt: string;}
 export interface WorkerRegistration {
   id: string;
   capabilities: string[];
@@ -62,7 +62,7 @@ export interface RunStep {
 }
 export interface RunRecord {
   id: string; jobId: string; jobVersion: string; trigger: {type: 'manual' | 'schedule' | 'retry'; id?: string; actor: string};
-  requestedAt: string; scheduledAt?: string; startedAt?: string; endedAt?: string; status: RunStatus; priority: JobPriority;
+  requestedAt: string; updatedAt?: string; scheduledAt?: string; startedAt?: string; endedAt?: string; status: RunStatus; priority: JobPriority;
   concurrency: ConcurrencyPolicy; parameters: Record<string, unknown>; steps: RunStep[]; artifacts: string[]; errors: string[];
   effectiveJob: JobDefinition; selectedWorkers: string[]; approvals: string[]; provenance: Array<{type: string; at: string; detail: string}>;
 }

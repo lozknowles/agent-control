@@ -16,3 +16,19 @@ test('human takeover is unconditional and blocks resume until ownership is delib
 test('reroute is a request and cannot directly substitute the lane model', () => { const {state, service} = setup(); const before = state.lanes[0].model; const request = service.requestReroute(1, 'web-operator', 'latency changed'); assert.equal(request.requiresApproval, true); assert.equal(state.lanes[0].model, before); });
 test('routing rationale is persisted with lane state and restored into projections', () => { const {state, ptys, service} = setup(); const option: RouteOption = {id: 'local', providerId: 'local', model: 'm', location: 'local', health: 'healthy', qualifiedCapabilities: ['coding'], tools: [], contextCapacity: 32000, capabilityScore: .9, reliability: .9, estimatedLatencyMs: 100, estimatedDurationMs: 1000, estimatedCost: 0, available: true}; const request: RouteRequest = {capabilities: ['coding'], urgency: 'normal', priority: 1, costSensitivity: 1, latencySensitivity: .5, reliabilitySensitivity: .5, privacy: 'standard', localComputeAvailable: true, gpuAvailable: true}; service.recordRoute(1, chooseRoute(request, [option])); const restored = new AgentControlService(structuredClone(state), ptys, undefined, '3.1.0-test', () => {}); assert.equal(restored.latestRoute(1)?.selected.id, 'local'); assert.match(restored.lane(1).routeReason ?? '', /qualified for coding/); });
 test('verification changes are exposed as typed events without changing lease or ownership', () => { const {state, ptys, service} = setup(); const lease = structuredClone(state.lanes[0].lease), owner = ptys.attached('pty-1').find(item => item.access === 'own')?.actorId; const events: string[] = []; service.events.subscribe(event => events.push(event.type)); service.setVerificationPolicy(1, {required: ['test_result']}, 'agent-a'); service.recordClaim(1, 'done', 'agent-a'); service.addVerificationEvidence(1, {type: 'test_result', description: 'suite', status: 'passed'}, 'agent-a'); assert.equal(service.verifyClaim(1, 'judge').ok, true); assert.ok(events.every(type => type === 'verification.changed')); assert.deepEqual(state.lanes[0].lease, lease); assert.equal(ptys.attached('pty-1').find(item => item.access === 'own')?.actorId, owner); });
+
+test('global pause and resume preserves meaningful lane state and human ownership fences', () => {
+  const {state, ptys, service} = setup();
+  state.lanes = [
+    {...lane(1), status: 'working'}, {...lane(2), status: 'waiting'}, {...lane(3), status: 'cancelled'},
+    {...lane(4), status: 'error'}, {...lane(5), status: 'paused'}, {...lane(6), status: 'working'},
+  ];
+  ptys.upsert({id: 'pty-human', cwd: '/tmp', command: 'agent', recovery: 'reattachable'}, '6');
+  ptys.attach('pty-human', 'human:operator', 'own');
+  service.setSystemPaused(true, 'operator');
+  assert.ok(state.lanes.every(value => value.status === 'paused'));
+  state.lanes[2].status = 'cancelled';
+  state.lanes[3].status = 'error';
+  service.setSystemPaused(false, 'operator');
+  assert.deepEqual(state.lanes.map(value => value.status), ['working', 'waiting', 'cancelled', 'error', 'paused', 'paused']);
+});

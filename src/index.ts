@@ -20,6 +20,7 @@ import {ContextStore} from './control/context.js';
 import {buildJobRuntime, startJobScheduler, startManagedNodeMonitoring} from './control/job-bootstrap.js';
 import {FileCommandResultStore, TokenAwareOutputService} from './control/token-aware-output.js';
 import {Trace} from './control/telemetry.js';
+import {AGENT_CONTROL_VERSION} from './version.js';
 
 const now = () => new Date().toISOString();
 const config = loadConfig();
@@ -54,8 +55,8 @@ const control = new AgentControlService(state, ptys, providers).configureProject
   tokenAwareOutput,
   harnessEfficiency: jobRuntime.harnessEfficiency,
 });
-startManagedNodeMonitoring(jobRuntime, snapshot => control.events.emit('resource.node_changed', {resourceId: snapshot.resourceId, state: snapshot.state, health: snapshot.health, currentWorkload: snapshot.currentWorkload}, undefined, 'managed-node-monitor'));
-startJobScheduler(jobRuntime, (runId, status) => control.events.emit('job.run_changed', {runId, status}, undefined, 'job-scheduler'));
+startManagedNodeMonitoring(jobRuntime, snapshot => control.events.emit('resource.node_changed', {resourceId: snapshot.resourceId, state: snapshot.state, health: snapshot.health, currentWorkload: snapshot.currentWorkload}, undefined, 'managed-node-monitor'), error => control.events.emit('failure', {scope: 'managed-node-monitor', error: error.message}, undefined, 'managed-node-monitor'));
+startJobScheduler(jobRuntime, (runId, status) => control.events.emit('job.run_changed', {runId, status}, undefined, 'job-scheduler'), 1000, error => control.events.emit('failure', {scope: 'job-scheduler', error: error.message}, undefined, 'job-scheduler'));
 const androidResource = config.resources.find(resource => resource.platform === 'android' && resource.android);
 let androidState: AndroidRecoveryState | undefined = androidResource ? {resourceId: androidResource.id, state: 'offline', detail: 'not probed', recovered: false} : undefined;
 let androidAuto = false;
@@ -90,7 +91,7 @@ if (process.env.AGENT_CONTROL_WEB_ENABLED !== '0') {
   web.on('error', error => appendEvent('web.failure', {message: error.message}));
 }
 
-const screen = blessed.screen({smartCSR: true, fullUnicode: true, title: 'Agent Control 3.1.0', mouse: true});
+const screen = blessed.screen({smartCSR: true, fullUnicode: true, title: `Agent Control ${AGENT_CONTROL_VERSION}`, mouse: true});
 let active = 0;
 const box = (options: any) => { const value = blessed.box({tags: true, border: 'line', style: {border: {fg: 'gray'}}, ...options}); screen.append(value); return value; };
 const header = box({top: 0, left: 0, width: '100%', height: 4});
@@ -108,7 +109,7 @@ const short = (value: string, size: number) => value.length <= size ? value : `$
 function render() {
   const selected = lanes[active], unassigned = ptys.list().filter(item => item.laneId === null).length, total = ptys.list().length;
   const metrics = workQueueMetrics(workQueue), outputMetrics = control.commandOutputMetrics(), view = controlRoomView(metrics, androidState), activeCount = lanes.filter(item => item.status === 'working').length, waiting = lanes.filter(item => item.status === 'waiting').length;
-  header.setContent(` {cyan-fg}{bold}AGENT CONTROL 3.1.0{/bold}{/cyan-fg}   ${tag(activeCount ? 'running' : 'ready', `${activeCount} ACTIVE`)}   ${tag(waiting ? 'waiting' : 'ready', `${waiting} WAITING`)}   |   ${tag(metrics.humanReview ? 'review' : 'ready', `${metrics.ready} READY / ${metrics.humanReview} REVIEW`)}   |   {gray-fg}TOKENS AVOIDED ${outputMetrics.contextTokensAvoided} · PTY ${total - unassigned}/${total}{/gray-fg}`);
+  header.setContent(` {cyan-fg}{bold}AGENT CONTROL ${AGENT_CONTROL_VERSION}{/bold}{/cyan-fg}   ${tag(activeCount ? 'running' : 'ready', `${activeCount} ACTIVE`)}   ${tag(waiting ? 'waiting' : 'ready', `${waiting} WAITING`)}   |   ${tag(metrics.humanReview ? 'review' : 'ready', `${metrics.ready} READY / ${metrics.humanReview} REVIEW`)}   |   {gray-fg}TOKENS AVOIDED ${outputMetrics.contextTokensAvoided} · PTY ${total - unassigned}/${total}{/gray-fg}`);
   lanes.forEach((item, index) => {
     const color = laneAccent(index), health = batonHealth(item.baton), laneColor = statusColor(item.status), healthColor = statusColor(health.label), context = Math.max(0, Math.min(100, Number.parseFloat(item.context) || 0));
     laneBoxes[index].style.border.fg = index === active ? color : 'gray';

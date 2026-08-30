@@ -80,6 +80,24 @@ test('active optical workload marks node BUSY and fences disruptive scheduler ca
   assert.equal(workers.resolve(['managed-node.inspect']).worker?.id, 'node-alpha');
 });
 
+test('managed-node observations preserve active scheduler claims', async () => {
+  const workers = new WorkerRegistry(), transport = new FakeTransport();
+  const configured = resource(); configured.metadata = {capacity: 1};
+  const manager = new ManagedNodeManager([configured], workers, transport, () => new Date('2026-08-26T08:00:00.000Z'));
+  await manager.poll('node-alpha');
+  workers.claim('node-alpha');
+  await manager.poll('node-alpha');
+  assert.equal(workers.list()[0].active, 1);
+  assert.match(workers.resolve(['compute.intensive']).rationale.rejected[0].reasons.join(','), /capacity_exhausted/);
+});
+
+test('managed-node monitor contains and reports a throwing observer callback', async () => {
+  const workers = new WorkerRegistry(), transport = new FakeTransport(), manager = new ManagedNodeManager([resource()], workers, transport, () => new Date('2026-08-26T08:00:00.000Z'));
+  let resolveFailure!: (value: string) => void; const failure = new Promise<string>(resolve => { resolveFailure = resolve; });
+  const stop = manager.start(() => { throw new Error('observer_fixture_failure'); }, error => resolveFailure(error.message));
+  try { assert.equal(await failure, 'observer_fixture_failure'); } finally { stop(); }
+});
+
 test('heartbeat failure degrades, expires offline, and recovers from a later successful probe', async () => {
   let now = new Date('2026-08-26T08:00:00.000Z'); const workers = new WorkerRegistry(), transport = new FakeTransport(), manager = new ManagedNodeManager([resource()], workers, transport, () => now);
   assert.equal((await manager.poll('node-alpha')).state, 'IDLE');

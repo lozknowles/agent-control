@@ -69,3 +69,30 @@ test('failed delegated verification escalates and prevents coordinator synthesis
   assert.equal(calls, 1);
   assert.equal(store.listDelegations()[0].status, 'REVIEW_REQUIRED');
 });
+
+test('coordinator profiles cannot be delegated as specialists', async () => {
+  const store = new PersistentTeammateStore(path.join(root(), 'teammates.json'));
+  for (const id of ['coordinator', 'other-coordinator']) store.upsertProfile({id, name: id, role: 'Coordinator', instructions: 'Coordinate.', preferredCapabilities: ['coordination'], coordinator: true});
+  store.upsertProfile({id: 'researcher', name: 'Researcher', role: 'Research', instructions: 'Research.', preferredCapabilities: ['research']});
+  const executor: GovernedTeammateExecutor = {async execute() { throw new Error('must_not_launch'); }};
+  await assert.rejects(() => new PersistentTeammateCoordinator(store, executor).coordinate({coordinatorId: 'coordinator', task: 'No recursive chain', assignments: [{teammateId: 'other-coordinator', task: 'Coordinate again'}, {teammateId: 'researcher', task: 'Research'}]}), /coordinator_cannot_be_specialist/);
+});
+
+test('teammate jobs are stable across delegations and historical retries survive restart', async () => {
+  const dir = root(), telemetry = new MemoryHarnessEfficiencyLedger(), actions = new ActionRegistry();
+  actions.registerControl('test.teammate@1.0.0', async context => ({artifacts: [{name: 'teammate-result', value: {result: `verified:${context.parameters.task}`}}], evidence: [`evidence:${context.run.id}`], verification: ['teammate-output-verified']}));
+  const profile = new PersistentTeammateStore(path.join(dir, 'teammates.json')).upsertProfile({id: 'researcher', name: 'Researcher', role: 'Research', instructions: 'Use evidence.', preferredCapabilities: ['research']});
+  const build = (catalog: JobCatalog) => {
+    const workers = new WorkerRegistry(); workers.register({id: 'worker', capabilities: ['research'], health: 'healthy', capacity: 1, active: 0, observedAt: new Date().toISOString()});
+    return new JobRuntime(catalog, actions, workers, new RunLedger(path.join(dir, 'runs.json')), new ArtifactStore(path.join(dir, 'artifacts')), new ResourceLockManager(path.join(dir, 'locks.json')), {efficiency: telemetry});
+  };
+  const catalog = new JobCatalog(actions.ids()), runtime = build(catalog), executor = new JobRuntimeTeammateExecutor(runtime, catalog, 'test.teammate@1.0.0', telemetry, {allowControlActionForDemo: true});
+  let historicalRunId = '';
+  for (let count = 0; count < 12; count++) historicalRunId = (await executor.execute({conversationId: 'conversation-fixture', delegationId: `delegation-${count}`, teammate: profile, phase: 'specialist', task: `task-${count}`, priorResults: []})).runId;
+  assert.equal(catalog.listJobs().length, 1);
+  const historical = runtime.ledger.get(historicalRunId)!; historical.status = 'FAILED'; historical.endedAt = new Date().toISOString(); runtime.ledger.update(historical, 'test.retryable');
+  const restartedCatalog = new JobCatalog(actions.ids()), restarted = build(restartedCatalog), retry = restarted.retry(historicalRunId);
+  assert.equal(retry.trigger.type, 'retry');
+  assert.equal(restartedCatalog.listJobs().length, 1);
+  assert.equal(retry.parameters.delegationId, 'delegation-11');
+});

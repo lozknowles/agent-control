@@ -5,7 +5,7 @@ import path from 'node:path';
 import test from 'node:test';
 import {emptyConfig} from './config.js';
 import {createInvocationObservation} from './harness-efficiency.js';
-import {buildJobRuntime} from './job-bootstrap.js';
+import {buildJobRuntime, runJobSchedulerTick} from './job-bootstrap.js';
 
 test('production bootstrap wires persistent telemetry and configured harness policy', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-harness-bootstrap-'));
@@ -21,4 +21,14 @@ test('production bootstrap wires persistent telemetry and configured harness pol
   } finally {
     fs.rmSync(root, {recursive: true, force: true});
   }
+});
+
+test('scheduler boundary reports an unexpected tick failure and remains callable', async () => {
+  let calls = 0; const failures: string[] = [], changes: string[] = [];
+  const runtime = {async tickSchedules() { calls++; if (calls === 1) throw new Error('scheduler_fixture_failure'); return []; }, async tick() { return undefined; }};
+  await runJobSchedulerTick(runtime, (runId, status) => changes.push(`${runId}:${status}`), error => failures.push(error.message));
+  await runJobSchedulerTick(runtime, (runId, status) => changes.push(`${runId}:${status}`), error => failures.push(error.message));
+  assert.deepEqual(failures, ['scheduler_fixture_failure']);
+  assert.equal(calls, 2);
+  assert.deepEqual(changes, []);
 });

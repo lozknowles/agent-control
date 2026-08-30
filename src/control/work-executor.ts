@@ -1,6 +1,6 @@
 import type {Resource} from './capabilities.js';
 import {WorkCoordinator} from './work-coordinator.js';
-import type {ResourceLoad, WorkItem} from './work-queue.js';
+import type {ResourceLoad, WorkItem, WorkVerification} from './work-queue.js';
 
 export interface WorkExecutionResult {
   resultRef?: string;
@@ -80,6 +80,12 @@ export class WorkExecutor {
     readonly loopThreshold = 3,
   ) {
     if (agentDispatch.path !== 'adaptive-harness') throw new Error('agent_dispatch_must_use_adaptive_harness');
+  }
+
+  completeVerification(workId: string, decision: Omit<WorkVerification, 'at'>) {
+    const work = this.coordinator.queue.completeVerification(workId, decision);
+    this.coordinator.store?.save(this.coordinator.queue);
+    return work;
   }
 
   context(work: WorkItem): WorkContextView {

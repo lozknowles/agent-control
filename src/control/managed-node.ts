@@ -238,9 +238,9 @@ export class ManagedNodeManager {
       this.snapshots.set(id, snapshot); this.syncWorker(resource, snapshot); return structuredClone(snapshot);
     }
   }
-  start(onChange?: (snapshot: ManagedNodeSnapshot) => void) {
+  start(onChange?: (snapshot: ManagedNodeSnapshot) => void, onError: (error: Error) => void = error => process.emitWarning(`managed-node monitor failure: ${error.message}`)) {
     for (const resource of this.resources.values()) {
-      const probe = () => void this.poll(resource.id).then(snapshot => onChange?.(snapshot));
+      const probe = () => void this.poll(resource.id).then(snapshot => onChange?.(snapshot)).catch(error => onError(error instanceof Error ? error : new Error(String(error))));
       probe();
       const timer = setInterval(probe, (resource.managedNode?.probeIntervalSeconds ?? 30) * 1000); timer.unref(); this.timers.add(timer);
     }
@@ -280,6 +280,6 @@ export class ManagedNodeManager {
   private syncWorker(resource: ResourceConfig, snapshot: ManagedNodeSnapshot) {
     const capacity = Math.max(1, Number(resource.metadata?.capacity ?? 1));
     const blockedCapabilities = snapshot.state === 'BUSY' ? unique([...(resource.managedNode?.busyBlockedCapabilities ?? []), ...DEFAULT_BUSY_BLOCKED]) : [];
-    this.workers.upsert({id: resource.id, capabilities: [...snapshot.capabilities], health: snapshot.health, capacity, active: 0, blockedCapabilities, labels: {managedNode: 'true', nodeState: snapshot.state, hostname: snapshot.hostname ?? resource.id}, observedAt: snapshot.lastProbeAt ?? this.clock().toISOString()});
+    this.workers.observe({id: resource.id, capabilities: [...snapshot.capabilities], health: snapshot.health, capacity, blockedCapabilities, labels: {managedNode: 'true', nodeState: snapshot.state, hostname: snapshot.hostname ?? resource.id}, observedAt: snapshot.lastProbeAt ?? this.clock().toISOString()});
   }
 }

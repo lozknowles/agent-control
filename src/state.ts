@@ -32,7 +32,7 @@ export interface LaneVerification {
 export interface HardContract {version: 2; laneId: number; goal: string; constraints: string[]; cwd: string; priority: number; mode: Mode; capabilities: CapabilityRequest; resourceLocks?: {host?: string | null; harness?: string | null; provider?: string | null; model?: string | null}; modelLock: string | null; sharedTaskIds: string[]; git?: {branch?: string; head?: string; dirtyFiles?: string[]}; updatedAt: string;}
 export interface Baton {version: 1; laneId: number; revision: number; status: string; progress: string[]; hypothesis: string; evidence: string[]; changes: string[]; nextAction: string; openQuestions: string[]; model: string; reasoning: string; contextSourceIds?: string[]; updatedAt: string;}
 export interface Lease {laneId: number; holder: string | null; acquiredAt: string | null; expiresAt: string | null;}
-export interface LaneState {id: number; name: string; status: LaneStatus; model: string; reasoning: string; context: string; contract: HardContract; baton: Baton; lease: Lease; lines: string[]; verification?: LaneVerification; routing?: RouteDecision;}
+export interface LaneState {id: number; name: string; status: LaneStatus; statusBeforeSystemPause?: LaneStatus; model: string; reasoning: string; context: string; contract: HardContract; baton: Baton; lease: Lease; lines: string[]; verification?: LaneVerification; routing?: RouteDecision;}
 export interface WorkspaceState {version: 1; paused: boolean; lastRestorePoint: string | null; lanes: LaneState[];}
 
 const ROOT = process.env.AGENT_CONTROL_STATE_DIR || path.resolve('.agent-control');

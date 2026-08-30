@@ -132,3 +132,39 @@ test('execution completion can remain pending independent verification', async (
   assert.equal((await executor.step([resource], [load])).kind, 'verification');
   assert.equal(queue.get('verify')?.status, 'verification-pending');
 });
+
+test('governed verification acceptance completes work and unblocks dependants', async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ac-verify-'));
+  const store = new WorkQueueStore(path.join(directory, 'q.json'));
+  const queue = new WorkQueue();
+  queue.enqueue(item('claim'));
+  queue.enqueue(item('dependant', {dependsOn: ['claim']}));
+  const executor = new WorkExecutor(new WorkCoordinator(queue, undefined, store), dispatch(async work => ({resultRef: `result/${work.id}`, requiresVerification: work.id === 'claim'})));
+  try {
+    assert.equal((await executor.step([resource], [load])).kind, 'verification');
+    executor.completeVerification('claim', {decision: 'ACCEPT', verifier: 'independent-verifier', evidenceRef: 'evidence/claim'});
+    assert.equal(queue.get('claim')?.status, 'completed');
+    assert.equal(queue.ready()[0]?.id, 'dependant');
+    assert.equal(store.load().get('claim')?.verification?.decision, 'ACCEPT');
+  } finally {
+    fs.rmSync(directory, {recursive: true, force: true});
+  }
+});
+
+test('governed verification rejection chooses bounded retry, review or failure explicitly', async () => {
+  const retryQueue = new WorkQueue();
+  retryQueue.enqueue(item('retry', {status: 'verification-pending', attempts: 1, maxAttempts: 2}));
+  const retryExecutor = new WorkExecutor(new WorkCoordinator(retryQueue), dispatch(async () => ({})));
+  retryExecutor.completeVerification('retry', {decision: 'REJECT', verifier: 'judge', evidenceRef: 'evidence/reject', reason: 'claim unsupported', disposition: 'retry'});
+  assert.equal(retryQueue.get('retry')?.status, 'queued');
+
+  const reviewQueue = new WorkQueue();
+  reviewQueue.enqueue(item('review', {status: 'verification-pending'}));
+  new WorkExecutor(new WorkCoordinator(reviewQueue), dispatch(async () => ({}))).completeVerification('review', {decision: 'REJECT', verifier: 'judge', evidenceRef: 'evidence/reject', reason: 'needs operator', disposition: 'human-review'});
+  assert.equal(reviewQueue.get('review')?.status, 'human-review');
+
+  const failedQueue = new WorkQueue();
+  failedQueue.enqueue(item('failed', {status: 'verification-pending'}));
+  new WorkExecutor(new WorkCoordinator(failedQueue), dispatch(async () => ({}))).completeVerification('failed', {decision: 'REJECT', verifier: 'judge', evidenceRef: 'evidence/reject', reason: 'invalid', disposition: 'failed'});
+  assert.equal(failedQueue.get('failed')?.status, 'failed');
+});

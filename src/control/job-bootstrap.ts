@@ -22,10 +22,16 @@ export function buildJobRuntime(config: AgentControlConfig, stateRoot = process.
   return Object.assign(createJobRuntime(stateRoot, catalog, actions, workers, {efficiency: harnessEfficiency}), {managedNodes, harnessEfficiency, harnessProfiles, harnessProfileRouter, contextPacketBuilder});
 }
 
-export function startManagedNodeMonitoring(runtime: ReturnType<typeof buildJobRuntime>, onChange?: (snapshot: ManagedNodeSnapshot) => void) { return runtime.managedNodes.start(onChange); }
+export function startManagedNodeMonitoring(runtime: ReturnType<typeof buildJobRuntime>, onChange?: (snapshot: ManagedNodeSnapshot) => void, onError?: (error: Error) => void) { return runtime.managedNodes.start(onChange, onError); }
 
-export function startJobScheduler(runtime: ReturnType<typeof buildJobRuntime>, onChange?: (runId: string, status: string) => void, intervalMs = 1000) {
+export async function runJobSchedulerTick(runtime: Pick<ReturnType<typeof buildJobRuntime>, 'tickSchedules' | 'tick'>, onChange?: (runId: string, status: string) => void, onError?: (error: Error) => void) {
+  try { const created = await runtime.tickSchedules(); for (const run of created) onChange?.(run.id, run.status); const changed = await runtime.tick(); if (changed) onChange?.(changed.id, changed.status); }
+  catch (error) { const failure = error instanceof Error ? error : new Error(String(error)); if (onError) onError(failure); else throw failure; }
+}
+
+export function startJobScheduler(runtime: ReturnType<typeof buildJobRuntime>, onChange?: (runId: string, status: string) => void, intervalMs = 1000, onError?: (error: Error) => void) {
   let busy = false;
-  const tick = async () => { if (busy) return; busy = true; try { const created = await runtime.tickSchedules(); for (const run of created) onChange?.(run.id, run.status); const changed = await runtime.tick(); if (changed) onChange?.(changed.id, changed.status); } finally { busy = false; } };
+  const report = onError ?? (error => process.emitWarning(`job scheduler failure: ${error.message}`));
+  const tick = async () => { if (busy) return; busy = true; try { await runJobSchedulerTick(runtime, onChange, report); } finally { busy = false; } };
   const timer = setInterval(() => void tick(), intervalMs); timer.unref(); void tick(); return () => clearInterval(timer);
 }
