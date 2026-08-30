@@ -117,6 +117,32 @@ test('dispatch fails closed when an executor exceeds the configured turn budget'
   assert.equal(store.list()[0].phase, 'FAILED');
 });
 
+test('non-streaming dispatch exposes canonical provider identity while pending and reconciles completion', async () => {
+  const policy = toolPolicy(), efficiency = new MemoryHarnessEfficiencyLedger();
+  const dispatcher = new HarnessDispatcher(new AdaptiveHarness(new SkillCatalog(), policy), policy, new ToolHandlerRegistry(), () => ({authority: {...authority}, workerId: 'worker-1'}), undefined, undefined, undefined, efficiency);
+  let complete!: (value: {invocations: ReturnType<typeof createInvocationObservation>[]}) => void;
+  const pending = dispatcher.dispatch({...plan(), request: {...request(), jobId: 'job-live', runId: 'run-live', taskId: 'run-live:review'}}, {execute: async () => new Promise(resolve => { complete = resolve; })});
+  await new Promise(resolve => setImmediate(resolve));
+  const running = efficiency.list()[0];
+  assert.equal(running.state, 'RUNNING');
+  assert.equal(running.phase, 'waiting for provider');
+  assert.equal(running.provider, 'provider-1');
+  assert.equal(running.model, 'model-1');
+  assert.equal(running.runId, 'run-live');
+  assert.equal(running.stepId, 'review');
+  assert.equal(running.completedAt, null);
+  assert.equal(running.usage.totalProcessedTokens, null);
+  complete({invocations: [createInvocationObservation({jobId: 'job-live', runId: 'run-live', stepId: 'review', taskId: 'run-live:review', laneId: 'lane-1', model: 'model-1', provider: 'provider-1', harnessProfile: 'STANDARD', executionStrategy: 'fixture-non-streaming', startedAt: running.startedAt, completedAt: new Date(Date.parse(running.startedAt) + 1500).toISOString(), rawUsage: {input_tokens: 10, output_tokens: 2, total_tokens: 12}, providerReportedCost: .01, recipeFingerprint: running.provenance.recipeFingerprint})]});
+  const result = await pending, completed = efficiency.list()[0];
+  assert.deepEqual(result.invocationIds, [running.id]);
+  assert.equal(completed.state, 'COMPLETE');
+  assert.equal(completed.elapsedMs, 1500);
+  assert.equal(completed.usage.totalProcessedTokens, 12);
+  assert.equal(completed.providerReportedCost, .01);
+  assert.equal(completed.usageSource, 'provider-reported');
+  assert.equal(completed.costSource, 'reported');
+});
+
 test('WorkExecutor normal agent path requires AdaptiveHarness and stops at verification', async () => {
   const policy = toolPolicy(), handlers = new ToolHandlerRegistry().register('repository.read', async () => 'read');
   const dispatcher = new HarnessDispatcher(new AdaptiveHarness(new SkillCatalog(), policy), policy, handlers, () => ({authority: {...authority}, workerId: 'worker-1'}));

@@ -143,6 +143,18 @@ test('invocation errors are redacted and bounded before telemetry persistence', 
   assert.equal((item.error ?? '').length, 2_048);
 });
 
+test('failure timeout cancellation and missing usage retain truthful identity and unknowns', () => {
+  const base = {jobId: 'job-outcomes', runId: 'run-outcomes', stepId: 'review', taskId: 'run-outcomes:review', laneId: 'lane-outcomes', model: 'model-visible', provider: 'provider-visible', harnessProfile: 'STANDARD' as const, executionStrategy: 'fixture', startedAt: '2026-08-27T10:00:00.000Z', completedAt: '2026-08-27T10:00:01.000Z', recipeFingerprint: 'recipe-outcomes'};
+  const failed = createInvocationObservation({...base, outcome: 'FAILED', error: 'provider rejected request'});
+  const timedOut = createInvocationObservation({...base, outcome: 'FAILED', error: 'provider invocation timed out'});
+  const cancelled = createInvocationObservation({...base, outcome: 'CANCELLED', error: 'operator cancelled'});
+  for (const item of [failed, timedOut, cancelled]) {
+    assert.equal(item.provider, 'provider-visible'); assert.equal(item.model, 'model-visible');
+    assert.equal(item.usage.totalProcessedTokens, null); assert.equal(item.usageSource, 'unknown'); assert.equal(item.costSource, 'unknown');
+  }
+  assert.equal(failed.state, 'FAILED'); assert.equal(timedOut.state, 'TIMED_OUT'); assert.equal(cancelled.state, 'CANCELLED');
+});
+
 function observation(id: string, jobId: string, rawUsage: unknown, pricing?: InvocationPricing) {
   return createInvocationObservation({id, jobId, runId: jobId, taskId: jobId, laneId: 'lane-1', model: 'same-model', provider: 'provider-a', harnessProfile: 'THIN', executionStrategy: 'fixture', startedAt: '2026-08-27T10:00:00.000Z', completedAt: '2026-08-27T10:00:01.000Z', startupSources: sources().slice(0, 4), rawUsage, pricing, recipeFingerprint: `recipe-${id}`});
 }

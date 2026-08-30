@@ -1,0 +1,11 @@
+✔ dashboard serializes parameter fields according to the manifest schema (2.984814ms)
+✔ dirty fields survive repeated refresh while untouched defaults remain server-owned (1.234924ms)
+✔ job detail source renders live pending state and canonical invocation history (0.590098ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 126.570119

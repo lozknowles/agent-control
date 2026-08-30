@@ -378,6 +378,7 @@ export interface ModelInvocationObservation {
   id: string;
   jobId: string;
   runId: string | null;
+  stepId: string | null;
   taskId: string;
   laneId: string;
   model: string;
@@ -387,13 +388,18 @@ export interface ModelInvocationObservation {
   executionStrategy: string;
   turnNumber: number;
   startedAt: string;
-  completedAt: string;
-  elapsedMs: number;
+  completedAt: string | null;
+  elapsedMs: number | null;
+  state: 'RUNNING' | 'COMPLETE' | 'FAILED' | 'CANCELLED' | 'TIMED_OUT';
+  phase: 'provider selected' | 'request sent' | 'waiting for provider' | 'response received' | 'processing' | 'verification' | 'complete';
   startup: StartupContextBreakdown;
   usage: NormalizedProviderUsage;
   providerReportedCost: number | null;
   calculatedCost: number | null;
   currency: string | null;
+  usageSource: 'provider-reported' | 'transport' | 'estimated' | 'unknown';
+  costSource: 'reported' | 'estimated' | 'unknown';
+  finishReason: string | null;
   toolCalls: number;
   toolIds: string[];
   agentId: string | null;
@@ -404,7 +410,7 @@ export interface ModelInvocationObservation {
   conversationHistoryTokens: number;
   verifierResult: InvocationVerifierResult;
   finalJobResult: InvocationFinalResult;
-  outcome: 'COMPLETE' | 'FAILED' | 'CANCELLED';
+  outcome: 'RUNNING' | 'COMPLETE' | 'FAILED' | 'CANCELLED';
   error: string | null;
   provenance: {recipeFingerprint: string; contextPacketId?: string; evidenceIds: string[]};
 }
@@ -413,6 +419,7 @@ export interface InvocationObservationInput {
   id?: string;
   jobId: string;
   runId?: string;
+  stepId?: string;
   taskId: string;
   laneId: string;
   model: string;
@@ -438,6 +445,7 @@ export interface InvocationObservationInput {
   recipeFingerprint: string;
   contextPacketId?: string;
   evidenceIds?: string[];
+  finishReason?: string;
 }
 
 export function createInvocationObservation(input: InvocationObservationInput): ModelInvocationObservation {
@@ -447,16 +455,45 @@ export function createInvocationObservation(input: InvocationObservationInput): 
   const turnNumber = input.turnNumber ?? 1;
   const startup = measureStartupContext(input.startupSources ?? [], turnNumber);
   return {
-    schema: 'agent-control.model-invocation/v1', id: input.id ?? `inv-${randomUUID()}`, jobId: input.jobId, runId: input.runId ?? null, taskId: input.taskId, laneId: input.laneId,
+    schema: 'agent-control.model-invocation/v1', id: input.id ?? `inv-${randomUUID()}`, jobId: input.jobId, runId: input.runId ?? null, stepId: input.stepId ?? null, taskId: input.taskId, laneId: input.laneId,
     model: input.model, provider: input.provider, harnessProfile: input.harnessProfile, harnessId: input.harnessId ?? 'adaptive-harness', executionStrategy: input.executionStrategy, turnNumber,
-    startedAt: input.startedAt, completedAt: input.completedAt, elapsedMs: completed - started,
+    startedAt: input.startedAt, completedAt: input.completedAt, elapsedMs: completed - started, state: input.outcome === 'CANCELLED' || /cancel/i.test(input.error ?? '') ? 'CANCELLED' : /timeout|timed out/i.test(input.error ?? '') ? 'TIMED_OUT' : input.outcome === 'FAILED' ? 'FAILED' : 'COMPLETE', phase: 'complete',
     startup, usage,
     providerReportedCost: input.providerReportedCost ?? null,
     calculatedCost: calculateInvocationCost(usage, input.pricing), currency: input.pricing?.currency ?? null,
+    usageSource: Object.values(usage).some(value => typeof value === 'number') ? 'provider-reported' : 'unknown',
+    costSource: input.providerReportedCost !== undefined ? 'reported' : calculateInvocationCost(usage, input.pricing) !== null ? 'estimated' : 'unknown', finishReason: input.finishReason ?? null,
     toolCalls: input.toolIds?.length ?? 0, toolIds: [...(input.toolIds ?? [])], agentId: input.agentId ?? null, filesContextSupplied: input.filesContextSupplied ?? null, contextSourceIds: [...(input.contextSourceIds ?? [])],
     retrievedContextTokens: input.retrievedContextTokens ?? null, repositoryContextTokens: input.repositoryContextTokens ?? null, conversationHistoryTokens: startup.conversationHistoryTokens,
     verifierResult: 'UNKNOWN', finalJobResult: 'UNKNOWN', outcome: input.outcome ?? 'COMPLETE', error: input.error === undefined ? null : boundedRedactedError(input.error),
     provenance: {recipeFingerprint: input.recipeFingerprint, ...(input.contextPacketId ? {contextPacketId: input.contextPacketId} : {}), evidenceIds: [...(input.evidenceIds ?? [])]},
+  };
+}
+
+export interface InvocationStartInput {
+  id?: string; jobId: string; runId?: string; stepId?: string; taskId: string; laneId: string; model: string; provider: string;
+  harnessProfile: HarnessProfileName; executionStrategy: string; startedAt: string; recipeFingerprint: string; contextPacketId?: string;
+}
+
+export function createInvocationStart(input: InvocationStartInput): ModelInvocationObservation {
+  if (!Number.isFinite(Date.parse(input.startedAt))) throw new Error('invocation_timestamp_invalid');
+  return {
+    schema: 'agent-control.model-invocation/v1', id: input.id ?? `inv-${randomUUID()}`, jobId: input.jobId, runId: input.runId ?? null, stepId: input.stepId ?? null,
+    taskId: input.taskId, laneId: input.laneId, model: input.model, provider: input.provider, harnessProfile: input.harnessProfile, harnessId: 'adaptive-harness', executionStrategy: input.executionStrategy,
+    turnNumber: 1, startedAt: input.startedAt, completedAt: null, elapsedMs: null, state: 'RUNNING', phase: 'waiting for provider', startup: measureStartupContext([], 1), usage: normalizeProviderUsage(undefined),
+    providerReportedCost: null, calculatedCost: null, currency: null, usageSource: 'unknown', costSource: 'unknown', finishReason: null, toolCalls: 0, toolIds: [], agentId: null,
+    filesContextSupplied: null, contextSourceIds: [], retrievedContextTokens: null, repositoryContextTokens: null, conversationHistoryTokens: 0, verifierResult: 'UNKNOWN', finalJobResult: 'UNKNOWN',
+    outcome: 'RUNNING', error: null, provenance: {recipeFingerprint: input.recipeFingerprint, ...(input.contextPacketId ? {contextPacketId: input.contextPacketId} : {}), evidenceIds: []},
+  };
+}
+
+function normalizedPersistedInvocation(record: ModelInvocationObservation): ModelInvocationObservation {
+  const usageKnown = Object.values(record.usage).some(value => typeof value === 'number');
+  return {
+    ...record, stepId: record.stepId ?? null, completedAt: record.completedAt ?? null, elapsedMs: record.elapsedMs ?? null,
+    state: record.state ?? (record.outcome === 'FAILED' ? 'FAILED' : record.outcome === 'CANCELLED' ? 'CANCELLED' : 'COMPLETE'), phase: record.phase ?? 'complete',
+    usageSource: record.usageSource ?? (usageKnown ? 'provider-reported' : 'unknown'), costSource: record.costSource ?? (record.providerReportedCost !== null ? 'reported' : record.calculatedCost !== null ? 'estimated' : 'unknown'),
+    finishReason: record.finishReason ?? null,
   };
 }
 
@@ -498,6 +535,7 @@ export interface HarnessEfficiencyMetrics {
 
 export interface HarnessEfficiencyLedgerPort {
   record(observation: ModelInvocationObservation): string;
+  complete(id: string, observation: ModelInvocationObservation): string;
   markVerification(ids: string[], result: Exclude<InvocationVerifierResult, 'UNKNOWN'>, finalResult?: InvocationFinalResult): void;
   markFinalResult(ids: string[], finalResult: Exclude<InvocationFinalResult, 'UNKNOWN'>): void;
   list(): ModelInvocationObservation[];
@@ -507,6 +545,11 @@ export interface HarnessEfficiencyLedgerPort {
 export class MemoryHarnessEfficiencyLedger implements HarnessEfficiencyLedgerPort {
   protected readonly records = new Map<string, ModelInvocationObservation>();
   record(observation: ModelInvocationObservation): string { if (this.records.has(observation.id)) throw new Error(`invocation_exists:${observation.id}`); this.records.set(observation.id, structuredClone(observation)); return observation.id; }
+  complete(id: string, observation: ModelInvocationObservation): string {
+    const current = this.records.get(id); if (!current) throw new Error(`invocation_missing:${id}`);
+    const elapsedMs = observation.completedAt === null ? observation.elapsedMs : Math.max(0, Date.parse(observation.completedAt) - Date.parse(current.startedAt));
+    this.records.set(id, structuredClone({...observation, id, jobId: current.jobId, runId: current.runId, stepId: observation.stepId ?? current.stepId, taskId: current.taskId, laneId: current.laneId, startedAt: current.startedAt, elapsedMs})); return id;
+  }
   markVerification(ids: string[], result: Exclude<InvocationVerifierResult, 'UNKNOWN'>, finalResult: InvocationFinalResult = 'UNKNOWN'): void { for (const id of ids) { const current = this.records.get(id); if (!current) throw new Error(`invocation_missing:${id}`); this.records.set(id, {...current, verifierResult: result, finalJobResult: finalResult}); } }
   markFinalResult(ids: string[], finalResult: Exclude<InvocationFinalResult, 'UNKNOWN'>): void { for (const id of ids) { const current = this.records.get(id); if (!current) throw new Error(`invocation_missing:${id}`); this.records.set(id, {...current, finalJobResult: finalResult}); } }
   list(): ModelInvocationObservation[] { return [...this.records.values()].map(record => structuredClone(record)); }
@@ -526,10 +569,11 @@ export class FileHarnessEfficiencyLedger extends MemoryHarnessEfficiencyLedger {
     if (fs.existsSync(file)) {
       const value = JSON.parse(fs.readFileSync(file, 'utf8')) as {schema: string; records: ModelInvocationObservation[]};
       if (value.schema !== 'agent-control.harness-efficiency-ledger/v1') throw new Error('harness_efficiency_ledger_schema_unsupported');
-      for (const record of value.records) this.records.set(record.id, structuredClone(record));
+      for (const record of value.records) this.records.set(record.id, structuredClone(normalizedPersistedInvocation(record)));
     }
   }
   override record(observation: ModelInvocationObservation): string { const id = super.record(observation); this.save(); return id; }
+  override complete(id: string, observation: ModelInvocationObservation): string { const result = super.complete(id, observation); this.save(); return result; }
   override markVerification(ids: string[], result: Exclude<InvocationVerifierResult, 'UNKNOWN'>, finalResult: InvocationFinalResult = 'UNKNOWN'): void { super.markVerification(ids, result, finalResult); this.save(); }
   override markFinalResult(ids: string[], finalResult: Exclude<InvocationFinalResult, 'UNKNOWN'>): void { super.markFinalResult(ids, finalResult); this.save(); }
   private save() { fs.mkdirSync(path.dirname(this.file), {recursive: true}); const temporary = `${this.file}.tmp`; fs.writeFileSync(temporary, `${JSON.stringify({schema: 'agent-control.harness-efficiency-ledger/v1', records: this.list()}, null, 2)}\n`, {mode: 0o600}); fs.renameSync(temporary, this.file); }
@@ -549,10 +593,10 @@ function aggregate(records: ModelInvocationObservation[]): EfficiencyAggregate {
   const cost = providerCost ?? calculatedCost;
   return {
     invocations: records.length, jobs: jobs.size, verifiedSuccesses: successes.size, verifierFailures, modelTurns: records.length, totalProcessedTokens: total, freshInputTokens: fresh, cachedInputTokens: cached, outputTokens: output, reasoningTokens: reasoning,
-    elapsedMs: records.reduce((sum, record) => sum + record.elapsedMs, 0), providerReportedCost: providerCost, calculatedCost, currency: currencies.length === 1 ? currencies[0] : null,
+    elapsedMs: records.reduce((sum, record) => sum + (record.elapsedMs ?? 0), 0), providerReportedCost: providerCost, calculatedCost, currency: currencies.length === 1 ? currencies[0] : null,
     cacheEffectiveness: fresh !== null && cached !== null && fresh + cached > 0 ? cached / (fresh + cached) : null,
     tokensPerVerifiedOutcome: ratio(total, successes.size), freshTokensPerVerifiedOutcome: ratio(fresh, successes.size), turnsPerVerifiedOutcome: successes.size ? records.length / successes.size : null,
-    timePerVerifiedOutcomeMs: successes.size ? records.reduce((sum, record) => sum + record.elapsedMs, 0) / successes.size : null, costPerVerifiedOutcome: ratio(cost, successes.size),
+    timePerVerifiedOutcomeMs: successes.size ? records.reduce((sum, record) => sum + (record.elapsedMs ?? 0), 0) / successes.size : null, costPerVerifiedOutcome: ratio(cost, successes.size),
     unknownMetricInvocations: records.filter(record => [record.usage.totalProcessedTokens, record.usage.freshInputTokens, record.usage.cachedInputTokens, record.providerReportedCost, record.calculatedCost].some(value => value === null)).length,
   };
 }

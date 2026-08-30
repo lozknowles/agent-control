@@ -1,0 +1,27 @@
+{
+  "schema": "agent-control.invocation-lifecycle-evidence/v1",
+  "stream": false,
+  "running": {
+    "state": "RUNNING",
+    "phase": "waiting for provider",
+    "provider": "provider-1",
+    "model": "model-1",
+    "runId": "run-live",
+    "stepId": "review",
+    "completedAt": null,
+    "usageSource": "unknown",
+    "costSource": "unknown"
+  },
+  "completed": {
+    "state": "COMPLETE",
+    "durationMs": 1500,
+    "inputTokens": 10,
+    "outputTokens": 2,
+    "totalTokens": 12,
+    "reportedCost": 0.01,
+    "usageSource": "provider-reported",
+    "costSource": "reported"
+  },
+  "identityStableAcrossLifecycle": true,
+  "containsSecrets": false
+}

@@ -7,25 +7,25 @@ import {registerReferenceActions} from './reference-actions.js';
 import {ManagedNodeManager, type ManagedNodeSnapshot} from './managed-node.js';
 import {registerManagedNodeActions} from './managed-node-actions.js';
 import {SshManagedNodeTransport} from './managed-node-ssh.js';
-import {configuredHarnessProfileRouter, configuredHarnessProfiles, ContextPacketBuilder, FileHarnessEfficiencyLedger} from './harness-efficiency.js';
+import {configuredHarnessProfileRouter, configuredHarnessProfiles, ContextPacketBuilder, FileHarnessEfficiencyLedger, type HarnessEfficiencyLedgerPort} from './harness-efficiency.js';
 import {registerFreeTokenQualificationActions} from './freetoken-actions.js';
 import {CatalogNaturalLanguagePlanner, WorkParcelCoordinator, WorkParcelStore, type WorkParcelPlanner} from './work-parcels.js';
 import {registerOperatorReviewActions} from './operator-review-actions.js';
 import {registerBrowserActions} from './browser-actions.js';
 
 /** Shared production definition path so qualification cannot drift from registered typed Actions. */
-export function buildJobRuntimeDefinition(config: AgentControlConfig, manifestDir = process.env.AGENT_CONTROL_JOB_DIR || path.resolve('config/jobs')) {
+export function buildJobRuntimeDefinition(config: AgentControlConfig, manifestDir = process.env.AGENT_CONTROL_JOB_DIR || path.resolve('config/jobs'), harnessEfficiency?: HarnessEfficiencyLedgerPort) {
   const parcelJobs = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../config/work-parcels/jobs');
   const operatorJobs = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../config/operator-jobs');
-  const workers = WorkerRegistry.fromConfig(config.resources), managedNodes = new ManagedNodeManager(config.resources, workers, new SshManagedNodeTransport()), actions = registerOperatorReviewActions(config, registerFreeTokenQualificationActions(registerManagedNodeActions(managedNodes, registerBrowserActions(registerReferenceActions())))), catalog = new JobCatalog(actions.ids()).loadDirectory(manifestDir).loadDirectory(parcelJobs);
+  const workers = WorkerRegistry.fromConfig(config.resources), managedNodes = new ManagedNodeManager(config.resources, workers, new SshManagedNodeTransport()), actions = registerOperatorReviewActions(config, registerFreeTokenQualificationActions(registerManagedNodeActions(managedNodes, registerBrowserActions(registerReferenceActions()))), harnessEfficiency), catalog = new JobCatalog(actions.ids()).loadDirectory(manifestDir).loadDirectory(parcelJobs);
   if (process.env.AGENT_CONTROL_ENABLE_OPERATOR_REVIEW === 'true') catalog.loadDirectory(operatorJobs);
   return {workers, managedNodes, actions, catalog};
 }
 
 export function buildJobRuntime(config: AgentControlConfig, stateRoot = process.env.AGENT_CONTROL_STATE_DIR || path.resolve('.agent-control'), manifestDir = process.env.AGENT_CONTROL_JOB_DIR || path.resolve('config/jobs'), reasoningPlanner?: WorkParcelPlanner) {
-  const {workers, managedNodes, actions, catalog} = buildJobRuntimeDefinition(config, manifestDir);
-  const harnessProfiles = configuredHarnessProfiles(config.harnessEfficiency), harnessProfileRouter = configuredHarnessProfileRouter(config.harnessEfficiency), contextPacketBuilder = new ContextPacketBuilder(harnessProfiles);
   const harnessEfficiency = new FileHarnessEfficiencyLedger(path.join(stateRoot, 'harness-efficiency', 'model-invocations.json'));
+  const {workers, managedNodes, actions, catalog} = buildJobRuntimeDefinition(config, manifestDir, harnessEfficiency);
+  const harnessProfiles = configuredHarnessProfiles(config.harnessEfficiency), harnessProfileRouter = configuredHarnessProfileRouter(config.harnessEfficiency), contextPacketBuilder = new ContextPacketBuilder(harnessProfiles);
   for (const resource of config.resources) if (resource.transport.type === 'local') workers.setHealth(resource.id, 'healthy');
   const runtime = createJobRuntime(stateRoot, catalog, actions, workers, {efficiency: harnessEfficiency});
   const workParcels = new WorkParcelCoordinator(runtime, new WorkParcelStore(path.join(stateRoot, 'work-parcels', 'parcels.json')), new CatalogNaturalLanguagePlanner(runtime, reasoningPlanner), harnessEfficiency);

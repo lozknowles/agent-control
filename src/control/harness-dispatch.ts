@@ -14,6 +14,7 @@ import type {WorkItem} from './work-queue.js';
 import type {ActionContext, ActionOutput, AgentActionHandler} from './job-types.js';
 import {
   createInvocationObservation,
+  createInvocationStart,
   DEFAULT_HARNESS_PROFILES,
   type ContextPacketSource,
   type HarnessEfficiencyLedgerPort,
@@ -260,6 +261,7 @@ export class HarnessDispatcher {
     }
     const recipe = built.recipe;
     const invocationStartedAt = this.clock();
+    const pendingInvocationId = this.startInvocation(recipe, invocationStartedAt);
     const invokedToolIds: string[] = [];
     let record = this.record(recipe, plan.placement, 'BUILT');
     this.store.save(record);
@@ -286,10 +288,10 @@ export class HarnessDispatcher {
       const maximumTurns = recipe.harness?.maximumTurns ?? DEFAULT_HARNESS_PROFILES.STANDARD.maximumTurns;
       if (observations.length > maximumTurns) {
         const error = new Error(`harness_turn_budget_exceeded:${observations.length}:${maximumTurns}`);
-        Object.assign(error, {efficiencyInvocationIds: this.recordInvocations(observations)});
+        Object.assign(error, {efficiencyInvocationIds: this.recordInvocations(observations, pendingInvocationId)});
         throw error;
       }
-      const invocationIds = this.recordInvocations(observations);
+      const invocationIds = this.recordInvocations(observations, pendingInvocationId);
       this.store.save({...record, phase: execution.error ? 'FAILED' : 'EXECUTED', updatedAt: this.clock(), detail: execution.error});
       return {recipe, execution, invocationIds, accepted: false};
     } catch (error) {
@@ -298,7 +300,7 @@ export class HarnessDispatcher {
       const retainedObservations = observationsFromError(error);
       const invocationIds = retainedInvocationIds.length
         ? retainedInvocationIds
-        : this.recordInvocations(retainedObservations.length ? retainedObservations : [this.fallbackObservation(recipe, invocationStartedAt, this.clock(), invokedToolIds, detail)]);
+        : this.recordInvocations(retainedObservations.length ? retainedObservations : [this.fallbackObservation(recipe, invocationStartedAt, this.clock(), invokedToolIds, detail)], pendingInvocationId);
       if (error && typeof error === 'object') Object.assign(error, {efficiencyInvocationIds: invocationIds});
       this.store.save({...record, phase: 'FAILED', updatedAt: this.clock(), detail});
       throw error;
@@ -326,9 +328,18 @@ export class HarnessDispatcher {
     };
   }
 
-  private recordInvocations(observations: ModelInvocationObservation[]) {
+  private startInvocation(recipe: ExecutionRecipe, startedAt: string) {
+    if (!this.efficiency) return undefined;
+    return this.efficiency.record(createInvocationStart({
+      jobId: recipe.jobId ?? recipe.taskId, runId: recipe.runId, stepId: recipe.taskId.split(':').at(-1), taskId: recipe.taskId, laneId: recipe.authority.laneId,
+      model: recipe.modelId, provider: recipe.providerId, harnessProfile: recipe.harness?.profile ?? 'STANDARD', executionStrategy: typeof recipe.runtime.executionStrategy === 'string' ? recipe.runtime.executionStrategy : 'adaptive-harness',
+      startedAt, recipeFingerprint: recipe.fingerprint, contextPacketId: recipe.harness?.contextPacketId,
+    }));
+  }
+
+  private recordInvocations(observations: ModelInvocationObservation[], pendingInvocationId?: string) {
     if (!this.efficiency) return [];
-    return observations.map(observation => this.efficiency!.record(observation));
+    return observations.map((observation, index) => index === 0 && pendingInvocationId ? this.efficiency!.complete(pendingInvocationId, observation) : this.efficiency!.record(observation));
   }
 
   private fallbackObservation(recipe: ExecutionRecipe, startedAt: string, completedAt: string, toolIds: string[], error?: string, evidenceIds: string[] = []) {
@@ -340,7 +351,7 @@ export class HarnessDispatcher {
       {id: `${recipe.id}:context`, kind: 'task_context', estimatedTokens: recipe.context.estimatedTokens, required: true, persistent: false, relevance: 1, provenanceIds: recipe.context.provenanceIds ?? recipe.context.evidenceIds},
     ];
     return createInvocationObservation({
-      jobId: recipe.jobId ?? recipe.taskId, runId: recipe.runId, taskId: recipe.taskId, laneId: recipe.authority.laneId,
+      jobId: recipe.jobId ?? recipe.taskId, runId: recipe.runId, stepId: recipe.taskId.split(':').at(-1), taskId: recipe.taskId, laneId: recipe.authority.laneId,
       model: recipe.modelId, provider: recipe.providerId, harnessProfile: recipe.harness?.profile ?? 'STANDARD', executionStrategy: typeof recipe.runtime.executionStrategy === 'string' ? recipe.runtime.executionStrategy : 'adaptive-harness',
       startedAt, completedAt, startupSources, toolIds, contextSourceIds: recipe.context.sourceIds, outcome: error ? 'FAILED' : 'COMPLETE', error,
       recipeFingerprint: recipe.fingerprint, contextPacketId: recipe.harness?.contextPacketId, evidenceIds,

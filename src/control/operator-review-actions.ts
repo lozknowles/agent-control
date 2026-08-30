@@ -4,7 +4,7 @@ import path from 'node:path';
 import {AdaptiveHarness, SkillCatalog, ToolPolicy, type HarnessCandidate, type RecipeRequest} from './adaptive-harness.js';
 import {createToolHandlerRegistry, HarnessDispatcher, HarnessJobAgentAction, type RecipeDispatchPlan, type RecipeExecutor} from './harness-dispatch.js';
 import {EconomicRouter} from './economic-routing.js';
-import {configuredHarnessProfiles, createInvocationObservation, HarnessProfileRouter, type ContextPacketSource} from './harness-efficiency.js';
+import {configuredHarnessProfiles, createInvocationObservation, HarnessProfileRouter, type ContextPacketSource, type HarnessEfficiencyLedgerPort} from './harness-efficiency.js';
 import {ActionFailure, ActionRegistry} from './job-runtime.js';
 import type {AgentControlConfig, ProviderConfig} from './config.js';
 
@@ -35,6 +35,15 @@ function safeUsage(value: unknown): Record<string, unknown> | undefined {
     }
   }
   return Object.keys(result).length ? result : undefined;
+}
+
+function providerReportedCost(value: unknown): number | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+  for (const key of ['cost', 'total_cost', 'reported_cost']) {
+    const cost = (value as Record<string, unknown>)[key];
+    if (typeof cost === 'number' && Number.isFinite(cost) && cost >= 0) return cost;
+  }
+  return undefined;
 }
 
 function readCredential(provider: ProviderConfig) {
@@ -135,6 +144,7 @@ class LargeContextResponsesExecutor implements RecipeExecutor {
       jobId: recipe.jobId ?? recipe.taskId, runId: recipe.runId, taskId: recipe.taskId, laneId: recipe.authority.laneId,
       model: body.model ?? this.provider.qualificationModel!, provider: this.provider.id, harnessProfile: recipe.harness?.profile ?? 'DEEP', executionStrategy: 'responses.large-context-review',
       startedAt, completedAt, startupSources, rawUsage: body.usage, contextSourceIds: recipe.context.sourceIds,
+      providerReportedCost: providerReportedCost(body.usage), finishReason: body.status,
       outcome: 'COMPLETE', recipeFingerprint: recipe.fingerprint, contextPacketId: recipe.harness?.contextPacketId,
       evidenceIds: [`provider_response:${body.id ?? rawResponseSha256}`, `provider_response_sha256:${rawResponseSha256}`, `context_sha256:${contextSha256}`],
     });
@@ -186,7 +196,7 @@ function plan(runId: string, stepId: string, workerId: string, route: HarnessCan
   };
 }
 
-export function registerOperatorReviewActions(config: AgentControlConfig, registry = new ActionRegistry()) {
+export function registerOperatorReviewActions(config: AgentControlConfig, registry = new ActionRegistry(), efficiency?: HarnessEfficiencyLedgerPort) {
   if (process.env.AGENT_CONTROL_ENABLE_OPERATOR_REVIEW !== 'true') return registry;
   const provider = config.providers.find(item => item.id === 'ox');
   if (!provider?.baseUrl || !provider.qualificationModel || provider.wireApi !== 'responses') throw new Error('operator_review_ox_provider_not_configured');
@@ -194,7 +204,7 @@ export function registerOperatorReviewActions(config: AgentControlConfig, regist
   const policy = new ToolPolicy([]);
   const profileRouter = new HarnessProfileRouter({mode: 'EXPERIMENT', minimumVerifiedRuns: 1, minimumSuccessRate: 0, minimumSameModelControlledRuns: 1});
   const harness = new AdaptiveHarness(new SkillCatalog(), policy, new EconomicRouter(), profileRouter, configuredHarnessProfiles(config.harnessEfficiency));
-  const dispatcher = new HarnessDispatcher(harness, policy, createToolHandlerRegistry([]), recipe => ({authority: recipe.authority, workerId: recipe.workerId, availableToolIds: [], approvedRisks: ['read']}));
+  const dispatcher = new HarnessDispatcher(harness, policy, createToolHandlerRegistry([]), recipe => ({authority: recipe.authority, workerId: recipe.workerId, availableToolIds: [], approvedRisks: ['read']}), undefined, undefined, undefined, efficiency);
   registry.registerAgent('operator.large-context.review@1.0.0', new HarnessJobAgentAction(dispatcher, context => {
     const selected = reviewFile(context.parameters.contextFile);
     const reviewPrompt = context.parameters.reviewPrompt;
