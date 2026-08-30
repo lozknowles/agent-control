@@ -64,3 +64,10 @@ test('harness efficiency metrics and redacted invocation telemetry are projected
   assert.equal((await (await fetch(`${base}/api/efficiency/invocations?limit=1&runId=run-web`)).json()).length, 1);
   const html = await (await fetch(base)).text(); assert.match(html, /Harness Efficiency/);
 });
+
+test('governed run cards route from Lanes to the authoritative Jobs detail', () => {
+  const source=fs.readFileSync(path.resolve('assets/dashboard/dashboard-enhancements.js'),'utf8');
+  assert.match(source,/data-view="jobs"/);
+  assert.match(source,/Last provider \/ control signal/);
+  assert.match(source,/phaseUpdatedAt/);
+});

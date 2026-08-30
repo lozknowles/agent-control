@@ -46,6 +46,13 @@ test('actual worker route becomes durable while execution is still running', asy
   releaseFirst(); await execution;
 });
 
+test('dispatch failure terminates the parcel instead of retrying forever', async () => {
+  const {coordinator,runtime}=setup(), parcel=await coordinator.submit('dispatch safely','operator');
+  const original=runtime.createRun.bind(runtime); runtime.createRun=(()=>{throw new Error('job_missing_after_planning')}) as typeof runtime.createRun;
+  const failed=await coordinator.tick(); runtime.createRun=original;
+  assert.equal(failed?.status,'FAILED'); assert.equal(failed?.stages[0].status,'FAILED'); assert.match(failed?.stages[0].error??'',/dispatch_failed:job_missing_after_planning/); assert.equal(failed?.decision?.outcome,'FAIL_CLOSED');
+});
+
 test('failed gate blocks every downstream stage and survives coordinator restart', async () => {
   const {coordinator, runtime, planner, storeFile} = setup(true); const parcel = await coordinator.submit('do the test', 'operator');
   await coordinator.tick(); await runtime.tick(); await coordinator.tick(); await runtime.tick(); await coordinator.tick();

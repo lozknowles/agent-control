@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {deriveSystemReadiness} from './system-readiness.js';
 import {ProviderRegistry} from './providers.js';
+import {createInvocationObservation, createInvocationStart} from './harness-efficiency.js';
 import type {WorkerRegistration} from './job-types.js';
 
 const at = '2026-08-30T12:00:00.000Z';
@@ -23,4 +24,17 @@ test('reachable provider with missing authentication is AUTH REQUIRED', () => {
 test('qualified reachable authenticated provider is AVAILABLE without exposing credential material', () => {
   const providers = new ProviderRegistry(); providers.register({id:'ox',name:'Ox',kind:'responses',requiresAuth:true,credentialConfigured:true,parallelism:1,costClass:'metered',capabilities:['model.execute'],qualificationModel:'ox-alpha',qualification:{status:'qualified'}}); providers.setHealth('ox','healthy','HTTP 200',8);
   const value = deriveSystemReadiness({providers,resources:[],workers:[],runs:[],invocations:[]})[0]; assert.equal(value.execution,'AVAILABLE'); assert.equal(value.authentication,'present'); assert.doesNotMatch(JSON.stringify(value),/token|password|secret|credentialConfigured/i);
+});
+
+test('active provider invocation is BUSY rather than UNKNOWN before a health probe', () => {
+  const providers = new ProviderRegistry(); providers.register({id:'ox',name:'Ox',kind:'responses',requiresAuth:true,credentialConfigured:true,parallelism:1,costClass:'metered',capabilities:['model.execute'],qualificationModel:'ox-alpha',qualification:{status:'qualified'}});
+  const invocation = createInvocationStart({jobId:'review',runId:'run-active',stepId:'review',taskId:'review',laneId:'job:run-active',model:'ox-alpha',provider:'ox',harnessProfile:'STANDARD',executionStrategy:'test',startedAt:at,recipeFingerprint:'active'});
+  const value = deriveSystemReadiness({providers,resources:[],workers:[],runs:[],invocations:[invocation]})[0]; assert.equal(value.execution,'BUSY'); assert.equal(value.active,1); assert.match(value.blockingReason??'',/active invocation/);
+});
+
+test('successful provider invocation supplies current readiness and last successful Job evidence', () => {
+  const providers = new ProviderRegistry(); providers.register({id:'ox',name:'Ox',kind:'responses',requiresAuth:true,credentialConfigured:true,parallelism:1,costClass:'metered',capabilities:['model.execute'],qualificationModel:'ox-alpha',qualification:{status:'qualified'}});
+  providers.setHealth('ox','degraded','provider_health_http_404',10); providers.health('ox')!.checkedAt='2026-08-30T11:00:00.000Z';
+  const completedAt='2026-08-30T12:00:05.000Z', invocation={...createInvocationObservation({jobId:'review',runId:'run-success',stepId:'review',taskId:'review',laneId:'job:run-success',model:'ox-alpha',provider:'ox',harnessProfile:'STANDARD',executionStrategy:'test',startedAt:at,completedAt,rawUsage:{input_tokens:10,output_tokens:2,total_tokens:12},recipeFingerprint:'success'}),finalJobResult:'SUCCEEDED' as const,verifierResult:'PASS' as const};
+  const value = deriveSystemReadiness({providers,resources:[],workers:[],runs:[],invocations:[invocation]})[0]; assert.equal(value.execution,'AVAILABLE'); assert.equal(value.reachable,'yes'); assert.equal(value.lastSuccessfulJobAt,completedAt); assert.equal(value.lastError,null);
 });

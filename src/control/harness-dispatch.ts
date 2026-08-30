@@ -204,6 +204,7 @@ export class HarnessJobAgentAction implements AgentActionHandler {
   async execute(context: ActionContext): Promise<ActionOutput> {
     const prepared = await this.factory(context);
     const plan = {...prepared.plan, request: {...prepared.plan.request, jobId: prepared.plan.request.jobId ?? context.run.jobId, runId: prepared.plan.request.runId ?? context.run.id, stepId: prepared.plan.request.stepId ?? context.step.id}};
+    if (!plan.request.verification.requireIndependentCheck) throw new HarnessPolicyDeniedError(['agent_action_independent_check_required']);
     if (plan.placement.workerId !== context.worker.id) throw new HarnessPolicyDeniedError(['worker_placement_mismatch']);
     const result = await this.dispatcher.dispatch(plan, prepared.executor);
     const mapped = prepared.toActionOutput?.(result) ?? {

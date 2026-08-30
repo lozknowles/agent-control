@@ -22,6 +22,11 @@ test('large-context review gate rejects a provider-completed role-confusion refu
   assert.equal(isCompleteLargeContextReview(refusal), false);
 });
 
+test('large-context review gate does not reject a substantive verdict that quotes refusal language', () => {
+  const review = `# Executive Verdict\n\nPASS_FOR_3.3.1\n\n${sections}\n\nThe source currently checks the quoted phrase \`I cannot invoke external review\`; generalize that matcher.\n${'repository evidence '.repeat(500)}`;
+  assert.equal(isCompleteLargeContextReview(review), true);
+});
+
 test('incomplete provider response retains immutable prompt usage cost response and canonical maximumOutputTokens', async () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-review-incomplete-'));
   const previous = {enabled: process.env.AGENT_CONTROL_ENABLE_OPERATOR_REVIEW, provider: process.env.AGENT_CONTROL_OPERATOR_REVIEW_PROVIDER, reviewRoot: process.env.AGENT_CONTROL_REVIEW_ROOT, credential: process.env.AGENT_CONTROL_TEST_REVIEW_KEY};

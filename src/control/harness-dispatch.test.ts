@@ -158,6 +158,7 @@ test('multi-turn executor exposes PROCESSING before provider completion', async 
   }});
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(efficiency.list()[0].phase, 'processing');
+  assert.ok(efficiency.list()[0].phaseUpdatedAt);
   finish(); await pending;
   assert.equal(efficiency.list()[0].state, 'COMPLETE');
 });
@@ -184,4 +185,11 @@ test('independent-check policy rejects model action self-attestation', async () 
   const action = new HarnessJobAgentAction(dispatcher, async () => ({plan: plan(), executor: {execute: async () => ({resultRef: 'model output'})}, toActionOutput: () => ({verification: ['test_result']})}));
   const context = {run: {id: 'run-independent', jobId: 'job-independent'}, step: {id: 'review'}, worker: {id: 'worker-1'}, parameters: {}, inputArtifacts: []} as never;
   await assert.rejects(action.execute(context), /independent_check_required:agent_action_cannot_self_attest/);
+});
+
+test('agent action cannot disable its independent verification boundary', async () => {
+  const policy = toolPolicy(), dispatcher = new HarnessDispatcher(new AdaptiveHarness(new SkillCatalog(), policy), policy, new ToolHandlerRegistry(), () => ({authority: {...authority}, workerId: 'worker-1'}));
+  const action = new HarnessJobAgentAction(dispatcher, async () => { const prepared=plan(); return {plan:{...prepared,request:{...prepared.request,verification:{...prepared.request.verification,requireIndependentCheck:false}}},executor:{execute:async()=>({resultRef:'model output'})}}; });
+  const context = {run: {id: 'run-boundary', jobId: 'job-boundary'}, step: {id: 'review'}, worker: {id: 'worker-1'}, parameters: {}, inputArtifacts: []} as never;
+  await assert.rejects(action.execute(context), /agent_action_independent_check_required/);
 });

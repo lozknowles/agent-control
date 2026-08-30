@@ -76,7 +76,9 @@ function reviewFile(value: unknown) {
 
 export function isCompleteLargeContextReview(response: string) {
   const requiredSections = ['What I would delete or simplify', 'CURRENT', 'PROPOSED', 'Quick wins', 'Structural improvements', 'Experimental ideas'];
-  const refused = /Ox Invocation Gate:\s*FAIL|Review Not Performed|I cannot invoke (?:"?Ox|external)/i.test(response);
+  const opening = response.slice(0, 2_000);
+  const hasVerdict = /\b(?:PASS_FOR_[A-Z0-9._-]+|REVIEW_REQUIRED|BLOCKED)\b/i.test(opening);
+  const refused = !hasVerdict && /(?:^|\n)\s*#{1,3}\s*(?:[^\n]{0,80}\s)?Invocation Gate:\s*FAIL\b|(?:^|\n)\s*#{1,3}\s*Review Not Performed\b|\bI cannot invoke (?:an?\s+)?(?:external|review)\b/i.test(opening);
   return response.length >= 8_000 && requiredSections.every(section => response.toLowerCase().includes(section.toLowerCase())) && !refused;
 }
 
@@ -90,19 +92,22 @@ class LargeContextResponsesExecutor implements RecipeExecutor {
     const started = Date.now();
     const endpoint = `${this.provider.baseUrl!.replace(/\/$/, '')}/responses`;
     tools.lifecycle?.('waiting for provider');
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {'content-type': 'application/json', authorization: `Bearer ${credential.value}`},
-      body: JSON.stringify({
-        model: this.provider.qualificationModel,
-        instructions: `Agent Control has invoked the operator-configured, qualified review provider and model. Act as the independent principal reviewer for this run. Do not attempt to invoke another model, inspect the live machine, create files, or refuse because you lack shell tools: the controller already captured a complete clean repository snapshot and will materialize your response. Perform the review using only the supplied immutable bundle. Do not claim to have modified or deployed anything.\n\nAUTHORITATIVE OPERATOR PROMPT:\n${this.reviewPrompt}`,
-        input,
-        max_output_tokens: this.maximumOutputTokens,
-        stream: false,
-        store: false,
-      }),
-      signal: AbortSignal.timeout(90 * 60 * 1000),
-    });
+    const heartbeat = setInterval(() => tools.lifecycle?.('waiting for provider'), 15_000);
+    let response: Response;
+    try { response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {'content-type': 'application/json', authorization: `Bearer ${credential.value}`},
+        body: JSON.stringify({
+          model: this.provider.qualificationModel,
+          instructions: `Agent Control has invoked the operator-configured, qualified review provider and model. Act as the independent principal reviewer for this run. Do not attempt to invoke another model, inspect the live machine, create files, or refuse because you lack shell tools: the controller already captured a complete clean repository snapshot and will materialize your response. Perform the review using only the supplied immutable bundle. Do not claim to have modified or deployed anything.\n\nAUTHORITATIVE OPERATOR PROMPT:\n${this.reviewPrompt}`,
+          input,
+          max_output_tokens: this.maximumOutputTokens,
+          stream: false,
+          store: false,
+        }),
+        signal: AbortSignal.timeout(90 * 60 * 1000),
+      }); }
+    finally { clearInterval(heartbeat); }
     let body: ResponseBody;
     try { body = await response.json() as ResponseBody; }
     catch { throw new ActionFailure(`provider_response_not_json:http_${response.status}`, 'execution'); }
@@ -222,7 +227,7 @@ export function registerOperatorReviewActions(config: AgentControlConfig, regist
     const reviewPrompt = context.parameters.reviewPrompt;
     if (typeof reviewPrompt !== 'string' || reviewPrompt.trim().length < 200 || reviewPrompt.length > 20_000) throw new ActionFailure('review_prompt_invalid', 'configuration');
     const maximumOutputTokens = Number(context.parameters.maximumOutputTokens ?? 32768);
-    if (!Number.isSafeInteger(maximumOutputTokens) || maximumOutputTokens < 1024 || maximumOutputTokens > 65536) throw new ActionFailure('maximum_output_tokens_invalid', 'configuration');
+    if (!Number.isSafeInteger(maximumOutputTokens) || maximumOutputTokens < 8192 || maximumOutputTokens > 65536) throw new ActionFailure('maximum_output_tokens_invalid', 'configuration');
     const route = candidate(provider, context.worker.id);
     return {
       plan: plan(context.run.id, context.step.id, context.worker.id, route, selected.file, selected.stat.size, maximumOutputTokens),
