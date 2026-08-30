@@ -11,12 +11,13 @@ import {configuredHarnessProfileRouter, configuredHarnessProfiles, ContextPacket
 import {registerFreeTokenQualificationActions} from './freetoken-actions.js';
 import {CatalogNaturalLanguagePlanner, WorkParcelCoordinator, WorkParcelStore, type WorkParcelPlanner} from './work-parcels.js';
 import {registerOperatorReviewActions} from './operator-review-actions.js';
+import {registerBrowserActions} from './browser-actions.js';
 
 /** Shared production definition path so qualification cannot drift from registered typed Actions. */
 export function buildJobRuntimeDefinition(config: AgentControlConfig, manifestDir = process.env.AGENT_CONTROL_JOB_DIR || path.resolve('config/jobs')) {
   const parcelJobs = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../config/work-parcels/jobs');
   const operatorJobs = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../config/operator-jobs');
-  const workers = WorkerRegistry.fromConfig(config.resources), managedNodes = new ManagedNodeManager(config.resources, workers, new SshManagedNodeTransport()), actions = registerOperatorReviewActions(config, registerFreeTokenQualificationActions(registerManagedNodeActions(managedNodes, registerReferenceActions()))), catalog = new JobCatalog(actions.ids()).loadDirectory(manifestDir).loadDirectory(parcelJobs);
+  const workers = WorkerRegistry.fromConfig(config.resources), managedNodes = new ManagedNodeManager(config.resources, workers, new SshManagedNodeTransport()), actions = registerOperatorReviewActions(config, registerFreeTokenQualificationActions(registerManagedNodeActions(managedNodes, registerBrowserActions(registerReferenceActions())))), catalog = new JobCatalog(actions.ids()).loadDirectory(manifestDir).loadDirectory(parcelJobs);
   if (process.env.AGENT_CONTROL_ENABLE_OPERATOR_REVIEW === 'true') catalog.loadDirectory(operatorJobs);
   return {workers, managedNodes, actions, catalog};
 }
