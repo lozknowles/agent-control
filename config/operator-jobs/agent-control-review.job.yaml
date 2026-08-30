@@ -15,7 +15,7 @@ spec:
       required: true
     contextFile:
       type: string
-      default: /fast/work/agent-control-ox-audit-20260830/AGENT-CONTROL-CONTEXT.txt
+      required: true
     maximumOutputUnits:
       type: integer
       default: 32768

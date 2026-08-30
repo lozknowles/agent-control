@@ -21,4 +21,4 @@ Secure-overlay reachability is discovery, not control authority. Agent Control c
 
 ## Current qualification boundary
 
-The hpubuntu Chromium worker is independently qualified against a harmless public page. No approved MSI Edge session bridge was present during qualification, so `chatgpt.web` remains blocked. Tailscale reachability of an Android device is network evidence only; `chatgpt.android` additionally requires a fresh authorised ADB or Agent Control Android transport, a qualified UI-automation mechanism, and a non-exported authenticated ChatGPT session.
+The configured headless Chromium worker is independently qualified against a harmless public page. No approved desktop Edge session bridge was present during qualification, so `chatgpt.web` remains blocked. Secure-overlay reachability of an Android device is network evidence only; `chatgpt.android` additionally requires a fresh authorised ADB or Agent Control Android transport, a qualified UI-automation mechanism, and a non-exported authenticated ChatGPT session.

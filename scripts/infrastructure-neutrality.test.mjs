@@ -5,7 +5,7 @@ import path from 'node:path';
 import test from 'node:test';
 
 const exceptions = new Set(['CHANGELOG.md', 'docs/evidence/infrastructure-agnostic-audit-3.0.1.md']);
-const textExtensions = /\.(?:ts|mjs|js|json|md|sh|py)$/i;
+const textExtensions = /\.(?:ts|mjs|js|json|ya?ml|md|sh|py)$/i;
 function sourceFiles(directory = '.') {
   const ignored = new Set(['.git', 'node_modules', '.agent-control', '.pdf-venv', 'qualification-results']);
   const result = [];

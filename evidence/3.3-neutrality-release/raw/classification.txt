@@ -1,0 +1,17 @@
+Initial maintained 3.3 gate violations at parent 1c697acdcf172e4b20d89f9b25af02e738e3e7b4:
+1. hpubuntu
+   - docs/browser-capabilities.md:24
+   - tracked documentation
+   - caught by: distributable text contains no private topology identifiers
+2. hpubuntu
+   - scripts/qualify-browser-capabilities.ts:28,39,44,47
+   - tracked production qualification script
+   - caught by: distributable text contains no private topology identifiers
+3. pixel-8-pro
+   - scripts/qualify-browser-capabilities.ts:41
+   - tracked production qualification script
+   - caught by: distributable text contains no private topology identifiers
+
+Additional release-candidate findings:
+- /fast/work in evidence/3.3-dashboard-invocation-telemetry/BASELINE.md:5 after telemetry evidence became tracked
+- /fast/work/agent-control-ox-audit-20260830/AGENT-CONTROL-CONTEXT.txt in config/operator-jobs/agent-control-review.job.yaml:18, tracked runtime configuration previously missed because YAML was outside textExtensions

@@ -25,7 +25,7 @@ const runtimeDir = fs.mkdtempSync(path.join(outputDir, 'job-runtime-'));
 const actions = registerBrowserActions(new ActionRegistry(), engine), catalog = new JobCatalog(actions.ids());
 const job: JobDefinition = {apiVersion:'agent-control/v1',kind:'Job',metadata:{id:'browser-headless-qualification',name:'Browser headless qualification',version:'1.0.0'},spec:{priority:'normal',concurrency:'no-overlap',parameters:{sessionJson:{type:'string',required:true}},steps:[{id:'browser',action:'browser.session@1.0.0',requires:[browserCapability.headless,browserCapability.javascript,browserCapability.screenshot,browserCapability.download],resources:['browser/session'],outputs:[{name:'browser-result',type:'application/vnd.agent-control.browser-result+json',schema:'agent-control.browser-result/v1',version:'1.0.0'}],verification:['browser-session-completed']}]}};
 catalog.addJob(job);
-const workers = new WorkerRegistry(); workers.register({id:'hpubuntu-headless',capabilities:[browserCapability.headless,browserCapability.javascript,browserCapability.screenshot,browserCapability.download],health:'healthy',capacity:1,active:0,observedAt:new Date().toISOString()});
+const workers = new WorkerRegistry(); workers.register({id:'browser-local-headless',capabilities:[browserCapability.headless,browserCapability.javascript,browserCapability.screenshot,browserCapability.download],health:'healthy',capacity:1,active:0,observedAt:new Date().toISOString()});
 const runtime = new JobRuntime(catalog, actions, workers, new RunLedger(path.join(runtimeDir,'ledger.json')), new ArtifactStore(path.join(runtimeDir,'artifacts')), new ResourceLockManager(path.join(runtimeDir,'locks.json')));
 const run = runtime.createRun('browser-headless-qualification@1.0.0',{sessionJson:JSON.stringify(session)},{type:'manual',actor:'qualification'}); await runtime.tick();
 const completedRun = runtime.ledger.get(run.id); if(completedRun?.status!=='SUCCEEDED')throw new Error(`browser_job_runtime_failed:${completedRun?.status ?? 'missing'}`);
@@ -36,15 +36,15 @@ fs.writeFileSync(screenshotFile, Buffer.from(screenshot.base64, 'base64'), {mode
 const codexChatGptAuthenticated = commandOk('codex', ['login','status'], /chatgpt/i);
 const pixel = {online: process.env.PIXEL_ONLINE === 'true', authorisedTransport: process.env.PIXEL_AUTHORISED_TRANSPORT === 'true', uiAutomation: process.env.PIXEL_UI_AUTOMATION === 'true', authenticatedSession: process.env.PIXEL_CHATGPT_AUTHENTICATED === 'true'};
 const routes: BrowserRoute[] = [
-  {id:'hpubuntu-headless',nodeId:'hpubuntu',capabilities:[browserCapability.headless,browserCapability.javascript,browserCapability.screenshot,browserCapability.download],state:'AVAILABLE',engine:'Chromium/Playwright',transport:'local process',authenticated:false,locality:'local',expectedCost:0,expectedLatencyMs:500,reason:'live public-page qualification'},
-  {id:'msi-chatgpt-web',nodeId:'msi',capabilities:[browserCapability.chatGptWeb,browserCapability.authenticated,browserCapability.interactive],state:'AUTH_REQUIRED',engine:'Edge',transport:'approved browser bridge required',authenticated:true,locality:'remote',reason:'no approved Edge session bridge found in Agent Control 3.3'},
-  {id:'pixel-chatgpt-android',nodeId:'pixel-8-pro',capabilities:[browserCapability.chatGptAndroid,browserCapability.androidUi,browserCapability.authenticated],state:pixelChatGptState(pixel),engine:'Android UI',transport:'authorised ADB or Agent Control Android transport required',authenticated:true,locality:'remote',reason:pixel.authorisedTransport?'transport observed':'overlay online but no authorised ADB, SSH or UI automation transport'},
+  {id:'browser-local-headless',nodeId:'browser-node-local',capabilities:[browserCapability.headless,browserCapability.javascript,browserCapability.screenshot,browserCapability.download],state:'AVAILABLE',engine:'Chromium/Playwright',transport:'local process',authenticated:false,locality:'local',expectedCost:0,expectedLatencyMs:500,reason:'live public-page qualification'},
+  {id:'desktop-chatgpt-web',nodeId:'desktop-browser-node',capabilities:[browserCapability.chatGptWeb,browserCapability.authenticated,browserCapability.interactive],state:'AUTH_REQUIRED',engine:'Edge',transport:'approved browser bridge required',authenticated:true,locality:'remote',reason:'no approved Edge session bridge found in Agent Control 3.3'},
+  {id:'android-chatgpt-ui',nodeId:'android-resource',capabilities:[browserCapability.chatGptAndroid,browserCapability.androidUi,browserCapability.authenticated],state:pixelChatGptState(pixel),engine:'Android UI',transport:'authorised ADB or Agent Control Android transport required',authenticated:true,locality:'remote',reason:pixel.authorisedTransport?'transport observed':'overlay online but no authorised ADB, SSH or UI automation transport'},
 ];
 const router = {
-  headless: selectBrowserRoute({capability:browserCapability.headless,explicitRouteId:'hpubuntu-headless'},routes).selected.id,
-  webRefusal: refusal(()=>selectBrowserRoute({capability:browserCapability.chatGptWeb,explicitRouteId:'msi-chatgpt-web'},routes)),
-  pixelRefusal: refusal(()=>selectBrowserRoute({capability:browserCapability.chatGptAndroid,explicitRouteId:'pixel-chatgpt-android'},routes)),
-  substitutionRefusal: refusal(()=>selectBrowserRoute({capability:browserCapability.chatGptAndroid,explicitRouteId:'hpubuntu-headless'},routes)),
+  headless: selectBrowserRoute({capability:browserCapability.headless,explicitRouteId:'browser-local-headless'},routes).selected.id,
+  webRefusal: refusal(()=>selectBrowserRoute({capability:browserCapability.chatGptWeb,explicitRouteId:'desktop-chatgpt-web'},routes)),
+  pixelRefusal: refusal(()=>selectBrowserRoute({capability:browserCapability.chatGptAndroid,explicitRouteId:'android-chatgpt-ui'},routes)),
+  substitutionRefusal: refusal(()=>selectBrowserRoute({capability:browserCapability.chatGptAndroid,explicitRouteId:'browser-local-headless'},routes)),
 };
 const report = {
   schema:'agent-control.browser-capability-qualification/v1',startedAt,completedAt:new Date().toISOString(),
