@@ -70,10 +70,20 @@ export interface ProviderConfig {
   baseUrl?: string;
   wireApi?: 'responses';
   requiresAuth?: boolean;
+  credentialEnv?: string;
+  credentialFileEnv?: string;
   parallelism?: number;
   costClass?: 'free' | 'included' | 'metered';
   capabilities?: string[];
   qualificationModel?: string;
+  qualification?: {
+    status?: 'unqualified' | 'historically-qualified' | 'qualified';
+    advertisedContextLimitTokens?: number;
+    maximumObservedInputTokens?: number;
+    pricingStatus?: string;
+    lastSuccessfulAt?: string;
+    evidence?: string[];
+  };
 }
 
 export interface ServiceConfig {
@@ -174,9 +184,9 @@ function assertIntegerRange(value: unknown, label: string, minimum: number, maxi
 
 function rejectSecrets(value: unknown, trail = 'config') {
   if (!value || typeof value !== 'object') return;
-  const safeTokenAccountingKeys = new Set(['tokenAwareOutput', 'completeMaxTokens', 'artifactOnlyAboveReturnedTokens', 'minimumCompleteTokens', 'harnessEfficiency', 'maximumInitialContextTokens']);
+  const safeTokenAccountingKeys = new Set(['tokenAwareOutput', 'completeMaxTokens', 'artifactOnlyAboveReturnedTokens', 'minimumCompleteTokens', 'harnessEfficiency', 'maximumInitialContextTokens', 'advertisedContextLimitTokens', 'maximumObservedInputTokens']);
   for (const [key, child] of Object.entries(value)) {
-    if (/token|password|secret|api.?key/i.test(key) && key !== 'credentialEnv' && !safeTokenAccountingKeys.has(key)) {
+    if (/token|password|secret|api.?key/i.test(key) && !['credentialEnv', 'credentialFileEnv'].includes(key) && !safeTokenAccountingKeys.has(key)) {
       throw new Error(`secret_material_forbidden:${trail}.${key}`);
     }
     rejectSecrets(child, `${trail}.${key}`);
@@ -258,6 +268,15 @@ export function validateConfig(raw: unknown): AgentControlConfig {
     if (ids.has(provider.id)) throw new Error(`duplicate_id:${provider.id}`);
     ids.add(provider.id);
     if (provider.baseUrl) assertUrl(provider.baseUrl, `provider_${provider.id}`);
+    for (const [field, value] of [['credentialEnv', provider.credentialEnv], ['credentialFileEnv', provider.credentialFileEnv]] as const) {
+      if (value !== undefined && (typeof value !== 'string' || !/^[A-Z_][A-Z0-9_]{0,127}$/.test(value))) throw new Error(`invalid_provider_${field}:${provider.id}`);
+    }
+    if (provider.qualification) {
+      assertIntegerRange(provider.qualification.advertisedContextLimitTokens, `provider_context_limit:${provider.id}`, 1, 100_000_000);
+      assertIntegerRange(provider.qualification.maximumObservedInputTokens, `provider_observed_input:${provider.id}`, 1, 100_000_000);
+      assertStringList(provider.qualification.evidence, `provider_qualification_evidence:${provider.id}`, /^[a-z0-9][a-z0-9:._/-]+$/i);
+      if (provider.qualification.lastSuccessfulAt && Number.isNaN(Date.parse(provider.qualification.lastSuccessfulAt))) throw new Error(`invalid_provider_qualification_timestamp:${provider.id}`);
+    }
   }
   for (const service of config.services) {
     assertId(service.id, 'service');

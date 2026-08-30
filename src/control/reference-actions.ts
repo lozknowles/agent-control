@@ -8,6 +8,15 @@ function candidates(value: unknown): CandidateEvent[] {
 }
 
 export function registerReferenceActions(registry = new ActionRegistry()) {
+  registry.register('qualification.dashboard.running-state@1.0.0', async context => {
+    const seconds = Number(context.parameters.durationSeconds ?? 20);
+    await new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(resolve, seconds * 1000);
+      const abort = () => { clearTimeout(timer); reject(new ActionFailure('dashboard_running_state_qualification_cancelled', 'execution')); };
+      if (context.signal.aborted) abort(); else context.signal.addEventListener('abort', abort, {once: true});
+    });
+    return {artifacts: [{name: 'liveness-report', value: {durationSeconds: seconds, completed: true, externalSideEffects: false}}], evidence: [`Observed governed RUNNING state for ${seconds} seconds without external work`], verification: ['dashboard-running-state-observed'], detail: `dashboard RUNNING-state qualification completed after ${seconds}s`};
+  });
   registry.register('qualification.events.discover@1.0.0', async context => {
     if (context.signal.aborted) throw new ActionFailure('cancelled', 'execution');
     const at = new Date(context.run.requestedAt), values: CandidateEvent[] = [

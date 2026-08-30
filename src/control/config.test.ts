@@ -41,6 +41,13 @@ test('configuration rejects embedded secrets and credentialed URLs', () => {
   assert.throws(() => validateConfig({schemaVersion: 1, resources: [], providers: [{id: 'p', kind: 'responses', baseUrl: 'https://user:pass@example.test'}], services: [], lanes: []}), /invalid_provider_p_url/);
 });
 
+test('provider credentials are references and qualification metadata is durable configuration', () => {
+  const config = validateConfig({schemaVersion: 1, resources: [], providers: [{id: 'ox', kind: 'responses', baseUrl: 'https://openrouter.ai/api/v1', wireApi: 'responses', requiresAuth: true, credentialEnv: 'OPENROUTER_API_KEY', credentialFileEnv: 'OPENROUTER_API_KEY_FILE', qualificationModel: 'z-ai/glm-5.3-flash', qualification: {status: 'unqualified', advertisedContextLimitTokens: 1048576, evidence: ['provider-catalog:openrouter:z-ai/glm-5.3-flash:2026-08-29']}}], services: [], lanes: []});
+  assert.equal(config.providers[0].credentialEnv, 'OPENROUTER_API_KEY');
+  assert.equal(config.providers[0].qualification?.advertisedContextLimitTokens, 1048576);
+  assert.throws(() => validateConfig({schemaVersion: 1, resources: [], providers: [{id: 'ox', kind: 'responses', credentialEnv: 'bad-name'}], services: [], lanes: []}), /invalid_provider_credentialEnv/);
+});
+
 test('configuration survives a persistence reload', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-config-'));
   const file = path.join(dir, 'config.json');

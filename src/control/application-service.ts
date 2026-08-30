@@ -11,6 +11,7 @@ import type {ManagedNodeManager, ManagedNodeSnapshot} from './managed-node.js';
 import type {OutputAuthorityScope, OutputExpansionRequest, TokenAwareOutputMetrics, TokenAwareOutputService} from './token-aware-output.js';
 import {MemoryHarnessEfficiencyLedger, type HarnessEfficiencyLedgerPort, type HarnessEfficiencyMetrics} from './harness-efficiency.js';
 import {AGENT_CONTROL_VERSION} from '../version.js';
+import type {WorkParcelCoordinator} from './work-parcels.js';
 
 export type ControlEventType =
   | 'system.snapshot'
@@ -33,6 +34,8 @@ export type ControlEventType =
   | 'job.run_approved'
   | 'job.schedule_changed'
   | 'job.run_changed'
+  | 'work.parcel_created'
+  | 'work.parcel_changed'
   | 'failure';
 
 export interface ControlEvent {id: number; at: string; type: ControlEventType; laneId?: number; actor?: string; payload: Record<string, unknown>;}
@@ -108,6 +111,7 @@ export class AgentControlService {
   private managedNodes?: ManagedNodeManager;
   private tokenAwareOutput?: TokenAwareOutputService;
   private harnessEfficiency?: HarnessEfficiencyLedgerPort;
+  private workParcels?: WorkParcelCoordinator;
 
   constructor(
     readonly state: WorkspaceState,
@@ -120,7 +124,7 @@ export class AgentControlService {
     this.verification = new VerificationService(state, persist);
   }
 
-  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService; harnessEfficiency?: HarnessEfficiencyLedgerPort}) {
+  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService; harnessEfficiency?: HarnessEfficiencyLedgerPort; workParcels?: WorkParcelCoordinator}) {
     if (extras.approvalCount) this.approvalCount = extras.approvalCount;
     if (extras.resources) this.resourceRows = structuredClone(extras.resources);
     if (extras.contextStore) this.contextStore = extras.contextStore;
@@ -128,6 +132,7 @@ export class AgentControlService {
     if (extras.managedNodes) this.managedNodes = extras.managedNodes;
     if (extras.tokenAwareOutput) this.tokenAwareOutput = extras.tokenAwareOutput;
     if (extras.harnessEfficiency) this.harnessEfficiency = extras.harnessEfficiency;
+    if (extras.workParcels) this.workParcels = extras.workParcels;
     return this;
   }
 
@@ -181,6 +186,10 @@ export class AgentControlService {
     const records = (this.harnessEfficiency?.list() ?? []).filter(record => (!options.runId || record.runId === options.runId) && (!options.jobId || record.jobId === options.jobId));
     return records.slice(-limit);
   }
+  parcels() { return this.mustWorkParcels().list(); }
+  parcel(id: string) { return this.mustWorkParcels().get(id); }
+  async submitNaturalTask(prompt: string, actor: string) { const parcel = await this.mustWorkParcels().submit(prompt, actor); this.events.emit('work.parcel_created', {parcelId: parcel.id, status: parcel.status}, undefined, actor); return parcel; }
+  cancelParcel(id: string, actor: string) { const parcel = this.mustWorkParcels().cancel(id, actor); this.events.emit('work.parcel_changed', {parcelId: id, status: parcel.status}, undefined, actor); return parcel; }
   expandCommandOutput(handle: string, request: OutputExpansionRequest, scope: OutputAuthorityScope) { return this.mustTokenAwareOutput().expand(handle, request, scope); }
 
   lane(id: number) { return this.projectLane(this.mustLane(id)); }
@@ -342,4 +351,5 @@ export class AgentControlService {
   private mustLane(id: number) { const lane = this.state.lanes.find(item => item.id === id); if (!lane) throw new Error('lane_missing'); return lane; }
   private mustJobRuntime() { if (!this.jobRuntime) throw new Error('job_runtime_unconfigured'); return this.jobRuntime; }
   private mustTokenAwareOutput() { if (!this.tokenAwareOutput) throw new Error('token_aware_output_unconfigured'); return this.tokenAwareOutput; }
+  private mustWorkParcels() { if (!this.workParcels) throw new Error('work_parcels_unconfigured'); return this.workParcels; }
 }

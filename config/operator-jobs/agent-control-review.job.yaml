@@ -1,0 +1,40 @@
+apiVersion: agent-control/v1
+kind: Job
+metadata:
+  id: agent-control-whole-repository-ox-review
+  name: Agent Control whole-repository independent review
+  version: 1.0.0
+  description: Enter the independent review prompt below, then submit the complete clean GitHub snapshot through the qualified logical Ox provider.
+spec:
+  enabled: true
+  priority: high
+  concurrency: no-overlap
+  parameters:
+    reviewPrompt:
+      type: string
+      required: true
+    contextFile:
+      type: string
+      default: /fast/work/agent-control-ox-audit-20260830/AGENT-CONTROL-CONTEXT.txt
+    maximumOutputUnits:
+      type: integer
+      default: 32768
+      minimum: 8192
+      maximum: 65536
+  retry:
+    attempts: 1
+    backoffSeconds: 30
+  steps:
+    - id: independent-review
+      name: Ox whole-repository defect and efficiency review
+      action: operator.large-context.review@1.0.0
+      requires: [model.execute, network.read, repository.review, large-context]
+      resources: [provider/ox, repository/agent-control-github-read-only]
+      timeoutSeconds: 5400
+      outputs:
+        - name: review-result
+          type: application/vnd.agent-control.large-context-review+json
+          schema: agent-control.large-context-review/v1
+          version: 1.0.0
+          retention: audit-evidence
+      verification: [provider-completed, review-content-complete]

@@ -55,7 +55,7 @@
 
   <main id="jobs-workspace" class="jobs-shell">
     <aside class="panel jobs-catalog"><div class="panel-heading"><div><span class="eyebrow">Reusable workflows</span><h1>Jobs</h1></div><span id="job-count" class="count">0</span></div><div id="job-list" class="job-list"></div></aside>
-    <section class="panel job-detail"><div id="job-empty" class="empty-state"><div class="empty-icon">◇</div><h2>No Job selected</h2><p>Select a catalog item to inspect its authoritative definition and history.</p></div><div id="job-detail" hidden></div></section>
+    <section class="parcel-and-job"><section class="panel natural-task"><form id="natural-task-form"><label for="natural-task-prompt"><span class="eyebrow">Natural-language task entry</span><strong>What should Agent Control do?</strong></label><textarea id="natural-task-prompt" rows="5" required placeholder="Describe the objective, constraints and evidence you need. Agent Control will plan, route, execute and verify it."></textarea><div class="natural-task-actions"><small>The prompt is retained verbatim. Proposed stages must validate against registered Jobs before execution.</small><button class="button" type="submit">Run with Agent Control</button></div></form></section><section class="panel parcel-panel"><div class="panel-heading"><div><span class="eyebrow">Top-level work</span><h2>Work Parcels</h2></div><span id="parcel-count" class="count">0</span></div><div id="parcel-list" class="parcel-list"></div></section><section class="panel job-detail"><div id="job-empty" class="empty-state"><div class="empty-icon">◇</div><h2>No Job selected</h2><p>Select a catalog item to inspect its authoritative definition and history.</p></div><div id="job-detail" hidden></div></section></section>
     <aside class="operations-column">
       <section class="panel"><div class="panel-heading"><div><span class="eyebrow">Heartbeat and workload safety</span><h2>Managed Nodes</h2></div></div><div id="managed-node-list" class="compact-list managed-node-list"></div></section>
       <section class="panel"><div class="panel-heading"><div><span class="eyebrow">Scheduler</span><h2>Queue</h2></div><span id="queue-count" class="count">0</span></div><div id="job-queue" class="compact-list"></div></section>
@@ -71,12 +71,13 @@
       <span class="eyebrow">Elevated capability</span><h2>Enable operator controls</h2>
       <p>The token stays in this browser tab and is sent only as an Authorization header. Agent Control does not use browser cookies for authority.</p>
       <label>Operator token<input id="operator-token" type="password" autocomplete="off" required></label>
-      <div class="dialog-actions"><button value="cancel" class="button secondary">Cancel</button><button value="save" class="button">Enable</button></div>
+      <div class="dialog-actions"><button value="cancel" class="button secondary" formnovalidate>Cancel</button><button value="save" class="button">Enable</button></div>
     </form>
   </dialog>
   <div id="toast" role="status" aria-live="polite"></div>
   <script src="/dashboard.js" defer></script>
   <script src="/dashboard-parameters.js" defer></script>
+  <script src="/dashboard-running-state.js" defer></script>
   <script src="/dashboard-enhancements.js" defer></script>
 </body>
 </html>
