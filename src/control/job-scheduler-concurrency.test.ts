@@ -23,11 +23,11 @@ function setup(definitions: JobDefinition[], handlers: Record<string, ActionHand
 }
 function start(runtime: ReturnType<typeof setup>['runtime']) { return startJobScheduler(runtime as never, undefined, 5, error => { throw error; }); }
 
-test('scheduler overlaps two independent Jobs when worker capacity is two', async () => {
-  let active = 0, maximum = 0;
-  const action = 'overlap@1.0.0', run = setup([job('one', action), job('two', action)], {[action]: async () => { active++; maximum = Math.max(maximum, active); await delay(120); active--; return {}; }}, 2);
+test('scheduler overlaps two independent Jobs when worker capacity is two', async t => {
+  let active = 0, maximum = 0; const windows = new Map<string, {start: number; end?: number}>();
+  const action = 'overlap@1.0.0', run = setup([job('one', action), job('two', action)], {[action]: async context => { const window = {start: Date.now(), end: undefined as number | undefined}; windows.set(context.run.jobId, window); active++; maximum = Math.max(maximum, active); await delay(120); window.end = Date.now(); active--; return {}; }}, 2);
   const a = run.runtime.createRun('one@1.0.0', {}, {type: 'manual', actor: 'test'}), b = run.runtime.createRun('two@1.0.0', {}, {type: 'manual', actor: 'test'}), stop = start(run.runtime);
-  try { await until(() => run.runtime.ledger.get(a.id)?.status === 'SUCCEEDED' && run.runtime.ledger.get(b.id)?.status === 'SUCCEEDED'); assert.equal(maximum, 2); } finally { stop(); fs.rmSync(run.root, {recursive: true, force: true}); }
+  try { await until(() => run.runtime.ledger.get(a.id)?.status === 'SUCCEEDED' && run.runtime.ledger.get(b.id)?.status === 'SUCCEEDED'); const values = [...windows.values()]; const overlapMs = Math.min(...values.map(value => value.end!)) - Math.max(...values.map(value => value.start)); assert.equal(maximum, 2); assert.ok(overlapMs > 0); t.diagnostic(JSON.stringify({windows: Object.fromEntries(windows), overlapMs, maximumActive: maximum, capacity: 2})); } finally { stop(); fs.rmSync(run.root, {recursive: true, force: true}); }
 });
 
 test('step dependencies remain serialized inside one Job', async () => {
@@ -38,11 +38,11 @@ test('step dependencies remain serialized inside one Job', async () => {
   try { await until(() => run.runtime.ledger.get(created.id)?.status === 'SUCCEEDED'); assert.deepEqual(events, ['first:start', 'first:end', 'second:start']); } finally { stop(); fs.rmSync(run.root, {recursive: true, force: true}); }
 });
 
-test('no-overlap serializes runs of the same Job', async () => {
-  let active = 0, maximum = 0; const action = 'serial@1.0.0';
-  const run = setup([job('serial', action, 'no-overlap')], {[action]: async () => { active++; maximum = Math.max(maximum, active); await delay(80); active--; return {}; }}, 2);
+test('no-overlap serializes runs of the same Job', async t => {
+  let active = 0, maximum = 0; const action = 'serial@1.0.0', windows: Array<{start: number; end?: number}> = [];
+  const run = setup([job('serial', action, 'no-overlap')], {[action]: async () => { const window = {start: Date.now(), end: undefined as number | undefined}; windows.push(window); active++; maximum = Math.max(maximum, active); await delay(80); window.end = Date.now(); active--; return {}; }}, 2);
   const a = run.runtime.createRun('serial@1.0.0', {}, {type: 'manual', actor: 'test'}), b = run.runtime.createRun('serial@1.0.0', {}, {type: 'manual', actor: 'test'}), stop = start(run.runtime);
-  try { await until(() => run.runtime.ledger.get(a.id)?.status === 'SUCCEEDED' && run.runtime.ledger.get(b.id)?.status === 'SUCCEEDED'); assert.equal(maximum, 1); } finally { stop(); fs.rmSync(run.root, {recursive: true, force: true}); }
+  try { await until(() => run.runtime.ledger.get(a.id)?.status === 'SUCCEEDED' && run.runtime.ledger.get(b.id)?.status === 'SUCCEEDED'); const overlapMs = Math.max(0, Math.min(...windows.map(value => value.end!)) - Math.max(...windows.map(value => value.start))); assert.equal(maximum, 1); assert.equal(overlapMs, 0); t.diagnostic(JSON.stringify({windows, overlapMs, maximumActive: maximum, policy: 'no-overlap'})); } finally { stop(); fs.rmSync(run.root, {recursive: true, force: true}); }
 });
 
 test('configured worker capacity is a hard scheduler bound', async () => {
