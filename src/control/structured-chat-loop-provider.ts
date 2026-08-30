@@ -1,6 +1,6 @@
 import {createHash} from 'node:crypto';
 import type {ExecutionRecipe} from './adaptive-harness.js';
-import type {RecipeExecutionResult, RecipeExecutor, ToolInvocationGateway} from './harness-dispatch.js';
+import {withLifecycleHeartbeat, type RecipeExecutionResult, type RecipeExecutor, type ToolInvocationGateway} from './harness-dispatch.js';
 import {
   createInvocationObservation,
   type ContextPacketSource,
@@ -98,12 +98,13 @@ export class StructuredChatLoopProvider {
       if (remainingMs <= 0) return failed('structured_chat_loop_timeout', observations, evidence);
       const startedAt = new Date().toISOString();
       let response: {body: ChatResponse};
-      try { response = await this.request(messages, Math.max(1, remainingMs), externalSignal); }
+      try { tools.lifecycle?.('waiting for provider'); response = await withLifecycleHeartbeat(tools, () => this.request(messages, Math.max(1, remainingMs), externalSignal)); tools.lifecycle?.('response received'); }
       catch (error) {
         const detail = boundedError(error);
         return failed(detail, observations, evidence, detail.includes('cancelled') ? 'CANCELLED' : 'FAILED');
       }
       const completedAt = new Date().toISOString();
+      tools.lifecycle?.('processing');
       const content = response.body.choices?.[0]?.message?.content;
       if (!content) return failed('provider_missing_tool_request', observations, evidence);
       const responseHash = createHash('sha256').update(content).digest('hex');

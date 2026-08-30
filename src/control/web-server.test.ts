@@ -70,4 +70,6 @@ test('governed run cards route from Lanes to the authoritative Jobs detail', () 
   assert.match(source,/data-view="jobs"/);
   assert.match(source,/Last provider \/ control signal/);
   assert.match(source,/phaseUpdatedAt/);
+  assert.match(source,/Unavailable \(mixed currencies\)/);
+  assert.match(source,/response received/);
 });

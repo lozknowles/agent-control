@@ -56,6 +56,12 @@ export interface ToolInvocationGateway {
   lifecycle?(phase: Extract<InvocationPhase, 'waiting for provider' | 'response received' | 'processing'>): void;
 }
 
+export async function withLifecycleHeartbeat<T>(tools: ToolInvocationGateway, operation: () => Promise<T>, intervalMs = 15_000): Promise<T> {
+  const heartbeat = setInterval(() => tools.lifecycle?.('waiting for provider'), intervalMs);
+  try { return await operation(); }
+  finally { clearInterval(heartbeat); }
+}
+
 export interface RecipeExecutor {
   execute(recipe: ExecutionRecipe, tools: ToolInvocationGateway): Promise<RecipeExecutionResult>;
 }
@@ -307,9 +313,11 @@ export class HarnessDispatcher {
       const detail = error instanceof Error ? error.message : String(error);
       const retainedInvocationIds = invocationIdsFromError(error);
       const retainedObservations = observationsFromError(error);
-      const invocationIds = retainedInvocationIds.length
-        ? retainedInvocationIds
-        : this.recordInvocations(retainedObservations.length ? retainedObservations : [this.fallbackObservation(recipe, invocationStartedAt, this.clock(), invokedToolIds, detail)], pendingInvocationId);
+      const pendingCovered = Boolean(pendingInvocationId && retainedInvocationIds.includes(pendingInvocationId));
+      const reconciledPending = pendingInvocationId && !pendingCovered
+        ? this.recordInvocations(retainedObservations.length ? retainedObservations : [this.fallbackObservation(recipe, invocationStartedAt, this.clock(), invokedToolIds, detail)], pendingInvocationId)
+        : [];
+      const invocationIds = [...new Set([...retainedInvocationIds, ...reconciledPending])];
       if (error && typeof error === 'object') Object.assign(error, {efficiencyInvocationIds: invocationIds});
       this.store.save({...record, phase: 'FAILED', updatedAt: this.clock(), detail});
       throw error;

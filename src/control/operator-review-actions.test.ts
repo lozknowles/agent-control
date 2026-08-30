@@ -4,6 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import {isCompleteLargeContextReview, registerOperatorReviewActions} from './operator-review-actions.js';
+import {withLifecycleHeartbeat} from './harness-dispatch.js';
 import {JobCatalog} from './job-catalog.js';
 import {ArtifactStore, JobRuntime, ResourceLockManager, RunLedger, WorkerRegistry} from './job-runtime.js';
 import {MemoryHarnessEfficiencyLedger} from './harness-efficiency.js';
@@ -25,6 +26,19 @@ test('large-context review gate rejects a provider-completed role-confusion refu
 test('large-context review gate does not reject a substantive verdict that quotes refusal language', () => {
   const review = `# Executive Verdict\n\nPASS_FOR_3.3.1\n\n${sections}\n\nThe source currently checks the quoted phrase \`I cannot invoke external review\`; generalize that matcher.\n${'repository evidence '.repeat(500)}`;
   assert.equal(isCompleteLargeContextReview(review), true);
+});
+
+test('provider heartbeat remains active until response body consumption completes', async () => {
+  const phases:string[]=[]; let release!:()=>void;
+  const bodyPending=new Promise<void>(resolve=>{release=resolve});
+  const operation=withLifecycleHeartbeat({invoke:async()=>undefined,lifecycle:phase=>phases.push(phase)},async()=>{await bodyPending;return 'complete'},5);
+  await new Promise(resolve=>setTimeout(resolve,18)); assert.ok(phases.length>=2); release(); assert.equal(await operation,'complete');
+  const stopped=phases.length; await new Promise(resolve=>setTimeout(resolve,12)); assert.equal(phases.length,stopped);
+});
+
+test('verdict-like prose cannot bypass a genuine refusal', () => {
+  const refusal = `# Review Not Performed\nThe requested alternatives include blocked as a possible protocol outcome.\n${sections}\n${'I cannot invoke external review. '.repeat(400)}`;
+  assert.equal(isCompleteLargeContextReview(refusal), false);
 });
 
 test('incomplete provider response retains immutable prompt usage cost response and canonical maximumOutputTokens', async () => {

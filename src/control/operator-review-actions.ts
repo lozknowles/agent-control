@@ -2,7 +2,7 @@ import {createHash} from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import {AdaptiveHarness, SkillCatalog, ToolPolicy, type HarnessCandidate, type RecipeRequest} from './adaptive-harness.js';
-import {createToolHandlerRegistry, HarnessDispatcher, HarnessJobAgentAction, type RecipeDispatchPlan, type RecipeExecutor, type ToolInvocationGateway} from './harness-dispatch.js';
+import {createToolHandlerRegistry, HarnessDispatcher, HarnessJobAgentAction, withLifecycleHeartbeat, type RecipeDispatchPlan, type RecipeExecutor, type ToolInvocationGateway} from './harness-dispatch.js';
 import {EconomicRouter} from './economic-routing.js';
 import {configuredHarnessProfiles, createInvocationObservation, HarnessProfileRouter, type ContextPacketSource, type HarnessEfficiencyLedgerPort} from './harness-efficiency.js';
 import {ActionFailure, ActionRegistry} from './job-runtime.js';
@@ -77,7 +77,7 @@ function reviewFile(value: unknown) {
 export function isCompleteLargeContextReview(response: string) {
   const requiredSections = ['What I would delete or simplify', 'CURRENT', 'PROPOSED', 'Quick wins', 'Structural improvements', 'Experimental ideas'];
   const opening = response.slice(0, 2_000);
-  const hasVerdict = /\b(?:PASS_FOR_[A-Z0-9._-]+|REVIEW_REQUIRED|BLOCKED)\b/i.test(opening);
+  const hasVerdict = /^(?:\s*(?:\*\*)?(?:(?:Final\s+)?verdict:\s*)?`?(?:PASS_FOR_[A-Z0-9._-]+|REVIEW_REQUIRED|BLOCKED)`?\.?(?:\*\*)?\s*)$/im.test(opening);
   const refused = !hasVerdict && /(?:^|\n)\s*#{1,3}\s*(?:[^\n]{0,80}\s)?Invocation Gate:\s*FAIL\b|(?:^|\n)\s*#{1,3}\s*Review Not Performed\b|\bI cannot invoke (?:an?\s+)?(?:external|review)\b/i.test(opening);
   return response.length >= 8_000 && requiredSections.every(section => response.toLowerCase().includes(section.toLowerCase())) && !refused;
 }
@@ -92,9 +92,9 @@ class LargeContextResponsesExecutor implements RecipeExecutor {
     const started = Date.now();
     const endpoint = `${this.provider.baseUrl!.replace(/\/$/, '')}/responses`;
     tools.lifecycle?.('waiting for provider');
-    const heartbeat = setInterval(() => tools.lifecycle?.('waiting for provider'), 15_000);
-    let response: Response;
-    try { response = await fetch(endpoint, {
+    let response!: Response;
+    const body = await withLifecycleHeartbeat(tools, async () => {
+      response = await fetch(endpoint, {
         method: 'POST',
         headers: {'content-type': 'application/json', authorization: `Bearer ${credential.value}`},
         body: JSON.stringify({
@@ -106,11 +106,10 @@ class LargeContextResponsesExecutor implements RecipeExecutor {
           store: false,
         }),
         signal: AbortSignal.timeout(90 * 60 * 1000),
-      }); }
-    finally { clearInterval(heartbeat); }
-    let body: ResponseBody;
-    try { body = await response.json() as ResponseBody; }
-    catch { throw new ActionFailure(`provider_response_not_json:http_${response.status}`, 'execution'); }
+      });
+      try { return await response.json() as ResponseBody; }
+      catch { throw new ActionFailure(`provider_response_not_json:http_${response.status}`, 'execution'); }
+    });
     tools.lifecycle?.('response received');
     const completedAt = new Date().toISOString();
     tools.lifecycle?.('processing');

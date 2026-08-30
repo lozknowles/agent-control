@@ -21,15 +21,16 @@ test('bounded structured loop executes multiple typed turns and stops only on fi
     {id: 'one', choices: [{message: {content: '{"tool":"repository.read","input":{"path":"src/a.js"}}'}}], usage: {prompt_tokens: 100, prompt_tokens_details: {cached_tokens: 20}, completion_tokens: 12, total_tokens: 112}},
     {id: 'two', choices: [{message: {content: '{"tool":"mutation.finish","input":{}}'}}], usage: {prompt_tokens: 140, prompt_tokens_details: {cached_tokens: 30}, completion_tokens: 9, total_tokens: 149}},
   ];
-  const bodies: string[] = [], invoked: string[] = [];
+  const bodies: string[] = [], invoked: string[] = [], phases:string[]=[];
   const provider = new StructuredChatLoopProvider({providerId: 'provider', modelId: 'model', baseUrl: 'http://127.0.0.1:8081/v1', toolSchemas: schemas, finishToolId: 'mutation.finish', fetch: async (_url, init) => { bodies.push(String(init?.body)); return new Response(JSON.stringify(replies.shift()), {status: 200}); }});
-  const result = await provider.executor('Inspect and repair.', [{id: 'task', kind: 'task_context', content: 'task', required: true, persistent: false, relevance: 1, provenanceIds: ['fixture']}]).execute(recipe(), {invoke: async id => { invoked.push(id); return id === 'repository.read' ? {content: 'export const value = 1;'} : {stopped: true}; }});
+  const result = await provider.executor('Inspect and repair.', [{id: 'task', kind: 'task_context', content: 'task', required: true, persistent: false, relevance: 1, provenanceIds: ['fixture']}]).execute(recipe(), {invoke: async id => { invoked.push(id); return id === 'repository.read' ? {content: 'export const value = 1;'} : {stopped: true}; },lifecycle:phase=>phases.push(phase)});
   assert.deepEqual(invoked, ['repository.read', 'mutation.finish']);
   assert.equal(result.invocations?.length, 2);
   assert.equal(result.invocations?.[0].usage.freshInputTokens, 80);
   assert.equal(result.invocations?.[1].turnNumber, 2);
   assert.match(bodies[1], /TOOL RESULT/);
   assert.match(result.resultRef ?? '', /mutation.finish/);
+  assert.deepEqual(phases,['waiting for provider','response received','processing','waiting for provider','response received','processing']);
 });
 
 test('loop stops at the governed turn limit without claiming verification', async () => {

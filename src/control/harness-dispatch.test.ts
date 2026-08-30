@@ -163,6 +163,14 @@ test('multi-turn executor exposes PROCESSING before provider completion', async 
   assert.equal(efficiency.list()[0].state, 'COMPLETE');
 });
 
+test('foreign retained invocation ids cannot orphan the dispatcher pending record', async () => {
+  const policy=toolPolicy(), efficiency=new MemoryHarnessEfficiencyLedger();
+  const dispatcher=new HarnessDispatcher(new AdaptiveHarness(new SkillCatalog(),policy),policy,new ToolHandlerRegistry(),()=>({authority:{...authority},workerId:'worker-1'}),undefined,undefined,undefined,efficiency);
+  const failure=Object.assign(new Error('executor_foreign_invocation_failure'),{efficiencyInvocationIds:['foreign-id']});
+  await assert.rejects(dispatcher.dispatch({...plan(),request:{...request(),jobId:'job-orphan',runId:'run-orphan',stepId:'review'}},{execute:async()=>{throw failure}}),/executor_foreign_invocation_failure/);
+  assert.equal(efficiency.list().filter(item=>item.state==='RUNNING').length,0); assert.equal(efficiency.list()[0].state,'FAILED');
+});
+
 test('WorkExecutor normal agent path requires AdaptiveHarness and stops at verification', async () => {
   const policy = toolPolicy(), handlers = new ToolHandlerRegistry().register('repository.read', async () => 'read');
   const dispatcher = new HarnessDispatcher(new AdaptiveHarness(new SkillCatalog(), policy), policy, handlers, () => ({authority: {...authority}, workerId: 'worker-1'}));
