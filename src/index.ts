@@ -61,6 +61,7 @@ startJobScheduler(jobRuntime, (runId, status) => control.events.emit('job.run_ch
 const androidResource = config.resources.find(resource => resource.platform === 'android' && resource.android);
 let androidState: AndroidRecoveryState | undefined = androidResource ? {resourceId: androidResource.id, state: 'offline', detail: 'not probed', recovered: false} : undefined;
 let androidAuto = false;
+let androidRecoveryRunning = false;
 
 function androidController(auto = androidAuto) {
   if (!androidResource) return null;
@@ -137,15 +138,19 @@ async function refreshProviders() {
   activity.log('Provider probes started');
   await Promise.all(providers.list().map(async provider => { providers.setHealth(provider.id, 'unknown', 'PROBING'); render(); const result = await probeProvider(provider); providers.setHealth(provider.id, result.health, `${result.detail} ${result.latencyMs}ms`); control.events.emit('provider.health_changed', {providerId: provider.id, health: result.health, detail: result.detail, latencyMs: result.latencyMs}, undefined, 'provider-probe'); activity.log(`${provider.name}: ${result.health} ${result.detail} ${result.latencyMs}ms`); render(); }));
 }
-function probeAndroid() {
+async function probeAndroid() {
   const controller = androidController(false);
   if (!controller) { activity.log('Android resource: UNCONFIGURED'); render(); return; }
-  androidState = controller.probe(); activity.log(`Android ${androidState.resourceId}: ${androidState.state} - ${androidState.detail}`); appendEvent('resource.android.probe', androidState); render();
+  androidState = await controller.probe(); activity.log(`Android ${androidState.resourceId}: ${androidState.state} - ${androidState.detail}`); appendEvent('resource.android.probe', androidState); render();
 }
-function recoverAndroid() {
+async function recoverAndroid() {
   const controller = androidController(true);
   if (!controller) { activity.log('Android recovery: UNCONFIGURED'); return; }
-  activity.log('Configured Android recovery started'); androidState = controller.recover(); activity.log(`Android recovery: ${androidState.state} - ${androidState.detail}`); appendEvent('resource.android.recovery-result', androidState); render();
+  if (androidRecoveryRunning) { activity.log('Android recovery is already running'); return; }
+  androidRecoveryRunning = true; activity.log('Configured Android recovery started'); render();
+  try { androidState = await controller.recover(); activity.log(`Android recovery: ${androidState.state} - ${androidState.detail}`); appendEvent('resource.android.recovery-result', androidState); }
+  catch (error) { activity.log(`Android recovery ERROR: ${error instanceof Error ? error.message : String(error)}`); }
+  finally { androidRecoveryRunning = false; render(); }
 }
 async function proveResponses() {
   const provider = providers.list().find(item => item.wireApi === 'responses');
@@ -165,10 +170,10 @@ screen.key(['q', 'C-c'], () => { saveWorkspace(state); queueStore.save(workQueue
 screen.key(['i', 'enter'], () => input.focus());
 screen.key(['g'], () => void refreshProviders());
 screen.key(['y'], () => void proveResponses());
-screen.key(['t'], ptyPopup); screen.key(['w'], queuePopup); screen.key(['j'], jobsPopup); screen.key(['d'], demoQueue); screen.key(['x'], probeAndroid); screen.key(['z'], recoverAndroid);
-screen.key(['a'], () => { androidAuto = !androidAuto; activity.log(`Android recovery mode: ${androidAuto ? 'AUTO' : 'MANUAL'}`); appendEvent('resource.android.recovery-mode', {auto: androidAuto}); if (androidAuto) { const controller = androidController(true); if (controller) { androidState = controller.probe(); if (androidState.state === 'node-degraded') androidState = controller.recover(); } } render(); });
+screen.key(['t'], ptyPopup); screen.key(['w'], queuePopup); screen.key(['j'], jobsPopup); screen.key(['d'], demoQueue); screen.key(['x'], () => void probeAndroid()); screen.key(['z'], () => void recoverAndroid());
+screen.key(['a'], () => { androidAuto = !androidAuto; activity.log(`Android recovery mode: ${androidAuto ? 'AUTO' : 'MANUAL'}`); appendEvent('resource.android.recovery-mode', {auto: androidAuto}); if (androidAuto) void recoverAndroid(); render(); });
 screen.key(['r'], () => { const selected = lanes[active]; control.requestReroute(selected.id, 'tui-operator', `Capability re-resolution requested from current ${selected.model}`, .8); render(); });
 screen.key(['p'], () => { control.setSystemPaused(!state.paused, 'tui-operator'); render(); });
 input.on('submit', value => { const text = value.trim(); if (text) control.submitTask(lanes[active].id, text, 'tui-operator'); input.clearValue(); render(); });
 
-render(); laneBoxes[0].focus(); probeAndroid(); void refreshProviders();
+render(); laneBoxes[0].focus(); void probeAndroid(); void refreshProviders();

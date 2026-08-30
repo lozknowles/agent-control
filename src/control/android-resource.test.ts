@@ -8,21 +8,21 @@ const fixture = (id: string, model: string) => ({
   android: {localHealthUrl: 'http://127.0.0.1:19088/health', remoteHealthUrl: 'http://127.0.0.1:19089/health', remoteDirectory: '~/agent-control', startCommand: './android/start-node.sh'},
 });
 
-test('two differently named Android devices use the same capability logic', () => {
+test('two differently named Android devices use the same capability logic', async () => {
   for (const resource of [fixture('android-test', 'Example One'), fixture('phone-other', 'Example Two')]) {
     const calls: string[] = [];
-    const recovery = new AndroidRecovery(resource, '', false, undefined, (command, args) => {
+    const recovery = new AndroidRecovery(resource, '', false, undefined, async (command, args) => {
       calls.push([command, ...args].join(' '));
       if (command === 'curl') return {status: 1} as any;
       if (args.at(-1) === 'echo AGENT-CONTROL-TRANSPORT-READY') return {status: 0} as any;
       return {status: 1} as any;
     });
-    assert.equal(recovery.probe().state, 'node-degraded');
+    assert.equal((await recovery.probe()).state, 'node-degraded');
     assert.ok(calls.some(call => call.includes(resource.id)));
   }
 });
 
-test('non-SSH Android transport is represented honestly', () => {
+test('non-SSH Android transport is represented honestly', async () => {
   const resource = {...fixture('android-any', 'Example Three'), transport: {type: 'orca' as const}};
-  assert.equal(new AndroidRecovery(resource, '', false).probe().state, 'unconfigured');
+  assert.equal((await new AndroidRecovery(resource, '', false).probe()).state, 'unconfigured');
 });
