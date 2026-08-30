@@ -20,8 +20,8 @@ const observation = (active = false, at = '2026-08-26T08:00:00.000Z'): ManagedNo
 });
 
 class FakeTransport implements ManagedNodeTransport {
-  fail = false; active = false; calls: ManagedNodeRequest[] = [];
-  async probe(_resource: ResourceConfig, at: string) { if (this.fail) throw new Error('transport_unreachable'); return observation(this.active, at); }
+  fail = false; active = false; probeStates: boolean[] = []; probeCalls = 0; calls: ManagedNodeRequest[] = [];
+  async probe(_resource: ResourceConfig, at: string) { this.probeCalls += 1; if (this.fail) throw new Error('transport_unreachable'); return observation(this.probeStates.shift() ?? this.active, at); }
   async execute(_resource: ResourceConfig, request: ManagedNodeRequest) { this.calls.push(request); return {exitCode: 0, stdout: 'qualified\n', stderr: ''}; }
 }
 
@@ -122,4 +122,26 @@ test('package and approved-service inspection use typed parameters and reject an
   await assert.rejects(manager.execute('node-alpha', {operation: 'service.status', target: 'ssh.service;reboot'}, []), /service_invalid/);
   await assert.rejects(manager.execute('node-alpha', {operation: 'service.restart', target: 'ssh.service'}, [PROTECTED_WORKLOAD_OVERRIDE]), /service_not_approved/);
   assert.deepEqual(transport.calls.map(item => item.operation), ['package.query', 'service.status']);
+});
+
+test('maintenance revalidates immediately before execution and proceeds when protected state stays idle', async () => {
+  const workers = new WorkerRegistry(), transport = new FakeTransport(), manager = new ManagedNodeManager([resource()], workers, transport, () => new Date('2026-08-26T08:00:00.000Z'));
+  await manager.poll('node-alpha');
+  const result = await manager.execute('node-alpha', {operation: 'package.update'}, [MAINTENANCE_APPROVAL]);
+  assert.equal(result.exitCode, 0); assert.equal(transport.probeCalls, 2); assert.equal(transport.calls.length, 1);
+});
+
+test('new protected workload at final revalidation aborts maintenance even with override', async () => {
+  const workers = new WorkerRegistry(), transport = new FakeTransport(); transport.probeStates = [false, true];
+  const manager = new ManagedNodeManager([resource()], workers, transport, () => new Date('2026-08-26T08:00:00.000Z'));
+  await manager.poll('node-alpha');
+  await assert.rejects(manager.execute('node-alpha', {operation: 'system.reboot'}, [PROTECTED_WORKLOAD_OVERRIDE]), /managed_node_protected_workload_changed:operation=system\.reboot:initial=IDLE:final=BUSY:new=disc-copy/);
+  assert.equal(transport.probeCalls, 2); assert.equal(transport.calls.length, 0);
+});
+
+test('read-only operations do not add a final revalidation probe', async () => {
+  const workers = new WorkerRegistry(), transport = new FakeTransport(), manager = new ManagedNodeManager([resource()], workers, transport, () => new Date('2026-08-26T08:00:00.000Z'));
+  await manager.poll('node-alpha');
+  await manager.execute('node-alpha', {operation: 'system.identity'}, []);
+  assert.equal(transport.probeCalls, 1); assert.equal(transport.calls.length, 1);
 });

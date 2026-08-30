@@ -15,13 +15,14 @@ const observation = (active: boolean, at: string): ManagedNodeObservation => ({o
 
 class Transport implements ManagedNodeTransport {
   calls: ManagedNodeRequest[] = [];
-  constructor(readonly active: boolean) {}
-  async probe(_resource: ResourceConfig, at: string) { return observation(this.active, at); }
+  probeStates: boolean[];
+  constructor(readonly active: boolean, probeStates: boolean[] = []) { this.probeStates = [...probeStates]; }
+  async probe(_resource: ResourceConfig, at: string) { return observation(this.probeStates.shift() ?? this.active, at); }
   async execute(_resource: ResourceConfig, request: ManagedNodeRequest) { this.calls.push(request); return {exitCode: 0, stdout: 'typed result\n', stderr: ''}; }
 }
 
-function runtime(active: boolean, definition: JobDefinition) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-managed-action-')), workers = new WorkerRegistry(), transport = new Transport(active), manager = new ManagedNodeManager([resource], workers, transport, () => new Date('2026-08-26T08:00:00.000Z')), actions = registerManagedNodeActions(manager, new ActionRegistry()), catalog = new JobCatalog(actions.ids());
+function runtime(active: boolean, definition: JobDefinition, probeStates: boolean[] = []) {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-managed-action-')), workers = new WorkerRegistry(), transport = new Transport(active, probeStates), manager = new ManagedNodeManager([resource], workers, transport, () => new Date('2026-08-26T08:00:00.000Z')), actions = registerManagedNodeActions(manager, new ActionRegistry()), catalog = new JobCatalog(actions.ids());
   catalog.addJob(definition);
   return {manager, transport, runtime: new JobRuntime(catalog, actions, workers, new RunLedger(path.join(root, 'ledger.json')), new ArtifactStore(path.join(root, 'artifacts')), new ResourceLockManager(path.join(root, 'locks.json')))};
 }
@@ -42,4 +43,14 @@ test('maintenance Job waits for named approval and that approval is the protecte
   assert.equal(setup.runtime.ledger.get(created.id)?.steps[0].status, 'WAITING_FOR_APPROVAL'); assert.equal(setup.transport.calls.length, 0);
   setup.runtime.approve(created.id, PROTECTED_WORKLOAD_OVERRIDE); await setup.runtime.tick();
   assert.equal(setup.runtime.ledger.get(created.id)?.status, 'SUCCEEDED'); assert.deepEqual(setup.transport.calls[0], {operation: 'service.restart', target: 'workload.service'});
+});
+
+test('Job audit records the final protected-workload revalidation rejection', async () => {
+  const setup = runtime(false, maintenanceJob, [false, true]); await setup.manager.poll(resource.id);
+  const created = setup.runtime.createRun('maintain-node@1.0.0', {}, {type: 'manual', actor: 'test'});
+  await setup.runtime.tick(); setup.runtime.approve(created.id, PROTECTED_WORKLOAD_OVERRIDE); await setup.runtime.tick();
+  const run = setup.runtime.ledger.get(created.id)!;
+  assert.equal(run.status, 'FAILED'); assert.equal(setup.transport.calls.length, 0);
+  assert.match(run.steps[0].error ?? '', /managed_node_protected_workload_changed/);
+  assert.match(run.errors.join('\n'), /managed_node_protected_workload_changed/);
 });

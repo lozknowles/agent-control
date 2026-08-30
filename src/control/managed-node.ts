@@ -250,7 +250,14 @@ export class ManagedNodeManager {
   async execute(id: string, request: ManagedNodeRequest, approvals: string[], signal?: AbortSignal) {
     const resource = this.resources.get(id); if (!resource) throw new Error('managed_node_missing');
     const snapshot = this.get(id)!;
-    const normalized = this.authorize(resource, snapshot, request, approvals);
+    let normalized = this.authorize(resource, snapshot, request, approvals);
+    if (!READ_ONLY.has(normalized.operation)) {
+      const initialProtected = new Set(snapshot.workloads.filter(item => item.protected && item.state === 'ACTIVE').map(item => item.id));
+      const revalidated = await this.poll(id);
+      const newlyActive = revalidated.workloads.filter(item => item.protected && item.state === 'ACTIVE' && !initialProtected.has(item.id)).map(item => item.id);
+      if (newlyActive.length) throw new Error(`managed_node_protected_workload_changed:operation=${normalized.operation}:initial=${snapshot.state}:final=${revalidated.state}:new=${newlyActive.join(',')}`);
+      normalized = this.authorize(resource, revalidated, normalized, approvals);
+    }
     const output = await this.transport.execute(resource, normalized, signal);
     return {schema: MANAGED_NODE_RESULT_SCHEMA, resourceId: id, operation: normalized.operation, observedAt: this.clock().toISOString(), ...output} satisfies ManagedNodeResult;
   }
