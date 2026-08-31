@@ -63,7 +63,15 @@ The current physical Android inspection observed an installed edge-gallery appli
 4. E4B then cloud;
 5. adaptive E2B, E4B, Luna, Sol.
 
-The report includes verified success, cloud and local tokens, Luna and Sol tokens, latency, cost, escalation frequency, false confidence, context reduction, cost per verified outcome, Sol tokens per verified outcome, and missing-evidence cases. Missing evidence in the adaptive route is a benchmark failure even if cost falls.
+The report includes verified success, cloud and local tokens, Luna and Sol tokens, latency, escalation frequency, false confidence, context reduction, missing-evidence cases, and failed-attempt cost. It separately reports API currency cost, subscription/quota consumption, local-energy Wh/cost, and counterfactual savings versus direct Luna and direct Sol. Missing evidence in the adaptive route is a benchmark failure even if cost falls.
+
+## Cost accounting
+
+Every new invocation can retain an immutable, versioned pricing snapshot (`tableId`, version, effective time, source, provider/model and each price component), rather than looking up a mutable price when the benchmark is read. The calculation separately retains fresh input, cached input, cache writes, output and reasoning units. Benchmark logic never contains a model price.
+
+Subscription-backed runs are marked `SUBSCRIPTION / QUOTA CONSUMPTION` when a defensible currency charge is not available; they are never shown as zero cost. Where the integration exposes it, the run retains consumed units, allowance percentage, reset time/period and source.
+
+Pixel local execution retains duration, average power, Wh, tariff, electricity cost, battery before/after, thermal state, throttling and tokens/sec. Missing power or tariff leaves local energy cost unknown. Hardware depreciation is deliberately not mixed into electricity cost. Optional infrastructure estimates stay separately labelled with source and estimate status.
 
 No live cells are currently available, so the current benchmark verdict is `NOT_RUN`. This repository does not claim an efficiency benefit.
 

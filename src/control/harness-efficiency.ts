@@ -4,6 +4,7 @@ import path from 'node:path';
 import {redactSensitiveText} from './context-readers.js';
 import {estimateTokens} from './token-aware-output.js';
 import type {HarnessEfficiencyConfig} from './config.js';
+import {calculateVersionedApiCost, type InvocationCostAccounting, type VersionedModelPricing} from './cost-accounting.js';
 
 export type HarnessProfileName = 'THIN' | 'STANDARD' | 'DEEP';
 export type HarnessRoutingMode = 'OBSERVE' | 'ENFORCE' | 'EXPERIMENT';
@@ -410,6 +411,8 @@ export interface ModelInvocationObservation {
   providerReportedCost: number | null;
   calculatedCost: number | null;
   currency: string | null;
+  /** Immutable per-invocation price/quota/energy evidence; absent for legacy records. */
+  costAccounting?: InvocationCostAccounting;
   usageSource: 'provider-reported' | 'transport' | 'estimated' | 'unknown';
   costSource: 'reported' | 'estimated' | 'unknown';
   finishReason: string | null;
@@ -448,6 +451,7 @@ export interface InvocationObservationInput {
   rawUsage?: unknown;
   providerReportedCost?: number;
   pricing?: InvocationPricing;
+  costAccounting?: InvocationCostAccounting;
   toolIds?: string[];
   filesContextSupplied?: number;
   agentId?: string;
@@ -470,15 +474,18 @@ export function createInvocationObservation(input: InvocationObservationInput): 
   if (!Number.isFinite(started) || !Number.isFinite(completed) || completed < started) throw new Error('invocation_timestamp_invalid');
   const turnNumber = input.turnNumber ?? 1;
   const startup = measureStartupContext(input.startupSources ?? [], turnNumber);
+  const versionedPricing: VersionedModelPricing | undefined = input.costAccounting?.cloud?.pricingBasis;
+  const calculatedCost = versionedPricing ? calculateVersionedApiCost(usage, versionedPricing) : calculateInvocationCost(usage, input.pricing);
   return {
     schema: 'agent-control.model-invocation/v1', id: input.id ?? `inv-${randomUUID()}`, jobId: input.jobId, runId: input.runId ?? null, stepId: input.stepId ?? null, taskId: input.taskId, laneId: input.laneId,
     model: input.model, provider: input.provider, harnessProfile: input.harnessProfile, harnessId: input.harnessId ?? 'adaptive-harness', executionStrategy: input.executionStrategy, turnNumber,
     startedAt: input.startedAt, completedAt: input.completedAt, elapsedMs: completed - started, state: input.outcome === 'CANCELLED' || /cancel/i.test(input.error ?? '') ? 'CANCELLED' : /timeout|timed out/i.test(input.error ?? '') ? 'TIMED_OUT' : input.outcome === 'FAILED' ? 'FAILED' : 'COMPLETE', phase: input.phase ?? 'complete', phaseUpdatedAt: input.completedAt,
     startup, usage,
     providerReportedCost: input.providerReportedCost ?? null,
-    calculatedCost: calculateInvocationCost(usage, input.pricing), currency: input.pricing?.currency ?? null,
+    calculatedCost, currency: versionedPricing?.currency ?? input.pricing?.currency ?? null,
+    ...(input.costAccounting ? {costAccounting: structuredClone(input.costAccounting)} : {}),
     usageSource: Object.values(usage).some(value => typeof value === 'number') ? 'provider-reported' : 'unknown',
-    costSource: input.providerReportedCost !== undefined ? 'reported' : calculateInvocationCost(usage, input.pricing) !== null ? 'estimated' : 'unknown', finishReason: input.finishReason ?? null,
+    costSource: input.providerReportedCost !== undefined ? 'reported' : calculatedCost !== null ? 'estimated' : 'unknown', finishReason: input.finishReason ?? null,
     toolCalls: input.toolIds?.length ?? 0, toolIds: [...(input.toolIds ?? [])], agentId: input.agentId ?? null, filesContextSupplied: input.filesContextSupplied ?? null, contextSourceIds: [...(input.contextSourceIds ?? [])],
     retrievedContextTokens: input.retrievedContextTokens ?? null, repositoryContextTokens: input.repositoryContextTokens ?? null, conversationHistoryTokens: startup.conversationHistoryTokens,
     verifierResult: 'UNKNOWN', finalJobResult: 'UNKNOWN', outcome: input.outcome ?? 'COMPLETE', error: input.error === undefined ? null : boundedRedactedError(input.error),

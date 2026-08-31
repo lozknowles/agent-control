@@ -38,6 +38,14 @@ test('false confidence counts only local acceptance candidates rejected by verif
   assert.equal(report.byVariant.ADAPTIVE.falseConfidenceRate, .5);
 });
 
+test('benchmark retains failed-attempt cost and produces adaptive counterfactuals', () => {
+  const observations = tasks.flatMap(task => CONTEXT_COMPILER_VARIANTS.map(variant => observation(task, variant, variant === 'ADAPTIVE' && task === 'MUT-002' ? {verified: false, apiCost: .8, localTokens: 400} : {})));
+  const report = buildContextCompilerBenchmark('frozen', 'abc', tasks, observations);
+  assert.equal(report.byVariant.ADAPTIVE.failedAttemptApiCost, .8);
+  assert.equal(report.counterfactuals.length, 2);
+  assert.equal(report.counterfactuals[0].directSol.solTokenSaving, 1100);
+});
+
 test('unknown tasks duplicate cells and invalid metrics fail closed', () => {
   assert.throws(() => buildContextCompilerBenchmark('frozen', 'abc', tasks, [observation('OTHER', 'DIRECT_LUNA')]), /task_unknown/);
   const duplicate = observation('MUT-001', 'DIRECT_LUNA');
