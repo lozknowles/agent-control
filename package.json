@@ -38,7 +38,9 @@
     "benchmark:token-output": "node --import tsx scripts/benchmark-token-aware-output.ts",
     "benchmark:harness-efficiency": "node --import tsx scripts/benchmark-harness-efficiency.ts",
     "benchmark:harness-efficiency:live": "node --import tsx scripts/benchmark-harness-efficiency-live.ts",
-    "benchmark:harness-mutation:live": "node --import tsx scripts/benchmark-harness-mutation-live.ts"
+    "benchmark:harness-mutation:live": "node --import tsx scripts/benchmark-harness-mutation-live.ts",
+    "benchmark:context-compiler": "node --import tsx scripts/benchmark-context-compiler.ts",
+    "qualify:edge-context-runtime": "node --import tsx scripts/qualify-edge-context-runtime.ts"
   },
   "dependencies": {
     "ajv": "^8.17.1",

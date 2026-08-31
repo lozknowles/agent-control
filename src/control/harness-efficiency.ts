@@ -373,6 +373,17 @@ export function calculateInvocationCost(usage: NormalizedProviderUsage, pricing?
 export type InvocationVerifierResult = 'UNKNOWN' | 'PASS' | 'FAIL';
 export type InvocationFinalResult = 'UNKNOWN' | 'SUCCEEDED' | 'FAILED' | 'DEGRADED' | 'CANCELLED' | 'DISCONNECTED';
 export type InvocationPhase = 'provider selected' | 'request sent' | 'waiting for provider' | 'response received' | 'processing' | 'verification' | 'complete';
+export interface ContextCompilerInvocationRouting {
+  initialTier: 'E2B' | 'E4B' | 'LUNA' | 'SOL';
+  activeTier: 'E2B' | 'E4B' | 'LUNA' | 'SOL';
+  sequence: Array<'E2B' | 'E4B' | 'LUNA' | 'SOL'>;
+  stage: string;
+  escalationReason?: string;
+  compilerConfidence?: number;
+  originalContextTokens?: number;
+  contextPacketTokens?: number;
+  retainedEvidenceIds: string[];
+}
 
 export interface ModelInvocationObservation {
   schema: 'agent-control.model-invocation/v1';
@@ -415,6 +426,7 @@ export interface ModelInvocationObservation {
   outcome: 'RUNNING' | 'COMPLETE' | 'FAILED' | 'CANCELLED';
   error: string | null;
   provenance: {recipeFingerprint: string; contextPacketId?: string; evidenceIds: string[]};
+  routing?: ContextCompilerInvocationRouting;
 }
 
 export interface InvocationObservationInput {
@@ -449,6 +461,7 @@ export interface InvocationObservationInput {
   evidenceIds?: string[];
   finishReason?: string;
   phase?: InvocationPhase;
+  routing?: ContextCompilerInvocationRouting;
 }
 
 export function createInvocationObservation(input: InvocationObservationInput): ModelInvocationObservation {
@@ -470,12 +483,14 @@ export function createInvocationObservation(input: InvocationObservationInput): 
     retrievedContextTokens: input.retrievedContextTokens ?? null, repositoryContextTokens: input.repositoryContextTokens ?? null, conversationHistoryTokens: startup.conversationHistoryTokens,
     verifierResult: 'UNKNOWN', finalJobResult: 'UNKNOWN', outcome: input.outcome ?? 'COMPLETE', error: input.error === undefined ? null : boundedRedactedError(input.error),
     provenance: {recipeFingerprint: input.recipeFingerprint, ...(input.contextPacketId ? {contextPacketId: input.contextPacketId} : {}), evidenceIds: [...(input.evidenceIds ?? [])]},
+    ...(input.routing ? {routing: structuredClone(input.routing)} : {}),
   };
 }
 
 export interface InvocationStartInput {
   id?: string; jobId: string; runId?: string; stepId?: string; taskId: string; laneId: string; model: string; provider: string;
   harnessProfile: HarnessProfileName; executionStrategy: string; startedAt: string; recipeFingerprint: string; contextPacketId?: string;
+  routing?: ContextCompilerInvocationRouting;
 }
 
 export function createInvocationStart(input: InvocationStartInput): ModelInvocationObservation {
@@ -487,6 +502,7 @@ export function createInvocationStart(input: InvocationStartInput): ModelInvocat
     providerReportedCost: null, calculatedCost: null, currency: null, usageSource: 'unknown', costSource: 'unknown', finishReason: null, toolCalls: 0, toolIds: [], agentId: null,
     filesContextSupplied: null, contextSourceIds: [], retrievedContextTokens: null, repositoryContextTokens: null, conversationHistoryTokens: 0, verifierResult: 'UNKNOWN', finalJobResult: 'UNKNOWN',
     outcome: 'RUNNING', error: null, provenance: {recipeFingerprint: input.recipeFingerprint, ...(input.contextPacketId ? {contextPacketId: input.contextPacketId} : {}), evidenceIds: []},
+    ...(input.routing ? {routing: structuredClone(input.routing)} : {}),
   };
 }
 
