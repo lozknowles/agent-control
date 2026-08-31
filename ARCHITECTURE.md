@@ -310,4 +310,4 @@ New capabilities are classified into policy/authority, scheduling, execution sub
 
 ## Release boundary
 
-3.0.1 remains an immutable source release and 3.1.0 is the current source boundary. Releasing source does not deploy services, expose the dashboard remotely, create credentials, broaden sharing or enable the bundled Schedule. STANDARD remains the applied harness-profile fallback because real-mutation evidence did not qualify automatic profile routing; opaque CLI mediation and universal adapter verification remain explicit gaps.
+Earlier version tags remain immutable source releases; 3.3.1 is the current source boundary. Releasing source does not itself deploy services, expose the dashboard remotely, create credentials, broaden sharing or enable bundled Schedules. STANDARD remains the applied harness-profile fallback because real-mutation evidence did not qualify automatic profile routing; opaque CLI mediation and universal adapter verification remain explicit gaps.
