@@ -33,6 +33,10 @@ if [ -d "$REPO" ] && [ -r "$TOKEN_FILE" ]; then
     setsid ./android/start-node.sh > "$HOME/.agent-control-android-node.log" 2>&1 < /dev/null &
     echo "Android node start sent"
   fi
+  if command -v adb >/dev/null 2>&1; then
+    # One bounded background reconnect; never delays node startup or starts pairing.
+    (cd "$REPO" && setsid node android/adb-local.mjs ensure-connected --json >/dev/null 2>&1 < /dev/null &) || true
+  fi
 else
   echo "Android node boot start skipped; repository/token not available"
 fi
