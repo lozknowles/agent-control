@@ -1,8 +1,8 @@
-# Agent Control 3.1 web dashboard
+# Agent Control web dashboard
 
 The web dashboard is an operator interface over `AgentControlService`. It is not a web scheduler and does not own lane, lease, PTY, verification or provider state.
 
-The default **Jobs** view shows the versioned catalog, Schedules, last/next Run, current structured step progress, Queue reasons, worker placement, artifacts, verification and provenance. The **Lanes** view retains the interactive multi-agent control room. Neither view parses terminal text for Run state.
+The default **Jobs** view shows the versioned catalog, Schedules, last/next Run, current structured step progress, Queue reasons, worker placement, artifacts, verification and provenance. **Lanes** retains the interactive multi-agent control room. **Systems** shows the canonical configured execution inventory and current readiness. **Configuration** provides authenticated, validated inventory editing. No view parses terminal text for Run state.
 
 ## Start
 
@@ -17,11 +17,34 @@ npm start
 
 Select **Observer mode** in the browser and enter the token. It remains in tab-scoped session storage and is sent as `Authorization: Bearer ...`. The server does not issue an authority cookie.
 
+## Configure systems
+
+1. Configure `AGENT_CONTROL_WEB_OPERATOR_TOKEN`, start Agent Control and authenticate using the top-right operator button.
+2. Open **Configuration**.
+3. Select an existing entry, or choose **Add machine**, **Add provider** or **Add service**.
+4. Edit the validated JSON and choose **Save configuration**.
+5. Restart Agent Control when the dashboard reports that a restart is required.
+6. Open **Systems** and verify the entry. An unprobed configured system is expected to show `UNKNOWN`; an unreachable observed system shows `OFFLINE`; a provider or service with a missing credential reference shows `AUTH REQUIRED`.
+
+Machines use the same resource schema described in the main configuration model. A provider or external service that requires an API key must use `credentialEnv` or `credentialFileEnv`, for example:
+
+```json
+{
+  "id": "example-service",
+  "name": "Example external service",
+  "requiresAuth": true,
+  "credentialEnv": "EXAMPLE_SERVICE_API_KEY"
+}
+```
+
+Set the referenced environment variable in the Agent Control process environment before restarting. Never paste its value into configuration: plaintext passwords, API keys, tokens and secret fields are rejected. The editor does not create credentials, test arbitrary endpoints or grant capabilities. A saved machine/provider/service becomes inventory; execution still requires qualified capabilities, current readiness and normal scheduler policy.
+
 ## API contract
 
 Read projections:
 
 - `GET /api/status`
+- `GET /api/configuration` (operator authenticated; returns validated configuration and revision, never credential values)
 - `GET /api/lanes`
 - `GET /api/lanes/:id`
 - `GET /api/lanes/:id/router`
@@ -40,6 +63,8 @@ Read projections:
 - `GET /api/efficiency/invocations` (prompt-free invocation metadata, usage composition and verifier result; default 200, maximum 1,000, optionally filtered by `runId` or `jobId`)
 
 Authenticated Job requests are `POST /api/jobs/:id/run`, schedule `enable`/`disable`, and Run `cancel`, `retry` and `approve`. Scoped command-result expansion is `POST /api/command-output/:handle/expand`; operator authentication is necessary but not sufficient, because the supplied task/lane/worker/lease/ownership scope must exactly match the retained result. These calls enter `AgentControlService`. The HTTP layer cannot register a worker, grant a capability, edit a manifest, acquire a resource lock, dispatch an Action or write a PTY.
+
+Authenticated inventory changes use `POST /api/configuration/systems` with the current `revision`, a `kind` of `resource`, `provider` or `service`, an optional `originalId`, and the complete replacement `item`. The server rejects stale revisions, embedded secret material and invalid schema, writes the complete configuration atomically, emits `configuration.changed`, and returns `restartRequired: true`.
 
 Operator requests under `/api/lanes/:id/` include `pause`, `resume`, `priority`, `mode`, `task`, `reroute`, `handoff`, `clone`, `cancel`, `takeover`, `return-ownership` and verification transitions. These endpoints call application-service methods. There is deliberately no direct lease, scheduler-state, persistence, terminal-input or execution-provider endpoint.
 

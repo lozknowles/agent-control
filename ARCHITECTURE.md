@@ -186,6 +186,8 @@ Managed-node execution is split into read-only inspection and typed maintenance 
 
 Configuration rejects embedded secret-like fields and credentialed URLs. Credentials are supplied through separately named environment variables. State defaults to `.agent-control/`; the path is overrideable.
 
+`ConfigurationStore` is the sole dashboard-facing inventory writer. Its authenticated API reads the current file with a SHA-256 revision, applies one resource/provider/service upsert, validates the complete resulting configuration, and atomically replaces the file. It never writes a supplied credential value: `credentialEnv` and `credentialFileEnv` are names of runtime environment variables, while plaintext password, token, secret and API-key fields fail closed. Configuration changes emit an audit event and require process restart; the browser does not mutate the active registry directly.
+
 ## Scheduling and execution
 
 The scheduler selects capabilities, placement and priority before queue mutation. It supports AUTO/MANUAL lanes, dependencies, shared tasks, batons, handoffs, cloning, batch leases, checkpoint/yield, quiet periods, resource budgets, maintenance windows, confidence routing, approval gates and successive-halving experiments.
@@ -213,6 +215,8 @@ Human takeover calls the existing PTY registry fence. A human-owned lane cannot 
 The dashboard's default Jobs workspace is an operational projection, not an additional scheduler. It reads catalog definitions, Schedule state, queue reasons, worker capability/capacity, resource locks, Run history, step verification and artifact provenance from `JobRuntime` through `AgentControlService`. Run, schedule enable/disable, cancel, whole-Run retry and exact named approval commands return through authenticated service methods. Artifact projections expose identity, checksum and provenance but not managed storage paths. A named approval is legal only while a matching step is authoritatively `WAITING_FOR_APPROVAL`.
 
 Managed-node snapshots are another `AgentControlService` resource projection, exposed through the shared system status and `GET /api/nodes`. The web dashboard, TUI and universal status command render that same versioned state; none probes hosts or owns heartbeat/workload policy independently.
+
+The Systems projection joins configured resources, providers and external services with whatever current heartbeat, provider-health, worker, capacity and invocation evidence exists. Absence of observation therefore produces `UNKNOWN`, observed reachability failure produces `OFFLINE`, and missing referenced authentication produces `AUTH REQUIRED`; a configured system is never removed merely because it cannot be contacted. The Configuration view changes the durable inventory through `ConfigurationStore`, not this readiness projection.
 
 ## Verification and provenance
 

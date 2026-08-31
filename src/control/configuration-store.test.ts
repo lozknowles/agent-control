@@ -13,10 +13,10 @@ function setup() {
 
 test('configuration store adds and edits a system without dropping unrelated configuration', t => {
   const {root, file, store} = setup(); t.after(() => fs.rmSync(root, {recursive: true, force: true}));
-  const created = store.upsert({revision: store.read().revision, kind: 'resource', item: {id: 'sentinel', name: 'Sentinel', platform: 'linux', transport: {type: 'ssh', host: 'sentinel', user: 'operator'}, capabilities: ['system.inspect']}});
-  assert.equal(created.restartRequired, true); assert.equal(created.resources[0].id, 'sentinel');
-  const updated = store.upsert({revision: created.revision, kind: 'resource', originalId: 'sentinel', item: {...created.resources[0], name: 'Sentinel archive'}});
-  assert.equal(updated.resources[0].name, 'Sentinel archive'); assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).lanes[0].name, 'Primary');
+  const created = store.upsert({revision: store.read().revision, kind: 'resource', item: {id: 'remote-host', name: 'Remote host', platform: 'linux', transport: {type: 'ssh', host: 'remote-host', user: 'operator'}, capabilities: ['system.inspect']}});
+  assert.equal(created.restartRequired, true); assert.equal(created.resources[0].id, 'remote-host');
+  const updated = store.upsert({revision: created.revision, kind: 'resource', originalId: 'remote-host', item: {...created.resources[0], name: 'Remote archive'}});
+  assert.equal(updated.resources[0].name, 'Remote archive'); assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).lanes[0].name, 'Primary');
 });
 
 test('configuration store rejects stale edits and secret material', t => {
