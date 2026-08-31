@@ -1,11 +1,14 @@
 # Changelog
 
-## [3.3.1] — Unreleased
+## [3.3.1] — 2026-08-31
 
 - Remediates the v3.3.0 REVIEW_REQUIRED findings for terminal invocation finalization, late cancellation, observable execution phases, provider-neutral review configuration, independent verification and queue transition validation.
 - Preserves partial provider telemetry and immutable retry/replacement history, including canonical `maximumOutputTokens` handling.
 - Adds server-validated operator session states and fail-closed natural-language submission with immediate, auditable Work Parcel intake.
 - Adds the first-class Systems execution-readiness dashboard backed by canonical node, provider, worker, run and invocation sources.
+- Retains every configured machine, provider and external service in Systems even when it is unprobed, offline or missing authentication.
+- Adds an authenticated Configuration dashboard and validated API for adding or editing machines, providers and external services without storing plaintext API keys.
+- Adds evidence-driven local context compilation and versioned, auditable provider pricing with verified-outcome cost accounting.
 
 ## [3.3.0] — 2026-08-30
 

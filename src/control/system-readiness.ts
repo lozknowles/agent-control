@@ -14,8 +14,9 @@ export interface SystemReadiness {
 }
 
 export interface RegisteredResource {id: string; name: string; platform: string; transport: string; capabilities: string[];}
+export interface RegisteredService {id: string; name: string; healthUrl: string; optional: boolean; requiresAuth: boolean; credentialConfigured: boolean;}
 
-export function deriveSystemReadiness(input: {providers?: ProviderRegistry; resources: RegisteredResource[]; managedNodes?: ManagedNodeManager; workers: WorkerRegistration[]; runs: RunRecord[]; invocations: ModelInvocationObservation[]}): SystemReadiness[] {
+export function deriveSystemReadiness(input: {providers?: ProviderRegistry; resources: RegisteredResource[]; services?: RegisteredService[]; managedNodes?: ManagedNodeManager; workers: WorkerRegistration[]; runs: RunRecord[]; invocations: ModelInvocationObservation[]}): SystemReadiness[] {
   const workers = new Map(input.workers.map(worker => [worker.id, worker]));
   const machines = input.resources.map(resource => machineReadiness(resource, input.managedNodes?.get(resource.id), workers.get(resource.id), input.runs));
   const providers = input.providers?.list().map(provider => {
@@ -34,7 +35,12 @@ export function deriveSystemReadiness(input: {providers?: ProviderRegistry; reso
     else { execution = 'AVAILABLE'; reachable = 'yes'; }
     return {id: provider.id, name: provider.name, type: provider.kind === 'local' ? 'local model' as const : 'LLM provider' as const, registered: true as const, reachable, authentication, execution, blockingReason, transport: provider.kind, capabilities: [...provider.capabilities], capacity: provider.parallelism, active, lastCheckAt: state && !['unknown','unconfigured'].includes(state.health) ? state.checkedAt : null, lastSuccessfulProbeAt: state?.lastSuccessAt ?? provider.qualification?.lastSuccessfulAt ?? null, lastSuccessfulJobAt: recentSuccess?.completedAt ?? null, lastError: state && ['degraded','offline'].includes(state.health) && !successIsCurrent ? state.detail ?? state.health : null, latencyMs: state?.latencyMs ?? recentSuccess?.elapsedMs ?? null, qualification, model: provider.qualificationModel, contextLimitTokens: provider.qualification?.advertisedContextLimitTokens, maximumObservedInputTokens: provider.qualification?.maximumObservedInputTokens, recentInvocation: recent ? {at: recent.completedAt ?? recent.startedAt, latencyMs: recent.elapsedMs, totalTokens: recent.usage.totalProcessedTokens, cost: recent.providerReportedCost ?? recent.calculatedCost, currency: recent.currency} : undefined};
   }) ?? [];
-  return [...machines, ...providers].sort((a, b) => a.name.localeCompare(b.name));
+  const services = (input.services ?? []).map(service => {
+    const authentication: SystemReadiness['authentication'] = !service.requiresAuth ? 'not required' : service.credentialConfigured ? 'present' : 'required';
+    const execution: SystemExecutionState = service.requiresAuth && !service.credentialConfigured ? 'AUTH REQUIRED' : 'UNKNOWN';
+    return {id: service.id, name: service.name, type: 'service' as const, registered: true as const, reachable: 'unknown' as const, authentication, execution, blockingReason: execution === 'AUTH REQUIRED' ? 'Service credential reference is configured but no credential is available to this process' : 'Service has not been successfully probed', transport: 'http', capabilities: [], capacity: null, active: null, lastCheckAt: null, lastSuccessfulProbeAt: null, lastSuccessfulJobAt: null, lastError: null, latencyMs: null};
+  });
+  return [...machines, ...providers, ...services].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 function machineReadiness(resource: RegisteredResource, node: ManagedNodeSnapshot | undefined, worker: WorkerRegistration | undefined, runs: RunRecord[]): SystemReadiness {

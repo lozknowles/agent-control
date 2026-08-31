@@ -1,4 +1,4 @@
-const jobState = {jobs: [], parcels: [], runs: [], queue: [], workers: [], resources: [], systems: [], locks: [], artifacts: [], outputMetrics: null, efficiencyMetrics: null, invocations: [], selectedJob: null, selectedRun: null, selectedSystem: null, search: ''};
+const jobState = {jobs: [], parcels: [], runs: [], queue: [], workers: [], resources: [], systems: [], locks: [], artifacts: [], outputMetrics: null, efficiencyMetrics: null, invocations: [], configuration: null, selectedConfiguration: null, configurationRestartRequired: false, selectedJob: null, selectedRun: null, selectedSystem: null, search: ''};
 const terminalRunStatuses = new Set(['SUCCEEDED', 'FAILED', 'DEGRADED', 'CANCELLED', 'MISSED', 'DISCONNECTED']);
 const retryableRunStatuses = new Set(['FAILED', 'DEGRADED', 'CANCELLED', 'DISCONNECTED']);
 const baseRefresh = refresh;
@@ -19,6 +19,7 @@ refresh = async () => {
   renderJobs();
   renderJobRunLanes();
   renderSystems();
+  renderConfiguration();
 };
 
 renderSystem = snapshot => {
@@ -328,6 +329,61 @@ function renderSystems() {
   detail.querySelector('[data-check-system]')?.addEventListener('click',event=>{event.currentTarget.disabled=true;jobCommand(`/api/systems/${encodeURIComponent(system.id)}/check`,{}).catch(showError)});
 }
 
+function configurationItems() {
+  if (!jobState.configuration) return [];
+  return [
+    ...jobState.configuration.resources.map(item=>({kind:'resource',label:'machine',item})),
+    ...jobState.configuration.providers.map(item=>({kind:'provider',label:'provider',item})),
+    ...jobState.configuration.services.map(item=>({kind:'service',label:'service',item})),
+  ].sort((a,b)=>(a.item.name||a.item.id).localeCompare(b.item.name||b.item.id));
+}
+
+function configurationTemplate(kind) {
+  if(kind==='provider') return {id:'new-provider',name:'New provider',kind:'responses',baseUrl:'https://provider.example/v1',wireApi:'responses',requiresAuth:true,credentialEnv:'PROVIDER_API_KEY',parallelism:1,costClass:'metered',capabilities:[],qualification:{status:'unqualified',evidence:[]}};
+  if(kind==='service') return {id:'new-service',name:'New service',healthUrl:'https://service.example/health',optional:true,requiresAuth:true,credentialEnv:'SERVICE_API_KEY'};
+  return {id:'new-system',name:'New system',platform:'unknown',transport:{type:'ssh',host:'hostname',user:'operator'},capabilities:[]};
+}
+
+async function loadConfiguration() {
+  const note=document.querySelector('#configuration-auth-note'), form=document.querySelector('#configuration-form'), status=document.querySelector('#configuration-save-state');
+  if(state.operatorAuth!=='authenticated'){jobState.configuration=null;form.hidden=true;note.hidden=false;note.className='configuration-notice';note.textContent='Authenticate as operator to read or change system configuration.';status.textContent='AUTH REQUIRED';renderConfiguration();return;}
+  status.textContent='LOADING';
+  const response=await fetch('/api/configuration',{headers:{Authorization:`Bearer ${state.token}`}});
+  if(response.status===401){authenticationExpired();return;}
+  const result=await response.json(); if(!response.ok)throw new Error(result.error||`HTTP ${response.status}`);
+  jobState.configuration=result;status.textContent=jobState.configurationRestartRequired?'RESTART REQUIRED':'CURRENT';note.hidden=true;renderConfiguration();
+}
+
+function selectConfiguration(kind,id,item) {
+  jobState.selectedConfiguration={kind,id,item:structuredClone(item)};
+  document.querySelector('#configuration-original-id').value=id||'';
+  document.querySelector('#configuration-kind').value=kind;
+  document.querySelector('#configuration-json').value=JSON.stringify(item,null,2);
+  document.querySelector('#configuration-editor-title').textContent=id?`Edit ${item.name||item.id}`:`Add ${kind==='resource'?'machine':kind}`;
+  document.querySelector('#configuration-form').hidden=false;
+  document.querySelector('#configuration-auth-note').hidden=true;
+  renderConfiguration();
+}
+
+function renderConfiguration() {
+  const list=document.querySelector('#configuration-list'), count=document.querySelector('#configuration-count'); if(!list)return;
+  const items=configurationItems(); count.textContent=items.length;
+  if(!jobState.configuration){list.innerHTML='<div class="compact-empty">Authenticate to load configuration</div>';return;}
+  list.innerHTML=items.length?items.map(({kind,label,item})=>`<button class="system-card ${jobState.selectedConfiguration?.kind===kind&&jobState.selectedConfiguration?.id===item.id?'active':''}" data-configuration-kind="${esc(kind)}" data-configuration-id="${esc(item.id)}"><span><strong>${esc(item.name||item.id)}</strong><small class="configuration-kind">${esc(label)}</small></span><span class="status-pill neutral">CONFIGURED</span><span class="system-scan"><b>ID</b> ${esc(item.id)}${item.credentialEnv||item.credentialFileEnv?` · <b>Credential</b> referenced`:''}</span></button>`).join(''):'<div class="compact-empty">No configured systems</div>';
+  list.querySelectorAll('[data-configuration-id]').forEach(button=>button.addEventListener('click',()=>{const found=configurationItems().find(value=>value.kind===button.dataset.configurationKind&&value.item.id===button.dataset.configurationId);if(found)selectConfiguration(found.kind,found.item.id,found.item)}));
+}
+
+async function saveConfiguration() {
+  let item; try{item=JSON.parse(document.querySelector('#configuration-json').value)}catch{throw new Error('Configuration JSON is invalid')}
+  const kind=document.querySelector('#configuration-kind').value, originalId=document.querySelector('#configuration-original-id').value||undefined;
+  const response=await fetch('/api/configuration/systems',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${state.token}`},body:JSON.stringify({revision:jobState.configuration.revision,kind,originalId,item,actor:'web-operator'})});
+  if(response.status===401){authenticationExpired();throw new Error('Operator authentication required')}
+  const result=await response.json(); if(!response.ok){if(response.status===409)await loadConfiguration();throw new Error(result.error||`HTTP ${response.status}`)}
+  jobState.configuration=result;jobState.configurationRestartRequired=true;jobState.selectedConfiguration={kind,id:item.id,item:structuredClone(item)};
+  const note=document.querySelector('#configuration-auth-note');note.hidden=false;note.className='configuration-notice success';note.textContent=`Saved ${item.id}. Restart Agent Control to apply the new inventory and readiness probes.`;
+  document.querySelector('#configuration-save-state').textContent='RESTART REQUIRED';document.querySelector('#configuration-original-id').value=item.id;renderConfiguration();toast('System configuration saved');
+}
+
 async function jobCommand(url, body) {
   if (state.operatorAuth !== 'authenticated') { openOperator(); throw new Error('Operator authentication required'); }
   const response = await fetch(url, {method: 'POST', headers: {'Content-Type': 'application/json', Authorization: `Bearer ${state.token}`}, body: JSON.stringify({...body, actor: 'web-operator'})});
@@ -347,9 +403,14 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelector('#jobs-workspace').hidden = view !== 'jobs';
     document.querySelector('#lanes-workspace').hidden = view !== 'lanes';
     document.querySelector('#systems-workspace').hidden = view !== 'systems';
+    document.querySelector('#configuration-workspace').hidden = view !== 'configuration';
+    if(view==='configuration')loadConfiguration().catch(showError);
   }));
   document.querySelector('#health').addEventListener('click',()=>document.querySelector('[data-view="systems"]').click());
   document.querySelector('#run-search').addEventListener('input', event => { jobState.search = event.target.value; renderRunHistory(); bindRunLinks(); });
+  document.querySelectorAll('[data-add-configuration]').forEach(button=>button.addEventListener('click',()=>{if(state.operatorAuth!=='authenticated'){openOperator();return}const kind=button.dataset.addConfiguration;selectConfiguration(kind,'',configurationTemplate(kind))}));
+  document.querySelector('#configuration-form').addEventListener('submit',event=>{event.preventDefault();saveConfiguration().catch(showError)});
+  document.querySelector('#configuration-reset').addEventListener('click',()=>{const selected=jobState.selectedConfiguration;if(selected)selectConfiguration(selected.kind,selected.id,selected.item)});
   setInterval(() => { document.querySelectorAll('[data-live-start]').forEach(node => { node.textContent = durationLabel(node.dataset.liveStart); }); document.querySelectorAll('[data-live-activity]').forEach(node => { node.textContent = `${ageLabel(node.dataset.liveActivity)} ago`; }); document.querySelectorAll('[data-live-liveness]').forEach(node => { const live = window.AgentControlRunningState.liveness(node.dataset.liveState, node.dataset.liveLiveness); node.textContent = live.label; node.closest('.parcel-live, .active-run-telemetry')?.classList.toggle('is-stale', live.stale); }); }, 1000);
   setInterval(() => refresh().catch(showError), 5000);
 });

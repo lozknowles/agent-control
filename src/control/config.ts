@@ -97,8 +97,12 @@ export interface ProviderConfig {
 
 export interface ServiceConfig {
   id: string;
+  name?: string;
   healthUrl: string;
   optional?: boolean;
+  requiresAuth?: boolean;
+  credentialEnv?: string;
+  credentialFileEnv?: string;
   start?:
     | {type: 'systemd-user'; unit: string}
     | {type: 'command'; command: string; args?: string[]};
@@ -297,6 +301,10 @@ export function validateConfig(raw: unknown): AgentControlConfig {
     if (ids.has(service.id)) throw new Error(`duplicate_id:${service.id}`);
     ids.add(service.id);
     assertUrl(service.healthUrl, `service_${service.id}`);
+    for (const [field, value] of [['credentialEnv', service.credentialEnv], ['credentialFileEnv', service.credentialFileEnv]] as const) {
+      if (value !== undefined && (typeof value !== 'string' || !/^[A-Z_][A-Z0-9_]{0,127}$/.test(value))) throw new Error(`invalid_service_${field}:${service.id}`);
+    }
+    if (service.requiresAuth && !service.credentialEnv && !service.credentialFileEnv) throw new Error(`service_credential_reference_required:${service.id}`);
     if (service.start?.type === 'systemd-user' && !service.start.unit) throw new Error(`systemd_unit_required:${service.id}`);
     if (service.start?.type === 'command' && !service.start.command) throw new Error(`start_command_required:${service.id}`);
   }

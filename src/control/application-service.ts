@@ -13,7 +13,7 @@ import {MemoryHarnessEfficiencyLedger, type HarnessEfficiencyLedgerPort, type Ha
 import {AGENT_CONTROL_VERSION} from '../version.js';
 import type {WorkParcelCoordinator} from './work-parcels.js';
 import {probeProvider} from './provider-health.js';
-import {deriveSystemReadiness, type SystemReadiness} from './system-readiness.js';
+import {deriveSystemReadiness, type RegisteredService, type SystemReadiness} from './system-readiness.js';
 
 export type ControlEventType =
   | 'system.snapshot'
@@ -38,6 +38,7 @@ export type ControlEventType =
   | 'job.run_changed'
   | 'work.parcel_created'
   | 'work.parcel_changed'
+  | 'configuration.changed'
   | 'failure';
 
 export interface ControlEvent {id: number; at: string; type: ControlEventType; laneId?: number; actor?: string; payload: Record<string, unknown>;}
@@ -108,6 +109,7 @@ export class AgentControlService {
   private readonly routeDecisions = new Map<number, RouteDecision>();
   private approvalCount: () => number = () => 0;
   private resourceRows: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>> = [];
+  private serviceRows: RegisteredService[] = [];
   private contextStore?: ContextStore;
   private jobRuntime?: JobRuntime;
   private managedNodes?: ManagedNodeManager;
@@ -126,9 +128,10 @@ export class AgentControlService {
     this.verification = new VerificationService(state, persist);
   }
 
-  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService; harnessEfficiency?: HarnessEfficiencyLedgerPort; workParcels?: WorkParcelCoordinator}) {
+  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; services?: RegisteredService[]; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService; harnessEfficiency?: HarnessEfficiencyLedgerPort; workParcels?: WorkParcelCoordinator}) {
     if (extras.approvalCount) this.approvalCount = extras.approvalCount;
     if (extras.resources) this.resourceRows = structuredClone(extras.resources);
+    if (extras.services) this.serviceRows = structuredClone(extras.services);
     if (extras.contextStore) this.contextStore = extras.contextStore;
     if (extras.jobRuntime) this.jobRuntime = extras.jobRuntime;
     if (extras.managedNodes) this.managedNodes = extras.managedNodes;
@@ -188,11 +191,12 @@ export class AgentControlService {
     const records = (this.harnessEfficiency?.list() ?? []).filter(record => (!options.runId || record.runId === options.runId) && (!options.jobId || record.jobId === options.jobId));
     return records.slice(-limit);
   }
-  systems(): SystemReadiness[] { return deriveSystemReadiness({providers: this.providers, resources: this.resourceRows, managedNodes: this.managedNodes, workers: this.jobRuntime?.workers.list() ?? [], runs: this.jobRuntime?.ledger.list() ?? [], invocations: this.harnessEfficiency?.list() ?? []}); }
+  systems(): SystemReadiness[] { return deriveSystemReadiness({providers: this.providers, resources: this.resourceRows, services: this.serviceRows, managedNodes: this.managedNodes, workers: this.jobRuntime?.workers.list() ?? [], runs: this.jobRuntime?.ledger.list() ?? [], invocations: this.harnessEfficiency?.list() ?? []}); }
   system(id: string) { const value = this.systems().find(item => item.id === id); if (!value) throw new Error('system_missing'); return value; }
   async checkSystem(id: string, actor: string) {
     if (this.managedNodes?.resource(id)) { const snapshot = await this.managedNodes.poll(id); this.events.emit('resource.node_changed', {resourceId: id, state: snapshot.state, health: snapshot.health, currentWorkload: snapshot.currentWorkload}, undefined, actor); return this.system(id); }
     const provider = this.providers?.get(id); if (provider) { const result = await probeProvider(provider); this.providers!.setHealth(id, result.health, result.detail, result.latencyMs); this.events.emit('provider.health_changed', {providerId: id, health: result.health, detail: result.detail, latencyMs: result.latencyMs}, undefined, actor); return this.system(id); }
+    if (this.serviceRows.some(item => item.id === id)) throw new Error('system_check_unavailable');
     if (this.resourceRows.some(item => item.id === id)) throw new Error('system_check_unavailable');
     throw new Error('system_missing');
   }

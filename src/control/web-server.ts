@@ -6,11 +6,14 @@ import {fileURLToPath} from 'node:url';
 import type {AgentControlService, ControlEvent} from './application-service.js';
 import {parseOutputAuthorityScope, parseOutputExpansionRequest} from './token-aware-output.js';
 import {JobManifestError} from './job-catalog.js';
+import {configPath} from './config.js';
+import {ConfigurationStore} from './configuration-store.js';
 
-export interface WebServerOptions {host?: string; port?: number; operatorToken?: string; allowedOrigins?: string[]; assetsDir?: string;}
+export interface WebServerOptions {host?: string; port?: number; operatorToken?: string; allowedOrigins?: string[]; assetsDir?: string; configFile?: string;}
 const MAX_BODY = 64 * 1024;
 const SECRET_KEY = /token|secret|password|credential|authorization|cookie|api[-_]?key/i;
 const SAFE_TOKEN_ACCOUNTING_KEY = /^(?:tokenAwareOutput|contextTokensAvoided|estimatedTokensOriginal|estimatedTokensReturned|estimatedTokensSaved|estimatedOriginalTokens|estimatedReturnedTokens|estimatedTokensAvoided|expansionTokensReturned|inputTokens|freshInputTokens|cachedInputTokens|cacheWriteTokens|outputTokens|maximumOutputTokens|reasoningTokens|totalTokens|totalProcessedTokens|startupContextTokens|taskContextTokens|retrievedContextTokens|repositoryContextTokens|conversationHistoryTokens|totalEstimatedContextTokens|repeatedContextCostEstimate|tokensPerVerifiedOutcome|freshTokensPerVerifiedOutcome|estimatedTokens)$/;
+const SAFE_CONFIG_REFERENCE_KEY = /^(?:credentialEnv|credentialFileEnv|identityFile)$/;
 const DOMAIN_STATUS = new Map<string, number>([
   ['approval_policy_required', 400], ['approval_policy_not_waiting', 409], ['run_not_retryable', 409], ['job_disabled', 409],
   ['job_missing', 404], ['run_missing', 404], ['schedule_missing', 404], ['artifact_missing', 404], ['system_missing', 404], ['system_check_unavailable', 409],
@@ -42,6 +45,7 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
 
   if (method === 'GET' && url.pathname === '/api/status') return json(response, 200, service.snapshot());
   if (method === 'GET' && url.pathname === '/api/operator-auth') return json(response, 200, operatorAuthentication(request, options));
+  if (method === 'GET' && url.pathname === '/api/configuration') { validateOperatorRequest(request, options); return json(response, 200, new ConfigurationStore(options.configFile ?? configPath()).read()); }
   if (method === 'GET' && url.pathname === '/api/lanes') return json(response, 200, service.snapshot().lanes);
   if (method === 'GET' && url.pathname === '/api/providers') return json(response, 200, service.snapshot().providers);
   if (method === 'GET' && url.pathname === '/api/router') return json(response, 200, service.allRoutes());
@@ -79,6 +83,11 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   if (method === 'POST') {
     validateMutationRequest(request, options);
     const body = await readJson(request), actor = typeof body.actor === 'string' && body.actor.trim() ? body.actor.trim() : 'web-operator';
+    if (url.pathname === '/api/configuration/systems') {
+      const result = new ConfigurationStore(options.configFile ?? configPath()).upsert({revision: body.revision, kind: body.kind, originalId: body.originalId, item: body.item});
+      service.events.emit('configuration.changed', {kind: result.changed.kind, id: result.changed.id, restartRequired: true}, undefined, actor);
+      return json(response, 200, result);
+    }
     if (jobMatch?.[2] === 'run') return json(response, 201, service.createJobRun(decodeURIComponent(jobMatch[1]), body.parameters && typeof body.parameters === 'object' && !Array.isArray(body.parameters) ? body.parameters as Record<string, unknown> : {}, actor));
     if (url.pathname === '/api/parcels') return json(response, 201, await service.submitNaturalTask(String(body.prompt ?? ''), actor));
     if (systemMatch?.[2] === 'check') return json(response, 200, await service.checkSystem(decodeURIComponent(systemMatch[1]), actor));
@@ -125,6 +134,11 @@ function validateMutationRequest(request: IncomingMessage, options: WebServerOpt
   const origin = request.headers.origin;
   const allowed = new Set(options.allowedOrigins ?? [`http://${options.host}:${options.port}`, `http://localhost:${options.port}`]);
   if (origin && !allowed.has(origin)) throw httpError(403, 'origin_denied');
+  validateOperatorRequest(request, options);
+}
+
+function validateOperatorRequest(request: IncomingMessage, options: WebServerOptions) {
+  if (!options.operatorToken) throw httpError(503, 'operator_auth_not_configured');
   const supplied = request.headers.authorization?.replace(/^Bearer\s+/i, '') ?? '';
   if (!secretEqual(supplied, options.operatorToken)) throw httpError(401, 'operator_authentication_required');
 }
@@ -168,7 +182,7 @@ function replyError(response: ServerResponse, error: unknown) { if (error instan
 function httpError(status: number, message: string) { return Object.assign(new Error(message), {status}); }
 function secretEqual(left: string, right: string) { const a = createHash('sha256').update(left).digest(), b = createHash('sha256').update(right).digest(); return timingSafeEqual(a, b); }
 function redact(value: unknown, key = ''): unknown {
-  if (SECRET_KEY.test(key) && !SAFE_TOKEN_ACCOUNTING_KEY.test(key)) return '[REDACTED]';
+  if (SECRET_KEY.test(key) && !SAFE_TOKEN_ACCOUNTING_KEY.test(key) && !SAFE_CONFIG_REFERENCE_KEY.test(key)) return '[REDACTED]';
   if (typeof value === 'string') return value.replace(/\b(?:sk|rk|pk)-[A-Za-z0-9_-]{12,}\b/g, '[REDACTED]');
   if (Array.isArray(value)) return value.map(item => redact(item));
   if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([name, item]) => [name, redact(item, name)]));

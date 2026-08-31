@@ -1,0 +1,29 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import test from 'node:test';
+import {ConfigurationStore, ConfigurationStoreError} from './configuration-store.js';
+
+function setup() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-configuration-')), file = path.join(root, 'config.json');
+  fs.writeFileSync(file, JSON.stringify({schemaVersion: 1, resources: [], providers: [], services: [], lanes: [{id: 1, name: 'Primary'}]}));
+  return {root, file, store: new ConfigurationStore(file)};
+}
+
+test('configuration store adds and edits a system without dropping unrelated configuration', t => {
+  const {root, file, store} = setup(); t.after(() => fs.rmSync(root, {recursive: true, force: true}));
+  const created = store.upsert({revision: store.read().revision, kind: 'resource', item: {id: 'sentinel', name: 'Sentinel', platform: 'linux', transport: {type: 'ssh', host: 'sentinel', user: 'operator'}, capabilities: ['system.inspect']}});
+  assert.equal(created.restartRequired, true); assert.equal(created.resources[0].id, 'sentinel');
+  const updated = store.upsert({revision: created.revision, kind: 'resource', originalId: 'sentinel', item: {...created.resources[0], name: 'Sentinel archive'}});
+  assert.equal(updated.resources[0].name, 'Sentinel archive'); assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).lanes[0].name, 'Primary');
+});
+
+test('configuration store rejects stale edits and secret material', t => {
+  const {root, store} = setup(); t.after(() => fs.rmSync(root, {recursive: true, force: true}));
+  const initial = store.read();
+  store.upsert({revision: initial.revision, kind: 'service', item: {id: 'bridge', healthUrl: 'https://bridge.example/health'}});
+  assert.throws(() => store.upsert({revision: initial.revision, kind: 'service', item: {id: 'stale', healthUrl: 'https://stale.example/health'}}), (error: unknown) => error instanceof ConfigurationStoreError && error.status === 409);
+  const current = store.read();
+  assert.throws(() => store.upsert({revision: current.revision, kind: 'provider', item: {id: 'unsafe', kind: 'responses', apiKey: 'plaintext'}}), /secret_material_forbidden/);
+});

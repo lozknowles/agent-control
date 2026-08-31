@@ -13,6 +13,11 @@ function machine(value?: WorkerRegistration) { return deriveSystemReadiness({res
 test('registered reachable machine with execution capacity is AVAILABLE', () => { const value = machine(worker('healthy')); assert.equal(value.execution, 'AVAILABLE'); assert.equal(value.reachable, 'yes'); });
 test('registered unreachable machine is OFFLINE', () => { const value = machine(worker('offline')); assert.equal(value.execution, 'OFFLINE'); assert.equal(value.reachable, 'no'); });
 test('stale or unprobed machine remains UNKNOWN', () => { assert.equal(machine().execution, 'UNKNOWN'); });
+test('every configured machine remains in inventory when none can be probed', () => {
+  const resources = ['host-a','host-b','device-c'].map(id => ({id, name: id, platform: 'unknown', transport: 'ssh', capabilities: []}));
+  const values = deriveSystemReadiness({resources, workers: [], runs: [], invocations: []});
+  assert.deepEqual(values.map(value => value.id).sort(), ['device-c','host-a','host-b']); assert.ok(values.every(value => value.execution === 'UNKNOWN'));
+});
 test('partially usable machine is DEGRADED', () => { assert.equal(machine(worker('degraded')).execution, 'DEGRADED'); });
 test('capacity exhausted machine is BUSY', () => { assert.equal(machine(worker('healthy', 1, 1)).execution, 'BUSY'); });
 
@@ -24,6 +29,11 @@ test('reachable provider with missing authentication is AUTH REQUIRED', () => {
 test('qualified reachable authenticated provider is AVAILABLE without exposing credential material', () => {
   const providers = new ProviderRegistry(); providers.register({id:'ox',name:'Ox',kind:'responses',requiresAuth:true,credentialConfigured:true,parallelism:1,costClass:'metered',capabilities:['model.execute'],qualificationModel:'ox-alpha',qualification:{status:'qualified'}}); providers.setHealth('ox','healthy','HTTP 200',8);
   const value = deriveSystemReadiness({providers,resources:[],workers:[],runs:[],invocations:[]})[0]; assert.equal(value.execution,'AVAILABLE'); assert.equal(value.authentication,'present'); assert.doesNotMatch(JSON.stringify(value),/token|password|secret|credentialConfigured/i);
+});
+
+test('authenticated external service is retained as UNKNOWN until probed and missing API key is AUTH REQUIRED', () => {
+  const values = deriveSystemReadiness({resources:[],services:[{id:'ready-ref',name:'Ready ref',healthUrl:'https://service.example/health',optional:true,requiresAuth:true,credentialConfigured:true},{id:'missing-key',name:'Missing key',healthUrl:'https://service.example/health',optional:true,requiresAuth:true,credentialConfigured:false}],workers:[],runs:[],invocations:[]});
+  assert.equal(values.find(value=>value.id==='ready-ref')?.execution,'UNKNOWN'); assert.equal(values.find(value=>value.id==='missing-key')?.execution,'AUTH REQUIRED');
 });
 
 test('active provider invocation is BUSY rather than UNKNOWN before a health probe', () => {

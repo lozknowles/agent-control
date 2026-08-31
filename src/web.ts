@@ -1,6 +1,6 @@
 import path from 'node:path';
 import {AgentControlService} from './control/application-service.js';
-import {loadConfig} from './control/config.js';
+import {configPath, loadConfig} from './control/config.js';
 import {discoverLinuxPtys, toPtyDiscoveries} from './control/linux-pty.js';
 import {ProviderRegistry, providersFromConfig} from './control/providers.js';
 import {PtyRegistry} from './control/pty.js';
@@ -14,7 +14,7 @@ import {FileCommandResultStore, TokenAwareOutputService} from './control/token-a
 import {Trace} from './control/telemetry.js';
 
 const now = () => new Date().toISOString();
-const config = loadConfig();
+const configurationFile = configPath(), config = loadConfig(configurationFile);
 function initialLane(id: number, name: string, cwd: string, priority: number, mode: 'auto' | 'manual'): LaneState {
   return {id, name, status: 'idle', model: 'unassigned', reasoning: 'medium', context: '0', lines: ['Ready.', 'Awaiting task...'], contract: {version: 2, laneId: id, goal: 'Await task', constraints: [], cwd, priority, mode, capabilities: defaultCapabilities(), resourceLocks: {}, modelLock: null, sharedTaskIds: [], updatedAt: now()}, baton: {version: 1, laneId: id, revision: 1, status: 'Await task', progress: [], hypothesis: '', evidence: [], changes: [], nextAction: 'Await command', openQuestions: [], model: 'unassigned', reasoning: 'medium', updatedAt: now()}, lease: {laneId: id, holder: null, acquiredAt: null, expiresAt: null}};
 }
@@ -33,6 +33,7 @@ const tokenAwareOutput = new TokenAwareOutputService(new FileCommandResultStore(
 const service = new AgentControlService(state, ptys, providers).configureProjection({
   approvalCount: () => workQueueMetrics(queue).humanReview,
   resources: config.resources.map(resource => ({id: resource.id, name: resource.name ?? resource.id, platform: resource.platform, transport: resource.transport.type, capabilities: [...resource.capabilities]})),
+  services: config.services.map(service => ({id: service.id, name: service.name ?? service.id, healthUrl: service.healthUrl, optional: Boolean(service.optional), requiresAuth: Boolean(service.requiresAuth), credentialConfigured: !service.requiresAuth || Boolean((service.credentialEnv && process.env[service.credentialEnv]) || (service.credentialFileEnv && process.env[service.credentialFileEnv]))})),
   contextStore: ContextStore.load(),
   jobRuntime,
   managedNodes: jobRuntime.managedNodes,
@@ -43,6 +44,6 @@ const service = new AgentControlService(state, ptys, providers).configureProject
 startManagedNodeMonitoring(jobRuntime, snapshot => service.events.emit('resource.node_changed', {resourceId: snapshot.resourceId, state: snapshot.state, health: snapshot.health, currentWorkload: snapshot.currentWorkload}, undefined, 'managed-node-monitor'), error => service.events.emit('failure', {scope: 'managed-node-monitor', error: error.message}, undefined, 'managed-node-monitor'));
 startJobScheduler(jobRuntime, (id, status) => id.startsWith('parcel-') ? service.events.emit('work.parcel_changed', {parcelId: id, status}, undefined, 'job-scheduler') : service.events.emit('job.run_changed', {runId: id, status}, undefined, 'job-scheduler'), 1000, error => service.events.emit('failure', {scope: 'job-scheduler', error: error.message}, undefined, 'job-scheduler'));
 const host = process.env.AGENT_CONTROL_WEB_HOST ?? '127.0.0.1', port = Number(process.env.AGENT_CONTROL_WEB_PORT ?? 4310);
-const server = startWebDashboard(service, {host, port, operatorToken: process.env.AGENT_CONTROL_WEB_OPERATOR_TOKEN, allowedOrigins: process.env.AGENT_CONTROL_WEB_ALLOWED_ORIGINS?.split(',').map(value => value.trim()).filter(Boolean)});
+const server = startWebDashboard(service, {host, port, operatorToken: process.env.AGENT_CONTROL_WEB_OPERATOR_TOKEN, allowedOrigins: process.env.AGENT_CONTROL_WEB_ALLOWED_ORIGINS?.split(',').map(value => value.trim()).filter(Boolean), configFile: configurationFile});
 server.on('listening', () => process.stdout.write(`Agent Control ${service.version} web dashboard: http://${host}:${port} (${process.env.AGENT_CONTROL_WEB_OPERATOR_TOKEN ? 'operator authenticated' : 'observer only'})\n`));
 server.on('error', error => { process.stderr.write(`Dashboard failed: ${error.message}\n`); process.exitCode = 1; });
