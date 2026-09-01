@@ -17,3 +17,9 @@ Current Codex custom-provider configuration supports the Responses wire API. Age
 This provider materialization does not bypass Agent Control policy. The model must first be qualified on the selected node, Work Parcel/Job routing records the exact selection, Codex may return only a schema-constrained request, and the existing live `ToolPolicy` gateway authorizes any tool execution.
 
 The operator's existing `~/.codex/config.toml`, profiles and authentication files are neither copied nor modified.
+
+## Fast execution
+
+The separate `CodexFastExecutionRunner` is a mutation-capable, more tightly bounded path for the generic `FAST_EXECUTION_MODEL` class. It is not a broader version of this schema-constrained read-only tool-request provider. It requires a disposable clean Git worktree, exact model-registry selection, a sealed one-file baton, one attempt, disabled multi-agent fan-out and independent Git/test verification.
+
+Spark availability is proved with an authenticated bounded `codex exec --model gpt-5.3-codex-spark` invocation. On the qualified `codex-cli 0.144.4`, `features.multi_agent=false` is the supported switch; the newer `agents.enabled=false` shape is rejected by that installed client. See [`../fast-execution.md`](../fast-execution.md).

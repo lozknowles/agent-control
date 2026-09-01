@@ -1,5 +1,34 @@
 # Changelog
 
+## Unreleased — Agent Control 3.5
+
+### Identity, delegation and sessions
+
+- Adds persistent Actor and Agent identities, immutable session creators, attributed participants, session modes, role/capability checks, opaque secret-use receipts, and deterministic legacy attribution.
+- Adds hash-addressed context-transfer records and authority-subset delegation across human-to-agent and agent-to-agent handoffs.
+- Adds complete execution provenance across Actor, Session, Work Parcel, Agent, Model, Provider, Runtime, Node, policy events, tools, resources, usage, cost and evidence, including causal-chain reconstruction, aggregation and child-first cancellation.
+- Adds fail-closed execution selection that cannot silently replace required sandboxing, locality, governed runners, nodes or models.
+- Adds a Sessions dashboard and read-only session, context-transfer, delegation and execution APIs backed by the same durable identity store; the view includes active attributed parcels and baton traces. Authenticated natural-language Work Parcels now ignore client-supplied actor spoofing and carry explicit attribution.
+- Enforces participant/session/delegation authority, model and node allow-lists, and filesystem/network envelopes when execution provenance is admitted; policy fields are not merely informational.
+- Adds context-deterioration experiment support for full, summary-only, evidence-only, structured-baton and hybrid transfers with recall, precision, evidence retention, contradiction, unresolved and semantic-loss metrics.
+
+### ACP compatibility
+
+- Adds a transport-neutral Agent Client Protocol v1 JSON-RPC adapter for initialize, new/load/resume/list/prompt/cancel/close, session updates and request cancellation.
+- Maps every ACP prompt to an Agent Control session, context-transfer record, Work Parcel and attribution record. ACP receives no direct shell, scheduler, lease, model-substitution or tool-policy authority.
+
+### Governed fast execution
+
+- Adds a generic `FAST_EXECUTION_MODEL` class with `gpt-5.3-codex-spark` as the current default-disabled implementation.
+- Adds conservative trivial-work classification, protected/sensitive rejection, authenticated model availability probing, model-registry-only selection, sealed minimal batons, one-attempt/zero-subagent Codex execution in disposable clean worktrees, independent verification and visible STANDARD escalation.
+- Adds persistent Spark routing/attempt telemetry with Work Parcel, Run and Session identity plus actual model, selection, context, verification, escalation/successor, file scope, usage/cost and evidence; the Sessions dashboard projects it alongside an authenticated Configuration-panel policy editor. Unknown values remain unknown.
+- Adds a frozen ten-case classifier and seven-case live benchmark. On the qualified host, classification was 10/10 with zero false positives; Spark verified 7/7 at 12.640s median versus the `gpt-5.6-luna` baseline's 5/7 at 24.912s median. Cost was not reported, so the lane remains disabled by default.
+
+### Compatibility and limits
+
+- Existing Work Parcel snapshots remain version 1 and accept additive attribution. Existing sessions are not fabricated; records without new identity fields receive deterministic legacy attribution when projected through the new path.
+- The required Luna → local LLM → GLM-5.3-Flash → Luna physical multi-provider qualification remains blocked on this host because no qualified local-LLM or GLM model-registry routes are configured. This does not weaken unit, API, ACP, Spark or full-suite gates and is reported as a limitation rather than simulated evidence.
+
 ## [3.4.0] — 2026-09-01
 
 - Adds versioned Job Definitions, schema-validated Saved Jobs, safe export/import, optimistic revisions, logical model roles, explicit model overrides, visible fallback, context profiles, budgets, and concurrency policies.
@@ -11,7 +40,7 @@
 
 Qualification note: the source release is created only if the documented real LocalWalks provider run and bounded near-term schedule evidence are completed. Until then, 3.4 remains a release candidate regardless of passing deterministic tests.
 
-## Unreleased
+## 3.4 provider/model registry scope
 
 ### Added
 
