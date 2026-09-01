@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {AdaptiveHarness, SkillCatalog, ToolPolicy, type RecipeRequest} from './adaptive-harness.js';
-import {CodexExecProviderFactory} from './codex-exec-provider.js';
+import {CodexExecProviderFactory, runCodexWithRegisteredModel} from './codex-exec-provider.js';
+import fs from 'node:fs';
 import {HarnessDispatcher, ToolHandlerRegistry} from './harness-dispatch.js';
 
 const provider = {id: 'codex-chatgpt', name: 'Codex with ChatGPT plan', kind: 'cli' as const, requiresAuth: true, parallelism: 1, costClass: 'included' as const, capabilities: ['structured-output', 'tool-request']};
@@ -55,4 +56,16 @@ test('Codex ChatGPT-plan execution is fenced by live Agent Control ownership', a
   live = {...live, ownershipGeneration: 5, owner: 'human'};
   await assert.rejects(() => dispatcher.dispatch({request, candidates: [codex.candidate()], placement: {workerId: 'windows-worker', reason: 'selected by scheduler'}}, codex.executor('return data')), /tool_policy_denied:human_owns_execution/);
   assert.equal(handlerCalls, 0);
+});
+
+test('registered external model runs with an isolated Codex provider config', async () => {
+  const secret = 'external-secret-not-persisted'; let observed = false;
+  const result = await runCodexWithRegisteredModel(
+    {command: 'codex', cwd: process.cwd(), modelId: 'ignored', instruction: 'test', grantedToolIds: ['qualification.return-data'], timeoutMs: 1_000},
+    {id: 'external', kind: 'openai-compatible', baseUrl: 'https://models.example/v1', wireApi: 'responses', auth: {type: 'bearer-env', env: 'EXTERNAL_TEST_KEY'}},
+    {id: 'fast', provider: 'external', providerModel: 'vendor/fast', capabilities: ['coding']},
+    {EXTERNAL_TEST_KEY: secret},
+    async request => { observed = true; assert.equal(request.modelId, 'vendor/fast'); assert.equal(request.loadUserConfig, true); const config = fs.readFileSync(`${request.environment?.CODEX_HOME}/config.toml`, 'utf8'); assert.match(config, /model_provider = "agent_control_external"/); assert.match(config, /wire_api = "responses"/); assert.equal(config.includes(secret), false); return {finalMessage: 'ok', observedItemTypes: ['agent_message']}; },
+  );
+  assert.equal(observed, true); assert.equal(result.finalMessage, 'ok');
 });

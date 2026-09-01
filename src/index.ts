@@ -21,6 +21,7 @@ import {buildJobRuntime, startJobScheduler, startManagedNodeMonitoring} from './
 import {FileCommandResultStore, TokenAwareOutputService} from './control/token-aware-output.js';
 import {Trace} from './control/telemetry.js';
 import {AGENT_CONTROL_VERSION} from './version.js';
+import {ModelQualificationStore, ModelRegistry} from './control/model-registry.js';
 
 const now = () => new Date().toISOString();
 const config = loadConfig();
@@ -40,7 +41,8 @@ const state = loadWorkspace(initial), lanes = state.lanes, ptys = new PtyRegistr
 for (const provider of providersFromConfig(config.providers)) providers.register(provider);
 const queueStore = new WorkQueueStore();
 let workQueue = queueStore.load();
-const jobRuntime = buildJobRuntime(config);
+const modelRegistry = new ModelRegistry(config.providers, config.models, config.modelRouting, new ModelQualificationStore(path.resolve(process.env.AGENT_CONTROL_STATE_DIR || '.agent-control', 'model-qualification.json')));
+const jobRuntime = buildJobRuntime(config, undefined, undefined, undefined, modelRegistry);
 const commandOutputRoot = path.resolve(process.env.AGENT_CONTROL_STATE_DIR || '.agent-control', 'command-output');
 const tokenAwareOutput = new TokenAwareOutputService(new FileCommandResultStore(commandOutputRoot), {
   policy: config.tokenAwareOutput,
@@ -55,6 +57,7 @@ const control = new AgentControlService(state, ptys, providers).configureProject
   tokenAwareOutput,
   harnessEfficiency: jobRuntime.harnessEfficiency,
   workParcels: jobRuntime.workParcels,
+  modelRegistry,
 });
 startManagedNodeMonitoring(jobRuntime, snapshot => control.events.emit('resource.node_changed', {resourceId: snapshot.resourceId, state: snapshot.state, health: snapshot.health, currentWorkload: snapshot.currentWorkload}, undefined, 'managed-node-monitor'), error => control.events.emit('failure', {scope: 'managed-node-monitor', error: error.message}, undefined, 'managed-node-monitor'));
 startJobScheduler(jobRuntime, (runId, status) => control.events.emit('job.run_changed', {runId, status}, undefined, 'job-scheduler'), 1000, error => control.events.emit('failure', {scope: 'job-scheduler', error: error.message}, undefined, 'job-scheduler'));

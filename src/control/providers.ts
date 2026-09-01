@@ -1,8 +1,8 @@
 import type {ProviderConfig} from './config.js';
 
-export type ProviderKind = 'local' | 'responses' | 'cli' | 'browser-bridge';
+export type ProviderKind = 'local' | 'responses' | 'cli' | 'browser-bridge' | 'openai-compatible';
 export type ProviderHealth = 'unconfigured' | 'unknown' | 'healthy' | 'degraded' | 'offline';
-export interface ProviderDefinition {id: string; name: string; kind: ProviderKind; baseUrl?: string; wireApi?: 'responses'; requiresAuth: boolean; credentialConfigured?: boolean; parallelism: number; costClass: 'free' | 'included' | 'metered'; capabilities: string[]; qualificationModel?: string; qualification?: ProviderConfig['qualification'];}
+export interface ProviderDefinition {id: string; name: string; kind: ProviderKind; baseUrl?: string; wireApi?: 'responses' | 'chat-completions'; requiresAuth: boolean; credentialConfigured?: boolean; parallelism: number; costClass: 'free' | 'included' | 'metered'; capabilities: string[]; qualificationModel?: string; qualification?: ProviderConfig['qualification'];}
 export interface ProviderState {providerId: string; health: ProviderHealth; detail?: string; checkedAt: string; lastSuccessAt?: string; latencyMs?: number;}
 export interface AgentRecipe {id: string; providerId: string; model: string; profile: string; reasoning: 'off' | 'low' | 'medium' | 'high'; promptVersion: string; tools: string[]; skills: string[];}
 
@@ -31,18 +31,22 @@ export class ProviderRegistry {
 }
 
 export function providersFromConfig(configured: ProviderConfig[]): ProviderDefinition[] {
-  return configured.map(provider => ({
-    id: provider.id,
-    name: provider.name ?? provider.id,
-    kind: provider.kind,
-    baseUrl: provider.baseUrl,
-    wireApi: provider.wireApi,
-    requiresAuth: provider.requiresAuth ?? false,
-    credentialConfigured: !(provider.requiresAuth ?? false) || Boolean((provider.credentialEnv && process.env[provider.credentialEnv]) || (provider.credentialFileEnv && process.env[provider.credentialFileEnv])),
-    parallelism: provider.parallelism ?? 1,
-    costClass: provider.costClass ?? 'metered',
-    capabilities: [...(provider.capabilities ?? [])],
-    qualificationModel: provider.qualificationModel,
-    qualification: provider.qualification ? structuredClone(provider.qualification) : undefined,
-  }));
+  return configured.map(provider => {
+    const requiresAuth = provider.auth ? provider.auth.type !== 'none' : provider.requiresAuth ?? false;
+    const authConfigured = provider.auth?.type === 'none' || Boolean(provider.auth?.env && process.env[provider.auth.env]);
+    return {
+      id: provider.id,
+      name: provider.name ?? provider.id,
+      kind: provider.kind,
+      baseUrl: provider.baseUrl,
+      wireApi: provider.wireApi,
+      requiresAuth,
+      credentialConfigured: !requiresAuth || authConfigured || Boolean((provider.credentialEnv && process.env[provider.credentialEnv]) || (provider.credentialFileEnv && process.env[provider.credentialFileEnv])),
+      parallelism: provider.parallelism ?? 1,
+      costClass: provider.costClass ?? 'metered',
+      capabilities: [...(provider.capabilities ?? [])],
+      qualificationModel: provider.qualificationModel,
+      qualification: provider.qualification ? structuredClone(provider.qualification) : undefined,
+    };
+  });
 }

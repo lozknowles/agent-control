@@ -1,6 +1,6 @@
-# Agent Control 3.1.0 architecture
+# Agent Control architecture
 
-This is the authoritative source boundary for 3.1.0. The tagged 3.0.1 infrastructure-neutral resource/provider model and the merged 3.0.x adaptive-harness recovery are the base. Status labels matter:
+This is the authoritative source boundary for Agent Control 3.3.1 and subsequent unreleased work. The tagged 3.0.1 infrastructure-neutral resource/provider model and the merged 3.0.x adaptive-harness recovery are the base. Status labels matter:
 
 - **implemented** means executable code and automated tests exist in this branch;
 - **experimental** means executable code exists but has not been qualified across every external substrate;
@@ -26,6 +26,8 @@ This is the authoritative source boundary for 3.1.0. The tagged 3.0.1 infrastruc
 16. A recipe constructs an execution environment but cannot schedule work, acquire authority, write a PTY or accept a result.
 17. A managed node is a configured resource plus discovered capabilities; its hostname, transport, hardware and workload identity never become control-plane policy.
 18. Remote maintenance is a typed Action with approval and evidence, never an arbitrary SSH command string.
+19. Provider registration, model registration, model qualification, logical role mapping and worker placement are distinct state and decisions.
+20. A declared capability or pricing field is not qualification evidence; unavailable usage and cost remain unknown rather than zero.
 
 ## System boundary and adaptive harness
 
@@ -186,7 +188,19 @@ Managed-node execution is split into read-only inspection and typed maintenance 
 
 Configuration rejects embedded secret-like fields and credentialed URLs. Credentials are supplied through separately named environment variables. State defaults to `.agent-control/`; the path is overrideable.
 
-`ConfigurationStore` is the sole dashboard-facing inventory writer. Its authenticated API reads the current file with a SHA-256 revision, applies one resource/provider/service upsert, validates the complete resulting configuration, and atomically replaces the file. It never writes a supplied credential value: `credentialEnv` and `credentialFileEnv` are names of runtime environment variables, while plaintext password, token, secret and API-key fields fail closed. Configuration changes emit an audit event and require process restart; the browser does not mutate the active registry directly.
+`ConfigurationStore` is the sole dashboard-facing inventory writer. Its authenticated API reads the current file with a SHA-256 revision, applies one resource/provider/model/service upsert or complete model-role-map replacement, validates the resulting configuration, and atomically replaces the file. It never writes a supplied credential value: `auth.env`, `credentialEnv` and `credentialFileEnv` are names of runtime environment variables, while plaintext password, token, secret and API-key fields fail closed. Provider/model/route changes reload the canonical `ModelRegistry`; resource/service changes remain restart-required. The browser never mutates a registry directly.
+
+## Provider and model registry
+
+`ModelRegistry` separates provider endpoint/authentication from model identity and routing policy. A provider records stable ID, display name, protocol, base URL, authentication reference and broad capabilities. A model records its stable Agent Control ID, provider-native model ID, declared capabilities, optional node scope, limits, sourced pricing metadata and configured qualification seed. `ModelQualificationStore` persists runtime evidence outside the tracked tree.
+
+Logical roles map to an ordered primary and fallbacks. Routing evaluates an explicit model before a role and an explicit role before the configured default. Eligibility requires an enabled provider and model, `QUALIFIED` evidence, selected-node membership when scoped, and every required capability in the proven qualification set. Fallback is explicit in the decision and can be prohibited. Cycles, duplicate IDs and unknown references fail configuration validation.
+
+The OpenAI-compatible adapter supports bounded non-streaming Responses and Chat Completions requests. It normalizes usage without inventing missing measurements and calculates cost only from configured, attributed pricing. Qualification runs three bounded checks and records response hashes, usage, latency, exact provider/model/node identity and capability evidence; it never records prompts' secret environment values or response bodies.
+
+Work Parcel model routing remains downstream of worker placement but upstream of Run creation. A stage requesting `modelRole` or `model` is resolved against the worker selected for its first runnable Job step. The immutable Run trigger records the exact provider model, node, qualification version and fallback reason so model-backed Actions can consume the governed decision. Ordinary Jobs with no model request retain their existing behavior.
+
+Codex integration materializes one selected Responses-compatible provider and model into a mode-0600 temporary `CODEX_HOME/config.toml`, references the approved credential environment variable, and deletes the directory after execution. It does not edit or copy the user's Codex configuration. Chat-Completions-only providers fail closed because current Codex custom-provider configuration supports the Responses wire API.
 
 ## Scheduling and execution
 

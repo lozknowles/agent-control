@@ -1,6 +1,6 @@
 # Implementation status
 
-Release boundary: **3.3.0**. Registry updated: **2026-08-30**.
+Release boundary: **3.3.1**. Registry updated: **2026-09-01**.
 
 This document is generated from `config/implementation-status.json`. Update the registry and run `npm run status:implementation -- --write`; do not edit this projection directly. `IMPLEMENTED` means executable source and focused tests exist. `QUALIFIED` additionally requires recorded real evidence. `PARTIAL`, `PLANNED` and `NOT_IMPLEMENTED` remain explicit gaps.
 
@@ -16,6 +16,7 @@ This document is generated from `config/implementation-status.json`. Update the 
 | Harness efficiency telemetry and context profiles (`harness.efficiency-context-routing`) | **PARTIAL** | Provider-neutral invocation telemetry, THIN/STANDARD/DEEP profiles, context packets, a neutral context-graph port, bounded structured mutation execution, deterministic diff verification, cumulative escalation outcomes and dashboard/API projections are executable; routing stays observational with STANDARD applied. | The 12-task same-model real-mutation run did not qualify THIN, immediate DEEP selection or adaptive escalation: only 2/12 STANDARD outcomes verified and adaptive fresh tokens per verified outcome were materially higher. Keep production routing observational with STANDARD applied until a larger deterministic suite demonstrates success non-regression and cumulative-resource improvement. |
 | Job Catalog, scheduler and Run Ledger (`jobs.catalog-scheduler-ledger`) | **IMPLEMENTED** | Versioned Jobs and Schedules produce durable Runs with capability placement, locks, retries, artifacts, approvals and recovery. | None recorded. |
 | Capability-advertising Worker Registry (`workers.capability-registry`) | **IMPLEMENTED** | Workers advertise semantic capabilities and health separately from provider/model routing. | None recorded. |
+| Provider-neutral external model registry (`models.provider-neutral-registry`) | **PARTIAL** | Configured providers, models, node-scoped qualification, logical roles, explicit fallbacks, normalized usage, ephemeral Codex provider materialization and dashboard/API projections are executable and fail closed. | The registry implementation is tested, but real governed GLM-5.3-Flash and GLM-5.3 qualifications remain pending until an approved provider credential is available to this isolated worktree. These models remain UNTESTED and cannot route. |
 | Model-backed Job Action bridge (`jobs.model-backed-action`) | **QUALIFIED** | Agent Actions delegate through HarnessDispatcher, return tool requests through ToolPolicy and stop at the verification boundary. | None recorded. |
 | OpenAI Responses API execution (`providers.openai-responses`) | **QUALIFIED** | A real Responses API Job returned a policy-gated function call and a verified checksummed artifact. | None recorded. |
 | Codex execution with ChatGPT-plan authentication (`providers.openai-codex-chatgpt-plan`) | **QUALIFIED** | A real Codex Job used saved ChatGPT authentication, a read-only process envelope and the central return-data tool gateway. | None recorded. |
@@ -81,6 +82,11 @@ This document is generated from `config/implementation-status.json`. Update the 
 
 - Source: [`src/control/job-runtime.ts`](../src/control/job-runtime.ts), [`src/control/job-bootstrap.ts`](../src/control/job-bootstrap.ts)
 - Tests: [`src/control/job-runtime.test.ts`](../src/control/job-runtime.test.ts)
+
+### Provider-neutral external model registry
+
+- Source: [`src/control/model-registry.ts`](../src/control/model-registry.ts), [`src/control/model-qualification.ts`](../src/control/model-qualification.ts), [`src/control/openai-compatible-provider.ts`](../src/control/openai-compatible-provider.ts), [`src/control/codex-model-config.ts`](../src/control/codex-model-config.ts), [`src/control/codex-exec-provider.ts`](../src/control/codex-exec-provider.ts), [`src/control/work-parcels.ts`](../src/control/work-parcels.ts), [`src/control/application-service.ts`](../src/control/application-service.ts), [`src/control/web-server.ts`](../src/control/web-server.ts), [`assets/dashboard/dashboard-models.js`](../assets/dashboard/dashboard-models.js)
+- Tests: [`src/control/model-registry.test.ts`](../src/control/model-registry.test.ts), [`src/control/model-qualification.test.ts`](../src/control/model-qualification.test.ts), [`src/control/openai-compatible-provider.test.ts`](../src/control/openai-compatible-provider.test.ts), [`src/control/codex-model-config.test.ts`](../src/control/codex-model-config.test.ts), [`src/control/codex-exec-provider.test.ts`](../src/control/codex-exec-provider.test.ts), [`src/control/work-parcels.test.ts`](../src/control/work-parcels.test.ts), [`src/control/configuration-store.test.ts`](../src/control/configuration-store.test.ts), [`src/control/web-server.test.ts`](../src/control/web-server.test.ts)
 
 ### Model-backed Job Action bridge
 

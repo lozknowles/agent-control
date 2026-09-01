@@ -66,9 +66,11 @@ export interface ResourceConfig {
 export interface ProviderConfig {
   id: string;
   name?: string;
-  kind: 'local' | 'responses' | 'cli' | 'browser-bridge';
+  kind: 'local' | 'responses' | 'cli' | 'browser-bridge' | 'openai-compatible';
+  enabled?: boolean;
   baseUrl?: string;
-  wireApi?: 'responses';
+  wireApi?: 'responses' | 'chat-completions';
+  auth?: {type: 'none' | 'bearer-env' | 'bearer-file-env'; env?: string};
   requiresAuth?: boolean;
   credentialEnv?: string;
   credentialFileEnv?: string;
@@ -94,6 +96,23 @@ export interface ProviderConfig {
     evidence?: string[];
   };
 }
+
+export type ModelQualificationState = 'UNTESTED' | 'QUALIFYING' | 'QUALIFIED' | 'DEGRADED' | 'DISABLED' | 'FAILED';
+export interface ModelConfig {
+  id: string;
+  provider: string;
+  providerModel: string;
+  displayName?: string;
+  enabled?: boolean;
+  capabilities: string[];
+  roles?: string[];
+  nodes?: string[];
+  limits?: {contextTokens?: number; outputTokens?: number};
+  qualification?: {state: ModelQualificationState; version?: string; qualifiedAt?: string; evidence?: string[]; capabilities?: string[]; nodes?: string[]; latencyMs?: number; successRate?: number};
+  pricing?: {currency: string; inputPerMillionTokens: number; outputPerMillionTokens: number; cachedInputPerMillionTokens?: number; effectiveFrom: string; source: string};
+}
+export interface ModelRouteConfig {primary: string; fallback?: string[];}
+export interface ModelRoutingConfig {defaultRole?: string; roles: Record<string, ModelRouteConfig>;}
 
 export interface ServiceConfig {
   id: string;
@@ -156,6 +175,8 @@ export interface AgentControlConfig {
   schemaVersion: 1;
   resources: ResourceConfig[];
   providers: ProviderConfig[];
+  models: ModelConfig[];
+  modelRouting: ModelRoutingConfig;
   services: ServiceConfig[];
   lanes: LaneConfig[];
   tokenAwareOutput?: TokenAwareOutputConfig;
@@ -166,6 +187,8 @@ export const emptyConfig = (): AgentControlConfig => ({
   schemaVersion: 1,
   resources: [],
   providers: [],
+  models: [],
+  modelRouting: {roles: {}},
   services: [],
   lanes: [],
 });
@@ -179,10 +202,8 @@ function assertId(value: unknown, label: string) {
 
 function assertUrl(value: unknown, label: string) {
   if (typeof value !== 'string') throw new Error(`invalid_${label}_url`);
-  const parsed = new URL(value);
-  if (!allowedSchemes.has(parsed.protocol) || parsed.username || parsed.password) {
-    throw new Error(`invalid_${label}_url`);
-  }
+  try { const parsed = new URL(value); if (!allowedSchemes.has(parsed.protocol) || parsed.username || parsed.password) throw new Error('invalid'); }
+  catch { throw new Error(`invalid_${label}_url`); }
 }
 
 function assertStringList(value: unknown, label: string, pattern: RegExp) {
@@ -197,7 +218,7 @@ function assertIntegerRange(value: unknown, label: string, minimum: number, maxi
 
 function rejectSecrets(value: unknown, trail = 'config') {
   if (!value || typeof value !== 'object') return;
-  const safeTokenAccountingKeys = new Set(['tokenAwareOutput', 'completeMaxTokens', 'artifactOnlyAboveReturnedTokens', 'minimumCompleteTokens', 'harnessEfficiency', 'maximumInitialContextTokens', 'advertisedContextLimitTokens', 'maximumObservedInputTokens', 'inputPerMillionTokens', 'outputPerMillionTokens']);
+  const safeTokenAccountingKeys = new Set(['tokenAwareOutput', 'completeMaxTokens', 'artifactOnlyAboveReturnedTokens', 'minimumCompleteTokens', 'harnessEfficiency', 'maximumInitialContextTokens', 'advertisedContextLimitTokens', 'maximumObservedInputTokens', 'inputPerMillionTokens', 'outputPerMillionTokens', 'cachedInputPerMillionTokens', 'contextTokens', 'outputTokens']);
   for (const [key, child] of Object.entries(value)) {
     if (/token|password|secret|api.?key/i.test(key) && !['credentialEnv', 'credentialFileEnv'].includes(key) && !safeTokenAccountingKeys.has(key)) {
       throw new Error(`secret_material_forbidden:${trail}.${key}`);
@@ -215,12 +236,14 @@ export function validateConfig(raw: unknown): AgentControlConfig {
     schemaVersion: 1,
     resources: input.resources ?? [],
     providers: input.providers ?? [],
+    models: input.models ?? [],
+    modelRouting: input.modelRouting ?? {roles: {}},
     services: input.services ?? [],
     lanes: input.lanes ?? [],
     tokenAwareOutput: input.tokenAwareOutput,
     harnessEfficiency: input.harnessEfficiency,
   };
-  for (const key of ['resources', 'providers', 'services', 'lanes'] as const) {
+  for (const key of ['resources', 'providers', 'models', 'services', 'lanes'] as const) {
     if (!Array.isArray(config[key])) throw new Error(`invalid_config_${key}`);
   }
   const ids = new Set<string>();
@@ -280,7 +303,16 @@ export function validateConfig(raw: unknown): AgentControlConfig {
     assertId(provider.id, 'provider');
     if (ids.has(provider.id)) throw new Error(`duplicate_id:${provider.id}`);
     ids.add(provider.id);
+    if (!['local', 'responses', 'cli', 'browser-bridge', 'openai-compatible'].includes(provider.kind)) throw new Error(`invalid_provider_kind:${provider.id}`);
+    if (provider.enabled !== undefined && typeof provider.enabled !== 'boolean') throw new Error(`invalid_provider_enabled:${provider.id}`);
     if (provider.baseUrl) assertUrl(provider.baseUrl, `provider_${provider.id}`);
+    if (provider.kind === 'openai-compatible' && !provider.baseUrl) throw new Error(`provider_base_url_required:${provider.id}`);
+    if (provider.wireApi !== undefined && !['responses', 'chat-completions'].includes(provider.wireApi)) throw new Error(`invalid_provider_wire_api:${provider.id}`);
+    if (provider.auth) {
+      if (!['none', 'bearer-env', 'bearer-file-env'].includes(provider.auth.type)) throw new Error(`invalid_provider_auth:${provider.id}`);
+      if (provider.auth.type !== 'none' && (!provider.auth.env || !/^[A-Z_][A-Z0-9_]{0,127}$/.test(provider.auth.env))) throw new Error(`invalid_provider_auth_env:${provider.id}`);
+      if (provider.auth.type === 'none' && provider.auth.env !== undefined) throw new Error(`invalid_provider_auth_env:${provider.id}`);
+    }
     for (const [field, value] of [['credentialEnv', provider.credentialEnv], ['credentialFileEnv', provider.credentialFileEnv]] as const) {
       if (value !== undefined && (typeof value !== 'string' || !/^[A-Z_][A-Z0-9_]{0,127}$/.test(value))) throw new Error(`invalid_provider_${field}:${provider.id}`);
     }
@@ -296,6 +328,45 @@ export function validateConfig(raw: unknown): AgentControlConfig {
       if (!provider.pricing.source?.trim() || Number.isNaN(Date.parse(provider.pricing.effectiveFrom))) throw new Error(`invalid_provider_pricing_provenance:${provider.id}`);
     }
   }
+  const providerIds = new Set(config.providers.map(provider => provider.id));
+  const modelIds = new Set<string>();
+  for (const model of config.models) {
+    assertId(model.id, 'model');
+    if (modelIds.has(model.id)) throw new Error(`duplicate_model_id:${model.id}`);
+    modelIds.add(model.id);
+    if (!providerIds.has(model.provider)) throw new Error(`unknown_model_provider:${model.id}:${model.provider}`);
+    if (typeof model.providerModel !== 'string' || !model.providerModel.trim() || model.providerModel.length > 256) throw new Error(`invalid_provider_model:${model.id}`);
+    if (!Array.isArray(model.capabilities) || model.capabilities.some(capability => typeof capability !== 'string' || !/^[a-z0-9][a-z0-9._-]{0,127}$/i.test(capability))) throw new Error(`invalid_model_capabilities:${model.id}`);
+    assertStringList(model.roles, `model_roles:${model.id}`, /^[a-z0-9][a-z0-9._-]{0,127}$/i);
+    assertStringList(model.nodes, `model_nodes:${model.id}`, /^[a-z0-9][a-z0-9._-]{0,127}$/i);
+    if (model.qualification && !['UNTESTED', 'QUALIFYING', 'QUALIFIED', 'DEGRADED', 'DISABLED', 'FAILED'].includes(model.qualification.state)) throw new Error(`invalid_model_qualification:${model.id}`);
+    if (model.qualification?.qualifiedAt && Number.isNaN(Date.parse(model.qualification.qualifiedAt))) throw new Error(`invalid_model_qualification_timestamp:${model.id}`);
+    assertStringList(model.qualification?.capabilities, `model_qualification_capabilities:${model.id}`, /^[a-z0-9][a-z0-9._-]{0,127}$/i);
+    assertStringList(model.qualification?.nodes, `model_qualification_nodes:${model.id}`, /^[a-z0-9][a-z0-9._-]{0,127}$/i);
+    assertStringList(model.qualification?.evidence, `model_qualification_evidence:${model.id}`, /^[a-z0-9][a-z0-9:._/-]+$/i);
+    if (model.qualification?.latencyMs !== undefined && (!Number.isFinite(model.qualification.latencyMs) || model.qualification.latencyMs < 0)) throw new Error(`invalid_model_qualification_latency:${model.id}`);
+    if (model.qualification?.successRate !== undefined && (!Number.isFinite(model.qualification.successRate) || model.qualification.successRate < 0 || model.qualification.successRate > 1)) throw new Error(`invalid_model_qualification_success_rate:${model.id}`);
+    assertIntegerRange(model.limits?.contextTokens, `model_context:${model.id}`, 1, 100_000_000);
+    assertIntegerRange(model.limits?.outputTokens, `model_output:${model.id}`, 1, 10_000_000);
+    if (model.pricing) {
+      if (!/^[A-Z]{3}$/.test(model.pricing.currency) || !model.pricing.source?.trim() || Number.isNaN(Date.parse(model.pricing.effectiveFrom))) throw new Error(`invalid_model_pricing_provenance:${model.id}`);
+      for (const value of [model.pricing.inputPerMillionTokens, model.pricing.outputPerMillionTokens, model.pricing.cachedInputPerMillionTokens ?? 0]) if (!Number.isFinite(value) || value < 0) throw new Error(`invalid_model_pricing:${model.id}`);
+    }
+  }
+  if (!config.modelRouting || typeof config.modelRouting !== 'object' || Array.isArray(config.modelRouting) || !config.modelRouting.roles || typeof config.modelRouting.roles !== 'object' || Array.isArray(config.modelRouting.roles)) throw new Error('invalid_model_routing');
+  const roleIds = new Set(Object.keys(config.modelRouting.roles));
+  if (config.modelRouting.defaultRole && !roleIds.has(config.modelRouting.defaultRole)) throw new Error(`unknown_default_model_role:${config.modelRouting.defaultRole}`);
+  const roleEdges = new Map<string, string[]>();
+  for (const [role, route] of Object.entries(config.modelRouting.roles)) {
+    if (!/^[a-z0-9][a-z0-9._-]{0,127}$/i.test(role) || !route || typeof route !== 'object' || Array.isArray(route)) throw new Error(`invalid_model_role:${role}`);
+    const candidates = [route.primary, ...(route.fallback ?? [])];
+    if (candidates.some(id => !modelIds.has(id))) throw new Error(`unknown_model_route:${role}`);
+    if (new Set(candidates).size !== candidates.length) throw new Error(`duplicate_model_fallback:${role}`);
+    roleEdges.set(role, candidates.filter(id => roleIds.has(id)));
+  }
+  const visiting = new Set<string>(), visited = new Set<string>();
+  const visit = (role: string) => { if (visiting.has(role)) throw new Error(`model_fallback_cycle:${role}`); if (visited.has(role)) return; visiting.add(role); for (const next of roleEdges.get(role) ?? []) visit(next); visiting.delete(role); visited.add(role); };
+  for (const role of roleIds) visit(role);
   for (const service of config.services) {
     assertId(service.id, 'service');
     if (ids.has(service.id)) throw new Error(`duplicate_id:${service.id}`);

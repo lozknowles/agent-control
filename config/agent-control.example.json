@@ -87,6 +87,30 @@
   ],
   "providers": [
     {
+      "id": "openai-api",
+      "name": "OpenAI",
+      "kind": "responses",
+      "baseUrl": "https://api.openai.com/v1",
+      "wireApi": "responses",
+      "enabled": true,
+      "auth": {"type": "bearer-env", "env": "OPENAI_API_KEY"},
+      "requiresAuth": true,
+      "credentialEnv": "OPENAI_API_KEY",
+      "capabilities": ["coding", "reasoning", "tool-use", "structured-output"]
+    },
+    {
+      "id": "openrouter",
+      "name": "OpenRouter",
+      "kind": "openai-compatible",
+      "baseUrl": "https://openrouter.ai/api/v1",
+      "wireApi": "responses",
+      "enabled": true,
+      "auth": {"type": "bearer-env", "env": "OPENROUTER_API_KEY"},
+      "requiresAuth": true,
+      "credentialEnv": "OPENROUTER_API_KEY",
+      "capabilities": ["coding", "reasoning", "tool-use"]
+    },
+    {
       "id": "local-model",
       "name": "Local OpenAI-compatible model",
       "kind": "local",
@@ -96,8 +120,37 @@
       "parallelism": 1,
       "costClass": "free",
       "capabilities": ["text", "tools"]
+    },
+    {
+      "id": "local-pixel",
+      "name": "Future Pixel-local provider",
+      "kind": "openai-compatible",
+      "baseUrl": "http://127.0.0.1:18080/v1",
+      "wireApi": "responses",
+      "enabled": false,
+      "auth": {"type": "none"},
+      "capabilities": []
     }
   ],
+  "models": [
+    {"id":"openai-default","provider":"openai-api","providerModel":"configured-openai-default","displayName":"OpenAI default","enabled":true,"capabilities":["coding","reasoning","tool-use"],"nodes":["controller"],"qualification":{"state":"UNTESTED","version":"migration-v1","evidence":[]}},
+    {"id":"glm-5.3-flash","provider":"openrouter","providerModel":"z-ai/glm-5.3-flash","displayName":"GLM-5.3-Flash","enabled":true,"capabilities":["reasoning","coding","tool-use"],"roles":["external-fast","coding.fast"],"nodes":["controller"],"qualification":{"state":"UNTESTED","version":"configured-v1","evidence":[]}},
+    {"id":"glm-5.3","provider":"openrouter","providerModel":"z-ai/glm-5.3","displayName":"GLM-5.3","enabled":true,"capabilities":["reasoning","coding","tool-use","long-context"],"roles":["external-deep","coding.deep","reasoning.deep"],"nodes":["controller"],"qualification":{"state":"UNTESTED","version":"configured-v1","evidence":[]}},
+    {"id":"pixel-local-example","provider":"local-pixel","providerModel":"local/model","displayName":"Future Pixel local model","enabled":false,"capabilities":["coding"],"roles":["local-code"],"nodes":["android-1"],"qualification":{"state":"DISABLED","version":"future-v1","evidence":[]}}
+  ],
+  "modelRouting": {
+    "defaultRole": "coding.default",
+    "roles": {
+      "coding.default": {"primary":"openai-default","fallback":["glm-5.3"]},
+      "coding.fast": {"primary":"glm-5.3-flash","fallback":["openai-default"]},
+      "coding.deep": {"primary":"glm-5.3","fallback":["openai-default"]},
+      "reasoning.deep": {"primary":"glm-5.3","fallback":["openai-default"]},
+      "external-fast": {"primary":"glm-5.3-flash","fallback":["glm-5.3"]},
+      "external-deep": {"primary":"glm-5.3","fallback":[]},
+      "review.default": {"primary":"openai-default","fallback":["glm-5.3"]},
+      "local-code": {"primary":"pixel-local-example","fallback":["openai-default"]}
+    }
+  },
   "services": [
     {
       "id": "local-model-service",

@@ -1,7 +1,7 @@
 {
   "schema": "agent-control.implementation-status/v1",
-  "release": "3.3.0",
-  "updated": "2026-08-30",
+  "release": "3.3.1",
+  "updated": "2026-09-01",
   "capabilities": [
     {
       "id": "teammates.persistent-coordination",
@@ -88,6 +88,16 @@
       "summary": "Workers advertise semantic capabilities and health separately from provider/model routing.",
       "sources": ["src/control/job-runtime.ts", "src/control/job-bootstrap.ts"],
       "tests": ["src/control/job-runtime.test.ts"]
+    },
+    {
+      "id": "models.provider-neutral-registry",
+      "title": "Provider-neutral external model registry",
+      "status": "PARTIAL",
+      "summary": "Configured providers, models, node-scoped qualification, logical roles, explicit fallbacks, normalized usage, ephemeral Codex provider materialization and dashboard/API projections are executable and fail closed.",
+      "sources": ["src/control/model-registry.ts", "src/control/model-qualification.ts", "src/control/openai-compatible-provider.ts", "src/control/codex-model-config.ts", "src/control/codex-exec-provider.ts", "src/control/work-parcels.ts", "src/control/application-service.ts", "src/control/web-server.ts", "assets/dashboard/dashboard-models.js"],
+      "tests": ["src/control/model-registry.test.ts", "src/control/model-qualification.test.ts", "src/control/openai-compatible-provider.test.ts", "src/control/codex-model-config.test.ts", "src/control/codex-exec-provider.test.ts", "src/control/work-parcels.test.ts", "src/control/configuration-store.test.ts", "src/control/web-server.test.ts"],
+      "evidence": [],
+      "limitation": "The registry implementation is tested, but real governed GLM-5.3-Flash and GLM-5.3 qualifications remain pending until an approved provider credential is available to this isolated worktree. These models remain UNTESTED and cannot route."
     },
     {
       "id": "jobs.model-backed-action",

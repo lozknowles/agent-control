@@ -27,3 +27,11 @@ test('configuration store rejects stale edits and secret material', t => {
   const current = store.read();
   assert.throws(() => store.upsert({revision: current.revision, kind: 'provider', item: {id: 'unsafe', kind: 'responses', apiKey: 'plaintext'}}), /secret_material_forbidden/);
 });
+
+test('configuration store updates model routes atomically without restart', t => {
+  const {root, store} = setup(); t.after(() => fs.rmSync(root, {recursive: true, force: true}));
+  const provider = store.upsert({revision: store.read().revision, kind: 'provider', item: {id: 'external', kind: 'openai-compatible', baseUrl: 'https://models.example/v1', auth: {type: 'bearer-env', env: 'EXTERNAL_API_KEY'}}});
+  const model = store.upsert({revision: provider.revision, kind: 'model', item: {id: 'fast', provider: 'external', providerModel: 'vendor/fast', capabilities: ['coding'], qualification: {state: 'UNTESTED'}}});
+  const routed = store.updateModelRouting({revision: model.revision, modelRouting: {defaultRole: 'coding.fast', roles: {'coding.fast': {primary: 'fast'}}}});
+  assert.equal(routed.restartRequired, false); assert.equal(routed.modelRouting.defaultRole, 'coding.fast'); assert.equal(routed.modelRouting.roles['coding.fast'].primary, 'fast');
+});

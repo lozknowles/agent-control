@@ -2,7 +2,7 @@
 
 The web dashboard is an operator interface over `AgentControlService`. It is not a web scheduler and does not own lane, lease, PTY, verification or provider state.
 
-The default **Jobs** view shows the versioned catalog, Schedules, last/next Run, current structured step progress, Queue reasons, worker placement, artifacts, verification and provenance. **Lanes** retains the interactive multi-agent control room. **Systems** shows the canonical configured execution inventory and current readiness. **Configuration** provides authenticated, validated inventory editing. No view parses terminal text for Run state.
+The default **Jobs** view shows the versioned catalog, Schedules, last/next Run, current structured step progress, Queue reasons, worker placement, artifacts, verification and provenance. **Lanes** retains the interactive multi-agent control room. **Systems** shows the canonical configured execution inventory and current readiness. **Models** shows the canonical provider-neutral model registry. **Configuration** provides authenticated, validated inventory editing. No view parses terminal text for Run state.
 
 ## Start
 
@@ -17,16 +17,16 @@ npm start
 
 Select **Observer mode** in the browser and enter the token. It remains in tab-scoped session storage and is sent as `Authorization: Bearer ...`. The server does not issue an authority cookie.
 
-## Configure systems
+## Configure systems and models
 
 1. Configure `AGENT_CONTROL_WEB_OPERATOR_TOKEN`, start Agent Control and authenticate using the top-right operator button.
 2. Open **Configuration**.
-3. Select an existing entry, or choose **Add machine**, **Add provider** or **Add service**.
+3. Select an existing entry, or choose **Add machine**, **Add provider**, **Add model** or **Add service**.
 4. Edit the validated JSON and choose **Save configuration**.
-5. Restart Agent Control when the dashboard reports that a restart is required.
+5. Provider and model changes hot-reload. Restart Agent Control only when the dashboard reports that a machine or service change requires it.
 6. Open **Systems** and verify the entry. An unprobed configured system is expected to show `UNKNOWN`; an unreachable observed system shows `OFFLINE`; a provider or service with a missing credential reference shows `AUTH REQUIRED`.
 
-Machines use the same resource schema described in the main configuration model. A provider or external service that requires an API key must use `credentialEnv` or `credentialFileEnv`, for example:
+Machines use the same resource schema described in the main configuration model. A provider or external service that requires an API key must use `auth.env`, `credentialEnv` or `credentialFileEnv`, for example:
 
 ```json
 {
@@ -49,6 +49,7 @@ Read projections:
 - `GET /api/lanes/:id`
 - `GET /api/lanes/:id/router`
 - `GET /api/providers`
+- `GET /api/models/providers`, `GET /api/models`, `GET /api/models/:id`, `GET /api/models/routes`
 - `GET /api/router`
 - `GET /api/evidence`
 - `GET /api/events` (SSE)
@@ -64,7 +65,9 @@ Read projections:
 
 Authenticated Job requests are `POST /api/jobs/:id/run`, schedule `enable`/`disable`, and Run `cancel`, `retry` and `approve`. Scoped command-result expansion is `POST /api/command-output/:handle/expand`; operator authentication is necessary but not sufficient, because the supplied task/lane/worker/lease/ownership scope must exactly match the retained result. These calls enter `AgentControlService`. The HTTP layer cannot register a worker, grant a capability, edit a manifest, acquire a resource lock, dispatch an Action or write a PTY.
 
-Authenticated inventory changes use `POST /api/configuration/systems` with the current `revision`, a `kind` of `resource`, `provider` or `service`, an optional `originalId`, and the complete replacement `item`. The server rejects stale revisions, embedded secret material and invalid schema, writes the complete configuration atomically, emits `configuration.changed`, and returns `restartRequired: true`.
+Authenticated inventory changes use `POST /api/configuration/systems` with the current `revision`, a `kind` of `resource`, `provider`, `model` or `service`, an optional `originalId`, and the complete replacement `item`. Model role maps use `POST /api/configuration/model-routing` with `revision` and the complete `modelRouting` object. The server rejects stale revisions, embedded secret material and invalid schema, writes the complete configuration atomically and emits `configuration.changed`. Provider/model/route updates return `restartRequired: false`; resources/services return `true`.
+
+Model qualification and routing mutations are `POST /api/models/:id/qualify` and `POST /api/models/:id/route`. Qualification accepts a `nodeId`; routing accepts `nodeId`, optional `requiredCapabilities` and `allowFallback`. These operations require operator authentication. `UNTESTED`, failed, disabled, wrong-node or capability-unproven models cannot route.
 
 Operator requests under `/api/lanes/:id/` include `pause`, `resume`, `priority`, `mode`, `task`, `reroute`, `handoff`, `clone`, `cancel`, `takeover`, `return-ownership` and verification transitions. These endpoints call application-service methods. There is deliberately no direct lease, scheduler-state, persistence, terminal-input or execution-provider endpoint.
 

@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Added a first-class provider-neutral model registry with stable provider/model identity, logical roles, ordered fallback, node-scoped qualification and fail-closed routing.
+- Added bounded OpenAI-compatible Responses and Chat Completions invocation, normalized usage, explicit unknown cost fields and optional source-attributed pricing.
+- Added persistent `UNTESTED`/`QUALIFYING`/`QUALIFIED`/`FAILED`/`DISABLED` qualification records with exact provider, model and node evidence.
+- Added isolated Codex external-provider configuration using a temporary `CODEX_HOME`; only Responses-compatible providers are accepted and user configuration is not edited.
+- Added a Models dashboard tab, authenticated model/provider configuration, hot-reloaded role mappings and governed model status/qualification/routing APIs.
+- Added example OpenAI, OpenRouter/GLM and disabled future local-runtime registrations. External example models remain `UNTESTED` until qualified with operator-supplied credentials.
+
+### Changed
+
+- Work Parcel stages can request a logical model role or explicit model. Agent Control resolves the qualified model against the scheduler-selected node before creating the Job run and persists the exact decision and fallback reason.
+- Provider, model and role-map configuration changes apply without process restart; resource and service changes retain explicit restart-required behavior.
+
 ## [3.3.1] — 2026-08-31
 
 - Remediates the v3.3.0 REVIEW_REQUIRED findings for terminal invocation finalization, late cancellation, observable execution phases, provider-neutral review configuration, independent verification and queue transition validation.

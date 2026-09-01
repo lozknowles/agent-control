@@ -14,6 +14,9 @@ import {AGENT_CONTROL_VERSION} from '../version.js';
 import type {WorkParcelCoordinator} from './work-parcels.js';
 import {probeProvider} from './provider-health.js';
 import {deriveSystemReadiness, type RegisteredService, type SystemReadiness} from './system-readiness.js';
+import type {ModelRegistry, ModelRouteRequest} from './model-registry.js';
+import {qualifyModel} from './model-qualification.js';
+import type {ModelConfig, ModelRoutingConfig, ProviderConfig} from './config.js';
 
 export type ControlEventType =
   | 'system.snapshot'
@@ -116,6 +119,7 @@ export class AgentControlService {
   private tokenAwareOutput?: TokenAwareOutputService;
   private harnessEfficiency?: HarnessEfficiencyLedgerPort;
   private workParcels?: WorkParcelCoordinator;
+  private modelRegistry?: ModelRegistry;
 
   constructor(
     readonly state: WorkspaceState,
@@ -128,7 +132,7 @@ export class AgentControlService {
     this.verification = new VerificationService(state, persist);
   }
 
-  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; services?: RegisteredService[]; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService; harnessEfficiency?: HarnessEfficiencyLedgerPort; workParcels?: WorkParcelCoordinator}) {
+  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; services?: RegisteredService[]; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService; harnessEfficiency?: HarnessEfficiencyLedgerPort; workParcels?: WorkParcelCoordinator; modelRegistry?: ModelRegistry}) {
     if (extras.approvalCount) this.approvalCount = extras.approvalCount;
     if (extras.resources) this.resourceRows = structuredClone(extras.resources);
     if (extras.services) this.serviceRows = structuredClone(extras.services);
@@ -138,6 +142,7 @@ export class AgentControlService {
     if (extras.tokenAwareOutput) this.tokenAwareOutput = extras.tokenAwareOutput;
     if (extras.harnessEfficiency) this.harnessEfficiency = extras.harnessEfficiency;
     if (extras.workParcels) this.workParcels = extras.workParcels;
+    if (extras.modelRegistry) this.modelRegistry = extras.modelRegistry;
     return this;
   }
 
@@ -191,6 +196,13 @@ export class AgentControlService {
     const records = (this.harnessEfficiency?.list() ?? []).filter(record => (!options.runId || record.runId === options.runId) && (!options.jobId || record.jobId === options.jobId));
     return records.slice(-limit);
   }
+  modelProviders() { return this.mustModelRegistry().providersList(); }
+  models() { return this.mustModelRegistry().list().map(model => { const recent = (this.harnessEfficiency?.list() ?? []).filter(item => item.model === model.id && item.provider === model.provider).at(-1); return {...model, ...(recent ? {recentInvocation: {at: recent.completedAt ?? recent.startedAt, outcome: recent.finalJobResult, verifierResult: recent.verifierResult, latencyMs: recent.elapsedMs, inputTokens: recent.usage.inputTokens, outputTokens: recent.usage.outputTokens, cachedInputTokens: recent.usage.cachedInputTokens, totalTokens: recent.usage.totalProcessedTokens, providerReportedCost: recent.providerReportedCost, calculatedCost: recent.calculatedCost, currency: recent.currency}} : {})}; }); }
+  model(id: string) { const value = this.models().find(model => model.id === id); if (!value) throw new Error('model_missing'); return value; }
+  modelRoutes() { return this.mustModelRegistry().routes(); }
+  reloadModels(providers: ProviderConfig[], models: ModelConfig[], routing: ModelRoutingConfig, actor: string) { this.mustModelRegistry().reload(providers, models, routing); this.events.emit('configuration.changed', {kind: 'model-registry', models: models.length, restartRequired: false}, undefined, actor); return {models: this.models(), routes: this.modelRoutes()}; }
+  routeModel(request: ModelRouteRequest) { return this.mustModelRegistry().route(request); }
+  qualifyModel(id: string, nodeId: string) { return qualifyModel({registry: this.mustModelRegistry(), modelId: id, nodeId}); }
   systems(): SystemReadiness[] { return deriveSystemReadiness({providers: this.providers, resources: this.resourceRows, services: this.serviceRows, managedNodes: this.managedNodes, workers: this.jobRuntime?.workers.list() ?? [], runs: this.jobRuntime?.ledger.list() ?? [], invocations: this.harnessEfficiency?.list() ?? []}); }
   system(id: string) { const value = this.systems().find(item => item.id === id); if (!value) throw new Error('system_missing'); return value; }
   async checkSystem(id: string, actor: string) {
@@ -366,4 +378,5 @@ export class AgentControlService {
   private mustJobRuntime() { if (!this.jobRuntime) throw new Error('job_runtime_unconfigured'); return this.jobRuntime; }
   private mustTokenAwareOutput() { if (!this.tokenAwareOutput) throw new Error('token_aware_output_unconfigured'); return this.tokenAwareOutput; }
   private mustWorkParcels() { if (!this.workParcels) throw new Error('work_parcels_unconfigured'); return this.workParcels; }
+  private mustModelRegistry() { if (!this.modelRegistry) throw new Error('model_registry_unconfigured'); return this.modelRegistry; }
 }

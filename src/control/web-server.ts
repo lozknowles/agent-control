@@ -6,7 +6,7 @@ import {fileURLToPath} from 'node:url';
 import type {AgentControlService, ControlEvent} from './application-service.js';
 import {parseOutputAuthorityScope, parseOutputExpansionRequest} from './token-aware-output.js';
 import {JobManifestError} from './job-catalog.js';
-import {configPath} from './config.js';
+import {configPath, loadConfig} from './config.js';
 import {ConfigurationStore} from './configuration-store.js';
 
 export interface WebServerOptions {host?: string; port?: number; operatorToken?: string; allowedOrigins?: string[]; assetsDir?: string; configFile?: string;}
@@ -25,6 +25,7 @@ const DOMAIN_STATUS = new Map<string, number>([
   ['output_scope_invalid', 400], ['output_scope_unknown_field', 400], ['output_scope_identity_missing', 400], ['output_scope_generation_invalid', 400],
   ['work_parcel_prompt_required', 400], ['work_parcel_plan_empty', 400], ['work_parcel_stage_id_invalid', 400], ['work_parcel_stage_invalid', 400], ['work_parcel_route_invalid', 400], ['work_parcel_reasoning_plan_invalid', 400], ['work_parcel_dependency_cycle', 400],
   ['work_parcel_reasoning_planner_unconfigured', 503], ['work_parcel_missing', 404], ['work_parcels_unconfigured', 503],
+  ['model_missing', 404], ['model_role_missing', 404], ['model_registry_unconfigured', 503], ['model_route_unconfigured', 409], ['model_route_unavailable', 409], ['model_fallback_disabled', 409], ['provider_authentication_required', 409],
 ]);
 
 export function startWebDashboard(service: AgentControlService, options: WebServerOptions = {}) {
@@ -48,6 +49,9 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   if (method === 'GET' && url.pathname === '/api/configuration') { validateOperatorRequest(request, options); return json(response, 200, new ConfigurationStore(options.configFile ?? configPath()).read()); }
   if (method === 'GET' && url.pathname === '/api/lanes') return json(response, 200, service.snapshot().lanes);
   if (method === 'GET' && url.pathname === '/api/providers') return json(response, 200, service.snapshot().providers);
+  if (method === 'GET' && url.pathname === '/api/models/providers') return json(response, 200, service.modelProviders());
+  if (method === 'GET' && url.pathname === '/api/models') return json(response, 200, service.models());
+  if (method === 'GET' && url.pathname === '/api/models/routes') return json(response, 200, service.modelRoutes());
   if (method === 'GET' && url.pathname === '/api/router') return json(response, 200, service.allRoutes());
   if (method === 'GET' && url.pathname === '/api/evidence') return json(response, 200, service.snapshot().lanes.map(lane => ({laneId: lane.id, task: lane.task, verification: lane.verification, batonEvidence: lane.baton.evidence, contextSourceIds: lane.baton.contextSourceIds})));
   if (method === 'GET' && url.pathname === '/api/events') return eventStream(service, request, response);
@@ -69,12 +73,13 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
     const limit = Number.isSafeInteger(requestedLimit) && requestedLimit > 0 ? Math.min(1_000, requestedLimit) : 200;
     return json(response, 200, service.modelInvocations({limit, runId: url.searchParams.get('runId') ?? undefined, jobId: url.searchParams.get('jobId') ?? undefined}));
   }
-  const jobMatch = url.pathname.match(/^\/api\/jobs\/([^/]+)(?:\/(runs|run))?$/), runMatch = url.pathname.match(/^\/api\/runs\/([^/]+)(?:\/(cancel|retry|approve))?$/), parcelMatch = url.pathname.match(/^\/api\/parcels\/([^/]+)(?:\/(cancel))?$/), systemMatch = url.pathname.match(/^\/api\/systems\/([^/]+)(?:\/(check))?$/), scheduleMatch = url.pathname.match(/^\/api\/schedules\/([^/]+)\/(enable|disable)$/), artifactMatch = url.pathname.match(/^\/api\/artifacts\/([^/]+)$/), outputExpansionMatch = url.pathname.match(/^\/api\/command-output\/([^/]+)\/expand$/);
+  const jobMatch = url.pathname.match(/^\/api\/jobs\/([^/]+)(?:\/(runs|run))?$/), runMatch = url.pathname.match(/^\/api\/runs\/([^/]+)(?:\/(cancel|retry|approve))?$/), parcelMatch = url.pathname.match(/^\/api\/parcels\/([^/]+)(?:\/(cancel))?$/), systemMatch = url.pathname.match(/^\/api\/systems\/([^/]+)(?:\/(check))?$/), modelMatch = url.pathname.match(/^\/api\/models\/([^/]+)(?:\/(qualify|route))?$/), scheduleMatch = url.pathname.match(/^\/api\/schedules\/([^/]+)\/(enable|disable)$/), artifactMatch = url.pathname.match(/^\/api\/artifacts\/([^/]+)$/), outputExpansionMatch = url.pathname.match(/^\/api\/command-output\/([^/]+)\/expand$/);
   if (method === 'GET' && jobMatch && !jobMatch[2]) return json(response, 200, service.job(decodeURIComponent(jobMatch[1])));
   if (method === 'GET' && jobMatch?.[2] === 'runs') return json(response, 200, service.runs(decodeURIComponent(jobMatch[1])));
   if (method === 'GET' && runMatch && !runMatch[2]) return json(response, 200, service.run(decodeURIComponent(runMatch[1])));
   if (method === 'GET' && parcelMatch && !parcelMatch[2]) return json(response, 200, service.parcel(decodeURIComponent(parcelMatch[1])));
   if (method === 'GET' && systemMatch && !systemMatch[2]) return json(response, 200, service.system(decodeURIComponent(systemMatch[1])));
+  if (method === 'GET' && modelMatch && !modelMatch[2]) return json(response, 200, service.model(decodeURIComponent(modelMatch[1])));
   if (method === 'GET' && artifactMatch) return json(response, 200, service.artifact(decodeURIComponent(artifactMatch[1])));
   const laneMatch = url.pathname.match(/^\/api\/lanes\/(\d+)(?:\/(.+))?$/);
   if (method === 'GET' && laneMatch && !laneMatch[2]) return json(response, 200, service.lane(Number(laneMatch[1])));
@@ -84,13 +89,22 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
     validateMutationRequest(request, options);
     const body = await readJson(request), actor = typeof body.actor === 'string' && body.actor.trim() ? body.actor.trim() : 'web-operator';
     if (url.pathname === '/api/configuration/systems') {
-      const result = new ConfigurationStore(options.configFile ?? configPath()).upsert({revision: body.revision, kind: body.kind, originalId: body.originalId, item: body.item});
-      service.events.emit('configuration.changed', {kind: result.changed.kind, id: result.changed.id, restartRequired: true}, undefined, actor);
+      const file = options.configFile ?? configPath(), result = new ConfigurationStore(file).upsert({revision: body.revision, kind: body.kind, originalId: body.originalId, item: body.item});
+      const changed = result.changed.kind;
+      if (changed === 'model' || changed === 'provider') { const next = loadConfig(file); service.reloadModels(next.providers, next.models, next.modelRouting, actor); }
+      else service.events.emit('configuration.changed', {kind: changed, id: result.changed.id, restartRequired: true}, undefined, actor);
+      return json(response, 200, result);
+    }
+    if (url.pathname === '/api/configuration/model-routing') {
+      const file = options.configFile ?? configPath(), result = new ConfigurationStore(file).updateModelRouting({revision: body.revision, modelRouting: body.modelRouting});
+      const next = loadConfig(file); service.reloadModels(next.providers, next.models, next.modelRouting, actor);
       return json(response, 200, result);
     }
     if (jobMatch?.[2] === 'run') return json(response, 201, service.createJobRun(decodeURIComponent(jobMatch[1]), body.parameters && typeof body.parameters === 'object' && !Array.isArray(body.parameters) ? body.parameters as Record<string, unknown> : {}, actor));
     if (url.pathname === '/api/parcels') return json(response, 201, await service.submitNaturalTask(String(body.prompt ?? ''), actor));
     if (systemMatch?.[2] === 'check') return json(response, 200, await service.checkSystem(decodeURIComponent(systemMatch[1]), actor));
+    if (modelMatch?.[2] === 'qualify') return json(response, 200, await service.qualifyModel(decodeURIComponent(modelMatch[1]), String(body.nodeId ?? 'controller')));
+    if (modelMatch?.[2] === 'route') return json(response, 200, service.routeModel({model: decodeURIComponent(modelMatch[1]), modelRole: typeof body.modelRole === 'string' ? body.modelRole : undefined, nodeId: String(body.nodeId ?? 'controller'), requiredCapabilities: Array.isArray(body.requiredCapabilities) ? body.requiredCapabilities.map(String) : [], allowFallback: body.allowFallback !== false}));
     if (parcelMatch?.[2] === 'cancel') return json(response, 202, service.cancelParcel(decodeURIComponent(parcelMatch[1]), actor));
     if (runMatch?.[2] === 'cancel') return json(response, 202, service.cancelJobRun(decodeURIComponent(runMatch[1]), actor));
     if (runMatch?.[2] === 'retry') return json(response, 201, service.retryJobRun(decodeURIComponent(runMatch[1]), actor));
@@ -170,7 +184,7 @@ function eventStream(service: AgentControlService, request: IncomingMessage, res
 
 function serveAsset(response: ServerResponse, assetsDir: string, pathname: string) {
   const asset = pathname === '/' ? 'index.html' : pathname.replace(/^\//, '');
-  if (!['index.html', 'dashboard.css', 'dashboard-fixes.css', 'dashboard-jobs.css', 'dashboard.js', 'dashboard-parameters.js', 'dashboard-running-state.js', 'dashboard-enhancements.js'].includes(asset)) throw httpError(404, 'not_found');
+  if (!['index.html', 'dashboard.css', 'dashboard-fixes.css', 'dashboard-jobs.css', 'dashboard.js', 'dashboard-parameters.js', 'dashboard-running-state.js', 'dashboard-enhancements.js', 'dashboard-models.js'].includes(asset)) throw httpError(404, 'not_found');
   const file = path.join(assetsDir, asset);
   if (!fs.existsSync(file)) throw httpError(404, 'dashboard_asset_missing');
   const type = asset.endsWith('.html') ? 'text/html; charset=utf-8' : asset.endsWith('.css') ? 'text/css; charset=utf-8' : 'text/javascript; charset=utf-8';

@@ -1,13 +1,15 @@
 import {createHash, randomUUID} from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import {emptyConfig, loadConfig, validateConfig, type AgentControlConfig, type ProviderConfig, type ResourceConfig, type ServiceConfig} from './config.js';
+import {emptyConfig, loadConfig, validateConfig, type AgentControlConfig, type ModelConfig, type ModelRoutingConfig, type ProviderConfig, type ResourceConfig, type ServiceConfig} from './config.js';
 
-export type ConfiguredSystemKind = 'resource' | 'provider' | 'service';
+export type ConfiguredSystemKind = 'resource' | 'provider' | 'model' | 'service';
 export interface ConfigurationSnapshot {
   revision: string;
   resources: ResourceConfig[];
   providers: ProviderConfig[];
+  models: ModelConfig[];
+  modelRouting: ModelRoutingConfig;
   services: ServiceConfig[];
 }
 
@@ -25,11 +27,11 @@ export class ConfigurationStore {
   upsert(input: {revision?: unknown; kind?: unknown; originalId?: unknown; item?: unknown}) {
     const current = this.current(), currentRevision = revision(current);
     if (typeof input.revision !== 'string' || input.revision !== currentRevision) throw new ConfigurationStoreError('configuration_revision_conflict', 409);
-    if (!['resource', 'provider', 'service'].includes(String(input.kind))) throw new ConfigurationStoreError('configuration_kind_invalid', 400);
+    if (!['resource', 'provider', 'model', 'service'].includes(String(input.kind))) throw new ConfigurationStoreError('configuration_kind_invalid', 400);
     if (!input.item || typeof input.item !== 'object' || Array.isArray(input.item)) throw new ConfigurationStoreError('configuration_item_invalid', 400);
     if (input.originalId !== undefined && typeof input.originalId !== 'string') throw new ConfigurationStoreError('configuration_original_id_invalid', 400);
-    const kind = input.kind as ConfiguredSystemKind, key = collection(kind), values = structuredClone(current[key]) as Array<ResourceConfig | ProviderConfig | ServiceConfig>;
-    const item = structuredClone(input.item) as ResourceConfig | ProviderConfig | ServiceConfig;
+    const kind = input.kind as ConfiguredSystemKind, key = collection(kind), values = structuredClone(current[key]) as Array<ResourceConfig | ProviderConfig | ModelConfig | ServiceConfig>;
+    const item = structuredClone(input.item) as ResourceConfig | ProviderConfig | ModelConfig | ServiceConfig;
     if (input.originalId === undefined) values.push(item);
     else {
       const index = values.findIndex(value => value.id === input.originalId);
@@ -40,7 +42,18 @@ export class ConfigurationStore {
     try { next = validateConfig({...current, [key]: values}); }
     catch (error) { throw new ConfigurationStoreError((error as Error).message || 'configuration_invalid', 400); }
     this.write(next);
-    return {...snapshot(next), restartRequired: true, changed: {kind, id: item.id}};
+    return {...snapshot(next), restartRequired: !['provider', 'model'].includes(kind), changed: {kind, id: item.id}};
+  }
+
+  updateModelRouting(input: {revision?: unknown; modelRouting?: unknown}) {
+    const current = this.current(), currentRevision = revision(current);
+    if (typeof input.revision !== 'string' || input.revision !== currentRevision) throw new ConfigurationStoreError('configuration_revision_conflict', 409);
+    if (!input.modelRouting || typeof input.modelRouting !== 'object' || Array.isArray(input.modelRouting)) throw new ConfigurationStoreError('configuration_model_routing_invalid', 400);
+    let next: AgentControlConfig;
+    try { next = validateConfig({...current, modelRouting: structuredClone(input.modelRouting) as ModelRoutingConfig}); }
+    catch (error) { throw new ConfigurationStoreError((error as Error).message || 'configuration_invalid', 400); }
+    this.write(next);
+    return {...snapshot(next), restartRequired: false, changed: {kind: 'model-routing' as const, id: 'model-routing'}};
   }
 
   private current() {
@@ -60,8 +73,8 @@ export class ConfigurationStore {
   }
 }
 
-function collection(kind: ConfiguredSystemKind): 'resources' | 'providers' | 'services' {
-  return kind === 'resource' ? 'resources' : kind === 'provider' ? 'providers' : 'services';
+function collection(kind: ConfiguredSystemKind): 'resources' | 'providers' | 'models' | 'services' {
+  return kind === 'resource' ? 'resources' : kind === 'provider' ? 'providers' : kind === 'model' ? 'models' : 'services';
 }
 
 function revision(config: AgentControlConfig) {
@@ -69,5 +82,5 @@ function revision(config: AgentControlConfig) {
 }
 
 function snapshot(config: AgentControlConfig): ConfigurationSnapshot {
-  return {revision: revision(config), resources: structuredClone(config.resources), providers: structuredClone(config.providers), services: structuredClone(config.services)};
+  return {revision: revision(config), resources: structuredClone(config.resources), providers: structuredClone(config.providers), models: structuredClone(config.models), modelRouting: structuredClone(config.modelRouting), services: structuredClone(config.services)};
 }

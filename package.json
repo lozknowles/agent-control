@@ -17,7 +17,7 @@
     "typecheck": "tsc --noEmit",
     "check:bootstrap": "node --check scripts/agent-control.mjs scripts/status-client.mjs scripts/control-plane.mjs scripts/config.mjs scripts/qualify-all.mjs && bash -n android/resource-agent.sh android/start-node.sh android/install-boot.sh android/termux-boot-agent-control.sh scripts/qualify-remote.sh scripts/managed-node-probe.sh scripts/managed-node-action.sh",
     "check:neutrality": "node --test scripts/infrastructure-neutrality.test.mjs",
-    "check:dashboard": "node --check assets/dashboard/dashboard.js assets/dashboard/dashboard-parameters.js assets/dashboard/dashboard-running-state.js assets/dashboard/dashboard-enhancements.js",
+    "check:dashboard": "node --check assets/dashboard/dashboard.js assets/dashboard/dashboard-parameters.js assets/dashboard/dashboard-running-state.js assets/dashboard/dashboard-enhancements.js assets/dashboard/dashboard-models.js",
     "check:status": "node scripts/implementation-status.mjs --check",
     "status:implementation": "node scripts/implementation-status.mjs",
     "check": "npm run typecheck && npm run check:bootstrap && npm run check:dashboard && npm run check:neutrality && npm run check:status && npm test",

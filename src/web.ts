@@ -12,6 +12,7 @@ import {defaultCapabilities, loadWorkspace, type LaneState, type WorkspaceState}
 import {buildJobRuntime, startJobScheduler, startManagedNodeMonitoring} from './control/job-bootstrap.js';
 import {FileCommandResultStore, TokenAwareOutputService} from './control/token-aware-output.js';
 import {Trace} from './control/telemetry.js';
+import {ModelQualificationStore, ModelRegistry} from './control/model-registry.js';
 
 const now = () => new Date().toISOString();
 const configurationFile = configPath(), config = loadConfig(configurationFile);
@@ -24,7 +25,8 @@ const state = loadWorkspace(initial), ptys = new PtyRegistry(), providers = new 
 for (const provider of providersFromConfig(config.providers)) providers.register(provider);
 if (process.platform === 'linux') for (const discovery of toPtyDiscoveries(discoverLinuxPtys())) { const lane = state.lanes.find(item => discovery.cwd === item.contract.cwd || discovery.cwd.startsWith(`${item.contract.cwd}/`)); ptys.upsert(discovery, lane ? String(lane.id) : null); }
 const queue = new WorkQueueStore().load();
-const jobRuntime = buildJobRuntime(config);
+const modelRegistry = new ModelRegistry(config.providers, config.models, config.modelRouting, new ModelQualificationStore(path.resolve(process.env.AGENT_CONTROL_STATE_DIR || '.agent-control', 'model-qualification.json')));
+const jobRuntime = buildJobRuntime(config, undefined, undefined, undefined, modelRegistry);
 const commandOutputRoot = path.resolve(process.env.AGENT_CONTROL_STATE_DIR || '.agent-control', 'command-output');
 const tokenAwareOutput = new TokenAwareOutputService(new FileCommandResultStore(commandOutputRoot), {
   policy: config.tokenAwareOutput,
@@ -40,6 +42,7 @@ const service = new AgentControlService(state, ptys, providers).configureProject
   tokenAwareOutput,
   harnessEfficiency: jobRuntime.harnessEfficiency,
   workParcels: jobRuntime.workParcels,
+  modelRegistry,
 });
 startManagedNodeMonitoring(jobRuntime, snapshot => service.events.emit('resource.node_changed', {resourceId: snapshot.resourceId, state: snapshot.state, health: snapshot.health, currentWorkload: snapshot.currentWorkload}, undefined, 'managed-node-monitor'), error => service.events.emit('failure', {scope: 'managed-node-monitor', error: error.message}, undefined, 'managed-node-monitor'));
 startJobScheduler(jobRuntime, (id, status) => id.startsWith('parcel-') ? service.events.emit('work.parcel_changed', {parcelId: id, status}, undefined, 'job-scheduler') : service.events.emit('job.run_changed', {runId: id, status}, undefined, 'job-scheduler'), 1000, error => service.events.emit('failure', {scope: 'job-scheduler', error: error.message}, undefined, 'job-scheduler'));

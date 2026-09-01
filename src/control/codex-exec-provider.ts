@@ -7,6 +7,8 @@ import type {HarnessCandidate} from './adaptive-harness.js';
 import type {RecipeExecutor, ToolInvocationGateway} from './harness-dispatch.js';
 import type {ProviderDefinition} from './providers.js';
 import {createInvocationObservation, type ContextPacketSource} from './harness-efficiency.js';
+import type {ModelConfig, ProviderConfig} from './config.js';
+import {materializeCodexModelConfig} from './codex-model-config.js';
 
 export interface CodexExecRequest {
   command: string;
@@ -15,6 +17,8 @@ export interface CodexExecRequest {
   instruction: string;
   grantedToolIds: string[];
   timeoutMs: number;
+  environment?: NodeJS.ProcessEnv;
+  loadUserConfig?: boolean;
 }
 
 export interface CodexExecResult {
@@ -132,7 +136,7 @@ export async function runCodexExec(request: CodexExecRequest): Promise<CodexExec
   try {
     fs.writeFileSync(schemaFile, JSON.stringify(codexToolRequestSchema(request.grantedToolIds)), {mode: 0o600});
     const prompt = `Return one Agent Control tool request as schema-constrained JSON. Put the tool input in input_json as a JSON-encoded string. Do not claim the tool ran. Do not modify files.\n\n${request.instruction}`;
-    const result = await captureProcess(request.command, ['exec', '--ephemeral', '--json', '--sandbox', 'read-only', '--ignore-user-config', '--model', request.modelId, '--output-schema', schemaFile, prompt], request.cwd, request.timeoutMs);
+    const result = await captureProcess(request.command, ['exec', '--ephemeral', '--json', '--sandbox', 'read-only', ...(request.loadUserConfig ? [] : ['--ignore-user-config']), '--model', request.modelId, '--output-schema', schemaFile, prompt], request.cwd, request.timeoutMs, request.environment, !request.loadUserConfig);
     if (result.code !== 0) throw new Error(`codex_exec_failed:${result.code}`);
     const events = result.stdout.split(/\r?\n/).filter(Boolean).map(line => {
       try { return JSON.parse(line) as Record<string, unknown>; } catch { throw new Error('codex_exec_invalid_jsonl'); }
@@ -153,6 +157,14 @@ export async function runCodexExec(request: CodexExecRequest): Promise<CodexExec
   }
 }
 
+/** Runs Codex against one registry-selected Responses-compatible provider in an isolated CODEX_HOME. */
+export async function runCodexWithRegisteredModel(request: CodexExecRequest, provider: ProviderConfig, model: ModelConfig, environment: NodeJS.ProcessEnv = process.env, runner: (request: CodexExecRequest) => Promise<CodexExecResult> = runCodexExec) {
+  if (model.provider !== provider.id) throw new Error('model_provider_mismatch');
+  const materialized = materializeCodexModelConfig(provider, model, environment);
+  try { return await runner({...request, modelId: model.providerModel, environment: materialized.environment, loadUserConfig: true}); }
+  finally { materialized.cleanup(); }
+}
+
 function sanitizeUsage(value: Record<string, unknown>): Record<string, unknown> {
   const sanitized: Record<string, unknown> = {};
   for (const [key, item] of Object.entries(value)) {
@@ -164,11 +176,10 @@ function sanitizeUsage(value: Record<string, unknown>): Record<string, unknown> 
 
 function codexToolRequestSchema(grantedToolIds: string[]) { return {type: 'object', properties: {tool: {type: 'string', enum: grantedToolIds}, input_json: {type: 'string'}}, required: ['tool', 'input_json'], additionalProperties: false}; }
 
-async function captureProcess(command: string, args: string[], cwd: string, timeoutMs: number): Promise<{code: number; stdout: string; stderr: string}> {
+async function captureProcess(command: string, args: string[], cwd: string, timeoutMs: number, environment: NodeJS.ProcessEnv = process.env, stripApiKeys = true): Promise<{code: number; stdout: string; stderr: string}> {
   return new Promise((resolve, reject) => {
-    const env = {...process.env};
-    delete env.OPENAI_API_KEY;
-    delete env.CODEX_API_KEY;
+    const env = {...environment};
+    if (stripApiKeys) { delete env.OPENAI_API_KEY; delete env.CODEX_API_KEY; }
     const child = spawn(command, args, {cwd, env, shell: false, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe']});
     let stdout = '', stderr = '', settled = false;
     const finish = (error?: Error, code = -1) => {

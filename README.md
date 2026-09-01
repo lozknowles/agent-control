@@ -6,6 +6,12 @@ A lane owns its task; recipes, agents, models, skills, tools, execution provider
 
 Orca is available behind a narrow execution-provider contract. Orca may execute processes, terminals and worktrees, but it does not receive Agent Control policy authority.
 
+## External model registry
+
+Agent Control now has a provider-neutral registry for external and local models. Providers own endpoint, wire protocol and secret references; models own provider model ID, capabilities, limits, pricing metadata and qualification state; logical roles such as `coding.fast` or `reasoning.deep` own ordered primary/fallback policy. Only a model qualified on the selected execution node can route. `UNTESTED`, `QUALIFYING`, `FAILED` and `DISABLED` entries remain visible but fail closed.
+
+The dashboard **Models** tab shows provider/model identity, roles, qualification, node availability, limits, latency, configured pricing and fallback position. The authenticated **Configuration** view can add or edit providers and models without storing API keys. See [`docs/models/README.md`](docs/models/README.md), [`docs/models/ADDING-A-PROVIDER.md`](docs/models/ADDING-A-PROVIDER.md), [`docs/models/CODEX-INTEGRATION.md`](docs/models/CODEX-INTEGRATION.md) and [`docs/models/LOCAL-MODELS.md`](docs/models/LOCAL-MODELS.md).
+
 ## Persistent Teammates
 
 Agent Control 3.2 adds durable named teammates without turning names, roles or remembered context into authority. Profiles retain bounded instructions, preferred semantic capabilities, verifier-backed working-context summaries and explicitly saved or verified routines. Controlled conversations permit agent-to-agent delegation, while a Coordinator can assign work to two or more specialists and synthesize only their verifier-passed results.
@@ -63,7 +69,7 @@ Enter that token using **Observer mode** in the dashboard. It is retained only i
 
 Monitor either interface for the same authoritative lanes, scheduler projection, providers, resources, PTY ownership, routing rationale and claim/evidence/verification state. The web terminal panel is observer-only; it never receives a PTY write primitive. Qualification writes timestamped JSON beneath ignored `qualification-results/`.
 
-The dashboard's **Systems** tab is the canonical execution inventory. Every configured machine, provider and external service remains listed when it is unreachable, unprobed or missing authentication; those conditions are shown as `OFFLINE`, `UNKNOWN` or `AUTH REQUIRED` rather than hiding the system. After operator authentication, use **Configuration** to add or edit systems as validated JSON. Saves are revision checked and atomic, and take effect after Agent Control restarts. See [`docs/web-dashboard.md`](docs/web-dashboard.md#configure-systems) for the operator procedure.
+The dashboard's **Systems** tab is the canonical execution inventory. Every configured machine, provider and external service remains listed when it is unreachable, unprobed or missing authentication; those conditions are shown as `OFFLINE`, `UNKNOWN` or `AUTH REQUIRED` rather than hiding the system. **Models** is the model registry projection. After operator authentication, use **Configuration** to add or edit systems and models as validated JSON. Saves are revision checked and atomic. Provider, model and role-map changes hot-reload; machine and service changes explicitly require restart. See [`docs/web-dashboard.md`](docs/web-dashboard.md#configure-systems-and-models) for the operator procedure.
 
 Configured Linux/SSH resources can opt into the generic `managedNode` policy. Agent Control then streams a fixed read-only inventory probe over the existing non-interactive SSH route, synchronises discovered capabilities and workload state into the Worker Registry, and shows the same heartbeat, `IDLE`/`BUSY`/`DEGRADED`/`OFFLINE` state, load, memory, storage, current workload and maintenance status in the dashboard, TUI, API and `agent-control status`. It installs no daemon and exposes no arbitrary SSH command surface.
 
@@ -103,10 +109,12 @@ The qualification Job is deliberately non-production and its twice-daily `07:00/
 
 ## Configuration model
 
-The versioned JSON schema has four independent collections plus optional output and harness-efficiency policies:
+The versioned JSON schema has six independent collections/policies plus optional output and harness-efficiency policies:
 
 - `resources`: identity, platform, transport and semantic capabilities;
-- `providers`: provider identity, API endpoint, qualification model, cost and capabilities;
+- `providers`: provider identity, API endpoint, wire protocol, authentication reference and capabilities;
+- `models`: stable model identity, provider model ID, declared capabilities, node scope, limits, qualification and optional sourced pricing;
+- `modelRouting`: logical role to ordered primary/fallback model mappings and an optional default role;
 - `services`: health endpoint and optional explicit start recipe;
 - `lanes`: lane identity, working directory, priority and AUTO/MANUAL mode.
 - `tokenAwareOutput`: provider-neutral completeness, index, artifact, retention and context-budget thresholds.
@@ -114,7 +122,7 @@ The versioned JSON schema has four independent collections plus optional output 
 
 Resource identity is separate from transport. A resource may be local, SSH, HTTP or Orca-backed. An SSH hostname is transport metadata, not the resource ID. Ports are configurable numbers. Optional unavailable services do not make an otherwise valid zero-provider installation fail.
 
-Providers and external services that require API keys use `credentialEnv` or `credentialFileEnv` to name the runtime environment variable that supplies the secret. The configuration stores only that reference. Plaintext API keys, passwords, tokens, secrets and credentialed URLs are rejected.
+Providers and external services that require API keys use `auth.env`, `credentialEnv` or `credentialFileEnv` to name the runtime environment variable that supplies the secret. The configuration stores only that reference. Plaintext API keys, passwords, tokens, secrets and credentialed URLs are rejected.
 
 For a managed Linux resource, `managedNode` adds polling/heartbeat policy, declarative protected-workload detectors, approved services, BUSY capability fences and an optional operator-reviewed runtime update target. Hardware, package tools, filesystems, optical devices, secure-overlay state and operational capabilities are discovered rather than assumed. Real endpoints and workload identifiers remain operator configuration, never core defaults.
 

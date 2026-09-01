@@ -9,6 +9,7 @@ import type {JobDefinition} from './job-types.js';
 import {createInvocationObservation, MemoryHarnessEfficiencyLedger} from './harness-efficiency.js';
 import {CatalogNaturalLanguagePlanner, explainParcelDecision, ReasoningModelWorkParcelPlanner, validateWorkParcelPlan, WorkParcelCoordinator, WorkParcelStore, type WorkParcel, type WorkParcelPlan} from './work-parcels.js';
 import type {SystemReadiness} from './system-readiness.js';
+import {ModelRegistry} from './model-registry.js';
 
 const job = (id: string, action: string, output = true): JobDefinition => ({apiVersion: 'agent-control/v1', kind: 'Job', metadata: {id, name: id, version: '1.0.0'}, spec: {priority: 'normal', concurrency: 'queue', steps: [{id: 'work', action, requires: ['qualification.local'], outputs: output ? [{name: 'result', type: 'application/json', schema: `${id}/v1`, version: '1.0.0'}] : undefined, verification: output ? ['passed'] : []}]}});
 function setup(failSecond = false, blockFirst = false) {
@@ -51,6 +52,21 @@ test('dispatch failure terminates the parcel instead of retrying forever', async
   const original=runtime.createRun.bind(runtime); runtime.createRun=(()=>{throw new Error('job_missing_after_planning')}) as typeof runtime.createRun;
   const failed=await coordinator.tick(); runtime.createRun=original;
   assert.equal(failed?.status,'FAILED'); assert.equal(failed?.stages[0].status,'FAILED'); assert.match(failed?.stages[0].error??'',/dispatch_failed:job_missing_after_planning/); assert.equal(failed?.decision?.outcome,'FAIL_CLOSED');
+});
+
+test('model role is qualified and bound to the selected node before Job dispatch', async () => {
+  const {runtime, plan, storeFile} = setup();
+  plan.stages = [{...plan.stages[0], requestedRoute: {modelRole: 'coding.fast', allowFallback: true, reason: 'test governed model routing'}}];
+  const registry = new ModelRegistry(
+    [{id: 'external', kind: 'openai-compatible', baseUrl: 'https://models.example/v1', enabled: true}],
+    [{id: 'fast', provider: 'external', providerModel: 'vendor/fast', capabilities: ['coding'], qualification: {state: 'QUALIFIED', version: 'qual-v1', capabilities: ['coding'], nodes: ['host']}}],
+    {roles: {'coding.fast': {primary: 'fast'}}},
+  );
+  const coordinator = new WorkParcelCoordinator(runtime, new WorkParcelStore(storeFile), {plan: () => plan}, undefined, registry);
+  const parcel = await coordinator.submit('route this', 'operator'); await coordinator.tick();
+  const stage = coordinator.get(parcel.id).stages[0], run = runtime.ledger.get(stage.runId!);
+  assert.equal(run?.trigger.modelRoute?.modelId, 'fast'); assert.equal(run?.trigger.modelRoute?.nodeId, 'host'); assert.equal(run?.trigger.modelRoute?.qualificationVersion, 'qual-v1');
+  assert.equal(stage.actualRoute?.provider, 'external'); assert.equal(stage.actualRoute?.model, 'fast');
 });
 
 test('failed gate blocks every downstream stage and survives coordinator restart', async () => {

@@ -1,0 +1,40 @@
+import {createHash} from 'node:crypto';
+import type {ModelConfig, ProviderConfig} from './config.js';
+import type {ModelQualificationRecord, ModelRegistry} from './model-registry.js';
+import {OpenAICompatibleProviderClient, type FetchLike, type ModelInvocationResult} from './openai-compatible-provider.js';
+
+export interface ModelQualificationEvidence {schema: 'agent-control.model-qualification/v1'; modelId: string; providerId: string; providerModel: string; nodeId: string; startedAt: string; completedAt: string; checks: Array<{id: string; passed: boolean; latencyMs: number; usage: ModelInvocationResult['usage']; responseModel: string | null; responseHash: string; capabilities: string[]}>; capabilities: string[]; state: ModelQualificationRecord['state']; detail?: string;}
+
+export async function qualifyModel(input: {registry: ModelRegistry; modelId: string; nodeId: string; fetcher?: FetchLike; version?: string}): Promise<{record: ModelQualificationRecord; evidence: ModelQualificationEvidence}> {
+  const model = input.registry.model(input.modelId); if (!model) throw new Error('model_missing');
+  const provider = input.registry.provider(model.provider); if (!provider) throw new Error('provider_missing');
+  if (model.enabled === false || provider.enabled === false) throw new Error('model_disabled');
+  const version = input.version ?? `qualification-${new Date().toISOString().slice(0, 10)}`, startedAt = new Date().toISOString();
+  input.registry.setQualification({modelId: model.id, state: 'QUALIFYING', version, checkedAt: startedAt, capabilities: [], nodes: [], evidence: []});
+  const client = new OpenAICompatibleProviderClient(provider, input.fetcher), checks: ModelQualificationEvidence['checks'] = [];
+  try {
+    for (const check of qualificationChecks(model)) {
+      const result = await client.invoke(model, check.prompt, {timeoutMs: 30_000, maximumOutputTokens: 256, structured: check.structured});
+      const passed = check.verify(result); checks.push({id: check.id, passed, latencyMs: result.elapsedMs, usage: result.usage, responseModel: result.responseModel, responseHash: createHash('sha256').update(result.output).digest('hex'), capabilities: passed ? [...check.capabilities] : []});
+      if (!passed) throw new Error(`qualification_check_failed:${check.id}`);
+    }
+    const usageObserved = checks.some(check => Object.entries(check.usage).some(([key, value]) => key !== 'currency' && value !== null));
+    const capabilities = [...new Set([provider.wireApi ?? 'responses', 'model-identity', ...(usageObserved ? ['usage-accounting'] : []), ...checks.flatMap(check => check.capabilities)])];
+    const completedAt = new Date().toISOString(), evidenceIds = checks.map(check => `${check.id}:${check.responseHash}`);
+    const record: ModelQualificationRecord = {modelId: model.id, state: 'QUALIFIED', version, checkedAt: completedAt, qualifiedAt: completedAt, capabilities, nodes: [input.nodeId], latencyMs: Math.round(checks.reduce((sum, check) => sum + check.latencyMs, 0) / checks.length), successRate: 1, evidence: evidenceIds};
+    input.registry.setQualification(record);
+    return {record, evidence: {schema: 'agent-control.model-qualification/v1', modelId: model.id, providerId: provider.id, providerModel: model.providerModel, nodeId: input.nodeId, startedAt, completedAt, checks, capabilities, state: 'QUALIFIED'}};
+  } catch (error) {
+    const completedAt = new Date().toISOString(), detail = safe((error as Error).message), record: ModelQualificationRecord = {modelId: model.id, state: 'FAILED', version, checkedAt: completedAt, capabilities: [], nodes: [], successRate: checks.length ? checks.filter(check => check.passed).length / checks.length : 0, evidence: checks.map(check => `${check.id}:${check.responseHash}`), detail};
+    input.registry.setQualification(record);
+    return {record, evidence: {schema: 'agent-control.model-qualification/v1', modelId: model.id, providerId: provider.id, providerModel: model.providerModel, nodeId: input.nodeId, startedAt, completedAt, checks, capabilities: [], state: 'FAILED', detail}};
+  }
+}
+
+function qualificationChecks(model: ModelConfig): Array<{id: string; prompt: string; structured: boolean; capabilities: string[]; verify: (result: ModelInvocationResult) => boolean}> {
+  const checks: ReturnType<typeof qualificationChecks> = [{id: 'basic-response-and-identity', prompt: 'Reply with exactly AGENT_CONTROL_MODEL_OK', structured: false, capabilities: ['basic-response'], verify: result => result.output.includes('AGENT_CONTROL_MODEL_OK') && result.responseModel === model.providerModel}];
+  if (model.capabilities.includes('coding')) checks.push({id: 'bounded-coding-and-structured-output', prompt: 'Return JSON with key code containing a JavaScript function add(a,b) that returns a+b.', structured: true, capabilities: ['coding', 'structured-output'], verify: result => { try { const value = JSON.parse(result.output) as {code?: unknown}; return typeof value.code === 'string' && /add\s*\(|function\s+add/.test(value.code); } catch { return false; } }});
+  if (model.capabilities.includes('reasoning')) checks.push({id: 'bounded-reasoning', prompt: 'A job has 3 retries and each attempt takes 2 seconds. Reply with the total seconds as a number.', structured: false, capabilities: ['reasoning'], verify: result => /\b6\b/.test(result.output)});
+  return checks;
+}
+function safe(value: string) { return value.replace(/\b(?:sk|rk|pk)-[A-Za-z0-9_-]{8,}\b/g, '[REDACTED]').slice(0, 240); }
