@@ -141,14 +141,14 @@
   "modelRouting": {
     "defaultRole": "coding.default",
     "roles": {
-      "coding.default": {"primary":"openai-default","fallback":["glm-5.3"]},
-      "coding.fast": {"primary":"glm-5.3-flash","fallback":["openai-default"]},
-      "coding.deep": {"primary":"glm-5.3","fallback":["openai-default"]},
-      "reasoning.deep": {"primary":"glm-5.3","fallback":["openai-default"]},
-      "external-fast": {"primary":"glm-5.3-flash","fallback":["glm-5.3"]},
-      "external-deep": {"primary":"glm-5.3","fallback":[]},
-      "review.default": {"primary":"openai-default","fallback":["glm-5.3"]},
-      "local-code": {"primary":"pixel-local-example","fallback":["openai-default"]}
+      "coding.default": {"primary":"openai-default","fallback":["glm-5.3"],"requires":["coding"]},
+      "coding.fast": {"primary":"glm-5.3-flash","fallback":["openai-default"],"requires":["coding"]},
+      "coding.deep": {"primary":"glm-5.3","fallback":["openai-default"],"requires":["coding","reasoning"]},
+      "reasoning.deep": {"primary":"glm-5.3","fallback":["openai-default"],"requires":["reasoning"]},
+      "external-fast": {"primary":"glm-5.3-flash","fallback":["glm-5.3"],"requires":["coding"]},
+      "external-deep": {"primary":"glm-5.3","fallback":[],"requires":["coding","reasoning"]},
+      "review.default": {"primary":"openai-default","fallback":["glm-5.3"],"requires":["coding","reasoning"]},
+      "local-code": {"primary":"pixel-local-example","fallback":["openai-default"],"requires":["coding"]}
     }
   },
   "services": [

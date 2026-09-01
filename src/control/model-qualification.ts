@@ -14,7 +14,7 @@ export async function qualifyModel(input: {registry: ModelRegistry; modelId: str
   const client = new OpenAICompatibleProviderClient(provider, input.fetcher), checks: ModelQualificationEvidence['checks'] = [];
   try {
     for (const check of qualificationChecks(model)) {
-      const result = await client.invoke(model, check.prompt, {timeoutMs: 30_000, maximumOutputTokens: 256, structured: check.structured});
+      const result = await client.invoke(model, check.prompt, {timeoutMs: 30_000, maximumOutputTokens: 256, structured: check.structured, toolProbe: check.toolProbe});
       const passed = check.verify(result); checks.push({id: check.id, passed, latencyMs: result.elapsedMs, usage: result.usage, responseModel: result.responseModel, responseHash: createHash('sha256').update(result.output).digest('hex'), capabilities: passed ? [...check.capabilities] : []});
       if (!passed) throw new Error(`qualification_check_failed:${check.id}`);
     }
@@ -31,10 +31,11 @@ export async function qualifyModel(input: {registry: ModelRegistry; modelId: str
   }
 }
 
-function qualificationChecks(model: ModelConfig): Array<{id: string; prompt: string; structured: boolean; capabilities: string[]; verify: (result: ModelInvocationResult) => boolean}> {
+function qualificationChecks(model: ModelConfig): Array<{id: string; prompt: string; structured: boolean; toolProbe?: string; capabilities: string[]; verify: (result: ModelInvocationResult) => boolean}> {
   const checks: ReturnType<typeof qualificationChecks> = [{id: 'basic-response-and-identity', prompt: 'Reply with exactly AGENT_CONTROL_MODEL_OK', structured: false, capabilities: ['basic-response'], verify: result => result.output.includes('AGENT_CONTROL_MODEL_OK') && result.responseModel === model.providerModel}];
   if (model.capabilities.includes('coding')) checks.push({id: 'bounded-coding-and-structured-output', prompt: 'Return JSON with key code containing a JavaScript function add(a,b) that returns a+b.', structured: true, capabilities: ['coding', 'structured-output'], verify: result => { try { const value = JSON.parse(result.output) as {code?: unknown}; return typeof value.code === 'string' && /add\s*\(|function\s+add/.test(value.code); } catch { return false; } }});
   if (model.capabilities.includes('reasoning')) checks.push({id: 'bounded-reasoning', prompt: 'A job has 3 retries and each attempt takes 2 seconds. Reply with the total seconds as a number.', structured: false, capabilities: ['reasoning'], verify: result => /\b6\b/.test(result.output)});
+  if (model.capabilities.includes('tool-use')) checks.push({id: 'bounded-tool-call', prompt: 'Call the supplied function with marker AGENT_CONTROL_TOOL_OK.', structured: false, toolProbe: 'agent_control_qualification_marker', capabilities: ['tool-use'], verify: result => { if (result.toolCall?.name !== 'agent_control_qualification_marker') return false; try { return (JSON.parse(result.toolCall.arguments) as {marker?: unknown}).marker === 'AGENT_CONTROL_TOOL_OK'; } catch { return false; } }});
   return checks;
 }
 function safe(value: string) { return value.replace(/\b(?:sk|rk|pk)-[A-Za-z0-9_-]{8,}\b/g, '[REDACTED]').slice(0, 240); }

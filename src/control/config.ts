@@ -111,7 +111,7 @@ export interface ModelConfig {
   qualification?: {state: ModelQualificationState; version?: string; qualifiedAt?: string; evidence?: string[]; capabilities?: string[]; nodes?: string[]; latencyMs?: number; successRate?: number};
   pricing?: {currency: string; inputPerMillionTokens: number; outputPerMillionTokens: number; cachedInputPerMillionTokens?: number; effectiveFrom: string; source: string};
 }
-export interface ModelRouteConfig {primary: string; fallback?: string[];}
+export interface ModelRouteConfig {primary: string; fallback?: string[]; requires?: string[];}
 export interface ModelRoutingConfig {defaultRole?: string; roles: Record<string, ModelRouteConfig>;}
 
 export interface ServiceConfig {
@@ -362,6 +362,7 @@ export function validateConfig(raw: unknown): AgentControlConfig {
     const candidates = [route.primary, ...(route.fallback ?? [])];
     if (candidates.some(id => !modelIds.has(id))) throw new Error(`unknown_model_route:${role}`);
     if (new Set(candidates).size !== candidates.length) throw new Error(`duplicate_model_fallback:${role}`);
+    assertStringList(route.requires, `model_role_capabilities:${role}`, /^[a-z0-9][a-z0-9._-]{0,127}$/i);
     roleEdges.set(role, candidates.filter(id => roleIds.has(id)));
   }
   const visiting = new Set<string>(), visited = new Set<string>();

@@ -32,7 +32,7 @@ A configured model starts `UNTESTED` unless durable evidence says otherwise. Onl
   }],
   "modelRouting": {
     "defaultRole": "coding.default",
-    "roles": {"coding.default": {"primary": "glm-fast", "fallback": []}}
+    "roles": {"coding.default": {"primary": "glm-fast", "fallback": [], "requires": ["coding"]}}
   }
 }
 ```
@@ -51,7 +51,7 @@ The current qualification performs basic response, bounded coding and bounded re
 
 ## Routing order
 
-An explicit model wins over a requested role; a requested role wins over `defaultRole`. Within a role, Agent Control evaluates primary then fallbacks. A fallback decision records every rejected candidate and reason. Set `allowFallback: false` when substitution is forbidden.
+An explicit model wins over a requested role; a requested role wins over `defaultRole`. Within a role, Agent Control evaluates primary then fallbacks and enforces optional `requires` capabilities against qualification evidence. A fallback decision records every rejected candidate and reason. Set `allowFallback: false` when substitution is forbidden.
 
 Work Parcel stages may specify `requestedRoute.model` or `requestedRoute.modelRole`. Agent Control resolves that request against the scheduler-selected node before creating the Job Run and stores the exact decision in `run.trigger.modelRoute`.
 

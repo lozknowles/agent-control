@@ -91,7 +91,9 @@ export class ModelRegistry {
     const requestedRole = request.modelRole ?? (!request.model ? this.routing.defaultRole : undefined);
     const candidates = request.model ? [request.model] : requestedRole ? this.expandRole(requestedRole) : [];
     if (!candidates.length) throw new Error(request.model ? 'model_missing' : 'model_route_unconfigured');
-    const considered = candidates.map(modelId => this.eligibility(modelId, request));
+    const roleCapabilities = requestedRole ? this.routing.roles[requestedRole]?.requires ?? [] : [];
+    const effectiveRequest = {...request, requiredCapabilities: [...new Set([...roleCapabilities, ...(request.requiredCapabilities ?? [])])]};
+    const considered = candidates.map(modelId => this.eligibility(modelId, effectiveRequest));
     const selectedIndex = considered.findIndex(item => item.eligible);
     if (selectedIndex < 0) throw Object.assign(new Error('model_route_unavailable'), {considered});
     if (selectedIndex > 0 && request.allowFallback === false) throw Object.assign(new Error('model_fallback_disabled'), {considered});
