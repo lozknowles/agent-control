@@ -1,0 +1,111 @@
+{
+  "schema": "agent-control.glm53-catalog-probe/v1",
+  "observedAt": "2026-09-01T22:02:55.921Z",
+  "provider": "openrouter",
+  "endpoint": "https://openrouter.ai/api/v1",
+  "authentication": "VALID_INDIRECT_FILE_REFERENCE",
+  "credentialFileMode": "0600",
+  "first": {
+    "status": 200,
+    "catalogSha256": "c6680fdfe1f390e8725647af570b1677ba6949963ee4b1d75f99cc476dadfbba",
+    "model": {
+      "id": "z-ai/glm-5.3-flash",
+      "canonical_slug": "z-ai/glm-5.3-flash-20260826",
+      "created": 1787752741,
+      "context_length": 1310720,
+      "architecture": {
+        "modality": "text+image+video->text",
+        "input_modalities": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "tokenizer": "Other",
+        "instruct_type": null
+      },
+      "supported_parameters": [
+        "frequency_penalty",
+        "include_reasoning",
+        "logit_bias",
+        "logprobs",
+        "max_tokens",
+        "min_p",
+        "presence_penalty",
+        "reasoning",
+        "reasoning_effort",
+        "repetition_penalty",
+        "response_format",
+        "seed",
+        "stop",
+        "structured_outputs",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_k",
+        "top_logprobs",
+        "top_p"
+      ],
+      "pricing": {
+        "prompt": "0.000000075",
+        "completion": "0.00000025",
+        "input_cache_read": "0.000000015"
+      }
+    },
+    "modelSha256": "65a29b547f776a8bf7d24676a770b63381f15b7a8d5bba58e80a36319c372b55"
+  },
+  "second": {
+    "status": 200,
+    "catalogSha256": "c6680fdfe1f390e8725647af570b1677ba6949963ee4b1d75f99cc476dadfbba",
+    "model": {
+      "id": "z-ai/glm-5.3-flash",
+      "canonical_slug": "z-ai/glm-5.3-flash-20260826",
+      "created": 1787752741,
+      "context_length": 1310720,
+      "architecture": {
+        "modality": "text+image+video->text",
+        "input_modalities": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "tokenizer": "Other",
+        "instruct_type": null
+      },
+      "supported_parameters": [
+        "frequency_penalty",
+        "include_reasoning",
+        "logit_bias",
+        "logprobs",
+        "max_tokens",
+        "min_p",
+        "presence_penalty",
+        "reasoning",
+        "reasoning_effort",
+        "repetition_penalty",
+        "response_format",
+        "seed",
+        "stop",
+        "structured_outputs",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_k",
+        "top_logprobs",
+        "top_p"
+      ],
+      "pricing": {
+        "prompt": "0.000000075",
+        "completion": "0.00000025",
+        "input_cache_read": "0.000000015"
+      }
+    },
+    "modelSha256": "65a29b547f776a8bf7d24676a770b63381f15b7a8d5bba58e80a36319c372b55"
+  },
+  "reproduced": true
+}

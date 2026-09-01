@@ -1,0 +1,46 @@
+{
+  "schema": "agent-control.glm53-resource-envelope/v2",
+  "supersedesSha256": "538b4de3205b4686efdccb58016889222d00a8e174b226d8cf05a8bc5f9a4276",
+  "reason": "Pre-lane Codex streaming transport produced no model output and failed after one reconnect; both lanes now use the same non-streaming Responses typed-tool runner.",
+  "frozenBeforeAnyLaneModelOutput": true,
+  "comparableLaneWallClockSeconds": 2700,
+  "topLevelGlmTurns": 2,
+  "maximumProviderHttpAttempts": 12,
+  "maximumProviderAttemptsByTurn": {
+    "assessmentAndReproduction": 6,
+    "boundedImplementation": 6
+  },
+  "maximumRetryCountPerRetryableTransportFailure": 1,
+  "maximumOutputTokensPerProviderAttempt": 16384,
+  "reportedInputTokenLimit": null,
+  "inputTokenLimitReason": "OpenRouter reports usage but does not expose a reliable per-lane hard input-token ceiling; tool outputs and request count are bounded instead.",
+  "providerTimeoutSeconds": 180,
+  "filesystemScope": "one isolated frozen benchmark worktree only",
+  "filesystemIsolation": "bubblewrap exposes only the lane workspace, typed runner, evidence directory and minimal read-only operating-system runtime",
+  "networkScope": "the runner can call only the fixed OpenRouter Responses endpoint; model tools expose no network or arbitrary shell",
+  "toolPermissions": [
+    "bounded tracked-file list/read/search",
+    "git status/diff through fixed arguments",
+    "fixed repository test commands",
+    "stage-2 exact replace or bounded complete-file write"
+  ],
+  "protectedPaths": [".git internals", "node_modules", "credentials", "sibling lanes", "host home", "production state", "remote Git"],
+  "maximumParallelWorkers": 0,
+  "subagentsEnabled": false,
+  "testTimeAllowanceSeconds": 720,
+  "maximumChangedFiles": 8,
+  "maximumChangedLines": 500,
+  "productionChangesAllowed": false,
+  "deploymentAllowed": false,
+  "silentModelFallbackAllowed": false,
+  "inference": {
+    "provider": "openrouter",
+    "model": "z-ai/glm-5.3-flash",
+    "catalogRevision": "z-ai/glm-5.3-flash-20260826",
+    "wireApi": "responses-non-streaming",
+    "temperature": null,
+    "topP": null,
+    "reasoningEffort": null,
+    "parameterInterpretation": "provider defaults; no lane-specific tuning"
+  }
+}

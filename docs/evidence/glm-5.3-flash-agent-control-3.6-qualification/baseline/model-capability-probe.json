@@ -1,0 +1,65 @@
+{
+  "schema": "agent-control.glm53-capability-probe/v1",
+  "observedAt": "2026-09-01T22:06:23.269Z",
+  "priorAttempt": {
+    "status": "FAILED",
+    "error": "provider_malformed_response",
+    "structured": true,
+    "maximumOutputTokens": 512
+  },
+  "sessions": "fresh-independent",
+  "structured": {
+    "kind": "plain-text-identity",
+    "status": "SUCCEEDED",
+    "result": {
+      "providerId": "openrouter",
+      "modelId": "glm-5.3-flash",
+      "providerModel": "z-ai/glm-5.3-flash",
+      "responseModel": "z-ai/glm-5.3-flash",
+      "finishReason": "completed",
+      "elapsedMs": 17881,
+      "usage": {
+        "inputTokens": 27,
+        "outputTokens": 830,
+        "cachedInputTokens": 0,
+        "totalTokens": 857,
+        "providerReportedCost": 0.000209525,
+        "calculatedCost": 0.000209525,
+        "currency": "USD"
+      },
+      "outputSha256": "3edd176d57131adb61cfc0a446ac45ae2b55729742727dcc4d44888c034996c5",
+      "markerPresent": true,
+      "toolCall": null
+    }
+  },
+  "tool": {
+    "kind": "tool-call",
+    "status": "SUCCEEDED",
+    "result": {
+      "providerId": "openrouter",
+      "modelId": "glm-5.3-flash",
+      "providerModel": "z-ai/glm-5.3-flash",
+      "responseModel": "z-ai/glm-5.3-flash",
+      "finishReason": "completed",
+      "elapsedMs": 6500,
+      "usage": {
+        "inputTokens": 178,
+        "outputTokens": 62,
+        "cachedInputTokens": 0,
+        "totalTokens": 240,
+        "providerReportedCost": 0.0000577,
+        "calculatedCost": 0.00002885,
+        "currency": "USD"
+      },
+      "outputSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "markerPresent": false,
+      "toolCall": {
+        "name": "report_capability",
+        "argumentsSha256": "ea68fb2614f0028df59dd60df890250550288587bf214ac709064d7c318bc6a5",
+        "markerPresent": true
+      }
+    }
+  },
+  "silentFallback": false,
+  "expectedProviderModel": "z-ai/glm-5.3-flash"
+}
