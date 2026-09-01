@@ -1,0 +1,68 @@
+{
+  "schema": "agent-control.glm53-qualification-comparison/v1",
+  "verdict": "FAIL",
+  "baseline": {
+    "branch": "feature/agent-control-3.6-acp-runtime-routing",
+    "commit": "5acdde13e41d58b511a33ac0e15f3dc6d3930613",
+    "agentControlVersion": "3.6.0",
+    "completeGate": {"tests": 628, "passed": 628, "failed": 0}
+  },
+  "model": {
+    "canonicalName": "GLM-5.3-Flash",
+    "provider": "openrouter",
+    "providerModel": "z-ai/glm-5.3-flash",
+    "catalogRevision": "z-ai/glm-5.3-flash-20260826",
+    "silentFallback": false
+  },
+  "frozenInputs": {
+    "debtBriefSha256": "2a357c8098ed0ddc02cbdb0c278eec77f801d5c75ba9315619e149e57374109c",
+    "assessmentPromptSha256": "0a5b435c6e6925c742f5e1c2136e4bc09b50648b1b4bc3ccf8a128b50d1728f5",
+    "implementationPromptSha256": "eb4e87b6cb0a64841d76da49ef97383a71adcd7523750912933a32d646743d9f",
+    "resourceEnvelopeSha256": "b43e7645cda6a22228717e6af6035332fbeafa00456ecd82f0b865c48f01d79d"
+  },
+  "lanes": {
+    "direct": {
+      "branch": "benchmark/glm53-direct-3.6-first-cut-20260901",
+      "outcome": "FAIL",
+      "score": 20,
+      "assessmentResponses": 6,
+      "implementationResponses": 0,
+      "elapsedMs": 68300,
+      "tokens": {"input": 99069, "output": 1921, "total": 100990},
+      "providerReportedCostUsd": 0.003924505,
+      "verifiedFixes": 0,
+      "filesChanged": 0,
+      "testsAdded": 0,
+      "independentGate": "PASS_628_OF_628",
+      "yield": "NONE"
+    },
+    "governed": {
+      "branch": "benchmark/glm53-agent-control-3.6-first-cut-20260901",
+      "outcome": "FAIL",
+      "score": 24,
+      "assessmentResponses": 6,
+      "implementationResponses": 0,
+      "elapsedMs": 89919,
+      "tokens": {"input": 118702, "output": 2721, "total": 121423},
+      "providerReportedCostUsd": 0.00515538,
+      "verifiedFixes": 0,
+      "filesChanged": 0,
+      "testsAdded": 0,
+      "independentGate": "PASS_628_OF_628",
+      "batons": {"parentBytes": 912, "childBytes": 1592},
+      "yield": ["CHILD_YIELD", "PARENT_YIELD"],
+      "coordinatorContribution": "mechanical-only"
+    }
+  },
+  "costPerVerifiedFix": null,
+  "costPerVerifiedFixReason": "No verified fix exists in either lane.",
+  "optionalControl": "NOT_RUN",
+  "recommendation": {
+    "lifecycle": "BENCHMARKING",
+    "fullRepositoryAnalysis": false,
+    "autonomousImplementation": false,
+    "maximumSupportedScope": "narrow low-risk disposable tasks with explicit context, deterministic independent verification, bounded writes, and automatic yield/escalation",
+    "agentControlMateriallyImprovedVerifiedPerformance": false,
+    "agentControlImprovedContainment": true
+  }
+}

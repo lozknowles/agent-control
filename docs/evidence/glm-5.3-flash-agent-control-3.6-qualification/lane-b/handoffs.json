@@ -1,0 +1,205 @@
+{
+  "schema": "agent-control.handoffs/v1",
+  "handoffs": [
+    {
+      "schema": "agent-control.handoff/v1",
+      "id": "handoff:cdd6205b-489a-493f-a545-562c19302ac7",
+      "outcome": "DELEGATE",
+      "policy": "AUTO",
+      "status": "COMPLETED",
+      "contractId": "contract:glm53-agent-control-3.6-first-cut",
+      "originatingActorId": "service:agent-control-mechanical-coordinator",
+      "originatingAgentId": "agent-control-contract-coordinator",
+      "receivingActorId": "agent:glm53-flash-governed-worker",
+      "receivingAgentId": "glm53-flash",
+      "reason": "Delegate the identical frozen task to the only authorised model under a sealed bounded baton.",
+      "batonSha256": "880a5abf43bc73cac680cc070f9af0e0e729a6b4435e71965d284f76319f213a",
+      "batonSizeBytes": 1592,
+      "authorityTransferred": [
+        "repository.read",
+        "repository.write:bounded",
+        "repository.test:bounded"
+      ],
+      "authorityWithheld": [],
+      "budgetTransferred": {},
+      "stateBefore": "ACTIVE",
+      "evidenceIds": [],
+      "verificationOutcome": "NOT_SUBMITTED",
+      "approvalReasons": [],
+      "createdAt": "2026-09-01T22:21:52.045Z",
+      "request": {
+        "outcome": "DELEGATE",
+        "policy": "AUTO",
+        "contractId": "contract:glm53-agent-control-3.6-first-cut",
+        "sourceActorId": "service:agent-control-mechanical-coordinator",
+        "sourceAgentId": "agent-control-contract-coordinator",
+        "target": {
+          "active": {
+            "actorId": "agent:glm53-flash-governed-worker",
+            "agentId": "glm53-flash",
+            "modelId": "z-ai/glm-5.3-flash",
+            "providerId": "openrouter",
+            "runtimeId": "typed-responses-runner",
+            "nodeId": "benchmark-sandbox"
+          },
+          "process": {
+            "id": "process:glm53-flash-worker"
+          },
+          "ptyId": "pty:glm53-flash-worker"
+        },
+        "child": {
+          "id": "contract:glm53-agent-control-3.6-first-cut:worker",
+          "objective": "Assess the frozen repository read-only, then implement only the highest-priority coherent work after the assessment gate.",
+          "completionCriteria": [
+            "mandatory architecture and debt assessment submitted before writes",
+            "defects reproduced before fixes",
+            "bounded implementation journal submitted",
+            "relevant checks run without weakening governance"
+          ]
+        },
+        "reason": "Delegate the identical frozen task to the only authorised model under a sealed bounded baton.",
+        "baton": {
+          "schema": "agent-control.glm53-qualification-child-baton/v1",
+          "task": "frozen Agent Control 3.6 debt assessment and bounded implementation",
+          "frozenCommit": "5acdde13e41d58b511a33ac0e15f3dc6d3930613",
+          "model": "z-ai/glm-5.3-flash",
+          "provider": "openrouter",
+          "debtBrief": {
+            "reference": "/debt-brief.md",
+            "sha256": "2a357c8098ed0ddc02cbdb0c278eec77f801d5c75ba9315619e149e57374109c",
+            "sizeBytes": 3868
+          },
+          "prompts": {
+            "assessmentSha256": "0a5b435c6e6925c742f5e1c2136e4bc09b50648b1b4bc3ccf8a128b50d1728f5",
+            "implementationSha256": "eb4e87b6cb0a64841d76da49ef97383a71adcd7523750912933a32d646743d9f"
+          },
+          "resourceEnvelope": {
+            "reference": "/resource-envelope.json",
+            "sha256": "b43e7645cda6a22228717e6af6035332fbeafa00456ecd82f0b865c48f01d79d",
+            "sizeBytes": 2225
+          },
+          "runner": {
+            "sha256": "6741779a193bf5eed3a10979a20ba74e6198ee95301302ebd03dd88ca8587fac"
+          },
+          "allowedFiles": [
+            "tracked files beneath the isolated repository root"
+          ],
+          "forbiddenPaths": [
+            ".git",
+            "node_modules",
+            "package-lock.json",
+            "npm-shrinkwrap.json",
+            "host paths",
+            "sibling lanes",
+            "production"
+          ],
+          "forbiddenActions": [
+            "credential access",
+            "network except provider transport",
+            "remote access",
+            "deployment",
+            "test weakening",
+            "model substitution"
+          ],
+          "authority": [
+            "repository.read",
+            "repository.write:bounded",
+            "repository.test:bounded"
+          ],
+          "limits": {
+            "providerRequests": 12,
+            "assessmentRequests": 6,
+            "implementationRequests": 6,
+            "changedFiles": 8,
+            "changedLines": 500,
+            "testTimeMs": 720000,
+            "parallelWorkers": 1
+          },
+          "verification": [
+            "git diff --check",
+            "npm run check",
+            "independent rubric scoring"
+          ],
+          "completionRule": "Agent Control records COMPLETE only as pending independent verification; otherwise record YIELD."
+        },
+        "requestedAuthority": [
+          "repository.read",
+          "repository.write:bounded",
+          "repository.test:bounded"
+        ],
+        "budget": {}
+      },
+      "childContractId": "contract:glm53-agent-control-3.6-first-cut:worker",
+      "stateAfter": "ACTIVE",
+      "completedAt": "2026-09-01T22:21:52.047Z"
+    },
+    {
+      "schema": "agent-control.handoff/v1",
+      "id": "handoff:3de2e469-7a4a-4de3-9410-29ca1f663b81",
+      "outcome": "YIELD",
+      "policy": "AUTO",
+      "status": "COMPLETED",
+      "contractId": "contract:glm53-agent-control-3.6-first-cut:worker",
+      "originatingActorId": "agent:glm53-flash-governed-worker",
+      "originatingAgentId": "glm53-flash",
+      "reason": "Worker exhausted the assessment request allowance without submitting the mandatory assessment.",
+      "batonSha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "batonSizeBytes": 2,
+      "authorityTransferred": [],
+      "authorityWithheld": [],
+      "budgetTransferred": {},
+      "stateBefore": "ACTIVE",
+      "evidenceIds": [],
+      "verificationOutcome": "NOT_SUBMITTED",
+      "approvalReasons": [],
+      "createdAt": "2026-09-01T22:24:31.476Z",
+      "request": {
+        "outcome": "YIELD",
+        "policy": "AUTO",
+        "contractId": "contract:glm53-agent-control-3.6-first-cut:worker",
+        "sourceActorId": "agent:glm53-flash-governed-worker",
+        "sourceAgentId": "glm53-flash",
+        "reason": "Worker exhausted the assessment request allowance without submitting the mandatory assessment.",
+        "baton": {},
+        "requestedAuthority": [],
+        "budget": {}
+      },
+      "stateAfter": "PAUSED",
+      "completedAt": "2026-09-01T22:24:31.483Z"
+    },
+    {
+      "schema": "agent-control.handoff/v1",
+      "id": "handoff:5fa790a1-fe9f-4368-90d6-c978450191dd",
+      "outcome": "YIELD",
+      "policy": "AUTO",
+      "status": "COMPLETED",
+      "contractId": "contract:glm53-agent-control-3.6-first-cut",
+      "originatingActorId": "service:agent-control-mechanical-coordinator",
+      "originatingAgentId": "agent-control-contract-coordinator",
+      "reason": "Child did not satisfy the assessment gate; implementation authority was not exercised. Worker exhausted the assessment request allowance without submitting the mandatory assessment.",
+      "batonSha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "batonSizeBytes": 2,
+      "authorityTransferred": [],
+      "authorityWithheld": [],
+      "budgetTransferred": {},
+      "stateBefore": "ACTIVE",
+      "evidenceIds": [],
+      "verificationOutcome": "NOT_SUBMITTED",
+      "approvalReasons": [],
+      "createdAt": "2026-09-01T22:24:31.484Z",
+      "request": {
+        "outcome": "YIELD",
+        "policy": "AUTO",
+        "contractId": "contract:glm53-agent-control-3.6-first-cut",
+        "sourceActorId": "service:agent-control-mechanical-coordinator",
+        "sourceAgentId": "agent-control-contract-coordinator",
+        "reason": "Child did not satisfy the assessment gate; implementation authority was not exercised. Worker exhausted the assessment request allowance without submitting the mandatory assessment.",
+        "baton": {},
+        "requestedAuthority": [],
+        "budget": {}
+      },
+      "stateAfter": "PAUSED",
+      "completedAt": "2026-09-01T22:24:31.485Z"
+    }
+  ]
+}

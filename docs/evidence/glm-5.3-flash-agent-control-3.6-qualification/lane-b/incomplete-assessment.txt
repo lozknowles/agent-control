@@ -1,0 +1,1 @@
+A strong P0.2 lead: `operator-review-actions.ts:82` gates acceptance on `response.length >= 8_000` plus substring checks. Let me read that file and scan for test skip/only patterns.

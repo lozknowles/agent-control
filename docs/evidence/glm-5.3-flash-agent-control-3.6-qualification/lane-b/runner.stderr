@@ -1,0 +1,9 @@
+file:///runner.mjs:28
+if(!assessment.completed)throw new Error('assessment_did_not_complete');
+                               ^
+
+Error: assessment_did_not_complete
+    at file:///runner.mjs:28:32
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+
+Node.js v24.19.0
