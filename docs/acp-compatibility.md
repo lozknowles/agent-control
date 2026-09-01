@@ -54,6 +54,8 @@ Defaults are `127.0.0.1:4311/acp`. `AGENT_CONTROL_ACP_REMOTE_ALLOWED_ORIGINS` is
 
 The remote transport uses the SDK's experimental server packaging API, but carries stable ACP protocol v1. It does not import the experimental ACP v2 entry point.
 
+The existing dashboard exposes a redacted transport/session projection through `GET /api/runtime`. It reports protocol version, stdio and remote configuration, authentication state, governed session/parcel references and delivery counts. It never exposes prompt bodies, cwd values or replay hashes. Because the durable ACP session format is transport-neutral, the dashboard does not invent per-session transport attribution.
+
 ## Mapping
 
 | ACP | Agent Control |

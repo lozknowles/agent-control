@@ -45,4 +45,4 @@ The active worker may submit evidence, moving the contract to `VERIFYING`. It ca
 
 ## Current boundary
 
-The durable authority/reconstruction model and deterministic process-port tests are implemented. Operating-system-specific PTY creation and signal delivery remain adapters beneath this record. Dashboard projection and governed handoff outcomes are later 3.6 checkpoints; no live process or production service was changed by this implementation.
+The durable authority/reconstruction model, governed handoff outcomes and redacted dashboard projection are implemented. `GET /api/runtime` and Sessions expose state, identities, participants, writer, approvals, baton hash/size, handoffs and verification without objective, baton payload or transcript content. Operating-system-specific PTY creation and signal delivery remain adapters beneath this record.

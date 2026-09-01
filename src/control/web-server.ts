@@ -59,6 +59,7 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   if (method === 'GET' && url.pathname === '/api/delegations') return json(response, 200, service.delegations(url.searchParams.get('sessionId') ?? undefined));
   if (method === 'GET' && url.pathname === '/api/executions') return json(response, 200, service.executionProvenance());
   if (method === 'GET' && url.pathname === '/api/fast-execution-attempts') return json(response, 200, service.fastExecutionAttempts());
+  if (method === 'GET' && url.pathname === '/api/runtime') return json(response, 200, service.runtime());
   if (method === 'GET' && url.pathname === '/api/router') return json(response, 200, service.allRoutes());
   if (method === 'GET' && url.pathname === '/api/evidence') return json(response, 200, service.snapshot().lanes.map(lane => ({laneId: lane.id, task: lane.task, verification: lane.verification, batonEvidence: lane.baton.evidence, contextSourceIds: lane.baton.contextSourceIds})));
   if (method === 'GET' && url.pathname === '/api/events') return eventStream(service, request, response);

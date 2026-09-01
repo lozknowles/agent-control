@@ -22,6 +22,10 @@ import {FileCommandResultStore, TokenAwareOutputService} from './control/token-a
 import {Trace} from './control/telemetry.js';
 import {AGENT_CONTROL_VERSION} from './version.js';
 import {ModelQualificationStore, ModelRegistry} from './control/model-registry.js';
+import {ContractExecutionRuntime} from './control/contract-runtime.js';
+import {GovernedHandoffRuntime} from './control/handoff-runtime.js';
+import {ProviderModelLifecycleRegistry} from './control/provider-lifecycle.js';
+import {RuntimeObservability} from './control/runtime-observability.js';
 
 const now = () => new Date().toISOString();
 const config = loadConfig();
@@ -43,6 +47,11 @@ const queueStore = new WorkQueueStore();
 let workQueue = queueStore.load();
 const modelRegistry = new ModelRegistry(config.providers, config.models, config.modelRouting, new ModelQualificationStore(path.resolve(process.env.AGENT_CONTROL_STATE_DIR || '.agent-control', 'model-qualification.json')));
 const stateRoot = path.resolve(process.env.AGENT_CONTROL_STATE_DIR || '.agent-control');
+const contracts = new ContractExecutionRuntime(path.join(stateRoot, 'contracts', 'executions.json'));
+const handoffs = new GovernedHandoffRuntime(contracts, path.join(stateRoot, 'contracts', 'handoffs.json'));
+const providerLifecycle = new ProviderModelLifecycleRegistry(path.join(stateRoot, 'models', 'lifecycle.json'));
+const remoteTokenEnvironment = process.env.AGENT_CONTROL_ACP_REMOTE_TOKEN_ENV?.trim();
+const runtimeObservability = new RuntimeObservability({contracts, handoffs, providerLifecycle, acpSessionDirectory:path.join(stateRoot,'acp'), remoteAcp:{enabled:process.env.AGENT_CONTROL_ACP_REMOTE_ENABLED==='true',authenticationConfigured:Boolean(remoteTokenEnvironment&&process.env[remoteTokenEnvironment]),loopback:['127.0.0.1','::1','localhost'].includes((process.env.AGENT_CONTROL_ACP_REMOTE_HOST??'127.0.0.1').toLowerCase())}});
 const jobRuntime = buildJobRuntime(config, stateRoot, undefined, undefined, modelRegistry);
 const parameterizedJobs = buildParameterizedJobRuntime(config, modelRegistry, jobRuntime.workParcels, stateRoot);
 const commandOutputRoot = path.resolve(stateRoot, 'command-output');
@@ -61,6 +70,7 @@ const control = new AgentControlService(state, ptys, providers).configureProject
   workParcels: jobRuntime.workParcels,
   modelRegistry,
   parameterizedJobs,
+  runtimeObservability,
 });
 startManagedNodeMonitoring(jobRuntime, snapshot => control.events.emit('resource.node_changed', {resourceId: snapshot.resourceId, state: snapshot.state, health: snapshot.health, currentWorkload: snapshot.currentWorkload}, undefined, 'managed-node-monitor'), error => control.events.emit('failure', {scope: 'managed-node-monitor', error: error.message}, undefined, 'managed-node-monitor'));
 startJobScheduler(jobRuntime, (runId, status) => control.events.emit('job.run_changed', {runId, status}, undefined, 'job-scheduler'), 1000, error => control.events.emit('failure', {scope: 'job-scheduler', error: error.message}, undefined, 'job-scheduler'));

@@ -5,7 +5,7 @@ import type {ProviderRegistry} from './providers.js';
 
 export type SystemExecutionState = 'AVAILABLE' | 'BUSY' | 'DEGRADED' | 'AUTH REQUIRED' | 'OFFLINE' | 'UNKNOWN';
 export interface SystemReadiness {
-  id: string; name: string; type: 'machine' | 'LLM provider' | 'local model' | 'service';
+  id: string; name: string; type: 'machine' | 'LLM provider' | 'local model' | 'service' | 'model' | 'transport';
   registered: true; reachable: 'yes' | 'no' | 'unknown'; authentication: 'valid' | 'present' | 'required' | 'failed' | 'not required' | 'unknown';
   execution: SystemExecutionState; blockingReason: string | null; transport?: string; platform?: string; capabilities: string[];
   capacity: number | null; active: number | null; lastCheckAt: string | null; lastSuccessfulProbeAt: string | null; lastSuccessfulJobAt: string | null;

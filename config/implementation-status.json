@@ -21,7 +21,7 @@
       "sources": ["src/control/contract-runtime.ts"],
       "tests": ["src/control/contract-runtime.test.ts"],
       "evidence": ["docs/contract-pty-runtime.md"],
-      "limitation": "The durable authority model and process-port behavior are implemented; operating-system-specific PTY creation/signal adapters, handoff outcomes and dashboard projection remain later 3.6 checkpoints."
+      "limitation": "The durable authority model, governed handoffs and redacted dashboard projection are implemented; operating-system-specific PTY creation and signal delivery remain adapters beneath this record."
     },
     {
       "id": "execution.governed-handoffs",
@@ -71,6 +71,16 @@
       "tests": ["src/control/contract-runtime.test.ts", "src/control/handoff-runtime.test.ts"],
       "evidence": ["docs/physical-multi-provider-qualification.md", "docs/evidence/physical-multi-provider-chain-20260901.json"],
       "limitation": "GLM required three bounded attempts, token/cost telemetry was unavailable, and this one synthetic contract does not satisfy the larger automatic-routing benchmark."
+    },
+    {
+      "id": "dashboard.runtime-observability",
+      "title": "Redacted ACP contract handoff and lifecycle dashboard projection",
+      "status": "IMPLEMENTED",
+      "summary": "GET /api/runtime and the existing Sessions, Systems and Models views project stable ACP v1 transport/session state, contract/process/PTY ownership, approvals, handoffs, baton hashes/sizes and immutable provider/model lifecycle without adding mutation authority.",
+      "sources": ["src/control/runtime-observability.ts", "src/control/application-service.ts", "src/control/web-server.ts", "assets/dashboard/dashboard-sessions.js", "assets/dashboard/dashboard-models.js", "assets/dashboard/dashboard-enhancements.js"],
+      "tests": ["src/control/runtime-observability.test.ts", "src/control/web-server.test.ts"],
+      "evidence": ["docs/web-dashboard.md", "docs/security-3.6.md", "docs/evidence/agent-control-3.6-development-qualification.md"],
+      "limitation": "Persisted ACP bindings are transport-neutral, so per-session stdio versus remote attribution remains unknown. Remote listener liveness is configured-but-unobserved rather than inferred."
     },
     {
       "id": "models.fast-execution-spark",

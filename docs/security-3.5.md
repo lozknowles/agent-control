@@ -27,6 +27,8 @@ On the unreleased 3.6 branch, `agent-control acp` accepts stable ACP v1 frames o
 
 `agent-control acp-remote` is disabled by default and fails closed without an indirectly resolved bearer credential. Authentication and Origin policy run before JSON-RPC parsing or WebSocket upgrade; comparisons are constant-time and bodies/frames are bounded. Non-loopback binding requires configured TLS certificate/key files. Values are not logged or persisted. The SDK's experimental server packaging carries stable v1; the experimental ACP v2 entry point is not imported.
 
+The complete unreleased runtime boundary, including contract/PTY observability, handoff redaction and provider lifecycle rules, is documented in [Agent Control 3.6 security boundaries](security-3.6.md).
+
 ## Known limits
 
 - An opaque external CLI may perform internal reads/tools that are not individually mediated by Agent Control; Spark is therefore restricted to an isolated worktree and bounded task class.

@@ -9,6 +9,8 @@ npm run qualify
 
 The harness always runs the local gate. It then reads the same configuration used by the control plane and performs only non-mutating health checks for configured services, resources and providers. Missing configuration is recorded as `SKIP configured-infrastructure`, not replaced by private defaults.
 
+For unreleased 3.6 development, also run `npm run benchmark:capability-routing` and review its retained report. A classifier pass is not physical model evidence. Verify `GET /api/runtime` through the web tests and inspect the final diff for credential-shaped values. The one retained physical Luna/local/GLM/Luna chain is separate evidence and does not satisfy the 50-attempt automatic-routing gate. The completed checkpoint results and explicit limitations are retained in [`evidence/agent-control-3.6-development-qualification.md`](evidence/agent-control-3.6-development-qualification.md).
+
 Optional SSH checks are explicit:
 
 ```bash

@@ -22,6 +22,7 @@ import {nextSavedJobOccurrence} from './parameterized-job-registry.js';
 import type {SavedJob} from './parameterized-job-types.js';
 import {legacyAttribution, type IdentityControlPlane, type WorkAttribution} from './identity-control-plane.js';
 import type {FastExecutionLedgerPort} from './fast-execution.js';
+import {RuntimeObservability} from './runtime-observability.js';
 
 export type ControlEventType =
   | 'system.snapshot'
@@ -130,6 +131,7 @@ export class AgentControlService {
   private identity?: IdentityControlPlane;
   private defaultSessionId?: string;
   private fastExecution?: FastExecutionLedgerPort;
+  private runtimeObservability?: RuntimeObservability;
 
   constructor(
     readonly state: WorkspaceState,
@@ -142,7 +144,7 @@ export class AgentControlService {
     this.verification = new VerificationService(state, persist);
   }
 
-  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; services?: RegisteredService[]; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService; harnessEfficiency?: HarnessEfficiencyLedgerPort; workParcels?: WorkParcelCoordinator; modelRegistry?: ModelRegistry; parameterizedJobs?: ParameterizedJobEngine; identity?: IdentityControlPlane; defaultSessionId?: string; fastExecution?: FastExecutionLedgerPort}) {
+  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; services?: RegisteredService[]; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService; harnessEfficiency?: HarnessEfficiencyLedgerPort; workParcels?: WorkParcelCoordinator; modelRegistry?: ModelRegistry; parameterizedJobs?: ParameterizedJobEngine; identity?: IdentityControlPlane; defaultSessionId?: string; fastExecution?: FastExecutionLedgerPort; runtimeObservability?: RuntimeObservability}) {
     if (extras.approvalCount) this.approvalCount = extras.approvalCount;
     if (extras.resources) this.resourceRows = structuredClone(extras.resources);
     if (extras.services) this.serviceRows = structuredClone(extras.services);
@@ -157,6 +159,7 @@ export class AgentControlService {
     if (extras.identity) this.identity = extras.identity;
     if (extras.defaultSessionId) this.defaultSessionId = extras.defaultSessionId;
     if (extras.fastExecution) this.fastExecution = extras.fastExecution;
+    if (extras.runtimeObservability) this.runtimeObservability = extras.runtimeObservability;
     return this;
   }
 
@@ -217,6 +220,7 @@ export class AgentControlService {
   executionProvenance() { return this.mustIdentity().listExecutions(); }
   executionChain(runId: string) { return {chain: this.mustIdentity().reconstruct(runId), aggregate: this.mustIdentity().aggregate(runId)}; }
   fastExecutionAttempts() { return this.fastExecution?.list() ?? []; }
+  runtime() { return this.runtimeObservability?.snapshot() ?? new RuntimeObservability().snapshot(); }
   modelProviders() { return this.mustModelRegistry().providersList(); }
   models() { return this.mustModelRegistry().list().map(model => { const recent = (this.harnessEfficiency?.list() ?? []).filter(item => item.model === model.id && item.provider === model.provider).at(-1); return {...model, ...(recent ? {recentInvocation: {at: recent.completedAt ?? recent.startedAt, outcome: recent.finalJobResult, verifierResult: recent.verifierResult, latencyMs: recent.elapsedMs, inputTokens: recent.usage.inputTokens, outputTokens: recent.usage.outputTokens, cachedInputTokens: recent.usage.cachedInputTokens, totalTokens: recent.usage.totalProcessedTokens, providerReportedCost: recent.providerReportedCost, calculatedCost: recent.calculatedCost, currency: recent.currency}} : {})}; }); }
   jobDefinitions() { return this.mustParameterizedJobs().definitions.list(); }
@@ -237,7 +241,7 @@ export class AgentControlService {
   reloadModels(providers: ProviderConfig[], models: ModelConfig[], routing: ModelRoutingConfig, actor: string) { this.mustModelRegistry().reload(providers, models, routing); this.events.emit('configuration.changed', {kind: 'model-registry', models: models.length, restartRequired: false}, undefined, actor); return {models: this.models(), routes: this.modelRoutes()}; }
   routeModel(request: ModelRouteRequest) { return this.mustModelRegistry().route(request); }
   qualifyModel(id: string, nodeId: string) { return qualifyModel({registry: this.mustModelRegistry(), modelId: id, nodeId}); }
-  systems(): SystemReadiness[] { return deriveSystemReadiness({providers: this.providers, resources: this.resourceRows, services: this.serviceRows, managedNodes: this.managedNodes, workers: this.jobRuntime?.workers.list() ?? [], runs: this.jobRuntime?.ledger.list() ?? [], invocations: this.harnessEfficiency?.list() ?? []}); }
+  systems(): SystemReadiness[] { return [...deriveSystemReadiness({providers: this.providers, resources: this.resourceRows, services: this.serviceRows, managedNodes: this.managedNodes, workers: this.jobRuntime?.workers.list() ?? [], runs: this.jobRuntime?.ledger.list() ?? [], invocations: this.harnessEfficiency?.list() ?? []}), ...(this.runtimeObservability?.systems() ?? [])].sort((a,b)=>a.name.localeCompare(b.name)); }
   system(id: string) { const value = this.systems().find(item => item.id === id); if (!value) throw new Error('system_missing'); return value; }
   async checkSystem(id: string, actor: string) {
     if (this.managedNodes?.resource(id)) { const snapshot = await this.managedNodes.poll(id); this.events.emit('resource.node_changed', {resourceId: id, state: snapshot.state, health: snapshot.health, currentWorkload: snapshot.currentWorkload}, undefined, actor); return this.system(id); }

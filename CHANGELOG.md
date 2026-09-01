@@ -15,7 +15,7 @@
 
 - Adds a durable contract-owned execution record for `Lane → Contract → Baton → Process/PTY → Agent`, retaining objective, authority, budget, active route, sealed baton, attachments, permissions, pending actions, verification, evidence and history across restart.
 - Adds read-only consultation/reconnect, detach without process termination, explicit single-writer requests/transfers, unconditional human takeover, deliberate agent resumption and ownership-generation fencing.
-- Adds ordered terminal output, process observation, orphan detection, distinct cancellation/timeout states and independent verification. Operating-system-specific process/PTY adapters and dashboard projection remain later checkpoints.
+- Adds ordered terminal output, process observation, orphan detection, distinct cancellation/timeout states and independent verification. The redacted dashboard projection is implemented; operating-system-specific process/PTY creation and signal adapters remain a later checkpoint.
 
 ### Governed handoffs
 
@@ -41,6 +41,12 @@
 - Qualifies the real `gpt-5.6-luna → local Qwen2.5 3B → z-ai/glm-5.3-flash → gpt-5.6-luna` chain with exact provider/model identities and indirect credentials.
 - Records local `YIELD`, GLM `SUBSTITUTE`, minimal sealed batons, fail-closed authority expansion, attach/detach, controller reconstruction and independent child/parent verification.
 - Records two unsuccessful GLM attempts before the successful bounded response and leaves unreported token/cost values unknown. This one chain does not qualify automatic production routing.
+
+### Dashboard and runtime observability
+
+- Adds one read-only `/api/runtime` projection for stable ACP v1 transports/sessions, contract/process/PTY ownership, approvals, handoffs and provider/model lifecycle state.
+- Extends existing Sessions, Systems and Models views with protocol/authentication state, active identities, node/runtime, participants/writer, baton hashes/sizes, recovery, verification and lifecycle policy without adding a disconnected ACP dashboard.
+- Omits prompt/cwd content, objectives, baton payloads, transcripts, handoff requests and credential references; missing transport attribution, usage, cost and reachability remain unknown.
 
 ## [3.5.0] — 2026-09-01
 

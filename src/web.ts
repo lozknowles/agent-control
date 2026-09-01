@@ -15,6 +15,10 @@ import {Trace} from './control/telemetry.js';
 import {ModelQualificationStore, ModelRegistry} from './control/model-registry.js';
 import {IdentityControlPlane} from './control/identity-control-plane.js';
 import {FileFastExecutionLedger} from './control/fast-execution.js';
+import {ContractExecutionRuntime} from './control/contract-runtime.js';
+import {GovernedHandoffRuntime} from './control/handoff-runtime.js';
+import {ProviderModelLifecycleRegistry} from './control/provider-lifecycle.js';
+import {RuntimeObservability} from './control/runtime-observability.js';
 
 const now = () => new Date().toISOString();
 const configurationFile = configPath(), config = loadConfig(configurationFile);
@@ -31,6 +35,11 @@ const modelRegistry = new ModelRegistry(config.providers, config.models, config.
 const stateRoot = path.resolve(process.env.AGENT_CONTROL_STATE_DIR || '.agent-control');
 const identity = new IdentityControlPlane(path.join(stateRoot, 'identity', 'control-plane.json'));
 const fastExecution = new FileFastExecutionLedger(path.join(stateRoot, 'fast-execution', 'attempts.json'));
+const contracts = new ContractExecutionRuntime(path.join(stateRoot, 'contracts', 'executions.json'));
+const handoffs = new GovernedHandoffRuntime(contracts, path.join(stateRoot, 'contracts', 'handoffs.json'));
+const providerLifecycle = new ProviderModelLifecycleRegistry(path.join(stateRoot, 'models', 'lifecycle.json'));
+const remoteTokenEnvironment = process.env.AGENT_CONTROL_ACP_REMOTE_TOKEN_ENV?.trim();
+const runtimeObservability = new RuntimeObservability({contracts, handoffs, providerLifecycle, acpSessionDirectory:path.join(stateRoot,'acp'), remoteAcp:{enabled:process.env.AGENT_CONTROL_ACP_REMOTE_ENABLED==='true',authenticationConfigured:Boolean(remoteTokenEnvironment&&process.env[remoteTokenEnvironment]),loopback:['127.0.0.1','::1','localhost'].includes((process.env.AGENT_CONTROL_ACP_REMOTE_HOST??'127.0.0.1').toLowerCase())}});
 identity.registerActor({id: 'web-operator', type: 'human', displayName: 'Authenticated web operator', principalId: 'operator:web', authenticationSource: 'dashboard-bearer', roles: ['operator'], capabilities: [], metadata: {surface: 'dashboard'}});
 const defaultSessionId = 'session:web-operator';
 try { identity.session(defaultSessionId); }
@@ -60,6 +69,7 @@ const service = new AgentControlService(state, ptys, providers).configureProject
   identity,
   defaultSessionId,
   fastExecution,
+  runtimeObservability,
 });
 startManagedNodeMonitoring(jobRuntime, snapshot => service.events.emit('resource.node_changed', {resourceId: snapshot.resourceId, state: snapshot.state, health: snapshot.health, currentWorkload: snapshot.currentWorkload}, undefined, 'managed-node-monitor'), error => service.events.emit('failure', {scope: 'managed-node-monitor', error: error.message}, undefined, 'managed-node-monitor'));
 startJobScheduler(jobRuntime, (id, status) => id.startsWith('parcel-') ? service.events.emit('work.parcel_changed', {parcelId: id, status}, undefined, 'job-scheduler') : service.events.emit('job.run_changed', {runId: id, status}, undefined, 'job-scheduler'), 1000, error => service.events.emit('failure', {scope: 'job-scheduler', error: error.message}, undefined, 'job-scheduler'));
