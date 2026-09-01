@@ -50,7 +50,17 @@
       "sources": ["src/control/provider-lifecycle.ts", "src/control/model-registry.ts"],
       "tests": ["src/control/provider-lifecycle.test.ts", "src/control/model-registry.test.ts"],
       "evidence": ["docs/provider-model-lifecycle.md", "docs/models/ADDING-A-PROVIDER.md"],
-      "limitation": "The lifecycle is implemented, but physical multi-provider promotion and automatic production Job adoption remain gated by the larger frozen benchmark."
+      "limitation": "The lifecycle is implemented, but physical multi-provider promotion and automatic production Job adoption remain gated by physical observations for the frozen benchmark."
+    },
+    {
+      "id": "models.capability-routing-benchmark",
+      "title": "Frozen capability-routing and coordinator/baton benchmark",
+      "status": "PARTIAL",
+      "summary": "A frozen 60-task corpus with a 12-task holdout predeclares route-safety and physical-outcome criteria across LOCAL, SPARK, STANDARD and FRONTIER. It also compiles a same-job twelve-child coordinator experiment with separate parent/baton accounting.",
+      "sources": ["src/control/capability-routing-benchmark.ts", "scripts/benchmark-capability-routing.ts"],
+      "tests": ["src/control/capability-routing-benchmark.test.ts"],
+      "evidence": ["docs/capability-routing-benchmark.md", "docs/evidence/capability-routing-benchmark-v1.json"],
+      "limitation": "The deterministic classifier passed 60/60 with zero unsafe false positives, but no physical model observations exist. Provider success, latency, token/cost, change-integrity and coordinator integration gates remain unqualified; automatic production routing stays disabled."
     },
     {
       "id": "models.fast-execution-spark",

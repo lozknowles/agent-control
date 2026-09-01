@@ -29,6 +29,13 @@
 - Adds immutable exact model recipes and the evidence-gated `DISCOVERED → BENCHMARKING → SHADOW → CANDIDATE → ACTIVE → PREFERRED → DEPRECATED` lifecycle.
 - Adds versioned champion/challenger routing policy, historical replay and verified rollback without enabling automatic production Job routing. Missing cost remains unknown.
 
+### Capability-routing benchmark
+
+- Adds a frozen 60-task capability-routing corpus with a 12-task holdout, predeclared safety/success criteria and deterministic `LOCAL → SPARK → STANDARD → FRONTIER` classification.
+- Adds a physical-observation contract for exact provider/model identity, verification, latency, attempts, escalation, context/baton size, tokens, cost and change-scope integrity without converting missing telemetry to zero.
+- Adds a same-job coordinator experiment with one complete FRONTIER context versus 12 separately accounted minimal child batons.
+- The classifier passed 60/60 with zero unsafe false positives, but no physical observations were supplied. Automatic production routing and Spark-by-default remain disabled.
+
 ## [3.5.0] — 2026-09-01
 
 ### Identity, delegation and sessions

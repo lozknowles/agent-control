@@ -138,3 +138,5 @@ If qualification fails:
 5. keep `spark.enabled` false until the full live benchmark passes locally.
 
 Research-preview entitlement is not universal, cost was unavailable, file-read telemetry depends on Codex exposure, the corpus is small and production Job adoption is not qualified. The lane therefore remains disabled by default. A future fast model can occupy `fast-execution` only by passing the same availability, registry, classifier, baton, worktree, verifier, telemetry and benchmark contracts; routing policy does not require a model-specific rewrite.
+
+Agent Control 3.6 adds a separate [60-task capability-routing benchmark](capability-routing-benchmark.md). Its deterministic route classifier passed, but its physical provider gate has no observations. That result does not supersede the seven-task Spark model qualification and does not justify enabling Spark or automatic production routing by default.

@@ -43,6 +43,7 @@
     "benchmark:harness-mutation:live": "node --import tsx scripts/benchmark-harness-mutation-live.ts",
     "benchmark:context-compiler": "node --import tsx scripts/benchmark-context-compiler.ts",
     "benchmark:fast-execution": "node --import tsx scripts/benchmark-fast-execution.ts",
+    "benchmark:capability-routing": "node --import tsx scripts/benchmark-capability-routing.ts",
     "qualify:edge-context-runtime": "node --import tsx scripts/qualify-edge-context-runtime.ts"
   },
   "dependencies": {
