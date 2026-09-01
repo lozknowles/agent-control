@@ -48,7 +48,7 @@ This document is generated from `config/implementation-status.json`. Update the 
 
 - Source: [`src/control/fast-execution.ts`](../src/control/fast-execution.ts), [`scripts/benchmark-fast-execution.ts`](../scripts/benchmark-fast-execution.ts), [`src/control/config.ts`](../src/control/config.ts), [`src/control/configuration-store.ts`](../src/control/configuration-store.ts), [`src/control/application-service.ts`](../src/control/application-service.ts), [`src/control/web-server.ts`](../src/control/web-server.ts), [`assets/dashboard/dashboard-enhancements.js`](../assets/dashboard/dashboard-enhancements.js), [`assets/dashboard/dashboard-sessions.js`](../assets/dashboard/dashboard-sessions.js)
 - Tests: [`src/control/fast-execution.test.ts`](../src/control/fast-execution.test.ts), [`src/control/config.test.ts`](../src/control/config.test.ts), [`src/control/configuration-store.test.ts`](../src/control/configuration-store.test.ts), [`src/control/web-server.test.ts`](../src/control/web-server.test.ts)
-- Qualification evidence: [`docs/evidence/agent-control-3.5-qualification.md`](../docs/evidence/agent-control-3.5-qualification.md), [`artifacts/fast-execution/benchmark-2026-09-01T18-50-39-151Z.json`](../artifacts/fast-execution/benchmark-2026-09-01T18-50-39-151Z.json)
+- Qualification evidence: [`docs/evidence/agent-control-3.5-qualification.md`](../docs/evidence/agent-control-3.5-qualification.md), [`artifacts/fast-execution/benchmark-2026-09-01T19-56-37-144Z.json`](../artifacts/fast-execution/benchmark-2026-09-01T19-56-37-144Z.json)
 
 ### Persistent Teammates and verified coordination
 

@@ -30,7 +30,7 @@
       "summary": "Conservative trivial-work classification, authenticated Spark probing, exact registry selection, minimal sealed batons, clean-worktree Codex execution, one-attempt/zero-subagent policy, independent verification, escalation and telemetry are executable; the frozen live benchmark verified all seven Spark cases.",
       "sources": ["src/control/fast-execution.ts", "scripts/benchmark-fast-execution.ts", "src/control/config.ts", "src/control/configuration-store.ts", "src/control/application-service.ts", "src/control/web-server.ts", "assets/dashboard/dashboard-enhancements.js", "assets/dashboard/dashboard-sessions.js"],
       "tests": ["src/control/fast-execution.test.ts", "src/control/config.test.ts", "src/control/configuration-store.test.ts", "src/control/web-server.test.ts"],
-      "evidence": ["docs/evidence/agent-control-3.5-qualification.md", "artifacts/fast-execution/benchmark-2026-09-01T18-50-39-151Z.json"],
+      "evidence": ["docs/evidence/agent-control-3.5-qualification.md", "artifacts/fast-execution/benchmark-2026-09-01T19-56-37-144Z.json"],
       "limitation": "Research-preview entitlement is not universal, cost was unreported, the corpus is small and production Job adoption is not yet qualified; keep spark.enabled false by default."
     },
     {

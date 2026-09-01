@@ -31,7 +31,7 @@ Select **Observer mode** in the browser and enter the token. It remains in tab-s
 2. Open **Configuration**.
 3. Select an existing entry, or choose **Add machine**, **Add provider**, **Add model**, **Add service**, or **Fast execution**.
 4. Edit the validated JSON and choose **Save configuration**.
-5. Provider and model changes hot-reload. Restart Agent Control only when the dashboard reports that a machine or service change requires it.
+5. Provider and model changes hot-reload. Machine, service and Fast execution changes require a restart; follow the dashboard's `restartRequired` result.
 6. Open **Systems** and verify the entry. An unprobed configured system is expected to show `UNKNOWN`; an unreachable observed system shows `OFFLINE`; a provider or service with a missing credential reference shows `AUTH REQUIRED`.
 
 Machines use the same resource schema described in the main configuration model. A provider or external service that requires an API key must use `auth.env`, `credentialEnv` or `credentialFileEnv`, for example:
@@ -59,6 +59,8 @@ Read projections:
 - `GET /api/providers`
 - `GET /api/models/providers`, `GET /api/models`, `GET /api/models/:id`, `GET /api/models/routes`
 - `GET /api/sessions`, `GET /api/sessions/:id`
+- `GET /api/context-transfers`, `GET /api/delegations`
+- `GET /api/fast-execution-attempts`
 - `GET /api/executions`, `GET /api/executions/:runId`
 - `GET /api/router`
 - `GET /api/evidence`
@@ -88,6 +90,12 @@ Operator requests under `/api/lanes/:id/` include `pause`, `resume`, `priority`,
 The prominent **Managed Nodes** panel renders the same resource-attached snapshot returned by `/api/status` and `/api/nodes`: state, OS/kernel, heartbeat, uptime, load, memory, workload, maintenance state, secure-overlay connectivity, storage and capabilities. It is an observation panel, not a remote shell. Node operations are created as governed Jobs through the existing scheduler and approval path.
 
 The compact **Harness Efficiency** diagnostic shows verified successes, turns, fresh/cached/output token composition, cache effectiveness, escalation rate and cost per verified outcome. Unknown provider measurements are rendered as `unknown`, not zero. A selected Run shows its recorded profile and verifier state; these observations cannot change routing or acceptance through the read-only endpoints.
+
+## Spark fast execution
+
+Open **Configuration → Fast execution** to edit the complete `spark` policy. It is disabled by default and requires a restart after save. The exact keys, defaults, registry prerequisites and qualification commands are documented in [`fast-execution.md`](fast-execution.md). The editor cannot bypass exact-model availability, qualification, classifier or verifier gates, and there is no dashboard control that forces arbitrary work onto Spark.
+
+When a selected Session has fast-execution telemetry, its **Fast execution** panel shows execution class, harness profile, requested and actual model, verification, elapsed time, changed scope, escalation reason, successor and evidence. If Spark is unavailable, the attempt/decision remains visible as unavailable or escalated; Agent Control never labels a substituted model as Spark. Provider fields that were not exposed, including current monetary cost and sometimes file reads, render as `unknown` rather than zero.
 
 ## Security model
 

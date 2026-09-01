@@ -20,11 +20,33 @@ An ACP v1 JSON-RPC adapter maps `initialize`, session new/load/resume/list/promp
 
 ## Governed fast execution (Spark)
 
-3.5 also adds an optional `FAST_EXECUTION_MODEL` execution class, currently qualified with `gpt-5.3-codex-spark`. It is disabled by default and is separate from the THIN context profile. A task reaches Spark only when it is explicitly trivial, THIN, low-risk, deterministically verifiable, within one file/80 changed lines by default, outside protected paths, and free of security, authentication, migration, governance, release, deployment or production signals.
+3.5 adds an optional `FAST_EXECUTION_MODEL` execution class, currently implemented by the exact model `gpt-5.3-codex-spark`. Its purpose is to avoid spending a more capable model on mechanically understandable, low-risk work while retaining Agent Control classification, authority, evidence and verification. It is disabled by default and is separate from the THIN context profile. The governed execution hierarchy is:
 
-Agent Control selects Spark through the provider-neutral model-registry role `fast-execution`, sends a small sealed baton, disables Codex multi-agent fan-out, permits exactly one attempt in a disposable clean Git worktree, independently checks scope and verifier evidence, and escalates visibly to STANDARD on failure or ambiguity. There is no silent model substitution. Persistent telemetry and the Sessions view identify the originating Work Parcel/Run/Session, actual model, selection reason, context size, verification and successor. Availability is established by an authenticated bounded `codex exec --model gpt-5.3-codex-spark` probe, not by assuming a subscription or API model.
+`LOCAL → SPARK → STANDARD → FRONTIER`
 
-The frozen live benchmark recorded 7/7 verified Spark outcomes versus 5/7 for the current `gpt-5.6-luna` lightweight baseline, with median latency 12.640s versus 24.912s and zero classifier false positives across ten cases. Provider cost was not reported and remains unknown; Spark also used more total output tokens. This single-host research-preview result is promising but not broad enough to enable the lane by default. See [fast execution](docs/fast-execution.md) and the [qualification evidence](docs/evidence/agent-control-3.5-qualification.md).
+LOCAL, STANDARD and FRONTIER remain logical policy classes backed by the configured model registry; they are not hard-coded model names. THIN/STANDARD/DEEP describe harness and context size, whereas LOCAL/SPARK/STANDARD/FRONTIER describe model execution class. A task reaches Spark only when it is explicitly trivial, THIN, low-risk, deterministically verifiable, within one file/80 changed lines by default, outside protected paths, and free of security, authentication, migration, governance, release, deployment or production signals.
+
+Agent Control selects Spark through the provider-neutral model-registry role `fast-execution`, sends a small sealed baton, disables Codex multi-agent fan-out, permits exactly one attempt in a disposable clean Git worktree, independently checks scope and verifier evidence, and escalates visibly to STANDARD on failure or ambiguity. There is no silent substitution: if Spark is unavailable or the exact qualified route cannot be resolved, no Spark invocation is claimed and existing governed routing remains authoritative. Persistent telemetry and the Sessions view identify the originating Work Parcel/Run/Session, actual model, selection reason, context size, verification and successor. Availability is established by an authenticated bounded `codex exec --model gpt-5.3-codex-spark` probe, not by assuming a subscription or API model.
+
+Enable or disable the lane in `.agent-control/config.json` or **Configuration → Fast execution**. Enabling policy does not bypass exact model qualification or the availability probe:
+
+```json
+{
+  "spark": {
+    "enabled": false,
+    "model": "gpt-5.3-codex-spark",
+    "modelRole": "fast-execution",
+    "maximumFiles": 1,
+    "maximumChangedLines": 80,
+    "maximumAttempts": 1,
+    "maximumSubagents": 0,
+    "maximumContextTokens": 2048,
+    "verificationRequired": true
+  }
+}
+```
+
+Run the non-mutating classifier/availability qualification with `npm run benchmark:fast-execution`; run the frozen disposable live comparison explicitly with `npm run benchmark:fast-execution -- --live --standard-model gpt-5.6-luna`. The current requalification recorded 7/7 verified Spark outcomes versus 6/7 for the comparison route, median latency 14.464s versus 27.100s, and zero classifier false positives across ten cases. Provider cost was not reported and remains unknown; Spark used more output tokens. This single-host research-preview result is promising but not broad enough to enable the lane by default. See [the governed flow and routing architecture](ARCHITECTURE.md#fast-execution-class), [fast-execution operator usage](docs/fast-execution.md), [Codex integration](docs/models/CODEX-INTEGRATION.md), and the [qualification evidence](docs/evidence/agent-control-3.5-qualification.md).
 
 ## Parameterised Jobs quick start
 
@@ -266,4 +288,4 @@ The neutrality guard rejects private topology identifiers in distributable runti
 - Ripgrep is the only semantic command-output adapter in this change. Other oversized command families use the generic labelled fallback until a specialised index is added. A tiny typed ripgrep request retains its structured authoritative stream and therefore can be larger than normal human-formatted `rg`; it is not compacted merely because it came from ripgrep.
 - Harness-profile routing remains observational. A live same-model repository-mutation experiment now measures provider tokens, observed warm-cache behaviour, latency, independent verifier outcomes and cumulative escalation cost, but its 12-task sample had only 2/12 STANDARD successes and no adaptive resource advantage. No profile is production-qualified; STANDARD remains the applied fallback and monetary cost remains unknown.
 
-The foundational operator guide is [`docs/Agent-Control-3.1.0-Operator-Guide.md`](docs/Agent-Control-3.1.0-Operator-Guide.md), distributed as [Markdown](assets/releases/3.1.0/Agent-Control-3.1.0-Operator-Guide.md) and [PDF](assets/releases/3.1.0/Agent-Control-3.1.0-Operator-Guide.pdf). For current 3.4 operation, use [`docs/jobs/README.md`](docs/jobs/README.md), [`docs/web-dashboard.md`](docs/web-dashboard.md), [`docs/jobs-and-scheduler.md`](docs/jobs-and-scheduler.md), [`docs/managed-nodes.md`](docs/managed-nodes.md), [`docs/status-command.md`](docs/status-command.md), [`ARCHITECTURE.md`](ARCHITECTURE.md), and the [`3.4.0 release notes`](docs/release-notes-3.4.0.md). The historical 3.0.1 guide remains under `assets/releases/3.0.1/`.
+The foundational operator guide is [`docs/Agent-Control-3.1.0-Operator-Guide.md`](docs/Agent-Control-3.1.0-Operator-Guide.md), distributed as [Markdown](assets/releases/3.1.0/Agent-Control-3.1.0-Operator-Guide.md) and [PDF](assets/releases/3.1.0/Agent-Control-3.1.0-Operator-Guide.pdf). For current operation, use [`docs/fast-execution.md`](docs/fast-execution.md), [`docs/migration-3.5.md`](docs/migration-3.5.md), [`docs/identity-sessions-delegation.md`](docs/identity-sessions-delegation.md), [`docs/jobs/README.md`](docs/jobs/README.md), [`docs/web-dashboard.md`](docs/web-dashboard.md), [`docs/jobs-and-scheduler.md`](docs/jobs-and-scheduler.md), [`docs/managed-nodes.md`](docs/managed-nodes.md), [`docs/status-command.md`](docs/status-command.md), and [`ARCHITECTURE.md`](ARCHITECTURE.md). The released base is documented in the [`3.4.0 release notes`](docs/release-notes-3.4.0.md); historical 3.0.1 assets remain under `assets/releases/3.0.1/`.

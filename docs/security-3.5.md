@@ -17,7 +17,7 @@ Configuration stores only environment/file references. Session policy stores all
 
 `selectExecutionFailClosed` independently enforces sandbox, locality, governed runner, required node and required model. A fallback is legal only when policy explicitly enables it and names allowed models/nodes.
 
-Spark execution additionally requires a disposable initially-clean Git worktree, explicit file/line scope, one attempt, zero Codex subagents, a sealed context baton and independent verification. Protected paths and security/auth/migration/governance/release/deployment/production work are denied before model invocation. Scope leakage is escalation/failure, never accepted completion.
+Spark execution additionally requires authenticated bounded availability for the exact configured model, a no-fallback qualified registry route, a disposable initially-clean Git worktree, explicit file/line scope, one attempt, zero Codex subagents, a sealed context baton and independent verification. Protected paths and security/auth/migration/governance/release/deployment/production work are denied before model invocation. Scope leakage is escalation/failure, never accepted completion. An unavailable or failed Spark route may create a visible STANDARD handoff, but another model is never silently substituted and reported as Spark.
 
 ## ACP
 

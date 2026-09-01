@@ -125,21 +125,48 @@ The adapter is transport-neutral so stdio or WebSocket framing can be supplied i
 ## Fast-execution class
 
 ```text
-task signals
-   -> classify trivial / low risk / deterministic
-   -> compile THIN Context Packet
-   -> resolve role fast-execution in Model Registry
-   -> verify authenticated Spark availability
-   -> sealed baton + disposable clean worktree
-   -> one Codex attempt (multi-agent disabled)
-   -> independent scope/test verifier
-      -> PASS: verified evidence
-      -> FAIL/ambiguity/scope growth: visible STANDARD escalation
+classify
+   -> compile minimal baton
+   -> execute with Spark
+   -> independently verify
+   -> escalate when necessary
+
+side gates before execution:
+   policy enabled + exact qualified fast-execution model route
+   + authenticated bounded Spark availability probe
+   + disposable initially-clean Git worktree
+
+execution:
+   explicit codex exec --model gpt-5.3-codex-spark
+   + workspace-write sandbox + ignored user config
+   + one attempt + multi-agent disabled
+
+verification:
+   approved files + changed-line limit + deterministic command/evidence
+      -> PASS: persist verified evidence
+      -> FAIL / ambiguity / scope growth / unavailable: visible STANDARD handoff
 ```
 
-The policy names `FAST_EXECUTION_MODEL`; Spark is its current model identity, not a hard-coded architectural role. Availability and registry qualification are both required. Classification rejects protected paths, sensitive domains, non-deterministic completion, more than the configured file/line budget, non-THIN context and ambiguity. The runner cannot silently substitute a model and records actual/requested identity separately.
+The policy names `FAST_EXECUTION_MODEL`; Spark is its current model identity, not a hard-coded architectural role. The model-execution hierarchy is `LOCAL → SPARK → STANDARD → FRONTIER`. LOCAL, STANDARD and FRONTIER resolve through existing registry roles/capabilities. A future fast model may occupy `fast-execution` only after passing the same exact-identity availability, node qualification, trivial-work classifier, baton, verifier, telemetry and benchmark contracts; routing policy requires no model-specific rewrite.
 
-The live benchmark demonstrates that small 24–35-token batons were sufficient for seven frozen tasks, but Codex startup context still dominated reported input tokens. This means baton minimisation is effective for parent-to-child transfer without proving low total provider context or cost. Research-preview entitlement and single-host evidence keep `spark.enabled` false by default.
+Harness profile and execution class are orthogonal:
+
+| Harness/context profile | Execution-class consequence |
+| --- | --- |
+| `THIN` + trivial + low-risk + deterministic verifier | Spark candidate, subject to all availability and qualification gates |
+| `THIN` + sensitive, ambiguous or protected work | Not Spark; retain governed STANDARD/FRONTIER policy |
+| `STANDARD` parent with one isolated trivial child | Child may receive a separate minimal Spark baton; parent model is unchanged |
+| `DEEP` | Never directly Spark-eligible; use the existing capable-model route |
+
+Availability and registry qualification are independent and both required. `probeCodexSparkAvailability` checks the installed Codex version, ChatGPT authentication and one bounded read-only exact-model invocation expecting a fixed probe response. A configured slug, CLI version or successful login alone is not availability evidence. Failure records the reason and leaves existing governed routing authoritative; no other model may be reported as Spark.
+
+The sealed `agent-control.fast-execution-baton/v1` contains the task ID and text, exact allowed files, maximum changed lines, forbidden scope/actions, Context Packet ID/hash, deterministic verifier commands and completion rule. It deliberately excludes broad parent history. `CodexFastExecutionRunner` requires an absolute disposable initially-clean Git worktree, chooses the exact provider model with `--model`, ignores user configuration, applies an explicit workspace sandbox and structured output schema, and disables multi-agent fan-out. One failed or uncertain attempt is the limit.
+
+Verification belongs to Agent Control. Git determines touched files, changed lines and the diff hash; an independent verifier determines acceptance. Model text cannot mark a result verified. Failure, low confidence, extra context, unexpected files/lines, or verifier failure preserves the Spark attempt and creates a visible STANDARD successor decision.
+
+Persistent attempt telemetry records Work Parcel/Run/Session, task and execution class, harness profile, requested/actual model and provider, availability/selection reasons, parent/delegated context, elapsed time, changed scope, independently verified outcome, escalation/successor, reported token/cost fields and evidence. Values Codex does not expose remain `null`, including monetary cost in the current qualification.
+
+The current live requalification demonstrates that small 24–35-token batons were sufficient for seven frozen tasks, but Codex startup context still dominated reported input tokens. This means baton minimisation is effective for parent-to-child transfer without proving low total provider context or cost. Research-preview entitlement, unavailable monetary cost, absent production Job adoption and single-host evidence keep `spark.enabled` false by default.
 
 ## Execution recipe
 

@@ -20,13 +20,15 @@
 ### Governed fast execution
 
 - Adds a generic `FAST_EXECUTION_MODEL` class with `gpt-5.3-codex-spark` as the current default-disabled implementation.
-- Adds conservative trivial-work classification, protected/sensitive rejection, authenticated model availability probing, model-registry-only selection, sealed minimal batons, one-attempt/zero-subagent Codex execution in disposable clean worktrees, independent verification and visible STANDARD escalation.
+- Adds conservative trivial-work classification, protected/sensitive rejection, authenticated exact-model availability probing, model-registry-only selection, sealed minimal batons, one-attempt/zero-subagent Codex execution in disposable clean worktrees, independent verification and visible STANDARD escalation. THIN remains a harness/context profile rather than a synonym for SPARK execution.
 - Adds persistent Spark routing/attempt telemetry with Work Parcel, Run and Session identity plus actual model, selection, context, verification, escalation/successor, file scope, usage/cost and evidence; the Sessions dashboard projects it alongside an authenticated Configuration-panel policy editor. Unknown values remain unknown.
-- Adds a frozen ten-case classifier and seven-case live benchmark. On the qualified host, classification was 10/10 with zero false positives; Spark verified 7/7 at 12.640s median versus the `gpt-5.6-luna` baseline's 5/7 at 24.912s median. Cost was not reported, so the lane remains disabled by default.
+- Adds a frozen ten-case classifier and seven-case live benchmark. Current desktop requalification on `codex-cli 0.144.4` classified 10/10 correctly with zero false positives; Spark verified 7/7 at 14.464s median versus the `gpt-5.6-luna` comparison route's 6/7 at 27.100s median. Cost was not reported, so the lane remains disabled by default.
+- Uses explicit `--model gpt-5.3-codex-spark`, `--ignore-user-config`, JSONL, output schema and sandbox flags. Current public Codex documentation describes `agents.enabled=false`, but installed client 0.144.4 rejects that shape; 3.5 therefore uses the directly verified compatibility override `features.multi_agent=false` and fails rather than permitting hidden fan-out.
 
 ### Compatibility and limits
 
 - Existing Work Parcel snapshots remain version 1 and accept additive attribution. Existing sessions are not fabricated; records without new identity fields receive deterministic legacy attribution when projected through the new path.
+- Spark entitlement is not universal, provider monetary cost remains unavailable, file-read telemetry remains unavailable when Codex does not expose it, and automatic production Job adoption is not yet qualified. These limits are not converted into released follow-on functionality.
 - The required Luna → local LLM → GLM-5.3-Flash → Luna physical multi-provider qualification remains blocked on this host because no qualified local-LLM or GLM model-registry routes are configured. This does not weaken unit, API, ACP, Spark or full-suite gates and is reported as a limitation rather than simulated evidence.
 
 ## [3.4.0] — 2026-09-01
