@@ -24,6 +24,15 @@
       "limitation": "The durable authority model and process-port behavior are implemented; operating-system-specific PTY creation/signal adapters, handoff outcomes and dashboard projection remain later 3.6 checkpoints."
     },
     {
+      "id": "execution.governed-handoffs",
+      "title": "Governed worker handoff outcomes",
+      "status": "IMPLEMENTED",
+      "summary": "SACRIFICE, SUBSTITUTE, DELEGATE, YIELD and COMPLETE have exact durable transitions over contract-owned state. AUTO remains inside authority and budget; risky, privileged, production, destructive, expanded-envelope and explicit MANUAL requests require operator approval without manufacturing withheld authority.",
+      "sources": ["src/control/handoff-runtime.ts", "src/control/contract-runtime.ts"],
+      "tests": ["src/control/handoff-runtime.test.ts", "src/control/contract-runtime.test.ts"],
+      "evidence": ["docs/governed-handoffs.md", "docs/contract-pty-runtime.md"]
+    },
+    {
       "id": "interop.acp-v1-adapter",
       "title": "ACP v1 governed session adapter",
       "status": "PARTIAL",

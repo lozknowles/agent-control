@@ -132,6 +132,12 @@ Lane → Contract → sealed Baton → Process / PTY → Agent
 
 Detach does not terminate a running process. Consultation and reconnect attach read-only. Write transfer requires a durable request approved by the current writer or contract operator, and there is exactly one writer. Human takeover revokes every agent writer and pauses the contract; deliberate return to an attached agent creates a new ownership generation. Stale retained writers therefore cannot regain authority. Cancellation, timeout and orphaning are distinct reconstructable states. A worker's completion is only a verification submission; the active worker cannot verify itself.
 
+## Governed handoff state machine
+
+`SACRIFICE` cancels the current worker and pauses the parent contract. `SUBSTITUTE` replaces process and route under the same contract with a next-generation baton. `DELEGATE` creates a bounded child contract, intersects authority and debits parent budget. `YIELD` pauses and returns control without completion. `COMPLETE` submits evidence to independent verification.
+
+AUTO policy permits only transitions inside the current contract authority, protected-resource envelope and remaining budget. Explicit MANUAL policy, missing authority, costly escalation, production writes, destructive actions, expanded resource envelopes or budget expansion create a durable approval wait. Approval records intent but cannot create authority absent from the parent. Every transition writes `agent-control.handoff/v1` with both identities, contract links, reason, baton hash/size, transferred and withheld authority, budget, before/after state, evidence and verification outcome.
+
 ## ACP interoperability boundary
 
 The ACP runtime implements stable Agent Client Protocol v1 JSON-RPC session methods above the control plane. The official TypeScript SDK owns schema validation, dispatch and NDJSON framing; `AcpAgentControlAdapter` owns the governed mapping. An external ACP session maps to one governed Agent Control session; prompt content becomes a hash-addressed context transfer and then an ordinary Work Parcel. `session/cancel`, `session/close` and request cancellation call the same cancellation port and preserve actor/session identity. Durable ACP bindings reconstruct from the identity and ACP session stores after a process restart. Ordered plan, tool-call and tool-call-update notifications carry Work Parcel, Run and evidence references, not direct tool authority. Usage or cost is omitted when the underlying execution does not report it.

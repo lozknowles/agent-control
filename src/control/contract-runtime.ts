@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 export type ContractState = 'ACTIVE' | 'PAUSED' | 'CANCELLING' | 'CANCELLED' | 'TIMED_OUT' | 'ORPHANED' | 'VERIFYING' | 'VERIFIED' | 'FAILED';
-export type ProcessState = 'STARTING' | 'RUNNING' | 'EXITED' | 'CANCEL_PENDING' | 'ORPHANED' | 'UNKNOWN';
+export type ProcessState = 'STARTING' | 'RUNNING' | 'PAUSED' | 'EXITED' | 'CANCEL_PENDING' | 'ORPHANED' | 'UNKNOWN';
 export type PtyState = 'ATTACHED' | 'DETACHED' | 'LOST' | 'CLOSED';
 export type PtyParticipantAccess = 'observe' | 'write';
 
@@ -49,7 +49,7 @@ export interface ContractExecution {
 }
 
 interface ContractSnapshot {schema: 'agent-control.contract-executions/v1'; contracts: ContractExecution[];}
-export interface ContractProcessPort {cancel(processId: string, reason: string): Promise<void> | void;}
+export interface ContractProcessPort {cancel(processId: string, reason: string): Promise<void> | void; pause?(processId: string, reason: string): Promise<void> | void;}
 
 /** Durable authority and recovery state for Lane -> Contract -> Baton -> Process/PTY -> Agent. */
 export class ContractExecutionRuntime {
@@ -152,6 +152,27 @@ export class ContractExecutionRuntime {
 
   submitForVerification(id: string, actorId: string, evidence: ContractEvidence[]) { const contract = this.get(id); if (contract.active.actorId !== actorId) throw new Error('contract_worker_mismatch'); contract.evidence.push(...evidence.map(item => structuredClone(item))); contract.verification = {state: 'PENDING', submittedAt: this.clock(), evidenceIds: unique(evidence.map(item => item.id)), reasons: []}; contract.state = 'VERIFYING'; this.record(contract, 'verification.submitted', actorId, `${evidence.length} evidence records`); return this.get(id); }
   verify(id: string, verifierActorId: string, passed: boolean, reasons: string[] = []) { const contract = this.get(id); if (contract.verification.state !== 'PENDING') throw new Error('verification_not_pending'); if (verifierActorId === contract.active.actorId) throw new Error('verification_not_independent'); contract.verification.state = passed ? 'PASSED' : 'FAILED'; contract.verification.verifierActorId = verifierActorId; contract.verification.reasons = reasons.map(value => bounded(value)); contract.state = passed ? 'VERIFIED' : 'FAILED'; this.record(contract, passed ? 'verification.passed' : 'verification.failed', verifierActorId, reasons.join('; ') || 'independent verification'); return this.get(id); }
+
+  linkHandoff(id: string, handoffId: string, actorId: string) { const contract = this.get(id); if (!contract.handoffs.includes(handoffId)) contract.handoffs.push(handoffId); this.record(contract, 'handoff.linked', actorId, handoffId); return this.get(id); }
+
+  async sacrificeWorker(id: string, actorId: string, reason: string) {
+    const contract = this.get(id); await this.processes.cancel(contract.process.id, `sacrifice:${reason}`); contract.state = 'PAUSED'; contract.process.state = 'EXITED'; contract.pty.state = 'CLOSED'; delete contract.pty.writeOwner; contract.pty.ownershipGeneration++; this.record(contract, 'worker.sacrificed', actorId, reason); return this.get(id);
+  }
+
+  async yieldWorker(id: string, actorId: string, reason: string) {
+    const contract = this.get(id); if (this.processes.pause) await this.processes.pause(contract.process.id, reason); contract.state = 'PAUSED'; contract.process.state = 'PAUSED'; contract.pty.state = 'DETACHED'; delete contract.pty.writeOwner; contract.pty.ownershipGeneration++; this.record(contract, 'worker.yielded', actorId, reason); return this.get(id);
+  }
+
+  async substituteWorker(id: string, byActorId: string, input: {active: ContractExecution['active']; baton: Record<string, unknown>; process: {id: string; pid?: number}; ptyId: string; reason: string}) {
+    const contract = this.get(id); if (byActorId !== contract.operatorActorId && byActorId !== contract.active.actorId) throw new Error('substitution_not_authorized'); rejectSecrets(input); await this.processes.cancel(contract.process.id, `substitute:${input.reason}`);
+    const at = this.clock(); contract.active = structuredClone(input.active); contract.baton = sealBaton(contract.baton.generation + 1, input.baton, byActorId, at); contract.process = {id: input.process.id, pid: input.process.pid, state: 'RUNNING', startedAt: at, observedAt: at}; contract.pty = {id: input.ptyId, state: 'DETACHED', ownershipGeneration: contract.pty.ownershipGeneration + 1, participants: [], transcript: [], nextSequence: 1}; contract.state = 'ACTIVE'; contract.verification = {state: 'UNSUBMITTED', evidenceIds: [], reasons: []}; this.record(contract, 'worker.substituted', byActorId, input.reason); return this.get(id);
+  }
+
+  allocateChildBudget(id: string, tokens: number | undefined, cost: number | undefined) {
+    const contract = this.get(id); if (tokens !== undefined) { if (!Number.isFinite(tokens) || tokens < 0 || contract.budget.remainingTokens === undefined || tokens > contract.budget.remainingTokens) throw new Error('child_token_budget_invalid'); contract.budget.remainingTokens -= tokens; }
+    if (cost !== undefined) { if (!Number.isFinite(cost) || cost < 0 || contract.budget.remainingCost === undefined || cost > contract.budget.remainingCost) throw new Error('child_cost_budget_invalid'); contract.budget.remainingCost -= cost; }
+    this.record(contract, 'budget.child_allocated', contract.operatorActorId, `tokens=${tokens ?? 'unknown'};cost=${cost ?? 'unknown'}`); return this.get(id);
+  }
 
   private transferWrite(contract: ContractExecution, actorId: string) { contract.pty.participants = contract.pty.participants.map(item => ({...item, access: item.actorId === actorId ? 'write' : 'observe'})); contract.pty.writeOwner = actorId; contract.pty.ownershipGeneration++; contract.pty.state = 'ATTACHED'; }
   private record(contract: ContractExecution, event: string, actorId: string, detail: string) { const at = this.clock(); contract.updatedAt = at; contract.history.push({at, event, actorId, detail: bounded(detail)}); this.contracts.set(contract.id, structuredClone(contract)); this.save(); }

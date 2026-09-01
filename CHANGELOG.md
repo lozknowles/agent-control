@@ -17,6 +17,12 @@
 - Adds read-only consultation/reconnect, detach without process termination, explicit single-writer requests/transfers, unconditional human takeover, deliberate agent resumption and ownership-generation fencing.
 - Adds ordered terminal output, process observation, orphan detection, distinct cancellation/timeout states and independent verification. Operating-system-specific process/PTY adapters and dashboard projection remain later checkpoints.
 
+### Governed handoffs
+
+- Adds explicit `SACRIFICE`, `SUBSTITUTE`, `DELEGATE`, `YIELD` and `COMPLETE` transitions over contract-owned state. Substitution preserves the parent contract; delegation creates a bounded child and debits parent budget; completion only submits verification.
+- Adds AUTO admission for changes inside existing authority/budget and MANUAL approval for cost, privilege, production, destructive or resource-envelope escalation. Approval never manufactures withheld authority.
+- Persists source/target identity, parent/child contract, reason, baton hash/size, transferred/withheld authority, budget, before/after state, evidence, approval and verification outcome with restart tests.
+
 ## [3.5.0] — 2026-09-01
 
 ### Identity, delegation and sessions
