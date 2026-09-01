@@ -14,9 +14,9 @@ The Run records repository identity, node, source/origin, requested ref, exact S
 
 ## Context and execution
 
-The deterministic context builder records the tracked tree, changed files/diff, important manifests, dependency metadata, tests and source selected by THIN/STANDARD/DEEP. Known credential paths, `.env*`, private keys, `.git`, and binary formats are excluded. Context is split into hashed bounded chunks; selected and omitted files are recorded.
+The deterministic context builder records the tracked tree, changed files/diff, important manifests, dependency metadata, tests and source selected by THIN/STANDARD/DEEP. Known credential paths, `.env*`, private keys, `.git`, and binary contents are excluded before provider input. Context is split into hashed bounded chunks; selected files and every unrepresented tracked filename are recorded for truthful coverage.
 
-Each chunk becomes a persistent Work Parcel and is sent directly to the selected OpenAI-compatible/local provider. The versioned template permits only supplied frozen evidence, prohibits invented paths/results and writes, and requires `repository-review-v1` JSON. Agent Control never executes suggested remediation.
+Each chunk becomes a persistent Work Parcel and is sent directly to the selected OpenAI-compatible/local provider. The versioned template permits only supplied frozen evidence, prohibits invented paths/results and writes, and requires `repository-review-v1` JSON. The adapter requests a strict JSON Schema where supported, rejects explicit incomplete/truncated finish states, and retains partial usage plus a response hash when parsing or validation fails. Agent Control never executes suggested remediation.
 
 The built-in maximum output budget is 65,536 tokens because qualified reasoning providers may account internal reasoning against the same response allowance before emitting structured output. Saved Jobs may lower it only after qualifying the selected model at that limit.
 

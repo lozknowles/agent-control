@@ -1,6 +1,6 @@
 import {createHash, randomUUID} from 'node:crypto';
 import type {ModelRegistry} from './model-registry.js';
-import {OpenAICompatibleProviderClient, type ModelInvocationResult} from './openai-compatible-provider.js';
+import {OpenAICompatibleProviderClient, type ModelInvocationResult, type PartialModelInvocation} from './openai-compatible-provider.js';
 import type {RepositoryReviewExecutor, RepositoryReviewResult, ReviewExecutionRequest, ReviewExecutionResponse} from './parameterized-job-types.js';
 import {WorkParcelStore, type WorkParcel} from './work-parcels.js';
 
@@ -11,22 +11,17 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
     if (!provider || !model) throw new Error('selected_model_configuration_missing');
     const client = new OpenAICompatibleProviderClient(provider), results: RepositoryReviewResult[] = [], parcelIds: string[] = [], responseIds: string[] = [];
     let inputTokens = 0, outputTokens = 0, totalTokens = 0, providerReportedCost = 0, calculatedCost = 0, currency: string | undefined, completeTokens = true, completeProviderCost = true, completeCalculatedCost = true, accountedInvocations = 0;
+    const capture=(parcel:WorkParcel,invocation:ModelInvocationResult,responseHash:string)=>{accountedInvocations++;responseIds.push(responseHash);if([invocation.usage.inputTokens,invocation.usage.outputTokens,invocation.usage.totalTokens].some(value=>value===null))completeTokens=false;inputTokens+=invocation.usage.inputTokens??0;outputTokens+=invocation.usage.outputTokens??0;totalTokens+=invocation.usage.totalTokens??0;if(invocation.usage.providerReportedCost===null)completeProviderCost=false;else providerReportedCost+=invocation.usage.providerReportedCost;if(invocation.usage.calculatedCost===null)completeCalculatedCost=false;else calculatedCost+=invocation.usage.calculatedCost;currency??=invocation.usage.currency??undefined;this.recordInvocation(parcel,invocation,request,responseHash)};
     for (const chunk of request.contextChunks) {
       const parcel = this.createParcel(request, chunk.id); parcelIds.push(parcel.id);
       try {
         const prompt = `${request.instruction}\n\nFrozen repository: ${request.run.repository?.name}\nRequested ref: ${request.run.repository?.requestedRef}\nReviewed SHA: ${request.run.repository?.reviewedSha}\nComparison SHA: ${request.run.repository?.comparisonSha ?? 'none'}\nContext chunk: ${chunk.id}\nFiles: ${chunk.files.join(', ')}\n\n${chunk.content}`;
         const invocation = await client.invoke(model, prompt, {structured: true, outputSchema: REPOSITORY_REVIEW_OUTPUT_SCHEMA, maximumOutputTokens: request.maximumOutputTokens, timeoutMs: request.run.definition.budgets.timeoutMinutes * 60_000, signal: request.signal});
-        accountedInvocations++;
-        responseIds.push(`sha256:${createHash('sha256').update(invocation.output).digest('hex')}`);
-        if ([invocation.usage.inputTokens, invocation.usage.outputTokens, invocation.usage.totalTokens].some(value => value === null)) completeTokens = false;
-        inputTokens += invocation.usage.inputTokens ?? 0; outputTokens += invocation.usage.outputTokens ?? 0; totalTokens += invocation.usage.totalTokens ?? 0;
-        if (invocation.usage.providerReportedCost === null) completeProviderCost = false; else providerReportedCost += invocation.usage.providerReportedCost;
-        if (invocation.usage.calculatedCost === null) completeCalculatedCost = false; else calculatedCost += invocation.usage.calculatedCost;
-        this.recordInvocation(parcel,invocation,request,responseIds.at(-1)!);
+        capture(parcel,invocation,`sha256:${createHash('sha256').update(invocation.output).digest('hex')}`);
         if (invocation.finishReason && !['stop','completed'].includes(invocation.finishReason)) throw new Error(`repository_review_provider_incomplete:${invocation.finishReason}`);
-        currency ??= invocation.usage.currency ?? undefined; results.push(parseRepositoryReviewResponse(invocation.output)); this.finishParcel(parcel, 'SUCCEEDED', `Provider ${invocation.providerId}; model ${invocation.modelId}; structured review returned`);
+        results.push(parseRepositoryReviewResponse(invocation.output)); this.finishParcel(parcel, 'SUCCEEDED', `Provider ${invocation.providerId}; model ${invocation.modelId}; structured review returned`);
         if (request.maximumCost !== undefined && effectiveCost(completeProviderCost,providerReportedCost,completeCalculatedCost,calculatedCost) > request.maximumCost) throw new Error('job_cost_budget_exceeded');
-      } catch (error) { this.finishParcel(parcel, 'FAILED', error instanceof Error ? error.message : String(error)); throw Object.assign(error instanceof Error ? error : new Error(String(error)), {workParcelIds: [...parcelIds], evidence: responseIds.map(id => `provider_response_${id}`), providerResponseIds: [...responseIds], usage: usage(accountedInvocations,completeTokens,completeProviderCost,completeCalculatedCost,inputTokens,outputTokens,totalTokens,providerReportedCost,calculatedCost,currency)}); }
+      } catch (error) { const partial=(error as {partialInvocation?:PartialModelInvocation}).partialInvocation;if(partial&&!responseIds.includes(partial.responseHash))capture(parcel,partial,partial.responseHash);this.finishParcel(parcel, 'FAILED', error instanceof Error ? error.message : String(error)); throw Object.assign(error instanceof Error ? error : new Error(String(error)), {workParcelIds: [...parcelIds], evidence: responseIds.map(id => `provider_response_${id}`), providerResponseIds: [...responseIds], usage: usage(accountedInvocations,completeTokens,completeProviderCost,completeCalculatedCost,inputTokens,outputTokens,totalTokens,providerReportedCost,calculatedCost,currency)}); }
     }
     return {result: consolidate(results), usage: usage(accountedInvocations,completeTokens,completeProviderCost,completeCalculatedCost,inputTokens,outputTokens,totalTokens,providerReportedCost,calculatedCost,currency), evidence: responseIds.map(id => `provider_response_${id}`), providerResponseIds: responseIds, workParcelIds: parcelIds};
   }

@@ -2,7 +2,7 @@
 
 Agent Control 3.4 establishes **Job Definition + Parameters + Schedule + Model Route + Governed Run + Persistent Result** as a first-class platform boundary.
 
-The built-in Repository Code Review freezes a Git SHA in a read-only snapshot, builds deterministic bounded context, routes `review.default` to a qualified model, invokes its provider directly without Codex, creates attributable Work Parcels, validates structured evidence, records usage/cost, and advances only a successful delta baseline.
+The built-in Repository Code Review freezes a Git SHA in a read-only snapshot, builds deterministic bounded context with exhaustive omission reporting, routes `review.default` to a qualified model, invokes its provider directly without Codex, requests a strict JSON Schema, creates fully attributable Work Parcels, validates structured evidence, records provider and configured-price cost, and advances only a successful delta baseline.
 
 The dashboard now separates Job Definitions, Saved Jobs, Schedules, and Runs and generates creation controls from formal parameter schemas. Equivalent authenticated API and `agent-control jobs` CLI operations support create/update/enable/disable/run/cancel/list/get/export/import.
 

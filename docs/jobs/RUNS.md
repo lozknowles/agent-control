@@ -10,7 +10,7 @@ Persistent evidence includes:
 - explicit fallback and retry histories;
 - context profile, file/chunk hashes, changed and omitted files;
 - Work Parcel IDs;
-- provider-response hashes (not bodies), normalized usage/cost, validation result, findings, evidence, and errors;
+- provider-response hashes (not bodies), normalized tokens, provider-reported cost, independently calculated configured-price cost, conservative effective budget cost/basis, validation result, findings, evidence, and errors;
 - requested, started, and completed times.
 
 Provider completion is not Run success. `PASS` becomes `SUCCEEDED`; validated findings become `SUCCEEDED_WITH_FINDINGS`; `REVIEW_REQUIRED` becomes `DEGRADED`; invalid/failing output becomes `FAILED`. Timeout is a failed budget condition; operator cancellation is `CANCELLED`.

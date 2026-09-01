@@ -3,7 +3,7 @@
 ## [3.4.0] — 2026-09-01
 
 - Adds versioned Job Definitions, schema-validated Saved Jobs, safe export/import, optimistic revisions, logical model roles, explicit model overrides, visible fallback, context profiles, budgets, and concurrency policies.
-- Adds the built-in read-only `repository-code-review@1` Job with policy-resolved local or allowlisted remote Git input, exact SHA freezing, isolated read-only checkout, secret/binary exclusion, deterministic decomposition, provider-direct execution, validated structured findings, and successful-run-only delta baselines.
+- Adds the built-in read-only `repository-code-review@1` Job with policy-resolved local or allowlisted remote Git input, exact SHA freezing, isolated read-only checkout, secret/binary exclusion, exhaustive omission reporting, deterministic decomposition, provider-direct strict-schema execution, validated structured findings, and successful-run-only delta baselines.
 - Adds persistent immutable parameterised Runs with lifecycle transitions, deterministic scheduled occurrence identity, Work Parcel links, selected provider/model/qualification evidence, response hashes, usage/cost, retries, fallbacks, errors, and restart recovery.
 - Adds persistent one-time/cron scheduling with timezone, enable/disable, missed-run policy, overlap protection, duplicate-occurrence prevention, and one shared manual/scheduled execution path.
 - Adds first-class dashboard views for Job Definitions, Saved Jobs, Schedules, Runs, schema-generated creation, Run now, and historical review details; adds corresponding authenticated HTTP and `agent-control jobs` CLI operations.

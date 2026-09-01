@@ -1,8 +1,10 @@
 import fs from 'node:fs';
+import {createHash} from 'node:crypto';
 import type {ModelConfig, ProviderConfig} from './config.js';
 
 export interface NormalizedModelUsage {inputTokens: number | null; outputTokens: number | null; cachedInputTokens: number | null; totalTokens: number | null; providerReportedCost: number | null; calculatedCost: number | null; currency: string | null;}
 export interface ModelInvocationResult {providerId: string; modelId: string; providerModel: string; output: string; elapsedMs: number; usage: NormalizedModelUsage; responseModel: string | null; finishReason: string | null; toolCall: {name: string; arguments: string} | null;}
+export interface PartialModelInvocation extends ModelInvocationResult {responseHash: string;}
 export type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 
 export class OpenAICompatibleProviderClient {
@@ -27,9 +29,9 @@ export class OpenAICompatibleProviderClient {
       if (!response.ok) throw providerError(response.status);
       let payload: Record<string, unknown>;
       try { payload = await response.json() as Record<string, unknown>; } catch { throw new Error('provider_malformed_response'); }
-      const toolCall = extractToolCall(payload, wire), output = extractOutput(payload, wire);
-      if (!output && !toolCall) throw new Error('provider_malformed_response');
-      return {providerId: this.provider.id, modelId: model.id, providerModel: model.providerModel, output, elapsedMs: Date.now() - started, usage: normalizeUsage(payload.usage, model), responseModel: typeof payload.model === 'string' ? payload.model : null, finishReason: extractFinishReason(payload, wire), toolCall};
+      const toolCall = extractToolCall(payload, wire), output = extractOutput(payload, wire), partial: PartialModelInvocation = {providerId: this.provider.id, modelId: model.id, providerModel: model.providerModel, output, elapsedMs: Date.now() - started, usage: normalizeUsage(payload.usage, model), responseModel: typeof payload.model === 'string' ? payload.model : null, finishReason: extractFinishReason(payload, wire), toolCall, responseHash:`sha256:${createHash('sha256').update(JSON.stringify(payload)).digest('hex')}`};
+      if (!output && !toolCall) throw Object.assign(new Error('provider_malformed_response'),{partialInvocation:partial});
+      const {responseHash: _responseHash, ...result}=partial;return result;
     } catch (error) { if ((error as Error).name === 'AbortError') throw new Error('provider_timeout'); throw sanitizeError(error); }
     finally { clearTimeout(timeout); }
   }
@@ -73,4 +75,4 @@ function normalizeUsage(value: unknown, model: ModelConfig): NormalizedModelUsag
 }
 function number(value: unknown) { return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null; }
 function providerError(status: number) { return new Error(status === 401 || status === 403 ? 'provider_authentication_failed' : status === 429 ? 'provider_rate_limited' : status >= 500 ? 'provider_unavailable' : `provider_request_failed:${status}`); }
-function sanitizeError(error: unknown) { const message = error instanceof Error ? error.message : 'provider_request_failed'; return new Error(message.replace(/\b(?:sk|rk|pk)-[A-Za-z0-9_-]{8,}\b/g, '[REDACTED]').slice(0, 240)); }
+function sanitizeError(error: unknown) { const message = error instanceof Error ? error.message : 'provider_request_failed',sanitized=new Error(message.replace(/\b(?:sk|rk|pk)-[A-Za-z0-9_-]{8,}\b/g, '[REDACTED]').slice(0, 240)),partial=(error as {partialInvocation?:PartialModelInvocation})?.partialInvocation;return partial?Object.assign(sanitized,{partialInvocation:partial}):sanitized; }
