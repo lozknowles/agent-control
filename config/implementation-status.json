@@ -1,6 +1,6 @@
 {
   "schema": "agent-control.implementation-status/v1",
-  "release": "3.3.1",
+  "release": "3.4.0",
   "updated": "2026-09-01",
   "capabilities": [
     {
@@ -82,6 +82,15 @@
       "tests": ["src/control/job-catalog.test.ts", "src/control/job-runtime.test.ts", "scripts/qualify-jobs.test.mjs"]
     },
     {
+      "id": "jobs.parameterized-platform",
+      "title": "Parameterised Jobs, schedules and repository review",
+      "status": "QUALIFIED",
+      "summary": "Versioned Job Definitions and typed parameters produce portable Saved Jobs, deterministic persistent schedules, immutable Runs and attributable Work Parcels; the built-in read-only repository review freezes exact Git revisions, handles successful delta baselines, routes a qualified provider directly, validates findings and preserves usage, cost and evidence.",
+      "sources": ["src/control/parameterized-job-types.ts", "src/control/parameterized-job-registry.ts", "src/control/parameterized-job-engine.ts", "src/control/job-bootstrap.ts", "src/control/repository-review-definition.ts", "src/control/repository-review-runtime.ts", "src/control/direct-repository-review-executor.ts", "assets/dashboard/dashboard-parameterized-jobs.js"],
+      "tests": ["src/control/parameterized-jobs.test.ts", "src/control/openai-compatible-provider.test.ts", "src/control/web-server.test.ts"],
+      "evidence": ["docs/evidence/agent-control-3.4.0-release-qualification.md"]
+    },
+    {
       "id": "workers.capability-registry",
       "title": "Capability-advertising Worker Registry",
       "status": "IMPLEMENTED",
@@ -92,12 +101,11 @@
     {
       "id": "models.provider-neutral-registry",
       "title": "Provider-neutral external model registry",
-      "status": "PARTIAL",
-      "summary": "Configured providers, models, node-scoped qualification, logical roles, explicit fallbacks, normalized usage, ephemeral Codex provider materialization and dashboard/API projections are executable and fail closed.",
+      "status": "QUALIFIED",
+      "summary": "Configured providers, models, node-scoped qualification, logical roles, explicit fallbacks, normalized usage, ephemeral Codex provider materialization and dashboard/API projections are executable and fail closed; a real governed GLM-5.3-Flash route completed direct-provider repository reviews with structured evidence and cost accounting.",
       "sources": ["src/control/model-registry.ts", "src/control/model-qualification.ts", "src/control/openai-compatible-provider.ts", "src/control/codex-model-config.ts", "src/control/codex-exec-provider.ts", "src/control/work-parcels.ts", "src/control/application-service.ts", "src/control/web-server.ts", "assets/dashboard/dashboard-models.js"],
       "tests": ["src/control/model-registry.test.ts", "src/control/model-qualification.test.ts", "src/control/openai-compatible-provider.test.ts", "src/control/codex-model-config.test.ts", "src/control/codex-exec-provider.test.ts", "src/control/work-parcels.test.ts", "src/control/configuration-store.test.ts", "src/control/web-server.test.ts"],
-      "evidence": [],
-      "limitation": "The registry implementation is tested, but real governed GLM-5.3-Flash and GLM-5.3 qualifications remain pending until an approved provider credential is available to this isolated worktree. These models remain UNTESTED and cannot route."
+      "evidence": ["docs/evidence/agent-control-3.4.0-release-qualification.md"]
     },
     {
       "id": "jobs.model-backed-action",

@@ -4,7 +4,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 
-const exceptions = new Set(['CHANGELOG.md', 'docs/evidence/infrastructure-agnostic-audit-3.0.1.md']);
+// Immutable qualification evidence records the environment where a release was proven;
+// distributable configuration and runtime remain topology-neutral.
+const exceptions = new Set(['CHANGELOG.md', 'docs/evidence/infrastructure-agnostic-audit-3.0.1.md', 'docs/evidence/agent-control-3.4.0-release-qualification.md']);
 const textExtensions = /\.(?:ts|mjs|js|json|ya?ml|md|sh|py)$/i;
 function sourceFiles(directory = '.') {
   const ignored = new Set(['.git', 'node_modules', '.agent-control', '.pdf-venv', 'qualification-results']);
