@@ -1,6 +1,6 @@
 # Agent Control architecture
 
-This is the authoritative source boundary for Agent Control 3.5.0. Status labels matter:
+This is the authoritative source boundary for the unreleased Agent Control 3.6 feature branch, based on released tag `v3.5.0`. Status labels matter:
 
 - **implemented** means executable code and automated tests exist in this branch;
 - **experimental** means executable code exists but has not been qualified across every external substrate;
@@ -118,9 +118,9 @@ Context transfer persists descriptors and hashes, not copied prompt bodies. Full
 
 ## ACP interoperability boundary
 
-The ACP adapter implements stable Agent Client Protocol v1 JSON-RPC session methods above the control plane. An external ACP session maps to one governed Agent Control session; prompt content becomes a hash-addressed context transfer and then an ordinary Work Parcel. `session/cancel`, `session/close` and `$/cancel_request` call the same cancellation port and preserve actor/session identity. ACP tool-call updates carry Work Parcel, Run and evidence references, not direct tool authority.
+The ACP runtime implements stable Agent Client Protocol v1 JSON-RPC session methods above the control plane. The official TypeScript SDK owns schema validation, dispatch and NDJSON framing; `AcpAgentControlAdapter` owns the governed mapping. An external ACP session maps to one governed Agent Control session; prompt content becomes a hash-addressed context transfer and then an ordinary Work Parcel. `session/cancel`, `session/close` and request cancellation call the same cancellation port and preserve actor/session identity. Durable ACP bindings reconstruct from the identity and ACP session stores after a process restart. Ordered plan, tool-call and tool-call-update notifications carry Work Parcel, Run and evidence references, not direct tool authority. Usage or cost is omitted when the underlying execution does not report it.
 
-The adapter is transport-neutral so stdio or WebSocket framing can be supplied independently. No OpenClaw dependency is introduced. ACP v2 remains experimental and is not claimed.
+`agent-control acp` is the qualified local stdio adapter. Actor admission is out-of-band and fail-closed: the configured Actor must already exist in the durable identity store. The core remains transport-neutral so an authenticated HTTP/WebSocket adapter can be supplied independently, but no network listener is enabled or qualified at this checkpoint. The stable code imports only `@agentclientprotocol/sdk`; the separate `experimental/v2` entry point is not used. ACP v2 remains draft and is not claimed.
 
 ## Fast-execution class
 
@@ -462,4 +462,4 @@ New capabilities are classified into policy/authority, scheduling, execution sub
 
 ## Release boundary
 
-Earlier version tags remain immutable source releases; `v3.5.0` is the current released source boundary. Installing or checking out the release does not deploy services, expose the dashboard remotely, create credentials, broaden sharing, enable Spark, or enable a Saved Job/Schedule. STANDARD remains the default context profile unless a governed policy explicitly selects another profile. The physical Luna → local LLM → GLM-5.3-Flash → Luna experiment remains an external qualification gate where those routes exist.
+Earlier version tags remain immutable source releases; `v3.5.0` remains the current released source boundary while 3.6 is developed. Committing or pushing the 3.6 branch does not deploy services, expose a remote ACP listener, create credentials, broaden sharing, enable Spark, or enable a Saved Job/Schedule. STANDARD remains the default context profile unless a governed policy explicitly selects another profile. The physical Luna → local LLM → GLM-5.3-Flash → Luna experiment remains an external qualification gate where those routes exist.

@@ -23,6 +23,8 @@ Spark execution additionally requires authenticated bounded availability for the
 
 ACP terminates at a Work Parcel port. It cannot confer capabilities, select arbitrary tools, create shell execution, acquire leases or accept results. Resume checks external principal identity; cancellation retains the same Actor/Session attribution.
 
+On the unreleased 3.6 branch, `agent-control acp` accepts stable ACP v1 frames only over local stdio. `AGENT_CONTROL_ACP_ACTOR_ID` must identify an Actor already present in the durable identity store; missing identities fail closed. Protocol stdout is never used for diagnostics. Session bindings are mode `0600`. No remote listener is enabled, and the experimental ACP v2 entry point is not imported.
+
 ## Known limits
 
 - An opaque external CLI may perform internal reads/tools that are not individually mediated by Agent Control; Spark is therefore restricted to an isolated worktree and bounded task class.

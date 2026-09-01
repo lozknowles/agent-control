@@ -1,4 +1,4 @@
-# Agent Control 3.5.0
+# Agent Control 3.6.0 (unreleased feature branch)
 
 Agent Control runs governed parameterised jobs against qualified execution and model resources. It is an infrastructure-neutral, policy-controlled adaptive harness for durable work by heterogeneous agents and models. Its executable harness core composes a task-appropriate worker, provider/model route, prompt profile, minimum qualified skills, restricted tools, context strategy, runtime settings, authority snapshot, resource limits and verification/escalation policy into a fingerprinted execution recipe.
 
@@ -16,7 +16,17 @@ The session creator is immutable. Participants, capabilities, context policy and
 
 The dashboard **Sessions** tab reads this authoritative store and shows participants, active attributed Work Parcels, the agent/delegation graph, baton token/hash traces, models, runtime/node identity, context policy, evidence and complete-chain token/cost values where providers reported them. Execution admission enforces the session's participant authority, model/node allow-lists and filesystem/network envelope. Existing records receive deterministic `legacy-actor:*` / `legacy-session:*` attribution; legacy “Ox” labels remain historical aliases of canonical `GLM-5.3-Flash`, not a distinct model.
 
-An ACP v1 JSON-RPC adapter maps `initialize`, session new/load/resume/list/prompt/cancel/close, session updates and request cancellation into the same sessions and Work Parcels. ACP is an interoperability edge, not a second scheduler, shell or tool-authority path. See [identity and delegation](docs/identity-sessions-delegation.md), [security](docs/security-3.5.md), [migration](docs/migration-3.5.md), and [ACP compatibility](docs/acp-compatibility.md).
+The unreleased 3.6 branch packages the governed ACP mapping as a real stable-v1 newline-delimited JSON-RPC stdio endpoint using the pinned official TypeScript SDK. It supports initialization, session new/load/resume/list/prompt/cancel/close, ordered plan/tool updates, request cancellation, durable session reconstruction and graceful shutdown. ACP is an interoperability edge, not a second scheduler, shell or tool-authority path.
+
+The caller must be admitted as an existing Actor; stdio uses `AGENT_CONTROL_ACP_ACTOR_ID` and defaults to the already registered `web-operator`. Diagnostics go to stderr because stdout is reserved for protocol frames:
+
+```bash
+AGENT_CONTROL_STATE_DIR=/srv/agent-control/state \
+AGENT_CONTROL_ACP_ACTOR_ID=web-operator \
+agent-control acp
+```
+
+No remote listener is enabled by this command. ACP v2 remains draft, is not imported by the stable runtime and is not claimed. See [identity and delegation](docs/identity-sessions-delegation.md), [security](docs/security-3.5.md), [migration](docs/migration-3.5.md), and [ACP compatibility](docs/acp-compatibility.md).
 
 ## Governed fast execution (Spark)
 

@@ -1,13 +1,13 @@
 # Implementation status
 
-Release boundary: **3.5.0**. Registry updated: **2026-09-01**.
+Release boundary: **3.6.0-unreleased**. Registry updated: **2026-09-01**.
 
 This document is generated from `config/implementation-status.json`. Update the registry and run `npm run status:implementation -- --write`; do not edit this projection directly. `IMPLEMENTED` means executable source and focused tests exist. `QUALIFIED` additionally requires recorded real evidence. `PARTIAL`, `PLANNED` and `NOT_IMPLEMENTED` remain explicit gaps.
 
 | Capability | Status | Executable truth | Remaining boundary |
 | --- | --- | --- | --- |
 | Persistent identity, sessions and delegation (`identity.sessions-delegation`) | **PARTIAL** | Actors, Agents, immutable session creators, attributed participants, context-transfer hashes, authority-subset delegation, opaque secret-use receipts and execution lineage are persistent; execution admission enforces participant/session/delegation authority plus model, node, filesystem and network envelopes, while the Sessions dashboard projects parcels, batons, delegations, runtimes and chain accounting. | The physical Luna to local LLM to GLM-5.3-Flash to Luna chain is not qualified on this host because no qualified local-LLM or GLM model-registry routes are available to the isolated branch. |
-| ACP v1 governed session adapter (`interop.acp-v1-adapter`) | **PARTIAL** | A transport-neutral Agent Client Protocol v1 JSON-RPC core maps initialize, session lifecycle, prompt, updates and cancellation into Actors, governed Sessions, context transfers and Work Parcels without adding a control path. | Stdio/WebSocket packaging and an external ACP client conformance suite remain unqualified; ACP v2 is not claimed. |
+| ACP v1 governed session adapter (`interop.acp-v1-adapter`) | **PARTIAL** | The official ACP SDK validates and frames a transport-neutral stable-v1 core; agent-control acp serves NDJSON stdio and maps durable session lifecycle, prompts, ordered plan/tool updates and cancellation into Actors, governed Sessions, context transfers and Work Parcels without adding a control path. | Official-SDK-client stdio interoperability is qualified; an independent non-SDK harness, authenticated remote HTTP/WebSocket transport and the full adversarial matrix remain unfinished. ACP v2 is disabled and not claimed. |
 | Governed fast-execution model class (`models.fast-execution-spark`) | **PARTIAL** | Conservative trivial-work classification, authenticated Spark probing, exact registry selection, minimal sealed batons, clean-worktree Codex execution, one-attempt/zero-subagent policy, independent verification, escalation and telemetry are executable; the frozen live benchmark verified all seven Spark cases. | Research-preview entitlement is not universal, cost was unreported, the corpus is small and production Job adoption is not yet qualified; keep spark.enabled false by default. |
 | Persistent Teammates and verified coordination (`teammates.persistent-coordination`) | **QUALIFIED** | Named teammates retain bounded instructions, evidence-backed context and routines; controlled conversations delegate specialist and synthesis work through ordinary capability-placed Jobs with telemetry and verifier gates. | None recorded. |
 | Safe empty-configuration bootstrap (`bootstrap.safe-empty-config`) | **IMPLEMENTED** | An idempotent initializer creates a schema-valid empty configuration without discovering infrastructure or overwriting operator state. | None recorded. |
@@ -40,9 +40,9 @@ This document is generated from `config/implementation-status.json`. Update the 
 
 ### ACP v1 governed session adapter
 
-- Source: [`src/control/acp-adapter.ts`](../src/control/acp-adapter.ts), [`src/control/identity-control-plane.ts`](../src/control/identity-control-plane.ts)
-- Tests: [`src/control/acp-adapter.test.ts`](../src/control/acp-adapter.test.ts), [`src/control/identity-control-plane.test.ts`](../src/control/identity-control-plane.test.ts)
-- Qualification evidence: [`docs/evidence/agent-control-3.5-qualification.md`](../docs/evidence/agent-control-3.5-qualification.md)
+- Source: [`src/acp.ts`](../src/acp.ts), [`src/control/acp-runtime.ts`](../src/control/acp-runtime.ts), [`src/control/acp-adapter.ts`](../src/control/acp-adapter.ts), [`src/control/identity-control-plane.ts`](../src/control/identity-control-plane.ts), [`scripts/agent-control.mjs`](../scripts/agent-control.mjs)
+- Tests: [`src/control/acp-runtime.test.ts`](../src/control/acp-runtime.test.ts), [`src/control/acp-adapter.test.ts`](../src/control/acp-adapter.test.ts), [`src/control/identity-control-plane.test.ts`](../src/control/identity-control-plane.test.ts)
+- Qualification evidence: [`docs/acp-compatibility.md`](../docs/acp-compatibility.md)
 
 ### Governed fast-execution model class
 

@@ -1,6 +1,6 @@
 {
   "schema": "agent-control.implementation-status/v1",
-  "release": "3.5.0",
+  "release": "3.6.0-unreleased",
   "updated": "2026-09-01",
   "capabilities": [
     {
@@ -17,11 +17,11 @@
       "id": "interop.acp-v1-adapter",
       "title": "ACP v1 governed session adapter",
       "status": "PARTIAL",
-      "summary": "A transport-neutral Agent Client Protocol v1 JSON-RPC core maps initialize, session lifecycle, prompt, updates and cancellation into Actors, governed Sessions, context transfers and Work Parcels without adding a control path.",
-      "sources": ["src/control/acp-adapter.ts", "src/control/identity-control-plane.ts"],
-      "tests": ["src/control/acp-adapter.test.ts", "src/control/identity-control-plane.test.ts"],
-      "evidence": ["docs/evidence/agent-control-3.5-qualification.md"],
-      "limitation": "Stdio/WebSocket packaging and an external ACP client conformance suite remain unqualified; ACP v2 is not claimed."
+      "summary": "The official ACP SDK validates and frames a transport-neutral stable-v1 core; agent-control acp serves NDJSON stdio and maps durable session lifecycle, prompts, ordered plan/tool updates and cancellation into Actors, governed Sessions, context transfers and Work Parcels without adding a control path.",
+      "sources": ["src/acp.ts", "src/control/acp-runtime.ts", "src/control/acp-adapter.ts", "src/control/identity-control-plane.ts", "scripts/agent-control.mjs"],
+      "tests": ["src/control/acp-runtime.test.ts", "src/control/acp-adapter.test.ts", "src/control/identity-control-plane.test.ts"],
+      "evidence": ["docs/acp-compatibility.md"],
+      "limitation": "Official-SDK-client stdio interoperability is qualified; an independent non-SDK harness, authenticated remote HTTP/WebSocket transport and the full adversarial matrix remain unfinished. ACP v2 is disabled and not claimed."
     },
     {
       "id": "models.fast-execution-spark",

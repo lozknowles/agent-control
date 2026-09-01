@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased — Agent Control 3.6
+
+### ACP runtime
+
+- Pins official `@agentclientprotocol/sdk` 1.4.0 and its Zod 4.5.4 peer, and packages the stable protocol-v1 governed adapter as `agent-control acp` over newline-delimited JSON-RPC stdio.
+- Adds official-SDK schema dispatch, ordered plan/tool-call updates, durable ACP session reconstruction, identity-bound admission, cancellation and graceful process shutdown.
+- Adds official SDK client interoperability tests over the real NDJSON stream. Independent non-SDK conformance, authenticated remote transport and adversarial/recovery expansion remain work in progress.
+- ACP v2 remains explicitly experimental and is not imported, advertised or claimed. No 3.6 contract-runtime, routing or release claim is made by this checkpoint.
+
 ## [3.5.0] — 2026-09-01
 
 ### Identity, delegation and sessions
