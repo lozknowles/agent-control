@@ -116,6 +116,22 @@ An agent profile describes a persistent specialist. An Actor is the authenticate
 
 Context transfer persists descriptors and hashes, not copied prompt bodies. Full, summary, evidence, structured-baton and hybrid policies can be compared using the same frozen experiment interface. Secret values may only cross an opaque capability-checked operation and are rejected if returned or placed in context.
 
+## Contract-owned execution
+
+```text
+Lane → Contract → sealed Baton → Process / PTY → Agent
+         |                              |
+         + authority / budget           + attach / detach
+         + completion criteria          + one write owner
+         + protected resources          + ordered output
+         + pending actions              + restart observation
+         + verification / evidence
+```
+
+`ContractExecutionRuntime` is the durable task owner. Agent, model, provider, runtime and process identities may change without replacing the contract. Its versioned record contains the active route, process observation, PTY ownership generation, participants, ordered transcript, attachments, permissions, remaining budget, pending actions, verification and evidence. The sealed baton stores canonical content plus its generation, byte count and SHA-256; credential-like content is rejected.
+
+Detach does not terminate a running process. Consultation and reconnect attach read-only. Write transfer requires a durable request approved by the current writer or contract operator, and there is exactly one writer. Human takeover revokes every agent writer and pauses the contract; deliberate return to an attached agent creates a new ownership generation. Stale retained writers therefore cannot regain authority. Cancellation, timeout and orphaning are distinct reconstructable states. A worker's completion is only a verification submission; the active worker cannot verify itself.
+
 ## ACP interoperability boundary
 
 The ACP runtime implements stable Agent Client Protocol v1 JSON-RPC session methods above the control plane. The official TypeScript SDK owns schema validation, dispatch and NDJSON framing; `AcpAgentControlAdapter` owns the governed mapping. An external ACP session maps to one governed Agent Control session; prompt content becomes a hash-addressed context transfer and then an ordinary Work Parcel. `session/cancel`, `session/close` and request cancellation call the same cancellation port and preserve actor/session identity. Durable ACP bindings reconstruct from the identity and ACP session stores after a process restart. Ordered plan, tool-call and tool-call-update notifications carry Work Parcel, Run and evidence references, not direct tool authority. Usage or cost is omitted when the underlying execution does not report it.

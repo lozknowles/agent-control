@@ -9,7 +9,13 @@
 - Adds official SDK client interoperability tests over the real NDJSON stream. Independent non-SDK conformance, authenticated remote transport and adversarial/recovery expansion remain work in progress.
 - Adds explicit authenticated Streamable HTTP and WebSocket adapters using the official SDK server transport, constant-time bearer comparison, origin checks, bounded bodies, exact-path routing and TLS-required non-loopback binding. The `ws` 8.21.3 transport dependency is exact-pinned.
 - Adds official HTTP/WebSocket client tests plus an SDK-independent raw wire harness for negotiation, malformed JSON, invalid IDs and unknown methods. Adds a namespaced durable delivery ID for idempotent prompt replay without changing standard ACP fields.
-- ACP v2 remains explicitly experimental and is not imported, advertised or claimed. No 3.6 contract-runtime, routing or release claim is made by this checkpoint.
+- ACP v2 remains explicitly experimental and is not imported, advertised or claimed.
+
+### Contract and PTY runtime
+
+- Adds a durable contract-owned execution record for `Lane → Contract → Baton → Process/PTY → Agent`, retaining objective, authority, budget, active route, sealed baton, attachments, permissions, pending actions, verification, evidence and history across restart.
+- Adds read-only consultation/reconnect, detach without process termination, explicit single-writer requests/transfers, unconditional human takeover, deliberate agent resumption and ownership-generation fencing.
+- Adds ordered terminal output, process observation, orphan detection, distinct cancellation/timeout states and independent verification. Operating-system-specific process/PTY adapters and dashboard projection remain later checkpoints.
 
 ## [3.5.0] — 2026-09-01
 

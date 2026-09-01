@@ -14,6 +14,16 @@
       "limitation": "The physical Luna to local LLM to GLM-5.3-Flash to Luna chain is not qualified on this host because no qualified local-LLM or GLM model-registry routes are available to the isolated branch."
     },
     {
+      "id": "execution.contract-pty-runtime",
+      "title": "Contract-owned process and PTY runtime",
+      "status": "PARTIAL",
+      "summary": "A durable versioned contract owns objective, criteria, authority, budget, route, sealed baton, process/PTY identity, attachments, permissions, pending actions, verification and evidence. Consultation/reconnect are read-only, write ownership is singular and explicitly transferred, human takeover fences agents, and cancellation, timeout, orphaning and output ordering reconstruct after restart.",
+      "sources": ["src/control/contract-runtime.ts"],
+      "tests": ["src/control/contract-runtime.test.ts"],
+      "evidence": ["docs/contract-pty-runtime.md"],
+      "limitation": "The durable authority model and process-port behavior are implemented; operating-system-specific PTY creation/signal adapters, handoff outcomes and dashboard projection remain later 3.6 checkpoints."
+    },
+    {
       "id": "interop.acp-v1-adapter",
       "title": "ACP v1 governed session adapter",
       "status": "PARTIAL",
