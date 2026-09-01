@@ -28,6 +28,17 @@
       "DEEP": {"maximumInitialContextTokens": 65536, "maximumSources": 192, "maximumOptionalSkills": 16, "maximumTools": 64, "maximumTurns": 32, "allowBroadRepositoryContext": true, "allowSharedContext": true}
     }
   },
+  "spark": {
+    "enabled": false,
+    "model": "gpt-5.3-codex-spark",
+    "modelRole": "fast-execution",
+    "maximumFiles": 1,
+    "maximumChangedLines": 80,
+    "maximumAttempts": 1,
+    "maximumSubagents": 0,
+    "maximumContextTokens": 2048,
+    "verificationRequired": true
+  },
   "jobs": {
     "repositoryRoots": ["/srv/repos"],
     "repositoryRemotes": ["https://github.com/example-organisation"]
@@ -91,6 +102,13 @@
   ],
   "providers": [
     {
+      "id": "codex-chatgpt",
+      "name": "Codex with ChatGPT authentication",
+      "kind": "cli",
+      "enabled": true,
+      "capabilities": ["trivial.coding"]
+    },
+    {
       "id": "openai-api",
       "name": "OpenAI",
       "kind": "responses",
@@ -137,6 +155,7 @@
     }
   ],
   "models": [
+    {"id":"spark-fast-execution","provider":"codex-chatgpt","providerModel":"gpt-5.3-codex-spark","displayName":"GPT-5.3-Codex-Spark","enabled":true,"capabilities":["trivial.coding"],"roles":["fast-execution"],"nodes":["controller"],"qualification":{"state":"UNTESTED","version":"configured-v1","evidence":[]}},
     {"id":"openai-default","provider":"openai-api","providerModel":"configured-openai-default","displayName":"OpenAI default","enabled":true,"capabilities":["coding","reasoning","tool-use","repository-review"],"nodes":["controller"],"qualification":{"state":"UNTESTED","version":"migration-v1","evidence":[]}},
     {"id":"glm-5.3-flash","provider":"openrouter","providerModel":"z-ai/glm-5.3-flash","displayName":"GLM-5.3-Flash","enabled":true,"capabilities":["reasoning","coding","tool-use","repository-review"],"roles":["external-fast","coding.fast"],"nodes":["controller"],"qualification":{"state":"UNTESTED","version":"configured-v1","evidence":[]}},
     {"id":"glm-5.3","provider":"openrouter","providerModel":"z-ai/glm-5.3","displayName":"GLM-5.3","enabled":true,"capabilities":["reasoning","coding","tool-use","long-context","repository-review"],"roles":["external-deep","coding.deep","reasoning.deep"],"nodes":["controller"],"qualification":{"state":"UNTESTED","version":"configured-v1","evidence":[]}},
@@ -146,6 +165,7 @@
     "defaultRole": "coding.default",
     "roles": {
       "coding.default": {"primary":"openai-default","fallback":["glm-5.3"],"requires":["coding"]},
+      "fast-execution": {"primary":"spark-fast-execution","fallback":[],"requires":["trivial.coding"]},
       "coding.fast": {"primary":"glm-5.3-flash","fallback":["openai-default"],"requires":["coding"]},
       "coding.deep": {"primary":"glm-5.3","fallback":["openai-default"],"requires":["coding","reasoning"]},
       "reasoning.deep": {"primary":"glm-5.3","fallback":["openai-default"],"requires":["reasoning"]},

@@ -171,6 +171,18 @@ export interface HarnessEfficiencyConfig {
   profiles?: Partial<Record<'THIN' | 'STANDARD' | 'DEEP', HarnessProfileConfig>>;
 }
 
+export interface SparkConfig {
+  enabled?: boolean;
+  model?: string;
+  modelRole?: string;
+  maximumFiles?: number;
+  maximumChangedLines?: number;
+  maximumAttempts?: number;
+  maximumSubagents?: number;
+  maximumContextTokens?: number;
+  verificationRequired?: boolean;
+}
+
 export interface ParameterizedJobsConfig {repositoryRoots: string[]; repositoryRemotes?: string[];}
 
 export interface AgentControlConfig {
@@ -183,6 +195,7 @@ export interface AgentControlConfig {
   lanes: LaneConfig[];
   tokenAwareOutput?: TokenAwareOutputConfig;
   harnessEfficiency?: HarnessEfficiencyConfig;
+  spark?: SparkConfig;
   jobs?: ParameterizedJobsConfig;
 }
 
@@ -221,7 +234,7 @@ function assertIntegerRange(value: unknown, label: string, minimum: number, maxi
 
 function rejectSecrets(value: unknown, trail = 'config') {
   if (!value || typeof value !== 'object') return;
-  const safeTokenAccountingKeys = new Set(['tokenAwareOutput', 'completeMaxTokens', 'artifactOnlyAboveReturnedTokens', 'minimumCompleteTokens', 'harnessEfficiency', 'maximumInitialContextTokens', 'advertisedContextLimitTokens', 'maximumObservedInputTokens', 'inputPerMillionTokens', 'outputPerMillionTokens', 'cachedInputPerMillionTokens', 'contextTokens', 'outputTokens']);
+  const safeTokenAccountingKeys = new Set(['tokenAwareOutput', 'completeMaxTokens', 'artifactOnlyAboveReturnedTokens', 'minimumCompleteTokens', 'harnessEfficiency', 'maximumInitialContextTokens', 'maximumContextTokens', 'advertisedContextLimitTokens', 'maximumObservedInputTokens', 'inputPerMillionTokens', 'outputPerMillionTokens', 'cachedInputPerMillionTokens', 'contextTokens', 'outputTokens']);
   for (const [key, child] of Object.entries(value)) {
     if (/token|password|secret|api.?key/i.test(key) && !['credentialEnv', 'credentialFileEnv'].includes(key) && !safeTokenAccountingKeys.has(key)) {
       throw new Error(`secret_material_forbidden:${trail}.${key}`);
@@ -245,6 +258,7 @@ export function validateConfig(raw: unknown): AgentControlConfig {
     lanes: input.lanes ?? [],
     tokenAwareOutput: input.tokenAwareOutput,
     harnessEfficiency: input.harnessEfficiency,
+    spark: input.spark,
     jobs: input.jobs,
   };
   if (config.jobs) {
@@ -429,6 +443,19 @@ export function validateConfig(raw: unknown): AgentControlConfig {
       if (profile.allowBroadRepositoryContext !== undefined && typeof profile.allowBroadRepositoryContext !== 'boolean') throw new Error(`invalid_harness_efficiency_broad_context:${name}`);
       if (profile.allowSharedContext !== undefined && typeof profile.allowSharedContext !== 'boolean') throw new Error(`invalid_harness_efficiency_shared_context:${name}`);
     }
+  }
+  if (config.spark !== undefined) {
+    const spark = config.spark;
+    if (!spark || typeof spark !== 'object' || Array.isArray(spark)) throw new Error('invalid_spark_config');
+    if (spark.enabled !== undefined && typeof spark.enabled !== 'boolean') throw new Error('invalid_spark_enabled');
+    if (spark.verificationRequired !== undefined && spark.verificationRequired !== true) throw new Error('spark_verification_required');
+    if (spark.model !== undefined && (typeof spark.model !== 'string' || !/^[a-z0-9][a-z0-9._-]{1,127}$/i.test(spark.model))) throw new Error('invalid_spark_model');
+    if (spark.modelRole !== undefined && (typeof spark.modelRole !== 'string' || !/^[a-z0-9][a-z0-9._-]{1,127}$/i.test(spark.modelRole))) throw new Error('invalid_spark_model_role');
+    assertIntegerRange(spark.maximumFiles, 'spark_maximum_files', 0, 10);
+    assertIntegerRange(spark.maximumChangedLines, 'spark_maximum_changed_lines', 1, 1_000);
+    assertIntegerRange(spark.maximumAttempts, 'spark_maximum_attempts', 1, 1);
+    assertIntegerRange(spark.maximumSubagents, 'spark_maximum_subagents', 0, 0);
+    assertIntegerRange(spark.maximumContextTokens, 'spark_maximum_context_tokens', 256, 8_192);
   }
   return config;
 }

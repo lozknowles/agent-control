@@ -35,3 +35,10 @@ test('configuration store updates model routes atomically without restart', t =>
   const routed = store.updateModelRouting({revision: model.revision, modelRouting: {defaultRole: 'coding.fast', roles: {'coding.fast': {primary: 'fast'}}}});
   assert.equal(routed.restartRequired, false); assert.equal(routed.modelRouting.defaultRole, 'coding.fast'); assert.equal(routed.modelRouting.roles['coding.fast'].primary, 'fast');
 });
+
+test('configuration store updates the optional Spark lane without weakening limits', t => {
+  const {root, store} = setup(); t.after(() => fs.rmSync(root, {recursive: true, force: true}));
+  const updated = store.updateSpark({revision: store.read().revision, spark: {enabled: false, model: 'gpt-5.3-codex-spark', modelRole: 'fast-execution', maximumFiles: 1, maximumChangedLines: 80, maximumAttempts: 1, maximumSubagents: 0, maximumContextTokens: 2048, verificationRequired: true}});
+  assert.equal(updated.spark?.model, 'gpt-5.3-codex-spark'); assert.equal(updated.restartRequired, true);
+  assert.throws(() => store.updateSpark({revision: updated.revision, spark: {enabled: true, maximumAttempts: 3}}), /spark_maximum_attempts/);
+});

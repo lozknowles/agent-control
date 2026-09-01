@@ -1,7 +1,7 @@
 import {createHash, randomUUID} from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import {emptyConfig, loadConfig, validateConfig, type AgentControlConfig, type ModelConfig, type ModelRoutingConfig, type ProviderConfig, type ResourceConfig, type ServiceConfig} from './config.js';
+import {emptyConfig, loadConfig, validateConfig, type AgentControlConfig, type ModelConfig, type ModelRoutingConfig, type ProviderConfig, type ResourceConfig, type ServiceConfig, type SparkConfig} from './config.js';
 
 export type ConfiguredSystemKind = 'resource' | 'provider' | 'model' | 'service';
 export interface ConfigurationSnapshot {
@@ -11,6 +11,7 @@ export interface ConfigurationSnapshot {
   models: ModelConfig[];
   modelRouting: ModelRoutingConfig;
   services: ServiceConfig[];
+  spark?: SparkConfig;
 }
 
 export class ConfigurationStoreError extends Error {
@@ -56,6 +57,17 @@ export class ConfigurationStore {
     return {...snapshot(next), restartRequired: false, changed: {kind: 'model-routing' as const, id: 'model-routing'}};
   }
 
+  updateSpark(input: {revision?: unknown; spark?: unknown}) {
+    const current = this.current(), currentRevision = revision(current);
+    if (typeof input.revision !== 'string' || input.revision !== currentRevision) throw new ConfigurationStoreError('configuration_revision_conflict', 409);
+    if (!input.spark || typeof input.spark !== 'object' || Array.isArray(input.spark)) throw new ConfigurationStoreError('configuration_spark_invalid', 400);
+    let next: AgentControlConfig;
+    try { next = validateConfig({...current, spark: structuredClone(input.spark) as SparkConfig}); }
+    catch (error) { throw new ConfigurationStoreError((error as Error).message || 'configuration_invalid', 400); }
+    this.write(next);
+    return {...snapshot(next), restartRequired: true, changed: {kind: 'spark' as const, id: 'fast-execution'}};
+  }
+
   private current() {
     try { return fs.existsSync(this.file) ? loadConfig(this.file) : emptyConfig(); }
     catch (error) { throw new ConfigurationStoreError((error as Error).message || 'configuration_read_failed', 500); }
@@ -82,5 +94,5 @@ function revision(config: AgentControlConfig) {
 }
 
 function snapshot(config: AgentControlConfig): ConfigurationSnapshot {
-  return {revision: revision(config), resources: structuredClone(config.resources), providers: structuredClone(config.providers), models: structuredClone(config.models), modelRouting: structuredClone(config.modelRouting), services: structuredClone(config.services)};
+  return {revision: revision(config), resources: structuredClone(config.resources), providers: structuredClone(config.providers), models: structuredClone(config.models), modelRouting: structuredClone(config.modelRouting), services: structuredClone(config.services), ...(config.spark ? {spark: structuredClone(config.spark)} : {})};
 }

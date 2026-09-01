@@ -13,6 +13,8 @@ import {buildJobRuntime, buildParameterizedJobRuntime, startJobScheduler, startM
 import {FileCommandResultStore, TokenAwareOutputService} from './control/token-aware-output.js';
 import {Trace} from './control/telemetry.js';
 import {ModelQualificationStore, ModelRegistry} from './control/model-registry.js';
+import {IdentityControlPlane} from './control/identity-control-plane.js';
+import {FileFastExecutionLedger} from './control/fast-execution.js';
 
 const now = () => new Date().toISOString();
 const configurationFile = configPath(), config = loadConfig(configurationFile);
@@ -27,6 +29,15 @@ if (process.platform === 'linux') for (const discovery of toPtyDiscoveries(disco
 const queue = new WorkQueueStore().load();
 const modelRegistry = new ModelRegistry(config.providers, config.models, config.modelRouting, new ModelQualificationStore(path.resolve(process.env.AGENT_CONTROL_STATE_DIR || '.agent-control', 'model-qualification.json')));
 const stateRoot = path.resolve(process.env.AGENT_CONTROL_STATE_DIR || '.agent-control');
+const identity = new IdentityControlPlane(path.join(stateRoot, 'identity', 'control-plane.json'));
+const fastExecution = new FileFastExecutionLedger(path.join(stateRoot, 'fast-execution', 'attempts.json'));
+identity.registerActor({id: 'web-operator', type: 'human', displayName: 'Authenticated web operator', principalId: 'operator:web', authenticationSource: 'dashboard-bearer', roles: ['operator'], capabilities: [], metadata: {surface: 'dashboard'}});
+const defaultSessionId = 'session:web-operator';
+try { identity.session(defaultSessionId); }
+catch (error) {
+  if (!(error instanceof Error) || error.message !== 'session_missing') throw error;
+  identity.createSession({id: defaultSessionId, creatorActorId: 'web-operator', mode: 'operator-controlled', permissions: {capabilities: ['session.observe', 'session.manage', 'parcel.create', 'parcel.execute', 'parcel.approve', 'agent.delegate', 'model.invoke', 'node.execute'], allowedModels: config.models.map(model => model.id), allowedNodes: config.resources.map(resource => resource.id), filesystem: 'none', network: 'provider-only', production: false}, contextPolicy: 'compiled', visibility: 'operator', metadata: {surface: 'dashboard'}});
+}
 const jobRuntime = buildJobRuntime(config, stateRoot, undefined, undefined, modelRegistry);
 const parameterizedJobs = buildParameterizedJobRuntime(config, modelRegistry, jobRuntime.workParcels, stateRoot);
 const commandOutputRoot = path.resolve(stateRoot, 'command-output');
@@ -46,6 +57,9 @@ const service = new AgentControlService(state, ptys, providers).configureProject
   workParcels: jobRuntime.workParcels,
   modelRegistry,
   parameterizedJobs,
+  identity,
+  defaultSessionId,
+  fastExecution,
 });
 startManagedNodeMonitoring(jobRuntime, snapshot => service.events.emit('resource.node_changed', {resourceId: snapshot.resourceId, state: snapshot.state, health: snapshot.health, currentWorkload: snapshot.currentWorkload}, undefined, 'managed-node-monitor'), error => service.events.emit('failure', {scope: 'managed-node-monitor', error: error.message}, undefined, 'managed-node-monitor'));
 startJobScheduler(jobRuntime, (id, status) => id.startsWith('parcel-') ? service.events.emit('work.parcel_changed', {parcelId: id, status}, undefined, 'job-scheduler') : service.events.emit('job.run_changed', {runId: id, status}, undefined, 'job-scheduler'), 1000, error => service.events.emit('failure', {scope: 'job-scheduler', error: error.message}, undefined, 'job-scheduler'));

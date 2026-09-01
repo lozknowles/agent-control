@@ -105,3 +105,12 @@ test('harness efficiency configuration rejects unsafe automatic-routing threshol
   assert.throws(() => validateConfig({...base, harnessEfficiency: {minimumSuccessRate: 0}}), /minimum_success_rate/);
   assert.throws(() => validateConfig({...base, harnessEfficiency: {profiles: {THIN: {maximumInitialContextTokens: 1}}}}), /harness_efficiency_context/);
 });
+
+test('Spark fast-execution configuration is conservative and fail-closed', () => {
+  const base = {schemaVersion: 1 as const, resources: [], providers: [], models: [], modelRouting: {roles: {}}, services: [], lanes: []};
+  const config = validateConfig({...base, spark: {enabled: false, model: 'gpt-5.3-codex-spark', modelRole: 'fast-execution', maximumFiles: 1, maximumChangedLines: 80, maximumAttempts: 1, maximumSubagents: 0, maximumContextTokens: 2048, verificationRequired: true}});
+  assert.equal(config.spark?.enabled, false); assert.equal(config.spark?.maximumAttempts, 1); assert.equal(config.spark?.verificationRequired, true);
+  assert.throws(() => validateConfig({...base, spark: {enabled: true, maximumAttempts: 2}}), /spark_maximum_attempts/);
+  assert.throws(() => validateConfig({...base, spark: {enabled: true, maximumSubagents: 1}}), /spark_maximum_subagents/);
+  assert.throws(() => validateConfig({...base, spark: {enabled: true, verificationRequired: false}}), /spark_verification_required/);
+});
