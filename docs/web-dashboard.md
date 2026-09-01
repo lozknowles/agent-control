@@ -2,7 +2,7 @@
 
 The web dashboard is an operator interface over `AgentControlService`. It is not a web scheduler and does not own lane, lease, PTY, verification or provider state.
 
-The default **Jobs** area contains four separate 3.4 platform views: **Job Definitions**, **Saved Jobs**, **Schedules**, and **Runs**. These sit alongside the existing catalog/Run-ledger projection rather than replacing its Action/DAG workflows. **Lanes** retains the interactive multi-agent control room. **Systems** shows the canonical configured execution inventory and current readiness. **Models** shows the canonical provider-neutral model registry. **Configuration** provides authenticated, validated inventory editing. No view parses terminal text for Run state.
+The default **Jobs** area contains four separate platform views: **Job Definitions**, **Saved Jobs**, **Schedules**, and **Runs**. These sit alongside the existing catalog/Run-ledger projection rather than replacing its Action/DAG workflows. **Lanes** retains the interactive multi-agent control room. **Sessions** projects persistent Actor, participant, delegation, model/runtime and evidence identity. **Systems** shows the canonical configured execution inventory and current readiness. **Models** shows the canonical provider-neutral model registry. **Configuration** provides authenticated, validated inventory and fast-execution policy editing. No view parses terminal text for Run state.
 
 ## Parameterised Jobs
 
@@ -29,9 +29,9 @@ Select **Observer mode** in the browser and enter the token. It remains in tab-s
 
 1. Configure `AGENT_CONTROL_WEB_OPERATOR_TOKEN`, start Agent Control and authenticate using the top-right operator button.
 2. Open **Configuration**.
-3. Select an existing entry, or choose **Add machine**, **Add provider**, **Add model** or **Add service**.
+3. Select an existing entry, or choose **Add machine**, **Add provider**, **Add model**, **Add service**, or **Fast execution**.
 4. Edit the validated JSON and choose **Save configuration**.
-5. Provider and model changes hot-reload. Restart Agent Control only when the dashboard reports that a machine or service change requires it.
+5. Provider and model changes hot-reload. Machine, service and Fast execution changes require a restart; follow the dashboard's `restartRequired` result.
 6. Open **Systems** and verify the entry. An unprobed configured system is expected to show `UNKNOWN`; an unreachable observed system shows `OFFLINE`; a provider or service with a missing credential reference shows `AUTH REQUIRED`.
 
 Machines use the same resource schema described in the main configuration model. A provider or external service that requires an API key must use `auth.env`, `credentialEnv` or `credentialFileEnv`, for example:
@@ -58,6 +58,10 @@ Read projections:
 - `GET /api/lanes/:id/router`
 - `GET /api/providers`
 - `GET /api/models/providers`, `GET /api/models`, `GET /api/models/:id`, `GET /api/models/routes`
+- `GET /api/sessions`, `GET /api/sessions/:id`
+- `GET /api/context-transfers`, `GET /api/delegations`
+- `GET /api/fast-execution-attempts`
+- `GET /api/executions`, `GET /api/executions/:runId`
 - `GET /api/router`
 - `GET /api/evidence`
 - `GET /api/events` (SSE)
@@ -77,7 +81,7 @@ Read projections:
 
 Authenticated legacy Job requests are `POST /api/jobs/:id/run`, schedule `enable`/`disable`, and Run `cancel`, `retry` and `approve`. Parameterised Job requests are `POST /api/saved-jobs`, `POST /api/saved-jobs/:id` (update), `POST /api/saved-jobs/:id/run`, `POST /api/saved-jobs/:id/enable`, `POST /api/saved-jobs/:id/disable`, and `POST /api/job-runs/:id/cancel`. Saved Job updates require the current revision. Scoped command-result expansion is `POST /api/command-output/:handle/expand`; operator authentication is necessary but not sufficient, because the supplied task/lane/worker/lease/ownership scope must exactly match the retained result. These calls enter `AgentControlService`. The HTTP layer cannot register a worker, grant a capability, edit a definition, acquire a resource lock, dispatch an Action or write a PTY.
 
-Authenticated inventory changes use `POST /api/configuration/systems` with the current `revision`, a `kind` of `resource`, `provider`, `model` or `service`, an optional `originalId`, and the complete replacement `item`. Model role maps use `POST /api/configuration/model-routing` with `revision` and the complete `modelRouting` object. The server rejects stale revisions, embedded secret material and invalid schema, writes the complete configuration atomically and emits `configuration.changed`. Provider/model/route updates return `restartRequired: false`; resources/services return `true`.
+Authenticated inventory changes use `POST /api/configuration/systems` with the current `revision`, a `kind` of `resource`, `provider`, `model` or `service`, an optional `originalId`, and the complete replacement `item`. Model role maps use `POST /api/configuration/model-routing`; fast-execution policy uses `POST /api/configuration/spark`. The server rejects stale revisions, embedded secret material and invalid schema, writes the complete configuration atomically and emits `configuration.changed`. Provider/model/route updates return `restartRequired: false`; resources/services/Spark policy return `true`.
 
 Model qualification and routing mutations are `POST /api/models/:id/qualify` and `POST /api/models/:id/route`. Qualification accepts a `nodeId`; routing accepts `nodeId`, optional `requiredCapabilities` and `allowFallback`. These operations require operator authentication. `UNTESTED`, failed, disabled, wrong-node or capability-unproven models cannot route.
 
@@ -86,6 +90,12 @@ Operator requests under `/api/lanes/:id/` include `pause`, `resume`, `priority`,
 The prominent **Managed Nodes** panel renders the same resource-attached snapshot returned by `/api/status` and `/api/nodes`: state, OS/kernel, heartbeat, uptime, load, memory, workload, maintenance state, secure-overlay connectivity, storage and capabilities. It is an observation panel, not a remote shell. Node operations are created as governed Jobs through the existing scheduler and approval path.
 
 The compact **Harness Efficiency** diagnostic shows verified successes, turns, fresh/cached/output token composition, cache effectiveness, escalation rate and cost per verified outcome. Unknown provider measurements are rendered as `unknown`, not zero. A selected Run shows its recorded profile and verifier state; these observations cannot change routing or acceptance through the read-only endpoints.
+
+## Spark fast execution
+
+Open **Configuration → Fast execution** to edit the complete `spark` policy. It is disabled by default and requires a restart after save. The exact keys, defaults, registry prerequisites and qualification commands are documented in [`fast-execution.md`](fast-execution.md). The editor cannot bypass exact-model availability, qualification, classifier or verifier gates, and there is no dashboard control that forces arbitrary work onto Spark.
+
+When a selected Session has fast-execution telemetry, its **Fast execution** panel shows execution class, harness profile, requested and actual model, verification, elapsed time, changed scope, escalation reason, successor and evidence. If Spark is unavailable, the attempt/decision remains visible as unavailable or escalated; Agent Control never labels a substituted model as Spark. Provider fields that were not exposed, including current monetary cost and sometimes file reads, render as `unknown` rather than zero.
 
 ## Security model
 

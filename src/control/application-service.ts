@@ -20,6 +20,8 @@ import type {ModelConfig, ModelRoutingConfig, ProviderConfig} from './config.js'
 import type {ParameterizedJobEngine} from './parameterized-job-engine.js';
 import {nextSavedJobOccurrence} from './parameterized-job-registry.js';
 import type {SavedJob} from './parameterized-job-types.js';
+import {legacyAttribution, type IdentityControlPlane, type WorkAttribution} from './identity-control-plane.js';
+import type {FastExecutionLedgerPort} from './fast-execution.js';
 
 export type ControlEventType =
   | 'system.snapshot'
@@ -125,6 +127,9 @@ export class AgentControlService {
   private workParcels?: WorkParcelCoordinator;
   private modelRegistry?: ModelRegistry;
   private parameterizedJobs?: ParameterizedJobEngine;
+  private identity?: IdentityControlPlane;
+  private defaultSessionId?: string;
+  private fastExecution?: FastExecutionLedgerPort;
 
   constructor(
     readonly state: WorkspaceState,
@@ -137,7 +142,7 @@ export class AgentControlService {
     this.verification = new VerificationService(state, persist);
   }
 
-  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; services?: RegisteredService[]; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService; harnessEfficiency?: HarnessEfficiencyLedgerPort; workParcels?: WorkParcelCoordinator; modelRegistry?: ModelRegistry; parameterizedJobs?: ParameterizedJobEngine}) {
+  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; services?: RegisteredService[]; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService; harnessEfficiency?: HarnessEfficiencyLedgerPort; workParcels?: WorkParcelCoordinator; modelRegistry?: ModelRegistry; parameterizedJobs?: ParameterizedJobEngine; identity?: IdentityControlPlane; defaultSessionId?: string; fastExecution?: FastExecutionLedgerPort}) {
     if (extras.approvalCount) this.approvalCount = extras.approvalCount;
     if (extras.resources) this.resourceRows = structuredClone(extras.resources);
     if (extras.services) this.serviceRows = structuredClone(extras.services);
@@ -149,6 +154,9 @@ export class AgentControlService {
     if (extras.workParcels) this.workParcels = extras.workParcels;
     if (extras.modelRegistry) this.modelRegistry = extras.modelRegistry;
     if (extras.parameterizedJobs) this.parameterizedJobs = extras.parameterizedJobs;
+    if (extras.identity) this.identity = extras.identity;
+    if (extras.defaultSessionId) this.defaultSessionId = extras.defaultSessionId;
+    if (extras.fastExecution) this.fastExecution = extras.fastExecution;
     return this;
   }
 
@@ -202,6 +210,13 @@ export class AgentControlService {
     const records = (this.harnessEfficiency?.list() ?? []).filter(record => (!options.runId || record.runId === options.runId) && (!options.jobId || record.jobId === options.jobId));
     return records.slice(-limit);
   }
+  sessions() { return this.mustIdentity().listSessions(); }
+  session(id: string) { return this.mustIdentity().session(id); }
+  contextTransfers(sessionId?: string) { return this.mustIdentity().listContextTransfers(sessionId); }
+  delegations(sessionId?: string) { return this.mustIdentity().listDelegations(sessionId); }
+  executionProvenance() { return this.mustIdentity().listExecutions(); }
+  executionChain(runId: string) { return {chain: this.mustIdentity().reconstruct(runId), aggregate: this.mustIdentity().aggregate(runId)}; }
+  fastExecutionAttempts() { return this.fastExecution?.list() ?? []; }
   modelProviders() { return this.mustModelRegistry().providersList(); }
   models() { return this.mustModelRegistry().list().map(model => { const recent = (this.harnessEfficiency?.list() ?? []).filter(item => item.model === model.id && item.provider === model.provider).at(-1); return {...model, ...(recent ? {recentInvocation: {at: recent.completedAt ?? recent.startedAt, outcome: recent.finalJobResult, verifierResult: recent.verifierResult, latencyMs: recent.elapsedMs, inputTokens: recent.usage.inputTokens, outputTokens: recent.usage.outputTokens, cachedInputTokens: recent.usage.cachedInputTokens, totalTokens: recent.usage.totalProcessedTokens, providerReportedCost: recent.providerReportedCost, calculatedCost: recent.calculatedCost, currency: recent.currency}} : {})}; }); }
   jobDefinitions() { return this.mustParameterizedJobs().definitions.list(); }
@@ -233,7 +248,16 @@ export class AgentControlService {
   }
   parcels() { return this.mustWorkParcels().list(); }
   parcel(id: string) { return this.mustWorkParcels().get(id); }
-  async submitNaturalTask(prompt: string, actor: string) { const parcel = this.mustWorkParcels().accept(prompt, actor, this.systems()); this.events.emit('work.parcel_created', {parcelId: parcel.id, status: parcel.status}, undefined, actor); return parcel; }
+  async submitNaturalTask(prompt: string, actor: string) {
+    let attribution: WorkAttribution;
+    if (this.identity && this.defaultSessionId) {
+      this.identity.authorize(this.defaultSessionId, actor, 'parcel.create');
+      attribution = {schema: 'agent-control.work-attribution/v1', actorId: actor, sessionId: this.defaultSessionId, authority: this.identity.session(this.defaultSessionId).participants.find(value => value.actorId === actor)?.capabilities ?? [], createdAt: new Date().toISOString(), legacy: false};
+    } else attribution = legacyAttribution(actor, `parcel-pending:${prompt}`);
+    let parcel = this.mustWorkParcels().accept(prompt, actor, this.systems(), attribution);
+    const finalAttribution: WorkAttribution = {...attribution, parcelId: parcel.id}; parcel.attribution = finalAttribution; parcel = this.mustWorkParcels().store.update(parcel);
+    this.events.emit('work.parcel_created', {parcelId: parcel.id, status: parcel.status, actorId: finalAttribution.actorId, sessionId: finalAttribution.sessionId}, undefined, actor); return parcel;
+  }
   cancelParcel(id: string, actor: string) { const parcel = this.mustWorkParcels().cancel(id, actor); this.events.emit('work.parcel_changed', {parcelId: id, status: parcel.status}, undefined, actor); return parcel; }
   expandCommandOutput(handle: string, request: OutputExpansionRequest, scope: OutputAuthorityScope) { return this.mustTokenAwareOutput().expand(handle, request, scope); }
 
@@ -398,5 +422,6 @@ export class AgentControlService {
   private mustTokenAwareOutput() { if (!this.tokenAwareOutput) throw new Error('token_aware_output_unconfigured'); return this.tokenAwareOutput; }
   private mustWorkParcels() { if (!this.workParcels) throw new Error('work_parcels_unconfigured'); return this.workParcels; }
   private mustModelRegistry() { if (!this.modelRegistry) throw new Error('model_registry_unconfigured'); return this.modelRegistry; }
+  private mustIdentity() { if (!this.identity) throw new Error('identity_control_plane_unconfigured'); return this.identity; }
   private mustParameterizedJobs() { if (!this.parameterizedJobs) throw new Error('parameterized_jobs_unconfigured'); return this.parameterizedJobs; }
 }

@@ -44,3 +44,23 @@ npx tsx scripts/prove-android-resolution.ts
 ```
 
 The proof is read-only and accepts only the bundled Android log-observation operation.
+
+## Spark fast-execution qualification
+
+Spark qualification is opt-in and is not part of the configuration-free local gate. First check the exact installed Codex executable, ChatGPT authentication, frozen classifier and bounded exact-model availability probe:
+
+```bash
+codex --version
+codex login status
+npm run benchmark:fast-execution
+```
+
+Only after that preflight passes, run both mutation arms in disposable Git worktrees:
+
+```bash
+npm run benchmark:fast-execution -- --live --standard-model gpt-5.6-luna
+```
+
+Acceptance requires 10/10 frozen classifier decisions with no false-positive Spark route; exact requested/actual `gpt-5.3-codex-spark` identity; approved file/line scope; a single attempt with no subagents; and independent verification for each accepted outcome. Unavailable Spark, requested context, scope growth, low confidence or verifier failure must be recorded as failure/escalation and must not trigger a hidden model substitution or Spark retry.
+
+The qualified desktop client is `codex-cli 0.144.4` and uses the directly tested `features.multi_agent=false` compatibility switch because that installed version rejects the currently documented `agents.enabled=false` boolean shape. Requalify this control after upgrading Codex. Provider monetary cost is currently unavailable and must remain `null`/`unknown`, not zero. The current evidence files and interpretation are listed in [`evidence/agent-control-3.5-qualification.md`](evidence/agent-control-3.5-qualification.md); detailed operator guidance is in [`fast-execution.md`](fast-execution.md).

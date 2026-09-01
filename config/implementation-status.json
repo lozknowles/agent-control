@@ -1,8 +1,38 @@
 {
   "schema": "agent-control.implementation-status/v1",
-  "release": "3.4.0",
+  "release": "3.5.0-unreleased",
   "updated": "2026-09-01",
   "capabilities": [
+    {
+      "id": "identity.sessions-delegation",
+      "title": "Persistent identity, sessions and delegation",
+      "status": "PARTIAL",
+      "summary": "Actors, Agents, immutable session creators, attributed participants, context-transfer hashes, authority-subset delegation, opaque secret-use receipts and execution lineage are persistent; execution admission enforces participant/session/delegation authority plus model, node, filesystem and network envelopes, while the Sessions dashboard projects parcels, batons, delegations, runtimes and chain accounting.",
+      "sources": ["src/control/identity-control-plane.ts", "src/control/context-deterioration.ts", "src/control/work-parcels.ts", "src/control/application-service.ts", "src/control/web-server.ts", "assets/dashboard/dashboard-sessions.js"],
+      "tests": ["src/control/identity-control-plane.test.ts", "src/control/context-deterioration.test.ts", "src/control/work-parcels.test.ts", "src/control/web-server.test.ts"],
+      "evidence": ["docs/evidence/agent-control-3.5-qualification.md"],
+      "limitation": "The physical Luna to local LLM to GLM-5.3-Flash to Luna chain is not qualified on this host because no qualified local-LLM or GLM model-registry routes are available to the isolated branch."
+    },
+    {
+      "id": "interop.acp-v1-adapter",
+      "title": "ACP v1 governed session adapter",
+      "status": "PARTIAL",
+      "summary": "A transport-neutral Agent Client Protocol v1 JSON-RPC core maps initialize, session lifecycle, prompt, updates and cancellation into Actors, governed Sessions, context transfers and Work Parcels without adding a control path.",
+      "sources": ["src/control/acp-adapter.ts", "src/control/identity-control-plane.ts"],
+      "tests": ["src/control/acp-adapter.test.ts", "src/control/identity-control-plane.test.ts"],
+      "evidence": ["docs/evidence/agent-control-3.5-qualification.md"],
+      "limitation": "Stdio/WebSocket packaging and an external ACP client conformance suite remain unqualified; ACP v2 is not claimed."
+    },
+    {
+      "id": "models.fast-execution-spark",
+      "title": "Governed fast-execution model class",
+      "status": "PARTIAL",
+      "summary": "Conservative trivial-work classification, authenticated Spark probing, exact registry selection, minimal sealed batons, clean-worktree Codex execution, one-attempt/zero-subagent policy, independent verification, escalation and telemetry are executable; the frozen live benchmark verified all seven Spark cases.",
+      "sources": ["src/control/fast-execution.ts", "scripts/benchmark-fast-execution.ts", "src/control/config.ts", "src/control/configuration-store.ts", "src/control/application-service.ts", "src/control/web-server.ts", "assets/dashboard/dashboard-enhancements.js", "assets/dashboard/dashboard-sessions.js"],
+      "tests": ["src/control/fast-execution.test.ts", "src/control/config.test.ts", "src/control/configuration-store.test.ts", "src/control/web-server.test.ts"],
+      "evidence": ["docs/evidence/agent-control-3.5-qualification.md", "artifacts/fast-execution/benchmark-2026-09-01T19-56-37-144Z.json"],
+      "limitation": "Research-preview entitlement is not universal, cost was unreported, the corpus is small and production Job adoption is not yet qualified; keep spark.enabled false by default."
+    },
     {
       "id": "teammates.persistent-coordination",
       "title": "Persistent Teammates and verified coordination",

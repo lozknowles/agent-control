@@ -336,6 +336,7 @@ function configurationItems() {
     ...jobState.configuration.providers.map(item=>({kind:'provider',label:'provider',item})),
     ...jobState.configuration.models.map(item=>({kind:'model',label:'model',item})),
     ...jobState.configuration.services.map(item=>({kind:'service',label:'service',item})),
+    ...(jobState.configuration.spark?[{kind:'spark',label:'fast execution',item:{id:'fast-execution',...jobState.configuration.spark}}]:[]),
   ].sort((a,b)=>(a.item.name||a.item.id).localeCompare(b.item.name||b.item.id));
 }
 
@@ -343,6 +344,7 @@ function configurationTemplate(kind) {
   if(kind==='provider') return {id:'new-provider',name:'New provider',kind:'openai-compatible',baseUrl:'https://provider.example/v1',wireApi:'responses',enabled:true,auth:{type:'bearer-env',env:'PROVIDER_API_KEY'},parallelism:1,costClass:'metered',capabilities:[]};
   if(kind==='model') return {id:'new-model',provider:'new-provider',providerModel:'provider/model-id',displayName:'New model',enabled:true,capabilities:['coding'],roles:[],qualification:{state:'UNTESTED',evidence:[]}};
   if(kind==='service') return {id:'new-service',name:'New service',healthUrl:'https://service.example/health',optional:true,requiresAuth:true,credentialEnv:'SERVICE_API_KEY'};
+  if(kind==='spark') return {id:'fast-execution',enabled:false,model:'gpt-5.3-codex-spark',modelRole:'fast-execution',maximumFiles:1,maximumChangedLines:80,maximumAttempts:1,maximumSubagents:0,maximumContextTokens:2048,verificationRequired:true};
   return {id:'new-system',name:'New system',platform:'unknown',transport:{type:'ssh',host:'hostname',user:'operator'},capabilities:[]};
 }
 
@@ -378,12 +380,13 @@ function renderConfiguration() {
 async function saveConfiguration() {
   let item; try{item=JSON.parse(document.querySelector('#configuration-json').value)}catch{throw new Error('Configuration JSON is invalid')}
   const kind=document.querySelector('#configuration-kind').value, originalId=document.querySelector('#configuration-original-id').value||undefined;
-  const response=await fetch('/api/configuration/systems',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${state.token}`},body:JSON.stringify({revision:jobState.configuration.revision,kind,originalId,item,actor:'web-operator'})});
+  const spark=kind==='spark'?Object.fromEntries(Object.entries(item).filter(([key])=>key!=='id')):null;
+  const response=await fetch(kind==='spark'?'/api/configuration/spark':'/api/configuration/systems',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${state.token}`},body:JSON.stringify(kind==='spark'?{revision:jobState.configuration.revision,spark,actor:'web-operator'}:{revision:jobState.configuration.revision,kind,originalId,item,actor:'web-operator'})});
   if(response.status===401){authenticationExpired();throw new Error('Operator authentication required')}
   const result=await response.json(); if(!response.ok){if(response.status===409)await loadConfiguration();throw new Error(result.error||`HTTP ${response.status}`)}
   jobState.configuration=result;jobState.configurationRestartRequired=result.restartRequired;jobState.selectedConfiguration={kind,id:item.id,item:structuredClone(item)};
   const note=document.querySelector('#configuration-auth-note');note.hidden=false;note.className='configuration-notice success';note.textContent=result.restartRequired?`Saved ${item.id}. Restart Agent Control to apply the new inventory and readiness probes.`:`Saved ${item.id}. The model registry was validated and reloaded.`;
-  document.querySelector('#configuration-save-state').textContent=result.restartRequired?'RESTART REQUIRED':'CURRENT';document.querySelector('#configuration-original-id').value=item.id;renderConfiguration();toast('System configuration saved');
+  document.querySelector('#configuration-save-state').textContent=result.restartRequired?'RESTART REQUIRED':'CURRENT';document.querySelector('#configuration-original-id').value=item.id;renderConfiguration();toast(kind==='spark'?'Fast execution configuration saved':'System configuration saved');
 }
 
 async function jobCommand(url, body) {
@@ -404,6 +407,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const view = button.dataset.view;
     document.querySelector('#jobs-workspace').hidden = view !== 'jobs';
     document.querySelector('#lanes-workspace').hidden = view !== 'lanes';
+    document.querySelector('#sessions-workspace').hidden = view !== 'sessions';
     document.querySelector('#systems-workspace').hidden = view !== 'systems';
     document.querySelector('#models-workspace').hidden = view !== 'models';
     document.querySelector('#configuration-workspace').hidden = view !== 'configuration';

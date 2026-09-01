@@ -13,6 +13,8 @@ A proposed plan is data, not authority. Agent Control validates every stage ID, 
 - aggregates elapsed time and existing per-invocation token/cost telemetry without converting unknown values to zero;
 - records requested and actual route information separately.
 
+Every newly submitted parcel also carries `agent-control.work-attribution/v1`: Actor, Session, optional Agent/delegation, authority snapshot, creation time and legacy marker. The authenticated dashboard selects `web-operator` server-side and ignores a body-supplied actor. Existing callers without the 3.5 identity service receive deterministic legacy attribution rather than an invented authenticated identity.
+
 The initial runtime executes one ready stage at a time. Dependencies are stored as arrays and cycle-validated, so later parallel DAG scheduling does not require a persistence-format replacement. This is deliberately not a general workflow language.
 
 ## FreeToken dogfood routine

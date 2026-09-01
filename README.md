@@ -1,10 +1,52 @@
-# Agent Control 3.4.0
+# Agent Control 3.5.0 (unreleased feature branch)
 
 Agent Control runs governed parameterised jobs against qualified execution and model resources. It is an infrastructure-neutral, policy-controlled adaptive harness for durable work by heterogeneous agents and models. Its executable harness core composes a task-appropriate worker, provider/model route, prompt profile, minimum qualified skills, restricted tools, context strategy, runtime settings, authority snapshot, resource limits and verification/escalation policy into a fingerprinted execution recipe.
 
 A lane owns its task; recipes, agents, models, skills, tools, execution providers and operator interfaces are replaceable and remain below the control boundary. Agent Control remains authoritative for scheduling, priorities, leases, ownership, unconditional human takeover, batons, handoffs, clones, shared tasks, provider qualification, routing, approvals, recovery validation, verification and conflict policy. In 3.1.0, ordinary `WorkExecutor` agent work can no longer accept a raw handler: it builds and records an `ExecutionRecipe`, dispatches it through `AdaptiveHarness`, and exposes only a live-authority `ToolPolicy` gateway.
 
 Orca is available behind a narrow execution-provider contract. Orca may execute processes, terminals and worktrees, but it does not receive Agent Control policy authority.
+
+## Identity, sessions and delegation
+
+3.5 adds a persistent identity control plane with an explicit chain:
+
+`Actor → Session → Work Parcel → Agent → Model → Runtime → Resource → Evidence`
+
+The session creator is immutable. Participants, capabilities, context policy and mode (`observer`, `collaborative`, `operator-controlled`, or `restricted`) are durable. Agent-to-agent delegation records both actors, both agents, the context-transfer hash, inherited authority, requested/actual model, child Run and evidence. Child authority must be a subset of its parent and session. Secrets remain opaque references used through capability-checked operations; literal credentials are rejected from context and persistence.
+
+The dashboard **Sessions** tab reads this authoritative store and shows participants, active attributed Work Parcels, the agent/delegation graph, baton token/hash traces, models, runtime/node identity, context policy, evidence and complete-chain token/cost values where providers reported them. Execution admission enforces the session's participant authority, model/node allow-lists and filesystem/network envelope. Existing records receive deterministic `legacy-actor:*` / `legacy-session:*` attribution; legacy “Ox” labels remain historical aliases of canonical `GLM-5.3-Flash`, not a distinct model.
+
+An ACP v1 JSON-RPC adapter maps `initialize`, session new/load/resume/list/prompt/cancel/close, session updates and request cancellation into the same sessions and Work Parcels. ACP is an interoperability edge, not a second scheduler, shell or tool-authority path. See [identity and delegation](docs/identity-sessions-delegation.md), [security](docs/security-3.5.md), [migration](docs/migration-3.5.md), and [ACP compatibility](docs/acp-compatibility.md).
+
+## Governed fast execution (Spark)
+
+3.5 adds an optional `FAST_EXECUTION_MODEL` execution class, currently implemented by the exact model `gpt-5.3-codex-spark`. Its purpose is to avoid spending a more capable model on mechanically understandable, low-risk work while retaining Agent Control classification, authority, evidence and verification. It is disabled by default and is separate from the THIN context profile. The governed execution hierarchy is:
+
+`LOCAL → SPARK → STANDARD → FRONTIER`
+
+LOCAL, STANDARD and FRONTIER remain logical policy classes backed by the configured model registry; they are not hard-coded model names. THIN/STANDARD/DEEP describe harness and context size, whereas LOCAL/SPARK/STANDARD/FRONTIER describe model execution class. A task reaches Spark only when it is explicitly trivial, THIN, low-risk, deterministically verifiable, within one file/80 changed lines by default, outside protected paths, and free of security, authentication, migration, governance, release, deployment or production signals.
+
+Agent Control selects Spark through the provider-neutral model-registry role `fast-execution`, sends a small sealed baton, disables Codex multi-agent fan-out, permits exactly one attempt in a disposable clean Git worktree, independently checks scope and verifier evidence, and escalates visibly to STANDARD on failure or ambiguity. There is no silent substitution: if Spark is unavailable or the exact qualified route cannot be resolved, no Spark invocation is claimed and existing governed routing remains authoritative. Persistent telemetry and the Sessions view identify the originating Work Parcel/Run/Session, actual model, selection reason, context size, verification and successor. Availability is established by an authenticated bounded `codex exec --model gpt-5.3-codex-spark` probe, not by assuming a subscription or API model.
+
+Enable or disable the lane in `.agent-control/config.json` or **Configuration → Fast execution**. Enabling policy does not bypass exact model qualification or the availability probe:
+
+```json
+{
+  "spark": {
+    "enabled": false,
+    "model": "gpt-5.3-codex-spark",
+    "modelRole": "fast-execution",
+    "maximumFiles": 1,
+    "maximumChangedLines": 80,
+    "maximumAttempts": 1,
+    "maximumSubagents": 0,
+    "maximumContextTokens": 2048,
+    "verificationRequired": true
+  }
+}
+```
+
+Run the non-mutating classifier/availability qualification with `npm run benchmark:fast-execution`; run the frozen disposable live comparison explicitly with `npm run benchmark:fast-execution -- --live --standard-model gpt-5.6-luna`. The current requalification recorded 7/7 verified Spark outcomes versus 6/7 for the comparison route, median latency 14.464s versus 27.100s, and zero classifier false positives across ten cases. Provider cost was not reported and remains unknown; Spark used more output tokens. This single-host research-preview result is promising but not broad enough to enable the lane by default. See [the governed flow and routing architecture](ARCHITECTURE.md#fast-execution-class), [fast-execution operator usage](docs/fast-execution.md), [Codex integration](docs/models/CODEX-INTEGRATION.md), and the [qualification evidence](docs/evidence/agent-control-3.5-qualification.md).
 
 ## Parameterised Jobs quick start
 
@@ -155,6 +197,7 @@ The versioned JSON schema has six independent collections/policies plus optional
 - `lanes`: lane identity, working directory, priority and AUTO/MANUAL mode.
 - `tokenAwareOutput`: provider-neutral completeness, index, artifact, retention and context-budget thresholds.
 - `harnessEfficiency`: observational/enforced routing mode, verifier-evidence thresholds and configurable THIN/STANDARD/DEEP budgets. `observe` is the safe default.
+- `spark`: optional, default-disabled fast-execution policy: exact model/registry role, one-file/line/context limits, one attempt, zero subagents, and mandatory independent verification.
 - `jobs`: allowed node-local repository roots and optional allowlisted HTTPS/Git remote prefixes for parameterised repository jobs.
 
 Resource identity is separate from transport. A resource may be local, SSH, HTTP or Orca-backed. An SSH hostname is transport metadata, not the resource ID. Ports are configurable numbers. Optional unavailable services do not make an otherwise valid zero-provider installation fail.
@@ -245,4 +288,4 @@ The neutrality guard rejects private topology identifiers in distributable runti
 - Ripgrep is the only semantic command-output adapter in this change. Other oversized command families use the generic labelled fallback until a specialised index is added. A tiny typed ripgrep request retains its structured authoritative stream and therefore can be larger than normal human-formatted `rg`; it is not compacted merely because it came from ripgrep.
 - Harness-profile routing remains observational. A live same-model repository-mutation experiment now measures provider tokens, observed warm-cache behaviour, latency, independent verifier outcomes and cumulative escalation cost, but its 12-task sample had only 2/12 STANDARD successes and no adaptive resource advantage. No profile is production-qualified; STANDARD remains the applied fallback and monetary cost remains unknown.
 
-The foundational operator guide is [`docs/Agent-Control-3.1.0-Operator-Guide.md`](docs/Agent-Control-3.1.0-Operator-Guide.md), distributed as [Markdown](assets/releases/3.1.0/Agent-Control-3.1.0-Operator-Guide.md) and [PDF](assets/releases/3.1.0/Agent-Control-3.1.0-Operator-Guide.pdf). For current 3.4 operation, use [`docs/jobs/README.md`](docs/jobs/README.md), [`docs/web-dashboard.md`](docs/web-dashboard.md), [`docs/jobs-and-scheduler.md`](docs/jobs-and-scheduler.md), [`docs/managed-nodes.md`](docs/managed-nodes.md), [`docs/status-command.md`](docs/status-command.md), [`ARCHITECTURE.md`](ARCHITECTURE.md), and the [`3.4.0 release notes`](docs/release-notes-3.4.0.md). The historical 3.0.1 guide remains under `assets/releases/3.0.1/`.
+The foundational operator guide is [`docs/Agent-Control-3.1.0-Operator-Guide.md`](docs/Agent-Control-3.1.0-Operator-Guide.md), distributed as [Markdown](assets/releases/3.1.0/Agent-Control-3.1.0-Operator-Guide.md) and [PDF](assets/releases/3.1.0/Agent-Control-3.1.0-Operator-Guide.pdf). For current operation, use [`docs/fast-execution.md`](docs/fast-execution.md), [`docs/migration-3.5.md`](docs/migration-3.5.md), [`docs/identity-sessions-delegation.md`](docs/identity-sessions-delegation.md), [`docs/jobs/README.md`](docs/jobs/README.md), [`docs/web-dashboard.md`](docs/web-dashboard.md), [`docs/jobs-and-scheduler.md`](docs/jobs-and-scheduler.md), [`docs/managed-nodes.md`](docs/managed-nodes.md), [`docs/status-command.md`](docs/status-command.md), and [`ARCHITECTURE.md`](ARCHITECTURE.md). The released base is documented in the [`3.4.0 release notes`](docs/release-notes-3.4.0.md); historical 3.0.1 assets remain under `assets/releases/3.0.1/`.

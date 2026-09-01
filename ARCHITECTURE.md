@@ -1,6 +1,6 @@
 # Agent Control architecture
 
-This is the authoritative source boundary for Agent Control 3.4.0 and subsequent unreleased work. The tagged 3.0.1 infrastructure-neutral resource/provider model and the merged 3.0.x adaptive-harness recovery are the base. Status labels matter:
+This is the authoritative source boundary for the unreleased Agent Control 3.5 feature branch. Agent Control 3.4.0 remains the released base. Status labels matter:
 
 - **implemented** means executable code and automated tests exist in this branch;
 - **experimental** means executable code exists but has not been qualified across every external substrate;
@@ -28,6 +28,13 @@ This is the authoritative source boundary for Agent Control 3.4.0 and subsequent
 18. Remote maintenance is a typed Action with approval and evidence, never an arbitrary SSH command string.
 19. Provider registration, model registration, model qualification, logical role mapping and worker placement are distinct state and decisions.
 20. A declared capability or pricing field is not qualification evidence; unavailable usage and cost remain unknown rather than zero.
+21. Actor, Agent, Model, Provider, Runtime, Node and Resource identities are separate; one must never stand in for another.
+22. A Session has one immutable creator and an attributed participant set; joining a session never grants authority beyond the actor, parent delegation or session envelope.
+23. Every context handoff records source and transferred hashes, token budget, selection/omission reason and receiving agent/model without persisting raw secret material.
+24. Missing sandbox, local execution, governed runner, required node or required model fails closed unless an explicit fallback policy names the replacement.
+25. ACP and other interoperability adapters terminate at AgentControlService/Work Parcel ports. They cannot become alternate scheduler, shell, tool or acceptance paths.
+26. `THIN` describes context shape; `SPARK` describes an execution class. Neither implies the other.
+27. Fast execution is one attempt, independently verified, scope-limited and visibly escalated. Protected or sensitive work never enters it.
 
 ## System boundary and adaptive harness
 
@@ -76,6 +83,90 @@ This is the authoritative source boundary for Agent Control 3.4.0 and subsequent
 ```
 
 Orca, PTYs, SSH, browsers, mobile nodes, local runtimes and API providers are substrates or adapters. They are not the harness and receive no control-plane authority. Orca may execute, but Agent Control always decides.
+
+## 3.5 identity and session control plane
+
+```text
+external client / dashboard / scheduler
+                  |
+               Actor identity
+                  |
+       governed persistent Session
+       mode / participants / authority
+                  |
+               Work Parcel
+                  |
+       delegation + context transfer
+      source actor/agent -> target actor/agent
+                  |
+       Model + Provider (separate identity)
+                  |
+       Runtime + Node + Resource
+                  |
+        tools / evidence / verification
+                  |
+       causal-chain usage and cost
+```
+
+`IdentityControlPlane` is the durable authority/audit source for actors, agents, sessions, context transfers, delegations, execution provenance and opaque secret-use receipts. It does not replace the Job Runtime, Work Parcel store, model registry or Worker Registry. Instead, those records carry or refer to `agent-control.work-attribution/v1`, preserving one causal chain across existing stores.
+
+Execution provenance is admitted only after checking session participation, the participant/session/delegation capability intersection, model and node allow-lists, and runtime filesystem/network policy. Empty model/node allow-lists deny execution; an interoperability adapter must use an explicit `*` only when Agent Control remains responsible for the governed selection.
+
+An agent profile describes a persistent specialist. An Actor is the authenticated principal responsible for action. A Model produces inference. A Provider exposes the model. A Runtime executes it. A Node hosts that runtime. A Resource advertises schedulable capability. These identities may be related but never collapsed.
+
+Context transfer persists descriptors and hashes, not copied prompt bodies. Full, summary, evidence, structured-baton and hybrid policies can be compared using the same frozen experiment interface. Secret values may only cross an opaque capability-checked operation and are rejected if returned or placed in context.
+
+## ACP interoperability boundary
+
+The ACP adapter implements stable Agent Client Protocol v1 JSON-RPC session methods above the control plane. An external ACP session maps to one governed Agent Control session; prompt content becomes a hash-addressed context transfer and then an ordinary Work Parcel. `session/cancel`, `session/close` and `$/cancel_request` call the same cancellation port and preserve actor/session identity. ACP tool-call updates carry Work Parcel, Run and evidence references, not direct tool authority.
+
+The adapter is transport-neutral so stdio or WebSocket framing can be supplied independently. No OpenClaw dependency is introduced. ACP v2 remains experimental and is not claimed.
+
+## Fast-execution class
+
+```text
+classify
+   -> compile minimal baton
+   -> execute with Spark
+   -> independently verify
+   -> escalate when necessary
+
+side gates before execution:
+   policy enabled + exact qualified fast-execution model route
+   + authenticated bounded Spark availability probe
+   + disposable initially-clean Git worktree
+
+execution:
+   explicit codex exec --model gpt-5.3-codex-spark
+   + workspace-write sandbox + ignored user config
+   + one attempt + multi-agent disabled
+
+verification:
+   approved files + changed-line limit + deterministic command/evidence
+      -> PASS: persist verified evidence
+      -> FAIL / ambiguity / scope growth / unavailable: visible STANDARD handoff
+```
+
+The policy names `FAST_EXECUTION_MODEL`; Spark is its current model identity, not a hard-coded architectural role. The model-execution hierarchy is `LOCAL → SPARK → STANDARD → FRONTIER`. LOCAL, STANDARD and FRONTIER resolve through existing registry roles/capabilities. A future fast model may occupy `fast-execution` only after passing the same exact-identity availability, node qualification, trivial-work classifier, baton, verifier, telemetry and benchmark contracts; routing policy requires no model-specific rewrite.
+
+Harness profile and execution class are orthogonal:
+
+| Harness/context profile | Execution-class consequence |
+| --- | --- |
+| `THIN` + trivial + low-risk + deterministic verifier | Spark candidate, subject to all availability and qualification gates |
+| `THIN` + sensitive, ambiguous or protected work | Not Spark; retain governed STANDARD/FRONTIER policy |
+| `STANDARD` parent with one isolated trivial child | Child may receive a separate minimal Spark baton; parent model is unchanged |
+| `DEEP` | Never directly Spark-eligible; use the existing capable-model route |
+
+Availability and registry qualification are independent and both required. `probeCodexSparkAvailability` checks the installed Codex version, ChatGPT authentication and one bounded read-only exact-model invocation expecting a fixed probe response. A configured slug, CLI version or successful login alone is not availability evidence. Failure records the reason and leaves existing governed routing authoritative; no other model may be reported as Spark.
+
+The sealed `agent-control.fast-execution-baton/v1` contains the task ID and text, exact allowed files, maximum changed lines, forbidden scope/actions, Context Packet ID/hash, deterministic verifier commands and completion rule. It deliberately excludes broad parent history. `CodexFastExecutionRunner` requires an absolute disposable initially-clean Git worktree, chooses the exact provider model with `--model`, ignores user configuration, applies an explicit workspace sandbox and structured output schema, and disables multi-agent fan-out. One failed or uncertain attempt is the limit.
+
+Verification belongs to Agent Control. Git determines touched files, changed lines and the diff hash; an independent verifier determines acceptance. Model text cannot mark a result verified. Failure, low confidence, extra context, unexpected files/lines, or verifier failure preserves the Spark attempt and creates a visible STANDARD successor decision.
+
+Persistent attempt telemetry records Work Parcel/Run/Session, task and execution class, harness profile, requested/actual model and provider, availability/selection reasons, parent/delegated context, elapsed time, changed scope, independently verified outcome, escalation/successor, reported token/cost fields and evidence. Values Codex does not expose remain `null`, including monetary cost in the current qualification.
+
+The current live requalification demonstrates that small 24–35-token batons were sufficient for seven frozen tasks, but Codex startup context still dominated reported input tokens. This means baton minimisation is effective for parent-to-child transfer without proving low total provider context or cost. Research-preview entitlement, unavailable monetary cost, absent production Job adoption and single-host evidence keep `spark.enabled` false by default.
 
 ## Execution recipe
 
@@ -371,4 +462,4 @@ New capabilities are classified into policy/authority, scheduling, execution sub
 
 ## Release boundary
 
-Earlier version tags remain immutable source releases; 3.4.0 is the current source boundary. Releasing source does not itself deploy services, expose the dashboard remotely, create credentials, broaden sharing or enable a Saved Job or Schedule. STANDARD remains the default context profile unless the Saved Job explicitly selects another profile. Opaque CLI mediation and universal adapter verification remain explicit gaps outside the provider-direct Repository Review path.
+Earlier version tags remain immutable source releases; 3.4.0 is the current released source boundary and this 3.5 branch is unreleased. Committing or pushing this branch does not deploy services, expose the dashboard remotely, create credentials, broaden sharing, enable Spark, or enable a Saved Job/Schedule. STANDARD remains the default context profile unless a governed policy explicitly selects another profile. The physical Luna → local LLM → GLM-5.3-Flash → Luna experiment remains an external qualification gate where those routes exist.
