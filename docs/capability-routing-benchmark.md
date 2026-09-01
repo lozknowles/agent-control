@@ -52,6 +52,8 @@ The same report freezes a twelve-part parent job and two strategies:
 
 Every child baton records objective, exact file/line scope, transferred and withheld authority, verifier, minimum execution class and completion rule. The compiled plan does not invent worker results, context requests, verification, escalation, integration cost or latency; those fields remain `null` until the physical experiment runs.
 
+The separate [physical multi-provider qualification](physical-multi-provider-qualification.md) proves one real Luna/local/GLM/Luna delegation and integration chain. It is not imported as 50 benchmark observations and therefore does not change this benchmark's physical gate.
+
 ## Production boundary
 
 The deterministic classifier gate passing does not qualify providers or automatic routing. Agent Control 3.6 permits explicit/manual selection, benchmark mode, shadow observations, candidate recommendations and governed opt-in only. Scheduled and manually initiated Jobs must use the same governed contract path. Spark stays default-disabled, and no production Job route changes from this report.

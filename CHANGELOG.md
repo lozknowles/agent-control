@@ -36,6 +36,12 @@
 - Adds a same-job coordinator experiment with one complete FRONTIER context versus 12 separately accounted minimal child batons.
 - The classifier passed 60/60 with zero unsafe false positives, but no physical observations were supplied. Automatic production routing and Spark-by-default remain disabled.
 
+### Physical multi-provider chain
+
+- Qualifies the real `gpt-5.6-luna → local Qwen2.5 3B → z-ai/glm-5.3-flash → gpt-5.6-luna` chain with exact provider/model identities and indirect credentials.
+- Records local `YIELD`, GLM `SUBSTITUTE`, minimal sealed batons, fail-closed authority expansion, attach/detach, controller reconstruction and independent child/parent verification.
+- Records two unsuccessful GLM attempts before the successful bounded response and leaves unreported token/cost values unknown. This one chain does not qualify automatic production routing.
+
 ## [3.5.0] — 2026-09-01
 
 ### Identity, delegation and sessions

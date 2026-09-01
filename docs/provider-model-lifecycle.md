@@ -42,4 +42,4 @@ Historical replay scores retained observations without changing active policy. V
 
 ## Current boundary
 
-The registry, transition gates, replay, policy versioning and rollback are implemented and deterministic. It does not enable automatic production Job routing. Physical provider qualification, the larger frozen benchmark and champion promotion recommendations are later checkpoints.
+The registry, transition gates, replay, policy versioning and rollback are implemented and deterministic. The [physical multi-provider qualification](physical-multi-provider-qualification.md) exercises exact Luna, local Qwen and GLM-5.3-Flash identities once, but does not promote their immutable recipes to ACTIVE/PREFERRED. The larger frozen benchmark still has no physical observations, so automatic production Job routing remains disabled.

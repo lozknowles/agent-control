@@ -11,7 +11,7 @@
       "sources": ["src/control/identity-control-plane.ts", "src/control/context-deterioration.ts", "src/control/work-parcels.ts", "src/control/application-service.ts", "src/control/web-server.ts", "assets/dashboard/dashboard-sessions.js"],
       "tests": ["src/control/identity-control-plane.test.ts", "src/control/context-deterioration.test.ts", "src/control/work-parcels.test.ts", "src/control/web-server.test.ts"],
       "evidence": ["docs/evidence/agent-control-3.5-qualification.md"],
-      "limitation": "The physical Luna to local LLM to GLM-5.3-Flash to Luna chain is not qualified on this host because no qualified local-LLM or GLM model-registry routes are available to the isolated branch."
+      "limitation": "The physical Luna to local Qwen to GLM-5.3-Flash to Luna chain is qualified for one bounded contract, including detach/restart, yield/substitution and independent verification. The 50-attempt production-routing gate remains unqualified."
     },
     {
       "id": "execution.contract-pty-runtime",
@@ -61,6 +61,16 @@
       "tests": ["src/control/capability-routing-benchmark.test.ts"],
       "evidence": ["docs/capability-routing-benchmark.md", "docs/evidence/capability-routing-benchmark-v1.json"],
       "limitation": "The deterministic classifier passed 60/60 with zero unsafe false positives, but no physical model observations exist. Provider success, latency, token/cost, change-integrity and coordinator integration gates remain unqualified; automatic production routing stays disabled."
+    },
+    {
+      "id": "models.physical-multi-provider-chain",
+      "title": "Physical Luna/local/GLM/Luna governed chain",
+      "status": "QUALIFIED",
+      "summary": "A real bounded contract ran through exact gpt-5.6-luna, loopback qwen2.5-3b-instruct-q4_k_m.gguf, OpenRouter z-ai/glm-5.3-flash and Luna integration. Local YIELD, GLM SUBSTITUTE, minimal batons, controller reconstruction and independent child/parent verification all completed.",
+      "sources": ["src/control/contract-runtime.ts", "src/control/handoff-runtime.ts"],
+      "tests": ["src/control/contract-runtime.test.ts", "src/control/handoff-runtime.test.ts"],
+      "evidence": ["docs/physical-multi-provider-qualification.md", "docs/evidence/physical-multi-provider-chain-20260901.json"],
+      "limitation": "GLM required three bounded attempts, token/cost telemetry was unavailable, and this one synthetic contract does not satisfy the larger automatic-routing benchmark."
     },
     {
       "id": "models.fast-execution-spark",
