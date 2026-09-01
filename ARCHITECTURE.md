@@ -1,6 +1,6 @@
 # Agent Control architecture
 
-This is the authoritative source boundary for Agent Control 3.3.1 and subsequent unreleased work. The tagged 3.0.1 infrastructure-neutral resource/provider model and the merged 3.0.x adaptive-harness recovery are the base. Status labels matter:
+This is the authoritative source boundary for Agent Control 3.4.0 and subsequent unreleased work. The tagged 3.0.1 infrastructure-neutral resource/provider model and the merged 3.0.x adaptive-harness recovery are the base. Status labels matter:
 
 - **implemented** means executable code and automated tests exist in this branch;
 - **experimental** means executable code exists but has not been qualified across every external substrate;
@@ -190,6 +190,53 @@ Configuration rejects embedded secret-like fields and credentialed URLs. Credent
 
 `ConfigurationStore` is the sole dashboard-facing inventory writer. Its authenticated API reads the current file with a SHA-256 revision, applies one resource/provider/model/service upsert or complete model-role-map replacement, validates the resulting configuration, and atomically replaces the file. It never writes a supplied credential value: `auth.env`, `credentialEnv` and `credentialFileEnv` are names of runtime environment variables, while plaintext password, token, secret and API-key fields fail closed. Provider/model/route changes reload the canonical `ModelRegistry`; resource/service changes remain restart-required. The browser never mutates a registry directly.
 
+## 3.4 parameterised Jobs layer
+
+Agent Control’s operator-facing Job platform is a durable layer over—not a replacement for—the existing internal Job Runtime and Work Parcel governance:
+
+```text
+Operator / authenticated CLI / persistent scheduler
+                     |
+                     v
+          Saved Job + resolved schedule
+                     |
+                     v
+        versioned Job Definition registry
+                     |
+           typed parameter resolution
+                     |
+                     v
+         freeze target and policy inputs
+                     |
+                     v
+        one or more governed Work Parcels
+                     |
+          node + model-role resolution
+                     |
+                     v
+       direct qualified provider executor
+                     |
+                     v
+       deterministic validation/evidence
+                     |
+                     v
+            immutable persistent Run
+```
+
+`ParameterizedJobRegistry` owns reusable definition identity, versions, formal parameter schemas, default routing intent, permissions, budgets, output contract, validation policy, and version-controlled instruction template. `SavedJobStore` owns configured instances and schedule/concurrency policy. A Saved Job either pins a definition version or follows only a declared compatible version. It cannot introduce arbitrary parameters or secret-shaped fields.
+
+`ParameterizedJobEngine` is the sole path for manual and scheduled execution. A scheduled occurrence has a deterministic identity; the persistent Run store makes duplicate delivery idempotent. Restart recovery requeues the same non-terminal Run identity and reuses only a verifiably intact frozen snapshot. Missed-run and overlap policy are evaluated before provider work. Agent Control—not a browser, Codex, or conversation—owns the timer.
+
+The initial `repository-code-review@1` definition supports node-local paths under configured `jobs.repositoryRoots` and remote Git URLs under explicit `jobs.repositoryRemotes` prefixes. It records source identity, origin, dirty state, requested ref, exact commit, and comparison SHA. A detached shared clone (local) or isolated clone (remote) is made recursively read-only before context construction. The production repository is never modified. If a branch moves after resolution, the Run retains the original SHA.
+
+`buildRepositoryContext` deterministically records tree, diff, changed files, important manifests/tests/source, chunk hashes, selected files, and explicit omissions. Secret-like and binary paths are excluded before provider context. THIN/STANDARD/DEEP are bounded intent profiles; omission is visible rather than reported as full coverage. Large inputs are decomposed into attributable chunks instead of being placed into one prompt.
+
+`DirectRepositoryReviewExecutor` consumes the already-selected `ModelRouteDecision` and invokes `OpenAICompatibleProviderClient` directly. It does not launch Codex. Every context chunk creates a persistent Work Parcel carrying Run ID, frozen SHA, requested/actual route, provider/model/qualification identity, and terminal evidence. Provider response bodies and credentials are not persisted; response hashes, normalized usage/cost, and selected identity are.
+
+The structured review validator checks schema, evidence presence, confidence, repository-relative path, file existence, and line range against the frozen snapshot. Duplicate or invalid findings are rejected. Provider completion is not Job success: validation determines `SUCCEEDED`, `SUCCEEDED_WITH_FINDINGS`, `DEGRADED`, or `FAILED`. Only successful accepted outcomes advance the `(Saved Job, repository identity, ref)` baseline.
+
+Persistent state is below `AGENT_CONTROL_STATE_DIR/parameterized-jobs/`: `saved-jobs.json`, `runs.json`, `review-baselines.json`, and read-only snapshots. Files are atomically replaced with mode 0600. Terminal Runs become immutable. Dashboard/API/CLI clients access this state only through `AgentControlService`.
+
 ## Provider and model registry
 
 `ModelRegistry` separates provider endpoint/authentication from model identity and routing policy. A provider records stable ID, display name, protocol, base URL, authentication reference and broad capabilities. A model records its stable Agent Control ID, provider-native model ID, declared capabilities, optional node scope, limits, sourced pricing metadata and configured qualification seed. `ModelQualificationStore` persists runtime evidence outside the tracked tree.
@@ -324,4 +371,4 @@ New capabilities are classified into policy/authority, scheduling, execution sub
 
 ## Release boundary
 
-Earlier version tags remain immutable source releases; 3.3.1 is the current source boundary. Releasing source does not itself deploy services, expose the dashboard remotely, create credentials, broaden sharing or enable bundled Schedules. STANDARD remains the applied harness-profile fallback because real-mutation evidence did not qualify automatic profile routing; opaque CLI mediation and universal adapter verification remain explicit gaps.
+Earlier version tags remain immutable source releases; 3.4.0 is the current source boundary. Releasing source does not itself deploy services, expose the dashboard remotely, create credentials, broaden sharing or enable a Saved Job or Schedule. STANDARD remains the default context profile unless the Saved Job explicitly selects another profile. Opaque CLI mediation and universal adapter verification remain explicit gaps outside the provider-direct Repository Review path.

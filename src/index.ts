@@ -17,7 +17,7 @@ import {AndroidRecovery, type AndroidRecoveryState} from './control/android-reco
 import {AgentControlService} from './control/application-service.js';
 import {startWebDashboard} from './control/web-server.js';
 import {ContextStore} from './control/context.js';
-import {buildJobRuntime, startJobScheduler, startManagedNodeMonitoring} from './control/job-bootstrap.js';
+import {buildJobRuntime, buildParameterizedJobRuntime, startJobScheduler, startManagedNodeMonitoring, startParameterizedJobScheduler} from './control/job-bootstrap.js';
 import {FileCommandResultStore, TokenAwareOutputService} from './control/token-aware-output.js';
 import {Trace} from './control/telemetry.js';
 import {AGENT_CONTROL_VERSION} from './version.js';
@@ -42,8 +42,10 @@ for (const provider of providersFromConfig(config.providers)) providers.register
 const queueStore = new WorkQueueStore();
 let workQueue = queueStore.load();
 const modelRegistry = new ModelRegistry(config.providers, config.models, config.modelRouting, new ModelQualificationStore(path.resolve(process.env.AGENT_CONTROL_STATE_DIR || '.agent-control', 'model-qualification.json')));
-const jobRuntime = buildJobRuntime(config, undefined, undefined, undefined, modelRegistry);
-const commandOutputRoot = path.resolve(process.env.AGENT_CONTROL_STATE_DIR || '.agent-control', 'command-output');
+const stateRoot = path.resolve(process.env.AGENT_CONTROL_STATE_DIR || '.agent-control');
+const jobRuntime = buildJobRuntime(config, stateRoot, undefined, undefined, modelRegistry);
+const parameterizedJobs = buildParameterizedJobRuntime(config, modelRegistry, jobRuntime.workParcels, stateRoot);
+const commandOutputRoot = path.resolve(stateRoot, 'command-output');
 const tokenAwareOutput = new TokenAwareOutputService(new FileCommandResultStore(commandOutputRoot), {
   policy: config.tokenAwareOutput,
   telemetry: event => { const span = new Trace().span(event.name, {attributes: event.attributes}); span.end(true, event.attributes); },
@@ -58,9 +60,11 @@ const control = new AgentControlService(state, ptys, providers).configureProject
   harnessEfficiency: jobRuntime.harnessEfficiency,
   workParcels: jobRuntime.workParcels,
   modelRegistry,
+  parameterizedJobs,
 });
 startManagedNodeMonitoring(jobRuntime, snapshot => control.events.emit('resource.node_changed', {resourceId: snapshot.resourceId, state: snapshot.state, health: snapshot.health, currentWorkload: snapshot.currentWorkload}, undefined, 'managed-node-monitor'), error => control.events.emit('failure', {scope: 'managed-node-monitor', error: error.message}, undefined, 'managed-node-monitor'));
 startJobScheduler(jobRuntime, (runId, status) => control.events.emit('job.run_changed', {runId, status}, undefined, 'job-scheduler'), 1000, error => control.events.emit('failure', {scope: 'job-scheduler', error: error.message}, undefined, 'job-scheduler'));
+startParameterizedJobScheduler(parameterizedJobs, (runId, status) => control.events.emit('job.run_changed', {runId, status, kind: 'parameterized'}, undefined, 'parameterized-job-scheduler'), 1000, error => control.events.emit('failure', {scope: 'parameterized-job-scheduler', error: error.message}, undefined, 'parameterized-job-scheduler'));
 const androidResource = config.resources.find(resource => resource.platform === 'android' && resource.android);
 let androidState: AndroidRecoveryState | undefined = androidResource ? {resourceId: androidResource.id, state: 'offline', detail: 'not probed', recovered: false} : undefined;
 let androidAuto = false;

@@ -17,6 +17,9 @@ import {deriveSystemReadiness, type RegisteredService, type SystemReadiness} fro
 import type {ModelRegistry, ModelRouteRequest} from './model-registry.js';
 import {qualifyModel} from './model-qualification.js';
 import type {ModelConfig, ModelRoutingConfig, ProviderConfig} from './config.js';
+import type {ParameterizedJobEngine} from './parameterized-job-engine.js';
+import {nextSavedJobOccurrence} from './parameterized-job-registry.js';
+import type {SavedJob} from './parameterized-job-types.js';
 
 export type ControlEventType =
   | 'system.snapshot'
@@ -39,6 +42,7 @@ export type ControlEventType =
   | 'job.run_approved'
   | 'job.schedule_changed'
   | 'job.run_changed'
+  | 'job.saved_changed'
   | 'work.parcel_created'
   | 'work.parcel_changed'
   | 'configuration.changed'
@@ -120,6 +124,7 @@ export class AgentControlService {
   private harnessEfficiency?: HarnessEfficiencyLedgerPort;
   private workParcels?: WorkParcelCoordinator;
   private modelRegistry?: ModelRegistry;
+  private parameterizedJobs?: ParameterizedJobEngine;
 
   constructor(
     readonly state: WorkspaceState,
@@ -132,7 +137,7 @@ export class AgentControlService {
     this.verification = new VerificationService(state, persist);
   }
 
-  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; services?: RegisteredService[]; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService; harnessEfficiency?: HarnessEfficiencyLedgerPort; workParcels?: WorkParcelCoordinator; modelRegistry?: ModelRegistry}) {
+  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; services?: RegisteredService[]; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService; harnessEfficiency?: HarnessEfficiencyLedgerPort; workParcels?: WorkParcelCoordinator; modelRegistry?: ModelRegistry; parameterizedJobs?: ParameterizedJobEngine}) {
     if (extras.approvalCount) this.approvalCount = extras.approvalCount;
     if (extras.resources) this.resourceRows = structuredClone(extras.resources);
     if (extras.services) this.serviceRows = structuredClone(extras.services);
@@ -143,6 +148,7 @@ export class AgentControlService {
     if (extras.harnessEfficiency) this.harnessEfficiency = extras.harnessEfficiency;
     if (extras.workParcels) this.workParcels = extras.workParcels;
     if (extras.modelRegistry) this.modelRegistry = extras.modelRegistry;
+    if (extras.parameterizedJobs) this.parameterizedJobs = extras.parameterizedJobs;
     return this;
   }
 
@@ -152,7 +158,7 @@ export class AgentControlService {
     const workers = new Map((this.jobRuntime?.workers.list() ?? []).map(worker => [worker.id, worker]));
     const resourceRows = this.resourceRows.map(resource => { const worker = workers.get(resource.id), node = this.managedNodes?.get(resource.id); return {...resource, capabilities: node?.capabilities ?? resource.capabilities, health: node?.health ?? worker?.health ?? 'unknown', capacity: worker?.capacity, active: worker?.active, observedAt: node?.lastProbeAt ?? worker?.observedAt ?? null, ...(node ? {node} : {})}; });
     const degraded = this.state.lanes.some(lane => lane.status === 'error') || providerRows.some(provider => provider.health === 'offline') || resourceRows.some(resource => ['degraded', 'offline'].includes(resource.health));
-    const jobRuns = this.jobRuntime?.ledger.list() ?? [], jobDefinitions = this.jobRuntime?.catalog.listJobs() ?? [], schedules = this.jobRuntime?.catalog.listSchedules() ?? [];
+    const jobRuns = this.jobRuntime?.ledger.list() ?? [], jobDefinitions = this.jobRuntime?.catalog.listJobs() ?? [], schedules = this.jobRuntime?.catalog.listSchedules() ?? [], savedJobs = this.parameterizedJobs?.savedJobs.list() ?? [], parameterizedRuns = this.parameterizedJobs?.runs.list() ?? [];
     return {
       schema: 'agent-control.system-status/v1',
       authority: 'AgentControlService',
@@ -166,7 +172,7 @@ export class AgentControlService {
       outstandingApprovals: this.approvalCount(),
       lastRestorePoint: this.state.lastRestorePoint,
       observedAt: new Date().toISOString(),
-      jobs: {total: jobDefinitions.length, enabled: jobDefinitions.filter(job => job.spec.enabled !== false).length, queued: jobRuns.filter(run => run.status === 'QUEUED').length, waiting: jobRuns.filter(run => run.status === 'WAITING').length, running: jobRuns.filter(run => ['RUNNING', 'VERIFYING'].includes(run.status)).length, failed: jobRuns.filter(run => ['FAILED', 'DEGRADED', 'DISCONNECTED'].includes(run.status)).length, succeeded: jobRuns.filter(run => run.status === 'SUCCEEDED').length, schedulesEnabled: schedules.filter(schedule => this.jobRuntime?.ledger.schedule(schedule.metadata.id)?.enabled).length},
+      jobs: {total: jobDefinitions.length + savedJobs.length, enabled: jobDefinitions.filter(job => job.spec.enabled !== false).length + savedJobs.filter(job => job.enabled).length, queued: jobRuns.filter(run => run.status === 'QUEUED').length + parameterizedRuns.filter(run => run.status === 'QUEUED').length, waiting: jobRuns.filter(run => run.status === 'WAITING').length, running: jobRuns.filter(run => ['RUNNING', 'VERIFYING'].includes(run.status)).length + parameterizedRuns.filter(run => ['RESOLVING', 'RUNNING', 'VALIDATING'].includes(run.status)).length, failed: jobRuns.filter(run => ['FAILED', 'DEGRADED', 'DISCONNECTED'].includes(run.status)).length + parameterizedRuns.filter(run => ['FAILED', 'DEGRADED'].includes(run.status)).length, succeeded: jobRuns.filter(run => run.status === 'SUCCEEDED').length + parameterizedRuns.filter(run => ['SUCCEEDED', 'SUCCEEDED_WITH_FINDINGS'].includes(run.status)).length, schedulesEnabled: schedules.filter(schedule => this.jobRuntime?.ledger.schedule(schedule.metadata.id)?.enabled).length + savedJobs.filter(job => job.schedule?.enabled).length},
       tokenAwareOutput: this.commandOutputMetrics(),
       harnessEfficiency: this.harnessEfficiencyMetrics(),
     };
@@ -198,6 +204,19 @@ export class AgentControlService {
   }
   modelProviders() { return this.mustModelRegistry().providersList(); }
   models() { return this.mustModelRegistry().list().map(model => { const recent = (this.harnessEfficiency?.list() ?? []).filter(item => item.model === model.id && item.provider === model.provider).at(-1); return {...model, ...(recent ? {recentInvocation: {at: recent.completedAt ?? recent.startedAt, outcome: recent.finalJobResult, verifierResult: recent.verifierResult, latencyMs: recent.elapsedMs, inputTokens: recent.usage.inputTokens, outputTokens: recent.usage.outputTokens, cachedInputTokens: recent.usage.cachedInputTokens, totalTokens: recent.usage.totalProcessedTokens, providerReportedCost: recent.providerReportedCost, calculatedCost: recent.calculatedCost, currency: recent.currency}} : {})}; }); }
+  jobDefinitions() { return this.mustParameterizedJobs().definitions.list(); }
+  jobDefinition(id: string, version?: number) { return this.mustParameterizedJobs().definitions.get(id, version); }
+  savedJobs() { return this.mustParameterizedJobs().savedJobs.list().map(job => ({...job, definitionResolved: this.mustParameterizedJobs().definitions.resolve(job), nextRun: nextSavedJobOccurrence(job, new Date())?.toISOString() ?? null, lastRun: this.mustParameterizedJobs().runs.list(job.id)[0] ?? null})); }
+  savedJob(id: string) { return this.savedJobs().find(job => job.id === id) ?? (() => { throw new Error('saved_job_missing'); })(); }
+  exportSavedJob(id: string) { return this.mustParameterizedJobs().savedJobs.export(id); }
+  createSavedJob(input: Omit<SavedJob, 'schema' | 'revision' | 'createdAt' | 'updatedAt'>, actor: string) { const job = this.mustParameterizedJobs().savedJobs.create(input); this.events.emit('job.saved_changed', {savedJobId: job.id, action: 'created'}, undefined, actor); return job; }
+  updateSavedJob(id: string, revision: number, changes: Partial<Omit<SavedJob, 'schema' | 'id' | 'revision' | 'createdAt'>>, actor: string) { const job = this.mustParameterizedJobs().savedJobs.update(id, revision, changes); this.events.emit('job.saved_changed', {savedJobId: id, action: 'updated', revision: job.revision}, undefined, actor); return job; }
+  setSavedJobEnabled(id: string, enabled: boolean, revision: number, actor: string) { const job = this.mustParameterizedJobs().savedJobs.setEnabled(id, enabled, revision); this.events.emit('job.saved_changed', {savedJobId: id, action: enabled ? 'enabled' : 'disabled'}, undefined, actor); return job; }
+  runSavedJob(id: string, actor: string) { const run = this.mustParameterizedJobs().runNow(id, actor); this.events.emit('job.run_created', {runId: run.id, savedJobId: id, trigger: 'manual'}, undefined, actor); return run; }
+  parameterizedRuns(savedJobId?: string) { return this.mustParameterizedJobs().runs.list(savedJobId); }
+  parameterizedRun(id: string) { const run = this.mustParameterizedJobs().runs.get(id); if (!run) throw new Error('job_run_missing'); return run; }
+  cancelParameterizedRun(id: string, actor: string) { const run = this.mustParameterizedJobs().cancel(id, actor); this.events.emit('job.run_cancelled', {runId: id, savedJobId: run.savedJobId}, undefined, actor); return run; }
+  parameterizedSchedules() { return this.savedJobs().filter(job => job.schedule).map(job => ({savedJobId: job.id, name: job.name, schedule: job.schedule, nextRun: job.nextRun, lastRun: job.lastRun})); }
   model(id: string) { const value = this.models().find(model => model.id === id); if (!value) throw new Error('model_missing'); return value; }
   modelRoutes() { return this.mustModelRegistry().routes(); }
   reloadModels(providers: ProviderConfig[], models: ModelConfig[], routing: ModelRoutingConfig, actor: string) { this.mustModelRegistry().reload(providers, models, routing); this.events.emit('configuration.changed', {kind: 'model-registry', models: models.length, restartRequired: false}, undefined, actor); return {models: this.models(), routes: this.modelRoutes()}; }
@@ -379,4 +398,5 @@ export class AgentControlService {
   private mustTokenAwareOutput() { if (!this.tokenAwareOutput) throw new Error('token_aware_output_unconfigured'); return this.tokenAwareOutput; }
   private mustWorkParcels() { if (!this.workParcels) throw new Error('work_parcels_unconfigured'); return this.workParcels; }
   private mustModelRegistry() { if (!this.modelRegistry) throw new Error('model_registry_unconfigured'); return this.modelRegistry; }
+  private mustParameterizedJobs() { if (!this.parameterizedJobs) throw new Error('parameterized_jobs_unconfigured'); return this.parameterizedJobs; }
 }

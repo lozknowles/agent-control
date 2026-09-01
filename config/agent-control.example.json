@@ -28,6 +28,10 @@
       "DEEP": {"maximumInitialContextTokens": 65536, "maximumSources": 192, "maximumOptionalSkills": 16, "maximumTools": 64, "maximumTurns": 32, "allowBroadRepositoryContext": true, "allowSharedContext": true}
     }
   },
+  "jobs": {
+    "repositoryRoots": ["/srv/repos"],
+    "repositoryRemotes": ["https://github.com/example-organisation"]
+  },
   "resources": [
     {
       "id": "controller",
@@ -133,9 +137,9 @@
     }
   ],
   "models": [
-    {"id":"openai-default","provider":"openai-api","providerModel":"configured-openai-default","displayName":"OpenAI default","enabled":true,"capabilities":["coding","reasoning","tool-use"],"nodes":["controller"],"qualification":{"state":"UNTESTED","version":"migration-v1","evidence":[]}},
-    {"id":"glm-5.3-flash","provider":"openrouter","providerModel":"z-ai/glm-5.3-flash","displayName":"GLM-5.3-Flash","enabled":true,"capabilities":["reasoning","coding","tool-use"],"roles":["external-fast","coding.fast"],"nodes":["controller"],"qualification":{"state":"UNTESTED","version":"configured-v1","evidence":[]}},
-    {"id":"glm-5.3","provider":"openrouter","providerModel":"z-ai/glm-5.3","displayName":"GLM-5.3","enabled":true,"capabilities":["reasoning","coding","tool-use","long-context"],"roles":["external-deep","coding.deep","reasoning.deep"],"nodes":["controller"],"qualification":{"state":"UNTESTED","version":"configured-v1","evidence":[]}},
+    {"id":"openai-default","provider":"openai-api","providerModel":"configured-openai-default","displayName":"OpenAI default","enabled":true,"capabilities":["coding","reasoning","tool-use","repository-review"],"nodes":["controller"],"qualification":{"state":"UNTESTED","version":"migration-v1","evidence":[]}},
+    {"id":"glm-5.3-flash","provider":"openrouter","providerModel":"z-ai/glm-5.3-flash","displayName":"GLM-5.3-Flash","enabled":true,"capabilities":["reasoning","coding","tool-use","repository-review"],"roles":["external-fast","coding.fast"],"nodes":["controller"],"qualification":{"state":"UNTESTED","version":"configured-v1","evidence":[]}},
+    {"id":"glm-5.3","provider":"openrouter","providerModel":"z-ai/glm-5.3","displayName":"GLM-5.3","enabled":true,"capabilities":["reasoning","coding","tool-use","long-context","repository-review"],"roles":["external-deep","coding.deep","reasoning.deep"],"nodes":["controller"],"qualification":{"state":"UNTESTED","version":"configured-v1","evidence":[]}},
     {"id":"pixel-local-example","provider":"local-pixel","providerModel":"local/model","displayName":"Future Pixel local model","enabled":false,"capabilities":["coding"],"roles":["local-code"],"nodes":["android-1"],"qualification":{"state":"DISABLED","version":"future-v1","evidence":[]}}
   ],
   "modelRouting": {
@@ -147,7 +151,7 @@
       "reasoning.deep": {"primary":"glm-5.3","fallback":["openai-default"],"requires":["reasoning"]},
       "external-fast": {"primary":"glm-5.3-flash","fallback":["glm-5.3"],"requires":["coding"]},
       "external-deep": {"primary":"glm-5.3","fallback":[],"requires":["coding","reasoning"]},
-      "review.default": {"primary":"openai-default","fallback":["glm-5.3"],"requires":["coding","reasoning"]},
+      "review.default": {"primary":"openai-default","fallback":["glm-5.3"],"requires":["repository-review"]},
       "local-code": {"primary":"pixel-local-example","fallback":["openai-default"],"requires":["coding"]}
     }
   },

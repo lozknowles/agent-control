@@ -8,6 +8,7 @@ import {parseOutputAuthorityScope, parseOutputExpansionRequest} from './token-aw
 import {JobManifestError} from './job-catalog.js';
 import {configPath, loadConfig} from './config.js';
 import {ConfigurationStore} from './configuration-store.js';
+import {ParameterizedJobError} from './parameterized-job-registry.js';
 
 export interface WebServerOptions {host?: string; port?: number; operatorToken?: string; allowedOrigins?: string[]; assetsDir?: string; configFile?: string;}
 const MAX_BODY = 64 * 1024;
@@ -56,6 +57,10 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   if (method === 'GET' && url.pathname === '/api/evidence') return json(response, 200, service.snapshot().lanes.map(lane => ({laneId: lane.id, task: lane.task, verification: lane.verification, batonEvidence: lane.baton.evidence, contextSourceIds: lane.baton.contextSourceIds})));
   if (method === 'GET' && url.pathname === '/api/events') return eventStream(service, request, response);
   if (method === 'GET' && url.pathname === '/api/jobs') return json(response, 200, service.jobs());
+  if (method === 'GET' && url.pathname === '/api/job-definitions') return json(response, 200, service.jobDefinitions());
+  if (method === 'GET' && url.pathname === '/api/saved-jobs') return json(response, 200, service.savedJobs());
+  if (method === 'GET' && url.pathname === '/api/job-schedules') return json(response, 200, service.parameterizedSchedules());
+  if (method === 'GET' && url.pathname === '/api/job-runs') return json(response, 200, service.parameterizedRuns(url.searchParams.get('savedJobId') ?? undefined));
   if (method === 'GET' && url.pathname === '/api/parcels') return json(response, 200, service.parcels());
   if (method === 'GET' && url.pathname === '/api/schedules') return json(response, 200, service.schedules());
   if (method === 'GET' && url.pathname === '/api/runs') return json(response, 200, service.runs(url.searchParams.get('jobId') ?? undefined));
@@ -73,7 +78,11 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
     const limit = Number.isSafeInteger(requestedLimit) && requestedLimit > 0 ? Math.min(1_000, requestedLimit) : 200;
     return json(response, 200, service.modelInvocations({limit, runId: url.searchParams.get('runId') ?? undefined, jobId: url.searchParams.get('jobId') ?? undefined}));
   }
-  const jobMatch = url.pathname.match(/^\/api\/jobs\/([^/]+)(?:\/(runs|run))?$/), runMatch = url.pathname.match(/^\/api\/runs\/([^/]+)(?:\/(cancel|retry|approve))?$/), parcelMatch = url.pathname.match(/^\/api\/parcels\/([^/]+)(?:\/(cancel))?$/), systemMatch = url.pathname.match(/^\/api\/systems\/([^/]+)(?:\/(check))?$/), modelMatch = url.pathname.match(/^\/api\/models\/([^/]+)(?:\/(qualify|route))?$/), scheduleMatch = url.pathname.match(/^\/api\/schedules\/([^/]+)\/(enable|disable)$/), artifactMatch = url.pathname.match(/^\/api\/artifacts\/([^/]+)$/), outputExpansionMatch = url.pathname.match(/^\/api\/command-output\/([^/]+)\/expand$/);
+  const jobMatch = url.pathname.match(/^\/api\/jobs\/([^/]+)(?:\/(runs|run))?$/), runMatch = url.pathname.match(/^\/api\/runs\/([^/]+)(?:\/(cancel|retry|approve))?$/), definitionMatch = url.pathname.match(/^\/api\/job-definitions\/([^/]+)(?:\/([0-9]+))?$/), savedJobMatch = url.pathname.match(/^\/api\/saved-jobs\/([^/]+)(?:\/(run|enable|disable|export))?$/), parameterizedRunMatch = url.pathname.match(/^\/api\/job-runs\/([^/]+)(?:\/(cancel))?$/), parcelMatch = url.pathname.match(/^\/api\/parcels\/([^/]+)(?:\/(cancel))?$/), systemMatch = url.pathname.match(/^\/api\/systems\/([^/]+)(?:\/(check))?$/), modelMatch = url.pathname.match(/^\/api\/models\/([^/]+)(?:\/(qualify|route))?$/), scheduleMatch = url.pathname.match(/^\/api\/schedules\/([^/]+)\/(enable|disable)$/), artifactMatch = url.pathname.match(/^\/api\/artifacts\/([^/]+)$/), outputExpansionMatch = url.pathname.match(/^\/api\/command-output\/([^/]+)\/expand$/);
+  if (method === 'GET' && definitionMatch) return json(response, 200, service.jobDefinition(decodeURIComponent(definitionMatch[1]), definitionMatch[2] ? Number(definitionMatch[2]) : undefined));
+  if (method === 'GET' && savedJobMatch?.[2] === 'export') return json(response, 200, service.exportSavedJob(decodeURIComponent(savedJobMatch[1])));
+  if (method === 'GET' && savedJobMatch && !savedJobMatch[2]) return json(response, 200, service.savedJob(decodeURIComponent(savedJobMatch[1])));
+  if (method === 'GET' && parameterizedRunMatch && !parameterizedRunMatch[2]) return json(response, 200, service.parameterizedRun(decodeURIComponent(parameterizedRunMatch[1])));
   if (method === 'GET' && jobMatch && !jobMatch[2]) return json(response, 200, service.job(decodeURIComponent(jobMatch[1])));
   if (method === 'GET' && jobMatch?.[2] === 'runs') return json(response, 200, service.runs(decodeURIComponent(jobMatch[1])));
   if (method === 'GET' && runMatch && !runMatch[2]) return json(response, 200, service.run(decodeURIComponent(runMatch[1])));
@@ -88,6 +97,11 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   if (method === 'POST') {
     validateMutationRequest(request, options);
     const body = await readJson(request), actor = typeof body.actor === 'string' && body.actor.trim() ? body.actor.trim() : 'web-operator';
+    if (url.pathname === '/api/saved-jobs') { const {actor: _actor, ...input} = body; return json(response, 201, service.createSavedJob(input as never, actor)); }
+    if (savedJobMatch && !savedJobMatch[2]) return json(response, 200, service.updateSavedJob(decodeURIComponent(savedJobMatch[1]), Number(body.revision), body.changes && typeof body.changes === 'object' && !Array.isArray(body.changes) ? body.changes as never : {}, actor));
+    if (savedJobMatch?.[2] === 'run') return json(response, 201, service.runSavedJob(decodeURIComponent(savedJobMatch[1]), actor));
+    if (savedJobMatch?.[2] === 'enable' || savedJobMatch?.[2] === 'disable') return json(response, 200, service.setSavedJobEnabled(decodeURIComponent(savedJobMatch[1]), savedJobMatch[2] === 'enable', Number(body.revision), actor));
+    if (parameterizedRunMatch?.[2] === 'cancel') return json(response, 202, service.cancelParameterizedRun(decodeURIComponent(parameterizedRunMatch[1]), actor));
     if (url.pathname === '/api/configuration/systems') {
       const file = options.configFile ?? configPath(), result = new ConfigurationStore(file).upsert({revision: body.revision, kind: body.kind, originalId: body.originalId, item: body.item});
       const changed = result.changed.kind;
@@ -184,7 +198,7 @@ function eventStream(service: AgentControlService, request: IncomingMessage, res
 
 function serveAsset(response: ServerResponse, assetsDir: string, pathname: string) {
   const asset = pathname === '/' ? 'index.html' : pathname.replace(/^\//, '');
-  if (!['index.html', 'dashboard.css', 'dashboard-fixes.css', 'dashboard-jobs.css', 'dashboard.js', 'dashboard-parameters.js', 'dashboard-running-state.js', 'dashboard-enhancements.js', 'dashboard-models.js'].includes(asset)) throw httpError(404, 'not_found');
+  if (!['index.html', 'dashboard.css', 'dashboard-fixes.css', 'dashboard-jobs.css', 'dashboard.js', 'dashboard-parameters.js', 'dashboard-running-state.js', 'dashboard-enhancements.js', 'dashboard-parameterized-jobs.js', 'dashboard-models.js'].includes(asset)) throw httpError(404, 'not_found');
   const file = path.join(assetsDir, asset);
   if (!fs.existsSync(file)) throw httpError(404, 'dashboard_asset_missing');
   const type = asset.endsWith('.html') ? 'text/html; charset=utf-8' : asset.endsWith('.css') ? 'text/css; charset=utf-8' : 'text/javascript; charset=utf-8';
@@ -192,7 +206,16 @@ function serveAsset(response: ServerResponse, assetsDir: string, pathname: strin
 }
 
 function json(response: ServerResponse, status: number, value: unknown) { response.writeHead(status, {'Content-Type': 'application/json; charset=utf-8'}); response.end(`${JSON.stringify(redact(value))}\n`); }
-function replyError(response: ServerResponse, error: unknown) { if (error instanceof JobManifestError) return json(response, 400, {error: error.message, issues: error.issues}); const item = error as Error & {status?: number}, knownDomain = DOMAIN_STATUS.has(item.message), status = item.status ?? DOMAIN_STATUS.get(item.message) ?? 500; json(response, status, {error: item.status || knownDomain ? item.message : 'internal_error'}); }
+function replyError(response: ServerResponse, error: unknown) {
+  if (error instanceof JobManifestError) return json(response, 400, {error: error.message, issues: error.issues});
+  if (error instanceof ParameterizedJobError) {
+    const status = /(?:missing|unknown_definition)$/.test(error.code) || ['saved_job_missing', 'job_run_missing'].includes(error.code) ? 404
+      : /(?:conflict|overlap|immutable|disabled|exists|duplicate)/.test(error.code) ? 409 : 400;
+    return json(response, status, {error: error.code, detail: error.message});
+  }
+  const item = error as Error & {status?: number}, knownDomain = DOMAIN_STATUS.has(item.message), status = item.status ?? DOMAIN_STATUS.get(item.message) ?? 500;
+  json(response, status, {error: item.status || knownDomain ? item.message : 'internal_error'});
+}
 function httpError(status: number, message: string) { return Object.assign(new Error(message), {status}); }
 function secretEqual(left: string, right: string) { const a = createHash('sha256').update(left).digest(), b = createHash('sha256').update(right).digest(); return timingSafeEqual(a, b); }
 function redact(value: unknown, key = ''): unknown {

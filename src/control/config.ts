@@ -171,6 +171,8 @@ export interface HarnessEfficiencyConfig {
   profiles?: Partial<Record<'THIN' | 'STANDARD' | 'DEEP', HarnessProfileConfig>>;
 }
 
+export interface ParameterizedJobsConfig {repositoryRoots: string[]; repositoryRemotes?: string[];}
+
 export interface AgentControlConfig {
   schemaVersion: 1;
   resources: ResourceConfig[];
@@ -181,6 +183,7 @@ export interface AgentControlConfig {
   lanes: LaneConfig[];
   tokenAwareOutput?: TokenAwareOutputConfig;
   harnessEfficiency?: HarnessEfficiencyConfig;
+  jobs?: ParameterizedJobsConfig;
 }
 
 export const emptyConfig = (): AgentControlConfig => ({
@@ -242,7 +245,17 @@ export function validateConfig(raw: unknown): AgentControlConfig {
     lanes: input.lanes ?? [],
     tokenAwareOutput: input.tokenAwareOutput,
     harnessEfficiency: input.harnessEfficiency,
+    jobs: input.jobs,
   };
+  if (config.jobs) {
+    if (!Array.isArray(config.jobs.repositoryRoots) || !config.jobs.repositoryRoots.length) throw new Error('invalid_job_repository_roots');
+    for (const root of config.jobs.repositoryRoots) if (typeof root !== 'string' || !path.isAbsolute(root) || path.normalize(root) === path.parse(root).root) throw new Error('invalid_job_repository_root');
+    if (config.jobs.repositoryRemotes !== undefined && !Array.isArray(config.jobs.repositoryRemotes)) throw new Error('invalid_job_repository_remotes');
+    for (const remote of config.jobs.repositoryRemotes ?? []) {
+      let parsed: URL; try { parsed = new URL(remote); } catch { throw new Error('invalid_job_repository_remote'); }
+      if (!['https:', 'git:'].includes(parsed.protocol) || parsed.username || parsed.password || parsed.search || parsed.hash) throw new Error('invalid_job_repository_remote');
+    }
+  }
   for (const key of ['resources', 'providers', 'models', 'services', 'lanes'] as const) {
     if (!Array.isArray(config[key])) throw new Error(`invalid_config_${key}`);
   }

@@ -1,5 +1,16 @@
 # Changelog
 
+## [3.4.0] — 2026-09-01
+
+- Adds versioned Job Definitions, schema-validated Saved Jobs, safe export/import, optimistic revisions, logical model roles, explicit model overrides, visible fallback, context profiles, budgets, and concurrency policies.
+- Adds the built-in read-only `repository-code-review@1` Job with policy-resolved local or allowlisted remote Git input, exact SHA freezing, isolated read-only checkout, secret/binary exclusion, deterministic decomposition, provider-direct execution, validated structured findings, and successful-run-only delta baselines.
+- Adds persistent immutable parameterised Runs with lifecycle transitions, deterministic scheduled occurrence identity, Work Parcel links, selected provider/model/qualification evidence, response hashes, usage/cost, retries, fallbacks, errors, and restart recovery.
+- Adds persistent one-time/cron scheduling with timezone, enable/disable, missed-run policy, overlap protection, duplicate-occurrence prevention, and one shared manual/scheduled execution path.
+- Adds first-class dashboard views for Job Definitions, Saved Jobs, Schedules, Runs, schema-generated creation, Run now, and historical review details; adds corresponding authenticated HTTP and `agent-control jobs` CLI operations.
+- Adds focused repository, scheduler, routing, lifecycle, API/dashboard, and direct-provider tests plus the detailed `docs/jobs/` developer/operator guide.
+
+Qualification note: the source release is created only if the documented real LocalWalks provider run and bounded near-term schedule evidence are completed. Until then, 3.4 remains a release candidate regardless of passing deterministic tests.
+
 ## Unreleased
 
 ### Added

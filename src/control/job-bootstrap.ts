@@ -13,6 +13,10 @@ import {CatalogNaturalLanguagePlanner, WorkParcelCoordinator, WorkParcelStore, t
 import {registerOperatorReviewActions} from './operator-review-actions.js';
 import {registerBrowserActions} from './browser-actions.js';
 import type {ModelRegistry} from './model-registry.js';
+import {ParameterizedJobRegistry} from './parameterized-job-registry.js';
+import {repositoryCodeReviewDefinition} from './repository-review-definition.js';
+import {createParameterizedJobEngine} from './parameterized-job-engine.js';
+import {DirectRepositoryReviewExecutor} from './direct-repository-review-executor.js';
 
 /** Shared production definition path so qualification cannot drift from registered typed Actions. */
 export function buildJobRuntimeDefinition(config: AgentControlConfig, manifestDir = process.env.AGENT_CONTROL_JOB_DIR || path.resolve('config/jobs'), harnessEfficiency?: HarnessEfficiencyLedgerPort) {
@@ -61,4 +65,17 @@ export function startJobScheduler(runtime: ReturnType<typeof buildJobRuntime>, o
     finally { scheduling = false; }
   };
   const timer = setInterval(() => void schedule(), intervalMs); timer.unref(); void schedule(); return () => { stopped = true; clearInterval(timer); };
+}
+
+export function buildParameterizedJobRuntime(config: AgentControlConfig, modelRegistry: ModelRegistry, workParcels: WorkParcelCoordinator, stateRoot = process.env.AGENT_CONTROL_STATE_DIR || path.resolve('.agent-control')) {
+  const definitions = new ParameterizedJobRegistry(); definitions.register(repositoryCodeReviewDefinition);
+  const roots = config.jobs?.repositoryRoots ?? (process.env.AGENT_CONTROL_REPOSITORY_ROOTS?.split(path.delimiter).filter(Boolean) || [path.resolve('.')]);
+  const executor = new DirectRepositoryReviewExecutor(modelRegistry, workParcels.store);
+  return createParameterizedJobEngine(stateRoot, definitions, modelRegistry, executor, {allowedRepositoryRoots: roots, allowedRepositoryRemotes: config.jobs?.repositoryRemotes, nodeHealthy: nodeId => { const resource = config.resources.find(item => item.id === nodeId); if (!resource) return false; if (resource.transport.type === 'local') return true; const node = workParcels.runtime.workers.list().find(item => item.id === nodeId); return node?.health === 'healthy'; }});
+}
+
+export function startParameterizedJobScheduler(runtime: ReturnType<typeof buildParameterizedJobRuntime>, onChange?: (runId: string, status: string) => void, intervalMs = 1000, onError?: (error: Error) => void) {
+  let active = false, stopped = false;
+  const tick = async () => { if (active || stopped) return; active = true; try { const created = await runtime.tickSchedules(); for (const run of created) onChange?.(run.id, run.status); const completed = await runtime.executeNext(); if (completed) onChange?.(completed.id, completed.status); } catch (error) { (onError ?? (failure => process.emitWarning(failure.message)))(error instanceof Error ? error : new Error(String(error))); } finally { active = false; } };
+  const timer = setInterval(() => void tick(), intervalMs); timer.unref(); void tick(); return () => { stopped = true; clearInterval(timer); };
 }

@@ -54,6 +54,13 @@
   </main>
 
   <main id="jobs-workspace" class="jobs-shell">
+    <section class="panel parameterized-jobs-platform">
+      <div class="parameterized-heading"><div><span class="eyebrow">Governed parameterised work</span><h1>Job Platform</h1><p>Choose a reusable definition and target. Agent Control owns resolution, model routing, execution, evidence and scheduling.</p></div><nav class="tabs job-platform-tabs" aria-label="Job platform views"><button class="tab active" data-job-platform-tab="definitions">Job Definitions</button><button class="tab" data-job-platform-tab="saved">Saved Jobs</button><button class="tab" data-job-platform-tab="schedules">Schedules</button><button class="tab" data-job-platform-tab="runs">Runs</button></nav></div>
+      <div id="job-platform-definitions" class="job-platform-panel active"></div>
+      <div id="job-platform-saved" class="job-platform-panel"></div>
+      <div id="job-platform-schedules" class="job-platform-panel"></div>
+      <div id="job-platform-runs" class="job-platform-panel"></div>
+    </section>
     <aside class="panel jobs-catalog"><div class="panel-heading"><div><span class="eyebrow">Reusable workflows</span><h1>Jobs</h1></div><span id="job-count" class="count">0</span></div><div id="job-list" class="job-list"></div></aside>
     <section class="parcel-and-job"><section class="panel natural-task"><form id="natural-task-form"><label for="natural-task-prompt"><span class="eyebrow">Natural-language task entry</span><strong>What should Agent Control do?</strong></label><div id="operator-auth-state" class="operator-auth-state" role="status" aria-live="polite">Checking operator authentication…</div><textarea id="natural-task-prompt" rows="5" required placeholder="Describe the objective, constraints and evidence you need. Agent Control will plan, route, execute and verify it."></textarea><div class="natural-task-actions"><small>The prompt is retained verbatim. Proposed stages must validate against registered Jobs before execution.</small><button id="natural-task-submit" class="button" type="submit" disabled>Run with Agent Control</button></div></form></section><section class="panel parcel-panel"><div class="panel-heading"><div><span class="eyebrow">Top-level work</span><h2>Work Parcels</h2></div><span id="parcel-count" class="count">0</span></div><div id="parcel-list" class="parcel-list"></div></section><section class="panel job-detail"><div id="job-empty" class="empty-state"><div class="empty-icon">◇</div><h2>No Job selected</h2><p>Select a catalog item to inspect its authoritative definition and history.</p></div><div id="job-detail" hidden></div></section></section>
     <aside class="operations-column">
@@ -107,6 +114,7 @@
   <script src="/dashboard-parameters.js" defer></script>
   <script src="/dashboard-running-state.js" defer></script>
   <script src="/dashboard-enhancements.js" defer></script>
+  <script src="/dashboard-parameterized-jobs.js" defer></script>
   <script src="/dashboard-models.js" defer></script>
 </body>
 </html>

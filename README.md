@@ -1,10 +1,46 @@
-# Agent Control 3.3.1
+# Agent Control 3.4.0
 
-Agent Control is an infrastructure-neutral, policy-controlled adaptive harness for durable work by heterogeneous agents and models. Its executable harness core composes a task-appropriate worker, provider/model route, prompt profile, minimum qualified skills, restricted tools, context strategy, runtime settings, authority snapshot, resource limits and verification/escalation policy into a fingerprinted execution recipe.
+Agent Control runs governed parameterised jobs against qualified execution and model resources. It is an infrastructure-neutral, policy-controlled adaptive harness for durable work by heterogeneous agents and models. Its executable harness core composes a task-appropriate worker, provider/model route, prompt profile, minimum qualified skills, restricted tools, context strategy, runtime settings, authority snapshot, resource limits and verification/escalation policy into a fingerprinted execution recipe.
 
 A lane owns its task; recipes, agents, models, skills, tools, execution providers and operator interfaces are replaceable and remain below the control boundary. Agent Control remains authoritative for scheduling, priorities, leases, ownership, unconditional human takeover, batons, handoffs, clones, shared tasks, provider qualification, routing, approvals, recovery validation, verification and conflict policy. In 3.1.0, ordinary `WorkExecutor` agent work can no longer accept a raw handler: it builds and records an `ExecutionRecipe`, dispatches it through `AdaptiveHarness`, and exposes only a live-authority `ToolPolicy` gateway.
 
 Orca is available behind a narrow execution-provider contract. Orca may execute processes, terminals and worktrees, but it does not receive Agent Control policy authority.
+
+## Parameterised Jobs quick start
+
+3.4 separates reusable **Job Definitions** from configured **Saved Jobs**, persistent **Schedules**, and immutable **Runs**. The built-in `repository-code-review@1` resolves and freezes a Git revision, builds bounded deterministic context, routes `review.default` to a qualified provider/model, creates attributable Work Parcels, validates evidence-backed findings, records usage/cost, and advances a successful delta baseline. It invokes the provider directly: Codex, ChatGPT, a browser session, and conversation history are not prerequisites.
+
+Configure a local execution resource, a qualified model for `review.default`, and repository policy in `.agent-control/config.json`:
+
+```json
+{
+  "jobs": {
+    "repositoryRoots": ["/srv/repositories"],
+    "repositoryRemotes": ["https://github.com/your-organisation"]
+  }
+}
+```
+
+Then create and run a reusable review:
+
+```bash
+agent-control jobs create \
+  --definition repository-code-review \
+  --name "LocalWalks Nightly Review" \
+  --node review-controller \
+  --repository /srv/repositories/LocalWalks \
+  --ref main \
+  --scope changes \
+  --model-role review.default \
+  --schedule "0 2 * * *" \
+  --timezone Europe/London
+
+agent-control jobs saved
+agent-control jobs run localwalks-nightly-review
+agent-control jobs runs --saved-job localwalks-nightly-review
+```
+
+Job mutations use `AGENT_CONTROL_WEB_OPERATOR_TOKEN` only as a bearer header. The dashboard Jobs area provides separate Job Definitions, Saved Jobs, Schedules, and Runs views; its Saved Job form is generated from the definition parameter schema. See [`docs/jobs/README.md`](docs/jobs/README.md).
 
 ## External model registry
 
@@ -109,7 +145,7 @@ The qualification Job is deliberately non-production and its twice-daily `07:00/
 
 ## Configuration model
 
-The versioned JSON schema has six independent collections/policies plus optional output and harness-efficiency policies:
+The versioned JSON schema has six independent collections/policies plus optional output, harness-efficiency, and parameterised-job policies:
 
 - `resources`: identity, platform, transport and semantic capabilities;
 - `providers`: provider identity, API endpoint, wire protocol, authentication reference and capabilities;
@@ -119,6 +155,7 @@ The versioned JSON schema has six independent collections/policies plus optional
 - `lanes`: lane identity, working directory, priority and AUTO/MANUAL mode.
 - `tokenAwareOutput`: provider-neutral completeness, index, artifact, retention and context-budget thresholds.
 - `harnessEfficiency`: observational/enforced routing mode, verifier-evidence thresholds and configurable THIN/STANDARD/DEEP budgets. `observe` is the safe default.
+- `jobs`: allowed node-local repository roots and optional allowlisted HTTPS/Git remote prefixes for parameterised repository jobs.
 
 Resource identity is separate from transport. A resource may be local, SSH, HTTP or Orca-backed. An SSH hostname is transport metadata, not the resource ID. Ports are configurable numbers. Optional unavailable services do not make an otherwise valid zero-provider installation fail.
 
@@ -208,4 +245,4 @@ The neutrality guard rejects private topology identifiers in distributable runti
 - Ripgrep is the only semantic command-output adapter in this change. Other oversized command families use the generic labelled fallback until a specialised index is added. A tiny typed ripgrep request retains its structured authoritative stream and therefore can be larger than normal human-formatted `rg`; it is not compacted merely because it came from ripgrep.
 - Harness-profile routing remains observational. A live same-model repository-mutation experiment now measures provider tokens, observed warm-cache behaviour, latency, independent verifier outcomes and cumulative escalation cost, but its 12-task sample had only 2/12 STANDARD successes and no adaptive resource advantage. No profile is production-qualified; STANDARD remains the applied fallback and monetary cost remains unknown.
 
-The foundational operator guide is [`docs/Agent-Control-3.1.0-Operator-Guide.md`](docs/Agent-Control-3.1.0-Operator-Guide.md), distributed as [Markdown](assets/releases/3.1.0/Agent-Control-3.1.0-Operator-Guide.md) and [PDF](assets/releases/3.1.0/Agent-Control-3.1.0-Operator-Guide.pdf). For current 3.3.1 operation, use [`docs/web-dashboard.md`](docs/web-dashboard.md), [`docs/jobs-and-scheduler.md`](docs/jobs-and-scheduler.md), [`docs/managed-nodes.md`](docs/managed-nodes.md), [`docs/status-command.md`](docs/status-command.md), [`ARCHITECTURE.md`](ARCHITECTURE.md), and the [`3.3.1 release notes`](docs/release-notes-3.3.1.md). The historical 3.0.1 guide remains under `assets/releases/3.0.1/`.
+The foundational operator guide is [`docs/Agent-Control-3.1.0-Operator-Guide.md`](docs/Agent-Control-3.1.0-Operator-Guide.md), distributed as [Markdown](assets/releases/3.1.0/Agent-Control-3.1.0-Operator-Guide.md) and [PDF](assets/releases/3.1.0/Agent-Control-3.1.0-Operator-Guide.pdf). For current 3.4 operation, use [`docs/jobs/README.md`](docs/jobs/README.md), [`docs/web-dashboard.md`](docs/web-dashboard.md), [`docs/jobs-and-scheduler.md`](docs/jobs-and-scheduler.md), [`docs/managed-nodes.md`](docs/managed-nodes.md), [`docs/status-command.md`](docs/status-command.md), [`ARCHITECTURE.md`](ARCHITECTURE.md), and the [`3.4.0 release notes`](docs/release-notes-3.4.0.md). The historical 3.0.1 guide remains under `assets/releases/3.0.1/`.

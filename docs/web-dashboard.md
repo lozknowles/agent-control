@@ -2,7 +2,15 @@
 
 The web dashboard is an operator interface over `AgentControlService`. It is not a web scheduler and does not own lane, lease, PTY, verification or provider state.
 
-The default **Jobs** view shows the versioned catalog, Schedules, last/next Run, current structured step progress, Queue reasons, worker placement, artifacts, verification and provenance. **Lanes** retains the interactive multi-agent control room. **Systems** shows the canonical configured execution inventory and current readiness. **Models** shows the canonical provider-neutral model registry. **Configuration** provides authenticated, validated inventory editing. No view parses terminal text for Run state.
+The default **Jobs** area contains four separate 3.4 platform views: **Job Definitions**, **Saved Jobs**, **Schedules**, and **Runs**. These sit alongside the existing catalog/Run-ledger projection rather than replacing its Action/DAG workflows. **Lanes** retains the interactive multi-agent control room. **Systems** shows the canonical configured execution inventory and current readiness. **Models** shows the canonical provider-neutral model registry. **Configuration** provides authenticated, validated inventory editing. No view parses terminal text for Run state.
+
+## Parameterised Jobs
+
+Open **Job Definitions** to inspect reusable, versioned contracts. Select **Repository Code Review** to create a Saved Job; the dashboard generates node, repository, ref, scope and comparison controls from the definition schema and adds routing, context, budgets, concurrency and schedule policy. It never asks for provider credentials.
+
+**Saved Jobs** lists configured instances and provides authenticated **Run now**, enable and disable controls. Manual and scheduled starts both enter `ParameterizedJobEngine.createRun`; the browser is not an executor or scheduler. **Schedules** shows persistent one-time or cron policy, timezone, missed-run behavior and next occurrence. **Runs** shows immutable lifecycle, frozen repository SHA/comparison SHA, route, Work Parcels, usage/cost, findings, evidence, retries, fallback and errors.
+
+The headless Agent Control process owns schedule polling. Closing the dashboard, logging out, or not having Codex installed does not stop a due parameterised Job. Full setup and operator examples are in [`jobs/README.md`](jobs/README.md).
 
 ## Start
 
@@ -55,6 +63,10 @@ Read projections:
 - `GET /api/events` (SSE)
 - `GET /api/jobs`, `GET /api/jobs/:id`, `GET /api/jobs/:id/runs`
 - `GET /api/schedules`, `GET /api/runs`, `GET /api/runs/:id`
+- `GET /api/job-definitions`, `GET /api/job-definitions/:id`
+- `GET /api/saved-jobs`, `GET /api/saved-jobs/:id`, `GET /api/saved-jobs/:id/export`
+- `GET /api/job-schedules`
+- `GET /api/job-runs`, `GET /api/job-runs/:id`
 - `GET /api/queue`, `GET /api/workers`, `GET /api/resources`
 - `GET /api/nodes` (managed-node heartbeat, inventory, workload and maintenance projection)
 - `GET /api/artifacts/:id` (metadata and checksum, not secret content)
@@ -63,7 +75,7 @@ Read projections:
 - `GET /api/efficiency` (profile/model/provider/lane aggregates and cost per verified outcome)
 - `GET /api/efficiency/invocations` (prompt-free invocation metadata, usage composition and verifier result; default 200, maximum 1,000, optionally filtered by `runId` or `jobId`)
 
-Authenticated Job requests are `POST /api/jobs/:id/run`, schedule `enable`/`disable`, and Run `cancel`, `retry` and `approve`. Scoped command-result expansion is `POST /api/command-output/:handle/expand`; operator authentication is necessary but not sufficient, because the supplied task/lane/worker/lease/ownership scope must exactly match the retained result. These calls enter `AgentControlService`. The HTTP layer cannot register a worker, grant a capability, edit a manifest, acquire a resource lock, dispatch an Action or write a PTY.
+Authenticated legacy Job requests are `POST /api/jobs/:id/run`, schedule `enable`/`disable`, and Run `cancel`, `retry` and `approve`. Parameterised Job requests are `POST /api/saved-jobs`, `POST /api/saved-jobs/:id` (update), `POST /api/saved-jobs/:id/run`, `POST /api/saved-jobs/:id/enable`, `POST /api/saved-jobs/:id/disable`, and `POST /api/job-runs/:id/cancel`. Saved Job updates require the current revision. Scoped command-result expansion is `POST /api/command-output/:handle/expand`; operator authentication is necessary but not sufficient, because the supplied task/lane/worker/lease/ownership scope must exactly match the retained result. These calls enter `AgentControlService`. The HTTP layer cannot register a worker, grant a capability, edit a definition, acquire a resource lock, dispatch an Action or write a PTY.
 
 Authenticated inventory changes use `POST /api/configuration/systems` with the current `revision`, a `kind` of `resource`, `provider`, `model` or `service`, an optional `originalId`, and the complete replacement `item`. Model role maps use `POST /api/configuration/model-routing` with `revision` and the complete `modelRouting` object. The server rejects stale revisions, embedded secret material and invalid schema, writes the complete configuration atomically and emits `configuration.changed`. Provider/model/route updates return `restartRequired: false`; resources/services return `true`.
 
