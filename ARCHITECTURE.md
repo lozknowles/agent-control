@@ -1,6 +1,6 @@
 # Agent Control architecture
 
-This is the authoritative source boundary for the unreleased Agent Control 3.5 feature branch. Agent Control 3.4.0 remains the released base. Status labels matter:
+This is the authoritative source boundary for Agent Control 3.5.0. Status labels matter:
 
 - **implemented** means executable code and automated tests exist in this branch;
 - **experimental** means executable code exists but has not been qualified across every external substrate;
@@ -462,4 +462,4 @@ New capabilities are classified into policy/authority, scheduling, execution sub
 
 ## Release boundary
 
-Earlier version tags remain immutable source releases; 3.4.0 is the current released source boundary and this 3.5 branch is unreleased. Committing or pushing this branch does not deploy services, expose the dashboard remotely, create credentials, broaden sharing, enable Spark, or enable a Saved Job/Schedule. STANDARD remains the default context profile unless a governed policy explicitly selects another profile. The physical Luna → local LLM → GLM-5.3-Flash → Luna experiment remains an external qualification gate where those routes exist.
+Earlier version tags remain immutable source releases; `v3.5.0` is the current released source boundary. Installing or checking out the release does not deploy services, expose the dashboard remotely, create credentials, broaden sharing, enable Spark, or enable a Saved Job/Schedule. STANDARD remains the default context profile unless a governed policy explicitly selects another profile. The physical Luna → local LLM → GLM-5.3-Flash → Luna experiment remains an external qualification gate where those routes exist.

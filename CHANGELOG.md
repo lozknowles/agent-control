@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased — Agent Control 3.5
+## [3.5.0] — 2026-09-01
 
 ### Identity, delegation and sessions
 
