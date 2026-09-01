@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 import test from 'node:test';
-import {PROTOCOL_VERSION, client, methods, ndJsonStream, type SessionNotification} from '@agentclientprotocol/sdk';
+import {PROTOCOL_VERSION, client, methods, ndJsonStream, type PromptResponse, type SessionNotification} from '@agentclientprotocol/sdk';
 import {createAcpRuntime} from './acp-runtime.js';
 import {IdentityControlPlane} from './identity-control-plane.js';
 
@@ -88,4 +88,39 @@ test('agent-control acp keeps stdout protocol-clean and exits gracefully at stdi
   assert.deepEqual(messages.map(message => message.id), [1, 2]);
   assert.equal(messages[0].result.protocolVersion, 1);
   assert.match(String(messages[1].result.sessionId), /^acp:/);
+});
+
+test('namespaced delivery IDs make replay durable and fail closed on mismatched content', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-acp-replay-')), first = fixture(root);
+  const sessionId = await withNdjsonClient(first.runtime, first.app, async agent => {
+    const created = await agent.request(methods.agent.session.new, {cwd: '/workspace', mcpServers: []});
+    const request = {sessionId: created.sessionId, prompt: [{type: 'text' as const, text: 'idempotent work'}], _meta: {agentControl: {deliveryId: 'delivery-1'}}};
+    const original = await agent.request(methods.agent.session.prompt, request) as PromptResponse, replay = await agent.request(methods.agent.session.prompt, request) as PromptResponse;
+    assert.deepEqual(replay._meta, original._meta);
+    return created.sessionId;
+  });
+  assert.deepEqual(first.submitted, ['idempotent work']);
+  const second = fixture(root);
+  await withNdjsonClient(second.runtime, second.app, async agent => {
+    await agent.request(methods.agent.session.resume, {sessionId, cwd: '/workspace', mcpServers: []});
+    await agent.request(methods.agent.session.prompt, {sessionId, prompt: [{type: 'text', text: 'idempotent work'}], _meta: {agentControl: {deliveryId: 'delivery-1'}}});
+    await assert.rejects(agent.request(methods.agent.session.prompt, {sessionId, prompt: [{type: 'text', text: 'different work'}], _meta: {agentControl: {deliveryId: 'delivery-1'}}}), /acp_delivery_replay_mismatch/);
+  });
+  assert.deepEqual(second.submitted, []);
+});
+
+test('two concurrent ACP sessions retain distinct governed identity and work', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-acp-concurrent-')), value = fixture(root);
+  await withNdjsonClient(value.runtime, value.app, async agent => {
+    const [one, two] = await Promise.all([
+      agent.request(methods.agent.session.new, {cwd: '/workspace/one', mcpServers: []}),
+      agent.request(methods.agent.session.new, {cwd: '/workspace/two', mcpServers: []}),
+    ]);
+    assert.notEqual(one.sessionId, two.sessionId);
+    await Promise.all([
+      agent.request(methods.agent.session.prompt, {sessionId: one.sessionId, prompt: [{type: 'text', text: 'one'}]}),
+      agent.request(methods.agent.session.prompt, {sessionId: two.sessionId, prompt: [{type: 'text', text: 'two'}]}),
+    ]);
+  });
+  assert.deepEqual(value.submitted.sort(), ['one', 'two']);
 });

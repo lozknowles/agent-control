@@ -11,6 +11,7 @@ const usage = `Agent Control command line
 Usage:
   agent-control status [--json]
   agent-control acp
+  agent-control acp-remote
   agent-control jobs definitions [definition-id]
   agent-control jobs saved [saved-job-id]
   agent-control jobs schedules
@@ -36,7 +37,7 @@ It admits the pre-registered AGENT_CONTROL_ACP_ACTOR_ID (default web-operator).`
 export async function main(argv = process.argv.slice(2), io = {out: console.log, error: console.error}) {
   const command = argv[0];
   if (command === '--help' || command === '-h') { io.out(usage); return 0; }
-  if (command === 'acp') return argv.length === 1 ? runAcpCommand() : (io.error(usage), 2);
+  if (command === 'acp' || command === 'acp-remote') return argv.length === 1 ? runTypeScriptCommand(command === 'acp' ? 'acp.ts' : 'acp-remote.ts') : (io.error(usage), 2);
   if (command === 'jobs') return jobsCommand(argv.slice(1), io);
   if (command !== 'status') { io.error(usage); return 2; }
   const flags = new Set(argv.slice(1));
@@ -53,8 +54,8 @@ export async function main(argv = process.argv.slice(2), io = {out: console.log,
   }
 }
 
-async function runAcpCommand() {
-  const script = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../src/acp.ts');
+async function runTypeScriptCommand(filename) {
+  const script = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../src', filename);
   const tsx = createRequire(import.meta.url).resolve('tsx');
   return await new Promise((resolve, reject) => {
     const child = spawn(process.execPath, ['--import', tsx, script], {stdio: 'inherit', env: process.env});

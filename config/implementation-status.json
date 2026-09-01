@@ -17,11 +17,11 @@
       "id": "interop.acp-v1-adapter",
       "title": "ACP v1 governed session adapter",
       "status": "PARTIAL",
-      "summary": "The official ACP SDK validates and frames a transport-neutral stable-v1 core; agent-control acp serves NDJSON stdio and maps durable session lifecycle, prompts, ordered plan/tool updates and cancellation into Actors, governed Sessions, context transfers and Work Parcels without adding a control path.",
-      "sources": ["src/acp.ts", "src/control/acp-runtime.ts", "src/control/acp-adapter.ts", "src/control/identity-control-plane.ts", "scripts/agent-control.mjs"],
-      "tests": ["src/control/acp-runtime.test.ts", "src/control/acp-adapter.test.ts", "src/control/identity-control-plane.test.ts"],
+      "summary": "The official ACP SDK validates and frames a transport-neutral stable-v1 core; agent-control acp serves NDJSON stdio and the explicit remote adapter serves authenticated Streamable HTTP/WebSocket with TLS-gated non-loopback binding. Durable session lifecycle, prompts, ordered plan/tool updates, idempotent namespaced delivery and cancellation map into Actors, governed Sessions, context transfers and Work Parcels without adding a control path.",
+      "sources": ["src/acp.ts", "src/acp-remote.ts", "src/control/acp-bootstrap.ts", "src/control/acp-runtime.ts", "src/control/acp-remote.ts", "src/control/acp-adapter.ts", "src/control/identity-control-plane.ts", "scripts/agent-control.mjs"],
+      "tests": ["src/control/acp-runtime.test.ts", "src/control/acp-remote.test.ts", "src/control/acp-adapter.test.ts", "src/control/identity-control-plane.test.ts"],
       "evidence": ["docs/acp-compatibility.md"],
-      "limitation": "Official-SDK-client stdio interoperability is qualified; an independent non-SDK harness, authenticated remote HTTP/WebSocket transport and the full adversarial matrix remain unfinished. ACP v2 is disabled and not claimed."
+      "limitation": "Official SDK clients qualify stdio, Streamable HTTP and WebSocket on ephemeral loopback, and an independent raw-wire harness covers malformed/invalid traffic. Production TLS exposure and cancellation while provider, permission or client-owned tool work is pending remain unqualified. ACP v2 is disabled and not claimed."
     },
     {
       "id": "models.fast-execution-spark",

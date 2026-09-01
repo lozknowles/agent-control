@@ -9,6 +9,7 @@ Agent Control 3.6 development now provides a transport-neutral ACP core and a st
 | official TypeScript SDK | `@agentclientprotocol/sdk@1.4.0` | Apache-2.0; upstream git commit `e6463f444093ed7c5f1cc937c3f32afb5853e906` |
 | stable schema bundled by the SDK | ACP schema release `schema-v1.21.0`; protocol version `1` | `schema/schema.json` SHA-256 `7f77702b34e0a0558e77220e9007bf8ee161a976bb8ac5021aba1b7e7b2c5708` |
 | SDK schema peer | `zod@4.5.4` | MIT |
+| WebSocket transport | `ws@8.21.3` | MIT |
 
 Dependencies are exact pins in `package.json`. The SDK's `experimental/v2` export and bundled unstable v2 schema are not imported by the stable runtime.
 
@@ -24,6 +25,8 @@ The official SDK validates and dispatches:
 
 Baseline prompting reports an ordered plan, initial tool call, tool-call update and final plan state. Usage and cost updates are sent only when the governed execution reports them; unknown values are never represented as zero. MCP servers and additional directories are rejected because those capabilities are not advertised. Image and audio prompts are not advertised.
 
+Initialization advertises the namespaced `_meta.agentControl.extensions.deliveryId` extension. A client may put a bounded `_meta.agentControl.deliveryId` on `session/prompt`; exact replay returns the original governed receipt across restart, while reuse with different prompt content fails closed. This does not alter a standard ACP field and stores no prompt body in the replay receipt.
+
 ## Stdio
 
 Run:
@@ -35,6 +38,21 @@ agent-control acp
 ```
 
 stdin and stdout carry newline-delimited JSON-RPC only. Diagnostics use stderr. EOF, SIGINT and SIGTERM close the SDK connection and stop the local scheduler cleanly. The selected Actor must already exist in the identity store; the command does not create or elevate an external principal.
+
+## Authenticated HTTP and WebSocket
+
+The separately testable remote adapter uses the same `AgentApp` through the official SDK Streamable HTTP and WebSocket server. It is fail-closed unless all required settings are present:
+
+```bash
+AGENT_CONTROL_ACP_REMOTE_ENABLED=true
+AGENT_CONTROL_ACP_REMOTE_TOKEN_ENV=ACP_OPERATOR_BEARER
+ACP_OPERATOR_BEARER='secret value supplied outside Agent Control state'
+agent-control acp-remote
+```
+
+Defaults are `127.0.0.1:4311/acp`. `AGENT_CONTROL_ACP_REMOTE_ALLOWED_ORIGINS` is a comma-separated allowlist for requests that carry an Origin header. HTTP bodies and WebSocket frames are limited to 1 MiB. Authentication is checked before ACP parsing or WebSocket upgrade with constant-time bearer comparison. A bind other than loopback requires both `AGENT_CONTROL_ACP_REMOTE_TLS_CERT_FILE` and `AGENT_CONTROL_ACP_REMOTE_TLS_KEY_FILE`; certificate contents and bearer values are never persisted or logged.
+
+The remote transport uses the SDK's experimental server packaging API, but carries stable ACP protocol v1. It does not import the experimental ACP v2 entry point.
 
 ## Mapping
 
@@ -59,7 +77,7 @@ ACP does not receive direct access to:
 - raw shell or unrestricted tools;
 - verification or acceptance transitions.
 
-Agent Control remains authoritative. The official SDK frames stdio around this core without changing that boundary. Authenticated HTTP/WebSocket packaging is the next transport checkpoint; no unauthenticated network listener exists. No OpenClaw dependency is required or introduced.
+Agent Control remains authoritative. The official SDK frames stdio, Streamable HTTP and WebSocket around this core without changing that boundary. No unauthenticated network listener exists. No OpenClaw dependency is required or introduced.
 
 ## Cancellation
 
@@ -67,10 +85,10 @@ Agent Control remains authoritative. The official SDK frames stdio around this c
 
 ## Conformance evidence
 
-`src/control/acp-runtime.test.ts` connects the Agent Control app to the official SDK client over two real NDJSON byte streams. It verifies negotiation, schema-valid session creation, ordered updates, prompt mapping, list, process-level reconstruction/resume, close/cancel and rejection of unsupported envelopes. Adapter authority tests remain in `src/control/acp-adapter.test.ts`.
+`src/control/acp-runtime.test.ts` connects the Agent Control app to the official SDK client over two real NDJSON byte streams. It verifies negotiation, schema-valid session creation, ordered updates, prompt mapping, concurrent sessions, durable delivery replay, list, process-level reconstruction/resume, close/cancel and rejection of unsupported envelopes. `src/control/acp-remote.test.ts` uses official HTTP/WebSocket clients and an SDK-independent raw HTTP wire harness for authentication, protocol fallback, malformed JSON, invalid request IDs and unknown methods. Adapter authority tests remain in `src/control/acp-adapter.test.ts`.
 
-This is strong official-client interoperability evidence, but not yet the independent non-SDK reference-harness and adversarial matrix required for the final 3.6 claim.
+This is official-client interoperability plus an independent raw-wire harness. Cancellation while an external provider call, client-owned permission prompt or tool is pending still needs end-to-end provider fixtures; production TLS/non-loopback exposure has not been deployed or physically qualified.
 
 ## Compatibility verdict
 
-The current checkpoint is **stable ACP v1 interoperable over local stdio with the official SDK client, with limitations**. Authenticated remote transports and an independent external reference harness remain unqualified. ACP v2 is draft, disabled and not claimed. ACP client-owned terminal/filesystem behavior is not reinterpreted as Agent Control PTY or filesystem authority.
+The current checkpoint is **stable ACP v1 interoperable over local stdio, authenticated Streamable HTTP and authenticated WebSocket, with limitations**. Transport tests use ephemeral loopback listeners; production TLS exposure and the remaining pending-operation adversarial cases are unqualified. ACP v2 is draft, disabled and not claimed. ACP client-owned terminal/filesystem behavior is not reinterpreted as Agent Control PTY or filesystem authority.

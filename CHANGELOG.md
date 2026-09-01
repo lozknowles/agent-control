@@ -7,6 +7,8 @@
 - Pins official `@agentclientprotocol/sdk` 1.4.0 and its Zod 4.5.4 peer, and packages the stable protocol-v1 governed adapter as `agent-control acp` over newline-delimited JSON-RPC stdio.
 - Adds official-SDK schema dispatch, ordered plan/tool-call updates, durable ACP session reconstruction, identity-bound admission, cancellation and graceful process shutdown.
 - Adds official SDK client interoperability tests over the real NDJSON stream. Independent non-SDK conformance, authenticated remote transport and adversarial/recovery expansion remain work in progress.
+- Adds explicit authenticated Streamable HTTP and WebSocket adapters using the official SDK server transport, constant-time bearer comparison, origin checks, bounded bodies, exact-path routing and TLS-required non-loopback binding. The `ws` 8.21.3 transport dependency is exact-pinned.
+- Adds official HTTP/WebSocket client tests plus an SDK-independent raw wire harness for negotiation, malformed JSON, invalid IDs and unknown methods. Adds a namespaced durable delivery ID for idempotent prompt replay without changing standard ACP fields.
 - ACP v2 remains explicitly experimental and is not imported, advertised or claimed. No 3.6 contract-runtime, routing or release claim is made by this checkpoint.
 
 ## [3.5.0] — 2026-09-01

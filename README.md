@@ -28,6 +28,17 @@ agent-control acp
 
 No remote listener is enabled by this command. ACP v2 remains draft, is not imported by the stable runtime and is not claimed. See [identity and delegation](docs/identity-sessions-delegation.md), [security](docs/security-3.5.md), [migration](docs/migration-3.5.md), and [ACP compatibility](docs/acp-compatibility.md).
 
+Authenticated Streamable HTTP and WebSocket are separately and explicitly enabled. The token is resolved indirectly from the named environment variable; it is never accepted in a URL or configuration file. Loopback is the safe default, and a non-loopback bind fails unless a TLS certificate/key pair is configured:
+
+```bash
+export AGENT_CONTROL_ACP_REMOTE_ENABLED=true
+export AGENT_CONTROL_ACP_REMOTE_TOKEN_ENV=ACP_OPERATOR_BEARER
+export ACP_OPERATOR_BEARER='use-a-secret-manager-generated-value'
+agent-control acp-remote
+```
+
+Optional settings are `AGENT_CONTROL_ACP_REMOTE_HOST`, `AGENT_CONTROL_ACP_REMOTE_PORT`, `AGENT_CONTROL_ACP_REMOTE_PATH`, `AGENT_CONTROL_ACP_REMOTE_ALLOWED_ORIGINS`, `AGENT_CONTROL_ACP_REMOTE_TLS_CERT_FILE`, and `AGENT_CONTROL_ACP_REMOTE_TLS_KEY_FILE`. Production exposure remains an operator deployment decision; development did not open or modify a live listener.
+
 ## Governed fast execution (Spark)
 
 3.5 adds an optional `FAST_EXECUTION_MODEL` execution class, currently implemented by the exact model `gpt-5.3-codex-spark`. Its purpose is to avoid spending a more capable model on mechanically understandable, low-risk work while retaining Agent Control classification, authority, evidence and verification. It is disabled by default and is separate from the THIN context profile. The governed execution hierarchy is:
