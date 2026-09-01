@@ -28,3 +28,7 @@ For a secret file, set `auth.type` to `bearer-file-env`; `auth.env` then names a
 The configuration validator rejects duplicate IDs, unknown provider/model references, role cycles, malformed limits/pricing and embedded secret-like fields. A missing environment variable reports authentication required and makes qualification fail closed.
 
 Provider and model edits hot-reload through the authenticated dashboard/API. Do not treat a successful endpoint health check as model qualification: qualification requires bounded inference evidence for the exact provider model and node.
+
+## 3.6 lifecycle registry
+
+On the unreleased 3.6 branch, configuration remains the operator-facing definition while the [provider/model lifecycle registry](../provider-model-lifecycle.md) records session-neutral discovery, immutable model recipes, qualification evidence and versioned champion/challenger policy. Register the exact provider model and recipe version, then advance it in order through benchmark, shadow and candidate evidence before ACTIVE/PREFERRED routing. Do not mutate a recipe in place or promote a model from endpoint reachability alone. Automatic production Job adoption remains disabled until the larger frozen benchmark qualifies it.

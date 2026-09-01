@@ -23,6 +23,12 @@
 - Adds AUTO admission for changes inside existing authority/budget and MANUAL approval for cost, privilege, production, destructive or resource-envelope escalation. Approval never manufactures withheld authority.
 - Persists source/target identity, parent/child contract, reason, baton hash/size, transferred/withheld authority, budget, before/after state, evidence, approval and verification outcome with restart tests.
 
+### Provider and model lifecycle
+
+- Adds durable session-neutral logical providers with indirect credential references and observed capabilities/model IDs; provider identity is not tied to a machine or controller session.
+- Adds immutable exact model recipes and the evidence-gated `DISCOVERED → BENCHMARKING → SHADOW → CANDIDATE → ACTIVE → PREFERRED → DEPRECATED` lifecycle.
+- Adds versioned champion/challenger routing policy, historical replay and verified rollback without enabling automatic production Job routing. Missing cost remains unknown.
+
 ## [3.5.0] — 2026-09-01
 
 ### Identity, delegation and sessions

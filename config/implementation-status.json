@@ -43,6 +43,16 @@
       "limitation": "Official SDK clients qualify stdio, Streamable HTTP and WebSocket on ephemeral loopback, and an independent raw-wire harness covers malformed/invalid traffic. Production TLS exposure and cancellation while provider, permission or client-owned tool work is pending remain unqualified. ACP v2 is disabled and not claimed."
     },
     {
+      "id": "models.provider-lifecycle",
+      "title": "Provider and model lifecycle management",
+      "status": "IMPLEMENTED",
+      "summary": "Session-neutral logical providers, immutable exact model recipes, evidence-gated lifecycle states, versioned champion/challenger routing, historical replay and verified rollback are durable. Credentials remain indirect references and placement requirements remain semantic rather than machine identities.",
+      "sources": ["src/control/provider-lifecycle.ts", "src/control/model-registry.ts"],
+      "tests": ["src/control/provider-lifecycle.test.ts", "src/control/model-registry.test.ts"],
+      "evidence": ["docs/provider-model-lifecycle.md", "docs/models/ADDING-A-PROVIDER.md"],
+      "limitation": "The lifecycle is implemented, but physical multi-provider promotion and automatic production Job adoption remain gated by the larger frozen benchmark."
+    },
+    {
       "id": "models.fast-execution-spark",
       "title": "Governed fast-execution model class",
       "status": "PARTIAL",

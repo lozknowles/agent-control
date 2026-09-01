@@ -138,6 +138,14 @@ Detach does not terminate a running process. Consultation and reconnect attach r
 
 AUTO policy permits only transitions inside the current contract authority, protected-resource envelope and remaining budget. Explicit MANUAL policy, missing authority, costly escalation, production writes, destructive actions, expanded resource envelopes or budget expansion create a durable approval wait. Approval records intent but cannot create authority absent from the parent. Every transition writes `agent-control.handoff/v1` with both identities, contract links, reason, baton hash/size, transferred and withheld authority, budget, before/after state, evidence and verification outcome.
 
+## Provider and model lifecycle
+
+Logical providers are durable identities independent of a client or controller session. Discovery updates only observed capabilities and model IDs. Provider endpoint and credential reference remain immutable under one ID; credentials are indirect `env:`/`file-env:` references and never enter batons, telemetry or evidence.
+
+Model recipes bind exact provider, provider model, model version, capability, context/output limit, tool, runtime and node requirements. Their fingerprints are immutable per recipe version. Evidence gates each transition through `DISCOVERED → BENCHMARKING → SHADOW → CANDIDATE → ACTIVE → PREFERRED → DEPRECATED`.
+
+Versioned routing policy names an ACTIVE/PREFERRED champion and qualified challengers for each logical role. Historical replay produces a recommendation without mutating active policy; verified rollback may reactivate an immutable earlier version. Placement remains separate: recipes state semantic node/runtime requirements without hard-coding a machine. `GLM-5.3-Flash` is canonical and historical `Ox` is only an input alias, not a separate lifecycle identity.
+
 ## ACP interoperability boundary
 
 The ACP runtime implements stable Agent Client Protocol v1 JSON-RPC session methods above the control plane. The official TypeScript SDK owns schema validation, dispatch and NDJSON framing; `AcpAgentControlAdapter` owns the governed mapping. An external ACP session maps to one governed Agent Control session; prompt content becomes a hash-addressed context transfer and then an ordinary Work Parcel. `session/cancel`, `session/close` and request cancellation call the same cancellation port and preserve actor/session identity. Durable ACP bindings reconstruct from the identity and ACP session stores after a process restart. Ordered plan, tool-call and tool-call-update notifications carry Work Parcel, Run and evidence references, not direct tool authority. Usage or cost is omitted when the underlying execution does not report it.
