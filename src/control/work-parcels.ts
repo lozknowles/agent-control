@@ -172,7 +172,7 @@ export class WorkParcelCoordinator {
     }
     return changed;
   }
-  private withTelemetry(parcel: WorkParcel) { parcel.audit ??= legacyAudit(parcel); parcel.telemetry = this.telemetry(parcel); this.syncAudit(parcel); parcel.decision = explainParcelDecision(parcel); return parcel; }
+  private withTelemetry(parcel: WorkParcel) { if (parcel.executionOwner === 'direct-repository-review-executor') { parcel.decision = explainParcelDecision(parcel); return parcel; } parcel.audit ??= legacyAudit(parcel); parcel.telemetry = this.telemetry(parcel); this.syncAudit(parcel); parcel.decision = explainParcelDecision(parcel); return parcel; }
   private syncAudit(parcel: WorkParcel) {
     const records = parcel.stages.flatMap(stage => stage.runId ? this.invocations(stage.runId).map(record => ({stage, record, modelRoute: this.runtime.ledger.get(stage.runId!)?.trigger.modelRoute})) : []);
     parcel.audit.invocations = records.map(({stage, record, modelRoute}) => invocationAudit(stage, record, modelRoute));
