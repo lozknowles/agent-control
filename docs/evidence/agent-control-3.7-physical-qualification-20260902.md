@@ -91,7 +91,15 @@ Provide at least two configured and qualified provider routes: a stronger source
 On the continuation attempt from `05938be9370bba6cbf3b0c53dd733a776b59f5cd`, the available physical environment still could not meet the unproven gates:
 
 - The execution session is a remote TTY with no graphical display. Chromium and ffmpeg are installed, but explicit attempts to initialize the Computer Use, Chrome, and built-in browser surfaces returned `TypeError: tools[name] is not a function`; deferred tool search is also unbound. There is therefore no safe browser window to record. A dashboard video was not fabricated or substituted with a synthetic capture.
-- The local Qwen and Qwen Coder endpoints are reachable, but neither reports current context occupancy or cost. Sentinel resolves but its model endpoint is unreachable; the local LiteLLM health endpoint returns HTTP 500. No configured, qualified, reachable cheaper destination route exists.
+- The local Qwen and Qwen Coder endpoints are reachable, but neither reports current context occupancy or cost. A configured remote host resolves but its model endpoint is unreachable; the local LiteLLM health endpoint returns HTTP 500. No configured, qualified, reachable cheaper destination route exists.
 - The production direct repository-review path only calls `TokenAwareBatonRuntime.observe`. It does not call `assess`, `createBaton`, or `governedHandoff`; those APIs are presently unreferenced by production source outside their runtime definition. A manual call would not qualify the dashboard's normal governed lifecycle and was not used.
 
 These are qualification blockers, not evidence of a completed multi-provider handoff. No product redesign, synthetic telemetry, manual destination invocation, merge, tag, release, or deployment change was made.
+
+## Post-audit production-path correction
+
+The third continuation-audit bullet above records the defect as observed at `4a13df341c79ff3cc8cbadfed8173618722b92ea`; it is retained rather than rewritten as if the earlier physical candidate contained the fix.
+
+The subsequent development change wires the existing token-aware machinery into `DirectRepositoryReviewExecutor`, the normal parameterized repository-review Work Parcel executor. A completed immutable chunk now supplies `observe → assess`; an eligible bounded continuation supplies sealed baton creation → governed child-contract delegation → destination provider execution; the existing parameterized-job validator remains the independent verification owner. A failed destination marks its child contract failed and resumes the same next chunk on the preserved source provider/thread. Focused deterministic tests prove the production call path and additive parcel accounting.
+
+No physical qualification was performed after this correction. Authoritative live context, a reachable qualified cheaper provider, the real handoff/recovery sequence, dashboard recording and final physical token/cost reconciliation therefore remain unproven exactly as listed above.

@@ -14,6 +14,8 @@ The focused TypeScript suite covers the durable governor and its integration bou
 - sealed baton provenance, SHA-256, Git/diff/test/next-action state, successful handoff, failed-handoff recovery, and original-thread recoverability;
 - Sol 184k, Luna 31k, and GLM-5.3-Flash 18k accounting that remains 233k after durable reload;
 - Responses-compatible direct review telemetry, Codex JSONL start/completion usage normalization, active/completed thread state for advancing elapsed time, redacted `GET /api/token-routing`, and the real SSE event stream.
+- the normal direct repository-review Work Parcel production boundary calling observe, assess, sealed baton creation, governed `DELEGATE`, destination execution and independent validation;
+- destination-execution failure marking the delegated child failed, preserving the source contract/thread, resuming the exact next frozen chunk on the source provider, and retaining additive parcel evidence.
 
 ## Telemetry authority
 
@@ -21,6 +23,18 @@ Codex JSONL provides a live `thread.started` event and completion usage from `tu
 
 Responses-compatible adapters normalize provider usage and use configured pricing only as an `estimated` cost. A provider-native current-context field may be represented as `authoritative` without changing core routing policy.
 
+## Qualification-discovered integration defect and fix
+
+The physical continuation audit at branch commit `4a13df341c79ff3cc8cbadfed8173618722b92ea` found that production repository review called `TokenAwareBatonRuntime.observe` but never called `assess`, `createBaton` or `governedHandoff`. The runtime and deterministic unit tests were sound, but there was no genuine production handoff call path.
+
+The fix connects the existing abstractions at `DirectRepositoryReviewExecutor`, the component that already owns provider invocation and Work Parcel evidence. At a completed immutable-chunk boundary it assesses bounded remaining work, resolves the exact target through `ModelRegistry`, seals the existing baton, delegates through `GovernedHandoffRuntime`/`ContractExecutionRuntime`, invokes the destination, and leaves final independent result validation with `ParameterizedJobEngine`. A destination failure is contained by the existing token handoff recovery boundary and resumes the source route. Focused production-executor tests prove both success and recovery; no provider-specific route was added to core policy.
+
 ## Boundary still requiring physical qualification
 
-This is development evidence, not a live provider promotion. Before enabling automatic production handoff, run a bounded qualified provider exercise that proves provider/model identity, live telemetry authority, independent verification, a successful governed handoff, recovery from an intentionally failed handoff, and final Work Parcel/evidence reconciliation. Missing live context telemetry must remain `unavailable` during that exercise.
+This is development evidence, not a live provider promotion. The new production path has not been physically exercised in this change. Before enabling automatic production handoff, run a bounded qualified provider exercise that proves provider/model identity, live telemetry authority, independent verification, a successful governed handoff, recovery from an intentionally failed handoff, and final Work Parcel/evidence reconciliation. Missing live context telemetry must remain `unavailable` during that exercise.
+
+## Validation after production-path correction
+
+- Focused command: `node --import tsx --test src/control/direct-repository-review-executor.test.ts src/control/token-aware-baton-routing.test.ts` — 11 passed, 0 failed.
+- Full command: `npm run check` — TypeScript, bootstrap syntax, dashboard syntax, infrastructure neutrality and implementation-status consistency passed; 642 tests passed, 0 failed.
+- No physical qualification, deployment, merge, tag or release was performed.

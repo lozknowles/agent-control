@@ -6,7 +6,7 @@ export interface NormalizedModelUsage {inputTokens: number | null; outputTokens:
 export interface ModelInvocationResult {providerId: string; modelId: string; providerModel: string; output: string; elapsedMs: number; usage: NormalizedModelUsage; responseModel: string | null; finishReason: string | null; toolCall: {name: string; arguments: string} | null;}
 export interface PartialModelInvocation extends ModelInvocationResult {responseHash: string;}
 export type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
-export interface ProviderInvocationTelemetry {phase: 'started' | 'completed'; providerId: string; modelId: string; elapsedMs: number; usage?: NormalizedModelUsage; context: {tokens: null; limitTokens: number | null; authority: 'unavailable'; source: 'provider_did_not_report_current_context'};}
+export interface ProviderInvocationTelemetry {phase: 'started' | 'completed'; providerId: string; modelId: string; elapsedMs: number; usage?: NormalizedModelUsage; context: {tokens: number | null; limitTokens: number | null; authority: 'authoritative' | 'estimated' | 'unavailable'; source: string};}
 
 export class OpenAICompatibleProviderClient {
   constructor(private readonly provider: ProviderConfig, private readonly fetcher: FetchLike = fetch) {

@@ -86,10 +86,11 @@
       "id": "routing.token-aware-baton",
       "title": "Token-aware baton routing and live telemetry",
       "status": "IMPLEMENTED",
-      "summary": "Provider-neutral thread telemetry keeps cumulative lifetime tokens separate from current context occupancy, persists configurable 75/85/90 governor transitions, sealed baton provenance, failed-handoff recovery and additive Work Parcel model-chain totals. The redacted dashboard/API projection streams updates over existing SSE without a page reload.",
-      "sources": ["src/control/token-aware-baton-routing.ts", "src/control/codex-exec-provider.ts", "src/control/openai-compatible-provider.ts", "src/control/application-service.ts", "src/control/web-server.ts", "assets/dashboard/dashboard-enhancements.js"],
+      "summary": "Provider-neutral thread telemetry keeps cumulative lifetime tokens separate from current context occupancy, persists configurable 75/85/90 governor transitions, sealed baton provenance, failed-handoff recovery and additive Work Parcel model-chain totals. The normal parameterized repository-review lifecycle now assesses immutable chunk boundaries, delegates destination execution through existing contract/handoff runtimes and returns results to independent validation. The redacted dashboard/API projection streams updates over existing SSE without a page reload.",
+      "sources": ["src/control/token-aware-baton-routing.ts", "src/control/direct-repository-review-executor.ts", "src/control/parameterized-job-engine.ts", "src/control/job-bootstrap.ts", "src/control/contract-runtime.ts", "src/control/handoff-runtime.ts", "src/control/codex-exec-provider.ts", "src/control/openai-compatible-provider.ts", "src/control/application-service.ts", "src/control/web-server.ts", "assets/dashboard/dashboard-enhancements.js"],
       "tests": ["src/control/token-aware-baton-routing.test.ts", "src/control/codex-exec-provider.test.ts", "src/control/openai-compatible-provider.test.ts", "src/control/direct-repository-review-executor.test.ts", "src/control/web-server.test.ts"],
-      "evidence": ["docs/token-aware-baton-routing.md", "docs/evidence/agent-control-3.7-development-qualification.md"]
+      "evidence": ["docs/token-aware-baton-routing.md", "docs/evidence/agent-control-3.7-development-qualification.md", "docs/evidence/agent-control-3.7-physical-qualification-20260902.md"],
+      "limitation": "The production call path is deterministically proven but has not yet been rerun against two physically qualified live providers; authoritative context and cost remain unavailable where providers do not report them."
     },
     {
       "id": "models.fast-execution-spark",

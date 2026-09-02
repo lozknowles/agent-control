@@ -199,8 +199,12 @@ export class TokenAwareBatonRuntime {
     catch (error) { const original = this.threads.get(thread.id)!; original.recoverable = true; original.governor = {...original.governor, state: 'CONTINUE', reason: 'handoff_failed_resume_original_thread'}; this.threads.set(original.id, original); this.save(); return this.record(thread, 'CONTINUE', `handoff_failed_resume_original_thread:${message(error)}`, 'FAILED', target, batonId); }
   }
 
-  async governedHandoff(threadId: string, batonId: string, target: {providerId: string; modelId: string}, handoffs: GovernedHandoffRuntime, request: Omit<HandoffRequest, 'baton' | 'reason'>) {
-    return this.handoff(threadId, batonId, target, async () => { const result = await handoffs.request({...request, reason: 'Token governor approved verified baton handoff', baton: {tokenBatonId: batonId, tokenBatonSha256: this.baton(batonId).sha256}}); if (result.status !== 'COMPLETED') throw new Error(`governed_handoff_not_completed:${result.status}`); });
+  async governedHandoff(threadId: string, batonId: string, target: {providerId: string; modelId: string}, handoffs: GovernedHandoffRuntime, request: Omit<HandoffRequest, 'baton' | 'reason'>, executeDestination?: (result: Awaited<ReturnType<GovernedHandoffRuntime['request']>>) => Promise<void>) {
+    return this.handoff(threadId, batonId, target, async () => {
+      const result = await handoffs.request({...request, reason: 'Token governor approved verified baton handoff', baton: {tokenBatonId: batonId, tokenBatonSha256: this.baton(batonId).sha256}});
+      if (result.status !== 'COMPLETED') throw new Error(`governed_handoff_not_completed:${result.status}`);
+      await executeDestination?.(result);
+    });
   }
 
   parcel(parcelId: string): ParcelTokenTotals {

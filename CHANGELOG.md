@@ -6,6 +6,7 @@
 - Adds durable per-thread and Work Parcel input/output/total token, context, cost, elapsed-time, authority, transition, route-decision, and sealed-baton evidence.
 - Adds provider-neutral adapter telemetry for Codex JSONL and Responses-compatible providers, including GLM-5.3-Flash and local providers. Current context is explicitly `unavailable` where a provider does not expose it; lifetime totals are not misrepresented as occupancy.
 - Adds verified baton contents, governed-handoff integration, failed-handoff recovery of the original thread, and multi-model aggregate accounting that survives model changes.
+- Wires the governor into the normal parameterized repository-review Work Parcel lifecycle: completed frozen chunks are assessed, the next bounded chunk is delegated through a child contract with a sealed baton, destination execution is independently validated, and destination failure resumes the preserved source route.
 - Adds real-time dashboard/SSE telemetry for active threads and parcel-level chain totals, plus the read-only `GET /api/token-routing` projection.
 
 ## Unreleased — Agent Control 3.6

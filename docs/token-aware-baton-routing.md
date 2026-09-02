@@ -38,6 +38,18 @@ Before a handoff, Agent Control seals a durable baton containing the objective, 
 
 The existing governed handoff runtime owns actual process replacement and authority transfer. A successful handoff leaves the original thread recoverable. A failed or approval-pending handoff records the result and resumes the original thread; no provider/model changes silently.
 
+## Production Work Parcel lifecycle
+
+The parameterized repository-review executor is the first normal production lifecycle wired to the governor. It uses an already completed, schema-valid frozen-context chunk as the reasoning checkpoint and treats the next frozen chunk as bounded remaining work:
+
+`provider invoke/observe → assess → seal baton → DELEGATE child contract → invoke destination → independent repository validation`
+
+Assessment occurs only when another immutable context chunk remains. A handoff candidate must still pass the normal model registry's provider, qualification, node and `repository-review` capability checks. The selected provider/model is recorded before invocation; it is never substituted implicitly. The receiving prompt includes the sealed baton ID and SHA-256, objective, completed work, decisions, exact next action, origin and parcel total at the boundary.
+
+The destination invocation runs inside the token runtime's governed-handoff result boundary. If it fails, the child contract is independently marked failed, the token decision records `handoff_failed_resume_original_thread`, and the same next frozen chunk is invoked on the preserved source route. If it succeeds, the child contract remains the verification owner. The parameterized-job engine then performs its existing independent repository validation and records that outcome on every provider invocation and the surviving source or destination contract.
+
+All successful source, destination and recovery invocations are additive in the original Work Parcel audit. Failed provider attempts retain any provider-supplied partial usage/evidence; unknown usage remains unknown.
+
 ## Dashboard and reconciliation
 
 The dashboard consumes the existing SSE endpoint. `token.telemetry`, `token.governor_transition`, `token.baton_created`, and `token.handoff_result` refresh the live thread panel without a page reload. While a thread is active, its elapsed runtime advances locally from the durable start time between events; completed threads retain the final provider-reported elapsed time. The panel displays provider/model, context (`Context: 182k / 272k — 67%`), token totals, authority, cost, governor state/current/next thresholds, and Work Parcel chain totals.
