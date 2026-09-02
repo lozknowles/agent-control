@@ -85,3 +85,13 @@ Only one qualified provider route was available in the temporary physical config
 ## Required next qualification environment
 
 Provide at least two configured and qualified provider routes: a stronger source and a genuinely cheaper destination, with credential references and pricing where cost qualification is required. Then execute a bounded real parcel with qualification-only context pressure that triggers baton preparation and handoff, deliberately make the destination continuation fail once, resume the original thread, independently verify the completed parcel, and reconcile SSE, per-thread telemetry, baton SHA-256, Work Parcel totals, model-chain totals, and cost evidence.
+
+## Continuation audit
+
+On the continuation attempt from `05938be9370bba6cbf3b0c53dd733a776b59f5cd`, the available physical environment still could not meet the unproven gates:
+
+- The execution session is a remote TTY with no graphical display. Chromium and ffmpeg are installed, but explicit attempts to initialize the Computer Use, Chrome, and built-in browser surfaces returned `TypeError: tools[name] is not a function`; deferred tool search is also unbound. There is therefore no safe browser window to record. A dashboard video was not fabricated or substituted with a synthetic capture.
+- The local Qwen and Qwen Coder endpoints are reachable, but neither reports current context occupancy or cost. Sentinel resolves but its model endpoint is unreachable; the local LiteLLM health endpoint returns HTTP 500. No configured, qualified, reachable cheaper destination route exists.
+- The production direct repository-review path only calls `TokenAwareBatonRuntime.observe`. It does not call `assess`, `createBaton`, or `governedHandoff`; those APIs are presently unreferenced by production source outside their runtime definition. A manual call would not qualify the dashboard's normal governed lifecycle and was not used.
+
+These are qualification blockers, not evidence of a completed multi-provider handoff. No product redesign, synthetic telemetry, manual destination invocation, merge, tag, release, or deployment change was made.
