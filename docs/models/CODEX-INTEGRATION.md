@@ -2,6 +2,43 @@
 
 Agent Control can invoke Codex with one registry-selected external model without editing the operator's normal Codex configuration.
 
+## Isolated ChatGPT account profiles
+
+A CLI provider can own multiple optional account profiles. Each stores only an opaque ID, safe friendly label, optional plan/capability metadata and its authority, a qualification state, and an environment-variable reference to a separately authenticated `CODEX_HOME`. It never stores an email address or any OAuth/access/refresh token, session cookie, or authentication-file content.
+
+Create and authenticate each directory directly with Codex in an interactive terminal. Use operator-controlled absolute paths and do not put a token on the command line:
+
+```bash
+install -d -m 700 /srv/agent-control/codex/lawrence-pro /srv/agent-control/codex/cottage-plus
+CODEX_HOME=/srv/agent-control/codex/lawrence-pro codex login
+CODEX_HOME=/srv/agent-control/codex/cottage-plus codex login
+export CODEX_HOME_LAWRENCE_PRO=/srv/agent-control/codex/lawrence-pro
+export CODEX_HOME_COTTAGE_PLUS=/srv/agent-control/codex/cottage-plus
+```
+
+The corresponding provider/model configuration is:
+
+```json
+{
+  "providers": [{
+    "id": "codex-chatgpt",
+    "kind": "cli",
+    "accountProfiles": [
+      {"id":"lawrence-pro","label":"Lawrence Pro","plan":"ChatGPT Pro","planAuthority":"operator-configured","credentialStore":{"type":"codex-home-env","env":"CODEX_HOME_LAWRENCE_PRO"}},
+      {"id":"cottage-plus","label":"Cottage Plus","plan":"ChatGPT Plus","planAuthority":"operator-configured","credentialStore":{"type":"codex-home-env","env":"CODEX_HOME_COTTAGE_PLUS"}}
+    ]
+  }],
+  "models": [
+    {"id":"spark-pro","provider":"codex-chatgpt","accountProfile":"lawrence-pro","providerModel":"gpt-5.3-codex-spark","capabilities":["trivial.coding"]},
+    {"id":"spark-plus","provider":"codex-chatgpt","accountProfile":"cottage-plus","providerModel":"gpt-5.3-codex-spark","capabilities":["trivial.coding"]}
+  ]
+}
+```
+
+The example uses the exact Spark model identity supported by this release; availability still depends on the selected account and installed Codex CLI. For other execution classes, use only exact model identities that have been independently qualified. After login, select **Models → Check account** or call `POST /api/models/accounts/{provider}/{account}/qualify` as an authenticated operator. Qualification runs `codex login status` with that profile's child environment and persists only a safe pass/fail record. A Saved Job can include `"accountProfile":"lawrence-pro"` in `routing`; otherwise the configured model role determines the account-bound model.
+
+Agent Control never changes the process-global Codex login. Every invocation receives a cloned child environment with exactly the selected `CODEX_HOME`, and the adapter rejects a result whose account identity differs from the sealed route. There is no automatic account rotation for quota/rate-limit avoidance; an exhausted profile fails visibly under its own opaque identity.
+
 `materializeCodexModelConfig` creates a mode-0600 temporary `CODEX_HOME/config.toml` containing only:
 
 - selected provider and provider-native model ID;

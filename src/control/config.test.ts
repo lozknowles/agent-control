@@ -48,6 +48,21 @@ test('provider credentials are references and qualification metadata is durable 
   assert.throws(() => validateConfig({schemaVersion: 1, resources: [], providers: [{id: 'ox', kind: 'responses', credentialEnv: 'bad-name'}], services: [], lanes: []}), /invalid_provider_credentialEnv/);
 });
 
+test('Codex account profiles contain only opaque identity and credential-store references', () => {
+  const provider = {id: 'codex', kind: 'cli' as const, accountProfiles: [
+    {id: 'lawrence-pro', label: 'Lawrence Pro', plan: 'ChatGPT Pro', planAuthority: 'operator-configured' as const, capabilities: ['codex-chatgpt'], credentialStore: {type: 'codex-home-env' as const, env: 'CODEX_HOME_LAWRENCE_PRO'}, qualification: {state: 'UNTESTED' as const, version: 'configured-v1'}},
+    {id: 'cottage-plus', label: 'Cottage Plus', plan: 'ChatGPT Plus', planAuthority: 'operator-configured' as const, credentialStore: {type: 'codex-home-env' as const, env: 'CODEX_HOME_COTTAGE_PLUS'}},
+  ]};
+  const model = {id: 'sol-pro', provider: 'codex', accountProfile: 'lawrence-pro', providerModel: 'gpt-sol', capabilities: ['coding']};
+  const config = validateConfig({schemaVersion: 1, resources: [], services: [], lanes: [], providers: [provider], models: [model], modelRouting: {roles: {}}});
+  assert.equal(config.providers[0].accountProfiles?.[1].credentialStore.env, 'CODEX_HOME_COTTAGE_PLUS');
+  assert.equal(config.models[0].accountProfile, 'lawrence-pro');
+  assert.throws(() => validateConfig({schemaVersion: 1, resources: [], services: [], lanes: [], providers: [{...provider, accountProfiles: [{...provider.accountProfiles[0], label: 'user@example.com'}]}], models: [model], modelRouting: {roles: {}}}), /account_profile_label/);
+  assert.throws(() => validateConfig({schemaVersion: 1, resources: [], services: [], lanes: [], providers: [provider], models: [{...model, accountProfile: 'missing'}], modelRouting: {roles: {}}}), /unknown_model_account_profile/);
+  assert.throws(() => validateConfig({schemaVersion: 1, resources: [], services: [], lanes: [], providers: [provider], models: [{...model, accountProfile: undefined}], modelRouting: {roles: {}}}), /model_account_profile_required/);
+  assert.throws(() => validateConfig({schemaVersion: 1, resources: [], services: [], lanes: [], providers: [{...provider, accountProfiles: [{...provider.accountProfiles[0], accessToken: 'forbidden'}]}], models: [model], modelRouting: {roles: {}}}), /secret_material_forbidden/);
+});
+
 test('configuration survives a persistence reload', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-config-'));
   const file = path.join(dir, 'config.json');

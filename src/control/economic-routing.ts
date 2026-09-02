@@ -60,6 +60,7 @@ export interface ProviderPerformance {
 export interface RouteCandidate {
   id: string;
   providerId: string;
+  accountProfileId?: string;
   modelId: string;
   workerId: string;
   local: boolean;

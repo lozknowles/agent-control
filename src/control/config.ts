@@ -64,6 +64,18 @@ export interface ResourceConfig {
   metadata?: Record<string, string | number | boolean>;
 }
 
+export type ModelQualificationState = 'UNTESTED' | 'QUALIFYING' | 'QUALIFIED' | 'DEGRADED' | 'DISABLED' | 'FAILED';
+export interface ProviderAccountProfileConfig {
+  id: string;
+  label: string;
+  enabled?: boolean;
+  plan?: string;
+  planAuthority?: 'operator-configured' | 'provider-reported';
+  capabilities?: string[];
+  credentialStore: {type: 'codex-home-env'; env: string};
+  qualification?: {state: ModelQualificationState; version?: string; checkedAt?: string; qualifiedAt?: string; capabilities?: string[]; evidence?: string[]; detail?: string};
+}
+
 export interface ProviderConfig {
   id: string;
   name?: string;
@@ -96,13 +108,14 @@ export interface ProviderConfig {
     lastSuccessfulAt?: string;
     evidence?: string[];
   };
+  accountProfiles?: ProviderAccountProfileConfig[];
 }
 
-export type ModelQualificationState = 'UNTESTED' | 'QUALIFYING' | 'QUALIFIED' | 'DEGRADED' | 'DISABLED' | 'FAILED';
 export interface ModelConfig {
   id: string;
   provider: string;
   providerModel: string;
+  accountProfile?: string;
   displayName?: string;
   enabled?: boolean;
   capabilities: string[];
@@ -364,14 +377,36 @@ export function validateConfig(raw: unknown): AgentControlConfig {
       for (const value of [provider.pricing.inputPerMillionTokens, provider.pricing.outputPerMillionTokens, provider.pricing.fixedPerRequest ?? 0]) if (!Number.isFinite(value) || value < 0) throw new Error(`invalid_provider_pricing:${provider.id}`);
       if (!provider.pricing.source?.trim() || Number.isNaN(Date.parse(provider.pricing.effectiveFrom))) throw new Error(`invalid_provider_pricing_provenance:${provider.id}`);
     }
+    if (provider.accountProfiles !== undefined && (!Array.isArray(provider.accountProfiles) || provider.kind !== 'cli')) throw new Error(`invalid_provider_account_profiles:${provider.id}`);
+    const accountIds = new Set<string>();
+    for (const account of provider.accountProfiles ?? []) {
+      assertId(account.id, 'account_profile');
+      if (accountIds.has(account.id)) throw new Error(`duplicate_account_profile:${provider.id}:${account.id}`);
+      accountIds.add(account.id);
+      if (typeof account.label !== 'string' || !account.label.trim() || account.label.length > 128 || /@/.test(account.label)) throw new Error(`invalid_account_profile_label:${provider.id}:${account.id}`);
+      if (account.enabled !== undefined && typeof account.enabled !== 'boolean') throw new Error(`invalid_account_profile_enabled:${provider.id}:${account.id}`);
+      if (account.plan !== undefined && (typeof account.plan !== 'string' || !account.plan.trim() || account.plan.length > 80 || /@/.test(account.plan))) throw new Error(`invalid_account_profile_plan:${provider.id}:${account.id}`);
+      if (account.planAuthority !== undefined && !['operator-configured', 'provider-reported'].includes(account.planAuthority)) throw new Error(`invalid_account_profile_plan_authority:${provider.id}:${account.id}`);
+      if (account.plan && !account.planAuthority) throw new Error(`account_profile_plan_authority_required:${provider.id}:${account.id}`);
+      assertStringList(account.capabilities, `account_profile_capabilities:${provider.id}:${account.id}`, /^[a-z0-9][a-z0-9._-]{0,127}$/i);
+      if (!account.credentialStore || account.credentialStore.type !== 'codex-home-env' || !/^[A-Z_][A-Z0-9_]{0,127}$/.test(account.credentialStore.env)) throw new Error(`invalid_account_profile_credential_store:${provider.id}:${account.id}`);
+      if (account.qualification && !['UNTESTED', 'QUALIFYING', 'QUALIFIED', 'DEGRADED', 'DISABLED', 'FAILED'].includes(account.qualification.state)) throw new Error(`invalid_account_profile_qualification:${provider.id}:${account.id}`);
+      for (const timestamp of [account.qualification?.checkedAt, account.qualification?.qualifiedAt]) if (timestamp && Number.isNaN(Date.parse(timestamp))) throw new Error(`invalid_account_profile_qualification_timestamp:${provider.id}:${account.id}`);
+      assertStringList(account.qualification?.capabilities, `account_profile_qualification_capabilities:${provider.id}:${account.id}`, /^[a-z0-9][a-z0-9._-]{0,127}$/i);
+      assertStringList(account.qualification?.evidence, `account_profile_qualification_evidence:${provider.id}:${account.id}`, /^[a-z0-9][a-z0-9:._/-]+$/i);
+      if (account.qualification?.detail !== undefined && (typeof account.qualification.detail !== 'string' || !/^[a-z0-9][a-z0-9:._ -]{0,239}$/i.test(account.qualification.detail) || /(?:bearer\s|\b(?:sk|rk|pk)-)/i.test(account.qualification.detail))) throw new Error(`invalid_account_profile_qualification_detail:${provider.id}:${account.id}`);
+    }
   }
-  const providerIds = new Set(config.providers.map(provider => provider.id));
+  const providerIds = new Set(config.providers.map(provider => provider.id)), providersById = new Map(config.providers.map(provider => [provider.id, provider]));
   const modelIds = new Set<string>();
   for (const model of config.models) {
     assertId(model.id, 'model');
     if (modelIds.has(model.id)) throw new Error(`duplicate_model_id:${model.id}`);
     modelIds.add(model.id);
     if (!providerIds.has(model.provider)) throw new Error(`unknown_model_provider:${model.id}:${model.provider}`);
+    const modelProvider = providersById.get(model.provider)!;
+    if (model.accountProfile !== undefined && !modelProvider.accountProfiles?.some(account => account.id === model.accountProfile)) throw new Error(`unknown_model_account_profile:${model.id}:${model.accountProfile}`);
+    if (modelProvider.kind === 'cli' && modelProvider.accountProfiles?.length && !model.accountProfile) throw new Error(`model_account_profile_required:${model.id}`);
     if (typeof model.providerModel !== 'string' || !model.providerModel.trim() || model.providerModel.length > 256) throw new Error(`invalid_provider_model:${model.id}`);
     if (!Array.isArray(model.capabilities) || model.capabilities.some(capability => typeof capability !== 'string' || !/^[a-z0-9][a-z0-9._-]{0,127}$/i.test(capability))) throw new Error(`invalid_model_capabilities:${model.id}`);
     assertStringList(model.roles, `model_roles:${model.id}`, /^[a-z0-9][a-z0-9._-]{0,127}$/i);

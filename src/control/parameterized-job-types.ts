@@ -40,7 +40,7 @@ export interface SavedJob {
   name: string;
   definition: SavedJobDefinitionReference;
   parameters: Record<string, unknown>;
-  routing?: {modelRole?: string; model?: string; allowFallback?: boolean};
+  routing?: {modelRole?: string; model?: string; accountProfile?: string; allowFallback?: boolean};
   contextProfile: 'THIN' | 'STANDARD' | 'DEEP';
   budgets?: Partial<JobBudgetPolicy>;
   schedule?: SavedJobSchedule;

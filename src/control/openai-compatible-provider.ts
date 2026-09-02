@@ -3,7 +3,7 @@ import {createHash} from 'node:crypto';
 import type {ModelConfig, ProviderConfig} from './config.js';
 
 export interface NormalizedModelUsage {inputTokens: number | null; outputTokens: number | null; cachedInputTokens: number | null; totalTokens: number | null; providerReportedCost: number | null; calculatedCost: number | null; currency: string | null;}
-export interface ModelInvocationResult {providerId: string; modelId: string; providerModel: string; output: string; elapsedMs: number; usage: NormalizedModelUsage; responseModel: string | null; finishReason: string | null; toolCall: {name: string; arguments: string} | null;}
+export interface ModelInvocationResult {providerId: string; accountProfileId?: string; modelId: string; providerModel: string; output: string; elapsedMs: number; usage: NormalizedModelUsage; responseModel: string | null; finishReason: string | null; toolCall: {name: string; arguments: string} | null;}
 export interface PartialModelInvocation extends ModelInvocationResult {responseHash: string;}
 export type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 export interface ProviderInvocationTelemetry {phase: 'started' | 'completed'; providerId: string; modelId: string; elapsedMs: number; usage?: NormalizedModelUsage; context: {tokens: number | null; limitTokens: number | null; authority: 'authoritative' | 'estimated' | 'unavailable'; source: string};}
@@ -31,7 +31,7 @@ export class OpenAICompatibleProviderClient {
       if (!response.ok) throw providerError(response.status);
       let payload: Record<string, unknown>;
       try { payload = await response.json() as Record<string, unknown>; } catch { throw new Error('provider_malformed_response'); }
-      const toolCall = extractToolCall(payload, wire), output = extractOutput(payload, wire), partial: PartialModelInvocation = {providerId: this.provider.id, modelId: model.id, providerModel: model.providerModel, output, elapsedMs: Date.now() - started, usage: normalizeUsage(payload.usage, model), responseModel: typeof payload.model === 'string' ? payload.model : null, finishReason: extractFinishReason(payload, wire), toolCall, responseHash:`sha256:${createHash('sha256').update(JSON.stringify(payload)).digest('hex')}`};
+      const toolCall = extractToolCall(payload, wire), output = extractOutput(payload, wire), partial: PartialModelInvocation = {providerId: this.provider.id, modelId: model.id, providerModel: model.providerModel, output, elapsedMs: Date.now() - started, usage: normalizeModelUsage(payload.usage, model), responseModel: typeof payload.model === 'string' ? payload.model : null, finishReason: extractFinishReason(payload, wire), toolCall, responseHash:`sha256:${createHash('sha256').update(JSON.stringify(payload)).digest('hex')}`};
       if (!output && !toolCall) throw Object.assign(new Error('provider_malformed_response'),{partialInvocation:partial});
       const {responseHash: _responseHash, ...result}=partial; options.onTelemetry?.({phase: 'completed', providerId: this.provider.id, modelId: model.id, elapsedMs: result.elapsedMs, usage: result.usage, context: {tokens: null, limitTokens: model.limits?.contextTokens ?? this.provider.qualification?.advertisedContextLimitTokens ?? null, authority: 'unavailable', source: 'provider_did_not_report_current_context'}}); return result;
     } catch (error) { if ((error as Error).name === 'AbortError') throw new Error('provider_timeout'); throw sanitizeError(error); }
@@ -69,7 +69,7 @@ function extractToolCall(payload: Record<string, unknown>, wire: string) {
   const output = Array.isArray(payload.output) ? payload.output : [], call = output.find(item => item && typeof item === 'object' && (item as Record<string, unknown>).type === 'function_call') as Record<string, unknown> | undefined;
   return call && typeof call.name === 'string' && typeof call.arguments === 'string' ? {name: call.name, arguments: call.arguments} : null;
 }
-function normalizeUsage(value: unknown, model: ModelConfig): NormalizedModelUsage {
+export function normalizeModelUsage(value: unknown, model: ModelConfig): NormalizedModelUsage {
   const usage = value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
   const input = number(usage.input_tokens ?? usage.prompt_tokens), output = number(usage.output_tokens ?? usage.completion_tokens), cached = number((usage.input_tokens_details as Record<string, unknown> | undefined)?.cached_tokens ?? (usage.prompt_tokens_details as Record<string, unknown> | undefined)?.cached_tokens), total = number(usage.total_tokens) ?? (input !== null && output !== null ? input + output : null);
   const calculated = model.pricing && input !== null && output !== null ? ((input - (cached ?? 0)) * model.pricing.inputPerMillionTokens + (cached ?? 0) * (model.pricing.cachedInputPerMillionTokens ?? model.pricing.inputPerMillionTokens) + output * model.pricing.outputPerMillionTokens) / 1_000_000 : null;

@@ -16,6 +16,7 @@ import {probeProvider} from './provider-health.js';
 import {deriveSystemReadiness, type RegisteredService, type SystemReadiness} from './system-readiness.js';
 import type {ModelRegistry, ModelRouteRequest} from './model-registry.js';
 import {qualifyModel} from './model-qualification.js';
+import {qualifyAccountProfile} from './account-profile-qualification.js';
 import type {ModelConfig, ModelRoutingConfig, ProviderConfig} from './config.js';
 import type {ParameterizedJobEngine} from './parameterized-job-engine.js';
 import {nextSavedJobOccurrence} from './parameterized-job-registry.js';
@@ -232,6 +233,7 @@ export class AgentControlService {
   fastExecutionAttempts() { return this.fastExecution?.list() ?? []; }
   runtime() { return this.runtimeObservability?.snapshot() ?? new RuntimeObservability().snapshot(); }
   modelProviders() { return this.mustModelRegistry().providersList(); }
+  modelAccountProfiles() { return this.mustModelRegistry().accountProfilesList(); }
   models() { return this.mustModelRegistry().list().map(model => { const recent = (this.harnessEfficiency?.list() ?? []).filter(item => item.model === model.id && item.provider === model.provider).at(-1); return {...model, ...(recent ? {recentInvocation: {at: recent.completedAt ?? recent.startedAt, outcome: recent.finalJobResult, verifierResult: recent.verifierResult, latencyMs: recent.elapsedMs, inputTokens: recent.usage.inputTokens, outputTokens: recent.usage.outputTokens, cachedInputTokens: recent.usage.cachedInputTokens, totalTokens: recent.usage.totalProcessedTokens, providerReportedCost: recent.providerReportedCost, calculatedCost: recent.calculatedCost, currency: recent.currency}} : {})}; }); }
   jobDefinitions() { return this.mustParameterizedJobs().definitions.list(); }
   jobDefinition(id: string, version?: number) { return this.mustParameterizedJobs().definitions.get(id, version); }
@@ -251,6 +253,12 @@ export class AgentControlService {
   reloadModels(providers: ProviderConfig[], models: ModelConfig[], routing: ModelRoutingConfig, actor: string) { this.mustModelRegistry().reload(providers, models, routing); this.events.emit('configuration.changed', {kind: 'model-registry', models: models.length, restartRequired: false}, undefined, actor); return {models: this.models(), routes: this.modelRoutes()}; }
   routeModel(request: ModelRouteRequest) { return this.mustModelRegistry().route(request); }
   qualifyModel(id: string, nodeId: string) { return qualifyModel({registry: this.mustModelRegistry(), modelId: id, nodeId}); }
+  qualifyModelAccount(providerId: string, accountProfileId: string) {
+    return qualifyAccountProfile({registry: this.mustModelRegistry(), providerId, accountProfileId}).then(result => {
+      this.events.emit('configuration.changed', {kind: 'model-account-qualification', providerId, accountProfileId, state: result.record.state, restartRequired: false}, undefined, 'account-qualification');
+      return result;
+    });
+  }
   systems(): SystemReadiness[] { return [...deriveSystemReadiness({providers: this.providers, resources: this.resourceRows, services: this.serviceRows, managedNodes: this.managedNodes, workers: this.jobRuntime?.workers.list() ?? [], runs: this.jobRuntime?.ledger.list() ?? [], invocations: this.harnessEfficiency?.list() ?? []}), ...(this.runtimeObservability?.systems() ?? [])].sort((a,b)=>a.name.localeCompare(b.name)); }
   system(id: string) { const value = this.systems().find(item => item.id === id); if (!value) throw new Error('system_missing'); return value; }
   async checkSystem(id: string, actor: string) {

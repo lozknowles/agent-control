@@ -21,7 +21,7 @@ import {buildJobRuntime, buildParameterizedJobRuntime, startJobScheduler, startM
 import {FileCommandResultStore, TokenAwareOutputService} from './control/token-aware-output.js';
 import {Trace} from './control/telemetry.js';
 import {AGENT_CONTROL_VERSION} from './version.js';
-import {ModelQualificationStore, ModelRegistry} from './control/model-registry.js';
+import {AccountProfileQualificationStore, ModelQualificationStore, ModelRegistry} from './control/model-registry.js';
 import {ContractExecutionRuntime} from './control/contract-runtime.js';
 import {GovernedHandoffRuntime} from './control/handoff-runtime.js';
 import {ProviderModelLifecycleRegistry} from './control/provider-lifecycle.js';
@@ -46,7 +46,7 @@ const state = loadWorkspace(initial), lanes = state.lanes, ptys = new PtyRegistr
 for (const provider of providersFromConfig(config.providers)) providers.register(provider);
 const queueStore = new WorkQueueStore();
 let workQueue = queueStore.load();
-const modelRegistry = new ModelRegistry(config.providers, config.models, config.modelRouting, new ModelQualificationStore(path.resolve(process.env.AGENT_CONTROL_STATE_DIR || '.agent-control', 'model-qualification.json')));
+const modelRegistry = new ModelRegistry(config.providers, config.models, config.modelRouting, new ModelQualificationStore(path.resolve(process.env.AGENT_CONTROL_STATE_DIR || '.agent-control', 'model-qualification.json')), new AccountProfileQualificationStore(path.resolve(process.env.AGENT_CONTROL_STATE_DIR || '.agent-control', 'account-profile-qualification.json')));
 const stateRoot = path.resolve(process.env.AGENT_CONTROL_STATE_DIR || '.agent-control');
 const contracts = new ContractExecutionRuntime(path.join(stateRoot, 'contracts', 'executions.json'));
 const handoffs = new GovernedHandoffRuntime(contracts, path.join(stateRoot, 'contracts', 'handoffs.json'));

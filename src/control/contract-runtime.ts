@@ -33,7 +33,7 @@ export interface ContractExecution {
   protectedResources: string[];
   budget: {deadlineAt?: string; remainingTokens?: number; remainingCost?: number; currency?: string};
   state: ContractState;
-  active: {actorId: string; agentId: string; modelId?: string; providerId?: string; runtimeId: string; nodeId: string};
+  active: {actorId: string; agentId: string; modelId?: string; providerId?: string; accountProfileId?: string; runtimeId: string; nodeId: string};
   baton: ContractBaton;
   process: {id: string; pid?: number; state: ProcessState; startedAt: string; observedAt: string; exitCode?: number; signal?: string};
   pty: {id: string; state: PtyState; writeOwner?: string; ownershipGeneration: number; participants: ContractParticipant[]; transcript: ContractTranscript[]; nextSequence: number};

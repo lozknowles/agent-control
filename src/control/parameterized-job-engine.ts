@@ -85,7 +85,7 @@ export class ParameterizedJobEngine {
         if (baseline && isAncestor(repository.snapshotPath, baseline.sha, repository.reviewedSha)) repository.comparisonSha = baseline.sha;
       }
       run.repository = repository;
-      const route = this.models.route({model: saved?.routing?.model, modelRole: saved?.routing?.modelRole ?? run.definition.routing.modelRole, nodeId, requiredCapabilities: ['repository-review'], allowFallback: saved?.routing?.allowFallback ?? run.definition.routing.allowFallback});
+      const route = this.models.route({model: saved?.routing?.model, modelRole: saved?.routing?.modelRole ?? run.definition.routing.modelRole, accountProfile: saved?.routing?.accountProfile, nodeId, requiredCapabilities: ['repository-review'], allowFallback: saved?.routing?.allowFallback ?? run.definition.routing.allowFallback});
       run.modelRoute = route; if (route.fallback) run.fallbackHistory.push({at: this.clock().toISOString(), reason: route.fallbackReason ?? 'primary unavailable', selectedModel: route.modelId});
       const context = buildRepositoryContext(repository, saved?.contextProfile ?? 'STANDARD', budgets.maximumInputTokens); run.context = context.summary;
       run = this.transition(run, 'RUNNING'); this.runs.update(run);

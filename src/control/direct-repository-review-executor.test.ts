@@ -114,6 +114,44 @@ test('failed production destination execution preserves evidence and resumes the
   } finally { fs.rmSync(root, {recursive: true, force: true}); }
 });
 
+test('production handoff binds the destination account and preserves account-aware baton and ledger identity', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-account-handoff-'));
+  const forbiddenSecret = 'sk-account-secret-must-never-enter-evidence-123456';
+  try {
+    const {models, route} = accountHandoffRegistry();
+    const store = new WorkParcelStore(path.join(root, 'parcels.json'));
+    const routing = new TokenAwareBatonRuntime(path.join(root, 'token-routing.json'));
+    const contracts = new ContractExecutionRuntime(path.join(root, 'contracts.json'));
+    const handoffs = new GovernedHandoffRuntime(contracts, path.join(root, 'handoffs.json'));
+    const calls: Array<{model: string; account: string}> = [];
+    const clients: RepositoryReviewProviderClientFactory = (provider, account) => ({async invoke(model, input, options) {
+      if (!account) throw new Error('account_profile_required');
+      calls.push({model: model.id, account: account.id});
+      if (model.id === 'luna-plus' && account.id !== 'cottage-plus') throw new Error('destination_account_isolation_failed');
+      if (model.id === 'sol-pro' && account.id !== 'lawrence-pro') throw new Error('source_account_isolation_failed');
+      const source = model.id === 'sol-pro', usage = {inputTokens: source ? 90 : 100, outputTokens: source ? 10 : 20, cachedInputTokens: 0, totalTokens: source ? 100 : 120, providerReportedCost: source ? .02 : .002, calculatedCost: source ? .0022 : .00014, currency: 'USD'};
+      options?.onTelemetry?.({phase: 'completed', providerId: provider.id, modelId: model.id, elapsedMs: 10, usage, context: {tokens: source ? 91 : 20, limitTokens: 100, authority: 'authoritative', source: 'fixture'}});
+      const reviewed = input.includes('Context chunk: context-2') ? 'second.ts' : 'first.ts';
+      return {providerId: provider.id, accountProfileId: account.id, modelId: model.id, providerModel: model.providerModel, output: JSON.stringify({schema: 'agent-control.repository-review/v1', executiveSummary: `Reviewed ${reviewed}.`, findings: [], positiveObservations: [], areasReviewed: [reviewed], areasNotReviewed: [], verdict: 'PASS'}), elapsedMs: 10, usage, responseModel: model.providerModel, finishReason: 'stop', toolCall: null};
+    }});
+    const executor = new DirectRepositoryReviewExecutor(models, store, routing, {routing, contracts, handoffs}, clients);
+    const response = await executor.execute(reviewRequest(route));
+    const parcel = store.get(response.workParcelIds[0])!, evidence = routing.evidence(), baton = evidence.batons[0], totals = routing.parcel(parcel.id);
+    assert.deepEqual(calls, [{model: 'sol-pro', account: 'lawrence-pro'}, {model: 'luna-plus', account: 'cottage-plus'}]);
+    assert.equal(baton.accountProfileId, 'lawrence-pro');
+    assert.equal(evidence.decisions.find(item => item.action === 'BATON_AND_HANDOFF')?.target?.accountProfileId, 'cottage-plus');
+    assert.deepEqual(parcel.audit.invocations.map(item => [item.provider, item.accountProfileId, item.model]), [['openai-codex', 'lawrence-pro', 'sol-pro'], ['openai-codex', 'cottage-plus', 'luna-plus']]);
+    assert.deepEqual(parcel.audit.totals.models, ['openai-codex/Lawrence Pro/sol-pro', 'openai-codex/Cottage Plus/luna-plus']);
+    assert.deepEqual(totals.byModel.map(item => [item.providerId, item.accountProfileId, item.modelId]), [['openai-codex', 'lawrence-pro', 'sol-pro'], ['openai-codex', 'cottage-plus', 'luna-plus']]);
+    assert.equal(totals.totalTokens, 220);
+    const destination = contracts.list().find(contract => contract.parentContractId);
+    assert.equal(destination?.active.accountProfileId, 'cottage-plus');
+    assert.equal(JSON.stringify({parcel, evidence, contracts: contracts.list()}).includes(forbiddenSecret), false);
+    executor.recordVerification(response.workParcelIds, 'PASS');
+    assert.equal(contracts.get(destination!.id).state, 'VERIFIED');
+  } finally { fs.rmSync(root, {recursive: true, force: true}); }
+});
+
 function handoffRegistry() {
   const models = new ModelRegistry([
     {id: 'source-provider', kind: 'openai-compatible', baseUrl: 'https://source.example/v1', auth: {type: 'none'}, enabled: true},
@@ -123,6 +161,18 @@ function handoffRegistry() {
     {id: 'cheap-model', provider: 'cheap-provider', providerModel: 'cheap/reviewer', capabilities: ['repository-review'], qualification: {state: 'QUALIFIED', version: 'cheap-q1', capabilities: ['repository-review'], nodes: ['controller']}, pricing: {currency: 'USD', inputPerMillionTokens: 1, outputPerMillionTokens: 2, effectiveFrom: '2026-09-01', source: 'fixture'}},
   ], {roles: {'review.default': {primary: 'source-model', fallback: ['cheap-model'], requires: ['repository-review']}}});
   return {models, route: models.route({model: 'source-model', nodeId: 'controller', requiredCapabilities: ['repository-review'], allowFallback: false})};
+}
+
+function accountHandoffRegistry() {
+  const profiles = [
+    {id: 'lawrence-pro', label: 'Lawrence Pro', plan: 'ChatGPT Pro', credentialStore: {type: 'codex-home-env' as const, env: 'CODEX_HOME_LAWRENCE_PRO'}, qualification: {state: 'QUALIFIED' as const, version: 'account-pro-q1', checkedAt: '2026-09-02T00:00:00Z', qualifiedAt: '2026-09-02T00:00:00Z', capabilities: ['codex-chatgpt'], evidence: ['interactive-login']}},
+    {id: 'cottage-plus', label: 'Cottage Plus', plan: 'ChatGPT Plus', credentialStore: {type: 'codex-home-env' as const, env: 'CODEX_HOME_COTTAGE_PLUS'}, qualification: {state: 'QUALIFIED' as const, version: 'account-plus-q1', checkedAt: '2026-09-02T00:00:00Z', qualifiedAt: '2026-09-02T00:00:00Z', capabilities: ['codex-chatgpt'], evidence: ['interactive-login']}},
+  ];
+  const models = new ModelRegistry([{id: 'openai-codex', kind: 'cli', enabled: true, accountProfiles: profiles}], [
+    {id: 'sol-pro', provider: 'openai-codex', accountProfile: 'lawrence-pro', providerModel: 'sol', capabilities: ['repository-review'], qualification: {state: 'QUALIFIED', version: 'sol-q1', capabilities: ['repository-review'], nodes: ['controller']}, pricing: {currency: 'USD', inputPerMillionTokens: 20, outputPerMillionTokens: 40, effectiveFrom: '2026-09-01', source: 'fixture'}},
+    {id: 'luna-plus', provider: 'openai-codex', accountProfile: 'cottage-plus', providerModel: 'luna', capabilities: ['repository-review'], qualification: {state: 'QUALIFIED', version: 'luna-q1', capabilities: ['repository-review'], nodes: ['controller']}, pricing: {currency: 'USD', inputPerMillionTokens: 1, outputPerMillionTokens: 2, effectiveFrom: '2026-09-01', source: 'fixture'}},
+  ], {roles: {'review.default': {primary: 'sol-pro', fallback: ['luna-plus'], requires: ['repository-review']}}}, undefined, undefined, {CODEX_HOME_LAWRENCE_PRO: process.cwd(), CODEX_HOME_COTTAGE_PLUS: process.cwd()});
+  return {models, route: models.route({model: 'sol-pro', accountProfile: 'lawrence-pro', nodeId: 'controller', requiredCapabilities: ['repository-review'], allowFallback: false})};
 }
 
 function reviewRequest(route: ReturnType<ModelRegistry['route']>) {

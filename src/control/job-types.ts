@@ -62,7 +62,7 @@ export interface RunStep {
   startedAt?: string; endedAt?: string; nextAttemptAt?: string; error?: string; verification?: {required: string[]; passed: string[]; failed: string[]};
 }
 export interface RunRecord {
-  id: string; jobId: string; jobVersion: string; trigger: {type: 'manual' | 'schedule' | 'retry'; id?: string; actor: string; modelRoute?: {requestedModel: string | null; requestedRole: string | null; modelId: string; providerId: string; providerModel: string; nodeId: string; qualificationVersion: string; fallback: boolean; fallbackReason: string | null}};
+  id: string; jobId: string; jobVersion: string; trigger: {type: 'manual' | 'schedule' | 'retry'; id?: string; actor: string; modelRoute?: {requestedModel: string | null; requestedRole: string | null; modelId: string; providerId: string; accountProfileId?: string | null; accountLabel?: string | null; accountPlan?: string | null; accountPlanAuthority?: 'operator-configured' | 'provider-reported' | null; accountQualification?: string | null; accountAvailability?: string | null; providerModel: string; nodeId: string; qualificationVersion: string; fallback: boolean; fallbackReason: string | null}};
   requestedAt: string; updatedAt?: string; scheduledAt?: string; startedAt?: string; endedAt?: string; status: RunStatus; priority: JobPriority;
   concurrency: ConcurrencyPolicy; parameters: Record<string, unknown>; steps: RunStep[]; artifacts: string[]; errors: string[];
   effectiveJob: JobDefinition; selectedWorkers: string[]; approvals: string[]; provenance: Array<{type: string; at: string; detail: string}>;

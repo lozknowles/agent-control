@@ -8,6 +8,9 @@
 - Adds verified baton contents, governed-handoff integration, failed-handoff recovery of the original thread, and multi-model aggregate accounting that survives model changes.
 - Wires the governor into the normal parameterized repository-review Work Parcel lifecycle: completed frozen chunks are assessed, the next bounded chunk is delegated through a child contract with a sealed baton, destination execution is independently validated, and destination failure resumes the preserved source route.
 - Adds real-time dashboard/SSE telemetry for active threads and parcel-level chain totals, plus the read-only `GET /api/token-routing` projection.
+- Adds optional provider-owned account profiles so governed routes are identified as `provider → account profile → model`. Codex profiles use isolated pre-authenticated `CODEX_HOME` directories referenced only by environment-variable name; model routes, sealed batons, contracts, telemetry, Work Parcel audits and chain totals preserve the opaque account identity.
+- Adds independent account health/qualification records and safe Models/dashboard projections for friendly label, operator/provider-attributed plan, availability, qualification and next route. Emails, credential paths, OAuth/access/refresh tokens, cookies and session material are excluded.
+- Allows Saved Jobs to pin an account profile as explicit workload policy. Account availability is never used for automatic rotation to evade or aggregate usage/rate limits; exhaustion and rate limiting remain visible failures on the selected profile.
 
 ## Unreleased — Agent Control 3.6
 

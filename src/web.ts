@@ -12,7 +12,7 @@ import {defaultCapabilities, loadWorkspace, type LaneState, type WorkspaceState}
 import {buildJobRuntime, buildParameterizedJobRuntime, startJobScheduler, startManagedNodeMonitoring, startParameterizedJobScheduler} from './control/job-bootstrap.js';
 import {FileCommandResultStore, TokenAwareOutputService} from './control/token-aware-output.js';
 import {Trace} from './control/telemetry.js';
-import {ModelQualificationStore, ModelRegistry} from './control/model-registry.js';
+import {AccountProfileQualificationStore, ModelQualificationStore, ModelRegistry} from './control/model-registry.js';
 import {IdentityControlPlane} from './control/identity-control-plane.js';
 import {FileFastExecutionLedger} from './control/fast-execution.js';
 import {ContractExecutionRuntime} from './control/contract-runtime.js';
@@ -32,7 +32,7 @@ const state = loadWorkspace(initial), ptys = new PtyRegistry(), providers = new 
 for (const provider of providersFromConfig(config.providers)) providers.register(provider);
 if (process.platform === 'linux') for (const discovery of toPtyDiscoveries(discoverLinuxPtys())) { const lane = state.lanes.find(item => discovery.cwd === item.contract.cwd || discovery.cwd.startsWith(`${item.contract.cwd}/`)); ptys.upsert(discovery, lane ? String(lane.id) : null); }
 const queue = new WorkQueueStore().load();
-const modelRegistry = new ModelRegistry(config.providers, config.models, config.modelRouting, new ModelQualificationStore(path.resolve(process.env.AGENT_CONTROL_STATE_DIR || '.agent-control', 'model-qualification.json')));
+const modelRegistry = new ModelRegistry(config.providers, config.models, config.modelRouting, new ModelQualificationStore(path.resolve(process.env.AGENT_CONTROL_STATE_DIR || '.agent-control', 'model-qualification.json')), new AccountProfileQualificationStore(path.resolve(process.env.AGENT_CONTROL_STATE_DIR || '.agent-control', 'account-profile-qualification.json')));
 const stateRoot = path.resolve(process.env.AGENT_CONTROL_STATE_DIR || '.agent-control');
 const identity = new IdentityControlPlane(path.join(stateRoot, 'identity', 'control-plane.json'));
 const fastExecution = new FileFastExecutionLedger(path.join(stateRoot, 'fast-execution', 'attempts.json'));
