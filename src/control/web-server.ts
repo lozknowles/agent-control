@@ -233,10 +233,11 @@ function replyError(response: ServerResponse, error: unknown) {
 }
 function httpError(status: number, message: string) { return Object.assign(new Error(message), {status}); }
 function secretEqual(left: string, right: string) { const a = createHash('sha256').update(left).digest(), b = createHash('sha256').update(right).digest(); return timingSafeEqual(a, b); }
-function redact(value: unknown, key = ''): unknown {
-  if (SECRET_KEY.test(key) && !SAFE_TOKEN_ACCOUNTING_KEY.test(key) && !SAFE_CONFIG_REFERENCE_KEY.test(key)) return '[REDACTED]';
+function redact(value: unknown, key = '', ancestors: string[] = []): unknown {
+  const safeContextTokenCount = key === 'tokens' && ancestors.at(-1) === 'context';
+  if (SECRET_KEY.test(key) && !safeContextTokenCount && !SAFE_TOKEN_ACCOUNTING_KEY.test(key) && !SAFE_CONFIG_REFERENCE_KEY.test(key)) return '[REDACTED]';
   if (typeof value === 'string') return value.replace(/\b(?:sk|rk|pk)-[A-Za-z0-9_-]{12,}\b/g, '[REDACTED]');
-  if (Array.isArray(value)) return value.map(item => redact(item));
-  if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([name, item]) => [name, redact(item, name)]));
+  if (Array.isArray(value)) return value.map(item => redact(item, '', ancestors));
+  if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([name, item]) => [name, redact(item, name, [...ancestors, key])]));
   return value;
 }
