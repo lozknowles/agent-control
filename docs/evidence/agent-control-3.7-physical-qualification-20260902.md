@@ -1,54 +1,87 @@
 # Agent Control 3.7 physical qualification — partial
 
-Timestamp: `2026-09-02T19:02:41Z`  
+Timestamp: `2026-09-02T19:30:26.932Z`
 Verdict: **PARTIAL — IMPLEMENTATION SOUND, QUALIFICATION INCOMPLETE**
 
-## Frozen candidate
+## Frozen candidate and normal gate
 
-- Product base: `5acdde13e41d58b511a33ac0e15f3dc6d3930613` — `feat: complete 3.6 runtime observability checkpoint`.
-- Qualified candidate: `2a6f6c49b96384774da5135945d009f032c2e7fb` on `feature/3.7-token-aware-baton-routing`.
-- Remote `origin/feature/3.7-token-aware-baton-routing` matched the candidate SHA before qualification.
-- The worktree was clean before qualification. The candidate is a descendant of the stated product base, with only `82afa61 feat: add token-aware baton routing` and `2a6f6c4 fix: keep live token telemetry current` above it. No benchmark/evidence-only commit is in its product base.
+- Product base: `5acdde13e41d58b511a33ac0e15f3dc6d3930613` — Agent Control 3.6 product checkpoint.
+- Physical candidate: `7fb00263a126018d9593f6e44186eead1b116ebb` on `feature/3.7-token-aware-baton-routing`, pushed to `origin` before this evidence update.
+- Qualification-found evidence defects corrected on this branch before the final run:
+  - `4640d00bc47f3c2e6081dfc2e932187f5d270840` preserves direct-provider parcel telemetry and exposes safe context counts through the API.
+  - `15579af5f8deb72a88be8cad04c970561660a15b` preserves direct-provider parcel totals in the coordinator read projection.
+  - `7fb00263a126018d9593f6e44186eead1b116ebb` records the independent repository-validation verdict on the originating parcel.
+- `npm run check` passed on the final candidate: TypeScript, bootstrap and dashboard syntax, neutrality, implementation-status consistency, and the complete test suite.
+- No merge, tag, release, or live Agent Control deployment change was made.
 
-## Environment and normal release-quality gate
+## Physical Codex telemetry observation
 
-- Host: current Linux controller workspace.
-- Agent Control: `3.7.0` candidate.
-- Installed Codex: `codex-cli 0.144.4`, authenticated using ChatGPT.
-- Command: `npm run check`.
-- Result: **308/308 PASS, 0 failures**. This includes TypeScript, bootstrap syntax, dashboard syntax, neutrality, generated implementation-status consistency, and the complete repository test suite.
+Installed Codex was `codex-cli 0.144.4`, authenticated with ChatGPT. A genuine read-only ephemeral JSONL thread emitted `12,475` input tokens, `8,960` cached input tokens, `15` output tokens, and no reasoning-output tokens. It did not expose current context occupancy or a context-window limit. The 3.7 Codex adapter correctly records those fields as `unavailable`; it does not manufacture them from lifetime usage.
 
-## Physical Codex observation
+## Final governed physical Work Parcel
 
-Command (read-only, ephemeral, no repository access):
+The final run used a disposable local configuration and state directory, not live deployment state. Its only configured provider was the running local OpenAI-compatible llama-server model:
 
-```bash
-codex exec --json --ephemeral --sandbox read-only --skip-git-repo-check \
-  'Reply with exactly: AGENT_CONTROL_37_CODEX_QUALIFICATION_OK. Do not run commands or inspect files.'
-```
+- Provider/model: `qwen-local` / `qwen2.5-3b-instruct-q4_k_m.gguf`.
+- Agent Control model identity: `qwen2.5-3b-local-qualification`.
+- Qualification version: `local-llama-server-observation-20260902`.
+- Frozen repository SHA: `7617cf65b51c837090775218b848b4be9fd18233`; dirty state: `false`.
+- Run: `0505723f-14c8-4baa-9252-188c6fe16f81`.
+- Work Parcel: `parcel-d8315858-297e-4b32-8e37-24761c25ba07`.
+- Token thread: `review:0505723f-14c8-4baa-9252-188c6fe16f81:context-1-ee257147ba10`.
+- Started `2026-09-02T19:30:22.682Z`; completed `2026-09-02T19:30:26.932Z`.
+- Result: immutable `SUCCEEDED_WITH_FINDINGS`; the independent repository validator marked the returned finding `VALID`.
+- Provider response/baton-boundary evidence SHA-256: `063430b1fdf61543420464c1d8abe9cc1dba1313a429e06a52144b6cd6c1d98f`.
 
-The genuine thread emitted `thread.started`, then `turn.completed` with `12,475` input tokens, `8,960` cached input tokens, `15` output tokens, and `0` reasoning-output tokens. It did **not** emit a current-context token count or context-window limit. The 3.7 Codex adapter therefore represents current context and context percentage as `unavailable`; it does not derive occupancy from the cumulative usage (`12,490` total by input plus output). This is the required truthful unavailable semantics, not an estimate.
+The direct-provider parcel retained one invocation with independent verifier result `PASS_WITH_FINDINGS`. Its durable timeline contains `verification.completed` at `2026-09-02T19:30:26.932Z` with the detail that Parameterized Job validation accepted the consolidated review result.
 
-## Dashboard observation
+## Live telemetry and reconciliation
 
-The candidate dashboard was started from an isolated temporary state directory on loopback. `GET /api/status` reported `version: 3.7.0`, `health: healthy`, and the configured 75/85/90 governor policy. The normal SSE/dashboard implementation was already covered by the complete suite, including the live `token.telemetry` event and `GET /api/token-routing` projection tests.
+SSE emitted `token.telemetry`, `token.governor_transition`, a final `token.telemetry`, and `job.run_changed` without a page refresh. The final dashboard, durable token-routing evidence, and Work Parcel audit reconciled exactly:
 
-The isolated runtime reported `providers: 0`, `resources: 0`, and `tokenThreads: 0`. It was correctly observer-only and could not accept a provider-backed Work Parcel.
+| Measurement | Value |
+| --- | ---: |
+| Cumulative input tokens | 418 |
+| Cumulative output tokens | 202 |
+| Cumulative total tokens | 620 |
+| Parcel fresh/cached input | 1 / 417 |
+| Context limit | 32,768 |
+| Current context / percent | unavailable / unavailable |
+| Cost | unavailable |
+| Governor | `CONTINUE`; next threshold 75%; reason `current_context_unavailable` |
+| Thread recoverable | `true` |
 
-## Provider and governed-handoff boundary
+The provider did not report current context occupancy or provider cost. Agent Control therefore records `provider_did_not_report_current_context` and `provider_not_reported`, rather than estimates. The token thread, Work Parcel telemetry/audit, and parcel aggregate each report exactly `620` total tokens.
 
-No Agent Control runtime configuration was present at `.agent-control/config.json`, `AGENT_CONTROL_CONFIG`, or `AGENT_CONTROL_STATE_DIR`; there was no running Agent Control service. The current process environment exposed no OpenAI/OpenRouter/GLM credential reference. Consequently, there were no already configured providers or models to inspect for authoritative live-context telemetry.
+Captured evidence checksums:
 
-This means the following mandatory physical gates were **not run**, rather than simulated:
+- Run API: `283b5e5029e90f147c63c2543b992bf5d5819f3d5dd3c18f5e18518371aa06e2`.
+- Token-routing API: `894311f40a3b7575b3d54199884e470e62e6eb185f1a327675301557bd79f3e7`.
+- Work Parcel API: `82eeec570d1aaab4e1e19b65b52e9bc68026cf9863c93a3652d865f3e16a6b83`.
+- SSE capture: `76f4e5efd65d6ef8636d20ef83065de80ac6e8d52eefbd0e42e94cd6151acaf6`.
+- Durable run, parcel, and token-routing ledgers: `ca227f4170ff131a6747d179db512ea74c912e4d68a82a73b2cf75e40db828a8`, `13829dc576d2e325b9a71646fbe645de5560bb9c13cf8594476187c5550d078c`, and `2ed6cf937859c8fec2fed9f8c277a0670f9f28854f169a60a6da918bcebb4ccc` respectively.
 
-- live dashboard Thread Context values for a governed provider-backed parcel;
-- physical `CONTINUE → PREPARE_BATON → COMPACT → HANDOFF` transitions;
-- a real Sol → Luna or Sol → GLM-5.3-Flash baton and destination execution;
-- durable destination-failure recovery on a physical model route;
-- physical Work Parcel cost-per-verified-outcome reconciliation across a handoff.
+## Gates proven and unproven
 
-No fake provider, copied historical credential, manufactured baton, or synthetic model route was used to fill these gaps. The deterministic suite does cover these behaviours, including durable transition/recovery and `Sol 184k → Luna 31k → GLM-5.3-Flash 18k = 233k` arithmetic, but that is not physical-provider qualification.
+Proven physically on the final candidate:
+
+- governed provider-backed Work Parcel creation, frozen repository provenance, no fallback, completion, and immutable result;
+- live SSE telemetry/governor publication;
+- durable thread telemetry, recoverable source-thread state, and exact parcel/dashboard aggregate reconciliation;
+- independent verification propagated to the Work Parcel invocation and timeline;
+- truthful unavailable context and cost semantics.
+
+Not proven physically, and not simulated:
+
+- authoritative current-context occupancy/percentage from a provider;
+- `PREPARE_BATON`, `COMPACT`, and `HANDOFF` threshold transitions;
+- sealed baton creation and baton SHA-256;
+- real source-to-destination model handoff, destination continuation, or failed-destination recovery to the original thread;
+- multi-provider `Sol → Luna → GLM-5.3-Flash` accounting and cheaper-route decision;
+- cross-handoff cost-per-verified-outcome reconciliation.
+
+Only one qualified provider route was available in the temporary physical configuration, and no configured second provider supplied a genuine cheaper, independently credentialed destination. A synthetic route, copied credential, or manufactured baton was not used. The deterministic suite covers those scenarios, but that is not physical-provider qualification.
 
 ## Required next qualification environment
 
-Provide the current Agent Control configuration/state directory with at least two qualified, credential-referenced provider routes: a stronger source model and a genuinely cheaper destination model. Then rerun this candidate's bounded physical Work Parcel with reduced qualification-only thresholds/window, preserve the sealed baton SHA-256 and all transition records, deliberately fail the narrow destination operation once, independently verify the completed parcel, and reconcile dashboard, token-routing evidence, Work Parcel ledger, and cost accounting.
+Provide at least two configured and qualified provider routes: a stronger source and a genuinely cheaper destination, with credential references and pricing where cost qualification is required. Then execute a bounded real parcel with qualification-only context pressure that triggers baton preparation and handoff, deliberately make the destination continuation fail once, resume the original thread, independently verify the completed parcel, and reconcile SSE, per-thread telemetry, baton SHA-256, Work Parcel totals, model-chain totals, and cost evidence.
