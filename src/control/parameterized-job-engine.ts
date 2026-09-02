@@ -109,6 +109,7 @@ export class ParameterizedJobEngine {
       if (budgets.maxCost !== undefined && response.usage.cost !== undefined && response.usage.cost > budgets.maxCost) throw new ParameterizedJobError('job_cost_budget_exceeded');
       run = this.transition(run, 'VALIDATING'); this.runs.update(run); run.result = validateRepositoryReview(response.result, repository);
       run.status = run.result.verdict === 'PASS' ? 'SUCCEEDED' : run.result.verdict === 'PASS_WITH_FINDINGS' ? 'SUCCEEDED_WITH_FINDINGS' : run.result.verdict === 'REVIEW_REQUIRED' ? 'DEGRADED' : 'FAILED';
+      this.executor.recordVerification?.(run.workParcelIds, run.result.verdict);
       run.completedAt = this.clock().toISOString(); run.transitions.push({status: run.status, at: run.completedAt, detail: run.result.verdict}); run.immutable = true;
       this.runs.update(run);
       if (['SUCCEEDED', 'SUCCEEDED_WITH_FINDINGS'].includes(run.status) && saved) this.baselines.advance(saved.id, repository, run.id, run.completedAt);

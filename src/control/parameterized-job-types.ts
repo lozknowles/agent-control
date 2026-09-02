@@ -129,4 +129,4 @@ export interface ReviewExecutionRequest {
   signal: AbortSignal;
 }
 export interface ReviewExecutionResponse {result: RepositoryReviewResult; usage: JobRunUsage; evidence: string[]; providerResponseIds: string[]; workParcelIds: string[];}
-export interface RepositoryReviewExecutor {execute(request: ReviewExecutionRequest): Promise<ReviewExecutionResponse>;}
+export interface RepositoryReviewExecutor {execute(request: ReviewExecutionRequest): Promise<ReviewExecutionResponse>; recordVerification?(workParcelIds: string[], verdict: RepositoryReviewResult['verdict']): void;}
