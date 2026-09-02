@@ -40,7 +40,7 @@ The existing governed handoff runtime owns actual process replacement and author
 
 ## Dashboard and reconciliation
 
-The dashboard consumes the existing SSE endpoint. `token.telemetry`, `token.governor_transition`, `token.baton_created`, and `token.handoff_result` refresh the live thread panel without a page reload. It displays provider/model, context (`Context: 182k / 272k — 67%`), token totals, authority, cost, elapsed time, governor state/thresholds, and Work Parcel chain totals.
+The dashboard consumes the existing SSE endpoint. `token.telemetry`, `token.governor_transition`, `token.baton_created`, and `token.handoff_result` refresh the live thread panel without a page reload. While a thread is active, its elapsed runtime advances locally from the durable start time between events; completed threads retain the final provider-reported elapsed time. The panel displays provider/model, context (`Context: 182k / 272k — 67%`), token totals, authority, cost, governor state/current/next thresholds, and Work Parcel chain totals.
 
 Parcel accounting is additive across threads and models. For example, `Sol 184k → Luna 31k → GLM-5.3-Flash 18k = 233k total` remains visible after each handoff. The same sampled values, transitions, decisions, baton IDs, and hashes persist in durable evidence and can be reconciled with the final Work Parcel cost-per-verified-outcome ledger.
 

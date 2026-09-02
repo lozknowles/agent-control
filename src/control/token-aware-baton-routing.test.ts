@@ -65,5 +65,6 @@ test('parcel totals survive Sol to Luna to GLM handoffs and durable evidence rec
   value.observe({...sample('luna', {agentId: 'luna-agent', modelId: 'luna', input: 28_000, output: 3_000, total: 31_000, context: 20_000, limit: 128_000, authority: 'estimated', cost: 1}), observedAt: at(2)});
   value.observe({...sample('glm', {agentId: 'glm-agent', providerId: 'openrouter', modelId: 'glm-5.3-flash', input: 16_000, output: 2_000, total: 18_000, context: null, limit: 131_072, authority: 'unavailable', cost: .2}), observedAt: at(3)});
   const totals = value.parcel('parcel:one'); assert.equal(totals.totalTokens, 233_000); assert.equal(totals.byModel.length, 3); assert.equal(totals.cost, 3.2);
+  assert.deepEqual(totals.byModel.map(item => item.modelId), ['sol', 'luna', 'glm-5.3-flash']);
   const restored = runtime(file); assert.deepEqual(restored.parcel('parcel:one'), totals); assert.equal(restored.projection().threads.length, 3); assert.ok(fs.readFileSync(file, 'utf8').includes('token-aware-baton-routing'));
 });

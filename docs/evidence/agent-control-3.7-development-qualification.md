@@ -13,7 +13,7 @@ The focused TypeScript suite covers the durable governor and its integration bou
 - partial configuration validation against the same 75/85/90 defaults used at runtime;
 - sealed baton provenance, SHA-256, Git/diff/test/next-action state, successful handoff, failed-handoff recovery, and original-thread recoverability;
 - Sol 184k, Luna 31k, and GLM-5.3-Flash 18k accounting that remains 233k after durable reload;
-- Responses-compatible direct review telemetry, Codex JSONL start/completion usage normalization, redacted `GET /api/token-routing`, and the real SSE event stream.
+- Responses-compatible direct review telemetry, Codex JSONL start/completion usage normalization, active/completed thread state for advancing elapsed time, redacted `GET /api/token-routing`, and the real SSE event stream.
 
 ## Telemetry authority
 

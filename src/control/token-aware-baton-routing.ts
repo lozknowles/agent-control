@@ -30,6 +30,7 @@ export interface TokenTelemetrySample {
   modelId: string;
   observedAt?: string;
   elapsedMs: number;
+  active?: boolean;
   cumulative: Partial<TokenAmounts>;
   context?: Partial<ContextOccupancy>;
   cost?: Partial<CostEstimate>;
@@ -52,6 +53,7 @@ export interface ThreadTokenRecord {
   modelId: string;
   startedAt: string;
   updatedAt: string;
+  active: boolean;
   recoverable: boolean;
   governor: {state: GovernorState; currentThreshold: number | null; nextThreshold: number | null; reason: string};
   latest: TokenTelemetryPoint;
@@ -158,8 +160,8 @@ export class TokenAwareBatonRuntime {
     const contextPercent = context.tokens === null || context.limitTokens === null || context.limitTokens === 0 ? null : Math.min(100, context.tokens / context.limitTokens * 100);
     const latest: TokenTelemetryPoint = {at, elapsedMs: input.elapsedMs, cumulative, context, contextPercent, cost};
     if (prior && (prior.parcelId !== input.parcelId || prior.agentId !== input.agentId || prior.providerId !== input.providerId || prior.modelId !== input.modelId)) throw new Error('token_thread_identity_changed');
-    const governor = governorFor(contextPercent, this.policy);
-    const record: ThreadTokenRecord = prior ? {...prior, updatedAt: at, latest, governor, samples: [...prior.samples, latest].slice(-this.policy.sampleRetention)} : {id: input.threadId, parcelId: input.parcelId, agentId: input.agentId, providerId: input.providerId, modelId: input.modelId, startedAt: at, updatedAt: at, recoverable: true, governor, latest, samples: [latest]};
+    const governor = governorFor(contextPercent, this.policy), active = input.active ?? prior?.active ?? true;
+    const record: ThreadTokenRecord = prior ? {...prior, updatedAt: at, active, latest, governor, samples: [...prior.samples, latest].slice(-this.policy.sampleRetention)} : {id: input.threadId, parcelId: input.parcelId, agentId: input.agentId, providerId: input.providerId, modelId: input.modelId, startedAt: at, updatedAt: at, active, recoverable: true, governor, latest, samples: [latest]};
     this.threads.set(record.id, record);
     this.save(); this.emit({type: 'telemetry', threadId: record.id, parcelId: record.parcelId, at});
     if (!prior || prior.governor.state !== governor.state) this.record(record, actionFor(governor.state), governor.reason, 'RECORDED');
@@ -211,7 +213,7 @@ export class TokenAwareBatonRuntime {
       }
       existing.inputTokens = sum(existing.inputTokens, thread.latest.cumulative.inputTokens); existing.outputTokens = sum(existing.outputTokens, thread.latest.cumulative.outputTokens); existing.totalTokens = sum(existing.totalTokens, thread.latest.cumulative.totalTokens); existing.cost = sum(existing.cost, thread.latest.cost.amount); existing.currency = existing.currency ?? thread.latest.cost.currency; byModel.set(key, existing);
     }
-    const values = [...byModel.values()].sort((a,b) => `${a.providerId}/${a.modelId}`.localeCompare(`${b.providerId}/${b.modelId}`));
+    const values = [...byModel.values()];
     return {parcelId, threads: threads.map(thread => thread.id).sort(), byModel: clone(values), inputTokens: aggregate(values.map(value => value.inputTokens)), outputTokens: aggregate(values.map(value => value.outputTokens)), totalTokens: aggregate(values.map(value => value.totalTokens)), cost: aggregate(values.map(value => value.cost)), currency: [...new Set(values.map(value => value.currency).filter((value): value is string => Boolean(value)))].length === 1 ? values.find(value => value.currency)?.currency ?? null : null};
   }
 
