@@ -17,6 +17,7 @@ import {ParameterizedJobRegistry} from './parameterized-job-registry.js';
 import {repositoryCodeReviewDefinition} from './repository-review-definition.js';
 import {createParameterizedJobEngine} from './parameterized-job-engine.js';
 import {DirectRepositoryReviewExecutor} from './direct-repository-review-executor.js';
+import type {TokenAwareBatonRuntime} from './token-aware-baton-routing.js';
 
 /** Shared production definition path so qualification cannot drift from registered typed Actions. */
 export function buildJobRuntimeDefinition(config: AgentControlConfig, manifestDir = process.env.AGENT_CONTROL_JOB_DIR || path.resolve('config/jobs'), harnessEfficiency?: HarnessEfficiencyLedgerPort) {
@@ -67,10 +68,10 @@ export function startJobScheduler(runtime: ReturnType<typeof buildJobRuntime>, o
   const timer = setInterval(() => void schedule(), intervalMs); timer.unref(); void schedule(); return () => { stopped = true; clearInterval(timer); };
 }
 
-export function buildParameterizedJobRuntime(config: AgentControlConfig, modelRegistry: ModelRegistry, workParcels: WorkParcelCoordinator, stateRoot = process.env.AGENT_CONTROL_STATE_DIR || path.resolve('.agent-control')) {
+export function buildParameterizedJobRuntime(config: AgentControlConfig, modelRegistry: ModelRegistry, workParcels: WorkParcelCoordinator, stateRoot = process.env.AGENT_CONTROL_STATE_DIR || path.resolve('.agent-control'), tokenRouting?: TokenAwareBatonRuntime) {
   const definitions = new ParameterizedJobRegistry(); definitions.register(repositoryCodeReviewDefinition);
   const roots = config.jobs?.repositoryRoots ?? (process.env.AGENT_CONTROL_REPOSITORY_ROOTS?.split(path.delimiter).filter(Boolean) || [path.resolve('.')]);
-  const executor = new DirectRepositoryReviewExecutor(modelRegistry, workParcels.store);
+  const executor = new DirectRepositoryReviewExecutor(modelRegistry, workParcels.store, tokenRouting);
   return createParameterizedJobEngine(stateRoot, definitions, modelRegistry, executor, {allowedRepositoryRoots: roots, allowedRepositoryRemotes: config.jobs?.repositoryRemotes, nodeHealthy: nodeId => { const resource = config.resources.find(item => item.id === nodeId); if (!resource) return false; if (resource.transport.type === 'local') return true; const node = workParcels.runtime.workers.list().find(item => item.id === nodeId); return node?.health === 'healthy'; }});
 }
 

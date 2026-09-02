@@ -23,6 +23,7 @@ import type {SavedJob} from './parameterized-job-types.js';
 import {legacyAttribution, type IdentityControlPlane, type WorkAttribution} from './identity-control-plane.js';
 import type {FastExecutionLedgerPort} from './fast-execution.js';
 import {RuntimeObservability} from './runtime-observability.js';
+import type {TokenAwareBatonRuntime, TokenRoutingProjection} from './token-aware-baton-routing.js';
 
 export type ControlEventType =
   | 'system.snapshot'
@@ -49,6 +50,10 @@ export type ControlEventType =
   | 'work.parcel_created'
   | 'work.parcel_changed'
   | 'configuration.changed'
+  | 'token.telemetry'
+  | 'token.governor_transition'
+  | 'token.baton_created'
+  | 'token.handoff_result'
   | 'failure';
 
 export interface ControlEvent {id: number; at: string; type: ControlEventType; laneId?: number; actor?: string; payload: Record<string, unknown>;}
@@ -93,6 +98,7 @@ export interface SystemProjection {
   observedAt: string;
   jobs: {total: number; enabled: number; queued: number; waiting: number; running: number; failed: number; succeeded: number; schedulesEnabled: number;};
   tokenAwareOutput: TokenAwareOutputMetrics;
+  tokenBatonRouting: TokenRoutingProjection;
   harnessEfficiency: HarnessEfficiencyMetrics;
 }
 
@@ -132,6 +138,7 @@ export class AgentControlService {
   private defaultSessionId?: string;
   private fastExecution?: FastExecutionLedgerPort;
   private runtimeObservability?: RuntimeObservability;
+  private tokenBatonRouting?: TokenAwareBatonRuntime;
 
   constructor(
     readonly state: WorkspaceState,
@@ -144,7 +151,7 @@ export class AgentControlService {
     this.verification = new VerificationService(state, persist);
   }
 
-  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; services?: RegisteredService[]; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService; harnessEfficiency?: HarnessEfficiencyLedgerPort; workParcels?: WorkParcelCoordinator; modelRegistry?: ModelRegistry; parameterizedJobs?: ParameterizedJobEngine; identity?: IdentityControlPlane; defaultSessionId?: string; fastExecution?: FastExecutionLedgerPort; runtimeObservability?: RuntimeObservability}) {
+  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; services?: RegisteredService[]; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService; tokenBatonRouting?: TokenAwareBatonRuntime; harnessEfficiency?: HarnessEfficiencyLedgerPort; workParcels?: WorkParcelCoordinator; modelRegistry?: ModelRegistry; parameterizedJobs?: ParameterizedJobEngine; identity?: IdentityControlPlane; defaultSessionId?: string; fastExecution?: FastExecutionLedgerPort; runtimeObservability?: RuntimeObservability}) {
     if (extras.approvalCount) this.approvalCount = extras.approvalCount;
     if (extras.resources) this.resourceRows = structuredClone(extras.resources);
     if (extras.services) this.serviceRows = structuredClone(extras.services);
@@ -152,6 +159,7 @@ export class AgentControlService {
     if (extras.jobRuntime) this.jobRuntime = extras.jobRuntime;
     if (extras.managedNodes) this.managedNodes = extras.managedNodes;
     if (extras.tokenAwareOutput) this.tokenAwareOutput = extras.tokenAwareOutput;
+    if (extras.tokenBatonRouting) this.tokenBatonRouting = extras.tokenBatonRouting;
     if (extras.harnessEfficiency) this.harnessEfficiency = extras.harnessEfficiency;
     if (extras.workParcels) this.workParcels = extras.workParcels;
     if (extras.modelRegistry) this.modelRegistry = extras.modelRegistry;
@@ -185,6 +193,7 @@ export class AgentControlService {
       observedAt: new Date().toISOString(),
       jobs: {total: jobDefinitions.length + savedJobs.length, enabled: jobDefinitions.filter(job => job.spec.enabled !== false).length + savedJobs.filter(job => job.enabled).length, queued: jobRuns.filter(run => run.status === 'QUEUED').length + parameterizedRuns.filter(run => run.status === 'QUEUED').length, waiting: jobRuns.filter(run => run.status === 'WAITING').length, running: jobRuns.filter(run => ['RUNNING', 'VERIFYING'].includes(run.status)).length + parameterizedRuns.filter(run => ['RESOLVING', 'RUNNING', 'VALIDATING'].includes(run.status)).length, failed: jobRuns.filter(run => ['FAILED', 'DEGRADED', 'DISCONNECTED'].includes(run.status)).length + parameterizedRuns.filter(run => ['FAILED', 'DEGRADED'].includes(run.status)).length, succeeded: jobRuns.filter(run => run.status === 'SUCCEEDED').length + parameterizedRuns.filter(run => ['SUCCEEDED', 'SUCCEEDED_WITH_FINDINGS'].includes(run.status)).length, schedulesEnabled: schedules.filter(schedule => this.jobRuntime?.ledger.schedule(schedule.metadata.id)?.enabled).length + savedJobs.filter(job => job.schedule?.enabled).length},
       tokenAwareOutput: this.commandOutputMetrics(),
+      tokenBatonRouting: this.tokenRouting(),
       harnessEfficiency: this.harnessEfficiencyMetrics(),
     };
   }
@@ -207,6 +216,7 @@ export class AgentControlService {
   artifact(id: string) { const value = this.mustJobRuntime().artifacts.get(id); if (!value) throw new Error('artifact_missing'); const {storageRef: _storageRef, ...metadata} = value; return {...metadata, storage: 'agent-control-managed'}; }
   commandOutputs() { return this.tokenAwareOutput?.list() ?? []; }
   commandOutputMetrics(): TokenAwareOutputMetrics { return this.tokenAwareOutput?.metrics() ?? {commandsObserved: 0, commandsCompacted: 0, rgSearchesCompacted: 0, originalOutputBytes: 0, returnedOutputBytes: 0, estimatedTokensOriginal: 0, estimatedTokensReturned: 0, estimatedTokensSaved: 0, contextTokensAvoided: 0, expansionRequests: 0, fullResultRequests: 0, expansionTokensReturned: 0, byJob: {}, byLane: {}, byAgentModel: {}}; }
+  tokenRouting(): TokenRoutingProjection { return this.tokenBatonRouting?.projection() ?? {schema: 'agent-control.token-aware-baton-routing/v1', observedAt: new Date().toISOString(), policy: {prepareBatonPercent: 75, compactPercent: 85, handoffPercent: 90, sampleRetention: 240}, threads: [], parcels: [], decisions: []}; }
   harnessEfficiencyMetrics(): HarnessEfficiencyMetrics { return this.harnessEfficiency?.metrics() ?? new MemoryHarnessEfficiencyLedger().metrics(); }
   modelInvocations(options: {limit?: number; runId?: string; jobId?: string} = {}) {
     const limit = Math.min(1_000, Math.max(1, Number.isSafeInteger(options.limit) ? options.limit! : 200));

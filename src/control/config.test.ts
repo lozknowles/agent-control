@@ -93,6 +93,15 @@ test('token-aware output configuration rejects unsafe or nonsensical limits', ()
   assert.throws(() => validateConfig({...base, tokenAwareOutput: {contextBudgetFraction: 1.1}}), /context_budget_fraction/);
 });
 
+test('token-aware baton-routing thresholds are explicit policy and reject invalid ordering', () => {
+  const base = {schemaVersion: 1, resources: [], providers: [], services: [], lanes: []};
+  const config = validateConfig({...base, tokenBatonRouting: {prepareBatonPercent: 75, compactPercent: 85, handoffPercent: 90, sampleRetention: 240}});
+  assert.equal(config.tokenBatonRouting?.handoffPercent, 90);
+  assert.throws(() => validateConfig({...base, tokenBatonRouting: {prepareBatonPercent: 85, compactPercent: 75, handoffPercent: 90}}), /threshold_order/);
+  assert.throws(() => validateConfig({...base, tokenBatonRouting: {prepareBatonPercent: 86}}), /threshold_order/);
+  assert.throws(() => validateConfig({...base, tokenBatonRouting: {sampleRetention: 1}}), /sample_retention/);
+});
+
 test('harness efficiency profiles are configurable without provider or machine identity', () => {
   const config = validateConfig({schemaVersion: 1, resources: [], providers: [], services: [], lanes: [], harnessEfficiency: {routingMode: 'observe', minimumVerifiedRuns: 12, minimumSuccessRate: .95, minimumSameModelControlledRuns: 10, profiles: {THIN: {maximumInitialContextTokens: 3000, maximumSources: 10, maximumOptionalSkills: 1, maximumTools: 5, maximumTurns: 2, allowBroadRepositoryContext: false, allowSharedContext: false}}}});
   assert.equal(config.harnessEfficiency?.routingMode, 'observe');

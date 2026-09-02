@@ -9,6 +9,7 @@ import type {ProviderDefinition} from './providers.js';
 import {createInvocationObservation, type ContextPacketSource} from './harness-efficiency.js';
 import type {ModelConfig, ProviderConfig} from './config.js';
 import {materializeCodexModelConfig} from './codex-model-config.js';
+import type {TokenTelemetrySample} from './token-aware-baton-routing.js';
 
 export interface CodexExecRequest {
   command: string;
@@ -19,7 +20,10 @@ export interface CodexExecRequest {
   timeoutMs: number;
   environment?: NodeJS.ProcessEnv;
   loadUserConfig?: boolean;
+  onTelemetry?: (event: CodexExecTelemetryEvent) => void;
 }
+
+export interface CodexExecTelemetryEvent {type: 'thread.started' | 'turn.completed'; threadId?: string; elapsedMs: number; usage?: Record<string, unknown>; context: {tokens: null; authority: 'unavailable'; source: string};}
 
 export interface CodexExecResult {
   threadId?: string;
@@ -49,6 +53,8 @@ export interface CodexExecProviderOptions {
   command?: string;
   authProbe?: (command: string, cwd: string, timeoutMs: number) => Promise<CodexChatGptAuth>;
   runner?: (request: CodexExecRequest) => Promise<CodexExecResult>;
+  telemetry?: (sample: TokenTelemetrySample) => void;
+  contextLimitTokens?: number;
 }
 
 interface ToolRequest {tool: string; input?: unknown;}
@@ -99,7 +105,13 @@ export class CodexExecProviderFactory {
     const command = this.options.command ?? process.env.CODEX_COMMAND ?? 'codex';
     await (this.options.authProbe ?? probeCodexChatGptAuth)(command, this.options.cwd, timeoutMs);
     const startedAt = new Date().toISOString();
-    const run = await (this.options.runner ?? runCodexExec)({command, cwd: this.options.cwd, modelId: this.options.modelId, instruction, grantedToolIds, timeoutMs});
+    const telemetry = this.options.telemetry;
+    const emit = (event: CodexExecTelemetryEvent) => {
+      if (!telemetry) return;
+      const usage = event.usage ?? {}, input = numeric(usage.input_tokens), output = numeric(usage.output_tokens), total = numeric(usage.total_tokens) ?? (input !== null && output !== null ? input + output : null);
+      telemetry({threadId: event.threadId ?? `codex:${recipe.id ?? recipe.taskId ?? 'unattributed'}`, parcelId: recipe.taskId ?? recipe.jobId ?? 'unattributed-task', agentId: this.options.workerId, providerId: this.options.provider.id, modelId: this.options.modelId, elapsedMs: event.elapsedMs, cumulative: {inputTokens: input, outputTokens: output, totalTokens: total}, context: {tokens: null, limitTokens: this.options.contextLimitTokens ?? null, authority: 'unavailable', source: 'codex_jsonl_does_not_report_current_context'}, cost: {amount: null, currency: null, authority: 'unavailable', source: 'codex_plan_cost_not_reported'}});
+    };
+    const run = await (this.options.runner ?? runCodexExec)({command, cwd: this.options.cwd, modelId: this.options.modelId, instruction, grantedToolIds, timeoutMs, onTelemetry: emit});
     const providerCompletedAt = new Date().toISOString();
     if (run.observedItemTypes.includes('file_change')) throw new Error('codex_exec_capability_envelope_violation:file_change');
     const request = parseToolRequest(run.finalMessage);
@@ -136,9 +148,15 @@ export async function runCodexExec(request: CodexExecRequest): Promise<CodexExec
   try {
     fs.writeFileSync(schemaFile, JSON.stringify(codexToolRequestSchema(request.grantedToolIds)), {mode: 0o600});
     const prompt = `Return one Agent Control tool request as schema-constrained JSON. Put the tool input in input_json as a JSON-encoded string. Do not claim the tool ran. Do not modify files.\n\n${request.instruction}`;
-    const result = await captureProcess(request.command, ['exec', '--ephemeral', '--json', '--sandbox', 'read-only', ...(request.loadUserConfig ? [] : ['--ignore-user-config']), '--model', request.modelId, '--output-schema', schemaFile, prompt], request.cwd, request.timeoutMs, request.environment, !request.loadUserConfig);
+    const startedAt = Date.now(), liveEvents: Record<string, unknown>[] = []; let liveThreadId: string | undefined;
+    const result = await captureProcess(request.command, ['exec', '--ephemeral', '--json', '--sandbox', 'read-only', ...(request.loadUserConfig ? [] : ['--ignore-user-config']), '--model', request.modelId, '--output-schema', schemaFile, prompt], request.cwd, request.timeoutMs, request.environment, !request.loadUserConfig, line => {
+      let event: Record<string, unknown>; try { event = JSON.parse(line) as Record<string, unknown>; } catch { return; }
+      liveEvents.push(event); const threadId = typeof event.thread_id === 'string' ? event.thread_id : undefined; if (threadId) liveThreadId = threadId;
+      if (event.type === 'thread.started') request.onTelemetry?.({type: 'thread.started', threadId: liveThreadId, elapsedMs: Date.now() - startedAt, context: {tokens: null, authority: 'unavailable', source: 'codex_jsonl_does_not_report_current_context'}});
+      if (event.type === 'turn.completed') request.onTelemetry?.({type: 'turn.completed', threadId: liveThreadId, elapsedMs: Date.now() - startedAt, usage: event.usage && typeof event.usage === 'object' && !Array.isArray(event.usage) ? sanitizeUsage(event.usage as Record<string, unknown>) : undefined, context: {tokens: null, authority: 'unavailable', source: 'codex_jsonl_does_not_report_current_context'}});
+    });
     if (result.code !== 0) throw new Error(`codex_exec_failed:${result.code}`);
-    const events = result.stdout.split(/\r?\n/).filter(Boolean).map(line => {
+    const events = liveEvents.length ? liveEvents : result.stdout.split(/\r?\n/).filter(Boolean).map(line => {
       try { return JSON.parse(line) as Record<string, unknown>; } catch { throw new Error('codex_exec_invalid_jsonl'); }
     });
     if (events.some(event => event.type === 'error' || event.type === 'turn.failed')) throw new Error('codex_exec_turn_failed');
@@ -176,7 +194,7 @@ function sanitizeUsage(value: Record<string, unknown>): Record<string, unknown> 
 
 function codexToolRequestSchema(grantedToolIds: string[]) { return {type: 'object', properties: {tool: {type: 'string', enum: grantedToolIds}, input_json: {type: 'string'}}, required: ['tool', 'input_json'], additionalProperties: false}; }
 
-async function captureProcess(command: string, args: string[], cwd: string, timeoutMs: number, environment: NodeJS.ProcessEnv = process.env, stripApiKeys = true): Promise<{code: number; stdout: string; stderr: string}> {
+async function captureProcess(command: string, args: string[], cwd: string, timeoutMs: number, environment: NodeJS.ProcessEnv = process.env, stripApiKeys = true, onStdoutLine?: (line: string) => void): Promise<{code: number; stdout: string; stderr: string}> {
   return new Promise((resolve, reject) => {
     const env = {...environment};
     if (stripApiKeys) { delete env.OPENAI_API_KEY; delete env.CODEX_API_KEY; }
@@ -193,13 +211,16 @@ async function captureProcess(command: string, args: string[], cwd: string, time
       if (next.length > 2_000_000) throw new Error('codex_exec_output_limit_exceeded');
       return next;
     };
-    child.stdout.on('data', chunk => { try { stdout = append(stdout, chunk as Buffer); } catch (error) { child.kill(); finish(error as Error); } });
+    let stdoutRemainder = '';
+    child.stdout.on('data', chunk => { try { stdout = append(stdout, chunk as Buffer); stdoutRemainder += (chunk as Buffer).toString('utf8'); const lines = stdoutRemainder.split(/\r?\n/); stdoutRemainder = lines.pop() ?? ''; for (const line of lines) if (line) onStdoutLine?.(line); } catch (error) { child.kill(); finish(error as Error); } });
     child.stderr.on('data', chunk => { try { stderr = append(stderr, chunk as Buffer); } catch (error) { child.kill(); finish(error as Error); } });
     child.once('error', error => finish(new Error(`codex_exec_launch_failed:${error.message}`)));
-    child.once('close', code => finish(undefined, code ?? -1));
+    child.once('close', code => { if (stdoutRemainder) onStdoutLine?.(stdoutRemainder); finish(undefined, code ?? -1); });
     const timer = setTimeout(() => { child.kill(); finish(new Error('codex_exec_timeout')); }, Math.max(1, timeoutMs));
   });
 }
+
+function numeric(value: unknown) { return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null; }
 
 function parseToolRequest(content: string): ToolRequest {
   let parsed: unknown;

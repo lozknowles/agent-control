@@ -1,6 +1,6 @@
 # Agent Control architecture
 
-This is the authoritative source boundary for the unreleased Agent Control 3.6 feature branch, based on released tag `v3.5.0`. Status labels matter:
+This is the authoritative source boundary for the unreleased Agent Control 3.7 feature branch, based on the 3.6 product checkpoint (released tag `v3.5.0`). Status labels matter:
 
 - **implemented** means executable code and automated tests exist in this branch;
 - **experimental** means executable code exists but has not been qualified across every external substrate;
@@ -500,6 +500,14 @@ Android support is device-neutral. The node ID, transport, port, repository and 
 
 New capabilities are classified into policy/authority, scheduling, execution substrate, provider/model adapter, routing, context/evidence, verification/provenance, operator interface, persistence or observability. `assessConceptualIntegrity` rejects duplicate authoritative state, a second control path, interface-owned authority, provider-owned policy and capabilities without a failure mode or durable verification evidence. The operator checklist is in `docs/conceptual-integrity.md`.
 
+## Token-Aware Baton Routing (3.7)
+
+`Provider adapter → normalized telemetry sample → durable token governor → sealed baton → governed handoff → Work Parcel aggregate → SSE/dashboard → final evidence`
+
+The 3.7 governor is provider-neutral. Adapters may report authoritative current context occupancy, but the core never derives it from lifetime token totals. It maintains a durable record per thread and an aggregate per Work Parcel, so provider/model transitions cannot reset cost or token accounting. Policy thresholds produce `CONTINUE`, `PREPARE_BATON`, `COMPACT`, or `HANDOFF`; routing converts that state to `CONTINUE`, `COMPACT_AND_CONTINUE`, or `BATON_AND_HANDOFF` only after considering unfinished reasoning, remaining-work bounds, capability, qualification, cost, baton readiness, and policy constraints.
+
+The sealed baton is written before the existing governed handoff runtime changes any worker. It carries task/diff/test/evidence/next-action provenance and token/parcel state, while the original contract/thread remains recoverable. Failed handoffs resume the original model and record the failure; a model/provider is never silently substituted. The dashboard reads the redacted projection over the existing SSE channel, while sampled telemetry and every transition/decision remain in the durable token-routing evidence for reconciliation with Work Parcel verified-outcome accounting. See [Token-Aware Baton Routing](docs/token-aware-baton-routing.md).
+
 ## Release boundary
 
-Earlier version tags remain immutable source releases; `v3.5.0` remains the current released source boundary while 3.6 is developed. Committing or pushing the 3.6 branch does not deploy services, expose a remote ACP listener, create credentials, broaden sharing, enable Spark, or enable a Saved Job/Schedule. STANDARD remains the default context profile unless a governed policy explicitly selects another profile. The physical Luna → local LLM → GLM-5.3-Flash → Luna experiment has one bounded qualification record; the larger automatic-routing gate remains external and incomplete.
+Earlier version tags remain immutable source releases; `v3.5.0` remains the current released source boundary while 3.7 is developed. Committing or pushing the 3.7 feature branch does not deploy services, expose a remote ACP listener, create credentials, broaden sharing, enable Spark, or enable a Saved Job/Schedule. STANDARD remains the default context profile unless a governed policy explicitly selects another profile. The physical Luna → local LLM → GLM-5.3-Flash → Luna experiment has one bounded qualification record; automatic token-governor handoff still needs a bounded physical provider qualification before promotion.

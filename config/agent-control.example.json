@@ -17,6 +17,12 @@
     "minimumCompleteTokens": 512,
     "maximumExpansionContextLines": 10
   },
+  "tokenBatonRouting": {
+    "prepareBatonPercent": 75,
+    "compactPercent": 85,
+    "handoffPercent": 90,
+    "sampleRetention": 240
+  },
   "harnessEfficiency": {
     "routingMode": "observe",
     "minimumVerifiedRuns": 10,

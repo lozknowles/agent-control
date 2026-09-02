@@ -19,6 +19,7 @@ import {ContractExecutionRuntime} from './control/contract-runtime.js';
 import {GovernedHandoffRuntime} from './control/handoff-runtime.js';
 import {ProviderModelLifecycleRegistry} from './control/provider-lifecycle.js';
 import {RuntimeObservability} from './control/runtime-observability.js';
+import {TokenAwareBatonRuntime} from './control/token-aware-baton-routing.js';
 
 const now = () => new Date().toISOString();
 const configurationFile = configPath(), config = loadConfig(configurationFile);
@@ -37,6 +38,7 @@ const identity = new IdentityControlPlane(path.join(stateRoot, 'identity', 'cont
 const fastExecution = new FileFastExecutionLedger(path.join(stateRoot, 'fast-execution', 'attempts.json'));
 const contracts = new ContractExecutionRuntime(path.join(stateRoot, 'contracts', 'executions.json'));
 const handoffs = new GovernedHandoffRuntime(contracts, path.join(stateRoot, 'contracts', 'handoffs.json'));
+const tokenBatonRouting = new TokenAwareBatonRuntime(path.join(stateRoot, 'token-baton-routing', 'evidence.json'), config.tokenBatonRouting);
 const providerLifecycle = new ProviderModelLifecycleRegistry(path.join(stateRoot, 'models', 'lifecycle.json'));
 const remoteTokenEnvironment = process.env.AGENT_CONTROL_ACP_REMOTE_TOKEN_ENV?.trim();
 const runtimeObservability = new RuntimeObservability({contracts, handoffs, providerLifecycle, acpSessionDirectory:path.join(stateRoot,'acp'), remoteAcp:{enabled:process.env.AGENT_CONTROL_ACP_REMOTE_ENABLED==='true',authenticationConfigured:Boolean(remoteTokenEnvironment&&process.env[remoteTokenEnvironment]),loopback:['127.0.0.1','::1','localhost'].includes((process.env.AGENT_CONTROL_ACP_REMOTE_HOST??'127.0.0.1').toLowerCase())}});
@@ -48,7 +50,7 @@ catch (error) {
   identity.createSession({id: defaultSessionId, creatorActorId: 'web-operator', mode: 'operator-controlled', permissions: {capabilities: ['session.observe', 'session.manage', 'parcel.create', 'parcel.execute', 'parcel.approve', 'agent.delegate', 'model.invoke', 'node.execute'], allowedModels: config.models.map(model => model.id), allowedNodes: config.resources.map(resource => resource.id), filesystem: 'none', network: 'provider-only', production: false}, contextPolicy: 'compiled', visibility: 'operator', metadata: {surface: 'dashboard'}});
 }
 const jobRuntime = buildJobRuntime(config, stateRoot, undefined, undefined, modelRegistry);
-const parameterizedJobs = buildParameterizedJobRuntime(config, modelRegistry, jobRuntime.workParcels, stateRoot);
+const parameterizedJobs = buildParameterizedJobRuntime(config, modelRegistry, jobRuntime.workParcels, stateRoot, tokenBatonRouting);
 const commandOutputRoot = path.resolve(stateRoot, 'command-output');
 const tokenAwareOutput = new TokenAwareOutputService(new FileCommandResultStore(commandOutputRoot), {
   policy: config.tokenAwareOutput,
@@ -62,6 +64,7 @@ const service = new AgentControlService(state, ptys, providers).configureProject
   jobRuntime,
   managedNodes: jobRuntime.managedNodes,
   tokenAwareOutput,
+  tokenBatonRouting,
   harnessEfficiency: jobRuntime.harnessEfficiency,
   workParcels: jobRuntime.workParcels,
   modelRegistry,
@@ -71,6 +74,7 @@ const service = new AgentControlService(state, ptys, providers).configureProject
   fastExecution,
   runtimeObservability,
 });
+tokenBatonRouting.subscribe(event => service.events.emit(event.type === 'telemetry' ? 'token.telemetry' : event.type === 'governor.transition' ? 'token.governor_transition' : event.type === 'baton.created' ? 'token.baton_created' : 'token.handoff_result', {threadId: event.threadId, parcelId: event.parcelId, observedAt: event.at}, undefined, 'token-baton-runtime'));
 startManagedNodeMonitoring(jobRuntime, snapshot => service.events.emit('resource.node_changed', {resourceId: snapshot.resourceId, state: snapshot.state, health: snapshot.health, currentWorkload: snapshot.currentWorkload}, undefined, 'managed-node-monitor'), error => service.events.emit('failure', {scope: 'managed-node-monitor', error: error.message}, undefined, 'managed-node-monitor'));
 startJobScheduler(jobRuntime, (id, status) => id.startsWith('parcel-') ? service.events.emit('work.parcel_changed', {parcelId: id, status}, undefined, 'job-scheduler') : service.events.emit('job.run_changed', {runId: id, status}, undefined, 'job-scheduler'), 1000, error => service.events.emit('failure', {scope: 'job-scheduler', error: error.message}, undefined, 'job-scheduler'));
 startParameterizedJobScheduler(parameterizedJobs, (runId, status) => service.events.emit('job.run_changed', {runId, status, kind: 'parameterized'}, undefined, 'parameterized-job-scheduler'), 1000, error => service.events.emit('failure', {scope: 'parameterized-job-scheduler', error: error.message}, undefined, 'parameterized-job-scheduler'));

@@ -9,7 +9,7 @@ npm run qualify
 
 The harness always runs the local gate. It then reads the same configuration used by the control plane and performs only non-mutating health checks for configured services, resources and providers. Missing configuration is recorded as `SKIP configured-infrastructure`, not replaced by private defaults.
 
-For unreleased 3.6 development, also run `npm run benchmark:capability-routing` and review its retained report. A classifier pass is not physical model evidence. Verify `GET /api/runtime` through the web tests and inspect the final diff for credential-shaped values. The one retained physical Luna/local/GLM/Luna chain is separate evidence and does not satisfy the 50-attempt automatic-routing gate. The completed checkpoint results and explicit limitations are retained in [`evidence/agent-control-3.6-development-qualification.md`](evidence/agent-control-3.6-development-qualification.md).
+For unreleased 3.7 development, also run `npm run benchmark:capability-routing` and review its retained report. A classifier pass is not physical model evidence. Verify `GET /api/runtime` and `GET /api/token-routing` through the web tests and inspect the final diff for credential-shaped values. The one retained physical Luna/local/GLM/Luna chain is separate evidence and does not satisfy the 50-attempt automatic-routing gate. The completed checkpoint results and explicit limitations are retained in [`evidence/agent-control-3.6-development-qualification.md`](evidence/agent-control-3.6-development-qualification.md) and [`evidence/agent-control-3.7-development-qualification.md`](evidence/agent-control-3.7-development-qualification.md).
 
 Optional SSH checks are explicit:
 
@@ -26,6 +26,16 @@ npm run benchmark:token-output
 ```
 
 It generates a temporary 240-file/48,000-line source tree, runs small, medium, broad and pathological searches, compares normal ripgrep output with the compact/indexed path, performs selected and full expansion, and fails unless match/file counts agree, the exact authoritative stream is recoverable, and broad/high-match initial reduction is at least 70%. It deletes the fixture after the run. Recorded evidence is [`docs/evidence/token-aware-output-benchmark-20260827.json`](evidence/token-aware-output-benchmark-20260827.json).
+
+## Token-aware baton-routing development qualification
+
+Run the deterministic routing and adapter/dashboard coverage before any provider exercise:
+
+```bash
+node --import tsx --test src/control/token-aware-baton-routing.test.ts src/control/direct-repository-review-executor.test.ts src/control/codex-exec-provider.test.ts src/control/openai-compatible-provider.test.ts src/control/web-server.test.ts
+```
+
+It proves threshold transitions, no lifetime/context conflation, authority labels, durable restart/reconciliation, sealed batons, successful and failed handoff recovery, additive Sol/Luna/GLM accounting, adapter normalization, and the actual HTTP/SSE dashboard projection. It is not a substitute for a live qualified provider handoff: retain exact model/provider identity, telemetry authority and verification evidence before promoting automated handoff policy.
 
 ## Real repository-mutation harness experiment
 

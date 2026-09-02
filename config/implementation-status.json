@@ -1,7 +1,7 @@
 {
   "schema": "agent-control.implementation-status/v1",
-  "release": "3.6.0-unreleased",
-  "updated": "2026-09-01",
+  "release": "3.7.0-unreleased",
+  "updated": "2026-09-02",
   "capabilities": [
     {
       "id": "identity.sessions-delegation",
@@ -81,6 +81,15 @@
       "tests": ["src/control/runtime-observability.test.ts", "src/control/web-server.test.ts"],
       "evidence": ["docs/web-dashboard.md", "docs/security-3.6.md", "docs/evidence/agent-control-3.6-development-qualification.md"],
       "limitation": "Persisted ACP bindings are transport-neutral, so per-session stdio versus remote attribution remains unknown. Remote listener liveness is configured-but-unobserved rather than inferred."
+    },
+    {
+      "id": "routing.token-aware-baton",
+      "title": "Token-aware baton routing and live telemetry",
+      "status": "IMPLEMENTED",
+      "summary": "Provider-neutral thread telemetry keeps cumulative lifetime tokens separate from current context occupancy, persists configurable 75/85/90 governor transitions, sealed baton provenance, failed-handoff recovery and additive Work Parcel model-chain totals. The redacted dashboard/API projection streams updates over existing SSE without a page reload.",
+      "sources": ["src/control/token-aware-baton-routing.ts", "src/control/codex-exec-provider.ts", "src/control/openai-compatible-provider.ts", "src/control/application-service.ts", "src/control/web-server.ts", "assets/dashboard/dashboard-enhancements.js"],
+      "tests": ["src/control/token-aware-baton-routing.test.ts", "src/control/codex-exec-provider.test.ts", "src/control/openai-compatible-provider.test.ts", "src/control/direct-repository-review-executor.test.ts", "src/control/web-server.test.ts"],
+      "evidence": ["docs/token-aware-baton-routing.md", "docs/evidence/agent-control-3.7-development-qualification.md"]
     },
     {
       "id": "models.fast-execution-spark",

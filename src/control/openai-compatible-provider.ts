@@ -6,15 +6,17 @@ export interface NormalizedModelUsage {inputTokens: number | null; outputTokens:
 export interface ModelInvocationResult {providerId: string; modelId: string; providerModel: string; output: string; elapsedMs: number; usage: NormalizedModelUsage; responseModel: string | null; finishReason: string | null; toolCall: {name: string; arguments: string} | null;}
 export interface PartialModelInvocation extends ModelInvocationResult {responseHash: string;}
 export type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
+export interface ProviderInvocationTelemetry {phase: 'started' | 'completed'; providerId: string; modelId: string; elapsedMs: number; usage?: NormalizedModelUsage; context: {tokens: null; limitTokens: number | null; authority: 'unavailable'; source: 'provider_did_not_report_current_context'};}
 
 export class OpenAICompatibleProviderClient {
   constructor(private readonly provider: ProviderConfig, private readonly fetcher: FetchLike = fetch) {
     if (provider.kind !== 'openai-compatible' && provider.kind !== 'responses' && provider.kind !== 'local') throw new Error('provider_not_openai_compatible');
     if (!provider.baseUrl) throw new Error('provider_base_url_required');
   }
-  async invoke(model: ModelConfig, input: string, options: {timeoutMs?: number; maximumOutputTokens?: number; structured?: boolean; outputSchema?: Record<string, unknown>; toolProbe?: string; signal?: AbortSignal} = {}): Promise<ModelInvocationResult> {
+  async invoke(model: ModelConfig, input: string, options: {timeoutMs?: number; maximumOutputTokens?: number; structured?: boolean; outputSchema?: Record<string, unknown>; toolProbe?: string; signal?: AbortSignal; onTelemetry?: (event: ProviderInvocationTelemetry) => void} = {}): Promise<ModelInvocationResult> {
     if (model.provider !== this.provider.id) throw new Error('model_provider_mismatch');
     const token = resolveToken(this.provider), controller = new AbortController(), started = Date.now();
+    options.onTelemetry?.({phase: 'started', providerId: this.provider.id, modelId: model.id, elapsedMs: 0, context: {tokens: null, limitTokens: model.limits?.contextTokens ?? this.provider.qualification?.advertisedContextLimitTokens ?? null, authority: 'unavailable', source: 'provider_did_not_report_current_context'}});
     const timeout = setTimeout(() => controller.abort(), options.timeoutMs ?? 30_000);
     const wire = this.provider.wireApi ?? 'responses';
     const endpoint = `${this.provider.baseUrl!.replace(/\/$/, '')}/${wire === 'chat-completions' ? 'chat/completions' : 'responses'}`;
@@ -31,7 +33,7 @@ export class OpenAICompatibleProviderClient {
       try { payload = await response.json() as Record<string, unknown>; } catch { throw new Error('provider_malformed_response'); }
       const toolCall = extractToolCall(payload, wire), output = extractOutput(payload, wire), partial: PartialModelInvocation = {providerId: this.provider.id, modelId: model.id, providerModel: model.providerModel, output, elapsedMs: Date.now() - started, usage: normalizeUsage(payload.usage, model), responseModel: typeof payload.model === 'string' ? payload.model : null, finishReason: extractFinishReason(payload, wire), toolCall, responseHash:`sha256:${createHash('sha256').update(JSON.stringify(payload)).digest('hex')}`};
       if (!output && !toolCall) throw Object.assign(new Error('provider_malformed_response'),{partialInvocation:partial});
-      const {responseHash: _responseHash, ...result}=partial;return result;
+      const {responseHash: _responseHash, ...result}=partial; options.onTelemetry?.({phase: 'completed', providerId: this.provider.id, modelId: model.id, elapsedMs: result.elapsedMs, usage: result.usage, context: {tokens: null, limitTokens: model.limits?.contextTokens ?? this.provider.qualification?.advertisedContextLimitTokens ?? null, authority: 'unavailable', source: 'provider_did_not_report_current_context'}}); return result;
     } catch (error) { if ((error as Error).name === 'AbortError') throw new Error('provider_timeout'); throw sanitizeError(error); }
     finally { clearTimeout(timeout); }
   }

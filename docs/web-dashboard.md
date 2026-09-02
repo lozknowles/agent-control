@@ -125,3 +125,9 @@ Systems adds stable ACP stdio, disabled/configured remote ACP, and durable lifec
 ## Failure behavior
 
 The dashboard can reconnect to the SSE stream and always refreshes the current durable snapshot. UI or stream failure does not change scheduler state. Missing authentication disables mutation. Invalid origin, content type, JSON, lane, action or evidence fails closed. A missing dashboard never blocks TUI operation or task recovery.
+
+## Live token governor (3.7)
+
+The dashboard’s **Thread Context** panel is driven by `GET /api/status` / `GET /api/token-routing` and refreshes through the normal SSE stream on `token.telemetry`, `token.governor_transition`, `token.baton_created`, and `token.handoff_result`. It lists every observed execution thread with provider/model, context/window/percentage, cumulative token totals, authority markers, cost, elapsed time, governor state/thresholds, and Work Parcel chain total. It does not turn unavailable provider data into zero or infer current context from lifetime use. The durable routing evidence contains the corresponding timestamped samples and all transition/decision records. See [Token-Aware Baton Routing](token-aware-baton-routing.md).
+
+`GET /api/token-routing` is a read-only projection. It deliberately excludes prompts, baton bodies, credentials, provider requests, and transcripts.

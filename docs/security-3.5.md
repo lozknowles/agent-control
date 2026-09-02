@@ -23,7 +23,7 @@ Spark execution additionally requires authenticated bounded availability for the
 
 ACP terminates at a Work Parcel port. It cannot confer capabilities, select arbitrary tools, create shell execution, acquire leases or accept results. Resume checks external principal identity; cancellation retains the same Actor/Session attribution.
 
-On the unreleased 3.6 branch, `agent-control acp` accepts stable ACP v1 frames over local stdio. `AGENT_CONTROL_ACP_ACTOR_ID` must identify an Actor already present in the durable identity store; missing identities fail closed. Protocol stdout is never used for diagnostics. Session bindings are mode `0600`.
+On the unreleased 3.7 branch, `agent-control acp` accepts stable ACP v1 frames over local stdio. `AGENT_CONTROL_ACP_ACTOR_ID` must identify an Actor already present in the durable identity store; missing identities fail closed. Protocol stdout is never used for diagnostics. Session bindings are mode `0600`.
 
 `agent-control acp-remote` is disabled by default and fails closed without an indirectly resolved bearer credential. Authentication and Origin policy run before JSON-RPC parsing or WebSocket upgrade; comparisons are constant-time and bodies/frames are bounded. Non-loopback binding requires configured TLS certificate/key files. Values are not logged or persisted. The SDK's experimental server packaging carries stable v1; the experimental ACP v2 entry point is not imported.
 

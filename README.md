@@ -1,4 +1,4 @@
-# Agent Control 3.6.0 (unreleased feature branch)
+# Agent Control 3.7.0 (unreleased feature branch)
 
 Agent Control runs governed parameterised jobs against qualified execution and model resources. It is an infrastructure-neutral, policy-controlled adaptive harness for durable work by heterogeneous agents and models. Its executable harness core composes a task-appropriate worker, provider/model route, prompt profile, minimum qualified skills, restricted tools, context strategy, runtime settings, authority snapshot, resource limits and verification/escalation policy into a fingerprinted execution recipe.
 
@@ -16,7 +16,7 @@ The session creator is immutable. Participants, capabilities, context policy and
 
 The dashboard **Sessions** tab reads this authoritative store and shows participants, active attributed Work Parcels, the agent/delegation graph, baton token/hash traces, models, runtime/node identity, context policy, evidence and complete-chain token/cost values where providers reported them. Execution admission enforces the session's participant authority, model/node allow-lists and filesystem/network envelope. Existing records receive deterministic `legacy-actor:*` / `legacy-session:*` attribution; legacy “Ox” labels remain historical aliases of canonical `GLM-5.3-Flash`, not a distinct model.
 
-The unreleased 3.6 branch packages the governed ACP mapping as a real stable-v1 newline-delimited JSON-RPC stdio endpoint using the pinned official TypeScript SDK. It supports initialization, session new/load/resume/list/prompt/cancel/close, ordered plan/tool updates, request cancellation, durable session reconstruction and graceful shutdown. ACP is an interoperability edge, not a second scheduler, shell or tool-authority path.
+The 3.6 product checkpoint, retained by this unreleased 3.7 branch, packages the governed ACP mapping as a real stable-v1 newline-delimited JSON-RPC stdio endpoint using the pinned official TypeScript SDK. It supports initialization, session new/load/resume/list/prompt/cancel/close, ordered plan/tool updates, request cancellation, durable session reconstruction and graceful shutdown. ACP is an interoperability edge, not a second scheduler, shell or tool-authority path.
 
 The caller must be admitted as an existing Actor; stdio uses `AGENT_CONTROL_ACP_ACTOR_ID` and defaults to the already registered `web-operator`. Diagnostics go to stderr because stdout is reserved for protocol frames:
 
@@ -41,7 +41,7 @@ Optional settings are `AGENT_CONTROL_ACP_REMOTE_HOST`, `AGENT_CONTROL_ACP_REMOTE
 
 ## Contract-owned process and PTY state
 
-The unreleased 3.6 runtime persists the ownership chain `Lane → Contract → Baton → Process/PTY → Agent`. A contract retains task identity, completion criteria, authority, protected-resource rules, budget, sealed baton, attachments, pending actions, verification and evidence if an agent disconnects or a controller restarts. PTY consultation and reconnect are read-only; write control is singular and explicitly transferred. Human takeover pauses agent authority before accepting writes, and agent resumption requires deliberate return. See [contract and PTY runtime](docs/contract-pty-runtime.md).
+The 3.6 runtime retained by the unreleased 3.7 branch persists the ownership chain `Lane → Contract → Baton → Process/PTY → Agent`. A contract retains task identity, completion criteria, authority, protected-resource rules, budget, sealed baton, attachments, pending actions, verification and evidence if an agent disconnects or a controller restarts. PTY consultation and reconnect are read-only; write control is singular and explicitly transferred. Human takeover pauses agent authority before accepting writes, and agent resumption requires deliberate return. See [contract and PTY runtime](docs/contract-pty-runtime.md).
 
 Governed workers return exactly one explicit outcome: `SACRIFICE`, `SUBSTITUTE`, `DELEGATE`, `YIELD`, or `COMPLETE`. AUTO handoffs execute only inside the contract's existing authority, resource envelope and budget. Costly escalation, privilege/resource expansion, production writes, destructive actions and explicitly MANUAL requests wait for the contract operator. `COMPLETE` means “submit for independent verification,” not success. See [governed handoffs](docs/governed-handoffs.md).
 
@@ -52,6 +52,12 @@ Capability routing now has a frozen 60-task suite with a 12-task holdout and a s
 The separate physical chain `gpt-5.6-luna → local Qwen2.5 3B → z-ai/glm-5.3-flash → gpt-5.6-luna` has now run with local `YIELD`, GLM `SUBSTITUTE`, minimal batons, controller reconstruction and independent parent/child verification. It qualified with observed GLM retries and unknown provider token/cost data; it does not satisfy the larger automatic-routing gate. See [physical multi-provider qualification](docs/physical-multi-provider-qualification.md).
 
 The existing Sessions, Systems and Models dashboard views now read one redacted `GET /api/runtime` projection for stable ACP v1 transports/sessions, contract/process/PTY ownership, approvals, handoffs, baton hashes/sizes and immutable provider/model lifecycle state. Prompt bodies, objectives, baton payloads, transcripts, credential references and unavailable usage/cost are not exposed. See [dashboard usage](docs/web-dashboard.md), [3.6 security boundaries](docs/security-3.6.md), and the [development qualification evidence](docs/evidence/agent-control-3.6-development-qualification.md).
+
+## Token-Aware Baton Routing
+
+3.7 introduces durable live token/context telemetry and a policy-driven baton governor. Each running thread reports provider/model, cumulative input/output/total tokens, current context/window/percentage where exposed, authority (`authoritative`, `estimated`, or `unavailable`), cost, elapsed time, governor state, and next threshold. The dashboard receives updates through its existing SSE stream without a page refresh and retains Work Parcel totals through handoffs: `Sol 184k → Luna 31k → GLM-5.3-Flash 18k = 233k total`.
+
+Default policy is `CONTINUE` below 75%, `PREPARE_BATON` at 75%, `COMPACT` at 85%, and handoff evaluation at 90%. Context pressure is not a downgrade command: unfinished difficult reasoning stays on the stronger model. A handoff requires a sealed verified baton, bounded/mechanical remaining work, compatible qualified target, policy permission, and a lower-cost target where price information exists. Failed handoffs leave the originating thread recoverable and record the decision. See [Token-Aware Baton Routing](docs/token-aware-baton-routing.md) for configuration, provider semantics, dashboard behavior, evidence, and qualification.
 
 ## Governed fast execution (Spark)
 

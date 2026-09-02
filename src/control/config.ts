@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import {normalizeGovernorPolicy} from './token-aware-baton-routing.js';
 
 export type Platform = 'linux' | 'windows' | 'android' | 'macos' | 'remote' | 'unknown';
 export type TransportType = 'local' | 'ssh' | 'http' | 'orca';
@@ -153,6 +154,13 @@ export interface TokenAwareOutputConfig {
   maximumExpansionContextLines?: number;
 }
 
+export interface TokenBatonRoutingConfig {
+  prepareBatonPercent?: number;
+  compactPercent?: number;
+  handoffPercent?: number;
+  sampleRetention?: number;
+}
+
 export interface HarnessProfileConfig {
   maximumInitialContextTokens?: number;
   maximumSources?: number;
@@ -194,6 +202,7 @@ export interface AgentControlConfig {
   services: ServiceConfig[];
   lanes: LaneConfig[];
   tokenAwareOutput?: TokenAwareOutputConfig;
+  tokenBatonRouting?: TokenBatonRoutingConfig;
   harnessEfficiency?: HarnessEfficiencyConfig;
   spark?: SparkConfig;
   jobs?: ParameterizedJobsConfig;
@@ -234,7 +243,7 @@ function assertIntegerRange(value: unknown, label: string, minimum: number, maxi
 
 function rejectSecrets(value: unknown, trail = 'config') {
   if (!value || typeof value !== 'object') return;
-  const safeTokenAccountingKeys = new Set(['tokenAwareOutput', 'completeMaxTokens', 'artifactOnlyAboveReturnedTokens', 'minimumCompleteTokens', 'harnessEfficiency', 'maximumInitialContextTokens', 'maximumContextTokens', 'advertisedContextLimitTokens', 'maximumObservedInputTokens', 'inputPerMillionTokens', 'outputPerMillionTokens', 'cachedInputPerMillionTokens', 'contextTokens', 'outputTokens']);
+  const safeTokenAccountingKeys = new Set(['tokenAwareOutput', 'tokenBatonRouting', 'completeMaxTokens', 'artifactOnlyAboveReturnedTokens', 'minimumCompleteTokens', 'harnessEfficiency', 'maximumInitialContextTokens', 'maximumContextTokens', 'advertisedContextLimitTokens', 'maximumObservedInputTokens', 'inputPerMillionTokens', 'outputPerMillionTokens', 'cachedInputPerMillionTokens', 'contextTokens', 'outputTokens', 'prepareBatonPercent', 'compactPercent', 'handoffPercent', 'sampleRetention']);
   for (const [key, child] of Object.entries(value)) {
     if (/token|password|secret|api.?key/i.test(key) && !['credentialEnv', 'credentialFileEnv'].includes(key) && !safeTokenAccountingKeys.has(key)) {
       throw new Error(`secret_material_forbidden:${trail}.${key}`);
@@ -257,6 +266,7 @@ export function validateConfig(raw: unknown): AgentControlConfig {
     services: input.services ?? [],
     lanes: input.lanes ?? [],
     tokenAwareOutput: input.tokenAwareOutput,
+    tokenBatonRouting: input.tokenBatonRouting,
     harnessEfficiency: input.harnessEfficiency,
     spark: input.spark,
     jobs: input.jobs,
@@ -424,6 +434,12 @@ export function validateConfig(raw: unknown): AgentControlConfig {
     ];
     for (const [key, minimum, maximum] of integerLimits) assertIntegerRange(config.tokenAwareOutput[key], `token_aware_output_${key}`, minimum, maximum);
     if (config.tokenAwareOutput.contextBudgetFraction !== undefined && (!(config.tokenAwareOutput.contextBudgetFraction > 0) || config.tokenAwareOutput.contextBudgetFraction > 1)) throw new Error('invalid_token_aware_output_context_budget_fraction');
+  }
+  if (config.tokenBatonRouting !== undefined) {
+    const routing = config.tokenBatonRouting;
+    if (!routing || typeof routing !== 'object' || Array.isArray(routing)) throw new Error('invalid_token_baton_routing');
+    try { normalizeGovernorPolicy(routing); }
+    catch (error) { throw new Error(`invalid_${error instanceof Error ? error.message : String(error)}`); }
   }
   if (config.harnessEfficiency !== undefined) {
     const efficiency = config.harnessEfficiency;

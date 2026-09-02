@@ -25,7 +25,21 @@ refresh = async () => {
 renderSystem = snapshot => {
   const items = [['Scheduler', snapshot.paused ? 'PAUSED' : 'ACTIVE'], ['Job runs', snapshot.jobs.running], ['Waiting', snapshot.jobs.waiting], ['Queued', snapshot.jobs.queued], ['Jobs', snapshot.jobs.total], ['Approvals', snapshot.outstandingApprovals], ['Context tokens avoided', snapshot.tokenAwareOutput?.contextTokensAvoided || 0], ['Resources', snapshot.resources.length]];
   document.querySelector('#system-summary').innerHTML = `<div class="summary-grid">${items.map(([label, value]) => `<div class="summary-item"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`).join('')}</div>`;
+  renderTokenRouting(snapshot.tokenBatonRouting);
 };
+
+function tokenNumber(value) { return typeof value === 'number' ? value.toLocaleString() : 'unknown'; }
+function tokenMoney(cost) { return typeof cost?.amount === 'number' ? `${cost.amount.toFixed(4)} ${cost.currency || ''} ${cost.authority === 'authoritative' ? '' : '(estimated)'}`.trim() : 'unknown'; }
+function renderTokenRouting(routing) {
+  const root = document.querySelector('#token-routing'); if (!root) return;
+  const threads = routing?.threads || [];
+  if (!threads.length) { root.innerHTML = '<div class="compact-empty">No live agent/thread telemetry yet.</div>'; return; }
+  root.innerHTML = threads.map(thread => {
+    const point = thread.latest || {}, context = point.context || {}, percent = typeof point.contextPercent === 'number' ? `${Math.round(point.contextPercent)}%` : 'unknown';
+    const parcel = (routing.parcels || []).find(item => item.parcelId === thread.parcelId), chain = parcel?.byModel?.map(item => `${item.modelId} ${tokenNumber(item.totalTokens)}`).join(' → ') || 'No parcel totals';
+    return `<article class="token-thread ${esc(String(thread.governor?.state || 'CONTINUE').toLowerCase())}"><div><strong>${esc(thread.providerId)} / ${esc(thread.modelId)}</strong><span class="status-pill">${esc(thread.governor?.state || 'CONTINUE')}</span></div><p>Context: ${esc(tokenNumber(context.tokens))} / ${esc(tokenNumber(context.limitTokens))} — ${esc(percent)} <small>${esc(context.authority || 'unavailable')}</small></p><p>Tokens: in ${esc(tokenNumber(point.cumulative?.inputTokens))} · out ${esc(tokenNumber(point.cumulative?.outputTokens))} · total ${esc(tokenNumber(point.cumulative?.totalTokens))}</p><p>Cost: ${esc(tokenMoney(point.cost))} · elapsed ${esc(Math.round((point.elapsedMs || 0) / 1000))}s</p><p>Governor: ${esc(thread.governor?.state || 'CONTINUE')} → ${esc(thread.governor?.nextThreshold === null || thread.governor?.nextThreshold === undefined ? 'none' : `${thread.governor.nextThreshold}%`)}</p><p class="token-parcel">Parcel: ${esc(chain)} = ${esc(tokenNumber(parcel?.totalTokens))} total</p></article>`;
+  }).join('');
+}
 
 const baseLaneRender = renderLane;
 renderLane = lane => {

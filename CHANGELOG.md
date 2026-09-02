@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.7.0] — unreleased
+
+- Adds Token-Aware Baton Routing with policy-configured `CONTINUE`, `PREPARE_BATON`, `COMPACT`, and `HANDOFF` pressure states (75/85/90% defaults).
+- Adds durable per-thread and Work Parcel input/output/total token, context, cost, elapsed-time, authority, transition, route-decision, and sealed-baton evidence.
+- Adds provider-neutral adapter telemetry for Codex JSONL and Responses-compatible providers, including GLM-5.3-Flash and local providers. Current context is explicitly `unavailable` where a provider does not expose it; lifetime totals are not misrepresented as occupancy.
+- Adds verified baton contents, governed-handoff integration, failed-handoff recovery of the original thread, and multi-model aggregate accounting that survives model changes.
+- Adds real-time dashboard/SSE telemetry for active threads and parcel-level chain totals, plus the read-only `GET /api/token-routing` projection.
+
 ## Unreleased — Agent Control 3.6
 
 ### ACP runtime

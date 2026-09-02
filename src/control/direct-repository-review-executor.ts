@@ -3,9 +3,10 @@ import type {ModelRegistry} from './model-registry.js';
 import {OpenAICompatibleProviderClient, type ModelInvocationResult, type PartialModelInvocation} from './openai-compatible-provider.js';
 import type {RepositoryReviewExecutor, RepositoryReviewResult, ReviewExecutionRequest, ReviewExecutionResponse} from './parameterized-job-types.js';
 import {WorkParcelStore, type WorkParcel} from './work-parcels.js';
+import type {TokenAwareBatonRuntime} from './token-aware-baton-routing.js';
 
 export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor {
-  constructor(private readonly models: ModelRegistry, private readonly parcels: WorkParcelStore) {}
+  constructor(private readonly models: ModelRegistry, private readonly parcels: WorkParcelStore, private readonly tokenRouting?: TokenAwareBatonRuntime) {}
   async execute(request: ReviewExecutionRequest): Promise<ReviewExecutionResponse> {
     const provider = this.models.provider(request.route.providerId), model = this.models.model(request.route.modelId);
     if (!provider || !model) throw new Error('selected_model_configuration_missing');
@@ -16,7 +17,8 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
       const parcel = this.createParcel(request, chunk.id); parcelIds.push(parcel.id);
       try {
         const prompt = `${request.instruction}\n\nFrozen repository: ${request.run.repository?.name}\nRequested ref: ${request.run.repository?.requestedRef}\nReviewed SHA: ${request.run.repository?.reviewedSha}\nComparison SHA: ${request.run.repository?.comparisonSha ?? 'none'}\nContext chunk: ${chunk.id}\nFiles: ${chunk.files.join(', ')}\n\n${chunk.content}`;
-        const invocation = await client.invoke(model, prompt, {structured: true, outputSchema: REPOSITORY_REVIEW_OUTPUT_SCHEMA, maximumOutputTokens: request.maximumOutputTokens, timeoutMs: request.run.definition.budgets.timeoutMinutes * 60_000, signal: request.signal});
+        const threadId = `review:${request.run.id}:${chunk.id}`;
+        const invocation = await client.invoke(model, prompt, {structured: true, outputSchema: REPOSITORY_REVIEW_OUTPUT_SCHEMA, maximumOutputTokens: request.maximumOutputTokens, timeoutMs: request.run.definition.budgets.timeoutMinutes * 60_000, signal: request.signal, onTelemetry: event => this.tokenRouting?.observe({threadId, parcelId: parcel.id, agentId: request.route.nodeId, providerId: event.providerId, modelId: event.modelId, elapsedMs: event.elapsedMs, cumulative: {inputTokens: event.usage?.inputTokens, outputTokens: event.usage?.outputTokens, totalTokens: event.usage?.totalTokens}, context: event.context, cost: {amount: event.usage?.providerReportedCost ?? event.usage?.calculatedCost ?? null, currency: event.usage?.currency ?? null, authority: event.usage?.providerReportedCost === null || event.usage?.providerReportedCost === undefined ? event.usage?.calculatedCost === null || event.usage?.calculatedCost === undefined ? 'unavailable' : 'estimated' : 'authoritative', source: event.usage?.providerReportedCost === null || event.usage?.providerReportedCost === undefined ? event.usage?.calculatedCost === null || event.usage?.calculatedCost === undefined ? 'provider_not_reported' : 'configured_pricing' : 'provider_usage'}})});
         capture(parcel,invocation,`sha256:${createHash('sha256').update(invocation.output).digest('hex')}`);
         if (invocation.finishReason && !['stop','completed'].includes(invocation.finishReason)) throw new Error(`repository_review_provider_incomplete:${invocation.finishReason}`);
         results.push(parseRepositoryReviewResponse(invocation.output)); this.finishParcel(parcel, 'SUCCEEDED', `Provider ${invocation.providerId}; model ${invocation.modelId}; structured review returned`);

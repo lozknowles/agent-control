@@ -13,7 +13,7 @@ import {ParameterizedJobError} from './parameterized-job-registry.js';
 export interface WebServerOptions {host?: string; port?: number; operatorToken?: string; allowedOrigins?: string[]; assetsDir?: string; configFile?: string;}
 const MAX_BODY = 64 * 1024;
 const SECRET_KEY = /token|secret|password|credential|authorization|cookie|api[-_]?key/i;
-const SAFE_TOKEN_ACCOUNTING_KEY = /^(?:tokenAwareOutput|contextTokensAvoided|estimatedTokensOriginal|estimatedTokensReturned|estimatedTokensSaved|estimatedOriginalTokens|estimatedReturnedTokens|estimatedTokensAvoided|expansionTokensReturned|inputTokens|freshInputTokens|cachedInputTokens|cacheWriteTokens|outputTokens|maximumOutputTokens|maximumContextTokens|reasoningTokens|totalTokens|totalProcessedTokens|startupContextTokens|taskContextTokens|retrievedContextTokens|repositoryContextTokens|conversationHistoryTokens|totalEstimatedContextTokens|repeatedContextCostEstimate|tokensPerVerifiedOutcome|freshTokensPerVerifiedOutcome|estimatedTokens)$/;
+const SAFE_TOKEN_ACCOUNTING_KEY = /^(?:tokenAwareOutput|tokenBatonRouting|contextTokensAvoided|estimatedTokensOriginal|estimatedTokensReturned|estimatedTokensSaved|estimatedOriginalTokens|estimatedReturnedTokens|estimatedTokensAvoided|expansionTokensReturned|inputTokens|freshInputTokens|cachedInputTokens|cacheWriteTokens|outputTokens|maximumOutputTokens|maximumContextTokens|reasoningTokens|totalTokens|totalProcessedTokens|startupContextTokens|taskContextTokens|retrievedContextTokens|repositoryContextTokens|conversationHistoryTokens|totalEstimatedContextTokens|repeatedContextCostEstimate|tokensPerVerifiedOutcome|freshTokensPerVerifiedOutcome|estimatedTokens|limitTokens|contextPercent|prepareBatonPercent|compactPercent|handoffPercent)$/;
 const SAFE_CONFIG_REFERENCE_KEY = /^(?:credentialEnv|credentialFileEnv|identityFile)$/;
 const DOMAIN_STATUS = new Map<string, number>([
   ['approval_policy_required', 400], ['approval_policy_not_waiting', 409], ['run_not_retryable', 409], ['job_disabled', 409],
@@ -60,6 +60,7 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   if (method === 'GET' && url.pathname === '/api/executions') return json(response, 200, service.executionProvenance());
   if (method === 'GET' && url.pathname === '/api/fast-execution-attempts') return json(response, 200, service.fastExecutionAttempts());
   if (method === 'GET' && url.pathname === '/api/runtime') return json(response, 200, service.runtime());
+  if (method === 'GET' && url.pathname === '/api/token-routing') return json(response, 200, service.tokenRouting());
   if (method === 'GET' && url.pathname === '/api/router') return json(response, 200, service.allRoutes());
   if (method === 'GET' && url.pathname === '/api/evidence') return json(response, 200, service.snapshot().lanes.map(lane => ({laneId: lane.id, task: lane.task, verification: lane.verification, batonEvidence: lane.baton.evidence, contextSourceIds: lane.baton.contextSourceIds})));
   if (method === 'GET' && url.pathname === '/api/events') return eventStream(service, request, response);
