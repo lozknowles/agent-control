@@ -1,6 +1,6 @@
 # Agent Control architecture
 
-This is the authoritative source boundary for the Agent Control 3.8.0 release candidate. Status labels matter:
+This is the authoritative source boundary for Agent Control 3.8.0. Status labels matter:
 
 - **implemented** means executable code and automated tests exist in this branch;
 - **experimental** means executable code exists but has not been qualified across every external substrate;

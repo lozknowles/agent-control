@@ -1,6 +1,6 @@
 # Implementation status
 
-Release boundary: **3.8.0-rc.1**. Registry updated: **2026-09-03**.
+Release boundary: **3.8.0**. Registry updated: **2026-09-03**.
 
 This document is generated from `config/implementation-status.json`. Update the registry and run `npm run status:implementation -- --write`; do not edit this projection directly. `IMPLEMENTED` means executable source and focused tests exist. `QUALIFIED` additionally requires recorded real evidence. `PARTIAL`, `PLANNED` and `NOT_IMPLEMENTED` remain explicit gaps.
 
@@ -44,7 +44,7 @@ This document is generated from `config/implementation-status.json`. Update the 
 
 - Source: [`src/control/governed-retrieval.ts`](../src/control/governed-retrieval.ts), [`src/control/retrieval-resource-policy.ts`](../src/control/retrieval-resource-policy.ts), [`src/control/direct-repository-review-executor.ts`](../src/control/direct-repository-review-executor.ts), [`src/control/harness-efficiency.ts`](../src/control/harness-efficiency.ts), [`src/control/application-service.ts`](../src/control/application-service.ts), [`src/control/web-server.ts`](../src/control/web-server.ts), [`assets/dashboard/dashboard-enhancements.js`](../assets/dashboard/dashboard-enhancements.js)
 - Tests: [`src/control/governed-retrieval.test.ts`](../src/control/governed-retrieval.test.ts), [`src/control/retrieval-resource-policy.test.ts`](../src/control/retrieval-resource-policy.test.ts), [`src/control/direct-repository-review-executor.test.ts`](../src/control/direct-repository-review-executor.test.ts), [`src/control/web-server.test.ts`](../src/control/web-server.test.ts)
-- Qualification evidence: [`docs/evidence/agent-control-3.8-retrieval-benchmark.json`](../docs/evidence/agent-control-3.8-retrieval-benchmark.json), [`docs/evidence/agent-control-3.8-local-model-retrieval.json`](../docs/evidence/agent-control-3.8-local-model-retrieval.json), [`docs/evidence/agent-control-3.8-phase2-qualification.json`](../docs/evidence/agent-control-3.8-phase2-qualification.json), [`docs/evidence/agent-control-3.8-phase2-qualification.md`](../docs/evidence/agent-control-3.8-phase2-qualification.md)
+- Qualification evidence: [`docs/evidence/agent-control-3.8-retrieval-benchmark.json`](../docs/evidence/agent-control-3.8-retrieval-benchmark.json), [`docs/evidence/agent-control-3.8-local-model-retrieval.json`](../docs/evidence/agent-control-3.8-local-model-retrieval.json), [`docs/evidence/agent-control-3.8-phase2-qualification.json`](../docs/evidence/agent-control-3.8-phase2-qualification.json), [`docs/evidence/agent-control-3.8-phase2-qualification.md`](../docs/evidence/agent-control-3.8-phase2-qualification.md), [`docs/evidence/agent-control-3.8.0-release-qualification.md`](../docs/evidence/agent-control-3.8.0-release-qualification.md)
 
 ### Persistent identity, sessions and delegation
 

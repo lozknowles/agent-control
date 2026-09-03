@@ -1,6 +1,6 @@
 # Migrating to Agent Control 3.8
 
-Agent Control 3.8 adds governed retrieval without changing existing Jobs, Work Parcels, provider routes or the 3.7 token governor. Existing deployments remain on conventional frozen context until retrieval is explicitly enabled.
+Agent Control 3.8 adds governed retrieval without changing existing Jobs, Work Parcels, provider routes or the 3.7 token governor. Existing deployments remain on conventional frozen context until retrieval is explicitly enabled. Persisted retrieval state from pre-release 3.8 builds is not accepted if its packet or item hashes fail the final integrity checks; the safe response is to retrieve current evidence again.
 
 ## Upgrade
 

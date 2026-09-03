@@ -1,4 +1,6 @@
-# Agent Control 3.8.0-rc.1 release notes
+# Agent Control 3.8.0-rc.1 release-candidate notes
+
+This historical document describes accepted RC commit `7534b6cb23db107452a92563694fb56c76aa5a16`. Final release review subsequently added fail-closed persisted-packet hash verification and post-capture symlink rejection; see the [3.8.0 release notes](release-notes-3.8.0.md).
 
 This release candidate adds provider-neutral governed retrieval and context intelligence. It retrieves bounded, content-addressed repository evidence before model invocation, compiles it through the existing ContextGraph/ContextPacketBuilder path, and carries portable evidence references through the existing 3.7 baton lifecycle.
 

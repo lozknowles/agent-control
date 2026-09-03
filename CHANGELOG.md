@@ -1,6 +1,6 @@
 # Changelog
 
-## [3.8.0-rc.1] — 2026-09-03
+## [3.8.0] — 2026-09-03
 
 - Adds opt-in governed retrieval with provider-neutral intents/providers, bounded progressive policy, compact content-addressed Evidence Packets, explicit local/remote/hybrid locality, and current/possibly-stale/invalid freshness.
 - Reuses Work Parcels, ContextGraph/ContextPacketBuilder, 3.7 token pressure, sealed batons, provider routing, independent verification, durable evidence and existing SSE rather than creating parallel control paths.
@@ -15,6 +15,7 @@
 - Phase 2 physically qualified a Qwen-instruct to Qwen-coder baton with rehydrated retrieval evidence, independent verification, restart recovery, stale invalidation and reconciled token/cost/SSE evidence. The two endpoints are distinct model/provider configurations using the same OpenAI-compatible adapter; a materially different adapter handoff remains unexercised.
 - Frozen 12-task mutation comparison: conventional, built-in and zg each verified 2/12 with the same Qwen2.5 Coder 3B model. Processed tokens per verified outcome were 95,101, 76,189 and 88,039.5 respectively. This does not demonstrate an expanded small-model task class, and retrieval remains opt-in.
 - Physically qualifies fallback for missing zg, absent/stale index, process failure and malformed/no result. Cold-index and warm-query resource costs remain separately reported; no monetary/electricity estimate is invented.
+- Final review makes persisted Evidence Packet SHA-256 and item-content hashes executable integrity gates and rejects post-capture symlink replacement before rehydration.
 
 ## [3.7.0] — 2026-09-03
 
