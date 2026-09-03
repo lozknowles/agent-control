@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import {DirectRepositoryReviewExecutor, parseRepositoryReviewResponse, type RepositoryReviewProviderClientFactory} from './direct-repository-review-executor.js';
+import {DirectRepositoryReviewExecutor, parseRepositoryReviewResponse, REPOSITORY_REVIEW_OUTPUT_SCHEMA, type RepositoryReviewProviderClientFactory} from './direct-repository-review-executor.js';
 import {ContractExecutionRuntime} from './contract-runtime.js';
 import {GovernedHandoffRuntime} from './handoff-runtime.js';
 import {JobCatalog} from './job-catalog.js';
@@ -31,6 +31,19 @@ test('provider review parsing rejects structurally incomplete findings before va
   assert.throws(()=>parseRepositoryReviewResponse(JSON.stringify({...base,findings:[{id:'f1',severity:'high',title:'Missing evidence'}],verdict:'PASS_WITH_FINDINGS'})),/repository_review_provider_schema_invalid/);
   assert.throws(()=>parseRepositoryReviewResponse(JSON.stringify({...base,verdict:'MAYBE'})),/repository_review_provider_schema_invalid/);
   assert.throws(()=>parseRepositoryReviewResponse('{not json'),/repository_review_provider_json_invalid/);
+});
+
+test('repository review wire schema satisfies strict structured-output object requirements and normalizes nullable locations',()=>{
+  const visit=(schema:unknown):void=>{
+    if(!schema||typeof schema!=='object'||Array.isArray(schema))return;
+    const node=schema as Record<string,unknown>,properties=node.properties as Record<string,unknown>|undefined;
+    if(properties){assert.equal(node.additionalProperties,false);assert.deepEqual(new Set(node.required as string[]),new Set(Object.keys(properties)));for(const child of Object.values(properties))visit(child)}
+    if(node.items)visit(node.items);
+  };
+  visit(REPOSITORY_REVIEW_OUTPUT_SCHEMA);
+  const finding={id:'f1',severity:'low',title:'A finding',category:'maintainability',file:null,startLine:null,endLine:null,evidence:'Observed in the bounded source.',reasoning:'The implementation can be clearer.',impact:'Low maintenance cost.',suggestedRemediation:'Clarify the implementation.',confidence:.8,validation:{state:'UNVERIFIED',reasons:[]}};
+  const result=parseRepositoryReviewResponse(JSON.stringify({schema:'agent-control.repository-review/v1',executiveSummary:'summary',findings:[finding],positiveObservations:[],areasReviewed:['index.ts'],areasNotReviewed:[],verdict:'PASS_WITH_FINDINGS'}));
+  assert.equal(result.findings[0].file,undefined);assert.equal(result.findings[0].startLine,undefined);assert.equal(result.findings[0].endLine,undefined);
 });
 
 test('production Work Parcel lifecycle assesses pressure, seals a baton, delegates the next chunk and independently verifies the destination', async () => {

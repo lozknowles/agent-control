@@ -438,7 +438,7 @@ export const REPOSITORY_REVIEW_OUTPUT_SCHEMA: Record<string, unknown> = {
   type: 'object', additionalProperties: false,
   properties: {
     schema: {type: 'string', const: 'agent-control.repository-review/v1'}, executiveSummary: {type: 'string'},
-    findings: {type: 'array', items: {type: 'object', additionalProperties: false, properties: {id: {type: 'string'}, severity: {type: 'string', enum: ['critical', 'high', 'medium', 'low', 'info']}, title: {type: 'string'}, category: {type: 'string', enum: ['correctness', 'reliability', 'security', 'maintainability', 'other']}, file: {type: 'string'}, startLine: {type: 'integer', minimum: 1}, endLine: {type: 'integer', minimum: 1}, evidence: {type: 'string'}, reasoning: {type: 'string'}, impact: {type: 'string'}, suggestedRemediation: {type: 'string'}, confidence: {type: 'number', minimum: 0, maximum: 1}, validation: {type: 'object', additionalProperties: false, properties: {state: {type: 'string', const: 'UNVERIFIED'}, reasons: {type: 'array', items: {type: 'string'}}}, required: ['state', 'reasons']}}, required: ['id', 'severity', 'title', 'category', 'evidence', 'reasoning', 'impact', 'suggestedRemediation', 'confidence', 'validation']}},
+    findings: {type: 'array', items: {type: 'object', additionalProperties: false, properties: {id: {type: 'string'}, severity: {type: 'string', enum: ['critical', 'high', 'medium', 'low', 'info']}, title: {type: 'string'}, category: {type: 'string', enum: ['correctness', 'reliability', 'security', 'maintainability', 'other']}, file: {type: ['string', 'null']}, startLine: {type: ['integer', 'null'], minimum: 1}, endLine: {type: ['integer', 'null'], minimum: 1}, evidence: {type: 'string'}, reasoning: {type: 'string'}, impact: {type: 'string'}, suggestedRemediation: {type: 'string'}, confidence: {type: 'number', minimum: 0, maximum: 1}, validation: {type: 'object', additionalProperties: false, properties: {state: {type: 'string', const: 'UNVERIFIED'}, reasons: {type: 'array', items: {type: 'string'}}}, required: ['state', 'reasons']}}, required: ['id', 'severity', 'title', 'category', 'file', 'startLine', 'endLine', 'evidence', 'reasoning', 'impact', 'suggestedRemediation', 'confidence', 'validation']}},
     positiveObservations: {type: 'array', items: {type: 'string'}}, areasReviewed: {type: 'array', items: {type: 'string'}}, areasNotReviewed: {type: 'array', items: {type: 'string'}}, verdict: {type: 'string', enum: ['PASS', 'PASS_WITH_FINDINGS', 'REVIEW_REQUIRED', 'FAILED']},
   }, required: ['schema', 'executiveSummary', 'findings', 'positiveObservations', 'areasReviewed', 'areasNotReviewed', 'verdict'],
 };
@@ -448,8 +448,18 @@ export function parseRepositoryReviewResponse(output: string): RepositoryReviewR
   if (text.startsWith('```')) text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
   let value: unknown;
   try { value = JSON.parse(text); } catch { throw new Error('repository_review_provider_json_invalid'); }
-  if (!isReview(value)) throw new Error('repository_review_provider_schema_invalid');
-  return value;
+  const normalized = normalizeNullableLocations(value);
+  if (!isReview(normalized)) throw new Error('repository_review_provider_schema_invalid');
+  return normalized;
+}
+function normalizeNullableLocations(value: unknown): unknown {
+  if (!record(value) || !Array.isArray(value.findings)) return value;
+  return {...value, findings: value.findings.map(finding => {
+    if (!record(finding)) return finding;
+    const normalized = {...finding};
+    for (const key of ['file', 'startLine', 'endLine']) if (normalized[key] === null) delete normalized[key];
+    return normalized;
+  })};
 }
 function isReview(value: unknown): value is RepositoryReviewResult {
   if (!record(value) || value.schema !== 'agent-control.repository-review/v1' || !nonempty(value.executiveSummary) || !arrayOfStrings(value.positiveObservations) || !arrayOfStrings(value.areasReviewed) || !arrayOfStrings(value.areasNotReviewed) || !['PASS', 'PASS_WITH_FINDINGS', 'REVIEW_REQUIRED', 'FAILED'].includes(String(value.verdict)) || !Array.isArray(value.findings)) return false;
