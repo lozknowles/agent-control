@@ -437,9 +437,11 @@ function usage(totals: ExecutionTotals) {
 export const REPOSITORY_REVIEW_OUTPUT_SCHEMA: Record<string, unknown> = {
   type: 'object', additionalProperties: false,
   properties: {
-    schema: {type: 'string', enum: ['agent-control.repository-review/v1']}, executiveSummary: {type: 'string'},
-    findings: {type: 'array', items: {type: 'object', additionalProperties: false, properties: {id: {type: 'string'}, severity: {type: 'string', enum: ['critical', 'high', 'medium', 'low', 'info']}, title: {type: 'string'}, category: {type: 'string', enum: ['correctness', 'reliability', 'security', 'maintainability', 'other']}, file: {type: ['string', 'null']}, startLine: {type: ['integer', 'null']}, endLine: {type: ['integer', 'null']}, evidence: {type: 'string'}, reasoning: {type: 'string'}, impact: {type: 'string'}, suggestedRemediation: {type: 'string'}, confidence: {type: 'number'}, validation: {type: 'object', additionalProperties: false, properties: {state: {type: 'string', enum: ['UNVERIFIED']}, reasons: {type: 'array', items: {type: 'string'}}}, required: ['state', 'reasons']}}, required: ['id', 'severity', 'title', 'category', 'file', 'startLine', 'endLine', 'evidence', 'reasoning', 'impact', 'suggestedRemediation', 'confidence', 'validation']}},
-    positiveObservations: {type: 'array', items: {type: 'string'}}, areasReviewed: {type: 'array', items: {type: 'string'}}, areasNotReviewed: {type: 'array', items: {type: 'string'}}, verdict: {type: 'string', enum: ['PASS', 'PASS_WITH_FINDINGS', 'REVIEW_REQUIRED', 'FAILED']},
+    // Semantic literals and ranges are enforced by isReview below. Keeping the
+    // provider schema structural avoids model-specific enum grammar failures.
+    schema: {type: 'string'}, executiveSummary: {type: 'string'},
+    findings: {type: 'array', items: {type: 'object', additionalProperties: false, properties: {id: {type: 'string'}, severity: {type: 'string'}, title: {type: 'string'}, category: {type: 'string'}, file: {type: ['string', 'null']}, startLine: {type: ['integer', 'null']}, endLine: {type: ['integer', 'null']}, evidence: {type: 'string'}, reasoning: {type: 'string'}, impact: {type: 'string'}, suggestedRemediation: {type: 'string'}, confidence: {type: 'number'}, validation: {type: 'object', additionalProperties: false, properties: {state: {type: 'string'}, reasons: {type: 'array', items: {type: 'string'}}}, required: ['state', 'reasons']}}, required: ['id', 'severity', 'title', 'category', 'file', 'startLine', 'endLine', 'evidence', 'reasoning', 'impact', 'suggestedRemediation', 'confidence', 'validation']}},
+    positiveObservations: {type: 'array', items: {type: 'string'}}, areasReviewed: {type: 'array', items: {type: 'string'}}, areasNotReviewed: {type: 'array', items: {type: 'string'}}, verdict: {type: 'string'},
   }, required: ['schema', 'executiveSummary', 'findings', 'positiveObservations', 'areasReviewed', 'areasNotReviewed', 'verdict'],
 };
 
