@@ -295,9 +295,9 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
         accountQualification: row.account?.qualification.state,
         accountAvailability: row.account?.availability,
         modelId: row.id,
-        nodeId: row.account?.nodeId ?? sourceRoute.nodeId,
+        nodeId: row.account?.nodeId ?? row.qualification.nodes[0] ?? row.nodes?.[0] ?? sourceRoute.nodeId,
         estimatedCost: estimateCost(row, source),
-        qualified: Boolean(provider) && provider?.enabled !== false && row.enabled !== false && row.qualification.state === 'QUALIFIED' && (!row.qualification.nodes.length || row.qualification.nodes.includes(row.account?.nodeId ?? sourceRoute.nodeId)) && (!row.account || row.account.availability === 'AVAILABLE'),
+        qualified: Boolean(provider) && provider?.enabled !== false && row.enabled !== false && row.qualification.state === 'QUALIFIED' && (!row.qualification.nodes.length || row.qualification.nodes.includes(row.account?.nodeId ?? row.qualification.nodes[0] ?? row.nodes?.[0] ?? sourceRoute.nodeId)) && (!row.account || row.account.availability === 'AVAILABLE'),
         capabilities: [...row.qualification.capabilities],
       };
     });

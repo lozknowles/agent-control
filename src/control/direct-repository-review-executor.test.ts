@@ -155,6 +155,30 @@ test('production handoff binds the destination account and node and preserves ac
   } finally { fs.rmSync(root, {recursive: true, force: true}); }
 });
 
+test('cross-provider continuation selects a qualified destination node instead of inheriting the source node', async () => {
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'agent-control-cross-provider-node-'));
+  try {
+    const providers=[{id:'source',kind:'cli' as const,enabled:true,accountProfiles:[{id:'remote',nodeId:'remote-node',label:'Remote',credentialStore:{type:'codex-home-env' as const,env:'CODEX_HOME_REMOTE'},qualification:{state:'QUALIFIED' as const,qualifiedAt:'2026-09-03T00:00:00Z',capabilities:['repository-review']}}]},{id:'local',kind:'local' as const,baseUrl:'http://127.0.0.1:8080/v1',enabled:true}];
+    const models=[{id:'strong',provider:'source',accountProfile:'remote',providerModel:'strong',capabilities:['repository-review'],nodes:['remote-node'],qualification:{state:'QUALIFIED' as const,version:'q1',qualifiedAt:'2026-09-03T00:00:00Z',capabilities:['repository-review'],nodes:['remote-node']},pricing:{currency:'USD',inputPerMillionTokens:10,outputPerMillionTokens:10,effectiveFrom:'2026-09-03',source:'fixture'}},{id:'cheap',provider:'local',providerModel:'cheap',capabilities:['repository-review'],nodes:['controller'],qualification:{state:'QUALIFIED' as const,version:'q1',qualifiedAt:'2026-09-03T00:00:00Z',capabilities:['repository-review'],nodes:['controller']},pricing:{currency:'USD',inputPerMillionTokens:0,outputPerMillionTokens:0,effectiveFrom:'2026-09-03',source:'fixture'}}];
+    const registry=new ModelRegistry(providers,models,{roles:{review:{primary:'strong',fallback:['cheap'],requires:['repository-review']}}},undefined,undefined,{});
+    const source=registry.route({model:'strong',nodeId:'remote-node',requiredCapabilities:['repository-review']});
+    const seen:string[]=[];
+    const routing=new TokenAwareBatonRuntime(undefined,{continuePercent:1,prepareBatonPercent:2,compactPercent:3,handoffPercent:4});
+    const store=new WorkParcelStore(path.join(root,'parcels.json'));
+    const contracts=new ContractExecutionRuntime(path.join(root,'contracts.json'));
+    const handoffs=new GovernedHandoffRuntime(contracts,path.join(root,'handoffs.json'));
+    const executor=new DirectRepositoryReviewExecutor(registry,store,routing,{routing,contracts,handoffs},(_provider,_account,route)=>({invoke:async(model,_input,options)=>{
+      seen.push(`${model.id}@${route?.nodeId}`);
+      const usage={inputTokens:10,outputTokens:2,cachedInputTokens:0,totalTokens:12,providerReportedCost:null,calculatedCost:model.id==='strong'?1:0,currency:'USD'};
+      options?.onTelemetry?.({phase:'started',providerId:model.provider,modelId:model.id,elapsedMs:0,context:{tokens:5,limitTokens:100,authority:'estimated',source:'fixture'}});
+      options?.onTelemetry?.({phase:'completed',providerId:model.provider,modelId:model.id,elapsedMs:1,usage,context:{tokens:5,limitTokens:100,authority:'estimated',source:'fixture'}});
+      return {providerId:model.provider,accountProfileId:model.accountProfile,modelId:model.id,nodeId:route?.nodeId,providerModel:model.providerModel,output:JSON.stringify({schema:'agent-control.repository-review/v1',executiveSummary:`Reviewed by ${model.id}.`,findings:[],positiveObservations:[],areasReviewed:[model.id==='strong'?'first.ts':'second.ts'],areasNotReviewed:[],verdict:'PASS'}),elapsedMs:1,usage,responseModel:model.providerModel,finishReason:'completed',toolCall:null};
+    }}));
+    await executor.execute(reviewRequest(source));
+    assert.deepEqual(seen,['strong@remote-node','cheap@controller']);
+  } finally { fs.rmSync(root,{recursive:true,force:true}); }
+});
+
 function handoffRegistry() {
   const models = new ModelRegistry([
     {id: 'source-provider', kind: 'openai-compatible', baseUrl: 'https://source.example/v1', auth: {type: 'none'}, enabled: true},

@@ -85,7 +85,9 @@ export class ParameterizedJobEngine {
         if (baseline && isAncestor(repository.snapshotPath, baseline.sha, repository.reviewedSha)) repository.comparisonSha = baseline.sha;
       }
       run.repository = repository;
-      const route = this.models.route({model: saved?.routing?.model, modelRole: saved?.routing?.modelRole ?? run.definition.routing.modelRole, accountProfile: saved?.routing?.accountProfile, nodeId, requiredCapabilities: ['repository-review'], allowFallback: saved?.routing?.allowFallback ?? run.definition.routing.allowFallback});
+      const modelRole = saved?.routing?.modelRole ?? run.definition.routing.modelRole;
+      const executionNodeId = modelExecutionNode(this.models, saved?.routing?.model, modelRole, saved?.routing?.accountProfile, nodeId);
+      const route = this.models.route({model: saved?.routing?.model, modelRole, accountProfile: saved?.routing?.accountProfile, nodeId: executionNodeId, requiredCapabilities: ['repository-review'], allowFallback: saved?.routing?.allowFallback ?? run.definition.routing.allowFallback});
       run.modelRoute = route; if (route.fallback) run.fallbackHistory.push({at: this.clock().toISOString(), reason: route.fallbackReason ?? 'primary unavailable', selectedModel: route.modelId});
       const context = buildRepositoryContext(repository, saved?.contextProfile ?? 'STANDARD', budgets.maximumInputTokens); run.context = context.summary;
       run = this.transition(run, 'RUNNING'); this.runs.update(run);
@@ -137,6 +139,22 @@ export class ParameterizedJobEngine {
   }
   private transition(run: ParameterizedJobRun, status: ParameterizedRunStatus) { run.status = status; run.transitions.push({status, at: this.clock().toISOString()}); return run; }
   private mustRun(id: string) { const run = this.runs.get(id); if (!run) throw new ParameterizedJobError('job_run_missing', id); return run; }
+}
+
+function modelExecutionNode(models: ModelRegistry, requestedModel: string | undefined, requestedRole: string | undefined, accountProfile: string | undefined, repositoryNode: string) {
+  let modelId = requestedModel;
+  if (!modelId && requestedRole) {
+    const seen = new Set<string>(); let candidate = requestedRole;
+    while (models.routes().roles[candidate]) {
+      if (seen.has(candidate)) throw new ParameterizedJobError('model_fallback_cycle', candidate);
+      seen.add(candidate); candidate = models.routes().roles[candidate].primary;
+    }
+    modelId = candidate;
+  }
+  const model = modelId ? models.model(modelId) : undefined;
+  if (!model || accountProfile && model.accountProfile !== accountProfile) return repositoryNode;
+  const account = model.accountProfile ? models.accountProfile(model.provider, model.accountProfile) : undefined;
+  return account?.nodeId ?? model.qualification?.nodes?.[0] ?? model.nodes?.[0] ?? repositoryNode;
 }
 
 function mergeBudgets(base: JobBudgetPolicy, overrides?: Partial<JobBudgetPolicy>): JobBudgetPolicy { return {...base, ...overrides}; }

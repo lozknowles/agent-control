@@ -27,12 +27,17 @@ export class CodexRepositoryReviewClient {
       if (event.type !== 'turn.completed') return;
       completionTelemetryEmitted = true;
       const usage = normalizeModelUsage(event.usage, model);
-      options.onTelemetry?.({phase: 'completed', providerId: this.provider.id, modelId: model.id, elapsedMs: event.elapsedMs, usage, context: {tokens: null, limitTokens: model.limits?.contextTokens ?? null, authority: 'unavailable', source: 'codex_jsonl_does_not_report_current_context'}});
+      options.onTelemetry?.({phase: 'completed', providerId: this.provider.id, modelId: model.id, elapsedMs: event.elapsedMs, usage, context: singleTurnContext(usage.totalTokens, model.limits?.contextTokens)});
     }});
     if (run.providerId !== this.provider.id || run.accountProfileId !== this.account.id || run.modelId !== model.id || run.nodeId !== this.nodeId) throw new Error('codex_node_execution_identity_mismatch');
     if (run.observedItemTypes.includes('file_change')) throw new Error('codex_exec_capability_envelope_violation:file_change');
     const elapsedMs = Date.now() - started, usage = normalizeModelUsage(run.usage, model);
-    if (!completionTelemetryEmitted) options.onTelemetry?.({phase: 'completed', providerId: this.provider.id, modelId: model.id, elapsedMs, usage, context: {tokens: null, limitTokens: model.limits?.contextTokens ?? null, authority: 'unavailable', source: 'codex_jsonl_does_not_report_current_context'}});
+    if (!completionTelemetryEmitted) options.onTelemetry?.({phase: 'completed', providerId: this.provider.id, modelId: model.id, elapsedMs, usage, context: singleTurnContext(usage.totalTokens, model.limits?.contextTokens)});
     return {providerId: this.provider.id, accountProfileId: this.account.id, modelId: model.id, nodeId: this.nodeId, providerModel: model.providerModel, output: run.finalMessage, elapsedMs, usage, responseModel: model.providerModel, finishReason: 'completed', toolCall: null};
   }
+}
+
+function singleTurnContext(totalTokens: number | null, limitTokens?: number) {
+  if (totalTokens === null || limitTokens === undefined) return {tokens: null, limitTokens: limitTokens ?? null, authority: 'unavailable' as const, source: 'codex_jsonl_does_not_report_current_context'};
+  return {tokens: totalTokens, limitTokens, authority: 'estimated' as const, source: 'codex_ephemeral_single_turn_usage_estimate'};
 }

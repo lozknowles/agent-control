@@ -14,6 +14,26 @@ param([string]$PayloadLine)
     }
     return $out
   }
+  function Quote-NativeArgument([string]$Value) {
+    if ($Value.Length -gt 0 -and $Value -notmatch '[\s"]') { return $Value }
+    $builder = New-Object Text.StringBuilder
+    [void]$builder.Append('"')
+    $slashes = 0
+    foreach ($character in $Value.ToCharArray()) {
+      if ($character -eq '\') { $slashes++; continue }
+      if ($character -eq '"') {
+        [void]$builder.Append(('\' * (($slashes * 2) + 1)))
+        [void]$builder.Append('"')
+        $slashes = 0
+        continue
+      }
+      if ($slashes -gt 0) { [void]$builder.Append(('\' * $slashes)); $slashes = 0 }
+      [void]$builder.Append($character)
+    }
+    if ($slashes -gt 0) { [void]$builder.Append(('\' * ($slashes * 2))) }
+    [void]$builder.Append('"')
+    return $builder.ToString()
+  }
   try {
     if ([string]::IsNullOrWhiteSpace($payloadLine)) { Fail 'unknown' 'codex_node_request_missing' }
     $requestText = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($payloadLine))
@@ -57,23 +77,44 @@ param([string]$PayloadLine)
     New-Item -ItemType Directory -Path $temporary | Out-Null
     try {
       $schemaFile = Join-Path $temporary 'output.schema.json'
-      $request.outputSchema | ConvertTo-Json -Depth 30 -Compress | Set-Content -LiteralPath $schemaFile -Encoding UTF8
-      $arguments = @('exec', '--ephemeral', '--json', '--sandbox', 'read-only', '--model', [string]$request.providerModel, '--output-schema', $schemaFile, [string]$request.instruction)
-      $argumentsJson = $arguments | ConvertTo-Json -Compress
+      $schemaJson = $request.outputSchema | ConvertTo-Json -Depth 30 -Compress
+      $utf8NoBom = New-Object Text.UTF8Encoding($false)
+      [IO.File]::WriteAllText($schemaFile, $schemaJson, $utf8NoBom)
+      $arguments = @('exec', '--ephemeral', '--json', '--sandbox', 'read-only', '--skip-git-repo-check', '--model', [string]$request.providerModel, '--output-schema', $schemaFile, '-')
       $stopwatch = [Diagnostics.Stopwatch]::StartNew()
-      $job = Start-Job -ScriptBlock { param($Executable, $ArgumentsJson, $Home) $env:CODEX_HOME = $Home; $Arguments = @($ArgumentsJson | ConvertFrom-Json); @(& $Executable @Arguments 2>&1) } -ArgumentList $selected.Path, $argumentsJson, $codexHome
-      $timeoutSeconds = [Math]::Max(1, [Math]::Min(1800, [Math]::Ceiling(([double]$request.timeoutMs) / 1000)))
-      if ($null -eq (Wait-Job -Job $job -Timeout $timeoutSeconds)) { Stop-Job -Job $job; Remove-Job -Job $job -Force; Fail $operation 'codex_node_exec_timeout' }
-      $lines = @(Receive-Job -Job $job -ErrorAction SilentlyContinue | ForEach-Object { [string]$_ })
-      $state = $job.State
+      # Codex always checks stdin for additional prompt input. A background
+      # PowerShell job leaves stdin open, so a fast refusal can be hidden until
+      # the outer timeout. A supervised native process receives a finite prompt
+      # through an explicitly closed stdin and captures both streams in memory.
+      $startInfo = New-Object Diagnostics.ProcessStartInfo
+      $startInfo.FileName = $selected.Path
+      $startInfo.Arguments = (($arguments | ForEach-Object { Quote-NativeArgument ([string]$_) }) -join ' ')
+      $startInfo.UseShellExecute = $false
+      $startInfo.CreateNoWindow = $true
+      $startInfo.RedirectStandardInput = $true
+      $startInfo.RedirectStandardOutput = $true
+      $startInfo.RedirectStandardError = $true
+      $process = New-Object Diagnostics.Process
+      $process.StartInfo = $startInfo
+      if (-not $process.Start()) { Fail $operation 'codex_node_exec_failed' }
+      $stdoutTask = $process.StandardOutput.ReadToEndAsync()
+      $stderrTask = $process.StandardError.ReadToEndAsync()
+      $process.StandardInput.Write([string]$request.instruction)
+      $process.StandardInput.Close()
+      $timeoutMilliseconds = [Math]::Max(1000, [Math]::Min(1800000, [int64]$request.timeoutMs))
+      if (-not $process.WaitForExit([int]$timeoutMilliseconds)) { $process.Kill(); $process.WaitForExit(); Fail $operation 'codex_node_exec_timeout' }
+      $stdout = $stdoutTask.GetAwaiter().GetResult()
+      [void]$stderrTask.GetAwaiter().GetResult()
       $stopwatch.Stop()
-      Remove-Job -Job $job -Force
-      if ($state -ne 'Completed') { Fail $operation 'codex_node_exec_failed' }
+      $lines = @($stdout -split '[\r\n]+' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
       $events = @()
       foreach ($line in $lines) { try { $event = $line | ConvertFrom-Json; if ($null -ne $event.type) { $events += $event } } catch {} }
       if (@($events | Where-Object { $_.type -in @('error', 'turn.failed') }).Count -gt 0) { Fail $operation 'codex_node_exec_turn_failed' }
       $completed = @($events | Where-Object { $_.type -eq 'turn.completed' })[-1]
-      if ($null -eq $completed) { Fail $operation 'codex_node_exec_turn_incomplete' }
+      if ($null -eq $completed) {
+        if ($null -ne $process.ExitCode -and $process.ExitCode -ne 0) { Fail $operation 'codex_node_exec_failed' }
+        Fail $operation 'codex_node_exec_turn_incomplete'
+      }
       $messages = @($events | Where-Object { $_.type -eq 'item.completed' -and $_.item.type -eq 'agent_message' })
       if ($messages.Count -eq 0) { Fail $operation 'codex_exec_missing_final_message' }
       $started = @($events | Where-Object { $_.type -eq 'thread.started' })[0]

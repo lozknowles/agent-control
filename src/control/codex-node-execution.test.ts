@@ -77,6 +77,13 @@ test('the audited Windows runner discovers versioned Codex bundles without a har
   assert.match(script, /\$savedErrorPreference = \$ErrorActionPreference/);
   assert.match(script, /\$statusExitCode = \$LASTEXITCODE/);
   assert.match(script, /login status 2>&1/);
+  assert.match(script, /UTF8Encoding\(\$false\)/);
+  assert.match(script, /--skip-git-repo-check/);
+  assert.match(script, /Diagnostics\.ProcessStartInfo/);
+  assert.match(script, /RedirectStandardInput = \$true/);
+  assert.match(script, /StandardInput\.Close\(\)/);
+  assert.match(script, /\$process\.WaitForExit/);
+  assert.doesNotMatch(script, /Start-Job|Start-Process/);
 });
 
 test('destination execution fails closed when the execution port reports a different account or node', async () => {
@@ -86,4 +93,20 @@ test('destination execution fails closed when the execution port reports a diffe
   };
   const client = new CodexRepositoryReviewClient(provider, account, node.id, wrongIdentityPort);
   await assert.rejects(() => client.invoke({id: 'model-a', provider: provider.id, accountProfile: account.id, providerModel: 'gpt-example', capabilities: []}, 'bounded input', {structured: true, outputSchema: {type: 'object'}}), /codex_node_execution_identity_mismatch/);
+});
+
+test('ephemeral Codex review marks response-window usage as estimated context without changing cumulative usage', async () => {
+  const events: Array<{phase: string; context: {tokens: number | null; limitTokens: number | null; authority: string; source: string}; usage?: {totalTokens: number | null}}> = [];
+  const exactPort: CodexNodeExecutionPort = {
+    async accountStatus() { throw new Error('not_used'); },
+    async execReadOnlyStructured(request) {
+      request.onTelemetry?.({type: 'turn.completed', elapsedMs: 9, usage: {input_tokens: 40, output_tokens: 6}, context: {tokens: null, authority: 'unavailable', source: 'codex_jsonl_does_not_report_current_context'}});
+      return {providerId: request.provider.id, accountProfileId: request.account.id, modelId: request.model.id, nodeId: request.nodeId, codexVersion: 'codex-cli 0.153.0', executableSha256: hash, discoveredAt: '2026-09-03T10:00:00.000Z', finalMessage: '{"ok":true}', usage: {input_tokens: 40, output_tokens: 6}, observedItemTypes: ['agent_message']};
+    },
+  };
+  const client = new CodexRepositoryReviewClient(provider, account, node.id, exactPort);
+  const result = await client.invoke({id: 'model-a', provider: provider.id, accountProfile: account.id, providerModel: 'gpt-example', capabilities: [], limits: {contextTokens: 100}}, 'bounded input', {structured: true, outputSchema: {type: 'object'}, onTelemetry: event => events.push(event)});
+  assert.equal(result.usage.totalTokens, 46);
+  assert.deepEqual(events.at(-1)?.context, {tokens: 46, limitTokens: 100, authority: 'estimated', source: 'codex_ephemeral_single_turn_usage_estimate'});
+  assert.equal(events.at(-1)?.usage?.totalTokens, 46);
 });
