@@ -63,6 +63,17 @@ test('Codex account profiles contain only opaque identity and credential-store r
   assert.throws(() => validateConfig({schemaVersion: 1, resources: [], services: [], lanes: [], providers: [{...provider, accountProfiles: [{...provider.accountProfiles[0], accessToken: 'forbidden'}]}], models: [model], modelRouting: {roles: {}}}), /secret_material_forbidden/);
 });
 
+test('Codex account profile node identity must resolve to a matching configured model node', () => {
+  const resource = {id: 'windows-node', platform: 'windows' as const, transport: {type: 'ssh' as const, host: 'windows-node.example'}, capabilities: ['harness.codex']};
+  const profile = {id: 'account-a', nodeId: resource.id, label: 'Account A', credentialStore: {type: 'codex-home-env' as const, env: 'CODEX_HOME_ACCOUNT_A'}};
+  const provider = {id: 'codex', kind: 'cli' as const, accountProfiles: [profile]};
+  const model = {id: 'model-a', provider: provider.id, accountProfile: profile.id, providerModel: 'gpt-example', nodes: [resource.id], capabilities: ['coding']};
+  const config = validateConfig({schemaVersion: 1, resources: [resource], services: [], lanes: [], providers: [provider], models: [model], modelRouting: {roles: {}}});
+  assert.equal(config.providers[0].accountProfiles?.[0].nodeId, resource.id);
+  assert.throws(() => validateConfig({schemaVersion: 1, resources: [], services: [], lanes: [], providers: [provider], models: [model], modelRouting: {roles: {}}}), /invalid_account_profile_node/);
+  assert.throws(() => validateConfig({schemaVersion: 1, resources: [resource], services: [], lanes: [], providers: [provider], models: [{...model, nodes: ['controller']}], modelRouting: {roles: {}}}), /model_account_profile_node_mismatch/);
+});
+
 test('configuration survives a persistence reload', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-config-'));
   const file = path.join(dir, 'config.json');

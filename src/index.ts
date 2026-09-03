@@ -18,6 +18,7 @@ import {AgentControlService} from './control/application-service.js';
 import {startWebDashboard} from './control/web-server.js';
 import {ContextStore} from './control/context.js';
 import {buildJobRuntime, buildParameterizedJobRuntime, startJobScheduler, startManagedNodeMonitoring, startParameterizedJobScheduler} from './control/job-bootstrap.js';
+import {ResourceCodexNodeExecutionPort} from './control/codex-node-execution.js';
 import {FileCommandResultStore, TokenAwareOutputService} from './control/token-aware-output.js';
 import {Trace} from './control/telemetry.js';
 import {AGENT_CONTROL_VERSION} from './version.js';
@@ -51,11 +52,12 @@ const stateRoot = path.resolve(process.env.AGENT_CONTROL_STATE_DIR || '.agent-co
 const contracts = new ContractExecutionRuntime(path.join(stateRoot, 'contracts', 'executions.json'));
 const handoffs = new GovernedHandoffRuntime(contracts, path.join(stateRoot, 'contracts', 'handoffs.json'));
 const tokenBatonRouting = new TokenAwareBatonRuntime(path.join(stateRoot, 'token-baton-routing', 'evidence.json'), config.tokenBatonRouting);
+const codexNodeExecution = new ResourceCodexNodeExecutionPort(config.resources);
 const providerLifecycle = new ProviderModelLifecycleRegistry(path.join(stateRoot, 'models', 'lifecycle.json'));
 const remoteTokenEnvironment = process.env.AGENT_CONTROL_ACP_REMOTE_TOKEN_ENV?.trim();
 const runtimeObservability = new RuntimeObservability({contracts, handoffs, providerLifecycle, acpSessionDirectory:path.join(stateRoot,'acp'), remoteAcp:{enabled:process.env.AGENT_CONTROL_ACP_REMOTE_ENABLED==='true',authenticationConfigured:Boolean(remoteTokenEnvironment&&process.env[remoteTokenEnvironment]),loopback:['127.0.0.1','::1','localhost'].includes((process.env.AGENT_CONTROL_ACP_REMOTE_HOST??'127.0.0.1').toLowerCase())}});
 const jobRuntime = buildJobRuntime(config, stateRoot, undefined, undefined, modelRegistry);
-const parameterizedJobs = buildParameterizedJobRuntime(config, modelRegistry, jobRuntime.workParcels, stateRoot, tokenBatonRouting, contracts, handoffs);
+const parameterizedJobs = buildParameterizedJobRuntime(config, modelRegistry, jobRuntime.workParcels, stateRoot, tokenBatonRouting, contracts, handoffs, codexNodeExecution);
 const commandOutputRoot = path.resolve(stateRoot, 'command-output');
 const tokenAwareOutput = new TokenAwareOutputService(new FileCommandResultStore(commandOutputRoot), {
   policy: config.tokenAwareOutput,
@@ -71,6 +73,7 @@ const control = new AgentControlService(state, ptys, providers).configureProject
   harnessEfficiency: jobRuntime.harnessEfficiency,
   workParcels: jobRuntime.workParcels,
   tokenBatonRouting,
+  codexNodeExecution,
   modelRegistry,
   parameterizedJobs,
   runtimeObservability,

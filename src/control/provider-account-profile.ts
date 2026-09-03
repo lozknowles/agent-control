@@ -16,8 +16,9 @@ export function resolveCodexAccountProfile(provider: ProviderConfig, accountProf
   return resolveCodexAccountEnvironment(profile, environment);
 }
 
-export function resolveCodexAccountEnvironment(profile: ProviderAccountProfileConfig, environment: NodeJS.ProcessEnv = process.env): ResolvedCodexAccountProfile {
+export function resolveCodexAccountEnvironment(profile: ProviderAccountProfileConfig, environment: NodeJS.ProcessEnv = process.env, nodeId = profile.nodeId ?? 'controller'): ResolvedCodexAccountProfile {
   if (profile.credentialStore.type !== 'codex-home-env') throw new Error('account_profile_credential_store_unsupported');
+  if (profile.nodeId && profile.nodeId !== nodeId) throw new Error('account_profile_remote_resolution_forbidden');
   const codexHome = environment[profile.credentialStore.env]?.trim();
   if (!codexHome) throw new Error('account_profile_authentication_required');
   if (!path.isAbsolute(codexHome)) throw new Error('account_profile_codex_home_must_be_absolute');

@@ -1,6 +1,6 @@
 # Token-Aware Baton Routing
 
-Agent Control 3.7 records live, provider-neutral token state for every thread that is connected to the execution adapter. A governed route is `provider → optional account profile → model`. The state is durable at `.agent-control/token-baton-routing/evidence.json` and is projected read-only through `GET /api/token-routing` and the normal `GET /api/status` snapshot.
+Agent Control 3.7 records live, provider-neutral token state for every thread that is connected to the execution adapter. An account-bound governed route is `provider → account profile → model → execution node`. The state is durable at `.agent-control/token-baton-routing/evidence.json` and is projected read-only through `GET /api/token-routing` and the normal `GET /api/status` snapshot.
 
 ## Telemetry semantics
 
@@ -34,7 +34,7 @@ High context pressure does not itself downgrade a model. `BATON_AND_HANDOFF` req
 
 ## Verified baton and recovery
 
-Before a handoff, Agent Control seals a durable baton containing the objective, completed work, decisions, changed files, Git SHA and dirty/diff state, tests/evidence, unresolved issues, exact next action, originating provider/account/model/thread, token state, and parcel totals. The baton has a SHA-256 digest.
+Before a handoff, Agent Control seals a durable baton containing the objective, completed work, decisions, changed files, Git SHA and dirty/diff state, tests/evidence, unresolved issues, exact next action, originating provider/account/model/node/thread, token state, and parcel totals. The baton has a SHA-256 digest.
 
 The existing governed handoff runtime owns actual process replacement and authority transfer. A successful handoff leaves the original thread recoverable. A failed or approval-pending handoff records the result and resumes the original thread; no provider/model changes silently.
 
@@ -44,7 +44,7 @@ The parameterized repository-review executor is the first normal production life
 
 `provider invoke/observe → assess → seal baton → DELEGATE child contract → invoke destination → independent repository validation`
 
-Assessment occurs only when another immutable context chunk remains. A handoff candidate must still pass the normal model registry's provider, account-profile, model, qualification, node and `repository-review` capability checks. The selected provider/account/model is recorded before invocation and the adapter must return that exact identity; it is never substituted implicitly. The receiving prompt includes the sealed baton ID and SHA-256, objective, completed work, decisions, exact next action, origin and parcel total at the boundary.
+Assessment occurs only when another immutable context chunk remains. A handoff candidate must still pass the normal model registry's provider, account-profile, model, qualification, node and `repository-review` capability checks. The selected provider/account/model/node is recorded before invocation and the adapter must return that exact identity; it is never substituted implicitly. The receiving prompt includes the sealed baton ID and SHA-256, objective, completed work, decisions, exact next action, origin and parcel total at the boundary.
 
 The destination invocation runs inside the token runtime's governed-handoff result boundary. If it fails, the child contract is independently marked failed, the token decision records `handoff_failed_resume_original_thread`, and the same next frozen chunk is invoked on the preserved source route. If it succeeds, the child contract remains the verification owner. The parameterized-job engine then performs its existing independent repository validation and records that outcome on every provider invocation and the surviving source or destination contract.
 
@@ -52,7 +52,7 @@ All successful source, destination and recovery invocations are additive in the 
 
 ## Dashboard and reconciliation
 
-The dashboard consumes the existing SSE endpoint. `token.telemetry`, `token.governor_transition`, `token.baton_created`, and `token.handoff_result` refresh the live thread panel without a page reload. While a thread is active, its elapsed runtime advances locally from the durable start time between events; completed threads retain the final provider-reported elapsed time. The panel displays provider/account/model, safe account label and reliably attributed plan, qualification/availability, next selected route, context (`Context: 182k / 272k — 67%`), token totals, authority, cost, governor state/current/next thresholds, and Work Parcel chain totals.
+The dashboard consumes the existing SSE endpoint. `token.telemetry`, `token.governor_transition`, `token.baton_created`, and `token.handoff_result` refresh the live thread panel without a page reload. While a thread is active, its elapsed runtime advances locally from the durable start time between events; completed threads retain the final provider-reported elapsed time. The panel displays provider/account/model/node, safe account label and reliably attributed plan, qualification/availability, next selected route, context (`Context: 182k / 272k — 67%`), token totals, authority, cost, governor state/current/next thresholds, and Work Parcel chain totals.
 
 Parcel accounting is additive across threads, accounts and models. For example, `OpenAI/Lawrence Pro/Sol 184k → OpenAI/Cottage Plus/Luna 31k → GLM/default/GLM-5.3-Flash 18k = 233k total` remains visible after each handoff. The same sampled values, transitions, decisions, account boundaries, baton IDs, and hashes persist in durable evidence and can be reconciled with the final Work Parcel cost-per-verified-outcome ledger.
 
@@ -62,14 +62,14 @@ Account profiles do not create a parallel provider system. A model registry row 
 
 Account fallback remains a predetermined model-role decision. Agent Control does not select another account because the current account is rate-limited, exhausted, or has less remaining quota, and does not aggregate account allowances. Such failures remain recorded against the selected account. Allowed selection reasons are explicit operator policy, workload ownership, capability, qualification, or a predeclared route.
 
-Codex account setup and interactive login are documented in [Codex integration](models/CODEX-INTEGRATION.md). Public APIs and evidence contain only opaque ID, safe label, plan authority and qualification metadata—never email, OAuth/access/refresh tokens, cookies, credential paths, or `CODEX_HOME` contents.
+Codex account setup and interactive login are documented in [Codex integration](models/CODEX-INTEGRATION.md). A profile may bind `nodeId`; remote qualification and execution then occur on that node through the restricted Codex node-execution port. Public APIs and evidence contain only opaque ID, safe label, node ID, plan authority, qualification metadata, CLI version, executable hash and discovery timestamp—never email, OAuth/access/refresh tokens, cookies, raw process output, executable paths, credential paths, or `CODEX_HOME` contents.
 
 ## Qualification
 
 Run the focused tests with:
 
 ```bash
-node --import tsx --test src/control/token-aware-baton-routing.test.ts src/control/direct-repository-review-executor.test.ts src/control/codex-exec-provider.test.ts src/control/account-profile-qualification.test.ts src/control/model-registry.test.ts src/control/openai-compatible-provider.test.ts src/control/web-server.test.ts
+node --import tsx --test --test-concurrency=1 src/control/token-aware-baton-routing.test.ts src/control/direct-repository-review-executor.test.ts src/control/codex-node-execution.test.ts src/control/codex-exec-provider.test.ts src/control/account-profile-qualification.test.ts src/control/model-registry.test.ts src/control/openai-compatible-provider.test.ts src/control/web-server.test.ts
 ```
 
 The full project check remains the release gate. It must include installed optional ACP and browser dependencies before its TypeScript phase can pass.

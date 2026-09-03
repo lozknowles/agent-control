@@ -1,6 +1,6 @@
 # Agent Control 3.7 development qualification
 
-Date: 2026-09-02  
+Date: 2026-09-03
 Branch: `feature/3.7-token-aware-baton-routing`  
 Base: `5acdde13e41d58b511a33ac0e15f3dc6d3930613` (Agent Control 3.6 product checkpoint)
 
@@ -17,7 +17,9 @@ The focused TypeScript suite covers the durable governor and its integration bou
 - the normal direct repository-review Work Parcel production boundary calling observe, assess, sealed baton creation, governed `DELEGATE`, destination execution and independent validation;
 - destination-execution failure marking the delegated child failed, preserving the source contract/thread, resuming the exact next frozen chunk on the source provider, and retaining additive parcel evidence.
 - two independently referenced Codex `CODEX_HOME` profiles remaining child-process isolated without changing the global login; account qualification persisting no path or credential material;
-- same-provider `lawrence-pro/Sol → cottage-plus/Luna` handoff binding the exact destination account, rejecting identity mismatch, and retaining separate account-aware baton, contract, invocation and parcel-chain records.
+- same-provider `lawrence-pro/Sol/source-node → cottage-plus/Luna/destination-node` handoff binding the exact destination account and node, rejecting identity mismatch, and retaining separate account-aware baton, contract, invocation and parcel-chain records;
+- remote account qualification dispatching to the configured Resource without resolving the controller environment or filesystem;
+- the Windows SSH adapter accepting only `accountStatus` and `execReadOnlyStructured`, sending fixed PowerShell over stdin, keeping variable data outside source, rejecting source-account/node reuse, omitting raw process output and paths, and discovering Codex bundles without a hard-coded bundle hash.
 
 ## Telemetry authority
 
@@ -31,7 +33,9 @@ The physical continuation audit at branch commit `4a13df341c79ff3cc8cbadfed81736
 
 The fix connects the existing abstractions at `DirectRepositoryReviewExecutor`, the component that already owns provider invocation and Work Parcel evidence. At a completed immutable-chunk boundary it assesses bounded remaining work, resolves the exact target through `ModelRegistry`, seals the existing baton, delegates through `GovernedHandoffRuntime`/`ContractExecutionRuntime`, invokes the destination, and leaves final independent result validation with `ParameterizedJobEngine`. A destination failure is contained by the existing token handoff recovery boundary and resumes the source route. Focused production-executor tests prove both success and recovery; no provider-specific route was added to core policy.
 
-The account-aware extension retains that lifecycle and adds one optional identity beneath a provider. Codex profiles resolve through separate environment-referenced `CODEX_HOME` directories; the runtime does not read or copy their contents. Model registry qualification, route decision, baton, contract, provider result, Work Parcel invocation and aggregate ledger must agree on `provider/account/model`. Account selection is explicit or predetermined policy, never utilization-driven rotation.
+The account-aware extension retains that lifecycle and adds account and node identity beneath a provider. The next qualification audit established that the credential-bearing Codex profiles live on a Windows execution Resource, while the controller only orchestrates them. The implementation had still assumed that qualification and CLI invocation were controller-local and that a handoff destination reused the source node. That was a genuine integration defect.
+
+The narrow fix adds `nodeId` to account-profile configuration and carries `provider/account/model/node` through registry candidates and decisions, token telemetry, sealed batons, child contracts, destination invocation, verification/recovery and Work Parcel chain totals. `CodexNodeExecutionPort` exposes only `accountStatus` and `execReadOnlyStructured`. Its controller-local implementation preserves the existing behavior. Its Windows SSH implementation reuses configured Resource transport, sends a fixed audited PowerShell script through `powershell.exe -NoProfile -NonInteractive -Command -`, and passes variable inputs as base64-encoded JSON data. The node resolves its own environment reference, discovers and validates `%LOCALAPPDATA%\OpenAI\Codex\bin\*\codex.exe`, and returns only sanitized structured fields. Qualification persists CLI version, executable SHA-256 and discovery timestamp, never the executable/profile path or raw stdout/stderr. Account selection remains explicit or predetermined policy, never utilization-driven rotation.
 
 ## Boundary still requiring physical qualification
 
@@ -44,4 +48,6 @@ This is development evidence, not a live provider promotion. The new production 
 
 - Account-aware focused command: `node --import tsx --test src/control/token-aware-baton-routing.test.ts src/control/direct-repository-review-executor.test.ts src/control/codex-exec-provider.test.ts src/control/account-profile-qualification.test.ts src/control/model-registry.test.ts src/control/openai-compatible-provider.test.ts src/control/parameterized-jobs.test.ts src/control/adaptive-harness.test.ts src/control/web-server.test.ts` — 94 passed, 0 failed.
 - Current full command: `npm run check` — TypeScript, bootstrap syntax, dashboard syntax, infrastructure neutrality and implementation-status consistency passed; 650 tests passed, 0 failed.
+- Cross-node focused command: `node --import tsx --test --test-concurrency=1 src/control/codex-node-execution.test.ts src/control/account-profile-qualification.test.ts src/control/config.test.ts src/control/model-registry.test.ts src/control/direct-repository-review-executor.test.ts src/control/token-aware-baton-routing.test.ts src/control/codex-exec-provider.test.ts src/control/web-server.test.ts` — 80 passed, 0 failed.
+- Final full command: `npm run check` — TypeScript, bootstrap/dashboard syntax, infrastructure neutrality and implementation-status consistency passed; 658 tests passed, 0 failed.
 - No interactive account authentication, physical qualification, deployment, merge, tag or release was performed. The physical verdict remains PARTIAL.

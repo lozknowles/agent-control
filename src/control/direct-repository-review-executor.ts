@@ -12,13 +12,14 @@ import {
 } from './openai-compatible-provider.js';
 import type {RepositoryReviewExecutor, RepositoryReviewResult, ReviewExecutionRequest, ReviewExecutionResponse} from './parameterized-job-types.js';
 import type {TokenAwareBatonRuntime, VerifiedBaton} from './token-aware-baton-routing.js';
+import {LocalCodexNodeExecutionPort, type CodexNodeExecutionPort} from './codex-node-execution.js';
 import {WorkParcelStore, type WorkParcel} from './work-parcels.js';
 
 type ReviewChunk = ReviewExecutionRequest['contextChunks'][number];
 type InvocationOptions = Parameters<OpenAICompatibleProviderClient['invoke']>[2];
 
 export interface RepositoryReviewProviderClient {
-  invoke(model: ModelConfig, input: string, options?: InvocationOptions): Promise<ModelInvocationResult>;
+  invoke(model: ModelConfig, input: string, options?: InvocationOptions): Promise<ModelInvocationResult & {nodeId?: string}>;
 }
 
 export interface RepositoryReviewTokenLifecycle {
@@ -27,7 +28,7 @@ export interface RepositoryReviewTokenLifecycle {
   handoffs: GovernedHandoffRuntime;
 }
 
-export type RepositoryReviewProviderClientFactory = (provider: ProviderConfig, account?: ProviderAccountProfileConfig) => RepositoryReviewProviderClient;
+export type RepositoryReviewProviderClientFactory = (provider: ProviderConfig, account?: ProviderAccountProfileConfig, route?: ModelRouteDecision) => RepositoryReviewProviderClient;
 
 interface ExecutionTotals {
   accountedInvocations: number;
@@ -50,7 +51,8 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
     private readonly parcels: WorkParcelStore,
     tokenRouting?: TokenAwareBatonRuntime,
     private readonly lifecycle?: RepositoryReviewTokenLifecycle,
-    private readonly clients: RepositoryReviewProviderClientFactory = (provider, account) => provider.kind === 'cli' ? new CodexRepositoryReviewClient(provider, requiredAccount(account)) : new OpenAICompatibleProviderClient(provider),
+    private readonly clients?: RepositoryReviewProviderClientFactory,
+    private readonly nodeExecution: CodexNodeExecutionPort = new LocalCodexNodeExecutionPort(),
   ) {
     this.routing = lifecycle?.routing ?? tokenRouting;
   }
@@ -158,12 +160,13 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
     });
     if (decision.action !== 'BATON_AND_HANDOFF' || !decision.target) return false;
 
-    const targetRoute = this.models.route({model: decision.target.modelId, nodeId: request.route.nodeId, requiredCapabilities: ['repository-review'], allowFallback: false});
-    if (targetRoute.providerId !== decision.target.providerId || targetRoute.accountProfileId !== (decision.target.accountProfileId ?? null)) throw new Error('token_handoff_route_identity_changed');
+    const targetRoute = this.models.route({model: decision.target.modelId, nodeId: decision.target.nodeId ?? request.route.nodeId, requiredCapabilities: ['repository-review'], allowFallback: false});
+    if (targetRoute.providerId !== decision.target.providerId || targetRoute.accountProfileId !== (decision.target.accountProfileId ?? null) || targetRoute.nodeId !== (decision.target.nodeId ?? request.route.nodeId)) throw new Error('token_handoff_route_identity_changed');
     const baton = this.routing.createBaton({
       threadId: source.threadId,
       parcelId: parcel.id,
       providerId: source.invocation.providerId,
+      nodeId: request.route.nodeId,
       accountProfileId: request.route.accountProfileId ?? undefined,
       accountLabel: request.route.accountLabel ?? undefined,
       accountPlan: request.route.accountPlan ?? undefined,
@@ -231,7 +234,8 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
   private async invokeChunk(request: ReviewExecutionRequest, route: ModelRouteDecision, parcel: WorkParcel, chunk: ReviewChunk, baton?: VerifiedBaton, threadId = `review:${request.run.id}:${chunk.id}`) {
     const {provider, model, account} = this.routeConfiguration(route);
     const prompt = this.prompt(request, chunk, baton);
-    const invocation = await this.clients(provider, account).invoke(model, prompt, {
+    const client: RepositoryReviewProviderClient = this.clients?.(provider, account, route) ?? (provider.kind === 'cli' ? new CodexRepositoryReviewClient(provider, requiredAccount(account), route.nodeId, this.nodeExecution) : new OpenAICompatibleProviderClient(provider));
+    const invocation = await client.invoke(model, prompt, {
       structured: true,
       outputSchema: REPOSITORY_REVIEW_OUTPUT_SCHEMA,
       maximumOutputTokens: request.maximumOutputTokens,
@@ -239,7 +243,7 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
       signal: request.signal,
       onTelemetry: event => this.observeTelemetry(event, threadId, parcel.id, route),
     });
-    if ((route.accountProfileId ?? undefined) !== invocation.accountProfileId) throw new Error('provider_account_profile_identity_mismatch');
+    if (route.providerId !== invocation.providerId || route.modelId !== invocation.modelId || (route.accountProfileId ?? undefined) !== invocation.accountProfileId || (invocation.nodeId !== undefined && route.nodeId !== invocation.nodeId) || (route.accountProfileId && invocation.nodeId === undefined)) throw new Error('provider_route_identity_mismatch');
     const responseHash = `sha256:${createHash('sha256').update(invocation.output).digest('hex')}`;
     try { return {invocation, responseHash, result: parseRepositoryReviewResponse(invocation.output), threadId}; }
     catch (error) { throw Object.assign(error instanceof Error ? error : new Error(String(error)), {partialInvocation: {...invocation, responseHash}}); }
@@ -256,6 +260,7 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
       threadId,
       parcelId,
       agentId: route.nodeId,
+      nodeId: route.nodeId,
       providerId: event.providerId,
       accountProfileId: route.accountProfileId ?? undefined,
       accountLabel: route.accountLabel ?? undefined,
@@ -290,8 +295,9 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
         accountQualification: row.account?.qualification.state,
         accountAvailability: row.account?.availability,
         modelId: row.id,
+        nodeId: row.account?.nodeId ?? sourceRoute.nodeId,
         estimatedCost: estimateCost(row, source),
-        qualified: Boolean(provider) && provider?.enabled !== false && row.enabled !== false && row.qualification.state === 'QUALIFIED' && (!row.qualification.nodes.length || row.qualification.nodes.includes(sourceRoute.nodeId)) && (!row.account || row.account.availability === 'AVAILABLE'),
+        qualified: Boolean(provider) && provider?.enabled !== false && row.enabled !== false && row.qualification.state === 'QUALIFIED' && (!row.qualification.nodes.length || row.qualification.nodes.includes(row.account?.nodeId ?? sourceRoute.nodeId)) && (!row.account || row.account.availability === 'AVAILABLE'),
         capabilities: [...row.qualification.capabilities],
       };
     });
@@ -353,6 +359,7 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
     if (!provider || !model) throw new Error('selected_model_configuration_missing');
     const account = route.accountProfileId ? this.models.accountProfile(route.providerId, route.accountProfileId) : undefined;
     if ((model.accountProfile ?? null) !== route.accountProfileId || (route.accountProfileId && !account)) throw new Error('selected_account_profile_configuration_missing');
+    if (account && (account.nodeId ?? 'controller') !== route.nodeId) throw new Error('selected_account_profile_node_mismatch');
     return {provider, model, account};
   }
 
@@ -407,9 +414,9 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
   }
 }
 
-function actorId(route: ModelRouteDecision) { return `agent:${route.providerId}:${route.accountProfileId ?? 'default'}:${route.modelId}`; }
-function agentId(route: ModelRouteDecision) { return `model:${route.accountProfileId ?? 'default'}:${route.modelId}`; }
-function routeLabel(route: {providerId: string; accountProfileId?: string | null; accountLabel?: string | null; modelId: string}) { return `${route.providerId}/${route.accountLabel ?? route.accountProfileId ?? 'default'}/${route.modelId}`; }
+function actorId(route: ModelRouteDecision) { return `agent:${route.providerId}:${route.accountProfileId ?? 'default'}:${route.modelId}:${route.nodeId}`; }
+function agentId(route: ModelRouteDecision) { return `model:${route.accountProfileId ?? 'default'}:${route.modelId}:${route.nodeId}`; }
+function routeLabel(route: {providerId: string; accountProfileId?: string | null; accountLabel?: string | null; modelId: string; nodeId?: string}) { return `${route.providerId}/${route.accountLabel ?? route.accountProfileId ?? 'default'}/${route.modelId}@${route.nodeId ?? 'controller'}`; }
 function auditModelLabel(route: {providerId: string; accountProfileId?: string | null; accountLabel?: string | null; modelId: string}) { return route.accountProfileId ? routeLabel(route) : route.modelId; }
 function requiredAccount(account?: ProviderAccountProfileConfig) { if (!account) throw new Error('codex_account_profile_required'); return account; }
 function message(error: unknown) { return error instanceof Error ? error.message : String(error); }

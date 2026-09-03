@@ -9,7 +9,7 @@ Four objects remain distinct:
 - **Schedule**: persistent trigger attached to a Saved Job.
 - **Run**: immutable execution of one resolved definition/version and parameter set.
 
-Repository Code Review is the reference definition. Responses-compatible routes run without Codex, ChatGPT, an interactive user, or conversation history; configured Codex CLI routes use a previously interactively authenticated account profile. The provider/account/model registry resolves `review.default`; a Saved Job may pin `routing.accountProfile`, and the Run records the exact account-qualified route actually selected.
+Repository Code Review is the reference definition. Responses-compatible routes run without Codex, ChatGPT, an interactive user, or conversation history; configured Codex CLI routes use a previously interactively authenticated account profile on its bound execution node. The provider/account/model/node registry resolves `review.default`; a Saved Job may pin `routing.accountProfile`, and the Run records the exact account-qualified route actually selected.
 
 ## Operator flow
 

@@ -1,7 +1,7 @@
 # Agent Control 3.7 physical qualification — partial
 
 Timestamp: `2026-09-02T19:30:26.932Z`
-Verdict: **PARTIAL — IMPLEMENTATION SOUND, QUALIFICATION INCOMPLETE**
+Verdict: **PARTIAL — CORE 3.7 IMPLEMENTATION SOUND; CROSS-NODE ACCOUNT EXECUTION NOT YET PHYSICALLY QUALIFIED**
 
 ## Frozen candidate and normal gate
 
@@ -107,3 +107,13 @@ No physical qualification was performed after this correction. Authoritative liv
 ## Account-aware extension remains unqualified
 
 The subsequent account-aware routing extension adds optional `provider/account-profile/model` identity and deterministic credential-isolation, destination-binding, dashboard and ledger tests. It has not interactively authenticated or physically exercised either example profile and does not alter this report's PARTIAL verdict. A future physical continuation must qualify each selected account independently and record any rate-limit/exhaustion result truthfully; it must not rotate accounts to aggregate usage.
+
+## Cross-node execution integration gap and correction
+
+The next qualification setup established that the two intended Codex account homes belong to a remote Windows credential-bearing execution Resource, not the controller. SSH reachability and remote discovery of the installed Codex Desktop CLI were independently verified outside this coding step. No credential content was inspected or copied.
+
+Review of the candidate found a second genuine production integration gap: account qualification resolved `CODEX_HOME` on the controller, `CodexRepositoryReviewClient` spawned locally, and the token handoff resolver forced the destination model onto the source node. Consequently the account-aware production path could not truthfully qualify or execute either remote profile.
+
+The development correction adds the execution node to the sealed route identity and introduces a two-operation Codex node port. Account qualification and normal parameterized repository-review execution now dispatch through the account profile's node. The Windows SSH adapter reuses the configured Resource transport and executes only a fixed PowerShell program supplied over stdin; request values are encoded data, not generated source. The Windows node resolves its own profile reference, discovers and validates versioned Codex Desktop executables, and returns only sanitized structured results plus CLI version, executable SHA-256 and discovery time. The controller rejects provider, account, model or node identity drift and cannot substitute source-node credentials at the destination. Existing controller-local profiles retain their prior path.
+
+Focused deterministic tests cover controller-environment non-resolution, source/destination credential isolation, node identity surviving baton sealing, mismatch rejection, bundle discovery without a fixed hash, path/raw-output omission, secret exclusion and local compatibility. This section records a development correction only: neither account was authenticated, no real remote account qualification or multi-account Work Parcel ran, and no live deployment changed. The physical qualification therefore remains **PARTIAL — CORE 3.7 IMPLEMENTATION SOUND; CROSS-NODE ACCOUNT EXECUTION NOT YET PHYSICALLY QUALIFIED**.

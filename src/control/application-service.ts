@@ -17,6 +17,7 @@ import {deriveSystemReadiness, type RegisteredService, type SystemReadiness} fro
 import type {ModelRegistry, ModelRouteRequest} from './model-registry.js';
 import {qualifyModel} from './model-qualification.js';
 import {qualifyAccountProfile} from './account-profile-qualification.js';
+import type {CodexNodeExecutionPort} from './codex-node-execution.js';
 import type {ModelConfig, ModelRoutingConfig, ProviderConfig} from './config.js';
 import type {ParameterizedJobEngine} from './parameterized-job-engine.js';
 import {nextSavedJobOccurrence} from './parameterized-job-registry.js';
@@ -140,6 +141,7 @@ export class AgentControlService {
   private fastExecution?: FastExecutionLedgerPort;
   private runtimeObservability?: RuntimeObservability;
   private tokenBatonRouting?: TokenAwareBatonRuntime;
+  private codexNodeExecution?: CodexNodeExecutionPort;
 
   constructor(
     readonly state: WorkspaceState,
@@ -152,7 +154,7 @@ export class AgentControlService {
     this.verification = new VerificationService(state, persist);
   }
 
-  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; services?: RegisteredService[]; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService; tokenBatonRouting?: TokenAwareBatonRuntime; harnessEfficiency?: HarnessEfficiencyLedgerPort; workParcels?: WorkParcelCoordinator; modelRegistry?: ModelRegistry; parameterizedJobs?: ParameterizedJobEngine; identity?: IdentityControlPlane; defaultSessionId?: string; fastExecution?: FastExecutionLedgerPort; runtimeObservability?: RuntimeObservability}) {
+  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; services?: RegisteredService[]; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService; tokenBatonRouting?: TokenAwareBatonRuntime; codexNodeExecution?: CodexNodeExecutionPort; harnessEfficiency?: HarnessEfficiencyLedgerPort; workParcels?: WorkParcelCoordinator; modelRegistry?: ModelRegistry; parameterizedJobs?: ParameterizedJobEngine; identity?: IdentityControlPlane; defaultSessionId?: string; fastExecution?: FastExecutionLedgerPort; runtimeObservability?: RuntimeObservability}) {
     if (extras.approvalCount) this.approvalCount = extras.approvalCount;
     if (extras.resources) this.resourceRows = structuredClone(extras.resources);
     if (extras.services) this.serviceRows = structuredClone(extras.services);
@@ -161,6 +163,7 @@ export class AgentControlService {
     if (extras.managedNodes) this.managedNodes = extras.managedNodes;
     if (extras.tokenAwareOutput) this.tokenAwareOutput = extras.tokenAwareOutput;
     if (extras.tokenBatonRouting) this.tokenBatonRouting = extras.tokenBatonRouting;
+    if (extras.codexNodeExecution) this.codexNodeExecution = extras.codexNodeExecution;
     if (extras.harnessEfficiency) this.harnessEfficiency = extras.harnessEfficiency;
     if (extras.workParcels) this.workParcels = extras.workParcels;
     if (extras.modelRegistry) this.modelRegistry = extras.modelRegistry;
@@ -254,7 +257,7 @@ export class AgentControlService {
   routeModel(request: ModelRouteRequest) { return this.mustModelRegistry().route(request); }
   qualifyModel(id: string, nodeId: string) { return qualifyModel({registry: this.mustModelRegistry(), modelId: id, nodeId}); }
   qualifyModelAccount(providerId: string, accountProfileId: string) {
-    return qualifyAccountProfile({registry: this.mustModelRegistry(), providerId, accountProfileId}).then(result => {
+    return qualifyAccountProfile({registry: this.mustModelRegistry(), providerId, accountProfileId, nodeExecution: this.codexNodeExecution}).then(result => {
       this.events.emit('configuration.changed', {kind: 'model-account-qualification', providerId, accountProfileId, state: result.record.state, restartRequired: false}, undefined, 'account-qualification');
       return result;
     });

@@ -68,6 +68,7 @@ export type ModelQualificationState = 'UNTESTED' | 'QUALIFYING' | 'QUALIFIED' | 
 export interface ProviderAccountProfileConfig {
   id: string;
   label: string;
+  nodeId?: string;
   enabled?: boolean;
   plan?: string;
   planAuthority?: 'operator-configured' | 'provider-reported';
@@ -383,6 +384,7 @@ export function validateConfig(raw: unknown): AgentControlConfig {
       assertId(account.id, 'account_profile');
       if (accountIds.has(account.id)) throw new Error(`duplicate_account_profile:${provider.id}:${account.id}`);
       accountIds.add(account.id);
+      if (account.nodeId !== undefined && (!/^[a-z0-9][a-z0-9._-]{0,63}$/i.test(account.nodeId) || !config.resources.some(resource => resource.id === account.nodeId))) throw new Error(`invalid_account_profile_node:${provider.id}:${account.id}`);
       if (typeof account.label !== 'string' || !account.label.trim() || account.label.length > 128 || /@/.test(account.label)) throw new Error(`invalid_account_profile_label:${provider.id}:${account.id}`);
       if (account.enabled !== undefined && typeof account.enabled !== 'boolean') throw new Error(`invalid_account_profile_enabled:${provider.id}:${account.id}`);
       if (account.plan !== undefined && (typeof account.plan !== 'string' || !account.plan.trim() || account.plan.length > 80 || /@/.test(account.plan))) throw new Error(`invalid_account_profile_plan:${provider.id}:${account.id}`);
@@ -407,6 +409,8 @@ export function validateConfig(raw: unknown): AgentControlConfig {
     const modelProvider = providersById.get(model.provider)!;
     if (model.accountProfile !== undefined && !modelProvider.accountProfiles?.some(account => account.id === model.accountProfile)) throw new Error(`unknown_model_account_profile:${model.id}:${model.accountProfile}`);
     if (modelProvider.kind === 'cli' && modelProvider.accountProfiles?.length && !model.accountProfile) throw new Error(`model_account_profile_required:${model.id}`);
+    const modelAccount = model.accountProfile ? modelProvider.accountProfiles?.find(account => account.id === model.accountProfile) : undefined;
+    if (modelAccount?.nodeId && model.nodes?.length && !model.nodes.includes(modelAccount.nodeId)) throw new Error(`model_account_profile_node_mismatch:${model.id}`);
     if (typeof model.providerModel !== 'string' || !model.providerModel.trim() || model.providerModel.length > 256) throw new Error(`invalid_provider_model:${model.id}`);
     if (!Array.isArray(model.capabilities) || model.capabilities.some(capability => typeof capability !== 'string' || !/^[a-z0-9][a-z0-9._-]{0,127}$/i.test(capability))) throw new Error(`invalid_model_capabilities:${model.id}`);
     assertStringList(model.roles, `model_roles:${model.id}`, /^[a-z0-9][a-z0-9._-]{0,127}$/i);

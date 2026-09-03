@@ -32,7 +32,7 @@ It generates a temporary 240-file/48,000-line source tree, runs small, medium, b
 Run the deterministic routing and adapter/dashboard coverage before any provider exercise:
 
 ```bash
-node --import tsx --test src/control/token-aware-baton-routing.test.ts src/control/direct-repository-review-executor.test.ts src/control/codex-exec-provider.test.ts src/control/account-profile-qualification.test.ts src/control/model-registry.test.ts src/control/openai-compatible-provider.test.ts src/control/web-server.test.ts
+node --import tsx --test --test-concurrency=1 src/control/token-aware-baton-routing.test.ts src/control/direct-repository-review-executor.test.ts src/control/codex-node-execution.test.ts src/control/codex-exec-provider.test.ts src/control/account-profile-qualification.test.ts src/control/model-registry.test.ts src/control/openai-compatible-provider.test.ts src/control/web-server.test.ts
 ```
 
 It proves threshold transitions, no lifetime/context conflation, authority labels, durable restart/reconciliation, sealed batons, successful and failed handoff recovery, additive Sol/Luna/GLM accounting, adapter normalization, and the actual HTTP/SSE dashboard projection. It is not a substitute for a live qualified provider handoff: retain exact model/provider identity, telemetry authority and verification evidence before promoting automated handoff policy.

@@ -27,7 +27,7 @@ For a secret file, set `auth.type` to `bearer-file-env`; `auth.env` then names a
 
 The configuration validator rejects duplicate IDs, unknown provider/model references, role cycles, malformed limits/pricing and embedded secret-like fields. A missing environment variable reports authentication required and makes qualification fail closed.
 
-For a Codex CLI provider with more than one authenticated account, add `accountProfiles` beneath that provider and bind every provider model to one `accountProfile`. Store only a `codex-home-env` reference; authenticate the corresponding home interactively outside Agent Control. Account selection must be explicit workload policy or a predeclared role route. Do not add utilization-driven fallback intended to evade or pool usage/rate limits. See [Codex integration](CODEX-INTEGRATION.md).
+For a Codex CLI provider with more than one authenticated account, add `accountProfiles` beneath that provider, bind each profile to its execution `nodeId`, and bind every provider model to one `accountProfile` with a matching qualified node. Store only a `codex-home-env` reference; authenticate the corresponding home interactively on that node outside Agent Control. Account selection must be explicit workload policy or a predeclared role route. Do not add utilization-driven fallback intended to evade or pool usage/rate limits. See [Codex integration](CODEX-INTEGRATION.md).
 
 Provider and model edits hot-reload through the authenticated dashboard/API. Do not treat a successful endpoint health check as model qualification: qualification requires bounded inference evidence for the exact provider model and node.
 

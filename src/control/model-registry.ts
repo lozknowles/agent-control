@@ -32,10 +32,10 @@ export interface ModelRouteDecision {
   qualificationVersion: string;
   fallback: boolean;
   fallbackReason: string | null;
-  considered: Array<{modelId: string; accountProfileId: string | null; eligible: boolean; reasons: string[]}>;
+  considered: Array<{modelId: string; accountProfileId: string | null; nodeId: string; eligible: boolean; reasons: string[]}>;
 }
-export interface AccountProfileQualificationRecord {providerId: string; accountProfileId: string; state: ModelQualificationState; version: string; checkedAt: string; qualifiedAt?: string; capabilities: string[]; evidence: string[]; detail?: string;}
-export interface ProviderAccountProfileView {providerId: string; id: string; label: string; plan: string | null; planAuthority: ProviderAccountProfileConfig['planAuthority'] | null; capabilities: string[]; qualification: AccountProfileQualificationRecord; credentialConfigured: boolean; availability: 'AVAILABLE' | 'AUTH_REQUIRED' | 'UNQUALIFIED' | 'DEGRADED' | 'DISABLED';}
+export interface AccountProfileQualificationRecord {providerId: string; accountProfileId: string; nodeId?: string; state: ModelQualificationState; version: string; checkedAt: string; qualifiedAt?: string; capabilities: string[]; evidence: string[]; detail?: string;}
+export interface ProviderAccountProfileView {providerId: string; id: string; nodeId: string; label: string; plan: string | null; planAuthority: ProviderAccountProfileConfig['planAuthority'] | null; capabilities: string[]; qualification: AccountProfileQualificationRecord; credentialConfigured: boolean; availability: 'AVAILABLE' | 'AUTH_REQUIRED' | 'UNQUALIFIED' | 'DEGRADED' | 'DISABLED';}
 export interface ModelRegistryRow extends ModelConfig {providerDisplayName: string; qualification: ModelQualificationRecord; assignedRoles: string[]; account: ProviderAccountProfileView | null;}
 
 export class AccountProfileQualificationStore {
@@ -118,9 +118,9 @@ export class ModelRegistry {
   accountQualification(providerId: string, accountProfileId: string): AccountProfileQualificationRecord {
     const provider = this.providers.get(providerId), account = provider?.accountProfiles?.find(value => value.id === accountProfileId);
     if (!provider || !account) throw new Error('account_profile_missing');
-    return this.accountQualifications.get(providerId, accountProfileId) ?? {providerId, accountProfileId, state: account.enabled === false ? 'DISABLED' : account.qualification?.state ?? 'UNTESTED', version: account.qualification?.version ?? 'configured-v1', checkedAt: account.qualification?.checkedAt ?? account.qualification?.qualifiedAt ?? new Date(0).toISOString(), ...(account.qualification?.qualifiedAt ? {qualifiedAt: account.qualification.qualifiedAt} : {}), capabilities: [...(account.qualification?.state === 'QUALIFIED' ? account.qualification.capabilities ?? account.capabilities ?? [] : [])], evidence: [...(account.qualification?.evidence ?? [])], ...(account.qualification?.detail ? {detail: account.qualification.detail} : {})};
+    return this.accountQualifications.get(providerId, accountProfileId) ?? {providerId, accountProfileId, nodeId: account.nodeId ?? 'controller', state: account.enabled === false ? 'DISABLED' : account.qualification?.state ?? 'UNTESTED', version: account.qualification?.version ?? 'configured-v1', checkedAt: account.qualification?.checkedAt ?? account.qualification?.qualifiedAt ?? new Date(0).toISOString(), ...(account.qualification?.qualifiedAt ? {qualifiedAt: account.qualification.qualifiedAt} : {}), capabilities: [...(account.qualification?.state === 'QUALIFIED' ? account.qualification.capabilities ?? account.capabilities ?? [] : [])], evidence: [...(account.qualification?.evidence ?? [])], ...(account.qualification?.detail ? {detail: account.qualification.detail} : {})};
   }
-  setAccountQualification(record: AccountProfileQualificationRecord) { if (!this.accountProfile(record.providerId, record.accountProfileId)) throw new Error('account_profile_missing'); return this.accountQualifications.set(record); }
+  setAccountQualification(record: AccountProfileQualificationRecord) { const account = this.accountProfile(record.providerId, record.accountProfileId); if (!account) throw new Error('account_profile_missing'); if ((record.nodeId ?? 'controller') !== (account.nodeId ?? 'controller')) throw new Error('account_profile_qualification_node_mismatch'); return this.accountQualifications.set(record); }
   route(request: ModelRouteRequest): ModelRouteDecision {
     const requestedRole = request.modelRole ?? (!request.model ? this.routing.defaultRole : undefined);
     const candidates = request.model ? [request.model] : requestedRole ? this.expandRole(requestedRole) : [];
@@ -135,7 +135,7 @@ export class ModelRegistry {
     const qualification = this.qualification(selected), accountView = account ? this.accountView(provider, account) : undefined;
     return {
       requestedModel: request.model ?? null, requestedRole: requestedRole ?? null, modelId: selected.id, providerId: selected.provider, accountProfileId: account?.id ?? null, accountLabel: account?.label ?? null, accountPlan: account?.plan ?? null, accountPlanAuthority: account?.planAuthority ?? null, accountQualification: accountView?.qualification.state ?? null, accountAvailability: accountView?.availability ?? null,
-      providerModel: selected.providerModel, nodeId: request.nodeId, qualificationVersion: qualification.version,
+      providerModel: selected.providerModel, nodeId: account?.nodeId ?? request.nodeId, qualificationVersion: qualification.version,
       fallback: selectedIndex > 0, fallbackReason: selectedIndex > 0 ? considered.slice(0, selectedIndex).map(item => `${item.modelId}:${item.reasons.join('+')}`).join(',') : null,
       considered,
     };
@@ -149,7 +149,7 @@ export class ModelRegistry {
   }
   private eligibility(modelId: string, request: ModelRouteRequest) {
     const reasons: string[] = [], model = this.models.get(modelId);
-    if (!model) return {modelId, accountProfileId: null, eligible: false, reasons: ['unknown-model']};
+    if (!model) return {modelId, accountProfileId: null, nodeId: request.nodeId, eligible: false, reasons: ['unknown-model']};
     const provider = this.providers.get(model.provider), qualification = this.qualification(model), capabilities = new Set(qualification.capabilities);
     if (provider?.enabled === false) reasons.push('provider-disabled');
     if (!provider) reasons.push('provider-missing');
@@ -160,21 +160,25 @@ export class ModelRegistry {
     if (model.accountProfile && !account) reasons.push('account-profile-missing');
     if (account) {
       const accountQualification = this.accountQualification(model.provider, account.id);
+      const accountNode = account.nodeId ?? request.nodeId;
+      if (account.nodeId && account.nodeId !== request.nodeId) reasons.push('account-profile-node-mismatch');
+      if (account.nodeId && accountQualification.nodeId && accountQualification.nodeId !== accountNode) reasons.push('account-profile-qualification-node-mismatch');
       if (account.enabled === false || accountQualification.state === 'DISABLED') reasons.push('account-profile-disabled');
-      else if (!this.credentialConfigured(account)) reasons.push('account-profile-authentication-required');
+      else if (!this.credentialConfigured(account, accountQualification)) reasons.push('account-profile-authentication-required');
       else if (accountQualification.state !== 'QUALIFIED') reasons.push(`account-profile-qualification-${accountQualification.state.toLowerCase()}`);
     }
     const nodes = qualification.nodes.length ? qualification.nodes : model.nodes ?? [];
     if (nodes.length && !nodes.includes(request.nodeId)) reasons.push('node-unavailable');
     for (const required of request.requiredCapabilities ?? []) if (!capabilities.has(required)) reasons.push(`capability-${required}-unproven`);
-    return {modelId, accountProfileId: model.accountProfile ?? null, eligible: reasons.length === 0, reasons};
+    return {modelId, accountProfileId: model.accountProfile ?? null, nodeId: account?.nodeId ?? request.nodeId, eligible: reasons.length === 0, reasons};
   }
   private accountView(provider: ProviderConfig, account: ProviderAccountProfileConfig): ProviderAccountProfileView {
-    const qualification = this.accountQualification(provider.id, account.id), credentialConfigured = this.credentialConfigured(account);
+    const qualification = this.accountQualification(provider.id, account.id), credentialConfigured = this.credentialConfigured(account, qualification);
     const availability = account.enabled === false || qualification.state === 'DISABLED' ? 'DISABLED' : !credentialConfigured ? 'AUTH_REQUIRED' : qualification.state === 'QUALIFIED' ? 'AVAILABLE' : qualification.state === 'DEGRADED' ? 'DEGRADED' : 'UNQUALIFIED';
-    return {providerId: provider.id, id: account.id, label: account.label, plan: account.plan ?? null, planAuthority: account.planAuthority ?? null, capabilities: [...(account.capabilities ?? [])], qualification, credentialConfigured, availability};
+    return {providerId: provider.id, id: account.id, nodeId: account.nodeId ?? 'controller', label: account.label, plan: account.plan ?? null, planAuthority: account.planAuthority ?? null, capabilities: [...(account.capabilities ?? [])], qualification, credentialConfigured, availability};
   }
-  private credentialConfigured(account: ProviderAccountProfileConfig) {
+  private credentialConfigured(account: ProviderAccountProfileConfig, qualification: AccountProfileQualificationRecord) {
+    if (account.nodeId && account.nodeId !== 'controller') return qualification.nodeId === account.nodeId && ['QUALIFIED', 'DEGRADED'].includes(qualification.state);
     const value = this.environment[account.credentialStore.env]?.trim();
     if (!value || !path.isAbsolute(value)) return false;
     try { return fs.statSync(value).isDirectory(); } catch { return false; }

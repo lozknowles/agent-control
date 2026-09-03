@@ -24,6 +24,14 @@ export const executeSsh: SshExecutor = (command, args, input, options) => new Pr
   child.stdin.on('error', () => {}); child.stdin.end(input);
 });
 
+export function sshResourceArgs(resource: ResourceConfig, remote: string[]) {
+  const transport = resource.transport, args = ['-T', '-o', 'BatchMode=yes', '-o', 'PasswordAuthentication=no', '-o', 'ClearAllForwardings=yes', '-o', 'ConnectTimeout=8'];
+  if (transport.identityFile) args.push('-i', expandUserPath(transport.identityFile)!);
+  if (transport.port && transport.port !== 22) args.push('-p', String(transport.port));
+  args.push(`${transport.user ? `${transport.user}@` : ''}${transport.host}`, ...remote);
+  return args;
+}
+
 function script(name: string) { return fs.readFileSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)), `../../scripts/${name}`), 'utf8'); }
 function clip(value: string) { return value.replace(/\0/g, '').slice(0, MAX_BYTES); }
 
@@ -35,7 +43,7 @@ export class SshManagedNodeTransport implements ManagedNodeTransport {
     this.actionScript = scripts.action ?? script('managed-node-action.sh');
   }
   async probe(resource: ResourceConfig, at: string): Promise<ManagedNodeObservation> {
-    const result = await this.executor('ssh', this.args(resource, ['sh', '-s']), this.probeScript, {timeoutMs: 20_000, maxBytes: MAX_BYTES});
+    const result = await this.executor('ssh', sshResourceArgs(resource, ['sh', '-s']), this.probeScript, {timeoutMs: 20_000, maxBytes: MAX_BYTES});
     if (result.timedOut) throw new Error('managed_node_probe_timeout');
     if (result.aborted) throw new Error('managed_node_probe_aborted');
     if (result.status !== 0) throw new Error(`managed_node_probe_failed:${clip(result.stderr).trim().split(/\r?\n/).at(-1) ?? result.status}`);
@@ -43,16 +51,9 @@ export class SshManagedNodeTransport implements ManagedNodeTransport {
   }
   async execute(resource: ResourceConfig, request: ManagedNodeRequest, signal?: AbortSignal): Promise<Omit<ManagedNodeResult, 'schema' | 'resourceId' | 'observedAt' | 'operation'>> {
     const target = request.target === undefined ? '__none__' : String(request.target), value = request.value === undefined ? '__none__' : String(request.value);
-    const result = await this.executor('ssh', this.args(resource, ['sh', '-s', '--', request.operation, target, value]), this.actionScript, {timeoutMs: 30 * 60_000, maxBytes: MAX_BYTES, signal});
+    const result = await this.executor('ssh', sshResourceArgs(resource, ['sh', '-s', '--', request.operation, target, value]), this.actionScript, {timeoutMs: 30 * 60_000, maxBytes: MAX_BYTES, signal});
     if (result.timedOut) throw new Error('managed_node_action_timeout');
     if (result.aborted) throw new Error('managed_node_action_cancelled');
     return {exitCode: result.status, stdout: clip(result.stdout), stderr: clip(result.stderr)};
-  }
-  private args(resource: ResourceConfig, remote: string[]) {
-    const transport = resource.transport, args = ['-T', '-o', 'BatchMode=yes', '-o', 'PasswordAuthentication=no', '-o', 'ClearAllForwardings=yes', '-o', 'ConnectTimeout=8'];
-    if (transport.identityFile) args.push('-i', expandUserPath(transport.identityFile)!);
-    if (transport.port && transport.port !== 22) args.push('-p', String(transport.port));
-    args.push(`${transport.user ? `${transport.user}@` : ''}${transport.host}`, ...remote);
-    return args;
   }
 }
