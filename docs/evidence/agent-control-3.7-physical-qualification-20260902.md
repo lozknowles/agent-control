@@ -126,6 +126,10 @@ The call path was the production `qualifyAccountProfile` → `ResourceCodexNodeE
 
 The qualification failed closed at `2026-09-03T05:38:16.622Z` with the sanitized blocker `codex_node_transport_failed`. No authenticated result, CLI version, executable SHA-256, or discovery timestamp was accepted or persisted. Raw SSH/PowerShell stdout and stderr were not placed in evidence. Per the qualification stop condition, `lawrence-pro` was not attempted, no manual `codex login status` substitute was run, no workaround or product change was made, and no Work Parcel or baton lifecycle was started.
 
-Stage verdict: **FAILED — CROSS-NODE CODEX ACCOUNT QUALIFICATION BLOCKED BY GOVERNED SSH TRANSPORT**.
+Ephemeral follow-up diagnosis established that basic TCP connectivity, MSI OpenSSH and interactive remote command execution were not the blocker. A fixed harmless command failed before remote command execution both without the Agent Control hardening flags and with the exact governed flags. The server offered public-key, password and keyboard-interactive authentication, but the controller had no SSH agent, no available controller key was accepted by MSI, and the qualification Resource had no `identityFile`. The previously successful interactive session therefore exercised an interactive authentication mechanism that the governed unattended path intentionally disables with `BatchMode=yes` and `PasswordAuthentication=no`. Host-key policy did not fail, and `cmd.exe` parsing, PowerShell invocation, stdin delivery, timeout handling and exit-status interpretation were never reached.
+
+This is a missing governed noninteractive SSH identity/Resource configuration prerequisite, not a Tailscale, port 22, MSI OpenSSH, general SSH connectivity, Codex authentication, or demonstrated Agent Control implementation defect. No network or product configuration was changed during diagnosis.
+
+Stage verdict: **FAILED — CROSS-NODE CODEX ACCOUNT QUALIFICATION BLOCKED BY MISSING MSI-AUTHORIZED NONINTERACTIVE SSH IDENTITY**.
 
 Overall 3.7 verdict remains **PARTIAL — CORE 3.7 IMPLEMENTATION SOUND; CROSS-NODE ACCOUNT EXECUTION NOT YET PHYSICALLY QUALIFIED**.
