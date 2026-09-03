@@ -71,11 +71,12 @@ param([string]$PayloadLine)
       $promptFile = Join-Path $temporary 'prompt.txt'
       $stdoutFile = Join-Path $temporary 'events.jsonl'
       $stderrFile = Join-Path $temporary 'stderr.txt'
+      $lastMessageFile = Join-Path $temporary 'last-message.json'
       $schemaJson = $request.outputSchema | ConvertTo-Json -Depth 30 -Compress
       $utf8NoBom = New-Object Text.UTF8Encoding($false)
       [IO.File]::WriteAllText($schemaFile, $schemaJson, $utf8NoBom)
       [IO.File]::WriteAllText($promptFile, [string]$request.instruction, $utf8NoBom)
-      $arguments = @('exec', '--ephemeral', '--json', '--sandbox', 'read-only', '--skip-git-repo-check', '--model', [string]$request.providerModel, '--output-schema', $schemaFile, '-')
+      $arguments = @('exec', '--ephemeral', '--json', '--sandbox', 'read-only', '--skip-git-repo-check', '--model', [string]$request.providerModel, '--output-schema', $schemaFile, '--output-last-message', $lastMessageFile, '-')
       $stopwatch = [Diagnostics.Stopwatch]::StartNew()
       # Codex always checks stdin for additional prompt input. A background
       # PowerShell job leaves stdin open, so a fast refusal can be hidden until
@@ -99,14 +100,15 @@ param([string]$PayloadLine)
         Fail $operation 'codex_node_exec_turn_incomplete'
       }
       $messages = @($events | Where-Object { $_.type -eq 'item.completed' -and $_.item.type -eq 'agent_message' })
-      if ($messages.Count -eq 0) { Fail $operation 'codex_exec_missing_final_message' }
+      $finalMessage = if ($messages.Count -gt 0) { [string]$messages[-1].item.text } elseif (Test-Path -LiteralPath $lastMessageFile -PathType Leaf) { [IO.File]::ReadAllText($lastMessageFile) } else { '' }
+      if ([string]::IsNullOrWhiteSpace($finalMessage)) { Fail $operation 'codex_exec_missing_final_message' }
       $started = @($events | Where-Object { $_.type -eq 'thread.started' })[0]
       $types = @($events | Where-Object { $null -ne $_.item.type } | ForEach-Object { [string]$_.item.type } | Sort-Object -Unique)
       if ($types -contains 'file_change') { Fail $operation 'codex_exec_capability_envelope_violation' }
       $telemetry = @()
       if ($null -ne $started) { $telemetry += @{ type = 'thread.started'; threadId = [string]$started.thread_id; elapsedMs = 0 } }
       $telemetry += @{ type = 'turn.completed'; threadId = [string]$started.thread_id; elapsedMs = [int64]$stopwatch.ElapsedMilliseconds; usage = Safe-Usage $completed.usage }
-      Emit-Result @{ operation = $operation; ok = $true; codexVersion = $selected.Version; executableSha256 = $executableSha256; discoveredAt = $discoveredAt; threadId = [string]$started.thread_id; finalMessage = [string]$messages[-1].item.text; usage = Safe-Usage $completed.usage; observedItemTypes = $types; telemetry = $telemetry }
+      Emit-Result @{ operation = $operation; ok = $true; codexVersion = $selected.Version; executableSha256 = $executableSha256; discoveredAt = $discoveredAt; threadId = [string]$started.thread_id; finalMessage = $finalMessage; usage = Safe-Usage $completed.usage; observedItemTypes = $types; telemetry = $telemetry }
     } finally { Remove-Item -LiteralPath $temporary -Recurse -Force -ErrorAction SilentlyContinue }
   } catch { Fail 'unknown' 'codex_node_internal_failure' }
 }
