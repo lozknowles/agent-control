@@ -121,6 +121,13 @@ test('dashboard exposes an operator configuration view with API-key references a
   assert.match(html,/data-view="configuration">Configuration/);assert.match(html,/Add machine/);assert.match(html,/Fast execution/);assert.match(html,/credentialEnv/);assert.match(source,/\/api\/configuration\/systems/);assert.match(source,/\/api\/configuration\/spark/);assert.match(source,/RESTART REQUIRED/);
 });
 
+test('dashboard renders workload provider-execution and credential-residency locality separately', () => {
+  const models=fs.readFileSync(path.resolve('assets/dashboard/dashboard-models.js'),'utf8'),runs=fs.readFileSync(path.resolve('assets/dashboard/dashboard-parameterized-jobs.js'),'utf8'),tokens=fs.readFileSync(path.resolve('assets/dashboard/dashboard-enhancements.js'),'utf8');
+  for (const source of [models,runs,tokens]) assert.match(source,/providerExecutionNodeId/);
+  for (const source of [models,runs,tokens]) assert.match(source,/credentialNodeId/);
+  assert.match(runs,/workloadNodeId/); assert.match(tokens,/workloadNodeId/);
+});
+
 test('Sessions dashboard reads authoritative identity execution and 3.6 runtime provenance', async t => {
   const control=service(),identity=new IdentityControlPlane();identity.registerActor({id:'web-operator',type:'human',displayName:'Web operator',principalId:'operator:web',authenticationSource:'dashboard-bearer',roles:['operator'],capabilities:[],metadata:{}});identity.createSession({id:'session:web',creatorActorId:'web-operator',mode:'operator-controlled',permissions:{capabilities:['session.observe','session.manage','parcel.create'],filesystem:'none',network:'none'},contextPolicy:'compiled'});control.configureProjection({identity,defaultSessionId:'session:web'});
   const server=startWebDashboard(control,{host:'127.0.0.1',port:0,assetsDir:path.resolve('assets/dashboard')});await once(server,'listening');t.after(()=>server.close());const base=`http://127.0.0.1:${(server.address() as AddressInfo).port}`;

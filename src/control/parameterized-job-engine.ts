@@ -4,7 +4,7 @@ import path from 'node:path';
 import {execFileSync} from 'node:child_process';
 import type {ModelRegistry} from './model-registry.js';
 import {nextSavedJobOccurrence, ParameterizedJobError, ParameterizedJobRegistry, ParameterizedRunStore, resolveParameters, SavedJobStore} from './parameterized-job-registry.js';
-import {buildRepositoryContext, LocalRepositoryResolver, ReviewBaselineStore, validateRepositoryReview} from './repository-review-runtime.js';
+import {buildRepositoryContext, LocalRepositoryResolver, ReviewBaselineStore, validateRepositoryReview, type RepositoryResolver} from './repository-review-runtime.js';
 import type {JobBudgetPolicy, ParameterizedJobRun, ParameterizedRunStatus, RepositoryReviewExecutor, SavedJob} from './parameterized-job-types.js';
 
 function hash(value: string) { return createHash('sha256').update(value).digest('hex'); }
@@ -28,7 +28,7 @@ export class ParameterizedJobEngine {
     readonly models: ModelRegistry,
     readonly executor: RepositoryReviewExecutor,
     readonly options: ParameterizedJobEngineOptions,
-    readonly repositories = new LocalRepositoryResolver(),
+    readonly repositories: RepositoryResolver = new LocalRepositoryResolver(),
   ) { this.clock = options.clock ?? (() => new Date()); this.recoverInterruptedRuns(); }
 
   runNow(savedJobId: string, actor: string) { const job = this.savedJobs.get(savedJobId); if (!job.enabled) throw new ParameterizedJobError('saved_job_disabled', savedJobId); return this.createRun(job, {type: 'manual', actor}); }
@@ -79,15 +79,14 @@ export class ParameterizedJobEngine {
       run = this.transition(run, 'RESOLVING'); run.startedAt = this.clock().toISOString(); this.runs.update(run);
       const nodeId = String(run.resolvedParameters.node), repositoryPath = String(run.resolvedParameters.repository), requestedRef = String(run.resolvedParameters.ref ?? 'main');
       if (!await this.options.nodeHealthy(nodeId)) throw new ParameterizedJobError('execution_node_unavailable', nodeId);
-      const repository = run.repository ? this.restoreFrozenRepository(run.repository) : this.repositories.resolve({nodeId, repository: repositoryPath, requestedRef, comparisonSha: typeof run.resolvedParameters.compareAgainst === 'string' ? run.resolvedParameters.compareAgainst : undefined, allowedRoots: this.options.allowedRepositoryRoots, allowedRemotes: this.options.allowedRepositoryRemotes, snapshotsRoot: this.options.snapshotsRoot});
+      const repository = run.repository ? this.restoreFrozenRepository(run.repository) : await this.repositories.resolve({nodeId, repository: repositoryPath, requestedRef, comparisonSha: typeof run.resolvedParameters.compareAgainst === 'string' ? run.resolvedParameters.compareAgainst : undefined, allowedRoots: this.options.allowedRepositoryRoots, allowedRemotes: this.options.allowedRepositoryRemotes, snapshotsRoot: this.options.snapshotsRoot});
       if (run.resolvedParameters.scope === 'changes' && !repository.comparisonSha && saved) {
         const baseline = this.baselines.get(saved.id, repository.identity, requestedRef);
         if (baseline && isAncestor(repository.snapshotPath, baseline.sha, repository.reviewedSha)) repository.comparisonSha = baseline.sha;
       }
       run.repository = repository;
       const modelRole = saved?.routing?.modelRole ?? run.definition.routing.modelRole;
-      const executionNodeId = modelExecutionNode(this.models, saved?.routing?.model, modelRole, saved?.routing?.accountProfile, nodeId);
-      const route = this.models.route({model: saved?.routing?.model, modelRole, accountProfile: saved?.routing?.accountProfile, nodeId: executionNodeId, requiredCapabilities: ['repository-review'], allowFallback: saved?.routing?.allowFallback ?? run.definition.routing.allowFallback});
+      const route = this.models.route({model: saved?.routing?.model, modelRole, accountProfile: saved?.routing?.accountProfile, nodeId, workloadNodeId: nodeId, requiredCapabilities: ['repository-review'], allowFallback: saved?.routing?.allowFallback ?? run.definition.routing.allowFallback});
       run.modelRoute = route; if (route.fallback) run.fallbackHistory.push({at: this.clock().toISOString(), reason: route.fallbackReason ?? 'primary unavailable', selectedModel: route.modelId});
       const context = buildRepositoryContext(repository, saved?.contextProfile ?? 'STANDARD', budgets.maximumInputTokens); run.context = context.summary;
       run = this.transition(run, 'RUNNING'); this.runs.update(run);
@@ -134,6 +133,10 @@ export class ParameterizedJobEngine {
   }
   private restoreFrozenRepository(repository: NonNullable<ParameterizedJobRun['repository']>) {
     try {
+      if (repository.snapshotKind === 'remote-immutable-archive') {
+        if (!repository.bundlePath || !repository.bundleSha256 || createHash('sha256').update(fs.readFileSync(repository.bundlePath)).digest('hex') !== repository.bundleSha256 || !fs.statSync(repository.snapshotPath).isDirectory()) throw new Error('bundle_mismatch');
+        return repository;
+      }
       const actual = execFileSync('git', ['-C', repository.snapshotPath, 'rev-parse', 'HEAD'], {encoding: 'utf8'}).trim();
       if (actual !== repository.reviewedSha) throw new Error('sha_mismatch');
       return repository;
@@ -143,27 +146,11 @@ export class ParameterizedJobEngine {
   private mustRun(id: string) { const run = this.runs.get(id); if (!run) throw new ParameterizedJobError('job_run_missing', id); return run; }
 }
 
-function modelExecutionNode(models: ModelRegistry, requestedModel: string | undefined, requestedRole: string | undefined, accountProfile: string | undefined, repositoryNode: string) {
-  let modelId = requestedModel;
-  if (!modelId && requestedRole) {
-    const seen = new Set<string>(); let candidate = requestedRole;
-    while (models.routes().roles[candidate]) {
-      if (seen.has(candidate)) throw new ParameterizedJobError('model_fallback_cycle', candidate);
-      seen.add(candidate); candidate = models.routes().roles[candidate].primary;
-    }
-    modelId = candidate;
-  }
-  const model = modelId ? models.model(modelId) : undefined;
-  if (!model || accountProfile && model.accountProfile !== accountProfile) return repositoryNode;
-  const account = model.accountProfile ? models.accountProfile(model.provider, model.accountProfile) : undefined;
-  return account?.nodeId ?? model.qualification?.nodes?.[0] ?? model.nodes?.[0] ?? repositoryNode;
-}
-
 function mergeBudgets(base: JobBudgetPolicy, overrides?: Partial<JobBudgetPolicy>): JobBudgetPolicy { return {...base, ...overrides}; }
 function isAncestor(repository: string, prior: string, current: string) { try { execFileSync('git', ['-C', repository, 'merge-base', '--is-ancestor', prior, current], {stdio: 'ignore'}); return true; } catch { return false; } }
 
-export function createParameterizedJobEngine(root: string, definitions: ParameterizedJobRegistry, models: ModelRegistry, executor: RepositoryReviewExecutor, options: Omit<ParameterizedJobEngineOptions, 'snapshotsRoot'> & {snapshotsRoot?: string}) {
+export function createParameterizedJobEngine(root: string, definitions: ParameterizedJobRegistry, models: ModelRegistry, executor: RepositoryReviewExecutor, options: Omit<ParameterizedJobEngineOptions, 'snapshotsRoot'> & {snapshotsRoot?: string}, repositories?: RepositoryResolver) {
   const jobsRoot = path.join(root, 'parameterized-jobs'); fs.mkdirSync(jobsRoot, {recursive: true});
   const savedJobs = new SavedJobStore(path.join(jobsRoot, 'saved-jobs.json'), definitions, options.clock), runs = new ParameterizedRunStore(path.join(jobsRoot, 'runs.json')), baselines = new ReviewBaselineStore(path.join(jobsRoot, 'review-baselines.json'));
-  return new ParameterizedJobEngine(definitions, savedJobs, runs, baselines, models, executor, {...options, snapshotsRoot: options.snapshotsRoot ?? path.join(jobsRoot, 'snapshots')});
+  return new ParameterizedJobEngine(definitions, savedJobs, runs, baselines, models, executor, {...options, snapshotsRoot: options.snapshotsRoot ?? path.join(jobsRoot, 'snapshots')}, repositories);
 }

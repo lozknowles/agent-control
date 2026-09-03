@@ -49,15 +49,19 @@ param([string]$PayloadLine)
     $executableSha256 = (Get-FileHash -LiteralPath $selected.Path -Algorithm SHA256).Hash.ToLowerInvariant()
     $env:CODEX_HOME = $codexHome
     if ($operation -eq 'accountStatus') {
-      $savedErrorPreference = $ErrorActionPreference
+      $statusTemporary = Join-Path ([IO.Path]::GetTempPath()) ('agent-control-codex-status-' + [Guid]::NewGuid().ToString('N'))
+      New-Item -ItemType Directory -Path $statusTemporary | Out-Null
       try {
-        # Codex writes login-status text to its native stderr stream. Windows
-        # PowerShell must not promote that expected stream to a terminating error.
-        $ErrorActionPreference = 'Continue'
-        $status = @(& $selected.Path login status 2>&1)
-        $statusExitCode = $LASTEXITCODE
-      } finally { $ErrorActionPreference = $savedErrorPreference }
-      $authenticated = $statusExitCode -eq 0 -and (($status -join ' ') -match 'ChatGPT')
+        $statusStdoutFile = Join-Path $statusTemporary 'stdout.txt'
+        $statusStderrFile = Join-Path $statusTemporary 'stderr.txt'
+        $statusProcess = Start-Process -FilePath $selected.Path -ArgumentList @('login', 'status') -WindowStyle Hidden -PassThru -RedirectStandardOutput $statusStdoutFile -RedirectStandardError $statusStderrFile
+        $statusTimeoutMilliseconds = [Math]::Max(1000, [Math]::Min(1800000, [int64]$request.timeoutMs))
+        if (-not $statusProcess.WaitForExit([int]$statusTimeoutMilliseconds)) { $statusProcess.Kill(); $statusProcess.WaitForExit(); Fail $operation 'codex_node_timeout' }
+        $statusStdout = if (Test-Path -LiteralPath $statusStdoutFile -PathType Leaf) { [IO.File]::ReadAllText($statusStdoutFile) } else { '' }
+        $statusStderr = if (Test-Path -LiteralPath $statusStderrFile -PathType Leaf) { [IO.File]::ReadAllText($statusStderrFile) } else { '' }
+        $statusText = $statusStdout + ' ' + $statusStderr
+        $authenticated = $statusProcess.ExitCode -eq 0 -and $statusText -match 'ChatGPT'
+      } finally { Remove-Item -LiteralPath $statusTemporary -Recurse -Force -ErrorAction SilentlyContinue }
       if (-not $authenticated) { Fail $operation 'codex_chatgpt_auth_required' }
       Emit-Result @{ operation = $operation; ok = $true; authenticated = $true; codexVersion = $selected.Version; executableSha256 = $executableSha256; discoveredAt = $discoveredAt }
       exit 0

@@ -135,8 +135,8 @@
       "enabled": true,
       "capabilities": ["trivial.coding"],
       "accountProfiles": [
-        {"id":"lawrence-pro","nodeId":"windows-codex-1","label":"Lawrence Pro","plan":"ChatGPT Pro","planAuthority":"operator-configured","capabilities":["codex-chatgpt"],"credentialStore":{"type":"codex-home-env","env":"CODEX_HOME_LAWRENCE_PRO"},"qualification":{"state":"UNTESTED","version":"configured-v1"}},
-        {"id":"cottage-plus","nodeId":"windows-codex-1","label":"Cottage Plus","plan":"ChatGPT Plus","planAuthority":"operator-configured","capabilities":["codex-chatgpt"],"credentialStore":{"type":"codex-home-env","env":"CODEX_HOME_COTTAGE_PLUS"},"qualification":{"state":"UNTESTED","version":"configured-v1"}}
+        {"id":"lawrence-pro","providerExecutionNodeId":"controller","credentialResidency":{"nodeId":"controller","store":{"type":"codex-home-env","env":"CODEX_HOME_LAWRENCE_PRO"}},"label":"Lawrence Pro","plan":"ChatGPT Pro","planAuthority":"operator-configured","capabilities":["codex-chatgpt"],"qualification":{"state":"UNTESTED","version":"configured-v1"}},
+        {"id":"cottage-plus","providerExecutionNodeId":"controller","credentialResidency":{"nodeId":"controller","store":{"type":"codex-home-env","env":"CODEX_HOME_COTTAGE_PLUS"}},"label":"Cottage Plus","plan":"ChatGPT Plus","planAuthority":"operator-configured","capabilities":["codex-chatgpt"],"qualification":{"state":"UNTESTED","version":"configured-v1"}}
       ]
     },
     {

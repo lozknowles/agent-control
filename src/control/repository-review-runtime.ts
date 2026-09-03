@@ -13,7 +13,8 @@ function git(cwd: string, args: string[]) { return execFileSync('git', ['-C', cw
 function hash(value: string) { return createHash('sha256').update(value).digest('hex'); }
 
 export interface RepositoryResolveRequest {nodeId: string; repository: string; requestedRef: string; comparisonSha?: string; allowedRoots: string[]; allowedRemotes?: string[]; snapshotsRoot?: string;}
-export class LocalRepositoryResolver {
+export interface RepositoryResolver {resolve(input: RepositoryResolveRequest): ResolvedRepository | Promise<ResolvedRepository>;}
+export class LocalRepositoryResolver implements RepositoryResolver {
   resolve(input: RepositoryResolveRequest): ResolvedRepository {
     if (!path.isAbsolute(input.repository)) return this.resolveRemote(input);
     let source: string; try { source = fs.realpathSync(input.repository); } catch { throw new ParameterizedJobError('repository_missing', input.repository); }
@@ -63,7 +64,7 @@ function listFiles(root: string, includeDirectories = false) {
 
 export interface RepositoryContext {summary: ParameterizedJobRun['context']; chunks: Array<{id: string; content: string; files: string[]; sha256: string}>;}
 export function buildRepositoryContext(repository: ResolvedRepository, profile: 'THIN' | 'STANDARD' | 'DEEP', maximumInputTokens?: number): RepositoryContext {
-  const allTracked = git(repository.snapshotPath, ['ls-files', '-z']).split('\0').filter(Boolean), tracked = allTracked.filter(file => !SECRET_PATH.test(file) && !BINARY.test(file));
+  const allTracked = repository.snapshotKind === 'remote-immutable-archive' ? listFiles(repository.snapshotPath) : git(repository.snapshotPath, ['ls-files', '-z']).split('\0').filter(Boolean), tracked = allTracked.filter(file => !SECRET_PATH.test(file) && !BINARY.test(file));
   const changedFiles = repository.comparisonSha ? git(repository.snapshotPath, ['diff', '--name-only', `${repository.comparisonSha}..${repository.reviewedSha}`, '--']).split('\n').filter(Boolean).filter(file => tracked.includes(file)) : [];
   const selected = selectFiles(tracked, changedFiles, profile), profileByteLimit = {THIN: 192_000, STANDARD: 768_000, DEEP: 2_000_000}[profile], byteLimit = Math.min(profileByteLimit, maximumInputTokens ? maximumInputTokens * 4 : profileByteLimit), chunks: RepositoryContext['chunks'] = [];
   let current = '', currentFiles: string[] = [], total = 0;

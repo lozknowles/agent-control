@@ -55,7 +55,8 @@ test('Codex account profiles contain only opaque identity and credential-store r
   ]};
   const model = {id: 'sol-pro', provider: 'codex', accountProfile: 'lawrence-pro', providerModel: 'gpt-sol', capabilities: ['coding']};
   const config = validateConfig({schemaVersion: 1, resources: [], services: [], lanes: [], providers: [provider], models: [model], modelRouting: {roles: {}}});
-  assert.equal(config.providers[0].accountProfiles?.[1].credentialStore.env, 'CODEX_HOME_COTTAGE_PLUS');
+  const configuredStore = config.providers[0].accountProfiles?.[1].credentialStore;
+  assert.equal(configuredStore?.type === 'codex-home-env' ? configuredStore.env : undefined, 'CODEX_HOME_COTTAGE_PLUS');
   assert.equal(config.models[0].accountProfile, 'lawrence-pro');
   assert.throws(() => validateConfig({schemaVersion: 1, resources: [], services: [], lanes: [], providers: [{...provider, accountProfiles: [{...provider.accountProfiles[0], label: 'user@example.com'}]}], models: [model], modelRouting: {roles: {}}}), /account_profile_label/);
   assert.throws(() => validateConfig({schemaVersion: 1, resources: [], services: [], lanes: [], providers: [provider], models: [{...model, accountProfile: 'missing'}], modelRouting: {roles: {}}}), /unknown_model_account_profile/);
@@ -72,6 +73,16 @@ test('Codex account profile node identity must resolve to a matching configured 
   assert.equal(config.providers[0].accountProfiles?.[0].nodeId, resource.id);
   assert.throws(() => validateConfig({schemaVersion: 1, resources: [], services: [], lanes: [], providers: [provider], models: [model], modelRouting: {roles: {}}}), /invalid_account_profile_node/);
   assert.throws(() => validateConfig({schemaVersion: 1, resources: [resource], services: [], lanes: [], providers: [provider], models: [{...model, nodes: ['controller']}], modelRouting: {roles: {}}}), /model_account_profile_node_mismatch/);
+});
+
+test('explicit account locality validates models against provider execution rather than workload placement', () => {
+  const execution = {id: 'execution-node', platform: 'linux' as const, transport: {type: 'local' as const}, capabilities: ['model.execute']};
+  const workload = {id: 'workload-node', platform: 'windows' as const, transport: {type: 'ssh' as const, host: 'workload.example'}, capabilities: ['repository.read']};
+  const account = {id: 'account-a', label: 'Account A', providerExecutionNodeId: execution.id, credentialResidency: {nodeId: execution.id, store: {type: 'codex-home-env' as const, env: 'CODEX_HOME_ACCOUNT_A'}}};
+  const provider = {id: 'codex', kind: 'cli' as const, accountProfiles: [account]};
+  const model = {id: 'model-a', provider: provider.id, accountProfile: account.id, providerModel: 'gpt-example', nodes: [execution.id], capabilities: ['repository-review']};
+  assert.doesNotThrow(() => validateConfig({schemaVersion: 1, resources: [execution, workload], services: [], lanes: [], providers: [provider], models: [model], modelRouting: {roles: {}}}));
+  assert.throws(() => validateConfig({schemaVersion: 1, resources: [execution, workload], services: [], lanes: [], providers: [provider], models: [{...model, nodes: [workload.id]}], modelRouting: {roles: {}}}), /model_account_profile_node_mismatch/);
 });
 
 test('configuration survives a persistence reload', () => {

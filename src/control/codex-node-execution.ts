@@ -5,10 +5,12 @@ import type {ModelConfig, ProviderAccountProfileConfig, ProviderConfig, Resource
 import {probeCodexChatGptAuth, runCodexExec, type CodexExecRequest, type CodexExecResult, type CodexExecTelemetryEvent} from './codex-exec-provider.js';
 import {executeSsh, sshResourceArgs, type SshExecutor} from './managed-node-ssh.js';
 import {resolveCodexAccountEnvironment} from './provider-account-profile.js';
+import {accountCredentialResidency, accountProviderExecutionNode} from './provider-account-profile.js';
 
-export interface CodexAccountStatusRequest {provider: ProviderConfig; account: ProviderAccountProfileConfig; nodeId: string; timeoutMs: number;}
+export interface CodexAccountStatusRequest {provider: ProviderConfig; account: ProviderAccountProfileConfig; nodeId: string; providerExecutionNodeId?: string; credentialNodeId?: string; timeoutMs: number;}
 export interface CodexAccountStatusResult {
   providerId: string; accountProfileId: string; nodeId: string; authenticated: boolean;
+  providerExecutionNodeId?: string; credentialNodeId?: string;
   codexVersion: string; executableSha256: string; discoveredAt: string;
 }
 export interface CodexStructuredExecutionRequest extends CodexAccountStatusRequest {
@@ -17,6 +19,7 @@ export interface CodexStructuredExecutionRequest extends CodexAccountStatusReque
 }
 export interface CodexStructuredExecutionResult extends CodexExecResult {
   providerId: string; accountProfileId: string; modelId: string; nodeId: string;
+  providerExecutionNodeId?: string; credentialNodeId?: string;
   codexVersion: string; executableSha256: string; discoveredAt: string;
 }
 export interface CodexNodeExecutionPort {
@@ -27,15 +30,17 @@ export interface CodexNodeExecutionPort {
 export class LocalCodexNodeExecutionPort implements CodexNodeExecutionPort {
   constructor(private readonly environment: NodeJS.ProcessEnv = process.env, private readonly command = process.env.CODEX_COMMAND ?? 'codex') {}
   async accountStatus(request: CodexAccountStatusRequest): Promise<CodexAccountStatusResult> {
+    assertLocalities(request);
     const resolved = resolveCodexAccountEnvironment(request.account, this.environment, request.nodeId);
     await probeCodexChatGptAuth(this.command, process.cwd(), request.timeoutMs, resolved.environment);
-    return {providerId: request.provider.id, accountProfileId: request.account.id, nodeId: request.nodeId, authenticated: true, codexVersion: 'locally-qualified', executableSha256: 'unavailable', discoveredAt: new Date().toISOString()};
+    return {providerId: request.provider.id, accountProfileId: request.account.id, nodeId: request.nodeId, providerExecutionNodeId: request.nodeId, credentialNodeId: request.nodeId, authenticated: true, codexVersion: 'locally-qualified', executableSha256: 'unavailable', discoveredAt: new Date().toISOString()};
   }
   async execReadOnlyStructured(request: CodexStructuredExecutionRequest): Promise<CodexStructuredExecutionResult> {
+    assertLocalities(request);
     const resolved = resolveCodexAccountEnvironment(request.account, this.environment, request.nodeId);
     await probeCodexChatGptAuth(this.command, process.cwd(), request.timeoutMs, resolved.environment);
     const run = await runCodexExec({command: this.command, cwd: process.cwd(), modelId: request.model.providerModel, instruction: request.instruction, grantedToolIds: [], timeoutMs: request.timeoutMs, environment: resolved.environment, loadUserConfig: true, outputSchema: request.outputSchema, onTelemetry: request.onTelemetry});
-    return {...run, providerId: request.provider.id, accountProfileId: request.account.id, modelId: request.model.id, nodeId: request.nodeId, codexVersion: 'locally-qualified', executableSha256: 'unavailable', discoveredAt: new Date().toISOString()};
+    return {...run, providerId: request.provider.id, accountProfileId: request.account.id, modelId: request.model.id, nodeId: request.nodeId, providerExecutionNodeId: request.nodeId, credentialNodeId: request.nodeId, codexVersion: 'locally-qualified', executableSha256: 'unavailable', discoveredAt: new Date().toISOString()};
   }
 }
 
@@ -63,24 +68,27 @@ export class ResourceCodexNodeExecutionPort implements CodexNodeExecutionPort {
     this.script = scriptSource ?? fs.readFileSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../scripts/codex-node-windows.ps1'), 'utf8');
   }
   async accountStatus(request: CodexAccountStatusRequest): Promise<CodexAccountStatusResult> {
-    this.assertAccountNode(request.account, request.nodeId);
+    assertLocalities(request);
     const resource = this.resource(request.nodeId);
     if (resource.transport.type === 'local') return new LocalCodexNodeExecutionPort(this.environment).accountStatus(request);
-    const wire = await this.windows(resource, 'accountStatus', {operation: 'accountStatus', providerId: request.provider.id, accountProfileId: request.account.id, nodeId: request.nodeId, credentialEnvironment: request.account.credentialStore.env, timeoutMs: request.timeoutMs}, request.timeoutMs);
+    const store = accountCredentialResidency(request.account).store;
+    if (store.type !== 'codex-home-env') throw new Error('account_profile_credential_store_unsupported');
+    const wire = await this.windows(resource, 'accountStatus', {operation: 'accountStatus', providerId: request.provider.id, accountProfileId: request.account.id, nodeId: request.nodeId, credentialEnvironment: store.env, timeoutMs: request.timeoutMs}, request.timeoutMs);
     if (!wire.ok || !wire.authenticated) throw new Error(remoteError(wire.error, 'codex_chatgpt_auth_required'));
-    return {providerId: request.provider.id, accountProfileId: request.account.id, nodeId: resource.id, authenticated: true, codexVersion: required(wire.codexVersion, 'codex_node_version_missing'), executableSha256: requiredHash(wire.executableSha256), discoveredAt: requiredTimestamp(wire.discoveredAt)};
+    return {providerId: request.provider.id, accountProfileId: request.account.id, nodeId: resource.id, providerExecutionNodeId: resource.id, credentialNodeId: resource.id, authenticated: true, codexVersion: required(wire.codexVersion, 'codex_node_version_missing'), executableSha256: requiredHash(wire.executableSha256), discoveredAt: requiredTimestamp(wire.discoveredAt)};
   }
   async execReadOnlyStructured(request: CodexStructuredExecutionRequest): Promise<CodexStructuredExecutionResult> {
-    this.assertAccountNode(request.account, request.nodeId);
+    assertLocalities(request);
     const resource = this.resource(request.nodeId);
     if (resource.transport.type === 'local') return new LocalCodexNodeExecutionPort(this.environment).execReadOnlyStructured(request);
-    const wire = await this.windows(resource, 'execReadOnlyStructured', {operation: 'execReadOnlyStructured', providerId: request.provider.id, accountProfileId: request.account.id, modelId: request.model.id, providerModel: request.model.providerModel, nodeId: request.nodeId, credentialEnvironment: request.account.credentialStore.env, timeoutMs: request.timeoutMs, maximumOutputTokens: request.maximumOutputTokens, instruction: request.instruction, outputSchema: request.outputSchema}, request.timeoutMs);
+    const store = accountCredentialResidency(request.account).store;
+    if (store.type !== 'codex-home-env') throw new Error('account_profile_credential_store_unsupported');
+    const wire = await this.windows(resource, 'execReadOnlyStructured', {operation: 'execReadOnlyStructured', providerId: request.provider.id, accountProfileId: request.account.id, modelId: request.model.id, providerModel: request.model.providerModel, nodeId: request.nodeId, credentialEnvironment: store.env, timeoutMs: request.timeoutMs, maximumOutputTokens: request.maximumOutputTokens, instruction: request.instruction, outputSchema: request.outputSchema}, request.timeoutMs);
     if (!wire.ok) throw new Error(remoteError(wire.error, 'codex_node_exec_failed'));
     for (const event of wire.telemetry ?? []) request.onTelemetry?.({...event, context: {tokens: null, authority: 'unavailable', source: 'codex_jsonl_does_not_report_current_context'}});
-    return {providerId: request.provider.id, accountProfileId: request.account.id, modelId: request.model.id, nodeId: resource.id, codexVersion: required(wire.codexVersion, 'codex_node_version_missing'), executableSha256: requiredHash(wire.executableSha256), discoveredAt: requiredTimestamp(wire.discoveredAt), threadId: wire.threadId, finalMessage: required(wire.finalMessage, 'codex_exec_missing_final_message'), usage: numericRecord(wire.usage), observedItemTypes: Array.isArray(wire.observedItemTypes) ? wire.observedItemTypes.filter(value => typeof value === 'string') : []};
+    return {providerId: request.provider.id, accountProfileId: request.account.id, modelId: request.model.id, nodeId: resource.id, providerExecutionNodeId: resource.id, credentialNodeId: resource.id, codexVersion: required(wire.codexVersion, 'codex_node_version_missing'), executableSha256: requiredHash(wire.executableSha256), discoveredAt: requiredTimestamp(wire.discoveredAt), threadId: wire.threadId, finalMessage: required(wire.finalMessage, 'codex_exec_missing_final_message'), usage: numericRecord(wire.usage), observedItemTypes: Array.isArray(wire.observedItemTypes) ? wire.observedItemTypes.filter(value => typeof value === 'string') : []};
   }
   private resource(nodeId: string) { const resource = this.resources.get(nodeId); if (!resource) throw new Error('codex_execution_node_missing'); return resource; }
-  private assertAccountNode(account: ProviderAccountProfileConfig, nodeId: string) { if ((account.nodeId ?? 'controller') !== nodeId) throw new Error('codex_account_execution_node_mismatch'); }
   private async windows(resource: ResourceConfig, operation: RemoteWireResult['operation'], payload: Record<string, unknown>, timeoutMs: number): Promise<RemoteWireResult> {
     if (resource.platform !== 'windows' || resource.transport.type !== 'ssh') throw new Error('codex_execution_node_transport_unsupported');
     const encoded = Buffer.from(JSON.stringify(payload), 'utf8').toString('base64');
@@ -99,6 +107,12 @@ export class ResourceCodexNodeExecutionPort implements CodexNodeExecutionPort {
 }
 
 function required(value: unknown, error: string) { if (typeof value !== 'string' || !value.trim() || /[\\/]/.test(value)) throw new Error(error); return value; }
+function assertLocalities(request: CodexAccountStatusRequest) {
+  const executionNode = accountProviderExecutionNode(request.account), credentialNode = accountCredentialResidency(request.account).nodeId;
+  if (request.nodeId !== executionNode || request.providerExecutionNodeId && request.providerExecutionNodeId !== executionNode) throw new Error('codex_account_execution_node_mismatch');
+  if (request.credentialNodeId && request.credentialNodeId !== credentialNode) throw new Error('codex_account_credential_node_mismatch');
+  if (credentialNode !== executionNode) throw new Error('codex_account_credential_execution_locality_unsupported');
+}
 function requiredHash(value: unknown) { if (typeof value !== 'string' || !/^[a-f0-9]{64}$/i.test(value)) throw new Error('codex_node_executable_hash_invalid'); return value.toLowerCase(); }
 function requiredTimestamp(value: unknown) { if (typeof value !== 'string' || Number.isNaN(Date.parse(value))) throw new Error('codex_node_discovery_timestamp_invalid'); return value; }
 function record(value: unknown): value is Record<string, unknown> { return Boolean(value && typeof value === 'object' && !Array.isArray(value)); }

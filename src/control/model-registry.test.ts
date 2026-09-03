@@ -28,8 +28,8 @@ test('configuration rejects duplicate model IDs, unknown provider, and fallback 
 
 test('routing binds an exact qualified account profile and never falls across account policy', () => {
   const profileProviders = [{id: 'codex', name: 'Codex', kind: 'cli' as const, accountProfiles: [
-    {id: 'lawrence-pro', label: 'Lawrence Pro', plan: 'ChatGPT Pro', credentialStore: {type: 'codex-home-env' as const, env: 'CODEX_HOME_LAWRENCE_PRO'}, qualification: {state: 'QUALIFIED' as const, version: 'account-q1', checkedAt: '2026-09-02T00:00:00Z', qualifiedAt: '2026-09-02T00:00:00Z', capabilities: ['codex-chatgpt'], evidence: ['interactive-login'] }},
-    {id: 'cottage-plus', label: 'Cottage Plus', plan: 'ChatGPT Plus', credentialStore: {type: 'codex-home-env' as const, env: 'CODEX_HOME_COTTAGE_PLUS'}, qualification: {state: 'QUALIFIED' as const, version: 'account-q2', checkedAt: '2026-09-02T00:00:00Z', qualifiedAt: '2026-09-02T00:00:00Z', capabilities: ['codex-chatgpt'], evidence: ['interactive-login'] }},
+    {id: 'lawrence-pro', nodeId: 'node-a', label: 'Lawrence Pro', plan: 'ChatGPT Pro', credentialStore: {type: 'codex-home-env' as const, env: 'CODEX_HOME_LAWRENCE_PRO'}, qualification: {state: 'QUALIFIED' as const, version: 'account-q1', checkedAt: '2026-09-02T00:00:00Z', qualifiedAt: '2026-09-02T00:00:00Z', capabilities: ['codex-chatgpt'], evidence: ['interactive-login'] }},
+    {id: 'cottage-plus', nodeId: 'node-a', label: 'Cottage Plus', plan: 'ChatGPT Plus', credentialStore: {type: 'codex-home-env' as const, env: 'CODEX_HOME_COTTAGE_PLUS'}, qualification: {state: 'QUALIFIED' as const, version: 'account-q2', checkedAt: '2026-09-02T00:00:00Z', qualifiedAt: '2026-09-02T00:00:00Z', capabilities: ['codex-chatgpt'], evidence: ['interactive-login'] }},
   ]}];
   const profileModels = [
     {id: 'sol-pro', provider: 'codex', accountProfile: 'lawrence-pro', providerModel: 'sol', capabilities: ['coding'], qualification: {state: 'QUALIFIED' as const, version: 'model-q1', nodes: ['node-a'], capabilities: ['coding']}},

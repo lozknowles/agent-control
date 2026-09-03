@@ -1,6 +1,6 @@
 # Agent Control architecture
 
-This is the authoritative source boundary for Agent Control 3.8.0. Status labels matter:
+This is the authoritative source boundary for Agent Control 3.8.1. Status labels matter:
 
 - **implemented** means executable code and automated tests exist in this branch;
 - **experimental** means executable code exists but has not been qualified across every external substrate;
@@ -392,6 +392,12 @@ The structured review validator checks schema, evidence presence, confidence, re
 Persistent state is below `AGENT_CONTROL_STATE_DIR/parameterized-jobs/`: `saved-jobs.json`, `runs.json`, `review-baselines.json`, and read-only snapshots. Files are atomically replaced with mode 0600. Terminal Runs become immutable. Dashboard/API/CLI clients access this state only through `AgentControlService`.
 
 ## Provider and model registry
+
+### Credential residency and execution locality (3.8.1)
+
+The provider-neutral route has three independent locations: `workloadNodeId` owns the repository/workspace; `providerExecutionNodeId` runs the provider adapter/process; `credentialNodeId` owns the opaque credential-store reference. A Codex CLI-home route requires execution and credentials on the same node, but the workload may be elsewhere. Other adapters may support different relationships without changing core policy.
+
+Agent Control freezes repository state at the workload node and moves only an immutable, hash-verified bundle plus governed Context/Evidence Packets, Work Parcels, and batons toward provider execution. It never transfers tokens, cookies, OAuth files, API keys, or credential stores. Qualification is account-and-credential-node specific, model qualification is provider-execution-node specific, and workload authority grants neither. Every route and baton seals all three identities; an invocation that returns a different account or node fails closed. The legacy 3.8 `account.nodeId` is normalized to both provider execution and credential residency for compatibility. See [credential residency](docs/credential-residency.md).
 
 `ModelRegistry` separates provider endpoint/authentication from model identity and routing policy. A provider records stable ID, display name, protocol, base URL, authentication reference and broad capabilities. A model records its stable Agent Control ID, provider-native model ID, declared capabilities, optional node scope, limits, sourced pricing metadata and configured qualification seed. `ModelQualificationStore` persists runtime evidence outside the tracked tree.
 

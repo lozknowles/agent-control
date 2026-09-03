@@ -1,5 +1,16 @@
 # Changelog
 
+## [3.8.1] — Unreleased
+
+- Separates workload/repository locality, provider execution locality, and credential residency in provider-neutral configuration, routing, sealed batons, contracts, telemetry, recovery, Work Parcel ledgers, and dashboard projections.
+- Adds generic references for CLI-home, API-key environment, bearer-file environment, and future provider secure stores without persisting secret values or resolved credential paths.
+- Keeps the 3.8 `account.nodeId` plus `credentialStore` shape backward-compatible through an explicit migration rule while recommending `providerExecutionNodeId` plus `credentialResidency` for new configuration.
+- Adds a governed immutable Windows repository snapshot operation through the existing managed-node SSH transport. It validates source roots/ref/SHA, rejects tracked credential-like files, transfers a content-hashed Git archive, and extracts it read-only with path/symlink protections.
+- Fixes remote Windows Codex `accountStatus` pipe retention: `codex login status` now uses bounded native-process supervision with node-local redirected streams, timeout cleanup, and sanitized classification. Unauthenticated profiles report `codex_chatgpt_auth_required` instead of hanging behind SSH.
+- Shows workload, provider-execution, and credential-residency nodes separately in Models, parameterized Runs, live token telemetry, handoff routes, and model-chain totals.
+- Preserves predetermined account-profile fallback and explicit rejection reasons; it does not rotate accounts to evade or aggregate provider limits.
+- Adds focused locality, migration, credential-isolation, snapshot-transfer, route-identity, and Windows-supervision regressions. Physical multi-account, remote-residency, and GLM review evidence remains a release-candidate gate and is not claimed here.
+
 ## [3.8.0] — 2026-09-03
 
 - Adds opt-in governed retrieval with provider-neutral intents/providers, bounded progressive policy, compact content-addressed Evidence Packets, explicit local/remote/hybrid locality, and current/possibly-stale/invalid freshness.

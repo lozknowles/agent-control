@@ -65,15 +65,28 @@ export interface ResourceConfig {
 }
 
 export type ModelQualificationState = 'UNTESTED' | 'QUALIFYING' | 'QUALIFIED' | 'DEGRADED' | 'DISABLED' | 'FAILED';
+export type ProviderCredentialStoreReference =
+  | {type: 'codex-home-env'; env: string}
+  | {type: 'api-key-env'; env: string}
+  | {type: 'bearer-file-env'; env: string}
+  | {type: 'provider-secure-store'; reference: string};
+export interface ProviderCredentialResidencyConfig {
+  nodeId: string;
+  store: ProviderCredentialStoreReference;
+}
 export interface ProviderAccountProfileConfig {
   id: string;
   label: string;
+  /** @deprecated 3.8.0 compatibility alias for both credential and provider-execution locality. */
   nodeId?: string;
+  providerExecutionNodeId?: string;
+  credentialResidency?: ProviderCredentialResidencyConfig;
   enabled?: boolean;
   plan?: string;
   planAuthority?: 'operator-configured' | 'provider-reported';
   capabilities?: string[];
-  credentialStore: {type: 'codex-home-env'; env: string};
+  /** @deprecated Use credentialResidency.store. */
+  credentialStore?: ProviderCredentialStoreReference;
   qualification?: {state: ModelQualificationState; version?: string; checkedAt?: string; qualifiedAt?: string; capabilities?: string[]; evidence?: string[]; detail?: string};
 }
 
@@ -304,7 +317,7 @@ export function validateConfig(raw: unknown): AgentControlConfig {
   };
   if (config.jobs) {
     if (!Array.isArray(config.jobs.repositoryRoots) || !config.jobs.repositoryRoots.length) throw new Error('invalid_job_repository_roots');
-    for (const root of config.jobs.repositoryRoots) if (typeof root !== 'string' || !path.isAbsolute(root) || path.normalize(root) === path.parse(root).root) throw new Error('invalid_job_repository_root');
+    for (const root of config.jobs.repositoryRoots) if (typeof root !== 'string' || !absolutePath(root) || filesystemRoot(root)) throw new Error('invalid_job_repository_root');
     if (config.jobs.repositoryRemotes !== undefined && !Array.isArray(config.jobs.repositoryRemotes)) throw new Error('invalid_job_repository_remotes');
     for (const remote of config.jobs.repositoryRemotes ?? []) {
       let parsed: URL; try { parsed = new URL(remote); } catch { throw new Error('invalid_job_repository_remote'); }
@@ -395,20 +408,30 @@ export function validateConfig(raw: unknown): AgentControlConfig {
       for (const value of [provider.pricing.inputPerMillionTokens, provider.pricing.outputPerMillionTokens, provider.pricing.fixedPerRequest ?? 0]) if (!Number.isFinite(value) || value < 0) throw new Error(`invalid_provider_pricing:${provider.id}`);
       if (!provider.pricing.source?.trim() || Number.isNaN(Date.parse(provider.pricing.effectiveFrom))) throw new Error(`invalid_provider_pricing_provenance:${provider.id}`);
     }
-    if (provider.accountProfiles !== undefined && (!Array.isArray(provider.accountProfiles) || provider.kind !== 'cli')) throw new Error(`invalid_provider_account_profiles:${provider.id}`);
+    if (provider.accountProfiles !== undefined && !Array.isArray(provider.accountProfiles)) throw new Error(`invalid_provider_account_profiles:${provider.id}`);
     const accountIds = new Set<string>();
     for (const account of provider.accountProfiles ?? []) {
       assertId(account.id, 'account_profile');
       if (accountIds.has(account.id)) throw new Error(`duplicate_account_profile:${provider.id}:${account.id}`);
       accountIds.add(account.id);
       if (account.nodeId !== undefined && (!/^[a-z0-9][a-z0-9._-]{0,63}$/i.test(account.nodeId) || !config.resources.some(resource => resource.id === account.nodeId))) throw new Error(`invalid_account_profile_node:${provider.id}:${account.id}`);
+      if (account.providerExecutionNodeId !== undefined && (!/^[a-z0-9][a-z0-9._-]{0,63}$/i.test(account.providerExecutionNodeId) || !config.resources.some(resource => resource.id === account.providerExecutionNodeId))) throw new Error(`invalid_account_profile_execution_node:${provider.id}:${account.id}`);
+      if (account.credentialResidency?.nodeId !== undefined && (!/^[a-z0-9][a-z0-9._-]{0,63}$/i.test(account.credentialResidency.nodeId) || !config.resources.some(resource => resource.id === account.credentialResidency!.nodeId))) throw new Error(`invalid_account_profile_credential_node:${provider.id}:${account.id}`);
       if (typeof account.label !== 'string' || !account.label.trim() || account.label.length > 128 || /@/.test(account.label)) throw new Error(`invalid_account_profile_label:${provider.id}:${account.id}`);
       if (account.enabled !== undefined && typeof account.enabled !== 'boolean') throw new Error(`invalid_account_profile_enabled:${provider.id}:${account.id}`);
       if (account.plan !== undefined && (typeof account.plan !== 'string' || !account.plan.trim() || account.plan.length > 80 || /@/.test(account.plan))) throw new Error(`invalid_account_profile_plan:${provider.id}:${account.id}`);
       if (account.planAuthority !== undefined && !['operator-configured', 'provider-reported'].includes(account.planAuthority)) throw new Error(`invalid_account_profile_plan_authority:${provider.id}:${account.id}`);
       if (account.plan && !account.planAuthority) throw new Error(`account_profile_plan_authority_required:${provider.id}:${account.id}`);
       assertStringList(account.capabilities, `account_profile_capabilities:${provider.id}:${account.id}`, /^[a-z0-9][a-z0-9._-]{0,127}$/i);
-      if (!account.credentialStore || account.credentialStore.type !== 'codex-home-env' || !/^[A-Z_][A-Z0-9_]{0,127}$/.test(account.credentialStore.env)) throw new Error(`invalid_account_profile_credential_store:${provider.id}:${account.id}`);
+      if (account.credentialStore && account.credentialResidency) throw new Error(`ambiguous_account_profile_credential_store:${provider.id}:${account.id}`);
+      const credentialStore = account.credentialResidency?.store ?? account.credentialStore;
+      if (!credentialStore) throw new Error(`invalid_account_profile_credential_store:${provider.id}:${account.id}`);
+      if (credentialStore.type === 'provider-secure-store') {
+        if (!/^[a-z0-9][a-z0-9._:/-]{0,255}$/i.test(credentialStore.reference)) throw new Error(`invalid_account_profile_credential_store:${provider.id}:${account.id}`);
+      } else if (!/^[A-Z_][A-Z0-9_]{0,127}$/.test(credentialStore.env)) throw new Error(`invalid_account_profile_credential_store:${provider.id}:${account.id}`);
+      const credentialNode = account.credentialResidency?.nodeId ?? account.nodeId ?? 'controller';
+      const executionNode = account.providerExecutionNodeId ?? account.credentialResidency?.nodeId ?? account.nodeId ?? 'controller';
+      if (credentialStore.type === 'codex-home-env' && credentialNode !== executionNode) throw new Error(`account_profile_execution_credential_node_mismatch:${provider.id}:${account.id}`);
       if (account.qualification && !['UNTESTED', 'QUALIFYING', 'QUALIFIED', 'DEGRADED', 'DISABLED', 'FAILED'].includes(account.qualification.state)) throw new Error(`invalid_account_profile_qualification:${provider.id}:${account.id}`);
       for (const timestamp of [account.qualification?.checkedAt, account.qualification?.qualifiedAt]) if (timestamp && Number.isNaN(Date.parse(timestamp))) throw new Error(`invalid_account_profile_qualification_timestamp:${provider.id}:${account.id}`);
       assertStringList(account.qualification?.capabilities, `account_profile_qualification_capabilities:${provider.id}:${account.id}`, /^[a-z0-9][a-z0-9._-]{0,127}$/i);
@@ -427,7 +450,8 @@ export function validateConfig(raw: unknown): AgentControlConfig {
     if (model.accountProfile !== undefined && !modelProvider.accountProfiles?.some(account => account.id === model.accountProfile)) throw new Error(`unknown_model_account_profile:${model.id}:${model.accountProfile}`);
     if (modelProvider.kind === 'cli' && modelProvider.accountProfiles?.length && !model.accountProfile) throw new Error(`model_account_profile_required:${model.id}`);
     const modelAccount = model.accountProfile ? modelProvider.accountProfiles?.find(account => account.id === model.accountProfile) : undefined;
-    if (modelAccount?.nodeId && model.nodes?.length && !model.nodes.includes(modelAccount.nodeId)) throw new Error(`model_account_profile_node_mismatch:${model.id}`);
+    const modelAccountExecutionNode = modelAccount?.providerExecutionNodeId ?? modelAccount?.credentialResidency?.nodeId ?? modelAccount?.nodeId;
+    if (modelAccountExecutionNode && model.nodes?.length && !model.nodes.includes(modelAccountExecutionNode)) throw new Error(`model_account_profile_node_mismatch:${model.id}`);
     if (typeof model.providerModel !== 'string' || !model.providerModel.trim() || model.providerModel.length > 256) throw new Error(`invalid_provider_model:${model.id}`);
     if (!Array.isArray(model.capabilities) || model.capabilities.some(capability => typeof capability !== 'string' || !/^[a-z0-9][a-z0-9._-]{0,127}$/i.test(capability))) throw new Error(`invalid_model_capabilities:${model.id}`);
     assertStringList(model.roles, `model_roles:${model.id}`, /^[a-z0-9][a-z0-9._-]{0,127}$/i);
@@ -557,3 +581,6 @@ export function loadConfig(file = configPath()): AgentControlConfig {
 export function expandUserPath(value: string | undefined, home = process.env.HOME || process.env.USERPROFILE || '') {
   return value?.replace(/^~(?=$|[\\/])/, home);
 }
+
+function absolutePath(value: string) { return path.isAbsolute(value) || path.win32.isAbsolute(value); }
+function filesystemRoot(value: string) { const flavor = path.win32.isAbsolute(value) ? path.win32 : path; return flavor.normalize(value) === flavor.parse(value).root; }

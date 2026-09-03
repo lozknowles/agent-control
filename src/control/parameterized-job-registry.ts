@@ -51,7 +51,7 @@ function validateParameter(name: string, schema: JobParameterSchema, value: unkn
   if (schema.type === 'git-ref' && (typeof value !== 'string' || !GIT_REF.test(value))) throw new ParameterizedJobError('invalid_git_ref', name);
   if ((schema.type === 'node' || schema.type === 'model-role') && (typeof value !== 'string' || !ID.test(value))) throw new ParameterizedJobError('invalid_identifier_parameter', name);
 }
-function repositoryReference(value: string) { if (value.includes('\0')) return false; if (path.isAbsolute(value)) return path.normalize(value) !== path.parse(value).root; try { const parsed = new URL(value); return ['https:', 'git:'].includes(parsed.protocol) && !parsed.username && !parsed.password && !parsed.search && !parsed.hash; } catch { return false; } }
+function repositoryReference(value: string) { if (value.includes('\0')) return false; if (path.isAbsolute(value) || path.win32.isAbsolute(value)) { const flavor = path.win32.isAbsolute(value) ? path.win32 : path; return flavor.normalize(value) !== flavor.parse(value).root; } try { const parsed = new URL(value); return ['https:', 'git:'].includes(parsed.protocol) && !parsed.username && !parsed.password && !parsed.search && !parsed.hash; } catch { return false; } }
 
 export class ParameterizedJobRegistry {
   private readonly definitions = new Map<string, ParameterizedJobDefinition>();

@@ -61,9 +61,12 @@ export interface ResolvedRepository {
   reviewedSha: string;
   dirty: boolean;
   dirtyPaths: string[];
+  dirtyFingerprint?: string;
   comparisonSha?: string;
   snapshotPath: string;
-  snapshotKind: 'local-shared-clone' | 'remote-clone';
+  snapshotKind: 'local-shared-clone' | 'remote-clone' | 'remote-immutable-archive';
+  bundleSha256?: string;
+  bundlePath?: string;
 }
 
 export type ParameterizedRunStatus = 'SCHEDULED' | 'QUEUED' | 'RESOLVING' | 'RUNNING' | 'VALIDATING' | 'SUCCEEDED' | 'SUCCEEDED_WITH_FINDINGS' | 'FAILED' | 'CANCELLED' | 'DEGRADED';

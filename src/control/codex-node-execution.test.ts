@@ -14,6 +14,22 @@ const provider: ProviderConfig = {id: 'codex', kind: 'cli'};
 const account: ProviderAccountProfileConfig = {id: 'account-a', nodeId: node.id, label: 'Account A', credentialStore: {type: 'codex-home-env', env: 'CODEX_HOME_ACCOUNT_A'}};
 const hash = 'a'.repeat(64);
 
+test('authenticated remote account status returns only sanitized qualification metadata', async () => {
+  const executor: SshExecutor = async () => ({status: 0, stdout: JSON.stringify({schema: 'agent-control.codex-node-result/v1', operation: 'accountStatus', ok: true, authenticated: true, codexVersion: 'codex-cli 0.153.0', executableSha256: hash, discoveredAt: '2026-09-03T10:00:00.000Z'}), stderr: 'raw stderr forbidden'});
+  const result = await new ResourceCodexNodeExecutionPort([node], {}, executor).accountStatus({provider, account, nodeId: node.id, timeoutMs: 1_000});
+  assert.deepEqual(result, {providerId: 'codex', accountProfileId: 'account-a', nodeId: 'windows-node', providerExecutionNodeId: 'windows-node', credentialNodeId: 'windows-node', authenticated: true, codexVersion: 'codex-cli 0.153.0', executableSha256: hash, discoveredAt: '2026-09-03T10:00:00.000Z'});
+  assert.equal(JSON.stringify(result).includes('raw stderr'), false);
+});
+
+test('genuine outer transport timeout remains a timeout instead of an authentication result', async () => {
+  const executor: SshExecutor = async () => ({status: 0, stdout: '', stderr: 'sensitive remote text', timedOut: true});
+  await assert.rejects(() => new ResourceCodexNodeExecutionPort([node], {}, executor).accountStatus({provider, account, nodeId: node.id, timeoutMs: 1_000}), error => {
+    assert.equal((error as Error).message, 'codex_node_timeout');
+    assert.equal(JSON.stringify(error).includes('sensitive remote text'), false);
+    return true;
+  });
+});
+
 test('Windows Codex node execution sends one fixed PowerShell program and treats all variable values as encoded data', async () => {
   const secretInstruction = 'review value with spaces; Write-Output injected-marker';
   let observed: {args: string[]; source: string; payload: Record<string, unknown>; bootstrap: string} | undefined;
@@ -74,9 +90,12 @@ test('the audited Windows runner discovers versioned Codex bundles without a har
   assert.match(script, /--version/);
   assert.doesNotMatch(script, /[a-f0-9]{16,}\\codex\.exe/i);
   assert.doesNotMatch(script, /Invoke-Expression|\biex\b/i);
-  assert.match(script, /\$savedErrorPreference = \$ErrorActionPreference/);
-  assert.match(script, /\$statusExitCode = \$LASTEXITCODE/);
-  assert.match(script, /login status 2>&1/);
+  assert.match(script, /\$statusProcess = Start-Process/);
+  assert.match(script, /RedirectStandardOutput \$statusStdoutFile/);
+  assert.match(script, /RedirectStandardError \$statusStderrFile/);
+  assert.match(script, /\$statusProcess\.WaitForExit/);
+  assert.match(script, /\$statusProcess\.Kill\(\)/);
+  assert.match(script, /codex_chatgpt_auth_required/);
   assert.match(script, /UTF8Encoding\(\$false\)/);
   assert.match(script, /--skip-git-repo-check/);
   assert.match(script, /features\.shell_tool=false/);
