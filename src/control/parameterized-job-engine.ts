@@ -94,7 +94,9 @@ export class ParameterizedJobEngine {
       let response;
       for (let attempt = 0; ; attempt++) {
         try {
-          response = await this.executor.execute({run: structuredClone(run), route, instruction: run.definition.template.instruction, contextChunks: context.chunks, maximumOutputTokens: budgets.maximumOutputTokens, maximumCost: budgets.maxCost, signal: controller.signal});
+          const executionRun = structuredClone(run);
+          executionRun.definition = {...executionRun.definition, budgets: structuredClone(budgets)};
+          response = await this.executor.execute({run: executionRun, route, instruction: run.definition.template.instruction, contextChunks: context.chunks, maximumOutputTokens: budgets.maximumOutputTokens, maximumCost: budgets.maxCost, signal: controller.signal});
           break;
         } catch (error) {
           const partial = error as Error & {workParcelIds?: string[]; evidence?: string[]; providerResponseIds?: string[]; usage?: ParameterizedJobRun['usage']}, parcelIds = partial.workParcelIds ?? [];
