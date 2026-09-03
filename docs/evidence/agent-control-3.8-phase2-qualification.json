@@ -51,7 +51,7 @@
   },
   "telemetry":{"transport":"existing SSE /api/events","eventCount":20,"reconciled":true,"observed":["retrieval.started","retrieval.provider_selected","retrieval.evidence","retrieval.rehydrated","token.telemetry","token.governor_transition","token.baton_created","token.handoff_result"]},
   "security":{"promptLikeRepositoryTextRemainsUntrustedEvidence":true,"pathEscapeAndSymlinkRejected":true,"staleIndexedTextRejected":true,"absoluteTemporaryRootPersisted":false,"rawProviderOutputPersisted":false},
-  "regression":{"npmRunCheck":{"passed":true,"tests":688,"failed":0,"skipped":0},"packageInstall":{"passed":true,"installedCliHelp":true},"dependencyAudit":{"status":"UNAVAILABLE","reason":"Repository intentionally has no npm lockfile; npm audit returned ENOLOCK."}},
+  "regression":{"npmRunCheck":{"passed":true,"tests":688,"failed":0,"skipped":0},"packageInstall":{"passed":true,"installedCliHelp":true},"dependencyAudit":{"status":"PASS","resolvedArtifactInstall":true,"vulnerabilities":{"info":0,"low":0,"moderate":0,"high":0,"critical":0,"total":0},"note":"The source repository has no lockfile, so the exact packed RC was installed into a clean temporary prefix and that resolved installation was audited."}},
   "decision":"PASS",
   "releaseAction":"Prepare and push 3.8.0-rc.1 only; do not merge, tag, release or deploy."
 }

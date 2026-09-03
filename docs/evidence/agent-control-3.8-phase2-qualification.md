@@ -83,7 +83,7 @@ The earlier representative cold index measured 21.41 seconds and 954,000 KiB pea
 
 The existing `/api/events` stream emitted 20 lifecycle events during the physical run. Durable and dashboard projections reconciled for retrieval start, provider selection, evidence creation, rehydration, token telemetry, governor transitions, baton creation and handoff result. Deterministic tests additionally cover escalation, compilation, invalidation, fallback and failure event handling. No second transport was added.
 
-`npm run check` passed TypeScript, bootstrap syntax, dashboard syntax, infrastructure neutrality, implementation status and 688/688 tests (0 failed, 0 skipped). `git diff --check` passed. The packed package installed into a clean temporary prefix and its installed CLI returned help successfully. `npm audit` was unavailable because this repository intentionally has no npm lockfile (`ENOLOCK`); no vulnerability count is inferred.
+`npm run check` passed TypeScript, bootstrap syntax, dashboard syntax, infrastructure neutrality, implementation status and 688/688 tests (0 failed, 0 skipped). `git diff --check` passed. The packed package installed into a clean temporary prefix and its installed CLI returned help successfully. The source tree intentionally has no npm lockfile, so the exact packed RC was installed into a fresh temporary prefix and the resulting resolved dependency tree was audited there: 0 info, low, moderate, high or critical vulnerabilities.
 
 ## Decision
 
