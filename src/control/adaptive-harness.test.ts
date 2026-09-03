@@ -121,6 +121,15 @@ test('recipe fingerprint changes with prompt, context, skills, tools or runtime 
   assert.match(base.id, /^recipe-[0-9a-f]{16}$/);
 });
 
+test('execution recipe preserves the selected account profile as route identity', () => {
+  const candidate = {...small, route: {...small.route, accountProfileId: 'lawrence-pro'}};
+  const recipe = harness().build(request('ECONOMY'), [candidate]).recipe!;
+  assert.equal(recipe.providerId, 'provider-small-local');
+  assert.equal(recipe.accountProfileId, 'lawrence-pro');
+  assert.equal(recipe.modelId, 'model-small-local');
+  assert.notEqual(recipe.fingerprint, harness().build(request('ECONOMY'), [small]).recipe!.fingerprint);
+});
+
 test('qualified harness profile and context packet become inspectable recipe identity', () => {
   const profileRouter = new HarnessProfileRouter({mode: 'ENFORCE', minimumVerifiedRuns: 5, minimumSuccessRate: .9, minimumSameModelControlledRuns: 5});
   const adaptive = new AdaptiveHarness(new SkillCatalog(skills), new ToolPolicy(tools), undefined, profileRouter);

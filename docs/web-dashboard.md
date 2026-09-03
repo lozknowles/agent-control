@@ -2,7 +2,7 @@
 
 The web dashboard is an operator interface over `AgentControlService`. It is not a web scheduler and does not own lane, lease, PTY, verification or provider state.
 
-The default **Jobs** area contains four separate platform views: **Job Definitions**, **Saved Jobs**, **Schedules**, and **Runs**. These sit alongside the existing catalog/Run-ledger projection rather than replacing its Action/DAG workflows. **Lanes** retains the interactive multi-agent control room. **Sessions** projects persistent Actor, participant, delegation, model/runtime and evidence identity. **Systems** shows the canonical configured execution inventory and current readiness. **Models** shows the canonical provider-neutral model registry. **Configuration** provides authenticated, validated inventory and fast-execution policy editing. No view parses terminal text for Run state.
+The default **Jobs** area contains four separate platform views: **Job Definitions**, **Saved Jobs**, **Schedules**, and **Runs**. These sit alongside the existing catalog/Run-ledger projection rather than replacing its Action/DAG workflows. **Lanes** retains the interactive multi-agent control room. **Sessions** projects persistent Actor, participant, delegation, ACP, contract/PTY, handoff, model/runtime and evidence identity. **Systems** shows canonical configured inventory plus ACP transport and lifecycle-recipe readiness. **Models** shows the canonical provider-neutral model registry and immutable 3.6 lifecycle state. **Configuration** provides authenticated, validated inventory and fast-execution policy editing. No view parses terminal text for Run state.
 
 ## Parameterised Jobs
 
@@ -61,6 +61,7 @@ Read projections:
 - `GET /api/sessions`, `GET /api/sessions/:id`
 - `GET /api/context-transfers`, `GET /api/delegations`
 - `GET /api/fast-execution-attempts`
+- `GET /api/runtime` (redacted ACP transport/session, contract/PTY, handoff and provider-lifecycle projection)
 - `GET /api/executions`, `GET /api/executions/:runId`
 - `GET /api/router`
 - `GET /api/evidence`
@@ -113,6 +114,22 @@ Remote binding is not a turnkey security boundary. If explicitly enabled, place 
 
 The terminal panel is an observer projection of session metadata. It has no input facility. Human takeover invokes `PtyRegistry.humanTakeover` through `AgentControlService`, pauses the lane, and prevents resume until ownership is deliberately returned. This is the same fence used by the core, not browser-maintained state.
 
+## 3.6 runtime observability
+
+The Sessions view reads `GET /api/runtime` alongside identity/execution provenance. It shows ACP protocol version, configured transports, connection/authentication state, governed ACP session and parcel references, contracts, active agent/model/provider/node/runtime, process/PTY state, attached participants, current writer, pending approvals, handoff outcomes, baton hash/size, verification and cancellation/recovery state. Usage and cost continue to come from invocation telemetry and remain `unknown` when absent.
+
+The projection deliberately omits ACP prompt/cwd content, contract objectives, sealed baton payloads, PTY transcript text, handoff requests and credential-reference names. A persisted ACP session is transport-neutral, so an active binding is not falsely attributed to stdio or remote transport. Remote ACP can be shown as configured but unobserved; the dashboard does not start or probe its listener.
+
+Systems adds stable ACP stdio, disabled/configured remote ACP, and durable lifecycle recipes. A disabled remote transport remains visible as `UNKNOWN` with its blocker. DISCOVERED/BENCHMARKING recipes remain `UNKNOWN`, SHADOW/CANDIDATE are `DEGRADED`, and only ACTIVE/PREFERRED are `AVAILABLE`. Models displays matching immutable recipe fingerprints, lifecycle state, semantic placement requirements and active policy. These are observations; no web route promotes a recipe or changes routing policy.
+
 ## Failure behavior
 
 The dashboard can reconnect to the SSE stream and always refreshes the current durable snapshot. UI or stream failure does not change scheduler state. Missing authentication disables mutation. Invalid origin, content type, JSON, lane, action or evidence fails closed. A missing dashboard never blocks TUI operation or task recovery.
+
+## Live token governor (3.7)
+
+The dashboard’s **Thread Context** panel is driven by `GET /api/status` / `GET /api/token-routing` and refreshes through the normal SSE stream on `token.telemetry`, `token.governor_transition`, `token.context_lifecycle`, `token.baton_created`, and `token.handoff_result`. It lists every observed execution thread with provider/safe account label/model, account plan where its authority is known, context/window/percentage, latest compaction/new-context/resume transition, cumulative token totals, authority markers, cost, elapsed time, governor state/thresholds, next selected route, and account-aware Work Parcel chain total. It does not turn unavailable provider data into zero or infer current context from lifetime use. The durable routing evidence contains the corresponding timestamped samples and all transition/decision records. See [Token-Aware Baton Routing](token-aware-baton-routing.md).
+
+`GET /api/token-routing` is a read-only projection. It deliberately excludes prompts, baton bodies, credentials, provider requests, and transcripts.
+
+The **Models** view reads `GET /api/models/accounts` and model account projections. It shows account friendly label, execution node, plan plus metadata authority, availability and independent qualification state. **Check account** dispatches bounded `codex login status` to the selected profile's configured node; `CODEX_HOME` is resolved only there. The dashboard never receives credential environment names, resolved paths, full executable paths, raw process output, email addresses, OAuth tokens, cookies, or authentication-file contents.

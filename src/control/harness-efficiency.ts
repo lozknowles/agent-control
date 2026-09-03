@@ -396,6 +396,7 @@ export interface ModelInvocationObservation {
   laneId: string;
   model: string;
   provider: string;
+  accountProfileId?: string;
   harnessProfile: HarnessProfileName;
   harnessId: string;
   executionStrategy: string;
@@ -441,6 +442,7 @@ export interface InvocationObservationInput {
   laneId: string;
   model: string;
   provider: string;
+  accountProfileId?: string;
   harnessProfile: HarnessProfileName;
   harnessId?: string;
   executionStrategy: string;
@@ -478,7 +480,7 @@ export function createInvocationObservation(input: InvocationObservationInput): 
   const calculatedCost = versionedPricing ? calculateVersionedApiCost(usage, versionedPricing) : calculateInvocationCost(usage, input.pricing);
   return {
     schema: 'agent-control.model-invocation/v1', id: input.id ?? `inv-${randomUUID()}`, jobId: input.jobId, runId: input.runId ?? null, stepId: input.stepId ?? null, taskId: input.taskId, laneId: input.laneId,
-    model: input.model, provider: input.provider, harnessProfile: input.harnessProfile, harnessId: input.harnessId ?? 'adaptive-harness', executionStrategy: input.executionStrategy, turnNumber,
+    model: input.model, provider: input.provider, ...(input.accountProfileId ? {accountProfileId: input.accountProfileId} : {}), harnessProfile: input.harnessProfile, harnessId: input.harnessId ?? 'adaptive-harness', executionStrategy: input.executionStrategy, turnNumber,
     startedAt: input.startedAt, completedAt: input.completedAt, elapsedMs: completed - started, state: input.outcome === 'CANCELLED' || /cancel/i.test(input.error ?? '') ? 'CANCELLED' : /timeout|timed out/i.test(input.error ?? '') ? 'TIMED_OUT' : input.outcome === 'FAILED' ? 'FAILED' : 'COMPLETE', phase: input.phase ?? 'complete', phaseUpdatedAt: input.completedAt,
     startup, usage,
     providerReportedCost: input.providerReportedCost ?? null,

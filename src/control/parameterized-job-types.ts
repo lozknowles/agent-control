@@ -40,7 +40,7 @@ export interface SavedJob {
   name: string;
   definition: SavedJobDefinitionReference;
   parameters: Record<string, unknown>;
-  routing?: {modelRole?: string; model?: string; allowFallback?: boolean};
+  routing?: {modelRole?: string; model?: string; accountProfile?: string; allowFallback?: boolean};
   contextProfile: 'THIN' | 'STANDARD' | 'DEEP';
   budgets?: Partial<JobBudgetPolicy>;
   schedule?: SavedJobSchedule;
@@ -129,4 +129,4 @@ export interface ReviewExecutionRequest {
   signal: AbortSignal;
 }
 export interface ReviewExecutionResponse {result: RepositoryReviewResult; usage: JobRunUsage; evidence: string[]; providerResponseIds: string[]; workParcelIds: string[];}
-export interface RepositoryReviewExecutor {execute(request: ReviewExecutionRequest): Promise<ReviewExecutionResponse>;}
+export interface RepositoryReviewExecutor {execute(request: ReviewExecutionRequest): Promise<ReviewExecutionResponse>; recordVerification?(workParcelIds: string[], verdict: RepositoryReviewResult['verdict']): void;}

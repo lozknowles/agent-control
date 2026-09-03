@@ -25,3 +25,22 @@ test('configuration rejects duplicate model IDs, unknown provider, and fallback 
   const cycleModels = [{...models[0], id: 'a'}, {...models[1], id: 'b'}];
   assert.throws(() => validateConfig({...base, models: cycleModels, modelRouting: {roles: {a: {primary: 'b'}, b: {primary: 'a'}}}}), /model_fallback_cycle/);
 });
+
+test('routing binds an exact qualified account profile and never falls across account policy', () => {
+  const profileProviders = [{id: 'codex', name: 'Codex', kind: 'cli' as const, accountProfiles: [
+    {id: 'lawrence-pro', label: 'Lawrence Pro', plan: 'ChatGPT Pro', credentialStore: {type: 'codex-home-env' as const, env: 'CODEX_HOME_LAWRENCE_PRO'}, qualification: {state: 'QUALIFIED' as const, version: 'account-q1', checkedAt: '2026-09-02T00:00:00Z', qualifiedAt: '2026-09-02T00:00:00Z', capabilities: ['codex-chatgpt'], evidence: ['interactive-login'] }},
+    {id: 'cottage-plus', label: 'Cottage Plus', plan: 'ChatGPT Plus', credentialStore: {type: 'codex-home-env' as const, env: 'CODEX_HOME_COTTAGE_PLUS'}, qualification: {state: 'QUALIFIED' as const, version: 'account-q2', checkedAt: '2026-09-02T00:00:00Z', qualifiedAt: '2026-09-02T00:00:00Z', capabilities: ['codex-chatgpt'], evidence: ['interactive-login'] }},
+  ]}];
+  const profileModels = [
+    {id: 'sol-pro', provider: 'codex', accountProfile: 'lawrence-pro', providerModel: 'sol', capabilities: ['coding'], qualification: {state: 'QUALIFIED' as const, version: 'model-q1', nodes: ['node-a'], capabilities: ['coding']}},
+    {id: 'luna-plus', provider: 'codex', accountProfile: 'cottage-plus', providerModel: 'luna', capabilities: ['coding'], qualification: {state: 'QUALIFIED' as const, version: 'model-q2', nodes: ['node-a'], capabilities: ['coding']}},
+  ];
+  const registry = new ModelRegistry(profileProviders, profileModels, {roles: {review: {primary: 'sol-pro', fallback: ['luna-plus']}}}, undefined, undefined, {CODEX_HOME_LAWRENCE_PRO: process.cwd(), CODEX_HOME_COTTAGE_PLUS: process.cwd()});
+  const route = registry.route({model: 'luna-plus', accountProfile: 'cottage-plus', nodeId: 'node-a'});
+  assert.deepEqual({provider: route.providerId, account: route.accountProfileId, label: route.accountLabel, plan: route.accountPlan, model: route.modelId}, {provider: 'codex', account: 'cottage-plus', label: 'Cottage Plus', plan: 'ChatGPT Plus', model: 'luna-plus'});
+  assert.throws(() => registry.route({model: 'luna-plus', accountProfile: 'lawrence-pro', nodeId: 'node-a'}), /model_route_unavailable/);
+  const publicProfile = registry.accountProfilesList()[0] as unknown as Record<string, unknown>;
+  assert.equal('credentialStore' in publicProfile, false);
+  assert.equal(JSON.stringify(registry.providersList()).includes(process.cwd()), false);
+  assert.deepEqual(registry.governedAlternatives('sol-pro'), ['sol-pro', 'luna-plus']);
+});

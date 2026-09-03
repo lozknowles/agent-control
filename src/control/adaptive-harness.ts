@@ -99,6 +99,7 @@ export interface ExecutionRecipe {
   stepId?: string;
   workerId: string;
   providerId: string;
+  accountProfileId?: string;
   modelId: string;
   promptProfile: PromptProfile;
   /** Absent only on pre-profile persisted/fixture recipes; interpreted as STANDARD. */
@@ -292,6 +293,7 @@ export class AdaptiveHarness {
       ...(request.stepId ? {stepId: request.stepId} : {}),
       workerId: composition.candidate.route.workerId,
       providerId: composition.candidate.route.providerId,
+      ...(composition.candidate.route.accountProfileId ? {accountProfileId: composition.candidate.route.accountProfileId} : {}),
       modelId: composition.candidate.route.modelId,
       promptProfile: composition.prompt!,
       harness,

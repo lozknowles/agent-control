@@ -1,4 +1,4 @@
-# Agent Control 3.5.0
+# Agent Control 3.7.0
 
 Agent Control runs governed parameterised jobs against qualified execution and model resources. It is an infrastructure-neutral, policy-controlled adaptive harness for durable work by heterogeneous agents and models. Its executable harness core composes a task-appropriate worker, provider/model route, prompt profile, minimum qualified skills, restricted tools, context strategy, runtime settings, authority snapshot, resource limits and verification/escalation policy into a fingerprinted execution recipe.
 
@@ -10,13 +10,58 @@ Orca is available behind a narrow execution-provider contract. Orca may execute 
 
 3.5 adds a persistent identity control plane with an explicit chain:
 
-`Actor → Session → Work Parcel → Agent → Model → Runtime → Resource → Evidence`
+`Actor → Session → Work Parcel → Agent → Model → Provider → Runtime → Node/Resource → Evidence`
 
 The session creator is immutable. Participants, capabilities, context policy and mode (`observer`, `collaborative`, `operator-controlled`, or `restricted`) are durable. Agent-to-agent delegation records both actors, both agents, the context-transfer hash, inherited authority, requested/actual model, child Run and evidence. Child authority must be a subset of its parent and session. Secrets remain opaque references used through capability-checked operations; literal credentials are rejected from context and persistence.
 
 The dashboard **Sessions** tab reads this authoritative store and shows participants, active attributed Work Parcels, the agent/delegation graph, baton token/hash traces, models, runtime/node identity, context policy, evidence and complete-chain token/cost values where providers reported them. Execution admission enforces the session's participant authority, model/node allow-lists and filesystem/network envelope. Existing records receive deterministic `legacy-actor:*` / `legacy-session:*` attribution; legacy “Ox” labels remain historical aliases of canonical `GLM-5.3-Flash`, not a distinct model.
 
-An ACP v1 JSON-RPC adapter maps `initialize`, session new/load/resume/list/prompt/cancel/close, session updates and request cancellation into the same sessions and Work Parcels. ACP is an interoperability edge, not a second scheduler, shell or tool-authority path. See [identity and delegation](docs/identity-sessions-delegation.md), [security](docs/security-3.5.md), [migration](docs/migration-3.5.md), and [ACP compatibility](docs/acp-compatibility.md).
+The 3.6 runtime retained by 3.7 packages the governed ACP mapping as a real stable-v1 newline-delimited JSON-RPC stdio endpoint using the pinned official TypeScript SDK. It supports initialization, session new/load/resume/list/prompt/cancel/close, ordered plan/tool updates, request cancellation, durable session reconstruction and graceful shutdown. ACP is an interoperability edge, not a second scheduler, shell or tool-authority path.
+
+The caller must be admitted as an existing Actor; stdio uses `AGENT_CONTROL_ACP_ACTOR_ID` and defaults to the already registered `web-operator`. Diagnostics go to stderr because stdout is reserved for protocol frames:
+
+```bash
+AGENT_CONTROL_STATE_DIR=/srv/agent-control/state \
+AGENT_CONTROL_ACP_ACTOR_ID=web-operator \
+agent-control acp
+```
+
+No remote listener is enabled by this command. ACP v2 remains draft, is not imported by the stable runtime and is not claimed. See [identity and delegation](docs/identity-sessions-delegation.md), [security](docs/security-3.5.md), [migration](docs/migration-3.5.md), and [ACP compatibility](docs/acp-compatibility.md).
+
+Authenticated Streamable HTTP and WebSocket are separately and explicitly enabled. The token is resolved indirectly from the named environment variable; it is never accepted in a URL or configuration file. Loopback is the safe default, and a non-loopback bind fails unless a TLS certificate/key pair is configured:
+
+```bash
+export AGENT_CONTROL_ACP_REMOTE_ENABLED=true
+export AGENT_CONTROL_ACP_REMOTE_TOKEN_ENV=ACP_OPERATOR_BEARER
+export ACP_OPERATOR_BEARER='use-a-secret-manager-generated-value'
+agent-control acp-remote
+```
+
+Optional settings are `AGENT_CONTROL_ACP_REMOTE_HOST`, `AGENT_CONTROL_ACP_REMOTE_PORT`, `AGENT_CONTROL_ACP_REMOTE_PATH`, `AGENT_CONTROL_ACP_REMOTE_ALLOWED_ORIGINS`, `AGENT_CONTROL_ACP_REMOTE_TLS_CERT_FILE`, and `AGENT_CONTROL_ACP_REMOTE_TLS_KEY_FILE`. Production exposure remains an operator deployment decision; development did not open or modify a live listener.
+
+## Contract-owned process and PTY state
+
+The 3.6 runtime retained by 3.7 persists the ownership chain `Lane → Contract → Baton → Process/PTY → Agent`. A contract retains task identity, completion criteria, authority, protected-resource rules, budget, sealed baton, attachments, pending actions, verification and evidence if an agent disconnects or a controller restarts. PTY consultation and reconnect are read-only; write control is singular and explicitly transferred. Human takeover pauses agent authority before accepting writes, and agent resumption requires deliberate return. See [contract and PTY runtime](docs/contract-pty-runtime.md).
+
+Governed workers return exactly one explicit outcome: `SACRIFICE`, `SUBSTITUTE`, `DELEGATE`, `YIELD`, or `COMPLETE`. AUTO handoffs execute only inside the contract's existing authority, resource envelope and budget. Costly escalation, privilege/resource expansion, production writes, destructive actions and explicitly MANUAL requests wait for the contract operator. `COMPLETE` means “submit for independent verification,” not success. See [governed handoffs](docs/governed-handoffs.md).
+
+Providers and models now have a session-neutral lifecycle separate from execution sessions: `DISCOVERED → BENCHMARKING → SHADOW → CANDIDATE → ACTIVE → PREFERRED → DEPRECATED`. Immutable recipes bind exact provider/model/version and capability requirements. Versioned champion/challenger policy supports historical replay and evidence-gated rollback while keeping credentials as indirect references. See [provider and model lifecycle](docs/provider-model-lifecycle.md) and [adding a provider](docs/models/ADDING-A-PROVIDER.md).
+
+Capability routing now has a frozen 60-task suite with a 12-task holdout and a separately accounted twelve-child coordinator/baton experiment. The deterministic classifier scored 60/60 with zero unsafe false positives, but no physical provider observations have been supplied to the new gate. Automatic production routing therefore remains disabled; use only manual, benchmark, shadow, candidate or governed opt-in modes. See the [capability-routing benchmark](docs/capability-routing-benchmark.md).
+
+The separate physical chain `gpt-5.6-luna → local Qwen2.5 3B → z-ai/glm-5.3-flash → gpt-5.6-luna` has now run with local `YIELD`, GLM `SUBSTITUTE`, minimal batons, controller reconstruction and independent parent/child verification. It qualified with observed GLM retries and unknown provider token/cost data; it does not satisfy the larger automatic-routing gate. See [physical multi-provider qualification](docs/physical-multi-provider-qualification.md).
+
+The existing Sessions, Systems and Models dashboard views now read one redacted `GET /api/runtime` projection for stable ACP v1 transports/sessions, contract/process/PTY ownership, approvals, handoffs, baton hashes/sizes and immutable provider/model lifecycle state. Prompt bodies, objectives, baton payloads, transcripts, credential references and unavailable usage/cost are not exposed. See [dashboard usage](docs/web-dashboard.md), [3.6 security boundaries](docs/security-3.6.md), and the [development qualification evidence](docs/evidence/agent-control-3.6-development-qualification.md).
+
+## Token-Aware Baton Routing
+
+3.7 introduces durable live token/context telemetry and a policy-driven baton governor. Each running thread reports provider/account profile/model, cumulative input/output/total tokens, current context/window/percentage where exposed, authority (`authoritative`, `estimated`, or `unavailable`), cost, elapsed time, governor state, and next threshold. The dashboard receives updates through its existing SSE stream without a page refresh and retains Work Parcel totals through handoffs: `OpenAI/Lawrence Pro/Sol 184k → OpenAI/Cottage Plus/Luna 31k → GLM/default/GLM-5.3-Flash 18k = 233k total`.
+
+Default policy records `CONTINUE` at 60%, `PREPARE_BATON` at 75%, `COMPACT` at 85%, and handoff evaluation at 90%. Context pressure is not a downgrade command: unfinished difficult reasoning stays on the stronger model. A handoff requires a sealed verified baton, bounded/mechanical remaining work, compatible qualified target, policy permission, and a lower-cost target where price information exists. Compaction, native context changes and resume boundaries are durable events and never reset Work Parcel totals. The normal parameterized repository-review lifecycle now evaluates this policy between immutable context chunks, delegates the next bounded chunk through the existing contract/handoff runtime, and returns the consolidated result to the existing independent validator. A failed destination is marked failed and the preserved source route resumes the same chunk. See [Token-Aware Baton Routing](docs/token-aware-baton-routing.md) and the [Codex 0.153 review](docs/evidence/agent-control-3.7-codex-0.153-review.md).
+
+Codex routes may optionally bind an opaque account profile and execution node beneath the provider: `provider → account profile → model → node`. Each profile points to a separately authenticated `CODEX_HOME` through an environment-variable reference that is resolved only on its configured node; Agent Control never reads, copies, logs, or persists the OAuth files or the resolved path. Controller-local profiles retain the existing child-process path. Windows credential nodes use the configured governed SSH resource and a fixed read-only PowerShell runner—there is no arbitrary remote-shell API. Authenticate each home once interactively on its own node, then use **Models → Check account** to qualify it independently. Saved Jobs may pin `accountProfile`, or leave it to predetermined model-role policy. Agent Control does not rotate accounts to evade or combine usage limits, and rate-limit/exhaustion failures remain attributed to the account that produced them. Configuration and login examples are in [Codex integration](docs/models/CODEX-INTEGRATION.md).
+
+The production lifecycle is physically qualified across two distinct live local provider/model routes. A real source result triggered the unchanged governor under an economical qualification-only threshold policy, produced a sealed baton, continued on the destination and passed independent verification; 186 source plus 510 destination tokens reconciled to 696 parcel tokens. A second run refused the destination and recovered the original source thread. Provider-unreported context and cost remain explicitly estimated or unavailable. See the [physical qualification evidence](docs/evidence/agent-control-3.7-physical-qualification-20260902.md).
 
 ## Governed fast execution (Spark)
 
@@ -88,7 +133,7 @@ Job mutations use `AGENT_CONTROL_WEB_OPERATOR_TOKEN` only as a bearer header. Th
 
 Agent Control now has a provider-neutral registry for external and local models. Providers own endpoint, wire protocol and secret references; models own provider model ID, capabilities, limits, pricing metadata and qualification state; logical roles such as `coding.fast` or `reasoning.deep` own ordered primary/fallback policy. Only a model qualified on the selected execution node can route. `UNTESTED`, `QUALIFYING`, `FAILED` and `DISABLED` entries remain visible but fail closed.
 
-The dashboard **Models** tab shows provider/model identity, roles, qualification, node availability, limits, latency, configured pricing and fallback position. The authenticated **Configuration** view can add or edit providers and models without storing API keys. See [`docs/models/README.md`](docs/models/README.md), [`docs/models/ADDING-A-PROVIDER.md`](docs/models/ADDING-A-PROVIDER.md), [`docs/models/CODEX-INTEGRATION.md`](docs/models/CODEX-INTEGRATION.md) and [`docs/models/LOCAL-MODELS.md`](docs/models/LOCAL-MODELS.md).
+The dashboard **Models** tab shows provider/account/model/node identity, safe account label and plan authority, independent account/model qualification, node availability, limits, latency, configured pricing and fallback position. The authenticated **Configuration** view can add or edit providers, account-profile references and models without storing API keys or OAuth material. See [`docs/models/README.md`](docs/models/README.md), [`docs/models/ADDING-A-PROVIDER.md`](docs/models/ADDING-A-PROVIDER.md), [`docs/models/CODEX-INTEGRATION.md`](docs/models/CODEX-INTEGRATION.md) and [`docs/models/LOCAL-MODELS.md`](docs/models/LOCAL-MODELS.md).
 
 ## Persistent Teammates
 
@@ -288,4 +333,4 @@ The neutrality guard rejects private topology identifiers in distributable runti
 - Ripgrep is the only semantic command-output adapter in this change. Other oversized command families use the generic labelled fallback until a specialised index is added. A tiny typed ripgrep request retains its structured authoritative stream and therefore can be larger than normal human-formatted `rg`; it is not compacted merely because it came from ripgrep.
 - Harness-profile routing remains observational. A live same-model repository-mutation experiment now measures provider tokens, observed warm-cache behaviour, latency, independent verifier outcomes and cumulative escalation cost, but its 12-task sample had only 2/12 STANDARD successes and no adaptive resource advantage. No profile is production-qualified; STANDARD remains the applied fallback and monetary cost remains unknown.
 
-The foundational operator guide is [`docs/Agent-Control-3.1.0-Operator-Guide.md`](docs/Agent-Control-3.1.0-Operator-Guide.md), distributed as [Markdown](assets/releases/3.1.0/Agent-Control-3.1.0-Operator-Guide.md) and [PDF](assets/releases/3.1.0/Agent-Control-3.1.0-Operator-Guide.pdf). For current operation, use [`docs/fast-execution.md`](docs/fast-execution.md), [`docs/migration-3.5.md`](docs/migration-3.5.md), [`docs/identity-sessions-delegation.md`](docs/identity-sessions-delegation.md), [`docs/jobs/README.md`](docs/jobs/README.md), [`docs/web-dashboard.md`](docs/web-dashboard.md), [`docs/jobs-and-scheduler.md`](docs/jobs-and-scheduler.md), [`docs/managed-nodes.md`](docs/managed-nodes.md), [`docs/status-command.md`](docs/status-command.md), and [`ARCHITECTURE.md`](ARCHITECTURE.md). Release scope and recovery instructions are in the [`3.5.0 release notes`](docs/release-notes-3.5.0.md); historical 3.0.1 assets remain under `assets/releases/3.0.1/`.
+The foundational operator guide is [`docs/Agent-Control-3.1.0-Operator-Guide.md`](docs/Agent-Control-3.1.0-Operator-Guide.md), distributed as [Markdown](assets/releases/3.1.0/Agent-Control-3.1.0-Operator-Guide.md) and [PDF](assets/releases/3.1.0/Agent-Control-3.1.0-Operator-Guide.pdf). For current operation, use [`docs/token-aware-baton-routing.md`](docs/token-aware-baton-routing.md), [`docs/contract-pty-runtime.md`](docs/contract-pty-runtime.md), [`docs/governed-handoffs.md`](docs/governed-handoffs.md), [`docs/provider-model-lifecycle.md`](docs/provider-model-lifecycle.md), [`docs/acp-compatibility.md`](docs/acp-compatibility.md), [`docs/fast-execution.md`](docs/fast-execution.md), [`docs/security-3.6.md`](docs/security-3.6.md), [`docs/identity-sessions-delegation.md`](docs/identity-sessions-delegation.md), [`docs/jobs/README.md`](docs/jobs/README.md), [`docs/web-dashboard.md`](docs/web-dashboard.md), [`docs/jobs-and-scheduler.md`](docs/jobs-and-scheduler.md), [`docs/managed-nodes.md`](docs/managed-nodes.md), [`docs/status-command.md`](docs/status-command.md), and [`ARCHITECTURE.md`](ARCHITECTURE.md). Release scope, upgrade and recovery instructions are in the [`3.7.0 release notes`](docs/release-notes-3.7.0.md) and [`3.7 migration guide`](docs/migration-3.7.md); historical releases remain immutable.

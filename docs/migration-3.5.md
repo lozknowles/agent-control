@@ -43,6 +43,8 @@ Use the authenticated **Configuration → Fast execution** editor or `POST /api/
 5. If evaluating Spark, confirm `codex --version` and `codex login status`, run `npm run benchmark:fast-execution`, then run `npm run benchmark:fast-execution -- --live --standard-model gpt-5.6-luna`; do not enable it from availability alone.
 6. Run ACP adapter conformance tests if an external client is being introduced.
 
+For the unreleased contract/PTY, ACP transport, provider lifecycle and runtime-dashboard changes after 3.5, continue with [migration to 3.6 development](migration-3.6.md). The released 3.5 rollback point remains tag `v3.5.0`.
+
 The qualified installed client is `codex-cli 0.144.4`. Although current Codex documentation describes `agents.enabled=false`, that boolean is rejected by this client; Agent Control uses the directly verified compatibility switch `features.multi_agent=false`. Requalify this no-fan-out setting after a Codex upgrade. The 2026-09-01 frozen live run recorded 10/10 classifier decisions, Spark 7/7 verified at 14.464 s median, and the `gpt-5.6-luna` comparison 6/7 at 27.100 s median. Monetary cost was not exposed. See [`fast-execution.md`](fast-execution.md) and [`evidence/agent-control-3.5-qualification.md`](evidence/agent-control-3.5-qualification.md).
 
 No deployment, live configuration change or tag is performed by this feature branch.

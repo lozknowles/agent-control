@@ -1,6 +1,6 @@
 # Agent Control architecture
 
-This is the authoritative source boundary for Agent Control 3.5.0. Status labels matter:
+This is the authoritative source boundary for Agent Control 3.7.0. Status labels matter:
 
 - **implemented** means executable code and automated tests exist in this branch;
 - **experimental** means executable code exists but has not been qualified across every external substrate;
@@ -116,11 +116,51 @@ An agent profile describes a persistent specialist. An Actor is the authenticate
 
 Context transfer persists descriptors and hashes, not copied prompt bodies. Full, summary, evidence, structured-baton and hybrid policies can be compared using the same frozen experiment interface. Secret values may only cross an opaque capability-checked operation and are rejected if returned or placed in context.
 
+## Contract-owned execution
+
+```text
+Lane → Contract → sealed Baton → Process / PTY → Agent
+         |                              |
+         + authority / budget           + attach / detach
+         + completion criteria          + one write owner
+         + protected resources          + ordered output
+         + pending actions              + restart observation
+         + verification / evidence
+```
+
+`ContractExecutionRuntime` is the durable task owner. Agent, model, provider, runtime and process identities may change without replacing the contract. Its versioned record contains the active route, process observation, PTY ownership generation, participants, ordered transcript, attachments, permissions, remaining budget, pending actions, verification and evidence. The sealed baton stores canonical content plus its generation, byte count and SHA-256; credential-like content is rejected.
+
+Detach does not terminate a running process. Consultation and reconnect attach read-only. Write transfer requires a durable request approved by the current writer or contract operator, and there is exactly one writer. Human takeover revokes every agent writer and pauses the contract; deliberate return to an attached agent creates a new ownership generation. Stale retained writers therefore cannot regain authority. Cancellation, timeout and orphaning are distinct reconstructable states. A worker's completion is only a verification submission; the active worker cannot verify itself.
+
+## Governed handoff state machine
+
+`SACRIFICE` cancels the current worker and pauses the parent contract. `SUBSTITUTE` replaces process and route under the same contract with a next-generation baton. `DELEGATE` creates a bounded child contract, intersects authority and debits parent budget. `YIELD` pauses and returns control without completion. `COMPLETE` submits evidence to independent verification.
+
+AUTO policy permits only transitions inside the current contract authority, protected-resource envelope and remaining budget. Explicit MANUAL policy, missing authority, costly escalation, production writes, destructive actions, expanded resource envelopes or budget expansion create a durable approval wait. Approval records intent but cannot create authority absent from the parent. Every transition writes `agent-control.handoff/v1` with both identities, contract links, reason, baton hash/size, transferred and withheld authority, budget, before/after state, evidence and verification outcome.
+
+## Provider and model lifecycle
+
+Logical providers are durable identities independent of a client or controller session. Discovery updates only observed capabilities and model IDs. Provider endpoint and credential reference remain immutable under one ID; credentials are indirect `env:`/`file-env:` references and never enter batons, telemetry or evidence.
+
+Model recipes bind exact provider, provider model, model version, capability, context/output limit, tool, runtime and node requirements. Their fingerprints are immutable per recipe version. Evidence gates each transition through `DISCOVERED → BENCHMARKING → SHADOW → CANDIDATE → ACTIVE → PREFERRED → DEPRECATED`.
+
+Versioned routing policy names an ACTIVE/PREFERRED champion and qualified challengers for each logical role. Historical replay produces a recommendation without mutating active policy; verified rollback may reactivate an immutable earlier version. Placement remains separate: recipes state semantic node/runtime requirements without hard-coding a machine. `GLM-5.3-Flash` is canonical and historical `Ox` is only an input alias, not a separate lifecycle identity.
+
+Capability classification then chooses a minimum execution class in the governed hierarchy `LOCAL → SPARK → STANDARD → FRONTIER`; the registry resolves that class to an exact qualified recipe. This is orthogonal to THIN/STANDARD/DEEP harness profiles. The frozen 60-task policy suite and 12-case holdout test conservative classification and fail-closed unavailability, while a separate physical-observation gate measures provider outcomes. A deterministic classifier pass cannot promote routing policy by itself.
+
+The coordinator experiment compares one FRONTIER worker receiving the whole twelve-part job with a coordinator compiling 12 minimal child batons. Parent context and child batons are accounted separately. Child results, additional-context requests, verification, escalation and integration outcomes remain unknown until physical execution. See [capability-routing benchmark](docs/capability-routing-benchmark.md).
+
+The physical multi-provider proof exercises the same boundaries across Codex/Luna, loopback llama.cpp/Qwen and OpenRouter/GLM-5.3-Flash. The local worker yields after its bounded task, the substituted reviewer receives only review authority and a minimal baton, and Luna submits the integrated result for independent verification. Contract detach/reconstruction preserves process and baton identity. See [physical multi-provider qualification](docs/physical-multi-provider-qualification.md).
+
 ## ACP interoperability boundary
 
-The ACP adapter implements stable Agent Client Protocol v1 JSON-RPC session methods above the control plane. An external ACP session maps to one governed Agent Control session; prompt content becomes a hash-addressed context transfer and then an ordinary Work Parcel. `session/cancel`, `session/close` and `$/cancel_request` call the same cancellation port and preserve actor/session identity. ACP tool-call updates carry Work Parcel, Run and evidence references, not direct tool authority.
+The ACP runtime implements stable Agent Client Protocol v1 JSON-RPC session methods above the control plane. The official TypeScript SDK owns schema validation, dispatch and NDJSON framing; `AcpAgentControlAdapter` owns the governed mapping. An external ACP session maps to one governed Agent Control session; prompt content becomes a hash-addressed context transfer and then an ordinary Work Parcel. `session/cancel`, `session/close` and request cancellation call the same cancellation port and preserve actor/session identity. Durable ACP bindings reconstruct from the identity and ACP session stores after a process restart. Ordered plan, tool-call and tool-call-update notifications carry Work Parcel, Run and evidence references, not direct tool authority. Usage or cost is omitted when the underlying execution does not report it.
 
-The adapter is transport-neutral so stdio or WebSocket framing can be supplied independently. No OpenClaw dependency is introduced. ACP v2 remains experimental and is not claimed.
+`RuntimeObservability` is a read-only composition boundary over persisted ACP bindings, contract/PTY state, handoffs and provider lifecycle. `AgentControlService` exposes it at `/api/runtime` and merges transport/lifecycle readiness into Systems. The projection carries identities, state, hashes, sizes and evidence references while omitting ACP prompt/cwd content, contract objective/baton payload, PTY transcript, handoff request and credential-reference names. It cannot start a listener, invoke a provider, write a PTY, approve a handoff or promote lifecycle state.
+
+`agent-control acp` is the qualified local stdio adapter. Actor admission is out-of-band and fail-closed: the configured Actor must already exist in the durable identity store. `agent-control acp-remote` reuses the same core through the official Streamable HTTP/WebSocket server transport. It is disabled unless explicitly enabled, requires an indirect bearer secret, checks browser origins, bounds request/frame size, routes one exact path and refuses cleartext non-loopback binding. A TLS certificate/key pair is mandatory for non-loopback use. Tests bind only ephemeral loopback ports; no live listener was deployed.
+
+Prompt replay can carry the advertised namespaced `_meta.agentControl.deliveryId` extension. Agent Control stores only its bounded ID, prompt hash and governed outcome references; exact replay returns the original receipt and a hash mismatch fails closed. Standard fields are not reinterpreted. The stable code imports only the stable ACP root; the SDK's server transport is used independently of the separate `experimental/v2` protocol entry point. ACP v2 remains draft and is not claimed.
 
 ## Fast-execution class
 
@@ -322,7 +362,7 @@ The initial `repository-code-review@1` definition supports node-local paths unde
 
 `buildRepositoryContext` deterministically records tree, diff, changed files, important manifests/tests/source, chunk hashes, selected files, and explicit omissions. Secret-like and binary paths are excluded before provider context. THIN/STANDARD/DEEP are bounded intent profiles; omission is visible rather than reported as full coverage. Large inputs are decomposed into attributable chunks instead of being placed into one prompt.
 
-`DirectRepositoryReviewExecutor` consumes the already-selected `ModelRouteDecision` and invokes `OpenAICompatibleProviderClient` directly. It does not launch Codex. Every context chunk creates a persistent Work Parcel carrying Run ID, frozen SHA, requested/actual route, provider/model/qualification identity, and terminal evidence. Provider response bodies and credentials are not persisted; response hashes, normalized usage/cost, and selected identity are.
+`DirectRepositoryReviewExecutor` consumes the already-selected `ModelRouteDecision` and invokes the matching provider client directly. Responses-compatible providers use `OpenAICompatibleProviderClient`; account-bound CLI providers use the schema-constrained `CodexRepositoryReviewClient` through the selected `CodexNodeExecutionPort`. Controller-local profiles use an isolated child-process `CODEX_HOME`; remote profiles resolve it only on their configured execution node. Every context chunk creates a persistent Work Parcel carrying Run ID, frozen SHA, requested/actual route, provider/account/model/node/qualification identity, and terminal evidence. Provider response bodies, credential references and credentials are not persisted; response hashes, normalized usage/cost, and selected safe identity are.
 
 The structured review validator checks schema, evidence presence, confidence, repository-relative path, file existence, and line range against the frozen snapshot. Duplicate or invalid findings are rejected. Provider completion is not Job success: validation determines `SUCCEEDED`, `SUCCEEDED_WITH_FINDINGS`, `DEGRADED`, or `FAILED`. Only successful accepted outcomes advance the `(Saved Job, repository identity, ref)` baseline.
 
@@ -460,6 +500,20 @@ Android support is device-neutral. The node ID, transport, port, repository and 
 
 New capabilities are classified into policy/authority, scheduling, execution substrate, provider/model adapter, routing, context/evidence, verification/provenance, operator interface, persistence or observability. `assessConceptualIntegrity` rejects duplicate authoritative state, a second control path, interface-owned authority, provider-owned policy and capabilities without a failure mode or durable verification evidence. The operator checklist is in `docs/conceptual-integrity.md`.
 
+## Token-Aware Baton Routing (3.7)
+
+`Provider adapter → account-qualified model route → normalized telemetry/context-lifecycle sample → durable token governor → sealed baton → governed handoff → Work Parcel aggregate → SSE/dashboard → final evidence`
+
+The 3.7 governor is provider-neutral. An account-bound route has identity `provider → account profile → model → execution node`; the account and node are governed route metadata, not a new provider abstraction. Adapters may report authoritative current context occupancy, but the core never derives it from lifetime token totals. It maintains a durable record per thread, context-lifecycle events (`COMPACTION`, `NEW_CONTEXT`, `CONTINUATION`, `RESUME`), and an aggregate per Work Parcel, so compaction or provider/account/model/node transitions cannot reset cost or token accounting. Policy thresholds at 60/75/85/90 produce `CONTINUE`, `PREPARE_BATON`, `COMPACT`, or `HANDOFF`; routing converts that state to `CONTINUE`, `COMPACT_AND_CONTINUE`, or `BATON_AND_HANDOFF` only after considering unfinished reasoning, remaining-work bounds, capability, model and account qualification, cost, baton readiness, and policy constraints.
+
+Codex 0.153 validates the generic pattern of budget-aware reminders, explicit context-window transitions, persisted usage and resumable history. Agent Control adopts those concepts as provider-neutral lifecycle and accounting records. Codex configuration (`features.context_management.experimental_mode`), history notes, the model-only `new_context` tool, app-server methods/events, raw Responses metadata and OTEL turn-cost lookup remain inside the Codex adapter. The current governed Codex execution route uses `codex exec --ephemeral --json --ignore-user-config`; it therefore does not claim the experimental mode or app-server-only telemetry. A future qualified persistent Codex adapter may use those native facilities while the core sealed-baton and continuation fallback remains executable if Codex disappears. See the [Codex 0.153 review](docs/evidence/agent-control-3.7-codex-0.153-review.md).
+
+The sealed baton is written before the existing governed handoff runtime changes any worker. It carries task/diff/test/evidence/next-action provenance, originating provider/account/model/node, and token/parcel state, while the original contract/thread remains recoverable. The destination is resolved with its exact configured account and node, and invocation results must agree with all four sealed identity fields; this prevents a baton from accidentally executing in the source authentication context. Failed handoffs resume the original account/model/node and record the failure; no route component is silently substituted. The dashboard reads the redacted projection over the existing SSE channel, while sampled telemetry and every transition/decision remain in the durable token-routing evidence for reconciliation with Work Parcel verified-outcome accounting.
+
+The production parameterized repository-review path now supplies the concrete integration boundary. After one immutable context chunk returns a schema-valid result, `DirectRepositoryReviewExecutor` assesses the live source thread if another bounded chunk remains. An approved route creates the sealed token baton and uses `GovernedHandoffRuntime` `DELEGATE` to create a capability-bounded child `ContractExecution`. The child invokes the exact registry-resolved destination over the next frozen chunk. Destination failure marks that child failed and invokes the same chunk on the still-active source route; success makes the child the verification owner. Existing `ParameterizedJobEngine` repository validation independently verifies the consolidated result and records the verdict on the Work Parcel and surviving contract. Source, destination and recovery usage remains additive in the same parcel. See [Token-Aware Baton Routing](docs/token-aware-baton-routing.md).
+
+For Codex/ChatGPT authentication, each account profile contains only opaque ID, safe label, optional plan/capability metadata with authority, qualification state, execution `nodeId`, and a credential-store reference naming an environment variable. A controller-local profile resolves that variable in the existing child-process path. A remote Windows profile is dispatched through the configured SSH resource to `CodexNodeExecutionPort`, whose API permits only `accountStatus` and `execReadOnlyStructured`. A fixed encoded bootstrap reads a base64 request data line and the audited runner source separately from stdin, then passes the request to that runner as an argument; identities, prompt data and schemas never become generated PowerShell source. Windows resolves the named environment reference locally, discovers and validates candidates beneath `%LOCALAPPDATA%\OpenAI\Codex\bin\*\codex.exe`, and returns only CLI version, executable SHA-256, discovery time and sanitized structured execution data. Raw stdout/stderr, executable paths and credential paths do not cross into evidence. Account selection is explicit Saved Job policy or predetermined model-role fallback. Utilization, rate-limit or quota exhaustion never triggers account rotation.
+
 ## Release boundary
 
-Earlier version tags remain immutable source releases; `v3.5.0` is the current released source boundary. Installing or checking out the release does not deploy services, expose the dashboard remotely, create credentials, broaden sharing, enable Spark, or enable a Saved Job/Schedule. STANDARD remains the default context profile unless a governed policy explicitly selects another profile. The physical Luna → local LLM → GLM-5.3-Flash → Luna experiment remains an external qualification gate where those routes exist.
+Earlier version tags remain immutable source releases. Installing 3.7.0 does not deploy services, expose a remote ACP listener, create credentials, broaden sharing, enable Spark, or enable a Saved Job/Schedule. STANDARD remains the default context profile unless a governed policy explicitly selects another profile. The production token-governor lifecycle is physically qualified across two distinct live local provider/model routes, including a sealed baton, destination continuation, independent verification, SSE/evidence reconciliation, additive token accounting and original-thread recovery after a refused destination. Provider-unreported context and cost remain estimated or unavailable. This bounded proof does not qualify the separate 50-observation automatic capability-routing benchmark.

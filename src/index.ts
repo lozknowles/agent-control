@@ -18,10 +18,16 @@ import {AgentControlService} from './control/application-service.js';
 import {startWebDashboard} from './control/web-server.js';
 import {ContextStore} from './control/context.js';
 import {buildJobRuntime, buildParameterizedJobRuntime, startJobScheduler, startManagedNodeMonitoring, startParameterizedJobScheduler} from './control/job-bootstrap.js';
+import {ResourceCodexNodeExecutionPort} from './control/codex-node-execution.js';
 import {FileCommandResultStore, TokenAwareOutputService} from './control/token-aware-output.js';
 import {Trace} from './control/telemetry.js';
 import {AGENT_CONTROL_VERSION} from './version.js';
-import {ModelQualificationStore, ModelRegistry} from './control/model-registry.js';
+import {AccountProfileQualificationStore, ModelQualificationStore, ModelRegistry} from './control/model-registry.js';
+import {ContractExecutionRuntime} from './control/contract-runtime.js';
+import {GovernedHandoffRuntime} from './control/handoff-runtime.js';
+import {ProviderModelLifecycleRegistry} from './control/provider-lifecycle.js';
+import {RuntimeObservability} from './control/runtime-observability.js';
+import {TokenAwareBatonRuntime} from './control/token-aware-baton-routing.js';
 
 const now = () => new Date().toISOString();
 const config = loadConfig();
@@ -41,10 +47,17 @@ const state = loadWorkspace(initial), lanes = state.lanes, ptys = new PtyRegistr
 for (const provider of providersFromConfig(config.providers)) providers.register(provider);
 const queueStore = new WorkQueueStore();
 let workQueue = queueStore.load();
-const modelRegistry = new ModelRegistry(config.providers, config.models, config.modelRouting, new ModelQualificationStore(path.resolve(process.env.AGENT_CONTROL_STATE_DIR || '.agent-control', 'model-qualification.json')));
+const modelRegistry = new ModelRegistry(config.providers, config.models, config.modelRouting, new ModelQualificationStore(path.resolve(process.env.AGENT_CONTROL_STATE_DIR || '.agent-control', 'model-qualification.json')), new AccountProfileQualificationStore(path.resolve(process.env.AGENT_CONTROL_STATE_DIR || '.agent-control', 'account-profile-qualification.json')));
 const stateRoot = path.resolve(process.env.AGENT_CONTROL_STATE_DIR || '.agent-control');
+const contracts = new ContractExecutionRuntime(path.join(stateRoot, 'contracts', 'executions.json'));
+const handoffs = new GovernedHandoffRuntime(contracts, path.join(stateRoot, 'contracts', 'handoffs.json'));
+const tokenBatonRouting = new TokenAwareBatonRuntime(path.join(stateRoot, 'token-baton-routing', 'evidence.json'), config.tokenBatonRouting);
+const codexNodeExecution = new ResourceCodexNodeExecutionPort(config.resources);
+const providerLifecycle = new ProviderModelLifecycleRegistry(path.join(stateRoot, 'models', 'lifecycle.json'));
+const remoteTokenEnvironment = process.env.AGENT_CONTROL_ACP_REMOTE_TOKEN_ENV?.trim();
+const runtimeObservability = new RuntimeObservability({contracts, handoffs, providerLifecycle, acpSessionDirectory:path.join(stateRoot,'acp'), remoteAcp:{enabled:process.env.AGENT_CONTROL_ACP_REMOTE_ENABLED==='true',authenticationConfigured:Boolean(remoteTokenEnvironment&&process.env[remoteTokenEnvironment]),loopback:['127.0.0.1','::1','localhost'].includes((process.env.AGENT_CONTROL_ACP_REMOTE_HOST??'127.0.0.1').toLowerCase())}});
 const jobRuntime = buildJobRuntime(config, stateRoot, undefined, undefined, modelRegistry);
-const parameterizedJobs = buildParameterizedJobRuntime(config, modelRegistry, jobRuntime.workParcels, stateRoot);
+const parameterizedJobs = buildParameterizedJobRuntime(config, modelRegistry, jobRuntime.workParcels, stateRoot, tokenBatonRouting, contracts, handoffs, codexNodeExecution);
 const commandOutputRoot = path.resolve(stateRoot, 'command-output');
 const tokenAwareOutput = new TokenAwareOutputService(new FileCommandResultStore(commandOutputRoot), {
   policy: config.tokenAwareOutput,
@@ -59,9 +72,13 @@ const control = new AgentControlService(state, ptys, providers).configureProject
   tokenAwareOutput,
   harnessEfficiency: jobRuntime.harnessEfficiency,
   workParcels: jobRuntime.workParcels,
+  tokenBatonRouting,
+  codexNodeExecution,
   modelRegistry,
   parameterizedJobs,
+  runtimeObservability,
 });
+tokenBatonRouting.subscribe(event => control.events.emit(event.type === 'telemetry' ? 'token.telemetry' : event.type === 'governor.transition' ? 'token.governor_transition' : event.type === 'context.lifecycle' ? 'token.context_lifecycle' : event.type === 'baton.created' ? 'token.baton_created' : 'token.handoff_result', {threadId: event.threadId, parcelId: event.parcelId, observedAt: event.at}, undefined, 'token-baton-runtime'));
 startManagedNodeMonitoring(jobRuntime, snapshot => control.events.emit('resource.node_changed', {resourceId: snapshot.resourceId, state: snapshot.state, health: snapshot.health, currentWorkload: snapshot.currentWorkload}, undefined, 'managed-node-monitor'), error => control.events.emit('failure', {scope: 'managed-node-monitor', error: error.message}, undefined, 'managed-node-monitor'));
 startJobScheduler(jobRuntime, (runId, status) => control.events.emit('job.run_changed', {runId, status}, undefined, 'job-scheduler'), 1000, error => control.events.emit('failure', {scope: 'job-scheduler', error: error.message}, undefined, 'job-scheduler'));
 startParameterizedJobScheduler(parameterizedJobs, (runId, status) => control.events.emit('job.run_changed', {runId, status, kind: 'parameterized'}, undefined, 'parameterized-job-scheduler'), 1000, error => control.events.emit('failure', {scope: 'parameterized-job-scheduler', error: error.message}, undefined, 'parameterized-job-scheduler'));

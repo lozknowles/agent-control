@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import path from 'node:path';
+import {spawn} from 'node:child_process';
+import {createRequire} from 'node:module';
 import {fileURLToPath} from 'node:url';
 import {formatAuthoritativeStatus, readAuthoritativeStatus, statusExitCode, StatusClientError} from './status-client.mjs';
 
@@ -8,6 +10,8 @@ const usage = `Agent Control command line
 
 Usage:
   agent-control status [--json]
+  agent-control acp
+  agent-control acp-remote
   agent-control jobs definitions [definition-id]
   agent-control jobs saved [saved-job-id]
   agent-control jobs schedules
@@ -25,11 +29,15 @@ It uses the controller-local endpoint by default or the configured SSH transport
 from the node's status-client configuration.
 
 Job reads use AGENT_CONTROL_WEB_URL (default http://127.0.0.1:4310). Mutations
-use AGENT_CONTROL_WEB_OPERATOR_TOKEN only as an Authorization header.`;
+use AGENT_CONTROL_WEB_OPERATOR_TOKEN only as an Authorization header.
+
+The acp command serves stable ACP v1 as newline-delimited JSON-RPC over stdio.
+It admits the pre-registered AGENT_CONTROL_ACP_ACTOR_ID (default web-operator).`;
 
 export async function main(argv = process.argv.slice(2), io = {out: console.log, error: console.error}) {
   const command = argv[0];
   if (command === '--help' || command === '-h') { io.out(usage); return 0; }
+  if (command === 'acp' || command === 'acp-remote') return argv.length === 1 ? runTypeScriptCommand(command === 'acp' ? 'acp.ts' : 'acp-remote.ts') : (io.error(usage), 2);
   if (command === 'jobs') return jobsCommand(argv.slice(1), io);
   if (command !== 'status') { io.error(usage); return 2; }
   const flags = new Set(argv.slice(1));
@@ -44,6 +52,15 @@ export async function main(argv = process.argv.slice(2), io = {out: console.log,
     else io.error(`AGENT CONTROL UNREACHABLE\n${item.code}: ${item.message}`);
     return 2;
   }
+}
+
+async function runTypeScriptCommand(filename) {
+  const script = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../src', filename);
+  const tsx = createRequire(import.meta.url).resolve('tsx');
+  return await new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, ['--import', tsx, script], {stdio: 'inherit', env: process.env});
+    child.once('error', reject); child.once('exit', (code, signal) => resolve(code ?? (signal ? 1 : 0)));
+  });
 }
 
 async function jobsCommand(argv, io) {

@@ -69,6 +69,8 @@ Operator-authenticated operations:
 - `POST /api/models/:id/qualify` with `{"nodeId":"controller"}`
 - `POST /api/models/:id/route` with node, capabilities and fallback policy
 - `POST /api/configuration/systems` for provider/model upserts
+
+On 3.7, a CLI provider may also contain safe account-profile metadata and a model may bind `accountProfile`. The effective account route is `provider/account/model/node`; account and model qualification are separate and both must agree on the execution node. `GET /api/models/accounts` exposes only opaque ID, node ID, friendly label, plan authority, availability and qualification. `POST /api/models/accounts/{provider}/{account}/qualify` performs an authenticated, operator-triggered profile check on that profile's node. Codex login, local isolation and restricted Windows-node execution are documented in [CODEX-INTEGRATION.md](CODEX-INTEGRATION.md).
 - `POST /api/configuration/model-routing` for complete role-map replacement
 
 See the **Models** dashboard tab for the same projection.

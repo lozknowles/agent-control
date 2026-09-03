@@ -1,5 +1,70 @@
 # Changelog
 
+## [3.7.0] — 2026-09-03
+
+- Adds Token-Aware Baton Routing with policy-configured `CONTINUE`, `PREPARE_BATON`, `COMPACT`, and `HANDOFF` pressure states (60/75/85/90% defaults).
+- Adds durable per-thread and Work Parcel input/output/total token, context, cost, elapsed-time, authority, transition, route-decision, and sealed-baton evidence.
+- Adds provider-neutral adapter telemetry for Codex JSONL and Responses-compatible providers, including GLM-5.3-Flash and local providers. Current context is explicitly `unavailable` where a provider does not expose it; lifetime totals are not misrepresented as occupancy.
+- Adds verified baton contents, governed-handoff integration, failed-handoff recovery of the original thread, and multi-model aggregate accounting that survives model changes.
+- Wires the governor into the normal parameterized repository-review Work Parcel lifecycle: completed frozen chunks are assessed, the next bounded chunk is delegated through a child contract with a sealed baton, destination execution is independently validated, and destination failure resumes the preserved source route.
+- Adds real-time dashboard/SSE telemetry for active threads and parcel-level chain totals, plus the read-only `GET /api/token-routing` projection.
+- Adds optional provider-owned account profiles so governed routes are identified as `provider → account profile → model → execution node`. Codex profiles use isolated pre-authenticated `CODEX_HOME` directories referenced only by environment-variable name; model routes, sealed batons, contracts, telemetry, Work Parcel audits and chain totals preserve the opaque account and node identity.
+- Adds a restricted Codex node-execution port with only account-status and structured read-only execution operations. Windows SSH resources receive one fixed audited PowerShell program over stdin, resolve their own profile reference, discover and version-check the active Codex Desktop bundle, and return sanitized structured results without executable paths, raw process output or credentials.
+- Fixes qualification-discovered Windows transport defects: the SSH adapter now frames request data separately from the audited stdin runner instead of expecting `-Command -` to leave unread stdin, and the login-status probe safely classifies Codex's native stderr result without persisting raw output.
+- Adds independent account health/qualification records and safe Models/dashboard projections for friendly label, operator/provider-attributed plan, availability, qualification and next route. Emails, credential paths, OAuth/access/refresh tokens, cookies and session material are excluded.
+- Allows Saved Jobs to pin an account profile as explicit workload policy. Account availability is never used for automatic rotation to evade or aggregate usage/rate limits; exhaustion and rate limiting remain visible failures on the selected profile.
+- Reviews official Codex `rust-v0.153.0` and adds provider-neutral durable context-lifecycle records for compaction, new-context, continuation and resume boundaries. These stream to the dashboard and preserve cumulative Work Parcel accounting across context resets.
+- Adds a Codex 0.153 adapter normalizer for app-server `thread/tokenUsage/updated` and `contextCompaction` events. Codex's mixed provider/recomputed context count is marked `estimated`; the current `codex exec --ephemeral --json --ignore-user-config` route retains its honest `unavailable` fallback. Experimental token-budget/history-notes/`new_context`, internal raw response metadata and OTEL turn cost remain Codex-specific capabilities and are not made core policy dependencies.
+- Physically qualifies the production lifecycle across two distinct live local provider/model routes: source observation and governor assessment, sealed baton creation, destination continuation, independent verification, exact SSE/evidence reconciliation, and fail-closed destination refusal with original-thread recovery. The proof uses qualification-only thresholds with the unchanged production governor; local current-context values are explicitly estimated, source price remains unavailable, and no Codex workload leg is claimed.
+
+## Unreleased — Agent Control 3.6
+
+### ACP runtime
+
+- Pins official `@agentclientprotocol/sdk` 1.4.0 and its Zod 4.5.4 peer, and packages the stable protocol-v1 governed adapter as `agent-control acp` over newline-delimited JSON-RPC stdio.
+- Adds official-SDK schema dispatch, ordered plan/tool-call updates, durable ACP session reconstruction, identity-bound admission, cancellation and graceful process shutdown.
+- Adds official SDK client interoperability tests over the real NDJSON stream. Independent non-SDK conformance, authenticated remote transport and adversarial/recovery expansion remain work in progress.
+- Adds explicit authenticated Streamable HTTP and WebSocket adapters using the official SDK server transport, constant-time bearer comparison, origin checks, bounded bodies, exact-path routing and TLS-required non-loopback binding. The `ws` 8.21.3 transport dependency is exact-pinned.
+- Adds official HTTP/WebSocket client tests plus an SDK-independent raw wire harness for negotiation, malformed JSON, invalid IDs and unknown methods. Adds a namespaced durable delivery ID for idempotent prompt replay without changing standard ACP fields.
+- ACP v2 remains explicitly experimental and is not imported, advertised or claimed.
+
+### Contract and PTY runtime
+
+- Adds a durable contract-owned execution record for `Lane → Contract → Baton → Process/PTY → Agent`, retaining objective, authority, budget, active route, sealed baton, attachments, permissions, pending actions, verification, evidence and history across restart.
+- Adds read-only consultation/reconnect, detach without process termination, explicit single-writer requests/transfers, unconditional human takeover, deliberate agent resumption and ownership-generation fencing.
+- Adds ordered terminal output, process observation, orphan detection, distinct cancellation/timeout states and independent verification. The redacted dashboard projection is implemented; operating-system-specific process/PTY creation and signal adapters remain a later checkpoint.
+
+### Governed handoffs
+
+- Adds explicit `SACRIFICE`, `SUBSTITUTE`, `DELEGATE`, `YIELD` and `COMPLETE` transitions over contract-owned state. Substitution preserves the parent contract; delegation creates a bounded child and debits parent budget; completion only submits verification.
+- Adds AUTO admission for changes inside existing authority/budget and MANUAL approval for cost, privilege, production, destructive or resource-envelope escalation. Approval never manufactures withheld authority.
+- Persists source/target identity, parent/child contract, reason, baton hash/size, transferred/withheld authority, budget, before/after state, evidence, approval and verification outcome with restart tests.
+
+### Provider and model lifecycle
+
+- Adds durable session-neutral logical providers with indirect credential references and observed capabilities/model IDs; provider identity is not tied to a machine or controller session.
+- Adds immutable exact model recipes and the evidence-gated `DISCOVERED → BENCHMARKING → SHADOW → CANDIDATE → ACTIVE → PREFERRED → DEPRECATED` lifecycle.
+- Adds versioned champion/challenger routing policy, historical replay and verified rollback without enabling automatic production Job routing. Missing cost remains unknown.
+
+### Capability-routing benchmark
+
+- Adds a frozen 60-task capability-routing corpus with a 12-task holdout, predeclared safety/success criteria and deterministic `LOCAL → SPARK → STANDARD → FRONTIER` classification.
+- Adds a physical-observation contract for exact provider/model identity, verification, latency, attempts, escalation, context/baton size, tokens, cost and change-scope integrity without converting missing telemetry to zero.
+- Adds a same-job coordinator experiment with one complete FRONTIER context versus 12 separately accounted minimal child batons.
+- The classifier passed 60/60 with zero unsafe false positives, but no physical observations were supplied. Automatic production routing and Spark-by-default remain disabled.
+
+### Physical multi-provider chain
+
+- Qualifies the real `gpt-5.6-luna → local Qwen2.5 3B → z-ai/glm-5.3-flash → gpt-5.6-luna` chain with exact provider/model identities and indirect credentials.
+- Records local `YIELD`, GLM `SUBSTITUTE`, minimal sealed batons, fail-closed authority expansion, attach/detach, controller reconstruction and independent child/parent verification.
+- Records two unsuccessful GLM attempts before the successful bounded response and leaves unreported token/cost values unknown. This one chain does not qualify automatic production routing.
+
+### Dashboard and runtime observability
+
+- Adds one read-only `/api/runtime` projection for stable ACP v1 transports/sessions, contract/process/PTY ownership, approvals, handoffs and provider/model lifecycle state.
+- Extends existing Sessions, Systems and Models views with protocol/authentication state, active identities, node/runtime, participants/writer, baton hashes/sizes, recovery, verification and lifecycle policy without adding a disconnected ACP dashboard.
+- Omits prompt/cwd content, objectives, baton payloads, transcripts, handoff requests and credential references; missing transport attribution, usage, cost and reachability remain unknown.
+
 ## [3.5.0] — 2026-09-01
 
 ### Identity, delegation and sessions

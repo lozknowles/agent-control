@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {AdaptiveHarness, SkillCatalog, ToolPolicy, type RecipeRequest} from './adaptive-harness.js';
-import {CodexExecProviderFactory, runCodexWithRegisteredModel} from './codex-exec-provider.js';
+import {CODEX_0153_CONTEXT_CAPABILITIES, CodexExecProviderFactory, normalizeCodex0153TelemetryEvent, runCodexWithRegisteredModel} from './codex-exec-provider.js';
 import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import {HarnessDispatcher, ToolHandlerRegistry} from './harness-dispatch.js';
 
 const provider = {id: 'codex-chatgpt', name: 'Codex with ChatGPT plan', kind: 'cli' as const, requiresAuth: true, parallelism: 1, costClass: 'included' as const, capabilities: ['structured-output', 'tool-request']};
@@ -28,6 +30,23 @@ test('Codex usage retains nested cache and reasoning details for normalisation',
   assert.equal(result.invocations?.[0].usage.freshInputTokens, 30);
   assert.equal(result.invocations?.[0].usage.cachedInputTokens, 70);
   assert.equal(result.invocations?.[0].usage.reasoningTokens, 8);
+});
+
+test('Codex adapter forwards only JSONL telemetry actually exposed and marks current context unavailable', async () => {
+  const samples: Array<{threadId:string; total:number|null; authority:string; active:boolean|undefined}> = [];
+  const result = await factory({telemetry: sample => samples.push({threadId: sample.threadId, total: sample.cumulative.totalTokens ?? null, authority: sample.context?.authority ?? 'missing', active: sample.active}), runner: async request => { request.onTelemetry?.({type: 'thread.started', threadId: 'thr_live', elapsedMs: 1, context: {tokens: null, authority: 'unavailable', source: 'fixture'}}); request.onTelemetry?.({type: 'turn.completed', threadId: 'thr_live', elapsedMs: 2, usage: {input_tokens: 40, output_tokens: 10, total_tokens: 50}, context: {tokens: null, authority: 'unavailable', source: 'fixture'}}); return {threadId: 'thr_live', finalMessage: JSON.stringify({tool: request.grantedToolIds[0], input_json: '{}'}), usage: {input_tokens: 40, output_tokens: 10, total_tokens: 50}, observedItemTypes: ['agent_message']}; }}).executor('Return safe data').execute({taskId: 'parcel:one', tools: [{id: 'qualification.return-data'}], resourceLimits: {}} as never, {invoke: async () => ({marker: 'SAFE'})});
+  assert.ok(result.resultRef); assert.deepEqual(samples, [{threadId: 'thr_live', total: null, authority: 'unavailable', active: true}, {threadId: 'thr_live', total: 50, authority: 'unavailable', active: false}]);
+});
+
+test('Codex 0.153 native app-server usage and compaction normalize behind the provider adapter', () => {
+  const usage = normalizeCodex0153TelemetryEvent({method: 'thread/tokenUsage/updated', params: {threadId: 'thr-153', tokenUsage: {total: {inputTokens: 1000, outputTokens: 100, totalTokens: 1100}, last: {inputTokens: 200, outputTokens: 20, totalTokens: 220}, modelContextWindow: 1000}}}, 25);
+  assert.equal(usage?.type, 'thread.token_usage.updated');
+  assert.deepEqual(usage?.usage, {input_tokens: 1000, output_tokens: 100, total_tokens: 1100, cached_input_tokens: null, reasoning_output_tokens: null});
+  assert.deepEqual(usage?.context, {tokens: 220, limitTokens: 1000, authority: 'estimated', source: 'codex_app_server_thread_usage_mixed_provider_or_recomputed'});
+  const compact = normalizeCodex0153TelemetryEvent({method: 'item/completed', params: {threadId: 'thr-153', item: {type: 'contextCompaction', id: 'compact-1'}}}, 30);
+  assert.deepEqual(compact?.contextLifecycle, {kind: 'COMPACTION', contextId: 'compact-1', authority: 'authoritative', source: 'codex_app_server_contextCompaction'});
+  assert.equal(CODEX_0153_CONTEXT_CAPABILITIES.nativeNewContext, 'eligible-chatgpt-codex-sessions-excluding-temporary-structured');
+  assert.equal(CODEX_0153_CONTEXT_CAPABILITIES.agentControlExecNativeContextManagement, false);
 });
 
 test('Codex fallback fails closed for missing ChatGPT auth and opaque file changes', async () => {
@@ -68,4 +87,31 @@ test('registered external model runs with an isolated Codex provider config', as
     async request => { observed = true; assert.equal(request.modelId, 'vendor/fast'); assert.equal(request.loadUserConfig, true); const config = fs.readFileSync(`${request.environment?.CODEX_HOME}/config.toml`, 'utf8'); assert.match(config, /model_provider = "agent_control_external"/); assert.match(config, /wire_api = "responses"/); assert.equal(config.includes(secret), false); return {finalMessage: 'ok', observedItemTypes: ['agent_message']}; },
   );
   assert.equal(observed, true); assert.equal(result.finalMessage, 'ok');
+});
+
+test('two Codex account profiles keep independent CODEX_HOME contexts and never emit credentials', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-codex-accounts-'));
+  const proHome = path.join(root, 'pro'), plusHome = path.join(root, 'plus');
+  fs.mkdirSync(proHome); fs.mkdirSync(plusHome);
+  const proSecret = 'sk-pro-account-secret-123456789', plusSecret = 'sk-plus-account-secret-987654321';
+  fs.writeFileSync(path.join(proHome, 'auth.json'), JSON.stringify({access_token: proSecret}));
+  fs.writeFileSync(path.join(plusHome, 'auth.json'), JSON.stringify({access_token: plusSecret}));
+  const profiles = [
+    {id: 'lawrence-pro', label: 'Lawrence Pro', plan: 'ChatGPT Pro', credentialStore: {type: 'codex-home-env' as const, env: 'CODEX_HOME_LAWRENCE_PRO'}},
+    {id: 'cottage-plus', label: 'Cottage Plus', plan: 'ChatGPT Plus', credentialStore: {type: 'codex-home-env' as const, env: 'CODEX_HOME_COTTAGE_PLUS'}},
+  ];
+  const accountProvider = {...provider, accountProfiles: profiles};
+  const environment = {CODEX_HOME: '/global-must-remain-untouched', CODEX_HOME_LAWRENCE_PRO: proHome, CODEX_HOME_COTTAGE_PLUS: plusHome};
+  const observed: string[] = [];
+  try {
+    for (const accountProfile of profiles) {
+      const expectedHome = accountProfile.id === 'lawrence-pro' ? proHome : plusHome;
+      const result = await factory({provider: accountProvider, accountProfile, environment, authProbe: async (_command, _cwd, _timeout, childEnvironment) => { assert.equal(childEnvironment?.CODEX_HOME, expectedHome); return {mode: 'chatgpt'}; }, runner: async request => { assert.equal(request.environment?.CODEX_HOME, expectedHome); observed.push(String(request.environment?.CODEX_HOME)); return {threadId: `thread-${accountProfile.id}`, finalMessage: JSON.stringify({tool: request.grantedToolIds[0], input_json: '{}'}), usage: {input_tokens: 1, output_tokens: 1}, observedItemTypes: ['agent_message']}; }}).executor('Return safe data').execute({tools: [{id: 'qualification.return-data'}], resourceLimits: {}} as never, {invoke: async () => ({safe: true})});
+      assert.equal(result.invocations?.[0].accountProfileId, accountProfile.id);
+      const publicEvidence = JSON.stringify(result);
+      assert.equal(publicEvidence.includes(proSecret), false); assert.equal(publicEvidence.includes(plusSecret), false); assert.equal(publicEvidence.includes(root), false);
+    }
+    assert.deepEqual(observed, [proHome, plusHome]);
+    assert.equal(environment.CODEX_HOME, '/global-must-remain-untouched');
+  } finally { fs.rmSync(root, {recursive: true, force: true}); }
 });

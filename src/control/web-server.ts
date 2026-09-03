@@ -13,8 +13,8 @@ import {ParameterizedJobError} from './parameterized-job-registry.js';
 export interface WebServerOptions {host?: string; port?: number; operatorToken?: string; allowedOrigins?: string[]; assetsDir?: string; configFile?: string;}
 const MAX_BODY = 64 * 1024;
 const SECRET_KEY = /token|secret|password|credential|authorization|cookie|api[-_]?key/i;
-const SAFE_TOKEN_ACCOUNTING_KEY = /^(?:tokenAwareOutput|contextTokensAvoided|estimatedTokensOriginal|estimatedTokensReturned|estimatedTokensSaved|estimatedOriginalTokens|estimatedReturnedTokens|estimatedTokensAvoided|expansionTokensReturned|inputTokens|freshInputTokens|cachedInputTokens|cacheWriteTokens|outputTokens|maximumOutputTokens|maximumContextTokens|reasoningTokens|totalTokens|totalProcessedTokens|startupContextTokens|taskContextTokens|retrievedContextTokens|repositoryContextTokens|conversationHistoryTokens|totalEstimatedContextTokens|repeatedContextCostEstimate|tokensPerVerifiedOutcome|freshTokensPerVerifiedOutcome|estimatedTokens)$/;
-const SAFE_CONFIG_REFERENCE_KEY = /^(?:credentialEnv|credentialFileEnv|identityFile)$/;
+const SAFE_TOKEN_ACCOUNTING_KEY = /^(?:tokenAwareOutput|tokenBatonRouting|contextTokensAvoided|estimatedTokensOriginal|estimatedTokensReturned|estimatedTokensSaved|estimatedOriginalTokens|estimatedReturnedTokens|estimatedTokensAvoided|expansionTokensReturned|inputTokens|freshInputTokens|cachedInputTokens|cacheWriteTokens|outputTokens|maximumOutputTokens|maximumContextTokens|reasoningTokens|totalTokens|totalProcessedTokens|startupContextTokens|taskContextTokens|retrievedContextTokens|repositoryContextTokens|conversationHistoryTokens|totalEstimatedContextTokens|repeatedContextCostEstimate|tokensPerVerifiedOutcome|freshTokensPerVerifiedOutcome|estimatedTokens|limitTokens|contextPercent|continuePercent|prepareBatonPercent|compactPercent|handoffPercent)$/;
+const SAFE_CONFIG_REFERENCE_KEY = /^(?:credentialEnv|credentialFileEnv|credentialStore|credentialConfigured|identityFile)$/;
 const DOMAIN_STATUS = new Map<string, number>([
   ['approval_policy_required', 400], ['approval_policy_not_waiting', 409], ['run_not_retryable', 409], ['job_disabled', 409],
   ['job_missing', 404], ['run_missing', 404], ['schedule_missing', 404], ['artifact_missing', 404], ['system_missing', 404], ['system_check_unavailable', 409],
@@ -26,7 +26,7 @@ const DOMAIN_STATUS = new Map<string, number>([
   ['output_scope_invalid', 400], ['output_scope_unknown_field', 400], ['output_scope_identity_missing', 400], ['output_scope_generation_invalid', 400],
   ['work_parcel_prompt_required', 400], ['work_parcel_plan_empty', 400], ['work_parcel_stage_id_invalid', 400], ['work_parcel_stage_invalid', 400], ['work_parcel_route_invalid', 400], ['work_parcel_reasoning_plan_invalid', 400], ['work_parcel_dependency_cycle', 400],
   ['work_parcel_reasoning_planner_unconfigured', 503], ['work_parcel_missing', 404], ['work_parcels_unconfigured', 503],
-    ['model_missing', 404], ['model_role_missing', 404], ['model_registry_unconfigured', 503], ['model_route_unconfigured', 409], ['model_route_unavailable', 409], ['model_fallback_disabled', 409], ['provider_authentication_required', 409],
+    ['provider_missing', 404], ['model_missing', 404], ['model_role_missing', 404], ['model_registry_unconfigured', 503], ['model_route_unconfigured', 409], ['model_route_unavailable', 409], ['model_fallback_disabled', 409], ['provider_authentication_required', 409], ['account_profile_missing', 404], ['account_profile_unavailable', 409],
     ['identity_control_plane_unconfigured', 503], ['session_missing', 404], ['execution_missing', 404],
 ]);
 
@@ -52,6 +52,7 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   if (method === 'GET' && url.pathname === '/api/lanes') return json(response, 200, service.snapshot().lanes);
   if (method === 'GET' && url.pathname === '/api/providers') return json(response, 200, service.snapshot().providers);
   if (method === 'GET' && url.pathname === '/api/models/providers') return json(response, 200, service.modelProviders());
+  if (method === 'GET' && url.pathname === '/api/models/accounts') return json(response, 200, service.modelAccountProfiles());
   if (method === 'GET' && url.pathname === '/api/models') return json(response, 200, service.models());
   if (method === 'GET' && url.pathname === '/api/models/routes') return json(response, 200, service.modelRoutes());
   if (method === 'GET' && url.pathname === '/api/sessions') return json(response, 200, service.sessions());
@@ -59,6 +60,8 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   if (method === 'GET' && url.pathname === '/api/delegations') return json(response, 200, service.delegations(url.searchParams.get('sessionId') ?? undefined));
   if (method === 'GET' && url.pathname === '/api/executions') return json(response, 200, service.executionProvenance());
   if (method === 'GET' && url.pathname === '/api/fast-execution-attempts') return json(response, 200, service.fastExecutionAttempts());
+  if (method === 'GET' && url.pathname === '/api/runtime') return json(response, 200, service.runtime());
+  if (method === 'GET' && url.pathname === '/api/token-routing') return json(response, 200, service.tokenRouting());
   if (method === 'GET' && url.pathname === '/api/router') return json(response, 200, service.allRoutes());
   if (method === 'GET' && url.pathname === '/api/evidence') return json(response, 200, service.snapshot().lanes.map(lane => ({laneId: lane.id, task: lane.task, verification: lane.verification, batonEvidence: lane.baton.evidence, contextSourceIds: lane.baton.contextSourceIds})));
   if (method === 'GET' && url.pathname === '/api/events') return eventStream(service, request, response);
@@ -84,7 +87,7 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
     const limit = Number.isSafeInteger(requestedLimit) && requestedLimit > 0 ? Math.min(1_000, requestedLimit) : 200;
     return json(response, 200, service.modelInvocations({limit, runId: url.searchParams.get('runId') ?? undefined, jobId: url.searchParams.get('jobId') ?? undefined}));
   }
-  const jobMatch = url.pathname.match(/^\/api\/jobs\/([^/]+)(?:\/(runs|run))?$/), runMatch = url.pathname.match(/^\/api\/runs\/([^/]+)(?:\/(cancel|retry|approve))?$/), definitionMatch = url.pathname.match(/^\/api\/job-definitions\/([^/]+)(?:\/([0-9]+))?$/), savedJobMatch = url.pathname.match(/^\/api\/saved-jobs\/([^/]+)(?:\/(run|enable|disable|export))?$/), parameterizedRunMatch = url.pathname.match(/^\/api\/job-runs\/([^/]+)(?:\/(cancel))?$/), parcelMatch = url.pathname.match(/^\/api\/parcels\/([^/]+)(?:\/(cancel))?$/), systemMatch = url.pathname.match(/^\/api\/systems\/([^/]+)(?:\/(check))?$/), modelMatch = url.pathname.match(/^\/api\/models\/([^/]+)(?:\/(qualify|route))?$/), sessionMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)$/), executionMatch = url.pathname.match(/^\/api\/executions\/([^/]+)$/), scheduleMatch = url.pathname.match(/^\/api\/schedules\/([^/]+)\/(enable|disable)$/), artifactMatch = url.pathname.match(/^\/api\/artifacts\/([^/]+)$/), outputExpansionMatch = url.pathname.match(/^\/api\/command-output\/([^/]+)\/expand$/);
+  const jobMatch = url.pathname.match(/^\/api\/jobs\/([^/]+)(?:\/(runs|run))?$/), runMatch = url.pathname.match(/^\/api\/runs\/([^/]+)(?:\/(cancel|retry|approve))?$/), definitionMatch = url.pathname.match(/^\/api\/job-definitions\/([^/]+)(?:\/([0-9]+))?$/), savedJobMatch = url.pathname.match(/^\/api\/saved-jobs\/([^/]+)(?:\/(run|enable|disable|export))?$/), parameterizedRunMatch = url.pathname.match(/^\/api\/job-runs\/([^/]+)(?:\/(cancel))?$/), parcelMatch = url.pathname.match(/^\/api\/parcels\/([^/]+)(?:\/(cancel))?$/), systemMatch = url.pathname.match(/^\/api\/systems\/([^/]+)(?:\/(check))?$/), accountMatch = url.pathname.match(/^\/api\/models\/accounts\/([^/]+)\/([^/]+)\/(qualify)$/), modelMatch = url.pathname.match(/^\/api\/models\/([^/]+)(?:\/(qualify|route))?$/), sessionMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)$/), executionMatch = url.pathname.match(/^\/api\/executions\/([^/]+)$/), scheduleMatch = url.pathname.match(/^\/api\/schedules\/([^/]+)\/(enable|disable)$/), artifactMatch = url.pathname.match(/^\/api\/artifacts\/([^/]+)$/), outputExpansionMatch = url.pathname.match(/^\/api\/command-output\/([^/]+)\/expand$/);
   if (method === 'GET' && definitionMatch) return json(response, 200, service.jobDefinition(decodeURIComponent(definitionMatch[1]), definitionMatch[2] ? Number(definitionMatch[2]) : undefined));
   if (method === 'GET' && savedJobMatch?.[2] === 'export') return json(response, 200, service.exportSavedJob(decodeURIComponent(savedJobMatch[1])));
   if (method === 'GET' && savedJobMatch && !savedJobMatch[2]) return json(response, 200, service.savedJob(decodeURIComponent(savedJobMatch[1])));
@@ -130,8 +133,9 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
     if (jobMatch?.[2] === 'run') return json(response, 201, service.createJobRun(decodeURIComponent(jobMatch[1]), body.parameters && typeof body.parameters === 'object' && !Array.isArray(body.parameters) ? body.parameters as Record<string, unknown> : {}, actor));
     if (url.pathname === '/api/parcels') return json(response, 201, await service.submitNaturalTask(String(body.prompt ?? ''), actor));
     if (systemMatch?.[2] === 'check') return json(response, 200, await service.checkSystem(decodeURIComponent(systemMatch[1]), actor));
+    if (accountMatch?.[3] === 'qualify') return json(response, 200, await service.qualifyModelAccount(decodeURIComponent(accountMatch[1]), decodeURIComponent(accountMatch[2])));
     if (modelMatch?.[2] === 'qualify') return json(response, 200, await service.qualifyModel(decodeURIComponent(modelMatch[1]), String(body.nodeId ?? 'controller')));
-    if (modelMatch?.[2] === 'route') return json(response, 200, service.routeModel({model: decodeURIComponent(modelMatch[1]), modelRole: typeof body.modelRole === 'string' ? body.modelRole : undefined, nodeId: String(body.nodeId ?? 'controller'), requiredCapabilities: Array.isArray(body.requiredCapabilities) ? body.requiredCapabilities.map(String) : [], allowFallback: body.allowFallback !== false}));
+    if (modelMatch?.[2] === 'route') return json(response, 200, service.routeModel({model: decodeURIComponent(modelMatch[1]), modelRole: typeof body.modelRole === 'string' ? body.modelRole : undefined, accountProfile: typeof body.accountProfile === 'string' ? body.accountProfile : undefined, nodeId: String(body.nodeId ?? 'controller'), requiredCapabilities: Array.isArray(body.requiredCapabilities) ? body.requiredCapabilities.map(String) : [], allowFallback: body.allowFallback !== false}));
     if (parcelMatch?.[2] === 'cancel') return json(response, 202, service.cancelParcel(decodeURIComponent(parcelMatch[1]), actor));
     if (runMatch?.[2] === 'cancel') return json(response, 202, service.cancelJobRun(decodeURIComponent(runMatch[1]), actor));
     if (runMatch?.[2] === 'retry') return json(response, 201, service.retryJobRun(decodeURIComponent(runMatch[1]), actor));
@@ -231,10 +235,11 @@ function replyError(response: ServerResponse, error: unknown) {
 }
 function httpError(status: number, message: string) { return Object.assign(new Error(message), {status}); }
 function secretEqual(left: string, right: string) { const a = createHash('sha256').update(left).digest(), b = createHash('sha256').update(right).digest(); return timingSafeEqual(a, b); }
-function redact(value: unknown, key = ''): unknown {
-  if (SECRET_KEY.test(key) && !SAFE_TOKEN_ACCOUNTING_KEY.test(key) && !SAFE_CONFIG_REFERENCE_KEY.test(key)) return '[REDACTED]';
+function redact(value: unknown, key = '', ancestors: string[] = []): unknown {
+  const safeContextTokenCount = key === 'tokens' && ancestors.at(-1) === 'context';
+  if (SECRET_KEY.test(key) && !safeContextTokenCount && !SAFE_TOKEN_ACCOUNTING_KEY.test(key) && !SAFE_CONFIG_REFERENCE_KEY.test(key)) return '[REDACTED]';
   if (typeof value === 'string') return value.replace(/\b(?:sk|rk|pk)-[A-Za-z0-9_-]{12,}\b/g, '[REDACTED]');
-  if (Array.isArray(value)) return value.map(item => redact(item));
-  if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([name, item]) => [name, redact(item, name)]));
+  if (Array.isArray(value)) return value.map(item => redact(item, '', ancestors));
+  if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([name, item]) => [name, redact(item, name, [...ancestors, key])]));
   return value;
 }

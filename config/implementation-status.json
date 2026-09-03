@@ -1,7 +1,7 @@
 {
   "schema": "agent-control.implementation-status/v1",
-  "release": "3.5.0",
-  "updated": "2026-09-01",
+  "release": "3.7.0",
+  "updated": "2026-09-03",
   "capabilities": [
     {
       "id": "identity.sessions-delegation",
@@ -11,17 +11,86 @@
       "sources": ["src/control/identity-control-plane.ts", "src/control/context-deterioration.ts", "src/control/work-parcels.ts", "src/control/application-service.ts", "src/control/web-server.ts", "assets/dashboard/dashboard-sessions.js"],
       "tests": ["src/control/identity-control-plane.test.ts", "src/control/context-deterioration.test.ts", "src/control/work-parcels.test.ts", "src/control/web-server.test.ts"],
       "evidence": ["docs/evidence/agent-control-3.5-qualification.md"],
-      "limitation": "The physical Luna to local LLM to GLM-5.3-Flash to Luna chain is not qualified on this host because no qualified local-LLM or GLM model-registry routes are available to the isolated branch."
+      "limitation": "The physical Luna to local Qwen to GLM-5.3-Flash to Luna chain is qualified for one bounded contract, including detach/restart, yield/substitution and independent verification. The 50-attempt production-routing gate remains unqualified."
+    },
+    {
+      "id": "execution.contract-pty-runtime",
+      "title": "Contract-owned process and PTY runtime",
+      "status": "PARTIAL",
+      "summary": "A durable versioned contract owns objective, criteria, authority, budget, route, sealed baton, process/PTY identity, attachments, permissions, pending actions, verification and evidence. Consultation/reconnect are read-only, write ownership is singular and explicitly transferred, human takeover fences agents, and cancellation, timeout, orphaning and output ordering reconstruct after restart.",
+      "sources": ["src/control/contract-runtime.ts"],
+      "tests": ["src/control/contract-runtime.test.ts"],
+      "evidence": ["docs/contract-pty-runtime.md"],
+      "limitation": "The durable authority model, governed handoffs and redacted dashboard projection are implemented; operating-system-specific PTY creation and signal delivery remain adapters beneath this record."
+    },
+    {
+      "id": "execution.governed-handoffs",
+      "title": "Governed worker handoff outcomes",
+      "status": "IMPLEMENTED",
+      "summary": "SACRIFICE, SUBSTITUTE, DELEGATE, YIELD and COMPLETE have exact durable transitions over contract-owned state. AUTO remains inside authority and budget; risky, privileged, production, destructive, expanded-envelope and explicit MANUAL requests require operator approval without manufacturing withheld authority.",
+      "sources": ["src/control/handoff-runtime.ts", "src/control/contract-runtime.ts"],
+      "tests": ["src/control/handoff-runtime.test.ts", "src/control/contract-runtime.test.ts"],
+      "evidence": ["docs/governed-handoffs.md", "docs/contract-pty-runtime.md"]
     },
     {
       "id": "interop.acp-v1-adapter",
       "title": "ACP v1 governed session adapter",
       "status": "PARTIAL",
-      "summary": "A transport-neutral Agent Client Protocol v1 JSON-RPC core maps initialize, session lifecycle, prompt, updates and cancellation into Actors, governed Sessions, context transfers and Work Parcels without adding a control path.",
-      "sources": ["src/control/acp-adapter.ts", "src/control/identity-control-plane.ts"],
-      "tests": ["src/control/acp-adapter.test.ts", "src/control/identity-control-plane.test.ts"],
-      "evidence": ["docs/evidence/agent-control-3.5-qualification.md"],
-      "limitation": "Stdio/WebSocket packaging and an external ACP client conformance suite remain unqualified; ACP v2 is not claimed."
+      "summary": "The official ACP SDK validates and frames a transport-neutral stable-v1 core; agent-control acp serves NDJSON stdio and the explicit remote adapter serves authenticated Streamable HTTP/WebSocket with TLS-gated non-loopback binding. Durable session lifecycle, prompts, ordered plan/tool updates, idempotent namespaced delivery and cancellation map into Actors, governed Sessions, context transfers and Work Parcels without adding a control path.",
+      "sources": ["src/acp.ts", "src/acp-remote.ts", "src/control/acp-bootstrap.ts", "src/control/acp-runtime.ts", "src/control/acp-remote.ts", "src/control/acp-adapter.ts", "src/control/identity-control-plane.ts", "scripts/agent-control.mjs"],
+      "tests": ["src/control/acp-runtime.test.ts", "src/control/acp-remote.test.ts", "src/control/acp-adapter.test.ts", "src/control/identity-control-plane.test.ts"],
+      "evidence": ["docs/acp-compatibility.md"],
+      "limitation": "Official SDK clients qualify stdio, Streamable HTTP and WebSocket on ephemeral loopback, and an independent raw-wire harness covers malformed/invalid traffic. Production TLS exposure and cancellation while provider, permission or client-owned tool work is pending remain unqualified. ACP v2 is disabled and not claimed."
+    },
+    {
+      "id": "models.provider-lifecycle",
+      "title": "Provider and model lifecycle management",
+      "status": "IMPLEMENTED",
+      "summary": "Session-neutral logical providers, immutable exact model recipes, evidence-gated lifecycle states, versioned champion/challenger routing, historical replay and verified rollback are durable. Credentials remain indirect references and placement requirements remain semantic rather than machine identities.",
+      "sources": ["src/control/provider-lifecycle.ts", "src/control/model-registry.ts"],
+      "tests": ["src/control/provider-lifecycle.test.ts", "src/control/model-registry.test.ts"],
+      "evidence": ["docs/provider-model-lifecycle.md", "docs/models/ADDING-A-PROVIDER.md"],
+      "limitation": "The lifecycle is implemented, but physical multi-provider promotion and automatic production Job adoption remain gated by physical observations for the frozen benchmark."
+    },
+    {
+      "id": "models.capability-routing-benchmark",
+      "title": "Frozen capability-routing and coordinator/baton benchmark",
+      "status": "PARTIAL",
+      "summary": "A frozen 60-task corpus with a 12-task holdout predeclares route-safety and physical-outcome criteria across LOCAL, SPARK, STANDARD and FRONTIER. It also compiles a same-job twelve-child coordinator experiment with separate parent/baton accounting.",
+      "sources": ["src/control/capability-routing-benchmark.ts", "scripts/benchmark-capability-routing.ts"],
+      "tests": ["src/control/capability-routing-benchmark.test.ts"],
+      "evidence": ["docs/capability-routing-benchmark.md", "docs/evidence/capability-routing-benchmark-v1.json"],
+      "limitation": "The deterministic classifier passed 60/60 with zero unsafe false positives, but no physical model observations exist. Provider success, latency, token/cost, change-integrity and coordinator integration gates remain unqualified; automatic production routing stays disabled."
+    },
+    {
+      "id": "models.physical-multi-provider-chain",
+      "title": "Physical Luna/local/GLM/Luna governed chain",
+      "status": "QUALIFIED",
+      "summary": "A real bounded contract ran through exact gpt-5.6-luna, loopback qwen2.5-3b-instruct-q4_k_m.gguf, OpenRouter z-ai/glm-5.3-flash and Luna integration. Local YIELD, GLM SUBSTITUTE, minimal batons, controller reconstruction and independent child/parent verification all completed.",
+      "sources": ["src/control/contract-runtime.ts", "src/control/handoff-runtime.ts"],
+      "tests": ["src/control/contract-runtime.test.ts", "src/control/handoff-runtime.test.ts"],
+      "evidence": ["docs/physical-multi-provider-qualification.md", "docs/evidence/physical-multi-provider-chain-20260901.json"],
+      "limitation": "GLM required three bounded attempts, token/cost telemetry was unavailable, and this one synthetic contract does not satisfy the larger automatic-routing benchmark."
+    },
+    {
+      "id": "dashboard.runtime-observability",
+      "title": "Redacted ACP contract handoff and lifecycle dashboard projection",
+      "status": "IMPLEMENTED",
+      "summary": "GET /api/runtime and the existing Sessions, Systems and Models views project stable ACP v1 transport/session state, contract/process/PTY ownership, approvals, handoffs, baton hashes/sizes and immutable provider/model lifecycle without adding mutation authority.",
+      "sources": ["src/control/runtime-observability.ts", "src/control/application-service.ts", "src/control/web-server.ts", "assets/dashboard/dashboard-sessions.js", "assets/dashboard/dashboard-models.js", "assets/dashboard/dashboard-enhancements.js"],
+      "tests": ["src/control/runtime-observability.test.ts", "src/control/web-server.test.ts"],
+      "evidence": ["docs/web-dashboard.md", "docs/security-3.6.md", "docs/evidence/agent-control-3.6-development-qualification.md"],
+      "limitation": "Persisted ACP bindings are transport-neutral, so per-session stdio versus remote attribution remains unknown. Remote listener liveness is configured-but-unobserved rather than inferred."
+    },
+    {
+      "id": "routing.token-aware-baton",
+      "title": "Token-aware baton routing and live telemetry",
+      "status": "QUALIFIED",
+      "summary": "Provider-neutral thread telemetry keeps cumulative lifetime tokens separate from current context occupancy, persists configurable 60/75/85/90 governor transitions and context-lifecycle boundaries, sealed baton provenance, failed-handoff recovery and additive Work Parcel provider/account/model/node-chain totals. Optional governed account profiles bind exact model routes to isolated Codex homes on a configured execution node without persisting credentials or resolved paths. A restricted Codex node port reuses configured Resources and fixed-script SSH for Windows account qualification and read-only structured execution. The normal parameterized repository-review lifecycle assesses immutable chunk boundaries, delegates an account-qualified destination through existing contract/handoff runtimes and returns results to independent validation. The redacted dashboard/API projection streams telemetry and context transitions over existing SSE without a page reload.",
+      "sources": ["src/control/token-aware-baton-routing.ts", "src/control/direct-repository-review-executor.ts", "src/control/parameterized-job-engine.ts", "src/control/job-bootstrap.ts", "src/control/contract-runtime.ts", "src/control/handoff-runtime.ts", "src/control/provider-account-profile.ts", "src/control/account-profile-qualification.ts", "src/control/codex-node-execution.ts", "src/control/codex-repository-review-client.ts", "src/control/codex-exec-provider.ts", "src/control/model-registry.ts", "src/control/openai-compatible-provider.ts", "src/control/application-service.ts", "src/control/web-server.ts", "scripts/codex-node-windows.ps1", "assets/dashboard/dashboard-enhancements.js", "assets/dashboard/dashboard-models.js"],
+      "tests": ["src/control/token-aware-baton-routing.test.ts", "src/control/codex-exec-provider.test.ts", "src/control/codex-node-execution.test.ts", "src/control/account-profile-qualification.test.ts", "src/control/model-registry.test.ts", "src/control/openai-compatible-provider.test.ts", "src/control/direct-repository-review-executor.test.ts", "src/control/web-server.test.ts"],
+      "evidence": ["docs/token-aware-baton-routing.md", "docs/evidence/agent-control-3.7-development-qualification.md", "docs/evidence/agent-control-3.7-physical-qualification-20260902.md", "docs/evidence/agent-control-3.7-physical-lifecycle-20260903.json"],
+      "limitation": "A bounded production Work Parcel physically qualified live SSE telemetry, a sealed source-to-destination baton, destination continuation, independent verification, additive provider/model accounting and original-thread recovery after an injected destination refusal. Both routes were distinct local OpenAI-compatible provider/model configurations; authoritative current-context occupancy and source monetary cost remain unavailable where the providers do not expose them. Remote Codex account qualification passed separately, but Codex was not a workload leg in this lifecycle proof."
     },
     {
       "id": "models.fast-execution-spark",

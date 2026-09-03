@@ -1,6 +1,6 @@
 {
   "name": "agent-control",
-  "version": "3.5.0",
+  "version": "3.7.0",
   "private": true,
   "type": "module",
   "description": "Infrastructure-neutral policy control plane and adaptive agent harness",
@@ -10,6 +10,8 @@
   "scripts": {
     "start": "tsx src/index.ts",
     "web": "tsx src/web.ts",
+    "acp": "node --import tsx src/acp.ts",
+    "acp:remote": "node --import tsx src/acp-remote.ts",
     "dev": "tsx watch src/index.ts",
     "init": "node scripts/init-config.mjs",
     "init:teammates": "node --import tsx scripts/init-teammates.ts",
@@ -41,13 +43,17 @@
     "benchmark:harness-mutation:live": "node --import tsx scripts/benchmark-harness-mutation-live.ts",
     "benchmark:context-compiler": "node --import tsx scripts/benchmark-context-compiler.ts",
     "benchmark:fast-execution": "node --import tsx scripts/benchmark-fast-execution.ts",
+    "benchmark:capability-routing": "node --import tsx scripts/benchmark-capability-routing.ts",
     "qualify:edge-context-runtime": "node --import tsx scripts/qualify-edge-context-runtime.ts"
   },
   "dependencies": {
+    "@agentclientprotocol/sdk": "1.4.0",
     "ajv": "^8.17.1",
     "blessed": "^0.1.81",
     "playwright-core": "^1.62.1",
-    "yaml": "^2.8.1"
+    "ws": "8.21.3",
+    "yaml": "^2.8.1",
+    "zod": "4.5.4"
   },
   "devDependencies": {
     "@types/blessed": "^0.1.25",

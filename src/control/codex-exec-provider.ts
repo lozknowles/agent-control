@@ -7,8 +7,20 @@ import type {HarnessCandidate} from './adaptive-harness.js';
 import type {RecipeExecutor, ToolInvocationGateway} from './harness-dispatch.js';
 import type {ProviderDefinition} from './providers.js';
 import {createInvocationObservation, type ContextPacketSource} from './harness-efficiency.js';
-import type {ModelConfig, ProviderConfig} from './config.js';
+import type {ModelConfig, ProviderAccountProfileConfig, ProviderConfig} from './config.js';
 import {materializeCodexModelConfig} from './codex-model-config.js';
+import {resolveCodexAccountEnvironment} from './provider-account-profile.js';
+import type {ContextLifecycleKind, TelemetryAuthority, TokenTelemetrySample} from './token-aware-baton-routing.js';
+
+export const CODEX_0153_CONTEXT_CAPABILITIES = Object.freeze({
+  persistedResponseUsage: true,
+  liveThreadTokenUsage: true,
+  nativeCompaction: true,
+  nativeNewContext: 'eligible-chatgpt-codex-sessions-excluding-temporary-structured',
+  rawResponseUsageMetadata: 'internal-notification-only',
+  turnCost: 'otel-only',
+  agentControlExecNativeContextManagement: false,
+});
 
 export interface CodexExecRequest {
   command: string;
@@ -19,6 +31,17 @@ export interface CodexExecRequest {
   timeoutMs: number;
   environment?: NodeJS.ProcessEnv;
   loadUserConfig?: boolean;
+  onTelemetry?: (event: CodexExecTelemetryEvent) => void;
+  outputSchema?: Record<string, unknown>;
+}
+
+export interface CodexExecTelemetryEvent {
+  type: 'thread.started' | 'turn.completed' | 'thread.token_usage.updated' | 'context.compacted';
+  threadId?: string;
+  elapsedMs: number;
+  usage?: Record<string, unknown>;
+  context: {tokens: number | null; limitTokens?: number | null; authority: TelemetryAuthority; source: string};
+  contextLifecycle?: {kind: ContextLifecycleKind; contextId?: string; authority: TelemetryAuthority; source: string};
 }
 
 export interface CodexExecResult {
@@ -47,8 +70,12 @@ export interface CodexExecProviderOptions {
   health: 'healthy' | 'degraded' | 'offline';
   timeoutMs?: number;
   command?: string;
-  authProbe?: (command: string, cwd: string, timeoutMs: number) => Promise<CodexChatGptAuth>;
+  authProbe?: (command: string, cwd: string, timeoutMs: number, environment?: NodeJS.ProcessEnv) => Promise<CodexChatGptAuth>;
   runner?: (request: CodexExecRequest) => Promise<CodexExecResult>;
+  telemetry?: (sample: TokenTelemetrySample) => void;
+  contextLimitTokens?: number;
+  accountProfile?: ProviderAccountProfileConfig;
+  environment?: NodeJS.ProcessEnv;
 }
 
 interface ToolRequest {tool: string; input?: unknown;}
@@ -68,8 +95,9 @@ export class CodexExecProviderFactory {
     const provider = this.options.provider;
     return {
       route: {
-        id: `${provider.id}:${this.options.modelId}:${this.options.workerId}`,
+        id: `${provider.id}:${this.options.accountProfile?.id ?? 'default'}:${this.options.modelId}:${this.options.workerId}`,
         providerId: provider.id,
+        ...(this.options.accountProfile ? {accountProfileId: this.options.accountProfile.id} : {}),
         modelId: this.options.modelId,
         workerId: this.options.workerId,
         local: true,
@@ -97,15 +125,23 @@ export class CodexExecProviderFactory {
     const grantedToolIds = recipe.tools.map(tool => tool.id);
     if (!grantedToolIds.length) throw new Error('codex_exec_no_granted_tools');
     const command = this.options.command ?? process.env.CODEX_COMMAND ?? 'codex';
-    await (this.options.authProbe ?? probeCodexChatGptAuth)(command, this.options.cwd, timeoutMs);
+    const account = this.options.accountProfile ? resolveCodexAccountEnvironment(this.options.accountProfile, this.options.environment) : undefined;
+    const environment = account?.environment ?? this.options.environment;
+    await (this.options.authProbe ?? probeCodexChatGptAuth)(command, this.options.cwd, timeoutMs, environment);
     const startedAt = new Date().toISOString();
-    const run = await (this.options.runner ?? runCodexExec)({command, cwd: this.options.cwd, modelId: this.options.modelId, instruction, grantedToolIds, timeoutMs});
+    const telemetry = this.options.telemetry;
+    const emit = (event: CodexExecTelemetryEvent) => {
+      if (!telemetry) return;
+      const usage = event.usage ?? {}, input = numeric(usage.input_tokens), output = numeric(usage.output_tokens), total = numeric(usage.total_tokens) ?? (input !== null && output !== null ? input + output : null);
+      telemetry({threadId: event.threadId ?? `codex:${recipe.id ?? recipe.taskId ?? 'unattributed'}`, parcelId: recipe.taskId ?? recipe.jobId ?? 'unattributed-task', agentId: this.options.workerId, nodeId: this.options.workerId, providerId: this.options.provider.id, accountProfileId: account?.profile.id, accountLabel: account?.profile.label, accountPlan: account?.profile.plan, accountPlanAuthority: account?.profile.planAuthority, accountQualification: account?.profile.qualification?.state, accountAvailability: account ? account.profile.qualification?.state === 'QUALIFIED' ? 'AVAILABLE' : 'UNQUALIFIED' : undefined, modelId: this.options.modelId, elapsedMs: event.elapsedMs, active: !['turn.completed'].includes(event.type), cumulative: {inputTokens: input, outputTokens: output, totalTokens: total}, context: {tokens: event.context.tokens, limitTokens: event.context.limitTokens ?? this.options.contextLimitTokens ?? null, authority: event.context.authority, source: event.context.source}, cost: {amount: null, currency: null, authority: 'unavailable', source: 'codex_turn_cost_not_exposed_on_exec_jsonl'}, ...(event.contextLifecycle ? {contextLifecycle: event.contextLifecycle} : {})});
+    };
+    const run = await (this.options.runner ?? runCodexExec)({command, cwd: this.options.cwd, modelId: this.options.modelId, instruction, grantedToolIds, timeoutMs, environment, onTelemetry: emit});
     const providerCompletedAt = new Date().toISOString();
     if (run.observedItemTypes.includes('file_change')) throw new Error('codex_exec_capability_envelope_violation:file_change');
     const request = parseToolRequest(run.finalMessage);
     const output = await tools.invoke(request.tool, request.input);
     const responseHash = createHash('sha256').update(run.finalMessage).digest('hex');
-    const result = {providerId: this.options.provider.id, modelId: this.options.modelId, authMode: 'chatgpt', threadId: run.threadId, requestedTool: request.tool, toolOutput: output, responseHash, usage: run.usage, capabilityEnvelope: 'read-only'};
+    const result = {providerId: this.options.provider.id, accountProfileId: account?.profile.id ?? null, modelId: this.options.modelId, authMode: 'chatgpt', threadId: run.threadId, requestedTool: request.tool, toolOutput: output, responseHash, usage: run.usage, capabilityEnvelope: 'read-only'};
     const startupSources: ContextPacketSource[] = [
       {id: `${recipe.id ?? 'unattributed'}:codex-system`, kind: 'system_instructions', content: 'Return one schema-constrained Agent Control tool request. Do not modify files.', required: true, persistent: true, relevance: 1, provenanceIds: [recipe.fingerprint ?? 'unattributed-recipe']},
       {id: `${recipe.id ?? 'unattributed'}:codex-control`, kind: 'agent_control_instructions', content: 'The requested tool remains subject to the live Agent Control policy gateway.', required: true, persistent: true, relevance: 1, provenanceIds: [recipe.fingerprint ?? 'unattributed-recipe']},
@@ -114,31 +150,37 @@ export class CodexExecProviderFactory {
       {id: `${recipe.id ?? 'unattributed'}:codex-task`, kind: 'task_context', content: instruction, required: true, persistent: false, relevance: 1, provenanceIds: recipe.context?.provenanceIds ?? recipe.context?.evidenceIds ?? []},
     ];
     const taskId = recipe.taskId ?? 'unattributed-task';
-    const invocation = createInvocationObservation({jobId: recipe.jobId ?? taskId, runId: recipe.runId, taskId, laneId: recipe.authority?.laneId ?? 'unattributed-lane', model: this.options.modelId, provider: this.options.provider.id, harnessProfile: recipe.harness?.profile ?? 'STANDARD', executionStrategy: 'cli.typed-read-only', startedAt, completedAt: providerCompletedAt, startupSources, rawUsage: run.usage, toolIds: [request.tool], contextSourceIds: recipe.context?.sourceIds ?? [], recipeFingerprint: recipe.fingerprint ?? 'unattributed-recipe', contextPacketId: recipe.harness?.contextPacketId, evidenceIds: [`provider_response_sha256:${responseHash}`]});
+    const invocation = createInvocationObservation({jobId: recipe.jobId ?? taskId, runId: recipe.runId, taskId, laneId: recipe.authority?.laneId ?? 'unattributed-lane', model: this.options.modelId, provider: this.options.provider.id, accountProfileId: account?.profile.id, harnessProfile: recipe.harness?.profile ?? 'STANDARD', executionStrategy: 'cli.typed-read-only', startedAt, completedAt: providerCompletedAt, startupSources, rawUsage: run.usage, toolIds: [request.tool], contextSourceIds: recipe.context?.sourceIds ?? [], recipeFingerprint: recipe.fingerprint ?? 'unattributed-recipe', contextPacketId: recipe.harness?.contextPacketId, evidenceIds: [`provider_response_sha256:${responseHash}`]});
     return {
       resultRef: JSON.stringify(result), confidence: .8,
       fingerprint: createHash('sha256').update(JSON.stringify(result)).digest('hex'),
-      evidence: [`codex_thread:${run.threadId ?? responseHash.slice(0, 16)}`, `provider_response_sha256:${responseHash}`, 'auth_mode:chatgpt', 'capability_envelope:read-only', `tool_executed:${request.tool}`],
+      evidence: [`codex_thread:${run.threadId ?? responseHash.slice(0, 16)}`, `provider_response_sha256:${responseHash}`, 'auth_mode:chatgpt', ...(account ? [`account_profile:${account.profile.id}`] : []), 'capability_envelope:read-only', `tool_executed:${request.tool}`],
       invocations: [invocation],
     };
   }
 }
 
-export async function probeCodexChatGptAuth(command: string, cwd: string, timeoutMs: number): Promise<CodexChatGptAuth> {
-  const result = await captureProcess(command, ['login', 'status'], cwd, timeoutMs);
+export async function probeCodexChatGptAuth(command: string, cwd: string, timeoutMs: number, environment: NodeJS.ProcessEnv = process.env): Promise<CodexChatGptAuth> {
+  const result = await captureProcess(command, ['login', 'status'], cwd, timeoutMs, environment);
   if (result.code !== 0 || !/chatgpt/i.test(`${result.stdout}\n${result.stderr}`)) throw new Error('codex_chatgpt_auth_required');
   return {mode: 'chatgpt'};
 }
 
 export async function runCodexExec(request: CodexExecRequest): Promise<CodexExecResult> {
   const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-codex-schema-'));
-  const schemaFile = path.join(temporary, 'tool-request.schema.json');
+  const schemaFile = path.join(temporary, 'output.schema.json');
   try {
-    fs.writeFileSync(schemaFile, JSON.stringify(codexToolRequestSchema(request.grantedToolIds)), {mode: 0o600});
-    const prompt = `Return one Agent Control tool request as schema-constrained JSON. Put the tool input in input_json as a JSON-encoded string. Do not claim the tool ran. Do not modify files.\n\n${request.instruction}`;
-    const result = await captureProcess(request.command, ['exec', '--ephemeral', '--json', '--sandbox', 'read-only', ...(request.loadUserConfig ? [] : ['--ignore-user-config']), '--model', request.modelId, '--output-schema', schemaFile, prompt], request.cwd, request.timeoutMs, request.environment, !request.loadUserConfig);
+    fs.writeFileSync(schemaFile, JSON.stringify(request.outputSchema ?? codexToolRequestSchema(request.grantedToolIds)), {mode: 0o600});
+    const prompt = request.outputSchema ? request.instruction : `Return one Agent Control tool request as schema-constrained JSON. Put the tool input in input_json as a JSON-encoded string. Do not claim the tool ran. Do not modify files.\n\n${request.instruction}`;
+    const startedAt = Date.now(), liveEvents: Record<string, unknown>[] = []; let liveThreadId: string | undefined;
+    const result = await captureProcess(request.command, ['exec', '--ephemeral', '--json', '--sandbox', 'read-only', ...(request.loadUserConfig ? [] : ['--ignore-user-config']), '--model', request.modelId, '--output-schema', schemaFile, prompt], request.cwd, request.timeoutMs, request.environment, !request.loadUserConfig, line => {
+      let event: Record<string, unknown>; try { event = JSON.parse(line) as Record<string, unknown>; } catch { return; }
+      liveEvents.push(event); const threadId = typeof event.thread_id === 'string' ? event.thread_id : undefined; if (threadId) liveThreadId = threadId;
+      const normalized = normalizeCodex0153TelemetryEvent(event, Date.now() - startedAt, liveThreadId);
+      if (normalized) request.onTelemetry?.(normalized);
+    });
     if (result.code !== 0) throw new Error(`codex_exec_failed:${result.code}`);
-    const events = result.stdout.split(/\r?\n/).filter(Boolean).map(line => {
+    const events = liveEvents.length ? liveEvents : result.stdout.split(/\r?\n/).filter(Boolean).map(line => {
       try { return JSON.parse(line) as Record<string, unknown>; } catch { throw new Error('codex_exec_invalid_jsonl'); }
     });
     if (events.some(event => event.type === 'error' || event.type === 'turn.failed')) throw new Error('codex_exec_turn_failed');
@@ -156,6 +198,36 @@ export async function runCodexExec(request: CodexExecRequest): Promise<CodexExec
     fs.rmSync(temporary, {recursive: true, force: true});
   }
 }
+
+/**
+ * Normalizes provider-native Codex telemetry without coupling governor policy to
+ * Codex. App-server thread usage is marked estimated because the same public
+ * field can contain provider-reported usage or a locally recomputed post-compact
+ * count and the wire protocol does not expose that distinction.
+ */
+export function normalizeCodex0153TelemetryEvent(event: Record<string, unknown>, elapsedMs: number, knownThreadId?: string): CodexExecTelemetryEvent | null {
+  const threadId = stringValue(event.thread_id) ?? knownThreadId;
+  if (event.type === 'thread.started') return {type: 'thread.started', threadId, elapsedMs, context: {tokens: null, authority: 'unavailable', source: 'codex_exec_jsonl_no_current_context'}};
+  if (event.type === 'turn.completed') return {type: 'turn.completed', threadId, elapsedMs, usage: recordValue(event.usage) ? sanitizeUsage(recordValue(event.usage)!) : undefined, context: {tokens: null, authority: 'unavailable', source: 'codex_exec_jsonl_no_current_context'}};
+  const params = recordValue(event.params), method = stringValue(event.method);
+  if (method === 'thread/tokenUsage/updated' && params) {
+    const tokenUsage = recordValue(params.tokenUsage) ?? recordValue(params.token_usage), totalUsage = recordValue(tokenUsage?.total), lastUsage = recordValue(tokenUsage?.last);
+    if (!tokenUsage || !totalUsage || !lastUsage) return null;
+    const limitTokens = numeric(tokenUsage.modelContextWindow ?? tokenUsage.model_context_window);
+    return {type: 'thread.token_usage.updated', threadId: stringValue(params.threadId) ?? stringValue(params.thread_id) ?? threadId, elapsedMs, usage: normalizeUsageBreakdown(totalUsage), context: {tokens: usageNumber(lastUsage, 'totalTokens', 'total_tokens'), limitTokens, authority: 'estimated', source: 'codex_app_server_thread_usage_mixed_provider_or_recomputed'}};
+  }
+  const item = params ? recordValue(params.item) : undefined;
+  if ((method === 'item/completed' || method === 'item/started') && item?.type === 'contextCompaction') return {type: 'context.compacted', threadId: stringValue(params?.threadId) ?? threadId, elapsedMs, context: {tokens: null, authority: 'unavailable', source: 'codex_context_compaction_event_has_no_post_compact_count'}, ...(method === 'item/completed' ? {contextLifecycle: {kind: 'COMPACTION', contextId: stringValue(item.id), authority: 'authoritative', source: 'codex_app_server_contextCompaction'}} : {})};
+  return null;
+}
+
+function normalizeUsageBreakdown(value: Record<string, unknown>) {
+  return {input_tokens: usageNumber(value, 'inputTokens', 'input_tokens'), output_tokens: usageNumber(value, 'outputTokens', 'output_tokens'), total_tokens: usageNumber(value, 'totalTokens', 'total_tokens'), cached_input_tokens: usageNumber(value, 'cachedInputTokens', 'cached_input_tokens'), reasoning_output_tokens: usageNumber(value, 'reasoningOutputTokens', 'reasoning_output_tokens')};
+}
+
+function usageNumber(value: Record<string, unknown>, camel: string, snake: string) { return numeric(value[camel] ?? value[snake]); }
+function recordValue(value: unknown): Record<string, unknown> | undefined { return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : undefined; }
+function stringValue(value: unknown) { return typeof value === 'string' && value ? value : undefined; }
 
 /** Runs Codex against one registry-selected Responses-compatible provider in an isolated CODEX_HOME. */
 export async function runCodexWithRegisteredModel(request: CodexExecRequest, provider: ProviderConfig, model: ModelConfig, environment: NodeJS.ProcessEnv = process.env, runner: (request: CodexExecRequest) => Promise<CodexExecResult> = runCodexExec) {
@@ -176,7 +248,7 @@ function sanitizeUsage(value: Record<string, unknown>): Record<string, unknown> 
 
 function codexToolRequestSchema(grantedToolIds: string[]) { return {type: 'object', properties: {tool: {type: 'string', enum: grantedToolIds}, input_json: {type: 'string'}}, required: ['tool', 'input_json'], additionalProperties: false}; }
 
-async function captureProcess(command: string, args: string[], cwd: string, timeoutMs: number, environment: NodeJS.ProcessEnv = process.env, stripApiKeys = true): Promise<{code: number; stdout: string; stderr: string}> {
+async function captureProcess(command: string, args: string[], cwd: string, timeoutMs: number, environment: NodeJS.ProcessEnv = process.env, stripApiKeys = true, onStdoutLine?: (line: string) => void): Promise<{code: number; stdout: string; stderr: string}> {
   return new Promise((resolve, reject) => {
     const env = {...environment};
     if (stripApiKeys) { delete env.OPENAI_API_KEY; delete env.CODEX_API_KEY; }
@@ -193,13 +265,16 @@ async function captureProcess(command: string, args: string[], cwd: string, time
       if (next.length > 2_000_000) throw new Error('codex_exec_output_limit_exceeded');
       return next;
     };
-    child.stdout.on('data', chunk => { try { stdout = append(stdout, chunk as Buffer); } catch (error) { child.kill(); finish(error as Error); } });
+    let stdoutRemainder = '';
+    child.stdout.on('data', chunk => { try { stdout = append(stdout, chunk as Buffer); stdoutRemainder += (chunk as Buffer).toString('utf8'); const lines = stdoutRemainder.split(/\r?\n/); stdoutRemainder = lines.pop() ?? ''; for (const line of lines) if (line) onStdoutLine?.(line); } catch (error) { child.kill(); finish(error as Error); } });
     child.stderr.on('data', chunk => { try { stderr = append(stderr, chunk as Buffer); } catch (error) { child.kill(); finish(error as Error); } });
     child.once('error', error => finish(new Error(`codex_exec_launch_failed:${error.message}`)));
-    child.once('close', code => finish(undefined, code ?? -1));
+    child.once('close', code => { if (stdoutRemainder) onStdoutLine?.(stdoutRemainder); finish(undefined, code ?? -1); });
     const timer = setTimeout(() => { child.kill(); finish(new Error('codex_exec_timeout')); }, Math.max(1, timeoutMs));
   });
 }
+
+function numeric(value: unknown) { return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null; }
 
 function parseToolRequest(content: string): ToolRequest {
   let parsed: unknown;

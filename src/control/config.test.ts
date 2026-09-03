@@ -48,6 +48,32 @@ test('provider credentials are references and qualification metadata is durable 
   assert.throws(() => validateConfig({schemaVersion: 1, resources: [], providers: [{id: 'ox', kind: 'responses', credentialEnv: 'bad-name'}], services: [], lanes: []}), /invalid_provider_credentialEnv/);
 });
 
+test('Codex account profiles contain only opaque identity and credential-store references', () => {
+  const provider = {id: 'codex', kind: 'cli' as const, accountProfiles: [
+    {id: 'lawrence-pro', label: 'Lawrence Pro', plan: 'ChatGPT Pro', planAuthority: 'operator-configured' as const, capabilities: ['codex-chatgpt'], credentialStore: {type: 'codex-home-env' as const, env: 'CODEX_HOME_LAWRENCE_PRO'}, qualification: {state: 'UNTESTED' as const, version: 'configured-v1'}},
+    {id: 'cottage-plus', label: 'Cottage Plus', plan: 'ChatGPT Plus', planAuthority: 'operator-configured' as const, credentialStore: {type: 'codex-home-env' as const, env: 'CODEX_HOME_COTTAGE_PLUS'}},
+  ]};
+  const model = {id: 'sol-pro', provider: 'codex', accountProfile: 'lawrence-pro', providerModel: 'gpt-sol', capabilities: ['coding']};
+  const config = validateConfig({schemaVersion: 1, resources: [], services: [], lanes: [], providers: [provider], models: [model], modelRouting: {roles: {}}});
+  assert.equal(config.providers[0].accountProfiles?.[1].credentialStore.env, 'CODEX_HOME_COTTAGE_PLUS');
+  assert.equal(config.models[0].accountProfile, 'lawrence-pro');
+  assert.throws(() => validateConfig({schemaVersion: 1, resources: [], services: [], lanes: [], providers: [{...provider, accountProfiles: [{...provider.accountProfiles[0], label: 'user@example.com'}]}], models: [model], modelRouting: {roles: {}}}), /account_profile_label/);
+  assert.throws(() => validateConfig({schemaVersion: 1, resources: [], services: [], lanes: [], providers: [provider], models: [{...model, accountProfile: 'missing'}], modelRouting: {roles: {}}}), /unknown_model_account_profile/);
+  assert.throws(() => validateConfig({schemaVersion: 1, resources: [], services: [], lanes: [], providers: [provider], models: [{...model, accountProfile: undefined}], modelRouting: {roles: {}}}), /model_account_profile_required/);
+  assert.throws(() => validateConfig({schemaVersion: 1, resources: [], services: [], lanes: [], providers: [{...provider, accountProfiles: [{...provider.accountProfiles[0], accessToken: 'forbidden'}]}], models: [model], modelRouting: {roles: {}}}), /secret_material_forbidden/);
+});
+
+test('Codex account profile node identity must resolve to a matching configured model node', () => {
+  const resource = {id: 'windows-node', platform: 'windows' as const, transport: {type: 'ssh' as const, host: 'windows-node.example'}, capabilities: ['harness.codex']};
+  const profile = {id: 'account-a', nodeId: resource.id, label: 'Account A', credentialStore: {type: 'codex-home-env' as const, env: 'CODEX_HOME_ACCOUNT_A'}};
+  const provider = {id: 'codex', kind: 'cli' as const, accountProfiles: [profile]};
+  const model = {id: 'model-a', provider: provider.id, accountProfile: profile.id, providerModel: 'gpt-example', nodes: [resource.id], capabilities: ['coding']};
+  const config = validateConfig({schemaVersion: 1, resources: [resource], services: [], lanes: [], providers: [provider], models: [model], modelRouting: {roles: {}}});
+  assert.equal(config.providers[0].accountProfiles?.[0].nodeId, resource.id);
+  assert.throws(() => validateConfig({schemaVersion: 1, resources: [], services: [], lanes: [], providers: [provider], models: [model], modelRouting: {roles: {}}}), /invalid_account_profile_node/);
+  assert.throws(() => validateConfig({schemaVersion: 1, resources: [resource], services: [], lanes: [], providers: [provider], models: [{...model, nodes: ['controller']}], modelRouting: {roles: {}}}), /model_account_profile_node_mismatch/);
+});
+
 test('configuration survives a persistence reload', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-config-'));
   const file = path.join(dir, 'config.json');
@@ -91,6 +117,16 @@ test('token-aware output configuration rejects unsafe or nonsensical limits', ()
   assert.throws(() => validateConfig({...base, tokenAwareOutput: {maxCaptureBytesPerStream: 1}}), /maxCaptureBytesPerStream/);
   assert.throws(() => validateConfig({...base, tokenAwareOutput: {retentionSeconds: 0}}), /retentionSeconds/);
   assert.throws(() => validateConfig({...base, tokenAwareOutput: {contextBudgetFraction: 1.1}}), /context_budget_fraction/);
+});
+
+test('token-aware baton-routing thresholds are explicit policy and reject invalid ordering', () => {
+  const base = {schemaVersion: 1, resources: [], providers: [], services: [], lanes: []};
+  const config = validateConfig({...base, tokenBatonRouting: {continuePercent: 60, prepareBatonPercent: 75, compactPercent: 85, handoffPercent: 90, sampleRetention: 240}});
+  assert.equal(config.tokenBatonRouting?.continuePercent, 60);
+  assert.equal(config.tokenBatonRouting?.handoffPercent, 90);
+  assert.throws(() => validateConfig({...base, tokenBatonRouting: {prepareBatonPercent: 85, compactPercent: 75, handoffPercent: 90}}), /threshold_order/);
+  assert.throws(() => validateConfig({...base, tokenBatonRouting: {prepareBatonPercent: 86}}), /threshold_order/);
+  assert.throws(() => validateConfig({...base, tokenBatonRouting: {sampleRetention: 1}}), /sample_retention/);
 });
 
 test('harness efficiency profiles are configurable without provider or machine identity', () => {
