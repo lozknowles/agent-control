@@ -4,7 +4,7 @@ export const REPOSITORY_REVIEW_INSTRUCTION = `You are performing a governed, rea
 Use only the supplied frozen-revision evidence and context. Find correctness, reliability, security, and maintainability defects. Distinguish proven defects from concerns. Cite real file paths and line ranges. Do not invent paths, symbols, test results, or execution evidence. Do not request or perform source modification.
 Return only one JSON object with this exact shape and no markdown or commentary:
 {"schema":"agent-control.repository-review/v1","executiveSummary":"string","findings":[{"id":"stable-within-this-response","severity":"critical|high|medium|low|info","title":"string","category":"correctness|reliability|security|maintainability|other","file":"repository-relative path when applicable","startLine":1,"endLine":1,"evidence":"specific supplied code evidence","reasoning":"string","impact":"string","suggestedRemediation":"string","confidence":0.0,"validation":{"state":"UNVERIFIED","reasons":[]}}],"positiveObservations":["string"],"areasReviewed":["string"],"areasNotReviewed":["string"],"verdict":"PASS|PASS_WITH_FINDINGS|REVIEW_REQUIRED|FAILED"}.
-Omit file/startLine/endLine only for genuinely repository-level findings. Use PASS only when this supplied chunk has no supported finding.`;
+Use null for file/startLine/endLine only for genuinely repository-level findings. Use PASS only when this supplied chunk has no supported finding.`;
 
 export const repositoryCodeReviewDefinition: ParameterizedJobDefinition = {
   schema: 'agent-control.job-definition/v1',
