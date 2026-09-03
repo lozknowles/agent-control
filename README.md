@@ -1,6 +1,16 @@
-# Agent Control 3.7.0
+# Agent Control 3.8.0 development
 
 Agent Control runs governed parameterised jobs against qualified execution and model resources. It is an infrastructure-neutral, policy-controlled adaptive harness for durable work by heterogeneous agents and models. Its executable harness core composes a task-appropriate worker, provider/model route, prompt profile, minimum qualified skills, restricted tools, context strategy, runtime settings, authority snapshot, resource limits and verification/escalation policy into a fingerprinted execution recipe.
+
+## Governed retrieval and context intelligence
+
+3.8 development adds an opt-in provider-neutral path: `Work Parcel → Retrieval Intent → Retrieval Governor → Retrieval Provider → Evidence Packet → ContextGraph/ContextPacketBuilder → Model → Verification/Baton`. It starts with bounded local exact/BM25 evidence, can use optional semantic/hybrid adapters such as zg, reacts to the 3.7 token governor's context pressure, streams redacted retrieval metrics over the existing SSE dashboard, and preserves content-addressed evidence references in portable batons. Search authority never grants index mutation, remote retrieval is denied by default, stale evidence is explicit, and provider failure retains the immutable frozen context.
+
+```json
+{"retrieval":{"enabled":true,"providers":["exact","lexical"],"maximumCalls":4,"maximumEvidenceTokens":8192,"allowRemote":false}}
+```
+
+zg is optional and normal startup has no new dependency. The current benchmark supports zg as a search-only reference adapter but does not qualify the first built-in BM25 implementation for automatic broad semantic routing. See [architecture review](docs/agent-control-3.8-architecture-review.md), [configuration and operation](docs/governed-retrieval.md), and [benchmark evidence](docs/evidence/agent-control-3.8-retrieval-benchmark.json).
 
 A lane owns its task; recipes, agents, models, skills, tools, execution providers and operator interfaces are replaceable and remain below the control boundary. Agent Control remains authoritative for scheduling, priorities, leases, ownership, unconditional human takeover, batons, handoffs, clones, shared tasks, provider qualification, routing, approvals, recovery validation, verification and conflict policy. In 3.1.0, ordinary `WorkExecutor` agent work can no longer accept a raw handler: it builds and records an `ExecutionRecipe`, dispatches it through `AdaptiveHarness`, and exposes only a live-authority `ToolPolicy` gateway.
 

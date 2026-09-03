@@ -1,11 +1,12 @@
 # Implementation status
 
-Release boundary: **3.7.0**. Registry updated: **2026-09-03**.
+Release boundary: **3.8.0-dev.0**. Registry updated: **2026-09-03**.
 
 This document is generated from `config/implementation-status.json`. Update the registry and run `npm run status:implementation -- --write`; do not edit this projection directly. `IMPLEMENTED` means executable source and focused tests exist. `QUALIFIED` additionally requires recorded real evidence. `PARTIAL`, `PLANNED` and `NOT_IMPLEMENTED` remain explicit gaps.
 
 | Capability | Status | Executable truth | Remaining boundary |
 | --- | --- | --- | --- |
+| Governed retrieval and context intelligence (`context.governed-retrieval`) | **PARTIAL** | An opt-in provider-neutral retrieval governor supplies bounded content-addressed Evidence Packets through local exact/BM25 and optional zg semantic/hybrid adapters, binds freshness to repository state, compiles evidence through the existing context path, carries portable references in 3.7 batons and streams redacted telemetry over existing SSE. | The five-task benchmark qualified zg retrieval quality but the initial built-in exact/BM25 lane found only 2/5 expected files; the real local-model comparison has one bounded question and does not qualify automatic production routing. |
 | Persistent identity, sessions and delegation (`identity.sessions-delegation`) | **PARTIAL** | Actors, Agents, immutable session creators, attributed participants, context-transfer hashes, authority-subset delegation, opaque secret-use receipts and execution lineage are persistent; execution admission enforces participant/session/delegation authority plus model, node, filesystem and network envelopes, while the Sessions dashboard projects parcels, batons, delegations, runtimes and chain accounting. | The physical Luna to local Qwen to GLM-5.3-Flash to Luna chain is qualified for one bounded contract, including detach/restart, yield/substitution and independent verification. The 50-attempt production-routing gate remains unqualified. |
 | Contract-owned process and PTY runtime (`execution.contract-pty-runtime`) | **PARTIAL** | A durable versioned contract owns objective, criteria, authority, budget, route, sealed baton, process/PTY identity, attachments, permissions, pending actions, verification and evidence. Consultation/reconnect are read-only, write ownership is singular and explicitly transferred, human takeover fences agents, and cancellation, timeout, orphaning and output ordering reconstruct after restart. | The durable authority model, governed handoffs and redacted dashboard projection are implemented; operating-system-specific PTY creation and signal delivery remain adapters beneath this record. |
 | Governed worker handoff outcomes (`execution.governed-handoffs`) | **IMPLEMENTED** | SACRIFICE, SUBSTITUTE, DELEGATE, YIELD and COMPLETE have exact durable transitions over contract-owned state. AUTO remains inside authority and budget; risky, privileged, production, destructive, expanded-envelope and explicit MANUAL requests require operator approval without manufacturing withheld authority. | None recorded. |
@@ -38,6 +39,12 @@ This document is generated from `config/implementation-status.json`. Update the 
 | Automatic governed recipe learning (`recipes.automatic-learning`) | **PLANNED** | Successive halving exists, but winners are not automatically promoted into a durable governed recipe catalog. | Persist qualification evidence and require policy approval before learned recipes influence routing. |
 
 ## Evidence map
+
+### Governed retrieval and context intelligence
+
+- Source: [`src/control/governed-retrieval.ts`](../src/control/governed-retrieval.ts), [`src/control/direct-repository-review-executor.ts`](../src/control/direct-repository-review-executor.ts), [`src/control/harness-efficiency.ts`](../src/control/harness-efficiency.ts), [`src/control/application-service.ts`](../src/control/application-service.ts), [`src/control/web-server.ts`](../src/control/web-server.ts), [`assets/dashboard/dashboard-enhancements.js`](../assets/dashboard/dashboard-enhancements.js)
+- Tests: [`src/control/governed-retrieval.test.ts`](../src/control/governed-retrieval.test.ts), [`src/control/direct-repository-review-executor.test.ts`](../src/control/direct-repository-review-executor.test.ts), [`src/control/web-server.test.ts`](../src/control/web-server.test.ts)
+- Qualification evidence: [`docs/evidence/agent-control-3.8-retrieval-benchmark.json`](../docs/evidence/agent-control-3.8-retrieval-benchmark.json), [`docs/evidence/agent-control-3.8-local-model-retrieval.json`](../docs/evidence/agent-control-3.8-local-model-retrieval.json)
 
 ### Persistent identity, sessions and delegation
 

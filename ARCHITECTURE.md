@@ -1,6 +1,6 @@
 # Agent Control architecture
 
-This is the authoritative source boundary for Agent Control 3.7.0. Status labels matter:
+This is the authoritative source boundary for Agent Control 3.8.0 development. Status labels matter:
 
 - **implemented** means executable code and automated tests exist in this branch;
 - **experimental** means executable code exists but has not been qualified across every external substrate;
@@ -35,6 +35,22 @@ This is the authoritative source boundary for Agent Control 3.7.0. Status labels
 25. ACP and other interoperability adapters terminate at AgentControlService/Work Parcel ports. They cannot become alternate scheduler, shell, tool or acceptance paths.
 26. `THIN` describes context shape; `SPARK` describes an execution class. Neither implies the other.
 27. Fast execution is one attempt, independently verified, scope-limited and visibly escalated. Protected or sensitive work never enters it.
+28. Retrieval is governed separately from model execution; search/inspect authority never implies index, configuration or repository mutation.
+29. Retrieved evidence is content-addressed, repository-state-bound and explicitly CURRENT, POSSIBLY_STALE or INVALID.
+30. Token pressure may narrow retrieval before expansion/compaction/handoff, but cumulative lifetime use never substitutes for active context occupancy.
+
+## Governed retrieval and context intelligence
+
+```text
+Work Parcel -> Retrieval Intent -> Retrieval Governor -> Retrieval Providers
+                                      ^                    |
+                              3.7 token governor           v
+Model <- ContextPacketBuilder <- ContextGraph <- Evidence Packet
+  |                                                |
+  +-> independent verification -> portable Baton -+
+```
+
+The governor progresses through available exact, lexical, semantic and hybrid strategies only while evidence is insufficient and budgets remain. Exact/BM25 are local built-ins; zg, provider-native and MCP retrieval remain adapters. Evidence compiles through existing context profiles and records references in existing batons. Existing SSE carries typed retrieval events. Missing optimisation providers fall back to controlled frozen context. Full contracts and boundaries are in [governed retrieval](docs/governed-retrieval.md) and the pre-implementation [3.8 review](docs/agent-control-3.8-architecture-review.md).
 
 ## System boundary and adaptive harness
 

@@ -1,4 +1,5 @@
 import {createHash, randomUUID} from 'node:crypto';
+import path from 'node:path';
 import type {ModelConfig, ProviderAccountProfileConfig, ProviderConfig} from './config.js';
 import {CodexRepositoryReviewClient} from './codex-repository-review-client.js';
 import type {ContractExecutionRuntime} from './contract-runtime.js';
@@ -14,8 +15,10 @@ import type {RepositoryReviewExecutor, RepositoryReviewResult, ReviewExecutionRe
 import type {TokenAwareBatonRuntime, VerifiedBaton} from './token-aware-baton-routing.js';
 import {LocalCodexNodeExecutionPort, type CodexNodeExecutionPort} from './codex-node-execution.js';
 import {WorkParcelStore, type WorkParcel} from './work-parcels.js';
+import {evidencePacketContextSource, evidenceReferences, type GovernedRetrievalRuntime, type RetrievedEvidenceContextCompiler} from './governed-retrieval.js';
 
 type ReviewChunk = ReviewExecutionRequest['contextChunks'][number];
+type PreparedReviewChunk = ReviewChunk & {evidenceReferences?: string[]; evidencePacketId?: string};
 type InvocationOptions = Parameters<OpenAICompatibleProviderClient['invoke']>[2];
 
 export interface RepositoryReviewProviderClient {
@@ -53,6 +56,8 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
     private readonly lifecycle?: RepositoryReviewTokenLifecycle,
     private readonly clients?: RepositoryReviewProviderClientFactory,
     private readonly nodeExecution: CodexNodeExecutionPort = new LocalCodexNodeExecutionPort(),
+    private readonly retrieval?: GovernedRetrievalRuntime,
+    private readonly evidenceCompiler?: RetrievedEvidenceContextCompiler,
   ) {
     this.routing = lifecycle?.routing ?? tokenRouting;
   }
@@ -62,6 +67,7 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
     const results: RepositoryReviewResult[] = [];
     const parcelIds: string[] = [];
     const responseIds: string[] = [];
+    const retrievalEvidence: string[] = [];
     const totals: ExecutionTotals = {
       accountedInvocations: 0,
       inputTokens: 0,
@@ -91,8 +97,9 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
 
     let chunkIndex = 0;
     while (chunkIndex < request.contextChunks.length) {
-      const chunk = request.contextChunks[chunkIndex];
-      const parcel = this.createParcel(request, chunk.id);
+      const originalChunk = request.contextChunks[chunkIndex];
+      const parcel = this.createParcel(request, originalChunk.id);
+      const chunk = await this.prepareChunk(request, parcel, originalChunk, retrievalEvidence);
       parcelIds.push(parcel.id);
       try {
         const source = await this.invokeChunk(request, request.route, parcel, chunk);
@@ -101,7 +108,8 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
         results.push(source.result);
         this.requireWithinBudget(request, totals);
 
-        const nextChunk = request.contextChunks[chunkIndex + 1];
+        const nextOriginal = request.contextChunks[chunkIndex + 1];
+        const nextChunk = nextOriginal ? await this.prepareChunk(request, parcel, nextOriginal, retrievalEvidence) : undefined;
         const handoff = nextChunk ? await this.tryGovernedContinuation(request, parcel, chunk, nextChunk, source, capture, totals, results) : false;
         if (handoff) chunkIndex += 2;
         else chunkIndex++;
@@ -112,7 +120,7 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
         this.finishParcel(parcel, 'FAILED', message(error));
         throw Object.assign(error instanceof Error ? error : new Error(String(error)), {
           workParcelIds: [...parcelIds],
-          evidence: responseIds.map(id => `provider_response_${id}`),
+          evidence: [...responseIds.map(id => `provider_response_${id}`), ...retrievalEvidence],
           providerResponseIds: [...responseIds],
           usage: usage(totals),
         });
@@ -122,7 +130,7 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
     return {
       result: consolidate(results),
       usage: usage(totals),
-      evidence: responseIds.map(id => `provider_response_${id}`),
+      evidence: [...responseIds.map(id => `provider_response_${id}`), ...retrievalEvidence],
       providerResponseIds: responseIds,
       workParcelIds: parcelIds,
     };
@@ -180,6 +188,7 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
       filesChanged: [],
       git: {sha: request.run.repository?.reviewedSha ?? 'unknown', dirty: request.run.repository?.dirty ?? false, diffSummary: request.run.repository?.dirty ? `Frozen snapshot includes dirty paths: ${request.run.repository.dirtyPaths.join(', ')}` : 'Frozen repository snapshot is clean'},
       testsAndEvidence: [source.responseHash],
+      evidenceReferences: [...((completedChunk as PreparedReviewChunk).evidenceReferences ?? []), ...((nextChunk as PreparedReviewChunk).evidenceReferences ?? [])],
       unresolvedIssues: [...source.result.areasNotReviewed, ...source.result.findings.map(finding => finding.id)],
       nextAction: `Review frozen context chunk ${nextChunk.id} containing ${nextChunk.files.join(', ')}`,
     });
@@ -231,7 +240,7 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
     return true;
   }
 
-  private async invokeChunk(request: ReviewExecutionRequest, route: ModelRouteDecision, parcel: WorkParcel, chunk: ReviewChunk, baton?: VerifiedBaton, threadId = `review:${request.run.id}:${chunk.id}`) {
+  private async invokeChunk(request: ReviewExecutionRequest, route: ModelRouteDecision, parcel: WorkParcel, chunk: PreparedReviewChunk, baton?: VerifiedBaton, threadId = `review:${request.run.id}:${chunk.id}`) {
     const {provider, model, account} = this.routeConfiguration(route);
     const prompt = this.prompt(request, chunk, baton);
     const client: RepositoryReviewProviderClient = this.clients?.(provider, account, route) ?? (provider.kind === 'cli' ? new CodexRepositoryReviewClient(provider, requiredAccount(account), route.nodeId, this.nodeExecution) : new OpenAICompatibleProviderClient(provider));
@@ -249,10 +258,28 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
     catch (error) { throw Object.assign(error instanceof Error ? error : new Error(String(error)), {partialInvocation: {...invocation, responseHash}}); }
   }
 
+  private async prepareChunk(request: ReviewExecutionRequest, parcel: WorkParcel, chunk: ReviewChunk, collected: string[]): Promise<PreparedReviewChunk> {
+    if (!this.retrieval || !request.run.repository) return chunk;
+    const at = new Date().toISOString();
+    try {
+      const packet = await this.retrieval.retrieve({id:`retrieval:${request.run.id}:${chunk.id}`,parcelId:parcel.id,taskType:'repository-review',query:`${request.instruction}\nFiles: ${chunk.files.join(' ')}`,exactTerms:chunk.files.map(file=>path.basename(file)).concat(extractIdentifiers(request.instruction)),scopes:chunk.files,repository:{repositoryId:request.run.repository.identity,root:request.run.repository.snapshotPath,gitSha:request.run.repository.reviewedSha,dirty:request.run.repository.dirty,dirtyFingerprint:request.run.repository.dirtyPaths.length?createHash('sha256').update(request.run.repository.dirtyPaths.slice().sort().join('\n')).digest('hex'):undefined},maximumEvidenceTokens:Math.min(request.run.definition.budgets.maximumInputTokens??this.retrieval.policy.maximumEvidenceTokens,this.retrieval.policy.maximumEvidenceTokens),requiredCoverage:.1,minimumConfidence:.05});
+      const compiled=this.evidenceCompiler?await this.evidenceCompiler.compile(packet,request.run.context?.profile??'STANDARD',this.retrieval.policy.maximumEvidenceTokens):undefined;
+      const source = compiled?.source??evidencePacketContextSource(packet), references = evidenceReferences(packet); collected.push(packet.id, ...references);
+      parcel.provenance.push({at,type:'retrieval.evidence',detail:`${packet.id}:${packet.sha256}`});
+      parcel.audit.timeline.push({id:`audit-${randomUUID()}`,at,type:'readiness.checked',stageId:'review',summary:`Governed retrieval supplied ${packet.items.length} compact evidence items`,detail:`${packet.id}; context ${compiled?.packet.id??'direct-source'}; ${packet.estimatedTokens} estimated tokens; ${packet.rawBytesAvoided} raw bytes avoided`});
+      this.parcels.update(parcel);
+      return {...chunk,content:source.content ?? '',sha256:createHash('sha256').update(source.content ?? '').digest('hex'),evidenceReferences:references,evidencePacketId:packet.id};
+    } catch (error) {
+      parcel.audit.timeline.push({id:`audit-${randomUUID()}`,at,type:'readiness.checked',stageId:'review',summary:'Governed retrieval unavailable; controlled frozen context retained',detail:message(error).slice(0,240)});
+      parcel.provenance.push({at,type:'retrieval.fallback',detail:'frozen-context'}); this.parcels.update(parcel); return chunk;
+    }
+  }
+
   private prompt(request: ReviewExecutionRequest, chunk: ReviewChunk, baton?: VerifiedBaton) {
-    const base = `${request.instruction}\n\n${chunk.content}`;
+    const prepared = chunk as PreparedReviewChunk;
+    const base = `${request.instruction}\n\n${prepared.evidencePacketId ? `Governed Evidence Packet: ${prepared.evidencePacketId}\n` : ''}${chunk.content}`;
     if (!baton) return base;
-    return `${base}\n\nGoverned continuation baton\nBaton ID: ${baton.id}\nBaton SHA-256: ${baton.sha256}\nObjective: ${baton.objective}\nCompleted work: ${baton.completedWork.join('; ')}\nDecisions: ${baton.decisions.join('; ')}\nExact next action: ${baton.nextAction}\nOrigin: ${routeLabel(baton)} thread ${baton.threadId}\nParcel tokens at handoff: ${baton.parcelTotals.totalTokens ?? 'unavailable'}`;
+    return `${base}\n\nGoverned continuation baton\nBaton ID: ${baton.id}\nBaton SHA-256: ${baton.sha256}\nObjective: ${baton.objective}\nCompleted work: ${baton.completedWork.join('; ')}\nDecisions: ${baton.decisions.join('; ')}\nEvidence references: ${(baton.evidenceReferences ?? []).join('; ') || 'none'}\nExact next action: ${baton.nextAction}\nOrigin: ${routeLabel(baton)} thread ${baton.threadId}\nParcel tokens at handoff: ${baton.parcelTotals.totalTokens ?? 'unavailable'}`;
   }
 
   private observeTelemetry(event: ProviderInvocationTelemetry, threadId: string, parcelId: string, route: ModelRouteDecision) {
@@ -482,4 +509,5 @@ function record(value: unknown): value is Record<string, unknown> { return Boole
 function nonempty(value: unknown): value is string { return typeof value === 'string' && Boolean(value.trim()); }
 function positiveInteger(value: unknown): value is number { return Number.isInteger(value) && Number(value) > 0; }
 function arrayOfStrings(value: unknown): value is string[] { return Array.isArray(value) && value.every(item => typeof item === 'string'); }
+function extractIdentifiers(value: string) { return [...new Set(value.match(/[A-Za-z_][A-Za-z0-9_]{2,}/g) ?? [])].slice(0, 12); }
 function consolidate(results: RepositoryReviewResult[]): RepositoryReviewResult { const findings = results.flatMap(result => result.findings ?? []), verdict = results.some(result => result.verdict === 'FAILED') ? 'FAILED' : results.some(result => result.verdict === 'REVIEW_REQUIRED') ? 'REVIEW_REQUIRED' : findings.length ? 'PASS_WITH_FINDINGS' : 'PASS'; return {schema: 'agent-control.repository-review/v1', executiveSummary: results.map(result => result.executiveSummary).filter(Boolean).join('\n\n'), findings, positiveObservations: [...new Set(results.flatMap(result => result.positiveObservations ?? []))], areasReviewed: [...new Set(results.flatMap(result => result.areasReviewed ?? []))], areasNotReviewed: [...new Set(results.flatMap(result => result.areasNotReviewed ?? []))], verdict}; }

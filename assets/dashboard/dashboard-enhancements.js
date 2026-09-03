@@ -27,7 +27,16 @@ renderSystem = snapshot => {
   const items = [['Scheduler', snapshot.paused ? 'PAUSED' : 'ACTIVE'], ['Job runs', snapshot.jobs.running], ['Waiting', snapshot.jobs.waiting], ['Queued', snapshot.jobs.queued], ['Jobs', snapshot.jobs.total], ['Approvals', snapshot.outstandingApprovals], ['Context tokens avoided', snapshot.tokenAwareOutput?.contextTokensAvoided || 0], ['Resources', snapshot.resources.length]];
   document.querySelector('#system-summary').innerHTML = `<div class="summary-grid">${items.map(([label, value]) => `<div class="summary-item"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`).join('')}</div>`;
   renderTokenRouting(snapshot.tokenBatonRouting);
+  renderRetrieval(snapshot.retrieval);
 };
+
+function renderRetrieval(retrieval) {
+  const root=document.querySelector('#retrieval-routing');if(!root)return;
+  const totals=retrieval?.totals,attempts=retrieval?.attempts||[],latest=attempts.at(-1),packet=(retrieval?.packets||[]).at(-1);
+  if(!retrieval?.policy?.enabled&&!attempts.length){root.innerHTML='<div class="compact-empty">Governed retrieval is disabled. Existing full-context behaviour remains available.</div>';return;}
+  const path=attempts.slice(-6).map(item=>`${item.strategy}/${item.providerId} ${item.outcome}`).join(' → ')||'Awaiting retrieval intent';
+  root.innerHTML=`<article class="token-thread"><div><strong>${esc(latest?.providerId||'No active provider')}</strong><span class="status-pill">${esc(latest?.outcome||'READY')}</span></div><p>Strategy path: ${esc(path)}</p><p>Evidence: ${esc(tokenNumber(totals?.evidenceCount))} items · ${esc(tokenNumber(totals?.evidenceTokens))} estimated tokens</p><p>Context saved: ${esc(tokenNumber(totals?.contextTokensSaved))} tokens · raw bytes avoided ${esc(tokenNumber(totals?.rawBytesAvoided))}</p><p>Queries: ${esc(tokenNumber(totals?.queries))} · escalations ${esc(tokenNumber(totals?.escalations))} · latency ${esc(tokenNumber(totals?.retrievalLatencyMs))}ms · cost ${esc(tokenMoney(packet?.retrievalCost))}</p><p>Freshness: ${esc(latest?.freshness||'not observed')} · index ${esc(latest?.indexState||'not observed')} · ${esc(retrieval.policy.allowedLocality.join('/'))}</p></article>`;
+}
 
 function tokenNumber(value) { return typeof value === 'number' ? value.toLocaleString() : 'unknown'; }
 function tokenMoney(cost) { return typeof cost?.amount === 'number' ? `${cost.amount.toFixed(4)} ${cost.currency || ''} ${cost.authority === 'authoritative' ? '' : '(estimated)'}`.trim() : 'unknown'; }

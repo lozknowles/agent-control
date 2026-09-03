@@ -1,8 +1,18 @@
 {
   "schema": "agent-control.implementation-status/v1",
-  "release": "3.7.0",
+  "release": "3.8.0-dev.0",
   "updated": "2026-09-03",
   "capabilities": [
+    {
+      "id": "context.governed-retrieval",
+      "title": "Governed retrieval and context intelligence",
+      "status": "PARTIAL",
+      "summary": "An opt-in provider-neutral retrieval governor supplies bounded content-addressed Evidence Packets through local exact/BM25 and optional zg semantic/hybrid adapters, binds freshness to repository state, compiles evidence through the existing context path, carries portable references in 3.7 batons and streams redacted telemetry over existing SSE.",
+      "sources": ["src/control/governed-retrieval.ts", "src/control/direct-repository-review-executor.ts", "src/control/harness-efficiency.ts", "src/control/application-service.ts", "src/control/web-server.ts", "assets/dashboard/dashboard-enhancements.js"],
+      "tests": ["src/control/governed-retrieval.test.ts", "src/control/direct-repository-review-executor.test.ts", "src/control/web-server.test.ts"],
+      "evidence": ["docs/evidence/agent-control-3.8-retrieval-benchmark.json", "docs/evidence/agent-control-3.8-local-model-retrieval.json"],
+      "limitation": "The five-task benchmark qualified zg retrieval quality but the initial built-in exact/BM25 lane found only 2/5 expected files; the real local-model comparison has one bounded question and does not qualify automatic production routing."
+    },
     {
       "id": "identity.sessions-delegation",
       "title": "Persistent identity, sessions and delegation",

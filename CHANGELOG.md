@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased — Agent Control 3.8
+
+- Adds opt-in governed retrieval with provider-neutral intents/providers, bounded progressive policy, compact content-addressed Evidence Packets, explicit local/remote/hybrid locality, and current/possibly-stale/invalid freshness.
+- Reuses Work Parcels, ContextGraph/ContextPacketBuilder, 3.7 token pressure, sealed batons, provider routing, independent verification, durable evidence and existing SSE rather than creating parallel control paths.
+- Adds dependency-free exact and BM25 providers plus an optional search-only zg 0.2.1 semantic/hybrid adapter. Index mutation remains a separate authority and zg is not required for startup.
+- Wires retrieval into production parameterized repository reviews with packet/hash provenance, portable baton evidence references, redacted dashboard telemetry and controlled immutable-context fallback.
+- Adds a provider-technique registry distinguishing generic core techniques from optional/provider-specific mechanisms.
+- Benchmark result: zg hybrid and repeated full context found 5/5 target files; initial built-in exact/BM25 found 2/5. Real Qwen2.5 3B output remained verified with provider-reported input of 20,912 full-context, 2,480 built-in retrieval and 1,556 zg retrieval tokens. These limited results do not yet qualify automatic production routing.
+
 ## [3.7.0] — 2026-09-03
 
 - Adds Token-Aware Baton Routing with policy-configured `CONTINUE`, `PREPARE_BATON`, `COMPACT`, and `HANDOFF` pressure states (60/75/85/90% defaults).

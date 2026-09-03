@@ -7,7 +7,7 @@ import {registerReferenceActions} from './reference-actions.js';
 import {ManagedNodeManager, type ManagedNodeSnapshot} from './managed-node.js';
 import {registerManagedNodeActions} from './managed-node-actions.js';
 import {SshManagedNodeTransport} from './managed-node-ssh.js';
-import {configuredHarnessProfileRouter, configuredHarnessProfiles, ContextPacketBuilder, FileHarnessEfficiencyLedger, type HarnessEfficiencyLedgerPort} from './harness-efficiency.js';
+import {configuredHarnessProfileRouter, configuredHarnessProfiles, ContextPacketBuilder, FileHarnessEfficiencyLedger, InMemoryContextGraph, type HarnessEfficiencyLedgerPort} from './harness-efficiency.js';
 import {registerFreeTokenQualificationActions} from './freetoken-actions.js';
 import {CatalogNaturalLanguagePlanner, WorkParcelCoordinator, WorkParcelStore, type WorkParcelPlanner} from './work-parcels.js';
 import {registerOperatorReviewActions} from './operator-review-actions.js';
@@ -21,6 +21,7 @@ import type {TokenAwareBatonRuntime} from './token-aware-baton-routing.js';
 import type {ContractExecutionRuntime} from './contract-runtime.js';
 import type {GovernedHandoffRuntime} from './handoff-runtime.js';
 import type {CodexNodeExecutionPort} from './codex-node-execution.js';
+import {GovernedRetrievalRuntime, RepositoryTextRetrievalProvider, RetrievedEvidenceContextCompiler, SpawnZgSearchExecutor, ZgRetrievalProvider, type RetrievalStrategy} from './governed-retrieval.js';
 
 /** Shared production definition path so qualification cannot drift from registered typed Actions. */
 export function buildJobRuntimeDefinition(config: AgentControlConfig, manifestDir = process.env.AGENT_CONTROL_JOB_DIR || path.resolve('config/jobs'), harnessEfficiency?: HarnessEfficiencyLedgerPort) {
@@ -71,11 +72,18 @@ export function startJobScheduler(runtime: ReturnType<typeof buildJobRuntime>, o
   const timer = setInterval(() => void schedule(), intervalMs); timer.unref(); void schedule(); return () => { stopped = true; clearInterval(timer); };
 }
 
-export function buildParameterizedJobRuntime(config: AgentControlConfig, modelRegistry: ModelRegistry, workParcels: WorkParcelCoordinator, stateRoot = process.env.AGENT_CONTROL_STATE_DIR || path.resolve('.agent-control'), tokenRouting?: TokenAwareBatonRuntime, contracts?: ContractExecutionRuntime, handoffs?: GovernedHandoffRuntime, codexNodeExecution?: CodexNodeExecutionPort) {
+export function buildGovernedRetrievalRuntime(config: AgentControlConfig, stateRoot = process.env.AGENT_CONTROL_STATE_DIR || path.resolve('.agent-control')) {
+  const names=config.retrieval?.providers??['exact','lexical'];
+  const providers=names.map(name=>name==='exact'?new RepositoryTextRetrievalProvider('exact'):name==='lexical'?new RepositoryTextRetrievalProvider('lexical'):new ZgRetrievalProvider(new SpawnZgSearchExecutor(config.retrieval?.zgExecutable??'zg')));
+  const progression:RetrievalStrategy[]=['EXACT','LEXICAL',...(names.includes('zg')?['SEMANTIC' as const,'HYBRID' as const]:[])];
+  return new GovernedRetrievalRuntime(providers,{enabled:config.retrieval?.enabled??false,maximumCalls:config.retrieval?.maximumCalls,maximumEvidenceItems:config.retrieval?.maximumEvidenceItems,maximumEvidenceTokens:config.retrieval?.maximumEvidenceTokens,minimumConfidence:config.retrieval?.minimumConfidence,requiredCoverage:config.retrieval?.requiredCoverage,contextPressurePercent:config.retrieval?.contextPressurePercent,contextPressureEvidenceFraction:config.retrieval?.contextPressureEvidenceFraction,allowedLocality:config.retrieval?.allowRemote?['LOCAL','REMOTE','HYBRID']:['LOCAL'],progression},{file:path.join(stateRoot,'retrieval','evidence.json')});
+}
+
+export function buildParameterizedJobRuntime(config: AgentControlConfig, modelRegistry: ModelRegistry, workParcels: WorkParcelCoordinator, stateRoot = process.env.AGENT_CONTROL_STATE_DIR || path.resolve('.agent-control'), tokenRouting?: TokenAwareBatonRuntime, contracts?: ContractExecutionRuntime, handoffs?: GovernedHandoffRuntime, codexNodeExecution?: CodexNodeExecutionPort, retrieval = buildGovernedRetrievalRuntime(config,stateRoot),contextPacketBuilder=new ContextPacketBuilder(configuredHarnessProfiles(config.harnessEfficiency))) {
   const definitions = new ParameterizedJobRegistry(); definitions.register(repositoryCodeReviewDefinition);
   const roots = config.jobs?.repositoryRoots ?? (process.env.AGENT_CONTROL_REPOSITORY_ROOTS?.split(path.delimiter).filter(Boolean) || [path.resolve('.')]);
   const lifecycle = tokenRouting && contracts && handoffs ? {routing: tokenRouting, contracts, handoffs} : undefined;
-  const executor = new DirectRepositoryReviewExecutor(modelRegistry, workParcels.store, tokenRouting, lifecycle, undefined, codexNodeExecution);
+  const executor = new DirectRepositoryReviewExecutor(modelRegistry, workParcels.store, tokenRouting, lifecycle, undefined, codexNodeExecution, retrieval,new RetrievedEvidenceContextCompiler(contextPacketBuilder,new InMemoryContextGraph()));
   return createParameterizedJobEngine(stateRoot, definitions, modelRegistry, executor, {allowedRepositoryRoots: roots, allowedRepositoryRemotes: config.jobs?.repositoryRemotes, nodeHealthy: nodeId => { const resource = config.resources.find(item => item.id === nodeId); if (!resource) return false; if (resource.transport.type === 'local') return true; const node = workParcels.runtime.workers.list().find(item => item.id === nodeId); return node?.health === 'healthy'; }});
 }
 
