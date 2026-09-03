@@ -1,3 +1,4 @@
+param([string]$PayloadLine)
 & {
   $ErrorActionPreference = 'Stop'
   $ResultSchema = 'agent-control.codex-node-result/v1'
@@ -14,7 +15,6 @@
     return $out
   }
   try {
-    $payloadLine = [Console]::In.ReadLine()
     if ([string]::IsNullOrWhiteSpace($payloadLine)) { Fail 'unknown' 'codex_node_request_missing' }
     $requestText = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($payloadLine))
     $request = $requestText | ConvertFrom-Json
@@ -38,8 +38,15 @@
     $executableSha256 = (Get-FileHash -LiteralPath $selected.Path -Algorithm SHA256).Hash.ToLowerInvariant()
     $env:CODEX_HOME = $codexHome
     if ($operation -eq 'accountStatus') {
-      $status = @(& $selected.Path login status 2>$null)
-      $authenticated = $LASTEXITCODE -eq 0 -and (($status -join ' ') -match 'ChatGPT')
+      $savedErrorPreference = $ErrorActionPreference
+      try {
+        # Codex writes login-status text to its native stderr stream. Windows
+        # PowerShell must not promote that expected stream to a terminating error.
+        $ErrorActionPreference = 'Continue'
+        $status = @(& $selected.Path login status 2>&1)
+        $statusExitCode = $LASTEXITCODE
+      } finally { $ErrorActionPreference = $savedErrorPreference }
+      $authenticated = $statusExitCode -eq 0 -and (($status -join ' ') -match 'ChatGPT')
       if (-not $authenticated) { Fail $operation 'codex_chatgpt_auth_required' }
       Emit-Result @{ operation = $operation; ok = $true; authenticated = $true; codexVersion = $selected.Version; executableSha256 = $executableSha256; discoveredAt = $discoveredAt }
       exit 0

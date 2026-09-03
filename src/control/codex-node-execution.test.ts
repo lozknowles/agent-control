@@ -16,17 +16,21 @@ const hash = 'a'.repeat(64);
 
 test('Windows Codex node execution sends one fixed PowerShell program and treats all variable values as encoded data', async () => {
   const secretInstruction = 'review value with spaces; Write-Output injected-marker';
-  let observed: {args: string[]; source: string; payload: Record<string, unknown>} | undefined;
+  let observed: {args: string[]; source: string; payload: Record<string, unknown>; bootstrap: string} | undefined;
   const executor: SshExecutor = async (command, args, input) => {
     assert.equal(command, 'ssh');
-    const lines = input.trimEnd().split(/\r?\n/), encoded = lines.pop()!;
+    const lines = input.trimEnd().split(/\r?\n/), encoded = lines.shift()!;
     const source = lines.join('\n'), payload = JSON.parse(Buffer.from(encoded, 'base64').toString('utf8')) as Record<string, unknown>;
-    observed = {args, source, payload};
+    const bootstrap = Buffer.from(args.at(-1)!, 'base64').toString('utf16le');
+    observed = {args, source, payload, bootstrap};
     return {status: 0, stdout: JSON.stringify({schema: 'agent-control.codex-node-result/v1', operation: 'execReadOnlyStructured', ok: true, codexVersion: 'codex-cli 0.152.1', executableSha256: hash, discoveredAt: '2026-09-03T10:00:00.000Z', threadId: 'thread-safe', finalMessage: '{"ok":true}', usage: {input_tokens: 4, output_tokens: 2, total_tokens: 6}, observedItemTypes: ['agent_message'], telemetry: [{type: 'turn.completed', elapsedMs: 9, usage: {input_tokens: 4, output_tokens: 2, total_tokens: 6}}]}), stderr: 'raw remote stderr must not be returned'};
   };
   const port = new ResourceCodexNodeExecutionPort([node], {CODEX_HOME_ACCOUNT_A: '/controller/must-not-be-read'}, executor);
   const result = await port.execReadOnlyStructured({provider, account, nodeId: node.id, model: {id: 'model-a', provider: provider.id, accountProfile: account.id, providerModel: 'gpt-example', capabilities: []}, instruction: secretInstruction, outputSchema: {type: 'object'}, timeoutMs: 1_000});
-  assert.deepEqual(observed?.args.slice(-5), ['powershell.exe', '-NoProfile', '-NonInteractive', '-Command', '-']);
+  assert.deepEqual(observed?.args.slice(-5, -1), ['powershell.exe', '-NoProfile', '-NonInteractive', '-EncodedCommand']);
+  assert.match(observed?.bootstrap ?? '', /ReadLine\(\)/);
+  assert.match(observed?.bootstrap ?? '', /ReadToEnd\(\)/);
+  assert.match(observed?.source ?? '', /^param\(\[string\]\$PayloadLine\)/);
   assert.equal(observed?.source.includes(secretInstruction), false);
   assert.equal(observed?.source.includes(account.id), false);
   assert.equal(observed?.payload.instruction, secretInstruction);
@@ -70,6 +74,9 @@ test('the audited Windows runner discovers versioned Codex bundles without a har
   assert.match(script, /--version/);
   assert.doesNotMatch(script, /[a-f0-9]{16,}\\codex\.exe/i);
   assert.doesNotMatch(script, /Invoke-Expression|\biex\b/i);
+  assert.match(script, /\$savedErrorPreference = \$ErrorActionPreference/);
+  assert.match(script, /\$statusExitCode = \$LASTEXITCODE/);
+  assert.match(script, /login status 2>&1/);
 });
 
 test('destination execution fails closed when the execution port reports a different account or node', async () => {

@@ -1,7 +1,8 @@
 # Agent Control 3.7 physical qualification — partial
 
 Timestamp: `2026-09-02T19:30:26.932Z`
-Verdict: **PARTIAL — CORE 3.7 IMPLEMENTATION SOUND; CROSS-NODE ACCOUNT EXECUTION NOT YET PHYSICALLY QUALIFIED**
+Latest continuation: `2026-09-03T06:33:31Z`
+Verdict: **PARTIAL — AGENT CONTROL 3.7 NOT RELEASE READY**
 
 ## Frozen candidate and normal gate
 
@@ -133,3 +134,26 @@ This is a missing governed noninteractive SSH identity/Resource configuration pr
 Stage verdict: **FAILED — CROSS-NODE CODEX ACCOUNT QUALIFICATION BLOCKED BY MISSING MSI-AUTHORIZED NONINTERACTIVE SSH IDENTITY**.
 
 Overall 3.7 verdict remains **PARTIAL — CORE 3.7 IMPLEMENTATION SOUND; CROSS-NODE ACCOUNT EXECUTION NOT YET PHYSICALLY QUALIFIED**.
+
+## Governed MSI account qualification after SSH identity provisioning
+
+The dedicated noninteractive SSH identity was subsequently authorized on the Windows node and referenced through the existing Resource `transport.identityFile` field. The private-key content was neither read nor copied. A fixed harmless production-transport probe passed with exit status 0, no timeout, no stderr, and a valid sanitized `agent-control.transport-proof/v1` response, proving controller → governed SSH Resource → Windows PowerShell stdin → structured result.
+
+That probe exposed a genuine runner defect before Codex authentication was accepted: `powershell.exe -Command -` consumed all stdin as source, leaving no request line for `[Console]::In.ReadLine()`. A fixed encoded bootstrap now reads the base64 request data line and audited runner source as separate stdin frames and passes the request as an argument. A second defect was then found at `codex login status`: Codex emitted its successful status through native stderr, which Windows PowerShell first promoted to a terminating `RemoteException` and, when suppressed, removed from authentication classification. The runner now captures that stream only in memory under a temporary non-terminating preference, preserves the native exit code, matches only the required authentication marker, restores fail-closed handling, and emits none of the raw stream.
+
+After those corrections, both production `accountStatus` calls passed on node `msi`:
+
+| Profile | Provider | State | CLI | Executable SHA-256 | Discovery time | Qualification time |
+| --- | --- | --- | --- | --- | --- | --- |
+| `cottage-plus` | `codex-chatgpt` | `QUALIFIED` | `codex-cli 0.153.0-alpha.5` | `dacb96688b155e20dbbbc0bfd18bba7ce7920f1b239ab08a1627917f23b8d9cd` | `2026-09-03T06:31:29.6997704Z` | `2026-09-03T06:31:31.140Z` |
+| `lawrence-pro` | `codex-chatgpt` | `QUALIFIED` | `codex-cli 0.153.0-alpha.5` | `dacb96688b155e20dbbbc0bfd18bba7ce7920f1b239ab08a1627917f23b8d9cd` | `2026-09-03T06:31:46.0242543Z` | `2026-09-03T06:31:47.485Z` |
+
+The node dynamically selected its newest valid Codex Desktop executable; no bundle-directory hash was configured. The controller supplied only opaque provider/profile/node identities and the environment-reference names. No resolved Windows profile path, credential content, email, raw PowerShell output, or raw Codex status output entered evidence.
+
+Stage verdict: **PASS — CROSS-NODE CODEX ACCOUNT QUALIFICATION**.
+
+The next bounded `execReadOnlyStructured` preflight used `codex-chatgpt/cottage-plus/spark-cottage@msi` with provider model `gpt-5.3-codex-spark`. It failed after the configured 120-second bound with sanitized error `codex_node_timeout`. No provider result, thread ID, usage, context telemetry, Work Parcel, baton, route transition, destination invocation, independent verification, or recovery result was manufactured. `lawrence-pro` was not invoked for workload execution, and the required identity-mismatch physical test was not reached.
+
+The framing/account-status regression suite passed 6/6. The complete `npm run check` passed TypeScript, bootstrap syntax, dashboard syntax, infrastructure neutrality, implementation-status validation, and 658/658 tests. These development results do not override the failed physical execution gate.
+
+Final verdict for this continuation: **PARTIAL — AGENT CONTROL 3.7 NOT RELEASE READY**. No merge, tag, GitHub Release, deployment, or 3.8 work was performed.

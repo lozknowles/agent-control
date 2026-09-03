@@ -47,6 +47,14 @@ type RemoteWireResult = {
   error?: string;
 };
 
+const WINDOWS_STDIN_BOOTSTRAP = [
+  '$ErrorActionPreference = "Stop"',
+  '$payload = [Console]::In.ReadLine()',
+  '$source = [Console]::In.ReadToEnd()',
+  '& ([ScriptBlock]::Create($source)) $payload',
+  '',
+].join('\n');
+
 export class ResourceCodexNodeExecutionPort implements CodexNodeExecutionPort {
   private readonly resources: Map<string, ResourceConfig>;
   private readonly script: string;
@@ -76,9 +84,10 @@ export class ResourceCodexNodeExecutionPort implements CodexNodeExecutionPort {
   private async windows(resource: ResourceConfig, operation: RemoteWireResult['operation'], payload: Record<string, unknown>, timeoutMs: number): Promise<RemoteWireResult> {
     if (resource.platform !== 'windows' || resource.transport.type !== 'ssh') throw new Error('codex_execution_node_transport_unsupported');
     const encoded = Buffer.from(JSON.stringify(payload), 'utf8').toString('base64');
-    const input = `${this.script.trimEnd()}\n${encoded}\n`;
+    const bootstrap = Buffer.from(WINDOWS_STDIN_BOOTSTRAP, 'utf16le').toString('base64');
+    const input = `${encoded}\n${this.script.trimEnd()}\n`;
     let result;
-    try { result = await this.executor('ssh', sshResourceArgs(resource, ['powershell.exe', '-NoProfile', '-NonInteractive', '-Command', '-']), input, {timeoutMs: Math.min(Math.max(timeoutMs + 10_000, 20_000), 30 * 60_000), maxBytes: 4 * 1024 * 1024}); }
+    try { result = await this.executor('ssh', sshResourceArgs(resource, ['powershell.exe', '-NoProfile', '-NonInteractive', '-EncodedCommand', bootstrap]), input, {timeoutMs: Math.min(Math.max(timeoutMs + 10_000, 20_000), 30 * 60_000), maxBytes: 4 * 1024 * 1024}); }
     catch { throw new Error('codex_node_transport_failed'); }
     if (result.timedOut) throw new Error('codex_node_timeout');
     if (result.aborted) throw new Error('codex_node_cancelled');
