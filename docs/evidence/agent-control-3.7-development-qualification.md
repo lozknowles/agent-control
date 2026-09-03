@@ -8,9 +8,9 @@ Base: `5acdde13e41d58b511a33ac0e15f3dc6d3930613` (Agent Control 3.6 product chec
 
 The focused TypeScript suite covers the durable governor and its integration boundaries:
 
-- monotonically increasing authoritative context pressure at 74%, 75%, 85%, and 91%;
+- configurable context pressure checkpoints at 60%, 75%, 85%, and 91%;
 - a 100k lifetime-token thread with only 12k current context, plus unavailable and estimated context values;
-- partial configuration validation against the same 75/85/90 defaults used at runtime;
+- partial configuration validation against the same 60/75/85/90 defaults used at runtime;
 - sealed baton provenance, SHA-256, Git/diff/test/next-action state, successful handoff, failed-handoff recovery, and original-thread recoverability;
 - Sol 184k, Luna 31k, and GLM-5.3-Flash 18k accounting that remains 233k after durable reload;
 - Responses-compatible direct review telemetry, Codex JSONL start/completion usage normalization, active/completed thread state for advancing elapsed time, redacted `GET /api/token-routing`, and the real SSE event stream.
@@ -20,12 +20,15 @@ The focused TypeScript suite covers the durable governor and its integration bou
 - same-provider `lawrence-pro/Sol/source-node → cottage-plus/Luna/destination-node` handoff binding the exact destination account and node, rejecting identity mismatch, and retaining separate account-aware baton, contract, invocation and parcel-chain records;
 - remote account qualification dispatching to the configured Resource without resolving the controller environment or filesystem;
 - the Windows SSH adapter accepting only `accountStatus` and `execReadOnlyStructured`, sending fixed PowerShell over stdin, keeping variable data outside source, rejecting source-account/node reuse, omitting raw process output and paths, and discovering Codex bundles without a hard-coded bundle hash.
+- Codex 0.153 app-server usage/compaction normalization, generic durable compaction/new-context/resume evidence, and cumulative totals surviving a current-context reset and process restart.
 
 ## Telemetry authority
 
 Codex JSONL provides a live `thread.started` event and completion usage from `turn.completed`. The current Codex CLI integration does not expose authoritative in-thread context occupancy, so 3.7 records the configured context-window limit when known and marks current context and percentage `unavailable`; it never derives them from lifetime tokens.
 
 Responses-compatible adapters normalize provider usage and use configured pricing only as an `estimated` cost. A provider-native current-context field may be represented as `authoritative` without changing core routing policy.
+
+The official Codex 0.153 source review is recorded separately in [agent-control-3.7-codex-0.153-review.md](agent-control-3.7-codex-0.153-review.md). The current Agent Control Codex invocation does not enable experimental context management and does not expose app-server or OTEL telemetry. The adapter can normalize 0.153 app-server usage and compaction when a future qualified persistent execution route supplies those events; the provider-neutral runtime already persists context lifecycle and keeps aggregate accounting stable.
 
 ## Qualification-discovered integration defect and fix
 
@@ -53,4 +56,6 @@ This remains development evidence, not a live provider promotion. The production
 - Cross-node focused command: `node --import tsx --test --test-concurrency=1 src/control/codex-node-execution.test.ts src/control/account-profile-qualification.test.ts src/control/config.test.ts src/control/model-registry.test.ts src/control/direct-repository-review-executor.test.ts src/control/token-aware-baton-routing.test.ts src/control/codex-exec-provider.test.ts src/control/web-server.test.ts` — 80 passed, 0 failed.
 - Final full command: `npm run check` — TypeScript, bootstrap/dashboard syntax, infrastructure neutrality and implementation-status consistency passed; 658 tests passed, 0 failed.
 - Post-physical-defect full command: `npm run check` — TypeScript, bootstrap/dashboard syntax, infrastructure neutrality and implementation-status consistency passed; 658 tests passed, 0 failed.
+- Codex 0.153 focused command: `npm run typecheck && node --import tsx --test --test-concurrency=1 src/control/token-aware-baton-routing.test.ts src/control/codex-exec-provider.test.ts src/control/web-server.test.ts src/control/config.test.ts` — typecheck passed; 60 tests passed, 0 failed.
+- Codex 0.153 final command: `npm run check` — TypeScript, bootstrap/dashboard syntax, infrastructure neutrality and implementation-status consistency passed; 660 tests passed, 0 failed.
 - Agent Control handled no interactive login or credential content. Both remote account-status checks later passed physically, but the first bounded structured workload timed out; no baton qualification, deployment, merge, tag or release was performed. The physical verdict remains PARTIAL.

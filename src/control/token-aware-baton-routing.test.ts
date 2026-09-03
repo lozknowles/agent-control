@@ -14,6 +14,8 @@ function baton(threadId = 'thread:one', overrides: Partial<BatonInput> = {}): Ba
 
 test('governor transitions under live context pressure use policy thresholds, not lifetime tokens', () => {
   const value = runtime();
+  value.observe({...sample('thread:one', {input: 500, output: 50, total: 550, context: 60, limit: 100, authority: 'authoritative'}), observedAt: at(0)});
+  assert.equal(value.thread('thread:one').governor.currentThreshold, 60);
   value.observe({...sample('thread:one', {input: 1_000, output: 100, total: 1_100, context: 74, limit: 100, authority: 'authoritative'}), observedAt: at(1)});
   assert.equal(value.thread('thread:one').governor.state, 'CONTINUE');
   value.observe({...sample('thread:one', {input: 2_000, output: 200, total: 2_200, context: 75, limit: 100, authority: 'authoritative'}), observedAt: at(2)});
@@ -67,4 +69,17 @@ test('parcel totals survive Sol to Luna to GLM handoffs and durable evidence rec
   const totals = value.parcel('parcel:one'); assert.equal(totals.totalTokens, 233_000); assert.equal(totals.byModel.length, 3); assert.equal(totals.cost, 3.2);
   assert.deepEqual(totals.byModel.map(item => item.modelId), ['sol', 'luna', 'glm-5.3-flash']);
   const restored = runtime(file); assert.deepEqual(restored.parcel('parcel:one'), totals); assert.equal(restored.projection().threads.length, 3); assert.ok(fs.readFileSync(file, 'utf8').includes('token-aware-baton-routing'));
+});
+
+test('compaction, new context and resume are durable without resetting lifetime or parcel totals', () => {
+  const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-context-lifecycle-')), 'routing.json'), value = runtime(file);
+  value.observe({...sample('thread:one', {input: 1_000, output: 100, total: 1_100, context: 90, limit: 100, authority: 'authoritative'}), observedAt: at(1), contextLifecycle: {kind: 'COMPACTION', contextId: 'compact-1', authority: 'authoritative', source: 'provider_native'}});
+  value.observe({...sample('thread:one', {input: 1_200, output: 120, total: 1_320, context: 20, limit: 100, authority: 'estimated'}), observedAt: at(2), contextLifecycle: {kind: 'NEW_CONTEXT', contextId: 'window-2', authority: 'authoritative', source: 'provider_native'}});
+  value.recordContextLifecycle('thread:one', {kind: 'RESUME', contextId: 'window-2', authority: 'authoritative', source: 'provider_native'}, at(3));
+  assert.equal(value.thread('thread:one').latest.cumulative.totalTokens, 1_320);
+  assert.equal(value.thread('thread:one').latest.context.tokens, 20);
+  assert.equal(value.parcel('parcel:one').totalTokens, 1_320);
+  const restored = runtime(file).projection();
+  assert.deepEqual(restored.contextLifecycle.map(item => item.kind), ['COMPACTION', 'NEW_CONTEXT', 'RESUME']);
+  assert.deepEqual(restored.contextLifecycle.map(item => item.cumulative.totalTokens), [1_100, 1_320, 1_320]);
 });

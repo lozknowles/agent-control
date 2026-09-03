@@ -121,7 +121,8 @@ test('token-aware output configuration rejects unsafe or nonsensical limits', ()
 
 test('token-aware baton-routing thresholds are explicit policy and reject invalid ordering', () => {
   const base = {schemaVersion: 1, resources: [], providers: [], services: [], lanes: []};
-  const config = validateConfig({...base, tokenBatonRouting: {prepareBatonPercent: 75, compactPercent: 85, handoffPercent: 90, sampleRetention: 240}});
+  const config = validateConfig({...base, tokenBatonRouting: {continuePercent: 60, prepareBatonPercent: 75, compactPercent: 85, handoffPercent: 90, sampleRetention: 240}});
+  assert.equal(config.tokenBatonRouting?.continuePercent, 60);
   assert.equal(config.tokenBatonRouting?.handoffPercent, 90);
   assert.throws(() => validateConfig({...base, tokenBatonRouting: {prepareBatonPercent: 85, compactPercent: 75, handoffPercent: 90}}), /threshold_order/);
   assert.throws(() => validateConfig({...base, tokenBatonRouting: {prepareBatonPercent: 86}}), /threshold_order/);

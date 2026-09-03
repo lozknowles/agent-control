@@ -169,6 +169,7 @@ export interface TokenAwareOutputConfig {
 }
 
 export interface TokenBatonRoutingConfig {
+  continuePercent?: number;
   prepareBatonPercent?: number;
   compactPercent?: number;
   handoffPercent?: number;
@@ -257,7 +258,7 @@ function assertIntegerRange(value: unknown, label: string, minimum: number, maxi
 
 function rejectSecrets(value: unknown, trail = 'config') {
   if (!value || typeof value !== 'object') return;
-  const safeTokenAccountingKeys = new Set(['tokenAwareOutput', 'tokenBatonRouting', 'completeMaxTokens', 'artifactOnlyAboveReturnedTokens', 'minimumCompleteTokens', 'harnessEfficiency', 'maximumInitialContextTokens', 'maximumContextTokens', 'advertisedContextLimitTokens', 'maximumObservedInputTokens', 'inputPerMillionTokens', 'outputPerMillionTokens', 'cachedInputPerMillionTokens', 'contextTokens', 'outputTokens', 'prepareBatonPercent', 'compactPercent', 'handoffPercent', 'sampleRetention']);
+  const safeTokenAccountingKeys = new Set(['tokenAwareOutput', 'tokenBatonRouting', 'completeMaxTokens', 'artifactOnlyAboveReturnedTokens', 'minimumCompleteTokens', 'harnessEfficiency', 'maximumInitialContextTokens', 'maximumContextTokens', 'advertisedContextLimitTokens', 'maximumObservedInputTokens', 'inputPerMillionTokens', 'outputPerMillionTokens', 'cachedInputPerMillionTokens', 'contextTokens', 'outputTokens', 'continuePercent', 'prepareBatonPercent', 'compactPercent', 'handoffPercent', 'sampleRetention']);
   for (const [key, child] of Object.entries(value)) {
     if (/token|password|secret|api.?key/i.test(key) && !['credentialEnv', 'credentialFileEnv'].includes(key) && !safeTokenAccountingKeys.has(key)) {
       throw new Error(`secret_material_forbidden:${trail}.${key}`);

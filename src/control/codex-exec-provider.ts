@@ -10,7 +10,17 @@ import {createInvocationObservation, type ContextPacketSource} from './harness-e
 import type {ModelConfig, ProviderAccountProfileConfig, ProviderConfig} from './config.js';
 import {materializeCodexModelConfig} from './codex-model-config.js';
 import {resolveCodexAccountEnvironment} from './provider-account-profile.js';
-import type {TokenTelemetrySample} from './token-aware-baton-routing.js';
+import type {ContextLifecycleKind, TelemetryAuthority, TokenTelemetrySample} from './token-aware-baton-routing.js';
+
+export const CODEX_0153_CONTEXT_CAPABILITIES = Object.freeze({
+  persistedResponseUsage: true,
+  liveThreadTokenUsage: true,
+  nativeCompaction: true,
+  nativeNewContext: 'eligible-chatgpt-codex-sessions-excluding-temporary-structured',
+  rawResponseUsageMetadata: 'internal-notification-only',
+  turnCost: 'otel-only',
+  agentControlExecNativeContextManagement: false,
+});
 
 export interface CodexExecRequest {
   command: string;
@@ -25,7 +35,14 @@ export interface CodexExecRequest {
   outputSchema?: Record<string, unknown>;
 }
 
-export interface CodexExecTelemetryEvent {type: 'thread.started' | 'turn.completed'; threadId?: string; elapsedMs: number; usage?: Record<string, unknown>; context: {tokens: null; authority: 'unavailable'; source: string};}
+export interface CodexExecTelemetryEvent {
+  type: 'thread.started' | 'turn.completed' | 'thread.token_usage.updated' | 'context.compacted';
+  threadId?: string;
+  elapsedMs: number;
+  usage?: Record<string, unknown>;
+  context: {tokens: number | null; limitTokens?: number | null; authority: TelemetryAuthority; source: string};
+  contextLifecycle?: {kind: ContextLifecycleKind; contextId?: string; authority: TelemetryAuthority; source: string};
+}
 
 export interface CodexExecResult {
   threadId?: string;
@@ -116,7 +133,7 @@ export class CodexExecProviderFactory {
     const emit = (event: CodexExecTelemetryEvent) => {
       if (!telemetry) return;
       const usage = event.usage ?? {}, input = numeric(usage.input_tokens), output = numeric(usage.output_tokens), total = numeric(usage.total_tokens) ?? (input !== null && output !== null ? input + output : null);
-      telemetry({threadId: event.threadId ?? `codex:${recipe.id ?? recipe.taskId ?? 'unattributed'}`, parcelId: recipe.taskId ?? recipe.jobId ?? 'unattributed-task', agentId: this.options.workerId, nodeId: this.options.workerId, providerId: this.options.provider.id, accountProfileId: account?.profile.id, accountLabel: account?.profile.label, accountPlan: account?.profile.plan, accountPlanAuthority: account?.profile.planAuthority, accountQualification: account?.profile.qualification?.state, accountAvailability: account ? account.profile.qualification?.state === 'QUALIFIED' ? 'AVAILABLE' : 'UNQUALIFIED' : undefined, modelId: this.options.modelId, elapsedMs: event.elapsedMs, active: event.type === 'thread.started', cumulative: {inputTokens: input, outputTokens: output, totalTokens: total}, context: {tokens: null, limitTokens: this.options.contextLimitTokens ?? null, authority: 'unavailable', source: 'codex_jsonl_does_not_report_current_context'}, cost: {amount: null, currency: null, authority: 'unavailable', source: 'codex_plan_cost_not_reported'}});
+      telemetry({threadId: event.threadId ?? `codex:${recipe.id ?? recipe.taskId ?? 'unattributed'}`, parcelId: recipe.taskId ?? recipe.jobId ?? 'unattributed-task', agentId: this.options.workerId, nodeId: this.options.workerId, providerId: this.options.provider.id, accountProfileId: account?.profile.id, accountLabel: account?.profile.label, accountPlan: account?.profile.plan, accountPlanAuthority: account?.profile.planAuthority, accountQualification: account?.profile.qualification?.state, accountAvailability: account ? account.profile.qualification?.state === 'QUALIFIED' ? 'AVAILABLE' : 'UNQUALIFIED' : undefined, modelId: this.options.modelId, elapsedMs: event.elapsedMs, active: !['turn.completed'].includes(event.type), cumulative: {inputTokens: input, outputTokens: output, totalTokens: total}, context: {tokens: event.context.tokens, limitTokens: event.context.limitTokens ?? this.options.contextLimitTokens ?? null, authority: event.context.authority, source: event.context.source}, cost: {amount: null, currency: null, authority: 'unavailable', source: 'codex_turn_cost_not_exposed_on_exec_jsonl'}, ...(event.contextLifecycle ? {contextLifecycle: event.contextLifecycle} : {})});
     };
     const run = await (this.options.runner ?? runCodexExec)({command, cwd: this.options.cwd, modelId: this.options.modelId, instruction, grantedToolIds, timeoutMs, environment, onTelemetry: emit});
     const providerCompletedAt = new Date().toISOString();
@@ -159,8 +176,8 @@ export async function runCodexExec(request: CodexExecRequest): Promise<CodexExec
     const result = await captureProcess(request.command, ['exec', '--ephemeral', '--json', '--sandbox', 'read-only', ...(request.loadUserConfig ? [] : ['--ignore-user-config']), '--model', request.modelId, '--output-schema', schemaFile, prompt], request.cwd, request.timeoutMs, request.environment, !request.loadUserConfig, line => {
       let event: Record<string, unknown>; try { event = JSON.parse(line) as Record<string, unknown>; } catch { return; }
       liveEvents.push(event); const threadId = typeof event.thread_id === 'string' ? event.thread_id : undefined; if (threadId) liveThreadId = threadId;
-      if (event.type === 'thread.started') request.onTelemetry?.({type: 'thread.started', threadId: liveThreadId, elapsedMs: Date.now() - startedAt, context: {tokens: null, authority: 'unavailable', source: 'codex_jsonl_does_not_report_current_context'}});
-      if (event.type === 'turn.completed') request.onTelemetry?.({type: 'turn.completed', threadId: liveThreadId, elapsedMs: Date.now() - startedAt, usage: event.usage && typeof event.usage === 'object' && !Array.isArray(event.usage) ? sanitizeUsage(event.usage as Record<string, unknown>) : undefined, context: {tokens: null, authority: 'unavailable', source: 'codex_jsonl_does_not_report_current_context'}});
+      const normalized = normalizeCodex0153TelemetryEvent(event, Date.now() - startedAt, liveThreadId);
+      if (normalized) request.onTelemetry?.(normalized);
     });
     if (result.code !== 0) throw new Error(`codex_exec_failed:${result.code}`);
     const events = liveEvents.length ? liveEvents : result.stdout.split(/\r?\n/).filter(Boolean).map(line => {
@@ -181,6 +198,36 @@ export async function runCodexExec(request: CodexExecRequest): Promise<CodexExec
     fs.rmSync(temporary, {recursive: true, force: true});
   }
 }
+
+/**
+ * Normalizes provider-native Codex telemetry without coupling governor policy to
+ * Codex. App-server thread usage is marked estimated because the same public
+ * field can contain provider-reported usage or a locally recomputed post-compact
+ * count and the wire protocol does not expose that distinction.
+ */
+export function normalizeCodex0153TelemetryEvent(event: Record<string, unknown>, elapsedMs: number, knownThreadId?: string): CodexExecTelemetryEvent | null {
+  const threadId = stringValue(event.thread_id) ?? knownThreadId;
+  if (event.type === 'thread.started') return {type: 'thread.started', threadId, elapsedMs, context: {tokens: null, authority: 'unavailable', source: 'codex_exec_jsonl_no_current_context'}};
+  if (event.type === 'turn.completed') return {type: 'turn.completed', threadId, elapsedMs, usage: recordValue(event.usage) ? sanitizeUsage(recordValue(event.usage)!) : undefined, context: {tokens: null, authority: 'unavailable', source: 'codex_exec_jsonl_no_current_context'}};
+  const params = recordValue(event.params), method = stringValue(event.method);
+  if (method === 'thread/tokenUsage/updated' && params) {
+    const tokenUsage = recordValue(params.tokenUsage) ?? recordValue(params.token_usage), totalUsage = recordValue(tokenUsage?.total), lastUsage = recordValue(tokenUsage?.last);
+    if (!tokenUsage || !totalUsage || !lastUsage) return null;
+    const limitTokens = numeric(tokenUsage.modelContextWindow ?? tokenUsage.model_context_window);
+    return {type: 'thread.token_usage.updated', threadId: stringValue(params.threadId) ?? stringValue(params.thread_id) ?? threadId, elapsedMs, usage: normalizeUsageBreakdown(totalUsage), context: {tokens: usageNumber(lastUsage, 'totalTokens', 'total_tokens'), limitTokens, authority: 'estimated', source: 'codex_app_server_thread_usage_mixed_provider_or_recomputed'}};
+  }
+  const item = params ? recordValue(params.item) : undefined;
+  if ((method === 'item/completed' || method === 'item/started') && item?.type === 'contextCompaction') return {type: 'context.compacted', threadId: stringValue(params?.threadId) ?? threadId, elapsedMs, context: {tokens: null, authority: 'unavailable', source: 'codex_context_compaction_event_has_no_post_compact_count'}, ...(method === 'item/completed' ? {contextLifecycle: {kind: 'COMPACTION', contextId: stringValue(item.id), authority: 'authoritative', source: 'codex_app_server_contextCompaction'}} : {})};
+  return null;
+}
+
+function normalizeUsageBreakdown(value: Record<string, unknown>) {
+  return {input_tokens: usageNumber(value, 'inputTokens', 'input_tokens'), output_tokens: usageNumber(value, 'outputTokens', 'output_tokens'), total_tokens: usageNumber(value, 'totalTokens', 'total_tokens'), cached_input_tokens: usageNumber(value, 'cachedInputTokens', 'cached_input_tokens'), reasoning_output_tokens: usageNumber(value, 'reasoningOutputTokens', 'reasoning_output_tokens')};
+}
+
+function usageNumber(value: Record<string, unknown>, camel: string, snake: string) { return numeric(value[camel] ?? value[snake]); }
+function recordValue(value: unknown): Record<string, unknown> | undefined { return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : undefined; }
+function stringValue(value: unknown) { return typeof value === 'string' && value ? value : undefined; }
 
 /** Runs Codex against one registry-selected Responses-compatible provider in an isolated CODEX_HOME. */
 export async function runCodexWithRegisteredModel(request: CodexExecRequest, provider: ProviderConfig, model: ModelConfig, environment: NodeJS.ProcessEnv = process.env, runner: (request: CodexExecRequest) => Promise<CodexExecResult> = runCodexExec) {

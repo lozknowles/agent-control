@@ -2,7 +2,7 @@
 
 ## [3.7.0] — unreleased
 
-- Adds Token-Aware Baton Routing with policy-configured `CONTINUE`, `PREPARE_BATON`, `COMPACT`, and `HANDOFF` pressure states (75/85/90% defaults).
+- Adds Token-Aware Baton Routing with policy-configured `CONTINUE`, `PREPARE_BATON`, `COMPACT`, and `HANDOFF` pressure states (60/75/85/90% defaults).
 - Adds durable per-thread and Work Parcel input/output/total token, context, cost, elapsed-time, authority, transition, route-decision, and sealed-baton evidence.
 - Adds provider-neutral adapter telemetry for Codex JSONL and Responses-compatible providers, including GLM-5.3-Flash and local providers. Current context is explicitly `unavailable` where a provider does not expose it; lifetime totals are not misrepresented as occupancy.
 - Adds verified baton contents, governed-handoff integration, failed-handoff recovery of the original thread, and multi-model aggregate accounting that survives model changes.
@@ -13,6 +13,8 @@
 - Fixes qualification-discovered Windows transport defects: the SSH adapter now frames request data separately from the audited stdin runner instead of expecting `-Command -` to leave unread stdin, and the login-status probe safely classifies Codex's native stderr result without persisting raw output.
 - Adds independent account health/qualification records and safe Models/dashboard projections for friendly label, operator/provider-attributed plan, availability, qualification and next route. Emails, credential paths, OAuth/access/refresh tokens, cookies and session material are excluded.
 - Allows Saved Jobs to pin an account profile as explicit workload policy. Account availability is never used for automatic rotation to evade or aggregate usage/rate limits; exhaustion and rate limiting remain visible failures on the selected profile.
+- Reviews official Codex `rust-v0.153.0` and adds provider-neutral durable context-lifecycle records for compaction, new-context, continuation and resume boundaries. These stream to the dashboard and preserve cumulative Work Parcel accounting across context resets.
+- Adds a Codex 0.153 adapter normalizer for app-server `thread/tokenUsage/updated` and `contextCompaction` events. Codex's mixed provider/recomputed context count is marked `estimated`; the current `codex exec --ephemeral --json --ignore-user-config` route retains its honest `unavailable` fallback. Experimental token-budget/history-notes/`new_context`, internal raw response metadata and OTEL turn cost remain Codex-specific capabilities and are not made core policy dependencies.
 
 ## Unreleased — Agent Control 3.6
 

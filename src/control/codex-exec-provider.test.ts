@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {AdaptiveHarness, SkillCatalog, ToolPolicy, type RecipeRequest} from './adaptive-harness.js';
-import {CodexExecProviderFactory, runCodexWithRegisteredModel} from './codex-exec-provider.js';
+import {CODEX_0153_CONTEXT_CAPABILITIES, CodexExecProviderFactory, normalizeCodex0153TelemetryEvent, runCodexWithRegisteredModel} from './codex-exec-provider.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -36,6 +36,17 @@ test('Codex adapter forwards only JSONL telemetry actually exposed and marks cur
   const samples: Array<{threadId:string; total:number|null; authority:string; active:boolean|undefined}> = [];
   const result = await factory({telemetry: sample => samples.push({threadId: sample.threadId, total: sample.cumulative.totalTokens ?? null, authority: sample.context?.authority ?? 'missing', active: sample.active}), runner: async request => { request.onTelemetry?.({type: 'thread.started', threadId: 'thr_live', elapsedMs: 1, context: {tokens: null, authority: 'unavailable', source: 'fixture'}}); request.onTelemetry?.({type: 'turn.completed', threadId: 'thr_live', elapsedMs: 2, usage: {input_tokens: 40, output_tokens: 10, total_tokens: 50}, context: {tokens: null, authority: 'unavailable', source: 'fixture'}}); return {threadId: 'thr_live', finalMessage: JSON.stringify({tool: request.grantedToolIds[0], input_json: '{}'}), usage: {input_tokens: 40, output_tokens: 10, total_tokens: 50}, observedItemTypes: ['agent_message']}; }}).executor('Return safe data').execute({taskId: 'parcel:one', tools: [{id: 'qualification.return-data'}], resourceLimits: {}} as never, {invoke: async () => ({marker: 'SAFE'})});
   assert.ok(result.resultRef); assert.deepEqual(samples, [{threadId: 'thr_live', total: null, authority: 'unavailable', active: true}, {threadId: 'thr_live', total: 50, authority: 'unavailable', active: false}]);
+});
+
+test('Codex 0.153 native app-server usage and compaction normalize behind the provider adapter', () => {
+  const usage = normalizeCodex0153TelemetryEvent({method: 'thread/tokenUsage/updated', params: {threadId: 'thr-153', tokenUsage: {total: {inputTokens: 1000, outputTokens: 100, totalTokens: 1100}, last: {inputTokens: 200, outputTokens: 20, totalTokens: 220}, modelContextWindow: 1000}}}, 25);
+  assert.equal(usage?.type, 'thread.token_usage.updated');
+  assert.deepEqual(usage?.usage, {input_tokens: 1000, output_tokens: 100, total_tokens: 1100, cached_input_tokens: null, reasoning_output_tokens: null});
+  assert.deepEqual(usage?.context, {tokens: 220, limitTokens: 1000, authority: 'estimated', source: 'codex_app_server_thread_usage_mixed_provider_or_recomputed'});
+  const compact = normalizeCodex0153TelemetryEvent({method: 'item/completed', params: {threadId: 'thr-153', item: {type: 'contextCompaction', id: 'compact-1'}}}, 30);
+  assert.deepEqual(compact?.contextLifecycle, {kind: 'COMPACTION', contextId: 'compact-1', authority: 'authoritative', source: 'codex_app_server_contextCompaction'});
+  assert.equal(CODEX_0153_CONTEXT_CAPABILITIES.nativeNewContext, 'eligible-chatgpt-codex-sessions-excluding-temporary-structured');
+  assert.equal(CODEX_0153_CONTEXT_CAPABILITIES.agentControlExecNativeContextManagement, false);
 });
 
 test('Codex fallback fails closed for missing ChatGPT auth and opaque file changes', async () => {

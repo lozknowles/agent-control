@@ -18,6 +18,7 @@
     "maximumExpansionContextLines": 10
   },
   "tokenBatonRouting": {
+    "continuePercent": 60,
     "prepareBatonPercent": 75,
     "compactPercent": 85,
     "handoffPercent": 90,

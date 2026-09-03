@@ -8,7 +8,9 @@ Each sample keeps separate values for cumulative input/output/total tokens, curr
 
 `authoritative` means the provider emitted the value. `estimated` means Agent Control calculated it from a configured price table or adapter estimate. `unavailable` means the provider did not expose it; the dashboard renders `unknown`, not zero.
 
-The Codex CLI JSONL path emits `thread.started` while a thread is live and exposes usage on `turn.completed`. The documented stream does not expose current-context occupancy, so Agent Control records any configured context-window limit but marks current context and context percentage `unavailable`. Responses-compatible providers (including configured GLM-5.3-Flash and local providers) publish start/completion state and normalized provider usage. An adapter that has a provider-native live context field may submit it as `authoritative` without changing governor policy.
+The current Codex CLI JSONL path emits `thread.started` while a thread is live and exposes usage on `turn.completed`. It does not expose current-context occupancy, so Agent Control records any configured context-window limit but marks current context and context percentage `unavailable`. Codex 0.153 app-server clients can additionally normalize persisted `thread/tokenUsage/updated` and `contextCompaction` events. Because the public thread-usage count can be provider-reported or locally recomputed after compaction without an authority flag, Agent Control marks that context occupancy `estimated`, not authoritative. Responses-compatible providers (including configured GLM-5.3-Flash and local providers) publish start/completion state and normalized provider usage. An adapter that has a provider-native live context field with unambiguous provenance may submit it as `authoritative` without changing governor policy.
+
+Context lifecycle is generic durable evidence. Adapters can record `COMPACTION`, `NEW_CONTEXT`, `CONTINUATION`, or `RESUME` with an authority/source marker and optional opaque context ID. A context reset may lower current occupancy, but cumulative thread and Work Parcel usage never decreases. Provider-native mechanisms remain behind adapters: Codex's experimental token-budget reminders, history notes and `new_context` tool are not required by core.
 
 ## Governor policy
 
@@ -17,6 +19,7 @@ The default policy is deliberately configurable:
 ```json
 {
   "tokenBatonRouting": {
+    "continuePercent": 60,
     "prepareBatonPercent": 75,
     "compactPercent": 85,
     "handoffPercent": 90,
@@ -25,7 +28,8 @@ The default policy is deliberately configurable:
 }
 ```
 
-- Below 75%: `CONTINUE`.
+- Below 60%: `CONTINUE`, next threshold 60%.
+- At 60%: `CONTINUE`, with the pressure checkpoint recorded and 75% next.
 - At 75%: `PREPARE_BATON`.
 - At 85%: `COMPACT` and normally `COMPACT_AND_CONTINUE`.
 - At 90%: Agent Control evaluates handoff.
@@ -52,7 +56,7 @@ All successful source, destination and recovery invocations are additive in the 
 
 ## Dashboard and reconciliation
 
-The dashboard consumes the existing SSE endpoint. `token.telemetry`, `token.governor_transition`, `token.baton_created`, and `token.handoff_result` refresh the live thread panel without a page reload. While a thread is active, its elapsed runtime advances locally from the durable start time between events; completed threads retain the final provider-reported elapsed time. The panel displays provider/account/model/node, safe account label and reliably attributed plan, qualification/availability, next selected route, context (`Context: 182k / 272k — 67%`), token totals, authority, cost, governor state/current/next thresholds, and Work Parcel chain totals.
+The dashboard consumes the existing SSE endpoint. `token.telemetry`, `token.governor_transition`, `token.context_lifecycle`, `token.baton_created`, and `token.handoff_result` refresh the live thread panel without a page reload. While a thread is active, its elapsed runtime advances locally from the durable start time between events; completed threads retain the final provider-reported elapsed time. The panel displays provider/account/model/node, safe account label and reliably attributed plan, qualification/availability, next selected route, context (`Context: 182k / 272k — 67%`), latest context transition, token totals, authority, cost, governor state/current/next thresholds, and Work Parcel chain totals.
 
 Parcel accounting is additive across threads, accounts and models. For example, `OpenAI/Lawrence Pro/Sol 184k → OpenAI/Cottage Plus/Luna 31k → GLM/default/GLM-5.3-Flash 18k = 233k total` remains visible after each handoff. The same sampled values, transitions, decisions, account boundaries, baton IDs, and hashes persist in durable evidence and can be reconciled with the final Work Parcel cost-per-verified-outcome ledger.
 

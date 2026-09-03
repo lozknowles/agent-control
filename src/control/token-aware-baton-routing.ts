@@ -9,15 +9,17 @@ export type GovernorState = 'CONTINUE' | 'PREPARE_BATON' | 'COMPACT' | 'HANDOFF'
 export type RoutingAction = 'CONTINUE' | 'COMPACT_AND_CONTINUE' | 'BATON_AND_HANDOFF';
 export type RemainingWork = 'DIFFICULT' | 'BOUNDED' | 'MECHANICAL';
 export type ReasoningState = 'UNFINISHED' | 'COMPLETE';
+export type ContextLifecycleKind = 'COMPACTION' | 'NEW_CONTEXT' | 'RESUME' | 'CONTINUATION';
 
 export interface TokenGovernorPolicy {
+  continuePercent: number;
   prepareBatonPercent: number;
   compactPercent: number;
   handoffPercent: number;
   sampleRetention: number;
 }
 
-export const DEFAULT_TOKEN_GOVERNOR_POLICY: TokenGovernorPolicy = Object.freeze({prepareBatonPercent: 75, compactPercent: 85, handoffPercent: 90, sampleRetention: 240});
+export const DEFAULT_TOKEN_GOVERNOR_POLICY: TokenGovernorPolicy = Object.freeze({continuePercent: 60, prepareBatonPercent: 75, compactPercent: 85, handoffPercent: 90, sampleRetention: 240});
 
 export interface TokenAmounts {inputTokens: number | null; outputTokens: number | null; totalTokens: number | null;}
 export interface AccountRouteIdentity {nodeId?: string; accountProfileId?: string; accountLabel?: string; accountPlan?: string; accountPlanAuthority?: 'operator-configured' | 'provider-reported'; accountQualification?: string; accountAvailability?: string;}
@@ -35,6 +37,19 @@ export interface TokenTelemetrySample extends AccountRouteIdentity {
   cumulative: Partial<TokenAmounts>;
   context?: Partial<ContextOccupancy>;
   cost?: Partial<CostEstimate>;
+  contextLifecycle?: {kind: ContextLifecycleKind; contextId?: string; authority: TelemetryAuthority; source: string};
+}
+
+export interface ContextLifecycleRecord {
+  id: string;
+  at: string;
+  threadId: string;
+  parcelId: string;
+  kind: ContextLifecycleKind;
+  contextId: string | null;
+  authority: TelemetryAuthority;
+  source: string;
+  cumulative: TokenAmounts;
 }
 
 export interface TokenTelemetryPoint {
@@ -111,10 +126,10 @@ export interface TokenRoutingDecision {
 
 export interface TokenRoutingCandidate extends AccountRouteIdentity {providerId: string; modelId: string; estimatedCost: number | null; qualified: boolean; capabilities: string[];}
 export interface RoutingAssessment {remainingWork: RemainingWork; reasoningState: ReasoningState; requiredCapabilities: string[]; candidates: TokenRoutingCandidate[];}
-export interface TokenRoutingEvent {type: 'telemetry' | 'governor.transition' | 'baton.created' | 'handoff.result'; threadId: string; parcelId: string; at: string;}
-export interface TokenRoutingProjection {schema: typeof TOKEN_BATON_ROUTING_SCHEMA; observedAt: string; policy: TokenGovernorPolicy; threads: ThreadTokenRecord[]; parcels: ParcelTokenTotals[]; decisions: TokenRoutingDecision[];}
+export interface TokenRoutingEvent {type: 'telemetry' | 'governor.transition' | 'context.lifecycle' | 'baton.created' | 'handoff.result'; threadId: string; parcelId: string; at: string;}
+export interface TokenRoutingProjection {schema: typeof TOKEN_BATON_ROUTING_SCHEMA; observedAt: string; policy: TokenGovernorPolicy; threads: ThreadTokenRecord[]; parcels: ParcelTokenTotals[]; decisions: TokenRoutingDecision[]; contextLifecycle: ContextLifecycleRecord[];}
 
-interface Snapshot {schema: typeof TOKEN_BATON_ROUTING_SCHEMA; policy: TokenGovernorPolicy; threads: ThreadTokenRecord[]; batons: VerifiedBaton[]; decisions: TokenRoutingDecision[];}
+interface Snapshot {schema: typeof TOKEN_BATON_ROUTING_SCHEMA; policy: TokenGovernorPolicy; threads: ThreadTokenRecord[]; batons: VerifiedBaton[]; decisions: TokenRoutingDecision[]; contextLifecycle?: ContextLifecycleRecord[];}
 const emptyAmounts = (): TokenAmounts => ({inputTokens: null, outputTokens: null, totalTokens: null});
 const emptyContext = (): ContextOccupancy => ({tokens: null, limitTokens: null, authority: 'unavailable', source: 'provider_not_reported'});
 const emptyCost = (): CostEstimate => ({amount: null, currency: null, authority: 'unavailable', source: 'provider_not_reported'});
@@ -124,8 +139,8 @@ const clone = <T>(value: T): T => structuredClone(value);
 
 export function normalizeGovernorPolicy(input: Partial<TokenGovernorPolicy> = {}): TokenGovernorPolicy {
   const value = {...DEFAULT_TOKEN_GOVERNOR_POLICY, ...input};
-  for (const key of ['prepareBatonPercent', 'compactPercent', 'handoffPercent'] as const) if (!Number.isFinite(value[key]) || value[key] <= 0 || value[key] >= 100) throw new Error(`token_governor_${key}_invalid`);
-  if (!(value.prepareBatonPercent < value.compactPercent && value.compactPercent < value.handoffPercent)) throw new Error('token_governor_threshold_order_invalid');
+  for (const key of ['continuePercent', 'prepareBatonPercent', 'compactPercent', 'handoffPercent'] as const) if (!Number.isFinite(value[key]) || value[key] <= 0 || value[key] >= 100) throw new Error(`token_governor_${key}_invalid`);
+  if (!(value.continuePercent < value.prepareBatonPercent && value.prepareBatonPercent < value.compactPercent && value.compactPercent < value.handoffPercent)) throw new Error('token_governor_threshold_order_invalid');
   if (!Number.isSafeInteger(value.sampleRetention) || value.sampleRetention < 2 || value.sampleRetention > 10_000) throw new Error('token_governor_sample_retention_invalid');
   return value;
 }
@@ -135,13 +150,15 @@ export function governorFor(contextPercent: number | null, policy: TokenGovernor
   if (contextPercent >= policy.handoffPercent) return {state: 'HANDOFF', currentThreshold: policy.handoffPercent, nextThreshold: null, reason: 'context_handoff_threshold_reached'};
   if (contextPercent >= policy.compactPercent) return {state: 'COMPACT', currentThreshold: policy.compactPercent, nextThreshold: policy.handoffPercent, reason: 'context_compaction_threshold_reached'};
   if (contextPercent >= policy.prepareBatonPercent) return {state: 'PREPARE_BATON', currentThreshold: policy.prepareBatonPercent, nextThreshold: policy.compactPercent, reason: 'context_baton_preparation_threshold_reached'};
-  return {state: 'CONTINUE', currentThreshold: null, nextThreshold: policy.prepareBatonPercent, reason: 'context_within_policy'};
+  if (contextPercent >= policy.continuePercent) return {state: 'CONTINUE', currentThreshold: policy.continuePercent, nextThreshold: policy.prepareBatonPercent, reason: 'context_continue_threshold_reached'};
+  return {state: 'CONTINUE', currentThreshold: null, nextThreshold: policy.continuePercent, reason: 'context_within_policy'};
 }
 
 export class TokenAwareBatonRuntime {
   private readonly threads = new Map<string, ThreadTokenRecord>();
   private readonly batons = new Map<string, VerifiedBaton>();
   private readonly decisions: TokenRoutingDecision[] = [];
+  private readonly contextLifecycle: ContextLifecycleRecord[] = [];
   private readonly listeners = new Set<(event: TokenRoutingEvent) => void>();
   readonly policy: TokenGovernorPolicy;
 
@@ -167,8 +184,16 @@ export class TokenAwareBatonRuntime {
     const record: ThreadTokenRecord = prior ? {...prior, ...account, updatedAt: at, active, latest, governor, samples: [...prior.samples, latest].slice(-this.policy.sampleRetention)} : {id: input.threadId, parcelId: input.parcelId, agentId: input.agentId, providerId: input.providerId, ...account, modelId: input.modelId, startedAt: at, updatedAt: at, active, recoverable: true, governor, latest, samples: [latest]};
     this.threads.set(record.id, record);
     this.save(); this.emit({type: 'telemetry', threadId: record.id, parcelId: record.parcelId, at});
+    if (input.contextLifecycle) this.recordContextLifecycle(record.id, input.contextLifecycle, at);
     if (!prior || prior.governor.state !== governor.state) this.record(record, actionFor(governor.state), governor.reason, 'RECORDED');
     return clone(record);
+  }
+
+  recordContextLifecycle(threadId: string, input: {kind: ContextLifecycleKind; contextId?: string; authority: TelemetryAuthority; source: string}, at = this.clock()): ContextLifecycleRecord {
+    const thread = this.thread(threadId);
+    if (!['COMPACTION', 'NEW_CONTEXT', 'RESUME', 'CONTINUATION'].includes(input.kind) || !['authoritative', 'estimated', 'unavailable'].includes(input.authority) || !input.source.trim()) throw new Error('token_context_lifecycle_invalid');
+    const record: ContextLifecycleRecord = {id: `context-lifecycle:${randomUUID()}`, at, threadId, parcelId: thread.parcelId, kind: input.kind, contextId: input.contextId ?? null, authority: input.authority, source: input.source, cumulative: clone(thread.latest.cumulative)};
+    this.contextLifecycle.push(record); this.save(); this.emit({type: 'context.lifecycle', threadId, parcelId: thread.parcelId, at}); return clone(record);
   }
 
   assess(threadId: string, assessment: RoutingAssessment): TokenRoutingDecision {
@@ -224,12 +249,12 @@ export class TokenAwareBatonRuntime {
     return {parcelId, threads: threads.map(thread => thread.id).sort(), byModel: clone(values), inputTokens: aggregate(values.map(value => value.inputTokens)), outputTokens: aggregate(values.map(value => value.outputTokens)), totalTokens: aggregate(values.map(value => value.totalTokens)), cost: aggregate(values.map(value => value.cost)), currency: [...new Set(values.map(value => value.currency).filter((value): value is string => Boolean(value)))].length === 1 ? values.find(value => value.currency)?.currency ?? null : null};
   }
 
-  projection(): TokenRoutingProjection { const parcels = [...new Set([...this.threads.values()].map(thread => thread.parcelId))].sort().map(id => this.parcel(id)); return {schema: TOKEN_BATON_ROUTING_SCHEMA, observedAt: this.clock(), policy: clone(this.policy), threads: [...this.threads.values()].sort((a,b) => a.id.localeCompare(b.id)).map(clone), parcels, decisions: this.decisions.map(clone)}; }
-  evidence() { return {schema: TOKEN_BATON_ROUTING_SCHEMA, policy: clone(this.policy), threads: [...this.threads.values()].map(clone), batons: [...this.batons.values()].map(clone), decisions: this.decisions.map(clone)} satisfies Snapshot; }
+  projection(): TokenRoutingProjection { const parcels = [...new Set([...this.threads.values()].map(thread => thread.parcelId))].sort().map(id => this.parcel(id)); return {schema: TOKEN_BATON_ROUTING_SCHEMA, observedAt: this.clock(), policy: clone(this.policy), threads: [...this.threads.values()].sort((a,b) => a.id.localeCompare(b.id)).map(clone), parcels, decisions: this.decisions.map(clone), contextLifecycle: this.contextLifecycle.map(clone)}; }
+  evidence() { return {schema: TOKEN_BATON_ROUTING_SCHEMA, policy: clone(this.policy), threads: [...this.threads.values()].map(clone), batons: [...this.batons.values()].map(clone), decisions: this.decisions.map(clone), contextLifecycle: this.contextLifecycle.map(clone)} satisfies Snapshot; }
 
   private record(thread: ThreadTokenRecord, action: RoutingAction, reason: string, outcome: TokenRoutingDecision['outcome'], target?: TokenRoutingDecision['target'], batonId?: string) { const decision: TokenRoutingDecision = {id: `token-route:${randomUUID()}`, at: this.clock(), threadId: thread.id, parcelId: thread.parcelId, state: thread.governor.state, action, reason, contextPercent: thread.latest.contextPercent, ...(target ? {target} : {}), ...(batonId ? {batonId} : {}), outcome}; this.decisions.push(decision); this.save(); this.emit({type: outcome === 'RECORDED' ? 'governor.transition' : 'handoff.result', threadId: thread.id, parcelId: thread.parcelId, at: decision.at}); return clone(decision); }
   private emit(event: TokenRoutingEvent) { for (const listener of this.listeners) listener(event); }
-  private load() { if (!this.file || !fs.existsSync(this.file)) return; const parsed = JSON.parse(fs.readFileSync(this.file, 'utf8')) as Snapshot; if (parsed.schema !== TOKEN_BATON_ROUTING_SCHEMA) throw new Error('token_routing_snapshot_unsupported'); normalizeGovernorPolicy(parsed.policy); for (const item of parsed.threads ?? []) this.threads.set(item.id, item); for (const item of parsed.batons ?? []) this.batons.set(item.id, item); this.decisions.push(...(parsed.decisions ?? [])); }
+  private load() { if (!this.file || !fs.existsSync(this.file)) return; const parsed = JSON.parse(fs.readFileSync(this.file, 'utf8')) as Snapshot; if (parsed.schema !== TOKEN_BATON_ROUTING_SCHEMA) throw new Error('token_routing_snapshot_unsupported'); normalizeGovernorPolicy(parsed.policy); for (const item of parsed.threads ?? []) this.threads.set(item.id, item); for (const item of parsed.batons ?? []) this.batons.set(item.id, item); this.decisions.push(...(parsed.decisions ?? [])); this.contextLifecycle.push(...(parsed.contextLifecycle ?? [])); }
   private save() { if (!this.file) return; fs.mkdirSync(path.dirname(this.file), {recursive: true, mode: 0o700}); const temporary = `${this.file}.tmp`; fs.writeFileSync(temporary, `${JSON.stringify(this.evidence(), null, 2)}\n`, {mode: 0o600}); fs.renameSync(temporary, this.file); }
 }
 
