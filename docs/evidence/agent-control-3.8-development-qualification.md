@@ -1,6 +1,6 @@
 # Agent Control 3.8 development qualification
 
-Verdict: **PARTIAL**. Implementation is coherent and the deterministic suite passes, but evidence does not yet justify automatic production retrieval routing or a 3.8 release.
+Verdict: **SUPERSEDED BY PHASE 2 PASS**. This document preserves the first development checkpoint. The release-candidate decision and later physical evidence are in [Agent Control 3.8 Phase 2 qualification](agent-control-3.8-phase2-qualification.md).
 
 ## Provenance and scope
 
@@ -11,7 +11,7 @@ Verdict: **PARTIAL**. Implementation is coherent and the deterministic suite pas
 
 ## Implementation evidence
 
-The production parameterized repository-review executor now performs optional retrieval before provider invocation. It records intent/attempt decisions, builds a bounded packet tied to repository state, compiles it as existing task context, adds packet/hash provenance to the Work Parcel, and puts portable evidence references into any 3.7 baton. Retrieval failure records its sanitized reason and keeps the immutable frozen chunk. The redacted projection and four typed events use the existing HTTP/SSE service.
+The production parameterized repository-review executor now performs optional retrieval before provider invocation. It records intent/attempt decisions, builds a bounded packet tied to repository state, compiles it as existing task context, adds packet/hash provenance to the Work Parcel, and puts portable evidence references into any 3.7 baton. Retrieval failure records its sanitized reason and keeps the immutable frozen chunk. The redacted projection and typed lifecycle events use the existing HTTP/SSE service.
 
 Exact and BM25 are built in. zg is a search-only optional adapter using the documented `query --hybrid|--vector`, compact preview, bounded limit and wait-for-fresh options. The execution port contains no index build/rebuild/drop operation. The independently authorized benchmark index contained 524 files/5,640 entities and cost 21.41 seconds with 954,000 KiB peak RSS; no monetary/electricity estimate is invented.
 
@@ -49,6 +49,6 @@ A real loopback Qwen2.5 3B Instruct model answered one repository question from 
 - `git diff --check`: PASS.
 - The temporary benchmark index was moved out of the worktree after measurement; no generated `.zvec-grep`, model payload, credential, repository absolute path, or raw provider response is included in the branch.
 
-## Remaining gates
+## Phase 2 resolution
 
-Before release, improve or constrain built-in lexical routing, run a larger frozen model/outcome benchmark (including mutation and ambiguous/stale cases), measure baton/handoff effects in real multi-route work, qualify restart reconciliation on persisted packets, and review index resource impact on intended nodes. Therefore this branch is not ready to tag.
+Phase 2 constrained weak retrieval with observable sufficiency signals and governed fallback, ran the frozen 12-task physical mutation comparison, measured a real retrieval-derived baton handoff, qualified restart rehydration and source-hash invalidation, exercised zg failure modes and introduced generic index resource policy. The same Qwen2.5 Coder 3B model verified only 2/12 in every lane, so no expanded model capability is claimed. The complete current verdict, measurements and limitations are recorded in [human-readable Phase 2 evidence](agent-control-3.8-phase2-qualification.md) and the [machine-readable summary](agent-control-3.8-phase2-qualification.json).

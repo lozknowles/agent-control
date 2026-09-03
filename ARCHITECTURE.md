@@ -1,6 +1,6 @@
 # Agent Control architecture
 
-This is the authoritative source boundary for Agent Control 3.8.0 development. Status labels matter:
+This is the authoritative source boundary for the Agent Control 3.8.0 release candidate. Status labels matter:
 
 - **implemented** means executable code and automated tests exist in this branch;
 - **experimental** means executable code exists but has not been qualified across every external substrate;
@@ -38,6 +38,9 @@ This is the authoritative source boundary for Agent Control 3.8.0 development. S
 28. Retrieval is governed separately from model execution; search/inspect authority never implies index, configuration or repository mutation.
 29. Retrieved evidence is content-addressed, repository-state-bound and explicitly CURRENT, POSSIBLY_STALE or INVALID.
 30. Token pressure may narrow retrieval before expansion/compaction/handoff, but cumulative lifetime use never substitutes for active context occupancy.
+31. Provider rank is not calibrated confidence; evidence sufficiency derives from observable exact, path, coverage, diversity and freshness signals.
+32. A baton evidence reference is portable only when rehydration revalidates repository identity, path boundary, source existence and whole-file content hash.
+33. Index search and index mutation are distinct authorities; resource policy may recommend a build but cannot grant it.
 
 ## Governed retrieval and context intelligence
 
@@ -50,7 +53,11 @@ Model <- ContextPacketBuilder <- ContextGraph <- Evidence Packet
   +-> independent verification -> portable Baton -+
 ```
 
-The governor progresses through available exact, lexical, semantic and hybrid strategies only while evidence is insufficient and budgets remain. Exact/BM25 are local built-ins; zg, provider-native and MCP retrieval remain adapters. Evidence compiles through existing context profiles and records references in existing batons. Existing SSE carries typed retrieval events. Missing optimisation providers fall back to controlled frozen context. Full contracts and boundaries are in [governed retrieval](docs/governed-retrieval.md) and the pre-implementation [3.8 review](docs/agent-control-3.8-architecture-review.md).
+The governor progresses through available exact, lexical, semantic and hybrid strategies only while evidence is insufficient and budgets remain. `EVIDENCE_SUFFICIENT`, `EVIDENCE_AMBIGUOUS` and `EVIDENCE_INSUFFICIENT` are based on observable matching and freshness, not an adapter's arbitrary score. Exact/BM25 are local built-ins; zg, provider-native and MCP retrieval remain adapters. zg is search-only (`--refresh off`) in model execution, and every returned excerpt is checked against current source content before it can be marked CURRENT.
+
+Evidence compiles through existing context profiles and records portable references in existing batons. On destination execution or restart, the durable store rehydrates only references whose repository identity, relative path, existence and whole-file hash still match. A mismatch emits invalidation and restores controlled frozen-context fallback. Existing SSE carries provider selection, escalation, evidence, compilation, rehydration, invalidation and fallback events without a second transport.
+
+`RetrievalResourcePolicy` is provider-neutral. It combines observed free memory/storage, repository bytes, index state, measured cold-index memory/time, expected task duration, built-in availability and separate index-management authority to return `USE_PROVIDER`, `USE_BUILTIN`, `BUILD_INDEX` or `DEFER_INDEX`. A recommendation never mutates an index by itself. Full contracts and boundaries are in [governed retrieval](docs/governed-retrieval.md), the pre-implementation [3.8 review](docs/agent-control-3.8-architecture-review.md), and [Phase 2 evidence](docs/evidence/agent-control-3.8-phase2-qualification.md).
 
 ## System boundary and adaptive harness
 

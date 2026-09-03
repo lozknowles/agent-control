@@ -1,17 +1,17 @@
 {
   "schema": "agent-control.implementation-status/v1",
-  "release": "3.8.0-dev.0",
+  "release": "3.8.0-rc.1",
   "updated": "2026-09-03",
   "capabilities": [
     {
       "id": "context.governed-retrieval",
       "title": "Governed retrieval and context intelligence",
-      "status": "PARTIAL",
-      "summary": "An opt-in provider-neutral retrieval governor supplies bounded content-addressed Evidence Packets through local exact/BM25 and optional zg semantic/hybrid adapters, binds freshness to repository state, compiles evidence through the existing context path, carries portable references in 3.7 batons and streams redacted telemetry over existing SSE.",
-      "sources": ["src/control/governed-retrieval.ts", "src/control/direct-repository-review-executor.ts", "src/control/harness-efficiency.ts", "src/control/application-service.ts", "src/control/web-server.ts", "assets/dashboard/dashboard-enhancements.js"],
-      "tests": ["src/control/governed-retrieval.test.ts", "src/control/direct-repository-review-executor.test.ts", "src/control/web-server.test.ts"],
-      "evidence": ["docs/evidence/agent-control-3.8-retrieval-benchmark.json", "docs/evidence/agent-control-3.8-local-model-retrieval.json"],
-      "limitation": "The five-task benchmark qualified zg retrieval quality but the initial built-in exact/BM25 lane found only 2/5 expected files; the real local-model comparison has one bounded question and does not qualify automatic production routing."
+      "status": "QUALIFIED",
+      "summary": "An opt-in provider-neutral retrieval governor supplies bounded content-addressed Evidence Packets through local exact/BM25 and optional zg semantic/hybrid adapters, assesses sufficiency from observable exact/coverage/freshness signals, binds evidence to repository content, revalidates portable references after restart and handoff, selects index use through a generic resource policy, and streams redacted lifecycle telemetry over existing SSE.",
+      "sources": ["src/control/governed-retrieval.ts", "src/control/retrieval-resource-policy.ts", "src/control/direct-repository-review-executor.ts", "src/control/harness-efficiency.ts", "src/control/application-service.ts", "src/control/web-server.ts", "assets/dashboard/dashboard-enhancements.js"],
+      "tests": ["src/control/governed-retrieval.test.ts", "src/control/retrieval-resource-policy.test.ts", "src/control/direct-repository-review-executor.test.ts", "src/control/web-server.test.ts"],
+      "evidence": ["docs/evidence/agent-control-3.8-retrieval-benchmark.json", "docs/evidence/agent-control-3.8-local-model-retrieval.json", "docs/evidence/agent-control-3.8-phase2-qualification.json", "docs/evidence/agent-control-3.8-phase2-qualification.md"],
+      "limitation": "The 12-task physical mutation comparison qualified context reduction and fail-safe lifecycle behaviour, not broader Qwen2.5 3B capability: all lanes verified only 2/12. Retrieval remains opt-in, weak evidence falls back, index mutation requires separate authority, and the cross-provider-implementation baton variant remains unexercised."
     },
     {
       "id": "identity.sessions-delegation",

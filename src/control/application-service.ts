@@ -59,8 +59,13 @@ export type ControlEventType =
   | 'token.baton_created'
   | 'token.handoff_result'
   | 'retrieval.started'
+  | 'retrieval.provider_selected'
   | 'retrieval.escalated'
   | 'retrieval.evidence'
+  | 'retrieval.context_compiled'
+  | 'retrieval.rehydrated'
+  | 'retrieval.invalidated'
+  | 'retrieval.fallback'
   | 'retrieval.failed'
   | 'failure';
 
