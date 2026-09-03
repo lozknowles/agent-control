@@ -2,7 +2,7 @@ import type {ParameterizedJobDefinition} from './parameterized-job-types.js';
 
 export const REPOSITORY_REVIEW_INSTRUCTION = `You are performing a governed, read-only repository review.
 Use only the supplied frozen-revision evidence and context. Find correctness, reliability, security, and maintainability defects. Distinguish proven defects from concerns. Cite real file paths and line ranges. Do not invent paths, symbols, test results, or execution evidence. Do not request or perform source modification.
-Return only the JSON object governed by the supplied output schema, with no markdown or commentary. Use null for file/startLine/endLine only for genuinely repository-level findings. Every finding begins UNVERIFIED; independent Agent Control validation owns acceptance. Use PASS only when this supplied chunk has no supported finding.`;
+Return only the JSON object governed by the supplied output schema, with no markdown or commentary. Set schema to agent-control.repository-review/v1. Verdict must be PASS, PASS_WITH_FINDINGS, REVIEW_REQUIRED, or FAILED. Use null for file/startLine/endLine only for genuinely repository-level findings. Every finding begins with validation state UNVERIFIED; independent Agent Control validation owns acceptance. Use PASS only when this supplied chunk has no supported finding.`;
 
 export const repositoryCodeReviewDefinition: ParameterizedJobDefinition = {
   schema: 'agent-control.job-definition/v1',
