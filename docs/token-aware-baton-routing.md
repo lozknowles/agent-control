@@ -77,3 +77,9 @@ node --import tsx --test --test-concurrency=1 src/control/token-aware-baton-rout
 ```
 
 The full project check remains the release gate. It must include installed optional ACP and browser dependencies before its TypeScript phase can pass.
+
+## Physical qualification
+
+Agent Control 3.7 physically qualified this production path on 2026-09-03 across two distinct live local provider/model routes. A qualification-only threshold policy exercised the unchanged governor without an artificial high-token spend. The source observed 186 tokens, sealed a SHA-256-addressed baton, the destination continued with 510 tokens, independent verification passed, and the Work Parcel reconciled to 696 tokens. A second run refused the destination before invocation and proved that the original source thread resumed and completed with no invented destination usage.
+
+The dashboard's `/api/token-routing` projection and SSE events reconciled with the durable evidence. The local providers exposed exact response usage but not authoritative retained-context occupancy, so the one-turn context values are marked estimated. Aggregate monetary cost remains unavailable when any leg lacks configured pricing. See the [physical qualification](evidence/agent-control-3.7-physical-qualification-20260902.md) and [machine-readable record](evidence/agent-control-3.7-physical-lifecycle-20260903.json).

@@ -1,6 +1,6 @@
 # Agent Client Protocol compatibility
 
-Agent Control 3.7 development retains the 3.6 transport-neutral ACP core and stable ACP v1 stdio adapter. The current formally released version remains 3.5.0; this document describes the isolated unreleased 3.7 branch.
+Agent Control 3.7 retains the 3.6 transport-neutral ACP core and stable ACP v1 stdio adapter.
 
 ## Pinned protocol inputs
 

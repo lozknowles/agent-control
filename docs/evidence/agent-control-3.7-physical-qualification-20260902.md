@@ -1,8 +1,10 @@
-# Agent Control 3.7 physical qualification — partial
+# Agent Control 3.7 physical qualification
 
 Timestamp: `2026-09-02T19:30:26.932Z`
-Latest continuation: `2026-09-03T06:33:31Z`
-Verdict: **PARTIAL — AGENT CONTROL 3.7 NOT RELEASE READY**
+Latest continuation: `2026-09-03T10:24:32.521Z`
+Final verdict: **PASS — AGENT CONTROL 3.7 PHYSICALLY QUALIFIED**
+
+The sections below preserve the chronological partial attempts and qualification-discovered defects. The final passing lifecycle is recorded in the last section and in the sanitized machine-readable [physical lifecycle record](agent-control-3.7-physical-lifecycle-20260903.json).
 
 ## Frozen candidate and normal gate
 
@@ -156,4 +158,20 @@ The next bounded `execReadOnlyStructured` preflight used `codex-chatgpt/cottage-
 
 The framing/account-status regression suite passed 6/6. The complete `npm run check` passed TypeScript, bootstrap syntax, dashboard syntax, infrastructure neutrality, implementation-status validation, and 658/658 tests. These development results do not override the failed physical execution gate.
 
-Final verdict for this continuation: **PARTIAL — AGENT CONTROL 3.7 NOT RELEASE READY**. No merge, tag, GitHub Release, deployment, or 3.8 work was performed.
+Historical verdict for that continuation: **PARTIAL — AGENT CONTROL 3.7 NOT RELEASE READY**. No merge, tag, GitHub Release, deployment, or 3.8 work was performed at that checkpoint.
+
+## Final autonomous two-route lifecycle — 2026-09-03
+
+The timeout and structured-response defects recorded above were corrected narrowly before this run. The production parameterized repository-review path then completed a real two-chunk workload in an isolated state directory and clean fixture repository. The first leg used `local-qwen-instruct/qwen-instruct-local` (`qwen2.5-3b-instruct-q4_k_m.gguf`); the governed destination used the distinct `local-qwen-coder/qwen-coder-local` route (`Qwen2.5-Coder-3B-Instruct-Q4_K_M.gguf`). Both were qualified live OpenAI-compatible provider endpoints on the controller node.
+
+The run used qualification-only thresholds `0.1/0.2/0.3/0.4%` with the unchanged production governor code path. This exercised a real pressure transition economically; it did not fabricate provider usage. At `0.567626953125%`, the runtime observed and assessed the source, selected `BATON_AND_HANDOFF`, sealed baton `token-baton:8c72d511-59e4-405e-b7a6-79f80982e12c` with SHA-256 `fc0de100074b3b25c421f4b39b198df47f29eadb8fdc644b4423cb3230d0cb7d`, executed the destination continuation, and independently verified the final repository result.
+
+Successful run `6d116287-a539-4606-a709-b43a11e7e134`, Work Parcel `parcel-a52d77d9-43ea-4306-8345-034a2e548156`, reconciled source `118/68/186` and destination `415/95/510` input/output/total tokens to parcel `533/163/696`: `186 + 510 = 696`. Current context remained separate from lifetime totals. The local endpoints report per-response usage but not retained-context occupancy, so the ephemeral one-turn context values are marked `estimated`; the source price and aggregate monetary cost remain `unavailable` rather than zero.
+
+The live dashboard read the same `/api/token-routing` state and received `token.telemetry`, `token.governor_transition`, `token.baton_created`, and `token.handoff_result` over SSE. Capture SHA-256 `f86bb311ab149c538edbaeaa73e1bc5674d87fc00ea0e07bff8f8c34995e1aa9` reconciled with the durable run, baton, contract and parcel records. The source thread remained recoverable after successful destination verification.
+
+A second real run, `d0e4f525-107b-43a4-a9e3-eee1b7abc18a`, injected a deterministic destination refusal before provider invocation. Baton SHA-256 `49a7985a6073cb14ddaa15ad83a3098301166ab280ef2e5909b3d0df0d44c2dc` was retained; the child failed truthfully, `handoff_failed_resume_original_thread` was recorded, the preserved source completed the remaining chunk, and independent verification passed. The ledger contains 366 source tokens and no fabricated destination usage.
+
+The retained record contains no credential, OAuth, email, Windows profile path, `CODEX_HOME` reference or raw remote-process output. Separate production `accountStatus` evidence for both MSI Codex profiles remains valid, but this workload lifecycle does not claim a Codex or GLM execution leg.
+
+Final physical verdict: **PASS — AGENT CONTROL 3.7 PHYSICALLY QUALIFIED**.

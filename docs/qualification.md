@@ -9,7 +9,7 @@ npm run qualify
 
 The harness always runs the local gate. It then reads the same configuration used by the control plane and performs only non-mutating health checks for configured services, resources and providers. Missing configuration is recorded as `SKIP configured-infrastructure`, not replaced by private defaults.
 
-For unreleased 3.7 development, also run `npm run benchmark:capability-routing` and review its retained report. A classifier pass is not physical model evidence. Verify `GET /api/runtime` and `GET /api/token-routing` through the web tests and inspect the final diff for credential-shaped values. The one retained physical Luna/local/GLM/Luna chain is separate evidence and does not satisfy the 50-attempt automatic-routing gate. The completed checkpoint results and explicit limitations are retained in [`evidence/agent-control-3.6-development-qualification.md`](evidence/agent-control-3.6-development-qualification.md) and [`evidence/agent-control-3.7-development-qualification.md`](evidence/agent-control-3.7-development-qualification.md).
+For 3.7 validation, also run `npm run benchmark:capability-routing` and review its retained report. A classifier pass is not physical model evidence. Verify `GET /api/runtime` and `GET /api/token-routing` through the web tests and inspect the final diff for credential-shaped values. The token-aware lifecycle has bounded physical evidence, but neither it nor the separate Luna/local/GLM/Luna chain satisfies the 50-attempt automatic-routing gate. The completed checkpoint results and explicit limitations are retained in [`evidence/agent-control-3.6-development-qualification.md`](evidence/agent-control-3.6-development-qualification.md), [`evidence/agent-control-3.7-development-qualification.md`](evidence/agent-control-3.7-development-qualification.md), and [`evidence/agent-control-3.7-physical-qualification-20260902.md`](evidence/agent-control-3.7-physical-qualification-20260902.md).
 
 Optional SSH checks are explicit:
 
@@ -35,7 +35,7 @@ Run the deterministic routing and adapter/dashboard coverage before any provider
 node --import tsx --test --test-concurrency=1 src/control/token-aware-baton-routing.test.ts src/control/direct-repository-review-executor.test.ts src/control/codex-node-execution.test.ts src/control/codex-exec-provider.test.ts src/control/account-profile-qualification.test.ts src/control/model-registry.test.ts src/control/openai-compatible-provider.test.ts src/control/web-server.test.ts
 ```
 
-It proves threshold transitions, no lifetime/context conflation, authority labels, durable restart/reconciliation, sealed batons, successful and failed handoff recovery, additive Sol/Luna/GLM accounting, adapter normalization, and the actual HTTP/SSE dashboard projection. It is not a substitute for a live qualified provider handoff: retain exact model/provider identity, telemetry authority and verification evidence before promoting automated handoff policy.
+It proves threshold transitions, no lifetime/context conflation, authority labels, durable restart/reconciliation, sealed batons, successful and failed handoff recovery, additive Sol/Luna/GLM accounting, adapter normalization, and the actual HTTP/SSE dashboard projection. The release's live provider proof is retained separately in the physical evidence; future route promotion must retain exact model/provider identity, telemetry authority and verification evidence rather than relying on this deterministic suite alone.
 
 ## Real repository-mutation harness experiment
 

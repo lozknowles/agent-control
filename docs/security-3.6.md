@@ -22,7 +22,9 @@ AUTO handoff cannot expand authority, protected resources or budget. Privilege/c
 
 Provider endpoints and credential references are immutable under one logical provider ID. Credentials are indirect `env:`/`file-env:` references and are excluded from batons, logs, telemetry, evidence and runtime projections. Cleartext provider endpoints are accepted only on loopback.
 
-Discovery is not qualification. Recipes are exact and immutable, lifecycle promotion is ordered/evidence-gated, and production policy accepts only ACTIVE/PREFERRED champions. The frozen classifier and one physical multi-provider chain do not qualify automatic production routing; missing provider tokens/cost and reachability remain unknown.
+Discovery is not qualification. Recipes are exact and immutable, lifecycle promotion is ordered/evidence-gated, and production policy accepts only ACTIVE/PREFERRED champions. The frozen classifier and bounded physical chains do not qualify the separate 50-observation automatic-routing benchmark; missing provider tokens/cost and reachability remain unknown.
+
+Token-aware handoff seals provider/account/model/node identity and baton provenance before invoking a destination. Account credential homes are resolved only on their configured node. Public telemetry and evidence omit credential values, resolved paths and raw remote process streams. A destination identity mismatch fails closed, and failed handoff preserves the original thread for recovery.
 
 ## Web projection
 

@@ -1,6 +1,6 @@
 # Agent Control architecture
 
-This is the authoritative source boundary for the unreleased Agent Control 3.7 feature branch, based on the 3.6 product checkpoint (released tag `v3.5.0`). Status labels matter:
+This is the authoritative source boundary for Agent Control 3.7.0. Status labels matter:
 
 - **implemented** means executable code and automated tests exist in this branch;
 - **experimental** means executable code exists but has not been qualified across every external substrate;
@@ -516,4 +516,4 @@ For Codex/ChatGPT authentication, each account profile contains only opaque ID, 
 
 ## Release boundary
 
-Earlier version tags remain immutable source releases; `v3.5.0` remains the current released source boundary while 3.7 is developed. Committing or pushing the 3.7 feature branch does not deploy services, expose a remote ACP listener, create credentials, broaden sharing, enable Spark, or enable a Saved Job/Schedule. STANDARD remains the default context profile unless a governed policy explicitly selects another profile. The physical Luna → local LLM → GLM-5.3-Flash → Luna experiment has one bounded qualification record; automatic token-governor handoff still needs a bounded physical provider qualification before promotion.
+Earlier version tags remain immutable source releases. Installing 3.7.0 does not deploy services, expose a remote ACP listener, create credentials, broaden sharing, enable Spark, or enable a Saved Job/Schedule. STANDARD remains the default context profile unless a governed policy explicitly selects another profile. The production token-governor lifecycle is physically qualified across two distinct live local provider/model routes, including a sealed baton, destination continuation, independent verification, SSE/evidence reconciliation, additive token accounting and original-thread recovery after a refused destination. Provider-unreported context and cost remain estimated or unavailable. This bounded proof does not qualify the separate 50-observation automatic capability-routing benchmark.

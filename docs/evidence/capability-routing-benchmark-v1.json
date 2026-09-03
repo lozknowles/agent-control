@@ -3,7 +3,7 @@
   "classification": "DETERMINISTIC_ROUTING_HARNESS_NOT_LIVE_PROVIDER_EVIDENCE",
   "suiteId": "capability-routing-v1",
   "suiteSha256": "fb1460cbea46ca3af70049a8be26a369519c3a14ae0959f362b5895146d0fe15",
-  "generatedAt": "2026-09-01T21:20:14.965Z",
+  "generatedAt": "2026-09-03T10:35:38.149Z",
   "predeclaredCriteria": {
     "minimumOverallClassificationAccuracy": 0.95,
     "minimumHoldoutClassificationAccuracy": 0.95,

@@ -1,6 +1,6 @@
 {
   "schema": "agent-control.implementation-status/v1",
-  "release": "3.7.0-unreleased",
+  "release": "3.7.0",
   "updated": "2026-09-03",
   "capabilities": [
     {
@@ -85,12 +85,12 @@
     {
       "id": "routing.token-aware-baton",
       "title": "Token-aware baton routing and live telemetry",
-      "status": "IMPLEMENTED",
+      "status": "QUALIFIED",
       "summary": "Provider-neutral thread telemetry keeps cumulative lifetime tokens separate from current context occupancy, persists configurable 60/75/85/90 governor transitions and context-lifecycle boundaries, sealed baton provenance, failed-handoff recovery and additive Work Parcel provider/account/model/node-chain totals. Optional governed account profiles bind exact model routes to isolated Codex homes on a configured execution node without persisting credentials or resolved paths. A restricted Codex node port reuses configured Resources and fixed-script SSH for Windows account qualification and read-only structured execution. The normal parameterized repository-review lifecycle assesses immutable chunk boundaries, delegates an account-qualified destination through existing contract/handoff runtimes and returns results to independent validation. The redacted dashboard/API projection streams telemetry and context transitions over existing SSE without a page reload.",
       "sources": ["src/control/token-aware-baton-routing.ts", "src/control/direct-repository-review-executor.ts", "src/control/parameterized-job-engine.ts", "src/control/job-bootstrap.ts", "src/control/contract-runtime.ts", "src/control/handoff-runtime.ts", "src/control/provider-account-profile.ts", "src/control/account-profile-qualification.ts", "src/control/codex-node-execution.ts", "src/control/codex-repository-review-client.ts", "src/control/codex-exec-provider.ts", "src/control/model-registry.ts", "src/control/openai-compatible-provider.ts", "src/control/application-service.ts", "src/control/web-server.ts", "scripts/codex-node-windows.ps1", "assets/dashboard/dashboard-enhancements.js", "assets/dashboard/dashboard-models.js"],
       "tests": ["src/control/token-aware-baton-routing.test.ts", "src/control/codex-exec-provider.test.ts", "src/control/codex-node-execution.test.ts", "src/control/account-profile-qualification.test.ts", "src/control/model-registry.test.ts", "src/control/openai-compatible-provider.test.ts", "src/control/direct-repository-review-executor.test.ts", "src/control/web-server.test.ts"],
-      "evidence": ["docs/token-aware-baton-routing.md", "docs/evidence/agent-control-3.7-development-qualification.md", "docs/evidence/agent-control-3.7-physical-qualification-20260902.md"],
-      "limitation": "Both isolated remote Codex accounts physically passed the production account-status path after correcting stdin framing and native stderr classification. The first bounded structured workload then timed out before returning provider telemetry, so the live baton, destination continuation, physical mismatch, recovery and ledger-reconciliation gates remain unproven. Authoritative context and cost remain unavailable where providers do not report them; the physical verdict remains PARTIAL."
+      "evidence": ["docs/token-aware-baton-routing.md", "docs/evidence/agent-control-3.7-development-qualification.md", "docs/evidence/agent-control-3.7-physical-qualification-20260902.md", "docs/evidence/agent-control-3.7-physical-lifecycle-20260903.json"],
+      "limitation": "A bounded production Work Parcel physically qualified live SSE telemetry, a sealed source-to-destination baton, destination continuation, independent verification, additive provider/model accounting and original-thread recovery after an injected destination refusal. Both routes were distinct local OpenAI-compatible provider/model configurations; authoritative current-context occupancy and source monetary cost remain unavailable where the providers do not expose them. Remote Codex account qualification passed separately, but Codex was not a workload leg in this lifecycle proof."
     },
     {
       "id": "models.fast-execution-spark",

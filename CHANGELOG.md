@@ -1,6 +1,6 @@
 # Changelog
 
-## [3.7.0] — unreleased
+## [3.7.0] — 2026-09-03
 
 - Adds Token-Aware Baton Routing with policy-configured `CONTINUE`, `PREPARE_BATON`, `COMPACT`, and `HANDOFF` pressure states (60/75/85/90% defaults).
 - Adds durable per-thread and Work Parcel input/output/total token, context, cost, elapsed-time, authority, transition, route-decision, and sealed-baton evidence.
@@ -15,6 +15,7 @@
 - Allows Saved Jobs to pin an account profile as explicit workload policy. Account availability is never used for automatic rotation to evade or aggregate usage/rate limits; exhaustion and rate limiting remain visible failures on the selected profile.
 - Reviews official Codex `rust-v0.153.0` and adds provider-neutral durable context-lifecycle records for compaction, new-context, continuation and resume boundaries. These stream to the dashboard and preserve cumulative Work Parcel accounting across context resets.
 - Adds a Codex 0.153 adapter normalizer for app-server `thread/tokenUsage/updated` and `contextCompaction` events. Codex's mixed provider/recomputed context count is marked `estimated`; the current `codex exec --ephemeral --json --ignore-user-config` route retains its honest `unavailable` fallback. Experimental token-budget/history-notes/`new_context`, internal raw response metadata and OTEL turn cost remain Codex-specific capabilities and are not made core policy dependencies.
+- Physically qualifies the production lifecycle across two distinct live local provider/model routes: source observation and governor assessment, sealed baton creation, destination continuation, independent verification, exact SSE/evidence reconciliation, and fail-closed destination refusal with original-thread recovery. The proof uses qualification-only thresholds with the unchanged production governor; local current-context values are explicitly estimated, source price remains unavailable, and no Codex workload leg is claimed.
 
 ## Unreleased — Agent Control 3.6
 
