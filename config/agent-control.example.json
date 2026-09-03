@@ -24,6 +24,19 @@
     "handoffPercent": 90,
     "sampleRetention": 240
   },
+  "retrieval": {
+    "enabled": false,
+    "providers": ["exact", "lexical"],
+    "maximumCalls": 4,
+    "maximumEvidenceItems": 12,
+    "maximumEvidenceTokens": 8192,
+    "minimumConfidence": 0.55,
+    "requiredCoverage": 0.6,
+    "contextPressurePercent": 75,
+    "contextPressureEvidenceFraction": 0.5,
+    "allowRemote": false,
+    "zgExecutable": "zg"
+  },
   "harnessEfficiency": {
     "routingMode": "observe",
     "minimumVerifiedRuns": 10,

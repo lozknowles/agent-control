@@ -35,6 +35,7 @@ import {verifyMutationWorkspace} from '../src/control/harness-mutation-verifier.
 import {MUTATION_TOOL_DEFINITIONS, MUTATION_TOOL_IDS, MUTATION_TOOL_SCHEMAS, MutationWorkspace, fixtureContentSha256} from '../src/control/harness-mutation-workspace.js';
 import {StructuredChatLoopProvider} from '../src/control/structured-chat-loop-provider.js';
 import {StructuredChatProviderFactory} from '../src/control/structured-chat-provider.js';
+import {GovernedRetrievalRuntime,RepositoryTextRetrievalProvider,SpawnZgSearchExecutor,ZgRetrievalProvider,evidencePacketContextSource,evidenceReferences,type RetrievalStrategy} from '../src/control/governed-retrieval.js';
 
 const baseUrl = required('AGENT_CONTROL_HARNESS_MUTATION_BASE_URL').replace(/\/$/, '');
 const modelId = required('AGENT_CONTROL_HARNESS_MUTATION_MODEL');
@@ -54,7 +55,12 @@ if (fixtureContentSha256(fixtureRoot) !== suite.fixtureSha256) throw new Error('
 const taskLimit = optionalInteger('AGENT_CONTROL_HARNESS_MUTATION_TASK_LIMIT', 1, suite.tasks.length);
 const tasks = taskLimit === undefined ? suite.tasks : suite.tasks.slice(0, taskLimit);
 const includePredicted = process.env.AGENT_CONTROL_HARNESS_MUTATION_INCLUDE_PREDICTED === 'true';
-const strategies: MutationStrategy[] = ['THIN_ONLY', 'STANDARD_ONLY', 'DEEP_ONLY', 'ADAPTIVE_THIN_STANDARD_DEEP', ...(includePredicted ? ['PREDICTED_ADAPTIVE' as const] : [])];
+const allStrategies: MutationStrategy[] = ['THIN_ONLY', 'STANDARD_ONLY', 'DEEP_ONLY', 'ADAPTIVE_THIN_STANDARD_DEEP', ...(includePredicted ? ['PREDICTED_ADAPTIVE' as const] : [])];
+const requestedStrategies=(process.env.AGENT_CONTROL_HARNESS_MUTATION_STRATEGIES??'').split(',').map(value=>value.trim()).filter(Boolean) as MutationStrategy[];
+if(requestedStrategies.some(value=>!allStrategies.includes(value)))throw new Error('mutation_benchmark_strategy_invalid');
+const strategies:MutationStrategy[]=requestedStrategies.length?requestedStrategies:allStrategies;
+const retrievalMode=(process.env.AGENT_CONTROL_HARNESS_MUTATION_RETRIEVAL_MODE??'CONVENTIONAL').toUpperCase() as 'CONVENTIONAL'|'BUILTIN'|'ZG';
+if(!['CONVENTIONAL','BUILTIN','ZG'].includes(retrievalMode))throw new Error('mutation_benchmark_retrieval_mode_invalid');
 const resume = process.env.AGENT_CONTROL_HARNESS_MUTATION_RESUME === 'true';
 const maximumContextTokens = optionalInteger('AGENT_CONTROL_HARNESS_MUTATION_CONTEXT_TOKENS', 1_024, 1_000_000) ?? 48_000;
 const maximumOutputTokens = optionalInteger('AGENT_CONTROL_HARNESS_MUTATION_OUTPUT_TOKENS', 64, 4_096) ?? 768;
@@ -106,10 +112,10 @@ for (const outcome of outcomes) {
 }
 const safety = qualifySafetyBoundaries();
 const report = createMutationQualificationReport({suite: {...suite, tasks}, generatedAt: new Date().toISOString(), model: modelId, provider: providerId, outcomes, safety});
-writeJsonAtomic(jsonFile, report);
+writeJsonAtomic(jsonFile, {...report,contextMode:retrievalMode});
 writeTextAtomic(markdownFile, renderMutationQualificationReport(report));
 await requireHealthyEndpoint();
-process.stdout.write(`${JSON.stringify({schema: report.schema, benchmarkId: report.benchmarkId, classification: report.classification, modelControl: report.modelControl, endpoint: {scope: loopback ? 'loopback' : 'explicit-private-remote', modelListSha256}, fixture: report.fixture, aggregates: report.aggregates, productionRoutingGate: report.productionRoutingGate, conclusions: report.conclusions, files: [jsonFile, markdownFile, partialFile, evidenceDirectory]}, null, 2)}\n`);
+process.stdout.write(`${JSON.stringify({schema: report.schema, benchmarkId: report.benchmarkId, classification: report.classification,contextMode:retrievalMode, modelControl: report.modelControl, endpoint: {scope: loopback ? 'loopback' : 'explicit-private-remote', modelListSha256}, fixture: report.fixture, aggregates: report.aggregates, productionRoutingGate: report.productionRoutingGate, conclusions: report.conclusions, files: [jsonFile, markdownFile, partialFile, evidenceDirectory]}, null, 2)}\n`);
 if (!outcomes.some(outcome => outcome.verifiedSuccess)) process.exitCode = 1;
 
 async function runOutcome(strategy: MutationStrategy, task: MutationBenchmarkTask): Promise<MutationOutcomeResult> {
@@ -148,7 +154,8 @@ async function runAttempt(task: MutationBenchmarkTask, strategy: MutationStrateg
   const attemptId = `${suite.suiteId}:${task.id}:${strategy}:${attemptNumber}:${profile}`;
   const jobId = `${suite.suiteId}:${task.id}:${strategy}`;
   const prediction = predictMutationContextProfile(task);
-  const sources = buildMutationContextSources(suite, task, fixtureRoot, checkpoint);
+  const preparedContext = await buildPhase2Context(task, checkpoint);
+  const sources = preparedContext.sources;
   const availableContextTokens = Math.min(maximumContextTokens, Math.max(1_024, Math.floor(task.tokenBudget * .7)));
   const packet = buildMutationContextPacket(profile, sources, availableContextTokens);
   const selected = selectMutationPacketSources(packet, sources);
@@ -184,15 +191,30 @@ async function runAttempt(task: MutationBenchmarkTask, strategy: MutationStrateg
   const patch = workspace.diff(), patchName = `${task.id.toLowerCase()}-${strategy.toLowerCase()}-attempt-${attemptNumber}.patch.gz`, patchFile = path.join(evidenceDirectory, patchName);
   const securityPassed = verifier.checks.find(check => check.id === 'credential_and_topology_scan')?.passed === true;
   if (patch && securityPassed) writePatchEvidence(patchFile, patch, verifier.diffSha256);
-  const evidenceIds = [...new Set([...executionEvidence, ...invocationIds.map(id => `invocation:${id}`), `context_packet:${packet.id}`, `diff_sha256:${verifier.diffSha256}`, ...(patch && securityPassed ? [`patch:${path.relative(root, patchFile).split(path.sep).join('/')}`] : [])])].sort();
+  const evidenceIds = [...new Set([...executionEvidence, ...invocationIds.map(id => `invocation:${id}`), `context_packet:${packet.id}`,...(preparedContext.retrieval?.references??[]), `diff_sha256:${verifier.diffSha256}`, ...(patch && securityPassed ? [`patch:${path.relative(root, patchFile).split(path.sep).join('/')}`] : [])])].sort();
   return {
     attemptId, taskId: task.id, strategy, profile, attemptNumber, startedAt, completedAt: new Date().toISOString(), elapsedMs: performance.now() - started,
     predictedProfile: prediction.profile, predictionConfidence: prediction.confidence, predictionReasons: prediction.reasons,
     contextPacketId: packet.id, contextSourceIds: packet.sourceIds, omittedContextSourceIds: packet.omitted.map(item => item.id), recipeId, invocationIds, usage,
     initialProviderInputTokens: invocations[0]?.usage.inputTokens ?? null, persistentEstimatedContextTokens: invocations[0]?.startup.startupContextTokens ?? null,
     turns: invocations.length, toolCalls: counters.toolCalls, toolIds: [...counters.toolIds], repositoryReads: counters.repositoryReads, repositorySearches: counters.repositorySearches, mutationsAttempted: counters.mutationsAttempted,
-    verifierAttempts: 1, verifier, verifiedSuccess, failureReason, escalationReason, checkpointDiffSha256: verifier.diffSha256, evidenceIds,
+    verifierAttempts: 1, verifier, verifiedSuccess, failureReason, escalationReason, checkpointDiffSha256: verifier.diffSha256, evidenceIds,retrieval:preparedContext.retrieval,
   };
+}
+
+async function buildPhase2Context(task:MutationBenchmarkTask,checkpoint?:MutationCheckpointContext){
+  const conventional=buildMutationContextSources(suite,task,fixtureRoot,checkpoint);
+  if(retrievalMode==='CONVENTIONAL')return{sources:conventional};
+  const retrievalRoot=path.resolve(process.env.AGENT_CONTROL_HARNESS_MUTATION_RETRIEVAL_ROOT??fixtureRoot),gitSha=suite.fixtureSha256,exactTerms=[...task.allowedFiles,...(task.description.match(/[A-Za-z_][A-Za-z0-9_]{3,}/g)??[]).filter(value=>value.includes('_')||/[a-z][A-Z]/.test(value)||/^[A-Z0-9_]{3,}$/.test(value))].slice(0,16),providers=retrievalMode==='BUILTIN'?[new RepositoryTextRetrievalProvider('exact'),new RepositoryTextRetrievalProvider('lexical')]:[new ZgRetrievalProvider(new SpawnZgSearchExecutor(required('ZG_EXECUTABLE')))],progression:RetrievalStrategy[]=retrievalMode==='BUILTIN'?['EXACT','LEXICAL']:['HYBRID'],runtime=new GovernedRetrievalRuntime(providers,{enabled:true,progression,maximumCalls:retrievalMode==='BUILTIN'?2:1,maximumEvidenceItems:12,maximumEvidenceTokens:8_192,requiredCoverage:.45,minimumConfidence:0}),requiredSources=conventional.filter(source=>source.required||['system_instructions','agent_control_instructions','tool_schemas'].includes(source.kind));
+  try {
+    const packet=await runtime.retrieve({id:`phase2:${retrievalMode}:${task.id}`,parcelId:`phase2:${task.id}`,taskType:task.taskClass,query:task.description,exactTerms,scopes:task.allowedFiles,repository:{repositoryId:`mutation-fixture:${suite.fixtureSha256}`,root:retrievalRoot,gitSha,dirty:false},maximumEvidenceTokens:8_192,requiredCoverage:.45,minimumConfidence:0});
+    const evidence=evidencePacketContextSource(packet);
+    return{sources:[...requiredSources,evidence],retrieval:{mode:retrievalMode,outcome:'SUCCEEDED' as const,packetId:packet.id,packetSha256:packet.sha256,assessment:packet.assessment.status,providerId:packet.items[0]?.providerId??'unknown',strategy:packet.items[0]?.method??progression.at(-1)!,evidenceBytes:Buffer.byteLength(evidence.content??''),evidenceTokens:packet.estimatedTokens,retrievalCalls:runtime.projection().attempts.length,latencyMs:packet.retrievalLatencyMs,rawBytesAvoided:packet.rawBytesAvoided,references:evidenceReferences(packet),fallbackReason:null}};
+  } catch(error) {
+    const attempts=runtime.projection().attempts, last=attempts.at(-1);
+    const fallbackSources=conventional.filter(source=>source.required||source.id.endsWith(':targeted-files')||source.id.endsWith(':workspace-index')||source.id.includes(':checkpoint:'));
+    return{sources:fallbackSources,retrieval:{mode:retrievalMode,outcome:'GOVERNED_FALLBACK' as const,packetId:null,packetSha256:null,assessment:last?.evidenceStatus??'EVIDENCE_INSUFFICIENT',providerId:last?.providerId??'none',strategy:last?.strategy??progression.at(-1)!,evidenceBytes:fallbackSources.reduce((sum,source)=>sum+Buffer.byteLength(source.content??''),0),evidenceTokens:Math.ceil(fallbackSources.reduce((sum,source)=>sum+Buffer.byteLength(source.content??''),0)/4),retrievalCalls:attempts.length,latencyMs:attempts.reduce((sum,attempt)=>sum+attempt.latencyMs,0),rawBytesAvoided:0,references:[],fallbackReason:boundedError(error)}};
+  }
 }
 
 function qualifySafetyBoundaries() {

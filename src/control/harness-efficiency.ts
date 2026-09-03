@@ -176,6 +176,7 @@ export interface ContextGraph {
   compactEvidence(nodes: ContextGraphNode[], query?: string): Promise<CompactGraphEvidence[]>;
   recordProvenance(edge: ContextGraphEdge): Promise<void>;
   writeVerifiedKnowledge(node: ContextGraphNode, verificationRef: string): Promise<void>;
+  recordRetrievedEvidence?(node: ContextGraphNode): Promise<void>;
 }
 
 export class InMemoryContextGraph implements ContextGraph {
@@ -231,6 +232,11 @@ export class InMemoryContextGraph implements ContextGraph {
   async writeVerifiedKnowledge(node: ContextGraphNode, verificationRef: string): Promise<void> {
     if (!node.verified || !verificationRef.trim()) throw new Error('context_graph_verification_required');
     this.nodes.set(node.id, {...structuredClone(node), provenanceIds: [...new Set([...node.provenanceIds, verificationRef])]});
+  }
+
+  async recordRetrievedEvidence(node: ContextGraphNode): Promise<void> {
+    if(!node.id.trim()||!node.provenanceIds.length)throw new Error('context_graph_retrieved_evidence_invalid');
+    this.nodes.set(node.id,structuredClone(node));
   }
 }
 

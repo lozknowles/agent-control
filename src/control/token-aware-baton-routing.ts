@@ -101,6 +101,7 @@ export interface VerifiedBaton extends AccountRouteIdentity {
   filesChanged: string[];
   git: {sha: string; dirty: boolean; diffSummary: string};
   testsAndEvidence: string[];
+  evidenceReferences?: string[];
   unresolvedIssues: string[];
   nextAction: string;
   tokenState: TokenTelemetryPoint;
@@ -214,7 +215,7 @@ export class TokenAwareBatonRuntime {
     const thread = this.thread(input.threadId);
     if (thread.parcelId !== input.parcelId || thread.providerId !== input.providerId || thread.accountProfileId !== input.accountProfileId || thread.modelId !== input.modelId || thread.nodeId !== input.nodeId) throw new Error('token_baton_provenance_mismatch');
     for (const [field, value] of Object.entries({objective: input.objective, nextAction: input.nextAction, gitSha: input.git?.sha})) if (typeof value !== 'string' || !value.trim()) throw new Error(`token_baton_${field}_required`);
-    for (const value of [input.completedWork, input.decisions, input.filesChanged, input.testsAndEvidence, input.unresolvedIssues]) if (!Array.isArray(value) || value.some(item => typeof item !== 'string')) throw new Error('token_baton_array_invalid');
+    for (const value of [input.completedWork, input.decisions, input.filesChanged, input.testsAndEvidence, input.unresolvedIssues, input.evidenceReferences ?? []]) if (!Array.isArray(value) || value.some(item => typeof item !== 'string')) throw new Error('token_baton_array_invalid');
     const createdAt = this.clock(), id = `token-baton:${randomUUID()}`, withoutHash = {schema: 'agent-control.token-baton/v1' as const, id, ...clone(input), tokenState: clone(thread.latest), parcelTotals: this.parcel(thread.parcelId), createdAt};
     const baton: VerifiedBaton = {...withoutHash, sha256: digest(withoutHash)};
     this.batons.set(id, baton); const stored = this.threads.get(thread.id)!; stored.batonId = id; this.threads.set(stored.id, stored); this.save(); this.emit({type: 'baton.created', threadId: thread.id, parcelId: thread.parcelId, at: createdAt}); return clone(baton);

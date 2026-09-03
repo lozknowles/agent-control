@@ -1,5 +1,22 @@
 # Changelog
 
+## [3.8.0] — 2026-09-03
+
+- Adds opt-in governed retrieval with provider-neutral intents/providers, bounded progressive policy, compact content-addressed Evidence Packets, explicit local/remote/hybrid locality, and current/possibly-stale/invalid freshness.
+- Reuses Work Parcels, ContextGraph/ContextPacketBuilder, 3.7 token pressure, sealed batons, provider routing, independent verification, durable evidence and existing SSE rather than creating parallel control paths.
+- Adds dependency-free exact and BM25 providers plus an optional search-only zg 0.2.1 semantic/hybrid adapter. Index mutation remains a separate authority and zg is not required for startup.
+- Wires retrieval into production parameterized repository reviews with packet/hash provenance, portable baton evidence references, redacted dashboard telemetry and controlled immutable-context fallback.
+- Adds a provider-technique registry distinguishing generic core techniques from optional/provider-specific mechanisms.
+- Constrains built-in and adapter retrieval with explicit `EVIDENCE_SUFFICIENT`, `EVIDENCE_AMBIGUOUS` and `EVIDENCE_INSUFFICIENT` assessments based on exact/path/query coverage, diversity and freshness; provider rank is never treated as calibrated confidence.
+- Revalidates repository identity, path boundary, source existence and whole-file content hashes when Evidence Packet references cross a baton or process restart. Stale, poisoned or mismatched evidence is invalidated and falls back safely.
+- Runs zg in search-only mode with refresh disabled, validates zg text against current source, excludes Agent Control state/qualification output from retrieval, and redacts executable/root details from failures.
+- Adds provider-neutral resource decisions (`USE_PROVIDER`, `USE_BUILTIN`, `BUILD_INDEX`, `DEFER_INDEX`) without granting index-mutation authority.
+- Extends existing SSE/dashboard lifecycle coverage with provider selection, context compilation, rehydration, invalidation and fallback events.
+- Phase 2 physically qualified a Qwen-instruct to Qwen-coder baton with rehydrated retrieval evidence, independent verification, restart recovery, stale invalidation and reconciled token/cost/SSE evidence. The two endpoints are distinct model/provider configurations using the same OpenAI-compatible adapter; a materially different adapter handoff remains unexercised.
+- Frozen 12-task mutation comparison: conventional, built-in and zg each verified 2/12 with the same Qwen2.5 Coder 3B model. Processed tokens per verified outcome were 95,101, 76,189 and 88,039.5 respectively. This does not demonstrate an expanded small-model task class, and retrieval remains opt-in.
+- Physically qualifies fallback for missing zg, absent/stale index, process failure and malformed/no result. Cold-index and warm-query resource costs remain separately reported; no monetary/electricity estimate is invented.
+- Final review makes persisted Evidence Packet SHA-256 and item-content hashes executable integrity gates and rejects post-capture symlink replacement before rehydration.
+
 ## [3.7.0] — 2026-09-03
 
 - Adds Token-Aware Baton Routing with policy-configured `CONTINUE`, `PREPARE_BATON`, `COMPACT`, and `HANDOFF` pressure states (60/75/85/90% defaults).

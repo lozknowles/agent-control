@@ -150,3 +150,5 @@ test('Spark fast-execution configuration is conservative and fail-closed', () =>
   assert.throws(() => validateConfig({...base, spark: {enabled: true, maximumSubagents: 1}}), /spark_maximum_subagents/);
   assert.throws(() => validateConfig({...base, spark: {enabled: true, verificationRequired: false}}), /spark_verification_required/);
 });
+
+test('governed retrieval is opt-in, bounded, local-first and keeps zg optional',()=>{const base={schemaVersion:1 as const,resources:[],providers:[],models:[],modelRouting:{roles:{}},services:[],lanes:[]};const config=validateConfig({...base,retrieval:{enabled:true,providers:['exact','lexical','zg'],maximumCalls:4,maximumEvidenceItems:12,maximumEvidenceTokens:4096,minimumConfidence:.5,requiredCoverage:.6,contextPressurePercent:75,contextPressureEvidenceFraction:.5,allowRemote:false,zgExecutable:'zg'}});assert.equal(config.retrieval?.enabled,true);assert.equal(config.retrieval?.allowRemote,false);assert.throws(()=>validateConfig({...base,retrieval:{maximumCalls:0}}),/maximum_calls/);assert.throws(()=>validateConfig({...base,retrieval:{zgExecutable:'/tmp/zg'}}),/zg_executable/);});

@@ -72,6 +72,23 @@ export interface MutationVerifierCheck {
   evidenceIds: string[];
 }
 
+export interface MutationRetrievalResult {
+  mode: 'BUILTIN' | 'ZG';
+  outcome: 'SUCCEEDED' | 'GOVERNED_FALLBACK';
+  packetId: string | null;
+  packetSha256: string | null;
+  assessment: 'EVIDENCE_SUFFICIENT' | 'EVIDENCE_AMBIGUOUS' | 'EVIDENCE_INSUFFICIENT';
+  providerId: string;
+  strategy: string;
+  evidenceBytes: number;
+  evidenceTokens: number;
+  retrievalCalls: number;
+  latencyMs: number;
+  rawBytesAvoided: number;
+  references: string[];
+  fallbackReason: string | null;
+}
+
 export interface MutationVerifierResult {
   schema: 'agent-control.mutation-verifier/v1';
   taskId: string;
@@ -119,6 +136,7 @@ export interface MutationAttemptResult {
   escalationReason: HarnessEscalationReason | null;
   checkpointDiffSha256: string;
   evidenceIds: string[];
+  retrieval?: MutationRetrievalResult;
 }
 
 export interface MutationOutcomeResult {

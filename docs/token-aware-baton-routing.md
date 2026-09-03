@@ -40,6 +40,8 @@ High context pressure does not itself downgrade a model. `BATON_AND_HANDOFF` req
 
 Before a handoff, Agent Control seals a durable baton containing the objective, completed work, decisions, changed files, Git SHA and dirty/diff state, tests/evidence, unresolved issues, exact next action, originating provider/account/model/node/thread, token state, and parcel totals. The baton has a SHA-256 digest.
 
+In 3.8, the same provider-neutral baton may include content-addressed Evidence Packet references. A receiving model rehydrates only evidence that still matches repository identity, relative-path boundary, source existence and whole-file content hash, instead of receiving repeated raw context. Failure preserves the original thread and invokes controlled context fallback. An adapter-private index, provider session or native context handle is never the only continuation representation.
+
 The existing governed handoff runtime owns actual process replacement and authority transfer. A successful handoff leaves the original thread recoverable. A failed or approval-pending handoff records the result and resumes the original thread; no provider/model changes silently.
 
 ## Production Work Parcel lifecycle

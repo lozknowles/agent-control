@@ -176,6 +176,20 @@ export interface TokenBatonRoutingConfig {
   sampleRetention?: number;
 }
 
+export interface GovernedRetrievalConfig {
+  enabled?: boolean;
+  providers?: Array<'exact' | 'lexical' | 'zg'>;
+  maximumCalls?: number;
+  maximumEvidenceItems?: number;
+  maximumEvidenceTokens?: number;
+  minimumConfidence?: number;
+  requiredCoverage?: number;
+  contextPressurePercent?: number;
+  contextPressureEvidenceFraction?: number;
+  allowRemote?: boolean;
+  zgExecutable?: string;
+}
+
 export interface HarnessProfileConfig {
   maximumInitialContextTokens?: number;
   maximumSources?: number;
@@ -218,6 +232,7 @@ export interface AgentControlConfig {
   lanes: LaneConfig[];
   tokenAwareOutput?: TokenAwareOutputConfig;
   tokenBatonRouting?: TokenBatonRoutingConfig;
+  retrieval?: GovernedRetrievalConfig;
   harnessEfficiency?: HarnessEfficiencyConfig;
   spark?: SparkConfig;
   jobs?: ParameterizedJobsConfig;
@@ -258,7 +273,7 @@ function assertIntegerRange(value: unknown, label: string, minimum: number, maxi
 
 function rejectSecrets(value: unknown, trail = 'config') {
   if (!value || typeof value !== 'object') return;
-  const safeTokenAccountingKeys = new Set(['tokenAwareOutput', 'tokenBatonRouting', 'completeMaxTokens', 'artifactOnlyAboveReturnedTokens', 'minimumCompleteTokens', 'harnessEfficiency', 'maximumInitialContextTokens', 'maximumContextTokens', 'advertisedContextLimitTokens', 'maximumObservedInputTokens', 'inputPerMillionTokens', 'outputPerMillionTokens', 'cachedInputPerMillionTokens', 'contextTokens', 'outputTokens', 'continuePercent', 'prepareBatonPercent', 'compactPercent', 'handoffPercent', 'sampleRetention']);
+  const safeTokenAccountingKeys = new Set(['tokenAwareOutput', 'tokenBatonRouting', 'completeMaxTokens', 'artifactOnlyAboveReturnedTokens', 'minimumCompleteTokens', 'harnessEfficiency', 'maximumInitialContextTokens', 'maximumContextTokens', 'maximumEvidenceTokens', 'advertisedContextLimitTokens', 'maximumObservedInputTokens', 'inputPerMillionTokens', 'outputPerMillionTokens', 'cachedInputPerMillionTokens', 'contextTokens', 'outputTokens', 'continuePercent', 'prepareBatonPercent', 'compactPercent', 'handoffPercent', 'sampleRetention']);
   for (const [key, child] of Object.entries(value)) {
     if (/token|password|secret|api.?key/i.test(key) && !['credentialEnv', 'credentialFileEnv'].includes(key) && !safeTokenAccountingKeys.has(key)) {
       throw new Error(`secret_material_forbidden:${trail}.${key}`);
@@ -282,6 +297,7 @@ export function validateConfig(raw: unknown): AgentControlConfig {
     lanes: input.lanes ?? [],
     tokenAwareOutput: input.tokenAwareOutput,
     tokenBatonRouting: input.tokenBatonRouting,
+    retrieval: input.retrieval,
     harnessEfficiency: input.harnessEfficiency,
     spark: input.spark,
     jobs: input.jobs,
@@ -480,6 +496,19 @@ export function validateConfig(raw: unknown): AgentControlConfig {
     if (!routing || typeof routing !== 'object' || Array.isArray(routing)) throw new Error('invalid_token_baton_routing');
     try { normalizeGovernorPolicy(routing); }
     catch (error) { throw new Error(`invalid_${error instanceof Error ? error.message : String(error)}`); }
+  }
+  if (config.retrieval !== undefined) {
+    const retrieval = config.retrieval;
+    if (!retrieval || typeof retrieval !== 'object' || Array.isArray(retrieval)) throw new Error('invalid_retrieval');
+    if (retrieval.enabled !== undefined && typeof retrieval.enabled !== 'boolean') throw new Error('invalid_retrieval_enabled');
+    if (retrieval.allowRemote !== undefined && typeof retrieval.allowRemote !== 'boolean') throw new Error('invalid_retrieval_allow_remote');
+    if (retrieval.providers !== undefined && (!Array.isArray(retrieval.providers) || retrieval.providers.some(provider => !['exact','lexical','zg'].includes(provider)))) throw new Error('invalid_retrieval_providers');
+    assertIntegerRange(retrieval.maximumCalls, 'retrieval_maximum_calls', 1, 32);
+    assertIntegerRange(retrieval.maximumEvidenceItems, 'retrieval_maximum_evidence_items', 1, 1_000);
+    assertIntegerRange(retrieval.maximumEvidenceTokens, 'retrieval_maximum_evidence_tokens', 128, 1_000_000);
+    for (const [key,value] of [['minimum_confidence',retrieval.minimumConfidence],['required_coverage',retrieval.requiredCoverage],['context_pressure_evidence_fraction',retrieval.contextPressureEvidenceFraction]] as const) if (value !== undefined && (!Number.isFinite(value) || value < 0 || value > 1)) throw new Error(`invalid_retrieval_${key}`);
+    if (retrieval.contextPressurePercent !== undefined && (!Number.isFinite(retrieval.contextPressurePercent) || retrieval.contextPressurePercent <= 0 || retrieval.contextPressurePercent >= 100)) throw new Error('invalid_retrieval_context_pressure_percent');
+    if (retrieval.zgExecutable !== undefined && (typeof retrieval.zgExecutable !== 'string' || !retrieval.zgExecutable.trim() || path.isAbsolute(retrieval.zgExecutable))) throw new Error('invalid_retrieval_zg_executable');
   }
   if (config.harnessEfficiency !== undefined) {
     const efficiency = config.harnessEfficiency;
