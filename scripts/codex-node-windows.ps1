@@ -15,7 +15,7 @@ param([string]$PayloadLine)
     return $out
   }
   function Classify-CodexFailure($Events, [string]$StandardError) {
-    $eventText = @($Events | Where-Object { $_.type -in @('error', 'turn.failed') } | ForEach-Object { $_ | ConvertTo-Json -Depth 10 -Compress }) -join ' '
+    $eventText = @($Events | Where-Object { $_.type -in @('error', 'turn.failed') -or ($_.type -eq 'item.completed' -and $_.item.type -eq 'error') } | ForEach-Object { $_ | ConvertTo-Json -Depth 10 -Compress }) -join ' '
     $failureText = "$eventText $StandardError"
     if ($failureText -match '(?i)rate.?limit|too many requests|usage.?limit|quota') { return 'codex_node_rate_limited' }
     if ($failureText -match '(?i)context.?window|context.?length|too many tokens|maximum context') { return 'codex_node_context_limit_exceeded' }
@@ -93,7 +93,7 @@ param([string]$PayloadLine)
       $lines = @($stdout -split '[\r\n]+' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
       $events = @()
       foreach ($line in $lines) { try { $event = $line | ConvertFrom-Json; if ($null -ne $event.type) { $events += $event } } catch {} }
-      if (@($events | Where-Object { $_.type -in @('error', 'turn.failed') }).Count -gt 0) { Fail $operation (Classify-CodexFailure $events $standardError) }
+      if (@($events | Where-Object { $_.type -in @('error', 'turn.failed') -or ($_.type -eq 'item.completed' -and $_.item.type -eq 'error') }).Count -gt 0) { Fail $operation (Classify-CodexFailure $events $standardError) }
       $completed = @($events | Where-Object { $_.type -eq 'turn.completed' })[-1]
       if ($null -eq $completed) {
         if ($null -ne $process.ExitCode -and $process.ExitCode -ne 0) { Fail $operation 'codex_node_exec_failed' }

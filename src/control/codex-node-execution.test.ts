@@ -88,6 +88,7 @@ test('the audited Windows runner discovers versioned Codex bundles without a har
   assert.match(script, /\$process\.WaitForExit/);
   assert.match(script, /codex_node_context_limit_exceeded/);
   assert.match(script, /codex_node_rate_limited/);
+  assert.match(script, /item\.type -eq 'error'/);
   assert.doesNotMatch(script, /Start-Job|ReadToEndAsync/);
 });
 
