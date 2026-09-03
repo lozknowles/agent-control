@@ -79,11 +79,13 @@ test('the audited Windows runner discovers versioned Codex bundles without a har
   assert.match(script, /login status 2>&1/);
   assert.match(script, /UTF8Encoding\(\$false\)/);
   assert.match(script, /--skip-git-repo-check/);
-  assert.match(script, /Diagnostics\.ProcessStartInfo/);
-  assert.match(script, /RedirectStandardInput = \$true/);
-  assert.match(script, /StandardInput\.Close\(\)/);
+  assert.match(script, /Start-Process -FilePath \$selected\.Path/);
+  assert.match(script, /-RedirectStandardInput \$promptFile/);
+  assert.match(script, /-RedirectStandardOutput \$stdoutFile/);
   assert.match(script, /\$process\.WaitForExit/);
-  assert.doesNotMatch(script, /Start-Job|Start-Process/);
+  assert.match(script, /codex_node_context_limit_exceeded/);
+  assert.match(script, /codex_node_rate_limited/);
+  assert.doesNotMatch(script, /Start-Job|ReadToEndAsync/);
 });
 
 test('destination execution fails closed when the execution port reports a different account or node', async () => {

@@ -14,25 +14,16 @@ param([string]$PayloadLine)
     }
     return $out
   }
-  function Quote-NativeArgument([string]$Value) {
-    if ($Value.Length -gt 0 -and $Value -notmatch '[\s"]') { return $Value }
-    $builder = New-Object Text.StringBuilder
-    [void]$builder.Append('"')
-    $slashes = 0
-    foreach ($character in $Value.ToCharArray()) {
-      if ($character -eq '\') { $slashes++; continue }
-      if ($character -eq '"') {
-        [void]$builder.Append(('\' * (($slashes * 2) + 1)))
-        [void]$builder.Append('"')
-        $slashes = 0
-        continue
-      }
-      if ($slashes -gt 0) { [void]$builder.Append(('\' * $slashes)); $slashes = 0 }
-      [void]$builder.Append($character)
-    }
-    if ($slashes -gt 0) { [void]$builder.Append(('\' * ($slashes * 2))) }
-    [void]$builder.Append('"')
-    return $builder.ToString()
+  function Classify-CodexFailure($Events, [string]$StandardError) {
+    $eventText = @($Events | Where-Object { $_.type -in @('error', 'turn.failed') } | ForEach-Object { $_ | ConvertTo-Json -Depth 10 -Compress }) -join ' '
+    $failureText = "$eventText $StandardError"
+    if ($failureText -match '(?i)rate.?limit|too many requests|usage.?limit|quota') { return 'codex_node_rate_limited' }
+    if ($failureText -match '(?i)context.?window|context.?length|too many tokens|maximum context') { return 'codex_node_context_limit_exceeded' }
+    if ($failureText -match '(?i)model.{0,80}(?:not found|unavailable|unsupported|access)|does not exist') { return 'codex_node_model_unavailable' }
+    if ($failureText -match '(?i)output.?schema|json.?schema|schema.{0,40}(?:invalid|unsupported)') { return 'codex_node_output_schema_rejected' }
+    if ($failureText -match '(?i)content.?policy|safety.?policy|policy.?violation') { return 'codex_node_policy_rejected' }
+    if ($failureText -match '(?i)connection|network|dns|temporarily unavailable|service unavailable') { return 'codex_node_provider_unavailable' }
+    return 'codex_node_exec_turn_failed'
   }
   try {
     if ([string]::IsNullOrWhiteSpace($payloadLine)) { Fail 'unknown' 'codex_node_request_missing' }
@@ -77,39 +68,31 @@ param([string]$PayloadLine)
     New-Item -ItemType Directory -Path $temporary | Out-Null
     try {
       $schemaFile = Join-Path $temporary 'output.schema.json'
+      $promptFile = Join-Path $temporary 'prompt.txt'
+      $stdoutFile = Join-Path $temporary 'events.jsonl'
+      $stderrFile = Join-Path $temporary 'stderr.txt'
       $schemaJson = $request.outputSchema | ConvertTo-Json -Depth 30 -Compress
       $utf8NoBom = New-Object Text.UTF8Encoding($false)
       [IO.File]::WriteAllText($schemaFile, $schemaJson, $utf8NoBom)
+      [IO.File]::WriteAllText($promptFile, [string]$request.instruction, $utf8NoBom)
       $arguments = @('exec', '--ephemeral', '--json', '--sandbox', 'read-only', '--skip-git-repo-check', '--model', [string]$request.providerModel, '--output-schema', $schemaFile, '-')
       $stopwatch = [Diagnostics.Stopwatch]::StartNew()
       # Codex always checks stdin for additional prompt input. A background
       # PowerShell job leaves stdin open, so a fast refusal can be hidden until
       # the outer timeout. A supervised native process receives a finite prompt
-      # through an explicitly closed stdin and captures both streams in memory.
-      $startInfo = New-Object Diagnostics.ProcessStartInfo
-      $startInfo.FileName = $selected.Path
-      $startInfo.Arguments = (($arguments | ForEach-Object { Quote-NativeArgument ([string]$_) }) -join ' ')
-      $startInfo.UseShellExecute = $false
-      $startInfo.CreateNoWindow = $true
-      $startInfo.RedirectStandardInput = $true
-      $startInfo.RedirectStandardOutput = $true
-      $startInfo.RedirectStandardError = $true
-      $process = New-Object Diagnostics.Process
-      $process.StartInfo = $startInfo
-      if (-not $process.Start()) { Fail $operation 'codex_node_exec_failed' }
-      $stdoutTask = $process.StandardOutput.ReadToEndAsync()
-      $stderrTask = $process.StandardError.ReadToEndAsync()
-      $process.StandardInput.Write([string]$request.instruction)
-      $process.StandardInput.Close()
+      # through a finite node-local file. Provider streams also terminate in
+      # node-local files, so a persistent code-mode child cannot retain the SSH
+      # response pipe after the bounded Codex parent has exited.
+      $process = Start-Process -FilePath $selected.Path -ArgumentList $arguments -WindowStyle Hidden -PassThru -RedirectStandardInput $promptFile -RedirectStandardOutput $stdoutFile -RedirectStandardError $stderrFile
       $timeoutMilliseconds = [Math]::Max(1000, [Math]::Min(1800000, [int64]$request.timeoutMs))
       if (-not $process.WaitForExit([int]$timeoutMilliseconds)) { $process.Kill(); $process.WaitForExit(); Fail $operation 'codex_node_exec_timeout' }
-      $stdout = $stdoutTask.GetAwaiter().GetResult()
-      [void]$stderrTask.GetAwaiter().GetResult()
+      $stdout = if (Test-Path -LiteralPath $stdoutFile -PathType Leaf) { [IO.File]::ReadAllText($stdoutFile) } else { '' }
+      $standardError = if (Test-Path -LiteralPath $stderrFile -PathType Leaf) { [IO.File]::ReadAllText($stderrFile) } else { '' }
       $stopwatch.Stop()
       $lines = @($stdout -split '[\r\n]+' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
       $events = @()
       foreach ($line in $lines) { try { $event = $line | ConvertFrom-Json; if ($null -ne $event.type) { $events += $event } } catch {} }
-      if (@($events | Where-Object { $_.type -in @('error', 'turn.failed') }).Count -gt 0) { Fail $operation 'codex_node_exec_turn_failed' }
+      if (@($events | Where-Object { $_.type -in @('error', 'turn.failed') }).Count -gt 0) { Fail $operation (Classify-CodexFailure $events $standardError) }
       $completed = @($events | Where-Object { $_.type -eq 'turn.completed' })[-1]
       if ($null -eq $completed) {
         if ($null -ne $process.ExitCode -and $process.ExitCode -ne 0) { Fail $operation 'codex_node_exec_failed' }
