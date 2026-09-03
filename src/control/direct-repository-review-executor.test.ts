@@ -63,6 +63,8 @@ test('production Work Parcel lifecycle assesses pressure, seals a baton, delegat
     const response = await executor.execute(reviewRequest(route));
 
     assert.deepEqual(calls.map(call => call.model), ['source-model', 'cheap-model']);
+    assert.equal(calls[0].prompt.includes('1123456789012345678901234567890123456789'), false);
+    assert.match(calls[0].prompt, /entire authoritative review input/);
     assert.match(calls[1].prompt, /Governed continuation baton/);
     assert.match(calls[1].prompt, /Baton SHA-256: [a-f0-9]{64}/);
     assert.match(calls[1].prompt, /Exact next action: Review frozen context chunk context-2/);
