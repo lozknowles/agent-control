@@ -250,7 +250,7 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
   }
 
   private prompt(request: ReviewExecutionRequest, chunk: ReviewChunk, baton?: VerifiedBaton) {
-    const base = `${request.instruction}\n\nThe following text is the entire authoritative review input. Do not invoke tools or inspect an execution node.\nContext chunk: ${chunk.id}\nFiles: ${chunk.files.join(', ')}\n\n${chunk.content}`;
+    const base = `${request.instruction}\n\n${chunk.content}`;
     if (!baton) return base;
     return `${base}\n\nGoverned continuation baton\nBaton ID: ${baton.id}\nBaton SHA-256: ${baton.sha256}\nObjective: ${baton.objective}\nCompleted work: ${baton.completedWork.join('; ')}\nDecisions: ${baton.decisions.join('; ')}\nExact next action: ${baton.nextAction}\nOrigin: ${routeLabel(baton)} thread ${baton.threadId}\nParcel tokens at handoff: ${baton.parcelTotals.totalTokens ?? 'unavailable'}`;
   }

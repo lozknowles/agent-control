@@ -64,7 +64,7 @@ test('production Work Parcel lifecycle assesses pressure, seals a baton, delegat
 
     assert.deepEqual(calls.map(call => call.model), ['source-model', 'cheap-model']);
     assert.equal(calls[0].prompt.includes('1123456789012345678901234567890123456789'), false);
-    assert.match(calls[0].prompt, /entire authoritative review input/);
+    assert.match(calls[0].prompt, /===== first\.ts =====/);
     assert.match(calls[1].prompt, /Governed continuation baton/);
     assert.match(calls[1].prompt, /Baton SHA-256: [a-f0-9]{64}/);
     assert.match(calls[1].prompt, /Exact next action: Review frozen context chunk context-2/);
@@ -148,7 +148,7 @@ test('production handoff binds the destination account and node and preserves ac
       if (model.id === 'sol-pro' && account.id !== 'lawrence-pro') throw new Error('source_account_isolation_failed');
       const source = model.id === 'sol-pro', usage = {inputTokens: source ? 90 : 100, outputTokens: source ? 10 : 20, cachedInputTokens: 0, totalTokens: source ? 100 : 120, providerReportedCost: source ? .02 : .002, calculatedCost: source ? .0022 : .00014, currency: 'USD'};
       options?.onTelemetry?.({phase: 'completed', providerId: provider.id, modelId: model.id, elapsedMs: 10, usage, context: {tokens: source ? 91 : 20, limitTokens: 100, authority: 'authoritative', source: 'fixture'}});
-      const reviewed = input.includes('Context chunk: context-2') ? 'second.ts' : 'first.ts';
+      const reviewed = input.includes('===== second.ts =====') ? 'second.ts' : 'first.ts';
       return {providerId: provider.id, accountProfileId: account.id, modelId: model.id, nodeId: selectedRoute?.nodeId, providerModel: model.providerModel, output: JSON.stringify({schema: 'agent-control.repository-review/v1', executiveSummary: `Reviewed ${reviewed}.`, findings: [], positiveObservations: [], areasReviewed: [reviewed], areasNotReviewed: [], verdict: 'PASS'}), elapsedMs: 10, usage, responseModel: model.providerModel, finishReason: 'stop', toolCall: null};
     }});
     const executor = new DirectRepositoryReviewExecutor(models, store, routing, {routing, contracts, handoffs}, clients);
@@ -233,7 +233,7 @@ function fakeReviewClients(calls: Array<{model: string; prompt: string}>, failDe
       options?.onTelemetry?.({phase: 'started', providerId: provider.id, modelId: model.id, elapsedMs: 0, context: {tokens: source ? 91 : 20, limitTokens: 100, authority: 'authoritative', source: 'fixture-live-context'}});
       if (!source && failDestination) throw new Error('destination_transport_failed');
       options?.onTelemetry?.({phase: 'completed', providerId: provider.id, modelId: model.id, elapsedMs: source ? 10 : 12, usage, context: {tokens: source ? 91 : 20, limitTokens: 100, authority: 'authoritative', source: 'fixture-live-context'}});
-      const reviewed = input.includes('Context chunk: context-2') ? 'second.ts' : 'first.ts';
+      const reviewed = input.includes('===== second.ts =====') ? 'second.ts' : 'first.ts';
       return {providerId: provider.id, modelId: model.id, providerModel: model.providerModel, output: JSON.stringify({schema: 'agent-control.repository-review/v1', executiveSummary: `Reviewed ${reviewed}.`, findings: [], positiveObservations: [], areasReviewed: [reviewed], areasNotReviewed: [], verdict: 'PASS'}), elapsedMs: source ? 10 : 12, usage, responseModel: model.providerModel, finishReason: 'stop', toolCall: null};
     },
   });
