@@ -79,6 +79,7 @@ test('the audited Windows runner discovers versioned Codex bundles without a har
   assert.match(script, /login status 2>&1/);
   assert.match(script, /UTF8Encoding\(\$false\)/);
   assert.match(script, /--skip-git-repo-check/);
+  assert.match(script, /features\.shell_tool=false/);
   assert.match(script, /--output-last-message/);
   assert.match(script, /ReadAllText\(\$lastMessageFile\)/);
   assert.match(script, /Start-Process -FilePath \$selected\.Path/);
