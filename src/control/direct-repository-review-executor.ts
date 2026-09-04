@@ -482,11 +482,12 @@ function usage(totals: ExecutionTotals) {
 export const REPOSITORY_REVIEW_OUTPUT_SCHEMA: Record<string, unknown> = {
   type: 'object', additionalProperties: false,
   properties: {
-    // Semantic literals and ranges are enforced by isReview below. Keeping the
-    // provider schema structural avoids model-specific enum grammar failures.
-    schema: {type: 'string'}, executiveSummary: {type: 'string'},
-    findings: {type: 'array', items: {type: 'object', additionalProperties: false, properties: {id: {type: 'string'}, severity: {type: 'string'}, title: {type: 'string'}, category: {type: 'string'}, file: {type: ['string', 'null']}, startLine: {type: ['integer', 'null']}, endLine: {type: ['integer', 'null']}, evidence: {type: 'string'}, reasoning: {type: 'string'}, impact: {type: 'string'}, suggestedRemediation: {type: 'string'}, confidence: {type: 'number'}, validation: {type: 'object', additionalProperties: false, properties: {state: {type: 'string'}, reasons: {type: 'array', items: {type: 'string'}}}, required: ['state', 'reasons']}}, required: ['id', 'severity', 'title', 'category', 'file', 'startLine', 'endLine', 'evidence', 'reasoning', 'impact', 'suggestedRemediation', 'confidence', 'validation']}},
-    positiveObservations: {type: 'array', items: {type: 'string'}}, areasReviewed: {type: 'array', items: {type: 'string'}}, areasNotReviewed: {type: 'array', items: {type: 'string'}}, verdict: {type: 'string'},
+    // Keep provider-side structured output and application validation aligned.
+    // A structural-only schema previously allowed values that the application
+    // then rejected without identifying the mismatched field.
+    schema: {type: 'string', enum: ['agent-control.repository-review/v1']}, executiveSummary: {type: 'string', minLength: 1},
+    findings: {type: 'array', items: {type: 'object', additionalProperties: false, properties: {id: {type: 'string', minLength: 1}, severity: {type: 'string', enum: ['critical', 'high', 'medium', 'low', 'info']}, title: {type: 'string', minLength: 1}, category: {type: 'string', enum: ['correctness', 'reliability', 'security', 'maintainability', 'other']}, file: {type: ['string', 'null']}, startLine: {type: ['integer', 'null'], minimum: 1}, endLine: {type: ['integer', 'null'], minimum: 1}, evidence: {type: 'string', minLength: 1}, reasoning: {type: 'string', minLength: 1}, impact: {type: 'string', minLength: 1}, suggestedRemediation: {type: 'string', minLength: 1}, confidence: {type: 'number', minimum: 0, maximum: 1}, validation: {type: 'object', additionalProperties: false, properties: {state: {type: 'string', enum: ['VALID', 'REJECTED', 'UNVERIFIED']}, reasons: {type: 'array', items: {type: 'string'}}}, required: ['state', 'reasons']}}, required: ['id', 'severity', 'title', 'category', 'file', 'startLine', 'endLine', 'evidence', 'reasoning', 'impact', 'suggestedRemediation', 'confidence', 'validation']}},
+    positiveObservations: {type: 'array', items: {type: 'string'}}, areasReviewed: {type: 'array', items: {type: 'string'}}, areasNotReviewed: {type: 'array', items: {type: 'string'}}, verdict: {type: 'string', enum: ['PASS', 'PASS_WITH_FINDINGS', 'REVIEW_REQUIRED', 'FAILED']},
   }, required: ['schema', 'executiveSummary', 'findings', 'positiveObservations', 'areasReviewed', 'areasNotReviewed', 'verdict'],
 };
 
@@ -496,8 +497,9 @@ export function parseRepositoryReviewResponse(output: string): RepositoryReviewR
   let value: unknown;
   try { value = JSON.parse(text); } catch { throw new Error('repository_review_provider_json_invalid'); }
   const normalized = normalizeNullableLocations(value);
-  if (!isReview(normalized)) throw new Error('repository_review_provider_schema_invalid');
-  return normalized;
+  const issues = repositoryReviewSchemaIssues(normalized);
+  if (issues.length) throw new Error(`repository_review_provider_schema_invalid:${issues.slice(0, 8).join(',')}`);
+  return normalized as RepositoryReviewResult;
 }
 function normalizeNullableLocations(value: unknown): unknown {
   if (!record(value) || !Array.isArray(value.findings)) return value;
@@ -508,20 +510,35 @@ function normalizeNullableLocations(value: unknown): unknown {
     return normalized;
   })};
 }
-function isReview(value: unknown): value is RepositoryReviewResult {
-  if (!record(value) || value.schema !== 'agent-control.repository-review/v1' || !nonempty(value.executiveSummary) || !arrayOfStrings(value.positiveObservations) || !arrayOfStrings(value.areasReviewed) || !arrayOfStrings(value.areasNotReviewed) || !['PASS', 'PASS_WITH_FINDINGS', 'REVIEW_REQUIRED', 'FAILED'].includes(String(value.verdict)) || !Array.isArray(value.findings)) return false;
-  return value.findings.every(finding => record(finding)
-    && nonempty(finding.id) && ['critical', 'high', 'medium', 'low', 'info'].includes(String(finding.severity))
-    && nonempty(finding.title) && ['correctness', 'reliability', 'security', 'maintainability', 'other'].includes(String(finding.category)) && nonempty(finding.evidence) && nonempty(finding.reasoning)
-    && nonempty(finding.impact) && nonempty(finding.suggestedRemediation) && typeof finding.confidence === 'number'
-    && Number.isFinite(finding.confidence) && finding.confidence >= 0 && finding.confidence <= 1
-    && (finding.file === undefined || nonempty(finding.file))
-    && (finding.startLine === undefined || positiveInteger(finding.startLine))
-    && (finding.endLine === undefined || positiveInteger(finding.endLine))
-    && (finding.endLine === undefined || finding.startLine !== undefined)
-    && (finding.endLine === undefined || Number(finding.endLine) >= Number(finding.startLine))
-    && record(finding.validation) && ['VALID', 'REJECTED', 'UNVERIFIED'].includes(String(finding.validation.state))
-    && arrayOfStrings(finding.validation.reasons));
+export function repositoryReviewSchemaIssues(value: unknown): string[] {
+  const issues: string[] = [];
+  if (!record(value)) return ['$:object_required'];
+  if (value.schema !== 'agent-control.repository-review/v1') issues.push('$.schema:literal');
+  if (!nonempty(value.executiveSummary)) issues.push('$.executiveSummary:nonempty_string');
+  for (const field of ['positiveObservations', 'areasReviewed', 'areasNotReviewed'] as const) if (!arrayOfStrings(value[field])) issues.push(`$.${field}:string_array`);
+  if (!['PASS', 'PASS_WITH_FINDINGS', 'REVIEW_REQUIRED', 'FAILED'].includes(String(value.verdict))) issues.push('$.verdict:enum');
+  if (!Array.isArray(value.findings)) issues.push('$.findings:array');
+  else value.findings.forEach((finding, index) => {
+    const root = `$.findings[${index}]`;
+    if (!record(finding)) { issues.push(`${root}:object`); return; }
+    if (!nonempty(finding.id)) issues.push(`${root}.id:nonempty_string`);
+    if (!['critical', 'high', 'medium', 'low', 'info'].includes(String(finding.severity))) issues.push(`${root}.severity:enum`);
+    if (!nonempty(finding.title)) issues.push(`${root}.title:nonempty_string`);
+    if (!['correctness', 'reliability', 'security', 'maintainability', 'other'].includes(String(finding.category))) issues.push(`${root}.category:enum`);
+    for (const field of ['evidence', 'reasoning', 'impact', 'suggestedRemediation'] as const) if (!nonempty(finding[field])) issues.push(`${root}.${field}:nonempty_string`);
+    if (typeof finding.confidence !== 'number' || !Number.isFinite(finding.confidence) || finding.confidence < 0 || finding.confidence > 1) issues.push(`${root}.confidence:range_0_1`);
+    if (finding.file !== undefined && !nonempty(finding.file)) issues.push(`${root}.file:nonempty_string_or_null`);
+    if (finding.startLine !== undefined && !positiveInteger(finding.startLine)) issues.push(`${root}.startLine:positive_integer_or_null`);
+    if (finding.endLine !== undefined && !positiveInteger(finding.endLine)) issues.push(`${root}.endLine:positive_integer_or_null`);
+    if (finding.endLine !== undefined && finding.startLine === undefined) issues.push(`${root}.endLine:startLine_required`);
+    if (positiveInteger(finding.endLine) && positiveInteger(finding.startLine) && finding.endLine < finding.startLine) issues.push(`${root}.endLine:not_before_startLine`);
+    if (!record(finding.validation)) issues.push(`${root}.validation:object`);
+    else {
+      if (!['VALID', 'REJECTED', 'UNVERIFIED'].includes(String(finding.validation.state))) issues.push(`${root}.validation.state:enum`);
+      if (!arrayOfStrings(finding.validation.reasons)) issues.push(`${root}.validation.reasons:string_array`);
+    }
+  });
+  return issues;
 }
 function record(value: unknown): value is Record<string, unknown> { return Boolean(value) && typeof value === 'object' && !Array.isArray(value); }
 function nonempty(value: unknown): value is string { return typeof value === 'string' && Boolean(value.trim()); }

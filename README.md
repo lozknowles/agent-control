@@ -1,8 +1,12 @@
-# Agent Control 3.8.1
+# Agent Control 3.8.2 release candidate
 
 Agent Control runs governed parameterised jobs against qualified execution and model resources. It is an infrastructure-neutral, policy-controlled adaptive harness for durable work by heterogeneous agents and models. Its executable harness core composes a task-appropriate worker, provider/model route, prompt profile, minimum qualified skills, restricted tools, context strategy, runtime settings, authority snapshot, resource limits and verification/escalation policy into a fingerprinted execution recipe.
 
 3.8.1 separates workload/repository location, provider execution location, and credential residency. The recommended default keeps credentials on the Agent Control controller or a designated credential/provider-execution node; managed workload nodes need not store provider credentials. Agent Control transfers frozen work/context, never credential stores. Remote credential residency remains supported where policy requires it. See [credential residency](docs/credential-residency.md), [Codex integration](docs/models/CODEX-INTEGRATION.md), and the [3.8.1 migration guide](docs/migration-3.8.1.md).
+
+The post-3.8.1 release candidate adds a human-readable **Execution history** to Saved Job Run detail and Lane Activity. It is a bounded, redacted projection of the existing durable Job Run, Work Parcel, token-governor and baton records—not a new transcript database or authority path. Entries identify operator requests, system transitions, provider activity, tool/action evidence, telemetry, governor recommendations, sealed batons, verification and errors. A baton is not labelled as a completed handoff unless the durable routing outcome says it succeeded. Raw prompts, rejected provider bodies, hidden reasoning and credential material remain excluded. See [execution history](docs/execution-history.md) and [dashboard operation](docs/web-dashboard.md).
+
+This candidate also closes a repository-review schema mismatch found during the 3.8.1 video qualification. The provider-facing structured-output schema now carries the same semantic literals, enums and ranges as application validation, and rejection evidence records safe failing JSON paths without retaining raw output. Validation remains fail closed. See the [qualification report](docs/evidence/agent-control-3.8.2-human-readable-history-qualification.md).
 
 ## Governed retrieval and context intelligence
 

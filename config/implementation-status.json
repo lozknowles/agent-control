@@ -1,8 +1,18 @@
 {
   "schema": "agent-control.implementation-status/v1",
-  "release": "3.8.1",
+  "release": "3.8.2-rc.1",
   "updated": "2026-09-04",
   "capabilities": [
+    {
+      "id": "dashboard.human-readable-execution-history",
+      "title": "Human-readable execution history and schema diagnostics",
+      "status": "QUALIFIED",
+      "summary": "Saved Job Runs and Lanes expose a bounded redacted chronological projection derived from their existing durable Run, Work Parcel, token-governor and baton records. Actor, association, telemetry authority, governor, baton, provider-result, verification and accounting semantics remain explicit without adding a transcript store or mutation path. Repository-review provider and application schemas now express the same semantic constraints and retain safe failing paths while validation remains fail closed.",
+      "sources": ["src/control/execution-history.ts", "src/control/application-service.ts", "src/control/direct-repository-review-executor.ts", "src/control/web-server.ts", "assets/dashboard/dashboard-parameterized-jobs.js", "assets/dashboard/dashboard.js", "assets/dashboard/dashboard-jobs.css"],
+      "tests": ["src/control/execution-history.test.ts", "src/control/direct-repository-review-executor.test.ts", "src/control/web-server.test.ts"],
+      "evidence": ["docs/execution-history.md", "docs/evidence/agent-control-3.8.2-human-readable-history-qualification.md"],
+      "limitation": "The v3.8.1 rejected provider bodies were intentionally ephemeral, so their exact failing field/value cannot be reconstructed; new failures record only safe field paths and constraints. The MSI recording is content-addressed external qualification media rather than a product dependency."
+    },
     {
       "id": "providers.credential-residency",
       "title": "Credential residency and provider execution locality",

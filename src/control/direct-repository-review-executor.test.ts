@@ -64,10 +64,12 @@ test('repository review wire schema satisfies strict structured-output object re
   };
   visit(REPOSITORY_REVIEW_OUTPUT_SCHEMA);
   assert.equal(JSON.stringify(REPOSITORY_REVIEW_OUTPUT_SCHEMA).includes('"const"'),false);
-  assert.equal(JSON.stringify(REPOSITORY_REVIEW_OUTPUT_SCHEMA).includes('"enum"'),false);
+  assert.equal(JSON.stringify(REPOSITORY_REVIEW_OUTPUT_SCHEMA).includes('"enum"'),true);
+  assert.deepEqual((REPOSITORY_REVIEW_OUTPUT_SCHEMA.properties as Record<string,{enum?:string[]}>).verdict.enum,['PASS','PASS_WITH_FINDINGS','REVIEW_REQUIRED','FAILED']);
   const finding={id:'f1',severity:'low',title:'A finding',category:'maintainability',file:null,startLine:null,endLine:null,evidence:'Observed in the bounded source.',reasoning:'The implementation can be clearer.',impact:'Low maintenance cost.',suggestedRemediation:'Clarify the implementation.',confidence:.8,validation:{state:'UNVERIFIED',reasons:[]}};
   const result=parseRepositoryReviewResponse(JSON.stringify({schema:'agent-control.repository-review/v1',executiveSummary:'summary',findings:[finding],positiveObservations:[],areasReviewed:['index.ts'],areasNotReviewed:[],verdict:'PASS_WITH_FINDINGS'}));
   assert.equal(result.findings[0].file,undefined);assert.equal(result.findings[0].startLine,undefined);assert.equal(result.findings[0].endLine,undefined);
+  assert.throws(()=>parseRepositoryReviewResponse(JSON.stringify({...result,findings:[{...finding,file:null,startLine:null,endLine:null,category:'release-integrity'}]})),/\$\.findings\[0\]\.category:enum/);
 });
 
 test('production Work Parcel lifecycle assesses pressure, seals a baton, delegates the next chunk and independently verifies the destination', async () => {

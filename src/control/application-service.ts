@@ -27,6 +27,7 @@ import type {FastExecutionLedgerPort} from './fast-execution.js';
 import {RuntimeObservability} from './runtime-observability.js';
 import type {TokenAwareBatonRuntime, TokenRoutingProjection} from './token-aware-baton-routing.js';
 import type {GovernedRetrievalRuntime, RetrievalProjection} from './governed-retrieval.js';
+import {projectLaneHistory, projectParameterizedRunHistory, type ExecutionHistoryEntry} from './execution-history.js';
 
 export type ControlEventType =
   | 'system.snapshot'
@@ -94,6 +95,7 @@ export interface LaneProjection {
   contextSources: Array<{id: string; type: string; url?: string; localRef?: string; description: string; classification: string; accessibility: string}>;
   lastMeaningfulActivity: string;
   warnings: string[];
+  history: ExecutionHistoryEntry[];
 }
 
 export interface SystemProjection {
@@ -263,8 +265,20 @@ export class AgentControlService {
   updateSavedJob(id: string, revision: number, changes: Partial<Omit<SavedJob, 'schema' | 'id' | 'revision' | 'createdAt'>>, actor: string) { const job = this.mustParameterizedJobs().savedJobs.update(id, revision, changes); this.events.emit('job.saved_changed', {savedJobId: id, action: 'updated', revision: job.revision}, undefined, actor); return job; }
   setSavedJobEnabled(id: string, enabled: boolean, revision: number, actor: string) { const job = this.mustParameterizedJobs().savedJobs.setEnabled(id, enabled, revision); this.events.emit('job.saved_changed', {savedJobId: id, action: enabled ? 'enabled' : 'disabled'}, undefined, actor); return job; }
   runSavedJob(id: string, actor: string) { const run = this.mustParameterizedJobs().runNow(id, actor); this.events.emit('job.run_created', {runId: run.id, savedJobId: id, trigger: 'manual'}, undefined, actor); return run; }
-  parameterizedRuns(savedJobId?: string) { return this.mustParameterizedJobs().runs.list(savedJobId); }
-  parameterizedRun(id: string) { const run = this.mustParameterizedJobs().runs.get(id); if (!run) throw new Error('job_run_missing'); return run; }
+  parameterizedRuns(savedJobId?: string) {
+    const jobs = this.mustParameterizedJobs(), savedJobs = jobs.savedJobs.list();
+    const parcels = this.workParcels?.list() ?? [], tokenEvidence = this.tokenBatonRouting?.evidence();
+    return jobs.runs.list(savedJobId).map(run => ({
+      ...run,
+      executionHistory: projectParameterizedRunHistory({
+        run,
+        savedJob: savedJobs.find(job => job.id === run.savedJobId),
+        parcels,
+        tokenEvidence,
+      }),
+    }));
+  }
+  parameterizedRun(id: string) { const run = this.parameterizedRuns().find(item => item.id === id); if (!run) throw new Error('job_run_missing'); return run; }
   cancelParameterizedRun(id: string, actor: string) { const run = this.mustParameterizedJobs().cancel(id, actor); this.events.emit('job.run_cancelled', {runId: id, savedJobId: run.savedJobId}, undefined, actor); return run; }
   parameterizedSchedules() { return this.savedJobs().filter(job => job.schedule).map(job => ({savedJobId: job.id, name: job.name, schedule: job.schedule, nextRun: job.nextRun, lastRun: job.lastRun})); }
   model(id: string) { const value = this.models().find(model => model.id === id); if (!value) throw new Error('model_missing'); return value; }
@@ -449,6 +463,7 @@ export class AgentControlService {
       contextSources,
       lastMeaningfulActivity: lane.baton.updatedAt,
       warnings: [lane.lease.holder && Date.parse(lane.lease.expiresAt ?? '') <= Date.now() ? 'lease_expired' : '', health.label === 'STALE' ? 'baton_stale' : ''].filter(Boolean),
+      history: projectLaneHistory(lane, route),
     };
   }
 
