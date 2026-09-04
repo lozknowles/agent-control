@@ -1,0 +1,21 @@
+{
+  "qualifiedRunIds": [
+    "89ae35db-dafb-4c4f-bf69-9f85f0936be1",
+    "dcea4ea9-3248-4c10-8f84-c126c87b273f",
+    "f958a778-d7af-46ed-9ccc-dba583bc6c45"
+  ],
+  "runTotals": {
+    "inputTokens": 115738,
+    "outputTokens": 6849,
+    "totalTokens": 122587,
+    "cost": 0.258872
+  },
+  "parcelTotals": {
+    "inputTokens": 115738,
+    "outputTokens": 6849,
+    "totalTokens": 122587,
+    "cost": 0.258872
+  },
+  "decisionCount": 6,
+  "handoffStates": 3
+}
