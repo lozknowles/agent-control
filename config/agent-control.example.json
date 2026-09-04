@@ -187,7 +187,7 @@
     }
   ],
   "models": [
-    {"id":"spark-fast-execution","provider":"codex-chatgpt","accountProfile":"lawrence-pro","providerModel":"gpt-5.3-codex-spark","displayName":"GPT-5.3-Codex-Spark","enabled":true,"capabilities":["trivial.coding"],"roles":["fast-execution"],"nodes":["windows-codex-1"],"qualification":{"state":"UNTESTED","version":"configured-v1","evidence":[]}},
+    {"id":"spark-fast-execution","provider":"codex-chatgpt","accountProfile":"lawrence-pro","providerModel":"gpt-5.3-codex-spark","displayName":"GPT-5.3-Codex-Spark","enabled":true,"capabilities":["trivial.coding"],"roles":["fast-execution"],"nodes":["controller"],"qualification":{"state":"UNTESTED","version":"configured-v1","evidence":[]}},
     {"id":"openai-default","provider":"openai-api","providerModel":"configured-openai-default","displayName":"OpenAI default","enabled":true,"capabilities":["coding","reasoning","tool-use","repository-review"],"nodes":["controller"],"qualification":{"state":"UNTESTED","version":"migration-v1","evidence":[]}},
     {"id":"glm-5.3-flash","provider":"openrouter","providerModel":"z-ai/glm-5.3-flash","displayName":"GLM-5.3-Flash","enabled":true,"capabilities":["reasoning","coding","tool-use","repository-review"],"roles":["external-fast","coding.fast"],"nodes":["controller"],"qualification":{"state":"UNTESTED","version":"configured-v1","evidence":[]}},
     {"id":"glm-5.3","provider":"openrouter","providerModel":"z-ai/glm-5.3","displayName":"GLM-5.3","enabled":true,"capabilities":["reasoning","coding","tool-use","long-context","repository-review"],"roles":["external-deep","coding.deep","reasoning.deep"],"nodes":["controller"],"qualification":{"state":"UNTESTED","version":"configured-v1","evidence":[]}},

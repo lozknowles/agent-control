@@ -119,6 +119,8 @@ export interface ParameterizedJobRun {
   errors: string[];
   fallbackHistory: Array<{at: string; reason: string; selectedModel: string}>;
   retryHistory: Array<{at: string; attempt: number; reason: string}>;
+  /** Durable, monotonically increasing provider-execution identity across retries and controller restarts. */
+  executionSequence?: number;
   immutable: boolean;
 }
 

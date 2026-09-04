@@ -6,7 +6,7 @@ import {execFileSync} from 'node:child_process';
 import test from 'node:test';
 import {validateConfig} from './config.js';
 import {ModelRegistry} from './model-registry.js';
-import {accountCredentialResidency, accountProviderExecutionNode} from './provider-account-profile.js';
+import {accountCredentialResidency, accountProviderExecutionNode, resolveCodexAccountEnvironment} from './provider-account-profile.js';
 import {ResourceRepositoryResolver} from './resource-repository-resolver.js';
 import {buildRepositoryContext, LocalRepositoryResolver} from './repository-review-runtime.js';
 import type {SshExecutor} from './managed-node-ssh.js';
@@ -22,6 +22,18 @@ test('explicit credential residency separates workload, provider execution and c
   assert.deepEqual({workload: route.workloadNodeId, execution: route.providerExecutionNodeId, credential: route.credentialNodeId, legacy: route.nodeId}, {workload: 'msi', execution: 'controller-node', credential: 'controller-node', legacy: 'controller-node'});
   assert.equal(registry.accountProfilesList()[0].credentialNodeId, 'controller-node');
   assert.equal(JSON.stringify(route).includes(temporary), false);
+});
+
+test('account-bound Codex execution strips ambient API billing credentials', () => {
+  const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'ac-account-env-'));
+  try {
+    const account = {id: 'account-a', label: 'Account A', providerExecutionNodeId: 'controller', credentialResidency: {nodeId: 'controller', store: {type: 'codex-home-env' as const, env: 'CODEX_HOME_ACCOUNT_A'}}};
+    const resolved = resolveCodexAccountEnvironment(account, {CODEX_HOME_ACCOUNT_A: temporary, OPENAI_API_KEY: 'forbidden-openai', CODEX_API_KEY: 'forbidden-codex', SAFE_SETTING: 'retained'}, 'controller');
+    assert.equal(resolved.environment.CODEX_HOME, temporary);
+    assert.equal(resolved.environment.SAFE_SETTING, 'retained');
+    assert.equal(resolved.environment.OPENAI_API_KEY, undefined);
+    assert.equal(resolved.environment.CODEX_API_KEY, undefined);
+  } finally { fs.rmSync(temporary, {recursive: true, force: true}); }
 });
 
 test('account-less provider execution uses qualified model placement instead of the workload node', () => {

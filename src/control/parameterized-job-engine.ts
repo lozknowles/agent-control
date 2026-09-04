@@ -93,9 +93,11 @@ export class ParameterizedJobEngine {
       let response;
       for (let attempt = 0; ; attempt++) {
         try {
+          run.executionSequence = (run.executionSequence ?? 0) + 1;
+          this.runs.update(run);
           const executionRun = structuredClone(run);
           executionRun.definition = {...executionRun.definition, budgets: structuredClone(budgets)};
-          response = await this.executor.execute({run: executionRun, executionAttempt: attempt + 1, route, instruction: run.definition.template.instruction, contextChunks: context.chunks, maximumOutputTokens: budgets.maximumOutputTokens, maximumCost: budgets.maxCost, signal: controller.signal});
+          response = await this.executor.execute({run: executionRun, executionAttempt: run.executionSequence, route, instruction: run.definition.template.instruction, contextChunks: context.chunks, maximumOutputTokens: budgets.maximumOutputTokens, maximumCost: budgets.maxCost, signal: controller.signal});
           break;
         } catch (error) {
           const partial = error as Error & {workParcelIds?: string[]; evidence?: string[]; providerResponseIds?: string[]; usage?: ParameterizedJobRun['usage']}, parcelIds = partial.workParcelIds ?? [];
@@ -109,10 +111,11 @@ export class ParameterizedJobEngine {
       }
       if (!response.workParcelIds.length) throw new ParameterizedJobError('repository_review_work_parcel_missing');
       run.workParcelIds = [...new Set([...run.workParcelIds, ...response.workParcelIds])]; run.evidence = response.evidence; run.providerResponseIds = response.providerResponseIds; run.usage = response.usage; this.runs.update(run);
-      if (budgets.maxCost !== undefined && response.usage.cost !== undefined && response.usage.cost > budgets.maxCost) throw new ParameterizedJobError('job_cost_budget_exceeded');
+      if (budgets.maxCost !== undefined && response.usage.cost === undefined) throw new ParameterizedJobError('job_cost_budget_unenforceable');
+      if (budgets.maxCost !== undefined && response.usage.cost! > budgets.maxCost) throw new ParameterizedJobError('job_cost_budget_exceeded');
       run = this.transition(run, 'VALIDATING'); this.runs.update(run); run.result = validateRepositoryReview(response.result, repository);
       run.status = run.result.verdict === 'PASS' ? 'SUCCEEDED' : run.result.verdict === 'PASS_WITH_FINDINGS' ? 'SUCCEEDED_WITH_FINDINGS' : run.result.verdict === 'REVIEW_REQUIRED' ? 'DEGRADED' : 'FAILED';
-      this.executor.recordVerification?.(run.workParcelIds, run.result.verdict);
+      this.executor.recordVerification?.(response.workParcelIds, run.result.verdict);
       run.completedAt = this.clock().toISOString(); run.transitions.push({status: run.status, at: run.completedAt, detail: run.result.verdict}); run.immutable = true;
       this.runs.update(run);
       if (['SUCCEEDED', 'SUCCEEDED_WITH_FINDINGS'].includes(run.status) && saved) this.baselines.advance(saved.id, repository, run.id, run.completedAt);

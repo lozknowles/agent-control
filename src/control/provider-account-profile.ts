@@ -41,5 +41,8 @@ export function resolveCodexAccountEnvironment(profile: ProviderAccountProfileCo
   let stat: fs.Stats;
   try { stat = fs.statSync(codexHome); } catch { throw new Error('account_profile_codex_home_unavailable'); }
   if (!stat.isDirectory()) throw new Error('account_profile_codex_home_unavailable');
-  return {profile: structuredClone(profile), environment: {...environment, CODEX_HOME: codexHome}};
+  const isolatedEnvironment: NodeJS.ProcessEnv = {...environment, CODEX_HOME: codexHome};
+  delete isolatedEnvironment.OPENAI_API_KEY;
+  delete isolatedEnvironment.CODEX_API_KEY;
+  return {profile: structuredClone(profile), environment: isolatedEnvironment};
 }

@@ -139,12 +139,12 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
   }
 
   recordVerification(workParcelIds: string[], verdict: RepositoryReviewResult['verdict']) {
-    const at = new Date().toISOString();
+    const at = new Date().toISOString(), accepted = verdict === 'PASS' || verdict === 'PASS_WITH_FINDINGS';
     for (const id of workParcelIds) {
       const parcel = this.parcels.get(id);
       if (!parcel || parcel.executionOwner !== 'direct-repository-review-executor') continue;
       for (const invocation of parcel.audit.invocations) invocation.verifierResult = verdict;
-      parcel.audit.timeline.push({id: `audit-${randomUUID()}`, at, type: 'verification.completed', stageId: 'review', summary: `Independent repository validation: ${verdict}`, detail: 'Parameterized Job validation accepted the consolidated repository-review result'});
+      parcel.audit.timeline.push({id: `audit-${randomUUID()}`, at, type: 'verification.completed', stageId: 'review', summary: `Independent repository validation: ${verdict}`, detail: `Parameterized Job validation ${accepted ? 'accepted' : 'rejected'} the consolidated repository-review result`});
       parcel.provenance.push({at, type: 'verification.completed', detail: verdict});
       this.parcels.update(parcel);
       this.verifyGovernedContract(parcel, verdict, at);
@@ -380,7 +380,8 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
         const evidence = parcel.audit.invocations.map(invocation => ({id: invocation.id, kind: 'provider-response', reference: invocation.id, createdAt: at}));
         this.lifecycle.contracts.submitForVerification(contract.id, contract.active.actorId, evidence);
       }
-      if (this.lifecycle.contracts.get(contract.id).verification.state === 'PENDING') this.lifecycle.contracts.verify(contract.id, `parameterized-job-validator:${parcel.id}`, true, [`Repository validation accepted verdict ${verdict}`]);
+      const accepted = verdict === 'PASS' || verdict === 'PASS_WITH_FINDINGS';
+      if (this.lifecycle.contracts.get(contract.id).verification.state === 'PENDING') this.lifecycle.contracts.verify(contract.id, `parameterized-job-validator:${parcel.id}`, accepted, [`Repository validation ${accepted ? 'accepted' : 'rejected'} verdict ${verdict}`]);
     } catch (error) {
       parcel.audit.timeline.push({id: `audit-${randomUUID()}`, at, type: 'stage.failed', stageId: 'review', summary: 'Governed contract verification record failed', detail: message(error)});
       this.parcels.update(parcel);
@@ -410,7 +411,9 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
   }
 
   private requireWithinBudget(request: ReviewExecutionRequest, totals: ExecutionTotals) {
-    if (request.maximumCost !== undefined && effectiveCost(totals.completeProviderCost, totals.providerReportedCost, totals.completeCalculatedCost, totals.calculatedCost) > request.maximumCost) throw new Error('job_cost_budget_exceeded');
+    if (request.maximumCost === undefined) return;
+    if (!totals.completeProviderCost && !totals.completeCalculatedCost) throw new Error('job_cost_budget_unenforceable');
+    if (effectiveCost(totals.completeProviderCost, totals.providerReportedCost, totals.completeCalculatedCost, totals.calculatedCost) > request.maximumCost) throw new Error('job_cost_budget_exceeded');
   }
 
   private createParcel(request: ReviewExecutionRequest, chunkId: string) {

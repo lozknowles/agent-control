@@ -10,6 +10,10 @@ test('missing configuration is a safe empty control plane', () => {
   assert.deepEqual(loadConfig(file), emptyConfig());
 });
 
+test('canonical example configuration validates as shipped', () => {
+  assert.doesNotThrow(() => validateConfig(loadConfig(path.resolve('config/agent-control.example.json'))));
+});
+
 test('arbitrary names, ports and Android models are configuration not identity', () => {
   const config = validateConfig({
     schemaVersion: 1,

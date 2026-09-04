@@ -30,7 +30,8 @@ test('production engine retry preserves one logical Run while opening an immutab
   const definitions=new ParameterizedJobRegistry();definitions.register(repositoryCodeReviewDefinition);const saved=new SavedJobStore(path.join(root,'saved.json'),definitions),runs=new ParameterizedRunStore(path.join(root,'runs.json')),baselines=new ReviewBaselineStore(path.join(root,'baselines.json')),engine=new ParameterizedJobEngine(definitions,saved,runs,baselines,models,executor,{allowedRepositoryRoots:[root],snapshotsRoot:path.join(root,'snapshots'),nodeHealthy:()=>true});
   saved.create({id:'retry-review',name:'Retry review',definition:{id:'repository-code-review',version:1,follow:'pinned'},parameters:{node:'controller',repository,ref:'main',scope:'full'},routing:{model:'source-model',allowFallback:false},contextProfile:'STANDARD',budgets:{maximumRetries:1},concurrency:'forbid-overlap',enabled:true});
   const completed=await engine.execute(engine.runNow('retry-review','test').id),threads=routing.projection().threads;
-  assert.equal(completed.status,'SUCCEEDED');assert.equal(completed.retryHistory[0].reason,'controlled_provider_retry');assert.equal(invocation,2);assert.equal(completed.workParcelIds.length,2);
+  assert.equal(completed.status,'SUCCEEDED');assert.equal(completed.retryHistory[0].reason,'controlled_provider_retry');assert.equal(invocation,2);assert.equal(completed.workParcelIds.length,2);assert.equal(completed.executionSequence,2);
+  const attemptParcels=completed.workParcelIds.map(id=>parcels.get(id)!);assert.equal(attemptParcels.find(parcel=>parcel.status==='FAILED')?.audit.invocations[0]?.verifierResult,undefined);assert.equal(attemptParcels.find(parcel=>parcel.status==='SUCCEEDED')?.audit.invocations[0]?.verifierResult,'PASS');
   assert.deepEqual(threads.map(thread=>thread.id).sort(),[`review:${completed.id}:attempt-1:${completed.context!.chunks[0].id}`,`review:${completed.id}:attempt-2:${completed.context!.chunks[0].id}`].sort());
   assert.notEqual(threads[0].parcelId,threads[1].parcelId);assert.ok(threads.every(thread=>thread.recoverable));
 });
@@ -107,12 +108,12 @@ test('production Work Parcel lifecycle assesses pressure, seals a baton, delegat
     assert.equal(routing.parcel(parcel.id).totalTokens, 220);
     assert.equal(handoffs.list()[0].status, 'COMPLETED');
 
-    executor.recordVerification(response.workParcelIds, response.result.verdict);
+    executor.recordVerification(response.workParcelIds, 'FAILED');
     const destination = contracts.list().find(contract => contract.parentContractId);
     assert.equal(destination?.active.modelId, 'cheap-model');
-    assert.equal(destination?.verification.state, 'PASSED');
-    assert.equal(destination?.state, 'VERIFIED');
-    assert.equal(store.get(parcel.id)?.audit.invocations.every(item => item.verifierResult === response.result.verdict), true);
+    assert.equal(destination?.verification.state, 'FAILED');
+    assert.equal(destination?.state, 'FAILED');
+    assert.equal(store.get(parcel.id)?.audit.invocations.every(item => item.verifierResult === 'FAILED'), true);
   } finally { fs.rmSync(root, {recursive: true, force: true}); }
 });
 
