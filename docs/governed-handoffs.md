@@ -41,6 +41,8 @@ Each durable handoff records:
 - evidence IDs and verification outcome;
 - approval reasons, approver, timestamps and any bounded failure.
 
+A governor recommendation, baton-preparation state or sealed-baton record is not an executed handoff. Dispatch and destination continuation must be represented by the governed handoff and destination execution records; only their successful durable outcome supports a completed-handoff claim. Approval-pending and failed outcomes remain visibly incomplete.
+
 Credential-like material is rejected before persistence. The complete request is retained for deterministic recovery, but no secret references are resolved into values.
 
 ## Recovery

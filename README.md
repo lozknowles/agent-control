@@ -8,6 +8,20 @@ Agent Control runs governed parameterised jobs against qualified execution and m
 
 This release also closes a repository-review schema mismatch found during the 3.8.1 video qualification. The provider-facing structured-output schema now carries the same semantic literals, enums and ranges as application validation, and rejection evidence records safe failing JSON paths without retaining raw output. Validation remains fail closed. See the [qualification report](docs/evidence/agent-control-3.8.2-human-readable-history-qualification.md).
 
+## Operating model
+
+Agent Control is provider-, model-, platform- and execution-environment-agnostic. Core policy addresses qualified capabilities and governed routes; Codex, OpenAI-compatible APIs, local models, Linux, Windows, Android and browser-backed integrations are optional adapters or execution resources rather than architectural dependencies.
+
+- A **Job Definition** is a reusable typed workflow; a **Saved Job** supplies operator configuration and schedule policy.
+- A **Run** is one immutable execution occurrence. It records the frozen target, exact route, lifecycle, evidence, result and accounting.
+- A **Work Parcel** is the attributable governed unit of work created within a Run. Provider invocations, verification and token/cost totals remain attached to it across retries or handoffs.
+- A **Lane** is an operator-visible ownership and coordination boundary with durable objective, baton, lease, route and verification state.
+- **Routing** selects a qualified provider/account/model/execution-node identity after capability and policy checks; it does not silently substitute unavailable routes.
+- The **token governor** keeps current context occupancy separate from cumulative usage, records provenance, and selects `CONTINUE`, `COMPACT_AND_CONTINUE` or a governed `BATON_AND_HANDOFF` decision without treating context pressure alone as proof of a transfer.
+- **Accounting** remains additive at thread, invocation, model/account and Work Parcel levels, allowing cost per verified outcome to survive compaction, retry and route changes.
+
+The dashboard is an observer and authenticated operator client over the same control service. Run and Lane **Execution history** correlates durable operator/system/provider/tool/governor/baton/error activity with telemetry, accounting and verification. It is not raw provider traffic, unredacted logs or hidden model reasoning.
+
 ## Governed retrieval and context intelligence
 
 3.8 adds an opt-in provider-neutral path: `Work Parcel → Retrieval Intent → Retrieval Governor → Retrieval Provider → Evidence Packet → ContextGraph/ContextPacketBuilder → Model → Verification/Baton`. It starts with bounded local exact/BM25 evidence, can use optional semantic/hybrid adapters such as zg, reacts to the 3.7 token governor's context pressure, streams redacted retrieval lifecycle metrics over the existing SSE dashboard, and revalidates content-addressed evidence references after baton handoff or restart. Search authority never grants index mutation, remote retrieval is denied by default, stale evidence is explicit, and insufficient or failed retrieval retains the immutable frozen context.
@@ -73,7 +87,7 @@ The existing Sessions, Systems and Models dashboard views now read one redacted 
 
 ## Token-Aware Baton Routing
 
-3.7 introduces durable live token/context telemetry and a policy-driven baton governor. Each running thread reports provider/account profile/model, cumulative input/output/total tokens, current context/window/percentage where exposed, authority (`authoritative`, `estimated`, or `unavailable`), cost, elapsed time, governor state, and next threshold. The dashboard receives updates through its existing SSE stream without a page refresh and retains Work Parcel totals through handoffs: `OpenAI/Lawrence Pro/Sol 184k → OpenAI/Cottage Plus/Luna 31k → GLM/default/GLM-5.3-Flash 18k = 233k total`.
+3.7 introduces durable live token/context telemetry and a policy-driven baton governor. Each running thread reports provider/account profile/model, cumulative input/output/total tokens, current context/window/percentage where exposed, authority (`authoritative`, `estimated`, or `unavailable`), cost, elapsed time, governor state, and next threshold. The dashboard receives updates through its existing SSE stream without a page refresh and retains Work Parcel totals through handoffs: `Provider/Primary/Sol 184k → Provider/Secondary/Luna 31k → Local/default/Fast 18k = 233k total`.
 
 Default policy records `CONTINUE` at 60%, `PREPARE_BATON` at 75%, `COMPACT` at 85%, and handoff evaluation at 90%. Context pressure is not a downgrade command: unfinished difficult reasoning stays on the stronger model. A handoff requires a sealed verified baton, bounded/mechanical remaining work, compatible qualified target, policy permission, and a lower-cost target where price information exists. Compaction, native context changes and resume boundaries are durable events and never reset Work Parcel totals. The normal parameterized repository-review lifecycle now evaluates this policy between immutable context chunks, delegates the next bounded chunk through the existing contract/handoff runtime, and returns the consolidated result to the existing independent validator. A failed destination is marked failed and the preserved source route resumes the same chunk. See [Token-Aware Baton Routing](docs/token-aware-baton-routing.md) and the [Codex 0.153 review](docs/evidence/agent-control-3.7-codex-0.153-review.md).
 

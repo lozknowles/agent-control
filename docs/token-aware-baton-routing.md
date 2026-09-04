@@ -36,13 +36,27 @@ The default policy is deliberately configurable:
 
 High context pressure does not itself downgrade a model. `BATON_AND_HANDOFF` requires completed difficult reasoning, bounded or mechanical remaining work, a sealed baton, a qualified capability-compatible route, and a cheaper candidate where cost is known. Otherwise the decision remains `CONTINUE` or `COMPACT_AND_CONTINUE`, with a durable reason.
 
+The pressure state and routing action are different records:
+
+| Evidence | Implemented meaning |
+| --- | --- |
+| `CONTINUE` pressure with `CONTINUE` action | Keep the current context and route. |
+| `PREPARE_BATON` pressure | Prepare/checkpoint the information a future baton would require; no baton or transfer is implied. |
+| `COMPACT` pressure with `COMPACT_AND_CONTINUE` action | Record/perform the available compaction strategy and retain the current route. |
+| `HANDOFF` pressure | Evaluate whether a handoff should occur; this is only a recommendation state. |
+| `BATON_AND_HANDOFF` with `RECORDED` outcome | A governed handoff request and baton reference exist; destination execution is not yet proven. |
+| `BATON_AND_HANDOFF` with `SUCCEEDED` outcome | The governed destination path completed and is eligible to be displayed as a completed handoff. |
+| failed handoff outcome | The transfer is not marked complete and the preserved source route remains recoverable. |
+
+Baton sealing, governed dispatch, destination invocation and successful handoff outcome are separately evidenced steps. Agent Control does not synthesize a baton transfer from a threshold crossing.
+
 ## Verified baton and recovery
 
 Before a handoff, Agent Control seals a durable baton containing the objective, completed work, decisions, changed files, Git SHA and dirty/diff state, tests/evidence, unresolved issues, exact next action, originating provider/account/model/node/thread, token state, and parcel totals. The baton has a SHA-256 digest.
 
 In 3.8, the same provider-neutral baton may include content-addressed Evidence Packet references. A receiving model rehydrates only evidence that still matches repository identity, relative-path boundary, source existence and whole-file content hash, instead of receiving repeated raw context. Failure preserves the original thread and invokes controlled context fallback. An adapter-private index, provider session or native context handle is never the only continuation representation.
 
-The existing governed handoff runtime owns actual process replacement and authority transfer. A successful handoff leaves the original thread recoverable. A failed or approval-pending handoff records the result and resumes the original thread; no provider/model changes silently.
+The existing governed handoff runtime owns actual process replacement and authority transfer. Baton creation precedes this runtime and is not itself dispatch. A successful handoff requires the durable governed outcome and destination continuation evidence while leaving the original thread recoverable. A failed or approval-pending handoff records the result and resumes the original thread; no provider/model changes silently.
 
 ## Production Work Parcel lifecycle
 
@@ -62,7 +76,7 @@ An engine-level retry keeps the same logical Run identity and frozen repository,
 
 The dashboard consumes the existing SSE endpoint. `token.telemetry`, `token.governor_transition`, `token.context_lifecycle`, `token.baton_created`, and `token.handoff_result` refresh the live thread panel without a page reload. While a thread is active, its elapsed runtime advances locally from the durable start time between events; completed threads retain the final provider-reported elapsed time. The panel displays provider/account/model, distinct workload/provider-execution/credential nodes, safe account label and reliably attributed plan, qualification/availability, next selected route, context (`Context: 182k / 272k — 67%`), latest context transition, token totals, authority, cost, governor state/current/next thresholds, and Work Parcel chain totals.
 
-Parcel accounting is additive across threads, accounts and models. For example, `OpenAI/Lawrence Pro/Sol 184k → OpenAI/Cottage Plus/Luna 31k → GLM/default/GLM-5.3-Flash 18k = 233k total` remains visible after each handoff. The same sampled values, transitions, decisions, account boundaries, baton IDs, and hashes persist in durable evidence and can be reconciled with the final Work Parcel cost-per-verified-outcome ledger.
+Parcel accounting is additive across threads, accounts and models. For example, `Provider/Primary/Sol 184k → Provider/Secondary/Luna 31k → Local/default/Fast 18k = 233k total` remains visible after each handoff. The same sampled values, transitions, decisions, account boundaries, baton IDs, and hashes persist in durable evidence and can be reconciled with the final Work Parcel cost-per-verified-outcome ledger.
 
 ## Account-aware routing policy
 

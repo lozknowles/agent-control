@@ -18,11 +18,11 @@ The provider/application schema correction, strict validation, safe diagnostics,
 
 The physical production-path Run `a0d646b0-77ae-41b3-85ed-a02a86f4880e` and Work Parcel `parcel-bccb41f1-c1b1-4ff2-8f1d-b3d8c61c2c07` passed both schema boundaries and independent verification. Its 13,092 input plus 194 output tokens reconciled to 13,286 total at calculated USD 0.026960. The 21-entry history remained associated with that Run and Parcel.
 
-Two MSI Chrome recordings are content-addressed by the RC evidence report. They show candidate identity and the successful/historical execution-history views. No actual 3.8.2 baton transfer was physically exercised or claimed.
+Two browser recordings are content-addressed by the RC evidence report. They show candidate identity and the successful/historical execution-history views. No actual 3.8.2 baton transfer was physically exercised or claimed.
 
 ## Architecture and security boundary
 
-Execution history derives from provider-neutral durable records and does not couple core behavior to Codex, ChatGPT, OpenAI, Controller Account A, Windows, MSI, hpubuntu or Chrome. Those names describe qualification environments or provider adapters only. Raw prompts, rejected responses, hidden reasoning, credentials, account emails and resolved credential paths remain excluded.
+Execution history derives from provider-neutral durable records and does not couple core behavior to any provider, model, account, operating system, host, controller or browser. Qualification environments and provider adapters do not become core dependencies. Raw prompts, rejected responses, hidden reasoning, credentials, account emails and resolved credential paths remain excluded.
 
 ## Final gate contract
 
