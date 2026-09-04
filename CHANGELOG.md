@@ -1,6 +1,6 @@
 # Changelog
 
-## [3.8.2] — Unreleased
+## [3.8.2] — 2026-09-04
 
 - Adds a bounded, human-readable Execution history to Saved Job Run detail and Lane Activity. The view derives from existing durable Job Run, Work Parcel, token-governor, baton and verification records and does not create a second transcript store or control path.
 - Distinguishes operator, system, provider, tool/action, governor, baton and error entries; correlates each entry to its Job Run, Work Parcel or Lane; and presents current-context authority separately from cumulative token/cost accounting.

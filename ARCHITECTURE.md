@@ -1,6 +1,6 @@
 # Agent Control architecture
 
-This is the authoritative source boundary for the Agent Control 3.8.2 release candidate. Status labels matter:
+This is the authoritative source boundary for Agent Control 3.8.2. Status labels matter:
 
 - **implemented** means executable code and automated tests exist in this branch;
 - **experimental** means executable code exists but has not been qualified across every external substrate;
@@ -541,7 +541,7 @@ The sealed baton is written before the existing governed handoff runtime changes
 
 The production parameterized repository-review path now supplies the concrete integration boundary. After one immutable context chunk returns a schema-valid result, `DirectRepositoryReviewExecutor` assesses the live source thread if another bounded chunk remains. An approved route creates the sealed token baton and uses `GovernedHandoffRuntime` `DELEGATE` to create a capability-bounded child `ContractExecution`. The child invokes the exact registry-resolved destination over the next frozen chunk. Destination failure marks that child failed and invokes the same chunk on the still-active source route; success makes the child the verification owner. Existing `ParameterizedJobEngine` repository validation independently verifies the consolidated result and records its pass/fail meaning only on the successful attempt's Work Parcels and surviving contract. A durable monotonically increasing execution sequence prevents token-thread identity reuse after process restart. Source, destination and recovery usage remains additive in the same parcel; configured monetary ceilings fail closed if neither provider reporting nor configured pricing can measure cost. See [Token-Aware Baton Routing](docs/token-aware-baton-routing.md).
 
-## Human-readable execution history (3.8.2 candidate)
+## Human-readable execution history (3.8.2)
 
 `Durable Job Run + Work Parcel audit + token/governor evidence + sealed baton state → bounded redacted projection → AgentControlService → existing HTTP/SSE dashboard`
 
