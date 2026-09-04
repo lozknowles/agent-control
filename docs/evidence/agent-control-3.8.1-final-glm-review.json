@@ -1,0 +1,85 @@
+{
+  "schema": "agent-control.3.8.1-glm-post-fix-review/v1",
+  "runId": "run-1c151e3a-19ad-41e5-8f58-3075eb1460c1",
+  "status": "SUCCEEDED",
+  "steps": [
+    {
+      "id": "independent-review",
+      "status": "SUCCEEDED",
+      "verification": {
+        "required": [],
+        "passed": [],
+        "failed": []
+      }
+    },
+    {
+      "id": "independent-verification",
+      "status": "SUCCEEDED",
+      "verification": {
+        "required": [
+          "provider-completed",
+          "review-content-complete"
+        ],
+        "passed": [
+          "provider-completed",
+          "review-content-complete"
+        ],
+        "failed": []
+      }
+    }
+  ],
+  "provider": "openrouter",
+  "model": "z-ai/glm-5.3-flash",
+  "reviewedCommit": "967181fd547f43a50cb26da566c6118ef7824364",
+  "contextSha256": "b21aad861d7507d94c48e96118173fc7521cfb637ed35ca66251b9ab5a901b51",
+  "expectedContextSha256": "b21aad861d7507d94c48e96118173fc7521cfb637ed35ca66251b9ab5a901b51",
+  "providerStatus": "completed",
+  "providerResponseId": "gen-1788516282-J0iAWsLfUyuaFEJOpJsY",
+  "rawResponseSha256": "d77a60520870218eeb3f51d6a52354c5d03e0b9edf60f766cd87640bc6f4e66f",
+  "usage": {
+    "input_tokens": 847422,
+    "input_tokens_details": {
+      "cached_tokens": 0
+    },
+    "output_tokens": 28628,
+    "output_tokens_details": {
+      "reasoning_tokens": 23130
+    },
+    "total_tokens": 876050,
+    "cost": 0.07071365,
+    "cost_details": {
+      "upstream_inference_cost": 0.07071365,
+      "upstream_inference_input_cost": 0.06355665,
+      "upstream_inference_output_cost": 0.007157
+    }
+  },
+  "reviewArtifact": {
+    "id": "artifact-77c5a51c-abc7-4dc8-a56f-9d7b6ee9b3f4",
+    "sha256": "03a9d900312a928b7a6779f2a94dd9c029561c0a3528282b92fe99cb597fd5b3",
+    "size": 29862
+  },
+  "invocations": [
+    {
+      "id": "inv-3efbb657-0c3d-4f53-a2a2-574bdb12d6f5",
+      "state": "COMPLETE",
+      "provider": "openrouter",
+      "model": "z-ai/glm-5.3-flash",
+      "startedAt": "2026-09-04T10:04:40.468Z",
+      "completedAt": "2026-09-04T10:18:29.860Z",
+      "usage": {
+        "inputTokens": 847422,
+        "freshInputTokens": 847422,
+        "cachedInputTokens": 0,
+        "cacheWriteTokens": null,
+        "outputTokens": 28628,
+        "reasoningTokens": 23130,
+        "totalProcessedTokens": 876050
+      },
+      "providerReportedCost": 0.07071365,
+      "calculatedCost": null,
+      "verifierResult": "PASS",
+      "finalJobResult": "SUCCEEDED"
+    }
+  ],
+  "credentialValuePersisted": false
+}

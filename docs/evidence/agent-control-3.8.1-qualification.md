@@ -145,3 +145,27 @@ The ignored-file and `.git` mutation-surface observation remains a bounded defer
 The release-relevant Medium findings were corrected without broadening the 3.8.1 architecture. Provider execution now increments a durable Run `executionSequence` before each invocation, so restart recovery cannot reuse a prior attempt's token-thread identity. Independent validation updates only the successful attempt's parcels and derives contract acceptance from `PASS`/`PASS_WITH_FINDINGS`; rejected verdicts fail the contract. A configured `maxCost` now fails closed when both provider-reported and calculated cost are unavailable. The canonical example configuration is validated by a regression and its account-bound Spark model now matches the controller execution node. Account-bound Codex child environments remove ambient `OPENAI_API_KEY` and `CODEX_API_KEY`, and foundational workspace, event, checkpoint and telemetry files are created/chmodded mode 0600.
 
 Focused validation passed 56/56, with an additional 9/9 direct lifecycle check and 3/3 state-permission check. The complete post-remediation `npm run check` passed TypeScript, bootstrap/dashboard syntax, all neutrality checks, all 32 implementation-status claims, and 711/711 deterministic tests. A final immutable governed review of this remediated candidate remains the last independent-review gate; no release is claimed by this checkpoint.
+
+## Final governed review and release-candidate evidence checkpoint
+
+The final governed review froze implementation commit `967181fd547f43a50cb26da566c6118ef7824364` with a clean tree and 606 tracked files. The 3,497,742-byte complete context had SHA-256 `b21aad861d7507d94c48e96118173fc7521cfb637ed35ca66251b9ab5a901b51`; 470 text files were supplied verbatim and 136 generated/binary/raw files were represented by path, size, and SHA-256.
+
+- Run: `run-1c151e3a-19ad-41e5-8f58-3075eb1460c1`
+- Provider/model: `openrouter/z-ai/glm-5.3-flash`
+- Provider response: `gen-1788516282-J0iAWsLfUyuaFEJOpJsY`
+- Raw-response SHA-256: `d77a60520870218eeb3f51d6a52354c5d03e0b9edf60f766cd87640bc6f4e66f`
+- Usage: 847,422 input + 28,628 output = 876,050 total; 23,130 reasoning tokens
+- Provider-reported cost: USD 0.07071365
+- Independent verification: `provider-completed` PASS; `review-content-complete` PASS
+- Review artifact SHA-256: `03a9d900312a928b7a6779f2a94dd9c029561c0a3528282b92fe99cb597fd5b3`
+- Findings: 0 Critical, 0 High, 1 Medium, 6 Low, 3 Informational
+
+The review independently confirmed both original High root causes fixed and all release-relevant Medium findings remediated. Its one Medium is the already documented ignored/`.git` mutation-surface hardening deferral. That does not undermine the 3.8.1 claims: ignored repository transients are intentionally excluded from the approved mutation ledger, and Spark remains disabled by default, one-attempt, disposable-worktree-only, and independently verified. Low/Informational items are future hardening or maintainability work and do not invalidate credential residency, retry identity, complete non-ignored Git mutation containment, verification, or cost-budget behavior.
+
+Sanitized physical High-fix proof is committed as [agent-control-3.8.1-high-remediation-physical.json](agent-control-3.8.1-high-remediation-physical.json). The final review and machine summary are committed as [agent-control-3.8.1-final-glm-review.md](agent-control-3.8.1-final-glm-review.md) and [agent-control-3.8.1-final-glm-review.json](agent-control-3.8.1-final-glm-review.json). No credential value, credential path, Windows absolute path, raw provider body, or authentication material is present in these records.
+
+The previously committed multi-account evidence remains valid because the High fixes changed only generic retry identity and mutation observation. The subsequent account-environment hardening was covered by a focused isolation regression and removes ambient API billing credentials without changing either isolated CLI home. Existing evidence still proves Account A qualification, Account B qualification, Account A → sealed baton → Account B, governed A-unavailable → B fallback, exact account attribution, and reconciled telemetry. No redundant credential-bearing physical rerun was manufactured.
+
+Interactive dashboard video remains unavailable from this execution surface and is not claimed. The committed physical evidence and existing SSE/dashboard tests provide the programmatic telemetry reconciliation required by this gate.
+
+Final candidate verdict: **READY_FOR_RELEASE_AUTHORIZATION**. No merge, tag, GitHub Release, deployment, or release mutation has been performed.
