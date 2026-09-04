@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.8.2] — 2026-09-04
+
+- Adds a bounded, human-readable Execution history to Saved Job Run detail and Lane Activity. The view derives from existing durable Job Run, Work Parcel, token-governor, baton and verification records and does not create a second transcript store or control path.
+- Distinguishes operator, system, provider, tool/action, governor, baton and error entries; correlates each entry to its Job Run, Work Parcel or Lane; and presents current-context authority separately from cumulative token/cost accounting.
+- Makes baton and handoff semantics explicit: baton creation is not dispatch or completion, a HANDOFF threshold can remain only a recommendation, and failed handoffs preserve source recovery.
+- Redacts credentials, authorization material, account emails, credential-home paths and control characters from the projection. Raw prompts, provider responses, hidden reasoning and credential references remain outside the operator transcript.
+- Fixes the repository-review provider/application schema mismatch observed in the v3.8.1 qualification. The provider wire schema now declares the same literals, enums, non-empty values, line constraints and confidence range enforced by the application validator.
+- Adds safe field-path diagnostics such as `$.findings[0].category:enum` while preserving fail-closed behavior and without persisting rejected provider bodies.
+- Fixes web-response redaction so the safe numeric `contextTokens` and `contextLimitTokens` telemetry fields remain visible while credential-like token fields are still redacted.
+- Adds `agent-control --version` / `-v` so a clean installed package can identify its exact release without contacting a running controller.
+- Physically qualifies a minimal Account A repository review: schema validation, independent verification, human-readable history and Job/Work Parcel token and calculated-cost reconciliation all passed. The historical v3.8.1 evidence remains unchanged.
+
 ## [3.8.1] — 2026-09-04
 
 - Separates workload/repository locality, provider execution locality, and credential residency in provider-neutral configuration, routing, sealed batons, contracts, telemetry, recovery, Work Parcel ledgers, and dashboard projections.

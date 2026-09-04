@@ -9,11 +9,11 @@ A CLI provider can own multiple optional account profiles. Each stores only an o
 Create and authenticate each directory directly with Codex in an interactive terminal. Use operator-controlled absolute paths and do not put a token on the command line:
 
 ```bash
-install -d -m 700 /srv/agent-control/codex/lawrence-pro /srv/agent-control/codex/cottage-plus
-CODEX_HOME=/srv/agent-control/codex/lawrence-pro codex login
-CODEX_HOME=/srv/agent-control/codex/cottage-plus codex login
-export CODEX_HOME_LAWRENCE_PRO=/srv/agent-control/codex/lawrence-pro
-export CODEX_HOME_COTTAGE_PLUS=/srv/agent-control/codex/cottage-plus
+install -d -m 700 /srv/agent-control/codex/primary-pro /srv/agent-control/codex/secondary-plus
+CODEX_HOME=/srv/agent-control/codex/primary-pro codex login
+CODEX_HOME=/srv/agent-control/codex/secondary-plus codex login
+export CODEX_HOME_PRIMARY_PRO=/srv/agent-control/codex/primary-pro
+export CODEX_HOME_SECONDARY_PLUS=/srv/agent-control/codex/secondary-plus
 ```
 
 For a remote Windows credential node, create and authenticate the profile directories in an interactive terminal on that Windows node, then define the named references in that Windows user's environment. Do not define those references to Windows paths on the controller. Agent Control resolves them only within the fixed remote runner:
@@ -32,18 +32,18 @@ The corresponding provider/model configuration is:
     "id": "codex-chatgpt",
     "kind": "cli",
     "accountProfiles": [
-      {"id":"lawrence-pro","providerExecutionNodeId":"controller","credentialResidency":{"nodeId":"controller","store":{"type":"codex-home-env","env":"CODEX_HOME_LAWRENCE_PRO"}},"label":"Lawrence Pro","plan":"ChatGPT Pro","planAuthority":"operator-configured"},
-      {"id":"cottage-plus","providerExecutionNodeId":"controller","credentialResidency":{"nodeId":"controller","store":{"type":"codex-home-env","env":"CODEX_HOME_COTTAGE_PLUS"}},"label":"Cottage Plus","plan":"ChatGPT Plus","planAuthority":"operator-configured"}
+      {"id":"primary-pro","providerExecutionNodeId":"controller","credentialResidency":{"nodeId":"controller","store":{"type":"codex-home-env","env":"CODEX_HOME_PRIMARY_PRO"}},"label":"Primary Pro","plan":"ChatGPT Pro","planAuthority":"operator-configured"},
+      {"id":"secondary-plus","providerExecutionNodeId":"controller","credentialResidency":{"nodeId":"controller","store":{"type":"codex-home-env","env":"CODEX_HOME_SECONDARY_PLUS"}},"label":"Secondary Plus","plan":"ChatGPT Plus","planAuthority":"operator-configured"}
     ]
   }],
   "models": [
-    {"id":"spark-pro","provider":"codex-chatgpt","accountProfile":"lawrence-pro","providerModel":"gpt-5.3-codex-spark","nodes":["controller"],"capabilities":["trivial.coding"]},
-    {"id":"spark-plus","provider":"codex-chatgpt","accountProfile":"cottage-plus","providerModel":"gpt-5.3-codex-spark","nodes":["controller"],"capabilities":["trivial.coding"]}
+    {"id":"spark-pro","provider":"codex-chatgpt","accountProfile":"primary-pro","providerModel":"gpt-5.3-codex-spark","nodes":["controller"],"capabilities":["trivial.coding"]},
+    {"id":"spark-plus","provider":"codex-chatgpt","accountProfile":"secondary-plus","providerModel":"gpt-5.3-codex-spark","nodes":["controller"],"capabilities":["trivial.coding"]}
   ]
 }
 ```
 
-The example uses the exact Spark model identity supported by this release; availability still depends on the selected account and installed Codex CLI. Both locality node IDs must exist as Resources, and an account-bound model's `nodes` must include its provider-execution node, not the repository node. For other execution classes, use only exact model identities that have been independently qualified. After login, select **Models → Check account** or call `POST /api/models/accounts/{provider}/{account}/qualify` as an authenticated operator. Qualification dispatches to the profile's provider-execution/credential node and runs `codex login status` there. For Windows SSH resources, the fixed runner discovers candidates under `%LOCALAPPDATA%\OpenAI\Codex\bin\*\codex.exe`, validates `--version`, deterministically selects the newest valid candidate, and persists only CLI version, executable SHA-256 and discovery timestamp. A Saved Job can include `"accountProfile":"lawrence-pro"` in `routing`; its repository `node` remains the independent workload location. Otherwise the configured model role determines the account-bound model.
+The example uses the exact Spark model identity supported by this release; availability still depends on the selected account and installed Codex CLI. Both locality node IDs must exist as Resources, and an account-bound model's `nodes` must include its provider-execution node, not the repository node. For other execution classes, use only exact model identities that have been independently qualified. After login, select **Models → Check account** or call `POST /api/models/accounts/{provider}/{account}/qualify` as an authenticated operator. Qualification dispatches to the profile's provider-execution/credential node and runs `codex login status` there. For Windows SSH resources, the fixed runner discovers candidates under `%LOCALAPPDATA%\OpenAI\Codex\bin\*\codex.exe`, validates `--version`, deterministically selects the newest valid candidate, and persists only CLI version, executable SHA-256 and discovery timestamp. A Saved Job can include `"accountProfile":"primary-pro"` in `routing`; its repository `node` remains the independent workload location. Otherwise the configured model role determines the account-bound model.
 
 Agent Control never changes the process-global Codex login. Controller-local execution retains the cloned child environment path. Remote Windows execution uses the configured Resource SSH transport and `powershell.exe -NoProfile -NonInteractive -EncodedCommand` with a fixed bootstrap: the base64 request is one data line and the audited runner is the remainder of stdin. The bootstrap passes the request to the runner as an argument, so identities, prompts and schemas are never interpolated into PowerShell source. The typed port exposes only `accountStatus` and `execReadOnlyStructured`, not arbitrary shell execution. The Windows node resolves its own `CODEX_HOME` reference, and the adapter rejects any provider/account/model/execution-node/credential-node result that differs from the sealed route. Account-status and execution streams terminate in node-local files under bounded native-process supervision, preventing child pipe retention. Raw PowerShell stdout/stderr, full executable paths and resolved profile paths are not durable evidence. There is no automatic account rotation for quota/rate-limit avoidance; an exhausted profile fails visibly under its own opaque identity.
 

@@ -17,6 +17,16 @@ test('package-bin symlink executes the Agent Control command entrypoint', () => 
   assert.match(result.stdout, /agent-control status \[--json\]/);
 });
 
+test('package-bin reports the installed Agent Control version', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-version-bin-'));
+  const source = fileURLToPath(new URL('./agent-control.mjs', import.meta.url));
+  const command = path.join(root, 'agent-control');
+  fs.symlinkSync(source, command);
+  const result = spawnSync(command, ['--version'], {encoding: 'utf8'});
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /^agent-control 3\.8\.2\s*$/);
+});
+
 test('Jobs CLI reads definitions and sends authenticated schema-valid create requests',async()=>{
   const originalFetch=globalThis.fetch,originalUrl=process.env.AGENT_CONTROL_WEB_URL,originalToken=process.env.AGENT_CONTROL_WEB_OPERATOR_TOKEN,requests=[];
   process.env.AGENT_CONTROL_WEB_URL='http://127.0.0.1:4310';process.env.AGENT_CONTROL_WEB_OPERATOR_TOKEN='fixture-token';

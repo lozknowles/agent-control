@@ -1,8 +1,18 @@
 {
   "schema": "agent-control.implementation-status/v1",
-  "release": "3.8.1",
+  "release": "3.8.2",
   "updated": "2026-09-04",
   "capabilities": [
+    {
+      "id": "dashboard.human-readable-execution-history",
+      "title": "Human-readable execution history and schema diagnostics",
+      "status": "QUALIFIED",
+      "summary": "Saved Job Runs and Lanes expose a bounded redacted chronological projection derived from their existing durable Run, Work Parcel, token-governor and baton records. Actor, association, telemetry authority, governor, baton, provider-result, verification and accounting semantics remain explicit without adding a transcript store or mutation path. Repository-review provider and application schemas now express the same semantic constraints and retain safe failing paths while validation remains fail closed.",
+      "sources": ["src/control/execution-history.ts", "src/control/application-service.ts", "src/control/direct-repository-review-executor.ts", "src/control/web-server.ts", "assets/dashboard/dashboard-parameterized-jobs.js", "assets/dashboard/dashboard.js", "assets/dashboard/dashboard-jobs.css"],
+      "tests": ["src/control/execution-history.test.ts", "src/control/direct-repository-review-executor.test.ts", "src/control/web-server.test.ts"],
+      "evidence": ["docs/execution-history.md", "docs/evidence/agent-control-3.8.2-human-readable-history-qualification.md"],
+      "limitation": "The v3.8.1 rejected provider bodies were intentionally ephemeral, so their exact failing field/value cannot be reconstructed; new failures record only safe field paths and constraints. The browser recording is content-addressed external qualification media rather than a product dependency, and no actual 3.8.2 baton transfer is claimed."
+    },
     {
       "id": "providers.credential-residency",
       "title": "Credential residency and provider execution locality",
@@ -11,7 +21,7 @@
       "sources": ["src/control/provider-account-profile.ts", "src/control/model-registry.ts", "src/control/account-profile-qualification.ts", "src/control/codex-node-execution.ts", "src/control/resource-repository-resolver.ts", "src/control/parameterized-job-engine.ts", "scripts/codex-node-windows.ps1", "scripts/repository-snapshot-windows.ps1", "assets/dashboard/dashboard-models.js", "assets/dashboard/dashboard-parameterized-jobs.js", "assets/dashboard/dashboard-enhancements.js"],
       "tests": ["src/control/credential-residency.test.ts", "src/control/model-registry.test.ts", "src/control/codex-node-execution.test.ts", "src/control/config.test.ts", "src/control/web-server.test.ts"],
       "evidence": ["docs/credential-residency.md", "docs/evidence/agent-control-3.8.1-qualification.md", "docs/evidence/agent-control-3.8.1-resumed-physical-evidence.json", "docs/evidence/agent-control-3.8.1-high-remediation-physical.json", "docs/evidence/agent-control-3.8.1-final-glm-review.md"],
-      "limitation": "MSI-to-controller immutable repository transfer, two-account baton continuation/fallback, remote Windows account-status, and GLM whole-repository review are physically qualified. Spark remains disabled by default; intentionally ignored and .git-internal mutations remain outside its mutation ledger and are a documented deferred hardening risk."
+      "limitation": "Remote Windows-node-to-controller immutable repository transfer, two-account baton continuation/fallback, remote account-status, and a GLM whole-repository review are physically qualified. Spark remains disabled by default; intentionally ignored and .git-internal mutations remain outside its mutation ledger and are a documented deferred hardening risk."
     },
     {
       "id": "context.governed-retrieval",

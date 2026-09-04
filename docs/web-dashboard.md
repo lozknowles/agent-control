@@ -10,6 +10,10 @@ Open **Job Definitions** to inspect reusable, versioned contracts. Select **Repo
 
 **Saved Jobs** lists configured instances and provides authenticated **Run now**, enable and disable controls. Manual and scheduled starts both enter `ParameterizedJobEngine.createRun`; the browser is not an executor or scheduler. **Schedules** shows persistent one-time or cron policy, timezone, missed-run behavior and next occurrence. **Runs** shows immutable lifecycle, frozen repository SHA/comparison SHA, route, Work Parcels, usage/cost, findings, evidence, retries, fallback and errors.
 
+Selecting a Run opens its **Execution history**. This is a chronological, human-readable projection of the same durable Run, associated Work Parcels, token/governor evidence and sealed batons. Cards distinguish `OPERATOR`, `SYSTEM EVENT`, `AGENT / PROVIDER`, `TOOL / ACTION`, `GOVERNOR`, `BATON` and `ERROR`; they show safe route identity, current-context authority, lifetime usage, cost authority and evidence references where available. The Lane Activity view provides the corresponding lane-local projection. See [`execution-history.md`](execution-history.md).
+
+History terminology is deliberately strict. `HANDOFF_RECOMMENDED` means the governor crossed a threshold but retained the current route. `HANDOFF_REQUESTED` is not proof that a destination accepted or ran. Only a durable successful routing outcome becomes `HANDOFF_COMPLETED`; a failed outcome records source recovery. Likewise, a created baton is a sealed checkpoint, not proof of a completed handoff. Initial Codex telemetry can show current context as unavailable until completion, while a completion-only estimate can be clamped at 100%; neither is described as authoritative provider occupancy.
+
 The headless Agent Control process owns schedule polling. Closing the dashboard, logging out, or not having Codex installed does not stop a due parameterised Job. Full setup and operator examples are in [`jobs/README.md`](jobs/README.md).
 
 ## Start
