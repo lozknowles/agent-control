@@ -56,6 +56,8 @@ The destination invocation runs inside the token runtime's governed-handoff resu
 
 All successful source, destination and recovery invocations are additive in the original Work Parcel audit. Failed provider attempts retain any provider-supplied partial usage/evidence; unknown usage remains unknown.
 
+An engine-level retry keeps the same logical Run identity and frozen repository, but opens a distinct execution-attempt token thread: `review:<run>:attempt-<n>:<chunk>`. The prior attempt's parcel, telemetry, provider error and recoverability remain durable. This avoids crossing parcel provenance while preserving the token runtime's immutable `provider + account + model + locality` identity check; a retry never rebinds an existing thread or hides `token_thread_identity_changed`.
+
 ## Dashboard and reconciliation
 
 The dashboard consumes the existing SSE endpoint. `token.telemetry`, `token.governor_transition`, `token.context_lifecycle`, `token.baton_created`, and `token.handoff_result` refresh the live thread panel without a page reload. While a thread is active, its elapsed runtime advances locally from the durable start time between events; completed threads retain the final provider-reported elapsed time. The panel displays provider/account/model, distinct workload/provider-execution/credential nodes, safe account label and reliably attributed plan, qualification/availability, next selected route, context (`Context: 182k / 272k — 67%`), latest context transition, token totals, authority, cost, governor state/current/next thresholds, and Work Parcel chain totals.

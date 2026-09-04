@@ -124,6 +124,7 @@ export interface ParameterizedJobRun {
 
 export interface ReviewExecutionRequest {
   run: ParameterizedJobRun;
+  executionAttempt: number;
   route: ModelRouteDecision;
   instruction: string;
   contextChunks: Array<{id: string; content: string; files: string[]; sha256: string}>;

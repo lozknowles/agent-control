@@ -75,7 +75,7 @@ The probe strips API-key environment variables. A model string, a successful CLI
 
 For an eligible task, Agent Control compiles `agent-control.fast-execution-baton/v1` containing the task, exact allowed files, changed-line limit, forbidden actions, Context Packet identity/hash, verifier commands and completion rule. `CodexFastExecutionRunner` requires an absolute disposable initially-clean Git worktree and runs one exact-model attempt with an explicit workspace-write sandbox, ignored user configuration, JSONL/output schema and multi-agent fan-out disabled.
 
-Agent Control—not model output—owns acceptance. Git determines touched files, changed lines and the diff hash. The independent verifier checks the resulting workspace. Failure, a verifier failure, low confidence, requested context, unexpected files/lines or scope growth records the Spark attempt and creates a visible STANDARD successor decision; it never retries Spark.
+Agent Control—not model output—owns acceptance. A reusable Git mutation-surface check uses NUL-delimited porcelain and the complete `HEAD` diff to account for staged and unstaged modifications, additions, deletions, rename source/destination paths, and non-ignored untracked files. Git-standard ignored files remain excluded so repository-local transient noise does not become a false release blocker. Untracked file content contributes to changed-line and mutation-hash evidence without changing the index. The independent verifier checks the resulting workspace. Failure, a verifier failure, low confidence, requested context, unexpected files/lines or scope growth records the Spark attempt and creates a visible STANDARD successor decision; it never retries Spark.
 
 ## Dashboard and telemetry
 

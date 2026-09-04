@@ -64,6 +64,7 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
   }
 
   async execute(request: ReviewExecutionRequest): Promise<ReviewExecutionResponse> {
+    if (!Number.isSafeInteger(request.executionAttempt) || request.executionAttempt < 1) throw new Error('repository_review_execution_attempt_invalid');
     this.routeConfiguration(request.route);
     const results: RepositoryReviewResult[] = [];
     const parcelIds: string[] = [];
@@ -244,7 +245,7 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
     return true;
   }
 
-  private async invokeChunk(request: ReviewExecutionRequest, route: ModelRouteDecision, parcel: WorkParcel, chunk: PreparedReviewChunk, baton?: VerifiedBaton, threadId = `review:${request.run.id}:${chunk.id}`) {
+  private async invokeChunk(request: ReviewExecutionRequest, route: ModelRouteDecision, parcel: WorkParcel, chunk: PreparedReviewChunk, baton?: VerifiedBaton, threadId = `review:${request.run.id}:attempt-${request.executionAttempt}:${chunk.id}`) {
     const {provider, model, account} = this.routeConfiguration(route);
     const prompt = await this.prompt(request, chunk, baton);
     const client: RepositoryReviewProviderClient = this.clients?.(provider, account, route) ?? (provider.kind === 'cli' ? new CodexRepositoryReviewClient(provider, requiredAccount(account), route.nodeId, this.nodeExecution) : new OpenAICompatibleProviderClient(provider));

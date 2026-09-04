@@ -9,9 +9,11 @@
 - Fixes remote Windows Codex `accountStatus` pipe retention: `codex login status` now uses bounded native-process supervision with node-local redirected streams, timeout cleanup, and sanitized classification. Unauthenticated profiles report `codex_chatgpt_auth_required` instead of hanging behind SSH.
 - Restores the declared file-backed credential reference as a generic fallback when a provider's primary bearer environment reference is absent, and gives nontrivial model-qualification checks a bounded 1,024-token response allowance so reasoning providers do not fail solely after exhausting the former 256-token cap.
 - Stops the operator whole-repository review artifact from retaining the resolved credential-file path or raw provider response; it now retains only the declared reference name, response hashes, normalized usage, status, and review text.
+- Fixes the governed repository-review retry lifecycle by retaining one logical Run while assigning each execution attempt a distinct immutable token-thread identity. Failed-attempt telemetry and parcels remain durable, retry reasons remain visible, and thread provenance checks stay fail-closed across provider/account/model/node boundaries.
+- Replaces Spark's tracked-diff-only scope accounting with a reusable NUL-safe Git mutation-surface check covering staged and unstaged modifications, additions, deletions, renames, and non-ignored untracked files. Ignored repository-local transients remain outside the release gate; unexpected untracked files now reject containment before independent verification.
 - Shows workload, provider-execution, and credential-residency nodes separately in Models, parameterized Runs, live token telemetry, handoff routes, and model-chain totals.
 - Preserves predetermined account-profile fallback and explicit rejection reasons; it does not rotate accounts to evade or aggregate provider limits.
-- Adds focused locality, migration, credential-isolation, snapshot-transfer, route-identity, and Windows-supervision regressions. Physical multi-account, remote-residency, and GLM review evidence remains a release-candidate gate and is not claimed here.
+- Adds focused locality, migration, credential-isolation, snapshot-transfer, route-identity, Windows-supervision, retry-lifecycle, and complete Git-mutation regressions. Physical retry/scope proof and a fresh governed GLM review remain release-candidate gates and are not claimed here.
 
 ## [3.8.0] — 2026-09-03
 

@@ -117,3 +117,13 @@ Final regression at this resumed checkpoint passed `npm run check`: TypeScript, 
 Current verdict: **REVIEW_REQUIRED — GLM QUALIFIED AND FULL REVIEW VERIFIED; RELEASE BLOCKED BY REVIEW FINDINGS**.
 
 Final post-review regression passed `npm run check`: TypeScript, bootstrap and dashboard syntax, three neutrality checks, all 32 implementation-status claims, and 703/703 deterministic tests passed with zero failures, cancellations, skips, or todos.
+
+## High-finding remediation checkpoint — 2026-09-04
+
+The governed review's two High findings were reproduced at their production integration seams and fixed without weakening route, credential-residency, baton, or thread identity checks.
+
+Repository-review retries intentionally retain one logical Run and frozen repository, but each executor attempt creates a new Work Parcel. The prior thread key omitted the attempt and therefore collided with the new parcel on retry. The engine now supplies an explicit one-based execution attempt and the provider-neutral direct executor keys token threads as `review:<run>:attempt-<n>:<chunk>`. The original failed thread/parcel and provider reason remain durable and recoverable; the retry opens a new immutable thread rather than rebinding identity or suppressing `token_thread_identity_changed`. A focused composed-path regression drives `ParameterizedJobEngine → DirectRepositoryReviewExecutor → TokenAwareBatonRuntime`: attempt one fails after live telemetry, attempt two completes, both attempt threads retain distinct parcel provenance, and retry history retains the original provider failure.
+
+Spark previously derived scope solely from `git diff`, which cannot represent an untracked file. The new reusable Git mutation-surface primitive uses `git status --porcelain=v1 -z --untracked-files=all --ignored=no` and a complete `HEAD` diff. It accounts for staged/unstaged modifications, additions, deletions, both rename paths, non-ignored untracked files, unusual filenames, changed lines, and content-addressed mutation evidence without modifying the index. Git-ignored transients remain excluded. A real-runner regression creates an out-of-scope untracked file and proves containment escalates with `unapproved-file-touched` before independent verification.
+
+Focused validation passed 32/32 tests. The first complete post-fix `npm run check` passed TypeScript, bootstrap/dashboard syntax, three neutrality checks, all 32 implementation-status claims, and 707/707 deterministic tests with zero failures, cancellations, skips, or todos. Physical retry/scope proofs and the mandatory fresh governed GLM review remain pending at this checkpoint, so the verdict remains **REVIEW_REQUIRED — RELEASE BLOCKED**.
