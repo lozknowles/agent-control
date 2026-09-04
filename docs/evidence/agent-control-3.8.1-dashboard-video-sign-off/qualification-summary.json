@@ -1,0 +1,111 @@
+{
+  "schema": "agent-control.dashboard-video-qualification/v1",
+  "recordedAt": "2026-09-04T12:30:57.236Z",
+  "release": {
+    "tag": "v3.8.1",
+    "commit": "4da1d360211bb27d8fde981d688a54850685501e"
+  },
+  "machines": {
+    "controller": "hpubuntu",
+    "browser": "MSI"
+  },
+  "video": {
+    "filename": "agent-control-v3.8.1-true-sign-off-msi-chrome.mp4",
+    "durationSeconds": 345.133333,
+    "width": 1920,
+    "height": 946,
+    "framesPerSecond": 15,
+    "bytes": 4125098,
+    "sha256": "5f85dcaa84fa622a8e1f1de0ba5350625ed895c6fe4e389f81f93cd1437d9014",
+    "continuous": true,
+    "cuts": 0,
+    "source": "MSI Chrome DevTools continuous screencast"
+  },
+  "qualificationPolicy": {
+    "qualificationOnly": true,
+    "continuePercent": 10,
+    "prepareBatonPercent": 20,
+    "compactPercent": 30,
+    "handoffPercent": 40,
+    "contextLimitTokens": 32768
+  },
+  "runs": [
+    {
+      "name": "Release Identity Review",
+      "runId": "89ae35db-dafb-4c4f-bf69-9f85f0936be1",
+      "parcelId": "parcel-e12d4045-0acc-4383-85e5-a5924acb06af",
+      "provider": "codex-chatgpt",
+      "accountLabel": "Controller Account A",
+      "model": "account-a-review",
+      "inputTokens": 22979,
+      "outputTokens": 1608,
+      "totalTokens": 24587,
+      "contextTokens": 24587,
+      "contextPercent": 75.0335693359375,
+      "contextAuthority": "estimated",
+      "cost": 0.05239,
+      "currency": "USD",
+      "costAuthority": "estimated",
+      "governor": ["CONTINUE", "HANDOFF"],
+      "routingAction": "COMPACT_AND_CONTINUE",
+      "result": "FAILED",
+      "reason": "repository_review_provider_schema_invalid"
+    },
+    {
+      "name": "Token Governor Review",
+      "runId": "dcea4ea9-3248-4c10-8f84-c126c87b273f",
+      "parcelId": "parcel-4253148c-8956-42c6-a142-358c74355d39",
+      "provider": "codex-chatgpt",
+      "accountLabel": "Controller Account A",
+      "model": "account-a-review",
+      "inputTokens": 51917,
+      "outputTokens": 2882,
+      "totalTokens": 54799,
+      "contextTokens": 54799,
+      "contextPercent": 100,
+      "contextAuthority": "estimated",
+      "cost": 0.115362,
+      "currency": "USD",
+      "costAuthority": "estimated",
+      "governor": ["CONTINUE", "HANDOFF"],
+      "routingAction": "COMPACT_AND_CONTINUE",
+      "result": "FAILED",
+      "reason": "repository_review_provider_schema_invalid"
+    },
+    {
+      "name": "Credential Residency Review",
+      "runId": "f958a778-d7af-46ed-9ccc-dba583bc6c45",
+      "parcelId": "parcel-2c337b6b-e2b1-4004-9cd1-d85da8f4f287",
+      "provider": "codex-chatgpt",
+      "accountLabel": "Controller Account A",
+      "model": "account-a-review",
+      "inputTokens": 40842,
+      "outputTokens": 2359,
+      "totalTokens": 43201,
+      "contextTokens": 43201,
+      "contextPercent": 100,
+      "contextAuthority": "estimated",
+      "cost": 0.09112,
+      "currency": "USD",
+      "costAuthority": "estimated",
+      "governor": ["CONTINUE", "HANDOFF"],
+      "routingAction": "COMPACT_AND_CONTINUE",
+      "result": "FAILED",
+      "reason": "repository_review_provider_schema_invalid"
+    }
+  ],
+  "reconciliation": {
+    "inputTokens": 115738,
+    "outputTokens": 6849,
+    "totalTokens": 122587,
+    "cost": 0.258872,
+    "currency": "USD",
+    "jobParcelDifferenceTokens": 0,
+    "jobParcelDifferenceCost": 0
+  },
+  "baton": {
+    "observed": false,
+    "claimed": false
+  },
+  "verdict": "AGENT_CONTROL_3.8.1_TRUE_SIGN_OFF"
+}
