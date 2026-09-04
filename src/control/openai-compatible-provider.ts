@@ -51,9 +51,12 @@ function resolveToken(provider: ProviderConfig) {
   const auth = provider.auth ?? (provider.credentialEnv ? {type: 'bearer-env' as const, env: provider.credentialEnv} : {type: provider.requiresAuth ? 'bearer-env' as const : 'none' as const, env: provider.credentialEnv});
   if (auth.type === 'none') return '';
   if (!auth.env) throw new Error('provider_secret_reference_missing');
-  const value = auth.type === 'bearer-file-env' ? (process.env[auth.env] ? fs.readFileSync(process.env[auth.env]!, 'utf8').trim() : '') : process.env[auth.env]?.trim();
+  let value = auth.type === 'bearer-file-env' ? readReferencedFile(auth.env) : process.env[auth.env]?.trim();
+  if (!value && provider.credentialFileEnv && provider.credentialFileEnv !== auth.env) value = readReferencedFile(provider.credentialFileEnv);
+  if (!value && provider.credentialEnv && provider.credentialEnv !== auth.env) value = process.env[provider.credentialEnv]?.trim();
   if (!value) throw new Error('provider_authentication_required'); return value;
 }
+function readReferencedFile(environmentName: string) { const file = process.env[environmentName]; return file ? fs.readFileSync(file, 'utf8').trim() : ''; }
 function extractOutput(payload: Record<string, unknown>, wire: string) {
   if (wire === 'chat-completions') { const choices = Array.isArray(payload.choices) ? payload.choices : []; const message = choices[0] && typeof choices[0] === 'object' ? (choices[0] as Record<string, unknown>).message : undefined; return message && typeof message === 'object' ? String((message as Record<string, unknown>).content ?? '') : ''; }
   if (typeof payload.output_text === 'string') return payload.output_text;

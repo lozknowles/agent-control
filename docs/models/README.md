@@ -20,7 +20,8 @@ A configured model starts `UNTESTED` unless durable evidence says otherwise. Onl
     "kind": "openai-compatible",
     "baseUrl": "https://openrouter.ai/api/v1",
     "wireApi": "responses",
-    "auth": {"type": "bearer-env", "env": "OPENROUTER_API_KEY"}
+    "auth": {"type": "bearer-env", "env": "OPENROUTER_API_KEY"},
+    "credentialFileEnv": "OPENROUTER_API_KEY_FILE"
   }],
   "models": [{
     "id": "glm-fast",
@@ -36,6 +37,8 @@ A configured model starts `UNTESTED` unless durable evidence says otherwise. Onl
   }
 }
 ```
+
+When both references are declared, the primary bearer environment reference is used when present; otherwise the provider resolves the path named by `credentialFileEnv`. The referenced file must remain outside source control. Agent Control never projects its path or value into telemetry or evidence.
 
 The example is a registration, not proof that the provider currently exposes that model. Confirm the provider-native model ID and qualify it before routing. Do not add pricing unless its source and effective date are known.
 
