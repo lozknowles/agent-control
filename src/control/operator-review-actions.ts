@@ -55,7 +55,7 @@ function readCredential(provider: ProviderConfig) {
     if (process.platform !== 'win32' && (stat.mode & 0o077) !== 0) throw new ActionFailure('provider_credential_file_permissions_too_open', 'authentication');
     const value = fs.readFileSync(file, 'utf8').trim();
     if (!value) throw new ActionFailure('provider_credential_file_empty', 'authentication');
-    return {value, source: 'file', reference: file};
+    return {value, source: 'file', reference: fileVariable};
   }
   const environmentVariable = provider.credentialEnv;
   if (environmentVariable && process.env[environmentVariable]) return {value: process.env[environmentVariable]!, source: 'environment', reference: environmentVariable};
@@ -140,7 +140,6 @@ class LargeContextResponsesExecutor implements RecipeExecutor {
       credentialReference: credential.reference,
       rawResponseSha256,
       responseText: text,
-      rawProviderResponse: body,
     };
     const startupSources: ContextPacketSource[] = [
       {id: `${recipe.id}:system`, kind: 'system_instructions', content: 'Independent whole-repository defect, efficiency and architecture review with no mutations.', required: true, persistent: true, relevance: 1, provenanceIds: [recipe.fingerprint]},

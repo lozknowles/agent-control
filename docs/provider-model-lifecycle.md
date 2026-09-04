@@ -14,6 +14,8 @@ A logical provider records:
 
 Literal credentials and credentialed URLs are rejected. Discovery updates capabilities/models only; provider identity, endpoint and credential reference are immutable under the same ID. Machine placement is not embedded in provider identity.
 
+Account profiles add provider-neutral locality beneath that logical provider. `credentialResidency` names an opaque store reference and owning node; `providerExecutionNodeId` selects the qualified node that invokes the provider; the Job independently selects its workload/repository node. The recommended deployment keeps credentials on the controller or a designated credential/provider-execution node. Managed workload nodes need no provider credentials, while explicitly configured remote credential residency remains supported. See [credential residency](credential-residency.md).
+
 The same shape covers OpenAI/Codex routes, local OpenAI-compatible or llama.cpp endpoints, external OpenAI-compatible providers and GLM-5.3-Flash. `Ox` remains accepted only by the existing historical compatibility normalizer and is not a separate model recipe.
 
 ## Immutable model recipes

@@ -6,6 +6,7 @@ import path from 'node:path';
 import type {SparkConfig} from './config.js';
 import {ContextPacketBuilder, type ContextPacket, type ContextPacketSource} from './harness-efficiency.js';
 import type {ModelRegistry, ModelRouteDecision} from './model-registry.js';
+import {inspectGitMutationSurface} from './git-mutation-surface.js';
 
 export type ExecutionClass = 'LOCAL' | 'SPARK' | 'STANDARD' | 'FRONTIER';
 export type TrivialTaskKind = 'documentation' | 'configuration' | 'symbol-rename' | 'single-file-bug' | 'lint' | 'test-addition' | 'repository-search';
@@ -159,10 +160,10 @@ export class CodexFastExecutionRunner implements FastExecutionRunner {
       const completed = [...events].reverse().find(event => event.type === 'turn.completed'), message = [...events].reverse().map(event => event.item).find(item => item && typeof item === 'object' && !Array.isArray(item) && (item as Record<string, unknown>).type === 'agent_message') as Record<string, unknown> | undefined;
       let output: {status: FastExecutionResult['status']; summary: string; confidence: number; requestedMoreContext: boolean} = {status: 'FAILED', summary: run.code === 0 ? 'spark_result_missing' : `codex_exec_failed:${run.code}`, confidence: 0, requestedMoreContext: false};
       if (typeof message?.text === 'string') try { const parsed = JSON.parse(message.text) as typeof output; if (['SUCCEEDED','FAILED','ESCALATE'].includes(parsed.status) && typeof parsed.summary === 'string' && typeof parsed.confidence === 'number' && typeof parsed.requestedMoreContext === 'boolean') output = parsed; } catch { output = {...output, summary: 'spark_result_invalid_json'}; }
-      const files = await capture('git', ['diff', '--name-only', '--'], this.cwd, 10_000), numstat = await capture('git', ['diff', '--numstat', '--'], this.cwd, 10_000), diff = await capture('git', ['diff', '--binary', '--'], this.cwd, 10_000);
-      const touchedFiles = files.stdout.split(/\r?\n/).filter(Boolean), changedLines = numstat.stdout.split(/\r?\n/).filter(Boolean).reduce((sum, line) => { const [added, removed] = line.split('\t'); return sum + (Number.isFinite(Number(added)) ? Number(added) : 1_000_000) + (Number.isFinite(Number(removed)) ? Number(removed) : 1_000_000); }, 0);
+      const mutations = await inspectGitMutationSurface(this.cwd);
+      const touchedFiles = mutations.touchedFiles, changedLines = mutations.changedLines;
       const usage = completed?.usage && typeof completed.usage === 'object' && !Array.isArray(completed.usage) ? completed.usage as Record<string, unknown> : undefined;
-      const evidence = [`model:${input.model}`, `provider:${input.providerId}`, `baton:${input.baton.contextHash}`, `diff-sha256:${createHash('sha256').update(diff.stdout).digest('hex')}`];
+      const evidence = [`model:${input.model}`, `provider:${input.providerId}`, `baton:${input.baton.contextHash}`, `diff-sha256:${mutations.sha256}`];
       return {...output, touchedFiles, changedLines, usage, evidence, actualModel: input.model, actualProviderId: input.providerId};
     } finally { fs.rmSync(temporary, {recursive: true, force: true}); }
   }

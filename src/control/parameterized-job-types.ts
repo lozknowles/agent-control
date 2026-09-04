@@ -61,9 +61,12 @@ export interface ResolvedRepository {
   reviewedSha: string;
   dirty: boolean;
   dirtyPaths: string[];
+  dirtyFingerprint?: string;
   comparisonSha?: string;
   snapshotPath: string;
-  snapshotKind: 'local-shared-clone' | 'remote-clone';
+  snapshotKind: 'local-shared-clone' | 'remote-clone' | 'remote-immutable-archive';
+  bundleSha256?: string;
+  bundlePath?: string;
 }
 
 export type ParameterizedRunStatus = 'SCHEDULED' | 'QUEUED' | 'RESOLVING' | 'RUNNING' | 'VALIDATING' | 'SUCCEEDED' | 'SUCCEEDED_WITH_FINDINGS' | 'FAILED' | 'CANCELLED' | 'DEGRADED';
@@ -116,11 +119,14 @@ export interface ParameterizedJobRun {
   errors: string[];
   fallbackHistory: Array<{at: string; reason: string; selectedModel: string}>;
   retryHistory: Array<{at: string; attempt: number; reason: string}>;
+  /** Durable, monotonically increasing provider-execution identity across retries and controller restarts. */
+  executionSequence?: number;
   immutable: boolean;
 }
 
 export interface ReviewExecutionRequest {
   run: ParameterizedJobRun;
+  executionAttempt: number;
   route: ModelRouteDecision;
   instruction: string;
   contextChunks: Array<{id: string; content: string; files: string[]; sha256: string}>;

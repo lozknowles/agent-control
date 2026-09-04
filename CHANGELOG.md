@@ -1,5 +1,22 @@
 # Changelog
 
+## [3.8.1] — 2026-09-04
+
+- Separates workload/repository locality, provider execution locality, and credential residency in provider-neutral configuration, routing, sealed batons, contracts, telemetry, recovery, Work Parcel ledgers, and dashboard projections.
+- Adds generic references for CLI-home, API-key environment, bearer-file environment, and future provider secure stores without persisting secret values or resolved credential paths.
+- Keeps the 3.8 `account.nodeId` plus `credentialStore` shape backward-compatible through an explicit migration rule while recommending `providerExecutionNodeId` plus `credentialResidency` for new configuration.
+- Adds a governed immutable Windows repository snapshot operation through the existing managed-node SSH transport. It validates source roots/ref/SHA, rejects tracked credential-like files, transfers a content-hashed Git archive, and extracts it read-only with path/symlink protections.
+- Fixes remote Windows Codex `accountStatus` pipe retention: `codex login status` now uses bounded native-process supervision with node-local redirected streams, timeout cleanup, and sanitized classification. Unauthenticated profiles report `codex_chatgpt_auth_required` instead of hanging behind SSH.
+- Restores the declared file-backed credential reference as a generic fallback when a provider's primary bearer environment reference is absent, and gives nontrivial model-qualification checks a bounded 1,024-token response allowance so reasoning providers do not fail solely after exhausting the former 256-token cap.
+- Stops the operator whole-repository review artifact from retaining the resolved credential-file path or raw provider response; it now retains only the declared reference name, response hashes, normalized usage, status, and review text.
+- Fixes the governed repository-review retry lifecycle by retaining one logical Run while assigning each execution attempt a distinct immutable token-thread identity. Failed-attempt telemetry and parcels remain durable, retry reasons remain visible, and thread provenance checks stay fail-closed across provider/account/model/node boundaries.
+- Makes that execution-attempt sequence durable across controller restart, verifies only the successful retry's parcels, derives contract acceptance from the actual validation verdict, and fails closed when a configured cost ceiling cannot be measured.
+- Replaces Spark's tracked-diff-only scope accounting with a reusable NUL-safe Git mutation-surface check covering staged and unstaged modifications, additions, deletions, renames, and non-ignored untracked files. Ignored repository-local transients remain outside the release gate; unexpected untracked files now reject containment before independent verification.
+- Keeps account-bound Codex CLI execution isolated from ambient OpenAI/Codex API billing credentials, writes foundational state/event/telemetry files owner-only, and continuously validates the canonical example configuration.
+- Shows workload, provider-execution, and credential-residency nodes separately in Models, parameterized Runs, live token telemetry, handoff routes, and model-chain totals.
+- Preserves predetermined account-profile fallback and explicit rejection reasons; it does not rotate accounts to evade or aggregate provider limits.
+- Adds focused locality, migration, credential-isolation, snapshot-transfer, route-identity, Windows-supervision, retry-lifecycle, and complete Git-mutation regressions. Physical retry/scope proof and the final governed GLM review passed; sanitized evidence is included with the release.
+
 ## [3.8.0] — 2026-09-03
 
 - Adds opt-in governed retrieval with provider-neutral intents/providers, bounded progressive policy, compact content-addressed Evidence Packets, explicit local/remote/hybrid locality, and current/possibly-stale/invalid freshness.

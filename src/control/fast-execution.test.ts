@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
+import {execFileSync} from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import {classifyTrivialWork, effectiveSparkConfig, FastExecutionCoordinator, FileFastExecutionLedger, probeCodexSparkAvailability, type FastExecutionResult, type SparkAvailability, type TrivialWorkRequest} from './fast-execution.js';
+import {classifyTrivialWork, CodexFastExecutionRunner, effectiveSparkConfig, FastExecutionCoordinator, FileFastExecutionLedger, probeCodexSparkAvailability, type FastExecutionResult, type SparkAvailability, type TrivialWorkRequest} from './fast-execution.js';
 import {ModelRegistry} from './model-registry.js';
 
 const available: SparkAvailability = {available: true, model: 'gpt-5.3-codex-spark', codexVersion: 'codex-cli test', authMode: 'chatgpt', checkedAt: '2026-09-01T00:00:00.000Z', reason: 'qualified-test', evidence: ['test'], latencyMs: 1};
@@ -100,4 +101,17 @@ test('file fast-execution ledger survives restart without converting unknown val
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ac-fast-ledger-')), file = path.join(root, 'attempts.json'), ledger = new FileFastExecutionLedger(file);
   const value = new FastExecutionCoordinator(registry(), available, {execute: async () => result({usage: undefined})}, {verify: async () => ({passed: true, evidence: ['verified']})}, enabled, undefined, () => new Date('2026-09-01T00:00:00.000Z'), ledger);
   await value.execute(request(), 'controller'); const restored = new FileFastExecutionLedger(file).list(); assert.equal(restored.length, 1); assert.equal(restored[0].cost, null); assert.equal(restored[0].filesRead, null); assert.equal(fs.statSync(file).mode & 0o777, 0o600);
+});
+
+test('real Spark runner reports and containment rejects an untracked out-of-scope file', async t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-spark-untracked-')); t.after(() => fs.rmSync(root, {recursive: true, force: true}));
+  execFileSync('git', ['init', '-q', '-b', 'main'], {cwd: root}); execFileSync('git', ['config', 'user.email', 'test@example.invalid'], {cwd: root}); execFileSync('git', ['config', 'user.name', 'Agent Control Test'], {cwd: root});
+  fs.mkdirSync(path.join(root, 'docs')); fs.writeFileSync(path.join(root, 'docs/guide.md'), 'guide\n'); execFileSync('git', ['add', '.'], {cwd: root}); execFileSync('git', ['commit', '-qm', 'fixture'], {cwd: root});
+  const command = path.join(root, 'fake-codex.mjs');
+  fs.writeFileSync(command, `#!/usr/bin/env node\nimport fs from 'node:fs';\nfs.writeFileSync('outside scope.txt', 'unauthorised\\n');\nconsole.log(JSON.stringify({type:'item.completed',item:{type:'agent_message',text:JSON.stringify({status:'SUCCEEDED',summary:'done',confidence:.99,requestedMoreContext:false})}}));\nconsole.log(JSON.stringify({type:'turn.completed',usage:{input_tokens:1,output_tokens:1}}));\n`); fs.chmodSync(command, 0o700); execFileSync('git', ['add', command], {cwd: root}); execFileSync('git', ['commit', '-qm', 'runner'], {cwd: root});
+  const value = new FastExecutionCoordinator(registry(), available, new CodexFastExecutionRunner(root, command), {verify: async () => ({passed: true, evidence: ['must-not-run']})}, enabled);
+  const outcome = await value.execute(request(), 'controller');
+  assert.equal(outcome.telemetry.outcome, 'ESCALATED');
+  assert.equal(outcome.telemetry.escalationReason, 'unapproved-file-touched');
+  assert.deepEqual(outcome.result?.touchedFiles, ['outside scope.txt']);
 });

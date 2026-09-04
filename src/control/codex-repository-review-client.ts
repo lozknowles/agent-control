@@ -1,6 +1,7 @@
 import type {ModelConfig, ProviderAccountProfileConfig, ProviderConfig} from './config.js';
 import {LocalCodexNodeExecutionPort, type CodexNodeExecutionPort} from './codex-node-execution.js';
 import {normalizeModelUsage, type ModelInvocationResult, type ProviderInvocationTelemetry} from './openai-compatible-provider.js';
+import {accountProviderExecutionNode} from './provider-account-profile.js';
 
 type InvocationOptions = {timeoutMs?: number; maximumOutputTokens?: number; structured?: boolean; outputSchema?: Record<string, unknown>; signal?: AbortSignal; onTelemetry?: (event: ProviderInvocationTelemetry) => void};
 
@@ -9,7 +10,7 @@ export class CodexRepositoryReviewClient {
   constructor(
     private readonly provider: ProviderConfig,
     private readonly account: ProviderAccountProfileConfig,
-    private readonly nodeId = account.nodeId ?? 'controller',
+    private readonly nodeId = accountProviderExecutionNode(account),
     private readonly nodeExecution: CodexNodeExecutionPort = new LocalCodexNodeExecutionPort(),
   ) {
     if (provider.kind !== 'cli') throw new Error('codex_repository_review_provider_kind_invalid');
@@ -17,7 +18,7 @@ export class CodexRepositoryReviewClient {
 
   async invoke(model: ModelConfig, input: string, options: InvocationOptions = {}): Promise<ModelInvocationResult & {nodeId: string}> {
     if (model.provider !== this.provider.id || model.accountProfile !== this.account.id) throw new Error('model_account_profile_mismatch');
-    if ((this.account.nodeId ?? this.nodeId) !== this.nodeId) throw new Error('model_account_node_mismatch');
+    if (accountProviderExecutionNode(this.account) !== this.nodeId) throw new Error('model_account_node_mismatch');
     if (!options.structured || !options.outputSchema) throw new Error('codex_repository_review_schema_required');
     if (options.signal?.aborted) throw new Error('provider_cancelled');
     const started = Date.now();
