@@ -76,11 +76,14 @@ This proves that the provider call succeeds, both schema boundaries validate, a 
 
 ## Browser evidence
 
-The existing qualified Tailscale/SSH/CDP path launched MSI Chrome and recorded navigation across the successful minimal result/history and all three historical failure histories/results.
+The existing qualified Tailscale/SSH/CDP path launched MSI Chrome and recorded navigation across the successful minimal result/history and all three historical failure histories/results. A supplemental identity clip visibly records the candidate version, branch and implementation commit.
 
-- Video: `/fast/qualification/agent-control-3.8.2-history-schema-mopup/agent-control-3.8.2-rc1-history-schema-mopup-msi.mp4`
-- SHA-256: `684cc5f66e301567113e1cebff0bad13040f21ad0f98cc88eaeded8a68b84047`
-- Format: H.264 MP4, 1920×980, approximately 70.9 seconds
+- Final history video: `/fast/qualification/agent-control-3.8.2-history-schema-mopup/agent-control-3.8.2-rc1-final-msi.mp4`
+- History video SHA-256: `bb885f3b3a427c2ac49d50e7fd7143f6862a9987ccd4c44298da51d318421e2e`
+- History format: H.264 MP4, 1920×978, 57 seconds
+- Identity video: `/fast/qualification/agent-control-3.8.2-history-schema-mopup/agent-control-3.8.2-rc1-msi-identity.mp4`
+- Identity video SHA-256: `e02fb8790242642b76597212e4db4c094d6b61ea0470bc3e3348d491936ed93a`
+- Identity shown: `v3.8.2-rc.1`, `feature/3.8.2-human-readable-execution-history`, implementation commit `9be253fb06f97ae0c010d2c26f0f74a263338ee4`
 
 The qualification media remains outside the Git worktree so it cannot become a product runtime dependency. Its hash binds it to this report.
 
