@@ -10,7 +10,7 @@ The exact final release commit is the descendant identified authoritatively by a
 
 ## Release-only delta
 
-The promotion commit changes release metadata only: package/runtime version, changelog date, final release and migration notes, README/architecture release wording, generated implementation-status projection, and this final release record. It changes no executable behavior and does not alter the accepted physical evidence.
+The promotion commits change package/runtime version, changelog date, final release and migration notes, README/architecture release wording, generated implementation-status projection, and this final release record. The package-install gate also exposed that the declared CLI version smoke command was absent; the final delta adds only the local read-only `agent-control --version` command and its regression test. Provider execution, schema validation, history projection, routing and physical evidence are unchanged.
 
 ## Qualification basis
 

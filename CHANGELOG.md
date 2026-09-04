@@ -9,6 +9,7 @@
 - Fixes the repository-review provider/application schema mismatch observed in the v3.8.1 qualification. The provider wire schema now declares the same literals, enums, non-empty values, line constraints and confidence range enforced by the application validator.
 - Adds safe field-path diagnostics such as `$.findings[0].category:enum` while preserving fail-closed behavior and without persisting rejected provider bodies.
 - Fixes web-response redaction so the safe numeric `contextTokens` and `contextLimitTokens` telemetry fields remain visible while credential-like token fields are still redacted.
+- Adds `agent-control --version` / `-v` so a clean installed package can identify its exact release without contacting a running controller.
 - Physically qualifies a minimal Account A repository review: schema validation, independent verification, human-readable history and Job/Work Parcel token and calculated-cost reconciliation all passed. The historical v3.8.1 evidence remains unchanged.
 
 ## [3.8.1] — 2026-09-04

@@ -10,6 +10,8 @@ Handoff semantics remain evidence-based. A threshold can produce `HANDOFF_RECOMM
 
 The HTTP redaction boundary now permits the safe numeric `contextTokens` and `contextLimitTokens` fields while continuing to redact credential-like token fields. Human-readable history excludes raw prompts, rejected provider bodies, hidden reasoning, authentication material, email addresses and resolved credential paths.
 
+Clean package installations can report their exact source release with `agent-control --version`; the command is local and does not require a running controller.
+
 Physical qualification used the normal Controller Account A Saved Job path. Run `a0d646b0-77ae-41b3-85ed-a02a86f4880e` and Work Parcel `parcel-bccb41f1-c1b1-4ff2-8f1d-b3d8c61c2c07` returned a schema-valid `PASS`, passed independent verification, exposed 21 correctly associated history entries and reconciled 13,092 input plus 194 output tokens to 13,286 total at calculated USD 0.026960.
 
 See [execution-history operation](execution-history.md), [dashboard operation](web-dashboard.md), [qualification evidence](evidence/agent-control-3.8.2-human-readable-history-qualification.md), and the [3.8.2 migration guide](migration-3.8.2.md).
