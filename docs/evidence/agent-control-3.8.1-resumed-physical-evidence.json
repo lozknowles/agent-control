@@ -97,11 +97,38 @@
     "credentialReference": "OPENROUTER_API_KEY_FILE",
     "qualificationEvidenceRoot": "/fast/qualification/agent-control-3.8.1-glm-KvSmy8",
     "capabilities": ["responses", "model-identity", "usage-accounting", "basic-response", "coding", "structured-output", "reasoning", "tool-use"],
-    "directProviderSubstitutionUsed": false
+    "directProviderSubstitutionUsed": false,
+    "fullReview": {
+      "runId": "run-e1a6c1ed-df0b-4f6f-b409-d9ee9650ea86",
+      "reviewedCommit": "d9f768123378e6d2858e9578cf8748e485186153",
+      "contextSha256": "4d58bc29810c9718e093cec1b2d75f2b476b7878cc0d977bd7099882cc1b9191",
+      "status": "SUCCEEDED",
+      "verification": ["provider-completed", "review-content-complete"],
+      "verdict": "PASS_WITH_FINDINGS",
+      "inputTokens": 827644,
+      "outputTokens": 53898,
+      "reasoningTokens": 44808,
+      "totalTokens": 881542,
+      "providerReportedCostUsd": 0.1510956,
+      "precedingIncompleteAttempt": {
+        "inputTokens": 985134,
+        "outputTokens": 32768,
+        "totalTokens": 1017902,
+        "providerReportedCostUsd": 0.1641541,
+        "verification": "FAIL"
+      },
+      "artifactRemediation": {
+        "state": "PASS",
+        "rawProviderResponsePersisted": false,
+        "resolvedCredentialPathPersisted": false,
+        "credentialValueObserved": false
+      },
+      "evidenceRoot": "/fast/qualification/agent-control-3.8.1-glm-full-review"
+    }
   },
   "dashboardVideo": {
-    "state": "NOT_STARTED",
-    "reason": "conditional GLM run blocked; no callable interactive browser/computer surface"
+    "state": "UNAVAILABLE",
+    "reason": "no callable interactive browser/computer surface; durable lifecycle and completion telemetry retained"
   },
   "regression": {
     "command": "npm run check",
@@ -110,8 +137,8 @@
     "dashboard": "PASS",
     "neutralityTests": 3,
     "implementationStatusClaims": 32,
-    "testsPassed": 702,
+    "testsPassed": 703,
     "testsFailed": 0
   },
-  "verdict": "QUALIFICATION IN PROGRESS — GLM PROVIDER QUALIFIED; FULL REPOSITORY REVIEW PENDING"
+  "verdict": "REVIEW_REQUIRED — GLM QUALIFIED AND FULL REVIEW VERIFIED; RELEASE BLOCKED BY REVIEW FINDINGS"
 }

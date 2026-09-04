@@ -92,8 +92,28 @@ The initial shell-only check was insufficient. Historical Ox/Ox Alpha launch con
 
 The first real `qualifyModel` run authenticated and proved exact `openrouter/z-ai/glm-5.3-flash` identity but exhausted the hard-coded 256-token allowance during structured output. After a bounded 1,024-token allowance was applied to nontrivial capability checks, the production qualifier passed identity, coding/structured output, reasoning, and tool-use. Provider-reported qualification usage and costs were retained; no credential value or path entered the evidence. Qualification evidence root: `/fast/qualification/agent-control-3.8.1-glm-KvSmy8`.
 
+### Full frozen-repository GLM review
+
+Commit `d9f768123378e6d2858e9578cf8748e485186153` was frozen with 604 tracked files. All 468 source, test, configuration, and documentation text files were supplied verbatim; 136 binary, generated-report, and historical raw-log files were represented by exact path, size, and SHA-256 so the request fit the qualified context envelope without losing repository coverage. Context SHA-256: `4d58bc29810c9718e093cec1b2d75f2b476b7878cc0d977bd7099882cc1b9191`.
+
+The first accepted monolithic attempt reached the exact 32,768 output-token ceiling and returned `incomplete`; Agent Control retained 985,134 input and 32,768 output tokens with provider-reported cost `0.1641541 USD`, failed verification, and did not claim success. The bounded final attempt used the Job's supported 65,536 ceiling and completed:
+
+- Run: `run-e1a6c1ed-df0b-4f6f-b409-d9ee9650ea86`
+- Provider/model: `openrouter/z-ai/glm-5.3-flash`
+- Provider response: `gen-1788503327-FYormfXpHxYraa3YHwCX`
+- Raw-response SHA-256: `5aca181adb82f08abb5852ddc6115f436b7fe5798ebc79cd267bd6f1245eeeab`
+- Usage: `827,644` input + `53,898` output = `881,542` total; `44,808` reasoning tokens; provider-reported cost `0.1510956 USD`
+- Independent verification: `provider-completed` and `review-content-complete` both passed
+- Review verdict: `PASS_WITH_FINDINGS`
+
+The review identified two high-severity and several medium/low findings. During qualification it correctly found that the operator review artifact retained a resolved credential-file path and raw provider body. That evidence-boundary defect was fixed immediately: artifacts now retain the declared reference name and response hashes/status/usage only. The three temporary artifacts were sanitized with old/new hashes preserved in `artifact-remediation.json`; no credential value was observed. The remaining high findings—repository-review retry thread identity and Spark untracked-file scope containment—and the medium contract-verdict finding require separate remediation and prevent release closure.
+
+No callable Computer Use, Chrome-control, or built-in browser-control surface was bound to this task, so a genuine dashboard video could not be produced. Durable lifecycle transitions and completed telemetry were retained, but OpenRouter's non-streaming Responses call exposed no authoritative mid-response token samples; live token and cost fields remained unavailable until completion rather than being estimated.
+
 Machine-readable resumed evidence is recorded in `agent-control-3.8.1-resumed-physical-evidence.json`. Operational full-fidelity records remain under `/fast/qualification/agent-control-3.8.1-accounts-1AJFlB`, `/fast/qualification/agent-control-3.8.1-fallback-LSq14w`, and `/fast/qualification/agent-control-3.8.1-msi-gsP6he`.
 
 Final regression at this resumed checkpoint passed `npm run check`: TypeScript, bootstrap syntax, dashboard syntax, infrastructure neutrality, and all 32 implementation-status claims passed; the complete deterministic suite passed 702/702 tests with zero failures, cancellations, skips, or todos. The evidence JSON parsed successfully, `git diff --check` passed, and a bounded secret/path scan found no credential values or Windows absolute paths in the persisted evidence.
 
-Current verdict: **QUALIFICATION IN PROGRESS — GLM PROVIDER QUALIFIED; FULL REPOSITORY REVIEW PENDING**.
+Current verdict: **REVIEW_REQUIRED — GLM QUALIFIED AND FULL REVIEW VERIFIED; RELEASE BLOCKED BY REVIEW FINDINGS**.
+
+Final post-review regression passed `npm run check`: TypeScript, bootstrap and dashboard syntax, three neutrality checks, all 32 implementation-status claims, and 703/703 deterministic tests passed with zero failures, cancellations, skips, or todos.
