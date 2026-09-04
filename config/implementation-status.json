@@ -1,17 +1,17 @@
 {
   "schema": "agent-control.implementation-status/v1",
   "release": "3.8.1",
-  "updated": "2026-09-03",
+  "updated": "2026-09-04",
   "capabilities": [
     {
       "id": "providers.credential-residency",
       "title": "Credential residency and provider execution locality",
-      "status": "IMPLEMENTED",
+      "status": "QUALIFIED",
       "summary": "Provider-neutral account profiles distinguish workload/repository, provider-execution and credential-residency nodes. Remote repositories cross the existing managed-node boundary only as hash-verified immutable archives; credentials remain opaque node-local references. Routes, batons, contracts, telemetry, recovery and dashboard/ledger views preserve all three localities, while legacy 3.8 profile configuration is normalized compatibly.",
       "sources": ["src/control/provider-account-profile.ts", "src/control/model-registry.ts", "src/control/account-profile-qualification.ts", "src/control/codex-node-execution.ts", "src/control/resource-repository-resolver.ts", "src/control/parameterized-job-engine.ts", "scripts/codex-node-windows.ps1", "scripts/repository-snapshot-windows.ps1", "assets/dashboard/dashboard-models.js", "assets/dashboard/dashboard-parameterized-jobs.js", "assets/dashboard/dashboard-enhancements.js"],
       "tests": ["src/control/credential-residency.test.ts", "src/control/model-registry.test.ts", "src/control/codex-node-execution.test.ts", "src/control/config.test.ts", "src/control/web-server.test.ts"],
-      "evidence": ["docs/credential-residency.md", "docs/evidence/agent-control-3.8.1-qualification.md"],
-      "limitation": "Deterministic implementation is complete. MSI-to-controller repository execution, two-account baton continuation/fallback, remote Windows account-status, and GLM whole-repository physical qualification remain pending and are not inferred."
+      "evidence": ["docs/credential-residency.md", "docs/evidence/agent-control-3.8.1-qualification.md", "docs/evidence/agent-control-3.8.1-resumed-physical-evidence.json", "docs/evidence/agent-control-3.8.1-high-remediation-physical.json", "docs/evidence/agent-control-3.8.1-final-glm-review.md"],
+      "limitation": "MSI-to-controller immutable repository transfer, two-account baton continuation/fallback, remote Windows account-status, and GLM whole-repository review are physically qualified. Spark remains disabled by default; intentionally ignored and .git-internal mutations remain outside its mutation ledger and are a documented deferred hardening risk."
     },
     {
       "id": "context.governed-retrieval",

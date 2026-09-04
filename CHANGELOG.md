@@ -1,6 +1,6 @@
 # Changelog
 
-## [3.8.1] — Unreleased
+## [3.8.1] — 2026-09-04
 
 - Separates workload/repository locality, provider execution locality, and credential residency in provider-neutral configuration, routing, sealed batons, contracts, telemetry, recovery, Work Parcel ledgers, and dashboard projections.
 - Adds generic references for CLI-home, API-key environment, bearer-file environment, and future provider secure stores without persisting secret values or resolved credential paths.
@@ -15,7 +15,7 @@
 - Keeps account-bound Codex CLI execution isolated from ambient OpenAI/Codex API billing credentials, writes foundational state/event/telemetry files owner-only, and continuously validates the canonical example configuration.
 - Shows workload, provider-execution, and credential-residency nodes separately in Models, parameterized Runs, live token telemetry, handoff routes, and model-chain totals.
 - Preserves predetermined account-profile fallback and explicit rejection reasons; it does not rotate accounts to evade or aggregate provider limits.
-- Adds focused locality, migration, credential-isolation, snapshot-transfer, route-identity, Windows-supervision, retry-lifecycle, and complete Git-mutation regressions. Physical retry/scope proof and a fresh governed GLM review remain release-candidate gates and are not claimed here.
+- Adds focused locality, migration, credential-isolation, snapshot-transfer, route-identity, Windows-supervision, retry-lifecycle, and complete Git-mutation regressions. Physical retry/scope proof and the final governed GLM review passed; sanitized evidence is included with the release.
 
 ## [3.8.0] — 2026-09-03
 
