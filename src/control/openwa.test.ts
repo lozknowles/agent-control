@@ -109,3 +109,11 @@ test('a killed writer leaves one durable run, defaults reconcile and conflicting
 });
 test('definition drift, expired challenge and changed linked identity fail closed',async t=>{const s=setup(t);await s.enroll();s.adapter.config.templates[0].definitionHash='0'.repeat(64);assert.equal(s.receive('run test','drift').rejected,true);const pair=s.adapter.beginPairing();s.advance(300001);await s.adapter.checkHealth();s.receive(pair.command,'expired');assert.equal(s.adapter.status().pairing.length,0);assert.throws(()=>s.adapter.confirmPairing('expired',[]));});
 test('signed delivery acknowledgements track delivery without executing another command',async t=>{const s=setup(t);await s.enroll();s.receive('help','help');await s.adapter.tick();assert.equal(s.adapter.status().deliveries[0].state,'submitted');s.receive('run test','ack',{id:'message-1',status:'delivered'},{event:'message.ack'});assert.equal(s.adapter.status().deliveries[0].state,'delivered');s.receive('run test','late-failure',{id:'message-1',status:'failed'},{event:'message.failed'});assert.equal(s.adapter.status().deliveries[0].state,'delivered');assert.equal(s.rt.ledger.list().length,0);});
+
+test('normalized OpenWA voice notes reach social intake while forwarded audio remains denied',async t=>{
+ const s=setup(t);await s.enroll();const messages:unknown[]=[];
+ s.adapter.social={accept:m=>{messages.push(m);return {accepted:true};},accepts:()=>false} as unknown as import('./social-voice.js').SocialVoiceCoordinator;
+ assert.equal(s.receive('','voice-note',{type:'voice',media:{mimetype:'audio/ogg'}}).accepted,true);
+ assert.equal((messages[0] as {kind:string}).kind,'audio');
+ s.receive('','forwarded',{type:'voice',media:{mimetype:'audio/ogg'},isForwarded:true});assert.equal(messages.length,1);
+});
