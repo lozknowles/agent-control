@@ -2,6 +2,9 @@
 
 ## Unreleased — Agent Control 3.9.0 candidate
 
+- Adds optional provider-neutral Social & Voice contracts, durable confirmed voice-to-Work-Parcel intake, a private dashboard/history view and separately granted one-shot social approvals. OpenWA and the isolated OmniVoice/Whisper worker remain replaceable edges. Physical TTS passed on P5000 and integrated Intel Arc; see `docs/social-voice/qualification.md` for pending end-to-end gates and vocabulary limitations.
+- Coding qualification now sends an explicit strict JSON schema and JSON-only instruction; malformed/fenced output remains rejected.
+
 - Adds a layered persistent Work Parcel context model: concise active state, hash-chained immutable events, governed historical retrieval and bounded content-hashed baton views. Baton compaction no longer deletes failed approaches, decisions, tests, routing, approvals or steering history.
 - Makes success criteria first-class provenance-bearing objects (`USER`, `POLICY`, `PLANNER`, or `REVIEWER`) and prevents a Parcel from becoming successful until every required criterion has independently evaluated evidence.
 - Adds durable non-blocking questions with stable identity, origin, dependent-stage set, priority, consequence, answer and timestamps. Only dependent DAG branches wait; independent ready stages dispatch concurrently and resume deterministically after an answer.

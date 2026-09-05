@@ -32,6 +32,7 @@ import type {CapabilityCandidateClassification, CapabilityCandidateState, Capabi
 import type {FrozenQualificationSuite, ModelIntelligenceLedger} from './model-intelligence.js';
 
 export type ControlEventType =
+  | 'social.activity'
   | 'system.snapshot'
   | 'lane.status_changed'
   | 'lane.priority_changed'
@@ -340,6 +341,10 @@ export class AgentControlService {
     throw new Error('system_missing');
   }
   parcels() { return this.mustWorkParcels().list(); }
+  createSocialParcel(jobId:string,parameters:Record<string,unknown>,actor:string,requestKey:string) {
+    const job=this.job(jobId),parcel=this.mustWorkParcels().submitApprovedPlan(`Approved social task: ${job.metadata.id}`,actor,requestKey,{objective:job.metadata.name,planner:{kind:'deterministic',reason:'Explicit enrolled sender selected a hash-pinned approved template'},stages:[{id:'execute',name:job.metadata.name,job:`${job.metadata.id}@${job.metadata.version}`,parameters,dependsOn:[]}]});
+    this.events.emit('work.parcel_created',{parcelId:parcel.id,status:parcel.status},undefined,actor);return parcel;
+  }
   parcel(id: string) { return this.mustWorkParcels().get(id); }
   async submitNaturalTask(prompt: string, actor: string) {
     let attribution: WorkAttribution;

@@ -174,3 +174,17 @@ test('capability and model-intelligence APIs expose durable queue state and emit
 });
 
 test('unconfigured intelligence endpoints fail explicitly instead of returning internal errors',async t=>{const{server,base}=await running();t.after(()=>server.close());for(const endpoint of ['capability-intelligence','model-intelligence','runtime-safety']){const response=await fetch(`${base}/api/${endpoint}`);assert.equal(response.status,503,endpoint);assert.match((await response.json()).error,/unconfigured/);}});
+
+test('Social and Voice history and approval routes require authentication and same origin',async t=>{
+ const {server,base}=await running('test-token');t.after(()=>server.close());
+ for(const route of ['/api/social-voice','/api/social-voice/transcript']){
+  assert.equal((await fetch(base+route)).status,401);
+  assert.equal((await fetch(base+route,{headers:{Authorization:'Bearer test-token'}})).status,200);
+ }
+ for(const route of ['/api/social-voice/approval','/api/social-voice/approval-grant']){
+  assert.equal((await fetch(base+route,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'})).status,401);
+  assert.equal((await fetch(base+route,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer test-token',Origin:'https://evil.invalid'},body:'{}'})).status,403);
+ }
+ assert.equal((await fetch(base+'/social-voice.html')).status,200);
+ assert.equal((await fetch(base+'/dashboard-social-voice.js')).status,200);
+});
