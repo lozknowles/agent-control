@@ -98,6 +98,8 @@ The Android node gains status and bounded reconnect operations. Existing base ca
 
 First pairing is an explicit local ceremony. Keep the Android System pairing-code dialog open and provide the six-digit code to `android/adb-local.mjs pair` through hidden stdin only, as documented in [`../android/README.md`](../android/README.md). Never place it in arguments, controller state or evidence. If native/local DNS-SD cannot discover a unique pairing service, stop and retain the capability as unavailable rather than entering a guessed address.
 
+Pairing and connect advertisements use a stable `adb-<device-guid>` prefix with independent six-character suffixes; operators should not expect their complete DNS-SD instance names or ports to remain equal. The helper correlates the stable identity, rediscovers a changed port and verifies the selected target with fixed ADB state/property operations before publishing capability. The 3.9 candidate physically passed this lifecycle on the recorded Android 17 / Termux / ADB 35.0.2 environment, including capability withdrawal, same- and changed-endpoint reconnect, governed typed execution and fresh-process session resume. A different Android or ADB build remains independently capability-assessed.
+
 ## Rollback
 
 Stop the 3.9 controller, restore the previous 3.8.2 package/checkout and the state backup taken before upgrade, then run `agent-control --version` and `agent-control status`. Do not point an older process at state that was concurrently modified by a newer controller. Provider credential stores and Android pairing material are external to this source migration and must not be copied or rewritten during rollback.

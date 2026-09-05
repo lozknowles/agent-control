@@ -61,22 +61,22 @@
     {
       "id": "execution.resilient-recovery",
       "title": "Durable execution identity and bounded recovery",
-      "status": "PARTIAL",
+      "status": "QUALIFIED",
       "summary": "Normal and parameterised Jobs persist exact execution identity, classify transport/enrolment/authentication/configuration failures, reconcile rather than replay unresolved work after restart, and expose bounded route-preserving retry state with real deadlines and remaining budget.",
       "sources": ["src/control/execution-recovery.ts", "src/control/job-runtime.ts", "src/control/parameterized-job-engine.ts", "src/control/parameterized-job-types.ts"],
       "tests": ["src/control/execution-recovery.test.ts", "src/control/job-runtime.test.ts", "src/control/parameterized-jobs.test.ts"],
       "evidence": ["docs/evidence/agent-control-3.9-evidence-gap-matrix.md", "docs/evidence/agent-control-3.9-qualification.md"],
-      "limitation": "Dashboard reload and durable unknown-state handling are physically observed, but a real provider authentication block, same-execution reconnect and transient retry were not all forced during the candidate physical run. Unknown continuity remains fail closed."
+      "limitation": "Representative physical qualification proved separate-authority reconciliation after an actual controller SIGKILL, same-route authentication recovery, bounded retry exhaustion and cancellation during backoff without replay or duplicate accounting. Provider/runtime combinations that do not expose authoritative reattachment still fail closed and require their own qualification."
     },
     {
       "id": "execution.verified-process-cleanup",
       "title": "Owned process trees and verified cancellation cleanup",
-      "status": "PARTIAL",
+      "status": "QUALIFIED",
       "summary": "Actions receive an owned-execution port. Linux captures process start identity and terminates/verifies the process group; Windows uses fixed CIM inventory plus bounded tree termination; cancellation, timeout and handoff retain explicit confirmed, uncertain, identity-mismatch or failed cleanup evidence.",
       "sources": ["src/control/owned-process.ts", "src/control/job-runtime.ts", "src/control/contract-runtime.ts", "src/control/codex-exec-provider.ts"],
       "tests": ["src/control/owned-process.test.ts", "src/control/job-runtime.test.ts", "src/control/contract-runtime.test.ts", "src/control/codex-exec-provider.test.ts"],
       "evidence": ["docs/evidence/agent-control-3.9-qualification.md"],
-      "limitation": "Linux process-group cancellation is physically qualified. Windows cleanup is deterministic-adapter tested but was not physically cancelled in this candidate; other substrates deliberately report uncertainty when descendants cannot be proven absent."
+      "limitation": "Linux process-group and Windows process-tree cancellation are physically qualified, including descendants, timeout, identity mismatch and retained protection under cleanup uncertainty. Other substrates deliberately report uncertainty when descendant absence cannot be proven."
     },
     {
       "id": "dashboard.resilient-live-lifecycle",
@@ -100,12 +100,12 @@
     {
       "id": "android.local-adb-reliability",
       "title": "Governed local Android wireless-ADB reliability",
-      "status": "PARTIAL",
+      "status": "QUALIFIED",
       "summary": "A bounded helper serializes pairing/reconnect ownership, recovers stale attempts, accepts pairing PIN only through local stdin, discovers pairing/connect DNS-SD services, preserves stable device identity, distinguishes paired from usable, verifies connection independently and publishes ADB transport capability only while qualified.",
       "sources": ["android/adb-local.mjs", "android/node-server.mjs", "android/resource-agent.sh"],
       "tests": ["android/adb-local.test.mjs"],
       "evidence": ["docs/evidence/agent-control-3.9-qualification.md"],
-      "limitation": "The candidate Pixel had no discovered local pairing/connect endpoint and no available locally entered PIN. Pair, reconnect and execution/resume were therefore not physically exercised, and android.adb.local/transport.adb correctly remained unpublished."
+      "limitation": "Physically qualified on the recorded Android 17 / Termux / ADB 35.0.2 environment for hidden-stdin pairing, intended-device verification, capability withdrawal, same- and changed-endpoint reconnect, governed typed execution and fresh-process session resume. Other Android/ADB builds remain capability-assessed, and first pairing remains an explicit local ceremony."
     },
     {
       "id": "providers.portable-prompt-cache-boundary",
@@ -115,7 +115,7 @@
       "sources": ["src/control/provider-prompt.ts", "src/control/openai-compatible-provider.ts", "src/control/codex-repository-review-client.ts", "src/control/work-parcels.ts", "scripts/qualify-provider-cache-boundary.ts"],
       "tests": ["src/control/provider-prompt.test.ts", "src/control/openai-compatible-provider.test.ts", "src/control/direct-repository-review-executor.test.ts", "src/control/harness-efficiency.test.ts"],
       "evidence": ["docs/evidence/agent-control-3.9-qualification.md", "docs/evidence/agent-control-post-3.8.2-context-efficiency.md"],
-      "limitation": "The physical Codex CLI route exposes automatic cache-read observations but not explicit Responses controls, cache-write counts, authoritative current context or billed cost. The alternating comparison is observational and does not establish repeatable token, latency or monetary savings."
+      "limitation": "A matched known-answer comparison produced equal independent quality scores, but the candidate used more tokens and elapsed time. The Codex CLI route exposes automatic cache-read observations but not explicit Responses controls, cache-write counts, authoritative current context or billed cost; no token, latency or economic saving is claimed."
     },
     {
       "id": "dashboard.human-readable-execution-history",
