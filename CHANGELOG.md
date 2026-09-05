@@ -574,3 +574,10 @@ All notable Agent Control changes are recorded here. The project is still pre-st
 - Recovery does not replace a healthy SSH forward.
 - Runtime state, qualification output, node modules and credentials remain excluded from source control.
 - PTY logical ownership is not a claim that raw OS terminal write attachment is production-qualified.
+
+## Unreleased — optional OpenWA pilot
+
+- Add signed, direct-chat messaging with dashboard operator enrolment, approved templates and run ownership checks.
+- Persist command request keys and delivery state; distinguish requested cancellation, confirmed cleanup and uncertain sends.
+- Add private integration setup and fixed repository test Action; preserve normal dashboard operation when disabled.
+- Physical WhatsApp/account and model-handoff qualification remain pending; no production release implied.

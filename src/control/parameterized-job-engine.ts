@@ -35,10 +35,10 @@ export class ParameterizedJobEngine {
     readonly repositories: RepositoryResolver = new LocalRepositoryResolver(),
   ) { this.clock = options.clock ?? (() => new Date()); this.wait = options.wait ?? abortableDelay; this.recoverInterruptedRuns(); }
 
-  runNow(savedJobId: string, actor: string) { const job = this.savedJobs.get(savedJobId); if (!job.enabled) throw new ParameterizedJobError('saved_job_disabled', savedJobId); return this.createRun(job, {type: 'manual', actor}); }
+  runNow(savedJobId: string, actor: string, requestKey?: string) { const job = this.savedJobs.get(savedJobId); if (!job.enabled) throw new ParameterizedJobError('saved_job_disabled', savedJobId); return this.createRun(job, {type: 'manual', actor, ...(requestKey?{id:requestKey}:{})}); }
   createRun(job: SavedJob, trigger: ParameterizedJobRun['trigger']) {
-    const definition = this.definitions.resolve(job), scheduledFor = trigger.scheduledFor ?? this.clock().toISOString(), occurrenceId = trigger.type === 'schedule' ? hash(`${job.id}\n${scheduledFor}`) : randomUUID();
-    const existing = this.runs.occurrence(occurrenceId); if (existing) return existing;
+    const definition = this.definitions.resolve(job), scheduledFor = trigger.scheduledFor ?? this.clock().toISOString(), occurrenceId = trigger.type === 'schedule' ? hash(`${job.id}\n${scheduledFor}`) : trigger.id ? hash(`command\n${trigger.actor}\n${trigger.id}`) : randomUUID();
+    const existing = this.runs.occurrence(occurrenceId); if (existing) { if(existing.savedJobId!==job.id)throw new ParameterizedJobError('request_key_conflict');return existing; }
     const concurrent = this.runs.list(job.id).filter(run => !terminal(run.status));
     if (concurrent.length && job.concurrency === 'forbid-overlap') throw new ParameterizedJobError('saved_job_overlap_forbidden', concurrent[0].id);
     const at = this.clock().toISOString(), run: ParameterizedJobRun = {

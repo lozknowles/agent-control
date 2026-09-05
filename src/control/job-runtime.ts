@@ -8,7 +8,7 @@ import type {HarnessEfficiencyLedgerPort, InvocationFinalResult} from './harness
 import {OwnedProcessManager, type ExecutionCleanupReport, type OwnedExecution} from './owned-process.js';
 import {deriveRuntimeActionIntent, type RuntimeSafetySupervisorPort} from './runtime-safety-supervisor.js';
 
-function writeJsonAtomic(file: string, value: unknown) { fs.mkdirSync(path.dirname(file), {recursive: true}); const temporary = `${file}.tmp`; fs.writeFileSync(temporary, `${JSON.stringify(value, null, 2)}\n`, {mode: 0o600}); fs.renameSync(temporary, file); }
+function writeJsonAtomic(file: string, value: unknown, durable = false) { fs.mkdirSync(path.dirname(file), {recursive: true}); const temporary = `${file}.tmp`; fs.writeFileSync(temporary, `${JSON.stringify(value, null, 2)}\n`, {mode: 0o600, flush: durable}); fs.renameSync(temporary, file); if (durable && process.platform !== 'win32') { const fd=fs.openSync(path.dirname(file),'r'); try { fs.fsyncSync(fd); } finally { fs.closeSync(fd); } } }
 function now() { return new Date().toISOString(); }
 const ACTIVE_RUNS: RunStatus[] = ['SCHEDULED', 'QUEUED', 'WAITING', 'AUTHENTICATION_BLOCKED', 'RECONNECTING', 'RUNNING', 'VERIFYING', 'CANCELLING', 'CLEANUP_UNCERTAIN', 'DISCONNECTED'];
 const TERMINAL_STEPS: StepStatus[] = ['SUCCEEDED', 'FAILED', 'TIMED_OUT', 'CANCELLED'];
@@ -98,6 +98,8 @@ export class ArtifactStore {
 
 interface LedgerSnapshot {version: 1; runs: RunRecord[]; schedules: ScheduleState[];}
 export class RunLedger {
+  private readonly listeners = new Set<(runId: string, type: string, status: string) => void>();
+  subscribe(listener: (runId: string, type: string, status: string) => void) { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; }
   private readonly runs = new Map<string, RunRecord>(); private readonly schedules = new Map<string, ScheduleState>(); private readonly eventsFile: string;
   constructor(readonly file: string) { this.eventsFile = path.join(path.dirname(file), 'run-events.jsonl'); if (fs.existsSync(file)) { const snapshot = JSON.parse(fs.readFileSync(file, 'utf8')) as LedgerSnapshot; if (snapshot.version !== 1) throw new Error('unsupported_run_ledger'); for (const run of snapshot.runs) this.runs.set(run.id, run); for (const schedule of snapshot.schedules ?? []) this.schedules.set(schedule.scheduleId, schedule); } }
   add(run: RunRecord) { if (this.runs.has(run.id)) throw new Error('run_exists'); run.updatedAt = run.requestedAt; this.runs.set(run.id, structuredClone(run)); this.record(run.id, 'run.created', run.status); return this.get(run.id)!; }
@@ -108,8 +110,8 @@ export class RunLedger {
   saveSchedule(state: ScheduleState) { this.schedules.set(state.scheduleId, structuredClone(state)); this.save(); return this.schedule(state.scheduleId)!; }
   scheduleStates() { return [...this.schedules.values()].map(state => structuredClone(state)); }
   recoverFailClosed() { const changed: string[] = []; for (const run of this.runs.values()) { let dirty = false; for (const step of run.steps) if (['DISPATCHED', 'RUNNING', 'VERIFYING'].includes(step.status)) { step.status = 'FAILED'; step.error = 'execution_identity_unproven_after_restart'; step.endedAt = now(); dirty = true; } if (dirty || ['RUNNING', 'VERIFYING'].includes(run.status)) { run.status = 'DISCONNECTED'; run.errors.push('execution_identity_unproven_after_restart'); run.provenance.push({type: 'recovery', at: now(), detail: 'Fail closed: original execution identity not proven'}); changed.push(run.id); } } if (changed.length) this.save(); return changed; }
-  private record(runId: string, type: string, status: string, evidence?: Record<string, unknown>) { fs.mkdirSync(path.dirname(this.file), {recursive: true}); fs.appendFileSync(this.eventsFile, `${JSON.stringify({at: now(), runId, type, status, ...(evidence ? {evidence} : {})})}\n`, {mode: 0o600}); this.save(); }
-  private save() { writeJsonAtomic(this.file, {version: 1, runs: this.list(), schedules: this.scheduleStates()} satisfies LedgerSnapshot); }
+  private record(runId: string, type: string, status: string, evidence?: Record<string, unknown>) { fs.mkdirSync(path.dirname(this.file), {recursive: true}); fs.appendFileSync(this.eventsFile, `${JSON.stringify({at: now(), runId, type, status, ...(evidence ? {evidence} : {})})}\n`, {mode: 0o600}); this.save(); for (const listener of this.listeners) { try { listener(runId,type,status); } catch { /* Optional observers cannot impair orchestration. */ } } }
+  private save() { writeJsonAtomic(this.file, {version: 1, runs: this.list(), schedules: this.scheduleStates()} satisfies LedgerSnapshot, true); }
 }
 
 export interface JobRuntimeOptions {now?: () => Date; approval?: (policy: string, run: RunRecord) => boolean; efficiency?: HarnessEfficiencyLedgerPort; safety?: RuntimeSafetySupervisorPort; defaultRecoveryDeadlineSeconds?: number; ownedExecutionFactory?: () => OwnedExecution;}
@@ -124,7 +126,12 @@ export class JobRuntime {
   private readonly defaultRecoveryDeadlineSeconds: number;
   private readonly ownedExecutionFactory: () => OwnedExecution;
 
-  createRun(jobReference: string, parameters: Record<string, unknown>, trigger: RunRecord['trigger'], scheduledAt?: string) {
+  createRun(jobReference: string, parameters: Record<string, unknown>, trigger: RunRecord['trigger'], scheduledAt?: string, requestKey?: string) {
+    if (requestKey) {
+      const existing = this.ledger.list().find(run => run.trigger.id === requestKey && run.trigger.actor === trigger.actor);
+      if (existing) { if (jobReference !== `${existing.jobId}@${existing.jobVersion}` || JSON.stringify(effectiveParameters(existing.effectiveJob,parameters)) !== JSON.stringify(existing.parameters)) throw new Error('request_key_conflict'); return existing; }
+      trigger = {...trigger, id: requestKey};
+    }
     const job = this.catalog.job(jobReference); if (!job) throw new Error('job_missing'); if (job.spec.enabled === false) throw new Error('job_disabled');
     const active = this.ledger.list(job.metadata.id).filter(run => ACTIVE_RUNS.includes(run.status));
     const runId = `run-${randomUUID()}`, replaced = job.spec.concurrency === 'replace-running' ? active[0] : undefined;

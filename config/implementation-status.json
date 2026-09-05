@@ -4,6 +4,16 @@
   "updated": "2026-09-05",
   "capabilities": [
     {
+      "id": "messaging.openwa-pilot",
+      "title": "Optional governed OpenWA messaging pilot",
+      "status": "PARTIAL",
+      "summary": "Signed direct commands, authenticated two-step enrolment, immutable template grants, durable runtime request keys, outbound recovery and private dashboard setup are implemented and automatically tested.",
+      "limitation": "Dedicated account linking and separate operator enrolment are pending. No physical round trip, conversation video or real model handoff is qualified. Legacy jobs and pinned saved reviews are supported; the pilot has no qualified review provider and the benchmark capability remains gated.",
+      "sources": ["src/control/openwa.ts", "src/control/messaging-commands.ts", "src/control/repository-test-actions.ts"],
+      "tests": ["src/control/openwa.test.ts"],
+      "evidence": ["docs/openwa/README.md"]
+    },
+    {
       "id": "context.persistent-parcel-ledger",
       "title": "Persistent Work Parcel context ledger and bounded baton views",
       "status": "QUALIFIED",

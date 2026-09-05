@@ -17,6 +17,8 @@ async function loadParameterizedJobs(){
   if(!definitions.some(item=>item.id===parameterizedJobView.selectedDefinition))parameterizedJobView.selectedDefinition=definitions[0]?.id??null;
   if(!saved.some(item=>item.id===parameterizedJobView.selectedSaved))parameterizedJobView.selectedSaved=saved[0]?.id??null;
   if(!runs.some(item=>item.id===parameterizedJobView.selectedRun))parameterizedJobView.selectedRun=runs[0]?.id??null;
+  const linked=new URL(location.href).searchParams.get('messagingRun');
+  if(linked&&runs.some(run=>run.id===linked)&&!parameterizedJobView.messagingLinkOpened){parameterizedJobView.selectedRun=linked;parameterizedJobView.messagingLinkOpened=true;setJobPlatformTab('runs');}
   renderParameterizedJobs();
 }
 
