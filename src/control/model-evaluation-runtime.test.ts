@@ -32,6 +32,7 @@ test('an untested exact model can run only through the qualification purpose and
   assert.equal(result.observation.costAccounting?.cloud?.pricingBasis.tableId, 'model-config:candidate');
   assert.equal(result.observation.usage.freshInputTokens, 80);
   assert.equal(capabilities.assess({providerId: 'api', modelId: 'candidate', nodeId: 'controller'}, ['code.modify'])[0].satisfied, true);
+  assert.match(capabilities.listObservations({providerId: 'api', modelId: 'candidate'}).find(item => item.source === 'QUALIFICATION')?.id ?? '', new RegExp(`^model-evaluation:batch-api:${suite.sha256}:`));
   assert.doesNotMatch(JSON.stringify(result), /The index is off by one/);
   assert.match(result.evidence?.[0] ?? '', /^response:[a-f0-9]{64}$/);
 });
@@ -63,4 +64,21 @@ test('a candidate missing a required model capability is classified before gener
   const batch = {schema: 'agent-control.model-evaluation-batch/v1' as const, id: 'batch-missing-capability', suiteId: suite.id, suiteVersion: suite.version, suiteSha256: suite.sha256, candidates: [candidate], status: 'RUNNING' as const, attemptIds: [], createdAt: '2026-09-05T00:00:00Z', startedAt: '2026-09-05T00:00:01Z', completedAt: null, requestedBy: 'operator', reason: 'test'};
   const executor = new ProviderNeutralModelEvaluationExecutor(registry, capabilities, unusedNodePort, async () => { throw new Error('unexpected_fetch'); });
   await assert.rejects(() => executor.execute({batch, suite, task, candidate, repetition: 1}), /capability_unavailable:code\.modify/);
+});
+
+test('repeated frozen batches append distinct capability evidence instead of colliding', async () => {
+  const suite = oneTaskSuite('coding-v1'), task = suite.tasks[0], capabilities = new CapabilityIntelligenceStore();
+  const registry = new ModelRegistry(
+    [{id: 'api', kind: 'openai-compatible', baseUrl: 'https://provider.example/v1', wireApi: 'responses', auth: {type: 'none'}}],
+    [{id: 'candidate', provider: 'api', providerModel: 'vendor/candidate', capabilities: ['code.modify'], nodes: ['controller'], qualification: {state: 'UNTESTED'}}],
+    {roles: {}}, undefined, undefined, {}, capabilities,
+  );
+  const fetcher = async () => new Response(JSON.stringify({model: 'vendor/candidate', status: 'completed', output_text: JSON.stringify({answer: 'Use xs[xs.length - 1].', evidence: ['xs.length - 1']}), usage: {input_tokens: 20, input_tokens_details: {cached_tokens: 0}, output_tokens: 10, total_tokens: 30}}), {status: 200, headers: {'content-type': 'application/json'}});
+  const executor = new ProviderNeutralModelEvaluationExecutor(registry, capabilities, unusedNodePort, fetcher);
+  const candidate: ModelCandidateIdentity = {providerId: 'api', modelId: 'candidate', providerModel: 'vendor/candidate', runtimeId: 'openai-compatible', runtimeVersion: '1', modelVersion: null, nodeId: 'controller'};
+  const batch = (id: string) => ({schema: 'agent-control.model-evaluation-batch/v1' as const, id, suiteId: suite.id, suiteVersion: suite.version, suiteSha256: suite.sha256, candidates: [candidate], status: 'RUNNING' as const, attemptIds: [], createdAt: '2026-09-05T00:00:00Z', startedAt: '2026-09-05T00:00:01Z', completedAt: null, requestedBy: 'operator', reason: 'repeat'});
+  assert.equal((await executor.execute({batch: batch('batch-one'), suite, task, candidate, repetition: 1})).passed, true);
+  assert.equal((await executor.execute({batch: batch('batch-two'), suite, task, candidate, repetition: 1})).passed, true);
+  const observations = capabilities.listObservations({providerId: 'api', modelId: 'candidate'}).filter(item => item.source === 'QUALIFICATION');
+  assert.equal(observations.length, 2); assert.notEqual(observations[0].id, observations[1].id);
 });
