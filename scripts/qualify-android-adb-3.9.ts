@@ -47,6 +47,7 @@ interface Options {
   pixelIdentity: string;
   resourceId: string;
   remoteAgent: string;
+  controllerNodeId: string;
   controllerSshPort: number;
   endpointChangeTimeoutMs: number;
   phaseDelayMs: number;
@@ -71,8 +72,9 @@ function options(): Options {
   const mode = (values.get('mode') ?? 'qualification') as Options['mode'];
   if (!['qualification', 'resume'].includes(mode)) throw new Error('qualification_mode_invalid');
   const stateDir = path.resolve(values.get('state-dir') ?? path.join(os.tmpdir(), `agent-control-android-adb-${randomUUID()}`));
-  const resourceId = values.get('resource-id') ?? 'pixel';
+  const resourceId = values.get('resource-id') ?? 'pixel', controllerNodeId = values.get('controller-node-id') ?? 'controller';
   if (!/^[a-z0-9][a-z0-9._-]*$/i.test(resourceId)) throw new Error('qualification_resource_id_invalid');
+  if (!/^[a-z0-9][a-z0-9._-]*$/i.test(controllerNodeId)) throw new Error('qualification_controller_node_id_invalid');
   const pixelHost = required('pixel-host'), pixelUser = required('pixel-user');
   if (!/^[a-z0-9.:-]+$/i.test(pixelHost) || !/^[a-z0-9._-]+$/i.test(pixelUser)) throw new Error('qualification_ssh_identity_invalid');
   return {
@@ -89,6 +91,7 @@ function options(): Options {
     pixelIdentity: path.resolve(required('pixel-identity')),
     resourceId,
     remoteAgent: values.get('remote-agent') ?? '~/.cache/agent-control-3.9-qualification/resource-agent.sh',
+    controllerNodeId,
     controllerSshPort: Number(values.get('controller-ssh-port') ?? 2222),
     endpointChangeTimeoutMs: Number(values.get('endpoint-change-timeout-ms') ?? 300_000),
     phaseDelayMs: Number(values.get('phase-delay-ms') ?? 3_000),
@@ -225,7 +228,7 @@ async function qualification(options: Options, node: NodeClientOptions) {
     const evidence = {
       schema: 'agent-control.android-adb-physical-qualification/v1', verdict: 'PASS', startedAt, completedAt: timestamp(),
       source: {branch: 'feature/3.9-resilient-execution', commit: sourceCommit, dirty: false},
-      topology: {controller: 'hpubuntu', controllerSshPort: options.controllerSshPort, pixel: {resourceId: options.resourceId, sshPort: options.pixelPort, platform: 'Android 17 / Termux'}, node: 'candidate loopback HTTP through strict-host-key SSH local-forward'},
+      topology: {controller: options.controllerNodeId, controllerSshPort: options.controllerSshPort, pixel: {resourceId: options.resourceId, sshPort: options.pixelPort, platform: 'Android 17 / Termux'}, node: 'candidate loopback HTTP through strict-host-key SSH local-forward'},
       discovery: {nativeAdbHostMdns: 'unsupported-host-service', selectedSource: safeInitial.adb.discoverySource, quBit: false, manualEndpointEntry: false},
       initial: {runId: initial.id, status: safeInitial, legacyCapabilities: legacyInitial.capabilities},
       disconnect: {injection: 'validated adb disconnect of the qualified endpoint', status: sanitizeStatus(disconnected!), nodeCapabilities: disconnectedResource.capabilities.map(item => item.id).sort(), legacyCapabilities: legacyDisconnected.capabilities},
