@@ -151,4 +151,4 @@ async function main() {
   }
 }
 
-main().catch(error => { process.stderr.write(`${JSON.stringify({phase: 'QUALIFICATION_FAILED', error: error instanceof Error ? error.message : String(error), at: timestamp()})}\n`); process.exitCode = 1; });
+main().catch(error => { process.stdout.write(`${JSON.stringify({phase: 'QUALIFICATION_FAILED', error: error instanceof Error ? error.message : String(error), at: timestamp()})}\n`); process.exitCode = 1; });

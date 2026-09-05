@@ -241,6 +241,11 @@ export class OwnedProcessManager implements OwnedExecution {
         resolve({pid, exitCode, signal: childSignal, stdout: Buffer.concat(stdout).toString('utf8'), stderr: Buffer.concat(stderr).toString('utf8')});
       });
     });
+    // Identity capture can span multiple event-loop turns on Windows. Attach a
+    // rejection observer before awaiting it so an abort/exit during capture is
+    // not reported as an unhandled rejection; callers still await the original
+    // promise below and receive the same failure.
+    void result.catch(() => undefined);
     const identity = await this.termination.capture(pid);
     const tracked: TrackedProcess = {child, identity, completed};
     this.processes.set(pid, tracked);
