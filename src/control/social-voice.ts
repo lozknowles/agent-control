@@ -15,6 +15,11 @@ export interface SocialExecutionPort {
   approvalSnapshot(parcelId: string, runId: string, action: string): string;
   decide(parcelId: string, runId: string, action: string, approved: boolean, actor: string): void;
 }
+export function spokenJobSummary(number:number,result:{status:string;durationMs?:number}) {
+  const outcome:Record<string,string>={SUCCEEDED:'completed successfully',FAILED:'failed',CANCELLED:'was cancelled',DEGRADED:'finished with unresolved issues'};
+  const duration=Number.isFinite(result.durationMs)&&result.durationMs!>=0?` in ${Math.round(result.durationMs!/1000)} seconds`:'';
+  return `Job ${number} ${outcome[result.status]??'has an update'}${duration}. The detailed report is available in the dashboard.`;
+}
 type Row = Record<string, any>;
 const hash=(value:string)=>createHash('sha256').update(value).digest('hex');
 const terminal=(status:string)=>['SUCCEEDED','FAILED','CANCELLED','DEGRADED'].includes(status);
@@ -64,7 +69,7 @@ export class SocialVoiceCoordinator {
         if(result.status===job.status)continue;
         const key=`parcel:${job.parcel}:${result.status}`,text=`Job AC-${job.number}: ${result.status}\n${result.text}`;
         await this.reply(message,key,text);this.audit('parcel.status',job.identity,{parcelId:job.parcel,...result});
-        if(terminal(result.status)&&job.voice)await this.speak(message,key,text);
+        if(terminal(result.status)&&job.voice)await this.speak(message,key,spokenJobSummary(job.number,result));
         this.db.prepare('UPDATE jobs SET status=? WHERE number=?').run(result.status,job.number);
       }
     }finally{this.busy=false;}
@@ -99,7 +104,7 @@ export class SocialVoiceCoordinator {
       await this.reply(m,key,`Job AC-${existing.number} accepted: ${template}.\nWork Parcel: ${parcel.id}\nTo stop: stop AC-${existing.number}${match[2]?'\nText and voice completion requested.':''}`);
     }else if((match=text.match(/^(?:job |status )?(ac[- ]?\d+)$/i))){const job=this.owned(match[1]!,identity);await this.reply(m,key,`Job AC-${job.number}\n${this.execution.observe(job.parcel).text}`);
     }else if((match=text.match(/^stop (ac[- ]?\d+)$/i))){const job=this.owned(match[1]!,identity);this.execution.stop(job.parcel,principal.actor);await this.reply(m,key,'Stop requested. Runtime cleanup remains authoritative.');
-    }else if((match=text.match(/^voice (ac[- ]?\d+)$/i))){const job=this.owned(match[1]!,identity);this.db.prepare('UPDATE jobs SET voice=1 WHERE number=?').run(job.number);const result=this.execution.observe(job.parcel);await this.reply(m,key,`Voice summary enabled for AC-${job.number}. Text evidence remains available.`);if(terminal(result.status))await this.speak(m,key,result.text);
+    }else if((match=text.match(/^voice (ac[- ]?\d+)$/i))){const job=this.owned(match[1]!,identity);this.db.prepare('UPDATE jobs SET voice=1 WHERE number=?').run(job.number);const result=this.execution.observe(job.parcel);await this.reply(m,key,`Voice summary enabled for AC-${job.number}. Text evidence remains available.`);if(terminal(result.status))await this.speak(m,key,spokenJobSummary(job.number,result));
     }else if((match=text.match(/^(approve|reject) (\d+)$/i))){await this.decide(m,key,identity,principal,Number(match[2]),match[1]!.toLowerCase()==='approve');
     }else{await this.reply(m,key,'Unsupported or ambiguous request. Use status, start <approved-template>, job AC-1, stop AC-1, or voice AC-1. Pause/resume are not supported by this runtime.');this.audit('policy.denied',identity,{reason:'unsupported_or_ambiguous_intent'});}
   }
@@ -107,7 +112,7 @@ export class SocialVoiceCoordinator {
     if(!this.speech||!this.voice){this.audit('speech.text_fallback',who(m.identity),{reason:'provider_unconfigured'});return;}
     if(this.db.prepare('SELECT key FROM spoken WHERE key=?').get(key))return;
     this.db.prepare("INSERT INTO spoken VALUES (?,'sending')").run(key);
-    try{const safe=text.split('\n').filter(line=>!/^https?:|^Work Parcel:/.test(line)).join(' ').slice(0,1000);const audio=await this.speech.synthesize({text:safe,voice:this.voice,signal:AbortSignal.timeout(180000)});validateAudio(audio.bytes,audio.mime);const receipt=await this.provider.sendArtifact(m.identity,audio.bytes,audio.mime,key+':audio');this.audit('speech.synthesized',who(m.identity),{metrics:audio.metrics,voice:this.voice,receipt,audioSha256:createHash('sha256').update(audio.bytes).digest('hex')});this.db.prepare("UPDATE spoken SET state='queued' WHERE key=?").run(key);}catch{this.db.prepare("UPDATE spoken SET state='failed' WHERE key=?").run(key);this.audit('speech.text_fallback',who(m.identity),{reason:'synthesis_or_delivery_failed'});}
+    try{const safe=text.split('\n').filter(line=>!/^https?:|^Work Parcel:/.test(line)).join(' ').slice(0,1000);const audio=await this.speech.synthesize({text:safe,voice:this.voice,signal:AbortSignal.timeout(180000)});validateAudio(audio.bytes,audio.mime);const receipt=await this.provider.sendArtifact(m.identity,audio.bytes,audio.mime,key+':audio');this.audit('speech.synthesized',who(m.identity),{text:safe,metrics:audio.metrics,voice:this.voice,receipt,audioSha256:createHash('sha256').update(audio.bytes).digest('hex')});this.db.prepare("UPDATE spoken SET state='queued' WHERE key=?").run(key);}catch{this.db.prepare("UPDATE spoken SET state='failed' WHERE key=?").run(key);this.audit('speech.text_fallback',who(m.identity),{reason:'synthesis_or_delivery_failed'});}
   }
   async requestApproval(identity:SocialIdentity,parcel:string,run:string,action:string,ttlMs=120000){
     if(!this.execution.principal(identity)?.approve||ttlMs<=0||ttlMs>300000)throw new Error('approval_grant_required');

@@ -125,7 +125,7 @@ export class OpenWAAdapter {
   private owns(sender: string, runId: string) { return Boolean(this.db.prepare("SELECT key FROM commands WHERE sender=? AND runId=? AND verb='run'").get(sender, runId)); }
   private queue(dedupe: string, sender: string, body: string, kind = 'reply', runId?: string) {
     // Only generated summaries go into this queue, never upstream bodies, errors or credentials.
-    this.db.prepare('INSERT OR IGNORE INTO outbox(dedupe,sender,runId,body,kind,due) VALUES (?,?,?,?,?,?)').run(dedupe, sender, runId ?? null, body.slice(0,3500), kind, this.clock());
+    this.db.prepare('INSERT OR IGNORE INTO outbox(dedupe,sender,runId,body,kind,due) VALUES (?,?,?,?,?,?)').run(dedupe, sender, runId ?? null, kind==='voice'?body:body.slice(0,3500), kind, this.clock());
   }
   receive(raw: Buffer, headers: Record<string, string | string[] | undefined>): {ignored?:boolean;rejected?:boolean;duplicate?:boolean;runId?:string|null;pairingObserved?:boolean;accepted?:boolean} {
     if (!this.enabled) throw new Error('integration_disabled');
