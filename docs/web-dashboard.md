@@ -147,3 +147,21 @@ The dashboard’s **Thread Context** panel is driven by `GET /api/status` / `GET
 The **Models** view reads `GET /api/models/accounts` and model account projections. It shows account friendly label, provider-execution node, credential-residency node, plan plus metadata authority, availability and independent qualification state. Parameterized Run and live token cards also show the workload node separately. **Check account** dispatches bounded `codex login status` to the selected profile's provider-execution/credential node; `CODEX_HOME` is resolved only there. The dashboard never receives credential environment names, resolved paths, full executable paths, raw process output, email addresses, OAuth tokens, cookies, or authentication-file contents.
 
 The **Retrieval** panel reads the redacted `retrieval` status projection and updates through the existing SSE stream on `retrieval.started`, `retrieval.provider_selected`, `retrieval.escalated`, `retrieval.evidence`, `retrieval.context_compiled`, `retrieval.rehydrated`, `retrieval.invalidated`, `retrieval.fallback`, and `retrieval.failed`. It shows provider/strategy path, calls and escalation, evidence sufficiency/items/tokens, raw bytes avoided, estimated context savings, freshness, locality and latency. A handoff or restart refreshes the same projection after reference revalidation; invalidation and fallback remain visible. Evidence text, repository roots, index paths and raw provider output are excluded. `GET /api/retrieval` is read-only. See [governed retrieval](governed-retrieval.md).
+
+## Persistent context and capability intelligence (3.9)
+
+Each Work Parcel card now includes a **Persistent context** board. It shows the current DAG stage/route, unresolved questions, criterion status, event/baton metrics and bounded history controls. Authenticated operators may answer a stable question, append a steering amendment, add/evaluate a criterion or request a bounded history lookup. These operations enter `AgentControlService`; the page cannot edit event hashes, mark stages successful or bypass verification. An open question names exactly which stages wait, while unrelated running/succeeded stages remain visible.
+
+The **Models** view adds:
+
+- verified model leaders, left empty when evidence is insufficient;
+- Capability Watch candidates grouped by lifecycle and native/emulated verified observations;
+- frozen evaluation batches and queue state;
+- append-only provider/account/model/node/runtime history;
+- 7/30/90-day quality/reliability, fresh/cache/total tokens, cache hit ratio, elapsed time and cost per success;
+- regression warnings and authenticated evidence-gated lifecycle controls;
+- independent Runtime Safety decisions and approval state.
+
+All values come from the capability/model/safety ledgers. Missing cost, unsupported evaluator capability and unqualified leaders display as unavailable, never zero or a fabricated ranking. Provider/model configuration remains separate from observed capability proof.
+
+The core `EventSource` starts independently of optional dashboard projections. If the parameterised Job engine or another optional panel is not configured, that panel reports its own unavailable state while Jobs, Work Parcels and live SSE continue. The top badge changes to `LIVE` only after the browser's event stream opens; reconnect still refreshes the complete authoritative snapshot.

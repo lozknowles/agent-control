@@ -10,20 +10,20 @@ const intent = (overrides: Partial<RuntimeActionIntent> = {}): RuntimeActionInte
 });
 
 test('runtime safety allows bounded reads and audits scoped writes independently of executor intent', () => {
-  const supervisor = new RuntimeSafetySupervisor({id: 'test-policy', approvedRepositoryRoots: ['/fast/repos/project'], approvedFilesystemRoots: ['/fast/work']});
+  const supervisor = new RuntimeSafetySupervisor({id: 'test-policy', approvedRepositoryRoots: ['/srv/repositories/project'], approvedFilesystemRoots: ['/srv/workspaces']});
   assert.equal(supervisor.assess(intent()).outcome, 'ALLOW');
-  const write = supervisor.assess(intent({stepId: 'write', action: 'repository.write', categories: ['REPOSITORY_WRITE'], repositoryScope: ['/fast/repos/project/src']}));
+  const write = supervisor.assess(intent({stepId: 'write', action: 'repository.write', categories: ['REPOSITORY_WRITE'], repositoryScope: ['/srv/repositories/project/src']}));
   assert.equal(write.outcome, 'ALLOW_WITH_AUDIT');
   assert.equal(write.policyId, 'test-policy');
 });
 
 test('normalized scope checks deny traversal, prefix confusion, relative paths and out-of-scope Windows paths', () => {
-  const supervisor = new RuntimeSafetySupervisor({id: 'scopes', approvedRepositoryRoots: ['/fast/repos/project', 'C:\\Users\\Loz\\project']});
-  assert.equal(supervisor.assess(intent({stepId: 'traversal', repositoryScope: ['/fast/repos/project/../secrets']})).outcome, 'DENY');
-  assert.equal(supervisor.assess(intent({stepId: 'prefix', repositoryScope: ['/fast/repos/project-evil']})).outcome, 'DENY');
+  const supervisor = new RuntimeSafetySupervisor({id: 'scopes', approvedRepositoryRoots: ['/srv/repositories/project', 'C:\\Work\\project']});
+  assert.equal(supervisor.assess(intent({stepId: 'traversal', repositoryScope: ['/srv/repositories/project/../secrets']})).outcome, 'DENY');
+  assert.equal(supervisor.assess(intent({stepId: 'prefix', repositoryScope: ['/srv/repositories/project-evil']})).outcome, 'DENY');
   assert.equal(supervisor.assess(intent({stepId: 'relative', repositoryScope: ['src']})).outcome, 'DENY');
-  assert.equal(supervisor.assess(intent({stepId: 'windows-ok', repositoryScope: ['c:\\users\\loz\\project\\src']})).outcome, 'ALLOW');
-  assert.equal(supervisor.assess(intent({stepId: 'windows-bad', repositoryScope: ['C:\\Users\\Loz\\elsewhere']})).outcome, 'DENY');
+  assert.equal(supervisor.assess(intent({stepId: 'windows-ok', repositoryScope: ['c:\\work\\project\\src']})).outcome, 'ALLOW');
+  assert.equal(supervisor.assess(intent({stepId: 'windows-bad', repositoryScope: ['C:\\Work\\elsewhere']})).outcome, 'DENY');
 });
 
 test('destructive and production actions pause for explicit approval and approval survives restart', () => {
@@ -52,8 +52,8 @@ test('plain credentials fail closed before redaction while opaque environment re
 });
 
 test('remote nodes and external communication obey separate policy dimensions', () => {
-  const supervisor = new RuntimeSafetySupervisor({id: 'remote-policy', approvedRemoteNodes: ['msi'], requireApprovalForExternalCommunication: true});
-  assert.equal(supervisor.assess(intent({stepId: 'remote-ok', categories: ['REMOTE_NODE'], remoteNodeIds: ['msi']})).outcome, 'ALLOW_WITH_AUDIT');
+  const supervisor = new RuntimeSafetySupervisor({id: 'remote-policy', approvedRemoteNodes: ['qualified-node'], requireApprovalForExternalCommunication: true});
+  assert.equal(supervisor.assess(intent({stepId: 'remote-ok', categories: ['REMOTE_NODE'], remoteNodeIds: ['qualified-node']})).outcome, 'ALLOW_WITH_AUDIT');
   assert.equal(supervisor.assess(intent({stepId: 'remote-bad', categories: ['REMOTE_NODE'], remoteNodeIds: ['unknown']})).outcome, 'DENY');
   assert.equal(supervisor.assess(intent({stepId: 'message', categories: ['EXTERNAL_COMMUNICATION'], externalDestinations: ['https://example.test']})).outcome, 'REQUIRE_APPROVAL');
 });

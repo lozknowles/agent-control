@@ -6,8 +6,9 @@ A proposed plan is data, not authority. Agent Control validates every stage ID, 
 
 `WorkParcelCoordinator` adds only parent orchestration:
 
-- starts a stage after every declared dependency succeeds;
-- records the child Run ID and typed artifact references in an `agent-control.work-parcel-baton/v1` baton;
+- starts every policy-allowed ready stage after all of its declared dependencies succeed;
+- permits independent ready stages to execute concurrently within worker capacity;
+- records the child Run ID and typed artifact references in a bounded `agent-control.work-parcel-baton/v2` context view;
 - blocks all dependent stages after a failed gate;
 - reconstructs state from the parcel and Run ledgers after restart;
 - aggregates elapsed time and existing per-invocation token/cost telemetry without converting unknown values to zero;
@@ -15,7 +16,23 @@ A proposed plan is data, not authority. Agent Control validates every stage ID, 
 
 Every newly submitted parcel also carries `agent-control.work-attribution/v1`: Actor, Session, optional Agent/delegation, authority snapshot, creation time and legacy marker. The authenticated dashboard selects `web-operator` server-side and ignores a body-supplied actor. Existing callers without the 3.5 identity service receive deterministic legacy attribution rather than an invented authenticated identity.
 
-The initial runtime executes one ready stage at a time. Dependencies are stored as arrays and cycle-validated, so later parallel DAG scheduling does not require a persistence-format replacement. This is deliberately not a general workflow language.
+## Persistent context and completion (3.9)
+
+Each new Parcel owns `agent-control.parcel-context/v1` alongside its stage graph:
+
+- immutable original goal, current interpretation, constraints, plan, stage, dependencies, approvals and route;
+- a SHA-256-linked immutable event ledger for decisions, failures, retries, tool/test results, routing, steering, questions, verification and accounting;
+- governed exact/filter/relevance retrieval over retained events;
+- bounded, content-hashed baton views containing only what the next executor needs;
+- append-only steering amendments without rewriting the original goal;
+- stable questions with originating/dependent stages, priority, consequence and answer timestamps;
+- first-class success criteria with `USER`, `POLICY`, `PLANNER` or `REVIEWER` provenance and independent evidence evaluation.
+
+An unanswered question changes only its declared dependent stages to `WAITING`; unrelated ready stages continue. Answering it appends a durable event and returns those dependencies to normal eligibility. A Parcel can become `SUCCEEDED` only after every stage succeeds and every required criterion passes. A provider completion statement is not evidence by itself.
+
+Stages form a validated acyclic dependency graph. The coordinator may dispatch multiple ready stages concurrently, but `JobRuntime` still owns every individual Run, capability placement, lock, approval, action and verifier gate. This remains a governed orchestration graph, not an arbitrary workflow or shell language.
+
+The dashboard exposes authenticated controls for answering questions, adding/evaluating criteria, steering and retrieving context. These call `AgentControlService`; the browser does not alter the context ledger directly.
 
 ## FreeToken dogfood routine
 

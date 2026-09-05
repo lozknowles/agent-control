@@ -1,6 +1,22 @@
 # Migrating to Agent Control 3.9
 
-Agent Control 3.9 is an additive, fail-safe migration from 3.8.2. It introduces durable execution/recovery fields, verified cleanup evidence, provenance-aware resource measurements, optional prompt-cache capabilities and an optional Android local-ADB helper. It does not deploy services, alter credentials, enable Jobs/Schedules/Spark, pair a device or migrate provider authentication automatically.
+Agent Control 3.9 is an additive, fail-safe migration from 3.8.2. It introduces durable execution/recovery fields, verified cleanup evidence, provenance-aware resource measurements, optional prompt-cache capabilities, an optional Android local-ADB helper, layered Work Parcel context, capability intelligence and append-only model evaluation history. It does not deploy services, alter credentials, enable Jobs/Schedules/Spark, pair a device, promote a model or migrate provider authentication automatically.
+
+## Work Parcel context migration
+
+Existing Parcels remain readable. A newly submitted Parcel receives concise active state, an immutable event chain, retrieval records, bounded baton views, steering amendments, questions and success criteria. Existing `agent-control.work-parcel-baton/v1` records remain historical evidence; new orchestration emits v2 context-view batons. Do not delete older baton/history files after upgrade.
+
+Custom planners should continue to return stable stage IDs and acyclic `dependsOn` arrays. They may additionally declare required capabilities and inferred criteria. Independent ready stages can now dispatch concurrently, so custom Actions must rely on declared resource locks rather than accidental serial ordering. A question must list its dependent stage IDs; omitting unrelated stages is what permits work to continue.
+
+Completion policy is stricter for new criteria-enabled Parcels: every required stage and criterion must pass. Integrations that previously treated a provider completion string as success should attach independently checkable evidence and evaluate the corresponding criterion.
+
+## Capability and model-history migration
+
+Configured provider/model capabilities remain accepted as unverified seeds; they no longer constitute verified routing evidence by themselves. Populate capability observations through bounded qualification and keep provider-specific event/API parsing in adapters. Core policy should request generic capability IDs.
+
+The model-intelligence files are append-only. Preserve them across controller upgrades and back them up with other state. Re-running the same suite creates a new batch and attempt identities; it must not overwrite prior evidence. Lifecycle promotion does not occur automatically. Review warnings, sample size, quality/reliability and known economics, then use the authenticated transition with required approval.
+
+The frozen suite is [`../config/qualification-suite-v1.json`](../config/qualification-suite-v1.json). A changed prompt, fixture, scoring rule, safety criterion or repetition count requires a new suite version/hash rather than an in-place historical reinterpretation.
 
 ## Before upgrading
 
@@ -86,4 +102,4 @@ First pairing is an explicit local ceremony. Keep the Android System pairing-cod
 
 Stop the 3.9 controller, restore the previous 3.8.2 package/checkout and the state backup taken before upgrade, then run `agent-control --version` and `agent-control status`. Do not point an older process at state that was concurrently modified by a newer controller. Provider credential stores and Android pairing material are external to this source migration and must not be copied or rewritten during rollback.
 
-See the [3.9 release notes](release-notes-3.9.0.md), [architecture](../ARCHITECTURE.md), [dashboard guide](web-dashboard.md), [managed-node guide](managed-nodes.md), and [qualification evidence](evidence/agent-control-3.9-qualification.md).
+See the [3.9 release notes](release-notes-3.9.0.md), [architecture](../ARCHITECTURE.md), [dashboard guide](web-dashboard.md), [Work Parcel guide](work-parcels.md), [provider/model lifecycle](provider-model-lifecycle.md), [managed-node guide](managed-nodes.md), [resilient qualification](evidence/agent-control-3.9-qualification.md), and [provider-neutral qualification](evidence/agent-control-3.9-provider-neutral-qualification.md).

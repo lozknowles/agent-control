@@ -7,6 +7,8 @@
 5. Start Agent Control with the referenced environment variable present.
 6. Qualify each model on every node where it may execute.
 7. Test the intended role and fallback policy before using it in a Work Parcel.
+8. Map provider-native techniques into normalized capability observations; do not add provider-name branches to core policy.
+9. Queue the exact model/runtime candidate against the frozen qualification suite and review historical evidence before promotion.
 
 Example provider:
 
@@ -31,6 +33,23 @@ For a Codex CLI provider with more than one authenticated account, add `accountP
 
 Provider and model edits hot-reload through the authenticated dashboard/API. Do not treat a successful endpoint health check as model qualification: qualification requires bounded inference evidence for the exact provider model and node.
 
+## Capability adapter boundary (3.9)
+
+A provider adapter may observe a native feature such as caching, resume, structured tools, asynchronous interaction, browser/computer use or provider review. It must normalize that observation into Agent Control's capability record with:
+
+- stable capability ID;
+- exact provider/model/runtime/version subject;
+- `SUPPORTED` or `UNSUPPORTED`;
+- `NATIVE` or `AGENT_CONTROL_EMULATED`;
+- `VERIFIED` or `UNVERIFIED`;
+- observation/qualification timestamp, limitations and evidence references.
+
+Keep provider API calls and event parsing inside the adapter. Core routing consumes only normalized capability/economic evidence. A configured declaration is not proof, and a provider claim does not bypass a frozen evaluator, independent verification, runtime safety or Work Parcel criteria. If Agent Control can provide a portable emulation, register and qualify it separately rather than pretending it is native.
+
+Model-evaluation adapters must support only the evaluator classes they can genuinely execute. Unsupported browser, computer, workflow or tool fixtures return `CAPABILITY_UNAVAILABLE`; missing credentials return `AUTHENTICATION_UNAVAILABLE`; unreachable providers and failed scoring are separate. Never translate these into a zero score or a successful attempt. Preserve only sanitized output hashes and structured measurements, not prompts, credentials or raw untrusted provider output.
+
 ## 3.6 lifecycle registry
 
 In 3.7, configuration remains the operator-facing definition while the [provider/model lifecycle registry](../provider-model-lifecycle.md) records session-neutral discovery, immutable model recipes, qualification evidence and versioned champion/challenger policy. Register the exact provider model and recipe version, then advance it in order through benchmark, shadow and candidate evidence before ACTIVE/PREFERRED routing. Do not mutate a recipe in place or promote a model from endpoint reachability alone. Automatic production Job adoption remains disabled until the larger frozen benchmark qualifies it.
+
+The 3.9 historical evaluator complements that registry with append-only frozen-suite batches and a conservative `CANDIDATE/QUALIFIED/PREFERRED/DEGRADED/QUARANTINED/RETIRED` review state. These records provide evidence to an operator/policy transition; they do not silently rewrite role mappings.
