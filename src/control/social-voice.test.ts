@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import {SocialVoiceCoordinator, type SocialExecutionPort} from './social-voice.js';
+import {SocialVoiceCoordinator, spokenJobSummary, type SocialExecutionPort} from './social-voice.js';
 import {validateAudio,validateVoice,type SocialChannelProvider,type SocialMessage,type VoiceIdentity,type SpeechProvider,type SpeechRecognitionProvider} from './social-voice-providers.js';
 const voice:VoiceIdentity={id:'test',kind:'designed',provider:'test',modelRevision:'immutable',instruction:'synthetic voice',seed:1};
 function setup(t:test.TestContext){
@@ -33,3 +33,10 @@ test('approvals bind identity action parcel timestamp and are one-shot',async t=
 test('changed and expired approval snapshots fail closed',async t=>{const s=setup(t);s.receive('start test');await s.c.tick();const p=[...s.parcels.values()][0]!;const a=await s.c.requestApproval(s.identity,p.id,'run','action');s.changeAction();s.receive('approve '+a.number,'a');await s.c.tick();assert.equal(s.decisions,0);const b=await s.c.requestApproval(s.identity,p.id,'run','action',1);s.advance(2);s.receive('approve '+b.number,'b');await s.c.tick();assert.equal(s.decisions,0);});
 test('audio signature and voice provenance reject arbitrary attachments and silent cloning',()=>{assert.throws(()=>validateAudio(Buffer.from('<html>not audio</html>'),'audio/wav'));assert.throws(()=>validateVoice({...voice,kind:'cloned'}));assert.doesNotThrow(()=>validateVoice(voice));});
 test('channel identity cannot be confused with a group or another account operator',t=>{const s=setup(t);assert.throws(()=>s.c.accept({identity:{...s.identity,conversation:'group'},id:'group',receivedAt:1000000,kind:'text',text:'start test'}));assert.throws(()=>s.c.accept({identity:{...s.identity,channel:'wrong'},id:'wrong',receivedAt:1000000,kind:'text',text:'start test'}));});
+
+test('spoken summaries use only the short job reference, outcome and duration',()=>{
+ const result={status:'FAILED',durationMs:22000,text:'secret internal diagnostics https://private.invalid',runId:'run-hex',model:'internal-model'};
+ assert.equal(spokenJobSummary(1,result),'Job 1 failed in 22 seconds. The detailed report is available in the dashboard.');
+ assert.match(spokenJobSummary(2,{status:'SUCCEEDED'}),/completed successfully/);
+ assert.doesNotMatch(spokenJobSummary(1,result),/secret|https|hex|internal-model/);
+});

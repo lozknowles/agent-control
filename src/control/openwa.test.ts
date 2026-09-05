@@ -112,8 +112,16 @@ test('signed delivery acknowledgements track delivery without executing another 
 
 test('normalized OpenWA voice notes reach social intake while forwarded audio remains denied',async t=>{
  const s=setup(t);await s.enroll();const messages:unknown[]=[];
- s.adapter.social={accept:m=>{messages.push(m);return {accepted:true};},accepts:()=>false} as unknown as import('./social-voice.js').SocialVoiceCoordinator;
+ s.adapter.social={accept:(m:unknown)=>{messages.push(m);return {accepted:true};},accepts:()=>false} as unknown as import('./social-voice.js').SocialVoiceCoordinator;
  assert.equal(s.receive('','voice-note',{type:'voice',media:{mimetype:'audio/ogg'}}).accepted,true);
  assert.equal((messages[0] as {kind:string}).kind,'audio');
  s.receive('','forwarded',{type:'voice',media:{mimetype:'audio/ogg'},isForwarded:true});assert.equal(messages.length,1);
+});
+
+
+test('voice outbox preserves bounded audio JSON beyond the text summary limit',async t=>{
+ const s=setup(t);await s.enroll();const bytes=Buffer.alloc(5000);bytes.write('RIFF');bytes.write('WAVE',8);
+ s.adapter.queueSocial({channel:'openwa',account:s.config.sessionId,sender,conversation:sender},'', 'voice-integrity',{bytes,mime:'audio/wav'});
+ const row=s.adapter.db.prepare("SELECT body FROM outbox WHERE kind='voice'").get()!;
+ assert.deepEqual(Buffer.from(JSON.parse(String(row.body)).base64,'base64'),bytes);
 });
