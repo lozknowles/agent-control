@@ -1,5 +1,6 @@
 const jobState = {jobs: [], parcels: [], runs: [], queue: [], workers: [], resources: [], systems: [], locks: [], artifacts: [], outputMetrics: null, efficiencyMetrics: null, invocations: [], configuration: null, selectedConfiguration: null, configurationRestartRequired: false, selectedJob: null, selectedRun: null, selectedSystem: null, search: ''};
 let tokenElapsedTimer = null;
+let linkedParcelScrolled = null;
 const terminalRunStatuses = new Set(['SUCCEEDED', 'FAILED', 'DEGRADED', 'CANCELLED', 'MISSED']);
 const retryableRunStatuses = new Set(['FAILED', 'DEGRADED', 'CANCELLED']);
 const baseRefresh = refresh;
@@ -20,6 +21,8 @@ refresh = async () => {
   if (!jobState.selectedSystem && systems.length) jobState.selectedSystem = systems[0].id;
   if (jobState.selectedSystem && !systems.some(system => system.id === jobState.selectedSystem)) jobState.selectedSystem = systems[0]?.id ?? null;
   renderJobs();
+  const linkedParcel=new URL(location.href).searchParams.get('parcel');
+  if(linkedParcel&&linkedParcelScrolled!==linkedParcel){const card=[...document.querySelectorAll('.parcel-card')].find(node=>node.dataset.parcelId===linkedParcel);if(card){card.scrollIntoView({block:'start'});linkedParcelScrolled=linkedParcel;}}
   renderJobRunLanes();
   renderSystems();
   renderConfiguration();
@@ -174,6 +177,7 @@ function renderParcels() {
     return `<article class="parcel-card ${parcel.status === 'RUNNING' ? 'is-running' : ''}"><div class="parcel-head"><strong>${esc(parcel.objective)}</strong><span class="status-pill ${statusClass(parcel.status)}">${esc(parcel.status)}</span><p>${esc(parcel.prompt)}</p></div><div class="parcel-metrics"><span>${esc(parcel.planner.kind)} planner</span><span>${esc(durationLabel(parcel.createdAt, parcel.endedAt))}</span><span>tokens ${esc(t.totalTokens ?? 'unavailable')}</span><span>cost ${esc(t.cost === null ? 'unavailable' : `${t.currency || ''} ${t.cost}`.trim())}</span></div>${summary}${live}${decision}${renderParcelContext(parcel)}${stages}${renderParcelAudit(parcel)}</article>`;
   }).join('') : '<div class="compact-empty">No natural-language work submitted yet.</div>';
   bindParcelContextControls();
+  document.querySelectorAll('.parcel-card').forEach((node,index)=>{node.dataset.parcelId=jobState.parcels[index]?.id||'';});
 }
 
 function byteLabel(value) {

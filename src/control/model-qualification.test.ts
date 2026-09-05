@@ -26,3 +26,14 @@ test('qualification failure is durable, sanitized, and cannot be routed', async 
   assert.equal(result.record.state, 'FAILED'); assert.match(result.record.detail ?? '', /provider_authentication_failed/); assert.equal(JSON.stringify(result).includes('sk-super-secret-value'), false);
   assert.throws(() => registry.route({modelRole: 'coding', nodeId: 'controller'}), /model_route_unavailable/);
 });
+
+test('coding qualification requests a schema and still rejects fenced JSON',async()=>{
+ process.env.QUALIFICATION_TEST_KEY='test';let call=0;
+ const registry=new ModelRegistry(providers,[{...models[0]!,capabilities:['coding']}],{roles:{}});
+ const result=await qualifyModel({registry,modelId:'fast',nodeId:'controller',fetcher:async(_url,init)=>{
+  const body=JSON.parse(String(init?.body));
+  if(call===1){assert.equal(body.text.format.type,'json_schema');assert.equal(body.text.format.strict,true);assert.deepEqual(body.text.format.schema.required,['code']);}
+  return Response.json({model:'vendor/fast',output_text:call++===0?'AGENT_CONTROL_MODEL_OK':'```json\n{"code":"function add(a,b){return a+b}"}\n```'});
+ }});
+ assert.equal(result.record.state,'FAILED');assert.match(result.record.detail??'',/bounded-coding/);
+});

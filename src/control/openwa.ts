@@ -4,6 +4,9 @@ import path from 'node:path';
 import {DatabaseSync} from 'node:sqlite';
 import {z} from 'zod';
 import type {AgentControlService} from './application-service.js';
+import type {SocialVoiceCoordinator} from './social-voice.js';
+import type {SocialIdentity} from './social-voice-providers.js';
+import {readBoundedResponse, validateAudio} from './social-voice-providers.js';
 import {messagingReport, parseMessagingCommand, proposeMessagingCommand, terminalMessagingRun, validateMessagingRun, type MessagingCommand} from './messaging-commands.js';
 import {savedMessagingMilestones,savedMessagingReport,validateSavedMessagingRun,type MessagingObservedRun} from './messaging-saved-jobs.js';
 
@@ -20,6 +23,7 @@ const help = 'Send one command per message:\nhelp · jobs · run <template>\nsta
  * The existing runtime persists request keys, closing the two-store enqueue crash window.
  */
 export class OpenWAAdapter {
+  social?: SocialVoiceCoordinator;
   readonly db: DatabaseSync;
   readonly config: OpenWAConfig;
   private enabled = true;
@@ -86,10 +90,11 @@ export class OpenWAAdapter {
     if (!pairing || !jid(pairing.sender)) throw new Error('pairing_not_observed_or_expired');
     if (!Array.isArray(grants) || grants.some(name => !this.config.templates.some(t => t.name === name))) throw new Error('invalid_template_grants');
     this.db.exec('BEGIN IMMEDIATE');
-    try { this.db.prepare('INSERT OR REPLACE INTO operators(sender,grants,active) VALUES (?,?,1)').run(pairing.sender, JSON.stringify(grants)); this.db.prepare('DELETE FROM pairing WHERE hash=?').run(hash); this.db.exec('COMMIT'); } catch (error) { this.db.exec('ROLLBACK'); throw error; }
+    try { this.db.prepare('DELETE FROM settings WHERE key=?').run(`socialApproval:${digest(pairing.sender)}`); this.db.prepare('INSERT OR REPLACE INTO operators(sender,grants,active) VALUES (?,?,1)').run(pairing.sender, JSON.stringify(grants)); this.db.prepare('DELETE FROM pairing WHERE hash=?').run(hash); this.db.exec('COMMIT'); } catch (error) { this.db.exec('ROLLBACK'); throw error; }
     return {sender: pairing.sender, enrolled: true};
   }
   revoke(sender: string) {
+    this.db.prepare('DELETE FROM settings WHERE key=?').run(`socialApproval:${digest(sender)}`);
     this.db.prepare('UPDATE operators SET active=0 WHERE sender=?').run(sender);
     this.db.prepare('DELETE FROM watches WHERE sender=?').run(sender);
     this.db.prepare("UPDATE outbox SET state='suppressed',body='' WHERE sender=? AND state IN ('queued','retry','failed','uncertain')").run(sender);
@@ -122,7 +127,7 @@ export class OpenWAAdapter {
     // Only generated summaries go into this queue, never upstream bodies, errors or credentials.
     this.db.prepare('INSERT OR IGNORE INTO outbox(dedupe,sender,runId,body,kind,due) VALUES (?,?,?,?,?,?)').run(dedupe, sender, runId ?? null, body.slice(0,3500), kind, this.clock());
   }
-  receive(raw: Buffer, headers: Record<string, string | string[] | undefined>) {
+  receive(raw: Buffer, headers: Record<string, string | string[] | undefined>): {ignored?:boolean;rejected?:boolean;duplicate?:boolean;runId?:string|null;pairingObserved?:boolean;accepted?:boolean} {
     if (!this.enabled) throw new Error('integration_disabled');
     if (raw.length > 65536) throw new Error('webhook_too_large');
     const expected = `sha256=${createHmac('sha256', this.secret).update(raw).digest('hex')}`, supplied = headers['x-openwa-signature'];
@@ -138,6 +143,12 @@ export class OpenWAAdapter {
     }
     if (event.event !== 'message.received') return {ignored: true};
     const data = event.data;
+    if(this.social && data && data.fromMe===false && data.isGroup===false && data.isForwarded===false && !data.quotedMessage && !data.isStatusBroadcast && jid(data.from) && data.chatId===data.from && typeof data.id==='string' && data.id.length<=256 && ((['audio','ptt'].includes(data.type)) || (data.type==='text' && !data.media && typeof data.body==='string' && this.social.accepts(data.body)))) {
+      this.requireConnected();
+      if(!this.operator(data.from))return {rejected:true};
+      if(!Number.isFinite(Date.parse(event.timestamp))||Math.abs(this.clock()-Date.parse(event.timestamp))>300000||typeof data.timestamp!=='number')throw new Error('stale_event');
+      return this.social.accept({id:data.id,identity:{channel:'openwa',account:this.config.sessionId,sender:data.from,conversation:data.from},receivedAt:data.timestamp*1000,kind:data.type==='text'?'text':'audio',...(data.type==='text'?{text:data.body}:{mediaId:data.id})});
+    }
     // Pinned gateway forwarding patch is mandatory; absent provenance fails closed.
     if (!data || data.fromMe !== false || data.isGroup !== false || data.isForwarded !== false || data.quotedMessage || data.media || data.type !== 'text' || data.isStatusBroadcast || !jid(data.from) || data.chatId !== data.from || typeof data.id !== 'string' || !data.id || data.id.length > 256 || typeof data.body !== 'string') return {ignored: true};
     const key = digest(`${this.config.sessionId}:${data.id}`), previous = this.db.prepare('SELECT * FROM commands WHERE key=?').get(key) as Row | undefined;
@@ -242,6 +253,24 @@ export class OpenWAAdapter {
     return this.health;
   }
   async qr() { if (!this.enabled) throw new Error('integration_disabled'); return this.gateway('/qr'); }
+  socialPrincipal(identity:SocialIdentity) {
+    if(identity.channel!=='openwa'||identity.account!==this.config.sessionId||identity.sender!==identity.conversation)return undefined;
+    const operator=this.operator(identity.sender);return operator?{actor:`messaging:${digest(identity.sender).slice(0,24)}`,templates:JSON.parse(operator.grants) as string[],approve:this.db.prepare('SELECT value FROM settings WHERE key=?').get(`socialApproval:${digest(identity.sender)}`)?.value==='true'}:undefined;
+  }
+  grantSocialApproval(sender:string,enabled:boolean){if(!this.operator(sender))throw new Error('operator_not_enrolled');this.db.prepare('INSERT OR REPLACE INTO settings VALUES (?,?)').run(`socialApproval:${digest(sender)}`,String(enabled));return {granted:enabled};}
+  queueSocial(identity:SocialIdentity,text:string,key:string,audio?:{bytes:Uint8Array;mime:string}) {
+    if(!this.socialPrincipal(identity))throw new Error('social_identity_denied');
+    if(audio)validateAudio(audio.bytes,audio.mime);else if(text.length>4096)throw new Error('social_text_too_large');
+    this.queue(`social:${key}`,identity.sender,audio?JSON.stringify({base64:Buffer.from(audio.bytes).toString('base64'),mimetype:audio.mime}):text,audio?'voice':'social');
+    return {id:key,state:'queued' as const};
+  }
+  async socialAudio(identity:SocialIdentity,messageId:string) {
+    if(!this.socialPrincipal(identity)||messageId.length>256)throw new Error('social_identity_denied');
+    const url=`${this.config.gatewayUrl.replace(/\/$/,'')}/sessions/${this.config.sessionId}/messages/${encodeURIComponent(identity.conversation)}/${encodeURIComponent(messageId)}/media`;
+    const response=await this.request(url,{headers:{'X-API-Key':this.apiKey},signal:AbortSignal.timeout(15000),redirect:'error'});
+    if(!response.ok||Number(response.headers.get('content-length'))>8*1024*1024)throw new Error('social_audio_unavailable');
+    const bytes=await readBoundedResponse(response,8*1024*1024),mime=response.headers.get('content-type')??'';validateAudio(bytes,mime);return {bytes,mime};
+  }
   async reconnectSession() { if(!this.enabled)throw new Error('integration_disabled'); await this.gateway('/start',{method:'POST',body:'{}'}); return this.checkHealth(); }
   async tick() {
     if (this.busy || !this.enabled || this.stopped) return;
@@ -254,7 +283,7 @@ export class OpenWAAdapter {
       if (!row) return;
       if (row.kind === 'progress' && row.runId && terminalMessagingRun(this.run(row.runId))) { this.db.prepare("UPDATE outbox SET state='suppressed',body='' WHERE id=?").run(row.id); return; }
       this.db.prepare("UPDATE outbox SET state='sending',attempts=attempts+1 WHERE id=?").run(row.id);
-      try { const result = await this.gateway('/messages/send-text',{method:'POST',body:JSON.stringify({chatId:row.sender,text:row.body,linkPreview:false})});
+      try { const result = await this.gateway(row.kind==='voice'?'/messages/send-audio':'/messages/send-text',{method:'POST',body:JSON.stringify(row.kind==='voice'?{chatId:row.sender,...JSON.parse(row.body),ptt:true}:{chatId:row.sender,text:row.body,linkPreview:false})});
         const remoteId = result.id ?? result.messageId;
         this.db.prepare("UPDATE outbox SET state=?,remoteId=?,code=? WHERE id=?").run(typeof remoteId==='string'?'submitted':'uncertain',typeof remoteId==='string'?remoteId:null,typeof remoteId==='string'?'gateway_accepted_delivery_unconfirmed':'response_without_message_id',row.id);
       } catch(error) {

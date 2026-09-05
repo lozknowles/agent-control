@@ -189,3 +189,15 @@ test('restart reconciliation repairs inferred stage criteria without duplicating
   assert.equal(after.context?.events.filter(event => event.type === 'criterion.evaluated' && event.stageId === 'one').length, 1);
   assert.equal(repaired.context?.active.originalGoal, 'restart criterion repair');
 });
+
+test('approved social parcel request is idempotent across restart and uses the existing executor',async()=>{
+  const s=setup();const key='a'.repeat(64),plan={...s.plan,stages:[s.plan.stages[0]!]};
+  const first=s.coordinator.submitApprovedPlan('approved test','operator',key,plan);
+  assert.equal(s.coordinator.submitApprovedPlan('approved test','operator',key,plan).id,first.id);
+  const restarted=new WorkParcelCoordinator(s.runtime,new WorkParcelStore(s.storeFile),s.planner);
+  assert.equal(restarted.submitApprovedPlan('approved test','operator',key,plan).id,first.id);
+  assert.throws(()=>restarted.submitApprovedPlan('approved test','other',key,plan),/identity_mismatch/);
+  await restarted.tick();await s.runtime.tick();await restarted.tick();
+  assert.equal(s.runtime.ledger.list().length,1);assert.equal(restarted.get(first.id).status,'SUCCEEDED');
+  assert.equal(s.runtime.ledger.list()[0]!.trigger.parcelContext?.parcelId,first.id);
+});

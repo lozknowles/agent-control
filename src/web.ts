@@ -103,6 +103,8 @@ startJobScheduler(jobRuntime, (id, status) => id.startsWith('parcel-') ? service
 startParameterizedJobScheduler(parameterizedJobs, (runId, status) => service.events.emit('job.run_changed', {runId, status, kind: 'parameterized'}, undefined, 'parameterized-job-scheduler'), 1000, error => service.events.emit('failure', {scope: 'parameterized-job-scheduler', error: error.message}, undefined, 'parameterized-job-scheduler'));
 const host = process.env.AGENT_CONTROL_WEB_HOST ?? '127.0.0.1', port = Number(process.env.AGENT_CONTROL_WEB_PORT ?? 4310);
 let openwa: OpenWAAdapter | undefined;
+let socialVoice: import('./control/social-voice.js').SocialVoiceCoordinator | undefined;
+let socialTimer: ReturnType<typeof setInterval> | undefined;
 jobRuntime.ledger.subscribe((runId,type,status)=>service.events.emit('job.run_changed',{runId,type,status},undefined,'run-ledger'));
 parameterizedJobs.runs.subscribe(run=>service.events.emit('job.run_changed',{runId:run.id,status:run.status,kind:'parameterized'},undefined,'parameterized-run-store'));
 if (process.env.AGENT_CONTROL_OPENWA_CONFIG) {
@@ -110,10 +112,21 @@ if (process.env.AGENT_CONTROL_OPENWA_CONFIG) {
     if (!process.env.AGENT_CONTROL_WEB_OPERATOR_TOKEN) throw new Error('operator_auth_required');
     const {OpenWAAdapter, openwaConfigSchema} = await import('./control/openwa.js');
     openwa = new OpenWAAdapter(service, openwaConfigSchema.parse(JSON.parse(fs.readFileSync(process.env.AGENT_CONTROL_OPENWA_CONFIG, 'utf8'))), path.join(stateRoot,'messaging','openwa.sqlite'));
+    if(process.env.AGENT_CONTROL_SOCIAL_VOICE_CONFIG){
+      try {
+      const settings=JSON.parse(fs.readFileSync(process.env.AGENT_CONTROL_SOCIAL_VOICE_CONFIG,'utf8'));
+      const {SocialVoiceCoordinator}=await import('./control/social-voice.js');
+      const {OpenWASocialProvider,openwaExecutionPort}=await import('./control/openwa-social-provider.js');
+      const {PrivateSpeechProvider}=await import('./control/speech-http-provider.js');
+      const speech=settings.speechUrl?new PrivateSpeechProvider(settings.voice.provider,settings.speechUrl,process.env[settings.tokenEnv]??'',settings.voice):undefined;
+      socialVoice=new SocialVoiceCoordinator(path.join(stateRoot,'messaging','social-voice.sqlite'),new OpenWASocialProvider(openwa),openwaExecutionPort(openwa),speech,speech,settings.voice,Date.now,event=>service.events.emit('social.activity',{event}));
+      openwa.social=socialVoice;socialTimer=setInterval(()=>void socialVoice?.tick().catch(()=>{}),1000);socialTimer.unref();
+      } catch {process.stderr.write('Optional Social & Voice configuration unavailable; existing WhatsApp remains active.\n');}
+    }
     openwa.start();
   } catch { process.stderr.write('Optional OpenWA adapter unavailable; dashboard and jobs remain active. Check private integration configuration.\n'); }
 }
-const server = startWebDashboard(service, {host, port, openwa, operatorToken: process.env.AGENT_CONTROL_WEB_OPERATOR_TOKEN, allowedOrigins: process.env.AGENT_CONTROL_WEB_ALLOWED_ORIGINS?.split(',').map(value => value.trim()).filter(Boolean), configFile: configurationFile});
-server.on('close',()=>openwa?.close());
+const server = startWebDashboard(service, {host, port, openwa, socialVoice, operatorToken: process.env.AGENT_CONTROL_WEB_OPERATOR_TOKEN, allowedOrigins: process.env.AGENT_CONTROL_WEB_ALLOWED_ORIGINS?.split(',').map(value => value.trim()).filter(Boolean), configFile: configurationFile});
+server.on('close',()=>{if(socialTimer)clearInterval(socialTimer);openwa?.close();});
 server.on('listening', () => process.stdout.write(`Agent Control ${service.version} web dashboard: http://${host}:${port} (${process.env.AGENT_CONTROL_WEB_OPERATOR_TOKEN ? 'operator authenticated' : 'observer only'})\n`));
 server.on('error', error => { process.stderr.write(`Dashboard failed: ${error.message}\n`); process.exitCode = 1; });
