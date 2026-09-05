@@ -1,12 +1,13 @@
 # Model registry
 
-Agent Control separates five concerns:
+Agent Control separates six concerns:
 
 1. a **provider** supplies an endpoint, protocol and credential reference;
 2. a **model** supplies a stable Agent Control ID and provider-native model ID;
 3. a **qualification** proves capabilities on a named execution node;
 4. a **role** supplies an ordered primary/fallback policy;
 5. worker placement selects the node independently of model routing.
+6. **capability intelligence** preserves verified native/emulated observations and historical task economics independently of configuration.
 
 A configured model starts `UNTESTED` unless durable evidence says otherwise. Only `QUALIFIED` models can route. `QUALIFYING`, `FAILED`, `DISABLED`, wrong-node and capability-unproven candidates remain visible and fail closed.
 
@@ -52,11 +53,15 @@ The example is a registration, not proof that the provider currently exposes tha
 
 The current qualification performs basic response, bounded coding and bounded reasoning checks. Evidence stores hashes, normalized usage, latency and identity—not response text, API keys or prompts containing secrets.
 
+For the 3.9 frozen suite, configured capability is only an unverified seed. A verified attempt records the exact provider/account/model/runtime/node and optional local-artifact hash, suite/prompt/adapter versions, required capability, score, failure class, fresh/cache-read/cache-write/output tokens, latency and cost authority. Repeated batches append history; they never replace yesterday's evidence.
+
 ## Routing order
 
 An explicit model wins over a requested role; a requested role wins over `defaultRole`. Within a role, Agent Control evaluates primary then fallbacks and enforces optional `requires` capabilities against qualification evidence. A fallback decision records every rejected candidate and reason. Set `allowFallback: false` when substitution is forbidden.
 
 Work Parcel stages may specify `requestedRoute.model` or `requestedRoute.modelRole`. Agent Control resolves that request against the scheduler-selected node before creating the Job Run and stores the exact decision in `run.trigger.modelRoute`.
+
+The 3.9 capability-first ranker rejects candidates without every verified requirement before comparing qualification confidence, observed task quality/reliability, known cost/latency, token/cache efficiency, account/node state, local/API preference and privacy policy. Its decision identifies each rejected candidate and whether the selected route satisfied requirements natively or through a verified Agent Control emulation. Unknown cost is not free.
 
 ## API
 
@@ -75,5 +80,7 @@ Operator-authenticated operations:
 
 On 3.7, a CLI provider may also contain safe account-profile metadata and a model may bind `accountProfile`. The effective account route is `provider/account/model/node`; account and model qualification are separate and both must agree on the execution node. `GET /api/models/accounts` exposes only opaque ID, node ID, friendly label, plan authority, availability and qualification. `POST /api/models/accounts/{provider}/{account}/qualify` performs an authenticated, operator-triggered profile check on that profile's node. Codex login, local isolation and restricted Windows-node execution are documented in [CODEX-INTEGRATION.md](CODEX-INTEGRATION.md).
 - `POST /api/configuration/model-routing` for complete role-map replacement
+
+The read-only status projection also carries `capabilityIntelligence` and `modelIntelligence`: capability candidates/observations, frozen batches, append-only attempts, rolling history, regression warnings and leader slots. Lifecycle mutation and model-evaluation queue operations remain authenticated and evidence gated; endpoint reachability alone never promotes a model.
 
 See the **Models** dashboard tab for the same projection.

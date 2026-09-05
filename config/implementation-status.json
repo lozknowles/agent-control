@@ -4,6 +4,61 @@
   "updated": "2026-09-05",
   "capabilities": [
     {
+      "id": "context.persistent-parcel-ledger",
+      "title": "Persistent Work Parcel context ledger and bounded baton views",
+      "status": "QUALIFIED",
+      "summary": "Each Work Parcel retains immutable goal and steering provenance, concise active state, a SHA-linked durable event ledger, governed historical retrieval and content-hashed bounded baton projections. Compaction or handoff can remove history from the current view without deleting it, and exact retrieval can recover excluded failures for later execution.",
+      "sources": ["src/control/parcel-context.ts", "src/control/work-parcels.ts"],
+      "tests": ["src/control/parcel-context.test.ts", "src/control/work-parcels.test.ts"],
+      "evidence": ["docs/evidence/agent-control-3.9-provider-neutral-qualification.md", "docs/evidence/agent-control-3.9-provider-neutral-qualification.json"]
+    },
+    {
+      "id": "work-parcels.async-dag-criteria",
+      "title": "Asynchronous Work Parcel DAGs and evidence-gated completion",
+      "status": "QUALIFIED",
+      "summary": "Validated Work Parcel dependency graphs dispatch policy-allowed independent stages concurrently, pause only branches named by stable asynchronous questions, resume them after a durable answer and require structured success criteria with provenance and evidence before parcel success. Steering remains append-only and never rewrites the original goal.",
+      "sources": ["src/control/work-parcels.ts", "src/control/parcel-context.ts", "src/control/job-runtime.ts"],
+      "tests": ["src/control/work-parcels.test.ts", "src/control/parcel-context.test.ts", "src/control/job-runtime.test.ts"],
+      "evidence": ["docs/evidence/agent-control-3.9-provider-neutral-qualification.md", "docs/evidence/agent-control-3.9-provider-neutral-qualification.json"]
+    },
+    {
+      "id": "models.capability-intelligence",
+      "title": "Provider-neutral capability intelligence and capabilities-first routing",
+      "status": "QUALIFIED",
+      "summary": "Normalized observations distinguish supported from unsupported, native from Agent Control-emulated and verified from advertised capability across provider, account, model, runtime, version and node identities. Routing filters on required verified capabilities before optimizing quality, reliability, latency, cost and token/cache efficiency; external discoveries enter an auditable candidate lifecycle rather than changing architecture automatically.",
+      "sources": ["src/control/capability-intelligence.ts", "src/control/model-registry.ts"],
+      "tests": ["src/control/capability-intelligence.test.ts", "src/control/model-registry.test.ts"],
+      "evidence": ["docs/evidence/agent-control-3.9-provider-neutral-qualification.md", "docs/evidence/agent-control-3.9-provider-neutral-qualification.json"]
+    },
+    {
+      "id": "models.historical-evaluation-intelligence",
+      "title": "Frozen model qualification and historical outcome intelligence",
+      "status": "PARTIAL",
+      "summary": "A content-hashed frozen suite records every repetition in an append-only ledger with exact candidate identity, scoring, failure class, elapsed time, provider usage, fresh/cache token split and cost authority. Rolling 7/30/90-day and all-time projections expose task economics, regressions, conservative lifecycle state and evidence-gated leaders without overwriting prior results.",
+      "sources": ["src/control/model-intelligence.ts", "src/control/model-evaluation-runtime.ts", "config/qualification-suite-v1.json"],
+      "tests": ["src/control/model-intelligence.test.ts", "src/control/model-evaluation-runtime.test.ts"],
+      "evidence": ["docs/evidence/agent-control-3.9-provider-neutral-qualification.md", "docs/evidence/agent-control-3.9-provider-neutral-qualification.json"],
+      "limitation": "Two real llama.cpp candidates completed two frozen batches and all 204 attempts persisted. Browser/computer/workflow evaluators, authoritative local current-context occupancy and monetary/energy cost were unavailable, while same-day history is intentionally insufficient for automatic preferred-model promotion."
+    },
+    {
+      "id": "runtime.independent-safety-supervisor",
+      "title": "Independent runtime safety supervision",
+      "status": "QUALIFIED",
+      "summary": "A provider-independent supervisor evaluates requested goal, action class, repository/filesystem scope, remote node, credential use, external communication and destructive/deployment consequences before Job execution. ALLOW, ALLOW_WITH_AUDIT, REQUIRE_APPROVAL, DENY, PAUSE and ESCALATE decisions plus reasons and approvals are durable and do not delegate governance to provider safety systems.",
+      "sources": ["src/control/runtime-safety-supervisor.ts", "src/control/job-runtime.ts"],
+      "tests": ["src/control/runtime-safety-supervisor.test.ts", "src/control/job-runtime.test.ts"],
+      "evidence": ["docs/evidence/agent-control-3.9-provider-neutral-qualification.md", "docs/evidence/agent-control-3.9-provider-neutral-qualification.json"]
+    },
+    {
+      "id": "dashboard.capability-context-intelligence",
+      "title": "Live context, capability and model-intelligence dashboard",
+      "status": "QUALIFIED",
+      "summary": "The authenticated dashboard projects Work Parcel context metrics, criteria, asynchronous questions, bounded retrieval, model leaders, capability watch, frozen batches, rolling history, cache/fresh-token economics, lifecycle controls, regressions and independent safety decisions from durable stores. Core SSE remains live when an optional dashboard projection is unavailable.",
+      "sources": ["src/control/application-service.ts", "src/control/web-server.ts", "assets/dashboard/dashboard-models.js", "assets/dashboard/dashboard-enhancements.js", "assets/dashboard/dashboard-parameterized-jobs.js"],
+      "tests": ["src/control/web-server.test.ts", "scripts/browser-dashboard.test.mjs"],
+      "evidence": ["docs/evidence/agent-control-3.9-provider-neutral-qualification.md", "docs/evidence/agent-control-3.9-provider-neutral-dashboard-video.json", "docs/evidence/agent-control-3.9-provider-neutral-dashboard.mp4"]
+    },
+    {
       "id": "execution.resilient-recovery",
       "title": "Durable execution identity and bounded recovery",
       "status": "PARTIAL",

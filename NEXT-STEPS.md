@@ -7,6 +7,10 @@ These items are intentionally deferred after the Agent Control 3.9.0 candidate. 
 - Physically force the provider `AUTHENTICATION_BLOCKED`, transient retry and same-execution reconnect paths without exposing credentials; reconcile their dashboard/SSE projection against the durable ledger.
 - Qualify explicit Responses prompt-cache keys/breakpoints only on provider/model pairs whose supported wire contract is proven. Re-run controlled baseline/candidate measurements with provider-reported cache writes and billed cost where available; retain no savings claim until verified outcomes, tokens, latency and cost demonstrate one.
 - Extend owned-process cleanup adapters only for substrates that can provide descendant identity/absence evidence; unsupported platforms must continue to fail closed as cleanup uncertainty.
+- Bind governed browser/computer evaluators to candidate routes before claiming those capabilities from the frozen suite; preserve `CAPABILITY_UNAVAILABLE` until physically exercised.
+- Add sourced local energy/tariff measurement if monetary cost per successful local-model outcome is needed; do not convert a local endpoint into zero-cost evidence.
+- Accumulate independent multi-day frozen-suite history before approving `QUALIFIED`/`PREFERRED` model transitions or populating leader slots. Keep same-day candidates observational.
+- Qualify semantic parcel-event retrieval only where it materially improves recovery beyond deterministic exact/relevance lookup; the current core remains dependency-free.
 
 - Improve and re-benchmark the built-in lexical ranker before it can influence automatic broad semantic routing; the first frozen suite retrieved the expected file for only 2/5 tasks.
 - Expand the local-model A/B/C trial beyond one bounded Qwen2.5 3B question, including mutation tasks, independent verification, baton/handoff size and cost-per-verified-outcome.

@@ -587,6 +587,45 @@ Repository-review structured output has one semantic contract at both boundaries
 
 For Codex/ChatGPT authentication, each account profile contains only opaque ID, safe label, optional plan/capability metadata with authority, qualification state, execution `nodeId`, and a credential-store reference naming an environment variable. A controller-local profile resolves that variable in the existing child-process path and strips ambient `OPENAI_API_KEY`/`CODEX_API_KEY` values before launching account-bound Codex, preventing an unrelated API billing identity from overriding the selected profile. A remote Windows profile is dispatched through the configured SSH resource to `CodexNodeExecutionPort`, whose API permits only `accountStatus` and `execReadOnlyStructured`. A fixed encoded bootstrap reads a base64 request data line and the audited runner source separately from stdin, then passes the request to that runner as an argument; identities, prompt data and schemas never become generated PowerShell source. Windows resolves the named environment reference locally, discovers and validates candidates beneath `%LOCALAPPDATA%\OpenAI\Codex\bin\*\codex.exe`, and returns only CLI version, executable SHA-256, discovery time and sanitized structured execution data. Raw stdout/stderr, executable paths and credential paths do not cross into evidence. Account selection is explicit Saved Job policy or predetermined model-role fallback. Utilization, rate-limit or quota exhaustion never triggers account rotation.
 
+## Provider-neutral persistent context and capability intelligence (3.9)
+
+The 3.9 orchestration layer is deliberately above provider/runtime adapters:
+
+```text
+Provider or runtime
+        |
+        v
+Capability adapter/observation
+        |
+        v
+Agent Control capability model ---- frozen historical qualification
+        |                                      |
+        v                                      v
+capability-first policy/router <----- model economics/regression history
+        |
+        v
+Work Parcel DAG -> active state + immutable event ledger + retrieval
+        |                                      |
+        +---- bounded baton view ---------------+
+        |
+        v
+JobRuntime -> independent safety -> execution -> criterion verification
+```
+
+`CapabilityIntelligenceStore` normalizes capability identity separately from a provider brand. An observation binds an optional provider/model/runtime/version subject to `SUPPORTED` or `UNSUPPORTED`, `NATIVE` or `AGENT_CONTROL_EMULATED`, `VERIFIED` or `UNVERIFIED`, confidence, timestamps, limitations and evidence. Configured advertisement is only unverified evidence; a later verified observation wins for routing. Provider discoveries enter a durable candidate lifecycle (`DISCOVERED → ANALYSED → EXPERIMENT → QUALIFICATION → ADOPTED/REJECTED/DEFERRED`) and cannot silently modify policy. This lets Agent Control adopt a generally useful pattern while leaving a native API behind its adapter. If that provider disappears, the core contract and any qualified emulation remain executable.
+
+`ParcelContextState` has four related but non-interchangeable views. Active state holds the immutable original goal plus current interpretation, constraints, plan/stage, dependencies, unresolved questions, approvals and route. A SHA-256-linked append-only event ledger retains decisions, failures, tool/test results, retries, steering, routing, verification, cost and token observations. Governed retrieval selects relevant historical events by exact filters or bounded relevance scoring. A baton is a size-bounded, content-hashed operational projection of active state plus selected event/artifact references; it is neither the transcript nor the only copy of history.
+
+Success criteria carry stable identity, type, source provenance, scope, required evidence and independent evaluation. `model says done` remains only a claim. Steering amendments append to the original goal and are accepted/rejected explicitly. Questions identify their originating and dependent stages; only those dependencies wait. `WorkParcelCoordinator` validates an acyclic graph and dispatches every ready independent stage allowed by worker capacity and policy, then joins only after declared predecessors succeed.
+
+`rankCapabilityRoutes` first requires verified capabilities and records whether native or Agent-Control-emulated support satisfied each requirement. It then compares only eligible routes using qualification confidence, observed task quality/reliability, known cost/latency, token/cache efficiency, availability, account/node state, locality and privacy constraints. Missing data remains unknown. The selected and rejected alternatives, scores and reasons are durable.
+
+`ModelIntelligenceLedger` preserves immutable frozen-suite batches and attempts rather than overwriting a latest score. The suite hash seals versioned prompts, required capability, evaluator kind, scoring rule, safety/success criteria and repetition count. Metrics retain fresh input, cache reads, cache writes, output, elapsed time, retries and actual/calculated cost independently. Rolling 7/30/90-day and all-time views, regression warnings and cost/tokens/time/retries per verified outcome use only measured attempts. Lifecycle promotion is conservative and evidence-gated; same-day candidate results do not manufacture a preferred model or leader.
+
+`RuntimeSafetySupervisor` is injected into the existing `JobRuntime` boundary. It independently evaluates requested scope and action metadata, persists the decision and approval trail, and returns `ALLOW`, `ALLOW_WITH_AUDIT`, `REQUIRE_APPROVAL`, `DENY`, `PAUSE` or `ESCALATE`. Provider-native safety can add evidence but cannot replace this decision or grant authority.
+
+The web dashboard is a redacted projection of these same stores. Existing SSE events refresh Work Parcel context, questions, criteria, steering, capability candidates/observations, frozen batches, historical metrics, regression warnings, leader slots and safety decisions. Event-stream startup is independent of optional panel availability, and a missing optional subsystem is shown locally rather than disabling live control-plane updates.
+
 ## Release boundary
 
 Earlier version tags remain immutable source releases. The 3.9.0 branch is a review candidate; it does not merge, tag, publish, deploy services, expose a remote ACP listener, create credentials, broaden sharing, enable Spark, enable Saved Jobs/Schedules or pair an Android device. The real dashboard/SSE/reload/concurrent-lane/Codex-accounting/Linux-cleanup path is physically evidenced. Windows cleanup has deterministic adapter coverage but no candidate physical cancellation. Pixel resource fallback was observed, while local wireless ADB remained correctly unavailable because pairing/connect discovery and local PIN entry could not be exercised. The cache comparison is observational and does not establish a repeatable token, latency or monetary saving. These limitations must remain visible in implementation status and release review.

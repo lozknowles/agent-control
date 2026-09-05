@@ -6,6 +6,12 @@ This document is generated from `config/implementation-status.json`. Update the 
 
 | Capability | Status | Executable truth | Remaining boundary |
 | --- | --- | --- | --- |
+| Persistent Work Parcel context ledger and bounded baton views (`context.persistent-parcel-ledger`) | **QUALIFIED** | Each Work Parcel retains immutable goal and steering provenance, concise active state, a SHA-linked durable event ledger, governed historical retrieval and content-hashed bounded baton projections. Compaction or handoff can remove history from the current view without deleting it, and exact retrieval can recover excluded failures for later execution. | None recorded. |
+| Asynchronous Work Parcel DAGs and evidence-gated completion (`work-parcels.async-dag-criteria`) | **QUALIFIED** | Validated Work Parcel dependency graphs dispatch policy-allowed independent stages concurrently, pause only branches named by stable asynchronous questions, resume them after a durable answer and require structured success criteria with provenance and evidence before parcel success. Steering remains append-only and never rewrites the original goal. | None recorded. |
+| Provider-neutral capability intelligence and capabilities-first routing (`models.capability-intelligence`) | **QUALIFIED** | Normalized observations distinguish supported from unsupported, native from Agent Control-emulated and verified from advertised capability across provider, account, model, runtime, version and node identities. Routing filters on required verified capabilities before optimizing quality, reliability, latency, cost and token/cache efficiency; external discoveries enter an auditable candidate lifecycle rather than changing architecture automatically. | None recorded. |
+| Frozen model qualification and historical outcome intelligence (`models.historical-evaluation-intelligence`) | **PARTIAL** | A content-hashed frozen suite records every repetition in an append-only ledger with exact candidate identity, scoring, failure class, elapsed time, provider usage, fresh/cache token split and cost authority. Rolling 7/30/90-day and all-time projections expose task economics, regressions, conservative lifecycle state and evidence-gated leaders without overwriting prior results. | Two real llama.cpp candidates completed two frozen batches and all 204 attempts persisted. Browser/computer/workflow evaluators, authoritative local current-context occupancy and monetary/energy cost were unavailable, while same-day history is intentionally insufficient for automatic preferred-model promotion. |
+| Independent runtime safety supervision (`runtime.independent-safety-supervisor`) | **QUALIFIED** | A provider-independent supervisor evaluates requested goal, action class, repository/filesystem scope, remote node, credential use, external communication and destructive/deployment consequences before Job execution. ALLOW, ALLOW_WITH_AUDIT, REQUIRE_APPROVAL, DENY, PAUSE and ESCALATE decisions plus reasons and approvals are durable and do not delegate governance to provider safety systems. | None recorded. |
+| Live context, capability and model-intelligence dashboard (`dashboard.capability-context-intelligence`) | **QUALIFIED** | The authenticated dashboard projects Work Parcel context metrics, criteria, asynchronous questions, bounded retrieval, model leaders, capability watch, frozen batches, rolling history, cache/fresh-token economics, lifecycle controls, regressions and independent safety decisions from durable stores. Core SSE remains live when an optional dashboard projection is unavailable. | None recorded. |
 | Durable execution identity and bounded recovery (`execution.resilient-recovery`) | **PARTIAL** | Normal and parameterised Jobs persist exact execution identity, classify transport/enrolment/authentication/configuration failures, reconcile rather than replay unresolved work after restart, and expose bounded route-preserving retry state with real deadlines and remaining budget. | Dashboard reload and durable unknown-state handling are physically observed, but a real provider authentication block, same-execution reconnect and transient retry were not all forced during the candidate physical run. Unknown continuity remains fail closed. |
 | Owned process trees and verified cancellation cleanup (`execution.verified-process-cleanup`) | **PARTIAL** | Actions receive an owned-execution port. Linux captures process start identity and terminates/verifies the process group; Windows uses fixed CIM inventory plus bounded tree termination; cancellation, timeout and handoff retain explicit confirmed, uncertain, identity-mismatch or failed cleanup evidence. | Linux process-group cancellation is physically qualified. Windows cleanup is deterministic-adapter tested but was not physically cancelled in this candidate; other substrates deliberately report uncertainty when descendants cannot be proven absent. |
 | Truthful resilient lifecycle and telemetry dashboard (`dashboard.resilient-live-lifecycle`) | **QUALIFIED** | The Jobs dashboard renders durable authentication, reconnect, cancellation, cleanup uncertainty, reason, retry deadline/budget, telemetry source/freshness, token/cache composition and process-cleanup evidence; reload and SSE reconnect reconcile a full authoritative snapshot without browser-owned state. | None recorded. |
@@ -47,6 +53,42 @@ This document is generated from `config/implementation-status.json`. Update the 
 | Automatic governed recipe learning (`recipes.automatic-learning`) | **PLANNED** | Successive halving exists, but winners are not automatically promoted into a durable governed recipe catalog. | Persist qualification evidence and require policy approval before learned recipes influence routing. |
 
 ## Evidence map
+
+### Persistent Work Parcel context ledger and bounded baton views
+
+- Source: [`src/control/parcel-context.ts`](../src/control/parcel-context.ts), [`src/control/work-parcels.ts`](../src/control/work-parcels.ts)
+- Tests: [`src/control/parcel-context.test.ts`](../src/control/parcel-context.test.ts), [`src/control/work-parcels.test.ts`](../src/control/work-parcels.test.ts)
+- Qualification evidence: [`docs/evidence/agent-control-3.9-provider-neutral-qualification.md`](../docs/evidence/agent-control-3.9-provider-neutral-qualification.md), [`docs/evidence/agent-control-3.9-provider-neutral-qualification.json`](../docs/evidence/agent-control-3.9-provider-neutral-qualification.json)
+
+### Asynchronous Work Parcel DAGs and evidence-gated completion
+
+- Source: [`src/control/work-parcels.ts`](../src/control/work-parcels.ts), [`src/control/parcel-context.ts`](../src/control/parcel-context.ts), [`src/control/job-runtime.ts`](../src/control/job-runtime.ts)
+- Tests: [`src/control/work-parcels.test.ts`](../src/control/work-parcels.test.ts), [`src/control/parcel-context.test.ts`](../src/control/parcel-context.test.ts), [`src/control/job-runtime.test.ts`](../src/control/job-runtime.test.ts)
+- Qualification evidence: [`docs/evidence/agent-control-3.9-provider-neutral-qualification.md`](../docs/evidence/agent-control-3.9-provider-neutral-qualification.md), [`docs/evidence/agent-control-3.9-provider-neutral-qualification.json`](../docs/evidence/agent-control-3.9-provider-neutral-qualification.json)
+
+### Provider-neutral capability intelligence and capabilities-first routing
+
+- Source: [`src/control/capability-intelligence.ts`](../src/control/capability-intelligence.ts), [`src/control/model-registry.ts`](../src/control/model-registry.ts)
+- Tests: [`src/control/capability-intelligence.test.ts`](../src/control/capability-intelligence.test.ts), [`src/control/model-registry.test.ts`](../src/control/model-registry.test.ts)
+- Qualification evidence: [`docs/evidence/agent-control-3.9-provider-neutral-qualification.md`](../docs/evidence/agent-control-3.9-provider-neutral-qualification.md), [`docs/evidence/agent-control-3.9-provider-neutral-qualification.json`](../docs/evidence/agent-control-3.9-provider-neutral-qualification.json)
+
+### Frozen model qualification and historical outcome intelligence
+
+- Source: [`src/control/model-intelligence.ts`](../src/control/model-intelligence.ts), [`src/control/model-evaluation-runtime.ts`](../src/control/model-evaluation-runtime.ts), [`config/qualification-suite-v1.json`](../config/qualification-suite-v1.json)
+- Tests: [`src/control/model-intelligence.test.ts`](../src/control/model-intelligence.test.ts), [`src/control/model-evaluation-runtime.test.ts`](../src/control/model-evaluation-runtime.test.ts)
+- Qualification evidence: [`docs/evidence/agent-control-3.9-provider-neutral-qualification.md`](../docs/evidence/agent-control-3.9-provider-neutral-qualification.md), [`docs/evidence/agent-control-3.9-provider-neutral-qualification.json`](../docs/evidence/agent-control-3.9-provider-neutral-qualification.json)
+
+### Independent runtime safety supervision
+
+- Source: [`src/control/runtime-safety-supervisor.ts`](../src/control/runtime-safety-supervisor.ts), [`src/control/job-runtime.ts`](../src/control/job-runtime.ts)
+- Tests: [`src/control/runtime-safety-supervisor.test.ts`](../src/control/runtime-safety-supervisor.test.ts), [`src/control/job-runtime.test.ts`](../src/control/job-runtime.test.ts)
+- Qualification evidence: [`docs/evidence/agent-control-3.9-provider-neutral-qualification.md`](../docs/evidence/agent-control-3.9-provider-neutral-qualification.md), [`docs/evidence/agent-control-3.9-provider-neutral-qualification.json`](../docs/evidence/agent-control-3.9-provider-neutral-qualification.json)
+
+### Live context, capability and model-intelligence dashboard
+
+- Source: [`src/control/application-service.ts`](../src/control/application-service.ts), [`src/control/web-server.ts`](../src/control/web-server.ts), [`assets/dashboard/dashboard-models.js`](../assets/dashboard/dashboard-models.js), [`assets/dashboard/dashboard-enhancements.js`](../assets/dashboard/dashboard-enhancements.js), [`assets/dashboard/dashboard-parameterized-jobs.js`](../assets/dashboard/dashboard-parameterized-jobs.js)
+- Tests: [`src/control/web-server.test.ts`](../src/control/web-server.test.ts), [`scripts/browser-dashboard.test.mjs`](../scripts/browser-dashboard.test.mjs)
+- Qualification evidence: [`docs/evidence/agent-control-3.9-provider-neutral-qualification.md`](../docs/evidence/agent-control-3.9-provider-neutral-qualification.md), [`docs/evidence/agent-control-3.9-provider-neutral-dashboard-video.json`](../docs/evidence/agent-control-3.9-provider-neutral-dashboard-video.json), [`docs/evidence/agent-control-3.9-provider-neutral-dashboard.mp4`](../docs/evidence/agent-control-3.9-provider-neutral-dashboard.mp4)
 
 ### Durable execution identity and bounded recovery
 

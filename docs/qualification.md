@@ -27,6 +27,36 @@ npm run benchmark:token-output
 
 It generates a temporary 240-file/48,000-line source tree, runs small, medium, broad and pathological searches, compares normal ripgrep output with the compact/indexed path, performs selected and full expansion, and fails unless match/file counts agree, the exact authoritative stream is recoverable, and broad/high-match initial reduction is at least 70%. It deletes the fixture after the run. Recorded evidence is [`docs/evidence/token-aware-output-benchmark-20260827.json`](evidence/token-aware-output-benchmark-20260827.json).
 
+## Provider-neutral 3.9 qualification
+
+Focused deterministic coverage is part of `npm run check`. The principal files are:
+
+```bash
+node --import tsx --test --test-concurrency=1 \
+  src/control/parcel-context.test.ts \
+  src/control/work-parcels.test.ts \
+  src/control/capability-intelligence.test.ts \
+  src/control/model-intelligence.test.ts \
+  src/control/model-evaluation-runtime.test.ts \
+  src/control/runtime-safety-supervisor.test.ts \
+  src/control/model-registry.test.ts \
+  src/control/web-server.test.ts
+```
+
+The physical runner is opt-in because it invokes real configured candidates. Supply at least two sanitized candidate descriptors through `AGENT_CONTROL_QUALIFICATION_CANDIDATES_JSON`; credentials stay in each provider's normal indirect reference. The runner rejects credentialed/non-loopback cleartext endpoints and requires exact local artifact hashes when a local model is declared:
+
+```bash
+AGENT_CONTROL_QUALIFICATION_CANDIDATES_JSON='[...]' \
+  npm run qualify:provider-neutral -- \
+  --state-dir /absolute/private/state \
+  --evidence-file /absolute/evidence.json \
+  --host 127.0.0.1 --port 4390 --hold-ms 10000
+```
+
+For a dashboard recording, set an existing Chromium executable and a qualification-only operator token, then run `npm run record:provider-neutral`. The recorder fails if the real dashboard cannot reach `LIVE`, records 1920×1080 H.264, follows Jobs/Models/Lanes, and writes a hash manifest. It does not deploy or modify the live dashboard.
+
+Acceptance covers A–E from the release plan: historical failure retrieval after baton exclusion; a question blocking only dependent work; two real model/runtime candidates running all 17 frozen tasks three times; a required capability excluding one candidate; and a second complete batch surviving ledger reload. Unsupported evaluator classes remain explicit unavailable. Review the [physical report](evidence/agent-control-3.9-provider-neutral-qualification.md), raw [JSON](evidence/agent-control-3.9-provider-neutral-qualification.json) and [video manifest](evidence/agent-control-3.9-provider-neutral-dashboard-video.json).
+
 ## Token-aware baton-routing development qualification
 
 Run the deterministic routing and adapter/dashboard coverage before any provider exercise:

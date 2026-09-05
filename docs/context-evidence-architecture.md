@@ -47,3 +47,27 @@ Missing, expired, deleted, authenticated or unsupported threads are omitted with
 A provider implements an injected `VisibleDocumentTransport`; the registry exposes it through `ContextSourceReader.read(source, maxTokens, request)`. Provider implementations must authenticate through approved credential storage, must not persist tokens in `ContextSource`, and must report inaccessible content without blocking recovery.
 
 Deterministic fixture transports qualify the generic contract. The official ChatKit GET adapter has additionally authenticated against a real project, but remains `SUPPORTED+UNQUALIFIED` until that project can create a workflow and produce an accessible `cthr_...` thread. ChatGPT Work and Codex task context remain host-only/reference-only outside approved host transports.
+
+## Work Parcel context ledger (3.9)
+
+The shared-source architecture above remains available. The 3.9 Work Parcel ledger adds a provider-neutral durable task context beneath it:
+
+```text
+immutable original goal
+        |
+        +--> concise active state
+        +--> hash-chained immutable events
+        +--> governed historical retrieval
+        +--> success criteria / questions / steering
+                         |
+                         v
+                 bounded baton view
+```
+
+Active state is authoritative for what is true now; immutable events explain how it became true; retrieval finds relevant history; a baton is only the current executor's bounded projection. Compaction or a new baton may exclude old events, but cannot delete them. Event integrity is verified from the previous-event SHA-256 chain. Baton integrity covers its canonical payload, selected event references and artifact references.
+
+Retrieval can constrain event type, stage, tags and exact terms, or use deterministic bounded relevance scoring. It records who queried, what was selected and the resulting event hashes. Existing repository/Evidence Packet retrieval remains the right path for source content; parcel-event retrieval is for task history such as a failed approach, decision or test outcome. Neither path expands authority.
+
+Metrics retain event-ledger bytes, latest baton bytes, historical bytes excluded from that baton, retrieval count and event count. Physical qualification recorded 103,526 bytes of recovery history while the latest baton was 4,941 bytes; the later stage retrieved the excluded failed approach by its original event ID/SHA and did not repeat it.
+
+Literal secret-like values are rejected before persistence. Dashboard projections expose summaries, IDs, status and hashes—not raw provider prompts, hidden reasoning, credentials or unrestricted tool output.
