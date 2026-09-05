@@ -127,7 +127,7 @@ The first corrected recording exposed that an unconfigured optional parameterise
 
 ### Neutrality fixture topology
 
-The final repository gate rejected deployment-specific `/fast/repos` and `/fast/work` literals in the new runtime-safety test fixture. No production runtime path depended on them, but shipping the fixture would have violated the Linux-first/private-topology neutrality policy. The fixture now uses generic POSIX and Windows roots and a generic remote-node identity. Its focused five tests, the three-test neutrality gate and the complete suite pass afterward.
+The final repository gate rejected deployment-specific controller repository and worktree roots in the new runtime-safety test fixture. No production runtime path depended on them, but shipping the fixture would have violated the Linux-first/private-topology neutrality policy. The fixture now uses generic POSIX and Windows roots and a generic remote-node identity. Its focused five tests, the three-test neutrality gate and the complete suite pass afterward.
 
 ## Reproduction
 
