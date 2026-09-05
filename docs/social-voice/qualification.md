@@ -4,7 +4,7 @@ Qualification date: 5 September 2026. **READY_WITH_LIMITATIONS for the private S
 
 ## A. Starting HEAD/state
 
-The preserved resilient-execution worktree was clean at `9e7696fd223a1eb80f5f83c94935b5b5ba8ef20e`. The new isolated branch `feature/3.9-social-voice-20260905` starts from the later OpenWA checkpoint `282dbc7f8e0ae886aa4d071bf8638944bbeb7acd`, which includes that work. The canonical checkout remains clean at `e7fe5c010bbea75e41f8ec875aab08caaa738104`; all three old checkouts were rechecked unchanged. SSH uses hpubuntu port 2222. Private state backups and original evidence hashes were retained.
+The preserved resilient-execution worktree was clean at `9e7696fd223a1eb80f5f83c94935b5b5ba8ef20e`. The new isolated branch `feature/3.9-social-voice-20260905` starts from the later OpenWA checkpoint `282dbc7f8e0ae886aa4d071bf8638944bbeb7acd`, which includes that work. The canonical checkout remains clean at `e7fe5c010bbea75e41f8ec875aab08caaa738104`; all three old checkouts were rechecked unchanged. SSH uses qualification-host port 2222. Private state backups and original evidence hashes were retained.
 
 ## B. Existing 3.9 regression result
 
@@ -83,7 +83,7 @@ Social/voice architecture, setup, provider replacement guidance, approval bounda
 
 ## S. Commits
 
-New isolated branch contains `7f26a3521d1265920ebaa608b5e9abd0c3a4b069`, `152d90b92ebe8cad09e2208c9a01f0af4b791982`, `a9148339f9bc768e8be23837c17d5e370a103df5`, and the final qualification/fix commit recorded in `social-voice-commit.txt`. Source: `/fast/work/agent-control-social-voice-20260905`. Existing draft PR #9 is https://github.com/lozknowles/agent-control/pull/9 and contains the earlier OpenWA branch, not this unpublished extension. No new branch push or PR publication was performed because the later request explicitly prohibits publishing without authorization.
+New isolated branch contains `7f26a3521d1265920ebaa608b5e9abd0c3a4b069`, `152d90b92ebe8cad09e2208c9a01f0af4b791982`, `a9148339f9bc768e8be23837c17d5e370a103df5`, and the final qualification/fix commit recorded in `social-voice-commit.txt`. Source: `/isolated/work/agent-control-social-voice-20260905`. Existing draft PR #9 is https://github.com/lozknowles/agent-control/pull/9 and contains the earlier OpenWA branch, not this unpublished extension. No new branch push or PR publication was performed because the later request explicitly prohibits publishing without authorization.
 
 ## T. Remaining limitations
 
@@ -92,3 +92,5 @@ No configured, qualified repository-review social route, real model handoff or b
 ## U. Release recommendation
 
 **READY_WITH_LIMITATIONS — private bounded Social & Voice pilot.** Actual voice-to-text-confirmation-to-runtime-to-delivered-summary is qualified, and the user confirmed the corrected voice clear. **The broader Agent Control 3.9 release remains unapproved and its outstanding model/multi-lane demonstration remains incomplete.** No merge, tag, release, publish or production deployment was performed.
+
+Publication copy: host names and workspace roots are generalized. Original physical evidence remains preserved in the starting worktree and private qualification archive.

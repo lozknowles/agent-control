@@ -80,3 +80,7 @@ Implement the generic interface, explicit capabilities and health, bounded authe
 ## Qualified voice-note troubleshooting
 
 Use Ogg/Opus for WhatsApp voice notes. Numeric job references caused unintelligible generation in the pinned model/settings; the coordinator spells numbers and speaks only an outcome sentence. Audio bypasses the text outbox truncation while retaining byte limits. Never blindly retry uncertain sends. An authenticated operator may request a new terminal-job summary through POST /api/social-voice/summary with the enrolled sender, owned AC reference and fresh idempotency request key. This is an explicit recovery request, not evidence that the original send succeeded. Forwarding metadata must be explicit: boolean isForwarded or a non-negative integer native forwardsCount. Missing provenance stays denied.
+
+## Realtime calls
+
+Asynchronous voice notes remain the supported private-pilot mode. [Realtime session primitives](../realtime-voice/README.md) are experimental and separately gated; WhatsApp calling remains BLOCKED. Installing history storage does not enable calls.

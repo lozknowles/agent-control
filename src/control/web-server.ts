@@ -11,8 +11,9 @@ import {ConfigurationStore} from './configuration-store.js';
 import {ParameterizedJobError} from './parameterized-job-registry.js';
 import type {OpenWAAdapter} from './openwa.js';
 import type {SocialVoiceCoordinator} from './social-voice.js';
+import type {VoiceSessionStore} from './realtime-voice.js';
 
-export interface WebServerOptions {host?: string; port?: number; operatorToken?: string; allowedOrigins?: string[]; assetsDir?: string; configFile?: string; openwa?: OpenWAAdapter; socialVoice?: SocialVoiceCoordinator;}
+export interface WebServerOptions {host?: string; port?: number; operatorToken?: string; allowedOrigins?: string[]; assetsDir?: string; configFile?: string; openwa?: OpenWAAdapter; socialVoice?: SocialVoiceCoordinator; voiceSessions?: VoiceSessionStore;}
 const MAX_BODY = 64 * 1024;
 const SECRET_KEY = /token|secret|password|credential|authorization|cookie|api[-_]?key/i;
 const SAFE_TOKEN_ACCOUNTING_KEY = /^(?:tokenAwareOutput|tokenBatonRouting|contextTokens|contextLimitTokens|contextTokensAvoided|contextTokensSaved|evidenceTokens|estimatedTokensOriginal|estimatedTokensReturned|estimatedTokensSaved|estimatedOriginalTokens|estimatedReturnedTokens|estimatedTokensAvoided|expansionTokensReturned|inputTokens|freshInputTokens|cachedInputTokens|cacheWriteTokens|outputTokens|maximumOutputTokens|maximumContextTokens|maximumEvidenceTokens|reasoningTokens|totalTokens|totalProcessedTokens|startupContextTokens|taskContextTokens|retrievedContextTokens|repositoryContextTokens|conversationHistoryTokens|totalEstimatedContextTokens|repeatedContextCostEstimate|tokensPerVerifiedOutcome|freshTokensPerVerifiedOutcome|estimatedTokens|limitTokens|contextPercent|continuePercent|prepareBatonPercent|compactPercent|handoffPercent)$/;
@@ -102,6 +103,11 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
     return json(response,404,{error:'not_found'});
   }
 
+  if(method==='GET' && (url.pathname==='/api/voice-sessions' || /^\/api\/voice-sessions\/[a-f0-9-]{36}\/transcript$/.test(url.pathname))){
+    validateOperatorRequest(request,options);
+    if(url.pathname.endsWith('/transcript'))return json(response,200,{transcript:options.voiceSessions?.transcript(url.pathname.split('/')[3])??''});
+    return json(response,200,{state:'BLOCKED',reason:'No authenticated WhatsApp call-media transport is configured. Voice notes remain available.',sessions:options.voiceSessions?.projection()??[],recognition:'utterance-buffered; partial STT unavailable',speech:'buffered-then-framed; native streaming unavailable'});
+  }
   if (method === 'GET' && url.pathname === '/api/status') return json(response, 200, service.snapshot());
   if (method === 'GET' && url.pathname === '/api/operator-auth') return json(response, 200, operatorAuthentication(request, options));
   if (method === 'GET' && url.pathname === '/api/configuration') { validateOperatorRequest(request, options); return json(response, 200, new ConfigurationStore(options.configFile ?? configPath()).read()); }
@@ -286,7 +292,7 @@ function eventStream(service: AgentControlService, request: IncomingMessage, res
 
 function serveAsset(response: ServerResponse, assetsDir: string, pathname: string) {
   const asset = pathname === '/' ? 'index.html' : pathname.replace(/^\//, '');
-  if (!['dashboard-social-voice.css','social-voice.html','dashboard-social-voice.js','dashboard-openwa.css', 'openwa.html', 'dashboard-openwa.js', 'index.html', 'dashboard.css', 'dashboard-fixes.css', 'dashboard-jobs.css', 'dashboard.js', 'dashboard-parameters.js', 'dashboard-running-state.js', 'dashboard-enhancements.js', 'dashboard-parameterized-jobs.js', 'dashboard-models.js', 'dashboard-sessions.js'].includes(asset)) throw httpError(404, 'not_found');
+  if (!['voice-sessions.html','dashboard-voice-sessions.js','dashboard-social-voice.css','social-voice.html','dashboard-social-voice.js','dashboard-openwa.css', 'openwa.html', 'dashboard-openwa.js', 'index.html', 'dashboard.css', 'dashboard-fixes.css', 'dashboard-jobs.css', 'dashboard.js', 'dashboard-parameters.js', 'dashboard-running-state.js', 'dashboard-enhancements.js', 'dashboard-parameterized-jobs.js', 'dashboard-models.js', 'dashboard-sessions.js'].includes(asset)) throw httpError(404, 'not_found');
   const file = path.join(assetsDir, asset);
   if (!fs.existsSync(file)) throw httpError(404, 'dashboard_asset_missing');
   const type = asset.endsWith('.html') ? 'text/html; charset=utf-8' : asset.endsWith('.css') ? 'text/css; charset=utf-8' : 'text/javascript; charset=utf-8';

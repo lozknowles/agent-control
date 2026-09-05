@@ -92,3 +92,7 @@ The final candidate gate results, package metadata and clean-install result are 
 ## Live qualification update — 5 September 2026
 
 The enrolled human's actual voice request and subsequent text confirmation created AC-3, which completed a governed typecheck and returned text plus an Ogg/Opus voice note. After a noisy numeric summary was diagnosed before transport, one-sentence summaries with spelled-out job numbers were confirmed clear on the handset. Speech now plays at 0.9 speed; detailed output stays in text/dashboard. The full gate passed 871 tests. Speech outage retained text and did not stop a real runtime job; cancellation confirmed process cleanup. See docs/social-voice/qualification.md for physical evidence and limitations. This supersedes earlier voice-pending statements. Repository review, model handoff, multi-lane video, general speech quality and production readiness remain unqualified.
+
+## Experimental realtime voice foundation
+
+The isolated realtime voice candidate adds provider-neutral session/audio/identity boundaries, cancellation fencing, bounded PCM/VAD, buffered speech adapters and authenticated session history. The complete gate passed 894 tests. Actual WhatsApp calling is BLOCKED: no authenticated call-media transport is configured. Voice notes remain unchanged; no full-duplex, acoustic barge-in or natural live model handoff is claimed. See [decision and qualification](realtime-voice/qualification.md).

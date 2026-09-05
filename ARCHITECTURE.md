@@ -633,3 +633,7 @@ Earlier version tags remain immutable source releases. The 3.9.0 branch is a rev
 ## Optional messaging adapters
 
 The channel-neutral messaging command contract binds immutable approved Job definitions and finite argument values to enrolled operator grants. OpenWA verifies signed message provenance, pairs a separate human through authenticated dashboard confirmation, and calls the existing application service. Durable command identities reconcile with the RunLedger across interrupted acknowledgements. SQLite stores an independent outbound queue and safe audit metadata; gateway failure never owns scheduler state or approvals. See [OpenWA architecture and recovery](docs/openwa/README.md).
+
+## Realtime voice boundary (experimental)
+
+Authenticated media transport → durable RealtimeVoiceSession → replaceable recognition → governed orchestration/routing/tools → independent speech provider → transport playout. Cancellation generations fence every stage. Caller identity needs an explicit enrolled binding; speech never grants authority. The existing asynchronous message/voice-note path is separate. See [realtime voice architecture](docs/realtime-voice/README.md) and [transport ADR](docs/realtime-voice/adr.md). No WhatsApp call-media adapter is enabled.
