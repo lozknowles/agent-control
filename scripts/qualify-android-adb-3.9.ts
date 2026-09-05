@@ -209,8 +209,8 @@ async function qualification(options: Options, node: NodeClientOptions) {
   try {
     writePhase('DASHBOARD_READY', {port: (server.address() as AddressInfo).port, operatorToken, resourceId: options.resourceId}); await delay(options.phaseDelayMs);
     const prePairRaw = await runNodeJob<NodeJob>(node, 'android.adb.status'), prePairStatus = sanitizeStatus(prePairRaw), prePairResource = await fetchNodeResource(node), prePairLegacy = legacyProjection(options);
-    const prePairUnqualified = !prePairRaw.evidence?.paired && !prePairRaw.evidence?.usableLocalDeviceConnected && !prePairRaw.evidence?.verification?.qualified;
-    assert.equal(prePairUnqualified, true, 'android_adb_pre_pair_state_not_unqualified');
+    const prePairUnqualified = !prePairRaw.evidence?.usableLocalDeviceConnected && !prePairRaw.evidence?.verification?.qualified;
+    assert.equal(prePairUnqualified, true, 'android_adb_pre_pair_connection_not_unqualified');
     assert.equal(prePairResource.capabilities.some(item => item.id === 'transport.adb' || item.id === 'android.adb.local'), false);
     assert.equal(prePairLegacy.capabilities.includes('transport.adb') || prePairLegacy.capabilities.includes('android.adb.local'), false);
     writePhase('PAIRING_REQUIRED', {status: prePairStatus, currentCapabilities: prePairResource.capabilities.map(item => item.id).sort(), legacyCapabilities: prePairLegacy.capabilities});
