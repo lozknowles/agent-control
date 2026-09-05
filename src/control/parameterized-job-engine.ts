@@ -89,9 +89,11 @@ export class ParameterizedJobEngine {
         if (baseline && isAncestor(repository.snapshotPath, baseline.sha, repository.reviewedSha)) repository.comparisonSha = baseline.sha;
       }
       run.repository = repository;
-      const modelRole = saved?.routing?.modelRole ?? run.definition.routing.modelRole;
-      const route = this.models.route({model: saved?.routing?.model, modelRole, accountProfile: saved?.routing?.accountProfile, nodeId, workloadNodeId: nodeId, requiredCapabilities: ['repository-review'], allowFallback: saved?.routing?.allowFallback ?? run.definition.routing.allowFallback});
-      run.modelRoute = route; if (route.fallback) run.fallbackHistory.push({at: this.clock().toISOString(), reason: route.fallbackReason ?? 'primary unavailable', selectedModel: route.modelId});
+      const modelRole = saved?.routing?.modelRole ?? run.definition.routing.modelRole, sealedRoute = run.modelRoute;
+      const route = sealedRoute
+        ? this.revalidateRoute(sealedRoute)
+        : this.models.route({model: saved?.routing?.model, modelRole, accountProfile: saved?.routing?.accountProfile, nodeId, workloadNodeId: nodeId, requiredCapabilities: ['repository-review'], allowFallback: saved?.routing?.allowFallback ?? run.definition.routing.allowFallback});
+      run.modelRoute = route; if (!sealedRoute && route.fallback) run.fallbackHistory.push({at: this.clock().toISOString(), reason: route.fallbackReason ?? 'primary unavailable', selectedModel: route.modelId});
       const context = buildRepositoryContext(repository, saved?.contextProfile ?? 'STANDARD', budgets.maximumInputTokens); run.context = context.summary;
       run = this.transition(run, 'RUNNING'); this.runs.update(run);
       let response: ReviewExecutionResponse;
@@ -148,10 +150,21 @@ export class ParameterizedJobEngine {
     run.status = 'CANCELLED'; run.completedAt = at; run.transitions.push({status: 'CANCELLED', at, detail: reason}); run.errors.push(reason); run.recovery = {state: 'NONE', reason: 'cancelled_before_execution', since: at, observedAt: at}; run.immutable = true; this.runs.update(run); return this.mustRun(runId);
   }
 
+  resumeAuthentication(runId: string, actor: string) {
+    const run = this.mustRun(runId), blockedAt = run.recovery?.since;
+    if (run.status !== 'AUTHENTICATION_BLOCKED' || run.recovery?.state !== 'AUTHENTICATION_REQUIRED') throw new ParameterizedJobError('job_run_not_authentication_blocked', runId);
+    if (!run.modelRoute?.accountProfileId || !blockedAt) throw new ParameterizedJobError('authentication_recovery_route_missing', runId);
+    const qualification = this.models.accountQualification(run.modelRoute.providerId, run.modelRoute.accountProfileId), checkedAt = Date.parse(qualification.checkedAt), blockedTime = Date.parse(blockedAt);
+    if (qualification.state !== 'QUALIFIED' || !Number.isFinite(checkedAt) || !Number.isFinite(blockedTime) || checkedAt <= blockedTime) throw new ParameterizedJobError('account_profile_requalification_required', run.modelRoute.accountProfileId);
+    run.modelRoute = this.revalidateRoute(run.modelRoute);
+    const at = this.clock().toISOString(); run.status = 'QUEUED'; run.transitions.push({status: run.status, at, detail: `authentication_requalified_same_route:${safeReason(actor)}`}); run.recovery = {state: 'NONE', reason: 'authentication_requalified_same_route', since: at, observedAt: qualification.checkedAt};
+    this.runs.update(run); return this.mustRun(runId);
+  }
+
   async reconcile(runId: string) {
     let run = this.mustRun(runId); if (!run.activeExecution || !['DISCONNECTED', 'RECONNECTING', 'CANCELLING'].includes(run.status)) return run;
     const execution = structuredClone(run.activeExecution), at = this.clock().toISOString();
-    if (run.status === 'CANCELLING') {
+    if (run.status === 'CANCELLING' || run.recovery?.state === 'CANCELLING') {
       if (!this.executor.cancel) return run;
       const result = await this.executor.cancel(structuredClone(run), execution, run.errors.at(-1) ?? 'cancelled_by:operator'); run = this.mustRun(runId);
       if (result.executionId !== execution.id || !result.cleanupConfirmed || result.state !== 'CANCELLED') { run.status = 'DISCONNECTED'; run.recovery = {state: 'RECONCILIATION_REQUIRED', reason: result.executionId !== execution.id ? 'cancellation_execution_identity_mismatch' : 'cancellation_cleanup_unproven', since: at, observedAt: result.observedAt}; run.transitions.push({status: run.status, at, detail: run.recovery.reason}); this.runs.update(run); return this.mustRun(runId); }
@@ -218,6 +231,12 @@ export class ParameterizedJobEngine {
     } catch { throw new ParameterizedJobError('frozen_repository_snapshot_unavailable', repository.reviewedSha); }
   }
   private transition(run: ParameterizedJobRun, status: ParameterizedRunStatus) { run.status = status; run.transitions.push({status, at: this.clock().toISOString()}); return run; }
+  private revalidateRoute(sealed: NonNullable<ParameterizedJobRun['modelRoute']>) {
+    const current = this.models.route({model: sealed.modelId, accountProfile: sealed.accountProfileId ?? undefined, nodeId: sealed.workloadNodeId, workloadNodeId: sealed.workloadNodeId, providerExecutionNodeId: sealed.providerExecutionNodeId, requiredCapabilities: sealed.requiredCapabilities ?? ['repository-review'], allowFallback: false});
+    const identity = (route: typeof sealed) => [route.providerId, route.accountProfileId, route.modelId, route.workloadNodeId, route.providerExecutionNodeId, route.credentialNodeId];
+    if (JSON.stringify(identity(current)) !== JSON.stringify(identity(sealed))) throw new ParameterizedJobError('recovery_route_identity_changed', sealed.modelId);
+    return {...sealed, accountLabel: current.accountLabel, accountPlan: current.accountPlan, accountPlanAuthority: current.accountPlanAuthority, accountQualification: current.accountQualification, accountAvailability: current.accountAvailability, qualificationVersion: current.qualificationVersion, nativeCapabilities: current.nativeCapabilities, emulatedCapabilities: current.emulatedCapabilities, considered: current.considered};
+  }
   private mustRun(id: string) { const run = this.runs.get(id); if (!run) throw new ParameterizedJobError('job_run_missing', id); return run; }
 }
 
