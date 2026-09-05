@@ -122,9 +122,17 @@ class Handler(BaseHTTPRequestHandler):
             value=json.loads(self.rfile.read(size))
             if self.path=='/synthesize':
                 if value.get('voice')!=voice:raise ValueError()
-                data,metrics=synthesize(value['text']);return self.respond(200,{'audio':base64.b64encode(data).decode(),'mime':'audio/wav','metrics':metrics})
+                data,metrics=synthesize(value['text'])
+                if value.get('format')=='wav':return self.respond(200,{'audio':base64.b64encode(data).decode(),'mime':'audio/wav','metrics':metrics})
+                encoding_started=time.perf_counter()
+                data=subprocess.run(['ffmpeg','-nostdin','-v','error','-f','wav','-i','pipe:0','-af','atempo=0.9','-c:a','libopus','-b:a','32k','-f','ogg','pipe:1'],input=data,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,check=True,timeout=20).stdout
+                metrics['encodingMs']=(time.perf_counter()-encoding_started)*1000
+                metrics['sourceAudioSeconds']=metrics['audioSeconds']
+                metrics['audioSeconds']/=0.9
+                metrics['rtf']=metrics['elapsedMs']/1000/metrics['audioSeconds']
+                metrics['playbackRate']=0.9
+                return self.respond(200,{'audio':base64.b64encode(data).decode(),'mime':'audio/ogg; codecs=opus','metrics':metrics})
             if self.path=='/transcribe':return self.respond(200,transcribe(base64.b64decode(value['audio'],validate=True)))
             self.respond(404,{'error':'not_found'})
         except Exception:self.respond(422,{'error':'speech_request_failed'})
 HTTPServer(('127.0.0.1',args.port),Handler).serve_forever()
-

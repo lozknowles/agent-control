@@ -1,0 +1,25 @@
+{
+  "classification": "Controlled signed HTTP fixtures; duplicate reconstructs an actual already-processed WhatsApp message identity. No new phone message and no unauthorized contact sent.",
+  "jobsBefore": 3,
+  "jobsAfter": 3,
+  "results": [
+    {
+      "fixture": "duplicate",
+      "result": {
+        "duplicate": true
+      }
+    },
+    {
+      "fixture": "unauthorized",
+      "result": {
+        "rejected": true
+      }
+    },
+    {
+      "fixture": "forwarded",
+      "result": {
+        "ignored": true
+      }
+    }
+  ]
+}

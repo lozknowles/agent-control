@@ -1,0 +1,21 @@
+{
+  "source": "/fast/qualification/agent-control-social-voice-20260905/live-evidence-4/social-voice-live.mkv",
+  "display": ":102",
+  "surfaces": "Actual WhatsApp Web and authenticated dashboard captured separately and composited in real time",
+  "handsetCaptured": false,
+  "audioTrack": false,
+  "segments": [
+    {
+      "sourceOffsetSeconds": 825,
+      "durationSeconds": 95,
+      "label": "Actual voice intake, fresh text confirmation and runtime result"
+    },
+    {
+      "sourceOffsetSeconds": 1100,
+      "durationSeconds": 35,
+      "label": "Corrected short voice reply delivered; user later confirmed clear"
+    }
+  ],
+  "sourceStarted": "2026-09-05T20:20:27.568Z",
+  "notes": "Chronological cuts only; no simulated UI. On-screen UTC timestamps retained. Detailed model/token/cache activity is unavailable for deterministic typecheck jobs."
+}

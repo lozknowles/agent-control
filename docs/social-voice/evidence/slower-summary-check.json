@@ -1,0 +1,20 @@
+{
+  "classification": "Real private worker generation and STT; not sent through WhatsApp",
+  "metrics": {
+    "provider": "omnivoice",
+    "host": "hpubuntu",
+    "model": "c5fdb5ccb189668d56333f77ba2629f4cd7535f4",
+    "elapsedMs": 1653.6335080018034,
+    "audioSeconds": 3.311111111111111,
+    "rtf": 0.49941951583947086,
+    "firstAudioMs": 1653.6335080018034,
+    "memoryBytes": 1563422720,
+    "device": "cuda:0",
+    "streaming": false,
+    "peakAllocatedBytes": 3363857920,
+    "encodingMs": 131.64515099924756,
+    "sourceAudioSeconds": 2.98,
+    "playbackRate": 0.9
+  },
+  "transcription": "Agent control drop 3 completed successfully."
+}

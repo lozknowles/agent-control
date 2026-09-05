@@ -1,0 +1,696 @@
+{
+  "classification": "Actual authenticated WhatsApp intake, runtime history, and signed gateway voice acknowledgements; controlled recovery requests identified by summary.requested",
+  "jobs": [
+    {
+      "number": 1,
+      "parcel": "parcel-social-d014f74dd2ae423d3d9ee31a1a1df106947dcdf4fc950844b92cfcce8c3991f6",
+      "status": "FAILED"
+    },
+    {
+      "number": 2,
+      "parcel": "parcel-social-02df5b5f5dc1aa19cbf678c98e497ce2518f7cde064047f9a40affed69363c64",
+      "status": "SUCCEEDED"
+    },
+    {
+      "number": 3,
+      "parcel": "parcel-social-b789ef15c136d14ed246c7c01b86af5f0393165657229999da86c08351033666",
+      "status": "SUCCEEDED"
+    }
+  ],
+  "runs": [
+    {
+      "id": "run-149e6ba4-8f0f-41d4-b7f8-a2b8559f571c",
+      "status": "SUCCEEDED",
+      "requestedAt": "2026-09-05T20:35:03.350Z",
+      "startedAt": "2026-09-05T20:35:03.371Z",
+      "endedAt": "2026-09-05T20:35:22.987Z",
+      "selectedWorkers": [
+        "controller"
+      ],
+      "errors": []
+    },
+    {
+      "id": "run-d68239f6-0169-4d6a-b4d3-aaf6a836c491",
+      "status": "SUCCEEDED",
+      "requestedAt": "2026-09-05T20:32:43.128Z",
+      "startedAt": "2026-09-05T20:32:43.163Z",
+      "endedAt": "2026-09-05T20:32:56.164Z",
+      "selectedWorkers": [
+        "controller"
+      ],
+      "errors": []
+    },
+    {
+      "id": "run-e1df8a3b-ac3a-4961-9c74-df4ba0a3763d",
+      "status": "DEGRADED",
+      "requestedAt": "2026-09-05T20:22:09.080Z",
+      "startedAt": "2026-09-05T20:22:09.094Z",
+      "endedAt": "2026-09-05T20:22:30.437Z",
+      "selectedWorkers": [
+        "controller"
+      ],
+      "errors": [
+        "tests:verification:repository_tests_failed_see_dashboard"
+      ]
+    }
+  ],
+  "history": [
+    {
+      "at": "2026-09-05T20:22:07.201000+00:00",
+      "event": "message.accepted",
+      "detail": {
+        "kind": "text",
+        "channel": "openwa",
+        "text": "start test-execution voice",
+        "classification": "enrolled direct sender",
+        "messageKey": "d014f74dd2ae423d3d9ee31a1a1df106947dcdf4fc950844b92cfcce8c3991f6"
+      }
+    },
+    {
+      "at": "2026-09-05T20:22:08.111000+00:00",
+      "event": "policy.allowed",
+      "detail": {
+        "template": "test-execution",
+        "parcelId": "parcel-social-d014f74dd2ae423d3d9ee31a1a1df106947dcdf4fc950844b92cfcce8c3991f6",
+        "requestKey": "d014f74dd2ae423d3d9ee31a1a1df106947dcdf4fc950844b92cfcce8c3991f6"
+      }
+    },
+    {
+      "at": "2026-09-05T20:22:08.115000+00:00",
+      "event": "social.response",
+      "detail": {
+        "text": "Job AC-1 accepted: test-execution.\nWork Parcel: parcel-social-d014f74dd2ae423d3d9ee31a1a1df106947dcdf4fc950844b92cfcce8c3991f6\nTo stop: stop AC-1\nText and voice completion requested.",
+        "receipt": {
+          "id": "d014f74dd2ae423d3d9ee31a1a1df106947dcdf4fc950844b92cfcce8c3991f6",
+          "state": "queued"
+        }
+      }
+    },
+    {
+      "at": "2026-09-05T20:22:08.128000+00:00",
+      "event": "social.response",
+      "detail": {
+        "text": "Job AC-1: QUEUED\nApproved repository tests: QUEUED.\nWork Parcel: parcel-social-d014f74dd2ae423d3d9ee31a1a1df106947dcdf4fc950844b92cfcce8c3991f6\nApproved repository tests: QUEUED\nModels: unavailable. Duration: 0 seconds.\nhttp://localhost:19191/?parcel=parcel-social-d014f74dd2ae423d3d9ee31a1a1df106947dcdf4fc950844b92cfcce8c3991f6",
+        "receipt": {
+          "id": "parcel:parcel-social-d014f74dd2ae423d3d9ee31a1a1df106947dcdf4fc950844b92cfcce8c3991f6:QUEUED",
+          "state": "queued"
+        }
+      }
+    },
+    {
+      "at": "2026-09-05T20:22:08.130000+00:00",
+      "event": "parcel.status",
+      "detail": {
+        "parcelId": "parcel-social-d014f74dd2ae423d3d9ee31a1a1df106947dcdf4fc950844b92cfcce8c3991f6",
+        "status": "QUEUED",
+        "text": "Approved repository tests: QUEUED.\nWork Parcel: parcel-social-d014f74dd2ae423d3d9ee31a1a1df106947dcdf4fc950844b92cfcce8c3991f6\nApproved repository tests: QUEUED\nModels: unavailable. Duration: 0 seconds.\nhttp://localhost:19191/?parcel=parcel-social-d014f74dd2ae423d3d9ee31a1a1df106947dcdf4fc950844b92cfcce8c3991f6",
+        "durationMs": 28
+      }
+    },
+    {
+      "at": "2026-09-05T20:22:09.106000+00:00",
+      "event": "social.response",
+      "detail": {
+        "text": "Job AC-1: RUNNING\nApproved repository tests: RUNNING.\nWork Parcel: parcel-social-d014f74dd2ae423d3d9ee31a1a1df106947dcdf4fc950844b92cfcce8c3991f6\nApproved repository tests: RUNNING\nModels: unavailable. Duration: 1 seconds.\nhttp://localhost:19191/?parcel=parcel-social-d014f74dd2ae423d3d9ee31a1a1df106947dcdf4fc950844b92cfcce8c3991f6",
+        "receipt": {
+          "id": "parcel:parcel-social-d014f74dd2ae423d3d9ee31a1a1df106947dcdf4fc950844b92cfcce8c3991f6:RUNNING",
+          "state": "queued"
+        }
+      }
+    },
+    {
+      "at": "2026-09-05T20:22:09.106000+00:00",
+      "event": "parcel.status",
+      "detail": {
+        "parcelId": "parcel-social-d014f74dd2ae423d3d9ee31a1a1df106947dcdf4fc950844b92cfcce8c3991f6",
+        "status": "RUNNING",
+        "runId": "run-e1df8a3b-ac3a-4961-9c74-df4ba0a3763d",
+        "text": "Approved repository tests: RUNNING.\nWork Parcel: parcel-social-d014f74dd2ae423d3d9ee31a1a1df106947dcdf4fc950844b92cfcce8c3991f6\nApproved repository tests: RUNNING\nModels: unavailable. Duration: 1 seconds.\nhttp://localhost:19191/?parcel=parcel-social-d014f74dd2ae423d3d9ee31a1a1df106947dcdf4fc950844b92cfcce8c3991f6",
+        "durationMs": 1009,
+        "node": "controller"
+      }
+    },
+    {
+      "at": "2026-09-05T20:22:31.226000+00:00",
+      "event": "social.response",
+      "detail": {
+        "text": "Job AC-1: FAILED\nApproved repository tests: FAILED.\nWork Parcel: parcel-social-d014f74dd2ae423d3d9ee31a1a1df106947dcdf4fc950844b92cfcce8c3991f6\nApproved repository tests: FAILED\nModels: unavailable. Duration: 22 seconds.\nhttp://localhost:19191/?parcel=parcel-social-d014f74dd2ae423d3d9ee31a1a1df106947dcdf4fc950844b92cfcce8c3991f6",
+        "receipt": {
+          "id": "parcel:parcel-social-d014f74dd2ae423d3d9ee31a1a1df106947dcdf4fc950844b92cfcce8c3991f6:FAILED",
+          "state": "queued"
+        }
+      }
+    },
+    {
+      "at": "2026-09-05T20:22:31.227000+00:00",
+      "event": "parcel.status",
+      "detail": {
+        "parcelId": "parcel-social-d014f74dd2ae423d3d9ee31a1a1df106947dcdf4fc950844b92cfcce8c3991f6",
+        "status": "FAILED",
+        "runId": "run-e1df8a3b-ac3a-4961-9c74-df4ba0a3763d",
+        "text": "Approved repository tests: FAILED.\nWork Parcel: parcel-social-d014f74dd2ae423d3d9ee31a1a1df106947dcdf4fc950844b92cfcce8c3991f6\nApproved repository tests: FAILED\nModels: unavailable. Duration: 22 seconds.\nhttp://localhost:19191/?parcel=parcel-social-d014f74dd2ae423d3d9ee31a1a1df106947dcdf4fc950844b92cfcce8c3991f6",
+        "durationMs": 22346,
+        "node": "controller"
+      }
+    },
+    {
+      "at": "2026-09-05T20:22:34.345000+00:00",
+      "event": "speech.synthesized",
+      "detail": {
+        "metrics": {
+          "provider": "omnivoice",
+          "host": "hpubuntu",
+          "model": "c5fdb5ccb189668d56333f77ba2629f4cd7535f4",
+          "elapsedMs": 3089.036078999925,
+          "audioSeconds": 8.22,
+          "rtf": 0.3757951434306478,
+          "firstAudioMs": 3089.036078999925,
+          "memoryBytes": 1899495424,
+          "device": "cuda:0",
+          "streaming": false,
+          "peakAllocatedBytes": 3541005312
+        },
+        "voice": {
+          "id": "agent-control-designed-v1",
+          "kind": "designed",
+          "provider": "omnivoice",
+          "modelRevision": "c5fdb5ccb189668d56333f77ba2629f4cd7535f4",
+          "instruction": "female, low pitch, british accent",
+          "seed": 3901
+        },
+        "receipt": {
+          "id": "parcel:parcel-social-d014f74dd2ae423d3d9ee31a1a1df106947dcdf4fc950844b92cfcce8c3991f6:FAILED:audio",
+          "state": "queued"
+        },
+        "audioSha256": "67cad4050dcea3877117b83895636b0aa5a311b60be619c7ee925f2cc62d3bf1"
+      }
+    },
+    {
+      "at": "2026-09-05T20:28:26.624000+00:00",
+      "event": "summary.requested",
+      "detail": {
+        "parcelId": "parcel-social-d014f74dd2ae423d3d9ee31a1a1df106947dcdf4fc950844b92cfcce8c3991f6",
+        "source": "authenticated_dashboard",
+        "requestKey": "short-summary-live-20260905-1"
+      }
+    },
+    {
+      "at": "2026-09-05T20:28:28.642000+00:00",
+      "event": "speech.synthesized",
+      "detail": {
+        "text": "Job 1 failed in 22 seconds. The detailed report is available in the dashboard.",
+        "metrics": {
+          "provider": "omnivoice",
+          "host": "hpubuntu",
+          "model": "c5fdb5ccb189668d56333f77ba2629f4cd7535f4",
+          "elapsedMs": 1998.4065009994083,
+          "audioSeconds": 5.44,
+          "rtf": 0.3673541362131265,
+          "firstAudioMs": 1998.4065009994083,
+          "memoryBytes": 1899569152,
+          "device": "cuda:0",
+          "streaming": false,
+          "peakAllocatedBytes": 3541005312
+        },
+        "voice": {
+          "id": "agent-control-designed-v1",
+          "kind": "designed",
+          "provider": "omnivoice",
+          "modelRevision": "c5fdb5ccb189668d56333f77ba2629f4cd7535f4",
+          "instruction": "female, low pitch, british accent",
+          "seed": 3901
+        },
+        "receipt": {
+          "id": "operator-summary:short-summary-live-20260905-1:parcel-social-d014f74dd2ae423d3d9ee31a1a1df106947dcdf4fc950844b92cfcce8c3991f6:audio",
+          "state": "queued"
+        },
+        "audioSha256": "a7d34779c932a88865898ad6a57e2dc37481fa85c3ccdf10cff534b7fc7dc99c"
+      }
+    },
+    {
+      "at": "2026-09-05T20:29:39.402000+00:00",
+      "event": "summary.requested",
+      "detail": {
+        "parcelId": "parcel-social-d014f74dd2ae423d3d9ee31a1a1df106947dcdf4fc950844b92cfcce8c3991f6",
+        "source": "authenticated_dashboard",
+        "requestKey": "short-summary-opus-20260905-1"
+      }
+    },
+    {
+      "at": "2026-09-05T20:29:41.849000+00:00",
+      "event": "speech.synthesized",
+      "detail": {
+        "text": "Job 1 failed in 22 seconds. The detailed report is available in the dashboard.",
+        "metrics": {
+          "provider": "omnivoice",
+          "host": "hpubuntu",
+          "model": "c5fdb5ccb189668d56333f77ba2629f4cd7535f4",
+          "elapsedMs": 2328.4970260065165,
+          "audioSeconds": 5.44,
+          "rtf": 0.4280325415453155,
+          "firstAudioMs": 2328.4970260065165,
+          "memoryBytes": 1562304512,
+          "device": "cuda:0",
+          "streaming": false,
+          "peakAllocatedBytes": 3437614080,
+          "encodingMs": 107.27737400156911
+        },
+        "voice": {
+          "id": "agent-control-designed-v1",
+          "kind": "designed",
+          "provider": "omnivoice",
+          "modelRevision": "c5fdb5ccb189668d56333f77ba2629f4cd7535f4",
+          "instruction": "female, low pitch, british accent",
+          "seed": 3901
+        },
+        "receipt": {
+          "id": "operator-summary:short-summary-opus-20260905-1:parcel-social-d014f74dd2ae423d3d9ee31a1a1df106947dcdf4fc950844b92cfcce8c3991f6:audio",
+          "state": "queued"
+        },
+        "audioSha256": "bc33fbef4150db14c82ad2de8b8f17ab98b6fa2840ff0638ee22c2c0020c23c5"
+      }
+    },
+    {
+      "at": "2026-09-05T20:32:41.557000+00:00",
+      "event": "message.accepted",
+      "detail": {
+        "kind": "text",
+        "channel": "openwa",
+        "text": "start test-execution voice",
+        "classification": "enrolled direct sender",
+        "messageKey": "02df5b5f5dc1aa19cbf678c98e497ce2518f7cde064047f9a40affed69363c64"
+      }
+    },
+    {
+      "at": "2026-09-05T20:32:42.316000+00:00",
+      "event": "policy.allowed",
+      "detail": {
+        "template": "test-execution",
+        "parcelId": "parcel-social-02df5b5f5dc1aa19cbf678c98e497ce2518f7cde064047f9a40affed69363c64",
+        "requestKey": "02df5b5f5dc1aa19cbf678c98e497ce2518f7cde064047f9a40affed69363c64"
+      }
+    },
+    {
+      "at": "2026-09-05T20:32:42.322000+00:00",
+      "event": "social.response",
+      "detail": {
+        "text": "Job AC-2 accepted: test-execution.\nWork Parcel: parcel-social-02df5b5f5dc1aa19cbf678c98e497ce2518f7cde064047f9a40affed69363c64\nTo stop: stop AC-2\nText and voice completion requested.",
+        "receipt": {
+          "id": "02df5b5f5dc1aa19cbf678c98e497ce2518f7cde064047f9a40affed69363c64",
+          "state": "queued"
+        }
+      }
+    },
+    {
+      "at": "2026-09-05T20:32:42.329000+00:00",
+      "event": "social.response",
+      "detail": {
+        "text": "Job AC-2: QUEUED\nApproved repository tests: QUEUED.\nWork Parcel: parcel-social-02df5b5f5dc1aa19cbf678c98e497ce2518f7cde064047f9a40affed69363c64\nApproved repository tests: QUEUED\nModels: unavailable. Duration: 0 seconds.\nhttp://localhost:19191/?parcel=parcel-social-02df5b5f5dc1aa19cbf678c98e497ce2518f7cde064047f9a40affed69363c64",
+        "receipt": {
+          "id": "parcel:parcel-social-02df5b5f5dc1aa19cbf678c98e497ce2518f7cde064047f9a40affed69363c64:QUEUED",
+          "state": "queued"
+        }
+      }
+    },
+    {
+      "at": "2026-09-05T20:32:42.330000+00:00",
+      "event": "parcel.status",
+      "detail": {
+        "parcelId": "parcel-social-02df5b5f5dc1aa19cbf678c98e497ce2518f7cde064047f9a40affed69363c64",
+        "status": "QUEUED",
+        "text": "Approved repository tests: QUEUED.\nWork Parcel: parcel-social-02df5b5f5dc1aa19cbf678c98e497ce2518f7cde064047f9a40affed69363c64\nApproved repository tests: QUEUED\nModels: unavailable. Duration: 0 seconds.\nhttp://localhost:19191/?parcel=parcel-social-02df5b5f5dc1aa19cbf678c98e497ce2518f7cde064047f9a40affed69363c64",
+        "durationMs": 28
+      }
+    },
+    {
+      "at": "2026-09-05T20:32:43.290000+00:00",
+      "event": "social.response",
+      "detail": {
+        "text": "Job AC-2: RUNNING\nApproved repository tests: RUNNING.\nWork Parcel: parcel-social-02df5b5f5dc1aa19cbf678c98e497ce2518f7cde064047f9a40affed69363c64\nApproved repository tests: RUNNING\nModels: unavailable. Duration: 1 seconds.\nhttp://localhost:19191/?parcel=parcel-social-02df5b5f5dc1aa19cbf678c98e497ce2518f7cde064047f9a40affed69363c64",
+        "receipt": {
+          "id": "parcel:parcel-social-02df5b5f5dc1aa19cbf678c98e497ce2518f7cde064047f9a40affed69363c64:RUNNING",
+          "state": "queued"
+        }
+      }
+    },
+    {
+      "at": "2026-09-05T20:32:43.291000+00:00",
+      "event": "parcel.status",
+      "detail": {
+        "parcelId": "parcel-social-02df5b5f5dc1aa19cbf678c98e497ce2518f7cde064047f9a40affed69363c64",
+        "status": "RUNNING",
+        "runId": "run-d68239f6-0169-4d6a-b4d3-aaf6a836c491",
+        "text": "Approved repository tests: RUNNING.\nWork Parcel: parcel-social-02df5b5f5dc1aa19cbf678c98e497ce2518f7cde064047f9a40affed69363c64\nApproved repository tests: RUNNING\nModels: unavailable. Duration: 1 seconds.\nhttp://localhost:19191/?parcel=parcel-social-02df5b5f5dc1aa19cbf678c98e497ce2518f7cde064047f9a40affed69363c64",
+        "durationMs": 989,
+        "node": "controller"
+      }
+    },
+    {
+      "at": "2026-09-05T20:32:56.342000+00:00",
+      "event": "social.response",
+      "detail": {
+        "text": "Job AC-2: SUCCEEDED\nApproved repository tests: SUCCEEDED.\nWork Parcel: parcel-social-02df5b5f5dc1aa19cbf678c98e497ce2518f7cde064047f9a40affed69363c64\nApproved repository tests: SUCCEEDED\nModels: unavailable. Duration: 14 seconds.\nhttp://localhost:19191/?parcel=parcel-social-02df5b5f5dc1aa19cbf678c98e497ce2518f7cde064047f9a40affed69363c64",
+        "receipt": {
+          "id": "parcel:parcel-social-02df5b5f5dc1aa19cbf678c98e497ce2518f7cde064047f9a40affed69363c64:SUCCEEDED",
+          "state": "queued"
+        }
+      }
+    },
+    {
+      "at": "2026-09-05T20:32:56.343000+00:00",
+      "event": "parcel.status",
+      "detail": {
+        "parcelId": "parcel-social-02df5b5f5dc1aa19cbf678c98e497ce2518f7cde064047f9a40affed69363c64",
+        "status": "SUCCEEDED",
+        "runId": "run-d68239f6-0169-4d6a-b4d3-aaf6a836c491",
+        "text": "Approved repository tests: SUCCEEDED.\nWork Parcel: parcel-social-02df5b5f5dc1aa19cbf678c98e497ce2518f7cde064047f9a40affed69363c64\nApproved repository tests: SUCCEEDED\nModels: unavailable. Duration: 14 seconds.\nhttp://localhost:19191/?parcel=parcel-social-02df5b5f5dc1aa19cbf678c98e497ce2518f7cde064047f9a40affed69363c64",
+        "durationMs": 13871,
+        "node": "controller"
+      }
+    },
+    {
+      "at": "2026-09-05T20:32:58.595000+00:00",
+      "event": "speech.synthesized",
+      "detail": {
+        "text": "Job 2 completed successfully in 14 seconds. The detailed report is available in the dashboard.",
+        "metrics": {
+          "provider": "omnivoice",
+          "host": "hpubuntu",
+          "model": "c5fdb5ccb189668d56333f77ba2629f4cd7535f4",
+          "elapsedMs": 2124.3046620002133,
+          "audioSeconds": 6.52,
+          "rtf": 0.3258135984662904,
+          "firstAudioMs": 2124.3046620002133,
+          "memoryBytes": 1564614656,
+          "device": "cuda:0",
+          "streaming": false,
+          "peakAllocatedBytes": 3472987648,
+          "encodingMs": 114.32085900014499
+        },
+        "voice": {
+          "id": "agent-control-designed-v1",
+          "kind": "designed",
+          "provider": "omnivoice",
+          "modelRevision": "c5fdb5ccb189668d56333f77ba2629f4cd7535f4",
+          "instruction": "female, low pitch, british accent",
+          "seed": 3901
+        },
+        "receipt": {
+          "id": "parcel:parcel-social-02df5b5f5dc1aa19cbf678c98e497ce2518f7cde064047f9a40affed69363c64:SUCCEEDED:audio",
+          "state": "queued"
+        },
+        "audioSha256": "035e4c782b696e739a0e03fbce2bf379f9497ea39028415b5b27ba87f0fd0303"
+      }
+    },
+    {
+      "at": "2026-09-05T20:34:19.927000+00:00",
+      "event": "message.accepted",
+      "detail": {
+        "kind": "audio",
+        "channel": "openwa",
+        "classification": "enrolled direct sender",
+        "messageKey": "de97d723c616649d55ce84158be599e24a7d36a7e0f5c4bbd43a46718b5473f3"
+      }
+    },
+    {
+      "at": "2026-09-05T20:34:22.833000+00:00",
+      "event": "speech.transcribed",
+      "detail": {
+        "text": "Start test execution",
+        "confidence": null,
+        "metrics": {
+          "provider": "whisper",
+          "host": "hpubuntu",
+          "model": "openai/whisper-tiny.en",
+          "elapsedMs": 2270.969076998881,
+          "audioSeconds": 3.0935,
+          "rtf": 0.7341099327618816,
+          "firstAudioMs": 0,
+          "memoryBytes": 2007695360
+        },
+        "authority": "untrusted transcription"
+      }
+    },
+    {
+      "at": "2026-09-05T20:34:22.837000+00:00",
+      "event": "social.response",
+      "detail": {
+        "text": "I heard: Start test execution\nNo action was executed. To confirm and receive a voice result, send this as a new text message:\nstart test-execution voice",
+        "receipt": {
+          "id": "de97d723c616649d55ce84158be599e24a7d36a7e0f5c4bbd43a46718b5473f3",
+          "state": "queued"
+        }
+      }
+    },
+    {
+      "at": "2026-09-05T20:34:22.838000+00:00",
+      "event": "policy.confirmation_required",
+      "detail": {
+        "reason": "consequential_or_ambiguous_transcription",
+        "command": "start test-execution voice"
+      }
+    },
+    {
+      "at": "2026-09-05T20:35:02.098000+00:00",
+      "event": "message.accepted",
+      "detail": {
+        "kind": "text",
+        "channel": "openwa",
+        "text": "start test-execution voice",
+        "classification": "enrolled direct sender",
+        "messageKey": "b789ef15c136d14ed246c7c01b86af5f0393165657229999da86c08351033666"
+      }
+    },
+    {
+      "at": "2026-09-05T20:35:02.561000+00:00",
+      "event": "voice.confirmed_by_text",
+      "detail": {
+        "sourceMessageKey": "de97d723c616649d55ce84158be599e24a7d36a7e0f5c4bbd43a46718b5473f3",
+        "confirmationMessageKey": "b789ef15c136d14ed246c7c01b86af5f0393165657229999da86c08351033666"
+      }
+    },
+    {
+      "at": "2026-09-05T20:35:02.588000+00:00",
+      "event": "policy.allowed",
+      "detail": {
+        "template": "test-execution",
+        "parcelId": "parcel-social-b789ef15c136d14ed246c7c01b86af5f0393165657229999da86c08351033666",
+        "requestKey": "b789ef15c136d14ed246c7c01b86af5f0393165657229999da86c08351033666"
+      }
+    },
+    {
+      "at": "2026-09-05T20:35:02.590000+00:00",
+      "event": "social.response",
+      "detail": {
+        "text": "Job AC-3 accepted: test-execution.\nWork Parcel: parcel-social-b789ef15c136d14ed246c7c01b86af5f0393165657229999da86c08351033666\nTo stop: stop AC-3\nText and voice completion requested.",
+        "receipt": {
+          "id": "b789ef15c136d14ed246c7c01b86af5f0393165657229999da86c08351033666",
+          "state": "queued"
+        }
+      }
+    },
+    {
+      "at": "2026-09-05T20:35:02.596000+00:00",
+      "event": "social.response",
+      "detail": {
+        "text": "Job AC-3: QUEUED\nApproved repository tests: QUEUED.\nWork Parcel: parcel-social-b789ef15c136d14ed246c7c01b86af5f0393165657229999da86c08351033666\nApproved repository tests: QUEUED\nModels: unavailable. Duration: 0 seconds.\nhttp://localhost:19191/?parcel=parcel-social-b789ef15c136d14ed246c7c01b86af5f0393165657229999da86c08351033666",
+        "receipt": {
+          "id": "parcel:parcel-social-b789ef15c136d14ed246c7c01b86af5f0393165657229999da86c08351033666:QUEUED",
+          "state": "queued"
+        }
+      }
+    },
+    {
+      "at": "2026-09-05T20:35:02.597000+00:00",
+      "event": "parcel.status",
+      "detail": {
+        "parcelId": "parcel-social-b789ef15c136d14ed246c7c01b86af5f0393165657229999da86c08351033666",
+        "status": "QUEUED",
+        "text": "Approved repository tests: QUEUED.\nWork Parcel: parcel-social-b789ef15c136d14ed246c7c01b86af5f0393165657229999da86c08351033666\nApproved repository tests: QUEUED\nModels: unavailable. Duration: 0 seconds.\nhttp://localhost:19191/?parcel=parcel-social-b789ef15c136d14ed246c7c01b86af5f0393165657229999da86c08351033666",
+        "durationMs": 24
+      }
+    },
+    {
+      "at": "2026-09-05T20:35:03.564000+00:00",
+      "event": "social.response",
+      "detail": {
+        "text": "Job AC-3: RUNNING\nApproved repository tests: RUNNING.\nWork Parcel: parcel-social-b789ef15c136d14ed246c7c01b86af5f0393165657229999da86c08351033666\nApproved repository tests: RUNNING\nModels: unavailable. Duration: 1 seconds.\nhttp://localhost:19191/?parcel=parcel-social-b789ef15c136d14ed246c7c01b86af5f0393165657229999da86c08351033666",
+        "receipt": {
+          "id": "parcel:parcel-social-b789ef15c136d14ed246c7c01b86af5f0393165657229999da86c08351033666:RUNNING",
+          "state": "queued"
+        }
+      }
+    },
+    {
+      "at": "2026-09-05T20:35:03.565000+00:00",
+      "event": "parcel.status",
+      "detail": {
+        "parcelId": "parcel-social-b789ef15c136d14ed246c7c01b86af5f0393165657229999da86c08351033666",
+        "status": "RUNNING",
+        "runId": "run-149e6ba4-8f0f-41d4-b7f8-a2b8559f571c",
+        "text": "Approved repository tests: RUNNING.\nWork Parcel: parcel-social-b789ef15c136d14ed246c7c01b86af5f0393165657229999da86c08351033666\nApproved repository tests: RUNNING\nModels: unavailable. Duration: 1 seconds.\nhttp://localhost:19191/?parcel=parcel-social-b789ef15c136d14ed246c7c01b86af5f0393165657229999da86c08351033666",
+        "durationMs": 990,
+        "node": "controller"
+      }
+    },
+    {
+      "at": "2026-09-05T20:35:23.595000+00:00",
+      "event": "social.response",
+      "detail": {
+        "text": "Job AC-3: SUCCEEDED\nApproved repository tests: SUCCEEDED.\nWork Parcel: parcel-social-b789ef15c136d14ed246c7c01b86af5f0393165657229999da86c08351033666\nApproved repository tests: SUCCEEDED\nModels: unavailable. Duration: 20 seconds.\nhttp://localhost:19191/?parcel=parcel-social-b789ef15c136d14ed246c7c01b86af5f0393165657229999da86c08351033666",
+        "receipt": {
+          "id": "parcel:parcel-social-b789ef15c136d14ed246c7c01b86af5f0393165657229999da86c08351033666:SUCCEEDED",
+          "state": "queued"
+        }
+      }
+    },
+    {
+      "at": "2026-09-05T20:35:23.596000+00:00",
+      "event": "parcel.status",
+      "detail": {
+        "parcelId": "parcel-social-b789ef15c136d14ed246c7c01b86af5f0393165657229999da86c08351033666",
+        "status": "SUCCEEDED",
+        "runId": "run-149e6ba4-8f0f-41d4-b7f8-a2b8559f571c",
+        "text": "Approved repository tests: SUCCEEDED.\nWork Parcel: parcel-social-b789ef15c136d14ed246c7c01b86af5f0393165657229999da86c08351033666\nApproved repository tests: SUCCEEDED\nModels: unavailable. Duration: 20 seconds.\nhttp://localhost:19191/?parcel=parcel-social-b789ef15c136d14ed246c7c01b86af5f0393165657229999da86c08351033666",
+        "durationMs": 20423,
+        "node": "controller"
+      }
+    },
+    {
+      "at": "2026-09-05T20:35:25.869000+00:00",
+      "event": "speech.synthesized",
+      "detail": {
+        "text": "Job 3 completed successfully in 20 seconds. The detailed report is available in the dashboard.",
+        "metrics": {
+          "provider": "omnivoice",
+          "host": "hpubuntu",
+          "model": "c5fdb5ccb189668d56333f77ba2629f4cd7535f4",
+          "elapsedMs": 2132.5696959975176,
+          "audioSeconds": 6.52,
+          "rtf": 0.3270812417174107,
+          "firstAudioMs": 2132.5696959975176,
+          "memoryBytes": 2008059904,
+          "device": "cuda:0",
+          "streaming": false,
+          "peakAllocatedBytes": 3472987648,
+          "encodingMs": 125.92427799972938
+        },
+        "voice": {
+          "id": "agent-control-designed-v1",
+          "kind": "designed",
+          "provider": "omnivoice",
+          "modelRevision": "c5fdb5ccb189668d56333f77ba2629f4cd7535f4",
+          "instruction": "female, low pitch, british accent",
+          "seed": 3901
+        },
+        "receipt": {
+          "id": "parcel:parcel-social-b789ef15c136d14ed246c7c01b86af5f0393165657229999da86c08351033666:SUCCEEDED:audio",
+          "state": "queued"
+        },
+        "audioSha256": "bb96d289a2df248aa9a68c7b2ccc71c43c03752f962db436f2c0867529287db3"
+      }
+    },
+    {
+      "at": "2026-09-05T20:39:01.926000+00:00",
+      "event": "summary.requested",
+      "detail": {
+        "parcelId": "parcel-social-b789ef15c136d14ed246c7c01b86af5f0393165657229999da86c08351033666",
+        "source": "authenticated_dashboard",
+        "requestKey": "short-summary-words-ac3-20260905-1"
+      }
+    },
+    {
+      "at": "2026-09-05T20:39:03.240000+00:00",
+      "event": "speech.synthesized",
+      "detail": {
+        "text": "Agent Control job three completed successfully.",
+        "metrics": {
+          "provider": "omnivoice",
+          "host": "hpubuntu",
+          "model": "c5fdb5ccb189668d56333f77ba2629f4cd7535f4",
+          "elapsedMs": 1178.7665660012863,
+          "audioSeconds": 2.98,
+          "rtf": 0.3955592503360021,
+          "firstAudioMs": 1178.7665660012863,
+          "memoryBytes": 1987817472,
+          "device": "cuda:0",
+          "streaming": false,
+          "peakAllocatedBytes": 3473462784,
+          "encodingMs": 122.2904739988735
+        },
+        "voice": {
+          "id": "agent-control-designed-v1",
+          "kind": "designed",
+          "provider": "omnivoice",
+          "modelRevision": "c5fdb5ccb189668d56333f77ba2629f4cd7535f4",
+          "instruction": "female, low pitch, british accent",
+          "seed": 3901
+        },
+        "receipt": {
+          "id": "operator-summary:short-summary-words-ac3-20260905-1:parcel-social-b789ef15c136d14ed246c7c01b86af5f0393165657229999da86c08351033666:audio",
+          "state": "queued"
+        },
+        "audioSha256": "5db35af59a654d278fa79a08e64eb9496005a1b8524690b68e113a5676fa0789"
+      }
+    },
+    {
+      "at": "2026-09-05T20:46:31.739000+00:00",
+      "event": "summary.requested",
+      "detail": {
+        "parcelId": "parcel-social-b789ef15c136d14ed246c7c01b86af5f0393165657229999da86c08351033666",
+        "source": "authenticated_dashboard",
+        "requestKey": "speech-outage-ac3-20260905-1"
+      }
+    },
+    {
+      "at": "2026-09-05T20:46:31.745000+00:00",
+      "event": "speech.text_fallback",
+      "detail": {
+        "reason": "synthesis_or_delivery_failed"
+      }
+    }
+  ],
+  "voiceDeliveries": [
+    {
+      "outboxId": 25,
+      "state": "uncertain",
+      "code": "send_result_uncertain",
+      "messageHash": null
+    },
+    {
+      "outboxId": 26,
+      "state": "uncertain",
+      "code": "send_result_uncertain",
+      "messageHash": null
+    },
+    {
+      "outboxId": 27,
+      "state": "delivered",
+      "code": "gateway_delivery_event",
+      "messageHash": "1ddf005601332e8b28fbdd79af130786a93553db8735427b0bd92ee079ccc8c8"
+    },
+    {
+      "outboxId": 32,
+      "state": "delivered",
+      "code": "gateway_delivery_event",
+      "messageHash": "8998ca1caeeb314638096b21b8a0f798f087a5c258de0f36213d8aaac12d0cdc"
+    },
+    {
+      "outboxId": 38,
+      "state": "delivered",
+      "code": "gateway_delivery_event",
+      "messageHash": "601e3ba9e24e43f55a3e4fa17a327e118471fdf351d859161cad492e3553dd64"
+    },
+    {
+      "outboxId": 39,
+      "state": "delivered",
+      "code": "gateway_delivery_event",
+      "messageHash": "ea5cd9f3a2a441b836df4193602605e343433f1a16efa5fb6c54de88ee44ba39"
+    }
+  ],
+  "humanFeedback": {
+    "text": "Clear slightly fast but clear",
+    "source": "User in Codex task after corrected AC-3 voice delivery",
+    "appliesTo": "Corrected spelled-number summary before 0.9 speed adjustment"
+  }
+}

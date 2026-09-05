@@ -14,7 +14,8 @@ export function registerRepositoryTestActions(actions: ActionRegistry, config: A
     if(suite!=='messaging' && suite!=='typecheck')throw new ActionFailure('test_suite_not_approved','policy_rejection');
     const args=suite==='messaging'?['--import','tsx','--test','src/control/openwa.test.ts']:['node_modules/typescript/bin/tsc','--noEmit'];
     const result=await context.ownedExecution.runProcess({command:process.execPath,args,cwd:root,env:{PATH:process.env.PATH,HOME:process.env.HOME,TMPDIR:process.env.TMPDIR,LANG:'C.UTF-8'},maxOutputBytes:262144},context.signal);
-    if(result.exitCode!==0)throw new ActionFailure('repository_tests_failed_see_dashboard','verification');
-    return {artifacts:[{name:'test-result',value:{suite,exitCode:result.exitCode,stdout:result.stdout,stderr:result.stderr}}],verification:['tests-passed'],detail:'Fixed repository test suite completed successfully'};
+    const artifacts=[{name:'test-result',value:{suite,exitCode:result.exitCode,stdout:result.stdout,stderr:result.stderr}}];
+    if(result.exitCode!==0)throw Object.assign(new ActionFailure('repository_tests_failed_see_dashboard','verification'),{partialActionOutput:{artifacts,verification:[]}});
+    return {artifacts,verification:['tests-passed'],detail:'Fixed repository test suite completed successfully'};
   });
 }

@@ -1,0 +1,302 @@
+{
+  "at": "2026-09-05T20:46:31.623097+00:00",
+  "classification": "Authenticated HTTP-triggered real runtime and private speech service outage; not a WhatsApp command",
+  "summaryFallbackRequest": {
+    "requested": true,
+    "parcelId": "parcel-social-b789ef15c136d14ed246c7c01b86af5f0393165657229999da86c08351033666"
+  },
+  "createdRun": {
+    "id": "run-a3b3a04f-8a29-4336-ba3c-8a312daa90ea",
+    "jobId": "dashboard-running-state-qualification",
+    "jobVersion": "1.0.0",
+    "trigger": {
+      "type": "manual",
+      "actor": "web-operator"
+    },
+    "requestedAt": "2026-09-05T20:46:31.748Z",
+    "status": "QUEUED",
+    "priority": "normal",
+    "concurrency": "queue",
+    "parameters": {
+      "durationSeconds": 90
+    },
+    "steps": [
+      {
+        "id": "observe",
+        "action": "qualification.dashboard.running-state@1.0.0",
+        "status": "QUEUED",
+        "dependsOn": [],
+        "capabilityRequest": {
+          "requires": [
+            {
+              "id": "qualification.local"
+            }
+          ]
+        },
+        "resources": [],
+        "attempts": [],
+        "artifactIds": [],
+        "verification": {
+          "required": [
+            "dashboard-running-state-observed"
+          ],
+          "passed": [],
+          "failed": []
+        }
+      }
+    ],
+    "artifacts": [],
+    "errors": [],
+    "effectiveJob": {
+      "apiVersion": "agent-control/v1",
+      "kind": "Job",
+      "metadata": {
+        "id": "dashboard-running-state-qualification",
+        "name": "Dashboard RUNNING-state qualification",
+        "version": "1.0.0",
+        "description": "Safely holds a governed local Job active long enough to verify honest dashboard liveness, inspection and terminal-state behaviour."
+      },
+      "spec": {
+        "enabled": true,
+        "priority": "normal",
+        "concurrency": "queue",
+        "parameters": {
+          "durationSeconds": {
+            "type": "integer",
+            "default": 20,
+            "minimum": 5,
+            "maximum": 180
+          }
+        },
+        "steps": [
+          {
+            "id": "observe",
+            "name": "Observe governed active execution",
+            "action": "qualification.dashboard.running-state@1.0.0",
+            "requires": [
+              "qualification.local"
+            ],
+            "outputs": [
+              {
+                "name": "liveness-report",
+                "type": "application/json",
+                "schema": "agent-control.dashboard-running-state-report/v1",
+                "version": "1.0.0",
+                "retention": "run-history"
+              }
+            ],
+            "verification": [
+              "dashboard-running-state-observed"
+            ]
+          }
+        ]
+      }
+    },
+    "selectedWorkers": [],
+    "approvals": [],
+    "provenance": [
+      {
+        "type": "trigger",
+        "at": "2026-09-05T20:46:31.748Z",
+        "detail": "manual:web-operator"
+      }
+    ],
+    "updatedAt": "2026-09-05T20:46:31.748Z"
+  },
+  "finalRun": {
+    "id": "run-a3b3a04f-8a29-4336-ba3c-8a312daa90ea",
+    "jobId": "dashboard-running-state-qualification",
+    "jobVersion": "1.0.0",
+    "trigger": {
+      "type": "manual",
+      "actor": "web-operator"
+    },
+    "requestedAt": "2026-09-05T20:46:31.748Z",
+    "status": "CANCELLED",
+    "priority": "normal",
+    "concurrency": "queue",
+    "parameters": {
+      "durationSeconds": 90
+    },
+    "steps": [
+      {
+        "id": "observe",
+        "action": "qualification.dashboard.running-state@1.0.0",
+        "status": "CANCELLED",
+        "dependsOn": [],
+        "capabilityRequest": {
+          "requires": [
+            {
+              "id": "qualification.local"
+            }
+          ]
+        },
+        "resources": [],
+        "attempts": [
+          {
+            "attempt": 1,
+            "startedAt": "2026-09-05T20:46:32.630Z",
+            "workerId": "controller",
+            "cleanup": {
+              "outcome": "confirmed",
+              "reason": "execution_cancelled",
+              "requestedAt": "2026-09-05T20:46:36.785Z",
+              "completedAt": "2026-09-05T20:46:36.785Z",
+              "processes": [
+                {
+                  "identity": {
+                    "pid": 1133415,
+                    "platform": "linux",
+                    "startedAtToken": "[REDACTED]",
+                    "capturedAt": "2026-09-05T20:46:32.647Z"
+                  },
+                  "outcome": "confirmed",
+                  "reason": "cancelled_by:web-operator",
+                  "signals": [
+                    "SIGTERM:sent"
+                  ],
+                  "requestedAt": "2026-09-05T20:46:36.758Z",
+                  "verifiedAt": "2026-09-05T20:46:36.784Z"
+                }
+              ]
+            },
+            "endedAt": "2026-09-05T20:46:36.785Z",
+            "outcome": "execution_cancelled"
+          }
+        ],
+        "artifactIds": [],
+        "verification": {
+          "required": [
+            "dashboard-running-state-observed"
+          ],
+          "passed": [],
+          "failed": []
+        },
+        "placement": {
+          "selected": "controller",
+          "eligible": [
+            "controller"
+          ],
+          "rejected": [],
+          "reasons": [
+            "satisfies:qualification.local",
+            "healthy",
+            "available"
+          ]
+        },
+        "startedAt": "2026-09-05T20:46:32.630Z",
+        "cleanup": {
+          "outcome": "confirmed",
+          "reason": "execution_cancelled",
+          "requestedAt": "2026-09-05T20:46:36.785Z",
+          "completedAt": "2026-09-05T20:46:36.785Z",
+          "processes": [
+            {
+              "identity": {
+                "pid": 1133415,
+                "platform": "linux",
+                "startedAtToken": "[REDACTED]",
+                "capturedAt": "2026-09-05T20:46:32.647Z"
+              },
+              "outcome": "confirmed",
+              "reason": "cancelled_by:web-operator",
+              "signals": [
+                "SIGTERM:sent"
+              ],
+              "requestedAt": "2026-09-05T20:46:36.758Z",
+              "verifiedAt": "2026-09-05T20:46:36.784Z"
+            }
+          ]
+        },
+        "endedAt": "2026-09-05T20:46:36.785Z"
+      }
+    ],
+    "artifacts": [],
+    "errors": [
+      "execution_cancelled"
+    ],
+    "effectiveJob": {
+      "apiVersion": "agent-control/v1",
+      "kind": "Job",
+      "metadata": {
+        "id": "dashboard-running-state-qualification",
+        "name": "Dashboard RUNNING-state qualification",
+        "version": "1.0.0",
+        "description": "Safely holds a governed local Job active long enough to verify honest dashboard liveness, inspection and terminal-state behaviour."
+      },
+      "spec": {
+        "enabled": true,
+        "priority": "normal",
+        "concurrency": "queue",
+        "parameters": {
+          "durationSeconds": {
+            "type": "integer",
+            "default": 20,
+            "minimum": 5,
+            "maximum": 180
+          }
+        },
+        "steps": [
+          {
+            "id": "observe",
+            "name": "Observe governed active execution",
+            "action": "qualification.dashboard.running-state@1.0.0",
+            "requires": [
+              "qualification.local"
+            ],
+            "outputs": [
+              {
+                "name": "liveness-report",
+                "type": "application/json",
+                "schema": "agent-control.dashboard-running-state-report/v1",
+                "version": "1.0.0",
+                "retention": "run-history"
+              }
+            ],
+            "verification": [
+              "dashboard-running-state-observed"
+            ]
+          }
+        ]
+      }
+    },
+    "selectedWorkers": [
+      "controller"
+    ],
+    "approvals": [],
+    "provenance": [
+      {
+        "type": "trigger",
+        "at": "2026-09-05T20:46:31.748Z",
+        "detail": "manual:web-operator"
+      },
+      {
+        "type": "runtime-safety",
+        "at": "2026-09-05T20:46:32.620Z",
+        "detail": "ALLOW:safety-9e1a3b8d-a1e1-4fd3-bb95-2e623acc581d:Read-only bounded action satisfies configured scope"
+      },
+      {
+        "type": "action-dispatch",
+        "at": "2026-09-05T20:46:32.637Z",
+        "detail": "control:qualification.dashboard.running-state@1.0.0"
+      }
+    ],
+    "updatedAt": "2026-09-05T20:46:36.786Z",
+    "startedAt": "2026-09-05T20:46:32.630Z",
+    "endedAt": "2026-09-05T20:46:36.785Z"
+  },
+  "resourcesAfter": [],
+  "servicesRestored": [
+    "active",
+    "active",
+    "active"
+  ],
+  "harnessRecovery": "Cancellation completed; initial resource read used nonexistent /locks and transient-unit start required recreation. Recovered using /resources and original private systemd-run helper.",
+  "fallbackAudit": [
+    {
+      "event": "speech.text_fallback",
+      "at": 1788641191745,
+      "detail": "{\"reason\":\"synthesis_or_delivery_failed\"}"
+    }
+  ]
+}

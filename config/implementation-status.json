@@ -7,8 +7,8 @@
       "id": "social-voice.providers",
       "title": "Replaceable governed Social and Voice capabilities",
       "status": "PARTIAL",
-      "summary": "Authenticated direct messages and confirmed voice intents create durable approved Work Parcels; generic speech edges, private history, optional voice summaries and separately granted one-shot approvals are implemented. Physical OmniVoice inference passed on P5000 and integrated Intel Arc; real CPU STT passed with vocabulary limitations.",
-      "limitation": "Complete real WhatsApp voice-to-Work-Parcel-to-audio delivery remains pending operator input. Real model handoff, long-duration speech soak, subjective voice quality and production deployment are not qualified.",
+      "summary": "Actual enrolled WhatsApp voice intake, untrusted STT, fresh text confirmation, governed AC-3 Work Parcel execution and delivered short voice summary passed. Human confirmed corrected summary clear. Physical OmniVoice inference passed on P5000 and integrated Intel Arc; provider-neutral boundaries and durable history remain authoritative.",
+      "limitation": "Private pilot only. General speech quality, real model handoff, repository-review routing, multi-lane video, long-duration soak and production deployment remain unqualified. Final 0.9 playback rate has codec/STT evidence but no second handset rating.",
       "sources": [
         "src/control/social-voice.ts",
         "src/control/social-voice-providers.ts",

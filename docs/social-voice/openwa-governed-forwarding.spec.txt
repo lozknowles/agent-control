@@ -1,0 +1,11 @@
+import {buildIncomingMessageBase} from './message-mapper';
+describe('governed ingress forwarding provenance',()=>{
+  const raw={id:{_serialized:'message-1'},from:'441234567890@c.us',to:'441111111111@c.us',body:'help',type:'chat',timestamp:123,fromMe:false};
+  it('retains explicit genuine and forwarded flags',()=>{
+    expect(buildIncomingMessageBase({...raw,isForwarded:false}).isForwarded).toBe(false);
+    expect(buildIncomingMessageBase({...raw,isForwarded:true}).isForwarded).toBe(true);
+  });
+  it('does not turn unavailable provenance into authority',()=>{
+    expect(buildIncomingMessageBase(raw).isForwarded).toBeUndefined();
+  });
+});

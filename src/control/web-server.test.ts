@@ -181,7 +181,7 @@ test('Social and Voice history and approval routes require authentication and sa
   assert.equal((await fetch(base+route)).status,401);
   assert.equal((await fetch(base+route,{headers:{Authorization:'Bearer test-token'}})).status,200);
  }
- for(const route of ['/api/social-voice/approval','/api/social-voice/approval-grant']){
+ for(const route of ['/api/social-voice/summary','/api/social-voice/approval','/api/social-voice/approval-grant']){
   assert.equal((await fetch(base+route,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'})).status,401);
   assert.equal((await fetch(base+route,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer test-token',Origin:'https://evil.invalid'},body:'{}'})).status,403);
  }
