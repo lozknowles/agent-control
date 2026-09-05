@@ -20,3 +20,15 @@ test('Android ADB physical qualification declares its sanitized artifact contrac
     version: '1.0.0',
   });
 });
+
+test('Android ADB reconnect qualification has one bounded production retry', () => {
+  const retry = {attempts: 1, backoffSeconds: 1, overallDeadlineSeconds: 90};
+  const definition = androidAdbQualificationDefinition(
+    'android-adb-governed-reconnect',
+    'qualification.android-adb-reconnect@1.0.0',
+    ['android.adb.ensure-connected'],
+    retry,
+  );
+
+  assert.deepEqual(definition.spec.steps[0].retry, retry);
+});
