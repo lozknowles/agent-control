@@ -45,3 +45,15 @@ Historical replay scores retained observations without changing active policy. V
 ## Current boundary
 
 The registry, transition gates, replay, policy versioning and rollback are implemented and deterministic. The [physical multi-provider qualification](physical-multi-provider-qualification.md) exercises exact Luna, local Qwen and GLM-5.3-Flash identities once, but does not promote their immutable recipes to ACTIVE/PREFERRED. The larger frozen benchmark still has no physical observations, so automatic production Job routing remains disabled.
+
+## Capability and historical intelligence (3.9)
+
+Provider/model lifecycle identity remains unchanged. The new capability store adds evidence that routing can consume without turning a provider feature into core policy. Each observation records capability, provider/model/runtime/version subject, supported state, native versus `AGENT_CONTROL_EMULATED`, verification state, confidence, timestamps, limitations and evidence. Advertised/configured capability is unverified until a frozen or task-specific qualification proves it.
+
+Capability candidates follow `DISCOVERED → ANALYSED → EXPERIMENT → QUALIFICATION → ADOPTED`, or end as `REJECTED`/`DEFERRED`. A candidate records the external source, claimed technique, proposed generic equivalent, measured experiment and final decision. Adoption updates neither active model policy nor authority automatically.
+
+The frozen model-evaluation ledger is append-only. A batch seals the suite SHA-256, Agent Control/adapter/prompt versions and exact provider/account/model/runtime/node/artifact candidate identities. Every repetition remains a separate attempt with output hash, scoring result, failure class, usage, cache split, cost authority, elapsed time and verification evidence. `CAPABILITY_UNAVAILABLE`, `AUTHENTICATION_UNAVAILABLE`, `PROVIDER_UNAVAILABLE`, `TEST_FAILURE` and `ARCHITECTURE_REGRESSION` are distinct outcomes.
+
+Historical projections provide 7-, 30- and 90-day plus all-time quality/reliability, cache hit ratio, latency, fresh/total tokens, cost and per-success economics. Regression warnings require a sufficient baseline/sample and retain the measured reason; one noisy result cannot quarantine a route. The candidate lifecycle used by this ledger is `CANDIDATE → QUALIFIED → PREFERRED → DEGRADED → QUARANTINED → RETIRED`. Consequential promotion remains approval/evidence gated. Leader slots stay empty when there is not enough durable evidence rather than fabricating a ranking.
+
+The real 3.9 frozen run used two local llama.cpp routes twice (204 persisted attempts). It verified capability-first selection of the coder route for `code.modify`, but leaves both same-day routes as candidates and leaves browser/computer capability and monetary cost unavailable. See [qualification](evidence/agent-control-3.9-provider-neutral-qualification.md).

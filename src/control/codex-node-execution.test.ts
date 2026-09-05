@@ -98,7 +98,20 @@ test('the audited Windows runner discovers versioned Codex bundles without a har
   assert.match(script, /codex_chatgpt_auth_required/);
   assert.match(script, /UTF8Encoding\(\$false\)/);
   assert.match(script, /--skip-git-repo-check/);
+  assert.match(script, /--strict-config/);
+  assert.match(script, /--ignore-user-config/);
+  assert.match(script, /--ignore-rules/);
+  assert.match(script, /project_doc_max_bytes=0/);
+  assert.match(script, /web_search="disabled"/);
   assert.match(script, /features\.shell_tool=false/);
+  assert.match(script, /features\.unified_exec=false/);
+  assert.match(script, /features\.multi_agent=false/);
+  assert.match(script, /features\.browser_use=false/);
+  assert.match(script, /features\.computer_use=false/);
+  assert.match(script, /features\.in_app_browser=false/);
+  assert.match(script, /features\.apps=false/);
+  assert.match(script, /features\.image_generation=false/);
+  assert.match(script, /features\.workspace_dependencies=false/);
   assert.match(script, /--output-last-message/);
   assert.match(script, /ReadAllText\(\$lastMessageFile\)/);
   assert.match(script, /Start-Process -FilePath \$selected\.Path/);
@@ -120,18 +133,21 @@ test('destination execution fails closed when the execution port reports a diffe
   await assert.rejects(() => client.invoke({id: 'model-a', provider: provider.id, accountProfile: account.id, providerModel: 'gpt-example', capabilities: []}, 'bounded input', {structured: true, outputSchema: {type: 'object'}}), /codex_node_execution_identity_mismatch/);
 });
 
-test('ephemeral Codex review marks response-window usage as estimated context without changing cumulative usage', async () => {
-  const events: Array<{phase: string; context: {tokens: number | null; limitTokens: number | null; authority: string; source: string}; usage?: {totalTokens: number | null}}> = [];
+test('ephemeral Codex review preserves top-level cached input in telemetry and calculated accounting', async () => {
+  const events: Array<{phase: string; context: {tokens: number | null; limitTokens: number | null; authority: string; source: string}; usage?: {cachedInputTokens: number | null; totalTokens: number | null}}> = [];
   const exactPort: CodexNodeExecutionPort = {
     async accountStatus() { throw new Error('not_used'); },
     async execReadOnlyStructured(request) {
-      request.onTelemetry?.({type: 'turn.completed', elapsedMs: 9, usage: {input_tokens: 40, output_tokens: 6}, context: {tokens: null, authority: 'unavailable', source: 'codex_jsonl_does_not_report_current_context'}});
-      return {providerId: request.provider.id, accountProfileId: request.account.id, modelId: request.model.id, nodeId: request.nodeId, codexVersion: 'codex-cli 0.153.0', executableSha256: hash, discoveredAt: '2026-09-03T10:00:00.000Z', finalMessage: '{"ok":true}', usage: {input_tokens: 40, output_tokens: 6}, observedItemTypes: ['agent_message']};
+      request.onTelemetry?.({type: 'turn.completed', elapsedMs: 9, usage: {input_tokens: 40, cached_input_tokens: 30, output_tokens: 6}, context: {tokens: null, authority: 'unavailable', source: 'codex_jsonl_does_not_report_current_context'}});
+      return {providerId: request.provider.id, accountProfileId: request.account.id, modelId: request.model.id, nodeId: request.nodeId, codexVersion: 'codex-cli 0.153.0', executableSha256: hash, discoveredAt: '2026-09-03T10:00:00.000Z', finalMessage: '{"ok":true}', usage: {input_tokens: 40, cached_input_tokens: 30, output_tokens: 6}, observedItemTypes: ['agent_message']};
     },
   };
   const client = new CodexRepositoryReviewClient(provider, account, node.id, exactPort);
-  const result = await client.invoke({id: 'model-a', provider: provider.id, accountProfile: account.id, providerModel: 'gpt-example', capabilities: [], limits: {contextTokens: 100}}, 'bounded input', {structured: true, outputSchema: {type: 'object'}, onTelemetry: event => events.push(event)});
+  const result = await client.invoke({id: 'model-a', provider: provider.id, accountProfile: account.id, providerModel: 'gpt-example', capabilities: [], limits: {contextTokens: 100}, pricing: {currency: 'USD', inputPerMillionTokens: 1, cachedInputPerMillionTokens: .5, outputPerMillionTokens: 2, effectiveFrom: '2026-09-05', source: 'test'}}, 'bounded input', {structured: true, outputSchema: {type: 'object'}, onTelemetry: event => events.push(event)});
   assert.equal(result.usage.totalTokens, 46);
-  assert.deepEqual(events.at(-1)?.context, {tokens: 46, limitTokens: 100, authority: 'estimated', source: 'codex_ephemeral_single_turn_usage_estimate'});
+  assert.equal(result.usage.cachedInputTokens, 30);
+  assert.equal(result.usage.calculatedCost, .000037);
+  assert.deepEqual(events.at(-1)?.context, {tokens: null, limitTokens: 100, authority: 'unavailable', source: 'codex_exec_turn_usage_is_not_current_context'});
   assert.equal(events.at(-1)?.usage?.totalTokens, 46);
+  assert.equal(events.at(-1)?.usage?.cachedInputTokens, 30);
 });

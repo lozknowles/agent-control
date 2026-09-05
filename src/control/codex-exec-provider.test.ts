@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {AdaptiveHarness, SkillCatalog, ToolPolicy, type RecipeRequest} from './adaptive-harness.js';
-import {CODEX_0153_CONTEXT_CAPABILITIES, CodexExecProviderFactory, normalizeCodex0153TelemetryEvent, runCodexWithRegisteredModel} from './codex-exec-provider.js';
+import {CODEX_0153_CONTEXT_CAPABILITIES, CodexExecProviderFactory, codexReadOnlyStructuredArguments, normalizeCodex0153TelemetryEvent, runCodexWithRegisteredModel} from './codex-exec-provider.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -26,22 +26,32 @@ test('Codex ChatGPT-plan factory returns data only through the ToolPolicy gatewa
 });
 
 test('Codex usage retains nested cache and reasoning details for normalisation', async () => {
-  const result = await factory({runner: async request => ({threadId: 'thr_nested', finalMessage: JSON.stringify({tool: request.grantedToolIds[0], input_json: '{}'}), usage: {input_tokens: 100, input_tokens_details: {cached_tokens: 70}, output_tokens: 20, output_tokens_details: {reasoning_tokens: 8}, total_tokens: 120}, observedItemTypes: ['agent_message']})}).executor('Return safe data').execute({tools: [{id: 'qualification.return-data'}], resourceLimits: {}} as never, {invoke: async () => ({marker: 'SAFE'})});
-  assert.equal(result.invocations?.[0].usage.freshInputTokens, 30);
+  const result = await factory({runner: async request => ({threadId: 'thr_nested', finalMessage: JSON.stringify({tool: request.grantedToolIds[0], input_json: '{}'}), usage: {input_tokens: 100, input_tokens_details: {cached_tokens: 70, cache_write_tokens: 10}, output_tokens: 20, output_tokens_details: {reasoning_tokens: 8}, total_tokens: 120}, observedItemTypes: ['agent_message']})}).executor('Return safe data').execute({tools: [{id: 'qualification.return-data'}], resourceLimits: {}} as never, {invoke: async () => ({marker: 'SAFE'})});
+  assert.equal(result.invocations?.[0].usage.freshInputTokens, 20);
   assert.equal(result.invocations?.[0].usage.cachedInputTokens, 70);
+  assert.equal(result.invocations?.[0].usage.cacheWriteTokens, 10);
   assert.equal(result.invocations?.[0].usage.reasoningTokens, 8);
 });
 
-test('Codex adapter forwards only JSONL telemetry actually exposed and marks current context unavailable', async () => {
-  const samples: Array<{threadId:string; total:number|null; authority:string; active:boolean|undefined}> = [];
-  const result = await factory({telemetry: sample => samples.push({threadId: sample.threadId, total: sample.cumulative.totalTokens ?? null, authority: sample.context?.authority ?? 'missing', active: sample.active}), runner: async request => { request.onTelemetry?.({type: 'thread.started', threadId: 'thr_live', elapsedMs: 1, context: {tokens: null, authority: 'unavailable', source: 'fixture'}}); request.onTelemetry?.({type: 'turn.completed', threadId: 'thr_live', elapsedMs: 2, usage: {input_tokens: 40, output_tokens: 10, total_tokens: 50}, context: {tokens: null, authority: 'unavailable', source: 'fixture'}}); return {threadId: 'thr_live', finalMessage: JSON.stringify({tool: request.grantedToolIds[0], input_json: '{}'}), usage: {input_tokens: 40, output_tokens: 10, total_tokens: 50}, observedItemTypes: ['agent_message']}; }}).executor('Return safe data').execute({taskId: 'parcel:one', tools: [{id: 'qualification.return-data'}], resourceLimits: {}} as never, {invoke: async () => ({marker: 'SAFE'})});
-  assert.ok(result.resultRef); assert.deepEqual(samples, [{threadId: 'thr_live', total: null, authority: 'unavailable', active: true}, {threadId: 'thr_live', total: 50, authority: 'unavailable', active: false}]);
+test('Codex adapter forwards cache-aware JSONL telemetry and marks current context unavailable', async () => {
+  const samples: Array<{threadId:string; fresh:number|null; cached:number|null; total:number|null; authority:string; active:boolean|undefined}> = [];
+  const result = await factory({telemetry: sample => samples.push({threadId: sample.threadId, fresh: sample.cumulative.freshInputTokens ?? null, cached: sample.cumulative.cachedInputTokens ?? null, total: sample.cumulative.totalTokens ?? null, authority: sample.context?.authority ?? 'missing', active: sample.active}), runner: async request => { request.onTelemetry?.({type: 'thread.started', threadId: 'thr_live', elapsedMs: 1, context: {tokens: null, authority: 'unavailable', source: 'fixture'}}); request.onTelemetry?.({type: 'turn.completed', threadId: 'thr_live', elapsedMs: 2, usage: {input_tokens: 40, cached_input_tokens: 30, output_tokens: 10, total_tokens: 50}, context: {tokens: null, authority: 'unavailable', source: 'fixture'}}); return {threadId: 'thr_live', finalMessage: JSON.stringify({tool: request.grantedToolIds[0], input_json: '{}'}), usage: {input_tokens: 40, cached_input_tokens: 30, output_tokens: 10, total_tokens: 50}, observedItemTypes: ['agent_message']}; }}).executor('Return safe data').execute({taskId: 'parcel:one', tools: [{id: 'qualification.return-data'}], resourceLimits: {}} as never, {invoke: async () => ({marker: 'SAFE'})});
+  assert.ok(result.resultRef); assert.deepEqual(samples, [{threadId: 'thr_live', fresh: null, cached: null, total: null, authority: 'unavailable', active: true}, {threadId: 'thr_live', fresh: 10, cached: 30, total: 50, authority: 'unavailable', active: false}]);
+});
+
+test('schema-constrained Codex arguments isolate account auth from mutable config and native execution tools', () => {
+  const isolated = codexReadOnlyStructuredArguments({modelId: 'gpt-example', loadUserConfig: false}, '/tmp/schema.json', 'stable prompt');
+  for (const value of ['--ephemeral','--strict-config','--skip-git-repo-check','--ignore-user-config','--ignore-rules','project_doc_max_bytes=0','web_search="disabled"','features.shell_tool=false','features.unified_exec=false','features.multi_agent=false','features.browser_use=false','features.computer_use=false','features.in_app_browser=false','features.apps=false','features.image_generation=false','features.workspace_dependencies=false']) assert.ok(isolated.includes(value));
+  assert.deepEqual(isolated.slice(-5), ['--model','gpt-example','--output-schema','/tmp/schema.json','stable prompt']);
+  const registered = codexReadOnlyStructuredArguments({modelId: 'vendor/model', loadUserConfig: true}, '/tmp/schema.json', 'stable prompt');
+  assert.equal(registered.includes('--ignore-user-config'), false);
+  assert.ok(registered.includes('features.shell_tool=false'));
 });
 
 test('Codex 0.153 native app-server usage and compaction normalize behind the provider adapter', () => {
   const usage = normalizeCodex0153TelemetryEvent({method: 'thread/tokenUsage/updated', params: {threadId: 'thr-153', tokenUsage: {total: {inputTokens: 1000, outputTokens: 100, totalTokens: 1100}, last: {inputTokens: 200, outputTokens: 20, totalTokens: 220}, modelContextWindow: 1000}}}, 25);
   assert.equal(usage?.type, 'thread.token_usage.updated');
-  assert.deepEqual(usage?.usage, {input_tokens: 1000, output_tokens: 100, total_tokens: 1100, cached_input_tokens: null, reasoning_output_tokens: null});
+  assert.deepEqual(usage?.usage, {input_tokens: 1000, output_tokens: 100, total_tokens: 1100, cached_input_tokens: null, cache_write_tokens: null, reasoning_output_tokens: null});
   assert.deepEqual(usage?.context, {tokens: 220, limitTokens: 1000, authority: 'estimated', source: 'codex_app_server_thread_usage_mixed_provider_or_recomputed'});
   const compact = normalizeCodex0153TelemetryEvent({method: 'item/completed', params: {threadId: 'thr-153', item: {type: 'contextCompaction', id: 'compact-1'}}}, 30);
   assert.deepEqual(compact?.contextLifecycle, {kind: 'COMPACTION', contextId: 'compact-1', authority: 'authoritative', source: 'codex_app_server_contextCompaction'});

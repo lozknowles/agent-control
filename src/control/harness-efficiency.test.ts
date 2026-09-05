@@ -121,6 +121,10 @@ test('provider usage separates fresh, cached, cache-write and reasoning tokens w
   assert.deepEqual(normalizeProviderUsage({input_tokens: 100, input_tokens_details: {cached_tokens: 60}, cache_creation_input_tokens: 5, output_tokens: 20, output_tokens_details: {reasoning_tokens: 7}, total_tokens: 120}), {inputTokens: 100, freshInputTokens: 40, cachedInputTokens: 60, cacheWriteTokens: 5, outputTokens: 20, reasoningTokens: 7, totalProcessedTokens: 120});
 });
 
+test('Responses cache writes are a distinct input portion and are not double counted as fresh input', () => {
+  assert.deepEqual(normalizeProviderUsage({input_tokens: 100, input_tokens_details: {cached_tokens: 40, cache_write_tokens: 20}, output_tokens: 10, total_tokens: 110}), {inputTokens: 100, freshInputTokens: 40, cachedInputTokens: 40, cacheWriteTokens: 20, outputTokens: 10, reasoningTokens: null, totalProcessedTokens: 110});
+});
+
 test('cost calculation requires an explicit complete pricing schedule', () => {
   const usage = normalizeProviderUsage({input_tokens: 100, input_tokens_details: {cached_tokens: 60}, output_tokens: 20});
   assert.equal(calculateInvocationCost(usage, {currency: 'TEST', freshInputPerMillionTokens: 10, outputPerMillionTokens: 20, source: 'fixture'}), null);
@@ -169,6 +173,7 @@ test('cost per verified outcome counts only verifier-passed successful jobs', ()
   const metrics = ledger.metrics().overall;
   assert.equal(metrics.verifiedSuccesses, 1);
   assert.equal(metrics.totalProcessedTokens, 240);
+  assert.equal(metrics.cacheWriteTokens, null);
   assert.equal(metrics.tokensPerVerifiedOutcome, 240);
   assert.equal(metrics.costPerVerifiedOutcome, .00184);
   assert.equal(metrics.cacheEffectiveness, .6);

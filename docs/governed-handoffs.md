@@ -48,3 +48,11 @@ Credential-like material is rejected before persistence. The complete request is
 ## Recovery
 
 Handoff and contract snapshots are separate atomic mode-`0600` records. On restart, parent/child links, budget debits, process replacement, baton generation and verification state remain reconstructable. Operating-system process adapters are still responsible for proving the observed process identity before resuming it.
+
+## Bounded context views in 3.9
+
+A Work Parcel handoff now consumes a `agent-control.work-parcel-baton/v2` projection. The durable Parcel context ledger remains the historical source of truth; the baton contains concise active state, unresolved work, criteria, selected recent/retrieved event references, artifact IDs, exact next action, route and size/hash metadata. Creating another baton never overwrites the event history.
+
+The receiver can use governed retrieval to recover an omitted decision or failed approach by content-hashed event identity. That retrieval is audited and does not grant new filesystem, node, provider, account or tool authority. Source and destination execution still pass the existing contract/handoff admission and route-identity checks.
+
+Non-blocking questions are dependency state, not handoff outcomes. An unanswered question pauses only named stages; independent branches and their batons may continue. A `COMPLETE` outcome still enters independent criterion verification and cannot make a Parcel successful merely because a model claims completion.

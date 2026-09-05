@@ -1,6 +1,6 @@
 # Agent Control architecture
 
-This is the authoritative source boundary for Agent Control 3.8.2. Status labels matter:
+This is the authoritative source boundary for the Agent Control 3.9.0 candidate. Status labels matter:
 
 - **implemented** means executable code and automated tests exist in this branch;
 - **experimental** means executable code exists but has not been qualified across every external substrate;
@@ -41,6 +41,10 @@ This is the authoritative source boundary for Agent Control 3.8.2. Status labels
 31. Provider rank is not calibrated confidence; evidence sufficiency derives from observable exact, path, coverage, diversity and freshness signals.
 32. A baton evidence reference is portable only when rehydration revalidates repository identity, path boundary, source existence and whole-file content hash.
 33. Index search and index mutation are distinct authorities; resource policy may recommend a build but cannot grant it.
+34. A remembered Run, PID or network connection is not execution continuity. Recovery requires the adapter to reconcile the exact durable execution identity and route.
+35. Sending a cancellation signal is not cleanup completion. Terminal state and authority release require verified descendant/process-tree absence or an explicit uncertainty state.
+36. Every resource metric carries source, authority and freshness. Missing data is null; a derived fallback cannot silently become an admission-qualified measurement.
+37. Cache admission is an adapter capability, not a core assumption. Stable prompt structure is portable; provider-specific keys and breakpoints are emitted only after provider-and-model qualification.
 
 ## Governed retrieval and context intelligence
 
@@ -58,6 +62,32 @@ The governor progresses through available exact, lexical, semantic and hybrid st
 Evidence compiles through existing context profiles and records portable references in existing batons. On destination execution or restart, the durable store rehydrates only references whose repository identity, relative path, existence and whole-file hash still match. A mismatch emits invalidation and restores controlled frozen-context fallback. Existing SSE carries provider selection, escalation, evidence, compilation, rehydration, invalidation and fallback events without a second transport.
 
 `RetrievalResourcePolicy` is provider-neutral. It combines observed free memory/storage, repository bytes, index state, measured cold-index memory/time, expected task duration, built-in availability and separate index-management authority to return `USE_PROVIDER`, `USE_BUILTIN`, `BUILD_INDEX` or `DEFER_INDEX`. A recommendation never mutates an index by itself. Full contracts and boundaries are in [governed retrieval](docs/governed-retrieval.md), the pre-implementation [3.8 review](docs/agent-control-3.8-architecture-review.md), and [Phase 2 evidence](docs/evidence/agent-control-3.8-phase2-qualification.md).
+
+## Resilient execution and cleanup (3.9)
+
+```text
+durable Run + exact route + execution ID
+                  |
+          adapter observation
+       /            |             \
+ authenticated   same live ID    terminal proof
+     block        reconnect       + cleanup evidence
+       |              |                  |
+human action   continue observing   verify/accept
+       \______________|__________________/
+                      |
+             durable dashboard/SSE
+```
+
+`JobRuntime` and `ParameterizedJobEngine` persist an execution identity before provider work begins. For a parameterised review that identity seals sequence, provider, account profile, model, workload node, provider-execution node and credential node. Controller restart moves an unresolved attempt to `DISCONNECTED`; it never changes that identity or automatically invokes the provider again. A provider-owned reconciliation port may return `RUNNING`, `COMPLETED`, `FAILED`, `CANCELLED` or `UNKNOWN`, but only the same execution ID with proven continuity can restore or terminalise the Run. A completed response still enters independent application validation.
+
+Recovery classification is provider-neutral. Transient transport and expired-enrolment failures are retry-eligible only inside the configured attempt budget, exponential backoff and overall deadline. Authentication-required becomes `AUTHENTICATION_BLOCKED`; permanent configuration and unclassified execution failures do not masquerade as transient recovery. The selected provider/account/model/node route stays fixed unless normal governed routing authorises an explicit change. Error projection retains a bounded safe reason, not credentials or raw provider transport.
+
+Every action receives an `OwnedExecution` capability rather than owning an untracked child process. On Linux the adapter launches a process group, captures `/proc/<pid>/stat` start identity, sends bounded TERM/KILL to the group and verifies absence. On Windows it enumerates a fixed CIM process tree, compares creation identity, invokes bounded tree termination and rechecks every captured process identity. Other substrates may stop the leader but must return `uncertain` when descendants cannot be proven absent. Contract, ordinary Job and parameterised-review cancellation/timeout paths therefore remain `CANCELLING`, `CLEANUP_UNCERTAIN`, `DISCONNECTED` or `ORPHANED` until cleanup evidence permits a terminal state; locks and write authority are not released on a mere signal attempt.
+
+Dashboard state is a projection of those durable records. Initial HTTP load and every SSE connection send/reload a full snapshot before incremental events. Reasons, source/observed time, freshness, retry/cancellation deadlines, remaining retry budget, execution identity and cleanup outcome are rendered directly. Locally advancing elapsed-time or countdown text is presentation between authoritative timestamps, never inferred state.
+
+Provider prompts have a generic ordered stable/volatile block representation plus a non-secret cache scope. The rendered text remains authoritative. A Responses adapter may derive a hashed key or explicit content breakpoint only when both its provider and exact model advertise `prompt-cache.key` or `prompt-cache.explicit`; unsupported adapters receive the unchanged rendered prompt. Cache reads, writes and fresh input are normalized separately, and configured cache-write cost is calculable only when the provider reports the write count. This preserves useful structure if any current provider disappears while keeping its wire controls behind its adapter.
 
 ## System boundary and adaptive harness
 
@@ -385,7 +415,7 @@ The initial `repository-code-review@1` definition supports node-local paths unde
 
 `buildRepositoryContext` deterministically records tree, diff, changed files, important manifests/tests/source, chunk hashes, selected files, and explicit omissions. Secret-like and binary paths are excluded before provider context. THIN/STANDARD/DEEP are bounded intent profiles; omission is visible rather than reported as full coverage. Large inputs are decomposed into attributable chunks instead of being placed into one prompt.
 
-`DirectRepositoryReviewExecutor` consumes the already-selected `ModelRouteDecision` and invokes the matching provider client directly. Responses-compatible providers use `OpenAICompatibleProviderClient`; account-bound CLI providers use the schema-constrained `CodexRepositoryReviewClient` through the selected `CodexNodeExecutionPort`. Controller-local profiles use an isolated child-process `CODEX_HOME`; remote profiles resolve it only on their configured execution node. Every context chunk creates a persistent Work Parcel carrying Run ID, frozen SHA, requested/actual route, provider/account/model/node/qualification identity, and terminal evidence. Provider response bodies, credential references and credentials are not persisted; response hashes, normalized usage/cost, and selected safe identity are.
+`DirectRepositoryReviewExecutor` consumes the already-selected `ModelRouteDecision` and invokes the matching provider client directly. Responses-compatible providers use `OpenAICompatibleProviderClient`; account-bound CLI providers use the schema-constrained `CodexRepositoryReviewClient` through the selected `CodexNodeExecutionPort`. Controller-local profiles use an isolated child-process `CODEX_HOME`; remote profiles resolve it only on their configured execution node. The Codex structured-review adapter reads authentication from that home but ignores mutable user/project configuration, suppresses project instructions and disables Codex-native shell, unified-exec, multi-agent, web-search, browser, computer, app, image and workspace-dependency surfaces under strict config validation. Every context chunk creates a persistent Work Parcel carrying Run ID, frozen SHA, requested/actual route, provider/account/model/node/qualification identity, and terminal evidence. Provider response bodies, credential references and credentials are not persisted; response hashes, normalized usage/cost, and selected safe identity are.
 
 The structured review validator checks schema, evidence presence, confidence, repository-relative path, file existence, and line range against the frozen snapshot. Duplicate or invalid findings are rejected. Provider completion is not Job success: validation determines `SUCCEEDED`, `SUCCEEDED_WITH_FINDINGS`, `DEGRADED`, or `FAILED`. Only successful accepted outcomes advance the `(Saved Job, repository identity, ref)` baseline.
 
@@ -407,7 +437,7 @@ The OpenAI-compatible adapter supports bounded non-streaming Responses and Chat 
 
 Work Parcel model routing remains downstream of worker placement but upstream of Run creation. A stage requesting `modelRole` or `model` is resolved against the worker selected for its first runnable Job step. The immutable Run trigger records the exact provider model, node, qualification version and fallback reason so model-backed Actions can consume the governed decision. Ordinary Jobs with no model request retain their existing behavior.
 
-Codex integration materializes one selected Responses-compatible provider and model into a mode-0600 temporary `CODEX_HOME/config.toml`, references the approved credential environment variable, and deletes the directory after execution. It does not edit or copy the user's Codex configuration. Chat-Completions-only providers fail closed because current Codex custom-provider configuration supports the Responses wire API.
+Codex integration materializes one selected Responses-compatible provider and model into a mode-0600 temporary `CODEX_HOME/config.toml`, references the approved credential environment variable, and deletes the directory after execution. It does not edit or copy the user's Codex configuration. That generated configuration is the one exception to ignoring user config; it is still executed with project instructions and native execution tools disabled. Chat-Completions-only providers fail closed because current Codex custom-provider configuration supports the Responses wire API.
 
 ## Scheduling and execution
 
@@ -421,7 +451,7 @@ Windows OpenAI execution uses an explicit authentication selector below this bou
 
 `JobRuntime` is the workflow-level extension of that scheduler, not a parallel policy engine. It discovers due Schedule definitions, calls one `createRun` path, evaluates a Run DAG, resolves every step against the worker capability registry, acquires semantic resource locks, dispatches a registered Action, stores typed artifacts and requires declared verification before success. Model/provider routing remains a separate decision from worker placement. All dashboard/TUI mutations enter through `AgentControlService`.
 
-The append-oriented Run ledger retains the effective Job version, parameters, trigger, worker assignments, retries, artifacts, evidence, errors and provenance. A restart never assumes a live Action survived: an in-flight step becomes `DISCONNECTED`/identity-unproven and its durable resource lock remains held for manual reconciliation. PID alone is not recovery evidence.
+The append-oriented Run ledger retains the effective Job version, parameters, trigger, worker assignments, execution identity, retries, recovery state, cleanup, artifacts, evidence, errors and provenance. A restart never assumes a live Action survived and never blindly requeues one: an in-flight step becomes `DISCONNECTED`/identity-unproven and its durable resource lock remains held while the configured adapter reconciles the exact execution ID. Proven continuity may enter `RECONNECTING`; an unknown or changed identity requires operator reconciliation. PID alone is not recovery evidence.
 
 The narrow execution-provider API exposes only start, status, reconnect, input, pause, resume, cancel, output, diff and cleanup. Orca-specific concepts remain inside the adapter so another substrate can replace it.
 
@@ -435,7 +465,7 @@ Human takeover calls the existing PTY registry fence. A human-owned lane cannot 
 
 The dashboard's default Jobs workspace is an operational projection, not an additional scheduler. It reads catalog definitions, Schedule state, queue reasons, worker capability/capacity, resource locks, Run history, step verification and artifact provenance from `JobRuntime` through `AgentControlService`. Run, schedule enable/disable, cancel, whole-Run retry and exact named approval commands return through authenticated service methods. Artifact projections expose identity, checksum and provenance but not managed storage paths. A named approval is legal only while a matching step is authoritatively `WAITING_FOR_APPROVAL`.
 
-Managed-node snapshots are another `AgentControlService` resource projection, exposed through the shared system status and `GET /api/nodes`. The web dashboard, TUI and universal status command render that same versioned state; none probes hosts or owns heartbeat/workload policy independently.
+Managed-node snapshots are another `AgentControlService` resource projection, exposed through the shared system status and `GET /api/nodes`. Each measurement retains value, source, authority, freshness, observation time, limitations and admission qualification. `/proc` remains primary; Node `os` values and Android sysfs cpuidle counters are bounded fallbacks. Two counter samples are required for CPU busy, resets/stale intervals stay unavailable, and Android-derived aggregate busy is not admission-qualified. The web dashboard, TUI and universal status command render that same versioned state; none probes hosts or owns heartbeat/workload policy independently.
 
 The Systems projection joins configured resources, providers and external services with whatever current heartbeat, provider-health, worker, capacity and invocation evidence exists. Absence of observation therefore produces `UNKNOWN`, observed reachability failure produces `OFFLINE`, and missing referenced authentication produces `AUTH REQUIRED`; a configured system is never removed merely because it cannot be contacted. The Configuration view changes the durable inventory through `ConfigurationStore`, not this readiness projection.
 
@@ -523,7 +553,7 @@ The TUI presents lanes, batons, queue state, resources, providers, PTY assignmen
 
 ## Optional Android resource
 
-Android support is device-neutral. The node ID, transport, port, repository and credential environment are configured. The bundled node advertises observed capabilities and exposes only an allow-listed read-only log operation. Provisioning requires explicit privilege, pairing and reboot approvals.
+Android support is device-neutral. The node ID, transport, port, repository and credential environment are configured. The bundled node advertises observed capabilities and exposes only allow-listed log/status/reconnect operations. Its local ADB helper serializes pairing/reconnect attempts with stale-owner recovery, discovers DNS-SD pairing and normal-connect endpoints, accepts a pairing PIN only through local stdin, and persists no PIN. Android Wireless Debugging publishes pairing and connect service-instance names with the same stable `adb-<device-guid>` prefix but independent six-character suffixes, so correlation strips only that final suffix and does not require the complete names to match. Connection verification addresses the selected target with fixed `adb -s <endpoint> get-state` and fixed property reads, then reconciles it with `adb devices`; raw serials are represented only by SHA-256 in evidence. Boot performs only a bounded reconnect attempt; it never starts pairing. `android.adb.local` and `transport.adb` are withheld until an already paired intended device is currently connected and verification-qualified. Provisioning and first pairing still require explicit local approval.
 
 ## Conceptual-integrity gate
 
@@ -533,9 +563,9 @@ New capabilities are classified into policy/authority, scheduling, execution sub
 
 `Provider adapter → account-qualified model route → normalized telemetry/context-lifecycle sample → durable token governor → sealed baton → governed handoff → Work Parcel aggregate → SSE/dashboard → final evidence`
 
-The 3.7 governor is provider-neutral. An account-bound route has identity `provider → account profile → model → execution node`; the account and node are governed route metadata, not a new provider abstraction. Adapters may report authoritative current context occupancy, but the core never derives it from lifetime token totals. It maintains a durable record per thread, context-lifecycle events (`COMPACTION`, `NEW_CONTEXT`, `CONTINUATION`, `RESUME`), and an aggregate per Work Parcel, so compaction or provider/account/model/node transitions cannot reset cost or token accounting. Policy thresholds at 60/75/85/90 produce `CONTINUE`, `PREPARE_BATON`, `COMPACT`, or `HANDOFF`; routing converts that state to `CONTINUE`, `COMPACT_AND_CONTINUE`, or `BATON_AND_HANDOFF` only after considering unfinished reasoning, remaining-work bounds, capability, model and account qualification, cost, baton readiness, and policy constraints.
+The 3.7 governor is provider-neutral. An account-bound route has identity `provider → account profile → model → execution node`; the account and node are governed route metadata, not a new provider abstraction. Adapters may report authoritative current context occupancy, but the core never derives it from lifetime token totals. Cumulative input is retained as total input plus independent fresh/cached components in thread, Job and Work Parcel records; cached input remains part of total input, and either component stays unknown when the provider does not supply enough information. A discount-sensitive calculated cost likewise stays unknown without the required cache split. It maintains a durable record per thread, context-lifecycle events (`COMPACTION`, `NEW_CONTEXT`, `CONTINUATION`, `RESUME`), and an aggregate per Work Parcel, so compaction or provider/account/model/node transitions cannot reset cost or token accounting. An explicit unavailable post-transition context count clears stale occupancy while retaining the independently known window, preventing the old pre-compaction percentage from driving a false handoff. Policy thresholds at 60/75/85/90 produce `CONTINUE`, `PREPARE_BATON`, `COMPACT`, or `HANDOFF`; routing converts that state to `CONTINUE`, `COMPACT_AND_CONTINUE`, or `BATON_AND_HANDOFF` only after considering unfinished reasoning, remaining-work bounds, capability, model and account qualification, cost, baton readiness, and policy constraints.
 
-Codex 0.153 validates the generic pattern of budget-aware reminders, explicit context-window transitions, persisted usage and resumable history. Agent Control adopts those concepts as provider-neutral lifecycle and accounting records. Codex configuration (`features.context_management.experimental_mode`), history notes, the model-only `new_context` tool, app-server methods/events, raw Responses metadata and OTEL turn-cost lookup remain inside the Codex adapter. The current governed Codex execution route uses `codex exec --ephemeral --json --ignore-user-config`; it therefore does not claim the experimental mode or app-server-only telemetry. A future qualified persistent Codex adapter may use those native facilities while the core sealed-baton and continuation fallback remains executable if Codex disappears. See the [Codex 0.153 review](docs/evidence/agent-control-3.7-codex-0.153-review.md).
+Codex 0.153 validates the generic pattern of budget-aware reminders, explicit context-window transitions, persisted usage and resumable history. Agent Control adopts those concepts as provider-neutral lifecycle and accounting records. Codex configuration (`features.context_management.experimental_mode`), history notes, the model-only `new_context` tool, app-server methods/events, raw Responses metadata and OTEL turn-cost lookup remain inside the Codex adapter. The current governed Codex execution route uses bounded ephemeral JSONL and does not claim the experimental mode or app-server-only telemetry. Its `turn.completed.usage` is cumulative turn consumption and cannot establish current occupancy; only a distinct context event may drive pressure. A future qualified persistent Codex adapter may use native resume/compaction within account, node, workspace, lane and policy boundaries, while the core sealed-baton and continuation fallback remains authoritative and executable if Codex disappears. See the [Codex 0.153 review](docs/evidence/agent-control-3.7-codex-0.153-review.md).
 
 The sealed baton is written before the existing governed handoff runtime changes any worker. It carries task/diff/test/evidence/next-action provenance, originating provider/account/model/node, and token/parcel state, while the original contract/thread remains recoverable. The destination is resolved with its exact configured account and node, and invocation results must agree with all four sealed identity fields; this prevents a baton from accidentally executing in the source authentication context. Failed handoffs resume the original account/model/node and record the failure; no route component is silently substituted. The dashboard reads the redacted projection over the existing SSE channel, while sampled telemetry and every transition/decision remain in the durable token-routing evidence for reconciliation with Work Parcel verified-outcome accounting.
 
@@ -557,6 +587,45 @@ Repository-review structured output has one semantic contract at both boundaries
 
 For Codex/ChatGPT authentication, each account profile contains only opaque ID, safe label, optional plan/capability metadata with authority, qualification state, execution `nodeId`, and a credential-store reference naming an environment variable. A controller-local profile resolves that variable in the existing child-process path and strips ambient `OPENAI_API_KEY`/`CODEX_API_KEY` values before launching account-bound Codex, preventing an unrelated API billing identity from overriding the selected profile. A remote Windows profile is dispatched through the configured SSH resource to `CodexNodeExecutionPort`, whose API permits only `accountStatus` and `execReadOnlyStructured`. A fixed encoded bootstrap reads a base64 request data line and the audited runner source separately from stdin, then passes the request to that runner as an argument; identities, prompt data and schemas never become generated PowerShell source. Windows resolves the named environment reference locally, discovers and validates candidates beneath `%LOCALAPPDATA%\OpenAI\Codex\bin\*\codex.exe`, and returns only CLI version, executable SHA-256, discovery time and sanitized structured execution data. Raw stdout/stderr, executable paths and credential paths do not cross into evidence. Account selection is explicit Saved Job policy or predetermined model-role fallback. Utilization, rate-limit or quota exhaustion never triggers account rotation.
 
+## Provider-neutral persistent context and capability intelligence (3.9)
+
+The 3.9 orchestration layer is deliberately above provider/runtime adapters:
+
+```text
+Provider or runtime
+        |
+        v
+Capability adapter/observation
+        |
+        v
+Agent Control capability model ---- frozen historical qualification
+        |                                      |
+        v                                      v
+capability-first policy/router <----- model economics/regression history
+        |
+        v
+Work Parcel DAG -> active state + immutable event ledger + retrieval
+        |                                      |
+        +---- bounded baton view ---------------+
+        |
+        v
+JobRuntime -> independent safety -> execution -> criterion verification
+```
+
+`CapabilityIntelligenceStore` normalizes capability identity separately from a provider brand. An observation binds an optional provider/model/runtime/version subject to `SUPPORTED` or `UNSUPPORTED`, `NATIVE` or `AGENT_CONTROL_EMULATED`, `VERIFIED` or `UNVERIFIED`, confidence, timestamps, limitations and evidence. Configured advertisement is only unverified evidence; a later verified observation wins for routing. Provider discoveries enter a durable candidate lifecycle (`DISCOVERED → ANALYSED → EXPERIMENT → QUALIFICATION → ADOPTED/REJECTED/DEFERRED`) and cannot silently modify policy. This lets Agent Control adopt a generally useful pattern while leaving a native API behind its adapter. If that provider disappears, the core contract and any qualified emulation remain executable.
+
+`ParcelContextState` has four related but non-interchangeable views. Active state holds the immutable original goal plus current interpretation, constraints, plan/stage, dependencies, unresolved questions, approvals and route. A SHA-256-linked append-only event ledger retains decisions, failures, tool/test results, retries, steering, routing, verification, cost and token observations. Governed retrieval selects relevant historical events by exact filters or bounded relevance scoring. A baton is a size-bounded, content-hashed operational projection of active state plus selected event/artifact references; it is neither the transcript nor the only copy of history.
+
+Success criteria carry stable identity, type, source provenance, scope, required evidence and independent evaluation. `model says done` remains only a claim. Steering amendments append to the original goal and are accepted/rejected explicitly. Questions identify their originating and dependent stages; only those dependencies wait. `WorkParcelCoordinator` validates an acyclic graph and dispatches every ready independent stage allowed by worker capacity and policy, then joins only after declared predecessors succeed.
+
+`rankCapabilityRoutes` first requires verified capabilities and records whether native or Agent-Control-emulated support satisfied each requirement. It then compares only eligible routes using qualification confidence, observed task quality/reliability, known cost/latency, token/cache efficiency, availability, account/node state, locality and privacy constraints. Missing data remains unknown. The selected and rejected alternatives, scores and reasons are durable.
+
+`ModelIntelligenceLedger` preserves immutable frozen-suite batches and attempts rather than overwriting a latest score. The suite hash seals versioned prompts, required capability, evaluator kind, scoring rule, safety/success criteria and repetition count. Metrics retain fresh input, cache reads, cache writes, output, elapsed time, retries and actual/calculated cost independently. Rolling 7/30/90-day and all-time views, regression warnings and cost/tokens/time/retries per verified outcome use only measured attempts. Lifecycle promotion is conservative and evidence-gated; same-day candidate results do not manufacture a preferred model or leader.
+
+`RuntimeSafetySupervisor` is injected into the existing `JobRuntime` boundary. It independently evaluates requested scope and action metadata, persists the decision and approval trail, and returns `ALLOW`, `ALLOW_WITH_AUDIT`, `REQUIRE_APPROVAL`, `DENY`, `PAUSE` or `ESCALATE`. Provider-native safety can add evidence but cannot replace this decision or grant authority.
+
+The web dashboard is a redacted projection of these same stores. Existing SSE events refresh Work Parcel context, questions, criteria, steering, capability candidates/observations, frozen batches, historical metrics, regression warnings, leader slots and safety decisions. Event-stream startup is independent of optional panel availability, and a missing optional subsystem is shown locally rather than disabling live control-plane updates.
+
 ## Release boundary
 
-Earlier version tags remain immutable source releases. Installing 3.7.0 does not deploy services, expose a remote ACP listener, create credentials, broaden sharing, enable Spark, or enable a Saved Job/Schedule. STANDARD remains the default context profile unless a governed policy explicitly selects another profile. The production token-governor lifecycle is physically qualified across two distinct live local provider/model routes, including a sealed baton, destination continuation, independent verification, SSE/evidence reconciliation, additive token accounting and original-thread recovery after a refused destination. Provider-unreported context and cost remain estimated or unavailable. This bounded proof does not qualify the separate 50-observation automatic capability-routing benchmark.
+Earlier version tags remain immutable source releases. The 3.9.0 branch is a review candidate; this qualification task does not merge, tag, publish, deploy services, expose a remote ACP listener, create credentials, broaden sharing, enable Spark or enable Saved Jobs/Schedules. Real evidence covers dashboard/SSE reload and concurrent work, Linux process-group cleanup, Windows process-tree cancellation/timeout/uncertainty, controller-restart and bounded recovery, and the Pixel hidden-stdin pair/disconnect/same- and changed-endpoint reconnect/governed-execution/session-resume lifecycle. The pairing ceremony altered only the Pixel's existing local Wireless Debugging authorization and did not deploy Agent Control. The matched cache comparison preserved independent quality but consumed more tokens and time; explicit Responses controls, cache writes, current context and billed cost remain unavailable on the tested CLI, so no repeatable token, latency or monetary saving is claimed. These boundaries remain visible in implementation status and release review.

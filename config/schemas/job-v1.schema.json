@@ -48,7 +48,13 @@
     "retry": {
       "type": "object", "additionalProperties": false,
       "required": ["attempts", "backoffSeconds"],
-      "properties": {"attempts": {"type": "integer", "minimum": 0, "maximum": 10}, "backoffSeconds": {"type": "integer", "minimum": 0, "maximum": 86400}}
+      "properties": {
+        "attempts": {"type": "integer", "minimum": 0, "maximum": 10},
+        "backoffSeconds": {"type": "integer", "minimum": 0, "maximum": 86400},
+        "backoffMultiplier": {"type": "number", "minimum": 1, "maximum": 10},
+        "maxBackoffSeconds": {"type": "integer", "minimum": 0, "maximum": 86400},
+        "overallDeadlineSeconds": {"type": "integer", "minimum": 1, "maximum": 604800}
+      }
     },
     "artifact": {
       "type": "object", "additionalProperties": false, "required": ["name", "type", "schema", "version"],

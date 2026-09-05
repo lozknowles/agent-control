@@ -1,0 +1,2701 @@
+{
+  "schema": "agent-control.provider-neutral-physical-qualification/v1",
+  "verdict": "PASS_WITH_LIMITATIONS",
+  "startedAt": "2026-09-05T08:19:31.840Z",
+  "completedAt": "2026-09-05T08:24:24.299Z",
+  "repository": {
+    "head": "39497b65cfffad3813d381cb70845c04379bc820",
+    "dirtyAtQualification": false,
+    "diffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "suite": {
+    "id": "agent-control-real-work-v1",
+    "version": "1.0.0",
+    "sha256": "8cb55e097d2e7fa5ebe36ed6ffc152e5639278f8c7ae4f886bab2ac553766062",
+    "taskCount": 17,
+    "repetitionsPerTask": [
+      3
+    ]
+  },
+  "preflight": [
+    {
+      "providerId": "llamacpp-instruct",
+      "modelId": "qwen2.5-instruct-3b-q4km",
+      "providerModel": "qwen2.5-3b-instruct-q4_k_m.gguf",
+      "nodeId": "controller",
+      "health": "AVAILABLE",
+      "latencyMs": 24,
+      "runtimeId": "llama.cpp",
+      "runtimeVersion": "9371-22d9bc441",
+      "modelVersion": null,
+      "localArtifact": {
+        "sha256": "626b4a6678b86442240e33df819e00132d3ba7dddfe1cdc4fbb18e0a9615c62d",
+        "bytes": 2104932768,
+        "format": "GGUF",
+        "quantization": "Q4_K_M"
+      }
+    },
+    {
+      "providerId": "llamacpp-coder",
+      "modelId": "qwen2.5-coder-3b-q4km",
+      "providerModel": "Qwen2.5-Coder-3B-Instruct-Q4_K_M.gguf",
+      "nodeId": "controller",
+      "health": "AVAILABLE",
+      "latencyMs": 6,
+      "runtimeId": "llama.cpp",
+      "runtimeVersion": "9371-22d9bc441",
+      "modelVersion": null,
+      "localArtifact": {
+        "sha256": "3da3afe6cf5c674ac195803ea0dd6fee7e1c228c2105c1ce8c66890d1d4ab460",
+        "bytes": 1929903360,
+        "format": "GGUF",
+        "quantization": "Q4_K_M"
+      }
+    }
+  ],
+  "scenarioA": {
+    "outcome": "PASS",
+    "parcelId": "parcel-e7469285-273a-4fc0-a3b1-02b5971dbe8d",
+    "status": "SUCCEEDED",
+    "failedApproachEventId": "context-event-753eb848-df43-4670-860a-366f3c34df62",
+    "failedApproachEventSha256": "d6ebf899a22f26832c71107811bb44ff5dd6cb9735ef3a2121e5be99f3b4d7c7",
+    "failureExcludedFromRecoveryBaton": true,
+    "retrievedEventId": "context-event-753eb848-df43-4670-860a-366f3c34df62",
+    "alphaAttempts": 1,
+    "betaAttempts": 1,
+    "eventCount": 126,
+    "eventLedgerBytes": 103526,
+    "latestBatonBytes": 4941,
+    "historicalBytesExcludedFromLatestBaton": 98585,
+    "retrievals": 1,
+    "criterion": {
+      "id": "criterion-3670bbe0-42fd-4d75-8abe-4fa8f1956b73",
+      "kind": "EXPECTED_RESULT",
+      "description": "Historical alpha failure is retrieved and beta completes without another alpha attempt",
+      "source": "USER",
+      "sourceActor": "qualification-operator",
+      "stageId": "continue",
+      "requiredEvidence": [
+        "qualification:context-recovery"
+      ],
+      "status": "PASS",
+      "evidence": [
+        "qualification:context-recovery"
+      ],
+      "createdAt": "2026-09-05T08:19:33.920Z",
+      "evaluatedAt": "2026-09-05T08:19:44.245Z",
+      "detail": "Retrieved the excluded alpha failure and used beta exactly once"
+    }
+  },
+  "scenarioB": {
+    "outcome": "PASS",
+    "parcelId": "parcel-dbe77859-41ef-435c-bd3f-a44d9713939e",
+    "status": "SUCCEEDED",
+    "questionId": "question-c57b5c3b-0af5-4216-9def-8842d048fd6b",
+    "createdAt": "2026-09-05T08:19:33.924Z",
+    "independentCompletedAt": "2026-09-05T08:19:37.982Z",
+    "answeredAt": "2026-09-05T08:19:41.160Z",
+    "beforeAnswer": [
+      {
+        "id": "left",
+        "status": "SUCCEEDED"
+      },
+      {
+        "id": "right",
+        "status": "WAITING"
+      },
+      {
+        "id": "join",
+        "status": "QUEUED"
+      }
+    ],
+    "finalStages": [
+      {
+        "id": "left",
+        "status": "SUCCEEDED",
+        "runId": "run-6165740f-c7d2-48ad-b7b3-9e4278870590",
+        "worker": "qualification-controller"
+      },
+      {
+        "id": "right",
+        "status": "SUCCEEDED",
+        "runId": "run-409233c0-c1d4-447c-924e-65b6e5f71c50",
+        "worker": "qualification-controller"
+      },
+      {
+        "id": "join",
+        "status": "SUCCEEDED",
+        "runId": "run-4a8d381a-891d-4dcc-8849-35edd71f4f97",
+        "worker": "qualification-controller"
+      }
+    ],
+    "snapshots": [
+      {
+        "at": "2026-09-05T08:19:41.152Z",
+        "label": "before-answer",
+        "stages": [
+          {
+            "id": "left",
+            "status": "SUCCEEDED"
+          },
+          {
+            "id": "right",
+            "status": "WAITING"
+          },
+          {
+            "id": "join",
+            "status": "QUEUED"
+          }
+        ]
+      }
+    ],
+    "criterion": {
+      "id": "criterion-c81a1032-1fe2-4da2-a01a-15bd42b9566f",
+      "kind": "EXPECTED_RESULT",
+      "description": "Independent work completes while the question waits and dependent work resumes after answer",
+      "source": "USER",
+      "sourceActor": "qualification-operator",
+      "stageId": "join",
+      "requiredEvidence": [
+        "qualification:async-question"
+      ],
+      "status": "PASS",
+      "evidence": [
+        "qualification:async-question"
+      ],
+      "createdAt": "2026-09-05T08:19:33.922Z",
+      "evaluatedAt": "2026-09-05T08:19:44.264Z",
+      "detail": "Left completed before answer; right and join resumed after answer"
+    }
+  },
+  "scenarioC": {
+    "outcome": "PASS_WITH_LIMITATIONS",
+    "batches": [
+      {
+        "id": "physical-qualification-20260905081931-1",
+        "status": "PARTIAL",
+        "createdAt": "2026-09-05T08:19:33.928Z",
+        "startedAt": "2026-09-05T08:19:33.929Z",
+        "completedAt": "2026-09-05T08:21:56.226Z",
+        "candidates": [
+          {
+            "providerId": "llamacpp-instruct",
+            "modelId": "qwen2.5-instruct-3b-q4km",
+            "nodeId": "controller",
+            "attempts": 51,
+            "measured": 24,
+            "passed": 18,
+            "failed": 6,
+            "unavailable": 27,
+            "blocked": 0,
+            "inputTokens": 2067,
+            "freshInputTokens": 512,
+            "cachedInputTokens": 1555,
+            "outputTokens": 2455,
+            "totalTokens": 4522,
+            "actualCost": null,
+            "calculatedCost": null,
+            "elapsedMs": 47886,
+            "failureClasses": {
+              "CAPABILITY_UNAVAILABLE": 27,
+              "VERIFICATION_FAILED": 6
+            }
+          },
+          {
+            "providerId": "llamacpp-coder",
+            "modelId": "qwen2.5-coder-3b-q4km",
+            "nodeId": "controller",
+            "attempts": 51,
+            "measured": 30,
+            "passed": 19,
+            "failed": 11,
+            "unavailable": 21,
+            "blocked": 0,
+            "inputTokens": 2511,
+            "freshInputTokens": 616,
+            "cachedInputTokens": 1895,
+            "outputTokens": 4924,
+            "totalTokens": 7435,
+            "actualCost": null,
+            "calculatedCost": null,
+            "elapsedMs": 93770,
+            "failureClasses": {
+              "VERIFICATION_FAILED": 11,
+              "CAPABILITY_UNAVAILABLE": 21
+            }
+          }
+        ]
+      },
+      {
+        "id": "physical-qualification-20260905081931-2",
+        "status": "PARTIAL",
+        "createdAt": "2026-09-05T08:21:57.233Z",
+        "startedAt": "2026-09-05T08:21:57.244Z",
+        "completedAt": "2026-09-05T08:24:23.256Z",
+        "candidates": [
+          {
+            "providerId": "llamacpp-instruct",
+            "modelId": "qwen2.5-instruct-3b-q4km",
+            "nodeId": "controller",
+            "attempts": 51,
+            "measured": 6,
+            "passed": 0,
+            "failed": 6,
+            "unavailable": 45,
+            "blocked": 0,
+            "inputTokens": 462,
+            "freshInputTokens": 6,
+            "cachedInputTokens": 456,
+            "outputTokens": 789,
+            "totalTokens": 1251,
+            "actualCost": null,
+            "calculatedCost": null,
+            "elapsedMs": 15076,
+            "failureClasses": {
+              "CAPABILITY_UNAVAILABLE": 45,
+              "VERIFICATION_FAILED": 6
+            }
+          },
+          {
+            "providerId": "llamacpp-coder",
+            "modelId": "qwen2.5-coder-3b-q4km",
+            "nodeId": "controller",
+            "attempts": 51,
+            "measured": 11,
+            "passed": 0,
+            "failed": 11,
+            "unavailable": 40,
+            "blocked": 0,
+            "inputTokens": 866,
+            "freshInputTokens": 11,
+            "cachedInputTokens": 855,
+            "outputTokens": 2075,
+            "totalTokens": 2941,
+            "actualCost": null,
+            "calculatedCost": null,
+            "elapsedMs": 39319,
+            "failureClasses": {
+              "CAPABILITY_UNAVAILABLE": 40,
+              "VERIFICATION_FAILED": 11
+            }
+          }
+        ]
+      }
+    ],
+    "limitations": [
+      "AGENT_CONTROL_WORKFLOW, BROWSER and COMPUTER fixtures are retained as CAPABILITY_UNAVAILABLE because no governed evaluator adapter is bound to these model candidates.",
+      "Local energy and electricity cost were not measured; monetary cost remains unavailable rather than estimated."
+    ]
+  },
+  "scenarioD": {
+    "outcome": "PASS",
+    "requiredCapabilities": [
+      "code.modify"
+    ],
+    "selected": "qwen2.5-coder-3b-q4km",
+    "considered": [
+      {
+        "candidate": "qwen2.5-instruct-3b-q4km",
+        "eligible": false,
+        "reasons": [
+          "code.modify:capability-unobserved"
+        ],
+        "capabilities": [
+          {
+            "capabilityId": "code.modify",
+            "satisfied": false,
+            "implementation": null,
+            "observationId": null,
+            "reason": "capability-unobserved"
+          }
+        ]
+      },
+      {
+        "candidate": "qwen2.5-coder-3b-q4km",
+        "eligible": true,
+        "reasons": [
+          "all-required-capabilities-verified"
+        ],
+        "capabilities": [
+          {
+            "capabilityId": "code.modify",
+            "satisfied": true,
+            "implementation": "NATIVE",
+            "observationId": "model-evaluation:8cb55e097d2e7fa5ebe36ed6ffc152e5639278f8c7ae4f886bab2ac553766062:llamacpp-coder:default:qwen2.5-coder-3b-q4km:controller:code-modification-v1:1:code.modify",
+            "reason": "verified-native-capability"
+          }
+        ]
+      }
+    ],
+    "rationale": {
+      "capabilitiesFirst": true,
+      "selectedScore": 5.463987404013779,
+      "nativeUsed": [
+        "code.modify"
+      ],
+      "emulatedUsed": []
+    }
+  },
+  "scenarioE": {
+    "outcome": "PASS",
+    "batchIds": [
+      "physical-qualification-20260905081931-2",
+      "physical-qualification-20260905081931-1"
+    ],
+    "persistedAttemptCount": 204,
+    "historyReloadedFromDisk": true
+  },
+  "measuredValue": {
+    "averageBatonBytes": 5261.214285714285,
+    "maximumBatonBytes": 9251,
+    "durableEventLedgerBytes": 121412,
+    "latestHistoricalBytesExcluded": 111709,
+    "contextRecoverySuccessRate": 1,
+    "repeatedFailedApproachRate": 0,
+    "workflowCompletionRate": 1,
+    "modelQualification": {
+      "qwen2.5-instruct-3b-q4km": {
+        "attempts": 102,
+        "measured": 30,
+        "passed": 18,
+        "failed": 12,
+        "unavailable": 72,
+        "blocked": 0,
+        "inputTokens": 2529,
+        "freshInputTokens": 518,
+        "cachedInputTokens": 2011,
+        "outputTokens": 3244,
+        "totalTokens": 5773,
+        "actualCost": null,
+        "calculatedCost": null,
+        "elapsedMs": 62962,
+        "failureClasses": {
+          "CAPABILITY_UNAVAILABLE": 72,
+          "VERIFICATION_FAILED": 12
+        }
+      },
+      "qwen2.5-coder-3b-q4km": {
+        "attempts": 102,
+        "measured": 41,
+        "passed": 19,
+        "failed": 22,
+        "unavailable": 61,
+        "blocked": 0,
+        "inputTokens": 3377,
+        "freshInputTokens": 627,
+        "cachedInputTokens": 2750,
+        "outputTokens": 6999,
+        "totalTokens": 10376,
+        "actualCost": null,
+        "calculatedCost": null,
+        "elapsedMs": 133089,
+        "failureClasses": {
+          "VERIFICATION_FAILED": 22,
+          "CAPABILITY_UNAVAILABLE": 61
+        }
+      }
+    }
+  },
+  "tokenEvidence": {
+    "schema": "agent-control.token-aware-baton-routing/v1",
+    "observedAt": "2026-09-05T08:24:24.299Z",
+    "policy": {
+      "continuePercent": 60,
+      "prepareBatonPercent": 75,
+      "compactPercent": 85,
+      "handoffPercent": 90,
+      "sampleRetention": 240
+    },
+    "threads": [
+      {
+        "id": "evaluation-thread:physical-qualification-20260905081931-1:qwen2.5-coder-3b-q4km",
+        "parcelId": "evaluation-parcel:physical-qualification-20260905081931-1",
+        "agentId": "frozen-model-evaluator",
+        "providerId": "llamacpp-coder",
+        "nodeId": "controller",
+        "workloadNodeId": "controller",
+        "providerExecutionNodeId": "controller",
+        "modelId": "qwen2.5-coder-3b-q4km",
+        "startedAt": "2026-09-05T08:20:25.609Z",
+        "updatedAt": "2026-09-05T08:21:56.220Z",
+        "active": true,
+        "recoverable": true,
+        "governor": {
+          "state": "CONTINUE",
+          "currentThreshold": null,
+          "nextThreshold": 60,
+          "reason": "context_within_policy"
+        },
+        "latest": {
+          "at": "2026-09-05T08:21:56.220Z",
+          "elapsedMs": 93770,
+          "cumulative": {
+            "inputTokens": 2511,
+            "freshInputTokens": 616,
+            "cachedInputTokens": 1895,
+            "cacheWriteTokens": 0,
+            "outputTokens": 4924,
+            "totalTokens": 7435
+          },
+          "context": {
+            "tokens": 227,
+            "limitTokens": 32768,
+            "authority": "estimated",
+            "source": "one-shot provider usage; lifetime totals are separate"
+          },
+          "contextPercent": 0.6927490234375,
+          "cost": {
+            "amount": null,
+            "currency": null,
+            "authority": "unavailable",
+            "source": "local energy not measured"
+          }
+        },
+        "samples": [
+          {
+            "at": "2026-09-05T08:20:25.609Z",
+            "elapsedMs": 3565,
+            "cumulative": {
+              "inputTokens": 75,
+              "freshInputTokens": 51,
+              "cachedInputTokens": 24,
+              "cacheWriteTokens": 0,
+              "outputTokens": 185,
+              "totalTokens": 260
+            },
+            "context": {
+              "tokens": 260,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.79345703125,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:20:29.609Z",
+            "elapsedMs": 7551,
+            "cumulative": {
+              "inputTokens": 150,
+              "freshInputTokens": 52,
+              "cachedInputTokens": 98,
+              "cacheWriteTokens": 0,
+              "outputTokens": 393,
+              "totalTokens": 543
+            },
+            "context": {
+              "tokens": 283,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.8636474609375,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:20:33.568Z",
+            "elapsedMs": 11505,
+            "cumulative": {
+              "inputTokens": 225,
+              "freshInputTokens": 53,
+              "cachedInputTokens": 172,
+              "cacheWriteTokens": 0,
+              "outputTokens": 601,
+              "totalTokens": 826
+            },
+            "context": {
+              "tokens": 283,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.8636474609375,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:20:36.368Z",
+            "elapsedMs": 14299,
+            "cumulative": {
+              "inputTokens": 313,
+              "freshInputTokens": 117,
+              "cachedInputTokens": 196,
+              "cacheWriteTokens": 0,
+              "outputTokens": 748,
+              "totalTokens": 1061
+            },
+            "context": {
+              "tokens": 235,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.7171630859375,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:20:40.111Z",
+            "elapsedMs": 18035,
+            "cumulative": {
+              "inputTokens": 401,
+              "freshInputTokens": 118,
+              "cachedInputTokens": 283,
+              "cacheWriteTokens": 0,
+              "outputTokens": 948,
+              "totalTokens": 1349
+            },
+            "context": {
+              "tokens": 288,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.87890625,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:20:43.865Z",
+            "elapsedMs": 21783,
+            "cumulative": {
+              "inputTokens": 489,
+              "freshInputTokens": 119,
+              "cachedInputTokens": 370,
+              "cacheWriteTokens": 0,
+              "outputTokens": 1148,
+              "totalTokens": 1637
+            },
+            "context": {
+              "tokens": 288,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.87890625,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:20:48.317Z",
+            "elapsedMs": 26228,
+            "cumulative": {
+              "inputTokens": 567,
+              "freshInputTokens": 173,
+              "cachedInputTokens": 394,
+              "cacheWriteTokens": 0,
+              "outputTokens": 1379,
+              "totalTokens": 1946
+            },
+            "context": {
+              "tokens": 309,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.9429931640625,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:20:54.063Z",
+            "elapsedMs": 31958,
+            "cumulative": {
+              "inputTokens": 645,
+              "freshInputTokens": 174,
+              "cachedInputTokens": 471,
+              "cacheWriteTokens": 0,
+              "outputTokens": 1679,
+              "totalTokens": 2324
+            },
+            "context": {
+              "tokens": 378,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 1.153564453125,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:20:59.785Z",
+            "elapsedMs": 37673,
+            "cumulative": {
+              "inputTokens": 723,
+              "freshInputTokens": 175,
+              "cachedInputTokens": 548,
+              "cacheWriteTokens": 0,
+              "outputTokens": 1979,
+              "totalTokens": 2702
+            },
+            "context": {
+              "tokens": 378,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 1.153564453125,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:21:07.552Z",
+            "elapsedMs": 45426,
+            "cumulative": {
+              "inputTokens": 796,
+              "freshInputTokens": 224,
+              "cachedInputTokens": 572,
+              "cacheWriteTokens": 0,
+              "outputTokens": 2392,
+              "totalTokens": 3188
+            },
+            "context": {
+              "tokens": 486,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 1.483154296875,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:21:14.170Z",
+            "elapsedMs": 52039,
+            "cumulative": {
+              "inputTokens": 869,
+              "freshInputTokens": 225,
+              "cachedInputTokens": 644,
+              "cacheWriteTokens": 0,
+              "outputTokens": 2744,
+              "totalTokens": 3613
+            },
+            "context": {
+              "tokens": 425,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 1.2969970703125,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:21:20.790Z",
+            "elapsedMs": 58651,
+            "cumulative": {
+              "inputTokens": 942,
+              "freshInputTokens": 226,
+              "cachedInputTokens": 716,
+              "cacheWriteTokens": 0,
+              "outputTokens": 3096,
+              "totalTokens": 4038
+            },
+            "context": {
+              "tokens": 425,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 1.2969970703125,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:21:22.208Z",
+            "elapsedMs": 60057,
+            "cumulative": {
+              "inputTokens": 1028,
+              "freshInputTokens": 288,
+              "cachedInputTokens": 740,
+              "cacheWriteTokens": 0,
+              "outputTokens": 3168,
+              "totalTokens": 4196
+            },
+            "context": {
+              "tokens": 158,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.482177734375,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:21:23.581Z",
+            "elapsedMs": 61423,
+            "cumulative": {
+              "inputTokens": 1114,
+              "freshInputTokens": 289,
+              "cachedInputTokens": 825,
+              "cacheWriteTokens": 0,
+              "outputTokens": 3240,
+              "totalTokens": 4354
+            },
+            "context": {
+              "tokens": 158,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.482177734375,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:21:24.952Z",
+            "elapsedMs": 62787,
+            "cumulative": {
+              "inputTokens": 1200,
+              "freshInputTokens": 290,
+              "cachedInputTokens": 910,
+              "cacheWriteTokens": 0,
+              "outputTokens": 3312,
+              "totalTokens": 4512
+            },
+            "context": {
+              "tokens": 158,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.482177734375,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:21:26.237Z",
+            "elapsedMs": 64064,
+            "cumulative": {
+              "inputTokens": 1292,
+              "freshInputTokens": 358,
+              "cachedInputTokens": 934,
+              "cacheWriteTokens": 0,
+              "outputTokens": 3373,
+              "totalTokens": 4665
+            },
+            "context": {
+              "tokens": 153,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.4669189453125,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:21:27.443Z",
+            "elapsedMs": 65262,
+            "cumulative": {
+              "inputTokens": 1384,
+              "freshInputTokens": 359,
+              "cachedInputTokens": 1025,
+              "cacheWriteTokens": 0,
+              "outputTokens": 3434,
+              "totalTokens": 4818
+            },
+            "context": {
+              "tokens": 153,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.4669189453125,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:21:28.652Z",
+            "elapsedMs": 66462,
+            "cumulative": {
+              "inputTokens": 1476,
+              "freshInputTokens": 360,
+              "cachedInputTokens": 1116,
+              "cacheWriteTokens": 0,
+              "outputTokens": 3495,
+              "totalTokens": 4971
+            },
+            "context": {
+              "tokens": 153,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.4669189453125,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:21:30.243Z",
+            "elapsedMs": 68044,
+            "cumulative": {
+              "inputTokens": 1592,
+              "freshInputTokens": 452,
+              "cachedInputTokens": 1140,
+              "cacheWriteTokens": 0,
+              "outputTokens": 3572,
+              "totalTokens": 5164
+            },
+            "context": {
+              "tokens": 193,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.5889892578125,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:21:31.675Z",
+            "elapsedMs": 69465,
+            "cumulative": {
+              "inputTokens": 1708,
+              "freshInputTokens": 453,
+              "cachedInputTokens": 1255,
+              "cacheWriteTokens": 0,
+              "outputTokens": 3645,
+              "totalTokens": 5353
+            },
+            "context": {
+              "tokens": 189,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.5767822265625,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:21:33.110Z",
+            "elapsedMs": 70884,
+            "cumulative": {
+              "inputTokens": 1824,
+              "freshInputTokens": 454,
+              "cachedInputTokens": 1370,
+              "cacheWriteTokens": 0,
+              "outputTokens": 3718,
+              "totalTokens": 5542
+            },
+            "context": {
+              "tokens": 189,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.5767822265625,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:21:37.621Z",
+            "elapsedMs": 75272,
+            "cumulative": {
+              "inputTokens": 1904,
+              "freshInputTokens": 510,
+              "cachedInputTokens": 1394,
+              "cacheWriteTokens": 0,
+              "outputTokens": 3950,
+              "totalTokens": 5854
+            },
+            "context": {
+              "tokens": 312,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.9521484375,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:21:41.981Z",
+            "elapsedMs": 79623,
+            "cumulative": {
+              "inputTokens": 1984,
+              "freshInputTokens": 511,
+              "cachedInputTokens": 1473,
+              "cacheWriteTokens": 0,
+              "outputTokens": 4182,
+              "totalTokens": 6166
+            },
+            "context": {
+              "tokens": 312,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.9521484375,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:21:46.344Z",
+            "elapsedMs": 83975,
+            "cumulative": {
+              "inputTokens": 2064,
+              "freshInputTokens": 512,
+              "cachedInputTokens": 1552,
+              "cacheWriteTokens": 0,
+              "outputTokens": 4414,
+              "totalTokens": 6478
+            },
+            "context": {
+              "tokens": 312,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.9521484375,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:21:46.875Z",
+            "elapsedMs": 84495,
+            "cumulative": {
+              "inputTokens": 2139,
+              "freshInputTokens": 562,
+              "cachedInputTokens": 1577,
+              "cacheWriteTokens": 0,
+              "outputTokens": 4438,
+              "totalTokens": 6577
+            },
+            "context": {
+              "tokens": 99,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.3021240234375,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:21:47.362Z",
+            "elapsedMs": 84969,
+            "cumulative": {
+              "inputTokens": 2214,
+              "freshInputTokens": 563,
+              "cachedInputTokens": 1651,
+              "cacheWriteTokens": 0,
+              "outputTokens": 4462,
+              "totalTokens": 6676
+            },
+            "context": {
+              "tokens": 99,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.3021240234375,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:21:47.852Z",
+            "elapsedMs": 85447,
+            "cumulative": {
+              "inputTokens": 2289,
+              "freshInputTokens": 564,
+              "cachedInputTokens": 1725,
+              "cacheWriteTokens": 0,
+              "outputTokens": 4486,
+              "totalTokens": 6775
+            },
+            "context": {
+              "tokens": 99,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.3021240234375,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:21:50.399Z",
+            "elapsedMs": 87983,
+            "cumulative": {
+              "inputTokens": 2363,
+              "freshInputTokens": 614,
+              "cachedInputTokens": 1749,
+              "cacheWriteTokens": 0,
+              "outputTokens": 4618,
+              "totalTokens": 6981
+            },
+            "context": {
+              "tokens": 206,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.628662109375,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:21:53.308Z",
+            "elapsedMs": 90882,
+            "cumulative": {
+              "inputTokens": 2437,
+              "freshInputTokens": 615,
+              "cachedInputTokens": 1822,
+              "cacheWriteTokens": 0,
+              "outputTokens": 4771,
+              "totalTokens": 7208
+            },
+            "context": {
+              "tokens": 227,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.6927490234375,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:21:56.220Z",
+            "elapsedMs": 93770,
+            "cumulative": {
+              "inputTokens": 2511,
+              "freshInputTokens": 616,
+              "cachedInputTokens": 1895,
+              "cacheWriteTokens": 0,
+              "outputTokens": 4924,
+              "totalTokens": 7435
+            },
+            "context": {
+              "tokens": 227,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.6927490234375,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          }
+        ]
+      },
+      {
+        "id": "evaluation-thread:physical-qualification-20260905081931-1:qwen2.5-instruct-3b-q4km",
+        "parcelId": "evaluation-parcel:physical-qualification-20260905081931-1",
+        "agentId": "frozen-model-evaluator",
+        "providerId": "llamacpp-instruct",
+        "nodeId": "controller",
+        "workloadNodeId": "controller",
+        "providerExecutionNodeId": "controller",
+        "modelId": "qwen2.5-instruct-3b-q4km",
+        "startedAt": "2026-09-05T08:19:37.451Z",
+        "updatedAt": "2026-09-05T08:20:22.037Z",
+        "active": true,
+        "recoverable": true,
+        "governor": {
+          "state": "CONTINUE",
+          "currentThreshold": null,
+          "nextThreshold": 60,
+          "reason": "context_within_policy"
+        },
+        "latest": {
+          "at": "2026-09-05T08:20:22.037Z",
+          "elapsedMs": 47886,
+          "cumulative": {
+            "inputTokens": 2067,
+            "freshInputTokens": 512,
+            "cachedInputTokens": 1555,
+            "cacheWriteTokens": 0,
+            "outputTokens": 2455,
+            "totalTokens": 4522
+          },
+          "context": {
+            "tokens": 229,
+            "limitTokens": 32768,
+            "authority": "estimated",
+            "source": "one-shot provider usage; lifetime totals are separate"
+          },
+          "contextPercent": 0.6988525390625,
+          "cost": {
+            "amount": null,
+            "currency": null,
+            "authority": "unavailable",
+            "source": "local energy not measured"
+          }
+        },
+        "samples": [
+          {
+            "at": "2026-09-05T08:19:37.451Z",
+            "elapsedMs": 3466,
+            "cumulative": {
+              "inputTokens": 88,
+              "freshInputTokens": 64,
+              "cachedInputTokens": 24,
+              "cacheWriteTokens": 0,
+              "outputTokens": 179,
+              "totalTokens": 267
+            },
+            "context": {
+              "tokens": 267,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.8148193359375,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:19:40.675Z",
+            "elapsedMs": 6686,
+            "cumulative": {
+              "inputTokens": 176,
+              "freshInputTokens": 65,
+              "cachedInputTokens": 111,
+              "cacheWriteTokens": 0,
+              "outputTokens": 342,
+              "totalTokens": 518
+            },
+            "context": {
+              "tokens": 251,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.7659912109375,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:19:43.866Z",
+            "elapsedMs": 9873,
+            "cumulative": {
+              "inputTokens": 264,
+              "freshInputTokens": 66,
+              "cachedInputTokens": 198,
+              "cacheWriteTokens": 0,
+              "outputTokens": 505,
+              "totalTokens": 769
+            },
+            "context": {
+              "tokens": 251,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.7659912109375,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:19:46.802Z",
+            "elapsedMs": 12800,
+            "cumulative": {
+              "inputTokens": 342,
+              "freshInputTokens": 120,
+              "cachedInputTokens": 222,
+              "cacheWriteTokens": 0,
+              "outputTokens": 647,
+              "totalTokens": 989
+            },
+            "context": {
+              "tokens": 220,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.67138671875,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:19:49.496Z",
+            "elapsedMs": 15490,
+            "cumulative": {
+              "inputTokens": 420,
+              "freshInputTokens": 121,
+              "cachedInputTokens": 299,
+              "cacheWriteTokens": 0,
+              "outputTokens": 789,
+              "totalTokens": 1209
+            },
+            "context": {
+              "tokens": 220,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.67138671875,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:19:52.187Z",
+            "elapsedMs": 18178,
+            "cumulative": {
+              "inputTokens": 498,
+              "freshInputTokens": 122,
+              "cachedInputTokens": 376,
+              "cacheWriteTokens": 0,
+              "outputTokens": 931,
+              "totalTokens": 1429
+            },
+            "context": {
+              "tokens": 220,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.67138671875,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:19:53.919Z",
+            "elapsedMs": 19904,
+            "cumulative": {
+              "inputTokens": 584,
+              "freshInputTokens": 184,
+              "cachedInputTokens": 400,
+              "cacheWriteTokens": 0,
+              "outputTokens": 1019,
+              "totalTokens": 1603
+            },
+            "context": {
+              "tokens": 174,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.531005859375,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:19:55.601Z",
+            "elapsedMs": 21582,
+            "cumulative": {
+              "inputTokens": 670,
+              "freshInputTokens": 185,
+              "cachedInputTokens": 485,
+              "cacheWriteTokens": 0,
+              "outputTokens": 1107,
+              "totalTokens": 1777
+            },
+            "context": {
+              "tokens": 174,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.531005859375,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:19:57.296Z",
+            "elapsedMs": 23273,
+            "cumulative": {
+              "inputTokens": 756,
+              "freshInputTokens": 186,
+              "cachedInputTokens": 570,
+              "cacheWriteTokens": 0,
+              "outputTokens": 1195,
+              "totalTokens": 1951
+            },
+            "context": {
+              "tokens": 174,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.531005859375,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:19:58.769Z",
+            "elapsedMs": 24742,
+            "cumulative": {
+              "inputTokens": 848,
+              "freshInputTokens": 254,
+              "cachedInputTokens": 594,
+              "cacheWriteTokens": 0,
+              "outputTokens": 1264,
+              "totalTokens": 2112
+            },
+            "context": {
+              "tokens": 161,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.4913330078125,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:20:00.178Z",
+            "elapsedMs": 26145,
+            "cumulative": {
+              "inputTokens": 940,
+              "freshInputTokens": 255,
+              "cachedInputTokens": 685,
+              "cacheWriteTokens": 0,
+              "outputTokens": 1333,
+              "totalTokens": 2273
+            },
+            "context": {
+              "tokens": 161,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.4913330078125,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:20:01.606Z",
+            "elapsedMs": 27569,
+            "cumulative": {
+              "inputTokens": 1032,
+              "freshInputTokens": 256,
+              "cachedInputTokens": 776,
+              "cacheWriteTokens": 0,
+              "outputTokens": 1402,
+              "totalTokens": 2434
+            },
+            "context": {
+              "tokens": 161,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.4913330078125,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:20:03.166Z",
+            "elapsedMs": 29125,
+            "cumulative": {
+              "inputTokens": 1148,
+              "freshInputTokens": 348,
+              "cachedInputTokens": 800,
+              "cacheWriteTokens": 0,
+              "outputTokens": 1478,
+              "totalTokens": 2626
+            },
+            "context": {
+              "tokens": 192,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.5859375,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:20:04.627Z",
+            "elapsedMs": 30579,
+            "cumulative": {
+              "inputTokens": 1264,
+              "freshInputTokens": 349,
+              "cachedInputTokens": 915,
+              "cacheWriteTokens": 0,
+              "outputTokens": 1554,
+              "totalTokens": 2818
+            },
+            "context": {
+              "tokens": 192,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.5859375,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:20:06.082Z",
+            "elapsedMs": 32030,
+            "cumulative": {
+              "inputTokens": 1380,
+              "freshInputTokens": 350,
+              "cachedInputTokens": 1030,
+              "cacheWriteTokens": 0,
+              "outputTokens": 1630,
+              "totalTokens": 3010
+            },
+            "context": {
+              "tokens": 192,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.5859375,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:20:08.187Z",
+            "elapsedMs": 34095,
+            "cumulative": {
+              "inputTokens": 1460,
+              "freshInputTokens": 406,
+              "cachedInputTokens": 1054,
+              "cacheWriteTokens": 0,
+              "outputTokens": 1738,
+              "totalTokens": 3198
+            },
+            "context": {
+              "tokens": 188,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.57373046875,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:20:10.219Z",
+            "elapsedMs": 36120,
+            "cumulative": {
+              "inputTokens": 1540,
+              "freshInputTokens": 407,
+              "cachedInputTokens": 1133,
+              "cacheWriteTokens": 0,
+              "outputTokens": 1846,
+              "totalTokens": 3386
+            },
+            "context": {
+              "tokens": 188,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.57373046875,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:20:12.239Z",
+            "elapsedMs": 38133,
+            "cumulative": {
+              "inputTokens": 1620,
+              "freshInputTokens": 408,
+              "cachedInputTokens": 1212,
+              "cacheWriteTokens": 0,
+              "outputTokens": 1954,
+              "totalTokens": 3574
+            },
+            "context": {
+              "tokens": 188,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.57373046875,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:20:12.718Z",
+            "elapsedMs": 38606,
+            "cumulative": {
+              "inputTokens": 1695,
+              "freshInputTokens": 458,
+              "cachedInputTokens": 1237,
+              "cacheWriteTokens": 0,
+              "outputTokens": 1974,
+              "totalTokens": 3669
+            },
+            "context": {
+              "tokens": 95,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.2899169921875,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:20:13.149Z",
+            "elapsedMs": 39031,
+            "cumulative": {
+              "inputTokens": 1770,
+              "freshInputTokens": 459,
+              "cachedInputTokens": 1311,
+              "cacheWriteTokens": 0,
+              "outputTokens": 1994,
+              "totalTokens": 3764
+            },
+            "context": {
+              "tokens": 95,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.2899169921875,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:20:13.608Z",
+            "elapsedMs": 39475,
+            "cumulative": {
+              "inputTokens": 1845,
+              "freshInputTokens": 460,
+              "cachedInputTokens": 1385,
+              "cacheWriteTokens": 0,
+              "outputTokens": 2014,
+              "totalTokens": 3859
+            },
+            "context": {
+              "tokens": 95,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.2899169921875,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:20:16.131Z",
+            "elapsedMs": 41992,
+            "cumulative": {
+              "inputTokens": 1919,
+              "freshInputTokens": 510,
+              "cachedInputTokens": 1409,
+              "cacheWriteTokens": 0,
+              "outputTokens": 2145,
+              "totalTokens": 4064
+            },
+            "context": {
+              "tokens": 205,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.6256103515625,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:20:19.103Z",
+            "elapsedMs": 44958,
+            "cumulative": {
+              "inputTokens": 1993,
+              "freshInputTokens": 511,
+              "cachedInputTokens": 1482,
+              "cacheWriteTokens": 0,
+              "outputTokens": 2300,
+              "totalTokens": 4293
+            },
+            "context": {
+              "tokens": 229,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.6988525390625,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:20:22.037Z",
+            "elapsedMs": 47886,
+            "cumulative": {
+              "inputTokens": 2067,
+              "freshInputTokens": 512,
+              "cachedInputTokens": 1555,
+              "cacheWriteTokens": 0,
+              "outputTokens": 2455,
+              "totalTokens": 4522
+            },
+            "context": {
+              "tokens": 229,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.6988525390625,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          }
+        ]
+      },
+      {
+        "id": "evaluation-thread:physical-qualification-20260905081931-2:qwen2.5-coder-3b-q4km",
+        "parcelId": "evaluation-parcel:physical-qualification-20260905081931-2",
+        "agentId": "frozen-model-evaluator",
+        "providerId": "llamacpp-coder",
+        "nodeId": "controller",
+        "workloadNodeId": "controller",
+        "providerExecutionNodeId": "controller",
+        "modelId": "qwen2.5-coder-3b-q4km",
+        "startedAt": "2026-09-05T08:23:40.715Z",
+        "updatedAt": "2026-09-05T08:24:23.240Z",
+        "active": true,
+        "recoverable": true,
+        "governor": {
+          "state": "CONTINUE",
+          "currentThreshold": null,
+          "nextThreshold": 60,
+          "reason": "context_within_policy"
+        },
+        "latest": {
+          "at": "2026-09-05T08:24:23.240Z",
+          "elapsedMs": 39319,
+          "cumulative": {
+            "inputTokens": 866,
+            "freshInputTokens": 11,
+            "cachedInputTokens": 855,
+            "cacheWriteTokens": 0,
+            "outputTokens": 2075,
+            "totalTokens": 2941
+          },
+          "context": {
+            "tokens": 227,
+            "limitTokens": 32768,
+            "authority": "estimated",
+            "source": "one-shot provider usage; lifetime totals are separate"
+          },
+          "contextPercent": 0.6927490234375,
+          "cost": {
+            "amount": null,
+            "currency": null,
+            "authority": "unavailable",
+            "source": "local energy not measured"
+          }
+        },
+        "samples": [
+          {
+            "at": "2026-09-05T08:23:40.715Z",
+            "elapsedMs": 6680,
+            "cumulative": {
+              "inputTokens": 73,
+              "freshInputTokens": 1,
+              "cachedInputTokens": 72,
+              "cacheWriteTokens": 0,
+              "outputTokens": 352,
+              "totalTokens": 425
+            },
+            "context": {
+              "tokens": 425,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 1.2969970703125,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:23:47.406Z",
+            "elapsedMs": 13348,
+            "cumulative": {
+              "inputTokens": 146,
+              "freshInputTokens": 2,
+              "cachedInputTokens": 144,
+              "cacheWriteTokens": 0,
+              "outputTokens": 704,
+              "totalTokens": 850
+            },
+            "context": {
+              "tokens": 425,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 1.2969970703125,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:23:48.805Z",
+            "elapsedMs": 14732,
+            "cumulative": {
+              "inputTokens": 232,
+              "freshInputTokens": 3,
+              "cachedInputTokens": 229,
+              "cacheWriteTokens": 0,
+              "outputTokens": 776,
+              "totalTokens": 1008
+            },
+            "context": {
+              "tokens": 158,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.482177734375,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:23:50.199Z",
+            "elapsedMs": 16108,
+            "cumulative": {
+              "inputTokens": 318,
+              "freshInputTokens": 4,
+              "cachedInputTokens": 314,
+              "cacheWriteTokens": 0,
+              "outputTokens": 848,
+              "totalTokens": 1166
+            },
+            "context": {
+              "tokens": 158,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.482177734375,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:23:51.600Z",
+            "elapsedMs": 17494,
+            "cumulative": {
+              "inputTokens": 404,
+              "freshInputTokens": 5,
+              "cachedInputTokens": 399,
+              "cacheWriteTokens": 0,
+              "outputTokens": 920,
+              "totalTokens": 1324
+            },
+            "context": {
+              "tokens": 158,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.482177734375,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:24:04.177Z",
+            "elapsedMs": 21860,
+            "cumulative": {
+              "inputTokens": 484,
+              "freshInputTokens": 6,
+              "cachedInputTokens": 478,
+              "cacheWriteTokens": 0,
+              "outputTokens": 1152,
+              "totalTokens": 1636
+            },
+            "context": {
+              "tokens": 312,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.9521484375,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:24:08.566Z",
+            "elapsedMs": 26230,
+            "cumulative": {
+              "inputTokens": 564,
+              "freshInputTokens": 7,
+              "cachedInputTokens": 557,
+              "cacheWriteTokens": 0,
+              "outputTokens": 1384,
+              "totalTokens": 1948
+            },
+            "context": {
+              "tokens": 312,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.9521484375,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:24:12.956Z",
+            "elapsedMs": 30597,
+            "cumulative": {
+              "inputTokens": 644,
+              "freshInputTokens": 8,
+              "cachedInputTokens": 636,
+              "cacheWriteTokens": 0,
+              "outputTokens": 1616,
+              "totalTokens": 2260
+            },
+            "context": {
+              "tokens": 312,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.9521484375,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:24:17.377Z",
+            "elapsedMs": 33501,
+            "cumulative": {
+              "inputTokens": 718,
+              "freshInputTokens": 9,
+              "cachedInputTokens": 709,
+              "cacheWriteTokens": 0,
+              "outputTokens": 1769,
+              "totalTokens": 2487
+            },
+            "context": {
+              "tokens": 227,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.6927490234375,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:24:20.301Z",
+            "elapsedMs": 36407,
+            "cumulative": {
+              "inputTokens": 792,
+              "freshInputTokens": 10,
+              "cachedInputTokens": 782,
+              "cacheWriteTokens": 0,
+              "outputTokens": 1922,
+              "totalTokens": 2714
+            },
+            "context": {
+              "tokens": 227,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.6927490234375,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:24:23.240Z",
+            "elapsedMs": 39319,
+            "cumulative": {
+              "inputTokens": 866,
+              "freshInputTokens": 11,
+              "cachedInputTokens": 855,
+              "cacheWriteTokens": 0,
+              "outputTokens": 2075,
+              "totalTokens": 2941
+            },
+            "context": {
+              "tokens": 227,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.6927490234375,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          }
+        ]
+      },
+      {
+        "id": "evaluation-thread:physical-qualification-20260905081931-2:qwen2.5-instruct-3b-q4km",
+        "parcelId": "evaluation-parcel:physical-qualification-20260905081931-2",
+        "agentId": "frozen-model-evaluator",
+        "providerId": "llamacpp-instruct",
+        "nodeId": "controller",
+        "workloadNodeId": "controller",
+        "providerExecutionNodeId": "controller",
+        "modelId": "qwen2.5-instruct-3b-q4km",
+        "startedAt": "2026-09-05T08:22:31.010Z",
+        "updatedAt": "2026-09-05T08:22:45.484Z",
+        "active": true,
+        "recoverable": true,
+        "governor": {
+          "state": "CONTINUE",
+          "currentThreshold": null,
+          "nextThreshold": 60,
+          "reason": "context_within_policy"
+        },
+        "latest": {
+          "at": "2026-09-05T08:22:45.484Z",
+          "elapsedMs": 15076,
+          "cumulative": {
+            "inputTokens": 462,
+            "freshInputTokens": 6,
+            "cachedInputTokens": 456,
+            "cacheWriteTokens": 0,
+            "outputTokens": 789,
+            "totalTokens": 1251
+          },
+          "context": {
+            "tokens": 229,
+            "limitTokens": 32768,
+            "authority": "estimated",
+            "source": "one-shot provider usage; lifetime totals are separate"
+          },
+          "contextPercent": 0.6988525390625,
+          "cost": {
+            "amount": null,
+            "currency": null,
+            "authority": "unavailable",
+            "source": "local energy not measured"
+          }
+        },
+        "samples": [
+          {
+            "at": "2026-09-05T08:22:31.010Z",
+            "elapsedMs": 2047,
+            "cumulative": {
+              "inputTokens": 80,
+              "freshInputTokens": 1,
+              "cachedInputTokens": 79,
+              "cacheWriteTokens": 0,
+              "outputTokens": 108,
+              "totalTokens": 188
+            },
+            "context": {
+              "tokens": 188,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.57373046875,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:22:33.088Z",
+            "elapsedMs": 4110,
+            "cumulative": {
+              "inputTokens": 160,
+              "freshInputTokens": 2,
+              "cachedInputTokens": 158,
+              "cacheWriteTokens": 0,
+              "outputTokens": 216,
+              "totalTokens": 376
+            },
+            "context": {
+              "tokens": 188,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.57373046875,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:22:35.167Z",
+            "elapsedMs": 6166,
+            "cumulative": {
+              "inputTokens": 240,
+              "freshInputTokens": 3,
+              "cachedInputTokens": 237,
+              "cacheWriteTokens": 0,
+              "outputTokens": 324,
+              "totalTokens": 564
+            },
+            "context": {
+              "tokens": 188,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.57373046875,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:22:39.510Z",
+            "elapsedMs": 9128,
+            "cumulative": {
+              "inputTokens": 314,
+              "freshInputTokens": 4,
+              "cachedInputTokens": 310,
+              "cacheWriteTokens": 0,
+              "outputTokens": 479,
+              "totalTokens": 793
+            },
+            "context": {
+              "tokens": 229,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.6988525390625,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:22:42.509Z",
+            "elapsedMs": 12115,
+            "cumulative": {
+              "inputTokens": 388,
+              "freshInputTokens": 5,
+              "cachedInputTokens": 383,
+              "cacheWriteTokens": 0,
+              "outputTokens": 634,
+              "totalTokens": 1022
+            },
+            "context": {
+              "tokens": 229,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.6988525390625,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          },
+          {
+            "at": "2026-09-05T08:22:45.484Z",
+            "elapsedMs": 15076,
+            "cumulative": {
+              "inputTokens": 462,
+              "freshInputTokens": 6,
+              "cachedInputTokens": 456,
+              "cacheWriteTokens": 0,
+              "outputTokens": 789,
+              "totalTokens": 1251
+            },
+            "context": {
+              "tokens": 229,
+              "limitTokens": 32768,
+              "authority": "estimated",
+              "source": "one-shot provider usage; lifetime totals are separate"
+            },
+            "contextPercent": 0.6988525390625,
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "source": "local energy not measured"
+            }
+          }
+        ]
+      }
+    ],
+    "parcels": [
+      {
+        "parcelId": "evaluation-parcel:physical-qualification-20260905081931-1",
+        "threads": [
+          "evaluation-thread:physical-qualification-20260905081931-1:qwen2.5-coder-3b-q4km",
+          "evaluation-thread:physical-qualification-20260905081931-1:qwen2.5-instruct-3b-q4km"
+        ],
+        "byModel": [
+          {
+            "providerId": "llamacpp-instruct",
+            "accountProfileId": null,
+            "accountLabel": null,
+            "accountPlan": null,
+            "modelId": "qwen2.5-instruct-3b-q4km",
+            "nodeId": "controller",
+            "workloadNodeId": "controller",
+            "providerExecutionNodeId": "controller",
+            "credentialNodeId": null,
+            "inputTokens": 2067,
+            "freshInputTokens": 512,
+            "cachedInputTokens": 1555,
+            "cacheWriteTokens": 0,
+            "outputTokens": 2455,
+            "totalTokens": 4522,
+            "cost": null,
+            "currency": null
+          },
+          {
+            "providerId": "llamacpp-coder",
+            "accountProfileId": null,
+            "accountLabel": null,
+            "accountPlan": null,
+            "modelId": "qwen2.5-coder-3b-q4km",
+            "nodeId": "controller",
+            "workloadNodeId": "controller",
+            "providerExecutionNodeId": "controller",
+            "credentialNodeId": null,
+            "inputTokens": 2511,
+            "freshInputTokens": 616,
+            "cachedInputTokens": 1895,
+            "cacheWriteTokens": 0,
+            "outputTokens": 4924,
+            "totalTokens": 7435,
+            "cost": null,
+            "currency": null
+          }
+        ],
+        "inputTokens": 4578,
+        "freshInputTokens": 1128,
+        "cachedInputTokens": 3450,
+        "cacheWriteTokens": 0,
+        "outputTokens": 7379,
+        "totalTokens": 11957,
+        "cost": null,
+        "currency": null
+      },
+      {
+        "parcelId": "evaluation-parcel:physical-qualification-20260905081931-2",
+        "threads": [
+          "evaluation-thread:physical-qualification-20260905081931-2:qwen2.5-coder-3b-q4km",
+          "evaluation-thread:physical-qualification-20260905081931-2:qwen2.5-instruct-3b-q4km"
+        ],
+        "byModel": [
+          {
+            "providerId": "llamacpp-instruct",
+            "accountProfileId": null,
+            "accountLabel": null,
+            "accountPlan": null,
+            "modelId": "qwen2.5-instruct-3b-q4km",
+            "nodeId": "controller",
+            "workloadNodeId": "controller",
+            "providerExecutionNodeId": "controller",
+            "credentialNodeId": null,
+            "inputTokens": 462,
+            "freshInputTokens": 6,
+            "cachedInputTokens": 456,
+            "cacheWriteTokens": 0,
+            "outputTokens": 789,
+            "totalTokens": 1251,
+            "cost": null,
+            "currency": null
+          },
+          {
+            "providerId": "llamacpp-coder",
+            "accountProfileId": null,
+            "accountLabel": null,
+            "accountPlan": null,
+            "modelId": "qwen2.5-coder-3b-q4km",
+            "nodeId": "controller",
+            "workloadNodeId": "controller",
+            "providerExecutionNodeId": "controller",
+            "credentialNodeId": null,
+            "inputTokens": 866,
+            "freshInputTokens": 11,
+            "cachedInputTokens": 855,
+            "cacheWriteTokens": 0,
+            "outputTokens": 2075,
+            "totalTokens": 2941,
+            "cost": null,
+            "currency": null
+          }
+        ],
+        "inputTokens": 1328,
+        "freshInputTokens": 17,
+        "cachedInputTokens": 1311,
+        "cacheWriteTokens": 0,
+        "outputTokens": 2864,
+        "totalTokens": 4192,
+        "cost": null,
+        "currency": null
+      }
+    ],
+    "decisions": [
+      {
+        "id": "token-route:b3080800-28f9-46b4-96fd-bca274a7f7ba",
+        "at": "2026-09-05T08:19:37.452Z",
+        "threadId": "evaluation-thread:physical-qualification-20260905081931-1:qwen2.5-instruct-3b-q4km",
+        "parcelId": "evaluation-parcel:physical-qualification-20260905081931-1",
+        "state": "CONTINUE",
+        "action": "CONTINUE",
+        "reason": "context_within_policy",
+        "contextPercent": 0.8148193359375,
+        "outcome": "RECORDED"
+      },
+      {
+        "id": "token-route:579be7a8-10d1-4ec7-b209-71a60011420c",
+        "at": "2026-09-05T08:20:25.609Z",
+        "threadId": "evaluation-thread:physical-qualification-20260905081931-1:qwen2.5-coder-3b-q4km",
+        "parcelId": "evaluation-parcel:physical-qualification-20260905081931-1",
+        "state": "CONTINUE",
+        "action": "CONTINUE",
+        "reason": "context_within_policy",
+        "contextPercent": 0.79345703125,
+        "outcome": "RECORDED"
+      },
+      {
+        "id": "token-route:164c58ce-5a77-45ef-a9b8-85f6b22b1500",
+        "at": "2026-09-05T08:22:31.012Z",
+        "threadId": "evaluation-thread:physical-qualification-20260905081931-2:qwen2.5-instruct-3b-q4km",
+        "parcelId": "evaluation-parcel:physical-qualification-20260905081931-2",
+        "state": "CONTINUE",
+        "action": "CONTINUE",
+        "reason": "context_within_policy",
+        "contextPercent": 0.57373046875,
+        "outcome": "RECORDED"
+      },
+      {
+        "id": "token-route:444b7100-b3b0-4fa2-9182-61f16afcf860",
+        "at": "2026-09-05T08:23:40.716Z",
+        "threadId": "evaluation-thread:physical-qualification-20260905081931-2:qwen2.5-coder-3b-q4km",
+        "parcelId": "evaluation-parcel:physical-qualification-20260905081931-2",
+        "state": "CONTINUE",
+        "action": "CONTINUE",
+        "reason": "context_within_policy",
+        "contextPercent": 1.2969970703125,
+        "outcome": "RECORDED"
+      }
+    ],
+    "contextLifecycle": []
+  },
+  "runtimeSafety": [
+    {
+      "schema": "agent-control.runtime-safety-decision/v1",
+      "id": "safety-f76f7d41-dd2b-49e9-8c21-e24343b8246c",
+      "at": "2026-09-05T08:19:33.965Z",
+      "intentHash": "eff437ebad288f4d1d399edf19cb01474015b0a0fbeefc3ca5b816ab3c8219f8",
+      "runId": "run-7ad46b95-c9fd-4ce6-80f4-c25912a3174a",
+      "parcelId": "parcel-e7469285-273a-4fc0-a3b1-02b5971dbe8d",
+      "stageId": "attempt",
+      "stepId": "work",
+      "action": "qualification.recovery-attempt@1.0.0",
+      "categories": [
+        "REMOTE_NODE"
+      ],
+      "outcome": "ALLOW_WITH_AUDIT",
+      "reason": "Scoped governed action is allowed with durable independent audit",
+      "policyId": "agent-control.qualification-runtime-safety/v1",
+      "evidence": [
+        "goal:0a046f8b2f0d9189",
+        "action:qualification.recovery-attempt@1.0.0",
+        "category:REMOTE_NODE"
+      ]
+    },
+    {
+      "schema": "agent-control.runtime-safety-decision/v1",
+      "id": "safety-421cbedd-e4b3-44cd-b1b3-b2117f996ae7",
+      "at": "2026-09-05T08:19:33.968Z",
+      "intentHash": "0418b28c5fb4eb04e48dca6b19ace7d4c7e28016b42a8ba54ddabd839a49eb23",
+      "runId": "run-6165740f-c7d2-48ad-b7b3-9e4278870590",
+      "parcelId": "parcel-dbe77859-41ef-435c-bd3f-a44d9713939e",
+      "stageId": "left",
+      "stepId": "work",
+      "action": "qualification.parallel-left@1.0.0",
+      "categories": [
+        "REMOTE_NODE"
+      ],
+      "outcome": "ALLOW_WITH_AUDIT",
+      "reason": "Scoped governed action is allowed with durable independent audit",
+      "policyId": "agent-control.qualification-runtime-safety/v1",
+      "evidence": [
+        "goal:3cc9efb5a4433fcd",
+        "action:qualification.parallel-left@1.0.0",
+        "category:REMOTE_NODE"
+      ]
+    },
+    {
+      "schema": "agent-control.runtime-safety-decision/v1",
+      "id": "safety-b4169b34-80ce-4f82-9898-e4bac850fde2",
+      "at": "2026-09-05T08:19:34.651Z",
+      "intentHash": "1fd0534b02bfc6821f3d7e683abbde33228c2375e156856a50c1d2581cb47051",
+      "runId": "run-452cedc7-dfec-401a-9717-b2a03387976f",
+      "parcelId": "parcel-e7469285-273a-4fc0-a3b1-02b5971dbe8d",
+      "stageId": "noise",
+      "stepId": "work",
+      "action": "qualification.context-noise@1.0.0",
+      "categories": [
+        "REMOTE_NODE"
+      ],
+      "outcome": "ALLOW_WITH_AUDIT",
+      "reason": "Scoped governed action is allowed with durable independent audit",
+      "policyId": "agent-control.qualification-runtime-safety/v1",
+      "evidence": [
+        "goal:0a046f8b2f0d9189",
+        "action:qualification.context-noise@1.0.0",
+        "category:REMOTE_NODE"
+      ]
+    },
+    {
+      "schema": "agent-control.runtime-safety-decision/v1",
+      "id": "safety-f6182f34-ddc7-4052-a4ab-d71c55f083aa",
+      "at": "2026-09-05T08:19:35.865Z",
+      "intentHash": "421149f8051bd6b3c8f057bfb5610de8934f620ffd7938e92e501baf23ef87ac",
+      "runId": "run-984a5147-a1dd-4f65-b72d-59576217ebe8",
+      "parcelId": "parcel-e7469285-273a-4fc0-a3b1-02b5971dbe8d",
+      "stageId": "recover",
+      "stepId": "work",
+      "action": "qualification.context-retrieve@1.0.0",
+      "categories": [
+        "REMOTE_NODE"
+      ],
+      "outcome": "ALLOW_WITH_AUDIT",
+      "reason": "Scoped governed action is allowed with durable independent audit",
+      "policyId": "agent-control.qualification-runtime-safety/v1",
+      "evidence": [
+        "goal:0a046f8b2f0d9189",
+        "action:qualification.context-retrieve@1.0.0",
+        "category:REMOTE_NODE"
+      ]
+    },
+    {
+      "schema": "agent-control.runtime-safety-decision/v1",
+      "id": "safety-db1a2a0b-e0f2-4933-b8d6-292ac198902d",
+      "at": "2026-09-05T08:19:36.719Z",
+      "intentHash": "63f4532fee841529922a43483fe78a9363a263e50aa4032c2fa644a872023bf8",
+      "runId": "run-17003164-9551-4efc-b6cf-252363febc42",
+      "parcelId": "parcel-e7469285-273a-4fc0-a3b1-02b5971dbe8d",
+      "stageId": "continue",
+      "stepId": "work",
+      "action": "qualification.recovery-continue@1.0.0",
+      "categories": [
+        "REMOTE_NODE"
+      ],
+      "outcome": "ALLOW_WITH_AUDIT",
+      "reason": "Scoped governed action is allowed with durable independent audit",
+      "policyId": "agent-control.qualification-runtime-safety/v1",
+      "evidence": [
+        "goal:0a046f8b2f0d9189",
+        "action:qualification.recovery-continue@1.0.0",
+        "category:REMOTE_NODE"
+      ]
+    },
+    {
+      "schema": "agent-control.runtime-safety-decision/v1",
+      "id": "safety-5159da06-7877-4163-a973-4e8262e0f2e5",
+      "at": "2026-09-05T08:19:41.432Z",
+      "intentHash": "bdce2708d118e86cfff65a606f80f4f739f22d67ed85a09ac8afa94327308450",
+      "runId": "run-409233c0-c1d4-447c-924e-65b6e5f71c50",
+      "parcelId": "parcel-dbe77859-41ef-435c-bd3f-a44d9713939e",
+      "stageId": "right",
+      "stepId": "work",
+      "action": "qualification.parallel-right@1.0.0",
+      "categories": [
+        "REMOTE_NODE"
+      ],
+      "outcome": "ALLOW_WITH_AUDIT",
+      "reason": "Scoped governed action is allowed with durable independent audit",
+      "policyId": "agent-control.qualification-runtime-safety/v1",
+      "evidence": [
+        "goal:3cc9efb5a4433fcd",
+        "action:qualification.parallel-right@1.0.0",
+        "category:REMOTE_NODE"
+      ]
+    },
+    {
+      "schema": "agent-control.runtime-safety-decision/v1",
+      "id": "safety-63cf4eb9-70c2-4d2f-949e-c7355c7d55f2",
+      "at": "2026-09-05T08:19:43.205Z",
+      "intentHash": "1830ea0e57907047916d888171f35f8ad51d69e4ea0c61d6d4da1d7362d663c9",
+      "runId": "run-4a8d381a-891d-4dcc-8849-35edd71f4f97",
+      "parcelId": "parcel-dbe77859-41ef-435c-bd3f-a44d9713939e",
+      "stageId": "join",
+      "stepId": "work",
+      "action": "qualification.parallel-join@1.0.0",
+      "categories": [
+        "REMOTE_NODE"
+      ],
+      "outcome": "ALLOW_WITH_AUDIT",
+      "reason": "Scoped governed action is allowed with durable independent audit",
+      "policyId": "agent-control.qualification-runtime-safety/v1",
+      "evidence": [
+        "goal:3cc9efb5a4433fcd",
+        "action:qualification.parallel-join@1.0.0",
+        "category:REMOTE_NODE"
+      ]
+    }
+  ],
+  "dashboard": {
+    "url": "http://127.0.0.1:4390",
+    "sseEventCount": 250,
+    "videoManifest": "agent-control-3.9-provider-neutral-dashboard-video-before-repeat-fix.json"
+  },
+  "limitations": [
+    "No governed browser/computer evaluator was bound for the two local model candidates.",
+    "Current-context occupancy is explicitly estimated from each one-shot request; provider-reported lifetime token totals remain authoritative and separate.",
+    "Local monetary/energy cost is unavailable because no energy meter and tariff were configured.",
+    "Conservative promotion correctly leaves same-day candidates unpromoted; leaderboard entries require durable history and approval."
+  ]
+}

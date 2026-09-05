@@ -28,6 +28,9 @@ import {GovernedHandoffRuntime} from './control/handoff-runtime.js';
 import {ProviderModelLifecycleRegistry} from './control/provider-lifecycle.js';
 import {RuntimeObservability} from './control/runtime-observability.js';
 import {TokenAwareBatonRuntime} from './control/token-aware-baton-routing.js';
+import {CapabilityIntelligenceStore, registerAgentControlCoreCapabilities} from './control/capability-intelligence.js';
+import {loadFrozenQualificationSuite, ModelEvaluationCoordinator, ModelIntelligenceLedger} from './control/model-intelligence.js';
+import {ProviderNeutralModelEvaluationExecutor, startModelEvaluationScheduler} from './control/model-evaluation-runtime.js';
 
 const now = () => new Date().toISOString();
 const config = loadConfig();
@@ -47,8 +50,12 @@ const state = loadWorkspace(initial), lanes = state.lanes, ptys = new PtyRegistr
 for (const provider of providersFromConfig(config.providers)) providers.register(provider);
 const queueStore = new WorkQueueStore();
 let workQueue = queueStore.load();
-const modelRegistry = new ModelRegistry(config.providers, config.models, config.modelRouting, new ModelQualificationStore(path.resolve(process.env.AGENT_CONTROL_STATE_DIR || '.agent-control', 'model-qualification.json')), new AccountProfileQualificationStore(path.resolve(process.env.AGENT_CONTROL_STATE_DIR || '.agent-control', 'account-profile-qualification.json')));
 const stateRoot = path.resolve(process.env.AGENT_CONTROL_STATE_DIR || '.agent-control');
+const capabilityIntelligence = new CapabilityIntelligenceStore(path.join(stateRoot, 'capabilities', 'intelligence.json'));
+registerAgentControlCoreCapabilities(capabilityIntelligence);
+const modelIntelligence = new ModelIntelligenceLedger(path.join(stateRoot, 'models', 'intelligence.json'));
+const qualificationSuite = loadFrozenQualificationSuite(path.resolve('config/qualification-suite-v1.json'));
+const modelRegistry = new ModelRegistry(config.providers, config.models, config.modelRouting, new ModelQualificationStore(path.join(stateRoot, 'model-qualification.json')), new AccountProfileQualificationStore(path.join(stateRoot, 'account-profile-qualification.json')), process.env, capabilityIntelligence, modelIntelligence);
 const contracts = new ContractExecutionRuntime(path.join(stateRoot, 'contracts', 'executions.json'));
 const handoffs = new GovernedHandoffRuntime(contracts, path.join(stateRoot, 'contracts', 'handoffs.json'));
 const tokenBatonRouting = new TokenAwareBatonRuntime(path.join(stateRoot, 'token-baton-routing', 'evidence.json'), config.tokenBatonRouting);
@@ -79,9 +86,16 @@ const control = new AgentControlService(state, ptys, providers).configureProject
   modelRegistry,
   parameterizedJobs,
   runtimeObservability,
+  capabilityIntelligence,
+  modelIntelligence,
+  qualificationSuite,
 });
+const modelEvaluationExecutor = new ProviderNeutralModelEvaluationExecutor(modelRegistry, capabilityIntelligence, codexNodeExecution, fetch, event => control.events.emit('model.intelligence_changed', {batchId: event.batchId, modelId: event.candidate.modelId, taskId: event.taskId, phase: event.phase, detail: event.detail, observedAt: event.at}, undefined, 'model-evaluation-runtime'));
+const modelEvaluation = new ModelEvaluationCoordinator(modelIntelligence, qualificationSuite, modelEvaluationExecutor, {agentControlVersion: AGENT_CONTROL_VERSION, adapterVersion: 'provider-neutral-v1', promptVersion: qualificationSuite.version});
+startModelEvaluationScheduler(modelEvaluation, (batchId, status) => control.events.emit('model.intelligence_changed', {batchId, status}, undefined, 'model-evaluation-runtime'), 1_000, error => control.events.emit('failure', {scope: 'model-evaluation-runtime', error: error.message}, undefined, 'model-evaluation-runtime'));
 tokenBatonRouting.subscribe(event => control.events.emit(event.type === 'telemetry' ? 'token.telemetry' : event.type === 'governor.transition' ? 'token.governor_transition' : event.type === 'context.lifecycle' ? 'token.context_lifecycle' : event.type === 'baton.created' ? 'token.baton_created' : 'token.handoff_result', {threadId: event.threadId, parcelId: event.parcelId, observedAt: event.at}, undefined, 'token-baton-runtime'));
 governedRetrieval.subscribe(event=>control.events.emit(event.type,{parcelId:event.parcelId,intentId:event.intentId,providerId:event.providerId,strategy:event.strategy,observedAt:event.at},undefined,'retrieval-runtime'));
+jobRuntime.safety?.subscribe?.(decision=>control.events.emit('runtime.safety_changed',{decisionId:decision.id,runId:decision.runId,stepId:decision.stepId,outcome:decision.outcome,policyId:decision.policyId},undefined,'runtime-safety-supervisor'));
 startManagedNodeMonitoring(jobRuntime, snapshot => control.events.emit('resource.node_changed', {resourceId: snapshot.resourceId, state: snapshot.state, health: snapshot.health, currentWorkload: snapshot.currentWorkload}, undefined, 'managed-node-monitor'), error => control.events.emit('failure', {scope: 'managed-node-monitor', error: error.message}, undefined, 'managed-node-monitor'));
 startJobScheduler(jobRuntime, (runId, status) => control.events.emit('job.run_changed', {runId, status}, undefined, 'job-scheduler'), 1000, error => control.events.emit('failure', {scope: 'job-scheduler', error: error.message}, undefined, 'job-scheduler'));
 startParameterizedJobScheduler(parameterizedJobs, (runId, status) => control.events.emit('job.run_changed', {runId, status, kind: 'parameterized'}, undefined, 'parameterized-job-scheduler'), 1000, error => control.events.emit('failure', {scope: 'parameterized-job-scheduler', error: error.message}, undefined, 'parameterized-job-scheduler'));
