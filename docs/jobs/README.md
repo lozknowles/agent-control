@@ -29,4 +29,12 @@ agent-control jobs export project-nightly-review > project-nightly-review.json
 
 Exports contain policy and references, never credentials. Import with `agent-control jobs import --file project-nightly-review.json` after choosing a unique ID.
 
+## Recovery, retry and cancellation
+
+3.9 gives each provider attempt a durable execution ID bound to the exact provider/account/model/node route. A controller restart or transport break does not replay an unresolved attempt. The Run becomes `DISCONNECTED`, then `RECONNECTING` only while the executor proves that same identity and continuity. A completed remote response still enters normal independent validation. Unknown or changed identity remains fenced for operator reconciliation.
+
+Ordinary Job definitions configure bounded recovery with `retry.attempts`, `backoffSeconds`, optional `backoffMultiplier`, `maxBackoffSeconds` and `overallDeadlineSeconds`. Parameterised Saved Jobs inherit `maximumRetries`, `retryBackoffSeconds`, `retryBackoffMultiplier` and `retryMaximumBackoffSeconds` from the definition budget and may narrow those values. Transient transport and expired-enrolment failures can consume this budget. Authentication-required enters `AUTHENTICATION_BLOCKED`; permanent configuration does not retry. The Run and dashboard preserve the actual next-attempt time, deadline and remaining budget.
+
+Cancellation first enters `CANCELLING`. Agent Control records captured process identity, requests platform cleanup, verifies the process group/tree and only then records `CANCELLED`. If descendants, PID identity or substrate state cannot be proven, the Run remains `CLEANUP_UNCERTAIN` or `DISCONNECTED`; resource locks and authority are not silently released. See [Runs](RUNS.md), [Jobs and scheduler](../jobs-and-scheduler.md), and [dashboard operation](../web-dashboard.md).
+
 See [Definitions](DEFINITIONS.md), [Parameters](PARAMETERS.md), [Scheduling](SCHEDULING.md), [Repository Review](REPOSITORY-REVIEW.md), [Runs](RUNS.md), and [Adding a Job](ADDING-A-JOB.md).

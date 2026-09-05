@@ -28,6 +28,8 @@ import {RuntimeObservability} from './runtime-observability.js';
 import type {TokenAwareBatonRuntime, TokenRoutingProjection} from './token-aware-baton-routing.js';
 import type {GovernedRetrievalRuntime, RetrievalProjection} from './governed-retrieval.js';
 import {projectLaneHistory, projectParameterizedRunHistory, type ExecutionHistoryEntry} from './execution-history.js';
+import type {CapabilityCandidateClassification, CapabilityCandidateState, CapabilityIntelligenceStore} from './capability-intelligence.js';
+import type {FrozenQualificationSuite, ModelIntelligenceLedger} from './model-intelligence.js';
 
 export type ControlEventType =
   | 'system.snapshot'
@@ -46,6 +48,7 @@ export type ControlEventType =
   | 'system.paused_changed'
   | 'job.run_created'
   | 'job.run_cancelled'
+  | 'job.run_authentication_resumed'
   | 'job.run_retried'
   | 'job.run_approved'
   | 'job.schedule_changed'
@@ -53,6 +56,9 @@ export type ControlEventType =
   | 'job.saved_changed'
   | 'work.parcel_created'
   | 'work.parcel_changed'
+  | 'capability.intelligence_changed'
+  | 'model.intelligence_changed'
+  | 'runtime.safety_changed'
   | 'configuration.changed'
   | 'token.telemetry'
   | 'token.governor_transition'
@@ -111,7 +117,7 @@ export interface SystemProjection {
   outstandingApprovals: number;
   lastRestorePoint: string | null;
   observedAt: string;
-  jobs: {total: number; enabled: number; queued: number; waiting: number; running: number; failed: number; succeeded: number; schedulesEnabled: number;};
+  jobs: {total: number; enabled: number; queued: number; waiting: number; authenticationBlocked: number; reconnecting: number; cancelling: number; cleanupUncertain: number; disconnected: number; running: number; failed: number; succeeded: number; schedulesEnabled: number;};
   tokenAwareOutput: TokenAwareOutputMetrics;
   tokenBatonRouting: TokenRoutingProjection;
   retrieval: RetrievalProjection;
@@ -157,6 +163,9 @@ export class AgentControlService {
   private tokenBatonRouting?: TokenAwareBatonRuntime;
   private governedRetrieval?: GovernedRetrievalRuntime;
   private codexNodeExecution?: CodexNodeExecutionPort;
+  private capabilityIntelligence?: CapabilityIntelligenceStore;
+  private modelIntelligence?: ModelIntelligenceLedger;
+  private qualificationSuite?: FrozenQualificationSuite;
 
   constructor(
     readonly state: WorkspaceState,
@@ -169,7 +178,7 @@ export class AgentControlService {
     this.verification = new VerificationService(state, persist);
   }
 
-  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; services?: RegisteredService[]; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService; tokenBatonRouting?: TokenAwareBatonRuntime; governedRetrieval?: GovernedRetrievalRuntime; codexNodeExecution?: CodexNodeExecutionPort; harnessEfficiency?: HarnessEfficiencyLedgerPort; workParcels?: WorkParcelCoordinator; modelRegistry?: ModelRegistry; parameterizedJobs?: ParameterizedJobEngine; identity?: IdentityControlPlane; defaultSessionId?: string; fastExecution?: FastExecutionLedgerPort; runtimeObservability?: RuntimeObservability}) {
+  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; services?: RegisteredService[]; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService; tokenBatonRouting?: TokenAwareBatonRuntime; governedRetrieval?: GovernedRetrievalRuntime; codexNodeExecution?: CodexNodeExecutionPort; harnessEfficiency?: HarnessEfficiencyLedgerPort; workParcels?: WorkParcelCoordinator; modelRegistry?: ModelRegistry; parameterizedJobs?: ParameterizedJobEngine; identity?: IdentityControlPlane; defaultSessionId?: string; fastExecution?: FastExecutionLedgerPort; runtimeObservability?: RuntimeObservability; capabilityIntelligence?: CapabilityIntelligenceStore; modelIntelligence?: ModelIntelligenceLedger; qualificationSuite?: FrozenQualificationSuite}) {
     if (extras.approvalCount) this.approvalCount = extras.approvalCount;
     if (extras.resources) this.resourceRows = structuredClone(extras.resources);
     if (extras.services) this.serviceRows = structuredClone(extras.services);
@@ -188,6 +197,9 @@ export class AgentControlService {
     if (extras.defaultSessionId) this.defaultSessionId = extras.defaultSessionId;
     if (extras.fastExecution) this.fastExecution = extras.fastExecution;
     if (extras.runtimeObservability) this.runtimeObservability = extras.runtimeObservability;
+    if (extras.capabilityIntelligence) this.capabilityIntelligence = extras.capabilityIntelligence;
+    if (extras.modelIntelligence) this.modelIntelligence = extras.modelIntelligence;
+    if (extras.qualificationSuite) this.qualificationSuite = structuredClone(extras.qualificationSuite);
     return this;
   }
 
@@ -211,7 +223,21 @@ export class AgentControlService {
       outstandingApprovals: this.approvalCount(),
       lastRestorePoint: this.state.lastRestorePoint,
       observedAt: new Date().toISOString(),
-      jobs: {total: jobDefinitions.length + savedJobs.length, enabled: jobDefinitions.filter(job => job.spec.enabled !== false).length + savedJobs.filter(job => job.enabled).length, queued: jobRuns.filter(run => run.status === 'QUEUED').length + parameterizedRuns.filter(run => run.status === 'QUEUED').length, waiting: jobRuns.filter(run => run.status === 'WAITING').length, running: jobRuns.filter(run => ['RUNNING', 'VERIFYING'].includes(run.status)).length + parameterizedRuns.filter(run => ['RESOLVING', 'RUNNING', 'VALIDATING'].includes(run.status)).length, failed: jobRuns.filter(run => ['FAILED', 'DEGRADED', 'DISCONNECTED'].includes(run.status)).length + parameterizedRuns.filter(run => ['FAILED', 'DEGRADED'].includes(run.status)).length, succeeded: jobRuns.filter(run => run.status === 'SUCCEEDED').length + parameterizedRuns.filter(run => ['SUCCEEDED', 'SUCCEEDED_WITH_FINDINGS'].includes(run.status)).length, schedulesEnabled: schedules.filter(schedule => this.jobRuntime?.ledger.schedule(schedule.metadata.id)?.enabled).length + savedJobs.filter(job => job.schedule?.enabled).length},
+      jobs: {
+        total: jobDefinitions.length + savedJobs.length,
+        enabled: jobDefinitions.filter(job => job.spec.enabled !== false).length + savedJobs.filter(job => job.enabled).length,
+        queued: jobRuns.filter(run => run.status === 'QUEUED').length + parameterizedRuns.filter(run => run.status === 'QUEUED').length,
+        waiting: jobRuns.filter(run => run.status === 'WAITING').length,
+        authenticationBlocked: jobRuns.filter(run => run.status === 'AUTHENTICATION_BLOCKED').length + parameterizedRuns.filter(run => run.status === 'AUTHENTICATION_BLOCKED').length,
+        reconnecting: jobRuns.filter(run => run.status === 'RECONNECTING').length + parameterizedRuns.filter(run => run.status === 'RECONNECTING').length,
+        cancelling: jobRuns.filter(run => run.status === 'CANCELLING').length + parameterizedRuns.filter(run => run.status === 'CANCELLING').length,
+        cleanupUncertain: jobRuns.filter(run => run.status === 'CLEANUP_UNCERTAIN').length,
+        disconnected: jobRuns.filter(run => run.status === 'DISCONNECTED').length + parameterizedRuns.filter(run => run.status === 'DISCONNECTED').length,
+        running: jobRuns.filter(run => ['RUNNING', 'VERIFYING'].includes(run.status)).length + parameterizedRuns.filter(run => ['RESOLVING', 'RUNNING', 'VALIDATING'].includes(run.status)).length,
+        failed: jobRuns.filter(run => ['FAILED', 'DEGRADED'].includes(run.status)).length + parameterizedRuns.filter(run => ['FAILED', 'DEGRADED'].includes(run.status)).length,
+        succeeded: jobRuns.filter(run => run.status === 'SUCCEEDED').length + parameterizedRuns.filter(run => ['SUCCEEDED', 'SUCCEEDED_WITH_FINDINGS'].includes(run.status)).length,
+        schedulesEnabled: schedules.filter(schedule => this.jobRuntime?.ledger.schedule(schedule.metadata.id)?.enabled).length + savedJobs.filter(job => job.schedule?.enabled).length,
+      },
       tokenAwareOutput: this.commandOutputMetrics(),
       tokenBatonRouting: this.tokenRouting(),
       retrieval: this.retrievalProjection(),
@@ -226,7 +252,7 @@ export class AgentControlService {
   createJobRun(id: string, parameters: Record<string, unknown>, actor: string) { const job = this.job(id); const run = this.mustJobRuntime().createRun(`${job.metadata.id}@${job.metadata.version}`, parameters, {type: 'manual', actor}); this.events.emit('job.run_created', {runId: run.id, jobId: run.jobId, trigger: 'manual'}, undefined, actor); return run; }
   cancelJobRun(id: string, actor: string) { const run = this.mustJobRuntime().cancel(id, `cancelled_by:${actor}`); this.events.emit('job.run_cancelled', {runId: id}, undefined, actor); return run; }
   retryJobRun(id: string, actor: string) { const run = this.mustJobRuntime().retry(id); this.events.emit('job.run_retried', {sourceRunId: id, runId: run.id}, undefined, actor); return run; }
-  approveJobRun(id: string, policy: string, actor: string) { if (!policy.trim()) throw new Error('approval_policy_required'); const run = this.mustJobRuntime().approve(id, policy); this.events.emit('job.run_approved', {runId: id, approval: policy}, undefined, actor); return run; }
+  approveJobRun(id: string, policy: string, actor: string) { if (!policy.trim()) throw new Error('approval_policy_required'); const run = this.mustJobRuntime().approve(id, policy, actor); this.events.emit('job.run_approved', {runId: id, approval: policy}, undefined, actor); return run; }
   schedules() { return this.mustJobRuntime().catalog.listSchedules().map(schedule => ({...schedule, state: this.mustJobRuntime().ledger.schedule(schedule.metadata.id)})); }
   setScheduleEnabled(id: string, enabled: boolean, actor: string) { const state = this.mustJobRuntime().setScheduleEnabled(id, enabled); this.events.emit('job.schedule_changed', {scheduleId: id, enabled}, undefined, actor); return state; }
   jobQueue() { return this.mustJobRuntime().queueProjection(); }
@@ -253,9 +279,20 @@ export class AgentControlService {
   executionChain(runId: string) { return {chain: this.mustIdentity().reconstruct(runId), aggregate: this.mustIdentity().aggregate(runId)}; }
   fastExecutionAttempts() { return this.fastExecution?.list() ?? []; }
   runtime() { return this.runtimeObservability?.snapshot() ?? new RuntimeObservability().snapshot(); }
+  capabilityIntelligenceProjection() { return this.mustCapabilityIntelligence().projection(); }
+  modelIntelligenceProjection() { return this.mustModelIntelligence().projection(); }
+  runtimeSafetyDecisions(runId?: string) { return this.mustJobRuntime().safetyDecisions(runId); }
+  discoverCapability(input: {id?: string; title: string; source: string; providerRuntime: string; claimedCapability: string; whyItMatters: string; agentControlEquivalent: string; evidence?: string[]}, actor: string) { const candidate = this.mustCapabilityIntelligence().discoverCandidate({...input, evidence: input.evidence ?? [], actor}); this.events.emit('capability.intelligence_changed', {candidateId: candidate.id, state: candidate.state}, undefined, actor); return candidate; }
+  transitionCapability(id: string, input: {to: CapabilityCandidateState; reason: string; classification?: CapabilityCandidateClassification; experiment?: string; measuredOutcome?: string; finalDecision?: string; evidence?: string[]}, actor: string) { const candidate = this.mustCapabilityIntelligence().transitionCandidate(id, {...input, actor}); this.events.emit('capability.intelligence_changed', {candidateId: candidate.id, state: candidate.state}, undefined, actor); return candidate; }
+  queueModelEvaluation(modelIds: string[], reason: string, actor: string) {
+    if (!modelIds.length) throw new Error('model_evaluation_candidates_required'); const suite = this.mustQualificationSuite(), registry = this.mustModelRegistry();
+    const candidates = modelIds.map(id => { const model = registry.list().find(item => item.id === id); if (!model) throw new Error('model_missing'); const provider = registry.provider(model.provider); if (!provider) throw new Error('provider_missing'); const nodeId = model.account?.providerExecutionNodeId ?? model.qualification.nodes[0] ?? model.nodes?.[0] ?? 'controller'; return {providerId: model.provider, ...(model.accountProfile ? {accountProfileId: model.accountProfile} : {}), modelId: model.id, providerModel: model.providerModel, runtimeId: provider.kind, runtimeVersion: null, modelVersion: null, nodeId}; });
+    const batch = this.mustModelIntelligence().createBatch({suite, candidates, requestedBy: actor, reason}); this.events.emit('model.intelligence_changed', {batchId: batch.id, status: batch.status}, undefined, actor); return batch;
+  }
+  transitionModelRoute(routeKey: string, to: Parameters<ModelIntelligenceLedger['transition']>[0]['to'], reason: string, actor: string, approved = false, evidence: string[] = []) { const value = this.mustModelIntelligence().transition({routeKey, to, reason, actor, approved, evidence}); this.events.emit('model.intelligence_changed', {routeKey, state: value.to}, undefined, actor); return value; }
   modelProviders() { return this.mustModelRegistry().providersList(); }
   modelAccountProfiles() { return this.mustModelRegistry().accountProfilesList(); }
-  models() { return this.mustModelRegistry().list().map(model => { const recent = (this.harnessEfficiency?.list() ?? []).filter(item => item.model === model.id && item.provider === model.provider).at(-1); return {...model, ...(recent ? {recentInvocation: {at: recent.completedAt ?? recent.startedAt, outcome: recent.finalJobResult, verifierResult: recent.verifierResult, latencyMs: recent.elapsedMs, inputTokens: recent.usage.inputTokens, outputTokens: recent.usage.outputTokens, cachedInputTokens: recent.usage.cachedInputTokens, totalTokens: recent.usage.totalProcessedTokens, providerReportedCost: recent.providerReportedCost, calculatedCost: recent.calculatedCost, currency: recent.currency}} : {})}; }); }
+  models() { return this.mustModelRegistry().list().map(model => { const recent = (this.harnessEfficiency?.list() ?? []).filter(item => item.model === model.id && item.provider === model.provider).at(-1); return {...model, ...(recent ? {recentInvocation: {at: recent.completedAt ?? recent.startedAt, outcome: recent.finalJobResult, verifierResult: recent.verifierResult, latencyMs: recent.elapsedMs, inputTokens: recent.usage.inputTokens, outputTokens: recent.usage.outputTokens, cachedInputTokens: recent.usage.cachedInputTokens, cacheWriteTokens: recent.usage.cacheWriteTokens, totalTokens: recent.usage.totalProcessedTokens, providerReportedCost: recent.providerReportedCost, calculatedCost: recent.calculatedCost, currency: recent.currency}} : {})}; }); }
   jobDefinitions() { return this.mustParameterizedJobs().definitions.list(); }
   jobDefinition(id: string, version?: number) { return this.mustParameterizedJobs().definitions.get(id, version); }
   savedJobs() { return this.mustParameterizedJobs().savedJobs.list().map(job => ({...job, definitionResolved: this.mustParameterizedJobs().definitions.resolve(job), nextRun: nextSavedJobOccurrence(job, new Date())?.toISOString() ?? null, lastRun: this.mustParameterizedJobs().runs.list(job.id)[0] ?? null})); }
@@ -280,6 +317,7 @@ export class AgentControlService {
   }
   parameterizedRun(id: string) { const run = this.parameterizedRuns().find(item => item.id === id); if (!run) throw new Error('job_run_missing'); return run; }
   cancelParameterizedRun(id: string, actor: string) { const run = this.mustParameterizedJobs().cancel(id, actor); this.events.emit('job.run_cancelled', {runId: id, savedJobId: run.savedJobId}, undefined, actor); return run; }
+  resumeParameterizedRunAuthentication(id: string, actor: string) { const run = this.mustParameterizedJobs().resumeAuthentication(id, actor); this.events.emit('job.run_authentication_resumed', {runId: id, savedJobId: run.savedJobId, providerId: run.modelRoute?.providerId, accountProfileId: run.modelRoute?.accountProfileId, modelId: run.modelRoute?.modelId, nodeId: run.modelRoute?.providerExecutionNodeId}, undefined, actor); return run; }
   parameterizedSchedules() { return this.savedJobs().filter(job => job.schedule).map(job => ({savedJobId: job.id, name: job.name, schedule: job.schedule, nextRun: job.nextRun, lastRun: job.lastRun})); }
   model(id: string) { const value = this.models().find(model => model.id === id); if (!value) throw new Error('model_missing'); return value; }
   modelRoutes() { return this.mustModelRegistry().routes(); }
@@ -314,6 +352,12 @@ export class AgentControlService {
     this.events.emit('work.parcel_created', {parcelId: parcel.id, status: parcel.status, actorId: finalAttribution.actorId, sessionId: finalAttribution.sessionId}, undefined, actor); return parcel;
   }
   cancelParcel(id: string, actor: string) { const parcel = this.mustWorkParcels().cancel(id, actor); this.events.emit('work.parcel_changed', {parcelId: id, status: parcel.status}, undefined, actor); return parcel; }
+  askParcelQuestion(id: string, input: {text: string; originatingStageId?: string; dependentStageIds: string[]; priority?: 'LOW'|'NORMAL'|'HIGH'|'URGENT'; consequence?: 'LOW'|'MEDIUM'|'HIGH'}, actor: string) { const parcel = this.mustWorkParcels().askQuestion(id, {...input, actor}); this.events.emit('work.parcel_changed', {parcelId: id, status: parcel.status, change: 'question-created'}, undefined, actor); return parcel; }
+  answerParcelQuestion(id: string, questionId: string, answer: string, actor: string) { const parcel = this.mustWorkParcels().answerQuestion(id, questionId, answer, actor); this.events.emit('work.parcel_changed', {parcelId: id, status: parcel.status, change: 'question-answered'}, undefined, actor); return parcel; }
+  steerParcel(id: string, input: {instruction: string; constraints?: string[]; affectedStageIds?: string[]; supersedes?: string[]}, actor: string) { const parcel = this.mustWorkParcels().steer(id, {...input, actor}); this.events.emit('work.parcel_changed', {parcelId: id, status: parcel.status, change: 'steering-amendment'}, undefined, actor); return parcel; }
+  addParcelCriterion(id: string, input: {kind: Parameters<WorkParcelCoordinator['addCriterion']>[1]['kind']; description: string; stageId?: string; requiredEvidence?: string[]}, actor: string) { const value = this.mustWorkParcels().addCriterion(id, {...input, source: 'USER', sourceActor: actor}); this.events.emit('work.parcel_changed', {parcelId: id, status: value.parcel.status, change: 'criterion-added', criterionId: value.criterion.id}, undefined, actor); return value; }
+  evaluateParcelCriterion(id: string, criterionId: string, input: {status: 'PASS' | 'FAIL'; evidence: string[]; detail?: string}, actor: string) { const parcel = this.mustWorkParcels().evaluateCriterion(id, criterionId, {...input, actor}); this.events.emit('work.parcel_changed', {parcelId: id, status: parcel.status, change: 'criterion-evaluated', criterionId}, undefined, actor); return parcel; }
+  retrieveParcelContext(id: string, input: {query: string; limit?: number; types?: Parameters<WorkParcelCoordinator['retrieveContext']>[1]['types']; stageIds?: string[]}, actor: string) { const values = this.mustWorkParcels().retrieveContext(id, {...input, actor}); this.events.emit('work.parcel_changed', {parcelId: id, change: 'context-retrieved', resultCount: values.length}, undefined, actor); return values; }
   expandCommandOutput(handle: string, request: OutputExpansionRequest, scope: OutputAuthorityScope) { return this.mustTokenAwareOutput().expand(handle, request, scope); }
 
   lane(id: number) { return this.projectLane(this.mustLane(id)); }
@@ -480,4 +524,7 @@ export class AgentControlService {
   private mustModelRegistry() { if (!this.modelRegistry) throw new Error('model_registry_unconfigured'); return this.modelRegistry; }
   private mustIdentity() { if (!this.identity) throw new Error('identity_control_plane_unconfigured'); return this.identity; }
   private mustParameterizedJobs() { if (!this.parameterizedJobs) throw new Error('parameterized_jobs_unconfigured'); return this.parameterizedJobs; }
+  private mustCapabilityIntelligence() { if (!this.capabilityIntelligence) throw new Error('capability_intelligence_unconfigured'); return this.capabilityIntelligence; }
+  private mustModelIntelligence() { if (!this.modelIntelligence) throw new Error('model_intelligence_unconfigured'); return this.modelIntelligence; }
+  private mustQualificationSuite() { if (!this.qualificationSuite) throw new Error('model_qualification_suite_unconfigured'); return this.qualificationSuite; }
 }

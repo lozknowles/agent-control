@@ -23,6 +23,7 @@ import type {GovernedHandoffRuntime} from './handoff-runtime.js';
 import type {CodexNodeExecutionPort} from './codex-node-execution.js';
 import {GovernedRetrievalRuntime, RepositoryTextRetrievalProvider, RetrievedEvidenceContextCompiler, SpawnZgSearchExecutor, ZgRetrievalProvider, type RetrievalStrategy} from './governed-retrieval.js';
 import {ResourceRepositoryResolver} from './resource-repository-resolver.js';
+import {RuntimeSafetySupervisor} from './runtime-safety-supervisor.js';
 
 /** Shared production definition path so qualification cannot drift from registered typed Actions. */
 export function buildJobRuntimeDefinition(config: AgentControlConfig, manifestDir = process.env.AGENT_CONTROL_JOB_DIR || path.resolve('config/jobs'), harnessEfficiency?: HarnessEfficiencyLedgerPort) {
@@ -38,7 +39,9 @@ export function buildJobRuntime(config: AgentControlConfig, stateRoot = process.
   const {workers, managedNodes, actions, catalog} = buildJobRuntimeDefinition(config, manifestDir, harnessEfficiency);
   const harnessProfiles = configuredHarnessProfiles(config.harnessEfficiency), harnessProfileRouter = configuredHarnessProfileRouter(config.harnessEfficiency), contextPacketBuilder = new ContextPacketBuilder(harnessProfiles);
   for (const resource of config.resources) if (resource.transport.type === 'local') workers.setHealth(resource.id, 'healthy');
-  const runtime = createJobRuntime(stateRoot, catalog, actions, workers, {efficiency: harnessEfficiency});
+  const repositoryRoots = config.jobs?.repositoryRoots ?? [path.resolve('.')];
+  const safety = new RuntimeSafetySupervisor({id: 'agent-control.runtime-safety/v1', approvedRepositoryRoots: repositoryRoots.map(root => path.resolve(root)), approvedRemoteNodes: config.resources.map(resource => resource.id)}, path.join(stateRoot, 'runtime-safety', 'decisions.json'));
+  const runtime = createJobRuntime(stateRoot, catalog, actions, workers, {efficiency: harnessEfficiency, safety});
   const workParcels = new WorkParcelCoordinator(runtime, new WorkParcelStore(path.join(stateRoot, 'work-parcels', 'parcels.json')), new CatalogNaturalLanguagePlanner(runtime, reasoningPlanner), harnessEfficiency, modelRegistry);
   return Object.assign(runtime, {managedNodes, harnessEfficiency, harnessProfiles, harnessProfileRouter, contextPacketBuilder, workParcels});
 }
@@ -90,6 +93,6 @@ export function buildParameterizedJobRuntime(config: AgentControlConfig, modelRe
 
 export function startParameterizedJobScheduler(runtime: ReturnType<typeof buildParameterizedJobRuntime>, onChange?: (runId: string, status: string) => void, intervalMs = 1000, onError?: (error: Error) => void) {
   let active = false, stopped = false;
-  const tick = async () => { if (active || stopped) return; active = true; try { const created = await runtime.tickSchedules(); for (const run of created) onChange?.(run.id, run.status); const completed = await runtime.executeNext(); if (completed) onChange?.(completed.id, completed.status); } catch (error) { (onError ?? (failure => process.emitWarning(failure.message)))(error instanceof Error ? error : new Error(String(error))); } finally { active = false; } };
+  const tick = async () => { if (active || stopped) return; active = true; try { const created = await runtime.tickSchedules(); for (const run of created) onChange?.(run.id, run.status); const reconciled = await runtime.reconcileInterrupted(); for (const run of reconciled) onChange?.(run.id, run.status); const completed = await runtime.executeNext(); if (completed) onChange?.(completed.id, completed.status); } catch (error) { (onError ?? (failure => process.emitWarning(failure.message)))(error instanceof Error ? error : new Error(String(error))); } finally { active = false; } };
   const timer = setInterval(() => void tick(), intervalMs); timer.unref(); void tick(); return () => { stopped = true; clearInterval(timer); };
 }

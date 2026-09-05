@@ -12,9 +12,17 @@ Open **Job Definitions** to inspect reusable, versioned contracts. Select **Repo
 
 Selecting a Run opens its **Execution history**. This is a chronological, human-readable projection of the same durable Run, associated Work Parcels, token/governor evidence and sealed batons. Cards distinguish `OPERATOR`, `SYSTEM EVENT`, `AGENT / PROVIDER`, `TOOL / ACTION`, `GOVERNOR`, `BATON` and `ERROR`; they show safe route identity, current-context authority, lifetime usage, cost authority and evidence references where available. The Lane Activity view provides the corresponding lane-local projection. See [`execution-history.md`](execution-history.md).
 
-History terminology is deliberately strict. `HANDOFF_RECOMMENDED` means the governor crossed a threshold but retained the current route. `HANDOFF_REQUESTED` is not proof that a destination accepted or ran. Only a durable successful routing outcome becomes `HANDOFF_COMPLETED`; a failed outcome records source recovery. Likewise, a created baton is a sealed checkpoint, not proof of a completed handoff. Initial Codex telemetry can show current context as unavailable until completion, while a completion-only estimate can be clamped at 100%; neither is described as authoritative provider occupancy.
+History terminology is deliberately strict. `HANDOFF_RECOMMENDED` means the governor crossed a threshold but retained the current route. `HANDOFF_REQUESTED` is not proof that a destination accepted or ran. Only a durable successful routing outcome becomes `HANDOFF_COMPLETED`; a failed outcome records source recovery. Likewise, a created baton is a sealed checkpoint, not proof of a completed handoff. Codex exec completion usage is cumulative and is not displayed as current context; Codex context remains unavailable unless a distinct usable signal is emitted. Other explicitly estimated adapter values can be clamped at 100%, but are never described as authoritative provider occupancy.
 
 The headless Agent Control process owns schedule polling. Closing the dashboard, logging out, or not having Codex installed does not stop a due parameterised Job. Full setup and operator examples are in [`jobs/README.md`](jobs/README.md).
+
+## Resilient Run state (3.9)
+
+Run cards now render the durable lifecycle reason and observation source instead of collapsing every nonterminal state into “running.” `AUTHENTICATION_BLOCKED`, `RECONNECTING`, `CANCELLING`, `CLEANUP_UNCERTAIN` and `DISCONNECTED` are distinct. A retry card shows `nextAttemptAt`, `recoveryDeadlineAt` and the remaining retry budget only when those timestamps/budgets actually exist. A locally advancing countdown is display convenience between those fixed timestamps; it does not change scheduler state.
+
+Cancellation remains pending until the execution adapter returns cleanup evidence. The dashboard shows cleanup outcome, reason, requested/verified times, platform and the number of captured process identities. It intentionally does not expose process output or platform command text. `confirmed` permits a terminal cancellation; `uncertain`, `identity-mismatch` or `failed` leaves the Run fenced for reconciliation. Do not interpret a sent TERM/KILL request as completion.
+
+The first page load and every SSE reconnect fetch a complete authoritative snapshot before applying later events. Reloading during provider work, a queue wait or cancellation therefore reconstructs the same Run, execution ID, retry state, Work Parcel and token totals; the browser never creates a replacement Run or infers terminal state from a missing event. Measurement cards show source, authority and freshness. Unavailable values are `unknown`, and stale values retain their observation time instead of becoming current.
 
 ## Start
 
@@ -92,9 +100,9 @@ Model qualification and routing mutations are `POST /api/models/:id/qualify` and
 
 Operator requests under `/api/lanes/:id/` include `pause`, `resume`, `priority`, `mode`, `task`, `reroute`, `handoff`, `clone`, `cancel`, `takeover`, `return-ownership` and verification transitions. These endpoints call application-service methods. There is deliberately no direct lease, scheduler-state, persistence, terminal-input or execution-provider endpoint.
 
-The prominent **Managed Nodes** panel renders the same resource-attached snapshot returned by `/api/status` and `/api/nodes`: state, OS/kernel, heartbeat, uptime, load, memory, workload, maintenance state, secure-overlay connectivity, storage and capabilities. It is an observation panel, not a remote shell. Node operations are created as governed Jobs through the existing scheduler and approval path.
+The prominent **Managed Nodes** panel renders the same resource-attached snapshot returned by `/api/status` and `/api/nodes`: state, OS/kernel, heartbeat, uptime, load, memory, workload, maintenance state, secure-overlay connectivity, storage and capabilities. Measurements include source, authority, freshness, observation time and limitations. Android/sysfs-derived CPU busy is visibly derived and not admission-qualified; absent temperature/storage/load data remains unknown. It is an observation panel, not a remote shell. Node operations are created as governed Jobs through the existing scheduler and approval path.
 
-The compact **Harness Efficiency** diagnostic shows verified successes, turns, fresh/cached/output token composition, cache effectiveness, escalation rate and cost per verified outcome. Unknown provider measurements are rendered as `unknown`, not zero. A selected Run shows its recorded profile and verifier state; these observations cannot change routing or acceptance through the read-only endpoints.
+The compact **Harness Efficiency** diagnostic shows verified successes, turns, fresh/cached/cache-write/output token composition, cache effectiveness, escalation rate and cost per verified outcome. A cache read is not a cache write, and neither is subtracted from authoritative total input. Unknown provider measurements are rendered as `unknown`, not zero. A selected Run shows its recorded profile and verifier state; these observations cannot change routing or acceptance through the read-only endpoints.
 
 ## Spark fast execution
 
@@ -132,10 +140,28 @@ The dashboard can reconnect to the SSE stream and always refreshes the current d
 
 ## Live token governor (3.7)
 
-The dashboard’s **Thread Context** panel is driven by `GET /api/status` / `GET /api/token-routing` and refreshes through the normal SSE stream on `token.telemetry`, `token.governor_transition`, `token.context_lifecycle`, `token.baton_created`, and `token.handoff_result`. It lists every observed execution thread with provider/safe account label/model, account plan where its authority is known, context/window/percentage, latest compaction/new-context/resume transition, cumulative token totals, authority markers, cost, elapsed time, governor state/thresholds, next selected route, and account-aware Work Parcel chain total. It does not turn unavailable provider data into zero or infer current context from lifetime use. The durable routing evidence contains the corresponding timestamped samples and all transition/decision records. See [Token-Aware Baton Routing](token-aware-baton-routing.md).
+The dashboard’s **Thread Context** panel is driven by `GET /api/status` / `GET /api/token-routing` and refreshes through the normal SSE stream on `token.telemetry`, `token.governor_transition`, `token.context_lifecycle`, `token.baton_created`, and `token.handoff_result`. It lists every observed execution thread with provider/safe account label/model, account plan where its authority is known, context/window/percentage, latest compaction/new-context/resume transition, cumulative total/fresh/cached input, output and total tokens, authority markers, cost, elapsed time, governor state/thresholds, next selected route, and account-aware Work Parcel chain total. Each model-chain leg preserves the same split, and route lookup uses the durable thread ID. It does not turn unavailable provider data into zero or infer current context from lifetime use. The durable routing evidence contains the corresponding timestamped samples and all transition/decision records. See [Token-Aware Baton Routing](token-aware-baton-routing.md).
 
 `GET /api/token-routing` is a read-only projection. It deliberately excludes prompts, baton bodies, credentials, provider requests, and transcripts.
 
 The **Models** view reads `GET /api/models/accounts` and model account projections. It shows account friendly label, provider-execution node, credential-residency node, plan plus metadata authority, availability and independent qualification state. Parameterized Run and live token cards also show the workload node separately. **Check account** dispatches bounded `codex login status` to the selected profile's provider-execution/credential node; `CODEX_HOME` is resolved only there. The dashboard never receives credential environment names, resolved paths, full executable paths, raw process output, email addresses, OAuth tokens, cookies, or authentication-file contents.
 
 The **Retrieval** panel reads the redacted `retrieval` status projection and updates through the existing SSE stream on `retrieval.started`, `retrieval.provider_selected`, `retrieval.escalated`, `retrieval.evidence`, `retrieval.context_compiled`, `retrieval.rehydrated`, `retrieval.invalidated`, `retrieval.fallback`, and `retrieval.failed`. It shows provider/strategy path, calls and escalation, evidence sufficiency/items/tokens, raw bytes avoided, estimated context savings, freshness, locality and latency. A handoff or restart refreshes the same projection after reference revalidation; invalidation and fallback remain visible. Evidence text, repository roots, index paths and raw provider output are excluded. `GET /api/retrieval` is read-only. See [governed retrieval](governed-retrieval.md).
+
+## Persistent context and capability intelligence (3.9)
+
+Each Work Parcel card now includes a **Persistent context** board. It shows the current DAG stage/route, unresolved questions, criterion status, event/baton metrics and bounded history controls. Authenticated operators may answer a stable question, append a steering amendment, add/evaluate a criterion or request a bounded history lookup. These operations enter `AgentControlService`; the page cannot edit event hashes, mark stages successful or bypass verification. An open question names exactly which stages wait, while unrelated running/succeeded stages remain visible.
+
+The **Models** view adds:
+
+- verified model leaders, left empty when evidence is insufficient;
+- Capability Watch candidates grouped by lifecycle and native/emulated verified observations;
+- frozen evaluation batches and queue state;
+- append-only provider/account/model/node/runtime history;
+- 7/30/90-day quality/reliability, fresh/cache/total tokens, cache hit ratio, elapsed time and cost per success;
+- regression warnings and authenticated evidence-gated lifecycle controls;
+- independent Runtime Safety decisions and approval state.
+
+All values come from the capability/model/safety ledgers. Missing cost, unsupported evaluator capability and unqualified leaders display as unavailable, never zero or a fabricated ranking. Provider/model configuration remains separate from observed capability proof.
+
+The core `EventSource` starts independently of optional dashboard projections. If the parameterised Job engine or another optional panel is not configured, that panel reports its own unavailable state while Jobs, Work Parcels and live SSE continue. The top badge changes to `LIVE` only after the browser's event stream opens; reconnect still refreshes the complete authoritative snapshot.

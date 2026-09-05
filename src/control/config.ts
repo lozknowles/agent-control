@@ -137,7 +137,7 @@ export interface ModelConfig {
   nodes?: string[];
   limits?: {contextTokens?: number; outputTokens?: number};
   qualification?: {state: ModelQualificationState; version?: string; qualifiedAt?: string; evidence?: string[]; capabilities?: string[]; nodes?: string[]; latencyMs?: number; successRate?: number};
-  pricing?: {currency: string; inputPerMillionTokens: number; outputPerMillionTokens: number; cachedInputPerMillionTokens?: number; effectiveFrom: string; source: string};
+  pricing?: {currency: string; inputPerMillionTokens: number; outputPerMillionTokens: number; cachedInputPerMillionTokens?: number; cacheWritePerMillionTokens?: number; effectiveFrom: string; source: string};
 }
 export interface ModelRouteConfig {primary: string; fallback?: string[]; requires?: string[];}
 export interface ModelRoutingConfig {defaultRole?: string; roles: Record<string, ModelRouteConfig>;}
@@ -286,7 +286,7 @@ function assertIntegerRange(value: unknown, label: string, minimum: number, maxi
 
 function rejectSecrets(value: unknown, trail = 'config') {
   if (!value || typeof value !== 'object') return;
-  const safeTokenAccountingKeys = new Set(['tokenAwareOutput', 'tokenBatonRouting', 'completeMaxTokens', 'artifactOnlyAboveReturnedTokens', 'minimumCompleteTokens', 'harnessEfficiency', 'maximumInitialContextTokens', 'maximumContextTokens', 'maximumEvidenceTokens', 'advertisedContextLimitTokens', 'maximumObservedInputTokens', 'inputPerMillionTokens', 'outputPerMillionTokens', 'cachedInputPerMillionTokens', 'contextTokens', 'outputTokens', 'continuePercent', 'prepareBatonPercent', 'compactPercent', 'handoffPercent', 'sampleRetention']);
+  const safeTokenAccountingKeys = new Set(['tokenAwareOutput', 'tokenBatonRouting', 'completeMaxTokens', 'artifactOnlyAboveReturnedTokens', 'minimumCompleteTokens', 'harnessEfficiency', 'maximumInitialContextTokens', 'maximumContextTokens', 'maximumEvidenceTokens', 'advertisedContextLimitTokens', 'maximumObservedInputTokens', 'inputPerMillionTokens', 'outputPerMillionTokens', 'cachedInputPerMillionTokens', 'cacheWritePerMillionTokens', 'contextTokens', 'outputTokens', 'continuePercent', 'prepareBatonPercent', 'compactPercent', 'handoffPercent', 'sampleRetention']);
   for (const [key, child] of Object.entries(value)) {
     if (/token|password|secret|api.?key/i.test(key) && !['credentialEnv', 'credentialFileEnv'].includes(key) && !safeTokenAccountingKeys.has(key)) {
       throw new Error(`secret_material_forbidden:${trail}.${key}`);
@@ -467,7 +467,7 @@ export function validateConfig(raw: unknown): AgentControlConfig {
     assertIntegerRange(model.limits?.outputTokens, `model_output:${model.id}`, 1, 10_000_000);
     if (model.pricing) {
       if (!/^[A-Z]{3}$/.test(model.pricing.currency) || !model.pricing.source?.trim() || Number.isNaN(Date.parse(model.pricing.effectiveFrom))) throw new Error(`invalid_model_pricing_provenance:${model.id}`);
-      for (const value of [model.pricing.inputPerMillionTokens, model.pricing.outputPerMillionTokens, model.pricing.cachedInputPerMillionTokens ?? 0]) if (!Number.isFinite(value) || value < 0) throw new Error(`invalid_model_pricing:${model.id}`);
+      for (const value of [model.pricing.inputPerMillionTokens, model.pricing.outputPerMillionTokens, model.pricing.cachedInputPerMillionTokens ?? 0, model.pricing.cacheWritePerMillionTokens ?? 0]) if (!Number.isFinite(value) || value < 0) throw new Error(`invalid_model_pricing:${model.id}`);
     }
   }
   if (!config.modelRouting || typeof config.modelRouting !== 'object' || Array.isArray(config.modelRouting) || !config.modelRouting.roles || typeof config.modelRouting.roles !== 'object' || Array.isArray(config.modelRouting.roles)) throw new Error('invalid_model_routing');

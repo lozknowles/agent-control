@@ -3,16 +3,24 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type {ResourceConfig} from './config.js';
 import {effectiveParameters, nextCronOccurrence, type JobCatalog} from './job-catalog.js';
-import {jobPriorityRank, type ActionFailureClass, type ActionHandler, type ActionOutput, type AgentActionHandler, type ArtifactRecord, type PlacementRationale, type RunRecord, type RunStatus, type ScheduleState, type StepAttempt, type StepStatus, type WorkerRegistration} from './job-types.js';
+import {jobPriorityRank, type ActionFailureClass, type ActionHandler, type ActionOutput, type AgentActionHandler, type ArtifactRecord, type PlacementRationale, type RecoveryFailureKind, type RetryPolicy, type RunRecord, type RunStatus, type ScheduleState, type StepAttempt, type StepStatus, type WorkerRegistration} from './job-types.js';
 import type {HarnessEfficiencyLedgerPort, InvocationFinalResult} from './harness-efficiency.js';
-import {OwnedProcessManager} from './owned-process.js';
+import {OwnedProcessManager, type ExecutionCleanupReport, type OwnedExecution} from './owned-process.js';
+import {deriveRuntimeActionIntent, type RuntimeSafetySupervisorPort} from './runtime-safety-supervisor.js';
 
 function writeJsonAtomic(file: string, value: unknown) { fs.mkdirSync(path.dirname(file), {recursive: true}); const temporary = `${file}.tmp`; fs.writeFileSync(temporary, `${JSON.stringify(value, null, 2)}\n`, {mode: 0o600}); fs.renameSync(temporary, file); }
 function now() { return new Date().toISOString(); }
-const ACTIVE_RUNS: RunStatus[] = ['SCHEDULED', 'QUEUED', 'WAITING', 'RUNNING', 'VERIFYING', 'DISCONNECTED'];
+const ACTIVE_RUNS: RunStatus[] = ['SCHEDULED', 'QUEUED', 'WAITING', 'AUTHENTICATION_BLOCKED', 'RECONNECTING', 'RUNNING', 'VERIFYING', 'CANCELLING', 'CLEANUP_UNCERTAIN', 'DISCONNECTED'];
 const TERMINAL_STEPS: StepStatus[] = ['SUCCEEDED', 'FAILED', 'TIMED_OUT', 'CANCELLED'];
+const EXECUTION_OWNED_STEPS: StepStatus[] = ['DISPATCHED', 'RUNNING', 'VERIFYING', 'CANCEL_PENDING', 'CLEANUP_UNCERTAIN'];
 
-export class ActionFailure extends Error {constructor(message: string, readonly failureClass: ActionFailureClass, readonly retryable = false) { super(message); this.name = 'ActionFailure'; }}
+export class ActionFailure extends Error {
+  readonly recoveryKind: RecoveryFailureKind;
+  constructor(message: string, readonly failureClass: ActionFailureClass, readonly retryable = false, recoveryKind?: RecoveryFailureKind) {
+    super(message); this.name = 'ActionFailure';
+    this.recoveryKind = recoveryKind ?? (failureClass === 'authentication' ? 'authentication-required' : failureClass === 'configuration' ? 'permanent-configuration' : retryable ? 'transient-transport' : 'execution');
+  }
+}
 class StepTimeoutError extends Error { constructor(readonly timeoutSeconds: number, readonly elapsedMs: number) { super(`step_timeout:${timeoutSeconds}s:${elapsedMs}ms`); this.name = 'StepTimeoutError'; } }
 export class ActionRegistry {
   private readonly actions = new Map<string, {kind: 'control'; handler: ActionHandler} | {kind: 'agent'; handler: AgentActionHandler}>();
@@ -104,14 +112,17 @@ export class RunLedger {
   private save() { writeJsonAtomic(this.file, {version: 1, runs: this.list(), schedules: this.scheduleStates()} satisfies LedgerSnapshot); }
 }
 
-export interface JobRuntimeOptions {now?: () => Date; approval?: (policy: string, run: RunRecord) => boolean; efficiency?: HarnessEfficiencyLedgerPort;}
+export interface JobRuntimeOptions {now?: () => Date; approval?: (policy: string, run: RunRecord) => boolean; efficiency?: HarnessEfficiencyLedgerPort; safety?: RuntimeSafetySupervisorPort; defaultRecoveryDeadlineSeconds?: number; ownedExecutionFactory?: () => OwnedExecution;}
 export interface JobDispatch {runId: string; completion: Promise<RunRecord | undefined>;}
 export class JobRuntime {
   private readonly controllers = new Map<string, AbortController>();
   private readonly clock: () => Date;
-  constructor(readonly catalog: JobCatalog, readonly actions: ActionRegistry, readonly workers: WorkerRegistry, readonly ledger: RunLedger, readonly artifacts: ArtifactStore, readonly locks: ResourceLockManager, options: JobRuntimeOptions = {}) { this.clock = options.now ?? (() => new Date()); this.approval = options.approval ?? (() => false); this.efficiency = options.efficiency; }
+  constructor(readonly catalog: JobCatalog, readonly actions: ActionRegistry, readonly workers: WorkerRegistry, readonly ledger: RunLedger, readonly artifacts: ArtifactStore, readonly locks: ResourceLockManager, options: JobRuntimeOptions = {}) { this.clock = options.now ?? (() => new Date()); this.approval = options.approval ?? (() => false); this.efficiency = options.efficiency; this.safety = options.safety; this.defaultRecoveryDeadlineSeconds = options.defaultRecoveryDeadlineSeconds ?? 900; this.ownedExecutionFactory = options.ownedExecutionFactory ?? (() => new OwnedProcessManager()); }
   private readonly approval: (policy: string, run: RunRecord) => boolean;
   private readonly efficiency?: HarnessEfficiencyLedgerPort;
+  readonly safety?: RuntimeSafetySupervisorPort;
+  private readonly defaultRecoveryDeadlineSeconds: number;
+  private readonly ownedExecutionFactory: () => OwnedExecution;
 
   createRun(jobReference: string, parameters: Record<string, unknown>, trigger: RunRecord['trigger'], scheduledAt?: string) {
     const job = this.catalog.job(jobReference); if (!job) throw new Error('job_missing'); if (job.spec.enabled === false) throw new Error('job_disabled');
@@ -119,7 +130,7 @@ export class JobRuntime {
     const runId = `run-${randomUUID()}`, replaced = job.spec.concurrency === 'replace-running' ? active[0] : undefined;
     if (job.spec.concurrency === 'replace-running') for (const existing of active) this.cancel(existing.id, `replaced_by_run:${runId}`, runId);
     const retryOfRunId = trigger.type === 'retry' ? trigger.id : undefined;
-    const run: RunRecord = {id: runId, jobId: job.metadata.id, jobVersion: job.metadata.version, trigger: structuredClone(trigger), requestedAt: this.clock().toISOString(), scheduledAt, status: 'QUEUED', priority: job.spec.priority, concurrency: job.spec.concurrency, parameters: effectiveParameters(job, parameters), steps: job.spec.steps.map(step => ({id: step.id, action: step.action, status: (step.dependsOn?.length ? 'WAITING_FOR_DEPENDENCY' : 'QUEUED'), dependsOn: [...(step.dependsOn ?? [])], capabilityRequest: {requires: step.requires.map(id => ({id}))}, resources: [...(step.resources ?? [])], attempts: [], artifactIds: [], approval: step.approval, verification: {required: [...(step.verification ?? [])], passed: [], failed: []}})), artifacts: [], errors: [], effectiveJob: structuredClone(job), selectedWorkers: [], approvals: [], provenance: [{type: 'trigger', at: this.clock().toISOString(), detail: `${trigger.type}:${trigger.actor}`} ], ...((replaced || retryOfRunId) ? {lineage: {...(replaced ? {replacesRunId: replaced.id} : {}), ...(retryOfRunId ? {retryOfRunId} : {})}} : {})};
+    const run: RunRecord = {id: runId, jobId: job.metadata.id, jobVersion: job.metadata.version, trigger: structuredClone(trigger), requestedAt: this.clock().toISOString(), scheduledAt, status: 'QUEUED', priority: job.spec.priority, concurrency: job.spec.concurrency, parameters: effectiveParameters(job, parameters), steps: job.spec.steps.map(step => { const retry = step.retry ?? job.spec.retry; return {id: step.id, action: step.action, status: (step.dependsOn?.length ? 'WAITING_FOR_DEPENDENCY' : 'QUEUED'), dependsOn: [...(step.dependsOn ?? [])], capabilityRequest: {requires: step.requires.map(id => ({id}))}, resources: [...(step.resources ?? [])], attempts: [], artifactIds: [], approval: step.approval, ...(retry ? {remainingRetryBudget: retry.attempts} : {}), verification: {required: [...(step.verification ?? [])], passed: [], failed: []}}; }), artifacts: [], errors: [], effectiveJob: structuredClone(job), selectedWorkers: [], approvals: [], provenance: [{type: 'trigger', at: this.clock().toISOString(), detail: `${trigger.type}:${trigger.actor}`} ], ...((replaced || retryOfRunId) ? {lineage: {...(replaced ? {replacesRunId: replaced.id} : {}), ...(retryOfRunId ? {retryOfRunId} : {})}} : {})};
     if (active.length && job.spec.concurrency === 'no-overlap') run.provenance.push({type: 'concurrency', at: now(), detail: `Waiting for active run ${active[0].id}`});
     const created = this.ledger.add(run);
     if (retryOfRunId) this.linkPriorRun(retryOfRunId, 'retriedByRunId', created.id);
@@ -133,7 +144,7 @@ export class JobRuntime {
   schedulerConcurrencyLimit() { return this.workers.schedulerCapacity(); }
 
   dispatch(): JobDispatch | undefined {
-    const runs = this.ledger.list().filter(run => ['QUEUED', 'WAITING', 'RUNNING'].includes(run.status)).sort((a, b) => jobPriorityRank[b.priority] - jobPriorityRank[a.priority] || Date.parse(a.requestedAt) - Date.parse(b.requestedAt));
+    const runs = this.ledger.list().filter(run => ['QUEUED', 'WAITING', 'RECONNECTING', 'RUNNING'].includes(run.status)).sort((a, b) => jobPriorityRank[b.priority] - jobPriorityRank[a.priority] || Date.parse(a.requestedAt) - Date.parse(b.requestedAt));
     for (const run of runs) {
       const activeSibling = this.ledger.list(run.jobId).find(other => other.id !== run.id && ['RUNNING', 'VERIFYING'].includes(other.status));
       if (activeSibling && ['no-overlap', 'queue'].includes(run.concurrency)) continue;
@@ -160,18 +171,34 @@ export class JobRuntime {
   }
 
   setScheduleEnabled(id: string, enabled: boolean) { const definition = this.catalog.schedule(id); if (!definition) throw new Error('schedule_missing'); const at = this.clock(), current = this.ledger.schedule(id); return this.ledger.saveSchedule({scheduleId: id, enabled, previousScheduledAt: current?.previousScheduledAt, nextScheduledAt: enabled ? nextCronOccurrence(definition.spec.cron, definition.spec.timezone, at).toISOString() : current?.nextScheduledAt, lastRunId: current?.lastRunId, lastSuccessAt: current?.lastSuccessAt, lastFailureAt: current?.lastFailureAt, lastError: current?.lastError, missedCount: current?.missedCount ?? 0, updatedAt: at.toISOString()}); }
-  approve(runId: string, policy: string) { const run = this.mustRun(runId), waiting = run.steps.filter(step => step.status === 'WAITING_FOR_APPROVAL' && step.approval === policy); if (!waiting.length) throw new Error('approval_policy_not_waiting'); if (!run.approvals.includes(policy)) run.approvals.push(policy); for (const step of waiting) { step.status = 'QUEUED'; step.waitingReason = undefined; } return this.ledger.update(run, 'run.approved'); }
-  cancel(runId: string, reason = 'operator_cancelled', replacedByRunId?: string) { const run = this.mustRun(runId); if (!ACTIVE_RUNS.includes(run.status)) return run; const controller = this.controllers.get(runId); controller?.abort(reason); for (const step of run.steps) if (!TERMINAL_STEPS.includes(step.status)) { step.status = 'CANCELLED'; step.endedAt = now(); } run.status = 'CANCELLED'; run.endedAt = now(); run.errors.push(reason); if (replacedByRunId) run.lineage = {...run.lineage, replacedByRunId}; const ids = this.invocationIds(run); if (ids.length) { this.efficiency?.finalizePending(ids, 'CANCELLED', reason, reason, run.endedAt); this.efficiency?.markVerification(ids, 'FAIL', 'CANCELLED'); } if (!controller) this.locks.release(run.id); else run.provenance.push({type: 'cancellation', at: now(), detail: 'Execution abort requested; resource lock retained until handler returns'}); return this.ledger.update(run, 'run.cancelled', replacedByRunId ? {replacedByRunId} : undefined); }
-  retry(runId: string) { const source = this.mustRun(runId); if (!['FAILED', 'DEGRADED', 'CANCELLED', 'DISCONNECTED'].includes(source.status)) throw new Error('run_not_retryable'); const reference = `${source.jobId}@${source.jobVersion}`; if (!this.catalog.job(reference)) this.catalog.addJob(source.effectiveJob); return this.createRun(reference, source.parameters, {type: 'retry', id: source.id, actor: 'operator'}); }
+  approve(runId: string, policy: string, actor = 'operator') { const run = this.mustRun(runId), waiting = run.steps.filter(step => step.status === 'WAITING_FOR_APPROVAL' && step.approval === policy); if (!waiting.length) throw new Error('approval_policy_not_waiting'); const safetyDecision = this.safety?.list().find(item => item.approvalId === policy && item.runId === runId); if (safetyDecision) this.safety!.approve(safetyDecision.id, actor); if (!run.approvals.includes(policy)) run.approvals.push(policy); for (const step of waiting) { step.status = 'QUEUED'; step.waitingReason = undefined; } return this.ledger.update(run, 'run.approved', {policy, actor}); }
+  safetyDecisions(runId?: string) { return (this.safety?.list() ?? []).filter(item => !runId || item.runId === runId); }
+  cancel(runId: string, reason = 'operator_cancelled', replacedByRunId?: string) {
+    const run = this.mustRun(runId); if (!ACTIVE_RUNS.includes(run.status)) return run;
+    if (['CLEANUP_UNCERTAIN', 'DISCONNECTED'].includes(run.status) && !this.controllers.has(runId)) return run;
+    if (replacedByRunId) run.lineage = {...run.lineage, replacedByRunId};
+    const controller = this.controllers.get(runId);
+    if (controller) {
+      if (run.status === 'CANCELLING') return run;
+      controller.abort(reason);
+      for (const step of run.steps) if (EXECUTION_OWNED_STEPS.includes(step.status)) { step.status = 'CANCEL_PENDING'; step.waitingReason = 'Termination requested; verifying worker process-tree cleanup'; }
+      run.status = 'CANCELLING'; run.errors.push(reason); run.provenance.push({type: 'cancellation', at: now(), detail: 'Abort requested; terminal state and resource release await verified cleanup'});
+      return this.ledger.update(run, 'run.cancel_requested', replacedByRunId ? {replacedByRunId} : undefined);
+    }
+    for (const step of run.steps) if (!TERMINAL_STEPS.includes(step.status)) { step.status = 'CANCELLED'; step.endedAt = now(); }
+    run.status = 'CANCELLED'; run.endedAt = now(); run.errors.push(reason); this.finalizeCancelledEfficiency(run, reason); this.locks.release(run.id);
+    return this.ledger.update(run, 'run.cancelled', replacedByRunId ? {replacedByRunId} : undefined);
+  }
+  retry(runId: string) { const source = this.mustRun(runId); if (!['FAILED', 'DEGRADED', 'CANCELLED'].includes(source.status)) throw new Error('run_not_retryable'); const reference = `${source.jobId}@${source.jobVersion}`; if (!this.catalog.job(reference)) this.catalog.addJob(source.effectiveJob); return this.createRun(reference, source.parameters, {type: 'retry', id: source.id, actor: 'operator'}); }
   jobsProjection() { return this.catalog.listJobs().map(job => { const runs = this.ledger.list(job.metadata.id), latest = runs[0], schedules = this.catalog.listSchedules().filter(schedule => schedule.spec.job === `${job.metadata.id}@${job.metadata.version}`).map(schedule => ({...schedule, state: this.ledger.schedule(schedule.metadata.id)})); return {...job, latestRun: latest, schedules}; }); }
-  queueProjection() { return this.ledger.list().flatMap(run => run.steps.filter(step => ['QUEUED', 'WAITING_FOR_WORKER', 'WAITING_FOR_DEPENDENCY', 'WAITING_FOR_RESOURCE', 'WAITING_FOR_APPROVAL', 'RETRY_PENDING'].includes(step.status)).map(step => ({runId: run.id, jobId: run.jobId, priority: run.priority, stepId: step.id, status: step.status, reason: step.waitingReason, eligibleWorkers: step.placement?.eligible ?? [], missingCapabilities: step.placement?.rejected.flatMap(item => item.reasons.filter(reason => reason.startsWith('missing:'))) ?? [], scheduledAt: run.scheduledAt, queuedAt: run.requestedAt})) ); }
+  queueProjection() { return this.ledger.list().flatMap(run => run.steps.filter(step => ['QUEUED', 'WAITING_FOR_WORKER', 'WAITING_FOR_DEPENDENCY', 'WAITING_FOR_RESOURCE', 'WAITING_FOR_APPROVAL', 'AUTHENTICATION_BLOCKED', 'RECONNECTING', 'RETRY_PENDING', 'CANCEL_PENDING', 'CLEANUP_UNCERTAIN'].includes(step.status)).map(step => ({runId: run.id, jobId: run.jobId, priority: run.priority, stepId: step.id, status: step.status, reason: step.waitingReason, eligibleWorkers: step.placement?.eligible ?? [], missingCapabilities: step.placement?.rejected.flatMap(item => item.reasons.filter(reason => reason.startsWith('missing:'))) ?? [], scheduledAt: run.scheduledAt, queuedAt: run.requestedAt, nextAttemptAt: step.nextAttemptAt, recoveryDeadlineAt: step.recoveryDeadlineAt, remainingRetryBudget: step.remainingRetryBudget})) ); }
 
   private nextRunnableStep(run: RunRecord) {
     let changed = false;
     const wait = (step: RunRecord['steps'][number], status: StepStatus, reason: string) => { if (step.status !== status || step.waitingReason !== reason) { step.status = status; step.waitingReason = reason; changed = true; } };
     for (const step of run.steps) {
       if (TERMINAL_STEPS.includes(step.status)) continue;
-      if (['DISPATCHED', 'RUNNING', 'VERIFYING'].includes(step.status)) return undefined;
+      if (EXECUTION_OWNED_STEPS.includes(step.status) || ['AUTHENTICATION_BLOCKED', 'RECONNECTING'].includes(step.status)) return undefined;
       const dependencies = step.dependsOn.map(id => run.steps.find(candidate => candidate.id === id));
       if (dependencies.some(dependency => dependency?.status === 'FAILED' || dependency?.status === 'CANCELLED')) { if (step.status !== 'CANCELLED' || step.error !== 'upstream_failed') { step.status = 'CANCELLED'; step.error = 'upstream_failed'; changed = true; } continue; }
       if (!dependencies.every(dependency => dependency?.status === 'SUCCEEDED')) { wait(step, 'WAITING_FOR_DEPENDENCY', `Waiting for ${dependencies.filter(item => item?.status !== 'SUCCEEDED').map(item => item?.id).join(', ')}`); continue; }
@@ -181,7 +208,7 @@ export class JobRuntime {
       if (changed) this.ledger.update(run, 'run.dependencies_reconciled');
       return step;
     }
-    if (changed) { run.status = 'WAITING'; this.ledger.update(run, 'run.waiting'); }
+    if (changed) { run.status = run.steps.some(step => step.status === 'AUTHENTICATION_BLOCKED') ? 'AUTHENTICATION_BLOCKED' : run.steps.some(step => ['RECONNECTING', 'RETRY_PENDING'].includes(step.status) && step.attempts.at(-1)?.recoveryKind === 'transient-transport') ? 'RECONNECTING' : 'WAITING'; this.ledger.update(run, run.status === 'RECONNECTING' ? 'run.reconnecting' : run.status === 'AUTHENTICATION_BLOCKED' ? 'run.authentication_blocked' : 'run.waiting'); }
     return undefined;
   }
 
@@ -191,9 +218,21 @@ export class JobRuntime {
     if (!lock.ok) { const reason = `Held by ${lock.blocked.map(item => `${item.resource}:${item.runId}`).join(', ')}`, changed = step.status !== 'WAITING_FOR_RESOURCE' || step.waitingReason !== reason || run.status !== 'WAITING'; step.status = 'WAITING_FOR_RESOURCE'; step.waitingReason = reason; run.status = 'WAITING'; if (changed) this.ledger.update(run, 'step.waiting_resource'); return; }
     const required = step.capabilityRequest.requires.map(item => item.id), resolution = this.workers.resolve(required, this.clock()), previousPlacement = JSON.stringify(step.placement); step.placement = resolution.rationale;
     if (!resolution.worker) { const reason = `No worker satisfies ${required.join(', ')}`, changed = step.status !== 'WAITING_FOR_WORKER' || step.waitingReason !== reason || run.status !== 'WAITING' || previousPlacement !== JSON.stringify(resolution.rationale); step.status = 'WAITING_FOR_WORKER'; step.waitingReason = reason; run.status = 'WAITING'; this.locks.release(run.id, step.id); if (changed) this.ledger.update(run, 'step.waiting_worker'); return; }
-    const worker = resolution.worker, controller = new AbortController(), ownedExecution = new OwnedProcessManager(); this.controllers.set(run.id, controller); this.workers.claim(worker.id); step.status = 'RUNNING'; step.startedAt ??= this.clock().toISOString(); run.startedAt ??= step.startedAt; run.status = 'RUNNING'; if (!run.selectedWorkers.includes(worker.id)) run.selectedWorkers.push(worker.id); const attempt: StepAttempt = {attempt: step.attempts.length + 1, startedAt: this.clock().toISOString(), workerId: worker.id}; step.attempts.push(attempt); this.ledger.update(run, 'step.dispatched');
-    const definition = run.effectiveJob.spec.steps.find(item => item.id === step.id)!, timeoutSeconds = definition.timeoutSeconds, wallStartedAt = Date.now();
-    let timeoutTimer: NodeJS.Timeout | undefined, timedOut = false;
+    const worker = resolution.worker, definition = run.effectiveJob.spec.steps.find(item => item.id === step.id)!;
+    if (this.safety) {
+      const decision = this.safety.assess(deriveRuntimeActionIntent({runId: run.id, parcelId: run.trigger.parcelContext?.parcelId, stageId: run.trigger.parcelContext?.stageId, stepId: step.id, actor: run.trigger.actor, action: step.action, goal: run.trigger.parcelContext?.currentInterpretation ?? run.effectiveJob.metadata.description ?? run.jobId, parameters: run.parameters, requestedCapabilities: required, resources: step.resources, workerId: worker.id}));
+      const safetyDetail = `${decision.outcome}:${decision.id}:${decision.reason}`; if (!run.provenance.some(item => item.type === 'runtime-safety' && item.detail === safetyDetail)) run.provenance.push({type: 'runtime-safety', at: decision.at, detail: safetyDetail});
+      if (decision.outcome === 'DENY') { const at = this.clock().toISOString(); step.status = 'FAILED'; step.error = `runtime_safety_denied:${decision.id}`; step.endedAt = at; this.cancelDependents(run, step.id); run.status = 'FAILED'; run.endedAt = at; run.errors.push(`${step.id}:policy:${step.error}`); this.locks.release(run.id, step.id); this.ledger.update(run, 'step.safety_denied', {decisionId: decision.id, outcome: decision.outcome, policyId: decision.policyId}); return; }
+      if (['REQUIRE_APPROVAL','PAUSE','ESCALATE'].includes(decision.outcome)) { step.status = 'WAITING_FOR_APPROVAL'; step.approval = decision.approvalId; step.waitingReason = `${decision.outcome}: ${decision.reason}`; run.status = 'WAITING'; this.locks.release(run.id, step.id); this.ledger.update(run, 'step.safety_waiting', {decisionId: decision.id, outcome: decision.outcome, policyId: decision.policyId, approvalId: decision.approvalId}); return; }
+      this.ledger.update(run, decision.outcome === 'ALLOW_WITH_AUDIT' ? 'step.safety_allowed_with_audit' : 'step.safety_allowed', {decisionId: decision.id, outcome: decision.outcome, policyId: decision.policyId});
+    }
+    const controller = new AbortController(), ownedExecution = this.ownedExecutionFactory(), retry = definition.retry ?? run.effectiveJob.spec.retry ?? {attempts: 0, backoffSeconds: 0}, attemptStartedAt = this.clock().toISOString();
+    this.controllers.set(run.id, controller); this.workers.claim(worker.id); step.status = 'RUNNING'; step.waitingReason = undefined; step.nextAttemptAt = undefined; step.startedAt ??= attemptStartedAt; run.startedAt ??= step.startedAt; run.status = 'RUNNING';
+    if (!run.selectedWorkers.includes(worker.id)) run.selectedWorkers.push(worker.id);
+    if (retry.attempts > 0) { step.recoveryDeadlineAt ??= new Date(this.clock().getTime() + (retry.overallDeadlineSeconds ?? this.defaultRecoveryDeadlineSeconds) * 1000).toISOString(); step.remainingRetryBudget = Math.max(0, retry.attempts - step.attempts.length); }
+    const attempt: StepAttempt = {attempt: step.attempts.length + 1, startedAt: attemptStartedAt, workerId: worker.id}; step.attempts.push(attempt); this.ledger.update(run, 'step.dispatched');
+    const timeoutSeconds = definition.timeoutSeconds, wallStartedAt = Date.now();
+    let timeoutTimer: NodeJS.Timeout | undefined, timedOut = false, safeToReleaseWorker = true;
     try {
       const inputs = this.inputArtifacts(run, step.id), action = this.actions.resolve(step.action);
       run.provenance.push({type: 'action-dispatch', at: this.clock().toISOString(), detail: `${action.kind}:${step.action}${action.kind === 'agent' ? ':adaptive-harness' : ''}`});
@@ -225,7 +264,10 @@ export class JobRuntime {
       const errorInvocationIds = efficiencyInvocationIds(error); if (!attempt.efficiencyInvocationIds?.length && errorInvocationIds.length) attempt.efficiencyInvocationIds = errorInvocationIds;
       const partialOutput = partialActionOutput(error); if (partialOutput) this.recordActionOutput(run, step.id, worker.id, partialOutput);
       if (error instanceof StepTimeoutError) {
-        await ownedExecution.terminateAll('step_timeout');
+        const cleanup = await ownedExecution.terminateAll('step_timeout'); attempt.cleanup = cleanup; step.cleanup = cleanup;
+        if (cleanup.outcome !== 'confirmed') {
+          safeToReleaseWorker = false; this.markCleanupUncertain(run, step, attempt, cleanup, `step_timeout:${error.timeoutSeconds}s`); return;
+        }
         const endedAt = this.clock().toISOString(), terminalReason = 'step_timeout';
         step.status = 'TIMED_OUT'; step.endedAt = endedAt; step.error = `${terminalReason}:${error.timeoutSeconds}s`; attempt.endedAt = endedAt; attempt.outcome = step.error; attempt.retryable = false; attempt.errorClass = 'execution'; attempt.timeoutSeconds = error.timeoutSeconds; attempt.elapsedMs = error.elapsedMs; attempt.terminalReason = terminalReason;
         this.cancelDependents(run, step.id); run.status = 'FAILED'; run.endedAt = endedAt; run.errors.push(`${step.id}:execution:${step.error}`);
@@ -233,21 +275,44 @@ export class JobRuntime {
         const ids = this.invocationIds(run, step.id); if (ids.length) { this.efficiency?.finalizePending(ids, 'FAILED', step.error, terminalReason, endedAt); this.efficiency?.markVerification(ids, 'FAIL', 'FAILED'); }
         run.provenance.push({type: 'step-timeout', at: endedAt, detail: JSON.stringify(timeoutEvidence)}); this.locks.release(run.id, step.id); this.ledger.update(run, 'step.timed_out', timeoutEvidence); return;
       }
-      if (controller.signal.aborted) { step.status = 'CANCELLED'; step.endedAt = this.clock().toISOString(); attempt.endedAt = step.endedAt; attempt.outcome = 'execution_cancelled'; run.status = 'CANCELLED'; run.endedAt = step.endedAt; run.errors.push('execution_cancelled'); const ids = this.invocationIds(run, step.id); if (ids.length) { this.efficiency?.finalizePending(ids, 'CANCELLED', 'execution_cancelled', 'execution_cancelled', step.endedAt); this.efficiency?.markVerification(ids, 'FAIL', 'CANCELLED'); } this.locks.release(run.id, step.id); this.ledger.update(run, 'run.cancellation_confirmed'); return; }
-      const failure = error instanceof ActionFailure ? error : new ActionFailure(error instanceof Error ? error.message : String(error), 'execution', true), retry = definition.retry ?? run.effectiveJob.spec.retry ?? {attempts: 0, backoffSeconds: 0};
-      attempt.endedAt = this.clock().toISOString(); attempt.outcome = failure.message; attempt.retryable = failure.retryable; attempt.errorClass = failure.failureClass; step.error = failure.message; this.locks.release(run.id, step.id);
+      if (controller.signal.aborted) {
+        const cleanup = await ownedExecution.terminateAll('execution_cancelled'); attempt.cleanup = cleanup; step.cleanup = cleanup;
+        if (cleanup.outcome !== 'confirmed') { safeToReleaseWorker = false; this.markCleanupUncertain(run, step, attempt, cleanup, 'execution_cancelled'); return; }
+        step.status = 'CANCELLED'; step.waitingReason = undefined; step.endedAt = this.clock().toISOString(); attempt.endedAt = step.endedAt; attempt.outcome = 'execution_cancelled'; run.status = 'CANCELLED'; run.endedAt = step.endedAt; if (!run.errors.includes('execution_cancelled')) run.errors.push('execution_cancelled'); this.finalizeCancelledEfficiency(run, 'execution_cancelled'); this.locks.release(run.id, step.id); this.ledger.update(run, 'run.cancellation_confirmed', {cleanup: cleanup.outcome}); return;
+      }
+      const failure = error instanceof ActionFailure ? error : new ActionFailure(error instanceof Error ? error.message : String(error), 'execution', true);
+      attempt.endedAt = this.clock().toISOString(); attempt.outcome = failure.message; attempt.retryable = failure.retryable; attempt.errorClass = failure.failureClass; attempt.recoveryKind = failure.recoveryKind; step.error = safeFailureMessage(failure.message); this.locks.release(run.id, step.id);
       if (attempt.efficiencyInvocationIds?.length) { this.efficiency?.finalizePending(attempt.efficiencyInvocationIds, 'FAILED', failure.message, 'executor_failure', attempt.endedAt); this.efficiency?.markVerification(attempt.efficiencyInvocationIds, 'FAIL'); }
-      if (failure.retryable && step.attempts.length <= retry.attempts) { step.status = 'RETRY_PENDING'; step.nextAttemptAt = new Date(this.clock().getTime() + retry.backoffSeconds * 1000).toISOString(); step.waitingReason = `${failure.failureClass}; retry ${step.attempts.length}/${retry.attempts}`; run.status = 'QUEUED'; this.ledger.update(run, 'step.retry_pending'); }
-      else { step.status = 'FAILED'; step.endedAt = this.clock().toISOString(); this.cancelDependents(run, step.id); run.errors.push(`${step.id}:${failure.failureClass}:${failure.message}`); run.status = failure.failureClass === 'verification' ? 'DEGRADED' : 'FAILED'; run.endedAt = step.endedAt; const ids = this.invocationIds(run); if (ids.length) { this.efficiency?.finalizePending(ids, 'FAILED', failure.message, 'executor_failure', run.endedAt); this.efficiency?.markVerification(ids, 'FAIL', run.status); } this.ledger.update(run, 'step.failed'); }
-    } finally { if (timeoutTimer) clearTimeout(timeoutTimer); if (controller.signal.aborted) await ownedExecution.terminateAll('execution_aborted'); this.workers.release(worker.id); this.controllers.delete(run.id); }
+      if (failure.recoveryKind === 'authentication-required') {
+        step.status = 'AUTHENTICATION_BLOCKED'; step.waitingReason = 'Authentication requires human action for the sealed account profile'; step.remainingRetryBudget = Math.max(0, retry.attempts - step.attempts.length + 1); run.status = 'AUTHENTICATION_BLOCKED'; run.errors.push(`${step.id}:authentication:human_action_required`); this.ledger.update(run, 'step.authentication_blocked', {recoveryKind: failure.recoveryKind});
+      } else {
+        const retryAt = this.nextRetryAt(step, retry);
+        if (failure.retryable && step.attempts.length <= retry.attempts && retryAt) {
+          step.status = 'RETRY_PENDING'; step.nextAttemptAt = retryAt; step.remainingRetryBudget = Math.max(0, retry.attempts - step.attempts.length + 1); step.waitingReason = `${failure.recoveryKind}; retry ${step.attempts.length}/${retry.attempts} at ${retryAt}`;
+          run.status = ['transient-transport', 'expired-enrolment'].includes(failure.recoveryKind) ? 'RECONNECTING' : 'QUEUED';
+          this.ledger.update(run, run.status === 'RECONNECTING' ? 'step.reconnect_pending' : 'step.retry_pending', {recoveryKind: failure.recoveryKind, nextAttemptAt: retryAt, recoveryDeadlineAt: step.recoveryDeadlineAt, remainingRetryBudget: step.remainingRetryBudget});
+        } else {
+          step.status = 'FAILED'; step.endedAt = this.clock().toISOString(); step.remainingRetryBudget = Math.max(0, retry.attempts - step.attempts.length + 1); this.cancelDependents(run, step.id); run.errors.push(`${step.id}:${failure.failureClass}:${safeFailureMessage(failure.message)}${failure.retryable && !retryAt ? ':recovery_deadline_exhausted' : ''}`); run.status = failure.failureClass === 'verification' ? 'DEGRADED' : 'FAILED'; run.endedAt = step.endedAt; const ids = this.invocationIds(run); if (ids.length) { this.efficiency?.finalizePending(ids, 'FAILED', failure.message, 'executor_failure', run.endedAt); this.efficiency?.markVerification(ids, 'FAIL', run.status); } this.ledger.update(run, 'step.failed', {recoveryKind: failure.recoveryKind, recoveryDeadlineAt: step.recoveryDeadlineAt, remainingRetryBudget: step.remainingRetryBudget});
+        }
+      }
+    } finally { if (timeoutTimer) clearTimeout(timeoutTimer); if (controller.signal.aborted && !attempt.cleanup) { const cleanup = await ownedExecution.terminateAll('execution_aborted'); attempt.cleanup = cleanup; step.cleanup = cleanup; if (cleanup.outcome !== 'confirmed') safeToReleaseWorker = false; } if (safeToReleaseWorker) this.workers.release(worker.id); this.controllers.delete(run.id); }
   }
 
+  private nextRetryAt(step: RunRecord['steps'][number], retry: RetryPolicy) {
+    const exponent = Math.max(0, step.attempts.length - 1), multiplied = retry.backoffSeconds * Math.pow(retry.backoffMultiplier ?? 1, exponent), delaySeconds = Math.min(multiplied, retry.maxBackoffSeconds ?? multiplied), candidate = new Date(this.clock().getTime() + delaySeconds * 1000);
+    const deadline = Date.parse(step.recoveryDeadlineAt ?? '');
+    return Number.isFinite(deadline) && candidate.getTime() > deadline ? undefined : candidate.toISOString();
+  }
+  private markCleanupUncertain(run: RunRecord, step: RunRecord['steps'][number], attempt: StepAttempt, cleanup: ExecutionCleanupReport, reason: string) {
+    const at = this.clock().toISOString(); step.status = 'CLEANUP_UNCERTAIN'; step.waitingReason = `Worker cleanup ${cleanup.outcome}; resource lease retained pending reconciliation`; step.error = `${reason}:cleanup_${cleanup.outcome}`; step.cleanup = cleanup; attempt.endedAt = at; attempt.outcome = step.error; attempt.terminalReason = 'cleanup_unproven'; run.status = 'CLEANUP_UNCERTAIN'; run.errors.push(`${step.id}:cleanup:${cleanup.outcome}`); run.provenance.push({type: 'cleanup-uncertain', at, detail: `outcome=${cleanup.outcome};processes=${cleanup.processes.length};resource-lock=retained`}); this.ledger.update(run, 'step.cleanup_uncertain', {cleanupOutcome: cleanup.outcome, processCount: cleanup.processes.length, resourceLockReleased: false});
+  }
+  private finalizeCancelledEfficiency(run: RunRecord, reason: string) { const ids = this.invocationIds(run); if (ids.length) { this.efficiency?.finalizePending(ids, 'CANCELLED', reason, reason, run.endedAt); this.efficiency?.markVerification(ids, 'FAIL', 'CANCELLED'); } }
   private inputArtifacts(run: RunRecord, stepId: string) { const definition = run.effectiveJob.spec.steps.find(step => step.id === stepId)!; return Object.values(definition.inputs ?? {}).map(reference => { const [sourceStep, artifactName] = reference.split('.'); const source = run.steps.find(step => step.id === sourceStep); const record = source?.artifactIds.map(id => this.artifacts.get(id)).find(item => item?.name === artifactName); if (!record) throw new ActionFailure(`input_artifact_missing:${reference}`, 'configuration'); this.artifacts.read(record.id); return record; }); }
   private recordActionOutput(run: RunRecord, stepId: string, workerId: string, output: ActionOutput) { const definition = run.effectiveJob.spec.steps.find(step => step.id === stepId)!, step = run.steps.find(item => item.id === stepId)!; for (const produced of output.artifacts ?? []) { const declaration = definition.outputs?.find(item => item.name === produced.name); if (!declaration) throw new ActionFailure(`undeclared_artifact:${produced.name}`, 'configuration'); if (produced.type && produced.type !== declaration.type || produced.schema && produced.schema !== declaration.schema || produced.version && produced.version !== declaration.version) throw new ActionFailure(`artifact_contract_mismatch:${produced.name}`, 'verification'); const artifact = this.artifacts.create(run, stepId, workerId, {...declaration, retention: produced.retention ?? declaration.retention}, produced.value); step.artifactIds.push(artifact.id); run.artifacts.push(artifact.id); } }
   private cancelDependents(run: RunRecord, failedStepId: string) { const blocked = new Set([failedStepId]); let changed = true; while (changed) { changed = false; for (const step of run.steps) if (!TERMINAL_STEPS.includes(step.status) && step.dependsOn.some(id => blocked.has(id))) { step.status = 'CANCELLED'; step.error = 'upstream_failed'; step.endedAt = this.clock().toISOString(); blocked.add(step.id); changed = true; } } }
   private invocationIds(run: RunRecord, stepId?: string) { const retained = run.steps.filter(step => !stepId || step.id === stepId).flatMap(step => step.attempts.flatMap(attempt => attempt.efficiencyInvocationIds ?? [])); const discovered = this.efficiency?.list().filter(item => item.runId === run.id && (!stepId || item.stepId === stepId)).map(item => item.id) ?? []; return [...new Set([...retained, ...discovered])]; }
   private linkPriorRun(id: string, field: 'retriedByRunId', value: string) { const prior = this.ledger.get(id); if (!prior) throw new Error('retry_source_missing'); prior.lineage = {...prior.lineage, [field]: value}; this.ledger.update(prior, 'run.lineage_linked', {[field]: value}); }
-  private finalizeRun(run: RunRecord) { if (run.steps.some(step => step.status === 'FAILED')) return; if (run.steps.some(step => !TERMINAL_STEPS.includes(step.status))) { const status: RunStatus = run.steps.some(step => ['WAITING_FOR_WORKER', 'WAITING_FOR_DEPENDENCY', 'WAITING_FOR_RESOURCE', 'WAITING_FOR_APPROVAL', 'RETRY_PENDING'].includes(step.status)) ? 'WAITING' : 'RUNNING'; if (run.status !== status) { run.status = status; this.ledger.update(run, status === 'WAITING' ? 'run.waiting' : 'run.continuing'); } return; } run.status = run.steps.every(step => step.status === 'SUCCEEDED') ? 'SUCCEEDED' : 'DEGRADED'; run.endedAt = this.clock().toISOString(); const ids = run.steps.flatMap(step => step.attempts.flatMap(attempt => attempt.efficiencyInvocationIds ?? [])); if (ids.length) this.efficiency?.markFinalResult(ids, run.status as Exclude<InvocationFinalResult, 'UNKNOWN'>); this.locks.release(run.id); if (run.trigger.type === 'schedule' && run.trigger.id) { const state = this.ledger.schedule(run.trigger.id); if (state) { if (run.status === 'SUCCEEDED') state.lastSuccessAt = run.endedAt; else state.lastFailureAt = run.endedAt; state.updatedAt = run.endedAt; this.ledger.saveSchedule(state); } } this.ledger.update(run, 'run.finished'); }
+  private finalizeRun(run: RunRecord) { if (run.steps.some(step => step.status === 'FAILED')) return; if (run.steps.some(step => !TERMINAL_STEPS.includes(step.status))) { const status: RunStatus = run.steps.some(step => step.status === 'AUTHENTICATION_BLOCKED') ? 'AUTHENTICATION_BLOCKED' : run.steps.some(step => step.status === 'CLEANUP_UNCERTAIN') ? 'CLEANUP_UNCERTAIN' : run.steps.some(step => step.status === 'CANCEL_PENDING') ? 'CANCELLING' : run.steps.some(step => step.status === 'RETRY_PENDING' && ['transient-transport', 'expired-enrolment'].includes(step.attempts.at(-1)?.recoveryKind ?? '')) ? 'RECONNECTING' : run.steps.some(step => ['WAITING_FOR_WORKER', 'WAITING_FOR_DEPENDENCY', 'WAITING_FOR_RESOURCE', 'WAITING_FOR_APPROVAL', 'RETRY_PENDING'].includes(step.status)) ? 'WAITING' : 'RUNNING'; if (run.status !== status) { run.status = status; this.ledger.update(run, status === 'RECONNECTING' ? 'run.reconnecting' : status === 'AUTHENTICATION_BLOCKED' ? 'run.authentication_blocked' : status === 'CANCELLING' ? 'run.cancelling' : status === 'CLEANUP_UNCERTAIN' ? 'run.cleanup_uncertain' : status === 'WAITING' ? 'run.waiting' : 'run.continuing'); } return; } run.status = run.steps.every(step => step.status === 'SUCCEEDED') ? 'SUCCEEDED' : 'DEGRADED'; run.endedAt = this.clock().toISOString(); const ids = run.steps.flatMap(step => step.attempts.flatMap(attempt => attempt.efficiencyInvocationIds ?? [])); if (ids.length) this.efficiency?.markFinalResult(ids, run.status as Exclude<InvocationFinalResult, 'UNKNOWN'>); this.locks.release(run.id); if (run.trigger.type === 'schedule' && run.trigger.id) { const state = this.ledger.schedule(run.trigger.id); if (state) { if (run.status === 'SUCCEEDED') state.lastSuccessAt = run.endedAt; else state.lastFailureAt = run.endedAt; state.updatedAt = run.endedAt; this.ledger.saveSchedule(state); } } this.ledger.update(run, 'run.finished'); }
   private mustRun(id: string) { const run = this.ledger.get(id); if (!run) throw new Error('run_missing'); return run; }
 }
 
@@ -255,3 +320,4 @@ export function createJobRuntime(root: string, catalog: JobCatalog, actions: Act
 
 function efficiencyInvocationIds(error: unknown): string[] { const value = error as {efficiencyInvocationIds?: unknown}; return Array.isArray(value?.efficiencyInvocationIds) ? value.efficiencyInvocationIds.filter((item): item is string => typeof item === 'string') : []; }
 function partialActionOutput(error: unknown): ActionOutput | undefined { const value = error as {partialActionOutput?: unknown}; return value?.partialActionOutput && typeof value.partialActionOutput === 'object' ? value.partialActionOutput as ActionOutput : undefined; }
+function safeFailureMessage(value: string) { return String(value).replace(/(?:bearer\s+|sk-)[A-Za-z0-9._-]{8,}/gi, '[REDACTED]').replace(/(password|api[_-]?key|access[_-]?token|refresh[_-]?token)\s*[:=]\s*\S+/gi, '$1=[REDACTED]').replace(/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/g, '[REDACTED_ACCOUNT]').slice(0, 2048); }

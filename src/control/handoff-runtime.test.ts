@@ -8,7 +8,7 @@ import {GovernedHandoffRuntime, type HandoffRequest, type HandoffTarget} from '.
 
 function fixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-handoff-')), processEvents: string[] = [], clock = () => '2026-09-01T21:00:00.000Z';
-  const contracts = new ContractExecutionRuntime(path.join(root, 'contracts.json'), {cancel: async (id, reason) => { processEvents.push(`cancel:${id}:${reason}`); }, pause: async (id, reason) => { processEvents.push(`pause:${id}:${reason}`); }}, clock);
+  const contracts = new ContractExecutionRuntime(path.join(root, 'contracts.json'), {cancel: async (id, reason) => { processEvents.push(`cancel:${id}:${reason}`); return {outcome: 'confirmed', detail: 'fixture_process_tree_absent'}; }, pause: async (id, reason) => { processEvents.push(`pause:${id}:${reason}`); }}, clock);
   contracts.create({id: 'contract:parent', laneId: 'lane:one', operatorActorId: 'human:operator', objective: 'Parent objective', completionCriteria: ['verified'], authority: ['repository.read', 'repository.write:bounded'], protectedResources: ['production'], budget: {remainingTokens: 20_000, remainingCost: 5, currency: 'USD'}, active: {actorId: 'agent:source', agentId: 'source-agent', modelId: 'model-a', providerId: 'provider-a', runtimeId: 'runtime-a', nodeId: 'node-a'}, baton: {task: 'parent'}, process: {id: 'process:source'}, ptyId: 'pty:source', permissions: {capabilities: ['repository.read', 'repository.write:bounded'], filesystem: 'write', network: 'none', production: false}});
   const handoffs = new GovernedHandoffRuntime(contracts, path.join(root, 'handoffs.json'), clock);
   return {root, contracts, handoffs, processEvents, clock};

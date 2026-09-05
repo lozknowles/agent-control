@@ -8,7 +8,7 @@ import {ContractExecutionRuntime} from './contract-runtime.js';
 function setup() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-contract-')), file = path.join(root, 'contracts.json'), cancelled: string[] = [];
   let instant = Date.parse('2026-09-01T20:00:00.000Z'); const clock = () => new Date(instant).toISOString(), advance = (ms: number) => { instant += ms; };
-  const runtime = new ContractExecutionRuntime(file, {cancel: async (processId, reason) => { cancelled.push(`${processId}:${reason}`); }}, clock);
+  const runtime = new ContractExecutionRuntime(file, {cancel: async (processId, reason) => { cancelled.push(`${processId}:${reason}`); return {outcome: 'confirmed', detail: 'fixture_process_tree_absent'}; }}, clock);
   const contract = runtime.create({
     id: 'contract:one', laneId: 'lane:one', operatorActorId: 'human:operator', objective: 'Produce a verified bounded change', completionCriteria: ['tests pass', 'independent verifier accepts'], authority: ['repository.read', 'repository.write:bounded'], protectedResources: ['production'], budget: {deadlineAt: '2026-09-01T20:10:00.000Z', remainingTokens: 10_000},
     active: {actorId: 'agent:worker', agentId: 'worker-one', modelId: 'model-one', providerId: 'provider-one', runtimeId: 'runtime-one', nodeId: 'node-one'}, baton: {objective: 'bounded change', references: ['evidence:input'], authority: ['repository.read']}, process: {id: 'process:one', pid: 1234}, ptyId: 'pty:one', attachments: [{id: 'attachment:one', kind: 'repository', reference: 'git:abc123'}], permissions: {capabilities: ['repository.read', 'repository.write:bounded'], filesystem: 'write', network: 'none', production: false},
@@ -51,6 +51,12 @@ test('terminal output is monotonically ordered and survives controller restart',
 test('cancellation and timeout use the process port and retain distinct terminal states', async () => {
   const cancelled = setup(); await cancelled.runtime.cancel('contract:one', 'human:operator', 'operator requested'); assert.equal(cancelled.runtime.get('contract:one').state, 'CANCELLED'); assert.deepEqual(cancelled.cancelled, ['process:one:operator requested']);
   const timed = setup(); timed.advance(11 * 60_000); await timed.runtime.enforceTimeout('contract:one'); assert.equal(timed.runtime.get('contract:one').state, 'TIMED_OUT'); assert.deepEqual(timed.cancelled, ['process:one:contract_timeout']);
+});
+
+test('unverified process cleanup remains visibly nonterminal and does not release the contract', async () => {
+  const value = setup(), uncertain = new ContractExecutionRuntime(value.file, {cancel: async () => ({outcome: 'uncertain', detail: 'descendant_visibility_unavailable'})}, value.clock);
+  const cancelled = await uncertain.cancel('contract:one', 'human:operator', 'operator requested');
+  assert.equal(cancelled.state, 'CANCELLING'); assert.equal(cancelled.process.state, 'UNKNOWN'); assert.equal(cancelled.pty.state, 'LOST'); assert.equal(cancelled.process.cleanup?.outcome, 'uncertain');
 });
 
 test('stale running process becomes an orphan without inventing completion', () => {

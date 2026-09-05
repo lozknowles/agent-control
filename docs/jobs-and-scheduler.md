@@ -79,11 +79,11 @@ Concurrency is `allow`, `no-overlap`, `replace-running` or `queue`. The conserva
 
 ## Run and step states
 
-Runs use `SCHEDULED`, `QUEUED`, `RUNNING`, `VERIFYING`, `SUCCEEDED`, `FAILED`, `DEGRADED`, `CANCELLED`, `MISSED` and `DISCONNECTED`. Steps additionally distinguish `WAITING_FOR_WORKER`, `WAITING_FOR_DEPENDENCY`, `WAITING_FOR_RESOURCE`, `WAITING_FOR_APPROVAL`, `DISPATCHED` and `RETRY_PENDING`. The dashboard reads these structures; terminal text is supplementary only.
+Runs use `SCHEDULED`, `QUEUED`, `WAITING`, `AUTHENTICATION_BLOCKED`, `RECONNECTING`, `RUNNING`, `VERIFYING`, `CANCELLING`, `CLEANUP_UNCERTAIN`, `SUCCEEDED`, `FAILED`, `DEGRADED`, `CANCELLED`, `MISSED` and `DISCONNECTED`. Steps additionally distinguish dependency/worker/resource/approval waits, authentication/reconnect, `DISPATCHED`, `RETRY_PENDING`, `CANCEL_PENDING`, cleanup uncertainty and timeout. The dashboard reads these durable structures; terminal text is supplementary only.
 
-Legal progression is queue/wait -> running -> verifying -> succeeded, or queue/running -> bounded retry -> running. Policy/configuration/authentication and verification failures are classified separately. A zero process exit is insufficient: every declared verification name must be observed before a step succeeds. An upstream failure cancels dependent steps.
+Legal progression is queue/wait -> running -> verifying -> succeeded, or queue/running -> bounded retry -> running. Transient transport and expired enrolment are separately retryable inside the declared attempt/deadline budget; authentication-required waits for human action, while permanent configuration fails closed. Cancellation proceeds through requested cleanup and requires verified process-group/tree absence before terminal status. A zero process exit is insufficient: every declared verification name must be observed before a step succeeds. An upstream failure cancels dependent steps.
 
-On restart, an in-flight execution is not assumed alive. The ledger marks it `DISCONNECTED` with `execution_identity_unproven_after_restart`; durable locks remain held until an operator reconciles or cancels it. Completed artifacts, Git state and ledger history remain available. PID is never sufficient recovery identity.
+On restart, an in-flight execution is not assumed alive or automatically replayed. The ledger marks it `DISCONNECTED` with its durable execution ID; locks remain held while the configured adapter reconciles the exact route and continuity. Proven same-ID work may enter `RECONNECTING`; changed/unknown identity requires operator reconciliation. Completed artifacts, Git state and ledger history remain available. PID is never sufficient recovery identity.
 
 ## Workers, resources and artifacts
 

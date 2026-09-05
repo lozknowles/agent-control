@@ -16,6 +16,7 @@ export interface CodexAccountStatusResult {
 export interface CodexStructuredExecutionRequest extends CodexAccountStatusRequest {
   model: ModelConfig; instruction: string; outputSchema: Record<string, unknown>; maximumOutputTokens?: number;
   onTelemetry?: (event: CodexExecTelemetryEvent) => void;
+  signal?: AbortSignal;
 }
 export interface CodexStructuredExecutionResult extends CodexExecResult {
   providerId: string; accountProfileId: string; modelId: string; nodeId: string;
@@ -39,7 +40,7 @@ export class LocalCodexNodeExecutionPort implements CodexNodeExecutionPort {
     assertLocalities(request);
     const resolved = resolveCodexAccountEnvironment(request.account, this.environment, request.nodeId);
     await probeCodexChatGptAuth(this.command, process.cwd(), request.timeoutMs, resolved.environment);
-    const run = await runCodexExec({command: this.command, cwd: process.cwd(), modelId: request.model.providerModel, instruction: request.instruction, grantedToolIds: [], timeoutMs: request.timeoutMs, environment: resolved.environment, loadUserConfig: true, outputSchema: request.outputSchema, onTelemetry: request.onTelemetry});
+    const run = await runCodexExec({command: this.command, cwd: process.cwd(), modelId: request.model.providerModel, instruction: request.instruction, grantedToolIds: [], timeoutMs: request.timeoutMs, environment: resolved.environment, loadUserConfig: false, outputSchema: request.outputSchema, onTelemetry: request.onTelemetry, signal: request.signal});
     return {...run, providerId: request.provider.id, accountProfileId: request.account.id, modelId: request.model.id, nodeId: request.nodeId, providerExecutionNodeId: request.nodeId, credentialNodeId: request.nodeId, codexVersion: 'locally-qualified', executableSha256: 'unavailable', discoveredAt: new Date().toISOString()};
   }
 }
@@ -83,19 +84,19 @@ export class ResourceCodexNodeExecutionPort implements CodexNodeExecutionPort {
     if (resource.transport.type === 'local') return new LocalCodexNodeExecutionPort(this.environment).execReadOnlyStructured(request);
     const store = accountCredentialResidency(request.account).store;
     if (store.type !== 'codex-home-env') throw new Error('account_profile_credential_store_unsupported');
-    const wire = await this.windows(resource, 'execReadOnlyStructured', {operation: 'execReadOnlyStructured', providerId: request.provider.id, accountProfileId: request.account.id, modelId: request.model.id, providerModel: request.model.providerModel, nodeId: request.nodeId, credentialEnvironment: store.env, timeoutMs: request.timeoutMs, maximumOutputTokens: request.maximumOutputTokens, instruction: request.instruction, outputSchema: request.outputSchema}, request.timeoutMs);
+    const wire = await this.windows(resource, 'execReadOnlyStructured', {operation: 'execReadOnlyStructured', providerId: request.provider.id, accountProfileId: request.account.id, modelId: request.model.id, providerModel: request.model.providerModel, nodeId: request.nodeId, credentialEnvironment: store.env, timeoutMs: request.timeoutMs, maximumOutputTokens: request.maximumOutputTokens, instruction: request.instruction, outputSchema: request.outputSchema}, request.timeoutMs, request.signal);
     if (!wire.ok) throw new Error(remoteError(wire.error, 'codex_node_exec_failed'));
     for (const event of wire.telemetry ?? []) request.onTelemetry?.({...event, context: {tokens: null, authority: 'unavailable', source: 'codex_jsonl_does_not_report_current_context'}});
     return {providerId: request.provider.id, accountProfileId: request.account.id, modelId: request.model.id, nodeId: resource.id, providerExecutionNodeId: resource.id, credentialNodeId: resource.id, codexVersion: required(wire.codexVersion, 'codex_node_version_missing'), executableSha256: requiredHash(wire.executableSha256), discoveredAt: requiredTimestamp(wire.discoveredAt), threadId: wire.threadId, finalMessage: required(wire.finalMessage, 'codex_exec_missing_final_message'), usage: numericRecord(wire.usage), observedItemTypes: Array.isArray(wire.observedItemTypes) ? wire.observedItemTypes.filter(value => typeof value === 'string') : []};
   }
   private resource(nodeId: string) { const resource = this.resources.get(nodeId); if (!resource) throw new Error('codex_execution_node_missing'); return resource; }
-  private async windows(resource: ResourceConfig, operation: RemoteWireResult['operation'], payload: Record<string, unknown>, timeoutMs: number): Promise<RemoteWireResult> {
+  private async windows(resource: ResourceConfig, operation: RemoteWireResult['operation'], payload: Record<string, unknown>, timeoutMs: number, signal?: AbortSignal): Promise<RemoteWireResult> {
     if (resource.platform !== 'windows' || resource.transport.type !== 'ssh') throw new Error('codex_execution_node_transport_unsupported');
     const encoded = Buffer.from(JSON.stringify(payload), 'utf8').toString('base64');
     const bootstrap = Buffer.from(WINDOWS_STDIN_BOOTSTRAP, 'utf16le').toString('base64');
     const input = `${encoded}\n${this.script.trimEnd()}\n`;
     let result;
-    try { result = await this.executor('ssh', sshResourceArgs(resource, ['powershell.exe', '-NoProfile', '-NonInteractive', '-EncodedCommand', bootstrap]), input, {timeoutMs: Math.min(Math.max(timeoutMs + 10_000, 20_000), 30 * 60_000), maxBytes: 4 * 1024 * 1024}); }
+    try { result = await this.executor('ssh', sshResourceArgs(resource, ['powershell.exe', '-NoProfile', '-NonInteractive', '-EncodedCommand', bootstrap]), input, {timeoutMs: Math.min(Math.max(timeoutMs + 10_000, 20_000), 30 * 60_000), maxBytes: 4 * 1024 * 1024, signal}); }
     catch { throw new Error('codex_node_transport_failed'); }
     if (result.timedOut) throw new Error('codex_node_timeout');
     if (result.aborted) throw new Error('codex_node_cancelled');

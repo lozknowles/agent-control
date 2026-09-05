@@ -81,8 +81,8 @@ export function calculateVersionedApiCost(usage: TokenUsageForCost, pricing: Ver
   for (const [name, value] of Object.entries(pricing)) if (name.endsWith('Tokens') || name.endsWith('Units') || name.endsWith('Request')) requireNonNegative(value as number | undefined, name);
   if (!pricing.tableId || !pricing.version || !pricing.source || !pricing.currency || !pricing.provider || !pricing.model || !Number.isFinite(Date.parse(pricing.effectiveAt))) throw new Error('cost_pricing_basis_invalid');
   if (usage.freshInputTokens === null || usage.outputTokens === null) return null;
-  if (usage.cachedInputTokens !== null && pricing.cachedInputPerMillionTokens === undefined) return null;
-  if (usage.cacheWriteTokens !== null && pricing.cacheWritePerMillionTokens === undefined) return null;
+  if ((usage.cachedInputTokens ?? 0) > 0 && pricing.cachedInputPerMillionTokens === undefined) return null;
+  if ((usage.cacheWriteTokens ?? 0) > 0 && pricing.cacheWritePerMillionTokens === undefined) return null;
   if ((usage.reasoningTokens ?? 0) > 0 && pricing.reasoningPerMillionUnits === undefined) return null;
   return (pricing.fixedPerRequest ?? 0)
     + usage.freshInputTokens * pricing.inputPerMillionTokens / 1_000_000

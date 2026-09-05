@@ -1,5 +1,6 @@
 import type {ManagedNodeConfig, ManagedWorkloadConfig, ResourceConfig} from './config.js';
 import type {WorkerRegistry} from './job-runtime.js';
+import {deriveCpuBusy, scalarMeasurement, unavailableMeasurement, type CpuCounterFrame, type ResourceMeasurement} from './resource-telemetry.js';
 
 export const MANAGED_NODE_SCHEMA = 'agent-control.managed-node/v1' as const;
 export const MANAGED_NODE_RESULT_SCHEMA = 'agent-control.managed-node-result/v1' as const;
@@ -35,10 +36,12 @@ export interface ManagedNodeObservation {
   observedAt: string;
   hostname: string;
   os: {id?: string; name?: string; version?: string; kernel?: string; architecture?: string};
-  cpu: {model?: string; logical: number};
-  memory: {totalBytes: number; availableBytes: number};
-  uptimeSeconds: number;
-  load: {one: number; five: number; fifteen: number};
+  cpu: {model?: string; logical: number | null};
+  memory: {totalBytes: number | null; availableBytes: number | null};
+  uptimeSeconds: number | null;
+  load: {one: number | null; five: number | null; fifteen: number | null};
+  metricSources?: Partial<Record<'cpu.logical' | 'memory.totalBytes' | 'memory.availableBytes' | 'uptimeSeconds' | 'load.one' | 'load.five' | 'load.fifteen', string>>;
+  cpuCounters?: CpuCounterFrame;
   storage: ManagedNodeStorage[];
   optical: ManagedNodeOpticalDevice[];
   network: string[];
@@ -56,10 +59,20 @@ export interface ManagedNodeSnapshot {
   hostname?: string;
   lastHeartbeatAt: string | null;
   lastProbeAt: string | null;
-  uptimeSeconds?: number;
+  uptimeSeconds?: number | null;
   os?: ManagedNodeObservation['os'];
   cpu?: ManagedNodeObservation['cpu'] & {load: ManagedNodeObservation['load']};
   memory?: ManagedNodeObservation['memory'];
+  measurements: {
+    cpuLogical: ResourceMeasurement<number>;
+    cpuBusyPercent: ResourceMeasurement<number>;
+    memoryTotalBytes: ResourceMeasurement<number>;
+    memoryAvailableBytes: ResourceMeasurement<number>;
+    uptimeSeconds: ResourceMeasurement<number>;
+    loadOne: ResourceMeasurement<number>;
+    loadFive: ResourceMeasurement<number>;
+    loadFifteen: ResourceMeasurement<number>;
+  };
   storage: ManagedNodeStorage[];
   optical: ManagedNodeOpticalDevice[];
   network: string[];
@@ -87,7 +100,7 @@ const READ_ONLY = new Set<ManagedNodeOperation>(['system.identity', 'process.lis
 const PACKAGE_NAME = /^[a-z0-9][a-z0-9+._-]{0,127}$/i;
 const UNIT_NAME = /^[a-z0-9@_.:-]+\.(?:service|timer|socket)$/i;
 
-function number(value: string | undefined, fallback = 0) { const parsed = Number(value); return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback; }
+function number(value: string | undefined) { if (value === undefined || value.trim() === '') return null; const parsed = Number(value); return Number.isFinite(parsed) && parsed >= 0 ? parsed : null; }
 function unique(values: string[]) { return [...new Set(values.filter(Boolean))].sort(); }
 function health(state: ManagedNodeState): ManagedNodeHealth { return state === 'OFFLINE' ? 'offline' : state === 'DEGRADED' ? 'degraded' : 'healthy'; }
 function safeDetail(value: unknown) { return String(value instanceof Error ? value.message : value).replace(/[\r\n\0]+/g, ' ').slice(0, 240) || 'probe_failed'; }
@@ -109,12 +122,21 @@ export function parseProbeRecords(output: string): ProbeRecords {
 export function parseManagedNodeProbe(output: string, observedAt: string): ManagedNodeObservation {
   const records = parseProbeRecords(output);
   if (records.get('protocol') !== 'agent-control.managed-node-probe/v1' || records.get('probe_complete') !== 'true') throw new Error('managed_node_probe_incomplete');
-  const storage = records.all('storage').map(row => { const [source, total, available, percent, ...mount] = row.split('\t'); return {source, totalBytes: number(total), availableBytes: number(available), usedPercent: number(percent?.replace('%', '')), mount: mount.join('\t')}; }).filter(item => item.source && item.mount);
+  const storage = records.all('storage').map(row => { const [source, total, available, percent, ...mount] = row.split('\t'); return {source, totalBytes: number(total), availableBytes: number(available), usedPercent: number(percent?.replace('%', '')), mount: mount.join('\t')}; }).filter((item): item is ManagedNodeStorage => Boolean(item.source && item.mount && item.totalBytes !== null && item.availableBytes !== null && item.usedPercent !== null));
   const holders = new Map<string, number[]>();
   for (const row of records.all('optical_holder')) { const [device, pid] = row.split('\t'), parsed = Number(pid); if (device && Number.isSafeInteger(parsed)) holders.set(device, [...(holders.get(device) ?? []), parsed]); }
   const optical = records.all('optical').map(row => { const [name, model, transport] = row.split('\t'); return {name, model: model || undefined, transport: transport || undefined, holders: holders.get(name) ?? []}; }).filter(item => item.name);
   const processes = records.all('process').map(row => { const [pid, comm, arg0, arg1, unit] = row.split('\t'), parsed = Number(pid); return {pid: parsed, names: unique([comm, arg0, arg1]), unit: unit || undefined}; }).filter(item => Number.isSafeInteger(item.pid));
-  const temperatures = records.all('temperature').map(row => { const [name, raw] = row.split('\t'), value = number(raw); return {name, celsius: value > 1000 ? value / 1000 : value}; }).filter(item => item.name && item.celsius >= -100 && item.celsius <= 250);
+  const temperatures = records.all('temperature').map(row => { const [name, raw] = row.split('\t'), value = number(raw); return {name, celsius: value === null ? null : value > 1000 ? value / 1000 : value}; }).filter((item): item is {name: string; celsius: number} => Boolean(item.name && item.celsius !== null && item.celsius >= -100 && item.celsius <= 250));
+  const counterKind = records.get('cpu_counter_kind');
+  const counters = records.all('cpu_counter').map(row => {
+    const [cpu, online, idle, total] = row.split('\t'), idleValue = number(idle), totalValue = number(total);
+    if (!cpu || idleValue === null || !['true', 'false'].includes(online)) return null;
+    return {cpu, online: online === 'true', idle: idleValue, ...(totalValue === null ? {} : {total: totalValue})};
+  }).filter((item): item is CpuCounterFrame['counters'][number] => item !== null);
+  const cpuCounters = ['procfs-times', 'sysfs-idle'].includes(counterKind ?? '') && counters.length
+    ? {kind: counterKind as CpuCounterFrame['kind'], observedAt, logicalOnline: number(records.get('cpu_counter_logical_online')), counters}
+    : undefined;
   return {
     observedAt,
     hostname: records.get('hostname') ?? '',
@@ -123,6 +145,16 @@ export function parseManagedNodeProbe(output: string, observedAt: string): Manag
     memory: {totalBytes: number(records.get('memory_total_bytes')), availableBytes: number(records.get('memory_available_bytes'))},
     uptimeSeconds: number(records.get('uptime_seconds')),
     load: {one: number(records.get('load_1')), five: number(records.get('load_5')), fifteen: number(records.get('load_15'))},
+    metricSources: {
+      'cpu.logical': records.get('cpu_logical_source') || undefined,
+      'memory.totalBytes': records.get('memory_total_bytes_source') || undefined,
+      'memory.availableBytes': records.get('memory_available_bytes_source') || undefined,
+      uptimeSeconds: records.get('uptime_seconds_source') || undefined,
+      'load.one': records.get('load_source') || undefined,
+      'load.five': records.get('load_source') || undefined,
+      'load.fifteen': records.get('load_source') || undefined,
+    },
+    ...(cpuCounters ? {cpuCounters} : {}),
     storage,
     optical,
     network: records.all('network'),
@@ -186,11 +218,11 @@ function capabilities(resource: ResourceConfig, observation: ManagedNodeObservat
   return unique(values);
 }
 
-export function projectManagedNode(resource: ResourceConfig, observation: ManagedNodeObservation): ManagedNodeSnapshot {
+export function projectManagedNode(resource: ResourceConfig, observation: ManagedNodeObservation, cpuBusyPercent: ResourceMeasurement<number> = unavailableMeasurement(observation.observedAt, 'cpu-counters', 'first_sample_requires_prior_counter_frame')): ManagedNodeSnapshot {
   const config = resource.managedNode ?? {}, detectedWorkloads = workloads(observation, config), connections = connectivity(observation, config), warnings: string[] = [];
   for (const connection of connections) if (connection.state !== 'RUNNING') warnings.push(`connectivity:${connection.id}:${connection.state.toLowerCase()}`);
   for (const filesystem of observation.storage) if (filesystem.usedPercent >= 95) warnings.push(`storage:${filesystem.mount}:${filesystem.usedPercent}%`);
-  if (observation.memory.totalBytes > 0 && observation.memory.availableBytes / observation.memory.totalBytes < .02) warnings.push('memory:less-than-2%-available');
+  if (observation.memory.totalBytes !== null && observation.memory.availableBytes !== null && observation.memory.totalBytes > 0 && observation.memory.availableBytes / observation.memory.totalBytes < .02) warnings.push('memory:less-than-2%-available');
   const active = detectedWorkloads.filter(item => item.state === 'ACTIVE'), protectedActive = active.filter(item => item.protected), discovered = capabilities(resource, observation, detectedWorkloads, connections);
   const state: ManagedNodeState = active.length ? 'BUSY' : warnings.length ? 'DEGRADED' : detectedWorkloads.length ? 'IDLE' : 'ONLINE';
   const projectedHealth: ManagedNodeHealth = warnings.length ? 'degraded' : health(state);
@@ -199,17 +231,35 @@ export function projectManagedNode(resource: ResourceConfig, observation: Manage
     : discovered.includes('managed-node.maintenance')
       ? {state: 'APPROVAL_REQUIRED' as const, detail: 'Typed maintenance operations require Agent Control approval'}
       : {state: 'UNAVAILABLE' as const, detail: 'No supported package, service or runtime maintenance tooling discovered'};
-  return {schema: MANAGED_NODE_SCHEMA, resourceId: resource.id, state, health: projectedHealth, hostname: observation.hostname, lastHeartbeatAt: observation.observedAt, lastProbeAt: observation.observedAt, uptimeSeconds: observation.uptimeSeconds, os: observation.os, cpu: {...observation.cpu, load: observation.load}, memory: observation.memory, storage: observation.storage, optical: observation.optical, network: observation.network, temperatures: observation.temperatures, services: observation.services, connectivity: connections, capabilities: discovered, workloads: detectedWorkloads, currentWorkload: active.map(item => item.id).join(', ') || null, maintenance, warnings};
+  const source = (key: keyof NonNullable<ManagedNodeObservation['metricSources']>) => observation.metricSources?.[key] || 'managed-node-probe:unspecified';
+  const measurements = {
+    cpuLogical: scalarMeasurement(observation.cpu.logical, observation.observedAt, source('cpu.logical')),
+    cpuBusyPercent,
+    memoryTotalBytes: scalarMeasurement(observation.memory.totalBytes, observation.observedAt, source('memory.totalBytes')),
+    memoryAvailableBytes: scalarMeasurement(observation.memory.availableBytes, observation.observedAt, source('memory.availableBytes')),
+    uptimeSeconds: scalarMeasurement(observation.uptimeSeconds, observation.observedAt, source('uptimeSeconds')),
+    loadOne: scalarMeasurement(observation.load.one, observation.observedAt, source('load.one')),
+    loadFive: scalarMeasurement(observation.load.five, observation.observedAt, source('load.five')),
+    loadFifteen: scalarMeasurement(observation.load.fifteen, observation.observedAt, source('load.fifteen')),
+  };
+  return {schema: MANAGED_NODE_SCHEMA, resourceId: resource.id, state, health: projectedHealth, hostname: observation.hostname, lastHeartbeatAt: observation.observedAt, lastProbeAt: observation.observedAt, uptimeSeconds: observation.uptimeSeconds, os: observation.os, cpu: {...observation.cpu, load: observation.load}, memory: observation.memory, measurements, storage: observation.storage, optical: observation.optical, network: observation.network, temperatures: observation.temperatures, services: observation.services, connectivity: connections, capabilities: discovered, workloads: detectedWorkloads, currentWorkload: active.map(item => item.id).join(', ') || null, maintenance, warnings};
 }
 
 function unavailable(resourceId: string, at: string | null, detail: string): ManagedNodeSnapshot {
-  return {schema: MANAGED_NODE_SCHEMA, resourceId, state: 'OFFLINE', health: 'offline', lastHeartbeatAt: null, lastProbeAt: at, storage: [], optical: [], network: [], temperatures: [], services: [], connectivity: [], capabilities: [], workloads: [], currentWorkload: null, maintenance: {state: 'UNAVAILABLE', detail: 'Node is offline'}, warnings: [detail]};
+  const observedAt = at ?? new Date(0).toISOString(), missing = (name: string) => unavailableMeasurement<number>(observedAt, name, 'node_observation_unavailable');
+  return {schema: MANAGED_NODE_SCHEMA, resourceId, state: 'OFFLINE', health: 'offline', lastHeartbeatAt: null, lastProbeAt: at, measurements: {cpuLogical: missing('cpu.logical'), cpuBusyPercent: missing('cpu.busy'), memoryTotalBytes: missing('memory.total'), memoryAvailableBytes: missing('memory.available'), uptimeSeconds: missing('uptime'), loadOne: missing('load.1'), loadFive: missing('load.5'), loadFifteen: missing('load.15')}, storage: [], optical: [], network: [], temperatures: [], services: [], connectivity: [], capabilities: [], workloads: [], currentWorkload: null, maintenance: {state: 'UNAVAILABLE', detail: 'Node is offline'}, warnings: [detail]};
+}
+
+function staleMeasurements(snapshot: ManagedNodeSnapshot) {
+  const measurements = Object.fromEntries(Object.entries(snapshot.measurements).map(([key, measurement]) => [key, measurement.value === null ? measurement : {...measurement, freshness: 'stale', limitations: unique([...measurement.limitations, 'heartbeat_not_refreshed'])}])) as ManagedNodeSnapshot['measurements'];
+  return {...snapshot, measurements};
 }
 
 export class ManagedNodeManager {
   private readonly resources = new Map<string, ResourceConfig>();
   private readonly snapshots = new Map<string, ManagedNodeSnapshot>();
   private readonly timers = new Set<NodeJS.Timeout>();
+  private readonly cpuCounterFrames = new Map<string, CpuCounterFrame>();
   constructor(resources: ResourceConfig[], readonly workers: WorkerRegistry, readonly transport: ManagedNodeTransport, private readonly clock: () => Date = () => new Date()) {
     for (const resource of resources) if (resource.managedNode?.enabled !== false && resource.managedNode) this.resources.set(resource.id, structuredClone(resource));
   }
@@ -221,7 +271,7 @@ export class ManagedNodeManager {
     const current = this.snapshots.get(id) ?? unavailable(id, null, 'No heartbeat received');
     const timeoutMs = (resource.managedNode?.offlineAfterSeconds ?? 90) * 1000;
     if (current.lastHeartbeatAt && this.clock().getTime() - Date.parse(current.lastHeartbeatAt) > timeoutMs) {
-      const offline = {...current, state: 'OFFLINE' as const, health: 'offline' as const, maintenance: {state: 'UNAVAILABLE' as const, detail: 'Heartbeat expired'}, warnings: unique([...current.warnings.filter(item => !item.startsWith('heartbeat:')), 'heartbeat:expired'])};
+      const offline = staleMeasurements({...current, state: 'OFFLINE' as const, health: 'offline' as const, maintenance: {state: 'UNAVAILABLE' as const, detail: 'Heartbeat expired'}, warnings: unique([...current.warnings.filter(item => !item.startsWith('heartbeat:')), 'heartbeat:expired'])});
       this.snapshots.set(id, offline); this.syncWorker(resource, offline); return structuredClone(offline);
     }
     return structuredClone(current);
@@ -230,11 +280,13 @@ export class ManagedNodeManager {
     const resource = this.resources.get(id); if (!resource) throw new Error('managed_node_missing');
     const at = this.clock().toISOString();
     try {
-      const observation = await this.transport.probe(resource, at), snapshot = projectManagedNode(resource, observation);
+      const observation = await this.transport.probe(resource, at), previousFrame = this.cpuCounterFrames.get(id), cpuBusy = deriveCpuBusy(previousFrame, observation.cpuCounters, (resource.managedNode?.probeIntervalSeconds ?? 30) * 3_000);
+      if (observation.cpuCounters) this.cpuCounterFrames.set(id, observation.cpuCounters); else this.cpuCounterFrames.delete(id);
+      const snapshot = projectManagedNode(resource, observation, cpuBusy);
       this.snapshots.set(id, snapshot); this.syncWorker(resource, snapshot); return structuredClone(snapshot);
     } catch (error) {
       const previous = this.snapshots.get(id), timeoutMs = (resource.managedNode?.offlineAfterSeconds ?? 90) * 1000, expired = !previous?.lastHeartbeatAt || this.clock().getTime() - Date.parse(previous.lastHeartbeatAt) > timeoutMs, detail = safeDetail(error);
-      const snapshot = previous ? {...previous, state: expired ? 'OFFLINE' as const : 'DEGRADED' as const, health: expired ? 'offline' as const : 'degraded' as const, lastProbeAt: at, maintenance: expired ? {state: 'UNAVAILABLE' as const, detail: 'Node is offline'} : previous.maintenance, warnings: unique([...previous.warnings.filter(item => !item.startsWith('heartbeat:')), `heartbeat:${detail}`])} : unavailable(id, at, `heartbeat:${detail}`);
+      const snapshot = previous ? staleMeasurements({...previous, state: expired ? 'OFFLINE' as const : 'DEGRADED' as const, health: expired ? 'offline' as const : 'degraded' as const, lastProbeAt: at, maintenance: expired ? {state: 'UNAVAILABLE' as const, detail: 'Node is offline'} : previous.maintenance, warnings: unique([...previous.warnings.filter(item => !item.startsWith('heartbeat:')), `heartbeat:${detail}`])}) : unavailable(id, at, `heartbeat:${detail}`);
       this.snapshots.set(id, snapshot); this.syncWorker(resource, snapshot); return structuredClone(snapshot);
     }
   }

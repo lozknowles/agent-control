@@ -19,7 +19,7 @@ export const repositoryCodeReviewDefinition: ParameterizedJobDefinition = {
   },
   routing: {modelRole: 'review.default', allowFallback: true},
   permissions: {repository: 'read-only', shell: 'bounded-read', network: 'provider-only'},
-  budgets: {timeoutMinutes: 90, maximumRetries: 1, maximumInputTokens: 120_000, maximumOutputTokens: 65_536},
+  budgets: {timeoutMinutes: 90, maximumRetries: 1, retryBackoffSeconds: 2, retryBackoffMultiplier: 2, retryMaximumBackoffSeconds: 30, maximumInputTokens: 120_000, maximumOutputTokens: 65_536},
   outputs: {schema: 'repository-review-v1'},
   validation: {requireEvidence: true, requireReviewedCommit: true},
   template: {id: 'repository-review', version: 1, instruction: REPOSITORY_REVIEW_INSTRUCTION},

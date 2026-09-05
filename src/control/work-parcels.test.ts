@@ -26,12 +26,26 @@ function setup(failSecond = false, blockFirst = false) {
   return {root, runtime, planner, storeFile, coordinator, plan, releaseFirst};
 }
 
+function parallelSetup() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-parallel-parcel-')), actions = new ActionRegistry(), started: string[] = [];
+  let releaseLeft = () => {}, releaseRight = () => {}; const leftGate = new Promise<void>(resolve => { releaseLeft = resolve; }), rightGate = new Promise<void>(resolve => { releaseRight = resolve; });
+  actions.register('left@1.0.0', async () => { started.push('left'); await leftGate; return {artifacts: [{name: 'result', value: {left: true}}], verification: ['passed']}; });
+  actions.register('right@1.0.0', async () => { started.push('right'); await rightGate; return {artifacts: [{name: 'result', value: {right: true}}], verification: ['passed']}; });
+  actions.register('join@1.0.0', async context => ({artifacts: [{name: 'result', value: {baton: context.run.trigger.parcelContext?.baton?.sha256}}], verification: ['passed']}));
+  const catalog = new JobCatalog(actions.ids()); for (const [id, action] of [['left-job','left@1.0.0'],['right-job','right@1.0.0'],['join-job','join@1.0.0']]) catalog.addJob(job(id, action));
+  const workers = new WorkerRegistry().register({id: 'host', capabilities: ['qualification.local'], health: 'healthy', capacity: 2, active: 0, observedAt: new Date().toISOString()});
+  const runtime = new JobRuntime(catalog, actions, workers, new RunLedger(path.join(root, 'runs.json')), new ArtifactStore(path.join(root, 'artifacts')), new ResourceLockManager(path.join(root, 'locks.json')), {approval: () => true});
+  const plan: WorkParcelPlan = {objective: 'planner interpretation of parallel objective', planner: {kind: 'reasoning-model', provider: 'test', model: 'planner', reason: 'independent branches'}, stages: [{id: 'left', name: 'Left', job: 'left-job@1.0.0'}, {id: 'right', name: 'Right', job: 'right-job@1.0.0'}, {id: 'join', name: 'Join', job: 'join-job@1.0.0', dependsOn: ['left','right']}]};
+  const planner = {plan: () => plan}, storeFile = path.join(root, 'parcels.json'), coordinator = new WorkParcelCoordinator(runtime, new WorkParcelStore(storeFile), planner);
+  return {root, runtime, planner, storeFile, coordinator, plan, started, releaseLeft, releaseRight};
+}
+
 test('natural-language parcel runs dependent Jobs sequentially and retains typed batons', async () => {
   const {coordinator, runtime} = setup(); const parcel = await coordinator.submit('do the test', 'operator');
   assert.equal(parcel.audit.schema, 'agent-control.work-parcel-audit/v1'); assert.match(parcel.audit.classification, /Complex|governed|Registered/); assert.equal(parcel.audit.planner.model, 'planner'); assert.ok(parcel.audit.alternatives.some(item => item.candidate === 'host' && item.eligible));
   for (let count = 0; count < 3; count++) { await coordinator.tick(); await runtime.tick(); await coordinator.tick(); }
   const result = coordinator.get(parcel.id); assert.equal(result.status, 'SUCCEEDED'); assert.deepEqual(result.stages.map(stage => stage.status), ['SUCCEEDED','SUCCEEDED','SUCCEEDED']);
-  assert.ok(result.stages.every(stage => stage.baton?.schema === 'agent-control.work-parcel-baton/v1' && stage.baton.artifactIds.length === 1)); assert.equal(result.prompt, 'do the test');
+  assert.ok(result.stages.every(stage => stage.baton?.schema === 'agent-control.work-parcel-baton/v2' && stage.baton.artifactIds.length === 1 && /^[a-f0-9]{64}$/.test(stage.baton.sha256))); assert.equal(result.prompt, 'do the test');
 });
 
 test('blocked named target still creates an auditable parcel with readiness evidence', () => {
@@ -117,4 +131,61 @@ test('durable audit records model changes and complete hierarchical invocation a
   assert.deepEqual(result.audit.totals.models, ['glm-5.3-flash', 'gpt-5.6']); assert.equal(result.audit.totals.invocations, 2); assert.equal(result.audit.totals.totalTokens, 330); assert.equal(result.audit.totals.providerReportedCost, .04); assert.equal(result.audit.totals.costBasis, 'provider-reported'); assert.equal(result.audit.totals.modelExecutionMs, 6000);
   assert.ok(result.audit.timeline.some(item => item.type === 'route.changed' && /glm-5.3-flash.*gpt-5.6/.test(item.summary))); assert.ok(result.audit.timeline.some(item => item.type === 'invocation.completed'));
   const restored = new WorkParcelCoordinator(runtime, new WorkParcelStore(storeFile), planner, ledger).get(parcel.id); assert.equal(restored.audit.totals.totalTokens, 330); assert.equal(restored.audit.invocations[0].freshInputTokens, 80);
+});
+
+test('independent Work Parcel branches dispatch and execute concurrently up to governed worker capacity', async () => {
+  const {coordinator, runtime, started, releaseLeft, releaseRight} = parallelSetup(), parcel = await coordinator.submit('original parallel goal verbatim', 'operator');
+  await coordinator.tick();
+  const dispatched = coordinator.get(parcel.id); assert.deepEqual(dispatched.stages.map(stage => stage.status), ['RUNNING','RUNNING','QUEUED']);
+  const left = runtime.dispatch(), right = runtime.dispatch(); assert.ok(left && right); await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual([...started].sort(), ['left','right']); assert.equal(runtime.workers.list()[0].active, 2);
+  releaseLeft(); releaseRight(); await Promise.all([left.completion, right.completion]); await coordinator.tick();
+  const afterBranches = coordinator.get(parcel.id); assert.deepEqual(afterBranches.stages.map(stage => stage.status), ['SUCCEEDED','SUCCEEDED','RUNNING']);
+  await runtime.tick(); await coordinator.tick();
+  assert.equal(coordinator.get(parcel.id).status, 'SUCCEEDED');
+  assert.ok(coordinator.get(parcel.id).context?.events.filter(event => event.type === 'stage.started').length === 3);
+});
+
+test('an asynchronous question pauses only dependent work and answering resumes it without losing independent progress', async () => {
+  const {coordinator, runtime, releaseLeft, releaseRight} = parallelSetup(), parcel = await coordinator.submit('run one branch while waiting for clarification', 'operator');
+  const questioned = coordinator.askQuestion(parcel.id, {text: 'Which right-side format should be used?', originatingStageId: 'left', dependentStageIds: ['right'], priority: 'HIGH', consequence: 'MEDIUM', actor: 'agent:left'});
+  const question = questioned.context!.questions[0]; assert.deepEqual(questioned.stages.map(stage => stage.status), ['QUEUED','WAITING','QUEUED']);
+  await coordinator.tick(); assert.deepEqual(coordinator.get(parcel.id).stages.map(stage => stage.status), ['RUNNING','WAITING','QUEUED']);
+  const left = runtime.dispatch()!; await new Promise(resolve => setImmediate(resolve)); releaseLeft(); await left.completion; await coordinator.tick();
+  const stillWaiting = coordinator.get(parcel.id); assert.equal(stillWaiting.stages[0].status, 'SUCCEEDED'); assert.equal(stillWaiting.stages[1].status, 'WAITING');
+  coordinator.answerQuestion(parcel.id, question.id, 'Use JSON', 'operator'); await coordinator.tick(); assert.equal(coordinator.get(parcel.id).stages[1].status, 'RUNNING');
+  const right = runtime.dispatch()!; await new Promise(resolve => setImmediate(resolve)); releaseRight(); await right.completion; await coordinator.tick(); await runtime.tick(); await coordinator.tick();
+  const result = coordinator.get(parcel.id); assert.equal(result.status, 'SUCCEEDED'); assert.equal(result.context?.questions[0].status, 'ANSWERED'); assert.ok(result.context?.events.some(event => event.type === 'question.answered'));
+});
+
+test('steering preserves the original request and supplies effective amendments through the production run contract', async () => {
+  const {coordinator, runtime} = setup(), original = 'original goal the planner must not overwrite', parcel = await coordinator.submit(original, 'operator');
+  coordinator.steer(parcel.id, {instruction: 'Limit output to JSON', constraints: ['do not deploy'], affectedStageIds: ['one'], actor: 'operator'});
+  await coordinator.tick(); const run = runtime.ledger.get(coordinator.get(parcel.id).stages[0].runId!)!;
+  assert.equal(run.trigger.parcelContext?.originalGoal, original);
+  assert.equal(run.trigger.parcelContext?.currentInterpretation, `${original} Active amendments: 1) Limit output to JSON`);
+  assert.deepEqual(run.trigger.parcelContext?.effectiveInstructions, ['Limit output to JSON']);
+  assert.deepEqual(run.trigger.parcelContext?.constraints, ['do not deploy']);
+  assert.equal(coordinator.get(parcel.id).objective, 'test objective');
+});
+
+test('explicit success criteria are first-class gates after stage verification and a failed criterion fails closed', async () => {
+  const first = setup(), parcel = await first.coordinator.submit('require operator outcome proof', 'operator'), added = first.coordinator.addCriterion(parcel.id, {kind: 'CUSTOM', description: 'Operator confirms semantic outcome', source: 'USER', sourceActor: 'operator'});
+  for (let count = 0; count < 3; count++) { await first.coordinator.tick(); await first.runtime.tick(); await first.coordinator.tick(); }
+  const waiting = first.coordinator.get(parcel.id); assert.equal(waiting.stages.every(stage => stage.status === 'SUCCEEDED'), true); assert.equal(waiting.status, 'WAITING'); assert.equal(waiting.context?.criteria.find(item => item.id === added.criterion.id)?.status, 'PENDING');
+  first.coordinator.evaluateCriterion(parcel.id, added.criterion.id, {status: 'PASS', evidence: ['operator:verified-outcome'], actor: 'operator'});
+  assert.equal(first.coordinator.get(parcel.id).status, 'SUCCEEDED');
+
+  const second = setup(), rejected = await second.coordinator.submit('reject unsafe outcome', 'operator'), criterion = second.coordinator.addCriterion(rejected.id, {kind: 'CUSTOM', description: 'Safety reviewer accepts', source: 'REVIEWER', sourceActor: 'reviewer'}).criterion;
+  second.coordinator.evaluateCriterion(rejected.id, criterion.id, {status: 'FAIL', evidence: ['review:unsafe'], detail: 'unsafe output', actor: 'reviewer'});
+  const failed = second.coordinator.get(rejected.id); assert.equal(failed.status, 'FAILED'); assert.equal(failed.decision?.outcome, 'FAIL_CLOSED'); assert.ok(failed.provenance.some(item => item.type === 'criterion.failed'));
+});
+
+test('restart reconciliation repairs inferred stage criteria without duplicating completion evidence', async () => {
+  const {coordinator, runtime, planner, storeFile} = setup(), parcel = await coordinator.submit('restart criterion repair', 'operator'); await coordinator.tick(); await runtime.tick();
+  const raw = JSON.parse(fs.readFileSync(storeFile, 'utf8')); const saved = raw.parcels.find((item: {id: string}) => item.id === parcel.id); saved.stages[0].status = 'SUCCEEDED'; saved.context.criteria.find((item: {stageId?: string}) => item.stageId === 'one').status = 'PENDING'; fs.writeFileSync(storeFile, `${JSON.stringify(raw, null, 2)}\n`);
+  const restarted = new WorkParcelCoordinator(runtime, new WorkParcelStore(storeFile), planner), repaired = restarted.get(parcel.id); await restarted.tick(); const after = restarted.get(parcel.id);
+  assert.equal(after.context?.criteria.find(item => item.stageId === 'one')?.status, 'PASS');
+  assert.equal(after.context?.events.filter(event => event.type === 'criterion.evaluated' && event.stageId === 'one').length, 1);
+  assert.equal(repaired.context?.active.originalGoal, 'restart criterion repair');
 });

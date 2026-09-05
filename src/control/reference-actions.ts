@@ -10,11 +10,12 @@ function candidates(value: unknown): CandidateEvent[] {
 export function registerReferenceActions(registry = new ActionRegistry()) {
   registry.register('qualification.dashboard.running-state@1.0.0', async context => {
     const seconds = Number(context.parameters.durationSeconds ?? 20);
-    await new Promise<void>((resolve, reject) => {
-      const timer = setTimeout(resolve, seconds * 1000);
-      const abort = () => { clearTimeout(timer); reject(new ActionFailure('dashboard_running_state_qualification_cancelled', 'execution')); };
-      if (context.signal.aborted) abort(); else context.signal.addEventListener('abort', abort, {once: true});
-    });
+    const result = await context.ownedExecution.runProcess({
+      command: process.execPath,
+      args: ['-e', 'const delay=Number(process.argv[1]);if(!Number.isFinite(delay)||delay<0)process.exit(2);setTimeout(()=>process.exit(0),delay)', String(seconds * 1000)],
+      maxOutputBytes: 4096,
+    }, context.signal);
+    if (result.exitCode !== 0) throw new ActionFailure('dashboard_running_state_qualification_process_failed', 'execution');
     return {artifacts: [{name: 'liveness-report', value: {durationSeconds: seconds, completed: true, externalSideEffects: false}}], evidence: [`Observed governed RUNNING state for ${seconds} seconds without external work`], verification: ['dashboard-running-state-observed'], detail: `dashboard RUNNING-state qualification completed after ${seconds}s`};
   });
   registry.register('qualification.events.discover@1.0.0', async context => {

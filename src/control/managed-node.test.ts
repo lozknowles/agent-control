@@ -36,6 +36,33 @@ test('fixed probe records parse without trusting host-provided framing', () => {
   assert.throws(() => parseManagedNodeProbe('protocol\tnot-base64***', new Date().toISOString()), /record_invalid/);
 });
 
+test('missing probe metrics remain unavailable instead of becoming zero', () => {
+  const parsed = parseManagedNodeProbe(encoded([['protocol', 'agent-control.managed-node-probe/v1'], ['hostname', 'sparse-node'], ['probe_complete', 'true']]), '2026-08-26T08:00:00.000Z');
+  assert.equal(parsed.cpu.logical, null);
+  assert.equal(parsed.memory.totalBytes, null);
+  assert.equal(parsed.memory.availableBytes, null);
+  assert.equal(parsed.uptimeSeconds, null);
+  assert.deepEqual(parsed.load, {one: null, five: null, fifteen: null});
+  const snapshot = projectManagedNode(resource(), parsed);
+  assert.equal(snapshot.measurements.cpuLogical.value, null);
+  assert.equal(snapshot.measurements.loadOne.authority, 'unavailable');
+});
+
+test('probe metric source and counter provenance survive parsing and projection', () => {
+  const at = '2026-08-26T08:00:00.000Z';
+  const parsed = parseManagedNodeProbe(encoded([
+    ['protocol', 'agent-control.managed-node-probe/v1'], ['hostname', 'measured-node'],
+    ['uptime_seconds', '42'], ['uptime_seconds_source', 'node:os.uptime'],
+    ['cpu_counter_kind', 'sysfs-idle'], ['cpu_counter_logical_online', '1'], ['cpu_counter', 'cpu0\ttrue\t1000'],
+    ['probe_complete', 'true'],
+  ]), at);
+  assert.equal(parsed.cpuCounters?.kind, 'sysfs-idle');
+  assert.equal(parsed.cpuCounters?.counters[0].idle, 1000);
+  const snapshot = projectManagedNode(resource(), parsed);
+  assert.equal(snapshot.measurements.uptimeSeconds.source, 'node:os.uptime');
+  assert.equal(snapshot.measurements.uptimeSeconds.freshness, 'current');
+});
+
 test('arbitrarily named Linux resources use the same discovered capability and state logic', () => {
   for (const id of ['node-alpha', 'node-zeta']) {
     const snapshot = projectManagedNode(resource(id), observation(false));
@@ -101,10 +128,31 @@ test('managed-node monitor contains and reports a throwing observer callback', a
 test('heartbeat failure degrades, expires offline, and recovers from a later successful probe', async () => {
   let now = new Date('2026-08-26T08:00:00.000Z'); const workers = new WorkerRegistry(), transport = new FakeTransport(), manager = new ManagedNodeManager([resource()], workers, transport, () => now);
   assert.equal((await manager.poll('node-alpha')).state, 'IDLE');
-  now = new Date('2026-08-26T08:00:10.000Z'); transport.fail = true; assert.equal((await manager.poll('node-alpha')).state, 'DEGRADED');
+  now = new Date('2026-08-26T08:00:10.000Z'); transport.fail = true; const degraded = await manager.poll('node-alpha'); assert.equal(degraded.state, 'DEGRADED'); assert.equal(degraded.measurements.uptimeSeconds.freshness, 'stale');
   await assert.rejects(manager.execute('node-alpha', {operation: 'package.update'}, [MAINTENANCE_APPROVAL]), /maintenance_unavailable_while_degraded/);
   now = new Date('2026-08-26T08:00:31.000Z'); assert.equal(manager.get('node-alpha')?.state, 'OFFLINE'); assert.equal(workers.list()[0].health, 'offline');
   transport.fail = false; assert.equal((await manager.poll('node-alpha')).state, 'IDLE'); assert.equal(workers.list()[0].health, 'healthy');
+});
+
+test('manager derives CPU busy only from two compatible fresh counter frames', async () => {
+  let now = new Date('2026-08-26T08:00:00.000Z'), idle = 1_000_000;
+  const transport: ManagedNodeTransport = {
+    async probe(_resource, at) {
+      const value = observation(false, at);
+      value.cpuCounters = {kind: 'sysfs-idle', observedAt: at, logicalOnline: 1, counters: [{cpu: 'cpu0', online: true, idle}]};
+      idle += 250_000;
+      return value;
+    },
+    async execute() { return {exitCode: 0, stdout: '', stderr: ''}; },
+  };
+  const manager = new ManagedNodeManager([resource()], new WorkerRegistry(), transport, () => now);
+  const first = await manager.poll('node-alpha');
+  assert.equal(first.measurements.cpuBusyPercent.value, null);
+  now = new Date('2026-08-26T08:00:01.000Z');
+  const second = await manager.poll('node-alpha');
+  assert.equal(second.measurements.cpuBusyPercent.value, 75);
+  assert.equal(second.measurements.cpuBusyPercent.authority, 'derived');
+  assert.equal(second.measurements.cpuBusyPercent.qualifiedForAdmission, false);
 });
 
 test('typed maintenance requires approval and an additional protected-workload override while busy', async () => {

@@ -24,7 +24,8 @@ test('package-bin reports the installed Agent Control version', () => {
   fs.symlinkSync(source, command);
   const result = spawnSync(command, ['--version'], {encoding: 'utf8'});
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /^agent-control 3\.8\.2\s*$/);
+  const packageVersion = JSON.parse(fs.readFileSync(fileURLToPath(new URL('../package.json', import.meta.url)), 'utf8')).version;
+  assert.equal(result.stdout.trim(), `agent-control ${packageVersion}`);
 });
 
 test('Jobs CLI reads definitions and sends authenticated schema-valid create requests',async()=>{

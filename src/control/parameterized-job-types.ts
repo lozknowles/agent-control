@@ -10,7 +10,7 @@ export interface JobParameterSchema {
   minimum?: number;
   maximum?: number;
 }
-export interface JobBudgetPolicy {timeoutMinutes: number; maxCost?: number; maximumRetries: number; maximumInputTokens?: number; maximumOutputTokens?: number;}
+export interface JobBudgetPolicy {timeoutMinutes: number; maxCost?: number; maximumRetries: number; retryBackoffSeconds?: number; retryBackoffMultiplier?: number; retryMaximumBackoffSeconds?: number; maximumInputTokens?: number; maximumOutputTokens?: number;}
 export interface JobDefinitionRouting {modelRole: string; allowFallback: boolean;}
 export interface ParameterizedJobDefinition {
   schema: 'agent-control.job-definition/v1';
@@ -69,7 +69,7 @@ export interface ResolvedRepository {
   bundlePath?: string;
 }
 
-export type ParameterizedRunStatus = 'SCHEDULED' | 'QUEUED' | 'RESOLVING' | 'RUNNING' | 'VALIDATING' | 'SUCCEEDED' | 'SUCCEEDED_WITH_FINDINGS' | 'FAILED' | 'CANCELLED' | 'DEGRADED';
+export type ParameterizedRunStatus = 'SCHEDULED' | 'QUEUED' | 'RESOLVING' | 'AUTHENTICATION_BLOCKED' | 'RECONNECTING' | 'RUNNING' | 'VALIDATING' | 'CANCELLING' | 'DISCONNECTED' | 'SUCCEEDED' | 'SUCCEEDED_WITH_FINDINGS' | 'FAILED' | 'CANCELLED' | 'DEGRADED';
 export interface JobFinding {
   id: string;
   severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
@@ -94,7 +94,31 @@ export interface RepositoryReviewResult {
   areasNotReviewed: string[];
   verdict: 'PASS' | 'PASS_WITH_FINDINGS' | 'REVIEW_REQUIRED' | 'FAILED';
 }
-export interface JobRunUsage {inputTokens?: number; outputTokens?: number; totalTokens?: number; providerReportedCost?: number; calculatedCost?: number; cost?: number; currency?: string; source: 'provider' | 'calculated' | 'unavailable';}
+export interface JobRunUsage {inputTokens?: number; freshInputTokens?: number; cachedInputTokens?: number; cacheWriteTokens?: number; outputTokens?: number; totalTokens?: number; providerReportedCost?: number; calculatedCost?: number; cost?: number; currency?: string; source: 'provider' | 'calculated' | 'unavailable';}
+export interface ParameterizedExecutionIdentity {
+  id: string;
+  sequence: number;
+  providerId: string;
+  accountProfileId: string | null;
+  modelId: string;
+  nodeId: string;
+  workloadNodeId: string;
+  providerExecutionNodeId: string;
+  credentialNodeId: string | null;
+  startedAt: string;
+  state: 'STARTING' | 'RUNNING' | 'RECONNECTING' | 'COMPLETED' | 'FAILED' | 'CANCELLED' | 'UNKNOWN';
+  activeTurnId?: string;
+  observedAt: string;
+}
+export interface ParameterizedRecoveryState {
+  state: 'NONE' | 'RECONCILIATION_REQUIRED' | 'RECONNECTING' | 'RETRY_PENDING' | 'AUTHENTICATION_REQUIRED' | 'CANCELLING' | 'UNRECOVERABLE';
+  reason: string;
+  since: string;
+  observedAt: string;
+  deadlineAt?: string;
+  nextCheckAt?: string;
+  remainingRetryBudget?: number;
+}
 export interface ParameterizedJobRun {
   schema: 'agent-control.job-run/v1';
   id: string;
@@ -118,15 +142,20 @@ export interface ParameterizedJobRun {
   result?: RepositoryReviewResult;
   errors: string[];
   fallbackHistory: Array<{at: string; reason: string; selectedModel: string}>;
-  retryHistory: Array<{at: string; attempt: number; reason: string}>;
+  retryHistory: Array<{at: string; attempt: number; reason: string; kind?: string; nextAttemptAt?: string}>;
   /** Durable, monotonically increasing provider-execution identity across retries and controller restarts. */
   executionSequence?: number;
+  activeExecution?: ParameterizedExecutionIdentity;
+  /** Route-bound provider attempts; distinct from the human-readable execution-history projection. */
+  providerExecutions?: ParameterizedExecutionIdentity[];
+  recovery?: ParameterizedRecoveryState;
   immutable: boolean;
 }
 
 export interface ReviewExecutionRequest {
   run: ParameterizedJobRun;
   executionAttempt: number;
+  executionId: string;
   route: ModelRouteDecision;
   instruction: string;
   contextChunks: Array<{id: string; content: string; files: string[]; sha256: string}>;
@@ -135,4 +164,19 @@ export interface ReviewExecutionRequest {
   signal: AbortSignal;
 }
 export interface ReviewExecutionResponse {result: RepositoryReviewResult; usage: JobRunUsage; evidence: string[]; providerResponseIds: string[]; workParcelIds: string[];}
-export interface RepositoryReviewExecutor {execute(request: ReviewExecutionRequest): Promise<ReviewExecutionResponse>; recordVerification?(workParcelIds: string[], verdict: RepositoryReviewResult['verdict']): void;}
+export interface ReviewExecutionReconciliation {
+  executionId: string;
+  state: 'RUNNING' | 'COMPLETED' | 'FAILED' | 'CANCELLED' | 'UNKNOWN';
+  continuityProven: boolean;
+  observedAt: string;
+  activeTurnId?: string;
+  detail?: string;
+  response?: ReviewExecutionResponse;
+}
+export interface ReviewExecutionCancellation {executionId: string; state: 'CANCELLED' | 'RUNNING' | 'UNKNOWN'; cleanupConfirmed: boolean; observedAt: string; detail?: string;}
+export interface RepositoryReviewExecutor {
+  execute(request: ReviewExecutionRequest): Promise<ReviewExecutionResponse>;
+  reconcile?(run: ParameterizedJobRun, execution: ParameterizedExecutionIdentity): Promise<ReviewExecutionReconciliation>;
+  cancel?(run: ParameterizedJobRun, execution: ParameterizedExecutionIdentity, reason: string): Promise<ReviewExecutionCancellation>;
+  recordVerification?(workParcelIds: string[], verdict: RepositoryReviewResult['verdict']): void;
+}
