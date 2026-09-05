@@ -61,7 +61,7 @@ try {
   await waitPhase('DASHBOARD_READY', 300_000); await waitPhase('CANCEL_READY', 30_000); assert.ok(operatorToken, 'qualification_operator_token_missing');
   const {chromium} = require(playwrightRoot); browser = await chromium.launch({headless: true, executablePath: chromiumExecutable, args: ['--no-sandbox','--disable-dev-shm-usage']});
   context = await browser.newContext({viewport: {width: 1920, height: 1080}, recordVideo: {dir: rawVideoDir, size: {width: 1920, height: 1080}}, colorScheme: 'dark'}); page = await context.newPage(); video = page.video(); page.on('dialog', dialog => dialog.accept());
-  await page.goto(base, {waitUntil: 'networkidle'}); await page.waitForFunction(() => document.querySelector('#stream-state')?.textContent === 'LIVE', undefined, {timeout: 10_000});
+  await page.goto(base, {waitUntil: 'domcontentloaded'}); await page.waitForFunction(() => document.querySelector('#stream-state')?.textContent === 'LIVE', undefined, {timeout: 10_000});
   await page.click('#operator-button'); await page.fill('#operator-token', operatorToken); await page.click('#operator-form button[type="submit"]'); await page.click('[data-view="jobs"]');
   const cancel = phases.get('CANCEL_READY'); await page.waitForSelector(`[data-run="${cancel.runId}"]`, {timeout: 10_000}); await page.click(`[data-run="${cancel.runId}"]`); await page.waitForSelector('[data-run-command="cancel"]'); await page.click('[data-run-command="cancel"]');
   await page.waitForFunction(id => fetch(`/api/runs/${id}`).then(response => response.json()).then(run => run.status === 'CANCELLING'), cancel.runId, {timeout: 5_000});
