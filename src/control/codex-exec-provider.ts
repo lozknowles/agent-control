@@ -1,4 +1,3 @@
-import {spawn} from 'node:child_process';
 import {createHash} from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -11,6 +10,7 @@ import type {ModelConfig, ProviderAccountProfileConfig, ProviderConfig} from './
 import {materializeCodexModelConfig} from './codex-model-config.js';
 import {resolveCodexAccountEnvironment} from './provider-account-profile.js';
 import type {ContextLifecycleKind, TelemetryAuthority, TokenTelemetrySample} from './token-aware-baton-routing.js';
+import {OwnedProcessManager} from './owned-process.js';
 
 export const CODEX_0153_CONTEXT_CAPABILITIES = Object.freeze({
   persistedResponseUsage: true,
@@ -33,6 +33,7 @@ export interface CodexExecRequest {
   loadUserConfig?: boolean;
   onTelemetry?: (event: CodexExecTelemetryEvent) => void;
   outputSchema?: Record<string, unknown>;
+  signal?: AbortSignal;
 }
 
 export interface CodexExecTelemetryEvent {
@@ -132,8 +133,8 @@ export class CodexExecProviderFactory {
     const telemetry = this.options.telemetry;
     const emit = (event: CodexExecTelemetryEvent) => {
       if (!telemetry) return;
-      const usage = event.usage ?? {}, input = numeric(usage.input_tokens), cached = cachedInput(usage), fresh = input !== null && cached !== null && cached <= input ? input - cached : null, output = numeric(usage.output_tokens), total = numeric(usage.total_tokens) ?? (input !== null && output !== null ? input + output : null);
-      telemetry({threadId: event.threadId ?? `codex:${recipe.id ?? recipe.taskId ?? 'unattributed'}`, parcelId: recipe.taskId ?? recipe.jobId ?? 'unattributed-task', agentId: this.options.workerId, nodeId: this.options.workerId, providerId: this.options.provider.id, accountProfileId: account?.profile.id, accountLabel: account?.profile.label, accountPlan: account?.profile.plan, accountPlanAuthority: account?.profile.planAuthority, accountQualification: account?.profile.qualification?.state, accountAvailability: account ? account.profile.qualification?.state === 'QUALIFIED' ? 'AVAILABLE' : 'UNQUALIFIED' : undefined, modelId: this.options.modelId, elapsedMs: event.elapsedMs, active: !['turn.completed'].includes(event.type), cumulative: {inputTokens: input, freshInputTokens: fresh, cachedInputTokens: cached, outputTokens: output, totalTokens: total}, context: {tokens: event.context.tokens, limitTokens: event.context.limitTokens ?? this.options.contextLimitTokens ?? null, authority: event.context.authority, source: event.context.source}, cost: {amount: null, currency: null, authority: 'unavailable', source: 'codex_turn_cost_not_exposed_on_exec_jsonl'}, ...(event.contextLifecycle ? {contextLifecycle: event.contextLifecycle} : {})});
+      const usage = event.usage ?? {}, input = numeric(usage.input_tokens), cached = cachedInput(usage), cacheWrite = cacheWriteInput(usage), fresh = input !== null && cached !== null && cached + (cacheWrite ?? 0) <= input ? input - cached - (cacheWrite ?? 0) : null, output = numeric(usage.output_tokens), total = numeric(usage.total_tokens) ?? (input !== null && output !== null ? input + output : null);
+      telemetry({threadId: event.threadId ?? `codex:${recipe.id ?? recipe.taskId ?? 'unattributed'}`, parcelId: recipe.taskId ?? recipe.jobId ?? 'unattributed-task', agentId: this.options.workerId, nodeId: this.options.workerId, providerId: this.options.provider.id, accountProfileId: account?.profile.id, accountLabel: account?.profile.label, accountPlan: account?.profile.plan, accountPlanAuthority: account?.profile.planAuthority, accountQualification: account?.profile.qualification?.state, accountAvailability: account ? account.profile.qualification?.state === 'QUALIFIED' ? 'AVAILABLE' : 'UNQUALIFIED' : undefined, modelId: this.options.modelId, elapsedMs: event.elapsedMs, active: !['turn.completed'].includes(event.type), cumulative: {inputTokens: input, freshInputTokens: fresh, cachedInputTokens: cached, cacheWriteTokens: cacheWrite, outputTokens: output, totalTokens: total}, context: {tokens: event.context.tokens, limitTokens: event.context.limitTokens ?? this.options.contextLimitTokens ?? null, authority: event.context.authority, source: event.context.source}, cost: {amount: null, currency: null, authority: 'unavailable', source: 'codex_turn_cost_not_exposed_on_exec_jsonl'}, ...(event.contextLifecycle ? {contextLifecycle: event.contextLifecycle} : {})});
     };
     const run = await (this.options.runner ?? runCodexExec)({command, cwd: this.options.cwd, modelId: this.options.modelId, instruction, grantedToolIds, timeoutMs, environment, onTelemetry: emit});
     const providerCompletedAt = new Date().toISOString();
@@ -178,7 +179,7 @@ export async function runCodexExec(request: CodexExecRequest): Promise<CodexExec
       liveEvents.push(event); const threadId = typeof event.thread_id === 'string' ? event.thread_id : undefined; if (threadId) liveThreadId = threadId;
       const normalized = normalizeCodex0153TelemetryEvent(event, Date.now() - startedAt, liveThreadId);
       if (normalized) request.onTelemetry?.(normalized);
-    });
+    }, request.signal);
     if (result.code !== 0) throw new Error(`codex_exec_failed:${result.code}`);
     const events = liveEvents.length ? liveEvents : result.stdout.split(/\r?\n/).filter(Boolean).map(line => {
       try { return JSON.parse(line) as Record<string, unknown>; } catch { throw new Error('codex_exec_invalid_jsonl'); }
@@ -246,7 +247,7 @@ export function normalizeCodex0153TelemetryEvent(event: Record<string, unknown>,
 }
 
 function normalizeUsageBreakdown(value: Record<string, unknown>) {
-  return {input_tokens: usageNumber(value, 'inputTokens', 'input_tokens'), output_tokens: usageNumber(value, 'outputTokens', 'output_tokens'), total_tokens: usageNumber(value, 'totalTokens', 'total_tokens'), cached_input_tokens: usageNumber(value, 'cachedInputTokens', 'cached_input_tokens'), reasoning_output_tokens: usageNumber(value, 'reasoningOutputTokens', 'reasoning_output_tokens')};
+  return {input_tokens: usageNumber(value, 'inputTokens', 'input_tokens'), output_tokens: usageNumber(value, 'outputTokens', 'output_tokens'), total_tokens: usageNumber(value, 'totalTokens', 'total_tokens'), cached_input_tokens: usageNumber(value, 'cachedInputTokens', 'cached_input_tokens'), cache_write_tokens: usageNumber(value, 'cacheWriteTokens', 'cache_write_tokens'), reasoning_output_tokens: usageNumber(value, 'reasoningOutputTokens', 'reasoning_output_tokens')};
 }
 
 function usageNumber(value: Record<string, unknown>, camel: string, snake: string) { return numeric(value[camel] ?? value[snake]); }
@@ -272,34 +273,23 @@ function sanitizeUsage(value: Record<string, unknown>): Record<string, unknown> 
 
 function codexToolRequestSchema(grantedToolIds: string[]) { return {type: 'object', properties: {tool: {type: 'string', enum: grantedToolIds}, input_json: {type: 'string'}}, required: ['tool', 'input_json'], additionalProperties: false}; }
 
-async function captureProcess(command: string, args: string[], cwd: string, timeoutMs: number, environment: NodeJS.ProcessEnv = process.env, stripApiKeys = true, onStdoutLine?: (line: string) => void): Promise<{code: number; stdout: string; stderr: string}> {
-  return new Promise((resolve, reject) => {
-    const env = {...environment};
-    if (stripApiKeys) { delete env.OPENAI_API_KEY; delete env.CODEX_API_KEY; }
-    const child = spawn(command, args, {cwd, env, shell: false, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe']});
-    let stdout = '', stderr = '', settled = false;
-    const finish = (error?: Error, code = -1) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      if (error) reject(error); else resolve({code, stdout, stderr});
-    };
-    const append = (current: string, chunk: Buffer) => {
-      const next = current + chunk.toString('utf8');
-      if (next.length > 2_000_000) throw new Error('codex_exec_output_limit_exceeded');
-      return next;
-    };
-    let stdoutRemainder = '';
-    child.stdout.on('data', chunk => { try { stdout = append(stdout, chunk as Buffer); stdoutRemainder += (chunk as Buffer).toString('utf8'); const lines = stdoutRemainder.split(/\r?\n/); stdoutRemainder = lines.pop() ?? ''; for (const line of lines) if (line) onStdoutLine?.(line); } catch (error) { child.kill(); finish(error as Error); } });
-    child.stderr.on('data', chunk => { try { stderr = append(stderr, chunk as Buffer); } catch (error) { child.kill(); finish(error as Error); } });
-    child.once('error', error => finish(new Error(`codex_exec_launch_failed:${error.message}`)));
-    child.once('close', code => { if (stdoutRemainder) onStdoutLine?.(stdoutRemainder); finish(undefined, code ?? -1); });
-    const timer = setTimeout(() => { child.kill(); finish(new Error('codex_exec_timeout')); }, Math.max(1, timeoutMs));
-  });
+async function captureProcess(command: string, args: string[], cwd: string, timeoutMs: number, environment: NodeJS.ProcessEnv = process.env, stripApiKeys = true, onStdoutLine?: (line: string) => void, externalSignal?: AbortSignal): Promise<{code: number; stdout: string; stderr: string}> {
+  const env = {...environment}; if (stripApiKeys) { delete env.OPENAI_API_KEY; delete env.CODEX_API_KEY; }
+  const timeout = new AbortController(), timer = setTimeout(() => timeout.abort(new Error('codex_exec_timeout')), Math.max(1, timeoutMs)), signal = externalSignal ? AbortSignal.any([externalSignal, timeout.signal]) : timeout.signal, owned = new OwnedProcessManager();
+  try {
+    const result = await owned.runProcess({command, args, cwd, env, maxOutputBytes: 2_000_000, onStdoutLine}, signal);
+    return {code: result.exitCode ?? -1, stdout: result.stdout, stderr: result.stderr};
+  } catch (error) {
+    const cleanup = await owned.terminateAll(timeout.signal.aborted ? 'codex_exec_timeout' : 'codex_exec_cancelled');
+    const failure = error instanceof Error ? error : new Error(String(error));
+    if (cleanup.outcome !== 'confirmed') Object.assign(failure, {cleanup});
+    throw failure;
+  } finally { clearTimeout(timer); }
 }
 
 function numeric(value: unknown) { return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null; }
 function cachedInput(usage: Record<string, unknown>) { return numeric(usage.cached_input_tokens ?? usage.cachedInputTokens ?? recordValue(usage.input_tokens_details)?.cached_tokens ?? recordValue(usage.prompt_tokens_details)?.cached_tokens); }
+function cacheWriteInput(usage: Record<string, unknown>) { return numeric(usage.cache_write_tokens ?? usage.cacheWriteTokens ?? usage.cache_creation_input_tokens ?? recordValue(usage.input_tokens_details)?.cache_write_tokens); }
 
 function parseToolRequest(content: string): ToolRequest {
   let parsed: unknown;

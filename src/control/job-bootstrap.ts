@@ -90,6 +90,6 @@ export function buildParameterizedJobRuntime(config: AgentControlConfig, modelRe
 
 export function startParameterizedJobScheduler(runtime: ReturnType<typeof buildParameterizedJobRuntime>, onChange?: (runId: string, status: string) => void, intervalMs = 1000, onError?: (error: Error) => void) {
   let active = false, stopped = false;
-  const tick = async () => { if (active || stopped) return; active = true; try { const created = await runtime.tickSchedules(); for (const run of created) onChange?.(run.id, run.status); const completed = await runtime.executeNext(); if (completed) onChange?.(completed.id, completed.status); } catch (error) { (onError ?? (failure => process.emitWarning(failure.message)))(error instanceof Error ? error : new Error(String(error))); } finally { active = false; } };
+  const tick = async () => { if (active || stopped) return; active = true; try { const created = await runtime.tickSchedules(); for (const run of created) onChange?.(run.id, run.status); const reconciled = await runtime.reconcileInterrupted(); for (const run of reconciled) onChange?.(run.id, run.status); const completed = await runtime.executeNext(); if (completed) onChange?.(completed.id, completed.status); } catch (error) { (onError ?? (failure => process.emitWarning(failure.message)))(error instanceof Error ? error : new Error(String(error))); } finally { active = false; } };
   const timer = setInterval(() => void tick(), intervalMs); timer.unref(); void tick(); return () => { stopped = true; clearInterval(timer); };
 }

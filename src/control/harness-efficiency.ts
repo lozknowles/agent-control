@@ -336,13 +336,18 @@ export interface NormalizedProviderUsage {
 export function normalizeProviderUsage(raw: unknown): NormalizedProviderUsage {
   const input = metric(raw, ['input_tokens'], ['prompt_tokens'], ['inputTokens']);
   const cached = metric(raw, ['input_tokens_details', 'cached_tokens'], ['prompt_tokens_details', 'cached_tokens'], ['cache_read_input_tokens'], ['cached_input_tokens'], ['cachedInputTokens']);
-  const cacheWrite = metric(raw, ['cache_creation_input_tokens'], ['cache_write_input_tokens'], ['cacheWriteTokens']);
+  const openAiCacheWrite = metric(raw, ['input_tokens_details', 'cache_write_tokens']);
+  const cacheWrite = openAiCacheWrite ?? metric(raw, ['cache_creation_input_tokens'], ['cache_write_input_tokens'], ['cacheWriteTokens']);
   const output = metric(raw, ['output_tokens'], ['completion_tokens'], ['outputTokens']);
   const reasoning = metric(raw, ['output_tokens_details', 'reasoning_tokens'], ['completion_tokens_details', 'reasoning_tokens'], ['reasoning_tokens'], ['reasoningTokens']);
   const reportedTotal = metric(raw, ['total_tokens'], ['totalTokens']);
   return {
     inputTokens: input,
-    freshInputTokens: input !== null && cached !== null ? Math.max(0, input - cached) : null,
+    // Responses input_tokens_details reports cache reads and writes as
+    // disjoint portions of input_tokens. Other provider aliases have not all
+    // established that accounting contract, so retain their historical fresh
+    // input derivation until their adapters can attest it.
+    freshInputTokens: input !== null && cached !== null ? Math.max(0, input - cached - (openAiCacheWrite ?? 0)) : null,
     cachedInputTokens: cached,
     cacheWriteTokens: cacheWrite,
     outputTokens: output,
@@ -524,7 +529,7 @@ export function createInvocationStart(input: InvocationStartInput): ModelInvocat
 function normalizedPersistedInvocation(record: ModelInvocationObservation): ModelInvocationObservation {
   const usageKnown = Object.values(record.usage).some(value => typeof value === 'number');
   return {
-    ...record, stepId: record.stepId ?? null, completedAt: record.completedAt ?? null, elapsedMs: record.elapsedMs ?? null,
+    ...record, usage: {...record.usage, cacheWriteTokens: record.usage.cacheWriteTokens ?? null}, stepId: record.stepId ?? null, completedAt: record.completedAt ?? null, elapsedMs: record.elapsedMs ?? null,
     state: record.state ?? (record.outcome === 'FAILED' ? 'FAILED' : record.outcome === 'CANCELLED' ? 'CANCELLED' : 'COMPLETE'), phase: record.phase ?? 'complete', phaseUpdatedAt: record.phaseUpdatedAt ?? record.completedAt ?? record.startedAt,
     usageSource: record.usageSource ?? (usageKnown ? 'provider-reported' : 'unknown'), costSource: record.costSource ?? (record.providerReportedCost !== null ? 'reported' : record.calculatedCost !== null ? 'estimated' : 'unknown'),
     finishReason: record.finishReason ?? null,
@@ -540,6 +545,7 @@ export interface EfficiencyAggregate {
   totalProcessedTokens: number | null;
   freshInputTokens: number | null;
   cachedInputTokens: number | null;
+  cacheWriteTokens: number | null;
   outputTokens: number | null;
   reasoningTokens: number | null;
   elapsedMs: number;
@@ -626,15 +632,15 @@ function aggregate(records: ModelInvocationObservation[]): EfficiencyAggregate {
   const jobs = new Set(records.map(record => record.jobId));
   const successes = new Set(records.filter(record => record.verifierResult === 'PASS' && record.finalJobResult === 'SUCCEEDED').map(record => record.jobId));
   const verifierFailures = new Set(records.filter(record => record.verifierResult === 'FAIL').map(record => record.jobId)).size;
-  const complete = (selector: (record: ModelInvocationObservation) => number | null) => records.length > 0 && records.every(record => selector(record) !== null) ? records.reduce((sum, record) => sum + selector(record)!, 0) : null;
-  const total = complete(record => record.usage.totalProcessedTokens), fresh = complete(record => record.usage.freshInputTokens), cached = complete(record => record.usage.cachedInputTokens), output = complete(record => record.usage.outputTokens), reasoning = complete(record => record.usage.reasoningTokens);
+  const complete = (selector: (record: ModelInvocationObservation) => number | null | undefined) => records.length > 0 && records.every(record => typeof selector(record) === 'number') ? records.reduce((sum, record) => sum + (selector(record) ?? 0), 0) : null;
+  const total = complete(record => record.usage.totalProcessedTokens), fresh = complete(record => record.usage.freshInputTokens), cached = complete(record => record.usage.cachedInputTokens), cacheWrite = complete(record => record.usage.cacheWriteTokens), output = complete(record => record.usage.outputTokens), reasoning = complete(record => record.usage.reasoningTokens);
   const providerCost = complete(record => record.providerReportedCost), calculatedCost = complete(record => record.calculatedCost);
   const currencies = [...new Set(records.map(record => record.currency).filter((value): value is string => value !== null))];
   const cost = providerCost ?? calculatedCost;
   return {
-    invocations: records.length, jobs: jobs.size, verifiedSuccesses: successes.size, verifierFailures, modelTurns: records.length, totalProcessedTokens: total, freshInputTokens: fresh, cachedInputTokens: cached, outputTokens: output, reasoningTokens: reasoning,
+    invocations: records.length, jobs: jobs.size, verifiedSuccesses: successes.size, verifierFailures, modelTurns: records.length, totalProcessedTokens: total, freshInputTokens: fresh, cachedInputTokens: cached, cacheWriteTokens: cacheWrite, outputTokens: output, reasoningTokens: reasoning,
     elapsedMs: records.reduce((sum, record) => sum + (record.elapsedMs ?? 0), 0), providerReportedCost: providerCost, calculatedCost, currency: currencies.length === 1 ? currencies[0] : null,
-    cacheEffectiveness: fresh !== null && cached !== null && fresh + cached > 0 ? cached / (fresh + cached) : null,
+    cacheEffectiveness: fresh !== null && cached !== null && fresh + cached + (cacheWrite ?? 0) > 0 ? cached / (fresh + cached + (cacheWrite ?? 0)) : null,
     tokensPerVerifiedOutcome: ratio(total, successes.size), freshTokensPerVerifiedOutcome: ratio(fresh, successes.size), turnsPerVerifiedOutcome: successes.size ? records.length / successes.size : null,
     timePerVerifiedOutcomeMs: successes.size ? records.reduce((sum, record) => sum + (record.elapsedMs ?? 0), 0) / successes.size : null, costPerVerifiedOutcome: ratio(cost, successes.size),
     unknownMetricInvocations: records.filter(record => [record.usage.totalProcessedTokens, record.usage.freshInputTokens, record.usage.cachedInputTokens, record.providerReportedCost, record.calculatedCost].some(value => value === null)).length,

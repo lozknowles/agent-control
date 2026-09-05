@@ -20,9 +20,9 @@ test('liveness distinguishes fresh, stale and waiting without inventing failure'
 });
 
 test('missing usage remains unknown while live usage and provider cost remain inspectable', () => {
-  assert.deepEqual({...state.usage({freshInputTokens: null, cachedInputTokens: null, outputTokens: null, reasoningTokens: null, totalTokens: null, cost: null})}, {available: false, label: 'Usage reported on completion'});
-  const live = state.usage({freshInputTokens: 120, cachedInputTokens: 80, outputTokens: 20, reasoningTokens: 5, totalTokens: 225, cost: 0.004});
-  assert.equal(live.available, true); assert.match(live.label, /input 120.*reasoning 5.*cost 0.004/);
+  assert.deepEqual({...state.usage({freshInputTokens: null, cachedInputTokens: null, cacheWriteTokens: null, outputTokens: null, reasoningTokens: null, totalTokens: null, cost: null})}, {available: false, label: 'Usage reported on completion'});
+  const live = state.usage({freshInputTokens: 120, cachedInputTokens: 80, cacheWriteTokens: 25, outputTokens: 20, reasoningTokens: 5, totalTokens: 245, cost: 0.004});
+  assert.equal(live.available, true); assert.match(live.label, /fresh 120.*cache read 80.*cache write 25.*reasoning 5.*cost 0.004/);
   assert.equal(state.metric(null), 'Not reported'); assert.notEqual(state.metric(null), '0');
 });
 

@@ -26,9 +26,10 @@ test('Codex ChatGPT-plan factory returns data only through the ToolPolicy gatewa
 });
 
 test('Codex usage retains nested cache and reasoning details for normalisation', async () => {
-  const result = await factory({runner: async request => ({threadId: 'thr_nested', finalMessage: JSON.stringify({tool: request.grantedToolIds[0], input_json: '{}'}), usage: {input_tokens: 100, input_tokens_details: {cached_tokens: 70}, output_tokens: 20, output_tokens_details: {reasoning_tokens: 8}, total_tokens: 120}, observedItemTypes: ['agent_message']})}).executor('Return safe data').execute({tools: [{id: 'qualification.return-data'}], resourceLimits: {}} as never, {invoke: async () => ({marker: 'SAFE'})});
-  assert.equal(result.invocations?.[0].usage.freshInputTokens, 30);
+  const result = await factory({runner: async request => ({threadId: 'thr_nested', finalMessage: JSON.stringify({tool: request.grantedToolIds[0], input_json: '{}'}), usage: {input_tokens: 100, input_tokens_details: {cached_tokens: 70, cache_write_tokens: 10}, output_tokens: 20, output_tokens_details: {reasoning_tokens: 8}, total_tokens: 120}, observedItemTypes: ['agent_message']})}).executor('Return safe data').execute({tools: [{id: 'qualification.return-data'}], resourceLimits: {}} as never, {invoke: async () => ({marker: 'SAFE'})});
+  assert.equal(result.invocations?.[0].usage.freshInputTokens, 20);
   assert.equal(result.invocations?.[0].usage.cachedInputTokens, 70);
+  assert.equal(result.invocations?.[0].usage.cacheWriteTokens, 10);
   assert.equal(result.invocations?.[0].usage.reasoningTokens, 8);
 });
 
@@ -50,7 +51,7 @@ test('schema-constrained Codex arguments isolate account auth from mutable confi
 test('Codex 0.153 native app-server usage and compaction normalize behind the provider adapter', () => {
   const usage = normalizeCodex0153TelemetryEvent({method: 'thread/tokenUsage/updated', params: {threadId: 'thr-153', tokenUsage: {total: {inputTokens: 1000, outputTokens: 100, totalTokens: 1100}, last: {inputTokens: 200, outputTokens: 20, totalTokens: 220}, modelContextWindow: 1000}}}, 25);
   assert.equal(usage?.type, 'thread.token_usage.updated');
-  assert.deepEqual(usage?.usage, {input_tokens: 1000, output_tokens: 100, total_tokens: 1100, cached_input_tokens: null, reasoning_output_tokens: null});
+  assert.deepEqual(usage?.usage, {input_tokens: 1000, output_tokens: 100, total_tokens: 1100, cached_input_tokens: null, cache_write_tokens: null, reasoning_output_tokens: null});
   assert.deepEqual(usage?.context, {tokens: 220, limitTokens: 1000, authority: 'estimated', source: 'codex_app_server_thread_usage_mixed_provider_or_recomputed'});
   const compact = normalizeCodex0153TelemetryEvent({method: 'item/completed', params: {threadId: 'thr-153', item: {type: 'contextCompaction', id: 'compact-1'}}}, 30);
   assert.deepEqual(compact?.contextLifecycle, {kind: 'COMPACTION', contextId: 'compact-1', authority: 'authoritative', source: 'codex_app_server_contextCompaction'});

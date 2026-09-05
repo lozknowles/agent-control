@@ -6,6 +6,7 @@ export type ContractState = 'ACTIVE' | 'PAUSED' | 'CANCELLING' | 'CANCELLED' | '
 export type ProcessState = 'STARTING' | 'RUNNING' | 'PAUSED' | 'EXITED' | 'CANCEL_PENDING' | 'ORPHANED' | 'UNKNOWN';
 export type PtyState = 'ATTACHED' | 'DETACHED' | 'LOST' | 'CLOSED';
 export type PtyParticipantAccess = 'observe' | 'write';
+export interface ContractCleanupResult {outcome: 'confirmed' | 'uncertain' | 'identity-mismatch' | 'failed'; detail?: string; verifiedAt?: string;}
 
 export interface ContractBaton {
   generation: number;
@@ -35,7 +36,7 @@ export interface ContractExecution {
   state: ContractState;
   active: {actorId: string; agentId: string; modelId?: string; providerId?: string; accountProfileId?: string; runtimeId: string; nodeId: string; workloadNodeId?: string; providerExecutionNodeId?: string; credentialNodeId?: string};
   baton: ContractBaton;
-  process: {id: string; pid?: number; state: ProcessState; startedAt: string; observedAt: string; exitCode?: number; signal?: string};
+  process: {id: string; pid?: number; state: ProcessState; startedAt: string; observedAt: string; exitCode?: number; signal?: string; cleanup?: ContractCleanupResult};
   pty: {id: string; state: PtyState; writeOwner?: string; ownershipGeneration: number; participants: ContractParticipant[]; transcript: ContractTranscript[]; nextSequence: number};
   attachments: Array<{id: string; kind: string; reference: string; sha256?: string}>;
   permissions: {capabilities: string[]; filesystem: 'none' | 'read' | 'write'; network: 'none' | 'provider-only' | 'unrestricted'; production: boolean};
@@ -49,12 +50,12 @@ export interface ContractExecution {
 }
 
 interface ContractSnapshot {schema: 'agent-control.contract-executions/v1'; contracts: ContractExecution[];}
-export interface ContractProcessPort {cancel(processId: string, reason: string): Promise<void> | void; pause?(processId: string, reason: string): Promise<void> | void;}
+export interface ContractProcessPort {cancel(processId: string, reason: string): Promise<ContractCleanupResult | void> | ContractCleanupResult | void; pause?(processId: string, reason: string): Promise<void> | void;}
 
 /** Durable authority and recovery state for Lane -> Contract -> Baton -> Process/PTY -> Agent. */
 export class ContractExecutionRuntime {
   private readonly contracts = new Map<string, ContractExecution>();
-  constructor(readonly file?: string, readonly processes: ContractProcessPort = {cancel: () => undefined}, readonly clock: () => string = () => new Date().toISOString()) { this.load(); }
+  constructor(readonly file?: string, readonly processes: ContractProcessPort = {cancel: () => ({outcome: 'uncertain', detail: 'process_port_not_configured'})}, readonly clock: () => string = () => new Date().toISOString()) { this.load(); }
 
   create(input: {
     id?: string; laneId: string; parentContractId?: string; operatorActorId: string; objective: string; completionCriteria: string[]; authority: string[]; protectedResources?: string[];
@@ -145,10 +146,12 @@ export class ContractExecutionRuntime {
   async cancel(id: string, actorId: string, reason: string) {
     const contract = this.get(id); if (['CANCELLED','TIMED_OUT','VERIFIED','FAILED'].includes(contract.state)) return contract;
     contract.state = 'CANCELLING'; contract.process.state = 'CANCEL_PENDING'; const action: ContractPendingAction = {id: `action:${randomUUID()}`, kind: 'cancel', requestedBy: actorId, reason: bounded(reason), status: 'PENDING', createdAt: this.clock()}; contract.pendingActions.push(action); this.record(contract, 'contract.cancel_requested', actorId, action.id);
-    await this.processes.cancel(contract.process.id, reason); const current = this.get(id), pending = current.pendingActions.find(item => item.id === action.id)!; pending.status = 'COMPLETED'; pending.decidedAt = this.clock(); pending.decidedBy = 'agent-control'; current.state = 'CANCELLED'; current.process.state = 'EXITED'; current.pty.state = 'CLOSED'; delete current.pty.writeOwner; current.pty.ownershipGeneration++; this.record(current, 'contract.cancelled', 'agent-control', reason); return this.get(id);
+    const cleanup = normalizeCleanup(await this.processes.cancel(contract.process.id, reason), this.clock()); const current = this.get(id), pending = current.pendingActions.find(item => item.id === action.id)!; current.process.cleanup = cleanup; current.process.observedAt = cleanup.verifiedAt!;
+    if (cleanup.outcome !== 'confirmed') { current.process.state = 'UNKNOWN'; current.pty.state = 'LOST'; delete current.pty.writeOwner; current.pty.ownershipGeneration++; this.record(current, 'contract.cleanup_uncertain', 'agent-control', `outcome=${cleanup.outcome};${cleanup.detail ?? 'no-detail'}`); return this.get(id); }
+    pending.status = 'COMPLETED'; pending.decidedAt = this.clock(); pending.decidedBy = 'agent-control'; current.state = 'CANCELLED'; current.process.state = 'EXITED'; current.pty.state = 'CLOSED'; delete current.pty.writeOwner; current.pty.ownershipGeneration++; this.record(current, 'contract.cancelled', 'agent-control', reason); return this.get(id);
   }
 
-  async enforceTimeout(id: string) { const contract = this.get(id), deadline = contract.budget.deadlineAt; if (!deadline || Date.parse(this.clock()) < Date.parse(deadline) || ['CANCELLED','TIMED_OUT','VERIFIED','FAILED'].includes(contract.state)) return contract; await this.processes.cancel(contract.process.id, 'contract_timeout'); const current = this.get(id); current.state = 'TIMED_OUT'; current.process.state = 'EXITED'; current.pty.state = 'CLOSED'; delete current.pty.writeOwner; current.pty.ownershipGeneration++; this.record(current, 'contract.timed_out', 'agent-control', deadline); return this.get(id); }
+  async enforceTimeout(id: string) { const contract = this.get(id), deadline = contract.budget.deadlineAt; if (!deadline || Date.parse(this.clock()) < Date.parse(deadline) || ['CANCELLED','TIMED_OUT','VERIFIED','FAILED'].includes(contract.state)) return contract; const cleanup = normalizeCleanup(await this.processes.cancel(contract.process.id, 'contract_timeout'), this.clock()); const current = this.get(id); current.process.cleanup = cleanup; current.process.observedAt = cleanup.verifiedAt!; if (cleanup.outcome !== 'confirmed') { current.state = 'ORPHANED'; current.process.state = 'UNKNOWN'; current.pty.state = 'LOST'; delete current.pty.writeOwner; current.pty.ownershipGeneration++; this.record(current, 'contract.timeout_cleanup_uncertain', 'agent-control', `deadline=${deadline};outcome=${cleanup.outcome}`); return this.get(id); } current.state = 'TIMED_OUT'; current.process.state = 'EXITED'; current.pty.state = 'CLOSED'; delete current.pty.writeOwner; current.pty.ownershipGeneration++; this.record(current, 'contract.timed_out', 'agent-control', deadline); return this.get(id); }
 
   submitForVerification(id: string, actorId: string, evidence: ContractEvidence[]) { const contract = this.get(id); if (contract.active.actorId !== actorId) throw new Error('contract_worker_mismatch'); contract.evidence.push(...evidence.map(item => structuredClone(item))); contract.verification = {state: 'PENDING', submittedAt: this.clock(), evidenceIds: unique(evidence.map(item => item.id)), reasons: []}; contract.state = 'VERIFYING'; this.record(contract, 'verification.submitted', actorId, `${evidence.length} evidence records`); return this.get(id); }
   verify(id: string, verifierActorId: string, passed: boolean, reasons: string[] = []) { const contract = this.get(id); if (contract.verification.state !== 'PENDING') throw new Error('verification_not_pending'); if (verifierActorId === contract.active.actorId) throw new Error('verification_not_independent'); contract.verification.state = passed ? 'PASSED' : 'FAILED'; contract.verification.verifierActorId = verifierActorId; contract.verification.reasons = reasons.map(value => bounded(value)); contract.state = passed ? 'VERIFIED' : 'FAILED'; this.record(contract, passed ? 'verification.passed' : 'verification.failed', verifierActorId, reasons.join('; ') || 'independent verification'); return this.get(id); }
@@ -156,7 +159,7 @@ export class ContractExecutionRuntime {
   linkHandoff(id: string, handoffId: string, actorId: string) { const contract = this.get(id); if (!contract.handoffs.includes(handoffId)) contract.handoffs.push(handoffId); this.record(contract, 'handoff.linked', actorId, handoffId); return this.get(id); }
 
   async sacrificeWorker(id: string, actorId: string, reason: string) {
-    const contract = this.get(id); await this.processes.cancel(contract.process.id, `sacrifice:${reason}`); contract.state = 'PAUSED'; contract.process.state = 'EXITED'; contract.pty.state = 'CLOSED'; delete contract.pty.writeOwner; contract.pty.ownershipGeneration++; this.record(contract, 'worker.sacrificed', actorId, reason); return this.get(id);
+    const contract = this.get(id), cleanup = normalizeCleanup(await this.processes.cancel(contract.process.id, `sacrifice:${reason}`), this.clock()); contract.process.cleanup = cleanup; if (cleanup.outcome !== 'confirmed') { contract.state = 'ORPHANED'; contract.process.state = 'UNKNOWN'; contract.pty.state = 'LOST'; this.record(contract, 'worker.sacrifice_cleanup_uncertain', actorId, `outcome=${cleanup.outcome}`); throw new Error('process_cleanup_unconfirmed'); } contract.state = 'PAUSED'; contract.process.state = 'EXITED'; contract.pty.state = 'CLOSED'; delete contract.pty.writeOwner; contract.pty.ownershipGeneration++; this.record(contract, 'worker.sacrificed', actorId, reason); return this.get(id);
   }
 
   async yieldWorker(id: string, actorId: string, reason: string) {
@@ -164,7 +167,7 @@ export class ContractExecutionRuntime {
   }
 
   async substituteWorker(id: string, byActorId: string, input: {active: ContractExecution['active']; baton: Record<string, unknown>; process: {id: string; pid?: number}; ptyId: string; reason: string}) {
-    const contract = this.get(id); if (byActorId !== contract.operatorActorId && byActorId !== contract.active.actorId) throw new Error('substitution_not_authorized'); rejectSecrets(input); await this.processes.cancel(contract.process.id, `substitute:${input.reason}`);
+    const contract = this.get(id); if (byActorId !== contract.operatorActorId && byActorId !== contract.active.actorId) throw new Error('substitution_not_authorized'); rejectSecrets(input); const cleanup = normalizeCleanup(await this.processes.cancel(contract.process.id, `substitute:${input.reason}`), this.clock()); contract.process.cleanup = cleanup; if (cleanup.outcome !== 'confirmed') { contract.state = 'ORPHANED'; contract.process.state = 'UNKNOWN'; contract.pty.state = 'LOST'; this.record(contract, 'worker.substitution_cleanup_uncertain', byActorId, `outcome=${cleanup.outcome}`); throw new Error('process_cleanup_unconfirmed'); }
     const at = this.clock(); contract.active = structuredClone(input.active); contract.baton = sealBaton(contract.baton.generation + 1, input.baton, byActorId, at); contract.process = {id: input.process.id, pid: input.process.pid, state: 'RUNNING', startedAt: at, observedAt: at}; contract.pty = {id: input.ptyId, state: 'DETACHED', ownershipGeneration: contract.pty.ownershipGeneration + 1, participants: [], transcript: [], nextSequence: 1}; contract.state = 'ACTIVE'; contract.verification = {state: 'UNSUBMITTED', evidenceIds: [], reasons: []}; this.record(contract, 'worker.substituted', byActorId, input.reason); return this.get(id);
   }
 
@@ -185,3 +188,4 @@ function stable(value: unknown): string { if (Array.isArray(value)) return `[${v
 function unique(values: string[]) { return [...new Set(values)]; }
 function bounded(value: string, maximum = 2048) { if (typeof value !== 'string' || !value.trim()) throw new Error('text_required'); return value.length <= maximum ? value : value.slice(0, maximum); }
 function rejectSecrets(value: unknown) { const serialized = JSON.stringify(value); if (/(?:sk-[A-Za-z0-9_-]{12,}|bearer\s+[A-Za-z0-9._-]{12,}|api[_-]?key["']?\s*[:=]|password["']?\s*[:=]|-----BEGIN [A-Z ]*PRIVATE KEY-----)/i.test(serialized)) throw new Error('contract_secret_material_forbidden'); }
+function normalizeCleanup(value: ContractCleanupResult | void, at: string): ContractCleanupResult { return value ? {...value, verifiedAt: value.verifiedAt ?? at} : {outcome: 'uncertain', detail: 'process_port_returned_no_cleanup_evidence', verifiedAt: at}; }

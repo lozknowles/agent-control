@@ -111,7 +111,7 @@ export interface SystemProjection {
   outstandingApprovals: number;
   lastRestorePoint: string | null;
   observedAt: string;
-  jobs: {total: number; enabled: number; queued: number; waiting: number; running: number; failed: number; succeeded: number; schedulesEnabled: number;};
+  jobs: {total: number; enabled: number; queued: number; waiting: number; authenticationBlocked: number; reconnecting: number; cancelling: number; cleanupUncertain: number; disconnected: number; running: number; failed: number; succeeded: number; schedulesEnabled: number;};
   tokenAwareOutput: TokenAwareOutputMetrics;
   tokenBatonRouting: TokenRoutingProjection;
   retrieval: RetrievalProjection;
@@ -211,7 +211,21 @@ export class AgentControlService {
       outstandingApprovals: this.approvalCount(),
       lastRestorePoint: this.state.lastRestorePoint,
       observedAt: new Date().toISOString(),
-      jobs: {total: jobDefinitions.length + savedJobs.length, enabled: jobDefinitions.filter(job => job.spec.enabled !== false).length + savedJobs.filter(job => job.enabled).length, queued: jobRuns.filter(run => run.status === 'QUEUED').length + parameterizedRuns.filter(run => run.status === 'QUEUED').length, waiting: jobRuns.filter(run => run.status === 'WAITING').length, running: jobRuns.filter(run => ['RUNNING', 'VERIFYING'].includes(run.status)).length + parameterizedRuns.filter(run => ['RESOLVING', 'RUNNING', 'VALIDATING'].includes(run.status)).length, failed: jobRuns.filter(run => ['FAILED', 'DEGRADED', 'DISCONNECTED'].includes(run.status)).length + parameterizedRuns.filter(run => ['FAILED', 'DEGRADED'].includes(run.status)).length, succeeded: jobRuns.filter(run => run.status === 'SUCCEEDED').length + parameterizedRuns.filter(run => ['SUCCEEDED', 'SUCCEEDED_WITH_FINDINGS'].includes(run.status)).length, schedulesEnabled: schedules.filter(schedule => this.jobRuntime?.ledger.schedule(schedule.metadata.id)?.enabled).length + savedJobs.filter(job => job.schedule?.enabled).length},
+      jobs: {
+        total: jobDefinitions.length + savedJobs.length,
+        enabled: jobDefinitions.filter(job => job.spec.enabled !== false).length + savedJobs.filter(job => job.enabled).length,
+        queued: jobRuns.filter(run => run.status === 'QUEUED').length + parameterizedRuns.filter(run => run.status === 'QUEUED').length,
+        waiting: jobRuns.filter(run => run.status === 'WAITING').length,
+        authenticationBlocked: jobRuns.filter(run => run.status === 'AUTHENTICATION_BLOCKED').length + parameterizedRuns.filter(run => run.status === 'AUTHENTICATION_BLOCKED').length,
+        reconnecting: jobRuns.filter(run => run.status === 'RECONNECTING').length + parameterizedRuns.filter(run => run.status === 'RECONNECTING').length,
+        cancelling: jobRuns.filter(run => run.status === 'CANCELLING').length + parameterizedRuns.filter(run => run.status === 'CANCELLING').length,
+        cleanupUncertain: jobRuns.filter(run => run.status === 'CLEANUP_UNCERTAIN').length,
+        disconnected: jobRuns.filter(run => run.status === 'DISCONNECTED').length + parameterizedRuns.filter(run => run.status === 'DISCONNECTED').length,
+        running: jobRuns.filter(run => ['RUNNING', 'VERIFYING'].includes(run.status)).length + parameterizedRuns.filter(run => ['RESOLVING', 'RUNNING', 'VALIDATING'].includes(run.status)).length,
+        failed: jobRuns.filter(run => ['FAILED', 'DEGRADED'].includes(run.status)).length + parameterizedRuns.filter(run => ['FAILED', 'DEGRADED'].includes(run.status)).length,
+        succeeded: jobRuns.filter(run => run.status === 'SUCCEEDED').length + parameterizedRuns.filter(run => ['SUCCEEDED', 'SUCCEEDED_WITH_FINDINGS'].includes(run.status)).length,
+        schedulesEnabled: schedules.filter(schedule => this.jobRuntime?.ledger.schedule(schedule.metadata.id)?.enabled).length + savedJobs.filter(job => job.schedule?.enabled).length,
+      },
       tokenAwareOutput: this.commandOutputMetrics(),
       tokenBatonRouting: this.tokenRouting(),
       retrieval: this.retrievalProjection(),
@@ -255,7 +269,7 @@ export class AgentControlService {
   runtime() { return this.runtimeObservability?.snapshot() ?? new RuntimeObservability().snapshot(); }
   modelProviders() { return this.mustModelRegistry().providersList(); }
   modelAccountProfiles() { return this.mustModelRegistry().accountProfilesList(); }
-  models() { return this.mustModelRegistry().list().map(model => { const recent = (this.harnessEfficiency?.list() ?? []).filter(item => item.model === model.id && item.provider === model.provider).at(-1); return {...model, ...(recent ? {recentInvocation: {at: recent.completedAt ?? recent.startedAt, outcome: recent.finalJobResult, verifierResult: recent.verifierResult, latencyMs: recent.elapsedMs, inputTokens: recent.usage.inputTokens, outputTokens: recent.usage.outputTokens, cachedInputTokens: recent.usage.cachedInputTokens, totalTokens: recent.usage.totalProcessedTokens, providerReportedCost: recent.providerReportedCost, calculatedCost: recent.calculatedCost, currency: recent.currency}} : {})}; }); }
+  models() { return this.mustModelRegistry().list().map(model => { const recent = (this.harnessEfficiency?.list() ?? []).filter(item => item.model === model.id && item.provider === model.provider).at(-1); return {...model, ...(recent ? {recentInvocation: {at: recent.completedAt ?? recent.startedAt, outcome: recent.finalJobResult, verifierResult: recent.verifierResult, latencyMs: recent.elapsedMs, inputTokens: recent.usage.inputTokens, outputTokens: recent.usage.outputTokens, cachedInputTokens: recent.usage.cachedInputTokens, cacheWriteTokens: recent.usage.cacheWriteTokens, totalTokens: recent.usage.totalProcessedTokens, providerReportedCost: recent.providerReportedCost, calculatedCost: recent.calculatedCost, currency: recent.currency}} : {})}; }); }
   jobDefinitions() { return this.mustParameterizedJobs().definitions.list(); }
   jobDefinition(id: string, version?: number) { return this.mustParameterizedJobs().definitions.get(id, version); }
   savedJobs() { return this.mustParameterizedJobs().savedJobs.list().map(job => ({...job, definitionResolved: this.mustParameterizedJobs().definitions.resolve(job), nextRun: nextSavedJobOccurrence(job, new Date())?.toISOString() ?? null, lastRun: this.mustParameterizedJobs().runs.list(job.id)[0] ?? null})); }

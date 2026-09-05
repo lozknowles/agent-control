@@ -1,13 +1,13 @@
 import type {CapabilityRequest} from './capabilities.js';
-import type {OwnedExecution} from './owned-process.js';
+import type {ExecutionCleanupReport, OwnedExecution} from './owned-process.js';
 
 export type JobPriority = 'background' | 'low' | 'normal' | 'high' | 'urgent';
 export type ConcurrencyPolicy = 'allow' | 'no-overlap' | 'replace-running' | 'queue';
 export type MissedRunPolicy = 'skip' | 'run-next-available' | 'run-once-immediately';
-export type RunStatus = 'SCHEDULED' | 'QUEUED' | 'WAITING' | 'RUNNING' | 'VERIFYING' | 'SUCCEEDED' | 'FAILED' | 'DEGRADED' | 'CANCELLED' | 'MISSED' | 'DISCONNECTED';
-export type StepStatus = 'QUEUED' | 'WAITING_FOR_WORKER' | 'WAITING_FOR_DEPENDENCY' | 'WAITING_FOR_RESOURCE' | 'WAITING_FOR_APPROVAL' | 'DISPATCHED' | 'RUNNING' | 'VERIFYING' | 'RETRY_PENDING' | 'SUCCEEDED' | 'FAILED' | 'TIMED_OUT' | 'CANCELLED';
+export type RunStatus = 'SCHEDULED' | 'QUEUED' | 'WAITING' | 'AUTHENTICATION_BLOCKED' | 'RECONNECTING' | 'RUNNING' | 'VERIFYING' | 'CANCELLING' | 'CLEANUP_UNCERTAIN' | 'SUCCEEDED' | 'FAILED' | 'DEGRADED' | 'CANCELLED' | 'MISSED' | 'DISCONNECTED';
+export type StepStatus = 'QUEUED' | 'WAITING_FOR_WORKER' | 'WAITING_FOR_DEPENDENCY' | 'WAITING_FOR_RESOURCE' | 'WAITING_FOR_APPROVAL' | 'AUTHENTICATION_BLOCKED' | 'RECONNECTING' | 'DISPATCHED' | 'RUNNING' | 'VERIFYING' | 'RETRY_PENDING' | 'CANCEL_PENDING' | 'CLEANUP_UNCERTAIN' | 'SUCCEEDED' | 'FAILED' | 'TIMED_OUT' | 'CANCELLED';
 
-export interface RetryPolicy {attempts: number; backoffSeconds: number;}
+export interface RetryPolicy {attempts: number; backoffSeconds: number; backoffMultiplier?: number; maxBackoffSeconds?: number; overallDeadlineSeconds?: number;}
 export interface ParameterDefinition {type: 'string' | 'integer' | 'number' | 'boolean'; default?: unknown; required?: boolean; secretRef?: boolean; minimum?: number; maximum?: number; enum?: unknown[];}
 export interface ArtifactDeclaration {name: string; type: string; schema: string; version: string; retention?: string;}
 export interface JobStepDefinition {
@@ -54,12 +54,13 @@ export interface ArtifactRecord {
   createdAt: string; size: number; sha256: string; storageRef: string; retention: string;
   provenance: {jobId: string; jobVersion: string; action: string; workerId: string};
 }
-export interface StepAttempt {attempt: number; startedAt: string; endedAt?: string; workerId?: string; outcome?: string; retryable?: boolean; errorClass?: ActionFailureClass; efficiencyInvocationIds?: string[]; timeoutSeconds?: number; elapsedMs?: number; terminalReason?: string;}
+export type RecoveryFailureKind = 'transient-transport' | 'expired-enrolment' | 'authentication-required' | 'permanent-configuration' | 'execution';
+export interface StepAttempt {attempt: number; startedAt: string; endedAt?: string; workerId?: string; outcome?: string; retryable?: boolean; errorClass?: ActionFailureClass; recoveryKind?: RecoveryFailureKind; efficiencyInvocationIds?: string[]; timeoutSeconds?: number; elapsedMs?: number; terminalReason?: string; cleanup?: ExecutionCleanupReport;}
 export type ActionFailureClass = 'execution' | 'capability_unavailable' | 'authentication' | 'policy_rejection' | 'verification' | 'configuration';
 export interface RunStep {
   id: string; action: string; status: StepStatus; dependsOn: string[]; capabilityRequest: CapabilityRequest; resources: string[];
   attempts: StepAttempt[]; artifactIds: string[]; placement?: PlacementRationale; waitingReason?: string; approval?: string;
-  startedAt?: string; endedAt?: string; nextAttemptAt?: string; error?: string; verification?: {required: string[]; passed: string[]; failed: string[]};
+  startedAt?: string; endedAt?: string; nextAttemptAt?: string; recoveryDeadlineAt?: string; remainingRetryBudget?: number; cleanup?: ExecutionCleanupReport; error?: string; verification?: {required: string[]; passed: string[]; failed: string[]};
 }
 export interface RunRecord {
   id: string; jobId: string; jobVersion: string; trigger: {type: 'manual' | 'schedule' | 'retry'; id?: string; actor: string; modelRoute?: {requestedModel: string | null; requestedRole: string | null; modelId: string; providerId: string; accountProfileId?: string | null; accountLabel?: string | null; accountPlan?: string | null; accountPlanAuthority?: 'operator-configured' | 'provider-reported' | null; accountQualification?: string | null; accountAvailability?: string | null; providerModel: string; nodeId: string; workloadNodeId?: string; providerExecutionNodeId?: string; credentialNodeId?: string | null; qualificationVersion: string; fallback: boolean; fallbackReason: string | null}};
