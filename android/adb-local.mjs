@@ -217,11 +217,15 @@ export function createAdbLocal({run = runCommand, wait = delay, attempts = 6, in
     const persisted = attemptState.current();
     const serviceCandidates = connect.filter(service => !identityHint || service.deviceIdentity === identityHint);
     const endpoints = [...new Set([...serviceCandidates.map(service => service.endpoint), ...(identityHint && persisted?.deviceIdentity === identityHint && persisted.lastEndpoint ? [persisted.lastEndpoint] : [])])];
-    let verified = null;
+    let verified = null, verificationFailure = null;
     for (const endpoint of endpoints) {
       if (!devices.some(device => device.serial === endpoint && device.state === 'device')) continue;
       const state = await run('adb', ['-s', endpoint, 'get-state'], {signal});
-      if (state.code === 0 && firstMeaningfulLine(state.stdout) === 'device') { verified = {endpoint, deviceIdentity: serviceCandidates.find(service => service.endpoint === endpoint)?.deviceIdentity ?? identityHint}; break; }
+      if (state.code !== 0 || firstMeaningfulLine(state.stdout) !== 'device') continue;
+      const deviceIdentity = serviceCandidates.find(service => service.endpoint === endpoint)?.deviceIdentity ?? identityHint;
+      const target = await verifyTarget(endpoint, deviceIdentity);
+      if (!target.qualified) { verificationFailure = target.reason; continue; }
+      verified = {endpoint, deviceIdentity, target: target.device}; break;
     }
     const paired = Boolean(persisted?.pairingSucceeded);
     return {
@@ -233,9 +237,32 @@ export function createAdbLocal({run = runCommand, wait = delay, attempts = 6, in
       usableLocalDeviceConnected: Boolean(verified),
       connectionEndpoint: verified?.endpoint ?? null,
       deviceIdentity: verified?.deviceIdentity ?? identityHint,
-      verification: verified ? {qualified: true, method: 'adb-devices-and-target-get-state'} : {qualified: false, method: 'adb-devices-and-target-get-state'},
+      verification: verified
+        ? {qualified: true, method: 'adb-devices-target-get-state-and-properties', target: verified.target}
+        : {qualified: false, method: 'adb-devices-target-get-state-and-properties', ...(verificationFailure ? {reason: verificationFailure} : {})},
       state: verified ? 'connected' : paired ? 'paired-disconnected' : pairing.length ? 'pairing-required' : connect.length ? 'disconnected' : 'undiscovered',
     };
+  }
+
+  async function verifyTarget(endpoint, deviceIdentity) {
+    const properties = [
+      ['manufacturer', 'ro.product.manufacturer'],
+      ['model', 'ro.product.model'],
+      ['device', 'ro.product.device'],
+      ['android', 'ro.build.version.release'],
+      ['sdk', 'ro.build.version.sdk'],
+      ['serial', 'ro.serialno'],
+    ];
+    const observed = {};
+    for (const [name, property] of properties) {
+      const result = await run('adb', ['-s', endpoint, 'shell', 'getprop', property], {signal});
+      const value = result.code === 0 ? firstMeaningfulLine(result.stdout) : null;
+      if (!value) return {qualified: false, reason: 'target-properties-unavailable'};
+      observed[name] = value;
+    }
+    const expected = `adb-${String(observed.serial).toLowerCase()}`, advertised = String(deviceIdentity ?? '').toLowerCase();
+    if (advertised !== expected && !advertised.startsWith(`${expected}-`)) return {qualified: false, reason: 'service-device-identity-mismatch'};
+    return {qualified: true, device: {manufacturer: observed.manufacturer, model: observed.model, device: observed.device, android: observed.android, sdk: observed.sdk, serialSha256: crypto.createHash('sha256').update(String(observed.serial)).digest('hex'), identityCorrelation: 'service-instance-prefix'}};
   }
 
   function activeResult(operation, current) {
@@ -343,7 +370,7 @@ export function createAdbLocal({run = runCommand, wait = delay, attempts = 6, in
 }
 
 function unavailable(result) {
-  return {schema: RESULT_SCHEMA, adb: {available: false, version: null, mdnsAvailable: false, discoverySource: 'unavailable'}, discovery: {pairing: [], connect: [], ignoredNonLocalServices: 0}, devices: [], paired: false, usableLocalDeviceConnected: false, connectionEndpoint: null, deviceIdentity: null, verification: {qualified: false, method: 'adb-devices-and-target-get-state'}, state: 'adb-unavailable', reason: result.code === 127 ? 'adb-not-installed' : 'adb-unavailable'};
+  return {schema: RESULT_SCHEMA, adb: {available: false, version: null, mdnsAvailable: false, discoverySource: 'unavailable'}, discovery: {pairing: [], connect: [], ignoredNonLocalServices: 0}, devices: [], paired: false, usableLocalDeviceConnected: false, connectionEndpoint: null, deviceIdentity: null, verification: {qualified: false, method: 'adb-devices-target-get-state-and-properties'}, state: 'adb-unavailable', reason: result.code === 127 ? 'adb-not-installed' : 'adb-unavailable'};
 }
 
 function selectServices(services, identity) {
