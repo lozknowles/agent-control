@@ -36,13 +36,22 @@ const ps = [
 const ssh = spawn('ssh', ['-T', '-i', windowsKey, '-o', 'BatchMode=yes', '-o', 'IdentitiesOnly=yes', '-o', 'StrictHostKeyChecking=yes', '-o', 'ConnectTimeout=10', '-L', `127.0.0.1:${localPort}:127.0.0.1:${remotePort}`, `${windowsUser}@${windowsHost}`, 'powershell.exe -NoProfile -NonInteractive -Command -'], {stdio: ['pipe','pipe','pipe']});
 ssh.stdin.end(ps); ssh.stdout.setEncoding('utf8'); ssh.stderr.setEncoding('utf8');
 let stdoutRemainder = '', stderrTail = '', exited = false, exitCode = null, evidenceBase64 = null, operatorToken = null;
-const phases = new Map(), waiters = new Map();
-function accept(value) { if (!value?.phase) return; if (typeof value.operatorToken === 'string') operatorToken = value.operatorToken; const safe = {...value}; delete safe.operatorToken; phases.set(value.phase, safe); const pending = waiters.get(value.phase) ?? []; waiters.delete(value.phase); for (const resolve of pending) resolve(safe); }
+const phases = new Map();
+function accept(value) { if (!value?.phase) return; if (typeof value.operatorToken === 'string') operatorToken = value.operatorToken; const safe = {...value}; delete safe.operatorToken; phases.set(value.phase, safe); }
 function line(value) { if (value.startsWith('EVIDENCE_BASE64:')) { evidenceBase64 = value.slice('EVIDENCE_BASE64:'.length); return; } try { accept(JSON.parse(value)); } catch {} }
 ssh.stdout.on('data', chunk => { stdoutRemainder += chunk; const lines = stdoutRemainder.split(/\r?\n/); stdoutRemainder = lines.pop() ?? ''; for (const value of lines) line(value); });
 ssh.stderr.on('data', chunk => { stderrTail = (stderrTail + chunk).slice(-4_096); });
 const sshExit = new Promise(resolve => ssh.once('exit', code => { exited = true; exitCode = code; resolve(code); }));
-function waitPhase(name, timeoutMs = 60_000) { if (phases.has(name)) return Promise.resolve(phases.get(name)); return Promise.race([new Promise(resolve => { const values = waiters.get(name) ?? []; values.push(resolve); waiters.set(name, values); }), delay(timeoutMs).then(() => { throw new Error(`qualification_phase_timeout:${name}`); })]); }
+function classifyRemoteFailure(source) {
+  const known = ['qualification_directory_already_exists','qualification_clone_failed','qualification_source_identity_mismatch','qualification_dependency_install_failed','qualified_node_executable_unavailable','qualified_npm_executable_unavailable','windows_cleanup_qualification_failed'];
+  const explicit = source.match(/"phase":"QUALIFICATION_FAILED","error":"([^"\\]{1,240})"/); if (explicit) return explicit[1];
+  return known.find(value => source.includes(value)) ?? 'remote_execution_failed';
+}
+async function waitPhase(name, timeoutMs = 60_000) {
+  const deadline = Date.now() + timeoutMs;
+  do { if (phases.has(name)) return phases.get(name); if (exited) throw new Error(`governed_ssh_exited_before_${name}:${exitCode}:${classifyRemoteFailure(stderrTail)}`); await delay(100); } while (Date.now() < deadline);
+  throw new Error(`qualification_phase_timeout:${name}`);
+}
 
 let browser, context, page, video;
 const rawVideoDir = path.join(outputRoot, 'raw-video'); fs.mkdirSync(rawVideoDir, {recursive: true, mode: 0o700});
