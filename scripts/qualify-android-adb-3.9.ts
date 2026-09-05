@@ -139,8 +139,8 @@ function requireQualified(result: NodeJob) {
   return value!;
 }
 
-function definition(id: string, action: string, requires: string[]): JobDefinition {
-  return androidAdbQualificationDefinition(id, action, requires) as JobDefinition;
+function definition(id: string, action: string, requires: string[], retry?: {attempts: number; backoffSeconds: number; overallDeadlineSeconds: number}): JobDefinition {
+  return androidAdbQualificationDefinition(id, action, requires, retry) as JobDefinition;
 }
 
 function ssh(options: Options, command: string[]) {
@@ -195,7 +195,7 @@ async function qualification(options: Options, node: NodeClientOptions) {
     return {artifacts: [{...androidAdbObservationArtifact, value: safe}], evidence: [`node-operation:${operation}`, `target-serial-sha256:${evidence.verification!.target!.serialSha256}`], verification: ['adb-target-qualified']};
   };
   const actions = new ActionRegistry().register('qualification.android-adb-status@1.0.0', action('android.adb.status')).register('qualification.android-adb-reconnect@1.0.0', action('android.adb.ensure-connected'));
-  const catalog = new JobCatalog(actions.ids()); catalog.addJob(definition('android-adb-governed-status', 'qualification.android-adb-status@1.0.0', ['android.adb.local'])); catalog.addJob(definition('android-adb-governed-reconnect', 'qualification.android-adb-reconnect@1.0.0', ['android.adb.ensure-connected']));
+  const catalog = new JobCatalog(actions.ids()); catalog.addJob(definition('android-adb-governed-status', 'qualification.android-adb-status@1.0.0', ['android.adb.local'])); catalog.addJob(definition('android-adb-governed-reconnect', 'qualification.android-adb-reconnect@1.0.0', ['android.adb.ensure-connected'], {attempts: 1, backoffSeconds: 1, overallDeadlineSeconds: 90}));
   const initialResource = await fetchNodeResource(node), workers = new WorkerRegistry().register({id: options.resourceId, capabilities: initialResource.capabilities.map(item => item.id), health: initialResource.health, capacity: 1, active: 0, observedAt: timestamp()});
   const ledger = new RunLedger(path.join(options.stateDir, 'runs.json')), artifacts = new ArtifactStore(path.join(options.stateDir, 'artifacts')), locks = new ResourceLockManager(path.join(options.stateDir, 'locks.json')), runtime = new JobRuntime(catalog, actions, workers, ledger, artifacts, locks);
   const workspace: WorkspaceState = {version: 1, paused: false, lastRestorePoint: null, lanes: []};
@@ -205,7 +205,16 @@ async function qualification(options: Options, node: NodeClientOptions) {
   project(initialResource);
   const operatorToken = randomUUID(), server = startWebDashboard(control, {host: options.host, port: options.port, operatorToken, assetsDir: path.resolve('assets/dashboard')}); await once(server, 'listening');
   const monitor = setInterval(() => { const run = ledger.list()[0]; if (run) control.events.emit('job.run_changed', {runId: run.id, status: run.status}, undefined, 'android-qualification'); }, 250); monitor.unref();
-  const run = async (reference: string) => { const created = runtime.createRun(reference, {}, {type: 'manual', actor: 'android-qualification'}); await runtime.tick(); const completed = ledger.get(created.id)!; assert.equal(completed.status, 'SUCCEEDED'); return completed; };
+  const run = async (reference: string) => {
+    const created = runtime.createRun(reference, {}, {type: 'manual', actor: 'android-qualification'}), deadline = Date.now() + 120_000;
+    while (Date.now() < deadline) {
+      await runtime.tick();
+      const observed = ledger.get(created.id)!;
+      if (['SUCCEEDED', 'FAILED', 'DEGRADED', 'CANCELLED'].includes(observed.status)) { assert.equal(observed.status, 'SUCCEEDED'); return observed; }
+      await delay(100);
+    }
+    throw new Error(`android_qualification_run_timeout:${created.id}`);
+  };
   try {
     writePhase('DASHBOARD_READY', {port: (server.address() as AddressInfo).port, operatorToken, resourceId: options.resourceId}); await delay(options.phaseDelayMs);
     const prePairRaw = await runNodeJob<NodeJob>(node, 'android.adb.status'), prePairStatus = sanitizeStatus(prePairRaw), prePairResource = await fetchNodeResource(node), prePairLegacy = legacyProjection(options);

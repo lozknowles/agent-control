@@ -5,7 +5,7 @@ export const androidAdbObservationArtifact = Object.freeze({
   version: '1.0.0',
 });
 
-export function androidAdbQualificationDefinition(id, action, requires) {
+export function androidAdbQualificationDefinition(id, action, requires, retry) {
   return {
     apiVersion: 'agent-control/v1',
     kind: 'Job',
@@ -25,6 +25,7 @@ export function androidAdbQualificationDefinition(id, action, requires) {
         resources: ['qualification/android-adb'],
         outputs: [androidAdbObservationArtifact],
         timeoutSeconds: 45,
+        ...(retry ? {retry} : {}),
         verification: ['adb-target-qualified'],
       }],
     },
