@@ -49,6 +49,7 @@ interface Options {
   remoteAgent: string;
   controllerNodeId: string;
   controllerSshPort: number;
+  pairingTimeoutMs: number;
   endpointChangeTimeoutMs: number;
   phaseDelayMs: number;
 }
@@ -93,6 +94,7 @@ function options(): Options {
     remoteAgent: values.get('remote-agent') ?? '~/.cache/agent-control-3.9-qualification/resource-agent.sh',
     controllerNodeId,
     controllerSshPort: Number(values.get('controller-ssh-port') ?? 2222),
+    pairingTimeoutMs: Number(values.get('pairing-timeout-ms') ?? 600_000),
     endpointChangeTimeoutMs: Number(values.get('endpoint-change-timeout-ms') ?? 300_000),
     phaseDelayMs: Number(values.get('phase-delay-ms') ?? 3_000),
   };
@@ -170,6 +172,16 @@ async function waitForChangedEndpoint(node: NodeClientOptions, previousEndpoint:
   throw new Error('android_adb_changed_endpoint_not_observed');
 }
 
+async function waitForQualifiedConnection(node: NodeClientOptions, timeoutMs: number) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const result = await runNodeJob<NodeJob>(node, 'android.adb.status');
+    if (result.evidence?.paired && result.evidence.usableLocalDeviceConnected && result.evidence.verification?.qualified) return result;
+    await delay(1_000);
+  }
+  throw new Error('android_adb_local_pairing_timeout');
+}
+
 async function qualification(options: Options, node: NodeClientOptions) {
   const startedAt = timestamp(), sourceCommit = execFileSync('git', ['rev-parse', 'HEAD'], {encoding: 'utf8'}).trim(), dirty = execFileSync('git', ['status', '--short'], {encoding: 'utf8'}).trim().length > 0;
   if (dirty) throw new Error('android_qualification_requires_clean_source');
@@ -193,6 +205,14 @@ async function qualification(options: Options, node: NodeClientOptions) {
   const run = async (reference: string) => { const created = runtime.createRun(reference, {}, {type: 'manual', actor: 'android-qualification'}); await runtime.tick(); const completed = ledger.get(created.id)!; assert.equal(completed.status, 'SUCCEEDED'); return completed; };
   try {
     writePhase('DASHBOARD_READY', {port: (server.address() as AddressInfo).port, operatorToken, resourceId: options.resourceId}); await delay(options.phaseDelayMs);
+    const prePairRaw = await runNodeJob<NodeJob>(node, 'android.adb.status'), prePairStatus = sanitizeStatus(prePairRaw), prePairResource = await fetchNodeResource(node), prePairLegacy = legacyProjection(options);
+    const prePairUnqualified = !prePairRaw.evidence?.paired && !prePairRaw.evidence?.usableLocalDeviceConnected && !prePairRaw.evidence?.verification?.qualified;
+    assert.equal(prePairUnqualified, true, 'android_adb_pre_pair_state_not_unqualified');
+    assert.equal(prePairResource.capabilities.some(item => item.id === 'transport.adb' || item.id === 'android.adb.local'), false);
+    assert.equal(prePairLegacy.capabilities.includes('transport.adb') || prePairLegacy.capabilities.includes('android.adb.local'), false);
+    writePhase('PAIRING_REQUIRED', {status: prePairStatus, currentCapabilities: prePairResource.capabilities.map(item => item.id).sort(), legacyCapabilities: prePairLegacy.capabilities});
+    const pairedObservation = await waitForQualifiedConnection(node, options.pairingTimeoutMs), pairedResource = await fetchNodeResource(node); project(pairedResource);
+    writePhase('PAIRING_COMPLETED', {status: sanitizeStatus(pairedObservation), currentCapabilities: pairedResource.capabilities.map(item => item.id).sort()}); await delay(options.phaseDelayMs);
     const initial = await run('android-adb-governed-status@1.0.0'), rawInitial = rawByRun.get(initial.id)!, initialEvidence = requireQualified(rawInitial), safeInitial = safeByRun.get(initial.id)!;
     assert.equal(initialEvidence.paired, true, 'android_pairing_not_completed_through_candidate_helper'); assert.equal(initialEvidence.verification?.target?.model, 'Pixel 8 Pro'); assert.equal(initialEvidence.verification?.target?.android, '17'); assert.equal(safeInitial.adb.discoverySource, 'direct-mdns');
     const initialEndpoint = initialEvidence.connectionEndpoint!, stableIdentity = initialEvidence.deviceIdentity ?? null, sessionId = `android-adb-session-${randomUUID()}`;
@@ -230,16 +250,17 @@ async function qualification(options: Options, node: NodeClientOptions) {
       source: {branch: 'feature/3.9-resilient-execution', commit: sourceCommit, dirty: false},
       topology: {controller: options.controllerNodeId, controllerSshPort: options.controllerSshPort, pixel: {resourceId: options.resourceId, sshPort: options.pixelPort, platform: 'Android 17 / Termux'}, node: 'candidate loopback HTTP through strict-host-key SSH local-forward'},
       discovery: {nativeAdbHostMdns: 'unsupported-host-service', selectedSource: safeInitial.adb.discoverySource, quBit: false, manualEndpointEntry: false},
+      prePair: {status: prePairStatus, nodeCapabilities: prePairResource.capabilities.map(item => item.id).sort(), legacyCapabilities: prePairLegacy.capabilities, capabilitiesWithheld: true},
       initial: {runId: initial.id, status: safeInitial, legacyCapabilities: legacyInitial.capabilities},
       disconnect: {injection: 'validated adb disconnect of the qualified endpoint', status: sanitizeStatus(disconnected!), nodeCapabilities: disconnectedResource.capabilities.map(item => item.id).sort(), legacyCapabilities: legacyDisconnected.capabilities},
       reconnect: {runId: reconnect.id, idempotentRunId: idempotent.id, status: safeReconnect, idempotentStatus: safeIdempotent, nodeCapabilities: reconnectedResource.capabilities.map(item => item.id).sort(), legacyCapabilities: legacyReconnect.capabilities},
       changedEndpoint: {injection: 'operator toggled Android Wireless debugging off then on', priorPort: endpointPort(initialEndpoint), currentPort: endpointPort(changedEndpoint), sameServiceIdentity: true, sameTargetSerialHash: true, runId: changedReconnect.id, status: safeChanged, nodeCapabilities: changedResource.capabilities.map(item => item.id).sort(), legacyCapabilities: legacyChanged.capabilities},
       governedExecution: {transport: 'production NodeClient to fixed node-server operations', operations: restoredLedger.list().map(item => ({runId: item.id, jobId: item.jobId, status: item.status, worker: item.selectedWorkers[0], artifactSha256: item.artifacts.map(id => artifacts.get(id)?.sha256).filter(Boolean)})), arbitraryShellExposed: false},
       persistedSession: {sessionId, initialRunId: initial.id, sourceProcess: process.pid, resumedInFreshProcess: true, sequence: finalSession.sequence, targetSerialSha256: finalSession.target.serialSha256, resumedAt: finalSession.resumedAt},
-      unavailableConnectivity: {evidence: 'pre-pair current Pixel observation and capability withdrawal in this run', failClosed: true},
+      unavailableConnectivity: {evidence: 'unqualified pre-pair observation plus deliberate post-pair disconnect and capability withdrawal in this run', failClosed: true},
       dashboard: {transport: 'loopback HTTP', eventStream: 'SSE', resourceTransitionsEmitted: true},
       security: {pairingPinPersisted: false, pairingPinInArguments: false, rawAdbOutputPersisted: false, rawSshStreamsPersisted: false, rawDeviceSerialPersisted: false, endpointAddressPersisted: false, targetSerialStoredAsSha256: true},
-      assertions: {pairingPreviouslyCompletedThroughHiddenLocalStdin: true, intendedPixelVerified: true, sameEndpointReconnect: true, changedEndpointRediscovered: true, currentNodeCapabilityGated: true, legacyCapabilityGated: true, governedExecutionPassed: true, persistedSessionResumePassed: true},
+      assertions: {pairingCompletedThroughHiddenLocalStdinDuringRun: true, prePairCapabilityWithheld: true, intendedPixelVerified: true, sameEndpointReconnect: true, changedEndpointRediscovered: true, currentNodeCapabilityGated: true, legacyCapabilityGated: true, governedExecutionPassed: true, persistedSessionResumePassed: true},
     };
     writeJson(options.evidenceFile, evidence); writePhase('QUALIFICATION_COMPLETE', {verdict: 'PASS', evidenceFile: options.evidenceFile});
   } finally { clearInterval(monitor); await new Promise<void>(resolve => server.close(() => resolve())); }

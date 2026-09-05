@@ -81,4 +81,6 @@ process.once('SIGTERM', stop);
 server.listen(PORT, HOST, () => console.log(`agent-control-node ${RESOURCE_ID} listening http://${HOST}:${PORT}`));
 // Startup reconnection is bounded and owned by this node lifecycle. It never
 // starts pairing, and stop() aborts any in-flight ADB child before shutdown.
-void adbLocal.ensureConnected().catch(() => undefined);
+// Qualification may defer it so an unpaired state is observed before the
+// separate, human-approved local pairing ceremony.
+if (process.env.AGENT_CONTROL_ADB_STARTUP_RECONNECT !== 'false') void adbLocal.ensureConnected().catch(() => undefined);

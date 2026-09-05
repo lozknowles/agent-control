@@ -109,6 +109,8 @@ test('an already connected endpoint is verified idempotently with target get-sta
   assert.equal(result.verification.qualified, true);
   assert.equal(result.verification.target.model, 'Fixture Phone');
   assert.match(result.verification.target.serialSha256, /^[a-f0-9]{64}$/);
+  assert.equal(result.paired, false);
+  assert.equal(value.attemptState.current().pairingSucceeded, false);
   assert.ok(value.calls.some(call => call.args.join(' ') === '-s 192.0.2.2:45231 get-state'));
   assert.deepEqual(value.counts(), {connects: 0, pairs: 0});
 });
@@ -237,6 +239,7 @@ test('Android node supervises startup reconnect and boot never initiates pairing
   const node = fs.readFileSync(new URL('./node-server.mjs', import.meta.url), 'utf8');
   const boot = fs.readFileSync(new URL('./termux-boot-agent-control.sh', import.meta.url), 'utf8');
   assert.match(node, /adbLocal\.ensureConnected\(\)/);
+  assert.match(node, /AGENT_CONTROL_ADB_STARTUP_RECONNECT/);
   assert.match(node, /adbLocal\.stop/);
   assert.doesNotMatch(`${node}\n${boot}`, /adbLocal\.pair|adb-local\.mjs pair|adb pair/);
 });

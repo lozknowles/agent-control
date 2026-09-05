@@ -356,7 +356,8 @@ export function createAdbLocal({run = runCommand, wait = delay, attempts = 6, in
 
   function releaseResult(lease, base, extra) {
     const success = extra.ok === true && base.usableLocalDeviceConnected === true;
-    const persisted = attemptState.release(lease, {phase: success ? 'connected' : extra.paired || base.paired ? 'paired-disconnected' : 'idle', deviceIdentity: base.deviceIdentity ?? attemptState.current()?.deviceIdentity ?? null, lastEndpoint: base.connectionEndpoint ?? attemptState.current()?.lastEndpoint ?? null, pairingEndpoint: null, pairingSucceeded: Boolean(extra.paired || base.paired || success), lastResult: extra.reason ?? extra.action ?? (success ? 'connected' : 'not-connected')});
+    const previous = attemptState.current();
+    const persisted = attemptState.release(lease, {phase: success ? 'connected' : extra.paired || base.paired ? 'paired-disconnected' : 'idle', deviceIdentity: base.deviceIdentity ?? previous?.deviceIdentity ?? null, lastEndpoint: base.connectionEndpoint ?? previous?.lastEndpoint ?? null, pairingEndpoint: null, pairingSucceeded: Boolean(extra.paired || base.paired || previous?.pairingSucceeded), lastResult: extra.reason ?? extra.action ?? (success ? 'connected' : 'not-connected')});
     return {...base, ...extra, attempt: publicAttempt(persisted)};
   }
 
