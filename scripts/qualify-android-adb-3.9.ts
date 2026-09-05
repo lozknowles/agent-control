@@ -7,6 +7,7 @@ import type {AddressInfo} from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {androidAdbObservationArtifact, androidAdbQualificationDefinition} from './android-adb-qualification-contract.mjs';
 import {AgentControlService} from '../src/control/application-service.js';
 import {JobCatalog} from '../src/control/job-catalog.js';
 import {ActionRegistry, ArtifactStore, JobRuntime, ResourceLockManager, RunLedger, WorkerRegistry} from '../src/control/job-runtime.js';
@@ -139,7 +140,7 @@ function requireQualified(result: NodeJob) {
 }
 
 function definition(id: string, action: string, requires: string[]): JobDefinition {
-  return {apiVersion: 'agent-control/v1', kind: 'Job', metadata: {id, name: id.split('-').map(part => part[0].toUpperCase() + part.slice(1)).join(' '), version: '1.0.0', description: 'Bounded physical Android wireless-ADB qualification'}, spec: {priority: 'high', concurrency: 'queue', steps: [{id: 'observe', action, requires, resources: ['qualification/android-adb'], timeoutSeconds: 45, verification: ['adb-target-qualified']}]}};
+  return androidAdbQualificationDefinition(id, action, requires) as JobDefinition;
 }
 
 function ssh(options: Options, command: string[]) {
@@ -191,7 +192,7 @@ async function qualification(options: Options, node: NodeClientOptions) {
   const action = (operation: 'android.adb.status' | 'android.adb.ensure-connected') => async (context: {run: RunRecord}) => {
     const raw = await runNodeJob<NodeJob>(node, operation), evidence = requireQualified(raw), safe = sanitizeStatus(raw);
     rawByRun.set(context.run.id, raw); safeByRun.set(context.run.id, safe);
-    return {artifacts: [{name: 'sanitized-adb-observation', value: safe, type: 'qualification-evidence', schema: 'agent-control.android-adb-sanitized/v1', version: '1'}], evidence: [`node-operation:${operation}`, `target-serial-sha256:${evidence.verification!.target!.serialSha256}`], verification: ['adb-target-qualified']};
+    return {artifacts: [{...androidAdbObservationArtifact, value: safe}], evidence: [`node-operation:${operation}`, `target-serial-sha256:${evidence.verification!.target!.serialSha256}`], verification: ['adb-target-qualified']};
   };
   const actions = new ActionRegistry().register('qualification.android-adb-status@1.0.0', action('android.adb.status')).register('qualification.android-adb-reconnect@1.0.0', action('android.adb.ensure-connected'));
   const catalog = new JobCatalog(actions.ids()); catalog.addJob(definition('android-adb-governed-status', 'qualification.android-adb-status@1.0.0', ['android.adb.local'])); catalog.addJob(definition('android-adb-governed-reconnect', 'qualification.android-adb-reconnect@1.0.0', ['android.adb.ensure-connected']));
