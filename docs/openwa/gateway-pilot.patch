@@ -1,0 +1,73 @@
+diff --git a/src/engine/adapters/governed-forwarding.spec.ts b/src/engine/adapters/governed-forwarding.spec.ts
+new file mode 100644
+index 0000000..1bb1666
+--- /dev/null
++++ b/src/engine/adapters/governed-forwarding.spec.ts
+@@ -0,0 +1,11 @@
++import {buildIncomingMessageBase} from './message-mapper';
++describe('governed ingress forwarding provenance',()=>{
++  const raw={id:{_serialized:'message-1'},from:'441234567890@c.us',to:'441111111111@c.us',body:'help',type:'chat',timestamp:123,fromMe:false};
++  it('retains explicit genuine and forwarded flags',()=>{
++    expect(buildIncomingMessageBase({...raw,isForwarded:false}).isForwarded).toBe(false);
++    expect(buildIncomingMessageBase({...raw,isForwarded:true}).isForwarded).toBe(true);
++  });
++  it('does not turn unavailable provenance into authority',()=>{
++    expect(buildIncomingMessageBase(raw).isForwarded).toBeUndefined();
++  });
++});
+diff --git a/src/engine/adapters/message-mapper.ts b/src/engine/adapters/message-mapper.ts
+index 5066d63..8811c3c 100644
+--- a/src/engine/adapters/message-mapper.ts
++++ b/src/engine/adapters/message-mapper.ts
+@@ -59,6 +59,8 @@ export interface RawMessageFields {
+   type: string;
+   timestamp: number;
+   fromMe: boolean;
++  /** Gateway provenance for governed command ingress; absent means unverified. */
++  isForwarded?: boolean;
+   /** Set on group messages: the participant WID that actually sent the message. */
+   author?: string;
+   /** WIDs @mentioned in the message; whatsapp-web.js attaches this to every Message. */
+@@ -90,6 +92,7 @@ export function buildIncomingMessageBase(msg: RawMessageFields): IncomingMessage
+     type: mapWwebjsMessageType(msg.type),
+     timestamp: msg.timestamp,
+     fromMe: msg.fromMe,
++    isForwarded: typeof msg.isForwarded === 'boolean' ? msg.isForwarded : undefined,
+     isGroup: chatId.endsWith('@g.us'),
+     kind: chatKind(chatId),
+     // Flag status/story broadcasts here (the engine-specific `status@broadcast` pseudo-JID stays in
+diff --git a/src/engine/interfaces/whatsapp-engine.interface.ts b/src/engine/interfaces/whatsapp-engine.interface.ts
+index 6777d2a..6d83880 100644
+--- a/src/engine/interfaces/whatsapp-engine.interface.ts
++++ b/src/engine/interfaces/whatsapp-engine.interface.ts
+@@ -92,6 +92,8 @@ export interface IncomingMessage {
+   type: MessageType;
+   timestamp: number;
+   fromMe: boolean;
++  /** Gateway provenance for governed command ingress; absent means unverified. */
++  isForwarded?: boolean;
+   isGroup: boolean;
+   /** User-facing chat kind of the conversation this message belongs to (derived from `chatId`). */
+   kind: ChatKind;
+@@ -568,6 +570,8 @@ export interface EditedMessage {
+   from: string;
+   to: string;
+   fromMe: boolean;
++  /** Gateway provenance for governed command ingress; absent means unverified. */
++  isForwarded?: boolean;
+   isGroup: boolean;
+   type: MessageType;
+   hasMedia: boolean;
+diff --git a/src/main.ts b/src/main.ts
+index c520ad0..5568dfd 100644
+--- a/src/main.ts
++++ b/src/main.ts
+@@ -194,7 +194,7 @@ async function bootstrap() {
+   );
+
+   const port = process.env.PORT || 2785;
+-  await app.listen(port);
++  await app.listen(port, '127.0.0.1');
+
+   // Advertise the configured public URL, matching the AuthService banner (auth.service.ts). A bare
+   // `localhost` literal here contradicted that banner and read as "the UI is pinned to localhost",

@@ -1,4 +1,6 @@
 import path from 'node:path';
+import fs from 'node:fs';
+import type {OpenWAAdapter} from './control/openwa.js';
 import {AgentControlService} from './control/application-service.js';
 import {configPath, loadConfig} from './control/config.js';
 import {discoverLinuxPtys, toPtyDiscoveries} from './control/linux-pty.js';
@@ -100,6 +102,18 @@ startManagedNodeMonitoring(jobRuntime, snapshot => service.events.emit('resource
 startJobScheduler(jobRuntime, (id, status) => id.startsWith('parcel-') ? service.events.emit('work.parcel_changed', {parcelId: id, status}, undefined, 'job-scheduler') : service.events.emit('job.run_changed', {runId: id, status}, undefined, 'job-scheduler'), 1000, error => service.events.emit('failure', {scope: 'job-scheduler', error: error.message}, undefined, 'job-scheduler'));
 startParameterizedJobScheduler(parameterizedJobs, (runId, status) => service.events.emit('job.run_changed', {runId, status, kind: 'parameterized'}, undefined, 'parameterized-job-scheduler'), 1000, error => service.events.emit('failure', {scope: 'parameterized-job-scheduler', error: error.message}, undefined, 'parameterized-job-scheduler'));
 const host = process.env.AGENT_CONTROL_WEB_HOST ?? '127.0.0.1', port = Number(process.env.AGENT_CONTROL_WEB_PORT ?? 4310);
-const server = startWebDashboard(service, {host, port, operatorToken: process.env.AGENT_CONTROL_WEB_OPERATOR_TOKEN, allowedOrigins: process.env.AGENT_CONTROL_WEB_ALLOWED_ORIGINS?.split(',').map(value => value.trim()).filter(Boolean), configFile: configurationFile});
+let openwa: OpenWAAdapter | undefined;
+jobRuntime.ledger.subscribe((runId,type,status)=>service.events.emit('job.run_changed',{runId,type,status},undefined,'run-ledger'));
+parameterizedJobs.runs.subscribe(run=>service.events.emit('job.run_changed',{runId:run.id,status:run.status,kind:'parameterized'},undefined,'parameterized-run-store'));
+if (process.env.AGENT_CONTROL_OPENWA_CONFIG) {
+  try {
+    if (!process.env.AGENT_CONTROL_WEB_OPERATOR_TOKEN) throw new Error('operator_auth_required');
+    const {OpenWAAdapter, openwaConfigSchema} = await import('./control/openwa.js');
+    openwa = new OpenWAAdapter(service, openwaConfigSchema.parse(JSON.parse(fs.readFileSync(process.env.AGENT_CONTROL_OPENWA_CONFIG, 'utf8'))), path.join(stateRoot,'messaging','openwa.sqlite'));
+    openwa.start();
+  } catch { process.stderr.write('Optional OpenWA adapter unavailable; dashboard and jobs remain active. Check private integration configuration.\n'); }
+}
+const server = startWebDashboard(service, {host, port, openwa, operatorToken: process.env.AGENT_CONTROL_WEB_OPERATOR_TOKEN, allowedOrigins: process.env.AGENT_CONTROL_WEB_ALLOWED_ORIGINS?.split(',').map(value => value.trim()).filter(Boolean), configFile: configurationFile});
+server.on('close',()=>openwa?.close());
 server.on('listening', () => process.stdout.write(`Agent Control ${service.version} web dashboard: http://${host}:${port} (${process.env.AGENT_CONTROL_WEB_OPERATOR_TOKEN ? 'operator authenticated' : 'observer only'})\n`));
 server.on('error', error => { process.stderr.write(`Dashboard failed: ${error.message}\n`); process.exitCode = 1; });

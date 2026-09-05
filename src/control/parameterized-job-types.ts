@@ -126,7 +126,7 @@ export interface ParameterizedJobRun {
   savedJobId?: string;
   definition: ParameterizedJobDefinition;
   resolvedParameters: Record<string, unknown>;
-  trigger: {type: 'manual' | 'schedule'; actor: string; scheduledFor?: string; scheduleCursor?: string};
+  trigger: {type: 'manual' | 'schedule'; actor: string; id?: string; scheduledFor?: string; scheduleCursor?: string};
   status: ParameterizedRunStatus;
   transitions: Array<{status: ParameterizedRunStatus; at: string; detail?: string}>;
   requestedAt: string;

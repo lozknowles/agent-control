@@ -4,6 +4,7 @@ import type {AgentControlConfig} from './config.js';
 import {JobCatalog} from './job-catalog.js';
 import {createJobRuntime, WorkerRegistry} from './job-runtime.js';
 import {registerReferenceActions} from './reference-actions.js';
+import {registerRepositoryTestActions} from './repository-test-actions.js';
 import {ManagedNodeManager, type ManagedNodeSnapshot} from './managed-node.js';
 import {registerManagedNodeActions} from './managed-node-actions.js';
 import {SshManagedNodeTransport} from './managed-node-ssh.js';
@@ -29,7 +30,7 @@ import {RuntimeSafetySupervisor} from './runtime-safety-supervisor.js';
 export function buildJobRuntimeDefinition(config: AgentControlConfig, manifestDir = process.env.AGENT_CONTROL_JOB_DIR || path.resolve('config/jobs'), harnessEfficiency?: HarnessEfficiencyLedgerPort) {
   const parcelJobs = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../config/work-parcels/jobs');
   const operatorJobs = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../config/operator-jobs');
-  const workers = WorkerRegistry.fromConfig(config.resources), managedNodes = new ManagedNodeManager(config.resources, workers, new SshManagedNodeTransport()), actions = registerOperatorReviewActions(config, registerFreeTokenQualificationActions(registerManagedNodeActions(managedNodes, registerBrowserActions(registerReferenceActions()))), harnessEfficiency), catalog = new JobCatalog(actions.ids()).loadDirectory(manifestDir).loadDirectory(parcelJobs);
+  const workers = WorkerRegistry.fromConfig(config.resources), managedNodes = new ManagedNodeManager(config.resources, workers, new SshManagedNodeTransport()), actions = registerOperatorReviewActions(config, registerFreeTokenQualificationActions(registerManagedNodeActions(managedNodes, registerBrowserActions(registerRepositoryTestActions(registerReferenceActions(), config)))), harnessEfficiency), catalog = new JobCatalog(actions.ids()).loadDirectory(manifestDir).loadDirectory(parcelJobs);
   if (process.env.AGENT_CONTROL_ENABLE_OPERATOR_REVIEW === 'true') catalog.loadDirectory(operatorJobs);
   return {workers, managedNodes, actions, catalog};
 }
