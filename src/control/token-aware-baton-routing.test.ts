@@ -50,6 +50,17 @@ test('estimated context is explicitly marked and policy validation rejects unsaf
   assert.equal(governorFor(85, normalizeGovernorPolicy()).state, 'COMPACT');
 });
 
+test('an unavailable post-compaction count clears stale occupancy and cannot trigger a false handoff', () => {
+  const value = runtime();
+  value.observe({...sample('thread:one', {context: 90, limit: 100, authority: 'estimated'}), observedAt: at(1)});
+  assert.equal(value.thread('thread:one').governor.state, 'HANDOFF');
+  value.observe({...sample('thread:one', {context: null, limit: 100, authority: 'unavailable', elapsedMs: 2_000}), observedAt: at(2), contextLifecycle: {kind: 'COMPACTION', authority: 'authoritative', source: 'provider_native_count_unavailable'}});
+  const current = value.thread('thread:one');
+  assert.deepEqual(current.latest.context, {tokens: null, limitTokens: 100, authority: 'unavailable', source: 'provider_not_reported'});
+  assert.equal(current.latest.contextPercent, null);
+  assert.deepEqual(current.governor, {state: 'CONTINUE', currentThreshold: null, nextThreshold: 75, reason: 'current_context_unavailable'});
+});
+
 test('verified baton preserves provenance, git state, token state and parcel totals before explicit handoff', () => {
   const value = runtime(); value.observe({...sample('thread:one', {context: 91, limit: 100, authority: 'authoritative', input: 100, output: 40, total: 140, cost: .02}), observedAt: at(1)});
   const created = value.createBaton(baton()); assert.match(created.sha256, /^[a-f0-9]{64}$/); assert.equal(created.tokenState.contextPercent, 91); assert.equal(created.parcelTotals.totalTokens, 140); assert.equal(value.thread('thread:one').batonId, created.id);
