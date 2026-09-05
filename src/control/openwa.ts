@@ -143,7 +143,7 @@ export class OpenWAAdapter {
     }
     if (event.event !== 'message.received') return {ignored: true};
     const data = event.data;
-    if(this.social && data && data.fromMe===false && data.isGroup===false && data.isForwarded===false && !data.quotedMessage && !data.isStatusBroadcast && jid(data.from) && data.chatId===data.from && typeof data.id==='string' && data.id.length<=256 && ((['audio','ptt'].includes(data.type)) || (data.type==='text' && !data.media && typeof data.body==='string' && this.social.accepts(data.body)))) {
+    if(this.social && data && data.fromMe===false && data.isGroup===false && data.isForwarded===false && !data.quotedMessage && !data.isStatusBroadcast && jid(data.from) && data.chatId===data.from && typeof data.id==='string' && data.id.length<=256 && ((['audio','voice','ptt'].includes(data.type)) || (data.type==='text' && !data.media && typeof data.body==='string' && this.social.accepts(data.body)))) {
       this.requireConnected();
       if(!this.operator(data.from))return {rejected:true};
       if(!Number.isFinite(Date.parse(event.timestamp))||Math.abs(this.clock()-Date.parse(event.timestamp))>300000||typeof data.timestamp!=='number')throw new Error('stale_event');
