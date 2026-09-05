@@ -14,6 +14,7 @@ import type {JobDefinition, RunRecord} from '../src/control/job-types.js';
 import {fetchNodeResource, runNodeJob, type NodeClientOptions} from '../src/control/node-client.js';
 import {PtyRegistry} from '../src/control/pty.js';
 import {startWebDashboard} from '../src/control/web-server.js';
+import {WorkParcelCoordinator, WorkParcelStore} from '../src/control/work-parcels.js';
 import type {WorkspaceState} from '../src/state.js';
 
 type RawAdbEvidence = {
@@ -197,7 +198,8 @@ async function qualification(options: Options, node: NodeClientOptions) {
   const initialResource = await fetchNodeResource(node), workers = new WorkerRegistry().register({id: options.resourceId, capabilities: initialResource.capabilities.map(item => item.id), health: initialResource.health, capacity: 1, active: 0, observedAt: timestamp()});
   const ledger = new RunLedger(path.join(options.stateDir, 'runs.json')), artifacts = new ArtifactStore(path.join(options.stateDir, 'artifacts')), locks = new ResourceLockManager(path.join(options.stateDir, 'locks.json')), runtime = new JobRuntime(catalog, actions, workers, ledger, artifacts, locks);
   const workspace: WorkspaceState = {version: 1, paused: false, lastRestorePoint: null, lanes: []};
-  const control = new AgentControlService(workspace, new PtyRegistry(), undefined, '3.9.0-android-qualification', () => {}).configureProjection({jobRuntime: runtime});
+  const workParcels = new WorkParcelCoordinator(runtime, new WorkParcelStore(path.join(options.stateDir, 'parcels.json')), {plan: () => { throw new Error('android_qualification_planner_not_configured'); }});
+  const control = new AgentControlService(workspace, new PtyRegistry(), undefined, '3.9.0-android-qualification', () => {}).configureProjection({jobRuntime: runtime, workParcels});
   const project = (resource: typeof initialResource) => { workers.observe({id: options.resourceId, capabilities: resource.capabilities.map(item => item.id), health: resource.health, capacity: 1, labels: {qualification: 'android-wireless-adb'}, observedAt: timestamp()}); control.configureProjection({resources: [{id: options.resourceId, name: 'Physical Pixel wireless ADB', platform: 'android', transport: 'governed loopback node over SSH tunnel', capabilities: resource.capabilities.map(item => item.id)}]}); control.events.emit('resource.node_changed', {resourceId: options.resourceId, capabilities: resource.capabilities.map(item => item.id)}, undefined, 'android-qualification'); };
   project(initialResource);
   const operatorToken = randomUUID(), server = startWebDashboard(control, {host: options.host, port: options.port, operatorToken, assetsDir: path.resolve('assets/dashboard')}); await once(server, 'listening');
