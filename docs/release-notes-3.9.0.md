@@ -64,7 +64,7 @@ The frozen suite ran 17 tasks × 3 repetitions × 2 candidates twice: 204 immuta
 Follow [`migration-3.9.md`](migration-3.9.md). The core gate is:
 
 ```bash
-npm ci
+npm install --no-package-lock --ignore-scripts
 npm run check
 npm pack --dry-run
 ```
