@@ -7,8 +7,8 @@ import {TokenAwareBatonRuntime, governorFor, normalizeGovernorPolicy, type Baton
 
 const at = (second: number) => `2026-09-02T10:00:${String(second).padStart(2, '0')}.000Z`;
 function runtime(file?: string) { return new TokenAwareBatonRuntime(file, {}, () => at(59)); }
-function sample(threadId: string, values: {parcelId?: string; agentId?: string; providerId?: string; modelId?: string; input?: number; output?: number; total?: number; context?: number | null; limit?: number | null; authority?: 'authoritative' | 'estimated' | 'unavailable'; cost?: number | null; elapsedMs?: number} = {}) {
-  return {threadId, parcelId: values.parcelId ?? 'parcel:one', agentId: values.agentId ?? threadId, providerId: values.providerId ?? 'openai', modelId: values.modelId ?? 'sol', elapsedMs: values.elapsedMs ?? 1_000, cumulative: {inputTokens: values.input ?? 10, outputTokens: values.output ?? 5, totalTokens: values.total ?? 15}, context: {tokens: values.context ?? null, limitTokens: values.limit ?? null, authority: values.authority ?? 'unavailable', source: values.authority === 'estimated' ? 'adapter_estimate' : values.authority === 'authoritative' ? 'provider_live' : 'provider_not_reported'}, cost: {amount: values.cost ?? null, currency: values.cost === undefined || values.cost === null ? null : 'USD', authority: values.cost === undefined || values.cost === null ? 'unavailable' : 'estimated', source: values.cost === undefined || values.cost === null ? 'provider_not_reported' : 'pricing_table'}} as const;
+function sample(threadId: string, values: {parcelId?: string; agentId?: string; providerId?: string; modelId?: string; input?: number; fresh?: number | null; cached?: number | null; output?: number; total?: number; context?: number | null; limit?: number | null; authority?: 'authoritative' | 'estimated' | 'unavailable'; cost?: number | null; elapsedMs?: number} = {}) {
+  return {threadId, parcelId: values.parcelId ?? 'parcel:one', agentId: values.agentId ?? threadId, providerId: values.providerId ?? 'openai', modelId: values.modelId ?? 'sol', elapsedMs: values.elapsedMs ?? 1_000, cumulative: {inputTokens: values.input ?? 10, ...(values.fresh !== undefined ? {freshInputTokens: values.fresh} : {}), cachedInputTokens: values.cached === undefined ? 0 : values.cached, outputTokens: values.output ?? 5, totalTokens: values.total ?? 15}, context: {tokens: values.context ?? null, limitTokens: values.limit ?? null, authority: values.authority ?? 'unavailable', source: values.authority === 'estimated' ? 'adapter_estimate' : values.authority === 'authoritative' ? 'provider_live' : 'provider_not_reported'}, cost: {amount: values.cost ?? null, currency: values.cost === undefined || values.cost === null ? null : 'USD', authority: values.cost === undefined || values.cost === null ? 'unavailable' : 'estimated', source: values.cost === undefined || values.cost === null ? 'provider_not_reported' : 'pricing_table'}} as const;
 }
 function baton(threadId = 'thread:one', overrides: Partial<BatonInput> = {}): BatonInput { return {threadId, parcelId: 'parcel:one', providerId: 'openai', modelId: 'sol', objective: 'Finish governed task', completedWork: ['identified routing boundary'], decisions: ['retain difficult reasoning on Sol'], filesChanged: ['src/control/example.ts'], git: {sha: 'a'.repeat(40), dirty: true, diffSummary: '1 file changed'}, testsAndEvidence: ['npm test'], unresolvedIssues: ['none'], nextAction: 'Run focused verifier', ...overrides}; }
 
@@ -33,6 +33,14 @@ test('lifetime usage and current context occupancy remain separate and unknown c
   const exact = value.thread('thread:one'); assert.equal(exact.latest.cumulative.totalTokens, 100_000); assert.equal(exact.latest.context.tokens, 12_000); assert.equal(exact.latest.contextPercent, 9.375); assert.equal(exact.latest.context.authority, 'authoritative');
   value.observe({...sample('thread:two', {context: null, limit: 128_000, authority: 'unavailable'}), observedAt: at(2)});
   const unavailable = value.thread('thread:two'); assert.equal(unavailable.latest.context.tokens, null); assert.equal(unavailable.latest.contextPercent, null); assert.equal(unavailable.governor.state, 'CONTINUE');
+});
+
+test('cached input remains part of cumulative input while missing cache telemetry leaves fresh input unknown', () => {
+  const value = runtime();
+  value.observe({...sample('cached', {input: 100, cached: 40, output: 20, total: 120}), observedAt: at(1)});
+  assert.deepEqual(value.thread('cached').latest.cumulative, {inputTokens: 100, freshInputTokens: 60, cachedInputTokens: 40, outputTokens: 20, totalTokens: 120});
+  value.observe({threadId: 'unknown', parcelId: 'parcel:unknown', agentId: 'unknown', providerId: 'provider', modelId: 'model', elapsedMs: 1, cumulative: {inputTokens: 100, outputTokens: 20, totalTokens: 120}});
+  assert.deepEqual(value.thread('unknown').latest.cumulative, {inputTokens: 100, freshInputTokens: null, cachedInputTokens: null, outputTokens: 20, totalTokens: 120});
 });
 
 test('estimated context is explicitly marked and policy validation rejects unsafe threshold ordering', () => {
@@ -63,12 +71,24 @@ test('successful and failed handoffs preserve the original recoverable thread an
 
 test('parcel totals survive Sol to Luna to GLM handoffs and durable evidence reconciles after restart', () => {
   const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-token-routing-')), 'routing.json'), value = runtime(file);
-  value.observe({...sample('sol', {agentId: 'sol-agent', modelId: 'sol', input: 160_000, output: 24_000, total: 184_000, context: 80_000, limit: 128_000, authority: 'authoritative', cost: 2}), observedAt: at(1)});
-  value.observe({...sample('luna', {agentId: 'luna-agent', modelId: 'luna', input: 28_000, output: 3_000, total: 31_000, context: 20_000, limit: 128_000, authority: 'estimated', cost: 1}), observedAt: at(2)});
+  value.observe({...sample('sol', {agentId: 'sol-agent', modelId: 'sol', input: 160_000, cached: 40_000, output: 24_000, total: 184_000, context: 80_000, limit: 128_000, authority: 'authoritative', cost: 2}), observedAt: at(1)});
+  value.observe({...sample('luna', {agentId: 'luna-agent', modelId: 'luna', input: 28_000, cached: 8_000, output: 3_000, total: 31_000, context: 20_000, limit: 128_000, authority: 'estimated', cost: 1}), observedAt: at(2)});
   value.observe({...sample('glm', {agentId: 'glm-agent', providerId: 'openrouter', modelId: 'glm-5.3-flash', input: 16_000, output: 2_000, total: 18_000, context: null, limit: 131_072, authority: 'unavailable', cost: .2}), observedAt: at(3)});
-  const totals = value.parcel('parcel:one'); assert.equal(totals.totalTokens, 233_000); assert.equal(totals.byModel.length, 3); assert.equal(totals.cost, 3.2);
+  const totals = value.parcel('parcel:one'); assert.equal(totals.totalTokens, 233_000); assert.equal(totals.inputTokens, 204_000); assert.equal(totals.freshInputTokens, 156_000); assert.equal(totals.cachedInputTokens, 48_000); assert.equal(totals.byModel.length, 3); assert.equal(totals.cost, 3.2);
   assert.deepEqual(totals.byModel.map(item => item.modelId), ['sol', 'luna', 'glm-5.3-flash']);
   const restored = runtime(file); assert.deepEqual(restored.parcel('parcel:one'), totals); assert.equal(restored.projection().threads.length, 3); assert.ok(fs.readFileSync(file, 'utf8').includes('token-aware-baton-routing'));
+});
+
+test('legacy routing snapshots recover with unknown cache components instead of inventing zero cache', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-token-routing-legacy-')), file = path.join(root, 'routing.json'), value = runtime(file);
+  value.observe({...sample('legacy', {input: 100, cached: 25, output: 20, total: 120}), observedAt: at(1)});
+  const snapshot = value.evidence() as unknown as {threads: Array<{latest: {cumulative: Record<string, unknown>}; samples: Array<{cumulative: Record<string, unknown>}>}>};
+  delete snapshot.threads[0].latest.cumulative.freshInputTokens; delete snapshot.threads[0].latest.cumulative.cachedInputTokens;
+  for (const point of snapshot.threads[0].samples) { delete point.cumulative.freshInputTokens; delete point.cumulative.cachedInputTokens; }
+  fs.writeFileSync(file, `${JSON.stringify(snapshot, null, 2)}\n`);
+  const restored = runtime(file);
+  assert.deepEqual(restored.thread('legacy').latest.cumulative, {inputTokens: 100, freshInputTokens: null, cachedInputTokens: null, outputTokens: 20, totalTokens: 120});
+  assert.equal(restored.parcel('parcel:one').freshInputTokens, null);
 });
 
 test('compaction, new context and resume are durable without resetting lifetime or parcel totals', () => {

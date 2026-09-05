@@ -39,7 +39,7 @@ export class LocalCodexNodeExecutionPort implements CodexNodeExecutionPort {
     assertLocalities(request);
     const resolved = resolveCodexAccountEnvironment(request.account, this.environment, request.nodeId);
     await probeCodexChatGptAuth(this.command, process.cwd(), request.timeoutMs, resolved.environment);
-    const run = await runCodexExec({command: this.command, cwd: process.cwd(), modelId: request.model.providerModel, instruction: request.instruction, grantedToolIds: [], timeoutMs: request.timeoutMs, environment: resolved.environment, loadUserConfig: true, outputSchema: request.outputSchema, onTelemetry: request.onTelemetry});
+    const run = await runCodexExec({command: this.command, cwd: process.cwd(), modelId: request.model.providerModel, instruction: request.instruction, grantedToolIds: [], timeoutMs: request.timeoutMs, environment: resolved.environment, loadUserConfig: false, outputSchema: request.outputSchema, onTelemetry: request.onTelemetry});
     return {...run, providerId: request.provider.id, accountProfileId: request.account.id, modelId: request.model.id, nodeId: request.nodeId, providerExecutionNodeId: request.nodeId, credentialNodeId: request.nodeId, codexVersion: 'locally-qualified', executableSha256: 'unavailable', discoveredAt: new Date().toISOString()};
   }
 }

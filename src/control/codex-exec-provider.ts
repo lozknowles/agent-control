@@ -132,8 +132,8 @@ export class CodexExecProviderFactory {
     const telemetry = this.options.telemetry;
     const emit = (event: CodexExecTelemetryEvent) => {
       if (!telemetry) return;
-      const usage = event.usage ?? {}, input = numeric(usage.input_tokens), output = numeric(usage.output_tokens), total = numeric(usage.total_tokens) ?? (input !== null && output !== null ? input + output : null);
-      telemetry({threadId: event.threadId ?? `codex:${recipe.id ?? recipe.taskId ?? 'unattributed'}`, parcelId: recipe.taskId ?? recipe.jobId ?? 'unattributed-task', agentId: this.options.workerId, nodeId: this.options.workerId, providerId: this.options.provider.id, accountProfileId: account?.profile.id, accountLabel: account?.profile.label, accountPlan: account?.profile.plan, accountPlanAuthority: account?.profile.planAuthority, accountQualification: account?.profile.qualification?.state, accountAvailability: account ? account.profile.qualification?.state === 'QUALIFIED' ? 'AVAILABLE' : 'UNQUALIFIED' : undefined, modelId: this.options.modelId, elapsedMs: event.elapsedMs, active: !['turn.completed'].includes(event.type), cumulative: {inputTokens: input, outputTokens: output, totalTokens: total}, context: {tokens: event.context.tokens, limitTokens: event.context.limitTokens ?? this.options.contextLimitTokens ?? null, authority: event.context.authority, source: event.context.source}, cost: {amount: null, currency: null, authority: 'unavailable', source: 'codex_turn_cost_not_exposed_on_exec_jsonl'}, ...(event.contextLifecycle ? {contextLifecycle: event.contextLifecycle} : {})});
+      const usage = event.usage ?? {}, input = numeric(usage.input_tokens), cached = cachedInput(usage), fresh = input !== null && cached !== null && cached <= input ? input - cached : null, output = numeric(usage.output_tokens), total = numeric(usage.total_tokens) ?? (input !== null && output !== null ? input + output : null);
+      telemetry({threadId: event.threadId ?? `codex:${recipe.id ?? recipe.taskId ?? 'unattributed'}`, parcelId: recipe.taskId ?? recipe.jobId ?? 'unattributed-task', agentId: this.options.workerId, nodeId: this.options.workerId, providerId: this.options.provider.id, accountProfileId: account?.profile.id, accountLabel: account?.profile.label, accountPlan: account?.profile.plan, accountPlanAuthority: account?.profile.planAuthority, accountQualification: account?.profile.qualification?.state, accountAvailability: account ? account.profile.qualification?.state === 'QUALIFIED' ? 'AVAILABLE' : 'UNQUALIFIED' : undefined, modelId: this.options.modelId, elapsedMs: event.elapsedMs, active: !['turn.completed'].includes(event.type), cumulative: {inputTokens: input, freshInputTokens: fresh, cachedInputTokens: cached, outputTokens: output, totalTokens: total}, context: {tokens: event.context.tokens, limitTokens: event.context.limitTokens ?? this.options.contextLimitTokens ?? null, authority: event.context.authority, source: event.context.source}, cost: {amount: null, currency: null, authority: 'unavailable', source: 'codex_turn_cost_not_exposed_on_exec_jsonl'}, ...(event.contextLifecycle ? {contextLifecycle: event.contextLifecycle} : {})});
     };
     const run = await (this.options.runner ?? runCodexExec)({command, cwd: this.options.cwd, modelId: this.options.modelId, instruction, grantedToolIds, timeoutMs, environment, onTelemetry: emit});
     const providerCompletedAt = new Date().toISOString();
@@ -173,7 +173,7 @@ export async function runCodexExec(request: CodexExecRequest): Promise<CodexExec
     fs.writeFileSync(schemaFile, JSON.stringify(request.outputSchema ?? codexToolRequestSchema(request.grantedToolIds)), {mode: 0o600});
     const prompt = request.outputSchema ? request.instruction : `Return one Agent Control tool request as schema-constrained JSON. Put the tool input in input_json as a JSON-encoded string. Do not claim the tool ran. Do not modify files.\n\n${request.instruction}`;
     const startedAt = Date.now(), liveEvents: Record<string, unknown>[] = []; let liveThreadId: string | undefined;
-    const result = await captureProcess(request.command, ['exec', '--ephemeral', '--json', '--sandbox', 'read-only', ...(request.loadUserConfig ? [] : ['--ignore-user-config']), '--model', request.modelId, '--output-schema', schemaFile, prompt], request.cwd, request.timeoutMs, request.environment, !request.loadUserConfig, line => {
+    const result = await captureProcess(request.command, codexReadOnlyStructuredArguments(request, schemaFile, prompt), request.cwd, request.timeoutMs, request.environment, !request.loadUserConfig, line => {
       let event: Record<string, unknown>; try { event = JSON.parse(line) as Record<string, unknown>; } catch { return; }
       liveEvents.push(event); const threadId = typeof event.thread_id === 'string' ? event.thread_id : undefined; if (threadId) liveThreadId = threadId;
       const normalized = normalizeCodex0153TelemetryEvent(event, Date.now() - startedAt, liveThreadId);
@@ -197,6 +197,30 @@ export async function runCodexExec(request: CodexExecRequest): Promise<CodexExec
   } finally {
     fs.rmSync(temporary, {recursive: true, force: true});
   }
+}
+
+/**
+ * Fixed capability envelope for schema-constrained automation. ChatGPT auth is
+ * still read from CODEX_HOME, while user/project configuration and Codex-native
+ * execution tools cannot silently expand the governed request.
+ */
+export function codexReadOnlyStructuredArguments(request: Pick<CodexExecRequest, 'modelId' | 'loadUserConfig'>, schemaFile: string, prompt: string) {
+  return [
+    'exec', '--ephemeral', '--json', '--strict-config', '--sandbox', 'read-only', '--skip-git-repo-check', '--ignore-rules',
+    ...(request.loadUserConfig ? [] : ['--ignore-user-config']),
+    '--config', 'project_doc_max_bytes=0',
+    '--config', 'web_search="disabled"',
+    '--config', 'features.shell_tool=false',
+    '--config', 'features.unified_exec=false',
+    '--config', 'features.multi_agent=false',
+    '--config', 'features.browser_use=false',
+    '--config', 'features.computer_use=false',
+    '--config', 'features.in_app_browser=false',
+    '--config', 'features.apps=false',
+    '--config', 'features.image_generation=false',
+    '--config', 'features.workspace_dependencies=false',
+    '--model', request.modelId, '--output-schema', schemaFile, prompt,
+  ];
 }
 
 /**
@@ -275,6 +299,7 @@ async function captureProcess(command: string, args: string[], cwd: string, time
 }
 
 function numeric(value: unknown) { return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null; }
+function cachedInput(usage: Record<string, unknown>) { return numeric(usage.cached_input_tokens ?? usage.cachedInputTokens ?? recordValue(usage.input_tokens_details)?.cached_tokens ?? recordValue(usage.prompt_tokens_details)?.cached_tokens); }
 
 function parseToolRequest(content: string): ToolRequest {
   let parsed: unknown;

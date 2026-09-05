@@ -94,7 +94,7 @@ export interface RepositoryReviewResult {
   areasNotReviewed: string[];
   verdict: 'PASS' | 'PASS_WITH_FINDINGS' | 'REVIEW_REQUIRED' | 'FAILED';
 }
-export interface JobRunUsage {inputTokens?: number; outputTokens?: number; totalTokens?: number; providerReportedCost?: number; calculatedCost?: number; cost?: number; currency?: string; source: 'provider' | 'calculated' | 'unavailable';}
+export interface JobRunUsage {inputTokens?: number; freshInputTokens?: number; cachedInputTokens?: number; outputTokens?: number; totalTokens?: number; providerReportedCost?: number; calculatedCost?: number; cost?: number; currency?: string; source: 'provider' | 'calculated' | 'unavailable';}
 export interface ParameterizedJobRun {
   schema: 'agent-control.job-run/v1';
   id: string;

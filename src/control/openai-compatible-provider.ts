@@ -76,8 +76,18 @@ function extractToolCall(payload: Record<string, unknown>, wire: string) {
 export function normalizeModelUsage(value: unknown, model: ModelConfig): NormalizedModelUsage {
   const usage = value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
   const input = number(usage.input_tokens ?? usage.prompt_tokens), output = number(usage.output_tokens ?? usage.completion_tokens), cached = number(usage.cached_input_tokens ?? usage.cachedInputTokens ?? (usage.input_tokens_details as Record<string, unknown> | undefined)?.cached_tokens ?? (usage.prompt_tokens_details as Record<string, unknown> | undefined)?.cached_tokens), total = number(usage.total_tokens) ?? (input !== null && output !== null ? input + output : null);
-  const calculated = model.pricing && input !== null && output !== null ? ((input - (cached ?? 0)) * model.pricing.inputPerMillionTokens + (cached ?? 0) * (model.pricing.cachedInputPerMillionTokens ?? model.pricing.inputPerMillionTokens) + output * model.pricing.outputPerMillionTokens) / 1_000_000 : null;
+  const calculated = calculateModelUsageCost(input, output, cached, model.pricing);
   return {inputTokens: input, outputTokens: output, cachedInputTokens: cached, totalTokens: total, providerReportedCost: number(usage.cost), calculatedCost: calculated, currency: model.pricing?.currency ?? null};
+}
+
+export function calculateModelUsageCost(input: number | null, output: number | null, cached: number | null, pricing?: ModelConfig['pricing']) {
+  if (!pricing || input === null || output === null || (cached !== null && cached > input)) return null;
+  const cachedRate = pricing.cachedInputPerMillionTokens ?? pricing.inputPerMillionTokens;
+  // If cached input has a distinct price, an absent cache measurement makes
+  // exact calculated cost unknowable. Equal rates make the split irrelevant.
+  if (cached === null && cachedRate !== pricing.inputPerMillionTokens) return null;
+  const cachedInput = cached ?? 0;
+  return ((input - cachedInput) * pricing.inputPerMillionTokens + cachedInput * cachedRate + output * pricing.outputPerMillionTokens) / 1_000_000;
 }
 function number(value: unknown) { return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null; }
 function providerError(status: number) { return new Error(status === 401 || status === 403 ? 'provider_authentication_failed' : status === 429 ? 'provider_rate_limited' : status >= 500 ? 'provider_unavailable' : `provider_request_failed:${status}`); }

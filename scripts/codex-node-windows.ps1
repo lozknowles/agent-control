@@ -80,7 +80,7 @@ param([string]$PayloadLine)
       $utf8NoBom = New-Object Text.UTF8Encoding($false)
       [IO.File]::WriteAllText($schemaFile, $schemaJson, $utf8NoBom)
       [IO.File]::WriteAllText($promptFile, [string]$request.instruction, $utf8NoBom)
-      $arguments = @('exec', '--ephemeral', '--json', '--sandbox', 'read-only', '--skip-git-repo-check', '--config', 'features.shell_tool=false', '--model', [string]$request.providerModel, '--output-schema', $schemaFile, '--output-last-message', $lastMessageFile, '-')
+      $arguments = @('exec', '--ephemeral', '--json', '--strict-config', '--sandbox', 'read-only', '--skip-git-repo-check', '--ignore-user-config', '--ignore-rules', '--config', 'project_doc_max_bytes=0', '--config', 'web_search="disabled"', '--config', 'features.shell_tool=false', '--config', 'features.unified_exec=false', '--config', 'features.multi_agent=false', '--config', 'features.browser_use=false', '--config', 'features.computer_use=false', '--config', 'features.in_app_browser=false', '--config', 'features.apps=false', '--config', 'features.image_generation=false', '--config', 'features.workspace_dependencies=false', '--model', [string]$request.providerModel, '--output-schema', $schemaFile, '--output-last-message', $lastMessageFile, '-')
       $stopwatch = [Diagnostics.Stopwatch]::StartNew()
       # Codex always checks stdin for additional prompt input. A background
       # PowerShell job leaves stdin open, so a fast refusal can be hidden until

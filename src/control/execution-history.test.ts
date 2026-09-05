@@ -36,8 +36,8 @@ function parcel(id = 'parcel-a'): WorkParcel {
 }
 
 function thread(id = 'thread-a', parcelId = 'parcel-a'): ThreadTokenRecord {
-  const initial = {at: at(4), elapsedMs: 0, cumulative: {inputTokens: 0, outputTokens: 0, totalTokens: 0}, context: {tokens: null, limitTokens: 128, authority: 'unavailable' as const, source: 'provider_reports_only_at_completion'}, contextPercent: null, cost: {amount: null, currency: null, authority: 'unavailable' as const, source: 'provider_not_reported'}};
-  const latest = {at: at(7), elapsedMs: 3000, cumulative: {inputTokens: 100, outputTokens: 20, totalTokens: 120}, context: {tokens: 140, limitTokens: 128, authority: 'estimated' as const, source: 'single_turn_usage_fallback'}, contextPercent: 100, cost: {amount: .25, currency: 'USD', authority: 'estimated' as const, source: 'configured_pricing'}};
+  const initial = {at: at(4), elapsedMs: 0, cumulative: {inputTokens: 0, freshInputTokens: 0, cachedInputTokens: 0, outputTokens: 0, totalTokens: 0}, context: {tokens: null, limitTokens: 128, authority: 'unavailable' as const, source: 'provider_reports_only_at_completion'}, contextPercent: null, cost: {amount: null, currency: null, authority: 'unavailable' as const, source: 'provider_not_reported'}};
+  const latest = {at: at(7), elapsedMs: 3000, cumulative: {inputTokens: 100, freshInputTokens: 80, cachedInputTokens: 20, outputTokens: 20, totalTokens: 120}, context: {tokens: 140, limitTokens: 128, authority: 'estimated' as const, source: 'single_turn_usage_fallback'}, contextPercent: 100, cost: {amount: .25, currency: 'USD', authority: 'estimated' as const, source: 'configured_pricing'}};
   return {id, parcelId, agentId: 'agent-a', providerId: 'openai', modelId: 'sol', accountProfileId: 'profile-a', accountLabel: 'Primary', providerExecutionNodeId: 'msi', startedAt: at(4), updatedAt: at(7), active: false, recoverable: true, governor: {state: 'HANDOFF', currentThreshold: 90, nextThreshold: null, reason: 'context_handoff_threshold_reached'}, latest, samples: [initial, latest]};
 }
 
@@ -47,7 +47,7 @@ function decision(parcelId = 'parcel-a'): TokenRoutingDecision {
 
 function baton(parcelId = 'parcel-a'): VerifiedBaton {
   const source = thread('thread-a', parcelId);
-  return {schema: 'agent-control.token-baton/v1', id: 'baton-a', threadId: source.id, parcelId, providerId: 'openai', modelId: 'sol', accountProfileId: 'profile-a', accountLabel: 'Primary', providerExecutionNodeId: 'msi', objective: 'Finish review', completedWork: ['Inspected context'], decisions: ['Continue safely'], filesChanged: [], git: {sha: 'a'.repeat(40), dirty: false, diffSummary: 'clean'}, testsAndEvidence: ['context compiled'], unresolvedIssues: ['Validate output'], nextAction: 'Validate structured response', tokenState: source.latest, parcelTotals: {parcelId, threads: [source.id], byModel: [], inputTokens: 100, outputTokens: 20, totalTokens: 120, cost: .25, currency: 'USD'}, createdAt: at(7), sha256: 'd'.repeat(64)};
+  return {schema: 'agent-control.token-baton/v1', id: 'baton-a', threadId: source.id, parcelId, providerId: 'openai', modelId: 'sol', accountProfileId: 'profile-a', accountLabel: 'Primary', providerExecutionNodeId: 'msi', objective: 'Finish review', completedWork: ['Inspected context'], decisions: ['Continue safely'], filesChanged: [], git: {sha: 'a'.repeat(40), dirty: false, diffSummary: 'clean'}, testsAndEvidence: ['context compiled'], unresolvedIssues: ['Validate output'], nextAction: 'Validate structured response', tokenState: source.latest, parcelTotals: {parcelId, threads: [source.id], byModel: [], inputTokens: 100, freshInputTokens: 80, cachedInputTokens: 20, outputTokens: 20, totalTokens: 120, cost: .25, currency: 'USD'}, createdAt: at(7), sha256: 'd'.repeat(64)};
 }
 
 test('derived Job Run history is ordered, isolated, correlated and represents fail-closed provider output', () => {
@@ -73,8 +73,11 @@ test('telemetry keeps lifetime and context distinct and explains completion-only
   assert.match(initial.content, /provider_reports_only_at_completion/);
   assert.equal(final.telemetry?.contextTokens, 140);
   assert.equal(final.telemetry?.contextPercent, 100);
+  assert.equal(final.telemetry?.freshInputTokens, 80);
+  assert.equal(final.telemetry?.cachedInputTokens, 20);
   assert.equal(final.telemetry?.totalTokens, 120);
   assert.match(final.content, /clamped at 100%/);
+  assert.match(final.content, /80 fresh \+ 20 cached/);
 
   const reported = thread();
   reported.latest = {...reported.latest, context: {tokens: 64, limitTokens: 128, authority: 'authoritative', source: 'provider'}, contextPercent: 50};
