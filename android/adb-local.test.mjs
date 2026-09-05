@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
+import {spawnSync} from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
+import {fileURLToPath} from 'node:url';
 import {createAdbLocal, createFileAttemptStore, createMemoryAttemptStore, parseDevices, parseMdnsServices} from './adb-local.mjs';
 
 const service = (endpoint, name = 'adb-device-one') => ({endpoint, name});
@@ -181,4 +183,20 @@ test('Android node supervises startup reconnect and boot never initiates pairing
   assert.match(node, /adbLocal\.ensureConnected\(\)/);
   assert.match(node, /adbLocal\.stop/);
   assert.doesNotMatch(`${node}\n${boot}`, /adbLocal\.pair|adb-local\.mjs pair|adb pair/);
+});
+
+test('legacy resource projection never advertises ADB transport from executable presence alone', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'adb-resource-agent-'));
+  try {
+    const bin = path.join(root, 'bin'); fs.mkdirSync(bin);
+    const adb = path.join(bin, 'adb'), node = path.join(bin, 'node');
+    fs.writeFileSync(adb, '#!/bin/sh\nexit 0\n', {mode: 0o700});
+    fs.writeFileSync(node, '#!/bin/sh\nprintf \'%s\\n\' \'{"usableLocalDeviceConnected":false,"verification":{"qualified":false}}\'\n', {mode: 0o700});
+    const script = fileURLToPath(new URL('./resource-agent.sh', import.meta.url));
+    const unavailable = spawnSync('bash', [script], {encoding:'utf8', env:{...process.env, PATH:`${bin}:${process.env.PATH}`}});
+    assert.equal(unavailable.status, 0, unavailable.stderr); assert.match(unavailable.stdout, /"adb":true/); assert.doesNotMatch(unavailable.stdout, /transport\.adb|android\.adb\.local/);
+    fs.writeFileSync(node, '#!/bin/sh\nprintf \'%s\\n\' \'{"usableLocalDeviceConnected":true,"verification":{"qualified":true}}\'\n', {mode: 0o700});
+    const qualified = spawnSync('bash', [script], {encoding:'utf8', env:{...process.env, PATH:`${bin}:${process.env.PATH}`}});
+    assert.equal(qualified.status, 0, qualified.stderr); assert.match(qualified.stdout, /android\.adb\.local/); assert.match(qualified.stdout, /transport\.adb/);
+  } finally { fs.rmSync(root, {recursive:true, force:true}); }
 });
