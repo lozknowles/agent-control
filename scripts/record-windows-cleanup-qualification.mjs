@@ -67,7 +67,7 @@ function classifyRemoteFailure(source) {
 }
 async function waitPhase(name, timeoutMs = 60_000) {
   const deadline = Date.now() + timeoutMs;
-  do { if (phases.has(name)) return phases.get(name); if (exited) throw new Error(`governed_ssh_exited_before_${name}:${exitCode}:${classifyRemoteFailure(stderrTail)}`); await delay(100); } while (Date.now() < deadline);
+  do { if (phases.has(name)) return phases.get(name); const failed = phases.get('QUALIFICATION_FAILED'); if (failed) throw new Error(`windows_qualification_failed:${failed.error ?? 'unspecified'}`); if (exited) throw new Error(`governed_ssh_exited_before_${name}:${exitCode}:${classifyRemoteFailure(stderrTail)}`); await delay(100); } while (Date.now() < deadline);
   throw new Error(`qualification_phase_timeout:${name}`);
 }
 

@@ -13,6 +13,25 @@ class FixtureTerminationAdapter implements ProcessTerminationAdapter {
   }
 }
 
+class DelayedCaptureTerminationAdapter implements ProcessTerminationAdapter {
+  readonly platform = 'win32' as const;
+  readonly captureStarted: Promise<void>;
+  terminated = false;
+  private markCaptureStarted!: () => void;
+  private releaseCapture!: () => void;
+  private readonly captureGate: Promise<void>;
+  constructor() {
+    this.captureStarted = new Promise(resolve => { this.markCaptureStarted = resolve; });
+    this.captureGate = new Promise(resolve => { this.releaseCapture = resolve; });
+  }
+  finishCapture() { this.releaseCapture(); }
+  async capture(pid: number): Promise<OwnedProcessIdentity> { this.markCaptureStarted(); await this.captureGate; return {pid, platform: this.platform, startedAtToken: 'fixture-delayed-creation-time', capturedAt: new Date().toISOString()}; }
+  async terminate(identity: OwnedProcessIdentity, child: ChildProcess, reason: string) {
+    this.terminated = true; child.kill('SIGKILL');
+    return {identity, outcome: 'confirmed' as const, reason, signals: ['fixture-tree-kill'], requestedAt: new Date().toISOString(), verifiedAt: new Date().toISOString(), detail: 'captured_tree_absent'};
+  }
+}
+
 test('platform termination adapter reports confirmed tree cleanup without requiring Windows', async () => {
   const manager = new OwnedProcessManager(new FixtureTerminationAdapter('confirmed')), controller = new AbortController();
   const running = manager.runProcess({command: process.execPath, args: ['-e', 'setInterval(() => {}, 1000)']}, controller.signal);
@@ -31,4 +50,12 @@ test('cleanup uncertainty and PID identity mismatch remain explicit', async () =
     assert.equal(report.outcome, outcome); assert.match(report.processes[0].detail ?? '', /not_proven/);
     await assert.rejects(running);
   }
+});
+
+test('cancellation during asynchronous process identity capture remains handled and cleans up', async () => {
+  const adapter = new DelayedCaptureTerminationAdapter(), manager = new OwnedProcessManager(adapter), controller = new AbortController();
+  const running = manager.runProcess({command: process.execPath, args: ['-e', 'setInterval(() => {}, 1000)']}, controller.signal);
+  await adapter.captureStarted; controller.abort('cancelled_during_identity_capture'); adapter.finishCapture();
+  await assert.rejects(running, /cancelled_during_identity_capture/);
+  assert.equal(adapter.terminated, true); assert.deepEqual(manager.activePids(), []);
 });
