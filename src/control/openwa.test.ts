@@ -50,14 +50,44 @@ function setup(t: test.TestContext) {
   const catalog=new JobCatalog();catalog.addJob(job);const actions=new ActionRegistry().register('test@1.0.0',async()=>({verification:['check']}));const workers=new WorkerRegistry().register({id:'local',capabilities:[],health:'healthy',capacity:1,active:0,observedAt:new Date().toISOString()});
   const runtime=()=>new JobRuntime(catalog,actions,workers,new RunLedger(path.join(root,'runs.json')),new ArtifactStore(path.join(root,'artifacts')),new ResourceLockManager(path.join(root,'locks.json')));
   let rt=runtime(), adapter: OpenWAAdapter, time=Date.now(), connection='ready', sends=0, sendStatus=200;
+  const sentBodies:unknown[]=[];
   const service={events:new ControlEventBus(),job:()=>job,runs:()=>rt.ledger.list(),run:(id:string)=>rt.ledger.get(id)!,modelInvocations:()=>[],createJobRun:(id:string,p:Record<string,unknown>,actor:string,key:string)=>rt.createRun(`${id}@1.0.0`,p,{type:'manual',actor},undefined,key),cancelJobRun:(id:string)=>rt.cancel(id)} as unknown as AgentControlService;
-  const request=(async(url:any)=>{if(String(url).endsWith('send-text')){sends++;return new Response(JSON.stringify({id:`message-${sends}`}),{status:sendStatus});}return new Response(JSON.stringify({status:connection,phone:'441111111111'}));}) as typeof fetch;
+  const request=(async(url:any,init?:RequestInit)=>{if(String(url).endsWith('send-text')){sends++;sentBodies.push(JSON.parse(String(init?.body)));return new Response(JSON.stringify({messageId:`message-${sends}`,timestamp:Math.floor(time/1000)}),{status:sendStatus});}return new Response(JSON.stringify({status:connection,phone:'441111111111'}));}) as typeof fetch;
   const reopen=()=>{adapter?.close();rt=runtime();adapter=new OpenWAAdapter(service,config,path.join(root,'openwa.sqlite'),request,()=>time);return adapter;};reopen();t.after(()=>adapter.close());
   const receive=(body:string,id=body,extra:Record<string,unknown>={},eventExtra:Record<string,unknown>={})=>{const payload={event:'message.received',timestamp:new Date(time).toISOString(),sessionId:config.sessionId,idempotencyKey:`key-${id}`,deliveryId:`delivery-${id}`,data:{id,from:sender,chatId:sender,to:'441111111111@c.us',type:'text',body,timestamp:Math.floor(time/1000),fromMe:false,isGroup:false,isForwarded:false,...extra},...eventExtra};const raw=Buffer.from(JSON.stringify(payload));return adapter.receive(raw,{'x-openwa-signature':`sha256=${createHmac('sha256',process.env.OPENWA_TEST_SECRET!).update(raw).digest('hex')}`,'x-openwa-event':payload.event,'x-openwa-idempotency-key':payload.idempotencyKey,'x-openwa-delivery-id':payload.deliveryId});};
   const enroll=async()=>{await adapter.checkHealth();const pair=adapter.beginPairing();receive(pair.command,'pair');const pending=adapter.status().pairing[0];adapter.confirmPairing(String(pending.hash),['test']);};
-  return {get adapter(){return adapter;},get rt(){return rt;},get sends(){return sends;},receive,enroll,reopen,service,config,advance:(ms:number)=>time+=ms,disconnect:()=>connection='disconnected',reconnect:()=>connection='ready',fail:(status:number)=>sendStatus=status};
+  return {get adapter(){return adapter;},get rt(){return rt;},get sends(){return sends;},sentBodies,receive,enroll,reopen,service,config,advance:(ms:number)=>time+=ms,disconnect:()=>connection='disconnected',reconnect:()=>connection='ready',fail:(status:number)=>sendStatus=status};
 }
-test('deterministic parser denies shell, ambiguous requests and unsupported lifecycle commands',()=>{assert.deepEqual(parseMessagingCommand('run test {"count":2}'),{verb:'run',template:'test',arguments:{count:2}});for(const text of ['sh -c whoami','run test;whoami','please do work','pause run-1','resume run-1'])assert.throws(()=>parseMessagingCommand(text));});
+
+test('phone-capitalized Help uses the pinned OpenWA chatId request and messageId response contract',async t=>{
+  const s=setup(t);await s.enroll();assert.equal(s.receive('Help','phone-help').accepted,true);
+  await s.adapter.tick();assert.equal(s.sentBodies.length,1);
+  const body=s.sentBodies[0] as Record<string,unknown>;assert.deepEqual(Object.keys(body).sort(),['chatId','linkPreview','text']);
+  assert.equal(body.chatId,sender);assert.equal(body.linkPreview,false);assert.match(String(body.text),/Approved templates: test/);
+  assert.equal(s.adapter.status().deliveries[0].remoteId,'message-1');assert.equal(s.adapter.status().deliveries[0].state,'submitted');
+  assert.deepEqual(parseMessagingCommand('Run test {"count":2}'),{verb:'run',template:'test',arguments:{count:2}});
+});
+test('deterministic parser denies shell, ambiguous requests and unsupported lifecycle commands',()=>{assert.deepEqual(parseMessagingCommand('run test {"count":2}'),{verb:'run',template:'test',arguments:{count:2}});for(const text of ['sh -c whoami','run test;whoami','please do work','pause run-1','resume run-1','cancel job 0','cancel job -1','cancel job 1 then run test'])assert.throws(()=>parseMessagingCommand(text));assert.deepEqual(parseMessagingCommand('Cancel job 1'),{verb:'cancel',runId:'job:1'});assert.deepEqual(parseMessagingCommand('status 2'),{verb:'status',runId:'job:2'});});
+
+test('short job numbers persist across restart and cannot address another operator job',async t=>{
+  const s=setup(t);await s.enroll();const first=s.receive('run test','first').runId!;
+  const body=()=>String(s.adapter.db.prepare('SELECT body FROM outbox ORDER BY id DESC LIMIT 1').get()!.body);
+  assert.match(body(),/^Job 1 accepted/);assert.match(body(),/cancel job 1/);
+  assert.doesNotMatch(body().split('\n').filter(l=>!l.startsWith('http')).join('\n'),/run-/);
+  s.receive('cancel job 1','cancel-first');assert.equal(s.rt.ledger.get(first)?.status,'CANCELLED');
+  const other='449999999999@lid',extra={from:other,chatId:other},pair=s.adapter.beginPairing();s.receive(pair.command,'pair-other',extra);
+  s.adapter.confirmPairing(String(s.adapter.status().pairing[0].hash),['test']);s.advance(1);
+  const second=s.receive('run test','second',extra).runId!;assert.notEqual(first,second);assert.match(body(),/^Job 1 accepted/);
+  s.reopen();await s.adapter.checkHealth();assert.equal(s.receive('run test','second',extra).duplicate,true);
+  s.receive('cancel job 1','again-first');assert.equal(s.rt.ledger.get(second)?.status,'QUEUED');
+  assert.equal(s.receive(`cancel ${second}`,'cross-operator').rejected,true);
+  assert.equal(s.receive('cancel job 99','unknown-number').rejected,true);assert.match(body(),/job_number_not_found/);
+  s.receive('cancel job 1','cancel-second',extra);assert.equal(s.rt.ledger.get(second)?.status,'CANCELLED');
+  s.advance(1);const third=s.receive('run test','third').runId!;assert.match(body(),/^Job 2 accepted/);
+  await s.rt.tick();s.receive('cancel job 2','already-finished');assert.match(body(),/already finished \(SUCCEEDED\)/);assert.doesNotMatch(body(),/Cancellation requested/);
+  s.adapter.db.exec('DROP TABLE job_numbers');s.reopen();await s.adapter.checkHealth();
+  s.receive('status job 2','migrated');assert.match(body(),/^Job 2: SUCCEEDED/);assert.equal(s.rt.ledger.get(third)?.status,'SUCCEEDED');
+});
 test('enrolment requires observed direct sender and dashboard confirmation; gateway identity is not operator',async t=>{const s=setup(t);await s.adapter.checkHealth();assert.deepEqual(s.receive('help'),{rejected:true});const challenge=s.adapter.beginPairing();assert.throws(()=>s.adapter.confirmPairing('not-observed',['test']));s.receive(challenge.command,'pair-group',{isGroup:true});assert.equal(s.adapter.status().pairing[0].sender,null);s.receive(challenge.command,'pair-human');assert.equal(s.adapter.status().operators.length,0);s.adapter.confirmPairing(String(s.adapter.status().pairing[0].hash),['test']);assert.equal(s.receive('help','new-help').accepted,true);s.adapter.revoke(sender);assert.equal(s.receive('help','after-revoke').rejected,true);});
 test('signed commands execute real runtime, report unavailable metrics, preserve durable dedupe after restart',async t=>{const s=setup(t);await s.enroll();const run=s.receive('run test {"count":2}','one');assert.ok(run.runId);assert.equal(s.rt.ledger.list().length,1);await s.rt.tick();assert.equal(s.rt.ledger.get(run.runId!)?.status,'SUCCEEDED');assert.equal(s.receive(`report ${run.runId}`,'report').accepted,true);s.reopen();await s.adapter.checkHealth();assert.equal(s.receive('run test {"count":2}','one').duplicate,true);assert.equal(s.rt.ledger.list().length,1);const bodies=s.adapter.db.prepare('SELECT body FROM outbox').all().map(r=>String(r.body)).join('\n');assert.match(bodies,/Context occupancy: unavailable/);assert.match(bodies,/input unavailable/);assert.match(bodies,/SUCCEEDED/);assert.doesNotMatch(bodies,/test-signature-secret/);});
 test('crash between runtime persistence and adapter completion reconciles same job',async t=>{const s=setup(t);await s.enroll();const run=s.receive('run test','crash');const key=createHash('sha256').update(`${s.config.sessionId}:crash`).digest('hex');s.adapter.db.prepare("UPDATE commands SET state='processing',runId=NULL WHERE key=?").run(key);s.adapter.db.prepare('DELETE FROM outbox WHERE dedupe=?').run(key);s.reopen();await s.adapter.checkHealth();assert.equal(s.receive('run test','crash').runId,run.runId);assert.equal(s.rt.ledger.list().length,1);});
