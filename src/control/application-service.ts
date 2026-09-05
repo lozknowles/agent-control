@@ -48,6 +48,7 @@ export type ControlEventType =
   | 'system.paused_changed'
   | 'job.run_created'
   | 'job.run_cancelled'
+  | 'job.run_authentication_resumed'
   | 'job.run_retried'
   | 'job.run_approved'
   | 'job.schedule_changed'
@@ -316,6 +317,7 @@ export class AgentControlService {
   }
   parameterizedRun(id: string) { const run = this.parameterizedRuns().find(item => item.id === id); if (!run) throw new Error('job_run_missing'); return run; }
   cancelParameterizedRun(id: string, actor: string) { const run = this.mustParameterizedJobs().cancel(id, actor); this.events.emit('job.run_cancelled', {runId: id, savedJobId: run.savedJobId}, undefined, actor); return run; }
+  resumeParameterizedRunAuthentication(id: string, actor: string) { const run = this.mustParameterizedJobs().resumeAuthentication(id, actor); this.events.emit('job.run_authentication_resumed', {runId: id, savedJobId: run.savedJobId, providerId: run.modelRoute?.providerId, accountProfileId: run.modelRoute?.accountProfileId, modelId: run.modelRoute?.modelId, nodeId: run.modelRoute?.providerExecutionNodeId}, undefined, actor); return run; }
   parameterizedSchedules() { return this.savedJobs().filter(job => job.schedule).map(job => ({savedJobId: job.id, name: job.name, schedule: job.schedule, nextRun: job.nextRun, lastRun: job.lastRun})); }
   model(id: string) { const value = this.models().find(model => model.id === id); if (!value) throw new Error('model_missing'); return value; }
   modelRoutes() { return this.mustModelRegistry().routes(); }
