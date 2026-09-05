@@ -1,6 +1,6 @@
 # Agent Control architecture
 
-This is the authoritative source boundary for Agent Control 3.8.2. Status labels matter:
+This is the authoritative source boundary for the Agent Control 3.9.0 candidate. Status labels matter:
 
 - **implemented** means executable code and automated tests exist in this branch;
 - **experimental** means executable code exists but has not been qualified across every external substrate;
@@ -41,6 +41,10 @@ This is the authoritative source boundary for Agent Control 3.8.2. Status labels
 31. Provider rank is not calibrated confidence; evidence sufficiency derives from observable exact, path, coverage, diversity and freshness signals.
 32. A baton evidence reference is portable only when rehydration revalidates repository identity, path boundary, source existence and whole-file content hash.
 33. Index search and index mutation are distinct authorities; resource policy may recommend a build but cannot grant it.
+34. A remembered Run, PID or network connection is not execution continuity. Recovery requires the adapter to reconcile the exact durable execution identity and route.
+35. Sending a cancellation signal is not cleanup completion. Terminal state and authority release require verified descendant/process-tree absence or an explicit uncertainty state.
+36. Every resource metric carries source, authority and freshness. Missing data is null; a derived fallback cannot silently become an admission-qualified measurement.
+37. Cache admission is an adapter capability, not a core assumption. Stable prompt structure is portable; provider-specific keys and breakpoints are emitted only after provider-and-model qualification.
 
 ## Governed retrieval and context intelligence
 
@@ -58,6 +62,32 @@ The governor progresses through available exact, lexical, semantic and hybrid st
 Evidence compiles through existing context profiles and records portable references in existing batons. On destination execution or restart, the durable store rehydrates only references whose repository identity, relative path, existence and whole-file hash still match. A mismatch emits invalidation and restores controlled frozen-context fallback. Existing SSE carries provider selection, escalation, evidence, compilation, rehydration, invalidation and fallback events without a second transport.
 
 `RetrievalResourcePolicy` is provider-neutral. It combines observed free memory/storage, repository bytes, index state, measured cold-index memory/time, expected task duration, built-in availability and separate index-management authority to return `USE_PROVIDER`, `USE_BUILTIN`, `BUILD_INDEX` or `DEFER_INDEX`. A recommendation never mutates an index by itself. Full contracts and boundaries are in [governed retrieval](docs/governed-retrieval.md), the pre-implementation [3.8 review](docs/agent-control-3.8-architecture-review.md), and [Phase 2 evidence](docs/evidence/agent-control-3.8-phase2-qualification.md).
+
+## Resilient execution and cleanup (3.9)
+
+```text
+durable Run + exact route + execution ID
+                  |
+          adapter observation
+       /            |             \
+ authenticated   same live ID    terminal proof
+     block        reconnect       + cleanup evidence
+       |              |                  |
+human action   continue observing   verify/accept
+       \______________|__________________/
+                      |
+             durable dashboard/SSE
+```
+
+`JobRuntime` and `ParameterizedJobEngine` persist an execution identity before provider work begins. For a parameterised review that identity seals sequence, provider, account profile, model, workload node, provider-execution node and credential node. Controller restart moves an unresolved attempt to `DISCONNECTED`; it never changes that identity or automatically invokes the provider again. A provider-owned reconciliation port may return `RUNNING`, `COMPLETED`, `FAILED`, `CANCELLED` or `UNKNOWN`, but only the same execution ID with proven continuity can restore or terminalise the Run. A completed response still enters independent application validation.
+
+Recovery classification is provider-neutral. Transient transport and expired-enrolment failures are retry-eligible only inside the configured attempt budget, exponential backoff and overall deadline. Authentication-required becomes `AUTHENTICATION_BLOCKED`; permanent configuration and unclassified execution failures do not masquerade as transient recovery. The selected provider/account/model/node route stays fixed unless normal governed routing authorises an explicit change. Error projection retains a bounded safe reason, not credentials or raw provider transport.
+
+Every action receives an `OwnedExecution` capability rather than owning an untracked child process. On Linux the adapter launches a process group, captures `/proc/<pid>/stat` start identity, sends bounded TERM/KILL to the group and verifies absence. On Windows it enumerates a fixed CIM process tree, compares creation identity, invokes bounded tree termination and rechecks every captured process identity. Other substrates may stop the leader but must return `uncertain` when descendants cannot be proven absent. Contract, ordinary Job and parameterised-review cancellation/timeout paths therefore remain `CANCELLING`, `CLEANUP_UNCERTAIN`, `DISCONNECTED` or `ORPHANED` until cleanup evidence permits a terminal state; locks and write authority are not released on a mere signal attempt.
+
+Dashboard state is a projection of those durable records. Initial HTTP load and every SSE connection send/reload a full snapshot before incremental events. Reasons, source/observed time, freshness, retry/cancellation deadlines, remaining retry budget, execution identity and cleanup outcome are rendered directly. Locally advancing elapsed-time or countdown text is presentation between authoritative timestamps, never inferred state.
+
+Provider prompts have a generic ordered stable/volatile block representation plus a non-secret cache scope. The rendered text remains authoritative. A Responses adapter may derive a hashed key or explicit content breakpoint only when both its provider and exact model advertise `prompt-cache.key` or `prompt-cache.explicit`; unsupported adapters receive the unchanged rendered prompt. Cache reads, writes and fresh input are normalized separately, and configured cache-write cost is calculable only when the provider reports the write count. This preserves useful structure if any current provider disappears while keeping its wire controls behind its adapter.
 
 ## System boundary and adaptive harness
 
@@ -421,7 +451,7 @@ Windows OpenAI execution uses an explicit authentication selector below this bou
 
 `JobRuntime` is the workflow-level extension of that scheduler, not a parallel policy engine. It discovers due Schedule definitions, calls one `createRun` path, evaluates a Run DAG, resolves every step against the worker capability registry, acquires semantic resource locks, dispatches a registered Action, stores typed artifacts and requires declared verification before success. Model/provider routing remains a separate decision from worker placement. All dashboard/TUI mutations enter through `AgentControlService`.
 
-The append-oriented Run ledger retains the effective Job version, parameters, trigger, worker assignments, retries, artifacts, evidence, errors and provenance. A restart never assumes a live Action survived: an in-flight step becomes `DISCONNECTED`/identity-unproven and its durable resource lock remains held for manual reconciliation. PID alone is not recovery evidence.
+The append-oriented Run ledger retains the effective Job version, parameters, trigger, worker assignments, execution identity, retries, recovery state, cleanup, artifacts, evidence, errors and provenance. A restart never assumes a live Action survived and never blindly requeues one: an in-flight step becomes `DISCONNECTED`/identity-unproven and its durable resource lock remains held while the configured adapter reconciles the exact execution ID. Proven continuity may enter `RECONNECTING`; an unknown or changed identity requires operator reconciliation. PID alone is not recovery evidence.
 
 The narrow execution-provider API exposes only start, status, reconnect, input, pause, resume, cancel, output, diff and cleanup. Orca-specific concepts remain inside the adapter so another substrate can replace it.
 
@@ -435,7 +465,7 @@ Human takeover calls the existing PTY registry fence. A human-owned lane cannot 
 
 The dashboard's default Jobs workspace is an operational projection, not an additional scheduler. It reads catalog definitions, Schedule state, queue reasons, worker capability/capacity, resource locks, Run history, step verification and artifact provenance from `JobRuntime` through `AgentControlService`. Run, schedule enable/disable, cancel, whole-Run retry and exact named approval commands return through authenticated service methods. Artifact projections expose identity, checksum and provenance but not managed storage paths. A named approval is legal only while a matching step is authoritatively `WAITING_FOR_APPROVAL`.
 
-Managed-node snapshots are another `AgentControlService` resource projection, exposed through the shared system status and `GET /api/nodes`. The web dashboard, TUI and universal status command render that same versioned state; none probes hosts or owns heartbeat/workload policy independently.
+Managed-node snapshots are another `AgentControlService` resource projection, exposed through the shared system status and `GET /api/nodes`. Each measurement retains value, source, authority, freshness, observation time, limitations and admission qualification. `/proc` remains primary; Node `os` values and Android sysfs cpuidle counters are bounded fallbacks. Two counter samples are required for CPU busy, resets/stale intervals stay unavailable, and Android-derived aggregate busy is not admission-qualified. The web dashboard, TUI and universal status command render that same versioned state; none probes hosts or owns heartbeat/workload policy independently.
 
 The Systems projection joins configured resources, providers and external services with whatever current heartbeat, provider-health, worker, capacity and invocation evidence exists. Absence of observation therefore produces `UNKNOWN`, observed reachability failure produces `OFFLINE`, and missing referenced authentication produces `AUTH REQUIRED`; a configured system is never removed merely because it cannot be contacted. The Configuration view changes the durable inventory through `ConfigurationStore`, not this readiness projection.
 
@@ -523,7 +553,7 @@ The TUI presents lanes, batons, queue state, resources, providers, PTY assignmen
 
 ## Optional Android resource
 
-Android support is device-neutral. The node ID, transport, port, repository and credential environment are configured. The bundled node advertises observed capabilities and exposes only an allow-listed read-only log operation. Provisioning requires explicit privilege, pairing and reboot approvals.
+Android support is device-neutral. The node ID, transport, port, repository and credential environment are configured. The bundled node advertises observed capabilities and exposes only allow-listed log/status/reconnect operations. Its local ADB helper serializes pairing/reconnect attempts with stale-owner recovery, discovers DNS-SD pairing and normal-connect endpoints, accepts a pairing PIN only through local stdin, persists no PIN, and verifies stable device identity with both `adb get-state` and `adb devices`. Boot performs only a bounded reconnect attempt; it never starts pairing. `android.adb.local` and `transport.adb` are withheld until an already paired device is currently connected and verification-qualified. Provisioning and first pairing still require explicit local approval.
 
 ## Conceptual-integrity gate
 
@@ -559,4 +589,4 @@ For Codex/ChatGPT authentication, each account profile contains only opaque ID, 
 
 ## Release boundary
 
-Earlier version tags remain immutable source releases. Installing 3.7.0 does not deploy services, expose a remote ACP listener, create credentials, broaden sharing, enable Spark, or enable a Saved Job/Schedule. STANDARD remains the default context profile unless a governed policy explicitly selects another profile. The production token-governor lifecycle is physically qualified across two distinct live local provider/model routes, including a sealed baton, destination continuation, independent verification, SSE/evidence reconciliation, additive token accounting and original-thread recovery after a refused destination. Provider-unreported context and cost remain estimated or unavailable. This bounded proof does not qualify the separate 50-observation automatic capability-routing benchmark.
+Earlier version tags remain immutable source releases. The 3.9.0 branch is a review candidate; it does not merge, tag, publish, deploy services, expose a remote ACP listener, create credentials, broaden sharing, enable Spark, enable Saved Jobs/Schedules or pair an Android device. The real dashboard/SSE/reload/concurrent-lane/Codex-accounting/Linux-cleanup path is physically evidenced. Windows cleanup has deterministic adapter coverage but no candidate physical cancellation. Pixel resource fallback was observed, while local wireless ADB remained correctly unavailable because pairing/connect discovery and local PIN entry could not be exercised. The cache comparison is observational and does not establish a repeatable token, latency or monetary saving. These limitations must remain visible in implementation status and release review.

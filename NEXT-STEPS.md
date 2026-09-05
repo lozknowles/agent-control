@@ -1,6 +1,12 @@
 # Next steps
 
-These items are intentionally deferred from Agent Control 3.8 development:
+These items are intentionally deferred after the Agent Control 3.9.0 candidate. They are not current release claims:
+
+- Complete the physical Pixel local wireless-ADB gate with the Android System pairing dialog open and a locally hidden PIN: pairing discovery, `adb pair`, normal connect discovery, reconnect, `adb devices`/`get-state` verification, governed ADB execution, controller/device restart and resume. Do not publish `android.adb.local` or `transport.adb` before that evidence passes.
+- Physically exercise Windows owned-process-tree cancellation and verify CIM creation identity, descendant cleanup and truthful uncertainty behavior on the configured Windows execution node.
+- Physically force the provider `AUTHENTICATION_BLOCKED`, transient retry and same-execution reconnect paths without exposing credentials; reconcile their dashboard/SSE projection against the durable ledger.
+- Qualify explicit Responses prompt-cache keys/breakpoints only on provider/model pairs whose supported wire contract is proven. Re-run controlled baseline/candidate measurements with provider-reported cache writes and billed cost where available; retain no savings claim until verified outcomes, tokens, latency and cost demonstrate one.
+- Extend owned-process cleanup adapters only for substrates that can provide descendant identity/absence evidence; unsupported platforms must continue to fail closed as cleanup uncertainty.
 
 - Improve and re-benchmark the built-in lexical ranker before it can influence automatic broad semantic routing; the first frozen suite retrieved the expected file for only 2/5 tasks.
 - Expand the local-model A/B/C trial beyond one bounded Qwen2.5 3B question, including mutation tasks, independent verification, baton/handoff size and cost-per-verified-outcome.

@@ -16,6 +16,14 @@ History terminology is deliberately strict. `HANDOFF_RECOMMENDED` means the gove
 
 The headless Agent Control process owns schedule polling. Closing the dashboard, logging out, or not having Codex installed does not stop a due parameterised Job. Full setup and operator examples are in [`jobs/README.md`](jobs/README.md).
 
+## Resilient Run state (3.9)
+
+Run cards now render the durable lifecycle reason and observation source instead of collapsing every nonterminal state into “running.” `AUTHENTICATION_BLOCKED`, `RECONNECTING`, `CANCELLING`, `CLEANUP_UNCERTAIN` and `DISCONNECTED` are distinct. A retry card shows `nextAttemptAt`, `recoveryDeadlineAt` and the remaining retry budget only when those timestamps/budgets actually exist. A locally advancing countdown is display convenience between those fixed timestamps; it does not change scheduler state.
+
+Cancellation remains pending until the execution adapter returns cleanup evidence. The dashboard shows cleanup outcome, reason, requested/verified times, platform and the number of captured process identities. It intentionally does not expose process output or platform command text. `confirmed` permits a terminal cancellation; `uncertain`, `identity-mismatch` or `failed` leaves the Run fenced for reconciliation. Do not interpret a sent TERM/KILL request as completion.
+
+The first page load and every SSE reconnect fetch a complete authoritative snapshot before applying later events. Reloading during provider work, a queue wait or cancellation therefore reconstructs the same Run, execution ID, retry state, Work Parcel and token totals; the browser never creates a replacement Run or infers terminal state from a missing event. Measurement cards show source, authority and freshness. Unavailable values are `unknown`, and stale values retain their observation time instead of becoming current.
+
 ## Start
 
 `npm start` starts the TUI and the embedded dashboard on `http://127.0.0.1:4310`. `npm run web` runs the same control service and dashboard without Blessed for a headless operator host. Run one authoritative control-plane process per state directory. Set `AGENT_CONTROL_WEB_ENABLED=0` to disable the embedded dashboard or `AGENT_CONTROL_WEB_PORT` to select another port.
@@ -92,9 +100,9 @@ Model qualification and routing mutations are `POST /api/models/:id/qualify` and
 
 Operator requests under `/api/lanes/:id/` include `pause`, `resume`, `priority`, `mode`, `task`, `reroute`, `handoff`, `clone`, `cancel`, `takeover`, `return-ownership` and verification transitions. These endpoints call application-service methods. There is deliberately no direct lease, scheduler-state, persistence, terminal-input or execution-provider endpoint.
 
-The prominent **Managed Nodes** panel renders the same resource-attached snapshot returned by `/api/status` and `/api/nodes`: state, OS/kernel, heartbeat, uptime, load, memory, workload, maintenance state, secure-overlay connectivity, storage and capabilities. It is an observation panel, not a remote shell. Node operations are created as governed Jobs through the existing scheduler and approval path.
+The prominent **Managed Nodes** panel renders the same resource-attached snapshot returned by `/api/status` and `/api/nodes`: state, OS/kernel, heartbeat, uptime, load, memory, workload, maintenance state, secure-overlay connectivity, storage and capabilities. Measurements include source, authority, freshness, observation time and limitations. Android/sysfs-derived CPU busy is visibly derived and not admission-qualified; absent temperature/storage/load data remains unknown. It is an observation panel, not a remote shell. Node operations are created as governed Jobs through the existing scheduler and approval path.
 
-The compact **Harness Efficiency** diagnostic shows verified successes, turns, fresh/cached/output token composition, cache effectiveness, escalation rate and cost per verified outcome. Unknown provider measurements are rendered as `unknown`, not zero. A selected Run shows its recorded profile and verifier state; these observations cannot change routing or acceptance through the read-only endpoints.
+The compact **Harness Efficiency** diagnostic shows verified successes, turns, fresh/cached/cache-write/output token composition, cache effectiveness, escalation rate and cost per verified outcome. A cache read is not a cache write, and neither is subtracted from authoritative total input. Unknown provider measurements are rendered as `unknown`, not zero. A selected Run shows its recorded profile and verifier state; these observations cannot change routing or acceptance through the read-only endpoints.
 
 ## Spark fast execution
 

@@ -47,6 +47,12 @@ This is the implementation-start record requested before production changes. His
 | Android evergreen harness `f990a96c16b0d2bac9094802e47784a34e361b06` | Preserved in the separate Android Codex release worktree/branch. It is not an Agent Control 3.9 implementation commit and will not be duplicated. |
 | Credential residency, token governor/batons, governed retrieval and accounting | Released through 3.8.2 and retained. The clean post-release cache/context checkpoint is the 3.9 base, avoiding loss or duplicate implementation. |
 
-## Initial gate state
+## Initial gate state (historical)
 
-No 3.9 production behavior or physical gate is claimed by this matrix. The following remain open: implementation, focused regression coverage, complete repository validation, install/build checks, Pixel qualification, cache baseline/candidate measurement, real concurrent-lane dashboard recording, documentation consistency, push and PR.
+At implementation start, no 3.9 production behavior or physical gate was claimed. The open set was implementation, focused regression coverage, complete repository validation, install/build checks, Pixel qualification, cache baseline/candidate measurement, real concurrent-lane dashboard recording, documentation consistency, push and PR.
+
+## Candidate disposition
+
+Implementation commit `b45daf5871d36da4f12f4d60b7c29c092a87e233` closes the code gaps without copying reviewed sources. Focused and full deterministic validation, package/install checks, documentation and PR status are recorded in the [candidate qualification](agent-control-3.9-qualification.md).
+
+The dashboard/concurrent-work/reload/Linux-cleanup gate passed physically. Pixel resource fallback was observed, but Android local-ADB pairing/reconnect/execution/resume remains unqualified because there was no discovered pairing/connect endpoint and no locally supplied PIN. Windows physical cancellation and live provider auth/reconnect/retry classes also remain unexercised. The real cache comparison confirmed truthful instrumentation but had nonequivalent accepted outcomes and cannot support a savings claim.

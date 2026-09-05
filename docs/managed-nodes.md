@@ -63,6 +63,10 @@ Workload detectors are declarative. A configured detector is available only when
 
 The fixed read-only probe reports a versioned, base64-framed record stream. The controller rejects malformed or incomplete frames. The projection includes hostname, distribution/version, kernel, architecture, CPU and logical cores, memory, uptime/load, filesystems/free space, optical devices and holders, network interfaces, secure-overlay state when present, temperatures, active services, known tools and relevant process evidence.
 
+3.9 wraps each scalar measurement as `{value, source, authority, freshness, observedAt, limitations, qualifiedForAdmission}`. `/proc/meminfo`, `/proc/uptime`, `/proc/loadavg` and aggregate `/proc/stat` are primary Linux sources. When those views are absent, the fixed probe may use Node's read-only `os` API for memory/uptime/load. If aggregate CPU counters are hidden but per-CPU sysfs cpuidle counters are readable, the controller derives one aggregate busy percentage from two samples and their real interval. That value is labelled `derived`, lists partial-visibility/no-breakdown limitations, and is always `qualifiedForAdmission: false`.
+
+The controller needs a prior counter frame before showing CPU busy. Counter reset, a nonpositive interval, a stale interval or incomplete CPU visibility never becomes zero load. A failed heartbeat changes the last good values to stale. A missing temperature, filesystem, load or CPU source remains `value: null`, `authority: unavailable`; the dashboard and placement code must not substitute a plausible value. Resource admission may use only a measurement whose policy and adapter have separately qualified it.
+
 Every managed node has one of these states:
 
 - `ONLINE`: healthy heartbeat but no workload capability was discovered for a more specific idle/busy classification;
@@ -73,7 +77,7 @@ Every managed node has one of these states:
 
 A failed probe first preserves the last good inventory as `DEGRADED`. After `offlineAfterSeconds`, the node becomes `OFFLINE`, maintenance becomes unavailable and worker placement fails closed. A subsequent complete probe restores the current state. Successful discovery synchronises observed capabilities and workload blocks into the existing Worker Registry.
 
-The web dashboard, `GET /api/nodes`, the TUI Resources view and `agent-control status` all read the same `AgentControlService` projection. They show the heartbeat, uptime, load, memory, storage, workload, maintenance state, secure-overlay connectivity and discovered capabilities; no interface maintains a separate node state.
+The web dashboard, `GET /api/nodes`, the TUI Resources view and `agent-control status` all read the same `AgentControlService` projection. They show the heartbeat, uptime, load, memory, storage, workload, maintenance state, secure-overlay connectivity and discovered capabilities together with source/authority/freshness where available; no interface maintains a separate node state.
 
 ## Governed execution
 
