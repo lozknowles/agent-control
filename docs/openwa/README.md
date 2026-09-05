@@ -1,6 +1,6 @@
 # Optional WhatsApp pilot
 
-Status: implemented pilot; physical WhatsApp qualification remains pending account linking and separate operator enrolment. No release or production installation is implied.
+Status: core live WhatsApp job control qualified; overall pilot PARTIAL. Linking, separate-human enrolment, help, typecheck, status, delivered reports and cancellation with cleanup passed. See [live qualification](live-qualification.md) for reconnect/replay evidence, video provenance and remaining handset-link/provider limitations. No release or production installation is implied.
 
 OpenWA is an unofficial WhatsApp Web gateway. The upstream project warns of account restriction risk and that send API acceptance does not prove delivery. Use a dedicated account; retain the normal Agent Control dashboard. No reserved-username capability is assumed. The gateway account number, display name and any username are not human operator credentials.
 
