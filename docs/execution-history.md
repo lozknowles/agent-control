@@ -44,9 +44,9 @@ Current context and lifetime usage are separate. Context values carry `authorita
 - `estimated`: Agent Control calculated the value from an adapter estimate, configured context limit or price table;
 - `unavailable`: the provider did not expose a usable value, so the dashboard shows unavailable rather than zero.
 
-Some providers expose usage only after completion. Their initial history entry therefore shows current context and lifetime usage as unavailable; a completion event can add final usage and, where supported, an explicitly estimated single-turn context value. If estimated current context exceeds the configured window, the dashboard displays 100% and explains that it is a clamp. A displayed estimated 100% is not an exact provider-reported measurement and does not establish that the provider exhausted its context.
+Some providers expose usage only after completion. Their initial history entry therefore shows current context and lifetime usage as unavailable; a genuinely one-request adapter can add an explicitly estimated single-turn context value where defensible. Codex `turn.completed.usage` can aggregate several internal calls, so the Codex exec adapter never treats it as current-context occupancy and leaves context unavailable unless Codex emits a separate usable signal. If another adapter's estimated current context exceeds the configured window, the dashboard displays 100% and explains that it is a clamp. A displayed estimated 100% is not an exact provider-reported measurement and does not establish that the provider exhausted its context.
 
-The history reconciles Job and Work Parcel totals. Missing cached-input reporting remains unavailable rather than becoming zero; total-token and cost reconciliation can still succeed from their independently retained totals.
+The history reconciles Job and Work Parcel totals. It displays cumulative total input with fresh and cached components separately. Missing cached-input reporting leaves both components unavailable rather than becoming zero, while authoritative total input is retained independently. A calculated price that depends on an unavailable discounted-cache split remains unknown; total-token reconciliation can still succeed.
 
 ## Security and retention
 

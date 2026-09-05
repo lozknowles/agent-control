@@ -1,7 +1,7 @@
 {
   "schema": "agent-control.implementation-status/v1",
   "release": "3.8.2",
-  "updated": "2026-09-04",
+  "updated": "2026-09-05",
   "capabilities": [
     {
       "id": "dashboard.human-readable-execution-history",
@@ -116,11 +116,11 @@
       "id": "routing.token-aware-baton",
       "title": "Token-aware baton routing and live telemetry",
       "status": "QUALIFIED",
-      "summary": "Provider-neutral thread telemetry keeps cumulative lifetime tokens separate from current context occupancy, persists configurable 60/75/85/90 governor transitions and context-lifecycle boundaries, sealed baton provenance, failed-handoff recovery and additive Work Parcel provider/account/model/node-chain totals. Optional governed account profiles bind exact model routes to isolated Codex homes on a configured execution node without persisting credentials or resolved paths. A restricted Codex node port reuses configured Resources and fixed-script SSH for Windows account qualification and read-only structured execution. The normal parameterized repository-review lifecycle assesses immutable chunk boundaries, delegates an account-qualified destination through existing contract/handoff runtimes and returns results to independent validation. The redacted dashboard/API projection streams telemetry and context transitions over existing SSE without a page reload.",
+      "summary": "Provider-neutral thread telemetry keeps cumulative lifetime tokens separate from current context occupancy and preserves total/fresh/cached input independently through Job, Work Parcel, baton, history and live dashboard records. Missing cache detail remains unknown, discount-sensitive cost fails closed, Codex cumulative turn usage is never relabeled as current context, and explicit unavailable post-compaction counts clear stale pressure. Configurable governor transitions, context lifecycle, sealed baton provenance, failed-handoff recovery and account/model/node-chain totals remain durable. Account-bound Codex review uses the existing local/remote node port with a strict immutable-context capability envelope, while the dashboard streams the reconciled projection over existing SSE.",
       "sources": ["src/control/token-aware-baton-routing.ts", "src/control/direct-repository-review-executor.ts", "src/control/parameterized-job-engine.ts", "src/control/job-bootstrap.ts", "src/control/contract-runtime.ts", "src/control/handoff-runtime.ts", "src/control/provider-account-profile.ts", "src/control/account-profile-qualification.ts", "src/control/codex-node-execution.ts", "src/control/codex-repository-review-client.ts", "src/control/codex-exec-provider.ts", "src/control/model-registry.ts", "src/control/openai-compatible-provider.ts", "src/control/application-service.ts", "src/control/web-server.ts", "scripts/codex-node-windows.ps1", "assets/dashboard/dashboard-enhancements.js", "assets/dashboard/dashboard-models.js"],
       "tests": ["src/control/token-aware-baton-routing.test.ts", "src/control/codex-exec-provider.test.ts", "src/control/codex-node-execution.test.ts", "src/control/account-profile-qualification.test.ts", "src/control/model-registry.test.ts", "src/control/openai-compatible-provider.test.ts", "src/control/direct-repository-review-executor.test.ts", "src/control/web-server.test.ts"],
-      "evidence": ["docs/token-aware-baton-routing.md", "docs/evidence/agent-control-3.7-development-qualification.md", "docs/evidence/agent-control-3.7-physical-qualification-20260902.md", "docs/evidence/agent-control-3.7-physical-lifecycle-20260903.json"],
-      "limitation": "A bounded production Work Parcel physically qualified live SSE telemetry, a sealed source-to-destination baton, destination continuation, independent verification, additive provider/model accounting and original-thread recovery after an injected destination refusal. Both routes were distinct local OpenAI-compatible provider/model configurations; authoritative current-context occupancy and source monetary cost remain unavailable where the providers do not expose them. Remote Codex account qualification passed separately, but Codex was not a workload leg in this lifecycle proof."
+      "evidence": ["docs/token-aware-baton-routing.md", "docs/evidence/agent-control-3.7-development-qualification.md", "docs/evidence/agent-control-3.7-physical-qualification-20260902.md", "docs/evidence/agent-control-3.7-physical-lifecycle-20260903.json", "docs/evidence/agent-control-post-3.8.2-context-efficiency.md"],
+      "limitation": "The post-3.8.2 matched Codex sequences proved truthful cache/context accounting and removal of observed native command execution, but prompt-cache hits varied from 35% to 0% under identical prompts and no reliable token or latency saving was established. Codex exec supplies no authoritative current-context or turn-cost field. Persistent native sessions/compaction remain disabled until lifecycle isolation and a practical benefit are qualified."
     },
     {
       "id": "models.fast-execution-spark",
@@ -258,10 +258,10 @@
       "id": "providers.openai-codex-chatgpt-plan",
       "title": "Codex execution with ChatGPT-plan authentication",
       "status": "QUALIFIED",
-      "summary": "A real Codex Job used saved ChatGPT authentication, a read-only process envelope and the central return-data tool gateway.",
+      "summary": "Real Codex Jobs use saved ChatGPT authentication under a strict ephemeral read-only envelope. Immutable structured review ignores user/rule/project context, disables known native action-capable tool surfaces, preserves provider-reported total/fresh/cached usage, and leaves current context unavailable when Codex exposes only cumulative turn usage; returned Agent Control tool requests still use the central gateway.",
       "sources": ["src/control/codex-exec-provider.ts", "src/control/openai-provider-selector.ts"],
       "tests": ["src/control/codex-exec-provider.test.ts", "src/control/openai-provider-selector.test.ts"],
-      "evidence": ["docs/evidence/windows-openai-chatgpt-plan-live-20260824.json"]
+      "evidence": ["docs/evidence/windows-openai-chatgpt-plan-live-20260824.json", "docs/evidence/agent-control-post-3.8.2-context-efficiency.md"]
     },
     {
       "id": "verification.universal-adapter-coverage",
@@ -276,10 +276,10 @@
       "id": "executors.opaque-cli-internal-tools",
       "title": "Opaque CLI internal-tool mediation",
       "status": "PARTIAL",
-      "summary": "CLI processes can be constrained by an approved capability envelope, but their internal tools are not individually authorised by ToolPolicy.",
+      "summary": "CLI processes can be constrained by an approved capability envelope, and immutable Codex review now disables its known native shell, multi-agent, retrieval and interactive action surfaces under strict config validation. Internal CLI actions are still not individually authorised by ToolPolicy; observed item types are post-run evidence only.",
       "sources": ["src/control/codex-exec-provider.ts", "src/control/execution-provider.ts"],
       "tests": ["src/control/codex-exec-provider.test.ts", "src/control/orca-execution-provider.test.ts"],
-      "limitation": "Add authoritative process supervision and immediate termination or suspension when live authority changes."
+      "limitation": "Keep provider-specific native surfaces disabled where the workload does not require them; add authoritative per-action mediation or immediate process suspension before claiming universal ToolPolicy coverage for an opaque CLI."
     },
     {
       "id": "skills.qualified-selection",

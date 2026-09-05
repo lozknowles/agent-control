@@ -3,6 +3,11 @@
 ## Unreleased
 
 - Normalizes Codex JSONL's top-level `cached_input_tokens`/`cachedInputTokens` fields in repository-review telemetry and accounting, preserving total input while calculating fresh input and configured cost from the reported cached amount.
+- Carries total/fresh/cached input independently through live token-governor samples, durable Job/Work Parcel accounting, batons, execution history, SSE-backed dashboard projections and provider/account/model chain totals; missing cache detail now leaves fresh input unknown instead of inventing zero cached input, while authoritative total input remains available.
+- Stops treating cumulative Codex exec turn usage as current-context occupancy. Codex JSONL context remains `unavailable` unless a distinct provider field is present, and an explicitly unavailable post-compaction count clears stale occupancy instead of triggering a false pressure/handoff transition.
+- Hardens schema-constrained Codex review on local and Windows nodes with a strict immutable automation envelope: ChatGPT authentication remains in the selected `CODEX_HOME`, mutable user/project configuration is ignored, project instructions are suppressed, and Codex shell, unified-exec, multi-agent, web-search, browser, computer, app, image and workspace-dependency surfaces are disabled.
+- Leaves calculated cost unknown when a discounted cached-input price requires a cache split the provider did not report; equal input/cache rates remain exactly calculable.
+- Moves opaque retrieval packet IDs behind the reusable instruction/evidence prefix. Five matched three-run physical sequences kept task/schema/model/account/snapshot fixed and confirmed cached input under ephemeral runs plus removal of observed internal command execution; token totals did not improve reliably, so no cache-saving or persistent-session benefit is claimed.
 
 ## [3.8.2] — 2026-09-04
 

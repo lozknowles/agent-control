@@ -65,6 +65,16 @@ This provider materialization does not bypass Agent Control policy. The model mu
 
 The operator's existing `~/.codex/config.toml`, profiles and authentication files are neither copied nor modified.
 
+## Immutable structured-review envelope
+
+Account-bound repository review keeps authentication in the selected `CODEX_HOME` but launches Codex with a strict, ephemeral, read-only automation envelope. Controller-local and Windows-node implementations ignore mutable user configuration and exec-policy rules, set `project_doc_max_bytes=0`, disable shell/unified-exec/multi-agent plus web-search/browser/computer/app/image/workspace-dependency surfaces, and require the exact output schema. The generated external-provider configuration described above is the only path that loads a config file; it loads only that temporary mode-0600 file and retains the same project/tool restrictions.
+
+Codex receives the fixed review instruction, one frozen context/Evidence Packet, optional rehydrated baton evidence and the stable schema. Opaque Evidence Packet and baton identifiers follow reusable content so they do not unnecessarily shorten a cacheable prefix. Temporary schema/config paths are local process details and are not rendered into the review text or durable evidence.
+
+The current production path uses bounded `codex exec --ephemeral --json`; it does not use a persisted native Codex session. Provider prompt caching can still occur under ephemeral execution and is recorded only when Codex reports cached input. `turn.completed.usage` is cumulative consumption and may span internal model calls, so it is not used as current-context occupancy. Native resume, app-server continuation and compaction remain future adapter options, not core requirements; Work Parcels and sealed batons stay sufficient for recovery if no native session exists.
+
+Codex-internal tool actions are not individually authorized by Agent Control `ToolPolicy`. This review adapter therefore disables the known action-capable native surfaces and retains observed JSONL item types as post-run evidence. A returned Agent Control tool request on the separate harness path still enters `ToolPolicy`; these are distinct boundaries.
+
 ## Fast execution
 
 The separate `CodexFastExecutionRunner` is a mutation-capable, more tightly bounded path for the generic `FAST_EXECUTION_MODEL` class. It is not a broader version of this schema-constrained read-only tool-request provider. The execution hierarchy is `LOCAL → SPARK → STANDARD → FRONTIER`; THIN remains a harness/context profile, not a model alias. The route requires a disposable clean Git worktree, exact model-registry selection, a sealed one-file baton, one attempt, disabled multi-agent fan-out and independent Git/test verification.
