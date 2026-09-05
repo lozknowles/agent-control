@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Normalizes Codex JSONL's top-level `cached_input_tokens`/`cachedInputTokens` fields in repository-review telemetry and accounting, preserving total input while calculating fresh input and configured cost from the reported cached amount.
+
 ## [3.8.2] — 2026-09-04
 
 - Adds a bounded, human-readable Execution history to Saved Job Run detail and Lane Activity. The view derives from existing durable Job Run, Work Parcel, token-governor, baton and verification records and does not create a second transcript store or control path.

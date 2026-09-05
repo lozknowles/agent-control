@@ -75,7 +75,7 @@ function extractToolCall(payload: Record<string, unknown>, wire: string) {
 }
 export function normalizeModelUsage(value: unknown, model: ModelConfig): NormalizedModelUsage {
   const usage = value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
-  const input = number(usage.input_tokens ?? usage.prompt_tokens), output = number(usage.output_tokens ?? usage.completion_tokens), cached = number((usage.input_tokens_details as Record<string, unknown> | undefined)?.cached_tokens ?? (usage.prompt_tokens_details as Record<string, unknown> | undefined)?.cached_tokens), total = number(usage.total_tokens) ?? (input !== null && output !== null ? input + output : null);
+  const input = number(usage.input_tokens ?? usage.prompt_tokens), output = number(usage.output_tokens ?? usage.completion_tokens), cached = number(usage.cached_input_tokens ?? usage.cachedInputTokens ?? (usage.input_tokens_details as Record<string, unknown> | undefined)?.cached_tokens ?? (usage.prompt_tokens_details as Record<string, unknown> | undefined)?.cached_tokens), total = number(usage.total_tokens) ?? (input !== null && output !== null ? input + output : null);
   const calculated = model.pricing && input !== null && output !== null ? ((input - (cached ?? 0)) * model.pricing.inputPerMillionTokens + (cached ?? 0) * (model.pricing.cachedInputPerMillionTokens ?? model.pricing.inputPerMillionTokens) + output * model.pricing.outputPerMillionTokens) / 1_000_000 : null;
   return {inputTokens: input, outputTokens: output, cachedInputTokens: cached, totalTokens: total, providerReportedCost: number(usage.cost), calculatedCost: calculated, currency: model.pricing?.currency ?? null};
 }
