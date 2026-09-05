@@ -14,7 +14,7 @@ export type OpenWAConfig = z.infer<typeof openwaConfigSchema>;
 type Row = Record<string, any>;
 const digest = (value: string) => createHash('sha256').update(value).digest('hex');
 const jid = (value: unknown): value is string => typeof value === 'string' && /^[0-9]{5,25}@(c\.us|s\.whatsapp\.net|lid)$/.test(value);
-const help = 'help | jobs | run <approved-template> {"argument":"value"} | status <run-id> | cancel <run-id> | report <run-id> | watch <run-id> | unwatch <run-id>\nPause/resume unsupported. Approvals use the authenticated dashboard. Natural language requires clarification and a fresh explicit command.';
+const help = 'Send one command per message:\nhelp · jobs · run <template>\nstatus job 1 · cancel job 1 · report job 1\nwatch job 1 · unwatch job 1\nUse the job number shown in your reply. No internal ID needed. Optional approved arguments use JSON. Pause/resume unsupported; approvals use the authenticated dashboard.';
 
 /** One adapter per isolated controller/state directory; SQLite persists command and delivery state.
  * The existing runtime persists request keys, closing the two-store enqueue crash window.
@@ -45,6 +45,7 @@ export class OpenWAAdapter {
       CREATE TABLE IF NOT EXISTS operators (sender TEXT PRIMARY KEY, grants TEXT NOT NULL, active INTEGER NOT NULL, progress INTEGER NOT NULL DEFAULT 1);
       CREATE TABLE IF NOT EXISTS pairing (hash TEXT PRIMARY KEY, expires INTEGER NOT NULL, sender TEXT);
       CREATE TABLE IF NOT EXISTS commands (key TEXT PRIMARY KEY, at INTEGER NOT NULL, sender TEXT NOT NULL, verb TEXT NOT NULL, state TEXT NOT NULL, runId TEXT, code TEXT);
+      CREATE TABLE IF NOT EXISTS job_numbers (sender TEXT NOT NULL, number INTEGER NOT NULL, runId TEXT NOT NULL, PRIMARY KEY(sender,number), UNIQUE(sender,runId));
       CREATE TABLE IF NOT EXISTS watches (sender TEXT NOT NULL, runId TEXT NOT NULL, fingerprint TEXT, notified INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(sender,runId));
       CREATE TABLE IF NOT EXISTS outbox (id INTEGER PRIMARY KEY AUTOINCREMENT, dedupe TEXT UNIQUE NOT NULL, sender TEXT NOT NULL, runId TEXT, body TEXT NOT NULL, kind TEXT NOT NULL, state TEXT NOT NULL DEFAULT 'queued', attempts INTEGER NOT NULL DEFAULT 0, due INTEGER NOT NULL, remoteId TEXT, code TEXT);`);
     this.enabled = this.db.prepare("SELECT value FROM settings WHERE key='enabled'").get()?.value !== 'false';
@@ -52,6 +53,8 @@ export class OpenWAAdapter {
     const scope=digest(`${this.config.sessionId}:${this.config.expectedPhone}`), previousScope=this.db.prepare("SELECT value FROM settings WHERE key='identityScope'").get()?.value;
     if(previousScope && previousScope!==scope){this.db.close();throw new Error('openwa_identity_changed_new_enrolment_required');}
     this.db.prepare("INSERT OR IGNORE INTO settings VALUES ('identityScope',?)").run(scope);
+    this.db.exec('BEGIN IMMEDIATE');
+    try { for(const row of this.db.prepare("SELECT sender,runId FROM commands WHERE verb='run' AND runId IS NOT NULL ORDER BY at,key").all() as Row[])this.jobNumber(row.sender,row.runId);this.db.exec('COMMIT'); } catch(error){this.db.exec('ROLLBACK');throw error;}
     // An interrupted HTTP send might already have reached WhatsApp. Never silently resend it.
     this.db.exec("UPDATE outbox SET state='uncertain',code='restart_during_send' WHERE state='sending'");
   }
@@ -66,8 +69,8 @@ export class OpenWAAdapter {
       templates: this.config.templates.map(({name, jobId, arguments: args, maxActive, maxRunsPerHour}) => ({name, jobId, arguments: args, maxActive, maxRunsPerHour})),
       operators: this.db.prepare('SELECT sender,grants,active,progress FROM operators').all(),
       pairing: this.db.prepare('SELECT hash,sender,expires FROM pairing WHERE expires>?').all(this.clock()),
-      commands: this.db.prepare('SELECT at,sender,verb,state,runId,code FROM commands ORDER BY at DESC LIMIT 50').all(),
-      deliveries: this.db.prepare('SELECT id,sender,runId,kind,state,attempts,remoteId,code FROM outbox ORDER BY id DESC LIMIT 50').all()};
+      commands: this.db.prepare('SELECT at,sender,verb,state,runId,code,(SELECT number FROM job_numbers n WHERE n.sender=commands.sender AND n.runId=commands.runId) AS jobNumber FROM commands ORDER BY at DESC LIMIT 50').all(),
+      deliveries: this.db.prepare('SELECT id,sender,runId,kind,state,attempts,remoteId,code,(SELECT number FROM job_numbers n WHERE n.sender=outbox.sender AND n.runId=outbox.runId) AS jobNumber FROM outbox ORDER BY id DESC LIMIT 50').all()};
   }
   setEnabled(value: boolean) { this.enabled = value; this.db.prepare("INSERT OR REPLACE INTO settings VALUES ('enabled',?)").run(String(value)); }
   beginPairing() {
@@ -100,7 +103,19 @@ export class OpenWAAdapter {
   private operator(sender: string) { return this.db.prepare('SELECT * FROM operators WHERE sender=? AND active=1').get(sender) as Row | undefined; }
   private allRuns():MessagingObservedRun[] { return [...this.service.runs(),...(this.config.templates.some(t=>t.kind==='saved')?this.service.parameterizedRuns():[])]; }
   private run(id:string):MessagingObservedRun { return id.startsWith('run-')?this.service.run(id):this.service.parameterizedRun(id); }
-  private report(run:MessagingObservedRun) { return 'steps' in run?messagingReport(this.service,run,this.config.dashboardUrl,this.clock()):savedMessagingReport(run,this.config.dashboardUrl,this.clock()); }
+  private report(run:MessagingObservedRun,sender:string) { const report='steps' in run?messagingReport(this.service,run,this.config.dashboardUrl,this.clock()):savedMessagingReport(run,this.config.dashboardUrl,this.clock());return report.replace(`${run.id}:`,`Job ${this.jobNumber(sender,run.id)}:`); }
+  private jobNumber(sender:string,runId:string):number {
+    const existing=this.db.prepare('SELECT number FROM job_numbers WHERE sender=? AND runId=?').get(sender,runId);
+    if(existing)return Number(existing.number);
+    this.db.prepare('INSERT INTO job_numbers(sender,number,runId) SELECT ?,COALESCE(MAX(number),0)+1,? FROM job_numbers WHERE sender=?').run(sender,runId,sender);
+    return Number(this.db.prepare('SELECT number FROM job_numbers WHERE sender=? AND runId=?').get(sender,runId)!.number);
+  }
+  private resolveReference(sender:string,reference:string):string {
+    if(!reference.startsWith('job:'))return reference;
+    const row=this.db.prepare('SELECT runId FROM job_numbers WHERE sender=? AND number=?').get(sender,Number(reference.slice(4)));
+    if(!row)throw new Error('job_number_not_found_send_jobs');
+    return String(row.runId);
+  }
   private requireConnected() { if (!this.enabled || this.health.state !== 'connected_verified' || this.clock() - this.health.checkedAt > 45000) throw new Error('gateway_not_verified_connected'); }
   private owns(sender: string, runId: string) { return Boolean(this.db.prepare("SELECT key FROM commands WHERE sender=? AND runId=? AND verb='run'").get(sender, runId)); }
   private queue(dedupe: string, sender: string, body: string, kind = 'reply', runId?: string) {
@@ -144,7 +159,7 @@ export class OpenWAAdapter {
       if (proposal) { try {
         const parsed = parseMessagingCommand(proposal);
         if (parsed.verb === 'run') { const template=this.config.templates.find(t=>t.name===parsed.template); if(!template || !JSON.parse(operator.grants).includes(template.name))throw new Error('denied');if(template.kind==='saved')validateSavedMessagingRun(this.service,template,parsed.arguments,this.clock());else validateMessagingRun(this.service,template,parsed.arguments,this.clock()); }
-        if ('runId' in parsed && !this.owns(data.from,parsed.runId))throw new Error('denied');
+        if ('runId' in parsed && !this.owns(data.from,this.resolveReference(data.from,parsed.runId)))throw new Error('denied');
       } catch { proposal=undefined; } }
       this.db.prepare("INSERT OR IGNORE INTO commands VALUES (?,?,?,'proposal','rejected',NULL,'explicit_command_required')").run(key, this.clock(), data.from);
       this.queue(key,data.from,proposal?`Proposed command (not executed):\n${proposal}\nSend that exact command in a new message to proceed. Permissions and budgets will be checked again.`:help);
@@ -154,7 +169,7 @@ export class OpenWAAdapter {
     try {
       let runId: string | undefined, reply: string;
       if (command.verb === 'help') reply = `${help}\nApproved templates: ${JSON.parse(operator.grants).join(', ') || 'none'}`;
-      else if (command.verb === 'jobs') reply = (this.db.prepare("SELECT DISTINCT runId FROM commands WHERE sender=? AND verb='run' AND runId IS NOT NULL ORDER BY at DESC LIMIT 10").all(data.from) as Row[]).map(row => `${row.runId}: ${this.run(row.runId).status}`).join('\n') || 'No jobs started by this operator.';
+      else if (command.verb === 'jobs') reply = (this.db.prepare("SELECT DISTINCT runId FROM commands WHERE sender=? AND verb='run' AND runId IS NOT NULL ORDER BY at DESC LIMIT 10").all(data.from) as Row[]).map(row => `Job ${this.jobNumber(data.from,row.runId)}: ${this.run(row.runId).status}`).join('\n') || 'No jobs started by this operator.';
       else if (command.verb === 'run') {
         const template = this.config.templates.find(t => t.name === command.template);
         if (!template || !JSON.parse(operator.grants).includes(template.name)) throw new Error('template_permission_denied');
@@ -165,15 +180,16 @@ export class OpenWAAdapter {
         if(!run){if(template.kind==='saved'){validateSavedMessagingRun(this.service,template,command.arguments,this.clock());const created=this.service.runSavedJob(template.jobId,actor,key);run=this.service.parameterizedRun(created.id);}else run=this.service.createJobRun(template.jobId,validateMessagingRun(this.service,template,command.arguments,this.clock()),actor,key);}
         runId = run.id; this.db.prepare('UPDATE commands SET runId=? WHERE key=?').run(runId, key);
         this.db.prepare('INSERT OR IGNORE INTO watches(sender,runId) VALUES (?,?)').run(data.from, runId);
-        reply = `Accepted ${run.id}; runtime ${run.status}.\n${this.report(run)}`;
+        reply = `Job ${this.jobNumber(data.from,run.id)} accepted: ${command.template}.\nStatus: ${run.status}\nTo cancel: cancel job ${this.jobNumber(data.from,run.id)}\n${this.config.dashboardUrl.replace(/\/$/,'')}/?messagingRun=${encodeURIComponent(run.id)}`;
       } else {
-        runId = command.runId;
+        runId = this.resolveReference(data.from,command.runId);
         if (!this.owns(data.from, runId)) throw new Error('job_permission_denied');
         let run = this.run(runId);
-        if (command.verb === 'cancel') { if('steps' in run)this.service.cancelJobRun(runId,`messaging:${digest(data.from).slice(0,24)}`);else this.service.cancelParameterizedRun(runId,`messaging:${digest(data.from).slice(0,24)}`);run=this.run(runId); }
+        const alreadyTerminal=terminalMessagingRun(run);
+        if (command.verb === 'cancel' && !alreadyTerminal) { if('steps' in run)this.service.cancelJobRun(runId,`messaging:${digest(data.from).slice(0,24)}`);else this.service.cancelParameterizedRun(runId,`messaging:${digest(data.from).slice(0,24)}`);run=this.run(runId); }
         if (command.verb === 'watch') this.db.prepare('INSERT OR IGNORE INTO watches(sender,runId) VALUES (?,?)').run(data.from, runId);
         if (command.verb === 'unwatch') { this.db.prepare('DELETE FROM watches WHERE sender=? AND runId=?').run(data.from, runId); this.db.prepare("UPDATE outbox SET state='suppressed',body='' WHERE sender=? AND runId=? AND kind!='reply' AND state IN ('queued','retry')").run(data.from,runId); }
-        reply = `${command.verb === 'cancel' ? (run.status === 'CANCELLED' ? 'Cancellation confirmed.\n' : `Cancellation requested; runtime ${run.status}. Cleanup is not confirmed.\n`) : command.verb === 'watch' || command.verb === 'unwatch' ? `${command.verb} confirmed.\n` : ''}${this.report(run)}`;
+        reply = `${command.verb === 'cancel' ? (run.status === 'CANCELLED' ? 'Cancellation confirmed.\n' : alreadyTerminal ? `Job already finished (${run.status}); nothing to cancel.\n` : `Cancellation requested; runtime ${run.status}. Cleanup is not confirmed.\n`) : command.verb === 'watch' || command.verb === 'unwatch' ? `${command.verb} confirmed.\n` : ''}${this.report(run,data.from)}`;
       }
       this.db.exec('BEGIN IMMEDIATE');
       try { this.queue(key, data.from, reply, 'reply', runId); this.db.prepare("UPDATE commands SET state='accepted',runId=? WHERE key=?").run(runId ?? null, key); this.db.exec('COMMIT'); } catch(error) { this.db.exec('ROLLBACK'); throw error; }
@@ -185,12 +201,12 @@ export class OpenWAAdapter {
         try {
         this.db.prepare("UPDATE commands SET state='accepted',runId=? WHERE key=?").run(committed.id,key);
         this.db.prepare('INSERT OR IGNORE INTO watches(sender,runId) VALUES (?,?)').run(data.from,committed.id);
-        this.queue(key,data.from,`Accepted ${committed.id}; recovered committed job.\n${this.report(committed)}`,'reply',committed.id);
+        this.queue(key,data.from,`Job ${this.jobNumber(data.from,committed.id)} accepted; recovered committed job.\n${this.report(committed,data.from)}`,'reply',committed.id);
         this.db.exec('COMMIT');
         } catch(failure) { this.db.exec('ROLLBACK'); throw failure; }
         return {accepted:true,runId:committed.id};
       }
-      const allowed = ['template_permission_denied','job_permission_denied','argument_not_approved','parameter_not_approved','template_definition_changed_reapprove_dashboard','active_job_budget_exceeded','hourly_job_budget_exceeded','template_replacement_denied'];
+      const allowed = ['job_number_not_found_send_jobs','template_permission_denied','job_permission_denied','argument_not_approved','parameter_not_approved','template_definition_changed_reapprove_dashboard','active_job_budget_exceeded','hourly_job_budget_exceeded','template_replacement_denied'];
       const code = error instanceof Error && allowed.includes(error.message) ? error.message : 'command_failed_check_dashboard';
       this.db.prepare("UPDATE commands SET state='rejected',code=? WHERE key=?").run(code,key);
       this.queue(key, data.from, `Request not accepted: ${code}. Use the authenticated dashboard.`); return {rejected: true};
@@ -200,7 +216,7 @@ export class OpenWAAdapter {
     if (!this.enabled || this.stopped) return;
     for (const watch of this.db.prepare('SELECT watches.*,operators.progress FROM watches JOIN operators USING(sender) WHERE operators.active=1').all() as Row[]) {
       const run = this.run(watch.runId), terminal = terminalMessagingRun(run);
-      if(!('steps' in run))for(const milestone of savedMessagingMilestones(run))this.queue(`milestone:${watch.sender}:${milestone.id}`,watch.sender,`${milestone.text}\n${this.config.dashboardUrl}/?messagingRun=${run.id}`,'handoff',run.id);
+      if(!('steps' in run))for(const milestone of savedMessagingMilestones(run))this.queue(`milestone:${watch.sender}:${milestone.id}`,watch.sender,`${milestone.text.replace(run.id,`Job ${this.jobNumber(watch.sender,run.id)}`)}\n${this.config.dashboardUrl}/?messagingRun=${run.id}`,'handoff',run.id);
       const fingerprint = digest(JSON.stringify([run.status, 'steps' in run?run.steps.map(s => [s.id,s.status]):run.transitions,'steps' in run?run.trigger.modelRoute:run.modelRoute]));
       if (watch.fingerprint === fingerprint) continue;
       const lifecycle = watch.runStatus!==run.status && ['QUEUED','RUNNING','CANCELLING','CLEANUP_UNCERTAIN','WAITING','AUTHENTICATION_BLOCKED','DISCONNECTED','RECONNECTING'].includes(run.status);
@@ -208,7 +224,7 @@ export class OpenWAAdapter {
       this.db.exec('BEGIN IMMEDIATE');
       try {
         if (terminal) this.db.prepare("UPDATE outbox SET state='suppressed',body='' WHERE sender=? AND runId=? AND kind='progress' AND state IN ('queued','retry')").run(watch.sender,run.id);
-        this.queue(`watch:${watch.sender}:${run.id}:${fingerprint}`,watch.sender,this.report(run),terminal?'terminal':lifecycle?'lifecycle':'progress',run.id);
+        this.queue(`watch:${watch.sender}:${run.id}:${fingerprint}`,watch.sender,this.report(run,watch.sender),terminal?'terminal':lifecycle?'lifecycle':'progress',run.id);
         this.db.prepare('UPDATE watches SET fingerprint=?,notified=?,runStatus=? WHERE sender=? AND runId=?').run(fingerprint,this.clock(),run.status,watch.sender,run.id);
         this.db.exec('COMMIT');
       } catch(error) {this.db.exec('ROLLBACK');throw error;}
@@ -238,7 +254,7 @@ export class OpenWAAdapter {
       if (!row) return;
       if (row.kind === 'progress' && row.runId && terminalMessagingRun(this.run(row.runId))) { this.db.prepare("UPDATE outbox SET state='suppressed',body='' WHERE id=?").run(row.id); return; }
       this.db.prepare("UPDATE outbox SET state='sending',attempts=attempts+1 WHERE id=?").run(row.id);
-      try { const result = await this.gateway('/messages/send-text',{method:'POST',body:JSON.stringify({to:row.sender,text:row.body,linkPreview:false})});
+      try { const result = await this.gateway('/messages/send-text',{method:'POST',body:JSON.stringify({chatId:row.sender,text:row.body,linkPreview:false})});
         const remoteId = result.id ?? result.messageId;
         this.db.prepare("UPDATE outbox SET state=?,remoteId=?,code=? WHERE id=?").run(typeof remoteId==='string'?'submitted':'uncertain',typeof remoteId==='string'?remoteId:null,typeof remoteId==='string'?'gateway_accepted_delivery_unconfirmed':'response_without_message_id',row.id);
       } catch(error) {

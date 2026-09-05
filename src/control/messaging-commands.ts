@@ -18,7 +18,8 @@ export function parseMessagingCommand(text: string): MessagingCommand {
   if (text.length > 2048) throw new Error('command_too_long');
   const match = text.trim().match(/^(\S+)(?:\s+([\s\S]+))?$/);
   if (!match) throw new Error('command_required');
-  const [, verb, tail] = match;
+  const [, rawVerb, tail] = match;
+  const verb = rawVerb.toLowerCase();
   if ((verb === 'help' || verb === 'jobs') && !tail) return {verb};
   if (['pause', 'resume'].includes(verb)) throw new Error('pause_resume_unsupported_use_dashboard');
   if (verb === 'run') {
@@ -27,6 +28,10 @@ export function parseMessagingCommand(text: string): MessagingCommand {
     const parsed = args[2] ? JSON.parse(args[2]) : {};
     if (!parsed || Array.isArray(parsed) || typeof parsed !== 'object') throw new Error('arguments_object_required');
     return {verb, template: args[1], arguments: parsed};
+  }
+  if (['status','report','cancel','watch','unwatch'].includes(verb) && tail) {
+    const short=tail.match(/^(?:job\s+|#)?([1-9][0-9]{0,8})$/i);
+    if(short)return {verb:verb as 'status',runId:`job:${Number(short[1])}`};
   }
   if (['status', 'report', 'cancel', 'watch', 'unwatch'].includes(verb) && tail && /^(?:run-[a-z0-9-]+|[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12})$/.test(tail)) return {verb: verb as 'status', runId: tail};
   // NL can only produce a proposal. A fresh explicit deterministic command is required.
