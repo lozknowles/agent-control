@@ -3,9 +3,10 @@ import {spawnSync} from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import {PassThrough} from 'node:stream';
 import test from 'node:test';
 import {fileURLToPath} from 'node:url';
-import {createAdbLocal, createFileAttemptStore, createMemoryAttemptStore, parseDevices, parseMdnsServices} from './adb-local.mjs';
+import {createAdbLocal, createFileAttemptStore, createMemoryAttemptStore, createRawMdnsQuery, parseDevices, parseMdnsServices, parseRawMdnsServices, readPairingCode} from './adb-local.mjs';
 
 const service = (endpoint, name = 'adb-device-one') => ({endpoint, name});
 const mdns = (pairing = [], connect = []) => [
@@ -15,13 +16,13 @@ const mdns = (pairing = [], connect = []) => [
 ].join('\n');
 const devices = entries => ['List of devices attached', ...entries.map(([serial, state = 'device']) => `${serial}\t${state} product:test model:test`), ''].join('\n');
 
-function fixture({available = true, pairing = [], connect = [], connected = [], pairCode = 0, connectCodes = [0], rotateTo, leak, attemptState = createMemoryAttemptStore()} = {}) {
+function fixture({available = true, pairing = [], connect = [], connected = [], pairCode = 0, connectCodes = [0], rotateTo, leak, attemptState = createMemoryAttemptStore(), nativeMdnsCode = 0, rawServices = []} = {}) {
   const calls = [];
-  let endpoints = [...connect], current = [...connected], connects = 0, pairs = 0;
+  let endpoints = [...connect], current = [...connected], connects = 0, pairs = 0, discoveries = 0;
   const run = async (_command, args, options = {}) => {
     calls.push({args: [...args], input: options.input});
     if (args[0] === 'version') return available ? {code: 0, stdout: 'Android Debug Bridge version 1.0.41\n', stderr: ''} : {code: 127, stdout: '', stderr: 'missing'};
-    if (args[0] === 'mdns') return {code: 0, stdout: mdns(pairing, endpoints), stderr: ''};
+    if (args[0] === 'mdns') return {code: nativeMdnsCode, stdout: nativeMdnsCode ? '' : mdns(pairing, endpoints), stderr: nativeMdnsCode ? 'unsupported' : ''};
     if (args[0] === 'devices') return {code: 0, stdout: devices(current), stderr: ''};
     if (args[0] === '-s' && args[2] === 'get-state') {
       const found = current.find(([endpoint, state = 'device']) => endpoint === args[1] && state === 'device');
@@ -37,7 +38,16 @@ function fixture({available = true, pairing = [], connect = [], connected = [], 
     }
     throw new Error(`unexpected:${args.join(' ')}`);
   };
-  return {helper: createAdbLocal({run, wait: async () => {}, attempts: 2, localAddresses: ['192.0.2.2'], attemptState}), calls, counts: () => ({connects, pairs}), attemptState};
+  const discoverServices = async () => { discoveries++; return {available: true, services: rawServices, reason: null}; };
+  return {helper: createAdbLocal({run, wait: async () => {}, attempts: 2, localAddresses: ['192.0.2.2'], attemptState, discoverServices}), calls, counts: () => ({connects, pairs}), discoveries: () => discoveries, attemptState};
+}
+
+function dnsName(name) { return Buffer.concat([...name.split('.').map(label => Buffer.concat([Buffer.from([Buffer.byteLength(label)]), Buffer.from(label)])), Buffer.from([0])]); }
+function dnsRecord(name, type, data) { const header = Buffer.alloc(10); header.writeUInt16BE(type, 0); header.writeUInt16BE(1, 2); header.writeUInt32BE(120, 4); header.writeUInt16BE(data.length, 8); return Buffer.concat([dnsName(name), header, data]); }
+function rawMdnsPacket() {
+  const type = '_adb-tls-connect._tcp.local', instance = `adb-device-one.${type}`, host = 'android-device.local', srv = Buffer.alloc(6); srv.writeUInt16BE(45231, 4);
+  const records = [dnsRecord(type, 12, dnsName(instance)), dnsRecord(instance, 33, Buffer.concat([srv, dnsName(host)])), dnsRecord(host, 1, Buffer.from([192, 0, 2, 2]))], header = Buffer.alloc(12); header.writeUInt16BE(0x8400, 2); header.writeUInt16BE(records.length, 6);
+  return Buffer.concat([header, ...records]);
 }
 
 test('parses pairing/connect services with a stable service identity and connected devices', () => {
@@ -45,6 +55,25 @@ test('parses pairing/connect services with a stable service identity and connect
   assert.deepEqual(parsed.map(value => value.type), ['_adb-tls-pairing._tcp', '_adb-tls-connect._tcp']);
   assert.equal(parsed[0].deviceIdentity, parsed[1].deviceIdentity);
   assert.equal(parseDevices(devices([['192.0.2.2:37102']]))[0].state, 'device');
+});
+
+test('direct DNS-SD fallback parses PTR, SRV and local A records without setting the QU bit', () => {
+  const query = createRawMdnsQuery(), marker = Buffer.from([0, 12, 0, 1]);
+  assert.notEqual(query.indexOf(marker), -1);
+  assert.notEqual(query.indexOf(marker, query.indexOf(marker) + marker.length), -1);
+  assert.equal(query.indexOf(Buffer.from([0, 12, 0, 0x81])), -1);
+  assert.deepEqual(parseRawMdnsServices([{packet: rawMdnsPacket(), remoteAddress: '192.0.2.2'}], ['192.0.2.2']), [{type: '_adb-tls-connect._tcp', endpoint: '192.0.2.2:45231', name: 'adb-device-one', deviceIdentity: 'adb-device-one'}]);
+  assert.deepEqual(parseRawMdnsServices([{packet: rawMdnsPacket(), remoteAddress: '192.0.2.2'}], ['198.51.100.7']), []);
+});
+
+test('native ADB discovery remains preferred and unsupported builds use direct DNS-SD', async () => {
+  const native = fixture({connect: [service('192.0.2.2:45231')]}), direct = fixture({nativeMdnsCode: 1, rawServices: [{...service('192.0.2.2:45231'), type: '_adb-tls-connect._tcp', deviceIdentity: 'adb-device-one'}]});
+  assert.equal((await native.helper.status()).adb.discoverySource, 'adb-mdns');
+  assert.equal(native.discoveries(), 0);
+  const fallback = await direct.helper.status();
+  assert.equal(fallback.adb.discoverySource, 'direct-mdns');
+  assert.equal(fallback.discovery.connect[0].endpoint, '192.0.2.2:45231');
+  assert.equal(direct.discoveries(), 1);
 });
 
 test('adb unavailable and absent discovery remain explicit', async () => {
@@ -129,6 +158,18 @@ test('pairing code never appears in returned evidence, errors, or persisted atte
   const pair = value.calls.find(call => call.args[0] === 'pair');
   assert.equal(pair.args.includes('123456'), false);
   assert.equal(pair.input, '123456\n');
+});
+
+test('interactive pairing input disables terminal echo and never writes the PIN', async () => {
+  const input = new PassThrough(), output = new PassThrough(), rawModes = [];
+  input.isTTY = true; input.isRaw = false; input.setRawMode = value => { rawModes.push(value); input.isRaw = value; return input; };
+  let displayed = ''; output.on('data', chunk => { displayed += chunk; });
+  const pending = readPairingCode(input, output);
+  input.write('123456\n');
+  assert.equal(await pending, '123456');
+  assert.deepEqual(rawModes, [true, false]);
+  assert.equal(displayed, 'Pairing code: \n');
+  assert.equal(displayed.includes('123456'), false);
 });
 
 test('active PIN entry owns the attempt lease and suppresses reconnect/discovery work', async () => {

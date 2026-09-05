@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 import {spawn} from 'node:child_process';
 import crypto from 'node:crypto';
+import dgram from 'node:dgram';
 import fs from 'node:fs';
+import {isIP} from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
@@ -12,6 +14,9 @@ const RESULT_SCHEMA = 'agent-control.android-adb-local/v1';
 const STATE_SCHEMA = 'agent-control.android-adb-attempt/v1';
 const DEFAULT_TIMEOUT_MS = 8_000;
 const DEFAULT_STALE_MS = 120_000;
+const DEFAULT_MDNS_TIMEOUT_MS = 1_500;
+const MDNS_ADDRESS = '224.0.0.251';
+const MDNS_PORT = 5353;
 
 export function parseMdnsServices(text) {
   const services = [];
@@ -36,6 +41,80 @@ export function parseDevices(text) {
     if (serial) devices.push({serial, state, detail: detail.join(' ')});
   }
   return devices;
+}
+
+export function createRawMdnsQuery() {
+  const services = [`${PAIRING_SERVICE}.local`, `${CONNECT_SERVICE}.local`];
+  return Buffer.concat([
+    // Standard mDNS query from port 5353. QCLASS is IN (0x0001), without QU.
+    Buffer.from([0, 0, 0, 0, 0, services.length, 0, 0, 0, 0, 0, 0]),
+    ...services.map(name => Buffer.concat([encodeDnsName(name), Buffer.from([0, 12, 0, 1])])),
+  ]);
+}
+
+export function parseRawMdnsServices(packets, localAddresses = []) {
+  const records = [];
+  for (const item of packets ?? []) {
+    try { records.push(...parseDnsPacket(item.packet).map(record => ({...record, remoteAddress: item.remoteAddress}))); }
+    catch { /* One malformed datagram cannot qualify or suppress another response. */ }
+  }
+  const local = new Set(localAddresses.map(normalizeAddress));
+  const addresses = new Map();
+  for (const record of records) {
+    if (![1, 28].includes(record.type) || typeof record.data !== 'string') continue;
+    const key = record.name.toLowerCase();
+    const values = addresses.get(key) ?? [];
+    values.push(record.data); addresses.set(key, values);
+  }
+  const services = [];
+  for (const pointer of records.filter(record => record.type === 12 && serviceType(record.name))) {
+    const type = serviceType(pointer.name), instance = String(pointer.data), server = records.find(record => record.type === 33 && record.name.toLowerCase() === instance.toLowerCase());
+    if (!type || !server || typeof server.data !== 'object' || !validPort(server.data.port)) continue;
+    const advertised = addresses.get(String(server.data.target).toLowerCase()) ?? [];
+    const host = advertised.find(value => isIP(value) === 4 && local.has(normalizeAddress(value)))
+      ?? advertised.find(value => local.has(normalizeAddress(value)))
+      ?? (local.has(normalizeAddress(server.remoteAddress)) ? server.remoteAddress : null);
+    if (!host) continue;
+    const name = instance.replace(new RegExp(`\\.${escapeRegex(type)}\\.local\\.?$`, 'i'), '');
+    const endpoint = `${isIP(host) === 6 ? `[${host}]` : host}:${server.data.port}`;
+    services.push({type, endpoint, name, deviceIdentity: serviceIdentity(name)});
+  }
+  return services.filter((service, index) => services.findIndex(candidate => candidate.type === service.type && candidate.endpoint === service.endpoint && candidate.deviceIdentity === service.deviceIdentity) === index);
+}
+
+export function discoverRawMdnsServices({localAddresses = hostAddresses(), timeoutMs = DEFAULT_MDNS_TIMEOUT_MS, signal} = {}) {
+  const interfaces = [...new Set(localAddresses.filter(address => isIP(address) === 4 && !address.startsWith('127.')))];
+  if (!interfaces.length) return Promise.resolve({available: false, services: [], reason: 'mdns-interface-unavailable'});
+  if (signal?.aborted) return Promise.reject(signal.reason);
+  return new Promise((resolve, reject) => {
+    const socket = dgram.createSocket({type: 'udp4', reuseAddr: true}), packets = [];
+    let settled = false, timer;
+    const close = () => { try { socket.close(); } catch {} };
+    const finish = result => { if (settled) return; settled = true; if (timer) clearTimeout(timer); signal?.removeEventListener('abort', abort); close(); resolve(result); };
+    const abort = () => { if (settled) return; settled = true; if (timer) clearTimeout(timer); close(); reject(signal.reason); };
+    signal?.addEventListener('abort', abort, {once: true});
+    socket.on('message', (packet, remote) => packets.push({packet: Buffer.from(packet), remoteAddress: remote.address}));
+    socket.once('error', error => finish({available: false, services: [], reason: safeError(error)}));
+    socket.bind(MDNS_PORT, '0.0.0.0', () => {
+      let memberships = 0;
+      for (const address of interfaces) {
+        try { socket.addMembership(MDNS_ADDRESS, address); memberships++; }
+        catch { /* Non-multicast cellular/tunnel interfaces are expected. */ }
+      }
+      if (!memberships) return finish({available: false, services: [], reason: 'mdns-membership-unavailable'});
+      socket.setMulticastTTL(255);
+      const query = createRawMdnsQuery();
+      let interfaceIndex = 0;
+      const sendNext = () => {
+        const address = interfaces[interfaceIndex++];
+        if (!address) return;
+        try { socket.setMulticastInterface(address); socket.send(query, MDNS_PORT, MDNS_ADDRESS, sendNext); }
+        catch { sendNext(); }
+      };
+      sendNext();
+      timer = setTimeout(() => finish({available: true, services: parseRawMdnsServices(packets, localAddresses), reason: null}), timeoutMs);
+    });
+  });
 }
 
 export function createMemoryAttemptStore({clock = () => new Date(), staleMs = DEFAULT_STALE_MS} = {}) {
@@ -117,14 +196,20 @@ function attemptStore({clock, staleMs, read, write, withLock = action => action(
   };
 }
 
-export function createAdbLocal({run = runCommand, wait = delay, attempts = 6, intervalMs = 500, localAddresses = hostAddresses(), attemptState = createFileAttemptStore(), controller = new AbortController()} = {}) {
+export function createAdbLocal({run = runCommand, wait = delay, attempts = 6, intervalMs = 500, localAddresses = hostAddresses(), attemptState = createFileAttemptStore(), controller = new AbortController(), discoverServices = discoverRawMdnsServices} = {}) {
   const signal = controller.signal;
 
   async function rawObserve(identityHint = attemptState.current()?.deviceIdentity ?? null) {
     const version = await run('adb', ['version'], {signal});
     if (version.code !== 0) return unavailable(version);
     const [mdns, listed] = await Promise.all([run('adb', ['mdns', 'services'], {signal}), run('adb', ['devices', '-l'], {signal})]);
-    const observedServices = mdns.code === 0 ? parseMdnsServices(mdns.stdout) : [];
+    const nativeServices = mdns.code === 0 ? parseMdnsServices(mdns.stdout) : [];
+    let direct = {available: false, services: [], reason: null};
+    if (!nativeServices.length) {
+      try { direct = await discoverServices({localAddresses, signal}); }
+      catch (error) { if (signal.aborted) throw error; direct = {available: false, services: [], reason: safeError(error)}; }
+    }
+    const observedServices = [...nativeServices, ...direct.services].filter((service, index, all) => all.findIndex(candidate => candidate.type === service.type && candidate.endpoint === service.endpoint && candidate.deviceIdentity === service.deviceIdentity) === index);
     const services = observedServices.filter(service => localAddresses.includes(endpointHost(service.endpoint)));
     const devices = listed.code === 0 ? parseDevices(listed.stdout) : [];
     const pairing = services.filter(service => service.type === PAIRING_SERVICE);
@@ -141,7 +226,7 @@ export function createAdbLocal({run = runCommand, wait = delay, attempts = 6, in
     const paired = Boolean(persisted?.pairingSucceeded);
     return {
       schema: RESULT_SCHEMA,
-      adb: {available: true, version: firstMeaningfulLine(version.stdout), mdnsAvailable: mdns.code === 0},
+      adb: {available: true, version: firstMeaningfulLine(version.stdout), mdnsAvailable: mdns.code === 0 || direct.available, discoverySource: nativeServices.length ? 'adb-mdns' : direct.available ? 'direct-mdns' : 'unavailable'},
       discovery: {pairing, connect, ignoredNonLocalServices: observedServices.length - services.length},
       devices,
       paired,
@@ -258,7 +343,7 @@ export function createAdbLocal({run = runCommand, wait = delay, attempts = 6, in
 }
 
 function unavailable(result) {
-  return {schema: RESULT_SCHEMA, adb: {available: false, version: null, mdnsAvailable: false}, discovery: {pairing: [], connect: [], ignoredNonLocalServices: 0}, devices: [], paired: false, usableLocalDeviceConnected: false, connectionEndpoint: null, deviceIdentity: null, verification: {qualified: false, method: 'adb-devices-and-target-get-state'}, state: 'adb-unavailable', reason: result.code === 127 ? 'adb-not-installed' : 'adb-unavailable'};
+  return {schema: RESULT_SCHEMA, adb: {available: false, version: null, mdnsAvailable: false, discoverySource: 'unavailable'}, discovery: {pairing: [], connect: [], ignoredNonLocalServices: 0}, devices: [], paired: false, usableLocalDeviceConnected: false, connectionEndpoint: null, deviceIdentity: null, verification: {qualified: false, method: 'adb-devices-and-target-get-state'}, state: 'adb-unavailable', reason: result.code === 127 ? 'adb-not-installed' : 'adb-unavailable'};
 }
 
 function selectServices(services, identity) {
@@ -269,7 +354,55 @@ function selectServices(services, identity) {
   return {services: matching, reason: null};
 }
 
+function encodeDnsName(name) { return Buffer.concat([...String(name).replace(/\.$/, '').split('.').map(label => Buffer.concat([Buffer.from([Buffer.byteLength(label)]), Buffer.from(label)])), Buffer.from([0])]); }
+function parseDnsPacket(packet) {
+  if (!Buffer.isBuffer(packet) || packet.length < 12) throw new Error('mdns-packet-short');
+  const questions = packet.readUInt16BE(4), recordCount = packet.readUInt16BE(6) + packet.readUInt16BE(8) + packet.readUInt16BE(10);
+  let offset = 12;
+  for (let index = 0; index < questions; index++) { const name = readDnsName(packet, offset); offset = name.offset + 4; if (offset > packet.length) throw new Error('mdns-question-short'); }
+  const records = [];
+  for (let index = 0; index < recordCount; index++) {
+    const name = readDnsName(packet, offset); offset = name.offset;
+    if (offset + 10 > packet.length) throw new Error('mdns-record-short');
+    const type = packet.readUInt16BE(offset), length = packet.readUInt16BE(offset + 8), start = offset + 10, end = start + length;
+    if (end > packet.length) throw new Error('mdns-rdata-short');
+    let data = null;
+    if (type === 12) data = readDnsName(packet, start).name;
+    else if (type === 33 && length >= 6) data = {priority: packet.readUInt16BE(start), weight: packet.readUInt16BE(start + 2), port: packet.readUInt16BE(start + 4), target: readDnsName(packet, start + 6).name};
+    else if (type === 1 && length === 4) data = [...packet.subarray(start, end)].join('.');
+    else if (type === 28 && length === 16) data = [...Array(8)].map((_, part) => packet.readUInt16BE(start + part * 2).toString(16)).join(':');
+    records.push({name: name.name, type, data}); offset = end;
+  }
+  return records;
+}
+function readDnsName(packet, start, visited = new Set()) {
+  let offset = start, next = start, jumped = false;
+  const labels = [];
+  while (true) {
+    if (offset >= packet.length) throw new Error('mdns-name-short');
+    const length = packet[offset];
+    if ((length & 0xc0) === 0xc0) {
+      if (offset + 1 >= packet.length) throw new Error('mdns-pointer-short');
+      const target = ((length & 0x3f) << 8) | packet[offset + 1];
+      if (visited.has(target)) throw new Error('mdns-pointer-loop');
+      const nextVisited = new Set(visited); nextVisited.add(target);
+      labels.push(readDnsName(packet, target, nextVisited).name);
+      if (!jumped) next = offset + 2;
+      jumped = true; break;
+    }
+    offset++;
+    if (length === 0) { if (!jumped) next = offset; break; }
+    if (length > 63 || offset + length > packet.length) throw new Error('mdns-label-invalid');
+    labels.push(packet.subarray(offset, offset + length).toString('utf8')); offset += length;
+    if (!jumped) next = offset;
+  }
+  return {name: labels.filter(Boolean).join('.'), offset: next};
+}
+function serviceType(name) { const value = String(name).replace(/\.$/, '').toLowerCase(); return value === `${PAIRING_SERVICE}.local` ? PAIRING_SERVICE : value === `${CONNECT_SERVICE}.local` ? CONNECT_SERVICE : null; }
 function serviceIdentity(name) { return String(name).trim().replace(/\.$/, '').toLowerCase(); }
+function normalizeAddress(value) { return String(value ?? '').replace(/^\[|\]$/g, '').split('%')[0].toLowerCase(); }
+function validPort(value) { return Number.isSafeInteger(value) && value > 0 && value <= 65535; }
+function escapeRegex(value) { return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 function validEndpoint(value) { const match = String(value).match(/^(?:\[[0-9a-f:]+\]|[^\s:]+):(\d{1,5})$/i), port = Number(match?.[1]); return Boolean(match && port > 0 && port <= 65535); }
 function endpointHost(value) { return String(value).replace(/:\d{1,5}$/, '').replace(/^\[|\]$/g, '').split('%')[0]; }
 function hostAddresses() { const addresses = ['127.0.0.1', '::1']; for (const entries of Object.values(os.networkInterfaces())) for (const entry of entries ?? []) if (entry.address) addresses.push(entry.address.split('%')[0]); return [...new Set(addresses)]; }
@@ -303,6 +436,32 @@ export function runCommand(command, args, {input, redact = '', signal} = {}) {
   });
 }
 
+export async function readPairingCode(input = process.stdin, output = process.stderr) {
+  if (!input.isTTY || typeof input.setRawMode !== 'function') {
+    let value = '';
+    for await (const chunk of input) value += chunk;
+    return value.trim();
+  }
+  output.write('Pairing code: ');
+  const wasRaw = Boolean(input.isRaw);
+  return new Promise((resolve, reject) => {
+    let value = '';
+    const cleanup = () => { input.off('data', onData); input.off('end', onEnd); input.setRawMode(wasRaw); input.pause(); output.write('\n'); };
+    const done = () => { const result = value; value = ''; cleanup(); resolve(result); };
+    const cancel = () => { value = ''; cleanup(); reject(new Error('pairing-input-cancelled')); };
+    const onEnd = () => value.length ? done() : cancel();
+    const onData = chunk => {
+      for (const character of String(chunk)) {
+        if (character === '\u0003') return cancel();
+        if (character === '\r' || character === '\n') return done();
+        if (character === '\u007f' || character === '\b') value = value.slice(0, -1);
+        else if (/\d/.test(character) && value.length < 6) value += character;
+      }
+    };
+    input.setRawMode(true); input.resume(); input.on('data', onData); input.once('end', onEnd);
+  });
+}
+
 async function main(argv = process.argv.slice(2)) {
   const command = argv[0] ?? 'status', extra = argv.slice(1).filter(value => value !== '--json'), helper = createAdbLocal();
   const stop = () => helper.stop('adb-helper-signal');
@@ -316,8 +475,7 @@ async function main(argv = process.argv.slice(2)) {
       const prepared = await helper.preparePairing();
       if (!prepared.ready) result = prepared.result;
       else {
-        let pin = '';
-        for await (const chunk of process.stdin) pin += chunk;
+        let pin = await readPairingCode();
         result = await prepared.complete(pin.trim());
         pin = '';
       }
