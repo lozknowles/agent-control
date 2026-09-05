@@ -9,8 +9,9 @@ import {JobManifestError} from './job-catalog.js';
 import {configPath, loadConfig} from './config.js';
 import {ConfigurationStore} from './configuration-store.js';
 import {ParameterizedJobError} from './parameterized-job-registry.js';
+import type {OpenWAAdapter} from './openwa.js';
 
-export interface WebServerOptions {host?: string; port?: number; operatorToken?: string; allowedOrigins?: string[]; assetsDir?: string; configFile?: string;}
+export interface WebServerOptions {host?: string; port?: number; operatorToken?: string; allowedOrigins?: string[]; assetsDir?: string; configFile?: string; openwa?: OpenWAAdapter;}
 const MAX_BODY = 64 * 1024;
 const SECRET_KEY = /token|secret|password|credential|authorization|cookie|api[-_]?key/i;
 const SAFE_TOKEN_ACCOUNTING_KEY = /^(?:tokenAwareOutput|tokenBatonRouting|contextTokens|contextLimitTokens|contextTokensAvoided|contextTokensSaved|evidenceTokens|estimatedTokensOriginal|estimatedTokensReturned|estimatedTokensSaved|estimatedOriginalTokens|estimatedReturnedTokens|estimatedTokensAvoided|expansionTokensReturned|inputTokens|freshInputTokens|cachedInputTokens|cacheWriteTokens|outputTokens|maximumOutputTokens|maximumContextTokens|maximumEvidenceTokens|reasoningTokens|totalTokens|totalProcessedTokens|startupContextTokens|taskContextTokens|retrievedContextTokens|repositoryContextTokens|conversationHistoryTokens|totalEstimatedContextTokens|repeatedContextCostEstimate|tokensPerVerifiedOutcome|freshTokensPerVerifiedOutcome|estimatedTokens|limitTokens|contextPercent|continuePercent|prepareBatonPercent|compactPercent|handoffPercent)$/;
@@ -52,6 +53,38 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   response.setHeader('Cache-Control', 'no-store');
   const url = new URL(request.url ?? '/', `http://${request.headers.host ?? `${options.host}:${options.port}`}`);
   const method = request.method ?? 'GET';
+
+  if (url.pathname === '/api/integrations/openwa/webhook' && method === 'POST') {
+    if (!options.openwa) return json(response,503,{error:'integration_disabled'});
+    const chunks: Buffer[] = []; let size=0;
+    for await(const chunk of request) { size+=chunk.length; if(size>MAX_BODY) throw httpError(413,'request_too_large'); chunks.push(Buffer.from(chunk)); }
+    try { return json(response,200,options.openwa.receive(Buffer.concat(chunks),request.headers)); }
+    catch { return json(response,403,{error:'webhook_rejected'}); }
+  }
+  if (url.pathname.startsWith('/api/integrations/openwa')) {
+    validateOperatorRequest(request,options);
+    if (!options.openwa) return json(response,200,{enabled:false,state:'not_configured'});
+    const action=url.pathname.slice('/api/integrations/openwa'.length);
+    if(method==='GET' && !action) return json(response,200,options.openwa.status());
+    if(method==='POST') {
+      validateMutationRequest(request,options); const body=await readJson(request);
+      try {
+        let result: unknown = {ok:true};
+        if(action==='/enabled' && typeof body.enabled==='boolean') options.openwa.setEnabled(body.enabled);
+        else if(action==='/health') result=await options.openwa.checkHealth();
+        else if(action==='/qr') result=await options.openwa.qr();
+        else if(action==='/reconnect') result=await options.openwa.reconnectSession();
+        else if(action==='/pair') result=options.openwa.beginPairing();
+        else if(action==='/confirm' && typeof body.hash==='string' && Array.isArray(body.grants) && body.grants.every(v=>typeof v==='string')) result=options.openwa.confirmPairing(body.hash,body.grants as string[]);
+        else if(action==='/revoke' && typeof body.sender==='string') options.openwa.revoke(body.sender);
+        else if(action==='/preferences' && typeof body.sender==='string' && typeof body.progress==='boolean') options.openwa.preferences(body.sender,body.progress);
+        else if(action==='/retry' && Number.isSafeInteger(body.id)) options.openwa.retry(body.id as number,body.acknowledgeUncertain===true);
+        else return json(response,400,{error:'invalid_integration_request'});
+        return json(response,200,result);
+      } catch { return json(response,409,{error:'integration_action_unavailable_check_connection_pairing_and_grants'}); }
+    }
+    return json(response,404,{error:'not_found'});
+  }
 
   if (method === 'GET' && url.pathname === '/api/status') return json(response, 200, service.snapshot());
   if (method === 'GET' && url.pathname === '/api/operator-auth') return json(response, 200, operatorAuthentication(request, options));
@@ -237,7 +270,7 @@ function eventStream(service: AgentControlService, request: IncomingMessage, res
 
 function serveAsset(response: ServerResponse, assetsDir: string, pathname: string) {
   const asset = pathname === '/' ? 'index.html' : pathname.replace(/^\//, '');
-  if (!['index.html', 'dashboard.css', 'dashboard-fixes.css', 'dashboard-jobs.css', 'dashboard.js', 'dashboard-parameters.js', 'dashboard-running-state.js', 'dashboard-enhancements.js', 'dashboard-parameterized-jobs.js', 'dashboard-models.js', 'dashboard-sessions.js'].includes(asset)) throw httpError(404, 'not_found');
+  if (!['dashboard-openwa.css', 'openwa.html', 'dashboard-openwa.js', 'index.html', 'dashboard.css', 'dashboard-fixes.css', 'dashboard-jobs.css', 'dashboard.js', 'dashboard-parameters.js', 'dashboard-running-state.js', 'dashboard-enhancements.js', 'dashboard-parameterized-jobs.js', 'dashboard-models.js', 'dashboard-sessions.js'].includes(asset)) throw httpError(404, 'not_found');
   const file = path.join(assetsDir, asset);
   if (!fs.existsSync(file)) throw httpError(404, 'dashboard_asset_missing');
   const type = asset.endsWith('.html') ? 'text/html; charset=utf-8' : asset.endsWith('.css') ? 'text/css; charset=utf-8' : 'text/javascript; charset=utf-8';

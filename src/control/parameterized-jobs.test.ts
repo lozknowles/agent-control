@@ -8,6 +8,8 @@ import {ModelRegistry} from './model-registry.js';
 import {ParameterizedJobEngine} from './parameterized-job-engine.js';
 import {ParameterizedJobError, ParameterizedJobRegistry, ParameterizedRunStore, resolveParameters, SavedJobStore} from './parameterized-job-registry.js';
 import {repositoryCodeReviewDefinition} from './repository-review-definition.js';
+import {savedMessagingTemplateHash,validateSavedMessagingRun} from './messaging-saved-jobs.js';
+import type {MessagingTemplate} from './messaging-commands.js';
 import {buildRepositoryContext, LocalRepositoryResolver, ReviewBaselineStore} from './repository-review-runtime.js';
 import type {ParameterizedExecutionIdentity, RepositoryReviewExecutor, ReviewExecutionRequest, ReviewExecutionResponse, SavedJob} from './parameterized-job-types.js';
 
@@ -24,6 +26,25 @@ class FixtureExecutor implements RepositoryReviewExecutor {
 }
 function fixtureResponse(): ReviewExecutionResponse { return {result: {schema: 'agent-control.repository-review/v1', executiveSummary: 'One validated finding.', findings: [{id: 'f1', severity: 'medium', title: 'Incorrect constant', category: 'correctness', file: 'index.ts', startLine: 1, endLine: 1, evidence: 'answer is fixed at 41', reasoning: 'fixture', impact: 'fixture', suggestedRemediation: 'review value', confidence: .9, validation: {state: 'UNVERIFIED', reasons: []}}, {id: 'bad', severity: 'high', title: 'Invented path', category: 'correctness', file: 'missing.ts', startLine: 1, evidence: 'not real', reasoning: 'fixture', impact: 'none', suggestedRemediation: 'none', confidence: .9, validation: {state: 'UNVERIFIED', reasons: []}}], positiveObservations: [], areasReviewed: ['index.ts'], areasNotReviewed: [], verdict: 'PASS_WITH_FINDINGS'}, usage: {inputTokens: 100, outputTokens: 20, totalTokens: 120, cost: .01, currency: 'USD', source: 'provider'}, evidence: ['provider-response:fixture'], providerResponseIds: ['response-1'], workParcelIds: ['parcel-1']}; }
 function setup<T extends RepositoryReviewExecutor = FixtureExecutor>(root: string, repo: string, executor: T = new FixtureExecutor() as unknown as T, instant = new Date('2026-09-01T00:00:00Z'), registryModels = models()) { const definitions = new ParameterizedJobRegistry(); definitions.register(repositoryCodeReviewDefinition); const clock = () => instant, saved = new SavedJobStore(path.join(root, 'saved.json'), definitions, clock), runs = new ParameterizedRunStore(path.join(root, 'runs.json')), baselines = new ReviewBaselineStore(path.join(root, 'baselines.json')), engine = new ParameterizedJobEngine(definitions, saved, runs, baselines, registryModels, executor, {allowedRepositoryRoots: [root], snapshotsRoot: path.join(root, 'snapshots'), nodeHealthy: id => id === 'controller', clock, wait: async () => {}}); const job = saved.create({id: 'review', name: 'Review', definition: {id: 'repository-code-review', version: 1, follow: 'latest-compatible'}, parameters: {node: 'controller', repository: repo, ref: 'main', scope: 'changes'}, contextProfile: 'STANDARD', concurrency: 'forbid-overlap', enabled: true}); return {definitions, saved, runs, baselines, engine, executor, job, setTime: (value: Date) => { instant = value; }}; }
+test('messaging saved review pins approval and persists one request across store restart',t=>{
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'ac-messaging-review-'));t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+  const s=setup(root,repository(root));
+  const service={exportSavedJob:(id:string)=>s.saved.export(id),jobDefinition:(id:string,version?:number)=>s.definitions.get(id,version),parameterizedRuns:(id?:string)=>s.runs.list(id)};
+  assert.throws(()=>savedMessagingTemplateHash(service,'review'),/must_be_pinned/);
+  s.saved.update('review',s.job.revision,{definition:{...s.job.definition,follow:'pinned'}});
+  const template:MessagingTemplate={kind:'saved',name:'review',jobId:'review',definitionHash:savedMessagingTemplateHash(service,'review'),parameters:{},arguments:{},maxActive:1,maxRunsPerHour:2};
+  validateSavedMessagingRun(service,template,{},Date.parse('2026-09-01T00:00:01Z'));
+  assert.throws(()=>validateSavedMessagingRun(service,template,{repository:'/unapproved'},Date.now()),/argument_not_approved/);
+  let observed=0;s.runs.subscribe(()=>{observed++;throw new Error('optional observer failure');});
+  const first=s.engine.runNow('review','messaging:test','stable-event');assert.equal(observed,1);
+  assert.throws(()=>validateSavedMessagingRun(service,template,{},Date.now()),/active_job_budget/);
+  const reloaded=new ParameterizedRunStore(s.runs.file),engine=new ParameterizedJobEngine(s.definitions,s.saved,reloaded,s.baselines,s.engine.models,s.executor,s.engine.options);
+  assert.equal(engine.runNow('review','messaging:test','stable-event').id,first.id);assert.equal(reloaded.list().length,1);
+  s.saved.update('review',s.saved.get('review').revision,{contextProfile:'THIN'});
+  assert.throws(()=>validateSavedMessagingRun(service,template,{},Date.now()),/definition_changed/);
+  engine.cancel(first.id,'messaging:test');assert.equal(reloaded.get(first.id)?.status,'CANCELLED');
+});
+
 function interruptedExecution(setupResult: ReturnType<typeof setup>, repo: string, state: 'RUNNING' | 'CANCELLING' = 'RUNNING') {
   const created=setupResult.engine.runNow('review','operator'),run=setupResult.runs.get(created.id)!,repository=new LocalRepositoryResolver().resolve({nodeId:'controller',repository:repo,requestedRef:'main',allowedRoots:[path.dirname(repo)],snapshotsRoot:path.join(path.dirname(repo),'recovery-snapshots')}),route=setupResult.engine.models.route({modelRole:'review.default',nodeId:'controller',workloadNodeId:'controller',requiredCapabilities:['repository-review'],allowFallback:true}),at='2026-09-01T00:00:00.000Z';
   const identity:ParameterizedExecutionIdentity={id:`repository-review:${run.id}:1`,sequence:1,providerId:route.providerId,accountProfileId:route.accountProfileId??null,modelId:route.modelId,nodeId:route.nodeId,workloadNodeId:route.workloadNodeId,providerExecutionNodeId:route.providerExecutionNodeId,credentialNodeId:route.credentialNodeId??null,startedAt:at,state:'RUNNING',observedAt:at};

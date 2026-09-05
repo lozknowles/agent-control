@@ -8,7 +8,7 @@ const PARAMETER = /^[A-Za-z][A-Za-z0-9._-]{0,63}$/;
 const GIT_REF = /^(?!-)(?!.*(?:\.\.|@\{|\\|\s|[~^:?*\[]))[A-Za-z0-9._/-]+$/;
 const SECRET_NAME = /(?:^|[-_.])(token|password|secret|api[-_.]?key|credential)(?:$|[-_.])/i;
 function clone<T>(value: T): T { return structuredClone(value); }
-function atomic(file: string, value: unknown) { fs.mkdirSync(path.dirname(file), {recursive: true}); const temporary = `${file}.${process.pid}.tmp`; fs.writeFileSync(temporary, `${JSON.stringify(value, null, 2)}\n`, {mode: 0o600}); fs.renameSync(temporary, file); }
+function atomic(file: string, value: unknown) { fs.mkdirSync(path.dirname(file), {recursive: true}); const temporary = `${file}.${process.pid}.tmp`; fs.writeFileSync(temporary, `${JSON.stringify(value, null, 2)}\n`, {mode: 0o600,flush:true}); fs.renameSync(temporary, file); if(process.platform!=='win32'){const fd=fs.openSync(path.dirname(file),'r');try{fs.fsyncSync(fd);}finally{fs.closeSync(fd);}} }
 function object(value: unknown): value is Record<string, unknown> { return Boolean(value) && typeof value === 'object' && !Array.isArray(value); }
 
 export class ParameterizedJobError extends Error { constructor(readonly code: string, detail?: string) { super(detail ? `${code}:${detail}` : code); this.name = 'ParameterizedJobError'; } }
@@ -82,10 +82,13 @@ function validRecoveryBudget(budgets: Partial<import('./parameterized-job-types.
 
 interface RunState {version: 1; runs: ParameterizedJobRun[];}
 export class ParameterizedRunStore {
+  private readonly listeners=new Set<(run:ParameterizedJobRun)=>void>();
+  subscribe(listener:(run:ParameterizedJobRun)=>void){this.listeners.add(listener);return()=>{this.listeners.delete(listener);};}
+  private notify(run:ParameterizedJobRun){for(const listener of this.listeners){try{listener(clone(run));}catch{/* Optional observers cannot impair runtime. */}}}
   private readonly runs = new Map<string, ParameterizedJobRun>();
   constructor(readonly file: string) { if (!fs.existsSync(file)) return; const state = JSON.parse(fs.readFileSync(file, 'utf8')) as RunState; if (state.version !== 1 || !Array.isArray(state.runs)) throw new ParameterizedJobError('job_run_state_invalid'); for (const run of state.runs) this.runs.set(run.id, run); }
-  add(run: ParameterizedJobRun) { if ([...this.runs.values()].some(item => item.occurrenceId === run.occurrenceId)) throw new ParameterizedJobError('duplicate_schedule_occurrence', run.occurrenceId); this.runs.set(run.id, clone(run)); this.save(); return this.get(run.id)!; }
-  update(run: ParameterizedJobRun) { const previous = this.runs.get(run.id); if (!previous) throw new ParameterizedJobError('job_run_missing', run.id); if (previous.immutable) throw new ParameterizedJobError('historical_run_immutable', run.id); this.runs.set(run.id, clone(run)); this.save(); return this.get(run.id)!; }
+  add(run: ParameterizedJobRun) { if ([...this.runs.values()].some(item => item.occurrenceId === run.occurrenceId)) throw new ParameterizedJobError('duplicate_schedule_occurrence', run.occurrenceId); this.runs.set(run.id, clone(run)); this.save();this.notify(run); return this.get(run.id)!; }
+  update(run: ParameterizedJobRun) { const previous = this.runs.get(run.id); if (!previous) throw new ParameterizedJobError('job_run_missing', run.id); if (previous.immutable) throw new ParameterizedJobError('historical_run_immutable', run.id); this.runs.set(run.id, clone(run)); this.save();this.notify(run); return this.get(run.id)!; }
   occurrence(id: string) { return this.list().find(run => run.occurrenceId === id); }
   get(id: string) { const value = this.runs.get(id); return value ? clone(value) : undefined; }
   list(savedJobId?: string) { return [...this.runs.values()].filter(run => !savedJobId || run.savedJobId === savedJobId).sort((a, b) => b.requestedAt.localeCompare(a.requestedAt)).map(clone); }

@@ -13,6 +13,8 @@ refresh = async () => {
     return response.json();
   }));
   Object.assign(jobState, {jobs, parcels, runs, queue, workers, resources: state.snapshot?.resources || [], locks, systems, artifacts, outputMetrics, efficiencyMetrics, invocations});
+  const linkedRun = new URL(location.href).searchParams.get('messagingRun');
+  if(linkedRun && !jobState.selectedRun){const run=runs.find(item=>item.id===linkedRun);if(run){jobState.selectedJob=run.jobId;jobState.selectedRun=run.id;}}
   if (!jobState.selectedJob && jobs.length) jobState.selectedJob = jobs[0].metadata.id;
   if (jobState.selectedJob && !jobs.some(job => job.metadata.id === jobState.selectedJob)) jobState.selectedJob = jobs[0]?.metadata.id ?? null;
   if (!jobState.selectedSystem && systems.length) jobState.selectedSystem = systems[0].id;

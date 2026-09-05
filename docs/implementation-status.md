@@ -6,6 +6,7 @@ This document is generated from `config/implementation-status.json`. Update the 
 
 | Capability | Status | Executable truth | Remaining boundary |
 | --- | --- | --- | --- |
+| Optional governed OpenWA messaging pilot (`messaging.openwa-pilot`) | **PARTIAL** | Signed direct commands, authenticated two-step enrolment, immutable template grants, durable runtime request keys, outbound recovery and private dashboard setup are implemented and automatically tested. | Live enrolment, help, typecheck, status, cancellation with cleanup and delivered reports passed; real reconnect and controlled duplicate replay passed. Evidence uses actual gateway messages beside separately captured dashboard frames, not handset footage. Handset dashboard links and real model handoff remain unqualified; no qualified review provider exists and benchmark execution remains gated. |
 | Persistent Work Parcel context ledger and bounded baton views (`context.persistent-parcel-ledger`) | **QUALIFIED** | Each Work Parcel retains immutable goal and steering provenance, concise active state, a SHA-linked durable event ledger, governed historical retrieval and content-hashed bounded baton projections. Compaction or handoff can remove history from the current view without deleting it, and exact retrieval can recover excluded failures for later execution. | None recorded. |
 | Asynchronous Work Parcel DAGs and evidence-gated completion (`work-parcels.async-dag-criteria`) | **QUALIFIED** | Validated Work Parcel dependency graphs dispatch policy-allowed independent stages concurrently, pause only branches named by stable asynchronous questions, resume them after a durable answer and require structured success criteria with provenance and evidence before parcel success. Steering remains append-only and never rewrites the original goal. | None recorded. |
 | Provider-neutral capability intelligence and capabilities-first routing (`models.capability-intelligence`) | **QUALIFIED** | Normalized observations distinguish supported from unsupported, native from Agent Control-emulated and verified from advertised capability across provider, account, model, runtime, version and node identities. Routing filters on required verified capabilities before optimizing quality, reliability, latency, cost and token/cache efficiency; external discoveries enter an auditable candidate lifecycle rather than changing architecture automatically. | None recorded. |
@@ -53,6 +54,12 @@ This document is generated from `config/implementation-status.json`. Update the 
 | Automatic governed recipe learning (`recipes.automatic-learning`) | **PLANNED** | Successive halving exists, but winners are not automatically promoted into a durable governed recipe catalog. | Persist qualification evidence and require policy approval before learned recipes influence routing. |
 
 ## Evidence map
+
+### Optional governed OpenWA messaging pilot
+
+- Source: [`src/control/openwa.ts`](../src/control/openwa.ts), [`src/control/messaging-commands.ts`](../src/control/messaging-commands.ts), [`src/control/repository-test-actions.ts`](../src/control/repository-test-actions.ts)
+- Tests: [`src/control/openwa.test.ts`](../src/control/openwa.test.ts)
+- Qualification evidence: [`docs/openwa/README.md`](../docs/openwa/README.md), [`docs/openwa/live-qualification.md`](../docs/openwa/live-qualification.md)
 
 ### Persistent Work Parcel context ledger and bounded baton views
 
