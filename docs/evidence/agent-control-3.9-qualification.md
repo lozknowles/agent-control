@@ -1,9 +1,13 @@
 # Agent Control 3.9 candidate qualification
 
-Date: 2026-09-05  
-Branch: `feature/3.9-resilient-execution`  
-Released baseline: `v3.8.2` / `b51623dae1b764a31198424e8fc6ea9076d04089`  
-Product checkpoint used as base: `d3d0376db6e00bed76deb8c5336fa49cdfc1554a`  
+Date: 2026-09-05
+
+Branch: `feature/3.9-resilient-execution`
+
+Released baseline: `v3.8.2` / `b51623dae1b764a31198424e8fc6ea9076d04089`
+
+Product checkpoint used as base: `d3d0376db6e00bed76deb8c5336fa49cdfc1554a`
+
 Implementation commit: `b45daf5871d36da4f12f4d60b7c29c092a87e233`
 
 ## Scope and provenance
@@ -50,7 +54,8 @@ Recording:
 
 ## Physical Pixel observation
 
-Sanitized evidence: `/fast/qualification/agent-control-3.9-resilient-execution/pixel-observation.json`  
+Sanitized evidence: `/fast/qualification/agent-control-3.9-resilient-execution/pixel-observation.json`
+
 SHA-256: `72c53e747da1dd288809e39578693b1afa4f212690650a79466da65c3dd7b7e4`
 
 Two current probe samples at 2026-09-05T06:07:15.992Z and 2026-09-05T06:07:36.998Z produced CPU busy `17.00695515566981%`, source `/sys/devices/system/cpu/*/cpuidle/state*/time`, authority `derived`, freshness `current`, interval 21,006 ms. Limitations are `derived_busy_only_no_user_system_breakdown` and `not_qualified_for_admission`; `qualifiedForAdmission` is false. Memory came from `/proc/meminfo`; uptime/load used Node `os` fallback. Storage and temperature were unavailable and remained absent/null.
@@ -63,7 +68,8 @@ Current OpenAI documentation distinguishes provider-managed prompt caching from 
 
 The corrected physical report ran eight real schema-constrained Codex calls in alternating release-baseline/candidate order across cold, warm-follow-up, changed-context and retry cases:
 
-`/fast/qualification/agent-control-3.9-cache-20260905/cache-boundary.json`  
+`/fast/qualification/agent-control-3.9-cache-20260905/cache-boundary.json`
+
 SHA-256: `4ff9c1858c0915e7fc6d121aac1829857f7a7bac5781b53f1a768dea22483ae6`
 
 | Arm | Calls | Schema-valid | Accepted outcomes | Input | Fresh | Cached | Output | Total | Elapsed |
