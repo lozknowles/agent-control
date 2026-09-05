@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {validateConfig} from './config.js';
+import {CapabilityIntelligenceStore} from './capability-intelligence.js';
 import {ModelRegistry} from './model-registry.js';
+import type {ModelIntelligenceLedger} from './model-intelligence.js';
 
 const providers = [{id: 'external', name: 'External', kind: 'openai-compatible' as const, baseUrl: 'https://models.example/v1', wireApi: 'responses' as const, enabled: true, auth: {type: 'bearer-env' as const, env: 'EXTERNAL_API_KEY'}}];
 const models = [
@@ -16,6 +18,27 @@ test('role capability requirements are enforced before fallback', () => { const 
 test('unavailable node and unqualified primary cause visible fallback', () => { const registry = new ModelRegistry(providers, models, {roles: {'coding.fast': {primary: 'untested', fallback: ['deep']}}}); const route = registry.route({modelRole: 'coding.fast', nodeId: 'node-a'}); assert.equal(route.modelId, 'deep'); assert.equal(route.fallback, true); assert.match(route.fallbackReason!, /qualification-untested/); });
 test('qualified model on a different node is unavailable', () => { const registry = new ModelRegistry(providers, models, {roles: {'coding.fast': {primary: 'fast'}}}); assert.throws(() => registry.route({modelRole: 'coding.fast', nodeId: 'node-b'}), /model_route_unavailable/); });
 test('fallback can be disabled', () => { const registry = new ModelRegistry(providers, models, {roles: {'coding.fast': {primary: 'untested', fallback: ['deep']}}}); assert.throws(() => registry.route({modelRole: 'coding.fast', nodeId: 'node-a', allowFallback: false}), /model_fallback_disabled/); });
+test('a human-approved historically preferred route can outrank static role order', () => {
+  const metrics = {attempts: 8, completed: 8, passed: 8, reliability: 1, quality: 1, criticalFailures: 0, retries: 0, inputTokens: 800, freshInputTokens: 800, cachedInputTokens: 0, cacheWriteTokens: 0, outputTokens: 80, totalTokens: 880, cacheHitRatio: 0, cacheCoverage: {knownAttempts: 8, totalAttempts: 8}, estimatedCacheSavings: 0, actualCost: null, calculatedCost: .01, equivalentUncachedCost: .01, currency: 'USD', elapsedMs: 8_000, costPerSuccessfulTask: .00125, tokensPerSuccessfulTask: 110, freshTokensPerSuccessfulTask: 100, timePerSuccessfulTaskMs: 1_000, retriesPerSuccessfulTask: 0, resourceCoverage: {measuredAttempts: 0, totalAttempts: 8}};
+  const intelligence = {projection: () => ({routes: [{routeKey: 'external/default/deep@node-a/openai-compatible', identity: {providerId: 'external', modelId: 'deep', providerModel: 'vendor/deep', runtimeId: 'openai-compatible', runtimeVersion: '1', modelVersion: 'current', nodeId: 'node-a'}, state: 'PREFERRED', current: metrics}]}), attemptsList: () => []} as unknown as ModelIntelligenceLedger;
+  const registry = new ModelRegistry(providers, models, {roles: {'coding.fast': {primary: 'fast', fallback: ['deep']}}}, undefined, undefined, process.env, undefined, intelligence);
+  const route = registry.route({modelRole: 'coding.fast', nodeId: 'node-a', requiredCapabilities: ['coding']});
+  assert.equal(route.modelId, 'deep');
+  assert.equal(route.intelligence?.selectionBasis, 'human-approved preferred route with historical verified economics');
+});
+test('historical qualification becomes routable only with separately verified capability evidence', () => {
+  const capabilities = new CapabilityIntelligenceStore();
+  capabilities.observe({id: 'qualification:untested:code.modify', capabilityId: 'code.modify', subject: {providerId: 'external', modelId: 'untested', nodeId: 'node-a'}, support: 'SUPPORTED', implementation: 'NATIVE', verification: 'VERIFIED', confidence: 1, observedAt: '2026-09-05T00:00:00Z', qualifiedAt: '2026-09-05T00:00:00Z', limitations: [], evidence: ['attempt:one'], source: 'QUALIFICATION'});
+  const metrics = {attempts: 8, completed: 8, passed: 8, reliability: 1, quality: 1, criticalFailures: 0, retries: 0, inputTokens: 800, freshInputTokens: 800, cachedInputTokens: 0, cacheWriteTokens: 0, outputTokens: 80, totalTokens: 880, cacheHitRatio: 0, cacheCoverage: {knownAttempts: 8, totalAttempts: 8}, estimatedCacheSavings: 0, actualCost: null, calculatedCost: null, equivalentUncachedCost: null, currency: null, elapsedMs: 8_000, costPerSuccessfulTask: null, tokensPerSuccessfulTask: 110, freshTokensPerSuccessfulTask: 100, timePerSuccessfulTaskMs: 1_000, retriesPerSuccessfulTask: 0, resourceCoverage: {measuredAttempts: 0, totalAttempts: 8}};
+  const routeKey = 'external/default/untested@node-a/openai-compatible', intelligence = {projection: () => ({routes: [{routeKey, identity: {providerId: 'external', modelId: 'untested', providerModel: 'vendor/new', runtimeId: 'openai-compatible', runtimeVersion: '1', modelVersion: 'current', nodeId: 'node-a'}, state: 'QUALIFIED', current: metrics}]}), attemptsList: () => [{suiteId: 'frozen', suiteVersion: '1.0.0', suiteSha256: 'a'.repeat(64)}]} as unknown as ModelIntelligenceLedger;
+  const candidate = {...models[2], nodes: ['node-a']};
+  const withoutEvidence = new ModelRegistry(providers, [candidate], {roles: {review: {primary: 'untested'}}}, undefined, undefined, process.env, undefined, intelligence);
+  assert.throws(() => withoutEvidence.route({modelRole: 'review', nodeId: 'node-a', requiredCapabilities: ['code.modify']}), /model_route_unavailable/);
+  const registry = new ModelRegistry(providers, [candidate], {roles: {review: {primary: 'untested'}}}, undefined, undefined, process.env, capabilities, intelligence);
+  const decision = registry.route({modelRole: 'review', nodeId: 'node-a', requiredCapabilities: ['code.modify']});
+  assert.equal(decision.modelId, 'untested');
+  assert.equal(decision.qualificationVersion, 'model-intelligence:frozen@1.0.0:aaaaaaaaaaaaaaaa');
+});
 test('disabled and capability-unproven models cannot route', () => { const disabled = {...models[0], enabled: false}; const registry = new ModelRegistry(providers, [disabled], {roles: {review: {primary: 'fast'}}}); assert.throws(() => registry.route({modelRole: 'review', nodeId: 'node-a', requiredCapabilities: ['review']}), /model_route_unavailable/); });
 test('configuration rejects duplicate model IDs, unknown provider, and fallback cycles', () => {
   const base = {schemaVersion: 1 as const, resources: [], services: [], lanes: [], providers, models, modelRouting: {roles: {}}};

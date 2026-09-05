@@ -7,26 +7,48 @@ import type {RunRecord} from './job-types.js';
 import type {SystemReadiness} from './system-readiness.js';
 import type {ModelRegistry} from './model-registry.js';
 import type {WorkAttribution} from './identity-control-plane.js';
+import {
+  addParcelQuestion,
+  addSteeringAmendment,
+  addSuccessCriterion,
+  allSuccessCriteriaPass,
+  answerParcelQuestion,
+  appendParcelContextEvent,
+  createBatonView,
+  createParcelContext,
+  evaluateSuccessCriterion,
+  inferStageCriteria,
+  retrieveParcelContext,
+  updateParcelActiveState,
+  verifyParcelContextEventChain,
+  withdrawParcelQuestion,
+  type ParcelBatonView,
+  type ParcelContextEventType,
+  type ParcelContextState,
+  type ParcelQuestion,
+  type ParcelSuccessCriterion,
+} from './parcel-context.js';
 
 export type ParcelStatus = 'PLANNING' | 'QUEUED' | 'RUNNING' | 'WAITING' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED';
 export type ParcelStageStatus = 'QUEUED' | 'BLOCKED' | 'RUNNING' | 'WAITING' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED';
 export interface WorkParcelPlanStage {
   id: string; name: string; job: string; dependsOn?: string[]; parameters?: Record<string, unknown>;
+  requiredCapabilities?: string[]; outputs?: string[]; executor?: string;
   requestedRoute?: {provider?: string; accountProfile?: string; model?: string; modelRole?: string; allowFallback?: boolean; profile?: 'THIN' | 'STANDARD' | 'DEEP'; reason: string};
 }
-export interface WorkParcelPlan {objective: string; planner: {kind: 'deterministic' | 'reasoning-model'; provider?: string; model?: string; reason: string}; stages: WorkParcelPlanStage[];}
+export interface WorkParcelPlan {objective: string; constraints?: string[]; successCriteria?: Array<{id?: string; kind: ParcelSuccessCriterion['kind']; description: string; source?: ParcelSuccessCriterion['source']; requiredEvidence?: string[]; stageId?: string}>; planner: {kind: 'deterministic' | 'reasoning-model'; provider?: string; model?: string; reason: string}; stages: WorkParcelPlanStage[];}
 export interface WorkParcelStage extends WorkParcelPlanStage {
-  dependsOn: string[]; parameters: Record<string, unknown>; status: ParcelStageStatus; runId?: string; waitingReason?: string; error?: string;
-  baton?: {schema: 'agent-control.work-parcel-baton/v1'; artifactIds: string[]; outputTypes: string[]};
+  dependsOn: string[]; parameters: Record<string, unknown>; requiredCapabilities: string[]; outputs: string[]; status: ParcelStageStatus; runId?: string; waitingReason?: string; waitingQuestionIds?: string[]; error?: string;
+  baton?: {schema: 'agent-control.work-parcel-baton/v1'; artifactIds: string[]; outputTypes: string[]} | ParcelBatonView;
   actualRoute?: {workers: string[]; workloadNodeId?: string; providerExecutionNodeId?: string; credentialNodeId?: string; provider?: string; accountProfile?: string; accountLabel?: string; accountPlan?: string; accountPlanAuthority?: 'operator-configured' | 'provider-reported'; accountQualification?: string; accountAvailability?: string; model?: string; profile?: string; reason: string};
   startedAt?: string; endedAt?: string;
 }
 export interface WorkParcelTelemetry {inputTokens?: number | null; freshInputTokens: number | null; cachedInputTokens: number | null; cacheWriteTokens?: number | null; outputTokens: number | null; reasoningTokens: number | null; totalTokens: number | null; cost: number | null; currency: string | null; elapsedMs: number;}
 export interface WorkParcelDecision {outcome: 'IN_PROGRESS' | 'COMPLETE' | 'FAIL_CLOSED' | 'CANCELLED'; title: string; summary: string; evidence: string[]; blockedStages: string[]; authority: 'Agent Control';}
 export interface WorkParcelInvocationAudit {id: string; stageId: string; runId: string | null; route: string; provider: string; accountProfileId?: string | null; accountLabel?: string | null; accountPlan?: string | null; model: string; logicalRole?: string | null; registryModelId?: string; providerModel?: string; qualificationVersion?: string; node: string | null; workloadNodeId?: string | null; providerExecutionNodeId?: string | null; credentialNodeId?: string | null; profile: string; startedAt: string; completedAt: string | null; elapsedMs: number | null; inputTokens?: number | null; freshInputTokens: number | null; cachedInputTokens: number | null; cacheWriteTokens?: number | null; outputTokens: number | null; reasoningTokens: number | null; totalTokens: number | null; providerReportedCost: number | null; calculatedCost: number | null; costBasis: 'provider-reported' | 'calculated' | 'unavailable'; currency: string | null; costAccounting?: ModelInvocationObservation['costAccounting']; verifierResult: string; outcome: string;}
-export interface WorkParcelAuditEvent {id: string; at: string; type: 'task.received' | 'task.classified' | 'target.resolving' | 'target.found' | 'readiness.checked' | 'planning.started' | 'planning.failed' | 'plan.selected' | 'route.requested' | 'stage.dispatched' | 'stage.failed' | 'route.resolved' | 'invocation.completed' | 'route.changed' | 'verification.completed'; stageId?: string; summary: string; detail: string;}
+export interface WorkParcelAuditEvent {id: string; at: string; type: 'task.received' | 'task.classified' | 'target.resolving' | 'target.found' | 'readiness.checked' | 'planning.started' | 'planning.failed' | 'plan.selected' | 'route.requested' | 'stage.dispatched' | 'stage.failed' | 'route.resolved' | 'invocation.completed' | 'route.changed' | 'verification.completed' | 'question.created' | 'question.answered' | 'steering.accepted' | 'criterion.evaluated' | 'baton.created' | 'context.retrieved'; stageId?: string; summary: string; detail: string;}
 export interface WorkParcelAudit {schema: 'agent-control.work-parcel-audit/v1'; recordedAt: string; classification: string; selectedExecution: 'Work Parcel'; planningRationale: string; planner: {kind: string; provider: string | null; model: string | null}; alternatives: Array<{stageId: string; candidate: string; eligible: boolean; reasons: string[]}>; timeline: WorkParcelAuditEvent[]; invocations: WorkParcelInvocationAudit[]; totals: {models: string[]; invocations: number; inputTokens?: number | null; freshInputTokens: number | null; cachedInputTokens: number | null; cacheWriteTokens?: number | null; outputTokens: number | null; reasoningTokens: number | null; totalTokens: number | null; providerReportedCost: number | null; calculatedCost: number | null; cost: number | null; costBasis: 'provider-reported' | 'calculated' | 'unavailable'; currency: string | null; modelExecutionMs: number; wallClockMs: number};}
-export interface WorkParcel {id: string; prompt: string; objective: string; actor: string; attribution?: WorkAttribution; executionOwner?: 'work-parcel-coordinator' | 'direct-repository-review-executor'; status: ParcelStatus; planner: WorkParcelPlan['planner']; stages: WorkParcelStage[]; createdAt: string; updatedAt: string; endedAt?: string; telemetry: WorkParcelTelemetry; decision?: WorkParcelDecision; audit: WorkParcelAudit; provenance: Array<{at: string; type: string; detail: string}>;}
+export interface WorkParcel {id: string; prompt: string; objective: string; actor: string; attribution?: WorkAttribution; executionOwner?: 'work-parcel-coordinator' | 'direct-repository-review-executor'; status: ParcelStatus; planner: WorkParcelPlan['planner']; stages: WorkParcelStage[]; context?: ParcelContextState; createdAt: string; updatedAt: string; endedAt?: string; telemetry: WorkParcelTelemetry; decision?: WorkParcelDecision; audit: WorkParcelAudit; provenance: Array<{at: string; type: string; detail: string}>;}
 export interface WorkParcelPlanner {plan(prompt: string): Promise<WorkParcelPlan> | WorkParcelPlan;}
 export type ReasoningPlanProposer = (input: {prompt: string; jobs: Array<{id: string; name: string; version: string; description?: string}>}) => Promise<unknown>;
 
@@ -38,12 +60,18 @@ function writeAtomic(file: string, value: unknown) { fs.mkdirSync(path.dirname(f
 
 export class WorkParcelStore {
   private readonly values = new Map<string, WorkParcel>();
-  constructor(readonly file: string) { if (fs.existsSync(file)) { const parsed = JSON.parse(fs.readFileSync(file, 'utf8')) as Snapshot; if (parsed.version !== 1) throw new Error('unsupported_work_parcel_snapshot'); for (const parcel of parsed.parcels) this.values.set(parcel.id, parcel); } }
-  add(parcel: WorkParcel) { if (this.values.has(parcel.id)) throw new Error('work_parcel_exists'); this.values.set(parcel.id, structuredClone(parcel)); this.save(); return this.get(parcel.id)!; }
+  constructor(readonly file: string) { if (fs.existsSync(file)) { const parsed = JSON.parse(fs.readFileSync(file, 'utf8')) as Snapshot; if (parsed.version !== 1) throw new Error('unsupported_work_parcel_snapshot'); for (const parcel of parsed.parcels) this.values.set(parcel.id, normalizeStoredParcel(parcel)); } }
+  add(parcel: WorkParcel) { if (this.values.has(parcel.id)) throw new Error('work_parcel_exists'); this.values.set(parcel.id, structuredClone(normalizeStoredParcel(parcel))); this.save(); return this.get(parcel.id)!; }
   get(id: string) { const value = this.values.get(id); return value ? structuredClone(value) : undefined; }
   list() { return [...this.values.values()].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)).map(value => structuredClone(value)); }
-  update(parcel: WorkParcel) { if (!this.values.has(parcel.id)) throw new Error('work_parcel_missing'); parcel.updatedAt = now(); this.values.set(parcel.id, structuredClone(parcel)); this.save(); return this.get(parcel.id)!; }
+  update(parcel: WorkParcel) { if (!this.values.has(parcel.id)) throw new Error('work_parcel_missing'); parcel.updatedAt = now(); this.values.set(parcel.id, structuredClone(normalizeStoredParcel(parcel))); this.save(); return this.get(parcel.id)!; }
   private save() { writeAtomic(this.file, {version: 1, parcels: this.list()} satisfies Snapshot); }
+}
+
+function normalizeStoredParcel(parcel: WorkParcel) {
+  parcel.stages = parcel.stages.map(stage => ({...stage, dependsOn: [...(stage.dependsOn ?? [])], parameters: structuredClone(stage.parameters ?? {}), requiredCapabilities: [...(stage.requiredCapabilities ?? [])], outputs: [...(stage.outputs ?? [])], waitingQuestionIds: [...(stage.waitingQuestionIds ?? [])]}));
+  parcel.context ??= createParcelContext({goal: parcel.objective || parcel.prompt, actor: parcel.actor, plan: parcel.stages, at: parcel.createdAt});
+  verifyParcelContextEventChain(parcel.context.events); updateParcelActiveState(parcel.context, {plan: parcel.stages, currentStageIds: parcel.stages.filter(stage => ['RUNNING','WAITING'].includes(stage.status)).map(stage => stage.id), at: parcel.updatedAt}); return parcel;
 }
 
 export class CatalogNaturalLanguagePlanner implements WorkParcelPlanner {
@@ -65,7 +93,7 @@ export class ReasoningModelWorkParcelPlanner implements WorkParcelPlanner {
     const jobs = this.runtime.catalog.listJobs().map(job => ({id: job.metadata.id, name: job.metadata.name, version: job.metadata.version, description: job.metadata.description}));
     const raw = await this.propose({prompt, jobs}); if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('work_parcel_reasoning_plan_invalid');
     const value = raw as {objective?: unknown; stages?: unknown}; if (!Array.isArray(value.stages)) throw new Error('work_parcel_reasoning_plan_invalid');
-    const stages = value.stages.map(item => { if (!item || typeof item !== 'object' || Array.isArray(item)) throw new Error('work_parcel_reasoning_plan_invalid'); const stage = item as Record<string, unknown>, allowed = new Set(['id','name','job','dependsOn','parameters','requestedRoute']); if (Object.keys(stage).some(key => !allowed.has(key)) || !['id','name','job'].every(key => typeof stage[key] === 'string')) throw new Error('work_parcel_reasoning_plan_invalid'); return structuredClone(stage) as unknown as WorkParcelPlanStage; });
+    const stages = value.stages.map(item => { if (!item || typeof item !== 'object' || Array.isArray(item)) throw new Error('work_parcel_reasoning_plan_invalid'); const stage = item as Record<string, unknown>, allowed = new Set(['id','name','job','dependsOn','parameters','requestedRoute','requiredCapabilities','outputs','executor']); if (Object.keys(stage).some(key => !allowed.has(key)) || !['id','name','job'].every(key => typeof stage[key] === 'string')) throw new Error('work_parcel_reasoning_plan_invalid'); return structuredClone(stage) as unknown as WorkParcelPlanStage; });
     return {objective: typeof value.objective === 'string' && value.objective.trim() ? value.objective : prompt, planner: {kind: 'reasoning-model', provider: this.provider, model: this.model, reason: 'Reasoning model proposed registered Job references; Agent Control validation is authoritative'}, stages};
   }
 }
@@ -73,10 +101,11 @@ export class ReasoningModelWorkParcelPlanner implements WorkParcelPlanner {
 export function validateWorkParcelPlan(plan: WorkParcelPlan, runtime: JobRuntime) {
   if (!plan.objective.trim() || !plan.stages.length) throw new Error('work_parcel_plan_empty');
   const ids = new Set<string>();
-  for (const stage of plan.stages) { if (!/^[a-z0-9][a-z0-9-]*$/.test(stage.id) || ids.has(stage.id)) throw new Error('work_parcel_stage_id_invalid'); if (typeof stage.name !== 'string' || !stage.name.trim() || typeof stage.job !== 'string' || !Array.isArray(stage.dependsOn ?? []) || (stage.dependsOn ?? []).some(value => typeof value !== 'string') || (stage.parameters !== undefined && (!stage.parameters || typeof stage.parameters !== 'object' || Array.isArray(stage.parameters)))) throw new Error('work_parcel_stage_invalid'); if (stage.requestedRoute && (typeof stage.requestedRoute.reason !== 'string' || (stage.requestedRoute.provider !== undefined && typeof stage.requestedRoute.provider !== 'string') || (stage.requestedRoute.accountProfile !== undefined && typeof stage.requestedRoute.accountProfile !== 'string') || (stage.requestedRoute.model !== undefined && typeof stage.requestedRoute.model !== 'string') || (stage.requestedRoute.modelRole !== undefined && typeof stage.requestedRoute.modelRole !== 'string') || (stage.requestedRoute.allowFallback !== undefined && typeof stage.requestedRoute.allowFallback !== 'boolean') || (stage.requestedRoute.profile !== undefined && !['THIN','STANDARD','DEEP'].includes(stage.requestedRoute.profile)))) throw new Error('work_parcel_route_invalid'); ids.add(stage.id); if (!runtime.catalog.job(stage.job)) throw new Error(`work_parcel_job_missing:${stage.job}`); }
+  for (const stage of plan.stages) { if (!/^[a-z0-9][a-z0-9-]*$/.test(stage.id) || ids.has(stage.id)) throw new Error('work_parcel_stage_id_invalid'); if (typeof stage.name !== 'string' || !stage.name.trim() || typeof stage.job !== 'string' || !Array.isArray(stage.dependsOn ?? []) || (stage.dependsOn ?? []).some(value => typeof value !== 'string') || (stage.parameters !== undefined && (!stage.parameters || typeof stage.parameters !== 'object' || Array.isArray(stage.parameters))) || !Array.isArray(stage.requiredCapabilities ?? []) || (stage.requiredCapabilities ?? []).some(value => typeof value !== 'string') || !Array.isArray(stage.outputs ?? []) || (stage.outputs ?? []).some(value => typeof value !== 'string') || (stage.executor !== undefined && typeof stage.executor !== 'string')) throw new Error('work_parcel_stage_invalid'); if (stage.requestedRoute && (typeof stage.requestedRoute.reason !== 'string' || (stage.requestedRoute.provider !== undefined && typeof stage.requestedRoute.provider !== 'string') || (stage.requestedRoute.accountProfile !== undefined && typeof stage.requestedRoute.accountProfile !== 'string') || (stage.requestedRoute.model !== undefined && typeof stage.requestedRoute.model !== 'string') || (stage.requestedRoute.modelRole !== undefined && typeof stage.requestedRoute.modelRole !== 'string') || (stage.requestedRoute.allowFallback !== undefined && typeof stage.requestedRoute.allowFallback !== 'boolean') || (stage.requestedRoute.profile !== undefined && !['THIN','STANDARD','DEEP'].includes(stage.requestedRoute.profile)))) throw new Error('work_parcel_route_invalid'); ids.add(stage.id); if (!runtime.catalog.job(stage.job)) throw new Error(`work_parcel_job_missing:${stage.job}`); }
   for (const stage of plan.stages) for (const dependency of stage.dependsOn ?? []) if (!ids.has(dependency) || dependency === stage.id) throw new Error(`work_parcel_dependency_invalid:${stage.id}:${dependency}`);
   const visiting = new Set<string>(), visited = new Set<string>(), byId = new Map(plan.stages.map(stage => [stage.id, stage]));
   const visit = (id: string) => { if (visiting.has(id)) throw new Error('work_parcel_dependency_cycle'); if (visited.has(id)) return; visiting.add(id); for (const dependency of byId.get(id)?.dependsOn ?? []) visit(dependency); visiting.delete(id); visited.add(id); }; for (const id of ids) visit(id);
+  for (const criterion of plan.successCriteria ?? []) if (!criterion.description?.trim() || criterion.stageId && !ids.has(criterion.stageId)) throw new Error('work_parcel_success_criterion_invalid');
   return structuredClone(plan);
 }
 
@@ -84,8 +113,8 @@ export class WorkParcelCoordinator {
   private readonly planning = new Set<string>();
   constructor(readonly runtime: JobRuntime, readonly store: WorkParcelStore, readonly planner: WorkParcelPlanner, private readonly efficiency?: HarnessEfficiencyLedgerPort, private readonly models?: ModelRegistry) {}
   async submit(prompt: string, actor: string, attribution?: WorkAttribution) {
-    const plan = validateWorkParcelPlan(await this.planner.plan(prompt), this.runtime), at = now();
-    return this.store.add({id: `parcel-${randomUUID()}`, prompt, objective: plan.objective, actor, ...(attribution ? {attribution: structuredClone(attribution)} : {}), executionOwner: 'work-parcel-coordinator', status: 'QUEUED', planner: plan.planner, stages: plan.stages.map(stage => ({...stage, dependsOn: [...(stage.dependsOn ?? [])], parameters: structuredClone(stage.parameters ?? {}), status: 'QUEUED'})), createdAt: at, updatedAt: at, telemetry: emptyTelemetry(), audit: createDecisionAudit(prompt, plan, this.runtime, at), provenance: [{at, type: 'submitted', detail: `Natural-language request accepted; planner=${plan.planner.kind}`} ]});
+    const plan = validateWorkParcelPlan(await this.planner.plan(prompt), this.runtime), at = now(), stages = materializeStages(plan.stages), context = contextForPlan(plan, actor, stages, at, prompt);
+    return this.store.add({id: `parcel-${randomUUID()}`, prompt, objective: plan.objective, actor, ...(attribution ? {attribution: structuredClone(attribution)} : {}), executionOwner: 'work-parcel-coordinator', status: 'QUEUED', planner: plan.planner, stages, context, createdAt: at, updatedAt: at, telemetry: emptyTelemetry(), audit: createDecisionAudit(prompt, plan, this.runtime, at), provenance: [{at, type: 'submitted', detail: `Natural-language request accepted; planner=${plan.planner.kind}`} ]});
   }
   accept(prompt: string, actor: string, systems: SystemReadiness[] = [], attribution?: WorkAttribution) {
     if (!prompt.trim()) throw new Error('work_parcel_prompt_required');
@@ -94,21 +123,39 @@ export class WorkParcelCoordinator {
     if (target) timeline.push(event(at, 'target.resolving', `Resolving target: ${target.name}`, target.id), event(at, 'target.found', 'Target found', `${target.type}:${target.id}`), event(at, 'readiness.checked', `Execution state: ${target.execution}`, `Reachability: ${target.reachable}; Authentication: ${target.authentication}; Capabilities: ${target.capabilities.join(', ') || 'none reported'}`));
     timeline.push(event(at, 'planning.started', 'Selecting registered Job', 'Planner may only select Jobs present in the canonical catalog'));
     const blocked = target && ['AUTH REQUIRED','OFFLINE','DEGRADED','UNKNOWN'].includes(target.execution) ? `BLOCKED — ${target.name} ${target.blockingReason ?? target.execution.toLowerCase()}` : null;
-    const parcel = this.store.add({id: `parcel-${randomUUID()}`, prompt, objective: prompt, actor, ...(attribution ? {attribution: structuredClone(attribution)} : {}), executionOwner: 'work-parcel-coordinator', status: blocked ? 'FAILED' : 'PLANNING', planner: {kind: 'deterministic', reason: blocked ?? 'Planning pending'}, stages: [], createdAt: at, updatedAt: at, ...(blocked ? {endedAt: at} : {}), telemetry: emptyTelemetry(), audit: planningAudit(at, timeline, blocked), provenance: [{at, type: 'submitted', detail: 'Natural-language request durably accepted before planning'}, ...(blocked ? [{at, type: 'readiness.blocked', detail: blocked}] : [])]});
+    const parcel = this.store.add({id: `parcel-${randomUUID()}`, prompt, objective: prompt, actor, ...(attribution ? {attribution: structuredClone(attribution)} : {}), executionOwner: 'work-parcel-coordinator', status: blocked ? 'FAILED' : 'PLANNING', planner: {kind: 'deterministic', reason: blocked ?? 'Planning pending'}, stages: [], context: createParcelContext({goal: prompt, actor, at}), createdAt: at, updatedAt: at, ...(blocked ? {endedAt: at} : {}), telemetry: emptyTelemetry(), audit: planningAudit(at, timeline, blocked), provenance: [{at, type: 'submitted', detail: 'Natural-language request durably accepted before planning'}, ...(blocked ? [{at, type: 'readiness.blocked', detail: blocked}] : [])]});
     if (!blocked) this.startPlanning(parcel.id);
     return parcel;
   }
   get(id: string) { let value = this.store.get(id); if (!value) throw new Error('work_parcel_missing'); if (this.captureLiveRoutes(value)) value = this.store.update(value); return this.withTelemetry(value); }
   list() { return this.store.list().map(value => { if (this.captureLiveRoutes(value)) value = this.store.update(value); return this.withTelemetry(value); }); }
+  askQuestion(id: string, input: {text: string; originatingStageId?: string; dependentStageIds: string[]; priority?: ParcelQuestion['priority']; consequence?: ParcelQuestion['consequence']; actor: string}) {
+    const parcel = this.get(id), context = mustParcelContext(parcel); for (const stageId of input.dependentStageIds) { const stage = parcel.stages.find(item => item.id === stageId); if (!stage) throw new Error(`parcel_question_dependency_missing:${stageId}`); if (['RUNNING','SUCCEEDED','FAILED','CANCELLED'].includes(stage.status)) throw new Error(`parcel_question_dependency_already_started:${stageId}`); }
+    if (input.originatingStageId && !parcel.stages.some(item => item.id === input.originatingStageId)) throw new Error('parcel_question_origin_missing'); const question = addParcelQuestion(context, input);
+    for (const stage of parcel.stages.filter(item => question.dependentStageIds.includes(item.id))) { stage.waitingQuestionIds = [...new Set([...(stage.waitingQuestionIds ?? []), question.id])]; stage.status = 'WAITING'; stage.waitingReason = `Waiting for answer to ${question.id}`; }
+    appendAudit(parcel, {at: question.createdAt, type: 'question.created', stageId: question.originatingStageId, summary: 'Non-blocking operator question recorded', detail: `${question.id}; dependent stages ${question.dependentStageIds.join(', ') || 'none'}`}); parcel.provenance.push({at: question.createdAt, type: 'question.created', detail: question.id}); return this.store.update(this.reconcile(parcel));
+  }
+  answerQuestion(id: string, questionId: string, answer: string, actor: string) {
+    const parcel = this.get(id), question = answerParcelQuestion(mustParcelContext(parcel), questionId, answer, actor);
+    for (const stage of parcel.stages.filter(item => question.dependentStageIds.includes(item.id))) { stage.waitingQuestionIds = (stage.waitingQuestionIds ?? []).filter(value => value !== questionId); if (!stage.waitingQuestionIds.length && stage.status === 'WAITING') { stage.status = 'QUEUED'; stage.waitingReason = undefined; } }
+    appendAudit(parcel, {at: question.answeredAt!, type: 'question.answered', stageId: question.originatingStageId, summary: 'Operator answer recorded', detail: `${question.id}; dependent stages eligible to resume`}); parcel.provenance.push({at: question.answeredAt!, type: 'question.answered', detail: question.id}); return this.store.update(this.reconcile(parcel));
+  }
+  withdrawQuestion(id: string, questionId: string, actor: string) { const parcel = this.get(id), question = withdrawParcelQuestion(mustParcelContext(parcel), questionId, actor); for (const stage of parcel.stages.filter(item => question.dependentStageIds.includes(item.id))) { stage.waitingQuestionIds = (stage.waitingQuestionIds ?? []).filter(value => value !== questionId); if (!stage.waitingQuestionIds.length && stage.status === 'WAITING') { stage.status = 'QUEUED'; stage.waitingReason = undefined; } } return this.store.update(this.reconcile(parcel)); }
+  steer(id: string, input: {instruction: string; constraints?: string[]; affectedStageIds?: string[]; supersedes?: string[]; actor: string}) { const parcel = this.get(id); for (const stageId of input.affectedStageIds ?? []) if (!parcel.stages.some(stage => stage.id === stageId)) throw new Error(`parcel_steering_stage_missing:${stageId}`); const amendment = addSteeringAmendment(mustParcelContext(parcel), input); appendAudit(parcel, {at: amendment.createdAt, type: 'steering.accepted', summary: 'User steering amendment accepted', detail: `${amendment.id}; original goal retained; affected ${amendment.affectedStageIds.join(', ') || 'all remaining stages'}`}); parcel.provenance.push({at: amendment.createdAt, type: 'steering.accepted', detail: amendment.id}); return this.store.update(parcel); }
+  addCriterion(id: string, input: {kind: ParcelSuccessCriterion['kind']; description: string; source: ParcelSuccessCriterion['source']; sourceActor: string; stageId?: string; requiredEvidence?: string[]}) { const parcel = this.get(id); if (input.stageId && !parcel.stages.some(stage => stage.id === input.stageId)) throw new Error('parcel_success_criterion_stage_missing'); const criterion = addSuccessCriterion(mustParcelContext(parcel), input); return {parcel: this.store.update(parcel), criterion}; }
+  evaluateCriterion(id: string, criterionId: string, input: {status: 'PASS' | 'FAIL'; evidence: string[]; detail?: string; actor: string}) { const parcel = this.get(id), criterion = evaluateSuccessCriterion(mustParcelContext(parcel), criterionId, input); appendAudit(parcel, {at: criterion.evaluatedAt!, type: 'criterion.evaluated', stageId: criterion.stageId, summary: criterion.description, detail: `${criterion.status}; evidence ${criterion.evidence.join(', ') || 'none'}`}); return this.store.update(this.reconcile(parcel)); }
+  retrieveContext(id: string, input: {query: string; limit?: number; types?: ParcelContextEventType[]; stageIds?: string[]; actor?: string}) { const parcel = this.get(id), results = retrieveParcelContext(mustParcelContext(parcel), input); appendAudit(parcel, {at: now(), type: 'context.retrieved', summary: 'Governed parcel-history retrieval completed', detail: `${results.length} event(s); ${results.map(item => item.id).join(', ')}`}); this.store.update(parcel); return results; }
   cancel(id: string, actor: string) { const parcel = this.get(id); for (const stage of parcel.stages) if (stage.runId && !['SUCCEEDED','FAILED','CANCELLED'].includes(stage.status)) this.runtime.cancel(stage.runId, `parcel_cancelled_by:${actor}`); for (const stage of parcel.stages) if (!['SUCCEEDED','FAILED'].includes(stage.status)) stage.status = 'CANCELLED'; parcel.status = 'CANCELLED'; parcel.endedAt = now(); parcel.provenance.push({at: now(), type: 'cancelled', detail: actor}); return this.store.update(parcel); }
   async tick() {
     for (const stored of this.store.list().filter(parcel => parcel.executionOwner !== 'direct-repository-review-executor' && ['PLANNING','QUEUED','RUNNING','WAITING'].includes(parcel.status)).reverse()) {
       if (stored.status === 'PLANNING') { this.startPlanning(stored.id); return this.get(stored.id); }
       const before = JSON.stringify({status: stored.status, stages: stored.stages.map(stage => [stage.status, stage.runId, stage.waitingReason, stage.error])}), parcel = this.reconcile(stored); if (['SUCCEEDED','FAILED','CANCELLED'].includes(parcel.status)) { this.store.update(parcel); return this.get(parcel.id); }
-      const ready = parcel.stages.find(stage => stage.status === 'QUEUED' && stage.dependsOn.every(id => parcel.stages.find(item => item.id === id)?.status === 'SUCCEEDED'));
-      if (ready) {
-        try {
-          const routeRequest = ready.requestedRoute;
+      const activeCount = parcel.stages.filter(stage => stage.status === 'RUNNING').length, dispatchBudget = Math.max(0, this.runtime.schedulerConcurrencyLimit() - activeCount), readyStages = parcel.stages.filter(stage => stage.status === 'QUEUED' && !(stage.waitingQuestionIds?.length) && stage.dependsOn.every(id => parcel.stages.find(item => item.id === id)?.status === 'SUCCEEDED')).slice(0, dispatchBudget);
+      if (readyStages.length) {
+        for (const ready of readyStages) try {
+          const routeRequest = ready.requestedRoute, context = mustParcelContext(parcel), dependencies = parcel.stages.filter(stage => ready.dependsOn.includes(stage.id)), artifactIds = dependencies.flatMap(stage => stage.baton?.artifactIds ?? []), outputTypes = dependencies.flatMap(stage => stage.baton?.outputTypes ?? []), selectedEventIds = context.events.filter(item => ready.dependsOn.includes(item.stageId ?? '') || ['steering.accepted','question.answered','stage.failed','recovery.recorded'].includes(item.type)).map(item => item.id);
+          const baton = createBatonView(context, {sourceStageIds: ready.dependsOn, targetStageId: ready.id, nextAction: `Execute ${ready.name} through ${ready.job} and satisfy its declared verification boundary`, artifactIds, outputTypes, selectedEventIds});
+          ready.baton = baton; appendAudit(parcel, {at: baton.createdAt, type: 'baton.created', stageId: ready.id, summary: 'Bounded operational baton view sealed', detail: `${baton.id}; sha256 ${baton.sha256}; ${baton.sizeBytes} bytes; full history remains in parcel ledger`});
           let modelRoute;
           if (routeRequest?.model || routeRequest?.modelRole) {
             if (!this.models) throw new Error('model_registry_unconfigured');
@@ -116,13 +163,15 @@ export class WorkParcelCoordinator {
             const first = definition.spec.steps.find(step => !(step.dependsOn?.length)) ?? definition.spec.steps[0];
             const worker = first ? this.runtime.workers.resolve(first.requires).worker : undefined;
             if (!worker) throw new Error('model_route_worker_unavailable');
-            modelRoute = this.models.route({model: routeRequest.model, modelRole: routeRequest.modelRole, accountProfile: routeRequest.accountProfile, nodeId: worker.id, allowFallback: routeRequest.allowFallback});
-            ready.actualRoute = {workers: [worker.id], provider: modelRoute.providerId, accountProfile: modelRoute.accountProfileId ?? undefined, accountLabel: modelRoute.accountLabel ?? undefined, accountPlan: modelRoute.accountPlan ?? undefined, accountPlanAuthority: modelRoute.accountPlanAuthority ?? undefined, accountQualification: modelRoute.accountQualification ?? undefined, accountAvailability: modelRoute.accountAvailability ?? undefined, model: modelRoute.modelId, profile: routeRequest.profile, reason: modelRoute.fallback ? `Qualified fallback selected: ${modelRoute.fallbackReason}` : `Qualified ${modelRoute.requestedRole ? `role ${modelRoute.requestedRole}` : `model ${modelRoute.modelId}`} selected`};
+            modelRoute = this.models.route({model: routeRequest.model, modelRole: routeRequest.modelRole, accountProfile: routeRequest.accountProfile, nodeId: worker.id, requiredCapabilities: ready.requiredCapabilities, allowFallback: routeRequest.allowFallback});
+            ready.actualRoute = {workers: [worker.id], workloadNodeId: modelRoute.workloadNodeId, providerExecutionNodeId: modelRoute.providerExecutionNodeId, credentialNodeId: modelRoute.credentialNodeId ?? undefined, provider: modelRoute.providerId, accountProfile: modelRoute.accountProfileId ?? undefined, accountLabel: modelRoute.accountLabel ?? undefined, accountPlan: modelRoute.accountPlan ?? undefined, accountPlanAuthority: modelRoute.accountPlanAuthority ?? undefined, accountQualification: modelRoute.accountQualification ?? undefined, accountAvailability: modelRoute.accountAvailability ?? undefined, model: modelRoute.modelId, profile: routeRequest.profile, reason: modelRoute.fallback ? `Qualified fallback selected: ${modelRoute.fallbackReason}` : `Qualified ${modelRoute.requestedRole ? `role ${modelRoute.requestedRole}` : `model ${modelRoute.modelId}`} selected`};
+            appendParcelContextEvent(context, {type: 'route.selected', stageId: ready.id, summary: `${modelRoute.providerId}/${modelRoute.accountProfileId ?? 'default'}/${modelRoute.modelId}@${modelRoute.providerExecutionNodeId}`, detail: {qualificationVersion: modelRoute.qualificationVersion, fallback: modelRoute.fallback, fallbackReason: modelRoute.fallbackReason, requiredCapabilities: ready.requiredCapabilities}, tags: ['route'], evidence: []});
           }
-          const run = this.runtime.createRun(ready.job, ready.parameters, {type: 'manual', actor: `work-parcel:${parcel.id}`, ...(modelRoute ? {modelRoute} : {})}); ready.runId = run.id; ready.status = 'RUNNING'; ready.startedAt = now(); parcel.status = 'RUNNING'; parcel.provenance.push({at: now(), type: 'stage.started', detail: `${ready.id}:${run.id}`}); appendAudit(parcel, {at: ready.startedAt, type: 'stage.dispatched', stageId: ready.id, summary: `${ready.name} dispatched`, detail: `Job ${ready.job}; Run ${run.id}; requested route ${routeRequestLabel(ready)}${modelRoute ? `; resolved ${modelRoute.providerId}/${modelRoute.modelId} on ${modelRoute.nodeId}; qualification ${modelRoute.qualificationVersion}` : ''}`});
+          const parcelContext = {schema: 'agent-control.run-parcel-context/v1' as const, parcelId: parcel.id, stageId: ready.id, originalGoal: context.active.originalGoal, currentInterpretation: context.active.currentInterpretation, effectiveInstructions: [...context.active.effectiveInstructions], constraints: [...context.active.constraints], successCriteria: context.criteria.map(item => ({id: item.id, description: item.description, status: item.status})), baton};
+          const run = this.runtime.createRun(ready.job, ready.parameters, {type: 'manual', actor: `work-parcel:${parcel.id}`, ...(modelRoute ? {modelRoute} : {}), parcelContext}); ready.runId = run.id; ready.status = 'RUNNING'; ready.startedAt = now(); ready.executor = ready.executor ?? run.trigger.modelRoute?.modelId ?? 'agent-control-job-runtime'; parcel.status = 'RUNNING'; parcel.provenance.push({at: ready.startedAt, type: 'stage.started', detail: `${ready.id}:${run.id}`}); appendParcelContextEvent(context, {at: ready.startedAt, type: 'stage.started', stageId: ready.id, summary: `${ready.name} dispatched`, detail: {runId: run.id, job: ready.job, executor: ready.executor}, tags: ['stage'], evidence: [baton.sha256]}); appendAudit(parcel, {at: ready.startedAt, type: 'stage.dispatched', stageId: ready.id, summary: `${ready.name} dispatched`, detail: `Job ${ready.job}; Run ${run.id}; requested route ${routeRequestLabel(ready)}${modelRoute ? `; resolved ${modelRoute.providerId}/${modelRoute.modelId} on ${modelRoute.nodeId}; qualification ${modelRoute.qualificationVersion}` : ''}`});
         }
-        catch (error) { const detail = error instanceof Error ? error.message : String(error); ready.status = 'FAILED'; ready.error = `dispatch_failed:${detail}`; ready.endedAt = now(); parcel.status = 'FAILED'; parcel.endedAt = ready.endedAt; parcel.provenance.push({at: ready.endedAt, type: 'stage.dispatch_failed', detail: `${ready.id}:${detail}`}); appendAudit(parcel, {at: ready.endedAt, type: 'stage.failed', stageId: ready.id, summary: `${ready.name} failed before dispatch`, detail}); }
-        this.store.update(parcel); return this.get(parcel.id);
+        catch (error) { const detail = error instanceof Error ? error.message : String(error); ready.status = 'FAILED'; ready.error = `dispatch_failed:${detail}`; ready.endedAt = now(); parcel.provenance.push({at: ready.endedAt, type: 'stage.dispatch_failed', detail: `${ready.id}:${detail}`}); appendParcelContextEvent(mustParcelContext(parcel), {at: ready.endedAt, type: 'stage.failed', stageId: ready.id, summary: `${ready.name} failed before dispatch`, detail: {reason: detail}, tags: ['stage','failure'], evidence: []}); appendAudit(parcel, {at: ready.endedAt, type: 'stage.failed', stageId: ready.id, summary: `${ready.name} failed before dispatch`, detail}); }
+        this.store.update(this.reconcile(parcel)); return this.get(parcel.id);
       }
       this.store.update(parcel); if (before !== JSON.stringify({status: parcel.status, stages: parcel.stages.map(stage => [stage.status, stage.runId, stage.waitingReason, stage.error])})) return this.get(parcel.id);
     }
@@ -133,30 +182,47 @@ export class WorkParcelCoordinator {
     const pending = this.store.get(id); if (!pending || pending.status !== 'PLANNING') return;
     try {
       const plan = validateWorkParcelPlan(await this.planner.plan(pending.prompt), this.runtime), decided = createDecisionAudit(pending.prompt, plan, this.runtime, now());
-      pending.objective = plan.objective; pending.planner = plan.planner; pending.stages = plan.stages.map(stage => ({...stage, dependsOn: [...(stage.dependsOn ?? [])], parameters: structuredClone(stage.parameters ?? {}), status: 'QUEUED'})); pending.status = 'QUEUED'; pending.audit = {...decided, timeline: [...pending.audit.timeline, ...decided.timeline.filter(item => !['task.received','task.classified'].includes(item.type))]}; pending.provenance.push({at: now(), type: 'planned', detail: `Registered stages selected; planner=${plan.planner.kind}`}); this.store.update(pending);
+      pending.objective = plan.objective; pending.planner = plan.planner; pending.stages = materializeStages(plan.stages); const context = mustParcelContext(pending); context.active.currentInterpretation = plan.objective; context.active.constraints = [...new Set(plan.constraints ?? [])]; updateParcelActiveState(context, {plan: pending.stages}); appendParcelContextEvent(context, {type: 'plan.recorded', summary: `${pending.stages.length} governed stage(s) recorded`, detail: {stageIds: pending.stages.map(stage => stage.id), planner: plan.planner.kind, interpretation: plan.objective}, tags: ['plan'], evidence: []}); for (const criterion of plan.successCriteria ?? []) addSuccessCriterion(context, {id: criterion.id, kind: criterion.kind, description: criterion.description, source: criterion.source ?? 'INFERRED', sourceActor: plan.planner.kind === 'reasoning-model' ? `${plan.planner.provider ?? 'provider'}/${plan.planner.model ?? 'model'}` : 'agent-control-planner', stageId: criterion.stageId, requiredEvidence: criterion.requiredEvidence}); inferStageCriteria(context, pending.stages); pending.status = 'QUEUED'; pending.audit = {...decided, timeline: [...pending.audit.timeline, ...decided.timeline.filter(item => !['task.received','task.classified'].includes(item.type))]}; pending.provenance.push({at: now(), type: 'planned', detail: `Registered stages selected; planner=${plan.planner.kind}`}); this.store.update(pending);
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error); pending.status = 'FAILED'; pending.endedAt = now(); pending.provenance.push({at: pending.endedAt, type: 'planning.failed', detail}); pending.audit.timeline.push(event(pending.endedAt, 'planning.failed', 'Planning failed closed', detail)); this.store.update(pending);
     }
   }
   private reconcile(parcel: WorkParcel) {
+    const context = mustParcelContext(parcel);
     for (const stage of parcel.stages) if (stage.runId && !['SUCCEEDED','FAILED','CANCELLED'].includes(stage.status)) {
+      const previousStatus = stage.status;
       const run = this.runtime.ledger.get(stage.runId); if (!run) { stage.status = 'FAILED'; stage.error = 'run_missing_after_restart'; continue; }
       stage.status = run.status === 'SUCCEEDED' ? 'SUCCEEDED' : failedRun.has(run.status) ? 'FAILED' : run.status === 'WAITING' ? 'WAITING' : 'RUNNING';
       stage.waitingReason = run.steps.find(step => step.waitingReason)?.waitingReason; stage.error = run.errors.at(-1) ?? run.steps.find(step => step.error)?.error;
       const resolvedRoute = routeFor(run, this.invocations(run.id)), previousRoute = actualRouteLabel(stage);
       if (resolvedRoute.workers.length || resolvedRoute.provider || resolvedRoute.model) {
-        stage.actualRoute = resolvedRoute;
+        stage.actualRoute = {...stage.actualRoute, ...resolvedRoute, profile: resolvedRoute.profile ?? stage.actualRoute?.profile};
         const detail = actualRouteLabel(stage);
         if (detail !== previousRoute && !parcel.audit.timeline.some(event => event.type === 'route.resolved' && event.stageId === stage.id && event.detail === detail)) appendAudit(parcel, {at: now(), type: 'route.resolved', stageId: stage.id, summary: `${stage.name} actual route recorded`, detail});
       }
-      if (terminalRun.has(run.status)) { stage.endedAt = run.endedAt ?? now(); stage.baton = {schema: 'agent-control.work-parcel-baton/v1', artifactIds: [...run.artifacts], outputTypes: run.artifacts.map(id => this.runtime.artifacts.get(id)?.type ?? 'unknown')}; }
+      if (terminalRun.has(run.status)) {
+        stage.endedAt = run.endedAt ?? now();
+        if (stage.status === 'SUCCEEDED' && previousStatus !== 'SUCCEEDED') {
+          stage.baton = createBatonView(context, {sourceStageIds: [stage.id], nextAction: `Continue with stages depending on ${stage.name}`, artifactIds: [...run.artifacts], outputTypes: run.artifacts.map(id => this.runtime.artifacts.get(id)?.type ?? 'unknown'), selectedEventIds: context.events.filter(item => item.stageId === stage.id || item.type === 'steering.accepted').map(item => item.id)});
+          appendParcelContextEvent(context, {at: stage.endedAt, type: 'stage.completed', stageId: stage.id, summary: `${stage.name} completed through verification`, detail: {runId: run.id, artifactIds: run.artifacts, batonId: stage.baton.id}, tags: ['stage','verified'], evidence: [stage.baton.sha256, ...run.artifacts]});
+          const inferred = context.criteria.find(item => item.kind === 'STAGE_VERIFIED' && item.stageId === stage.id && item.status === 'PENDING'); if (inferred) evaluateSuccessCriterion(context, inferred.id, {status: 'PASS', evidence: [`stage:${stage.id}:verified`, ...run.artifacts], actor: 'agent-control-verifier', at: stage.endedAt});
+        } else if (stage.status === 'FAILED' && previousStatus !== 'FAILED') appendParcelContextEvent(context, {at: stage.endedAt, type: 'stage.failed', stageId: stage.id, summary: `${stage.name} failed`, detail: {runId: run.id, reason: stage.error ?? 'unclassified'}, tags: ['stage','failure'], evidence: []});
+      }
+    }
+    for (const stage of parcel.stages.filter(item => item.status === 'SUCCEEDED')) {
+      const inferred = context.criteria.find(item => item.kind === 'STAGE_VERIFIED' && item.stageId === stage.id && item.status === 'PENDING');
+      if (inferred) evaluateSuccessCriterion(context, inferred.id, {status: 'PASS', evidence: [`stage:${stage.id}:verified`, ...(stage.baton?.artifactIds ?? [])], actor: 'agent-control-verifier', at: stage.endedAt ?? now()});
     }
     const failed = parcel.stages.filter(stage => stage.status === 'FAILED');
     if (failed.length) for (const stage of parcel.stages.filter(stage => stage.status === 'QUEUED' && stage.dependsOn.some(id => failed.some(item => item.id === id)))) { stage.status = 'BLOCKED'; stage.waitingReason = `Upstream gate failed: ${stage.dependsOn.filter(id => failed.some(item => item.id === id)).join(', ')}`; }
     let propagated = true; while (propagated) { propagated = false; for (const stage of parcel.stages.filter(stage => stage.status === 'QUEUED' && stage.dependsOn.some(id => parcel.stages.find(item => item.id === id)?.status === 'BLOCKED'))) { stage.status = 'BLOCKED'; stage.waitingReason = 'Blocked by downstream dependency chain'; propagated = true; } }
-    if (parcel.stages.every(stage => stage.status === 'SUCCEEDED')) { parcel.status = 'SUCCEEDED'; parcel.endedAt = now(); }
+    const failedCriteria = context.criteria.filter(item => item.status === 'FAIL');
+    if (failedCriteria.length) { parcel.status = 'FAILED'; parcel.endedAt ??= now(); parcel.provenance.push(...failedCriteria.filter(item => !parcel.provenance.some(event => event.type === 'criterion.failed' && event.detail === item.id)).map(item => ({at: item.evaluatedAt ?? now(), type: 'criterion.failed', detail: item.id}))); }
+    else if (parcel.stages.every(stage => stage.status === 'SUCCEEDED') && allSuccessCriteriaPass(context)) { parcel.status = 'SUCCEEDED'; parcel.endedAt ??= now(); }
+    else if (parcel.stages.every(stage => stage.status === 'SUCCEEDED')) { parcel.status = 'WAITING'; parcel.endedAt = undefined; }
     else if (parcel.stages.every(stage => ['SUCCEEDED','FAILED','BLOCKED','CANCELLED'].includes(stage.status)) && failed.length) { parcel.status = 'FAILED'; parcel.endedAt = now(); }
-    else parcel.status = parcel.stages.some(stage => stage.status === 'WAITING') ? 'WAITING' : parcel.stages.some(stage => stage.status === 'RUNNING') ? 'RUNNING' : 'QUEUED';
+    else parcel.status = parcel.stages.some(stage => stage.status === 'RUNNING') ? 'RUNNING' : parcel.stages.some(stage => stage.status === 'WAITING') ? 'WAITING' : 'QUEUED';
+    const activeStages = parcel.stages.filter(stage => ['RUNNING','WAITING'].includes(stage.status)), route = activeStages.find(stage => stage.actualRoute)?.actualRoute; updateParcelActiveState(context, {plan: parcel.stages, currentStageIds: activeStages.map(stage => stage.id), route: route ? actualRouteLabel(activeStages.find(stage => stage.actualRoute)!) : undefined, model: route?.model, node: route?.providerExecutionNodeId ?? route?.workers[0]});
     parcel.telemetry = this.telemetry(parcel); this.syncAudit(parcel); return parcel;
   }
   private invocations(runId: string) { return (this.efficiency?.list() ?? []).filter(item => item.runId === runId); }
@@ -167,7 +233,7 @@ export class WorkParcelCoordinator {
       if (!stage.runId || ['SUCCEEDED','FAILED','CANCELLED'].includes(stage.status)) continue;
       const run = this.runtime.ledger.get(stage.runId); if (!run) continue;
       const resolved = routeFor(run, this.invocations(run.id)); if (!resolved.workers.length && !resolved.provider && !resolved.model) continue;
-      const previous = actualRouteLabel(stage); stage.actualRoute = resolved; const detail = actualRouteLabel(stage);
+      const previous = actualRouteLabel(stage); stage.actualRoute = {...stage.actualRoute, ...resolved, profile: resolved.profile ?? stage.actualRoute?.profile}; const detail = actualRouteLabel(stage);
       if (detail !== previous) { changed = true; if (!parcel.audit.timeline.some(event => event.type === 'route.resolved' && event.stageId === stage.id && event.detail === detail)) appendAudit(parcel, {at: now(), type: 'route.resolved', stageId: stage.id, summary: `${stage.name} actual route recorded`, detail}); }
     }
     return changed;
@@ -210,6 +276,9 @@ function legacyAudit(parcel: WorkParcel): WorkParcelAudit {
 function appendAudit(parcel: WorkParcel, event: Omit<WorkParcelAuditEvent, 'id'>) { parcel.audit.timeline.push({id: `audit-${randomUUID()}`, ...event}); }
 function event(at: string, type: WorkParcelAuditEvent['type'], summary: string, detail: string): WorkParcelAuditEvent { return {id: `audit-${randomUUID()}`, at, type, summary, detail}; }
 function planningAudit(at: string, timeline: WorkParcelAuditEvent[], blocked: string | null): WorkParcelAudit { return {schema: 'agent-control.work-parcel-audit/v1', recordedAt: at, classification: blocked ? 'Target readiness blocked before dispatch' : 'Planning in progress', selectedExecution: 'Work Parcel', planningRationale: blocked ?? 'Resolving registered Jobs and governed execution readiness', planner: {kind: 'pending', provider: null, model: null}, alternatives: [], timeline, invocations: [], totals: auditTotals([], at, blocked ? at : undefined)}; }
+function materializeStages(stages: WorkParcelPlanStage[]): WorkParcelStage[] { return stages.map(stage => ({...stage, dependsOn: [...(stage.dependsOn ?? [])], parameters: structuredClone(stage.parameters ?? {}), requiredCapabilities: [...(stage.requiredCapabilities ?? [])], outputs: [...(stage.outputs ?? [])], waitingQuestionIds: [], status: 'QUEUED'})); }
+function contextForPlan(plan: WorkParcelPlan, actor: string, stages: WorkParcelStage[], at: string, originalGoal = plan.objective) { const context = createParcelContext({goal: originalGoal, actor, plan: stages, constraints: plan.constraints, criteria: (plan.successCriteria ?? []).map(item => ({...item, source: item.source ?? 'INFERRED', sourceActor: plan.planner.kind === 'reasoning-model' ? `${plan.planner.provider ?? 'provider'}/${plan.planner.model ?? 'model'}` : 'agent-control-planner', requiredEvidence: item.requiredEvidence ?? []})), at}); context.active.currentInterpretation = plan.objective; inferStageCriteria(context, stages, 'agent-control-policy', at); return context; }
+function mustParcelContext(parcel: WorkParcel) { parcel.context ??= createParcelContext({goal: parcel.objective || parcel.prompt, actor: parcel.actor, plan: parcel.stages, at: parcel.createdAt}); return parcel.context; }
 function escapeRegExp(value: string) { return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 function routeRequestLabel(stage: WorkParcelPlanStage) { const route = stage.requestedRoute; return route ? `Requested provider ${route.provider ?? 'policy-selected'}; account ${route.accountProfile ?? 'policy-selected'}; model ${route.model ?? 'policy-selected'}; role ${route.modelRole ?? 'policy-selected'}; fallback ${route.allowFallback === false ? 'disabled' : 'allowed'}; profile ${route.profile ?? 'policy-selected'}; ${route.reason}` : 'Normal Agent Control placement and routing policy'; }
 function actualRouteLabel(stage: WorkParcelStage) { const route = stage.actualRoute; return route ? `Workers ${route.workers.join(', ') || 'none'}; provider ${route.provider ?? 'no model'}; account ${route.accountLabel ?? route.accountProfile ?? 'default'}; model ${route.model ?? 'no model'}; profile ${route.profile ?? 'control action'}; ${route.reason}` : 'Actual route not reported'; }
@@ -235,7 +304,26 @@ export function explainParcelDecision(parcel: WorkParcel): WorkParcelDecision {
   const active = parcel.stages.find(stage => ['RUNNING','WAITING'].includes(stage.status)); return {outcome: 'IN_PROGRESS', title: 'What Agent Control is doing', summary: active ? `${active.name} is ${active.status.toLowerCase()}.` : 'The parcel is waiting for its next eligible Job.', evidence: active?.waitingReason ? [active.waitingReason] : [], blockedStages: blocked, authority: 'Agent Control'};
 }
 
-function routeFor(run: RunRecord, invocations: ModelInvocationObservation[]) { const last = invocations.at(-1); return {workers: [...run.selectedWorkers], provider: last?.provider, model: last?.model, profile: last?.harnessProfile, reason: run.steps.flatMap(step => step.placement?.reasons ?? []).join(', ') || 'Normal Agent Control placement; no model invocation reported'}; }
+function routeFor(run: RunRecord, invocations: ModelInvocationObservation[]) {
+  const last = invocations.at(-1), route = run.trigger.modelRoute;
+  const placementReason = run.steps.flatMap(step => step.placement?.reasons ?? []).join(', ');
+  return {
+    workers: [...run.selectedWorkers],
+    workloadNodeId: route?.workloadNodeId,
+    providerExecutionNodeId: route?.providerExecutionNodeId ?? route?.nodeId,
+    credentialNodeId: route?.credentialNodeId ?? undefined,
+    provider: route?.providerId ?? last?.provider,
+    accountProfile: route?.accountProfileId ?? undefined,
+    accountLabel: route?.accountLabel ?? undefined,
+    accountPlan: route?.accountPlan ?? undefined,
+    accountPlanAuthority: route?.accountPlanAuthority ?? undefined,
+    accountQualification: route?.accountQualification ?? undefined,
+    accountAvailability: route?.accountAvailability ?? undefined,
+    model: route?.modelId ?? last?.model,
+    profile: last?.harnessProfile,
+    reason: placementReason || (route ? `Qualified route ${route.qualificationVersion}` : 'Normal Agent Control placement; no model invocation reported'),
+  };
+}
 function emptyTelemetry(): WorkParcelTelemetry { return {inputTokens: null, freshInputTokens: null, cachedInputTokens: null, cacheWriteTokens: null, outputTokens: null, reasoningTokens: null, totalTokens: null, cost: null, currency: null, elapsedMs: 0}; }
 function aggregateTelemetry(records: ModelInvocationObservation[], start: string, end?: string): WorkParcelTelemetry { const sum = (selector: (record: ModelInvocationObservation) => number | null) => records.length && records.every(record => selector(record) !== null) ? records.reduce((total, record) => total + (selector(record) ?? 0), 0) : null; const providerCost = sum(record => record.providerReportedCost), calculated = sum(record => record.calculatedCost); return {inputTokens: sum(record => record.usage.inputTokens), freshInputTokens: sum(record => record.usage.freshInputTokens), cachedInputTokens: sum(record => record.usage.cachedInputTokens), cacheWriteTokens: sum(record => record.usage.cacheWriteTokens), outputTokens: sum(record => record.usage.outputTokens), reasoningTokens: sum(record => record.usage.reasoningTokens), totalTokens: sum(record => record.usage.totalProcessedTokens), cost: providerCost ?? calculated, currency: records.length && records.every(record => record.currency === records[0].currency) ? records[0].currency : null, elapsedMs: Math.max(0, Date.parse(end ?? now()) - Date.parse(start))}; }
 

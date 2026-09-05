@@ -1,0 +1,59 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import test from 'node:test';
+import {deriveRuntimeActionIntent, RuntimeSafetySupervisor, type RuntimeActionIntent} from './runtime-safety-supervisor.js';
+
+const intent = (overrides: Partial<RuntimeActionIntent> = {}): RuntimeActionIntent => ({
+  runId: 'run-1', parcelId: 'parcel-1', stageId: 'stage-1', stepId: 'step-1', actor: 'agent-control', action: 'inspect@1.0.0', goal: 'Inspect repository', categories: ['READ_ONLY'], filesystemScope: [], repositoryScope: [], remoteNodeIds: [], credentialReferences: [], externalDestinations: [], production: false, destructive: false, requestedCapabilities: ['repository.read'], ...overrides,
+});
+
+test('runtime safety allows bounded reads and audits scoped writes independently of executor intent', () => {
+  const supervisor = new RuntimeSafetySupervisor({id: 'test-policy', approvedRepositoryRoots: ['/fast/repos/project'], approvedFilesystemRoots: ['/fast/work']});
+  assert.equal(supervisor.assess(intent()).outcome, 'ALLOW');
+  const write = supervisor.assess(intent({stepId: 'write', action: 'repository.write', categories: ['REPOSITORY_WRITE'], repositoryScope: ['/fast/repos/project/src']}));
+  assert.equal(write.outcome, 'ALLOW_WITH_AUDIT');
+  assert.equal(write.policyId, 'test-policy');
+});
+
+test('normalized scope checks deny traversal, prefix confusion, relative paths and out-of-scope Windows paths', () => {
+  const supervisor = new RuntimeSafetySupervisor({id: 'scopes', approvedRepositoryRoots: ['/fast/repos/project', 'C:\\Users\\Loz\\project']});
+  assert.equal(supervisor.assess(intent({stepId: 'traversal', repositoryScope: ['/fast/repos/project/../secrets']})).outcome, 'DENY');
+  assert.equal(supervisor.assess(intent({stepId: 'prefix', repositoryScope: ['/fast/repos/project-evil']})).outcome, 'DENY');
+  assert.equal(supervisor.assess(intent({stepId: 'relative', repositoryScope: ['src']})).outcome, 'DENY');
+  assert.equal(supervisor.assess(intent({stepId: 'windows-ok', repositoryScope: ['c:\\users\\loz\\project\\src']})).outcome, 'ALLOW');
+  assert.equal(supervisor.assess(intent({stepId: 'windows-bad', repositoryScope: ['C:\\Users\\Loz\\elsewhere']})).outcome, 'DENY');
+});
+
+test('destructive and production actions pause for explicit approval and approval survives restart', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-safety-')), file = path.join(root, 'safety.json'), supervisor = new RuntimeSafetySupervisor({id: 'approval-policy'}, file, () => '2026-09-05T10:00:00Z');
+  const decision = supervisor.assess(intent({stepId: 'remove', action: 'repository.delete', categories: ['DESTRUCTIVE'], destructive: true}));
+  assert.equal(decision.outcome, 'REQUIRE_APPROVAL');
+  assert.match(decision.approvalId ?? '', /^runtime-safety:/);
+  assert.equal(supervisor.approve(decision.id, 'operator').outcome, 'ALLOW_WITH_AUDIT');
+  const restored = new RuntimeSafetySupervisor({id: 'approval-policy'}, file);
+  assert.equal(restored.list()[0].outcome, 'ALLOW_WITH_AUDIT');
+  assert.ok(restored.list()[0].evidence.includes('approval:operator'));
+});
+
+test('plain credentials fail closed before redaction while opaque environment references remain allowed', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-safety-secret-')), file = path.join(root, 'safety.json'), supervisor = new RuntimeSafetySupervisor({id: 'secret-policy'}, file);
+  const derived = deriveRuntimeActionIntent({runId: 'run-secret', stepId: 'step-secret', actor: 'agent-control', action: 'provider.auth', goal: 'Qualify provider', parameters: {apiKey: 'sk-proj-abcdefghijklmnop'}, requestedCapabilities: ['credential.use'], resources: []});
+  assert.equal(derived.sensitiveMaterialDetected, true);
+  const denied = supervisor.assess(derived);
+  assert.equal(denied.outcome, 'DENY');
+  assert.match(denied.reason, /Plain credential material/);
+  const safe = supervisor.assess(intent({runId: 'run-reference', stepId: 'step-reference', categories: ['CREDENTIAL_USE'], credentialReferences: ['OPENAI_API_KEY'], requestedCapabilities: ['credential.use']}));
+  assert.equal(safe.outcome, 'ALLOW_WITH_AUDIT');
+  const persisted = fs.readFileSync(file, 'utf8');
+  assert.doesNotMatch(persisted, /sk-proj-abcdefghijklmnop/);
+  assert.match(persisted, /Plain credential material is forbidden/);
+});
+
+test('remote nodes and external communication obey separate policy dimensions', () => {
+  const supervisor = new RuntimeSafetySupervisor({id: 'remote-policy', approvedRemoteNodes: ['msi'], requireApprovalForExternalCommunication: true});
+  assert.equal(supervisor.assess(intent({stepId: 'remote-ok', categories: ['REMOTE_NODE'], remoteNodeIds: ['msi']})).outcome, 'ALLOW_WITH_AUDIT');
+  assert.equal(supervisor.assess(intent({stepId: 'remote-bad', categories: ['REMOTE_NODE'], remoteNodeIds: ['unknown']})).outcome, 'DENY');
+  assert.equal(supervisor.assess(intent({stepId: 'message', categories: ['EXTERNAL_COMMUNICATION'], externalDestinations: ['https://example.test']})).outcome, 'REQUIRE_APPROVAL');
+});

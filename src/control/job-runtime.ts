@@ -6,6 +6,7 @@ import {effectiveParameters, nextCronOccurrence, type JobCatalog} from './job-ca
 import {jobPriorityRank, type ActionFailureClass, type ActionHandler, type ActionOutput, type AgentActionHandler, type ArtifactRecord, type PlacementRationale, type RecoveryFailureKind, type RetryPolicy, type RunRecord, type RunStatus, type ScheduleState, type StepAttempt, type StepStatus, type WorkerRegistration} from './job-types.js';
 import type {HarnessEfficiencyLedgerPort, InvocationFinalResult} from './harness-efficiency.js';
 import {OwnedProcessManager, type ExecutionCleanupReport} from './owned-process.js';
+import {deriveRuntimeActionIntent, type RuntimeSafetySupervisorPort} from './runtime-safety-supervisor.js';
 
 function writeJsonAtomic(file: string, value: unknown) { fs.mkdirSync(path.dirname(file), {recursive: true}); const temporary = `${file}.tmp`; fs.writeFileSync(temporary, `${JSON.stringify(value, null, 2)}\n`, {mode: 0o600}); fs.renameSync(temporary, file); }
 function now() { return new Date().toISOString(); }
@@ -111,14 +112,15 @@ export class RunLedger {
   private save() { writeJsonAtomic(this.file, {version: 1, runs: this.list(), schedules: this.scheduleStates()} satisfies LedgerSnapshot); }
 }
 
-export interface JobRuntimeOptions {now?: () => Date; approval?: (policy: string, run: RunRecord) => boolean; efficiency?: HarnessEfficiencyLedgerPort; defaultRecoveryDeadlineSeconds?: number;}
+export interface JobRuntimeOptions {now?: () => Date; approval?: (policy: string, run: RunRecord) => boolean; efficiency?: HarnessEfficiencyLedgerPort; safety?: RuntimeSafetySupervisorPort; defaultRecoveryDeadlineSeconds?: number;}
 export interface JobDispatch {runId: string; completion: Promise<RunRecord | undefined>;}
 export class JobRuntime {
   private readonly controllers = new Map<string, AbortController>();
   private readonly clock: () => Date;
-  constructor(readonly catalog: JobCatalog, readonly actions: ActionRegistry, readonly workers: WorkerRegistry, readonly ledger: RunLedger, readonly artifacts: ArtifactStore, readonly locks: ResourceLockManager, options: JobRuntimeOptions = {}) { this.clock = options.now ?? (() => new Date()); this.approval = options.approval ?? (() => false); this.efficiency = options.efficiency; this.defaultRecoveryDeadlineSeconds = options.defaultRecoveryDeadlineSeconds ?? 900; }
+  constructor(readonly catalog: JobCatalog, readonly actions: ActionRegistry, readonly workers: WorkerRegistry, readonly ledger: RunLedger, readonly artifacts: ArtifactStore, readonly locks: ResourceLockManager, options: JobRuntimeOptions = {}) { this.clock = options.now ?? (() => new Date()); this.approval = options.approval ?? (() => false); this.efficiency = options.efficiency; this.safety = options.safety; this.defaultRecoveryDeadlineSeconds = options.defaultRecoveryDeadlineSeconds ?? 900; }
   private readonly approval: (policy: string, run: RunRecord) => boolean;
   private readonly efficiency?: HarnessEfficiencyLedgerPort;
+  readonly safety?: RuntimeSafetySupervisorPort;
   private readonly defaultRecoveryDeadlineSeconds: number;
 
   createRun(jobReference: string, parameters: Record<string, unknown>, trigger: RunRecord['trigger'], scheduledAt?: string) {
@@ -168,7 +170,8 @@ export class JobRuntime {
   }
 
   setScheduleEnabled(id: string, enabled: boolean) { const definition = this.catalog.schedule(id); if (!definition) throw new Error('schedule_missing'); const at = this.clock(), current = this.ledger.schedule(id); return this.ledger.saveSchedule({scheduleId: id, enabled, previousScheduledAt: current?.previousScheduledAt, nextScheduledAt: enabled ? nextCronOccurrence(definition.spec.cron, definition.spec.timezone, at).toISOString() : current?.nextScheduledAt, lastRunId: current?.lastRunId, lastSuccessAt: current?.lastSuccessAt, lastFailureAt: current?.lastFailureAt, lastError: current?.lastError, missedCount: current?.missedCount ?? 0, updatedAt: at.toISOString()}); }
-  approve(runId: string, policy: string) { const run = this.mustRun(runId), waiting = run.steps.filter(step => step.status === 'WAITING_FOR_APPROVAL' && step.approval === policy); if (!waiting.length) throw new Error('approval_policy_not_waiting'); if (!run.approvals.includes(policy)) run.approvals.push(policy); for (const step of waiting) { step.status = 'QUEUED'; step.waitingReason = undefined; } return this.ledger.update(run, 'run.approved'); }
+  approve(runId: string, policy: string, actor = 'operator') { const run = this.mustRun(runId), waiting = run.steps.filter(step => step.status === 'WAITING_FOR_APPROVAL' && step.approval === policy); if (!waiting.length) throw new Error('approval_policy_not_waiting'); const safetyDecision = this.safety?.list().find(item => item.approvalId === policy && item.runId === runId); if (safetyDecision) this.safety!.approve(safetyDecision.id, actor); if (!run.approvals.includes(policy)) run.approvals.push(policy); for (const step of waiting) { step.status = 'QUEUED'; step.waitingReason = undefined; } return this.ledger.update(run, 'run.approved', {policy, actor}); }
+  safetyDecisions(runId?: string) { return (this.safety?.list() ?? []).filter(item => !runId || item.runId === runId); }
   cancel(runId: string, reason = 'operator_cancelled', replacedByRunId?: string) {
     const run = this.mustRun(runId); if (!ACTIVE_RUNS.includes(run.status)) return run;
     if (['CLEANUP_UNCERTAIN', 'DISCONNECTED'].includes(run.status) && !this.controllers.has(runId)) return run;
@@ -214,7 +217,15 @@ export class JobRuntime {
     if (!lock.ok) { const reason = `Held by ${lock.blocked.map(item => `${item.resource}:${item.runId}`).join(', ')}`, changed = step.status !== 'WAITING_FOR_RESOURCE' || step.waitingReason !== reason || run.status !== 'WAITING'; step.status = 'WAITING_FOR_RESOURCE'; step.waitingReason = reason; run.status = 'WAITING'; if (changed) this.ledger.update(run, 'step.waiting_resource'); return; }
     const required = step.capabilityRequest.requires.map(item => item.id), resolution = this.workers.resolve(required, this.clock()), previousPlacement = JSON.stringify(step.placement); step.placement = resolution.rationale;
     if (!resolution.worker) { const reason = `No worker satisfies ${required.join(', ')}`, changed = step.status !== 'WAITING_FOR_WORKER' || step.waitingReason !== reason || run.status !== 'WAITING' || previousPlacement !== JSON.stringify(resolution.rationale); step.status = 'WAITING_FOR_WORKER'; step.waitingReason = reason; run.status = 'WAITING'; this.locks.release(run.id, step.id); if (changed) this.ledger.update(run, 'step.waiting_worker'); return; }
-    const worker = resolution.worker, controller = new AbortController(), ownedExecution = new OwnedProcessManager(), definition = run.effectiveJob.spec.steps.find(item => item.id === step.id)!, retry = definition.retry ?? run.effectiveJob.spec.retry ?? {attempts: 0, backoffSeconds: 0}, attemptStartedAt = this.clock().toISOString();
+    const worker = resolution.worker, definition = run.effectiveJob.spec.steps.find(item => item.id === step.id)!;
+    if (this.safety) {
+      const decision = this.safety.assess(deriveRuntimeActionIntent({runId: run.id, parcelId: run.trigger.parcelContext?.parcelId, stageId: run.trigger.parcelContext?.stageId, stepId: step.id, actor: run.trigger.actor, action: step.action, goal: run.trigger.parcelContext?.currentInterpretation ?? run.effectiveJob.metadata.description ?? run.jobId, parameters: run.parameters, requestedCapabilities: required, resources: step.resources, workerId: worker.id}));
+      const safetyDetail = `${decision.outcome}:${decision.id}:${decision.reason}`; if (!run.provenance.some(item => item.type === 'runtime-safety' && item.detail === safetyDetail)) run.provenance.push({type: 'runtime-safety', at: decision.at, detail: safetyDetail});
+      if (decision.outcome === 'DENY') { const at = this.clock().toISOString(); step.status = 'FAILED'; step.error = `runtime_safety_denied:${decision.id}`; step.endedAt = at; this.cancelDependents(run, step.id); run.status = 'FAILED'; run.endedAt = at; run.errors.push(`${step.id}:policy:${step.error}`); this.locks.release(run.id, step.id); this.ledger.update(run, 'step.safety_denied', {decisionId: decision.id, outcome: decision.outcome, policyId: decision.policyId}); return; }
+      if (['REQUIRE_APPROVAL','PAUSE','ESCALATE'].includes(decision.outcome)) { step.status = 'WAITING_FOR_APPROVAL'; step.approval = decision.approvalId; step.waitingReason = `${decision.outcome}: ${decision.reason}`; run.status = 'WAITING'; this.locks.release(run.id, step.id); this.ledger.update(run, 'step.safety_waiting', {decisionId: decision.id, outcome: decision.outcome, policyId: decision.policyId, approvalId: decision.approvalId}); return; }
+      this.ledger.update(run, decision.outcome === 'ALLOW_WITH_AUDIT' ? 'step.safety_allowed_with_audit' : 'step.safety_allowed', {decisionId: decision.id, outcome: decision.outcome, policyId: decision.policyId});
+    }
+    const controller = new AbortController(), ownedExecution = new OwnedProcessManager(), retry = definition.retry ?? run.effectiveJob.spec.retry ?? {attempts: 0, backoffSeconds: 0}, attemptStartedAt = this.clock().toISOString();
     this.controllers.set(run.id, controller); this.workers.claim(worker.id); step.status = 'RUNNING'; step.waitingReason = undefined; step.nextAttemptAt = undefined; step.startedAt ??= attemptStartedAt; run.startedAt ??= step.startedAt; run.status = 'RUNNING';
     if (!run.selectedWorkers.includes(worker.id)) run.selectedWorkers.push(worker.id);
     if (retry.attempts > 0) { step.recoveryDeadlineAt ??= new Date(this.clock().getTime() + (retry.overallDeadlineSeconds ?? this.defaultRecoveryDeadlineSeconds) * 1000).toISOString(); step.remainingRetryBudget = Math.max(0, retry.attempts - step.attempts.length); }

@@ -9,6 +9,7 @@ import type {JobDefinition, ScheduleDefinition, WorkerRegistration} from './job-
 import {registerBrowserActions} from './browser-actions.js';
 import {registerReferenceActions} from './reference-actions.js';
 import {createInvocationStart, MemoryHarnessEfficiencyLedger, type HarnessEfficiencyLedgerPort} from './harness-efficiency.js';
+import {RuntimeSafetySupervisor} from './runtime-safety-supervisor.js';
 
 const worker = (id: string, capabilities: string[], health: WorkerRegistration['health'] = 'healthy', extra: Partial<WorkerRegistration> = {}): WorkerRegistration => ({id, capabilities, health, capacity: 1, active: 0, observedAt: new Date().toISOString(), ...extra});
 const job = (steps: JobDefinition['spec']['steps'], extra: Partial<JobDefinition['spec']> = {}): JobDefinition => ({apiVersion: 'agent-control/v1', kind: 'Job', metadata: {id: 'job', name: 'Job', version: '1.0.0'}, spec: {priority: 'normal', concurrency: 'no-overlap', steps, ...extra}});
@@ -75,6 +76,23 @@ test('step timeout terminates the owned process group including descendants', {s
   } finally { fs.rmSync(pidFile, {force: true}); }
 });
 test('worker registry explains protected-workload capability fencing without hiding safe inspection', () => { const registry = new WorkerRegistry(); registry.register(worker('managed', ['compute.intensive', 'managed-node.inspect'], 'healthy', {blockedCapabilities: ['compute.intensive']})); assert.match(registry.resolve(['compute.intensive']).rationale.rejected[0].reasons.join(','), /workload_blocked:compute\.intensive/); assert.equal(registry.resolve(['managed-node.inspect']).worker?.id, 'managed'); });
+
+test('production Job dispatch consults runtime safety, waits for approval, then resumes the same governed action', async () => {
+  let calls = 0; const setup = runtime(job([{id: 'remove', action: 'repository.delete@1.0.0', requires: ['repository.write']}], {parameters: {repoPath: {type: 'string', required: true}}}), actions => actions.register('repository.delete@1.0.0', async () => { calls++; return {}; }), [worker('worker', ['repository.write'])]);
+  const safety = new RuntimeSafetySupervisor({id: 'job-safety', approvedRepositoryRoots: ['/srv/agent-control-test/project']}, path.join(setup.root, 'safety.json'));
+  const governed = new JobRuntime(setup.catalog, setup.actions, setup.workers, setup.runtime.ledger, setup.runtime.artifacts, setup.runtime.locks, {approval: () => false, safety}), run = governed.createRun('job@1.0.0', {repoPath: '/srv/agent-control-test/project'}, {type: 'manual', actor: 'operator'});
+  await governed.tick(); const waiting = governed.ledger.get(run.id)!; assert.equal(waiting.status, 'WAITING'); assert.equal(waiting.steps[0].status, 'WAITING_FOR_APPROVAL'); assert.equal(calls, 0);
+  const approval = waiting.steps[0].approval!; governed.approve(run.id, approval, 'operator'); await governed.tick();
+  assert.equal(governed.ledger.get(run.id)?.status, 'SUCCEEDED'); assert.equal(calls, 1); assert.equal(safety.list()[0].outcome, 'ALLOW_WITH_AUDIT'); assert.ok(governed.ledger.get(run.id)?.provenance.some(item => item.type === 'runtime-safety'));
+});
+
+test('production Job dispatch fails closed before an out-of-scope action handler runs', async () => {
+  let calls = 0; const setup = runtime(job([{id: 'write', action: 'repository.write@1.0.0', requires: ['repository.write']}], {parameters: {repoPath: {type: 'string', required: true}}}), actions => actions.register('repository.write@1.0.0', async () => { calls++; return {}; }), [worker('worker', ['repository.write'])]);
+  const safety = new RuntimeSafetySupervisor({id: 'job-safety', approvedRepositoryRoots: ['/srv/agent-control-test/approved']}, path.join(setup.root, 'safety.json'));
+  const governed = new JobRuntime(setup.catalog, setup.actions, setup.workers, setup.runtime.ledger, setup.runtime.artifacts, setup.runtime.locks, {safety}), run = governed.createRun('job@1.0.0', {repoPath: '/srv/agent-control-test/approved/../forbidden'}, {type: 'manual', actor: 'operator'});
+  await governed.tick(); const failed = governed.ledger.get(run.id)!;
+  assert.equal(failed.status, 'FAILED'); assert.equal(failed.steps[0].status, 'FAILED'); assert.match(failed.steps[0].error ?? '', /runtime_safety_denied/); assert.equal(calls, 0); assert.equal(safety.list()[0].outcome, 'DENY');
+});
 test('reference workflow retains discovery artifact while publisher is unavailable then resumes across workers', async () => {
   const actions = registerReferenceActions(); registerBrowserActions(actions);
   actions.register('managed-node.inspect@1.0.0', async () => ({})); actions.register('managed-node.maintain@1.0.0', async () => ({}));

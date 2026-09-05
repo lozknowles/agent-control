@@ -2,6 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type {ModelConfig, ModelQualificationState, ModelRoutingConfig, ProviderAccountProfileConfig, ProviderConfig} from './config.js';
 import {accountCredentialResidency, accountProviderExecutionNode} from './provider-account-profile.js';
+import {normalizeCapabilityId, type CapabilityIntelligenceStore, type CapabilityRequirementAssessment} from './capability-intelligence.js';
+import type {ModelIntelligenceLedger, ModelLifecycleState, ModelWindowMetrics} from './model-intelligence.js';
 
 export interface ModelQualificationRecord {
   modelId: string;
@@ -16,7 +18,7 @@ export interface ModelQualificationRecord {
   evidence: string[];
   detail?: string;
 }
-export interface ModelRouteRequest {model?: string; modelRole?: string; accountProfile?: string; nodeId: string; workloadNodeId?: string; providerExecutionNodeId?: string; requiredCapabilities?: string[]; allowFallback?: boolean;}
+export interface ModelRouteRequest {model?: string; modelRole?: string; accountProfile?: string; nodeId: string; workloadNodeId?: string; providerExecutionNodeId?: string; requiredCapabilities?: string[]; allowFallback?: boolean; purpose?: 'EXECUTION' | 'QUALIFICATION';}
 export interface ModelRouteDecision {
   requestedModel: string | null;
   requestedRole: string | null;
@@ -37,7 +39,11 @@ export interface ModelRouteDecision {
   qualificationVersion: string;
   fallback: boolean;
   fallbackReason: string | null;
-  considered: Array<{modelId: string; accountProfileId: string | null; workloadNodeId: string; providerExecutionNodeId: string; credentialNodeId: string | null; nodeId: string; eligible: boolean; reasons: string[]}>;
+  requiredCapabilities?: string[];
+  nativeCapabilities?: string[];
+  emulatedCapabilities?: string[];
+  intelligence?: {state: ModelLifecycleState; metrics: ModelWindowMetrics; qualificationVersion: string; selectionBasis: string};
+  considered: Array<{modelId: string; accountProfileId: string | null; workloadNodeId: string; providerExecutionNodeId: string; credentialNodeId: string | null; nodeId: string; eligible: boolean; reasons: string[]; capabilityAssessment?: CapabilityRequirementAssessment[]; intelligence?: {state: ModelLifecycleState; metrics: ModelWindowMetrics; qualificationVersion: string}}>;
 }
 export interface AccountProfileQualificationRecord {providerId: string; accountProfileId: string; nodeId?: string; providerExecutionNodeId?: string; credentialNodeId?: string; state: ModelQualificationState; version: string; checkedAt: string; qualifiedAt?: string; capabilities: string[]; evidence: string[]; detail?: string;}
 export interface ProviderAccountProfileView {providerId: string; id: string; nodeId: string; providerExecutionNodeId: string; credentialNodeId: string; label: string; plan: string | null; planAuthority: ProviderAccountProfileConfig['planAuthority'] | null; capabilities: string[]; qualification: AccountProfileQualificationRecord; credentialConfigured: boolean; availability: 'AVAILABLE' | 'AUTH_REQUIRED' | 'UNQUALIFIED' | 'DEGRADED' | 'DISABLED';}
@@ -81,11 +87,12 @@ export class ModelRegistry {
   private providers = new Map<string, ProviderConfig>();
   private models = new Map<string, ModelConfig>();
   private routing: ModelRoutingConfig = {roles: {}};
-  constructor(providers: ProviderConfig[], models: ModelConfig[], routing: ModelRoutingConfig, readonly qualifications = new ModelQualificationStore(), readonly accountQualifications = new AccountProfileQualificationStore(), private readonly environment: NodeJS.ProcessEnv = process.env) { this.reload(providers, models, routing); }
+  constructor(providers: ProviderConfig[], models: ModelConfig[], routing: ModelRoutingConfig, readonly qualifications = new ModelQualificationStore(), readonly accountQualifications = new AccountProfileQualificationStore(), private readonly environment: NodeJS.ProcessEnv = process.env, readonly capabilityIntelligence?: CapabilityIntelligenceStore, readonly modelIntelligence?: ModelIntelligenceLedger) { this.reload(providers, models, routing); }
   reload(providers: ProviderConfig[], models: ModelConfig[], routing: ModelRoutingConfig) {
     this.providers = new Map(providers.map(provider => [provider.id, structuredClone(provider)]));
     this.models = new Map(models.map(model => [model.id, structuredClone(model)]));
     this.routing = structuredClone(routing);
+    this.harvestCapabilities();
   }
   provider(id: string) { const value = this.providers.get(id); return value ? structuredClone(value) : undefined; }
   model(id: string) { const value = this.models.get(id); return value ? structuredClone(value) : undefined; }
@@ -118,7 +125,7 @@ export class ModelRegistry {
   }
   setQualification(record: ModelQualificationRecord) {
     if (!this.models.has(record.modelId)) throw new Error('model_missing');
-    return this.qualifications.set(record);
+    const value = this.qualifications.set(record); this.harvestModelCapabilities(this.models.get(record.modelId)!, value); return value;
   }
   accountQualification(providerId: string, accountProfileId: string): AccountProfileQualificationRecord {
     const provider = this.providers.get(providerId), account = provider?.accountProfiles?.find(value => value.id === accountProfileId);
@@ -126,7 +133,7 @@ export class ModelRegistry {
     const providerExecutionNodeId = accountProviderExecutionNode(account), credentialNodeId = accountCredentialResidency(account).nodeId;
     return this.accountQualifications.get(providerId, accountProfileId) ?? {providerId, accountProfileId, nodeId: providerExecutionNodeId, providerExecutionNodeId, credentialNodeId, state: account.enabled === false ? 'DISABLED' : account.qualification?.state ?? 'UNTESTED', version: account.qualification?.version ?? 'configured-v1', checkedAt: account.qualification?.checkedAt ?? account.qualification?.qualifiedAt ?? new Date(0).toISOString(), ...(account.qualification?.qualifiedAt ? {qualifiedAt: account.qualification.qualifiedAt} : {}), capabilities: [...(account.qualification?.state === 'QUALIFIED' ? account.qualification.capabilities ?? account.capabilities ?? [] : [])], evidence: [...(account.qualification?.evidence ?? [])], ...(account.qualification?.detail ? {detail: account.qualification.detail} : {})};
   }
-  setAccountQualification(record: AccountProfileQualificationRecord) { const account = this.accountProfile(record.providerId, record.accountProfileId); if (!account) throw new Error('account_profile_missing'); const executionNode = accountProviderExecutionNode(account), credentialNode = accountCredentialResidency(account).nodeId; if ((record.providerExecutionNodeId ?? record.nodeId ?? 'controller') !== executionNode) throw new Error('account_profile_qualification_execution_node_mismatch'); if ((record.credentialNodeId ?? credentialNode) !== credentialNode) throw new Error('account_profile_qualification_credential_node_mismatch'); return this.accountQualifications.set({...record, nodeId: executionNode, providerExecutionNodeId: executionNode, credentialNodeId: credentialNode}); }
+  setAccountQualification(record: AccountProfileQualificationRecord) { const account = this.accountProfile(record.providerId, record.accountProfileId); if (!account) throw new Error('account_profile_missing'); const executionNode = accountProviderExecutionNode(account), credentialNode = accountCredentialResidency(account).nodeId; if ((record.providerExecutionNodeId ?? record.nodeId ?? 'controller') !== executionNode) throw new Error('account_profile_qualification_execution_node_mismatch'); if ((record.credentialNodeId ?? credentialNode) !== credentialNode) throw new Error('account_profile_qualification_credential_node_mismatch'); const value = this.accountQualifications.set({...record, nodeId: executionNode, providerExecutionNodeId: executionNode, credentialNodeId: credentialNode}); this.harvestAccountCapabilities(value); return value; }
   route(request: ModelRouteRequest): ModelRouteDecision {
     const requestedRole = request.modelRole ?? (!request.model ? this.routing.defaultRole : undefined);
     const candidates = request.model ? [request.model] : requestedRole ? this.expandRole(requestedRole) : [];
@@ -134,16 +141,19 @@ export class ModelRegistry {
     const roleCapabilities = requestedRole ? this.routing.roles[requestedRole]?.requires ?? [] : [];
     const effectiveRequest = {...request, requiredCapabilities: [...new Set([...roleCapabilities, ...(request.requiredCapabilities ?? [])])]};
     const considered = candidates.map(modelId => this.eligibility(modelId, effectiveRequest));
-    const selectedIndex = considered.findIndex(item => item.eligible);
+    const preferred = considered.map((item, index) => ({item, index})).filter(value => value.item.eligible && value.item.intelligence?.state === 'PREFERRED').sort((left, right) => historicalRouteScore(right.item.intelligence!.metrics) - historicalRouteScore(left.item.intelligence!.metrics) || left.index - right.index);
+    const selectedIndex = preferred[0]?.index ?? considered.findIndex(item => item.eligible);
     if (selectedIndex < 0) throw Object.assign(new Error('model_route_unavailable'), {considered});
     if (selectedIndex > 0 && request.allowFallback === false) throw Object.assign(new Error('model_fallback_disabled'), {considered});
-    const selected = this.models.get(considered[selectedIndex].modelId)!, provider = this.providers.get(selected.provider)!, account = selected.accountProfile ? provider.accountProfiles?.find(value => value.id === selected.accountProfile) : undefined;
+    const selectedAssessment = considered[selectedIndex], selected = this.models.get(selectedAssessment.modelId)!, provider = this.providers.get(selected.provider)!, account = selected.accountProfile ? provider.accountProfiles?.find(value => value.id === selected.accountProfile) : undefined;
     const qualification = this.qualification(selected), accountView = account ? this.accountView(provider, account) : undefined;
     const providerExecutionNodeId = account ? accountProviderExecutionNode(account) : request.providerExecutionNodeId ?? (request.workloadNodeId === undefined ? request.nodeId : qualification.nodes[0] ?? selected.nodes?.[0] ?? request.nodeId);
     return {
       requestedModel: request.model ?? null, requestedRole: requestedRole ?? null, modelId: selected.id, providerId: selected.provider, accountProfileId: account?.id ?? null, accountLabel: account?.label ?? null, accountPlan: account?.plan ?? null, accountPlanAuthority: account?.planAuthority ?? null, accountQualification: accountView?.qualification.state ?? null, accountAvailability: accountView?.availability ?? null,
-      providerModel: selected.providerModel, workloadNodeId: request.workloadNodeId ?? request.nodeId, providerExecutionNodeId, credentialNodeId: account ? accountCredentialResidency(account).nodeId : null, nodeId: providerExecutionNodeId, qualificationVersion: qualification.version,
+      providerModel: selected.providerModel, workloadNodeId: request.workloadNodeId ?? request.nodeId, providerExecutionNodeId, credentialNodeId: account ? accountCredentialResidency(account).nodeId : null, nodeId: providerExecutionNodeId, qualificationVersion: qualification.state === 'QUALIFIED' ? qualification.version : selectedAssessment.intelligence?.qualificationVersion ?? qualification.version,
       fallback: selectedIndex > 0, fallbackReason: selectedIndex > 0 ? considered.slice(0, selectedIndex).map(item => `${item.modelId}:${item.reasons.join('+')}`).join(',') : null,
+      requiredCapabilities: effectiveRequest.requiredCapabilities.map(normalizeCapabilityId), nativeCapabilities: selectedAssessment.capabilityAssessment?.filter(item => item.satisfied && item.implementation === 'NATIVE').map(item => item.capabilityId) ?? [], emulatedCapabilities: selectedAssessment.capabilityAssessment?.filter(item => item.satisfied && item.implementation === 'AGENT_CONTROL_EMULATED').map(item => item.capabilityId) ?? [],
+      ...(selectedAssessment.intelligence ? {intelligence: {...selectedAssessment.intelligence, selectionBasis: selectedAssessment.intelligence.state === 'PREFERRED' ? 'human-approved preferred route with historical verified economics' : 'configured route order'}} : {}),
       considered,
     };
   }
@@ -158,11 +168,11 @@ export class ModelRegistry {
     const reasons: string[] = [], model = this.models.get(modelId);
     const workloadNodeId = request.workloadNodeId ?? request.nodeId;
     if (!model) return {modelId, accountProfileId: null, workloadNodeId, providerExecutionNodeId: request.providerExecutionNodeId ?? request.nodeId, credentialNodeId: null, nodeId: request.providerExecutionNodeId ?? request.nodeId, eligible: false, reasons: ['unknown-model']};
-    const provider = this.providers.get(model.provider), qualification = this.qualification(model), capabilities = new Set(qualification.capabilities);
+    const provider = this.providers.get(model.provider), qualification = this.qualification(model), capabilities = new Set(qualification.capabilities.map(normalizeCapabilityId));
     if (provider?.enabled === false) reasons.push('provider-disabled');
     if (!provider) reasons.push('provider-missing');
+    const qualificationRun = request.purpose === 'QUALIFICATION';
     if (model.enabled === false || qualification.state === 'DISABLED') reasons.push('model-disabled');
-    if (qualification.state !== 'QUALIFIED') reasons.push(`qualification-${qualification.state.toLowerCase()}`);
     const account = model.accountProfile ? provider?.accountProfiles?.find(value => value.id === model.accountProfile) : undefined;
     if (request.accountProfile && model.accountProfile !== request.accountProfile) reasons.push('account-profile-policy-mismatch');
     if (model.accountProfile && !account) reasons.push('account-profile-missing');
@@ -177,10 +187,14 @@ export class ModelRegistry {
       else if (accountQualification.state !== 'QUALIFIED') reasons.push(`account-profile-qualification-${accountQualification.state.toLowerCase()}`);
     }
     const executionNode = account ? accountProviderExecutionNode(account) : request.providerExecutionNodeId ?? (request.workloadNodeId === undefined ? request.nodeId : qualification.nodes[0] ?? model.nodes?.[0] ?? request.nodeId), credentialNode = account ? accountCredentialResidency(account).nodeId : null;
+    const intelligence = this.intelligenceFor(model, executionNode), historicallyQualified = Boolean(this.capabilityIntelligence && intelligence && ['QUALIFIED','PREFERRED'].includes(intelligence.state));
+    if (qualificationRun ? !['UNTESTED','QUALIFYING','QUALIFIED','DEGRADED'].includes(qualification.state) : qualification.state !== 'QUALIFIED' && !historicallyQualified) reasons.push(`qualification-${qualification.state.toLowerCase()}`);
     const nodes = qualification.nodes.length ? qualification.nodes : model.nodes ?? [];
     if (nodes.length && !nodes.includes(executionNode)) reasons.push('provider-execution-node-unavailable');
-    for (const required of request.requiredCapabilities ?? []) if (!capabilities.has(required)) reasons.push(`capability-${required}-unproven`);
-    return {modelId, accountProfileId: model.accountProfile ?? null, workloadNodeId, providerExecutionNodeId: executionNode, credentialNodeId: credentialNode, nodeId: executionNode, eligible: reasons.length === 0, reasons};
+    const capabilityAssessment = this.capabilityIntelligence?.assess({providerId: model.provider, modelId: model.id, ...(model.accountProfile ? {accountProfileId: model.accountProfile} : {}), runtimeId: provider?.kind, nodeId: executionNode}, request.requiredCapabilities ?? [], {allowEmulated: true, verifiedOnly: !qualificationRun});
+    if (capabilityAssessment) for (const assessment of capabilityAssessment) { if (!assessment.satisfied) reasons.push(`capability-${assessment.capabilityId}-${assessment.reason}`); }
+    else for (const required of request.requiredCapabilities ?? []) if (!(qualificationRun ? new Set(model.capabilities.map(normalizeCapabilityId)) : capabilities).has(normalizeCapabilityId(required))) reasons.push(`capability-${required}-unproven`);
+    return {modelId, accountProfileId: model.accountProfile ?? null, workloadNodeId, providerExecutionNodeId: executionNode, credentialNodeId: credentialNode, nodeId: executionNode, eligible: reasons.length === 0, reasons, ...(capabilityAssessment ? {capabilityAssessment} : {}), ...(intelligence ? {intelligence} : {})};
   }
   private accountView(provider: ProviderConfig, account: ProviderAccountProfileConfig): ProviderAccountProfileView {
     const qualification = this.accountQualification(provider.id, account.id), credentialConfigured = this.credentialConfigured(account, qualification);
@@ -199,9 +213,35 @@ export class ModelRegistry {
     try { return residency.store.type === 'codex-home-env' ? fs.statSync(value).isDirectory() : fs.statSync(value).isFile(); } catch { return false; }
   }
   private rolesFor(modelId: string) { return Object.entries(this.routing.roles).filter(([, route]) => [route.primary, ...(route.fallback ?? [])].includes(modelId)).map(([role]) => role); }
+  private harvestCapabilities() {
+    if (!this.capabilityIntelligence) return;
+    for (const provider of this.providers.values()) for (const capability of provider.capabilities ?? []) this.observeCapability({id: `provider-config:${provider.id}:${normalizeCapabilityId(capability)}`, capability, subject: {providerId: provider.id, runtimeId: provider.kind}, verified: false, evidence: [`provider-config:${provider.id}`], source: 'ADAPTER'});
+    for (const model of this.models.values()) this.harvestModelCapabilities(model, this.qualification(model));
+    for (const record of this.accountQualifications.list()) this.harvestAccountCapabilities(record);
+  }
+  private harvestModelCapabilities(model: ModelConfig, qualification: ModelQualificationRecord) {
+    if (!this.capabilityIntelligence) return; const verified = qualification.state === 'QUALIFIED', capabilities = verified ? qualification.capabilities : model.capabilities;
+    for (const capability of capabilities) this.observeCapability({id: `model-${verified ? 'qualification' : 'config'}:${model.id}:${qualification.version}:${normalizeCapabilityId(capability)}`, capability, subject: {providerId: model.provider, modelId: model.id, ...(model.accountProfile ? {accountProfileId: model.accountProfile} : {})}, verified, evidence: qualification.evidence.length ? qualification.evidence : [`model-config:${model.id}`], source: verified ? 'QUALIFICATION' : 'ADAPTER', qualifiedAt: verified ? qualification.qualifiedAt ?? qualification.checkedAt : undefined});
+  }
+  private harvestAccountCapabilities(record: AccountProfileQualificationRecord) {
+    if (!this.capabilityIntelligence) return; for (const capability of record.capabilities) this.observeCapability({id: `account-qualification:${record.providerId}:${record.accountProfileId}:${record.version}:${normalizeCapabilityId(capability)}`, capability, subject: {providerId: record.providerId, accountProfileId: record.accountProfileId, nodeId: record.providerExecutionNodeId ?? record.nodeId}, verified: record.state === 'QUALIFIED', evidence: record.evidence, source: 'QUALIFICATION', qualifiedAt: record.qualifiedAt});
+  }
+  private observeCapability(input: {id: string; capability: string; subject: {providerId: string; modelId?: string; accountProfileId?: string; runtimeId?: string; nodeId?: string}; verified: boolean; evidence: string[]; source: 'ADAPTER' | 'QUALIFICATION'; qualifiedAt?: string}) {
+    if (!this.capabilityIntelligence || this.capabilityIntelligence.listObservations().some(item => item.id === input.id)) return;
+    this.capabilityIntelligence.observe({id: input.id, capabilityId: input.capability, subject: input.subject, support: 'SUPPORTED', implementation: 'NATIVE', verification: input.verified ? 'VERIFIED' : 'UNVERIFIED', confidence: input.verified ? 1 : .5, ...(input.qualifiedAt ? {qualifiedAt: input.qualifiedAt} : {}), limitations: input.verified ? [] : ['Configured or advertised capability has not completed qualification'], evidence: input.evidence, source: input.source, adapterCapability: input.capability});
+  }
+  private intelligenceFor(model: ModelConfig, nodeId: string) {
+    const route = this.modelIntelligence?.projection().routes.filter(item => item.identity.providerId === model.provider && item.identity.modelId === model.id && item.identity.nodeId === nodeId && (item.identity.accountProfileId ?? null) === (model.accountProfile ?? null)).sort((left, right) => right.current.completed - left.current.completed)[0];
+    if (!route || !this.modelIntelligence) return undefined;
+    const latest = this.modelIntelligence.attemptsList({routeKey: route.routeKey}).at(-1);
+    const qualificationVersion = latest ? `model-intelligence:${latest.suiteId}@${latest.suiteVersion}:${latest.suiteSha256.slice(0, 16)}` : `model-intelligence:${route.routeKey}`;
+    return {state: route.state, metrics: route.current, qualificationVersion};
+  }
 }
 
 function key(providerId: string, accountProfileId: string) { return `${providerId}\u0000${accountProfileId}`; }
+
+function historicalRouteScore(metrics: ModelWindowMetrics) { return (metrics.quality ?? 0) * 4 + (metrics.reliability ?? 0) * 3 + (metrics.costPerSuccessfulTask === null ? 0 : 1 / (1 + metrics.costPerSuccessfulTask)) + (metrics.timePerSuccessfulTaskMs === null ? 0 : 1 / (1 + metrics.timePerSuccessfulTaskMs / 1_000)); }
 
 function safeProvider(provider: ProviderConfig) {
   return {id: provider.id, name: provider.name ?? provider.id, kind: provider.kind, enabled: provider.enabled !== false, baseUrl: provider.baseUrl, wireApi: provider.wireApi, auth: provider.auth ? {type: provider.auth.type, configured: provider.auth.type === 'none' || Boolean(provider.auth.env && process.env[provider.auth.env])} : undefined, capabilities: [...(provider.capabilities ?? [])]};

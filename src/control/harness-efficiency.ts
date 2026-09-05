@@ -371,8 +371,8 @@ export function calculateInvocationCost(usage: NormalizedProviderUsage, pricing?
   if (!pricing) return null;
   const fresh = usage.freshInputTokens;
   if (fresh === null || usage.outputTokens === null) return null;
-  if (usage.cachedInputTokens !== null && pricing.cachedInputPerMillionTokens === undefined) return null;
-  if (usage.cacheWriteTokens !== null && pricing.cacheWritePerMillionTokens === undefined) return null;
+  if ((usage.cachedInputTokens ?? 0) > 0 && pricing.cachedInputPerMillionTokens === undefined) return null;
+  if ((usage.cacheWriteTokens ?? 0) > 0 && pricing.cacheWritePerMillionTokens === undefined) return null;
   if (usage.reasoningTokens !== null && pricing.reasoningPerMillionTokens === undefined && usage.reasoningTokens > 0) return null;
   return (pricing.fixedPerRequest ?? 0)
     + fresh * pricing.freshInputPerMillionTokens / 1_000_000
