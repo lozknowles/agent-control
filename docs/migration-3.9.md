@@ -31,7 +31,7 @@ The frozen suite is [`../config/qualification-suite-v1.json`](../config/qualific
 From the reviewed 3.9 package or checkout:
 
 ```bash
-npm ci
+npm install --no-package-lock --ignore-scripts
 npm run check
 npm pack --dry-run
 agent-control --version
