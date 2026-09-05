@@ -2,8 +2,13 @@ const parameterizedJobView={definitions:[],saved:[],schedules:[],runs:[],selecte
 const parameterizedBaseRefresh=refresh;
 let parameterizedRefreshInFlight=null,parameterizedRefreshPending=false;
 
-async function refreshParameterizedOnce(){await parameterizedBaseRefresh();await loadParameterizedJobs()}
+async function refreshParameterizedOnce(){await parameterizedBaseRefresh();try{await loadParameterizedJobs()}catch(error){renderParameterizedUnavailable(error)}}
 refresh=async()=>{if(parameterizedRefreshInFlight){parameterizedRefreshPending=true;return parameterizedRefreshInFlight}parameterizedRefreshInFlight=(async()=>{do{parameterizedRefreshPending=false;await refreshParameterizedOnce()}while(parameterizedRefreshPending)})();try{return await parameterizedRefreshInFlight}finally{parameterizedRefreshInFlight=null}};
+
+function renderParameterizedUnavailable(error){
+  const detail=error instanceof Error?error.message:String(error),message=`This optional projection is unavailable (${detail}). Core Job, Work Parcel and live event-stream controls remain active.`;
+  for(const id of['job-platform-definitions','job-platform-saved','job-platform-schedules','job-platform-runs']){const root=document.querySelector(`#${id}`);if(root)root.innerHTML=`<div class="job-platform-empty">${esc(message)}</div>`}
+}
 
 async function loadParameterizedJobs(){
   const urls=['/api/job-definitions','/api/saved-jobs','/api/job-schedules','/api/job-runs'];
