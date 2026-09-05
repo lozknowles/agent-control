@@ -16,7 +16,7 @@ const mdns = (pairing = [], connect = []) => [
 ].join('\n');
 const devices = entries => ['List of devices attached', ...entries.map(([serial, state = 'device']) => `${serial}\t${state} product:test model:test`), ''].join('\n');
 
-function fixture({available = true, pairing = [], connect = [], connected = [], pairCode = 0, connectCodes = [0], rotateTo, leak, attemptState = createMemoryAttemptStore(), nativeMdnsCode = 0, rawServices = []} = {}) {
+function fixture({available = true, pairing = [], connect = [], connected = [], pairCode = 0, connectCodes = [0], rotateTo, leak, attemptState = createMemoryAttemptStore(), nativeMdnsCode = 0, rawServices = [], targetSerial = 'device-one'} = {}) {
   const calls = [];
   let endpoints = [...connect], current = [...connected], connects = 0, pairs = 0, discoveries = 0;
   const run = async (_command, args, options = {}) => {
@@ -27,6 +27,11 @@ function fixture({available = true, pairing = [], connect = [], connected = [], 
     if (args[0] === '-s' && args[2] === 'get-state') {
       const found = current.find(([endpoint, state = 'device']) => endpoint === args[1] && state === 'device');
       return found ? {code: 0, stdout: 'device\n', stderr: ''} : {code: 1, stdout: '', stderr: 'not connected'};
+    }
+    if (args[0] === '-s' && args[2] === 'shell' && args[3] === 'getprop') {
+      const values = {'ro.product.manufacturer': 'Fixture', 'ro.product.model': 'Fixture Phone', 'ro.product.device': 'fixture', 'ro.build.version.release': '17', 'ro.build.version.sdk': '37', 'ro.serialno': targetSerial};
+      const value = values[args[4]];
+      return value ? {code: 0, stdout: `${value}\n`, stderr: ''} : {code: 1, stdout: '', stderr: 'property unavailable'};
     }
     if (args[0] === 'pair') { pairs++; return {code: pairCode, stdout: pairCode ? '' : `Successfully paired ${leak ?? ''}`, stderr: pairCode ? `failed ${leak ?? ''}` : ''}; }
     if (args[0] === 'connect') {
@@ -102,8 +107,18 @@ test('an already connected endpoint is verified idempotently with target get-sta
   const result = await value.helper.ensureConnected();
   assert.equal(result.action, 'already-connected');
   assert.equal(result.verification.qualified, true);
+  assert.equal(result.verification.target.model, 'Fixture Phone');
+  assert.match(result.verification.target.serialSha256, /^[a-f0-9]{64}$/);
   assert.ok(value.calls.some(call => call.args.join(' ') === '-s 192.0.2.2:45231 get-state'));
   assert.deepEqual(value.counts(), {connects: 0, pairs: 0});
+});
+
+test('a reachable ADB endpoint whose fixed properties do not match the advertised service fails closed', async () => {
+  const value = fixture({connect: [service('192.0.2.2:45231', 'adb-another-device')], connected: [['192.0.2.2:45231']], targetSerial: 'device-one'});
+  const result = await value.helper.status();
+  assert.equal(result.usableLocalDeviceConnected, false);
+  assert.equal(result.verification.qualified, false);
+  assert.equal(result.verification.reason, 'service-device-identity-mismatch');
 });
 
 test('changed connection endpoint is rediscovered only for the same service identity', async () => {
