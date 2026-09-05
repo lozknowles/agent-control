@@ -1,0 +1,11 @@
+{
+  "classification": "Actual existing asynchronous speech-provider generation; not a newly delivered WhatsApp message",
+  "mime": "audio/ogg; codecs=opus",
+  "bytes": 12802,
+  "sha256": "758c20188f9e0df7270ede2aa46c3bfeadc817628382833dc616f4358e6c578d",
+  "elapsedMs": 1243.377209000755,
+  "health": {
+    "state": "ready",
+    "checkedAt": "2026-09-05T21:15:41.920Z"
+  }
+}

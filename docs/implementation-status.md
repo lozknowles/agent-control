@@ -6,6 +6,7 @@ This document is generated from `config/implementation-status.json`. Update the 
 
 | Capability | Status | Executable truth | Remaining boundary |
 | --- | --- | --- | --- |
+| Provider-neutral realtime voice session primitives (`voice.realtime-sessions`) | **PARTIAL** | Experimental durable session lifecycle, bounded PCM/VAD, cancellation epochs, explicit identity bindings, governed orchestration port, buffered speech bridge and authenticated history view have deterministic tests. Actual speech components were exercised independently. | WhatsApp calling is BLOCKED: no authenticated call-media adapter is configured. No physical duplex call, acoustic barge-in, natural live model escalation or live-call tool invocation is qualified. STT is utterance-buffered and OmniVoice is buffered-then-framed. |
 | Replaceable governed Social and Voice capabilities (`social-voice.providers`) | **PARTIAL** | Actual enrolled WhatsApp voice intake, untrusted STT, fresh text confirmation, governed AC-3 Work Parcel execution and delivered short voice summary passed. Human confirmed corrected summary clear. Physical OmniVoice inference passed on P5000 and integrated Intel Arc; provider-neutral boundaries and durable history remain authoritative. | Private pilot only. General speech quality, real model handoff, repository-review routing, multi-lane video, long-duration soak and production deployment remain unqualified. Final 0.9 playback rate has codec/STT evidence but no second handset rating. |
 | Optional governed OpenWA messaging pilot (`messaging.openwa-pilot`) | **PARTIAL** | Signed direct commands, authenticated two-step enrolment, immutable template grants, durable runtime request keys, outbound recovery and private dashboard setup are implemented and automatically tested. | Live enrolment, help, typecheck, status, cancellation with cleanup and delivered reports passed; real reconnect and controlled duplicate replay passed. Evidence uses actual gateway messages beside separately captured dashboard frames, not handset footage. Handset dashboard links and real model handoff remain unqualified; no qualified review provider exists and benchmark execution remains gated. |
 | Persistent Work Parcel context ledger and bounded baton views (`context.persistent-parcel-ledger`) | **QUALIFIED** | Each Work Parcel retains immutable goal and steering provenance, concise active state, a SHA-linked durable event ledger, governed historical retrieval and content-hashed bounded baton projections. Compaction or handoff can remove history from the current view without deleting it, and exact retrieval can recover excluded failures for later execution. | None recorded. |
@@ -55,6 +56,12 @@ This document is generated from `config/implementation-status.json`. Update the 
 | Automatic governed recipe learning (`recipes.automatic-learning`) | **PLANNED** | Successive halving exists, but winners are not automatically promoted into a durable governed recipe catalog. | Persist qualification evidence and require policy approval before learned recipes influence routing. |
 
 ## Evidence map
+
+### Provider-neutral realtime voice session primitives
+
+- Source: [`src/control/realtime-voice.ts`](../src/control/realtime-voice.ts), [`src/control/realtime-voice-speech.ts`](../src/control/realtime-voice-speech.ts), [`src/control/realtime-voice-authority.ts`](../src/control/realtime-voice-authority.ts)
+- Tests: [`src/control/realtime-voice.test.ts`](../src/control/realtime-voice.test.ts), [`src/control/realtime-voice-speech.test.ts`](../src/control/realtime-voice-speech.test.ts), [`src/control/realtime-voice-authority.test.ts`](../src/control/realtime-voice-authority.test.ts), [`src/control/realtime-voice-web.test.ts`](../src/control/realtime-voice-web.test.ts)
+- Qualification evidence: [`docs/realtime-voice/README.md`](../docs/realtime-voice/README.md), [`docs/realtime-voice/adr.md`](../docs/realtime-voice/adr.md), [`docs/realtime-voice/qualification.md`](../docs/realtime-voice/qualification.md)
 
 ### Replaceable governed Social and Voice capabilities
 

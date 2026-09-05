@@ -4,6 +4,29 @@
   "updated": "2026-09-05",
   "capabilities": [
     {
+      "id": "voice.realtime-sessions",
+      "title": "Provider-neutral realtime voice session primitives",
+      "status": "PARTIAL",
+      "summary": "Experimental durable session lifecycle, bounded PCM/VAD, cancellation epochs, explicit identity bindings, governed orchestration port, buffered speech bridge and authenticated history view have deterministic tests. Actual speech components were exercised independently.",
+      "limitation": "WhatsApp calling is BLOCKED: no authenticated call-media adapter is configured. No physical duplex call, acoustic barge-in, natural live model escalation or live-call tool invocation is qualified. STT is utterance-buffered and OmniVoice is buffered-then-framed.",
+      "sources": [
+        "src/control/realtime-voice.ts",
+        "src/control/realtime-voice-speech.ts",
+        "src/control/realtime-voice-authority.ts"
+      ],
+      "tests": [
+        "src/control/realtime-voice.test.ts",
+        "src/control/realtime-voice-speech.test.ts",
+        "src/control/realtime-voice-authority.test.ts",
+        "src/control/realtime-voice-web.test.ts"
+      ],
+      "evidence": [
+        "docs/realtime-voice/README.md",
+        "docs/realtime-voice/adr.md",
+        "docs/realtime-voice/qualification.md"
+      ]
+    },
+    {
       "id": "social-voice.providers",
       "title": "Replaceable governed Social and Voice capabilities",
       "status": "PARTIAL",

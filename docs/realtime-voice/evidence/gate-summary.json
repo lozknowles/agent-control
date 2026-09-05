@@ -1,0 +1,18 @@
+{
+  "command": "npm run check",
+  "tests": 894,
+  "passed": 894,
+  "failed": 0,
+  "skipped": 0,
+  "classification": "Complete deterministic regression gate; not physical call qualification",
+  "logSha256": "de07aacd2f2ac5a66a8f38dfee54f3f28c891fbca413e0cec1a3122a0bc8264e",
+  "sourceSha256": {
+    "src/control/realtime-voice-authority.test.ts": "ba3baac8372d72d3ba93fa3deea2efa3016f76c9732a31e17918a118c3c5101b",
+    "src/control/realtime-voice-authority.ts": "8be30ff57f4aad39a4484448bccd0a610175dbb71674ebcb13b4f91bd5518230",
+    "src/control/realtime-voice-speech.test.ts": "fb1698c0141fc542fb0b15b0ee9a940a26674111cf43ae0d4a4ff7cd8aa3b1b0",
+    "src/control/realtime-voice-speech.ts": "2b9fd4c4b26266575e3c01865e32d054869e322793a15452644858f198a1f3aa",
+    "src/control/realtime-voice-web.test.ts": "07c238aaa47cf09ec82a63d547ed9e6bdaa19bb18923f2e1f2586805e3f3768b",
+    "src/control/realtime-voice.test.ts": "5a36b6f61b61843158ad29a6075f46377b7984d36e8596e11baf6d502fca6429",
+    "src/control/realtime-voice.ts": "cdeaf7c23124992fe79e9c88d594d572424e74ae4bfbc26d512909eca61861b2"
+  }
+}

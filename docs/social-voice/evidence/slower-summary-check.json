@@ -2,7 +2,7 @@
   "classification": "Real private worker generation and STT; not sent through WhatsApp",
   "metrics": {
     "provider": "omnivoice",
-    "host": "hpubuntu",
+    "host": "qualification-host",
     "model": "c5fdb5ccb189668d56333f77ba2629f4cd7535f4",
     "elapsedMs": 1653.6335080018034,
     "audioSeconds": 3.311111111111111,

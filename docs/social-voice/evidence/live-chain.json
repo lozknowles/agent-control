@@ -159,7 +159,7 @@
       "detail": {
         "metrics": {
           "provider": "omnivoice",
-          "host": "hpubuntu",
+          "host": "qualification-host",
           "model": "c5fdb5ccb189668d56333f77ba2629f4cd7535f4",
           "elapsedMs": 3089.036078999925,
           "audioSeconds": 8.22,
@@ -201,7 +201,7 @@
         "text": "Job 1 failed in 22 seconds. The detailed report is available in the dashboard.",
         "metrics": {
           "provider": "omnivoice",
-          "host": "hpubuntu",
+          "host": "qualification-host",
           "model": "c5fdb5ccb189668d56333f77ba2629f4cd7535f4",
           "elapsedMs": 1998.4065009994083,
           "audioSeconds": 5.44,
@@ -243,7 +243,7 @@
         "text": "Job 1 failed in 22 seconds. The detailed report is available in the dashboard.",
         "metrics": {
           "provider": "omnivoice",
-          "host": "hpubuntu",
+          "host": "qualification-host",
           "model": "c5fdb5ccb189668d56333f77ba2629f4cd7535f4",
           "elapsedMs": 2328.4970260065165,
           "audioSeconds": 5.44,
@@ -375,7 +375,7 @@
         "text": "Job 2 completed successfully in 14 seconds. The detailed report is available in the dashboard.",
         "metrics": {
           "provider": "omnivoice",
-          "host": "hpubuntu",
+          "host": "qualification-host",
           "model": "c5fdb5ccb189668d56333f77ba2629f4cd7535f4",
           "elapsedMs": 2124.3046620002133,
           "audioSeconds": 6.52,
@@ -420,7 +420,7 @@
         "confidence": null,
         "metrics": {
           "provider": "whisper",
-          "host": "hpubuntu",
+          "host": "qualification-host",
           "model": "openai/whisper-tiny.en",
           "elapsedMs": 2270.969076998881,
           "audioSeconds": 3.0935,
@@ -563,7 +563,7 @@
         "text": "Job 3 completed successfully in 20 seconds. The detailed report is available in the dashboard.",
         "metrics": {
           "provider": "omnivoice",
-          "host": "hpubuntu",
+          "host": "qualification-host",
           "model": "c5fdb5ccb189668d56333f77ba2629f4cd7535f4",
           "elapsedMs": 2132.5696959975176,
           "audioSeconds": 6.52,
@@ -606,7 +606,7 @@
         "text": "Agent Control job three completed successfully.",
         "metrics": {
           "provider": "omnivoice",
-          "host": "hpubuntu",
+          "host": "qualification-host",
           "model": "c5fdb5ccb189668d56333f77ba2629f4cd7535f4",
           "elapsedMs": 1178.7665660012863,
           "audioSeconds": 2.98,

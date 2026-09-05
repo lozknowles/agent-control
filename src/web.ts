@@ -1,3 +1,4 @@
+import {VoiceSessionStore} from './control/realtime-voice.js';
 import path from 'node:path';
 import fs from 'node:fs';
 import type {OpenWAAdapter} from './control/openwa.js';
@@ -126,7 +127,8 @@ if (process.env.AGENT_CONTROL_OPENWA_CONFIG) {
     openwa.start();
   } catch { process.stderr.write('Optional OpenWA adapter unavailable; dashboard and jobs remain active. Check private integration configuration.\n'); }
 }
-const server = startWebDashboard(service, {host, port, openwa, socialVoice, operatorToken: process.env.AGENT_CONTROL_WEB_OPERATOR_TOKEN, allowedOrigins: process.env.AGENT_CONTROL_WEB_ALLOWED_ORIGINS?.split(',').map(value => value.trim()).filter(Boolean), configFile: configurationFile});
-server.on('close',()=>{if(socialTimer)clearInterval(socialTimer);openwa?.close();});
+const voiceSessions = process.env.AGENT_CONTROL_REALTIME_VOICE_HISTORY === 'true' ? new VoiceSessionStore(path.join(stateRoot,'voice-sessions','sessions.sqlite')) : undefined;
+const server = startWebDashboard(service, {host, port, openwa, socialVoice, voiceSessions, operatorToken: process.env.AGENT_CONTROL_WEB_OPERATOR_TOKEN, allowedOrigins: process.env.AGENT_CONTROL_WEB_ALLOWED_ORIGINS?.split(',').map(value => value.trim()).filter(Boolean), configFile: configurationFile});
+server.on('close',()=>{voiceSessions?.close();if(socialTimer)clearInterval(socialTimer);openwa?.close();});
 server.on('listening', () => process.stdout.write(`Agent Control ${service.version} web dashboard: http://${host}:${port} (${process.env.AGENT_CONTROL_WEB_OPERATOR_TOKEN ? 'operator authenticated' : 'observer only'})\n`));
 server.on('error', error => { process.stderr.write(`Dashboard failed: ${error.message}\n`); process.exitCode = 1; });

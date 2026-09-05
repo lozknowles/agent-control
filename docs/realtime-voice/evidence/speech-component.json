@@ -1,0 +1,12 @@
+{
+  "classification": "Physical OmniVoice P5000 and CPU Whisper through new PCM bridge; no WhatsApp call, no model or handset playout",
+  "bufferedTtsFirstFrameMs": 1295.930463,
+  "frames": 149,
+  "audioSeconds": 2.98,
+  "sttMs": 529.4966959999999,
+  "transcript": "Agent control drop 3 completed successfully.",
+  "streamingTts": false,
+  "partialStt": false,
+  "callerSpeechToSuppressionMs": null,
+  "endUtteranceToAudibleMs": null
+}
