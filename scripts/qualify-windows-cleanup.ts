@@ -16,7 +16,7 @@ import {startWebDashboard} from '../src/control/web-server.js';
 import {WorkParcelCoordinator, WorkParcelStore} from '../src/control/work-parcels.js';
 import type {WorkspaceState} from '../src/state.js';
 
-interface Options {stateDir: string; evidenceFile: string; host: string; port: number; holdMs: number; nodeId: string}
+interface Options {stateDir: string; evidenceFile: string; host: string; port: number; holdMs: number; nodeId: string; allowedOrigin?: string}
 interface ProcessObservation {role: 'root' | 'child' | 'grandchild'; pid: number}
 
 const delay = (milliseconds: number) => new Promise(resolve => setTimeout(resolve, milliseconds));
@@ -32,7 +32,9 @@ function parseOptions(): Options {
   }
   const stateDir = path.resolve(values.get('state-dir') ?? path.join(os.tmpdir(), `agent-control-windows-cleanup-${randomUUID()}`));
   const nodeId = values.get('node-id') ?? 'windows-qualification-node'; if (!/^[a-z0-9][a-z0-9._-]*$/i.test(nodeId)) throw new Error('qualification_node_id_invalid');
-  return {stateDir, evidenceFile: path.resolve(values.get('evidence-file') ?? path.join(stateDir, 'windows-cleanup.json')), host: values.get('host') ?? '127.0.0.1', port: Number(values.get('port') ?? 4391), holdMs: Number(values.get('hold-ms') ?? 3_000), nodeId};
+  const allowedOrigin = values.get('allowed-origin');
+  if (allowedOrigin && !/^http:\/\/(?:127\.0\.0\.1|localhost):[1-9][0-9]{0,4}$/.test(allowedOrigin)) throw new Error('qualification_allowed_origin_invalid');
+  return {stateDir, evidenceFile: path.resolve(values.get('evidence-file') ?? path.join(stateDir, 'windows-cleanup.json')), host: values.get('host') ?? '127.0.0.1', port: Number(values.get('port') ?? 4391), holdMs: Number(values.get('hold-ms') ?? 3_000), nodeId, ...(allowedOrigin ? {allowedOrigin} : {})};
 }
 
 function treeSource() {
@@ -92,7 +94,7 @@ async function main() {
   const workParcels = new WorkParcelCoordinator(runtime, new WorkParcelStore(path.join(options.stateDir, 'work-parcels.json')), {plan: () => { throw new Error('qualification_planner_not_configured'); }});
   const workspace: WorkspaceState = {version: 1, paused: false, lastRestorePoint: null, lanes: []};
   const control = new AgentControlService(workspace, new PtyRegistry(), undefined, '3.9.0-windows-qualification', () => {}).configureProjection({jobRuntime: runtime, workParcels, resources: [{id: 'windows-native', name: 'Native Windows qualification', platform: 'windows', transport: 'local-governed-runtime', capabilities: ['qualification.windows-process']}]});
-  const operatorToken = randomUUID(), server = startWebDashboard(control, {host: options.host, port: options.port, operatorToken, assetsDir: path.resolve('assets/dashboard')});
+  const operatorToken = randomUUID(), server = startWebDashboard(control, {host: options.host, port: options.port, operatorToken, ...(options.allowedOrigin ? {allowedOrigins: [options.allowedOrigin]} : {}), assetsDir: path.resolve('assets/dashboard')});
   await once(server, 'listening'); const address = server.address() as AddressInfo;
   const monitor = setInterval(() => { for (const run of ledger.list()) { const current = {at: timestamp(), runId: run.id, status: run.status, stepStatus: run.steps[0].status, workerActive: workers.list()[0].active, lockHeld: locks.list().some(lock => lock.runId === run.id)}, prior = snapshots.at(-1); if (!prior || JSON.stringify({...prior, at: undefined}) !== JSON.stringify({...current, at: undefined})) { snapshots.push(current); control.events.emit('job.run_changed', {runId: run.id, status: run.status, stepStatus: run.steps[0].status}, undefined, 'windows-qualification'); } } }, 75);
   let unrelated: ChildProcess | undefined, unrelatedIdentity: OwnedProcessIdentity | undefined;
