@@ -81,7 +81,8 @@ test('secret capability executes out of context and persists only an opaque rece
 });
 
 test('historical attribution and Ox compatibility are deterministic without conflating model identity', () => {
-  assert.deepEqual(legacyAttribution('old-operator', 'run-1'), legacyAttribution('old-operator', 'run-1'));
+  const createdAt = '2026-09-01T00:00:00.000Z';
+  assert.deepEqual(legacyAttribution('old-operator', 'run-1', createdAt), legacyAttribution('old-operator', 'run-1', createdAt));
   const ox = canonicalModelIdentity('Ox', 'openrouter', 'z-ai/glm-5.3-flash'); assert.equal(ox.modelId, 'GLM-5.3-Flash'); assert.deepEqual(ox.historicalAliases, ['Ox']);
   assert.equal(canonicalModelIdentity('GLM-5.3-Flash', 'openrouter').historicalAliases, undefined);
 });
