@@ -76,3 +76,7 @@ If health is unavailable, inspect the isolated worker/service and private config
 ## Adding providers
 
 Implement the generic interface, explicit capabilities and health, bounded authenticated input/output and honest delivery semantics. Normalize channel identity without inferring authorization. Preserve message IDs and timestamps and call intake only after authenticating the transport. Keep codecs/model dependencies in a separate edge process. Add deterministic identity, replay, malformed response, unavailable provider, restart, telemetry and fallback tests, then qualify the real transport and device. A provider catalog entry or unit-test fixture is not physical qualification.
+
+## Qualified voice-note troubleshooting
+
+Use Ogg/Opus for WhatsApp voice notes. Numeric job references caused unintelligible generation in the pinned model/settings; the coordinator spells numbers and speaks only an outcome sentence. Audio bypasses the text outbox truncation while retaining byte limits. Never blindly retry uncertain sends. An authenticated operator may request a new terminal-job summary through POST /api/social-voice/summary with the enrolled sender, owned AC reference and fresh idempotency request key. This is an explicit recovery request, not evidence that the original send succeeded. Forwarding metadata must be explicit: boolean isForwarded or a non-negative integer native forwardsCount. Missing provenance stays denied.

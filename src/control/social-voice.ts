@@ -15,10 +15,17 @@ export interface SocialExecutionPort {
   approvalSnapshot(parcelId: string, runId: string, action: string): string;
   decide(parcelId: string, runId: string, action: string, approved: boolean, actor: string): void;
 }
+function spokenNumber(value:number):string {
+  const small=['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen'];
+  if(value<20)return small[value]!;
+  if(value<100)return ['','','twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety'][Math.floor(value/10)]!+(value%10?' '+small[value%10]:'');
+  if(value<1000)return small[Math.floor(value/100)]+' hundred'+(value%100?' and '+spokenNumber(value%100):'');
+  return spokenNumber(Math.floor(value/1000))+' thousand'+(value%1000?' '+spokenNumber(value%1000):'');
+}
 export function spokenJobSummary(number:number,result:{status:string;durationMs?:number}) {
   const outcome:Record<string,string>={SUCCEEDED:'completed successfully',FAILED:'failed',CANCELLED:'was cancelled',DEGRADED:'finished with unresolved issues'};
-  const duration=Number.isFinite(result.durationMs)&&result.durationMs!>=0?` in ${Math.round(result.durationMs!/1000)} seconds`:'';
-  return `Job ${number} ${outcome[result.status]??'has an update'}${duration}. The detailed report is available in the dashboard.`;
+  const reference=Number.isSafeInteger(number)&&number>0&&number<1000000?'job '+spokenNumber(number):'job';
+  return `Agent Control ${reference} ${outcome[result.status]??'has an update'}.`;
 }
 type Row = Record<string, any>;
 const hash=(value:string)=>createHash('sha256').update(value).digest('hex');
@@ -113,6 +120,16 @@ export class SocialVoiceCoordinator {
     if(this.db.prepare('SELECT key FROM spoken WHERE key=?').get(key))return;
     this.db.prepare("INSERT INTO spoken VALUES (?,'sending')").run(key);
     try{const safe=text.split('\n').filter(line=>!/^https?:|^Work Parcel:/.test(line)).join(' ').slice(0,1000);const audio=await this.speech.synthesize({text:safe,voice:this.voice,signal:AbortSignal.timeout(180000)});validateAudio(audio.bytes,audio.mime);const receipt=await this.provider.sendArtifact(m.identity,audio.bytes,audio.mime,key+':audio');this.audit('speech.synthesized',who(m.identity),{text:safe,metrics:audio.metrics,voice:this.voice,receipt,audioSha256:createHash('sha256').update(audio.bytes).digest('hex')});this.db.prepare("UPDATE spoken SET state='queued' WHERE key=?").run(key);}catch{this.db.prepare("UPDATE spoken SET state='failed' WHERE key=?").run(key);this.audit('speech.text_fallback',who(m.identity),{reason:'synthesis_or_delivery_failed'});}
+  }
+  async requestSummary(identity:SocialIdentity,reference:string,requestKey:string){
+    if(!this.execution.principal(identity)||!/^[-a-zA-Z0-9]{8,80}$/.test(requestKey))throw new Error('summary_request_denied');
+    const job=this.owned(reference,who(identity)),result=this.execution.observe(job.parcel);
+    if(!terminal(result.status))throw new Error('summary_job_not_terminal');
+    const origin=this.db.prepare('SELECT message FROM inbox WHERE key=?').get(job.key) as Row;
+    const message=JSON.parse(origin.message) as SocialMessage,key=`operator-summary:${requestKey}:${job.parcel}`;
+    this.audit('summary.requested',who(identity),{parcelId:job.parcel,source:'authenticated_dashboard',requestKey});
+    await this.speak(message,key,spokenJobSummary(job.number,result));
+    return {requested:true,parcelId:job.parcel};
   }
   async requestApproval(identity:SocialIdentity,parcel:string,run:string,action:string,ttlMs=120000){
     if(!this.execution.principal(identity)?.approve||ttlMs<=0||ttlMs>300000)throw new Error('approval_grant_required');

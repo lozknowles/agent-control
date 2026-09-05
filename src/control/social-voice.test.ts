@@ -34,9 +34,11 @@ test('changed and expired approval snapshots fail closed',async t=>{const s=setu
 test('audio signature and voice provenance reject arbitrary attachments and silent cloning',()=>{assert.throws(()=>validateAudio(Buffer.from('<html>not audio</html>'),'audio/wav'));assert.throws(()=>validateVoice({...voice,kind:'cloned'}));assert.doesNotThrow(()=>validateVoice(voice));});
 test('channel identity cannot be confused with a group or another account operator',t=>{const s=setup(t);assert.throws(()=>s.c.accept({identity:{...s.identity,conversation:'group'},id:'group',receivedAt:1000000,kind:'text',text:'start test'}));assert.throws(()=>s.c.accept({identity:{...s.identity,channel:'wrong'},id:'wrong',receivedAt:1000000,kind:'text',text:'start test'}));});
 
-test('spoken summaries use only the short job reference, outcome and duration',()=>{
+test('spoken summaries use number words and the outcome only',()=>{
  const result={status:'FAILED',durationMs:22000,text:'secret internal diagnostics https://private.invalid',runId:'run-hex',model:'internal-model'};
- assert.equal(spokenJobSummary(1,result),'Job 1 failed in 22 seconds. The detailed report is available in the dashboard.');
- assert.match(spokenJobSummary(2,{status:'SUCCEEDED'}),/completed successfully/);
+ assert.equal(spokenJobSummary(1,result),'Agent Control job one failed.');
+ assert.equal(spokenJobSummary(2,{status:'SUCCEEDED'}),'Agent Control job two completed successfully.');assert.doesNotMatch(spokenJobSummary(123,{status:'CANCELLED'}),/[0-9]/);
  assert.doesNotMatch(spokenJobSummary(1,result),/secret|https|hex|internal-model/);
 });
+
+test('authenticated summary recovery is owner-scoped, terminal-only and audio-idempotent',async t=>{const s=setup(t);s.receive('start test');await s.c.tick();await assert.rejects(()=>s.c.requestSummary(s.identity,'AC-1','summary-1'),/not_terminal/);for(const p of s.parcels.values())p.status='FAILED';await s.c.requestSummary(s.identity,'AC-1','summary-1');await s.c.requestSummary(s.identity,'AC-1','summary-1');assert.equal(s.audio.length,1);s.revoke();await assert.rejects(()=>s.c.requestSummary(s.identity,'AC-1','summary-2'),/denied/);});

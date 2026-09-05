@@ -54,11 +54,12 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   response.setHeader('Cache-Control', 'no-store');
   const url = new URL(request.url ?? '/', `http://${request.headers.host ?? `${options.host}:${options.port}`}`);
   const method = request.method ?? 'GET';
-  if(url.pathname==='/api/social-voice/approval' || url.pathname==='/api/social-voice/approval-grant'){
+  if(url.pathname==='/api/social-voice/summary' || url.pathname==='/api/social-voice/approval' || url.pathname==='/api/social-voice/approval-grant'){
     validateOperatorRequest(request,options);validateMutationRequest(request,options);
     if(method!=='POST')return json(response,405,{error:'method_not_allowed'});
     const body=await readJson(request);
     if(!options.openwa||!options.socialVoice||typeof body.sender!=='string')return json(response,400,{error:'social_configuration_required'});
+    if(url.pathname.endsWith('/summary')){if(typeof body.reference!=='string'||typeof body.requestKey!=='string')return json(response,400,{error:'invalid_summary'});return json(response,200,await options.socialVoice.requestSummary({channel:'openwa',account:options.openwa.config.sessionId,sender:body.sender,conversation:body.sender},body.reference,body.requestKey));}
     if(url.pathname.endsWith('approval-grant')){if(typeof body.enabled!=='boolean')return json(response,400,{error:'invalid_grant'});return json(response,200,options.openwa.grantSocialApproval(body.sender,body.enabled));}
     if(typeof body.parcel!=='string'||typeof body.run!=='string'||typeof body.action!=='string')return json(response,400,{error:'invalid_approval'});
     return json(response,200,await options.socialVoice.requestApproval({channel:'openwa',account:options.openwa.config.sessionId,sender:body.sender,conversation:body.sender},body.parcel,body.run,body.action));
