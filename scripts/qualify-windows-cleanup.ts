@@ -13,6 +13,7 @@ import type {JobDefinition, RunRecord} from '../src/control/job-types.js';
 import {defaultProcessTerminationAdapter, OwnedProcessManager, type ExecutionCleanupReport, type OwnedProcessIdentity, type ProcessCleanupResult, type ProcessTerminationAdapter} from '../src/control/owned-process.js';
 import {PtyRegistry} from '../src/control/pty.js';
 import {startWebDashboard} from '../src/control/web-server.js';
+import {WorkParcelCoordinator, WorkParcelStore} from '../src/control/work-parcels.js';
 import type {WorkspaceState} from '../src/state.js';
 
 interface Options {stateDir: string; evidenceFile: string; host: string; port: number; holdMs: number; nodeId: string}
@@ -88,8 +89,9 @@ async function main() {
   const ledger = new RunLedger(path.join(options.stateDir, 'runs.json')), locks = new ResourceLockManager(path.join(options.stateDir, 'locks.json')), artifacts = new ArtifactStore(path.join(options.stateDir, 'artifacts'));
   const delayed = new DelayedTerminationAdapter(actual, 5_000), proofLoss = new ProofLossTerminationAdapter(actual); let adapter: ProcessTerminationAdapter = delayed;
   const runtime = new JobRuntime(catalog, actions, workers, ledger, artifacts, locks, {approval: () => true, ownedExecutionFactory: () => new OwnedProcessManager(adapter)});
+  const workParcels = new WorkParcelCoordinator(runtime, new WorkParcelStore(path.join(options.stateDir, 'work-parcels.json')), {plan: () => { throw new Error('qualification_planner_not_configured'); }});
   const workspace: WorkspaceState = {version: 1, paused: false, lastRestorePoint: null, lanes: []};
-  const control = new AgentControlService(workspace, new PtyRegistry(), undefined, '3.9.0-windows-qualification', () => {}).configureProjection({jobRuntime: runtime, resources: [{id: 'windows-native', name: 'Native Windows qualification', platform: 'windows', transport: 'local-governed-runtime', capabilities: ['qualification.windows-process']}]});
+  const control = new AgentControlService(workspace, new PtyRegistry(), undefined, '3.9.0-windows-qualification', () => {}).configureProjection({jobRuntime: runtime, workParcels, resources: [{id: 'windows-native', name: 'Native Windows qualification', platform: 'windows', transport: 'local-governed-runtime', capabilities: ['qualification.windows-process']}]});
   const operatorToken = randomUUID(), server = startWebDashboard(control, {host: options.host, port: options.port, operatorToken, assetsDir: path.resolve('assets/dashboard')});
   await once(server, 'listening'); const address = server.address() as AddressInfo;
   const monitor = setInterval(() => { for (const run of ledger.list()) { const current = {at: timestamp(), runId: run.id, status: run.status, stepStatus: run.steps[0].status, workerActive: workers.list()[0].active, lockHeld: locks.list().some(lock => lock.runId === run.id)}, prior = snapshots.at(-1); if (!prior || JSON.stringify({...prior, at: undefined}) !== JSON.stringify({...current, at: undefined})) { snapshots.push(current); control.events.emit('job.run_changed', {runId: run.id, status: run.status, stepStatus: run.steps[0].status}, undefined, 'windows-qualification'); } } }, 75);
