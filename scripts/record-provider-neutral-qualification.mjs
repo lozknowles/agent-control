@@ -45,7 +45,7 @@ async function waitFor(predicate, timeoutMs) {
   return predicate();
 }
 
-let browser, context, page, video;
+let browser, context, page, video, liveObservedAt;
 const views = [];
 try {
   await waitForDashboard();
@@ -54,14 +54,19 @@ try {
   context = await browser.newContext({viewport: {width: 1920, height: 1080}, recordVideo: {dir: rawVideoDir, size: {width: 1920, height: 1080}}, colorScheme: 'dark'});
   page = await context.newPage(); video = page.video();
   await page.goto(base, {waitUntil: 'networkidle'});
+  await page.waitForFunction(() => document.querySelector('#stream-state')?.textContent === 'LIVE', undefined, {timeout: 10_000});
+  liveObservedAt = new Date().toISOString();
   await page.click('#operator-button'); await page.fill('#operator-token', operatorToken); await page.click('#operator-form button[type="submit"]');
   await page.waitForFunction(() => document.querySelector('#operator-button')?.textContent?.includes('enabled') || document.querySelector('#operator-button')?.textContent?.includes('authenticated'), undefined, {timeout: 10_000}).catch(() => {});
 
   async function show(view, milliseconds, target) {
     await page.click(`[data-view="${view}"]`); await delay(750);
-    if (target) await page.locator(target).first().scrollIntoViewIfNeeded().catch(() => {});
     views.push({view, at: new Date().toISOString(), target: target ?? null});
-    await delay(milliseconds);
+    const deadline = Date.now() + milliseconds;
+    do {
+      if (target) await page.locator(target).first().scrollIntoViewIfNeeded().catch(() => {});
+      await delay(Math.min(250, Math.max(0, deadline - Date.now())));
+    } while (Date.now() < deadline);
   }
 
   await page.waitForSelector('.question-panel', {timeout: 30_000});
@@ -86,7 +91,7 @@ try {
   const exit = await childExit;
   if (exit.code !== 0) throw new Error(`qualification_process_failed:${exit.code}:${childFailure.slice(-300)}`);
   const videoBytes = fs.readFileSync(videoFile), evidenceBytes = fs.readFileSync(evidenceFile), browserVersion = await require(playwrightRoot).chromium.launch({headless: true, executablePath: chromiumExecutable}).then(async instance => { const value = instance.version(); await instance.close(); return value; });
-  const manifest = {schema: 'agent-control.dashboard-video-evidence/v1', recordedAt: new Date().toISOString(), source: 'Real Agent Control dashboard over a loopback observer endpoint', qualificationEvidence: {file: path.basename(evidenceFile), sha256: createHash('sha256').update(evidenceBytes).digest('hex')}, video: {file: path.basename(videoFile), sha256: createHash('sha256').update(videoBytes).digest('hex'), bytes: videoBytes.length, format: 'MP4/H.264', resolution: '1920x1080'}, browser: {engine: 'Chromium', version: browserVersion, headless: true}, views, qualificationExitCode: exit.code};
+  const manifest = {schema: 'agent-control.dashboard-video-evidence/v1', recordedAt: new Date().toISOString(), source: 'Real Agent Control dashboard over a loopback observer endpoint', qualificationEvidence: {file: path.basename(evidenceFile), sha256: createHash('sha256').update(evidenceBytes).digest('hex')}, video: {file: path.basename(videoFile), sha256: createHash('sha256').update(videoBytes).digest('hex'), bytes: videoBytes.length, format: 'MP4/H.264', resolution: '1920x1080'}, browser: {engine: 'Chromium', version: browserVersion, headless: true}, dashboard: {streamState: 'LIVE', observedAt: liveObservedAt}, views, qualificationExitCode: exit.code};
   fs.writeFileSync(manifestFile, `${JSON.stringify(manifest, null, 2)}\n`, {mode: 0o600});
   process.stdout.write(`${JSON.stringify({phase: 'VIDEO_COMPLETE', videoFile, manifestFile, sha256: manifest.video.sha256, bytes: manifest.video.bytes})}\n`);
 } catch (error) {
