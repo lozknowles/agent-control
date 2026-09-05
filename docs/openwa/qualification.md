@@ -1,3 +1,5 @@
+Historical pre-linking checkpoint. Superseded for live results by [live qualification](live-qualification.md). The pending statements below describe the earlier HTTP-only stage.
+
 # OpenWA pilot qualification — 2026-09-05
 
 Result: automated and isolated HTTP pilot checks passed; physical WhatsApp qualification is pending. This is not a release or a production deployment.
