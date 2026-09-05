@@ -44,6 +44,7 @@ for (const file of remoteFiles) {
 const nodeLocalPort = await freePort(), dashboardPort = await freePort(), remoteNodePort = 20000 + Math.floor(Math.random() * 20000), token = randomUUID(), nodeUrl = `http://127.0.0.1:${nodeLocalPort}`;
 const remoteScript = [
   'set -eu',
+  'printf "AGENT_CONTROL_REMOTE_PID=%s\\n" "$$"',
   `export AGENT_CONTROL_NODE_PORT=${remoteNodePort}`,
   `export AGENT_CONTROL_NODE_TOKEN=${token}`,
   `export AGENT_CONTROL_RESOURCE_ID=${resourceId}`,
@@ -53,8 +54,8 @@ const remoteScript = [
   '',
 ].join('\n');
 const tunnel = spawn('ssh', [...sshBase, '-L', `127.0.0.1:${nodeLocalPort}:127.0.0.1:${remoteNodePort}`, target, 'bash', '-s'], {stdio: ['pipe', 'pipe', 'pipe']});
-tunnel.stdin.end(remoteScript); tunnel.stdout.setEncoding('utf8'); tunnel.stderr.setEncoding('utf8'); let tunnelTail = '', tunnelExited = false, tunnelExitCode = null;
-tunnel.stdout.on('data', chunk => { tunnelTail = (tunnelTail + chunk).slice(-2048); }); tunnel.stderr.on('data', chunk => { tunnelTail = (tunnelTail + chunk).slice(-2048); });
+tunnel.stdin.end(remoteScript); tunnel.stdout.setEncoding('utf8'); tunnel.stderr.setEncoding('utf8'); let tunnelTail = '', tunnelExited = false, tunnelExitCode = null, remoteNodePid = null;
+tunnel.stdout.on('data', chunk => { tunnelTail = (tunnelTail + chunk).slice(-2048); const match = tunnelTail.match(/AGENT_CONTROL_REMOTE_PID=(\d+)/); if (match) remoteNodePid = Number(match[1]); }); tunnel.stderr.on('data', chunk => { tunnelTail = (tunnelTail + chunk).slice(-2048); });
 const tunnelExit = new Promise(resolve => tunnel.once('exit', code => { tunnelExited = true; tunnelExitCode = code; resolve(code); }));
 const healthDeadline = Date.now() + 30_000;
 while (Date.now() < healthDeadline) { try { if ((await fetch(`${nodeUrl}/health`)).ok) break; } catch {} if (tunnelExited) throw new Error(`android_node_tunnel_exited:${tunnelExitCode}`); await delay(200); }
@@ -96,5 +97,11 @@ try {
   child.kill('SIGTERM'); await Promise.race([childExit, delay(3_000)]); if (!childExited) child.kill('SIGKILL'); await context?.close().catch(() => {}); await browser?.close().catch(() => {});
   process.stderr.write(`${JSON.stringify({verdict: 'FAIL', error: error instanceof Error ? error.message : String(error)})}\n`); process.exitCode = 1;
 } finally {
+  if (Number.isSafeInteger(remoteNodePid) && remoteNodePid > 0) {
+    try {
+      const command = fixedSsh(['ps', '-p', String(remoteNodePid), '-o', 'args=']).trim();
+      if (command.includes(`${remoteRoot}/node-server.mjs`)) fixedSsh(['kill', '-TERM', String(remoteNodePid)]);
+    } catch { /* The remote candidate already stopped or transport closed. */ }
+  }
   tunnel.kill('SIGTERM'); await Promise.race([tunnelExit, delay(3_000)]); if (!tunnelExited) tunnel.kill('SIGKILL');
 }

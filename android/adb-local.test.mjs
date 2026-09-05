@@ -56,9 +56,10 @@ function rawMdnsPacket() {
 }
 
 test('parses pairing/connect services with a stable service identity and connected devices', () => {
-  const parsed = parseMdnsServices(mdns([service('192.0.2.2:37101')], [service('192.0.2.2:37102')]));
+  const parsed = parseMdnsServices(mdns([service('192.0.2.2:37101', 'adb-device-one-QXjCrW')], [service('192.0.2.2:37102', 'adb-device-one-TnSdi9')]));
   assert.deepEqual(parsed.map(value => value.type), ['_adb-tls-pairing._tcp', '_adb-tls-connect._tcp']);
   assert.equal(parsed[0].deviceIdentity, parsed[1].deviceIdentity);
+  assert.equal(parsed[0].deviceIdentity, 'adb-device-one');
   assert.equal(parseDevices(devices([['192.0.2.2:37102']]))[0].state, 'device');
 });
 
@@ -124,7 +125,7 @@ test('a reachable ADB endpoint whose fixed properties do not match the advertise
 });
 
 test('changed connection endpoint is rediscovered only for the same service identity', async () => {
-  const value = fixture({connect: [service('192.0.2.2:40001')], connectCodes: [1, 0], rotateTo: service('192.0.2.2:40002')});
+  const value = fixture({connect: [service('192.0.2.2:40001', 'adb-device-one-QXjCrW')], connectCodes: [1, 0], rotateTo: service('192.0.2.2:40002', 'adb-device-one-TnSdi9')});
   const result = await value.helper.ensureConnected();
   assert.equal(result.ok, true);
   assert.equal(result.connectionEndpoint, '192.0.2.2:40002');
@@ -147,7 +148,7 @@ test('invalid PIN is rejected before ADB or state mutation', async () => {
 });
 
 test('successful pairing connects the matching endpoint and verifies usability', async () => {
-  const value = fixture({pairing: [service('192.0.2.2:37101')], connect: [service('192.0.2.2:37102')]});
+  const value = fixture({pairing: [service('192.0.2.2:37101', 'adb-device-one-QXjCrW')], connect: [service('192.0.2.2:37102', 'adb-device-one-TnSdi9')]});
   const result = await value.helper.pair('123456');
   assert.equal(result.ok, true);
   assert.equal(result.paired, true);

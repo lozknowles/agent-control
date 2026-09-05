@@ -427,7 +427,13 @@ function readDnsName(packet, start, visited = new Set()) {
   return {name: labels.filter(Boolean).join('.'), offset: next};
 }
 function serviceType(name) { const value = String(name).replace(/\.$/, '').toLowerCase(); return value === `${PAIRING_SERVICE}.local` ? PAIRING_SERVICE : value === `${CONNECT_SERVICE}.local` ? CONNECT_SERVICE : null; }
-function serviceIdentity(name) { return String(name).trim().replace(/\.$/, '').toLowerCase(); }
+function serviceIdentity(name) {
+  const value = String(name).trim().replace(/\.$/, '').toLowerCase();
+  // Android's mDNS backend appends a new six-character suffix to each
+  // pairing/connect service instance. The adb-<device-guid> prefix is the
+  // stable identity shared by both service types and endpoint rotations.
+  return value.match(/^(adb-.+)-[a-z0-9]{6}$/i)?.[1] ?? value;
+}
 function normalizeAddress(value) { return String(value ?? '').replace(/^\[|\]$/g, '').split('%')[0].toLowerCase(); }
 function validPort(value) { return Number.isSafeInteger(value) && value > 0 && value <= 65535; }
 function escapeRegex(value) { return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
