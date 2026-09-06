@@ -36,6 +36,10 @@ function modelListResponse() {
   ]}), {status: 200, headers: {'content-type': 'application/json', 'x-ratelimit-limit-requests': '40', 'x-ratelimit-remaining-requests': '39'}});
 }
 
+function confirmCallability(store: ProviderCatalogStore, modelId = 'vendor/model-a') {
+  store.recordCallability('nvidia-hosted', modelId, {status:'PASS',startedAt:at,completedAt:at,elapsedMs:1,inferenceEndpointStatus:'CONFIRMED',httpStatus:200,httpAccepted:true,streamRequested:true,streamStarted:true,firstEventMs:1,ttftMs:1,ttftAuthority:'MEASURED',partialOutput:true,finishReason:'stop',usage:null,failure:null,failureClass:null,responseHash:'a'.repeat(64),responseLength:17,requestedOutputTokens:64,inputSha256:'b'.repeat(64),invocationProfile:'test-precondition'});
+}
+
 test('authenticated generic discovery creates unqualified routing-disabled models and preserves unknown metadata', async t => {
   let authorization = '', endpoint = '';
   const {root, registry, runtime} = setup(t, async (input, init) => { endpoint = String(input); authorization = new Headers(init?.headers).get('authorization') ?? ''; return modelListResponse(); });
@@ -89,7 +93,7 @@ test('pricing-derived cost class is labelled adapter-derived and catalogue paylo
 
 test('bounded smoke suite records hashes and normalized usage but never provider output or credentials', async t => {
   let calls = 0; const budgets:number[]=[]; const prompts:string[]=[];
-  const {root, runtime} = setup(t, async (_input, init) => {
+  const {root, runtime, store} = setup(t, async (_input, init) => {
     calls++;
     assert.equal(new Headers(init?.headers).get('authorization'), `Bearer ${syntheticCredential()}`);
     if ((init?.method ?? 'GET') === 'GET') return modelListResponse();
@@ -101,6 +105,7 @@ test('bounded smoke suite records hashes and normalized usage but never provider
     return new Response(JSON.stringify({model: 'vendor/model-a', choices: [{finish_reason: 'stop', message: {content}}], usage}), {status: 200});
   });
   await runtime.discover('nvidia-hosted');
+  confirmCallability(store);
   const smoke = await runtime.smoke('nvidia-hosted', 'vendor/model-a');
   assert.equal(calls, 6);
   assert.equal(smoke.status, 'PASS');
@@ -129,7 +134,7 @@ test('callability is a distinct streaming gate and its successful basic probe is
   });
   await runtime.discover('nvidia-hosted');const before=runtime.projection().models[0];assert.equal(before.inferenceEndpointStatus,'UNTESTED');assert.equal(before.triage.next,'CALLABILITY_PROBE');
   const callability=await runtime.probeCallability('nvidia-hosted','vendor/model-a');assert.equal(callability.status,'PASS');assert.equal(callability.inferenceEndpointStatus,'CONFIRMED');assert.equal(callability.httpAccepted,true);assert.equal(callability.streamStarted,true);assert.equal(callability.usage?.totalTokens,11);assert.equal(callability.ttftAuthority,'MEASURED');assert.equal(callability.responseLength,'AC_CALLABILITY_OK'.length);
-  const smoke=await runtime.smoke('nvidia-hosted','vendor/model-a');assert.equal(postCalls,5);assert.equal(smoke.probes[0].evidenceSource,'CALLABILITY_REUSED');assert.equal(smoke.probes[0].requestedOutputTokens,64);assert.equal(runtime.projection().models[0].triage.next,'FROZEN_BENCHMARK');
+  const smoke=await runtime.smoke('nvidia-hosted','vendor/model-a');assert.equal(postCalls,5);assert.equal(smoke.probes[0].evidenceSource,'CALLABILITY_REUSED');assert.equal(smoke.probes[0].requestedOutputTokens,64);const projection=runtime.projection();assert.equal(projection.models[0].triage.next,'FROZEN_BENCHMARK');assert.deepEqual({callability:projection.tournament.requestAccounting.callabilityRequests,capability:projection.tournament.requestAccounting.capabilityRequests,total:projection.tournament.requestAccounting.totalRequests,tokens:projection.tournament.requestAccounting.providerReportedTokens.total},{callability:1,capability:4,total:5,tokens:59});
   const durable=fs.readFileSync(path.join(root,'provider-catalog.json'),'utf8');assert.equal(durable.includes('AC_CALLABILITY_OK'),false);assert.equal(durable.includes(syntheticCredential()),false);
 });
 
@@ -148,12 +153,32 @@ test('catalogue-visible model remains distinct from a missing inference endpoint
 
 test('staged catalogue estimate spends capability probes only on callability-confirmed models',()=>{assert.deepEqual(stagedCatalogueEstimate(81,2),{callabilityRequests:81,capabilitySmokeRequests:8,totalPreBenchmarkRequests:89,naiveFiveProbeRequests:405,requestsAvoided:316});assert.deepEqual(stagedCatalogueEstimate(81,81),{callabilityRequests:81,capabilitySmokeRequests:324,totalPreBenchmarkRequests:405,naiveFiveProbeRequests:405,requestsAvoided:0})});
 
+test('runtime enforces callability-first early stopping before spending capability requests', async t => {
+  let posts = 0;
+  const {runtime} = setup(t, async (_input, init) => { if ((init?.method ?? 'GET') !== 'GET') posts++; return modelListResponse(); });
+  await runtime.discover('nvidia-hosted');
+  await assert.rejects(() => runtime.smoke('nvidia-hosted','vendor/model-a'), /provider_catalog_callability_required/);
+  assert.equal(posts, 0);
+  assert.equal(runtime.projection().models.find(item=>item.canonicalModelId==='vendor/model-a')?.qualificationStage, 'DISCOVERED');
+});
+
+test('superseding adjudication preserves history while excluding harness failure from model attribution', async t => {
+  const {runtime,store,root} = setup(t, async () => modelListResponse());
+  await runtime.discover('nvidia-hosted');
+  const adjudication = store.recordEvidenceAdjudication('nvidia-hosted','vendor/model-a',{evidenceKind:'CAPABILITY_SMOKE',evidenceReference:`smoke:${'c'.repeat(64)}`,attribution:'HARNESS_FAILURE',scoreDisposition:'EXCLUDE',reason:'Output budget ended the response at the configured cap; this is not demonstrated model failure.',supersededBy:`smoke:${'d'.repeat(64)}`,supportingEvidence:['diagnostic:bounded-output-v2']});
+  assert.equal(adjudication.attribution,'HARNESS_FAILURE');
+  const model=runtime.projection().models.find(item=>item.canonicalModelId==='vendor/model-a')!;
+  assert.equal(model.evidenceAdjudications?.[0].scoreDisposition,'EXCLUDE');
+  assert.equal(JSON.parse(fs.readFileSync(path.join(root,'provider-catalog.json'),'utf8')).models.find((item:{canonicalModelId:string})=>item.canonicalModelId==='vendor/model-a').evidenceAdjudications.length,1);
+});
+
 test('truncated final output preserves partial usage finish reason and hash without provider text', async t => {
-  const {root, runtime} = setup(t, async (_input, init) => {
+  const {root, runtime, store} = setup(t, async (_input, init) => {
     if ((init?.method ?? 'GET') === 'GET') return modelListResponse();
     return new Response(JSON.stringify({model: 'vendor/model-a', choices: [{finish_reason: 'length', message: {content: null, reasoning_content: 'private reasoning must not persist'}}], usage: {prompt_tokens: 10, completion_tokens: 20, total_tokens: 30}}), {status: 200});
   });
   await runtime.discover('nvidia-hosted');
+  confirmCallability(store);
   const smoke = await runtime.smoke('nvidia-hosted', 'vendor/model-a');
   assert.equal(smoke.status, 'FAILED');
   assert.ok(smoke.probes.every(probe => probe.failure === 'provider_output_truncated'));
@@ -166,12 +191,12 @@ test('truncated final output preserves partial usage finish reason and hash with
 });
 
 test('smoke diagnostics distinguish strict-schema and tool-call verification failures',async t=>{
-  const {runtime}=setup(t,async(_input,init)=>{
+  const {runtime,store}=setup(t,async(_input,init)=>{
     if((init?.method??'GET')==='GET')return modelListResponse();const body=JSON.parse(String(init?.body)) as {messages?:Array<{content?:string}>;tools?:unknown[]},prompt=body.messages?.[0]?.content??'',usage={prompt_tokens:5,completion_tokens:2,total_tokens:7};
     if(body.tools)return new Response(JSON.stringify({choices:[{finish_reason:'stop',message:{content:'did not call tool'}}],usage}),{status:200});
     const content=prompt.includes('marker value')?'{"marker":"WRONG"}':prompt.includes('AC_CODE_OK')?'AC_CODE_OK':prompt.includes('AC_CONTEXT_OK')?'AC_CONTEXT_OK':'AC_SMOKE_OK';return new Response(JSON.stringify({choices:[{finish_reason:'stop',message:{content}}],usage}),{status:200});
   });
-  await runtime.discover('nvidia-hosted');const smoke=await runtime.smoke('nvidia-hosted','vendor/model-a');assert.equal(smoke.status,'LIMITED');assert.equal(smoke.probes.find(item=>item.id==='structured-json')?.failureClass,'SCHEMA_INVALID');assert.equal(smoke.probes.find(item=>item.id==='tool-calling')?.failureClass,'TOOL_CALL_UNRELIABLE');assert.equal(runtime.projection().models[0].diagnosticStatus.label,'LIMITED — SCHEMA_INVALID');
+  await runtime.discover('nvidia-hosted');confirmCallability(store);const smoke=await runtime.smoke('nvidia-hosted','vendor/model-a');assert.equal(smoke.status,'LIMITED');assert.equal(smoke.probes.find(item=>item.id==='structured-json')?.failureClass,'SCHEMA_INVALID');assert.equal(smoke.probes.find(item=>item.id==='tool-calling')?.failureClass,'TOOL_CALL_UNRELIABLE');assert.equal(runtime.projection().models[0].diagnosticStatus.label,'LIMITED — SCHEMA_INVALID');
 });
 
 test('legacy persisted smoke evidence derives callability without rewriting its historical token budgets',async t=>{

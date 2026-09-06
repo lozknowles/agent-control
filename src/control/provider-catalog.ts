@@ -15,6 +15,8 @@ export type CatalogSupport = 'SUPPORTED' | 'UNSUPPORTED' | 'UNKNOWN';
 export type CatalogAuthority = 'PROVIDER_REPORTED' | 'ADAPTER_DERIVED' | 'OPERATOR_CONFIGURED' | 'UNKNOWN';
 export type CatalogInferenceEndpointStatus = 'UNTESTED' | 'CONFIRMED' | 'NOT_AVAILABLE' | 'AUTHORIZATION_REQUIRED' | 'RATE_LIMITED' | 'INDETERMINATE';
 export type CatalogFailureClass = 'TIMEOUT_BEFORE_FIRST_TOKEN' | 'TIMEOUT_DURING_GENERATION' | 'TIMEOUT_UNCLASSIFIED' | 'OUTPUT_TRUNCATED' | 'SCHEMA_INVALID' | 'ENDPOINT_NOT_AVAILABLE' | 'AUTHORIZATION' | 'RATE_LIMITED' | 'PROVIDER_ERROR' | 'MALFORMED_RESPONSE' | 'CAPABILITY_UNAVAILABLE' | 'TOOL_CALL_UNRELIABLE' | 'VERIFICATION_FAILED';
+export type CatalogOutcomeAttribution = 'MODEL_SUCCESS' | 'MODEL_FAILURE' | 'HARNESS_FAILURE' | 'TEST_INVALIDATED' | 'PROVIDER_FAILURE' | 'ENDPOINT_UNAVAILABLE' | 'INDETERMINATE';
+export type CatalogQualificationStage = 'DISCOVERED' | 'TESTING_CALLABILITY' | 'CONFIRMED' | 'CAPABILITY_TESTING' | 'CAPABILITY_CONFIRMED' | 'BENCHMARKING' | 'QUALIFIED' | 'LIMITED' | 'FAILED';
 const MAXIMUM_CATALOG_RESPONSE_BYTES = 8 * 1024 * 1024;
 
 export interface CatalogValue<T> {value: T | null; authority: CatalogAuthority}
@@ -38,6 +40,19 @@ export interface CatalogModelMetadata {
 export interface CatalogSmokeProbe {id: 'basic-completion' | 'structured-json' | 'coding' | 'tool-calling' | 'context-reliability'; status: 'PASS' | 'FAIL' | 'UNAVAILABLE'; elapsedMs: number | null; ttftMs: number | null; ttftAuthority: 'PROVIDER_REPORTED' | 'MEASURED' | 'UNAVAILABLE'; usage: NormalizedModelUsage | null; retries: number; finishReason: string | null; failure: string | null; failureClass: CatalogFailureClass | null; responseHash: string | null; responseLength: number | null; requestedOutputTokens: number; invocationProfile: string | null; evidenceSource?: 'DIRECT_SMOKE' | 'CALLABILITY_REUSED'}
 export interface CatalogSmokeEvidence {status: 'PASS' | 'LIMITED' | 'FAILED'; startedAt: string; completedAt: string; probes: CatalogSmokeProbe[]; inputSha256: string; adapterId: string}
 export interface CatalogCallabilityEvidence {status: 'PASS' | 'FAIL'; startedAt: string; completedAt: string; elapsedMs: number; inferenceEndpointStatus: CatalogInferenceEndpointStatus; httpStatus: number | null; httpAccepted: boolean; streamRequested: boolean; streamStarted: boolean; firstEventMs: number | null; ttftMs: number | null; ttftAuthority: 'MEASURED' | 'UNAVAILABLE'; partialOutput: boolean; finishReason: string | null; usage: NormalizedModelUsage | null; failure: string | null; failureClass: CatalogFailureClass | null; responseHash: string | null; responseLength: number | null; requestedOutputTokens: number; inputSha256: string; invocationProfile: string | null}
+export interface CatalogStageTransition {stage: CatalogQualificationStage; at: string; reason: string; evidence?: string}
+export interface CatalogEvidenceAdjudication {
+  id: string;
+  recordedAt: string;
+  evidenceKind: 'CALLABILITY' | 'CAPABILITY_SMOKE' | 'FROZEN_BENCHMARK';
+  evidenceReference: string;
+  attribution: CatalogOutcomeAttribution;
+  scoreDisposition: 'INCLUDE' | 'EXCLUDE';
+  reason: string;
+  supersededBy?: string;
+  supportingEvidence: string[];
+}
+export type CatalogEvidenceAdjudicationInput = Omit<CatalogEvidenceAdjudication, 'id' | 'recordedAt'> & {id?: string; recordedAt?: string};
 export interface ProviderCatalogModel {
   providerId: string;
   registryModelId: string;
@@ -56,6 +71,9 @@ export interface ProviderCatalogModel {
   smoke?: CatalogSmokeEvidence;
   smokeHistory?: CatalogSmokeEvidence[];
   benchmarkBatchIds: string[];
+  qualificationStage?: CatalogQualificationStage;
+  stageHistory?: CatalogStageTransition[];
+  evidenceAdjudications?: CatalogEvidenceAdjudication[];
 }
 interface ProviderCatalogObservation {providerId: string; endpointStatus: CatalogEndpointStatus; discoveryStatus: CatalogDiscoveryStatus; credentialStatus: ProviderCredentialStatus; lastDiscoveryAt: string | null; lastError: string | null; rateLimit: CatalogRateLimitObservation; quota: CatalogQuotaObservation}
 interface ProviderCatalogSnapshot {schema: 'agent-control.provider-catalog/v1'; providers: ProviderCatalogObservation[]; models: ProviderCatalogModel[]}
@@ -123,7 +141,8 @@ export class ProviderCatalogStore {
     if (value.schema !== 'agent-control.provider-catalog/v1') throw new Error('provider_catalog_snapshot_invalid');
     for (const provider of value.providers) this.providers.set(provider.providerId, provider);
     for (const model of value.models) {
-      const normalized = {...model, available: model.available !== false, inferenceEndpointStatus: model.inferenceEndpointStatus ?? inferLegacyInferenceStatus(model)};
+      const stage = model.qualificationStage ?? inferQualificationStage(model);
+      const normalized = {...model, available: model.available !== false, inferenceEndpointStatus: model.inferenceEndpointStatus ?? inferLegacyInferenceStatus(model), qualificationStage: stage, stageHistory: model.stageHistory?.length ? model.stageHistory : [{stage, at: model.lastDiscoveredAt, reason: 'restored from legacy catalogue evidence'}], evidenceAdjudications: model.evidenceAdjudications ?? []};
       if (normalized.smoke) normalized.smoke.probes = normalized.smoke.probes.map(probe => normalizeStoredProbe(probe));
       if (normalized.smokeHistory) normalized.smokeHistory = normalized.smokeHistory.map(smoke => ({...smoke, probes: smoke.probes.map(probe => normalizeStoredProbe(probe))}));
       this.models.set(catalogKey(model.providerId, model.canonicalModelId), normalized);
@@ -140,7 +159,7 @@ export class ProviderCatalogStore {
       const key = catalogKey(providerId, discovered.id); seen.add(key); const existing = this.models.get(key), registryModelId = existing?.registryModelId ?? discoveredRegistryId(providerId, discovered.id);
       const value: ProviderCatalogModel = existing
         ? {...existing, ownedBy: discovered.ownedBy, lastDiscoveredAt: at, available: true, metadata: discovered.metadata}
-        : {providerId, registryModelId, canonicalModelId: discovered.id, ownedBy: discovered.ownedBy, firstDiscoveredAt: at, lastDiscoveredAt: at, available: true, inferenceEndpointStatus: 'UNTESTED', reviewState: 'UNQUALIFIED', stateHistory: [{state: 'DISCOVERED', at, reason: 'provider catalogue observation'}, {state: 'UNQUALIFIED', at, reason: 'discovery never grants qualification or inference callability'}], routingEligible: false, metadata: discovered.metadata, benchmarkBatchIds: []};
+        : {providerId, registryModelId, canonicalModelId: discovered.id, ownedBy: discovered.ownedBy, firstDiscoveredAt: at, lastDiscoveredAt: at, available: true, inferenceEndpointStatus: 'UNTESTED', reviewState: 'UNQUALIFIED', stateHistory: [{state: 'DISCOVERED', at, reason: 'provider catalogue observation'}, {state: 'UNQUALIFIED', at, reason: 'discovery never grants qualification or inference callability'}], routingEligible: false, metadata: discovered.metadata, benchmarkBatchIds: [], qualificationStage: 'DISCOVERED', stageHistory: [{stage: 'DISCOVERED', at, reason: 'canonical model ID observed in provider catalogue'}], evidenceAdjudications: []};
       if (existing && !existing.available) { value.routingEligible = false; transition(value, 'UNQUALIFIED', at, 'model returned to provider catalogue; routing requires current review'); }
       this.models.set(key, value);
     }
@@ -152,16 +171,26 @@ export class ProviderCatalogStore {
     this.save(); return {provider: structuredClone(current), models: this.modelsList(providerId), discovered: seen.size};
   }
   recordSmoke(providerId: string, canonicalModelId: string, smoke: CatalogSmokeEvidence) {
-    const item = this.mustModel(providerId, canonicalModelId); if (item.smoke && !sameEvidenceRun(item.smoke, smoke)) item.smokeHistory = appendEvidence(item.smokeHistory, item.smoke); item.smoke = structuredClone(smoke); item.inferenceEndpointStatus = inferenceStatusFromProbes(smoke.probes); transition(item, 'SMOKE_TESTED', smoke.completedAt, `bounded smoke ${smoke.status.toLowerCase()}`, `smoke:${smoke.inputSha256}`); this.models.set(catalogKey(providerId, canonicalModelId), item); this.save(); return structuredClone(item);
+    const item = this.mustModel(providerId, canonicalModelId); if (item.smoke && !sameEvidenceRun(item.smoke, smoke)) item.smokeHistory = appendEvidence(item.smokeHistory, item.smoke); item.smoke = structuredClone(smoke); item.inferenceEndpointStatus = inferenceStatusFromProbes(smoke.probes); transition(item, 'SMOKE_TESTED', smoke.completedAt, `bounded smoke ${smoke.status.toLowerCase()}`, `smoke:${smoke.inputSha256}`); stageTransition(item, smoke.status === 'PASS' ? 'CAPABILITY_CONFIRMED' : smoke.status === 'LIMITED' ? 'LIMITED' : 'FAILED', smoke.completedAt, `capability smoke ${smoke.status.toLowerCase()}`, `smoke:${smoke.inputSha256}`); this.models.set(catalogKey(providerId, canonicalModelId), item); this.save(); return structuredClone(item);
   }
-  recordCallability(providerId: string, canonicalModelId: string, evidence: CatalogCallabilityEvidence) { const item = this.mustModel(providerId, canonicalModelId); if (item.callability && !sameEvidenceRun(item.callability, evidence)) item.callabilityHistory = appendEvidence(item.callabilityHistory, item.callability); item.callability = structuredClone(evidence); item.inferenceEndpointStatus = evidence.inferenceEndpointStatus; this.models.set(catalogKey(providerId, canonicalModelId), item); this.save(); return structuredClone(item); }
-  markBenchmarkQueued(modelIds: string[], batchId: string) { for (const modelId of modelIds) { const item = [...this.models.values()].find(value => value.registryModelId === modelId); if (!item) continue; if (!item.benchmarkBatchIds.includes(batchId)) item.benchmarkBatchIds.push(batchId); transition(item, 'BENCHMARK_QUEUED', this.clock(), 'frozen benchmark queued', `batch:${batchId}`); } this.save(); }
+  beginCallability(providerId: string, canonicalModelId: string, at = this.clock()) { const item = this.mustModel(providerId, canonicalModelId); stageTransition(item, 'TESTING_CALLABILITY', at, 'bounded authoritative callability request started'); this.models.set(catalogKey(providerId, canonicalModelId), item); this.save(); return structuredClone(item); }
+  recordCallability(providerId: string, canonicalModelId: string, evidence: CatalogCallabilityEvidence) { const item = this.mustModel(providerId, canonicalModelId); if (item.callability && !sameEvidenceRun(item.callability, evidence)) item.callabilityHistory = appendEvidence(item.callabilityHistory, item.callability); item.callability = structuredClone(evidence); item.inferenceEndpointStatus = evidence.inferenceEndpointStatus; const attribution = callabilityAttribution(evidence), stage: CatalogQualificationStage = evidence.status === 'PASS' ? 'CONFIRMED' : attribution === 'INDETERMINATE' || attribution === 'PROVIDER_FAILURE' ? 'LIMITED' : 'FAILED'; stageTransition(item, stage, evidence.completedAt, callabilityNarrative(item.canonicalModelId, evidence), `callability:${evidence.inputSha256}`); this.models.set(catalogKey(providerId, canonicalModelId), item); this.save(); return structuredClone(item); }
+  beginSmoke(providerId: string, canonicalModelId: string, at = this.clock()) { const item = this.mustModel(providerId, canonicalModelId); if (item.inferenceEndpointStatus !== 'CONFIRMED') throw new Error('provider_catalog_callability_required'); stageTransition(item, 'CAPABILITY_TESTING', at, 'bounded capability smoke started after confirmed callability'); this.models.set(catalogKey(providerId, canonicalModelId), item); this.save(); return structuredClone(item); }
+  recordEvidenceAdjudication(providerId: string, canonicalModelId: string, input: CatalogEvidenceAdjudicationInput) {
+    const evidenceKinds: CatalogEvidenceAdjudication['evidenceKind'][] = ['CALLABILITY','CAPABILITY_SMOKE','FROZEN_BENCHMARK'], attributions: CatalogOutcomeAttribution[] = ['MODEL_SUCCESS','MODEL_FAILURE','HARNESS_FAILURE','TEST_INVALIDATED','PROVIDER_FAILURE','ENDPOINT_UNAVAILABLE','INDETERMINATE'];
+    if (!evidenceKinds.includes(input.evidenceKind) || !attributions.includes(input.attribution) || !['INCLUDE','EXCLUDE'].includes(input.scoreDisposition) || typeof input.evidenceReference !== 'string' || !input.evidenceReference.trim() || typeof input.reason !== 'string' || !input.reason.trim() || !Array.isArray(input.supportingEvidence) || input.supportingEvidence.some(value => typeof value !== 'string')) throw new Error('provider_catalog_adjudication_invalid');
+    if (input.recordedAt !== undefined && (typeof input.recordedAt !== 'string' || !Number.isFinite(Date.parse(input.recordedAt)))) throw new Error('provider_catalog_adjudication_invalid');
+    const item = this.mustModel(providerId, canonicalModelId), value: CatalogEvidenceAdjudication = {id: safeIdentifier(input.id ?? `adjudication:${hash({providerId, canonicalModelId, evidenceReference: input.evidenceReference, attribution: input.attribution, reason: input.reason}).slice(0, 24)}`), recordedAt: input.recordedAt ?? this.clock(), evidenceKind: input.evidenceKind, evidenceReference: safeText(input.evidenceReference, 256), attribution: input.attribution, scoreDisposition: input.scoreDisposition, reason: safeText(input.reason, 1_024), ...(input.supersededBy ? {supersededBy: safeText(input.supersededBy, 256)} : {}), supportingEvidence: [...new Set(input.supportingEvidence.map(value => safeText(value, 512)).filter(Boolean))]};
+    if ((item.evidenceAdjudications ?? []).some(existing => existing.id === value.id)) throw new Error('provider_catalog_adjudication_exists');
+    item.evidenceAdjudications = [...(item.evidenceAdjudications ?? []), value]; this.models.set(catalogKey(providerId, canonicalModelId), item); this.save(); return structuredClone(value);
+  }
+  markBenchmarkQueued(modelIds: string[], batchId: string) { const at = this.clock(); for (const modelId of modelIds) { const item = [...this.models.values()].find(value => value.registryModelId === modelId); if (!item) continue; if (!item.benchmarkBatchIds.includes(batchId)) item.benchmarkBatchIds.push(batchId); transition(item, 'BENCHMARK_QUEUED', at, 'frozen benchmark queued', `batch:${batchId}`); stageTransition(item, 'BENCHMARKING', at, 'frozen benchmark queued', `batch:${batchId}`); } this.save(); }
   reconcile(intelligence: ModelIntelligenceProjection) {
     let changed = false;
     for (const item of this.models.values()) {
       if (!item.available) {
         if (item.routingEligible) { item.routingEligible = false; changed = true; }
-        if (item.reviewState !== 'LIMITED') { transition(item, 'LIMITED', this.clock(), 'model is absent from latest successful provider catalogue'); changed = true; }
+        if (item.reviewState !== 'LIMITED') { transition(item, 'LIMITED', this.clock(), 'model is absent from latest successful provider catalogue'); stageTransition(item, 'FAILED', this.clock(), 'model is absent from latest successful provider catalogue'); changed = true; }
         continue;
       }
       const route = intelligence.routes.filter(value => value.identity.providerId === item.providerId && value.identity.modelId === item.registryModelId).sort((a,b) => b.current.completed-a.current.completed)[0];
@@ -173,7 +202,14 @@ export class ProviderCatalogStore {
         changed = true;
       }
       const derived: CatalogReviewState | undefined = item.routingEligible ? 'ROUTING_ELIGIBLE' : route && ['QUALIFIED','PREFERRED'].includes(route.state) ? 'QUALIFIED' : route?.state === 'QUARANTINED' ? 'REJECTED' : route?.state === 'DEGRADED' ? 'LIMITED' : terminal ? 'BENCHMARKED' : batches.some(batch => ['QUEUED','RUNNING'].includes(batch.status)) ? 'BENCHMARK_QUEUED' : undefined;
-      if (derived && item.reviewState !== derived) { transition(item, derived, this.clock(), 'reconciled from immutable model intelligence', terminal ? `batch:${terminal.id}` : route ? `route:${route.routeKey}` : undefined); changed = true; }
+      if (derived && item.reviewState !== derived) {
+        const at = this.clock(), evidence = terminal ? `batch:${terminal.id}` : route ? `route:${route.routeKey}` : undefined;
+        transition(item, derived, at, 'reconciled from immutable model intelligence', evidence);
+        if (derived === 'QUALIFIED' || derived === 'ROUTING_ELIGIBLE') stageTransition(item, 'QUALIFIED', at, 'frozen evidence satisfies qualification policy', evidence);
+        else if (derived === 'REJECTED') stageTransition(item, 'FAILED', at, 'frozen evidence rejected by qualification policy', evidence);
+        else if (derived === 'BENCHMARKED' || derived === 'LIMITED') stageTransition(item, 'LIMITED', at, 'frozen benchmark completed without routing qualification', evidence);
+        changed = true;
+      }
     }
     if (changed) this.save();
   }
@@ -211,7 +247,8 @@ export class ProviderCatalogRuntime {
         const observation = this.store.provider(provider.id) ?? emptyProvider(provider.id), discovered = rows.filter(model => model.providerId === provider.id);
         return {id: provider.id, name: provider.name ?? provider.id, kind: provider.kind, enabled: provider.enabled !== false, adapter: provider.adapter ?? 'openai-compatible-v1', baseUrl: provider.baseUrl ?? null, authenticationType: provider.auth?.type ?? (provider.requiresAuth ? 'bearer-env' : 'none'), credentialReference: providerCredentialReferenceType(provider), credentialStatus: providerCredentialStatus(provider, this.environment), endpointStatus: observation.endpointStatus, discoveryStatus: observation.discoveryStatus, discoveredModels: discovered.length, availableModels: discovered.filter(model => model.available).length, inferenceConfirmedModels: discovered.filter(model => model.available && model.inferenceEndpointStatus === 'CONFIRMED').length, callabilityUntestedModels: discovered.filter(model => model.available && model.inferenceEndpointStatus === 'UNTESTED').length, lastDiscoveryAt: observation.lastDiscoveryAt, rateLimit: observation.rateLimit, quota: observation.quota, costClassification: provider.costClass ? {value: provider.costClass.toUpperCase(), authority: 'OPERATOR_CONFIGURED'} : {value: null, authority: 'UNKNOWN'}, qualificationStatus: provider.qualification?.status ?? 'unqualified', routingEligibleModels: discovered.filter(model => model.routingEligible).length, lastError: observation.lastError};
       }),
-      models: rows.map(model => ({...model, diagnosticStatus: diagnosticStatus(model), triage: triageProjection(model), lifecycle: lifecycleProjection(model, intelligence), benchmark: benchmarkProjection(model, intelligence)})),
+      models: rows.map(model => ({...model, qualificationStage: model.qualificationStage ?? inferQualificationStage(model), costStatus: catalogCostStatus(model), latestNarrative: latestCatalogNarrative(model), diagnosticStatus: diagnosticStatus(model), triage: triageProjection(model), lifecycle: lifecycleProjection(model, intelligence), benchmark: benchmarkProjection(model, intelligence)})),
+      tournament: {leaders: catalogTournamentLeaders(rows, intelligence), requestAccounting: catalogTournamentRequestAccounting(rows, intelligence), narrative: rows.flatMap(model => (model.stageHistory ?? []).map((transition, index) => ({id: `catalog-narrative:${hash({providerId:model.providerId,modelId:model.canonicalModelId,index,transition}).slice(0,24)}`, providerId: model.providerId, canonicalModelId: model.canonicalModelId, stage: transition.stage, at: transition.at, text: transition.reason, evidence: transition.evidence ?? null}))).sort((left,right) => Date.parse(left.at)-Date.parse(right.at)).slice(-100)},
     };
   }
 
@@ -229,7 +266,7 @@ export class ProviderCatalogRuntime {
     const provider = this.mustProvider(providerId); if (provider.enabled === false) throw new Error('provider_disabled');
     const item = this.store.modelsList(providerId).find(model => model.canonicalModelId === canonicalModelId); if (!item) throw new Error('provider_catalog_model_missing');
     if (!item.available) throw new Error('provider_catalog_model_unavailable');
-    const adapter = this.adapters.resolve(provider), model = catalogModelConfig(item), extension = adapter.smokeRequest?.({provider, model, probe: 'basic-completion'}), startedAt = this.clock(), requestedOutputTokens = 64;
+    const adapter = this.adapters.resolve(provider), model = catalogModelConfig(item), extension = adapter.smokeRequest?.({provider, model, probe: 'basic-completion'}), startedAt = this.clock(), requestedOutputTokens = 64; this.store.beginCallability(providerId, canonicalModelId, startedAt);
     const client = new OpenAICompatibleProviderClient(provider, this.fetcher, () => { const credential = resolveProviderCredential(provider, this.environment); try { adapter.validateCredential?.(credential); } catch (error) { throw safeError(error, credential); } return credential; });
     const result = await client.probeStreaming(model, 'Reply with exactly AC_CALLABILITY_OK.', {maximumOutputTokens: requestedOutputTokens, timeoutMs: Math.min(timeoutMs, 60_000), requestExtension: extension});
     const completedAt = this.clock(), failureClass = callabilityFailureClass(result), passed = result.outcome === 'COMPLETED' && result.finishReason !== 'length' && result.output.includes('AC_CALLABILITY_OK'), inferenceEndpointStatus = callabilityEndpointStatus(result);
@@ -241,7 +278,7 @@ export class ProviderCatalogRuntime {
     const provider = this.mustProvider(providerId); if (provider.enabled === false) throw new Error('provider_disabled');
     const item = this.store.modelsList(providerId).find(model => model.canonicalModelId === canonicalModelId); if (!item) throw new Error('provider_catalog_model_missing');
     if (!item.available) throw new Error('provider_catalog_model_unavailable');
-    const adapter = this.adapters.resolve(provider), startedAt = this.clock(), model = catalogModelConfig(item), client = new OpenAICompatibleProviderClient(provider, this.fetcher, () => { const credential = resolveProviderCredential(provider, this.environment); try { adapter.validateCredential?.(credential); } catch (error) { throw safeError(error, credential); } return credential; }), probes: CatalogSmokeProbe[] = [];
+    const adapter = this.adapters.resolve(provider), startedAt = this.clock(); this.store.beginSmoke(providerId, canonicalModelId, startedAt); const model = catalogModelConfig(item), client = new OpenAICompatibleProviderClient(provider, this.fetcher, () => { const credential = resolveProviderCredential(provider, this.environment); try { adapter.validateCredential?.(credential); } catch (error) { throw safeError(error, credential); } return credential; }), probes: CatalogSmokeProbe[] = [];
     const run = async (id: CatalogSmokeProbe['id'], prompt: string, options: NonNullable<Parameters<OpenAICompatibleProviderClient['invoke']>[2]>, verify: (result: Awaited<ReturnType<OpenAICompatibleProviderClient['invoke']>>) => boolean) => {
       const requestedOutputTokens = options.maximumOutputTokens ?? 256;
       const extension = adapter.smokeRequest?.({provider, model, probe: id});
@@ -259,6 +296,7 @@ export class ProviderCatalogRuntime {
   }
 
   markBenchmarkQueued(modelIds: string[], batchId: string) { this.store.markBenchmarkQueued(modelIds, batchId); }
+  recordEvidenceAdjudication(providerId: string, canonicalModelId: string, input: CatalogEvidenceAdjudicationInput) { return this.store.recordEvidenceAdjudication(providerId, canonicalModelId, input); }
   setRoutingEligibility(providerId: string, canonicalModelId: string, enabled: boolean) { const provider = this.mustProvider(providerId); if (enabled && provider.enabled === false) throw new Error('provider_disabled'); const item = this.store.setRoutingEligibility(providerId, canonicalModelId, enabled, this.intelligence.projection()); this.models.setDiscoveredRoutingEligibility(item.registryModelId, enabled); return item; }
   modelByRegistryId(modelId: string) { return this.store.modelsList().find(model => model.registryModelId === modelId); }
   syncModels() { for (const item of this.store.modelsList()) if (this.byId.has(item.providerId)) this.models.registerDiscoveredModel(catalogModelConfig(item)); }
@@ -285,6 +323,47 @@ function rateLimitFrom(headers: Headers, credential = ''): CatalogRateLimitObser
 function quotaFrom(headers: Headers): CatalogQuotaObservation { const value = headerNumber(headers, 'x-quota-remaining'); return {value, unit: value === null ? null : 'provider-defined', authority: value === null ? 'UNKNOWN' : 'PROVIDER_REPORTED'}; }
 function emptyProvider(providerId: string): ProviderCatalogObservation { return {providerId, endpointStatus: 'UNKNOWN', discoveryStatus: 'NEVER', credentialStatus: 'MISSING', lastDiscoveryAt: null, lastError: null, rateLimit: {requestsLimit:null,requestsRemaining:null,tokensLimit:null,tokensRemaining:null,reset:null,retryAfter:null,authority:'UNKNOWN'}, quota:{value:null,unit:null,authority:'UNKNOWN'}}; }
 function transition(item: ProviderCatalogModel, state: CatalogReviewState, at: string, reason: string, evidence?: string) { if (item.reviewState === state) return; item.reviewState = state; item.stateHistory.push({state, at, reason, ...(evidence ? {evidence} : {})}); }
+function stageTransition(item: ProviderCatalogModel, stage: CatalogQualificationStage, at: string, reason: string, evidence?: string) { if (item.qualificationStage === stage && item.stageHistory?.at(-1)?.reason === reason) return; item.qualificationStage = stage; item.stageHistory = [...(item.stageHistory ?? []), {stage, at, reason: safeText(reason, 1_024), ...(evidence ? {evidence: safeText(evidence, 256)} : {})}]; }
+function inferQualificationStage(model: ProviderCatalogModel): CatalogQualificationStage { if (!model.available) return 'FAILED'; if (model.routingEligible || model.reviewState === 'QUALIFIED') return 'QUALIFIED'; if (model.reviewState === 'BENCHMARK_QUEUED' || model.reviewState === 'BENCHMARKED') return model.reviewState === 'BENCHMARK_QUEUED' ? 'BENCHMARKING' : 'LIMITED'; if (model.smoke) return model.smoke.status === 'PASS' ? 'CAPABILITY_CONFIRMED' : model.smoke.status === 'LIMITED' ? 'LIMITED' : 'FAILED'; if (model.callability?.status === 'PASS') return 'CONFIRMED'; if (model.callability?.status === 'FAIL') return callabilityAttribution(model.callability) === 'ENDPOINT_UNAVAILABLE' ? 'FAILED' : 'LIMITED'; return 'DISCOVERED'; }
+function callabilityAttribution(evidence: CatalogCallabilityEvidence): CatalogOutcomeAttribution { if (evidence.status === 'PASS') return 'MODEL_SUCCESS'; if (evidence.failureClass === 'ENDPOINT_NOT_AVAILABLE') return 'ENDPOINT_UNAVAILABLE'; if (evidence.failureClass === 'TIMEOUT_BEFORE_FIRST_TOKEN' || evidence.failureClass === 'TIMEOUT_UNCLASSIFIED') return 'INDETERMINATE'; if (['AUTHORIZATION','RATE_LIMITED','PROVIDER_ERROR','MALFORMED_RESPONSE'].includes(evidence.failureClass ?? '')) return 'PROVIDER_FAILURE'; return 'MODEL_FAILURE'; }
+function callabilityNarrative(modelId: string, evidence: CatalogCallabilityEvidence) { if (evidence.status === 'PASS') return `${modelId} responded successfully and is moving to capability testing.`; if (evidence.failureClass === 'ENDPOINT_NOT_AVAILABLE') return `${modelId} returned HTTP ${evidence.httpStatus ?? 'unavailable'}, so Agent Control stopped testing it as endpoint unavailable.`; if (callabilityAttribution(evidence) === 'INDETERMINATE') return `${modelId} produced no authoritative callable result within the bounded test, so Agent Control stopped pending policy.`; return `${modelId} failed the bounded callability gate (${evidence.failureClass ?? 'UNKNOWN'}), so Agent Control stopped before capability testing.`; }
+function latestCatalogNarrative(model: ProviderCatalogModel) { return model.stageHistory?.at(-1)?.reason ?? `${model.canonicalModelId} is discovered and awaiting callability testing.`; }
+function catalogCostStatus(model: ProviderCatalogModel): 'KNOWN_ZERO' | 'KNOWN_PAID' | 'UNKNOWN' { const value = model.metadata.costClassification.value; return value === 'FREE' ? 'KNOWN_ZERO' : value === 'METERED' ? 'KNOWN_PAID' : 'UNKNOWN'; }
+function catalogTournamentLeaders(models: ProviderCatalogModel[], intelligence: ModelIntelligenceProjection) {
+  const rows = models.map(model => {
+    const benchmark = benchmarkProjection(model, intelligence), probes = model.smoke?.probes ?? [], passed = new Set(probes.filter(probe => probe.status === 'PASS').map(probe => probe.id)), elapsed = probes.filter(probe => probe.elapsedMs !== null).map(probe => probe.elapsedMs!), adequate = ['basic-completion','coding','context-reliability'].every(id => passed.has(id as CatalogSmokeProbe['id']));
+    return {model, benchmark, passed, adequate, averageSmokeLatencyMs: elapsed.length ? elapsed.reduce((sum,value)=>sum+value,0)/elapsed.length : null, costStatus: catalogCostStatus(model)};
+  });
+  const entry = (row: typeof rows[number] | undefined, value: number | null, basis: string) => row ? {providerId: row.model.providerId, canonicalModelId: row.model.canonicalModelId, registryModelId: row.model.registryModelId, value, basis, reviewState: row.model.reviewState, routingEligible: row.model.routingEligible, costStatus: row.costStatus} : null;
+  const maximum = (selector: (row: typeof rows[number]) => number | null, filter: (row: typeof rows[number]) => boolean) => rows.filter(filter).map(row=>({row,value:selector(row)})).filter((item): item is {row:typeof rows[number];value:number}=>item.value!==null).sort((left,right)=>right.value-left.value)[0];
+  const minimum = (selector: (row: typeof rows[number]) => number | null, filter: (row: typeof rows[number]) => boolean) => rows.filter(filter).map(row=>({row,value:selector(row)})).filter((item): item is {row:typeof rows[number];value:number}=>item.value!==null).sort((left,right)=>left.value-right.value)[0];
+  const qualifiedCoding = maximum(row=>row.benchmark.codingScore,row=>['QUALIFIED','ROUTING_ELIGIBLE'].includes(row.model.reviewState));
+  const coding = maximum(row=>row.benchmark.codingScore,row=>row.adequate&&row.passed.has('coding'));
+  const fast = minimum(row=>row.averageSmokeLatencyMs,row=>row.adequate);
+  const tools = minimum(row=>row.averageSmokeLatencyMs,row=>row.adequate&&row.passed.has('tool-calling'));
+  const zero = minimum(row=>row.averageSmokeLatencyMs,row=>row.adequate&&row.costStatus==='KNOWN_ZERO');
+  const context = maximum(row=>row.benchmark.score,row=>row.adequate&&row.passed.has('context-reliability'));
+  const preFrontier = maximum(row=>row.benchmark.score,row=>row.adequate&&row.model.smoke?.status==='PASS');
+  return {
+    bestQualifiedCodingWorker: entry(qualifiedCoding?.row, qualifiedCoding?.value ?? null, 'qualified frozen coding score'),
+    strongestCodingCandidate: entry(coding?.row, coding?.value ?? null, 'frozen coding score plus passing bounded capability gates'),
+    fastestAdequateModel: entry(fast?.row, fast?.value ?? null, 'lowest measured mean capability-probe latency among adequate candidates'),
+    bestToolUseCandidate: entry(tools?.row, tools?.value ?? null, 'verified forced-tool smoke with lowest measured mean probe latency'),
+    strongestKnownZeroCostHostedWorker: entry(zero?.row, zero?.value ?? null, 'adequate candidate with authoritative zero-cost classification'),
+    bestContextCandidate: entry(context?.row, context?.value ?? null, 'bounded context smoke plus frozen benchmark score'),
+    preFrontierCandidate: entry(preFrontier?.row, preFrontier?.value ?? null, 'highest frozen benchmark score among full-smoke survivors'),
+    unavailableOrUnreliable: rows.filter(row=>!row.model.available||['NOT_AVAILABLE','INDETERMINATE','RATE_LIMITED','AUTHORIZATION_REQUIRED'].includes(row.model.inferenceEndpointStatus)||row.model.smoke?.status==='FAILED').map(row=>({providerId:row.model.providerId,canonicalModelId:row.model.canonicalModelId,inferenceEndpointStatus:row.model.inferenceEndpointStatus,diagnostic:diagnosticStatus(row.model).label})),
+  };
+}
+function catalogTournamentRequestAccounting(models: ProviderCatalogModel[], intelligence: ModelIntelligenceProjection) {
+  const callability = models.flatMap(model => [...(model.callabilityHistory ?? []), ...(model.callability ? [model.callability] : [])].map(value => ({kind:'CALLABILITY' as const, status:value.status === 'PASS' ? 'SUCCESS' as const : 'FAILED' as const, attribution:callabilityAttribution(value), failureClass:value.failureClass, usage:value.usage, elapsedMs:value.elapsedMs}))), smoke = models.flatMap(model => [...(model.smokeHistory ?? []), ...(model.smoke ? [model.smoke] : [])].flatMap(value => value.probes.filter(probe => probe.evidenceSource !== 'CALLABILITY_REUSED').map(probe => ({kind:'CAPABILITY' as const, status:probe.status === 'PASS' ? 'SUCCESS' as const : probe.status === 'FAIL' ? 'FAILED' as const : 'UNAVAILABLE' as const, attribution:smokeAttribution(probe), failureClass:probe.failureClass, usage:probe.usage, elapsedMs:probe.elapsedMs}))));
+  const registryIds = new Set(models.map(model=>model.registryModelId)), benchmark = intelligence.attempts.filter(attempt=>registryIds.has(attempt.candidate.modelId) && benchmarkAttemptReachedProvider(attempt)).map(attempt=>({kind:'BENCHMARK' as const,status:attempt.status === 'PASSED' ? 'SUCCESS' as const : attempt.status === 'FAILED' ? 'FAILED' as const : 'UNAVAILABLE' as const,attribution:attempt.outcomeAttribution,failureClass:attempt.failureClass,usage:attempt.usage.authority === 'PROVIDER_REPORTED' ? {inputTokens:attempt.usage.inputTokens,outputTokens:attempt.usage.outputTokens,totalTokens:attempt.usage.totalTokens} : null,elapsedMs:attempt.elapsedMs !== null && attempt.elapsedMs > 0 ? attempt.elapsedMs : null}));
+  const requests = [...callability,...smoke,...benchmark], usage = requests.filter(request=>request.usage && request.usage.inputTokens !== null && request.usage.outputTokens !== null && request.usage.totalTokens !== null), elapsed = requests.filter(request=>request.elapsedMs !== null), sum = (field:'inputTokens'|'outputTokens'|'totalTokens') => usage.reduce((total,request)=>total+(request.usage?.[field] ?? 0),0), attributions = Object.fromEntries(['MODEL_SUCCESS','MODEL_FAILURE','HARNESS_FAILURE','TEST_INVALIDATED','PROVIDER_FAILURE','ENDPOINT_UNAVAILABLE','INDETERMINATE'].map(value=>[value,requests.filter(request=>request.attribution===value).length])) as Record<CatalogOutcomeAttribution,number>;
+  const currentCallabilityFailures = models.filter(model=>model.callability?.status==='FAIL'&&!model.smoke).length;
+  return {authority:'DURABLE_CATALOGUE_AND_MODEL_INTELLIGENCE' as const,modelsWithCallability:models.filter(model=>Boolean(model.callability)).length,callabilityRequests:callability.length,capabilityRequests:smoke.length,benchmarkRequests:benchmark.length,totalRequests:requests.length,successfulCalls:requests.filter(request=>request.status==='SUCCESS').length,failedCalls:requests.filter(request=>request.status==='FAILED').length,unavailableCalls:requests.filter(request=>request.status==='UNAVAILABLE').length,timedOutCalls:requests.filter(request=>request.failureClass?.startsWith('TIMEOUT')).length,attribution:attributions,providerReportedTokens:{inputKnown:sum('inputTokens'),outputKnown:sum('outputTokens'),totalKnown:sum('totalTokens'),requestsWithCompleteUsage:usage.length,requestCoverage:requests.length,complete:usage.length===requests.length,total:usage.length===requests.length?sum('totalTokens'):null},providerExecutionTime:{knownMs:elapsed.reduce((total,request)=>total+(request.elapsedMs??0),0),requestsWithMeasuredTime:elapsed.length,requestCoverage:requests.length,complete:elapsed.length===requests.length,totalMs:elapsed.length===requests.length?elapsed.reduce((total,request)=>total+(request.elapsedMs??0),0):null},requestsAvoidedByCurrentCallabilityEarlyStop:currentCallabilityFailures*4};
+}
+function smokeAttribution(probe: CatalogSmokeProbe): CatalogOutcomeAttribution { if (probe.status==='PASS') return 'MODEL_SUCCESS'; if (probe.failureClass==='ENDPOINT_NOT_AVAILABLE') return 'ENDPOINT_UNAVAILABLE'; if (probe.failureClass==='CAPABILITY_UNAVAILABLE') return 'TEST_INVALIDATED'; if (probe.failureClass?.startsWith('TIMEOUT')) return 'INDETERMINATE'; if (['AUTHORIZATION','RATE_LIMITED','PROVIDER_ERROR','MALFORMED_RESPONSE'].includes(probe.failureClass??'')) return 'PROVIDER_FAILURE'; return 'MODEL_FAILURE'; }
+function benchmarkAttemptReachedProvider(attempt: ModelIntelligenceProjection['attempts'][number]) { return attempt.invocationIds.length>0 || ['PROVIDER_FAILURE','ENDPOINT_UNAVAILABLE','INDETERMINATE'].includes(attempt.outcomeAttribution); }
 function markerSchema() { return {type:'object',properties:{marker:{type:'string',enum:['AC_SMOKE_OK']}},required:['marker'],additionalProperties:false}; }
 function smokeSuiteIdentity() {
   return {
@@ -377,6 +456,21 @@ export function stagedCatalogueEstimate(discoveredModels: number, callabilityCon
   const discovered = Math.max(0, Math.floor(discoveredModels)), confirmed = Math.min(discovered, Math.max(0, Math.floor(callabilityConfirmedModels)));
   return {callabilityRequests: discovered, capabilitySmokeRequests: confirmed * 4, totalPreBenchmarkRequests: discovered + confirmed * 4, naiveFiveProbeRequests: discovered * 5, requestsAvoided: (discovered - confirmed) * 4};
 }
+export function providerCatalogEventNarrative(input: {action: string; providerId: string; canonicalModelId?: string; status?: string | null; failureClass?: string | null; models?: number}) {
+  const model = input.canonicalModelId ?? 'the selected model';
+  if (input.action === 'discovering') return `Agent Control is discovering canonical model IDs from ${input.providerId}.`;
+  if (input.action === 'discovered') return `${input.providerId} discovery returned ${input.models ?? 'an unknown number of'} canonical model IDs; none were admitted to routing.`;
+  if (input.action === 'callability-testing') return `${model} is undergoing one bounded authoritative callability request.`;
+  if (input.action === 'callability-tested' && input.status === 'PASS') return `${model} responded successfully and is moving to capability testing.`;
+  if (input.action === 'callability-tested') return `${model} stopped after callability with ${input.failureClass ?? input.status ?? 'UNKNOWN'}; capability requests were avoided.`;
+  if (input.action === 'smoke-testing') return `${model} passed callability and is undergoing bounded capability testing.`;
+  if (input.action === 'smoke-tested' && input.status === 'PASS') return `${model} passed the capability suite and may be considered for frozen qualification.`;
+  if (input.action === 'smoke-tested') return `${model} completed capability testing as ${input.status ?? 'UNKNOWN'} and will not automatically enter an expensive benchmark.`;
+  if (input.action === 'benchmark-queued') return `${model} was selected as a frozen-benchmark finalist; routing remains disabled.`;
+  if (input.action === 'benchmark-completed') return `${model} completed frozen qualification as ${input.status ?? 'INDETERMINATE'}; routing remains disabled pending explicit admission.`;
+  if (input.action === 'evidence-adjudicated') return `${model} historical evidence was classified as ${input.status ?? 'INDETERMINATE'}; the original evidence remains immutable.`;
+  return `Agent Control recorded ${input.action.replaceAll('-', ' ')} for ${input.canonicalModelId ?? input.providerId}.`;
+}
 function discoveredRegistryId(providerId: string, canonicalModelId: string) { const slug = canonicalModelId.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 36) || 'model'; return `${providerId}-${slug}-${hash(canonicalModelId).slice(0, 8)}`.slice(0, 64); }
 function catalogKey(providerId: string, modelId: string) { return `${providerId}\u0000${modelId}`; }
 function numericValue(value: unknown): CatalogValue<number> { return typeof value === 'number' && Number.isFinite(value) && value > 0 ? {value, authority:'PROVIDER_REPORTED'} : {value:null,authority:'UNKNOWN'}; }
@@ -385,6 +479,7 @@ function stringArray(value: unknown) { return Array.isArray(value) && value.ever
 function asRecord(value: unknown): Record<string, unknown> { return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}; }
 function safeModelId(value: string) { const safe = safeText(value, 256); if (!safe || !/^[a-z0-9][a-z0-9._:/-]{0,255}$/i.test(safe)) throw new Error('provider_catalog_model_id_invalid'); return safe; }
 function safeText(value: string, max: number) { return redactSensitiveText(value).replace(/[\r\n]+/g, ' ').trim().slice(0, max); }
+function safeIdentifier(value: string) { const safe = safeText(value, 256); return /^[a-z0-9][a-z0-9:._/@-]*$/i.test(safe) ? safe : `sha256:${hash(safe)}`; }
 function safeHeader(value: string | null, credential = '') { return value ? safeText(redactSensitiveText(value, [credential]), 128) : null; }
 function headerNumber(headers: Headers, name: string) { const value = headers.get(name); if (value === null || value.trim() === '') return null; const number = Number(value); return Number.isFinite(number) && number >= 0 ? number : null; }
 async function boundedJson(response: Response) {
