@@ -185,7 +185,10 @@ try {
   const verificationIndicator = page.locator('[data-matrix-indicator="verification"]'); await verificationIndicator.click();
   screenshots.push(await screenshot(page, '09-independent-verification-active.png'));
   completePhase = await waitPhase('QUALIFICATION_COMPLETE', 60_000);
+  await page.click('[data-view="models"]'); await page.evaluate(() => scrollTo(0, 0));
   await page.waitForFunction(() => /COMPLETED/.test(document.querySelector('#persistent-usage-summary')?.textContent || '') && /total/i.test(document.querySelector('.persistent-usage-chain')?.textContent || ''), undefined, {timeout: 10_000});
+  const finalChainBox = await page.locator('.persistent-usage-chain').boundingBox();
+  if (!finalChainBox || finalChainBox.y < 0 || finalChainBox.y + finalChainBox.height > 1080) throw new Error(`final_model_chain_not_visible:${JSON.stringify(finalChainBox)}`);
   completedDashboard = await currentDashboard(page);
   screenshots.push(await screenshot(page, '10-completed-reconciled-model-chain.png'));
   await page.click('[data-view="jobs"]');
