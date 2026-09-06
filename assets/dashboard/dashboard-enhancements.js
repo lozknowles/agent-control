@@ -470,6 +470,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelector('#sessions-workspace').hidden = view !== 'sessions';
     document.querySelector('#systems-workspace').hidden = view !== 'systems';
     document.querySelector('#models-workspace').hidden = view !== 'models';
+    document.querySelector('#crew-workspace').hidden = view !== 'crew';
     document.querySelector('#configuration-workspace').hidden = view !== 'configuration';
     if(view==='configuration')loadConfiguration().catch(showError);
   }));

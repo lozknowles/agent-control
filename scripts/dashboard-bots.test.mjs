@@ -1,0 +1,58 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import test from 'node:test';
+import vm from 'node:vm';
+
+const source = fs.readFileSync(new URL('../assets/dashboard/dashboard-bots.js', import.meta.url), 'utf8');
+const html = fs.readFileSync(new URL('../assets/dashboard/index.html', import.meta.url), 'utf8');
+const css = fs.readFileSync(new URL('../assets/dashboard/dashboard-bots.css', import.meta.url), 'utf8');
+const context = {window: {}};
+vm.runInNewContext(source, context);
+const bots = context.window.AgentControlBots;
+
+test('character runtime exports the complete shared state vocabulary and six non-colour identities', () => {
+  assert.deepEqual([...bots.states], ['idle', 'queued', 'working', 'reviewing', 'waiting', 'awaiting_operator', 'blocked', 'resource_pressure', 'recovering', 'handing_over', 'completed', 'failed', 'cancelling', 'cancelled', 'offline', 'stale', 'unknown']);
+  assert.deepEqual(Object.keys(bots.identities), ['lane-master', 'prompt-reviewer', 'parcel-coordinator', 'model-scout', 'resource-guardian', 'quality-inspector']);
+  assert.equal(new Set(Object.values(bots.identities).map(identity => identity.accessory)).size, 6);
+});
+
+test('motion preference is user-controlled and system reduced motion safely caps Full', () => {
+  assert.equal(bots.effectiveMotion('full', false), 'full');
+  assert.equal(bots.effectiveMotion('full', true), 'reduced');
+  assert.equal(bots.effectiveMotion('reduced', false), 'reduced');
+  assert.equal(bots.effectiveMotion('off', false), 'off');
+});
+
+test('completion acknowledgement occurs only on a fresh live transition, never initial load or reconnect', () => {
+  const working = {state: 'working', freshness: 'current'};
+  const completed = {state: 'completed', freshness: 'current'};
+  assert.equal(bots.shouldAcknowledge(undefined, completed, {initial: true, streamLive: true}), false);
+  assert.equal(bots.shouldAcknowledge(working, completed, {initial: false, streamLive: false}), false);
+  assert.equal(bots.shouldAcknowledge(working, {...completed, freshness: 'stale'}, {initial: false, streamLive: true}), false);
+  assert.equal(bots.shouldAcknowledge(completed, completed, {initial: false, streamLive: true}), false);
+  assert.equal(bots.shouldAcknowledge(working, completed, {initial: false, streamLive: true}), true);
+});
+
+test('dashboard positions navigable characters at real areas and isolates the simulated gallery', () => {
+  for (const id of Object.keys(bots.identities)) assert.match(html, new RegExp(`data-bot-slot="${id}"`));
+  assert.match(html, /data-view="crew">Crew/);
+  assert.match(html, /Authoritative operational projection/);
+  assert.match(html, /SIMULATED — PREVIEW ONLY/);
+  assert.match(html, /data-bot-motion="full"/);
+  assert.match(html, /data-bot-motion="reduced"/);
+  assert.match(html, /data-bot-motion="off"/);
+  assert.match(html, /data-bot-display="off"/);
+});
+
+test('visual layer has state text equivalents, role accessories, focus, mobile and motion safeguards', () => {
+  for (const marker of ['bot-conductor', 'bot-editor', 'bot-dispatcher', 'bot-scout', 'bot-guardian', 'bot-inspector']) assert.match(source, new RegExp(marker));
+  for (const state of bots.states) assert.match(source, new RegExp(`${state}:`));
+  assert.match(css, /button\.bot-card:focus-visible/);
+  assert.match(css, /prefers-reduced-motion: reduce/);
+  assert.match(css, /data-bot-page-active="false"/);
+  assert.match(css, /\.agent-bot\.bot-offscreen/);
+  assert.match(source, /suppressNextAcknowledgement/);
+  assert.match(source, /RECONNECTING/);
+  assert.match(css, /@media \(max-width: 760px\)/);
+  assert.doesNotMatch(css, /flash/i);
+});

@@ -1,6 +1,10 @@
 # Changelog
 
-## Unreleased — Agent Control 3.9.0 candidate
+## Unreleased
+
+- Adds an original six-character dashboard crew for Lanes, task readiness, Work Parcels, Models, Systems and verification. A deterministic read-only projector maps canonical state to text/icon/SVG poses, retains mixed active/queued/blocked counts, treats stale observations and pending cancellation truthfully, and navigates to existing evidence without adding agents or model calls. Includes Full/Reduced/Off/Hidden browser-local settings, system reduced-motion handling, off-screen/background pausing, responsive light/dark inspection canvases, an isolated clearly simulated all-state gallery, reconnect-safe completion acknowledgement and focused lifecycle tests. The feature remains unreleased and undeployed on its isolated branch.
+
+## [3.9.0] — 2026-09-05
 
 - Adds a layered persistent Work Parcel context model: concise active state, hash-chained immutable events, governed historical retrieval and bounded content-hashed baton views. Baton compaction no longer deletes failed approaches, decisions, tests, routing, approvals or steering history.
 - Makes success criteria first-class provenance-bearing objects (`USER`, `POLICY`, `PLANNER`, or `REVIEWER`) and prevents a Parcel from becoming successful until every required criterion has independently evaluated evidence.
