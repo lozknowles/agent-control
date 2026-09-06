@@ -143,7 +143,7 @@ try {
     adjudications.push(await api(`/api/provider-catalog/providers/${providerId}/models/${encodeURIComponent(input.canonicalModelId)}/adjudications`,input));
   }
   await delay(displayHoldMs); await openView(page,'models');
-  await page.locator('#provider-evidence-adjudications').scrollIntoViewIfNeeded();
+  await scrollSelector(page,'#provider-evidence-adjudications');
   screenshots.push(await screenshot(page,'03-append-only-harness-attribution.png'));
   journey.push({at:new Date().toISOString(),view:'models',outcome:'Historical Nemotron/Muse results visibly classified as HARNESS_FAILURE/EXCLUDE without rewriting source evidence.'});
 
@@ -171,7 +171,7 @@ try {
     await delay(displayHoldMs); await showModel(page,candidate.canonicalModelId);
   }
   await openView(page,'crew');
-  await page.locator('#crew-model-flow').scrollIntoViewIfNeeded();
+  await scrollSelector(page,'#crew-model-flow');
   const capabilityAnimation=await sampleCrewAnimation(page,1_200);
   screenshots.push(await screenshot(page,'05-real-crew-provider-events.png'));
   journey.push({at:new Date().toISOString(),view:'crew',outcome:'Animated Crew displayed actual provider/model lifecycle events emitted by the tournament.'});
@@ -193,7 +193,7 @@ try {
     assert.ok(['COMPLETED','PARTIAL','BLOCKED','FAILED'].includes(terminal.status));
     await delay(5_500);
     await openView(page,'models');
-    await page.locator('#provider-tournament-accounting').scrollIntoViewIfNeeded();
+    await scrollSelector(page,'#provider-tournament-accounting');
     screenshots.push(await screenshot(page,'07-benchmark-efficiency-and-leaders.png'));
     journey.push({at:new Date().toISOString(),view:'models',outcome:`Frozen batch ${queuedBatch.id} reached ${terminal.status}; dashboard reconciled durable request accounting and measured leaders.`});
   }
@@ -247,7 +247,7 @@ try {
   process.stdout.write(`${JSON.stringify({verdict:evidence.verdict,evidenceFile,reportFile,transcriptFile,videoFile,manifestFile,videoSha256:manifest.video.sha256,durationSeconds:Number(media.format.duration),requestAccounting,finalists:benchmarkFinalists.map(item=>item.canonicalModelId)})}\n`);
 } catch(error){
   if(context)await context.close().catch(()=>{});
-  throw new Error(`${sanitize(error instanceof Error?error.message:String(error))}${serverExited?`:server-exited:${serverOutput}:${serverError}`:''}`);
+  throw new Error(`${sanitize(error instanceof Error?(error.stack??error.message):String(error))}${serverExited?`:server-exited:${serverOutput}:${serverError}`:''}`);
 } finally {
   if(browser)await browser.close().catch(()=>{});
   if(!serverExited)web.kill('SIGTERM');
@@ -257,7 +257,8 @@ try {
 async function api(route,body){const response=await fetch(`${baseUrl}${route}`,body===undefined?{}:{method:'POST',headers:{'content-type':'application/json',authorization:`Bearer ${operatorToken}`},body:JSON.stringify(body)}),text=await response.text();let value;try{value=JSON.parse(text)}catch{value={error:`HTTP_${response.status}`}}if(!response.ok)throw new Error(`${value.error??`HTTP_${response.status}`}`);return value}
 async function authenticate(target,token){await target.click('#operator-button');await target.fill('#operator-token',token);await target.click('#operator-form button[type="submit"]');await target.getByRole('button',{name:'Operator authenticated',exact:true}).waitFor({timeout:10_000})}
 async function openView(target,name){await target.click(`[data-view="${name}"]`);if(name==='models')await target.waitForSelector('#provider-catalog');if(name==='crew')await target.waitForSelector('#crew-live-grid');await delay(150)}
-async function showModel(target,canonicalModelId){await openView(target,'models');const row=target.locator('#provider-catalog tbody tr').filter({hasText:canonicalModelId}).first();if(await row.count()){await row.scrollIntoViewIfNeeded();await delay(displayHoldMs)}else{await target.locator('#provider-tournament-narrative').scrollIntoViewIfNeeded();await delay(displayHoldMs)}}
+async function showModel(target,canonicalModelId){await openView(target,'models');const found=await target.evaluate(modelId=>{const row=[...document.querySelectorAll('#provider-catalog tbody tr')].find(candidate=>candidate.textContent?.includes(modelId)),fallback=document.querySelector('#provider-tournament-narrative');(row??fallback)?.scrollIntoView({block:'center'});return Boolean(row)},canonicalModelId);if(!found)await target.waitForSelector('#provider-tournament-narrative');await delay(displayHoldMs)}
+async function scrollSelector(target,selector){await target.waitForFunction(value=>Boolean(document.querySelector(value)),selector,{timeout:10_000});await target.evaluate(value=>document.querySelector(value)?.scrollIntoView({block:'center'}),selector);await delay(100)}
 async function waitForBatch(id,timeoutMs){const deadline=Date.now()+timeoutMs;while(Date.now()<deadline){const intelligence=await api('/api/model-intelligence'),batch=intelligence.queue.find(item=>item.id===id);if(batch&&['COMPLETED','PARTIAL','BLOCKED','FAILED'].includes(batch.status))return batch;if(serverExited)throw new Error('agent_control_server_exited_during_benchmark');await delay(1_000)}throw new Error(`benchmark_timeout:${id}`)}
 async function waitForServer(url,timeoutMs){const deadline=Date.now()+timeoutMs;while(Date.now()<deadline&&!serverExited){try{const response=await fetch(`${url}/api/status`);if(response.ok)return}catch{}await delay(100)}throw new Error(`dashboard_start_failed:${serverOutput}:${serverError}`)}
 async function screenshot(target,name){const file=path.join(screenshotDirectory,name),bytes=await target.screenshot({path:file,type:'png'});return{file:path.relative(outputDirectory,file),sha256:sha256(bytes),bytes:bytes.length}}
