@@ -2,7 +2,7 @@
 
 The web dashboard is an operator interface over `AgentControlService`. It is not a web scheduler and does not own lane, lease, PTY, verification or provider state.
 
-The default **Jobs** area contains four separate platform views: **Job Definitions**, **Saved Jobs**, **Schedules**, and **Runs**. These sit alongside the existing catalog/Run-ledger projection rather than replacing its Action/DAG workflows. **Lanes** retains the interactive multi-agent control room. **Sessions** projects persistent Actor, participant, delegation, ACP, contract/PTY, handoff, model/runtime and evidence identity. **Systems** shows canonical configured inventory plus ACP transport and lifecycle-recipe readiness. **Models** shows the canonical provider-neutral model registry and immutable 3.6 lifecycle state. **Configuration** provides authenticated, validated inventory and fast-execution policy editing. No view parses terminal text for Run state.
+The default **Jobs** area contains four separate platform views: **Job Definitions**, **Saved Jobs**, **Schedules**, and **Runs**. These sit alongside the existing catalog/Run-ledger projection rather than replacing its Action/DAG workflows. **Lanes** retains the interactive multi-agent control room. **Sessions** projects persistent Actor, participant, delegation, ACP, contract/PTY, handoff, model/runtime and evidence identity. **Systems** shows canonical configured inventory plus ACP transport and lifecycle-recipe readiness. **Models** shows the canonical provider-neutral model registry and immutable 3.6 lifecycle state. **Crew** shows the same operational state through navigable characters plus an isolated simulated inspection gallery. **Configuration** provides authenticated, validated inventory and fast-execution policy editing. No view parses terminal text for Run state.
 
 ## Parameterised Jobs
 
@@ -36,6 +36,12 @@ npm start
 ```
 
 Select **Observer mode** in the browser and enter the token. It remains in tab-scoped session storage and is sent as `Authorization: Bearer ...`. The server does not issue an authority cookie.
+
+## Operational characters
+
+Six cards appear beside their real areas and together under **Crew**. They expose factual state, reason, concurrent counts, elapsed/update age, next action and instrumentation limits from `characterCrew` in `GET /api/status`. Activating a card navigates to its underlying Lanes, task entry, Work Parcels, Models, Systems or Run evidence. It never performs an operational command.
+
+The Crew settings select Shown/Hidden and Full/Reduced/Off motion. Defaults are Shown and Full; operating-system reduced-motion caps Full at Reduced. The choices are browser-local and do not alter server state. The gallery is prominently labelled `SIMULATED` and cannot create work. Exact role/source mappings, precedence, stale/reconnect rules, accessibility behavior and disable/rollback guidance are in [`dashboard-characters.md`](dashboard-characters.md).
 
 ## Configure systems and models
 
