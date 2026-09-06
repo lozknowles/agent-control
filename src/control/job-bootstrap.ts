@@ -17,7 +17,7 @@ import type {ModelRegistry} from './model-registry.js';
 import {ParameterizedJobRegistry} from './parameterized-job-registry.js';
 import {repositoryCodeReviewDefinition} from './repository-review-definition.js';
 import {createParameterizedJobEngine} from './parameterized-job-engine.js';
-import {DirectRepositoryReviewExecutor} from './direct-repository-review-executor.js';
+import {DirectRepositoryReviewExecutor, type RepositoryReviewQualityGate} from './direct-repository-review-executor.js';
 import type {TokenAwareBatonRuntime} from './token-aware-baton-routing.js';
 import type {ContractExecutionRuntime} from './contract-runtime.js';
 import type {GovernedHandoffRuntime} from './handoff-runtime.js';
@@ -84,11 +84,11 @@ export function buildGovernedRetrievalRuntime(config: AgentControlConfig, stateR
   return new GovernedRetrievalRuntime(providers,{enabled:config.retrieval?.enabled??false,maximumCalls:config.retrieval?.maximumCalls,maximumEvidenceItems:config.retrieval?.maximumEvidenceItems,maximumEvidenceTokens:config.retrieval?.maximumEvidenceTokens,minimumConfidence:config.retrieval?.minimumConfidence,requiredCoverage:config.retrieval?.requiredCoverage,contextPressurePercent:config.retrieval?.contextPressurePercent,contextPressureEvidenceFraction:config.retrieval?.contextPressureEvidenceFraction,allowedLocality:config.retrieval?.allowRemote?['LOCAL','REMOTE','HYBRID']:['LOCAL'],progression},{file:path.join(stateRoot,'retrieval','evidence.json')});
 }
 
-export function buildParameterizedJobRuntime(config: AgentControlConfig, modelRegistry: ModelRegistry, workParcels: WorkParcelCoordinator, stateRoot = process.env.AGENT_CONTROL_STATE_DIR || path.resolve('.agent-control'), tokenRouting?: TokenAwareBatonRuntime, contracts?: ContractExecutionRuntime, handoffs?: GovernedHandoffRuntime, codexNodeExecution?: CodexNodeExecutionPort, retrieval = buildGovernedRetrievalRuntime(config,stateRoot),contextPacketBuilder=new ContextPacketBuilder(configuredHarnessProfiles(config.harnessEfficiency))) {
+export function buildParameterizedJobRuntime(config: AgentControlConfig, modelRegistry: ModelRegistry, workParcels: WorkParcelCoordinator, stateRoot = process.env.AGENT_CONTROL_STATE_DIR || path.resolve('.agent-control'), tokenRouting?: TokenAwareBatonRuntime, contracts?: ContractExecutionRuntime, handoffs?: GovernedHandoffRuntime, codexNodeExecution?: CodexNodeExecutionPort, retrieval = buildGovernedRetrievalRuntime(config,stateRoot),contextPacketBuilder=new ContextPacketBuilder(configuredHarnessProfiles(config.harnessEfficiency)),qualityGate?:RepositoryReviewQualityGate) {
   const definitions = new ParameterizedJobRegistry(); definitions.register(repositoryCodeReviewDefinition);
   const roots = config.jobs?.repositoryRoots ?? (process.env.AGENT_CONTROL_REPOSITORY_ROOTS?.split(path.delimiter).filter(Boolean) || [path.resolve('.')]);
   const lifecycle = tokenRouting && contracts && handoffs ? {routing: tokenRouting, contracts, handoffs} : undefined;
-  const executor = new DirectRepositoryReviewExecutor(modelRegistry, workParcels.store, tokenRouting, lifecycle, undefined, codexNodeExecution, retrieval,new RetrievedEvidenceContextCompiler(contextPacketBuilder,new InMemoryContextGraph()));
+  const executor = new DirectRepositoryReviewExecutor(modelRegistry, workParcels.store, tokenRouting, lifecycle, undefined, codexNodeExecution, retrieval,new RetrievedEvidenceContextCompiler(contextPacketBuilder,new InMemoryContextGraph()),qualityGate);
   return createParameterizedJobEngine(stateRoot, definitions, modelRegistry, executor, {allowedRepositoryRoots: roots, allowedRepositoryRemotes: config.jobs?.repositoryRemotes, nodeHealthy: nodeId => { const resource = config.resources.find(item => item.id === nodeId); if (!resource) return false; if (resource.transport.type === 'local') return true; const node = workParcels.runtime.workers.list().find(item => item.id === nodeId); return node?.health === 'healthy'; }}, new ResourceRepositoryResolver(config.resources));
 }
 

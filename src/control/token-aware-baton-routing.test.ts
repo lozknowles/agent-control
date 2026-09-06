@@ -82,6 +82,26 @@ test('bounded mechanical work can hand off to a qualified cheaper route while di
   assert.equal(difficult.action, 'COMPACT_AND_CONTINUE'); assert.match(difficult.reason, /difficult_reasoning/);
 });
 
+test('an independently observed quality failure selects the configured governed fallback without pretending context pressure or lower cost', () => {
+  const value = runtime();
+  value.observe({...sample('thread:one', {providerId: 'local', modelId: 'source-small', context: 12, limit: 100, authority: 'authoritative', cost: 0}), observedAt: at(1)});
+  const decision = value.assess('thread:one', {
+    remainingWork: 'DIFFICULT', reasoningState: 'UNFINISHED', requiredCapabilities: ['repository-review'],
+    trigger: {kind: 'QUALITY_GATE', code: 'acceptance_tests_not_explained', reason: 'The result did not account for two predeclared failing tests.', evidence: ['test-report:sha256:abc']},
+    candidates: [
+      {providerId: 'local', modelId: 'source-small', estimatedCost: 0, qualified: true, capabilities: ['repository-review'], preferenceOrder: 0},
+      {providerId: 'local', modelId: 'strong-reviewer', estimatedCost: 2, qualified: true, capabilities: ['repository-review'], preferenceOrder: 1},
+    ],
+  });
+  assert.equal(decision.state, 'CONTINUE');
+  assert.equal(decision.action, 'BATON_AND_HANDOFF');
+  assert.equal(decision.target?.modelId, 'strong-reviewer');
+  assert.equal(decision.trigger?.kind, 'QUALITY_GATE');
+  assert.equal(decision.trigger?.code, 'acceptance_tests_not_explained');
+  assert.match(decision.reason, /^quality_gate_failed_governed_fallback_selected:/);
+  assert.notEqual(decision.reason, 'context_handoff_threshold_and_bounded_work_on_qualified_lower_cost_route');
+});
+
 test('successful and failed handoffs preserve the original recoverable thread and record outcomes', async () => {
   const value = runtime(); value.observe({...sample('thread:one', {context: 91, limit: 100, authority: 'authoritative'}), observedAt: at(1)}); const sealed = value.createBaton(baton());
   const success = await value.handoff('thread:one', sealed.id, {providerId: 'openrouter', modelId: 'glm-5.3-flash'}, async () => undefined); assert.equal(success.outcome, 'SUCCEEDED'); assert.equal(value.thread('thread:one').recoverable, true);

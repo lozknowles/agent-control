@@ -135,7 +135,7 @@ test('a recorded live token handoff selects the handover pose and preserves dest
   const transfer = project({
     tokenRouting: {
       threads: [{id: 'thread:a', parcelId: 'parcel:a', active: true, updatedAt: current, providerId: 'openai', accountProfileId: 'account-a', modelId: 'sol', nodeId: 'source'}],
-      decisions: [{id: 'decision:a', threadId: 'thread:a', parcelId: 'parcel:a', at: current, action: 'BATON_AND_HANDOFF', outcome: 'RECORDED', batonId: 'baton:a', contextPercent: 91, reason: 'difficult reasoning complete; bounded verification remains', target: {providerId: 'local', modelId: 'qwen', nodeId: 'edge'}}],
+      decisions: [{id: 'decision:a', threadId: 'thread:a', parcelId: 'parcel:a', at: current, action: 'BATON_AND_HANDOFF', outcome: 'RECORDED', batonId: 'baton:a', contextPercent: 91, reason: 'difficult reasoning complete; bounded verification remains', trigger: {kind: 'QUALITY_GATE', code: 'acceptance-review', reason: 'Predeclared acceptance failed', evidence: ['test:one']}, target: {providerId: 'local', modelId: 'qwen', nodeId: 'edge'}}],
     },
   }).batonTransfers[0];
   assert.equal(transfer.sourceType, 'token-routing');
@@ -144,6 +144,9 @@ test('a recorded live token handoff selects the handover pose and preserves dest
   assert.equal(transfer.from?.label, 'openai / account-a / sol / @ source');
   assert.equal(transfer.to?.label, 'local / qwen / @ edge');
   assert.equal(transfer.reason, 'difficult reasoning complete; bounded verification remains');
+  assert.equal(transfer.triggerKind, 'QUALITY_GATE');
+  assert.equal(transfer.triggerCode, 'acceptance-review');
+  assert.match(transfer.explanation,/Independent quality gate acceptance-review/);
 });
 
 test('Work Parcel baton animation can originate only from a durable baton view/event', () => {
@@ -183,6 +186,46 @@ test('a terminal handoff result clears the pending handover pose', () => {
   }, 'parcel-coordinator');
   assert.equal(coordinator.state, 'working');
   assert.notEqual(coordinator.reason, 'sealed baton ready');
+});
+
+test('activity matrix coalesces only canonical state and typed events into inspectable indicators', () => {
+  const crew=project({
+    lanes:[{id:7,name:'Review lane',status:'working',lastMeaningfulActivity:current,model:'small-reviewer'}],
+    runs:[{id:'run:matrix',status:'RUNNING',requestedAt:current,updatedAt:current,steps:[{id:'step:tool',action:'repository.search@1',status:'RUNNING',startedAt:current}]}],
+    systems:[{id:'controller',name:'Controller',execution:'AVAILABLE',active:1,capacity:2,lastCheckAt:current}],
+    tokenRouting:{threads:[{id:'thread:matrix',parcelId:'parcel:matrix',active:true,updatedAt:current,providerId:'local-small',modelId:'small-reviewer',latest:{at:current,elapsedMs:30000}}],decisions:[{id:'route:quality',threadId:'thread:matrix',parcelId:'parcel:matrix',at:current,action:'BATON_AND_HANDOFF',outcome:'RECORDED',reason:'quality_gate_failed_governed_fallback_selected:acceptance',trigger:{kind:'QUALITY_GATE',code:'acceptance',reason:'Acceptance gate failed',evidence:['test:one']},target:{providerId:'local-strong',modelId:'strong-reviewer'}}]},
+    events:[{id:31,at:current,type:'token.telemetry',payload:{providerId:'local-small',modelId:'small-reviewer'}},{id:32,at:current,type:'token.governor_transition',payload:{providerId:'local-small',modelId:'small-reviewer'}},{id:33,at:current,type:'job.run_changed'}],
+  });
+  const panel=crew.activityPanel,indicators=panel.groups.flatMap(group=>group.indicators),byId=Object.fromEntries(indicators.map(item=>[item.id,item]));
+  assert.equal(panel.schema,'agent-control.dashboard-activity-panel/v1');
+  assert.deepEqual(panel.groups.map(group=>group.id),['control','execution','providers','handoff','assurance','infrastructure']);
+  assert.equal(byId.controller.state,'ACTIVE');assert.equal(byId.lanes.count,1);assert.equal(byId.tools.state,'ACTIVE');assert.equal(byId['provider-request'].state,'ACTIVE');assert.equal(byId.baton.state,'ACTIVE');
+  assert.equal(byId.baton.model,'strong-reviewer');assert.match(byId.baton.explanation,/Acceptance gate failed/);assert.equal(byId.baton.eventId,'32');
+  const transfer=crew.batonTransfers.find(item=>item.sourceType==='token-routing')!;assert.equal(transfer.triggerReason,'Acceptance gate failed');assert.match(transfer.explanation,/Acceptance gate failed/);
+  assert.equal(byId.nodes.state,'ACTIVE');assert.ok(indicators.every(item=>item.source&&item.meaning&&item.persistence&&item.staleBehavior));
+  assert.equal(panel.decorativeHeartbeat.authority,'presentation-only');assert.match(panel.decorativeHeartbeat.explanation,/not work/i);
+});
+
+test('quality handoff stays active while its destination thread executes after the source response completed',()=>{
+  const crew=project({
+    tokenRouting:{threads:[
+      {id:'source',parcelId:'parcel:one',active:false,updatedAt:current,providerId:'local',modelId:'small',providerExecutionNodeId:'controller'},
+      {id:'destination',parcelId:'parcel:one',active:true,updatedAt:current,providerId:'codex',accountProfileId:'account-a',modelId:'luna',providerExecutionNodeId:'controller'},
+    ],decisions:[{id:'decision:one',threadId:'source',parcelId:'parcel:one',at:current,action:'BATON_AND_HANDOFF',outcome:'RECORDED',reason:'quality fallback selected',trigger:{kind:'QUALITY_GATE',code:'acceptance',reason:'Root cause missing',evidence:['test']},target:{providerId:'codex',accountProfileId:'account-a',modelId:'luna',providerExecutionNodeId:'controller'}}]},
+    runs:[{id:'run:one',status:'RUNNING',requestedAt:current,updatedAt:current}],
+  });
+  const transfer=crew.batonTransfers[0],indicators=Object.fromEntries(crew.activityPanel.groups.flatMap(group=>group.indicators).map(item=>[item.id,item]));
+  assert.equal(transfer.active,true);assert.equal(transfer.triggerReason,'Root cause missing');assert.equal(indicators.baton.state,'ACTIVE');assert.equal(indicators.lanes.state,'ACTIVE');assert.match(indicators.lanes.explanation,/Job execution lane/);
+});
+
+test('activity matrix labels stale, disconnected and unknown sources without inventing activity', () => {
+  const crew=project({lanes:[{id:1,status:'working',lastMeaningfulActivity:stale}],systems:[{id:'offline',execution:'OFFLINE',lastCheckAt:current},{id:'unknown',execution:'UNKNOWN'}]});
+  const indicators=Object.fromEntries(crew.activityPanel.groups.flatMap(group=>group.indicators).map(item=>[item.id,item]));
+  assert.equal(indicators.lanes.state,'STALE');
+  assert.equal(indicators.nodes.state,'DISCONNECTED');
+  assert.equal(indicators['provider-request'].state,'IDLE');
+  assert.equal(indicators['provider-request'].count,0);
+  assert.doesNotMatch(JSON.stringify(crew.activityPanel),/Math\.random|simulated pulse/i);
 });
 
 test('cancellation requested remains cancelling until canonical cleanup is confirmed', () => {

@@ -167,10 +167,42 @@
     const action = options.navigable ? ` type="button" data-bot-character-nav="${esc(member.id)}"` : options.focusable ? ` type="button" data-bot-character-focus="${esc(member.id)}"` : '';
     const aria = interactive ? ` aria-label="${esc(`${identity.name}, ${identity.role}: ${operational}; ${member.activity?.label || label}. ${member.summary} ${options.navigable ? `Open ${identity.area}.` : 'Open human-readable explanation.'}`)}"` : '';
     const activityLabel = member.activity?.label || (stateName === 'idle' ? 'No active work' : label), tool = member.activity?.tool;
-    return `<${tag} class="bot-card bot-${esc(member.id)} bot-state-${esc(stateName)}${restClass}${expressionClass}${activityClass}${completeAck}${compact}${simulated}" data-bot-rest="${esc(rest || 'none')}" data-bot-expression="${esc(expression)}" data-operational-state="${esc(operational)}" data-activity="${esc(activity)}" data-transition-key="${esc(member.transitionKey || 'unreported')}"${action}${aria}>
+    const renderKey = [member.id, member.transitionKey || 'unreported', stateName, rest || 'none', expression, activity, tool?.kind || 'none', operational, options.acknowledge ? 'ack' : 'steady', options.compact ? 'compact' : 'full', options.simulated ? 'simulated' : 'live'].join('|');
+    return `<${tag} class="bot-card bot-${esc(member.id)} bot-state-${esc(stateName)}${restClass}${expressionClass}${activityClass}${completeAck}${compact}${simulated}" data-bot-character-id="${esc(member.id)}" data-bot-render-key="${esc(renderKey)}" data-bot-rest="${esc(rest || 'none')}" data-bot-expression="${esc(expression)}" data-operational-state="${esc(operational)}" data-activity="${esc(activity)}" data-transition-key="${esc(member.transitionKey || 'unreported')}"${action}${aria}>
       <span class="bot-portrait">${botSvg({...member, id: member.id, state: stateName}, expression)}<span class="bot-state-pill"><span aria-hidden="true">${esc(icons[stateName])}</span>${esc(operational)}</span></span>
       <span class="bot-copy"><span class="bot-identity"><strong>${esc(identity.name)}</strong><small>${esc(identity.role)}</small>${options.simulated ? '<b class="bot-simulated-label">SIMULATED</b>' : ''}</span><span class="bot-activity-line"><b>${esc(activity)}</b><span>${esc(activityLabel)}</span>${tool ? `<i>${esc(tool.kind)}</i>` : ''}</span><span class="bot-summary">${esc(member.summary)}</span><span class="bot-reason">${esc(member.reason)}</span>${signals(member)}<span class="bot-facts">${esc(facts(member))}</span><span class="bot-next"><b>Next</b> ${esc(member.nextAction)}</span>${member.instrumentation?.limitation ? `<span class="bot-limitation">${esc(member.instrumentation.limitation)}</span>` : ''}<span class="bot-animation-label">Presentation only: ${esc(String(expression).toLowerCase().replaceAll('_', ' '))}</span></span>
     </${tag}>`;
+  }
+
+  function cardElement(markup) {
+    const template = document.createElement('template'); template.innerHTML = markup.trim();
+    return template.content.firstElementChild;
+  }
+
+  function preserveOrReplace(current, desired) {
+    if (current?.dataset?.botRenderKey === desired?.dataset?.botRenderKey) {
+      const factsNode = current.querySelector('.bot-facts'), desiredFacts = desired.querySelector('.bot-facts');
+      if (factsNode && desiredFacts) factsNode.textContent = desiredFacts.textContent;
+      return current;
+    }
+    if (current) current.replaceWith(desired); else return desired;
+    return desired;
+  }
+
+  function reconcileSingleCard(container, markup) {
+    const desired = cardElement(markup), current = container.firstElementChild;
+    preserveOrReplace(current, desired);
+    if (!current) container.append(desired);
+    while (container.children.length > 1) container.lastElementChild.remove();
+  }
+
+  function reconcileCardList(container, markups) {
+    markups.forEach((markup, index) => {
+      const desired = cardElement(markup), current = container.children[index];
+      preserveOrReplace(current, desired);
+      if (!current) container.append(desired);
+    });
+    while (container.children.length > markups.length) container.lastElementChild.remove();
   }
 
   function simulatedMember(id, stateName, mixed = false) {
@@ -204,7 +236,8 @@
 
   function renderBaton(transfer) {
     const context = transfer.contextPercent === null || transfer.contextPercent === undefined ? '' : ` · context ${Number(transfer.contextPercent).toFixed(1)}%`;
-    return `<button type="button" class="crew-baton ${transfer.active ? 'active' : ''}" data-baton-focus="${esc(transfer.id)}"><span class="crew-baton-route"><span>${esc(routeText(transfer.from))}</span><i aria-hidden="true"><b>▰</b>→</i><span>${esc(routeText(transfer.to))}</span></span><strong>${esc(transfer.outcome)}${esc(context)}</strong><small>${esc(transfer.reason)}</small><em>Open exact recorded reason</em></button>`;
+    const trigger=transfer.triggerKind?` · ${transfer.triggerKind}${transfer.triggerCode?` / ${transfer.triggerCode}`:''}`:'';
+    return `<button type="button" class="crew-baton ${transfer.active ? 'active' : ''}" data-baton-focus="${esc(transfer.id)}"><span class="crew-baton-route"><span>${esc(routeText(transfer.from))}</span><i aria-hidden="true"><b>▰</b>→</i><span>${esc(routeText(transfer.to))}</span></span><strong>${esc(transfer.outcome)}${esc(context)}${esc(trigger)}</strong><small>${esc(transfer.reason)}</small><em>Open exact recorded reason</em></button>`;
   }
 
   function renderModelActivity(item) {
@@ -217,7 +250,7 @@
     const crew = state.snapshot?.characterCrew;
     const baton = runtime.batonFocusId && crew?.batonTransfers?.find(item => item.id === runtime.batonFocusId);
     if (baton) {
-      panel.innerHTML = `<div><span class="eyebrow">Level 2 · Human explanation</span><h2>Why did this baton move?</h2><p>${esc(baton.explanation)}</p><dl><div><dt>Authority</dt><dd>Agent Control ${esc(baton.sourceType)}</dd></div><div><dt>Source event</dt><dd>${esc(baton.sourceEventId)}</dd></div><div><dt>Sealed baton</dt><dd>${esc(baton.batonId || 'ID not projected')}</dd></div><div><dt>Recorded at</dt><dd>${esc(new Date(baton.at).toLocaleString())}</dd></div></dl></div><button type="button" class="button secondary" data-bot-character-nav="parcel-coordinator">Level 3 · Open engineering evidence</button>`;
+      panel.innerHTML = `<div><span class="eyebrow">Level 2 · Human explanation</span><h2>Why did this baton move?</h2><p>${esc(baton.explanation)}</p><dl><div><dt>Authority</dt><dd>Agent Control ${esc(baton.sourceType)}</dd></div><div><dt>Trigger</dt><dd>${esc(baton.triggerKind || 'Recorded handoff')}${baton.triggerCode ? ` · ${esc(baton.triggerCode)}` : ''}${baton.triggerReason ? `<br>${esc(baton.triggerReason)}` : ''}</dd></div><div><dt>Source event</dt><dd>${esc(baton.sourceEventId)}</dd></div><div><dt>Sealed baton</dt><dd>${esc(baton.batonId || 'ID not projected')}</dd></div><div><dt>Recorded at</dt><dd>${esc(new Date(baton.at).toLocaleString())}</dd></div></dl></div><button type="button" class="button secondary" data-bot-character-nav="parcel-coordinator">Level 3 · Open engineering evidence</button>`;
       panel.hidden = false; return;
     }
     const member = crew?.members?.find(item => item.id === runtime.focusId);
@@ -243,11 +276,14 @@
     for (const member of members) {
       const previous = previousValues.get(member.id), acknowledge = shouldAcknowledge(previous, member, {initial: runtime.initial, streamLive: document.querySelector('#stream-state')?.textContent === 'LIVE' && !runtime.suppressNextAcknowledgement}), slot = document.querySelector(`[data-bot-slot="${member.id}"]`);
       acknowledgements.set(member.id, acknowledge);
-      if (slot) slot.innerHTML = characterCard(member, {compact: true, navigable: true, acknowledge, previous});
+      if (slot) reconcileSingleCard(slot, characterCard(member, {compact: true, navigable: true, acknowledge, previous}));
       runtime.previous.set(member.id, {state: member.state, transitionKey: member.transitionKey, rest: idleDisposition(member)});
     }
     const live = document.querySelector('#crew-live-grid');
-    if (live) live.innerHTML = members.length ? members.map(member => characterCard(member, {focusable: true, acknowledge: acknowledgements.get(member.id), previous: previousValues.get(member.id)})).join('') : '<div class="compact-empty">No character projection is available from this Agent Control server.</div>';
+    if (live) {
+      if (members.length) reconcileCardList(live, members.map(member => characterCard(member, {focusable: true, acknowledge: acknowledgements.get(member.id), previous: previousValues.get(member.id)})));
+      else live.innerHTML = '<div class="compact-empty">No character projection is available from this Agent Control server.</div>';
+    }
     const ageNode = document.querySelector('#crew-live-age'); if (ageNode) ageNode.textContent = crew ? `SNAPSHOT ${age(crew.observedAt).toUpperCase()}` : 'AWAITING SNAPSHOT';
     renderWorkflow();
     runtime.initial = false;

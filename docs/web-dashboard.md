@@ -47,6 +47,10 @@ Real Work Parcels show their stage DAG, selected workers/routes, classified tool
 
 The settings select Shown/Hidden and Full/Reduced/Off motion. Defaults are Shown and Full; operating-system reduced-motion caps Full at Reduced. Fresh idle workers look around, sustained-idle workers sleep, and only a new authoritative activity wakes a sleeper. These bounded, staggered expressions never alter the `IDLE` operational state. Choices are browser-local, hidden/off-screen/background animation pauses, and narrow layouts use a horizontally scrollable worker strip. The gallery is prominently labelled `SIMULATED` and cannot create work or enter real qualification evidence. Exact source mappings, accessibility behavior, isolation and qualification commands are in [`dashboard-characters.md`](dashboard-characters.md).
 
+The Crew's **Activity Matrix** coalesces canonical state and retained typed events into nine inspectable controller, queue, execution-lane, tool, model-request, model-response, baton/escalation, verification and node-health indicators. Activate any labelled shape to inspect source, event/time, lane, provider/model, meaning, persistence and stale/disconnected behavior. It never generates random traffic. Its slow decorative heartbeat is explicitly labelled `NOT WORK ACTIVITY`; reduced motion removes pulses and background/hidden views pause them.
+
+The compact **Live usage** strip stays mounted while switching among all main views. Select a token thread or lane to keep its provider/account/model, state, elapsed time, context authority, fresh/cache/input/output totals, cost authority, governor thresholds and additive Work Parcel model chain in view. It renders replacement snapshots from the normal status/SSE path, so navigation and reconnect do not reset or double-count. `Unavailable` means the adapter did not provide the value; it never means zero.
+
 ## Configure systems and models
 
 1. Configure `AGENT_CONTROL_WEB_OPERATOR_TOKEN`, start Agent Control and authenticate using the top-right operator button.
