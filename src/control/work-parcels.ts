@@ -7,6 +7,7 @@ import type {RunRecord} from './job-types.js';
 import type {SystemReadiness} from './system-readiness.js';
 import type {ModelRegistry} from './model-registry.js';
 import type {WorkAttribution} from './identity-control-plane.js';
+import {assertNoSensitiveMaterial, redactSensitiveValue} from './security-redaction.js';
 import {
   addParcelQuestion,
   addSteeringAmendment,
@@ -61,10 +62,10 @@ function writeAtomic(file: string, value: unknown) { fs.mkdirSync(path.dirname(f
 export class WorkParcelStore {
   private readonly values = new Map<string, WorkParcel>();
   constructor(readonly file: string) { if (fs.existsSync(file)) { const parsed = JSON.parse(fs.readFileSync(file, 'utf8')) as Snapshot; if (parsed.version !== 1) throw new Error('unsupported_work_parcel_snapshot'); for (const parcel of parsed.parcels) this.values.set(parcel.id, normalizeStoredParcel(parcel)); } }
-  add(parcel: WorkParcel) { if (this.values.has(parcel.id)) throw new Error('work_parcel_exists'); this.values.set(parcel.id, structuredClone(normalizeStoredParcel(parcel))); this.save(); return this.get(parcel.id)!; }
+  add(parcel: WorkParcel) { if (this.values.has(parcel.id)) throw new Error('work_parcel_exists'); this.values.set(parcel.id, structuredClone(redactSensitiveValue(normalizeStoredParcel(parcel)))); this.save(); return this.get(parcel.id)!; }
   get(id: string) { const value = this.values.get(id); return value ? structuredClone(value) : undefined; }
   list() { return [...this.values.values()].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)).map(value => structuredClone(value)); }
-  update(parcel: WorkParcel) { if (!this.values.has(parcel.id)) throw new Error('work_parcel_missing'); parcel.updatedAt = now(); this.values.set(parcel.id, structuredClone(normalizeStoredParcel(parcel))); this.save(); return this.get(parcel.id)!; }
+  update(parcel: WorkParcel) { if (!this.values.has(parcel.id)) throw new Error('work_parcel_missing'); parcel.updatedAt = now(); this.values.set(parcel.id, structuredClone(redactSensitiveValue(normalizeStoredParcel(parcel)))); this.save(); return this.get(parcel.id)!; }
   private save() { writeAtomic(this.file, {version: 1, parcels: this.list()} satisfies Snapshot); }
 }
 
@@ -120,11 +121,13 @@ export class WorkParcelCoordinator {
     return this.store.add({id,prompt,objective:plan.objective,actor,executionOwner:'work-parcel-coordinator',status:'QUEUED',planner:plan.planner,stages,context,createdAt:at,updatedAt:at,telemetry:emptyTelemetry(),audit:createDecisionAudit(prompt,plan,this.runtime,at),provenance:[{at,type:'submitted',detail:'Approved social template; durable request identity; existing runtime remains authoritative'}]});
   }
   async submit(prompt: string, actor: string, attribution?: WorkAttribution) {
+    assertNoSensitiveMaterial(prompt, 'work_parcel_credential_material_forbidden');
     const plan = validateWorkParcelPlan(await this.planner.plan(prompt), this.runtime), at = now(), stages = materializeStages(plan.stages), context = contextForPlan(plan, actor, stages, at, prompt);
     return this.store.add({id: `parcel-${randomUUID()}`, prompt, objective: plan.objective, actor, ...(attribution ? {attribution: structuredClone(attribution)} : {}), executionOwner: 'work-parcel-coordinator', status: 'QUEUED', planner: plan.planner, stages, context, createdAt: at, updatedAt: at, telemetry: emptyTelemetry(), audit: createDecisionAudit(prompt, plan, this.runtime, at), provenance: [{at, type: 'submitted', detail: `Natural-language request accepted; planner=${plan.planner.kind}`} ]});
   }
   accept(prompt: string, actor: string, systems: SystemReadiness[] = [], attribution?: WorkAttribution) {
     if (!prompt.trim()) throw new Error('work_parcel_prompt_required');
+    assertNoSensitiveMaterial(prompt, 'work_parcel_credential_material_forbidden');
     const at = now(), target = systems.find(system => new RegExp(`\\b${escapeRegExp(system.id)}\\b`, 'i').test(prompt) || new RegExp(`\\b${escapeRegExp(system.name)}\\b`, 'i').test(prompt));
     const timeline: WorkParcelAuditEvent[] = [event(at, 'task.received', 'Natural-language task accepted', 'Verbatim prompt retained before planning'), event(at, 'task.classified', 'Task queued for governed planning', 'Registered Job selection remains authoritative')];
     if (target) timeline.push(event(at, 'target.resolving', `Resolving target: ${target.name}`, target.id), event(at, 'target.found', 'Target found', `${target.type}:${target.id}`), event(at, 'readiness.checked', `Execution state: ${target.execution}`, `Reachability: ${target.reachable}; Authentication: ${target.authentication}; Capabilities: ${target.capabilities.join(', ') || 'none reported'}`));

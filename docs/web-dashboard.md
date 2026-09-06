@@ -60,7 +60,7 @@ The compact **Live usage** strip stays mounted while switching among all main vi
 5. Provider and model changes hot-reload. Machine, service and Fast execution changes require a restart; follow the dashboard's `restartRequired` result.
 6. Open **Systems** and verify the entry. An unprobed configured system is expected to show `UNKNOWN`; an unreachable observed system shows `OFFLINE`; a provider or service with a missing credential reference shows `AUTH REQUIRED`.
 
-Machines use the same resource schema described in the main configuration model. A provider or external service that requires an API key must use `auth.env`, `credentialEnv` or `credentialFileEnv`, for example:
+Machines use the same resource schema described in the main configuration model. A provider or external service that requires an API key must use an indirect environment, referenced-file or `provider-secure-store` reference. Services retain the environment form, for example:
 
 ```json
 {
@@ -71,7 +71,7 @@ Machines use the same resource schema described in the main configuration model.
 }
 ```
 
-Set the referenced environment variable in the Agent Control process environment before restarting. Never paste its value into configuration: plaintext passwords, API keys, tokens and secret fields are rejected. The editor does not create credentials, test arbitrary endpoints or grant capabilities. A saved machine/provider/service becomes inventory; execution still requires qualified capabilities, current readiness and normal scheduler policy.
+Set a service's referenced environment variable in the Agent Control process environment before restarting. For an API provider configured with `provider-secure-store`, use `agent-control providers credential set PROVIDER_ID`; the dashboard never accepts the value. Never paste a secret into configuration: plaintext passwords, API keys, tokens and secret fields are rejected. The editor does not create credentials, test arbitrary endpoints or grant capabilities. A saved machine/provider/service becomes inventory; execution still requires qualified capabilities, current readiness and normal scheduler policy.
 
 ## API contract
 
@@ -175,6 +175,20 @@ The **Models** view adds:
 - 7/30/90-day quality/reliability, fresh/cache/total tokens, cache hit ratio, elapsed time and cost per success;
 - regression warnings and authenticated evidence-gated lifecycle controls;
 - independent Runtime Safety decisions and approval state.
+
+It also contains the generic **Provider catalogue**. Provider cards show configured enabled/disabled state; endpoint, credential and discovery state; available-versus-observed model count; current cost classification with authority; observed request/token remaining-versus-limit, reset/retry and quota fields; provider qualification; and routing-eligible count. Missing headers or metadata remain `UNKNOWN`. The model table shows explicit availability, canonical ID, review/routing state, context/modality observations, cost authority, frozen quality/coding/tool/reliability/latency/token-efficiency metrics, latest benchmark and 30/90-day trend. Actions for an unavailable model are disabled.
+
+Authenticated actions call the same control service:
+
+- **Discover Models** performs one bounded authenticated catalogue request;
+- **Smoke Test** runs the fixed small probe set for one selected model;
+- **Queue Benchmark / Re-benchmark** enters the existing frozen evaluation queue;
+- **Enable Routing** is disabled until current model intelligence is `QUALIFIED` or `PREFERRED`;
+- **Disable Routing** immediately removes dynamic eligibility.
+
+Discovery and smoke success never edit a logical role or qualify production routing. If durable model intelligence degrades, the catalogue automatically disables the dynamic route. Provider catalogue changes emit `provider.catalog_changed` through the existing SSE stream and refresh the same `GET /api/provider-catalog` projection. Public data contains credential class/status, never reference name or value. See [model registry](models/README.md) and [NVIDIA hosted models](models/NVIDIA-HOSTED.md).
+
+The 2026-09-06 isolated physical projection reconciled the protected NVIDIA catalogue and intelligence ledgers: provider `CONFIGURED / AVAILABLE / SUCCEEDED`, 81 discovered/available IDs, zero routing-eligible IDs, Nemotron `BENCHMARKED / CANDIDATE`, and its numeric token-efficiency metric. The same run replayed a typed `provider.catalog_changed` event as `text/event-stream` without authorization or credential fields. This exercised the feature assets and API on loopback only; it was not a live deployment. See the [physical evidence](evidence/agent-control-3.9-nvidia-hosted-qualification-20260906.md).
 
 All values come from the capability/model/safety ledgers. Missing cost, unsupported evaluator capability and unqualified leaders display as unavailable, never zero or a fabricated ranking. Provider/model configuration remains separate from observed capability proof.
 

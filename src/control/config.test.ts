@@ -52,6 +52,26 @@ test('provider credentials are references and qualification metadata is durable 
   assert.throws(() => validateConfig({schemaVersion: 1, resources: [], providers: [{id: 'ox', kind: 'responses', credentialEnv: 'bad-name'}], services: [], lanes: []}), /invalid_provider_credentialEnv/);
 });
 
+test('provider authentication reuses generic environment, file and opaque store references', () => {
+  const base = {schemaVersion: 1 as const, resources: [], models: [], modelRouting: {roles: {}}, services: [], lanes: []};
+  const providers = [
+    {id: 'environment', kind: 'openai-compatible' as const, baseUrl: 'https://environment.example/v1', auth: {type: 'api-key-env' as const, env: 'PROVIDER_API_KEY'}},
+    {id: 'file', kind: 'openai-compatible' as const, baseUrl: 'https://file.example/v1', auth: {type: 'bearer-file-env' as const, env: 'PROVIDER_API_KEY_FILE'}},
+    {id: 'opaque', kind: 'openai-compatible' as const, baseUrl: 'https://opaque.example/v1', auth: {type: 'provider-secure-store' as const, reference: 'provider:opaque:primary'}, discovery: {enabled: true, path: 'models'}},
+  ];
+  const config = validateConfig({...base, providers});
+  assert.deepEqual(config.providers.map(provider => provider.auth?.type), ['api-key-env','bearer-file-env','provider-secure-store']);
+  assert.equal(config.providers[2].auth?.type === 'provider-secure-store' ? config.providers[2].auth.reference : null, 'provider:opaque:primary');
+  assert.throws(() => validateConfig({...base, providers: [{...providers[2], auth: {type: 'provider-secure-store', reference: '../escape'}}]}), /invalid_provider_auth_reference/);
+  assert.throws(() => validateConfig({...base, providers: [{...providers[2], discovery: {path: '../models'}}]}), /invalid_provider_discovery_path/);
+});
+
+test('configuration rejects literal NVIDIA credentials while accepting opaque references', () => {
+  const secret = ['nvapi', 'fixture', 'C'.repeat(24)].join('-'), base = {schemaVersion: 1 as const, resources: [], models: [], modelRouting: {roles: {}}, services: [], lanes: []};
+  assert.throws(() => validateConfig({...base, providers: [{id: 'unsafe', kind: 'openai-compatible', baseUrl: 'https://integrate.api.nvidia.com/v1', note: secret}]}), /secret_material_forbidden/);
+  assert.doesNotThrow(() => validateConfig({...base, providers: [{id: 'safe', kind: 'openai-compatible', baseUrl: 'https://integrate.api.nvidia.com/v1', auth: {type: 'provider-secure-store', reference: 'provider:nvidia-hosted'}}]}));
+});
+
 test('Codex account profiles contain only opaque identity and credential-store references', () => {
   const provider = {id: 'codex', kind: 'cli' as const, accountProfiles: [
     {id: 'lawrence-pro', label: 'Lawrence Pro', plan: 'ChatGPT Pro', planAuthority: 'operator-configured' as const, capabilities: ['codex-chatgpt'], credentialStore: {type: 'codex-home-env' as const, env: 'CODEX_HOME_LAWRENCE_PRO'}, qualification: {state: 'UNTESTED' as const, version: 'configured-v1'}},

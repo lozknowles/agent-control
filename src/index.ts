@@ -31,6 +31,7 @@ import {TokenAwareBatonRuntime} from './control/token-aware-baton-routing.js';
 import {CapabilityIntelligenceStore, registerAgentControlCoreCapabilities} from './control/capability-intelligence.js';
 import {loadFrozenQualificationSuite, ModelEvaluationCoordinator, ModelIntelligenceLedger} from './control/model-intelligence.js';
 import {ProviderNeutralModelEvaluationExecutor, startModelEvaluationScheduler} from './control/model-evaluation-runtime.js';
+import {ProviderCatalogRuntime, ProviderCatalogStore} from './control/provider-catalog.js';
 
 const now = () => new Date().toISOString();
 const config = loadConfig();
@@ -56,6 +57,7 @@ registerAgentControlCoreCapabilities(capabilityIntelligence);
 const modelIntelligence = new ModelIntelligenceLedger(path.join(stateRoot, 'models', 'intelligence.json'));
 const qualificationSuite = loadFrozenQualificationSuite(path.resolve('config/qualification-suite-v1.json'));
 const modelRegistry = new ModelRegistry(config.providers, config.models, config.modelRouting, new ModelQualificationStore(path.join(stateRoot, 'model-qualification.json')), new AccountProfileQualificationStore(path.join(stateRoot, 'account-profile-qualification.json')), process.env, capabilityIntelligence, modelIntelligence);
+const providerCatalog = new ProviderCatalogRuntime(config.providers, new ProviderCatalogStore(path.join(stateRoot, 'models', 'provider-catalog.json')), modelRegistry, modelIntelligence);
 const contracts = new ContractExecutionRuntime(path.join(stateRoot, 'contracts', 'executions.json'));
 const handoffs = new GovernedHandoffRuntime(contracts, path.join(stateRoot, 'contracts', 'handoffs.json'));
 const tokenBatonRouting = new TokenAwareBatonRuntime(path.join(stateRoot, 'token-baton-routing', 'evidence.json'), config.tokenBatonRouting);
@@ -89,6 +91,7 @@ const control = new AgentControlService(state, ptys, providers).configureProject
   capabilityIntelligence,
   modelIntelligence,
   qualificationSuite,
+  providerCatalog,
 });
 const modelEvaluationExecutor = new ProviderNeutralModelEvaluationExecutor(modelRegistry, capabilityIntelligence, codexNodeExecution, fetch, event => control.events.emit('model.intelligence_changed', {batchId: event.batchId, modelId: event.candidate.modelId, taskId: event.taskId, phase: event.phase, detail: event.detail, observedAt: event.at}, undefined, 'model-evaluation-runtime'));
 const modelEvaluation = new ModelEvaluationCoordinator(modelIntelligence, qualificationSuite, modelEvaluationExecutor, {agentControlVersion: AGENT_CONTROL_VERSION, adapterVersion: 'provider-neutral-v1', promptVersion: qualificationSuite.version});

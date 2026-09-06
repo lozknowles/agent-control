@@ -1,25 +1,28 @@
-import fs from 'node:fs';
 import {createHash} from 'node:crypto';
 import type {ModelConfig, ProviderConfig} from './config.js';
 import {providerPromptBoundary, renderProviderPrompt, type ProviderPromptInput} from './provider-prompt.js';
+import {resolveProviderCredential} from './provider-credential-store.js';
+import {redactSensitiveText} from './security-redaction.js';
 
 export const PROMPT_CACHE_KEY_CAPABILITY = 'prompt-cache.key';
 export const PROMPT_CACHE_EXPLICIT_CAPABILITY = 'prompt-cache.explicit';
 
 export interface NormalizedModelUsage {inputTokens: number | null; outputTokens: number | null; cachedInputTokens: number | null; cacheWriteTokens?: number | null; totalTokens: number | null; providerReportedCost: number | null; calculatedCost: number | null; currency: string | null;}
-export interface ModelInvocationResult {providerId: string; accountProfileId?: string; modelId: string; providerModel: string; output: string; elapsedMs: number; usage: NormalizedModelUsage; responseModel: string | null; finishReason: string | null; toolCall: {name: string; arguments: string} | null;}
+export interface ModelInvocationResult {providerId: string; accountProfileId?: string; nodeId?: string; modelId: string; providerModel: string; output: string; elapsedMs: number; usage: NormalizedModelUsage; responseModel: string | null; finishReason: string | null; toolCall: {name: string; arguments: string} | null;}
 export interface PartialModelInvocation extends ModelInvocationResult {responseHash: string;}
 export type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 export interface ProviderInvocationTelemetry {phase: 'started' | 'completed'; providerId: string; modelId: string; elapsedMs: number; usage?: NormalizedModelUsage; context: {tokens: number | null; limitTokens: number | null; authority: 'authoritative' | 'estimated' | 'unavailable'; source: string};}
+export interface ProviderRequestExtension {profile: string; body: Readonly<Record<string, unknown>>;}
 
 export class OpenAICompatibleProviderClient {
-  constructor(private readonly provider: ProviderConfig, private readonly fetcher: FetchLike = fetch) {
+  constructor(private readonly provider: ProviderConfig, private readonly fetcher: FetchLike = fetch, private readonly credential = () => resolveProviderCredential(provider), private readonly identity: {accountProfileId?: string; nodeId?: string} = {}) {
     if (provider.kind !== 'openai-compatible' && provider.kind !== 'responses' && provider.kind !== 'local') throw new Error('provider_not_openai_compatible');
     if (!provider.baseUrl) throw new Error('provider_base_url_required');
   }
-  async invoke(model: ModelConfig, input: ProviderPromptInput, options: {timeoutMs?: number; maximumOutputTokens?: number; structured?: boolean; outputSchema?: Record<string, unknown>; toolProbe?: string; signal?: AbortSignal; onTelemetry?: (event: ProviderInvocationTelemetry) => void} = {}): Promise<ModelInvocationResult> {
+  async invoke(model: ModelConfig, input: ProviderPromptInput, options: {timeoutMs?: number; maximumOutputTokens?: number; structured?: boolean; outputSchema?: Record<string, unknown>; toolProbe?: string; requestExtension?: ProviderRequestExtension; signal?: AbortSignal; onTelemetry?: (event: ProviderInvocationTelemetry) => void} = {}): Promise<ModelInvocationResult> {
     if (model.provider !== this.provider.id) throw new Error('model_provider_mismatch');
-    const token = resolveToken(this.provider), controller = new AbortController(), started = Date.now();
+    if ((model.accountProfile ?? undefined) !== this.identity.accountProfileId) throw new Error('model_account_profile_mismatch');
+    const token = this.credential(), controller = new AbortController(), started = Date.now();
     options.onTelemetry?.({phase: 'started', providerId: this.provider.id, modelId: model.id, elapsedMs: 0, context: {tokens: null, limitTokens: model.limits?.contextTokens ?? this.provider.qualification?.advertisedContextLimitTokens ?? null, authority: 'unavailable', source: 'provider_did_not_report_current_context'}});
     const timeout = setTimeout(() => controller.abort(), options.timeoutMs ?? 30_000);
     const wire = this.provider.wireApi ?? 'responses';
@@ -28,25 +31,37 @@ export class OpenAICompatibleProviderClient {
     const promptCache = wire === 'responses' ? promptCacheRequest(this.provider, model, input) : {};
     const parameters = {type: 'object', properties: {marker: {type: 'string'}}, required: ['marker'], additionalProperties: false};
     const responseFormat = options.outputSchema ? {type: 'json_schema', json_schema: {name: 'agent_control_output', strict: true, schema: options.outputSchema}} : {type: 'json_object'};
-    const body = wire === 'chat-completions'
+    const coreBody = wire === 'chat-completions'
       ? {model: model.providerModel, messages: [{role: 'user', content: renderedInput}], max_tokens: options.maximumOutputTokens ?? 256, ...(options.structured ? {temperature: 0, response_format: responseFormat} : {}), ...(options.toolProbe ? {tools: [{type: 'function', function: {name: options.toolProbe, description: 'Return the requested qualification marker', parameters}}], tool_choice: {type: 'function', function: {name: options.toolProbe}}} : {})}
       : {model: model.providerModel, input: promptCache.input ?? renderedInput, max_output_tokens: options.maximumOutputTokens ?? 256, ...promptCache.parameters, ...(options.structured ? {text: {format: options.outputSchema ? {type: 'json_schema', name: 'agent_control_output', strict: true, schema: options.outputSchema} : {type: 'json_object'}}} : {}), ...(options.toolProbe ? {tools: [{type: 'function', name: options.toolProbe, description: 'Return the requested qualification marker', parameters, strict: true}], tool_choice: {type: 'function', name: options.toolProbe}} : {})};
+    const body = extendProviderRequest(coreBody, options.requestExtension);
     try {
       const signal = options.signal ? AbortSignal.any([controller.signal, options.signal]) : controller.signal;
       const response = await this.fetcher(endpoint, {method: 'POST', headers: {'content-type': 'application/json', ...(token ? {authorization: `Bearer ${token}`} : {})}, body: JSON.stringify(body), signal});
       if (!response.ok) throw providerError(response.status);
       let payload: Record<string, unknown>;
       try { payload = await response.json() as Record<string, unknown>; } catch { throw new Error('provider_malformed_response'); }
-      const toolCall = extractToolCall(payload, wire), output = extractOutput(payload, wire), partial: PartialModelInvocation = {providerId: this.provider.id, modelId: model.id, providerModel: model.providerModel, output, elapsedMs: Date.now() - started, usage: normalizeModelUsage(payload.usage, model), responseModel: typeof payload.model === 'string' ? payload.model : null, finishReason: extractFinishReason(payload, wire), toolCall, responseHash:`sha256:${createHash('sha256').update(JSON.stringify(payload)).digest('hex')}`};
+      const extractedToolCall = extractToolCall(payload, wire), toolCall = extractedToolCall ? {name: redactSensitiveText(extractedToolCall.name, [token]), arguments: redactSensitiveText(extractedToolCall.arguments, [token])} : null, output = redactSensitiveText(extractOutput(payload, wire), [token]), partial: PartialModelInvocation = {providerId: this.provider.id, ...(this.identity.accountProfileId ? {accountProfileId: this.identity.accountProfileId} : {}), ...(this.identity.nodeId ? {nodeId: this.identity.nodeId} : {}), modelId: model.id, providerModel: model.providerModel, output, elapsedMs: Date.now() - started, usage: normalizeModelUsage(payload.usage, model), responseModel: typeof payload.model === 'string' ? redactSensitiveText(payload.model, [token]) : null, finishReason: redactSensitiveText(extractFinishReason(payload, wire) ?? '', [token]) || null, toolCall, responseHash:`sha256:${createHash('sha256').update(JSON.stringify(payload)).digest('hex')}`};
       if (!output && !toolCall) throw Object.assign(new Error('provider_malformed_response'),{partialInvocation:partial});
       const {responseHash: _responseHash, ...result}=partial, limitTokens=model.limits?.contextTokens ?? this.provider.qualification?.advertisedContextLimitTokens ?? null, estimatedContext=result.usage.totalTokens !== null && limitTokens !== null;
       options.onTelemetry?.({phase: 'completed', providerId: this.provider.id, modelId: model.id, elapsedMs: result.elapsedMs, usage: result.usage, context: {tokens: estimatedContext ? result.usage.totalTokens : null, limitTokens, authority: estimatedContext ? 'estimated' : 'unavailable', source: estimatedContext ? 'ephemeral_single_turn_usage_estimate' : 'provider_did_not_report_current_context'}}); return result;
     } catch (error) {
       if ((error as Error).name === 'AbortError') throw new Error(options.signal?.aborted ? 'provider_cancelled' : 'provider_timeout');
-      throw sanitizeError(error);
+      throw sanitizeError(error, token);
     }
     finally { clearTimeout(timeout); }
   }
+}
+
+const RESERVED_REQUEST_FIELDS = new Set(['model','messages','input','max_tokens','max_output_tokens','response_format','text','tools','tool_choice','stream']);
+function extendProviderRequest(core: Record<string, unknown>, extension?: ProviderRequestExtension) {
+  if (!extension) return core;
+  if (!/^[a-z0-9][a-z0-9._-]{0,127}$/i.test(extension.profile)) throw new Error('provider_request_extension_invalid');
+  const serialized = JSON.stringify(extension.body);
+  if (Buffer.byteLength(serialized) > 16_384 || redactSensitiveText(serialized) !== serialized) throw new Error('provider_request_extension_invalid');
+  const body = JSON.parse(serialized) as Record<string, unknown>;
+  if (Object.keys(body).some(key => RESERVED_REQUEST_FIELDS.has(key))) throw new Error('provider_request_extension_reserved_field');
+  return {...core, ...body};
 }
 
 function extractFinishReason(payload: Record<string, unknown>, wire: string) {
@@ -56,16 +71,6 @@ function extractFinishReason(payload: Record<string, unknown>, wire: string) {
   return typeof incomplete?.reason === 'string' ? incomplete.reason : null;
 }
 
-function resolveToken(provider: ProviderConfig) {
-  const auth = provider.auth ?? (provider.credentialEnv ? {type: 'bearer-env' as const, env: provider.credentialEnv} : {type: provider.requiresAuth ? 'bearer-env' as const : 'none' as const, env: provider.credentialEnv});
-  if (auth.type === 'none') return '';
-  if (!auth.env) throw new Error('provider_secret_reference_missing');
-  let value = auth.type === 'bearer-file-env' ? readReferencedFile(auth.env) : process.env[auth.env]?.trim();
-  if (!value && provider.credentialFileEnv && provider.credentialFileEnv !== auth.env) value = readReferencedFile(provider.credentialFileEnv);
-  if (!value && provider.credentialEnv && provider.credentialEnv !== auth.env) value = process.env[provider.credentialEnv]?.trim();
-  if (!value) throw new Error('provider_authentication_required'); return value;
-}
-function readReferencedFile(environmentName: string) { const file = process.env[environmentName]; return file ? fs.readFileSync(file, 'utf8').trim() : ''; }
 function extractOutput(payload: Record<string, unknown>, wire: string) {
   if (wire === 'chat-completions') { const choices = Array.isArray(payload.choices) ? payload.choices : []; const message = choices[0] && typeof choices[0] === 'object' ? (choices[0] as Record<string, unknown>).message : undefined; return message && typeof message === 'object' ? String((message as Record<string, unknown>).content ?? '') : ''; }
   if (typeof payload.output_text === 'string') return payload.output_text;
@@ -124,4 +129,4 @@ function supportsCacheCapability(provider: ProviderConfig, model: ModelConfig, c
 }
 function number(value: unknown) { return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null; }
 function providerError(status: number) { return new Error(status === 401 || status === 403 ? 'provider_authentication_failed' : status === 429 ? 'provider_rate_limited' : status >= 500 ? 'provider_unavailable' : `provider_request_failed:${status}`); }
-function sanitizeError(error: unknown) { const message = error instanceof Error ? error.message : 'provider_request_failed',sanitized=new Error(message.replace(/\b(?:sk|rk|pk)-[A-Za-z0-9_-]{8,}\b/g, '[REDACTED]').slice(0, 240)),partial=(error as {partialInvocation?:PartialModelInvocation})?.partialInvocation;return partial?Object.assign(sanitized,{partialInvocation:partial}):sanitized; }
+function sanitizeError(error: unknown, credential = '') { const message = error instanceof Error ? error.message : 'provider_request_failed',sanitized=new Error(redactSensitiveText(message, [credential]).slice(0, 240)),partial=(error as {partialInvocation?:PartialModelInvocation})?.partialInvocation;return partial?Object.assign(sanitized,{partialInvocation:partial}):sanitized; }

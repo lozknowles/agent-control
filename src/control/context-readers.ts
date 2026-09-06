@@ -5,6 +5,8 @@ import type {
   ContextSourceReader,
   ContextSourceType,
 } from './context.js';
+export {redactSensitiveText} from './security-redaction.js';
+import {redactSensitiveText} from './security-redaction.js';
 
 export type ContextAccessMode = 'public_read_only' | 'approved_authenticated_read_only' | 'reference_only';
 
@@ -230,14 +232,6 @@ export function selectRelevantSections(
     if (used >= maxTokens) break;
   }
   return selected;
-}
-
-export function redactSensitiveText(value: string): string {
-  return value
-    .replace(/-----BEGIN [^-]+PRIVATE KEY-----[\s\S]*?-----END [^-]+PRIVATE KEY-----/g, '[REDACTED PRIVATE KEY]')
-    .replace(/\bBearer\s+[A-Za-z0-9._~+\/-]+/gi, 'Bearer [REDACTED]')
-    .replace(/\bsk-[A-Za-z0-9_-]{10,}\b/g, '[REDACTED API KEY]')
-    .replace(/\b(api[_-]?key|access[_-]?token|password|secret|session[_-]?token)\s*[:=]\s*[^\s,;]+/gi, '$1=[REDACTED]');
 }
 
 function adapter(capability: ContextProviderCapability, matches: ContextReaderAdapter['matches'], fetchVisibleDocument: VisibleDocumentTransport): ContextReaderAdapter {

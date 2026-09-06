@@ -1,7 +1,7 @@
 {
   "schema": "agent-control.implementation-status/v1",
   "release": "3.9.0",
-  "updated": "2026-09-05",
+  "updated": "2026-09-06",
   "capabilities": [
     {
       "id": "social-voice.providers",
@@ -45,6 +45,26 @@
         "docs/openwa/README.md",
         "docs/openwa/live-qualification.md"
       ]
+    },
+    {
+      "id": "providers.secure-credential-references",
+      "title": "Generic late-bound provider credential references",
+      "status": "QUALIFIED",
+      "summary": "The existing environment, referenced-file and provider-secure-store credential kinds share one invocation-time resolver. The secure-store backend uses hashed names, owner-only permissions and atomic rotation; metadata-only status, account-specific no-fallback selection and exact-secret response redaction keep credential values out of configuration, Work Parcels, Jobs, evidence, telemetry, API, SSE and dashboard state.",
+      "sources": ["src/control/provider-credential-store.ts", "src/control/security-redaction.ts", "src/provider-credential.ts", "src/control/openai-compatible-provider.ts", "src/control/model-registry.ts"],
+      "tests": ["src/control/provider-credential-store.test.ts", "src/control/security-redaction.test.ts", "src/provider-credential.test.ts", "src/control/openai-compatible-provider.test.ts", "src/control/model-registry.test.ts", "src/control/web-server.test.ts"],
+      "evidence": ["docs/credential-residency.md", "docs/evidence/agent-control-3.9-nvidia-hosted-qualification-20260906.md"],
+      "limitation": "The controller-local owner-only backend is physically qualified through a real late-bound NVIDIA credential and sanitized authenticated calls. Remote API-account credential resolution still requires a governed node-specific adapter; the credential value and transient ceremony fingerprint are intentionally absent from durable evidence."
+    },
+    {
+      "id": "providers.dynamic-model-catalogue",
+      "title": "Dynamic provider model discovery and governed review lifecycle",
+      "status": "PARTIAL",
+      "summary": "Provider adapters can perform bounded authenticated model discovery, preserve field-level metadata authority and observed limits, register routing-disabled dynamic models, run a versioned content-hashed smoke suite, queue the existing frozen benchmark and admit routing only after current qualified intelligence plus explicit operator enablement. NVIDIA hosted NIM is a thin endpoint/key-format and smoke-invocation-profile adapter over this generic path.",
+      "sources": ["src/control/provider-catalog.ts", "src/control/openai-compatible-provider.ts", "src/control/model-registry.ts", "src/control/application-service.ts", "src/control/web-server.ts", "assets/dashboard/dashboard-models.js"],
+      "tests": ["src/control/provider-catalog.test.ts", "src/control/openai-compatible-provider.test.ts", "src/control/model-registry.test.ts", "src/control/model-evaluation-runtime.test.ts", "src/control/web-server.test.ts"],
+      "evidence": ["docs/models/NVIDIA-HOSTED.md", "docs/provider-model-lifecycle.md", "docs/evidence/agent-control-3.9-nvidia-hosted-qualification-20260906.md"],
+      "limitation": "Physical qualification discovered 81 NVIDIA IDs, smoke-tested four representatives and ran one frozen Nemotron batch. That batch passed 9/9 provider-executed attempts but remained PARTIAL because 42/51 capability-gated attempts were unavailable. No NVIDIA model is qualified or routing eligible; provider price, quota, rate limits, TTFT, context occupancy and most catalogue metadata remain unavailable, and mass benchmarking is not authorized."
     },
     {
       "id": "context.persistent-parcel-ledger",

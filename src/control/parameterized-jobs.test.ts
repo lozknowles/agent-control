@@ -134,3 +134,19 @@ test('cancellation during retry backoff preserves intent and reconciles the exac
 });
 
 test('forbid-overlap rejects a second active Run and rewritten history never uses a non-ancestor baseline',async()=>{const root=fs.mkdtempSync(path.join(os.tmpdir(),'ac-rewrite-')),repo=repository(root),setupResult=setup(root,repo),queued=setupResult.engine.runNow('review','operator');assert.throws(()=>setupResult.engine.runNow('review','operator'),/overlap_forbidden/);await setupResult.engine.execute(queued.id);const first=setupResult.runs.get(queued.id)!.repository!.reviewedSha;command(repo,'git','checkout','--orphan','rewritten');for(const file of fs.readdirSync(repo))if(file!=='.git')fs.rmSync(path.join(repo,file),{recursive:true,force:true});fs.writeFileSync(path.join(repo,'new.ts'),'export const rewritten = true;\n');command(repo,'git','add','-A');command(repo,'git','commit','-qm','rewrite');command(repo,'git','branch','-M','main');setupResult.setTime(new Date('2026-09-02T00:00:00Z'));const second=await setupResult.engine.execute(setupResult.engine.runNow('review','operator').id);assert.notEqual(second.repository?.reviewedSha,first);assert.equal(second.repository?.comparisonSha,undefined);assert.ok(['SUCCEEDED','SUCCEEDED_WITH_FINDINGS'].includes(second.status))});
+
+test('saved-job ingress rejects credentials and parameterized run state redacts provider echoes', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ac-parameterized-secret-')), repo = repository(root), setupResult = setup(root, repo), credential = ['nvapi', 'fixture', 'K'.repeat(24)].join('-');
+  try {
+    const saved = setupResult.saved.get('review');
+    assert.throws(() => setupResult.saved.update('review', saved.revision, {name: `unsafe ${credential}`}), /saved_job_credential_material_forbidden/);
+    const run = setupResult.engine.runNow('review', 'operator'), mutable = setupResult.runs.get(run.id)!;
+    mutable.errors.push(`provider echoed ${credential}`);
+    const updated = setupResult.runs.update(mutable);
+    assert.equal(JSON.stringify(updated).includes(credential), false);
+    assert.match(JSON.stringify(updated), /REDACTED/);
+    assert.equal(fs.readFileSync(path.join(root, 'runs.json'), 'utf8').includes(credential), false);
+  } finally {
+    fs.rmSync(root, {recursive: true, force: true});
+  }
+});

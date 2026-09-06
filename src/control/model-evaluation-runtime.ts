@@ -8,6 +8,7 @@ import {createInvocationObservation} from './harness-efficiency.js';
 import {calculateVersionedApiCost, type InvocationCostAccounting, type TokenUsageForCost} from './cost-accounting.js';
 import type {CapabilityIntelligenceStore} from './capability-intelligence.js';
 import type {ModelRegistry} from './model-registry.js';
+import {resolveProviderAccountCredential} from './provider-credential-store.js';
 import {
   ModelEvaluationCoordinator,
   type FrozenQualificationTask,
@@ -57,9 +58,10 @@ export class ProviderNeutralModelEvaluationExecutor implements ModelEvaluationEx
     if (assessments.some(item => !item.satisfied)) throw new Error(`capability_unavailable:${assessments.filter(item => !item.satisfied).map(item => item.capabilityId).join(',')}`);
     const route = this.registry.route({model: model.id, accountProfile: candidate.accountProfileId, nodeId: candidate.nodeId, requiredCapabilities: task.requiredCapabilities, allowFallback: false, purpose: 'QUALIFICATION'});
     if (route.modelId !== candidate.modelId || route.providerId !== candidate.providerId || (route.accountProfileId ?? null) !== (candidate.accountProfileId ?? null) || route.nodeId !== candidate.nodeId) throw new Error('model_evaluation_route_identity_mismatch');
+    const account = candidate.accountProfileId ? requiredAccount(this.registry, provider.id, candidate.accountProfileId) : undefined;
     const client = provider.kind === 'cli'
       ? new CodexRepositoryReviewClient(provider, requiredAccount(this.registry, provider.id, candidate.accountProfileId), candidate.nodeId, this.nodeExecution)
-      : new OpenAICompatibleProviderClient(provider, this.fetcher);
+      : new OpenAICompatibleProviderClient(provider, this.fetcher, account ? () => resolveProviderAccountCredential(provider, account, process.env, undefined, candidate.nodeId) : undefined, {accountProfileId: account?.id, nodeId: candidate.nodeId});
     const instruction = `${task.fixture.instruction}\n\nReturn only the requested structured object. Put the concise result in answer and independently checkable support in evidence.`;
     const result = await client.invoke(model, instruction, {structured: true, outputSchema: RESULT_SCHEMA, maximumOutputTokens: Math.min(model.limits?.outputTokens ?? 2_048, 2_048), timeoutMs: task.maximumDurationMs});
     const scored = score(task, result.output), observation = observationFor(batch.id, task, candidate, model, result);

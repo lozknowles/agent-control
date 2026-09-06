@@ -165,6 +165,19 @@
       "capabilities": ["coding", "reasoning", "tool-use"]
     },
     {
+      "id": "nvidia-hosted",
+      "name": "NVIDIA hosted models",
+      "kind": "openai-compatible",
+      "adapter": "nvidia-hosted-v1",
+      "baseUrl": "https://integrate.api.nvidia.com/v1",
+      "wireApi": "chat-completions",
+      "enabled": true,
+      "auth": {"type": "provider-secure-store", "reference": "provider:nvidia-hosted"},
+      "discovery": {"enabled": true, "path": "models"},
+      "requiresAuth": true,
+      "capabilities": ["chat-completions", "streaming"]
+    },
+    {
       "id": "local-model",
       "name": "Local OpenAI-compatible model",
       "kind": "local",

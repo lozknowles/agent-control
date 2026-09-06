@@ -1,10 +1,10 @@
 # Adding an external provider
 
-1. Add a provider with a stable ID, base URL and wire API (`responses` or `chat-completions`).
-2. Reference an environment variable; never put the credential value in JSON.
-3. Add one or more model entries using the provider's exact model identifier.
+1. Add a provider with a stable ID, base URL, wire API (`responses` or `chat-completions`) and optional discovery adapter.
+2. Select an indirect credential reference; never put the credential value in JSON.
+3. Add exact model entries, or enable governed catalogue discovery and review the returned IDs.
 4. Add or update logical role mappings.
-5. Start Agent Control with the referenced environment variable present.
+5. Provision the selected environment, file, isolated-home or secure-store reference; never pass a credential in an argument.
 6. Qualify each model on every node where it may execute.
 7. Test the intended role and fallback policy before using it in a Work Parcel.
 8. Map provider-native techniques into normalized capability observations; do not add provider-name branches to core policy.
@@ -25,13 +25,39 @@ Example provider:
 }
 ```
 
-For a secret file, set `auth.type` to `bearer-file-env`; `auth.env` then names an environment variable whose value is the file path. `none` is appropriate only for an intentionally unauthenticated local endpoint.
+Supported API references are `api-key-env` (or legacy-compatible `bearer-env`), `bearer-file-env`, and `provider-secure-store`. For a secret file, `auth.env` names an environment variable whose value is the absolute file path. For the generic owner-only store, configure an opaque `auth.reference`, then run `agent-control providers credential set external`. A missing or invalid selected reference fails closed before the provider request. `none` is appropriate only for an intentionally unauthenticated local endpoint. See [credential residency](../credential-residency.md).
 
-The configuration validator rejects duplicate IDs, unknown provider/model references, role cycles, malformed limits/pricing and embedded secret-like fields. A missing environment variable reports authentication required and makes qualification fail closed.
+An API account profile can carry a separate opaque secure-store reference. Manage it with the same command and `--account PROFILE_ID`; Agent Control refuses controller-side management or resolution when that profile belongs to another execution/credential node.
+
+The configuration validator rejects duplicate IDs, unknown provider/model references, role cycles, malformed limits/pricing and embedded secret-like fields. A missing or invalid selected credential reference reports authentication required/invalid and makes qualification fail closed.
 
 For a Codex CLI provider with more than one authenticated account, add `accountProfiles` beneath that provider, bind each profile to its execution `nodeId`, and bind every provider model to one `accountProfile` with a matching qualified node. Store only a `codex-home-env` reference; authenticate the corresponding home interactively on that node outside Agent Control. Account selection must be explicit workload policy or a predeclared role route. Do not add utilization-driven fallback intended to evade or pool usage/rate limits. See [Codex integration](CODEX-INTEGRATION.md).
 
 Provider and model edits hot-reload through the authenticated dashboard/API. Do not treat a successful endpoint health check as model qualification: qualification requires bounded inference evidence for the exact provider model and node.
+
+## Dynamic discovery
+
+An OpenAI-compatible provider can opt into the generic catalogue:
+
+```json
+{
+  "id": "external",
+  "name": "External hosted models",
+  "kind": "openai-compatible",
+  "adapter": "openai-compatible-v1",
+  "baseUrl": "https://provider.example/v1",
+  "wireApi": "chat-completions",
+  "auth": {"type": "provider-secure-store", "reference": "provider:external"},
+  "discovery": {"enabled": true, "path": "models"},
+  "requiresAuth": true
+}
+```
+
+The adapter performs `GET {baseUrl}/{discovery.path}` with bounded authentication, validates an OpenAI-style model list and normalizes only authoritative or safely derived fields. Do not hard-code catalogue size, pricing, limits or capabilities. Unknown remains `UNKNOWN`. Discovery creates reviewable, routing-disabled models; bounded smoke tests retain hashes and normalized measurements, not provider output. Queue the exact dynamic model into the existing frozen evaluation system before considering it qualified.
+
+A provider-specific adapter may constrain endpoint and credential syntax or normalize documented fields, but core catalogue, credentials, evidence, dashboard and routing policy must remain provider-neutral. The NVIDIA implementation is the worked example in [NVIDIA-HOSTED.md](NVIDIA-HOSTED.md).
+
+For multiple API accounts, give each account profile its own credential-residency reference and bind each model to one account profile. Controller-local execution resolves only that profile's reference and seals `provider/account/model/node` in the result. It never falls back to the provider credential or another profile. Remote-resident API profiles require an explicit governed node adapter; controller-side resolution fails closed.
 
 ## Capability adapter boundary (3.9)
 

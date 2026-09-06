@@ -18,6 +18,7 @@ import {LocalCodexNodeExecutionPort, type CodexNodeExecutionPort} from './codex-
 import {WorkParcelStore, type WorkParcel} from './work-parcels.js';
 import {evidencePacketContextSource, evidenceReferences, type GovernedRetrievalRuntime, type RetrievedEvidenceContextCompiler} from './governed-retrieval.js';
 import {accountProviderExecutionNode} from './provider-account-profile.js';
+import {resolveProviderAccountCredential} from './provider-credential-store.js';
 import type {ProviderPrompt, ProviderPromptInput} from './provider-prompt.js';
 
 type ReviewChunk = ReviewExecutionRequest['contextChunks'][number];
@@ -380,7 +381,9 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
   private async invokeChunk(request: ReviewExecutionRequest, route: ModelRouteDecision, parcel: WorkParcel, chunk: PreparedReviewChunk, baton?: VerifiedBaton, threadId = `${request.executionId}:${chunk.id}`) {
     const {provider, model, account} = this.routeConfiguration(route);
     const prompt = await this.prompt(request, chunk, baton);
-    const client: RepositoryReviewProviderClient = this.clients?.(provider, account, route) ?? (provider.kind === 'cli' ? new CodexRepositoryReviewClient(provider, requiredAccount(account), route.nodeId, this.nodeExecution) : new OpenAICompatibleProviderClient(provider));
+    const client: RepositoryReviewProviderClient = this.clients?.(provider, account, route) ?? (provider.kind === 'cli'
+      ? new CodexRepositoryReviewClient(provider, requiredAccount(account), route.nodeId, this.nodeExecution)
+      : new OpenAICompatibleProviderClient(provider, fetch, account ? () => resolveProviderAccountCredential(provider, account, process.env, undefined, route.providerExecutionNodeId) : undefined, {accountProfileId: account?.id, nodeId: route.providerExecutionNodeId}));
     const invocation = await client.invoke(model, prompt, {
       structured: true,
       outputSchema: REPOSITORY_REVIEW_OUTPUT_SCHEMA,
