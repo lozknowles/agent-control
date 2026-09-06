@@ -101,3 +101,5 @@ Use the gallery for visual inspection of accessories, expressions, text equivale
 - Characters add no provider/model requests, background daemon, secret flow, operational mutation or deployment requirement.
 
 Roll out by reviewing the Crew gallery, leaving operational characters Shown, and monitoring the first normal dashboard lifecycle. Roll back presentation immediately with **Crew → Hidden** and **Animation → Off**; removing the feature bundle does not require state migration because no character state is persisted server-side.
+
+The isolated governed dashboard run, all-six animation measurements, screenshots, video hashes and physical-versus-simulated coverage boundary are recorded in [dashboard character qualification evidence](evidence/agent-control-dashboard-characters-qualification.md).

@@ -1,0 +1,520 @@
+{
+  "schema": "agent-control.dashboard-character-video/v1",
+  "recordedAt": "2026-09-06T13:25:34.412Z",
+  "source": "Isolated real AgentControlService dashboard over loopback; no deployment",
+  "repository": {
+    "head": "5285626917a6ed4e473079b9fe18fba6f471e165",
+    "branch": "feature/animated-dashboard-bots",
+    "dirtyDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "qualification": {
+    "file": "agent-control-dashboard-characters-qualification.json",
+    "sha256": "96df9652eaaac290dd3aae239092e1f44f460e40eff47a65a9f071c414cdff3c",
+    "bytes": 451384,
+    "verdict": "PASS"
+  },
+  "video": {
+    "file": "agent-control-dashboard-characters.mp4",
+    "sha256": "13705a2216630a5b78f73daa1343f9bfc76e136d52877626f30ec7e33a1156e4",
+    "bytes": 3336230,
+    "format": "MP4/H.264",
+    "stream": {
+      "codec_name": "h264",
+      "width": 1920,
+      "height": 1080,
+      "duration": "40.880000"
+    }
+  },
+  "browser": {
+    "engine": "Chromium",
+    "version": "152.0.7977.64",
+    "headless": true,
+    "liveAt": "2026-09-06T13:24:32.467Z",
+    "streamState": "LIVE",
+    "consoleErrors": [],
+    "httpErrors": []
+  },
+  "allCharacters": {
+    "visibleTogether": true,
+    "animatedTogetherUnderFullMotion": true,
+    "concurrentStateAt": "2026-09-06T13:24:37.017Z",
+    "visibleAnimatedDwellMs": 4000,
+    "evidence": [
+      {
+        "id": "bot-lane-master",
+        "visible": true,
+        "bounds": {
+          "top": 223,
+          "right": 643,
+          "bottom": 438,
+          "left": 33
+        },
+        "viewport": {
+          "width": 1920,
+          "height": 1080,
+          "scrollY": 0
+        },
+        "accent": "#4f8cff",
+        "runningAnimations": [
+          "bot-float",
+          "bot-blink",
+          "bot-conduct"
+        ],
+        "motion": {
+          "animation": "bot-float",
+          "target": "bot-float",
+          "elapsedTimelineMs": 633.356,
+          "transformChanged": true
+        }
+      },
+      {
+        "id": "bot-prompt-reviewer",
+        "visible": true,
+        "bounds": {
+          "top": 223,
+          "right": 1265,
+          "bottom": 438,
+          "left": 655
+        },
+        "viewport": {
+          "width": 1920,
+          "height": 1080,
+          "scrollY": 0
+        },
+        "accent": "#a879ff",
+        "runningAnimations": [
+          "bot-float",
+          "bot-blink"
+        ],
+        "motion": {
+          "animation": "bot-float",
+          "target": "bot-float",
+          "elapsedTimelineMs": 633.356,
+          "transformChanged": true
+        }
+      },
+      {
+        "id": "bot-parcel-coordinator",
+        "visible": true,
+        "bounds": {
+          "top": 223,
+          "right": 1887,
+          "bottom": 438,
+          "left": 1277
+        },
+        "viewport": {
+          "width": 1920,
+          "height": 1080,
+          "scrollY": 0
+        },
+        "accent": "#35c7be",
+        "runningAnimations": [
+          "bot-float",
+          "bot-blink",
+          "bot-dispatch"
+        ],
+        "motion": {
+          "animation": "bot-float",
+          "target": "bot-float",
+          "elapsedTimelineMs": 633.356,
+          "transformChanged": true
+        }
+      },
+      {
+        "id": "bot-model-scout",
+        "visible": true,
+        "bounds": {
+          "top": 450,
+          "right": 643,
+          "bottom": 665,
+          "left": 33
+        },
+        "viewport": {
+          "width": 1920,
+          "height": 1080,
+          "scrollY": 0
+        },
+        "accent": "#ff9b4a",
+        "runningAnimations": [
+          "bot-float",
+          "bot-blink",
+          "bot-scan"
+        ],
+        "motion": {
+          "animation": "bot-float",
+          "target": "bot-float",
+          "elapsedTimelineMs": 633.356,
+          "transformChanged": true
+        }
+      },
+      {
+        "id": "bot-resource-guardian",
+        "visible": true,
+        "bounds": {
+          "top": 450,
+          "right": 1265,
+          "bottom": 665,
+          "left": 655
+        },
+        "viewport": {
+          "width": 1920,
+          "height": 1080,
+          "scrollY": 0
+        },
+        "accent": "#55c979",
+        "runningAnimations": [
+          "bot-warning",
+          "bot-blink",
+          "bot-gauge"
+        ],
+        "motion": {
+          "animation": "bot-warning",
+          "target": "bot-float",
+          "elapsedTimelineMs": 633.356,
+          "transformChanged": true
+        }
+      },
+      {
+        "id": "bot-quality-inspector",
+        "visible": true,
+        "bounds": {
+          "top": 450,
+          "right": 1887,
+          "bottom": 665,
+          "left": 1277
+        },
+        "viewport": {
+          "width": 1920,
+          "height": 1080,
+          "scrollY": 0
+        },
+        "accent": "#e3b84e",
+        "runningAnimations": [
+          "bot-float",
+          "bot-blink",
+          "bot-inspect"
+        ],
+        "motion": {
+          "animation": "bot-float",
+          "target": "bot-float",
+          "elapsedTimelineMs": 633.356,
+          "transformChanged": true
+        }
+      }
+    ]
+  },
+  "actualLifecycle": {
+    "concurrentCrew": [
+      {
+        "id": "lane-master",
+        "name": "Cadence",
+        "role": "Lane Master",
+        "state": "working",
+        "summary": "2 active executions; 1 waiting; 1 blocked.",
+        "signals": [
+          {
+            "state": "working",
+            "label": "active",
+            "count": 2
+          },
+          {
+            "state": "queued",
+            "label": "queued",
+            "count": 1
+          },
+          {
+            "state": "blocked",
+            "label": "blocked",
+            "count": 1
+          }
+        ],
+        "freshness": "current"
+      },
+      {
+        "id": "prompt-reviewer",
+        "name": "Quill",
+        "role": "Master Prompt Reviewer",
+        "state": "awaiting_operator",
+        "summary": "1 explicit operator question await an answer.",
+        "signals": [
+          {
+            "state": "awaiting_operator",
+            "label": "questions",
+            "count": 1
+          }
+        ],
+        "freshness": "current"
+      },
+      {
+        "id": "parcel-coordinator",
+        "name": "Relay",
+        "role": "Work Parcel Coordinator",
+        "state": "working",
+        "summary": "1 parcel moving; 0 waiting; 0 blocked.",
+        "signals": [
+          {
+            "state": "working",
+            "label": "active",
+            "count": 1
+          },
+          {
+            "state": "awaiting_operator",
+            "label": "questions",
+            "count": 1
+          }
+        ],
+        "freshness": "current"
+      },
+      {
+        "id": "model-scout",
+        "name": "Lumen",
+        "role": "Model Scout",
+        "state": "working",
+        "summary": "1 frozen model evaluation running; 0 queued.",
+        "signals": [
+          {
+            "state": "working",
+            "label": "evaluating",
+            "count": 1
+          }
+        ],
+        "freshness": "current"
+      },
+      {
+        "id": "resource-guardian",
+        "name": "Rook",
+        "role": "Resource Guardian",
+        "state": "resource_pressure",
+        "summary": "0 available; 1 busy; 0 degraded; 0 offline; 0 unknown.",
+        "signals": [
+          {
+            "state": "working",
+            "label": "active workloads",
+            "count": 1
+          },
+          {
+            "state": "resource_pressure",
+            "label": "pressure",
+            "count": 1
+          }
+        ],
+        "freshness": "current"
+      },
+      {
+        "id": "quality-inspector",
+        "name": "Verity",
+        "role": "Quality Inspector",
+        "state": "reviewing",
+        "summary": "1 validation check active; 0 failed; 0 blocked.",
+        "signals": [
+          {
+            "state": "reviewing",
+            "label": "validating",
+            "count": 1
+          },
+          {
+            "state": "queued",
+            "label": "awaiting checks",
+            "count": 1
+          }
+        ],
+        "freshness": "current"
+      }
+    ],
+    "completedCrew": [
+      {
+        "id": "lane-master",
+        "name": "Cadence",
+        "role": "Lane Master",
+        "state": "working",
+        "summary": "1 active execution; 1 waiting; 1 blocked.",
+        "signals": [
+          {
+            "state": "working",
+            "label": "active",
+            "count": 1
+          },
+          {
+            "state": "queued",
+            "label": "queued",
+            "count": 1
+          },
+          {
+            "state": "blocked",
+            "label": "blocked",
+            "count": 1
+          }
+        ],
+        "freshness": "current"
+      },
+      {
+        "id": "prompt-reviewer",
+        "name": "Quill",
+        "role": "Master Prompt Reviewer",
+        "state": "idle",
+        "summary": "Task entry is ready; no prompt is currently being planned.",
+        "signals": [],
+        "freshness": "current"
+      },
+      {
+        "id": "parcel-coordinator",
+        "name": "Relay",
+        "role": "Work Parcel Coordinator",
+        "state": "completed",
+        "summary": "1 parcel tracked; 1 completed; 0 failed.",
+        "signals": [],
+        "freshness": "current"
+      },
+      {
+        "id": "model-scout",
+        "name": "Lumen",
+        "role": "Model Scout",
+        "state": "blocked",
+        "summary": "0 of 1 configured model route currently qualified.",
+        "signals": [],
+        "freshness": "current"
+      },
+      {
+        "id": "resource-guardian",
+        "name": "Rook",
+        "role": "Resource Guardian",
+        "state": "idle",
+        "summary": "1 available; 0 busy; 0 degraded; 0 offline; 0 unknown.",
+        "signals": [],
+        "freshness": "current"
+      },
+      {
+        "id": "quality-inspector",
+        "name": "Verity",
+        "role": "Quality Inspector",
+        "state": "completed",
+        "summary": "3 verified outcomes; 0 failed; 0 blocked.",
+        "signals": [
+          {
+            "state": "completed",
+            "label": "verified",
+            "count": 3
+          }
+        ],
+        "freshness": "current"
+      }
+    ],
+    "navigation": {
+      "resourceGuardian": {
+        "interaction": "pointer",
+        "target": "#systems-list",
+        "at": "2026-09-06T13:24:42.732Z"
+      },
+      "parcelCoordinator": {
+        "interaction": "keyboard-enter",
+        "target": "#parcel-list",
+        "at": "2026-09-06T13:24:44.788Z"
+      }
+    }
+  },
+  "reducedMotion": {
+    "setting": "reduced",
+    "animatedNames": [
+      "bot-blink"
+    ]
+  },
+  "simulatedGallery": {
+    "clearlyLabelled": true,
+    "presetsRecorded": [
+      "mixed",
+      "all-stale"
+    ],
+    "canvasesRecorded": [
+      "light",
+      "dark"
+    ],
+    "productionStateMutated": false
+  },
+  "screenshots": [
+    {
+      "file": "agent-control-dashboard-characters/01-crew-initial.png",
+      "sha256": "624b304432c22795b3494ff533c3d3834164b0b12805fff675ef57c957c0e9e2",
+      "bytes": 861580,
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "fullPage": false
+    },
+    {
+      "file": "agent-control-dashboard-characters/02-crew-concurrent-live.png",
+      "sha256": "b5c1fa71e8f0288c00231e83df5b6f70d8f67846850d023fcec8c460790c0838",
+      "bytes": 881055,
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "fullPage": false
+    },
+    {
+      "file": "agent-control-dashboard-characters/03-resource-navigation.png",
+      "sha256": "a4f9f69d6953a91b8b7de0d47d3493924db8930422ec2430d0bef22ea28f1a0f",
+      "bytes": 498856,
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "fullPage": false
+    },
+    {
+      "file": "agent-control-dashboard-characters/04-crew-completed.png",
+      "sha256": "e7221849df286ce3764d776c0006752e70d7c0b1961700ee0ebdbf0ded24956b",
+      "bytes": 854883,
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "fullPage": false
+    },
+    {
+      "file": "agent-control-dashboard-characters/05-crew-reduced-motion.png",
+      "sha256": "a0829e28a078304f34a5f63ae27e66f32e9780600ae067a1dac851dd68797477",
+      "bytes": 849743,
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "fullPage": false
+    },
+    {
+      "file": "agent-control-dashboard-characters/06-simulated-gallery-light.png",
+      "sha256": "dc6408baf7134a93b40bbb152275709982b6ef563bfb4950845a6d84aac39a47",
+      "bytes": 976125,
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "fullPage": true
+    },
+    {
+      "file": "agent-control-dashboard-characters/07-simulated-gallery-stale-dark.png",
+      "sha256": "7d49c1e66dba3888b51c3c2b344483b25cc6b5777bd76d5fa20ec37282e6b309",
+      "bytes": 977481,
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "fullPage": true
+    },
+    {
+      "file": "agent-control-dashboard-characters/08-crew-mobile.png",
+      "sha256": "f25b637a4462606144c24e6a800b3b4fa341c978436264ce12adda230707dcc8",
+      "bytes": 701972,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "fullPage": true
+    }
+  ],
+  "security": {
+    "operatorCredentialPersisted": false,
+    "externalCredentialsUsed": false,
+    "productionStateTouched": false
+  }
+}
