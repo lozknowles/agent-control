@@ -111,7 +111,13 @@ test('provider catalogue API, dashboard and SSE expose governed state without cr
   assert.equal(discovered.status, 200);
   const discovery = await discovered.json(); assert.equal(discovery.discovered, 1); assert.equal(JSON.stringify(discovery).includes(credential), false);
   const callability = await fetch(`${base}/api/provider-catalog/providers/nvidia-hosted/models/${encodeURIComponent('vendor/model-a')}/callability`, {method: 'POST', headers: {'content-type':'application/json', authorization:'Bearer test-token'}, body:'{}'}); assert.equal(callability.status,200); assert.equal((await callability.json()).inferenceEndpointStatus,'CONFIRMED');
-  assert.deepEqual(control.events.history().filter(event => event.type === 'provider.catalog_changed').map(event => (event.payload as {action?: string}).action), ['discovering', 'discovered', 'callability-testing', 'callability-tested']);
+  const invalidAdjudication = await fetch(`${base}/api/provider-catalog/providers/nvidia-hosted/models/${encodeURIComponent('vendor/model-a')}/adjudications`, {method:'POST',headers:{'content-type':'application/json',authorization:'Bearer test-token'},body:JSON.stringify({evidenceKind:'CAPABILITY_SMOKE',evidenceReference:'legacy:v2',attribution:'UNSUPPORTED_CLASS',scoreDisposition:'EXCLUDE',reason:'invalid taxonomy'})}); assert.equal(invalidAdjudication.status,400);
+  const adjudicated = await fetch(`${base}/api/provider-catalog/providers/nvidia-hosted/models/${encodeURIComponent('vendor/model-a')}/adjudications`, {method:'POST',headers:{'content-type':'application/json',authorization:'Bearer test-token'},body:JSON.stringify({evidenceKind:'CAPABILITY_SMOKE',evidenceReference:'legacy:v2',attribution:'HARNESS_FAILURE',scoreDisposition:'EXCLUDE',reason:'The old output cap invalidated the test.',supersededBy:'smoke:v3',supportingEvidence:['diagnostic:v3']})}); assert.equal(adjudicated.status,201); assert.equal((await adjudicated.json()).attribution,'HARNESS_FAILURE');
+  const catalogueEvents=control.events.history().filter(event => event.type === 'provider.catalog_changed');
+  assert.deepEqual(catalogueEvents.map(event => (event.payload as {action?: string}).action), ['discovering', 'discovered', 'callability-testing', 'callability-tested', 'evidence-adjudicated']);
+  assert.ok(catalogueEvents.every(event => typeof event.payload.narrative === 'string'));
+  assert.equal(catalogueEvents.find(event => event.payload.action === 'callability-tested')?.payload.stage,'CONFIRMED');
+  assert.match(String(catalogueEvents.at(-1)?.payload.narrative),/HARNESS_FAILURE/);
 
   const projection = await (await fetch(`${base}/api/provider-catalog`)).json();
   assert.equal(projection.providers[0].enabled, true);
@@ -119,7 +125,12 @@ test('provider catalogue API, dashboard and SSE expose governed state without cr
   assert.equal(projection.providers[0].inferenceConfirmedModels, 1);
   assert.equal(projection.models[0].reviewState, 'UNQUALIFIED');
   assert.equal(projection.models[0].inferenceEndpointStatus, 'CONFIRMED');
+  assert.equal(projection.models[0].qualificationStage, 'CONFIRMED');
   assert.equal(projection.models[0].routingEligible, false);
+  assert.equal(projection.models[0].evidenceAdjudications[0].scoreDisposition,'EXCLUDE');
+  assert.match(projection.models[0].latestNarrative,/responded successfully/);
+  assert.ok(Array.isArray(projection.tournament.narrative));
+  assert.deepEqual({callability:projection.tournament.requestAccounting.callabilityRequests,capability:projection.tournament.requestAccounting.capabilityRequests,benchmark:projection.tournament.requestAccounting.benchmarkRequests,total:projection.tournament.requestAccounting.totalRequests},{callability:1,capability:0,benchmark:0,total:1});
   assert.deepEqual(projection.providers[0].rateLimit, {requestsLimit: 40, requestsRemaining: 39, tokensLimit: 10000, tokensRemaining: 9900, reset: null, retryAfter: null, authority: 'PROVIDER_HEADER'});
   assert.deepEqual(projection.providers[0].quota, {value: 12, unit: 'provider-defined', authority: 'PROVIDER_REPORTED'});
   assert.equal(JSON.stringify(projection).includes(credential), false);
@@ -132,6 +143,9 @@ test('provider catalogue API, dashboard and SSE expose governed state without cr
   assert.match(dashboard, /requestsRemaining/);
   assert.match(dashboard, /available\/observed · inference confirmed/);
   assert.match(dashboard, /UNAVAILABLE/);
+  assert.match(dashboard, /Measured tournament leadership/);
+  assert.match(dashboard, /Deterministic tournament narrative/);
+  assert.match(dashboard, /Benchmark efficiency telemetry/);
   assert.equal(dashboard.includes(credential), false);
   for (const file of [path.join(root, 'catalogue.json'), path.join(root, 'intelligence.json')]) if (fs.existsSync(file)) assert.equal(fs.readFileSync(file, 'utf8').includes(credential), false);
 });

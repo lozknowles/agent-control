@@ -28,7 +28,7 @@ const RESULT_SCHEMA = {
 } as const;
 
 interface EvaluationAnswer {answer: string; evidence: string[]}
-export interface ModelEvaluationRuntimeEvent {batchId: string; candidate: ModelCandidateIdentity; taskId: string; phase: 'STARTED' | 'COMPLETED' | 'UNAVAILABLE'; at: string; detail: string}
+export interface ModelEvaluationRuntimeEvent {batchId: string; candidate: ModelCandidateIdentity; taskId: string; phase: 'STARTED' | 'REQUEST_STARTED' | 'REQUEST_COMPLETED' | 'REQUEST_FAILED' | 'COMPLETED' | 'UNAVAILABLE'; at: string; detail: string}
 
 /**
  * Executes the portable, structured-response portion of the frozen suite.
@@ -63,7 +63,15 @@ export class ProviderNeutralModelEvaluationExecutor implements ModelEvaluationEx
       ? new CodexRepositoryReviewClient(provider, requiredAccount(this.registry, provider.id, candidate.accountProfileId), candidate.nodeId, this.nodeExecution)
       : new OpenAICompatibleProviderClient(provider, this.fetcher, account ? () => resolveProviderAccountCredential(provider, account, process.env, undefined, candidate.nodeId) : undefined, {accountProfileId: account?.id, nodeId: candidate.nodeId});
     const instruction = `${task.fixture.instruction}\n\nReturn only the requested structured object. Put the concise result in answer and independently checkable support in evidence.`;
-    const result = await client.invoke(model, instruction, {structured: true, outputSchema: RESULT_SCHEMA, maximumOutputTokens: Math.min(model.limits?.outputTokens ?? 2_048, 2_048), timeoutMs: task.maximumDurationMs});
+    this.publish({batchId: batch.id, candidate, taskId: task.id, phase: 'REQUEST_STARTED', at: new Date().toISOString(), detail: 'provider-invocation'});
+    let result: ModelInvocationResult;
+    try {
+      result = await client.invoke(model, instruction, {structured: true, outputSchema: RESULT_SCHEMA, maximumOutputTokens: Math.min(model.limits?.outputTokens ?? 2_048, 2_048), timeoutMs: task.maximumDurationMs});
+      this.publish({batchId: batch.id, candidate, taskId: task.id, phase: 'REQUEST_COMPLETED', at: new Date().toISOString(), detail: `finish:${result.finishReason ?? 'UNKNOWN'}`});
+    } catch (error) {
+      this.publish({batchId: batch.id, candidate, taskId: task.id, phase: 'REQUEST_FAILED', at: new Date().toISOString(), detail: 'provider-invocation-failed'});
+      throw error;
+    }
     const scored = score(task, result.output), observation = observationFor(batch.id, task, candidate, model, result);
     if (scored.passed) for (const capabilityId of task.requiredCapabilities) this.capabilities.observe({id: `model-evaluation:${batch.id}:${batch.suiteSha256}:${candidate.providerId}:${candidate.accountProfileId ?? 'default'}:${candidate.modelId}:${candidate.nodeId}:${task.id}:${input.repetition}:${capabilityId}`, capabilityId, subject: capabilitySubject, support: 'SUPPORTED', implementation: 'NATIVE', verification: 'VERIFIED', confidence: 1, observedAt: observation.completedAt ?? new Date().toISOString(), qualifiedAt: observation.completedAt ?? new Date().toISOString(), limitations: [], evidence: [`attempt:${batch.id}:${task.id}:${input.repetition}`, `response:${sha(result.output)}`], source: 'QUALIFICATION'});
     this.publish({batchId: batch.id, candidate, taskId: task.id, phase: 'COMPLETED', at: resultTimestamp(observation.completedAt), detail: scored.passed ? 'verified-pass' : 'verification-failed'});
