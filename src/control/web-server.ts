@@ -286,7 +286,7 @@ function eventStream(service: AgentControlService, request: IncomingMessage, res
 
 function serveAsset(response: ServerResponse, assetsDir: string, pathname: string) {
   const asset = pathname === '/' ? 'index.html' : pathname.replace(/^\//, '');
-  if (!['dashboard-social-voice.css', 'social-voice.html', 'dashboard-social-voice.js', 'dashboard-openwa.css', 'openwa.html', 'dashboard-openwa.js', 'index.html', 'dashboard.css', 'dashboard-fixes.css', 'dashboard-jobs.css', 'dashboard-bots.css', 'dashboard.js', 'dashboard-parameters.js', 'dashboard-running-state.js', 'dashboard-enhancements.js', 'dashboard-parameterized-jobs.js', 'dashboard-models.js', 'dashboard-sessions.js', 'dashboard-bots.js'].includes(asset)) throw httpError(404, 'not_found');
+  if (!['dashboard-social-voice.css', 'social-voice.html', 'dashboard-social-voice.js', 'dashboard-openwa.css', 'openwa.html', 'dashboard-openwa.js', 'index.html', 'dashboard.css', 'dashboard-fixes.css', 'dashboard-jobs.css', 'dashboard-bots.css', 'dashboard-wopr.css', 'dashboard.js', 'dashboard-parameters.js', 'dashboard-running-state.js', 'dashboard-enhancements.js', 'dashboard-parameterized-jobs.js', 'dashboard-models.js', 'dashboard-sessions.js', 'dashboard-bots.js', 'dashboard-wopr.js'].includes(asset)) throw httpError(404, 'not_found');
   const file = path.join(assetsDir, asset);
   if (!fs.existsSync(file)) throw httpError(404, 'dashboard_asset_missing');
   const type = asset.endsWith('.html') ? 'text/html; charset=utf-8' : asset.endsWith('.css') ? 'text/css; charset=utf-8' : 'text/javascript; charset=utf-8';

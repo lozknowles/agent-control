@@ -64,6 +64,18 @@ The pressure state and routing action are different records:
 
 Baton sealing, governed dispatch, destination invocation and successful handoff outcome are separately evidenced steps. Agent Control does not synthesize a baton transfer from a threshold crossing.
 
+## Independent quality-gate trigger
+
+The governor accepts a second provider-neutral trigger, `QUALITY_GATE`, for production paths that have an independently configured acceptance boundary. This is not a model self-rating and does not inspect private reasoning. The repository-review gate receives only the frozen request/chunk, schema-valid application result, exact route and response hash, then returns a stable code, bounded evidence, unresolved criteria and exact next action.
+
+A rejection does not weaken schema validation and does not permit an arbitrary route. `TokenAwareBatonRuntime.assess` records the trigger and selects the first policy-ordered alternative that is enabled, independently qualified for the required capability and distinct from the source route. If none exists, execution fails closed with `quality_gate_failed_no_qualified_governed_fallback`; it does not relabel the source output as success.
+
+For an eligible route, the production sequence is:
+
+`provider invoke/observe → independent quality assessment → generic governor decision → sealed baton → governed route/account/model/node handoff → destination execution → same quality assessment → repository verification/recovery`
+
+Every routing decision retains trigger kind/code/reason/evidence. The dashboard and human-readable transcript therefore distinguish a low-context quality escalation from context-threshold handoff, timeout recovery or provider failure. The destination must satisfy the same gate. A failed destination or route-identity mismatch never becomes a completed handoff and leaves the source thread recoverable.
+
 ## Verified baton and recovery
 
 Before a handoff, Agent Control seals a durable baton containing the objective, completed work, decisions, changed files, Git SHA and dirty/diff state, tests/evidence, unresolved issues, exact next action, originating provider/account/model/node/thread, token state, and parcel totals. The baton has a SHA-256 digest.
@@ -115,3 +127,5 @@ The full project check remains the release gate. It must include installed optio
 Agent Control 3.7 physically qualified this production path on 2026-09-03 across two distinct live local provider/model routes. A qualification-only threshold policy exercised the unchanged governor without an artificial high-token spend. The source observed 186 tokens, sealed a SHA-256-addressed baton, the destination continued with 510 tokens, independent verification passed, and the Work Parcel reconciled to 696 tokens. A second run refused the destination before invocation and proved that the original source thread resumed and completed with no invented destination usage.
 
 The dashboard's `/api/token-routing` projection and SSE events reconciled with the durable evidence. The local providers exposed exact response usage but not authoritative retained-context occupancy, so the one-turn context values are marked estimated. Aggregate monetary cost remains unavailable when any leg lacks configured pricing. See the [physical qualification](evidence/agent-control-3.7-physical-qualification-20260902.md) and [machine-readable record](evidence/agent-control-3.7-physical-lifecycle-20260903.json).
+
+The isolated post-3.9 Crew/WOPR integration candidate separately qualifies the new quality trigger through the normal parameterized repository-review lifecycle. Local Qwen returned complete schema-valid output but missed four objective acceptance-level root-cause criteria at approximately 4.3% estimated one-turn context. Agent Control explicitly recorded `QUALITY_GATE`, sealed the unresolved work, changed provider/model to Codex/Controller Account A/Luna, and the destination passed the same gate. Independent verification reconciled both model legs; neither missing current Codex context nor unavailable monetary cost was coerced to zero. See the [human-readable model-change transcript](evidence/agent-control-3.9-crew-wopr-escalation-transcript.md) and [candidate qualification report](evidence/agent-control-3.9-crew-wopr-escalation.md). This evidence does not merge, tag, release or deploy the candidate.

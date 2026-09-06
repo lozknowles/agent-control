@@ -36,6 +36,28 @@ export interface RepositoryReviewTokenLifecycle {
 
 export type RepositoryReviewProviderClientFactory = (provider: ProviderConfig, account?: ProviderAccountProfileConfig, route?: ModelRouteDecision) => RepositoryReviewProviderClient;
 
+export interface RepositoryReviewQualityGateResult {
+  accepted: boolean;
+  code: string;
+  summary: string;
+  evidence: string[];
+  unresolvedCriteria: string[];
+  nextAction: string;
+}
+
+export interface RepositoryReviewQualityGateInput {
+  request: ReviewExecutionRequest;
+  chunk: ReviewChunk;
+  result: RepositoryReviewResult;
+  route: ModelRouteDecision;
+  responseHash: string;
+}
+
+/** An independent, preconfigured acceptance boundary. It must not use private model reasoning. */
+export interface RepositoryReviewQualityGate {
+  evaluate(input: RepositoryReviewQualityGateInput): RepositoryReviewQualityGateResult | Promise<RepositoryReviewQualityGateResult>;
+}
+
 interface ExecutionTotals {
   accountedInvocations: number;
   inputTokens: number;
@@ -67,6 +89,7 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
     private readonly nodeExecution: CodexNodeExecutionPort = new LocalCodexNodeExecutionPort(),
     private readonly retrieval?: GovernedRetrievalRuntime,
     private readonly evidenceCompiler?: RetrievedEvidenceContextCompiler,
+    private readonly qualityGate?: RepositoryReviewQualityGate,
   ) {
     this.routing = lifecycle?.routing ?? tokenRouting;
   }
@@ -125,12 +148,18 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
         const source = await this.invokeChunk(request, request.route, parcel, chunk);
         capture(parcel, source.invocation, request.route, source.responseHash);
         this.requireComplete(source.invocation);
-        results.push(source.result);
+        const sourceQuality = await this.assessQuality(request, parcel, chunk, source.result, request.route, source.responseHash);
+        let acceptedResult = source.result, qualityEscalated = false;
+        if (sourceQuality && !sourceQuality.accepted) {
+          acceptedResult = await this.tryGovernedQualityEscalation(request, parcel, chunk, source, sourceQuality, capture, totals);
+          qualityEscalated = true;
+        }
+        results.push(acceptedResult);
         this.requireWithinBudget(request, totals);
 
         const nextOriginal = request.contextChunks[chunkIndex + 1];
         const nextChunk = nextOriginal ? await this.prepareChunk(request, parcel, nextOriginal, retrievalEvidence) : undefined;
-        const handoff = nextChunk ? await this.tryGovernedContinuation(request, parcel, chunk, nextChunk, source, capture, totals, results) : false;
+        const handoff = nextChunk && !qualityEscalated ? await this.tryGovernedContinuation(request, parcel, chunk, nextChunk, source, capture, totals, results) : false;
         if (handoff) chunkIndex += 2;
         else chunkIndex++;
         this.finishParcel(parcel, 'SUCCEEDED', handoff ? 'Governed token-aware continuation completed' : `Provider ${source.invocation.providerId}; model ${source.invocation.modelId}; structured review returned`);
@@ -167,6 +196,91 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
       this.parcels.update(parcel);
       this.verifyGovernedContract(parcel, verdict, at);
     }
+  }
+
+  private async assessQuality(request: ReviewExecutionRequest, parcel: WorkParcel, chunk: ReviewChunk, result: RepositoryReviewResult, route: ModelRouteDecision, responseHash: string) {
+    if (!this.qualityGate) return undefined;
+    const assessment = normalizeQualityGateResult(await this.qualityGate.evaluate({request, chunk, result, route, responseHash}));
+    const at = new Date().toISOString();
+    parcel.audit.timeline.push({id: `audit-${randomUUID()}`, at, type: 'verification.completed', stageId: 'review', summary: `Independent quality gate ${assessment.accepted ? 'accepted' : 'rejected'} ${route.providerId}/${route.modelId}`, detail: `${assessment.code}; ${assessment.summary}; evidence ${assessment.evidence.join(', ') || 'none'}; unresolved ${assessment.unresolvedCriteria.join(', ') || 'none'}`});
+    parcel.provenance.push({at, type: assessment.accepted ? 'quality-gate-passed' : 'quality-gate-failed', detail: `${assessment.code}:${responseHash}`});
+    this.parcels.update(parcel);
+    return assessment;
+  }
+
+  private async tryGovernedQualityEscalation(
+    request: ReviewExecutionRequest,
+    parcel: WorkParcel,
+    chunk: ReviewChunk,
+    source: Awaited<ReturnType<DirectRepositoryReviewExecutor['invokeChunk']>>,
+    quality: RepositoryReviewQualityGateResult,
+    capture: (parcel: WorkParcel, invocation: ModelInvocationResult, route: ModelRouteDecision, responseHash: string) => void,
+    totals: ExecutionTotals,
+  ): Promise<RepositoryReviewResult> {
+    if (!this.routing || !this.lifecycle) throw new Error(`repository_review_quality_gate_failed_lifecycle_unavailable:${quality.code}`);
+    const decision = this.routing.assess(source.threadId, {
+      remainingWork: 'DIFFICULT',
+      reasoningState: 'UNFINISHED',
+      requiredCapabilities: ['repository-review'],
+      candidates: this.routingCandidates(request.route, source.invocation),
+      trigger: {kind: 'QUALITY_GATE', code: quality.code, reason: quality.summary, evidence: [...new Set([source.responseHash, ...quality.evidence])]},
+    });
+    if (decision.action !== 'BATON_AND_HANDOFF' || !decision.target) throw new Error(`repository_review_quality_gate_failed_no_governed_fallback:${quality.code}`);
+
+    const targetRoute = this.models.route({model: decision.target.modelId, nodeId: request.route.workloadNodeId, workloadNodeId: request.route.workloadNodeId, providerExecutionNodeId: decision.target.providerExecutionNodeId ?? decision.target.nodeId, requiredCapabilities: ['repository-review'], allowFallback: false});
+    if (targetRoute.providerId !== decision.target.providerId || targetRoute.accountProfileId !== (decision.target.accountProfileId ?? null) || targetRoute.providerExecutionNodeId !== (decision.target.providerExecutionNodeId ?? decision.target.nodeId ?? request.route.providerExecutionNodeId) || targetRoute.credentialNodeId !== (decision.target.credentialNodeId ?? null)) throw new Error('quality_escalation_route_identity_changed');
+    const baton = this.routing.createBaton({
+      threadId: source.threadId,
+      parcelId: parcel.id,
+      providerId: source.invocation.providerId,
+      nodeId: request.route.nodeId,
+      workloadNodeId: request.route.workloadNodeId,
+      providerExecutionNodeId: request.route.providerExecutionNodeId,
+      credentialNodeId: request.route.credentialNodeId ?? undefined,
+      accountProfileId: request.route.accountProfileId ?? undefined,
+      accountLabel: request.route.accountLabel ?? undefined,
+      accountPlan: request.route.accountPlan ?? undefined,
+      accountPlanAuthority: request.route.accountPlanAuthority ?? undefined,
+      accountQualification: request.route.accountQualification ?? undefined,
+      accountAvailability: request.route.accountAvailability ?? undefined,
+      modelId: source.invocation.modelId,
+      objective: `${request.instruction}\nFrozen repository: ${request.run.repository?.name ?? 'repository'} at ${request.run.repository?.reviewedSha ?? 'unknown SHA'}`,
+      completedWork: [`${request.route.providerId}/${source.invocation.modelId} reviewed ${chunk.id}: ${source.result.executiveSummary}`, `Independent quality gate ${quality.code} rejected that result: ${quality.summary}`],
+      decisions: [decision.reason, `Relevant frozen files: ${chunk.files.join(', ')}`, 'Escalation is quality-triggered; it is not a context-limit, timeout or provider-failure handoff'],
+      filesChanged: [],
+      git: {sha: request.run.repository?.reviewedSha ?? 'unknown', dirty: request.run.repository?.dirty ?? false, diffSummary: request.run.repository?.dirty ? `Frozen snapshot includes dirty paths: ${request.run.repository.dirtyPaths.join(', ')}` : 'Frozen repository snapshot is clean'},
+      testsAndEvidence: [...new Set([source.responseHash, `frozen-context-sha256:${chunk.sha256}`, ...quality.evidence])],
+      evidenceReferences: (chunk as PreparedReviewChunk).evidenceReferences ?? [],
+      unresolvedIssues: [...quality.unresolvedCriteria],
+      nextAction: quality.nextAction,
+    });
+    const sourceContract = this.ensureSourceContract(request, parcel, source.invocation);
+    let destinationContractId: string | undefined, destinationResult: RepositoryReviewResult | undefined;
+    const handoffDecision = await this.routing.governedHandoff(source.threadId, baton.id, decision.target, this.lifecycle.handoffs, {
+      outcome: 'DELEGATE', policy: 'AUTO', contractId: sourceContract.id, sourceActorId: sourceContract.active.actorId, sourceAgentId: sourceContract.active.agentId,
+      target: {active: {actorId: actorId(targetRoute), agentId: agentId(targetRoute), modelId: targetRoute.modelId, providerId: targetRoute.providerId, accountProfileId: targetRoute.accountProfileId ?? undefined, runtimeId: `provider:${targetRoute.providerId}`, nodeId: targetRoute.nodeId, workloadNodeId: targetRoute.workloadNodeId, providerExecutionNodeId: targetRoute.providerExecutionNodeId, credentialNodeId: targetRoute.credentialNodeId ?? undefined}, process: {id: `provider-invocation:${request.run.id}:${chunk.id}:${targetRoute.modelId}`}, ptyId: `provider-pty:${request.run.id}:${chunk.id}:${targetRoute.modelId}`},
+      requestedAuthority: ['repository-review'], budget: {}, child: {objective: baton.nextAction, completionCriteria: [`Pass independent quality gate ${quality.code}`, 'Return a schema-valid repository review for the same frozen context chunk']},
+    }, async governed => {
+      destinationContractId = governed.childContractId;
+      let destination: Awaited<ReturnType<DirectRepositoryReviewExecutor['invokeChunk']>>;
+      try { destination = await this.invokeChunk(request, targetRoute, parcel, chunk, baton, `${source.threadId}:quality:${targetRoute.modelId}`); }
+      catch (error) { const partial = (error as {partialInvocation?: PartialModelInvocation}).partialInvocation; if (partial) capture(parcel, partial, targetRoute, partial.responseHash); throw error; }
+      capture(parcel, destination.invocation, targetRoute, destination.responseHash);
+      this.requireComplete(destination.invocation);
+      const destinationQuality = await this.assessQuality(request, parcel, chunk, destination.result, targetRoute, destination.responseHash);
+      if (!destinationQuality?.accepted) throw new Error(`repository_review_quality_gate_failed_after_escalation:${destinationQuality?.code ?? quality.code}`);
+      destinationResult = destination.result;
+    });
+    if (handoffDecision.outcome !== 'SUCCEEDED' || !destinationResult || !destinationContractId) {
+      if (destinationContractId) this.failDestinationContract(destinationContractId, handoffDecision.reason);
+      parcel.audit.timeline.push({id: `audit-${randomUUID()}`, at: new Date().toISOString(), type: 'route.changed', stageId: 'review', summary: 'Quality escalation failed closed; original provider thread remains recoverable', detail: handoffDecision.reason});
+      parcel.provenance.push({at: new Date().toISOString(), type: 'quality-escalation-recovery', detail: source.threadId});
+      this.parcels.update(parcel);
+      throw new Error(`repository_review_quality_escalation_failed:${quality.code}`);
+    }
+    this.recordContract(parcel, destinationContractId, 'governed-verification-contract', `Quality gate ${quality.code} selected ${targetRoute.providerId}/${targetRoute.modelId}; destination passed independently`);
+    this.requireWithinBudget(request, totals);
+    return destinationResult;
   }
 
   private async tryGovernedContinuation(
@@ -359,7 +473,7 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
   }
 
   private routingCandidates(sourceRoute: ModelRouteDecision, source: ModelInvocationResult) {
-    const permitted = new Set(this.models.governedAlternatives(sourceRoute.modelId, sourceRoute.requestedRole));
+    const ordered = this.models.governedAlternatives(sourceRoute.modelId, sourceRoute.requestedRole), permitted = new Set(ordered), preference = new Map(ordered.map((id, index) => [id, index]));
     return this.models.list().filter(row => permitted.has(row.id)).map(row => {
       const provider = this.models.provider(row.provider);
       return {
@@ -376,6 +490,7 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
         providerExecutionNodeId: row.account?.providerExecutionNodeId ?? row.account?.nodeId ?? row.qualification.nodes[0] ?? row.nodes?.[0] ?? sourceRoute.providerExecutionNodeId,
         credentialNodeId: row.account?.credentialNodeId,
         estimatedCost: estimateCost(row, source),
+        preferenceOrder: preference.get(row.id),
         qualified: Boolean(provider) && provider?.enabled !== false && row.enabled !== false && row.qualification.state === 'QUALIFIED' && (!row.qualification.nodes.length || row.qualification.nodes.includes(row.account?.providerExecutionNodeId ?? row.account?.nodeId ?? row.qualification.nodes[0] ?? row.nodes?.[0] ?? sourceRoute.providerExecutionNodeId)) && (!row.account || row.account.availability === 'AVAILABLE'),
         capabilities: [...row.qualification.capabilities],
       };
@@ -503,6 +618,11 @@ function routeLabel(route: {providerId: string; accountProfileId?: string | null
 function auditModelLabel(route: {providerId: string; accountProfileId?: string | null; accountLabel?: string | null; modelId: string}) { return route.accountProfileId ? routeLabel(route) : route.modelId; }
 function requiredAccount(account?: ProviderAccountProfileConfig) { if (!account) throw new Error('codex_account_profile_required'); return account; }
 function message(error: unknown) { return error instanceof Error ? error.message : String(error); }
+function normalizeQualityGateResult(value: RepositoryReviewQualityGateResult): RepositoryReviewQualityGateResult {
+  if (!value || typeof value !== 'object' || typeof value.accepted !== 'boolean' || !/^[a-z0-9][a-z0-9._-]{0,127}$/i.test(value.code) || !value.summary?.trim() || !value.nextAction?.trim()) throw new Error('repository_review_quality_gate_result_invalid');
+  for (const items of [value.evidence, value.unresolvedCriteria]) if (!Array.isArray(items) || items.some(item => typeof item !== 'string' || !item.trim())) throw new Error('repository_review_quality_gate_result_invalid');
+  return {accepted: value.accepted, code: value.code, summary: value.summary.trim(), evidence: [...new Set(value.evidence)], unresolvedCriteria: [...new Set(value.unresolvedCriteria)], nextAction: value.nextAction.trim()};
+}
 function mergeAmount(previous: number | null, next: number | null, first: boolean) { return first ? next : previous === null || next === null ? null : previous + next; }
 function freshInput(input: number | null | undefined, cached: number | null | undefined, cacheWrite: number | null | undefined = null) { return input === null || input === undefined || cached === null || cached === undefined || cached > input || (cacheWrite !== null && cacheWrite !== undefined && cached + cacheWrite > input) ? null : input - cached - (cacheWrite ?? 0); }
 function effectiveCost(providerComplete: boolean, provider: number, calculatedComplete: boolean, calculated: number) { return Math.max(providerComplete ? provider : 0, calculatedComplete ? calculated : 0); }

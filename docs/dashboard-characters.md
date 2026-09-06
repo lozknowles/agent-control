@@ -99,6 +99,32 @@ Typed `provider.catalog_changed` and existing `model.intelligence_changed` event
 
 This applies to NVIDIA and every other provider through the same projection contract. A provider adapter or qualification workflow must emit the factual lifecycle event; the Crew does not poll providers or manufacture candidate status itself.
 
+## Event-backed Activity Matrix
+
+The Crew view includes an original retro Activity Matrix inspired by banks of status lights, not a reproduction of a film prop. Its `agent-control.dashboard-activity-panel/v1` data is produced by the same deterministic projector as the Crew. High-frequency events are coalesced into one current state and count per indicator; no timer generates fake work.
+
+| Indicator | Canonical source | Meaning and persistence | Stale/disconnected behavior |
+| --- | --- | --- | --- |
+| Controller | non-terminal Runs and Work Parcels | active while controller-owned work is non-terminal; recent for 30 seconds | unchanged active work older than 120 seconds is `STALE` |
+| Queue | queued/scheduled Run status | active until dispatch or terminal transition | an old unchanged queue claim is `STALE`, not repulsed |
+| Execution lanes | `WORKING` lanes and active Job Runs | coalesced real workspace/Job execution count | old last-meaningful activity is `STALE` |
+| Tool execution | active Job step action/status | active only while a canonical step executes | unchanged active step after 120 seconds is `STALE` |
+| Model request | active token-routing thread | open provider invocation; never inferred token streaming | no fresh thread telemetry after 120 seconds is `STALE` |
+| Model response | completed token-routing thread | a 30-second recent-completion pulse | expires to `IDLE`; ledger history remains durable |
+| Baton / escalation | token, Parcel or lane baton/handoff record | active only for a recorded transfer; recent for 30 seconds after outcome | incomplete transfer older than 120 seconds is `STALE` |
+| Verification | canonical verification/terminal Run state | active during verification; recent outcome for 30 seconds | an unchanged active verifier becomes `STALE` |
+| Node health | configured-system readiness/workload | faults persist until replaced by successful readiness evidence | missing is `UNKNOWN`; unreachable/auth-required is `DISCONNECTED`, never healthy |
+
+Every indicator is a native button with visible focus and shape-plus-text state. Mouse, Enter or Space opens the associated source, event ID/time, lane, provider/model, explanation, persistence and stale rule. `ACTIVE`, `RECENT`, `IDLE`, `STALE`, `FAILED`, `DISCONNECTED` and `UNKNOWN` are explicit labels, not colours alone. Full motion uses slow coalesced pulses; reduced motion removes those pulses, Off removes all animation, and hidden/background views pause unnecessary work.
+
+The panel has one slow decorative connection heartbeat. Its authority is `presentation-only`, its label says `NOT WORK ACTIVITY`, and it carries no controller, provider, token or hardware meaning.
+
+## Persistent usage while navigating
+
+The **Live usage** strip remains mounted above Jobs, Lanes, Sessions, Systems, Models, Crew and Configuration. Choose a thread or lane to inspect provider/safe account/model, execution node, operational state, elapsed time, governor reason and thresholds, context value/limit/percentage plus authority, cumulative input/fresh/cache-read/cache-write/output/total tokens, cost plus authority and the complete Work Parcel model chain.
+
+The selected ID is browser-local presentation state. Data always comes from the latest `GET /api/status` snapshot and typed SSE refresh; a replacement snapshot is rendered rather than accumulated, so navigation, reload and reconnect cannot double-count. A handoff adds a model leg without resetting parcel totals. Missing context or cost is shown as `Unavailable`; cumulative usage never masquerades as current-context occupancy.
+
 ## Deterministic narration and progressive disclosure
 
 Narration is assembled from fixed templates and the same source IDs used by the cards. No model is called to explain another model or worker.
@@ -134,10 +160,13 @@ Disable the dashboard with `AGENT_CONTROL_WEB_ENABLED=0`. To remove only the Cre
 Run focused tests and the real isolated dashboard recording with:
 
 ```bash
-node --test scripts/dashboard-bots.test.mjs
+node --test scripts/dashboard-bots.test.mjs scripts/dashboard-wopr.test.mjs
 node --import tsx --test src/control/dashboard-characters.test.ts src/control/web-server.test.ts
 npm run record:crew-workflow
+npm run record:crew-wopr-escalation
 npm run check
 ```
 
 The recorder submits a real authenticated Work Parcel, executes concurrent repository search and file-read stages through separate workers, consumes their sealed batons in a composition stage, independently verifies the result, queries a live local provider catalogue and runs a frozen local-model evaluation. Its video never enables the simulated gallery. Results, hashes, performance measurements and evidence boundaries are in [Crew workflow qualification evidence](evidence/agent-control-crew-workflow-qualification.md).
+
+The escalation recorder is a separate, continuous 1× physical trial. It submits the exact visible prompt against a frozen reservation-service fixture, shows two concurrent control Jobs, lets local Qwen complete normally, applies an independent acceptance gate, seals the unresolved criteria into a token baton, automatically changes the explicit route to Codex/Controller Account A/Luna, and independently verifies the destination result and additive usage. The first model is not instructed or constrained to fail, and the trigger is `QUALITY_GATE`, not fabricated context pressure. See the [plain-English model-change transcript](evidence/agent-control-3.9-crew-wopr-escalation-transcript.md) and [qualification report](evidence/agent-control-3.9-crew-wopr-escalation.md).

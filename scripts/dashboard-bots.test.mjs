@@ -79,6 +79,9 @@ test('visual layer has state text equivalents, role accessories, focus, mobile a
   assert.match(source, /bot-sleep-signals/);
   for (const marker of ['bot-active-search', 'bot-active-code', 'bot-active-file', 'bot-active-browser', 'bot-active-remote', 'bot-active-test', 'bot-active-voice', 'bot-active-social', 'bot-active-model']) assert.match(source, new RegExp(marker));
   assert.match(source, /data-animation-authority="presentation-only"/);
+  assert.match(source, /data-bot-render-key/);
+  assert.match(source, /current\?\.dataset\?\.botRenderKey === desired\?\.dataset\?\.botRenderKey/);
+  assert.match(source, /reconcileCardList/);
   assert.match(source, /data-operational-state/);
   assert.match(source, /data-baton-focus/);
   assert.match(source, /Open exact recorded reason/);

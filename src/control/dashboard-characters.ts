@@ -106,7 +106,38 @@ export interface DashboardCharacterCrewProjection {
   parcels: DashboardParcelProjection[];
   batonTransfers: DashboardBatonTransferProjection[];
   modelActivity: DashboardModelActivityProjection[];
+  activityPanel: DashboardActivityPanelProjection;
   members: DashboardCharacterProjection[];
+}
+
+export type DashboardActivityIndicatorState = 'ACTIVE' | 'RECENT' | 'IDLE' | 'STALE' | 'FAILED' | 'DISCONNECTED' | 'UNKNOWN';
+export type DashboardActivityIndicatorShape = 'circle' | 'diamond' | 'bar' | 'triangle' | 'square';
+
+export interface DashboardActivityIndicatorProjection {
+  id: string;
+  groupId: 'control' | 'execution' | 'providers' | 'handoff' | 'assurance' | 'infrastructure';
+  label: string;
+  shape: DashboardActivityIndicatorShape;
+  state: DashboardActivityIndicatorState;
+  count: number | null;
+  at: string | null;
+  eventType: string;
+  eventId: string | null;
+  laneId: string | null;
+  provider: string | null;
+  model: string | null;
+  explanation: string;
+  source: string;
+  meaning: string;
+  persistence: string;
+  staleBehavior: string;
+}
+
+export interface DashboardActivityPanelProjection {
+  schema: 'agent-control.dashboard-activity-panel/v1';
+  observedAt: string;
+  groups: Array<{id: DashboardActivityIndicatorProjection['groupId']; label: string; indicators: DashboardActivityIndicatorProjection[]}>;
+  decorativeHeartbeat: {authority: 'presentation-only'; label: string; explanation: string};
 }
 
 export interface DashboardParcelStageProjection {
@@ -168,6 +199,9 @@ export interface DashboardBatonTransferProjection {
   reason: string;
   explanation: string;
   contextPercent: number | null;
+  triggerKind: string | null;
+  triggerCode: string | null;
+  triggerReason: string | null;
 }
 
 export interface DashboardModelActivityProjection {
@@ -278,8 +312,8 @@ interface ModelSource {
 }
 
 interface ModelBatchSource {id?: string; status: string; createdAt?: string | null; startedAt?: string | null; completedAt?: string | null; candidates?: Array<{providerId?: string; modelId?: string}>;}
-interface TokenThreadSource {id: string; parcelId: string; active: boolean; updatedAt?: string; providerId?: string; modelId?: string; accountLabel?: string | null; accountProfileId?: string | null; providerExecutionNodeId?: string; nodeId?: string; governor?: {state?: string; reason?: string};}
-interface TokenDecisionSource {id?: string; threadId: string; parcelId: string; at: string; action: string; outcome: string; reason?: string; batonId?: string; contextPercent?: number | null; target?: {providerId?: string; modelId?: string; accountLabel?: string; accountProfileId?: string; providerExecutionNodeId?: string; nodeId?: string};}
+interface TokenThreadSource {id: string; parcelId: string; active: boolean; startedAt?: string; updatedAt?: string; providerId?: string; modelId?: string; accountLabel?: string | null; accountProfileId?: string | null; providerExecutionNodeId?: string; nodeId?: string; governor?: {state?: string; reason?: string}; latest?: {at?: string; elapsedMs?: number};}
+interface TokenDecisionSource {id?: string; threadId: string; parcelId: string; at: string; action: string; outcome: string; reason?: string; batonId?: string; contextPercent?: number | null; trigger?: {kind?: string; code?: string; reason?: string; evidence?: string[]}; target?: {providerId?: string; modelId?: string; accountLabel?: string; accountProfileId?: string; providerExecutionNodeId?: string; nodeId?: string};}
 interface ControlEventSource {id: number; at: string; type: string; laneId?: number; payload?: Record<string, unknown>;}
 
 export interface DashboardCharacterSource {
@@ -690,7 +724,9 @@ function batonTransfers(source: DashboardCharacterSource): DashboardBatonTransfe
   for (const decision of decisions) {
     if (decision.action !== 'BATON_AND_HANDOFF') continue;
     const thread = (source.tokenRouting?.threads ?? []).find(item => item.id === decision.threadId), from = routeProjection(thread), to = routeProjection(decision.target), reason = clean(decision.reason, 'No routing reason was recorded.');
-    transfers.push({id: decision.id ?? `token:${decision.threadId}:${decision.at}`, at: decision.at, parcelId: decision.parcelId, sourceType: 'token-routing', sourceEventId: decision.id ?? decision.threadId, batonId: decision.batonId ?? null, from, to, outcome: decision.outcome, active: latestTokenDecision.get(decision.threadId) === decision && decision.outcome === 'RECORDED' && Boolean(thread?.active), reason, explanation: `Agent Control recorded ${decision.outcome.toLowerCase()} for ${from?.label ?? 'the source route'} → ${to?.label ?? 'the governed destination'}: ${reason}`, contextPercent: typeof decision.contextPercent === 'number' ? decision.contextPercent : null});
+    const destinationActive = (source.tokenRouting?.threads ?? []).some(item => item.active && item.providerId === decision.target?.providerId && item.modelId === decision.target?.modelId && (item.accountProfileId ?? null) === (decision.target?.accountProfileId ?? null) && (item.providerExecutionNodeId ?? item.nodeId ?? null) === (decision.target?.providerExecutionNodeId ?? decision.target?.nodeId ?? null));
+    const triggerKind=clean(decision.trigger?.kind)||null,triggerCode=clean(decision.trigger?.code)||null,triggerReason=clean(decision.trigger?.reason)||null,trigger=triggerKind==='QUALITY_GATE'?`Independent quality gate ${triggerCode??'unreported'} triggered`:triggerKind==='CONTEXT_PRESSURE'?`Context governor ${triggerCode??'assessment'} triggered`:'Recorded routing policy triggered';
+    transfers.push({id: decision.id ?? `token:${decision.threadId}:${decision.at}`, at: decision.at, parcelId: decision.parcelId, sourceType: 'token-routing', sourceEventId: decision.id ?? decision.threadId, batonId: decision.batonId ?? null, from, to, outcome: decision.outcome, active: latestTokenDecision.get(decision.threadId) === decision && decision.outcome === 'RECORDED' && Boolean(thread?.active || destinationActive), reason, explanation: `${trigger}${triggerReason?`: ${triggerReason}`:''}. ${decision.outcome.toLowerCase()} routing for ${from?.label ?? 'the source route'} → ${to?.label ?? 'the governed destination'}: ${reason}`, contextPercent: typeof decision.contextPercent === 'number' ? decision.contextPercent : null,triggerKind,triggerCode,triggerReason});
   }
   for (const parcel of source.parcels ?? []) {
     const views = parcel.context?.batonViews ?? [];
@@ -698,16 +734,16 @@ function batonTransfers(source: DashboardCharacterSource): DashboardBatonTransfe
       const target = parcel.stages.find(stage => stage.id === baton.targetStageId), sourceStages = parcel.stages.filter(stage => baton.sourceStageIds?.includes(stage.id ?? '')), event = [...(parcel.context?.events ?? [])].reverse().find(item => item.type === 'baton.created' && (item.detail?.batonId === baton.id || item.at === baton.createdAt)), reason = clean(baton.nextAction ?? event?.summary, 'Continue the recorded downstream stage.'), outcome = target?.status ?? 'CREATED';
       const recentlyCreated = (timestamp(baton.createdAt) ?? -Infinity) >= (timestamp(source.observedAt) ?? Date.now()) - DASHBOARD_CHARACTER_ACTIVITY_RECENT_MS;
       const from = stageSetRoute(sourceStages, source) ?? workflowEndpoint('Work Parcel intake'), to = stageRoute(target, source) ?? workflowEndpoint(target ? `Governed stage ${target.name ?? target.id ?? 'unreported'}` : 'Next governed stage'), sourceDescription = sourceStages.map(stage => stage.name ?? stage.id).filter(Boolean).join(' + ') || 'recorded predecessor work';
-      transfers.push({id: `parcel:${baton.id}`, at: baton.createdAt, parcelId: parcel.id ?? 'unreported-parcel', sourceType: 'work-parcel', sourceEventId: event?.id ?? `baton-view:${baton.id}`, batonId: baton.id, from, to, outcome, active: Boolean(target && (['QUEUED', 'WAITING'].includes(target.status) || (target.status === 'RUNNING' && recentlyCreated))), reason, explanation: `Sealed Parcel baton ${baton.id} carries ${sourceDescription} → ${target?.name ?? target?.id ?? 'the next governed stage'}: ${reason}`, contextPercent: null});
+      transfers.push({id: `parcel:${baton.id}`, at: baton.createdAt, parcelId: parcel.id ?? 'unreported-parcel', sourceType: 'work-parcel', sourceEventId: event?.id ?? `baton-view:${baton.id}`, batonId: baton.id, from, to, outcome, active: Boolean(target && (['QUEUED', 'WAITING'].includes(target.status) || (target.status === 'RUNNING' && recentlyCreated))), reason, explanation: `Sealed Parcel baton ${baton.id} carries ${sourceDescription} → ${target?.name ?? target?.id ?? 'the next governed stage'}: ${reason}`, contextPercent: null,triggerKind:'WORK_PARCEL_DEPENDENCY',triggerCode:null,triggerReason:null});
     }
     if (!views.length) for (const event of parcel.audit?.timeline?.filter(item => item.type === 'baton.created') ?? []) {
       const stage = parcel.stages.find(item => item.id === event.stageId), reason = clean(event.detail ?? event.summary, 'A Work Parcel baton was recorded.');
-      transfers.push({id: `parcel-audit:${event.id ?? `${parcel.id ?? 'unreported-parcel'}:${event.at}`}`, at: event.at, parcelId: parcel.id ?? 'unreported-parcel', sourceType: 'work-parcel', sourceEventId: event.id ?? `${parcel.id ?? 'unreported-parcel'}:${event.at}`, batonId: stage?.baton?.id ?? null, from: workflowEndpoint('Work Parcel intake'), to: stageRoute(stage, source) ?? workflowEndpoint(stage ? `Governed stage ${stage.name ?? stage.id ?? 'unreported'}` : 'Next governed stage'), outcome: stage?.status ?? 'CREATED', active: Boolean(stage && ['QUEUED', 'WAITING', 'RUNNING'].includes(stage.status)), reason, explanation: `Agent Control recorded a Work Parcel baton${stage ? ` for ${stage.name ?? stage.id}` : ''}: ${reason}`, contextPercent: null});
+      transfers.push({id: `parcel-audit:${event.id ?? `${parcel.id ?? 'unreported-parcel'}:${event.at}`}`, at: event.at, parcelId: parcel.id ?? 'unreported-parcel', sourceType: 'work-parcel', sourceEventId: event.id ?? `${parcel.id ?? 'unreported-parcel'}:${event.at}`, batonId: stage?.baton?.id ?? null, from: workflowEndpoint('Work Parcel intake'), to: stageRoute(stage, source) ?? workflowEndpoint(stage ? `Governed stage ${stage.name ?? stage.id ?? 'unreported'}` : 'Next governed stage'), outcome: stage?.status ?? 'CREATED', active: Boolean(stage && ['QUEUED', 'WAITING', 'RUNNING'].includes(stage.status)), reason, explanation: `Agent Control recorded a Work Parcel baton${stage ? ` for ${stage.name ?? stage.id}` : ''}: ${reason}`, contextPercent: null,triggerKind:'WORK_PARCEL_DEPENDENCY',triggerCode:null,triggerReason:null});
     }
   }
   for (const event of (source.events ?? []).filter(item => item.type === 'lane.handoff')) {
     const fromId = typeof event.payload?.fromId === 'number' || typeof event.payload?.fromId === 'string' ? String(event.payload.fromId) : 'unreported', toId = typeof event.payload?.toId === 'number' || typeof event.payload?.toId === 'string' ? String(event.payload.toId) : 'unreported', holder = clean(event.payload?.holder, 'recorded holder'), reason = `Lane baton holder ${holder} moved from Lane ${fromId} to Lane ${toId}.`, recent = (timestamp(event.at) ?? -Infinity) >= (timestamp(source.observedAt) ?? Date.now()) - DASHBOARD_CHARACTER_ACTIVITY_RECENT_MS;
-    transfers.push({id: `lane:${event.id}`, at: event.at, parcelId: `lane:${toId}`, sourceType: 'lane', sourceEventId: String(event.id), batonId: null, from: {provider: 'Agent Control', account: null, model: `Lane ${fromId}`, node: null, label: `Lane ${fromId}`}, to: {provider: 'Agent Control', account: null, model: `Lane ${toId}`, node: null, label: `Lane ${toId}`}, outcome: 'RECORDED', active: recent, reason, explanation: `Agent Control recorded a lane handoff: ${reason}`, contextPercent: null});
+    transfers.push({id: `lane:${event.id}`, at: event.at, parcelId: `lane:${toId}`, sourceType: 'lane', sourceEventId: String(event.id), batonId: null, from: {provider: 'Agent Control', account: null, model: `Lane ${fromId}`, node: null, label: `Lane ${fromId}`}, to: {provider: 'Agent Control', account: null, model: `Lane ${toId}`, node: null, label: `Lane ${toId}`}, outcome: 'RECORDED', active: recent, reason, explanation: `Agent Control recorded a lane handoff: ${reason}`, contextPercent: null,triggerKind:'LANE_HANDOFF',triggerCode:null,triggerReason:null});
   }
   return transfers.sort((left, right) => (timestamp(right.at) ?? 0) - (timestamp(left.at) ?? 0)).slice(0, 24);
 }
@@ -719,6 +755,78 @@ function modelActivity(source: DashboardCharacterSource): DashboardModelActivity
     const explanation = action === 'discovering' ? `Agent Control is discovering the ${provider ?? 'recorded'} provider catalogue.` : action === 'discovered' ? `Agent Control recorded provider catalogue discovery${typeof payload.models === 'number' ? ` for ${payload.models} model(s)` : ''}.` : action === 'callability-testing' ? `Agent Control is testing whether ${model ?? 'the recorded model'} accepts a bounded call.` : action === 'callability-tested' ? `Callability finished with ${status ?? 'an unreported status'}${failure ? ` (${failure})` : ''}.` : action === 'routing-disabled' ? `Automatic routing is explicitly disabled for ${model ?? 'the recorded model'}.` : action === 'routing-enabled' ? `Automatic routing is explicitly enabled for ${model ?? 'the recorded model'}.` : `Agent Control recorded ${action.replaceAll('-', ' ')}${status ? `: ${status}` : ''}.`;
     return {id: `event:${event.id}`, at: event.at, provider, model, action, status, failure, httpStatus, routingEligible, explanation};
   }).sort((left, right) => (timestamp(right.at) ?? 0) - (timestamp(left.at) ?? 0)).slice(0, 24);
+}
+
+interface ActivityIndicatorInput {
+  id: DashboardActivityIndicatorProjection['id'];
+  groupId: DashboardActivityIndicatorProjection['groupId'];
+  label: string;
+  shape: DashboardActivityIndicatorShape;
+  active?: boolean;
+  failed?: boolean;
+  disconnected?: boolean;
+  unknown?: boolean;
+  count?: number | null;
+  at?: string | null;
+  event?: ControlEventSource | null;
+  laneId?: string | number | null;
+  provider?: string | null;
+  model?: string | null;
+  explanation: string;
+  source: string;
+  meaning: string;
+  persistence: string;
+  staleBehavior: string;
+}
+
+function latestControlEvent(source: DashboardCharacterSource, types: string[]) {
+  return [...(source.events ?? [])].filter(event => types.includes(event.type)).sort((left, right) => (timestamp(right.at) ?? 0) - (timestamp(left.at) ?? 0))[0] ?? null;
+}
+
+function indicatorState(input: ActivityIndicatorInput, nowMs: number): DashboardActivityIndicatorState {
+  if (input.disconnected) return 'DISCONNECTED';
+  if (input.failed) return 'FAILED';
+  if (input.unknown) return 'UNKNOWN';
+  const at = timestamp(input.at ?? input.event?.at);
+  if (input.active) return at !== null && nowMs - at >= DASHBOARD_CHARACTER_STALE_AFTER_MS ? 'STALE' : 'ACTIVE';
+  if (at !== null && nowMs - at < DASHBOARD_CHARACTER_ACTIVITY_RECENT_MS) return 'RECENT';
+  return 'IDLE';
+}
+
+function activityIndicator(input: ActivityIndicatorInput, nowMs: number): DashboardActivityIndicatorProjection {
+  const event = input.event ?? null, payload = event?.payload ?? {}, at = input.at ?? event?.at ?? null;
+  return {
+    id: input.id, groupId: input.groupId, label: input.label, shape: input.shape, state: indicatorState(input, nowMs), count: input.count ?? null, at,
+    eventType: event?.type ?? input.source, eventId: event ? String(event.id) : null,
+    laneId: clean(input.laneId ?? event?.laneId) || null,
+    provider: clean(input.provider ?? payload.providerId) || null,
+    model: clean(input.model ?? payload.modelId ?? payload.canonicalModelId) || null,
+    explanation: input.explanation, source: input.source, meaning: input.meaning, persistence: input.persistence, staleBehavior: input.staleBehavior,
+  };
+}
+
+function activityPanel(source: DashboardCharacterSource, transfers: DashboardBatonTransferProjection[]): DashboardActivityPanelProjection {
+  const nowMs = timestamp(source.observedAt) ?? Date.now(), runs = [...(source.runs ?? []), ...(source.parameterizedRuns ?? [])], parcels = source.parcels ?? [], lanes = source.lanes ?? [], threads = source.tokenRouting?.threads ?? [];
+  const activeRuns = runs.filter(run => activeStates.has(run.status.toUpperCase())), queuedRuns = runs.filter(run => queuedStates.has(run.status.toUpperCase())), activeParcels = parcels.filter(parcel => ['PLANNING','QUEUED','RUNNING','WAITING'].includes(parcel.status.toUpperCase())), activeLanes = lanes.filter(lane => lane.status.toUpperCase() === 'WORKING');
+  const activeSteps = activeRuns.flatMap(run => (run.steps ?? []).filter(step => activeStates.has(step.status.toUpperCase())).map(step => ({run, step}))), activeThreads = threads.filter(thread => thread.active), completedThreads = threads.filter(thread => !thread.active);
+  const latestThread = [...threads].sort((left,right) => (timestamp(right.updatedAt ?? right.latest?.at) ?? 0) - (timestamp(left.updatedAt ?? left.latest?.at) ?? 0))[0], latestCompletedThread = [...completedThreads].sort((left,right) => (timestamp(right.updatedAt ?? right.latest?.at) ?? 0) - (timestamp(left.updatedAt ?? left.latest?.at) ?? 0))[0];
+  const latestTransfer = transfers[0], activeTransfer = transfers.find(transfer => transfer.active), verifying = runs.filter(run => ['VERIFYING','VALIDATING'].includes(run.status.toUpperCase())), failedRuns = runs.filter(run => ['FAILED','DEGRADED'].includes(run.status.toUpperCase()));
+  const unavailableSystems = (source.systems ?? []).filter(system => ['UNAVAILABLE','OFFLINE','AUTH REQUIRED'].includes(system.execution.toUpperCase())), degradedSystems = (source.systems ?? []).filter(system => system.execution.toUpperCase() === 'DEGRADED'), unknownSystems = (source.systems ?? []).filter(system => system.execution.toUpperCase() === 'UNKNOWN'), busySystems = (source.systems ?? []).filter(system => (system.active ?? 0) > 0);
+  const controllerEvent = latestControlEvent(source,['work.parcel_created','work.parcel_changed','job.run_created','job.run_changed']), queueEvent = latestControlEvent(source,['job.run_created','job.run_changed']), laneEvent = latestControlEvent(source,['lane.status_changed','lane.handoff']), providerEvent = latestControlEvent(source,['token.telemetry']), responseEvent = latestControlEvent(source,['token.telemetry','job.run_changed']), toolEvent = latestControlEvent(source,['job.run_changed','retrieval.started','retrieval.evidence']), batonEvent = latestControlEvent(source,['token.baton_created','token.handoff_result','token.governor_transition','lane.handoff']), verificationEvent = latestControlEvent(source,['verification.changed','job.run_changed']), nodeEvent = latestControlEvent(source,['resource.node_changed','provider.health_changed']);
+  const indicators: DashboardActivityIndicatorProjection[] = [
+    activityIndicator({id:'controller',groupId:'control',label:'Controller',shape:'diamond',active:activeRuns.length+activeParcels.length>0,count:activeRuns.length+activeParcels.length,at:latest([...activeRuns.map(runUpdatedAt),...activeParcels.map(parcel=>parcel.updatedAt)])??controllerEvent?.at??source.observedAt,event:controllerEvent,explanation:activeRuns.length+activeParcels.length?`${activeRuns.length} governed Run(s) and ${activeParcels.length} Work Parcel(s) are non-terminal.`:'No governed Run or Work Parcel is active.',source:'canonical run and Work Parcel status',meaning:'Lights only for non-terminal controller-owned work.',persistence:'Active while canonical work remains non-terminal; recent for 30 seconds after the last event.',staleBehavior:'An active claim older than 120 seconds is labelled STALE.'},nowMs),
+    activityIndicator({id:'queue',groupId:'control',label:'Queue',shape:'bar',active:queuedRuns.length>0,count:queuedRuns.length,at:latest(queuedRuns.map(runUpdatedAt))??queueEvent?.at,event:queueEvent,explanation:queuedRuns.length?`${queuedRuns.length} Run(s) are queued or awaiting dispatch.`:'The canonical scheduler queue has no waiting Run.',source:'canonical Run status',meaning:'Represents queued/scheduled work, not provider activity.',persistence:'Active until each queued Run is dispatched or terminal.',staleBehavior:'A queue entry without a fresh transition is labelled STALE rather than repeatedly pulsed.'},nowMs),
+    activityIndicator({id:'lanes',groupId:'execution',label:'Execution lanes',shape:'square',active:activeLanes.length+activeRuns.length>0,count:activeLanes.length||activeRuns.length,at:latest([...activeLanes.map(lane=>lane.lastMeaningfulActivity),...activeRuns.map(runUpdatedAt)])??laneEvent?.at,event:laneEvent,laneId:activeLanes[0]?.id,model:activeLanes[0]?.model,explanation:activeLanes.length?`${activeLanes.length} authoritative workspace lane(s) report WORKING.`:activeRuns.length?`${activeRuns.length} canonical Job execution lane(s) are active.`:'No workspace lane or governed Job execution lane is active.',source:'canonical lane or Job Run state',meaning:'One coalesced indicator for real active workspace lanes and governed Run execution lanes.',persistence:'Active while at least one workspace lane reports WORKING or a canonical Run remains active.',staleBehavior:'Old last-meaningful-activity converts ACTIVE to STALE.'},nowMs),
+    activityIndicator({id:'tools',groupId:'execution',label:'Tool execution',shape:'triangle',active:activeSteps.length>0,count:activeSteps.length,at:latest(activeSteps.flatMap(item=>[item.step.startedAt,item.run.updatedAt]))??toolEvent?.at,event:toolEvent,explanation:activeSteps.length?`${activeSteps.length} recorded Job step(s) are executing${activeSteps[0].step.action?`: ${activeSteps[0].step.action}`:''}.`:'No executing Job step exposes tool activity.',source:'canonical Job step action/status',meaning:'Represents recorded step/tool execution; it never guesses hardware activity.',persistence:'Active only while a canonical step is active.',staleBehavior:'An unchanged active step older than 120 seconds is labelled STALE.'},nowMs),
+    activityIndicator({id:'provider-request',groupId:'providers',label:'Model request',shape:'circle',active:activeThreads.length>0,count:activeThreads.length,at:latest(activeThreads.map(thread=>thread.updatedAt??thread.latest?.at))??providerEvent?.at,event:providerEvent,provider:latestThread?.providerId,model:latestThread?.modelId,explanation:activeThreads.length?`${activeThreads.length} token-runtime thread(s) report an open provider invocation.`:'No token-runtime thread reports an open provider invocation.',source:'token routing thread active flag',meaning:'An open provider/model invocation with telemetry; not token-stream inference.',persistence:'Active until the provider adapter records completion/failure.',staleBehavior:'An open request without fresh telemetry for 120 seconds is STALE.'},nowMs),
+    activityIndicator({id:'provider-response',groupId:'providers',label:'Model response',shape:'bar',active:false,count:completedThreads.length,at:latestCompletedThread?.updatedAt??latestCompletedThread?.latest?.at??responseEvent?.at,event:responseEvent,provider:latestCompletedThread?.providerId,model:latestCompletedThread?.modelId,explanation:latestCompletedThread?`Latest completed token thread: ${latestCompletedThread.providerId??'unreported provider'}/${latestCompletedThread.modelId??'unreported model'}.`:'No completed provider token thread is recorded.',source:'token routing thread completion',meaning:'A coalesced recent completion pulse, not a claim that tokens streamed.',persistence:'Recent for 30 seconds after a completed thread update.',staleBehavior:'Expires to IDLE; completed work is retained in the ledger.'},nowMs),
+    activityIndicator({id:'baton',groupId:'handoff',label:'Baton / escalation',shape:'diamond',active:Boolean(activeTransfer),count:transfers.length,at:activeTransfer?.at??latestTransfer?.at??batonEvent?.at,event:batonEvent,provider:activeTransfer?.to?.provider??latestTransfer?.to?.provider,model:activeTransfer?.to?.model??latestTransfer?.to?.model,explanation:activeTransfer?.explanation??latestTransfer?.explanation??'No sealed baton transfer is recorded.',source:'sealed token/Work Parcel/lane handoff records',meaning:'Shows only persisted baton creation, governed handoff or escalation decisions.',persistence:'Active while a handoff is recorded in progress; recent for 30 seconds after its last outcome.',staleBehavior:'A recorded in-progress transfer older than 120 seconds is STALE.'},nowMs),
+    activityIndicator({id:'verification',groupId:'assurance',label:'Verification',shape:'triangle',active:verifying.length>0,failed:!verifying.length&&failedRuns.length>0&&Boolean(verificationEvent&&(nowMs-(timestamp(verificationEvent.at)??0)<DASHBOARD_CHARACTER_ACTIVITY_RECENT_MS)),count:verifying.length||failedRuns.length,at:latest([...verifying.map(runUpdatedAt),...failedRuns.map(runUpdatedAt)])??verificationEvent?.at,event:verificationEvent,explanation:verifying.length?`${verifying.length} Run(s) are under independent verification.`:failedRuns.length?`${failedRuns.length} Run(s) have a recorded failed/degraded outcome.`:'No Run is currently under verification.',source:'canonical Run verification/terminal status',meaning:'Tracks independent validation state and recent outcomes.',persistence:'Active during VERIFYING/VALIDATING; recent outcome remains for 30 seconds.',staleBehavior:'An unchanged active verifier older than 120 seconds is STALE.'},nowMs),
+    activityIndicator({id:'nodes',groupId:'infrastructure',label:'Node health',shape:'square',active:busySystems.length>0,disconnected:unavailableSystems.length>0,failed:!unavailableSystems.length&&degradedSystems.length>0,unknown:!unavailableSystems.length&&!degradedSystems.length&&unknownSystems.length>0,count:(source.systems??[]).length,at:latest((source.systems??[]).flatMap(system=>[system.lastCheckAt,system.lastSuccessfulProbeAt,system.node?.lastProbeAt]))??nodeEvent?.at,event:nodeEvent,explanation:unavailableSystems.length?`${unavailableSystems.length} configured system(s) are unavailable or require authentication.`:degradedSystems.length?`${degradedSystems.length} configured system(s) are degraded.`:unknownSystems.length?`${unknownSystems.length} configured system(s) have unknown readiness.`:busySystems.length?`${busySystems.length} system(s) report active workload.`:'Configured systems have no active workload or recorded fault.',source:'canonical configured-system readiness',meaning:'Represents downstream readiness independently from global Agent Control health.',persistence:'Fault states persist until a successful readiness update replaces them.',staleBehavior:'Missing readiness is UNKNOWN; disconnection is never shown as healthy.'},nowMs),
+  ];
+  const labels:Record<DashboardActivityIndicatorProjection['groupId'],string>={control:'Control',execution:'Execution',providers:'Providers & models',handoff:'Handoff',assurance:'Assurance',infrastructure:'Infrastructure'};
+  const order:DashboardActivityIndicatorProjection['groupId'][]=['control','execution','providers','handoff','assurance','infrastructure'];
+  return {schema:'agent-control.dashboard-activity-panel/v1',observedAt:source.observedAt,groups:order.map(id=>({id,label:labels[id],indicators:indicators.filter(item=>item.groupId===id)})),decorativeHeartbeat:{authority:'presentation-only',label:'Connection heartbeat',explanation:'A slow decorative animation indicates that this page is rendering. It is not work, traffic, token or hardware telemetry.'}};
 }
 
 export function projectDashboardCharacterCrew(source: DashboardCharacterSource): DashboardCharacterCrewProjection {
@@ -736,6 +844,7 @@ export function projectDashboardCharacterCrew(source: DashboardCharacterSource):
     parcels,
     batonTransfers: transfers,
     modelActivity: modelActivity(source),
+    activityPanel: activityPanel(source, transfers),
     members,
   };
 }

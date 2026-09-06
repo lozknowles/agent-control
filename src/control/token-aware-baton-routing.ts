@@ -10,6 +10,14 @@ export type RoutingAction = 'CONTINUE' | 'COMPACT_AND_CONTINUE' | 'BATON_AND_HAN
 export type RemainingWork = 'DIFFICULT' | 'BOUNDED' | 'MECHANICAL';
 export type ReasoningState = 'UNFINISHED' | 'COMPLETE';
 export type ContextLifecycleKind = 'COMPACTION' | 'NEW_CONTEXT' | 'RESUME' | 'CONTINUATION';
+export type RoutingTriggerKind = 'CONTEXT_PRESSURE' | 'QUALITY_GATE';
+
+export interface RoutingTrigger {
+  kind: RoutingTriggerKind;
+  code: string;
+  reason: string;
+  evidence: string[];
+}
 
 export interface TokenGovernorPolicy {
   continuePercent: number;
@@ -122,14 +130,16 @@ export interface TokenRoutingDecision {
   state: GovernorState;
   action: RoutingAction;
   reason: string;
+  /** Present on all newly recorded decisions; optional only for v1 snapshot compatibility. */
+  trigger?: RoutingTrigger;
   contextPercent: number | null;
   target?: {providerId: string; accountProfileId?: string; accountLabel?: string; accountPlan?: string; accountPlanAuthority?: 'operator-configured' | 'provider-reported'; accountQualification?: string; accountAvailability?: string; modelId: string; nodeId?: string; workloadNodeId?: string; providerExecutionNodeId?: string; credentialNodeId?: string};
   batonId?: string;
   outcome: 'RECORDED' | 'SUCCEEDED' | 'FAILED';
 }
 
-export interface TokenRoutingCandidate extends AccountRouteIdentity {providerId: string; modelId: string; estimatedCost: number | null; qualified: boolean; capabilities: string[];}
-export interface RoutingAssessment {remainingWork: RemainingWork; reasoningState: ReasoningState; requiredCapabilities: string[]; candidates: TokenRoutingCandidate[];}
+export interface TokenRoutingCandidate extends AccountRouteIdentity {providerId: string; modelId: string; estimatedCost: number | null; qualified: boolean; capabilities: string[]; preferenceOrder?: number;}
+export interface RoutingAssessment {remainingWork: RemainingWork; reasoningState: ReasoningState; requiredCapabilities: string[]; candidates: TokenRoutingCandidate[]; trigger?: RoutingTrigger;}
 export interface TokenRoutingEvent {type: 'telemetry' | 'governor.transition' | 'context.lifecycle' | 'baton.created' | 'handoff.result'; threadId: string; parcelId: string; at: string;}
 export interface TokenRoutingProjection {schema: typeof TOKEN_BATON_ROUTING_SCHEMA; observedAt: string; policy: TokenGovernorPolicy; threads: ThreadTokenRecord[]; parcels: ParcelTokenTotals[]; decisions: TokenRoutingDecision[]; contextLifecycle: ContextLifecycleRecord[];}
 
@@ -202,16 +212,30 @@ export class TokenAwareBatonRuntime {
 
   assess(threadId: string, assessment: RoutingAssessment): TokenRoutingDecision {
     const thread = this.thread(threadId), state = thread.governor.state, pressure = thread.latest.contextPercent;
+    const trigger = normalizeTrigger(assessment.trigger, thread);
     let action: RoutingAction = state === 'COMPACT' || state === 'HANDOFF' ? 'COMPACT_AND_CONTINUE' : 'CONTINUE', reason = thread.governor.reason, target: TokenRoutingDecision['target'];
+    if (trigger.kind === 'QUALITY_GATE') {
+      const eligible = eligibleCandidates(thread, assessment);
+      const selected = eligible.sort((a, b) => (a.preferenceOrder ?? Number.MAX_SAFE_INTEGER) - (b.preferenceOrder ?? Number.MAX_SAFE_INTEGER) || routeKey(a).localeCompare(routeKey(b)))[0];
+      if (selected) {
+        action = 'BATON_AND_HANDOFF';
+        target = decisionTarget(selected);
+        reason = `quality_gate_failed_governed_fallback_selected:${trigger.code}`;
+      } else {
+        action = 'CONTINUE';
+        reason = `quality_gate_failed_no_qualified_governed_fallback:${trigger.code}`;
+      }
+      return this.record(thread, action, reason, 'RECORDED', target, undefined, trigger);
+    }
     if (state === 'HANDOFF' && assessment.reasoningState === 'COMPLETE' && ['BOUNDED', 'MECHANICAL'].includes(assessment.remainingWork)) {
       const currentCost = thread.latest.cost.amount;
-      const eligible = assessment.candidates.filter(candidate => candidate.qualified && assessment.requiredCapabilities.every(capability => candidate.capabilities.includes(capability)) && routeKey(candidate) !== routeKey(thread) && (currentCost === null || candidate.estimatedCost === null || candidate.estimatedCost < currentCost));
+      const eligible = eligibleCandidates(thread, assessment).filter(candidate => currentCost === null || candidate.estimatedCost === null || candidate.estimatedCost < currentCost);
       const selected = eligible.sort((a, b) => (a.estimatedCost ?? Infinity) - (b.estimatedCost ?? Infinity) || routeKey(a).localeCompare(routeKey(b)))[0];
-      if (selected) { action = 'BATON_AND_HANDOFF'; target = {providerId: selected.providerId, ...(selected.accountProfileId ? {accountProfileId: selected.accountProfileId, accountLabel: selected.accountLabel, accountPlan: selected.accountPlan, accountPlanAuthority: selected.accountPlanAuthority, accountQualification: selected.accountQualification, accountAvailability: selected.accountAvailability} : {}), modelId: selected.modelId, ...(selected.nodeId ? {nodeId: selected.nodeId} : {}), ...(selected.workloadNodeId ? {workloadNodeId: selected.workloadNodeId} : {}), ...(selected.providerExecutionNodeId ? {providerExecutionNodeId: selected.providerExecutionNodeId} : {}), ...(selected.credentialNodeId ? {credentialNodeId: selected.credentialNodeId} : {})}; reason = 'context_handoff_threshold_and_bounded_work_on_qualified_lower_cost_route'; }
+      if (selected) { action = 'BATON_AND_HANDOFF'; target = decisionTarget(selected); reason = 'context_handoff_threshold_and_bounded_work_on_qualified_lower_cost_route'; }
       else reason = assessment.reasoningState === 'COMPLETE' ? 'context_high_no_qualified_cheaper_route' : 'difficult_reasoning_remains_on_current_model';
     }
     if (assessment.reasoningState === 'UNFINISHED' && state === 'HANDOFF') { action = 'COMPACT_AND_CONTINUE'; reason = 'difficult_reasoning_remains_on_current_model'; }
-    return this.record(thread, action, reason, 'RECORDED', target);
+    return this.record(thread, action, reason, 'RECORDED', target, undefined, trigger);
   }
 
   createBaton(input: BatonInput): VerifiedBaton {
@@ -226,14 +250,16 @@ export class TokenAwareBatonRuntime {
 
   async handoff(threadId: string, batonId: string, target: TokenRoutingDecision['target'] & {providerId: string; modelId: string}, execute: () => Promise<void>): Promise<TokenRoutingDecision> {
     const thread = this.thread(threadId), baton = this.baton(batonId); if (baton.threadId !== thread.id) throw new Error('token_handoff_baton_thread_mismatch');
-    this.record(thread, 'BATON_AND_HANDOFF', 'verified_baton_ready_for_explicit_handoff', 'RECORDED', target, batonId);
-    try { await execute(); const original = this.threads.get(thread.id)!; original.recoverable = true; this.threads.set(original.id, original); this.save(); return this.record(thread, 'BATON_AND_HANDOFF', 'handoff_completed_original_thread_recoverable', 'SUCCEEDED', target, batonId); }
-    catch (error) { const original = this.threads.get(thread.id)!; original.recoverable = true; original.governor = {...original.governor, state: 'CONTINUE', reason: 'handoff_failed_resume_original_thread'}; this.threads.set(original.id, original); this.save(); return this.record(thread, 'CONTINUE', `handoff_failed_resume_original_thread:${message(error)}`, 'FAILED', target, batonId); }
+    const trigger = [...this.decisions].reverse().find(decision => decision.threadId === thread.id && decision.target && routeKey(decision.target) === routeKey(target))?.trigger ?? contextTrigger(thread);
+    this.record(thread, 'BATON_AND_HANDOFF', 'verified_baton_ready_for_explicit_handoff', 'RECORDED', target, batonId, trigger);
+    try { await execute(); const original = this.threads.get(thread.id)!; original.recoverable = true; this.threads.set(original.id, original); this.save(); return this.record(thread, 'BATON_AND_HANDOFF', 'handoff_completed_original_thread_recoverable', 'SUCCEEDED', target, batonId, trigger); }
+    catch (error) { const original = this.threads.get(thread.id)!; original.recoverable = true; original.governor = {...original.governor, state: 'CONTINUE', reason: 'handoff_failed_resume_original_thread'}; this.threads.set(original.id, original); this.save(); return this.record(thread, 'CONTINUE', `handoff_failed_resume_original_thread:${message(error)}`, 'FAILED', target, batonId, trigger); }
   }
 
   async governedHandoff(threadId: string, batonId: string, target: TokenRoutingDecision['target'] & {providerId: string; modelId: string}, handoffs: GovernedHandoffRuntime, request: Omit<HandoffRequest, 'baton' | 'reason'>, executeDestination?: (result: Awaited<ReturnType<GovernedHandoffRuntime['request']>>) => Promise<void>) {
+    const trigger = [...this.decisions].reverse().find(decision => decision.threadId === threadId && decision.target && routeKey(decision.target) === routeKey(target))?.trigger;
     return this.handoff(threadId, batonId, target, async () => {
-      const result = await handoffs.request({...request, reason: 'Token governor approved verified baton handoff', baton: {tokenBatonId: batonId, tokenBatonSha256: this.baton(batonId).sha256}});
+      const result = await handoffs.request({...request, reason: trigger?.kind === 'QUALITY_GATE' ? `Quality governor approved verified baton escalation: ${trigger.code}` : 'Token governor approved verified baton handoff', baton: {tokenBatonId: batonId, tokenBatonSha256: this.baton(batonId).sha256}});
       if (result.status !== 'COMPLETED') throw new Error(`governed_handoff_not_completed:${result.status}`);
       await executeDestination?.(result);
     });
@@ -256,9 +282,9 @@ export class TokenAwareBatonRuntime {
   projection(): TokenRoutingProjection { const parcels = [...new Set([...this.threads.values()].map(thread => thread.parcelId))].sort().map(id => this.parcel(id)); return {schema: TOKEN_BATON_ROUTING_SCHEMA, observedAt: this.clock(), policy: clone(this.policy), threads: [...this.threads.values()].sort((a,b) => a.id.localeCompare(b.id)).map(clone), parcels, decisions: this.decisions.map(clone), contextLifecycle: this.contextLifecycle.map(clone)}; }
   evidence() { return {schema: TOKEN_BATON_ROUTING_SCHEMA, policy: clone(this.policy), threads: [...this.threads.values()].map(clone), batons: [...this.batons.values()].map(clone), decisions: this.decisions.map(clone), contextLifecycle: this.contextLifecycle.map(clone)} satisfies Snapshot; }
 
-  private record(thread: ThreadTokenRecord, action: RoutingAction, reason: string, outcome: TokenRoutingDecision['outcome'], target?: TokenRoutingDecision['target'], batonId?: string) { const decision: TokenRoutingDecision = {id: `token-route:${randomUUID()}`, at: this.clock(), threadId: thread.id, parcelId: thread.parcelId, state: thread.governor.state, action, reason, contextPercent: thread.latest.contextPercent, ...(target ? {target} : {}), ...(batonId ? {batonId} : {}), outcome}; this.decisions.push(decision); this.save(); this.emit({type: outcome === 'RECORDED' ? 'governor.transition' : 'handoff.result', threadId: thread.id, parcelId: thread.parcelId, at: decision.at}); return clone(decision); }
+  private record(thread: ThreadTokenRecord, action: RoutingAction, reason: string, outcome: TokenRoutingDecision['outcome'], target?: TokenRoutingDecision['target'], batonId?: string, trigger: RoutingTrigger = contextTrigger(thread)) { const decision: TokenRoutingDecision = {id: `token-route:${randomUUID()}`, at: this.clock(), threadId: thread.id, parcelId: thread.parcelId, state: thread.governor.state, action, reason, trigger: clone(trigger), contextPercent: thread.latest.contextPercent, ...(target ? {target} : {}), ...(batonId ? {batonId} : {}), outcome}; this.decisions.push(decision); this.save(); this.emit({type: outcome === 'RECORDED' ? 'governor.transition' : 'handoff.result', threadId: thread.id, parcelId: thread.parcelId, at: decision.at}); return clone(decision); }
   private emit(event: TokenRoutingEvent) { for (const listener of this.listeners) listener(event); }
-  private load() { if (!this.file || !fs.existsSync(this.file)) return; const parsed = JSON.parse(fs.readFileSync(this.file, 'utf8')) as Snapshot; if (parsed.schema !== TOKEN_BATON_ROUTING_SCHEMA) throw new Error('token_routing_snapshot_unsupported'); normalizeGovernorPolicy(parsed.policy); for (const item of parsed.threads ?? []) { const samples = item.samples.map(point => ({...point, cumulative: normalizePersistedAmounts(point.cumulative)})), latest = {...item.latest, cumulative: normalizePersistedAmounts(item.latest.cumulative)}; this.threads.set(item.id, {...item, samples, latest}); } for (const item of parsed.batons ?? []) this.batons.set(item.id, item); this.decisions.push(...(parsed.decisions ?? [])); this.contextLifecycle.push(...(parsed.contextLifecycle ?? []).map(item => ({...item, cumulative: normalizePersistedAmounts(item.cumulative)}))); }
+  private load() { if (!this.file || !fs.existsSync(this.file)) return; const parsed = JSON.parse(fs.readFileSync(this.file, 'utf8')) as Snapshot; if (parsed.schema !== TOKEN_BATON_ROUTING_SCHEMA) throw new Error('token_routing_snapshot_unsupported'); normalizeGovernorPolicy(parsed.policy); for (const item of parsed.threads ?? []) { const samples = item.samples.map(point => ({...point, cumulative: normalizePersistedAmounts(point.cumulative)})), latest = {...item.latest, cumulative: normalizePersistedAmounts(item.latest.cumulative)}; this.threads.set(item.id, {...item, samples, latest}); } for (const item of parsed.batons ?? []) this.batons.set(item.id, item); this.decisions.push(...(parsed.decisions ?? []).map(decision => ({...decision, trigger: decision.trigger ?? {kind: 'CONTEXT_PRESSURE' as const, code: 'legacy_context_governor', reason: decision.reason, evidence: []}}))); this.contextLifecycle.push(...(parsed.contextLifecycle ?? []).map(item => ({...item, cumulative: normalizePersistedAmounts(item.cumulative)}))); }
   private save() { if (!this.file) return; fs.mkdirSync(path.dirname(this.file), {recursive: true, mode: 0o700}); const temporary = `${this.file}.tmp`; fs.writeFileSync(temporary, `${JSON.stringify(this.evidence(), null, 2)}\n`, {mode: 0o600}); fs.renameSync(temporary, this.file); }
 }
 
@@ -303,6 +329,14 @@ function completeInputBreakdown(value: TokenAmounts) {
   }
 }
 function routeKey(value: {providerId: string; accountProfileId?: string; modelId: string; nodeId?: string; providerExecutionNodeId?: string; credentialNodeId?: string}) { return `${value.providerId}\u0000${value.accountProfileId ?? ''}\u0000${value.modelId}\u0000${value.providerExecutionNodeId ?? value.nodeId ?? ''}\u0000${value.credentialNodeId ?? ''}`; }
+function contextTrigger(thread: ThreadTokenRecord): RoutingTrigger { return {kind: 'CONTEXT_PRESSURE', code: thread.governor.reason, reason: thread.governor.reason, evidence: thread.latest.contextPercent === null ? [] : [`context_percent:${thread.latest.contextPercent}`]}; }
+function normalizeTrigger(trigger: RoutingTrigger | undefined, thread: ThreadTokenRecord): RoutingTrigger {
+  if (!trigger) return contextTrigger(thread);
+  if (!['CONTEXT_PRESSURE', 'QUALITY_GATE'].includes(trigger.kind) || !/^[a-z0-9][a-z0-9._-]{0,127}$/i.test(trigger.code) || !trigger.reason.trim() || !Array.isArray(trigger.evidence) || trigger.evidence.some(item => typeof item !== 'string' || !item.trim())) throw new Error('token_routing_trigger_invalid');
+  return clone(trigger);
+}
+function eligibleCandidates(thread: ThreadTokenRecord, assessment: RoutingAssessment) { return assessment.candidates.filter(candidate => candidate.qualified && assessment.requiredCapabilities.every(capability => candidate.capabilities.includes(capability)) && routeKey(candidate) !== routeKey(thread)); }
+function decisionTarget(selected: TokenRoutingCandidate): NonNullable<TokenRoutingDecision['target']> { return {providerId: selected.providerId, ...(selected.accountProfileId ? {accountProfileId: selected.accountProfileId, accountLabel: selected.accountLabel, accountPlan: selected.accountPlan, accountPlanAuthority: selected.accountPlanAuthority, accountQualification: selected.accountQualification, accountAvailability: selected.accountAvailability} : {}), modelId: selected.modelId, ...(selected.nodeId ? {nodeId: selected.nodeId} : {}), ...(selected.workloadNodeId ? {workloadNodeId: selected.workloadNodeId} : {}), ...(selected.providerExecutionNodeId ? {providerExecutionNodeId: selected.providerExecutionNodeId} : {}), ...(selected.credentialNodeId ? {credentialNodeId: selected.credentialNodeId} : {})}; }
 function validateAccountIdentity(value: AccountRouteIdentity) { for (const [name,node] of Object.entries({nodeId:value.nodeId,workloadNodeId:value.workloadNodeId,providerExecutionNodeId:value.providerExecutionNodeId,credentialNodeId:value.credentialNodeId})) if (node !== undefined && !/^[a-z0-9][a-z0-9._-]{0,127}$/i.test(node)) throw new Error(`token_${name}_invalid`); if (value.accountProfileId !== undefined && !/^[a-z0-9][a-z0-9._-]{0,63}$/i.test(value.accountProfileId)) throw new Error('token_account_profile_identity_invalid'); if (value.accountProfileId === undefined && (value.accountLabel !== undefined || value.accountPlan !== undefined || value.accountPlanAuthority !== undefined || value.accountQualification !== undefined || value.accountAvailability !== undefined || value.credentialNodeId !== undefined)) throw new Error('token_account_profile_identity_invalid'); if (value.accountLabel !== undefined && (!value.accountLabel.trim() || value.accountLabel.length > 128 || /@/.test(value.accountLabel))) throw new Error('token_account_profile_label_invalid'); if (value.accountPlan !== undefined && (!value.accountPlan.trim() || value.accountPlan.length > 80 || /@/.test(value.accountPlan))) throw new Error('token_account_profile_plan_invalid'); if (value.accountPlanAuthority !== undefined && !['operator-configured','provider-reported'].includes(value.accountPlanAuthority)) throw new Error('token_account_profile_plan_authority_invalid'); if (value.accountQualification !== undefined && !['UNTESTED','QUALIFYING','QUALIFIED','DEGRADED','DISABLED','FAILED'].includes(value.accountQualification)) throw new Error('token_account_profile_qualification_invalid'); if (value.accountAvailability !== undefined && !['AVAILABLE','AUTH_REQUIRED','UNQUALIFIED','DEGRADED','DISABLED'].includes(value.accountAvailability)) throw new Error('token_account_profile_availability_invalid'); }
 function mergeContext(previous: ContextOccupancy, input?: Partial<ContextOccupancy>): ContextOccupancy { if (!input) return previous; const authority = input.authority ?? previous.authority, tokens = input.tokens === undefined ? previous.tokens : valid(input.tokens), limitTokens = input.limitTokens === undefined ? previous.limitTokens : valid(input.limitTokens); if (authority === 'authoritative' && (tokens === null || limitTokens === null)) throw new Error('token_context_authoritative_values_required'); return {tokens, limitTokens, authority, source: input.source ?? previous.source}; }
 function mergeCost(previous: CostEstimate, input?: Partial<CostEstimate>): CostEstimate { if (!input) return previous; return {amount: valid(input.amount) ?? previous.amount, currency: input.currency ?? previous.currency, authority: input.authority ?? previous.authority, source: input.source ?? previous.source}; }

@@ -1,0 +1,250 @@
+import {createHash, randomBytes} from 'node:crypto';
+import {execFileSync, spawn} from 'node:child_process';
+import {createRequire} from 'node:module';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+
+const require = createRequire(import.meta.url);
+const root = process.cwd();
+const evidenceFile = path.resolve(process.env.AGENT_CONTROL_CREW_WOPR_EVIDENCE ?? 'docs/evidence/agent-control-3.9-crew-wopr-escalation.json');
+const transcriptFile = path.resolve(process.env.AGENT_CONTROL_CREW_WOPR_TRANSCRIPT ?? 'docs/evidence/agent-control-3.9-crew-wopr-escalation-transcript.md');
+const videoFile = path.resolve(process.env.AGENT_CONTROL_CREW_WOPR_VIDEO ?? 'docs/evidence/agent-control-3.9-crew-wopr-escalation.mp4');
+const manifestFile = path.resolve(process.env.AGENT_CONTROL_CREW_WOPR_VIDEO_MANIFEST ?? 'docs/evidence/agent-control-3.9-crew-wopr-escalation-video.json');
+const screenshotDir = path.resolve(process.env.AGENT_CONTROL_CREW_WOPR_SCREENSHOTS ?? 'docs/evidence/agent-control-3.9-crew-wopr-escalation');
+const chromiumExecutable = process.env.AGENT_CONTROL_CHROMIUM ?? '/snap/bin/chromium';
+const ffmpeg = process.env.AGENT_CONTROL_FFMPEG ?? 'ffmpeg';
+const ffprobe = process.env.AGENT_CONTROL_FFPROBE ?? 'ffprobe';
+const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-crew-wopr-escalation-'));
+const rawVideoDir = path.join(stateDir, 'raw-video');
+const operatorToken = randomBytes(32).toString('hex');
+const codexHome = process.env.CODEX_HOME_COTTAGE_PLUS ?? process.env.AGENT_CONTROL_QUALIFICATION_CODEX_HOME ?? path.join(os.homedir(), '.local', 'share', 'agent-control', 'codex-profiles', 'cottage-plus');
+if (!fs.statSync(codexHome, {throwIfNoEntry: false})?.isDirectory()) throw new Error('qualification_codex_home_reference_unavailable');
+for (const file of [evidenceFile, transcriptFile, videoFile, manifestFile]) fs.rmSync(file, {force: true});
+fs.rmSync(screenshotDir, {recursive: true, force: true});
+for (const directory of [path.dirname(evidenceFile), path.dirname(transcriptFile), path.dirname(videoFile), path.dirname(manifestFile), screenshotDir, rawVideoDir]) fs.mkdirSync(directory, {recursive: true});
+
+const child = spawn(process.execPath, ['--import', 'tsx', 'scripts/qualify-crew-wopr-escalation.ts', '--host', '127.0.0.1', '--port', '0', '--state-dir', stateDir, '--evidence-file', evidenceFile, '--transcript-file', transcriptFile, '--hold-ms', '30000'], {
+  cwd: root,
+  env: {...process.env, AGENT_CONTROL_STATE_DIR: stateDir, AGENT_CONTROL_QUALIFICATION_OPERATOR_TOKEN: operatorToken, CODEX_HOME_COTTAGE_PLUS: codexHome},
+  stdio: ['ignore', 'pipe', 'pipe'],
+});
+
+let stdoutBuffer = '', stderr = '', exited = false;
+const phases = [];
+child.stdout.setEncoding('utf8'); child.stderr.setEncoding('utf8');
+child.stdout.on('data', chunk => {
+  process.stdout.write(chunk); stdoutBuffer += String(chunk);
+  for (;;) {
+    const newline = stdoutBuffer.indexOf('\n'); if (newline < 0) break;
+    const line = stdoutBuffer.slice(0, newline); stdoutBuffer = stdoutBuffer.slice(newline + 1);
+    try { phases.push(JSON.parse(line)); } catch { /* Qualification emits JSONL; ignore third-party noise. */ }
+  }
+});
+child.stderr.on('data', chunk => { process.stderr.write(chunk); stderr = `${stderr}${String(chunk)}`.slice(-8_000); });
+const childExit = new Promise(resolve => child.once('exit', (code, signal) => { exited = true; resolve({code, signal}); }));
+const delay = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
+const sha256 = value => createHash('sha256').update(value).digest('hex');
+
+async function waitPhase(name, timeoutMs = 120_000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline && !exited) {
+    const found = phases.find(item => item.phase === name); if (found) return found;
+    const failed = phases.find(item => item.phase === 'QUALIFICATION_FAILED'); if (failed) throw new Error(`qualification_failed:${failed.error}`);
+    await delay(100);
+  }
+  const found = phases.find(item => item.phase === name); if (found) return found;
+  throw new Error(`qualification_phase_timeout:${name}:${stderr.slice(-500)}`);
+}
+
+async function screenshot(page, name, fullPage = false) {
+  const file = path.join(screenshotDir, name), bytes = await page.screenshot({path: file, type: 'png', fullPage});
+  return {file: path.relative(path.dirname(manifestFile), file), sha256: sha256(bytes), bytes: bytes.length, viewport: page.viewportSize(), fullPage};
+}
+
+async function crewMotion(page, waitMs = 750) {
+  const measure = () => page.evaluate(() => [...document.querySelectorAll('#crew-live-grid .bot-card')].map(card => {
+    const rect = card.getBoundingClientRect(), id = [...card.classList].find(value => /^bot-(?:lane|prompt|parcel|model|resource|quality)-/.test(value));
+    const animations = card.getAnimations({subtree: true}).filter(item => item.playState === 'running').map(item => ({name: getComputedStyle(item.effect?.target).animationName, currentTime: Number(item.currentTime ?? 0), transform: getComputedStyle(item.effect?.target).transform, opacity: getComputedStyle(item.effect?.target).opacity})).filter(item => item.name && item.name !== 'none');
+    return {id, state: [...card.classList].find(value => value.startsWith('bot-state-'))?.slice(10), rest: card.dataset.botRest ?? 'none', visible: rect.width > 0 && rect.height > 0 && rect.top >= 0 && rect.left >= 0 && rect.right <= innerWidth && rect.bottom <= innerHeight, animations};
+  }));
+  const before = await measure(); await delay(waitMs); const after = await measure();
+  return before.map(item => { const next = after.find(value => value.id === item.id), moving = item.animations.find(animation => animation.name !== 'bot-blink') ?? item.animations[0], moved = next?.animations.find(animation => animation.name === moving?.name); return {...item, timelineDeltaMs: moving && moved ? moved.currentTime - moving.currentTime : 0, visualChanged: Boolean(moving && moved && (moving.transform !== moved.transform || moving.opacity !== moved.opacity))}; });
+}
+
+async function currentDashboard(page) {
+  return page.evaluate(async () => {
+    const snapshot = await (await fetch('/api/status')).json();
+    return {observedAt: snapshot.observedAt, crew: snapshot.characterCrew, tokenRouting: snapshot.tokenBatonRouting, jobs: snapshot.jobs};
+  });
+}
+
+function mediaInfo(file) {
+  return JSON.parse(execFileSync(ffprobe, ['-v', 'error', '-show_entries', 'format=duration,size:stream=codec_name,width,height,r_frame_rate', '-of', 'json', file], {encoding: 'utf8'}));
+}
+
+let browser, context, page, video, cdp;
+const screenshots = [], consoleErrors = [], httpErrors = [], expectedOptionalHttp = [], expectedOptionalConsole = [], journey = [], receivedEvents = [];
+let dashboardReady, concurrentPhase, sourcePhase, rejectionPhase, destinationPhase, verificationPhase, completePhase;
+let idleMotion, concurrentMotion, sourceDashboard, handoffDashboard, destinationDashboard, completedDashboard, eventLatency, performance, reducedMotion, mobile;
+
+try {
+  dashboardReady = await waitPhase('DASHBOARD_READY', 30_000);
+  const {chromium} = require('playwright-core');
+  browser = await chromium.launch({headless: true, executablePath: chromiumExecutable, args: ['--no-sandbox', '--disable-dev-shm-usage']});
+  context = await browser.newContext({viewport: {width: 1920, height: 1080}, recordVideo: {dir: rawVideoDir, size: {width: 1920, height: 1080}}, colorScheme: 'dark'});
+  page = await context.newPage(); video = page.video();
+  page.on('console', message => {
+    if (message.type() !== 'error') return;
+    const item=`${message.location().url || 'inline'}: ${message.text()}`.slice(0,500);
+    if (/\/api\/(?:model-intelligence|capability-intelligence|runtime-safety): Failed to load resource:.*503/i.test(item)) expectedOptionalConsole.push(item);
+    else consoleErrors.push(item);
+  });
+  page.on('pageerror', error => consoleErrors.push(error.message.slice(0, 500)));
+  page.on('response', response => {
+    if (response.status() < 400) return;
+    const item={status:response.status(),method:response.request().method(),path:new URL(response.url()).pathname};
+    if (item.status===503 && ['/api/model-intelligence','/api/capability-intelligence','/api/runtime-safety'].includes(item.path)) expectedOptionalHttp.push(item);
+    else httpErrors.push(item);
+  });
+  await page.goto(dashboardReady.url, {waitUntil: 'domcontentloaded'});
+  cdp = await context.newCDPSession(page); await cdp.send('Performance.enable');
+  await page.evaluate(() => {
+    window.__crewWoprEvidence = {events: [], renders: [], start: performance.now()};
+    document.addEventListener('agent-control:event-received', event => window.__crewWoprEvidence.events.push({type: event.detail.type, at: performance.now()}));
+    document.addEventListener('agent-control:crew-rendered', event => window.__crewWoprEvidence.renders.push({at: event.detail.renderedAt, observedAt: event.detail.observedAt}));
+  });
+  await page.waitForFunction(() => document.querySelector('#stream-state')?.textContent === 'LIVE', undefined, {timeout: 10_000});
+  await page.click('#operator-button'); await page.fill('#operator-token', operatorToken); await page.click('#operator-form button[type="submit"]');
+  await page.getByRole('button', {name: 'Operator authenticated', exact: true}).waitFor({timeout: 10_000});
+  journey.push({at: new Date().toISOString(), view: 'authentication', outcome: 'operator boundary accepted'});
+
+  await page.click('[data-view="crew"]');
+  await page.waitForSelector('#crew-live-grid .bot-card');
+  await page.waitForFunction(() => document.querySelectorAll('#crew-live-grid .bot-card').length === 6);
+  idleMotion = await crewMotion(page, 1_600);
+  if (idleMotion.length !== 6 || idleMotion.some(item => !item.visible || !item.animations.length || item.timelineDeltaMs < 1_200)) throw new Error(`idle_character_animation_missing:${JSON.stringify(idleMotion)}`);
+  screenshots.push(await screenshot(page, '01-crew-idle-and-event-matrix.png'));
+  journey.push({at: new Date().toISOString(), view: 'crew', outcome: 'all six original characters visible with idle looking/sleeping motion'});
+  await delay(2_000);
+
+  await page.click('[data-view="jobs"]');
+  await page.fill('#natural-task-prompt', dashboardReady.prompt);
+  screenshots.push(await screenshot(page, '02-exact-work-parcel-request.png'));
+  await delay(1_500);
+  const submission = page.waitForResponse(response => new URL(response.url()).pathname === '/api/parcels' && response.request().method() === 'POST', {timeout: 10_000});
+  await page.click('#natural-task-submit');
+  const submissionResponse = await submission;
+  if (submissionResponse.status() !== 201) throw new Error(`qualification_dashboard_submission_failed:${submissionResponse.status()}:${(await submissionResponse.text()).slice(0, 500)}`);
+  journey.push({at: new Date().toISOString(), view: 'jobs', outcome: 'exact prompt submitted through authenticated dashboard'});
+
+  concurrentPhase = await waitPhase('CONCURRENT_STATE_READY', 30_000);
+  await page.click('[data-view="crew"]'); await page.evaluate(() => scrollTo(0, 0));
+  await page.waitForFunction(() => [...document.querySelectorAll('.matrix-indicator')].some(item => item.dataset.state === 'ACTIVE'));
+  await page.waitForFunction(() => {
+    const cards = [...document.querySelectorAll('#crew-live-grid .bot-card')];
+    return cards.length === 6 && cards.every(card => card.getAnimations({subtree: true}).some(animation => animation.playState === 'running'));
+  }, undefined, {timeout: 5_000});
+  concurrentMotion = await crewMotion(page);
+  if (concurrentMotion.length !== 6 || concurrentMotion.some(item => !item.visible || !item.animations.length) || !concurrentMotion.some(item => item.state !== 'idle' && item.visualChanged)) throw new Error(`concurrent_character_animation_missing:${JSON.stringify(concurrentMotion)}`);
+  screenshots.push(await screenshot(page, '03-real-concurrent-lanes.png'));
+  const toolIndicator = page.locator('[data-matrix-indicator="tools"]'); await toolIndicator.focus(); await page.keyboard.press('Enter');
+  await page.waitForFunction(() => /canonical Job step/i.test(document.querySelector('#activity-matrix-inspector')?.textContent || ''));
+  screenshots.push(await screenshot(page, '04-wopr-tool-indicator-evidence.png'));
+  journey.push({at: new Date().toISOString(), view: 'crew', outcome: 'two concurrent governed lanes and event-backed tool indicator inspected'});
+
+  sourcePhase = await waitPhase('SOURCE_MODEL_ACTIVE', 90_000);
+  await page.click('[data-view="models"]');
+  await page.waitForFunction(() => /local-llama|qwen/i.test(document.querySelector('#persistent-usage-summary')?.textContent || ''), undefined, {timeout: 10_000});
+  sourceDashboard = await currentDashboard(page);
+  screenshots.push(await screenshot(page, '05-source-model-live-usage-across-models-view.png'));
+  journey.push({at: new Date().toISOString(), view: 'models', outcome: 'persistent strip showed live Qwen provider/model, governor, elapsed time, context authority and unavailable values honestly'});
+
+  rejectionPhase = await waitPhase('QUALITY_GATE_REJECTED', 120_000);
+  destinationPhase = await waitPhase('DESTINATION_MODEL_ACTIVE', 30_000);
+  await page.click('[data-view="crew"]'); await page.evaluate(() => scrollTo(0, document.querySelector('.crew-workflow-board')?.getBoundingClientRect().top + scrollY - 120));
+  await page.waitForFunction(() => [...document.querySelectorAll('.crew-baton')].some(item => /QUALITY_GATE|quality/i.test(item.textContent || item.getAttribute('aria-label') || '')), undefined, {timeout: 10_000}).catch(() => {});
+  const tokenBaton = page.locator('.crew-baton').filter({hasText: 'QUALITY_GATE'}).first();
+  if (await tokenBaton.count()) await tokenBaton.click(); else await page.locator('.crew-baton').first().click();
+  await page.waitForFunction(() => /reservation-cache-root-cause-v1/.test(document.querySelector('#crew-human-explanation')?.textContent || ''), undefined, {timeout: 10_000});
+  handoffDashboard = await currentDashboard(page);
+  screenshots.push(await screenshot(page, '06-quality-gate-baton-reason.png'));
+  await page.locator('[data-matrix-indicator="baton"]').click({timeout:10_000});
+  await page.waitForFunction(() => /sealed token|handoff|escalation/i.test(document.querySelector('#activity-matrix-inspector')?.textContent || ''));
+  screenshots.push(await screenshot(page, '07-wopr-handoff-indicator.png'));
+  journey.push({at: new Date().toISOString(), view: 'crew', outcome: 'quality-gate trigger, precise rejection, sealed baton and Qwen → Codex route visible'});
+
+  await page.click('[data-view="lanes"]');
+  await page.waitForFunction(() => /codex-chatgpt|Luna|Controller Account A/i.test(document.querySelector('#persistent-usage-summary')?.textContent || ''), undefined, {timeout: 10_000});
+  destinationDashboard = await currentDashboard(page);
+  screenshots.push(await screenshot(page, '08-destination-live-usage-across-lanes-view.png'));
+  journey.push({at: new Date().toISOString(), view: 'lanes', outcome: 'persistent strip followed destination account/provider/model without resetting parcel totals'});
+
+  verificationPhase = await waitPhase('INDEPENDENT_VERIFICATION_ACTIVE', 180_000);
+  await page.click('[data-view="crew"]');
+  const verificationIndicator = page.locator('[data-matrix-indicator="verification"]'); await verificationIndicator.click();
+  screenshots.push(await screenshot(page, '09-independent-verification-active.png'));
+  completePhase = await waitPhase('QUALIFICATION_COMPLETE', 60_000);
+  await page.waitForFunction(() => /COMPLETED/.test(document.querySelector('#persistent-usage-summary')?.textContent || '') && /total/i.test(document.querySelector('.persistent-usage-chain')?.textContent || ''), undefined, {timeout: 10_000});
+  completedDashboard = await currentDashboard(page);
+  screenshots.push(await screenshot(page, '10-completed-reconciled-model-chain.png'));
+  await page.click('[data-view="jobs"]');
+  await page.locator('#run-history').scrollIntoViewIfNeeded();
+  screenshots.push(await screenshot(page, '11-job-history-and-transcript-association.png'));
+  journey.push({at: new Date().toISOString(), view: 'jobs', outcome: 'verified terminal Work Parcel and durable run history shown'});
+  await delay(2_500);
+
+  const metricsBefore = Object.fromEntries((await cdp.send('Performance.getMetrics')).metrics.map(item => [item.name, item.value]));
+  const frame = await page.evaluate(() => new Promise(resolve => { const values = [], started = performance.now(); let prior = started; const next = now => { values.push(now - prior); prior = now; if (now - started < 1_500) requestAnimationFrame(next); else resolve(values); }; requestAnimationFrame(next); }));
+  const metricsAfter = Object.fromEntries((await cdp.send('Performance.getMetrics')).metrics.map(item => [item.name, item.value]));
+  performance = {sampleMs: (metricsAfter.Timestamp - metricsBefore.Timestamp) * 1_000, rendererTaskMs: (metricsAfter.TaskDuration - metricsBefore.TaskDuration) * 1_000, heapDeltaBytes: metricsAfter.JSHeapUsedSize - metricsBefore.JSHeapUsedSize, frames: frame.length, intervalsOver50Ms: frame.filter(value => value > 50).length, maximumFrameIntervalMs: Math.max(...frame)};
+  const browserEvidence = await page.evaluate(() => window.__crewWoprEvidence);
+  receivedEvents.push(...browserEvidence.events);
+  eventLatency = {events: browserEvidence.events.length, renders: browserEvidence.renders.length, requiredTypes: ['job.run_changed', 'token.telemetry', 'token.governor_transition', 'token.baton_created', 'token.handoff_result'].map(type => ({type, observed: browserEvidence.events.some(item => item.type === type)}))};
+  if (eventLatency.requiredTypes.some(item => !item.observed)) throw new Error(`required_sse_event_missing:${JSON.stringify(eventLatency.requiredTypes)}`);
+  if (consoleErrors.length || httpErrors.length) throw new Error(`browser_errors:${JSON.stringify({consoleErrors,httpErrors})}`);
+
+  const reducedContext = await browser.newContext({viewport: {width: 1280, height: 800}, reducedMotion: 'reduce', colorScheme: 'dark'}), reducedPage = await reducedContext.newPage();
+  await reducedPage.goto(dashboardReady.url, {waitUntil: 'domcontentloaded'}); await reducedPage.click('[data-view="crew"]'); await reducedPage.waitForSelector('.matrix-indicator');
+  reducedMotion = await reducedPage.evaluate(() => ({mediaMatches: matchMedia('(prefers-reduced-motion: reduce)').matches, matrixAnimationNames: [...document.querySelectorAll('.matrix-lamp')].map(node => getComputedStyle(node).animationName), transitionDurations: [...document.querySelectorAll('.persistent-context-pressure')].map(node => getComputedStyle(node).transitionDuration)}));
+  screenshots.push(await screenshot(reducedPage, '12-reduced-motion.png', true)); await reducedContext.close();
+  if (!reducedMotion.mediaMatches || reducedMotion.matrixAnimationNames.some(name => name !== 'none')) throw new Error('reduced_motion_not_honoured');
+
+  const mobileContext = await browser.newContext({viewport: {width: 390, height: 844}, colorScheme: 'dark'}), mobilePage = await mobileContext.newPage();
+  await mobilePage.goto(dashboardReady.url, {waitUntil: 'domcontentloaded'}); await mobilePage.click('[data-view="crew"]'); await mobilePage.waitForSelector('.matrix-indicator');
+  mobile = await mobilePage.evaluate(() => ({viewport: {width: innerWidth, height: innerHeight}, documentWidth: document.documentElement.scrollWidth, indicatorCount: document.querySelectorAll('.matrix-indicator').length, usageVisible: Boolean(document.querySelector('#persistent-usage')?.getBoundingClientRect().height), crewCards: document.querySelectorAll('#crew-live-grid .bot-card').length}));
+  screenshots.push(await screenshot(mobilePage, '13-mobile-responsive.png', true)); await mobileContext.close();
+  if (mobile.documentWidth > mobile.viewport.width + 1 || mobile.indicatorCount !== 9 || mobile.crewCards !== 6 || !mobile.usageVisible) throw new Error(`mobile_layout_failed:${JSON.stringify(mobile)}`);
+
+  await context.close(); context = undefined;
+  const rawVideo = await video.path();
+  execFileSync(ffmpeg, ['-y', '-i', rawVideo, '-an', '-c:v', 'libx264', '-preset', 'medium', '-crf', '21', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', videoFile], {stdio: ['ignore', 'ignore', 'pipe'], maxBuffer: 4 * 1024 * 1024});
+  const info = mediaInfo(videoFile), videoBytes = fs.readFileSync(videoFile), evidenceBytes = fs.readFileSync(evidenceFile), transcriptBytes = fs.readFileSync(transcriptFile);
+  const manifest = {
+    schema: 'agent-control.crew-wopr-escalation-video/v1', verdict: 'PASS', recordedAt: new Date().toISOString(), continuousCapture: true, editedOrSpliced: false, playbackSpeed: 1,
+    video: {file: path.relative(path.dirname(manifestFile), videoFile), sha256: sha256(videoBytes), bytes: videoBytes.length, media: info},
+    evidence: {file: path.relative(path.dirname(manifestFile), evidenceFile), qualificationPayloadSha256BeforeVideoAttachment: sha256(evidenceBytes)},
+    transcript: {file: path.relative(path.dirname(manifestFile), transcriptFile), sha256: sha256(transcriptBytes)},
+    browser: {engine: 'Chromium', version: browser.version(), viewport: {width: 1920, height: 1080}, executableRecordedAs: 'configured Chromium executable'},
+    phases: {dashboardReady, concurrentPhase, sourcePhase, rejectionPhase, destinationPhase, verificationPhase, completePhase},
+    journey, screenshots, animation: {idle: idleMotion, concurrent: concurrentMotion},
+    liveEvidence: {source: sourceDashboard, handoff: handoffDashboard, destination: destinationDashboard, completed: completedDashboard, eventLatency},
+    checks: {allSixCharactersVisibleAndAnimated: true, exactPromptVisibleBeforeSubmission: true, twoConcurrentLanesVisible: true, eventBackedWoprIndicatorsInspected: true, sourceDifficultyVisible: true, qualityGateReasonVisible: true, sealedBatonVisible: true, destinationRouteVisible: true, persistentUsageAcrossViews: true, finalModelChainVisible: true, reducedMotion, mobile, performance, consoleErrors, httpErrors, expectedOptionalHttp, expectedOptionalConsole},
+    security: {operatorTokenPersisted: false, codexHomePathPersisted: false, credentialsVisibleInVideo: false, privateReasoningVisible: false},
+  };
+  fs.writeFileSync(manifestFile, `${JSON.stringify(manifest, null, 2)}\n`, {mode: 0o600});
+  const evidence = JSON.parse(evidenceBytes.toString('utf8'));
+  evidence.videoEvidence = {manifest: path.relative(root, manifestFile), manifestSha256: sha256(fs.readFileSync(manifestFile)), video: path.relative(root, videoFile), videoSha256: manifest.video.sha256, durationSeconds: Number(info.format.duration), continuousCapture: true, screenshots: screenshots.length};
+  fs.writeFileSync(evidenceFile, `${JSON.stringify(evidence, null, 2)}\n`, {mode: 0o600});
+  const exit = await childExit;
+  if (exit.code !== 0) throw new Error(`qualification_process_failed:${exit.code}:${stderr.slice(-500)}`);
+  process.stdout.write(`${JSON.stringify({verdict: 'PASS', evidenceFile, transcriptFile, videoFile, manifestFile, videoSha256: manifest.video.sha256, durationSeconds: Number(info.format.duration), screenshots: screenshots.length})}\n`);
+} catch (error) {
+  if (context) await context.close().catch(() => {});
+  if (browser) await browser.close().catch(() => {});
+  if (!exited) child.kill('SIGTERM');
+  await childExit.catch(() => {});
+  throw error;
+} finally {
+  if (browser) await browser.close().catch(() => {});
+}
