@@ -307,6 +307,11 @@ export class AgentControlService {
     try { const value = await pending; this.events.emit('provider.catalog_changed', {providerId, canonicalModelId, action: 'smoke-tested', status: value.status}, undefined, actor); return value; }
     catch (error) { this.events.emit('provider.catalog_changed', {providerId, canonicalModelId, action: 'smoke-failed'}, undefined, actor); throw error; }
   }
+  async probeProviderModelCallability(providerId: string, canonicalModelId: string, actor: string) {
+    const pending = this.mustProviderCatalog().probeCallability(providerId, canonicalModelId); this.events.emit('provider.catalog_changed', {providerId, canonicalModelId, action: 'callability-testing'}, undefined, actor);
+    try { const value = await pending; this.events.emit('provider.catalog_changed', {providerId, canonicalModelId, action: 'callability-tested', status: value.status, inferenceEndpointStatus: value.inferenceEndpointStatus, failureClass: value.failureClass}, undefined, actor); return value; }
+    catch (error) { this.events.emit('provider.catalog_changed', {providerId, canonicalModelId, action: 'callability-failed'}, undefined, actor); throw error; }
+  }
   setProviderModelRoutingEligibility(providerId: string, canonicalModelId: string, enabled: boolean, actor: string) { const value = this.mustProviderCatalog().setRoutingEligibility(providerId, canonicalModelId, enabled); this.events.emit('provider.catalog_changed', {providerId, canonicalModelId, action: enabled ? 'routing-enabled' : 'routing-disabled'}, undefined, actor); return value; }
   runtimeSafetyDecisions(runId?: string) { return this.mustJobRuntime().safetyDecisions(runId); }
   discoverCapability(input: {id?: string; title: string; source: string; providerRuntime: string; claimedCapability: string; whyItMatters: string; agentControlEquivalent: string; evidence?: string[]}, actor: string) { const candidate = this.mustCapabilityIntelligence().discoverCandidate({...input, evidence: input.evidence ?? [], actor}); this.events.emit('capability.intelligence_changed', {candidateId: candidate.id, state: candidate.state}, undefined, actor); return candidate; }

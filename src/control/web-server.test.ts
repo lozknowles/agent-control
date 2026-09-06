@@ -94,6 +94,7 @@ test('provider catalogue API, dashboard and SSE expose governed state without cr
   const intelligence = new ModelIntelligenceLedger(path.join(root, 'intelligence.json')), registry = new ModelRegistry([provider], [], {roles: {}}, undefined, undefined, environment, undefined, intelligence);
   const catalogue = new ProviderCatalogRuntime([provider], new ProviderCatalogStore(path.join(root, 'catalogue.json')), registry, intelligence, undefined, environment, async (_input, init) => {
     assert.equal(new Headers(init?.headers).get('authorization'), `Bearer ${credential}`);
+    if ((init?.method ?? 'GET') === 'POST') return new Response(['data: {"choices":[{"delta":{"content":"AC_CALLABILITY_OK"},"finish_reason":null}]}','data: {"choices":[{"delta":{},"finish_reason":"stop"}]}','data: [DONE]'].join('\n\n'), {status: 200, headers: {'content-type':'text/event-stream'}});
     return new Response(JSON.stringify({data: [{id: 'vendor/model-a', owned_by: credential}]}), {status: 200, headers: {'x-ratelimit-limit-requests': '40', 'x-ratelimit-remaining-requests': '39', 'x-ratelimit-limit-tokens': '10000', 'x-ratelimit-remaining-tokens': '9900', 'x-quota-remaining': '12'}});
   });
   const control = service(); control.configureProjection({modelRegistry: registry, modelIntelligence: intelligence, providerCatalog: catalogue});
@@ -109,12 +110,15 @@ test('provider catalogue API, dashboard and SSE expose governed state without cr
   const discovered = await fetch(`${base}/api/provider-catalog/providers/nvidia-hosted/discover`, {method: 'POST', headers: {'content-type': 'application/json', authorization: 'Bearer test-token'}, body: '{}'});
   assert.equal(discovered.status, 200);
   const discovery = await discovered.json(); assert.equal(discovery.discovered, 1); assert.equal(JSON.stringify(discovery).includes(credential), false);
-  assert.deepEqual(control.events.history().filter(event => event.type === 'provider.catalog_changed').map(event => (event.payload as {action?: string}).action), ['discovering', 'discovered']);
+  const callability = await fetch(`${base}/api/provider-catalog/providers/nvidia-hosted/models/${encodeURIComponent('vendor/model-a')}/callability`, {method: 'POST', headers: {'content-type':'application/json', authorization:'Bearer test-token'}, body:'{}'}); assert.equal(callability.status,200); assert.equal((await callability.json()).inferenceEndpointStatus,'CONFIRMED');
+  assert.deepEqual(control.events.history().filter(event => event.type === 'provider.catalog_changed').map(event => (event.payload as {action?: string}).action), ['discovering', 'discovered', 'callability-testing', 'callability-tested']);
 
   const projection = await (await fetch(`${base}/api/provider-catalog`)).json();
   assert.equal(projection.providers[0].enabled, true);
   assert.equal(projection.providers[0].availableModels, 1);
+  assert.equal(projection.providers[0].inferenceConfirmedModels, 1);
   assert.equal(projection.models[0].reviewState, 'UNQUALIFIED');
+  assert.equal(projection.models[0].inferenceEndpointStatus, 'CONFIRMED');
   assert.equal(projection.models[0].routingEligible, false);
   assert.deepEqual(projection.providers[0].rateLimit, {requestsLimit: 40, requestsRemaining: 39, tokensLimit: 10000, tokensRemaining: 9900, reset: null, retryAfter: null, authority: 'PROVIDER_HEADER'});
   assert.deepEqual(projection.providers[0].quota, {value: 12, unit: 'provider-defined', authority: 'PROVIDER_REPORTED'});
@@ -124,8 +128,9 @@ test('provider catalogue API, dashboard and SSE expose governed state without cr
   assert.equal(events.includes(credential), false);
   const dashboard = await (await fetch(`${base}/dashboard-models.js`)).text();
   assert.match(dashboard, /Discover Models/);
+  assert.match(dashboard, /Check Callability/);
   assert.match(dashboard, /requestsRemaining/);
-  assert.match(dashboard, /available\/observed models/);
+  assert.match(dashboard, /available\/observed · inference confirmed/);
   assert.match(dashboard, /UNAVAILABLE/);
   assert.equal(dashboard.includes(credential), false);
   for (const file of [path.join(root, 'catalogue.json'), path.join(root, 'intelligence.json')]) if (fs.existsSync(file)) assert.equal(fs.readFileSync(file, 'utf8').includes(credential), false);
