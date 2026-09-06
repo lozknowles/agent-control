@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {normalizeGovernorPolicy} from './token-aware-baton-routing.js';
+import {containsSensitiveMaterial} from './security-redaction.js';
 
 export type Platform = 'linux' | 'windows' | 'android' | 'macos' | 'remote' | 'unknown';
 export type TransportType = 'local' | 'ssh' | 'http' | 'orca';
@@ -70,6 +71,11 @@ export type ProviderCredentialStoreReference =
   | {type: 'api-key-env'; env: string}
   | {type: 'bearer-file-env'; env: string}
   | {type: 'provider-secure-store'; reference: string};
+export type ProviderAuthConfig =
+  | {type: 'none'}
+  /** @deprecated Prefer api-key-env for new bearer-token provider configuration. */
+  | {type: 'bearer-env'; env: string}
+  | Extract<ProviderCredentialStoreReference, {type: 'api-key-env' | 'bearer-file-env' | 'provider-secure-store'}>;
 export interface ProviderCredentialResidencyConfig {
   nodeId: string;
   store: ProviderCredentialStoreReference;
@@ -96,8 +102,10 @@ export interface ProviderConfig {
   kind: 'local' | 'responses' | 'cli' | 'browser-bridge' | 'openai-compatible';
   enabled?: boolean;
   baseUrl?: string;
+  adapter?: string;
   wireApi?: 'responses' | 'chat-completions';
-  auth?: {type: 'none' | 'bearer-env' | 'bearer-file-env'; env?: string};
+  auth?: ProviderAuthConfig;
+  discovery?: {enabled?: boolean; path?: string};
   requiresAuth?: boolean;
   credentialEnv?: string;
   credentialFileEnv?: string;
@@ -132,6 +140,7 @@ export interface ModelConfig {
   accountProfile?: string;
   displayName?: string;
   enabled?: boolean;
+  routingEligible?: boolean;
   capabilities: string[];
   roles?: string[];
   nodes?: string[];
@@ -285,6 +294,7 @@ function assertIntegerRange(value: unknown, label: string, minimum: number, maxi
 }
 
 function rejectSecrets(value: unknown, trail = 'config') {
+  if (typeof value === 'string' && containsSensitiveMaterial(value)) throw new Error(`secret_material_forbidden:${trail}`);
   if (!value || typeof value !== 'object') return;
   const safeTokenAccountingKeys = new Set(['tokenAwareOutput', 'tokenBatonRouting', 'completeMaxTokens', 'artifactOnlyAboveReturnedTokens', 'minimumCompleteTokens', 'harnessEfficiency', 'maximumInitialContextTokens', 'maximumContextTokens', 'maximumEvidenceTokens', 'advertisedContextLimitTokens', 'maximumObservedInputTokens', 'inputPerMillionTokens', 'outputPerMillionTokens', 'cachedInputPerMillionTokens', 'cacheWritePerMillionTokens', 'contextTokens', 'outputTokens', 'continuePercent', 'prepareBatonPercent', 'compactPercent', 'handoffPercent', 'sampleRetention']);
   for (const [key, child] of Object.entries(value)) {
@@ -388,11 +398,16 @@ export function validateConfig(raw: unknown): AgentControlConfig {
     if (provider.enabled !== undefined && typeof provider.enabled !== 'boolean') throw new Error(`invalid_provider_enabled:${provider.id}`);
     if (provider.baseUrl) assertUrl(provider.baseUrl, `provider_${provider.id}`);
     if (provider.kind === 'openai-compatible' && !provider.baseUrl) throw new Error(`provider_base_url_required:${provider.id}`);
+    if (provider.adapter !== undefined && !/^[a-z0-9][a-z0-9._-]{0,127}$/i.test(provider.adapter)) throw new Error(`invalid_provider_adapter:${provider.id}`);
     if (provider.wireApi !== undefined && !['responses', 'chat-completions'].includes(provider.wireApi)) throw new Error(`invalid_provider_wire_api:${provider.id}`);
     if (provider.auth) {
-      if (!['none', 'bearer-env', 'bearer-file-env'].includes(provider.auth.type)) throw new Error(`invalid_provider_auth:${provider.id}`);
-      if (provider.auth.type !== 'none' && (!provider.auth.env || !/^[A-Z_][A-Z0-9_]{0,127}$/.test(provider.auth.env))) throw new Error(`invalid_provider_auth_env:${provider.id}`);
-      if (provider.auth.type === 'none' && provider.auth.env !== undefined) throw new Error(`invalid_provider_auth_env:${provider.id}`);
+      if (!['none', 'bearer-env', 'api-key-env', 'bearer-file-env', 'provider-secure-store'].includes(provider.auth.type)) throw new Error(`invalid_provider_auth:${provider.id}`);
+      if ((provider.auth.type === 'bearer-env' || provider.auth.type === 'api-key-env' || provider.auth.type === 'bearer-file-env') && !/^[A-Z_][A-Z0-9_]{0,127}$/.test(provider.auth.env)) throw new Error(`invalid_provider_auth_env:${provider.id}`);
+      if (provider.auth.type === 'provider-secure-store' && !/^[a-z0-9][a-z0-9._:/-]{0,255}$/i.test(provider.auth.reference)) throw new Error(`invalid_provider_auth_reference:${provider.id}`);
+    }
+    if (provider.discovery) {
+      if (provider.discovery.enabled !== undefined && typeof provider.discovery.enabled !== 'boolean') throw new Error(`invalid_provider_discovery:${provider.id}`);
+      if (provider.discovery.path !== undefined && (!/^[a-z0-9][a-z0-9._/-]{0,127}$/i.test(provider.discovery.path.replace(/^\//, '')) || provider.discovery.path.includes('..'))) throw new Error(`invalid_provider_discovery_path:${provider.id}`);
     }
     for (const [field, value] of [['credentialEnv', provider.credentialEnv], ['credentialFileEnv', provider.credentialFileEnv]] as const) {
       if (value !== undefined && (typeof value !== 'string' || !/^[A-Z_][A-Z0-9_]{0,127}$/.test(value))) throw new Error(`invalid_provider_${field}:${provider.id}`);
@@ -453,6 +468,7 @@ export function validateConfig(raw: unknown): AgentControlConfig {
     const modelAccountExecutionNode = modelAccount?.providerExecutionNodeId ?? modelAccount?.credentialResidency?.nodeId ?? modelAccount?.nodeId;
     if (modelAccountExecutionNode && model.nodes?.length && !model.nodes.includes(modelAccountExecutionNode)) throw new Error(`model_account_profile_node_mismatch:${model.id}`);
     if (typeof model.providerModel !== 'string' || !model.providerModel.trim() || model.providerModel.length > 256) throw new Error(`invalid_provider_model:${model.id}`);
+    if (model.routingEligible !== undefined && typeof model.routingEligible !== 'boolean') throw new Error(`invalid_model_routing_eligibility:${model.id}`);
     if (!Array.isArray(model.capabilities) || model.capabilities.some(capability => typeof capability !== 'string' || !/^[a-z0-9][a-z0-9._-]{0,127}$/i.test(capability))) throw new Error(`invalid_model_capabilities:${model.id}`);
     assertStringList(model.roles, `model_roles:${model.id}`, /^[a-z0-9][a-z0-9._-]{0,127}$/i);
     assertStringList(model.nodes, `model_nodes:${model.id}`, /^[a-z0-9][a-z0-9._-]{0,127}$/i);

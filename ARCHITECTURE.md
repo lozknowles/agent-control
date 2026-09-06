@@ -220,7 +220,39 @@ AUTO policy permits only transitions inside the current contract authority, prot
 
 ## Provider and model lifecycle
 
-Logical providers are durable identities independent of a client or controller session. Discovery updates only observed capabilities and model IDs. Provider endpoint and credential reference remain immutable under one ID; credentials are indirect `env:`/`file-env:` references and never enter batons, telemetry or evidence.
+Logical providers are durable identities independent of a client or controller session. Their ordinary configuration contains endpoint/protocol/adapter policy and an indirect credential reference, never a secret. The existing credential-residency vocabulary covers `codex-home-env`, `api-key-env`, `bearer-file-env`, and `provider-secure-store`. The latter now has one concrete controller-local backend beneath the same abstraction; it is not an NVIDIA store or a second credential architecture.
+
+```text
+provider / optional account profile / model / execution node
+                         |
+               opaque credential reference
+                         |
+       metadata-only readiness (no credential read)
+                         |
+              governed invocation boundary
+                         |
+       late node-local resolution -> adapter header/env
+                         |
+         exact-secret + pattern response redaction
+                         |
+       normalized telemetry / evidence / dashboard
+```
+
+The secure-store backend hashes the opaque reference into an owner-only filename under the Agent Control state directory. Directories are `0700`, files are `0600`, writes are exclusive temporary-file plus atomic rename, and symlink, ownership or permission mismatches fail closed. Rotation replaces the same reference atomically; revocation removes it. Status is derived from safe file metadata and does not read the credential. The set operation may compute a display-only prefix/suffix fingerprint from its ephemeral input, but does not persist it.
+
+Resolution occurs inside the chosen provider invocation, after provider/account/model/node identity has been selected. A provider-level route resolves its provider reference. An account-bound API route resolves only that account's `credentialResidency.store`; it does not fall back to provider or ambient credentials, and a controller client refuses a remote-resident profile. Codex keeps its existing isolated `CODEX_HOME` flow. Only the adapter receives the resolved value, and only for its authorization header or isolated child environment. Exact runtime values plus recognized credential patterns are removed from returned content, tool arguments, model metadata and failures before any state/evidence boundary.
+
+Dynamic discovery is an observation, not qualification. A provider adapter may call its documented catalogue endpoint and normalize only returned or safely derived metadata, preserving an authority per field. Missing context limits, modalities, capabilities, licence, pricing, quota and rate limits remain `UNKNOWN`. A discovered entry is registered as enabled for review but `routingEligible: false` and starts `DISCOVERED → UNQUALIFIED`.
+
+```text
+DISCOVERED -> UNQUALIFIED -> SMOKE_TESTED -> BENCHMARK_QUEUED
+           -> BENCHMARKED -> QUALIFIED / REJECTED / LIMITED
+           -> ROUTING_ELIGIBLE (explicit authenticated operator action)
+```
+
+Smoke checks are bounded and retain normalized usage, latency, finish reason, safe failure class and response hashes—not prompts, response bodies or credentials. The exact probe contract is versioned and content-hashed. An adapter may supply a bounded, audited provider request extension when a provider's native invocation control is needed for the smoke contract; reserved governed fields cannot be overridden, and ordinary execution, benchmarks and core routing do not inherit that extension. A response that consumes its output budget before producing final content is recorded as truncated with any safe partial usage/hash evidence rather than mislabeled as a malformed transport response. Frozen benchmark attempts and 7/30/90-day economics continue through the existing model-intelligence ledger. Routing admission requires current `QUALIFIED`/`PREFERRED` evidence plus explicit enablement; degradation, quarantine, retirement or loss of evidence automatically withdraws the dynamic route. This catalogue lifecycle feeds, rather than replaces, immutable model recipes and versioned role policy.
+
+The NVIDIA adapter is intentionally thin: it constrains the provider to NVIDIA's documented HTTPS hosted endpoint and validates the `nvapi-` credential form. OpenAI-compatible wire requests, discovery, secure references, smoke checks, telemetry, model intelligence, dashboard projection and routing are generic. Removing NVIDIA leaves those capabilities intact.
 
 Model recipes bind exact provider, provider model, model version, capability, context/output limit, tool, runtime and node requirements. Their fingerprints are immutable per recipe version. Evidence gates each transition through `DISCOVERED → BENCHMARKING → SHADOW → CANDIDATE → ACTIVE → PREFERRED → DEPRECATED`.
 
@@ -397,9 +429,9 @@ An authorised Linux/SSH resource may opt into the generic managed-node adapter. 
 
 Managed-node execution is split into read-only inspection and typed maintenance Actions. The controller validates operation, parameter form, service allowlist, runtime target, current heartbeat and approvals before streaming one reviewed action script. The remote script validates its typed operands again. It never receives `sh -c` or an operator-provided command. An active protected workload marks the node BUSY, blocks configured disruptive/competing scheduling capabilities and requires the stronger protected-workload override for maintenance. Job leases, locks, approval waits, cancellation, verification, artifacts and provenance remain in the existing control plane.
 
-Configuration rejects embedded secret-like fields and credentialed URLs. Credentials are supplied through separately named environment variables. State defaults to `.agent-control/`; the path is overrideable.
+Configuration rejects embedded secret-like fields and credentialed URLs. Credentials are supplied through separately named environment variables, referenced files, isolated CLI homes or the existing opaque `provider-secure-store` reference. State defaults to `.agent-control/`; the path is overrideable.
 
-`ConfigurationStore` is the sole dashboard-facing inventory writer. Its authenticated API reads the current file with a SHA-256 revision, applies one resource/provider/model/service upsert or complete model-role-map replacement, validates the resulting configuration, and atomically replaces the file. It never writes a supplied credential value: `auth.env`, `credentialEnv` and `credentialFileEnv` are names of runtime environment variables, while plaintext password, token, secret and API-key fields fail closed. Provider/model/route changes reload the canonical `ModelRegistry`; resource/service changes remain restart-required. The browser never mutates a registry directly.
+`ConfigurationStore` is the sole dashboard-facing inventory writer. Its authenticated API reads the current file with a SHA-256 revision, applies one resource/provider/model/service upsert or complete model-role-map replacement, validates the resulting configuration, and atomically replaces the file. It never writes a supplied credential value: environment/file forms name runtime references and `provider-secure-store` carries only an opaque lookup name, while plaintext password, token, secret and API-key fields fail closed. Provider/model/route changes reload the canonical `ModelRegistry`; resource/service changes remain restart-required. The browser never mutates a registry directly.
 
 ## 3.4 parameterised Jobs layer
 
@@ -464,7 +496,7 @@ The OpenAI-compatible adapter supports bounded non-streaming Responses and Chat 
 
 Work Parcel model routing remains downstream of worker placement but upstream of Run creation. A stage requesting `modelRole` or `model` is resolved against the worker selected for its first runnable Job step. The immutable Run trigger records the exact provider model, node, qualification version and fallback reason so model-backed Actions can consume the governed decision. Ordinary Jobs with no model request retain their existing behavior.
 
-Codex integration materializes one selected Responses-compatible provider and model into a mode-0600 temporary `CODEX_HOME/config.toml`, references the approved credential environment variable, and deletes the directory after execution. It does not edit or copy the user's Codex configuration. That generated configuration is the one exception to ignoring user config; it is still executed with project instructions and native execution tools disabled. Chat-Completions-only providers fail closed because current Codex custom-provider configuration supports the Responses wire API.
+Codex integration materializes one selected Responses-compatible provider and model into a mode-0600 temporary `CODEX_HOME/config.toml`, references the approved credential environment variable, and deletes the directory after execution. A secure-store value is resolved only at that boundary and supplied through a dedicated ephemeral child environment key; it is never written to the generated TOML. The path does not edit or copy the user's Codex configuration. That generated configuration is the one exception to ignoring user config; it is still executed with project instructions and native execution tools disabled. Chat-Completions-only providers fail closed because current Codex custom-provider configuration supports the Responses wire API.
 
 ## Scheduling and execution
 
@@ -657,7 +689,7 @@ The web dashboard is a redacted projection of these same stores. Existing SSE ev
 
 ## Release boundary
 
-Earlier version tags remain immutable source releases. The 3.9.0 branch is a review candidate; this qualification task does not merge, tag, publish, deploy services, expose a remote ACP listener, create credentials, broaden sharing, enable Spark or enable Saved Jobs/Schedules. Real evidence covers dashboard/SSE reload and concurrent work, Linux process-group cleanup, Windows process-tree cancellation/timeout/uncertainty, controller-restart and bounded recovery, and the Pixel hidden-stdin pair/disconnect/same- and changed-endpoint reconnect/governed-execution/session-resume lifecycle. The pairing ceremony altered only the Pixel's existing local Wireless Debugging authorization and did not deploy Agent Control. The matched cache comparison preserved independent quality but consumed more tokens and time; explicit Responses controls, cache writes, current context and billed cost remain unavailable on the tested CLI, so no repeatable token, latency or monetary saving is claimed. These boundaries remain visible in implementation status and release review.
+Earlier version tags remain immutable source releases. Agent Control 3.9.0 is the released baseline. The current isolated WOPR/Crew and provider-catalogue composition is qualification-only: it does not merge, tag, publish, deploy services, expose a remote ACP listener, broaden sharing, enable Spark or enable Saved Jobs/Schedules. The controller-local NVIDIA credential exists only in the owner-only runtime store and is not source or evidence. The 3.9.0 evidence covers dashboard/SSE reload and concurrent work, Linux process-group cleanup, Windows process-tree cancellation/timeout/uncertainty, controller-restart and bounded recovery, and the Pixel hidden-stdin pair/disconnect/same- and changed-endpoint reconnect/governed-execution/session-resume lifecycle. The pairing ceremony altered only the Pixel's existing local Wireless Debugging authorization and did not deploy Agent Control. The matched cache comparison preserved independent quality but consumed more tokens and time; explicit Responses controls, cache writes, current context and billed cost remain unavailable on the tested CLI, so no repeatable token, latency or monetary saving is claimed. The provider-catalogue path has prior physical evidence for authenticated NVIDIA discovery, representative smoke, a partial frozen Nemotron benchmark and dashboard/SSE reconciliation, but no NVIDIA route is qualified or enabled. See the [NVIDIA qualification evidence](docs/evidence/agent-control-3.9-nvidia-hosted-qualification-20260906.md).
 
 ## Optional messaging adapters
 

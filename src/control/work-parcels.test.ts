@@ -48,6 +48,19 @@ test('natural-language parcel runs dependent Jobs sequentially and retains typed
   assert.ok(result.stages.every(stage => stage.baton?.schema === 'agent-control.work-parcel-baton/v2' && stage.baton.artifactIds.length === 1 && /^[a-f0-9]{64}$/.test(stage.baton.sha256))); assert.equal(result.prompt, 'do the test');
 });
 
+test('credential material is rejected at Work Parcel ingress and redacted at durable store boundary', async () => {
+  const {coordinator, root, storeFile} = setup(), secret = ['nvapi', 'fixture', 'E'.repeat(24)].join('-');
+  try {
+    await assert.rejects(() => coordinator.submit(`review using ${secret}`, 'operator'), /work_parcel_credential_material_forbidden/);
+    assert.throws(() => coordinator.accept(`review using ${secret}`, 'operator'), /work_parcel_credential_material_forbidden/);
+    const safe = await coordinator.submit('review without credential material', 'operator'), stored = coordinator.store.get(safe.id)!;
+    stored.provenance.push({at: new Date().toISOString(), type: 'provider-error', detail: `upstream echoed ${secret}`});
+    coordinator.store.update(stored);
+    assert.equal(JSON.stringify(coordinator.store.get(safe.id)).includes(secret), false);
+    assert.equal(fs.readFileSync(storeFile, 'utf8').includes(secret), false);
+  } finally { fs.rmSync(root, {recursive: true, force: true}); }
+});
+
 test('blocked named target still creates an auditable parcel with readiness evidence', () => {
   const {coordinator}=setup(), system: SystemReadiness={id:'node-alpha',name:'Node Alpha',type:'machine',registered:true,reachable:'no',authentication:'unknown',execution:'OFFLINE',blockingReason:'is offline',transport:'ssh',platform:'linux',capabilities:['remote.inspect'],capacity:1,active:0,lastCheckAt:null,lastSuccessfulProbeAt:null,lastSuccessfulJobAt:null,lastError:'connection refused',latencyMs:null};
   const prompt='perform a hostname check on node-alpha and report its free disk space', parcel=coordinator.accept(prompt,'operator',[system]); assert.equal(parcel.status,'FAILED'); assert.equal(parcel.prompt,prompt); assert.match(parcel.provenance.at(-1)?.detail??'',/BLOCKED.*Node Alpha.*offline/i); assert.deepEqual(parcel.audit.timeline.slice(2,5).map(item=>item.type),['target.resolving','target.found','readiness.checked']); assert.equal(coordinator.get(parcel.id).decision?.outcome,'FAIL_CLOSED');

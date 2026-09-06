@@ -8,7 +8,7 @@ A logical provider records:
 
 - stable provider ID and kind;
 - HTTPS endpoint, or loopback HTTP for a local service;
-- an indirect credential reference such as `env:MODEL_PROVIDER_KEY` or `file-env:MODEL_PROVIDER_KEY_FILE`;
+- an indirect credential reference such as `env:MODEL_PROVIDER_KEY`, `file-env:MODEL_PROVIDER_KEY_FILE`, an isolated CLI home or `provider-secure-store`;
 - currently observed capabilities and provider model IDs;
 - observation timestamp.
 
@@ -17,6 +17,23 @@ Literal credentials and credentialed URLs are rejected. Discovery updates capabi
 Account profiles add provider-neutral locality beneath that logical provider. `credentialResidency` names an opaque store reference and owning node; `providerExecutionNodeId` selects the qualified node that invokes the provider; the Job independently selects its workload/repository node. The recommended deployment keeps credentials on the controller or a designated credential/provider-execution node. Managed workload nodes need no provider credentials, while explicitly configured remote credential residency remains supported. See [credential residency](credential-residency.md).
 
 The same shape covers OpenAI/Codex routes, local OpenAI-compatible or llama.cpp endpoints, external OpenAI-compatible providers and GLM-5.3-Flash. `Ox` remains accepted only by the existing historical compatibility normalizer and is not a separate model recipe.
+
+## Dynamic catalogue review
+
+The generic dynamic catalogue complements the immutable recipe lifecycle; it does not replace or bypass it. Authenticated discovery records provider endpoint/credential/discovery state, canonical model IDs, timestamps, field-level authority, observed request/token limits and quota. Discovery is time- and response-size-bounded. A field absent from the latest successful provider response is `UNKNOWN` rather than inheriting either a marketing claim or a stale earlier observation.
+
+Every new model starts routing-disabled and follows:
+
+```text
+DISCOVERED → UNQUALIFIED → SMOKE_TESTED → BENCHMARK_QUEUED
+→ BENCHMARKED → QUALIFIED / REJECTED / LIMITED → ROUTING_ELIGIBLE
+```
+
+The bounded, versioned and content-hashed smoke suite checks basic completion, strict structured JSON, coding, tool invocation and a larger context request. It records latency, normalized usage, finish reason, safe failure class, response hash and adapter invocation-profile ID; TTFT, caching, cost or context occupancy remain unavailable unless the adapter reports them authoritatively. An adapter can add only audited non-reserved provider fields for smoke compatibility. Truncation retains safe partial telemetry and fails explicitly; a malformed structured result fails its probe without weakening validation.
+
+`BENCHMARK_QUEUED` enters the existing content-hashed frozen suite. Only current `QUALIFIED` or `PREFERRED` model-intelligence evidence permits an authenticated operator to enable routing. `DEGRADED`, `QUARANTINED`, `RETIRED`, missing or otherwise unqualified evidence automatically revokes a dynamic route. A model absent from the latest successful provider catalogue is marked unavailable and disabled in the registry; if it later reappears it returns to `UNQUALIFIED` with routing still disabled. Role-map policy remains a separate deliberate configuration step.
+
+See [model registry](models/README.md), [adding a provider](models/ADDING-A-PROVIDER.md), [NVIDIA hosted models](models/NVIDIA-HOSTED.md), and the [first physical dynamic-catalogue qualification](evidence/agent-control-3.9-nvidia-hosted-qualification-20260906.md).
 
 ## Immutable model recipes
 

@@ -1,6 +1,7 @@
 import {createHash, randomUUID} from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import {assertNoSensitiveMaterial, redactSensitiveValue} from './security-redaction.js';
 import type {ResourceConfig} from './config.js';
 import {effectiveParameters, nextCronOccurrence, type JobCatalog} from './job-catalog.js';
 import {jobPriorityRank, type ActionFailureClass, type ActionHandler, type ActionOutput, type AgentActionHandler, type ArtifactRecord, type PlacementRationale, type RecoveryFailureKind, type RetryPolicy, type RunRecord, type RunStatus, type ScheduleState, type StepAttempt, type StepStatus, type WorkerRegistration} from './job-types.js';
@@ -8,7 +9,7 @@ import type {HarnessEfficiencyLedgerPort, InvocationFinalResult} from './harness
 import {OwnedProcessManager, type ExecutionCleanupReport, type OwnedExecution} from './owned-process.js';
 import {deriveRuntimeActionIntent, type RuntimeSafetySupervisorPort} from './runtime-safety-supervisor.js';
 
-function writeJsonAtomic(file: string, value: unknown, durable = false) { fs.mkdirSync(path.dirname(file), {recursive: true}); const temporary = `${file}.tmp`; fs.writeFileSync(temporary, `${JSON.stringify(value, null, 2)}\n`, {mode: 0o600, flush: durable}); fs.renameSync(temporary, file); if (durable && process.platform !== 'win32') { const fd=fs.openSync(path.dirname(file),'r'); try { fs.fsyncSync(fd); } finally { fs.closeSync(fd); } } }
+function writeJsonAtomic(file: string, value: unknown, durable = false) { fs.mkdirSync(path.dirname(file), {recursive: true}); const temporary = `${file}.tmp`; fs.writeFileSync(temporary, `${JSON.stringify(redactSensitiveValue(value), null, 2)}\n`, {mode: 0o600, flush: durable}); fs.renameSync(temporary, file); if (durable && process.platform !== 'win32') { const fd=fs.openSync(path.dirname(file),'r'); try { fs.fsyncSync(fd); } finally { fs.closeSync(fd); } } }
 function now() { return new Date().toISOString(); }
 const ACTIVE_RUNS: RunStatus[] = ['SCHEDULED', 'QUEUED', 'WAITING', 'AUTHENTICATION_BLOCKED', 'RECONNECTING', 'RUNNING', 'VERIFYING', 'CANCELLING', 'CLEANUP_UNCERTAIN', 'DISCONNECTED'];
 const TERMINAL_STEPS: StepStatus[] = ['SUCCEEDED', 'FAILED', 'TIMED_OUT', 'CANCELLED'];
@@ -82,13 +83,13 @@ export class ArtifactStore {
   private readonly records = new Map<string, ArtifactRecord>();
   private readonly metadataFile: string;
   private readonly objectDir: string;
-  constructor(readonly root: string) { this.metadataFile = path.join(root, 'artifacts.json'); this.objectDir = path.join(root, 'objects'); if (fs.existsSync(this.metadataFile)) { const snapshot = JSON.parse(fs.readFileSync(this.metadataFile, 'utf8')) as ArtifactSnapshot; if (snapshot.version !== 1) throw new Error('unsupported_artifact_snapshot'); for (const record of snapshot.artifacts) this.records.set(record.id, record); } }
+  constructor(readonly root: string) { this.metadataFile = path.join(root, 'artifacts.json'); this.objectDir = path.join(root, 'objects'); if (fs.existsSync(this.metadataFile)) { const snapshot = JSON.parse(fs.readFileSync(this.metadataFile, 'utf8')) as ArtifactSnapshot; if (snapshot.version !== 1) throw new Error('unsupported_artifact_snapshot'); for (const record of snapshot.artifacts) this.records.set(record.id, redactSensitiveValue(record)); } }
   create(run: RunRecord, stepId: string, workerId: string, declaration: {name: string; type: string; schema: string; version: string; retention?: string}, value: unknown) {
-    const bytes = Buffer.from(`${JSON.stringify(value, null, 2)}\n`), sha256 = createHash('sha256').update(bytes).digest('hex'), id = `artifact-${randomUUID()}`, objectFile = path.join(this.objectDir, `${id}.json`);
+    const safeValue = redactSensitiveValue(value), bytes = Buffer.from(`${JSON.stringify(safeValue, null, 2)}\n`), sha256 = createHash('sha256').update(bytes).digest('hex'), id = `artifact-${randomUUID()}`, objectFile = path.join(this.objectDir, `${id}.json`);
     fs.mkdirSync(this.objectDir, {recursive: true}); fs.writeFileSync(objectFile, bytes, {mode: 0o600});
     const step = run.steps.find(item => item.id === stepId)!;
     const record: ArtifactRecord = {id, runId: run.id, stepId, name: declaration.name, type: declaration.type, schema: declaration.schema, version: declaration.version, createdAt: now(), size: bytes.length, sha256, storageRef: objectFile, retention: declaration.retention ?? 'run-history', provenance: {jobId: run.jobId, jobVersion: run.jobVersion, action: step.action, workerId}};
-    this.records.set(id, record); this.save(); return structuredClone(record);
+    const safeRecord = redactSensitiveValue(record); this.records.set(id, safeRecord); this.save(); return structuredClone(safeRecord);
   }
   get(id: string) { const record = this.records.get(id); return record ? structuredClone(record) : undefined; }
   read(id: string) { const record = this.records.get(id); if (!record) throw new Error('artifact_missing'); const bytes = fs.readFileSync(record.storageRef); if (createHash('sha256').update(bytes).digest('hex') !== record.sha256) throw new Error('artifact_checksum_mismatch'); return JSON.parse(bytes.toString('utf8')); }
@@ -101,16 +102,16 @@ export class RunLedger {
   private readonly listeners = new Set<(runId: string, type: string, status: string) => void>();
   subscribe(listener: (runId: string, type: string, status: string) => void) { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; }
   private readonly runs = new Map<string, RunRecord>(); private readonly schedules = new Map<string, ScheduleState>(); private readonly eventsFile: string;
-  constructor(readonly file: string) { this.eventsFile = path.join(path.dirname(file), 'run-events.jsonl'); if (fs.existsSync(file)) { const snapshot = JSON.parse(fs.readFileSync(file, 'utf8')) as LedgerSnapshot; if (snapshot.version !== 1) throw new Error('unsupported_run_ledger'); for (const run of snapshot.runs) this.runs.set(run.id, run); for (const schedule of snapshot.schedules ?? []) this.schedules.set(schedule.scheduleId, schedule); } }
-  add(run: RunRecord) { if (this.runs.has(run.id)) throw new Error('run_exists'); run.updatedAt = run.requestedAt; this.runs.set(run.id, structuredClone(run)); this.record(run.id, 'run.created', run.status); return this.get(run.id)!; }
-  update(run: RunRecord, event = 'run.updated', evidence?: Record<string, unknown>) { if (!this.runs.has(run.id)) throw new Error('run_missing'); run.updatedAt = now(); this.runs.set(run.id, structuredClone(run)); this.record(run.id, event, run.status, evidence); return this.get(run.id)!; }
+  constructor(readonly file: string) { this.eventsFile = path.join(path.dirname(file), 'run-events.jsonl'); if (fs.existsSync(file)) { const snapshot = JSON.parse(fs.readFileSync(file, 'utf8')) as LedgerSnapshot; if (snapshot.version !== 1) throw new Error('unsupported_run_ledger'); for (const run of snapshot.runs) this.runs.set(run.id, redactSensitiveValue(run)); for (const schedule of snapshot.schedules ?? []) this.schedules.set(schedule.scheduleId, redactSensitiveValue(schedule)); } }
+  add(run: RunRecord) { if (this.runs.has(run.id)) throw new Error('run_exists'); run.updatedAt = run.requestedAt; this.runs.set(run.id, structuredClone(redactSensitiveValue(run))); this.record(run.id, 'run.created', run.status); return this.get(run.id)!; }
+  update(run: RunRecord, event = 'run.updated', evidence?: Record<string, unknown>) { if (!this.runs.has(run.id)) throw new Error('run_missing'); run.updatedAt = now(); this.runs.set(run.id, structuredClone(redactSensitiveValue(run))); this.record(run.id, event, run.status, evidence); return this.get(run.id)!; }
   get(id: string) { const run = this.runs.get(id); return run ? structuredClone(run) : undefined; }
   list(jobId?: string) { return [...this.runs.values()].filter(run => !jobId || run.jobId === jobId).sort((a, b) => Date.parse(b.requestedAt) - Date.parse(a.requestedAt)).map(run => structuredClone(run)); }
   schedule(id: string) { const state = this.schedules.get(id); return state ? structuredClone(state) : undefined; }
-  saveSchedule(state: ScheduleState) { this.schedules.set(state.scheduleId, structuredClone(state)); this.save(); return this.schedule(state.scheduleId)!; }
+  saveSchedule(state: ScheduleState) { this.schedules.set(state.scheduleId, structuredClone(redactSensitiveValue(state))); this.save(); return this.schedule(state.scheduleId)!; }
   scheduleStates() { return [...this.schedules.values()].map(state => structuredClone(state)); }
   recoverFailClosed() { const changed: string[] = []; for (const run of this.runs.values()) { let dirty = false; for (const step of run.steps) if (['DISPATCHED', 'RUNNING', 'VERIFYING'].includes(step.status)) { step.status = 'FAILED'; step.error = 'execution_identity_unproven_after_restart'; step.endedAt = now(); dirty = true; } if (dirty || ['RUNNING', 'VERIFYING'].includes(run.status)) { run.status = 'DISCONNECTED'; run.errors.push('execution_identity_unproven_after_restart'); run.provenance.push({type: 'recovery', at: now(), detail: 'Fail closed: original execution identity not proven'}); changed.push(run.id); } } if (changed.length) this.save(); return changed; }
-  private record(runId: string, type: string, status: string, evidence?: Record<string, unknown>) { fs.mkdirSync(path.dirname(this.file), {recursive: true}); fs.appendFileSync(this.eventsFile, `${JSON.stringify({at: now(), runId, type, status, ...(evidence ? {evidence} : {})})}\n`, {mode: 0o600}); this.save(); for (const listener of this.listeners) { try { listener(runId,type,status); } catch { /* Optional observers cannot impair orchestration. */ } } }
+  private record(runId: string, type: string, status: string, evidence?: Record<string, unknown>) { fs.mkdirSync(path.dirname(this.file), {recursive: true}); fs.appendFileSync(this.eventsFile, `${JSON.stringify(redactSensitiveValue({at: now(), runId, type, status, ...(evidence ? {evidence} : {})}))}\n`, {mode: 0o600}); this.save(); for (const listener of this.listeners) { try { listener(runId,type,status); } catch { /* Optional observers cannot impair orchestration. */ } } }
   private save() { writeJsonAtomic(this.file, {version: 1, runs: this.list(), schedules: this.scheduleStates()} satisfies LedgerSnapshot, true); }
 }
 
@@ -127,6 +128,7 @@ export class JobRuntime {
   private readonly ownedExecutionFactory: () => OwnedExecution;
 
   createRun(jobReference: string, parameters: Record<string, unknown>, trigger: RunRecord['trigger'], scheduledAt?: string, requestKey?: string) {
+    assertNoSensitiveMaterial(JSON.stringify({parameters, trigger}), 'job_credential_material_forbidden');
     if (requestKey) {
       const existing = this.ledger.list().find(run => run.trigger.id === requestKey && run.trigger.actor === trigger.actor);
       if (existing) { if (jobReference !== `${existing.jobId}@${existing.jobVersion}` || JSON.stringify(effectiveParameters(existing.effectiveJob,parameters)) !== JSON.stringify(existing.parameters)) throw new Error('request_key_conflict'); return existing; }
@@ -287,9 +289,9 @@ export class JobRuntime {
         if (cleanup.outcome !== 'confirmed') { safeToReleaseWorker = false; this.markCleanupUncertain(run, step, attempt, cleanup, 'execution_cancelled'); return; }
         step.status = 'CANCELLED'; step.waitingReason = undefined; step.endedAt = this.clock().toISOString(); attempt.endedAt = step.endedAt; attempt.outcome = 'execution_cancelled'; run.status = 'CANCELLED'; run.endedAt = step.endedAt; if (!run.errors.includes('execution_cancelled')) run.errors.push('execution_cancelled'); this.finalizeCancelledEfficiency(run, 'execution_cancelled'); this.locks.release(run.id, step.id); this.ledger.update(run, 'run.cancellation_confirmed', {cleanup: cleanup.outcome}); return;
       }
-      const failure = error instanceof ActionFailure ? error : new ActionFailure(error instanceof Error ? error.message : String(error), 'execution', true);
-      attempt.endedAt = this.clock().toISOString(); attempt.outcome = failure.message; attempt.retryable = failure.retryable; attempt.errorClass = failure.failureClass; attempt.recoveryKind = failure.recoveryKind; step.error = safeFailureMessage(failure.message); this.locks.release(run.id, step.id);
-      if (attempt.efficiencyInvocationIds?.length) { this.efficiency?.finalizePending(attempt.efficiencyInvocationIds, 'FAILED', failure.message, 'executor_failure', attempt.endedAt); this.efficiency?.markVerification(attempt.efficiencyInvocationIds, 'FAIL'); }
+      const failure = error instanceof ActionFailure ? error : new ActionFailure(error instanceof Error ? error.message : String(error), 'execution', true), failureMessage = safeFailureMessage(failure.message);
+      attempt.endedAt = this.clock().toISOString(); attempt.outcome = failureMessage; attempt.retryable = failure.retryable; attempt.errorClass = failure.failureClass; attempt.recoveryKind = failure.recoveryKind; step.error = failureMessage; this.locks.release(run.id, step.id);
+      if (attempt.efficiencyInvocationIds?.length) { this.efficiency?.finalizePending(attempt.efficiencyInvocationIds, 'FAILED', failureMessage, 'executor_failure', attempt.endedAt); this.efficiency?.markVerification(attempt.efficiencyInvocationIds, 'FAIL'); }
       if (failure.recoveryKind === 'authentication-required') {
         step.status = 'AUTHENTICATION_BLOCKED'; step.waitingReason = 'Authentication requires human action for the sealed account profile'; step.remainingRetryBudget = Math.max(0, retry.attempts - step.attempts.length + 1); run.status = 'AUTHENTICATION_BLOCKED'; run.errors.push(`${step.id}:authentication:human_action_required`); this.ledger.update(run, 'step.authentication_blocked', {recoveryKind: failure.recoveryKind});
       } else {
@@ -327,4 +329,4 @@ export function createJobRuntime(root: string, catalog: JobCatalog, actions: Act
 
 function efficiencyInvocationIds(error: unknown): string[] { const value = error as {efficiencyInvocationIds?: unknown}; return Array.isArray(value?.efficiencyInvocationIds) ? value.efficiencyInvocationIds.filter((item): item is string => typeof item === 'string') : []; }
 function partialActionOutput(error: unknown): ActionOutput | undefined { const value = error as {partialActionOutput?: unknown}; return value?.partialActionOutput && typeof value.partialActionOutput === 'object' ? value.partialActionOutput as ActionOutput : undefined; }
-function safeFailureMessage(value: string) { return String(value).replace(/(?:bearer\s+|sk-)[A-Za-z0-9._-]{8,}/gi, '[REDACTED]').replace(/(password|api[_-]?key|access[_-]?token|refresh[_-]?token)\s*[:=]\s*\S+/gi, '$1=[REDACTED]').replace(/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/g, '[REDACTED_ACCOUNT]').slice(0, 2048); }
+function safeFailureMessage(value: string) { return redactSensitiveValue(String(value)).replace(/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/g, '[REDACTED_ACCOUNT]').slice(0, 2048); }

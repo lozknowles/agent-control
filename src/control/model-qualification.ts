@@ -2,16 +2,20 @@ import {createHash} from 'node:crypto';
 import type {ModelConfig, ProviderConfig} from './config.js';
 import type {ModelQualificationRecord, ModelRegistry} from './model-registry.js';
 import {OpenAICompatibleProviderClient, type FetchLike, type ModelInvocationResult} from './openai-compatible-provider.js';
+import {resolveProviderAccountCredential} from './provider-credential-store.js';
+import {redactSensitiveText} from './security-redaction.js';
 
-export interface ModelQualificationEvidence {schema: 'agent-control.model-qualification/v1'; modelId: string; providerId: string; providerModel: string; nodeId: string; startedAt: string; completedAt: string; checks: Array<{id: string; passed: boolean; latencyMs: number; usage: ModelInvocationResult['usage']; responseModel: string | null; responseHash: string; capabilities: string[]}>; capabilities: string[]; state: ModelQualificationRecord['state']; detail?: string;}
+export interface ModelQualificationEvidence {schema: 'agent-control.model-qualification/v1'; modelId: string; providerId: string; accountProfileId: string | null; providerModel: string; nodeId: string; startedAt: string; completedAt: string; checks: Array<{id: string; passed: boolean; latencyMs: number; usage: ModelInvocationResult['usage']; responseModel: string | null; responseHash: string; capabilities: string[]}>; capabilities: string[]; state: ModelQualificationRecord['state']; detail?: string;}
 
 export async function qualifyModel(input: {registry: ModelRegistry; modelId: string; nodeId: string; fetcher?: FetchLike; version?: string}): Promise<{record: ModelQualificationRecord; evidence: ModelQualificationEvidence}> {
   const model = input.registry.model(input.modelId); if (!model) throw new Error('model_missing');
   const provider = input.registry.provider(model.provider); if (!provider) throw new Error('provider_missing');
   if (model.enabled === false || provider.enabled === false) throw new Error('model_disabled');
   const version = input.version ?? `qualification-${new Date().toISOString().slice(0, 10)}`, startedAt = new Date().toISOString();
+  const account = model.accountProfile ? input.registry.accountProfile(provider.id, model.accountProfile) : undefined;
+  if (model.accountProfile && !account) throw new Error('account_profile_missing');
   input.registry.setQualification({modelId: model.id, state: 'QUALIFYING', version, checkedAt: startedAt, capabilities: [], nodes: [], evidence: []});
-  const client = new OpenAICompatibleProviderClient(provider, input.fetcher), checks: ModelQualificationEvidence['checks'] = [];
+  const client = new OpenAICompatibleProviderClient(provider, input.fetcher, account ? () => resolveProviderAccountCredential(provider, account, process.env, undefined, input.nodeId) : undefined, {accountProfileId: account?.id, nodeId: input.nodeId}), checks: ModelQualificationEvidence['checks'] = [];
   try {
     for (const check of qualificationChecks(model)) {
       const result = await client.invoke(model, check.prompt, {timeoutMs: 30_000, maximumOutputTokens: check.maximumOutputTokens, structured: check.structured, outputSchema: check.outputSchema, toolProbe: check.toolProbe});
@@ -23,11 +27,11 @@ export async function qualifyModel(input: {registry: ModelRegistry; modelId: str
     const completedAt = new Date().toISOString(), evidenceIds = checks.map(check => `${check.id}:${check.responseHash}`);
     const record: ModelQualificationRecord = {modelId: model.id, state: 'QUALIFIED', version, checkedAt: completedAt, qualifiedAt: completedAt, capabilities, nodes: [input.nodeId], latencyMs: Math.round(checks.reduce((sum, check) => sum + check.latencyMs, 0) / checks.length), successRate: 1, evidence: evidenceIds};
     input.registry.setQualification(record);
-    return {record, evidence: {schema: 'agent-control.model-qualification/v1', modelId: model.id, providerId: provider.id, providerModel: model.providerModel, nodeId: input.nodeId, startedAt, completedAt, checks, capabilities, state: 'QUALIFIED'}};
+    return {record, evidence: {schema: 'agent-control.model-qualification/v1', modelId: model.id, providerId: provider.id, accountProfileId: account?.id ?? null, providerModel: model.providerModel, nodeId: input.nodeId, startedAt, completedAt, checks, capabilities, state: 'QUALIFIED'}};
   } catch (error) {
     const completedAt = new Date().toISOString(), detail = safe((error as Error).message), record: ModelQualificationRecord = {modelId: model.id, state: 'FAILED', version, checkedAt: completedAt, capabilities: [], nodes: [], successRate: checks.length ? checks.filter(check => check.passed).length / checks.length : 0, evidence: checks.map(check => `${check.id}:${check.responseHash}`), detail};
     input.registry.setQualification(record);
-    return {record, evidence: {schema: 'agent-control.model-qualification/v1', modelId: model.id, providerId: provider.id, providerModel: model.providerModel, nodeId: input.nodeId, startedAt, completedAt, checks, capabilities: [], state: 'FAILED', detail}};
+    return {record, evidence: {schema: 'agent-control.model-qualification/v1', modelId: model.id, providerId: provider.id, accountProfileId: account?.id ?? null, providerModel: model.providerModel, nodeId: input.nodeId, startedAt, completedAt, checks, capabilities: [], state: 'FAILED', detail}};
   }
 }
 
@@ -38,4 +42,4 @@ function qualificationChecks(model: ModelConfig): Array<{id: string; prompt: str
   if (model.capabilities.includes('tool-use')) checks.push({id: 'bounded-tool-call', prompt: 'Call the supplied function with marker AGENT_CONTROL_TOOL_OK.', maximumOutputTokens: 1024, structured: false, toolProbe: 'agent_control_qualification_marker', capabilities: ['tool-use'], verify: result => { if (result.toolCall?.name !== 'agent_control_qualification_marker') return false; try { return (JSON.parse(result.toolCall.arguments) as {marker?: unknown}).marker === 'AGENT_CONTROL_TOOL_OK'; } catch { return false; } }});
   return checks;
 }
-function safe(value: string) { return value.replace(/\b(?:sk|rk|pk)-[A-Za-z0-9_-]{8,}\b/g, '[REDACTED]').slice(0, 240); }
+function safe(value: string) { return redactSensitiveText(value).slice(0, 240); }

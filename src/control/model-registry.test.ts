@@ -1,8 +1,12 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import test from 'node:test';
 import {validateConfig} from './config.js';
 import {CapabilityIntelligenceStore} from './capability-intelligence.js';
 import {ModelRegistry} from './model-registry.js';
+import {SecureProviderCredentialStore} from './provider-credential-store.js';
 import type {ModelIntelligenceLedger} from './model-intelligence.js';
 
 const providers = [{id: 'external', name: 'External', kind: 'openai-compatible' as const, baseUrl: 'https://models.example/v1', wireApi: 'responses' as const, enabled: true, auth: {type: 'bearer-env' as const, env: 'EXTERNAL_API_KEY'}}];
@@ -66,4 +70,18 @@ test('routing binds an exact qualified account profile and never falls across ac
   assert.equal('credentialStore' in publicProfile, false);
   assert.equal(JSON.stringify(registry.providersList()).includes(process.cwd()), false);
   assert.deepEqual(registry.governedAlternatives('sol-pro'), ['sol-pro', 'luna-plus']);
+});
+
+test('controller account profiles reuse provider-secure-store status without exposing the opaque reference', t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-profile-secure-store-')), environment: NodeJS.ProcessEnv = {AGENT_CONTROL_STATE_DIR: root}, store = new SecureProviderCredentialStore(path.join(root, 'credentials', 'providers'));
+  t.after(() => fs.rmSync(root, {recursive: true, force: true}));
+  const provider = {id: 'external', kind: 'openai-compatible' as const, baseUrl: 'https://models.example/v1', accountProfiles: [{id: 'account-a', label: 'Account A', providerExecutionNodeId: 'controller', credentialResidency: {nodeId: 'controller', store: {type: 'provider-secure-store' as const, reference: 'provider:external:account-a'}}, qualification: {state: 'QUALIFIED' as const, version: 'account-q1', qualifiedAt: '2026-09-06T00:00:00Z'}}]};
+  const model = {id: 'external-a', provider: 'external', accountProfile: 'account-a', providerModel: 'vendor/model', capabilities: ['coding'], nodes: ['controller'], qualification: {state: 'QUALIFIED' as const, version: 'model-q1', nodes: ['controller'], capabilities: ['coding']}};
+  const registry = new ModelRegistry([provider], [model], {roles: {review: {primary: 'external-a'}}}, undefined, undefined, environment);
+  assert.equal(registry.accountProfilesList()[0].availability, 'AUTH_REQUIRED');
+  store.set('provider:external:account-a', 'future-provider-account-credential');
+  assert.equal(registry.accountProfilesList()[0].availability, 'AVAILABLE');
+  assert.equal(JSON.stringify(registry.providersList()).includes('provider:external:account-a'), false);
+  store.revoke('provider:external:account-a');
+  assert.equal(registry.accountProfilesList()[0].availability, 'AUTH_REQUIRED');
 });

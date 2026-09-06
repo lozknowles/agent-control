@@ -6,9 +6,10 @@ export const emptyConfig = () => ({schemaVersion: 1, resources: [], providers: [
 const idPattern = /^[a-z0-9][a-z0-9._-]{0,63}$/i;
 
 function rejectSecrets(value, trail = 'config') {
+  if (typeof value === 'string' && /\b(?:nvapi-|sk-(?:proj-)?|sk-ant-|gh[opusr]_)[A-Za-z0-9_-]{8,}\b|\bBearer\s+[A-Za-z0-9._~+/=-]{8,}/i.test(value)) throw new Error(`secret_material_forbidden:${trail}`);
   if (!value || typeof value !== 'object') return;
   for (const [key, child] of Object.entries(value)) {
-    if (/token|password|secret|api.?key/i.test(key) && key !== 'credentialEnv') throw new Error(`secret_material_forbidden:${trail}.${key}`);
+    if (/token|password|secret|api.?key/i.test(key) && !['credentialEnv','credentialFileEnv'].includes(key)) throw new Error(`secret_material_forbidden:${trail}.${key}`);
     rejectSecrets(child, `${trail}.${key}`);
   }
 }

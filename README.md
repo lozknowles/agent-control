@@ -16,6 +16,30 @@ Provider techniques enter a capability-intelligence lifecycle instead of becomin
 
 This release also closes a repository-review schema mismatch found during the 3.8.1 video qualification. The provider-facing structured-output schema now carries the same semantic literals, enums and ranges as application validation, and rejection evidence records safe failing JSON paths without retaining raw output. Validation remains fail closed. See the [qualification report](docs/evidence/agent-control-3.8.2-human-readable-history-qualification.md).
 
+## Unreleased dynamic provider onboarding
+
+The current feature branch adds a provider-neutral catalogue for authenticated model discovery, bounded smoke qualification, frozen benchmark queueing, historical model economics and explicit routing admission. Discovery creates routing-disabled `DISCOVERED / UNQUALIFIED` entries; an endpoint response never promotes a model. A model can become routing eligible only after the existing model-intelligence ledger reports `QUALIFIED` or `PREFERRED` evidence and an authenticated operator enables it. Later degradation automatically withdraws eligibility.
+
+NVIDIA hosted NIM is the first adapter using this path. Provider-specific code is limited to the documented hosted endpoint and API-key shape; discovery, credential references, model records, telemetry, benchmarking and routing policy remain generic. NVIDIA currently documents an OpenAI-compatible `POST /v1/chat/completions` service at `https://integrate.api.nvidia.com`; catalogue contents, model limits, pricing, free-endpoint status, quotas and rate limits are observed dynamically or remain `UNKNOWN`. See [NVIDIA hosted models](docs/models/NVIDIA-HOSTED.md), [adding a provider](docs/models/ADDING-A-PROVIDER.md), and [provider/model lifecycle](docs/provider-model-lifecycle.md).
+
+API credentials reuse the existing `provider-secure-store` credential-residency reference. Configuration contains only an opaque name:
+
+```json
+{
+  "id": "nvidia-hosted",
+  "kind": "openai-compatible",
+  "adapter": "nvidia-hosted-v1",
+  "baseUrl": "https://integrate.api.nvidia.com/v1",
+  "wireApi": "chat-completions",
+  "auth": {"type": "provider-secure-store", "reference": "provider:nvidia-hosted"},
+  "discovery": {"enabled": true, "path": "models"}
+}
+```
+
+`agent-control providers credential set nvidia-hosted` reads the value from hidden terminal input or stdin—not an argument—and stores it under the controller state directory with owner-only permissions. `status` checks metadata without reading credential contents; `revoke` removes the selected reference. Add `--account PROFILE_ID` to manage a controller-resident API account profile's distinct secure-store reference through the same command. The value is resolved only when the selected provider/account invocation begins, injected only into its authorization header or isolated child environment, and scrubbed from provider output and errors. Multiple API account profiles can use distinct references without falling back across accounts. See [credential residency](docs/credential-residency.md).
+
+The bounded physical qualification authenticated through that reference, discovered 81 live canonical IDs, smoke-tested four representative advertised IDs, ran the frozen model-evaluation path against `nvidia/nemotron-3-super-120b-a12b`, and reconciled the protected ledgers with an isolated dashboard/API/SSE projection. The provider returned no authoritative rate-limit, quota, price, context-window or current-context data, so those fields remain `UNKNOWN`/unavailable. Nemotron passed all nine model calls available to its observed capability set, but the 51-attempt batch remained `PARTIAL` because 42 capability-gated attempts were unavailable; it is a `CANDIDATE`, not qualified. No NVIDIA model is routing eligible. See the [physical qualification evidence](docs/evidence/agent-control-3.9-nvidia-hosted-qualification-20260906.md).
+
 ## Operating model
 
 Agent Control is provider-, model-, platform- and execution-environment-agnostic. Core policy addresses qualified capabilities and governed routes; Codex, OpenAI-compatible APIs, local models, Linux, Windows, Android and browser-backed integrations are optional adapters or execution resources rather than architectural dependencies.
@@ -214,7 +238,7 @@ npm run check
 
 `npm run init` creates only a schema-valid empty `.agent-control/config.json`. It is idempotent, never discovers infrastructure and never overwrites existing operator configuration. Use `config/agent-control.example.json` only as an illustrative reference after replacing every example endpoint, path and command.
 
-Edit `.agent-control/config.json` for the installation. Runtime state and credentials remain ignored. A different path can be selected with `AGENT_CONTROL_CONFIG`. Do not put credentials in JSON; configuration names only the environment variable that supplies a credential.
+Edit `.agent-control/config.json` for the installation. Runtime state and credentials remain ignored. A different path can be selected with `AGENT_CONTROL_CONFIG`. Do not put credentials in JSON; configuration stores only an environment, referenced-file, isolated-home or opaque secure-store reference.
 
 With no configuration file, Agent Control starts with a safe local lane and reports infrastructure as `UNCONFIGURED`. It does not invent providers, machines or services.
 
@@ -306,7 +330,7 @@ The versioned JSON schema has six independent collections/policies plus optional
 
 Resource identity is separate from transport. A resource may be local, SSH, HTTP or Orca-backed. An SSH hostname is transport metadata, not the resource ID. Ports are configurable numbers. Optional unavailable services do not make an otherwise valid zero-provider installation fail.
 
-Providers and external services that require API keys use `auth.env`, `credentialEnv` or `credentialFileEnv` to name the runtime environment variable that supplies the secret. The configuration stores only that reference. Plaintext API keys, passwords, tokens, secrets and credentialed URLs are rejected.
+Providers and external services that require API keys use an indirect environment, referenced-file or `provider-secure-store` reference. Configuration stores only the reference; the generic secure-store backend keeps its value owner-only beneath the state directory and resolves it at invocation. Plaintext API keys, passwords, tokens, secrets and credentialed URLs are rejected.
 
 For a managed Linux resource, `managedNode` adds polling/heartbeat policy, declarative protected-workload detectors, approved services, BUSY capability fences and an optional operator-reviewed runtime update target. Hardware, package tools, filesystems, optical devices, secure-overlay state and operational capabilities are discovered rather than assumed. Real endpoints and workload identifiers remain operator configuration, never core defaults.
 

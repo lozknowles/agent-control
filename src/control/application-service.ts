@@ -31,6 +31,8 @@ import {projectLaneHistory, projectParameterizedRunHistory, type ExecutionHistor
 import type {CapabilityCandidateClassification, CapabilityCandidateState, CapabilityIntelligenceStore} from './capability-intelligence.js';
 import type {FrozenQualificationSuite, ModelIntelligenceLedger} from './model-intelligence.js';
 import {projectDashboardCharacterCrew, type DashboardCharacterCrewProjection} from './dashboard-characters.js';
+import type {ProviderCatalogRuntime} from './provider-catalog.js';
+import {redactSensitiveValue} from './security-redaction.js';
 
 export type ControlEventType =
   | 'social.activity'
@@ -61,6 +63,7 @@ export type ControlEventType =
   | 'work.parcel_changed'
   | 'capability.intelligence_changed'
   | 'model.intelligence_changed'
+  | 'provider.catalog_changed'
   | 'runtime.safety_changed'
   | 'configuration.changed'
   | 'token.telemetry'
@@ -133,10 +136,10 @@ export class ControlEventBus {
   private readonly listeners = new Set<(event: ControlEvent) => void>();
   private readonly recentEvents: ControlEvent[] = [];
   emit(type: ControlEventType, payload: Record<string, unknown> = {}, laneId?: number, actor?: string) {
-    const event: ControlEvent = {id: this.nextId++, at: new Date().toISOString(), type, laneId, actor, payload};
+    const event: ControlEvent = {id: this.nextId++, at: new Date().toISOString(), type, laneId, actor, payload: redactSensitiveValue(payload)};
     this.recentEvents.push(event);
     if (this.recentEvents.length > 250) this.recentEvents.shift();
-    appendEvent(`control.${type}`, {laneId, actor, payload});
+    appendEvent(`control.${type}`, {laneId, actor, payload: event.payload});
     for (const listener of this.listeners) listener(event);
     return event;
   }
@@ -170,6 +173,7 @@ export class AgentControlService {
   private capabilityIntelligence?: CapabilityIntelligenceStore;
   private modelIntelligence?: ModelIntelligenceLedger;
   private qualificationSuite?: FrozenQualificationSuite;
+  private providerCatalog?: ProviderCatalogRuntime;
 
   constructor(
     readonly state: WorkspaceState,
@@ -182,7 +186,7 @@ export class AgentControlService {
     this.verification = new VerificationService(state, persist);
   }
 
-  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; services?: RegisteredService[]; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService; tokenBatonRouting?: TokenAwareBatonRuntime; governedRetrieval?: GovernedRetrievalRuntime; codexNodeExecution?: CodexNodeExecutionPort; harnessEfficiency?: HarnessEfficiencyLedgerPort; workParcels?: WorkParcelCoordinator; modelRegistry?: ModelRegistry; parameterizedJobs?: ParameterizedJobEngine; identity?: IdentityControlPlane; defaultSessionId?: string; fastExecution?: FastExecutionLedgerPort; runtimeObservability?: RuntimeObservability; capabilityIntelligence?: CapabilityIntelligenceStore; modelIntelligence?: ModelIntelligenceLedger; qualificationSuite?: FrozenQualificationSuite}) {
+  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; services?: RegisteredService[]; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService; tokenBatonRouting?: TokenAwareBatonRuntime; governedRetrieval?: GovernedRetrievalRuntime; codexNodeExecution?: CodexNodeExecutionPort; harnessEfficiency?: HarnessEfficiencyLedgerPort; workParcels?: WorkParcelCoordinator; modelRegistry?: ModelRegistry; parameterizedJobs?: ParameterizedJobEngine; identity?: IdentityControlPlane; defaultSessionId?: string; fastExecution?: FastExecutionLedgerPort; runtimeObservability?: RuntimeObservability; capabilityIntelligence?: CapabilityIntelligenceStore; modelIntelligence?: ModelIntelligenceLedger; qualificationSuite?: FrozenQualificationSuite; providerCatalog?: ProviderCatalogRuntime}) {
     if (extras.approvalCount) this.approvalCount = extras.approvalCount;
     if (extras.resources) this.resourceRows = structuredClone(extras.resources);
     if (extras.services) this.serviceRows = structuredClone(extras.services);
@@ -204,6 +208,7 @@ export class AgentControlService {
     if (extras.capabilityIntelligence) this.capabilityIntelligence = extras.capabilityIntelligence;
     if (extras.modelIntelligence) this.modelIntelligence = extras.modelIntelligence;
     if (extras.qualificationSuite) this.qualificationSuite = structuredClone(extras.qualificationSuite);
+    if (extras.providerCatalog) this.providerCatalog = extras.providerCatalog;
     return this;
   }
 
@@ -291,13 +296,25 @@ export class AgentControlService {
   runtime() { return this.runtimeObservability?.snapshot() ?? new RuntimeObservability().snapshot(); }
   capabilityIntelligenceProjection() { return this.mustCapabilityIntelligence().projection(); }
   modelIntelligenceProjection() { return this.mustModelIntelligence().projection(); }
+  providerCatalogProjection() { return this.mustProviderCatalog().projection(); }
+  async discoverProviderModels(providerId: string, actor: string) {
+    const pending = this.mustProviderCatalog().discover(providerId); this.events.emit('provider.catalog_changed', {providerId, action: 'discovering'}, undefined, actor);
+    try { const value = await pending; this.events.emit('provider.catalog_changed', {providerId, action: 'discovered', models: value.discovered}, undefined, actor); return value; }
+    catch (error) { this.events.emit('provider.catalog_changed', {providerId, action: 'discovery-failed'}, undefined, actor); throw error; }
+  }
+  async smokeProviderModel(providerId: string, canonicalModelId: string, actor: string) {
+    const pending = this.mustProviderCatalog().smoke(providerId, canonicalModelId); this.events.emit('provider.catalog_changed', {providerId, canonicalModelId, action: 'smoke-testing'}, undefined, actor);
+    try { const value = await pending; this.events.emit('provider.catalog_changed', {providerId, canonicalModelId, action: 'smoke-tested', status: value.status}, undefined, actor); return value; }
+    catch (error) { this.events.emit('provider.catalog_changed', {providerId, canonicalModelId, action: 'smoke-failed'}, undefined, actor); throw error; }
+  }
+  setProviderModelRoutingEligibility(providerId: string, canonicalModelId: string, enabled: boolean, actor: string) { const value = this.mustProviderCatalog().setRoutingEligibility(providerId, canonicalModelId, enabled); this.events.emit('provider.catalog_changed', {providerId, canonicalModelId, action: enabled ? 'routing-enabled' : 'routing-disabled'}, undefined, actor); return value; }
   runtimeSafetyDecisions(runId?: string) { return this.mustJobRuntime().safetyDecisions(runId); }
   discoverCapability(input: {id?: string; title: string; source: string; providerRuntime: string; claimedCapability: string; whyItMatters: string; agentControlEquivalent: string; evidence?: string[]}, actor: string) { const candidate = this.mustCapabilityIntelligence().discoverCandidate({...input, evidence: input.evidence ?? [], actor}); this.events.emit('capability.intelligence_changed', {candidateId: candidate.id, state: candidate.state}, undefined, actor); return candidate; }
   transitionCapability(id: string, input: {to: CapabilityCandidateState; reason: string; classification?: CapabilityCandidateClassification; experiment?: string; measuredOutcome?: string; finalDecision?: string; evidence?: string[]}, actor: string) { const candidate = this.mustCapabilityIntelligence().transitionCandidate(id, {...input, actor}); this.events.emit('capability.intelligence_changed', {candidateId: candidate.id, state: candidate.state}, undefined, actor); return candidate; }
   queueModelEvaluation(modelIds: string[], reason: string, actor: string) {
     if (!modelIds.length) throw new Error('model_evaluation_candidates_required'); const suite = this.mustQualificationSuite(), registry = this.mustModelRegistry();
     const candidates = modelIds.map(id => { const model = registry.list().find(item => item.id === id); if (!model) throw new Error('model_missing'); const provider = registry.provider(model.provider); if (!provider) throw new Error('provider_missing'); const nodeId = model.account?.providerExecutionNodeId ?? model.qualification.nodes[0] ?? model.nodes?.[0] ?? 'controller'; return {providerId: model.provider, ...(model.accountProfile ? {accountProfileId: model.accountProfile} : {}), modelId: model.id, providerModel: model.providerModel, runtimeId: provider.kind, runtimeVersion: null, modelVersion: null, nodeId}; });
-    const batch = this.mustModelIntelligence().createBatch({suite, candidates, requestedBy: actor, reason}); this.events.emit('model.intelligence_changed', {batchId: batch.id, status: batch.status}, undefined, actor); return batch;
+    const batch = this.mustModelIntelligence().createBatch({suite, candidates, requestedBy: actor, reason}); this.providerCatalog?.markBenchmarkQueued(modelIds, batch.id); this.events.emit('model.intelligence_changed', {batchId: batch.id, status: batch.status}, undefined, actor); return batch;
   }
   transitionModelRoute(routeKey: string, to: Parameters<ModelIntelligenceLedger['transition']>[0]['to'], reason: string, actor: string, approved = false, evidence: string[] = []) { const value = this.mustModelIntelligence().transition({routeKey, to, reason, actor, approved, evidence}); this.events.emit('model.intelligence_changed', {routeKey, state: value.to}, undefined, actor); return value; }
   modelProviders() { return this.mustModelRegistry().providersList(); }
@@ -331,7 +348,7 @@ export class AgentControlService {
   parameterizedSchedules() { return this.savedJobs().filter(job => job.schedule).map(job => ({savedJobId: job.id, name: job.name, schedule: job.schedule, nextRun: job.nextRun, lastRun: job.lastRun})); }
   model(id: string) { const value = this.models().find(model => model.id === id); if (!value) throw new Error('model_missing'); return value; }
   modelRoutes() { return this.mustModelRegistry().routes(); }
-  reloadModels(providers: ProviderConfig[], models: ModelConfig[], routing: ModelRoutingConfig, actor: string) { this.mustModelRegistry().reload(providers, models, routing); this.events.emit('configuration.changed', {kind: 'model-registry', models: models.length, restartRequired: false}, undefined, actor); return {models: this.models(), routes: this.modelRoutes()}; }
+  reloadModels(providers: ProviderConfig[], models: ModelConfig[], routing: ModelRoutingConfig, actor: string) { this.mustModelRegistry().reload(providers, models, routing); this.providerCatalog?.reloadProviders(providers); this.events.emit('configuration.changed', {kind: 'model-registry', models: models.length, restartRequired: false}, undefined, actor); return {models: this.models(), routes: this.modelRoutes()}; }
   routeModel(request: ModelRouteRequest) { return this.mustModelRegistry().route(request); }
   qualifyModel(id: string, nodeId: string) { return qualifyModel({registry: this.mustModelRegistry(), modelId: id, nodeId}); }
   qualifyModelAccount(providerId: string, accountProfileId: string) {
@@ -540,5 +557,6 @@ export class AgentControlService {
   private mustParameterizedJobs() { if (!this.parameterizedJobs) throw new Error('parameterized_jobs_unconfigured'); return this.parameterizedJobs; }
   private mustCapabilityIntelligence() { if (!this.capabilityIntelligence) throw new Error('capability_intelligence_unconfigured'); return this.capabilityIntelligence; }
   private mustModelIntelligence() { if (!this.modelIntelligence) throw new Error('model_intelligence_unconfigured'); return this.modelIntelligence; }
+  private mustProviderCatalog() { if (!this.providerCatalog) throw new Error('provider_catalog_unconfigured'); return this.providerCatalog; }
   private mustQualificationSuite() { if (!this.qualificationSuite) throw new Error('model_qualification_suite_unconfigured'); return this.qualificationSuite; }
 }

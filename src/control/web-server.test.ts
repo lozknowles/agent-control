@@ -27,6 +27,8 @@ import {TokenAwareBatonRuntime} from './token-aware-baton-routing.js';
 import {GovernedRetrievalRuntime, type RetrievalProvider} from './governed-retrieval.js';
 import {CapabilityIntelligenceStore, registerAgentControlCoreCapabilities} from './capability-intelligence.js';
 import {loadFrozenQualificationSuite, ModelIntelligenceLedger} from './model-intelligence.js';
+import {ProviderCatalogRuntime, ProviderCatalogStore} from './provider-catalog.js';
+import {SecureProviderCredentialStore} from './provider-credential-store.js';
 
 const now = () => new Date().toISOString();
 function service() { const lane: LaneState = {id: 1, name: 'Primary', status: 'waiting', model: 'model-a', reasoning: 'medium', context: '0', lines: [], contract: {version: 2, laneId: 1, goal: 'safe task', constraints: [], cwd: '/tmp', priority: 1, mode: 'auto', capabilities: defaultCapabilities(), resourceLocks: {}, modelLock: null, sharedTaskIds: [], updatedAt: now()}, baton: {version: 1, laneId: 1, revision: 1, status: 'waiting', progress: [], hypothesis: '', evidence: [], changes: [], nextAction: 'schedule', openQuestions: [], model: 'model-a', reasoning: 'medium', updatedAt: now()}, lease: {laneId: 1, holder: null, acquiredAt: null, expiresAt: null}}; return new AgentControlService({version: 1, paused: false, lastRestorePoint: null, lanes: [lane]}, new PtyRegistry(), undefined, '3.1.0-test', () => {}); }
@@ -47,11 +49,12 @@ test('token routing projection is served and live telemetry is published through
 
 test('execution-history context counters remain visible while credential-like token fields stay redacted', async t => {
   const control=service();
-  (control as unknown as {parameterizedRuns:()=>unknown[]}).parameterizedRuns=()=>[{id:'run-history',executionHistory:{entries:[{telemetry:{contextTokens:80,contextLimitTokens:100,inputTokens:70,outputTokens:10,totalTokens:80},credentialToken:'must-not-leak'}]}}];
+  (control as unknown as {parameterizedRuns:()=>unknown[]}).parameterizedRuns=()=>[{id:'run-history',executionHistory:{entries:[{telemetry:{contextTokens:80,contextLimitTokens:100,inputTokens:70,outputTokens:10,totalTokens:80,tokenEfficiency:441.11},credentialToken:'must-not-leak'}]}}];
   const {server,base}=await runningWithControl(control);t.after(()=>server.close());
   const [run]=await(await fetch(`${base}/api/job-runs`)).json();
   assert.equal(run.executionHistory.entries[0].telemetry.contextTokens,80);
   assert.equal(run.executionHistory.entries[0].telemetry.contextLimitTokens,100);
+  assert.equal(run.executionHistory.entries[0].telemetry.tokenEfficiency,441.11);
   assert.equal(run.executionHistory.entries[0].credentialToken,'[REDACTED]');
 });
 
@@ -81,6 +84,51 @@ test('model registry APIs expose safe identity and governed deterministic routes
   const providers=await (await fetch(`${base}/api/models/providers`)).json();assert.equal(providers[0].auth.type,'bearer-env');assert.equal('env' in providers[0].auth,false);assert.equal(JSON.stringify(providers).includes('SECRET_ENV_NAME'),false);
   const models=await (await fetch(`${base}/api/models`)).json();assert.equal(models[0].providerModel,'vendor/fast');assert.equal(models[0].qualification.state,'QUALIFIED');
   const routed=await fetch(`${base}/api/models/fast/route`,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer test-token'},body:JSON.stringify({nodeId:'worker',requiredCapabilities:['coding']})});assert.equal(routed.status,200);assert.equal((await routed.json()).qualificationVersion,'q1');
+});
+
+test('provider catalogue API, dashboard and SSE expose governed state without credential material', async t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-web-provider-catalog-')), credential = ['nvapi', 'fixture', 'L'.repeat(24)].join('-'), environment: NodeJS.ProcessEnv = {AGENT_CONTROL_STATE_DIR: root};
+  t.after(() => fs.rmSync(root, {recursive: true, force: true}));
+  const provider = {id: 'nvidia-hosted', name: 'NVIDIA hosted models', kind: 'openai-compatible' as const, adapter: 'nvidia-hosted-v1', baseUrl: 'https://integrate.api.nvidia.com/v1', wireApi: 'chat-completions' as const, enabled: true, auth: {type: 'provider-secure-store' as const, reference: 'provider:nvidia-hosted'}, discovery: {enabled: true, path: 'models'}, requiresAuth: true};
+  new SecureProviderCredentialStore(path.join(root, 'credentials', 'providers')).set('provider:nvidia-hosted', credential);
+  const intelligence = new ModelIntelligenceLedger(path.join(root, 'intelligence.json')), registry = new ModelRegistry([provider], [], {roles: {}}, undefined, undefined, environment, undefined, intelligence);
+  const catalogue = new ProviderCatalogRuntime([provider], new ProviderCatalogStore(path.join(root, 'catalogue.json')), registry, intelligence, undefined, environment, async (_input, init) => {
+    assert.equal(new Headers(init?.headers).get('authorization'), `Bearer ${credential}`);
+    return new Response(JSON.stringify({data: [{id: 'vendor/model-a', owned_by: credential}]}), {status: 200, headers: {'x-ratelimit-limit-requests': '40', 'x-ratelimit-remaining-requests': '39', 'x-ratelimit-limit-tokens': '10000', 'x-ratelimit-remaining-tokens': '9900', 'x-quota-remaining': '12'}});
+  });
+  const control = service(); control.configureProjection({modelRegistry: registry, modelIntelligence: intelligence, providerCatalog: catalogue});
+  const server = startWebDashboard(control, {host: '127.0.0.1', port: 0, operatorToken: 'test-token', assetsDir: path.resolve('assets/dashboard')});
+  await once(server, 'listening'); t.after(() => server.close()); const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+
+  const before = await (await fetch(`${base}/api/provider-catalog`)).json();
+  assert.equal(before.providers[0].credentialStatus, 'CONFIGURED');
+  assert.equal(before.providers[0].credentialReference, 'secure-store');
+  assert.equal(JSON.stringify(before).includes(credential), false);
+  const denied = await fetch(`${base}/api/provider-catalog/providers/nvidia-hosted/discover`, {method: 'POST', headers: {'content-type': 'application/json'}, body: '{}'});
+  assert.equal(denied.status, 401);
+  const discovered = await fetch(`${base}/api/provider-catalog/providers/nvidia-hosted/discover`, {method: 'POST', headers: {'content-type': 'application/json', authorization: 'Bearer test-token'}, body: '{}'});
+  assert.equal(discovered.status, 200);
+  const discovery = await discovered.json(); assert.equal(discovery.discovered, 1); assert.equal(JSON.stringify(discovery).includes(credential), false);
+  assert.deepEqual(control.events.history().filter(event => event.type === 'provider.catalog_changed').map(event => (event.payload as {action?: string}).action), ['discovering', 'discovered']);
+
+  const projection = await (await fetch(`${base}/api/provider-catalog`)).json();
+  assert.equal(projection.providers[0].enabled, true);
+  assert.equal(projection.providers[0].availableModels, 1);
+  assert.equal(projection.models[0].reviewState, 'UNQUALIFIED');
+  assert.equal(projection.models[0].routingEligible, false);
+  assert.deepEqual(projection.providers[0].rateLimit, {requestsLimit: 40, requestsRemaining: 39, tokensLimit: 10000, tokensRemaining: 9900, reset: null, retryAfter: null, authority: 'PROVIDER_HEADER'});
+  assert.deepEqual(projection.providers[0].quota, {value: 12, unit: 'provider-defined', authority: 'PROVIDER_REPORTED'});
+  assert.equal(JSON.stringify(projection).includes(credential), false);
+  const abort = new AbortController(), response = await fetch(`${base}/api/events`, {headers: {'last-event-id': '0'}, signal: abort.signal}), reader = response.body!.getReader(), chunk = await reader.read(), events = new TextDecoder().decode(chunk.value); abort.abort();
+  assert.match(events, /event: provider\.catalog_changed/);
+  assert.equal(events.includes(credential), false);
+  const dashboard = await (await fetch(`${base}/dashboard-models.js`)).text();
+  assert.match(dashboard, /Discover Models/);
+  assert.match(dashboard, /requestsRemaining/);
+  assert.match(dashboard, /available\/observed models/);
+  assert.match(dashboard, /UNAVAILABLE/);
+  assert.equal(dashboard.includes(credential), false);
+  for (const file of [path.join(root, 'catalogue.json'), path.join(root, 'intelligence.json')]) if (fs.existsSync(file)) assert.equal(fs.readFileSync(file, 'utf8').includes(credential), false);
 });
 test('account-aware model APIs expose labels, plan and qualification without credential locations', async t => {
   const account={id:'lawrence-pro',label:'Lawrence Pro',plan:'ChatGPT Pro',planAuthority:'operator-configured' as const,credentialStore:{type:'codex-home-env' as const,env:'CODEX_HOME_LAWRENCE_PRO'},qualification:{state:'QUALIFIED' as const,version:'account-q1',checkedAt:'2026-09-02T00:00:00Z',qualifiedAt:'2026-09-02T00:00:00Z',capabilities:['codex-chatgpt'],evidence:['interactive-login']}};
