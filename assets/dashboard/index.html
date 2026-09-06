@@ -97,8 +97,15 @@
   </main>
   <main id="crew-workspace" class="crew-shell" hidden>
     <section class="panel crew-live-panel">
-      <div class="crew-heading"><div><span class="eyebrow">Authoritative operational projection</span><h1>Agent Control Crew</h1><p>Each character presents canonical dashboard state. Characters do not create agents, model calls or operational authority.</p></div><span id="crew-live-age" class="status-pill neutral">AWAITING SNAPSHOT</span></div>
+      <div class="crew-heading"><div><span class="eyebrow">Level 1 · Authoritative operational projection</span><h1>Agent Control Crew</h1><p>Each character presents canonical dashboard state. Activity is recorded work; animation is presentation only and cannot create agents, model calls, progress or operational authority.</p></div><span id="crew-live-age" class="status-pill neutral">AWAITING SNAPSHOT</span></div>
+      <section class="crew-status-summary" aria-live="polite"><strong id="crew-headline">Awaiting authoritative Agent Control state.</strong><ul id="crew-narration"></ul></section>
       <div id="crew-live-grid" class="crew-grid" aria-live="polite"></div>
+      <section id="crew-human-explanation" class="crew-human-explanation" aria-live="polite" hidden></section>
+      <section class="crew-workflow-board" aria-label="Human-readable Work Parcel workflow">
+        <article class="crew-flow-column crew-flow-parcels"><header><span class="eyebrow">Authoritative journey</span><h2>Work Parcel flow</h2></header><div id="crew-parcel-flow"></div></article>
+        <article class="crew-flow-column"><header><span class="eyebrow">Sealed events only</span><h2>Baton transfers</h2></header><div id="crew-baton-flow"></div></article>
+        <article class="crew-flow-column"><header><span class="eyebrow">Provider/model events</span><h2>Discovery &amp; qualification</h2></header><div id="crew-model-flow"></div></article>
+      </section>
     </section>
     <section class="panel crew-gallery-panel" id="crew-gallery-panel">
       <div class="crew-heading"><div><span class="eyebrow">Simulated inspection gallery</span><h2>Character and state coverage</h2><p><strong>SIMULATED — PREVIEW ONLY.</strong> Controls below never create Jobs or alter production telemetry.</p></div><span class="status-pill waiting">SIMULATED</span></div>

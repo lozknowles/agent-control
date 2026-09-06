@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {DASHBOARD_CHARACTER_STATES, projectDashboardCharacterCrew, type DashboardCharacterSource} from './dashboard-characters.js';
+import {DASHBOARD_CHARACTER_STATES, classifyDashboardTool, projectDashboardCharacterCrew, type DashboardCharacterSource} from './dashboard-characters.js';
 
 const observedAt = '2026-09-06T12:00:00.000Z';
 const current = '2026-09-06T11:59:30.000Z';
@@ -16,11 +16,71 @@ function member(source: Partial<DashboardCharacterSource>, id: string) {
 
 test('dashboard character roster has stable, non-colour identities for each real dashboard area', () => {
   const crew = project();
-  assert.equal(crew.schema, 'agent-control.dashboard-character-crew/v1');
+  assert.equal(crew.schema, 'agent-control.dashboard-character-crew/v2');
   assert.deepEqual(crew.members.map(item => item.id), ['lane-master', 'prompt-reviewer', 'parcel-coordinator', 'model-scout', 'resource-guardian', 'quality-inspector']);
   assert.equal(new Set(crew.members.map(item => item.identityColor)).size, crew.members.length);
   assert.equal(new Set(crew.members.map(item => item.accessory)).size, crew.members.length);
   assert.ok(crew.members.every(item => item.accessory.length > 8 && item.navigation.target.startsWith('#')));
+  assert.ok(crew.members.every(item => item.idlePersonality && item.workingPersonality));
+  assert.ok(crew.members.every(item => item.animationCue.authority === 'presentation-only'));
+});
+
+test('operational state, activity and animation expression remain three explicit layers', () => {
+  const crew = project({runs: [{id: 'run:one', status: 'RUNNING', requestedAt: current, updatedAt: current, steps: [{id: 'edit', action: 'repository.code-edit@1.0.0', status: 'RUNNING', startedAt: current, capabilityRequest: {requires: [{id: 'repository.write'}]}}]}]});
+  const cadence = crew.members.find(item => item.id === 'lane-master')!, relay = crew.members.find(item => item.id === 'parcel-coordinator')!;
+  assert.equal(cadence.operationalState, 'ROUTING');
+  assert.equal(cadence.activity.kind, 'ROUTING');
+  assert.equal(cadence.animationCue.authority, 'presentation-only');
+  assert.equal(relay.activity.kind, 'NONE', 'a bare Run is not falsely presented as Parcel-owned work');
+});
+
+test('governed action metadata maps to subtle provider-neutral tool activity', () => {
+  const cases = [
+    ['repository.search@1', 'SEARCH'], ['repository.code-edit@1', 'CODE_EDIT'], ['artifact.file-read@1', 'FILE'], ['browser.navigate@1', 'WEB_BROWSER'], ['managed-node.ssh-exec@1', 'REMOTE_MACHINE'], ['qualification.test@1', 'BENCHMARK'], ['voice.transcribe@1', 'VOICE'], ['social.message@1', 'SOCIAL'], ['provider.model-discovery@1', 'MODEL_DISCOVERY'], ['bounded.action@1', 'GENERIC_TOOL'],
+  ] as const;
+  for (const [action, kind] of cases) assert.equal(classifyDashboardTool({action})?.kind, kind, action);
+  assert.equal(classifyDashboardTool({}), null);
+});
+
+test('a real concurrent Parcel graph projects stages and parallel count without simulated progress', () => {
+  const crew = project({
+    parcels: [{id: 'parcel:parallel', objective: 'Inspect two independent surfaces', status: 'RUNNING', createdAt: current, updatedAt: current, stages: [
+      {id: 'search', name: 'Search repository', status: 'RUNNING', startedAt: current, runId: 'run:search', dependsOn: []},
+      {id: 'read', name: 'Read architecture', status: 'RUNNING', startedAt: current, runId: 'run:read', dependsOn: []},
+      {id: 'verify', name: 'Verify result', status: 'QUEUED', dependsOn: ['search', 'read']},
+    ]}],
+    runs: [
+      {id: 'run:search', status: 'RUNNING', requestedAt: current, updatedAt: current, selectedWorkers: ['worker:a'], steps: [{id: 'search-step', action: 'repository.search@1', status: 'RUNNING', startedAt: current}]},
+      {id: 'run:read', status: 'RUNNING', requestedAt: current, updatedAt: current, selectedWorkers: ['worker:b'], steps: [{id: 'read-step', action: 'file.read@1', status: 'RUNNING', startedAt: current}]},
+    ],
+  });
+  assert.equal(crew.parcels[0].parallelActive, 2);
+  assert.deepEqual(crew.parcels[0].progress, {completed: 0, active: 2, waiting: 1, failed: 0, total: 3});
+  assert.equal(crew.parcels[0].stages[0].tool?.kind, 'SEARCH');
+  assert.equal(crew.parcels[0].stages[1].tool?.kind, 'FILE');
+  assert.match(crew.headline, /2 stages executing in parallel/);
+});
+
+test('a future waiting stage cannot hide the tool used by a currently running stage', () => {
+  const relay = member({
+    parcels: [{id: 'parcel:active-before-input', objective: 'Read now and compose after input', status: 'RUNNING', createdAt: current, updatedAt: observedAt, stages: [
+      {id: 'read', name: 'Read architecture', status: 'RUNNING', startedAt: current, runId: 'run:read'},
+      {id: 'compose', name: 'Compose after answer', status: 'WAITING', waitingReason: 'Waiting for operator answer'},
+    ]}],
+    runs: [{id: 'run:read', status: 'RUNNING', requestedAt: current, updatedAt: current, selectedWorkers: ['reader'], steps: [{id: 'read-step', action: 'file.read@1', status: 'RUNNING', startedAt: current}]}],
+  }, 'parcel-coordinator');
+  assert.equal(relay.operationalState, 'EXECUTING');
+  assert.equal(relay.activity.kind, 'READING');
+  assert.equal(relay.activity.tool?.kind, 'FILE');
+  assert.equal(relay.activity.source.id, 'read-step');
+});
+
+test('no animation-shaped input can create operational work or fake progress', () => {
+  const crew = project({animationCue: {expression: 'WORKING'}, progress: 99} as Partial<DashboardCharacterSource>);
+  assert.equal(crew.parcels.length, 0);
+  assert.equal(crew.headline, 'Crew is watching canonical state; no Work Parcel is executing.');
+  assert.ok(crew.members.every(item => item.operationalState === 'IDLE' || item.operationalState === 'UNKNOWN'));
+  assert.ok(crew.members.every(item => item.activity.kind === 'NONE'));
 });
 
 test('active work wins the Lane Master pose while mixed blocked and queued activity stays visible', () => {
@@ -72,6 +132,42 @@ test('a recorded live token handoff selects the handover pose and preserves dest
   }, 'parcel-coordinator');
   assert.equal(coordinator.state, 'handing_over');
   assert.equal(coordinator.reason, 'sealed baton ready');
+  const transfer = project({
+    tokenRouting: {
+      threads: [{id: 'thread:a', parcelId: 'parcel:a', active: true, updatedAt: current, providerId: 'openai', accountProfileId: 'account-a', modelId: 'sol', nodeId: 'source'}],
+      decisions: [{id: 'decision:a', threadId: 'thread:a', parcelId: 'parcel:a', at: current, action: 'BATON_AND_HANDOFF', outcome: 'RECORDED', batonId: 'baton:a', contextPercent: 91, reason: 'difficult reasoning complete; bounded verification remains', target: {providerId: 'local', modelId: 'qwen', nodeId: 'edge'}}],
+    },
+  }).batonTransfers[0];
+  assert.equal(transfer.sourceType, 'token-routing');
+  assert.equal(transfer.sourceEventId, 'decision:a');
+  assert.equal(transfer.batonId, 'baton:a');
+  assert.equal(transfer.from?.label, 'openai / account-a / sol / @ source');
+  assert.equal(transfer.to?.label, 'local / qwen / @ edge');
+  assert.equal(transfer.reason, 'difficult reasoning complete; bounded verification remains');
+});
+
+test('Work Parcel baton animation can originate only from a durable baton view/event', () => {
+  const absent = project({parcels: [{id: 'parcel:a', status: 'RUNNING', objective: 'Continue work', createdAt: current, updatedAt: current, stages: [{id: 'one', status: 'RUNNING'}]}]});
+  assert.equal(absent.batonTransfers.length, 0);
+  const present = project({parcels: [{id: 'parcel:a', status: 'RUNNING', objective: 'Continue work', createdAt: current, updatedAt: current, stages: [{id: 'one', name: 'Source', status: 'SUCCEEDED', actualRoute: {workers: ['source-worker']}}, {id: 'two', name: 'Destination', status: 'RUNNING', dependsOn: ['one'], actualRoute: {workers: ['destination-worker']}}], context: {events: [{id: 'event:baton', at: current, type: 'baton.created', stageId: 'two', summary: 'Source stage sealed for destination', detail: {batonId: 'baton:parcel'}}], batonViews: [{id: 'baton:parcel', createdAt: current, sourceStageIds: ['one'], targetStageId: 'two', nextAction: 'Run destination verification', sha256: 'abc'}]}}]});
+  assert.equal(present.batonTransfers.length, 1);
+  assert.equal(present.batonTransfers[0].sourceEventId, 'event:baton');
+  assert.equal(present.batonTransfers[0].reason, 'Run destination verification');
+  assert.equal(present.batonTransfers[0].active, true);
+  assert.equal(present.batonTransfers[0].from?.label, 'Worker source-worker');
+  assert.equal(present.batonTransfers[0].to?.label, 'Worker destination-worker');
+});
+
+test('a lane baton is projected only from the typed authoritative lane handoff event', () => {
+  const absent = project({lanes: [{id: 2, status: 'working', lastMeaningfulActivity: current, baton: {status: 'continuing', nextAction: 'work'}}]});
+  assert.equal(absent.batonTransfers.length, 0);
+  const present = project({events: [{id: 7, at: current, type: 'lane.handoff', payload: {fromId: 1, toId: 2, holder: 'agent:reviewer'}}]});
+  assert.equal(present.batonTransfers.length, 1);
+  assert.equal(present.batonTransfers[0].sourceType, 'lane');
+  assert.equal(present.batonTransfers[0].sourceEventId, '7');
+  assert.equal(present.batonTransfers[0].from?.label, 'Lane 1');
+  assert.equal(present.batonTransfers[0].to?.label, 'Lane 2');
+  assert.match(present.batonTransfers[0].reason, /agent:reviewer/);
 });
 
 test('a terminal handoff result clears the pending handover pose', () => {
@@ -108,6 +204,8 @@ test('dependency wait, recovery and explicit blocked state remain distinguishabl
   assert.equal(recovery.state, 'recovering');
   const blocked = member({parcels: [{status: 'WAITING', createdAt: current, updatedAt: current, stages: [{status: 'BLOCKED', error: 'dependency failed'}]}]}, 'parcel-coordinator');
   assert.equal(blocked.state, 'blocked');
+  assert.equal(blocked.reason, 'dependency failed');
+  assert.equal(blocked.narration.detail, 'dependency failed');
 });
 
 test('Resource Guardian distinguishes pressure, offline, unknown and stale readiness', () => {
@@ -131,6 +229,42 @@ test('Model Scout and Quality Inspector use only registry, evaluation and verifi
   assert.equal(reviewing.state, 'reviewing');
   const completed = member({runs: [{status: 'SUCCEEDED', requestedAt: current, updatedAt: current, endedAt: current}]}, 'quality-inspector');
   assert.equal(completed.state, 'completed');
+});
+
+test('provider catalogue events truthfully distinguish discovery, limited callability, failure and routing disablement', () => {
+  const events = [
+    {id: 1, at: current, type: 'provider.catalog_changed', payload: {providerId: 'nvidia', action: 'discovering'}},
+    {id: 2, at: current, type: 'provider.catalog_changed', payload: {providerId: 'nvidia', canonicalModelId: 'model:a', action: 'callability-tested', status: 'LIMITED', inferenceEndpointStatus: 429, failureClass: 'rate-limited'}},
+    {id: 3, at: current, type: 'provider.catalog_changed', payload: {providerId: 'nvidia', canonicalModelId: 'model:a', action: 'routing-disabled'}},
+  ];
+  const crew = project({events});
+  assert.equal(crew.modelActivity.length, 3);
+  const disabled = crew.modelActivity.find(item => item.action === 'routing-disabled')!, limited = crew.modelActivity.find(item => item.action === 'callability-tested')!;
+  assert.equal(disabled.routingEligible, false);
+  assert.equal(limited.status, 'LIMITED');
+  assert.equal(limited.failure, 'rate-limited');
+  assert.equal(limited.httpStatus, 429);
+  const lumen = crew.members.find(item => item.id === 'model-scout')!;
+  assert.equal(lumen.activity.kind, 'ROUTING');
+  assert.match(lumen.narration.text, /routing disabled/);
+});
+
+test('Model Scout narrates model evaluation phases instead of exposing the event type', () => {
+  const lumen = member({events: [{id: 1, at: current, type: 'model.intelligence_changed', payload: {phase: 'STARTED', providerId: 'local', modelId: 'qwen'}}]}, 'model-scout');
+  assert.equal(lumen.activity.kind, 'BENCHMARKING');
+  assert.equal(lumen.activity.label, 'evaluation STARTED · local · qwen');
+  assert.match(lumen.narration.text, /evaluation STARTED/);
+  assert.doesNotMatch(lumen.narration.text, /model\.intelligence_changed/);
+});
+
+test('human narration is deterministic and cites the authoritative source', () => {
+  const source: Partial<DashboardCharacterSource> = {parcels: [{id: 'parcel:a', objective: 'Search safely', status: 'RUNNING', createdAt: current, updatedAt: current, stages: [{id: 'search', name: 'Search source', status: 'RUNNING', runId: 'run:a', startedAt: current}]}], runs: [{id: 'run:a', status: 'RUNNING', requestedAt: current, updatedAt: current, steps: [{id: 'step:a', action: 'repository.search@1', status: 'RUNNING', startedAt: current}]}]};
+  const first = project(source), second = project(source), relay = first.members.find(item => item.id === 'parcel-coordinator')!;
+  assert.deepEqual(first.narration, second.narration);
+  assert.equal(relay.activity.kind, 'SEARCHING');
+  assert.equal(relay.activity.source.type, 'job-step');
+  assert.equal(relay.activity.source.id, 'step:a');
+  assert.match(relay.narration.text, /Relay is search/);
 });
 
 test('the preview vocabulary covers every declared production character state', () => {

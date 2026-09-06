@@ -37,11 +37,15 @@ npm start
 
 Select **Observer mode** in the browser and enter the token. It remains in tab-scoped session storage and is sent as `Authorization: Bearer ...`. The server does not issue an authority cookie.
 
-## Operational characters
+## Operational Crew
 
-Six cards appear beside their real areas and together under **Crew**. They expose factual state, reason, concurrent counts, elapsed/update age, next action and instrumentation limits from `characterCrew` in `GET /api/status`. Activating a card navigates to its underlying Lanes, task entry, Work Parcels, Models, Systems or Run evidence. It never performs an operational command.
+Six role-specific cards appear beside their engineering areas and together under **Crew**: Cadence (controller/dispatcher), Quill (Work Parcel reviewer), Relay (tool/execution worker), Lumen (model router/scout), Rook (resource/node guardian) and Verity (verification/evidence inspector). `characterCrew` in `GET /api/status` explicitly separates authoritative operational state, source-backed activity and a presentation-only animation expression. Each card exposes state, current activity/tool, source reason, concurrent counts, elapsed/update age, next action and instrumentation limits.
 
-The Crew settings select Shown/Hidden and Full/Reduced/Off motion. Defaults are Shown and Full; operating-system reduced-motion caps Full at Reduced. The choices are browser-local and do not alter server state. The gallery is prominently labelled `SIMULATED` and cannot create work. Exact role/source mappings, precedence, stale/reconnect rules, accessibility behavior and disable/rollback guidance are in [`dashboard-characters.md`](dashboard-characters.md).
+The Crew view is Level 1 immediate understanding. Activating a card or real baton opens Level 2 deterministic human explanation, including the source event and exact handoff reason. Its Level 3 action focuses the existing Lanes, task entry, Work Parcels, Models, Systems or Run evidence. The Crew never performs an operational command and does not replace transcripts, token/cache telemetry, routing or evidence.
+
+Real Work Parcels show their stage DAG, selected workers/routes, classified tools and one mini worker per actually `RUNNING` stage. Baton movement is accepted only from durable token-routing, Parcel-baton or lane-handoff records. Typed provider/model events preserve limited/failure/HTTP/routing-eligibility data; completion of discovery or evaluation is not displayed as qualification unless the registry says so.
+
+The settings select Shown/Hidden and Full/Reduced/Off motion. Defaults are Shown and Full; operating-system reduced-motion caps Full at Reduced. Fresh idle workers look around, sustained-idle workers sleep, and only a new authoritative activity wakes a sleeper. These bounded, staggered expressions never alter the `IDLE` operational state. Choices are browser-local, hidden/off-screen/background animation pauses, and narrow layouts use a horizontally scrollable worker strip. The gallery is prominently labelled `SIMULATED` and cannot create work or enter real qualification evidence. Exact source mappings, accessibility behavior, isolation and qualification commands are in [`dashboard-characters.md`](dashboard-characters.md).
 
 ## Configure systems and models
 

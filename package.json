@@ -43,6 +43,8 @@
     "record:provider-neutral": "node scripts/record-provider-neutral-qualification.mjs",
     "qualify:dashboard-characters": "node --import tsx scripts/qualify-dashboard-characters.ts",
     "record:dashboard-characters": "node scripts/record-dashboard-characters.mjs",
+    "qualify:crew-workflow": "node --import tsx scripts/qualify-dashboard-characters.ts",
+    "record:crew-workflow": "AGENT_CONTROL_CHARACTER_EVIDENCE=docs/evidence/agent-control-crew-workflow-qualification.json AGENT_CONTROL_CHARACTER_VIDEO=docs/evidence/agent-control-crew-workflow.mp4 AGENT_CONTROL_CHARACTER_VIDEO_MANIFEST=docs/evidence/agent-control-crew-workflow-video.json AGENT_CONTROL_CHARACTER_SCREENSHOTS=docs/evidence/agent-control-crew-workflow node scripts/record-dashboard-characters.mjs",
     "qualify:windows-cleanup": "node --import tsx scripts/qualify-windows-cleanup.ts",
     "record:windows-cleanup": "node scripts/record-windows-cleanup-qualification.mjs",
     "qualify:recovery": "node --import tsx scripts/qualify-recovery-3.9.ts",

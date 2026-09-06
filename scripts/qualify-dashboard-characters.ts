@@ -61,7 +61,12 @@ function lane(id: number, name: string, status: LaneState['status'], model: stri
 
 function emit(value: unknown) { process.stdout.write(`${JSON.stringify(value)}\n`); }
 function safeCrew(control: AgentControlService) {
-  return control.snapshot().characterCrew.members.map(member => ({id: member.id, name: member.name, role: member.role, state: member.state, summary: member.summary, current: member.current, signals: member.signals, freshness: member.freshness, coverage: member.instrumentation.coverage, transitionKey: member.transitionKey}));
+  return control.snapshot().characterCrew.members.map(member => ({id: member.id, name: member.name, role: member.role, state: member.state, operationalState: member.operationalState, activity: member.activity, animationCue: member.animationCue, narration: member.narration, summary: member.summary, current: member.current, signals: member.signals, freshness: member.freshness, coverage: member.instrumentation.coverage, transitionKey: member.transitionKey}));
+}
+
+async function repeatBounded(milliseconds: number, action: () => void) {
+  const deadline = Date.now() + milliseconds;
+  do { action(); await delay(400); } while (Date.now() < deadline);
 }
 
 async function modelInventory(baseUrl: string, expected: string) {
@@ -82,18 +87,48 @@ async function main() {
   const modelPreflight = await modelInventory(config.modelBaseUrl, config.providerModel);
 
   const actions = new ActionRegistry();
-  actions.register('qualification.crew-work@1.0.0', async context => {
-    const stageId = context.run.trigger.parcelContext?.stageId ?? 'unknown';
-    await delay(stageId === 'inspect' ? 20_000 : 7_000);
-    return {verification: ['crew-stage-verified'], evidence: [`crew-stage:${stageId}:bounded-local-action`], detail: `${stageId}:completed_and_verified`};
+  actions.register('repository.search@1.0.0', async () => {
+    let output = '';
+    await repeatBounded(9_000, () => { output = execFileSync('rg', ['-n', '-e', 'Work Parcel', '-e', 'Agent Control', 'README.md', 'ARCHITECTURE.md'], {encoding: 'utf8', maxBuffer: 2 * 1024 * 1024}); });
+    return {artifacts: [{name: 'search-index', value: {matches: output.trim().split('\n').length, sha256: sha256(output)}, type: 'qualification-search-index', schema: 'agent-control.qualification-search/v1', version: '1'}], verification: ['search-result-verified'], evidence: [`repository-search-sha256:${sha256(output)}`], detail: 'Repository search completed and hashed'};
   });
-  const job: JobDefinition = {apiVersion: 'agent-control/v1', kind: 'Job', metadata: {id: 'crew-lifecycle', name: 'Crew Lifecycle', version: '1.0.0', description: 'Bounded local dashboard-character qualification'}, spec: {priority: 'normal', concurrency: 'allow', steps: [{id: 'work', action: 'qualification.crew-work@1.0.0', requires: ['qualification.crew'], verification: ['crew-stage-verified']}]}};
-  const catalog = new JobCatalog(actions.ids()); catalog.addJob(job);
-  const workers = new WorkerRegistry().register({id: 'qualification-worker', capabilities: ['qualification.crew'], health: 'healthy', capacity: 1, active: 0, observedAt: startedAt});
+  actions.register('file.read@1.0.0', async () => {
+    let architecture = '';
+    await repeatBounded(9_000, () => { architecture = fs.readFileSync(path.resolve('ARCHITECTURE.md'), 'utf8'); createHash('sha256').update(architecture).digest(); });
+    return {artifacts: [{name: 'architecture-facts', value: {bytes: Buffer.byteLength(architecture), headings: architecture.split('\n').filter(line => /^#{1,3} /.test(line)).length, sha256: sha256(architecture)}, type: 'qualification-document-facts', schema: 'agent-control.qualification-document/v1', version: '1'}], verification: ['file-read-verified'], evidence: [`architecture-sha256:${sha256(architecture)}`], detail: 'Architecture document read and measured'};
+  });
+  actions.register('repository.code-edit@1.0.0', async context => {
+    const artifactIds = context.run.trigger.parcelContext?.baton?.artifactIds ?? [];
+    const inputs = artifactIds.map(id => context.readArtifact(id));
+    let report = {schema: 'agent-control.crew-demo-result/v1', sources: inputs.length, objective: context.run.trigger.parcelContext?.currentInterpretation ?? 'unknown', format: 'JSON'};
+    await repeatBounded(6_000, () => { report = JSON.parse(JSON.stringify(report)); assert.equal(report.sources, 2); });
+    return {artifacts: [{name: 'crew-report', value: report, type: 'qualification-report', schema: report.schema, version: '1'}], verification: ['report-schema-verified'], evidence: [`input-artifacts:${artifactIds.length}`], detail: 'Structured report composed from both predecessor batons'};
+  });
+  actions.register('benchmark.verify@1.0.0', async context => {
+    const artifactIds = context.run.trigger.parcelContext?.baton?.artifactIds ?? [];
+    let verified = false;
+    await repeatBounded(5_000, () => { const report = artifactIds.map(id => context.readArtifact(id)).find(value => (value as {schema?: string}).schema === 'agent-control.crew-demo-result/v1') as {sources?: number} | undefined; assert.equal(report?.sources, 2); verified = true; });
+    return {artifacts: [{name: 'verification-result', value: {verified, checkedArtifacts: artifactIds.length}, type: 'qualification-verification', schema: 'agent-control.qualification-verification/v1', version: '1'}], verification: ['independent-verification-passed'], evidence: [`verified-artifacts:${artifactIds.length}`], detail: 'Independent bounded verification passed'};
+  });
+  const job = (id: string, name: string, action: string, capability: string, verification: string, output: {name: string; type: string; schema: string}): JobDefinition => ({apiVersion: 'agent-control/v1', kind: 'Job', metadata: {id, name, version: '1.0.0', description: `Real bounded ${name.toLowerCase()} for Crew workflow qualification`}, spec: {priority: 'normal', concurrency: 'allow', steps: [{id: 'work', action, requires: [capability], outputs: [{...output, version: '1'}], verification: [verification]}]}});
+  const jobs = [
+    job('crew-search', 'Repository Search', 'repository.search@1.0.0', 'qualification.search', 'search-result-verified', {name: 'search-index', type: 'qualification-search-index', schema: 'agent-control.qualification-search/v1'}),
+    job('crew-read', 'Architecture Read', 'file.read@1.0.0', 'qualification.read', 'file-read-verified', {name: 'architecture-facts', type: 'qualification-document-facts', schema: 'agent-control.qualification-document/v1'}),
+    job('crew-compose', 'Structured Composition', 'repository.code-edit@1.0.0', 'qualification.edit', 'report-schema-verified', {name: 'crew-report', type: 'qualification-report', schema: 'agent-control.crew-demo-result/v1'}),
+    job('crew-verify', 'Independent Verification', 'benchmark.verify@1.0.0', 'qualification.verify', 'independent-verification-passed', {name: 'verification-result', type: 'qualification-verification', schema: 'agent-control.qualification-verification/v1'}),
+  ];
+  const catalog = new JobCatalog(actions.ids()); for (const definition of jobs) catalog.addJob(definition);
+  const workers = new WorkerRegistry()
+    .register({id: 'search-worker', capabilities: ['qualification.search'], health: 'healthy', capacity: 1, active: 0, observedAt: startedAt})
+    .register({id: 'reader-worker', capabilities: ['qualification.read'], health: 'healthy', capacity: 1, active: 0, observedAt: startedAt})
+    .register({id: 'editor-worker', capabilities: ['qualification.edit'], health: 'healthy', capacity: 1, active: 0, observedAt: startedAt})
+    .register({id: 'verifier-worker', capabilities: ['qualification.verify'], health: 'healthy', capacity: 1, active: 0, observedAt: startedAt});
   const runtime = new JobRuntime(catalog, actions, workers, new RunLedger(path.join(config.stateDir, 'runs.json')), new ArtifactStore(path.join(config.stateDir, 'artifacts')), new ResourceLockManager(path.join(config.stateDir, 'locks.json')));
-  const plan: WorkParcelPlan = {objective: 'Inspect a bounded local input, wait for an explicit operator format decision, then produce independently verified output', planner: {kind: 'deterministic', reason: 'Dedicated bounded character-system qualification plan'}, stages: [
-    {id: 'inspect', name: 'Inspect bounded local input', job: 'crew-lifecycle@1.0.0'},
-    {id: 'report', name: 'Produce verified report', job: 'crew-lifecycle@1.0.0', dependsOn: ['inspect']},
+  const plan: WorkParcelPlan = {objective: 'Search and read the Agent Control repository concurrently, compose a structured result, then verify it independently', planner: {kind: 'deterministic', reason: 'Dedicated real multi-stage character-system qualification plan'}, stages: [
+    {id: 'search', name: 'Search repository evidence', job: 'crew-search@1.0.0'},
+    {id: 'read', name: 'Read architecture evidence', job: 'crew-read@1.0.0'},
+    {id: 'compose', name: 'Compose structured result', job: 'crew-compose@1.0.0', dependsOn: ['search', 'read']},
+    {id: 'verify', name: 'Verify structured result', job: 'crew-verify@1.0.0', dependsOn: ['compose']},
   ]};
   const planner: WorkParcelPlanner = {plan: async () => { await delay(1_200); return plan; }};
   const parcels = new WorkParcelCoordinator(runtime, new WorkParcelStore(path.join(config.stateDir, 'parcels.json')), planner);
@@ -121,14 +156,14 @@ async function main() {
     modelIntelligence,
     capabilityIntelligence,
     qualificationSuite: suite,
-    resources: [{id: 'qualification-worker', name: 'Qualification worker', platform: 'linux', transport: 'local process', capabilities: ['qualification.crew']}],
+    resources: workers.list().map(worker => ({id: worker.id, name: worker.id.replaceAll('-', ' '), platform: 'linux', transport: 'local process', capabilities: worker.capabilities})),
   });
   control.setVerificationPolicy(1, {required: ['ui_evidence']}, 'qualification-controller');
   control.recordClaim(1, 'The dashboard accurately presents the bounded lifecycle', 'qualification-controller');
   control.addVerificationEvidence(1, {id: 'character-ui-evidence', type: 'ui_evidence', description: 'Live browser evidence collection is in progress', status: 'passed', reference: 'pending-video-manifest'}, 'qualification-controller');
 
   const nodeExecution: CodexNodeExecutionPort = {accountStatus: async () => { throw new Error('codex_not_used'); }, execReadOnlyStructured: async () => { throw new Error('codex_not_used'); }};
-  const evaluator = new ProviderNeutralModelEvaluationExecutor(registry, capabilityIntelligence, nodeExecution, fetch, event => control.events.emit('model.intelligence.changed', {batchId: event.batchId, modelId: event.candidate.modelId, taskId: event.taskId, phase: event.phase, detail: event.detail}, undefined, 'qualification-model-evaluator'));
+  const evaluator = new ProviderNeutralModelEvaluationExecutor(registry, capabilityIntelligence, nodeExecution, fetch, event => control.events.emit('model.intelligence_changed', {batchId: event.batchId, providerId: event.candidate.providerId, modelId: event.candidate.modelId, taskId: event.taskId, phase: event.phase, detail: event.detail}, undefined, 'qualification-model-evaluator'));
   const modelCoordinator = new ModelEvaluationCoordinator(modelIntelligence, suite, evaluator, {agentControlVersion: '3.9.0', adapterVersion: 'provider-neutral-v1', promptVersion: 'frozen-dashboard-character-v1'});
 
   const server = startWebDashboard(control, {host: config.host, port: config.port, operatorToken: config.operatorToken, assetsDir: path.resolve('assets/dashboard')});
@@ -146,7 +181,7 @@ async function main() {
   emit({phase: 'TASK_RECEIVED', parcelId: parcel.id, at: new Date().toISOString()});
   while (parcel.status === 'PLANNING' && Date.now() < deadline) { await delay(100); parcel = parcels.get(parcel.id); sample('poll'); }
   if (parcel.status !== 'QUEUED') throw new Error(`qualification_planning_failed:${parcel.status}`);
-  parcel = control.askParcelQuestion(parcel.id, {text: 'Which stable output format should the final report use?', originatingStageId: 'inspect', dependentStageIds: ['report'], priority: 'HIGH', consequence: 'MEDIUM'}, 'qualification-worker');
+  parcel = control.askParcelQuestion(parcel.id, {text: 'Which stable output format should the final report use?', originatingStageId: 'read', dependentStageIds: ['compose'], priority: 'HIGH', consequence: 'MEDIUM'}, 'reader-worker');
   const question = parcel.context?.questions[0]; if (!question) throw new Error('qualification_question_missing');
   emit({phase: 'QUESTION_READY', parcelId: parcel.id, questionId: question.id, at: question.createdAt});
 
@@ -154,9 +189,13 @@ async function main() {
   const inFlight = new Set<Promise<unknown>>();
   const launchRuns = () => { for (;;) { const dispatch = runtime.dispatch(); if (!dispatch) break; const completion = dispatch.completion.finally(() => inFlight.delete(completion)); inFlight.add(completion); } };
   launchRuns();
+  control.events.emit('provider.catalog_changed', {providerId: provider.id, action: 'discovering'}, undefined, 'qualification-controller');
+  const liveInventory = await modelInventory(config.modelBaseUrl, config.providerModel);
+  control.events.emit('provider.catalog_changed', {providerId: provider.id, action: 'discovered', models: 1, observedAt: liveInventory.observedAt}, undefined, 'qualification-controller');
   const batch = modelIntelligence.createBatch({id: 'dashboard-character-live-model-batch', suite, candidates: [{providerId: provider.id, modelId: model.id, providerModel: model.providerModel, runtimeId: 'llama.cpp-openai-compatible', runtimeVersion: null, modelVersion: null, nodeId: 'qualification-worker'}], requestedBy: 'qualification-controller', reason: 'Real bounded model activity for dashboard character qualification'});
-  control.events.emit('model.intelligence.changed', {batchId: batch.id, status: batch.status}, undefined, 'qualification-controller');
-  const modelPromise = modelCoordinator.runBatch(batch.id).then(result => { control.events.emit('model.intelligence.changed', {batchId: result.id, status: result.status}, undefined, 'qualification-model-evaluator'); return result; });
+  control.events.emit('provider.catalog_changed', {providerId: provider.id, canonicalModelId: model.id, action: 'evaluation-running', routingEligible: false}, undefined, 'qualification-controller');
+  control.events.emit('model.intelligence_changed', {batchId: batch.id, status: batch.status}, undefined, 'qualification-controller');
+  const modelPromise = modelCoordinator.runBatch(batch.id).then(result => { control.events.emit('model.intelligence_changed', {batchId: result.id, providerId: provider.id, modelId: model.id, status: result.status}, undefined, 'qualification-model-evaluator'); control.events.emit('provider.catalog_changed', {providerId: provider.id, canonicalModelId: model.id, action: result.status === 'COMPLETED' ? 'evaluation-completed' : 'evaluation-failed', status: result.status, routingEligible: false}, undefined, 'qualification-model-evaluator'); return result; });
 
   let concurrentRecorded = false, lastRunSignature = '', lastParcelSignature = '', finalParcel = parcels.get(parcel.id);
   while (Date.now() < deadline) {
@@ -168,9 +207,9 @@ async function main() {
       lastParcelSignature = parcelSignature;
       control.events.emit('work.parcel_changed', {parcelId: finalParcel.id, status: finalParcel.status, stages: finalParcel.stages.map(stage => ({id: stage.id, status: stage.status}))}, undefined, 'qualification-runtime');
     }
-    const crew = sample('poll'), states = Object.fromEntries(crew.map(item => [item.id, item.state]));
-    if (!concurrentRecorded && states['lane-master'] === 'working' && states['prompt-reviewer'] === 'awaiting_operator' && states['parcel-coordinator'] === 'working' && states['model-scout'] === 'working' && states['resource-guardian'] === 'resource_pressure' && states['quality-inspector'] === 'reviewing') {
-      concurrentRecorded = true; sample('concurrent-live'); emit({phase: 'CONCURRENT_STATE_READY', parcelId: finalParcel.id, states, at: new Date().toISOString()});
+    const crew = sample('poll'), states = Object.fromEntries(crew.map(item => [item.id, item.state])), projection = control.snapshot().characterCrew, visualParcel = projection.parcels.find(item => item.id === finalParcel.id), relay = crew.find(item => item.id === 'parcel-coordinator');
+    if (!concurrentRecorded && states['lane-master'] === 'working' && states['prompt-reviewer'] === 'awaiting_operator' && states['parcel-coordinator'] === 'working' && states['model-scout'] === 'working' && states['resource-guardian'] === 'resource_pressure' && states['quality-inspector'] === 'reviewing' && visualParcel?.parallelActive === 2 && ['SEARCHING', 'READING'].includes(relay?.activity.kind ?? '')) {
+      concurrentRecorded = true; sample('concurrent-live'); emit({phase: 'CONCURRENT_STATE_READY', parcelId: finalParcel.id, states, activities: Object.fromEntries(crew.map(item => [item.id, item.activity.kind])), parallelActive: visualParcel.parallelActive, toolKinds: visualParcel.stages.map(stage => stage.tool?.kind).filter(Boolean), batonIds: projection.batonTransfers.map(item => item.batonId).filter(Boolean), at: new Date().toISOString()});
     }
     if (finalParcel.status === 'SUCCEEDED' && inFlight.size === 0) break;
     if (finalParcel.status === 'FAILED') throw new Error('qualification_work_parcel_failed');
@@ -186,20 +225,23 @@ async function main() {
   assert.equal(finalParcel.stages.every(stage => stage.status === 'SUCCEEDED'), true);
   assert.equal(finalParcel.context?.questions[0]?.status, 'ANSWERED');
   assert.equal(finalParcel.context?.questions[0]?.answeredBy, 'web-operator');
+  assert.equal(finalParcel.context?.batonViews.length, 8);
+  assert.equal(finalParcel.audit.invocations.length, 0);
   assert.ok(['COMPLETED', 'PARTIAL', 'BLOCKED'].includes(modelResult.status));
-  const eventTypes = [...new Set(control.events.history().map(event => event.type))];
+  const eventTypes = [...new Set(control.events.history().map(event => event.type))], finalProjection = control.snapshot().characterCrew;
   const result = {
-    schema: 'agent-control.dashboard-character-qualification/v1', verdict: 'PASS', startedAt, completedAt: new Date().toISOString(),
+    schema: 'agent-control.crew-workflow-qualification/v1', verdict: 'PASS', startedAt, completedAt: new Date().toISOString(),
     repository: {head: repositoryHead, branch: execFileSync('git', ['branch', '--show-current'], {encoding: 'utf8'}).trim()},
     topology: {controller: 'isolated local AgentControlService', dashboard: base, browserEvidence: 'recorded separately', provider: provider.id, model: model.id, node: 'qualification-worker'},
     productionPath: ['AgentControlService', 'JobRuntime', 'WorkParcelCoordinator', 'ModelEvaluationCoordinator', 'projectDashboardCharacterCrew', 'GET /api/status', 'typed SSE', 'dashboard renderer'],
-    workload: {parcelId: finalParcel.id, status: finalParcel.status, runIds: finalParcel.stages.map(stage => stage.runId), questionId: question.id, questionStatus: finalParcel.context?.questions[0]?.status, stages: finalParcel.stages.map(stage => ({id: stage.id, status: stage.status, runId: stage.runId, batonSha256: stage.baton?.sha256 ?? null}))},
+    workload: {parcelId: finalParcel.id, objective: finalParcel.objective, status: finalParcel.status, dependencyGraph: finalParcel.stages.map(stage => ({id: stage.id, dependsOn: stage.dependsOn})), runIds: finalParcel.stages.map(stage => stage.runId), questionId: question.id, questionStatus: finalParcel.context?.questions[0]?.status, stages: finalParcel.stages.map(stage => ({id: stage.id, status: stage.status, runId: stage.runId, workers: stage.actualRoute?.workers ?? [], action: runtime.ledger.get(stage.runId ?? '')?.steps[0]?.action ?? null, artifactIds: stage.baton?.artifactIds ?? [], batonId: stage.baton && 'id' in stage.baton ? stage.baton.id : null, batonSha256: stage.baton && 'sha256' in stage.baton ? stage.baton.sha256 : null}))},
     modelEvaluation: {batchId: modelResult.id, status: modelResult.status, provider: provider.id, model: model.id, providerModel: model.providerModel, attempts: modelIntelligence.attemptsList({batchId: modelResult.id}).map(attempt => ({taskId: attempt.taskId, status: attempt.status, verification: attempt.verification, inputTokens: attempt.usage.inputTokens, outputTokens: attempt.usage.outputTokens, totalTokens: attempt.usage.totalTokens, authority: attempt.usage.authority, costAuthority: attempt.cost.authority}))},
     eventTransport: {eventCount: control.events.history().length, eventTypes},
     characterTrace: trace,
+    finalWorkflowProjection: {headline: finalProjection.headline, parcels: finalProjection.parcels, batonTransfers: finalProjection.batonTransfers, modelActivity: finalProjection.modelActivity, narration: finalProjection.narration},
     finalCrew,
-    assertions: {allSixProjected: finalCrew.length === 6, concurrentMixedStateObserved: concurrentRecorded, operatorQuestionAnsweredThroughAuthenticatedWebPath: finalParcel.context?.questions[0]?.answeredBy === 'web-operator', parcelCompletedThroughVerifiedJobs: true, laneVerificationAccepted: true, characterProjectionCreatedNoModelCalls: true},
-    boundaries: {real: ['lane/scheduler mixed activity', 'Work Parcel planning, question, dispatch and completion', 'Job worker capacity pressure', 'frozen local model evaluation', 'verification evidence and acceptance', 'HTTP status and typed SSE refresh'], simulatedOnly: ['all-state gallery controls'], unavailable: ['No distinct prompt-review worker exists; Quill uses partial planning/readiness telemetry.']},
+    assertions: {allSixProjected: finalCrew.length === 6, realParallelStagesObserved: concurrentRecorded, operatorQuestionAnsweredThroughAuthenticatedWebPath: finalParcel.context?.questions[0]?.answeredBy === 'web-operator', parcelCompletedThroughVerifiedJobs: true, eightSealedParcelBatonBoundaries: finalParcel.context?.batonViews.length === 8, independentVerificationPassed: finalParcel.stages.find(stage => stage.id === 'verify')?.status === 'SUCCEEDED', realProviderCatalogueQueried: eventTypes.includes('provider.catalog_changed'), laneVerificationAccepted: true, characterProjectionCreatedNoModelCalls: true},
+    boundaries: {real: ['natural-language request through authenticated dashboard', 'deterministic planning', 'concurrent repository search and architecture read', 'governed tool actions and worker placement', 'eight sealed Work Parcel baton boundaries (dispatch and completion for four stages)', 'structured composition from predecessor artifacts', 'independent verification Job', 'live provider catalogue query', 'frozen local model evaluation', 'verification evidence and acceptance', 'HTTP status and typed SSE refresh'], simulatedOnly: ['all-state gallery controls'], unavailable: ['No distinct prompt-review worker exists; Quill uses partial planning/readiness telemetry.', 'No model escalation was required by this bounded Work Parcel; token/model handoff rendering is deterministically qualified from real routing records.']},
     security: {operatorTokenPersisted: false, credentialsUsed: false, productionStateTouched: false, deploymentPerformed: false},
   };
   fs.writeFileSync(config.evidenceFile, `${JSON.stringify(result, null, 2)}\n`, {mode: 0o600});

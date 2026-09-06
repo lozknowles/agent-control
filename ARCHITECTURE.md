@@ -87,10 +87,11 @@ Every action receives an `OwnedExecution` capability rather than owning an untra
 
 Dashboard state is a projection of those durable records. Initial HTTP load and every SSE connection send/reload a full snapshot before incremental events. Reasons, source/observed time, freshness, retry/cancellation deadlines, remaining retry budget, execution identity and cleanup outcome are rendered directly. Locally advancing elapsed-time or countdown text is presentation between authoritative timestamps, never inferred state.
 
-The optional dashboard character crew is another read-only projection inside this boundary:
+The optional dashboard Crew is another read-only projection inside this boundary:
 
 ```text
-canonical lanes / Runs / Parcels / systems / models / routing evidence
+canonical lanes / Runs / steps / Parcel DAGs / baton views
+workers / tools / systems / models / provider and routing events
                               |
               projectDashboardCharacterCrew
                               |
@@ -98,12 +99,16 @@ canonical lanes / Runs / Parcels / systems / models / routing evidence
                               |
        existing HTTP status + SSE-triggered reconciliation
                               |
-       text, icon, SVG pose and optional CSS movement
+      Crew + explanation + linked engineering evidence
 ```
 
-Core state is reduced deterministically to one primary presentation state per functional area, with concurrent conditions retained as typed count badges. Active work can therefore remain primary while blocked and queued work remains visible. A two-minute presentation freshness rule changes an otherwise-active pose to `stale`, never `failed`; canonical cancellation remains `cancelling` until cleanup is terminal. Initial load and reconnect reconciliation suppress transition-only completion acknowledgement. The browser-local gallery has no API writer and its simulated state is never merged into this projection.
+The `agent-control.dashboard-character-crew/v2` contract separates three layers. `operationalState` is canonical control truth; `activity` is current source-backed work plus its source ID and optional classified tool; `animationCue` is explicitly `presentation-only`. The browser can derive bounded idle expressions such as looking, sleeping and one-shot waking, but no animation value is accepted as projector input or returned to execution. Deterministic narration is built from the same source IDs and fixed templates, never another model.
 
-Characters have no model, scheduler, provider, worker, lease, PTY or verification capability. Their identity and role-specific motion are expendable presentation; source records and linked detail views remain authoritative. The complete mapping and rollout boundary are documented in [dashboard operational characters](docs/dashboard-characters.md).
+Core state is reduced deterministically to one primary presentation state per functional area, with concurrent conditions retained as typed count badges. Work Parcels additionally project their actual stage dependency graph, selected Run workers, routes and one visual worker per canonical `RUNNING` stage. A baton can move only from a token-governor handoff record, durable Parcel baton/audit record or typed lane-handoff event; source, destination, outcome and exact reason remain inspectable. Provider/model events retain explicit failure, HTTP and routing-eligibility facts, so discovery or evaluation completion cannot imply qualification.
+
+Active work can remain primary while blocked and queued work remains visible. A two-minute presentation freshness rule changes an otherwise-active pose to `stale`, never `failed`; recent event-derived activity is bounded to 30 seconds unless a Run/stage remains active. Canonical cancellation remains `cancelling` until cleanup is terminal. Initial load and reconnect reconciliation suppress transition-only completion acknowledgement. The browser-local gallery has no API writer and its simulated state is never merged into real workflow evidence.
+
+Characters have no model, scheduler, provider, worker, lease, PTY or verification capability. Motion uses browser-only SVG/CSS transform/opacity, pauses when hidden/off-screen, respects reduced motion and collapses to a horizontal worker strip on small screens. The source records and linked Level 3 views remain authoritative. The complete mapping, three disclosure levels and qualification boundary are documented in [dashboard operational Crew](docs/dashboard-characters.md).
 
 Provider prompts have a generic ordered stable/volatile block representation plus a non-secret cache scope. The rendered text remains authoritative. A Responses adapter may derive a hashed key or explicit content breakpoint only when both its provider and exact model advertise `prompt-cache.key` or `prompt-cache.explicit`; unsupported adapters receive the unchanged rendered prompt. Cache reads, writes and fresh input are normalized separately, and configured cache-write cost is calculable only when the provider reports the write count. This preserves useful structure if any current provider disappears while keeping its wire controls behind its adapter.
 
