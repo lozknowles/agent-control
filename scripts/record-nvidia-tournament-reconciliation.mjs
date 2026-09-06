@@ -16,7 +16,9 @@ const evidenceFile=path.join(outputDir,`${stem}.json`),videoFile=path.join(outpu
 const configFile=path.join(stateDir,'nvidia-tournament-config.json'),chromiumExecutable=process.env.AGENT_CONTROL_CHROMIUM??'/snap/bin/chromium',token=randomBytes(32).toString('hex'),startedAt=new Date().toISOString();
 if(!fs.existsSync(configFile)||!fs.existsSync(sourceEvidence))throw new Error('completed_tournament_state_required');
 for(const file of [evidenceFile,videoFile,manifestFile])if(fs.existsSync(file))throw new Error(`reconciliation_evidence_exists:${path.basename(file)}`);
-for(const directory of [screensDir,rawDir]){if(fs.existsSync(directory))throw new Error(`reconciliation_directory_exists:${path.basename(directory)}`);fs.mkdirSync(directory,{recursive:true,mode:0o700})}
+const outputDirectories=[screensDir,rawDir];
+for(const directory of outputDirectories)if(fs.existsSync(directory))throw new Error(`reconciliation_directory_exists:${path.basename(directory)}`);
+for(const directory of outputDirectories)fs.mkdirSync(directory,{recursive:true,mode:0o700});
 
 const port=await availablePort(),baseUrl=`http://127.0.0.1:${port}`,environment={...process.env,AGENT_CONTROL_STATE_DIR:stateDir,AGENT_CONTROL_CONFIG:configFile,AGENT_CONTROL_WEB_HOST:'127.0.0.1',AGENT_CONTROL_WEB_PORT:String(port),AGENT_CONTROL_WEB_OPERATOR_TOKEN:token};
 delete environment.NVIDIA_API_KEY;
