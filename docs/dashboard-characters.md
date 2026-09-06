@@ -1,105 +1,143 @@
-# Dashboard operational characters
+# Dashboard operational Crew
 
-Agent Control can present six compact operational characters beside the dashboard areas they describe. They are a read-only presentation of the same canonical `AgentControlService` snapshot used by the rest of the dashboard. They do not create agents, invoke models, schedule work, infer hidden progress, or gain control-plane authority.
+The **Crew** is a human-readable, read-only projection of Agent Control's canonical state. It does not create agents, schedule work, invoke models, advance a Work Parcel, or decide that work succeeded. The execution system behaves identically when the dashboard is closed, JavaScript fails, assets fail to load, or motion is disabled.
 
-## Roster
+The governing rule is:
 
-| Name | Role | Identity | Non-colour identifier | Canonical area |
-| --- | --- | --- | --- | --- |
-| Cadence | Lane Master | blue | conductor baton and three-lane crown | Lanes, scheduler queue, Run concurrency and capacity |
-| Quill | Master Prompt Reviewer | purple | document visor and marking quill | natural-language entry, Work Parcel planning and durable questions |
-| Relay | Work Parcel Coordinator | teal | parcel harness and relay baton | Work Parcels, dependencies and recorded handoffs |
-| Lumen | Model Scout | orange | survey lens and signal dish | Models registry and frozen qualification batches |
-| Rook | Resource Guardian | green | shield frame and pressure gauge | Systems readiness, capacity and managed-node measurements |
-| Verity | Quality Inspector | gold | inspection lens and check seal | Job Run, step and independent-verification evidence |
+> **Animation state is not operational state.**
 
-Identity colour is stable and never carries severity by itself. State text, an icon, expression, state prop, supporting reason and signal badges carry operational meaning. The characters are personalities only in the presentation layer.
+An operationally `IDLE` character may look around or sleep. Those movements are browser presentation and cannot become telemetry.
 
-Quill has deliberately partial instrumentation. Agent Control has no independent prompt-review worker in this release, so Quill reports only durable planning, readiness and open-question state. The card says so rather than implying a review that did not occur.
+## Crew roster
 
-## Authoritative data flow
+| Name | Agent Control role | Stable visual identity | Idle personality | Working personality | Engineering view |
+| --- | --- | --- | --- | --- | --- |
+| Cadence | Controller & Lane Dispatcher | blue; conductor baton and three-lane crown | quietly counts lanes and checks the room | conducts concurrent lanes and exposes scheduling | Lanes |
+| Quill | Work Parcel Reviewer | purple; document visor and marking quill | reads and annotates a page | checks objective, constraints, plan and operator questions | task entry |
+| Relay | Tool & Execution Worker | teal; parcel harness and relay baton | keeps the harness ready | carries bounded work through tools, workers and dependencies | Work Parcels |
+| Lumen | Model Router & Scout | orange; survey lens and signal dish | watches qualified routes | projects recorded discovery, evaluation and routing | Models |
+| Rook | Resource & Node Guardian | green; shield frame and pressure gauge | checks gauges and nearby workers | watches nodes, capacity, remote execution and credential locality | Systems |
+| Verity | Verification & Evidence Inspector | gold; inspection lens and check seal | reviews the latest evidence seal | independently checks results and exact failures | Runs/evidence |
+
+Colour is identity, not status. Every card also carries a name, role, state text, icon, activity text, reason, source, progress and accessible name.
+
+Quill's instrumentation remains deliberately partial: Agent Control has no separate prompt-review worker. Quill reports only durable planning, readiness and question state and says when deeper review evidence is unavailable.
+
+## Three independent state layers
+
+The `agent-control.dashboard-character-crew/v2` projection keeps three concepts separate:
+
+| Layer | Purpose | Examples | Authority |
+| --- | --- | --- | --- |
+| Operational state | what Agent Control records as true | `IDLE`, `PLANNING`, `ROUTING`, `EXECUTING`, `WAITING`, `VERIFYING`, `PAUSED`, `SUCCEEDED`, `FAILED`, `CANCELLED`, `RECOVERING`, `UNKNOWN` | canonical control records |
+| Activity | what current source-backed work is doing | `CODING`, `SEARCHING`, `READING`, `REMOTE_EXECUTION`, `BENCHMARKING`, `MODEL_DISCOVERY`, `REVIEWING_OUTPUT`, `PASSING_BATON` | current Run/stage/event evidence |
+| Animation expression | how that fact is illustrated | `LOOKING_AROUND`, `SLEEPING`, `WAKING`, `TYPING`, `THINKING`, `CARRYING_PARCEL`, `INSPECTING`, `CONCERNED` | `presentation-only` |
+
+The older lower-case card state remains a compatibility-oriented visual vocabulary. The explicit operational state and activity are the facts. An animation cue is always marked `authority: presentation-only` and is never fed back into the controller.
+
+Active event-derived activity expires after 30 seconds unless a canonical Run or stage still records active work. An otherwise-live observation older than 120 seconds becomes visually `stale`, never `failed`. Missing information is `UNKNOWN` or unavailable. A cancellation remains pending until canonical cleanup confirms its terminal state.
+
+## Projection and event flow
 
 ```text
-Lane / scheduler / Run / Work Parcel / model / system / token records
+lanes / scheduler / Runs / steps / Work Parcels / batons
+workers / tools / systems / models / provider and routing events
                               |
                  AgentControlService.snapshot()
                               |
               projectDashboardCharacterCrew()
                               |
-       GET /api/status + existing typed SSE refresh signal
+       GET /api/status + typed SSE refresh/reconciliation
                               |
-         text/icon/card pose + optional CSS animation
+     Level 1 Crew + Level 2 explanation + Level 3 evidence
 ```
 
-`projectDashboardCharacterCrew` is deterministic and read-only. Its output is `agent-control.dashboard-character-crew/v1`. The browser does not parse terminals, provider prose or animation state to decide what happened. SSE events trigger a new authoritative status read; the existing five-second refresh remains a recovery fallback.
+The projector is deterministic and read-only. The browser does not parse terminal text or model prose to infer work. SSE events request a fresh authoritative snapshot; the normal five-second refresh is a recovery fallback.
 
-## Shared state vocabulary
+The six primary cards use source precedence appropriate to their roles. One pose cannot encode every concurrent fact, so active, queued, waiting, blocked, completed and failed counts remain visible as independent badges. A currently running stage wins over a future waiting stage when selecting Relay's tool activity.
 
-The projection supports `idle`, `queued`, `working`, `reviewing`, `waiting`, `awaiting_operator`, `blocked`, `resource_pressure`, `recovering`, `handing_over`, `completed`, `failed`, `cancelling`, `cancelled`, `offline`, `stale`, and `unknown`.
+## Work Parcel flow and concurrency
 
-The visual action is role-specific where the evidence supports active work: Cadence directs traffic, Quill marks a document, Relay dispatches a parcel, Lumen scans candidates, Rook checks a gauge, and Verity inspects evidence. A freshly idle character looks around; after 45 seconds without a newer authoritative update, the same truthful `idle` state settles into a breathing sleep pose with periodic brief wake-and-glance motion. This is browser presentation only and never changes, advances or infers operational state. Waiting, obstacle, warning, repair, handoff, completion, failure, cancellation, disconnected, stale and unknown props remain recognisable without colour or motion.
+Each real Work Parcel is rendered as a compact object with its immutable objective, status, current owner and reason, stage dependency graph, progress, Run/worker, route and classified tool. The role stations explain responsibility, but do not pretend a concurrent DAG is linear.
 
-### Source mapping and precedence
+Every canonical `RUNNING` stage gets its own visible mini worker. Two or three genuinely parallel stages therefore show two or three workers simultaneously. A queued, waiting or completed stage never becomes a running worker merely to make the scene look busy. The durable Parcel journey remains available beneath the visual summary.
 
-| Character | Primary sources | High-to-low primary-state precedence |
+## Baton and route transfers
+
+A moving baton can originate only from one of these authoritative sources:
+
+- a token governor `BATON_AND_HANDOFF` routing decision;
+- a durable Work Parcel baton view or `baton.created` audit event;
+- a typed `lane.handoff` event.
+
+The projection retains source event ID, baton ID where available, recorded time, source route, destination route, outcome, context percentage where reported and the exact recorded reason. Clicking the baton opens that reason in Level 2 and links to Work Parcel evidence in Level 3. Merely crossing a threshold, displaying a recommendation or completing an old handoff does not create an active transfer animation.
+
+For ordinary Job stages without a provider/model route, the Crew names the actual selected worker. It does not substitute an invented model route.
+
+## Tool activity
+
+Tool classification is provider-neutral and derives from the current action, resources and declared capabilities:
+
+| Tool kind | Visual shorthand | Typical evidence |
 | --- | --- | --- |
-| Cadence | lanes, ordinary/parameterised Runs, scheduler pause, approvals, token handoff decisions | global pause; active recorded handoff; working; cancelling; recovering; operator wait; blocked; dependency wait; queued; failed; cancelled; idle |
-| Quill | Work Parcel planning and durable open questions | operator question; reviewing/planning; queued; recorded planning failure; idle |
-| Relay | Work Parcels/stages, Runs, token handoff decisions | active recorded handoff; working; cancelling; recovering; operator question; blocked; waiting; queued; failed; cancelled; completed; idle |
-| Lumen | Models registry and frozen evaluation batches | running evaluation; queued evaluation; blocked/partial evidence; no inventory; no qualified route; idle |
-| Rook | Systems readiness, provider auth, capacity and node measurements | measured pressure; active workload; auth required; all observed systems offline; all unknown; idle |
-| Verity | Runs, steps and lane verification phases | reviewing; cancelling; blocked; failed; cancelled; completed; queued; idle |
+| `SEARCH` | magnifying glass | repository/search action |
+| `CODE_EDIT` | keyboard/terminal | code or patch action |
+| `FILE` | document | file read/write action |
+| `WEB_BROWSER` | browser window | browser capability |
+| `REMOTE_MACHINE` | linked nodes | remote/SSH/managed-node action |
+| `BENCHMARK` | stopwatch/gauge | test, benchmark or verification action |
+| `VOICE` | waveform | voice capability |
+| `SOCIAL` | message indicator | approved social/messaging action |
+| `MODEL_DISCOVERY` | candidate cards/lens | model discovery or evaluation |
+| `GENERIC_TOOL` | restrained tool badge | a real but otherwise unclassified action |
 
-One pose cannot represent every concurrent condition. The primary pose follows the table, while badges and counts preserve concurrent active, queued, waiting, blocked, recovery, operator, failure and completion facts. For example, three active lanes remain `working` while a separate blocked badge reports one blocked lane; neither fact hides the other.
+Unknown tools remain generic; they are not guessed from output prose.
 
-An active observation older than 120 seconds is `stale`. Staleness replaces only an otherwise-live primary pose and retains the last-update age; it never invents failure. Missing observations remain `unknown` or explicitly unavailable. A cancellation request remains `cancelling` while cleanup/confirmation is pending and becomes `cancelled` only after canonical terminal state confirms it.
+## Provider and model discovery
 
-A handoff pose requires the latest handoff decision for a currently active token-governor thread to be a pending `BATON_AND_HANDOFF` record. A later `SUCCEEDED` or `FAILED` handoff result clears the pose. Merely crossing a threshold or creating a baton is not shown as a completed transfer. Provider, account and model route text appears only when the underlying stage reports it.
+Typed `provider.catalog_changed` and existing `model.intelligence_changed` events support provider connection, catalogue discovery, candidate evaluation and routing state. Cards preserve provider/model identity, status, failure class, HTTP status and explicit routing eligibility when those fields exist. `LIMITED`, call failure and `routing-disabled` remain distinct. Endpoint reachability or a completed evaluation batch does not silently qualify a model for routing.
 
-## Dashboard controls
+This applies to NVIDIA and every other provider through the same projection contract. A provider adapter or qualification workflow must emit the factual lifecycle event; the Crew does not poll providers or manufacture candidate status itself.
 
-Each operational card is a native keyboard-activatable button with a visible focus ring and an accessible name containing its identity, role, state and summary. Activating it opens and focuses the existing authoritative area:
+## Deterministic narration and progressive disclosure
 
-- Cadence → Lanes;
-- Quill → natural-language task entry;
-- Relay → Work Parcels;
-- Lumen → Models;
-- Rook → Systems;
-- Verity → Job Platform Runs and Run History.
+Narration is assembled from fixed templates and the same source IDs used by the cards. No model is called to explain another model or worker.
 
-Cards show the role/state, concise current fact and reason, relevant counts, elapsed and last-update age when available, the next operator action, telemetry coverage and any limitation. The click is navigation only; it does not mutate operational state.
+- **Level 1 — Crew:** names, roles, operational state, current activity, concise headline and parallel-work summary.
+- **Level 2 — Human explanation:** source-backed narrative, route/lane, elapsed time, counts, exact baton reason and presentation-only expression.
+- **Level 3 — Engineering evidence:** existing Jobs, Work Parcels, Models, Systems, Runs, transcripts, token/cache telemetry, routing history and evidence.
 
-## Motion and display settings
+Pointer, tap, Enter and Space interactions reach the same underlying views. The Crew augments rather than replaces engineering telemetry.
 
-Open **Crew** in the primary dashboard navigation. Defaults are:
+## Motion, idle and terminal behavior
 
-- operational characters: **Shown**;
-- animation: **Full**;
-- gallery canvas: **Dashboard**.
+Open **Crew** and choose Full, Reduced or Off motion; choose Shown or Hidden independently. Preferences are browser-local (`agent-control-character-motion` and `agent-control-character-display`) and never enter Agent Control state.
 
-Choose **Reduced** for infrequent blink-only motion, **Off** for no character animation, or **Hidden** to remove operational cards while retaining the normal dashboard. In Full mode, fresh idle characters scan their surroundings and sustained-idle characters sleep, breathe, emit a small visual `Z`, and periodically wake to glance around. Preferences stay in browser-local storage as `agent-control-character-motion` and `agent-control-character-display`; they are not server configuration or durable Agent Control state. A system `prefers-reduced-motion: reduce` setting caps Full at Reduced. Hidden views, off-screen characters and background browser tabs pause animation.
+In Full mode, a newly idle character looks around for 45 seconds. Sustained idle then sleeps with a gentle breathing cycle. Character-specific delays keep the roster from moving in lockstep. When an authoritative transition records work, a previously sleeping character gets one short waking expression before its role activity. That expression cannot change the operational state.
 
-No state relies on animation, flashing, sound or an overlay. Text/icon equivalents and focus operation remain in Reduced and Off modes. Card geometry is fixed across state changes; responsive breakpoints use three, two and one columns. Character colours use the dashboard variables, and the inspection gallery provides explicit dashboard, light and dark canvases.
+Failures use still/concerned/retrying treatments with the real reason available; there is no flashing alarm. Success gets a brief transition-only acknowledgement. Initial load, stale reconstruction and SSE reconnect cannot replay old success.
 
-Completion acknowledgement is brief and transition-only. It requires a previous non-completed state, a fresh current completed state and a live stream. Initial load, periodic reconstruction while disconnected, stale data and the first reconciliation after `RECONNECTING` suppress it, so a reload cannot replay old success.
+Reduced mode retains static state, parcel and baton changes and allows only an infrequent blink. Off mode removes animation. Off-screen characters, hidden views and background tabs pause movement. Continuous animation uses opacity and transforms rather than layout-changing properties.
 
-To disable the entire web dashboard, set `AGENT_CONTROL_WEB_ENABLED=0`. To keep the dashboard but disable this presentation locally, open **Crew**, choose **Hidden**, and choose animation **Off**. These controls do not affect other users or server execution.
+## Accessibility, mobile and isolation
 
-## Inspection gallery
+- Native buttons, visible focus rings and descriptive accessible names support keyboard and screen-reader use.
+- State text, icons and reasons mean no fact depends on colour or animation.
+- `prefers-reduced-motion` caps Full at Reduced.
+- At narrow widths, the six cards become a horizontally scrollable, snap-aligned active-worker strip; Work Parcel, baton and model columns stack vertically.
+- Character JavaScript imports no execution module and has no mutation endpoint. The clearly marked simulated gallery is isolated browser state and is excluded from runtime qualification evidence.
 
-The Crew view contains a clearly marked **SIMULATED — PREVIEW ONLY** gallery. Each character can be placed in any supported state; presets cover mixed activity and stale telemetry; one control can put the full roster into a selected state. The gallery uses an isolated in-memory map and never writes an API, creates a Job, alters the authoritative crew projection or enters durable evidence.
+Disable the dashboard with `AGENT_CONTROL_WEB_ENABLED=0`. To remove only the Crew presentation, choose Hidden and Off. Neither action needs state migration or affects execution.
 
-Use the gallery for visual inspection of accessories, expressions, text equivalents, reduced motion, light/dark canvases and responsive layout. It is not physical runtime evidence. Qualification must separately identify states demonstrated through real canonical events, deterministic projector tests and gallery-only previews. The browser recorder also rejects a run unless real `idle` cards demonstrate both look-around and sleep dispositions, their expected animation timelines advance, and their transforms visibly change while canonical state remains `idle`.
+## Qualification
 
-## Limitations and rollout
+Run focused tests and the real isolated dashboard recording with:
 
-- Prompt clarity has no separately instrumented reviewer; Quill is partial by design.
-- The cards aggregate several canonical surfaces. Badges expose coexistence, while the linked source remains authoritative for individual records.
-- Last-update age advances locally from an authoritative timestamp; it does not advance workflow state.
-- The 120-second freshness threshold is a presentation constant in this first rollout, not a scheduler timeout or failure policy.
-- A browser without `IntersectionObserver` still renders correctly but cannot pause individual off-screen SVG animation; tab visibility and motion settings still apply.
-- Characters add no provider/model requests, background daemon, secret flow, operational mutation or deployment requirement.
+```bash
+node --test scripts/dashboard-bots.test.mjs
+node --import tsx --test src/control/dashboard-characters.test.ts src/control/web-server.test.ts
+npm run record:crew-workflow
+npm run check
+```
 
-Roll out by reviewing the Crew gallery, leaving operational characters Shown, and monitoring the first normal dashboard lifecycle. Roll back presentation immediately with **Crew → Hidden** and **Animation → Off**; removing the feature bundle does not require state migration because no character state is persisted server-side.
-
-The isolated governed dashboard run, all-six animation measurements, screenshots, video hashes and physical-versus-simulated coverage boundary are recorded in [dashboard character qualification evidence](evidence/agent-control-dashboard-characters-qualification.md).
+The recorder submits a real authenticated Work Parcel, executes concurrent repository search and file-read stages through separate workers, consumes their sealed batons in a composition stage, independently verifies the result, queries a live local provider catalogue and runs a frozen local-model evaluation. Its video never enables the simulated gallery. Results, hashes, performance measurements and evidence boundaries are in [Crew workflow qualification evidence](evidence/agent-control-crew-workflow-qualification.md).

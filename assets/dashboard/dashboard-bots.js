@@ -4,12 +4,12 @@
   const icons = {idle: '○', queued: '▤', working: '▶', reviewing: '⌕', waiting: '◷', awaiting_operator: '!', blocked: '⊘', resource_pressure: '△', recovering: '↻', handing_over: '⇢', completed: '✓', failed: '×', cancelling: '◒', cancelled: '■', offline: '⌁', stale: '◴', unknown: '?'};
   const idleLookDurationMs = 45_000;
   const identities = {
-    'lane-master': {name: 'Cadence', role: 'Lane Master', area: 'Lanes, queue and capacity', accessory: 'conductor baton and three-lane crown'},
-    'prompt-reviewer': {name: 'Quill', role: 'Master Prompt Reviewer', area: 'Task entry and readiness', accessory: 'document visor and marking quill'},
-    'parcel-coordinator': {name: 'Relay', role: 'Work Parcel Coordinator', area: 'Work Parcels and handovers', accessory: 'parcel harness and relay baton'},
-    'model-scout': {name: 'Lumen', role: 'Model Scout', area: 'Models and qualification', accessory: 'survey lens and signal dish'},
-    'resource-guardian': {name: 'Rook', role: 'Resource Guardian', area: 'Systems and resources', accessory: 'shield frame and pressure gauge'},
-    'quality-inspector': {name: 'Verity', role: 'Quality Inspector', area: 'Validation and run evidence', accessory: 'inspection lens and check seal'},
+    'lane-master': {name: 'Cadence', role: 'Controller & Lane Dispatcher', area: 'Lanes, queue and capacity', accessory: 'conductor baton and three-lane crown'},
+    'prompt-reviewer': {name: 'Quill', role: 'Work Parcel Reviewer', area: 'Task entry and readiness', accessory: 'document visor and marking quill'},
+    'parcel-coordinator': {name: 'Relay', role: 'Tool & Execution Worker', area: 'Work Parcels, tools and handovers', accessory: 'parcel harness and relay baton'},
+    'model-scout': {name: 'Lumen', role: 'Model Router & Scout', area: 'Models, providers and qualification', accessory: 'survey lens and signal dish'},
+    'resource-guardian': {name: 'Rook', role: 'Resource & Node Guardian', area: 'Systems, remote nodes and resources', accessory: 'shield frame and pressure gauge'},
+    'quality-inspector': {name: 'Verity', role: 'Verification & Evidence Inspector', area: 'Validation, transcripts and run evidence', accessory: 'inspection lens and check seal'},
   };
 
   function effectiveMotion(preference, systemReduced) {
@@ -23,14 +23,23 @@
   }
 
   function idleDisposition(member, now = Date.now()) {
-    if (!member || member.state !== 'idle') return null;
+    if (!member || member.state !== 'idle' || (member.activity?.kind && member.activity.kind !== 'NONE')) return null;
     const updatedAt = Date.parse(member.lastUpdatedAt || '');
     if (!Number.isFinite(updatedAt)) return 'sleeping';
     return Math.max(0, now - updatedAt) < idleLookDurationMs ? 'looking' : 'sleeping';
   }
 
+  function shouldWake(previous, current) {
+    return Boolean(previous?.rest === 'sleeping' && current && current.state !== 'idle' && current.activity?.kind && current.activity.kind !== 'NONE');
+  }
+
+  function animationExpression(member, previous) {
+    if (shouldWake(previous, member)) return 'WAKING';
+    return member?.animationCue?.expression || (member?.state === 'idle' ? 'AMBIENT_IDLE' : member?.state === 'completed' ? 'SUCCESS_ACKNOWLEDGEMENT' : 'WORKING');
+  }
+
   function normalizePreference(value, accepted, fallback) { return accepted.includes(value) ? value : fallback; }
-  root.AgentControlBots = {states: [...states], labels: {...labels}, icons: {...icons}, identities: Object.fromEntries(Object.entries(identities).map(([id, identity]) => [id, {...identity}])), idleLookDurationMs, effectiveMotion, shouldAcknowledge, idleDisposition, normalizePreference};
+  root.AgentControlBots = {states: [...states], labels: {...labels}, icons: {...icons}, identities: Object.fromEntries(Object.entries(identities).map(([id, identity]) => [id, {...identity}])), idleLookDurationMs, effectiveMotion, shouldAcknowledge, shouldWake, animationExpression, idleDisposition, normalizePreference};
   if (typeof document === 'undefined') return;
 
   const runtime = {
@@ -42,6 +51,8 @@
     galleryTheme: 'dashboard',
     suppressNextAcknowledgement: false,
     observer: null,
+    focusId: null,
+    batonFocusId: null,
   };
   const defaultGalleryStates = ['working', 'reviewing', 'handing_over', 'queued', 'resource_pressure', 'completed'];
   Object.keys(identities).forEach((id, index) => runtime.gallery.set(id, defaultGalleryStates[index]));
@@ -91,10 +102,25 @@
     return '<g class="bot-role-accessory bot-inspector"><circle class="bot-lens" cx="121" cy="100" r="20"/><path class="bot-tool bot-magnifier" d="M136 115l17 17"/><path class="bot-accent-stroke bot-check-seal" d="M69 108l8 8 17-20"/></g>';
   }
 
-  function botSvg(member) {
+  function activeToolArtwork(kind) {
+    if (kind === 'SEARCH') return '<g class="bot-active-tool bot-active-search"><circle cx="28" cy="82" r="10"/><path d="M35 89l9 9M22 82h12"/></g>';
+    if (kind === 'CODE_EDIT') return '<g class="bot-active-tool bot-active-code"><rect x="20" y="76" width="28" height="18" rx="3"/><path d="M25 82l5 4-5 4M34 90h8M43 72l7-7"/></g>';
+    if (kind === 'FILE') return '<g class="bot-active-tool bot-active-file"><path d="M21 67h21l7 7v25H21zM42 67v8h7M27 82h16M27 89h12"/></g>';
+    if (kind === 'WEB_BROWSER') return '<g class="bot-active-tool bot-active-browser"><rect x="18" y="69" width="34" height="27" rx="4"/><path d="M18 77h34M24 73h.1M29 73h.1M26 85h18"/></g>';
+    if (kind === 'REMOTE_MACHINE') return '<g class="bot-active-tool bot-active-remote"><rect x="17" y="70" width="36" height="27" rx="4"/><path d="M23 80l5 4-5 4M32 89h13M35 68v-8M30 63h10"/></g>';
+    if (kind === 'BENCHMARK') return '<g class="bot-active-tool bot-active-test"><path d="M19 91h8l4-14 7 23 5-16h10"/><circle cx="36" cy="84" r="18"/></g>';
+    if (kind === 'VOICE') return '<g class="bot-active-tool bot-active-voice"><path d="M18 84h5l3-10 5 20 5-27 5 26 4-9h8"/></g>';
+    if (kind === 'SOCIAL') return '<g class="bot-active-tool bot-active-social"><path d="M18 70h31v21H31l-8 7v-7h-5zM25 78h17M25 84h12"/></g>';
+    if (kind === 'MODEL_DISCOVERY') return '<g class="bot-active-tool bot-active-model"><circle cx="29" cy="80" r="5"/><circle cx="49" cy="68" r="4"/><circle cx="49" cy="94" r="4"/><path d="M33 77l12-7M33 84l12 8M20 65q-11 15 0 30"/></g>';
+    if (kind === 'GENERIC_TOOL') return '<g class="bot-active-tool bot-active-generic"><circle cx="32" cy="82" r="12"/><path d="M32 65v7M32 92v7M15 82h7M42 82h7M20 70l5 5M39 89l5 5M44 70l-5 5M25 89l-5 5"/></g>';
+    return '';
+  }
+
+  function botSvg(member, expression) {
     const id = Object.prototype.hasOwnProperty.call(identities, member.id) ? member.id : 'quality-inspector';
     const stateName = states.includes(member.state) ? member.state : 'unknown';
-    return `<svg class="agent-bot bot-${id} bot-state-${stateName}" viewBox="0 0 180 150" aria-hidden="true" focusable="false">
+    const expressionName = String(expression || 'STILL').toLowerCase().replaceAll('_', '-'), toolKind = member.activity?.tool?.kind || null;
+    return `<svg class="agent-bot bot-${id} bot-state-${stateName} bot-expression-${expressionName}" data-animation-authority="presentation-only" viewBox="0 0 180 150" aria-hidden="true" focusable="false">
       <ellipse class="bot-shadow" cx="90" cy="141" rx="49" ry="6"/>
       <g class="bot-float">
         <g class="bot-antenna"><path d="M90 38V24"/><circle class="bot-accent-fill bot-antenna-light" cx="90" cy="19" r="6"/></g>
@@ -117,6 +143,7 @@
           <g class="bot-stale-mark"><circle cx="147" cy="84" r="15"/><path d="M147 75v10l7 4"/></g>
           <text class="bot-unknown-mark" x="147" y="95" text-anchor="middle">?</text>
         </g>
+        ${activeToolArtwork(toolKind)}
       </g>
     </svg>`;
   }
@@ -136,18 +163,21 @@
   }
 
   function characterCard(member, options = {}) {
-    const identity = identities[member.id] || identities['quality-inspector'], stateName = states.includes(member.state) ? member.state : 'unknown', label = labels[stateName], rest = idleDisposition({...member, state: stateName}, options.now), restClass = rest ? ` bot-rest-${rest}` : '', completeAck = options.acknowledge ? ' bot-acknowledge' : '', compact = options.compact ? ' bot-card-compact' : '', simulated = options.simulated ? ' bot-card-simulated' : '', tag = options.navigable ? 'button' : 'article';
-    const nav = options.navigable ? ` type="button" data-bot-character-nav="${esc(member.id)}"` : '';
-    const aria = options.navigable ? ` aria-label="${esc(`${identity.name}, ${identity.role}: ${label}. ${member.summary} Open ${identity.area}.`)}"` : '';
-    return `<${tag} class="bot-card bot-${esc(member.id)} bot-state-${esc(stateName)}${restClass}${completeAck}${compact}${simulated}" data-bot-rest="${esc(rest || 'none')}"${nav}${aria}>
-      <span class="bot-portrait">${botSvg({...member, id: member.id, state: stateName})}<span class="bot-state-pill"><span aria-hidden="true">${esc(icons[stateName])}</span>${esc(label)}</span></span>
-      <span class="bot-copy"><span class="bot-identity"><strong>${esc(identity.name)}</strong><small>${esc(identity.role)}</small>${options.simulated ? '<b class="bot-simulated-label">SIMULATED</b>' : ''}</span><span class="bot-summary">${esc(member.summary)}</span><span class="bot-reason">${esc(member.reason)}</span>${signals(member)}<span class="bot-facts">${esc(facts(member))}</span><span class="bot-next"><b>Next</b> ${esc(member.nextAction)}</span>${member.instrumentation?.limitation ? `<span class="bot-limitation">${esc(member.instrumentation.limitation)}</span>` : ''}</span>
+    const fallback = identities[member.id] || identities['quality-inspector'], identity = {...fallback, name: member.name || fallback.name, role: member.role || fallback.role, area: member.area || fallback.area}, stateName = states.includes(member.state) ? member.state : 'unknown', label = labels[stateName], rest = idleDisposition({...member, state: stateName}, options.now), expression = animationExpression(member, options.previous), activity = member.activity?.kind || 'NONE', operational = member.operationalState || stateName.toUpperCase(), restClass = rest ? ` bot-rest-${rest}` : '', expressionClass = ` bot-expression-${String(expression).toLowerCase().replaceAll('_', '-')}`, activityClass = ` bot-activity-${String(activity).toLowerCase().replaceAll('_', '-')}`, completeAck = options.acknowledge ? ' bot-acknowledge' : '', compact = options.compact ? ' bot-card-compact' : '', simulated = options.simulated ? ' bot-card-simulated' : '', interactive = options.navigable || options.focusable, tag = interactive ? 'button' : 'article';
+    const action = options.navigable ? ` type="button" data-bot-character-nav="${esc(member.id)}"` : options.focusable ? ` type="button" data-bot-character-focus="${esc(member.id)}"` : '';
+    const aria = interactive ? ` aria-label="${esc(`${identity.name}, ${identity.role}: ${operational}; ${member.activity?.label || label}. ${member.summary} ${options.navigable ? `Open ${identity.area}.` : 'Open human-readable explanation.'}`)}"` : '';
+    const activityLabel = member.activity?.label || (stateName === 'idle' ? 'No active work' : label), tool = member.activity?.tool;
+    return `<${tag} class="bot-card bot-${esc(member.id)} bot-state-${esc(stateName)}${restClass}${expressionClass}${activityClass}${completeAck}${compact}${simulated}" data-bot-rest="${esc(rest || 'none')}" data-bot-expression="${esc(expression)}" data-operational-state="${esc(operational)}" data-activity="${esc(activity)}" data-transition-key="${esc(member.transitionKey || 'unreported')}"${action}${aria}>
+      <span class="bot-portrait">${botSvg({...member, id: member.id, state: stateName}, expression)}<span class="bot-state-pill"><span aria-hidden="true">${esc(icons[stateName])}</span>${esc(operational)}</span></span>
+      <span class="bot-copy"><span class="bot-identity"><strong>${esc(identity.name)}</strong><small>${esc(identity.role)}</small>${options.simulated ? '<b class="bot-simulated-label">SIMULATED</b>' : ''}</span><span class="bot-activity-line"><b>${esc(activity)}</b><span>${esc(activityLabel)}</span>${tool ? `<i>${esc(tool.kind)}</i>` : ''}</span><span class="bot-summary">${esc(member.summary)}</span><span class="bot-reason">${esc(member.reason)}</span>${signals(member)}<span class="bot-facts">${esc(facts(member))}</span><span class="bot-next"><b>Next</b> ${esc(member.nextAction)}</span>${member.instrumentation?.limitation ? `<span class="bot-limitation">${esc(member.instrumentation.limitation)}</span>` : ''}<span class="bot-animation-label">Presentation only: ${esc(String(expression).toLowerCase().replaceAll('_', ' '))}</span></span>
     </${tag}>`;
   }
 
   function simulatedMember(id, stateName, mixed = false) {
     const identity = identities[id], mixedSignals = mixed ? id === 'lane-master' ? [{state: 'working', label: 'active', count: 3}, {state: 'blocked', label: 'blocked', count: 1}, {state: 'queued', label: 'queued', count: 2}] : [{state: stateName, label: 'preview', count: 1}] : [];
-    return {id, ...identity, state: stateName, stateLabel: labels[stateName], summary: mixed && id === 'lane-master' ? 'Three lanes working; two queued; one blocked.' : `${identity.role} ${labels[stateName].toLowerCase()} pose preview.`, reason: 'Simulated gallery state; no production event or capability is claimed.', nextAction: 'Choose another state to inspect its visual and text equivalent.', counts: {active: mixed ? 3 : 0, queued: mixed ? 2 : 0, waiting: 0, blocked: mixed ? 1 : 0, completed: 0, failed: 0}, signals: mixedSignals, elapsedMs: stateName === 'working' ? 38_000 : null, lastUpdatedAt: new Date().toISOString(), freshness: stateName === 'stale' ? 'stale' : 'current', instrumentation: {coverage: 'unavailable', source: 'isolated gallery simulation', limitation: 'Preview data never enters Agent Control runtime state.'}};
+    const operationalState = stateName === 'working' ? 'EXECUTING' : stateName === 'reviewing' ? 'VERIFYING' : stateName === 'completed' ? 'SUCCEEDED' : stateName === 'failed' ? 'FAILED' : stateName === 'cancelled' ? 'CANCELLED' : stateName === 'recovering' ? 'RECOVERING' : stateName === 'queued' ? 'PLANNING' : stateName === 'idle' ? 'IDLE' : 'WAITING';
+    const activityKind = stateName === 'working' ? id === 'parcel-coordinator' ? 'CODING' : id === 'model-scout' ? 'MODEL_DISCOVERY' : 'USING_TOOL' : stateName === 'reviewing' ? 'VERIFYING' : stateName === 'handing_over' ? 'PASSING_BATON' : 'NONE';
+    return {id, ...identity, state: stateName, stateLabel: labels[stateName], operationalState, activity: {kind: activityKind, label: activityKind === 'NONE' ? 'No active work' : 'Simulated activity preview', source: {authority: 'Agent Control', type: 'simulation', id: null, at: null, detail: 'Preview only'}, tool: activityKind === 'CODING' ? {kind: 'CODE_EDIT', label: 'code editor', action: 'simulation', capabilities: []} : activityKind === 'MODEL_DISCOVERY' ? {kind: 'MODEL_DISCOVERY', label: 'model discovery', action: 'simulation', capabilities: []} : null}, animationCue: {expression: stateName === 'idle' ? 'AMBIENT_IDLE' : stateName === 'completed' ? 'SUCCESS_ACKNOWLEDGEMENT' : stateName === 'failed' ? 'CONCERNED' : 'WORKING', label: 'preview', authority: 'presentation-only', sourceType: 'simulation'}, summary: mixed && id === 'lane-master' ? 'Three lanes working; two queued; one blocked.' : `${identity.role} ${labels[stateName].toLowerCase()} pose preview.`, reason: 'Simulated gallery state; no production event or capability is claimed.', nextAction: 'Choose another state to inspect its visual and text equivalent.', counts: {active: mixed ? 3 : 0, queued: mixed ? 2 : 0, waiting: 0, blocked: mixed ? 1 : 0, completed: 0, failed: 0}, signals: mixedSignals, elapsedMs: stateName === 'working' ? 38_000 : null, lastUpdatedAt: new Date().toISOString(), freshness: stateName === 'stale' ? 'stale' : 'current', instrumentation: {coverage: 'unavailable', source: 'isolated gallery simulation', limitation: 'Preview data never enters Agent Control runtime state.'}};
   }
 
   function renderGallery() {
@@ -161,22 +191,70 @@
     observeBots();
   }
 
+  function routeText(route) { return route?.label || 'route not reported'; }
+  function statusClass(value) { return String(value || 'unknown').toLowerCase().replace(/[^a-z0-9_-]+/g, '-'); }
+  function toolBadge(tool) { return tool ? `<span class="crew-tool-badge crew-tool-${esc(statusClass(tool.kind))}">${esc(tool.kind)} · ${esc(tool.action)}</span>` : ''; }
+
+  function renderParcel(parcel) {
+    const identity = identities[parcel.owner] || identities['lane-master'];
+    const stations = Object.entries(identities).map(([id, item]) => `<span class="crew-station ${id === parcel.owner ? 'active' : ''}" data-character="${esc(id)}"><b>${esc(item.name)}</b><small>${esc(item.role)}</small>${id === parcel.owner ? '<i class="crew-parcel-marker" aria-hidden="true">◆</i>' : ''}</span>`).join('<span class="crew-station-link" aria-hidden="true">→</span>');
+    const stages = (parcel.stages || []).map(stage => { const running = String(stage.status).toUpperCase() === 'RUNNING', worker = running ? `<span class="crew-worker-bot" aria-label="${esc(stage.worker || 'Recorded stage worker')} is active"><i aria-hidden="true"><b></b><b></b></i>${esc(stage.worker || 'active worker')}</span>` : ''; return `<li class="crew-stage crew-stage-${esc(statusClass(stage.status))}" data-stage-id="${esc(stage.id)}"><span><b>${esc(stage.name)}</b><em>${esc(stage.status)}</em></span><small>${stage.dependencies?.length ? `After ${esc(stage.dependencies.join(', '))}` : 'Entry stage'}${stage.worker ? ` · ${esc(stage.worker)}` : ''}</small>${worker}${toolBadge(stage.tool)}${stage.route ? `<small class="crew-stage-route">${esc(stage.route)}</small>` : ''}</li>`; }).join('');
+    return `<article class="crew-parcel" data-parcel-id="${esc(parcel.id)}" data-parcel-state="${esc(parcel.operationalState)}"><header><div><span class="eyebrow">Real Work Parcel</span><h3>${esc(parcel.id)}</h3></div><span class="status-pill ${esc(statusClass(parcel.status))}">${esc(parcel.status)}</span></header><p>${esc(parcel.objective)}</p><div class="crew-parcel-metrics"><span>${esc(parcel.progress.completed)}/${esc(parcel.progress.total)} complete</span><span>${esc(parcel.progress.active)} active</span>${parcel.parallelActive > 1 ? `<strong>${esc(parcel.parallelActive)} PARALLEL</strong>` : ''}</div><small class="crew-role-map-label">Role ownership · actual concurrent dependency graph is shown below</small><div class="crew-stations" aria-label="Current Parcel owner: ${esc(identity.name)}">${stations}</div><p class="crew-owner-copy"><b>${esc(identity.name)}</b> · ${esc(parcel.ownerReason)}</p><ol class="crew-stage-rail">${stages || '<li class="crew-stage">No governed stages projected.</li>'}</ol>${parcel.route ? `<p class="crew-route"><b>Current route</b> ${esc(parcel.route)}</p>` : ''}</article>`;
+  }
+
+  function renderBaton(transfer) {
+    const context = transfer.contextPercent === null || transfer.contextPercent === undefined ? '' : ` · context ${Number(transfer.contextPercent).toFixed(1)}%`;
+    return `<button type="button" class="crew-baton ${transfer.active ? 'active' : ''}" data-baton-focus="${esc(transfer.id)}"><span class="crew-baton-route"><span>${esc(routeText(transfer.from))}</span><i aria-hidden="true"><b>▰</b>→</i><span>${esc(routeText(transfer.to))}</span></span><strong>${esc(transfer.outcome)}${esc(context)}</strong><small>${esc(transfer.reason)}</small><em>Open exact recorded reason</em></button>`;
+  }
+
+  function renderModelActivity(item) {
+    const eligibility = item.routingEligible === true ? ' · routing enabled' : item.routingEligible === false ? ' · routing disabled' : '';
+    return `<article class="crew-model-event ${item.failure ? 'failed' : ''}"><header><b>${esc([item.provider, item.model].filter(Boolean).join(' / ') || 'Model intelligence')}</b><time>${esc(age(item.at))}</time></header><strong>${esc(item.action.replaceAll('-', ' '))}${esc(eligibility)}</strong><p>${esc(item.explanation)}</p>${item.failure ? `<small>Recorded failure: ${esc(item.failure)}${item.httpStatus ? ` · HTTP ${esc(item.httpStatus)}` : ''}</small>` : ''}</article>`;
+  }
+
+  function renderFocus() {
+    const panel = document.querySelector('#crew-human-explanation'); if (!panel) return;
+    const crew = state.snapshot?.characterCrew;
+    const baton = runtime.batonFocusId && crew?.batonTransfers?.find(item => item.id === runtime.batonFocusId);
+    if (baton) {
+      panel.innerHTML = `<div><span class="eyebrow">Level 2 · Human explanation</span><h2>Why did this baton move?</h2><p>${esc(baton.explanation)}</p><dl><div><dt>Authority</dt><dd>Agent Control ${esc(baton.sourceType)}</dd></div><div><dt>Source event</dt><dd>${esc(baton.sourceEventId)}</dd></div><div><dt>Sealed baton</dt><dd>${esc(baton.batonId || 'ID not projected')}</dd></div><div><dt>Recorded at</dt><dd>${esc(new Date(baton.at).toLocaleString())}</dd></div></dl></div><button type="button" class="button secondary" data-bot-character-nav="parcel-coordinator">Level 3 · Open engineering evidence</button>`;
+      panel.hidden = false; return;
+    }
+    const member = crew?.members?.find(item => item.id === runtime.focusId);
+    if (!member) { panel.hidden = true; panel.innerHTML = ''; return; }
+    panel.innerHTML = `<div><span class="eyebrow">Level 2 · Human explanation</span><h2>${esc(member.name)} · ${esc(member.operationalState)}</h2><p>${esc(member.narration?.text || member.summary)}</p><p>${esc(member.narration?.detail || member.reason)}</p><dl><div><dt>Recorded activity</dt><dd>${esc(member.activity?.kind || 'NONE')} · ${esc(member.activity?.source?.type || 'none')} ${member.activity?.source?.id ? `#${esc(member.activity.source.id)}` : ''}</dd></div><div><dt>Model / provider / lane</dt><dd>${esc(member.current || 'No active route or lane reported')}</dd></div><div><dt>Elapsed</dt><dd>${esc(duration(member.elapsedMs))}</dd></div><div><dt>Progress</dt><dd>${esc(member.counts?.completed || 0)} complete · ${esc(member.counts?.active || 0)} active · ${esc(member.counts?.waiting || 0)} waiting · ${esc(member.counts?.failed || 0)} failed</dd></div><div><dt>Animation</dt><dd>${esc(member.animationCue?.expression || 'STILL')} · presentation only</dd></div><div><dt>When idle</dt><dd>${esc(member.idlePersonality || 'Watches for authoritative work.')}</dd></div><div><dt>When working</dt><dd>${esc(member.workingPersonality || 'Projects recorded activity.')}</dd></div></dl></div><button type="button" class="button secondary" data-bot-character-nav="${esc(member.id)}">Level 3 · Open engineering evidence</button>`;
+    panel.hidden = false;
+  }
+
+  function renderWorkflow() {
+    const crew = state.snapshot?.characterCrew;
+    const headline = document.querySelector('#crew-headline'), narration = document.querySelector('#crew-narration'), parcels = document.querySelector('#crew-parcel-flow'), batons = document.querySelector('#crew-baton-flow'), models = document.querySelector('#crew-model-flow');
+    if (headline) headline.textContent = crew?.headline || 'Awaiting authoritative Agent Control state.';
+    if (narration) narration.innerHTML = crew?.narration?.length ? crew.narration.map(item => `<li data-character="${esc(item.characterId)}"><b>${esc(identities[item.characterId]?.name || item.characterId)}</b><span>${esc(item.text)}</span></li>`).join('') : '<li><b>Crew</b><span>No active operation is recorded.</span></li>';
+    if (parcels) parcels.innerHTML = crew?.parcels?.length ? crew.parcels.slice(0, 6).map(renderParcel).join('') : '<div class="compact-empty">No Work Parcel flow is recorded.</div>';
+    if (batons) batons.innerHTML = crew?.batonTransfers?.length ? crew.batonTransfers.slice(0, 6).map(renderBaton).join('') : '<div class="compact-empty">No real baton transfer is recorded.</div>';
+    if (models) models.innerHTML = crew?.modelActivity?.length ? crew.modelActivity.slice(0, 6).map(renderModelActivity).join('') : '<div class="compact-empty">No recent provider/model discovery event is recorded.</div>';
+    renderFocus();
+  }
+
   function renderCharacters() {
     const crew = state.snapshot?.characterCrew, members = crew?.members || [];
-    const acknowledgements = new Map();
+    const acknowledgements = new Map(), previousValues = new Map(runtime.previous);
     for (const member of members) {
-      const previous = runtime.previous.get(member.id), acknowledge = shouldAcknowledge(previous, member, {initial: runtime.initial, streamLive: document.querySelector('#stream-state')?.textContent === 'LIVE' && !runtime.suppressNextAcknowledgement}), slot = document.querySelector(`[data-bot-slot="${member.id}"]`);
+      const previous = previousValues.get(member.id), acknowledge = shouldAcknowledge(previous, member, {initial: runtime.initial, streamLive: document.querySelector('#stream-state')?.textContent === 'LIVE' && !runtime.suppressNextAcknowledgement}), slot = document.querySelector(`[data-bot-slot="${member.id}"]`);
       acknowledgements.set(member.id, acknowledge);
-      if (slot) slot.innerHTML = characterCard(member, {compact: true, navigable: true, acknowledge});
-      runtime.previous.set(member.id, {state: member.state, transitionKey: member.transitionKey});
+      if (slot) slot.innerHTML = characterCard(member, {compact: true, navigable: true, acknowledge, previous});
+      runtime.previous.set(member.id, {state: member.state, transitionKey: member.transitionKey, rest: idleDisposition(member)});
     }
     const live = document.querySelector('#crew-live-grid');
-    if (live) live.innerHTML = members.length ? members.map(member => characterCard(member, {navigable: true, acknowledge: acknowledgements.get(member.id)})).join('') : '<div class="compact-empty">No character projection is available from this Agent Control server.</div>';
+    if (live) live.innerHTML = members.length ? members.map(member => characterCard(member, {focusable: true, acknowledge: acknowledgements.get(member.id), previous: previousValues.get(member.id)})).join('') : '<div class="compact-empty">No character projection is available from this Agent Control server.</div>';
     const ageNode = document.querySelector('#crew-live-age'); if (ageNode) ageNode.textContent = crew ? `SNAPSHOT ${age(crew.observedAt).toUpperCase()}` : 'AWAITING SNAPSHOT';
+    renderWorkflow();
     runtime.initial = false;
     if (document.querySelector('#stream-state')?.textContent === 'LIVE') runtime.suppressNextAcknowledgement = false;
     applyPreferences();
     observeBots();
+    document.dispatchEvent(new CustomEvent('agent-control:crew-rendered', {detail: {observedAt: crew?.observedAt || null, renderedAt: performance.now()}}));
   }
 
   function observeBots() {
@@ -210,6 +288,8 @@
     document.addEventListener('click', event => {
       const target = event.target instanceof Element ? event.target : null; if (!target) return;
       const nav = target.closest('[data-bot-character-nav]'); if (nav) navigate(nav.dataset.botCharacterNav);
+      const focus = target.closest('[data-bot-character-focus]'); if (focus) { runtime.focusId = focus.dataset.botCharacterFocus; runtime.batonFocusId = null; renderFocus(); document.querySelector('#crew-human-explanation')?.scrollIntoView({behavior: effectiveMotion(runtime.motion, systemReducedMotion()) === 'full' ? 'smooth' : 'auto', block: 'nearest'}); }
+      const baton = target.closest('[data-baton-focus]'); if (baton) { runtime.batonFocusId = baton.dataset.batonFocus; runtime.focusId = null; renderFocus(); document.querySelector('#crew-human-explanation')?.scrollIntoView({behavior: effectiveMotion(runtime.motion, systemReducedMotion()) === 'full' ? 'smooth' : 'auto', block: 'nearest'}); }
       const motion = target.closest('[data-bot-motion]'); if (motion) { runtime.motion = motion.dataset.botMotion; writePreference('agent-control-character-motion', runtime.motion); applyPreferences(); }
       const display = target.closest('[data-bot-display]'); if (display) { runtime.display = display.dataset.botDisplay; writePreference('agent-control-character-display', runtime.display); applyPreferences(); }
       const theme = target.closest('[data-gallery-theme]'); if (theme) { runtime.galleryTheme = theme.dataset.galleryTheme; applyPreferences(); }

@@ -46,6 +46,7 @@ export type ControlEventType =
   | 'ownership.returned'
   | 'verification.changed'
   | 'provider.health_changed'
+  | 'provider.catalog_changed'
   | 'resource.node_changed'
   | 'system.paused_changed'
   | 'job.run_created'
@@ -217,7 +218,7 @@ export class AgentControlService {
     const outstandingApprovals = this.approvalCount(), tokenBatonRouting = this.tokenRouting(), systems = this.systems();
     const models = this.modelRegistry?.list().map(model => ({id: model.id, provider: model.provider, enabled: model.enabled, qualificationState: model.qualification.state, accountAvailability: model.account?.availability, checkedAt: model.qualification.checkedAt})) ?? [];
     const modelBatches = this.modelIntelligence?.projection(observedAt).queue ?? [];
-    const characterCrew = projectDashboardCharacterCrew({observedAt, paused: this.state.paused, lanes, runs: jobRuns, parameterizedRuns, parcels: this.workParcels?.list() ?? [], systems, models, modelBatches, tokenRouting: tokenBatonRouting, outstandingApprovals});
+    const characterCrew = projectDashboardCharacterCrew({observedAt, paused: this.state.paused, lanes, runs: jobRuns, parameterizedRuns, parcels: this.workParcels?.list() ?? [], systems, models, modelBatches, tokenRouting: tokenBatonRouting, events: this.events.history(), outstandingApprovals});
     return {
       schema: 'agent-control.system-status/v1',
       authority: 'AgentControlService',
