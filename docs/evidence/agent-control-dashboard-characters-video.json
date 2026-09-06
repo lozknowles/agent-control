@@ -1,0 +1,690 @@
+{
+  "schema": "agent-control.dashboard-character-video/v1",
+  "recordedAt": "2026-09-06T13:46:08.489Z",
+  "source": "Isolated real AgentControlService dashboard over loopback; no deployment",
+  "repository": {
+    "head": "ba19b0fe02d86d5fe381edabfb50ad1ef32fb00e",
+    "branch": "feature/animated-dashboard-bots",
+    "dirtyDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "qualification": {
+    "file": "agent-control-dashboard-characters-qualification.json",
+    "sha256": "d4408700d922885a2a8c334f07210ce117e3b4726e258785b777a034fd35135e",
+    "bytes": 451384,
+    "verdict": "PASS"
+  },
+  "video": {
+    "file": "agent-control-dashboard-characters.mp4",
+    "sha256": "4faba20d80e41e34d9ad6e1e699a95a93c4634a4ac6e6a6682c1e284ec0d8907",
+    "bytes": 4307801,
+    "format": "MP4/H.264",
+    "stream": {
+      "codec_name": "h264",
+      "width": 1920,
+      "height": 1080,
+      "duration": "43.480000"
+    }
+  },
+  "browser": {
+    "engine": "Chromium",
+    "version": "152.0.7977.64",
+    "headless": true,
+    "liveAt": "2026-09-06T13:45:03.864Z",
+    "streamState": "LIVE",
+    "consoleErrors": [],
+    "httpErrors": []
+  },
+  "allCharacters": {
+    "visibleTogether": true,
+    "animatedTogetherUnderFullMotion": true,
+    "concurrentStateAt": "2026-09-06T13:45:11.041Z",
+    "visibleAnimatedDwellMs": 4000,
+    "evidence": [
+      {
+        "id": "bot-lane-master",
+        "rest": "none",
+        "visible": true,
+        "bounds": {
+          "top": 223,
+          "right": 643,
+          "bottom": 438,
+          "left": 33
+        },
+        "viewport": {
+          "width": 1920,
+          "height": 1080,
+          "scrollY": 0
+        },
+        "accent": "#4f8cff",
+        "runningAnimations": [
+          "bot-float",
+          "bot-blink",
+          "bot-conduct"
+        ],
+        "animationDetails": [
+          {
+            "name": "bot-float",
+            "target": "bot-float",
+            "currentTime": 83.4400000000004,
+            "transform": "matrix(1, 0, 0, 1, 0, -0.00670116)"
+          },
+          {
+            "name": "bot-blink",
+            "target": "bot-eyes",
+            "currentTime": 83.4400000000004,
+            "transform": "matrix(1, 0, 0, 1, 0, 0)"
+          },
+          {
+            "name": "bot-conduct",
+            "target": "bot-tool bot-baton",
+            "currentTime": 83.4400000000004,
+            "transform": "matrix(0.998564, -0.0535685, 0.0535685, 0.998564, 0, 0)"
+          }
+        ],
+        "motion": {
+          "animation": "bot-float",
+          "target": "bot-float",
+          "elapsedTimelineMs": 650.004,
+          "transformChanged": true
+        }
+      },
+      {
+        "id": "bot-prompt-reviewer",
+        "rest": "none",
+        "visible": true,
+        "bounds": {
+          "top": 223,
+          "right": 1265,
+          "bottom": 438,
+          "left": 655
+        },
+        "viewport": {
+          "width": 1920,
+          "height": 1080,
+          "scrollY": 0
+        },
+        "accent": "#a879ff",
+        "runningAnimations": [
+          "bot-float",
+          "bot-blink"
+        ],
+        "animationDetails": [
+          {
+            "name": "bot-float",
+            "target": "bot-float",
+            "currentTime": 83.4400000000004,
+            "transform": "matrix(1, 0, 0, 1, 0, -0.00670116)"
+          },
+          {
+            "name": "bot-blink",
+            "target": "bot-eyes",
+            "currentTime": 83.4400000000004,
+            "transform": "matrix(1, 0, 0, 1, 0, 0)"
+          }
+        ],
+        "motion": {
+          "animation": "bot-float",
+          "target": "bot-float",
+          "elapsedTimelineMs": 650.004,
+          "transformChanged": true
+        }
+      },
+      {
+        "id": "bot-parcel-coordinator",
+        "rest": "none",
+        "visible": true,
+        "bounds": {
+          "top": 223,
+          "right": 1887,
+          "bottom": 438,
+          "left": 1277
+        },
+        "viewport": {
+          "width": 1920,
+          "height": 1080,
+          "scrollY": 0
+        },
+        "accent": "#35c7be",
+        "runningAnimations": [
+          "bot-float",
+          "bot-blink",
+          "bot-dispatch"
+        ],
+        "animationDetails": [
+          {
+            "name": "bot-float",
+            "target": "bot-float",
+            "currentTime": 83.4400000000004,
+            "transform": "matrix(1, 0, 0, 1, 0, -0.00670116)"
+          },
+          {
+            "name": "bot-blink",
+            "target": "bot-eyes",
+            "currentTime": 83.4400000000004,
+            "transform": "matrix(1, 0, 0, 1, 0, 0)"
+          },
+          {
+            "name": "bot-dispatch",
+            "target": "bot-accent-fill bot-relay-token",
+            "currentTime": 83.4400000000004,
+            "transform": "matrix(1, 0, 0, 1, -2.54977, 0)"
+          }
+        ],
+        "motion": {
+          "animation": "bot-float",
+          "target": "bot-float",
+          "elapsedTimelineMs": 650.004,
+          "transformChanged": true
+        }
+      },
+      {
+        "id": "bot-model-scout",
+        "rest": "none",
+        "visible": true,
+        "bounds": {
+          "top": 450,
+          "right": 643,
+          "bottom": 665,
+          "left": 33
+        },
+        "viewport": {
+          "width": 1920,
+          "height": 1080,
+          "scrollY": 0
+        },
+        "accent": "#ff9b4a",
+        "runningAnimations": [
+          "bot-float",
+          "bot-blink",
+          "bot-scan"
+        ],
+        "animationDetails": [
+          {
+            "name": "bot-float",
+            "target": "bot-float",
+            "currentTime": 116.7720000000001,
+            "transform": "matrix(1, 0, 0, 1, 0, -0.0132187)"
+          },
+          {
+            "name": "bot-blink",
+            "target": "bot-eyes",
+            "currentTime": 116.7720000000001,
+            "transform": "matrix(1, 0, 0, 1, 0, 0)"
+          },
+          {
+            "name": "bot-scan",
+            "target": "bot-accent-fill bot-dish",
+            "currentTime": 116.7720000000001,
+            "transform": "matrix(0.99683, -0.079563, 0.079563, 0.99683, 0, 0)"
+          }
+        ],
+        "motion": {
+          "animation": "bot-float",
+          "target": "bot-float",
+          "elapsedTimelineMs": 650.0039999999999,
+          "transformChanged": true
+        }
+      },
+      {
+        "id": "bot-resource-guardian",
+        "rest": "none",
+        "visible": true,
+        "bounds": {
+          "top": 450,
+          "right": 1265,
+          "bottom": 665,
+          "left": 655
+        },
+        "viewport": {
+          "width": 1920,
+          "height": 1080,
+          "scrollY": 0
+        },
+        "accent": "#55c979",
+        "runningAnimations": [
+          "bot-warning",
+          "bot-blink",
+          "bot-gauge"
+        ],
+        "animationDetails": [
+          {
+            "name": "bot-warning",
+            "target": "bot-float",
+            "currentTime": 116.7720000000001,
+            "transform": "matrix(1, 0, 0, 1, -0.175613, 0)"
+          },
+          {
+            "name": "bot-blink",
+            "target": "bot-eyes",
+            "currentTime": 116.7720000000001,
+            "transform": "matrix(1, 0, 0, 1, 0, 0)"
+          },
+          {
+            "name": "bot-gauge",
+            "target": "bot-gauge-needle",
+            "currentTime": 116.7720000000001,
+            "transform": "matrix(0.871646, -0.490135, 0.490135, 0.871646, 0, 0)"
+          }
+        ],
+        "motion": {
+          "animation": "bot-warning",
+          "target": "bot-float",
+          "elapsedTimelineMs": 650.0039999999999,
+          "transformChanged": true
+        }
+      },
+      {
+        "id": "bot-quality-inspector",
+        "rest": "none",
+        "visible": true,
+        "bounds": {
+          "top": 450,
+          "right": 1887,
+          "bottom": 665,
+          "left": 1277
+        },
+        "viewport": {
+          "width": 1920,
+          "height": 1080,
+          "scrollY": 0
+        },
+        "accent": "#e3b84e",
+        "runningAnimations": [
+          "bot-float",
+          "bot-blink",
+          "bot-inspect"
+        ],
+        "animationDetails": [
+          {
+            "name": "bot-float",
+            "target": "bot-float",
+            "currentTime": 116.7720000000001,
+            "transform": "matrix(1, 0, 0, 1, 0, -0.0132187)"
+          },
+          {
+            "name": "bot-blink",
+            "target": "bot-eyes",
+            "currentTime": 116.7720000000001,
+            "transform": "matrix(1, 0, 0, 1, 0, 0)"
+          },
+          {
+            "name": "bot-inspect",
+            "target": "bot-role-accessory bot-inspector",
+            "currentTime": 116.7720000000001,
+            "transform": "matrix(1, 0, 0, 1, -0.226518, -0.113259)"
+          }
+        ],
+        "motion": {
+          "animation": "bot-float",
+          "target": "bot-float",
+          "elapsedTimelineMs": 650.0039999999999,
+          "transformChanged": true
+        }
+      }
+    ]
+  },
+  "actualLifecycle": {
+    "idleAmbient": {
+      "operationalStatePreserved": "idle",
+      "lookAndSleepObservedTogether": true,
+      "evidence": [
+        {
+          "id": "bot-prompt-reviewer",
+          "disposition": "sleeping",
+          "expectedAnimation": "bot-sleep-breathe",
+          "runningAnimations": [
+            "bot-sleep-breathe",
+            "bot-sleep-nod",
+            "bot-sleep-glance",
+            "bot-sleep-peek",
+            "bot-sleep-lids",
+            "bot-dream-z"
+          ],
+          "elapsedTimelineMs": 1016.6939999989952,
+          "transformChanged": true
+        },
+        {
+          "id": "bot-parcel-coordinator",
+          "disposition": "sleeping",
+          "expectedAnimation": "bot-sleep-breathe",
+          "runningAnimations": [
+            "bot-sleep-breathe",
+            "bot-sleep-nod",
+            "bot-sleep-glance",
+            "bot-sleep-peek",
+            "bot-sleep-lids",
+            "bot-dream-z"
+          ],
+          "elapsedTimelineMs": 1016.6939999989952,
+          "transformChanged": true
+        },
+        {
+          "id": "bot-resource-guardian",
+          "disposition": "looking",
+          "expectedAnimation": "bot-look-around",
+          "runningAnimations": [
+            "bot-float",
+            "bot-curious-antenna",
+            "bot-look-tilt",
+            "bot-look-around",
+            "bot-blink"
+          ],
+          "elapsedTimelineMs": 1016.6939999989952,
+          "transformChanged": true
+        }
+      ]
+    },
+    "concurrentCrew": [
+      {
+        "id": "lane-master",
+        "name": "Cadence",
+        "role": "Lane Master",
+        "state": "working",
+        "summary": "2 active executions; 1 waiting; 1 blocked.",
+        "signals": [
+          {
+            "state": "working",
+            "label": "active",
+            "count": 2
+          },
+          {
+            "state": "queued",
+            "label": "queued",
+            "count": 1
+          },
+          {
+            "state": "blocked",
+            "label": "blocked",
+            "count": 1
+          }
+        ],
+        "freshness": "current"
+      },
+      {
+        "id": "prompt-reviewer",
+        "name": "Quill",
+        "role": "Master Prompt Reviewer",
+        "state": "awaiting_operator",
+        "summary": "1 explicit operator question await an answer.",
+        "signals": [
+          {
+            "state": "awaiting_operator",
+            "label": "questions",
+            "count": 1
+          }
+        ],
+        "freshness": "current"
+      },
+      {
+        "id": "parcel-coordinator",
+        "name": "Relay",
+        "role": "Work Parcel Coordinator",
+        "state": "working",
+        "summary": "1 parcel moving; 0 waiting; 0 blocked.",
+        "signals": [
+          {
+            "state": "working",
+            "label": "active",
+            "count": 1
+          },
+          {
+            "state": "awaiting_operator",
+            "label": "questions",
+            "count": 1
+          }
+        ],
+        "freshness": "current"
+      },
+      {
+        "id": "model-scout",
+        "name": "Lumen",
+        "role": "Model Scout",
+        "state": "working",
+        "summary": "1 frozen model evaluation running; 0 queued.",
+        "signals": [
+          {
+            "state": "working",
+            "label": "evaluating",
+            "count": 1
+          }
+        ],
+        "freshness": "current"
+      },
+      {
+        "id": "resource-guardian",
+        "name": "Rook",
+        "role": "Resource Guardian",
+        "state": "resource_pressure",
+        "summary": "0 available; 1 busy; 0 degraded; 0 offline; 0 unknown.",
+        "signals": [
+          {
+            "state": "working",
+            "label": "active workloads",
+            "count": 1
+          },
+          {
+            "state": "resource_pressure",
+            "label": "pressure",
+            "count": 1
+          }
+        ],
+        "freshness": "current"
+      },
+      {
+        "id": "quality-inspector",
+        "name": "Verity",
+        "role": "Quality Inspector",
+        "state": "reviewing",
+        "summary": "1 validation check active; 0 failed; 0 blocked.",
+        "signals": [
+          {
+            "state": "reviewing",
+            "label": "validating",
+            "count": 1
+          },
+          {
+            "state": "queued",
+            "label": "awaiting checks",
+            "count": 1
+          }
+        ],
+        "freshness": "current"
+      }
+    ],
+    "completedCrew": [
+      {
+        "id": "lane-master",
+        "name": "Cadence",
+        "role": "Lane Master",
+        "state": "working",
+        "summary": "1 active execution; 1 waiting; 1 blocked.",
+        "signals": [
+          {
+            "state": "working",
+            "label": "active",
+            "count": 1
+          },
+          {
+            "state": "queued",
+            "label": "queued",
+            "count": 1
+          },
+          {
+            "state": "blocked",
+            "label": "blocked",
+            "count": 1
+          }
+        ],
+        "freshness": "current"
+      },
+      {
+        "id": "prompt-reviewer",
+        "name": "Quill",
+        "role": "Master Prompt Reviewer",
+        "state": "idle",
+        "summary": "Task entry is ready; no prompt is currently being planned.",
+        "signals": [],
+        "freshness": "current"
+      },
+      {
+        "id": "parcel-coordinator",
+        "name": "Relay",
+        "role": "Work Parcel Coordinator",
+        "state": "completed",
+        "summary": "1 parcel tracked; 1 completed; 0 failed.",
+        "signals": [],
+        "freshness": "current"
+      },
+      {
+        "id": "model-scout",
+        "name": "Lumen",
+        "role": "Model Scout",
+        "state": "blocked",
+        "summary": "0 of 1 configured model route currently qualified.",
+        "signals": [],
+        "freshness": "current"
+      },
+      {
+        "id": "resource-guardian",
+        "name": "Rook",
+        "role": "Resource Guardian",
+        "state": "idle",
+        "summary": "1 available; 0 busy; 0 degraded; 0 offline; 0 unknown.",
+        "signals": [],
+        "freshness": "current"
+      },
+      {
+        "id": "quality-inspector",
+        "name": "Verity",
+        "role": "Quality Inspector",
+        "state": "completed",
+        "summary": "3 verified outcomes; 0 failed; 0 blocked.",
+        "signals": [
+          {
+            "state": "completed",
+            "label": "verified",
+            "count": 3
+          }
+        ],
+        "freshness": "current"
+      }
+    ],
+    "navigation": {
+      "resourceGuardian": {
+        "interaction": "pointer",
+        "target": "#systems-list",
+        "at": "2026-09-06T13:45:16.816Z"
+      },
+      "parcelCoordinator": {
+        "interaction": "keyboard-enter",
+        "target": "#parcel-list",
+        "at": "2026-09-06T13:45:18.983Z"
+      }
+    }
+  },
+  "reducedMotion": {
+    "setting": "reduced",
+    "animatedNames": [
+      "bot-blink"
+    ]
+  },
+  "simulatedGallery": {
+    "clearlyLabelled": true,
+    "presetsRecorded": [
+      "mixed",
+      "all-stale"
+    ],
+    "canvasesRecorded": [
+      "light",
+      "dark"
+    ],
+    "productionStateMutated": false
+  },
+  "screenshots": [
+    {
+      "file": "agent-control-dashboard-characters/01-crew-initial.png",
+      "sha256": "edcc82e3212e0f54efb3f12bc2c1fa91fa19eb5ac4bf3e424198ba164db74233",
+      "bytes": 862204,
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "fullPage": false
+    },
+    {
+      "file": "agent-control-dashboard-characters/02-crew-concurrent-live.png",
+      "sha256": "531b67294febc3e94e9cd3e61a6c0217b8a0f61edabff0ea8be550671cbd6dfb",
+      "bytes": 881708,
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "fullPage": false
+    },
+    {
+      "file": "agent-control-dashboard-characters/03-resource-navigation.png",
+      "sha256": "39231ee3d116c731f9529960b28e08b348d833a8674e6c3f8eac6e658e24df68",
+      "bytes": 498682,
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "fullPage": false
+    },
+    {
+      "file": "agent-control-dashboard-characters/04-crew-completed.png",
+      "sha256": "56f95b2fe96287330aba48a59e3c0342200ad8780a1c71ccfbe22ea19839d726",
+      "bytes": 856020,
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "fullPage": false
+    },
+    {
+      "file": "agent-control-dashboard-characters/05-crew-reduced-motion.png",
+      "sha256": "874fb31d2417471745a28bf24d23294fb9d65bd2196a91538d1b286c3f6f730e",
+      "bytes": 849782,
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "fullPage": false
+    },
+    {
+      "file": "agent-control-dashboard-characters/06-simulated-gallery-light.png",
+      "sha256": "67e1d55d2d2aeadf55c07ebe37e6b12845f5b846c1edd5933432767c1f8701ea",
+      "bytes": 976218,
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "fullPage": true
+    },
+    {
+      "file": "agent-control-dashboard-characters/07-simulated-gallery-stale-dark.png",
+      "sha256": "3eb30a0c24a75bac094ce44ec352511508797b62dd72475428148f2a21334dd2",
+      "bytes": 977462,
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "fullPage": true
+    },
+    {
+      "file": "agent-control-dashboard-characters/08-crew-mobile.png",
+      "sha256": "a2f1a314146b4708d54e7f99a1fb6e5f5c54060d4ae62c465087fc34ed7da885",
+      "bytes": 702031,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "fullPage": true
+    }
+  ],
+  "security": {
+    "operatorCredentialPersisted": false,
+    "externalCredentialsUsed": false,
+    "productionStateTouched": false
+  }
+}

@@ -30,6 +30,7 @@ import type {GovernedRetrievalRuntime, RetrievalProjection} from './governed-ret
 import {projectLaneHistory, projectParameterizedRunHistory, type ExecutionHistoryEntry} from './execution-history.js';
 import type {CapabilityCandidateClassification, CapabilityCandidateState, CapabilityIntelligenceStore} from './capability-intelligence.js';
 import type {FrozenQualificationSuite, ModelIntelligenceLedger} from './model-intelligence.js';
+import {projectDashboardCharacterCrew, type DashboardCharacterCrewProjection} from './dashboard-characters.js';
 
 export type ControlEventType =
   | 'social.activity'
@@ -123,6 +124,7 @@ export interface SystemProjection {
   tokenBatonRouting: TokenRoutingProjection;
   retrieval: RetrievalProjection;
   harnessEfficiency: HarnessEfficiencyMetrics;
+  characterCrew: DashboardCharacterCrewProjection;
 }
 
 export class ControlEventBus {
@@ -205,12 +207,17 @@ export class AgentControlService {
   }
 
   snapshot(): SystemProjection {
+    const observedAt = new Date().toISOString();
     const lanes = this.state.lanes.map(lane => this.projectLane(lane));
     const providerRows = this.providers?.list().map(provider => ({id: provider.id, name: provider.name, kind: provider.kind, health: this.providers?.health(provider.id)?.health ?? 'unknown', capabilities: [...provider.capabilities]})) ?? [];
     const workers = new Map((this.jobRuntime?.workers.list() ?? []).map(worker => [worker.id, worker]));
     const resourceRows = this.resourceRows.map(resource => { const worker = workers.get(resource.id), node = this.managedNodes?.get(resource.id); return {...resource, capabilities: node?.capabilities ?? resource.capabilities, health: node?.health ?? worker?.health ?? 'unknown', capacity: worker?.capacity, active: worker?.active, observedAt: node?.lastProbeAt ?? worker?.observedAt ?? null, ...(node ? {node} : {})}; });
     const degraded = this.state.lanes.some(lane => lane.status === 'error') || providerRows.some(provider => provider.health === 'offline') || resourceRows.some(resource => ['degraded', 'offline'].includes(resource.health));
     const jobRuns = this.jobRuntime?.ledger.list() ?? [], jobDefinitions = this.jobRuntime?.catalog.listJobs() ?? [], schedules = this.jobRuntime?.catalog.listSchedules() ?? [], savedJobs = this.parameterizedJobs?.savedJobs.list() ?? [], parameterizedRuns = this.parameterizedJobs?.runs.list() ?? [];
+    const outstandingApprovals = this.approvalCount(), tokenBatonRouting = this.tokenRouting(), systems = this.systems();
+    const models = this.modelRegistry?.list().map(model => ({id: model.id, provider: model.provider, enabled: model.enabled, qualificationState: model.qualification.state, accountAvailability: model.account?.availability, checkedAt: model.qualification.checkedAt})) ?? [];
+    const modelBatches = this.modelIntelligence?.projection(observedAt).queue ?? [];
+    const characterCrew = projectDashboardCharacterCrew({observedAt, paused: this.state.paused, lanes, runs: jobRuns, parameterizedRuns, parcels: this.workParcels?.list() ?? [], systems, models, modelBatches, tokenRouting: tokenBatonRouting, outstandingApprovals});
     return {
       schema: 'agent-control.system-status/v1',
       authority: 'AgentControlService',
@@ -221,9 +228,9 @@ export class AgentControlService {
       lanes,
       providers: providerRows,
       resources: structuredClone(resourceRows),
-      outstandingApprovals: this.approvalCount(),
+      outstandingApprovals,
       lastRestorePoint: this.state.lastRestorePoint,
-      observedAt: new Date().toISOString(),
+      observedAt,
       jobs: {
         total: jobDefinitions.length + savedJobs.length,
         enabled: jobDefinitions.filter(job => job.spec.enabled !== false).length + savedJobs.filter(job => job.enabled).length,
@@ -240,9 +247,10 @@ export class AgentControlService {
         schedulesEnabled: schedules.filter(schedule => this.jobRuntime?.ledger.schedule(schedule.metadata.id)?.enabled).length + savedJobs.filter(job => job.schedule?.enabled).length,
       },
       tokenAwareOutput: this.commandOutputMetrics(),
-      tokenBatonRouting: this.tokenRouting(),
+      tokenBatonRouting,
       retrieval: this.retrievalProjection(),
       harnessEfficiency: this.harnessEfficiencyMetrics(),
+      characterCrew,
     };
   }
 
