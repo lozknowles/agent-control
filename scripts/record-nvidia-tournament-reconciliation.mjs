@@ -12,7 +12,7 @@ const outputDir=path.resolve(required('AGENT_CONTROL_NVIDIA_TOURNAMENT_OUTPUT_DI
 const sourceEvidence=path.join(outputDir,'agent-control-3.9-nvidia-shortlist-tournament-20260906-v1.json');
 const stem=process.env.AGENT_CONTROL_NVIDIA_RECONCILIATION_STEM?.trim()??'agent-control-3.9-nvidia-shortlist-tournament-20260906-reconciliation-v1';
 if(!/^agent-control-3\.9-nvidia-shortlist-tournament-20260906-reconciliation-v[1-9][0-9]*$/.test(stem))throw new Error('reconciliation_stem_invalid');
-const evidenceFile=path.join(outputDir,`${stem}.json`),videoFile=path.join(outputDir,`${stem}.mp4`),manifestFile=path.join(outputDir,`${stem}-video.json`),screensDir=path.join(outputDir,stem),rawDir=path.join(stateDir,'reconciliation-video-raw');
+const evidenceFile=path.join(outputDir,`${stem}.json`),videoFile=path.join(outputDir,`${stem}.mp4`),manifestFile=path.join(outputDir,`${stem}-video.json`),screensDir=path.join(outputDir,stem),rawDir=path.join(stateDir,`${stem}-video-raw`);
 const configFile=path.join(stateDir,'nvidia-tournament-config.json'),chromiumExecutable=process.env.AGENT_CONTROL_CHROMIUM??'/snap/bin/chromium',token=randomBytes(32).toString('hex'),startedAt=new Date().toISOString();
 if(!fs.existsSync(configFile)||!fs.existsSync(sourceEvidence))throw new Error('completed_tournament_state_required');
 for(const file of [evidenceFile,videoFile,manifestFile])if(fs.existsSync(file))throw new Error(`reconciliation_evidence_exists:${path.basename(file)}`);
