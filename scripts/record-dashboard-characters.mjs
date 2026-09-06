@@ -69,13 +69,13 @@ async function characterAnimationSnapshot(page) {
       return {name, target: target.getAttribute('class') || target.tagName, currentTime: Number(item.currentTime ?? 0), transform: style.transform};
     }).filter(item => item?.name && item.name !== 'none') ?? [];
     const motion = animations.find(item => item.name !== 'bot-blink') ?? animations[0] ?? null;
-    return {id, visible: rect.width > 0 && rect.height > 0 && rect.top >= 0 && rect.left >= 0 && rect.bottom <= innerHeight && rect.right <= innerWidth, bounds: {top: Math.round(rect.top), right: Math.round(rect.right), bottom: Math.round(rect.bottom), left: Math.round(rect.left)}, viewport: {width: innerWidth, height: innerHeight, scrollY}, accent, runningAnimations: [...new Set(animations.map(item => item.name))], motion};
+    return {id, rest: card.dataset.botRest || 'none', visible: rect.width > 0 && rect.height > 0 && rect.top >= 0 && rect.left >= 0 && rect.bottom <= innerHeight && rect.right <= innerWidth, bounds: {top: Math.round(rect.top), right: Math.round(rect.right), bottom: Math.round(rect.bottom), left: Math.round(rect.left)}, viewport: {width: innerWidth, height: innerHeight, scrollY}, accent, runningAnimations: [...new Set(animations.map(item => item.name))], animationDetails: animations, motion};
   }));
 }
 
 let browser, context, page, video;
 const screenshots = [], consoleErrors = [], httpErrors = [], navigation = {};
-let liveAt, concurrentCrew, completedCrew, animationEvidence, reducedMotionEvidence, browserVersion;
+let liveAt, concurrentCrew, completedCrew, animationEvidence, idleAmbientEvidence, reducedMotionEvidence, browserVersion;
 try {
   await waitPhase('DASHBOARD_READY');
   const {chromium} = require(playwrightRoot);
@@ -95,8 +95,18 @@ try {
 
   await page.click('[data-view="crew"]');
   await page.waitForSelector('#crew-live-grid .bot-card');
+  await page.waitForFunction(() => {
+    const idle = [...document.querySelectorAll('#crew-live-grid .bot-state-idle')];
+    return idle.some(card => card.dataset.botRest === 'looking') && idle.some(card => card.dataset.botRest === 'sleeping');
+  }, undefined, {timeout: 10_000});
+  const idleBefore = await characterAnimationSnapshot(page); await delay(1_100); const idleAfter = await characterAnimationSnapshot(page);
+  idleAmbientEvidence = idleBefore.filter(item => item.rest !== 'none').map(before => {
+    const after = idleAfter.find(item => item.id === before.id), expectedAnimation = before.rest === 'looking' ? 'bot-look-around' : 'bot-sleep-breathe', first = before.animationDetails.find(item => item.name === expectedAnimation), second = after?.animationDetails.find(item => item.name === expectedAnimation);
+    return {id: before.id, disposition: before.rest, expectedAnimation, runningAnimations: before.runningAnimations, elapsedTimelineMs: first && second ? second.currentTime - first.currentTime : 0, transformChanged: Boolean(first && second && first.transform !== second.transform)};
+  });
+  if (!idleAmbientEvidence.some(item => item.disposition === 'looking') || !idleAmbientEvidence.some(item => item.disposition === 'sleeping') || idleAmbientEvidence.some(item => item.elapsedTimelineMs < 800 || !item.transformChanged)) throw new Error(`idle_ambient_animation_evidence_missing:${JSON.stringify(idleAmbientEvidence)}`);
   screenshots.push(await screenshot(page, '01-crew-initial.png'));
-  await delay(1_500);
+  await delay(3_000);
 
   await page.click('[data-view="jobs"]');
   await page.fill('#natural-task-prompt', 'Run the bounded Crew Lifecycle qualification and retain browser evidence.');
@@ -170,12 +180,23 @@ try {
   const evidenceBytes = fs.readFileSync(evidenceFile), videoBytes = fs.readFileSync(videoFile), probe = JSON.parse(execFileSync('ffprobe', ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=codec_name,width,height,duration', '-of', 'json', videoFile], {encoding: 'utf8'}));
   const manifest = {
     schema: 'agent-control.dashboard-character-video/v1', recordedAt: new Date().toISOString(), source: 'Isolated real AgentControlService dashboard over loopback; no deployment',
-    repository: {head: execFileSync('git', ['rev-parse', 'HEAD'], {cwd: root, encoding: 'utf8'}).trim(), branch: execFileSync('git', ['branch', '--show-current'], {cwd: root, encoding: 'utf8'}).trim(), dirtyDiffSha256: digest(execFileSync('git', ['diff', '--binary', 'HEAD'], {cwd: root}))},
+    repository: {
+      head: execFileSync('git', ['rev-parse', 'HEAD'], {cwd: root, encoding: 'utf8'}).trim(),
+      branch: execFileSync('git', ['branch', '--show-current'], {cwd: root, encoding: 'utf8'}).trim(),
+      dirtyDiffSha256: digest(execFileSync('git', [
+        'diff', '--binary', 'HEAD', '--', '.',
+        ':!docs/evidence/agent-control-dashboard-characters-qualification.json',
+        ':!docs/evidence/agent-control-dashboard-characters-qualification.md',
+        ':!docs/evidence/agent-control-dashboard-characters-video.json',
+        ':!docs/evidence/agent-control-dashboard-characters.mp4',
+        ':!docs/evidence/agent-control-dashboard-characters/**',
+      ], {cwd: root, maxBuffer: 16 * 1024 * 1024})),
+    },
     qualification: {file: path.relative(path.dirname(manifestFile), evidenceFile), sha256: digest(evidenceBytes), bytes: evidenceBytes.length, verdict: 'PASS'},
     video: {file: path.relative(path.dirname(manifestFile), videoFile), sha256: digest(videoBytes), bytes: videoBytes.length, format: 'MP4/H.264', stream: probe.streams[0]},
     browser: {engine: 'Chromium', version: browserVersion, headless: true, liveAt, streamState: 'LIVE', consoleErrors, httpErrors},
     allCharacters: {visibleTogether: true, animatedTogetherUnderFullMotion: true, concurrentStateAt: concurrentPhase.at, visibleAnimatedDwellMs: 4_000, evidence: animationEvidence},
-    actualLifecycle: {concurrentCrew, completedCrew, navigation},
+    actualLifecycle: {idleAmbient: {operationalStatePreserved: 'idle', lookAndSleepObservedTogether: true, evidence: idleAmbientEvidence}, concurrentCrew, completedCrew, navigation},
     reducedMotion: reducedMotionEvidence,
     simulatedGallery: {clearlyLabelled: true, presetsRecorded: ['mixed', 'all-stale'], canvasesRecorded: ['light', 'dark'], productionStateMutated: false},
     screenshots,

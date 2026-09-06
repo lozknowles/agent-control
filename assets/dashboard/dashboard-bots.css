@@ -63,12 +63,12 @@ button.bot-card:focus-visible,
   outline-offset: 3px;
 }
 
-.bot-lane-master { --bot-accent: #4f8cff; }
-.bot-prompt-reviewer { --bot-accent: #a879ff; }
-.bot-parcel-coordinator { --bot-accent: #35c7be; }
-.bot-model-scout { --bot-accent: #ff9b4a; }
-.bot-resource-guardian { --bot-accent: #55c979; }
-.bot-quality-inspector { --bot-accent: #e3b84e; }
+.bot-lane-master { --bot-accent: #4f8cff; --bot-rest-delay: 0s; }
+.bot-prompt-reviewer { --bot-accent: #a879ff; --bot-rest-delay: -1.7s; }
+.bot-parcel-coordinator { --bot-accent: #35c7be; --bot-rest-delay: -3.4s; }
+.bot-model-scout { --bot-accent: #ff9b4a; --bot-rest-delay: -5.1s; }
+.bot-resource-guardian { --bot-accent: #55c979; --bot-rest-delay: -6.8s; }
+.bot-quality-inspector { --bot-accent: #e3b84e; --bot-rest-delay: -8.5s; }
 
 .bot-state-working,
 .bot-state-reviewing,
@@ -153,6 +153,18 @@ button.bot-card:focus-visible,
   stroke-linejoin: round;
 }
 .bot-eyes { fill: var(--bot-accent); }
+.bot-sleep-eyes,
+.bot-sleep-signals { opacity: 0; }
+.bot-sleep-eyes path {
+  fill: none;
+  stroke: color-mix(in srgb, var(--bot-accent) 82%, white);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+.bot-sleep-signals {
+  fill: color-mix(in srgb, var(--bot-accent) 82%, white);
+  font: 800 13px/1 ui-rounded, ui-sans-serif, sans-serif;
+}
 .bot-mouth { fill: none; stroke: color-mix(in srgb, var(--bot-accent) 72%, white); stroke-width: 2; stroke-linecap: round; }
 .bot-mouth-smile,
 .bot-mouth-frown { display: none; }
@@ -337,6 +349,50 @@ button.bot-card:focus-visible,
   35% { transform: translateX(-1.5px); }
   70% { transform: translateX(1.5px); }
 }
+@keyframes bot-look-around {
+  0%, 10%, 100% { transform: translate(0, 0); }
+  18%, 30% { transform: translate(-7px, 0); }
+  38%, 50% { transform: translate(7px, 0); }
+  58%, 70% { transform: translate(-3px, 3px); }
+  78%, 90% { transform: translate(4px, -2px); }
+}
+@keyframes bot-look-tilt {
+  0%, 12%, 100% { transform: rotate(0); }
+  20%, 34% { transform: rotate(-2deg); }
+  42%, 56% { transform: rotate(2deg); }
+  64%, 76% { transform: rotate(-1deg); }
+}
+@keyframes bot-curious-antenna {
+  0%, 12%, 100% { transform: rotate(0); }
+  24%, 38% { transform: rotate(-7deg); }
+  50%, 64% { transform: rotate(7deg); }
+}
+@keyframes bot-sleep-breathe {
+  0%, 100% { transform: translateY(4px) scaleY(.985); }
+  50% { transform: translateY(2px) scaleY(1.01); }
+}
+@keyframes bot-sleep-nod {
+  0%, 66%, 100% { transform: rotate(2deg) translateY(1px); }
+  72%, 84% { transform: rotate(-1deg) translateY(-1px); }
+}
+@keyframes bot-sleep-peek {
+  0%, 66%, 86%, 100% { opacity: 0; }
+  70%, 82% { opacity: 1; }
+}
+@keyframes bot-sleep-lids {
+  0%, 66%, 86%, 100% { opacity: 1; }
+  70%, 82% { opacity: 0; }
+}
+@keyframes bot-sleep-glance {
+  0%, 68%, 86%, 100% { transform: translateX(0); }
+  72%, 76% { transform: translateX(-5px); }
+  78%, 82% { transform: translateX(5px); }
+}
+@keyframes bot-dream-z {
+  0%, 12%, 100% { opacity: 0; transform: translate(0, 5px) scale(.86); }
+  28%, 58% { opacity: .9; transform: translate(3px, -4px) scale(1); }
+  70%, 86% { opacity: 0; transform: translate(6px, -10px) scale(1.08); }
+}
 
 html[data-bot-motion="full"] .agent-bot .bot-float { animation: bot-float 4s ease-in-out infinite; transform-origin: 90px 90px; }
 html[data-bot-motion="full"] .agent-bot .bot-eyes { animation: bot-blink 5.4s steps(1, end) infinite; transform-origin: 90px 66px; }
@@ -354,6 +410,15 @@ html[data-bot-motion="full"] .bot-state-recovering .bot-recovery-gear { animatio
 html[data-bot-motion="full"] .bot-state-handing_over .bot-handoff-token { animation: bot-pass 1.45s ease-in-out infinite; }
 html[data-bot-motion="full"] .bot-state-resource_pressure .bot-float { animation: bot-warning 1.4s ease-in-out infinite; }
 html[data-bot-motion="full"] .bot-acknowledge .bot-complete-mark { animation: bot-ack .75s ease-out 1; transform-origin: 145px 82px; }
+html[data-bot-motion="full"] .bot-state-idle.bot-rest-looking .bot-eye-direction { animation: bot-look-around 6.8s ease-in-out infinite; animation-delay: var(--bot-rest-delay); transform-origin: 90px 66px; }
+html[data-bot-motion="full"] .bot-state-idle.bot-rest-looking .bot-head { animation: bot-look-tilt 6.8s ease-in-out infinite; animation-delay: var(--bot-rest-delay); transform-origin: 90px 74px; }
+html[data-bot-motion="full"] .bot-state-idle.bot-rest-looking .bot-antenna { animation: bot-curious-antenna 6.8s ease-in-out infinite; animation-delay: var(--bot-rest-delay); transform-origin: 90px 38px; }
+html[data-bot-motion="full"] .bot-state-idle.bot-rest-sleeping .bot-float { animation: bot-sleep-breathe 4.8s ease-in-out infinite; animation-delay: var(--bot-rest-delay); transform-origin: 90px 136px; }
+html[data-bot-motion="full"] .bot-state-idle.bot-rest-sleeping .bot-head { animation: bot-sleep-nod 13s ease-in-out infinite; animation-delay: var(--bot-rest-delay); transform-origin: 90px 91px; }
+html[data-bot-motion="full"] .bot-state-idle.bot-rest-sleeping .bot-eye-direction { animation: bot-sleep-glance 13s ease-in-out infinite; animation-delay: var(--bot-rest-delay); transform-origin: 90px 66px; }
+html[data-bot-motion="full"] .bot-state-idle.bot-rest-sleeping .bot-eyes { opacity: 0; animation: bot-sleep-peek 13s steps(1, end) infinite; animation-delay: var(--bot-rest-delay); transform-origin: 90px 66px; }
+html[data-bot-motion="full"] .bot-state-idle.bot-rest-sleeping .bot-sleep-eyes { opacity: 1; animation: bot-sleep-lids 13s steps(1, end) infinite; animation-delay: var(--bot-rest-delay); }
+html[data-bot-motion="full"] .bot-state-idle.bot-rest-sleeping .bot-sleep-signals { opacity: 1; animation: bot-dream-z 4.1s ease-in-out infinite; animation-delay: var(--bot-rest-delay); transform-origin: 143px 42px; }
 
 html[data-bot-motion="reduced"] .agent-bot .bot-eyes { animation: bot-blink 8s steps(1, end) infinite; transform-origin: 90px 66px; }
 html[data-bot-motion="off"] .agent-bot *,

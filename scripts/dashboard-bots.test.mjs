@@ -23,6 +23,15 @@ test('motion preference is user-controlled and system reduced motion safely caps
   assert.equal(bots.effectiveMotion('off', false), 'off');
 });
 
+test('truthful idle state receives looking then sleeping presentation without changing state', () => {
+  const now = Date.parse('2026-09-06T14:00:00.000Z');
+  assert.equal(bots.idleDisposition({state: 'working', lastUpdatedAt: '2026-09-06T13:59:59.000Z'}, now), null);
+  assert.equal(bots.idleDisposition({state: 'idle', lastUpdatedAt: '2026-09-06T13:59:30.001Z'}, now), 'looking');
+  assert.equal(bots.idleDisposition({state: 'idle', lastUpdatedAt: '2026-09-06T13:59:15.000Z'}, now), 'sleeping');
+  assert.equal(bots.idleDisposition({state: 'idle', lastUpdatedAt: null}, now), 'sleeping');
+  assert.equal(bots.idleLookDurationMs, 45_000);
+});
+
 test('completion acknowledgement occurs only on a fresh live transition, never initial load or reconnect', () => {
   const working = {state: 'working', freshness: 'current'};
   const completed = {state: 'completed', freshness: 'current'};
@@ -53,6 +62,14 @@ test('visual layer has state text equivalents, role accessories, focus, mobile a
   assert.match(css, /\.agent-bot\.bot-offscreen/);
   assert.match(source, /suppressNextAcknowledgement/);
   assert.match(source, /RECONNECTING/);
+  assert.match(source, /bot-sleep-eyes/);
+  assert.match(source, /bot-sleep-signals/);
+  assert.match(css, /bot-look-around/);
+  assert.match(css, /bot-sleep-breathe/);
+  assert.match(css, /bot-sleep-peek/);
+  assert.match(css, /bot-dream-z/);
+  assert.match(css, /data-bot-motion="full".*bot-rest-looking/s);
+  assert.match(css, /data-bot-motion="full".*bot-rest-sleeping/s);
   assert.match(css, /@media \(max-width: 760px\)/);
   assert.doesNotMatch(css, /flash/i);
 });
