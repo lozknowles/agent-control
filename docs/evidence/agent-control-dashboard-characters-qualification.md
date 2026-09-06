@@ -4,7 +4,7 @@
 
 **PASS — DASHBOARD CHARACTER SYSTEM QUALIFIED**
 
-The character system was exercised from implementation commit `5285626917a6ed4e473079b9fe18fba6f471e165` on `feature/animated-dashboard-bots`. The run used an isolated `AgentControlService` over loopback and did not deploy, mutate production state, or use external credentials.
+The character system was exercised from implementation commit `ba19b0fe02d86d5fe381edabfb50ad1ef32fb00e` on `feature/animated-dashboard-bots`. The run used an isolated `AgentControlService` over loopback and did not deploy, mutate production state, or use external credentials.
 
 ## Governed exercise
 
@@ -12,9 +12,9 @@ The browser submitted one real bounded Work Parcel through the authenticated das
 
 | Evidence | Result |
 | --- | --- |
-| Work Parcel | `parcel-dcf63093-3b10-4e2e-9f2e-201650a2201d` — `SUCCEEDED` |
-| Job Runs | `run-d3be2241-dee9-48e3-82dd-330fa8b01453`, `run-f6e994a4-4e03-4619-b8b5-22b2d47af424` — both succeeded |
-| Stage batons | `0792ae60bb3f9d552e5612e61c8b1261ce7870360780532cd9f707116a0c5eed`, `b63d49ea2c5bf2fd744280c9e34c63eb0dde6e4753faed1857de13875cbabbc0` |
+| Work Parcel | `parcel-ada0213f-36ee-471e-aca8-5c38b02b6a33` — `SUCCEEDED` |
+| Job Runs | `run-50b29b38-0b30-41f8-b5de-d4b78aab45ab`, `run-97ae9ae4-90bc-485e-a00c-296a22454e5b` — both succeeded |
+| Stage batons | `f58521ad0605b59eb019254f5762b833452ccfb56738b77f212e498281135480`, `071deada7af28f3580ce8401452f5f10254e0b31f7048f5ce37b5083bb6a25f5` |
 | Operator question | answered through the authenticated dashboard as `web-operator` |
 | Model route | `local-dashboard-qualification` / `local-dashboard-qualification-model` / `qwen2.5-3b-instruct-q4_k_m.gguf` / `qualification-worker` |
 | Frozen evaluations | coding `192`, repository review `251`, structured output `95` provider-reported tokens; all `PASSED` |
@@ -36,9 +36,9 @@ The recording then shows Relay and Verity settle to `completed`, Quill and Rook 
 
 ## Video and animation proof
 
-The [40.88-second MP4](agent-control-dashboard-characters.mp4) is H.264 at 1920×1080 and 25 fps. SHA-256: `13705a2216630a5b78f73daa1343f9bfc76e136d52877626f30ec7e33a1156e4`.
+The [43.48-second MP4](agent-control-dashboard-characters.mp4) is H.264 at 1920×1080 and 25 fps. SHA-256: `4faba20d80e41e34d9ad6e1e699a95a93c4634a4ac6e6a6682c1e284ec0d8907`.
 
-At `2026-09-06T13:24:37.017Z`, all six operational cards were simultaneously inside the 1920×1080 viewport for a four-second recorded dwell. The browser sampled each Web Animation twice, approximately 633 ms apart. Every animation timeline advanced and every sampled transform changed:
+At `2026-09-06T13:45:11.041Z`, all six operational cards were simultaneously inside the 1920×1080 viewport for a four-second recorded dwell. The browser sampled each Web Animation twice, approximately 650 ms apart. Every animation timeline advanced and every sampled transform changed:
 
 | Character | Stable accent | Running animations during real state |
 | --- | --- | --- |
@@ -48,6 +48,8 @@ At `2026-09-06T13:24:37.017Z`, all six operational cards were simultaneously ins
 | Lumen | `#ff9b4a` | float, blink, scan |
 | Rook | `#55c979` | warning, blink, gauge |
 | Verity | `#e3b84e` | float, blink, inspect |
+
+Before work submission, the same real status projection also showed both ambient idle dispositions at once. Quill and Relay retained canonical `idle` while sleeping with breathing, nod, closed-eye/periodic-peek and drifting-`Z` animations. Rook retained canonical `idle` while looking around with eye, head and antenna movement. The recorder sampled the required `bot-sleep-breathe` and `bot-look-around` animations approximately 1,017 ms apart; every timeline advanced and every transform changed. This motion did not create or alter an Agent Control event.
 
 The full bounds, timeline deltas, transform-change assertions, browser version, lifecycle states and hashes are in the [video manifest](agent-control-dashboard-characters-video.json). The browser reported `LIVE`, no console errors and no HTTP errors. Rook navigation was exercised by pointer to `#systems-list`; Relay navigation was exercised with keyboard Enter to `#parcel-list`. Reduced mode left only the infrequent blink animation active.
 
@@ -69,6 +71,7 @@ All screenshot hashes and dimensions are recorded in the video manifest.
 Physically demonstrated from canonical runtime events:
 
 - idle, working, awaiting-operator, resource-pressure, reviewing, completed and blocked primary poses;
+- simultaneous real idle look-around and sleep/breathe/periodic-wake behavior without changing canonical `idle` state;
 - concurrent active, queued, blocked, question, pressure and verification badges/counts;
 - actual event-driven pose changes, full animation, completion acknowledgement, reduced motion, pointer navigation, keyboard navigation, desktop and mobile layout;
 - HTTP status reconciliation and typed SSE refresh;
@@ -96,9 +99,10 @@ Known limitation: Agent Control has no separately instrumented prompt-review wor
 Commands and results:
 
 - `npm run record:dashboard-characters` — `PASS`; real governed exercise, browser recording, eight screenshots and evidence reconciliation.
-- `npm run check` — `PASS`; TypeScript, bootstrap syntax, dashboard syntax, infrastructure neutrality, 45 implementation-status entries, and `845/845` tests.
+- focused character/web suite — `PASS`; `51/51` tests.
+- `npm run check` — `PASS`; TypeScript, bootstrap syntax, dashboard syntax, infrastructure neutrality, 45 implementation-status entries, and `846/846` tests.
 - `git diff --check` — `PASS` before the implementation checkpoint and repeated before evidence commit.
 
-Machine-readable qualification: [agent-control-dashboard-characters-qualification.json](agent-control-dashboard-characters-qualification.json), SHA-256 `96df9652eaaac290dd3aae239092e1f44f460e40eff47a65a9f071c414cdff3c`.
+Machine-readable qualification: [agent-control-dashboard-characters-qualification.json](agent-control-dashboard-characters-qualification.json), SHA-256 `d4408700d922885a2a8c334f07210ce117e3b4726e258785b777a034fd35135e`.
 
-Video manifest: [agent-control-dashboard-characters-video.json](agent-control-dashboard-characters-video.json), SHA-256 `8b931de1d55b15310bf61618fb97bea11abc21d1158b7b0a77819da8da3132b9`.
+Video manifest: [agent-control-dashboard-characters-video.json](agent-control-dashboard-characters-video.json), SHA-256 `7d16c516bf13f936ef7a4e641c06292b4fad8692ad355ac617a394e431f80e02`.

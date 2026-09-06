@@ -1,35 +1,35 @@
 {
   "schema": "agent-control.dashboard-character-video/v1",
-  "recordedAt": "2026-09-06T13:25:34.412Z",
+  "recordedAt": "2026-09-06T13:46:08.489Z",
   "source": "Isolated real AgentControlService dashboard over loopback; no deployment",
   "repository": {
-    "head": "5285626917a6ed4e473079b9fe18fba6f471e165",
+    "head": "ba19b0fe02d86d5fe381edabfb50ad1ef32fb00e",
     "branch": "feature/animated-dashboard-bots",
     "dirtyDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
   },
   "qualification": {
     "file": "agent-control-dashboard-characters-qualification.json",
-    "sha256": "96df9652eaaac290dd3aae239092e1f44f460e40eff47a65a9f071c414cdff3c",
+    "sha256": "d4408700d922885a2a8c334f07210ce117e3b4726e258785b777a034fd35135e",
     "bytes": 451384,
     "verdict": "PASS"
   },
   "video": {
     "file": "agent-control-dashboard-characters.mp4",
-    "sha256": "13705a2216630a5b78f73daa1343f9bfc76e136d52877626f30ec7e33a1156e4",
-    "bytes": 3336230,
+    "sha256": "4faba20d80e41e34d9ad6e1e699a95a93c4634a4ac6e6a6682c1e284ec0d8907",
+    "bytes": 4307801,
     "format": "MP4/H.264",
     "stream": {
       "codec_name": "h264",
       "width": 1920,
       "height": 1080,
-      "duration": "40.880000"
+      "duration": "43.480000"
     }
   },
   "browser": {
     "engine": "Chromium",
     "version": "152.0.7977.64",
     "headless": true,
-    "liveAt": "2026-09-06T13:24:32.467Z",
+    "liveAt": "2026-09-06T13:45:03.864Z",
     "streamState": "LIVE",
     "consoleErrors": [],
     "httpErrors": []
@@ -37,11 +37,12 @@
   "allCharacters": {
     "visibleTogether": true,
     "animatedTogetherUnderFullMotion": true,
-    "concurrentStateAt": "2026-09-06T13:24:37.017Z",
+    "concurrentStateAt": "2026-09-06T13:45:11.041Z",
     "visibleAnimatedDwellMs": 4000,
     "evidence": [
       {
         "id": "bot-lane-master",
+        "rest": "none",
         "visible": true,
         "bounds": {
           "top": 223,
@@ -60,15 +61,36 @@
           "bot-blink",
           "bot-conduct"
         ],
+        "animationDetails": [
+          {
+            "name": "bot-float",
+            "target": "bot-float",
+            "currentTime": 83.4400000000004,
+            "transform": "matrix(1, 0, 0, 1, 0, -0.00670116)"
+          },
+          {
+            "name": "bot-blink",
+            "target": "bot-eyes",
+            "currentTime": 83.4400000000004,
+            "transform": "matrix(1, 0, 0, 1, 0, 0)"
+          },
+          {
+            "name": "bot-conduct",
+            "target": "bot-tool bot-baton",
+            "currentTime": 83.4400000000004,
+            "transform": "matrix(0.998564, -0.0535685, 0.0535685, 0.998564, 0, 0)"
+          }
+        ],
         "motion": {
           "animation": "bot-float",
           "target": "bot-float",
-          "elapsedTimelineMs": 633.356,
+          "elapsedTimelineMs": 650.004,
           "transformChanged": true
         }
       },
       {
         "id": "bot-prompt-reviewer",
+        "rest": "none",
         "visible": true,
         "bounds": {
           "top": 223,
@@ -86,15 +108,30 @@
           "bot-float",
           "bot-blink"
         ],
+        "animationDetails": [
+          {
+            "name": "bot-float",
+            "target": "bot-float",
+            "currentTime": 83.4400000000004,
+            "transform": "matrix(1, 0, 0, 1, 0, -0.00670116)"
+          },
+          {
+            "name": "bot-blink",
+            "target": "bot-eyes",
+            "currentTime": 83.4400000000004,
+            "transform": "matrix(1, 0, 0, 1, 0, 0)"
+          }
+        ],
         "motion": {
           "animation": "bot-float",
           "target": "bot-float",
-          "elapsedTimelineMs": 633.356,
+          "elapsedTimelineMs": 650.004,
           "transformChanged": true
         }
       },
       {
         "id": "bot-parcel-coordinator",
+        "rest": "none",
         "visible": true,
         "bounds": {
           "top": 223,
@@ -113,15 +150,36 @@
           "bot-blink",
           "bot-dispatch"
         ],
+        "animationDetails": [
+          {
+            "name": "bot-float",
+            "target": "bot-float",
+            "currentTime": 83.4400000000004,
+            "transform": "matrix(1, 0, 0, 1, 0, -0.00670116)"
+          },
+          {
+            "name": "bot-blink",
+            "target": "bot-eyes",
+            "currentTime": 83.4400000000004,
+            "transform": "matrix(1, 0, 0, 1, 0, 0)"
+          },
+          {
+            "name": "bot-dispatch",
+            "target": "bot-accent-fill bot-relay-token",
+            "currentTime": 83.4400000000004,
+            "transform": "matrix(1, 0, 0, 1, -2.54977, 0)"
+          }
+        ],
         "motion": {
           "animation": "bot-float",
           "target": "bot-float",
-          "elapsedTimelineMs": 633.356,
+          "elapsedTimelineMs": 650.004,
           "transformChanged": true
         }
       },
       {
         "id": "bot-model-scout",
+        "rest": "none",
         "visible": true,
         "bounds": {
           "top": 450,
@@ -140,15 +198,36 @@
           "bot-blink",
           "bot-scan"
         ],
+        "animationDetails": [
+          {
+            "name": "bot-float",
+            "target": "bot-float",
+            "currentTime": 116.7720000000001,
+            "transform": "matrix(1, 0, 0, 1, 0, -0.0132187)"
+          },
+          {
+            "name": "bot-blink",
+            "target": "bot-eyes",
+            "currentTime": 116.7720000000001,
+            "transform": "matrix(1, 0, 0, 1, 0, 0)"
+          },
+          {
+            "name": "bot-scan",
+            "target": "bot-accent-fill bot-dish",
+            "currentTime": 116.7720000000001,
+            "transform": "matrix(0.99683, -0.079563, 0.079563, 0.99683, 0, 0)"
+          }
+        ],
         "motion": {
           "animation": "bot-float",
           "target": "bot-float",
-          "elapsedTimelineMs": 633.356,
+          "elapsedTimelineMs": 650.0039999999999,
           "transformChanged": true
         }
       },
       {
         "id": "bot-resource-guardian",
+        "rest": "none",
         "visible": true,
         "bounds": {
           "top": 450,
@@ -167,15 +246,36 @@
           "bot-blink",
           "bot-gauge"
         ],
+        "animationDetails": [
+          {
+            "name": "bot-warning",
+            "target": "bot-float",
+            "currentTime": 116.7720000000001,
+            "transform": "matrix(1, 0, 0, 1, -0.175613, 0)"
+          },
+          {
+            "name": "bot-blink",
+            "target": "bot-eyes",
+            "currentTime": 116.7720000000001,
+            "transform": "matrix(1, 0, 0, 1, 0, 0)"
+          },
+          {
+            "name": "bot-gauge",
+            "target": "bot-gauge-needle",
+            "currentTime": 116.7720000000001,
+            "transform": "matrix(0.871646, -0.490135, 0.490135, 0.871646, 0, 0)"
+          }
+        ],
         "motion": {
           "animation": "bot-warning",
           "target": "bot-float",
-          "elapsedTimelineMs": 633.356,
+          "elapsedTimelineMs": 650.0039999999999,
           "transformChanged": true
         }
       },
       {
         "id": "bot-quality-inspector",
+        "rest": "none",
         "visible": true,
         "bounds": {
           "top": 450,
@@ -194,16 +294,86 @@
           "bot-blink",
           "bot-inspect"
         ],
+        "animationDetails": [
+          {
+            "name": "bot-float",
+            "target": "bot-float",
+            "currentTime": 116.7720000000001,
+            "transform": "matrix(1, 0, 0, 1, 0, -0.0132187)"
+          },
+          {
+            "name": "bot-blink",
+            "target": "bot-eyes",
+            "currentTime": 116.7720000000001,
+            "transform": "matrix(1, 0, 0, 1, 0, 0)"
+          },
+          {
+            "name": "bot-inspect",
+            "target": "bot-role-accessory bot-inspector",
+            "currentTime": 116.7720000000001,
+            "transform": "matrix(1, 0, 0, 1, -0.226518, -0.113259)"
+          }
+        ],
         "motion": {
           "animation": "bot-float",
           "target": "bot-float",
-          "elapsedTimelineMs": 633.356,
+          "elapsedTimelineMs": 650.0039999999999,
           "transformChanged": true
         }
       }
     ]
   },
   "actualLifecycle": {
+    "idleAmbient": {
+      "operationalStatePreserved": "idle",
+      "lookAndSleepObservedTogether": true,
+      "evidence": [
+        {
+          "id": "bot-prompt-reviewer",
+          "disposition": "sleeping",
+          "expectedAnimation": "bot-sleep-breathe",
+          "runningAnimations": [
+            "bot-sleep-breathe",
+            "bot-sleep-nod",
+            "bot-sleep-glance",
+            "bot-sleep-peek",
+            "bot-sleep-lids",
+            "bot-dream-z"
+          ],
+          "elapsedTimelineMs": 1016.6939999989952,
+          "transformChanged": true
+        },
+        {
+          "id": "bot-parcel-coordinator",
+          "disposition": "sleeping",
+          "expectedAnimation": "bot-sleep-breathe",
+          "runningAnimations": [
+            "bot-sleep-breathe",
+            "bot-sleep-nod",
+            "bot-sleep-glance",
+            "bot-sleep-peek",
+            "bot-sleep-lids",
+            "bot-dream-z"
+          ],
+          "elapsedTimelineMs": 1016.6939999989952,
+          "transformChanged": true
+        },
+        {
+          "id": "bot-resource-guardian",
+          "disposition": "looking",
+          "expectedAnimation": "bot-look-around",
+          "runningAnimations": [
+            "bot-float",
+            "bot-curious-antenna",
+            "bot-look-tilt",
+            "bot-look-around",
+            "bot-blink"
+          ],
+          "elapsedTimelineMs": 1016.6939999989952,
+          "transformChanged": true
+        }
+      ]
+    },
     "concurrentCrew": [
       {
         "id": "lane-master",
@@ -403,12 +573,12 @@
       "resourceGuardian": {
         "interaction": "pointer",
         "target": "#systems-list",
-        "at": "2026-09-06T13:24:42.732Z"
+        "at": "2026-09-06T13:45:16.816Z"
       },
       "parcelCoordinator": {
         "interaction": "keyboard-enter",
         "target": "#parcel-list",
-        "at": "2026-09-06T13:24:44.788Z"
+        "at": "2026-09-06T13:45:18.983Z"
       }
     }
   },
@@ -433,8 +603,8 @@
   "screenshots": [
     {
       "file": "agent-control-dashboard-characters/01-crew-initial.png",
-      "sha256": "624b304432c22795b3494ff533c3d3834164b0b12805fff675ef57c957c0e9e2",
-      "bytes": 861580,
+      "sha256": "edcc82e3212e0f54efb3f12bc2c1fa91fa19eb5ac4bf3e424198ba164db74233",
+      "bytes": 862204,
       "viewport": {
         "width": 1920,
         "height": 1080
@@ -443,8 +613,8 @@
     },
     {
       "file": "agent-control-dashboard-characters/02-crew-concurrent-live.png",
-      "sha256": "b5c1fa71e8f0288c00231e83df5b6f70d8f67846850d023fcec8c460790c0838",
-      "bytes": 881055,
+      "sha256": "531b67294febc3e94e9cd3e61a6c0217b8a0f61edabff0ea8be550671cbd6dfb",
+      "bytes": 881708,
       "viewport": {
         "width": 1920,
         "height": 1080
@@ -453,8 +623,8 @@
     },
     {
       "file": "agent-control-dashboard-characters/03-resource-navigation.png",
-      "sha256": "a4f9f69d6953a91b8b7de0d47d3493924db8930422ec2430d0bef22ea28f1a0f",
-      "bytes": 498856,
+      "sha256": "39231ee3d116c731f9529960b28e08b348d833a8674e6c3f8eac6e658e24df68",
+      "bytes": 498682,
       "viewport": {
         "width": 1920,
         "height": 1080
@@ -463,8 +633,8 @@
     },
     {
       "file": "agent-control-dashboard-characters/04-crew-completed.png",
-      "sha256": "e7221849df286ce3764d776c0006752e70d7c0b1961700ee0ebdbf0ded24956b",
-      "bytes": 854883,
+      "sha256": "56f95b2fe96287330aba48a59e3c0342200ad8780a1c71ccfbe22ea19839d726",
+      "bytes": 856020,
       "viewport": {
         "width": 1920,
         "height": 1080
@@ -473,8 +643,8 @@
     },
     {
       "file": "agent-control-dashboard-characters/05-crew-reduced-motion.png",
-      "sha256": "a0829e28a078304f34a5f63ae27e66f32e9780600ae067a1dac851dd68797477",
-      "bytes": 849743,
+      "sha256": "874fb31d2417471745a28bf24d23294fb9d65bd2196a91538d1b286c3f6f730e",
+      "bytes": 849782,
       "viewport": {
         "width": 1920,
         "height": 1080
@@ -483,8 +653,8 @@
     },
     {
       "file": "agent-control-dashboard-characters/06-simulated-gallery-light.png",
-      "sha256": "dc6408baf7134a93b40bbb152275709982b6ef563bfb4950845a6d84aac39a47",
-      "bytes": 976125,
+      "sha256": "67e1d55d2d2aeadf55c07ebe37e6b12845f5b846c1edd5933432767c1f8701ea",
+      "bytes": 976218,
       "viewport": {
         "width": 1920,
         "height": 1080
@@ -493,8 +663,8 @@
     },
     {
       "file": "agent-control-dashboard-characters/07-simulated-gallery-stale-dark.png",
-      "sha256": "7d49c1e66dba3888b51c3c2b344483b25cc6b5777bd76d5fa20ec37282e6b309",
-      "bytes": 977481,
+      "sha256": "3eb30a0c24a75bac094ce44ec352511508797b62dd72475428148f2a21334dd2",
+      "bytes": 977462,
       "viewport": {
         "width": 1920,
         "height": 1080
@@ -503,8 +673,8 @@
     },
     {
       "file": "agent-control-dashboard-characters/08-crew-mobile.png",
-      "sha256": "f25b637a4462606144c24e6a800b3b4fa341c978436264ce12adda230707dcc8",
-      "bytes": 701972,
+      "sha256": "a2f1a314146b4708d54e7f99a1fb6e5f5c54060d4ae62c465087fc34ed7da885",
+      "bytes": 702031,
       "viewport": {
         "width": 390,
         "height": 844
