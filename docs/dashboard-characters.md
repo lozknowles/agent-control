@@ -37,7 +37,7 @@ Lane / scheduler / Run / Work Parcel / model / system / token records
 
 The projection supports `idle`, `queued`, `working`, `reviewing`, `waiting`, `awaiting_operator`, `blocked`, `resource_pressure`, `recovering`, `handing_over`, `completed`, `failed`, `cancelling`, `cancelled`, `offline`, `stale`, and `unknown`.
 
-The visual action is role-specific where the evidence supports active work: Cadence directs traffic, Quill marks a document, Relay dispatches a parcel, Lumen scans candidates, Rook checks a gauge, and Verity inspects evidence. Waiting, obstacle, warning, repair, handoff, completion, failure, cancellation, disconnected, stale and unknown props remain recognisable without colour or motion.
+The visual action is role-specific where the evidence supports active work: Cadence directs traffic, Quill marks a document, Relay dispatches a parcel, Lumen scans candidates, Rook checks a gauge, and Verity inspects evidence. A freshly idle character looks around; after 45 seconds without a newer authoritative update, the same truthful `idle` state settles into a breathing sleep pose with periodic brief wake-and-glance motion. This is browser presentation only and never changes, advances or infers operational state. Waiting, obstacle, warning, repair, handoff, completion, failure, cancellation, disconnected, stale and unknown props remain recognisable without colour or motion.
 
 ### Source mapping and precedence
 
@@ -77,7 +77,7 @@ Open **Crew** in the primary dashboard navigation. Defaults are:
 - animation: **Full**;
 - gallery canvas: **Dashboard**.
 
-Choose **Reduced** for infrequent blink-only motion, **Off** for no character animation, or **Hidden** to remove operational cards while retaining the normal dashboard. Preferences stay in browser-local storage as `agent-control-character-motion` and `agent-control-character-display`; they are not server configuration or durable Agent Control state. A system `prefers-reduced-motion: reduce` setting caps Full at Reduced. Hidden views, off-screen characters and background browser tabs pause animation.
+Choose **Reduced** for infrequent blink-only motion, **Off** for no character animation, or **Hidden** to remove operational cards while retaining the normal dashboard. In Full mode, fresh idle characters scan their surroundings and sustained-idle characters sleep, breathe, emit a small visual `Z`, and periodically wake to glance around. Preferences stay in browser-local storage as `agent-control-character-motion` and `agent-control-character-display`; they are not server configuration or durable Agent Control state. A system `prefers-reduced-motion: reduce` setting caps Full at Reduced. Hidden views, off-screen characters and background browser tabs pause animation.
 
 No state relies on animation, flashing, sound or an overlay. Text/icon equivalents and focus operation remain in Reduced and Off modes. Card geometry is fixed across state changes; responsive breakpoints use three, two and one columns. Character colours use the dashboard variables, and the inspection gallery provides explicit dashboard, light and dark canvases.
 
@@ -89,7 +89,7 @@ To disable the entire web dashboard, set `AGENT_CONTROL_WEB_ENABLED=0`. To keep 
 
 The Crew view contains a clearly marked **SIMULATED — PREVIEW ONLY** gallery. Each character can be placed in any supported state; presets cover mixed activity and stale telemetry; one control can put the full roster into a selected state. The gallery uses an isolated in-memory map and never writes an API, creates a Job, alters the authoritative crew projection or enters durable evidence.
 
-Use the gallery for visual inspection of accessories, expressions, text equivalents, reduced motion, light/dark canvases and responsive layout. It is not physical runtime evidence. Qualification must separately identify states demonstrated through real canonical events, deterministic projector tests and gallery-only previews.
+Use the gallery for visual inspection of accessories, expressions, text equivalents, reduced motion, light/dark canvases and responsive layout. It is not physical runtime evidence. Qualification must separately identify states demonstrated through real canonical events, deterministic projector tests and gallery-only previews. The browser recorder also rejects a run unless real `idle` cards demonstrate both look-around and sleep dispositions, their expected animation timelines advance, and their transforms visibly change while canonical state remains `idle`.
 
 ## Limitations and rollout
 

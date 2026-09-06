@@ -2,6 +2,7 @@
   const states = ['idle', 'queued', 'working', 'reviewing', 'waiting', 'awaiting_operator', 'blocked', 'resource_pressure', 'recovering', 'handing_over', 'completed', 'failed', 'cancelling', 'cancelled', 'offline', 'stale', 'unknown'];
   const labels = {idle: 'Idle', queued: 'Queued', working: 'Working', reviewing: 'Reviewing', waiting: 'Waiting', awaiting_operator: 'Awaiting operator', blocked: 'Blocked', resource_pressure: 'Resource pressure', recovering: 'Recovering', handing_over: 'Handing over', completed: 'Completed', failed: 'Failed', cancelling: 'Cancelling', cancelled: 'Cancelled', offline: 'Offline', stale: 'Stale', unknown: 'Unknown'};
   const icons = {idle: '○', queued: '▤', working: '▶', reviewing: '⌕', waiting: '◷', awaiting_operator: '!', blocked: '⊘', resource_pressure: '△', recovering: '↻', handing_over: '⇢', completed: '✓', failed: '×', cancelling: '◒', cancelled: '■', offline: '⌁', stale: '◴', unknown: '?'};
+  const idleLookDurationMs = 45_000;
   const identities = {
     'lane-master': {name: 'Cadence', role: 'Lane Master', area: 'Lanes, queue and capacity', accessory: 'conductor baton and three-lane crown'},
     'prompt-reviewer': {name: 'Quill', role: 'Master Prompt Reviewer', area: 'Task entry and readiness', accessory: 'document visor and marking quill'},
@@ -21,8 +22,15 @@
     return Boolean(previous && previous.state !== 'completed' && current?.state === 'completed' && current.freshness === 'current' && options.streamLive !== false && options.initial !== true);
   }
 
+  function idleDisposition(member, now = Date.now()) {
+    if (!member || member.state !== 'idle') return null;
+    const updatedAt = Date.parse(member.lastUpdatedAt || '');
+    if (!Number.isFinite(updatedAt)) return 'sleeping';
+    return Math.max(0, now - updatedAt) < idleLookDurationMs ? 'looking' : 'sleeping';
+  }
+
   function normalizePreference(value, accepted, fallback) { return accepted.includes(value) ? value : fallback; }
-  root.AgentControlBots = {states: [...states], labels: {...labels}, icons: {...icons}, identities: Object.fromEntries(Object.entries(identities).map(([id, identity]) => [id, {...identity}])), effectiveMotion, shouldAcknowledge, normalizePreference};
+  root.AgentControlBots = {states: [...states], labels: {...labels}, icons: {...icons}, identities: Object.fromEntries(Object.entries(identities).map(([id, identity]) => [id, {...identity}])), idleLookDurationMs, effectiveMotion, shouldAcknowledge, idleDisposition, normalizePreference};
   if (typeof document === 'undefined') return;
 
   const runtime = {
@@ -91,7 +99,8 @@
       <g class="bot-float">
         <g class="bot-antenna"><path d="M90 38V24"/><circle class="bot-accent-fill bot-antenna-light" cx="90" cy="19" r="6"/></g>
         <g class="bot-body"><rect class="bot-shell" x="52" y="83" width="76" height="51" rx="18"/><path class="bot-panel" d="M67 101h46v23H67z"/><path class="bot-leg" d="M72 130v9M108 130v9"/><path class="bot-foot" d="M61 140h22M97 140h22"/></g>
-        <g class="bot-head"><rect class="bot-shell" x="45" y="38" width="90" height="57" rx="24"/><path class="bot-face" d="M58 51h64v31H58z"/><g class="bot-eyes"><circle cx="76" cy="66" r="5"/><circle cx="104" cy="66" r="5"/></g><path class="bot-mouth bot-mouth-neutral" d="M82 79h16"/><path class="bot-mouth bot-mouth-smile" d="M81 76q9 10 18 0"/><path class="bot-mouth bot-mouth-frown" d="M81 82q9-10 18 0"/></g>
+        <g class="bot-head"><rect class="bot-shell" x="45" y="38" width="90" height="57" rx="24"/><path class="bot-face" d="M58 51h64v31H58z"/><g class="bot-eye-direction"><g class="bot-eyes"><circle cx="76" cy="66" r="5"/><circle cx="104" cy="66" r="5"/></g><g class="bot-sleep-eyes"><path d="M69 66q7 7 14 0M97 66q7 7 14 0"/></g></g><path class="bot-mouth bot-mouth-neutral" d="M82 79h16"/><path class="bot-mouth bot-mouth-smile" d="M81 76q9 10 18 0"/><path class="bot-mouth bot-mouth-frown" d="M81 82q9-10 18 0"/></g>
+        <g class="bot-sleep-signals"><text x="132" y="54">z</text><text x="143" y="42">z</text><text x="156" y="28">Z</text></g>
         <g class="bot-arms"><path class="bot-arm bot-arm-left" d="M53 95L34 112"/><path class="bot-arm bot-arm-right" d="M127 95l19 17"/><circle class="bot-hand" cx="32" cy="114" r="6"/><circle class="bot-hand" cx="148" cy="114" r="6"/></g>
         ${roleAccessory(id)}
         <g class="bot-state-props">
@@ -127,10 +136,10 @@
   }
 
   function characterCard(member, options = {}) {
-    const identity = identities[member.id] || identities['quality-inspector'], stateName = states.includes(member.state) ? member.state : 'unknown', label = labels[stateName], completeAck = options.acknowledge ? ' bot-acknowledge' : '', compact = options.compact ? ' bot-card-compact' : '', simulated = options.simulated ? ' bot-card-simulated' : '', tag = options.navigable ? 'button' : 'article';
+    const identity = identities[member.id] || identities['quality-inspector'], stateName = states.includes(member.state) ? member.state : 'unknown', label = labels[stateName], rest = idleDisposition({...member, state: stateName}, options.now), restClass = rest ? ` bot-rest-${rest}` : '', completeAck = options.acknowledge ? ' bot-acknowledge' : '', compact = options.compact ? ' bot-card-compact' : '', simulated = options.simulated ? ' bot-card-simulated' : '', tag = options.navigable ? 'button' : 'article';
     const nav = options.navigable ? ` type="button" data-bot-character-nav="${esc(member.id)}"` : '';
     const aria = options.navigable ? ` aria-label="${esc(`${identity.name}, ${identity.role}: ${label}. ${member.summary} Open ${identity.area}.`)}"` : '';
-    return `<${tag} class="bot-card bot-${esc(member.id)} bot-state-${esc(stateName)}${completeAck}${compact}${simulated}"${nav}${aria}>
+    return `<${tag} class="bot-card bot-${esc(member.id)} bot-state-${esc(stateName)}${restClass}${completeAck}${compact}${simulated}" data-bot-rest="${esc(rest || 'none')}"${nav}${aria}>
       <span class="bot-portrait">${botSvg({...member, id: member.id, state: stateName})}<span class="bot-state-pill"><span aria-hidden="true">${esc(icons[stateName])}</span>${esc(label)}</span></span>
       <span class="bot-copy"><span class="bot-identity"><strong>${esc(identity.name)}</strong><small>${esc(identity.role)}</small>${options.simulated ? '<b class="bot-simulated-label">SIMULATED</b>' : ''}</span><span class="bot-summary">${esc(member.summary)}</span><span class="bot-reason">${esc(member.reason)}</span>${signals(member)}<span class="bot-facts">${esc(facts(member))}</span><span class="bot-next"><b>Next</b> ${esc(member.nextAction)}</span>${member.instrumentation?.limitation ? `<span class="bot-limitation">${esc(member.instrumentation.limitation)}</span>` : ''}</span>
     </${tag}>`;

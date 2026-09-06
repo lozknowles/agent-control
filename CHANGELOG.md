@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Adds an original six-character dashboard crew for Lanes, task readiness, Work Parcels, Models, Systems and verification. A deterministic read-only projector maps canonical state to text/icon/SVG poses, retains mixed active/queued/blocked counts, treats stale observations and pending cancellation truthfully, and navigates to existing evidence without adding agents or model calls. Includes Full/Reduced/Off/Hidden browser-local settings, system reduced-motion handling, off-screen/background pausing, responsive light/dark inspection canvases, an isolated clearly simulated all-state gallery, reconnect-safe completion acknowledgement and focused lifecycle tests. The feature remains unreleased and undeployed on its isolated branch.
+- Adds an original six-character dashboard crew for Lanes, task readiness, Work Parcels, Models, Systems and verification. A deterministic read-only projector maps canonical state to text/icon/SVG poses, retains mixed active/queued/blocked counts, treats stale observations and pending cancellation truthfully, and navigates to existing evidence without adding agents or model calls. Full motion gives fresh idle characters a look-around cycle and sustained-idle characters a sleeping/breathing/periodic-wake cycle without changing canonical `idle` state. Includes Full/Reduced/Off/Hidden browser-local settings, system reduced-motion handling, off-screen/background pausing, responsive light/dark inspection canvases, an isolated clearly simulated all-state gallery, reconnect-safe completion acknowledgement and focused lifecycle tests. The feature remains unreleased and undeployed on its isolated branch.
 
 ## [3.9.0] — 2026-09-05
 
