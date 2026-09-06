@@ -87,6 +87,24 @@ Every action receives an `OwnedExecution` capability rather than owning an untra
 
 Dashboard state is a projection of those durable records. Initial HTTP load and every SSE connection send/reload a full snapshot before incremental events. Reasons, source/observed time, freshness, retry/cancellation deadlines, remaining retry budget, execution identity and cleanup outcome are rendered directly. Locally advancing elapsed-time or countdown text is presentation between authoritative timestamps, never inferred state.
 
+The optional dashboard character crew is another read-only projection inside this boundary:
+
+```text
+canonical lanes / Runs / Parcels / systems / models / routing evidence
+                              |
+              projectDashboardCharacterCrew
+                              |
+        versioned AgentControlService status snapshot
+                              |
+       existing HTTP status + SSE-triggered reconciliation
+                              |
+       text, icon, SVG pose and optional CSS movement
+```
+
+Core state is reduced deterministically to one primary presentation state per functional area, with concurrent conditions retained as typed count badges. Active work can therefore remain primary while blocked and queued work remains visible. A two-minute presentation freshness rule changes an otherwise-active pose to `stale`, never `failed`; canonical cancellation remains `cancelling` until cleanup is terminal. Initial load and reconnect reconciliation suppress transition-only completion acknowledgement. The browser-local gallery has no API writer and its simulated state is never merged into this projection.
+
+Characters have no model, scheduler, provider, worker, lease, PTY or verification capability. Their identity and role-specific motion are expendable presentation; source records and linked detail views remain authoritative. The complete mapping and rollout boundary are documented in [dashboard operational characters](docs/dashboard-characters.md).
+
 Provider prompts have a generic ordered stable/volatile block representation plus a non-secret cache scope. The rendered text remains authoritative. A Responses adapter may derive a hashed key or explicit content breakpoint only when both its provider and exact model advertise `prompt-cache.key` or `prompt-cache.explicit`; unsupported adapters receive the unchanged rendered prompt. Cache reads, writes and fresh input are normalized separately, and configured cache-write cost is calculable only when the provider reports the write count. This preserves useful structure if any current provider disappears while keeping its wire controls behind its adapter.
 
 ## System boundary and adaptive harness
