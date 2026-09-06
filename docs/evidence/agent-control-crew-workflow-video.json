@@ -1,0 +1,2616 @@
+{
+  "schema": "agent-control.crew-workflow-video/v1",
+  "recordedAt": "2026-09-06T16:01:29.378Z",
+  "source": "Isolated real AgentControlService dashboard over loopback; no deployment and no simulated runtime events",
+  "repository": {
+    "head": "6157f5da2e266e982caf5e0620b1b17ee0b975e3",
+    "branch": "feature/3.9-crew-workflow-visualization",
+    "dirtyDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "qualification": {
+    "file": "agent-control-crew-workflow-qualification.json",
+    "sha256": "e3ee947aaf17f8f123acdc109d9123e796f5020a611c1954289215043f40e667",
+    "bytes": 1157216,
+    "verdict": "PASS"
+  },
+  "video": {
+    "file": "agent-control-crew-workflow.mp4",
+    "sha256": "607a38f92c9f3eb3d788d3b74d1780e8a1d71767bebba324b57fa093725fae66",
+    "bytes": 3715106,
+    "format": "MP4/H.264",
+    "stream": {
+      "codec_name": "h264",
+      "width": 1920,
+      "height": 1080,
+      "duration": "36.480000"
+    }
+  },
+  "browser": {
+    "engine": "Chromium",
+    "version": "152.0.7977.64",
+    "headless": true,
+    "liveAt": "2026-09-06T16:00:30.328Z",
+    "streamState": "LIVE",
+    "consoleErrors": [],
+    "httpErrors": []
+  },
+  "allCharacters": {
+    "visibleTogether": true,
+    "animatedTogetherUnderFullMotion": true,
+    "concurrentStateAt": "2026-09-06T16:00:38.254Z",
+    "evidence": [
+      {
+        "id": "bot-lane-master",
+        "rest": "none",
+        "visible": true,
+        "bounds": {
+          "top": 338,
+          "right": 643,
+          "bottom": 553,
+          "left": 33
+        },
+        "viewport": {
+          "width": 1920,
+          "height": 1080,
+          "scrollY": 0
+        },
+        "accent": "#4f8cff",
+        "runningAnimations": [
+          "bot-float",
+          "bot-blink",
+          "bot-conduct"
+        ],
+        "animationDetails": [
+          {
+            "name": "bot-float",
+            "target": "bot-portrait",
+            "currentTime": 0,
+            "transform": "none",
+            "opacity": "0.96"
+          },
+          {
+            "name": "bot-blink",
+            "target": "bot-eyes",
+            "currentTime": 0,
+            "transform": "matrix(1, 0, 0, 1, 0, 0)",
+            "opacity": "1"
+          },
+          {
+            "name": "bot-conduct",
+            "target": "bot-tool bot-baton",
+            "currentTime": 0,
+            "transform": "matrix(0.997564, -0.0697565, 0.0697565, 0.997564, 0, 0)",
+            "opacity": "1"
+          }
+        ],
+        "motion": {
+          "animation": "bot-float",
+          "target": "bot-portrait",
+          "elapsedTimelineMs": 600.0480000080248,
+          "transformChanged": false,
+          "opacityChanged": true,
+          "visualChanged": true
+        }
+      },
+      {
+        "id": "bot-prompt-reviewer",
+        "rest": "none",
+        "visible": true,
+        "bounds": {
+          "top": 338,
+          "right": 1265,
+          "bottom": 553,
+          "left": 655
+        },
+        "viewport": {
+          "width": 1920,
+          "height": 1080,
+          "scrollY": 0
+        },
+        "accent": "#a879ff",
+        "runningAnimations": [
+          "bot-float",
+          "bot-blink"
+        ],
+        "animationDetails": [
+          {
+            "name": "bot-float",
+            "target": "bot-portrait",
+            "currentTime": 0,
+            "transform": "none",
+            "opacity": "0.96"
+          },
+          {
+            "name": "bot-blink",
+            "target": "bot-eyes",
+            "currentTime": 0,
+            "transform": "matrix(1, 0, 0, 1, 0, 0)",
+            "opacity": "1"
+          }
+        ],
+        "motion": {
+          "animation": "bot-float",
+          "target": "bot-portrait",
+          "elapsedTimelineMs": 600.0480000080248,
+          "transformChanged": false,
+          "opacityChanged": true,
+          "visualChanged": true
+        }
+      },
+      {
+        "id": "bot-parcel-coordinator",
+        "rest": "none",
+        "visible": true,
+        "bounds": {
+          "top": 338,
+          "right": 1887,
+          "bottom": 553,
+          "left": 1277
+        },
+        "viewport": {
+          "width": 1920,
+          "height": 1080,
+          "scrollY": 0
+        },
+        "accent": "#35c7be",
+        "runningAnimations": [
+          "bot-float",
+          "bot-blink",
+          "bot-tool-search"
+        ],
+        "animationDetails": [
+          {
+            "name": "bot-float",
+            "target": "bot-portrait",
+            "currentTime": 0,
+            "transform": "none",
+            "opacity": "0.96"
+          },
+          {
+            "name": "bot-blink",
+            "target": "bot-eyes",
+            "currentTime": 0,
+            "transform": "matrix(1, 0, 0, 1, 0, 0)",
+            "opacity": "1"
+          },
+          {
+            "name": "bot-tool-search",
+            "target": "bot-active-tool bot-active-file",
+            "currentTime": 0,
+            "transform": "matrix(0.99863, -0.052336, 0.052336, 0.99863, -2, 0)",
+            "opacity": "1"
+          }
+        ],
+        "motion": {
+          "animation": "bot-float",
+          "target": "bot-portrait",
+          "elapsedTimelineMs": 600.0480000080248,
+          "transformChanged": false,
+          "opacityChanged": true,
+          "visualChanged": true
+        }
+      },
+      {
+        "id": "bot-model-scout",
+        "rest": "none",
+        "visible": true,
+        "bounds": {
+          "top": 565,
+          "right": 643,
+          "bottom": 780,
+          "left": 33
+        },
+        "viewport": {
+          "width": 1920,
+          "height": 1080,
+          "scrollY": 0
+        },
+        "accent": "#ff9b4a",
+        "runningAnimations": [
+          "bot-float",
+          "bot-blink",
+          "bot-scan",
+          "bot-tool-test"
+        ],
+        "animationDetails": [
+          {
+            "name": "bot-float",
+            "target": "bot-portrait",
+            "currentTime": 0,
+            "transform": "none",
+            "opacity": "0.96"
+          },
+          {
+            "name": "bot-blink",
+            "target": "bot-eyes",
+            "currentTime": 0,
+            "transform": "matrix(1, 0, 0, 1, 0, 0)",
+            "opacity": "1"
+          },
+          {
+            "name": "bot-scan",
+            "target": "bot-accent-fill bot-dish",
+            "currentTime": 0,
+            "transform": "matrix(0.996195, -0.0871557, 0.0871557, 0.996195, 0, 0)",
+            "opacity": "1"
+          },
+          {
+            "name": "bot-tool-test",
+            "target": "bot-active-tool bot-active-model",
+            "currentTime": 0,
+            "transform": "matrix(1, 0, 0, 1, 0, 0)",
+            "opacity": "0.72"
+          }
+        ],
+        "motion": {
+          "animation": "bot-float",
+          "target": "bot-portrait",
+          "elapsedTimelineMs": 600.0480000080248,
+          "transformChanged": false,
+          "opacityChanged": true,
+          "visualChanged": true
+        }
+      },
+      {
+        "id": "bot-resource-guardian",
+        "rest": "none",
+        "visible": true,
+        "bounds": {
+          "top": 565,
+          "right": 1265,
+          "bottom": 780,
+          "left": 655
+        },
+        "viewport": {
+          "width": 1920,
+          "height": 1080,
+          "scrollY": 0
+        },
+        "accent": "#55c979",
+        "runningAnimations": [
+          "bot-warning",
+          "bot-blink",
+          "bot-gauge"
+        ],
+        "animationDetails": [
+          {
+            "name": "bot-warning",
+            "target": "bot-portrait",
+            "currentTime": 0,
+            "transform": "none",
+            "opacity": "0.82"
+          },
+          {
+            "name": "bot-blink",
+            "target": "bot-eyes",
+            "currentTime": 0,
+            "transform": "matrix(1, 0, 0, 1, 0, 0)",
+            "opacity": "1"
+          },
+          {
+            "name": "bot-gauge",
+            "target": "bot-gauge-needle",
+            "currentTime": 0,
+            "transform": "matrix(0.848048, -0.529919, 0.529919, 0.848048, 0, 0)",
+            "opacity": "1"
+          }
+        ],
+        "motion": {
+          "animation": "bot-warning",
+          "target": "bot-portrait",
+          "elapsedTimelineMs": 600.0480000080248,
+          "transformChanged": false,
+          "opacityChanged": true,
+          "visualChanged": true
+        }
+      },
+      {
+        "id": "bot-quality-inspector",
+        "rest": "none",
+        "visible": true,
+        "bounds": {
+          "top": 565,
+          "right": 1887,
+          "bottom": 780,
+          "left": 1277
+        },
+        "viewport": {
+          "width": 1920,
+          "height": 1080,
+          "scrollY": 0
+        },
+        "accent": "#e3b84e",
+        "runningAnimations": [
+          "bot-float",
+          "bot-blink",
+          "bot-inspect",
+          "bot-tool-search"
+        ],
+        "animationDetails": [
+          {
+            "name": "bot-float",
+            "target": "bot-portrait",
+            "currentTime": 0,
+            "transform": "none",
+            "opacity": "0.96"
+          },
+          {
+            "name": "bot-blink",
+            "target": "bot-eyes",
+            "currentTime": 0,
+            "transform": "matrix(1, 0, 0, 1, 0, 0)",
+            "opacity": "1"
+          },
+          {
+            "name": "bot-inspect",
+            "target": "bot-role-accessory bot-inspector",
+            "currentTime": 0,
+            "transform": "matrix(1, 0, 0, 1, 0, 0)",
+            "opacity": "1"
+          },
+          {
+            "name": "bot-tool-search",
+            "target": "bot-active-tool bot-active-generic",
+            "currentTime": 0,
+            "transform": "matrix(0.99863, -0.052336, 0.052336, 0.99863, -2, 0)",
+            "opacity": "1"
+          }
+        ],
+        "motion": {
+          "animation": "bot-float",
+          "target": "bot-portrait",
+          "elapsedTimelineMs": 600.0480000080248,
+          "transformChanged": false,
+          "opacityChanged": true,
+          "visualChanged": true
+        }
+      }
+    ]
+  },
+  "actualLifecycle": {
+    "source": "authenticated dashboard submission through production WorkParcelCoordinator and JobRuntime",
+    "idleAmbient": {
+      "operationalStatePreserved": "IDLE",
+      "lookAndSleepObservedTogether": true,
+      "evidence": [
+        {
+          "id": "bot-prompt-reviewer",
+          "disposition": "sleeping",
+          "expectedAnimation": "bot-sleep-breathe",
+          "runningAnimations": [
+            "bot-sleep-breathe",
+            "bot-dream-z"
+          ],
+          "elapsedTimelineMs": 2149.9879999970894,
+          "transformChanged": false,
+          "opacityChanged": true,
+          "visualChanged": true
+        },
+        {
+          "id": "bot-parcel-coordinator",
+          "disposition": "sleeping",
+          "expectedAnimation": "bot-sleep-breathe",
+          "runningAnimations": [
+            "bot-sleep-breathe",
+            "bot-dream-z"
+          ],
+          "elapsedTimelineMs": 2149.9879999970894,
+          "transformChanged": false,
+          "opacityChanged": true,
+          "visualChanged": true
+        },
+        {
+          "id": "bot-resource-guardian",
+          "disposition": "looking",
+          "expectedAnimation": "bot-look-around",
+          "runningAnimations": [
+            "bot-float",
+            "bot-look-around",
+            "bot-blink"
+          ],
+          "elapsedTimelineMs": 2149.9879999970894,
+          "transformChanged": true,
+          "opacityChanged": false,
+          "visualChanged": true
+        }
+      ]
+    },
+    "waking": {
+      "oneShotPresentationTriggeredByRecordedWork": true,
+      "evidence": [
+        {
+          "id": "bot-prompt-reviewer",
+          "at": 7048.70000000298,
+          "transitionKey": "reviewing:2026-09-06T16:00:36.892Z:1:0:0:0:0:0:PLANNING:PLANNING:parcel-9111ba17-96d7-4e8d-8b72-80161fabc37b"
+        }
+      ]
+    },
+    "concurrent": {
+      "crew": [
+        {
+          "id": "lane-master",
+          "name": "Cadence",
+          "role": "Controller & Lane Dispatcher",
+          "state": "working",
+          "operationalState": "ROUTING",
+          "activity": {
+            "kind": "ROUTING",
+            "label": "dispatching 2 active executions",
+            "source": {
+              "authority": "Agent Control",
+              "type": "job-run",
+              "id": "run-a7d11285-480d-4940-9a1f-a77a46ede0f6",
+              "at": "2026-09-06T16:00:38.212Z",
+              "detail": "Run run-a7d11285-480d-4940-9a1f-a77a46ede0f6 is RUNNING"
+            },
+            "tool": null
+          },
+          "animationCue": {
+            "expression": "THINKING",
+            "label": "thinking",
+            "authority": "presentation-only",
+            "sourceType": "job-run"
+          },
+          "narration": {
+            "id": "lane-master:job-run:run-a7d11285-480d-4940-9a1f-a77a46ede0f6:working:2026-09-06T16:00:38.212Z:3:1:0:1:0:0",
+            "characterId": "lane-master",
+            "text": "Cadence is dispatching 2 active executions.",
+            "detail": "Run run-a7d11285-480d-4940-9a1f-a77a46ede0f6 is RUNNING",
+            "source": {
+              "authority": "Agent Control",
+              "type": "job-run",
+              "id": "run-a7d11285-480d-4940-9a1f-a77a46ede0f6",
+              "at": "2026-09-06T16:00:38.212Z",
+              "detail": "Run run-a7d11285-480d-4940-9a1f-a77a46ede0f6 is RUNNING"
+            }
+          },
+          "summary": "3 active executions; 1 waiting; 1 blocked.",
+          "signals": [
+            {
+              "state": "working",
+              "label": "active",
+              "count": 3
+            },
+            {
+              "state": "queued",
+              "label": "queued",
+              "count": 1
+            },
+            {
+              "state": "blocked",
+              "label": "blocked",
+              "count": 1
+            }
+          ],
+          "freshness": "current"
+        },
+        {
+          "id": "prompt-reviewer",
+          "name": "Quill",
+          "role": "Work Parcel Reviewer",
+          "state": "awaiting_operator",
+          "operationalState": "WAITING",
+          "activity": {
+            "kind": "WAITING",
+            "label": "waiting on parcel-9111ba17-96d7-4e8d-8b72-80161fabc37b",
+            "source": {
+              "authority": "Agent Control",
+              "type": "work-parcel",
+              "id": "parcel-9111ba17-96d7-4e8d-8b72-80161fabc37b",
+              "at": "2026-09-06T16:00:38.772Z",
+              "detail": "Search and read the Agent Control repository concurrently, compose a structured result, then verify it independently"
+            },
+            "tool": null
+          },
+          "animationCue": {
+            "expression": "WAITING",
+            "label": "waiting",
+            "authority": "presentation-only",
+            "sourceType": "work-parcel"
+          },
+          "narration": {
+            "id": "prompt-reviewer:work-parcel:parcel-9111ba17-96d7-4e8d-8b72-80161fabc37b:awaiting_operator:2026-09-06T16:00:38.772Z:0:0:1:0:0:0",
+            "characterId": "prompt-reviewer",
+            "text": "Quill is waiting on parcel-9111ba17-96d7-4e8d-8b72-80161fabc37b.",
+            "detail": "Search and read the Agent Control repository concurrently, compose a structured result, then verify it independently",
+            "source": {
+              "authority": "Agent Control",
+              "type": "work-parcel",
+              "id": "parcel-9111ba17-96d7-4e8d-8b72-80161fabc37b",
+              "at": "2026-09-06T16:00:38.772Z",
+              "detail": "Search and read the Agent Control repository concurrently, compose a structured result, then verify it independently"
+            }
+          },
+          "summary": "1 explicit operator question await an answer.",
+          "signals": [
+            {
+              "state": "awaiting_operator",
+              "label": "questions",
+              "count": 1
+            }
+          ],
+          "freshness": "current"
+        },
+        {
+          "id": "parcel-coordinator",
+          "name": "Relay",
+          "role": "Tool & Execution Worker",
+          "state": "working",
+          "operationalState": "EXECUTING",
+          "activity": {
+            "kind": "READING",
+            "label": "file reader · Read architecture evidence",
+            "source": {
+              "authority": "Agent Control",
+              "type": "job-step",
+              "id": "work",
+              "at": "2026-09-06T16:00:38.212Z",
+              "detail": "Run run-a7d11285-480d-4940-9a1f-a77a46ede0f6 records file.read@1.0.0 as RUNNING"
+            },
+            "tool": {
+              "kind": "FILE",
+              "label": "file reader",
+              "action": "file.read@1.0.0",
+              "capabilities": [
+                "qualification.read"
+              ]
+            }
+          },
+          "animationCue": {
+            "expression": "INSPECTING",
+            "label": "inspecting",
+            "authority": "presentation-only",
+            "sourceType": "job-step"
+          },
+          "narration": {
+            "id": "parcel-coordinator:job-step:work:working:2026-09-06T16:00:38.772Z:1:0:0:0:0:0",
+            "characterId": "parcel-coordinator",
+            "text": "Relay is file reader · Read architecture evidence.",
+            "detail": "Run run-a7d11285-480d-4940-9a1f-a77a46ede0f6 records file.read@1.0.0 as RUNNING",
+            "source": {
+              "authority": "Agent Control",
+              "type": "job-step",
+              "id": "work",
+              "at": "2026-09-06T16:00:38.212Z",
+              "detail": "Run run-a7d11285-480d-4940-9a1f-a77a46ede0f6 records file.read@1.0.0 as RUNNING"
+            }
+          },
+          "summary": "1 parcel moving; 0 waiting; 0 blocked.",
+          "signals": [
+            {
+              "state": "working",
+              "label": "active",
+              "count": 1
+            },
+            {
+              "state": "awaiting_operator",
+              "label": "questions",
+              "count": 1
+            }
+          ],
+          "freshness": "current"
+        },
+        {
+          "id": "model-scout",
+          "name": "Lumen",
+          "role": "Model Router & Scout",
+          "state": "working",
+          "operationalState": "EXECUTING",
+          "activity": {
+            "kind": "BENCHMARKING",
+            "label": "evaluation STARTED · local-dashboard-qualification · local-dashboard-qualification-model",
+            "source": {
+              "authority": "Agent Control",
+              "type": "model.intelligence_changed",
+              "id": "10",
+              "at": "2026-09-06T16:00:38.234Z",
+              "detail": "Recorded model.intelligence_changed action evaluation-STARTED"
+            },
+            "tool": {
+              "kind": "MODEL_DISCOVERY",
+              "label": "model discovery",
+              "action": "model discovery evaluation-STARTED",
+              "capabilities": [
+                "model.discovery"
+              ]
+            }
+          },
+          "animationCue": {
+            "expression": "TESTING",
+            "label": "testing",
+            "authority": "presentation-only",
+            "sourceType": "model.intelligence_changed"
+          },
+          "narration": {
+            "id": "model-scout:model.intelligence_changed:10:working:2026-09-06T16:00:38.233Z:1:0:0:0:0:0",
+            "characterId": "model-scout",
+            "text": "Lumen is evaluation STARTED · local-dashboard-qualification · local-dashboard-qualification-model.",
+            "detail": "Recorded model.intelligence_changed action evaluation-STARTED",
+            "source": {
+              "authority": "Agent Control",
+              "type": "model.intelligence_changed",
+              "id": "10",
+              "at": "2026-09-06T16:00:38.234Z",
+              "detail": "Recorded model.intelligence_changed action evaluation-STARTED"
+            }
+          },
+          "summary": "1 frozen model evaluation running; 0 queued.",
+          "signals": [
+            {
+              "state": "working",
+              "label": "evaluating",
+              "count": 1
+            }
+          ],
+          "freshness": "current"
+        },
+        {
+          "id": "resource-guardian",
+          "name": "Rook",
+          "role": "Resource & Node Guardian",
+          "state": "resource_pressure",
+          "operationalState": "EXECUTING",
+          "activity": {
+            "kind": "MONITORING_RESOURCES",
+            "label": "monitoring reader worker",
+            "source": {
+              "authority": "Agent Control",
+              "type": "system-readiness",
+              "id": "reader-worker",
+              "at": "2026-09-06T16:00:28.916Z",
+              "detail": "Execution capacity is exhausted"
+            },
+            "tool": null
+          },
+          "animationCue": {
+            "expression": "CONCERNED",
+            "label": "concerned",
+            "authority": "presentation-only",
+            "sourceType": "system-readiness"
+          },
+          "narration": {
+            "id": "resource-guardian:system-readiness:reader-worker:resource_pressure:2026-09-06T16:00:28.916Z:2:0:2:0:2:0",
+            "characterId": "resource-guardian",
+            "text": "Rook is monitoring reader worker.",
+            "detail": "Execution capacity is exhausted",
+            "source": {
+              "authority": "Agent Control",
+              "type": "system-readiness",
+              "id": "reader-worker",
+              "at": "2026-09-06T16:00:28.916Z",
+              "detail": "Execution capacity is exhausted"
+            }
+          },
+          "summary": "2 available; 2 busy; 0 degraded; 0 offline; 0 unknown.",
+          "signals": [
+            {
+              "state": "working",
+              "label": "active workloads",
+              "count": 2
+            },
+            {
+              "state": "resource_pressure",
+              "label": "pressure",
+              "count": 2
+            }
+          ],
+          "freshness": "current"
+        },
+        {
+          "id": "quality-inspector",
+          "name": "Verity",
+          "role": "Verification & Evidence Inspector",
+          "state": "reviewing",
+          "operationalState": "VERIFYING",
+          "activity": {
+            "kind": "REVIEWING_OUTPUT",
+            "label": "reviewing recorded verification",
+            "source": {
+              "authority": "Agent Control",
+              "type": "verification.changed",
+              "id": "3",
+              "at": "2026-09-06T16:00:28.970Z",
+              "detail": "A verification state change was recorded"
+            },
+            "tool": {
+              "kind": "GENERIC_TOOL",
+              "label": "governed tool",
+              "action": "verification",
+              "capabilities": []
+            }
+          },
+          "animationCue": {
+            "expression": "INSPECTING",
+            "label": "inspecting",
+            "authority": "presentation-only",
+            "sourceType": "verification.changed"
+          },
+          "narration": {
+            "id": "quality-inspector:verification.changed:3:reviewing:2026-09-06T16:00:38.212Z:1:2:0:0:0:0",
+            "characterId": "quality-inspector",
+            "text": "Verity is reviewing recorded verification.",
+            "detail": "A verification state change was recorded",
+            "source": {
+              "authority": "Agent Control",
+              "type": "verification.changed",
+              "id": "3",
+              "at": "2026-09-06T16:00:28.970Z",
+              "detail": "A verification state change was recorded"
+            }
+          },
+          "summary": "1 validation check active; 0 failed; 0 blocked.",
+          "signals": [
+            {
+              "state": "reviewing",
+              "label": "validating",
+              "count": 1
+            },
+            {
+              "state": "queued",
+              "label": "awaiting checks",
+              "count": 2
+            }
+          ],
+          "freshness": "current"
+        }
+      ],
+      "workflow": {
+        "headline": "Sealed baton moving for parcel-9111ba17-96d7-4e8d-8b72-80161fabc37b: Work Parcel intake → Worker reader-worker.",
+        "parcels": [
+          {
+            "id": "parcel-9111ba17-96d7-4e8d-8b72-80161fabc37b",
+            "objective": "Search and read the Agent Control repository concurrently, compose a structured result, then verify it independently",
+            "status": "RUNNING",
+            "operationalState": "EXECUTING",
+            "owner": "parcel-coordinator",
+            "ownerReason": "Stage Search repository evidence is RUNNING.",
+            "narration": "Relay owns the visible step because stage Search repository evidence is RUNNING.",
+            "progress": {
+              "completed": 0,
+              "active": 2,
+              "waiting": 2,
+              "failed": 0,
+              "total": 4
+            },
+            "parallelActive": 2,
+            "route": "Worker search-worker",
+            "updatedAt": "2026-09-06T16:00:41.915Z",
+            "transitionKey": "parcel-9111ba17-96d7-4e8d-8b72-80161fabc37b:RUNNING:2026-09-06T16:00:41.915Z:RUNNING:RUNNING:WAITING:QUEUED",
+            "stages": [
+              {
+                "id": "search",
+                "name": "Search repository evidence",
+                "status": "RUNNING",
+                "dependencies": [],
+                "runId": "run-3b77a8ca-6767-4ab8-b3f1-954153416690",
+                "worker": "search-worker",
+                "route": "Worker search-worker",
+                "tool": {
+                  "kind": "SEARCH",
+                  "label": "search",
+                  "action": "repository.search@1.0.0",
+                  "capabilities": [
+                    "qualification.search"
+                  ]
+                }
+              },
+              {
+                "id": "read",
+                "name": "Read architecture evidence",
+                "status": "RUNNING",
+                "dependencies": [],
+                "runId": "run-a7d11285-480d-4940-9a1f-a77a46ede0f6",
+                "worker": "reader-worker",
+                "route": "Worker reader-worker",
+                "tool": {
+                  "kind": "FILE",
+                  "label": "file reader",
+                  "action": "file.read@1.0.0",
+                  "capabilities": [
+                    "qualification.read"
+                  ]
+                }
+              },
+              {
+                "id": "compose",
+                "name": "Compose structured result",
+                "status": "WAITING",
+                "dependencies": [
+                  "search",
+                  "read"
+                ],
+                "runId": null,
+                "worker": null,
+                "route": null,
+                "tool": null
+              },
+              {
+                "id": "verify",
+                "name": "Verify structured result",
+                "status": "QUEUED",
+                "dependencies": [
+                  "compose"
+                ],
+                "runId": null,
+                "worker": null,
+                "route": null,
+                "tool": null
+              }
+            ],
+            "journey": [
+              {
+                "id": "audit-5a2b4ef1-92fd-4224-8067-4336d2d43fe5",
+                "at": "2026-09-06T16:00:38.093Z",
+                "type": "route.requested",
+                "summary": "Verify structured result route requested",
+                "characterId": "model-scout",
+                "stageId": "verify"
+              },
+              {
+                "id": "context-event-32e1a2db-2984-411e-804a-99ad9fd37a5f",
+                "at": "2026-09-06T16:00:38.095Z",
+                "type": "plan.recorded",
+                "summary": "4 governed stage(s) recorded",
+                "characterId": "prompt-reviewer",
+                "stageId": null
+              },
+              {
+                "id": "context-event-5ad7e4db-596f-45d1-b449-7c3110f5241f",
+                "at": "2026-09-06T16:00:38.095Z",
+                "type": "criterion.added",
+                "summary": "Search repository evidence completes through its declared verification boundary",
+                "characterId": "quality-inspector",
+                "stageId": "search"
+              },
+              {
+                "id": "context-event-77342322-2dfc-4617-b8b1-973737da2aca",
+                "at": "2026-09-06T16:00:38.095Z",
+                "type": "criterion.added",
+                "summary": "Read architecture evidence completes through its declared verification boundary",
+                "characterId": "quality-inspector",
+                "stageId": "read"
+              },
+              {
+                "id": "context-event-f6714d5b-e86a-4a59-8f74-af532145ea9f",
+                "at": "2026-09-06T16:00:38.095Z",
+                "type": "criterion.added",
+                "summary": "Compose structured result completes through its declared verification boundary",
+                "characterId": "quality-inspector",
+                "stageId": "compose"
+              },
+              {
+                "id": "context-event-fb9210ac-0576-4c72-8605-958640ce3113",
+                "at": "2026-09-06T16:00:38.095Z",
+                "type": "criterion.added",
+                "summary": "Verify structured result completes through its declared verification boundary",
+                "characterId": "quality-inspector",
+                "stageId": "verify"
+              },
+              {
+                "id": "context-event-d29fb10a-1fc3-4d93-9bf2-d700b0fd0567",
+                "at": "2026-09-06T16:00:38.188Z",
+                "type": "question.created",
+                "summary": "Which stable output format should the final report use?",
+                "characterId": "prompt-reviewer",
+                "stageId": "read"
+              },
+              {
+                "id": "audit-1b7f79ce-d7d6-4107-b830-e3a653e53479",
+                "at": "2026-09-06T16:00:38.188Z",
+                "type": "question.created",
+                "summary": "Non-blocking operator question recorded",
+                "characterId": "prompt-reviewer",
+                "stageId": "read"
+              },
+              {
+                "id": "context-event-0dc818db-ff10-4f10-bdde-d532f69a2d19",
+                "at": "2026-09-06T16:00:38.193Z",
+                "type": "baton.created",
+                "summary": "Bounded baton view created for search",
+                "characterId": "parcel-coordinator",
+                "stageId": "search"
+              },
+              {
+                "id": "audit-b360a18f-9eb1-4759-a6ea-7cf57ff91b31",
+                "at": "2026-09-06T16:00:38.193Z",
+                "type": "baton.created",
+                "summary": "Bounded operational baton view sealed",
+                "characterId": "parcel-coordinator",
+                "stageId": "search"
+              },
+              {
+                "id": "context-event-664b0ba6-9fd1-4cb7-9835-29b5951e9766",
+                "at": "2026-09-06T16:00:38.198Z",
+                "type": "stage.started",
+                "summary": "Search repository evidence dispatched",
+                "characterId": "parcel-coordinator",
+                "stageId": "search"
+              },
+              {
+                "id": "audit-146acb20-e247-4f4e-8f7c-1e3f1089a1d9",
+                "at": "2026-09-06T16:00:38.198Z",
+                "type": "stage.dispatched",
+                "summary": "Search repository evidence dispatched",
+                "characterId": "parcel-coordinator",
+                "stageId": "search"
+              },
+              {
+                "id": "context-event-787c94f7-6490-40f9-9403-0e8e55c992c8",
+                "at": "2026-09-06T16:00:38.199Z",
+                "type": "baton.created",
+                "summary": "Bounded baton view created for read",
+                "characterId": "parcel-coordinator",
+                "stageId": "read"
+              },
+              {
+                "id": "audit-8c8a35b6-3641-487d-9e44-dd8ee2cfb84b",
+                "at": "2026-09-06T16:00:38.199Z",
+                "type": "baton.created",
+                "summary": "Bounded operational baton view sealed",
+                "characterId": "parcel-coordinator",
+                "stageId": "read"
+              },
+              {
+                "id": "context-event-6bfae192-6fd5-47b7-b155-845123a2e0ca",
+                "at": "2026-09-06T16:00:38.203Z",
+                "type": "stage.started",
+                "summary": "Read architecture evidence dispatched",
+                "characterId": "parcel-coordinator",
+                "stageId": "read"
+              },
+              {
+                "id": "audit-0079d8fc-f290-42b8-9200-78ab3dc9b4ed",
+                "at": "2026-09-06T16:00:38.203Z",
+                "type": "stage.dispatched",
+                "summary": "Read architecture evidence dispatched",
+                "characterId": "parcel-coordinator",
+                "stageId": "read"
+              },
+              {
+                "id": "audit-4b84d237-ebe4-417a-8779-1504280b6539",
+                "at": "2026-09-06T16:00:38.238Z",
+                "type": "route.resolved",
+                "summary": "Search repository evidence actual route recorded",
+                "characterId": "model-scout",
+                "stageId": "search"
+              },
+              {
+                "id": "audit-d7f1dfd6-5ce5-4fff-838b-f1818f22f78f",
+                "at": "2026-09-06T16:00:38.238Z",
+                "type": "route.resolved",
+                "summary": "Read architecture evidence actual route recorded",
+                "characterId": "model-scout",
+                "stageId": "read"
+              }
+            ]
+          }
+        ],
+        "batonTransfers": [
+          {
+            "id": "parcel:parcel-baton-04f6ac75-d5d1-4291-b67a-e63a09bcb88d",
+            "at": "2026-09-06T16:00:38.199Z",
+            "parcelId": "parcel-9111ba17-96d7-4e8d-8b72-80161fabc37b",
+            "sourceType": "work-parcel",
+            "sourceEventId": "context-event-787c94f7-6490-40f9-9403-0e8e55c992c8",
+            "batonId": "parcel-baton-04f6ac75-d5d1-4291-b67a-e63a09bcb88d",
+            "from": {
+              "provider": "Agent Control",
+              "account": null,
+              "model": "Work Parcel",
+              "node": null,
+              "label": "Work Parcel intake"
+            },
+            "to": {
+              "provider": "Agent Control",
+              "account": null,
+              "model": "governed Job worker",
+              "node": "reader-worker",
+              "label": "Worker reader-worker"
+            },
+            "outcome": "RUNNING",
+            "active": true,
+            "reason": "Execute Read architecture evidence through crew-read@1.0.0 and satisfy its declared verification boundary",
+            "explanation": "Sealed Parcel baton parcel-baton-04f6ac75-d5d1-4291-b67a-e63a09bcb88d carries recorded predecessor work → Read architecture evidence: Execute Read architecture evidence through crew-read@1.0.0 and satisfy its declared verification boundary",
+            "contextPercent": null
+          },
+          {
+            "id": "parcel:parcel-baton-b64d2b11-b7d2-4b9c-865d-778fb7e3edc5",
+            "at": "2026-09-06T16:00:38.193Z",
+            "parcelId": "parcel-9111ba17-96d7-4e8d-8b72-80161fabc37b",
+            "sourceType": "work-parcel",
+            "sourceEventId": "context-event-0dc818db-ff10-4f10-bdde-d532f69a2d19",
+            "batonId": "parcel-baton-b64d2b11-b7d2-4b9c-865d-778fb7e3edc5",
+            "from": {
+              "provider": "Agent Control",
+              "account": null,
+              "model": "Work Parcel",
+              "node": null,
+              "label": "Work Parcel intake"
+            },
+            "to": {
+              "provider": "Agent Control",
+              "account": null,
+              "model": "governed Job worker",
+              "node": "search-worker",
+              "label": "Worker search-worker"
+            },
+            "outcome": "RUNNING",
+            "active": true,
+            "reason": "Execute Search repository evidence through crew-search@1.0.0 and satisfy its declared verification boundary",
+            "explanation": "Sealed Parcel baton parcel-baton-b64d2b11-b7d2-4b9c-865d-778fb7e3edc5 carries recorded predecessor work → Search repository evidence: Execute Search repository evidence through crew-search@1.0.0 and satisfy its declared verification boundary",
+            "contextPercent": null
+          }
+        ],
+        "modelActivity": [
+          {
+            "id": "event:15",
+            "at": "2026-09-06T16:00:40.548Z",
+            "provider": "local-dashboard-qualification",
+            "model": "local-dashboard-qualification-model",
+            "action": "STARTED",
+            "status": null,
+            "failure": null,
+            "httpStatus": null,
+            "routingEligible": null,
+            "explanation": "Agent Control recorded STARTED."
+          },
+          {
+            "id": "event:14",
+            "at": "2026-09-06T16:00:40.546Z",
+            "provider": "local-dashboard-qualification",
+            "model": "local-dashboard-qualification-model",
+            "action": "COMPLETED",
+            "status": null,
+            "failure": null,
+            "httpStatus": null,
+            "routingEligible": null,
+            "explanation": "Agent Control recorded COMPLETED."
+          },
+          {
+            "id": "event:10",
+            "at": "2026-09-06T16:00:38.234Z",
+            "provider": "local-dashboard-qualification",
+            "model": "local-dashboard-qualification-model",
+            "action": "STARTED",
+            "status": null,
+            "failure": null,
+            "httpStatus": null,
+            "routingEligible": null,
+            "explanation": "Agent Control recorded STARTED."
+          },
+          {
+            "id": "event:8",
+            "at": "2026-09-06T16:00:38.233Z",
+            "provider": "local-dashboard-qualification",
+            "model": "local-dashboard-qualification-model",
+            "action": "evaluation-running",
+            "status": null,
+            "failure": null,
+            "httpStatus": null,
+            "routingEligible": false,
+            "explanation": "Agent Control recorded evaluation running."
+          },
+          {
+            "id": "event:9",
+            "at": "2026-09-06T16:00:38.233Z",
+            "provider": null,
+            "model": null,
+            "action": "QUEUED",
+            "status": "QUEUED",
+            "failure": null,
+            "httpStatus": null,
+            "routingEligible": null,
+            "explanation": "Agent Control recorded QUEUED: QUEUED."
+          },
+          {
+            "id": "event:7",
+            "at": "2026-09-06T16:00:38.230Z",
+            "provider": "local-dashboard-qualification",
+            "model": null,
+            "action": "discovered",
+            "status": null,
+            "failure": null,
+            "httpStatus": null,
+            "routingEligible": null,
+            "explanation": "Agent Control recorded provider catalogue discovery for 1 model(s)."
+          },
+          {
+            "id": "event:6",
+            "at": "2026-09-06T16:00:38.216Z",
+            "provider": "local-dashboard-qualification",
+            "model": null,
+            "action": "discovering",
+            "status": null,
+            "failure": null,
+            "httpStatus": null,
+            "routingEligible": null,
+            "explanation": "Agent Control is discovering the local-dashboard-qualification provider catalogue."
+          }
+        ],
+        "narration": [
+          {
+            "id": "lane-master:job-run:run-a7d11285-480d-4940-9a1f-a77a46ede0f6:working:2026-09-06T16:00:38.212Z:3:1:0:1:0:0",
+            "characterId": "lane-master",
+            "text": "Cadence is dispatching 2 active executions.",
+            "detail": "Run run-a7d11285-480d-4940-9a1f-a77a46ede0f6 is RUNNING",
+            "source": {
+              "authority": "Agent Control",
+              "type": "job-run",
+              "id": "run-a7d11285-480d-4940-9a1f-a77a46ede0f6",
+              "at": "2026-09-06T16:00:38.212Z",
+              "detail": "Run run-a7d11285-480d-4940-9a1f-a77a46ede0f6 is RUNNING"
+            }
+          },
+          {
+            "id": "prompt-reviewer:work-parcel:parcel-9111ba17-96d7-4e8d-8b72-80161fabc37b:awaiting_operator:2026-09-06T16:00:41.915Z:0:0:1:0:0:0",
+            "characterId": "prompt-reviewer",
+            "text": "Quill is waiting on parcel-9111ba17-96d7-4e8d-8b72-80161fabc37b.",
+            "detail": "Search and read the Agent Control repository concurrently, compose a structured result, then verify it independently",
+            "source": {
+              "authority": "Agent Control",
+              "type": "work-parcel",
+              "id": "parcel-9111ba17-96d7-4e8d-8b72-80161fabc37b",
+              "at": "2026-09-06T16:00:41.915Z",
+              "detail": "Search and read the Agent Control repository concurrently, compose a structured result, then verify it independently"
+            }
+          },
+          {
+            "id": "parcel-coordinator:job-step:work:working:2026-09-06T16:00:41.915Z:1:0:0:0:0:0",
+            "characterId": "parcel-coordinator",
+            "text": "Relay is file reader · Read architecture evidence.",
+            "detail": "Run run-a7d11285-480d-4940-9a1f-a77a46ede0f6 records file.read@1.0.0 as RUNNING",
+            "source": {
+              "authority": "Agent Control",
+              "type": "job-step",
+              "id": "work",
+              "at": "2026-09-06T16:00:38.212Z",
+              "detail": "Run run-a7d11285-480d-4940-9a1f-a77a46ede0f6 records file.read@1.0.0 as RUNNING"
+            }
+          },
+          {
+            "id": "model-scout:model.intelligence_changed:15:working:2026-09-06T16:00:38.233Z:1:0:0:0:0:0",
+            "characterId": "model-scout",
+            "text": "Lumen is evaluation STARTED · local-dashboard-qualification · local-dashboard-qualification-model.",
+            "detail": "Recorded model.intelligence_changed action evaluation-STARTED",
+            "source": {
+              "authority": "Agent Control",
+              "type": "model.intelligence_changed",
+              "id": "15",
+              "at": "2026-09-06T16:00:40.548Z",
+              "detail": "Recorded model.intelligence_changed action evaluation-STARTED"
+            }
+          },
+          {
+            "id": "resource-guardian:system-readiness:reader-worker:resource_pressure:2026-09-06T16:00:28.916Z:2:0:2:0:2:0",
+            "characterId": "resource-guardian",
+            "text": "Rook is monitoring reader worker.",
+            "detail": "Execution capacity is exhausted",
+            "source": {
+              "authority": "Agent Control",
+              "type": "system-readiness",
+              "id": "reader-worker",
+              "at": "2026-09-06T16:00:28.916Z",
+              "detail": "Execution capacity is exhausted"
+            }
+          },
+          {
+            "id": "quality-inspector:verification.changed:3:reviewing:2026-09-06T16:00:38.212Z:1:2:0:0:0:0",
+            "characterId": "quality-inspector",
+            "text": "Verity is reviewing recorded verification.",
+            "detail": "A verification state change was recorded",
+            "source": {
+              "authority": "Agent Control",
+              "type": "verification.changed",
+              "id": "3",
+              "at": "2026-09-06T16:00:28.970Z",
+              "detail": "A verification state change was recorded"
+            }
+          }
+        ]
+      },
+      "actualRunningStages": 2
+    },
+    "completed": {
+      "crew": [
+        {
+          "id": "lane-master",
+          "name": "Cadence",
+          "role": "Controller & Lane Dispatcher",
+          "state": "working",
+          "operationalState": "PLANNING",
+          "activity": {
+            "kind": "PLANNING",
+            "label": "scheduling 1 queued item",
+            "source": {
+              "authority": "Agent Control",
+              "type": "scheduler",
+              "id": null,
+              "at": "2026-09-06T16:00:59.228Z",
+              "detail": "1 active execution; 1 waiting; 1 blocked."
+            },
+            "tool": null
+          },
+          "animationCue": {
+            "expression": "THINKING",
+            "label": "thinking",
+            "authority": "presentation-only",
+            "sourceType": "scheduler"
+          },
+          "narration": {
+            "id": "lane-master:scheduler:none:working:2026-09-06T16:00:59.228Z:1:1:0:1:4:0",
+            "characterId": "lane-master",
+            "text": "Cadence is scheduling 1 queued item.",
+            "detail": "1 active execution; 1 waiting; 1 blocked.",
+            "source": {
+              "authority": "Agent Control",
+              "type": "scheduler",
+              "id": null,
+              "at": "2026-09-06T16:00:59.228Z",
+              "detail": "1 active execution; 1 waiting; 1 blocked."
+            }
+          },
+          "summary": "1 active execution; 1 waiting; 1 blocked.",
+          "signals": [
+            {
+              "state": "working",
+              "label": "active",
+              "count": 1
+            },
+            {
+              "state": "queued",
+              "label": "queued",
+              "count": 1
+            },
+            {
+              "state": "blocked",
+              "label": "blocked",
+              "count": 1
+            }
+          ],
+          "freshness": "current"
+        },
+        {
+          "id": "prompt-reviewer",
+          "name": "Quill",
+          "role": "Work Parcel Reviewer",
+          "state": "idle",
+          "operationalState": "IDLE",
+          "activity": {
+            "kind": "NONE",
+            "label": "no active work",
+            "source": {
+              "authority": "Agent Control",
+              "type": "none",
+              "id": null,
+              "at": null,
+              "detail": "There is no dedicated prompt-review agent or separate prompt-quality telemetry."
+            },
+            "tool": null
+          },
+          "animationCue": {
+            "expression": "AMBIENT_IDLE",
+            "label": "ambient idle",
+            "authority": "presentation-only",
+            "sourceType": "none"
+          },
+          "narration": {
+            "id": "prompt-reviewer:none:none:idle:2026-09-06T16:00:59.252Z:0:0:0:0:1:0",
+            "characterId": "prompt-reviewer",
+            "text": "Quill is available and has no recorded active work.",
+            "detail": "There is no dedicated prompt-review agent or separate prompt-quality telemetry.",
+            "source": {
+              "authority": "Agent Control",
+              "type": "none",
+              "id": null,
+              "at": null,
+              "detail": "There is no dedicated prompt-review agent or separate prompt-quality telemetry."
+            }
+          },
+          "summary": "Task entry is ready; no prompt is currently being planned.",
+          "signals": [],
+          "freshness": "current"
+        },
+        {
+          "id": "parcel-coordinator",
+          "name": "Relay",
+          "role": "Tool & Execution Worker",
+          "state": "completed",
+          "operationalState": "SUCCEEDED",
+          "activity": {
+            "kind": "NONE",
+            "label": "no active work",
+            "source": {
+              "authority": "Agent Control",
+              "type": "none",
+              "id": null,
+              "at": null,
+              "detail": "No Work Parcel is active."
+            },
+            "tool": null
+          },
+          "animationCue": {
+            "expression": "SUCCESS_ACKNOWLEDGEMENT",
+            "label": "success acknowledgement",
+            "authority": "presentation-only",
+            "sourceType": "none"
+          },
+          "narration": {
+            "id": "parcel-coordinator:none:none:completed:2026-09-06T16:00:59.252Z:0:0:0:0:1:0",
+            "characterId": "parcel-coordinator",
+            "text": "Relay reports completed: 1 parcel tracked; 1 completed; 0 failed.",
+            "detail": "No Work Parcel is active.",
+            "source": {
+              "authority": "Agent Control",
+              "type": "none",
+              "id": null,
+              "at": null,
+              "detail": "No Work Parcel is active."
+            }
+          },
+          "summary": "1 parcel tracked; 1 completed; 0 failed.",
+          "signals": [],
+          "freshness": "current"
+        },
+        {
+          "id": "model-scout",
+          "name": "Lumen",
+          "role": "Model Router & Scout",
+          "state": "blocked",
+          "operationalState": "PAUSED",
+          "activity": {
+            "kind": "BENCHMARKING",
+            "label": "evaluation completed · local-dashboard-qualification · local-dashboard-qualification-model",
+            "source": {
+              "authority": "Agent Control",
+              "type": "provider.catalog_changed",
+              "id": "20",
+              "at": "2026-09-06T16:00:44.227Z",
+              "detail": "Recorded provider.catalog_changed action evaluation-completed"
+            },
+            "tool": {
+              "kind": "MODEL_DISCOVERY",
+              "label": "model discovery",
+              "action": "model discovery evaluation-completed",
+              "capabilities": [
+                "model.discovery"
+              ]
+            }
+          },
+          "animationCue": {
+            "expression": "CONCERNED",
+            "label": "concerned",
+            "authority": "presentation-only",
+            "sourceType": "provider.catalog_changed"
+          },
+          "narration": {
+            "id": "model-scout:provider.catalog_changed:20:blocked:2026-09-06T16:00:44.226Z:0:0:0:0:0:0",
+            "characterId": "model-scout",
+            "text": "Lumen is evaluation completed · local-dashboard-qualification · local-dashboard-qualification-model.",
+            "detail": "Recorded provider.catalog_changed action evaluation-completed",
+            "source": {
+              "authority": "Agent Control",
+              "type": "provider.catalog_changed",
+              "id": "20",
+              "at": "2026-09-06T16:00:44.227Z",
+              "detail": "Recorded provider.catalog_changed action evaluation-completed"
+            }
+          },
+          "summary": "0 of 1 configured model route currently qualified.",
+          "signals": [],
+          "freshness": "current"
+        },
+        {
+          "id": "resource-guardian",
+          "name": "Rook",
+          "role": "Resource & Node Guardian",
+          "state": "idle",
+          "operationalState": "IDLE",
+          "activity": {
+            "kind": "NONE",
+            "label": "no active work",
+            "source": {
+              "authority": "Agent Control",
+              "type": "none",
+              "id": null,
+              "at": null,
+              "detail": "No resource pressure is reported."
+            },
+            "tool": null
+          },
+          "animationCue": {
+            "expression": "AMBIENT_IDLE",
+            "label": "ambient idle",
+            "authority": "presentation-only",
+            "sourceType": "none"
+          },
+          "narration": {
+            "id": "resource-guardian:none:none:idle:2026-09-06T16:00:28.916Z:0:0:0:0:4:0",
+            "characterId": "resource-guardian",
+            "text": "Rook is available and has no recorded active work.",
+            "detail": "No resource pressure is reported.",
+            "source": {
+              "authority": "Agent Control",
+              "type": "none",
+              "id": null,
+              "at": null,
+              "detail": "No resource pressure is reported."
+            }
+          },
+          "summary": "4 available; 0 busy; 0 degraded; 0 offline; 0 unknown.",
+          "signals": [],
+          "freshness": "current"
+        },
+        {
+          "id": "quality-inspector",
+          "name": "Verity",
+          "role": "Verification & Evidence Inspector",
+          "state": "completed",
+          "operationalState": "SUCCEEDED",
+          "activity": {
+            "kind": "REVIEWING_OUTPUT",
+            "label": "reviewing recorded verification",
+            "source": {
+              "authority": "Agent Control",
+              "type": "verification.changed",
+              "id": "41",
+              "at": "2026-09-06T16:00:59.266Z",
+              "detail": "A verification state change was recorded"
+            },
+            "tool": {
+              "kind": "GENERIC_TOOL",
+              "label": "governed tool",
+              "action": "verification",
+              "capabilities": []
+            }
+          },
+          "animationCue": {
+            "expression": "SUCCESS_ACKNOWLEDGEMENT",
+            "label": "success acknowledgement",
+            "authority": "presentation-only",
+            "sourceType": "verification.changed"
+          },
+          "narration": {
+            "id": "quality-inspector:verification.changed:41:completed:2026-09-06T16:00:59.228Z:0:0:0:0:5:0",
+            "characterId": "quality-inspector",
+            "text": "Verity is reviewing recorded verification.",
+            "detail": "A verification state change was recorded",
+            "source": {
+              "authority": "Agent Control",
+              "type": "verification.changed",
+              "id": "41",
+              "at": "2026-09-06T16:00:59.266Z",
+              "detail": "A verification state change was recorded"
+            }
+          },
+          "summary": "5 verified outcomes; 0 failed; 0 blocked.",
+          "signals": [
+            {
+              "state": "completed",
+              "label": "verified",
+              "count": 5
+            }
+          ],
+          "freshness": "current"
+        }
+      ],
+      "workflow": {
+        "headline": "Crew is watching canonical state; no Work Parcel is executing.",
+        "parcels": [
+          {
+            "id": "parcel-9111ba17-96d7-4e8d-8b72-80161fabc37b",
+            "objective": "Search and read the Agent Control repository concurrently, compose a structured result, then verify it independently",
+            "status": "SUCCEEDED",
+            "operationalState": "SUCCEEDED",
+            "owner": "quality-inspector",
+            "ownerReason": "The authoritative Parcel status is SUCCEEDED.",
+            "narration": "Verity owns the visible step because the authoritative Parcel status is SUCCEEDED.",
+            "progress": {
+              "completed": 4,
+              "active": 0,
+              "waiting": 0,
+              "failed": 0,
+              "total": 4
+            },
+            "parallelActive": 0,
+            "route": "Worker verifier-worker",
+            "updatedAt": "2026-09-06T16:00:59.252Z",
+            "transitionKey": "parcel-9111ba17-96d7-4e8d-8b72-80161fabc37b:SUCCEEDED:2026-09-06T16:00:59.252Z:SUCCEEDED:SUCCEEDED:SUCCEEDED:SUCCEEDED",
+            "stages": [
+              {
+                "id": "search",
+                "name": "Search repository evidence",
+                "status": "SUCCEEDED",
+                "dependencies": [],
+                "runId": "run-3b77a8ca-6767-4ab8-b3f1-954153416690",
+                "worker": "search-worker",
+                "route": "Worker search-worker",
+                "tool": {
+                  "kind": "SEARCH",
+                  "label": "search",
+                  "action": "repository.search@1.0.0",
+                  "capabilities": [
+                    "qualification.search"
+                  ]
+                }
+              },
+              {
+                "id": "read",
+                "name": "Read architecture evidence",
+                "status": "SUCCEEDED",
+                "dependencies": [],
+                "runId": "run-a7d11285-480d-4940-9a1f-a77a46ede0f6",
+                "worker": "reader-worker",
+                "route": "Worker reader-worker",
+                "tool": {
+                  "kind": "FILE",
+                  "label": "file reader",
+                  "action": "file.read@1.0.0",
+                  "capabilities": [
+                    "qualification.read"
+                  ]
+                }
+              },
+              {
+                "id": "compose",
+                "name": "Compose structured result",
+                "status": "SUCCEEDED",
+                "dependencies": [
+                  "search",
+                  "read"
+                ],
+                "runId": "run-9aaf68da-2c2b-4328-af2d-53213d5b7f87",
+                "worker": "editor-worker",
+                "route": "Worker editor-worker",
+                "tool": {
+                  "kind": "CODE_EDIT",
+                  "label": "code editor",
+                  "action": "repository.code-edit@1.0.0",
+                  "capabilities": [
+                    "qualification.edit"
+                  ]
+                }
+              },
+              {
+                "id": "verify",
+                "name": "Verify structured result",
+                "status": "SUCCEEDED",
+                "dependencies": [
+                  "compose"
+                ],
+                "runId": "run-fce77234-cbe1-41d3-8977-3af36fa189b8",
+                "worker": "verifier-worker",
+                "route": "Worker verifier-worker",
+                "tool": {
+                  "kind": "BENCHMARK",
+                  "label": "test or benchmark",
+                  "action": "benchmark.verify@1.0.0",
+                  "capabilities": [
+                    "qualification.verify"
+                  ]
+                }
+              }
+            ],
+            "journey": [
+              {
+                "id": "context-event-9a2eb79e-eb0f-47f2-8442-0b8a342665dd",
+                "at": "2026-09-06T16:00:47.642Z",
+                "type": "criterion.evaluated",
+                "summary": "Search repository evidence completes through its declared verification boundary: PASS",
+                "characterId": "quality-inspector",
+                "stageId": "search"
+              },
+              {
+                "id": "context-event-ff6aac95-e3a7-4f6b-865e-53c9b45925be",
+                "at": "2026-09-06T16:00:47.670Z",
+                "type": "baton.created",
+                "summary": "Bounded baton view created for next executor",
+                "characterId": "parcel-coordinator",
+                "stageId": null
+              },
+              {
+                "id": "context-event-595bdb06-386b-4f33-9591-99f18c38fb07",
+                "at": "2026-09-06T16:00:47.675Z",
+                "type": "baton.created",
+                "summary": "Bounded baton view created for compose",
+                "characterId": "parcel-coordinator",
+                "stageId": "compose"
+              },
+              {
+                "id": "audit-681a3791-8020-46f0-bb46-13904378b8ea",
+                "at": "2026-09-06T16:00:47.675Z",
+                "type": "baton.created",
+                "summary": "Bounded operational baton view sealed",
+                "characterId": "parcel-coordinator",
+                "stageId": "compose"
+              },
+              {
+                "id": "context-event-922e6929-1228-4c1b-9b7f-7e84c1a19100",
+                "at": "2026-09-06T16:00:47.679Z",
+                "type": "stage.started",
+                "summary": "Compose structured result dispatched",
+                "characterId": "parcel-coordinator",
+                "stageId": "compose"
+              },
+              {
+                "id": "audit-3e90daf1-72e6-452a-90a9-51ef9352d50b",
+                "at": "2026-09-06T16:00:47.679Z",
+                "type": "stage.dispatched",
+                "summary": "Compose structured result dispatched",
+                "characterId": "parcel-coordinator",
+                "stageId": "compose"
+              },
+              {
+                "id": "audit-68b2f542-3a84-4003-a70e-f4dbf8ca13ed",
+                "at": "2026-09-06T16:00:47.691Z",
+                "type": "route.resolved",
+                "summary": "Compose structured result actual route recorded",
+                "characterId": "model-scout",
+                "stageId": "compose"
+              },
+              {
+                "id": "context-event-4ed8621c-be70-4b90-bc9d-f83058c720ad",
+                "at": "2026-09-06T16:00:53.729Z",
+                "type": "stage.completed",
+                "summary": "Compose structured result completed through verification",
+                "characterId": "parcel-coordinator",
+                "stageId": "compose"
+              },
+              {
+                "id": "context-event-1ee778f2-ce63-4146-892e-9548812d2028",
+                "at": "2026-09-06T16:00:53.729Z",
+                "type": "criterion.evaluated",
+                "summary": "Compose structured result completes through its declared verification boundary: PASS",
+                "characterId": "quality-inspector",
+                "stageId": "compose"
+              },
+              {
+                "id": "context-event-9dcf2071-41a1-4a4e-b416-da779fe4106a",
+                "at": "2026-09-06T16:00:53.975Z",
+                "type": "baton.created",
+                "summary": "Bounded baton view created for next executor",
+                "characterId": "parcel-coordinator",
+                "stageId": null
+              },
+              {
+                "id": "context-event-4a934a1b-81a0-4e74-958a-623a21931603",
+                "at": "2026-09-06T16:00:53.977Z",
+                "type": "baton.created",
+                "summary": "Bounded baton view created for verify",
+                "characterId": "parcel-coordinator",
+                "stageId": "verify"
+              },
+              {
+                "id": "audit-96eabc97-fff6-448b-94b6-ef170729d5a3",
+                "at": "2026-09-06T16:00:53.977Z",
+                "type": "baton.created",
+                "summary": "Bounded operational baton view sealed",
+                "characterId": "parcel-coordinator",
+                "stageId": "verify"
+              },
+              {
+                "id": "context-event-b1f89eb2-2ddf-4dfc-974e-b57723868c4a",
+                "at": "2026-09-06T16:00:53.983Z",
+                "type": "stage.started",
+                "summary": "Verify structured result dispatched",
+                "characterId": "parcel-coordinator",
+                "stageId": "verify"
+              },
+              {
+                "id": "audit-feadfafb-16da-4851-a092-0bfd4eb107f1",
+                "at": "2026-09-06T16:00:53.983Z",
+                "type": "stage.dispatched",
+                "summary": "Verify structured result dispatched",
+                "characterId": "parcel-coordinator",
+                "stageId": "verify"
+              },
+              {
+                "id": "audit-45e751f4-2c29-4d17-a22f-9ff3dc34a279",
+                "at": "2026-09-06T16:00:53.996Z",
+                "type": "route.resolved",
+                "summary": "Verify structured result actual route recorded",
+                "characterId": "model-scout",
+                "stageId": "verify"
+              },
+              {
+                "id": "context-event-23156138-595c-4132-b645-e6c7158f5be9",
+                "at": "2026-09-06T16:00:59.228Z",
+                "type": "stage.completed",
+                "summary": "Verify structured result completed through verification",
+                "characterId": "parcel-coordinator",
+                "stageId": "verify"
+              },
+              {
+                "id": "context-event-1cee1348-5362-42af-a50b-6991c449ae3e",
+                "at": "2026-09-06T16:00:59.228Z",
+                "type": "criterion.evaluated",
+                "summary": "Verify structured result completes through its declared verification boundary: PASS",
+                "characterId": "quality-inspector",
+                "stageId": "verify"
+              },
+              {
+                "id": "context-event-052aa768-6a3b-4c12-b474-9ea522857afb",
+                "at": "2026-09-06T16:00:59.249Z",
+                "type": "baton.created",
+                "summary": "Bounded baton view created for next executor",
+                "characterId": "parcel-coordinator",
+                "stageId": null
+              }
+            ]
+          }
+        ],
+        "batonTransfers": [
+          {
+            "id": "parcel:parcel-baton-35ac605b-bd15-4132-9953-307bbd39c778",
+            "at": "2026-09-06T16:00:59.249Z",
+            "parcelId": "parcel-9111ba17-96d7-4e8d-8b72-80161fabc37b",
+            "sourceType": "work-parcel",
+            "sourceEventId": "context-event-052aa768-6a3b-4c12-b474-9ea522857afb",
+            "batonId": "parcel-baton-35ac605b-bd15-4132-9953-307bbd39c778",
+            "from": {
+              "provider": "Agent Control",
+              "account": null,
+              "model": "governed Job worker",
+              "node": "verifier-worker",
+              "label": "Worker verifier-worker"
+            },
+            "to": {
+              "provider": "Agent Control",
+              "account": null,
+              "model": "Work Parcel",
+              "node": null,
+              "label": "Next governed stage"
+            },
+            "outcome": "CREATED",
+            "active": false,
+            "reason": "Continue with stages depending on Verify structured result",
+            "explanation": "Sealed Parcel baton parcel-baton-35ac605b-bd15-4132-9953-307bbd39c778 carries Verify structured result → the next governed stage: Continue with stages depending on Verify structured result",
+            "contextPercent": null
+          },
+          {
+            "id": "parcel:parcel-baton-4ecdb61c-f7d5-4bca-8f05-2185b77c3828",
+            "at": "2026-09-06T16:00:53.977Z",
+            "parcelId": "parcel-9111ba17-96d7-4e8d-8b72-80161fabc37b",
+            "sourceType": "work-parcel",
+            "sourceEventId": "context-event-4a934a1b-81a0-4e74-958a-623a21931603",
+            "batonId": "parcel-baton-4ecdb61c-f7d5-4bca-8f05-2185b77c3828",
+            "from": {
+              "provider": "Agent Control",
+              "account": null,
+              "model": "governed Job worker",
+              "node": "editor-worker",
+              "label": "Worker editor-worker"
+            },
+            "to": {
+              "provider": "Agent Control",
+              "account": null,
+              "model": "governed Job worker",
+              "node": "verifier-worker",
+              "label": "Worker verifier-worker"
+            },
+            "outcome": "SUCCEEDED",
+            "active": false,
+            "reason": "Execute Verify structured result through crew-verify@1.0.0 and satisfy its declared verification boundary",
+            "explanation": "Sealed Parcel baton parcel-baton-4ecdb61c-f7d5-4bca-8f05-2185b77c3828 carries Compose structured result → Verify structured result: Execute Verify structured result through crew-verify@1.0.0 and satisfy its declared verification boundary",
+            "contextPercent": null
+          },
+          {
+            "id": "parcel:parcel-baton-1e2bc0a6-073f-4f6f-b8ee-f455818f3b88",
+            "at": "2026-09-06T16:00:53.975Z",
+            "parcelId": "parcel-9111ba17-96d7-4e8d-8b72-80161fabc37b",
+            "sourceType": "work-parcel",
+            "sourceEventId": "context-event-9dcf2071-41a1-4a4e-b416-da779fe4106a",
+            "batonId": "parcel-baton-1e2bc0a6-073f-4f6f-b8ee-f455818f3b88",
+            "from": {
+              "provider": "Agent Control",
+              "account": null,
+              "model": "governed Job worker",
+              "node": "editor-worker",
+              "label": "Worker editor-worker"
+            },
+            "to": {
+              "provider": "Agent Control",
+              "account": null,
+              "model": "Work Parcel",
+              "node": null,
+              "label": "Next governed stage"
+            },
+            "outcome": "CREATED",
+            "active": false,
+            "reason": "Continue with stages depending on Compose structured result",
+            "explanation": "Sealed Parcel baton parcel-baton-1e2bc0a6-073f-4f6f-b8ee-f455818f3b88 carries Compose structured result → the next governed stage: Continue with stages depending on Compose structured result",
+            "contextPercent": null
+          },
+          {
+            "id": "parcel:parcel-baton-4ac353b0-5366-46ac-b33f-0bdce9122881",
+            "at": "2026-09-06T16:00:47.675Z",
+            "parcelId": "parcel-9111ba17-96d7-4e8d-8b72-80161fabc37b",
+            "sourceType": "work-parcel",
+            "sourceEventId": "context-event-595bdb06-386b-4f33-9591-99f18c38fb07",
+            "batonId": "parcel-baton-4ac353b0-5366-46ac-b33f-0bdce9122881",
+            "from": {
+              "provider": "Agent Control",
+              "account": null,
+              "model": "Work Parcel",
+              "node": null,
+              "label": "Worker search-worker + Worker reader-worker"
+            },
+            "to": {
+              "provider": "Agent Control",
+              "account": null,
+              "model": "governed Job worker",
+              "node": "editor-worker",
+              "label": "Worker editor-worker"
+            },
+            "outcome": "SUCCEEDED",
+            "active": false,
+            "reason": "Execute Compose structured result through crew-compose@1.0.0 and satisfy its declared verification boundary",
+            "explanation": "Sealed Parcel baton parcel-baton-4ac353b0-5366-46ac-b33f-0bdce9122881 carries Search repository evidence + Read architecture evidence → Compose structured result: Execute Compose structured result through crew-compose@1.0.0 and satisfy its declared verification boundary",
+            "contextPercent": null
+          },
+          {
+            "id": "parcel:parcel-baton-4b10f411-7eab-4823-bfbd-b4d6dff2f06e",
+            "at": "2026-09-06T16:00:47.670Z",
+            "parcelId": "parcel-9111ba17-96d7-4e8d-8b72-80161fabc37b",
+            "sourceType": "work-parcel",
+            "sourceEventId": "context-event-ff6aac95-e3a7-4f6b-865e-53c9b45925be",
+            "batonId": "parcel-baton-4b10f411-7eab-4823-bfbd-b4d6dff2f06e",
+            "from": {
+              "provider": "Agent Control",
+              "account": null,
+              "model": "governed Job worker",
+              "node": "search-worker",
+              "label": "Worker search-worker"
+            },
+            "to": {
+              "provider": "Agent Control",
+              "account": null,
+              "model": "Work Parcel",
+              "node": null,
+              "label": "Next governed stage"
+            },
+            "outcome": "CREATED",
+            "active": false,
+            "reason": "Continue with stages depending on Search repository evidence",
+            "explanation": "Sealed Parcel baton parcel-baton-4b10f411-7eab-4823-bfbd-b4d6dff2f06e carries Search repository evidence → the next governed stage: Continue with stages depending on Search repository evidence",
+            "contextPercent": null
+          },
+          {
+            "id": "parcel:parcel-baton-0fa26a83-7857-4ace-8244-7c18e750f8f7",
+            "at": "2026-09-06T16:00:47.386Z",
+            "parcelId": "parcel-9111ba17-96d7-4e8d-8b72-80161fabc37b",
+            "sourceType": "work-parcel",
+            "sourceEventId": "context-event-6d3b1a18-0786-4b0c-a8cd-546e6c025131",
+            "batonId": "parcel-baton-0fa26a83-7857-4ace-8244-7c18e750f8f7",
+            "from": {
+              "provider": "Agent Control",
+              "account": null,
+              "model": "governed Job worker",
+              "node": "reader-worker",
+              "label": "Worker reader-worker"
+            },
+            "to": {
+              "provider": "Agent Control",
+              "account": null,
+              "model": "Work Parcel",
+              "node": null,
+              "label": "Next governed stage"
+            },
+            "outcome": "CREATED",
+            "active": false,
+            "reason": "Continue with stages depending on Read architecture evidence",
+            "explanation": "Sealed Parcel baton parcel-baton-0fa26a83-7857-4ace-8244-7c18e750f8f7 carries Read architecture evidence → the next governed stage: Continue with stages depending on Read architecture evidence",
+            "contextPercent": null
+          },
+          {
+            "id": "parcel:parcel-baton-04f6ac75-d5d1-4291-b67a-e63a09bcb88d",
+            "at": "2026-09-06T16:00:38.199Z",
+            "parcelId": "parcel-9111ba17-96d7-4e8d-8b72-80161fabc37b",
+            "sourceType": "work-parcel",
+            "sourceEventId": "context-event-787c94f7-6490-40f9-9403-0e8e55c992c8",
+            "batonId": "parcel-baton-04f6ac75-d5d1-4291-b67a-e63a09bcb88d",
+            "from": {
+              "provider": "Agent Control",
+              "account": null,
+              "model": "Work Parcel",
+              "node": null,
+              "label": "Work Parcel intake"
+            },
+            "to": {
+              "provider": "Agent Control",
+              "account": null,
+              "model": "governed Job worker",
+              "node": "reader-worker",
+              "label": "Worker reader-worker"
+            },
+            "outcome": "SUCCEEDED",
+            "active": false,
+            "reason": "Execute Read architecture evidence through crew-read@1.0.0 and satisfy its declared verification boundary",
+            "explanation": "Sealed Parcel baton parcel-baton-04f6ac75-d5d1-4291-b67a-e63a09bcb88d carries recorded predecessor work → Read architecture evidence: Execute Read architecture evidence through crew-read@1.0.0 and satisfy its declared verification boundary",
+            "contextPercent": null
+          },
+          {
+            "id": "parcel:parcel-baton-b64d2b11-b7d2-4b9c-865d-778fb7e3edc5",
+            "at": "2026-09-06T16:00:38.193Z",
+            "parcelId": "parcel-9111ba17-96d7-4e8d-8b72-80161fabc37b",
+            "sourceType": "work-parcel",
+            "sourceEventId": "context-event-0dc818db-ff10-4f10-bdde-d532f69a2d19",
+            "batonId": "parcel-baton-b64d2b11-b7d2-4b9c-865d-778fb7e3edc5",
+            "from": {
+              "provider": "Agent Control",
+              "account": null,
+              "model": "Work Parcel",
+              "node": null,
+              "label": "Work Parcel intake"
+            },
+            "to": {
+              "provider": "Agent Control",
+              "account": null,
+              "model": "governed Job worker",
+              "node": "search-worker",
+              "label": "Worker search-worker"
+            },
+            "outcome": "SUCCEEDED",
+            "active": false,
+            "reason": "Execute Search repository evidence through crew-search@1.0.0 and satisfy its declared verification boundary",
+            "explanation": "Sealed Parcel baton parcel-baton-b64d2b11-b7d2-4b9c-865d-778fb7e3edc5 carries recorded predecessor work → Search repository evidence: Execute Search repository evidence through crew-search@1.0.0 and satisfy its declared verification boundary",
+            "contextPercent": null
+          }
+        ],
+        "modelActivity": [
+          {
+            "id": "event:19",
+            "at": "2026-09-06T16:00:44.227Z",
+            "provider": "local-dashboard-qualification",
+            "model": "local-dashboard-qualification-model",
+            "action": "COMPLETED",
+            "status": "COMPLETED",
+            "failure": null,
+            "httpStatus": null,
+            "routingEligible": null,
+            "explanation": "Agent Control recorded COMPLETED: COMPLETED."
+          },
+          {
+            "id": "event:20",
+            "at": "2026-09-06T16:00:44.227Z",
+            "provider": "local-dashboard-qualification",
+            "model": "local-dashboard-qualification-model",
+            "action": "evaluation-completed",
+            "status": "COMPLETED",
+            "failure": null,
+            "httpStatus": null,
+            "routingEligible": false,
+            "explanation": "Agent Control recorded evaluation completed: COMPLETED."
+          },
+          {
+            "id": "event:18",
+            "at": "2026-09-06T16:00:44.225Z",
+            "provider": "local-dashboard-qualification",
+            "model": "local-dashboard-qualification-model",
+            "action": "COMPLETED",
+            "status": null,
+            "failure": null,
+            "httpStatus": null,
+            "routingEligible": null,
+            "explanation": "Agent Control recorded COMPLETED."
+          },
+          {
+            "id": "event:17",
+            "at": "2026-09-06T16:00:43.734Z",
+            "provider": "local-dashboard-qualification",
+            "model": "local-dashboard-qualification-model",
+            "action": "STARTED",
+            "status": null,
+            "failure": null,
+            "httpStatus": null,
+            "routingEligible": null,
+            "explanation": "Agent Control recorded STARTED."
+          },
+          {
+            "id": "event:16",
+            "at": "2026-09-06T16:00:43.733Z",
+            "provider": "local-dashboard-qualification",
+            "model": "local-dashboard-qualification-model",
+            "action": "COMPLETED",
+            "status": null,
+            "failure": null,
+            "httpStatus": null,
+            "routingEligible": null,
+            "explanation": "Agent Control recorded COMPLETED."
+          },
+          {
+            "id": "event:15",
+            "at": "2026-09-06T16:00:40.548Z",
+            "provider": "local-dashboard-qualification",
+            "model": "local-dashboard-qualification-model",
+            "action": "STARTED",
+            "status": null,
+            "failure": null,
+            "httpStatus": null,
+            "routingEligible": null,
+            "explanation": "Agent Control recorded STARTED."
+          },
+          {
+            "id": "event:14",
+            "at": "2026-09-06T16:00:40.546Z",
+            "provider": "local-dashboard-qualification",
+            "model": "local-dashboard-qualification-model",
+            "action": "COMPLETED",
+            "status": null,
+            "failure": null,
+            "httpStatus": null,
+            "routingEligible": null,
+            "explanation": "Agent Control recorded COMPLETED."
+          },
+          {
+            "id": "event:10",
+            "at": "2026-09-06T16:00:38.234Z",
+            "provider": "local-dashboard-qualification",
+            "model": "local-dashboard-qualification-model",
+            "action": "STARTED",
+            "status": null,
+            "failure": null,
+            "httpStatus": null,
+            "routingEligible": null,
+            "explanation": "Agent Control recorded STARTED."
+          },
+          {
+            "id": "event:8",
+            "at": "2026-09-06T16:00:38.233Z",
+            "provider": "local-dashboard-qualification",
+            "model": "local-dashboard-qualification-model",
+            "action": "evaluation-running",
+            "status": null,
+            "failure": null,
+            "httpStatus": null,
+            "routingEligible": false,
+            "explanation": "Agent Control recorded evaluation running."
+          },
+          {
+            "id": "event:9",
+            "at": "2026-09-06T16:00:38.233Z",
+            "provider": null,
+            "model": null,
+            "action": "QUEUED",
+            "status": "QUEUED",
+            "failure": null,
+            "httpStatus": null,
+            "routingEligible": null,
+            "explanation": "Agent Control recorded QUEUED: QUEUED."
+          },
+          {
+            "id": "event:7",
+            "at": "2026-09-06T16:00:38.230Z",
+            "provider": "local-dashboard-qualification",
+            "model": null,
+            "action": "discovered",
+            "status": null,
+            "failure": null,
+            "httpStatus": null,
+            "routingEligible": null,
+            "explanation": "Agent Control recorded provider catalogue discovery for 1 model(s)."
+          },
+          {
+            "id": "event:6",
+            "at": "2026-09-06T16:00:38.216Z",
+            "provider": "local-dashboard-qualification",
+            "model": null,
+            "action": "discovering",
+            "status": null,
+            "failure": null,
+            "httpStatus": null,
+            "routingEligible": null,
+            "explanation": "Agent Control is discovering the local-dashboard-qualification provider catalogue."
+          }
+        ],
+        "narration": [
+          {
+            "id": "lane-master:scheduler:none:working:2026-09-06T16:00:59.228Z:1:1:0:1:4:0",
+            "characterId": "lane-master",
+            "text": "Cadence is scheduling 1 queued item.",
+            "detail": "1 active execution; 1 waiting; 1 blocked.",
+            "source": {
+              "authority": "Agent Control",
+              "type": "scheduler",
+              "id": null,
+              "at": "2026-09-06T16:00:59.228Z",
+              "detail": "1 active execution; 1 waiting; 1 blocked."
+            }
+          },
+          {
+            "id": "model-scout:provider.catalog_changed:20:blocked:2026-09-06T16:00:44.226Z:0:0:0:0:0:0",
+            "characterId": "model-scout",
+            "text": "Lumen is evaluation completed · local-dashboard-qualification · local-dashboard-qualification-model.",
+            "detail": "Recorded provider.catalog_changed action evaluation-completed",
+            "source": {
+              "authority": "Agent Control",
+              "type": "provider.catalog_changed",
+              "id": "20",
+              "at": "2026-09-06T16:00:44.227Z",
+              "detail": "Recorded provider.catalog_changed action evaluation-completed"
+            }
+          },
+          {
+            "id": "quality-inspector:verification.changed:41:completed:2026-09-06T16:00:59.228Z:0:0:0:0:5:0",
+            "characterId": "quality-inspector",
+            "text": "Verity is reviewing recorded verification.",
+            "detail": "A verification state change was recorded",
+            "source": {
+              "authority": "Agent Control",
+              "type": "verification.changed",
+              "id": "41",
+              "at": "2026-09-06T16:00:59.266Z",
+              "detail": "A verification state change was recorded"
+            }
+          }
+        ]
+      }
+    },
+    "progressiveDisclosure": {
+      "level1": "Crew and deterministic narration",
+      "level2": "human explanation and exact baton reason",
+      "level3": "existing engineering Jobs and Systems views",
+      "focusResponsivenessMs": 101.70000000298023,
+      "navigation": {
+        "resourceGuardian": {
+          "interaction": "pointer",
+          "target": "#systems-list",
+          "at": "2026-09-06T16:00:44.845Z"
+        },
+        "parcelCoordinator": {
+          "interaction": "keyboard-enter",
+          "target": "#parcel-list",
+          "at": "2026-09-06T16:00:46.842Z"
+        }
+      }
+    }
+  },
+  "performance": {
+    "method": "Chromium DevTools Performance metrics plus requestAnimationFrame and in-page typed-SSE receipt-to-Crew-render instrumentation",
+    "multipleSimultaneousWorkers": 2,
+    "concurrentFullMotion": {
+      "durationMs": 1812.2890000086045,
+      "rendererTaskDurationMs": 481.50800000000027,
+      "rendererTaskSharePercent": 26.569051624642327,
+      "jsHeapUsedBeforeBytes": 3319976,
+      "jsHeapUsedAfterBytes": 4835652,
+      "jsHeapDeltaBytes": 1515676,
+      "documentCount": 1,
+      "domNodeCount": 18984,
+      "layoutCountDelta": 43,
+      "styleRecalculationCountDelta": 46,
+      "frame": {
+        "durationMs": 1802.6999999970194,
+        "frames": 45,
+        "meanIntervalMs": 40.059999999933765,
+        "p95IntervalMs": 66.70000000000073,
+        "maximumIntervalMs": 83.29999999999927,
+        "intervalsOver50Ms": 5
+      }
+    },
+    "completedFullMotion": {
+      "durationMs": 1868.6840000009397,
+      "rendererTaskDurationMs": 230.64699999999937,
+      "rendererTaskSharePercent": 12.34275029913476,
+      "jsHeapUsedBeforeBytes": 4179580,
+      "jsHeapUsedAfterBytes": 4736216,
+      "jsHeapDeltaBytes": 556636,
+      "documentCount": 1,
+      "domNodeCount": 10428,
+      "layoutCountDelta": 4,
+      "styleRecalculationCountDelta": 61,
+      "frame": {
+        "durationMs": 1832.2999999999993,
+        "frames": 58,
+        "meanIntervalMs": 31.591379310344816,
+        "p95IntervalMs": 33.400000000001455,
+        "maximumIntervalMs": 49.900000000001455,
+        "intervalsOver50Ms": 0
+      }
+    },
+    "completedReducedMotion": {
+      "durationMs": 1815.6749999907333,
+      "rendererTaskDurationMs": 487.31300000000033,
+      "rendererTaskSharePercent": 26.839219574124634,
+      "jsHeapUsedBeforeBytes": 5026452,
+      "jsHeapUsedAfterBytes": 5054904,
+      "jsHeapDeltaBytes": 28452,
+      "documentCount": 1,
+      "domNodeCount": 10446,
+      "layoutCountDelta": 0,
+      "styleRecalculationCountDelta": 107,
+      "frame": {
+        "durationMs": 1806.8999999910593,
+        "frames": 107,
+        "meanIntervalMs": 16.88691588776691,
+        "p95IntervalMs": 16.799999999995634,
+        "maximumIntervalMs": 33.39999999999782,
+        "intervalsOver50Ms": 0
+      }
+    },
+    "noVideoCapture": {
+      "fullMotion": {
+        "durationMs": 1808.4220000018831,
+        "rendererTaskDurationMs": 88.39399999999999,
+        "rendererTaskSharePercent": 4.8879078002760386,
+        "jsHeapUsedBeforeBytes": 4640180,
+        "jsHeapUsedAfterBytes": 4676940,
+        "jsHeapDeltaBytes": 36760,
+        "documentCount": 4,
+        "domNodeCount": 93176,
+        "layoutCountDelta": 2,
+        "styleRecalculationCountDelta": 109,
+        "frame": {
+          "durationMs": 1804.40000000298,
+          "frames": 109,
+          "meanIntervalMs": 16.55412844039431,
+          "p95IntervalMs": 16.700000000000273,
+          "maximumIntervalMs": 16.800000000000182,
+          "intervalsOver50Ms": 0
+        }
+      },
+      "reducedMotion": {
+        "durationMs": 1811.2600000022212,
+        "rendererTaskDurationMs": 102.98400000000001,
+        "rendererTaskSharePercent": 5.68576571005122,
+        "jsHeapUsedBeforeBytes": 4882536,
+        "jsHeapUsedAfterBytes": 4911304,
+        "jsHeapDeltaBytes": 28768,
+        "documentCount": 4,
+        "domNodeCount": 93191,
+        "layoutCountDelta": 0,
+        "styleRecalculationCountDelta": 109,
+        "frame": {
+          "durationMs": 1805.90000000298,
+          "frames": 109,
+          "meanIntervalMs": 16.567889908284222,
+          "p95IntervalMs": 16.700000000000728,
+          "maximumIntervalMs": 16.800000000000182,
+          "intervalsOver50Ms": 0
+        }
+      },
+      "recordingOverheadExcluded": true
+    },
+    "pointSamples": {
+      "baseline": {
+        "Timestamp": 106750.406672,
+        "TaskDuration": 0.004051,
+        "JSHeapUsedSize": 1706840,
+        "JSHeapTotalSize": 3932160,
+        "Documents": 4,
+        "Nodes": 2740,
+        "LayoutCount": 0,
+        "RecalcStyleCount": 0
+      },
+      "concurrent": {
+        "Timestamp": 106762.153732,
+        "TaskDuration": 2.757534,
+        "JSHeapUsedSize": 4835652,
+        "JSHeapTotalSize": 7716864,
+        "Documents": 1,
+        "Nodes": 18984,
+        "LayoutCount": 329,
+        "RecalcStyleCount": 405
+      },
+      "completedReduced": {
+        "Timestamp": 106783.956434,
+        "TaskDuration": 8.901194,
+        "JSHeapUsedSize": 4124276,
+        "JSHeapTotalSize": 6406144,
+        "Documents": 1,
+        "Nodes": 10446,
+        "LayoutCount": 912,
+        "RecalcStyleCount": 1253
+      }
+    },
+    "dashboardFocusResponsivenessMs": 101.70000000298023,
+    "sseEventProcessing": {
+      "renderCount": 51,
+      "eventToRender": {
+        "samples": 38,
+        "minimumMs": 86.29999999701977,
+        "medianMs": 144.69999998807907,
+        "p95Ms": 452.69999998807907,
+        "maximumMs": 667.1999999880791
+      },
+      "sampleTypes": [
+        "work.parcel_created",
+        "work.parcel_changed",
+        "provider.catalog_changed",
+        "model.intelligence_changed",
+        "job.run_changed",
+        "verification.changed"
+      ],
+      "samples": [
+        {
+          "type": "work.parcel_created",
+          "milliseconds": 111.59999999403954
+        },
+        {
+          "type": "work.parcel_changed",
+          "milliseconds": 300.19999998807907
+        },
+        {
+          "type": "provider.catalog_changed",
+          "milliseconds": 298.8999999910593
+        },
+        {
+          "type": "provider.catalog_changed",
+          "milliseconds": 274
+        },
+        {
+          "type": "provider.catalog_changed",
+          "milliseconds": 273.59999999403954
+        },
+        {
+          "type": "model.intelligence_changed",
+          "milliseconds": 273.19999998807907
+        },
+        {
+          "type": "model.intelligence_changed",
+          "milliseconds": 272.8999999910593
+        },
+        {
+          "type": "job.run_changed",
+          "milliseconds": 272.69999998807907
+        },
+        {
+          "type": "job.run_changed",
+          "milliseconds": 272.3999999910593
+        },
+        {
+          "type": "work.parcel_changed",
+          "milliseconds": 272
+        },
+        {
+          "type": "model.intelligence_changed",
+          "milliseconds": 158.90000000596046
+        },
+        {
+          "type": "model.intelligence_changed",
+          "milliseconds": 157.40000000596046
+        },
+        {
+          "type": "model.intelligence_changed",
+          "milliseconds": 144.69999998807907
+        },
+        {
+          "type": "model.intelligence_changed",
+          "milliseconds": 143.69999998807907
+        },
+        {
+          "type": "model.intelligence_changed",
+          "milliseconds": 384.29999999701977
+        },
+        {
+          "type": "model.intelligence_changed",
+          "milliseconds": 383.20000000298023
+        },
+        {
+          "type": "provider.catalog_changed",
+          "milliseconds": 382.70000000298023
+        },
+        {
+          "type": "work.parcel_changed",
+          "milliseconds": 667.1999999880791
+        },
+        {
+          "type": "job.run_changed",
+          "milliseconds": 452.69999998807907
+        },
+        {
+          "type": "job.run_changed",
+          "milliseconds": 452.3999999910593
+        },
+        {
+          "type": "work.parcel_changed",
+          "milliseconds": 451.8999999910593
+        },
+        {
+          "type": "job.run_changed",
+          "milliseconds": 89.29999999701977
+        },
+        {
+          "type": "job.run_changed",
+          "milliseconds": 88.79999999701977
+        },
+        {
+          "type": "job.run_changed",
+          "milliseconds": 86.79999999701977
+        },
+        {
+          "type": "work.parcel_changed",
+          "milliseconds": 86.29999999701977
+        },
+        {
+          "type": "job.run_changed",
+          "milliseconds": 104.6000000089407
+        },
+        {
+          "type": "job.run_changed",
+          "milliseconds": 103.70000000298023
+        },
+        {
+          "type": "job.run_changed",
+          "milliseconds": 103.40000000596046
+        },
+        {
+          "type": "job.run_changed",
+          "milliseconds": 102.90000000596046
+        },
+        {
+          "type": "work.parcel_changed",
+          "milliseconds": 102.6000000089407
+        },
+        {
+          "type": "job.run_changed",
+          "milliseconds": 119.20000000298023
+        },
+        {
+          "type": "job.run_changed",
+          "milliseconds": 118.1000000089407
+        },
+        {
+          "type": "job.run_changed",
+          "milliseconds": 117.6000000089407
+        },
+        {
+          "type": "job.run_changed",
+          "milliseconds": 117.1000000089407
+        },
+        {
+          "type": "work.parcel_changed",
+          "milliseconds": 116.20000000298023
+        },
+        {
+          "type": "verification.changed",
+          "milliseconds": 115.5
+        },
+        {
+          "type": "verification.changed",
+          "milliseconds": 114.6000000089407
+        },
+        {
+          "type": "verification.changed",
+          "milliseconds": 114
+        }
+      ]
+    },
+    "scope": "Renderer-process measurements; not whole-machine CPU or memory."
+  },
+  "reducedMotion": {
+    "setting": "reduced",
+    "animatedNames": [
+      "bot-blink"
+    ]
+  },
+  "responsive": {
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "cards": 6,
+    "layout": "flex",
+    "overflowX": "auto",
+    "clientWidth": 368,
+    "scrollWidth": 1940,
+    "horizontallyScrollable": true,
+    "firstCardWidth": 310,
+    "workflowColumns": "348px"
+  },
+  "accessibility": {
+    "keyboardNavigationVerified": true,
+    "textualOperationalStatePresent": true,
+    "activityTextPresent": true,
+    "animationMarkedPresentationOnly": true,
+    "batonReasonAvailableWithoutMotion": true,
+    "reducedMotionVerified": true,
+    "colourIsNotSoleSignal": true
+  },
+  "executionIsolation": {
+    "dashboardProjectionOnly": true,
+    "animationFailureCanAffectExecution": false,
+    "evidence": "Character JavaScript consumes GET /api/status and SSE only; the only POST in this recorder is the existing operator-authenticated Work Parcel submission/question path."
+  },
+  "simulatedGallery": {
+    "presentButNotUsedForRuntimeVideoEvidence": true,
+    "clearlyLabelled": true,
+    "productionStateMutated": false
+  },
+  "screenshots": [
+    {
+      "file": "agent-control-crew-workflow/01-crew-initial.png",
+      "sha256": "02c052e8d5a970c7e11fa1321e86a9bddebe398811cb614ccbd12479b32ae698",
+      "bytes": 760222,
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "fullPage": false
+    },
+    {
+      "file": "agent-control-crew-workflow/02-crew-concurrent-live.png",
+      "sha256": "d84ab6ce4f600c973a330b3ebe3bc43cd5f6f9290c2f1f814af8f4d28492306a",
+      "bytes": 826277,
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "fullPage": false
+    },
+    {
+      "file": "agent-control-crew-workflow/03-real-parallel-workflow.png",
+      "sha256": "76abe60fc075e34ff3d2496b16346e6ad45e9675e264d77922a4f8b938779ff0",
+      "bytes": 791805,
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "fullPage": false
+    },
+    {
+      "file": "agent-control-crew-workflow/04-real-baton-reason.png",
+      "sha256": "21f68d9c71d0b6220d1cd85f69be7a145616f274ecd32256aa688a9821daa1ce",
+      "bytes": 811668,
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "fullPage": false
+    },
+    {
+      "file": "agent-control-crew-workflow/05-level-two-human-explanation.png",
+      "sha256": "da9f40f10b455346f4e3d63a7cf9d4cfcca6572b41d0e70a9a1c7cc5b5ec7825",
+      "bytes": 803266,
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "fullPage": false
+    },
+    {
+      "file": "agent-control-crew-workflow/06-resource-navigation.png",
+      "sha256": "17040c2451e7dd4a0fb5d6f44af133e932198fb06135773ad034f761793d4111",
+      "bytes": 534129,
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "fullPage": false
+    },
+    {
+      "file": "agent-control-crew-workflow/07-crew-completed.png",
+      "sha256": "a93ff8b1fcdb7e3426571a5dba2459fa158ef72344fd0b70b66becf5208a41ae",
+      "bytes": 748548,
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "fullPage": false
+    },
+    {
+      "file": "agent-control-crew-workflow/08-crew-reduced-motion.png",
+      "sha256": "438249ce0f443a63c23dbc2dde6ffad258363d5c5a6942a956875a135bd23f19",
+      "bytes": 746523,
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "fullPage": false
+    },
+    {
+      "file": "agent-control-crew-workflow/09-crew-mobile-active-strip.png",
+      "sha256": "41719f66fee94fe8615ff959564824598b530b6f334db9730fdf93dca58e935a",
+      "bytes": 919408,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "fullPage": true
+    }
+  ],
+  "security": {
+    "operatorCredentialPersisted": false,
+    "externalCredentialsUsed": false,
+    "productionStateTouched": false
+  }
+}
