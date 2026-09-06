@@ -131,6 +131,7 @@ test('provider catalogue API, dashboard and SSE expose governed state without cr
   assert.match(projection.models[0].latestNarrative,/responded successfully/);
   assert.ok(Array.isArray(projection.tournament.narrative));
   assert.deepEqual({callability:projection.tournament.requestAccounting.callabilityRequests,capability:projection.tournament.requestAccounting.capabilityRequests,benchmark:projection.tournament.requestAccounting.benchmarkRequests,total:projection.tournament.requestAccounting.totalRequests},{callability:1,capability:0,benchmark:0,total:1});
+  assert.deepEqual(projection.tournament.requestAccounting.providerReportedTokens,{inputKnown:0,outputKnown:0,totalKnown:0,requestsWithCompleteUsage:0,requestCoverage:1,complete:false,total:null});
   assert.deepEqual(projection.providers[0].rateLimit, {requestsLimit: 40, requestsRemaining: 39, tokensLimit: 10000, tokensRemaining: 9900, reset: null, retryAfter: null, authority: 'PROVIDER_HEADER'});
   assert.deepEqual(projection.providers[0].quota, {value: 12, unit: 'provider-defined', authority: 'PROVIDER_REPORTED'});
   assert.equal(JSON.stringify(projection).includes(credential), false);
