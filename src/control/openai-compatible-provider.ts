@@ -13,6 +13,27 @@ export interface PartialModelInvocation extends ModelInvocationResult {responseH
 export type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 export interface ProviderInvocationTelemetry {phase: 'started' | 'completed'; providerId: string; modelId: string; elapsedMs: number; usage?: NormalizedModelUsage; context: {tokens: number | null; limitTokens: number | null; authority: 'authoritative' | 'estimated' | 'unavailable'; source: string};}
 export interface ProviderRequestExtension {profile: string; body: Readonly<Record<string, unknown>>;}
+export interface ProviderStreamingProbeResult {
+  outcome: 'COMPLETED' | 'HTTP_ERROR' | 'TIMEOUT' | 'MALFORMED' | 'TRANSPORT_ERROR';
+  providerId: string;
+  modelId: string;
+  providerModel: string;
+  elapsedMs: number;
+  httpStatus: number | null;
+  httpAccepted: boolean;
+  streamStarted: boolean;
+  firstEventMs: number | null;
+  firstTokenMs: number | null;
+  tokenObserved: boolean;
+  output: string;
+  usage: NormalizedModelUsage;
+  responseModel: string | null;
+  finishReason: string | null;
+  responseHash: string | null;
+  failure: string | null;
+}
+
+const MAXIMUM_STREAM_PROBE_BYTES = 2 * 1024 * 1024;
 
 export class OpenAICompatibleProviderClient {
   constructor(private readonly provider: ProviderConfig, private readonly fetcher: FetchLike = fetch, private readonly credential = () => resolveProviderCredential(provider), private readonly identity: {accountProfileId?: string; nodeId?: string} = {}) {
@@ -50,6 +71,91 @@ export class OpenAICompatibleProviderClient {
       throw sanitizeError(error, token);
     }
     finally { clearTimeout(timeout); }
+  }
+
+  /**
+   * Bounded streaming probe used to distinguish catalogue presence from an
+   * inference endpoint that actually accepts and starts a request. Raw stream
+   * data and reasoning are hashed in memory and never returned.
+   */
+  async probeStreaming(model: ModelConfig, input: ProviderPromptInput, options: {timeoutMs?: number; maximumOutputTokens?: number; requestExtension?: ProviderRequestExtension; signal?: AbortSignal} = {}): Promise<ProviderStreamingProbeResult> {
+    if (model.provider !== this.provider.id) throw new Error('model_provider_mismatch');
+    if ((model.accountProfile ?? undefined) !== this.identity.accountProfileId) throw new Error('model_account_profile_mismatch');
+    const token = this.credential(), controller = new AbortController(), started = Date.now(), wire = this.provider.wireApi ?? 'responses';
+    const timeout = setTimeout(() => controller.abort(), options.timeoutMs ?? 30_000), endpoint = `${this.provider.baseUrl!.replace(/\/$/, '')}/${wire === 'chat-completions' ? 'chat/completions' : 'responses'}`;
+    const renderedInput = renderProviderPrompt(input), coreBody = wire === 'chat-completions'
+      ? {model: model.providerModel, messages: [{role: 'user', content: renderedInput}], max_tokens: options.maximumOutputTokens ?? 64, stream: true}
+      : {model: model.providerModel, input: renderedInput, max_output_tokens: options.maximumOutputTokens ?? 64, stream: true};
+    const body = extendProviderRequest(coreBody, options.requestExtension), digest = createHash('sha256');
+    let httpStatus: number | null = null, httpAccepted = false, streamStarted = false, firstEventMs: number | null = null, firstTokenMs: number | null = null, tokenObserved = false, output = '', usage = normalizeModelUsage(undefined, model), responseModel: string | null = null, finishReason: string | null = null, bytes = 0;
+    const result = (outcome: ProviderStreamingProbeResult['outcome'], failure: string | null): ProviderStreamingProbeResult => ({outcome, providerId: this.provider.id, modelId: model.id, providerModel: model.providerModel, elapsedMs: Date.now() - started, httpStatus, httpAccepted, streamStarted, firstEventMs, firstTokenMs, tokenObserved, output: redactSensitiveText(output, [token]), usage, responseModel: responseModel ? redactSensitiveText(responseModel, [token]) : null, finishReason: finishReason ? redactSensitiveText(finishReason, [token]) : null, responseHash: bytes ? `sha256:${digest.digest('hex')}` : null, failure: failure ? redactSensitiveText(failure, [token]) : null});
+    const observePayload = (payload: Record<string, unknown>) => {
+      streamStarted = true; firstEventMs ??= Date.now() - started;
+      if (typeof payload.model === 'string') responseModel = payload.model;
+      if (payload.usage && typeof payload.usage === 'object') usage = normalizeModelUsage(payload.usage, model);
+      if (wire === 'chat-completions') {
+        const choice = Array.isArray(payload.choices) && payload.choices[0] && typeof payload.choices[0] === 'object' ? payload.choices[0] as Record<string, unknown> : undefined;
+        const delta = choice?.delta && typeof choice.delta === 'object' ? choice.delta as Record<string, unknown> : {};
+        const content = typeof delta.content === 'string' ? delta.content : '';
+        const reasoning = typeof delta.reasoning_content === 'string' ? delta.reasoning_content : typeof delta.reasoning === 'string' ? delta.reasoning : '';
+        const toolDelta = Array.isArray(delta.tool_calls) && delta.tool_calls.length > 0;
+        if (content) output += content;
+        if (content || reasoning || toolDelta) { tokenObserved = true; firstTokenMs ??= Date.now() - started; }
+        if (typeof choice?.finish_reason === 'string') finishReason = choice.finish_reason;
+      } else {
+        const type = typeof payload.type === 'string' ? payload.type : '';
+        const delta = typeof payload.delta === 'string' ? payload.delta : '';
+        if (type.includes('output_text') && delta) output += delta;
+        if ((type.includes('output_text') || type.includes('reasoning') || type.includes('function_call')) && delta) { tokenObserved = true; firstTokenMs ??= Date.now() - started; }
+        if (type === 'response.completed' || type === 'response.incomplete') {
+          const response = payload.response && typeof payload.response === 'object' ? payload.response as Record<string, unknown> : {};
+          if (typeof response.model === 'string') responseModel = response.model;
+          if (response.usage && typeof response.usage === 'object') usage = normalizeModelUsage(response.usage, model);
+          finishReason = type === 'response.completed' ? 'completed' : 'incomplete';
+        }
+      }
+    };
+    try {
+      const signal = options.signal ? AbortSignal.any([controller.signal, options.signal]) : controller.signal;
+      const response = await this.fetcher(endpoint, {method: 'POST', headers: {'content-type': 'application/json', accept: 'text/event-stream', ...(token ? {authorization: `Bearer ${token}`} : {})}, body: JSON.stringify(body), signal});
+      httpStatus = response.status;
+      if (!response.ok) return result('HTTP_ERROR', providerError(response.status).message);
+      httpAccepted = true;
+      if (!response.body) return result('MALFORMED', 'provider_malformed_response');
+      const contentType = response.headers.get('content-type')?.toLowerCase() ?? '';
+      if (!contentType.includes('text/event-stream')) {
+        const raw = new Uint8Array(await response.arrayBuffer()); bytes = raw.byteLength;
+        if (bytes > MAXIMUM_STREAM_PROBE_BYTES) return result('MALFORMED', 'provider_response_too_large');
+        digest.update(raw);
+        let payload: Record<string, unknown>;
+        try { payload = JSON.parse(Buffer.from(raw).toString('utf8')) as Record<string, unknown>; } catch { return result('MALFORMED', 'provider_malformed_response'); }
+        output = extractOutput(payload, wire); usage = normalizeModelUsage(payload.usage, model); responseModel = typeof payload.model === 'string' ? payload.model : null; finishReason = extractFinishReason(payload, wire); tokenObserved = Boolean(output || extractToolCall(payload, wire));
+        return result('COMPLETED', null);
+      }
+      const reader = response.body.getReader(), decoder = new TextDecoder(); let pending = '';
+      const consume = (block: string) => {
+        const data = block.split('\n').filter(line => line.startsWith('data:')).map(line => line.slice(5).trimStart()).join('\n').trim();
+        if (!data || data === '[DONE]') return;
+        let payload: Record<string, unknown>;
+        try { payload = JSON.parse(data) as Record<string, unknown>; } catch { throw new Error('provider_malformed_stream'); }
+        observePayload(payload);
+      };
+      try {
+        while (true) {
+          const {done, value} = await reader.read(); if (done) break;
+          bytes += value.byteLength; if (bytes > MAXIMUM_STREAM_PROBE_BYTES) { void reader.cancel(); throw new Error('provider_response_too_large'); }
+          digest.update(value); pending += decoder.decode(value, {stream: true}).replace(/\r\n/g, '\n');
+          let boundary: number;
+          while ((boundary = pending.indexOf('\n\n')) >= 0) { consume(pending.slice(0, boundary)); pending = pending.slice(boundary + 2); }
+        }
+        pending += decoder.decode(); if (pending.trim()) consume(pending);
+      } finally { reader.releaseLock(); }
+      return result('COMPLETED', null);
+    } catch (error) {
+      if ((error as Error).name === 'AbortError') return result('TIMEOUT', options.signal?.aborted ? 'provider_cancelled' : 'provider_timeout');
+      if (['provider_malformed_stream','provider_response_too_large'].includes((error as Error).message)) return result('MALFORMED', (error as Error).message);
+      return result('TRANSPORT_ERROR', sanitizeError(error, token).message);
+    } finally { clearTimeout(timeout); }
   }
 }
 

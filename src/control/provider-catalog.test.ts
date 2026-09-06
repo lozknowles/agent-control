@@ -11,6 +11,7 @@ import {
   NvidiaHostedProviderAdapter,
   ProviderCatalogRuntime,
   ProviderCatalogStore,
+  stagedCatalogueEstimate,
 } from './provider-catalog.js';
 import {SecureProviderCredentialStore} from './provider-credential-store.js';
 
@@ -87,23 +88,26 @@ test('pricing-derived cost class is labelled adapter-derived and catalogue paylo
 });
 
 test('bounded smoke suite records hashes and normalized usage but never provider output or credentials', async t => {
-  let calls = 0;
+  let calls = 0; const budgets:number[]=[]; const prompts:string[]=[];
   const {root, runtime} = setup(t, async (_input, init) => {
     calls++;
     assert.equal(new Headers(init?.headers).get('authorization'), `Bearer ${syntheticCredential()}`);
     if ((init?.method ?? 'GET') === 'GET') return modelListResponse();
-    const body = JSON.parse(String(init?.body)) as {messages?: Array<{content?: string}>; tools?: unknown[]; chat_template_kwargs?: {enable_thinking?: boolean}}, prompt = body.messages?.[0]?.content ?? '';
+    const body = JSON.parse(String(init?.body)) as {messages?: Array<{content?: string}>; tools?: unknown[]; max_tokens?:number; chat_template_kwargs?: {enable_thinking?: boolean}}, prompt = body.messages?.[0]?.content ?? ''; budgets.push(body.max_tokens??0); prompts.push(prompt);
     assert.deepEqual(body.chat_template_kwargs, {enable_thinking: false});
     const usage = {prompt_tokens: 20, completion_tokens: 4, total_tokens: 24};
     if (body.tools) return new Response(JSON.stringify({model: 'vendor/model-a', choices: [{finish_reason: 'tool_calls', message: {content: null, tool_calls: [{function: {name: 'agent_control_qualification_marker', arguments: '{"marker":"AC_TOOL_OK"}'}}]}}], usage}), {status: 200});
-    const content = prompt.includes('AC_CODE_OK') ? '{"marker":"AC_CODE_OK"}' : prompt.includes('AC_CONTEXT_OK') ? 'AC_CONTEXT_OK' : prompt.includes('required marker') ? '{"marker":"AC_SMOKE_OK"}' : 'AC_SMOKE_OK';
+    const content = prompt.includes('AC_CODE_OK') ? '{"marker":"AC_CODE_OK"}' : prompt.includes('AC_CONTEXT_OK') ? 'AC_CONTEXT_OK' : prompt.includes('marker value') ? '{"marker":"AC_SMOKE_OK"}' : 'AC_SMOKE_OK';
     return new Response(JSON.stringify({model: 'vendor/model-a', choices: [{finish_reason: 'stop', message: {content}}], usage}), {status: 200});
   });
   await runtime.discover('nvidia-hosted');
   const smoke = await runtime.smoke('nvidia-hosted', 'vendor/model-a');
   assert.equal(calls, 6);
   assert.equal(smoke.status, 'PASS');
-  assert.equal(smoke.inputSha256, '3c9eb89c175ff2685b12f86e1f9a938bbd7d995c1d979228145d618b09b2897e');
+  assert.match(smoke.inputSha256, /^[a-f0-9]{64}$/);
+  assert.notEqual(smoke.inputSha256, '3c9eb89c175ff2685b12f86e1f9a938bbd7d995c1d979228145d618b09b2897e');
+  assert.deepEqual(budgets,[64,256,256,128,64]);
+  assert.match(prompts[1],/exactly AC_SMOKE_OK/);
   assert.deepEqual(smoke.probes.map(probe => probe.status), ['PASS','PASS','PASS','PASS','PASS']);
   assert.ok(smoke.probes.every(probe => probe.invocationProfile === 'nvidia-hosted-nonreasoning-smoke-v1'));
   assert.ok(smoke.probes.every(probe => probe.responseHash && /^[a-f0-9]{64}$/.test(probe.responseHash)));
@@ -111,7 +115,38 @@ test('bounded smoke suite records hashes and normalized usage but never provider
   const durable = fs.readFileSync(path.join(root, 'provider-catalog.json'), 'utf8');
   for (const forbidden of [syntheticCredential(), 'AC_SMOKE_OK', 'AC_CODE_OK', 'AC_CONTEXT_OK']) assert.equal(durable.includes(forbidden), false);
   assert.equal(runtime.projection().models[0].reviewState, 'SMOKE_TESTED');
+  assert.equal(runtime.projection().models[0].inferenceEndpointStatus, 'CONFIRMED');
 });
+
+test('callability is a distinct streaming gate and its successful basic probe is reused by smoke',async t=>{
+  let postCalls=0;
+  const {root,runtime}=setup(t,async(_input,init)=>{
+    if((init?.method??'GET')==='GET')return modelListResponse();
+    postCalls++;const body=JSON.parse(String(init?.body)) as {stream?:boolean;messages?:Array<{content?:string}>;tools?:unknown[]},prompt=body.messages?.[0]?.content??'';
+    if(body.stream){const s=['data: {"choices":[{"delta":{"role":"assistant"},"finish_reason":null}]}','data: {"choices":[{"delta":{"content":"AC_CALLABILITY_OK"},"finish_reason":null}]}','data: {"choices":[{"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":8,"completion_tokens":3,"total_tokens":11}}','data: [DONE]'].join('\n\n');return new Response(s,{status:200,headers:{'content-type':'text/event-stream'}})}
+    const usage={prompt_tokens:10,completion_tokens:2,total_tokens:12};if(body.tools)return new Response(JSON.stringify({choices:[{finish_reason:'tool_calls',message:{tool_calls:[{function:{name:'agent_control_qualification_marker',arguments:'{"marker":"AC_TOOL_OK"}'}}]}}],usage}),{status:200});
+    const content=prompt.includes('marker value')?'{"marker":"AC_SMOKE_OK"}':prompt.includes('AC_CODE_OK')?'AC_CODE_OK':prompt.includes('AC_CONTEXT_OK')?'AC_CONTEXT_OK':'unexpected';return new Response(JSON.stringify({choices:[{finish_reason:'stop',message:{content}}],usage}),{status:200});
+  });
+  await runtime.discover('nvidia-hosted');const before=runtime.projection().models[0];assert.equal(before.inferenceEndpointStatus,'UNTESTED');assert.equal(before.triage.next,'CALLABILITY_PROBE');
+  const callability=await runtime.probeCallability('nvidia-hosted','vendor/model-a');assert.equal(callability.status,'PASS');assert.equal(callability.inferenceEndpointStatus,'CONFIRMED');assert.equal(callability.httpAccepted,true);assert.equal(callability.streamStarted,true);assert.equal(callability.usage?.totalTokens,11);assert.equal(callability.ttftAuthority,'MEASURED');assert.equal(callability.responseLength,'AC_CALLABILITY_OK'.length);
+  const smoke=await runtime.smoke('nvidia-hosted','vendor/model-a');assert.equal(postCalls,5);assert.equal(smoke.probes[0].evidenceSource,'CALLABILITY_REUSED');assert.equal(smoke.probes[0].requestedOutputTokens,64);assert.equal(runtime.projection().models[0].triage.next,'FROZEN_BENCHMARK');
+  const durable=fs.readFileSync(path.join(root,'provider-catalog.json'),'utf8');assert.equal(durable.includes('AC_CALLABILITY_OK'),false);assert.equal(durable.includes(syntheticCredential()),false);
+});
+
+test('callability diagnostics distinguish pre-token and mid-generation timeout and confirmed endpoint state',async t=>{
+  let mode:'before'|'during'='before';const {runtime}=setup(t,async(_input,init)=>{
+    if((init?.method??'GET')==='GET')return modelListResponse();
+    return new Response(new ReadableStream({start(controller){if(mode==='during')controller.enqueue(new TextEncoder().encode('data: {"choices":[{"delta":{"reasoning_content":"working"},"finish_reason":null}]}\n\n'));init?.signal?.addEventListener('abort',()=>controller.error(Object.assign(new Error('aborted'),{name:'AbortError'})),{once:true});}}),{status:200,headers:{'content-type':'text/event-stream'}});
+  });
+  await runtime.discover('nvidia-hosted');let result=await runtime.probeCallability('nvidia-hosted','vendor/model-a',5);assert.equal(result.failureClass,'TIMEOUT_BEFORE_FIRST_TOKEN');assert.equal(result.httpAccepted,true);assert.equal(result.inferenceEndpointStatus,'CONFIRMED');
+  mode='during';result=await runtime.probeCallability('nvidia-hosted','vendor/model-a',5);assert.equal(result.failureClass,'TIMEOUT_DURING_GENERATION');assert.equal(result.partialOutput,true);assert.equal(result.responseLength,0);assert.equal(result.ttftAuthority,'MEASURED');
+});
+
+test('catalogue-visible model remains distinct from a missing inference endpoint',async t=>{
+  const {runtime}=setup(t,async(_input,init)=>(init?.method??'GET')==='GET'?modelListResponse():new Response('',{status:404}));await runtime.discover('nvidia-hosted');const evidence=await runtime.probeCallability('nvidia-hosted','vendor/model-a');assert.equal(evidence.status,'FAIL');assert.equal(evidence.failureClass,'ENDPOINT_NOT_AVAILABLE');assert.equal(evidence.inferenceEndpointStatus,'NOT_AVAILABLE');const model=runtime.projection().models[0];assert.equal(model.available,true);assert.equal(model.inferenceEndpointStatus,'NOT_AVAILABLE');assert.equal(model.triage.next,'STOP');assert.equal(model.routingEligible,false);
+});
+
+test('staged catalogue estimate spends capability probes only on callability-confirmed models',()=>{assert.deepEqual(stagedCatalogueEstimate(81,2),{callabilityRequests:81,capabilitySmokeRequests:8,totalPreBenchmarkRequests:89,naiveFiveProbeRequests:405,requestsAvoided:316});assert.deepEqual(stagedCatalogueEstimate(81,81),{callabilityRequests:81,capabilitySmokeRequests:324,totalPreBenchmarkRequests:405,naiveFiveProbeRequests:405,requestsAvoided:0})});
 
 test('truncated final output preserves partial usage finish reason and hash without provider text', async t => {
   const {root, runtime} = setup(t, async (_input, init) => {
@@ -122,11 +157,31 @@ test('truncated final output preserves partial usage finish reason and hash with
   const smoke = await runtime.smoke('nvidia-hosted', 'vendor/model-a');
   assert.equal(smoke.status, 'FAILED');
   assert.ok(smoke.probes.every(probe => probe.failure === 'provider_output_truncated'));
+  assert.ok(smoke.probes.every(probe => probe.failureClass === 'OUTPUT_TRUNCATED'));
   assert.ok(smoke.probes.every(probe => probe.finishReason === 'length'));
   assert.ok(smoke.probes.every(probe => probe.usage?.totalTokens === 30));
   assert.ok(smoke.probes.every(probe => /^[a-f0-9]{64}$/.test(probe.responseHash ?? '')));
   const durable = fs.readFileSync(path.join(root, 'provider-catalog.json'), 'utf8');
   assert.equal(durable.includes('private reasoning'), false);
+});
+
+test('smoke diagnostics distinguish strict-schema and tool-call verification failures',async t=>{
+  const {runtime}=setup(t,async(_input,init)=>{
+    if((init?.method??'GET')==='GET')return modelListResponse();const body=JSON.parse(String(init?.body)) as {messages?:Array<{content?:string}>;tools?:unknown[]},prompt=body.messages?.[0]?.content??'',usage={prompt_tokens:5,completion_tokens:2,total_tokens:7};
+    if(body.tools)return new Response(JSON.stringify({choices:[{finish_reason:'stop',message:{content:'did not call tool'}}],usage}),{status:200});
+    const content=prompt.includes('marker value')?'{"marker":"WRONG"}':prompt.includes('AC_CODE_OK')?'AC_CODE_OK':prompt.includes('AC_CONTEXT_OK')?'AC_CONTEXT_OK':'AC_SMOKE_OK';return new Response(JSON.stringify({choices:[{finish_reason:'stop',message:{content}}],usage}),{status:200});
+  });
+  await runtime.discover('nvidia-hosted');const smoke=await runtime.smoke('nvidia-hosted','vendor/model-a');assert.equal(smoke.status,'LIMITED');assert.equal(smoke.probes.find(item=>item.id==='structured-json')?.failureClass,'SCHEMA_INVALID');assert.equal(smoke.probes.find(item=>item.id==='tool-calling')?.failureClass,'TOOL_CALL_UNRELIABLE');assert.equal(runtime.projection().models[0].diagnosticStatus.label,'LIMITED — SCHEMA_INVALID');
+});
+
+test('legacy persisted smoke evidence derives callability without rewriting its historical token budgets',async t=>{
+  const {root,runtime}=setup(t,async()=>modelListResponse());await runtime.discover('nvidia-hosted');const file=path.join(root,'provider-catalog.json'),snapshot=JSON.parse(fs.readFileSync(file,'utf8'));const target=snapshot.models.find((item:{canonicalModelId:string})=>item.canonicalModelId==='vendor/model-a');delete target.inferenceEndpointStatus;target.smoke={status:'FAILED',startedAt:at,completedAt:at,inputSha256:'legacy',adapterId:'openai-compatible-v1',probes:[{id:'structured-json',status:'FAIL',elapsedMs:null,ttftMs:null,ttftAuthority:'UNAVAILABLE',usage:null,retries:0,finishReason:null,failure:'provider_request_failed:404',responseHash:null,invocationProfile:null}]};fs.writeFileSync(file,`${JSON.stringify(snapshot)}\n`);
+  const restored=new ProviderCatalogStore(file,()=>at),model=restored.modelsList().find(item=>item.canonicalModelId==='vendor/model-a')!;assert.equal(model.inferenceEndpointStatus,'NOT_AVAILABLE');assert.equal(model.smoke?.probes[0].failureClass,'ENDPOINT_NOT_AVAILABLE');assert.equal(model.smoke?.probes[0].requestedOutputTokens,128);
+});
+
+test('new focused runs retain prior callability and smoke evidence instead of overwriting it',async t=>{
+  const {store,runtime}=setup(t,async(_input,init)=>{if((init?.method??'GET')==='GET')return modelListResponse();const body=JSON.parse(String(init?.body)) as {stream?:boolean;messages?:Array<{content?:string}>;tools?:unknown[]},prompt=body.messages?.[0]?.content??'';if(body.stream)return new Response(['data: {"choices":[{"delta":{"content":"AC_CALLABILITY_OK"},"finish_reason":null}]}','data: {"choices":[{"delta":{},"finish_reason":"stop"}]}'].join('\n\n'),{status:200,headers:{'content-type':'text/event-stream'}});const content=body.tools?'':prompt.includes('marker value')?'{"marker":"AC_SMOKE_OK"}':prompt.includes('AC_CODE_OK')?'AC_CODE_OK':prompt.includes('AC_CONTEXT_OK')?'AC_CONTEXT_OK':'AC_SMOKE_OK';return body.tools?new Response(JSON.stringify({choices:[{finish_reason:'tool_calls',message:{tool_calls:[{function:{name:'agent_control_qualification_marker',arguments:'{"marker":"AC_TOOL_OK"}'}}]}}]}),{status:200}):new Response(JSON.stringify({choices:[{finish_reason:'stop',message:{content}}]}),{status:200})});
+  await runtime.discover('nvidia-hosted');const callability=await runtime.probeCallability('nvidia-hosted','vendor/model-a'),smoke=await runtime.smoke('nvidia-hosted','vendor/model-a');store.recordCallability('nvidia-hosted','vendor/model-a',{...callability,startedAt:'2026-09-06T10:01:00.000Z',completedAt:'2026-09-06T10:01:01.000Z'});store.recordSmoke('nvidia-hosted','vendor/model-a',{...smoke,startedAt:'2026-09-06T10:02:00.000Z',completedAt:'2026-09-06T10:02:01.000Z'});const model=store.modelsList().find(item=>item.canonicalModelId==='vendor/model-a')!;assert.equal(model.callabilityHistory?.length,1);assert.equal(model.callabilityHistory?.[0].inputSha256,callability.inputSha256);assert.equal(model.smokeHistory?.length,1);assert.equal(model.smokeHistory?.[0].inputSha256,smoke.inputSha256);
 });
 
 test('provider failures that echo a credential are redacted before exception and durable catalogue state', async t => {

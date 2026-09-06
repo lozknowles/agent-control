@@ -22,18 +22,22 @@ The same shape covers OpenAI/Codex routes, local OpenAI-compatible or llama.cpp 
 
 The generic dynamic catalogue complements the immutable recipe lifecycle; it does not replace or bypass it. Authenticated discovery records provider endpoint/credential/discovery state, canonical model IDs, timestamps, field-level authority, observed request/token limits and quota. Discovery is time- and response-size-bounded. A field absent from the latest successful provider response is `UNKNOWN` rather than inheriting either a marketing claim or a stale earlier observation.
 
-Every new model starts routing-disabled and follows:
+Every new model starts routing-disabled. Catalogue presence and inference availability are independent:
 
 ```text
-DISCOVERED → UNQUALIFIED → SMOKE_TESTED → BENCHMARK_QUEUED
+DISCOVERED / UNQUALIFIED / inference UNTESTED
+→ bounded callability probe / inference CONFIRMED
+→ capability smoke / SMOKE_TESTED → BENCHMARK_QUEUED
 → BENCHMARKED → QUALIFIED / REJECTED / LIMITED → ROUTING_ELIGIBLE
 ```
 
-The bounded, versioned and content-hashed smoke suite checks basic completion, strict structured JSON, coding, tool invocation and a larger context request. It records latency, normalized usage, finish reason, safe failure class, response hash and adapter invocation-profile ID; TTFT, caching, cost or context occupancy remain unavailable unless the adapter reports them authoritatively. An adapter can add only audited non-reserved provider fields for smoke compatibility. Truncation retains safe partial telemetry and fails explicitly; a malformed structured result fails its probe without weakening validation.
+An ID returned by a model-list operation never implies that its inference route accepts that ID. The one-request streaming callability gate records HTTP acceptance, stream start, first event, measured TTFT, partial-output signal, finish reason and normalized usage. It distinguishes timeout before first token from timeout during generation and keeps unavailable values unavailable. Raw events, output and reasoning are not durable evidence.
+
+Only a callability-confirmed model proceeds to the bounded, versioned and content-hashed capability suite. Its passing callability result may satisfy the equivalent basic-completion probe; four remaining probes check strict structured JSON, coding, tool invocation and a larger context request. Evidence records requested output budget, output length, latency, normalized usage, finish reason, provider-neutral failure class, response hash, evidence source and adapter invocation-profile ID. An adapter can add only audited non-reserved provider fields for compatibility. Truncation retains safe partial telemetry and fails explicitly; malformed or semantically invalid structured output fails without weakening validation. Prior callability and smoke runs remain append-only history.
 
 `BENCHMARK_QUEUED` enters the existing content-hashed frozen suite. Only current `QUALIFIED` or `PREFERRED` model-intelligence evidence permits an authenticated operator to enable routing. `DEGRADED`, `QUARANTINED`, `RETIRED`, missing or otherwise unqualified evidence automatically revokes a dynamic route. A model absent from the latest successful provider catalogue is marked unavailable and disabled in the registry; if it later reappears it returns to `UNQUALIFIED` with routing still disabled. Role-map policy remains a separate deliberate configuration step.
 
-See [model registry](models/README.md), [adding a provider](models/ADDING-A-PROVIDER.md), [NVIDIA hosted models](models/NVIDIA-HOSTED.md), and the [first physical dynamic-catalogue qualification](evidence/agent-control-3.9-nvidia-hosted-qualification-20260906.md).
+See [model registry](models/README.md), [adding a provider](models/ADDING-A-PROVIDER.md), [NVIDIA hosted models](models/NVIDIA-HOSTED.md), the [first physical dynamic-catalogue qualification](evidence/agent-control-3.9-nvidia-hosted-qualification-20260906.md), and the [focused diagnostic follow-up](evidence/agent-control-3.9-nvidia-focused-diagnostics-20260906.md).
 
 ## Immutable model recipes
 

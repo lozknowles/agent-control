@@ -58,7 +58,9 @@ POST /api/provider-catalog/providers/nvidia-hosted/discover
 
 The provider's configured `GET /v1/models` operation is treated as a bounded live capability probe, not a permanent assumption. A missing, unauthorized, rate-limited, oversized, malformed or unsupported result fails closed and records only a sanitized status. A successful OpenAI-style list creates stable Agent Control IDs from canonical provider model IDs. Fields omitted from the latest successful response revert to `UNKNOWN`; they do not inherit stale values. Every model remains `UNQUALIFIED` and routing-disabled.
 
-After reviewing the returned catalogue, choose a conservative representative sample. Current family names must come from live IDs; do not synthesize IDs for GLM, MiniMax, Nemotron, Muse Glimmer or Kimi. Run **Smoke Test** on selected entries. The five bounded probes cover:
+After reviewing the returned catalogue, choose a conservative representative sample. Current family names must come from live IDs; do not synthesize IDs for GLM, MiniMax, Nemotron, Muse Glimmer or Kimi. Run **Check Callability** first. It makes one bounded streaming request and records whether the inference endpoint accepted the discovered ID, whether streaming began, measured first-event/TTFT values and whether a timeout occurred before a token or during generation. Catalogue visibility remains separate from `INFERENCE_ENDPOINT_CONFIRMED`.
+
+Run **Capability Smoke** only after callability is confirmed. Its five evidence slots comprise the reused post-discovery basic completion plus four further probes:
 
 - basic completion;
 - strict structured JSON, including malformed-output rejection;
@@ -66,7 +68,7 @@ After reviewing the returned catalogue, choose a conservative representative sam
 - a forced tool call where supported;
 - a larger but bounded context request.
 
-Evidence retains probe state, elapsed time, normalized input/output/cache/total usage, retry count, finish reason, safe failure class, response SHA-256 and the adapter invocation-profile ID. The exact probe contract is versioned and content-hashed. The NVIDIA adapter's bounded smoke profile uses the provider-supported `chat_template_kwargs.enable_thinking=false` control so reasoning-first models can be tested against tiny deterministic marker budgets; that extension is not applied to normal execution or the frozen benchmark. Reserved model, prompt, token, schema, tool and stream fields cannot be overridden by an adapter extension. Output-budget exhaustion is `provider_output_truncated`, with safe partial usage and hash evidence retained. TTFT is `UNAVAILABLE` in the non-streaming path. Cost, cached tokens, context occupancy, limits and quota remain unknown unless provider output or headers expose them. Raw prompts, responses, reasoning and credentials are not evidence.
+Evidence retains probe state, requested output budget, response length, elapsed time, normalized input/output/cache/total usage, retry count, finish reason, safe failure class, response SHA-256, evidence source and adapter invocation-profile ID. The exact callability and smoke contracts are separately versioned and content-hashed. The NVIDIA adapter's bounded profile uses the provider-supported `chat_template_kwargs.enable_thinking=false` control so reasoning-first models can be tested against small deterministic marker budgets; that extension is not applied to normal execution or the frozen benchmark. Reserved model, prompt, token, schema, tool and stream fields cannot be overridden by an adapter extension. Output-budget exhaustion is `OUTPUT_TRUNCATED`, with safe partial usage and hash evidence retained. Cost, cached tokens, context occupancy, limits and quota remain unknown unless provider output or headers expose them. Raw prompts, responses, stream events, reasoning and credentials are not evidence. Prior focused runs remain append-only history.
 
 Queue a smoke-tested model into the normal frozen model review. Historical attempts preserve benchmark version, quality, coding/tool reliability, schema/context behavior, latency, retries, token/cache fields, cost authority and timestamps. Hosted/local comparisons use the same frozen inputs and validators, while exact model revision and local quantization remain part of identity; apparent family similarity is not equivalence.
 
@@ -94,3 +96,15 @@ Final smoke-suite-v2 observations were:
 Nemotron then entered frozen suite `agent-control-real-work-v1` (`8cb55e…`), batch `evaluation-batch-1a5ab593-ddea-452b-9015-79443d49517b`. All nine provider-executed coding, code-modification and retrieval attempts passed their independent deterministic validators, consuming 621 input plus 3,349 output = 3,970 provider-reported tokens in 57,153 ms. The other 42 of 51 attempt records were explicitly `CAPABILITY_UNAVAILABLE`, making the batch `PARTIAL` and the route only `CANDIDATE`. Cost, cached/fresh split, TTFT and current-context occupancy were unavailable. No NVIDIA model is qualified or routing eligible.
 
 The full evidence, including before/after defect classification and dashboard reconciliation, is [Agent Control 3.9 NVIDIA hosted qualification](../evidence/agent-control-3.9-nvidia-hosted-qualification-20260906.md). Do not mass-benchmark the 81-model catalogue until the operator separately authorizes the request/time volume.
+
+### Focused diagnostic follow-up
+
+The historical table above remains unchanged evidence. A later focused investigation established:
+
+- Nemotron's v2 structured prompt did not state the marker that its validator required. The frozen benchmark used a different explicit `answer/evidence` contract and up to 2,048 tokens; its nine admitted calls therefore did not rerun the defective smoke contract. Smoke v3 states and schema-constrains the marker; Nemotron passed 5/5.
+- Muse's structured and coding responses ended at exactly Agent Control's 128- and 64-token caps. With bounded 256-token budgets they completed at 96 and 87 output tokens and Muse passed 5/5. The earlier failures were harness truncation, not model-quality evidence.
+- Two MiniMax streaming probes each expired at 45 seconds before response headers, a stream event or first token. Its inference endpoint remains `INDETERMINATE`; Agent Control does not claim provider acceptance or slow generation.
+- Kimi K2.6 remains catalogue-visible but returned HTTP 404 for inference and is `NOT_AVAILABLE`. Current NVIDIA documentation also omits K2.6 while listing other Kimi IDs, consistent with a catalogue/API inconsistency.
+- The protected projection now has 81 discovered, 2 inference-confirmed, 1 indeterminate, 2 endpoint-unavailable and 76 untested models; routing eligible remains zero.
+
+See the complete [focused diagnostics and staged-funnel evidence](../evidence/agent-control-3.9-nvidia-focused-diagnostics-20260906.md). The 405-request sweep was not run. If separately authorized, use one callability request per selected untested model and spend the four capability requests only on confirmed survivors.

@@ -53,7 +53,9 @@ An OpenAI-compatible provider can opt into the generic catalogue:
 }
 ```
 
-The adapter performs `GET {baseUrl}/{discovery.path}` with bounded authentication, validates an OpenAI-style model list and normalizes only authoritative or safely derived fields. Do not hard-code catalogue size, pricing, limits or capabilities. Unknown remains `UNKNOWN`. Discovery creates reviewable, routing-disabled models; bounded smoke tests retain hashes and normalized measurements, not provider output. Queue the exact dynamic model into the existing frozen evaluation system before considering it qualified.
+The adapter performs `GET {baseUrl}/{discovery.path}` with bounded authentication, validates an OpenAI-style model list and normalizes only authoritative or safely derived fields. Do not hard-code catalogue size, pricing, limits or capabilities. Unknown remains `UNKNOWN`. Discovery creates reviewable, routing-disabled models with inference state `UNTESTED`; it does not prove that the listed ID is accepted by the inference endpoint.
+
+Use the generic staged funnel: one bounded streaming callability probe, then capability smoke only for `CONFIRMED` endpoints, then the frozen evaluation system only for promising reviewed candidates. Callability records HTTP acceptance, stream start, measured TTFT and pre-token versus mid-generation timeout without retaining raw output. Capability smoke retains requested budget, safe failure taxonomy, hashes and normalized measurements. An existing post-discovery passing callability result is reused instead of buying a duplicate basic-completion call. Prior runs remain history. Queue the exact dynamic model into the frozen evaluation system before considering it qualified.
 
 A provider-specific adapter may constrain endpoint and credential syntax or normalize documented fields, but core catalogue, credentials, evidence, dashboard and routing policy must remain provider-neutral. The NVIDIA implementation is the worked example in [NVIDIA-HOSTED.md](NVIDIA-HOSTED.md).
 

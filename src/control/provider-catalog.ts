@@ -13,6 +13,8 @@ export type CatalogDiscoveryStatus = 'NEVER' | 'DISCOVERING' | 'SUCCEEDED' | 'FA
 export type CatalogReviewState = 'DISCOVERED' | 'UNQUALIFIED' | 'SMOKE_TESTED' | 'BENCHMARK_QUEUED' | 'BENCHMARKED' | 'QUALIFIED' | 'REJECTED' | 'LIMITED' | 'ROUTING_ELIGIBLE';
 export type CatalogSupport = 'SUPPORTED' | 'UNSUPPORTED' | 'UNKNOWN';
 export type CatalogAuthority = 'PROVIDER_REPORTED' | 'ADAPTER_DERIVED' | 'OPERATOR_CONFIGURED' | 'UNKNOWN';
+export type CatalogInferenceEndpointStatus = 'UNTESTED' | 'CONFIRMED' | 'NOT_AVAILABLE' | 'AUTHORIZATION_REQUIRED' | 'RATE_LIMITED' | 'INDETERMINATE';
+export type CatalogFailureClass = 'TIMEOUT_BEFORE_FIRST_TOKEN' | 'TIMEOUT_DURING_GENERATION' | 'TIMEOUT_UNCLASSIFIED' | 'OUTPUT_TRUNCATED' | 'SCHEMA_INVALID' | 'ENDPOINT_NOT_AVAILABLE' | 'AUTHORIZATION' | 'RATE_LIMITED' | 'PROVIDER_ERROR' | 'MALFORMED_RESPONSE' | 'CAPABILITY_UNAVAILABLE' | 'TOOL_CALL_UNRELIABLE' | 'VERIFICATION_FAILED';
 const MAXIMUM_CATALOG_RESPONSE_BYTES = 8 * 1024 * 1024;
 
 export interface CatalogValue<T> {value: T | null; authority: CatalogAuthority}
@@ -33,8 +35,9 @@ export interface CatalogModelMetadata {
   license: CatalogValue<string>;
   costClassification: CatalogValue<'FREE' | 'INCLUDED' | 'METERED'>;
 }
-export interface CatalogSmokeProbe {id: 'basic-completion' | 'structured-json' | 'coding' | 'tool-calling' | 'context-reliability'; status: 'PASS' | 'FAIL' | 'UNAVAILABLE'; elapsedMs: number | null; ttftMs: number | null; ttftAuthority: 'PROVIDER_REPORTED' | 'MEASURED' | 'UNAVAILABLE'; usage: NormalizedModelUsage | null; retries: number; finishReason: string | null; failure: string | null; responseHash: string | null; invocationProfile: string | null}
+export interface CatalogSmokeProbe {id: 'basic-completion' | 'structured-json' | 'coding' | 'tool-calling' | 'context-reliability'; status: 'PASS' | 'FAIL' | 'UNAVAILABLE'; elapsedMs: number | null; ttftMs: number | null; ttftAuthority: 'PROVIDER_REPORTED' | 'MEASURED' | 'UNAVAILABLE'; usage: NormalizedModelUsage | null; retries: number; finishReason: string | null; failure: string | null; failureClass: CatalogFailureClass | null; responseHash: string | null; responseLength: number | null; requestedOutputTokens: number; invocationProfile: string | null; evidenceSource?: 'DIRECT_SMOKE' | 'CALLABILITY_REUSED'}
 export interface CatalogSmokeEvidence {status: 'PASS' | 'LIMITED' | 'FAILED'; startedAt: string; completedAt: string; probes: CatalogSmokeProbe[]; inputSha256: string; adapterId: string}
+export interface CatalogCallabilityEvidence {status: 'PASS' | 'FAIL'; startedAt: string; completedAt: string; elapsedMs: number; inferenceEndpointStatus: CatalogInferenceEndpointStatus; httpStatus: number | null; httpAccepted: boolean; streamRequested: boolean; streamStarted: boolean; firstEventMs: number | null; ttftMs: number | null; ttftAuthority: 'MEASURED' | 'UNAVAILABLE'; partialOutput: boolean; finishReason: string | null; usage: NormalizedModelUsage | null; failure: string | null; failureClass: CatalogFailureClass | null; responseHash: string | null; responseLength: number | null; requestedOutputTokens: number; inputSha256: string; invocationProfile: string | null}
 export interface ProviderCatalogModel {
   providerId: string;
   registryModelId: string;
@@ -43,11 +46,15 @@ export interface ProviderCatalogModel {
   firstDiscoveredAt: string;
   lastDiscoveredAt: string;
   available: boolean;
+  inferenceEndpointStatus: CatalogInferenceEndpointStatus;
   reviewState: CatalogReviewState;
   stateHistory: Array<{state: CatalogReviewState; at: string; reason: string; evidence?: string}>;
   routingEligible: boolean;
   metadata: CatalogModelMetadata;
+  callability?: CatalogCallabilityEvidence;
+  callabilityHistory?: CatalogCallabilityEvidence[];
   smoke?: CatalogSmokeEvidence;
+  smokeHistory?: CatalogSmokeEvidence[];
   benchmarkBatchIds: string[];
 }
 interface ProviderCatalogObservation {providerId: string; endpointStatus: CatalogEndpointStatus; discoveryStatus: CatalogDiscoveryStatus; credentialStatus: ProviderCredentialStatus; lastDiscoveryAt: string | null; lastError: string | null; rateLimit: CatalogRateLimitObservation; quota: CatalogQuotaObservation}
@@ -115,7 +122,12 @@ export class ProviderCatalogStore {
     const value = redactSensitiveValue(JSON.parse(fs.readFileSync(file, 'utf8'))) as ProviderCatalogSnapshot;
     if (value.schema !== 'agent-control.provider-catalog/v1') throw new Error('provider_catalog_snapshot_invalid');
     for (const provider of value.providers) this.providers.set(provider.providerId, provider);
-    for (const model of value.models) this.models.set(catalogKey(model.providerId, model.canonicalModelId), {...model, available: model.available !== false});
+    for (const model of value.models) {
+      const normalized = {...model, available: model.available !== false, inferenceEndpointStatus: model.inferenceEndpointStatus ?? inferLegacyInferenceStatus(model)};
+      if (normalized.smoke) normalized.smoke.probes = normalized.smoke.probes.map(probe => normalizeStoredProbe(probe));
+      if (normalized.smokeHistory) normalized.smokeHistory = normalized.smokeHistory.map(smoke => ({...smoke, probes: smoke.probes.map(probe => normalizeStoredProbe(probe))}));
+      this.models.set(catalogKey(model.providerId, model.canonicalModelId), normalized);
+    }
   }
   provider(providerId: string) { const value = this.providers.get(providerId); return value ? structuredClone(value) : undefined; }
   modelsList(providerId?: string) { return [...this.models.values()].filter(model => !providerId || model.providerId === providerId).sort((a,b) => a.canonicalModelId.localeCompare(b.canonicalModelId)).map(model => structuredClone(model)); }
@@ -128,7 +140,7 @@ export class ProviderCatalogStore {
       const key = catalogKey(providerId, discovered.id); seen.add(key); const existing = this.models.get(key), registryModelId = existing?.registryModelId ?? discoveredRegistryId(providerId, discovered.id);
       const value: ProviderCatalogModel = existing
         ? {...existing, ownedBy: discovered.ownedBy, lastDiscoveredAt: at, available: true, metadata: discovered.metadata}
-        : {providerId, registryModelId, canonicalModelId: discovered.id, ownedBy: discovered.ownedBy, firstDiscoveredAt: at, lastDiscoveredAt: at, available: true, reviewState: 'UNQUALIFIED', stateHistory: [{state: 'DISCOVERED', at, reason: 'provider catalogue observation'}, {state: 'UNQUALIFIED', at, reason: 'discovery never grants qualification'}], routingEligible: false, metadata: discovered.metadata, benchmarkBatchIds: []};
+        : {providerId, registryModelId, canonicalModelId: discovered.id, ownedBy: discovered.ownedBy, firstDiscoveredAt: at, lastDiscoveredAt: at, available: true, inferenceEndpointStatus: 'UNTESTED', reviewState: 'UNQUALIFIED', stateHistory: [{state: 'DISCOVERED', at, reason: 'provider catalogue observation'}, {state: 'UNQUALIFIED', at, reason: 'discovery never grants qualification or inference callability'}], routingEligible: false, metadata: discovered.metadata, benchmarkBatchIds: []};
       if (existing && !existing.available) { value.routingEligible = false; transition(value, 'UNQUALIFIED', at, 'model returned to provider catalogue; routing requires current review'); }
       this.models.set(key, value);
     }
@@ -140,8 +152,9 @@ export class ProviderCatalogStore {
     this.save(); return {provider: structuredClone(current), models: this.modelsList(providerId), discovered: seen.size};
   }
   recordSmoke(providerId: string, canonicalModelId: string, smoke: CatalogSmokeEvidence) {
-    const item = this.mustModel(providerId, canonicalModelId); item.smoke = structuredClone(smoke); transition(item, 'SMOKE_TESTED', smoke.completedAt, `bounded smoke ${smoke.status.toLowerCase()}`, `smoke:${smoke.inputSha256}`); this.models.set(catalogKey(providerId, canonicalModelId), item); this.save(); return structuredClone(item);
+    const item = this.mustModel(providerId, canonicalModelId); if (item.smoke && !sameEvidenceRun(item.smoke, smoke)) item.smokeHistory = appendEvidence(item.smokeHistory, item.smoke); item.smoke = structuredClone(smoke); item.inferenceEndpointStatus = inferenceStatusFromProbes(smoke.probes); transition(item, 'SMOKE_TESTED', smoke.completedAt, `bounded smoke ${smoke.status.toLowerCase()}`, `smoke:${smoke.inputSha256}`); this.models.set(catalogKey(providerId, canonicalModelId), item); this.save(); return structuredClone(item);
   }
+  recordCallability(providerId: string, canonicalModelId: string, evidence: CatalogCallabilityEvidence) { const item = this.mustModel(providerId, canonicalModelId); if (item.callability && !sameEvidenceRun(item.callability, evidence)) item.callabilityHistory = appendEvidence(item.callabilityHistory, item.callability); item.callability = structuredClone(evidence); item.inferenceEndpointStatus = evidence.inferenceEndpointStatus; this.models.set(catalogKey(providerId, canonicalModelId), item); this.save(); return structuredClone(item); }
   markBenchmarkQueued(modelIds: string[], batchId: string) { for (const modelId of modelIds) { const item = [...this.models.values()].find(value => value.registryModelId === modelId); if (!item) continue; if (!item.benchmarkBatchIds.includes(batchId)) item.benchmarkBatchIds.push(batchId); transition(item, 'BENCHMARK_QUEUED', this.clock(), 'frozen benchmark queued', `batch:${batchId}`); } this.save(); }
   reconcile(intelligence: ModelIntelligenceProjection) {
     let changed = false;
@@ -196,9 +209,9 @@ export class ProviderCatalogRuntime {
       observedAt: this.clock(),
       providers: [...this.byId.values()].map(provider => {
         const observation = this.store.provider(provider.id) ?? emptyProvider(provider.id), discovered = rows.filter(model => model.providerId === provider.id);
-        return {id: provider.id, name: provider.name ?? provider.id, kind: provider.kind, enabled: provider.enabled !== false, adapter: provider.adapter ?? 'openai-compatible-v1', baseUrl: provider.baseUrl ?? null, authenticationType: provider.auth?.type ?? (provider.requiresAuth ? 'bearer-env' : 'none'), credentialReference: providerCredentialReferenceType(provider), credentialStatus: providerCredentialStatus(provider, this.environment), endpointStatus: observation.endpointStatus, discoveryStatus: observation.discoveryStatus, discoveredModels: discovered.length, availableModels: discovered.filter(model => model.available).length, lastDiscoveryAt: observation.lastDiscoveryAt, rateLimit: observation.rateLimit, quota: observation.quota, costClassification: provider.costClass ? {value: provider.costClass.toUpperCase(), authority: 'OPERATOR_CONFIGURED'} : {value: null, authority: 'UNKNOWN'}, qualificationStatus: provider.qualification?.status ?? 'unqualified', routingEligibleModels: discovered.filter(model => model.routingEligible).length, lastError: observation.lastError};
+        return {id: provider.id, name: provider.name ?? provider.id, kind: provider.kind, enabled: provider.enabled !== false, adapter: provider.adapter ?? 'openai-compatible-v1', baseUrl: provider.baseUrl ?? null, authenticationType: provider.auth?.type ?? (provider.requiresAuth ? 'bearer-env' : 'none'), credentialReference: providerCredentialReferenceType(provider), credentialStatus: providerCredentialStatus(provider, this.environment), endpointStatus: observation.endpointStatus, discoveryStatus: observation.discoveryStatus, discoveredModels: discovered.length, availableModels: discovered.filter(model => model.available).length, inferenceConfirmedModels: discovered.filter(model => model.available && model.inferenceEndpointStatus === 'CONFIRMED').length, callabilityUntestedModels: discovered.filter(model => model.available && model.inferenceEndpointStatus === 'UNTESTED').length, lastDiscoveryAt: observation.lastDiscoveryAt, rateLimit: observation.rateLimit, quota: observation.quota, costClassification: provider.costClass ? {value: provider.costClass.toUpperCase(), authority: 'OPERATOR_CONFIGURED'} : {value: null, authority: 'UNKNOWN'}, qualificationStatus: provider.qualification?.status ?? 'unqualified', routingEligibleModels: discovered.filter(model => model.routingEligible).length, lastError: observation.lastError};
       }),
-      models: rows.map(model => ({...model, lifecycle: lifecycleProjection(model, intelligence), benchmark: benchmarkProjection(model, intelligence)})),
+      models: rows.map(model => ({...model, diagnosticStatus: diagnosticStatus(model), triage: triageProjection(model), lifecycle: lifecycleProjection(model, intelligence), benchmark: benchmarkProjection(model, intelligence)})),
     };
   }
 
@@ -212,19 +225,33 @@ export class ProviderCatalogRuntime {
     } catch (error) { const sanitized = safeError(error, credential); this.store.failDiscovery(provider.id, credentialStatus, sanitized); throw sanitized; }
   }
 
+  async probeCallability(providerId: string, canonicalModelId: string, timeoutMs = 45_000) {
+    const provider = this.mustProvider(providerId); if (provider.enabled === false) throw new Error('provider_disabled');
+    const item = this.store.modelsList(providerId).find(model => model.canonicalModelId === canonicalModelId); if (!item) throw new Error('provider_catalog_model_missing');
+    if (!item.available) throw new Error('provider_catalog_model_unavailable');
+    const adapter = this.adapters.resolve(provider), model = catalogModelConfig(item), extension = adapter.smokeRequest?.({provider, model, probe: 'basic-completion'}), startedAt = this.clock(), requestedOutputTokens = 64;
+    const client = new OpenAICompatibleProviderClient(provider, this.fetcher, () => { const credential = resolveProviderCredential(provider, this.environment); try { adapter.validateCredential?.(credential); } catch (error) { throw safeError(error, credential); } return credential; });
+    const result = await client.probeStreaming(model, 'Reply with exactly AC_CALLABILITY_OK.', {maximumOutputTokens: requestedOutputTokens, timeoutMs: Math.min(timeoutMs, 60_000), requestExtension: extension});
+    const completedAt = this.clock(), failureClass = callabilityFailureClass(result), passed = result.outcome === 'COMPLETED' && result.finishReason !== 'length' && result.output.includes('AC_CALLABILITY_OK'), inferenceEndpointStatus = callabilityEndpointStatus(result);
+    const evidence: CatalogCallabilityEvidence = {status: passed ? 'PASS' : 'FAIL', startedAt, completedAt, elapsedMs: result.elapsedMs, inferenceEndpointStatus, httpStatus: result.httpStatus, httpAccepted: result.httpAccepted, streamRequested: true, streamStarted: result.streamStarted, firstEventMs: result.firstEventMs, ttftMs: result.firstTokenMs, ttftAuthority: result.firstTokenMs === null ? 'UNAVAILABLE' : 'MEASURED', partialOutput: result.tokenObserved, finishReason: result.finishReason, usage: hasUsage(result.usage) ? result.usage : null, failure: passed ? null : result.failure ?? (result.finishReason === 'length' ? 'provider_output_truncated' : 'callability_verification_failed'), failureClass: passed ? null : failureClass ?? 'VERIFICATION_FAILED', responseHash: result.responseHash?.replace(/^sha256:/, '') ?? null, responseLength: result.output.length, requestedOutputTokens, inputSha256: hash(callabilitySuiteIdentity()), invocationProfile: extension?.profile ?? null};
+    this.store.recordCallability(providerId, canonicalModelId, evidence); this.syncModels(); return structuredClone(evidence);
+  }
+
   async smoke(providerId: string, canonicalModelId: string) {
     const provider = this.mustProvider(providerId); if (provider.enabled === false) throw new Error('provider_disabled');
     const item = this.store.modelsList(providerId).find(model => model.canonicalModelId === canonicalModelId); if (!item) throw new Error('provider_catalog_model_missing');
     if (!item.available) throw new Error('provider_catalog_model_unavailable');
     const adapter = this.adapters.resolve(provider), startedAt = this.clock(), model = catalogModelConfig(item), client = new OpenAICompatibleProviderClient(provider, this.fetcher, () => { const credential = resolveProviderCredential(provider, this.environment); try { adapter.validateCredential?.(credential); } catch (error) { throw safeError(error, credential); } return credential; }), probes: CatalogSmokeProbe[] = [];
     const run = async (id: CatalogSmokeProbe['id'], prompt: string, options: NonNullable<Parameters<OpenAICompatibleProviderClient['invoke']>[2]>, verify: (result: Awaited<ReturnType<OpenAICompatibleProviderClient['invoke']>>) => boolean) => {
+      const requestedOutputTokens = options.maximumOutputTokens ?? 256;
       const extension = adapter.smokeRequest?.({provider, model, probe: id});
-      try { const result = await client.invoke(model, prompt, {...options, requestExtension: extension, timeoutMs: Math.min(options.timeoutMs ?? 45_000, 60_000)}), passed = result.finishReason !== 'length' && verify(result); probes.push({id, status: passed ? 'PASS' : 'FAIL', elapsedMs: result.elapsedMs, ttftMs: null, ttftAuthority: 'UNAVAILABLE', usage: result.usage, retries: 0, finishReason: result.finishReason, failure: passed ? null : result.finishReason === 'length' ? 'provider_output_truncated' : 'smoke_verification_failed', responseHash: hash(result.output || JSON.stringify(result.toolCall)), invocationProfile: extension?.profile ?? null}); }
-      catch (error) { const partial = (error as {partialInvocation?: {elapsedMs: number; usage: NormalizedModelUsage; finishReason: string | null; responseHash: string}}).partialInvocation, reason = partial?.finishReason === 'length' ? 'provider_output_truncated' : safeFailure(error); probes.push({id, status: /unsupported|capability/.test(reason) ? 'UNAVAILABLE' : 'FAIL', elapsedMs: partial?.elapsedMs ?? null, ttftMs: null, ttftAuthority: 'UNAVAILABLE', usage: partial?.usage ?? null, retries: 0, finishReason: partial?.finishReason ?? null, failure: reason, responseHash: partial?.responseHash?.replace(/^sha256:/, '') ?? null, invocationProfile: extension?.profile ?? null}); }
+      try { const result = await client.invoke(model, prompt, {...options, requestExtension: extension, timeoutMs: Math.min(options.timeoutMs ?? 45_000, 60_000)}), passed = result.finishReason !== 'length' && verify(result), failure = passed ? null : result.finishReason === 'length' ? 'provider_output_truncated' : 'smoke_verification_failed'; probes.push({id, status: passed ? 'PASS' : 'FAIL', elapsedMs: result.elapsedMs, ttftMs: null, ttftAuthority: 'UNAVAILABLE', usage: result.usage, retries: 0, finishReason: result.finishReason, failure, failureClass: failure ? classifySmokeFailure(id, failure) : null, responseHash: hash(result.output || JSON.stringify(result.toolCall)), responseLength: result.output.length || (result.toolCall ? result.toolCall.arguments.length : 0), requestedOutputTokens, invocationProfile: extension?.profile ?? null, evidenceSource: 'DIRECT_SMOKE'}); }
+      catch (error) { const partial = (error as {partialInvocation?: {elapsedMs: number; output?: string; toolCall?: {arguments?: string} | null; usage: NormalizedModelUsage; finishReason: string | null; responseHash: string}}).partialInvocation, reason = partial?.finishReason === 'length' ? 'provider_output_truncated' : safeFailure(error), unavailable = /unsupported|capability/.test(reason); probes.push({id, status: unavailable ? 'UNAVAILABLE' : 'FAIL', elapsedMs: partial?.elapsedMs ?? null, ttftMs: null, ttftAuthority: 'UNAVAILABLE', usage: partial?.usage ?? null, retries: 0, finishReason: partial?.finishReason ?? null, failure: reason, failureClass: classifySmokeFailure(id, reason), responseHash: partial?.responseHash?.replace(/^sha256:/, '') ?? null, responseLength: typeof partial?.output === 'string' ? partial.output.length : partial?.toolCall?.arguments?.length ?? null, requestedOutputTokens, invocationProfile: extension?.profile ?? null, evidenceSource: 'DIRECT_SMOKE'}); }
     };
-    await run('basic-completion', 'Reply with exactly AC_SMOKE_OK.', {maximumOutputTokens: 64}, result => result.output.includes('AC_SMOKE_OK'));
-    await run('structured-json', 'Return the required marker.', {structured: true, outputSchema: markerSchema(), maximumOutputTokens: 128}, result => parseMarker(result.output));
-    await run('coding', 'Check that a JavaScript add(a,b) function should return a + b, then reply with exactly AC_CODE_OK.', {maximumOutputTokens: 64}, result => result.output.includes('AC_CODE_OK'));
+    if (reusableCallability(item)) probes.push(callabilityAsSmokeProbe(item.callability!));
+    else await run('basic-completion', 'Reply with exactly AC_SMOKE_OK.', {maximumOutputTokens: 64}, result => result.output.includes('AC_SMOKE_OK'));
+    await run('structured-json', 'Return a JSON object whose marker value is exactly AC_SMOKE_OK.', {structured: true, outputSchema: markerSchema(), maximumOutputTokens: 256}, result => parseMarker(result.output));
+    await run('coding', 'Check that a JavaScript add(a,b) function should return a + b, then reply with exactly AC_CODE_OK.', {maximumOutputTokens: 256}, result => result.output.includes('AC_CODE_OK'));
     await run('tool-calling', 'Call the required qualification function with marker AC_TOOL_OK.', {toolProbe: 'agent_control_qualification_marker', maximumOutputTokens: 128}, result => result.toolCall?.name === 'agent_control_qualification_marker' && parseToolMarker(result.toolCall.arguments));
     await run('context-reliability', `${'bounded-context-line\n'.repeat(256)}\nReply with exactly AC_CONTEXT_OK.`, {maximumOutputTokens: 64}, result => result.output.includes('AC_CONTEXT_OK'));
     const required = probes.filter(probe => ['basic-completion','coding','context-reliability'].includes(probe.id)), status = required.every(probe => probe.status === 'PASS') ? probes.every(probe => probe.status === 'PASS') ? 'PASS' : 'LIMITED' : 'FAILED', completedAt = this.clock();
@@ -258,27 +285,98 @@ function rateLimitFrom(headers: Headers, credential = ''): CatalogRateLimitObser
 function quotaFrom(headers: Headers): CatalogQuotaObservation { const value = headerNumber(headers, 'x-quota-remaining'); return {value, unit: value === null ? null : 'provider-defined', authority: value === null ? 'UNKNOWN' : 'PROVIDER_REPORTED'}; }
 function emptyProvider(providerId: string): ProviderCatalogObservation { return {providerId, endpointStatus: 'UNKNOWN', discoveryStatus: 'NEVER', credentialStatus: 'MISSING', lastDiscoveryAt: null, lastError: null, rateLimit: {requestsLimit:null,requestsRemaining:null,tokensLimit:null,tokensRemaining:null,reset:null,retryAfter:null,authority:'UNKNOWN'}, quota:{value:null,unit:null,authority:'UNKNOWN'}}; }
 function transition(item: ProviderCatalogModel, state: CatalogReviewState, at: string, reason: string, evidence?: string) { if (item.reviewState === state) return; item.reviewState = state; item.stateHistory.push({state, at, reason, ...(evidence ? {evidence} : {})}); }
-function markerSchema() { return {type:'object',properties:{marker:{type:'string'}},required:['marker'],additionalProperties:false}; }
+function markerSchema() { return {type:'object',properties:{marker:{type:'string',enum:['AC_SMOKE_OK']}},required:['marker'],additionalProperties:false}; }
 function smokeSuiteIdentity() {
   return {
     id: 'provider-catalog-smoke',
-    version: 2,
+    version: 3,
     probes: [
       {id: 'basic-completion', maximumOutputTokens: 64, structured: false},
-      {id: 'structured-json', maximumOutputTokens: 128, structured: true},
-      {id: 'coding', maximumOutputTokens: 64, structured: false},
+      {id: 'structured-json', maximumOutputTokens: 256, structured: true, expectedMarker: 'AC_SMOKE_OK'},
+      {id: 'coding', maximumOutputTokens: 256, structured: false},
       {id: 'tool-calling', maximumOutputTokens: 128, tool: 'agent_control_qualification_marker'},
       {id: 'context-reliability', maximumOutputTokens: 64, contextLines: 256, structured: false},
     ],
     verification: {
       finishReasonLengthIsFailure: true,
       providerOutputIsHashOnly: true,
+      callabilityEvidenceMaySatisfyBasicProbeWhenObservedAfterLatestDiscovery: true,
     },
   };
 }
+function callabilitySuiteIdentity() { return {id: 'provider-catalog-callability', version: 1, streaming: true, prompt: 'exact-marker', marker: 'AC_CALLABILITY_OK', maximumOutputTokens: 64, retainedOutput: 'hash-and-length-only'}; }
 function parseMarker(value: string, expected = 'AC_SMOKE_OK') { try { return (JSON.parse(value) as {marker?: unknown}).marker === expected; } catch { return false; } }
 function parseToolMarker(value: string) { try { return (JSON.parse(value) as {marker?: unknown}).marker === 'AC_TOOL_OK'; } catch { return false; } }
 function smokeCapabilities(id: CatalogSmokeProbe['id']) { return id === 'basic-completion' ? ['text'] : id === 'structured-json' ? ['structured-output'] : id === 'coding' ? ['coding'] : id === 'tool-calling' ? ['tool-use'] : ['context-reliability']; }
+function classifySmokeFailure(id: CatalogSmokeProbe['id'], reason: string): CatalogFailureClass {
+  if (reason === 'provider_output_truncated') return 'OUTPUT_TRUNCATED';
+  if (reason === 'provider_timeout') return 'TIMEOUT_UNCLASSIFIED';
+  if (/authentication/.test(reason)) return 'AUTHORIZATION';
+  if (/rate_limited/.test(reason)) return 'RATE_LIMITED';
+  if (/request_failed:404/.test(reason)) return 'ENDPOINT_NOT_AVAILABLE';
+  if (/malformed/.test(reason)) return 'MALFORMED_RESPONSE';
+  if (/unsupported|capability/.test(reason)) return 'CAPABILITY_UNAVAILABLE';
+  if (reason === 'smoke_verification_failed') return id === 'structured-json' ? 'SCHEMA_INVALID' : id === 'tool-calling' ? 'TOOL_CALL_UNRELIABLE' : 'VERIFICATION_FAILED';
+  return 'PROVIDER_ERROR';
+}
+function callabilityFailureClass(result: Awaited<ReturnType<OpenAICompatibleProviderClient['probeStreaming']>>): CatalogFailureClass | null {
+  if (result.finishReason === 'length') return 'OUTPUT_TRUNCATED';
+  if (result.outcome === 'TIMEOUT') return result.tokenObserved ? 'TIMEOUT_DURING_GENERATION' : 'TIMEOUT_BEFORE_FIRST_TOKEN';
+  if (result.outcome === 'MALFORMED') return 'MALFORMED_RESPONSE';
+  if (result.outcome === 'TRANSPORT_ERROR') return 'PROVIDER_ERROR';
+  if (result.outcome === 'HTTP_ERROR') {
+    if (result.httpStatus === 401 || result.httpStatus === 403) return 'AUTHORIZATION';
+    if (result.httpStatus === 404) return 'ENDPOINT_NOT_AVAILABLE';
+    if (result.httpStatus === 429) return 'RATE_LIMITED';
+    return 'PROVIDER_ERROR';
+  }
+  return null;
+}
+function callabilityEndpointStatus(result: Awaited<ReturnType<OpenAICompatibleProviderClient['probeStreaming']>>): CatalogInferenceEndpointStatus {
+  if (result.httpAccepted) return 'CONFIRMED';
+  if (result.httpStatus === 404) return 'NOT_AVAILABLE';
+  if (result.httpStatus === 401 || result.httpStatus === 403) return 'AUTHORIZATION_REQUIRED';
+  if (result.httpStatus === 429) return 'RATE_LIMITED';
+  return 'INDETERMINATE';
+}
+function hasUsage(usage: NormalizedModelUsage) { return usage.inputTokens !== null || usage.outputTokens !== null || usage.totalTokens !== null || usage.providerReportedCost !== null; }
+function inferLegacyInferenceStatus(model: ProviderCatalogModel): CatalogInferenceEndpointStatus {
+  if (model.callability?.inferenceEndpointStatus) return model.callability.inferenceEndpointStatus;
+  return model.smoke ? inferenceStatusFromProbes(model.smoke.probes) : 'UNTESTED';
+}
+function inferenceStatusFromProbes(probes: CatalogSmokeProbe[]): CatalogInferenceEndpointStatus {
+  if (probes.some(probe => probe.responseHash !== null || probe.usage !== null || probe.finishReason !== null)) return 'CONFIRMED';
+  if (probes.length && probes.every(probe => classifySmokeFailure(probe.id, probe.failure ?? '') === 'ENDPOINT_NOT_AVAILABLE')) return 'NOT_AVAILABLE';
+  if (probes.length && probes.every(probe => classifySmokeFailure(probe.id, probe.failure ?? '') === 'AUTHORIZATION')) return 'AUTHORIZATION_REQUIRED';
+  if (probes.length && probes.every(probe => classifySmokeFailure(probe.id, probe.failure ?? '') === 'RATE_LIMITED')) return 'RATE_LIMITED';
+  return 'INDETERMINATE';
+}
+function normalizeStoredProbe(probe: CatalogSmokeProbe): CatalogSmokeProbe {
+  return {...probe, failureClass: probe.failureClass ?? (probe.failure ? classifySmokeFailure(probe.id, probe.failure) : null), responseLength: probe.responseLength ?? null, requestedOutputTokens: probe.requestedOutputTokens ?? legacySmokeProbeBudget(probe.id)};
+}
+function legacySmokeProbeBudget(id: CatalogSmokeProbe['id']) { return id === 'structured-json' || id === 'tool-calling' ? 128 : 64; }
+function reusableCallability(item: ProviderCatalogModel) { const evidence = item.callability; return evidence?.status === 'PASS' && evidence.inputSha256 === hash(callabilitySuiteIdentity()) && Date.parse(evidence.completedAt) >= Date.parse(item.lastDiscoveredAt); }
+function callabilityAsSmokeProbe(evidence: CatalogCallabilityEvidence): CatalogSmokeProbe { return {id: 'basic-completion', status: 'PASS', elapsedMs: evidence.elapsedMs, ttftMs: evidence.ttftMs, ttftAuthority: evidence.ttftAuthority, usage: evidence.usage, retries: 0, finishReason: evidence.finishReason, failure: null, failureClass: null, responseHash: evidence.responseHash, responseLength: evidence.responseLength, requestedOutputTokens: evidence.requestedOutputTokens, invocationProfile: evidence.invocationProfile, evidenceSource: 'CALLABILITY_REUSED'}; }
+function diagnosticStatus(model: ProviderCatalogModel) {
+  const failures = (model.smoke?.probes ?? []).filter(probe => probe.status !== 'PASS').map(probe => probe.failureClass ?? (probe.failure ? classifySmokeFailure(probe.id, probe.failure) : 'VERIFICATION_FAILED'));
+  const primaryFailureClass = failures[0] ?? (model.callability?.status === 'FAIL' ? model.callability.failureClass : null);
+  const status = model.smoke?.status ?? (model.callability?.status === 'PASS' ? 'CALLABLE' : model.callability?.status === 'FAIL' ? 'FAILED' : 'UNTESTED');
+  return {status, primaryFailureClass, failureClasses: [...new Set(failures)], label: primaryFailureClass ? `${status} — ${primaryFailureClass}` : status};
+}
+function triageProjection(model: ProviderCatalogModel) {
+  if (!model.available) return {stage: 'STOPPED', next: 'REDISCOVER', reason: 'ABSENT_FROM_LATEST_CATALOGUE'};
+  if (model.inferenceEndpointStatus !== 'CONFIRMED') return {stage: 'DISCOVERED', next: model.inferenceEndpointStatus === 'UNTESTED' || model.inferenceEndpointStatus === 'INDETERMINATE' ? 'CALLABILITY_PROBE' : 'STOP', reason: `INFERENCE_${model.inferenceEndpointStatus}`};
+  if (!model.smoke) return {stage: 'CALLABILITY_CONFIRMED', next: 'CAPABILITY_SMOKE', reason: 'BASIC_INFERENCE_CONFIRMED'};
+  if (model.smoke.status === 'FAILED') return {stage: 'SMOKE_FAILED', next: 'REVIEW_FAILURE', reason: diagnosticStatus(model).primaryFailureClass ?? 'SMOKE_FAILED'};
+  if (!model.benchmarkBatchIds.length) return {stage: 'SMOKE_COMPLETE', next: 'FROZEN_BENCHMARK', reason: `SMOKE_${model.smoke.status}`};
+  return {stage: 'BENCHMARK_EVIDENCE', next: model.reviewState === 'QUALIFIED' ? 'OPERATOR_ROUTING_DECISION' : 'REVIEW_BENCHMARK', reason: model.reviewState};
+}
+function sameEvidenceRun(left: {startedAt: string; completedAt: string; inputSha256: string}, right: {startedAt: string; completedAt: string; inputSha256: string}) { return left.startedAt === right.startedAt && left.completedAt === right.completedAt && left.inputSha256 === right.inputSha256; }
+function appendEvidence<T extends {startedAt: string; completedAt: string; inputSha256: string}>(history: T[] | undefined, value: T) { const next = [...(history ?? [])]; if (!next.some(item => sameEvidenceRun(item, value))) next.push(structuredClone(value)); return next; }
+export function stagedCatalogueEstimate(discoveredModels: number, callabilityConfirmedModels: number) {
+  const discovered = Math.max(0, Math.floor(discoveredModels)), confirmed = Math.min(discovered, Math.max(0, Math.floor(callabilityConfirmedModels)));
+  return {callabilityRequests: discovered, capabilitySmokeRequests: confirmed * 4, totalPreBenchmarkRequests: discovered + confirmed * 4, naiveFiveProbeRequests: discovered * 5, requestsAvoided: (discovered - confirmed) * 4};
+}
 function discoveredRegistryId(providerId: string, canonicalModelId: string) { const slug = canonicalModelId.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 36) || 'model'; return `${providerId}-${slug}-${hash(canonicalModelId).slice(0, 8)}`.slice(0, 64); }
 function catalogKey(providerId: string, modelId: string) { return `${providerId}\u0000${modelId}`; }
 function numericValue(value: unknown): CatalogValue<number> { return typeof value === 'number' && Number.isFinite(value) && value > 0 ? {value, authority:'PROVIDER_REPORTED'} : {value:null,authority:'UNKNOWN'}; }
