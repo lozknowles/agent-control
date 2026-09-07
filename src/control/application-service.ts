@@ -33,6 +33,7 @@ import type {FrozenQualificationSuite, ModelIntelligenceLedger} from './model-in
 import {projectDashboardCharacterCrew, type DashboardCharacterCrewProjection} from './dashboard-characters.js';
 import {providerCatalogEventNarrative, type CatalogEvidenceAdjudicationInput, type ProviderCatalogRuntime} from './provider-catalog.js';
 import {redactSensitiveValue} from './security-redaction.js';
+import type {AdaptiveLeagueFilter, AdaptiveOrchestrationRuntime} from './adaptive-orchestration.js';
 
 export type ControlEventType =
   | 'social.activity'
@@ -174,6 +175,7 @@ export class AgentControlService {
   private modelIntelligence?: ModelIntelligenceLedger;
   private qualificationSuite?: FrozenQualificationSuite;
   private providerCatalog?: ProviderCatalogRuntime;
+  private adaptiveOrchestration?: AdaptiveOrchestrationRuntime;
 
   constructor(
     readonly state: WorkspaceState,
@@ -186,7 +188,7 @@ export class AgentControlService {
     this.verification = new VerificationService(state, persist);
   }
 
-  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; services?: RegisteredService[]; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService; tokenBatonRouting?: TokenAwareBatonRuntime; governedRetrieval?: GovernedRetrievalRuntime; codexNodeExecution?: CodexNodeExecutionPort; harnessEfficiency?: HarnessEfficiencyLedgerPort; workParcels?: WorkParcelCoordinator; modelRegistry?: ModelRegistry; parameterizedJobs?: ParameterizedJobEngine; identity?: IdentityControlPlane; defaultSessionId?: string; fastExecution?: FastExecutionLedgerPort; runtimeObservability?: RuntimeObservability; capabilityIntelligence?: CapabilityIntelligenceStore; modelIntelligence?: ModelIntelligenceLedger; qualificationSuite?: FrozenQualificationSuite; providerCatalog?: ProviderCatalogRuntime}) {
+  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; services?: RegisteredService[]; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService; tokenBatonRouting?: TokenAwareBatonRuntime; governedRetrieval?: GovernedRetrievalRuntime; codexNodeExecution?: CodexNodeExecutionPort; harnessEfficiency?: HarnessEfficiencyLedgerPort; workParcels?: WorkParcelCoordinator; modelRegistry?: ModelRegistry; parameterizedJobs?: ParameterizedJobEngine; identity?: IdentityControlPlane; defaultSessionId?: string; fastExecution?: FastExecutionLedgerPort; runtimeObservability?: RuntimeObservability; capabilityIntelligence?: CapabilityIntelligenceStore; modelIntelligence?: ModelIntelligenceLedger; qualificationSuite?: FrozenQualificationSuite; providerCatalog?: ProviderCatalogRuntime; adaptiveOrchestration?: AdaptiveOrchestrationRuntime}) {
     if (extras.approvalCount) this.approvalCount = extras.approvalCount;
     if (extras.resources) this.resourceRows = structuredClone(extras.resources);
     if (extras.services) this.serviceRows = structuredClone(extras.services);
@@ -209,6 +211,7 @@ export class AgentControlService {
     if (extras.modelIntelligence) this.modelIntelligence = extras.modelIntelligence;
     if (extras.qualificationSuite) this.qualificationSuite = structuredClone(extras.qualificationSuite);
     if (extras.providerCatalog) this.providerCatalog = extras.providerCatalog;
+    if (extras.adaptiveOrchestration) this.adaptiveOrchestration = extras.adaptiveOrchestration;
     return this;
   }
 
@@ -381,6 +384,12 @@ export class AgentControlService {
     this.events.emit('work.parcel_created',{parcelId:parcel.id,status:parcel.status},undefined,actor);return parcel;
   }
   parcel(id: string) { return this.mustWorkParcels().get(id); }
+  adaptiveModelLeague(taskClass?: string, filter?: AdaptiveLeagueFilter) { return this.adaptiveOrchestration?.modelLeague(taskClass, undefined, filter) ?? []; }
+  adaptiveWorkflowLeague(taskClass?: string, filter?: AdaptiveLeagueFilter) { return this.adaptiveOrchestration?.workflowLeague(taskClass, undefined, filter) ?? []; }
+  adaptiveDecisions() { return this.adaptiveOrchestration?.decisions() ?? []; }
+  adaptiveDecision(id: string) { if (!this.adaptiveOrchestration) throw new Error('adaptive_orchestration_unconfigured'); return this.adaptiveOrchestration.decision(id); }
+  adaptiveReport(id: string) { if (!this.adaptiveOrchestration) throw new Error('adaptive_orchestration_unconfigured'); return this.adaptiveOrchestration.report(id); }
+  adaptiveParcelReport(id: string) { const parcel = this.parcel(id), decisionId = parcel.audit.orchestrationDecisionId; if (!decisionId) throw new Error('adaptive_decision_missing'); return this.adaptiveReport(decisionId); }
   async submitNaturalTask(prompt: string, actor: string) {
     let attribution: WorkAttribution;
     if (this.identity && this.defaultSessionId) {

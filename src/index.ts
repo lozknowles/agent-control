@@ -92,6 +92,7 @@ const control = new AgentControlService(state, ptys, providers).configureProject
   modelIntelligence,
   qualificationSuite,
   providerCatalog,
+  adaptiveOrchestration: jobRuntime.adaptiveOrchestration,
 });
 const modelEvaluationExecutor = new ProviderNeutralModelEvaluationExecutor(modelRegistry, capabilityIntelligence, codexNodeExecution, fetch, event => control.events.emit('model.intelligence_changed', {batchId: event.batchId, providerId: event.candidate.providerId, accountProfileId: event.candidate.accountProfileId ?? null, modelId: event.candidate.modelId, providerModel: event.candidate.providerModel, nodeId: event.candidate.nodeId, taskId: event.taskId, phase: event.phase, detail: event.detail, observedAt: event.at}, undefined, 'model-evaluation-runtime'));
 const modelEvaluation = new ModelEvaluationCoordinator(modelIntelligence, qualificationSuite, modelEvaluationExecutor, {agentControlVersion: AGENT_CONTROL_VERSION, adapterVersion: 'provider-neutral-v1', promptVersion: qualificationSuite.version});

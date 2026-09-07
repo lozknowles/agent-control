@@ -146,6 +146,33 @@ Post-3.8.2 Codex hardening keeps schema-constrained repository review ephemeral 
 
 The production lifecycle is physically qualified across two distinct live local provider/model routes. A real source result triggered the unchanged governor under an economical qualification-only threshold policy, produced a sealed baton, continued on the destination and passed independent verification; 186 source plus 510 destination tokens reconciled to 696 parcel tokens. A second run refused the destination and recovered the original source thread. Provider-unreported context and cost remain explicitly estimated or unavailable. See the [physical qualification evidence](docs/evidence/agent-control-3.7-physical-qualification-20260902.md).
 
+## Evidence-driven adaptive orchestration
+
+The 3.7 adaptive orchestration workstream adds a provider-, platform- and model-neutral **Model Capability League**, **Workflow League** and durable per-Work-Parcel **Decision Tree**. It selects against task class and required capabilities using verified quality, reliability, confidence, recency/version, latency, token/cache and cost evidence. It does not create a global “best model” list, silently mix benchmark with production evidence, or store private model reasoning. Provider, infrastructure, policy and cancellation failures remain operational evidence rather than being counted as model-quality failures.
+
+The normal flow is:
+
+`request → classify → capabilities → policy → eligible candidates → league evidence → cost/quality/latency trade-off → route/workflow → execute → quality gate → verify → update evidence`
+
+Adaptive routing is configurable and disabled only when the operator sets `adaptiveOrchestration.enabled` to `false`; the default is enabled for the isolated workstream but it never bypasses the existing qualified model registry, node placement, approvals, verification or token-aware baton governor. The default preference threshold is three verified samples, with quality floor `0.6`, minimum quality `0.7`, evidence age limit 90 days, no cost/latency ceiling, and weights quality/reliability/cost/latency/confidence `0.5/0.2/0.15/0.1/0.05`. A minimal configuration is:
+
+```json
+{
+  "adaptiveOrchestration": {
+    "enabled": true,
+    "minimumSamplesForPreference": 3,
+    "minimumQualityScore": 0.7,
+    "maxEvidenceAgeDays": 90,
+    "policyQualityFloor": 0.6,
+    "maxRouteCost": null,
+    "maxRouteLatencyMs": null,
+    "explorationRate": 0.1
+  }
+}
+```
+
+Open the dashboard's **Routing** tab to filter both leagues by task class, capability, provider, model/version, local/remote location, evidence class, quality or age, and to select each persisted decision node. A Work Parcel's Audit panel links directly to its routing record. The same canonical record powers the machine-readable report and the human-readable operational report, including evidence-linked token/cost/latency measurements; past decisions do not change when later evidence arrives. See [adaptive multi-model orchestration](docs/adaptive-multi-model-orchestration.md) and [dashboard usage](docs/web-dashboard.md).
+
 ## Governed fast execution (Spark)
 
 3.5 adds an optional `FAST_EXECUTION_MODEL` execution class, currently implemented by the exact model `gpt-5.3-codex-spark`. Its purpose is to avoid spending a more capable model on mechanically understandable, low-risk work while retaining Agent Control classification, authority, evidence and verification. It is disabled by default and is separate from the THIN context profile. The governed execution hierarchy is:
@@ -342,7 +369,7 @@ Providers and external services that require API keys use an indirect environmen
 
 For a managed Linux resource, `managedNode` adds polling/heartbeat policy, declarative protected-workload detectors, approved services, BUSY capability fences and an optional operator-reviewed runtime update target. Hardware, package tools, filesystems, optical devices, secure-overlay state and operational capabilities are discovered rather than assumed. Real endpoints and workload identifiers remain operator configuration, never core defaults.
 
-See [`config/agent-control.example.json`](config/agent-control.example.json), [`ARCHITECTURE.md`](ARCHITECTURE.md), and [`docs/concepts.md`](docs/concepts.md). The older [`docs/architecture-v2-agnostic.md`](docs/architecture-v2-agnostic.md) remains a configuration-neutrality appendix.
+See [`config/agent-control.example.json`](config/agent-control.example.json), [`ARCHITECTURE.md`](ARCHITECTURE.md), [`docs/adaptive-multi-model-orchestration.md`](docs/adaptive-multi-model-orchestration.md), and [`docs/concepts.md`](docs/concepts.md). The older [`docs/architecture-v2-agnostic.md`](docs/architecture-v2-agnostic.md) remains a configuration-neutrality appendix.
 
 ## Adaptive harness
 
@@ -427,7 +454,7 @@ The neutrality guard rejects private topology identifiers in distributable runti
 - Ripgrep is the only semantic command-output adapter in this change. Other oversized command families use the generic labelled fallback until a specialised index is added. A tiny typed ripgrep request retains its structured authoritative stream and therefore can be larger than normal human-formatted `rg`; it is not compacted merely because it came from ripgrep.
 - Harness-profile routing remains observational. A live same-model repository-mutation experiment now measures provider tokens, observed warm-cache behaviour, latency, independent verifier outcomes and cumulative escalation cost, but its 12-task sample had only 2/12 STANDARD successes and no adaptive resource advantage. No profile is production-qualified; STANDARD remains the applied fallback and monetary cost remains unknown.
 
-The foundational operator guide is [`docs/Agent-Control-3.1.0-Operator-Guide.md`](docs/Agent-Control-3.1.0-Operator-Guide.md), distributed as [Markdown](assets/releases/3.1.0/Agent-Control-3.1.0-Operator-Guide.md) and [PDF](assets/releases/3.1.0/Agent-Control-3.1.0-Operator-Guide.pdf). For current operation, use [`docs/governed-retrieval.md`](docs/governed-retrieval.md), [`docs/credential-residency.md`](docs/credential-residency.md), [`docs/token-aware-baton-routing.md`](docs/token-aware-baton-routing.md), [`docs/execution-history.md`](docs/execution-history.md), [`docs/provider-model-lifecycle.md`](docs/provider-model-lifecycle.md), [`docs/models/CODEX-INTEGRATION.md`](docs/models/CODEX-INTEGRATION.md), [`docs/managed-nodes.md`](docs/managed-nodes.md), [`android/README.md`](android/README.md), [`docs/web-dashboard.md`](docs/web-dashboard.md), and [`ARCHITECTURE.md`](ARCHITECTURE.md). Candidate scope and migration guidance are in the [`3.9.0 release notes`](docs/release-notes-3.9.0.md) and [`3.9 migration guide`](docs/migration-3.9.md); historical releases remain immutable.
+The foundational operator guide is [`docs/Agent-Control-3.1.0-Operator-Guide.md`](docs/Agent-Control-3.1.0-Operator-Guide.md), distributed as [Markdown](assets/releases/3.1.0/Agent-Control-3.1.0-Operator-Guide.md) and [PDF](assets/releases/3.1.0/Agent-Control-3.1.0-Operator-Guide.pdf). For current operation, use [`docs/governed-retrieval.md`](docs/governed-retrieval.md), [`docs/credential-residency.md`](docs/credential-residency.md), [`docs/token-aware-baton-routing.md`](docs/token-aware-baton-routing.md), [`docs/adaptive-multi-model-orchestration.md`](docs/adaptive-multi-model-orchestration.md), [`docs/execution-history.md`](docs/execution-history.md), [`docs/contract-pty-runtime.md`](docs/contract-pty-runtime.md), [`docs/governed-handoffs.md`](docs/governed-handoffs.md), [`docs/provider-model-lifecycle.md`](docs/provider-model-lifecycle.md), [`docs/models/CODEX-INTEGRATION.md`](docs/models/CODEX-INTEGRATION.md), [`docs/acp-compatibility.md`](docs/acp-compatibility.md), [`docs/fast-execution.md`](docs/fast-execution.md), [`docs/security-3.6.md`](docs/security-3.6.md), [`docs/identity-sessions-delegation.md`](docs/identity-sessions-delegation.md), [`docs/jobs/README.md`](docs/jobs/README.md), [`docs/jobs-and-scheduler.md`](docs/jobs-and-scheduler.md), [`docs/managed-nodes.md`](docs/managed-nodes.md), [`android/README.md`](android/README.md), [`docs/web-dashboard.md`](docs/web-dashboard.md), [`docs/status-command.md`](docs/status-command.md), and [`ARCHITECTURE.md`](ARCHITECTURE.md). Candidate scope and migration guidance are in the [`3.9.0 release notes`](docs/release-notes-3.9.0.md) and [`3.9 migration guide`](docs/migration-3.9.md); historical releases remain immutable.
 
 ## Optional WhatsApp pilot
 

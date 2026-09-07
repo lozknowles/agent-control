@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {normalizeGovernorPolicy} from './token-aware-baton-routing.js';
 import {containsSensitiveMaterial} from './security-redaction.js';
+import type {AdaptiveOrchestrationConfig} from './adaptive-orchestration.js';
 
 export type Platform = 'linux' | 'windows' | 'android' | 'macos' | 'remote' | 'unknown';
 export type TransportType = 'local' | 'ssh' | 'http' | 'orca';
@@ -257,6 +258,7 @@ export interface AgentControlConfig {
   retrieval?: GovernedRetrievalConfig;
   harnessEfficiency?: HarnessEfficiencyConfig;
   spark?: SparkConfig;
+  adaptiveOrchestration?: AdaptiveOrchestrationConfig;
   jobs?: ParameterizedJobsConfig;
 }
 
@@ -323,6 +325,7 @@ export function validateConfig(raw: unknown): AgentControlConfig {
     retrieval: input.retrieval,
     harnessEfficiency: input.harnessEfficiency,
     spark: input.spark,
+    adaptiveOrchestration: input.adaptiveOrchestration,
     jobs: input.jobs,
   };
   if (config.jobs) {
@@ -581,6 +584,18 @@ export function validateConfig(raw: unknown): AgentControlConfig {
     assertIntegerRange(spark.maximumAttempts, 'spark_maximum_attempts', 1, 1);
     assertIntegerRange(spark.maximumSubagents, 'spark_maximum_subagents', 0, 0);
     assertIntegerRange(spark.maximumContextTokens, 'spark_maximum_context_tokens', 256, 8_192);
+  }
+  if (config.adaptiveOrchestration !== undefined) {
+    const adaptive = config.adaptiveOrchestration;
+    if (!adaptive || typeof adaptive !== 'object' || Array.isArray(adaptive)) throw new Error('invalid_adaptive_orchestration');
+    if (adaptive.enabled !== undefined && typeof adaptive.enabled !== 'boolean') throw new Error('invalid_adaptive_orchestration_enabled');
+    assertIntegerRange(adaptive.minimumSamplesForPreference, 'adaptive_orchestration_minimum_samples', 1, 100_000);
+    assertIntegerRange(adaptive.maxEvidenceAgeDays, 'adaptive_orchestration_evidence_age', 1, 3_650);
+    if (adaptive.maxRouteLatencyMs !== undefined && adaptive.maxRouteLatencyMs !== null) assertIntegerRange(adaptive.maxRouteLatencyMs, 'adaptive_orchestration_latency', 0, 86_400_000);
+    for (const [key, value] of [['minimumQualityScore', adaptive.minimumQualityScore], ['policyQualityFloor', adaptive.policyQualityFloor], ['qualityWeight', adaptive.qualityWeight], ['reliabilityWeight', adaptive.reliabilityWeight], ['costWeight', adaptive.costWeight], ['latencyWeight', adaptive.latencyWeight], ['confidenceWeight', adaptive.confidenceWeight], ['explorationRate', adaptive.explorationRate]] as const) {
+      if (value !== undefined && (!Number.isFinite(value) || value < 0 || value > 1)) throw new Error(`invalid_adaptive_orchestration_${key}`);
+    }
+    if (adaptive.maxRouteCost !== undefined && adaptive.maxRouteCost !== null && (!Number.isFinite(adaptive.maxRouteCost) || adaptive.maxRouteCost < 0)) throw new Error('invalid_adaptive_orchestration_cost');
   }
   return config;
 }

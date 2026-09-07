@@ -13,6 +13,8 @@ Agent Control 3.7.0 adds token-aware baton routing, account/node-bound routes, l
 
 Omitting `tokenBatonRouting` uses the conservative 60/75/85/90 defaults. Context pressure alone never forces a cheaper route. A destination must be independently qualified and capability-compatible, and failed handoff resumes the original thread.
 
+The separate adaptive-orchestration workstream adds an optional `adaptiveOrchestration` policy, a persistent Model Capability League, Workflow League and Work Parcel Decision Tree. Its state is additive under `adaptive-orchestration/state.json`; it preserves the existing registry and token-governor fallback. Do not treat benchmark, qualification and production evidence as interchangeable, and do not enable a route solely because it has a high global score. See [`adaptive-multi-model-orchestration.md`](adaptive-multi-model-orchestration.md) for the development configuration and qualification gate.
+
 For Codex account profiles, keep each `CODEX_HOME` credential store on its configured execution node and store only the environment-reference name in Agent Control configuration. Requalify the account after changing its CLI, profile home, model or execution node. Never copy profile contents between nodes.
 
 ## State and observability

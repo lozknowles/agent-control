@@ -23,6 +23,7 @@ import {resolveProviderAccountCredential} from './provider-credential-store.js';
 import type {ProviderPrompt, ProviderPromptInput} from './provider-prompt.js';
 import {classifyExecutionFailure} from './execution-recovery.js';
 import {defaultProviderAdapterRegistry, type ProviderAdapterRegistry} from './provider-catalog.js';
+import type {AdaptiveOrchestrationRuntime} from './adaptive-orchestration.js';
 
 type ReviewChunk = ReviewExecutionRequest['contextChunks'][number];
 type PreparedReviewChunk = ReviewChunk & {evidenceReferences?: string[]; evidencePacketId?: string};
@@ -96,6 +97,7 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
     private readonly evidenceCompiler?: RetrievedEvidenceContextCompiler,
     private readonly qualityGate?: RepositoryReviewQualityGate,
     private readonly providerAdapters: ProviderAdapterRegistry = defaultProviderAdapterRegistry(),
+    private readonly adaptiveOrchestration?: AdaptiveOrchestrationRuntime,
   ) {
     this.routing = lifecycle?.routing ?? tokenRouting;
   }
@@ -176,6 +178,7 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
           }
         } catch (handoffError) { terminalError = handoffError; }
         this.finishParcel(parcel, 'FAILED', message(terminalError));
+        this.recordAdaptiveFailure(parcel, request.route, message(terminalError));
         throw Object.assign(terminalError instanceof Error ? terminalError : new Error(String(terminalError)), {
           workParcelIds: [...parcelIds],
           evidence: [...responseIds.map(id => `provider_response_${id}`), ...retrievalEvidence],
@@ -205,6 +208,28 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
       parcel.provenance.push({at, type: 'verification.completed', detail: verdict});
       this.parcels.update(parcel);
       this.verifyGovernedContract(parcel, verdict, at);
+      if (this.adaptiveOrchestration && parcel.audit.orchestrationDecisionId) for (const invocation of parcel.audit.invocations) {
+        this.adaptiveOrchestration.recordOutcome({
+          decisionId: parcel.audit.orchestrationDecisionId,
+          parcelId: parcel.id,
+          observationId: invocation.id,
+          stageId: 'review',
+          route: {providerId: invocation.provider, modelId: invocation.model, accountProfileId: invocation.accountProfileId ?? null, nodeId: invocation.node, modelVersion: invocation.qualificationVersion ?? null},
+          capabilities: this.models.qualification(invocation.registryModelId ?? invocation.model).capabilities,
+          workflow: {id: 'repository-review', version: '1'},
+          evidenceKind: 'PRODUCTION_WORK_PARCEL',
+          outcome: verdict === 'FAILED' ? 'FAILED' : verdict === 'REVIEW_REQUIRED' ? 'REVIEW_REQUIRED' : 'SUCCEEDED',
+          verified: true,
+          qualityScore: verdict === 'FAILED' ? 0 : verdict === 'REVIEW_REQUIRED' ? .5 : 1,
+          qualityGatePass: verdict !== 'FAILED',
+          firstPass: true,
+          latencyMs: invocation.elapsedMs,
+          usage: {inputTokens: invocation.freshInputTokens === null ? null : invocation.freshInputTokens + (invocation.cachedInputTokens ?? 0), outputTokens: invocation.outputTokens, totalTokens: invocation.totalTokens, cachedInputTokens: invocation.cachedInputTokens},
+          cost: invocation.providerReportedCost ?? invocation.calculatedCost,
+          currency: invocation.currency ?? null,
+          costAuthority: invocation.providerReportedCost !== null ? 'authoritative' : invocation.calculatedCost !== null ? 'estimated' : 'unavailable',
+        });
+      }
     }
   }
 
@@ -407,6 +432,14 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
       requiredCapabilities: ['repository-review'],
       candidates: this.routingCandidates(request.route, source.invocation),
     });
+    if (this.adaptiveOrchestration && parcel.audit.orchestrationDecisionId) this.adaptiveOrchestration.recordOperationalNode(parcel.audit.orchestrationDecisionId, {
+      stageId: 'review',
+      kind: 'TRADEOFF',
+      status: decision.action === 'BATON_AND_HANDOFF' ? 'SELECTED' : 'OBSERVED',
+      facts: {tokenGovernorAction: decision.action, contextPercent: decision.contextPercent, reason: decision.reason, target: decision.target ? `${decision.target.providerId}/${decision.target.accountProfileId ?? 'default'}/${decision.target.modelId}@${decision.target.nodeId ?? 'controller'}` : 'none'},
+      ...(decision.target ? {route: {providerId: decision.target.providerId, modelId: decision.target.modelId, accountProfileId: decision.target.accountProfileId ?? null, nodeId: decision.target.nodeId ?? request.route.nodeId}} : {}),
+      reason: decision.reason,
+    });
     if (decision.action !== 'BATON_AND_HANDOFF' || !decision.target) return false;
 
     const targetRoute = this.models.route({model: decision.target.modelId, nodeId: request.route.workloadNodeId, workloadNodeId: request.route.workloadNodeId, providerExecutionNodeId: decision.target.providerExecutionNodeId ?? decision.target.nodeId, requiredCapabilities: ['repository-review'], allowFallback: false});
@@ -435,6 +468,14 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
       evidenceReferences: [...((completedChunk as PreparedReviewChunk).evidenceReferences ?? []), ...((nextChunk as PreparedReviewChunk).evidenceReferences ?? [])],
       unresolvedIssues: [...source.result.areasNotReviewed, ...source.result.findings.map(finding => finding.id)],
       nextAction: `Review frozen context chunk ${nextChunk.id} containing ${nextChunk.files.join(', ')}`,
+    });
+    if (this.adaptiveOrchestration && parcel.audit.orchestrationDecisionId) this.adaptiveOrchestration.recordOperationalNode(parcel.audit.orchestrationDecisionId, {
+      stageId: 'review',
+      kind: 'EXECUTION',
+      status: 'OBSERVED',
+      facts: {action: 'sealed-baton-created', batonId: baton.id, batonSha256: baton.sha256, sourceThreadId: source.threadId, nextChunk: nextChunk.id},
+      route: request.route,
+      reason: 'Verified token-aware baton created before destination invocation',
     });
     const sourceContract = this.ensureSourceContract(request, parcel, source.invocation);
     let destinationContractId: string | undefined;
@@ -468,6 +509,14 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
     if (handoffDecision.outcome === 'SUCCEEDED') {
       if (!destinationContractId) throw new Error('governed_handoff_destination_contract_missing');
       this.recordContract(parcel, destinationContractId, 'governed-verification-contract', `Destination ${targetRoute.providerId}/${targetRoute.modelId} continued ${nextChunk.id}`);
+      if (this.adaptiveOrchestration && parcel.audit.orchestrationDecisionId) this.adaptiveOrchestration.recordOperationalNode(parcel.audit.orchestrationDecisionId, {
+        stageId: 'review',
+        kind: 'ROUTE',
+        status: 'SELECTED',
+        facts: {action: 'destination-handoff', outcome: handoffDecision.outcome, batonId: baton.id, batonSha256: baton.sha256, destination: routeLabel(targetRoute)},
+        route: targetRoute,
+        reason: 'Governed destination completed under the sealed baton',
+      });
       this.requireWithinBudget(request, totals);
       return true;
     }
@@ -480,6 +529,14 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
     results.push(recovered.result);
     this.recordContract(parcel, sourceContract.id, 'governed-verification-contract', `Destination failed; original ${request.route.providerId}/${request.route.modelId} resumed ${nextChunk.id}`);
     parcel.audit.timeline.push({id: `audit-${randomUUID()}`, at: new Date().toISOString(), type: 'route.changed', stageId: 'review', summary: 'Original provider thread resumed after failed governed handoff', detail: handoffDecision.reason});
+    if (this.adaptiveOrchestration && parcel.audit.orchestrationDecisionId) this.adaptiveOrchestration.recordOperationalNode(parcel.audit.orchestrationDecisionId, {
+      stageId: 'review',
+      kind: 'ROUTE',
+      status: 'OBSERVED',
+      facts: {action: 'source-recovery', outcome: handoffDecision.outcome, destination: routeLabel(targetRoute), source: routeLabel(request.route)},
+      route: request.route,
+      reason: 'Destination handoff failed; source route resumed the unfinished chunk',
+    });
     this.parcels.update(parcel);
     this.requireWithinBudget(request, totals);
     return true;
@@ -698,7 +755,12 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
     const at = new Date().toISOString();
     const id = `parcel-${randomUUID()}`;
     const parcel: WorkParcel = {id, prompt: `Repository review ${request.run.id} ${chunkId}`, objective: `Review frozen ${request.run.repository?.reviewedSha} context chunk ${chunkId}`, actor: `parameterized-job:${request.run.id}`, executionMode: request.run.executionMode ?? 'LIVE', executionOwner: 'direct-repository-review-executor', status: 'RUNNING', planner: {kind: 'deterministic', reason: 'Repository Job deterministically decomposed frozen context'}, stages: [{id: 'review', name: `Review ${chunkId}`, job: `repository-code-review@${request.run.definition.version}`, dependsOn: [], parameters: {jobRunId: request.run.id, contextChunkId: chunkId}, requiredCapabilities: ['repository-review'], outputs: ['repository-review-result'], waitingQuestionIds: [], status: 'RUNNING', requestedRoute: {accountProfile: request.route.accountProfileId ?? undefined, model: request.route.modelId, modelRole: request.route.requestedRole ?? undefined, allowFallback: !request.route.fallback, purpose: request.route.purpose, profile: request.run.context?.profile, reason: 'Route frozen by parameterized Job resolution'}, actualRoute: {workers: [request.route.providerExecutionNodeId], workloadNodeId: request.route.workloadNodeId, providerExecutionNodeId: request.route.providerExecutionNodeId, credentialNodeId: request.route.credentialNodeId ?? undefined, provider: request.route.providerId, accountProfile: request.route.accountProfileId ?? undefined, accountLabel: request.route.accountLabel ?? undefined, accountPlan: request.route.accountPlan ?? undefined, accountPlanAuthority: request.route.accountPlanAuthority ?? undefined, accountQualification: request.route.accountQualification ?? undefined, accountAvailability: request.route.accountAvailability ?? undefined, model: request.route.modelId, profile: request.run.context?.profile, reason: `Qualification ${request.route.qualificationVersion}`}, startedAt: at}], createdAt: at, updatedAt: at, telemetry: {inputTokens: null, freshInputTokens: null, cachedInputTokens: null, cacheWriteTokens: null, outputTokens: null, reasoningTokens: null, totalTokens: null, cost: null, currency: null, elapsedMs: 0}, audit: {schema: 'agent-control.work-parcel-audit/v1', recordedAt: at, classification: 'Frozen repository context review', selectedExecution: 'Work Parcel', planningRationale: 'Deterministic decomposition owned by repository-code-review definition', planner: {kind: 'deterministic', provider: null, model: null}, alternatives: [], timeline: [{id: `audit-${randomUUID()}`, at, type: 'task.received', summary: 'Frozen review chunk received', detail: chunkId}, {id: `audit-${randomUUID()}`, at, type: 'route.resolved', stageId: 'review', summary: routeLabel(request.route), detail: `Qualification ${request.route.qualificationVersion}; fallback ${request.route.fallback}; purpose ${request.route.purpose ?? 'EXECUTION'}`}], invocations: [], totals: {models: [auditModelLabel(request.route)], invocations: 0, inputTokens: null, freshInputTokens: null, cachedInputTokens: null, cacheWriteTokens: null, outputTokens: null, reasoningTokens: null, totalTokens: null, providerReportedCost: null, calculatedCost: null, cost: null, costBasis: 'unavailable', currency: null, modelExecutionMs: 0, wallClockMs: 0}}, provenance: [{at, type: 'job-run', detail: request.run.id}, {at, type: 'execution-mode', detail: request.run.executionMode ?? 'LIVE'}, {at, type: 'reviewed-sha', detail: request.run.repository?.reviewedSha ?? 'unresolved'}, {at, type: 'execution-locality', detail: `workload=${request.route.workloadNodeId};provider=${request.route.providerExecutionNodeId};credential=${request.route.credentialNodeId ?? 'none'}`}]};
-    return this.parcels.add(parcel);
+    const created = this.parcels.add(parcel);
+    if (!this.adaptiveOrchestration) return created;
+    const decision = this.adaptiveOrchestration.startDecision({parcelId: created.id, objective: created.objective, taskClass: 'repository-review', requiredCapabilities: ['repository-review'], workflowId: 'repository-review'});
+    created.audit.orchestrationDecisionId = decision.id;
+    this.adaptiveOrchestration.evaluateDecision(decision.id, {stageId: 'review', candidates: [{route: {providerId: request.route.providerId, modelId: request.route.modelId, accountProfileId: request.route.accountProfileId ?? null, nodeId: request.route.providerExecutionNodeId, modelVersion: request.route.qualificationVersion}, eligible: true, reasons: [], capabilities: this.models.qualification(request.route.modelId).capabilities, declaredOrder: 0}], workflowCandidates: [{id: 'repository-review', version: '1', eligible: true, reasons: []}]});
+    return this.parcels.update(created);
   }
 
   private recordInvocation(parcel: WorkParcel, invocation: ModelInvocationResult, request: ReviewExecutionRequest, route: ModelRouteDecision, evidenceId: string) {
@@ -723,6 +785,14 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
     parcel.audit.totals = {models: [...new Set([...prior.models, auditModelLabel(route)])], invocations: prior.invocations + 1, inputTokens: mergeAmount(prior.inputTokens ?? null, invocation.usage.inputTokens, first), freshInputTokens: mergeAmount(prior.freshInputTokens, fresh, first), cachedInputTokens: mergeAmount(prior.cachedInputTokens, cached, first), cacheWriteTokens: mergeAmount(prior.cacheWriteTokens ?? null, cacheWrite, first), outputTokens: mergeAmount(prior.outputTokens, invocation.usage.outputTokens, first), reasoningTokens: null, totalTokens: mergeAmount(prior.totalTokens, invocation.usage.totalTokens, first), providerReportedCost: nextProviderCost, calculatedCost: nextCalculatedCost, cost: aggregateCost, costBasis: aggregateCostBasis, currency, modelExecutionMs: prior.modelExecutionMs + invocation.elapsedMs, wallClockMs: Math.max(0, Date.parse(completedAt) - Date.parse(parcel.createdAt))};
     parcel.telemetry = {inputTokens: parcel.audit.totals.inputTokens ?? null, freshInputTokens: parcel.audit.totals.freshInputTokens, cachedInputTokens: parcel.audit.totals.cachedInputTokens, cacheWriteTokens: parcel.audit.totals.cacheWriteTokens ?? null, outputTokens: parcel.audit.totals.outputTokens, reasoningTokens: parcel.audit.totals.reasoningTokens, totalTokens: parcel.audit.totals.totalTokens, cost: parcel.audit.totals.cost, currency: parcel.audit.totals.currency, elapsedMs: parcel.audit.totals.modelExecutionMs};
     parcel.provenance.push({at: completedAt, type: 'provider-response', detail: evidenceId});
+    this.parcels.update(parcel);
+    if (this.adaptiveOrchestration && parcel.audit.orchestrationDecisionId) this.adaptiveOrchestration.recordObservedRoute(parcel.audit.orchestrationDecisionId, {stageId: 'review', route: {providerId: route.providerId, modelId: route.modelId, accountProfileId: route.accountProfileId ?? null, nodeId: route.nodeId, modelVersion: route.qualificationVersion}, reason: `Observed provider invocation ${route.providerId}/${route.modelId}`});
+  }
+
+  private recordAdaptiveFailure(parcel: WorkParcel, route: ModelRouteDecision, reason: string) {
+    if (!this.adaptiveOrchestration || !parcel.audit.orchestrationDecisionId) return;
+    this.adaptiveOrchestration.recordOutcome({decisionId: parcel.audit.orchestrationDecisionId, parcelId: parcel.id, stageId: 'review', route: {providerId: route.providerId, modelId: route.modelId, accountProfileId: route.accountProfileId ?? null, nodeId: route.nodeId, modelVersion: route.qualificationVersion}, workflow: {id: 'repository-review', version: '1'}, evidenceKind: 'PRODUCTION_WORK_PARCEL', outcome: 'PROVIDER_FAILURE', verified: false, qualityGatePass: null, failureClass: 'provider', observedAt: new Date().toISOString()});
+    parcel.provenance.push({at: new Date().toISOString(), type: 'adaptive-outcome', detail: 'provider-failure:provider invocation failed'});
     this.parcels.update(parcel);
   }
 
