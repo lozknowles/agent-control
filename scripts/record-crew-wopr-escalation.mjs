@@ -60,6 +60,14 @@ function pixelAdb(args, timeout = 30_000) {
   return execFileSync('ssh', ['-T', '-i', pixel.identity, '-p', String(pixel.port), '-o', 'BatchMode=yes', '-o', 'IdentitiesOnly=yes', '-o', 'StrictHostKeyChecking=yes', '-o', 'ConnectTimeout=10', `${pixel.user}@${pixel.host}`, 'adb', ...args], {encoding: 'utf8', timeout, maxBuffer: 4 * 1024 * 1024});
 }
 
+function ensurePixelAdb() {
+  if (!pixel) throw new Error('qualification_pixel_transport_unconfigured');
+  const raw = execFileSync('ssh', ['-T', '-i', pixel.identity, '-p', String(pixel.port), '-o', 'BatchMode=yes', '-o', 'IdentitiesOnly=yes', '-o', 'StrictHostKeyChecking=yes', '-o', 'ConnectTimeout=10', `${pixel.user}@${pixel.host}`, 'node', '$HOME/.cache/agent-control-3.9-qualification/adb-local.mjs', 'ensure-connected', '--json'], {encoding: 'utf8', timeout: 30_000, maxBuffer: 1024 * 1024});
+  const status = JSON.parse(raw);
+  if (status.ok !== true || status.verification?.qualified !== true) throw new Error('qualification_pixel_local_adb_unavailable');
+  return {qualified: true, discoverySource: status.adb?.discoverySource, deviceModel: status.verification?.target?.model, android: status.verification?.target?.android};
+}
+
 function boundsForLabel(xml, pattern) {
   const nodes = [...xml.matchAll(/<node\b[^>]*(?:text|content-desc)="([^"]*)"[^>]*bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"[^>]*\/?\s*>/g)];
   const match = nodes.find(item => pattern.test(item[1].trim()));
@@ -67,6 +75,7 @@ function boundsForLabel(xml, pattern) {
 }
 
 async function sendPhysicalSocialRequest() {
+  const adb = ensurePixelAdb();
   // Move the underlying foreground away from the operator chat without
   // unlocking the device, so the subsequently queued bot prompt is eligible
   // to surface as a genuine lock-screen notification.
@@ -97,7 +106,7 @@ async function sendPhysicalSocialRequest() {
   const composed = pixelAdb(['exec-out', 'uiautomator', 'dump', '/dev/tty']), send = boundsForLabel(composed, /^send$/i);
   if (!send) throw new Error('qualification_pixel_message_send_control_unavailable');
   pixelAdb(['shell', 'input', 'tap', String(send.x), String(send.y)]);
-  return {node: 'configured Android operator device', transport: 'strict-host-key SSH to existing local ADB', action: 'notification inline reply', request: 'start governed-adaptive-crew'};
+  return {node: 'configured Android operator device', transport: 'strict-host-key SSH to existing qualified local ADB', adb, action: 'notification inline reply', request: 'start governed-adaptive-crew'};
 }
 
 async function waitPhase(name, timeoutMs = 120_000) {
