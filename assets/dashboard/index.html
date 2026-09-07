@@ -8,11 +8,12 @@
   <link rel="stylesheet" href="/dashboard.css">
   <link rel="stylesheet" href="/dashboard-fixes.css">
   <link rel="stylesheet" href="/dashboard-jobs.css">
+  <link rel="stylesheet" href="/dashboard-adaptive-orchestration.css">
 </head>
 <body>
   <header class="topbar">
     <div class="brand"><span class="brand-mark" aria-hidden="true">AC</span><div><strong>Agent Control</strong><small id="version">connecting</small></div></div>
-    <nav class="primary-nav" aria-label="Control views"><button class="primary-tab active" data-view="jobs">Jobs</button><button class="primary-tab" data-view="lanes">Lanes</button><button class="primary-tab" data-view="sessions">Sessions</button><button class="primary-tab" data-view="systems">Systems</button><button class="primary-tab" data-view="models">Models</button><button class="primary-tab" data-view="configuration">Configuration</button></nav>
+    <nav class="primary-nav" aria-label="Control views"><button class="primary-tab active" data-view="jobs">Jobs</button><button class="primary-tab" data-view="lanes">Lanes</button><button class="primary-tab" data-view="sessions">Sessions</button><button class="primary-tab" data-view="systems">Systems</button><button class="primary-tab" data-view="models">Models</button><button class="primary-tab" data-view="routing">Routing</button><button class="primary-tab" data-view="configuration">Configuration</button></nav>
     <div class="topbar-status"><span id="stream-state" class="status-pill neutral">CONNECTING</span><button id="health" class="status-pill neutral" title="Agent Control health; open downstream Systems readiness">UNKNOWN</button><button id="operator-button" class="button secondary">Operator authentication required</button></div>
   </header>
   <main id="lanes-workspace" class="shell" hidden>
@@ -73,6 +74,11 @@
       <section class="panel"><div class="panel-heading"><div><span class="eyebrow">Verified-outcome diagnostics</span><h2>Harness Efficiency</h2></div></div><div id="harness-efficiency-metrics" class="compact-list"></div></section>
     </aside>
   </main>
+  <main id="routing-workspace" class="orchestration-shell" hidden>
+    <aside class="panel orchestration-league"><div class="panel-heading"><div><span class="eyebrow">Evidence-conditioned routing</span><h1>Model Capability League</h1></div><span id="orchestration-model-count" class="count">0</span></div><p class="systems-health-note">Scores are task-specific and update only from verified outcomes. Benchmark, qualification and production evidence remain visibly separate.</p><div class="orchestration-filters" aria-label="League filters"><label>Task class<select id="orchestration-task-filter"><option value="">All task classes</option><option>coding</option><option>debugging</option><option>repository-review</option><option>reasoning</option><option>tool-use</option><option>long-context</option><option>test-generation</option><option>repair</option><option>critique</option><option>structured-output</option></select></label><label>Capability<input id="orchestration-capability-filter" placeholder="repository-review"></label><label>Provider<input id="orchestration-provider-filter" placeholder="provider id"></label><label>Model<input id="orchestration-model-filter" placeholder="model id"></label><label>Model version<input id="orchestration-version-filter" placeholder="qualification version"></label><label>Location<select id="orchestration-location-filter"><option value="">Local or remote</option><option value="local">Local</option><option value="remote">Remote</option></select></label><label>Evidence<select id="orchestration-evidence-filter"><option value="">All evidence</option><option>BENCHMARK</option><option>QUALIFICATION</option><option>PRODUCTION_WORK_PARCEL</option></select></label><label>Sort<select id="orchestration-sort-filter"><option value="quality">Quality</option><option value="confidence">Confidence</option><option value="samples">Samples</option><option value="cost">Cost</option><option value="latency">Latency</option><option value="reliability">Reliability</option><option value="recent">Recent evidence</option></select></label></div><div id="orchestration-model-league" class="orchestration-list"></div></aside>
+    <section class="panel orchestration-decision"><div class="panel-heading"><div><span class="eyebrow">Reproducible operational facts</span><h1>Decision Tree</h1></div><span id="orchestration-decision-count" class="count">0</span></div><p class="systems-health-note">Each parcel retains the decision record that selected its route; this view never regenerates past decisions from current league data.</p><div id="orchestration-decision-list" class="orchestration-list"></div><div id="orchestration-decision-detail" class="orchestration-detail"><div class="empty-state"><div class="empty-icon">◇</div><h2>No decision selected</h2><p>Select a Work Parcel decision to inspect classification, candidates, route, execution and evidence updates.</p></div></div></section>
+    <aside class="panel orchestration-league"><div class="panel-heading"><div><span class="eyebrow">Strategy evidence</span><h1>Workflow League</h1></div><span id="orchestration-workflow-count" class="count">0</span></div><p class="systems-health-note">Workflow evidence is maintained independently from model quality and records operational failures without poisoning model rankings.</p><div id="orchestration-workflow-league" class="orchestration-list"></div></aside>
+  </main>
   <main id="systems-workspace" class="systems-shell" hidden>
     <aside class="panel systems-list-panel"><div class="panel-heading"><div><span class="eyebrow">Execution inventory</span><h1>Systems</h1></div><span id="system-count" class="count">0</span></div><p class="systems-health-note">Global HEALTHY describes Agent Control itself. Each downstream system is assessed independently for dispatch readiness.</p><div id="systems-list" class="systems-list"></div></aside>
     <section class="panel system-detail-panel"><div id="system-detail-empty" class="empty-state"><div class="empty-icon">◉</div><h2>No system selected</h2><p>Select a machine, provider, model or service to inspect its canonical readiness.</p></div><div id="system-detail" hidden></div></section>
@@ -89,7 +95,7 @@
     <aside class="panel configuration-list-panel">
       <div class="panel-heading"><div><span class="eyebrow">Canonical inventory</span><h1>Configuration</h1></div><span id="configuration-count" class="count">0</span></div>
       <p class="systems-health-note">Configured systems remain visible even when unreachable. Credentials are referenced by environment-variable name; secret values are never stored here.</p>
-      <div class="configuration-add"><button class="button" data-add-configuration="resource">Add machine</button><button class="button" data-add-configuration="provider">Add provider</button><button class="button" data-add-configuration="model">Add model</button><button class="button" data-add-configuration="service">Add service</button><button class="button" data-add-configuration="spark">Fast execution</button></div>
+      <div class="configuration-add"><button class="button" data-add-configuration="resource">Add machine</button><button class="button" data-add-configuration="provider">Add provider</button><button class="button" data-add-configuration="model">Add model</button><button class="button" data-add-configuration="service">Add service</button><button class="button" data-add-configuration="spark">Fast execution</button><button class="button" data-add-configuration="adaptive">Adaptive routing</button></div>
       <div id="configuration-list" class="systems-list"></div>
     </aside>
     <section class="panel configuration-editor-panel">
@@ -97,7 +103,7 @@
       <div id="configuration-auth-note" class="configuration-notice">Authenticate as operator to read or change system configuration.</div>
       <form id="configuration-form" hidden>
         <input id="configuration-original-id" type="hidden">
-        <label>System kind<select id="configuration-kind"><option value="resource">Machine</option><option value="provider">Provider</option><option value="model">Model</option><option value="service">Service</option><option value="spark">Fast execution</option></select></label>
+        <label>System kind<select id="configuration-kind"><option value="resource">Machine</option><option value="provider">Provider</option><option value="model">Model</option><option value="service">Service</option><option value="spark">Fast execution</option><option value="adaptive">Adaptive routing</option></select></label>
         <label>Validated configuration JSON<textarea id="configuration-json" rows="24" spellcheck="false"></textarea></label>
         <div class="configuration-help">Use <code>auth.env</code>, <code>credentialEnv</code> or <code>credentialFileEnv</code> for API-key references. Plaintext tokens, passwords, secrets and API keys are rejected by the server.</div>
         <div class="control-strip"><button id="configuration-save" class="button" type="submit">Save configuration</button><button id="configuration-reset" class="button secondary" type="button">Reset</button><small>Provider/model changes hot-reload; machine/service changes require restart.</small></div>
@@ -122,5 +128,6 @@
   <script src="/dashboard-parameterized-jobs.js" defer></script>
   <script src="/dashboard-models.js" defer></script>
   <script src="/dashboard-sessions.js" defer></script>
+  <script src="/dashboard-adaptive-orchestration.js" defer></script>
 </body>
 </html>

@@ -24,6 +24,21 @@
     "handoffPercent": 90,
     "sampleRetention": 240
   },
+  "adaptiveOrchestration": {
+    "enabled": true,
+    "minimumSamplesForPreference": 3,
+    "minimumQualityScore": 0.7,
+    "maxEvidenceAgeDays": 90,
+    "policyQualityFloor": 0.6,
+    "maxRouteCost": null,
+    "maxRouteLatencyMs": null,
+    "qualityWeight": 0.5,
+    "reliabilityWeight": 0.2,
+    "costWeight": 0.15,
+    "latencyWeight": 0.1,
+    "confidenceWeight": 0.05,
+    "explorationRate": 0.1
+  },
   "harnessEfficiency": {
     "routingMode": "observe",
     "minimumVerifiedRuns": 10,

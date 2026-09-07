@@ -1,6 +1,10 @@
 # Next steps
 
-These items are intentionally deferred from the unreleased Agent Control 3.6 development baseline:
+These items are intentionally deferred from the current Agent Control 3.7 development workstream. They are not implemented release claims:
+
+- Run a separate physical qualification through the normal dashboard/runtime using a genuine Work Parcel and qualified provider/model routes; reconcile the persisted Decision Tree, Model/Workflow League evidence, provider telemetry and independent verification before any release decision.
+- Add additional controlled production observations before allowing adaptive evidence to prefer routes broadly; retain benchmark, qualification and production evidence as separate classes.
+- Extend registered workflow candidates only when each strategy has an explicit quality gate, recovery path and independently verified outcome evidence.
 
 - Add production TLS termination and deployment qualification for the authenticated ACP remote transport. The current HTTP/WebSocket evidence is bounded to loopback.
 - Propagate ACP cancellation while provider, permission or client-owned tool work is pending.

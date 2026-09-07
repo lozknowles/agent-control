@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased — evidence-driven adaptive orchestration
+
+- Adds a persistent, task-conditioned Model Capability League and a separate Workflow League. Both retain verified quality, success, reliability, confidence, recency/version, latency, token/cache, cost, local-compute and escalation evidence without creating a global best-model ranking.
+- Keeps `BENCHMARK`, `QUALIFICATION` and `PRODUCTION_WORK_PARCEL` evidence classes distinguishable. Provider, infrastructure, policy, cancellation and insufficient-evidence failures remain operational observations and do not silently reduce model-quality scores.
+- Adds the provider-neutral decision path `classify → capabilities → policy → candidates → league evidence → trade-off → route/workflow → execute → quality gate → verify → evidence update`, persisted as parent-linked operational nodes with safe reasons and scores but no private model reasoning.
+- Wires adaptive assessment into normal Work Parcel dispatch and the parameterized repository-review record, while retaining existing Model Registry, JobRuntime, token governor, baton, contract/handoff and independent verification authority.
+- Adds server-filtered Model/Workflow League APIs, persisted decision/report APIs, a first-class dashboard Routing view, Work Parcel links to its decision tree, and a human-readable report rendered from the same canonical decision record.
+- Adds conservative validated policy configuration under `adaptiveOrchestration`, including minimum samples, quality floors, age decay, cost/latency ceilings and explicit scoring weights. Adaptive selection can be disabled without removing normal registry routing.
+- Adds deterministic coverage for task-specific ranking, workflow ranking, bounded deterministic exploration, sparse evidence, provider/cancellation exclusion, cost/quality trade-offs, evidence filtering and age/version handling, policy disablement, repeated observations, persistence/reconstruction and normal Work Parcel integration. Decision reports now retain evidence-linked token, cost, latency and authority measurements, with model-version and local/remote league filters.
+- Physical provider/workflow qualification is not claimed by this development change; the deterministic suite and dashboard projections must pass before a separate qualification gate.
+
 ## [3.7.0] — 2026-09-03
 
 - Adds Token-Aware Baton Routing with policy-configured `CONTINUE`, `PREPARE_BATON`, `COMPACT`, and `HANDOFF` pressure states (60/75/85/90% defaults).

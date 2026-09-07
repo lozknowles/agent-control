@@ -1,7 +1,7 @@
 {
   "schema": "agent-control.implementation-status/v1",
   "release": "3.7.0",
-  "updated": "2026-09-03",
+  "updated": "2026-09-07",
   "capabilities": [
     {
       "id": "identity.sessions-delegation",
@@ -91,6 +91,15 @@
       "tests": ["src/control/token-aware-baton-routing.test.ts", "src/control/codex-exec-provider.test.ts", "src/control/codex-node-execution.test.ts", "src/control/account-profile-qualification.test.ts", "src/control/model-registry.test.ts", "src/control/openai-compatible-provider.test.ts", "src/control/direct-repository-review-executor.test.ts", "src/control/web-server.test.ts"],
       "evidence": ["docs/token-aware-baton-routing.md", "docs/evidence/agent-control-3.7-development-qualification.md", "docs/evidence/agent-control-3.7-physical-qualification-20260902.md", "docs/evidence/agent-control-3.7-physical-lifecycle-20260903.json"],
       "limitation": "A bounded production Work Parcel physically qualified live SSE telemetry, a sealed source-to-destination baton, destination continuation, independent verification, additive provider/model accounting and original-thread recovery after an injected destination refusal. Both routes were distinct local OpenAI-compatible provider/model configurations; authoritative current-context occupancy and source monetary cost remain unavailable where the providers do not expose them. Remote Codex account qualification passed separately, but Codex was not a workload leg in this lifecycle proof."
+    },
+    {
+      "id": "routing.adaptive-multi-model",
+      "title": "Evidence-driven adaptive multi-model orchestration",
+      "status": "IMPLEMENTED",
+      "summary": "Persistent task-specific Model Capability and Workflow Leagues retain verified quality, reliability, confidence, recency/version, latency, token/cache and cost evidence by evidence class. Normal Work Parcels and repository reviews persist parent-linked operational routing decisions and project the same decision tree and human-readable report through the dashboard/API without storing private model reasoning.",
+      "sources": ["src/control/adaptive-orchestration.ts", "src/control/work-parcels.ts", "src/control/direct-repository-review-executor.ts", "src/control/job-bootstrap.ts", "src/control/application-service.ts", "src/control/web-server.ts", "assets/dashboard/dashboard-adaptive-orchestration.js", "assets/dashboard/dashboard-adaptive-orchestration.css"],
+      "tests": ["src/control/adaptive-orchestration.test.ts", "src/control/web-server.test.ts", "src/control/config.test.ts", "src/control/configuration-store.test.ts"],
+      "limitation": "Physical provider/workflow qualification through the live dashboard and runtime remains a separate gate; this workstream does not claim that adaptive production routing has been physically qualified."
     },
     {
       "id": "models.fast-execution-spark",

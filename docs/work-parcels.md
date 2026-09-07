@@ -17,6 +17,12 @@ Every newly submitted parcel also carries `agent-control.work-attribution/v1`: A
 
 The initial runtime executes one ready stage at a time. Dependencies are stored as arrays and cycle-validated, so later parallel DAG scheduling does not require a persistence-format replacement. This is deliberately not a general workflow language.
 
+## Adaptive routing evidence
+
+When `adaptiveOrchestration` is configured, each parcel receives a durable decision ID. The coordinator classifies the objective, derives model capabilities from the requested model role, evaluates qualified route candidates through the task-specific Model Capability League and records the `work-parcel-coordinator@1` strategy in the Workflow League. The selected route is still passed through the existing model registry, worker placement and JobRuntime gates; adaptive evidence cannot grant a capability or bypass verification.
+
+The parcel audit retains the decision ID, while `GET /api/parcels/:id/decision-tree` and `GET /api/parcels/:id/decision-report` expose the persisted decision and its operational report. The dashboard Audit panel links to the Routing view. Only independently verified quality outcomes update league preference; provider, infrastructure, policy, cancellation and insufficient-evidence outcomes remain operational observations. See [`adaptive-multi-model-orchestration.md`](adaptive-multi-model-orchestration.md).
+
 ## FreeToken dogfood routine
 
 The included five-stage qualification routine is an isolated safety test, not a production provider definition. Its model root comes only from `AGENT_CONTROL_FREETOKEN_MODEL_ROOT`; no operator topology is stored in the canonical repository. Inventory is read-only. The readiness Job requires at least 8192 MiB of free VRAM and a compatible HF/FTW checkpoint before any isolated service, benchmark or provider qualification stage can run. A failed gate blocks all later stages and cannot change production routing.

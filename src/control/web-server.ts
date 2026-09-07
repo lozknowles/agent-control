@@ -9,6 +9,7 @@ import {JobManifestError} from './job-catalog.js';
 import {configPath, loadConfig} from './config.js';
 import {ConfigurationStore} from './configuration-store.js';
 import {ParameterizedJobError} from './parameterized-job-registry.js';
+import type {AdaptiveEvidenceKind, AdaptiveLeagueFilter} from './adaptive-orchestration.js';
 
 export interface WebServerOptions {host?: string; port?: number; operatorToken?: string; allowedOrigins?: string[]; assetsDir?: string; configFile?: string;}
 const MAX_BODY = 64 * 1024;
@@ -26,6 +27,7 @@ const DOMAIN_STATUS = new Map<string, number>([
   ['output_scope_invalid', 400], ['output_scope_unknown_field', 400], ['output_scope_identity_missing', 400], ['output_scope_generation_invalid', 400],
   ['work_parcel_prompt_required', 400], ['work_parcel_plan_empty', 400], ['work_parcel_stage_id_invalid', 400], ['work_parcel_stage_invalid', 400], ['work_parcel_route_invalid', 400], ['work_parcel_reasoning_plan_invalid', 400], ['work_parcel_dependency_cycle', 400],
   ['work_parcel_reasoning_planner_unconfigured', 503], ['work_parcel_missing', 404], ['work_parcels_unconfigured', 503],
+  ['adaptive_orchestration_unconfigured', 503], ['adaptive_decision_missing', 404],
     ['provider_missing', 404], ['model_missing', 404], ['model_role_missing', 404], ['model_registry_unconfigured', 503], ['model_route_unconfigured', 409], ['model_route_unavailable', 409], ['model_fallback_disabled', 409], ['provider_authentication_required', 409], ['account_profile_missing', 404], ['account_profile_unavailable', 409],
     ['identity_control_plane_unconfigured', 503], ['session_missing', 404], ['execution_missing', 404],
 ]);
@@ -82,12 +84,15 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   if (method === 'GET' && url.pathname === '/api/command-output') return json(response, 200, service.commandOutputs());
   if (method === 'GET' && url.pathname === '/api/command-output/metrics') return json(response, 200, service.commandOutputMetrics());
   if (method === 'GET' && url.pathname === '/api/efficiency') return json(response, 200, service.harnessEfficiencyMetrics());
+  if (method === 'GET' && url.pathname === '/api/orchestration/models') return json(response, 200, service.adaptiveModelLeague(url.searchParams.get('taskClass') ?? undefined, adaptiveLeagueFilter(url)));
+  if (method === 'GET' && url.pathname === '/api/orchestration/workflows') return json(response, 200, service.adaptiveWorkflowLeague(url.searchParams.get('taskClass') ?? undefined, adaptiveLeagueFilter(url)));
+  if (method === 'GET' && url.pathname === '/api/orchestration/decisions') return json(response, 200, service.adaptiveDecisions());
   if (method === 'GET' && url.pathname === '/api/efficiency/invocations') {
     const requestedLimit = Number(url.searchParams.get('limit') ?? 200);
     const limit = Number.isSafeInteger(requestedLimit) && requestedLimit > 0 ? Math.min(1_000, requestedLimit) : 200;
     return json(response, 200, service.modelInvocations({limit, runId: url.searchParams.get('runId') ?? undefined, jobId: url.searchParams.get('jobId') ?? undefined}));
   }
-  const jobMatch = url.pathname.match(/^\/api\/jobs\/([^/]+)(?:\/(runs|run))?$/), runMatch = url.pathname.match(/^\/api\/runs\/([^/]+)(?:\/(cancel|retry|approve))?$/), definitionMatch = url.pathname.match(/^\/api\/job-definitions\/([^/]+)(?:\/([0-9]+))?$/), savedJobMatch = url.pathname.match(/^\/api\/saved-jobs\/([^/]+)(?:\/(run|enable|disable|export))?$/), parameterizedRunMatch = url.pathname.match(/^\/api\/job-runs\/([^/]+)(?:\/(cancel))?$/), parcelMatch = url.pathname.match(/^\/api\/parcels\/([^/]+)(?:\/(cancel))?$/), systemMatch = url.pathname.match(/^\/api\/systems\/([^/]+)(?:\/(check))?$/), accountMatch = url.pathname.match(/^\/api\/models\/accounts\/([^/]+)\/([^/]+)\/(qualify)$/), modelMatch = url.pathname.match(/^\/api\/models\/([^/]+)(?:\/(qualify|route))?$/), sessionMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)$/), executionMatch = url.pathname.match(/^\/api\/executions\/([^/]+)$/), scheduleMatch = url.pathname.match(/^\/api\/schedules\/([^/]+)\/(enable|disable)$/), artifactMatch = url.pathname.match(/^\/api\/artifacts\/([^/]+)$/), outputExpansionMatch = url.pathname.match(/^\/api\/command-output\/([^/]+)\/expand$/);
+  const jobMatch = url.pathname.match(/^\/api\/jobs\/([^/]+)(?:\/(runs|run))?$/), runMatch = url.pathname.match(/^\/api\/runs\/([^/]+)(?:\/(cancel|retry|approve))?$/), definitionMatch = url.pathname.match(/^\/api\/job-definitions\/([^/]+)(?:\/([0-9]+))?$/), savedJobMatch = url.pathname.match(/^\/api\/saved-jobs\/([^/]+)(?:\/(run|enable|disable|export))?$/), parameterizedRunMatch = url.pathname.match(/^\/api\/job-runs\/([^/]+)(?:\/(cancel))?$/), parcelMatch = url.pathname.match(/^\/api\/parcels\/([^/]+)(?:\/(cancel))?$/), decisionMatch = url.pathname.match(/^\/api\/orchestration\/decisions\/([^/]+)(?:\/(report))?$/), parcelDecisionMatch = url.pathname.match(/^\/api\/parcels\/([^/]+)\/(decision-tree|decision-report)$/), systemMatch = url.pathname.match(/^\/api\/systems\/([^/]+)(?:\/(check))?$/), accountMatch = url.pathname.match(/^\/api\/models\/accounts\/([^/]+)\/([^/]+)\/(qualify)$/), modelMatch = url.pathname.match(/^\/api\/models\/([^/]+)(?:\/(qualify|route))?$/), sessionMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)$/), executionMatch = url.pathname.match(/^\/api\/executions\/([^/]+)$/), scheduleMatch = url.pathname.match(/^\/api\/schedules\/([^/]+)\/(enable|disable)$/), artifactMatch = url.pathname.match(/^\/api\/artifacts\/([^/]+)$/), outputExpansionMatch = url.pathname.match(/^\/api\/command-output\/([^/]+)\/expand$/);
   if (method === 'GET' && definitionMatch) return json(response, 200, service.jobDefinition(decodeURIComponent(definitionMatch[1]), definitionMatch[2] ? Number(definitionMatch[2]) : undefined));
   if (method === 'GET' && savedJobMatch?.[2] === 'export') return json(response, 200, service.exportSavedJob(decodeURIComponent(savedJobMatch[1])));
   if (method === 'GET' && savedJobMatch && !savedJobMatch[2]) return json(response, 200, service.savedJob(decodeURIComponent(savedJobMatch[1])));
@@ -96,6 +101,10 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   if (method === 'GET' && jobMatch?.[2] === 'runs') return json(response, 200, service.runs(decodeURIComponent(jobMatch[1])));
   if (method === 'GET' && runMatch && !runMatch[2]) return json(response, 200, service.run(decodeURIComponent(runMatch[1])));
   if (method === 'GET' && parcelMatch && !parcelMatch[2]) return json(response, 200, service.parcel(decodeURIComponent(parcelMatch[1])));
+  if (method === 'GET' && decisionMatch && !decisionMatch[2]) return json(response, 200, service.adaptiveDecision(decodeURIComponent(decisionMatch[1])));
+  if (method === 'GET' && decisionMatch?.[2] === 'report') return json(response, 200, service.adaptiveReport(decodeURIComponent(decisionMatch[1])));
+  if (method === 'GET' && parcelDecisionMatch?.[2] === 'decision-tree') return json(response, 200, service.adaptiveDecision(decodeURIComponent(service.parcel(decodeURIComponent(parcelDecisionMatch[1])).audit.orchestrationDecisionId ?? '')));
+  if (method === 'GET' && parcelDecisionMatch?.[2] === 'decision-report') return json(response, 200, service.adaptiveParcelReport(decodeURIComponent(parcelDecisionMatch[1])));
   if (method === 'GET' && systemMatch && !systemMatch[2]) return json(response, 200, service.system(decodeURIComponent(systemMatch[1])));
   if (method === 'GET' && modelMatch && !modelMatch[2]) return json(response, 200, service.model(decodeURIComponent(modelMatch[1])));
   if (method === 'GET' && sessionMatch) return json(response, 200, service.session(decodeURIComponent(sessionMatch[1])));
@@ -128,6 +137,11 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
     if (url.pathname === '/api/configuration/spark') {
       const file = options.configFile ?? configPath(), result = new ConfigurationStore(file).updateSpark({revision: body.revision, spark: body.spark});
       service.events.emit('configuration.changed', {kind: 'spark', id: 'fast-execution', restartRequired: true}, undefined, actor);
+      return json(response, 200, result);
+    }
+    if (url.pathname === '/api/configuration/adaptive-orchestration') {
+      const file = options.configFile ?? configPath(), result = new ConfigurationStore(file).updateAdaptiveOrchestration({revision: body.revision, adaptiveOrchestration: body.adaptiveOrchestration});
+      service.events.emit('configuration.changed', {kind: 'adaptive-orchestration', id: 'adaptive-orchestration', restartRequired: true}, undefined, actor);
       return json(response, 200, result);
     }
     if (jobMatch?.[2] === 'run') return json(response, 201, service.createJobRun(decodeURIComponent(jobMatch[1]), body.parameters && typeof body.parameters === 'object' && !Array.isArray(body.parameters) ? body.parameters as Record<string, unknown> : {}, actor));
@@ -213,9 +227,27 @@ function eventStream(service: AgentControlService, request: IncomingMessage, res
   request.on('close', () => { clearInterval(heartbeat); unsubscribe(); });
 }
 
+function adaptiveLeagueFilter(url: URL): AdaptiveLeagueFilter {
+  const evidence = url.searchParams.get('evidenceKind'), sort = url.searchParams.get('sort'), minQuality = optionalFraction(url.searchParams.get('minQuality')), maxAgeDays = optionalNumber(url.searchParams.get('maxAgeDays'), 0, 3_650);
+  return {
+    ...(url.searchParams.get('capability') ? {capability: url.searchParams.get('capability')!} : {}),
+    ...(url.searchParams.get('providerId') ? {providerId: url.searchParams.get('providerId')!} : {}),
+    ...(url.searchParams.get('modelId') ? {modelId: url.searchParams.get('modelId')!} : {}),
+    ...(url.searchParams.get('modelVersion') ? {modelVersion: url.searchParams.get('modelVersion')!} : {}),
+    ...(url.searchParams.get('location') && ['local', 'remote'].includes(url.searchParams.get('location')!) ? {location: url.searchParams.get('location') as 'local' | 'remote'} : {}),
+    ...(evidence && ['BENCHMARK', 'QUALIFICATION', 'PRODUCTION_WORK_PARCEL'].includes(evidence) ? {evidenceKind: evidence as AdaptiveEvidenceKind} : {}),
+    ...(minQuality === undefined ? {} : {minQuality}),
+    ...(maxAgeDays === undefined ? {} : {maxAgeDays}),
+    ...(sort && ['quality', 'cost', 'latency', 'reliability', 'confidence', 'samples', 'recent'].includes(sort) ? {sort: sort as AdaptiveLeagueFilter['sort']} : {}),
+  };
+}
+
+function optionalFraction(value: string | null) { if (value === null || value === '') return undefined; const parsed = Number(value); return Number.isFinite(parsed) && parsed >= 0 && parsed <= 1 ? parsed : undefined; }
+function optionalNumber(value: string | null, minimum: number, maximum: number) { if (value === null || value === '') return undefined; const parsed = Number(value); return Number.isFinite(parsed) && parsed >= minimum && parsed <= maximum ? parsed : undefined; }
+
 function serveAsset(response: ServerResponse, assetsDir: string, pathname: string) {
   const asset = pathname === '/' ? 'index.html' : pathname.replace(/^\//, '');
-  if (!['index.html', 'dashboard.css', 'dashboard-fixes.css', 'dashboard-jobs.css', 'dashboard.js', 'dashboard-parameters.js', 'dashboard-running-state.js', 'dashboard-enhancements.js', 'dashboard-parameterized-jobs.js', 'dashboard-models.js', 'dashboard-sessions.js'].includes(asset)) throw httpError(404, 'not_found');
+  if (!['index.html', 'dashboard.css', 'dashboard-fixes.css', 'dashboard-jobs.css', 'dashboard-adaptive-orchestration.css', 'dashboard.js', 'dashboard-parameters.js', 'dashboard-running-state.js', 'dashboard-enhancements.js', 'dashboard-parameterized-jobs.js', 'dashboard-models.js', 'dashboard-sessions.js', 'dashboard-adaptive-orchestration.js'].includes(asset)) throw httpError(404, 'not_found');
   const file = path.join(assetsDir, asset);
   if (!fs.existsSync(file)) throw httpError(404, 'dashboard_asset_missing');
   const type = asset.endsWith('.html') ? 'text/html; charset=utf-8' : asset.endsWith('.css') ? 'text/css; charset=utf-8' : 'text/javascript; charset=utf-8';

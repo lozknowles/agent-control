@@ -26,6 +26,7 @@ import {legacyAttribution, type IdentityControlPlane, type WorkAttribution} from
 import type {FastExecutionLedgerPort} from './fast-execution.js';
 import {RuntimeObservability} from './runtime-observability.js';
 import type {TokenAwareBatonRuntime, TokenRoutingProjection} from './token-aware-baton-routing.js';
+import type {AdaptiveLeagueFilter, AdaptiveOrchestrationRuntime} from './adaptive-orchestration.js';
 
 export type ControlEventType =
   | 'system.snapshot'
@@ -143,6 +144,7 @@ export class AgentControlService {
   private runtimeObservability?: RuntimeObservability;
   private tokenBatonRouting?: TokenAwareBatonRuntime;
   private codexNodeExecution?: CodexNodeExecutionPort;
+  private adaptiveOrchestration?: AdaptiveOrchestrationRuntime;
 
   constructor(
     readonly state: WorkspaceState,
@@ -155,7 +157,7 @@ export class AgentControlService {
     this.verification = new VerificationService(state, persist);
   }
 
-  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; services?: RegisteredService[]; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService; tokenBatonRouting?: TokenAwareBatonRuntime; codexNodeExecution?: CodexNodeExecutionPort; harnessEfficiency?: HarnessEfficiencyLedgerPort; workParcels?: WorkParcelCoordinator; modelRegistry?: ModelRegistry; parameterizedJobs?: ParameterizedJobEngine; identity?: IdentityControlPlane; defaultSessionId?: string; fastExecution?: FastExecutionLedgerPort; runtimeObservability?: RuntimeObservability}) {
+  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; services?: RegisteredService[]; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService; tokenBatonRouting?: TokenAwareBatonRuntime; codexNodeExecution?: CodexNodeExecutionPort; harnessEfficiency?: HarnessEfficiencyLedgerPort; workParcels?: WorkParcelCoordinator; modelRegistry?: ModelRegistry; parameterizedJobs?: ParameterizedJobEngine; identity?: IdentityControlPlane; defaultSessionId?: string; fastExecution?: FastExecutionLedgerPort; runtimeObservability?: RuntimeObservability; adaptiveOrchestration?: AdaptiveOrchestrationRuntime}) {
     if (extras.approvalCount) this.approvalCount = extras.approvalCount;
     if (extras.resources) this.resourceRows = structuredClone(extras.resources);
     if (extras.services) this.serviceRows = structuredClone(extras.services);
@@ -173,6 +175,7 @@ export class AgentControlService {
     if (extras.defaultSessionId) this.defaultSessionId = extras.defaultSessionId;
     if (extras.fastExecution) this.fastExecution = extras.fastExecution;
     if (extras.runtimeObservability) this.runtimeObservability = extras.runtimeObservability;
+    if (extras.adaptiveOrchestration) this.adaptiveOrchestration = extras.adaptiveOrchestration;
     return this;
   }
 
@@ -274,6 +277,12 @@ export class AgentControlService {
   }
   parcels() { return this.mustWorkParcels().list(); }
   parcel(id: string) { return this.mustWorkParcels().get(id); }
+  adaptiveModelLeague(taskClass?: string, filter?: AdaptiveLeagueFilter) { return this.adaptiveOrchestration?.modelLeague(taskClass, undefined, filter) ?? []; }
+  adaptiveWorkflowLeague(taskClass?: string, filter?: AdaptiveLeagueFilter) { return this.adaptiveOrchestration?.workflowLeague(taskClass, undefined, filter) ?? []; }
+  adaptiveDecisions() { return this.adaptiveOrchestration?.decisions() ?? []; }
+  adaptiveDecision(id: string) { if (!this.adaptiveOrchestration) throw new Error('adaptive_orchestration_unconfigured'); return this.adaptiveOrchestration.decision(id); }
+  adaptiveReport(id: string) { if (!this.adaptiveOrchestration) throw new Error('adaptive_orchestration_unconfigured'); return this.adaptiveOrchestration.report(id); }
+  adaptiveParcelReport(id: string) { const parcel = this.parcel(id), decisionId = parcel.audit.orchestrationDecisionId; if (!decisionId) throw new Error('adaptive_decision_missing'); return this.adaptiveReport(decisionId); }
   async submitNaturalTask(prompt: string, actor: string) {
     let attribution: WorkAttribution;
     if (this.identity && this.defaultSessionId) {

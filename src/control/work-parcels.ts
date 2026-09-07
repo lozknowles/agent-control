@@ -7,6 +7,7 @@ import type {RunRecord} from './job-types.js';
 import type {SystemReadiness} from './system-readiness.js';
 import type {ModelRegistry} from './model-registry.js';
 import type {WorkAttribution} from './identity-control-plane.js';
+import type {AdaptiveOrchestrationRuntime, AdaptiveOutcome, AdaptiveRouteCandidate, AdaptiveTaskClass} from './adaptive-orchestration.js';
 
 export type ParcelStatus = 'PLANNING' | 'QUEUED' | 'RUNNING' | 'WAITING' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED';
 export type ParcelStageStatus = 'QUEUED' | 'BLOCKED' | 'RUNNING' | 'WAITING' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED';
@@ -25,7 +26,7 @@ export interface WorkParcelTelemetry {freshInputTokens: number | null; cachedInp
 export interface WorkParcelDecision {outcome: 'IN_PROGRESS' | 'COMPLETE' | 'FAIL_CLOSED' | 'CANCELLED'; title: string; summary: string; evidence: string[]; blockedStages: string[]; authority: 'Agent Control';}
 export interface WorkParcelInvocationAudit {id: string; stageId: string; runId: string | null; route: string; provider: string; accountProfileId?: string | null; accountLabel?: string | null; accountPlan?: string | null; model: string; logicalRole?: string | null; registryModelId?: string; providerModel?: string; qualificationVersion?: string; node: string | null; profile: string; startedAt: string; completedAt: string | null; elapsedMs: number | null; freshInputTokens: number | null; cachedInputTokens: number | null; outputTokens: number | null; reasoningTokens: number | null; totalTokens: number | null; providerReportedCost: number | null; calculatedCost: number | null; costBasis: 'provider-reported' | 'calculated' | 'unavailable'; currency: string | null; costAccounting?: ModelInvocationObservation['costAccounting']; verifierResult: string; outcome: string;}
 export interface WorkParcelAuditEvent {id: string; at: string; type: 'task.received' | 'task.classified' | 'target.resolving' | 'target.found' | 'readiness.checked' | 'planning.started' | 'planning.failed' | 'plan.selected' | 'route.requested' | 'stage.dispatched' | 'stage.failed' | 'route.resolved' | 'invocation.completed' | 'route.changed' | 'verification.completed'; stageId?: string; summary: string; detail: string;}
-export interface WorkParcelAudit {schema: 'agent-control.work-parcel-audit/v1'; recordedAt: string; classification: string; selectedExecution: 'Work Parcel'; planningRationale: string; planner: {kind: string; provider: string | null; model: string | null}; alternatives: Array<{stageId: string; candidate: string; eligible: boolean; reasons: string[]}>; timeline: WorkParcelAuditEvent[]; invocations: WorkParcelInvocationAudit[]; totals: {models: string[]; invocations: number; freshInputTokens: number | null; cachedInputTokens: number | null; outputTokens: number | null; reasoningTokens: number | null; totalTokens: number | null; providerReportedCost: number | null; calculatedCost: number | null; cost: number | null; costBasis: 'provider-reported' | 'calculated' | 'unavailable'; currency: string | null; modelExecutionMs: number; wallClockMs: number};}
+export interface WorkParcelAudit {schema: 'agent-control.work-parcel-audit/v1'; recordedAt: string; classification: string; selectedExecution: 'Work Parcel'; planningRationale: string; planner: {kind: string; provider: string | null; model: string | null}; orchestrationDecisionId?: string; alternatives: Array<{stageId: string; candidate: string; eligible: boolean; reasons: string[]}>; timeline: WorkParcelAuditEvent[]; invocations: WorkParcelInvocationAudit[]; totals: {models: string[]; invocations: number; freshInputTokens: number | null; cachedInputTokens: number | null; outputTokens: number | null; reasoningTokens: number | null; totalTokens: number | null; providerReportedCost: number | null; calculatedCost: number | null; cost: number | null; costBasis: 'provider-reported' | 'calculated' | 'unavailable'; currency: string | null; modelExecutionMs: number; wallClockMs: number};}
 export interface WorkParcel {id: string; prompt: string; objective: string; actor: string; attribution?: WorkAttribution; executionOwner?: 'work-parcel-coordinator' | 'direct-repository-review-executor'; status: ParcelStatus; planner: WorkParcelPlan['planner']; stages: WorkParcelStage[]; createdAt: string; updatedAt: string; endedAt?: string; telemetry: WorkParcelTelemetry; decision?: WorkParcelDecision; audit: WorkParcelAudit; provenance: Array<{at: string; type: string; detail: string}>;}
 export interface WorkParcelPlanner {plan(prompt: string): Promise<WorkParcelPlan> | WorkParcelPlan;}
 export type ReasoningPlanProposer = (input: {prompt: string; jobs: Array<{id: string; name: string; version: string; description?: string}>}) => Promise<unknown>;
@@ -82,10 +83,11 @@ export function validateWorkParcelPlan(plan: WorkParcelPlan, runtime: JobRuntime
 
 export class WorkParcelCoordinator {
   private readonly planning = new Set<string>();
-  constructor(readonly runtime: JobRuntime, readonly store: WorkParcelStore, readonly planner: WorkParcelPlanner, private readonly efficiency?: HarnessEfficiencyLedgerPort, private readonly models?: ModelRegistry) {}
+  constructor(readonly runtime: JobRuntime, readonly store: WorkParcelStore, readonly planner: WorkParcelPlanner, private readonly efficiency?: HarnessEfficiencyLedgerPort, private readonly models?: ModelRegistry, readonly adaptiveOrchestration?: AdaptiveOrchestrationRuntime) {}
   async submit(prompt: string, actor: string, attribution?: WorkAttribution) {
-    const plan = validateWorkParcelPlan(await this.planner.plan(prompt), this.runtime), at = now();
-    return this.store.add({id: `parcel-${randomUUID()}`, prompt, objective: plan.objective, actor, ...(attribution ? {attribution: structuredClone(attribution)} : {}), executionOwner: 'work-parcel-coordinator', status: 'QUEUED', planner: plan.planner, stages: plan.stages.map(stage => ({...stage, dependsOn: [...(stage.dependsOn ?? [])], parameters: structuredClone(stage.parameters ?? {}), status: 'QUEUED'})), createdAt: at, updatedAt: at, telemetry: emptyTelemetry(), audit: createDecisionAudit(prompt, plan, this.runtime, at), provenance: [{at, type: 'submitted', detail: `Natural-language request accepted; planner=${plan.planner.kind}`} ]});
+    const plan = validateWorkParcelPlan(await this.planner.plan(prompt), this.runtime), at = now(), id = `parcel-${randomUUID()}`;
+    const parcel = this.store.add({id, prompt, objective: plan.objective, actor, ...(attribution ? {attribution: structuredClone(attribution)} : {}), executionOwner: 'work-parcel-coordinator', status: 'QUEUED', planner: plan.planner, stages: plan.stages.map(stage => ({...stage, dependsOn: [...(stage.dependsOn ?? [])], parameters: structuredClone(stage.parameters ?? {}), status: 'QUEUED'})), createdAt: at, updatedAt: at, telemetry: emptyTelemetry(), audit: createDecisionAudit(prompt, plan, this.runtime, at), provenance: [{at, type: 'submitted', detail: `Natural-language request accepted; planner=${plan.planner.kind}`} ]});
+    return this.ensureOrchestration(parcel, plan);
   }
   accept(prompt: string, actor: string, systems: SystemReadiness[] = [], attribution?: WorkAttribution) {
     if (!prompt.trim()) throw new Error('work_parcel_prompt_required');
@@ -95,8 +97,9 @@ export class WorkParcelCoordinator {
     timeline.push(event(at, 'planning.started', 'Selecting registered Job', 'Planner may only select Jobs present in the canonical catalog'));
     const blocked = target && ['AUTH REQUIRED','OFFLINE','DEGRADED','UNKNOWN'].includes(target.execution) ? `BLOCKED — ${target.name} ${target.blockingReason ?? target.execution.toLowerCase()}` : null;
     const parcel = this.store.add({id: `parcel-${randomUUID()}`, prompt, objective: prompt, actor, ...(attribution ? {attribution: structuredClone(attribution)} : {}), executionOwner: 'work-parcel-coordinator', status: blocked ? 'FAILED' : 'PLANNING', planner: {kind: 'deterministic', reason: blocked ?? 'Planning pending'}, stages: [], createdAt: at, updatedAt: at, ...(blocked ? {endedAt: at} : {}), telemetry: emptyTelemetry(), audit: planningAudit(at, timeline, blocked), provenance: [{at, type: 'submitted', detail: 'Natural-language request durably accepted before planning'}, ...(blocked ? [{at, type: 'readiness.blocked', detail: blocked}] : [])]});
+    this.ensureOrchestration(parcel);
     if (!blocked) this.startPlanning(parcel.id);
-    return parcel;
+    return this.store.get(parcel.id)!;
   }
   get(id: string) { let value = this.store.get(id); if (!value) throw new Error('work_parcel_missing'); if (this.captureLiveRoutes(value)) value = this.store.update(value); return this.withTelemetry(value); }
   list() { return this.store.list().map(value => { if (this.captureLiveRoutes(value)) value = this.store.update(value); return this.withTelemetry(value); }); }
@@ -116,8 +119,15 @@ export class WorkParcelCoordinator {
             const first = definition.spec.steps.find(step => !(step.dependsOn?.length)) ?? definition.spec.steps[0];
             const worker = first ? this.runtime.workers.resolve(first.requires).worker : undefined;
             if (!worker) throw new Error('model_route_worker_unavailable');
-            modelRoute = this.models.route({model: routeRequest.model, modelRole: routeRequest.modelRole, accountProfile: routeRequest.accountProfile, nodeId: worker.id, allowFallback: routeRequest.allowFallback});
+            const required = routeRequest.modelRole ? this.models.routes().roles[routeRequest.modelRole]?.requires ?? [] : [];
+            const candidates = this.modelCandidates(routeRequest, worker.id, required), adaptive = this.adaptiveOrchestration && parcel.audit.orchestrationDecisionId
+              ? this.adaptiveOrchestration.evaluateDecision(parcel.audit.orchestrationDecisionId, {stageId: ready.id, candidates, workflowCandidates: [{id: 'work-parcel-coordinator', version: '1', eligible: true, reasons: []}]})
+              : undefined;
+            const selectedRoute = adaptive?.selectedRoute?.route, selectedModel = selectedRoute?.modelId;
+            modelRoute = this.models.route({model: selectedModel ?? routeRequest.model, modelRole: selectedModel ? undefined : routeRequest.modelRole, accountProfile: selectedRoute?.accountProfileId ?? routeRequest.accountProfile, nodeId: selectedRoute?.nodeId ?? worker.id, requiredCapabilities: required, allowFallback: selectedModel ? false : routeRequest.allowFallback});
             ready.actualRoute = {workers: [worker.id], provider: modelRoute.providerId, accountProfile: modelRoute.accountProfileId ?? undefined, accountLabel: modelRoute.accountLabel ?? undefined, accountPlan: modelRoute.accountPlan ?? undefined, accountPlanAuthority: modelRoute.accountPlanAuthority ?? undefined, accountQualification: modelRoute.accountQualification ?? undefined, accountAvailability: modelRoute.accountAvailability ?? undefined, model: modelRoute.modelId, profile: routeRequest.profile, reason: modelRoute.fallback ? `Qualified fallback selected: ${modelRoute.fallbackReason}` : `Qualified ${modelRoute.requestedRole ? `role ${modelRoute.requestedRole}` : `model ${modelRoute.modelId}`} selected`};
+          } else if (this.adaptiveOrchestration && parcel.audit.orchestrationDecisionId) {
+            this.adaptiveOrchestration.evaluateDecision(parcel.audit.orchestrationDecisionId, {stageId: ready.id, workflowCandidates: [{id: 'work-parcel-coordinator', version: '1', eligible: true, reasons: []}]});
           }
           const run = this.runtime.createRun(ready.job, ready.parameters, {type: 'manual', actor: `work-parcel:${parcel.id}`, ...(modelRoute ? {modelRoute} : {})}); ready.runId = run.id; ready.status = 'RUNNING'; ready.startedAt = now(); parcel.status = 'RUNNING'; parcel.provenance.push({at: now(), type: 'stage.started', detail: `${ready.id}:${run.id}`}); appendAudit(parcel, {at: ready.startedAt, type: 'stage.dispatched', stageId: ready.id, summary: `${ready.name} dispatched`, detail: `Job ${ready.job}; Run ${run.id}; requested route ${routeRequestLabel(ready)}${modelRoute ? `; resolved ${modelRoute.providerId}/${modelRoute.modelId} on ${modelRoute.nodeId}; qualification ${modelRoute.qualificationVersion}` : ''}`});
         }
@@ -128,12 +138,46 @@ export class WorkParcelCoordinator {
     }
     return undefined;
   }
+  private ensureOrchestration(parcel: WorkParcel, plan?: WorkParcelPlan) {
+    if (!this.adaptiveOrchestration) return parcel;
+    const objective = plan?.objective ?? parcel.objective, taskClass = classifyTask(objective, plan?.stages ?? parcel.stages), requiredCapabilities = this.requiredModelCapabilities(plan?.stages ?? parcel.stages);
+    if (parcel.audit.orchestrationDecisionId) this.adaptiveOrchestration.updateRequest(parcel.audit.orchestrationDecisionId, {objective, taskClass, requiredCapabilities, workflowId: 'work-parcel-coordinator'});
+    else {
+      const decision = this.adaptiveOrchestration.startDecision({parcelId: parcel.id, objective, taskClass, requiredCapabilities, workflowId: 'work-parcel-coordinator'});
+      parcel.audit.orchestrationDecisionId = decision.id;
+      this.store.update(parcel);
+    }
+    return this.store.get(parcel.id)!;
+  }
+  private modelCandidates(routeRequest: NonNullable<WorkParcelPlanStage['requestedRoute']>, nodeId: string, requiredCapabilities: string[]): AdaptiveRouteCandidate[] {
+    if (!this.models) return [];
+    const rows = this.models.list().filter(row => routeRequest.model ? row.id === routeRequest.model : routeRequest.modelRole ? row.assignedRoles.includes(routeRequest.modelRole) : false);
+    return rows.map((row, index) => {
+      const fallbackRoute = {providerId: row.provider, modelId: row.id, accountProfileId: row.account?.id ?? null, nodeId: row.account?.nodeId ?? row.qualification.nodes[0] ?? row.nodes?.[0] ?? nodeId, modelVersion: row.qualification.version};
+      try {
+        const route = this.models!.route({model: row.id, modelRole: routeRequest.modelRole, accountProfile: routeRequest.accountProfile, nodeId, requiredCapabilities, allowFallback: false});
+        return {route: {...route, modelVersion: route.qualificationVersion}, eligible: true, reasons: [], capabilities: [...row.qualification.capabilities], latencyMs: row.qualification.latencyMs ?? null, availability: row.account && row.account.availability !== 'AVAILABLE' ? 'unavailable' : 'available', costAuthority: 'unavailable' as const, estimatedCost: null, declaredOrder: index};
+      } catch (error) {
+        const detail = error instanceof Error ? error.message : String(error);
+        return {route: fallbackRoute, eligible: false, reasons: [detail], capabilities: [...row.qualification.capabilities], latencyMs: row.qualification.latencyMs ?? null, availability: row.account && row.account.availability !== 'AVAILABLE' ? 'unavailable' : 'unknown', costAuthority: 'unavailable' as const, estimatedCost: null, declaredOrder: index};
+      }
+    });
+  }
+  private requiredModelCapabilities(stages: Array<WorkParcelPlanStage | WorkParcelStage>) {
+    const capabilities = new Set<string>();
+    for (const stage of stages) {
+      const route = stage.requestedRoute;
+      if (!route) continue;
+      if (route.modelRole) for (const capability of this.models?.routes().roles[route.modelRole]?.requires ?? []) capabilities.add(capability);
+    }
+    return [...capabilities];
+  }
   private startPlanning(id: string) { if (this.planning.has(id)) return; this.planning.add(id); void this.completePlanning(id).finally(() => this.planning.delete(id)); }
   private async completePlanning(id: string) {
     const pending = this.store.get(id); if (!pending || pending.status !== 'PLANNING') return;
     try {
       const plan = validateWorkParcelPlan(await this.planner.plan(pending.prompt), this.runtime), decided = createDecisionAudit(pending.prompt, plan, this.runtime, now());
-      pending.objective = plan.objective; pending.planner = plan.planner; pending.stages = plan.stages.map(stage => ({...stage, dependsOn: [...(stage.dependsOn ?? [])], parameters: structuredClone(stage.parameters ?? {}), status: 'QUEUED'})); pending.status = 'QUEUED'; pending.audit = {...decided, timeline: [...pending.audit.timeline, ...decided.timeline.filter(item => !['task.received','task.classified'].includes(item.type))]}; pending.provenance.push({at: now(), type: 'planned', detail: `Registered stages selected; planner=${plan.planner.kind}`}); this.store.update(pending);
+      pending.objective = plan.objective; pending.planner = plan.planner; pending.stages = plan.stages.map(stage => ({...stage, dependsOn: [...(stage.dependsOn ?? [])], parameters: structuredClone(stage.parameters ?? {}), status: 'QUEUED'})); pending.status = 'QUEUED'; pending.audit = {...decided, ...(pending.audit.orchestrationDecisionId ? {orchestrationDecisionId: pending.audit.orchestrationDecisionId} : {}), timeline: [...pending.audit.timeline, ...decided.timeline.filter(item => !['task.received','task.classified'].includes(item.type))]}; this.ensureOrchestration(pending, plan); pending.provenance.push({at: now(), type: 'planned', detail: `Registered stages selected; planner=${plan.planner.kind}`}); this.store.update(pending);
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error); pending.status = 'FAILED'; pending.endedAt = now(); pending.provenance.push({at: pending.endedAt, type: 'planning.failed', detail}); pending.audit.timeline.push(event(pending.endedAt, 'planning.failed', 'Planning failed closed', detail)); this.store.update(pending);
     }
@@ -149,7 +193,7 @@ export class WorkParcelCoordinator {
         const detail = actualRouteLabel(stage);
         if (detail !== previousRoute && !parcel.audit.timeline.some(event => event.type === 'route.resolved' && event.stageId === stage.id && event.detail === detail)) appendAudit(parcel, {at: now(), type: 'route.resolved', stageId: stage.id, summary: `${stage.name} actual route recorded`, detail});
       }
-      if (terminalRun.has(run.status)) { stage.endedAt = run.endedAt ?? now(); stage.baton = {schema: 'agent-control.work-parcel-baton/v1', artifactIds: [...run.artifacts], outputTypes: run.artifacts.map(id => this.runtime.artifacts.get(id)?.type ?? 'unknown')}; }
+      if (terminalRun.has(run.status)) { stage.endedAt = run.endedAt ?? now(); stage.baton = {schema: 'agent-control.work-parcel-baton/v1', artifactIds: [...run.artifacts], outputTypes: run.artifacts.map(id => this.runtime.artifacts.get(id)?.type ?? 'unknown')}; this.recordAdaptiveOutcome(parcel, stage, run); }
     }
     const failed = parcel.stages.filter(stage => stage.status === 'FAILED');
     if (failed.length) for (const stage of parcel.stages.filter(stage => stage.status === 'QUEUED' && stage.dependsOn.some(id => failed.some(item => item.id === id)))) { stage.status = 'BLOCKED'; stage.waitingReason = `Upstream gate failed: ${stage.dependsOn.filter(id => failed.some(item => item.id === id)).join(', ')}`; }
@@ -160,6 +204,18 @@ export class WorkParcelCoordinator {
     parcel.telemetry = this.telemetry(parcel); this.syncAudit(parcel); return parcel;
   }
   private invocations(runId: string) { return (this.efficiency?.list() ?? []).filter(item => item.runId === runId); }
+  private recordAdaptiveOutcome(parcel: WorkParcel, stage: WorkParcelStage, run: RunRecord) {
+    if (!this.adaptiveOrchestration || !parcel.audit.orchestrationDecisionId) return;
+    const records = this.invocations(run.id), outcome = adaptiveOutcome(run.status), failureClass = run.status === 'CANCELLED' ? 'cancel' as const : run.status === 'FAILED' || run.status === 'DEGRADED' ? run.steps.some(step => step.error && /provider|model/i.test(step.error)) ? 'provider' as const : 'workflow' as const : undefined;
+    if (!records.length) {
+      this.adaptiveOrchestration.recordOutcome({decisionId: parcel.audit.orchestrationDecisionId, parcelId: parcel.id, stageId: stage.id, workflow: {id: 'work-parcel-coordinator', version: '1'}, evidenceKind: 'PRODUCTION_WORK_PARCEL', outcome, verified: run.status === 'SUCCEEDED', qualityGatePass: run.status === 'SUCCEEDED' ? true : run.status === 'FAILED' ? false : null, failureClass});
+      return;
+    }
+    for (const record of records) {
+      const modelRoute = run.trigger.modelRoute;
+      this.adaptiveOrchestration.recordOutcome({decisionId: parcel.audit.orchestrationDecisionId, parcelId: parcel.id, stageId: stage.id, observationId: record.id, route: {providerId: modelRoute?.providerId ?? record.provider, modelId: modelRoute?.modelId ?? record.model, accountProfileId: modelRoute?.accountProfileId ?? record.accountProfileId ?? null, nodeId: modelRoute?.nodeId ?? stage.actualRoute?.workers[0] ?? null, modelVersion: modelRoute?.qualificationVersion ?? null}, capabilities: modelRoute ? this.models?.qualification(modelRoute.modelId).capabilities : [], workflow: {id: 'work-parcel-coordinator', version: '1'}, evidenceKind: 'PRODUCTION_WORK_PARCEL', outcome, verified: run.status === 'SUCCEEDED', qualityGatePass: run.status === 'SUCCEEDED' ? true : run.status === 'FAILED' ? false : null, firstPass: record.turnNumber === 1 ? run.status === 'SUCCEEDED' : null, retryCount: Math.max(0, record.turnNumber - 1), latencyMs: record.elapsedMs, usage: {inputTokens: record.usage.inputTokens, outputTokens: record.usage.outputTokens, totalTokens: record.usage.totalProcessedTokens, cachedInputTokens: record.usage.cachedInputTokens}, cost: record.providerReportedCost ?? record.calculatedCost, currency: record.currency, costAuthority: record.providerReportedCost !== null ? 'authoritative' : record.calculatedCost !== null ? 'estimated' : 'unavailable', failureClass});
+    }
+  }
   private telemetry(parcel: WorkParcel) { const records = parcel.stages.flatMap(stage => stage.runId ? this.invocations(stage.runId) : []); return aggregateTelemetry(records, parcel.createdAt, parcel.endedAt); }
   private captureLiveRoutes(parcel: WorkParcel) {
     let changed = false;
@@ -238,6 +294,21 @@ export function explainParcelDecision(parcel: WorkParcel): WorkParcelDecision {
 function routeFor(run: RunRecord, invocations: ModelInvocationObservation[]) { const last = invocations.at(-1); return {workers: [...run.selectedWorkers], provider: last?.provider, model: last?.model, profile: last?.harnessProfile, reason: run.steps.flatMap(step => step.placement?.reasons ?? []).join(', ') || 'Normal Agent Control placement; no model invocation reported'}; }
 function emptyTelemetry(): WorkParcelTelemetry { return {freshInputTokens: null, cachedInputTokens: null, outputTokens: null, reasoningTokens: null, totalTokens: null, cost: null, currency: null, elapsedMs: 0}; }
 function aggregateTelemetry(records: ModelInvocationObservation[], start: string, end?: string): WorkParcelTelemetry { const sum = (selector: (record: ModelInvocationObservation) => number | null) => records.length && records.every(record => selector(record) !== null) ? records.reduce((total, record) => total + (selector(record) ?? 0), 0) : null; const providerCost = sum(record => record.providerReportedCost), calculated = sum(record => record.calculatedCost); return {freshInputTokens: sum(record => record.usage.freshInputTokens), cachedInputTokens: sum(record => record.usage.cachedInputTokens), outputTokens: sum(record => record.usage.outputTokens), reasoningTokens: sum(record => record.usage.reasoningTokens), totalTokens: sum(record => record.usage.totalProcessedTokens), cost: providerCost ?? calculated, currency: records.length && records.every(record => record.currency === records[0].currency) ? records[0].currency : null, elapsedMs: Math.max(0, Date.parse(end ?? now()) - Date.parse(start))}; }
+
+function classifyTask(objective: string, stages: Array<WorkParcelPlanStage | WorkParcelStage>): AdaptiveTaskClass {
+  const value = `${objective} ${stages.map(stage => `${stage.name} ${stage.job}`).join(' ')}`.toLowerCase();
+  if (/repository[- ]review|code review|whole[- ]repository/.test(value)) return 'repository-review';
+  if (/debug|diagnos|troubleshoot|regression/.test(value)) return 'debugging';
+  if (/test[- ]generation|generate tests|coverage/.test(value)) return 'test-generation';
+  if (/repair|fix|patch|remediat/.test(value)) return 'repair';
+  if (/coding|code|implement|develop/.test(value)) return 'coding';
+  if (/critique|review/.test(value)) return 'critique';
+  if (/reason|architecture|design/.test(value)) return 'reasoning';
+  if (/tool|inspect|inventory|query/.test(value)) return 'tool-use';
+  if (/long[- ]context|large context|whole repo/.test(value)) return 'long-context';
+  return 'other';
+}
+function adaptiveOutcome(status: string): AdaptiveOutcome { return status === 'SUCCEEDED' ? 'SUCCEEDED' : status === 'CANCELLED' ? 'CANCELLED' : status === 'DEGRADED' ? 'FAILED' : 'FAILED'; }
 
 export function freeTokenEvaluationPlan(objective: string): WorkParcelPlan { return {objective, planner: {kind: 'deterministic', reason: 'Safety-constrained built-in qualification routine selected from explicit FreeToken objective'}, stages: [
   {id: 'inventory', name: 'A · Safety and asset inventory', job: 'freetoken-inventory@1.0.0', requestedRoute: {profile: 'THIN', reason: 'Deterministic host inspection; no model required'}},
