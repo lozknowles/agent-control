@@ -60,6 +60,23 @@ function pixelAdb(args, timeout = 30_000) {
   return execFileSync('ssh', ['-T', '-i', pixel.identity, '-p', String(pixel.port), '-o', 'BatchMode=yes', '-o', 'IdentitiesOnly=yes', '-o', 'StrictHostKeyChecking=yes', '-o', 'ConnectTimeout=10', `${pixel.user}@${pixel.host}`, 'adb', ...args], {encoding: 'utf8', timeout, maxBuffer: 4 * 1024 * 1024});
 }
 
+function pixelAdbBuffer(args, timeout = 30_000) {
+  if (!pixel) throw new Error('qualification_pixel_transport_unconfigured');
+  return execFileSync('ssh', ['-T', '-i', pixel.identity, '-p', String(pixel.port), '-o', 'BatchMode=yes', '-o', 'IdentitiesOnly=yes', '-o', 'StrictHostKeyChecking=yes', '-o', 'ConnectTimeout=10', `${pixel.user}@${pixel.host}`, 'adb', ...args], {timeout, maxBuffer: 8 * 1024 * 1024});
+}
+
+function whatsAppNotificationChevron(displayWidth) {
+  const image = path.join(stateDir, 'private-lock-screen-locator.png');
+  try {
+    fs.writeFileSync(image, pixelAdbBuffer(['exec-out', 'screencap', '-p']), {mode: 0o600});
+    const tsv = execFileSync('tesseract', [image, 'stdout', 'tsv'], {encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 15_000});
+    const row = tsv.split('\n').map(line => line.split('\t')).find(columns => /^whatsa/i.test(columns[11] ?? ''));
+    if (!row) throw new Error('qualification_pixel_whatsapp_notification_not_visible');
+    const top = Number(row[7]), height = Number(row[9]);
+    return {x: Math.round(displayWidth * 0.80), y: Math.max(1, Math.round(top - 2 * height))};
+  } finally { fs.rmSync(image, {force: true}); }
+}
+
 function ensurePixelAdb() {
   if (!pixel) throw new Error('qualification_pixel_transport_unconfigured');
   const raw = execFileSync('ssh', ['-T', '-i', pixel.identity, '-p', String(pixel.port), '-o', 'BatchMode=yes', '-o', 'IdentitiesOnly=yes', '-o', 'StrictHostKeyChecking=yes', '-o', 'ConnectTimeout=10', `${pixel.user}@${pixel.host}`, 'node', '$HOME/.cache/agent-control-3.9-qualification/adb-local.mjs', 'ensure-connected', '--json'], {encoding: 'utf8', timeout: 30_000, maxBuffer: 1024 * 1024});
@@ -90,12 +107,10 @@ async function sendPhysicalSocialRequest() {
   const displaySize = pixelAdb(['shell', 'wm', 'size']).match(/(\d+)x(\d+)/);
   if (!displaySize) throw new Error('qualification_pixel_display_size_unavailable');
   if (!reply) {
-    for (const fraction of [0.25, 0.29, 0.33, 0.36, 0.40, 0.44]) {
-      pixelAdb(['shell', 'input', 'tap', String(Math.round(Number(displaySize[1]) * 0.80)), String(Math.round(Number(displaySize[2]) * fraction))]);
-      await delay(350);
-      reply = boundsForLabel(pixelAdb(['exec-out', 'uiautomator', 'dump', '/dev/tty']), /^(?:reply|respond)$/i);
-      if (reply) break;
-    }
+    const chevron = whatsAppNotificationChevron(Number(displaySize[1]));
+    pixelAdb(['shell', 'input', 'tap', String(chevron.x), String(chevron.y)]);
+    await delay(750);
+    reply = boundsForLabel(pixelAdb(['exec-out', 'uiautomator', 'dump', '/dev/tty']), /^(?:reply|respond)$/i);
   }
   while (!reply && Date.now() < deadline) {
     const xml = pixelAdb(['exec-out', 'uiautomator', 'dump', '/dev/tty']);
