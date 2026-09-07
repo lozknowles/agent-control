@@ -90,16 +90,20 @@ async function sendPhysicalSocialRequest() {
   const displaySize = pixelAdb(['shell', 'wm', 'size']).match(/(\d+)x(\d+)/);
   if (!displaySize) throw new Error('qualification_pixel_display_size_unavailable');
   if (!reply) {
-    pixelAdb(['shell', 'input', 'tap', String(Math.round(Number(displaySize[1]) * 0.80)), String(Math.round(Number(displaySize[2]) * 0.29))]);
-    await delay(750);
+    for (const fraction of [0.25, 0.29, 0.33, 0.36, 0.40, 0.44]) {
+      pixelAdb(['shell', 'input', 'tap', String(Math.round(Number(displaySize[1]) * 0.80)), String(Math.round(Number(displaySize[2]) * fraction))]);
+      await delay(350);
+      reply = boundsForLabel(pixelAdb(['exec-out', 'uiautomator', 'dump', '/dev/tty']), /^(?:reply|respond)$/i);
+      if (reply) break;
+    }
   }
   while (!reply && Date.now() < deadline) {
     const xml = pixelAdb(['exec-out', 'uiautomator', 'dump', '/dev/tty']);
     reply = boundsForLabel(xml, /^(?:reply|respond)$/i);
     if (!reply) await delay(750);
   }
-  if (reply) pixelAdb(['shell', 'input', 'tap', String(reply.x), String(reply.y)]);
-  else pixelAdb(['shell', 'input', 'tap', String(Math.round(Number(displaySize[1]) * 0.13)), String(Math.round(Number(displaySize[2]) * 0.58))]);
+  if (!reply) throw new Error('qualification_pixel_notification_reply_unavailable');
+  pixelAdb(['shell', 'input', 'tap', String(reply.x), String(reply.y)]);
   await delay(500);
   pixelAdb(['shell', 'input', 'text', 'start%sgoverned-adaptive-crew']);
   await delay(300);
