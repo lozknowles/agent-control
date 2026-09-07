@@ -72,7 +72,7 @@ function whatsAppNotificationChevron(displayWidth) {
     fs.writeFileSync(image, pixelAdbBuffer(['exec-out', 'screencap', '-p']), {mode: 0o600});
     const tsv = execFileSync('tesseract', [image, 'stdout', 'tsv'], {encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 15_000});
     const row = tsv.split('\n').map(line => line.split('\t')).find(columns => /^whatsa/i.test(columns[11] ?? ''));
-    if (!row) throw new Error('qualification_pixel_whatsapp_notification_not_visible');
+    if (!row) return null;
     const top = Number(row[7]), height = Number(row[9]);
     return {x: Math.round(displayWidth * 0.80), y: Math.max(1, Math.round(top - 2 * height))};
   } finally { fs.rmSync(image, {force: true}); }
@@ -137,24 +137,24 @@ async function sendPhysicalSocialRequest() {
   pixelAdb(['shell', 'input', 'keyevent', 'KEYCODE_WAKEUP']);
   pixelAdb(['shell', 'cmd', 'statusbar', 'expand-notifications']);
   let reply = null;
-  const deadline = Date.now() + 8_000;
-  await delay(1_000);
-  const initial = pixelAdb(['exec-out', 'uiautomator', 'dump', '/dev/tty']);
-  reply = boundsForLabel(initial, /^(?:reply|respond)$/i);
+  const deadline = Date.now() + 20_000;
   const displaySize = pixelAdb(['shell', 'wm', 'size']).match(/(\d+)x(\d+)/);
   if (!displaySize) throw new Error('qualification_pixel_display_size_unavailable');
-  if (!reply) {
-    const chevron = whatsAppNotificationChevron(Number(displaySize[1]));
-    pixelAdb(['shell', 'input', 'tap', String(chevron.x), String(chevron.y)]);
-    await delay(750);
-    reply = boundsForLabel(pixelAdb(['exec-out', 'uiautomator', 'dump', '/dev/tty']), /^(?:reply|respond)$/i);
-  }
   while (!reply && Date.now() < deadline) {
+    pixelAdb(['shell', 'cmd', 'statusbar', 'expand-notifications']);
     const xml = pixelAdb(['exec-out', 'uiautomator', 'dump', '/dev/tty']);
     reply = boundsForLabel(xml, /^(?:reply|respond)$/i);
-    if (!reply) await delay(750);
+    if (!reply) {
+      const chevron = whatsAppNotificationChevron(Number(displaySize[1]));
+      if (chevron) {
+        pixelAdb(['shell', 'input', 'tap', String(chevron.x), String(chevron.y)]);
+        await delay(750);
+        reply = boundsForLabel(pixelAdb(['exec-out', 'uiautomator', 'dump', '/dev/tty']), /^(?:reply|respond)$/i);
+      }
+    }
+    if (!reply) await delay(1_000);
   }
-  if (!reply) return {node: 'configured Android operator device', transport: 'strict-host-key SSH to existing qualified local ADB', adb, action: 'no additional UI submission; awaiting an already-submitted exact enrolled-device command', request: 'start governed-adaptive-crew'};
+  if (!reply) throw new Error('qualification_pixel_whatsapp_notification_reply_unavailable');
   pixelAdb(['shell', 'input', 'tap', String(reply.x), String(reply.y)]);
   await delay(500);
   pixelAdb(['shell', 'input', 'text', 'start%sgoverned-adaptive-crew']);
