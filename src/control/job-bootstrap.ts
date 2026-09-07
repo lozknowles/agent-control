@@ -25,6 +25,7 @@ import type {CodexNodeExecutionPort} from './codex-node-execution.js';
 import {GovernedRetrievalRuntime, RepositoryTextRetrievalProvider, RetrievedEvidenceContextCompiler, SpawnZgSearchExecutor, ZgRetrievalProvider, type RetrievalStrategy} from './governed-retrieval.js';
 import {ResourceRepositoryResolver} from './resource-repository-resolver.js';
 import {RuntimeSafetySupervisor} from './runtime-safety-supervisor.js';
+import {AdaptiveOrchestrationRuntime, FileAdaptiveOrchestrationStore} from './adaptive-orchestration.js';
 
 /** Shared production definition path so qualification cannot drift from registered typed Actions. */
 export function buildJobRuntimeDefinition(config: AgentControlConfig, manifestDir = process.env.AGENT_CONTROL_JOB_DIR || path.resolve('config/jobs'), harnessEfficiency?: HarnessEfficiencyLedgerPort) {
@@ -37,14 +38,15 @@ export function buildJobRuntimeDefinition(config: AgentControlConfig, manifestDi
 
 export function buildJobRuntime(config: AgentControlConfig, stateRoot = process.env.AGENT_CONTROL_STATE_DIR || path.resolve('.agent-control'), manifestDir = process.env.AGENT_CONTROL_JOB_DIR || path.resolve('config/jobs'), reasoningPlanner?: WorkParcelPlanner, modelRegistry?: ModelRegistry) {
   const harnessEfficiency = new FileHarnessEfficiencyLedger(path.join(stateRoot, 'harness-efficiency', 'model-invocations.json'));
+  const adaptiveOrchestration = new AdaptiveOrchestrationRuntime(new FileAdaptiveOrchestrationStore(path.join(stateRoot, 'adaptive-orchestration', 'state.json')), config.adaptiveOrchestration);
   const {workers, managedNodes, actions, catalog} = buildJobRuntimeDefinition(config, manifestDir, harnessEfficiency);
   const harnessProfiles = configuredHarnessProfiles(config.harnessEfficiency), harnessProfileRouter = configuredHarnessProfileRouter(config.harnessEfficiency), contextPacketBuilder = new ContextPacketBuilder(harnessProfiles);
   for (const resource of config.resources) if (resource.transport.type === 'local') workers.setHealth(resource.id, 'healthy');
   const repositoryRoots = config.jobs?.repositoryRoots ?? [path.resolve('.')];
   const safety = new RuntimeSafetySupervisor({id: 'agent-control.runtime-safety/v1', approvedRepositoryRoots: repositoryRoots.map(root => path.resolve(root)), approvedRemoteNodes: config.resources.map(resource => resource.id)}, path.join(stateRoot, 'runtime-safety', 'decisions.json'));
   const runtime = createJobRuntime(stateRoot, catalog, actions, workers, {efficiency: harnessEfficiency, safety});
-  const workParcels = new WorkParcelCoordinator(runtime, new WorkParcelStore(path.join(stateRoot, 'work-parcels', 'parcels.json')), new CatalogNaturalLanguagePlanner(runtime, reasoningPlanner), harnessEfficiency, modelRegistry);
-  return Object.assign(runtime, {managedNodes, harnessEfficiency, harnessProfiles, harnessProfileRouter, contextPacketBuilder, workParcels});
+  const workParcels = new WorkParcelCoordinator(runtime, new WorkParcelStore(path.join(stateRoot, 'work-parcels', 'parcels.json')), new CatalogNaturalLanguagePlanner(runtime, reasoningPlanner), harnessEfficiency, modelRegistry, adaptiveOrchestration);
+  return Object.assign(runtime, {managedNodes, harnessEfficiency, harnessProfiles, harnessProfileRouter, contextPacketBuilder, workParcels, adaptiveOrchestration});
 }
 
 export function startManagedNodeMonitoring(runtime: ReturnType<typeof buildJobRuntime>, onChange?: (snapshot: ManagedNodeSnapshot) => void, onError?: (error: Error) => void) { return runtime.managedNodes.start(onChange, onError); }
@@ -88,7 +90,7 @@ export function buildParameterizedJobRuntime(config: AgentControlConfig, modelRe
   const definitions = new ParameterizedJobRegistry(); definitions.register(repositoryCodeReviewDefinition);
   const roots = config.jobs?.repositoryRoots ?? (process.env.AGENT_CONTROL_REPOSITORY_ROOTS?.split(path.delimiter).filter(Boolean) || [path.resolve('.')]);
   const lifecycle = tokenRouting && contracts && handoffs ? {routing: tokenRouting, contracts, handoffs} : undefined;
-  const executor = new DirectRepositoryReviewExecutor(modelRegistry, workParcels.store, tokenRouting, lifecycle, undefined, codexNodeExecution, retrieval,new RetrievedEvidenceContextCompiler(contextPacketBuilder,new InMemoryContextGraph()),qualityGate);
+  const executor = new DirectRepositoryReviewExecutor(modelRegistry, workParcels.store, tokenRouting, lifecycle, undefined, codexNodeExecution, retrieval,new RetrievedEvidenceContextCompiler(contextPacketBuilder,new InMemoryContextGraph()),qualityGate,undefined,workParcels.adaptiveOrchestration);
   return createParameterizedJobEngine(stateRoot, definitions, modelRegistry, executor, {allowedRepositoryRoots: roots, allowedRepositoryRemotes: config.jobs?.repositoryRemotes, nodeHealthy: nodeId => { const resource = config.resources.find(item => item.id === nodeId); if (!resource) return false; if (resource.transport.type === 'local') return true; const node = workParcels.runtime.workers.list().find(item => item.id === nodeId); return node?.health === 'healthy'; }}, new ResourceRepositoryResolver(config.resources), {parcels: workParcels.store, tokenRouting});
 }
 

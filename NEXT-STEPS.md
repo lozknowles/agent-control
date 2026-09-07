@@ -2,6 +2,10 @@
 
 These items are intentionally deferred after the Agent Control 3.9.0 candidate. They are not current release claims:
 
+- Run a separate physical qualification through the normal dashboard/runtime using a genuine Work Parcel and qualified provider/model routes; reconcile the persisted Decision Tree, Model/Workflow League evidence, provider telemetry and independent verification before any release decision.
+- Add additional controlled production observations before allowing adaptive evidence to prefer routes broadly; retain benchmark, qualification and production evidence as separate classes.
+- Extend registered workflow candidates only when each strategy has an explicit quality gate, recovery path and independently verified outcome evidence.
+
 - Complete the physical Pixel local wireless-ADB gate with the Android System pairing dialog open and a locally hidden PIN: pairing discovery, `adb pair`, normal connect discovery, reconnect, `adb devices`/`get-state` verification, governed ADB execution, controller/device restart and resume. Do not publish `android.adb.local` or `transport.adb` before that evidence passes.
 - Physically exercise Windows owned-process-tree cancellation and verify CIM creation identity, descendant cleanup and truthful uncertainty behavior on the configured Windows execution node.
 - Physically force the provider `AUTHENTICATION_BLOCKED`, transient retry and same-execution reconnect paths without exposing credentials; reconcile their dashboard/SSE projection against the durable ledger.

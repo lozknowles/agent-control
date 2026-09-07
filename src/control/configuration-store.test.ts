@@ -42,3 +42,12 @@ test('configuration store updates the optional Spark lane without weakening limi
   assert.equal(updated.spark?.model, 'gpt-5.3-codex-spark'); assert.equal(updated.restartRequired, true);
   assert.throws(() => store.updateSpark({revision: updated.revision, spark: {enabled: true, maximumAttempts: 3}}), /spark_maximum_attempts/);
 });
+
+test('configuration store persists the adaptive orchestration policy with nullable ceilings', t => {
+  const {root, store} = setup(); t.after(() => fs.rmSync(root, {recursive: true, force: true}));
+  const updated = store.updateAdaptiveOrchestration({revision: store.read().revision, adaptiveOrchestration: {enabled: true, minimumSamplesForPreference: 3, minimumQualityScore: .7, maxEvidenceAgeDays: 90, policyQualityFloor: .6, maxRouteCost: null, maxRouteLatencyMs: null, qualityWeight: .5, reliabilityWeight: .2, costWeight: .15, latencyWeight: .1, confidenceWeight: .05, explorationRate: .1}});
+  assert.equal(updated.restartRequired, true);
+  assert.equal(updated.adaptiveOrchestration?.enabled, true);
+  assert.equal(updated.adaptiveOrchestration?.maxRouteCost, null);
+  assert.deepEqual(new ConfigurationStore(store.file).read().adaptiveOrchestration, updated.adaptiveOrchestration);
+});

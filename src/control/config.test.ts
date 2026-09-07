@@ -187,3 +187,12 @@ test('Spark fast-execution configuration is conservative and fail-closed', () =>
 });
 
 test('governed retrieval is opt-in, bounded, local-first and keeps zg optional',()=>{const base={schemaVersion:1 as const,resources:[],providers:[],models:[],modelRouting:{roles:{}},services:[],lanes:[]};const config=validateConfig({...base,retrieval:{enabled:true,providers:['exact','lexical','zg'],maximumCalls:4,maximumEvidenceItems:12,maximumEvidenceTokens:4096,minimumConfidence:.5,requiredCoverage:.6,contextPressurePercent:75,contextPressureEvidenceFraction:.5,allowRemote:false,zgExecutable:'zg'}});assert.equal(config.retrieval?.enabled,true);assert.equal(config.retrieval?.allowRemote,false);assert.throws(()=>validateConfig({...base,retrieval:{maximumCalls:0}}),/maximum_calls/);assert.throws(()=>validateConfig({...base,retrieval:{zgExecutable:'/tmp/zg'}}),/zg_executable/);});
+
+test('adaptive orchestration policy accepts nullable ceilings and rejects unsafe values', () => {
+  const base = {schemaVersion: 1 as const, resources: [], providers: [], models: [], modelRouting: {roles: {}}, services: [], lanes: []};
+  const config = validateConfig({...base, adaptiveOrchestration: {enabled: true, minimumSamplesForPreference: 3, minimumQualityScore: .7, maxEvidenceAgeDays: 90, policyQualityFloor: .6, maxRouteCost: null, maxRouteLatencyMs: null, qualityWeight: .5, reliabilityWeight: .2, costWeight: .15, latencyWeight: .1, confidenceWeight: .05, explorationRate: .1}});
+  assert.equal(config.adaptiveOrchestration?.maxRouteCost, null);
+  assert.equal(config.adaptiveOrchestration?.maxRouteLatencyMs, null);
+  assert.throws(() => validateConfig({...base, adaptiveOrchestration: {maxRouteCost: -1}}), /adaptive_orchestration_cost/);
+  assert.throws(() => validateConfig({...base, adaptiveOrchestration: {maxRouteLatencyMs: 86_400_001}}), /adaptive_orchestration_latency/);
+});

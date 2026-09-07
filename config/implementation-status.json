@@ -1,7 +1,7 @@
 {
   "schema": "agent-control.implementation-status/v1",
   "release": "3.9.0",
-  "updated": "2026-09-06",
+  "updated": "2026-09-07",
   "capabilities": [
     {
       "id": "social-voice.providers",
@@ -603,6 +603,15 @@
         "docs/evidence/agent-control-post-3.8.2-context-efficiency.md"
       ],
       "limitation": "The post-3.8.2 matched Codex sequences proved truthful cache/context accounting and removal of observed native command execution, but prompt-cache hits varied from 35% to 0% under identical prompts and no reliable token or latency saving was established. Codex exec supplies no authoritative current-context or turn-cost field. Persistent native sessions/compaction remain disabled until lifecycle isolation and a practical benefit are qualified."
+    },
+    {
+      "id": "routing.adaptive-multi-model",
+      "title": "Evidence-driven adaptive multi-model orchestration",
+      "status": "IMPLEMENTED",
+      "summary": "Persistent task-specific Model Capability and Workflow Leagues retain verified quality, reliability, confidence, recency/version, latency, token/cache and cost evidence by evidence class. Normal Work Parcels and repository reviews persist parent-linked operational routing decisions and project the same decision tree and human-readable report through the dashboard/API without storing private model reasoning.",
+      "sources": ["src/control/adaptive-orchestration.ts", "src/control/work-parcels.ts", "src/control/direct-repository-review-executor.ts", "src/control/job-bootstrap.ts", "src/control/application-service.ts", "src/control/web-server.ts", "assets/dashboard/dashboard-adaptive-orchestration.js", "assets/dashboard/dashboard-adaptive-orchestration.css"],
+      "tests": ["src/control/adaptive-orchestration.test.ts", "src/control/web-server.test.ts", "src/control/config.test.ts", "src/control/configuration-store.test.ts"],
+      "limitation": "Physical provider/workflow qualification through the live dashboard and runtime remains a separate gate; this workstream does not claim that adaptive production routing has been physically qualified."
     },
     {
       "id": "models.fast-execution-spark",
