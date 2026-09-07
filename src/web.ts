@@ -63,7 +63,7 @@ catch (error) {
   if (!(error instanceof Error) || error.message !== 'session_missing') throw error;
   identity.createSession({id: defaultSessionId, creatorActorId: 'web-operator', mode: 'operator-controlled', permissions: {capabilities: ['session.observe', 'session.manage', 'parcel.create', 'parcel.execute', 'parcel.approve', 'agent.delegate', 'model.invoke', 'node.execute'], allowedModels: config.models.map(model => model.id), allowedNodes: config.resources.map(resource => resource.id), filesystem: 'none', network: 'provider-only', production: false}, contextPolicy: 'compiled', visibility: 'operator', metadata: {surface: 'dashboard'}});
 }
-const jobRuntime = buildJobRuntime(config, stateRoot, undefined, undefined, modelRegistry);
+const jobRuntime = buildJobRuntime(config, stateRoot, undefined, undefined, modelRegistry, codexNodeExecution);
 const governedRetrieval = buildGovernedRetrievalRuntime(config,stateRoot);
 const parameterizedJobs = buildParameterizedJobRuntime(config, modelRegistry, jobRuntime.workParcels, stateRoot, tokenBatonRouting, contracts, handoffs, codexNodeExecution, governedRetrieval);
 const commandOutputRoot = path.resolve(stateRoot, 'command-output');

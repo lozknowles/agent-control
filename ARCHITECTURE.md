@@ -699,6 +699,16 @@ Success criteria carry stable identity, type, source provenance, scope, required
 
 `RuntimeSafetySupervisor` is injected into the existing `JobRuntime` boundary. It independently evaluates requested scope and action metadata, persists the decision and approval trail, and returns `ALLOW`, `ALLOW_WITH_AUDIT`, `REQUIRE_APPROVAL`, `DENY`, `PAUSE` or `ESCALATE`. Provider-native safety can add evidence but cannot replace this decision or grant authority.
 
+For consequential repository operations, an Action registration may also provide a typed semantic-effect resolver. `JobRuntime` invokes it before safety assessment, compiles immutable Work Parcel constraints into resource capabilities, and supplies the governed plan to the Action only after the supervisor allows it:
+
+`proposal → action normalization → semantic effect resolution → resource/capability intersection → runtime safety decision → dispatch → external-state reconciliation`
+
+The first adapter is `repository.git-governed@1.0.0`. It resolves remote Git writes to logical resources such as `git-ref:origin/master`, including explicit refspec, force, delete, mirror, wrapper, chain, remote-alias and `git -C` forms. A read-only resource policy denies every intersecting `CREATE`, `UPDATE`, `FORCE_UPDATE`, `DELETE` or `REWRITE` effect before subprocess creation. Accepted operations are argv-only and shell-free. Ambiguous destinations and unresolved execution semantics fail closed; this is an adapter boundary, not a core command blacklist.
+
+`repository.git-propose@1.0.0` is the model-facing Action. It performs bounded read-only inspection and obtains a strict structured proposal through the existing provider registry and adaptive harness. The exact provider/account/model/node route is sealed in the proposal artifact and checked again before governed execution. `repository.git-protected-ref.verify@1.0.0` owns independent remote-ref verification. This preserves the boundary: model intelligence proposes work; Agent Control grants or denies effects.
+
+Consequential effects carry operation-level truth independently of Run completion: `PROPOSED → AUTHORISED → EXECUTING → EXTERNALLY_COMMITTED`, with `CANCELLED_BEFORE_COMMIT`, `COMMIT_STATE_UNCERTAIN` and `FAILED` alternatives. Remote-ref observation reconciles interrupted Git operations where possible; uncertainty remains explicit. The Run and safety ledgers preserve the proposal effect, resource, policy, actor/stage/route identity, governor decision, reason, state and timestamps without retaining hidden reasoning. See [protected-resource mutation governance](docs/protected-resource-governance.md).
+
 The web dashboard is a redacted projection of these same stores. Existing SSE events refresh Work Parcel context, questions, criteria, steering, capability candidates/observations, frozen batches, historical metrics, regression warnings, leader slots and safety decisions. Event-stream startup is independent of optional panel availability, and a missing optional subsystem is shown locally rather than disabling live control-plane updates.
 
 ## Evidence-driven adaptive orchestration
