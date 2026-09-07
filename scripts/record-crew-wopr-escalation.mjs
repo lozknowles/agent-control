@@ -226,6 +226,7 @@ try {
   screenshots.push(await screenshot(page, '04-wopr-tool-indicator-evidence.png'));
   journey.push({at: new Date().toISOString(), view: 'crew', outcome: 'two concurrent governed lanes and event-backed tool indicator inspected'});
 
+  await page.click('[data-view="jobs"]');
   await page.waitForSelector('[data-live-shell-open]', {timeout: 10_000});
   await page.locator('[data-live-shell-open]').first().click();
   await page.waitForFunction(() => /AGENT_CONTROL_LIVE_SHELL_READY/.test(document.querySelector('#live-shell-output')?.textContent || ''), undefined, {timeout: 10_000});
