@@ -10,7 +10,8 @@ import type {ModelConfig, ProviderAccountProfileConfig, ProviderConfig} from './
 import {materializeCodexModelConfig} from './codex-model-config.js';
 import {resolveCodexAccountEnvironment} from './provider-account-profile.js';
 import type {ContextLifecycleKind, TelemetryAuthority, TokenTelemetrySample} from './token-aware-baton-routing.js';
-import {OwnedProcessManager} from './owned-process.js';
+import {OwnedProcessManager, type OwnedExecution, type OwnedProcessRequest} from './owned-process.js';
+import {redactSensitiveText} from './security-redaction.js';
 
 export const CODEX_0153_CONTEXT_CAPABILITIES = Object.freeze({
   persistedResponseUsage: true,
@@ -34,6 +35,10 @@ export interface CodexExecRequest {
   onTelemetry?: (event: CodexExecTelemetryEvent) => void;
   outputSchema?: Record<string, unknown>;
   signal?: AbortSignal;
+  /** Existing Agent Control process authority used to expose the genuine CLI process. */
+  ownedExecution?: OwnedExecution;
+  /** Truthful attachment capabilities for this specific invocation. */
+  executionSession?: OwnedProcessRequest['session'];
 }
 
 export interface CodexExecTelemetryEvent {
@@ -179,7 +184,7 @@ export async function runCodexExec(request: CodexExecRequest): Promise<CodexExec
       liveEvents.push(event); const threadId = typeof event.thread_id === 'string' ? event.thread_id : undefined; if (threadId) liveThreadId = threadId;
       const normalized = normalizeCodex0153TelemetryEvent(event, Date.now() - startedAt, liveThreadId);
       if (normalized) request.onTelemetry?.(normalized);
-    }, request.signal);
+    }, request.signal, request.ownedExecution, request.executionSession);
     if (result.code !== 0) throw new Error(`codex_exec_failed:${result.code}`);
     const events = liveEvents.length ? liveEvents : result.stdout.split(/\r?\n/).filter(Boolean).map(line => {
       try { return JSON.parse(line) as Record<string, unknown>; } catch { throw new Error('codex_exec_invalid_jsonl'); }
@@ -246,6 +251,35 @@ export function normalizeCodex0153TelemetryEvent(event: Record<string, unknown>,
   return null;
 }
 
+/**
+ * Safe, human-readable projection of lines emitted by the genuine Codex CLI.
+ * Reasoning-class payloads remain private while lifecycle, public agent output,
+ * and numeric usage stay observable in the attached execution session.
+ */
+export function codexExecutionSessionOutputLine(stream: 'stdout' | 'stderr', line: string): string | undefined {
+  if (!line.trim()) return undefined;
+  if (stream === 'stderr') return `Codex diagnostic: ${redactSensitiveText(line).slice(0, 4_096)}`;
+  let event: Record<string, unknown>;
+  try { event = JSON.parse(line) as Record<string, unknown>; }
+  catch { return 'Codex emitted a non-JSON lifecycle line; content withheld.'; }
+  const type = stringValue(event.type) ?? 'unknown';
+  if (type === 'thread.started') return `Codex thread started${stringValue(event.thread_id) ? ` · ${stringValue(event.thread_id)}` : ''}`;
+  if (type === 'turn.started') return 'Codex turn started';
+  if (type === 'turn.completed') return `Codex turn completed · usage ${JSON.stringify(sanitizeUsage(recordValue(event.usage) ?? {}))}`;
+  if (type === 'turn.failed' || type === 'error') return `Codex ${type}; provider detail retained only in governed failure evidence.`;
+  const item = recordValue(event.item), itemType = stringValue(item?.type) ?? 'unknown-item';
+  if (type === 'item.started') return itemType === 'reasoning' ? 'Codex reasoning started · private content withheld' : `Codex ${itemType} started`;
+  if (type === 'item.completed') {
+    if (itemType === 'reasoning') return 'Codex reasoning completed · private content withheld';
+    if (itemType === 'agent_message') {
+      const text = stringValue(item?.text);
+      return text ? `Codex agent output:\n${redactSensitiveText(text)}` : 'Codex agent output completed';
+    }
+    return `Codex ${itemType} completed`;
+  }
+  return `Codex lifecycle event · ${type}`;
+}
+
 function normalizeUsageBreakdown(value: Record<string, unknown>) {
   return {input_tokens: usageNumber(value, 'inputTokens', 'input_tokens'), output_tokens: usageNumber(value, 'outputTokens', 'output_tokens'), total_tokens: usageNumber(value, 'totalTokens', 'total_tokens'), cached_input_tokens: usageNumber(value, 'cachedInputTokens', 'cached_input_tokens'), cache_write_tokens: usageNumber(value, 'cacheWriteTokens', 'cache_write_tokens'), reasoning_output_tokens: usageNumber(value, 'reasoningOutputTokens', 'reasoning_output_tokens')};
 }
@@ -273,11 +307,11 @@ function sanitizeUsage(value: Record<string, unknown>): Record<string, unknown> 
 
 function codexToolRequestSchema(grantedToolIds: string[]) { return {type: 'object', properties: {tool: {type: 'string', enum: grantedToolIds}, input_json: {type: 'string'}}, required: ['tool', 'input_json'], additionalProperties: false}; }
 
-async function captureProcess(command: string, args: string[], cwd: string, timeoutMs: number, environment: NodeJS.ProcessEnv = process.env, stripApiKeys = true, onStdoutLine?: (line: string) => void, externalSignal?: AbortSignal): Promise<{code: number; stdout: string; stderr: string}> {
+async function captureProcess(command: string, args: string[], cwd: string, timeoutMs: number, environment: NodeJS.ProcessEnv = process.env, stripApiKeys = true, onStdoutLine?: (line: string) => void, externalSignal?: AbortSignal, ownedExecution?: OwnedExecution, executionSession?: OwnedProcessRequest['session']): Promise<{code: number; stdout: string; stderr: string}> {
   const env = {...environment}; if (stripApiKeys) { delete env.OPENAI_API_KEY; delete env.CODEX_API_KEY; }
-  const timeout = new AbortController(), timer = setTimeout(() => timeout.abort(new Error('codex_exec_timeout')), Math.max(1, timeoutMs)), signal = externalSignal ? AbortSignal.any([externalSignal, timeout.signal]) : timeout.signal, owned = new OwnedProcessManager();
+  const timeout = new AbortController(), timer = setTimeout(() => timeout.abort(new Error('codex_exec_timeout')), Math.max(1, timeoutMs)), signal = externalSignal ? AbortSignal.any([externalSignal, timeout.signal]) : timeout.signal, owned = ownedExecution ?? new OwnedProcessManager();
   try {
-    const result = await owned.runProcess({command, args, cwd, env, maxOutputBytes: 2_000_000, onStdoutLine}, signal);
+    const result = await owned.runProcess({command, args, cwd, env, maxOutputBytes: 2_000_000, onStdoutLine, ...(executionSession ? {session: executionSession} : {})}, signal);
     return {code: result.exitCode ?? -1, stdout: result.stdout, stderr: result.stderr};
   } catch (error) {
     const cleanup = await owned.terminateAll(timeout.signal.aborted ? 'codex_exec_timeout' : 'codex_exec_cancelled');

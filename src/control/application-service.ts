@@ -34,6 +34,7 @@ import {projectDashboardCharacterCrew, type DashboardCharacterCrewProjection} fr
 import {providerCatalogEventNarrative, type CatalogEvidenceAdjudicationInput, type ProviderCatalogRuntime} from './provider-catalog.js';
 import {redactSensitiveValue} from './security-redaction.js';
 import type {AdaptiveLeagueFilter, AdaptiveOrchestrationRuntime} from './adaptive-orchestration.js';
+import type {ExecutionSessionMode, ExecutionSessionRuntime, ExecutionSessionSignal} from './execution-session.js';
 
 export type ControlEventType =
   | 'social.activity'
@@ -81,6 +82,8 @@ export type ControlEventType =
   | 'retrieval.invalidated'
   | 'retrieval.fallback'
   | 'retrieval.failed'
+  | 'execution.session_changed'
+  | 'execution.session_output'
   | 'failure';
 
 export interface ControlEvent {id: number; at: string; type: ControlEventType; laneId?: number; actor?: string; payload: Record<string, unknown>;}
@@ -130,6 +133,7 @@ export interface SystemProjection {
   retrieval: RetrievalProjection;
   harnessEfficiency: HarnessEfficiencyMetrics;
   characterCrew: DashboardCharacterCrewProjection;
+  executionSessions: Array<{id: string; incarnation: string; state: string; adapterId: string; scope: {runId: string; jobId: string; jobVersion: string; stepId: string; workerId: string; nodeId: string; parcelId?: string; laneId?: string; crewRole?: string; providerId?: string; accountLabel?: string; modelId?: string}; command: string; cwd: string; pid?: number; capabilities: import('./execution-session.js').ExecutionSessionCapabilities; control: {owner: 'agent' | 'human'; actorId: string; generation: number; reconciliationRequired: boolean}; activeAttachments: Array<{id: string; actorId: string; mode: ExecutionSessionMode; attachedAt: string}>; createdAt: string; startedAt: string; updatedAt: string; endedAt?: string; exitCode?: number | null; exitSignal?: string | null; outputBytes: number; outputTruncated: boolean; lastOutputAt?: string; lastError?: string}>;
 }
 
 export class ControlEventBus {
@@ -176,6 +180,7 @@ export class AgentControlService {
   private qualificationSuite?: FrozenQualificationSuite;
   private providerCatalog?: ProviderCatalogRuntime;
   private adaptiveOrchestration?: AdaptiveOrchestrationRuntime;
+  private executionSessions?: ExecutionSessionRuntime;
 
   constructor(
     readonly state: WorkspaceState,
@@ -188,7 +193,7 @@ export class AgentControlService {
     this.verification = new VerificationService(state, persist);
   }
 
-  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; services?: RegisteredService[]; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService; tokenBatonRouting?: TokenAwareBatonRuntime; governedRetrieval?: GovernedRetrievalRuntime; codexNodeExecution?: CodexNodeExecutionPort; harnessEfficiency?: HarnessEfficiencyLedgerPort; workParcels?: WorkParcelCoordinator; modelRegistry?: ModelRegistry; parameterizedJobs?: ParameterizedJobEngine; identity?: IdentityControlPlane; defaultSessionId?: string; fastExecution?: FastExecutionLedgerPort; runtimeObservability?: RuntimeObservability; capabilityIntelligence?: CapabilityIntelligenceStore; modelIntelligence?: ModelIntelligenceLedger; qualificationSuite?: FrozenQualificationSuite; providerCatalog?: ProviderCatalogRuntime; adaptiveOrchestration?: AdaptiveOrchestrationRuntime}) {
+  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; services?: RegisteredService[]; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService; tokenBatonRouting?: TokenAwareBatonRuntime; governedRetrieval?: GovernedRetrievalRuntime; codexNodeExecution?: CodexNodeExecutionPort; harnessEfficiency?: HarnessEfficiencyLedgerPort; workParcels?: WorkParcelCoordinator; modelRegistry?: ModelRegistry; parameterizedJobs?: ParameterizedJobEngine; identity?: IdentityControlPlane; defaultSessionId?: string; fastExecution?: FastExecutionLedgerPort; runtimeObservability?: RuntimeObservability; capabilityIntelligence?: CapabilityIntelligenceStore; modelIntelligence?: ModelIntelligenceLedger; qualificationSuite?: FrozenQualificationSuite; providerCatalog?: ProviderCatalogRuntime; adaptiveOrchestration?: AdaptiveOrchestrationRuntime; executionSessions?: ExecutionSessionRuntime}) {
     if (extras.approvalCount) this.approvalCount = extras.approvalCount;
     if (extras.resources) this.resourceRows = structuredClone(extras.resources);
     if (extras.services) this.serviceRows = structuredClone(extras.services);
@@ -212,6 +217,7 @@ export class AgentControlService {
     if (extras.qualificationSuite) this.qualificationSuite = structuredClone(extras.qualificationSuite);
     if (extras.providerCatalog) this.providerCatalog = extras.providerCatalog;
     if (extras.adaptiveOrchestration) this.adaptiveOrchestration = extras.adaptiveOrchestration;
+    if (extras.executionSessions) this.executionSessions = extras.executionSessions;
     return this;
   }
 
@@ -260,6 +266,7 @@ export class AgentControlService {
       retrieval: this.retrievalProjection(),
       harnessEfficiency: this.harnessEfficiencyMetrics(),
       characterCrew,
+      executionSessions: this.executionSessionProjection(),
     };
   }
 
@@ -275,6 +282,16 @@ export class AgentControlService {
   setScheduleEnabled(id: string, enabled: boolean, actor: string) { const state = this.mustJobRuntime().setScheduleEnabled(id, enabled); this.events.emit('job.schedule_changed', {scheduleId: id, enabled}, undefined, actor); return state; }
   jobQueue() { return this.mustJobRuntime().queueProjection(); }
   workers() { return this.mustJobRuntime().workers.list(); }
+  executionSessionProjection() { return (this.executionSessions?.list() ?? []).map(session => ({id: session.id, incarnation: session.incarnation, state: session.state, adapterId: session.adapterId, scope: structuredClone(session.scope), command: session.command, cwd: session.cwd, ...(session.pid === undefined ? {} : {pid: session.pid}), capabilities: structuredClone(session.capabilities), control: structuredClone(session.control), activeAttachments: session.attachments.filter(item => !item.detachedAt).map(item => ({id: item.id, actorId: item.actorId, mode: item.mode, attachedAt: item.attachedAt})), createdAt: session.createdAt, startedAt: session.startedAt, updatedAt: session.updatedAt, ...(session.endedAt ? {endedAt: session.endedAt} : {}), ...(session.exitCode === undefined ? {} : {exitCode: session.exitCode}), ...(session.exitSignal === undefined ? {} : {exitSignal: session.exitSignal}), outputBytes: session.outputBytes, outputTruncated: session.outputTruncated, ...(session.lastOutputAt ? {lastOutputAt: session.lastOutputAt} : {}), ...(session.lastError ? {lastError: session.lastError} : {})})); }
+  executionSession(id: string) { return this.mustExecutionSessions().get(id); }
+  executionSessionEvents(id: string, after = 0) { return this.mustExecutionSessions().events(id, after); }
+  executionSessionTranscript(id: string) { return {sessionId: id, content: this.mustExecutionSessions().transcript(id)}; }
+  attachExecutionSession(id: string, mode: ExecutionSessionMode, actor: string) { return this.mustExecutionSessions().attach(id, mode, sessionAuthority(actor)); }
+  detachExecutionSession(id: string, attachmentId: string, actor: string) { return this.mustExecutionSessions().detach(id, attachmentId, sessionAuthority(actor)); }
+  inputExecutionSession(id: string, attachmentId: string, value: string, sensitive: boolean, actor: string) { return this.mustExecutionSessions().input(id, attachmentId, value, sessionAuthority(actor), sensitive); }
+  resizeExecutionSession(id: string, attachmentId: string, columns: number, rows: number, actor: string) { return this.mustExecutionSessions().resize(id, attachmentId, columns, rows, sessionAuthority(actor)); }
+  signalExecutionSession(id: string, attachmentId: string, signal: ExecutionSessionSignal, actor: string) { return this.mustExecutionSessions().signal(id, attachmentId, signal, sessionAuthority(actor)); }
+  returnExecutionSessionControl(id: string, attachmentId: string, reconciliation: {summary: string; batonId?: string}, actor: string) { return this.mustExecutionSessions().returnControl(id, attachmentId, sessionAuthority(actor), reconciliation); }
   nodes() { return this.managedNodes?.list() ?? []; }
   resourceLocks() { return this.mustJobRuntime().locks.list(); }
   artifacts(runId?: string) { return this.mustJobRuntime().artifacts.list(runId).map(value => { const {storageRef: _storageRef, ...metadata} = value; return {...metadata, storage: 'agent-control-managed'}; }); }
@@ -577,4 +594,7 @@ export class AgentControlService {
   private mustModelIntelligence() { if (!this.modelIntelligence) throw new Error('model_intelligence_unconfigured'); return this.modelIntelligence; }
   private mustProviderCatalog() { if (!this.providerCatalog) throw new Error('provider_catalog_unconfigured'); return this.providerCatalog; }
   private mustQualificationSuite() { if (!this.qualificationSuite) throw new Error('model_qualification_suite_unconfigured'); return this.qualificationSuite; }
+  private mustExecutionSessions() { if (!this.executionSessions) throw new Error('execution_session_runtime_unconfigured'); return this.executionSessions; }
 }
+
+function sessionAuthority(actor: string) { return {actorId: actor.startsWith('human:') ? actor : `human:${actor}`, roles: ['operator' as const]}; }

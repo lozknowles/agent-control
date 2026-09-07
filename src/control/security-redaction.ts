@@ -7,7 +7,7 @@ const PROVIDER_KEYS = [
   /\bAIza[A-Za-z0-9_-]{20,}\b/g,
   /\bgh[opusr]_[A-Za-z0-9]{20,}\b/g,
 ];
-const ASSIGNMENT = /\b(api[_-]?key|access[_-]?token|refresh[_-]?token|password|secret|session[_-]?token)\s*[:=]\s*[^\s,;]+/gi;
+const ASSIGNMENT = /\b(api[_-]?key|access[_-]?token|refresh[_-]?token|authorization|cookie|password|secret|session[_-]?token)\s*[:=]\s*[^\s,;]+/gi;
 
 /** Redacts credential material before it can enter state, evidence, telemetry or an API projection. */
 export function redactSensitiveText(value: string, runtimeCredentials: readonly string[] = []): string {

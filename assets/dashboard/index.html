@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="/dashboard-bots.css">
   <link rel="stylesheet" href="/dashboard-wopr.css">
   <link rel="stylesheet" href="/dashboard-adaptive-orchestration.css">
+  <link rel="stylesheet" href="/dashboard-live-shell.css">
 </head>
 <body>
   <header class="topbar">
@@ -79,6 +80,7 @@
       <section class="panel"><div class="panel-heading"><div><span class="eyebrow">Scheduler</span><h2>Queue</h2></div><span id="queue-count" class="count">0</span></div><div id="job-queue" class="compact-list"></div></section>
       <section class="panel"><div class="panel-heading run-history-heading"><div><span class="eyebrow">Durable ledger</span><h2>Run History</h2></div><input id="run-search" class="compact-input" type="search" aria-label="Search run history" placeholder="Search runs"></div><div class="bot-slot" data-bot-slot="quality-inspector"></div><div id="run-history" class="compact-list"></div></section>
       <section class="panel"><div class="panel-heading"><div><span class="eyebrow">Capability placement</span><h2>Workers &amp; Locks</h2></div></div><div id="worker-list" class="compact-list"></div><div id="resource-locks" class="compact-list resource-locks"></div></section>
+      <section class="panel live-shell-panel"><div class="panel-heading"><div><span class="eyebrow">Real process attachment</span><h2>Live Execution Sessions</h2></div><span id="live-shell-count" class="count">0</span></div><p class="live-shell-safety-note">Only adapter-supported controls are offered. Terminal bytes are never reconstructed from job logs.</p><div id="live-shell-list" class="live-shell-list" aria-live="polite"></div></section>
       <section class="panel"><div class="panel-heading"><div><span class="eyebrow">Model context efficiency</span><h2>Token-Aware Output</h2></div></div><div id="command-output-metrics" class="compact-list"></div></section>
       <section class="panel"><div class="panel-heading"><div><span class="eyebrow">Verified-outcome diagnostics</span><h2>Harness Efficiency</h2></div></div><div id="harness-efficiency-metrics" class="compact-list"></div></section>
     </aside>
@@ -166,6 +168,19 @@
       <div class="dialog-actions"><button id="operator-cancel" type="button" class="button secondary">Cancel</button><button type="submit" class="button">Authenticate</button></div>
     </form>
   </dialog>
+  <dialog id="live-shell-dialog" class="live-shell-dialog">
+    <div class="live-shell-window">
+      <header class="live-shell-header"><div><span class="eyebrow">Governed execution attachment</span><h2 id="live-shell-title">Execution session</h2><p id="live-shell-subtitle">No session selected.</p></div><div><span id="live-shell-mode" class="status-pill neutral">DETACHED</span><button id="live-shell-close" type="button" class="button secondary">Close</button></div></header>
+      <section id="live-shell-identity" class="live-shell-identity" aria-label="Execution identity"></section>
+      <section class="live-shell-toolbar" aria-label="Attachment modes"><strong>Attach:</strong><button type="button" class="button" data-live-shell-mode="WATCH">WATCH</button><button type="button" class="button warning" data-live-shell-mode="INTERVENE">INTERVENE</button><button type="button" class="button danger" data-live-shell-mode="TAKE_CONTROL">TAKE CONTROL</button><button id="live-shell-detach" type="button" class="button secondary" disabled>Detach</button><button id="live-shell-transcript" type="button" class="button secondary">Full transcript</button></section>
+      <p id="live-shell-notice" class="live-shell-notice" role="status">Select a supported mode. WATCH is read-only.</p>
+      <pre id="live-shell-output" class="live-shell-output" tabindex="0" aria-label="Live execution-session output"></pre>
+      <form id="live-shell-input-form" class="live-shell-input" hidden><label for="live-shell-input">Send to the real session</label><textarea id="live-shell-input" rows="2" autocomplete="off" spellcheck="false" placeholder="Input is sent to this session only and is not retained in transcripts."></textarea><label class="live-shell-sensitive"><input id="live-shell-sensitive" type="checkbox"> Sensitive input</label><button type="submit" class="button warning">Send input</button></form>
+      <section id="live-shell-controls" class="live-shell-controls" hidden><strong>Terminal control</strong><span id="live-shell-signals"></span><form id="live-shell-resize-form"><label>Columns <input id="live-shell-columns" type="number" min="20" max="500" value="120"></label><label>Rows <input id="live-shell-rows" type="number" min="5" max="300" value="36"></label><button type="submit" class="button secondary">Resize</button></form></section>
+      <form id="live-shell-return-form" class="live-shell-return" hidden><label>Reconciliation summary<textarea id="live-shell-reconciliation" rows="2" required placeholder="Record what changed before returning autonomous control."></textarea></label><button type="submit" class="button">Return control to Agent Control</button></form>
+      <section id="live-shell-transcript-panel" class="execution-transcript" hidden><div class="live-shell-transcript-heading"><strong>Durable human-readable transcript</strong><button id="live-shell-transcript-close" type="button" class="text-button">Hide transcript</button></div><pre id="live-shell-transcript-content"></pre></section>
+    </div>
+  </dialog>
   <div id="toast" role="status" aria-live="polite"></div>
   <script src="/dashboard.js" defer></script>
   <script src="/dashboard-parameters.js" defer></script>
@@ -177,5 +192,6 @@
   <script src="/dashboard-bots.js" defer></script>
   <script src="/dashboard-wopr.js" defer></script>
   <script src="/dashboard-adaptive-orchestration.js" defer></script>
+  <script src="/dashboard-live-shell.js" defer></script>
 </body>
 </html>

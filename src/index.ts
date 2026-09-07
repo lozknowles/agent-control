@@ -32,6 +32,7 @@ import {CapabilityIntelligenceStore, registerAgentControlCoreCapabilities} from 
 import {loadFrozenQualificationSuite, ModelEvaluationCoordinator, ModelIntelligenceLedger} from './control/model-intelligence.js';
 import {ProviderNeutralModelEvaluationExecutor, startModelEvaluationScheduler} from './control/model-evaluation-runtime.js';
 import {ProviderCatalogRuntime, ProviderCatalogStore} from './control/provider-catalog.js';
+import {ExecutionSessionRuntime} from './control/execution-session.js';
 
 const now = () => new Date().toISOString();
 const config = loadConfig();
@@ -59,13 +60,14 @@ const qualificationSuite = loadFrozenQualificationSuite(path.resolve('config/qua
 const modelRegistry = new ModelRegistry(config.providers, config.models, config.modelRouting, new ModelQualificationStore(path.join(stateRoot, 'model-qualification.json')), new AccountProfileQualificationStore(path.join(stateRoot, 'account-profile-qualification.json')), process.env, capabilityIntelligence, modelIntelligence);
 const providerCatalog = new ProviderCatalogRuntime(config.providers, new ProviderCatalogStore(path.join(stateRoot, 'models', 'provider-catalog.json')), modelRegistry, modelIntelligence);
 const contracts = new ContractExecutionRuntime(path.join(stateRoot, 'contracts', 'executions.json'));
+const executionSessions = new ExecutionSessionRuntime(path.join(stateRoot, 'execution-sessions'), contracts);
 const handoffs = new GovernedHandoffRuntime(contracts, path.join(stateRoot, 'contracts', 'handoffs.json'));
 const tokenBatonRouting = new TokenAwareBatonRuntime(path.join(stateRoot, 'token-baton-routing', 'evidence.json'), config.tokenBatonRouting);
-const codexNodeExecution = new ResourceCodexNodeExecutionPort(config.resources);
+const codexNodeExecution = new ResourceCodexNodeExecutionPort(config.resources, process.env, undefined, undefined, executionSessions);
 const providerLifecycle = new ProviderModelLifecycleRegistry(path.join(stateRoot, 'models', 'lifecycle.json'));
 const remoteTokenEnvironment = process.env.AGENT_CONTROL_ACP_REMOTE_TOKEN_ENV?.trim();
 const runtimeObservability = new RuntimeObservability({contracts, handoffs, providerLifecycle, acpSessionDirectory:path.join(stateRoot,'acp'), remoteAcp:{enabled:process.env.AGENT_CONTROL_ACP_REMOTE_ENABLED==='true',authenticationConfigured:Boolean(remoteTokenEnvironment&&process.env[remoteTokenEnvironment]),loopback:['127.0.0.1','::1','localhost'].includes((process.env.AGENT_CONTROL_ACP_REMOTE_HOST??'127.0.0.1').toLowerCase())}});
-const jobRuntime = buildJobRuntime(config, stateRoot, undefined, undefined, modelRegistry, codexNodeExecution);
+const jobRuntime = buildJobRuntime(config, stateRoot, undefined, undefined, modelRegistry, codexNodeExecution, executionSessions);
 const governedRetrieval = buildGovernedRetrievalRuntime(config,stateRoot);
 const parameterizedJobs = buildParameterizedJobRuntime(config, modelRegistry, jobRuntime.workParcels, stateRoot, tokenBatonRouting, contracts, handoffs, codexNodeExecution, governedRetrieval);
 const commandOutputRoot = path.resolve(stateRoot, 'command-output');
@@ -93,11 +95,13 @@ const control = new AgentControlService(state, ptys, providers).configureProject
   qualificationSuite,
   providerCatalog,
   adaptiveOrchestration: jobRuntime.adaptiveOrchestration,
+  executionSessions,
 });
 const modelEvaluationExecutor = new ProviderNeutralModelEvaluationExecutor(modelRegistry, capabilityIntelligence, codexNodeExecution, fetch, event => control.events.emit('model.intelligence_changed', {batchId: event.batchId, providerId: event.candidate.providerId, accountProfileId: event.candidate.accountProfileId ?? null, modelId: event.candidate.modelId, providerModel: event.candidate.providerModel, nodeId: event.candidate.nodeId, taskId: event.taskId, phase: event.phase, detail: event.detail, observedAt: event.at}, undefined, 'model-evaluation-runtime'));
 const modelEvaluation = new ModelEvaluationCoordinator(modelIntelligence, qualificationSuite, modelEvaluationExecutor, {agentControlVersion: AGENT_CONTROL_VERSION, adapterVersion: 'provider-neutral-v1', promptVersion: qualificationSuite.version});
 startModelEvaluationScheduler(modelEvaluation, (batchId, status) => { control.events.emit('model.intelligence_changed', {batchId, status}, undefined, 'model-evaluation-runtime'); control.reconcileProviderBenchmark(batchId,status,'model-evaluation-runtime'); }, 1_000, error => control.events.emit('failure', {scope: 'model-evaluation-runtime', error: error.message}, undefined, 'model-evaluation-runtime'));
 tokenBatonRouting.subscribe(event => control.events.emit(event.type === 'telemetry' ? 'token.telemetry' : event.type === 'governor.transition' ? 'token.governor_transition' : event.type === 'context.lifecycle' ? 'token.context_lifecycle' : event.type === 'baton.created' ? 'token.baton_created' : 'token.handoff_result', {threadId: event.threadId, parcelId: event.parcelId, observedAt: event.at}, undefined, 'token-baton-runtime'));
+executionSessions.subscribe((event, session) => control.events.emit(event.type === 'output' ? 'execution.session_output' : 'execution.session_changed', {sessionId: session.id, runId: session.scope.runId, stepId: session.scope.stepId, workerId: session.scope.workerId, nodeId: session.scope.nodeId, eventType: event.type, sequence: event.sequence, state: session.state, observedAt: event.at}, undefined, event.actorId));
 governedRetrieval.subscribe(event=>control.events.emit(event.type,{parcelId:event.parcelId,intentId:event.intentId,providerId:event.providerId,strategy:event.strategy,observedAt:event.at},undefined,'retrieval-runtime'));
 jobRuntime.safety?.subscribe?.(decision=>control.events.emit('runtime.safety_changed',{decisionId:decision.id,runId:decision.runId,stepId:decision.stepId,outcome:decision.outcome,policyId:decision.policyId},undefined,'runtime-safety-supervisor'));
 startManagedNodeMonitoring(jobRuntime, snapshot => control.events.emit('resource.node_changed', {resourceId: snapshot.resourceId, state: snapshot.state, health: snapshot.health, currentWorkload: snapshot.currentWorkload}, undefined, 'managed-node-monitor'), error => control.events.emit('failure', {scope: 'managed-node-monitor', error: error.message}, undefined, 'managed-node-monitor'));
