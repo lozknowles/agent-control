@@ -7,6 +7,7 @@ import {effectiveParameters, nextCronOccurrence, type JobCatalog} from './job-ca
 import {jobPriorityRank, type ActionFailureClass, type ActionHandler, type ActionOutput, type AgentActionHandler, type ArtifactRecord, type PlacementRationale, type RecoveryFailureKind, type RetryPolicy, type RunRecord, type RunStatus, type ScheduleState, type StepAttempt, type StepStatus, type WorkerRegistration} from './job-types.js';
 import type {HarnessEfficiencyLedgerPort, InvocationFinalResult} from './harness-efficiency.js';
 import {OwnedProcessManager, type ExecutionCleanupReport, type OwnedExecution} from './owned-process.js';
+import type {ExecutionSessionRuntime, ExecutionSessionScope} from './execution-session.js';
 import {deriveRuntimeActionIntent, type RuntimeSafetySupervisorPort} from './runtime-safety-supervisor.js';
 
 function writeJsonAtomic(file: string, value: unknown, durable = false) { fs.mkdirSync(path.dirname(file), {recursive: true}); const temporary = `${file}.tmp`; fs.writeFileSync(temporary, `${JSON.stringify(redactSensitiveValue(value), null, 2)}\n`, {mode: 0o600, flush: durable}); fs.renameSync(temporary, file); if (durable && process.platform !== 'win32') { const fd=fs.openSync(path.dirname(file),'r'); try { fs.fsyncSync(fd); } finally { fs.closeSync(fd); } } }
@@ -115,17 +116,17 @@ export class RunLedger {
   private save() { writeJsonAtomic(this.file, {version: 1, runs: this.list(), schedules: this.scheduleStates()} satisfies LedgerSnapshot, true); }
 }
 
-export interface JobRuntimeOptions {now?: () => Date; approval?: (policy: string, run: RunRecord) => boolean; efficiency?: HarnessEfficiencyLedgerPort; safety?: RuntimeSafetySupervisorPort; defaultRecoveryDeadlineSeconds?: number; ownedExecutionFactory?: () => OwnedExecution;}
+export interface JobRuntimeOptions {now?: () => Date; approval?: (policy: string, run: RunRecord) => boolean; efficiency?: HarnessEfficiencyLedgerPort; safety?: RuntimeSafetySupervisorPort; defaultRecoveryDeadlineSeconds?: number; ownedExecutionFactory?: (scope: ExecutionSessionScope) => OwnedExecution; executionSessions?: ExecutionSessionRuntime;}
 export interface JobDispatch {runId: string; completion: Promise<RunRecord | undefined>;}
 export class JobRuntime {
   private readonly controllers = new Map<string, AbortController>();
   private readonly clock: () => Date;
-  constructor(readonly catalog: JobCatalog, readonly actions: ActionRegistry, readonly workers: WorkerRegistry, readonly ledger: RunLedger, readonly artifacts: ArtifactStore, readonly locks: ResourceLockManager, options: JobRuntimeOptions = {}) { this.clock = options.now ?? (() => new Date()); this.approval = options.approval ?? (() => false); this.efficiency = options.efficiency; this.safety = options.safety; this.defaultRecoveryDeadlineSeconds = options.defaultRecoveryDeadlineSeconds ?? 900; this.ownedExecutionFactory = options.ownedExecutionFactory ?? (() => new OwnedProcessManager()); }
+  constructor(readonly catalog: JobCatalog, readonly actions: ActionRegistry, readonly workers: WorkerRegistry, readonly ledger: RunLedger, readonly artifacts: ArtifactStore, readonly locks: ResourceLockManager, options: JobRuntimeOptions = {}) { this.clock = options.now ?? (() => new Date()); this.approval = options.approval ?? (() => false); this.efficiency = options.efficiency; this.safety = options.safety; this.defaultRecoveryDeadlineSeconds = options.defaultRecoveryDeadlineSeconds ?? 900; this.ownedExecutionFactory = options.ownedExecutionFactory ?? (scope => new OwnedProcessManager(undefined, options.executionSessions, scope)); }
   private readonly approval: (policy: string, run: RunRecord) => boolean;
   private readonly efficiency?: HarnessEfficiencyLedgerPort;
   readonly safety?: RuntimeSafetySupervisorPort;
   private readonly defaultRecoveryDeadlineSeconds: number;
-  private readonly ownedExecutionFactory: () => OwnedExecution;
+  private readonly ownedExecutionFactory: (scope: ExecutionSessionScope) => OwnedExecution;
 
   createRun(jobReference: string, parameters: Record<string, unknown>, trigger: RunRecord['trigger'], scheduledAt?: string, requestKey?: string) {
     assertNoSensitiveMaterial(JSON.stringify({parameters, trigger}), 'job_credential_material_forbidden');
@@ -235,7 +236,7 @@ export class JobRuntime {
       if (['REQUIRE_APPROVAL','PAUSE','ESCALATE'].includes(decision.outcome)) { step.status = 'WAITING_FOR_APPROVAL'; step.approval = decision.approvalId; step.waitingReason = `${decision.outcome}: ${decision.reason}`; run.status = 'WAITING'; this.locks.release(run.id, step.id); this.ledger.update(run, 'step.safety_waiting', {decisionId: decision.id, outcome: decision.outcome, policyId: decision.policyId, approvalId: decision.approvalId}); return; }
       this.ledger.update(run, decision.outcome === 'ALLOW_WITH_AUDIT' ? 'step.safety_allowed_with_audit' : 'step.safety_allowed', {decisionId: decision.id, outcome: decision.outcome, policyId: decision.policyId});
     }
-    const controller = new AbortController(), ownedExecution = this.ownedExecutionFactory(), retry = definition.retry ?? run.effectiveJob.spec.retry ?? {attempts: 0, backoffSeconds: 0}, attemptStartedAt = this.clock().toISOString();
+    const controller = new AbortController(), sessionScope: ExecutionSessionScope = {runId: run.id, jobId: run.jobId, jobVersion: run.jobVersion, stepId: step.id, actionId: step.action, workerId: worker.id, nodeId: run.trigger.modelRoute?.nodeId ?? worker.id, ...(run.trigger.parcelContext?.parcelId ? {parcelId: run.trigger.parcelContext.parcelId} : {}), crewRole: crewRole(step.action), ...(run.trigger.modelRoute?.providerId ? {providerId: run.trigger.modelRoute.providerId} : {}), ...(run.trigger.modelRoute?.accountLabel ? {accountLabel: run.trigger.modelRoute.accountLabel} : {}), ...(run.trigger.modelRoute?.modelId ? {modelId: run.trigger.modelRoute.modelId} : {})}, ownedExecution = this.ownedExecutionFactory(sessionScope), retry = definition.retry ?? run.effectiveJob.spec.retry ?? {attempts: 0, backoffSeconds: 0}, attemptStartedAt = this.clock().toISOString();
     this.controllers.set(run.id, controller); this.workers.claim(worker.id); step.status = 'RUNNING'; step.waitingReason = undefined; step.nextAttemptAt = undefined; step.startedAt ??= attemptStartedAt; run.startedAt ??= step.startedAt; run.status = 'RUNNING';
     if (!run.selectedWorkers.includes(worker.id)) run.selectedWorkers.push(worker.id);
     if (retry.attempts > 0) { step.recoveryDeadlineAt ??= new Date(this.clock().getTime() + (retry.overallDeadlineSeconds ?? this.defaultRecoveryDeadlineSeconds) * 1000).toISOString(); step.remainingRetryBudget = Math.max(0, retry.attempts - step.attempts.length); }
@@ -261,7 +262,7 @@ export class JobRuntime {
           }, timeoutSeconds * 1000);
         }),
       ]);
-      attempt.efficiencyInvocationIds = [...(output.efficiencyInvocationIds ?? [])];
+      attempt.efficiencyInvocationIds = [...(output.efficiencyInvocationIds ?? [])]; this.captureExecutionSessions(run, step, attempt, ownedExecution);
       if (action.kind === 'agent' && output.executionState !== 'verification-pending') throw new ActionFailure('agent_action_missing_verification_boundary', 'verification');
       if (controller.signal.aborted) throw new ActionFailure('execution_cancelled', 'execution');
       this.recordActionOutput(run, step.id, worker.id, output); step.status = 'VERIFYING'; run.status = 'VERIFYING'; if (attempt.efficiencyInvocationIds.length) this.efficiency?.setPhase(attempt.efficiencyInvocationIds, 'verification'); this.ledger.update(run, 'step.verifying');
@@ -270,7 +271,7 @@ export class JobRuntime {
       if (attempt.efficiencyInvocationIds.length && requiredVerification.length) this.efficiency?.markVerification(attempt.efficiencyInvocationIds, 'PASS');
       step.status = 'SUCCEEDED'; step.endedAt = this.clock().toISOString(); attempt.endedAt = step.endedAt; attempt.outcome = output.detail ?? 'completed_and_verified'; run.provenance.push(...(output.evidence ?? []).map(detail => ({type: 'evidence', at: now(), detail}))); this.locks.release(run.id, step.id); this.ledger.update(run, 'step.succeeded'); this.finalizeRun(run);
     } catch (error) {
-      const errorInvocationIds = efficiencyInvocationIds(error); if (!attempt.efficiencyInvocationIds?.length && errorInvocationIds.length) attempt.efficiencyInvocationIds = errorInvocationIds;
+      this.captureExecutionSessions(run, step, attempt, ownedExecution); const errorInvocationIds = efficiencyInvocationIds(error); if (!attempt.efficiencyInvocationIds?.length && errorInvocationIds.length) attempt.efficiencyInvocationIds = errorInvocationIds;
       const partialOutput = partialActionOutput(error); if (partialOutput) this.recordActionOutput(run, step.id, worker.id, partialOutput);
       if (error instanceof StepTimeoutError) {
         const cleanup = await ownedExecution.terminateAll('step_timeout'); attempt.cleanup = cleanup; step.cleanup = cleanup;
@@ -320,12 +321,21 @@ export class JobRuntime {
   private recordActionOutput(run: RunRecord, stepId: string, workerId: string, output: ActionOutput) { const definition = run.effectiveJob.spec.steps.find(step => step.id === stepId)!, step = run.steps.find(item => item.id === stepId)!; for (const produced of output.artifacts ?? []) { const declaration = definition.outputs?.find(item => item.name === produced.name); if (!declaration) throw new ActionFailure(`undeclared_artifact:${produced.name}`, 'configuration'); if (produced.type && produced.type !== declaration.type || produced.schema && produced.schema !== declaration.schema || produced.version && produced.version !== declaration.version) throw new ActionFailure(`artifact_contract_mismatch:${produced.name}`, 'verification'); const artifact = this.artifacts.create(run, stepId, workerId, {...declaration, retention: produced.retention ?? declaration.retention}, produced.value); step.artifactIds.push(artifact.id); run.artifacts.push(artifact.id); } }
   private cancelDependents(run: RunRecord, failedStepId: string) { const blocked = new Set([failedStepId]); let changed = true; while (changed) { changed = false; for (const step of run.steps) if (!TERMINAL_STEPS.includes(step.status) && step.dependsOn.some(id => blocked.has(id))) { step.status = 'CANCELLED'; step.error = 'upstream_failed'; step.endedAt = this.clock().toISOString(); blocked.add(step.id); changed = true; } } }
   private invocationIds(run: RunRecord, stepId?: string) { const retained = run.steps.filter(step => !stepId || step.id === stepId).flatMap(step => step.attempts.flatMap(attempt => attempt.efficiencyInvocationIds ?? [])); const discovered = this.efficiency?.list().filter(item => item.runId === run.id && (!stepId || item.stepId === stepId)).map(item => item.id) ?? []; return [...new Set([...retained, ...discovered])]; }
+  private captureExecutionSessions(run: RunRecord, step: RunRecord['steps'][number], attempt: StepAttempt, execution: OwnedExecution) { const ids = execution.sessionIds?.() ?? []; if (!ids.length) return; attempt.executionSessionIds = [...new Set([...(attempt.executionSessionIds ?? []), ...ids])]; for (const id of ids) if (!run.provenance.some(item => item.type === 'execution-session' && item.detail === id)) run.provenance.push({type: 'execution-session', at: this.clock().toISOString(), detail: id}); }
   private linkPriorRun(id: string, field: 'retriedByRunId', value: string) { const prior = this.ledger.get(id); if (!prior) throw new Error('retry_source_missing'); prior.lineage = {...prior.lineage, [field]: value}; this.ledger.update(prior, 'run.lineage_linked', {[field]: value}); }
   private finalizeRun(run: RunRecord) { if (run.steps.some(step => step.status === 'FAILED')) return; if (run.steps.some(step => !TERMINAL_STEPS.includes(step.status))) { const status: RunStatus = run.steps.some(step => step.status === 'AUTHENTICATION_BLOCKED') ? 'AUTHENTICATION_BLOCKED' : run.steps.some(step => step.status === 'CLEANUP_UNCERTAIN') ? 'CLEANUP_UNCERTAIN' : run.steps.some(step => step.status === 'CANCEL_PENDING') ? 'CANCELLING' : run.steps.some(step => step.status === 'RETRY_PENDING' && ['transient-transport', 'expired-enrolment'].includes(step.attempts.at(-1)?.recoveryKind ?? '')) ? 'RECONNECTING' : run.steps.some(step => ['WAITING_FOR_WORKER', 'WAITING_FOR_DEPENDENCY', 'WAITING_FOR_RESOURCE', 'WAITING_FOR_APPROVAL', 'RETRY_PENDING'].includes(step.status)) ? 'WAITING' : 'RUNNING'; if (run.status !== status) { run.status = status; this.ledger.update(run, status === 'RECONNECTING' ? 'run.reconnecting' : status === 'AUTHENTICATION_BLOCKED' ? 'run.authentication_blocked' : status === 'CANCELLING' ? 'run.cancelling' : status === 'CLEANUP_UNCERTAIN' ? 'run.cleanup_uncertain' : status === 'WAITING' ? 'run.waiting' : 'run.continuing'); } return; } run.status = run.steps.every(step => step.status === 'SUCCEEDED') ? 'SUCCEEDED' : 'DEGRADED'; run.endedAt = this.clock().toISOString(); const ids = run.steps.flatMap(step => step.attempts.flatMap(attempt => attempt.efficiencyInvocationIds ?? [])); if (ids.length) this.efficiency?.markFinalResult(ids, run.status as Exclude<InvocationFinalResult, 'UNKNOWN'>); this.locks.release(run.id); if (run.trigger.type === 'schedule' && run.trigger.id) { const state = this.ledger.schedule(run.trigger.id); if (state) { if (run.status === 'SUCCEEDED') state.lastSuccessAt = run.endedAt; else state.lastFailureAt = run.endedAt; state.updatedAt = run.endedAt; this.ledger.saveSchedule(state); } } this.ledger.update(run, 'run.finished'); }
   private mustRun(id: string) { const run = this.ledger.get(id); if (!run) throw new Error('run_missing'); return run; }
 }
 
 export function createJobRuntime(root: string, catalog: JobCatalog, actions: ActionRegistry, workers: WorkerRegistry, options?: JobRuntimeOptions) { const jobsRoot = path.join(root, 'jobs'); const ledger = new RunLedger(path.join(jobsRoot, 'run-ledger.json')); ledger.recoverFailClosed(); return new JobRuntime(catalog, actions, workers, ledger, new ArtifactStore(path.join(jobsRoot, 'artifact-store')), new ResourceLockManager(path.join(jobsRoot, 'resource-locks.json')), options); }
+
+function crewRole(actionId: string): ExecutionSessionScope['crewRole'] {
+  if (/managed-node|remote/i.test(actionId)) return 'resource-guardian';
+  if (/test|verify|quality|review/i.test(actionId)) return 'quality-inspector';
+  if (/model|provider|route/i.test(actionId)) return 'model-scout';
+  if (/prompt|plan/i.test(actionId)) return 'prompt-reviewer';
+  return 'parcel-coordinator';
+}
 
 function efficiencyInvocationIds(error: unknown): string[] { const value = error as {efficiencyInvocationIds?: unknown}; return Array.isArray(value?.efficiencyInvocationIds) ? value.efficiencyInvocationIds.filter((item): item is string => typeof item === 'string') : []; }
 function partialActionOutput(error: unknown): ActionOutput | undefined { const value = error as {partialActionOutput?: unknown}; return value?.partialActionOutput && typeof value.partialActionOutput === 'object' ? value.partialActionOutput as ActionOutput : undefined; }

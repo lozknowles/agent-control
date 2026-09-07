@@ -12,6 +12,7 @@ import {ParameterizedJobError} from './parameterized-job-registry.js';
 import type {OpenWAAdapter} from './openwa.js';
 import type {SocialVoiceCoordinator} from './social-voice.js';
 import {redactSensitiveText} from './security-redaction.js';
+import type {ExecutionSessionMode, ExecutionSessionSignal} from './execution-session.js';
 
 export interface WebServerOptions {host?: string; port?: number; operatorToken?: string; allowedOrigins?: string[]; assetsDir?: string; configFile?: string; openwa?: OpenWAAdapter; socialVoice?: SocialVoiceCoordinator;}
 const MAX_BODY = 64 * 1024;
@@ -27,6 +28,12 @@ const DOMAIN_STATUS = new Map<string, number>([
   ['output_expansion_files_invalid', 400], ['output_expansion_lines_invalid', 400], ['output_expansion_range_invalid', 400],
   ['output_expansion_selector_unsupported', 400], ['output_expansion_selector_outside_result', 403],
   ['output_scope_invalid', 400], ['output_scope_unknown_field', 400], ['output_scope_identity_missing', 400], ['output_scope_generation_invalid', 400],
+  ['execution_session_missing', 404], ['execution_session_runtime_unconfigured', 503], ['execution_session_adapter_unavailable', 503],
+  ['execution_session_identity_invalid', 400], ['execution_session_text_required', 400], ['execution_session_sequence_invalid', 400], ['execution_session_input_invalid', 400],
+  ['execution_session_observer_authority_required', 403], ['execution_session_operator_authority_required', 403], ['execution_session_attachment_actor_mismatch', 403], ['execution_session_watch_read_only', 403], ['execution_session_write_fenced', 403],
+  ['execution_session_not_live', 409], ['execution_session_identity_mismatch', 409], ['execution_session_attachment_missing', 409], ['execution_session_interactive_attachment_held', 409],
+  ['execution_session_mode_unsupported', 409], ['execution_session_input_unsupported', 409], ['execution_session_resize_unsupported', 409], ['execution_session_signal_unsupported', 409],
+  ['execution_session_take_control_unsupported', 409], ['execution_session_take_control_reconciliation_unavailable', 409], ['execution_session_take_control_not_active', 409], ['execution_session_control_return_required', 409],
   ['work_parcel_prompt_required', 400], ['work_parcel_plan_empty', 400], ['work_parcel_stage_id_invalid', 400], ['work_parcel_stage_invalid', 400], ['work_parcel_route_invalid', 400], ['work_parcel_reasoning_plan_invalid', 400], ['work_parcel_dependency_cycle', 400],
   ['work_parcel_reasoning_planner_unconfigured', 503], ['work_parcel_missing', 404], ['work_parcel_exists', 409], ['work_parcels_unconfigured', 503],
   ['parcel_success_criterion_invalid', 400], ['parcel_success_criterion_exists', 409], ['parcel_success_criterion_missing', 404], ['parcel_success_criterion_stage_missing', 404], ['parcel_success_criterion_evaluation_invalid', 400],
@@ -39,6 +46,7 @@ const DOMAIN_STATUS = new Map<string, number>([
     ['provider_missing', 404], ['model_missing', 404], ['model_role_missing', 404], ['model_registry_unconfigured', 503], ['model_route_unconfigured', 409], ['model_route_unavailable', 409], ['model_fallback_disabled', 409], ['provider_authentication_required', 409], ['account_profile_missing', 404], ['account_profile_unavailable', 409],
     ['provider_catalog_unconfigured', 503], ['provider_catalog_model_missing', 404], ['provider_catalog_model_unavailable', 409], ['provider_discovery_disabled', 409], ['provider_discovery_adapter_unavailable', 409], ['provider_catalog_model_not_qualified', 409], ['provider_credential_format_invalid', 400], ['provider_catalog_adjudication_invalid', 400], ['provider_catalog_adjudication_exists', 409],
     ['identity_control_plane_unconfigured', 503], ['session_missing', 404], ['execution_missing', 404],
+    ['execution_session_runtime_unconfigured', 503], ['execution_session_missing', 404], ['execution_session_attachment_missing', 404], ['execution_session_not_live', 409], ['execution_session_identity_mismatch', 409], ['execution_session_interactive_attachment_held', 409], ['execution_session_control_return_required', 409], ['execution_session_operator_authority_required', 403], ['execution_session_attachment_actor_mismatch', 403], ['execution_session_watch_read_only', 403], ['execution_session_write_fenced', 403], ['execution_session_input_invalid', 400], ['execution_session_resize_unsupported', 409], ['execution_session_signal_unsupported', 409], ['execution_session_input_unsupported', 409], ['execution_session_take_control_unsupported', 409], ['execution_session_take_control_reconciliation_unavailable', 409], ['execution_session_take_control_not_active', 409],
 ]);
 
 export function startWebDashboard(service: AgentControlService, options: WebServerOptions = {}) {
@@ -150,6 +158,15 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
     const limit = Number.isSafeInteger(requestedLimit) && requestedLimit > 0 ? Math.min(1_000, requestedLimit) : 200;
     return json(response, 200, service.modelInvocations({limit, runId: url.searchParams.get('runId') ?? undefined, jobId: url.searchParams.get('jobId') ?? undefined}));
   }
+  if (method === 'GET' && url.pathname === '/api/execution-sessions') { validateOperatorRequest(request, options); return json(response, 200, service.executionSessionProjection()); }
+  const liveSessionMatch = url.pathname.match(/^\/api\/execution-sessions\/([^/]+)(?:\/(events|stream|transcript|attach|detach|input|resize|signal|return-control))?$/);
+  if (method === 'GET' && liveSessionMatch) {
+    validateOperatorRequest(request, options); const id = decodeURIComponent(liveSessionMatch[1]), action = liveSessionMatch[2];
+    if (!action) return json(response, 200, service.executionSession(id));
+    if (action === 'events') return json(response, 200, service.executionSessionEvents(id, Number(url.searchParams.get('after') ?? 0)));
+    if (action === 'transcript') return json(response, 200, service.executionSessionTranscript(id));
+    if (action === 'stream') return executionSessionStream(service, id, Number(url.searchParams.get('after') ?? 0), request, response);
+  }
     const jobMatch = url.pathname.match(/^\/api\/jobs\/([^/]+)(?:\/(runs|run))?$/), runMatch = url.pathname.match(/^\/api\/runs\/([^/]+)(?:\/(cancel|retry|approve))?$/), definitionMatch = url.pathname.match(/^\/api\/job-definitions\/([^/]+)(?:\/([0-9]+))?$/), savedJobMatch = url.pathname.match(/^\/api\/saved-jobs\/([^/]+)(?:\/(run|enable|disable|export))?$/), parameterizedRunMatch = url.pathname.match(/^\/api\/job-runs\/([^/]+)(?:\/(cancel|resume-authentication|transcript))?$/), parcelMatch = url.pathname.match(/^\/api\/parcels\/([^/]+)(?:\/(cancel))?$/), parcelQuestionsMatch = url.pathname.match(/^\/api\/parcels\/([^/]+)\/questions(?:\/([^/]+)\/answer)?$/), parcelCriteriaMatch = url.pathname.match(/^\/api\/parcels\/([^/]+)\/criteria(?:\/([^/]+)\/evaluate)?$/), parcelSteeringMatch = url.pathname.match(/^\/api\/parcels\/([^/]+)\/steering$/), parcelRetrievalMatch = url.pathname.match(/^\/api\/parcels\/([^/]+)\/context\/retrieve$/), capabilityCandidateMatch = url.pathname.match(/^\/api\/capability-candidates(?:\/([^/]+)\/transition)?$/), modelIntelligenceRouteMatch = url.pathname.match(/^\/api\/model-intelligence\/routes\/([^/]+)\/transition$/), providerCatalogMatch = url.pathname.match(/^\/api\/provider-catalog\/providers\/([^/]+)(?:\/models\/([^/]+)\/(callability|smoke|adjudications|routing-enable|routing-disable)|\/(discover))?$/), systemMatch = url.pathname.match(/^\/api\/systems\/([^/]+)(?:\/(check))?$/), accountMatch = url.pathname.match(/^\/api\/models\/accounts\/([^/]+)\/([^/]+)\/(qualify)$/), modelMatch = url.pathname.match(/^\/api\/models\/([^/]+)(?:\/(qualify|route))?$/), sessionMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)$/), executionMatch = url.pathname.match(/^\/api\/executions\/([^/]+)$/), scheduleMatch = url.pathname.match(/^\/api\/schedules\/([^/]+)\/(enable|disable)$/), artifactMatch = url.pathname.match(/^\/api\/artifacts\/([^/]+)$/), outputExpansionMatch = url.pathname.match(/^\/api\/command-output\/([^/]+)\/expand$/);
   if (method === 'GET' && definitionMatch) return json(response, 200, service.jobDefinition(decodeURIComponent(definitionMatch[1]), definitionMatch[2] ? Number(definitionMatch[2]) : undefined));
   if (method === 'GET' && savedJobMatch?.[2] === 'export') return json(response, 200, service.exportSavedJob(decodeURIComponent(savedJobMatch[1])));
@@ -172,6 +189,12 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   if (method === 'POST') {
     validateMutationRequest(request, options);
     const body = await readJson(request), actor = 'web-operator';
+    if (liveSessionMatch?.[2] === 'attach') return json(response, 201, await service.attachExecutionSession(decodeURIComponent(liveSessionMatch[1]), String(body.mode ?? '') as ExecutionSessionMode, actor));
+    if (liveSessionMatch?.[2] === 'detach') return json(response, 200, service.detachExecutionSession(decodeURIComponent(liveSessionMatch[1]), String(body.attachmentId ?? ''), actor));
+    if (liveSessionMatch?.[2] === 'input') return json(response, 200, await service.inputExecutionSession(decodeURIComponent(liveSessionMatch[1]), String(body.attachmentId ?? ''), String(body.value ?? ''), body.sensitive === true, actor));
+    if (liveSessionMatch?.[2] === 'resize') return json(response, 200, await service.resizeExecutionSession(decodeURIComponent(liveSessionMatch[1]), String(body.attachmentId ?? ''), Number(body.columns), Number(body.rows), actor));
+    if (liveSessionMatch?.[2] === 'signal') return json(response, 200, await service.signalExecutionSession(decodeURIComponent(liveSessionMatch[1]), String(body.attachmentId ?? ''), String(body.signal ?? '') as ExecutionSessionSignal, actor));
+    if (liveSessionMatch?.[2] === 'return-control') return json(response, 200, await service.returnExecutionSessionControl(decodeURIComponent(liveSessionMatch[1]), String(body.attachmentId ?? ''), {summary: String(body.summary ?? ''), ...(typeof body.batonId === 'string' ? {batonId: body.batonId} : {})}, actor));
     if (url.pathname === '/api/saved-jobs') { const {actor: _actor, ...input} = body; return json(response, 201, service.createSavedJob(input as never, actor)); }
     if (savedJobMatch && !savedJobMatch[2]) return json(response, 200, service.updateSavedJob(decodeURIComponent(savedJobMatch[1]), Number(body.revision), body.changes && typeof body.changes === 'object' && !Array.isArray(body.changes) ? body.changes as never : {}, actor));
     if (savedJobMatch?.[2] === 'run') return json(response, 201, service.runSavedJob(decodeURIComponent(savedJobMatch[1]), actor));
@@ -293,9 +316,34 @@ function eventStream(service: AgentControlService, request: IncomingMessage, res
   request.on('close', () => { clearInterval(heartbeat); unsubscribe(); });
 }
 
+function executionSessionStream(service: AgentControlService, id: string, requestedAfter: number, request: IncomingMessage, response: ServerResponse) {
+  if (!Number.isSafeInteger(requestedAfter) || requestedAfter < 0) throw httpError(400, 'execution_session_sequence_invalid');
+  // Resolve the session before committing response headers so a stale/missing
+  // reference receives an ordinary authenticated JSON error.
+  service.executionSession(id);
+  response.writeHead(200, {
+    'Content-Type': 'text/event-stream; charset=utf-8',
+    'Cache-Control': 'no-cache, no-transform',
+    Connection: 'keep-alive',
+    'X-Accel-Buffering': 'no',
+  });
+  let cursor = requestedAfter, closed = false;
+  const send = () => {
+    if (closed) return;
+    for (const event of service.executionSessionEvents(id, cursor)) {
+      cursor = event.sequence;
+      response.write(`id: ${event.sequence}\nevent: ${event.type}\ndata: ${JSON.stringify(redact(event))}\n\n`);
+    }
+  };
+  send();
+  const polling = setInterval(send, 100), heartbeat = setInterval(() => response.write(': keepalive\n\n'), 15_000);
+  polling.unref(); heartbeat.unref();
+  request.on('close', () => { closed = true; clearInterval(polling); clearInterval(heartbeat); });
+}
+
 function serveAsset(response: ServerResponse, assetsDir: string, pathname: string) {
   const asset = pathname === '/' ? 'index.html' : pathname.replace(/^\//, '');
-  if (!['dashboard-social-voice.css', 'social-voice.html', 'dashboard-social-voice.js', 'dashboard-openwa.css', 'openwa.html', 'dashboard-openwa.js', 'index.html', 'dashboard.css', 'dashboard-fixes.css', 'dashboard-jobs.css', 'dashboard-bots.css', 'dashboard-wopr.css', 'dashboard.js', 'dashboard-parameters.js', 'dashboard-running-state.js', 'dashboard-enhancements.js', 'dashboard-parameterized-jobs.js', 'dashboard-models.js', 'dashboard-sessions.js', 'dashboard-bots.js', 'dashboard-wopr.js'].includes(asset)) throw httpError(404, 'not_found');
+  if (!['dashboard-social-voice.css', 'social-voice.html', 'dashboard-social-voice.js', 'dashboard-openwa.css', 'openwa.html', 'dashboard-openwa.js', 'index.html', 'dashboard.css', 'dashboard-fixes.css', 'dashboard-jobs.css', 'dashboard-bots.css', 'dashboard-wopr.css', 'dashboard-live-shell.css', 'dashboard.js', 'dashboard-parameters.js', 'dashboard-running-state.js', 'dashboard-enhancements.js', 'dashboard-parameterized-jobs.js', 'dashboard-models.js', 'dashboard-sessions.js', 'dashboard-bots.js', 'dashboard-wopr.js', 'dashboard-live-shell.js'].includes(asset)) throw httpError(404, 'not_found');
   const file = path.join(assetsDir, asset);
   if (!fs.existsSync(file)) throw httpError(404, 'dashboard_asset_missing');
   const type = asset.endsWith('.html') ? 'text/html; charset=utf-8' : asset.endsWith('.css') ? 'text/css; charset=utf-8' : 'text/javascript; charset=utf-8';

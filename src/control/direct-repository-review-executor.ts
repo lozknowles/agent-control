@@ -23,6 +23,7 @@ import {resolveProviderAccountCredential} from './provider-credential-store.js';
 import type {ProviderPrompt, ProviderPromptInput} from './provider-prompt.js';
 import {classifyExecutionFailure} from './execution-recovery.js';
 import {defaultProviderAdapterRegistry, type ProviderAdapterRegistry} from './provider-catalog.js';
+import type {ExecutionSessionScope} from './execution-session.js';
 
 type ReviewChunk = ReviewExecutionRequest['contextChunks'][number];
 type PreparedReviewChunk = ReviewChunk & {evidenceReferences?: string[]; evidencePacketId?: string};
@@ -490,7 +491,7 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
     const prompt = await this.prompt(request, chunk, baton);
     const requestExtension = provider.kind === 'cli' ? undefined : this.providerAdapters.resolve(provider).invocationRequest?.({provider, model, purpose: 'repository-review'});
     const client: RepositoryReviewProviderClient = this.clients?.(provider, account, route) ?? (provider.kind === 'cli'
-      ? new CodexRepositoryReviewClient(provider, requiredAccount(account), route.nodeId, this.nodeExecution)
+      ? new CodexRepositoryReviewClient(provider, requiredAccount(account), route.nodeId, this.nodeExecution, executionSessionScope(request, route, parcel, chunk))
       : new OpenAICompatibleProviderClient(provider, fetch, account ? () => resolveProviderAccountCredential(provider, account, process.env, undefined, route.providerExecutionNodeId) : undefined, {accountProfileId: account?.id, nodeId: route.providerExecutionNodeId}));
     const startedAt = new Date().toISOString();
     parcel.audit.timeline.push({id: `audit-${randomUUID()}`, at: startedAt, type: 'invocation.started', stageId: 'review', summary: `${routeLabel(route)} provider invocation started`, detail: `Thread ${threadId}; frozen context ${chunk.id}; structured schema agent-control.repository-review/v1; invocation profile ${requestExtension?.profile ?? 'provider-default'}${baton ? `; continuation baton ${baton.id}` : ''}`});
@@ -757,6 +758,22 @@ function agentId(route: ModelRouteDecision) { return `model:${route.accountProfi
 function routeLabel(route: {providerId: string; accountProfileId?: string | null; accountLabel?: string | null; modelId: string; nodeId?: string}) { return `${route.providerId}/${route.accountLabel ?? route.accountProfileId ?? 'default'}/${route.modelId}@${route.nodeId ?? 'controller'}`; }
 function auditModelLabel(route: {providerId: string; accountProfileId?: string | null; accountLabel?: string | null; modelId: string}) { return route.accountProfileId ? routeLabel(route) : route.modelId; }
 function requiredAccount(account?: ProviderAccountProfileConfig) { if (!account) throw new Error('codex_account_profile_required'); return account; }
+function executionSessionScope(request: ReviewExecutionRequest, route: ModelRouteDecision, parcel: WorkParcel, chunk: ReviewChunk): ExecutionSessionScope {
+  return {
+    runId: request.run.id,
+    jobId: request.run.savedJobId ?? request.run.definition.id,
+    jobVersion: String(request.run.definition.version),
+    stepId: `repository-review:${chunk.id}`,
+    actionId: 'repository.review.invoke',
+    workerId: `provider:${route.providerId}:${route.accountProfileId ?? 'default'}:${route.modelId}`,
+    nodeId: route.providerExecutionNodeId ?? route.nodeId,
+    parcelId: parcel.id,
+    crewRole: 'quality-inspector',
+    providerId: route.providerId,
+    ...(route.accountLabel ? {accountLabel: route.accountLabel} : {}),
+    modelId: route.modelId,
+  };
+}
 function message(error: unknown) { return error instanceof Error ? error.message : String(error); }
 function normalizeQualityGateResult(value: RepositoryReviewQualityGateResult): RepositoryReviewQualityGateResult {
   if (!value || typeof value !== 'object' || typeof value.accepted !== 'boolean' || !/^[a-z0-9][a-z0-9._-]{0,127}$/i.test(value.code) || !value.summary?.trim() || !value.nextAction?.trim()) throw new Error('repository_review_quality_gate_result_invalid');

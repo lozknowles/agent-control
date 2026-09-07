@@ -56,7 +56,7 @@ export interface ArtifactRecord {
   provenance: {jobId: string; jobVersion: string; action: string; workerId: string};
 }
 export type RecoveryFailureKind = 'transient-transport' | 'expired-enrolment' | 'authentication-required' | 'permanent-configuration' | 'execution';
-export interface StepAttempt {attempt: number; startedAt: string; endedAt?: string; workerId?: string; outcome?: string; retryable?: boolean; errorClass?: ActionFailureClass; recoveryKind?: RecoveryFailureKind; efficiencyInvocationIds?: string[]; timeoutSeconds?: number; elapsedMs?: number; terminalReason?: string; cleanup?: ExecutionCleanupReport;}
+export interface StepAttempt {attempt: number; startedAt: string; endedAt?: string; workerId?: string; outcome?: string; retryable?: boolean; errorClass?: ActionFailureClass; recoveryKind?: RecoveryFailureKind; efficiencyInvocationIds?: string[]; executionSessionIds?: string[]; timeoutSeconds?: number; elapsedMs?: number; terminalReason?: string; cleanup?: ExecutionCleanupReport;}
 export type ActionFailureClass = 'execution' | 'capability_unavailable' | 'authentication' | 'policy_rejection' | 'verification' | 'configuration';
 export interface RunStep {
   id: string; action: string; status: StepStatus; dependsOn: string[]; capabilityRequest: CapabilityRequest; resources: string[];
