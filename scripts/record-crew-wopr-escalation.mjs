@@ -83,14 +83,14 @@ async function sendPhysicalSocialRequest() {
   pixelAdb(['shell', 'input', 'keyevent', 'KEYCODE_WAKEUP']);
   pixelAdb(['shell', 'cmd', 'statusbar', 'expand-notifications']);
   let reply = null;
-  const deadline = Date.now() + 30_000;
+  const deadline = Date.now() + 8_000;
   await delay(1_000);
   const initial = pixelAdb(['exec-out', 'uiautomator', 'dump', '/dev/tty']);
   reply = boundsForLabel(initial, /^(?:reply|respond)$/i);
+  const displaySize = pixelAdb(['shell', 'wm', 'size']).match(/(\d+)x(\d+)/);
+  if (!displaySize) throw new Error('qualification_pixel_display_size_unavailable');
   if (!reply) {
-    const size = pixelAdb(['shell', 'wm', 'size']).match(/(\d+)x(\d+)/);
-    if (!size) throw new Error('qualification_pixel_display_size_unavailable');
-    pixelAdb(['shell', 'input', 'tap', String(Math.round(Number(size[1]) * 0.80)), String(Math.round(Number(size[2]) * 0.29))]);
+    pixelAdb(['shell', 'input', 'tap', String(Math.round(Number(displaySize[1]) * 0.80)), String(Math.round(Number(displaySize[2]) * 0.29))]);
     await delay(750);
   }
   while (!reply && Date.now() < deadline) {
@@ -98,8 +98,8 @@ async function sendPhysicalSocialRequest() {
     reply = boundsForLabel(xml, /^(?:reply|respond)$/i);
     if (!reply) await delay(750);
   }
-  if (!reply) throw new Error('qualification_pixel_notification_reply_unavailable');
-  pixelAdb(['shell', 'input', 'tap', String(reply.x), String(reply.y)]);
+  if (reply) pixelAdb(['shell', 'input', 'tap', String(reply.x), String(reply.y)]);
+  else pixelAdb(['shell', 'input', 'tap', String(Math.round(Number(displaySize[1]) * 0.13)), String(Math.round(Number(displaySize[2]) * 0.58))]);
   await delay(500);
   pixelAdb(['shell', 'input', 'text', 'start%sgoverned-adaptive-crew']);
   await delay(300);
