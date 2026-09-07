@@ -495,7 +495,7 @@ async function main() {
   const serialized = JSON.stringify(evidence, null, 2);
   if (/\/home\/loz\/\.local\/share\/agent-control\/codex-profiles|(?:access|refresh|oauth)[_-]?token|authorization\s*:/i.test(serialized)) throw new Error('qualification_evidence_secret_or_profile_path_detected');
   fs.writeFileSync(options.evidenceFile, `${serialized}\n`, {mode: 0o600});
-  emit({phase: 'QUALIFICATION_COMPLETE', verdict: 'PASS', evidenceFile: options.evidenceFile, transcriptFile: options.transcriptFile, parentParcelId: parent.id, parameterizedRunId, nestedParcelId: nestedParcel.id, sourceRoute: `${source.route.providerId}/${source.route.modelId}`, destinationRoute: `${destination.route.providerId}/${destination.route.accountProfileId}/${destination.route.modelId}`, batonId: baton.id, batonSha256: baton.sha256, totalTokens: totals.totalTokens, at: completedAt});
+  emit({phase: 'QUALIFICATION_COMPLETE', verdict: 'PASS', evidenceFile: path.relative(process.cwd(), options.evidenceFile), transcriptFile: path.relative(process.cwd(), options.transcriptFile), parentParcelId: parent.id, parameterizedRunId, nestedParcelId: nestedParcel.id, sourceRoute: `${source.route.providerId}/${source.route.modelId}`, destinationRoute: `${destination.route.providerId}/${destination.route.accountProfileId}/${destination.route.modelId}`, batonId: baton.id, batonSha256: baton.sha256, totalTokens: totals.totalTokens, at: completedAt});
   await delay(options.holdMs); server.close(); await once(server, 'close'); activeServer = undefined;
 }
 
