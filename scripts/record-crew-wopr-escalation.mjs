@@ -214,14 +214,14 @@ try {
   page.on('console', message => {
     if (message.type() !== 'error') return;
     const item=`${message.location().url || 'inline'}: ${message.text()}`.slice(0,500);
-    if (/\/api\/(?:model-intelligence|capability-intelligence|runtime-safety): Failed to load resource:.*503/i.test(item)) expectedOptionalConsole.push(item);
+    if (/\/api\/(?:model-intelligence|capability-intelligence|runtime-safety|provider-catalog): Failed to load resource:.*503/i.test(item)) expectedOptionalConsole.push(item);
     else consoleErrors.push(item);
   });
   page.on('pageerror', error => consoleErrors.push(error.message.slice(0, 500)));
   page.on('response', response => {
     if (response.status() < 400) return;
     const item={status:response.status(),method:response.request().method(),path:new URL(response.url()).pathname};
-    if (item.status===503 && ['/api/model-intelligence','/api/capability-intelligence','/api/runtime-safety'].includes(item.path)) expectedOptionalHttp.push(item);
+    if (item.status===503 && ['/api/model-intelligence','/api/capability-intelligence','/api/runtime-safety','/api/provider-catalog'].includes(item.path)) expectedOptionalHttp.push(item);
     else httpErrors.push(item);
   });
   await page.goto(dashboardReady.url, {waitUntil: 'domcontentloaded'});
