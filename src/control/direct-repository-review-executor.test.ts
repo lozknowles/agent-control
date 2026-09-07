@@ -34,9 +34,56 @@ test('production engine retry preserves one logical Run while opening an immutab
   saved.create({id:'retry-review',name:'Retry review',definition:{id:'repository-code-review',version:1,follow:'pinned'},parameters:{node:'controller',repository,ref:'main',scope:'full'},routing:{model:'source-model',allowFallback:false},contextProfile:'STANDARD',budgets:{maximumRetries:1},concurrency:'forbid-overlap',enabled:true});
   const completed=await engine.execute(engine.runNow('retry-review','test').id),threads=routing.projection().threads;
   assert.equal(completed.status,'SUCCEEDED',JSON.stringify({errors:completed.errors,retryHistory:completed.retryHistory,recovery:completed.recovery,executions:completed.providerExecutions}));assert.equal(completed.retryHistory[0].reason,'transient_transport_failure');assert.equal(invocation,2);assert.equal(completed.workParcelIds.length,2);assert.equal(completed.executionSequence,2);
-  const attemptParcels=completed.workParcelIds.map(id=>parcels.get(id)!);assert.equal(attemptParcels.find(parcel=>parcel.status==='FAILED')?.audit.invocations[0]?.verifierResult,undefined);assert.equal(attemptParcels.find(parcel=>parcel.status==='SUCCEEDED')?.audit.invocations[0]?.verifierResult,'PASS');
+  const attemptParcels=completed.workParcelIds.map(id=>parcels.get(id)!);assert.equal(attemptParcels.find(parcel=>parcel.status==='FAILED')?.audit.invocations[0]?.verifierResult,'not-applicable-transport-failure');assert.equal(attemptParcels.find(parcel=>parcel.status==='SUCCEEDED')?.audit.invocations[0]?.verifierResult,'PASS');assert.equal(completed.usage.totalTokens,undefined);assert.equal(completed.usage.unknownUsageInvocations,1);
   assert.deepEqual(threads.map(thread=>thread.id).sort(),[`repository-review:${completed.id}:1:${completed.context!.chunks[0].id}`,`repository-review:${completed.id}:2:${completed.context!.chunks[0].id}`].sort());
   assert.notEqual(threads[0].parcelId,threads[1].parcelId);assert.ok(threads.every(thread=>thread.recoverable));
+});
+
+test('exhausted transient provider retries seal a failure baton and continue on a qualified governed fallback', async t => {
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'agent-control-provider-failure-handoff-')),repository=path.join(root,'repository');
+  t.after(()=>{for(const entry of fs.readdirSync(root,{recursive:true}).map(value=>path.join(root,String(value))).sort((a,b)=>b.length-a.length))try{fs.chmodSync(entry,fs.statSync(entry).isDirectory()?0o700:0o600)}catch{}fs.rmSync(root,{recursive:true,force:true})});
+  fs.mkdirSync(repository);
+  for(const args of [['init','-q','-b','main'],['config','user.email','test@example.invalid'],['config','user.name','Agent Control Test']] as string[][])execFileSync('git',args,{cwd:repository});
+  fs.writeFileSync(path.join(repository,'index.ts'),'export const safe = true;\n');execFileSync('git',['add','.'],{cwd:repository});execFileSync('git',['commit','-qm','fixture'],{cwd:repository});
+  const {models}=handoffRegistry(),parcels=new WorkParcelStore(path.join(root,'parcels.json')),routing=new TokenAwareBatonRuntime(path.join(root,'routing.json')),contracts=new ContractExecutionRuntime(path.join(root,'contracts.json')),handoffs=new GovernedHandoffRuntime(contracts,path.join(root,'handoffs.json')),calls:string[]=[];
+  const executor=new DirectRepositoryReviewExecutor(models,parcels,routing,{routing,contracts,handoffs},provider=>({invoke:async(model,_input,options)=>{
+    calls.push(model.id);
+    options?.onTelemetry?.({phase:'started',providerId:provider.id,modelId:model.id,elapsedMs:0,context:{tokens:null,limitTokens:null,authority:'unavailable',source:'fixture'}});
+    if(model.id==='source-model')throw Object.assign(new Error('http_502_controlled_transport_failure'),{providerFailureObservation:{requestDispatched:false,usage:{inputTokens:0,outputTokens:0,cachedInputTokens:0,cacheWriteTokens:0,totalTokens:0,providerReportedCost:0,calculatedCost:0,currency:'USD'},usageAuthority:'authoritative',elapsedMs:0}});
+    const usage={inputTokens:30,outputTokens:10,cachedInputTokens:0,cacheWriteTokens:0,totalTokens:40,providerReportedCost:null,calculatedCost:.001,currency:'USD'};
+    options?.onTelemetry?.({phase:'completed',providerId:provider.id,modelId:model.id,elapsedMs:3,usage,context:{tokens:null,limitTokens:null,authority:'unavailable',source:'fixture'}});
+    return{providerId:provider.id,modelId:model.id,providerModel:model.providerModel,output:JSON.stringify({schema:'agent-control.repository-review/v1',executiveSummary:'Fallback completed the unchanged frozen review.',findings:[],positiveObservations:['Source transport failure did not alter repository state.'],areasReviewed:['index.ts'],areasNotReviewed:[],verdict:'PASS'}),elapsedMs:3,usage,responseModel:model.providerModel,finishReason:'stop',toolCall:null};
+  }}));
+  const definitions=new ParameterizedJobRegistry();definitions.register(repositoryCodeReviewDefinition);const saved=new SavedJobStore(path.join(root,'saved.json'),definitions),runs=new ParameterizedRunStore(path.join(root,'runs.json')),baselines=new ReviewBaselineStore(path.join(root,'baselines.json')),engine=new ParameterizedJobEngine(definitions,saved,runs,baselines,models,executor,{allowedRepositoryRoots:[root],snapshotsRoot:path.join(root,'snapshots'),nodeHealthy:()=>true,wait:async()=>{}});
+  saved.create({id:'provider-fallback-review',name:'Provider fallback review',definition:{id:'repository-code-review',version:1,follow:'pinned'},parameters:{node:'controller',repository,ref:'main',scope:'full'},routing:{modelRole:'review.default',allowFallback:true},contextProfile:'STANDARD',budgets:{maximumRetries:1,retryBackoffSeconds:0},concurrency:'forbid-overlap',executionMode:'CONTROLLED_FAULT_INJECTION',enabled:true});
+  const completed=await engine.execute(engine.runNow('provider-fallback-review','test').id),evidence=routing.evidence(),baton=evidence.batons[0],decision=evidence.decisions.find(item=>item.trigger?.kind==='PROVIDER_FAILURE'&&item.action==='BATON_AND_HANDOFF'),success=evidence.decisions.find(item=>item.batonId===baton?.id&&item.outcome==='SUCCEEDED');
+  assert.equal(completed.status,'SUCCEEDED',JSON.stringify({errors:completed.errors,calls,modelRoute:completed.modelRoute,routing:evidence,handoffs:handoffs.list(),contracts:contracts.list(),parcels:parcels.list().map(item=>({id:item.id,status:item.status,timeline:item.audit.timeline,provenance:item.provenance}))}));
+  assert.deepEqual(calls,['source-model','source-model','cheap-model']);
+  assert.equal(completed.retryHistory.length,1);
+  assert.equal(completed.fallbackHistory.length,1);
+  assert.equal(completed.fallbackHistory[0].failureKind,'transient-transport');
+  assert.equal(completed.fallbackHistory[0].selectedModel,'cheap-model');
+  assert.equal(completed.executionMode,'CONTROLLED_FAULT_INJECTION');
+  assert.equal(completed.usage.totalTokens,40);
+  assert.equal(completed.usage.accountedInvocations,3);
+  assert.equal(completed.usage.unknownUsageInvocations,0);
+  assert.ok(baton&&/^[a-f0-9]{64}$/.test(baton.sha256));
+  assert.match(baton.completedWork.join(' '),/2 bounded same-route execution attempt/);
+  assert.equal(decision?.trigger?.code,'transient-transport');
+  assert.equal(decision?.target?.modelId,'cheap-model');
+  assert.equal(success?.outcome,'SUCCEEDED');
+  assert.equal(evidence.threads.find(thread=>thread.id===baton.threadId)?.recoverable,true);
+  const finalParcel=parcels.get(completed.workParcelIds.at(-1)!)!;
+  assert.deepEqual(finalParcel.audit.invocations.map(item=>item.model),['source-model','cheap-model']);
+  assert.equal(finalParcel.audit.invocations[0].requestDispatched,false);
+  assert.equal(finalParcel.audit.invocations[0].totalTokens,0);
+  assert.equal(finalParcel.audit.invocations[0].verifierResult,'not-applicable-transport-failure');
+  assert.ok(finalParcel.audit.timeline.some(item=>item.type==='retry.exhausted'));
+  assert.ok(finalParcel.audit.timeline.some(item=>item.type==='governor.decision'));
+  assert.ok(finalParcel.audit.timeline.some(item=>item.type==='baton.created'));
+  assert.ok(finalParcel.audit.timeline.some(item=>item.type==='handoff.completed'));
+  assert.equal(models.qualification('source-model').state,'QUALIFIED');
+  assert.equal(models.qualification('cheap-model').state,'QUALIFIED');
 });
 
 test('repository review invokes the selected provider directly and persists attributable Work Parcels, usage and response evidence', async () => {
@@ -49,6 +96,18 @@ test('repository review invokes the selected provider directly and persists attr
     assert.equal(requestBody?.model,'vendor/reviewer');assert.equal((requestBody?.response_format as {type?:string})?.type,'json_schema');assert.equal(((requestBody?.response_format as {json_schema?:{strict?:boolean}})?.json_schema?.strict),true);assert.equal(JSON.stringify(requestBody).includes('codex'),false);assert.equal(result.result.verdict,'PASS');assert.equal(result.usage.totalTokens,100);assert.equal(result.usage.providerReportedCost,.002);assert.equal(result.usage.calculatedCost,.00012);assert.equal(result.usage.cost,.002);assert.equal(result.usage.source,'provider');assert.match(result.providerResponseIds[0],/^sha256:[a-f0-9]{64}$/);assert.equal(result.providerResponseIds[0].includes('provider-response-secret-id'),false);assert.equal(result.workParcelIds.length,1);executor.recordVerification(result.workParcelIds,'PASS');let parcel=store.get(result.workParcelIds[0])!;assert.equal(parcel.executionOwner,'direct-repository-review-executor');assert.equal(parcel.status,'SUCCEEDED');assert.equal(parcel.stages[0].actualRoute?.provider,'external');assert.equal(parcel.stages[0].actualRoute?.model,'reviewer');assert.equal(parcel.telemetry.totalTokens,100);assert.equal(parcel.telemetry.cost,.002);assert.equal(parcel.audit.invocations[0].providerModel,'vendor/reviewer');assert.equal(parcel.audit.invocations[0].qualificationVersion,'qualification-7');assert.equal(parcel.audit.invocations[0].verifierResult,'PASS');assert.ok(parcel.audit.timeline.some(event=>event.type==='verification.completed'));assert.equal(parcel.audit.totals.costBasis,'provider-reported');assert.equal(parcel.provenance.some(item=>item.detail===run.repository?.reviewedSha),true);const runtime=new JobRuntime(new JobCatalog(new Set()),new ActionRegistry(),new WorkerRegistry(),new RunLedger(path.join(root,'runs.json')),new ArtifactStore(path.join(root,'artifacts')),new ResourceLockManager(path.join(root,'locks.json'))),coordinator=new WorkParcelCoordinator(runtime,store,{plan:()=>{throw new Error('direct_parcel_must_not_be_planned')}});await coordinator.tick();parcel=coordinator.get(result.workParcelIds[0]);assert.equal(parcel.audit.invocations.length,1);assert.equal(parcel.audit.totals.totalTokens,100);assert.equal(parcel.telemetry.totalTokens,100);assert.equal(coordinator.list()[0].audit.totals.totalTokens,100);const thread=routing.projection().threads[0];assert.equal(thread.active,false);assert.equal(thread.latest.cumulative.totalTokens,100);assert.equal(thread.latest.context.authority,'unavailable');assert.equal(routing.parcel(thread.parcelId).totalTokens,100);
     assert.equal(thread.latest.cumulative.inputTokens,80);assert.equal(thread.latest.cumulative.freshInputTokens,null);assert.equal(thread.latest.cumulative.cachedInputTokens,null);assert.equal(parcel.telemetry.inputTokens,80);assert.equal(parcel.audit.totals.inputTokens,80);assert.equal(parcel.audit.invocations[0].inputTokens,80);
   }finally{globalThis.fetch=originalFetch;fs.rmSync(root,{recursive:true,force:true})}
+});
+
+test('production repository review applies the audited provider invocation profile through the provider adapter', async () => {
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'agent-control-review-provider-profile-'));
+  try {
+    const models=new ModelRegistry([{id:'nvidia-hosted',kind:'openai-compatible',adapter:'nvidia-hosted-v1',baseUrl:'https://integrate.api.nvidia.com/v1',wireApi:'chat-completions',auth:{type:'none'},enabled:true}],[{id:'gpt-oss',provider:'nvidia-hosted',providerModel:'openai/gpt-oss-20b',capabilities:['repository-review'],qualification:{state:'QUALIFIED',version:'q1',capabilities:['repository-review'],nodes:['controller']}}],{roles:{review:{primary:'gpt-oss',requires:['repository-review']}}}),route=models.route({model:'gpt-oss',nodeId:'controller',requiredCapabilities:['repository-review']}),seen:string[]=[],store=new WorkParcelStore(path.join(root,'parcels.json'));
+    const executor=new DirectRepositoryReviewExecutor(models,store,undefined,undefined,provider=>({invoke:async(model,_input,options)=>{seen.push(options?.requestExtension?.profile??'none');assert.deepEqual(options?.requestExtension?.body,{chat_template_kwargs:{enable_thinking:false}});return{providerId:provider.id,modelId:model.id,providerModel:model.providerModel,invocationProfile:options?.requestExtension?.profile,output:JSON.stringify({schema:'agent-control.repository-review/v1',executiveSummary:'Reviewed.',findings:[],positiveObservations:[],areasReviewed:['first.ts'],areasNotReviewed:[],verdict:'PASS'}),elapsedMs:1,usage:{inputTokens:10,outputTokens:2,cachedInputTokens:0,cacheWriteTokens:0,totalTokens:12,providerReportedCost:null,calculatedCost:null,currency:null},responseModel:model.providerModel,finishReason:'stop',toolCall:null};}}));
+    const request:ReviewExecutionRequest=reviewRequest(route);request.contextChunks=request.contextChunks.slice(0,1);delete request.maximumCost;
+    const response=await executor.execute(request),parcel=store.get(response.workParcelIds[0])!;
+    assert.deepEqual(seen,['nvidia-hosted-nonreasoning-repository-review-v1']);
+    assert.equal(parcel.audit.invocations[0].invocationProfile,'nvidia-hosted-nonreasoning-repository-review-v1');
+  } finally { fs.rmSync(root,{recursive:true,force:true}); }
 });
 
 test('provider review parsing rejects structurally incomplete findings before validation',()=>{
@@ -187,7 +246,7 @@ test('failed production destination execution preserves evidence and resumes the
     assert.deepEqual(calls.map(call => call.model), ['source-model', 'cheap-model', 'source-model']);
     assert.equal(response.workParcelIds.length, 1);
     const parcel = store.get(response.workParcelIds[0])!;
-    assert.deepEqual(parcel.audit.invocations.map(item => item.model), ['source-model', 'source-model']);
+    assert.deepEqual(parcel.audit.invocations.map(item => item.model), ['source-model', 'cheap-model', 'source-model']);
     assert.equal(parcel.audit.totals.totalTokens, 200);
     assert.equal(parcel.audit.timeline.some(item => item.type === 'route.changed' && item.summary.includes('resumed')), true);
     const failed = routing.evidence().decisions.find(item => item.outcome === 'FAILED');
@@ -201,6 +260,7 @@ test('failed production destination execution preserves evidence and resumes the
     assert.equal(destination?.state, 'FAILED');
     assert.equal(source?.state, 'ACTIVE');
     executor.recordVerification(response.workParcelIds, response.result.verdict);
+    assert.deepEqual(store.get(parcel.id)?.audit.invocations.map(item => item.verifierResult), ['PASS', 'not-applicable-transport-failure', 'PASS']);
     assert.equal(contracts.get(source!.id).verification.state, 'PASSED');
     assert.equal(contracts.get(source!.id).state, 'VERIFIED');
   } finally { fs.rmSync(root, {recursive: true, force: true}); }
@@ -319,7 +379,7 @@ function fakeReviewClients(calls: Array<{model: string; prompt: string}>, failDe
       const source = model.id === 'source-model';
       const usage = {inputTokens: source ? 90 : 100, outputTokens: source ? 10 : 20, cachedInputTokens: 0, totalTokens: source ? 100 : 120, providerReportedCost: source ? 0.02 : 0.002, calculatedCost: source ? 0.0022 : 0.00014, currency: 'USD'};
       options?.onTelemetry?.({phase: 'started', providerId: provider.id, modelId: model.id, elapsedMs: 0, context: {tokens: source ? 91 : 20, limitTokens: 100, authority: 'authoritative', source: 'fixture-live-context'}});
-      if (!source && failDestination) throw new Error('destination_transport_failed');
+      if (!source && failDestination) throw Object.assign(new Error('destination_transport_failed'), {providerFailureObservation: {requestDispatched: false, usage: {inputTokens: 0, outputTokens: 0, cachedInputTokens: 0, cacheWriteTokens: 0, totalTokens: 0, providerReportedCost: 0, calculatedCost: 0, currency: 'USD'}, usageAuthority: 'authoritative', elapsedMs: 0}});
       options?.onTelemetry?.({phase: 'completed', providerId: provider.id, modelId: model.id, elapsedMs: source ? 10 : 12, usage, context: {tokens: source ? 91 : 20, limitTokens: 100, authority: 'authoritative', source: 'fixture-live-context'}});
       const reviewed = renderProviderPrompt(input).includes('===== second.ts =====') ? 'second.ts' : 'first.ts';
       return {providerId: provider.id, modelId: model.id, providerModel: model.providerModel, output: JSON.stringify({schema: 'agent-control.repository-review/v1', executiveSummary: `Reviewed ${reviewed}.`, findings: [], positiveObservations: [], areasReviewed: [reviewed], areasNotReviewed: [], verdict: 'PASS'}), elapsedMs: source ? 10 : 12, usage, responseModel: model.providerModel, finishReason: 'stop', toolCall: null};

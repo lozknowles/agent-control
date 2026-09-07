@@ -101,6 +101,7 @@ export interface DashboardCharacterCrewProjection {
   observedAt: string;
   staleAfterMs: number;
   activityRecentMs: number;
+  executionMode: 'LIVE' | 'CONTROLLED_FAULT_INJECTION' | 'SIMULATED' | null;
   headline: string;
   narration: DashboardNarrationProjection[];
   parcels: DashboardParcelProjection[];
@@ -246,6 +247,7 @@ interface RunSource {
   id?: string;
   jobId?: string;
   status: string;
+  executionMode?: 'LIVE' | 'CONTROLLED_FAULT_INJECTION' | 'SIMULATED';
   requestedAt?: string;
   updatedAt?: string;
   startedAt?: string;
@@ -276,6 +278,7 @@ interface ParcelStageSource {
 interface ParcelSource {
   id?: string;
   status: string;
+  executionMode?: 'LIVE' | 'CONTROLLED_FAULT_INJECTION' | 'SIMULATED';
   createdAt: string;
   updatedAt: string;
   endedAt?: string;
@@ -725,7 +728,7 @@ function batonTransfers(source: DashboardCharacterSource): DashboardBatonTransfe
     if (decision.action !== 'BATON_AND_HANDOFF') continue;
     const thread = (source.tokenRouting?.threads ?? []).find(item => item.id === decision.threadId), from = routeProjection(thread), to = routeProjection(decision.target), reason = clean(decision.reason, 'No routing reason was recorded.');
     const destinationActive = (source.tokenRouting?.threads ?? []).some(item => item.active && item.providerId === decision.target?.providerId && item.modelId === decision.target?.modelId && (item.accountProfileId ?? null) === (decision.target?.accountProfileId ?? null) && (item.providerExecutionNodeId ?? item.nodeId ?? null) === (decision.target?.providerExecutionNodeId ?? decision.target?.nodeId ?? null));
-    const triggerKind=clean(decision.trigger?.kind)||null,triggerCode=clean(decision.trigger?.code)||null,triggerReason=clean(decision.trigger?.reason)||null,trigger=triggerKind==='QUALITY_GATE'?`Independent quality gate ${triggerCode??'unreported'} triggered`:triggerKind==='CONTEXT_PRESSURE'?`Context governor ${triggerCode??'assessment'} triggered`:'Recorded routing policy triggered';
+    const triggerKind=clean(decision.trigger?.kind)||null,triggerCode=clean(decision.trigger?.code)||null,triggerReason=clean(decision.trigger?.reason)||null,trigger=triggerKind==='QUALITY_GATE'?`Independent quality gate ${triggerCode??'unreported'} triggered`:triggerKind==='PROVIDER_FAILURE'?`Authoritative provider-failure classification ${triggerCode??'unreported'} triggered`:triggerKind==='CONTEXT_PRESSURE'?`Context governor ${triggerCode??'assessment'} triggered`:'Recorded routing policy triggered';
     transfers.push({id: decision.id ?? `token:${decision.threadId}:${decision.at}`, at: decision.at, parcelId: decision.parcelId, sourceType: 'token-routing', sourceEventId: decision.id ?? decision.threadId, batonId: decision.batonId ?? null, from, to, outcome: decision.outcome, active: latestTokenDecision.get(decision.threadId) === decision && decision.outcome === 'RECORDED' && Boolean(thread?.active || destinationActive), reason, explanation: `${trigger}${triggerReason?`: ${triggerReason}`:''}. ${decision.outcome.toLowerCase()} routing for ${from?.label ?? 'the source route'} → ${to?.label ?? 'the governed destination'}: ${reason}`, contextPercent: typeof decision.contextPercent === 'number' ? decision.contextPercent : null,triggerKind,triggerCode,triggerReason});
   }
   for (const parcel of source.parcels ?? []) {
@@ -833,12 +836,14 @@ export function projectDashboardCharacterCrew(source: DashboardCharacterSource):
   const nowMs = timestamp(source.observedAt) ?? Date.now(), staleAfterMs = source.staleAfterMs ?? DASHBOARD_CHARACTER_STALE_AFTER_MS;
   const members = [laneMaster(source, nowMs, staleAfterMs), promptReviewer(source, nowMs, staleAfterMs), parcelCoordinator(source, nowMs, staleAfterMs), modelScout(source, nowMs, staleAfterMs), resourceGuardian(source, nowMs, staleAfterMs), qualityInspector(source, nowMs, staleAfterMs)].map(member => enrichCharacter(member, source, nowMs));
   const parcels = projectParcels(source), transfers = batonTransfers(source), activeParcels = parcels.filter(parcel => ['PLANNING', 'ROUTING', 'EXECUTING', 'WAITING', 'VERIFYING'].includes(parcel.operationalState)), parallel = activeParcels.reduce((total, parcel) => total + parcel.parallelActive, 0), activeTransfer = transfers.find(item => item.active);
+  const activeRun = [...(source.parameterizedRuns ?? []), ...(source.runs ?? [])].find(run => activeStates.has(run.status.toUpperCase())), activeSourceParcel = (source.parcels ?? []).find(parcel => ['PLANNING','QUEUED','RUNNING','WAITING'].includes(parcel.status.toUpperCase())), executionMode = activeSourceParcel?.executionMode ?? activeRun?.executionMode ?? null;
   const headline = activeTransfer ? `Sealed baton moving for ${activeTransfer.parcelId}: ${activeTransfer.from?.label ?? 'recorded source'} → ${activeTransfer.to?.label ?? 'governed destination'}.` : activeParcels.length ? `${activeParcels.length} Work Parcel${activeParcels.length === 1 ? '' : 's'} active${parallel > 1 ? ` with ${parallel} stages executing in parallel` : ''}.` : 'Crew is watching canonical state; no Work Parcel is executing.';
   return {
     schema: DASHBOARD_CHARACTER_CREW_SCHEMA,
     observedAt: source.observedAt,
     staleAfterMs,
     activityRecentMs: DASHBOARD_CHARACTER_ACTIVITY_RECENT_MS,
+    executionMode,
     headline,
     narration: members.filter(member => member.activity.kind !== 'NONE' || ['failed', 'blocked', 'resource_pressure', 'recovering'].includes(member.state)).map(member => member.narration),
     parcels,

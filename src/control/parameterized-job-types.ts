@@ -34,17 +34,19 @@ export type SavedJobSchedule =
   | {kind: 'cron'; cron: string; timezone: string; enabled: boolean; missedRunPolicy: MissedSchedulePolicy};
 export type MissedSchedulePolicy = 'run-once-immediately' | 'skip' | 'queue';
 export type SavedJobConcurrency = 'forbid-overlap' | 'queue' | 'allow';
+export type ExecutionEvidenceMode = 'LIVE' | 'CONTROLLED_FAULT_INJECTION' | 'SIMULATED';
 export interface SavedJob {
   schema: 'agent-control.saved-job/v1';
   id: string;
   name: string;
   definition: SavedJobDefinitionReference;
   parameters: Record<string, unknown>;
-  routing?: {modelRole?: string; model?: string; accountProfile?: string; allowFallback?: boolean};
+  routing?: {modelRole?: string; model?: string; accountProfile?: string; allowFallback?: boolean; purpose?: 'EXECUTION' | 'QUALIFICATION'};
   contextProfile: 'THIN' | 'STANDARD' | 'DEEP';
   budgets?: Partial<JobBudgetPolicy>;
   schedule?: SavedJobSchedule;
   concurrency: SavedJobConcurrency;
+  executionMode?: ExecutionEvidenceMode;
   enabled: boolean;
   revision: number;
   createdAt: string;
@@ -94,7 +96,7 @@ export interface RepositoryReviewResult {
   areasNotReviewed: string[];
   verdict: 'PASS' | 'PASS_WITH_FINDINGS' | 'REVIEW_REQUIRED' | 'FAILED';
 }
-export interface JobRunUsage {inputTokens?: number; freshInputTokens?: number; cachedInputTokens?: number; cacheWriteTokens?: number; outputTokens?: number; totalTokens?: number; providerReportedCost?: number; calculatedCost?: number; cost?: number; currency?: string; source: 'provider' | 'calculated' | 'unavailable';}
+export interface JobRunUsage {inputTokens?: number; freshInputTokens?: number; cachedInputTokens?: number; cacheWriteTokens?: number; outputTokens?: number; totalTokens?: number; providerReportedCost?: number; calculatedCost?: number; cost?: number; currency?: string; accountedInvocations?: number; unknownUsageInvocations?: number; source: 'provider' | 'calculated' | 'unavailable';}
 export interface ParameterizedExecutionIdentity {
   id: string;
   sequence: number;
@@ -127,6 +129,7 @@ export interface ParameterizedJobRun {
   definition: ParameterizedJobDefinition;
   resolvedParameters: Record<string, unknown>;
   trigger: {type: 'manual' | 'schedule'; actor: string; id?: string; scheduledFor?: string; scheduleCursor?: string};
+  executionMode?: ExecutionEvidenceMode;
   status: ParameterizedRunStatus;
   transitions: Array<{status: ParameterizedRunStatus; at: string; detail?: string}>;
   requestedAt: string;
@@ -141,7 +144,7 @@ export interface ParameterizedJobRun {
   usage: JobRunUsage;
   result?: RepositoryReviewResult;
   errors: string[];
-  fallbackHistory: Array<{at: string; reason: string; selectedModel: string}>;
+  fallbackHistory: Array<{at: string; reason: string; selectedModel: string; selectedProvider?: string; batonId?: string; failureKind?: string}>;
   retryHistory: Array<{at: string; attempt: number; reason: string; kind?: string; nextAttemptAt?: string}>;
   /** Durable, monotonically increasing provider-execution identity across retries and controller restarts. */
   executionSequence?: number;
@@ -163,7 +166,14 @@ export interface ReviewExecutionRequest {
   maximumCost?: number;
   signal: AbortSignal;
 }
-export interface ReviewExecutionResponse {result: RepositoryReviewResult; usage: JobRunUsage; evidence: string[]; providerResponseIds: string[]; workParcelIds: string[];}
+export interface ReviewExecutionResponse {
+  result: RepositoryReviewResult;
+  usage: JobRunUsage;
+  evidence: string[];
+  providerResponseIds: string[];
+  workParcelIds: string[];
+  governedFallbacks?: Array<{at: string; reason: string; selectedModel: string; selectedProvider: string; batonId: string; failureKind: string}>;
+}
 export interface ReviewExecutionReconciliation {
   executionId: string;
   state: 'RUNNING' | 'COMPLETED' | 'FAILED' | 'CANCELLED' | 'UNKNOWN';

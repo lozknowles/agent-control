@@ -289,6 +289,7 @@ test('NVIDIA adapter constrains only hosted endpoint and credential shape', () =
   assert.equal(adapter.supports({...base, wireApi: 'responses'}), false);
   assert.doesNotThrow(() => adapter.validateCredential(syntheticCredential()));
   assert.throws(() => adapter.validateCredential('not-an-nvidia-key'), /credential_format_invalid/);
+  assert.deepEqual(adapter.invocationRequest({provider: base, model: {id:'gpt-oss',provider:'nvidia',providerModel:'openai/gpt-oss-20b',capabilities:['repository-review']}, purpose:'repository-review'}), {profile:'nvidia-hosted-nonreasoning-repository-review-v1',body:{chat_template_kwargs:{enable_thinking:false}}});
 });
 
 function emptyIntelligence(identity?: {providerId: string; modelId: string; providerModel: string}, state: 'QUALIFIED' | 'DEGRADED' = 'QUALIFIED') {

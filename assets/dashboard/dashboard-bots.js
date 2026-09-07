@@ -285,6 +285,7 @@
       else live.innerHTML = '<div class="compact-empty">No character projection is available from this Agent Control server.</div>';
     }
     const ageNode = document.querySelector('#crew-live-age'); if (ageNode) ageNode.textContent = crew ? `SNAPSHOT ${age(crew.observedAt).toUpperCase()}` : 'AWAITING SNAPSHOT';
+    const modeNode = document.querySelector('#crew-execution-mode'); if (modeNode) { const mode = crew?.executionMode; modeNode.textContent = mode === 'CONTROLLED_FAULT_INJECTION' ? 'CONTROLLED FAULT INJECTION' : mode === 'SIMULATED' ? 'SIMULATED / TEST DATA' : mode === 'LIVE' ? 'LIVE / REAL EXECUTION' : 'NO ACTIVE EXECUTION'; modeNode.className = `status-pill ${mode === 'CONTROLLED_FAULT_INJECTION' ? 'waiting' : mode === 'SIMULATED' ? 'neutral' : mode === 'LIVE' ? 'available' : 'neutral'}`; }
     renderWorkflow();
     runtime.initial = false;
     if (document.querySelector('#stream-state')?.textContent === 'LIVE') runtime.suppressNextAcknowledgement = false;
@@ -319,7 +320,9 @@
   refresh = async () => { await previousRefresh(); renderCharacters(); };
 
   document.addEventListener('DOMContentLoaded', () => {
-    renderGallery();
+    const galleryPanel = document.querySelector('#crew-gallery-panel'), galleryEnabled = new URLSearchParams(location.search).get('crewGallery') === '1';
+    if (galleryPanel) galleryPanel.hidden = !galleryEnabled;
+    if (galleryEnabled) renderGallery();
     applyPreferences();
     document.addEventListener('click', event => {
       const target = event.target instanceof Element ? event.target : null; if (!target) return;

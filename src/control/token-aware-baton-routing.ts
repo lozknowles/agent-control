@@ -2,6 +2,7 @@ import {createHash, randomUUID} from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import type {GovernedHandoffRuntime, HandoffRequest} from './handoff-runtime.js';
+import {normalizeCapabilityId} from './capability-intelligence.js';
 
 export const TOKEN_BATON_ROUTING_SCHEMA = 'agent-control.token-aware-baton-routing/v1' as const;
 export type TelemetryAuthority = 'authoritative' | 'estimated' | 'unavailable';
@@ -10,7 +11,7 @@ export type RoutingAction = 'CONTINUE' | 'COMPACT_AND_CONTINUE' | 'BATON_AND_HAN
 export type RemainingWork = 'DIFFICULT' | 'BOUNDED' | 'MECHANICAL';
 export type ReasoningState = 'UNFINISHED' | 'COMPLETE';
 export type ContextLifecycleKind = 'COMPACTION' | 'NEW_CONTEXT' | 'RESUME' | 'CONTINUATION';
-export type RoutingTriggerKind = 'CONTEXT_PRESSURE' | 'QUALITY_GATE';
+export type RoutingTriggerKind = 'CONTEXT_PRESSURE' | 'QUALITY_GATE' | 'PROVIDER_FAILURE';
 
 export interface RoutingTrigger {
   kind: RoutingTriggerKind;
@@ -214,16 +215,20 @@ export class TokenAwareBatonRuntime {
     const thread = this.thread(threadId), state = thread.governor.state, pressure = thread.latest.contextPercent;
     const trigger = normalizeTrigger(assessment.trigger, thread);
     let action: RoutingAction = state === 'COMPACT' || state === 'HANDOFF' ? 'COMPACT_AND_CONTINUE' : 'CONTINUE', reason = thread.governor.reason, target: TokenRoutingDecision['target'];
-    if (trigger.kind === 'QUALITY_GATE') {
+    if (trigger.kind === 'QUALITY_GATE' || trigger.kind === 'PROVIDER_FAILURE') {
       const eligible = eligibleCandidates(thread, assessment);
       const selected = eligible.sort((a, b) => (a.preferenceOrder ?? Number.MAX_SAFE_INTEGER) - (b.preferenceOrder ?? Number.MAX_SAFE_INTEGER) || routeKey(a).localeCompare(routeKey(b)))[0];
       if (selected) {
         action = 'BATON_AND_HANDOFF';
         target = decisionTarget(selected);
-        reason = `quality_gate_failed_governed_fallback_selected:${trigger.code}`;
+        reason = trigger.kind === 'QUALITY_GATE'
+          ? `quality_gate_failed_governed_fallback_selected:${trigger.code}`
+          : `provider_failure_retry_exhausted_governed_fallback_selected:${trigger.code}`;
       } else {
         action = 'CONTINUE';
-        reason = `quality_gate_failed_no_qualified_governed_fallback:${trigger.code}`;
+        reason = trigger.kind === 'QUALITY_GATE'
+          ? `quality_gate_failed_no_qualified_governed_fallback:${trigger.code}`
+          : `provider_failure_retry_exhausted_no_qualified_governed_fallback:${trigger.code}`;
       }
       return this.record(thread, action, reason, 'RECORDED', target, undefined, trigger);
     }
@@ -259,7 +264,7 @@ export class TokenAwareBatonRuntime {
   async governedHandoff(threadId: string, batonId: string, target: TokenRoutingDecision['target'] & {providerId: string; modelId: string}, handoffs: GovernedHandoffRuntime, request: Omit<HandoffRequest, 'baton' | 'reason'>, executeDestination?: (result: Awaited<ReturnType<GovernedHandoffRuntime['request']>>) => Promise<void>) {
     const trigger = [...this.decisions].reverse().find(decision => decision.threadId === threadId && decision.target && routeKey(decision.target) === routeKey(target))?.trigger;
     return this.handoff(threadId, batonId, target, async () => {
-      const result = await handoffs.request({...request, reason: trigger?.kind === 'QUALITY_GATE' ? `Quality governor approved verified baton escalation: ${trigger.code}` : 'Token governor approved verified baton handoff', baton: {tokenBatonId: batonId, tokenBatonSha256: this.baton(batonId).sha256}});
+      const result = await handoffs.request({...request, reason: trigger?.kind === 'QUALITY_GATE' ? `Quality governor approved verified baton escalation: ${trigger.code}` : trigger?.kind === 'PROVIDER_FAILURE' ? `Provider-failure governor approved verified baton continuation: ${trigger.code}` : 'Token governor approved verified baton handoff', baton: {tokenBatonId: batonId, tokenBatonSha256: this.baton(batonId).sha256}});
       if (result.status !== 'COMPLETED') throw new Error(`governed_handoff_not_completed:${result.status}`);
       await executeDestination?.(result);
     });
@@ -332,10 +337,16 @@ function routeKey(value: {providerId: string; accountProfileId?: string; modelId
 function contextTrigger(thread: ThreadTokenRecord): RoutingTrigger { return {kind: 'CONTEXT_PRESSURE', code: thread.governor.reason, reason: thread.governor.reason, evidence: thread.latest.contextPercent === null ? [] : [`context_percent:${thread.latest.contextPercent}`]}; }
 function normalizeTrigger(trigger: RoutingTrigger | undefined, thread: ThreadTokenRecord): RoutingTrigger {
   if (!trigger) return contextTrigger(thread);
-  if (!['CONTEXT_PRESSURE', 'QUALITY_GATE'].includes(trigger.kind) || !/^[a-z0-9][a-z0-9._-]{0,127}$/i.test(trigger.code) || !trigger.reason.trim() || !Array.isArray(trigger.evidence) || trigger.evidence.some(item => typeof item !== 'string' || !item.trim())) throw new Error('token_routing_trigger_invalid');
+  if (!['CONTEXT_PRESSURE', 'QUALITY_GATE', 'PROVIDER_FAILURE'].includes(trigger.kind) || !/^[a-z0-9][a-z0-9._-]{0,127}$/i.test(trigger.code) || !trigger.reason.trim() || !Array.isArray(trigger.evidence) || trigger.evidence.some(item => typeof item !== 'string' || !item.trim())) throw new Error('token_routing_trigger_invalid');
   return clone(trigger);
 }
-function eligibleCandidates(thread: ThreadTokenRecord, assessment: RoutingAssessment) { return assessment.candidates.filter(candidate => candidate.qualified && assessment.requiredCapabilities.every(capability => candidate.capabilities.includes(capability)) && routeKey(candidate) !== routeKey(thread)); }
+function eligibleCandidates(thread: ThreadTokenRecord, assessment: RoutingAssessment) {
+  const required = assessment.requiredCapabilities.map(normalizeCapabilityId);
+  return assessment.candidates.filter(candidate => {
+    const available = new Set(candidate.capabilities.map(normalizeCapabilityId));
+    return candidate.qualified && required.every(capability => available.has(capability)) && routeKey(candidate) !== routeKey(thread);
+  });
+}
 function decisionTarget(selected: TokenRoutingCandidate): NonNullable<TokenRoutingDecision['target']> { return {providerId: selected.providerId, ...(selected.accountProfileId ? {accountProfileId: selected.accountProfileId, accountLabel: selected.accountLabel, accountPlan: selected.accountPlan, accountPlanAuthority: selected.accountPlanAuthority, accountQualification: selected.accountQualification, accountAvailability: selected.accountAvailability} : {}), modelId: selected.modelId, ...(selected.nodeId ? {nodeId: selected.nodeId} : {}), ...(selected.workloadNodeId ? {workloadNodeId: selected.workloadNodeId} : {}), ...(selected.providerExecutionNodeId ? {providerExecutionNodeId: selected.providerExecutionNodeId} : {}), ...(selected.credentialNodeId ? {credentialNodeId: selected.credentialNodeId} : {})}; }
 function validateAccountIdentity(value: AccountRouteIdentity) { for (const [name,node] of Object.entries({nodeId:value.nodeId,workloadNodeId:value.workloadNodeId,providerExecutionNodeId:value.providerExecutionNodeId,credentialNodeId:value.credentialNodeId})) if (node !== undefined && !/^[a-z0-9][a-z0-9._-]{0,127}$/i.test(node)) throw new Error(`token_${name}_invalid`); if (value.accountProfileId !== undefined && !/^[a-z0-9][a-z0-9._-]{0,63}$/i.test(value.accountProfileId)) throw new Error('token_account_profile_identity_invalid'); if (value.accountProfileId === undefined && (value.accountLabel !== undefined || value.accountPlan !== undefined || value.accountPlanAuthority !== undefined || value.accountQualification !== undefined || value.accountAvailability !== undefined || value.credentialNodeId !== undefined)) throw new Error('token_account_profile_identity_invalid'); if (value.accountLabel !== undefined && (!value.accountLabel.trim() || value.accountLabel.length > 128 || /@/.test(value.accountLabel))) throw new Error('token_account_profile_label_invalid'); if (value.accountPlan !== undefined && (!value.accountPlan.trim() || value.accountPlan.length > 80 || /@/.test(value.accountPlan))) throw new Error('token_account_profile_plan_invalid'); if (value.accountPlanAuthority !== undefined && !['operator-configured','provider-reported'].includes(value.accountPlanAuthority)) throw new Error('token_account_profile_plan_authority_invalid'); if (value.accountQualification !== undefined && !['UNTESTED','QUALIFYING','QUALIFIED','DEGRADED','DISABLED','FAILED'].includes(value.accountQualification)) throw new Error('token_account_profile_qualification_invalid'); if (value.accountAvailability !== undefined && !['AVAILABLE','AUTH_REQUIRED','UNQUALIFIED','DEGRADED','DISABLED'].includes(value.accountAvailability)) throw new Error('token_account_profile_availability_invalid'); }
 function mergeContext(previous: ContextOccupancy, input?: Partial<ContextOccupancy>): ContextOccupancy { if (!input) return previous; const authority = input.authority ?? previous.authority, tokens = input.tokens === undefined ? previous.tokens : valid(input.tokens), limitTokens = input.limitTokens === undefined ? previous.limitTokens : valid(input.limitTokens); if (authority === 'authoritative' && (tokens === null || limitTokens === null)) throw new Error('token_context_authoritative_values_required'); return {tokens, limitTokens, authority, source: input.source ?? previous.source}; }
