@@ -9,6 +9,7 @@ import {repositoryCodeReviewDefinition} from './repository-review-definition.js'
 import {TokenAwareBatonRuntime} from './token-aware-baton-routing.js';
 import {WorkParcelStore, type WorkParcel} from './work-parcels.js';
 import type {ParameterizedJobRun} from './parameterized-job-types.js';
+import {governedRequestOrigin} from './request-origin.js';
 
 test('complete transcript is generated during execution, uncapped, redacted and byte-identical after restart', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-transcript-'));
@@ -68,4 +69,15 @@ test('qualification-purpose route is not described as production-qualified or ad
   assert.match(content, /Governed qualification route selected/);
   assert.match(content, /does not grant production routing admission/);
   assert.doesNotMatch(content, /Qualified provider route selected/);
+});
+
+test('transcript begins with exact channel request and safe authentication provenance', () => {
+  const origin=governedRequestOrigin({channel:'openwa',modality:'voice-confirmed-by-text',receivedAt:'2026-09-07T10:00:00.000Z',authentication:'enrolled-direct-sender',actorId:'messaging:operator-safe',authority:['template:release-review'],messageReference:'a'.repeat(64),identityReference:'b'.repeat(64),confirmationReference:'c'.repeat(64),request:'Run the complete release review against the immutable repository bundle.',transcriptionAuthority:'untrusted-confirmed-by-text'});
+  const projection={schema:'agent-control.execution-history/v1' as const,jobRunId:'run-origin',savedJobId:'review',jobName:'Release review',workParcelIds:['parcel-origin'],origin,retention:{mode:'complete-durable' as const,maximumEntries:null,source:'authoritative durable records'},entries:[]};
+  const run={id:'run-origin',savedJobId:'review',status:'RUNNING',executionMode:'LIVE',requestedAt:origin.receivedAt} as ParameterizedJobRun,content=renderExecutionTranscript(projection,run);
+  assert.ok(content.indexOf('## Origin')<content.indexOf('- Schema:'));
+  assert.ok(content.indexOf('## Authoritative retained transcription')<content.indexOf('## Chronological execution record'));
+  assert.match(content,/Run the complete release review against the immutable repository bundle\./);
+  assert.match(content,/untrusted speech recognition output; execution was authorized only by a separate authenticated text confirmation/);
+  assert.doesNotMatch(content,/phone|@c\.us|oauth|cookie/i);
 });

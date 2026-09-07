@@ -107,6 +107,7 @@ export function renderExecutionTranscript(projection: ExecutionHistoryProjection
     '',
     '> Product-generated during execution from authoritative durable records. This is not an after-the-fact narrative and excludes credentials, raw provider transport payloads, and private chain-of-thought.',
     '',
+    ...(projection.origin ? renderOrigin(projection.origin) : []),
     `- Schema: \`agent-control.execution-transcript/v1\``,
     `- Job Run: \`${inline(projection.jobRunId)}\``,
     `- Saved Job: ${projection.savedJobId ? `\`${inline(projection.savedJobId)}\`` : 'none'}`,
@@ -131,6 +132,29 @@ export function renderExecutionTranscript(projection: ExecutionHistoryProjection
     '',
   );
   return `${lines.join('\n')}\n`;
+}
+
+function renderOrigin(origin: NonNullable<ExecutionHistoryProjection['origin']>) {
+  const voice = origin.modality === 'voice-confirmed-by-text';
+  return [
+    '## Origin',
+    '',
+    `- Channel: \`${inline(origin.channel)}\``,
+    `- Modality: \`${inline(origin.modality)}\``,
+    `- Received: \`${inline(origin.receivedAt)}\``,
+    `- Authentication: \`${inline(origin.authentication)}\``,
+    `- Governed actor: \`${inline(origin.actorId)}\``,
+    `- Authority: ${origin.authority.length ? origin.authority.map(value=>`\`${inline(value)}\``).join(', ') : 'none'}`,
+    `- Identity reference: \`${inline(origin.identityReference)}\``,
+    `- Message/audio reference: \`${inline(origin.messageReference)}\``,
+    ...(origin.confirmationReference ? [`- Confirmation reference: \`${inline(origin.confirmationReference)}\``] : []),
+    ...(voice ? ['- Transcription authority: untrusted speech recognition output; execution was authorized only by a separate authenticated text confirmation.'] : []),
+    '',
+    voice ? '## Authoritative retained transcription' : '## Authoritative initiating request',
+    '',
+    ...quote(origin.request),
+    '',
+  ];
 }
 
 function renderEntry(entry: ExecutionHistoryEntry, index: number) {

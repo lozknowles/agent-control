@@ -1,4 +1,5 @@
 import type {ModelRouteDecision} from './model-registry.js';
+import type {GovernedRequestOrigin} from './request-origin.js';
 
 export type JobParameterType = 'string' | 'integer' | 'boolean' | 'enum' | 'repository' | 'path' | 'git-ref' | 'node' | 'model-role' | 'duration';
 export interface JobParameterSchema {
@@ -128,7 +129,7 @@ export interface ParameterizedJobRun {
   savedJobId?: string;
   definition: ParameterizedJobDefinition;
   resolvedParameters: Record<string, unknown>;
-  trigger: {type: 'manual' | 'schedule'; actor: string; id?: string; scheduledFor?: string; scheduleCursor?: string};
+  trigger: {type: 'manual' | 'schedule'; actor: string; id?: string; scheduledFor?: string; scheduleCursor?: string; origin?: GovernedRequestOrigin};
   executionMode?: ExecutionEvidenceMode;
   status: ParameterizedRunStatus;
   transitions: Array<{status: ParameterizedRunStatus; at: string; detail?: string}>;

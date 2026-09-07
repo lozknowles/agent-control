@@ -260,17 +260,18 @@ export class OwnedProcessManager implements OwnedExecution {
     if (!child.pid) throw new Error('owned_process_pid_unavailable');
     const pid = child.pid;
     const scope = this.executionScope ? {...this.executionScope, ...(request.session?.crewRole ? {crewRole: request.session.crewRole} : {})} : undefined;
+    const interactionAllowed=scope?.interactionPolicy!=='WATCH_ONLY',interactiveInput=Boolean(request.session?.interactiveInput)&&interactionAllowed,allowSignals=Boolean(request.session?.allowSignals)&&interactionAllowed;
     const sessionId = `session-${randomUUID()}`, incarnation = randomUUID();
     const session = this.executionSessions && scope ? this.executionSessions.create({
       id: sessionId, incarnation,
       adapterId: request.session?.adapterId ?? (request.session?.remoteTransport ? 'ssh-pipe' : launch.adapterId), scope,
       command: request.session?.commandLabel ?? request.command, cwd: request.cwd ?? process.cwd(), pid,
-      capabilities: sessionCapabilities(launch.terminal, Boolean(request.session?.interactiveInput), Boolean(request.session?.allowSignals), Boolean(request.session?.remoteTransport)),
+      capabilities: sessionCapabilities(launch.terminal, interactiveInput, allowSignals, Boolean(request.session?.remoteTransport), scope?.interactionPolicy),
       runtimeCredentials: credentials,
       control: {
         prove: async () => ({sessionId, incarnation, state: child.exitCode === null && child.signalCode === null ? 'RUNNING' : child.exitCode === 0 ? 'EXITED' : 'FAILED', pid}),
-        ...(request.session?.interactiveInput ? {write: async (value: string) => { if (!child.stdin || child.stdin.destroyed || child.exitCode !== null) throw new Error('owned_process_stdin_unavailable'); if (!child.stdin.write(value)) await new Promise<void>((resolve, reject) => { child.stdin!.once('drain', resolve); child.stdin!.once('error', reject); }); }} : {}),
-        ...(request.session?.allowSignals ? {signal: async (value: ExecutionSessionSignal) => signalProcess(child, pid, value)} : {}),
+        ...(interactiveInput ? {write: async (value: string) => { if (!child.stdin || child.stdin.destroyed || child.exitCode !== null) throw new Error('owned_process_stdin_unavailable'); if (!child.stdin.write(value)) await new Promise<void>((resolve, reject) => { child.stdin!.once('drain', resolve); child.stdin!.once('error', reject); }); }} : {}),
+        ...(allowSignals ? {signal: async (value: ExecutionSessionSignal) => signalProcess(child, pid, value)} : {}),
       },
     }) : undefined;
     if (session) this.executionSessionIds.push(session.id);
@@ -290,8 +291,8 @@ export class OwnedProcessManager implements OwnedExecution {
     };
     child.stdout?.on('data', (chunk: Buffer) => { appendBounded(stdout, chunk, stdoutSize, maximum); exposeSessionOutput('stdout', chunk.toString('utf8')); if (request.onStdoutLine) { stdoutRemainder += chunk.toString('utf8'); const lines = stdoutRemainder.split(/\r?\n/); stdoutRemainder = lines.pop() ?? ''; for (const line of lines) if (line) request.onStdoutLine(session ? this.executionSessions!.redactRuntimeOutput(session.id, line) : redactSensitiveText(line, credentials)); } });
     child.stderr?.on('data', (chunk: Buffer) => { appendBounded(stderr, chunk, stderrSize, maximum); exposeSessionOutput('stderr', chunk.toString('utf8')); });
-    if (request.input !== undefined) { child.stdin?.write(request.input); if (!request.session?.interactiveInput) child.stdin?.end(); }
-    else if (!request.session?.interactiveInput) child.stdin?.end();
+    if (request.input !== undefined) { child.stdin?.write(request.input); if (!interactiveInput) child.stdin?.end(); }
+    else if (!interactiveInput) child.stdin?.end();
 
     let complete!: () => void;
     const completed = new Promise<void>(resolve => { complete = resolve; });
@@ -359,14 +360,14 @@ export class OwnedProcessManager implements OwnedExecution {
   }
 }
 
-function sessionCapabilities(terminal: 'pipe' | 'pty', interactiveInput: boolean, signals: boolean, remoteTransport: boolean): ExecutionSessionCapabilities {
+function sessionCapabilities(terminal: 'pipe' | 'pty', interactiveInput: boolean, signals: boolean, remoteTransport: boolean, interactionPolicy?: ExecutionSessionScope['interactionPolicy']): ExecutionSessionCapabilities {
   const supportedSignals: ExecutionSessionSignal[] = signals ? ['INTERRUPT', 'TERMINATE', ...(process.platform === 'win32' ? [] : ['SUSPEND', 'CONTINUE'] as ExecutionSessionSignal[])] : [];
   const exposedTerminal = remoteTransport ? 'ssh-channel' : terminal;
   return {
     observableOutput: true, interactiveInput, terminal: exposedTerminal, resize: false, signals: supportedSignals,
     suspendResume: supportedSignals.includes('SUSPEND'), persistent: false, reconnectable: false, remoteTransport,
     modes: {watch: true, intervene: interactiveInput || supportedSignals.length > 0, takeControl: false},
-    limitations: [terminal === 'pty' ? 'util-linux PTY adapter does not expose terminal resize through Node.js' : 'pipe-backed session; terminal resize unavailable', 'controller restart cannot recover the live byte stream', ...(interactiveInput ? [] : ['stdin closed by action policy']), 'exclusive TAKE CONTROL requires an adapter with autonomous-writer fencing and reconciliation'],
+    limitations: [terminal === 'pty' ? 'util-linux PTY adapter does not expose terminal resize through Node.js' : 'pipe-backed session; terminal resize unavailable', 'controller restart cannot recover the live byte stream', ...(interactionPolicy==='WATCH_ONLY'?['governed protected-resource action is observable but intervention is policy-forbidden']:interactiveInput ? [] : ['stdin closed by action policy']), 'exclusive TAKE CONTROL requires an adapter with autonomous-writer fencing and reconciliation'],
   };
 }
 

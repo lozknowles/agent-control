@@ -6,9 +6,10 @@ test('queued social parcels consume active and hourly limits before runtime disp
  const p={id:'parcel-social-existing',actor:'operator',createdAt:new Date().toISOString(),status:'QUEUED',stages:[{job:'test@1.0.0'}]};
  const adapter={config:{sessionId:'account',templates:[{name:'test',jobId:'test',maxActive:1,maxRunsPerHour:1}]},service:{parcels:()=>[p],runs:()=>[]}} as unknown as OpenWAAdapter;
  const port=openwaExecutionPort(adapter);
- assert.throws(()=>port.start('test','operator','new'),/active_job_budget/);
- p.status='CANCELLED';assert.throws(()=>port.start('test','operator','new'),/hourly_job_budget/);
- assert.equal(port.start('test','operator','existing').id,p.id);
+ const request={prompt:'start test',origin:{schema:'agent-control.request-origin/v1' as const,channel:'openwa',modality:'text' as const,receivedAt:new Date().toISOString(),authentication:'enrolled-direct-sender',actorId:'operator',authority:['template:test'],messageReference:'a'.repeat(64),identityReference:'b'.repeat(64),request:'start test'}};
+ assert.throws(()=>port.start('test','operator','new',request),/active_job_budget/);
+ p.status='CANCELLED';assert.throws(()=>port.start('test','operator','new',request),/hourly_job_budget/);
+ assert.equal(port.start('test','operator','existing',request).id,p.id);
 });
 test('OpenWA normalization rejects account confusion and group conversations',()=>{
  const provider=new OpenWASocialProvider({config:{sessionId:'account'}} as OpenWAAdapter);

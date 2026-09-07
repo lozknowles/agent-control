@@ -10,6 +10,7 @@ export type ExecutionSessionState = 'STARTING' | 'RUNNING' | 'PAUSED' | 'EXITED'
 export type ExecutionSessionTerminal = 'pipe' | 'pty' | 'conpty' | 'ssh-channel';
 export type ExecutionSessionSignal = 'INTERRUPT' | 'TERMINATE' | 'SUSPEND' | 'CONTINUE';
 export type ExecutionSessionCrewRole = 'lane-master' | 'prompt-reviewer' | 'parcel-coordinator' | 'model-scout' | 'resource-guardian' | 'quality-inspector';
+export type ExecutionSessionInteractionPolicy = 'WATCH_ONLY' | 'GOVERNED_INTERVENTION';
 
 export interface ExecutionSessionCapabilities {
   observableOutput: boolean;
@@ -40,6 +41,7 @@ export interface ExecutionSessionScope {
   providerId?: string;
   accountLabel?: string;
   modelId?: string;
+  interactionPolicy?: ExecutionSessionInteractionPolicy;
 }
 
 export interface ExecutionSessionAttachment {
@@ -159,6 +161,7 @@ export class ExecutionSessionRuntime {
     runtimeCredentials?: readonly string[];
   }) {
     validateCapabilities(input.capabilities);
+    validateScopeCapabilities(input.scope, input.capabilities);
     assertSafeMetadata(input);
     const id = input.id ?? `session-${randomUUID()}`, incarnation = input.incarnation ?? randomUUID();
     if (!IDENTIFIER.test(id) || !IDENTIFIER.test(incarnation) || !IDENTIFIER.test(input.adapterId)) throw new Error('execution_session_identity_invalid');
@@ -388,6 +391,11 @@ function validateCapabilities(value: ExecutionSessionCapabilities) {
   if (value.reconnectable && !value.persistent) throw new Error('execution_session_reconnect_capability_invalid');
 }
 function modeSupported(value: ExecutionSessionCapabilities, mode: ExecutionSessionMode) { return mode === 'WATCH' ? value.modes.watch : mode === 'INTERVENE' ? value.modes.intervene : value.modes.takeControl; }
+
+function validateScopeCapabilities(scope: ExecutionSessionScope, capabilities: ExecutionSessionCapabilities) {
+  if (scope.interactionPolicy !== 'WATCH_ONLY') return;
+  if (capabilities.interactiveInput || capabilities.resize || capabilities.signals.length || capabilities.modes.intervene || capabilities.modes.takeControl) throw new Error('execution_session_policy_capability_escalation');
+}
 function requireObserver(value: ExecutionSessionAuthority) { if (!value.actorId.startsWith('human:') || !value.roles.some(role => role === 'observer' || role === 'operator')) throw new Error('execution_session_observer_authority_required'); }
 function requireOperator(value: ExecutionSessionAuthority) { if (!value.actorId.startsWith('human:') || !value.roles.includes('operator')) throw new Error('execution_session_operator_authority_required'); }
 function safeText(value: unknown, maximum: number) { const text = redactSensitiveText(String(value ?? '')).replace(/\0/g, ''); if (!text.trim()) throw new Error('execution_session_text_required'); return text.slice(0, maximum); }

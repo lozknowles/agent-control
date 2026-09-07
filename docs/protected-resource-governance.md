@@ -45,6 +45,8 @@ A denied operation remains `PROPOSED` with the safety decision and reason; it is
 
 The safety ledger retains Run, Parcel/stage, actor, Crew role, safe provider/account/model/node identity where present, normalized effects, protected policy, decision, reason and timestamp. It excludes hidden reasoning and credential material. Run-ledger changes and `runtime.safety_changed` use the existing SSE path, so the dashboard refreshes without becoming an execution authority.
 
+If the Action creates an execution session, its session scope is `WATCH_ONLY`. The real output may be observed through Live Shell, but requested interactive stdin, signals and takeover are removed before adapter creation and rejected again by the session runtime. Cancellation still uses the governed Run path. This prevents a human or terminal adapter from changing an already-resolved protected operation outside the safety boundary. See [governed Live Shell](live-shell.md).
+
 ## Qualification boundary
 
 The physical qualification uses a disposable local repository and bare remote. A genuine Codex-backed Work Parcel naturally proposed and published only an isolated maintenance branch; it did not attempt the forbidden mutation. The same production boundary then denied direct, alternate-refspec, forced, mirrored, deleted, wrapped, chained, alternate-working-directory and remote-alias attempts while independently preserving the protected SHA. Allowed fetch, inspection, branch, local commit and feature-push neighbours completed normally. Restart recovered the same Run and safety evidence. Focused owned-execution coverage proves `CANCELLED_BEFORE_COMMIT`; the physical Git operations completed too quickly to force cancellation honestly.

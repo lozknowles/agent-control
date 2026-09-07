@@ -102,6 +102,17 @@ test('concurrent execution sessions preserve process, output and input isolation
   assert.match(quillTranscript, /quill:GOT:ONLY_QUILL/); assert.doesNotMatch(quillTranscript, /rook:|ONLY_ROOK/); assert.match(rookTranscript, /rook:GOT:ONLY_ROOK/); assert.doesNotMatch(rookTranscript, /quill:|ONLY_QUILL/);
 });
 
+test('protected-resource WATCH_ONLY scope suppresses requested PTY intervention and closes stdin', async t => {
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'agent-control-owned-protected-'));t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+  const sessions=new ExecutionSessionRuntime(path.join(root,'sessions')),manager=new OwnedProcessManager(undefined,sessions,{runId:'run:protected',jobId:'protected-job',jobVersion:'1.0.0',stepId:'mutate',actionId:'protected.mutation@1.0.0',workerId:'worker:guardian',nodeId:'controller',interactionPolicy:'WATCH_ONLY'});
+  const source="process.stdin.on('end',()=>{process.stdout.write('STDIN_CLOSED_BY_POLICY\\n');process.exit(0)});process.stdin.resume()";
+  const running=manager.runProcess({command:process.execPath,args:['-e',source],cwd:root,session:{terminal:'pty',interactiveInput:true,allowSignals:true,commandLabel:'protected resource operation'}});
+  await waitFor(()=>manager.sessionIds().length===1);const id=manager.sessionIds()[0],record=sessions.get(id);
+  assert.equal(record.scope.interactionPolicy,'WATCH_ONLY');assert.equal(record.capabilities.interactiveInput,false);assert.equal(record.capabilities.modes.intervene,false);assert.deepEqual(record.capabilities.signals,[]);assert.match(record.capabilities.limitations.join(' '),/intervention is policy-forbidden/);
+  await assert.rejects(sessions.attach(id,'INTERVENE',{actorId:'human:operator',roles:['operator']}),/execution_session_mode_unsupported/);
+  const result=await running;assert.equal(result.exitCode,0);assert.match(result.stdout,/STDIN_CLOSED_BY_POLICY/);
+});
+
 async function waitFor(predicate: () => boolean, timeoutMs = 5_000) {
   const deadline = Date.now() + timeoutMs;
   while (!predicate()) { if (Date.now() >= deadline) throw new Error('fixture_wait_timeout'); await new Promise(resolve => setTimeout(resolve, 10)); }

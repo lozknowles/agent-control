@@ -10,6 +10,7 @@ import {createInvocationObservation, MemoryHarnessEfficiencyLedger} from './harn
 import {CatalogNaturalLanguagePlanner, explainParcelDecision, ReasoningModelWorkParcelPlanner, validateWorkParcelPlan, WorkParcelCoordinator, WorkParcelStore, type WorkParcel, type WorkParcelPlan} from './work-parcels.js';
 import type {SystemReadiness} from './system-readiness.js';
 import {ModelRegistry} from './model-registry.js';
+import {governedRequestOrigin} from './request-origin.js';
 
 const job = (id: string, action: string, output = true): JobDefinition => ({apiVersion: 'agent-control/v1', kind: 'Job', metadata: {id, name: id, version: '1.0.0'}, spec: {priority: 'normal', concurrency: 'queue', steps: [{id: 'work', action, requires: ['qualification.local'], outputs: output ? [{name: 'result', type: 'application/json', schema: `${id}/v1`, version: '1.0.0'}] : undefined, verification: output ? ['passed'] : []}]}});
 function setup(failSecond = false, blockFirst = false) {
@@ -59,6 +60,11 @@ test('credential material is rejected at Work Parcel ingress and redacted at dur
     assert.equal(JSON.stringify(coordinator.store.get(safe.id)).includes(secret), false);
     assert.equal(fs.readFileSync(storeFile, 'utf8').includes(secret), false);
   } finally { fs.rmSync(root, {recursive: true, force: true}); }
+});
+
+test('approved channel request origin survives durable Work Parcel restart without transport identity', () => {
+  const {coordinator,root,storeFile,plan}=setup();
+  try{const origin=governedRequestOrigin({channel:'openwa',modality:'text',receivedAt:'2026-09-07T12:00:00Z',authentication:'enrolled-direct-sender',actorId:'operator',authority:['template:one'],messageReference:'1'.repeat(64),identityReference:'2'.repeat(64),request:'start one'}),parcel=coordinator.submitApprovedPlan(origin.request,'operator','3'.repeat(64),plan,origin),restored=new WorkParcelStore(storeFile).get(parcel.id)!;assert.deepEqual(restored.origin,origin);assert.equal(restored.prompt,'start one');assert.doesNotMatch(fs.readFileSync(storeFile,'utf8'),/@c\.us|phone|cookie/i);}finally{fs.rmSync(root,{recursive:true,force:true});}
 });
 
 test('blocked named target still creates an auditable parcel with readiness evidence', () => {

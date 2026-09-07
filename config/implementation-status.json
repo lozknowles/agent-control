@@ -1,17 +1,18 @@
 {
   "schema": "agent-control.implementation-status/v1",
-  "release": "3.9.0",
+  "release": "4.0.0-rc.1",
   "updated": "2026-09-07",
   "capabilities": [
     {
       "id": "social-voice.providers",
       "title": "Replaceable governed Social and Voice capabilities",
       "status": "PARTIAL",
-      "summary": "Actual enrolled WhatsApp voice intake, untrusted STT, fresh text confirmation, governed AC-3 Work Parcel execution and delivered short voice summary passed. Human confirmed corrected summary clear. Physical OmniVoice inference passed on P5000 and integrated Intel Arc; provider-neutral boundaries and durable history remain authoritative.",
+      "summary": "Actual enrolled WhatsApp voice intake, untrusted STT, fresh text confirmation, governed AC-3 Work Parcel execution and delivered short voice summary passed. Confirmed requests now retain exact transcription and redacted channel/authentication provenance through the canonical Work Parcel and complete transcript. Human confirmed corrected summary clear. Physical OmniVoice inference passed on P5000 and integrated Intel Arc; provider-neutral boundaries and durable history remain authoritative.",
       "limitation": "Private pilot only. General speech quality, real model handoff, repository-review routing, multi-lane video, long-duration soak and production deployment remain unqualified. Final 0.9 playback rate has codec/STT evidence but no second handset rating.",
       "sources": [
         "src/control/social-voice.ts",
         "src/control/social-voice-providers.ts",
+        "src/control/request-origin.ts",
         "src/control/openwa-social-provider.ts",
         "src/control/speech-http-provider.ts",
         "scripts/speech-worker.py"
@@ -35,6 +36,7 @@
       "limitation": "Live enrolment, help, typecheck, status, cancellation with cleanup and delivered reports passed; real reconnect and controlled duplicate replay passed. Evidence uses actual gateway messages beside separately captured dashboard frames, not handset footage. Handset dashboard links and real model handoff remain unqualified; no qualified review provider exists and benchmark execution remains gated.",
       "sources": [
         "src/control/openwa.ts",
+        "src/control/request-origin.ts",
         "src/control/messaging-commands.ts",
         "src/control/repository-test-actions.ts"
       ],
@@ -44,6 +46,32 @@
       "evidence": [
         "docs/openwa/README.md",
         "docs/openwa/live-qualification.md"
+      ]
+    },
+    {
+      "id": "runtime.governed-live-shell",
+      "title": "Governed Live Shell and execution-session attachment",
+      "status": "IMPLEMENTED",
+      "summary": "Real owned local, SSH and bounded Codex processes can expose durable redacted WATCH, INTERVENE or TAKE_CONTROL sessions according to adapter capability, operator authority and writer-fencing policy. Protected-resource Actions are WATCH_ONLY, and adapter input/signal/takeover capability cannot widen that scope.",
+      "sources": [
+        "src/control/execution-session.ts",
+        "src/control/owned-process.ts",
+        "src/control/job-runtime.ts",
+        "src/control/managed-node-ssh.ts",
+        "src/control/codex-node-execution.ts",
+        "src/control/web-server.ts",
+        "assets/dashboard/dashboard-live-shell.js",
+        "scripts/execution-session-runner.mjs"
+      ],
+      "tests": [
+        "src/control/execution-session.test.ts",
+        "src/control/owned-process.test.ts",
+        "src/control/job-runtime.test.ts",
+        "src/control/codex-node-execution.test.ts",
+        "src/control/web-server.test.ts"
+      ],
+      "evidence": [
+        "docs/live-shell.md"
       ]
     },
     {

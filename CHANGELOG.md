@@ -1,6 +1,15 @@
 # Changelog
 
-## Unreleased
+## [4.0.0-rc.1] — 2026-09-07 (release candidate; not released)
+
+- Integrates the governed Social & Voice/OpenWA ingress, canonical Work Parcel, adaptive Model/Workflow Leagues, token governor, sealed-baton handoff, independent verification, protected-resource policy, operational Crew/WOPR dashboard and Live Shell session projection on one isolated branch.
+- Adds `agent-control.request-origin/v1`. Exact initiating text or retained voice transcription, channel, authentication classification, granted template authority and one-way message/identity references now survive into the immutable Run, Work Parcel and complete transcript. Voice transcription remains untrusted until independently confirmed by authenticated text; phone numbers, JIDs, email addresses, cookies and credentials are excluded.
+- Adds production Live Shell attachment to real owned local, remote and Codex process sessions. WATCH is read-only, INTERVENE requires adapter capability and operator authority, and TAKE_CONTROL requires exclusive writer fencing plus contract reconciliation before autonomous work can resume.
+- Makes protected-resource Actions explicitly `WATCH_ONLY`. Requested PTY input, signals, resize or takeover are suppressed by the owned-process adapter and rejected at the durable execution-session boundary, preventing an attached session from becoming a policy bypass.
+- Confirms delegated handoffs can transfer only a subset of parent authority, retain the parent protected-resource envelope, preserve source recovery and require independent verification. A baton carries context and evidence; it never grants authority.
+- Preserves route/account/model/node identity, per-leg and Work Parcel aggregate token/cost authority, retries, fallback reasons, human intervention and exact model transitions in durable evidence and the streaming dashboard.
+- Retains NVIDIA-hosted routing as `PARTIAL / DO_NOT_ADMIT`; catalogue discovery or a qualification-purpose invocation does not enable production routing.
+- This candidate does not merge, tag, release, deploy, broaden network exposure, or claim physical 4.0 qualification.
 
 - Adds semantic protected-resource mutation governance to the existing production Job safety boundary. Work Parcel constraints such as `origin/master must remain completely unchanged` compile to durable read-only Git-ref capabilities before Action dispatch.
 - Adds a typed governed Git Action and Job that normalize explicit refspec, force, delete, mirror, wrapper, chain and alternate-working-directory forms into effects rather than relying on a command-string blacklist. Unsupported or unresolved execution forms fail closed.

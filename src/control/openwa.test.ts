@@ -24,14 +24,14 @@ test('saved review command bridge preserves IDs, reports authoritative handoffs 
   let entries:any[]=[];
   Object.assign(s.service,{exportSavedJob:()=>saved,jobDefinition:()=>repositoryCodeReviewDefinition,parameterizedRuns:()=>runs,
     parameterizedRun:(id:string)=>({...runs.find(run=>run.id===id)!,executionHistory:{entries}}),
-    runSavedJob:(_id:string,actor:string,key:string)=>{const run={id:'11111111-2222-4333-8444-555555555555',trigger:{type:'manual',actor,id:key},savedJobId:'review',status:'QUEUED',requestedAt:new Date().toISOString(),transitions:[],usage:{source:'unavailable'},evidence:[]} as unknown as ParameterizedJobRun;runs.push(run);return run;},
+    runSavedJob:(_id:string,actor:string,key:string,origin:import('./request-origin.js').GovernedRequestOrigin)=>{const run={id:'11111111-2222-4333-8444-555555555555',trigger:{type:'manual',actor,id:key,origin},savedJobId:'review',status:'QUEUED',requestedAt:new Date().toISOString(),transitions:[],usage:{source:'unavailable'},evidence:[]} as unknown as ParameterizedJobRun;runs.push(run);return run;},
     cancelParameterizedRun:(id:string)=>{runs.find(run=>run.id===id)!.status='CANCELLED';}
   });
   const template={kind:'saved' as const,name:'review',jobId:'review',definitionHash:savedMessagingTemplateHash(s.service,'review'),parameters:{},arguments:{},maxActive:1,maxRunsPerHour:2};
   s.config.templates.push(template);s.reopen();await s.enroll();
   assert.equal(s.receive('run review','no-grant').rejected,true);
   const pair=s.adapter.beginPairing();s.receive(pair.command,'pair-review');s.adapter.confirmPairing(String(s.adapter.status().pairing[0].hash),['review']);
-  const accepted=s.receive('run review','review');assert.equal(runs.length,1);assert.ok(accepted.runId);
+  const accepted=s.receive('run review','review');assert.equal(runs.length,1);assert.ok(accepted.runId);assert.equal(runs[0].trigger.origin?.request,'run review');assert.equal(runs[0].trigger.origin?.channel,'openwa');assert.equal(runs[0].trigger.origin?.authentication,'enrolled-direct-sender');assert.doesNotMatch(JSON.stringify(runs[0].trigger.origin),/441234567890|@c\.us/);
   assert.equal(s.receive(`status ${accepted.runId}`,'review-status').accepted,true);
   entries=[{id:'requested',type:'HANDOFF_REQUESTED',outcome:'INFO',title:'Handoff requested',content:'reason: context capacity',at:new Date().toISOString()},
     {id:'bad',type:'HANDOFF_COMPLETED',outcome:'FAILED',title:'Never complete',content:'',at:new Date().toISOString()},

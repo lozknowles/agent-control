@@ -14,7 +14,8 @@ flowchart TD
     R --> P[Untrusted transcript and intent policy]
     I --> P
     P --> T[New explicit text confirmation for actions]
-    T --> W[Persistent Work Parcel]
+    T --> O[Redacted request-origin envelope]
+    O --> W[Persistent Work Parcel]
     W --> J[Existing governed JobRuntime]
     J --> H[Durable execution history and dashboard]
     H --> S
@@ -31,6 +32,8 @@ Existing `help`, `jobs`, `run <template>`, `status job 1`, `cancel job 1` and re
 Only direct, enrolled senders with a hash-pinned template grant may start work. Durable message keys deduplicate delivery. A stable Social Work Parcel ID and runtime request key bridge controller restart without creating a second run. Runtime cancellation and process cleanup remain authoritative; a stop acknowledgement does not prove cleanup.
 
 Voice status requests use a narrow read-only grammar. Every other transcript is treated as ambiguous or consequential and executes nothing. A recognized approved template produces a five-minute confirmation proposal. The operator must send a new explicit text command, which independently revalidates the template grant and records its link to the voice request. Audio does not convey authority, confidence is unavailable, and the system never guesses an action from an approximate transcription.
+
+When execution is confirmed, the original retained transcription—not a generated summary—enters the canonical Work Parcel as `origin.request`. The envelope also carries the OpenWA channel, receipt time, enrolled-direct-sender classification, granted template, governed actor and one-way source/confirmation/identity references. The Run transcript starts with this material and explicitly states that speech recognition was untrusted and authority came from the separate text confirmation. Raw sender/account identifiers and audio bytes do not enter Work Parcel, Run, SSE or transcript records.
 
 ## Setup
 
