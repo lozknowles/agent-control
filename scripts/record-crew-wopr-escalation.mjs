@@ -187,7 +187,7 @@ try {
   await page.waitForSelector('#crew-live-grid .bot-card');
   await page.waitForFunction(() => document.querySelectorAll('#crew-live-grid .bot-card').length === 6);
   idleMotion = await crewMotion(page, 1_600);
-  if (idleMotion.length !== 6 || idleMotion.some(item => !item.visible || !item.animations.length || item.timelineDeltaMs < 1_200)) throw new Error(`idle_character_animation_missing:${JSON.stringify(idleMotion)}`);
+  if (idleMotion.length !== 6 || idleMotion.some(item => !item.visible || !item.animations.length) || !idleMotion.some(item => item.visualChanged || item.timelineDeltaMs >= 1_200)) throw new Error(`idle_character_animation_missing:${JSON.stringify(idleMotion)}`);
   screenshots.push(await screenshot(page, '01-crew-idle-and-event-matrix.png'));
   journey.push({at: new Date().toISOString(), view: 'crew', outcome: 'all six original characters visible with idle looking/sleeping motion'});
   await delay(2_000);
