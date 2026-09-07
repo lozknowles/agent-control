@@ -75,6 +75,15 @@ async function sendPhysicalSocialRequest() {
   pixelAdb(['shell', 'cmd', 'statusbar', 'expand-notifications']);
   let reply = null;
   const deadline = Date.now() + 30_000;
+  await delay(1_000);
+  const initial = pixelAdb(['exec-out', 'uiautomator', 'dump', '/dev/tty']);
+  reply = boundsForLabel(initial, /^(?:reply|respond)$/i);
+  if (!reply) {
+    const size = pixelAdb(['shell', 'wm', 'size']).match(/(\d+)x(\d+)/);
+    if (!size) throw new Error('qualification_pixel_display_size_unavailable');
+    pixelAdb(['shell', 'input', 'tap', String(Math.round(Number(size[1]) * 0.80)), String(Math.round(Number(size[2]) * 0.29))]);
+    await delay(750);
+  }
   while (!reply && Date.now() < deadline) {
     const xml = pixelAdb(['exec-out', 'uiautomator', 'dump', '/dev/tty']);
     reply = boundsForLabel(xml, /^(?:reply|respond)$/i);
