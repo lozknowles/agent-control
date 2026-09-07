@@ -43,16 +43,16 @@ Complete natural transcript: [Markdown](agent-control-4.0-protected-resource-tra
 
 ## Automated validation
 
-At `b31486b` plus the first convergence fix, `npm run check` passed:
+At `411781d` with both convergence corrections, the final `npm run check` passed:
 
 - TypeScript: pass
 - bootstrap and shell syntax: pass
 - dashboard JavaScript syntax: pass
 - infrastructure neutrality: 3/3
 - implementation status: 52/52
-- deterministic tests: 1,013/1,013
+- deterministic tests: 1,014/1,014
 
-After the restart-repair delta at `6a44c3b`, the focused Work Parcel suite passed 20/20 and TypeScript passed. The complete suite must be rerun once more before final candidate sign-off.
+The focused Work Parcel suite passed 20/20, including both social convergence tests.
 
 Documentation validation examined 137 Markdown documents and 822 local links with zero broken links. `git diff --check` passed. The protected JSON/transcript had zero matches for credential-home paths, OAuth/access/refresh token assignments, bearer values or private keys.
 
