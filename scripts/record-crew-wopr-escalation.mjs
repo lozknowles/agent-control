@@ -79,7 +79,7 @@ async function sendPhysicalSocialRequest() {
   if (!reply) throw new Error('qualification_pixel_notification_reply_unavailable');
   pixelAdb(['shell', 'input', 'tap', String(reply.x), String(reply.y)]);
   await delay(500);
-  pixelAdb(['shell', 'input', 'text', 'start%20governed-adaptive-crew']);
+  pixelAdb(['shell', 'input', 'text', 'start%sgoverned-adaptive-crew']);
   pixelAdb(['shell', 'input', 'keyevent', 'KEYCODE_ENTER']);
   return {node: 'configured Android operator device', transport: 'strict-host-key SSH to existing local ADB', action: 'notification inline reply', request: 'start governed-adaptive-crew'};
 }
