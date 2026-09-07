@@ -15,6 +15,15 @@ const screenshotDir = path.resolve(process.env.AGENT_CONTROL_CREW_WOPR_SCREENSHO
 const chromiumExecutable = process.env.AGENT_CONTROL_CHROMIUM ?? '/snap/bin/chromium';
 const ffmpeg = process.env.AGENT_CONTROL_FFMPEG ?? 'ffmpeg';
 const ffprobe = process.env.AGENT_CONTROL_FFPROBE ?? 'ffprobe';
+const ingress = process.env.AGENT_CONTROL_QUALIFICATION_INGRESS === 'openwa' ? 'openwa' : 'dashboard';
+const dashboardPort = ingress === 'openwa' ? Number(process.env.AGENT_CONTROL_QUALIFICATION_PORT ?? 19191) : 0;
+const pixel = ingress === 'openwa' ? {
+  host: process.env.AGENT_CONTROL_PIXEL_HOST,
+  user: process.env.AGENT_CONTROL_PIXEL_USER,
+  port: Number(process.env.AGENT_CONTROL_PIXEL_PORT ?? 8022),
+  identity: process.env.AGENT_CONTROL_PIXEL_IDENTITY,
+} : null;
+if (pixel && (!pixel.host || !pixel.user || !pixel.identity || !process.env.AGENT_CONTROL_QUALIFICATION_OPENWA_CONFIG || !process.env.AGENT_CONTROL_QUALIFICATION_OPENWA_ENROLMENT)) throw new Error('qualification_social_transport_configuration_required');
 const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-crew-wopr-escalation-'));
 const rawVideoDir = path.join(stateDir, 'raw-video');
 const operatorToken = randomBytes(32).toString('hex');
@@ -24,7 +33,7 @@ for (const file of [evidenceFile, transcriptFile, videoFile, manifestFile]) fs.r
 fs.rmSync(screenshotDir, {recursive: true, force: true});
 for (const directory of [path.dirname(evidenceFile), path.dirname(transcriptFile), path.dirname(videoFile), path.dirname(manifestFile), screenshotDir, rawVideoDir]) fs.mkdirSync(directory, {recursive: true});
 
-const child = spawn(process.execPath, ['--import', 'tsx', 'scripts/qualify-crew-wopr-escalation.ts', '--host', '127.0.0.1', '--port', '0', '--state-dir', stateDir, '--evidence-file', evidenceFile, '--transcript-file', transcriptFile, '--hold-ms', '30000'], {
+const child = spawn(process.execPath, ['--import', 'tsx', 'scripts/qualify-crew-wopr-escalation.ts', '--host', '127.0.0.1', '--port', String(dashboardPort), '--state-dir', stateDir, '--evidence-file', evidenceFile, '--transcript-file', transcriptFile, '--hold-ms', '45000'], {
   cwd: root,
   env: {...process.env, AGENT_CONTROL_STATE_DIR: stateDir, AGENT_CONTROL_QUALIFICATION_OPERATOR_TOKEN: operatorToken, CODEX_HOME_COTTAGE_PLUS: codexHome},
   stdio: ['ignore', 'pipe', 'pipe'],
@@ -45,6 +54,35 @@ child.stderr.on('data', chunk => { process.stderr.write(chunk); stderr = `${stde
 const childExit = new Promise(resolve => child.once('exit', (code, signal) => { exited = true; resolve({code, signal}); }));
 const delay = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
 const sha256 = value => createHash('sha256').update(value).digest('hex');
+
+function pixelAdb(args, timeout = 30_000) {
+  if (!pixel) throw new Error('qualification_pixel_transport_unconfigured');
+  return execFileSync('ssh', ['-T', '-i', pixel.identity, '-p', String(pixel.port), '-o', 'BatchMode=yes', '-o', 'IdentitiesOnly=yes', '-o', 'StrictHostKeyChecking=yes', '-o', 'ConnectTimeout=10', `${pixel.user}@${pixel.host}`, 'adb', ...args], {encoding: 'utf8', timeout, maxBuffer: 4 * 1024 * 1024});
+}
+
+function boundsForReply(xml) {
+  const nodes = [...xml.matchAll(/<node\b[^>]*(?:text|content-desc)="([^"]*)"[^>]*bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"[^>]*\/?\s*>/g)];
+  const match = nodes.find(item => /^(?:reply|respond)$/i.test(item[1].trim())) ?? nodes.find(item => /reply/i.test(item[1]));
+  return match ? {x: Math.round((Number(match[2]) + Number(match[4])) / 2), y: Math.round((Number(match[3]) + Number(match[5])) / 2)} : null;
+}
+
+async function sendPhysicalSocialRequest() {
+  pixelAdb(['shell', 'input', 'keyevent', 'KEYCODE_WAKEUP']);
+  pixelAdb(['shell', 'cmd', 'statusbar', 'expand-notifications']);
+  let reply = null;
+  const deadline = Date.now() + 30_000;
+  while (!reply && Date.now() < deadline) {
+    const xml = pixelAdb(['exec-out', 'uiautomator', 'dump', '/dev/tty']);
+    reply = boundsForReply(xml);
+    if (!reply) await delay(750);
+  }
+  if (!reply) throw new Error('qualification_pixel_notification_reply_unavailable');
+  pixelAdb(['shell', 'input', 'tap', String(reply.x), String(reply.y)]);
+  await delay(500);
+  pixelAdb(['shell', 'input', 'text', 'start%20governed-adaptive-crew']);
+  pixelAdb(['shell', 'input', 'keyevent', 'KEYCODE_ENTER']);
+  return {node: 'configured Android operator device', transport: 'strict-host-key SSH to existing local ADB', action: 'notification inline reply', request: 'start governed-adaptive-crew'};
+}
 
 async function waitPhase(name, timeoutMs = 120_000) {
   const deadline = Date.now() + timeoutMs;
@@ -85,8 +123,9 @@ function mediaInfo(file) {
 
 let browser, context, page, video, cdp;
 const screenshots = [], consoleErrors = [], httpErrors = [], expectedOptionalHttp = [], expectedOptionalConsole = [], journey = [], receivedEvents = [];
-let dashboardReady, concurrentPhase, sourcePhase, rejectionPhase, destinationPhase, verificationPhase, completePhase;
+let dashboardReady, socialPhase, taskPhase, concurrentPhase, sourcePhase, rejectionPhase, destinationPhase, verificationPhase, completePhase;
 let idleMotion, concurrentMotion, sourceDashboard, handoffDashboard, destinationDashboard, completedDashboard, eventLatency, performance, reducedMotion, mobile;
+let socialIngressEvidence, liveShellEvidence;
 
 try {
   dashboardReady = await waitPhase('DASHBOARD_READY', 30_000);
@@ -129,14 +168,23 @@ try {
   await delay(2_000);
 
   await page.click('[data-view="jobs"]');
-  await page.fill('#natural-task-prompt', dashboardReady.prompt);
-  screenshots.push(await screenshot(page, '02-exact-work-parcel-request.png'));
-  await delay(1_500);
-  const submission = page.waitForResponse(response => new URL(response.url()).pathname === '/api/parcels' && response.request().method() === 'POST', {timeout: 10_000});
-  await page.click('#natural-task-submit');
-  const submissionResponse = await submission;
-  if (submissionResponse.status() !== 201) throw new Error(`qualification_dashboard_submission_failed:${submissionResponse.status()}:${(await submissionResponse.text()).slice(0, 500)}`);
-  journey.push({at: new Date().toISOString(), view: 'jobs', outcome: 'exact prompt submitted through authenticated dashboard'});
+  if (ingress === 'openwa') {
+    socialPhase = await waitPhase('SOCIAL_CHANNEL_READY', 45_000);
+    socialIngressEvidence = await sendPhysicalSocialRequest();
+    taskPhase = await waitPhase('TASK_RECEIVED', 45_000);
+    await page.waitForFunction(() => /start governed-adaptive-crew|governed adaptive crew/i.test(document.querySelector('#work-parcel-list')?.textContent || document.body.textContent || ''), undefined, {timeout: 15_000});
+    screenshots.push(await screenshot(page, '02-authenticated-social-work-parcel-request.png'));
+    journey.push({at: new Date().toISOString(), view: 'jobs', outcome: 'real enrolled-device OpenWA command accepted through SocialVoiceCoordinator and shown as a live Work Parcel'});
+  } else {
+    await page.fill('#natural-task-prompt', dashboardReady.prompt);
+    screenshots.push(await screenshot(page, '02-exact-work-parcel-request.png'));
+    await delay(1_500);
+    const submission = page.waitForResponse(response => new URL(response.url()).pathname === '/api/parcels' && response.request().method() === 'POST', {timeout: 10_000});
+    await page.click('#natural-task-submit');
+    const submissionResponse = await submission;
+    if (submissionResponse.status() !== 201) throw new Error(`qualification_dashboard_submission_failed:${submissionResponse.status()}:${(await submissionResponse.text()).slice(0, 500)}`);
+    journey.push({at: new Date().toISOString(), view: 'jobs', outcome: 'exact prompt submitted through authenticated dashboard'});
+  }
 
   concurrentPhase = await waitPhase('CONCURRENT_STATE_READY', 30_000);
   await page.click('[data-view="crew"]'); await page.evaluate(() => scrollTo(0, 0));
@@ -153,11 +201,33 @@ try {
   screenshots.push(await screenshot(page, '04-wopr-tool-indicator-evidence.png'));
   journey.push({at: new Date().toISOString(), view: 'crew', outcome: 'two concurrent governed lanes and event-backed tool indicator inspected'});
 
+  await page.waitForSelector('[data-live-shell-open]', {timeout: 10_000});
+  await page.locator('[data-live-shell-open]').first().click();
+  await page.waitForFunction(() => /AGENT_CONTROL_LIVE_SHELL_READY/.test(document.querySelector('#live-shell-output')?.textContent || ''), undefined, {timeout: 10_000});
+  screenshots.push(await screenshot(page, '05-live-shell-watch-real-pty.png'));
+  page.once('dialog', dialog => dialog.accept());
+  await page.locator('[data-live-shell-mode="INTERVENE"]').click();
+  await page.waitForFunction(() => document.querySelector('#live-shell-mode')?.textContent === 'INTERVENE', undefined, {timeout: 10_000});
+  await page.fill('#live-shell-input', 'continue');
+  await page.locator('#live-shell-input-form button[type="submit"]').click();
+  await page.waitForFunction(() => /AGENT_CONTROL_LIVE_SHELL_INTERVENTION_ACCEPTED/.test(document.querySelector('#live-shell-output')?.textContent || ''), undefined, {timeout: 10_000});
+  screenshots.push(await screenshot(page, '06-live-shell-governed-harmless-intervention.png'));
+  await page.click('#live-shell-detach');
+  await page.waitForFunction(() => document.querySelector('#live-shell-mode')?.textContent === 'DETACHED', undefined, {timeout: 10_000});
+  liveShellEvidence = {watch: true, intervene: true, inputContentWithheld: true, acceptedMarkerVisible: true, detached: true};
+  await page.click('#live-shell-close');
+  journey.push({at: new Date().toISOString(), view: 'crew/live-shell', outcome: 'WATCH → governed harmless INTERVENE → detached on the real qualification PTY; input content withheld from durable evidence'});
+
+  await page.click('[data-view="systems"]');
+  await page.waitForSelector('#systems-list');
+  screenshots.push(await screenshot(page, '07-configured-systems-and-node-state.png'));
+  journey.push({at: new Date().toISOString(), view: 'systems', outcome: 'configured execution system and availability shown during the live run'});
+
   sourcePhase = await waitPhase('SOURCE_MODEL_ACTIVE', 90_000);
   await page.click('[data-view="models"]');
   await page.waitForFunction(() => /local-llama|qwen/i.test(document.querySelector('#persistent-usage-summary')?.textContent || ''), undefined, {timeout: 10_000});
   sourceDashboard = await currentDashboard(page);
-  screenshots.push(await screenshot(page, '05-source-model-live-usage-across-models-view.png'));
+  screenshots.push(await screenshot(page, '08-source-model-live-usage-across-models-view.png'));
   journey.push({at: new Date().toISOString(), view: 'models', outcome: 'persistent strip showed live Qwen provider/model, governor, elapsed time, context authority and unavailable values honestly'});
 
   rejectionPhase = await waitPhase('QUALITY_GATE_REJECTED', 120_000);
@@ -168,33 +238,43 @@ try {
   if (await tokenBaton.count()) await tokenBaton.click(); else await page.locator('.crew-baton').first().click();
   await page.waitForFunction(() => /reservation-cache-root-cause-v1/.test(document.querySelector('#crew-human-explanation')?.textContent || ''), undefined, {timeout: 10_000});
   handoffDashboard = await currentDashboard(page);
-  screenshots.push(await screenshot(page, '06-quality-gate-baton-reason.png'));
+  screenshots.push(await screenshot(page, '09-quality-gate-baton-reason.png'));
   await page.locator('[data-matrix-indicator="baton"]').click({timeout:10_000});
   await page.waitForFunction(() => /sealed token|handoff|escalation/i.test(document.querySelector('#activity-matrix-inspector')?.textContent || ''));
-  screenshots.push(await screenshot(page, '07-wopr-handoff-indicator.png'));
+  screenshots.push(await screenshot(page, '10-wopr-handoff-indicator.png'));
   journey.push({at: new Date().toISOString(), view: 'crew', outcome: 'quality-gate trigger, precise rejection, sealed baton and Qwen → Codex route visible'});
 
   await page.click('[data-view="lanes"]');
   await page.waitForFunction(() => /codex-chatgpt|Luna|Controller Account A/i.test(document.querySelector('#persistent-usage-summary')?.textContent || ''), undefined, {timeout: 10_000});
   destinationDashboard = await currentDashboard(page);
-  screenshots.push(await screenshot(page, '08-destination-live-usage-across-lanes-view.png'));
+  screenshots.push(await screenshot(page, '11-destination-live-usage-across-lanes-view.png'));
   journey.push({at: new Date().toISOString(), view: 'lanes', outcome: 'persistent strip followed destination account/provider/model without resetting parcel totals'});
 
   verificationPhase = await waitPhase('INDEPENDENT_VERIFICATION_ACTIVE', 180_000);
   await page.click('[data-view="crew"]');
   const verificationIndicator = page.locator('[data-matrix-indicator="verification"]'); await verificationIndicator.click();
-  screenshots.push(await screenshot(page, '09-independent-verification-active.png'));
+  screenshots.push(await screenshot(page, '12-independent-verification-active.png'));
   completePhase = await waitPhase('QUALIFICATION_COMPLETE', 60_000);
   await page.click('[data-view="models"]'); await page.evaluate(() => scrollTo(0, 0));
   await page.waitForFunction(() => /COMPLETED/.test(document.querySelector('#persistent-usage-summary')?.textContent || '') && /total/i.test(document.querySelector('.persistent-usage-chain')?.textContent || ''), undefined, {timeout: 10_000});
   const finalChainBox = await page.locator('.persistent-usage-chain').boundingBox();
   if (!finalChainBox || finalChainBox.y < 0 || finalChainBox.y + finalChainBox.height > 1080) throw new Error(`final_model_chain_not_visible:${JSON.stringify(finalChainBox)}`);
   completedDashboard = await currentDashboard(page);
-  screenshots.push(await screenshot(page, '10-completed-reconciled-model-chain.png'));
+  screenshots.push(await screenshot(page, '13-completed-reconciled-model-chain.png'));
   await page.click('[data-view="jobs"]');
-  await page.locator('#run-history').scrollIntoViewIfNeeded();
-  screenshots.push(await screenshot(page, '11-job-history-and-transcript-association.png'));
-  journey.push({at: new Date().toISOString(), view: 'jobs', outcome: 'verified terminal Work Parcel and durable run history shown'});
+  await page.click('[data-job-platform-tab="runs"]');
+  await page.waitForSelector('[data-parameterized-run]');
+  await page.locator('[data-parameterized-run]').first().click();
+  const transcriptButton = page.locator('[data-parameterized-transcript]').first();
+  await transcriptButton.scrollIntoViewIfNeeded(); await transcriptButton.click();
+  await page.waitForSelector('pre[aria-label="Complete Agent Control execution transcript"]');
+  const productTranscript = page.locator('pre[aria-label="Complete Agent Control execution transcript"]');
+  await productTranscript.evaluate(node => { node.scrollTop = 0; node.scrollIntoView({block: 'start'}); });
+  await page.waitForFunction(() => /## Origin[\s\S]*## Authoritative initiating request[\s\S]*start governed-adaptive-crew/.test(document.querySelector('pre[aria-label="Complete Agent Control execution transcript"]')?.textContent || ''));
+  screenshots.push(await screenshot(page, '14-product-transcript-origin-and-exact-request.png'));
+  await productTranscript.evaluate(node => { const text=node.textContent||'',needle='HANDOFF_COMPLETED',line=text.slice(0,text.indexOf(needle)).split('\n').length; node.scrollTop=Math.max(0,(line-12)*16); });
+  screenshots.push(await screenshot(page, '15-product-transcript-model-change-and-handoff.png'));
+  journey.push({at: new Date().toISOString(), view: 'jobs/transcript', outcome: 'product-generated full transcript visibly associated with the live Run, exact origin first and complete model-change chronology retained'});
   await delay(2_500);
 
   const metricsBefore = Object.fromEntries((await cdp.send('Performance.getMetrics')).metrics.map(item => [item.name, item.value]));
@@ -210,18 +290,18 @@ try {
   const reducedContext = await browser.newContext({viewport: {width: 1280, height: 800}, reducedMotion: 'reduce', colorScheme: 'dark'}), reducedPage = await reducedContext.newPage();
   await reducedPage.goto(dashboardReady.url, {waitUntil: 'domcontentloaded'}); await reducedPage.click('[data-view="crew"]'); await reducedPage.waitForSelector('.matrix-indicator');
   reducedMotion = await reducedPage.evaluate(() => ({mediaMatches: matchMedia('(prefers-reduced-motion: reduce)').matches, matrixAnimationNames: [...document.querySelectorAll('.matrix-lamp')].map(node => getComputedStyle(node).animationName), transitionDurations: [...document.querySelectorAll('.persistent-context-pressure')].map(node => getComputedStyle(node).transitionDuration)}));
-  screenshots.push(await screenshot(reducedPage, '12-reduced-motion.png', true)); await reducedContext.close();
+  screenshots.push(await screenshot(reducedPage, '16-reduced-motion.png', true)); await reducedContext.close();
   if (!reducedMotion.mediaMatches || reducedMotion.matrixAnimationNames.some(name => name !== 'none')) throw new Error('reduced_motion_not_honoured');
 
   const mobileContext = await browser.newContext({viewport: {width: 390, height: 844}, colorScheme: 'dark'}), mobilePage = await mobileContext.newPage();
   await mobilePage.goto(dashboardReady.url, {waitUntil: 'domcontentloaded'}); await mobilePage.click('[data-view="crew"]'); await mobilePage.waitForSelector('.matrix-indicator');
   mobile = await mobilePage.evaluate(() => ({viewport: {width: innerWidth, height: innerHeight}, documentWidth: document.documentElement.scrollWidth, indicatorCount: document.querySelectorAll('.matrix-indicator').length, usageVisible: Boolean(document.querySelector('#persistent-usage')?.getBoundingClientRect().height), crewCards: document.querySelectorAll('#crew-live-grid .bot-card').length}));
-  screenshots.push(await screenshot(mobilePage, '13-mobile-responsive.png', true)); await mobileContext.close();
+  screenshots.push(await screenshot(mobilePage, '17-mobile-responsive.png', true)); await mobileContext.close();
   if (mobile.documentWidth > mobile.viewport.width + 1 || mobile.indicatorCount !== 9 || mobile.crewCards !== 6 || !mobile.usageVisible) throw new Error(`mobile_layout_failed:${JSON.stringify(mobile)}`);
 
   await context.close(); context = undefined;
   const rawVideo = await video.path();
-  execFileSync(ffmpeg, ['-y', '-i', rawVideo, '-an', '-c:v', 'libx264', '-preset', 'medium', '-crf', '21', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', videoFile], {stdio: ['ignore', 'ignore', 'pipe'], maxBuffer: 4 * 1024 * 1024});
+  execFileSync(ffmpeg, ['-y', '-i', rawVideo, '-an', '-c:v', 'libx264', '-preset', 'slow', '-crf', '18', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', videoFile], {stdio: ['ignore', 'ignore', 'pipe'], maxBuffer: 4 * 1024 * 1024});
   const info = mediaInfo(videoFile), videoBytes = fs.readFileSync(videoFile), evidenceBytes = fs.readFileSync(evidenceFile), transcriptBytes = fs.readFileSync(transcriptFile);
   const manifest = {
     schema: 'agent-control.crew-wopr-escalation-video/v1', verdict: 'PASS', recordedAt: new Date().toISOString(), continuousCapture: true, editedOrSpliced: false, playbackSpeed: 1,
@@ -229,10 +309,11 @@ try {
     evidence: {file: path.relative(path.dirname(manifestFile), evidenceFile), qualificationPayloadSha256BeforeVideoAttachment: sha256(evidenceBytes)},
     transcript: {file: path.relative(path.dirname(manifestFile), transcriptFile), sha256: sha256(transcriptBytes)},
     browser: {engine: 'Chromium', version: browser.version(), viewport: {width: 1920, height: 1080}, executableRecordedAs: 'configured Chromium executable'},
-    phases: {dashboardReady, concurrentPhase, sourcePhase, rejectionPhase, destinationPhase, verificationPhase, completePhase},
+    phases: {dashboardReady, socialPhase, taskPhase, concurrentPhase, sourcePhase, rejectionPhase, destinationPhase, verificationPhase, completePhase},
     journey, screenshots, animation: {idle: idleMotion, concurrent: concurrentMotion},
     liveEvidence: {source: sourceDashboard, handoff: handoffDashboard, destination: destinationDashboard, completed: completedDashboard, eventLatency},
-    checks: {allSixCharactersVisibleAndAnimated: true, exactPromptVisibleBeforeSubmission: true, twoConcurrentLanesVisible: true, eventBackedWoprIndicatorsInspected: true, sourceDifficultyVisible: true, qualityGateReasonVisible: true, sealedBatonVisible: true, destinationRouteVisible: true, persistentUsageAcrossViews: true, finalModelChainVisible: true, reducedMotion, mobile, performance, consoleErrors, httpErrors, expectedOptionalHttp, expectedOptionalConsole},
+    checks: {allSixCharactersVisibleAndAnimated: true, genuineSocialIngress: ingress === 'openwa', exactInitiatingRequestVisible: true, jobsLanesModelsSystemsCrewVisited: true, liveShellEvidence, twoConcurrentLanesVisible: true, eventBackedWoprIndicatorsInspected: true, sourceDifficultyVisible: true, qualityGateReasonVisible: true, sealedBatonVisible: true, destinationRouteVisible: true, persistentUsageAcrossViews: true, finalModelChainVisible: true, productGeneratedCompleteTranscriptVisible: true, reducedMotion, mobile, performance, consoleErrors, httpErrors, expectedOptionalHttp, expectedOptionalConsole},
+    socialIngress: socialIngressEvidence,
     security: {operatorTokenPersisted: false, codexHomePathPersisted: false, credentialsVisibleInVideo: false, privateReasoningVisible: false},
   };
   fs.writeFileSync(manifestFile, `${JSON.stringify(manifest, null, 2)}\n`, {mode: 0o600});

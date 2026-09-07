@@ -5,24 +5,30 @@ import {once} from 'node:events';
 import fs from 'node:fs';
 import type {AddressInfo} from 'node:net';
 import path from 'node:path';
+import {DatabaseSync} from 'node:sqlite';
 import {AgentControlService} from '../src/control/application-service.js';
 import type {AgentControlConfig, ModelConfig, ProviderAccountProfileConfig, ProviderConfig} from '../src/control/config.js';
 import {ContractExecutionRuntime} from '../src/control/contract-runtime.js';
 import {LocalCodexNodeExecutionPort} from '../src/control/codex-node-execution.js';
 import type {RepositoryReviewQualityGate, RepositoryReviewQualityGateResult} from '../src/control/direct-repository-review-executor.js';
+import {ExecutionSessionRuntime} from '../src/control/execution-session.js';
 import {GovernedHandoffRuntime} from '../src/control/handoff-runtime.js';
 import {buildParameterizedJobRuntime} from '../src/control/job-bootstrap.js';
 import {JobCatalog} from '../src/control/job-catalog.js';
 import {ActionFailure, ActionRegistry, ArtifactStore, JobRuntime, ResourceLockManager, RunLedger, WorkerRegistry} from '../src/control/job-runtime.js';
 import type {JobDefinition} from '../src/control/job-types.js';
 import {ModelRegistry} from '../src/control/model-registry.js';
+import {OpenWAAdapter, openwaConfigSchema, type OpenWAConfig} from '../src/control/openwa.js';
+import {openwaExecutionPort, OpenWASocialProvider} from '../src/control/openwa-social-provider.js';
 import {PtyRegistry} from '../src/control/pty.js';
+import {SocialVoiceCoordinator} from '../src/control/social-voice.js';
 import {TokenAwareBatonRuntime} from '../src/control/token-aware-baton-routing.js';
 import {WorkParcelCoordinator, WorkParcelStore, type WorkParcelPlan, type WorkParcelPlanner} from '../src/control/work-parcels.js';
 import {startWebDashboard} from '../src/control/web-server.js';
 import type {WorkspaceState} from '../src/state.js';
 
-export const QUALIFICATION_PROMPT = 'Review the frozen reservation-service fixture. Explain whether concurrent callers can both acquire the same resource and whether expired cache entries can be accepted as fresh. Preserve evidence, use the configured quality gate, and escalate only if the first route misses either root cause.';
+export const QUALIFICATION_PROMPT = 'Complete the read-only review of the frozen reservation-service fixture on the authorised qualification branch. Explain whether concurrent callers can both acquire the same resource and whether expired cache entries can be accepted as fresh. Preserve evidence, use the configured quality gate, and escalate only if the first route misses either root cause. origin/main must remain completely unchanged. Do not deploy production. Verify the result.';
+export const QUALIFICATION_SOCIAL_COMMAND = 'start governed-adaptive-crew';
 const QUALITY_GATE_CODE = 'reservation-cache-root-cause-v1';
 const SOURCE_MODEL_ID = 'qwen-local-small-reviewer';
 const DESTINATION_MODEL_ID = 'codex-luna-controller-a';
@@ -39,6 +45,9 @@ interface Options {
   sourceBaseUrl: string;
   sourceProviderModel: string;
   destinationProviderModel: string;
+  ingress: 'dashboard' | 'openwa';
+  openwaConfigFile?: string;
+  openwaEnrolmentFile?: string;
 }
 
 interface QualityObservation {
@@ -79,6 +88,9 @@ function readOptions(): Options {
     sourceBaseUrl: process.env.AGENT_CONTROL_QUALIFICATION_SOURCE_URL ?? 'http://127.0.0.1:8080',
     sourceProviderModel: process.env.AGENT_CONTROL_QUALIFICATION_SOURCE_MODEL ?? 'qwen2.5-3b-instruct-q4_k_m.gguf',
     destinationProviderModel: process.env.AGENT_CONTROL_QUALIFICATION_DESTINATION_MODEL ?? 'gpt-5.6-luna',
+    ingress: process.env.AGENT_CONTROL_QUALIFICATION_INGRESS === 'openwa' ? 'openwa' : 'dashboard',
+    ...(process.env.AGENT_CONTROL_QUALIFICATION_OPENWA_CONFIG ? {openwaConfigFile: path.resolve(process.env.AGENT_CONTROL_QUALIFICATION_OPENWA_CONFIG)} : {}),
+    ...(process.env.AGENT_CONTROL_QUALIFICATION_OPENWA_ENROLMENT ? {openwaEnrolmentFile: path.resolve(process.env.AGENT_CONTROL_QUALIFICATION_OPENWA_ENROLMENT)} : {}),
   };
 }
 
@@ -87,6 +99,7 @@ function command(cwd: string, executable: string, args: string[]) { return execF
 
 function createFixture(root: string) {
   const repository = path.join(root, 'reservation-service-fixture');
+  const remote = path.join(root, 'reservation-service-origin.git');
   fs.mkdirSync(path.join(repository, 'src'), {recursive: true, mode: 0o700});
   fs.mkdirSync(path.join(repository, 'test'), {recursive: true, mode: 0o700});
   fs.writeFileSync(path.join(repository, 'package.json'), `${JSON.stringify({name: 'reservation-service-fixture', version: '1.0.0', private: true, type: 'module', scripts: {test: 'node --test'}}, null, 2)}\n`);
@@ -136,11 +149,16 @@ test('an entry older than its TTL is stale', () => {
 });
 `);
   const gitEnvironment = {...process.env, GIT_AUTHOR_NAME: 'Agent Control Qualification', GIT_AUTHOR_EMAIL: 'qualification@invalid.example', GIT_COMMITTER_NAME: 'Agent Control Qualification', GIT_COMMITTER_EMAIL: 'qualification@invalid.example', GIT_AUTHOR_DATE: '2026-09-06T12:00:00Z', GIT_COMMITTER_DATE: '2026-09-06T12:00:00Z'};
+  execFileSync('git', ['init', '--bare', '-q', remote], {cwd: root, env: gitEnvironment});
   execFileSync('git', ['init', '-q', '-b', 'main'], {cwd: repository, env: gitEnvironment});
   execFileSync('git', ['add', '.'], {cwd: repository, env: gitEnvironment});
   execFileSync('git', ['commit', '-qm', 'qualification fixture'], {cwd: repository, env: gitEnvironment});
+  execFileSync('git', ['remote', 'add', 'origin', remote], {cwd: repository, env: gitEnvironment});
+  execFileSync('git', ['push', '-q', '-u', 'origin', 'main'], {cwd: repository, env: gitEnvironment});
+  execFileSync('git', ['switch', '-q', '-c', 'qualification/4.0-governed-adaptive-crew'], {cwd: repository, env: gitEnvironment});
+  const protectedRef = command(repository, 'git', ['ls-remote', '--refs', 'origin', 'refs/heads/main']).split(/\s+/)[0]!;
   return {
-    repository,
+    repository, remote, protectedRef,
     commit: command(repository, 'git', ['rev-parse', 'HEAD']),
     files: ['README.md', 'src/reservation-ledger.mjs', 'src/snapshot-cache.mjs', 'test/acceptance.test.mjs'].map(file => ({file, sha256: sha256(fs.readFileSync(path.join(repository, file)))})),
   };
@@ -333,7 +351,8 @@ async function main() {
   const sourceModel: ModelConfig = {id: SOURCE_MODEL_ID, provider: sourceProvider.id, providerModel: options.sourceProviderModel, displayName: 'Qwen 2.5 3B local reviewer', enabled: true, capabilities: ['repository-review'], roles: [MODEL_ROLE], nodes: ['controller'], limits: {contextTokens: 32_768, outputTokens: 1_800}, qualification: {state: 'QUALIFIED', version: 'live-llama-cpp-preflight-v1', qualifiedAt: sourcePreflight.observedAt, capabilities: ['repository-review'], nodes: ['controller'], evidence: ['live /health and model identity']}};
   const destinationModel: ModelConfig = {id: DESTINATION_MODEL_ID, provider: destinationProvider.id, providerModel: options.destinationProviderModel, accountProfile: account.id, displayName: 'Codex Luna · Controller Account A', enabled: true, capabilities: ['repository-review'], roles: [MODEL_ROLE], nodes: ['controller'], limits: {contextTokens: 272_000, outputTokens: 2_000}, qualification: {state: 'QUALIFIED', version: 'controller-account-a-codex-v1', qualifiedAt: startedAt, capabilities: ['repository-review'], nodes: ['controller'], evidence: ['bounded account and model qualification']}};
   const config: AgentControlConfig = {schemaVersion: 1, resources: [{id: 'controller', name: 'Qualification controller', platform: 'linux', transport: {type: 'local'}, capabilities: ['qualification.baseline', 'qualification.inventory', 'qualification.review', 'qualification.verify', 'repository-review'], controller: true, metadata: {capacity: 4}}], providers: [sourceProvider, destinationProvider], models: [sourceModel, destinationModel], modelRouting: {defaultRole: MODEL_ROLE, roles: {[MODEL_ROLE]: {primary: SOURCE_MODEL_ID, fallback: [DESTINATION_MODEL_ID], requires: ['repository-review']}}}, services: [], lanes: [], tokenBatonRouting: {continuePercent: 60, prepareBatonPercent: 75, compactPercent: 85, handoffPercent: 90, sampleRetention: 240}, retrieval: {enabled: false}, jobs: {repositoryRoots: [options.stateDir]}};
-  const nodeExecution = new LocalCodexNodeExecutionPort(process.env, process.env.CODEX_COMMAND ?? 'codex');
+  const executionSessions = new ExecutionSessionRuntime(path.join(options.stateDir, 'execution-sessions'));
+  const nodeExecution = new LocalCodexNodeExecutionPort(process.env, process.env.CODEX_COMMAND ?? 'codex', executionSessions);
   const accountStatus = await nodeExecution.accountStatus({provider: destinationProvider, account, nodeId: 'controller', providerExecutionNodeId: 'controller', credentialNodeId: 'controller', timeoutMs: 20_000});
   const registry = new ModelRegistry(config.providers, config.models, config.modelRouting, undefined, undefined, process.env);
   const qualityObservations: QualityObservation[] = [], qualityGate = acceptanceQualityGate(qualityObservations);
@@ -344,7 +363,14 @@ async function main() {
   let parameterizedRunId = '';
 
   const actions = new ActionRegistry();
-  actions.register('qualification.acceptance-baseline@1.0.0', async () => {
+  actions.register('qualification.acceptance-baseline@1.0.0', async context => {
+    const attached = await context.ownedExecution.runProcess({
+      command: process.execPath,
+      args: ['-e', "process.stdout.write('AGENT_CONTROL_LIVE_SHELL_READY\\n'); process.stdin.setEncoding('utf8'); let value=''; process.stdin.on('data',chunk=>{value+=chunk;if(value.includes('continue')){process.stdout.write('AGENT_CONTROL_LIVE_SHELL_INTERVENTION_ACCEPTED\\n');process.exit(0)}}); setTimeout(()=>process.exit(42),45000)"],
+      maxOutputBytes: 64 * 1024,
+      session: {terminal: 'pty', interactiveInput: true, allowSignals: true, adapterId: 'qualification-linux-pty', commandLabel: 'Harmless acceptance-baseline operator checkpoint'},
+    }, context.signal);
+    if (attached.exitCode !== 0 || !attached.stdout.includes('AGENT_CONTROL_LIVE_SHELL_INTERVENTION_ACCEPTED')) throw new ActionFailure('live_shell_harmless_intervention_missing', 'verification');
     const result = runAcceptance(fixture.repository), deadline = Date.now() + 6_000;
     while (Date.now() < deadline) { sha256(fs.readFileSync(path.join(fixture.repository, 'test/acceptance.test.mjs'))); await delay(120); }
     return {artifacts: [{name: 'acceptance-baseline', value: result, type: 'qualification-acceptance-baseline', schema: 'agent-control.qualification-acceptance/v1', version: '1'}], verification: ['two-known-failures-confirmed'], evidence: [`acceptance-output-sha256:${result.outputSha256}`], detail: 'Two deterministic acceptance failures confirmed without modifying the fixture'};
@@ -357,7 +383,8 @@ async function main() {
   actions.register('qualification.repository-review@1.0.0', async context => {
     const artifacts = context.run.trigger.parcelContext?.baton?.artifactIds ?? [];
     assert.equal(artifacts.length, 2);
-    const run = parameterizedJobs.runNow('crew-wopr-quality-review', `work-parcel:${context.run.trigger.parcelContext?.parcelId ?? 'unknown'}`);
+    const sourceParcelId = context.run.trigger.parcelContext?.parcelId, sourceParcel = sourceParcelId ? parcels.get(sourceParcelId) : undefined;
+    const run = parameterizedJobs.runNow('crew-wopr-quality-review', `work-parcel:${sourceParcelId ?? 'unknown'}`, undefined, sourceParcel?.origin);
     parameterizedRunId = run.id;
     const completed = await parameterizedJobs.execute(run.id);
     if (!['SUCCEEDED', 'SUCCEEDED_WITH_FINDINGS'].includes(completed.status) || !completed.result) throw new ActionFailure(`parameterized_review_failed:${completed.errors.at(-1) ?? completed.status}`, 'verification');
@@ -390,8 +417,8 @@ async function main() {
     .register({id: 'inventory-worker', capabilities: ['qualification.inventory'], health: 'healthy', capacity: 1, active: 0, observedAt: startedAt})
     .register({id: 'review-worker', capabilities: ['qualification.review'], health: 'healthy', capacity: 1, active: 0, observedAt: startedAt})
     .register({id: 'verification-worker', capabilities: ['qualification.verify'], health: 'healthy', capacity: 1, active: 0, observedAt: startedAt});
-  const runtime = new JobRuntime(catalog, actions, workers, new RunLedger(path.join(options.stateDir, 'runs.json')), new ArtifactStore(path.join(options.stateDir, 'artifacts')), new ResourceLockManager(path.join(options.stateDir, 'locks.json')));
-  const plan: WorkParcelPlan = {objective: QUALIFICATION_PROMPT, constraints: ['Read-only immutable fixture', 'No deployment or production mutation', 'Do not manufacture context pressure', 'Only the independent gate may trigger escalation'], planner: {kind: 'deterministic', reason: 'Explicit physical qualification maps to four registered governed Jobs'}, stages: [
+  const runtime = new JobRuntime(catalog, actions, workers, new RunLedger(path.join(options.stateDir, 'runs.json')), new ArtifactStore(path.join(options.stateDir, 'artifacts')), new ResourceLockManager(path.join(options.stateDir, 'locks.json')), {executionSessions});
+  const plan: WorkParcelPlan = {objective: QUALIFICATION_PROMPT, constraints: ['Read-only immutable fixture on qualification/4.0-governed-adaptive-crew', 'origin/main must remain completely unchanged', 'No deployment or production mutation', 'Do not manufacture context pressure', 'Only the independent gate may trigger escalation'], planner: {kind: 'deterministic', reason: 'Explicit physical qualification maps to four registered governed Jobs'}, stages: [
     {id: 'baseline', name: 'Confirm failing acceptance baseline', job: 'crew-wopr-baseline@1.0.0'},
     {id: 'inventory', name: 'Inventory frozen revision', job: 'crew-wopr-inventory@1.0.0'},
     {id: 'review', name: 'Run token-aware repository review', job: 'crew-wopr-review@1.0.0', dependsOn: ['baseline', 'inventory']},
@@ -403,35 +430,61 @@ async function main() {
   parameterizedJobs.savedJobs.create({id: 'crew-wopr-quality-review', name: 'Crew/WOPR quality-escalation review', definition: {id: 'repository-code-review', version: 1, follow: 'pinned'}, parameters: {node: 'controller', repository: fixture.repository, ref: fixture.commit, scope: 'full'}, routing: {model: SOURCE_MODEL_ID, allowFallback: false}, contextProfile: 'THIN', budgets: {timeoutMinutes: 4, maximumRetries: 0, maximumInputTokens: 12_000, maximumOutputTokens: 1_800}, concurrency: 'forbid-overlap', enabled: true});
 
   const state: WorkspaceState = {version: 1, paused: false, lastRestorePoint: null, lanes: []};
-  const control = new AgentControlService(state, new PtyRegistry(), undefined, '3.9.0-integration-candidate', () => {}).configureProjection({
+  const control = new AgentControlService(state, new PtyRegistry(), undefined, '4.0.0-rc.1', () => {}).configureProjection({
     jobRuntime: runtime,
     workParcels: parcels,
     modelRegistry: registry,
     parameterizedJobs,
     tokenBatonRouting: tokenRouting,
+    executionSessions,
     resources: workers.list().map(worker => ({id: worker.id, name: worker.id.replaceAll('-', ' '), platform: 'linux', transport: 'local', capabilities: worker.capabilities})),
   });
   runtime.ledger.subscribe((runId, type, status) => control.events.emit('job.run_changed', {runId, type, status}, undefined, 'qualification-job-runtime'));
   parameterizedJobs.runs.subscribe(run => control.events.emit('job.run_changed', {runId: run.id, status: run.status, kind: 'parameterized'}, undefined, 'qualification-parameterized-runtime'));
   tokenRouting.subscribe(event => control.events.emit(eventName(event.type), {threadId: event.threadId, parcelId: event.parcelId, observedAt: event.at}, undefined, 'qualification-token-runtime'));
+  executionSessions.subscribe((event, session) => control.events.emit(event.type === 'output' ? 'execution.session_output' : 'execution.session_changed', {sessionId: session.id, runId: session.scope.runId, stepId: session.scope.stepId, workerId: session.scope.workerId, nodeId: session.scope.nodeId, eventType: event.type, sequence: event.sequence, state: session.state, observedAt: event.at}, undefined, event.actorId));
 
   const allowedOrigins: string[] = [];
-  const server = startWebDashboard(control, {host: options.host, port: options.port, operatorToken: options.operatorToken, allowedOrigins, assetsDir: path.resolve('assets/dashboard')});
+  let openwa: OpenWAAdapter | undefined, social: SocialVoiceCoordinator | undefined, socialIdentity: {channel: 'openwa'; account: string; sender: string; conversation: string} | undefined;
+  if (options.ingress === 'openwa') {
+    if (!options.openwaConfigFile || !options.openwaEnrolmentFile || options.port < 1) throw new Error('qualification_openwa_configuration_required');
+    const existingConfig = openwaConfigSchema.parse(JSON.parse(fs.readFileSync(options.openwaConfigFile, 'utf8')));
+    const socialTemplate = {name: 'governed-adaptive-crew', jobId: 'crew-wopr-review', definitionHash: sha256(JSON.stringify(jobDefinitions.find(item => item.metadata.id === 'crew-wopr-review'))), parameters: {}, arguments: {}, maxActive: 1, maxRunsPerHour: 3};
+    const openwaConfig: OpenWAConfig = {...existingConfig, dashboardUrl: `http://localhost:${options.port}`, templates: [socialTemplate]};
+    openwa = new OpenWAAdapter(control, openwaConfig, path.join(options.stateDir, 'messaging', 'openwa.sqlite'));
+    const enrolment = new DatabaseSync(options.openwaEnrolmentFile, {readOnly: true}), operator = enrolment.prepare('SELECT sender FROM operators WHERE active=1 ORDER BY sender LIMIT 1').get() as {sender?: string} | undefined;
+    enrolment.close();
+    if (!operator?.sender) throw new Error('qualification_openwa_enrolled_operator_missing');
+    openwa.db.prepare('INSERT OR REPLACE INTO operators(sender,grants,active,progress) VALUES (?,?,1,1)').run(operator.sender, JSON.stringify([socialTemplate.name]));
+    socialIdentity = {channel: 'openwa', account: openwaConfig.sessionId, sender: operator.sender, conversation: operator.sender};
+    const standard = openwaExecutionPort(openwa);
+    social = new SocialVoiceCoordinator(path.join(options.stateDir, 'messaging', 'social-voice.sqlite'), new OpenWASocialProvider(openwa), {...standard, start(_template, actor, key, request) { return parcels.submitApprovedPlan(request.prompt, actor, key, plan, request.origin); }});
+    openwa.social = social;
+  }
+  const server = startWebDashboard(control, {host: options.host, port: options.port, operatorToken: options.operatorToken, allowedOrigins, assetsDir: path.resolve('assets/dashboard'), openwa, socialVoice: social});
   activeServer = server; await once(server, 'listening');
   const address = server.address() as AddressInfo, base = `http://${options.host}:${address.port}`;
   allowedOrigins.push(base, `http://localhost:${address.port}`);
   emit({phase: 'DASHBOARD_READY', url: base, prompt: QUALIFICATION_PROMPT, at: now()});
+  if (openwa && socialIdentity) {
+    openwa.start();
+    const healthDeadline = Date.now() + 30_000; let health = await openwa.checkHealth();
+    while (health.state !== 'connected_verified' && Date.now() < healthDeadline) { await delay(1_000); health = await openwa.checkHealth(); }
+    if (health.state !== 'connected_verified') throw new Error(`qualification_openwa_unavailable:${health.state}`);
+    openwa.queueSocial(socialIdentity, `Agent Control 4.0 qualification is ready. Reply with exactly:\n${QUALIFICATION_SOCIAL_COMMAND}`, `qualification-ready:${sha256(startedAt)}`);
+    emit({phase: 'SOCIAL_CHANNEL_READY', command: QUALIFICATION_SOCIAL_COMMAND, channel: 'openwa', at: now()});
+  }
 
   const deadline = Date.now() + 6 * 60_000, inFlight = new Set<Promise<unknown>>(), trace: Array<{at: string; label: string; crew: ReturnType<typeof safeCrew>; activityPanel: ReturnType<AgentControlService['snapshot']>['characterCrew']['activityPanel']}> = [];
   let parent = parcels.list().find(item => item.executionOwner === 'work-parcel-coordinator'), lastSignature = '', concurrentEmitted = false, sourceEmitted = false, rejectionEmitted = false, destinationEmitted = false, verificationEmitted = false;
   const sample = (label: string) => { const snapshot = control.snapshot(), signature = snapshot.characterCrew.members.map(item => item.transitionKey).join('|') + snapshot.characterCrew.activityPanel.groups.flatMap(group => group.indicators.map(item => `${item.id}:${item.state}:${item.count}`)).join('|'); if (signature !== lastSignature || label !== 'poll') { lastSignature = signature; trace.push({at: now(), label, crew: safeCrew(control), activityPanel: snapshot.characterCrew.activityPanel}); } return snapshot; };
   const launch = () => { for (;;) { const dispatch = runtime.dispatch(); if (!dispatch) break; const completion = dispatch.completion.finally(() => inFlight.delete(completion)); inFlight.add(completion); } };
-  while (!parent && Date.now() < deadline) { await delay(100); parent = parcels.list().find(item => item.executionOwner === 'work-parcel-coordinator'); sample('poll'); }
+  while (!parent && Date.now() < deadline) { await social?.tick(); await delay(100); parent = parcels.list().find(item => item.executionOwner === 'work-parcel-coordinator'); sample('poll'); }
   if (!parent) throw new Error('qualification_browser_submission_missing');
   emit({phase: 'TASK_RECEIVED', parcelId: parent.id, at: now()});
 
   while (Date.now() < deadline) {
-    await parcels.tick(); launch(); parent = parcels.get(parent.id); const snapshot = sample('poll'), routing = tokenRouting.projection();
+    await social?.tick(); await parcels.tick(); launch(); parent = parcels.get(parent.id); const snapshot = sample('poll'), routing = tokenRouting.projection();
     const activeParentStages = parent.stages.filter(stage => stage.status === 'RUNNING'), sourceThread = routing.threads.find(thread => thread.providerId === sourceProvider.id), destinationThread = routing.threads.find(thread => thread.providerId === destinationProvider.id), rejected = qualityObservations.find(item => !item.accepted), baton = tokenRouting.evidence().batons[0];
     if (!concurrentEmitted && activeParentStages.some(stage => stage.id === 'baseline') && activeParentStages.some(stage => stage.id === 'inventory')) { concurrentEmitted = true; emit({phase: 'CONCURRENT_STATE_READY', parcelId: parent.id, activeStages: activeParentStages.map(stage => stage.id), at: now()}); }
     if (!sourceEmitted && sourceThread?.active) { sourceEmitted = true; emit({phase: 'SOURCE_MODEL_ACTIVE', parcelId: sourceThread.parcelId, threadId: sourceThread.id, providerId: sourceThread.providerId, modelId: sourceThread.modelId, contextAuthority: sourceThread.latest.context.authority, at: now()}); }
@@ -468,14 +521,32 @@ async function main() {
   const finalSnapshot = sample('completed'), parentRunIds = parent.stages.map(stage => stage.runId).filter((item): item is string => Boolean(item));
   const parentRuns = parentRunIds.map(runId => runtime.ledger.get(runId)).filter((item): item is NonNullable<typeof item> => Boolean(item));
   const parentRunsById = new Map(parentRuns.map(run => [run.id, run]));
-  const transcriptText = transcript({startedAt, completedAt, repositoryCommit: fixture.commit, parentParcelId: parent.id, parentRunIds, parentRuns, parameterizedRunId, nestedParcelId: nestedParcel.id, source, destination, baton, routing: routingProjection, routingEvidence, verification});
+  const transcriptDocument = parameterizedJobs.transcripts?.read(nestedRun.id);
+  if (!transcriptDocument) throw new Error('qualification_product_transcript_unavailable');
+  const transcriptText = transcriptDocument.content;
+  assert.match(transcriptText, /^# Agent Control Natural Execution Transcript/m);
+  assert.match(transcriptText, /## Origin\n/);
+  assert.match(transcriptText, /## Authoritative initiating request\n\n> start governed-adaptive-crew/);
+  assert.ok(transcriptText.indexOf('## Authoritative initiating request') < transcriptText.indexOf('- Schema:'));
+  assert.match(transcriptText, /BATON_CREATED/);
+  assert.match(transcriptText, /HANDOFF_COMPLETED/);
+  const protectedRefAfter = command(fixture.repository, 'git', ['ls-remote', '--refs', 'origin', 'refs/heads/main']).split(/\s+/)[0]!;
+  assert.equal(protectedRefAfter, fixture.protectedRef);
+  const sessions = executionSessions.list(), liveShellSession = sessions.find(item => item.adapterId === 'qualification-linux-pty');
+  assert.ok(liveShellSession);
+  const liveShellEvents = executionSessions.events(liveShellSession.id);
+  assert.ok(liveShellEvents.some(item => item.type === 'attachment.opened' && item.detail.startsWith('WATCH;')));
+  assert.ok(liveShellEvents.some(item => item.type === 'attachment.opened' && item.detail.startsWith('INTERVENE;')));
+  assert.ok(liveShellEvents.some(item => item.type === 'human.input'));
+  assert.ok(liveShellEvents.some(item => item.type === 'attachment.closed'));
+  assert.equal(liveShellSession.capabilities.modes.intervene, true);
   fs.writeFileSync(options.transcriptFile, transcriptText, {mode: 0o600});
   const evidence = {
     schema: 'agent-control.crew-wopr-escalation-qualification/v1', verdict: 'PASS', startedAt, completedAt,
-    repository: {candidateHead: command(process.cwd(), 'git', ['rev-parse', 'HEAD']), candidateBranch: command(process.cwd(), 'git', ['branch', '--show-current']), fixtureCommit: fixture.commit, fixtureFiles: fixture.files, immutable: true},
-    request: {source: 'authenticated dashboard POST /api/parcels', exactPrompt: QUALIFICATION_PROMPT, parentParcelId: parent.id, parentRunIds},
+    repository: {candidateHead: command(process.cwd(), 'git', ['rev-parse', 'HEAD']), candidateBranch: command(process.cwd(), 'git', ['branch', '--show-current']), fixtureCommit: fixture.commit, fixtureFiles: fixture.files, immutable: true, protectedRef: 'refs/heads/main', protectedRefBefore: fixture.protectedRef, protectedRefAfter, protectedRefUnchanged: true},
+    request: {source: options.ingress === 'openwa' ? 'authenticated enrolled OpenWA sender through SocialVoiceCoordinator' : 'authenticated dashboard POST /api/parcels', exactInitiatingRequest: parent.origin?.request ?? parent.prompt, governedObjective: QUALIFICATION_PROMPT, origin: parent.origin, parentParcelId: parent.id, parentRunIds},
     topology: {controller: 'isolated AgentControlService', workloadNode: 'controller', source: {providerId: sourceProvider.id, modelId: sourceModel.id, providerModel: sourceModel.providerModel, preflight: sourcePreflight}, destination: {providerId: destinationProvider.id, accountProfileId: account.id, accountLabel: account.label, modelId: destinationModel.id, providerModel: destinationModel.providerModel, nodeId: 'controller', credentialReference: 'CODEX_HOME_COTTAGE_PLUS', accountStatus: {authenticated: accountStatus.authenticated, codexVersion: accountStatus.codexVersion, executableSha256: accountStatus.executableSha256, discoveredAt: accountStatus.discoveredAt}}},
-    productionPath: ['authenticated dashboard', 'AgentControlService', 'WorkParcelCoordinator', 'JobRuntime', 'buildParameterizedJobRuntime', 'ParameterizedJobEngine', 'DirectRepositoryReviewExecutor', 'TokenAwareBatonRuntime.observe', 'independent RepositoryReviewQualityGate', 'TokenAwareBatonRuntime.assess', 'TokenAwareBatonRuntime.createBaton', 'GovernedHandoffRuntime', 'destination provider invocation', 'independent repository validation', 'Run/Work Parcel ledger'],
+    productionPath: [options.ingress === 'openwa' ? 'authenticated enrolled OpenWA sender' : 'authenticated dashboard', ...(options.ingress === 'openwa' ? ['OpenWAAdapter', 'OpenWASocialProvider', 'SocialVoiceCoordinator'] : []), 'AgentControlService', 'WorkParcelCoordinator', 'JobRuntime', 'buildParameterizedJobRuntime', 'ParameterizedJobEngine', 'DirectRepositoryReviewExecutor', 'TokenAwareBatonRuntime.observe', 'independent RepositoryReviewQualityGate', 'TokenAwareBatonRuntime.assess', 'TokenAwareBatonRuntime.createBaton', 'GovernedHandoffRuntime', 'destination provider invocation', 'independent repository validation', 'Run/Work Parcel ledger'],
     parentWorkParcel: {id: parent.id, status: parent.status, objective: parent.objective, stages: parent.stages.map(stage => { const run = stage.runId ? parentRunsById.get(stage.runId) : undefined; return {id: stage.id, status: stage.status, runId: stage.runId, worker: stage.actualRoute?.workers[0] ?? null, startedAt: run?.startedAt ?? null, completedAt: run?.endedAt ?? null, actions: run?.steps.map(step => ({action: step.action, status: step.status, startedAt: step.startedAt ?? null, completedAt: step.endedAt ?? null})) ?? [], batonId: stage.baton?.id ?? null, batonSha256: stage.baton?.sha256 ?? null};})},
     parameterizedReview: {runId: nestedRun.id, status: nestedRun.status, reviewedSha: nestedRun.repository?.reviewedSha, frozenContext: nestedRun.context, workParcelId: nestedParcel.id, providerResponseIds: nestedRun.providerResponseIds, usage: nestedRun.usage, result: nestedRun.result},
     qualityGate: {code: QUALITY_GATE_CODE, observations: qualityObservations},
@@ -485,18 +556,19 @@ async function main() {
     handoff,
     contracts: contracts.list().map(contract => ({id: contract.id, parentContractId: contract.parentContractId, state: contract.state, active: contract.active, baton: {generation: contract.baton.generation, sha256: contract.baton.sha256}, verification: contract.verification, handoffs: contract.handoffs})),
     verification,
+    executionSessions: {liveShellSession, events: liveShellEvents, transcriptSha256: sha256(executionSessions.transcript(liveShellSession.id)), harmlessIntervention: true, inputContentPersisted: false},
     dashboard: {urlAuthority: 'isolated loopback qualification server', sseEventCount: control.events.history().length, sseEventTypes: [...new Set(control.events.history().map(event => event.type))], finalActivityPanel: finalSnapshot.characterCrew.activityPanel, finalCrew: finalSnapshot.characterCrew.members, characterTrace: trace},
-    assertions: {normalProductionCallPath: true, twoRealConcurrentControlLanes: concurrentEmitted, sourceResponseSchemaValid: true, sourceRejectedOnlyByIndependentQualityGate: true, qualityTriggeredAtLowContext: routingEvidence.decisions.some(item => item.trigger?.kind === 'QUALITY_GATE' && (item.contextPercent ?? 0) < 75), sealedBatonCreated: /^[a-f0-9]{64}$/.test(baton.sha256), crossProviderDestinationContinued: true, destinationPassedSameGate: true, sourceThreadRecoverable: true, independentVerificationPassed: verification.passed === true, lifetimeTokensReconciled: nestedRun.usage.totalTokens === totals.totalTokens && nestedParcel.audit.totals.totalTokens === totals.totalTokens, currentContextSeparateFromLifetime: routingEvidence.threads.every(thread => thread.latest.context.tokens !== thread.latest.cumulative.totalTokens || thread.latest.context.authority === 'estimated'), missingValuesNotCoercedToZero: routingEvidence.threads.some(thread => thread.latest.context.authority === 'unavailable'), credentialsAbsent: true, productionStateUntouched: true},
-    boundaries: {real: ['browser-authenticated task submission', 'deterministic concurrent Jobs', 'live local Qwen provider response', 'schema parsing and application validation', 'independent quality rejection', 'quality governor decision below context thresholds', 'durable sealed baton', 'cross-provider Codex destination continuation', 'independent quality acceptance', 'final repository validation', 'token and model-chain reconciliation', 'typed SSE dashboard updates'], unavailable: ['Neither provider exposes authoritative mid-turn current-context occupancy.', 'Neither provider reports an authoritative monetary cost for these routes.'], simulated: []},
+    assertions: {normalProductionCallPath: true, socialIngressPhysicallyAuthenticated: options.ingress === 'openwa', exactInitiatingRequestFirstInTranscript: true, twoRealConcurrentControlLanes: concurrentEmitted, liveShellWatchInterveneDetach: true, protectedRefUnchanged: true, sourceResponseSchemaValid: true, sourceRejectedOnlyByIndependentQualityGate: true, qualityTriggeredAtLowContext: routingEvidence.decisions.some(item => item.trigger?.kind === 'QUALITY_GATE' && (item.contextPercent ?? 0) < 75), sealedBatonCreated: /^[a-f0-9]{64}$/.test(baton.sha256), crossProviderDestinationContinued: true, destinationPassedSameGate: true, sourceThreadRecoverable: true, independentVerificationPassed: verification.passed === true, lifetimeTokensReconciled: nestedRun.usage.totalTokens === totals.totalTokens && nestedParcel.audit.totals.totalTokens === totals.totalTokens, currentContextSeparateFromLifetime: routingEvidence.threads.every(thread => thread.latest.context.tokens !== thread.latest.cumulative.totalTokens || thread.latest.context.authority === 'estimated'), missingValuesNotCoercedToZero: routingEvidence.threads.some(thread => thread.latest.context.authority === 'unavailable'), credentialsAbsent: true, productionStateUntouched: true},
+    boundaries: {real: [options.ingress === 'openwa' ? 'authenticated OpenWA social task submission from enrolled operator device' : 'browser-authenticated task submission', 'deterministic concurrent Jobs', 'real PTY WATCH then governed harmless INTERVENE and detach', 'live local Qwen provider response', 'schema parsing and application validation', 'independent quality rejection', 'quality governor decision below context thresholds', 'durable sealed baton', 'cross-provider Codex destination continuation', 'independent quality acceptance', 'final repository validation', 'protected origin/main before/after equality', 'token and model-chain reconciliation', 'typed SSE dashboard updates', 'product-generated complete execution transcript'], unavailable: ['Neither provider exposes authoritative mid-turn current-context occupancy.', 'Neither provider reports an authoritative monetary cost for these routes.'], simulated: []},
     security: {credentialMaterialPersisted: false, codexHomePathPersisted: false, providerRawTransportPersisted: false, privateReasoningPersisted: false, liveDeploymentTouched: false, releaseActionPerformed: false},
     initialAcceptance,
-    transcript: {file: path.relative(process.cwd(), options.transcriptFile), sha256: sha256(transcriptText)},
+    transcript: {file: path.relative(process.cwd(), options.transcriptFile), sha256: sha256(transcriptText), sourceSha256: transcriptDocument.sourceSha256, entryCount: transcriptDocument.entryCount, generatedDuringExecution: transcriptDocument.generatedDuringExecution, restartReconstructible: transcriptDocument.restartReconstructible},
   };
   const serialized = JSON.stringify(evidence, null, 2);
-  if (/\/home\/loz\/\.local\/share\/agent-control\/codex-profiles|(?:access|refresh|oauth)[_-]?token|authorization\s*:/i.test(serialized)) throw new Error('qualification_evidence_secret_or_profile_path_detected');
+  if (/\/home\/loz\/\.local\/share\/agent-control\/codex-profiles|(?:access|refresh|oauth)[_-]?token|authorization\s*:|\b\d{5,25}@(c\.us|s\.whatsapp\.net|lid)\b/i.test(serialized)) throw new Error('qualification_evidence_secret_or_profile_path_detected');
   fs.writeFileSync(options.evidenceFile, `${serialized}\n`, {mode: 0o600});
   emit({phase: 'QUALIFICATION_COMPLETE', verdict: 'PASS', evidenceFile: path.relative(process.cwd(), options.evidenceFile), transcriptFile: path.relative(process.cwd(), options.transcriptFile), parentParcelId: parent.id, parameterizedRunId, nestedParcelId: nestedParcel.id, sourceRoute: `${source.route.providerId}/${source.route.modelId}`, destinationRoute: `${destination.route.providerId}/${destination.route.accountProfileId}/${destination.route.modelId}`, batonId: baton.id, batonSha256: baton.sha256, totalTokens: totals.totalTokens, at: completedAt});
-  await delay(options.holdMs); server.close(); await once(server, 'close'); activeServer = undefined;
+  await delay(options.holdMs); social?.close(); openwa?.close(); parameterizedJobs.transcripts?.dispose(); server.close(); await once(server, 'close'); activeServer = undefined;
 }
 
 main().catch(error => { activeServer?.close(); emit({phase: 'QUALIFICATION_FAILED', error: error instanceof Error ? error.message : String(error), at: now()}); process.exitCode = 1; });
