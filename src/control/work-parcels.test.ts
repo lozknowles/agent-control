@@ -234,3 +234,13 @@ test('approved social parcels enter the same durable adaptive orchestration life
   assert.equal(restored.audit.orchestrationDecisionId,parcel.audit.orchestrationDecisionId);
   assert.equal(restartedAdaptive.decision(restored.audit.orchestrationDecisionId!).parcelId,parcel.id);
 });
+
+test('idempotent social replay repairs a decision-less parcel after coordinator restart',()=>{
+  const s=setup(),key='c'.repeat(64),plan={...s.plan,stages:[s.plan.stages[0]!]};
+  const legacy=s.coordinator.submitApprovedPlan('approved pre-adaptive social work','operator',key,plan);
+  assert.equal(legacy.audit.orchestrationDecisionId,undefined);
+  const adaptiveFile=path.join(s.root,'adaptive-recovery.json'),adaptive=new AdaptiveOrchestrationRuntime(new FileAdaptiveOrchestrationStore(adaptiveFile),{enabled:true}),restarted=new WorkParcelCoordinator(s.runtime,new WorkParcelStore(s.storeFile),s.planner,undefined,undefined,adaptive),recovered=restarted.submitApprovedPlan('approved pre-adaptive social work','operator',key,plan);
+  assert.match(recovered.audit.orchestrationDecisionId??'',/^orchestration-/);
+  assert.equal(adaptive.decision(recovered.audit.orchestrationDecisionId!).parcelId,legacy.id);
+  assert.equal(restarted.submitApprovedPlan('approved pre-adaptive social work','operator',key,plan).audit.orchestrationDecisionId,recovered.audit.orchestrationDecisionId);
+});

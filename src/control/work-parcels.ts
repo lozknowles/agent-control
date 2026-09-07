@@ -123,7 +123,7 @@ export class WorkParcelCoordinator {
     if(!/^[a-f0-9]{64}$/.test(requestKey))throw new Error('parcel_request_key_invalid');
     assertNoSensitiveMaterial(JSON.stringify({prompt,origin}), 'work_parcel_credential_material_forbidden');
     const id=`parcel-social-${requestKey}`,existing=this.store.get(id);
-    if(existing){if(existing.actor!==actor||existing.prompt!==prompt||JSON.stringify(existing.origin??null)!==JSON.stringify(origin??null))throw new Error('parcel_request_identity_mismatch');return existing;}
+    if(existing){if(existing.actor!==actor||existing.prompt!==prompt||JSON.stringify(existing.origin??null)!==JSON.stringify(origin??null))throw new Error('parcel_request_identity_mismatch');return this.ensureOrchestration(existing);}
     const plan=validateWorkParcelPlan(input,this.runtime),at=now(),stages=materializeStages(plan.stages),context=contextForPlan(plan,actor,stages,at,prompt);
     const parcel=this.store.add({id,prompt,objective:plan.objective,actor,...(origin?{origin:structuredClone(origin)}:{}),executionMode:'LIVE',executionOwner:'work-parcel-coordinator',status:'QUEUED',planner:plan.planner,stages,context,createdAt:at,updatedAt:at,telemetry:emptyTelemetry(),audit:createDecisionAudit(prompt,plan,this.runtime,at),provenance:[{at,type:'submitted',detail:'Approved social template; durable request identity; existing runtime remains authoritative'}]});
     return this.ensureOrchestration(parcel,plan);
