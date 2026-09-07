@@ -100,8 +100,8 @@
     "completePhase": {
       "phase": "QUALIFICATION_COMPLETE",
       "verdict": "PASS",
-      "evidenceFile": "/fast/work/agent-control-3.9-crew-wopr-escalation-20260906/docs/evidence/agent-control-3.9-crew-wopr-escalation.json",
-      "transcriptFile": "/fast/work/agent-control-3.9-crew-wopr-escalation-20260906/docs/evidence/agent-control-3.9-crew-wopr-escalation-transcript.md",
+      "evidenceFile": "docs/evidence/agent-control-3.9-crew-wopr-escalation.json",
+      "transcriptFile": "docs/evidence/agent-control-3.9-crew-wopr-escalation-transcript.md",
       "parentParcelId": "parcel-2febccc3-571c-4dad-a76f-733b102441ff",
       "parameterizedRunId": "d08a007b-74f1-4cc5-b93e-c9f65a99cab7",
       "nestedParcelId": "parcel-44deb8fa-71dd-477c-b555-a6caf8fb728e",
