@@ -67,6 +67,10 @@ function boundsForReply(xml) {
 }
 
 async function sendPhysicalSocialRequest() {
+  // Move the underlying foreground away from the operator chat without
+  // unlocking the device, so the subsequently queued bot prompt is eligible
+  // to surface as a genuine lock-screen notification.
+  pixelAdb(['shell', 'am', 'start', '-a', 'android.settings.SETTINGS']);
   pixelAdb(['shell', 'input', 'keyevent', 'KEYCODE_WAKEUP']);
   pixelAdb(['shell', 'cmd', 'statusbar', 'expand-notifications']);
   let reply = null;

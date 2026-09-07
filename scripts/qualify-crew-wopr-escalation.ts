@@ -471,8 +471,9 @@ async function main() {
     const healthDeadline = Date.now() + 30_000; let health = await openwa.checkHealth();
     while (health.state !== 'connected_verified' && Date.now() < healthDeadline) { await delay(1_000); health = await openwa.checkHealth(); }
     if (health.state !== 'connected_verified') throw new Error(`qualification_openwa_unavailable:${health.state}`);
-    openwa.queueSocial(socialIdentity, `Agent Control 4.0 qualification is ready. Reply with exactly:\n${QUALIFICATION_SOCIAL_COMMAND}`, `qualification-ready:${sha256(startedAt)}`);
     emit({phase: 'SOCIAL_CHANNEL_READY', command: QUALIFICATION_SOCIAL_COMMAND, channel: 'openwa', at: now()});
+    await delay(2_000);
+    openwa.queueSocial(socialIdentity, `Agent Control 4.0 qualification is ready. Reply with exactly:\n${QUALIFICATION_SOCIAL_COMMAND}`, `qualification-ready:${sha256(startedAt)}`);
   }
 
   const deadline = Date.now() + 6 * 60_000, inFlight = new Set<Promise<unknown>>(), trace: Array<{at: string; label: string; crew: ReturnType<typeof safeCrew>; activityPanel: ReturnType<AgentControlService['snapshot']>['characterCrew']['activityPanel']}> = [];
