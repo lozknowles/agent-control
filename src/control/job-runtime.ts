@@ -8,6 +8,7 @@ import {jobPriorityRank, type ActionFailureClass, type ActionHandler, type Actio
 import type {HarnessEfficiencyLedgerPort, InvocationFinalResult} from './harness-efficiency.js';
 import {OwnedProcessManager, type ExecutionCleanupReport, type OwnedExecution} from './owned-process.js';
 import {deriveRuntimeActionIntent, type RuntimeSafetySupervisorPort} from './runtime-safety-supervisor.js';
+import {compileResourcePolicies, isExternalMutation, type ActionGovernancePlan, type ActionGovernanceResolver, type ExternalOperationRecord, type ExternalOperationState} from './action-governance.js';
 
 function writeJsonAtomic(file: string, value: unknown, durable = false) { fs.mkdirSync(path.dirname(file), {recursive: true}); const temporary = `${file}.tmp`; fs.writeFileSync(temporary, `${JSON.stringify(redactSensitiveValue(value), null, 2)}\n`, {mode: 0o600, flush: durable}); fs.renameSync(temporary, file); if (durable && process.platform !== 'win32') { const fd=fs.openSync(path.dirname(file),'r'); try { fs.fsyncSync(fd); } finally { fs.closeSync(fd); } } }
 function now() { return new Date().toISOString(); }
@@ -24,10 +25,11 @@ export class ActionFailure extends Error {
 }
 class StepTimeoutError extends Error { constructor(readonly timeoutSeconds: number, readonly elapsedMs: number) { super(`step_timeout:${timeoutSeconds}s:${elapsedMs}ms`); this.name = 'StepTimeoutError'; } }
 export class ActionRegistry {
-  private readonly actions = new Map<string, {kind: 'control'; handler: ActionHandler} | {kind: 'agent'; handler: AgentActionHandler}>();
+  private readonly actions = new Map<string, {kind: 'control'; handler: ActionHandler; governance?: ActionGovernanceResolver} | {kind: 'agent'; handler: AgentActionHandler; governance?: ActionGovernanceResolver}>();
   /** Existing deterministic/control-plane Actions remain explicitly outside model execution. */
   register(id: string, handler: ActionHandler) { return this.registerControl(id, handler); }
   registerControl(id: string, handler: ActionHandler) { this.assertRegistration(id); this.actions.set(id, {kind: 'control', handler}); return this; }
+  registerGovernedControl(id: string, handler: ActionHandler, governance: ActionGovernanceResolver) { this.assertRegistration(id); this.actions.set(id, {kind: 'control', handler, governance}); return this; }
   /** Model-backed Actions can only be registered through an adaptive-harness handler. */
   registerAgent(id: string, handler: AgentActionHandler) { this.assertRegistration(id); if (handler.path !== 'adaptive-harness') throw new Error('agent_action_must_use_adaptive_harness'); this.actions.set(id, {kind: 'agent', handler}); return this; }
   has(id: string) { return this.actions.has(id); }
@@ -228,24 +230,43 @@ export class JobRuntime {
     const required = step.capabilityRequest.requires.map(item => item.id), resolution = this.workers.resolve(required, this.clock()), previousPlacement = JSON.stringify(step.placement); step.placement = resolution.rationale;
     if (!resolution.worker) { const reason = `No worker satisfies ${required.join(', ')}`, changed = step.status !== 'WAITING_FOR_WORKER' || step.waitingReason !== reason || run.status !== 'WAITING' || previousPlacement !== JSON.stringify(resolution.rationale); step.status = 'WAITING_FOR_WORKER'; step.waitingReason = reason; run.status = 'WAITING'; this.locks.release(run.id, step.id); if (changed) this.ledger.update(run, 'step.waiting_worker'); return; }
     const worker = resolution.worker, definition = run.effectiveJob.spec.steps.find(item => item.id === step.id)!;
-    if (this.safety) {
-      const decision = this.safety.assess(deriveRuntimeActionIntent({runId: run.id, parcelId: run.trigger.parcelContext?.parcelId, stageId: run.trigger.parcelContext?.stageId, stepId: step.id, actor: run.trigger.actor, action: step.action, goal: run.trigger.parcelContext?.currentInterpretation ?? run.effectiveJob.metadata.description ?? run.jobId, parameters: run.parameters, requestedCapabilities: required, resources: step.resources, workerId: worker.id}));
-      const safetyDetail = `${decision.outcome}:${decision.id}:${decision.reason}`; if (!run.provenance.some(item => item.type === 'runtime-safety' && item.detail === safetyDetail)) run.provenance.push({type: 'runtime-safety', at: decision.at, detail: safetyDetail});
-      if (decision.outcome === 'DENY') { const at = this.clock().toISOString(); step.status = 'FAILED'; step.error = `runtime_safety_denied:${decision.id}`; step.endedAt = at; this.cancelDependents(run, step.id); run.status = 'FAILED'; run.endedAt = at; run.errors.push(`${step.id}:policy:${step.error}`); this.locks.release(run.id, step.id); this.ledger.update(run, 'step.safety_denied', {decisionId: decision.id, outcome: decision.outcome, policyId: decision.policyId}); return; }
-      if (['REQUIRE_APPROVAL','PAUSE','ESCALATE'].includes(decision.outcome)) { step.status = 'WAITING_FOR_APPROVAL'; step.approval = decision.approvalId; step.waitingReason = `${decision.outcome}: ${decision.reason}`; run.status = 'WAITING'; this.locks.release(run.id, step.id); this.ledger.update(run, 'step.safety_waiting', {decisionId: decision.id, outcome: decision.outcome, policyId: decision.policyId, approvalId: decision.approvalId}); return; }
-      this.ledger.update(run, decision.outcome === 'ALLOW_WITH_AUDIT' ? 'step.safety_allowed_with_audit' : 'step.safety_allowed', {decisionId: decision.id, outcome: decision.outcome, policyId: decision.policyId});
+    const registeredAction = this.actions.resolve(step.action);
+    let inputs: ArtifactRecord[];
+    try { inputs = this.inputArtifacts(run, step.id); }
+    catch (error) {
+      const at = this.clock().toISOString(), reason = safeFailureMessage(error instanceof Error ? error.message : String(error)); step.status = 'FAILED'; step.error = reason; step.endedAt = at; run.status = 'FAILED'; run.endedAt = at; run.errors.push(`${step.id}:configuration:${reason}`); this.cancelDependents(run, step.id); this.locks.release(run.id, step.id); this.ledger.update(run, 'step.input_resolution_failed', {reason}); return;
     }
+    if (registeredAction.governance) {
+      try {
+        const resolved = registeredAction.governance({run: structuredClone(run), step: structuredClone(step), worker, parameters: structuredClone(run.parameters), inputArtifacts: structuredClone(inputs), readArtifact: id => this.artifacts.read(id)});
+        const policies = [...resolved.policies, ...compileResourcePolicies(run)].filter((item, index, values) => values.findIndex(candidate => candidate.id === item.id) === index);
+        step.governance = {...resolved, policies};
+        step.externalOperations = resolved.effects.filter(isExternalMutation).map(effect => { const proposedAt = this.clock().toISOString(); return {schema: 'agent-control.external-operation/v1', id: `external-operation-${randomUUID()}`, effectId: effect.id, resource: effect.resource, effect: effect.kind, state: 'PROPOSED', proposedAt, updatedAt: proposedAt, transitions: [{state: 'PROPOSED', at: proposedAt}]}; });
+        this.ledger.update(run, 'step.effects_resolved', {effectCount: resolved.effects.length, protectedResourceCount: policies.filter(item => item.capability === 'READ_ONLY').length});
+      } catch (error) {
+        const at = this.clock().toISOString(), reason = safeFailureMessage(error instanceof Error ? error.message : String(error)); step.status = 'FAILED'; step.error = `action_effect_resolution_failed:${reason}`; step.endedAt = at; run.status = 'FAILED'; run.endedAt = at; run.errors.push(`${step.id}:policy:${step.error}`); this.cancelDependents(run, step.id); this.locks.release(run.id, step.id); this.ledger.update(run, 'step.effect_resolution_failed', {reason}); return;
+      }
+    }
+    if (this.safety) {
+      const route = run.trigger.modelRoute, decision = this.safety.assess(deriveRuntimeActionIntent({runId: run.id, parcelId: run.trigger.parcelContext?.parcelId, stageId: run.trigger.parcelContext?.stageId, stepId: step.id, actor: run.trigger.actor, action: step.action, goal: run.trigger.parcelContext?.currentInterpretation ?? run.effectiveJob.metadata.description ?? run.jobId, parameters: run.parameters, requestedCapabilities: required, resources: step.resources, workerId: worker.id, crewRole: 'resource-guardian', providerId: route?.providerId, accountProfileId: route?.accountProfileId ?? undefined, modelId: route?.modelId, nodeId: route?.providerExecutionNodeId ?? worker.id, effects: step.governance?.effects, resourcePolicies: step.governance?.policies}));
+      for (const operation of step.externalOperations ?? []) { operation.decisionId = decision.id; operation.updatedAt = this.clock().toISOString(); }
+      const safetyDetail = `${decision.outcome}:${decision.id}:${decision.reason}`; if (!run.provenance.some(item => item.type === 'runtime-safety' && item.detail === safetyDetail)) run.provenance.push({type: 'runtime-safety', at: decision.at, detail: safetyDetail});
+      if (decision.outcome === 'DENY') { const at = this.clock().toISOString(); for (const operation of step.externalOperations ?? []) { operation.reason = decision.reason; operation.transitions[0].reason = decision.reason; } step.status = 'FAILED'; step.error = `runtime_safety_denied:${decision.id}`; step.endedAt = at; this.cancelDependents(run, step.id); run.status = 'FAILED'; run.endedAt = at; run.errors.push(`${step.id}:policy:${step.error}`); this.locks.release(run.id, step.id); this.ledger.update(run, 'step.safety_denied', {decisionId: decision.id, outcome: decision.outcome, policyId: decision.policyId}); return; }
+      if (['REQUIRE_APPROVAL','PAUSE','ESCALATE'].includes(decision.outcome)) { for (const operation of step.externalOperations ?? []) operation.reason = decision.reason; step.status = 'WAITING_FOR_APPROVAL'; step.approval = decision.approvalId; step.waitingReason = `${decision.outcome}: ${decision.reason}`; run.status = 'WAITING'; this.locks.release(run.id, step.id); this.ledger.update(run, 'step.safety_waiting', {decisionId: decision.id, outcome: decision.outcome, policyId: decision.policyId, approvalId: decision.approvalId}); return; }
+      this.ledger.update(run, decision.outcome === 'ALLOW_WITH_AUDIT' ? 'step.safety_allowed_with_audit' : 'step.safety_allowed', {decisionId: decision.id, outcome: decision.outcome, policyId: decision.policyId});
+      this.setExternalOperationState(step, 'AUTHORISED', decision.reason);
+    } else this.setExternalOperationState(step, 'AUTHORISED', 'No runtime safety supervisor configured');
     const controller = new AbortController(), ownedExecution = this.ownedExecutionFactory(), retry = definition.retry ?? run.effectiveJob.spec.retry ?? {attempts: 0, backoffSeconds: 0}, attemptStartedAt = this.clock().toISOString();
     this.controllers.set(run.id, controller); this.workers.claim(worker.id); step.status = 'RUNNING'; step.waitingReason = undefined; step.nextAttemptAt = undefined; step.startedAt ??= attemptStartedAt; run.startedAt ??= step.startedAt; run.status = 'RUNNING';
     if (!run.selectedWorkers.includes(worker.id)) run.selectedWorkers.push(worker.id);
     if (retry.attempts > 0) { step.recoveryDeadlineAt ??= new Date(this.clock().getTime() + (retry.overallDeadlineSeconds ?? this.defaultRecoveryDeadlineSeconds) * 1000).toISOString(); step.remainingRetryBudget = Math.max(0, retry.attempts - step.attempts.length); }
-    const attempt: StepAttempt = {attempt: step.attempts.length + 1, startedAt: attemptStartedAt, workerId: worker.id}; step.attempts.push(attempt); this.ledger.update(run, 'step.dispatched');
+    const attempt: StepAttempt = {attempt: step.attempts.length + 1, startedAt: attemptStartedAt, workerId: worker.id}; step.attempts.push(attempt); this.setExternalOperationState(step, 'EXECUTING'); this.ledger.update(run, 'step.dispatched');
     const timeoutSeconds = definition.timeoutSeconds, wallStartedAt = Date.now();
     let timeoutTimer: NodeJS.Timeout | undefined, timedOut = false, safeToReleaseWorker = true;
     try {
-      const inputs = this.inputArtifacts(run, step.id), action = this.actions.resolve(step.action);
+      const action = registeredAction;
       run.provenance.push({type: 'action-dispatch', at: this.clock().toISOString(), detail: `${action.kind}:${step.action}${action.kind === 'agent' ? ':adaptive-harness' : ''}`});
-      const actionContext = {run: structuredClone(run), step: structuredClone(step), worker, parameters: structuredClone(run.parameters), inputArtifacts: inputs, readArtifact: (id: string) => this.artifacts.read(id), signal: controller.signal, ownedExecution};
+      const actionContext = {run: structuredClone(run), step: structuredClone(step), worker, parameters: structuredClone(run.parameters), inputArtifacts: inputs, readArtifact: (id: string) => this.artifacts.read(id), signal: controller.signal, ownedExecution, ...(step.governance ? {governance: structuredClone(step.governance)} : {})};
       const invocation = Promise.resolve().then(() => action.kind === 'control' ? action.handler(actionContext) : action.handler.execute(actionContext)).then(
         output => timedOut ? new Promise<never>(() => undefined) : output,
         error => timedOut ? new Promise<never>(() => undefined) : Promise.reject(error),
@@ -264,6 +285,7 @@ export class JobRuntime {
       attempt.efficiencyInvocationIds = [...(output.efficiencyInvocationIds ?? [])];
       if (action.kind === 'agent' && output.executionState !== 'verification-pending') throw new ActionFailure('agent_action_missing_verification_boundary', 'verification');
       if (controller.signal.aborted) throw new ActionFailure('execution_cancelled', 'execution');
+      this.applyExternalOperationStates(step, output.externalOperationStates); this.setExternalOperationState(step, 'EXTERNALLY_COMMITTED', undefined, ['EXECUTING']);
       this.recordActionOutput(run, step.id, worker.id, output); step.status = 'VERIFYING'; run.status = 'VERIFYING'; if (attempt.efficiencyInvocationIds.length) this.efficiency?.setPhase(attempt.efficiencyInvocationIds, 'verification'); this.ledger.update(run, 'step.verifying');
       const requiredVerification = step.verification?.required ?? [], passed = new Set(output.verification ?? []); step.verification!.passed = requiredVerification.filter(item => passed.has(item)); step.verification!.failed = requiredVerification.filter(item => !passed.has(item));
       if (step.verification!.failed.length) throw new ActionFailure(`verification_failed:${step.verification!.failed.join(',')}`, 'verification');
@@ -272,8 +294,10 @@ export class JobRuntime {
     } catch (error) {
       const errorInvocationIds = efficiencyInvocationIds(error); if (!attempt.efficiencyInvocationIds?.length && errorInvocationIds.length) attempt.efficiencyInvocationIds = errorInvocationIds;
       const partialOutput = partialActionOutput(error); if (partialOutput) this.recordActionOutput(run, step.id, worker.id, partialOutput);
+      if (partialOutput) this.applyExternalOperationStates(step, partialOutput.externalOperationStates);
       if (error instanceof StepTimeoutError) {
         const cleanup = await ownedExecution.terminateAll('step_timeout'); attempt.cleanup = cleanup; step.cleanup = cleanup;
+        this.setExternalOperationState(step, cleanup.outcome === 'confirmed' ? 'COMMIT_STATE_UNCERTAIN' : 'COMMIT_STATE_UNCERTAIN', 'Execution timed out before external commit could be reconciled', ['EXECUTING']);
         if (cleanup.outcome !== 'confirmed') {
           safeToReleaseWorker = false; this.markCleanupUncertain(run, step, attempt, cleanup, `step_timeout:${error.timeoutSeconds}s`); return;
         }
@@ -286,10 +310,12 @@ export class JobRuntime {
       }
       if (controller.signal.aborted) {
         const cleanup = await ownedExecution.terminateAll('execution_cancelled'); attempt.cleanup = cleanup; step.cleanup = cleanup;
+        this.setExternalOperationState(step, 'COMMIT_STATE_UNCERTAIN', 'Execution cancelled before external commit could be reconciled', ['EXECUTING']);
         if (cleanup.outcome !== 'confirmed') { safeToReleaseWorker = false; this.markCleanupUncertain(run, step, attempt, cleanup, 'execution_cancelled'); return; }
         step.status = 'CANCELLED'; step.waitingReason = undefined; step.endedAt = this.clock().toISOString(); attempt.endedAt = step.endedAt; attempt.outcome = 'execution_cancelled'; run.status = 'CANCELLED'; run.endedAt = step.endedAt; if (!run.errors.includes('execution_cancelled')) run.errors.push('execution_cancelled'); this.finalizeCancelledEfficiency(run, 'execution_cancelled'); this.locks.release(run.id, step.id); this.ledger.update(run, 'run.cancellation_confirmed', {cleanup: cleanup.outcome}); return;
       }
       const failure = error instanceof ActionFailure ? error : new ActionFailure(error instanceof Error ? error.message : String(error), 'execution', true), failureMessage = safeFailureMessage(failure.message);
+      this.setExternalOperationState(step, 'COMMIT_STATE_UNCERTAIN', failureMessage, ['EXECUTING']);
       attempt.endedAt = this.clock().toISOString(); attempt.outcome = failureMessage; attempt.retryable = failure.retryable; attempt.errorClass = failure.failureClass; attempt.recoveryKind = failure.recoveryKind; step.error = failureMessage; this.locks.release(run.id, step.id);
       if (attempt.efficiencyInvocationIds?.length) { this.efficiency?.finalizePending(attempt.efficiencyInvocationIds, 'FAILED', failureMessage, 'executor_failure', attempt.endedAt); this.efficiency?.markVerification(attempt.efficiencyInvocationIds, 'FAIL'); }
       if (failure.recoveryKind === 'authentication-required') {
@@ -312,6 +338,8 @@ export class JobRuntime {
     const deadline = Date.parse(step.recoveryDeadlineAt ?? '');
     return Number.isFinite(deadline) && candidate.getTime() > deadline ? undefined : candidate.toISOString();
   }
+  private setExternalOperationState(step: RunRecord['steps'][number], state: ExternalOperationState, reason?: string, from?: ExternalOperationState[]) { for (const operation of step.externalOperations ?? []) if ((!from || from.includes(operation.state)) && operation.state !== state) { const at = this.clock().toISOString(), safeReason = reason ? safeFailureMessage(reason) : undefined; operation.state = state; operation.updatedAt = at; operation.transitions.push({state, at, ...(safeReason ? {reason: safeReason} : {})}); if (safeReason) operation.reason = safeReason; } }
+  private applyExternalOperationStates(step: RunRecord['steps'][number], states?: ActionOutput['externalOperationStates']) { for (const state of states ?? []) { const operation = step.externalOperations?.find(item => item.effectId === state.effectId); if (!operation) throw new ActionFailure(`external_operation_effect_unknown:${state.effectId}`, 'verification'); if (operation.state === state.state) continue; const at = this.clock().toISOString(), reason = state.reason ? safeFailureMessage(state.reason) : undefined; operation.state = state.state; operation.updatedAt = at; operation.transitions.push({state: state.state, at, ...(reason ? {reason} : {})}); if (reason) operation.reason = reason; } }
   private markCleanupUncertain(run: RunRecord, step: RunRecord['steps'][number], attempt: StepAttempt, cleanup: ExecutionCleanupReport, reason: string) {
     const at = this.clock().toISOString(); step.status = 'CLEANUP_UNCERTAIN'; step.waitingReason = `Worker cleanup ${cleanup.outcome}; resource lease retained pending reconciliation`; step.error = `${reason}:cleanup_${cleanup.outcome}`; step.cleanup = cleanup; attempt.endedAt = at; attempt.outcome = step.error; attempt.terminalReason = 'cleanup_unproven'; run.status = 'CLEANUP_UNCERTAIN'; run.errors.push(`${step.id}:cleanup:${cleanup.outcome}`); run.provenance.push({type: 'cleanup-uncertain', at, detail: `outcome=${cleanup.outcome};processes=${cleanup.processes.length};resource-lock=retained`}); this.ledger.update(run, 'step.cleanup_uncertain', {cleanupOutcome: cleanup.outcome, processCount: cleanup.processes.length, resourceLockReleased: false});
   }

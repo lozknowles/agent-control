@@ -1,4 +1,5 @@
 import {ActionFailure, ActionRegistry} from './job-runtime.js';
+import {registerGovernedGitActions} from './governed-git-actions.js';
 
 interface CandidateEvent {id: string; title: string; startsAt: string; source: string;}
 function candidates(value: unknown): CandidateEvent[] {
@@ -46,5 +47,5 @@ export function registerReferenceActions(registry = new ActionRegistry()) {
     if (value.target !== 'qualification-fixture' || value.immutable !== true) throw new ActionFailure('target_verification_failed', 'verification');
     return {artifacts: [{name: 'verification-report', value: {ok: true, target: value.target}}], evidence: ['Fixture target independently verified'], verification: ['target-verified'], detail: 'fixture target verified'};
   });
-  return registry;
+  return registerGovernedGitActions(registry);
 }

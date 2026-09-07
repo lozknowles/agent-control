@@ -2,6 +2,8 @@
 
 Agent Control remains the authority boundary. ACP clients, browser sessions, model providers, processes, PTYs, agents and lifecycle discovery can request or execute bounded work; none can grant itself scheduler ownership, capabilities, protected-resource access, approval, write control or verified completion.
 
+Natural Work Parcel constraints may compile to durable protected-resource capabilities. A consequential Action must resolve semantic effects before dispatch; a write-like effect intersecting a read-only resource is denied before the handler starts. The Git adapter executes only normalized argv operations without a shell and fails closed on unsupported or implicit semantics. Force, delete, mirror, wrapper, chain and alternate-working-directory forms do not bypass the resource check. External commit uncertainty remains explicit rather than being inferred from process exit.
+
 ## ACP transport
 
 Stable ACP v1 stdio uses newline-delimited JSON-RPC on process streams and requires a pre-registered Actor. Protocol stdout is framing-only. Remote HTTP/WebSocket is opt-in, bearer-authenticated before parsing/upgrade, Origin-restricted, size-bounded and loopback by default. Non-loopback binding requires TLS certificate/key file references. ACP v2 is not imported or claimed.

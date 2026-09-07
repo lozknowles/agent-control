@@ -5,6 +5,7 @@ import {IdentityControlPlane} from './identity-control-plane.js';
 import {buildJobRuntime, startJobScheduler} from './job-bootstrap.js';
 import {ModelQualificationStore, ModelRegistry} from './model-registry.js';
 import {CapabilityIntelligenceStore, registerAgentControlCoreCapabilities} from './capability-intelligence.js';
+import {ResourceCodexNodeExecutionPort} from './codex-node-execution.js';
 
 export function bootstrapAcpRuntime(environment: NodeJS.ProcessEnv = process.env) {
   const config = loadConfig(configPath(environment));
@@ -16,7 +17,8 @@ export function bootstrapAcpRuntime(environment: NodeJS.ProcessEnv = process.env
 
   const capabilities = new CapabilityIntelligenceStore(path.join(stateRoot, 'capabilities', 'intelligence.json')); registerAgentControlCoreCapabilities(capabilities);
   const models = new ModelRegistry(config.providers, config.models, config.modelRouting, new ModelQualificationStore(path.join(stateRoot, 'model-qualification.json')), undefined, environment, capabilities);
-  const jobs = buildJobRuntime(config, stateRoot, undefined, undefined, models);
+  const codexNodeExecution = new ResourceCodexNodeExecutionPort(config.resources);
+  const jobs = buildJobRuntime(config, stateRoot, undefined, undefined, models, codexNodeExecution);
   const runtime = createAcpRuntime({
     identities,
     principalActorId,

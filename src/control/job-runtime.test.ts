@@ -8,6 +8,8 @@ import {ActionFailure, ActionRegistry, ArtifactStore, JobRuntime, ResourceLockMa
 import type {JobDefinition, ScheduleDefinition, WorkerRegistration} from './job-types.js';
 import {registerBrowserActions} from './browser-actions.js';
 import {registerReferenceActions} from './reference-actions.js';
+import {registerProtectedResourceModelActions} from './protected-resource-model-actions.js';
+import type {AgentControlConfig} from './config.js';
 import {createInvocationStart, MemoryHarnessEfficiencyLedger, type HarnessEfficiencyLedgerPort} from './harness-efficiency.js';
 import {RuntimeSafetySupervisor} from './runtime-safety-supervisor.js';
 import type {ExecutionCleanupReport, OwnedExecution} from './owned-process.js';
@@ -123,7 +125,7 @@ test('production Job dispatch fails closed before an out-of-scope action handler
   assert.equal(failed.status, 'FAILED'); assert.equal(failed.steps[0].status, 'FAILED'); assert.match(failed.steps[0].error ?? '', /runtime_safety_denied/); assert.equal(calls, 0); assert.equal(safety.list()[0].outcome, 'DENY');
 });
 test('reference workflow retains discovery artifact while publisher is unavailable then resumes across workers', async () => {
-  const actions = registerReferenceActions(); registerBrowserActions(actions);
+  const actions = registerReferenceActions(); registerBrowserActions(actions); registerProtectedResourceModelActions({} as AgentControlConfig, undefined, undefined, actions);
   actions.register('managed-node.inspect@1.0.0', async () => ({})); actions.register('managed-node.maintain@1.0.0', async () => ({}));
   const catalog = new JobCatalog(actions.ids()).loadDirectory(path.resolve('config/jobs')), root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-events-')), workers = new WorkerRegistry(); workers.register(worker('mobile', ['browser.mobile', 'facebook.authenticated'])); workers.register(worker('publisher', ['localwalks.publisher', 'node', 'git', 'production-access'], 'offline')); workers.register(worker('observer', ['network.read']));
   const runtime = new JobRuntime(catalog, actions, workers, new RunLedger(path.join(root, 'ledger.json')), new ArtifactStore(path.join(root, 'artifacts')), new ResourceLockManager(path.join(root, 'locks.json')), {approval: () => true}); const run = runtime.createRun('events-refresh-qualification@1.0.0', {}, {type: 'manual', actor: 'qualification'});
