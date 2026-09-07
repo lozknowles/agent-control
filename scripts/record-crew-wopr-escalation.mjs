@@ -104,8 +104,16 @@ async function sendPhysicalSocialRequest() {
   pixelAdb(['shell', 'input', 'text', 'start%sgoverned-adaptive-crew']);
   await delay(300);
   const composed = pixelAdb(['exec-out', 'uiautomator', 'dump', '/dev/tty']), send = boundsForLabel(composed, /^send$/i);
+  if (!composed.includes('text="start governed-adaptive-crew"')) throw new Error('qualification_pixel_composed_command_not_exact');
   if (!send) throw new Error('qualification_pixel_message_send_control_unavailable');
   pixelAdb(['shell', 'input', 'tap', String(send.x), String(send.y)]);
+  await delay(500);
+  const submitted = pixelAdb(['exec-out', 'uiautomator', 'dump', '/dev/tty']);
+  if (submitted.includes('text="start governed-adaptive-crew"')) {
+    pixelAdb(['shell', 'input', 'tap', String(send.x), String(send.y)]);
+    await delay(500);
+    if (pixelAdb(['exec-out', 'uiautomator', 'dump', '/dev/tty']).includes('text="start governed-adaptive-crew"')) throw new Error('qualification_pixel_message_send_not_committed');
+  }
   return {node: 'configured Android operator device', transport: 'strict-host-key SSH to existing qualified local ADB', adb, action: 'notification inline reply', request: 'start governed-adaptive-crew'};
 }
 
