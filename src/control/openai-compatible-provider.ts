@@ -1,4 +1,5 @@
 import {createHash} from 'node:crypto';
+import {Agent, fetch as undiciFetch} from 'undici';
 import type {ModelConfig, ProviderConfig} from './config.js';
 import {providerPromptBoundary, renderProviderPrompt, type ProviderPromptInput} from './provider-prompt.js';
 import {resolveProviderCredential} from './provider-credential-store.js';
@@ -35,9 +36,17 @@ export interface ProviderStreamingProbeResult {
 }
 
 const MAXIMUM_STREAM_PROBE_BYTES = 2 * 1024 * 1024;
+// The invocation AbortSignal is Agent Control's authoritative timeout. Undici's
+// otherwise implicit 300-second header/body deadlines can terminate a valid,
+// slow non-streaming model response before the governed job budget expires.
+const GOVERNED_PROVIDER_DISPATCHER = new Agent({headersTimeout: 0, bodyTimeout: 0});
+const governedProviderFetch: FetchLike = (input, init) => undiciFetch(
+  input as Parameters<typeof undiciFetch>[0],
+  {...init, dispatcher: GOVERNED_PROVIDER_DISPATCHER} as Parameters<typeof undiciFetch>[1],
+) as unknown as Promise<Response>;
 
 export class OpenAICompatibleProviderClient {
-  constructor(private readonly provider: ProviderConfig, private readonly fetcher: FetchLike = fetch, private readonly credential = () => resolveProviderCredential(provider), private readonly identity: {accountProfileId?: string; nodeId?: string} = {}) {
+  constructor(private readonly provider: ProviderConfig, private readonly fetcher: FetchLike = governedProviderFetch, private readonly credential = () => resolveProviderCredential(provider), private readonly identity: {accountProfileId?: string; nodeId?: string} = {}) {
     if (provider.kind !== 'openai-compatible' && provider.kind !== 'responses' && provider.kind !== 'local') throw new Error('provider_not_openai_compatible');
     if (!provider.baseUrl) throw new Error('provider_base_url_required');
   }
@@ -70,7 +79,7 @@ export class OpenAICompatibleProviderClient {
       const {responseHash: _responseHash, ...result}=partial, limitTokens=model.limits?.contextTokens ?? this.provider.qualification?.advertisedContextLimitTokens ?? null, estimatedContext=result.usage.totalTokens !== null && limitTokens !== null;
       options.onTelemetry?.({phase: 'completed', providerId: this.provider.id, modelId: model.id, elapsedMs: result.elapsedMs, usage: result.usage, context: {tokens: estimatedContext ? result.usage.totalTokens : null, limitTokens, authority: estimatedContext ? 'estimated' : 'unavailable', source: estimatedContext ? 'ephemeral_single_turn_usage_estimate' : 'provider_did_not_report_current_context'}}); return result;
     } catch (error) {
-      const failure = (error as Error).name === 'AbortError' ? new Error(options.signal?.aborted ? 'provider_cancelled' : 'provider_timeout') : error;
+      const failure = normalizeProviderTransportFailure(error, options.signal?.aborted === true, controller.signal.aborted);
       if (!(failure as {partialInvocation?: PartialModelInvocation}).partialInvocation && !(failure as {providerFailureObservation?: ProviderFailureObservation}).providerFailureObservation) Object.assign(failure as object, {providerFailureObservation: {requestDispatched, usage: null, usageAuthority: 'unavailable', elapsedMs: Date.now() - started, invocationProfile: options.requestExtension?.profile ?? null} satisfies ProviderFailureObservation});
       throw sanitizeError(failure, token);
     }
@@ -156,9 +165,10 @@ export class OpenAICompatibleProviderClient {
       } finally { reader.releaseLock(); }
       return result('COMPLETED', null);
     } catch (error) {
-      if ((error as Error).name === 'AbortError') return result('TIMEOUT', options.signal?.aborted ? 'provider_cancelled' : 'provider_timeout');
+      const failure = normalizeProviderTransportFailure(error, options.signal?.aborted === true, controller.signal.aborted);
+      if (failure.message === 'provider_timeout' || failure.message === 'provider_cancelled') return result('TIMEOUT', failure.message);
       if (['provider_malformed_stream','provider_response_too_large'].includes((error as Error).message)) return result('MALFORMED', (error as Error).message);
-      return result('TRANSPORT_ERROR', sanitizeError(error, token).message);
+      return result('TRANSPORT_ERROR', sanitizeError(failure, token).message);
     } finally { clearTimeout(timeout); }
   }
 }
@@ -239,4 +249,23 @@ function supportsCacheCapability(provider: ProviderConfig, model: ModelConfig, c
 }
 function number(value: unknown) { return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null; }
 function providerError(status: number) { return new Error(status === 401 || status === 403 ? 'provider_authentication_failed' : status === 429 ? 'provider_rate_limited' : status >= 500 ? 'provider_unavailable' : `provider_request_failed:${status}`); }
+const PROVIDER_TIMEOUT_CODES = new Set(['UND_ERR_HEADERS_TIMEOUT', 'UND_ERR_BODY_TIMEOUT', 'UND_ERR_CONNECT_TIMEOUT', 'ETIMEDOUT']);
+const PROVIDER_TRANSPORT_CODES = new Set(['ECONNRESET', 'ECONNREFUSED', 'ENOTFOUND', 'EHOSTUNREACH', 'ENETUNREACH', 'UND_ERR_SOCKET']);
+function nestedErrorCode(error: unknown) {
+  let current: unknown = error;
+  for (let depth = 0; depth < 4 && current && typeof current === 'object'; depth++) {
+    const code = (current as {code?: unknown}).code;
+    if (typeof code === 'string') return code;
+    current = (current as {cause?: unknown}).cause;
+  }
+  return null;
+}
+function normalizeProviderTransportFailure(error: unknown, callerCancelled: boolean, governedTimeout: boolean): Error {
+  if (callerCancelled) return new Error('provider_cancelled');
+  if (governedTimeout || (error as Error)?.name === 'AbortError') return new Error('provider_timeout');
+  const code = nestedErrorCode(error);
+  if (code && PROVIDER_TIMEOUT_CODES.has(code)) return new Error('provider_timeout');
+  if (code && PROVIDER_TRANSPORT_CODES.has(code) || (error as Error)?.message === 'fetch failed') return new Error('provider_transport_failed');
+  return error instanceof Error ? error : new Error('provider_request_failed');
+}
 function sanitizeError(error: unknown, credential = '') { const message = error instanceof Error ? error.message : 'provider_request_failed',sanitized=new Error(redactSensitiveText(message, [credential]).slice(0, 240)),partial=(error as {partialInvocation?:PartialModelInvocation})?.partialInvocation,observation=(error as {providerFailureObservation?:ProviderFailureObservation})?.providerFailureObservation;return Object.assign(sanitized,partial?{partialInvocation:partial}:{},observation?{providerFailureObservation:structuredClone(observation)}:{}); }
