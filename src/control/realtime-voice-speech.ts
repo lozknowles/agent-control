@@ -33,3 +33,41 @@ export class PrivatePcmSpeech implements IncrementalVoiceSpeech {
     for(const frame of waveFrames(Buffer.from(body.audio,'base64'))){signal.throwIfAborted();yield frame;}
   }
 }
+
+/** Keeps the configured voice while avoiding known long-list degeneration in buffered synthesis. */
+export class ChunkedPcmSpeech implements IncrementalVoiceSpeech {
+  readonly id:string;readonly mode='buffered-then-framed' as const;
+  constructor(private source:IncrementalVoiceSpeech){this.id=`${source.id}-chunked`;}
+  private chunks(text:string){
+    const comma=text.split(/,\s*/).map(value=>value.trim()).filter(Boolean);
+    if(comma.length>=6){const chunks:string[]=[];for(let index=0;index<comma.length;){const remaining=comma.length-index,size=remaining===4?4:Math.min(3,remaining);index+=size;chunks.push(comma.slice(index-size,index).join(', ').replace(/[.!?]?$/,index>=comma.length?'.':','));}return chunks;}
+    return [text];
+  }
+  async *frames(text:string,voice:VoiceIdentity,signal:AbortSignal){for(const chunk of this.chunks(text)){signal.throwIfAborted();yield* this.source.frames(chunk,voice,signal);}}
+}
+
+/** Durable exact-response cache. The namespace must change with synthesis settings; voice identity carries its model revision. */
+export class CachedPcmSpeech implements IncrementalVoiceSpeech {
+  readonly id:string;readonly mode:'native-streaming'|'buffered-then-framed';private allowed:Set<string>;
+  constructor(private source:IncrementalVoiceSpeech,private root:string,private namespace:string,allowedTexts:readonly string[]){
+    if(!path.isAbsolute(root)||!namespace.trim()||!allowedTexts.length||allowedTexts.some(text=>!text.trim()))throw new Error('speech_cache_configuration_invalid');
+    this.allowed=new Set(allowedTexts);
+    this.id=`${source.id}-content-cache`;this.mode=source.mode;
+  }
+  async *frames(text:string,voice:VoiceIdentity,signal:AbortSignal){
+    validateVoice(voice);signal.throwIfAborted();
+    if(!this.allowed.has(text)){yield* this.source.frames(text,voice,signal);return;}
+    const key=createHash('sha256').update(JSON.stringify({schema:1,namespace:this.namespace,provider:this.source.id,text,voice})).digest('hex'),file=path.join(this.root,key.slice(0,2),`${key}.wav`);
+    try{
+      const cached=fs.readFileSync(file);for(const frame of waveFrames(cached)){signal.throwIfAborted();yield frame;}return;
+    }catch(error){if((error as NodeJS.ErrnoException).code!=='ENOENT')throw error;}
+    const generated:Int16Array[]=[];for await(const frame of this.source.frames(text,voice,signal)){signal.throwIfAborted();generated.push(frame.slice());}
+    if(!generated.length)throw new Error('speech_cache_empty_generation');
+    const pcm=new Int16Array(generated.length*320);generated.forEach((frame,index)=>pcm.set(frame,index*320));const data=pcmWave(pcm),folder=path.dirname(file),temporary=path.join(folder,`.${key}.${randomUUID()}.tmp`);
+    fs.mkdirSync(folder,{recursive:true,mode:0o700});try{fs.writeFileSync(temporary,data,{mode:0o600,flag:'wx'});try{fs.renameSync(temporary,file);}catch(error){if((error as NodeJS.ErrnoException).code!=='EEXIST')throw error;fs.rmSync(temporary,{force:true});}}finally{fs.rmSync(temporary,{force:true});}
+    for(const frame of generated){signal.throwIfAborted();yield frame;}
+  }
+}
+import {createHash,randomUUID} from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';

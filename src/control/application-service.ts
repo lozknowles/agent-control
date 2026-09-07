@@ -11,7 +11,7 @@ import type {ManagedNodeManager, ManagedNodeSnapshot} from './managed-node.js';
 import type {OutputAuthorityScope, OutputExpansionRequest, TokenAwareOutputMetrics, TokenAwareOutputService} from './token-aware-output.js';
 import {MemoryHarnessEfficiencyLedger, type HarnessEfficiencyLedgerPort, type HarnessEfficiencyMetrics} from './harness-efficiency.js';
 import {AGENT_CONTROL_VERSION} from '../version.js';
-import type {WorkParcelCoordinator} from './work-parcels.js';
+import type {VoiceWorkOrigin,WorkParcelCoordinator} from './work-parcels.js';
 import {probeProvider} from './provider-health.js';
 import {deriveSystemReadiness, type RegisteredService, type SystemReadiness} from './system-readiness.js';
 import type {ModelRegistry, ModelRouteRequest} from './model-registry.js';
@@ -346,13 +346,13 @@ export class AgentControlService {
     this.events.emit('work.parcel_created',{parcelId:parcel.id,status:parcel.status},undefined,actor);return parcel;
   }
   parcel(id: string) { return this.mustWorkParcels().get(id); }
-  async submitNaturalTask(prompt: string, actor: string) {
+  async submitNaturalTask(prompt: string, actor: string, origin?:VoiceWorkOrigin) {
     let attribution: WorkAttribution;
     if (this.identity && this.defaultSessionId) {
       this.identity.authorize(this.defaultSessionId, actor, 'parcel.create');
       attribution = {schema: 'agent-control.work-attribution/v1', actorId: actor, sessionId: this.defaultSessionId, authority: this.identity.session(this.defaultSessionId).participants.find(value => value.actorId === actor)?.capabilities ?? [], createdAt: new Date().toISOString(), legacy: false};
     } else attribution = legacyAttribution(actor, `parcel-pending:${prompt}`);
-    let parcel = this.mustWorkParcels().accept(prompt, actor, this.systems(), attribution);
+    let parcel = this.mustWorkParcels().accept(prompt, actor, this.systems(), attribution, origin);
     const finalAttribution: WorkAttribution = {...attribution, parcelId: parcel.id}; parcel.attribution = finalAttribution; parcel = this.mustWorkParcels().store.update(parcel);
     this.events.emit('work.parcel_created', {parcelId: parcel.id, status: parcel.status, actorId: finalAttribution.actorId, sessionId: finalAttribution.sessionId}, undefined, actor); return parcel;
   }

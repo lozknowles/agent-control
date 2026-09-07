@@ -7,7 +7,7 @@ import {JobCatalog} from './job-catalog.js';
 import {ActionFailure, ActionRegistry, ArtifactStore, JobRuntime, ResourceLockManager, RunLedger, WorkerRegistry} from './job-runtime.js';
 import type {JobDefinition} from './job-types.js';
 import {createInvocationObservation, MemoryHarnessEfficiencyLedger} from './harness-efficiency.js';
-import {CatalogNaturalLanguagePlanner, explainParcelDecision, ReasoningModelWorkParcelPlanner, validateWorkParcelPlan, WorkParcelCoordinator, WorkParcelStore, type WorkParcel, type WorkParcelPlan} from './work-parcels.js';
+import {CatalogNaturalLanguagePlanner, explainParcelDecision, ReasoningModelWorkParcelPlanner, validateWorkParcelPlan, workParcelExecutionTranscript, WorkParcelCoordinator, WorkParcelStore, type VoiceWorkOrigin, type WorkParcel, type WorkParcelPlan} from './work-parcels.js';
 import type {SystemReadiness} from './system-readiness.js';
 import {ModelRegistry} from './model-registry.js';
 
@@ -46,6 +46,12 @@ test('natural-language parcel runs dependent Jobs sequentially and retains typed
   for (let count = 0; count < 3; count++) { await coordinator.tick(); await runtime.tick(); await coordinator.tick(); }
   const result = coordinator.get(parcel.id); assert.equal(result.status, 'SUCCEEDED'); assert.deepEqual(result.stages.map(stage => stage.status), ['SUCCEEDED','SUCCEEDED','SUCCEEDED']);
   assert.ok(result.stages.every(stage => stage.baton?.schema === 'agent-control.work-parcel-baton/v2' && stage.baton.artifactIds.length === 1 && /^[a-f0-9]{64}$/.test(stage.baton.sha256))); assert.equal(result.prompt, 'do the test');
+});
+
+test('voice-originated parcel retains raw STT separately and its transcript starts with the human request',async()=>{
+  const {runtime,plan,storeFile}=setup();let planned='';const coordinator=new WorkParcelCoordinator(runtime,new WorkParcelStore(storeFile),{plan:value=>{planned=value;return plan;}}),origin:VoiceWorkOrigin={schema:'agent-control.voice-work-origin/v1',interface:'realtime-voice',voiceSessionId:'VS-123',requestId:'voice-request-1',at:'2026-09-06T12:00:00.000Z',user:'Approved operator',audio:{retention:'retained',reference:'call-ref-1'},rawStt:'write me a python script that fines duplicate fotos',normalized:'Write me a Python script that finds duplicate photos.',clarifications:[{at:'2026-09-06T12:00:10.000Z',rawStt:'Just report them.',interpretation:'Report only; do not move or delete files.'}],effectiveRequest:'Create and test a Python utility that reports duplicate photos without modifying them.'};
+  const parcel=coordinator.accept(origin.rawStt,'operator',[],undefined,origin);await new Promise(resolve=>setImmediate(resolve));const stored=coordinator.get(parcel.id),transcript=workParcelExecutionTranscript(stored);
+  assert.equal(planned,origin.effectiveRequest);assert.equal(stored.prompt,origin.rawStt);assert.equal(stored.origin?.rawStt,origin.rawStt);assert.equal(stored.context?.active.originalGoal,origin.effectiveRequest);assert.ok(transcript.startsWith('AGENT CONTROL EXECUTION TRANSCRIPT\n\nORIGINATING HUMAN REQUEST'));assert.ok(transcript.indexOf(origin.rawStt)<transcript.indexOf('EFFECTIVE REQUEST'));assert.ok(transcript.indexOf('ORIGINATING HUMAN REQUEST')<transcript.indexOf('WORK PARCEL'));
 });
 
 test('blocked named target still creates an auditable parcel with readiness evidence', () => {
