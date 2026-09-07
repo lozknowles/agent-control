@@ -11,6 +11,7 @@ import {CatalogNaturalLanguagePlanner, explainParcelDecision, ReasoningModelWork
 import type {SystemReadiness} from './system-readiness.js';
 import {ModelRegistry} from './model-registry.js';
 import {governedRequestOrigin} from './request-origin.js';
+import {AdaptiveOrchestrationRuntime, FileAdaptiveOrchestrationStore} from './adaptive-orchestration.js';
 
 const job = (id: string, action: string, output = true): JobDefinition => ({apiVersion: 'agent-control/v1', kind: 'Job', metadata: {id, name: id, version: '1.0.0'}, spec: {priority: 'normal', concurrency: 'queue', steps: [{id: 'work', action, requires: ['qualification.local'], outputs: output ? [{name: 'result', type: 'application/json', schema: `${id}/v1`, version: '1.0.0'}] : undefined, verification: output ? ['passed'] : []}]}});
 function setup(failSecond = false, blockFirst = false) {
@@ -219,4 +220,17 @@ test('approved social parcel request is idempotent across restart and uses the e
   await restarted.tick();await s.runtime.tick();await restarted.tick();
   assert.equal(s.runtime.ledger.list().length,1);assert.equal(restarted.get(first.id).status,'SUCCEEDED');
   assert.equal(s.runtime.ledger.list()[0]!.trigger.parcelContext?.parcelId,first.id);
+});
+
+test('approved social parcels enter the same durable adaptive orchestration lifecycle as dashboard parcels',()=>{
+  const s=setup(),adaptiveFile=path.join(s.root,'adaptive.json'),adaptive=new AdaptiveOrchestrationRuntime(new FileAdaptiveOrchestrationStore(adaptiveFile),{enabled:true}),store=new WorkParcelStore(s.storeFile),coordinator=new WorkParcelCoordinator(s.runtime,store,s.planner,undefined,undefined,adaptive),key='b'.repeat(64),plan={...s.plan,stages:[s.plan.stages[0]!]};
+  const parcel=coordinator.submitApprovedPlan('approved adaptive social work','operator',key,plan);
+  assert.match(parcel.audit.orchestrationDecisionId??'',/^orchestration-/);
+  const decision=adaptive.decision(parcel.audit.orchestrationDecisionId!);
+  assert.equal(decision.parcelId,parcel.id);
+  assert.equal(decision.request.workflowId,'work-parcel-coordinator');
+  assert.ok(decision.nodes.some(node=>node.kind==='CLASSIFICATION'));
+  const restartedAdaptive=new AdaptiveOrchestrationRuntime(new FileAdaptiveOrchestrationStore(adaptiveFile),{enabled:true}),restarted=new WorkParcelCoordinator(s.runtime,new WorkParcelStore(s.storeFile),s.planner,undefined,undefined,restartedAdaptive),restored=restarted.submitApprovedPlan('approved adaptive social work','operator',key,plan);
+  assert.equal(restored.audit.orchestrationDecisionId,parcel.audit.orchestrationDecisionId);
+  assert.equal(restartedAdaptive.decision(restored.audit.orchestrationDecisionId!).parcelId,parcel.id);
 });

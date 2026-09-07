@@ -313,6 +313,13 @@ try {
   screenshots.push(await screenshot(page, '07-configured-systems-and-node-state.png'));
   journey.push({at: new Date().toISOString(), view: 'systems', outcome: 'configured execution system and availability shown during the live run'});
 
+  await page.click('[data-view="routing"]');
+  await page.waitForFunction(() => document.querySelectorAll('#orchestration-decision-list [data-adaptive-decision]').length > 0, undefined, {timeout: 10_000});
+  await page.locator('#orchestration-decision-list [data-adaptive-decision]').first().click();
+  await page.waitForFunction(() => /Classification|Eligible|League|Tradeoff|Route/i.test(document.querySelector('#orchestration-decision-detail')?.textContent || ''), undefined, {timeout: 10_000});
+  screenshots.push(await screenshot(page, '07b-adaptive-model-workflow-decision-tree.png'));
+  journey.push({at: new Date().toISOString(), view: 'routing', outcome: 'the production Work Parcel decision tree visibly showed classification, policy, league evidence and governed route/workflow selection'});
+
   sourcePhase = await waitPhase('SOURCE_MODEL_ACTIVE', 90_000);
   await page.click('[data-view="models"]');
   await page.waitForFunction(() => /local-llama|qwen/i.test(document.querySelector('#persistent-usage-summary')?.textContent || ''), undefined, {timeout: 10_000});

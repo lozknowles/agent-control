@@ -7,6 +7,7 @@ import type {AddressInfo} from 'node:net';
 import path from 'node:path';
 import {DatabaseSync} from 'node:sqlite';
 import {AgentControlService} from '../src/control/application-service.js';
+import {AdaptiveOrchestrationRuntime, FileAdaptiveOrchestrationStore} from '../src/control/adaptive-orchestration.js';
 import type {AgentControlConfig, ModelConfig, ProviderAccountProfileConfig, ProviderConfig} from '../src/control/config.js';
 import {ContractExecutionRuntime} from '../src/control/contract-runtime.js';
 import {LocalCodexNodeExecutionPort} from '../src/control/codex-node-execution.js';
@@ -350,7 +351,7 @@ async function main() {
   const destinationProvider: ProviderConfig = {id: 'codex-chatgpt', name: 'OpenAI Codex', kind: 'cli', enabled: true, parallelism: 1, costClass: 'included', capabilities: ['repository-review'], accountProfiles: [account]};
   const sourceModel: ModelConfig = {id: SOURCE_MODEL_ID, provider: sourceProvider.id, providerModel: options.sourceProviderModel, displayName: 'Qwen 2.5 3B local reviewer', enabled: true, capabilities: ['repository-review'], roles: [MODEL_ROLE], nodes: ['controller'], limits: {contextTokens: 32_768, outputTokens: 1_800}, qualification: {state: 'QUALIFIED', version: 'live-llama-cpp-preflight-v1', qualifiedAt: sourcePreflight.observedAt, capabilities: ['repository-review'], nodes: ['controller'], evidence: ['live /health and model identity']}};
   const destinationModel: ModelConfig = {id: DESTINATION_MODEL_ID, provider: destinationProvider.id, providerModel: options.destinationProviderModel, accountProfile: account.id, displayName: 'Codex Luna · Controller Account A', enabled: true, capabilities: ['repository-review'], roles: [MODEL_ROLE], nodes: ['controller'], limits: {contextTokens: 272_000, outputTokens: 2_000}, qualification: {state: 'QUALIFIED', version: 'controller-account-a-codex-v1', qualifiedAt: startedAt, capabilities: ['repository-review'], nodes: ['controller'], evidence: ['bounded account and model qualification']}};
-  const config: AgentControlConfig = {schemaVersion: 1, resources: [{id: 'controller', name: 'Qualification controller', platform: 'linux', transport: {type: 'local'}, capabilities: ['qualification.baseline', 'qualification.inventory', 'qualification.review', 'qualification.verify', 'repository-review'], controller: true, metadata: {capacity: 4}}], providers: [sourceProvider, destinationProvider], models: [sourceModel, destinationModel], modelRouting: {defaultRole: MODEL_ROLE, roles: {[MODEL_ROLE]: {primary: SOURCE_MODEL_ID, fallback: [DESTINATION_MODEL_ID], requires: ['repository-review']}}}, services: [], lanes: [], tokenBatonRouting: {continuePercent: 60, prepareBatonPercent: 75, compactPercent: 85, handoffPercent: 90, sampleRetention: 240}, retrieval: {enabled: false}, jobs: {repositoryRoots: [options.stateDir]}};
+  const config: AgentControlConfig = {schemaVersion: 1, resources: [{id: 'controller', name: 'Qualification controller', platform: 'linux', transport: {type: 'local'}, capabilities: ['qualification.baseline', 'qualification.inventory', 'qualification.review', 'qualification.verify', 'repository-review'], controller: true, metadata: {capacity: 4}}], providers: [sourceProvider, destinationProvider], models: [sourceModel, destinationModel], modelRouting: {defaultRole: MODEL_ROLE, roles: {[MODEL_ROLE]: {primary: SOURCE_MODEL_ID, fallback: [DESTINATION_MODEL_ID], requires: ['repository-review']}}}, services: [], lanes: [], tokenBatonRouting: {continuePercent: 60, prepareBatonPercent: 75, compactPercent: 85, handoffPercent: 90, sampleRetention: 240}, adaptiveOrchestration: {enabled: true, minimumSamplesForPreference: 3, minimumQualityScore: .7, maxEvidenceAgeDays: 90, policyQualityFloor: .6, maxRouteCost: null, maxRouteLatencyMs: null, qualityWeight: .5, reliabilityWeight: .2, costWeight: .15, latencyWeight: .1, confidenceWeight: .05, explorationRate: 0}, retrieval: {enabled: false}, jobs: {repositoryRoots: [options.stateDir]}};
   const executionSessions = new ExecutionSessionRuntime(path.join(options.stateDir, 'execution-sessions'));
   const nodeExecution = new LocalCodexNodeExecutionPort(process.env, process.env.CODEX_COMMAND ?? 'codex', executionSessions);
   const accountStatus = await nodeExecution.accountStatus({provider: destinationProvider, account, nodeId: 'controller', providerExecutionNodeId: 'controller', credentialNodeId: 'controller', timeoutMs: 20_000});
@@ -359,6 +360,7 @@ async function main() {
   const tokenRouting = new TokenAwareBatonRuntime(path.join(options.stateDir, 'token-routing.json'), config.tokenBatonRouting);
   const contracts = new ContractExecutionRuntime(path.join(options.stateDir, 'contracts.json'));
   const handoffs = new GovernedHandoffRuntime(contracts, path.join(options.stateDir, 'handoffs.json'));
+  const adaptiveOrchestration = new AdaptiveOrchestrationRuntime(new FileAdaptiveOrchestrationStore(path.join(options.stateDir, 'adaptive-orchestration', 'state.json')), config.adaptiveOrchestration);
   let parameterizedJobs!: ReturnType<typeof buildParameterizedJobRuntime>;
   let parameterizedRunId = '';
 
@@ -425,7 +427,7 @@ async function main() {
     {id: 'verify', name: 'Independently verify reviewed outcome', job: 'crew-wopr-verify@1.0.0', dependsOn: ['review']},
   ]};
   const planner: WorkParcelPlanner = {plan: async prompt => { assert.equal(prompt, QUALIFICATION_PROMPT); await delay(900); return plan; }};
-  const parcels = new WorkParcelCoordinator(runtime, new WorkParcelStore(path.join(options.stateDir, 'work-parcels.json')), planner, undefined, registry);
+  const parcels = new WorkParcelCoordinator(runtime, new WorkParcelStore(path.join(options.stateDir, 'work-parcels.json')), planner, undefined, registry, adaptiveOrchestration);
   parameterizedJobs = buildParameterizedJobRuntime(config, registry, parcels, path.join(options.stateDir, 'parameterized'), tokenRouting, contracts, handoffs, nodeExecution, undefined, undefined, qualityGate);
   parameterizedJobs.savedJobs.create({id: 'crew-wopr-quality-review', name: 'Crew/WOPR quality-escalation review', definition: {id: 'repository-code-review', version: 1, follow: 'pinned'}, parameters: {node: 'controller', repository: fixture.repository, ref: fixture.commit, scope: 'full'}, routing: {model: SOURCE_MODEL_ID, allowFallback: false}, contextProfile: 'THIN', budgets: {timeoutMinutes: 4, maximumRetries: 0, maximumInputTokens: 12_000, maximumOutputTokens: 1_800}, concurrency: 'forbid-overlap', enabled: true});
 
@@ -436,6 +438,7 @@ async function main() {
     modelRegistry: registry,
     parameterizedJobs,
     tokenBatonRouting: tokenRouting,
+    adaptiveOrchestration,
     executionSessions,
     resources: workers.list().map(worker => ({id: worker.id, name: worker.id.replaceAll('-', ' '), platform: 'linux', transport: 'local', capabilities: worker.capabilities})),
   });
@@ -502,8 +505,17 @@ async function main() {
   const completedAt = now(), routingEvidence = tokenRouting.evidence(), routingProjection = tokenRouting.projection(), source = qualityObservations.find(item => !item.accepted), destination = qualityObservations.find(item => item.accepted), baton = routingEvidence.batons[0], nestedRun = parameterizedJobs.runs.get(parameterizedRunId), nestedParcelId = nestedRun?.workParcelIds[0], nestedParcel = nestedParcelId ? parcels.get(nestedParcelId) : undefined, verificationStage = parent.stages.find(stage => stage.id === 'verify'), verificationRun = verificationStage?.runId ? runtime.ledger.get(verificationStage.runId) : undefined, verificationArtifactId = verificationRun?.artifacts[0], verification = verificationArtifactId ? runtime.artifacts.read(verificationArtifactId) as Record<string, unknown> : undefined;
   assert.ok(source && destination && baton && nestedRun && nestedParcel && verification);
   const handoff = handoffs.list().find(item => item.batonSha256 === sha256(JSON.stringify({tokenBatonId: baton.id, tokenBatonSha256: baton.sha256}))) ?? handoffs.list()[0];
-  const successfulDecision = routingEvidence.decisions.find(item => item.outcome === 'SUCCEEDED' && item.batonId === baton.id), totals = routingProjection.parcels.find(item => item.parcelId === nestedParcel.id);
+  const successfulDecision = routingEvidence.decisions.find(item => item.outcome === 'SUCCEEDED' && item.batonId === baton.id), totals = routingProjection.parcels.find(item => item.parcelId === nestedParcel.id), parentAdaptiveDecisionId = parent.audit.orchestrationDecisionId, nestedAdaptiveDecisionId = nestedParcel.audit.orchestrationDecisionId;
   assert.ok(handoff && successfulDecision && totals);
+  assert.ok(parentAdaptiveDecisionId && nestedAdaptiveDecisionId);
+  const parentAdaptiveReport = adaptiveOrchestration.report(parentAdaptiveDecisionId), nestedAdaptiveReport = adaptiveOrchestration.report(nestedAdaptiveDecisionId), modelLeague = adaptiveOrchestration.modelLeague('repository-review'), workflowLeague = adaptiveOrchestration.workflowLeague('repository-review');
+  assert.equal(parentAdaptiveReport.parcelId, parent.id);
+  assert.equal(parentAdaptiveReport.selectedWorkflow?.workflow.id, 'work-parcel-coordinator');
+  assert.equal(nestedAdaptiveReport.parcelId, nestedParcel.id);
+  assert.equal(nestedAdaptiveReport.selectedRoute?.route.providerId, sourceProvider.id);
+  assert.ok(nestedAdaptiveReport.steps.some(item => item.kind === 'LEAGUE_EVIDENCE'));
+  assert.ok(modelLeague.some(item => item.route.providerId === sourceProvider.id));
+  assert.ok(workflowLeague.some(item => item.workflow.id === 'repository-review'));
   assert.equal(handoff.status, 'COMPLETED');
   assert.equal(successfulDecision.trigger?.kind, 'QUALITY_GATE');
   assert.equal(successfulDecision.trigger?.code, QUALITY_GATE_CODE);
@@ -554,12 +566,13 @@ async function main() {
     tokenRouting: routingEvidence,
     reconciledTotals: totals,
     providerAudit: nestedParcel.audit,
+    adaptiveOrchestration: {policy: adaptiveOrchestration.policySnapshot(), parentDecision: parentAdaptiveReport, nestedDecision: nestedAdaptiveReport, modelLeague, workflowLeague},
     handoff,
     contracts: contracts.list().map(contract => ({id: contract.id, parentContractId: contract.parentContractId, state: contract.state, active: contract.active, baton: {generation: contract.baton.generation, sha256: contract.baton.sha256}, verification: contract.verification, handoffs: contract.handoffs})),
     verification,
     executionSessions: {liveShellSession, events: liveShellEvents, transcriptSha256: sha256(executionSessions.transcript(liveShellSession.id)), harmlessIntervention: true, inputContentPersisted: false},
     dashboard: {urlAuthority: 'isolated loopback qualification server', sseEventCount: control.events.history().length, sseEventTypes: [...new Set(control.events.history().map(event => event.type))], finalActivityPanel: finalSnapshot.characterCrew.activityPanel, finalCrew: finalSnapshot.characterCrew.members, characterTrace: trace},
-    assertions: {normalProductionCallPath: true, socialIngressPhysicallyAuthenticated: options.ingress === 'openwa', exactInitiatingRequestFirstInTranscript: true, twoRealConcurrentControlLanes: concurrentEmitted, liveShellWatchInterveneDetach: true, protectedRefUnchanged: true, sourceResponseSchemaValid: true, sourceRejectedOnlyByIndependentQualityGate: true, qualityTriggeredAtLowContext: routingEvidence.decisions.some(item => item.trigger?.kind === 'QUALITY_GATE' && (item.contextPercent ?? 0) < 75), sealedBatonCreated: /^[a-f0-9]{64}$/.test(baton.sha256), crossProviderDestinationContinued: true, destinationPassedSameGate: true, sourceThreadRecoverable: true, independentVerificationPassed: verification.passed === true, lifetimeTokensReconciled: nestedRun.usage.totalTokens === totals.totalTokens && nestedParcel.audit.totals.totalTokens === totals.totalTokens, currentContextSeparateFromLifetime: routingEvidence.threads.every(thread => thread.latest.context.tokens !== thread.latest.cumulative.totalTokens || thread.latest.context.authority === 'estimated'), missingValuesNotCoercedToZero: routingEvidence.threads.some(thread => thread.latest.context.authority === 'unavailable'), credentialsAbsent: true, productionStateUntouched: true},
+    assertions: {normalProductionCallPath: true, socialIngressPhysicallyAuthenticated: options.ingress === 'openwa', socialIngressAdaptiveConvergence: Boolean(parentAdaptiveDecisionId), modelAndWorkflowLeaguesConsulted: nestedAdaptiveReport.steps.some(item => item.kind === 'LEAGUE_EVIDENCE') && Boolean(parentAdaptiveReport.selectedWorkflow), exactInitiatingRequestFirstInTranscript: true, twoRealConcurrentControlLanes: concurrentEmitted, liveShellWatchInterveneDetach: true, protectedRefUnchanged: true, sourceResponseSchemaValid: true, sourceRejectedOnlyByIndependentQualityGate: true, qualityTriggeredAtLowContext: routingEvidence.decisions.some(item => item.trigger?.kind === 'QUALITY_GATE' && (item.contextPercent ?? 0) < 75), sealedBatonCreated: /^[a-f0-9]{64}$/.test(baton.sha256), crossProviderDestinationContinued: true, destinationPassedSameGate: true, sourceThreadRecoverable: true, independentVerificationPassed: verification.passed === true, lifetimeTokensReconciled: nestedRun.usage.totalTokens === totals.totalTokens && nestedParcel.audit.totals.totalTokens === totals.totalTokens, currentContextSeparateFromLifetime: routingEvidence.threads.every(thread => thread.latest.context.tokens !== thread.latest.cumulative.totalTokens || thread.latest.context.authority === 'estimated'), missingValuesNotCoercedToZero: routingEvidence.threads.some(thread => thread.latest.context.authority === 'unavailable'), credentialsAbsent: true, productionStateUntouched: true},
     boundaries: {real: [options.ingress === 'openwa' ? 'authenticated OpenWA social task submission from enrolled operator device' : 'browser-authenticated task submission', 'deterministic concurrent Jobs', 'real PTY WATCH then governed harmless INTERVENE and detach', 'live local Qwen provider response', 'schema parsing and application validation', 'independent quality rejection', 'quality governor decision below context thresholds', 'durable sealed baton', 'cross-provider Codex destination continuation', 'independent quality acceptance', 'final repository validation', 'protected origin/main before/after equality', 'token and model-chain reconciliation', 'typed SSE dashboard updates', 'product-generated complete execution transcript'], unavailable: ['Neither provider exposes authoritative mid-turn current-context occupancy.', 'Neither provider reports an authoritative monetary cost for these routes.'], simulated: []},
     security: {credentialMaterialPersisted: false, codexHomePathPersisted: false, providerRawTransportPersisted: false, privateReasoningPersisted: false, liveDeploymentTouched: false, releaseActionPerformed: false},
     initialAcceptance,
