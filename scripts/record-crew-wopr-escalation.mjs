@@ -103,6 +103,17 @@ async function sendPhysicalSocialRequest() {
   pixelAdb(['shell', 'monkey', '-p', 'com.whatsapp', '1']);
   await delay(1_000);
   const chatList = pixelAdb(['exec-out', 'uiautomator', 'dump', '/dev/tty']);
+  const activeComposer = boundsForClass(chatList, 'android.widget.EditText');
+  if (activeComposer) {
+    pixelAdb(['shell', 'input', 'tap', String(activeComposer.x), String(activeComposer.y)]);
+    pixelAdb(['shell', 'input', 'text', 'start%sgoverned-adaptive-crew']);
+    await delay(300);
+    const composed = pixelAdb(['exec-out', 'uiautomator', 'dump', '/dev/tty']), send = boundsForLabel(composed, /^send$/i);
+    if (!composed.includes('text="start governed-adaptive-crew"')) throw new Error('qualification_pixel_composed_command_not_exact');
+    if (!send) throw new Error('qualification_pixel_message_send_control_unavailable');
+    pixelAdb(['shell', 'input', 'tap', String(send.x), String(send.y)]);
+    return {node: 'configured Android operator device', transport: 'strict-host-key SSH to existing qualified local ADB', adb, action: 'authenticated WhatsApp active-conversation composer', request: 'start governed-adaptive-crew'};
+  }
   const escapedLabel = socialConversationLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const conversation = boundsForLabel(chatList, new RegExp(`^${escapedLabel} picture`, 'i'));
   if (conversation) {
