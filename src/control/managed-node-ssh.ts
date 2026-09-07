@@ -4,13 +4,24 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {expandUserPath, type ResourceConfig} from './config.js';
 import {parseManagedNodeProbe, type ManagedNodeObservation, type ManagedNodeRequest, type ManagedNodeResult, type ManagedNodeTransport} from './managed-node.js';
+import type {OwnedExecution, OwnedProcessRequest} from './owned-process.js';
 
 export interface SshExecutionResult {status: number; stdout: string; stderr: string; timedOut?: boolean; aborted?: boolean;}
-export type SshExecutor = (command: string, args: string[], input: string, options: {timeoutMs: number; maxBytes: number; signal?: AbortSignal}) => Promise<SshExecutionResult>;
+export interface SshExecutionOptions {
+  timeoutMs: number;
+  maxBytes: number;
+  signal?: AbortSignal;
+  /** Optional production process authority; absent for probes and legacy callers. */
+  ownedExecution?: OwnedExecution;
+  session?: OwnedProcessRequest['session'];
+}
+export type SshExecutor = (command: string, args: string[], input: string, options: SshExecutionOptions) => Promise<SshExecutionResult>;
 
 const MAX_BYTES = 4 * 1024 * 1024;
 
-export const executeSsh: SshExecutor = (command, args, input, options) => new Promise((resolve, reject) => {
+export const executeSsh: SshExecutor = async (command, args, input, options) => {
+  if (options.ownedExecution) return executeOwnedSsh(command, args, input, options);
+  return new Promise((resolve, reject) => {
   const child = spawn(command, args, {stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true, shell: false});
   const stdout: Buffer[] = [], stderr: Buffer[] = []; let bytes = 0, settled = false, timedOut = false, aborted = false;
   const stop = () => { if (!child.killed) child.kill('SIGTERM'); };
@@ -22,7 +33,30 @@ export const executeSsh: SshExecutor = (command, args, input, options) => new Pr
   child.on('error', error => { if (settled) return; settled = true; clearTimeout(timer); options.signal?.removeEventListener('abort', onAbort); reject(error); });
   child.on('close', code => { if (settled) return; settled = true; clearTimeout(timer); options.signal?.removeEventListener('abort', onAbort); if (bytes > options.maxBytes) return reject(new Error('managed_node_response_too_large')); resolve({status: code ?? 255, stdout: Buffer.concat(stdout).toString('utf8'), stderr: Buffer.concat(stderr).toString('utf8'), timedOut, aborted}); });
   child.stdin.on('error', () => {}); child.stdin.end(input);
-});
+  });
+};
+
+async function executeOwnedSsh(command: string, args: string[], input: string, options: SshExecutionOptions): Promise<SshExecutionResult> {
+  const timeout = new AbortController();
+  let timedOut = false;
+  const timer = setTimeout(() => { timedOut = true; timeout.abort('managed_node_ssh_timeout'); }, Math.max(1, options.timeoutMs));
+  const signal = options.signal ? AbortSignal.any([options.signal, timeout.signal]) : timeout.signal;
+  try {
+    const result = await options.ownedExecution!.runProcess({
+      command,
+      args,
+      input,
+      maxOutputBytes: options.maxBytes,
+      ...(options.session ? {session: options.session} : {}),
+    }, signal);
+    const totalBytes = Buffer.byteLength(result.stdout) + Buffer.byteLength(result.stderr);
+    if (totalBytes > options.maxBytes) throw new Error('managed_node_response_too_large');
+    return {status: result.exitCode ?? 255, stdout: result.stdout, stderr: result.stderr, timedOut, aborted: Boolean(options.signal?.aborted)};
+  } catch (error) {
+    if (timedOut || options.signal?.aborted) return {status: 255, stdout: '', stderr: '', timedOut, aborted: Boolean(options.signal?.aborted)};
+    throw error;
+  } finally { clearTimeout(timer); }
+}
 
 export function sshResourceArgs(resource: ResourceConfig, remote: string[]) {
   const transport = resource.transport, args = ['-T', '-o', 'BatchMode=yes', '-o', 'PasswordAuthentication=no', '-o', 'ClearAllForwardings=yes', '-o', 'ConnectTimeout=8'];

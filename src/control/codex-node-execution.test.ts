@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import {fileURLToPath} from 'node:url';
@@ -8,6 +9,7 @@ import type {CodexNodeExecutionPort} from './codex-node-execution.js';
 import {CodexRepositoryReviewClient} from './codex-repository-review-client.js';
 import type {ProviderAccountProfileConfig, ProviderConfig, ResourceConfig} from './config.js';
 import type {SshExecutor} from './managed-node-ssh.js';
+import {ExecutionSessionRuntime, type ExecutionSessionScope} from './execution-session.js';
 
 const node: ResourceConfig = {id: 'windows-node', platform: 'windows', transport: {type: 'ssh', host: 'windows-node.example', port: 22, user: 'operator'}, capabilities: ['harness.codex']};
 const provider: ProviderConfig = {id: 'codex', kind: 'cli'};
@@ -150,4 +152,35 @@ test('ephemeral Codex review preserves top-level cached input in telemetry and c
   assert.deepEqual(events.at(-1)?.context, {tokens: null, limitTokens: 100, authority: 'unavailable', source: 'codex_exec_turn_usage_is_not_current_context'});
   assert.equal(events.at(-1)?.usage?.totalTokens, 46);
   assert.equal(events.at(-1)?.usage?.cachedInputTokens, 30);
+});
+
+test('remote Codex repository execution registers the genuine governed SSH process as a scoped session', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-codex-live-session-'));
+  const sessions = new ExecutionSessionRuntime(root);
+  const scope: ExecutionSessionScope = {runId: 'run-remote', jobId: 'review-job', jobVersion: '1', stepId: 'repository-review:chunk-1', actionId: 'repository.review.invoke', workerId: 'provider:codex:account-a:model-a', nodeId: node.id, parcelId: 'parcel-remote', crewRole: 'quality-inspector', providerId: provider.id, accountLabel: account.label, modelId: 'model-a'};
+  const wire = JSON.stringify({schema: 'agent-control.codex-node-result/v1', operation: 'execReadOnlyStructured', ok: true, codexVersion: 'codex-cli 0.153.0', executableSha256: hash, discoveredAt: '2026-09-03T10:00:00.000Z', threadId: 'thread-remote', finalMessage: '{"safe":true}', usage: {input_tokens: 12, output_tokens: 3, total_tokens: 15}, observedItemTypes: ['agent_message']});
+  const executor: SshExecutor = async (_command, _args, _input, options) => {
+    assert.ok(options.ownedExecution, 'production port must supply Agent Control process ownership');
+    assert.equal(options.session?.remoteTransport, true);
+    const result = await options.ownedExecution!.runProcess({command: process.execPath, args: ['-e', `process.stdout.write(${JSON.stringify(`${wire}\n`)})`], session: options.session}, options.signal);
+    return {status: result.exitCode ?? 255, stdout: result.stdout, stderr: result.stderr};
+  };
+  try {
+    const port = new ResourceCodexNodeExecutionPort([node], {}, executor, undefined, sessions);
+    const result = await port.execReadOnlyStructured({provider, account, nodeId: node.id, model: {id: 'model-a', provider: provider.id, accountProfile: account.id, providerModel: 'gpt-example', capabilities: []}, instruction: 'bounded review', outputSchema: {type: 'object'}, timeoutMs: 5_000, executionSessionScope: scope});
+    assert.equal(result.threadId, 'thread-remote');
+    const [session] = sessions.list();
+    assert.equal(session.scope.parcelId, 'parcel-remote');
+    assert.equal(session.scope.nodeId, node.id);
+    assert.equal(session.capabilities.terminal, 'ssh-channel');
+    assert.equal(session.capabilities.remoteTransport, true);
+    assert.equal(session.capabilities.modes.watch, true);
+    assert.equal(session.capabilities.modes.intervene, true);
+    assert.equal(session.capabilities.interactiveInput, false);
+    const transcript = sessions.transcript(session.id);
+    assert.match(transcript, /Remote Codex execReadOnlyStructured completed/);
+    assert.match(transcript, /Codex agent output:/);
+    assert.match(transcript, /\{"safe":true\}/);
+    assert.doesNotMatch(transcript, /agent-control\.codex-node-result/);
+  } finally { fs.rmSync(root, {recursive: true, force: true}); }
 });

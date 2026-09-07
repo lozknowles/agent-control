@@ -27,6 +27,7 @@ import {ResourceRepositoryResolver} from './resource-repository-resolver.js';
 import {RuntimeSafetySupervisor} from './runtime-safety-supervisor.js';
 import {AdaptiveOrchestrationRuntime, FileAdaptiveOrchestrationStore} from './adaptive-orchestration.js';
 import {registerProtectedResourceModelActions} from './protected-resource-model-actions.js';
+import type {ExecutionSessionRuntime} from './execution-session.js';
 
 /** Shared production definition path so qualification cannot drift from registered typed Actions. */
 export function buildJobRuntimeDefinition(config: AgentControlConfig, manifestDir = process.env.AGENT_CONTROL_JOB_DIR || path.resolve('config/jobs'), harnessEfficiency?: HarnessEfficiencyLedgerPort, modelRegistry?: ModelRegistry, codexNodeExecution?: CodexNodeExecutionPort) {
@@ -37,7 +38,7 @@ export function buildJobRuntimeDefinition(config: AgentControlConfig, manifestDi
   return {workers, managedNodes, actions, catalog};
 }
 
-export function buildJobRuntime(config: AgentControlConfig, stateRoot = process.env.AGENT_CONTROL_STATE_DIR || path.resolve('.agent-control'), manifestDir = process.env.AGENT_CONTROL_JOB_DIR || path.resolve('config/jobs'), reasoningPlanner?: WorkParcelPlanner, modelRegistry?: ModelRegistry, codexNodeExecution?: CodexNodeExecutionPort) {
+export function buildJobRuntime(config: AgentControlConfig, stateRoot = process.env.AGENT_CONTROL_STATE_DIR || path.resolve('.agent-control'), manifestDir = process.env.AGENT_CONTROL_JOB_DIR || path.resolve('config/jobs'), reasoningPlanner?: WorkParcelPlanner, modelRegistry?: ModelRegistry, codexNodeExecution?: CodexNodeExecutionPort, executionSessions?: ExecutionSessionRuntime) {
   const harnessEfficiency = new FileHarnessEfficiencyLedger(path.join(stateRoot, 'harness-efficiency', 'model-invocations.json'));
   const adaptiveOrchestration = new AdaptiveOrchestrationRuntime(new FileAdaptiveOrchestrationStore(path.join(stateRoot, 'adaptive-orchestration', 'state.json')), config.adaptiveOrchestration);
   const {workers, managedNodes, actions, catalog} = buildJobRuntimeDefinition(config, manifestDir, harnessEfficiency, modelRegistry, codexNodeExecution);
@@ -45,7 +46,7 @@ export function buildJobRuntime(config: AgentControlConfig, stateRoot = process.
   for (const resource of config.resources) if (resource.transport.type === 'local') workers.setHealth(resource.id, 'healthy');
   const repositoryRoots = config.jobs?.repositoryRoots ?? [path.resolve('.')];
   const safety = new RuntimeSafetySupervisor({id: 'agent-control.runtime-safety/v1', approvedRepositoryRoots: repositoryRoots.map(root => path.resolve(root)), approvedRemoteNodes: config.resources.map(resource => resource.id)}, path.join(stateRoot, 'runtime-safety', 'decisions.json'));
-  const runtime = createJobRuntime(stateRoot, catalog, actions, workers, {efficiency: harnessEfficiency, safety});
+  const runtime = createJobRuntime(stateRoot, catalog, actions, workers, {efficiency: harnessEfficiency, safety, executionSessions});
   const workParcels = new WorkParcelCoordinator(runtime, new WorkParcelStore(path.join(stateRoot, 'work-parcels', 'parcels.json')), new CatalogNaturalLanguagePlanner(runtime, reasoningPlanner), harnessEfficiency, modelRegistry, adaptiveOrchestration);
   return Object.assign(runtime, {managedNodes, harnessEfficiency, harnessProfiles, harnessProfileRouter, contextPacketBuilder, workParcels, adaptiveOrchestration});
 }

@@ -3,6 +3,7 @@ import {LocalCodexNodeExecutionPort, type CodexNodeExecutionPort} from './codex-
 import {normalizeModelUsage, type ModelInvocationResult, type ProviderInvocationTelemetry} from './openai-compatible-provider.js';
 import {accountProviderExecutionNode} from './provider-account-profile.js';
 import {renderProviderPrompt, type ProviderPromptInput} from './provider-prompt.js';
+import type {ExecutionSessionScope} from './execution-session.js';
 
 type InvocationOptions = {timeoutMs?: number; maximumOutputTokens?: number; structured?: boolean; outputSchema?: Record<string, unknown>; signal?: AbortSignal; onTelemetry?: (event: ProviderInvocationTelemetry) => void};
 
@@ -13,6 +14,7 @@ export class CodexRepositoryReviewClient {
     private readonly account: ProviderAccountProfileConfig,
     private readonly nodeId = accountProviderExecutionNode(account),
     private readonly nodeExecution: CodexNodeExecutionPort = new LocalCodexNodeExecutionPort(),
+    private readonly executionSessionScope?: ExecutionSessionScope,
   ) {
     if (provider.kind !== 'cli') throw new Error('codex_repository_review_provider_kind_invalid');
   }
@@ -25,7 +27,7 @@ export class CodexRepositoryReviewClient {
     const started = Date.now();
     options.onTelemetry?.({phase: 'started', providerId: this.provider.id, modelId: model.id, elapsedMs: 0, context: {tokens: null, limitTokens: model.limits?.contextTokens ?? null, authority: 'unavailable', source: 'codex_jsonl_does_not_report_current_context'}});
     let completionTelemetryEmitted = false;
-    const run = await this.nodeExecution.execReadOnlyStructured({provider: this.provider, account: this.account, model, nodeId: this.nodeId, instruction: renderProviderPrompt(input), outputSchema: options.outputSchema, maximumOutputTokens: options.maximumOutputTokens, timeoutMs: options.timeoutMs ?? 30_000, signal: options.signal, onTelemetry: event => {
+    const run = await this.nodeExecution.execReadOnlyStructured({provider: this.provider, account: this.account, model, nodeId: this.nodeId, instruction: renderProviderPrompt(input), outputSchema: options.outputSchema, maximumOutputTokens: options.maximumOutputTokens, timeoutMs: options.timeoutMs ?? 30_000, signal: options.signal, ...(this.executionSessionScope ? {executionSessionScope: this.executionSessionScope} : {}), onTelemetry: event => {
       if (event.type !== 'turn.completed') return;
       completionTelemetryEmitted = true;
       const usage = normalizeModelUsage(event.usage, model);
