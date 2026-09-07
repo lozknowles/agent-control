@@ -66,6 +66,8 @@ The `WorkParcelCoordinator` creates a durable adaptive decision when a parcel is
 
 For the parameterized repository-review path, the direct executor creates the same decision record for each immutable context chunk, observes provider invocations, records governor/baton/handoff operational nodes and records the independent repository-verification outcome. Token-aware baton routing remains the context-pressure authority; adaptive orchestration supplies evidence-conditioned route/workflow evidence where the existing lifecycle exposes candidates. The token runtime's aggregate parcel accounting and the adaptive runtime's verified outcome evidence are additive and use the same Work Parcel ID.
 
+An external channel does not become a routing authority. Its redacted request-origin record follows the Work Parcel for transcript and response association, while this runtime still considers only qualified capability/policy candidates. A reroute or baton preserves provider/account/model/node provenance and cannot add template, tool or resource authority. The contract/handoff layer intersects requested authority with the source contract and retains its protected-resource envelope.
+
 Operational failures are classified rather than scored as model failures. A provider timeout, unavailable node, policy rejection or cancellation is visible in the decision tree and retained for reliability analysis, while only an independently verified quality result can increase or decrease quality preference. Failed or uncertain work remains eligible for the existing review, repair, escalation and baton recovery controls.
 
 ## Dashboard and reports

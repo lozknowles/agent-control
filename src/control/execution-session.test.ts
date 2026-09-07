@@ -80,3 +80,9 @@ test('secret-bearing durable metadata is rejected instead of silently persisted'
   const {runtime} = fixture(t);
   assert.throws(() => runtime.create({adapterId: 'fixture', scope: scope(), command: `tool --api_key=sk-proj-${'z'.repeat(24)}`, cwd: '/workspace', capabilities: capabilities()}), /execution_session_secret_material_forbidden/);
 });
+
+test('WATCH_ONLY scope rejects an adapter that attempts to expose intervention capability', t => {
+  const {runtime} = fixture(t);
+  assert.throws(() => runtime.create({adapterId: 'fixture', scope: scope({interactionPolicy:'WATCH_ONLY'}), command: 'protected-action', cwd: '/workspace', capabilities: capabilities()}), /execution_session_policy_capability_escalation/);
+  assert.doesNotThrow(() => runtime.create({id:'session:protected-watch',adapterId:'fixture',scope:scope({interactionPolicy:'WATCH_ONLY'}),command:'protected-action',cwd:'/workspace',capabilities:capabilities({interactiveInput:false,resize:false,signals:[],modes:{watch:true,intervene:false,takeControl:false},limitations:['protected action is watch-only']})}));
+});

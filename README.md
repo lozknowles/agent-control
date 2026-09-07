@@ -1,6 +1,16 @@
-# Agent Control 3.9.0
+# Agent Control 4.0 release candidate
 
 Agent Control runs governed parameterised jobs against qualified execution and model resources. It is an infrastructure-neutral, policy-controlled adaptive harness for durable work by heterogeneous agents and models. Its executable harness core composes a task-appropriate worker, provider/model route, prompt profile, minimum qualified skills, restricted tools, context strategy, runtime settings, authority snapshot, resource limits and verification/escalation policy into a fingerprinted execution recipe.
+
+The isolated `4.0.0-rc.1` candidate integrates the previously separate adaptive-routing, protected-resource, Social & Voice/OpenWA, operational Crew/WOPR and Live Shell workstreams into one governed lifecycle:
+
+`authenticated channel → canonical Work Parcel → capability/authority-qualified adaptive route → Crew/lane execution → token governor → retry or sealed-baton handoff → independent verification → immutable evidence → originating channel`
+
+The channel, exact initiating text or retained voice transcription, authentication classification, opaque message/identity references and granted template authority are preserved in the Run and Work Parcel. A complete execution transcript starts with those source facts before showing the chronological route, model changes, tools, telemetry, governor decisions, handoffs and verification. Voice transcription remains untrusted and cannot start consequential work until a separate authenticated text confirmation is linked.
+
+Live Shell attaches to the real process/session recorded by a Run; it is not a browser terminal or arbitrary shell API. `WATCH`, `INTERVENE` and `TAKE_CONTROL` are explicit capabilities. Protected-resource Actions are forcibly `WATCH_ONLY`, so an adapter cannot use PTY input, signals or takeover to bypass the safety decision. Handoffs transfer only authority already held by the parent contract and retain its protected-resource envelope. See [4.0 RC notes](docs/release-notes-4.0.0-rc.1.md), [migration](docs/migration-4.0.md), [Live Shell](docs/live-shell.md), [adaptive orchestration](docs/adaptive-multi-model-orchestration.md), [protected resources](docs/protected-resource-governance.md), and [dashboard operation](docs/web-dashboard.md).
+
+This branch is a reviewable release candidate only. It is not merged, tagged, released or deployed; physical end-to-end qualification remains the release gate.
 
 3.9 makes long-running execution and operator telemetry fail-safe. Runs now retain provider-neutral execution identity, reconnect and authentication state, bounded retry budget/deadline, and verified cancellation evidence. A controller restart does not replay work whose remote state is unresolved. Owned Linux process groups and Windows process trees are terminated through platform adapters and a Run reaches a clean terminal state only when cleanup is confirmed; uncertainty stays visible and keeps authority fenced. Dashboard reload and SSE reconnect rebuild the complete durable projection, including genuine wait/retry deadlines, lifecycle reason, telemetry freshness/source, and cleanup outcome.
 

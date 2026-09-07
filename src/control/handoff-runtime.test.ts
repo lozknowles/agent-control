@@ -29,7 +29,7 @@ test('SUBSTITUTE replaces worker route and process while preserving parent contr
 
 test('DELEGATE creates a bounded child with minimal baton and debits parent budget', async () => {
   const value = fixture(), record = await value.handoffs.request(request('DELEGATE', {target, child: {id: 'contract:child', objective: 'Bounded child objective', completionCriteria: ['child verified']}, requestedAuthority: ['repository.read'], budget: {tokens: 2_000, cost: 1, currency: 'USD'}}));
-  const parent = value.contracts.get('contract:parent'), child = value.contracts.get('contract:child'); assert.equal(record.childContractId, child.id); assert.equal(child.parentContractId, parent.id); assert.deepEqual(child.authority, ['repository.read']); assert.equal(child.budget.remainingTokens, 2_000); assert.equal(parent.budget.remainingTokens, 18_000); assert.equal(parent.budget.remainingCost, 4); assert.equal(record.batonSha256, child.baton.sha256); assert.equal(record.batonSizeBytes, child.baton.sizeBytes);
+  const parent = value.contracts.get('contract:parent'), child = value.contracts.get('contract:child'); assert.equal(record.childContractId, child.id); assert.equal(child.parentContractId, parent.id); assert.deepEqual(child.authority, ['repository.read']);assert.deepEqual(child.protectedResources,parent.protectedResources);assert.ok(child.authority.every(item=>parent.authority.includes(item))); assert.equal(child.budget.remainingTokens, 2_000); assert.equal(parent.budget.remainingTokens, 18_000); assert.equal(parent.budget.remainingCost, 4); assert.equal(record.batonSha256, child.baton.sha256); assert.equal(record.batonSizeBytes, child.baton.sizeBytes);
 });
 
 test('YIELD pauses process and returns control without claiming completion', async () => {

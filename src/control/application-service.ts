@@ -355,7 +355,7 @@ export class AgentControlService {
   createSavedJob(input: Omit<SavedJob, 'schema' | 'revision' | 'createdAt' | 'updatedAt'>, actor: string) { const job = this.mustParameterizedJobs().savedJobs.create(input); this.events.emit('job.saved_changed', {savedJobId: job.id, action: 'created'}, undefined, actor); return job; }
   updateSavedJob(id: string, revision: number, changes: Partial<Omit<SavedJob, 'schema' | 'id' | 'revision' | 'createdAt'>>, actor: string) { const job = this.mustParameterizedJobs().savedJobs.update(id, revision, changes); this.events.emit('job.saved_changed', {savedJobId: id, action: 'updated', revision: job.revision}, undefined, actor); return job; }
   setSavedJobEnabled(id: string, enabled: boolean, revision: number, actor: string) { const job = this.mustParameterizedJobs().savedJobs.setEnabled(id, enabled, revision); this.events.emit('job.saved_changed', {savedJobId: id, action: enabled ? 'enabled' : 'disabled'}, undefined, actor); return job; }
-  runSavedJob(id: string, actor: string, requestKey?: string) { const run = this.mustParameterizedJobs().runNow(id, actor, requestKey); this.events.emit('job.run_created', {runId: run.id, savedJobId: id, trigger: 'manual'}, undefined, actor); return run; }
+  runSavedJob(id: string, actor: string, requestKey?: string, origin?: import('./request-origin.js').GovernedRequestOrigin) { const run = this.mustParameterizedJobs().runNow(id, actor, requestKey, origin); this.events.emit('job.run_created', {runId: run.id, savedJobId: id, trigger: 'manual'}, undefined, actor); return run; }
   parameterizedRuns(savedJobId?: string) {
     const jobs = this.mustParameterizedJobs(), savedJobs = jobs.savedJobs.list();
     const parcels = this.workParcels?.list() ?? [], tokenEvidence = this.tokenBatonRouting?.evidence();
@@ -396,8 +396,8 @@ export class AgentControlService {
     throw new Error('system_missing');
   }
   parcels() { return this.mustWorkParcels().list(); }
-  createSocialParcel(jobId:string,parameters:Record<string,unknown>,actor:string,requestKey:string) {
-    const job=this.job(jobId),parcel=this.mustWorkParcels().submitApprovedPlan(`Approved social task: ${job.metadata.id}`,actor,requestKey,{objective:job.metadata.name,planner:{kind:'deterministic',reason:'Explicit enrolled sender selected a hash-pinned approved template'},stages:[{id:'execute',name:job.metadata.name,job:`${job.metadata.id}@${job.metadata.version}`,parameters,dependsOn:[]}]});
+  createSocialParcel(jobId:string,parameters:Record<string,unknown>,actor:string,requestKey:string,prompt?:string,origin?:import('./request-origin.js').GovernedRequestOrigin) {
+    const job=this.job(jobId),parcel=this.mustWorkParcels().submitApprovedPlan(prompt??`Approved social task: ${job.metadata.id}`,actor,requestKey,{objective:job.metadata.name,planner:{kind:'deterministic',reason:'Explicit enrolled sender selected a hash-pinned approved template'},stages:[{id:'execute',name:job.metadata.name,job:`${job.metadata.id}@${job.metadata.version}`,parameters,dependsOn:[]}]},origin);
     this.events.emit('work.parcel_created',{parcelId:parcel.id,status:parcel.status},undefined,actor);return parcel;
   }
   parcel(id: string) { return this.mustWorkParcels().get(id); }

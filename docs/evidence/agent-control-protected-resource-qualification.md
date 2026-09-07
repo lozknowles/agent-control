@@ -35,5 +35,5 @@ Cancellation qualification is intentionally bounded: a deterministic owned-execu
 Artifact hashes:
 
 - Qualification JSON: `8f9ba1b5e15ecc2916004e7a23af47f7127b474321257d906f8827436a4f0cfc`
-- Complete transcript: `62c3c8cc7948c0d3a008472dabcc610c0cdb8e4349364ae560848989784799cf`
+- Complete transcript: `0b76b2abde5897f17184e4c0c0a5c0d72b2753bea12cc5e01fa456f2f7813f00` (disposable worktree path normalized to `qualification-fixture/repository`; results and verdict unchanged)
 - Dashboard video: `eeebb30951025527ff0e28573d017b4f32ea85e6b73893ee1f438c975ca4c185`

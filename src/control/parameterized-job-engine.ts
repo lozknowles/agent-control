@@ -10,6 +10,7 @@ import {boundedRecoveryDelay, classifyExecutionFailure, recoveryDeadlineAllows} 
 import {ExecutionTranscriptRuntime} from './execution-transcript.js';
 import type {TokenAwareBatonRuntime} from './token-aware-baton-routing.js';
 import type {WorkParcelStore} from './work-parcels.js';
+import type {GovernedRequestOrigin} from './request-origin.js';
 
 function hash(value: string) { return createHash('sha256').update(value).digest('hex'); }
 function terminal(status: ParameterizedRunStatus) { return ['SUCCEEDED', 'SUCCEEDED_WITH_FINDINGS', 'FAILED', 'CANCELLED', 'DEGRADED'].includes(status); }
@@ -39,7 +40,7 @@ export class ParameterizedJobEngine {
     readonly transcripts?: ExecutionTranscriptRuntime,
   ) { this.clock = options.clock ?? (() => new Date()); this.wait = options.wait ?? abortableDelay; this.recoverInterruptedRuns(); }
 
-  runNow(savedJobId: string, actor: string, requestKey?: string) { const job = this.savedJobs.get(savedJobId); if (!job.enabled) throw new ParameterizedJobError('saved_job_disabled', savedJobId); return this.createRun(job, {type: 'manual', actor, ...(requestKey?{id:requestKey}:{})}); }
+  runNow(savedJobId: string, actor: string, requestKey?: string, origin?: GovernedRequestOrigin) { const job = this.savedJobs.get(savedJobId); if (!job.enabled) throw new ParameterizedJobError('saved_job_disabled', savedJobId); return this.createRun(job, {type: 'manual', actor, ...(requestKey?{id:requestKey}:{}), ...(origin?{origin:structuredClone(origin)}:{})}); }
   createRun(job: SavedJob, trigger: ParameterizedJobRun['trigger']) {
     const definition = this.definitions.resolve(job), scheduledFor = trigger.scheduledFor ?? this.clock().toISOString(), occurrenceId = trigger.type === 'schedule' ? hash(`${job.id}\n${scheduledFor}`) : trigger.id ? hash(`command\n${trigger.actor}\n${trigger.id}`) : randomUUID();
     const existing = this.runs.occurrence(occurrenceId); if (existing) { if(existing.savedJobId!==job.id)throw new ParameterizedJobError('request_key_conflict');return existing; }

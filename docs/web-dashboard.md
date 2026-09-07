@@ -2,7 +2,7 @@
 
 The web dashboard is an operator interface over `AgentControlService`. It is not a web scheduler and does not own lane, lease, PTY, verification or provider state.
 
-The default **Jobs** area contains four separate platform views: **Job Definitions**, **Saved Jobs**, **Schedules**, and **Runs**. These sit alongside the existing catalog/Run-ledger projection rather than replacing its Action/DAG workflows. **Lanes** retains the interactive multi-agent control room. **Sessions** projects persistent Actor, participant, delegation, ACP, contract/PTY, handoff, model/runtime and evidence identity. **Systems** shows canonical configured inventory plus ACP transport and lifecycle-recipe readiness. **Models** shows the canonical provider-neutral model registry and immutable lifecycle state. **Routing** shows the evidence-conditioned Model Capability League, Workflow League and persisted per-Work-Parcel Decision Tree. **Crew** shows the same operational state through navigable characters plus an isolated simulated inspection gallery. **Configuration** provides authenticated, validated inventory and fast-execution/adaptive-routing policy editing. No view parses terminal text for Run state.
+The default **Jobs** area contains four separate platform views: **Job Definitions**, **Saved Jobs**, **Schedules**, and **Runs**. These sit alongside the existing catalog/Run-ledger projection rather than replacing its Action/DAG workflows. **Lanes** retains the interactive multi-agent control room. **Sessions** projects persistent Actor, participant, delegation, ACP, contract/PTY, handoff, model/runtime, Live Shell and evidence identity. **Systems** shows canonical configured inventory plus ACP transport and lifecycle-recipe readiness. **Models** shows the canonical provider-neutral model registry and immutable lifecycle state. **Routing** shows the evidence-conditioned Model Capability League, Workflow League and persisted per-Work-Parcel Decision Tree. **Crew** shows the same operational state through navigable characters plus an isolated simulated inspection gallery. **Configuration** provides authenticated, validated inventory and fast-execution/adaptive-routing policy editing. No view parses terminal text for Run state.
 
 ## Parameterised Jobs
 
@@ -60,6 +60,12 @@ The settings select Shown/Hidden and Full/Reduced/Off motion. Defaults are Shown
 The Crew's **Activity Matrix** coalesces canonical state and retained typed events into nine inspectable controller, queue, execution-lane, tool, model-request, model-response, baton/escalation, verification and node-health indicators. Activate any labelled shape to inspect source, event/time, lane, provider/model, meaning, persistence and stale/disconnected behavior. It never generates random traffic. Its slow decorative heartbeat is explicitly labelled `NOT WORK ACTIVITY`; reduced motion removes pulses and background/hidden views pause them.
 
 The compact **Live usage** strip stays mounted while switching among all main views. Select a token thread or lane to keep its provider/account/model, state, elapsed time, context authority, fresh/cache/input/output totals, cost authority, governor thresholds and additive Work Parcel model chain in view. It renders replacement snapshots from the normal status/SSE path, so navigation and reconnect do not reset or double-count. `Unavailable` means the adapter did not provide the value; it never means zero.
+
+## Live Shell
+
+The Sessions view can open the retained output of a genuine owned process. Mode buttons come only from durable execution-session capabilities: WATCH is read-only; INTERVENE requires operator authority plus real adapter input/signal support; TAKE CONTROL additionally requires a persistent contract-linked session, exclusive writer fencing and reconciliation before autonomous return. Input content is never placed in the event stream.
+
+Protected-resource Actions show `WATCH_ONLY`. The server suppresses and independently rejects intervention capabilities for that scope, so the browser cannot use a PTY to bypass semantic effect policy. A disconnected or identity-unproven session does not accept attachment. See [governed Live Shell](live-shell.md).
 
 ## Configure systems and models
 

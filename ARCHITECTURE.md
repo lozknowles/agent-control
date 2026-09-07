@@ -1,6 +1,6 @@
 # Agent Control architecture
 
-This is the authoritative source boundary for the Agent Control 3.9.0 candidate. Status labels matter:
+This is the authoritative source boundary for the isolated Agent Control 4.0 release candidate. Agent Control 3.9.0 remains the latest released baseline until the physical 4.0 gate passes and a separate release is authorized. Status labels matter:
 
 - **implemented** means executable code and automated tests exist in this branch;
 - **experimental** means executable code exists but has not been qualified across every external substrate;
@@ -45,6 +45,34 @@ This is the authoritative source boundary for the Agent Control 3.9.0 candidate.
 35. Sending a cancellation signal is not cleanup completion. Terminal state and authority release require verified descendant/process-tree absence or an explicit uncertainty state.
 36. Every resource metric carries source, authority and freshness. Missing data is null; a derived fallback cannot silently become an admission-qualified measurement.
 37. Cache admission is an adapter capability, not a core assumption. Stable prompt structure is portable; provider-specific keys and breakpoints are emitted only after provider-and-model qualification.
+38. Every external ingress that starts governed work preserves a redacted `request-origin` envelope through the Run, Work Parcel, transcript and response association; channel identity and authentication are provenance, never execution authority by themselves.
+39. A baton transfers context and evidence, never authority. A child contract receives only an intersection with parent authority and inherits the parent's protected-resource envelope.
+40. Live Shell is an attachment to a proven execution-session identity, not a shell API. Protected-resource Actions are `WATCH_ONLY`; adapter capabilities cannot widen that policy.
+
+## Agent Control 4.0 integrated lifecycle
+
+```text
+authenticated dashboard / OpenWA text / confirmed voice / ACP
+                              |
+                              v
+           redacted request-origin + canonical Work Parcel
+                              |
+          classify capabilities, policy and authority envelope
+                              |
+               adaptive model/workflow decision record
+                              |
+            Lane + Crew projection + owned execution session
+                              |
+       models / typed tools / optional observable Live Shell
+                              |
+      token governor -> retry / compact / sealed-baton handoff
+                              |
+               independent verification and acceptance
+                              |
+       immutable transcript/evidence -> originating channel
+```
+
+The flow composes existing control-plane records. `GovernedRequestOrigin` records exact initiating text, safe channel/authentication metadata and opaque message/identity references. It does not grant a template or tool; the enrolled principal and normal policy still decide authority. `AdaptiveOrchestrationRuntime` ranks only eligible routes and workflows. `RuntimeSafetySupervisor` resolves semantic effects before process launch. `ExecutionSessionRuntime` projects the proven process with adapter-specific capabilities. `TokenAwareBatonRuntime` decides context/cost continuation, while `GovernedHandoffRuntime` intersects requested authority with the source contract and retains protected resources. Verification remains a separate actor and acceptance boundary. The dashboard/Crew/WOPR consume these same records over SSE and cannot mutate their meaning.
 
 ## Governed retrieval and context intelligence
 
@@ -731,7 +759,7 @@ Detailed configuration, API filters, evidence semantics and deterministic qualif
 
 ## Release boundary
 
-Earlier version tags remain immutable source releases. Agent Control 3.9.0 is the released baseline. The current isolated WOPR/Crew and provider-catalogue composition is qualification-only and does not merge, tag, publish, deploy services, expose a remote ACP listener, broaden sharing, enable Spark or enable Saved Jobs/Schedules. Its controller-local NVIDIA credential now exists only in the owner-only runtime store and is not source or evidence. The 3.9.0 evidence covers dashboard/SSE reload and concurrent work, Linux process-group cleanup, Windows process-tree cancellation/timeout/uncertainty, controller-restart and bounded recovery, and the Pixel hidden-stdin pair/disconnect/same- and changed-endpoint reconnect/governed-execution/session-resume lifecycle. The matched cache comparison preserved independent quality but consumed more tokens and time; explicit Responses controls, cache writes, current context and billed cost remain unavailable on the tested CLI, so no repeatable token, latency or monetary saving is claimed. The provider-catalogue path is physically proven through authenticated NVIDIA discovery, representative smoke, a partial frozen Nemotron benchmark and dashboard/SSE reconciliation. Focused follow-up proves staged callability and corrected smoke for Nemotron/Muse while leaving MiniMax indeterminate, Kimi K2.6 endpoint-unavailable and every NVIDIA route disabled. See the [initial NVIDIA qualification](docs/evidence/agent-control-3.9-nvidia-hosted-qualification-20260906.md) and [focused diagnostics](docs/evidence/agent-control-3.9-nvidia-focused-diagnostics-20260906.md).
+Earlier version tags remain immutable source releases. Agent Control 3.9.0 is the released baseline. The isolated `4.0.0-rc.1` composition integrates Crew/WOPR, adaptive orchestration, protected-resource governance, Social & Voice/OpenWA provenance and Live Shell, but does not merge, tag, publish, deploy services, expose a remote ACP listener, broaden sharing, enable Spark, enable Saved Jobs/Schedules or admit NVIDIA routing. Its controller-local NVIDIA credential exists only in the owner-only runtime store and is not source or evidence. The 3.9.0 evidence covers dashboard/SSE reload and concurrent work, Linux process-group cleanup, Windows process-tree cancellation/timeout/uncertainty, controller-restart and bounded recovery, and the Pixel hidden-stdin pair/disconnect/same- and changed-endpoint reconnect/governed-execution/session-resume lifecycle. The matched cache comparison preserved independent quality but consumed more tokens and time; explicit Responses controls, cache writes, current context and billed cost remain unavailable on the tested CLI, so no repeatable token, latency or monetary saving is claimed. The provider-catalogue path is physically proven through authenticated NVIDIA discovery, representative smoke, a partial frozen Nemotron benchmark and dashboard/SSE reconciliation. Focused follow-up proves staged callability and corrected smoke for Nemotron/Muse while leaving MiniMax indeterminate, Kimi K2.6 endpoint-unavailable and every NVIDIA route disabled. See the [initial NVIDIA qualification](docs/evidence/agent-control-3.9-nvidia-hosted-qualification-20260906.md) and [focused diagnostics](docs/evidence/agent-control-3.9-nvidia-focused-diagnostics-20260906.md).
 
 ## Optional messaging adapters
 

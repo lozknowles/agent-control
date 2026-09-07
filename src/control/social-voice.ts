@@ -4,11 +4,12 @@ import path from 'node:path';
 import {DatabaseSync} from 'node:sqlite';
 import type {SocialChannelProvider, SocialIdentity, SocialMessage, SpeechProvider, SpeechRecognitionProvider, VoiceIdentity} from './social-voice-providers.js';
 import {validateAudio} from './social-voice-providers.js';
+import {governedRequestOrigin, type GovernedRequestOrigin} from './request-origin.js';
 
 export interface SocialPrincipal {actor: string; templates: string[]; approve: boolean;}
 export interface SocialExecutionPort {
   principal(identity: SocialIdentity): SocialPrincipal | undefined;
-  start(template: string, actor: string, requestKey: string): {id: string};
+  start(template: string, actor: string, requestKey: string, request: {prompt: string; origin: GovernedRequestOrigin}): {id: string};
   observe(parcelId: string): {status: string; text: string; runId?: string; model?: string; node?: string; durationMs?: number};
   stop(parcelId: string, actor: string): void;
   overview(kind: 'status'|'models'|'nodes'|'health', actor: string): string;
@@ -45,6 +46,9 @@ export class SocialVoiceCoordinator {
       CREATE TABLE IF NOT EXISTS history(id INTEGER PRIMARY KEY AUTOINCREMENT,at INTEGER NOT NULL,event TEXT NOT NULL,identity TEXT NOT NULL,detail TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS spoken(key TEXT PRIMARY KEY,state TEXT NOT NULL);`);
     this.db.exec('CREATE TABLE IF NOT EXISTS confirmations(identity TEXT PRIMARY KEY,sourceKey TEXT NOT NULL,command TEXT NOT NULL,expires INTEGER NOT NULL)');
+    const confirmationColumns=this.db.prepare('PRAGMA table_info(confirmations)').all() as Row[];
+    if(!confirmationColumns.some(column=>column.name==='request'))this.db.exec("ALTER TABLE confirmations ADD COLUMN request TEXT NOT NULL DEFAULT ''");
+    if(!confirmationColumns.some(column=>column.name==='sourceReceivedAt'))this.db.exec('ALTER TABLE confirmations ADD COLUMN sourceReceivedAt INTEGER NOT NULL DEFAULT 0');
     this.db.exec("UPDATE spoken SET state='uncertain' WHERE state='sending'");
   }
   close(){if(this.busy)throw new Error('social_worker_busy');this.db.close();}
@@ -92,7 +96,7 @@ export class SocialVoiceCoordinator {
       if(!/^(?:status|jobs|health|models|nodes|what'?s agent control doing\??|(?:status |job )?ac[- ]?\d+)$/i.test(text.trim())){
         const template=principal.templates.find(name=>text.toLowerCase()===`start ${name.replaceAll('-',' ')}`||text.toLowerCase()===`start ${name}`);
         const command=template?`start ${template} voice`:undefined;
-        if(command)this.db.prepare('INSERT OR REPLACE INTO confirmations VALUES (?,?,?,?)').run(identity,key,command,this.clock()+300000);
+        if(command)this.db.prepare('INSERT OR REPLACE INTO confirmations(identity,sourceKey,command,expires,request,sourceReceivedAt) VALUES (?,?,?,?,?,?)').run(identity,key,command,this.clock()+300000,text,m.receivedAt);
         await this.reply(m,key,`I heard: ${text}\nNo action was executed. ${command?`To confirm and receive a voice result, send this as a new text message:\n${command}`:'Please send a new explicit text command; the request is ambiguous.'}`);this.audit('policy.confirmation_required',identity,{reason:'consequential_or_ambiguous_transcription',command});return;
       }
     }
@@ -102,11 +106,12 @@ export class SocialVoiceCoordinator {
     }else if(/^jobs$/i.test(text)){const jobs=this.db.prepare('SELECT number,parcel FROM jobs WHERE identity=? AND parcel IS NOT NULL').all(identity) as Row[];await this.reply(m,key,jobs.map(j=>`AC-${j.number}: ${this.execution.observe(j.parcel).status}`).join('\n')||'No Social & Voice jobs yet.');
     }else if((match=text.match(/^start ([a-z0-9-]+)( voice)?$/i))){
       const template=match[1]!.toLowerCase();if(!principal.templates.includes(template))throw new Error('template_not_granted');
-      const confirmation=this.db.prepare('SELECT sourceKey FROM confirmations WHERE identity=? AND command=? AND expires>?').get(identity,text.toLowerCase(),this.clock()) as Row|undefined;
+      const confirmation=this.db.prepare('SELECT sourceKey,request,sourceReceivedAt FROM confirmations WHERE identity=? AND command=? AND expires>?').get(identity,text.toLowerCase(),this.clock()) as Row|undefined;
       if(confirmation){this.audit('voice.confirmed_by_text',identity,{sourceMessageKey:confirmation.sourceKey,confirmationMessageKey:key});this.db.prepare('DELETE FROM confirmations WHERE identity=?').run(identity);}
       this.db.prepare('INSERT OR IGNORE INTO jobs(key,identity,voice) VALUES (?,?,?)').run(key,identity,Number(Boolean(match[2])));
       const existing=this.db.prepare('SELECT * FROM jobs WHERE key=?').get(key) as Row;
-      const parcel=existing.parcel?{id:existing.parcel}:this.execution.start(template,principal.actor,key);
+      const origin=governedRequestOrigin({channel:this.provider.id,modality:confirmation?'voice-confirmed-by-text':'text',receivedAt:new Date(confirmation?.sourceReceivedAt||m.receivedAt).toISOString(),authentication:'enrolled-direct-sender',actorId:principal.actor,authority:[`template:${template}`],messageReference:confirmation?.sourceKey??key,identityReference:identity,request:confirmation?.request||text,...(confirmation?{confirmationReference:key,transcriptionAuthority:'untrusted-confirmed-by-text' as const}:{})});
+      const parcel=existing.parcel?{id:existing.parcel}:this.execution.start(template,principal.actor,key,{prompt:origin.request,origin});
       this.db.prepare('UPDATE jobs SET parcel=? WHERE key=?').run(parcel.id,key);this.audit('policy.allowed',identity,{template,parcelId:parcel.id,requestKey:key});
       await this.reply(m,key,`Job AC-${existing.number} accepted: ${template}.\nWork Parcel: ${parcel.id}\nTo stop: stop AC-${existing.number}${match[2]?'\nText and voice completion requested.':''}`);
     }else if((match=text.match(/^(?:job |status )?(ac[- ]?\d+)$/i))){const job=this.owned(match[1]!,identity);await this.reply(m,key,`Job AC-${job.number}\n${this.execution.observe(job.parcel).text}`);

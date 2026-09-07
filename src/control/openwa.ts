@@ -9,6 +9,7 @@ import type {SocialIdentity} from './social-voice-providers.js';
 import {readBoundedResponse, validateAudio} from './social-voice-providers.js';
 import {messagingReport, parseMessagingCommand, proposeMessagingCommand, terminalMessagingRun, validateMessagingRun, type MessagingCommand} from './messaging-commands.js';
 import {savedMessagingMilestones,savedMessagingReport,validateSavedMessagingRun,type MessagingObservedRun} from './messaging-saved-jobs.js';
+import {governedRequestOrigin} from './request-origin.js';
 
 export const OPENWA_COMMIT = '1bfebfe57232bcb20ddd0975560d3f4bc994fb36';
 const templateSchema = z.object({kind:z.enum(['legacy','saved']).optional(),name: z.string().regex(/^[a-z0-9-]+$/), jobId: z.string().min(1), definitionHash: z.string().regex(/^[a-f0-9]{64}$/), parameters: z.record(z.string(), z.unknown()), arguments: z.record(z.string(), z.array(z.union([z.string(), z.number(), z.boolean()])).min(1)), maxActive: z.number().int().min(1).max(10), maxRunsPerHour: z.number().int().min(1).max(60)}).strict();
@@ -188,7 +189,7 @@ export class OpenWAAdapter {
         // Reconcile a runtime commit that preceded an adapter crash before checking new-run budgets.
         const existing = this.allRuns().find(run => run.trigger.id === key && run.trigger.actor === actor);
         let run=existing;
-        if(!run){if(template.kind==='saved'){validateSavedMessagingRun(this.service,template,command.arguments,this.clock());const created=this.service.runSavedJob(template.jobId,actor,key);run=this.service.parameterizedRun(created.id);}else run=this.service.createJobRun(template.jobId,validateMessagingRun(this.service,template,command.arguments,this.clock()),actor,key);}
+        if(!run){if(template.kind==='saved'){validateSavedMessagingRun(this.service,template,command.arguments,this.clock());const origin=governedRequestOrigin({channel:'openwa',modality:'text',receivedAt:new Date(data.timestamp*1000).toISOString(),authentication:'enrolled-direct-sender',actorId:actor,authority:[`template:${template.name}`],messageReference:key,identityReference:digest(data.from),request:data.body});const created=this.service.runSavedJob(template.jobId,actor,key,origin);run=this.service.parameterizedRun(created.id);}else run=this.service.createJobRun(template.jobId,validateMessagingRun(this.service,template,command.arguments,this.clock()),actor,key);}
         runId = run.id; this.db.prepare('UPDATE commands SET runId=? WHERE key=?').run(runId, key);
         this.db.prepare('INSERT OR IGNORE INTO watches(sender,runId) VALUES (?,?)').run(data.from, runId);
         reply = `Job ${this.jobNumber(data.from,run.id)} accepted: ${command.template}.\nStatus: ${run.status}\nTo cancel: cancel job ${this.jobNumber(data.from,run.id)}\n${this.config.dashboardUrl.replace(/\/$/,'')}/?messagingRun=${encodeURIComponent(run.id)}`;

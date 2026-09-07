@@ -2,6 +2,8 @@
 
 The dashboard accepts an ordinary-language objective and retains it verbatim. `CatalogNaturalLanguagePlanner` converts a directly named Job deterministically, selects an explicitly registered constrained routine where one exists, or delegates complex planning through the `WorkParcelPlanner` port. If no reasoning planner is configured, an ambiguous request remains rejected as `work_parcel_reasoning_planner_unconfigured`; the dashboard never invents an executable shell workflow.
 
+External-channel parcels may additionally retain `agent-control.request-origin/v1`: exact initiating text or confirmed voice transcription, channel and receipt time, authentication classification, governed actor, granted template authority and opaque message/identity references. This additive provenance cannot grant a Job, tool, model, node or protected-resource capability. Secrets and raw transport identity are rejected before persistence. A duplicate request key must match actor, prompt and origin exactly.
+
 A proposed plan is data, not authority. Agent Control validates every stage ID, registered versioned Job reference, dependency and cycle before persisting a parcel. The existing `JobRuntime` remains the only executor: it owns parameter validation, capability placement, locks, approvals, retries, action dispatch, artifacts and verification.
 
 `WorkParcelCoordinator` adds only parent orchestration:

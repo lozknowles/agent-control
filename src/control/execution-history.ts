@@ -4,6 +4,7 @@ import type {ParameterizedJobRun, SavedJob} from './parameterized-job-types.js';
 import {DEFAULT_TOKEN_GOVERNOR_POLICY, governorFor, type ContextLifecycleRecord, type TokenGovernorPolicy, type VerifiedBaton, type TokenRoutingDecision, type ThreadTokenRecord} from './token-aware-baton-routing.js';
 import type {WorkParcel} from './work-parcels.js';
 import {redactSensitiveText} from './security-redaction.js';
+import type {GovernedRequestOrigin} from './request-origin.js';
 
 export type ExecutionHistoryActor = 'OPERATOR' | 'SYSTEM EVENT' | 'AGENT / PROVIDER' | 'TOOL / ACTION' | 'GOVERNOR' | 'BATON' | 'ERROR';
 export type ExecutionHistoryOutcome = 'INFO' | 'RUNNING' | 'SUCCEEDED' | 'FAILED' | 'RECOMMENDED' | 'UNAVAILABLE';
@@ -49,6 +50,7 @@ export interface ExecutionHistoryProjection {
   savedJobId: string | null;
   jobName: string;
   workParcelIds: string[];
+  origin?: GovernedRequestOrigin;
   entries: ExecutionHistoryEntry[];
   retention: {mode: 'derived-durable' | 'complete-durable'; maximumEntries: number | null; source: string};
 }
@@ -83,6 +85,7 @@ export function projectParameterizedRunHistory(input: {run: ParameterizedJobRun;
   const {run, savedJob} = input, complete = input.options?.mode === 'complete';
   const parcels = input.parcels.filter(parcel => run.workParcelIds.includes(parcel.id) || parcel.provenance.some(item => item.type === 'job-run' && item.detail === run.id));
   const parcelIds = new Set([...run.workParcelIds, ...parcels.map(parcel => parcel.id)]), threads = (input.tokenEvidence?.threads ?? []).filter(thread => parcelIds.has(thread.parcelId));
+  const origin = run.trigger.origin ?? parcels.find(parcel => parcel.origin)?.origin;
   const batons = (input.tokenEvidence?.batons ?? []).filter(baton => parcelIds.has(baton.parcelId));
   const decisions = (input.tokenEvidence?.decisions ?? []).filter(decision => parcelIds.has(decision.parcelId));
   const entries: ExecutionHistoryEntry[] = [];
@@ -176,7 +179,7 @@ export function projectParameterizedRunHistory(input: {run: ParameterizedJobRun;
 
   const ordered = entries.map((entry, sequence) => ({entry, sequence})).sort((left, right) => left.entry.at.localeCompare(right.entry.at) || left.sequence - right.sequence).map(item => item.entry);
   const retained = complete ? ordered : ordered.slice(-MAX_ENTRIES);
-  return {schema: 'agent-control.execution-history/v1', jobRunId: run.id, savedJobId: run.savedJobId ?? null, jobName, workParcelIds: [...parcelIds], entries: retained, retention: {mode: complete ? 'complete-durable' : 'derived-durable', maximumEntries: complete ? null : MAX_ENTRIES, source: complete ? 'Complete deterministic projection of Job Run + Work Parcel audit/provenance + every retained token/governor/baton record' : 'Job Run + Work Parcel audit + token/governor/baton evidence'}};
+  return {schema: 'agent-control.execution-history/v1', jobRunId: run.id, savedJobId: run.savedJobId ?? null, jobName, workParcelIds: [...parcelIds], ...(origin?{origin:structuredClone(origin)}:{}), entries: retained, retention: {mode: complete ? 'complete-durable' : 'derived-durable', maximumEntries: complete ? null : MAX_ENTRIES, source: complete ? 'Complete deterministic projection of Job Run + Work Parcel audit/provenance + every retained token/governor/baton record' : 'Job Run + Work Parcel audit + token/governor/baton evidence'}};
 }
 
 export function projectLaneHistory(lane: LaneState, route?: RouteDecision): ExecutionHistoryEntry[] {
