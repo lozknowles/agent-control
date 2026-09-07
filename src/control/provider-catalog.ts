@@ -85,6 +85,7 @@ export interface ProviderDiscoveryAdapter {
   validateCredential?(credential: string): void;
   discover(input: {provider: ProviderConfig; credential: string; fetcher: FetchLike; timeoutMs: number}): Promise<ProviderDiscoveryResult>;
   smokeRequest?(input: {provider: ProviderConfig; model: ModelConfig; probe: CatalogSmokeProbe['id']}): ProviderRequestExtension | undefined;
+  invocationRequest?(input: {provider: ProviderConfig; model: ModelConfig; purpose: 'repository-review'}): ProviderRequestExtension | undefined;
 }
 
 export class ProviderAdapterRegistry {
@@ -102,6 +103,7 @@ export class OpenAICompatibleDiscoveryAdapter implements ProviderDiscoveryAdapte
   supports(provider: ProviderConfig) { return ['openai-compatible', 'responses', 'local'].includes(provider.kind) && Boolean(provider.baseUrl); }
   validateCredential(_credential: string) {}
   smokeRequest(_input: {provider: ProviderConfig; model: ModelConfig; probe: CatalogSmokeProbe['id']}): ProviderRequestExtension | undefined { return undefined; }
+  invocationRequest(_input: {provider: ProviderConfig; model: ModelConfig; purpose: 'repository-review'}): ProviderRequestExtension | undefined { return undefined; }
   async discover(input: {provider: ProviderConfig; credential: string; fetcher: FetchLike; timeoutMs: number}): Promise<ProviderDiscoveryResult> {
     const controller = new AbortController(), timeout = setTimeout(() => controller.abort(), input.timeoutMs);
     try {
@@ -126,6 +128,7 @@ export class NvidiaHostedProviderAdapter extends OpenAICompatibleDiscoveryAdapte
   }
   override validateCredential(credential: string) { if (!/^nvapi-[A-Za-z0-9_-]{16,}$/.test(credential)) throw new Error('provider_credential_format_invalid'); }
   override smokeRequest() { return {profile: 'nvidia-hosted-nonreasoning-smoke-v1', body: {chat_template_kwargs: {enable_thinking: false}}}; }
+  override invocationRequest(_input: {provider: ProviderConfig; model: ModelConfig; purpose: 'repository-review'}) { return {profile: 'nvidia-hosted-nonreasoning-repository-review-v1', body: {chat_template_kwargs: {enable_thinking: false}}}; }
 }
 
 export function defaultProviderAdapterRegistry() {

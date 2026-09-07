@@ -23,6 +23,10 @@ export interface ModelRouteRequest {model?: string; modelRole?: string; accountP
 export interface ModelRouteDecision {
   requestedModel: string | null;
   requestedRole: string | null;
+  /** Whether a later governed lifecycle decision may select a configured alternate route. */
+  allowFallback?: boolean;
+  /** Explicit qualification runs may inspect disabled-for-production candidates without admitting them. */
+  purpose?: 'EXECUTION' | 'QUALIFICATION';
   modelId: string;
   providerId: string;
   accountProfileId: string | null;
@@ -164,7 +168,7 @@ export class ModelRegistry {
     const qualification = this.qualification(selected), accountView = account ? this.accountView(provider, account) : undefined;
     const providerExecutionNodeId = account ? accountProviderExecutionNode(account) : request.providerExecutionNodeId ?? (request.workloadNodeId === undefined ? request.nodeId : qualification.nodes[0] ?? selected.nodes?.[0] ?? request.nodeId);
     return {
-      requestedModel: request.model ?? null, requestedRole: requestedRole ?? null, modelId: selected.id, providerId: selected.provider, accountProfileId: account?.id ?? null, accountLabel: account?.label ?? null, accountPlan: account?.plan ?? null, accountPlanAuthority: account?.planAuthority ?? null, accountQualification: accountView?.qualification.state ?? null, accountAvailability: accountView?.availability ?? null,
+      requestedModel: request.model ?? null, requestedRole: requestedRole ?? null, allowFallback: request.allowFallback !== false, purpose: request.purpose ?? 'EXECUTION', modelId: selected.id, providerId: selected.provider, accountProfileId: account?.id ?? null, accountLabel: account?.label ?? null, accountPlan: account?.plan ?? null, accountPlanAuthority: account?.planAuthority ?? null, accountQualification: accountView?.qualification.state ?? null, accountAvailability: accountView?.availability ?? null,
       providerModel: selected.providerModel, workloadNodeId: request.workloadNodeId ?? request.nodeId, providerExecutionNodeId, credentialNodeId: account ? accountCredentialResidency(account).nodeId : null, nodeId: providerExecutionNodeId, qualificationVersion: qualification.state === 'QUALIFIED' ? qualification.version : selectedAssessment.intelligence?.qualificationVersion ?? qualification.version,
       fallback: selectedIndex > 0, fallbackReason: selectedIndex > 0 ? considered.slice(0, selectedIndex).map(item => `${item.modelId}:${item.reasons.join('+')}`).join(',') : null,
       requiredCapabilities: effectiveRequest.requiredCapabilities.map(normalizeCapabilityId), nativeCapabilities: selectedAssessment.capabilityAssessment?.filter(item => item.satisfied && item.implementation === 'NATIVE').map(item => item.capabilityId) ?? [], emulatedCapabilities: selectedAssessment.capabilityAssessment?.filter(item => item.satisfied && item.implementation === 'AGENT_CONTROL_EMULATED').map(item => item.capabilityId) ?? [],

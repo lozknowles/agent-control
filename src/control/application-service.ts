@@ -341,6 +341,7 @@ export class AgentControlService {
     const parcels = this.workParcels?.list() ?? [], tokenEvidence = this.tokenBatonRouting?.evidence();
     return jobs.runs.list(savedJobId).map(run => ({
       ...run,
+      executionTranscript: jobs.transcripts?.metadata(run.id),
       executionHistory: projectParameterizedRunHistory({
         run,
         savedJob: savedJobs.find(job => job.id === run.savedJobId),
@@ -350,6 +351,7 @@ export class AgentControlService {
     }));
   }
   parameterizedRun(id: string) { const run = this.parameterizedRuns().find(item => item.id === id); if (!run) throw new Error('job_run_missing'); return run; }
+  parameterizedRunTranscript(id: string) { const transcripts = this.mustParameterizedJobs().transcripts; if (!transcripts) throw new Error('execution_transcript_runtime_unavailable'); return transcripts.read(id); }
   cancelParameterizedRun(id: string, actor: string) { const run = this.mustParameterizedJobs().cancel(id, actor); this.events.emit('job.run_cancelled', {runId: id, savedJobId: run.savedJobId}, undefined, actor); return run; }
   resumeParameterizedRunAuthentication(id: string, actor: string) { const run = this.mustParameterizedJobs().resumeAuthentication(id, actor); this.events.emit('job.run_authentication_resumed', {runId: id, savedJobId: run.savedJobId, providerId: run.modelRoute?.providerId, accountProfileId: run.modelRoute?.accountProfileId, modelId: run.modelRoute?.modelId, nodeId: run.modelRoute?.providerExecutionNodeId}, undefined, actor); return run; }
   parameterizedSchedules() { return this.savedJobs().filter(job => job.schedule).map(job => ({savedJobId: job.id, name: job.name, schedule: job.schedule, nextRun: job.nextRun, lastRun: job.lastRun})); }
