@@ -17,6 +17,7 @@ const ffmpeg = process.env.AGENT_CONTROL_FFMPEG ?? 'ffmpeg';
 const ffprobe = process.env.AGENT_CONTROL_FFPROBE ?? 'ffprobe';
 const ingress = process.env.AGENT_CONTROL_QUALIFICATION_INGRESS === 'openwa' ? 'openwa' : 'dashboard';
 const dashboardPort = ingress === 'openwa' ? Number(process.env.AGENT_CONTROL_QUALIFICATION_PORT ?? 19191) : 0;
+const socialConversationLabel = process.env.AGENT_CONTROL_QUALIFICATION_SOCIAL_LABEL ?? 'Collingham';
 const pixel = ingress === 'openwa' ? {
   host: process.env.AGENT_CONTROL_PIXEL_HOST,
   user: process.env.AGENT_CONTROL_PIXEL_USER,
@@ -91,8 +92,33 @@ function boundsForLabel(xml, pattern) {
   return match ? {x: Math.round((Number(match[2]) + Number(match[4])) / 2), y: Math.round((Number(match[3]) + Number(match[5])) / 2)} : null;
 }
 
+function boundsForClass(xml, className) {
+  const tag = [...xml.matchAll(/<node\b[^>]*>/g)].map(item => item[0]).find(value => value.includes(`class="${className}"`) && /bounds="\[\d+,\d+\]\[\d+,\d+\]"/.test(value));
+  const match = tag?.match(/bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/);
+  return match ? {x: Math.round((Number(match[1]) + Number(match[3])) / 2), y: Math.round((Number(match[2]) + Number(match[4])) / 2)} : null;
+}
+
 async function sendPhysicalSocialRequest() {
   const adb = ensurePixelAdb();
+  pixelAdb(['shell', 'monkey', '-p', 'com.whatsapp', '1']);
+  await delay(1_000);
+  const chatList = pixelAdb(['exec-out', 'uiautomator', 'dump', '/dev/tty']);
+  const escapedLabel = socialConversationLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const conversation = boundsForLabel(chatList, new RegExp(`^${escapedLabel} picture`, 'i'));
+  if (conversation) {
+    pixelAdb(['shell', 'input', 'tap', String(conversation.x), String(conversation.y)]);
+    await delay(750);
+    const chat = pixelAdb(['exec-out', 'uiautomator', 'dump', '/dev/tty']), composer = boundsForClass(chat, 'android.widget.EditText');
+    if (!composer) throw new Error('qualification_pixel_whatsapp_composer_unavailable');
+    pixelAdb(['shell', 'input', 'tap', String(composer.x), String(composer.y)]);
+    pixelAdb(['shell', 'input', 'text', 'start%sgoverned-adaptive-crew']);
+    await delay(300);
+    const composed = pixelAdb(['exec-out', 'uiautomator', 'dump', '/dev/tty']), send = boundsForLabel(composed, /^send$/i);
+    if (!composed.includes('text="start governed-adaptive-crew"')) throw new Error('qualification_pixel_composed_command_not_exact');
+    if (!send) throw new Error('qualification_pixel_message_send_control_unavailable');
+    pixelAdb(['shell', 'input', 'tap', String(send.x), String(send.y)]);
+    return {node: 'configured Android operator device', transport: 'strict-host-key SSH to existing qualified local ADB', adb, action: 'authenticated WhatsApp conversation composer', request: 'start governed-adaptive-crew'};
+  }
   // Move the underlying foreground away from the operator chat without
   // unlocking the device, so the subsequently queued bot prompt is eligible
   // to surface as a genuine lock-screen notification.
