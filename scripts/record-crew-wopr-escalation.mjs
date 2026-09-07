@@ -60,9 +60,9 @@ function pixelAdb(args, timeout = 30_000) {
   return execFileSync('ssh', ['-T', '-i', pixel.identity, '-p', String(pixel.port), '-o', 'BatchMode=yes', '-o', 'IdentitiesOnly=yes', '-o', 'StrictHostKeyChecking=yes', '-o', 'ConnectTimeout=10', `${pixel.user}@${pixel.host}`, 'adb', ...args], {encoding: 'utf8', timeout, maxBuffer: 4 * 1024 * 1024});
 }
 
-function boundsForReply(xml) {
+function boundsForLabel(xml, pattern) {
   const nodes = [...xml.matchAll(/<node\b[^>]*(?:text|content-desc)="([^"]*)"[^>]*bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"[^>]*\/?\s*>/g)];
-  const match = nodes.find(item => /^(?:reply|respond)$/i.test(item[1].trim())) ?? nodes.find(item => /reply/i.test(item[1]));
+  const match = nodes.find(item => pattern.test(item[1].trim()));
   return match ? {x: Math.round((Number(match[2]) + Number(match[4])) / 2), y: Math.round((Number(match[3]) + Number(match[5])) / 2)} : null;
 }
 
@@ -77,14 +77,17 @@ async function sendPhysicalSocialRequest() {
   const deadline = Date.now() + 30_000;
   while (!reply && Date.now() < deadline) {
     const xml = pixelAdb(['exec-out', 'uiautomator', 'dump', '/dev/tty']);
-    reply = boundsForReply(xml);
+    reply = boundsForLabel(xml, /^(?:reply|respond)$/i);
     if (!reply) await delay(750);
   }
   if (!reply) throw new Error('qualification_pixel_notification_reply_unavailable');
   pixelAdb(['shell', 'input', 'tap', String(reply.x), String(reply.y)]);
   await delay(500);
   pixelAdb(['shell', 'input', 'text', 'start%sgoverned-adaptive-crew']);
-  pixelAdb(['shell', 'input', 'keyevent', 'KEYCODE_ENTER']);
+  await delay(300);
+  const composed = pixelAdb(['exec-out', 'uiautomator', 'dump', '/dev/tty']), send = boundsForLabel(composed, /^send$/i);
+  if (!send) throw new Error('qualification_pixel_message_send_control_unavailable');
+  pixelAdb(['shell', 'input', 'tap', String(send.x), String(send.y)]);
   return {node: 'configured Android operator device', transport: 'strict-host-key SSH to existing local ADB', action: 'notification inline reply', request: 'start governed-adaptive-crew'};
 }
 
