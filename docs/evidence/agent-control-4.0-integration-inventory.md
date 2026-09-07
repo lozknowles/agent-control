@@ -3,7 +3,7 @@
 Recorded: 2026-09-07  
 Integration branch: `integration/4.0-governed-adaptive-crew`  
 Baseline: `eb291f9c9f2ff0fb74956b367c16218ef0b057f3`  
-Current candidate checkpoint: `c7eaa9918068874e12d124f06e6a391337ffef5a`
+Current product checkpoint: `6a44c3b` (social decision recovery); evidence commits may follow without changing product behavior
 
 This inventory was produced from Git branches, remotes, worktrees, ancestry and working-tree state. All listed source worktrees were clean when inspected. The integration branch is pushed. No merge to `main`, tag, GitHub Release or deployment is part of this candidate.
 
@@ -20,7 +20,7 @@ This inventory was produced from Git branches, remotes, worktrees, ancestry and 
 | Protected-resource governance | `feature/protected-resource-mutation-governance-20260907` at `eb291f9c9f2ff0fb74956b367c16218ef0b057f3` | Selected integration baseline | Integrated 4.0 physical rerun passed: 11/11 denied, 5/5 allowed, protected SHA unchanged | Uses common semantic effects, runtime governor, owned execution and independent verification. |
 | Live Shell / PTY | `feature/3.9-live-shell-pty-attachment` at `4c93227b1670672b663a57b6d68e51c54065e0d7` | Deliberate cherry-pick `e7045fde8babc3d5ee95bbacc5ef78f120e59a79`, followed by 4.0 policy integration in `96638b7` | Ordinary WATCH/INTERVENE/detach passed in the earlier complete 4.0 run; protected physical sessions now prove WATCH-only | Reuses JobRuntime-owned processes and existing managed-node transport. No second shell authority exists. |
 | 4.0 canonical origin/transcript integration | `96638b796fbc823f9064c61141393c5c03749653` | Direct ancestor | Deterministic origin and complete-transcript tests passed | Introduces a common request-origin envelope from channels through Work Parcels and execution transcripts. |
-| Social adaptive convergence correction | `f6f4a1d` | Direct ancestor | Focused 19/19 Work Parcel tests pass; physical rerun pending Pixel availability | Fixes the discovered omission where `submitApprovedPlan` persisted a social parcel without invoking the normal adaptive decision hook. |
+| Social adaptive convergence correction | `f6f4a1d`, restart repair `6a44c3b` | Direct ancestors | Focused 20/20 Work Parcel tests pass; physical rerun pending Pixel availability | Fixes the discovered omission where `submitApprovedPlan` persisted a social parcel without invoking the normal adaptive decision hook, including idempotent recovery of a decision-less pre-fix parcel. |
 
 ## Supersession decisions
 
