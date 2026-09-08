@@ -14,7 +14,12 @@ def telemetry():
 def verify(task,out,stem):
     if task['id']=='instruction': return {'passed':out.strip()==task['expected'],'method':'exact three-line comparison'}
     if task['id']=='json':
-        try: ok=json.loads(out)==task['expected']
+        try:
+            value=json.loads(out); expected=task['expected']
+            def typed_equal(actual,wanted):
+                if type(wanted) in (int,float): return type(actual) in (int,float) and actual==wanted
+                return type(actual) is type(wanted) and actual==wanted
+            ok=isinstance(value,dict) and value.keys()==expected.keys() and all(typed_equal(value[k],v) for k,v in expected.items())
         except Exception: ok=False
         return {'passed':ok,'method':'JSON parse and exact typed object comparison'}
     if task['id']=='code':
