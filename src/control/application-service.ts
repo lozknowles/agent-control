@@ -292,6 +292,7 @@ export class AgentControlService {
   jobQueue() { return this.mustJobRuntime().queueProjection(); }
   workers() { return this.mustJobRuntime().workers.list(); }
   executionSessionProjection() { return (this.executionSessions?.list() ?? []).map(session => ({id: session.id, incarnation: session.incarnation, state: session.state, adapterId: session.adapterId, scope: structuredClone(session.scope), command: session.command, cwd: session.cwd, ...(session.pid === undefined ? {} : {pid: session.pid}), capabilities: structuredClone(session.capabilities), control: structuredClone(session.control), activeAttachments: session.attachments.filter(item => !item.detachedAt).map(item => ({id: item.id, actorId: item.actorId, mode: item.mode, attachedAt: item.attachedAt})), createdAt: session.createdAt, startedAt: session.startedAt, updatedAt: session.updatedAt, ...(session.endedAt ? {endedAt: session.endedAt} : {}), ...(session.exitCode === undefined ? {} : {exitCode: session.exitCode}), ...(session.exitSignal === undefined ? {} : {exitSignal: session.exitSignal}), outputBytes: session.outputBytes, outputTruncated: session.outputTruncated, ...(session.lastOutputAt ? {lastOutputAt: session.lastOutputAt} : {}), ...(session.lastError ? {lastError: session.lastError} : {})})); }
+  poeRegression(){return this.mustPoe().regression();}
   poeKnowledge(){return this.mustPoe().knowledge();}
   poeKnowledgeSource(id:string){return this.mustPoe().knowledgeSource(id);}
   greetPoe(id:string,actor:string){return this.mustPoe().greeting(id,actor);}

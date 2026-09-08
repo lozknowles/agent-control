@@ -480,6 +480,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('[data-view]').forEach(button => button.addEventListener('click', () => {
     document.querySelectorAll('[data-view]').forEach(item => item.classList.toggle('active', item === button));
     const view = button.dataset.view;
+    if(view==='poe'){document.dispatchEvent(new Event('poe:open'));return;}
     document.querySelector('#jobs-workspace').hidden = view !== 'jobs';
     document.querySelector('#lanes-workspace').hidden = view !== 'lanes';
     document.querySelector('#sessions-workspace').hidden = view !== 'sessions';

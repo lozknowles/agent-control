@@ -1,3 +1,4 @@
+import {readPoeRegression} from './control/poe-regression.js';
 import path from 'node:path';
 import fs from 'node:fs';
 import {createHash} from 'node:crypto';
@@ -120,6 +121,7 @@ if (process.env.AGENT_CONTROL_POE_VOICE_CONFIG) {
 }
 const knowledge = new PoeKnowledgeService({root:process.cwd(),version:AGENT_CONTROL_VERSION,sources:JSON.parse(fs.readFileSync('config/poe-knowledge-sources.json','utf8')),configuration:()=>({jobs:jobRuntime.catalog.listJobs(),schedules:jobRuntime.catalog.listSchedules(),models:service.models(),routing:config.modelRouting}),live:category=>{
   const snapshot=service.snapshot();
+  if(category==='regression')return readPoeRegression(process.env.AGENT_CONTROL_POE_REGRESSION_FILE);
   if(category==='crew')return snapshot.characterCrew.members.map(member=>({id:member.id,name:member.name,role:member.role,state:member.operationalState,summary:member.summary,freshness:member.freshness}));
   if(category==='models')return {models:service.models(),providers:snapshot.providers,routing:config.modelRouting};
   if(category==='lanes')return {systems:service.systems(),lanes:snapshot.lanes.map(lane=>({id:lane.id,name:lane.name,status:lane.status,model:lane.model,baton:lane.baton}))};
@@ -132,7 +134,7 @@ const operator = new PoeOperatorRuntime({knowledge,registries:process.env.AGENT_
   registrations:JSON.parse(fs.readFileSync(path.resolve('config/poe-operator-jobs.json'),'utf8')),
   topics:JSON.parse(fs.readFileSync(path.resolve('config/poe-system-topics.json'),'utf8')),
   sources:{systems:()=>service.systems(),savedJobs:()=>service.savedJobs(),parameterizedSchedules:()=>service.parameterizedSchedules(),overview:()=>service.poeEvidence(),resolve:reference=>service.poeEvidence(reference)}});
-const poe = new PoeRuntime({operator,
+const poe = new PoeRuntime({operator,regression:()=>readPoeRegression(process.env.AGENT_CONTROL_POE_REGRESSION_FILE),
   file:path.join(stateRoot,'poe','conversations.json'),
   evidence:{overview:()=>service.poeEvidence(),resolve:reference=>service.poeEvidence(reference)},
   ...(process.env.AGENT_CONTROL_POE_STATUS_MODEL_ROLE?{responseModel:new RoutedPoeResponseModel(modelRegistry,codexNodeExecution,{status:process.env.AGENT_CONTROL_POE_STATUS_MODEL_ROLE,reasoning:process.env.AGENT_CONTROL_POE_REASONING_MODEL_ROLE??process.env.AGENT_CONTROL_POE_STATUS_MODEL_ROLE})}:{}),
