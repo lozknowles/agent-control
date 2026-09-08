@@ -36,6 +36,12 @@ type Row = Record<string, any>;
 const hash=(value:string)=>createHash('sha256').update(value).digest('hex');
 const terminal=(status:string)=>['SUCCEEDED','FAILED','CANCELLED','DEGRADED'].includes(status);
 const who=(identity:SocialIdentity)=>hash(JSON.stringify(identity));
+function normalizeSpokenPoeInvocation(text:string) {
+  return text
+    .replace(/^((?:(?:sorry|excuse me)[, ]+)?(?:let me |to )?interrupt[, ]+)(?:po|pose)(?=[,.!?: ])/i,'$1POE')
+    .replace(/^(ask\s+)(?:po|pose)(?=[, :])/i,'$1POE')
+    .replace(/^(?:po|pose)(?=[, :])/i,'POE');
+}
 export class SocialVoiceCoordinator {
   readonly db: DatabaseSync;
   private busy=false;
@@ -96,8 +102,10 @@ export class SocialVoiceCoordinator {
     if(m.kind==='audio'){
       if(!this.recognition||!m.mediaId){await this.reply(m,key,'Speech recognition is unavailable. Please send a text message.');return;}
       const audio=await this.provider.downloadAudio(m.identity,m.mediaId);validateAudio(audio.bytes,audio.mime);
-      const transcript=await this.recognition.transcribe({...audio,signal:AbortSignal.timeout(120000)});text=transcript.text.replace(/^agent control[, :]+/i,'').replace(/[.!?]+$/,'').trim();
-      this.audit('speech.transcribed',identity,{text,confidence:transcript.confidence,metrics:transcript.metrics,authority:'untrusted transcription'});
+      const transcript=await this.recognition.transcribe({...audio,signal:AbortSignal.timeout(120000)}),providerText=transcript.text.trim();text=providerText.replace(/^agent control[, :]+/i,'').replace(/[.!?]+$/,'').trim();
+      this.audit('speech.transcribed',identity,{text:providerText,confidence:transcript.confidence,metrics:transcript.metrics,authority:'untrusted transcription'});
+      const normalizedText=normalizeSpokenPoeInvocation(text);
+      if(normalizedText!==text){this.audit('speech.intent_normalized',identity,{sourceText:text,normalizedText,rule:'poe-invocation-homophone-v1',authority:'deterministic lexical normalization'});text=normalizedText;}
       const interruption=text.match(/^(?:(?:sorry|excuse me)[, ]+)?(?:let me |to )?interrupt[, ]+poe[,.!?: ]+(.+)$/i),playback=interruption?this.db.prepare("SELECT conversation,turn FROM poe_playback WHERE identity=? AND state='queued'").get(identity) as Row|undefined:undefined;
       if(interruption&&playback&&this.poe?.interrupt){const result=await this.poe.interrupt({actor:principal.actor,identityReference:identity,conversationId:playback.conversation,turnId:playback.turn});if(result.interrupted){this.db.prepare("UPDATE poe_playback SET state='interrupted' WHERE identity=?").run(identity);this.audit('poe.interrupted',identity,{conversationId:playback.conversation,turnId:playback.turn,speechBoundary:'client-playback',workParcelCancellation:false});}text=`POE: ${interruption[1]!.trim()}`;}
       if(!/^(?:poe(?:[, :]\s*).+|ask poe(?:[, :]\s*).+|status|jobs|health|models|nodes|what'?s agent control doing\??|(?:status |job )?ac[- ]?\d+)$/i.test(text.trim())){
