@@ -9,7 +9,7 @@ env['AGENT_CONTROL_QUALIFICATION_OPERATOR_TOKEN'] = secrets.token_urlsafe(32)
 proxylog = open(str(root) + '-proxy.log', 'w')
 serverlog = open(str(root) + '-server.log', 'w')
 browserlog = open(str(root) + '-browser.log', 'w')
-proxy = subprocess.Popen(['python3', str(repo / 'scripts/record-private-inference-http.py'), '--port', '19482', '--target', 'http://127.0.0.1:19483', '--output', str(root) + '-http'], stdout=proxylog, stderr=proxylog)
+proxy = subprocess.Popen(['python3', str(repo / 'scripts/record-private-inference-http.py'), '--port', '19482', '--target', 'http://127.0.0.1:19483', '--output', str(root) + '-http', '--timeout', str(cfg.get('timeoutMinutes', 4)*60+15)], stdout=proxylog, stderr=proxylog)
 server = browser = None
 
 def disconnect_owned_forward(phase):

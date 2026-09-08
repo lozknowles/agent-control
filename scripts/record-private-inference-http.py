@@ -1,5 +1,5 @@
 import argparse, http.server, json, pathlib, time, urllib.request, urllib.error, uuid
-p=argparse.ArgumentParser();p.add_argument('--port',type=int,required=True);p.add_argument('--target',required=True);p.add_argument('--output',required=True);a=p.parse_args();root=pathlib.Path(a.output);root.mkdir(parents=True,exist_ok=True)
+p=argparse.ArgumentParser();p.add_argument('--port',type=int,required=True);p.add_argument('--target',required=True);p.add_argument('--output',required=True);p.add_argument('--timeout',type=float,default=240);a=p.parse_args();root=pathlib.Path(a.output);root.mkdir(parents=True,exist_ok=True)
 class Proxy(http.server.BaseHTTPRequestHandler):
  def log_message(self,*args): pass
  def do_GET(self): self.forward()
@@ -9,7 +9,7 @@ class Proxy(http.server.BaseHTTPRequestHandler):
   if body: (root/(identity+'-request.json')).write_bytes(body)
   try:
    req=urllib.request.Request(a.target.rstrip('/')+self.path,data=body if self.command=='POST' else None,headers={'Content-Type':'application/json'},method=self.command)
-   try: response=urllib.request.urlopen(req,timeout=240)
+   try: response=urllib.request.urlopen(req,timeout=a.timeout)
    except urllib.error.HTTPError as e: response=e
    with response:
     status=response.status;self.send_response(status);self.send_header('Content-Type',response.headers.get('Content-Type','application/json'));self.end_headers()
