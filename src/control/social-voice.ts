@@ -17,7 +17,8 @@ export interface SocialExecutionPort {
   decide(parcelId: string, runId: string, action: string, approved: boolean, actor: string): void;
 }
 export interface PoeSocialPort {
-  ask(input: {actor: string; identityReference: string; text: string; modality: 'text' | 'voice'}): Promise<{conversationId: string; text: string}> | {conversationId: string; text: string};
+  ask(input: {actor: string; identityReference: string; text: string; modality: 'text' | 'voice'}): Promise<{conversationId: string; turnId?: string; text: string}> | {conversationId: string; turnId?: string; text: string};
+  interrupt?(input: {actor: string; identityReference: string; conversationId: string; turnId: string}): Promise<{interrupted: boolean}> | {interrupted: boolean};
 }
 function spokenNumber(value:number):string {
   const small=['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen'];
@@ -47,7 +48,8 @@ export class SocialVoiceCoordinator {
       CREATE TABLE IF NOT EXISTS jobs(number INTEGER PRIMARY KEY AUTOINCREMENT,key TEXT UNIQUE NOT NULL,identity TEXT NOT NULL,parcel TEXT,voice INTEGER NOT NULL DEFAULT 0,status TEXT);
       CREATE TABLE IF NOT EXISTS approvals(number INTEGER PRIMARY KEY AUTOINCREMENT,identity TEXT NOT NULL,parcel TEXT NOT NULL,run TEXT NOT NULL,action TEXT NOT NULL,snapshot TEXT NOT NULL,expires INTEGER NOT NULL,state TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS history(id INTEGER PRIMARY KEY AUTOINCREMENT,at INTEGER NOT NULL,event TEXT NOT NULL,identity TEXT NOT NULL,detail TEXT NOT NULL);
-      CREATE TABLE IF NOT EXISTS spoken(key TEXT PRIMARY KEY,state TEXT NOT NULL);`);
+      CREATE TABLE IF NOT EXISTS spoken(key TEXT PRIMARY KEY,state TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS poe_playback(identity TEXT PRIMARY KEY,conversation TEXT NOT NULL,turn TEXT NOT NULL,state TEXT NOT NULL,queuedAt INTEGER NOT NULL);`);
     this.db.exec('CREATE TABLE IF NOT EXISTS confirmations(identity TEXT PRIMARY KEY,sourceKey TEXT NOT NULL,command TEXT NOT NULL,expires INTEGER NOT NULL)');
     const confirmationColumns=this.db.prepare('PRAGMA table_info(confirmations)').all() as Row[];
     if(!confirmationColumns.some(column=>column.name==='request'))this.db.exec("ALTER TABLE confirmations ADD COLUMN request TEXT NOT NULL DEFAULT ''");
@@ -96,6 +98,8 @@ export class SocialVoiceCoordinator {
       const audio=await this.provider.downloadAudio(m.identity,m.mediaId);validateAudio(audio.bytes,audio.mime);
       const transcript=await this.recognition.transcribe({...audio,signal:AbortSignal.timeout(120000)});text=transcript.text.replace(/^agent control[, :]+/i,'').replace(/[.!?]+$/,'').trim();
       this.audit('speech.transcribed',identity,{text,confidence:transcript.confidence,metrics:transcript.metrics,authority:'untrusted transcription'});
+      const interruption=text.match(/^(?:(?:sorry|excuse me)[, ]+)?(?:let me |to )?interrupt[, ]+poe[, :]+(.+)$/i),playback=interruption?this.db.prepare("SELECT conversation,turn FROM poe_playback WHERE identity=? AND state='queued'").get(identity) as Row|undefined:undefined;
+      if(interruption&&playback&&this.poe?.interrupt){const result=await this.poe.interrupt({actor:principal.actor,identityReference:identity,conversationId:playback.conversation,turnId:playback.turn});if(result.interrupted){this.db.prepare("UPDATE poe_playback SET state='interrupted' WHERE identity=?").run(identity);this.audit('poe.interrupted',identity,{conversationId:playback.conversation,turnId:playback.turn,speechBoundary:'client-playback',workParcelCancellation:false});}text=`POE: ${interruption[1]!.trim()}`;}
       if(!/^(?:poe(?:[, :]\s*).+|ask poe(?:[, :]\s*).+|status|jobs|health|models|nodes|what'?s agent control doing\??|(?:status |job )?ac[- ]?\d+)$/i.test(text.trim())){
         const template=principal.templates.find(name=>text.toLowerCase()===`start ${name.replaceAll('-',' ')}`||text.toLowerCase()===`start ${name}`);
         const command=template?`start ${template} voice`:undefined;
@@ -107,7 +111,7 @@ export class SocialVoiceCoordinator {
     if((match=text.match(/^(?:poe|ask poe)(?:[, :]\s*)(.+)$/i))){
       if(!this.poe){await this.reply(m,key,'POE is unavailable on this channel. The authenticated dashboard remains available.');this.audit('poe.unavailable',identity,{reason:'channel_adapter_unconfigured'});return;}
       const answer=await this.poe.ask({actor:principal.actor,identityReference:identity,text:match[1]!.trim(),modality:m.kind==='audio'?'voice':'text'});
-      await this.reply(m,key,answer.text);if(m.kind==='audio')await this.speak(m,`${key}:poe`,answer.text);this.audit('poe.response',identity,{conversationId:answer.conversationId,channel:this.provider.id,modality:m.kind==='audio'?'voice':'text',spoken:m.kind==='audio',authority:'agent-control-evidence'});
+      await this.reply(m,key,answer.text);if(m.kind==='audio'){const spoken=await this.speak(m,`${key}:poe`,answer.text);if(spoken&&answer.turnId)this.db.prepare("INSERT OR REPLACE INTO poe_playback(identity,conversation,turn,state,queuedAt) VALUES (?,?,?,'queued',?)").run(identity,answer.conversationId,answer.turnId,this.clock());}this.audit('poe.response',identity,{conversationId:answer.conversationId,turnId:answer.turnId??null,channel:this.provider.id,modality:m.kind==='audio'?'voice':'text',spoken:m.kind==='audio',authority:'agent-control-evidence'});
     }else if(/^(status|health|models|nodes|what'?s agent control doing\??)$/i.test(text)){
       const kind=/^(health|models|nodes)$/i.test(text)?text.toLowerCase() as 'health'|'models'|'nodes':'status';await this.reply(m,key,this.execution.overview(kind,principal.actor));
     }else if(/^jobs$/i.test(text)){const jobs=this.db.prepare('SELECT number,parcel FROM jobs WHERE identity=? AND parcel IS NOT NULL').all(identity) as Row[];await this.reply(m,key,jobs.map(j=>`AC-${j.number}: ${this.execution.observe(j.parcel).status}`).join('\n')||'No Social & Voice jobs yet.');
@@ -131,7 +135,7 @@ export class SocialVoiceCoordinator {
     if(!this.speech||!this.voice){this.audit('speech.text_fallback',who(m.identity),{reason:'provider_unconfigured'});return;}
     if(this.db.prepare('SELECT key FROM spoken WHERE key=?').get(key))return;
     this.db.prepare("INSERT INTO spoken VALUES (?,'sending')").run(key);
-    try{const safe=text.split('\n').filter(line=>!/^https?:|^Work Parcel:/.test(line)).join(' ').slice(0,1000);const audio=await this.speech.synthesize({text:safe,voice:this.voice,signal:AbortSignal.timeout(180000)});validateAudio(audio.bytes,audio.mime);const receipt=await this.provider.sendArtifact(m.identity,audio.bytes,audio.mime,key+':audio');this.audit('speech.synthesized',who(m.identity),{text:safe,metrics:audio.metrics,voice:this.voice,receipt,audioSha256:createHash('sha256').update(audio.bytes).digest('hex')});this.db.prepare("UPDATE spoken SET state='queued' WHERE key=?").run(key);}catch{this.db.prepare("UPDATE spoken SET state='failed' WHERE key=?").run(key);this.audit('speech.text_fallback',who(m.identity),{reason:'synthesis_or_delivery_failed'});}
+    try{const safe=text.split('\n').filter(line=>!/^https?:|^Work Parcel:/.test(line)).join(' ').slice(0,1000);const audio=await this.speech.synthesize({text:safe,voice:this.voice,signal:AbortSignal.timeout(180000)});validateAudio(audio.bytes,audio.mime);const receipt=await this.provider.sendArtifact(m.identity,audio.bytes,audio.mime,key+':audio');this.audit('speech.synthesized',who(m.identity),{text:safe,metrics:audio.metrics,voice:this.voice,receipt,audioSha256:createHash('sha256').update(audio.bytes).digest('hex')});this.db.prepare("UPDATE spoken SET state='queued' WHERE key=?").run(key);return{metrics:audio.metrics};}catch{this.db.prepare("UPDATE spoken SET state='failed' WHERE key=?").run(key);this.audit('speech.text_fallback',who(m.identity),{reason:'synthesis_or_delivery_failed'});}
   }
   async requestSummary(identity:SocialIdentity,reference:string,requestKey:string){
     if(!this.execution.principal(identity)||!/^[-a-zA-Z0-9]{8,80}$/.test(requestKey))throw new Error('summary_request_denied');
