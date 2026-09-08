@@ -16,3 +16,9 @@ test('technical identifiers remain in text while speech uses a legible reference
  const original='Version 4.0.0, commit 69ba1dbcf8279df3315a13f59d44992a433d3917. The working tree is clean.';
  assert.equal(prepareSpokenText(original),'Version four point zero point zero, commit identifier shown in the transcript. The working tree is clean.');assert.match(original,/69ba1dbcf8279df3315a13f59d44992a433d3917/);
 });
+test('spoken and transcribed thousands preserve actual regression totals',()=>{
+ assert.equal(prepareSpokenText('1,070 tests passed after 15,011 ms.'),'one thousand seventy tests passed after fifteen thousand eleven ms.');
+ assert.equal(speechContentCoverage('One thousand seventy tests passed.','1,070 tests passed.').matched,true);
+ assert.equal(speechContentCoverage('One thousand seventy tests passed.','One, seventy tests passed.').matched,false);
+ assert.equal(prepareSpokenText('One, two, three.'),'One, two, three.');
+});
