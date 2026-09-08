@@ -52,7 +52,7 @@ test('approved repetitions materialize distinct Job stages and verification crit
  assert.equal(fact.informationKind,'LIVE_OBSERVED');const value=JSON.parse(String(fact.value));
  assert.equal(value.conversationId,conversation.id);assert.equal(value.snapshotTurnCount,1);
  assert.ok(value.bytes>0);assert.match(value.sha256,/^[a-f0-9]{64}$/);
- assert.match(value.exportPath,/\/transcript$/);assert.equal(result.conversation.state,'EXPLAINING');
+ assert.equal(value.dashboardControl,'Transcript');assert.match(value.exportPath,/\/transcript$/);assert.equal(result.conversation.state,'EXPLAINING');
  assert.match(runtime.transcript(conversation.id),/Show my complete natural transcript/);
  const other=runtime.createConversation({actorId:'web-operator',channel:'dashboard'});
  const second=await runtime.ask({conversationId:other.id,text:question});
