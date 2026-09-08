@@ -1,5 +1,6 @@
 import path from 'node:path';
 import fs from 'node:fs';
+import {createHash} from 'node:crypto';
 import type {OpenWAAdapter} from './control/openwa.js';
 import {AgentControlService} from './control/application-service.js';
 import {configPath, loadConfig} from './control/config.js';
@@ -29,6 +30,9 @@ import {ProviderNeutralModelEvaluationExecutor, startModelEvaluationScheduler} f
 import {ProviderCatalogRuntime, ProviderCatalogStore} from './control/provider-catalog.js';
 import {AGENT_CONTROL_VERSION} from './version.js';
 import {ExecutionSessionRuntime} from './control/execution-session.js';
+import {PoeRuntime} from './control/poe.js';
+import {RoutedPoeResponseModel} from './control/poe-model.js';
+import {governedRequestOrigin} from './control/request-origin.js';
 
 const now = () => new Date().toISOString();
 const configurationFile = configPath(), config = loadConfig(configurationFile);
@@ -99,6 +103,31 @@ const service = new AgentControlService(state, ptys, providers).configureProject
   adaptiveOrchestration: jobRuntime.adaptiveOrchestration,
   executionSessions,
 });
+let poeSpeech: import('./control/social-voice-providers.js').SpeechProvider | undefined;
+let poeRecognition: import('./control/social-voice-providers.js').SpeechRecognitionProvider | undefined;
+let poeVoice: import('./control/social-voice-providers.js').VoiceIdentity | undefined;
+if (process.env.AGENT_CONTROL_POE_VOICE_CONFIG) {
+  try {
+    const settings=JSON.parse(fs.readFileSync(process.env.AGENT_CONTROL_POE_VOICE_CONFIG,'utf8'));
+    const {PrivateSpeechProvider}=await import('./control/speech-http-provider.js');
+    if(!settings.speechUrl||!settings.tokenEnv||!settings.voice)throw new Error('poe_voice_configuration_invalid');
+    const provider=new PrivateSpeechProvider(settings.voice.provider,settings.speechUrl,process.env[settings.tokenEnv]??'',settings.voice);
+    poeSpeech=provider;poeRecognition=provider;poeVoice=settings.voice;
+  } catch {process.stderr.write('Optional POE voice configuration unavailable; text conversation remains active.\n');}
+}
+const poe = new PoeRuntime({
+  file:path.join(stateRoot,'poe','conversations.json'),
+  evidence:{overview:()=>service.poeEvidence(),resolve:reference=>service.poeEvidence(reference)},
+  ...(process.env.AGENT_CONTROL_POE_STATUS_MODEL_ROLE?{responseModel:new RoutedPoeResponseModel(modelRegistry,codexNodeExecution,{status:process.env.AGENT_CONTROL_POE_STATUS_MODEL_ROLE,reasoning:process.env.AGENT_CONTROL_POE_REASONING_MODEL_ROLE??process.env.AGENT_CONTROL_POE_STATUS_MODEL_ROLE})}:{}),
+  benchmark:{submit:({proposal,actor,requestKey,plan})=>{
+    const identityReference=createHash('sha256').update(`poe:${actor}`).digest('hex');
+    const origin=governedRequestOrigin({channel:'poe/dashboard',modality:'dashboard',receivedAt:new Date().toISOString(),authentication:'dashboard-bearer',actorId:actor,authority:[`conversation:${proposal.conversationId}`,`proposal:${proposal.id}`,`frozen-sha256:${proposal.frozenSha256}`],messageReference:requestKey,identityReference,request:`${proposal.decision}\n\n${proposal.objective}`});
+    const parcel=jobRuntime.workParcels.submitApprovedPlan(origin.request,actor,requestKey,plan,origin);return{parcelId:parcel.id};
+  }},
+  speech:poeSpeech,recognition:poeRecognition,voice:poeVoice,
+  onEvent:event=>service.events.emit(event.type==='conversation.changed'?'poe.conversation_changed':event.type==='proposal.changed'?'poe.proposal_changed':event.type==='speech.changed'?'poe.speech_changed':'poe.interrupted',{conversationId:event.conversationId,proposalId:event.proposalId,state:event.state,detail:event.detail,observedAt:event.at},undefined,'poe'),
+});
+service.configureProjection({poe});
 const modelEvaluationExecutor = new ProviderNeutralModelEvaluationExecutor(modelRegistry, capabilityIntelligence, codexNodeExecution, fetch, event => service.events.emit('model.intelligence_changed', {batchId: event.batchId, providerId: event.candidate.providerId, accountProfileId: event.candidate.accountProfileId ?? null, modelId: event.candidate.modelId, providerModel: event.candidate.providerModel, nodeId: event.candidate.nodeId, taskId: event.taskId, phase: event.phase, detail: event.detail, observedAt: event.at}, undefined, 'model-evaluation-runtime'));
 const modelEvaluation = new ModelEvaluationCoordinator(modelIntelligence, qualificationSuite, modelEvaluationExecutor, {agentControlVersion: AGENT_CONTROL_VERSION, adapterVersion: 'provider-neutral-v1', promptVersion: qualificationSuite.version});
 startModelEvaluationScheduler(modelEvaluation, (batchId, status) => { service.events.emit('model.intelligence_changed', {batchId, status}, undefined, 'model-evaluation-runtime'); service.reconcileProviderBenchmark(batchId,status,'model-evaluation-runtime'); }, 1_000, error => service.events.emit('failure', {scope: 'model-evaluation-runtime', error: error.message}, undefined, 'model-evaluation-runtime'));
@@ -127,7 +156,14 @@ if (process.env.AGENT_CONTROL_OPENWA_CONFIG) {
       const {OpenWASocialProvider,openwaExecutionPort}=await import('./control/openwa-social-provider.js');
       const {PrivateSpeechProvider}=await import('./control/speech-http-provider.js');
       const speech=settings.speechUrl?new PrivateSpeechProvider(settings.voice.provider,settings.speechUrl,process.env[settings.tokenEnv]??'',settings.voice):undefined;
-      socialVoice=new SocialVoiceCoordinator(path.join(stateRoot,'messaging','social-voice.sqlite'),new OpenWASocialProvider(openwa),openwaExecutionPort(openwa),speech,speech,settings.voice,Date.now,event=>service.events.emit('social.activity',{event}));
+      socialVoice=new SocialVoiceCoordinator(path.join(stateRoot,'messaging','social-voice.sqlite'),new OpenWASocialProvider(openwa),openwaExecutionPort(openwa),speech,speech,settings.voice,Date.now,event=>service.events.emit('social.activity',{event}),{
+        ask:async({actor,identityReference,text,modality})=>{
+          const conversationId=`poe-whatsapp:${createHash('sha256').update(identityReference).digest('hex')}`;
+          try{poe.conversation(conversationId);}catch{poe.createConversation({id:conversationId,actorId:actor,channel:'whatsapp'});}
+          const result=await poe.ask({conversationId,text,channel:'whatsapp',modality,contentTrust:modality==='voice'?'UNTRUSTED_DATA':'OPERATOR_REQUEST'});
+          return{conversationId,text:result.turn.text};
+        },
+      });
       openwa.social=socialVoice;socialTimer=setInterval(()=>void socialVoice?.tick().catch(()=>{}),1000);socialTimer.unref();
       } catch {process.stderr.write('Optional Social & Voice configuration unavailable; existing WhatsApp remains active.\n');}
     }
