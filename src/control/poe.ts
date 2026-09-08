@@ -171,8 +171,10 @@ export class PoeRuntime {
   async operatorProjection(id: string, actor: string) {
     const conversation = this.mustConversation(id);
     if(conversation.actorId !== actor || conversation.channel !== 'dashboard') throw new Error('poe_conversation_actor_mismatch');
-    const projection=await this.options.operator?.projection(actor,id);
+    const benchmarkParcelIds=[...this.proposals.values()].filter(proposal=>proposal.conversationId===id&&proposal.approvedBy===actor&&proposal.state==='SUBMITTED'&&proposal.execution).map(proposal=>proposal.execution!.parcelId);
+    const projection=await this.options.operator?.projection(actor,id,benchmarkParcelIds);
     if(!projection)return null;
+    if(projection.batch.running>0&&conversation.state!=='WORKING')this.setState(conversation,'WORKING',{parcelIds:projection.batch.parcelIds});
     for(const handover of projection.handovers){
       if(conversation.announcedHandoverIds?.includes(handover.id))continue;
       (conversation.announcedHandoverIds??=[]).push(handover.id);this.setState(conversation,'HANDOFF',{batonId:handover.batonId,received:handover.received});
@@ -187,7 +189,8 @@ export class PoeRuntime {
     }
     if(projection.batch.reconciled&&!conversation.announcedBatchIds?.includes(projection.batch.id)){
       (conversation.announcedBatchIds??=[]).push(projection.batch.id);
-      this.addTurn(conversation,{purpose:'RESULT',actor:'poe',channel:'dashboard',modality:'text',text:projection.batch.text+' No publication was requested through this adapter.',authority:'AGENT_CONTROL',contentTrust:'AGENT_CONTROL_EVIDENCE',references:projection.batch.parcelIds.map(id=>({kind:'parcel' as const,id})),evidence:[{label:'Reconciled requested set',value:JSON.stringify(projection.batch),authority:'AGENT_CONTROL',informationKind:'LIVE_OBSERVED',observedAt:this.clock(),evidence:projection.batch.parcelIds.map(id=>`parcel:${id}`)}]});
+      this.setState(conversation,projection.batch.failed||projection.batch.blocked?'FAILED':projection.batch.cancelled?'INTERRUPTED':'SUCCEEDED',{parcelIds:projection.batch.parcelIds,reconciled:true});
+      this.addTurn(conversation,{purpose:'RESULT',actor:'poe',channel:'dashboard',modality:'text',text:projection.batch.text+' '+projection.batch.outputs,authority:'AGENT_CONTROL',contentTrust:'AGENT_CONTROL_EVIDENCE',references:projection.batch.parcelIds.map(id=>({kind:'parcel' as const,id})),evidence:[{label:'Reconciled requested set',value:JSON.stringify(projection.batch),authority:'AGENT_CONTROL',informationKind:'LIVE_OBSERVED',observedAt:this.clock(),evidence:projection.batch.parcelIds.map(id=>`parcel:${id}`)}]});
     }
     this.save();return projection;
   }

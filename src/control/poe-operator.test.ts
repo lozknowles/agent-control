@@ -8,7 +8,7 @@ import {ActionRegistry,WorkerRegistry,createJobRuntime} from './job-runtime.js';
 import {JobCatalog} from './job-catalog.js';
 import {WorkParcelCoordinator,WorkParcelStore} from './work-parcels.js';
 import {PoeOperatorRuntime,type OperatorRegistration} from './poe-operator.js';
-import {PoeRuntime} from './poe.js';
+import {PoeRuntime,type PoeBenchmarkProposalInput} from './poe.js';
 import {registerOperatorObservation} from './poe-observation-job.js';
 
 function fixture(t:TestContext) {
@@ -21,7 +21,7 @@ function fixture(t:TestContext) {
   const registration:OperatorRegistration={job:'operator-system-observation@1.1.0',purpose:'Observe the worker registry',owner:'Lane Master',changes:'Local evidence artifact only.',externalMutation:false,publication:false,permitted:true};
   const sources={systems:()=>[{id:'pixel',name:'Pixel',reachable:'unknown',authentication:'unknown'}],savedJobs:()=>[],parameterizedSchedules:()=>[],overview:()=>({title:'Status',summary:'Fixture state',facts:[],related:[]}),resolve:()=>({title:'Unavailable',summary:'Not observed',facts:[],related:[]})};
   const operator=new PoeOperatorRuntime({runtime,parcels,sources,registrations:[registration],topics:[{id:'purpose',title:'Purpose',terms:['system works'],text:'Jobs execute through governed Work Parcels.',source:'config/poe-system-topics.json#purpose'}],file:path.join(root,'operator.json')});
-  const poe=new PoeRuntime({operator,evidence:sources,file:path.join(root,'poe.json')}),conversation=poe.createConversation({actorId:'web-operator',channel:'dashboard'});
+  const poe=new PoeRuntime({operator,evidence:sources,file:path.join(root,'poe.json'),benchmark:{submit:({actor,requestKey,plan,proposal})=>({parcelId:parcels.submitApprovedPlan(proposal.objective,actor,requestKey,plan).id})}}),conversation=poe.createConversation({actorId:'web-operator',channel:'dashboard'});
   const ask=(text:string)=>poe.ask({conversationId:conversation.id,text});
   return {operator,poe,conversation,ask,runtime,parcels,registration,catalog,workers};
 }
@@ -85,4 +85,38 @@ test('aggregate completion waits for every child and verification; real baton re
 });
 test('independent observation verifier inspects the persisted artifact before parcel success',async t=>{
  const f=fixture(t);const run=f.runtime.createRun(f.registration.job,{}, {type:'manual',actor:'test'});for(let i=0;i<5;i++)await f.runtime.tick();const done=f.runtime.ledger.get(run.id)!;assert.equal(done.status,'SUCCEEDED');const verified=f.runtime.artifacts.list(run.id).find(a=>a.name==='independent-verification')!;const value=f.runtime.artifacts.read(verified.id);assert.equal(value.status,'PASS');assert.equal(value.inputSha256,f.runtime.artifacts.get(value.inputArtifactId)?.sha256);assert.ok(value.checks.includes('artifact_checksum'));
+});
+
+test('approved benchmark handovers and completion remain scoped to the owning conversation',async t=>{
+ const f=fixture(t),other=f.poe.createConversation({actorId:'web-operator',channel:'dashboard'});
+ const condition={route:{providerId:'fixture',modelId:'deterministic-test',nodeId:'controller'},tools:['observe'],contextPolicy:'identical test input',fixtureSha256:'f'.repeat(64),softwareVersion:'test',hardwareClass:'fixture',quantization:null,cacheState:'COLD' as const,providerEndpoint:'fixture',authority:'TEST_FIXTURE',timeLimitMs:10000};
+ const input:PoeBenchmarkProposalInput={decision:'Check test handover continuity',objective:'Observe then verify continuation',whyNewEvidenceIsNeeded:'Exercise approved benchmark event projection',conditions:[condition,condition],stages:[{id:'source',name:'Observation',job:f.registration.job},{id:'destination',name:'Verify continuation',job:f.registration.job,dependsOn:['source']}],metrics:[{id:'verified',label:'Verified continuation',kind:'OBJECTIVE',successCriterion:'Both stages complete verified execution',stageId:'destination'}],repetitions:1};
+ const draft=f.poe.proposeBenchmark(f.conversation.id,input);
+ assert.equal((await f.poe.operatorProjection(f.conversation.id,'web-operator'))!.batch.requested,0);
+ const frozen=f.poe.freezeBenchmark(draft.id,draft.revision);
+ assert.equal((await f.poe.operatorProjection(f.conversation.id,'web-operator'))!.batch.reconciled,false);
+ assert.equal(f.parcels.list().length,0);
+ const submitted=f.poe.approveBenchmark(frozen.id,{revision:frozen.revision,frozenSha256:frozen.frozenSha256!,actor:'web-operator'});
+ const own=await f.poe.operatorProjection(f.conversation.id,'web-operator');
+ assert.equal(own!.batch.requested,2);assert.equal(own!.batch.reconciled,false);
+ await assert.rejects(()=>f.poe.operatorProjection(f.conversation.id,'another-actor'),/actor_mismatch/);
+ assert.equal((await f.poe.operatorProjection(other.id,'web-operator'))!.batch.requested,0);
+ for(let i=0;i<14;i++){
+  await f.parcels.tick();await f.runtime.tick();
+  const current=await f.poe.operatorProjection(f.conversation.id,'web-operator');
+  if(!current!.batch.reconciled)assert.equal(f.poe.conversation(f.conversation.id).turns.filter(turn=>turn.purpose==='RESULT').length,0);
+ }
+ const done=await f.poe.operatorProjection(f.conversation.id,'web-operator');
+ assert.equal(done!.batch.reconciled,true);assert.equal(done!.batch.succeeded,2);
+ assert.deepEqual(done!.batch.parcelIds,[submitted.execution!.parcelId]);
+ const conversation=f.poe.conversation(f.conversation.id),handovers=conversation.turns.filter(turn=>turn.purpose==='HANDOVER');
+ assert.ok(handovers.some(turn=>turn.text.includes('Baton received')));
+ assert.ok(handovers.every(turn=>turn.references[0]?.id===submitted.execution!.parcelId));
+ assert.equal(conversation.turns.filter(turn=>turn.purpose==='RESULT').length,1);
+ assert.equal(conversation.state,'SUCCEEDED');
+ await f.poe.operatorProjection(f.conversation.id,'web-operator');
+ assert.equal(f.poe.conversation(f.conversation.id).turns.length,conversation.turns.length);
+ const unrelated=await f.poe.operatorProjection(other.id,'web-operator');
+ assert.equal(unrelated!.batch.requested,0);assert.deepEqual(unrelated!.handovers,[]);
+ assert.equal(f.poe.conversation(other.id).turns.filter(turn=>turn.purpose==='RESULT'||turn.purpose==='HANDOVER').length,0);
 });
