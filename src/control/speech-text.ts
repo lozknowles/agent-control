@@ -11,7 +11,8 @@ export function spokenJobSummary(number:number,result:{status:string;durationMs?
   return `Agent Control ${reference} ${outcome[result.status]??'has an update'}.`;
 }
 export function prepareSpokenText(text:string) {
-  const lines=text.split('\n').map(line=>line.trim()).filter(line=>line&&!/^https?:|^Work Parcel:/.test(line)).map(line=>line.replace(/\s+\((?:agent control|operator|provider reported|estimated|unavailable)\)\s*$/i,'').replace(/:\s*/g,', ').replace(/[.!?]+$/,'')).filter(Boolean);
+  const spoken=text.replace(/\b[a-f0-9]{32,64}\b/gi,'identifier shown in the transcript').replace(/\b\d+\.\d+\.\d+\b/g,version=>version.split('.').map(part=>spokenNumber(Number(part))).join(' point '));
+  const lines=spoken.split('\n').map(line=>line.trim()).filter(line=>line&&!/^https?:|^Work Parcel:/.test(line)).map(line=>line.replace(/\s+\((?:agent control|operator|provider reported|estimated|unavailable)\)\s*$/i,'').replace(/:\s*/g,', ').replace(/[.!?]+$/,'')).filter(Boolean);
   return `${lines.join('. ').replace(/\b\d{1,6}\b/g,value=>spokenNumber(Number(value))).replace(/\s+/g,' ').trim().slice(0,999)}.`;
 }
 export function speechContentCoverage(expected:string,observed:string) {

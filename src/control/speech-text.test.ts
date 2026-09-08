@@ -11,3 +11,8 @@ test('speech content comparison rejects changed counts and reversed negation',()
 test('speech rendering preserves an explicit spoken form without authority glyphs',()=>{
   assert.equal(prepareSpokenText('Waiting work: 0 (agent control)'),'Waiting work, zero.');
 });
+
+test('technical identifiers remain in text while speech uses a legible reference and version',()=>{
+ const original='Version 4.0.0, commit 69ba1dbcf8279df3315a13f59d44992a433d3917. The working tree is clean.';
+ assert.equal(prepareSpokenText(original),'Version four point zero point zero, commit identifier shown in the transcript. The working tree is clean.');assert.match(original,/69ba1dbcf8279df3315a13f59d44992a433d3917/);
+});
