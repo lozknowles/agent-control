@@ -2,7 +2,7 @@
 
 The web dashboard is an operator interface over `AgentControlService`. It is not a web scheduler and does not own lane, lease, PTY, verification or provider state.
 
-The default **Jobs** area contains four separate platform views: **Job Definitions**, **Saved Jobs**, **Schedules**, and **Runs**. These sit alongside the existing catalog/Run-ledger projection rather than replacing its Action/DAG workflows. **Lanes** retains the interactive multi-agent control room. **Sessions** projects persistent Actor, participant, delegation, ACP, contract/PTY, handoff, model/runtime and evidence identity. **Systems** shows canonical configured inventory plus ACP transport and lifecycle-recipe readiness. **Models** shows the canonical provider-neutral model registry and immutable 3.6 lifecycle state. **Configuration** provides authenticated, validated inventory and fast-execution policy editing. No view parses terminal text for Run state.
+The default **Jobs** area contains four separate platform views: **Job Definitions**, **Saved Jobs**, **Schedules**, and **Runs**. These sit alongside the existing catalog/Run-ledger projection rather than replacing its Action/DAG workflows. **Lanes** retains the interactive multi-agent control room. **Sessions** projects persistent Actor, participant, delegation, ACP, contract/PTY, handoff, model/runtime, Live Shell and evidence identity. **Systems** shows canonical configured inventory plus ACP transport and lifecycle-recipe readiness. **Models** shows the canonical provider-neutral model registry and immutable lifecycle state. **Routing** shows the evidence-conditioned Model Capability League, Workflow League and persisted per-Work-Parcel Decision Tree. **Crew** shows the same operational state through navigable characters plus an isolated simulated inspection gallery. **Configuration** provides authenticated, validated inventory and fast-execution/adaptive-routing policy editing. No view parses terminal text for Run state.
 
 ## Parameterised Jobs
 
@@ -24,6 +24,16 @@ Cancellation remains pending until the execution adapter returns cleanup evidenc
 
 The first page load and every SSE reconnect fetch a complete authoritative snapshot before applying later events. Reloading during provider work, a queue wait or cancellation therefore reconstructs the same Run, execution ID, retry state, Work Parcel and token totals; the browser never creates a replacement Run or infers terminal state from a missing event. Measurement cards show source, authority and freshness. Unavailable values are `unknown`, and stale values retain their observation time instead of becoming current.
 
+Governed Job step detail also shows semantic protected-resource effects and operation truth when present. `PROPOSED` means the effect was resolved but not executed; `EXTERNALLY_COMMITTED` requires successful execution or independent remote-state reconciliation; `COMMIT_STATE_UNCERTAIN` is deliberately not displayed as success or clean cancellation. Runtime-safety decisions and Run-ledger transitions arrive over the existing SSE stream. The browser cannot edit the resolved effect or protected policy. See [protected-resource governance](protected-resource-governance.md).
+
+## Adaptive routing and the Decision Tree
+
+Open **Routing** to inspect the same canonical adaptive records used by the runtime and reports. The **Model Capability League** is conditioned by task class and capability; it shows verified sample count, quality, reliability, confidence, latency, token/cost measurements, cache efficiency, evidence age/trend and the separate `BENCHMARK`, `QUALIFICATION` and `PRODUCTION_WORK_PARCEL` counts. The **Workflow League** reports the corresponding evidence for complete orchestration strategies. Sparse or stale evidence is labelled rather than presented as a global ranking.
+
+Select a Work Parcel's **Open routing decision tree** control, or select a decision in the Routing view. Each node is selectable and expands timestamp, parent node, stage, operational facts, candidate eligibility, league measurements, policy, reason and resulting action. The record includes rejected candidates and route transitions, but never private model chain-of-thought. A human-readable operational report is rendered from the same persisted decision record, so a report cannot silently change when current league scores change.
+
+The adaptive policy is conservative and controlled through configuration. It is enabled by default when the adaptive runtime is attached; sparse evidence retains the declared registry order, and adaptive selection never bypasses qualification, placement or verification. Defaults are `minimumSamplesForPreference: 3`, `minimumQualityScore: 0.7`, `policyQualityFloor: 0.6`, `maxEvidenceAgeDays: 90`, no cost/latency ceiling, quality/reliability/cost/latency/confidence weights `0.5/0.2/0.15/0.1/0.05`, and `explorationRate: 0.1`. Set `enabled: false` to retain normal registry routing while still recording that adaptive selection was excluded. Cost values are labelled `authoritative`, `estimated` or `unavailable`; absent provider measurements are never rendered as zero. See [`adaptive-multi-model-orchestration.md`](adaptive-multi-model-orchestration.md) for configuration and qualification details.
+
 ## Start
 
 `npm start` starts the TUI and the embedded dashboard on `http://127.0.0.1:4310`. `npm run web` runs the same control service and dashboard without Blessed for a headless operator host. Run one authoritative control-plane process per state directory. Set `AGENT_CONTROL_WEB_ENABLED=0` to disable the embedded dashboard or `AGENT_CONTROL_WEB_PORT` to select another port.
@@ -37,16 +47,36 @@ npm start
 
 Select **Observer mode** in the browser and enter the token. It remains in tab-scoped session storage and is sent as `Authorization: Bearer ...`. The server does not issue an authority cookie.
 
+## Operational Crew
+
+Six role-specific cards appear beside their engineering areas and together under **Crew**: Cadence (controller/dispatcher), Quill (Work Parcel reviewer), Relay (tool/execution worker), Lumen (model router/scout), Rook (resource/node guardian) and Verity (verification/evidence inspector). `characterCrew` in `GET /api/status` explicitly separates authoritative operational state, source-backed activity and a presentation-only animation expression. Each card exposes state, current activity/tool, source reason, concurrent counts, elapsed/update age, next action and instrumentation limits.
+
+The Crew view is Level 1 immediate understanding. Activating a card or real baton opens Level 2 deterministic human explanation, including the source event and exact handoff reason. Its Level 3 action focuses the existing Lanes, task entry, Work Parcels, Models, Systems or Run evidence. The Crew never performs an operational command and does not replace transcripts, token/cache telemetry, routing or evidence.
+
+Real Work Parcels show their stage DAG, selected workers/routes, classified tools and one mini worker per actually `RUNNING` stage. Baton movement is accepted only from durable token-routing, Parcel-baton or lane-handoff records. Typed provider/model events preserve limited/failure/HTTP/routing-eligibility data; completion of discovery or evaluation is not displayed as qualification unless the registry says so.
+
+The settings select Shown/Hidden and Full/Reduced/Off motion. Defaults are Shown and Full; operating-system reduced-motion caps Full at Reduced. Fresh idle workers look around, sustained-idle workers sleep, and only a new authoritative activity wakes a sleeper. These bounded, staggered expressions never alter the `IDLE` operational state. Choices are browser-local, hidden/off-screen/background animation pauses, and narrow layouts use a horizontally scrollable worker strip. The gallery is prominently labelled `SIMULATED` and cannot create work or enter real qualification evidence. Exact source mappings, accessibility behavior, isolation and qualification commands are in [`dashboard-characters.md`](dashboard-characters.md).
+
+The Crew's **Activity Matrix** coalesces canonical state and retained typed events into nine inspectable controller, queue, execution-lane, tool, model-request, model-response, baton/escalation, verification and node-health indicators. Activate any labelled shape to inspect source, event/time, lane, provider/model, meaning, persistence and stale/disconnected behavior. It never generates random traffic. Its slow decorative heartbeat is explicitly labelled `NOT WORK ACTIVITY`; reduced motion removes pulses and background/hidden views pause them.
+
+The compact **Live usage** strip stays mounted while switching among all main views. Select a token thread or lane to keep its provider/account/model, state, elapsed time, context authority, fresh/cache/input/output totals, cost authority, governor thresholds and additive Work Parcel model chain in view. It renders replacement snapshots from the normal status/SSE path, so navigation and reconnect do not reset or double-count. `Unavailable` means the adapter did not provide the value; it never means zero.
+
+## Live Shell
+
+The Sessions view can open the retained output of a genuine owned process. Mode buttons come only from durable execution-session capabilities: WATCH is read-only; INTERVENE requires operator authority plus real adapter input/signal support; TAKE CONTROL additionally requires a persistent contract-linked session, exclusive writer fencing and reconciliation before autonomous return. Input content is never placed in the event stream.
+
+Protected-resource Actions show `WATCH_ONLY`. The server suppresses and independently rejects intervention capabilities for that scope, so the browser cannot use a PTY to bypass semantic effect policy. A disconnected or identity-unproven session does not accept attachment. See [governed Live Shell](live-shell.md).
+
 ## Configure systems and models
 
 1. Configure `AGENT_CONTROL_WEB_OPERATOR_TOKEN`, start Agent Control and authenticate using the top-right operator button.
 2. Open **Configuration**.
-3. Select an existing entry, or choose **Add machine**, **Add provider**, **Add model**, **Add service**, or **Fast execution**.
+3. Select an existing entry, or choose **Add machine**, **Add provider**, **Add model**, **Add service**, **Fast execution**, or **Adaptive routing**.
 4. Edit the validated JSON and choose **Save configuration**.
-5. Provider and model changes hot-reload. Machine, service and Fast execution changes require a restart; follow the dashboard's `restartRequired` result.
+5. Provider and model changes hot-reload. Machine, service, Fast execution and Adaptive routing changes require a restart; follow the dashboard's `restartRequired` result.
 6. Open **Systems** and verify the entry. An unprobed configured system is expected to show `UNKNOWN`; an unreachable observed system shows `OFFLINE`; a provider or service with a missing credential reference shows `AUTH REQUIRED`.
 
-Machines use the same resource schema described in the main configuration model. A provider or external service that requires an API key must use `auth.env`, `credentialEnv` or `credentialFileEnv`, for example:
+Machines use the same resource schema described in the main configuration model. A provider or external service that requires an API key must use an indirect environment, referenced-file or `provider-secure-store` reference. Services retain the environment form, for example:
 
 ```json
 {
@@ -57,7 +87,7 @@ Machines use the same resource schema described in the main configuration model.
 }
 ```
 
-Set the referenced environment variable in the Agent Control process environment before restarting. Never paste its value into configuration: plaintext passwords, API keys, tokens and secret fields are rejected. The editor does not create credentials, test arbitrary endpoints or grant capabilities. A saved machine/provider/service becomes inventory; execution still requires qualified capabilities, current readiness and normal scheduler policy.
+Set a service's referenced environment variable in the Agent Control process environment before restarting. For an API provider configured with `provider-secure-store`, use `agent-control providers credential set PROVIDER_ID`; the dashboard never accepts the value. Never paste a secret into configuration: plaintext passwords, API keys, tokens and secret fields are rejected. The editor does not create credentials, test arbitrary endpoints or grant capabilities. A saved machine/provider/service becomes inventory; execution still requires qualified capabilities, current readiness and normal scheduler policy.
 
 ## API contract
 
@@ -91,10 +121,12 @@ Read projections:
 - `GET /api/command-output/metrics` (bytes, estimated tokens, expansions and context tokens avoided)
 - `GET /api/efficiency` (profile/model/provider/lane aggregates and cost per verified outcome)
 - `GET /api/efficiency/invocations` (prompt-free invocation metadata, usage composition and verifier result; default 200, maximum 1,000, optionally filtered by `runId` or `jobId`)
+- `GET /api/orchestration/models` and `GET /api/orchestration/workflows` (filtered evidence-conditioned leagues; optional `taskClass`, `capability`, `providerId`, `modelId`, `modelVersion`, `location`, `evidenceKind`, `minQuality`, `maxAgeDays` and `sort`)
+- `GET /api/orchestration/decisions`, `GET /api/orchestration/decisions/:id`, `GET /api/orchestration/decisions/:id/report`, `GET /api/parcels/:id/decision-tree`, and `GET /api/parcels/:id/decision-report` (persisted machine-readable and human-readable operational routing records)
 
 Authenticated legacy Job requests are `POST /api/jobs/:id/run`, schedule `enable`/`disable`, and Run `cancel`, `retry` and `approve`. Parameterised Job requests are `POST /api/saved-jobs`, `POST /api/saved-jobs/:id` (update), `POST /api/saved-jobs/:id/run`, `POST /api/saved-jobs/:id/enable`, `POST /api/saved-jobs/:id/disable`, and `POST /api/job-runs/:id/cancel`. Saved Job updates require the current revision. Scoped command-result expansion is `POST /api/command-output/:handle/expand`; operator authentication is necessary but not sufficient, because the supplied task/lane/worker/lease/ownership scope must exactly match the retained result. These calls enter `AgentControlService`. The HTTP layer cannot register a worker, grant a capability, edit a definition, acquire a resource lock, dispatch an Action or write a PTY.
 
-Authenticated inventory changes use `POST /api/configuration/systems` with the current `revision`, a `kind` of `resource`, `provider`, `model` or `service`, an optional `originalId`, and the complete replacement `item`. Model role maps use `POST /api/configuration/model-routing`; fast-execution policy uses `POST /api/configuration/spark`. The server rejects stale revisions, embedded secret material and invalid schema, writes the complete configuration atomically and emits `configuration.changed`. Provider/model/route updates return `restartRequired: false`; resources/services/Spark policy return `true`.
+Authenticated inventory changes use `POST /api/configuration/systems` with the current `revision`, a `kind` of `resource`, `provider`, `model` or `service`, an optional `originalId`, and the complete replacement `item`. Model role maps use `POST /api/configuration/model-routing`; fast-execution policy uses `POST /api/configuration/spark`; adaptive orchestration policy uses `POST /api/configuration/adaptive-orchestration`. The server rejects stale revisions, embedded secret material and invalid schema, writes the complete configuration atomically and emits `configuration.changed`. Provider/model/route updates return `restartRequired: false`; resources/services/Spark/adaptive policy return `true`.
 
 Model qualification and routing mutations are `POST /api/models/:id/qualify` and `POST /api/models/:id/route`. Qualification accepts a `nodeId`; routing accepts `nodeId`, optional `requiredCapabilities` and `allowFallback`. These operations require operator authentication. `UNTESTED`, failed, disabled, wrong-node or capability-unproven models cannot route.
 
@@ -161,6 +193,21 @@ The **Models** view adds:
 - 7/30/90-day quality/reliability, fresh/cache/total tokens, cache hit ratio, elapsed time and cost per success;
 - regression warnings and authenticated evidence-gated lifecycle controls;
 - independent Runtime Safety decisions and approval state.
+
+It also contains the generic **Provider catalogue**. Provider cards show configured enabled/disabled state; endpoint, credential and discovery state; discovered, inference-confirmed and callability-untested counts; current cost classification with authority; observed request/token remaining-versus-limit, reset/retry and quota fields; provider qualification; and routing-eligible count. Missing headers or metadata remain `UNKNOWN`. The model table keeps catalogue availability separate from inference state, then shows a human-readable diagnostic label, next triage step, measured TTFT where available, review/routing state, context/modality observations, cost authority, frozen metrics and trends. Actions for an unavailable model are disabled.
+
+Authenticated actions call the same control service:
+
+- **Discover Models** performs one bounded authenticated catalogue request;
+- **Check Callability** performs one bounded streaming inference request and classifies endpoint acceptance, TTFT and timeout phase;
+- **Capability Smoke** is enabled only after inference is confirmed, reuses passing callability as basic completion, and runs four fixed capability probes;
+- **Queue Benchmark / Re-benchmark** enters the existing frozen evaluation queue;
+- **Enable Routing** is disabled until current model intelligence is `QUALIFIED` or `PREFERRED`;
+- **Disable Routing** immediately removes dynamic eligibility.
+
+Discovery, callability and smoke success never edit a logical role or qualify production routing. `DISCOVERED` means only catalogue-visible; inference remains `UNTESTED`, `CONFIRMED`, `NOT_AVAILABLE`, `AUTHORIZATION_REQUIRED`, `RATE_LIMITED` or `INDETERMINATE`. Rich failures such as `TIMEOUT_BEFORE_FIRST_TOKEN`, `TIMEOUT_DURING_GENERATION`, `OUTPUT_TRUNCATED`, `SCHEMA_INVALID` and `ENDPOINT_NOT_AVAILABLE` project durable observations rather than invented visual state. If durable model intelligence degrades, the catalogue automatically disables the dynamic route. Provider catalogue changes emit `provider.catalog_changed` through the existing SSE stream and refresh the same `GET /api/provider-catalog` projection. Public data contains credential class/status, never reference name or value. See [model registry](models/README.md) and [NVIDIA hosted models](models/NVIDIA-HOSTED.md).
+
+The 2026-09-06 isolated physical projection reconciled the protected NVIDIA catalogue and intelligence ledgers: provider `CONFIGURED / AVAILABLE / SUCCEEDED`, 81 discovered/available IDs, zero routing-eligible IDs, Nemotron `BENCHMARKED / CANDIDATE`, and its numeric token-efficiency metric. The focused follow-up added the staged callability projection and richer diagnostics while preserving that historical result. This exercised feature assets and API on loopback only; it was not a live deployment. See the [physical evidence](evidence/agent-control-3.9-nvidia-hosted-qualification-20260906.md) and [focused diagnostics](evidence/agent-control-3.9-nvidia-focused-diagnostics-20260906.md).
 
 All values come from the capability/model/safety ledgers. Missing cost, unsupported evaluator capability and unqualified leaders display as unavailable, never zero or a fabricated ranking. Provider/model configuration remains separate from observed capability proof.
 

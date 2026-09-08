@@ -10,6 +10,8 @@ import {createInvocationObservation, MemoryHarnessEfficiencyLedger} from './harn
 import {CatalogNaturalLanguagePlanner, explainParcelDecision, ReasoningModelWorkParcelPlanner, validateWorkParcelPlan, WorkParcelCoordinator, WorkParcelStore, type WorkParcel, type WorkParcelPlan} from './work-parcels.js';
 import type {SystemReadiness} from './system-readiness.js';
 import {ModelRegistry} from './model-registry.js';
+import {governedRequestOrigin} from './request-origin.js';
+import {AdaptiveOrchestrationRuntime, FileAdaptiveOrchestrationStore} from './adaptive-orchestration.js';
 
 const job = (id: string, action: string, output = true): JobDefinition => ({apiVersion: 'agent-control/v1', kind: 'Job', metadata: {id, name: id, version: '1.0.0'}, spec: {priority: 'normal', concurrency: 'queue', steps: [{id: 'work', action, requires: ['qualification.local'], outputs: output ? [{name: 'result', type: 'application/json', schema: `${id}/v1`, version: '1.0.0'}] : undefined, verification: output ? ['passed'] : []}]}});
 function setup(failSecond = false, blockFirst = false) {
@@ -46,6 +48,24 @@ test('natural-language parcel runs dependent Jobs sequentially and retains typed
   for (let count = 0; count < 3; count++) { await coordinator.tick(); await runtime.tick(); await coordinator.tick(); }
   const result = coordinator.get(parcel.id); assert.equal(result.status, 'SUCCEEDED'); assert.deepEqual(result.stages.map(stage => stage.status), ['SUCCEEDED','SUCCEEDED','SUCCEEDED']);
   assert.ok(result.stages.every(stage => stage.baton?.schema === 'agent-control.work-parcel-baton/v2' && stage.baton.artifactIds.length === 1 && /^[a-f0-9]{64}$/.test(stage.baton.sha256))); assert.equal(result.prompt, 'do the test');
+});
+
+test('credential material is rejected at Work Parcel ingress and redacted at durable store boundary', async () => {
+  const {coordinator, root, storeFile} = setup(), secret = ['nvapi', 'fixture', 'E'.repeat(24)].join('-');
+  try {
+    await assert.rejects(() => coordinator.submit(`review using ${secret}`, 'operator'), /work_parcel_credential_material_forbidden/);
+    assert.throws(() => coordinator.accept(`review using ${secret}`, 'operator'), /work_parcel_credential_material_forbidden/);
+    const safe = await coordinator.submit('review without credential material', 'operator'), stored = coordinator.store.get(safe.id)!;
+    stored.provenance.push({at: new Date().toISOString(), type: 'provider-error', detail: `upstream echoed ${secret}`});
+    coordinator.store.update(stored);
+    assert.equal(JSON.stringify(coordinator.store.get(safe.id)).includes(secret), false);
+    assert.equal(fs.readFileSync(storeFile, 'utf8').includes(secret), false);
+  } finally { fs.rmSync(root, {recursive: true, force: true}); }
+});
+
+test('approved channel request origin survives durable Work Parcel restart without transport identity', () => {
+  const {coordinator,root,storeFile,plan}=setup();
+  try{const origin=governedRequestOrigin({channel:'openwa',modality:'text',receivedAt:'2026-09-07T12:00:00Z',authentication:'enrolled-direct-sender',actorId:'operator',authority:['template:one'],messageReference:'1'.repeat(64),identityReference:'2'.repeat(64),request:'start one'}),parcel=coordinator.submitApprovedPlan(origin.request,'operator','3'.repeat(64),plan,origin),restored=new WorkParcelStore(storeFile).get(parcel.id)!;assert.deepEqual(restored.origin,origin);assert.equal(restored.prompt,'start one');assert.doesNotMatch(fs.readFileSync(storeFile,'utf8'),/@c\.us|phone|cookie/i);}finally{fs.rmSync(root,{recursive:true,force:true});}
 });
 
 test('blocked named target still creates an auditable parcel with readiness evidence', () => {
@@ -188,4 +208,39 @@ test('restart reconciliation repairs inferred stage criteria without duplicating
   assert.equal(after.context?.criteria.find(item => item.stageId === 'one')?.status, 'PASS');
   assert.equal(after.context?.events.filter(event => event.type === 'criterion.evaluated' && event.stageId === 'one').length, 1);
   assert.equal(repaired.context?.active.originalGoal, 'restart criterion repair');
+});
+
+test('approved social parcel request is idempotent across restart and uses the existing executor',async()=>{
+  const s=setup();const key='a'.repeat(64),plan={...s.plan,stages:[s.plan.stages[0]!]};
+  const first=s.coordinator.submitApprovedPlan('approved test','operator',key,plan);
+  assert.equal(s.coordinator.submitApprovedPlan('approved test','operator',key,plan).id,first.id);
+  const restarted=new WorkParcelCoordinator(s.runtime,new WorkParcelStore(s.storeFile),s.planner);
+  assert.equal(restarted.submitApprovedPlan('approved test','operator',key,plan).id,first.id);
+  assert.throws(()=>restarted.submitApprovedPlan('approved test','other',key,plan),/identity_mismatch/);
+  await restarted.tick();await s.runtime.tick();await restarted.tick();
+  assert.equal(s.runtime.ledger.list().length,1);assert.equal(restarted.get(first.id).status,'SUCCEEDED');
+  assert.equal(s.runtime.ledger.list()[0]!.trigger.parcelContext?.parcelId,first.id);
+});
+
+test('approved social parcels enter the same durable adaptive orchestration lifecycle as dashboard parcels',()=>{
+  const s=setup(),adaptiveFile=path.join(s.root,'adaptive.json'),adaptive=new AdaptiveOrchestrationRuntime(new FileAdaptiveOrchestrationStore(adaptiveFile),{enabled:true}),store=new WorkParcelStore(s.storeFile),coordinator=new WorkParcelCoordinator(s.runtime,store,s.planner,undefined,undefined,adaptive),key='b'.repeat(64),plan={...s.plan,stages:[s.plan.stages[0]!]};
+  const parcel=coordinator.submitApprovedPlan('approved adaptive social work','operator',key,plan);
+  assert.match(parcel.audit.orchestrationDecisionId??'',/^orchestration-/);
+  const decision=adaptive.decision(parcel.audit.orchestrationDecisionId!);
+  assert.equal(decision.parcelId,parcel.id);
+  assert.equal(decision.request.workflowId,'work-parcel-coordinator');
+  assert.ok(decision.nodes.some(node=>node.kind==='CLASSIFICATION'));
+  const restartedAdaptive=new AdaptiveOrchestrationRuntime(new FileAdaptiveOrchestrationStore(adaptiveFile),{enabled:true}),restarted=new WorkParcelCoordinator(s.runtime,new WorkParcelStore(s.storeFile),s.planner,undefined,undefined,restartedAdaptive),restored=restarted.submitApprovedPlan('approved adaptive social work','operator',key,plan);
+  assert.equal(restored.audit.orchestrationDecisionId,parcel.audit.orchestrationDecisionId);
+  assert.equal(restartedAdaptive.decision(restored.audit.orchestrationDecisionId!).parcelId,parcel.id);
+});
+
+test('idempotent social replay repairs a decision-less parcel after coordinator restart',()=>{
+  const s=setup(),key='c'.repeat(64),plan={...s.plan,stages:[s.plan.stages[0]!]};
+  const legacy=s.coordinator.submitApprovedPlan('approved pre-adaptive social work','operator',key,plan);
+  assert.equal(legacy.audit.orchestrationDecisionId,undefined);
+  const adaptiveFile=path.join(s.root,'adaptive-recovery.json'),adaptive=new AdaptiveOrchestrationRuntime(new FileAdaptiveOrchestrationStore(adaptiveFile),{enabled:true}),restarted=new WorkParcelCoordinator(s.runtime,new WorkParcelStore(s.storeFile),s.planner,undefined,undefined,adaptive),recovered=restarted.submitApprovedPlan('approved pre-adaptive social work','operator',key,plan);
+  assert.match(recovered.audit.orchestrationDecisionId??'',/^orchestration-/);
+  assert.equal(adaptive.decision(recovered.audit.orchestrationDecisionId!).parcelId,legacy.id);
+  assert.equal(restarted.submitApprovedPlan('approved pre-adaptive social work','operator',key,plan).audit.orchestrationDecisionId,recovered.audit.orchestrationDecisionId);
 });

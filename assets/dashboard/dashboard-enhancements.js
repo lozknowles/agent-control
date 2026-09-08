@@ -1,5 +1,6 @@
 const jobState = {jobs: [], parcels: [], runs: [], queue: [], workers: [], resources: [], systems: [], locks: [], artifacts: [], outputMetrics: null, efficiencyMetrics: null, invocations: [], configuration: null, selectedConfiguration: null, configurationRestartRequired: false, selectedJob: null, selectedRun: null, selectedSystem: null, search: ''};
 let tokenElapsedTimer = null;
+let linkedParcelScrolled = null;
 const terminalRunStatuses = new Set(['SUCCEEDED', 'FAILED', 'DEGRADED', 'CANCELLED', 'MISSED']);
 const retryableRunStatuses = new Set(['FAILED', 'DEGRADED', 'CANCELLED']);
 const baseRefresh = refresh;
@@ -13,11 +14,15 @@ refresh = async () => {
     return response.json();
   }));
   Object.assign(jobState, {jobs, parcels, runs, queue, workers, resources: state.snapshot?.resources || [], locks, systems, artifacts, outputMetrics, efficiencyMetrics, invocations});
+  const linkedRun = new URL(location.href).searchParams.get('messagingRun');
+  if(linkedRun && !jobState.selectedRun){const run=runs.find(item=>item.id===linkedRun);if(run){jobState.selectedJob=run.jobId;jobState.selectedRun=run.id;}}
   if (!jobState.selectedJob && jobs.length) jobState.selectedJob = jobs[0].metadata.id;
   if (jobState.selectedJob && !jobs.some(job => job.metadata.id === jobState.selectedJob)) jobState.selectedJob = jobs[0]?.metadata.id ?? null;
   if (!jobState.selectedSystem && systems.length) jobState.selectedSystem = systems[0].id;
   if (jobState.selectedSystem && !systems.some(system => system.id === jobState.selectedSystem)) jobState.selectedSystem = systems[0]?.id ?? null;
   renderJobs();
+  const linkedParcel=new URL(location.href).searchParams.get('parcel');
+  if(linkedParcel&&linkedParcelScrolled!==linkedParcel){const card=[...document.querySelectorAll('.parcel-card')].find(node=>node.dataset.parcelId===linkedParcel);if(card){card.scrollIntoView({block:'start'});linkedParcelScrolled=linkedParcel;}}
   renderJobRunLanes();
   renderSystems();
   renderConfiguration();
@@ -126,7 +131,8 @@ function renderParcelAudit(parcel) {
   const alternatives = audit.alternatives.length ? audit.alternatives.map(item => `<li><strong>${esc(item.candidate)}</strong><span>${item.eligible ? 'eligible' : 'rejected'} · ${esc(item.reasons.join(', ') || 'no reason reported')}</span></li>`).join('') : '<li><span>No candidate alternatives were reported at decision time.</span></li>';
   const timeline = audit.timeline.map(item => `<li><time>${esc(new Date(item.at).toLocaleTimeString())}</time><strong>${esc(item.summary)}</strong><span>${esc(item.detail)}</span></li>`).join('');
   const invocations = audit.invocations.length ? audit.invocations.map(item => { const accounting = item.costAccounting, price = accounting?.cloud?.pricingBasis, local = accounting?.localEnergy; const costDetail = accounting?.billingMode === 'SUBSCRIPTION_QUOTA' && item.calculatedCost === null && item.providerReportedCost === null ? `SUBSCRIPTION / QUOTA CONSUMPTION · ${accounting.subscription?.unitsConsumed ?? 'unknown'} ${accounting.subscription?.unitLabel ?? 'units'} · reset ${accounting.subscription?.resetAt ?? accounting.subscription?.resetPeriod ?? 'unknown'}` : price ? `${price.currency} input ${price.inputPerMillionTokens}/M · cache read ${price.cachedInputPerMillionTokens ?? 'unpriced'}/M · cache write ${price.cacheWritePerMillionTokens ?? 'unpriced'}/M · output ${price.outputPerMillionTokens}/M · ${price.tableId}@${price.version} (${price.source})` : item.costBasis; const localDetail = local ? ` · local ${local.energyWh ?? 'unknown'} Wh / ${local.estimatedElectricityCost ?? 'unknown'} ${local.currency ?? ''} (${local.estimate ? 'estimate' : 'measured'})` : ''; const identity = item.providerModel ? `${item.providerModel} · role ${item.logicalRole || 'explicit'} · qualification ${item.qualificationVersion}` : item.profile; return `<tr><td>${esc(item.provider)}<br><small>${esc(item.route)}</small></td><td>${esc(item.registryModelId || item.model)}<br><small>${esc(identity)}</small></td><td>${esc(item.node ?? 'Not reported')}</td><td>${esc(item.freshInputTokens ?? 'Not reported')} / ${esc(item.cachedInputTokens ?? 'Not reported')} / ${esc(item.cacheWriteTokens ?? 'Not reported')}</td><td>${esc(item.outputTokens ?? 'Not reported')} / ${esc(item.reasoningTokens ?? 'Not reported')}</td><td>${esc(item.totalTokens ?? 'Not reported')}</td><td>${esc(item.providerReportedCost ?? item.calculatedCost ?? 'Not reported')}<br><small>${esc(costDetail + localDetail)}</small></td><td>${esc(durationLabel(item.startedAt, item.completedAt))}</td></tr>`; }).join('') : '<tr><td colspan="8">No model invocation recorded. Deterministic control actions consume no model tokens.</td></tr>';
-  return `<details class="parcel-audit"><summary><span>Audit</span><small>WHAT · WHY · WHO · COST</small></summary><div class="audit-body"><section><span class="eyebrow">What did I ask?</span><p>${esc(parcel.prompt)}</p></section><section><span class="eyebrow">Plan and rationale</span><p>${esc(audit.classification)} · ${esc(audit.planningRationale)}</p><ol class="audit-plan">${plan}</ol></section><section><span class="eyebrow">Resources considered at decision time</span><ul class="audit-alternatives">${alternatives}</ul></section><section><span class="eyebrow">Routing and execution timeline</span><ol class="audit-timeline">${timeline}</ol></section><section><span class="eyebrow">Invocation → Job → Stage → Parcel accounting</span><div class="audit-table-wrap"><table><thead><tr><th>Provider / route</th><th>Model / profile</th><th>Node</th><th>Fresh / read / write</th><th>Output / reasoning</th><th>Total</th><th>Cost</th><th>Model time</th></tr></thead><tbody>${invocations}</tbody></table></div><p class="audit-total">${esc(totals.models.length ? totals.models.join(', ') : 'No model')} · ${esc(totals.invocations)} invocation(s) · ${esc(totals.totalTokens ?? 'tokens unavailable')} · cache writes ${esc(totals.cacheWriteTokens ?? 'unavailable')} · ${esc(cost)} · model ${esc(durationLabel(parcel.createdAt, new Date(Date.parse(parcel.createdAt) + totals.modelExecutionMs).toISOString()))} · wall ${esc(durationLabel(parcel.createdAt, parcel.endedAt))}</p></section><section><span class="eyebrow">Final state and verification</span><p>${esc(parcel.status)} · ${esc(parcel.decision?.summary || 'Execution still active')}</p></section></div></details>`;
+  const decisionLink = audit.orchestrationDecisionId ? `<p><button type="button" class="button secondary" data-adaptive-decision-link="${esc(audit.orchestrationDecisionId)}">Open routing decision tree</button></p>` : '';
+  return `<details class="parcel-audit"><summary><span>Audit</span><small>WHAT · WHY · WHO · COST</small></summary><div class="audit-body">${decisionLink}<section><span class="eyebrow">What did I ask?</span><p>${esc(parcel.prompt)}</p></section><section><span class="eyebrow">Plan and rationale</span><p>${esc(audit.classification)} · ${esc(audit.planningRationale)}</p><ol class="audit-plan">${plan}</ol></section><section><span class="eyebrow">Resources considered at decision time</span><ul class="audit-alternatives">${alternatives}</ul></section><section><span class="eyebrow">Routing and execution timeline</span><ol class="audit-timeline">${timeline}</ol></section><section><span class="eyebrow">Invocation → Job → Stage → Parcel accounting</span><div class="audit-table-wrap"><table><thead><tr><th>Provider / route</th><th>Model / profile</th><th>Node</th><th>Fresh / read / write</th><th>Output / reasoning</th><th>Total</th><th>Cost</th><th>Model time</th></tr></thead><tbody>${invocations}</tbody></table></div><p class="audit-total">${esc(totals.models.length ? totals.models.join(', ') : 'No model')} · ${esc(totals.invocations)} invocation(s) · ${esc(totals.totalTokens ?? 'tokens unavailable')} · cache writes ${esc(totals.cacheWriteTokens ?? 'unavailable')} · ${esc(cost)} · model ${esc(durationLabel(parcel.createdAt, new Date(Date.parse(parcel.createdAt) + totals.modelExecutionMs).toISOString()))} · wall ${esc(durationLabel(parcel.createdAt, parcel.endedAt))}</p></section><section><span class="eyebrow">Final state and verification</span><p>${esc(parcel.status)} · ${esc(parcel.decision?.summary || 'Execution still active')}</p></section></div></details>`;
 }
 
 function renderParcelContext(parcel) {
@@ -172,6 +178,7 @@ function renderParcels() {
     return `<article class="parcel-card ${parcel.status === 'RUNNING' ? 'is-running' : ''}"><div class="parcel-head"><strong>${esc(parcel.objective)}</strong><span class="status-pill ${statusClass(parcel.status)}">${esc(parcel.status)}</span><p>${esc(parcel.prompt)}</p></div><div class="parcel-metrics"><span>${esc(parcel.planner.kind)} planner</span><span>${esc(durationLabel(parcel.createdAt, parcel.endedAt))}</span><span>tokens ${esc(t.totalTokens ?? 'unavailable')}</span><span>cost ${esc(t.cost === null ? 'unavailable' : `${t.currency || ''} ${t.cost}`.trim())}</span></div>${summary}${live}${decision}${renderParcelContext(parcel)}${stages}${renderParcelAudit(parcel)}</article>`;
   }).join('') : '<div class="compact-empty">No natural-language work submitted yet.</div>';
   bindParcelContextControls();
+  document.querySelectorAll('.parcel-card').forEach((node,index)=>{node.dataset.parcelId=jobState.parcels[index]?.id||'';});
 }
 
 function byteLabel(value) {
@@ -246,7 +253,8 @@ function renderStep(step) {
   const verification = Array.isArray(step.verification) ? `Verification required: ${step.verification.join(', ') || 'none'}` : step.verification ? `Verification ${step.verification.passed.length}/${step.verification.required.length}` : 'Verification not declared';
   const recovery=step.nextAttemptAt||step.recoveryDeadlineAt||step.remainingRetryBudget!==undefined?`<small>Next retry/check ${esc(timeLabel(step.nextAttemptAt))} · remaining retry budget ${esc(step.remainingRetryBudget??'unknown')} · ${deadlineMarkup(step.recoveryDeadlineAt)}</small>`:'';
   const cleanup=step.cleanup?`<small>Cleanup ${esc(step.cleanup.outcome)} · verified ${esc(timeLabel(step.cleanup.completedAt))} · ${esc(step.cleanup.processes?.length??0)} process identity record(s)</small>`:'';
-  return `<div class="job-step"><span class="step-mark ${statusClass(step.status)}">${esc(step.status === 'SUCCEEDED' ? '✓' : step.status === 'RUNNING' ? '●' : '○')}</span><div><strong>${esc(step.name || step.id)}</strong><small>${esc(step.action)} · worker ${esc(worker)} · ${esc(attempts)} · ${esc(durationLabel(step.startedAt, step.endedAt))}</small><small>${esc(verification)}</small>${recovery}${cleanup}${step.waitingReason ? `<p>${esc(step.waitingReason)}</p>` : ''}${step.error ? `<p class="error-text">${esc(step.error)}</p>` : ''}</div><span class="status-pill ${statusClass(step.status)}">${esc(step.status || 'DEFINED')}</span></div>`;
+  const effects=(step.governance?.effects||[]).map(item=>`${item.kind} ${item.resource.id}`).join(' · '),external=(step.externalOperations||[]).map(item=>`${item.state} ${item.resource.id}`).join(' · '),governance=effects||external?`<small>Resolved effects: ${esc(effects||'none')}<br>External operation truth: ${esc(external||'none')}</small>`:'';
+  return `<div class="job-step"><span class="step-mark ${statusClass(step.status)}">${esc(step.status === 'SUCCEEDED' ? '✓' : step.status === 'RUNNING' ? '●' : '○')}</span><div><strong>${esc(step.name || step.id)}</strong><small>${esc(step.action)} · worker ${esc(worker)} · ${esc(attempts)} · ${esc(durationLabel(step.startedAt, step.endedAt))}</small><small>${esc(verification)}</small>${governance}${recovery}${cleanup}${step.waitingReason ? `<p>${esc(step.waitingReason)}</p>` : ''}${step.error ? `<p class="error-text">${esc(step.error)}</p>` : ''}</div><span class="status-pill ${statusClass(step.status)}">${esc(step.status || 'DEFINED')}</span></div>`;
 }
 
 function renderRunControls(run) {
@@ -287,7 +295,8 @@ function renderRunEvidence(run) {
   const rationale = run.steps.flatMap(step => step.placement ? [`${step.id}: ${step.placement.selected || 'none'} — ${step.placement.reasons.join(', ')}${step.placement.rejected.length ? `; rejected ${step.placement.rejected.map(item => `${item.workerId} (${item.reasons.join(', ')})`).join('; ')}` : ''}`] : []).join('\n');
   const verification = run.steps.map(step => `${step.id}: ${(step.verification?.passed || []).join(', ') || 'no passing evidence'}${step.verification?.failed.length ? `; failed ${step.verification.failed.join(', ')}` : ''}`).join('\n');
   const provenance = run.provenance.map(item => `${timeLabel(item.at)} · ${item.type}: ${item.detail}`).join('\n');
-  return `<div class="run-evidence"><div class="data-card full-width"><label>Artifacts</label><div>${artifacts}</div></div><div class="data-card"><label>Verification</label><p>${esc(verification || 'No verification observations')}</p></div><div class="data-card"><label>Worker placement</label><p>${esc(rationale || 'Not placed')}</p></div><div class="data-card"><label>Errors</label><p>${esc(run.errors.join(', ') || 'None')}</p></div><div class="data-card"><label>Structured log / provenance</label><p>${esc(provenance || 'No events recorded')}</p></div></div>`;
+  const governance=run.steps.flatMap(step=>(step.externalOperations||[]).map(item=>`${step.id}: ${item.effect} ${item.resource.id} → ${item.state}${item.decisionId?` · decision ${item.decisionId}`:''}${item.reason?` · ${item.reason}`:''}`)).join('\n');
+  return `<div class="run-evidence"><div class="data-card full-width"><label>Artifacts</label><div>${artifacts}</div></div><div class="data-card"><label>Verification</label><p>${esc(verification || 'No verification observations')}</p></div><div class="data-card"><label>Worker placement</label><p>${esc(rationale || 'Not placed')}</p></div><div class="data-card"><label>External operation truth</label><p>${esc(governance||'No consequential external operation proposed')}</p></div><div class="data-card"><label>Errors</label><p>${esc(run.errors.join(', ') || 'None')}</p></div><div class="data-card"><label>Structured log / provenance</label><p>${esc(provenance || 'No events recorded')}</p></div></div>`;
 }
 
 function renderQueue() {
@@ -397,6 +406,7 @@ function configurationItems() {
     ...jobState.configuration.models.map(item=>({kind:'model',label:'model',item})),
     ...jobState.configuration.services.map(item=>({kind:'service',label:'service',item})),
     ...(jobState.configuration.spark?[{kind:'spark',label:'fast execution',item:{id:'fast-execution',...jobState.configuration.spark}}]:[]),
+    ...(jobState.configuration.adaptiveOrchestration?[{kind:'adaptive',label:'adaptive routing',item:{id:'adaptive-orchestration',name:'Adaptive multi-model orchestration',...jobState.configuration.adaptiveOrchestration}}]:[]),
   ].sort((a,b)=>(a.item.name||a.item.id).localeCompare(b.item.name||b.item.id));
 }
 
@@ -405,6 +415,7 @@ function configurationTemplate(kind) {
   if(kind==='model') return {id:'new-model',provider:'new-provider',providerModel:'provider/model-id',displayName:'New model',enabled:true,capabilities:['coding'],roles:[],qualification:{state:'UNTESTED',evidence:[]}};
   if(kind==='service') return {id:'new-service',name:'New service',healthUrl:'https://service.example/health',optional:true,requiresAuth:true,credentialEnv:'SERVICE_API_KEY'};
   if(kind==='spark') return {id:'fast-execution',enabled:false,model:'gpt-5.3-codex-spark',modelRole:'fast-execution',maximumFiles:1,maximumChangedLines:80,maximumAttempts:1,maximumSubagents:0,maximumContextTokens:2048,verificationRequired:true};
+  if(kind==='adaptive') return {id:'adaptive-orchestration',name:'Adaptive multi-model orchestration',enabled:true,minimumSamplesForPreference:3,minimumQualityScore:0.7,maxEvidenceAgeDays:90,policyQualityFloor:0.6,maxRouteCost:null,maxRouteLatencyMs:null,qualityWeight:0.5,reliabilityWeight:0.2,costWeight:0.15,latencyWeight:0.1,confidenceWeight:0.05,explorationRate:0.1};
   return {id:'new-system',name:'New system',platform:'unknown',transport:{type:'ssh',host:'hostname',user:'operator'},capabilities:[]};
 }
 
@@ -441,12 +452,13 @@ async function saveConfiguration() {
   let item; try{item=JSON.parse(document.querySelector('#configuration-json').value)}catch{throw new Error('Configuration JSON is invalid')}
   const kind=document.querySelector('#configuration-kind').value, originalId=document.querySelector('#configuration-original-id').value||undefined;
   const spark=kind==='spark'?Object.fromEntries(Object.entries(item).filter(([key])=>key!=='id')):null;
-  const response=await fetch(kind==='spark'?'/api/configuration/spark':'/api/configuration/systems',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${state.token}`},body:JSON.stringify(kind==='spark'?{revision:jobState.configuration.revision,spark,actor:'web-operator'}:{revision:jobState.configuration.revision,kind,originalId,item,actor:'web-operator'})});
+  const adaptive=kind==='adaptive'?Object.fromEntries(Object.entries(item).filter(([key])=>!['id','name'].includes(key))):null;
+  const response=await fetch(kind==='spark'?'/api/configuration/spark':kind==='adaptive'?'/api/configuration/adaptive-orchestration':'/api/configuration/systems',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${state.token}`},body:JSON.stringify(kind==='spark'?{revision:jobState.configuration.revision,spark,actor:'web-operator'}:kind==='adaptive'?{revision:jobState.configuration.revision,adaptiveOrchestration:adaptive,actor:'web-operator'}:{revision:jobState.configuration.revision,kind,originalId,item,actor:'web-operator'})});
   if(response.status===401){authenticationExpired();throw new Error('Operator authentication required')}
   const result=await response.json(); if(!response.ok){if(response.status===409)await loadConfiguration();throw new Error(result.error||`HTTP ${response.status}`)}
-  jobState.configuration=result;jobState.configurationRestartRequired=result.restartRequired;jobState.selectedConfiguration={kind,id:item.id,item:structuredClone(item)};
+  jobState.configuration=result;jobState.configurationRestartRequired=result.restartRequired;const savedItem=kind==='adaptive'?{id:'adaptive-orchestration',name:'Adaptive multi-model orchestration',...(result.adaptiveOrchestration||adaptive)}:item;jobState.selectedConfiguration={kind,id:savedItem.id,item:structuredClone(savedItem)};
   const note=document.querySelector('#configuration-auth-note');note.hidden=false;note.className='configuration-notice success';note.textContent=result.restartRequired?`Saved ${item.id}. Restart Agent Control to apply the new inventory and readiness probes.`:`Saved ${item.id}. The model registry was validated and reloaded.`;
-  document.querySelector('#configuration-save-state').textContent=result.restartRequired?'RESTART REQUIRED':'CURRENT';document.querySelector('#configuration-original-id').value=item.id;renderConfiguration();toast(kind==='spark'?'Fast execution configuration saved':'System configuration saved');
+  document.querySelector('#configuration-save-state').textContent=result.restartRequired?'RESTART REQUIRED':'CURRENT';document.querySelector('#configuration-original-id').value=savedItem.id;renderConfiguration();toast(kind==='spark'?'Fast execution configuration saved':kind==='adaptive'?'Adaptive routing configuration saved':'System configuration saved');
 }
 
 async function jobCommand(url, body) {
@@ -470,7 +482,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelector('#sessions-workspace').hidden = view !== 'sessions';
     document.querySelector('#systems-workspace').hidden = view !== 'systems';
     document.querySelector('#models-workspace').hidden = view !== 'models';
+    document.querySelector('#crew-workspace').hidden = view !== 'crew';
     document.querySelector('#configuration-workspace').hidden = view !== 'configuration';
+    document.querySelector('#routing-workspace').hidden = view !== 'routing';
     if(view==='configuration')loadConfiguration().catch(showError);
   }));
   document.querySelector('#health').addEventListener('click',()=>document.querySelector('[data-view="systems"]').click());

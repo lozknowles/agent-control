@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import {assertNoSensitiveMaterial, redactSensitiveValue} from './security-redaction.js';
 import {nextCronOccurrence, parseCron} from './job-catalog.js';
 import type {JobParameterSchema, ParameterizedJobDefinition, ParameterizedJobRun, SavedJob} from './parameterized-job-types.js';
 
@@ -8,7 +9,7 @@ const PARAMETER = /^[A-Za-z][A-Za-z0-9._-]{0,63}$/;
 const GIT_REF = /^(?!-)(?!.*(?:\.\.|@\{|\\|\s|[~^:?*\[]))[A-Za-z0-9._/-]+$/;
 const SECRET_NAME = /(?:^|[-_.])(token|password|secret|api[-_.]?key|credential)(?:$|[-_.])/i;
 function clone<T>(value: T): T { return structuredClone(value); }
-function atomic(file: string, value: unknown) { fs.mkdirSync(path.dirname(file), {recursive: true}); const temporary = `${file}.${process.pid}.tmp`; fs.writeFileSync(temporary, `${JSON.stringify(value, null, 2)}\n`, {mode: 0o600}); fs.renameSync(temporary, file); }
+function atomic(file: string, value: unknown) { fs.mkdirSync(path.dirname(file), {recursive: true}); const temporary = `${file}.${process.pid}.tmp`; fs.writeFileSync(temporary, `${JSON.stringify(redactSensitiveValue(value), null, 2)}\n`, {mode: 0o600,flush:true}); fs.renameSync(temporary, file); if(process.platform!=='win32'){const fd=fs.openSync(path.dirname(file),'r');try{fs.fsyncSync(fd);}finally{fs.closeSync(fd);}} }
 function object(value: unknown): value is Record<string, unknown> { return Boolean(value) && typeof value === 'object' && !Array.isArray(value); }
 
 export class ParameterizedJobError extends Error { constructor(readonly code: string, detail?: string) { super(detail ? `${code}:${detail}` : code); this.name = 'ParameterizedJobError'; } }
@@ -70,9 +71,9 @@ export class SavedJobStore {
   setEnabled(id: string, enabled: boolean, revision: number) { return this.update(id, revision, {enabled}); }
   get(id: string) { return clone(this.must(id)); }
   list() { return [...this.jobs.values()].sort((a, b) => a.name.localeCompare(b.name)).map(clone); }
-  export(id: string) { const value = this.get(id); return {schema: value.schema, id: value.id, name: value.name, definition: value.definition, parameters: value.parameters, routing: value.routing, contextProfile: value.contextProfile, budgets: value.budgets, schedule: value.schedule, concurrency: value.concurrency, enabled: value.enabled}; }
+  export(id: string) { const value = this.get(id); return {schema: value.schema, id: value.id, name: value.name, definition: value.definition, parameters: value.parameters, routing: value.routing, contextProfile: value.contextProfile, budgets: value.budgets, schedule: value.schedule, concurrency: value.concurrency, executionMode: value.executionMode ?? 'LIVE', enabled: value.enabled}; }
   private must(id: string) { const value = this.jobs.get(id); if (!value) throw new ParameterizedJobError('saved_job_missing', id); return value; }
-  private validate(value: SavedJob) { if (value.schema !== 'agent-control.saved-job/v1' || !ID.test(value.id) || !value.name.trim() || value.revision < 1) throw new ParameterizedJobError('saved_job_invalid'); const definition = this.registry.resolve(value); resolveParameters(definition, value.parameters); if (!['THIN', 'STANDARD', 'DEEP'].includes(value.contextProfile) || !['forbid-overlap', 'queue', 'allow'].includes(value.concurrency)) throw new ParameterizedJobError('saved_job_policy_invalid'); if (value.routing?.model && value.routing.modelRole) throw new ParameterizedJobError('saved_job_route_ambiguous'); if (value.routing?.accountProfile !== undefined && !/^[a-z0-9][a-z0-9._-]{0,63}$/i.test(value.routing.accountProfile)) throw new ParameterizedJobError('saved_job_account_profile_invalid'); validateBudgetOverrides(value.budgets); if (value.schedule) validateSchedule(value.schedule); return clone(value); }
+  private validate(value: SavedJob) { assertNoSensitiveMaterial(JSON.stringify(value), 'saved_job_credential_material_forbidden'); if (value.schema !== 'agent-control.saved-job/v1' || !ID.test(value.id) || !value.name.trim() || value.revision < 1) throw new ParameterizedJobError('saved_job_invalid'); const definition = this.registry.resolve(value); resolveParameters(definition, value.parameters); if (!['THIN', 'STANDARD', 'DEEP'].includes(value.contextProfile) || !['forbid-overlap', 'queue', 'allow'].includes(value.concurrency) || (value.executionMode !== undefined && !['LIVE','CONTROLLED_FAULT_INJECTION','SIMULATED'].includes(value.executionMode))) throw new ParameterizedJobError('saved_job_policy_invalid'); if (value.routing?.model && value.routing.modelRole) throw new ParameterizedJobError('saved_job_route_ambiguous'); if (value.routing?.accountProfile !== undefined && !/^[a-z0-9][a-z0-9._-]{0,63}$/i.test(value.routing.accountProfile)) throw new ParameterizedJobError('saved_job_account_profile_invalid'); if (value.routing?.purpose !== undefined && !['EXECUTION','QUALIFICATION'].includes(value.routing.purpose)) throw new ParameterizedJobError('saved_job_route_purpose_invalid'); validateBudgetOverrides(value.budgets); if (value.schedule) validateSchedule(value.schedule); return clone(value); }
   private save() { atomic(this.file, {version: 1, jobs: this.list()}); }
 }
 
@@ -82,10 +83,13 @@ function validRecoveryBudget(budgets: Partial<import('./parameterized-job-types.
 
 interface RunState {version: 1; runs: ParameterizedJobRun[];}
 export class ParameterizedRunStore {
+  private readonly listeners=new Set<(run:ParameterizedJobRun)=>void>();
+  subscribe(listener:(run:ParameterizedJobRun)=>void){this.listeners.add(listener);return()=>{this.listeners.delete(listener);};}
+  private notify(run:ParameterizedJobRun){for(const listener of this.listeners){try{listener(clone(run));}catch{/* Optional observers cannot impair runtime. */}}}
   private readonly runs = new Map<string, ParameterizedJobRun>();
-  constructor(readonly file: string) { if (!fs.existsSync(file)) return; const state = JSON.parse(fs.readFileSync(file, 'utf8')) as RunState; if (state.version !== 1 || !Array.isArray(state.runs)) throw new ParameterizedJobError('job_run_state_invalid'); for (const run of state.runs) this.runs.set(run.id, run); }
-  add(run: ParameterizedJobRun) { if ([...this.runs.values()].some(item => item.occurrenceId === run.occurrenceId)) throw new ParameterizedJobError('duplicate_schedule_occurrence', run.occurrenceId); this.runs.set(run.id, clone(run)); this.save(); return this.get(run.id)!; }
-  update(run: ParameterizedJobRun) { const previous = this.runs.get(run.id); if (!previous) throw new ParameterizedJobError('job_run_missing', run.id); if (previous.immutable) throw new ParameterizedJobError('historical_run_immutable', run.id); this.runs.set(run.id, clone(run)); this.save(); return this.get(run.id)!; }
+  constructor(readonly file: string) { if (!fs.existsSync(file)) return; const state = JSON.parse(fs.readFileSync(file, 'utf8')) as RunState; if (state.version !== 1 || !Array.isArray(state.runs)) throw new ParameterizedJobError('job_run_state_invalid'); for (const run of state.runs) this.runs.set(run.id, redactSensitiveValue(run)); }
+  add(run: ParameterizedJobRun) { if ([...this.runs.values()].some(item => item.occurrenceId === run.occurrenceId)) throw new ParameterizedJobError('duplicate_schedule_occurrence', run.occurrenceId); const safe=clone(redactSensitiveValue(run)); this.runs.set(run.id, safe); this.save();this.notify(safe); return this.get(run.id)!; }
+  update(run: ParameterizedJobRun) { const previous = this.runs.get(run.id); if (!previous) throw new ParameterizedJobError('job_run_missing', run.id); if (previous.immutable) throw new ParameterizedJobError('historical_run_immutable', run.id); const safe=clone(redactSensitiveValue(run)); this.runs.set(run.id, safe); this.save();this.notify(safe); return this.get(run.id)!; }
   occurrence(id: string) { return this.list().find(run => run.occurrenceId === id); }
   get(id: string) { const value = this.runs.get(id); return value ? clone(value) : undefined; }
   list(savedJobId?: string) { return [...this.runs.values()].filter(run => !savedJobId || run.savedJobId === savedJobId).sort((a, b) => b.requestedAt.localeCompare(a.requestedAt)).map(clone); }

@@ -19,6 +19,7 @@ import type {ParameterizedJobRun, ReviewExecutionRequest} from './parameterized-
 import {WorkParcelCoordinator, WorkParcelStore} from './work-parcels.js';
 import {TokenAwareBatonRuntime} from './token-aware-baton-routing.js';
 import {GovernedRetrievalRuntime, RepositoryTextRetrievalProvider} from './governed-retrieval.js';
+import {governedRequestOrigin} from './request-origin.js';
 
 test('production repository review compiles governed evidence and preserves retrieval provenance',async()=>{const root=fs.mkdtempSync(path.join(os.tmpdir(),'agent-control-production-retrieval-'));try{fs.writeFileSync(path.join(root,'first.ts'),`export function routeModel() { return 'qualified'; }\n${'irrelevant broad context\n'.repeat(500)}`);const {models,route}=handoffRegistry(),store=new WorkParcelStore(path.join(root,'parcels.json')),retrieval=new GovernedRetrievalRuntime([new RepositoryTextRetrievalProvider('exact')],{enabled:true,progression:['EXACT'],minimumConfidence:0,requiredCoverage:0,maximumEvidenceTokens:256}),calls:Array<{model:string;prompt:string}>=[],executor=new DirectRepositoryReviewExecutor(models,store,undefined,undefined,fakeReviewClients(calls),undefined,retrieval),request=reviewRequest(route);request.run.repository!.snapshotPath=root;request.run.repository!.identity='retrieval-fixture';request.contextChunks=[{id:'context-1',content:`===== first.ts =====\n${fs.readFileSync(path.join(root,'first.ts'),'utf8')}`,files:['first.ts'],sha256:'one'}];request.instruction='Review routeModel';const response=await executor.execute(request);assert.match(calls[0].prompt,/Governed Evidence Packet:/);assert.ok(calls[0].prompt.indexOf('export function routeModel')<calls[0].prompt.indexOf('Governed Evidence Packet:'));assert.ok(calls[0].prompt.length<1000);assert.ok(response.evidence.some(item=>item.startsWith('evidence-packet:')));const parcel=store.get(response.workParcelIds[0])!;assert.ok(parcel.provenance.some(item=>item.type==='retrieval.evidence'));assert.ok(retrieval.projection().totals.contextTokensSaved>0);}finally{fs.rmSync(root,{recursive:true,force:true});}});
 
@@ -34,9 +35,56 @@ test('production engine retry preserves one logical Run while opening an immutab
   saved.create({id:'retry-review',name:'Retry review',definition:{id:'repository-code-review',version:1,follow:'pinned'},parameters:{node:'controller',repository,ref:'main',scope:'full'},routing:{model:'source-model',allowFallback:false},contextProfile:'STANDARD',budgets:{maximumRetries:1},concurrency:'forbid-overlap',enabled:true});
   const completed=await engine.execute(engine.runNow('retry-review','test').id),threads=routing.projection().threads;
   assert.equal(completed.status,'SUCCEEDED',JSON.stringify({errors:completed.errors,retryHistory:completed.retryHistory,recovery:completed.recovery,executions:completed.providerExecutions}));assert.equal(completed.retryHistory[0].reason,'transient_transport_failure');assert.equal(invocation,2);assert.equal(completed.workParcelIds.length,2);assert.equal(completed.executionSequence,2);
-  const attemptParcels=completed.workParcelIds.map(id=>parcels.get(id)!);assert.equal(attemptParcels.find(parcel=>parcel.status==='FAILED')?.audit.invocations[0]?.verifierResult,undefined);assert.equal(attemptParcels.find(parcel=>parcel.status==='SUCCEEDED')?.audit.invocations[0]?.verifierResult,'PASS');
+  const attemptParcels=completed.workParcelIds.map(id=>parcels.get(id)!);assert.equal(attemptParcels.find(parcel=>parcel.status==='FAILED')?.audit.invocations[0]?.verifierResult,'not-applicable-transport-failure');assert.equal(attemptParcels.find(parcel=>parcel.status==='SUCCEEDED')?.audit.invocations[0]?.verifierResult,'PASS');assert.equal(completed.usage.totalTokens,undefined);assert.equal(completed.usage.unknownUsageInvocations,1);
   assert.deepEqual(threads.map(thread=>thread.id).sort(),[`repository-review:${completed.id}:1:${completed.context!.chunks[0].id}`,`repository-review:${completed.id}:2:${completed.context!.chunks[0].id}`].sort());
   assert.notEqual(threads[0].parcelId,threads[1].parcelId);assert.ok(threads.every(thread=>thread.recoverable));
+});
+
+test('exhausted transient provider retries seal a failure baton and continue on a qualified governed fallback', async t => {
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'agent-control-provider-failure-handoff-')),repository=path.join(root,'repository');
+  t.after(()=>{for(const entry of fs.readdirSync(root,{recursive:true}).map(value=>path.join(root,String(value))).sort((a,b)=>b.length-a.length))try{fs.chmodSync(entry,fs.statSync(entry).isDirectory()?0o700:0o600)}catch{}fs.rmSync(root,{recursive:true,force:true})});
+  fs.mkdirSync(repository);
+  for(const args of [['init','-q','-b','main'],['config','user.email','test@example.invalid'],['config','user.name','Agent Control Test']] as string[][])execFileSync('git',args,{cwd:repository});
+  fs.writeFileSync(path.join(repository,'index.ts'),'export const safe = true;\n');execFileSync('git',['add','.'],{cwd:repository});execFileSync('git',['commit','-qm','fixture'],{cwd:repository});
+  const {models}=handoffRegistry(),parcels=new WorkParcelStore(path.join(root,'parcels.json')),routing=new TokenAwareBatonRuntime(path.join(root,'routing.json')),contracts=new ContractExecutionRuntime(path.join(root,'contracts.json')),handoffs=new GovernedHandoffRuntime(contracts,path.join(root,'handoffs.json')),calls:string[]=[];
+  const executor=new DirectRepositoryReviewExecutor(models,parcels,routing,{routing,contracts,handoffs},provider=>({invoke:async(model,_input,options)=>{
+    calls.push(model.id);
+    options?.onTelemetry?.({phase:'started',providerId:provider.id,modelId:model.id,elapsedMs:0,context:{tokens:null,limitTokens:null,authority:'unavailable',source:'fixture'}});
+    if(model.id==='source-model')throw Object.assign(new Error('http_502_controlled_transport_failure'),{providerFailureObservation:{requestDispatched:false,usage:{inputTokens:0,outputTokens:0,cachedInputTokens:0,cacheWriteTokens:0,totalTokens:0,providerReportedCost:0,calculatedCost:0,currency:'USD'},usageAuthority:'authoritative',elapsedMs:0}});
+    const usage={inputTokens:30,outputTokens:10,cachedInputTokens:0,cacheWriteTokens:0,totalTokens:40,providerReportedCost:null,calculatedCost:.001,currency:'USD'};
+    options?.onTelemetry?.({phase:'completed',providerId:provider.id,modelId:model.id,elapsedMs:3,usage,context:{tokens:null,limitTokens:null,authority:'unavailable',source:'fixture'}});
+    return{providerId:provider.id,modelId:model.id,providerModel:model.providerModel,output:JSON.stringify({schema:'agent-control.repository-review/v1',executiveSummary:'Fallback completed the unchanged frozen review.',findings:[],positiveObservations:['Source transport failure did not alter repository state.'],areasReviewed:['index.ts'],areasNotReviewed:[],verdict:'PASS'}),elapsedMs:3,usage,responseModel:model.providerModel,finishReason:'stop',toolCall:null};
+  }}));
+  const definitions=new ParameterizedJobRegistry();definitions.register(repositoryCodeReviewDefinition);const saved=new SavedJobStore(path.join(root,'saved.json'),definitions),runs=new ParameterizedRunStore(path.join(root,'runs.json')),baselines=new ReviewBaselineStore(path.join(root,'baselines.json')),engine=new ParameterizedJobEngine(definitions,saved,runs,baselines,models,executor,{allowedRepositoryRoots:[root],snapshotsRoot:path.join(root,'snapshots'),nodeHealthy:()=>true,wait:async()=>{}});
+  saved.create({id:'provider-fallback-review',name:'Provider fallback review',definition:{id:'repository-code-review',version:1,follow:'pinned'},parameters:{node:'controller',repository,ref:'main',scope:'full'},routing:{modelRole:'review.default',allowFallback:true},contextProfile:'STANDARD',budgets:{maximumRetries:1,retryBackoffSeconds:0},concurrency:'forbid-overlap',executionMode:'CONTROLLED_FAULT_INJECTION',enabled:true});
+  const completed=await engine.execute(engine.runNow('provider-fallback-review','test').id),evidence=routing.evidence(),baton=evidence.batons[0],decision=evidence.decisions.find(item=>item.trigger?.kind==='PROVIDER_FAILURE'&&item.action==='BATON_AND_HANDOFF'),success=evidence.decisions.find(item=>item.batonId===baton?.id&&item.outcome==='SUCCEEDED');
+  assert.equal(completed.status,'SUCCEEDED',JSON.stringify({errors:completed.errors,calls,modelRoute:completed.modelRoute,routing:evidence,handoffs:handoffs.list(),contracts:contracts.list(),parcels:parcels.list().map(item=>({id:item.id,status:item.status,timeline:item.audit.timeline,provenance:item.provenance}))}));
+  assert.deepEqual(calls,['source-model','source-model','cheap-model']);
+  assert.equal(completed.retryHistory.length,1);
+  assert.equal(completed.fallbackHistory.length,1);
+  assert.equal(completed.fallbackHistory[0].failureKind,'transient-transport');
+  assert.equal(completed.fallbackHistory[0].selectedModel,'cheap-model');
+  assert.equal(completed.executionMode,'CONTROLLED_FAULT_INJECTION');
+  assert.equal(completed.usage.totalTokens,40);
+  assert.equal(completed.usage.accountedInvocations,3);
+  assert.equal(completed.usage.unknownUsageInvocations,0);
+  assert.ok(baton&&/^[a-f0-9]{64}$/.test(baton.sha256));
+  assert.match(baton.completedWork.join(' '),/2 bounded same-route execution attempt/);
+  assert.equal(decision?.trigger?.code,'transient-transport');
+  assert.equal(decision?.target?.modelId,'cheap-model');
+  assert.equal(success?.outcome,'SUCCEEDED');
+  assert.equal(evidence.threads.find(thread=>thread.id===baton.threadId)?.recoverable,true);
+  const finalParcel=parcels.get(completed.workParcelIds.at(-1)!)!;
+  assert.deepEqual(finalParcel.audit.invocations.map(item=>item.model),['source-model','cheap-model']);
+  assert.equal(finalParcel.audit.invocations[0].requestDispatched,false);
+  assert.equal(finalParcel.audit.invocations[0].totalTokens,0);
+  assert.equal(finalParcel.audit.invocations[0].verifierResult,'not-applicable-transport-failure');
+  assert.ok(finalParcel.audit.timeline.some(item=>item.type==='retry.exhausted'));
+  assert.ok(finalParcel.audit.timeline.some(item=>item.type==='governor.decision'));
+  assert.ok(finalParcel.audit.timeline.some(item=>item.type==='baton.created'));
+  assert.ok(finalParcel.audit.timeline.some(item=>item.type==='handoff.completed'));
+  assert.equal(models.qualification('source-model').state,'QUALIFIED');
+  assert.equal(models.qualification('cheap-model').state,'QUALIFIED');
 });
 
 test('repository review invokes the selected provider directly and persists attributable Work Parcels, usage and response evidence', async () => {
@@ -44,11 +92,24 @@ test('repository review invokes the selected provider directly and persists attr
   globalThis.fetch=async(_input,init)=>{requestBody=JSON.parse(String(init?.body));return new Response(JSON.stringify({id:'provider-response-secret-id',model:'vendor/reviewer',choices:[{finish_reason:'stop',message:{content:JSON.stringify({schema:'agent-control.repository-review/v1',executiveSummary:'Reviewed one frozen chunk.',findings:[],positiveObservations:['Typed boundary'],areasReviewed:['index.ts'],areasNotReviewed:[],verdict:'PASS'})}}],usage:{prompt_tokens:80,completion_tokens:20,total_tokens:100,cost:.002}}),{status:200,headers:{'content-type':'application/json'}})};
   try{
     const models=new ModelRegistry([{id:'external',kind:'openai-compatible',baseUrl:'https://provider.example/v1',wireApi:'chat-completions',auth:{type:'none'},enabled:true}],[{id:'reviewer',provider:'external',providerModel:'vendor/reviewer',capabilities:['repository-review'],qualification:{state:'QUALIFIED',version:'qualification-7',qualifiedAt:'2026-09-01T00:00:00Z',capabilities:['repository-review'],nodes:['controller']},pricing:{currency:'USD',inputPerMillionTokens:1,outputPerMillionTokens:2,effectiveFrom:'2026-09-01',source:'fixture'}}],{roles:{'review.default':{primary:'reviewer',requires:['repository-review']}}}),route=models.route({modelRole:'review.default',nodeId:'controller',requiredCapabilities:['repository-review']}),store=new WorkParcelStore(path.join(root,'parcels.json')),routing=new TokenAwareBatonRuntime(path.join(root,'token-routing.json')),executor=new DirectRepositoryReviewExecutor(models,store,routing);
-    const run:ParameterizedJobRun={schema:'agent-control.job-run/v1',id:'run-1',occurrenceId:'occurrence-1',savedJobId:'saved-1',definition:repositoryCodeReviewDefinition,resolvedParameters:{node:'controller',repository:'/repo',ref:'main',scope:'full'},trigger:{type:'manual',actor:'test'},status:'RUNNING',transitions:[{status:'RUNNING',at:'2026-09-01T00:00:00Z'}],requestedAt:'2026-09-01T00:00:00Z',startedAt:'2026-09-01T00:00:00Z',repository:{identity:'repo-id',name:'repo',nodeId:'controller',sourcePath:'/repo',requestedRef:'main',reviewedSha:'0123456789012345678901234567890123456789',dirty:false,dirtyPaths:[],snapshotPath:'/snapshot',snapshotKind:'local-shared-clone'},context:{profile:'STANDARD',files:['index.ts'],changedFiles:[],omittedFiles:[],chunks:[{id:'context-1',files:['index.ts'],sha256:'abc'}],truncated:false},workParcelIds:[],evidence:[],providerResponseIds:[],usage:{source:'unavailable'},errors:[],fallbackHistory:[],retryHistory:[],immutable:false};
+    const origin=governedRequestOrigin({channel:'openwa',modality:'text',receivedAt:'2026-09-01T00:00:00Z',authentication:'enrolled-direct-sender',actorId:'test',authority:['template:saved-1'],messageReference:'a'.repeat(64),identityReference:'b'.repeat(64),request:'run saved-1'});
+    const run:ParameterizedJobRun={schema:'agent-control.job-run/v1',id:'run-1',occurrenceId:'occurrence-1',savedJobId:'saved-1',definition:repositoryCodeReviewDefinition,resolvedParameters:{node:'controller',repository:'/repo',ref:'main',scope:'full'},trigger:{type:'manual',actor:'test',origin},status:'RUNNING',transitions:[{status:'RUNNING',at:'2026-09-01T00:00:00Z'}],requestedAt:'2026-09-01T00:00:00Z',startedAt:'2026-09-01T00:00:00Z',repository:{identity:'repo-id',name:'repo',nodeId:'controller',sourcePath:'/repo',requestedRef:'main',reviewedSha:'0123456789012345678901234567890123456789',dirty:false,dirtyPaths:[],snapshotPath:'/snapshot',snapshotKind:'local-shared-clone'},context:{profile:'STANDARD',files:['index.ts'],changedFiles:[],omittedFiles:[],chunks:[{id:'context-1',files:['index.ts'],sha256:'abc'}],truncated:false},workParcelIds:[],evidence:[],providerResponseIds:[],usage:{source:'unavailable'},errors:[],fallbackHistory:[],retryHistory:[],immutable:false};
     const result=await executor.execute({run,executionAttempt:1,executionId:'repository-review:run-1:1',route,instruction:'Return the governed repository-review-v1 object.',contextChunks:[{id:'context-1',content:'===== index.ts =====\nexport const safe = true;',files:['index.ts'],sha256:'abc'}],maximumOutputTokens:1000,maximumCost:1,signal:new AbortController().signal});
     assert.equal(requestBody?.model,'vendor/reviewer');assert.equal((requestBody?.response_format as {type?:string})?.type,'json_schema');assert.equal(((requestBody?.response_format as {json_schema?:{strict?:boolean}})?.json_schema?.strict),true);assert.equal(JSON.stringify(requestBody).includes('codex'),false);assert.equal(result.result.verdict,'PASS');assert.equal(result.usage.totalTokens,100);assert.equal(result.usage.providerReportedCost,.002);assert.equal(result.usage.calculatedCost,.00012);assert.equal(result.usage.cost,.002);assert.equal(result.usage.source,'provider');assert.match(result.providerResponseIds[0],/^sha256:[a-f0-9]{64}$/);assert.equal(result.providerResponseIds[0].includes('provider-response-secret-id'),false);assert.equal(result.workParcelIds.length,1);executor.recordVerification(result.workParcelIds,'PASS');let parcel=store.get(result.workParcelIds[0])!;assert.equal(parcel.executionOwner,'direct-repository-review-executor');assert.equal(parcel.status,'SUCCEEDED');assert.equal(parcel.stages[0].actualRoute?.provider,'external');assert.equal(parcel.stages[0].actualRoute?.model,'reviewer');assert.equal(parcel.telemetry.totalTokens,100);assert.equal(parcel.telemetry.cost,.002);assert.equal(parcel.audit.invocations[0].providerModel,'vendor/reviewer');assert.equal(parcel.audit.invocations[0].qualificationVersion,'qualification-7');assert.equal(parcel.audit.invocations[0].verifierResult,'PASS');assert.ok(parcel.audit.timeline.some(event=>event.type==='verification.completed'));assert.equal(parcel.audit.totals.costBasis,'provider-reported');assert.equal(parcel.provenance.some(item=>item.detail===run.repository?.reviewedSha),true);const runtime=new JobRuntime(new JobCatalog(new Set()),new ActionRegistry(),new WorkerRegistry(),new RunLedger(path.join(root,'runs.json')),new ArtifactStore(path.join(root,'artifacts')),new ResourceLockManager(path.join(root,'locks.json'))),coordinator=new WorkParcelCoordinator(runtime,store,{plan:()=>{throw new Error('direct_parcel_must_not_be_planned')}});await coordinator.tick();parcel=coordinator.get(result.workParcelIds[0]);assert.equal(parcel.audit.invocations.length,1);assert.equal(parcel.audit.totals.totalTokens,100);assert.equal(parcel.telemetry.totalTokens,100);assert.equal(coordinator.list()[0].audit.totals.totalTokens,100);const thread=routing.projection().threads[0];assert.equal(thread.active,false);assert.equal(thread.latest.cumulative.totalTokens,100);assert.equal(thread.latest.context.authority,'unavailable');assert.equal(routing.parcel(thread.parcelId).totalTokens,100);
-    assert.equal(thread.latest.cumulative.inputTokens,80);assert.equal(thread.latest.cumulative.freshInputTokens,null);assert.equal(thread.latest.cumulative.cachedInputTokens,null);assert.equal(parcel.telemetry.inputTokens,80);assert.equal(parcel.audit.totals.inputTokens,80);assert.equal(parcel.audit.invocations[0].inputTokens,80);
+    assert.equal(thread.latest.cumulative.inputTokens,80);assert.equal(thread.latest.cumulative.freshInputTokens,null);assert.equal(thread.latest.cumulative.cachedInputTokens,null);assert.equal(parcel.telemetry.inputTokens,80);assert.equal(parcel.audit.totals.inputTokens,80);assert.equal(parcel.audit.invocations[0].inputTokens,80);assert.equal(parcel.prompt,'run saved-1');assert.deepEqual(parcel.origin,origin);assert.ok(parcel.provenance.some(item=>item.type==='request-origin'&&item.detail===`openwa:${'a'.repeat(64)}`));
   }finally{globalThis.fetch=originalFetch;fs.rmSync(root,{recursive:true,force:true})}
+});
+
+test('production repository review applies the audited provider invocation profile through the provider adapter', async () => {
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'agent-control-review-provider-profile-'));
+  try {
+    const models=new ModelRegistry([{id:'nvidia-hosted',kind:'openai-compatible',adapter:'nvidia-hosted-v1',baseUrl:'https://integrate.api.nvidia.com/v1',wireApi:'chat-completions',auth:{type:'none'},enabled:true}],[{id:'gpt-oss',provider:'nvidia-hosted',providerModel:'openai/gpt-oss-20b',capabilities:['repository-review'],qualification:{state:'QUALIFIED',version:'q1',capabilities:['repository-review'],nodes:['controller']}}],{roles:{review:{primary:'gpt-oss',requires:['repository-review']}}}),route=models.route({model:'gpt-oss',nodeId:'controller',requiredCapabilities:['repository-review']}),seen:string[]=[],store=new WorkParcelStore(path.join(root,'parcels.json'));
+    const executor=new DirectRepositoryReviewExecutor(models,store,undefined,undefined,provider=>({invoke:async(model,_input,options)=>{seen.push(options?.requestExtension?.profile??'none');assert.deepEqual(options?.requestExtension?.body,{chat_template_kwargs:{enable_thinking:false}});return{providerId:provider.id,modelId:model.id,providerModel:model.providerModel,invocationProfile:options?.requestExtension?.profile,output:JSON.stringify({schema:'agent-control.repository-review/v1',executiveSummary:'Reviewed.',findings:[],positiveObservations:[],areasReviewed:['first.ts'],areasNotReviewed:[],verdict:'PASS'}),elapsedMs:1,usage:{inputTokens:10,outputTokens:2,cachedInputTokens:0,cacheWriteTokens:0,totalTokens:12,providerReportedCost:null,calculatedCost:null,currency:null},responseModel:model.providerModel,finishReason:'stop',toolCall:null};}}));
+    const request:ReviewExecutionRequest=reviewRequest(route);request.contextChunks=request.contextChunks.slice(0,1);delete request.maximumCost;
+    const response=await executor.execute(request),parcel=store.get(response.workParcelIds[0])!;
+    assert.deepEqual(seen,['nvidia-hosted-nonreasoning-repository-review-v1']);
+    assert.equal(parcel.audit.invocations[0].invocationProfile,'nvidia-hosted-nonreasoning-repository-review-v1');
+  } finally { fs.rmSync(root,{recursive:true,force:true}); }
 });
 
 test('provider review parsing rejects structurally incomplete findings before validation',()=>{
@@ -74,6 +135,51 @@ test('repository review wire schema satisfies strict structured-output object re
   const result=parseRepositoryReviewResponse(JSON.stringify({schema:'agent-control.repository-review/v1',executiveSummary:'summary',findings:[finding],positiveObservations:[],areasReviewed:['index.ts'],areasNotReviewed:[],verdict:'PASS_WITH_FINDINGS'}));
   assert.equal(result.findings[0].file,undefined);assert.equal(result.findings[0].startLine,undefined);assert.equal(result.findings[0].endLine,undefined);
   assert.throws(()=>parseRepositoryReviewResponse(JSON.stringify({...result,findings:[{...finding,file:null,startLine:null,endLine:null,category:'release-integrity'}]})),/\$\.findings\[0\]\.category:enum/);
+});
+
+test('repository review instruction distinguishes severe findings from an unusable review',()=>{
+  assert.match(repositoryCodeReviewDefinition.template.instruction,/completed review with supported defects is PASS_WITH_FINDINGS, regardless of severity/i);
+  assert.match(repositoryCodeReviewDefinition.template.instruction,/FAILED means the review itself could not be completed or could not produce a usable result/i);
+});
+
+test('production review escalates a real quality-gate failure through a sealed baton while context remains low', async () => {
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'agent-control-quality-escalation-'));
+  try {
+    const {models,route}=qualityHandoffRegistry(),store=new WorkParcelStore(path.join(root,'parcels.json')),routing=new TokenAwareBatonRuntime(path.join(root,'routing.json')),contracts=new ContractExecutionRuntime(path.join(root,'contracts.json')),handoffs=new GovernedHandoffRuntime(contracts,path.join(root,'handoffs.json')),calls:string[]=[];
+    const clients:RepositoryReviewProviderClientFactory=provider=>({invoke:async(model,_input,options)=>{
+      calls.push(model.id);const destination=model.id==='strong-reviewer',usage={inputTokens:destination?140:80,outputTokens:destination?40:10,cachedInputTokens:0,cacheWriteTokens:0,totalTokens:destination?180:90,providerReportedCost:null,calculatedCost:destination?.02:0,currency:'USD'};
+      options?.onTelemetry?.({phase:'started',providerId:provider.id,modelId:model.id,elapsedMs:0,context:{tokens:10,limitTokens:100,authority:'authoritative',source:'fixture-provider'}});
+      options?.onTelemetry?.({phase:'completed',providerId:provider.id,modelId:model.id,elapsedMs:10,usage,context:{tokens:12,limitTokens:100,authority:'authoritative',source:'fixture-provider'}});
+      const findings=destination?[qualityFinding()]:[];
+      return{providerId:provider.id,modelId:model.id,providerModel:model.providerModel,output:JSON.stringify({schema:'agent-control.repository-review/v1',executiveSummary:destination?'Identified the non-atomic reservation defect.':'No actionable defect identified.',findings,positiveObservations:[],areasReviewed:['reservation.ts'],areasNotReviewed:[],verdict:findings.length?'PASS_WITH_FINDINGS':'PASS'}),elapsedMs:10,usage,responseModel:model.providerModel,finishReason:'stop',toolCall:null};
+    }});
+    const gate={evaluate:({result,responseHash}:{result:{findings:Array<{title:string}>};responseHash:string})=>{const accepted=result.findings.some(item=>/non-atomic reservation/i.test(item.title));return{accepted,code:'reservation-race-acceptance',summary:accepted?'The result explains the predeclared concurrent reservation failure.':'The result does not explain the predeclared concurrent reservation failure.',evidence:['acceptance-test:reservation-concurrency',responseHash],unresolvedCriteria:accepted?[]:['Explain why concurrent callers can both reserve one seat'],nextAction:'Review the same frozen chunk and explain the concurrency failure with file-backed evidence.'};}};
+    const executor=new DirectRepositoryReviewExecutor(models,store,routing,{routing,contracts,handoffs},clients,undefined,undefined,undefined,gate),request=reviewRequest(route);request.contextChunks=request.contextChunks.slice(0,1);request.maximumCost=10;
+    const response=await executor.execute(request),parcel=store.get(response.workParcelIds[0])!,evidence=routing.evidence(),baton=evidence.batons[0];
+    assert.deepEqual(calls,['small-reviewer','strong-reviewer']);
+    assert.equal(response.result.findings[0].title,'Non-atomic reservation permits duplicate ownership');
+    assert.equal(parcel.audit.invocations.length,2);assert.deepEqual(parcel.audit.invocations.map(item=>item.model),calls);
+    assert.ok(parcel.audit.timeline.some(item=>item.summary.includes('quality gate rejected local-small/small-reviewer')));
+    assert.ok(parcel.audit.timeline.some(item=>item.summary.includes('destination passed independently')));
+    const selected=evidence.decisions.find(item=>item.reason.startsWith('quality_gate_failed_governed_fallback_selected'))!;
+    assert.equal(selected.state,'CONTINUE');assert.equal(selected.contextPercent,12);assert.equal(selected.trigger?.kind,'QUALITY_GATE');assert.equal(selected.target?.modelId,'strong-reviewer');
+    assert.match(baton.sha256,/^[a-f0-9]{64}$/);assert.ok(baton.completedWork.some(item=>item.includes('rejected that result')));assert.deepEqual(baton.unresolvedIssues,['Explain why concurrent callers can both reserve one seat']);
+    assert.equal(routing.thread(`${request.executionId}:context-1`).recoverable,true);assert.equal(routing.parcel(parcel.id).totalTokens,270);
+    executor.recordVerification(response.workParcelIds,response.result.verdict);assert.equal(contracts.list().find(item=>item.parentContractId)?.state,'VERIFIED');
+  } finally {fs.rmSync(root,{recursive:true,force:true});}
+});
+
+test('quality escalation fails closed and preserves the original thread when the destination also misses the gate', async () => {
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'agent-control-quality-escalation-recovery-'));
+  try {
+    const {models,route}=qualityHandoffRegistry(),store=new WorkParcelStore(path.join(root,'parcels.json')),routing=new TokenAwareBatonRuntime(path.join(root,'routing.json')),contracts=new ContractExecutionRuntime(path.join(root,'contracts.json')),handoffs=new GovernedHandoffRuntime(contracts,path.join(root,'handoffs.json'));
+    const clients:RepositoryReviewProviderClientFactory=provider=>({invoke:async(model,_input,options)=>{const usage={inputTokens:20,outputTokens:5,cachedInputTokens:0,cacheWriteTokens:0,totalTokens:25,providerReportedCost:null,calculatedCost:0,currency:'USD'};options?.onTelemetry?.({phase:'completed',providerId:provider.id,modelId:model.id,elapsedMs:1,usage,context:{tokens:5,limitTokens:100,authority:'authoritative',source:'fixture-provider'}});return{providerId:provider.id,modelId:model.id,providerModel:model.providerModel,output:JSON.stringify({schema:'agent-control.repository-review/v1',executiveSummary:'Defect not identified.',findings:[],positiveObservations:[],areasReviewed:['reservation.ts'],areasNotReviewed:[],verdict:'PASS'}),elapsedMs:1,usage,responseModel:model.providerModel,finishReason:'stop',toolCall:null};}});
+    const gate={evaluate:()=>({accepted:false,code:'reservation-race-acceptance',summary:'Required defect was not explained.',evidence:['acceptance-test:reservation-concurrency'],unresolvedCriteria:['Explain concurrent duplicate ownership'],nextAction:'Re-evaluate the frozen reservation implementation.'})};
+    const executor=new DirectRepositoryReviewExecutor(models,store,routing,{routing,contracts,handoffs},clients,undefined,undefined,undefined,gate),request=reviewRequest(route);request.contextChunks=request.contextChunks.slice(0,1);request.maximumCost=10;
+    await assert.rejects(()=>executor.execute(request),/repository_review_quality_escalation_failed/);
+    const sourceThread=routing.thread(`${request.executionId}:context-1`),failed=routing.evidence().decisions.find(item=>item.outcome==='FAILED');
+    assert.equal(sourceThread.recoverable,true);assert.equal(failed?.trigger?.kind,'QUALITY_GATE');assert.match(failed?.reason??'',/handoff_failed_resume_original_thread/);assert.equal(store.list()[0].status,'FAILED');
+  } finally {fs.rmSync(root,{recursive:true,force:true});}
 });
 
 test('production Work Parcel lifecycle assesses pressure, seals a baton, delegates the next chunk and independently verifies the destination', async () => {
@@ -142,7 +248,7 @@ test('failed production destination execution preserves evidence and resumes the
     assert.deepEqual(calls.map(call => call.model), ['source-model', 'cheap-model', 'source-model']);
     assert.equal(response.workParcelIds.length, 1);
     const parcel = store.get(response.workParcelIds[0])!;
-    assert.deepEqual(parcel.audit.invocations.map(item => item.model), ['source-model', 'source-model']);
+    assert.deepEqual(parcel.audit.invocations.map(item => item.model), ['source-model', 'cheap-model', 'source-model']);
     assert.equal(parcel.audit.totals.totalTokens, 200);
     assert.equal(parcel.audit.timeline.some(item => item.type === 'route.changed' && item.summary.includes('resumed')), true);
     const failed = routing.evidence().decisions.find(item => item.outcome === 'FAILED');
@@ -156,6 +262,7 @@ test('failed production destination execution preserves evidence and resumes the
     assert.equal(destination?.state, 'FAILED');
     assert.equal(source?.state, 'ACTIVE');
     executor.recordVerification(response.workParcelIds, response.result.verdict);
+    assert.deepEqual(store.get(parcel.id)?.audit.invocations.map(item => item.verifierResult), ['PASS', 'not-applicable-transport-failure', 'PASS']);
     assert.equal(contracts.get(source!.id).verification.state, 'PASSED');
     assert.equal(contracts.get(source!.id).state, 'VERIFIED');
   } finally { fs.rmSync(root, {recursive: true, force: true}); }
@@ -237,6 +344,19 @@ function handoffRegistry() {
   return {models, route: models.route({model: 'source-model', nodeId: 'controller', requiredCapabilities: ['repository-review'], allowFallback: false})};
 }
 
+function qualityHandoffRegistry() {
+  const models=new ModelRegistry([
+    {id:'local-small',kind:'local',baseUrl:'http://127.0.0.1:8080/v1',enabled:true},
+    {id:'local-strong',kind:'local',baseUrl:'http://127.0.0.1:19223/v1',enabled:true},
+  ],[
+    {id:'small-reviewer',provider:'local-small',providerModel:'qwen-3b',capabilities:['repository-review'],qualification:{state:'QUALIFIED',version:'small-q1',capabilities:['repository-review'],nodes:['controller']},pricing:{currency:'USD',inputPerMillionTokens:0,outputPerMillionTokens:0,effectiveFrom:'2026-09-06',source:'local'}},
+    {id:'strong-reviewer',provider:'local-strong',providerModel:'ministral-8b',capabilities:['repository-review'],qualification:{state:'QUALIFIED',version:'strong-q1',capabilities:['repository-review'],nodes:['controller']},pricing:{currency:'USD',inputPerMillionTokens:100,outputPerMillionTokens:100,effectiveFrom:'2026-09-06',source:'fixture-higher-cost'}},
+  ],{roles:{'review.quality-escalation':{primary:'small-reviewer',fallback:['strong-reviewer'],requires:['repository-review']}}});
+  return{models,route:models.route({modelRole:'review.quality-escalation',nodeId:'controller',requiredCapabilities:['repository-review'],allowFallback:false})};
+}
+
+function qualityFinding(){return{id:'reservation-race',severity:'high' as const,title:'Non-atomic reservation permits duplicate ownership',category:'correctness' as const,file:'reservation.ts',startLine:2,endLine:6,evidence:'The read and write are separated by awaited work, so two callers can observe an unowned seat.',reasoning:'Both concurrent calls pass the ownership check before either update is committed.',impact:'One seat can be assigned to multiple users.',suggestedRemediation:'Use an atomic conditional update or transaction and verify one affected row.',confidence:.98,validation:{state:'VALID' as const,reasons:['Matches the concurrent reservation acceptance test.']}};}
+
 function accountHandoffRegistry() {
   const profiles = [
     {id: 'lawrence-pro', nodeId: 'source-node', label: 'Lawrence Pro', plan: 'ChatGPT Pro', credentialStore: {type: 'codex-home-env' as const, env: 'CODEX_HOME_LAWRENCE_PRO'}, qualification: {state: 'QUALIFIED' as const, version: 'account-pro-q1', checkedAt: '2026-09-02T00:00:00Z', qualifiedAt: '2026-09-02T00:00:00Z', capabilities: ['codex-chatgpt'], evidence: ['interactive-login']}},
@@ -261,7 +381,7 @@ function fakeReviewClients(calls: Array<{model: string; prompt: string}>, failDe
       const source = model.id === 'source-model';
       const usage = {inputTokens: source ? 90 : 100, outputTokens: source ? 10 : 20, cachedInputTokens: 0, totalTokens: source ? 100 : 120, providerReportedCost: source ? 0.02 : 0.002, calculatedCost: source ? 0.0022 : 0.00014, currency: 'USD'};
       options?.onTelemetry?.({phase: 'started', providerId: provider.id, modelId: model.id, elapsedMs: 0, context: {tokens: source ? 91 : 20, limitTokens: 100, authority: 'authoritative', source: 'fixture-live-context'}});
-      if (!source && failDestination) throw new Error('destination_transport_failed');
+      if (!source && failDestination) throw Object.assign(new Error('destination_transport_failed'), {providerFailureObservation: {requestDispatched: false, usage: {inputTokens: 0, outputTokens: 0, cachedInputTokens: 0, cacheWriteTokens: 0, totalTokens: 0, providerReportedCost: 0, calculatedCost: 0, currency: 'USD'}, usageAuthority: 'authoritative', elapsedMs: 0}});
       options?.onTelemetry?.({phase: 'completed', providerId: provider.id, modelId: model.id, elapsedMs: source ? 10 : 12, usage, context: {tokens: source ? 91 : 20, limitTokens: 100, authority: 'authoritative', source: 'fixture-live-context'}});
       const reviewed = renderProviderPrompt(input).includes('===== second.ts =====') ? 'second.ts' : 'first.ts';
       return {providerId: provider.id, modelId: model.id, providerModel: model.providerModel, output: JSON.stringify({schema: 'agent-control.repository-review/v1', executiveSummary: `Reviewed ${reviewed}.`, findings: [], positiveObservations: [], areasReviewed: [reviewed], areasNotReviewed: [], verdict: 'PASS'}), elapsedMs: source ? 10 : 12, usage, responseModel: model.providerModel, finishReason: 'stop', toolCall: null};

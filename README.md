@@ -1,6 +1,16 @@
-# Agent Control 3.9.0
+# Agent Control 4.0.0
 
 Agent Control runs governed parameterised jobs against qualified execution and model resources. It is an infrastructure-neutral, policy-controlled adaptive harness for durable work by heterogeneous agents and models. Its executable harness core composes a task-appropriate worker, provider/model route, prompt profile, minimum qualified skills, restricted tools, context strategy, runtime settings, authority snapshot, resource limits and verification/escalation policy into a fingerprinted execution recipe.
+
+Agent Control 4.0.0 integrates the previously separate adaptive-routing, protected-resource, Social & Voice/OpenWA, operational Crew/WOPR and Live Shell workstreams into one governed lifecycle:
+
+`authenticated channel → canonical Work Parcel → capability/authority-qualified adaptive route → Crew/lane execution → token governor → retry or sealed-baton handoff → independent verification → immutable evidence → originating channel`
+
+The channel, exact initiating text or retained voice transcription, authentication classification, opaque message/identity references and granted template authority are preserved in the Run and Work Parcel. A complete execution transcript starts with those source facts before showing the chronological route, model changes, tools, telemetry, governor decisions, handoffs and verification. Voice transcription remains untrusted and cannot start consequential work until a separate authenticated text confirmation is linked.
+
+Live Shell attaches to the real process/session recorded by a Run; it is not a browser terminal or arbitrary shell API. `WATCH`, `INTERVENE` and `TAKE_CONTROL` are explicit capabilities. Protected-resource Actions are forcibly `WATCH_ONLY`, so an adapter cannot use PTY input, signals or takeover to bypass the safety decision. Handoffs transfer only authority already held by the parent contract and retain its protected-resource envelope. See [4.0 release notes](docs/release-notes-4.0.0.md), [migration](docs/migration-4.0.md), [Live Shell](docs/live-shell.md), [adaptive orchestration](docs/adaptive-multi-model-orchestration.md), [protected resources](docs/protected-resource-governance.md), and [dashboard operation](docs/web-dashboard.md).
+
+The 4.0 release gate passed against product checkpoint `a08ccac5ced3cd399755bd084ff30fe224ab7860`; the later evidence commit contains qualification artifacts and tooling hardening only. The [consolidated qualification](docs/evidence/agent-control-4.0-qualification.md) and [Pixel social continuation](docs/evidence/agent-control-4.0-pixel-social-continuation.md) preserve that distinction. No production deployment is implied by the source release.
 
 3.9 makes long-running execution and operator telemetry fail-safe. Runs now retain provider-neutral execution identity, reconnect and authentication state, bounded retry budget/deadline, and verified cancellation evidence. A controller restart does not replay work whose remote state is unresolved. Owned Linux process groups and Windows process trees are terminated through platform adapters and a Run reaches a clean terminal state only when cleanup is confirmed; uncertainty stays visible and keeps authority fenced. Dashboard reload and SSE reconnect rebuild the complete durable projection, including genuine wait/retry deadlines, lifecycle reason, telemetry freshness/source, and cleanup outcome.
 
@@ -16,6 +26,38 @@ Provider techniques enter a capability-intelligence lifecycle instead of becomin
 
 This release also closes a repository-review schema mismatch found during the 3.8.1 video qualification. The provider-facing structured-output schema now carries the same semantic literals, enums and ranges as application validation, and rejection evidence records safe failing JSON paths without retaining raw output. Validation remains fail closed. See the [qualification report](docs/evidence/agent-control-3.8.2-human-readable-history-qualification.md).
 
+## Dynamic provider onboarding
+
+Agent Control includes a provider-neutral catalogue for authenticated model discovery, staged inference callability, bounded capability smoke, frozen benchmark queueing, historical model economics and explicit routing admission. Discovery creates routing-disabled `DISCOVERED / UNQUALIFIED / inference UNTESTED` entries; a model-list response never proves an inference endpoint. A single bounded streaming probe records endpoint acceptance, TTFT and timeout phase before the remaining four capability probes are considered. A model can become routing eligible only after the existing model-intelligence ledger reports `QUALIFIED` or `PREFERRED` evidence and an authenticated operator enables it. Later degradation automatically withdraws eligibility.
+
+NVIDIA hosted NIM is the first adapter using this path. Provider-specific code is limited to the documented hosted endpoint and API-key shape; discovery, credential references, model records, telemetry, benchmarking and routing policy remain generic. NVIDIA currently documents an OpenAI-compatible `POST /v1/chat/completions` service at `https://integrate.api.nvidia.com`; catalogue contents, model limits, pricing, free-endpoint status, quotas and rate limits are observed dynamically or remain `UNKNOWN`. See [NVIDIA hosted models](docs/models/NVIDIA-HOSTED.md), [adding a provider](docs/models/ADDING-A-PROVIDER.md), and [provider/model lifecycle](docs/provider-model-lifecycle.md).
+
+API credentials reuse the existing `provider-secure-store` credential-residency reference. Configuration contains only an opaque name:
+
+```json
+{
+  "id": "nvidia-hosted",
+  "kind": "openai-compatible",
+  "adapter": "nvidia-hosted-v1",
+  "baseUrl": "https://integrate.api.nvidia.com/v1",
+  "wireApi": "chat-completions",
+  "auth": {"type": "provider-secure-store", "reference": "provider:nvidia-hosted"},
+  "discovery": {"enabled": true, "path": "models"}
+}
+```
+
+`agent-control providers credential set nvidia-hosted` reads the value from hidden terminal input or stdin—not an argument—and stores it under the controller state directory with owner-only permissions. `status` checks metadata without reading credential contents; `revoke` removes the selected reference. Add `--account PROFILE_ID` to manage a controller-resident API account profile's distinct secure-store reference through the same command. The value is resolved only when the selected provider/account invocation begins, injected only into its authorization header or isolated child environment, and scrubbed from provider output and errors. Multiple API account profiles can use distinct references without falling back across accounts. See [credential residency](docs/credential-residency.md).
+
+The bounded physical qualification authenticated through that reference, discovered 81 live canonical IDs, smoke-tested representative advertised IDs, ran the frozen model-evaluation path against `nvidia/nemotron-3-super-120b-a12b`, and reconciled the protected ledgers with an isolated dashboard/API/SSE projection. The provider returned no authoritative rate-limit, quota, price, context-window or current-context data, so those fields remain `UNKNOWN`/unavailable. Nemotron passed all nine model calls available to its observed capability set, but the 51-attempt batch remained `PARTIAL` because 42 capability-gated attempts were unavailable; it is a `CANDIDATE`, not qualified. Focused follow-up proved Nemotron and Muse callability plus corrected 5/5 smoke, classified MiniMax as timeout-before-first-token and Kimi K2.6 as endpoint-unavailable, and left all 81 routes disabled. See the [initial physical qualification](docs/evidence/agent-control-3.9-nvidia-hosted-qualification-20260906.md) and [focused diagnostics](docs/evidence/agent-control-3.9-nvidia-focused-diagnostics-20260906.md).
+
+### Retry-exhaustion failover and complete transcripts
+
+The production repository-review lifecycle treats an exhausted transient provider retry as a governed continuation boundary. Agent Control classifies the failure without changing model-quality history, preserves the failed attempts, asks the provider-neutral governor for a qualified capability-compatible fallback, seals repository/result/evidence/next-action state into a content-hashed baton, verifies the destination route identity, continues execution, and independently verifies the result. No fallback is silent, no retry is unbounded, and source state remains recoverable if destination execution fails.
+
+Every parameterised review Run also materialises a complete Markdown transcript while authoritative Run, Work Parcel, provider, token, governor or baton records change. The transcript is an uncapped projection of records associated with that Run—not raw provider traffic or private reasoning—and has both content and source-projection SHA-256 digests. Restart reconstruction must be byte-identical. `LIVE`, `CONTROLLED_FAULT_INJECTION` and `SIMULATED` are explicit execution modes in the Job, transcript and Crew presentation.
+
+The release-qualification evidence is deliberately not a success story: the separate controlled 503 exercise passed retry exhaustion, sealed-baton fallback, destination continuation and verification, but the principal LIVE NVIDIA GPT-OSS review missed a pre-frozen capacity-race criterion. The candidate therefore remains **PARTIAL**, the NVIDIA route remains routing-disabled, and the admission recommendation is `DO_NOT_ADMIT`. See the [routing-admission release qualification](docs/evidence/agent-control-3.9-nvidia-routing-admission-release-qualification.md).
+
 ## Operating model
 
 Agent Control is provider-, model-, platform- and execution-environment-agnostic. Core policy addresses qualified capabilities and governed routes; Codex, OpenAI-compatible APIs, local models, Linux, Windows, Android and browser-backed integrations are optional adapters or execution resources rather than architectural dependencies.
@@ -30,6 +72,12 @@ Agent Control is provider-, model-, platform- and execution-environment-agnostic
 - **Accounting** remains additive at thread, invocation, model/account and Work Parcel levels, allowing cost per verified outcome to survive compaction, retry and route changes.
 
 The dashboard is an observer and authenticated operator client over the same control service. Run and Lane **Execution history** correlates durable operator/system/provider/tool/governor/baton/error activity with telemetry, accounting and verification. It is not raw provider traffic, unredacted logs or hidden model reasoning.
+
+## Protected-resource mutation governance
+
+The `RuntimeSafetySupervisor` allows natural Work Parcel constraints to become machine-enforced resource capabilities. For example, `origin/master must remain completely unchanged` compiles to a durable read-only `git-ref:origin/master` policy. A typed governed Git Action normalizes wrappers, chains, refspecs, force/delete/mirror forms and alternate working directories into semantic effects before dispatch. An intersecting mutation is denied before any handler or subprocess starts; an allowed feature-ref operation retains explicit external commit truth and independent verification evidence.
+
+The complete flow is `model/action proposal → sealed proposal artifact → normalize → resolve effects → resource policy → safety governor → execute/reconcile → independent verification`. The model-backed Job uses the existing adaptive route and structured-provider abstraction, but the model receives no shell or mutation authority. Dashboard updates use the normal Run and safety SSE stream, and the Run view shows resolved effects plus `PROPOSED`, `AUTHORISED`, `EXECUTING`, `EXTERNALLY_COMMITTED`, `CANCELLED_BEFORE_COMMIT`, `COMMIT_STATE_UNCERTAIN` or `FAILED` operation state. See [protected-resource governance](docs/protected-resource-governance.md), [qualification evidence](docs/evidence/agent-control-protected-resource-qualification.md), [Job Runs](docs/jobs/RUNS.md), and [dashboard operation](docs/web-dashboard.md).
 
 ## Resilient execution and truthful telemetry
 
@@ -113,6 +161,33 @@ Codex routes may optionally bind an opaque account profile beneath the provider.
 Post-3.8.2 Codex hardening keeps schema-constrained repository review ephemeral but isolates it from mutable user/project configuration and disables Codex-native shell, unified-exec, multi-agent, web, browser, computer and app tool surfaces. The model receives the immutable governed context directly; any opaque retrieval/baton identifiers are placed after reusable instruction/content prefixes. Codex exec completion usage is cumulative consumption, not current-context occupancy, so it remains `unavailable` unless Codex exposes a distinct context measurement. Real repeated runs confirm that ephemeral execution can still receive provider-reported cached input, but cache hits are automatic and non-deterministic; Agent Control does not claim that persistent sessions guarantee savings. Authoritative total input survives even when its fresh/cache split is unknown, and discount-sensitive calculated cost then remains unknown rather than assuming zero cache. See [Codex integration](docs/models/CODEX-INTEGRATION.md) and the [post-3.8.2 qualification](docs/evidence/agent-control-post-3.8.2-context-efficiency.md).
 
 The production lifecycle is physically qualified across two distinct live local provider/model routes. A real source result triggered the unchanged governor under an economical qualification-only threshold policy, produced a sealed baton, continued on the destination and passed independent verification; 186 source plus 510 destination tokens reconciled to 696 parcel tokens. A second run refused the destination and recovered the original source thread. Provider-unreported context and cost remain explicitly estimated or unavailable. See the [physical qualification evidence](docs/evidence/agent-control-3.7-physical-qualification-20260902.md).
+
+## Evidence-driven adaptive orchestration
+
+The 3.7 adaptive orchestration workstream adds a provider-, platform- and model-neutral **Model Capability League**, **Workflow League** and durable per-Work-Parcel **Decision Tree**. It selects against task class and required capabilities using verified quality, reliability, confidence, recency/version, latency, token/cache and cost evidence. It does not create a global “best model” list, silently mix benchmark with production evidence, or store private model reasoning. Provider, infrastructure, policy and cancellation failures remain operational evidence rather than being counted as model-quality failures.
+
+The normal flow is:
+
+`request → classify → capabilities → policy → eligible candidates → league evidence → cost/quality/latency trade-off → route/workflow → execute → quality gate → verify → update evidence`
+
+Adaptive routing is configurable and disabled only when the operator sets `adaptiveOrchestration.enabled` to `false`; the default is enabled for the isolated workstream but it never bypasses the existing qualified model registry, node placement, approvals, verification or token-aware baton governor. The default preference threshold is three verified samples, with quality floor `0.6`, minimum quality `0.7`, evidence age limit 90 days, no cost/latency ceiling, and weights quality/reliability/cost/latency/confidence `0.5/0.2/0.15/0.1/0.05`. A minimal configuration is:
+
+```json
+{
+  "adaptiveOrchestration": {
+    "enabled": true,
+    "minimumSamplesForPreference": 3,
+    "minimumQualityScore": 0.7,
+    "maxEvidenceAgeDays": 90,
+    "policyQualityFloor": 0.6,
+    "maxRouteCost": null,
+    "maxRouteLatencyMs": null,
+    "explorationRate": 0.1
+  }
+}
+```
+
+Open the dashboard's **Routing** tab to filter both leagues by task class, capability, provider, model/version, local/remote location, evidence class, quality or age, and to select each persisted decision node. A Work Parcel's Audit panel links directly to its routing record. The same canonical record powers the machine-readable report and the human-readable operational report, including evidence-linked token/cost/latency measurements; past decisions do not change when later evidence arrives. See [adaptive multi-model orchestration](docs/adaptive-multi-model-orchestration.md) and [dashboard usage](docs/web-dashboard.md).
 
 ## Governed fast execution (Spark)
 
@@ -214,7 +289,7 @@ npm run check
 
 `npm run init` creates only a schema-valid empty `.agent-control/config.json`. It is idempotent, never discovers infrastructure and never overwrites existing operator configuration. Use `config/agent-control.example.json` only as an illustrative reference after replacing every example endpoint, path and command.
 
-Edit `.agent-control/config.json` for the installation. Runtime state and credentials remain ignored. A different path can be selected with `AGENT_CONTROL_CONFIG`. Do not put credentials in JSON; configuration names only the environment variable that supplies a credential.
+Edit `.agent-control/config.json` for the installation. Runtime state and credentials remain ignored. A different path can be selected with `AGENT_CONTROL_CONFIG`. Do not put credentials in JSON; configuration stores only an environment, referenced-file, isolated-home or opaque secure-store reference.
 
 With no configuration file, Agent Control starts with a safe local lane and reports infrastructure as `UNCONFIGURED`. It does not invent providers, machines or services.
 
@@ -244,6 +319,14 @@ Enter that token using **Observer mode** in the dashboard. It is retained only i
 Monitor either interface for the same authoritative lanes, scheduler projection, providers, resources, PTY ownership, routing rationale and claim/evidence/verification state. The web terminal panel is observer-only; it never receives a PTY write primitive. Qualification writes timestamped JSON beneath ignored `qualification-results/`.
 
 The dashboard's **Systems** tab is the canonical execution inventory. Every configured machine, provider and external service remains listed when it is unreachable, unprobed or missing authentication; those conditions are shown as `OFFLINE`, `UNKNOWN` or `AUTH REQUIRED` rather than hiding the system. **Models** is the model registry projection. After operator authentication, use **Configuration** to add or edit systems and models as validated JSON. Saves are revision checked and atomic. Provider, model and role-map changes hot-reload; machine and service changes explicitly require restart. See [`docs/web-dashboard.md`](docs/web-dashboard.md#configure-systems-and-models) for the operator procedure.
+
+The optional **Crew** turns canonical Agent Control state into a human-readable operational scene without adding agents or authority. Cadence dispatches lanes, Quill reviews Work Parcel readiness, Relay projects real tools and execution, Lumen shows provider/model discovery and routing, Rook watches nodes/resources, and Verity exposes verification. Operational state, current activity and presentation-only animation are separate fields. Real Parcel dependency graphs show one mini worker per actually running stage; sealed baton motion requires a durable Parcel, lane or token-routing event, and opens the exact recorded reason. Deterministic narration and the three Crew → human explanation → engineering evidence levels lead back to the existing Jobs, Models, Systems, transcripts, token/cache and evidence views.
+
+Full motion gives newly idle characters bounded, staggered look-around behavior and sustained-idle characters a gentle sleep/peek cycle; authoritative work wakes them once without changing controller state. Reduced, Off and Hidden settings are browser-local, system reduced-motion is respected, and narrow screens use a scrollable worker strip. The dashboard and Agent Control continue normally if this presentation is disabled or fails. See [dashboard operational Crew](docs/dashboard-characters.md) for the exact schema, event/tool mappings, accessibility, performance boundary and real qualification evidence.
+
+Agent Control 4.0 adds an original WOPR-inspired **Activity Matrix** beneath the Crew. Its labelled controller, queue, lane, model request/response, tool, baton/escalation, verification and node indicators are computed from canonical state and retained typed events; they never blink randomly to imply work. Every lamp is keyboard-inspectable and explains its source, event/time, lane/model, persistence and stale/disconnected behavior. A slow decorative page heartbeat is explicitly labelled `NOT WORK ACTIVITY`.
+
+A compact **Live usage** strip remains present while navigating Jobs, Lanes, Sessions, Systems, Models, Crew and Configuration. Operators can select a thread or lane and see route, operational state, elapsed time, governor state, context authority, fresh/cache-read/cache-write/input/output totals, cost authority and the additive Work Parcel model chain. Missing current context or cost stays `Unavailable`, not zero. The 4.0 qualification physically demonstrated an explicit quality-gate model change from local Qwen to Codex/Controller Account A/Luna through the production `observe → assess → sealed baton → governed handoff → destination → verification` path. The [human-readable transcript](docs/evidence/agent-control-4.0-pixel-social-continuation-transcript.md) starts with the exact authenticated request and gives a timestamped source → destination record without exposing private reasoning; the [qualification report](docs/evidence/agent-control-4.0-pixel-social-continuation.md) links the continuous video and machine evidence. The source release does not deploy or enable services automatically.
 
 Configured Linux/SSH resources can opt into the generic `managedNode` policy. Agent Control then streams a fixed read-only inventory probe over the existing non-interactive SSH route, synchronises discovered capabilities and workload state into the Worker Registry, and shows the same heartbeat, `IDLE`/`BUSY`/`DEGRADED`/`OFFLINE` state, load, memory, storage, current workload and maintenance status in the dashboard, TUI, API and `agent-control status`. It installs no daemon and exposes no arbitrary SSH command surface.
 
@@ -298,11 +381,11 @@ The versioned JSON schema has six independent collections/policies plus optional
 
 Resource identity is separate from transport. A resource may be local, SSH, HTTP or Orca-backed. An SSH hostname is transport metadata, not the resource ID. Ports are configurable numbers. Optional unavailable services do not make an otherwise valid zero-provider installation fail.
 
-Providers and external services that require API keys use `auth.env`, `credentialEnv` or `credentialFileEnv` to name the runtime environment variable that supplies the secret. The configuration stores only that reference. Plaintext API keys, passwords, tokens, secrets and credentialed URLs are rejected.
+Providers and external services that require API keys use an indirect environment, referenced-file or `provider-secure-store` reference. Configuration stores only the reference; the generic secure-store backend keeps its value owner-only beneath the state directory and resolves it at invocation. Plaintext API keys, passwords, tokens, secrets and credentialed URLs are rejected.
 
 For a managed Linux resource, `managedNode` adds polling/heartbeat policy, declarative protected-workload detectors, approved services, BUSY capability fences and an optional operator-reviewed runtime update target. Hardware, package tools, filesystems, optical devices, secure-overlay state and operational capabilities are discovered rather than assumed. Real endpoints and workload identifiers remain operator configuration, never core defaults.
 
-See [`config/agent-control.example.json`](config/agent-control.example.json), [`ARCHITECTURE.md`](ARCHITECTURE.md), and [`docs/concepts.md`](docs/concepts.md). The older [`docs/architecture-v2-agnostic.md`](docs/architecture-v2-agnostic.md) remains a configuration-neutrality appendix.
+See [`config/agent-control.example.json`](config/agent-control.example.json), [`ARCHITECTURE.md`](ARCHITECTURE.md), [`docs/adaptive-multi-model-orchestration.md`](docs/adaptive-multi-model-orchestration.md), and [`docs/concepts.md`](docs/concepts.md). The older [`docs/architecture-v2-agnostic.md`](docs/architecture-v2-agnostic.md) remains a configuration-neutrality appendix.
 
 ## Adaptive harness
 
@@ -387,4 +470,8 @@ The neutrality guard rejects private topology identifiers in distributable runti
 - Ripgrep is the only semantic command-output adapter in this change. Other oversized command families use the generic labelled fallback until a specialised index is added. A tiny typed ripgrep request retains its structured authoritative stream and therefore can be larger than normal human-formatted `rg`; it is not compacted merely because it came from ripgrep.
 - Harness-profile routing remains observational. A live same-model repository-mutation experiment now measures provider tokens, observed warm-cache behaviour, latency, independent verifier outcomes and cumulative escalation cost, but its 12-task sample had only 2/12 STANDARD successes and no adaptive resource advantage. No profile is production-qualified; STANDARD remains the applied fallback and monetary cost remains unknown.
 
-The foundational operator guide is [`docs/Agent-Control-3.1.0-Operator-Guide.md`](docs/Agent-Control-3.1.0-Operator-Guide.md), distributed as [Markdown](assets/releases/3.1.0/Agent-Control-3.1.0-Operator-Guide.md) and [PDF](assets/releases/3.1.0/Agent-Control-3.1.0-Operator-Guide.pdf). For current operation, use [`docs/governed-retrieval.md`](docs/governed-retrieval.md), [`docs/credential-residency.md`](docs/credential-residency.md), [`docs/token-aware-baton-routing.md`](docs/token-aware-baton-routing.md), [`docs/execution-history.md`](docs/execution-history.md), [`docs/provider-model-lifecycle.md`](docs/provider-model-lifecycle.md), [`docs/models/CODEX-INTEGRATION.md`](docs/models/CODEX-INTEGRATION.md), [`docs/managed-nodes.md`](docs/managed-nodes.md), [`android/README.md`](android/README.md), [`docs/web-dashboard.md`](docs/web-dashboard.md), and [`ARCHITECTURE.md`](ARCHITECTURE.md). Candidate scope and migration guidance are in the [`3.9.0 release notes`](docs/release-notes-3.9.0.md) and [`3.9 migration guide`](docs/migration-3.9.md); historical releases remain immutable.
+The foundational operator guide is [`docs/Agent-Control-3.1.0-Operator-Guide.md`](docs/Agent-Control-3.1.0-Operator-Guide.md), distributed as [Markdown](assets/releases/3.1.0/Agent-Control-3.1.0-Operator-Guide.md) and [PDF](assets/releases/3.1.0/Agent-Control-3.1.0-Operator-Guide.pdf). For current operation, use [`docs/governed-retrieval.md`](docs/governed-retrieval.md), [`docs/credential-residency.md`](docs/credential-residency.md), [`docs/token-aware-baton-routing.md`](docs/token-aware-baton-routing.md), [`docs/adaptive-multi-model-orchestration.md`](docs/adaptive-multi-model-orchestration.md), [`docs/execution-history.md`](docs/execution-history.md), [`docs/contract-pty-runtime.md`](docs/contract-pty-runtime.md), [`docs/governed-handoffs.md`](docs/governed-handoffs.md), [`docs/provider-model-lifecycle.md`](docs/provider-model-lifecycle.md), [`docs/models/CODEX-INTEGRATION.md`](docs/models/CODEX-INTEGRATION.md), [`docs/acp-compatibility.md`](docs/acp-compatibility.md), [`docs/fast-execution.md`](docs/fast-execution.md), [`docs/security-3.6.md`](docs/security-3.6.md), [`docs/identity-sessions-delegation.md`](docs/identity-sessions-delegation.md), [`docs/jobs/README.md`](docs/jobs/README.md), [`docs/jobs-and-scheduler.md`](docs/jobs-and-scheduler.md), [`docs/managed-nodes.md`](docs/managed-nodes.md), [`android/README.md`](android/README.md), [`docs/web-dashboard.md`](docs/web-dashboard.md), [`docs/status-command.md`](docs/status-command.md), and [`ARCHITECTURE.md`](ARCHITECTURE.md). Candidate scope and migration guidance are in the [`3.9.0 release notes`](docs/release-notes-3.9.0.md) and [`3.9 migration guide`](docs/migration-3.9.md); historical releases remain immutable.
+
+## Optional WhatsApp pilot
+
+See [OpenWA setup and qualification status](docs/openwa/README.md) for the private adapter, dedicated-account linking, operator enrolment, bounded commands and delivery recovery. This is a feature pilot; physical WhatsApp qualification is pending. Dashboard access and core jobs remain available when the adapter is disabled.

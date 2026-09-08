@@ -1,26 +1,16 @@
 # Next steps
 
-These items are intentionally deferred after the Agent Control 3.9.0 candidate. They are not current release claims:
+These items are intentionally deferred after Agent Control 4.0.0. They are not 4.0 release claims:
 
-- Complete the physical Pixel local wireless-ADB gate with the Android System pairing dialog open and a locally hidden PIN: pairing discovery, `adb pair`, normal connect discovery, reconnect, `adb devices`/`get-state` verification, governed ADB execution, controller/device restart and resume. Do not publish `android.adb.local` or `transport.adb` before that evidence passes.
-- Physically exercise Windows owned-process-tree cancellation and verify CIM creation identity, descendant cleanup and truthful uncertainty behavior on the configured Windows execution node.
-- Physically force the provider `AUTHENTICATION_BLOCKED`, transient retry and same-execution reconnect paths without exposing credentials; reconcile their dashboard/SSE projection against the durable ledger.
-- Qualify explicit Responses prompt-cache keys/breakpoints only on provider/model pairs whose supported wire contract is proven. Re-run controlled baseline/candidate measurements with provider-reported cache writes and billed cost where available; retain no savings claim until verified outcomes, tokens, latency and cost demonstrate one.
-- Extend owned-process cleanup adapters only for substrates that can provide descendant identity/absence evidence; unsupported platforms must continue to fail closed as cleanup uncertainty.
+- Add controlled production observations before allowing adaptive evidence to prefer routes broadly; keep benchmark, qualification and production evidence as separate classes.
+- Extend registered workflow candidates only when each strategy has an explicit quality gate, recovery path and independently verified outcome evidence.
+- Qualify explicit Responses prompt-cache keys or breakpoints only on provider/model pairs whose wire contract is proven. Retain no savings claim until provider-reported cache writes, billed cost and matched verified outcomes support it.
 - Bind governed browser/computer evaluators to candidate routes before claiming those capabilities from the frozen suite; preserve `CAPABILITY_UNAVAILABLE` until physically exercised.
-- Add sourced local energy/tariff measurement if monetary cost per successful local-model outcome is needed; do not convert a local endpoint into zero-cost evidence.
-- Accumulate independent multi-day frozen-suite history before approving `QUALIFIED`/`PREFERRED` model transitions or populating leader slots. Keep same-day candidates observational.
-- Qualify semantic parcel-event retrieval only where it materially improves recovery beyond deterministic exact/relevance lookup; the current core remains dependency-free.
-
-- Improve and re-benchmark the built-in lexical ranker before it can influence automatic broad semantic routing; the first frozen suite retrieved the expected file for only 2/5 tasks.
-- Expand the local-model A/B/C trial beyond one bounded Qwen2.5 3B question, including mutation tasks, independent verification, baton/handoff size and cost-per-verified-outcome.
-- Qualify provider-native and MCP retrieval adapters only after their locality, freshness and search-versus-index authority contracts are explicit.
-- Review zg cold-index memory (roughly 954 MB peak in this run) and warm latency on controller-class and edge nodes before recommending it as a default.
-
-- Add production TLS termination and deployment qualification for the authenticated ACP remote transport. The current HTTP/WebSocket evidence is bounded to loopback.
-- Propagate ACP cancellation while provider, permission or client-owned tool work is pending.
-- Add operating-system-specific PTY creation and signal-delivery adapters beneath the durable contract-owned PTY authority model.
-- Collect at least 50 independent physical observations for the frozen capability-routing benchmark, including provider-reported latency, token usage and monetary cost when available.
-- Run the complete coordinator-versus-monolithic execution experiment; the current evidence compares compiled context and batons, not provider outcomes.
-- Keep automatic production capability routing disabled until all frozen safety, verification, integrity, latency and cost gates pass; repeat qualification after model, provider or Codex CLI changes.
-- Extend session lifecycle mutation APIs only after defining external authentication and participant-admission policy; the dashboard remains read-only for sessions.
+- Add sourced local energy/tariff measurement if monetary cost per successful local-model outcome is needed; unavailable cost must not become zero-cost evidence.
+- Accumulate independent multi-day frozen-suite history before approving `QUALIFIED`/`PREFERRED` model transitions or populating leader slots.
+- Improve and re-benchmark the built-in lexical ranker before it can influence broad semantic routing, and qualify provider-native or MCP retrieval adapters only after locality, freshness and authority contracts are explicit.
+- Expand local-model comparison beyond the bounded Qwen evidence to mutation tasks, independent verification, baton size and cost per verified outcome.
+- Add production TLS termination and deployment qualification for the authenticated ACP remote transport. Current HTTP/WebSocket evidence remains bounded to loopback.
+- Propagate ACP cancellation while provider, permission or client-owned tool work is pending, and add platform PTY adapters only where signal and descendant-cleanup evidence can be retained.
+- Keep automatic production capability routing disabled until frozen safety, verification, integrity, latency and cost gates pass after relevant model, provider or runtime changes.
+- Revisit the routing-disabled NVIDIA catalogue only through a separately authorized qualification; current 4.0 evidence does not admit any NVIDIA model.

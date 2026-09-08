@@ -29,6 +29,8 @@ Attaching with `observe` is read-only. `consult` is an explicit read-only operat
 
 A participant requests write control through a durable pending action. Only the current writer or contract operator may approve transfer. Exactly one participant is then marked `write`; all others become observers.
 
+The 4.0 execution-session adapter projects these rules as `WATCH`, `INTERVENE` and `TAKE_CONTROL`. Process capability does not imply policy permission: protected-resource Actions are explicitly `WATCH_ONLY`, and an adapter that advertises input, signals, resize or takeover for that scope is rejected. See [governed Live Shell](live-shell.md).
+
 ## Human takeover and resumption
 
 Human takeover is unconditional. It transfers write ownership to a `human:*` actor, increments the ownership generation and pauses the contract. Every agent becomes read-only. Agent execution resumes only when the current human owner deliberately returns control to an attached agent; this increments the generation again, so retained stale writers remain fenced.

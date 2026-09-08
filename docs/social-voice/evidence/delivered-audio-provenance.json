@@ -1,0 +1,6 @@
+{
+  "classification": "Actual outgoing WhatsApp voice note retrieved through authenticated gateway after signed delivered acknowledgement",
+  "bytes": 11541,
+  "mime": "audio/ogg; codecs=opus",
+  "sha256": "5db35af59a654d278fa79a08e64eb9496005a1b8524690b68e113a5676fa0789"
+}
