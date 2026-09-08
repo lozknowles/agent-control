@@ -1,0 +1,26 @@
+{
+  "at": "2026-09-08T08:35:05.515203+00:00",
+  "endpoint": "http://127.0.0.1:19310/api/status",
+  "schema": "agent-control.system-status/v1",
+  "version": "3.9.0 Collingham daily",
+  "appVersion": null,
+  "top_level_keys": [
+    "schema",
+    "authority",
+    "version",
+    "health",
+    "paused",
+    "scheduler",
+    "lanes",
+    "providers",
+    "resources",
+    "outstandingApprovals",
+    "lastRestorePoint",
+    "observedAt",
+    "jobs",
+    "tokenAwareOutput",
+    "tokenBatonRouting",
+    "retrieval",
+    "harnessEfficiency"
+  ]
+}

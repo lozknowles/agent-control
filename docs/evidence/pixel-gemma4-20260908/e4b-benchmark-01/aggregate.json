@@ -1,0 +1,337 @@
+{
+  "model": "e4b",
+  "n": 15,
+  "tasks": [
+    {
+      "task": "instruction",
+      "n": 3,
+      "response_ms": [
+        7049.526919989148,
+        8653.851292998297,
+        9061.454875016352
+      ],
+      "client_first_content_ms": [
+        5690.175727009773,
+        8012.304439995205,
+        8101.594993000617
+      ],
+      "runtime_generation_tokens_per_second": [
+        3.5907364744138484,
+        7.116455094456708,
+        5.251587817576645
+      ],
+      "output_characters": [
+        14,
+        14,
+        14
+      ],
+      "usage": [
+        {
+          "completion_tokens": 6,
+          "prompt_tokens": 34,
+          "total_tokens": 40,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          }
+        },
+        {
+          "completion_tokens": 6,
+          "prompt_tokens": 34,
+          "total_tokens": 40,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          }
+        },
+        {
+          "completion_tokens": 6,
+          "prompt_tokens": 34,
+          "total_tokens": 40,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          }
+        }
+      ],
+      "automatic_verification": [
+        {
+          "passed": true,
+          "method": "exact three-line comparison"
+        },
+        {
+          "passed": true,
+          "method": "exact three-line comparison"
+        },
+        {
+          "passed": true,
+          "method": "exact three-line comparison"
+        }
+      ]
+    },
+    {
+      "task": "json",
+      "n": 3,
+      "response_ms": [
+        56855.9454609931,
+        8987.047351984074,
+        8667.258244997356
+      ],
+      "client_first_content_ms": [
+        4283.686272014165,
+        4131.599677988561,
+        3859.139050997328
+      ],
+      "runtime_generation_tokens_per_second": [
+        0.5697745322407488,
+        6.247848397208211,
+        6.241805030145838
+      ],
+      "output_characters": [
+        68,
+        68,
+        68
+      ],
+      "usage": [
+        {
+          "completion_tokens": 31,
+          "prompt_tokens": 53,
+          "total_tokens": 84,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          }
+        },
+        {
+          "completion_tokens": 31,
+          "prompt_tokens": 53,
+          "total_tokens": 84,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          }
+        },
+        {
+          "completion_tokens": 31,
+          "prompt_tokens": 53,
+          "total_tokens": 84,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          }
+        }
+      ],
+      "automatic_verification": [
+        {
+          "passed": false,
+          "method": "JSON parse and exact typed object comparison"
+        },
+        {
+          "passed": false,
+          "method": "JSON parse and exact typed object comparison"
+        },
+        {
+          "passed": false,
+          "method": "JSON parse and exact typed object comparison"
+        }
+      ]
+    },
+    {
+      "task": "summary",
+      "n": 3,
+      "response_ms": [
+        16504.22521700966,
+        13639.829046995146,
+        14193.067348009208
+      ],
+      "client_first_content_ms": [
+        10198.022619006224,
+        7847.9723000200465,
+        5882.473322009901
+      ],
+      "runtime_generation_tokens_per_second": [
+        5.306016710831453,
+        5.840091091679639,
+        4.140332931477491
+      ],
+      "output_characters": [
+        164,
+        164,
+        164
+      ],
+      "usage": [
+        {
+          "completion_tokens": 35,
+          "prompt_tokens": 67,
+          "total_tokens": 102,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          }
+        },
+        {
+          "completion_tokens": 35,
+          "prompt_tokens": 67,
+          "total_tokens": 102,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          }
+        },
+        {
+          "completion_tokens": 35,
+          "prompt_tokens": 67,
+          "total_tokens": 102,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          }
+        }
+      ],
+      "automatic_verification": [
+        {
+          "passed": null,
+          "method": "human review required against frozen criteria"
+        },
+        {
+          "passed": null,
+          "method": "human review required against frozen criteria"
+        },
+        {
+          "passed": null,
+          "method": "human review required against frozen criteria"
+        }
+      ]
+    },
+    {
+      "task": "code",
+      "n": 3,
+      "response_ms": [
+        14648.609767988091,
+        14902.443014987512,
+        21128.252416994656
+      ],
+      "client_first_content_ms": [
+        5707.87779497914,
+        5666.261990991188,
+        7662.212142982753
+      ],
+      "runtime_generation_tokens_per_second": [
+        6.18699963330979,
+        6.063419250901365,
+        4.161809364457524
+      ],
+      "output_characters": [
+        197,
+        197,
+        197
+      ],
+      "usage": [
+        {
+          "completion_tokens": 57,
+          "prompt_tokens": 54,
+          "total_tokens": 111,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          }
+        },
+        {
+          "completion_tokens": 57,
+          "prompt_tokens": 54,
+          "total_tokens": 111,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          }
+        },
+        {
+          "completion_tokens": 57,
+          "prompt_tokens": 54,
+          "total_tokens": 111,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          }
+        }
+      ],
+      "automatic_verification": [
+        {
+          "passed": true,
+          "method": "network and filesystem isolated bubblewrap Python execution",
+          "exit": 0,
+          "stdout": "PASS: four cases and input preservation\n",
+          "stderr": ""
+        },
+        {
+          "passed": true,
+          "method": "network and filesystem isolated bubblewrap Python execution",
+          "exit": 0,
+          "stdout": "PASS: four cases and input preservation\n",
+          "stderr": ""
+        },
+        {
+          "passed": true,
+          "method": "network and filesystem isolated bubblewrap Python execution",
+          "exit": 0,
+          "stdout": "PASS: four cases and input preservation\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "task": "uncertainty",
+      "n": 3,
+      "response_ms": [
+        12698.326266021468,
+        12564.797167986399,
+        9683.991128986236
+      ],
+      "client_first_content_ms": [
+        7566.858760023024,
+        10259.275905002141,
+        5801.455565000651
+      ],
+      "runtime_generation_tokens_per_second": [
+        2.530788994883523,
+        5.631313568866633,
+        3.3248166875107104
+      ],
+      "output_characters": [
+        73,
+        73,
+        73
+      ],
+      "usage": [
+        {
+          "completion_tokens": 14,
+          "prompt_tokens": 56,
+          "total_tokens": 70,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          }
+        },
+        {
+          "completion_tokens": 14,
+          "prompt_tokens": 56,
+          "total_tokens": 70,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          }
+        },
+        {
+          "completion_tokens": 14,
+          "prompt_tokens": 56,
+          "total_tokens": 70,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          }
+        }
+      ],
+      "automatic_verification": [
+        {
+          "passed": null,
+          "method": "human review required against frozen criteria"
+        },
+        {
+          "passed": null,
+          "method": "human review required against frozen criteria"
+        },
+        {
+          "passed": null,
+          "method": "human review required against frozen criteria"
+        }
+      ]
+    }
+  ],
+  "telemetry": "Battery/charging/temperature unavailable; RSS samples and /proc high water when captured only",
+  "comparison": "Three task-order repetitions. Transport and telemetry gaps are included in duty cycle, not continuous saturation."
+}

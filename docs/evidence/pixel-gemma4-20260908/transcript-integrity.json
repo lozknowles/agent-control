@@ -1,38 +1,52 @@
 [
   {
     "path": "e2b-disconnect-01/transcript.md",
-    "expected": "5efcf9121b09cd301130c96aa060f2601b99f5b851a65df7c9f8b40d283e3718",
-    "actual": "5efcf9121b09cd301130c96aa060f2601b99f5b851a65df7c9f8b40d283e3718",
+    "sha256": "5efcf9121b09cd301130c96aa060f2601b99f5b851a65df7c9f8b40d283e3718",
     "matches": true
   },
   {
     "path": "e2b-cancel-02/transcript.md",
-    "expected": "243f59a5206591319d87ab1acda8f083941692a53f86ce0f5ae3c300c79d4726",
-    "actual": "243f59a5206591319d87ab1acda8f083941692a53f86ce0f5ae3c300c79d4726",
+    "sha256": "243f59a5206591319d87ab1acda8f083941692a53f86ce0f5ae3c300c79d4726",
     "matches": true
   },
   {
     "path": "e2b-integration-05/transcript.md",
-    "expected": "aba70e52d3f5d9757a06cb4ea0e4ac823d776f524298dfec6a4864f5a87ad28b",
-    "actual": "aba70e52d3f5d9757a06cb4ea0e4ac823d776f524298dfec6a4864f5a87ad28b",
+    "sha256": "aba70e52d3f5d9757a06cb4ea0e4ac823d776f524298dfec6a4864f5a87ad28b",
     "matches": true
   },
   {
     "path": "e2b-disconnect-inflight-01/transcript.md",
-    "expected": "4d390b3de121d1ceb3e4edb3c26777e9be11d2f671c86ba5ecb5b98b9696fe37",
-    "actual": "4d390b3de121d1ceb3e4edb3c26777e9be11d2f671c86ba5ecb5b98b9696fe37",
+    "sha256": "4d390b3de121d1ceb3e4edb3c26777e9be11d2f671c86ba5ecb5b98b9696fe37",
+    "matches": true
+  },
+  {
+    "path": "e4b-integration-02/transcript.md",
+    "sha256": "3099c130cb12294f97b50d941631d23d086c86b6f2cc8664a15b1427fd52d418",
+    "matches": true
+  },
+  {
+    "path": "e4b-disconnect-inflight-01/transcript.md",
+    "sha256": "564cecbc70df06065e3f853758441c7110c8e6564c89f62a72943b45ffa858bd",
     "matches": true
   },
   {
     "path": "e2b-integration-04/transcript.md",
-    "expected": "b670e1937200a016cf3bd8fa69d30f1e543219c4169b4214823f13893cc35705",
-    "actual": "b670e1937200a016cf3bd8fa69d30f1e543219c4169b4214823f13893cc35705",
+    "sha256": "b670e1937200a016cf3bd8fa69d30f1e543219c4169b4214823f13893cc35705",
+    "matches": true
+  },
+  {
+    "path": "e4b-integration-01/transcript.md",
+    "sha256": "04a7820b7f741521ccb44d19f47ec4909eeffa2b78cafa3a779006eef24de98a",
     "matches": true
   },
   {
     "path": "e2b-cancel-01/transcript.md",
-    "expected": "e6482eaf65ef691ac46ec554f4bb7067cc0f0852fcc895b68833e9180244b49e",
-    "actual": "e6482eaf65ef691ac46ec554f4bb7067cc0f0852fcc895b68833e9180244b49e",
+    "sha256": "e6482eaf65ef691ac46ec554f4bb7067cc0f0852fcc895b68833e9180244b49e",
+    "matches": true
+  },
+  {
+    "path": "e4b-cancel-01/transcript.md",
+    "sha256": "9f27804639ce2330f266f8dd958fdb17aba0eaf7c4f932b35ae84f29a10db3bd",
     "matches": true
   }
 ]

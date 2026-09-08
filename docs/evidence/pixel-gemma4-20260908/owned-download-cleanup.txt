@@ -1,0 +1,93 @@
+{
+  "at": "2026-09-08T09:36:39.970Z",
+  "verifiedFinalModel": true,
+  "removed": [
+    {
+      "name": "gemma-4-E4B-it-Q4_0.gguf.partial",
+      "bytes": 367497216
+    },
+    {
+      "name": "e4b-tail-0.part",
+      "bytes": 61393590
+    },
+    {
+      "name": "e4b-segment-0-0.part",
+      "bytes": 248608489
+    },
+    {
+      "name": "e4b-segment-0-1.part",
+      "bytes": 248608489
+    },
+    {
+      "name": "e4b-segment-0-2.part",
+      "bytes": 248608489
+    },
+    {
+      "name": "e4b-segment-0-3.part",
+      "bytes": 248608487
+    },
+    {
+      "name": "e4b-tail-1.part",
+      "bytes": 77258052
+    },
+    {
+      "name": "e4b-segment-1-0.part",
+      "bytes": 244642373
+    },
+    {
+      "name": "e4b-segment-1-1.part",
+      "bytes": 244642373
+    },
+    {
+      "name": "e4b-segment-1-2.part",
+      "bytes": 244642373
+    },
+    {
+      "name": "e4b-segment-1-3.part",
+      "bytes": 244642373
+    },
+    {
+      "name": "e4b-tail-2.part",
+      "bytes": 56894253
+    },
+    {
+      "name": "e4b-segment-2-0.part",
+      "bytes": 249733323
+    },
+    {
+      "name": "e4b-segment-2-1.part",
+      "bytes": 249733323
+    },
+    {
+      "name": "e4b-segment-2-2.part",
+      "bytes": 249733323
+    },
+    {
+      "name": "e4b-segment-2-3.part",
+      "bytes": 249733322
+    },
+    {
+      "name": "e4b-tail-3.part",
+      "bytes": 54924063
+    },
+    {
+      "name": "e4b-segment-3-0.part",
+      "bytes": 250225871
+    },
+    {
+      "name": "e4b-segment-3-1.part",
+      "bytes": 250225871
+    },
+    {
+      "name": "e4b-segment-3-2.part",
+      "bytes": 250225871
+    },
+    {
+      "name": "e4b-segment-3-3.part",
+      "bytes": 250225868
+    }
+  ],
+  "bytesReclaimed": 4590807392
+}
+Filesystem       Size Used Avail Use% Mounted on
+/dev/block/dm-66 110G  95G   14G  88% /data/user/0

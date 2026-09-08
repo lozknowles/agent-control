@@ -1,0 +1,1 @@
+PASS: actual JSON verifier accepts JSON numbers and booleans, rejects numeric boolean substitution and Markdown fences

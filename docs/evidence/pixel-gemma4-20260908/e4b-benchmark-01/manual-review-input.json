@@ -1,0 +1,38 @@
+[
+  {
+    "task": "summary",
+    "repetition": 1,
+    "prompt": "Summarise in exactly two sentences, using only these facts: The library roof repair starts on 12 October. The library will close for three days. Returns can be left in the outside box. Online services remain available. Include the start date, closure duration, and both available services.",
+    "output": "Library roof repair begins on 12 October, requiring a three-day closure. During this time, patrons can utilize online services and leave returns in the outside box."
+  },
+  {
+    "task": "uncertainty",
+    "repetition": 1,
+    "prompt": "Use only the following fictional information: The sealed box contains one object. Its mass is 200 grams. What colour is the object? Answer in one sentence and explicitly say that its colour cannot be determined from the information given.",
+    "output": "The colour of the object cannot be determined from the information given."
+  },
+  {
+    "task": "summary",
+    "repetition": 2,
+    "prompt": "Summarise in exactly two sentences, using only these facts: The library roof repair starts on 12 October. The library will close for three days. Returns can be left in the outside box. Online services remain available. Include the start date, closure duration, and both available services.",
+    "output": "Library roof repair begins on 12 October, requiring a three-day closure. During this time, patrons can utilize online services and leave returns in the outside box."
+  },
+  {
+    "task": "uncertainty",
+    "repetition": 2,
+    "prompt": "Use only the following fictional information: The sealed box contains one object. Its mass is 200 grams. What colour is the object? Answer in one sentence and explicitly say that its colour cannot be determined from the information given.",
+    "output": "The colour of the object cannot be determined from the information given."
+  },
+  {
+    "task": "summary",
+    "repetition": 3,
+    "prompt": "Summarise in exactly two sentences, using only these facts: The library roof repair starts on 12 October. The library will close for three days. Returns can be left in the outside box. Online services remain available. Include the start date, closure duration, and both available services.",
+    "output": "Library roof repair begins on 12 October, requiring a three-day closure. During this time, patrons can utilize online services and leave returns in the outside box."
+  },
+  {
+    "task": "uncertainty",
+    "repetition": 3,
+    "prompt": "Use only the following fictional information: The sealed box contains one object. Its mass is 200 grams. What colour is the object? Answer in one sentence and explicitly say that its colour cannot be determined from the information given.",
+    "output": "The colour of the object cannot be determined from the information given."
+  }
+]

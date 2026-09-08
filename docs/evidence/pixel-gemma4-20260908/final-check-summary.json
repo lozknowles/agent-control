@@ -1,0 +1,10 @@
+{
+  "command": "npm run check",
+  "testedSourceCommit": "4dbc189123f040ba791481ab103b82d7e1dca9a5",
+  "tests": 1015,
+  "pass": 1015,
+  "fail": 0,
+  "skipped": 0,
+  "rawLogSha256": "a48f8f53bcefdf9880be50b2306c6d151326b1ddf1e3e59b7aa0acf18f8404a7",
+  "rawLogLocation": "raw-evidence.zip/final-check.log"
+}

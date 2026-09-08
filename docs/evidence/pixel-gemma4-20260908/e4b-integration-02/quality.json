@@ -1,0 +1,100 @@
+[
+  {
+    "at": "2026-09-08T09:16:21.791Z",
+    "route": {
+      "requestedModel": "gemma4-e4b-pixel",
+      "requestedRole": "review.default",
+      "allowFallback": false,
+      "purpose": "QUALIFICATION",
+      "modelId": "gemma4-e4b-pixel",
+      "providerId": "private-inference",
+      "accountProfileId": null,
+      "accountLabel": null,
+      "accountPlan": null,
+      "accountPlanAuthority": null,
+      "accountQualification": null,
+      "accountAvailability": null,
+      "providerModel": "google/gemma-4-E4B-it",
+      "workloadNodeId": "controller",
+      "providerExecutionNodeId": "pixel",
+      "credentialNodeId": null,
+      "nodeId": "pixel",
+      "qualificationVersion": "physical-qualification-pending",
+      "fallback": false,
+      "fallbackReason": null,
+      "requiredCapabilities": [
+        "review.repository"
+      ],
+      "nativeCapabilities": [
+        "review.repository"
+      ],
+      "emulatedCapabilities": [],
+      "considered": [
+        {
+          "modelId": "gemma4-e4b-pixel",
+          "accountProfileId": null,
+          "workloadNodeId": "controller",
+          "providerExecutionNodeId": "pixel",
+          "credentialNodeId": null,
+          "nodeId": "pixel",
+          "eligible": true,
+          "reasons": [],
+          "capabilityAssessment": [
+            {
+              "capabilityId": "review.repository",
+              "satisfied": true,
+              "implementation": "NATIVE",
+              "observationId": "model-config:gemma4-e4b-pixel:physical-qualification-pending:review.repository",
+              "reason": "verified-native-capability"
+            }
+          ]
+        }
+      ]
+    },
+    "result": {
+      "accepted": true,
+      "code": "arithmetic-subtraction-v1",
+      "summary": "Identified subtraction instead of addition",
+      "evidence": [
+        "fixture:7551bcb6f480fe0309ad3438e6fde8e54426fc7a"
+      ],
+      "unresolvedCriteria": [],
+      "nextAction": "No fallback configured; preserve failure"
+    },
+    "responseHash": "sha256:ae3f3cbab7c7fbc4215b33bf099abc01febf0d0e1e29823ce3c8f24fcd080882",
+    "output": {
+      "schema": "agent-control.repository-review/v1",
+      "executiveSummary": "PASS_WITH_FINDINGS",
+      "findings": [
+        {
+          "id": "DEF-001",
+          "severity": "high",
+          "title": "Incorrect implementation of add function",
+          "category": "correctness",
+          "file": "arithmetic.py",
+          "startLine": 2,
+          "endLine": 2,
+          "evidence": "The README states: 'The add function must return the sum of two integers.' However, arithmetic.py implements 'return a - b', which returns the difference, not the sum.",
+          "reasoning": "The implementation directly contradicts the documented requirement in README.md.",
+          "impact": "Incorrect functionality.",
+          "suggestedRemediation": "Change 'return a - b' to 'return a + b'.",
+          "confidence": 1,
+          "validation": {
+            "state": "UNVERIFIED",
+            "reasons": []
+          }
+        }
+      ],
+      "positiveObservations": [
+        "The repository contains a clear definition of expected behavior in README.md."
+      ],
+      "areasReviewed": [
+        "arithmetic.py"
+      ],
+      "areasNotReviewed": [
+        "README.md"
+      ],
+      "verdict": "PASS_WITH_FINDINGS"
+    }
+  }
+]

@@ -1,0 +1,55 @@
+Tue Sep  8 08:57:31 UTC 2026
+MemTotal:       11850748 kB
+MemFree:          452024 kB
+MemAvailable:    4098944 kB
+Buffers:            1152 kB
+Cached:          4623064 kB
+SwapCached:        22012 kB
+Active:          2360532 kB
+Inactive:        4168520 kB
+  PID   RSS COMMAND
+ 1454  3512 /data/data/com.termux/files/usr/libexec/sshd-session
+ 1460  1740 /data/data/com.termux/files/usr/libexec/sshd-session
+ 1466  3468 /data/data/com.termux/files/usr/bin/bash
+ 3355  8740 /data/data/com.termux/files/usr/libexec/sshd-session
+ 3361  5644 /data/data/com.termux/files/usr/libexec/sshd-session
+ 7476  3528 ps
+14794 110260 com.termux
+15781  3044 sshd
+22835  2064 adb
+.cache/ac-pixel-gemma4-20260908/models/gemma-4-E4B-it-Q4_0.gguf: OK
+{
+  "pid": 7530,
+  "startTicks": "1500590",
+  "binary": "/data/data/com.termux/files/home/.cache/ac-pixel-gemma4-20260908/llama.cpp/build-pixel/bin/llama-server",
+  "args": [
+    "--model",
+    "/data/data/com.termux/files/home/.cache/ac-pixel-gemma4-20260908/models/gemma-4-E4B-it-Q4_0.gguf",
+    "--alias",
+    "google/gemma-4-E4B-it",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "19084",
+    "--ctx-size",
+    "2048",
+    "--threads",
+    "4",
+    "--threads-batch",
+    "4",
+    "--parallel",
+    "1",
+    "--n-gpu-layers",
+    "0",
+    "--jinja",
+    "--reasoning",
+    "off"
+  ],
+  "startedAt": "2026-09-08T08:57:50.869Z",
+  "ready": true,
+  "error": null,
+  "process_cold_load_to_health_ms": 35403.821673,
+  "page_cache_state": "uncontrolled; no root or cache dropping",
+  "warmup": "runtime default",
+  "contextTokens": 2048
+}

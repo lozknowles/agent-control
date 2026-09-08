@@ -1,0 +1,17 @@
+{
+  "schema": "agent-control.execution-transcript/v1",
+  "jobRunId": "ac76b94b-15fd-4909-9b1b-213ba2af9285",
+  "savedJobId": "experimental-inference-review",
+  "status": "SUCCEEDED_WITH_FINDINGS",
+  "terminal": true,
+  "entryCount": 40,
+  "workParcelIds": [
+    "parcel-0023a150-5211-4fe1-8cad-df1f3d50774e"
+  ],
+  "observedAt": "2026-09-08T09:16:21.824Z",
+  "sourceSha256": "9e77fa9c81437957b63e1212ddf033227a3573bccad67b00feb5a6d5060513df",
+  "sha256": "3099c130cb12294f97b50d941631d23d086c86b6f2cc8664a15b1427fd52d418",
+  "file": "ac76b94b-15fd-4909-9b1b-213ba2af9285-4c7af0a1eca6.md",
+  "generatedDuringExecution": true,
+  "restartReconstructible": true
+}

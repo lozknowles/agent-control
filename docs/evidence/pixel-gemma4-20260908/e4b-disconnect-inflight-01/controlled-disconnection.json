@@ -1,0 +1,8 @@
+{
+  "at": 1788859747.8257692,
+  "pid": 1126060,
+  "startTicks": "25251219",
+  "phase": "five seconds after genuine model request reached private proxy",
+  "action": "SIGTERM owned private SSH forward only",
+  "fallbackAllowed": false
+}

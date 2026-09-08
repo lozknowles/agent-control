@@ -1,0 +1,14 @@
+[
+  {
+    "loopbackPort": 19481,
+    "acceptsConnections": false
+  },
+  {
+    "loopbackPort": 19482,
+    "acceptsConnections": false
+  },
+  {
+    "loopbackPort": 19483,
+    "acceptsConnections": false
+  }
+]

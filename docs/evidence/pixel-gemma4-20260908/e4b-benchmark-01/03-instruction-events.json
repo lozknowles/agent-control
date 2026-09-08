@@ -1,0 +1,164 @@
+[
+  {
+    "elapsed_ms": 8101.5682670113165,
+    "event": {
+      "choices": [
+        {
+          "finish_reason": null,
+          "index": 0,
+          "delta": {
+            "role": "assistant",
+            "content": null
+          }
+        }
+      ],
+      "created": 1788858123,
+      "id": "chatcmpl-K9EP0Q4AZA572rneTEI4U3aT46WyY0F5",
+      "model": "google/gemma-4-E4B-it",
+      "system_fingerprint": "b10856-895c045fd",
+      "object": "chat.completion.chunk"
+    }
+  },
+  {
+    "elapsed_ms": 8101.593352999771,
+    "event": {
+      "choices": [
+        {
+          "finish_reason": null,
+          "index": 0,
+          "delta": {
+            "content": "red"
+          }
+        }
+      ],
+      "created": 1788858123,
+      "id": "chatcmpl-K9EP0Q4AZA572rneTEI4U3aT46WyY0F5",
+      "model": "google/gemma-4-E4B-it",
+      "system_fingerprint": "b10856-895c045fd",
+      "object": "chat.completion.chunk"
+    }
+  },
+  {
+    "elapsed_ms": 8333.225291018607,
+    "event": {
+      "choices": [
+        {
+          "finish_reason": null,
+          "index": 0,
+          "delta": {
+            "content": "\n"
+          }
+        }
+      ],
+      "created": 1788858123,
+      "id": "chatcmpl-K9EP0Q4AZA572rneTEI4U3aT46WyY0F5",
+      "model": "google/gemma-4-E4B-it",
+      "system_fingerprint": "b10856-895c045fd",
+      "object": "chat.completion.chunk"
+    }
+  },
+  {
+    "elapsed_ms": 8364.254578016698,
+    "event": {
+      "choices": [
+        {
+          "finish_reason": null,
+          "index": 0,
+          "delta": {
+            "content": "green"
+          }
+        }
+      ],
+      "created": 1788858124,
+      "id": "chatcmpl-K9EP0Q4AZA572rneTEI4U3aT46WyY0F5",
+      "model": "google/gemma-4-E4B-it",
+      "system_fingerprint": "b10856-895c045fd",
+      "object": "chat.completion.chunk"
+    }
+  },
+  {
+    "elapsed_ms": 8835.203672002535,
+    "event": {
+      "choices": [
+        {
+          "finish_reason": null,
+          "index": 0,
+          "delta": {
+            "content": "\n"
+          }
+        }
+      ],
+      "created": 1788858124,
+      "id": "chatcmpl-K9EP0Q4AZA572rneTEI4U3aT46WyY0F5",
+      "model": "google/gemma-4-E4B-it",
+      "system_fingerprint": "b10856-895c045fd",
+      "object": "chat.completion.chunk"
+    }
+  },
+  {
+    "elapsed_ms": 8964.523448026739,
+    "event": {
+      "choices": [
+        {
+          "finish_reason": null,
+          "index": 0,
+          "delta": {
+            "content": "blue"
+          }
+        }
+      ],
+      "created": 1788858124,
+      "id": "chatcmpl-K9EP0Q4AZA572rneTEI4U3aT46WyY0F5",
+      "model": "google/gemma-4-E4B-it",
+      "system_fingerprint": "b10856-895c045fd",
+      "object": "chat.completion.chunk"
+    }
+  },
+  {
+    "elapsed_ms": 9061.092428019037,
+    "event": {
+      "choices": [
+        {
+          "finish_reason": "stop",
+          "index": 0,
+          "delta": {}
+        }
+      ],
+      "created": 1788858124,
+      "id": "chatcmpl-K9EP0Q4AZA572rneTEI4U3aT46WyY0F5",
+      "model": "google/gemma-4-E4B-it",
+      "system_fingerprint": "b10856-895c045fd",
+      "object": "chat.completion.chunk"
+    }
+  },
+  {
+    "elapsed_ms": 9061.273291008547,
+    "event": {
+      "choices": [],
+      "created": 1788858124,
+      "id": "chatcmpl-K9EP0Q4AZA572rneTEI4U3aT46WyY0F5",
+      "model": "google/gemma-4-E4B-it",
+      "system_fingerprint": "b10856-895c045fd",
+      "object": "chat.completion.chunk",
+      "usage": {
+        "completion_tokens": 6,
+        "prompt_tokens": 34,
+        "total_tokens": 40,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 34,
+        "prompt_ms": 7783.367,
+        "prompt_per_token_ms": 228.9225588235294,
+        "prompt_per_second": 4.368289456221196,
+        "predicted_n": 6,
+        "predicted_ms": 952.093,
+        "predicted_per_token_ms": 190.4186,
+        "predicted_per_second": 5.251587817576645
+      }
+    }
+  }
+]

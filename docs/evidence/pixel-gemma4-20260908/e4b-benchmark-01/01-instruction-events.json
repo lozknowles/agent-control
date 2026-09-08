@@ -1,0 +1,164 @@
+[
+  {
+    "elapsed_ms": 5690.1420099893585,
+    "event": {
+      "choices": [
+        {
+          "finish_reason": null,
+          "index": 0,
+          "delta": {
+            "role": "assistant",
+            "content": null
+          }
+        }
+      ],
+      "created": 1788857914,
+      "id": "chatcmpl-RgyrQzEDY232kgoZuLfBVUJSSKVsfB6e",
+      "model": "google/gemma-4-E4B-it",
+      "system_fingerprint": "b10856-895c045fd",
+      "object": "chat.completion.chunk"
+    }
+  },
+  {
+    "elapsed_ms": 5690.1733269914985,
+    "event": {
+      "choices": [
+        {
+          "finish_reason": null,
+          "index": 0,
+          "delta": {
+            "content": "red"
+          }
+        }
+      ],
+      "created": 1788857914,
+      "id": "chatcmpl-RgyrQzEDY232kgoZuLfBVUJSSKVsfB6e",
+      "model": "google/gemma-4-E4B-it",
+      "system_fingerprint": "b10856-895c045fd",
+      "object": "chat.completion.chunk"
+    }
+  },
+  {
+    "elapsed_ms": 5897.035489993868,
+    "event": {
+      "choices": [
+        {
+          "finish_reason": null,
+          "index": 0,
+          "delta": {
+            "content": "\n"
+          }
+        }
+      ],
+      "created": 1788857914,
+      "id": "chatcmpl-RgyrQzEDY232kgoZuLfBVUJSSKVsfB6e",
+      "model": "google/gemma-4-E4B-it",
+      "system_fingerprint": "b10856-895c045fd",
+      "object": "chat.completion.chunk"
+    }
+  },
+  {
+    "elapsed_ms": 6037.872166984016,
+    "event": {
+      "choices": [
+        {
+          "finish_reason": null,
+          "index": 0,
+          "delta": {
+            "content": "green"
+          }
+        }
+      ],
+      "created": 1788857914,
+      "id": "chatcmpl-RgyrQzEDY232kgoZuLfBVUJSSKVsfB6e",
+      "model": "google/gemma-4-E4B-it",
+      "system_fingerprint": "b10856-895c045fd",
+      "object": "chat.completion.chunk"
+    }
+  },
+  {
+    "elapsed_ms": 6419.1577619931195,
+    "event": {
+      "choices": [
+        {
+          "finish_reason": null,
+          "index": 0,
+          "delta": {
+            "content": "\n"
+          }
+        }
+      ],
+      "created": 1788857915,
+      "id": "chatcmpl-RgyrQzEDY232kgoZuLfBVUJSSKVsfB6e",
+      "model": "google/gemma-4-E4B-it",
+      "system_fingerprint": "b10856-895c045fd",
+      "object": "chat.completion.chunk"
+    }
+  },
+  {
+    "elapsed_ms": 6819.527566985926,
+    "event": {
+      "choices": [
+        {
+          "finish_reason": null,
+          "index": 0,
+          "delta": {
+            "content": "blue"
+          }
+        }
+      ],
+      "created": 1788857915,
+      "id": "chatcmpl-RgyrQzEDY232kgoZuLfBVUJSSKVsfB6e",
+      "model": "google/gemma-4-E4B-it",
+      "system_fingerprint": "b10856-895c045fd",
+      "object": "chat.completion.chunk"
+    }
+  },
+  {
+    "elapsed_ms": 7048.931586992694,
+    "event": {
+      "choices": [
+        {
+          "finish_reason": "stop",
+          "index": 0,
+          "delta": {}
+        }
+      ],
+      "created": 1788857915,
+      "id": "chatcmpl-RgyrQzEDY232kgoZuLfBVUJSSKVsfB6e",
+      "model": "google/gemma-4-E4B-it",
+      "system_fingerprint": "b10856-895c045fd",
+      "object": "chat.completion.chunk"
+    }
+  },
+  {
+    "elapsed_ms": 7049.214561993722,
+    "event": {
+      "choices": [],
+      "created": 1788857915,
+      "id": "chatcmpl-RgyrQzEDY232kgoZuLfBVUJSSKVsfB6e",
+      "model": "google/gemma-4-E4B-it",
+      "system_fingerprint": "b10856-895c045fd",
+      "object": "chat.completion.chunk",
+      "usage": {
+        "completion_tokens": 6,
+        "prompt_tokens": 34,
+        "total_tokens": 40,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 34,
+        "prompt_ms": 5282.753,
+        "prompt_per_token_ms": 155.3750882352941,
+        "prompt_per_second": 6.436038179335662,
+        "predicted_n": 6,
+        "predicted_ms": 1392.472,
+        "predicted_per_token_ms": 278.4944,
+        "predicted_per_second": 3.5907364744138484
+      }
+    }
+  }
+]

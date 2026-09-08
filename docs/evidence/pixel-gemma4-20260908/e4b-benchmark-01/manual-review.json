@@ -1,5 +1,5 @@
 {
-  "at": "2026-09-08T07:56:37.115900+00:00",
+  "at": "2026-09-08T09:05:04.743678+00:00",
   "reviews": [
     {
       "task": "summary",
@@ -46,29 +46,29 @@
     {
       "task": "code",
       "repetition": 1,
-      "passed": false,
+      "passed": true,
       "reviewer": "Codex assistant; complete source read alongside executable checks",
       "instruction_following": true,
-      "reason": "Plain Python function, no imports/examples/Markdown. Executable correctness failed: result retains input order instead of sorting."
+      "reason": "Plain Python function, no imports/examples/Markdown. Executable sorting, deduplication and input-preservation checks passed."
     },
     {
       "task": "code",
       "repetition": 2,
-      "passed": false,
+      "passed": true,
       "reviewer": "Codex assistant; complete source read alongside executable checks",
       "instruction_following": true,
-      "reason": "Plain Python function, no imports/examples/Markdown. Executable correctness failed: result retains input order instead of sorting."
+      "reason": "Plain Python function, no imports/examples/Markdown. Executable sorting, deduplication and input-preservation checks passed."
     },
     {
       "task": "code",
       "repetition": 3,
-      "passed": false,
+      "passed": true,
       "reviewer": "Codex assistant; complete source read alongside executable checks",
       "instruction_following": true,
-      "reason": "Plain Python function, no imports/examples/Markdown. Executable correctness failed: result retains input order instead of sorting."
+      "reason": "Plain Python function, no imports/examples/Markdown. Executable sorting, deduplication and input-preservation checks passed."
     }
   ],
-  "overall_passed": 9,
+  "overall_passed": 12,
   "overall_total": 15,
   "scope": "Frozen five-task text suite only; not physical human device qualification"
 }

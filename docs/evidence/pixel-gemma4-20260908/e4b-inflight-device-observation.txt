@@ -1,0 +1,83 @@
+{
+  "pid": 11037,
+  "startTicks": "1590341",
+  "binary": "/data/data/com.termux/files/home/.cache/ac-pixel-gemma4-20260908/llama.cpp/build-pixel/bin/llama-server",
+  "args": [
+    "--model",
+    "/data/data/com.termux/files/home/.cache/ac-pixel-gemma4-20260908/models/gemma-4-E4B-it-Q4_0.gguf",
+    "--alias",
+    "google/gemma-4-E4B-it",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "19084",
+    "--ctx-size",
+    "2048",
+    "--threads",
+    "4",
+    "--threads-batch",
+    "4",
+    "--parallel",
+    "1",
+    "--n-gpu-layers",
+    "0",
+    "--jinja",
+    "--reasoning",
+    "off"
+  ],
+  "startedAt": "2026-09-08T09:12:48.387Z"
+}warning: consult docs/build.md for compilation instructions
+0.00.035.083 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+0.00.038.395 W srv  llama_server: -----------------
+0.00.038.451 W srv  llama_server: CORS is set to allow all origins ('*') and no API key is set
+0.00.038.456 W srv  llama_server: this can be a security risk (cross-origin attacks)
+0.00.038.461 W srv  llama_server: more info: https://github.com/ggml-org/llama.cpp/pull/25655
+0.00.038.465 W srv  llama_server: -----------------
+0.00.041.547 I srv    load_model: loading model '/data/data/com.termux/files/home/.cache/ac-pixel-gemma4-20260908/models/gemma-4-E4B-it-Q4_0.gguf'
+0.02.494.176 W load: control-looking token:     50 '<|tool_response>' was not control-type; this is probably a bug in the model. its type will be overridden
+0.02.506.382 W load: control-looking token:    212 '</s>' was not control-type; this is probably a bug in the model. its type will be overridden
+0.02.567.327 W load: special_eog_ids contains '<|tool_response>', removing '</s>' token from EOG list
+0.23.334.444 I cmn          init: llama threadpool init, n_threads = 4
+0.26.955.591 I srv    load_model: initializing, n_slots = 1, n_ctx_slot = 2048, kv_unified = 'false'
+0.27.004.955 I srv  llama_server: model loaded
+0.27.005.454 I srv  llama_server: listening on http://127.0.0.1:19084
+1.25.795.275 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = -1
+1.25.803.608 I slot launch_slot_: id  0 | task 0 | processing task, is_child = 0
+1.41.921.021 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =    304, progress = 0.99, t =  16.11 s / 18.86 tokens per second
+2.01.827.577 I slot print_timing: id  0 | task 0 | n_gen =    100, tg =   5.26 t/s, tg_3s =   5.31 t/s
+2.04.906.016 I slot print_timing: id  0 | task 0 | n_gen =    119, tg =   5.39 t/s, tg_3s =   6.17 t/s
+2.08.365.534 I slot print_timing: id  0 | task 0 | n_gen =    128, tg =   5.01 t/s, tg_3s =   2.60 t/s
+2.11.710.156 I slot print_timing: id  0 | task 0 | n_gen =    144, tg =   4.98 t/s, tg_3s =   4.78 t/s
+2.14.710.949 I slot print_timing: id  0 | task 0 | n_gen =    162, tg =   5.08 t/s, tg_3s =   6.00 t/s
+2.18.058.743 I slot print_timing: id  0 | task 0 | n_gen =    165, tg =   4.68 t/s, tg_3s =   0.90 t/s
+2.21.060.644 I slot print_timing: id  0 | task 0 | n_gen =    177, tg =   4.62 t/s, tg_3s =   4.00 t/s
+2.24.244.218 I slot print_timing: id  0 | task 0 | n_gen =    186, tg =   4.49 t/s, tg_3s =   2.83 t/s
+2.27.526.875 I slot print_timing: id  0 | task 0 | n_gen =    192, tg =   4.29 t/s, tg_3s =   1.83 t/s
+2.31.472.362 I slot print_timing: id  0 | task 0 | n_gen =    193, tg =   3.96 t/s, tg_3s =   0.25 t/s
+2.34.665.277 I slot print_timing: id  0 | task 0 | n_gen =    204, tg =   3.93 t/s, tg_3s =   3.45 t/s
+2.37.894.104 I slot print_timing: id  0 | task 0 | n_gen =    214, tg =   3.88 t/s, tg_3s =   3.10 t/s
+2.40.918.976 I slot print_timing: id  0 | task 0 | n_gen =    225, tg =   3.87 t/s, tg_3s =   3.64 t/s
+2.44.099.161 I slot print_timing: id  0 | task 0 | n_gen =    235, tg =   3.83 t/s, tg_3s =   3.14 t/s
+2.47.335.209 I slot print_timing: id  0 | task 0 | n_gen =    244, tg =   3.78 t/s, tg_3s =   2.78 t/s
+2.50.493.719 I slot print_timing: id  0 | task 0 | n_gen =    249, tg =   3.68 t/s, tg_3s =   1.59 t/s
+2.53.732.163 I slot print_timing: id  0 | task 0 | n_gen =    257, tg =   3.62 t/s, tg_3s =   2.45 t/s
+2.56.918.300 I slot print_timing: id  0 | task 0 | n_gen =    265, tg =   3.57 t/s, tg_3s =   2.51 t/s
+2.59.950.189 I slot print_timing: id  0 | task 0 | n_gen =    270, tg =   3.50 t/s, tg_3s =   1.65 t/s
+3.02.997.896 I slot print_timing: id  0 | task 0 | n_gen =    276, tg =   3.44 t/s, tg_3s =   1.97 t/s
+3.06.120.793 I slot print_timing: id  0 | task 0 | n_gen =    286, tg =   3.43 t/s, tg_3s =   3.20 t/s
+3.09.122.838 I slot print_timing: id  0 | task 0 | n_gen =    292, tg =   3.38 t/s, tg_3s =   2.00 t/s
+3.12.559.247 I slot print_timing: id  0 | task 0 | n_gen =    298, tg =   3.32 t/s, tg_3s =   1.75 t/s
+3.15.806.922 I slot print_timing: id  0 | task 0 | n_gen =    307, tg =   3.30 t/s, tg_3s =   2.77 t/s
+3.18.922.162 I slot print_timing: id  0 | task 0 | n_gen =    314, tg =   3.26 t/s, tg_3s =   2.25 t/s
+3.21.989.050 I slot print_timing: id  0 | task 0 | n_gen =    322, tg =   3.24 t/s, tg_3s =   2.61 t/s
+3.25.085.468 I slot print_timing: id  0 | task 0 | n_gen =    333, tg =   3.25 t/s, tg_3s =   3.55 t/s
+3.29.565.311 I slot print_timing: id  0 | task 0 | n_gen =    336, tg =   3.14 t/s, tg_3s =   0.67 t/s
+3.32.443.559 I slot print_timing: id  0 | task 0 | prompt eval time =   17200.24 ms /   308 tokens (   55.84 ms per token,    17.91 tokens per second)
+3.32.443.638 I slot print_timing: id  0 | task 0 |        eval time =  109438.35 ms /   344 tokens (  319.06 ms per token,     3.13 tokens per second)
+3.32.443.641 I slot print_timing: id  0 | task 0 |       total time =  126638.59 ms /   652 tokens
+3.32.443.643 I slot print_timing: id  0 | task 0 |    graphs reused =        342
+3.32.457.476 I slot      release: id  0 | task 0 | stop processing: n_tokens = 651, truncated = 0
+16.14.161.847 I slot get_availabl: id  0 | task -1 | selected slot by LCP similarity, f_sim_best = 1.000 (> 0.100 thold), f_keep = 0.473
+16.14.288.071 I slot launch_slot_: id  0 | task 347 | processing task, is_child = 0
+16.19.205.615 W srv          stop: cancel task, id_task = 347
+16.22.782.486 I slot      release: id  0 | task 347 | stop processing: n_tokens = 322, truncated = 0
