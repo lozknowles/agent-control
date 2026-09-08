@@ -11,15 +11,16 @@ export function spokenJobSummary(number:number,result:{status:string;durationMs?
   return `Agent Control ${reference} ${outcome[result.status]??'has an update'}.`;
 }
 export function prepareSpokenText(text:string) {
-  const spoken=text.replace(/\b[a-f0-9]{32,64}\b/gi,'identifier shown in the transcript').replace(/\b\d+\.\d+\.\d+\b/g,version=>version.split('.').map(part=>spokenNumber(Number(part))).join(' point '));
+  const spoken=normalizeGroupedNumbers(text).replace(/\b[a-f0-9]{32,64}\b/gi,'identifier shown in the transcript').replace(/\b\d+\.\d+\.\d+\b/g,version=>version.split('.').map(part=>spokenNumber(Number(part))).join(' point '));
   const lines=spoken.split('\n').map(line=>line.trim()).filter(line=>line&&!/^https?:|^Work Parcel:/.test(line)).map(line=>line.replace(/\s+\((?:agent control|operator|provider reported|estimated|unavailable)\)\s*$/i,'').replace(/:\s*/g,', ').replace(/[.!?]+$/,'')).filter(Boolean);
   return `${lines.join('. ').replace(/\b\d{1,6}\b/g,value=>spokenNumber(Number(value))).replace(/\s+/g,' ').trim().slice(0,999)}.`;
 }
 export function speechContentCoverage(expected:string,observed:string) {
-  const tokens=(value:string)=>new Set((value.toLowerCase().match(/[a-z]+|\d+/g)??[]).flatMap(token=>/^\d+$/.test(token)?spokenNumber(Number(token)).split(' '):[token]));
+  const tokens=(value:string)=>new Set((normalizeGroupedNumbers(value).toLowerCase().match(/[a-z]+|\d+/g)??[]).flatMap(token=>/^\d+$/.test(token)?spokenNumber(Number(token)).split(' '):[token]));
   const target=tokens(expected),actual=tokens(observed),matched=[...target].filter(token=>actual.has(token)).length,coverage=target.size?matched/target.size:0;
   const critical=new Set('no not never cannot zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty thirty forty fifty sixty seventy eighty ninety hundred thousand'.split(' '));
   const criticalMatch=[...critical].every(token=>target.has(token)===actual.has(token));
   const precision=actual.size?matched/actual.size:0;
   return {matched:coverage>=0.8&&precision>=0.8&&criticalMatch,coverage};
 }
+function normalizeGroupedNumbers(value:string){return value.replace(/\b\d{1,3}(?:,\d{3})+\b/g,number=>number.replaceAll(',',''));}
