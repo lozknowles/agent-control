@@ -29,3 +29,16 @@ test('barge-in cannot let an old audio completion advance a paused tour',async()
 test('decode failure leaves the feature paused with captions retained',async()=>{
  const f=fixture();await f.api.speak({id:'tour-1'});f.api.view.audio.onerror();assert.equal(f.api.state(),'paused');assert.equal(f.node('#poe-tour-next').disabled,true);assert.match(f.node('#poe-audio-caption').textContent,/highlighted feature/);
 });
+
+ test('retired audio errors cannot overwrite interruption or a retried reply',async()=>{
+ const f=fixture();await f.api.speak({id:'tour-1'});const staleError=f.api.view.audio.onerror;
+ f.api.stopLocal();staleError();assert.equal(f.api.view.localState,'INTERRUPTED');
+ await f.api.speak({id:'tour-1'});const active=f.api.view.playback;staleError();
+ assert.equal(f.api.view.localState,'SPEAKING');assert.equal(f.api.view.playback,active);
+});
+test('retired completion cannot finish a newer attempt of the same reply',async()=>{
+ const f=fixture();await f.api.speak({id:'tour-1'});const staleEnd=f.api.view.audio.onended;
+ f.api.stopLocal();await f.api.speak({id:'tour-1'});staleEnd();
+ assert.equal(f.api.state(),'playing');assert.equal(f.node('#poe-tour-next').disabled,true);
+ f.api.view.audio.onended();assert.equal(f.api.state(),'complete');
+});
