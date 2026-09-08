@@ -65,10 +65,12 @@ export class PoeOperatorRuntime {
   schedules() {
     return this.options.runtime.catalog.listSchedules().map(schedule => ({...schedule, state: this.options.runtime.ledger.schedule(schedule.metadata.id) ?? null}));
   }
-  async projection(actor: string, conversationId: string) {
+  async projection(actor: string, conversationId: string, approvedBenchmarkParcelIds: readonly string[] = []) {
     const read = (fn: () => unknown[]) => {try {return {available: true, records: fn()};} catch {return {available: false, records: []};}};
     const registries=await Promise.all((this.options.registries??[]).map(source=>source.refresh()));
-    const owned=[...this.proposals.values()].filter(p=>p.actor===actor&&p.conversationId===conversationId&&p.operation!=='CANCEL'&&p.state==='SUBMITTED'&&p.parcelId).map(p=>this.options.parcels.get(p.parcelId!));
+    // Additional IDs come only from PoeRuntime's approved, conversation-owned proposals.
+    const parcelIds=[...this.proposals.values()].filter(p=>p.actor===actor&&p.conversationId===conversationId&&p.operation!=='CANCEL'&&p.state==='SUBMITTED'&&p.parcelId).map(p=>p.parcelId!);
+    const owned=[...new Set([...parcelIds,...approvedBenchmarkParcelIds])].map(id=>this.options.parcels.get(id));
     return {batch:reconcilePoeBatch(owned),handovers:owned.flatMap(poeParcelHandovers),registries, jobs: this.catalogue(), schedules: this.schedules(), savedJobs: read(() => this.options.sources.savedJobs()), savedSchedules: read(() => this.options.sources.parameterizedSchedules()), proposals: [...this.proposals.values()].filter(item => item.actor === actor && item.conversationId === conversationId).map(item=>({...copy(item),execution:item.parcelId?this.options.sources.resolve({kind:'parcel',id:item.parcelId}):null,executionStatus:item.parcelId?this.options.parcels.get(item.parcelId).status:null})), observedAt: this.clock().toISOString()};
   }
   private matches(text: string) {
