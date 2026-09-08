@@ -140,15 +140,40 @@
       <section class="crew-vocabulary" aria-labelledby="crew-vocabulary-title"><h3 id="crew-vocabulary-title">Supported state vocabulary</h3><div id="crew-state-vocabulary" class="crew-state-chips"></div></section>
     </section>
   </main>
+  <button id="poe-launcher" type="button" class="button poe-launcher" aria-controls="poe-workspace" aria-expanded="false">Talk to POE</button>
   <main id="poe-workspace" class="poe-shell" hidden>
     <aside class="panel poe-residence">
-      <div class="poe-room" aria-hidden="true"><div class="poe-window"></div><div id="poe-character" class="poe-character" data-state="IDLE"><i class="poe-halo"></i><i class="poe-head"><b></b><em></em></i><i class="poe-collar"></i><i class="poe-coat"></i><i class="poe-hand"></i><i class="poe-hologram"></i></div><div class="poe-desk"></div></div>
+      <div class="poe-room" aria-hidden="true"><div class="poe-window"></div><div id="poe-character" class="poe-character" data-state="IDLE"><svg viewBox="0 0 300 390" role="img" aria-label="POE, an original moustached digital hotelier in a dark waistcoat" xmlns="http://www.w3.org/2000/svg">
+<defs><linearGradient id="poe-waistcoat" x2="1" y2="1"><stop stop-color="#42404a"/><stop offset="1" stop-color="#161a24"/></linearGradient><linearGradient id="poe-skin" x2="1" y2="1"><stop stop-color="#e9bc94"/><stop offset="1" stop-color="#b78162"/></linearGradient></defs>
+<ellipse cx="151" cy="367" rx="106" ry="12" fill="#080c11" opacity=".6"/>
+<g class="poe-body"><path d="M99 198 Q68 207 58 252 L55 335 93 346 108 261M201 198 Q232 207 242 252 L245 335 207 346 192 261" fill="#d7d1c4" stroke="#a19b90" stroke-width="2"/>
+<path d="M109 186L192 186 212 347Q153 370 87 347Z" fill="url(#poe-waistcoat)" stroke="#747079" stroke-width="2"/>
+<path d="M109 184L150 242 192 184 170 191 150 205 129 191Z" fill="#f0e9dc"/>
+<path d="M141 209L158 209 167 240 151 259 137 240Z" fill="#743b44" stroke="#bd7b72"/>
+<path d="M109 193L150 253 191 193M151 254L151 346" fill="none" stroke="#8b8176" stroke-width="2"/>
+<g fill="#b89a5d"><circle cx="153" cy="270" r="3"/><circle cx="153" cy="293" r="3"/><circle cx="153" cy="316" r="3"/></g>
+<path d="M167 289Q208 336 200 279" fill="none" stroke="#c6a763" stroke-width="2"/><path d="M176 275H204" stroke="#9f8d73" stroke-width="3"/>
+<g class="poe-arm-left"><path d="M78 234Q48 264 49 314L81 319 106 258" fill="#dad4c5" stroke="#948e84" stroke-width="2"/><path d="M49 305L84 311 83 329 48 325Z" fill="#f0ebdf"/><path d="M51 326Q43 350 55 358L75 358 79 329" fill="url(#poe-skin)" stroke="#805a4a"/></g>
+<g class="poe-arm-right"><path d="M220 234Q246 261 238 306L208 302 196 256" fill="#dad4c5" stroke="#948e84" stroke-width="2"/><path d="M207 294L239 298 237 316 205 312Z" fill="#f0ebdf"/><path d="M209 314Q200 334 213 345L232 343 234 317" fill="url(#poe-skin)" stroke="#805a4a"/><path d="M211 330L218 337M219 326L226 337" stroke="#8f6451" fill="none"/></g>
+<g class="poe-head-group"><path d="M132 166L131 195 151 208 174 194 170 166" fill="url(#poe-skin)"/>
+<ellipse cx="102" cy="128" rx="12" ry="21" fill="#bf8b6c"/><ellipse cx="199" cy="128" rx="12" ry="21" fill="#bf8b6c"/>
+<path d="M102 99Q98 52 148 51 202 49 202 100L195 151Q190 180 150 190 113 181 107 154Z" fill="url(#poe-skin)" stroke="#87614e" stroke-width="2"/>
+<path d="M102 117Q80 62 112 45 153 24 187 50 214 58 201 117L189 80Q155 88 122 68L113 109Z" fill="#32313a"/><path d="M110 65Q151 32 186 63M106 84L101 109M194 77L200 104" fill="none" stroke="#777179" stroke-width="3"/>
+<g class="poe-brows" fill="none" stroke="#41353a" stroke-width="5" stroke-linecap="round"><path d="M118 112Q130 103 141 110"/><path d="M160 110Q173 103 185 113"/></g>
+<g class="poe-eyes"><path d="M117 123Q130 114 141 123Q129 130 117 123M160 123Q173 114 186 123Q174 130 160 123" fill="#f2e1c9"/><circle cx="131" cy="122" r="4" fill="#514939"/><circle cx="172" cy="122" r="4" fill="#514939"/><circle cx="132" cy="121" r="1.4" fill="#fff"/><circle cx="173" cy="121" r="1.4" fill="#fff"/></g>
+<path d="M152 121L146 143Q151 148 158 143" stroke="#9b6850" fill="none" stroke-width="2"/>
+<ellipse class="poe-mouth" cx="151" cy="164" rx="13" ry="2.3" fill="#613d39"/>
+<path d="M150 148Q140 143 132 151 122 159 114 149Q115 168 135 161L151 155 166 162Q188 168 189 149 179 161 169 151 161 143 150 148Z" fill="#3e3034"/>
+<path d="M136 177Q150 181 165 176" fill="none" stroke="#a7765d"/>
+</g></g>
+<g class="poe-digital" fill="none" stroke="#cfa960" opacity=".6"><path d="M24 85V59H52M248 59H276V85M24 327V353H42M259 353H277V327"/><circle cx="254" cy="184" r="14"/><path d="M254 174V184L262 188"/></g>
+</svg></div><div class="poe-desk"></div></div>
       <div class="poe-identity"><span class="eyebrow">Resident conversational operator</span><h1>POE</h1><p>Evidence guide, benchmark designer and liaison to the Agent Control Crew.</p><span id="poe-state" class="status-pill neutral">IDLE</span></div>
       <div id="poe-grounding" class="poe-grounding">Truth precedes charm. Records absent from Agent Control remain unavailable.</div>
-      <button id="poe-interrupt" class="button warning" type="button" disabled>Interrupt speech</button>
+      <div class="poe-audio-controls"><button id="poe-interrupt" class="button warning" type="button" disabled>Stop speaking</button><button id="poe-close" class="button secondary" type="button">Close panel</button><button id="poe-enable-audio" class="button secondary" type="button">Enable audio</button><button id="poe-play-reply" class="button secondary" type="button" hidden>Play reply</button></div><p id="poe-audio-message" role="status">Typed conversation is available. Enable audio to hear OmniVoice replies.</p><p id="poe-audio-caption" class="poe-caption"></p>
     </aside>
     <section class="panel poe-conversation-panel">
-      <header class="poe-heading"><div><span class="eyebrow">Grounded conversation</span><h2 id="poe-conversation-title">Conversation</h2></div><div><button id="poe-new-conversation" class="button secondary" type="button">New conversation</button><button id="poe-download-transcript" class="button secondary" type="button">Transcript</button></div></header>
+      <header class="poe-heading"><div><span class="eyebrow">Grounded conversation</span><small class="poe-route" id="poe-reasoning-route"></small><h2 id="poe-conversation-title">Conversation</h2></div><div><button id="poe-new-conversation" class="button secondary" type="button">New conversation</button><button id="poe-download-transcript" class="button secondary" type="button">Transcript</button></div></header>
       <div id="poe-reference" class="poe-reference" hidden></div>
       <ol id="poe-turns" class="poe-turns" aria-live="polite"></ol>
       <form id="poe-form" class="poe-form"><label for="poe-input">Ask POE</label><textarea id="poe-input" rows="3" placeholder="Ask what Agent Control knows, why it routed work, or whether a fair experiment would answer your question." required></textarea><div><small>POE can explain and propose. Consequential work still requires an approved Work Parcel.</small><button id="poe-speak" class="button secondary" type="button" disabled>Hold to speak</button><button class="button" type="submit">Ask</button></div></form>
@@ -157,7 +182,7 @@
       <div class="panel-heading"><div><span class="eyebrow">Approval-gated experiment design</span><h2>Benchmark proposals</h2></div><span id="poe-proposal-count" class="count">0</span></div>
       <p class="poe-benchmark-note">A draft does nothing. Freeze seals conditions; approval submits registered Jobs through a normal Work Parcel.</p>
       <details class="poe-builder"><summary>Design a benchmark</summary><form id="poe-benchmark-form"><label>Decision<textarea id="poe-benchmark-decision" rows="2" required placeholder="Which route should handle bounded repository reviews?"></textarea></label><label>Objective<textarea id="poe-benchmark-objective" rows="2" required></textarea></label><label>Why new evidence is needed<textarea id="poe-benchmark-reason" rows="2" required></textarea></label><label>Conditions, stages and metrics (validated JSON)<textarea id="poe-benchmark-json" rows="16" spellcheck="false" required></textarea></label><button class="button" type="submit">Create draft</button></form></details>
-      <div id="poe-proposals" class="poe-proposals"></div>
+      <p id="poe-batch-summary" class="poe-benchmark-note"></p><div id="poe-handover-list"></div><details id="poe-source-details"><summary>Selected knowledge source</summary><pre id="poe-source-text"></pre></details><div id="poe-job-proposals" class="poe-proposals"></div><details id="poe-catalogue" class="poe-builder"></details><details id="poe-schedules" class="poe-builder"></details><div id="poe-proposals" class="poe-proposals"></div>
     </aside>
   </main>
   <main id="configuration-workspace" class="configuration-shell" hidden>

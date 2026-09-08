@@ -1,3 +1,4 @@
+import {registerOperatorObservation} from './poe-observation-job.js';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import type {AgentControlConfig} from './config.js';
@@ -34,6 +35,7 @@ export function buildJobRuntimeDefinition(config: AgentControlConfig, manifestDi
   const parcelJobs = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../config/work-parcels/jobs');
   const operatorJobs = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../config/operator-jobs');
   const workers = WorkerRegistry.fromConfig(config.resources), managedNodes = new ManagedNodeManager(config.resources, workers, new SshManagedNodeTransport()), actions = registerProtectedResourceModelActions(config, modelRegistry, codexNodeExecution, registerOperatorReviewActions(config, registerFreeTokenQualificationActions(registerManagedNodeActions(managedNodes, registerBrowserActions(registerRepositoryTestActions(registerReferenceActions(), config)))), harnessEfficiency), harnessEfficiency), catalog = new JobCatalog(actions.ids()).loadDirectory(manifestDir).loadDirectory(parcelJobs);
+  registerOperatorObservation(actions, catalog, workers);
   if (process.env.AGENT_CONTROL_ENABLE_OPERATOR_REVIEW === 'true') catalog.loadDirectory(operatorJobs);
   return {workers, managedNodes, actions, catalog};
 }

@@ -13,6 +13,7 @@ parser.add_argument('--device', default='cuda:0')
 parser.add_argument('--port', type=int, default=19194)
 parser.add_argument('--state', required=True)
 parser.add_argument('--qualify', action='store_true')
+parser.add_argument('--voice-config', help='Explicit original designed voice JSON; no HTTP-selected voice changes')
 args = parser.parse_args()
 state = Path(args.state); state.mkdir(parents=True, exist_ok=True)
 os.environ.setdefault('HF_HOME', str(state/'hf-cache'))
@@ -50,6 +51,11 @@ if args.device.startswith('xpu'):
     model.audio_tokenizer.to(args.device)
 startup_ms = (time.perf_counter()-started)*1000
 voice = {'id':'agent-control-designed-v1','kind':'designed','provider':'omnivoice','modelRevision':'c5fdb5ccb189668d56333f77ba2629f4cd7535f4','instruction':'female, low pitch, british accent','seed':3901}
+if args.voice_config:
+    candidate=json.loads(Path(args.voice_config).read_text())
+    if candidate.get('kind')!='designed' or candidate.get('provider')!='omnivoice' or candidate.get('modelRevision')!=voice['modelRevision'] or not candidate.get('id') or not candidate.get('instruction') or not isinstance(candidate.get('seed'),int):
+        raise ValueError('invalid_original_voice_configuration')
+    voice=candidate
 recognizer = None
 
 def synchronize():
@@ -134,5 +140,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.respond(200,{'audio':base64.b64encode(data).decode(),'mime':'audio/ogg; codecs=opus','metrics':metrics})
             if self.path=='/transcribe':return self.respond(200,transcribe(base64.b64decode(value['audio'],validate=True)))
             self.respond(404,{'error':'not_found'})
-        except Exception:self.respond(422,{'error':'speech_request_failed'})
+        except Exception as error:
+            import traceback
+            print(json.dumps({'event':'speech_request_failed','errorClass':type(error).__name__,'frames':[{'file':Path(frame.filename).name,'line':frame.lineno} for frame in traceback.extract_tb(error.__traceback__)[-3:]]}),flush=True)
+            self.respond(422,{'error':'speech_request_failed'})
 HTTPServer(('127.0.0.1',args.port),Handler).serve_forever()
