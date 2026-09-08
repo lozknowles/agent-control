@@ -6,7 +6,15 @@ import test from 'node:test';
 
 // Immutable qualification evidence records the environment where a release was proven;
 // distributable configuration and runtime remain topology-neutral.
-const exceptions = new Set(['CHANGELOG.md', 'docs/evidence/infrastructure-agnostic-audit-3.0.1.md', 'docs/evidence/agent-control-3.4.0-release-qualification.md', 'docs/evidence/agent-control-3.8.1-qualification.md']);
+const exceptions = new Set([
+  'CHANGELOG.md',
+  'docs/evidence/infrastructure-agnostic-audit-3.0.1.md',
+  'docs/evidence/agent-control-3.4.0-release-qualification.md',
+  'docs/evidence/agent-control-3.8.1-qualification.md',
+  // Accepted immutable physical evidence records the qualified controller cwd.
+  // Runtime, configuration and operator documentation remain topology-neutral.
+  'docs/evidence/agent-control-4.0-pixel-social-continuation.json',
+]);
 const textExtensions = /\.(?:ts|mjs|js|json|ya?ml|md|sh|py)$/i;
 function sourceFiles(directory = '.') {
   const ignored = new Set(['.git', 'node_modules', '.agent-control', '.pdf-venv', 'qualification-results']);
