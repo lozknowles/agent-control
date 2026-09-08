@@ -90,8 +90,8 @@
     poeView.audio??=new Audio();poeView.audio.src=url;
     if(poeView.audioContext&&!poeView.analyser){const source=poeView.audioContext.createMediaElementSource(poeView.audio);poeView.analyser=poeView.audioContext.createAnalyser();poeView.analyser.fftSize=256;source.connect(poeView.analyser);poeView.analyser.connect(poeView.audioContext.destination);}
     animateMouth();poeView.playback={url,turnId:turn.id};q('#poe-audio-caption').textContent=audio.spokenText;q('#poe-play-reply').hidden=false;
-    poeView.audio.onended=()=>{if(poeView.playback?.turnId===turn.id){URL.revokeObjectURL(url);poeView.playback=null;q('#poe-play-reply').hidden=true;if(turn.purpose==='GREETING')sessionStorage.setItem('poe-greeting-spoken:'+turn.id,'yes');if(tourTurn?.id===turn.id&&tourSpeech==='playing')tourSpeech='complete';setLocal(null,'Speech finished.');announceNext().catch(fail)}};
-    poeView.audio.onerror=()=>{if(tourIndex>=0)tourSpeech='paused';if(poeView.playback?.url)URL.revokeObjectURL(poeView.playback.url);poeView.playback=null;q('#poe-play-reply').hidden=true;setLocal('FAILED','Browser audio decoding failed. The text and caption remain available.');};
+    poeView.audio.onended=()=>{if(epoch===poeView.epoch&&poeView.playback?.turnId===turn.id){URL.revokeObjectURL(url);poeView.playback=null;q('#poe-play-reply').hidden=true;if(turn.purpose==='GREETING')sessionStorage.setItem('poe-greeting-spoken:'+turn.id,'yes');if(tourTurn?.id===turn.id&&tourSpeech==='playing')tourSpeech='complete';setLocal(null,'Speech finished.');announceNext().catch(fail)}};
+    poeView.audio.onerror=()=>{if(epoch!==poeView.epoch||poeView.playback?.turnId!==turn.id)return;if(tourIndex>=0)tourSpeech='paused';if(poeView.playback?.url)URL.revokeObjectURL(poeView.playback.url);poeView.playback=null;q('#poe-play-reply').hidden=true;setLocal('FAILED','Browser audio decoding failed. The text and caption remain available.');};
     await playReply();
   }
   async function sendText(text,guidedEpoch=null){
