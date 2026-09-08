@@ -113,7 +113,7 @@ export class PoeOperatorRuntime {
       for(const source of registries){facts.push(this.fact(`${source.name}: schedules`,source.state==='OBSERVED'?source.schedules.length:null,`${source.source}/api/schedules`,source.state==='OBSERVED'?'LIVE_OBSERVED':'UNAVAILABLE'));for(const schedule of source.schedules)facts.push(this.fact(schedule.metadata.name,schedule,`${source.source}/api/schedules`, 'LIVE_OBSERVED'));}
       return this.result('Registered schedules', 'Only registered schedules are shown. A missing execution cursor or next run is unavailable, not a successful or scheduled run.', facts);
     }
-    if (/\b(?:systems?|machines?|pixel|overlay|network|termux|readiness)\b/i.test(text) && !/facebook|job|how.*works|purpose|explain.*system/i.test(text)) {
+    if (/\b(?:systems?|machines?|pixel|overlay|network|termux|readiness)\b/i.test(text) && !/facebook|\bjobs?\b|how.*works|purpose|\bexplain\s+(?:how\s+)?(?:the\s+)?system\b/i.test(text)) {
       const rows = this.options.sources.systems().filter(item => !/pixel/i.test(text) || /pixel/i.test(`${item.id} ${item.name}`));
       if (!rows.length) return this.unavailable('System readiness unavailable', 'No matching authoritative system observation is available. Reachability alone cannot establish browser or Facebook login readiness.');
       return this.result('Systems and readiness', 'These are the current readiness projections. Configured capability and observed authentication remain separate.', rows.map(item => this.fact(item.name, item, `system:${item.id}`)), rows.map(item => ({kind: 'system', id: item.id})));

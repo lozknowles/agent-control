@@ -126,3 +126,13 @@ test('approved benchmark handovers and completion remain scoped to the owning co
  assert.equal(unrelated!.batch.requested,0);assert.deepEqual(unrelated!.handovers,[]);
  assert.equal(f.poe.conversation(other.id).turns.filter(turn=>turn.purpose==='RESULT'||turn.purpose==='HANDOVER').length,0);
 });
+
+ test('guided Systems presentation retrieves current readiness instead of generic documentation',async t=>{
+ const f=fixture(t),question="[Operator-selected guided tour: Systems] As Agent Control's part-time tour guide, briefly explain the highlighted Systems area and what the operator can see or do there. Which systems and machines are currently available? Use authoritative evidence only, distinguish unavailable features, and keep the spoken explanation to two concise sentences.";
+ const answer=await f.ask(question);
+ assert.match(answer.turn.text,/Systems and readiness/);
+ assert.ok(answer.turn.evidence.some(fact=>fact.label==='Pixel'&&String(fact.value).includes('unknown')));
+ assert.equal(f.runtime.ledger.list().length,0);
+ const docs=await f.ask('Explain how the system works');
+ assert.equal(docs.turn.evidence[0]?.informationKind,'DOCUMENTATION');
+});
