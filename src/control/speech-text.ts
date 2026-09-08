@@ -11,7 +11,7 @@ export function spokenJobSummary(number:number,result:{status:string;durationMs?
   return `Agent Control ${reference} ${outcome[result.status]??'has an update'}.`;
 }
 export function prepareSpokenText(text:string) {
-  const spoken=normalizeGroupedNumbers(text).replace(/\b[a-f0-9]{32,64}\b/gi,'identifier shown in the transcript').replace(/\b\d+\.\d+\.\d+\b/g,version=>version.split('.').map(part=>spokenNumber(Number(part))).join(' point '));
+  const spoken=normalizeGroupedNumbers(text).replace(/`([^`]+)`/g,'$1').replace(/\b(?:\d{1,3}\.){3}\d{1,3}(?::\d{1,5})?\b/g,'address shown in the transcript').replace(/\b([01]?\d|2[0-3]):([0-5]\d)\b/g,(_value,hours,minutes)=>hours==='00'&&minutes==='00'?'midnight':spokenNumber(Number(hours))+(minutes==='00'?" o'clock":(Number(minutes)<10?' oh ':' ')+spokenNumber(Number(minutes)))).replace(/\b[a-f0-9]{32,64}\b/gi,'identifier shown in the transcript').replace(/\b\d+\.\d+\.\d+\b/g,version=>version.split('.').map(part=>spokenNumber(Number(part))).join(' point '));
   const lines=spoken.split('\n').map(line=>line.trim()).filter(line=>line&&!/^https?:|^Work Parcel:/.test(line)).map(line=>line.replace(/\s+\((?:agent control|operator|provider reported|estimated|unavailable)\)\s*$/i,'').replace(/:\s*/g,', ').replace(/[.!?]+$/,'')).filter(Boolean);
   return `${lines.join('. ').replace(/\b\d{1,6}\b/g,value=>spokenNumber(Number(value))).replace(/\s+/g,' ').trim().slice(0,999)}.`;
 }

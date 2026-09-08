@@ -22,3 +22,11 @@ test('spoken and transcribed thousands preserve actual regression totals',()=>{
  assert.equal(speechContentCoverage('One thousand seventy tests passed.','One, seventy tests passed.').matched,false);
  assert.equal(prepareSpokenText('One, two, three.'),'One, two, three.');
 });
+
+ test('spoken network identifiers stay in the transcript while versions remain readable',()=>{
+ assert.equal(prepareSpokenText('The device `127.0.0.1:38931` was not found. Version 4.1.0 is configured.'),'The device address shown in the transcript was not found. Version four point one point zero is configured.');
+});
+test('clock times speak as clock times rather than independent numeric fields',()=>{
+ assert.equal(prepareSpokenText('Scheduled at 09:00 UK and 15:05 UK.'),"Scheduled at nine o'clock UK and fifteen oh five UK.");
+ assert.equal(prepareSpokenText('Starts at 00:00.'),'Starts at midnight.');
+});
