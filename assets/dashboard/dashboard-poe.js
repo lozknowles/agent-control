@@ -17,6 +17,7 @@
   function setLocal(value,message){poeView.localState=value;if(message)q('#poe-audio-message').textContent=message;paintState()}
   function paintState(){const name=poeView.localState||poeView.conversation?.state||'IDLE';q('#poe-character').dataset.state=name;q('#poe-character').dataset.focus=poeView.reference?.kind||poeView.conversation?.lastReference?.kind||'conversation';q('#poe-state').textContent=name.replaceAll('_',' ');q('#poe-interrupt').disabled=!poeView.playback&&!poeView.busy;q('#poe-speak').disabled=!poeView.projection?.voice?.recognition;q('#poe-form button[type="submit"]').disabled=poeView.busy;}
   async function load(){
+    if(poeView.switching)return;
     if(poeView.loading)return poeView.loading;
     poeView.loading=(async()=>{
       if(state.operatorAuth!=='authenticated'){q('#poe-turns').textContent='Authenticate this dashboard tab before starting a conversation.';paintState();return}
@@ -89,7 +90,7 @@
     poeView.audio??=new Audio();poeView.audio.src=url;
     if(poeView.audioContext&&!poeView.analyser){const source=poeView.audioContext.createMediaElementSource(poeView.audio);poeView.analyser=poeView.audioContext.createAnalyser();poeView.analyser.fftSize=256;source.connect(poeView.analyser);poeView.analyser.connect(poeView.audioContext.destination);}
     animateMouth();poeView.playback={url,turnId:turn.id};q('#poe-audio-caption').textContent=audio.spokenText;q('#poe-play-reply').hidden=false;
-    poeView.audio.onended=()=>{if(poeView.playback?.turnId===turn.id){URL.revokeObjectURL(url);poeView.playback=null;setLocal(null,'Speech finished.')}};
+    poeView.audio.onended=()=>{if(poeView.playback?.turnId===turn.id){URL.revokeObjectURL(url);poeView.playback=null;setLocal(null,'Speech finished.');announceNext().catch(fail)}};
     poeView.audio.onerror=()=>setLocal('FAILED','Browser audio decoding failed. The text and caption remain available.');
     await playReply();
   }
@@ -125,7 +126,7 @@
     q('#poe-close').addEventListener('click',()=>{interrupt().catch(fail);endVoice();q('#poe-workspace').hidden=true;q('#poe-launcher').setAttribute('aria-expanded','false')});
     q('#poe-enable-audio').addEventListener('click',async()=>{try{await unlock();const greeting=poeView.conversation?.turns.find(turn=>turn.purpose==='GREETING');if(greeting&&!sessionStorage.getItem('poe-greeting-spoken:'+greeting.id)){sessionStorage.setItem('poe-greeting-spoken:'+greeting.id,'yes');queueAnnouncement(greeting);}else await announceNext();}catch(error){fail(error)}});q('#poe-play-reply').addEventListener('click',()=>playReply().catch(fail));
     q('#poe-interrupt').addEventListener('click',()=>interrupt().catch(fail));
-    q('#poe-new-conversation').addEventListener('click',async()=>{await interrupt();poeView.conversation=await post('/api/poe/conversations',{channel:'dashboard'});poeView.reference=null;setLocal(null);await load();if(poeView.voiceEnabled)queueAnnouncement(poeView.conversation.turns.find(turn=>turn.purpose==='GREETING'))});
+    q('#poe-new-conversation').addEventListener('click',async()=>{if(poeView.switching)return;poeView.switching=true;try{await poeView.loading;await interrupt();poeView.conversation=await post('/api/poe/conversations',{channel:'dashboard'});sessionStorage.setItem(key,poeView.conversation.id);poeView.reference=null;poeView.operator=null;setLocal(null);}catch(error){fail(error)}finally{poeView.switching=false;}await load();if(poeView.voiceEnabled)queueAnnouncement(poeView.conversation.turns.find(turn=>turn.purpose==='GREETING'))});
     q('#poe-form').addEventListener('submit',event=>{event.preventDefault();const input=q('#poe-input'),text=input.value;if(!text.trim()||poeView.busy)return;input.value='';sendText(text)});
     q('#poe-reference').addEventListener('click',event=>{if(event.target.id==='poe-clear-reference'){poeView.reference=null;render()}});
     q('#poe-download-transcript').addEventListener('click',()=>request(endpoint('transcript')).then(({transcript})=>{const url=URL.createObjectURL(new Blob([transcript],{type:'text/markdown'})),link=document.createElement('a');link.href=url;link.download='poe-conversation.md';link.click();URL.revokeObjectURL(url)}).catch(fail));
