@@ -95,6 +95,11 @@ provisioned Python environment, the approved local OmniVoice model path, and an
 unused loopback port. Its `--help` describes model, device, state and port options.
 Do not invoke its standalone `--qualify` generation/cloning experiment as startup.
 
+For the POE male worker, pass `--sentence-chunks` to render complete sentences
+with the same original voice seed and a 150 ms pause between sentences. This
+mode preserves the full text and the existing number/negation validation gate.
+It is explicitly selected per worker; other channel workers are unaffected.
+
 Synthesis and independent speech-content validation finish before playback. This
 adapter does not stream TTS. CPU generation can be slower than real time; an
 audio artifact alone does not prove speaker intelligibility or microphone input.
