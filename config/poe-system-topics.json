@@ -92,7 +92,7 @@
       "approval",
       "capabilities"
     ],
-    "text": "Authentication identifies the operator. Capabilities restrict what workers can do. Explicit approval authorizes only the reviewed action; materially changed actions need fresh approval.",
+    "text": "POE's proposed job starts and cancellations require explicit approval of the sealed request in the dashboard. Benchmark plans must be frozen and explicitly approved before submission. Reading status, inspecting evidence and conversation do not start work. Authentication identifies the operator; capabilities restrict workers. Approval covers only the reviewed action, so material changes require fresh approval. Schedule changes, staging and publication retain their separate governed controls and approval boundaries.",
     "source": "config/poe-system-topics.json#approvals"
   },
   {

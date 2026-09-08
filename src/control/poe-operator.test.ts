@@ -20,7 +20,7 @@ function fixture(t:TestContext) {
   const runtime=createJobRuntime(root,catalog,actions,workers),parcels=new WorkParcelCoordinator(runtime,new WorkParcelStore(path.join(root,'parcels.json')),{plan:async()=>{throw new Error('No model or planner invoked by fixture');}});
   const registration:OperatorRegistration={job:'operator-system-observation@1.1.0',purpose:'Observe the worker registry',owner:'Lane Master',changes:'Local evidence artifact only.',externalMutation:false,publication:false,permitted:true};
   const sources={systems:()=>[{id:'pixel',name:'Pixel',reachable:'unknown',authentication:'unknown'}],savedJobs:()=>[],parameterizedSchedules:()=>[],overview:()=>({title:'Status',summary:'Fixture state',facts:[],related:[]}),resolve:()=>({title:'Unavailable',summary:'Not observed',facts:[],related:[]})};
-  const operator=new PoeOperatorRuntime({runtime,parcels,sources,registrations:[registration],topics:[{id:'purpose',title:'Purpose',terms:['system works'],text:'Jobs execute through governed Work Parcels.',source:'config/poe-system-topics.json#purpose'}],file:path.join(root,'operator.json')});
+  const operator=new PoeOperatorRuntime({runtime,parcels,sources,registrations:[registration],topics:[{id:'purpose',title:'Purpose',terms:['system works'],text:'Jobs execute through governed Work Parcels.',source:'config/poe-system-topics.json#purpose'},{id:'approvals',title:'Approval boundaries',terms:['approval'],text:'Job starts require review of the sealed request.',source:'config/poe-system-topics.json#approvals'}],file:path.join(root,'operator.json')});
   const poe=new PoeRuntime({operator,evidence:sources,file:path.join(root,'poe.json'),benchmark:{submit:({actor,requestKey,plan,proposal})=>({parcelId:parcels.submitApprovedPlan(proposal.objective,actor,requestKey,plan).id})}}),conversation=poe.createConversation({actorId:'web-operator',channel:'dashboard'});
   const ask=(text:string)=>poe.ask({conversationId:conversation.id,text});
   return {operator,poe,conversation,ask,runtime,parcels,registration,catalog,workers};
@@ -34,6 +34,12 @@ test('catalogue and schedules come from real registrations, including disabled s
 test('system explanations and unknown readiness have explicit source classifications',async t=>{
   const f=fixture(t),docs=await f.ask('Explain how the system works'),systems=await f.ask('Is the Pixel ready?');
   assert.equal(docs.turn.evidence[0]?.informationKind,'DOCUMENTATION');assert.match(systems.turn.evidence[0]?.value as string,/unknown/);assert.equal(f.runtime.ledger.list().length,0);
+});
+
+test('natural approval questions retrieve the documented boundary without requesting work',async t=>{
+ const f=fixture(t),answer=await f.ask('What requires my approval?');
+ assert.ok(answer.turn.evidence.some(fact=>fact.label==='Approval boundaries'&&fact.informationKind==='DOCUMENTATION'));
+ assert.match(answer.turn.text,/sealed request/);assert.equal(f.parcels.list().length,0);
 });
 test('unknown and ambiguous job requests never execute',async t=>{
   const f=fixture(t);assert.match((await f.ask('Start impossible-job')).turn.text,/No registered job/);
