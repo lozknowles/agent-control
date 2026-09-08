@@ -16,6 +16,9 @@ export interface SocialExecutionPort {
   approvalSnapshot(parcelId: string, runId: string, action: string): string;
   decide(parcelId: string, runId: string, action: string, approved: boolean, actor: string): void;
 }
+export interface PoeSocialPort {
+  ask(input: {actor: string; identityReference: string; text: string; modality: 'text' | 'voice'}): Promise<{conversationId: string; text: string}> | {conversationId: string; text: string};
+}
 function spokenNumber(value:number):string {
   const small=['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen'];
   if(value<20)return small[value]!;
@@ -37,7 +40,7 @@ export class SocialVoiceCoordinator {
   private busy=false;
   private checkedAt=0;
   private providerHealth:unknown={social:'unchecked',speech:'unchecked',recognition:'unchecked'};
-  constructor(file:string, readonly provider:SocialChannelProvider, readonly execution:SocialExecutionPort, private readonly speech?:SpeechProvider, private readonly recognition?:SpeechRecognitionProvider, private readonly voice?:VoiceIdentity, private readonly clock=Date.now, private readonly onEvent?:(event:string)=>void) {
+  constructor(file:string, readonly provider:SocialChannelProvider, readonly execution:SocialExecutionPort, private readonly speech?:SpeechProvider, private readonly recognition?:SpeechRecognitionProvider, private readonly voice?:VoiceIdentity, private readonly clock=Date.now, private readonly onEvent?:(event:string)=>void, private readonly poe?:PoeSocialPort) {
     fs.mkdirSync(path.dirname(file),{recursive:true,mode:0o700});this.db=new DatabaseSync(file);fs.chmodSync(file,0o600);
     this.db.exec(`PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;
       CREATE TABLE IF NOT EXISTS inbox(key TEXT PRIMARY KEY,identity TEXT NOT NULL,message TEXT NOT NULL,state TEXT NOT NULL,at INTEGER NOT NULL);
@@ -52,7 +55,7 @@ export class SocialVoiceCoordinator {
     this.db.exec("UPDATE spoken SET state='uncertain' WHERE state='sending'");
   }
   close(){if(this.busy)throw new Error('social_worker_busy');this.db.close();}
-  accepts(text:string) {return /^(start\s|voice\s|(?:job|stop|pause|resume)\s+ac[- ]?\d+|(?:approve|reject)\s+\d+|models$|nodes$|health$|status$|what'?s agent control doing\??$)/i.test(text.trim());}
+  accepts(text:string) {return /^(?:poe(?:[, :]\s*|$)|ask poe(?:[, :]\s*|$)|start\s|voice\s|(?:job|stop|pause|resume)\s+ac[- ]?\d+|(?:approve|reject)\s+\d+|models$|nodes$|health$|status$|what'?s agent control doing\??$)/i.test(text.trim());}
   /** Only the authenticated transport ingress may call this. It must not be exposed as a public JSON API. */
   accept(message:SocialMessage) {
     message=this.provider.receive(message);
@@ -93,7 +96,7 @@ export class SocialVoiceCoordinator {
       const audio=await this.provider.downloadAudio(m.identity,m.mediaId);validateAudio(audio.bytes,audio.mime);
       const transcript=await this.recognition.transcribe({...audio,signal:AbortSignal.timeout(120000)});text=transcript.text.replace(/^agent control[, :]+/i,'').replace(/[.!?]+$/,'').trim();
       this.audit('speech.transcribed',identity,{text,confidence:transcript.confidence,metrics:transcript.metrics,authority:'untrusted transcription'});
-      if(!/^(?:status|jobs|health|models|nodes|what'?s agent control doing\??|(?:status |job )?ac[- ]?\d+)$/i.test(text.trim())){
+      if(!/^(?:poe(?:[, :]\s*).+|ask poe(?:[, :]\s*).+|status|jobs|health|models|nodes|what'?s agent control doing\??|(?:status |job )?ac[- ]?\d+)$/i.test(text.trim())){
         const template=principal.templates.find(name=>text.toLowerCase()===`start ${name.replaceAll('-',' ')}`||text.toLowerCase()===`start ${name}`);
         const command=template?`start ${template} voice`:undefined;
         if(command)this.db.prepare('INSERT OR REPLACE INTO confirmations(identity,sourceKey,command,expires,request,sourceReceivedAt) VALUES (?,?,?,?,?,?)').run(identity,key,command,this.clock()+300000,text,m.receivedAt);
@@ -101,7 +104,11 @@ export class SocialVoiceCoordinator {
       }
     }
     text=text.trim();let match:RegExpMatchArray|null;
-    if(/^(status|health|models|nodes|what'?s agent control doing\??)$/i.test(text)){
+    if((match=text.match(/^(?:poe|ask poe)(?:[, :]\s*)(.+)$/i))){
+      if(!this.poe){await this.reply(m,key,'POE is unavailable on this channel. The authenticated dashboard remains available.');this.audit('poe.unavailable',identity,{reason:'channel_adapter_unconfigured'});return;}
+      const answer=await this.poe.ask({actor:principal.actor,identityReference:identity,text:match[1]!.trim(),modality:m.kind==='audio'?'voice':'text'});
+      await this.reply(m,key,answer.text);this.audit('poe.response',identity,{conversationId:answer.conversationId,channel:this.provider.id,modality:m.kind==='audio'?'voice':'text',authority:'agent-control-evidence'});
+    }else if(/^(status|health|models|nodes|what'?s agent control doing\??)$/i.test(text)){
       const kind=/^(health|models|nodes)$/i.test(text)?text.toLowerCase() as 'health'|'models'|'nodes':'status';await this.reply(m,key,this.execution.overview(kind,principal.actor));
     }else if(/^jobs$/i.test(text)){const jobs=this.db.prepare('SELECT number,parcel FROM jobs WHERE identity=? AND parcel IS NOT NULL').all(identity) as Row[];await this.reply(m,key,jobs.map(j=>`AC-${j.number}: ${this.execution.observe(j.parcel).status}`).join('\n')||'No Social & Voice jobs yet.');
     }else if((match=text.match(/^start ([a-z0-9-]+)( voice)?$/i))){
@@ -118,7 +125,7 @@ export class SocialVoiceCoordinator {
     }else if((match=text.match(/^stop (ac[- ]?\d+)$/i))){const job=this.owned(match[1]!,identity);this.execution.stop(job.parcel,principal.actor);await this.reply(m,key,'Stop requested. Runtime cleanup remains authoritative.');
     }else if((match=text.match(/^voice (ac[- ]?\d+)$/i))){const job=this.owned(match[1]!,identity);this.db.prepare('UPDATE jobs SET voice=1 WHERE number=?').run(job.number);const result=this.execution.observe(job.parcel);await this.reply(m,key,`Voice summary enabled for AC-${job.number}. Text evidence remains available.`);if(terminal(result.status))await this.speak(m,key,spokenJobSummary(job.number,result));
     }else if((match=text.match(/^(approve|reject) (\d+)$/i))){await this.decide(m,key,identity,principal,Number(match[2]),match[1]!.toLowerCase()==='approve');
-    }else{await this.reply(m,key,'Unsupported or ambiguous request. Use status, start <approved-template>, job AC-1, stop AC-1, or voice AC-1. Pause/resume are not supported by this runtime.');this.audit('policy.denied',identity,{reason:'unsupported_or_ambiguous_intent'});}
+    }else{await this.reply(m,key,'Unsupported or ambiguous request. Use POE: <question>, status, start <approved-template>, job AC-1, stop AC-1, or voice AC-1. Pause/resume are not supported by this runtime.');this.audit('policy.denied',identity,{reason:'unsupported_or_ambiguous_intent'});}
   }
   private async speak(m:SocialMessage,key:string,text:string){
     if(!this.speech||!this.voice){this.audit('speech.text_fallback',who(m.identity),{reason:'provider_unconfigured'});return;}

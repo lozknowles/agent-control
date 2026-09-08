@@ -13,11 +13,12 @@
   <link rel="stylesheet" href="/dashboard-wopr.css">
   <link rel="stylesheet" href="/dashboard-adaptive-orchestration.css">
   <link rel="stylesheet" href="/dashboard-live-shell.css">
+  <link rel="stylesheet" href="/dashboard-poe.css">
 </head>
 <body>
   <header class="topbar">
     <div class="brand"><span class="brand-mark" aria-hidden="true">AC</span><div><strong>Agent Control</strong><small id="version">connecting</small></div></div>
-    <a class="button secondary" href="/social-voice.html">Social &amp; Voice</a><nav class="primary-nav" aria-label="Control views"><button class="primary-tab active" data-view="jobs">Jobs</button><button class="primary-tab" data-view="lanes">Lanes</button><button class="primary-tab" data-view="sessions">Sessions</button><button class="primary-tab" data-view="systems">Systems</button><button class="primary-tab" data-view="models">Models</button><button class="primary-tab" data-view="routing">Routing</button><button class="primary-tab" data-view="crew">Crew</button><button class="primary-tab" data-view="configuration">Configuration</button></nav>
+    <a class="button secondary" href="/social-voice.html">Social &amp; Voice</a><nav class="primary-nav" aria-label="Control views"><button class="primary-tab active" data-view="jobs">Jobs</button><button class="primary-tab" data-view="lanes">Lanes</button><button class="primary-tab" data-view="sessions">Sessions</button><button class="primary-tab" data-view="systems">Systems</button><button class="primary-tab" data-view="models">Models</button><button class="primary-tab" data-view="routing">Routing</button><button class="primary-tab" data-view="crew">Crew</button><button class="primary-tab poe-nav" data-view="poe">POE</button><button class="primary-tab" data-view="configuration">Configuration</button></nav>
     <div class="topbar-status"><span id="stream-state" class="status-pill neutral">CONNECTING</span><button id="health" class="status-pill neutral" title="Agent Control health; open downstream Systems readiness">UNKNOWN</button><button id="operator-button" class="button secondary">Operator authentication required</button></div>
   </header>
   <section id="persistent-usage" class="persistent-usage" aria-label="Persistent live model usage" aria-live="polite">
@@ -139,6 +140,26 @@
       <section class="crew-vocabulary" aria-labelledby="crew-vocabulary-title"><h3 id="crew-vocabulary-title">Supported state vocabulary</h3><div id="crew-state-vocabulary" class="crew-state-chips"></div></section>
     </section>
   </main>
+  <main id="poe-workspace" class="poe-shell" hidden>
+    <aside class="panel poe-residence">
+      <div class="poe-room" aria-hidden="true"><div class="poe-window"></div><div id="poe-character" class="poe-character" data-state="IDLE"><i class="poe-halo"></i><i class="poe-head"><b></b><em></em></i><i class="poe-collar"></i><i class="poe-coat"></i><i class="poe-hand"></i><i class="poe-hologram"></i></div><div class="poe-desk"></div></div>
+      <div class="poe-identity"><span class="eyebrow">Resident conversational operator</span><h1>POE</h1><p>Evidence guide, benchmark designer and liaison to the Agent Control Crew.</p><span id="poe-state" class="status-pill neutral">IDLE</span></div>
+      <div id="poe-grounding" class="poe-grounding">Truth precedes charm. Records absent from Agent Control remain unavailable.</div>
+      <button id="poe-interrupt" class="button warning" type="button" disabled>Interrupt speech</button>
+    </aside>
+    <section class="panel poe-conversation-panel">
+      <header class="poe-heading"><div><span class="eyebrow">Grounded conversation</span><h2 id="poe-conversation-title">Conversation</h2></div><div><button id="poe-new-conversation" class="button secondary" type="button">New conversation</button><button id="poe-download-transcript" class="button secondary" type="button">Transcript</button></div></header>
+      <div id="poe-reference" class="poe-reference" hidden></div>
+      <ol id="poe-turns" class="poe-turns" aria-live="polite"></ol>
+      <form id="poe-form" class="poe-form"><label for="poe-input">Ask POE</label><textarea id="poe-input" rows="3" placeholder="Ask what Agent Control knows, why it routed work, or whether a fair experiment would answer your question." required></textarea><div><small>POE can explain and propose. Consequential work still requires an approved Work Parcel.</small><button id="poe-speak" class="button secondary" type="button" disabled>Hold to speak</button><button class="button" type="submit">Ask</button></div></form>
+    </section>
+    <aside class="panel poe-benchmark-panel">
+      <div class="panel-heading"><div><span class="eyebrow">Approval-gated experiment design</span><h2>Benchmark proposals</h2></div><span id="poe-proposal-count" class="count">0</span></div>
+      <p class="poe-benchmark-note">A draft does nothing. Freeze seals conditions; approval submits registered Jobs through a normal Work Parcel.</p>
+      <details class="poe-builder"><summary>Design a benchmark</summary><form id="poe-benchmark-form"><label>Decision<textarea id="poe-benchmark-decision" rows="2" required placeholder="Which route should handle bounded repository reviews?"></textarea></label><label>Objective<textarea id="poe-benchmark-objective" rows="2" required></textarea></label><label>Why new evidence is needed<textarea id="poe-benchmark-reason" rows="2" required></textarea></label><label>Conditions, stages and metrics (validated JSON)<textarea id="poe-benchmark-json" rows="16" spellcheck="false" required></textarea></label><button class="button" type="submit">Create draft</button></form></details>
+      <div id="poe-proposals" class="poe-proposals"></div>
+    </aside>
+  </main>
   <main id="configuration-workspace" class="configuration-shell" hidden>
     <aside class="panel configuration-list-panel">
       <div class="panel-heading"><div><span class="eyebrow">Canonical inventory</span><h1>Configuration</h1></div><span id="configuration-count" class="count">0</span></div>
@@ -193,5 +214,6 @@
   <script src="/dashboard-wopr.js" defer></script>
   <script src="/dashboard-adaptive-orchestration.js" defer></script>
   <script src="/dashboard-live-shell.js" defer></script>
+  <script src="/dashboard-poe.js" defer></script>
 </body>
 </html>

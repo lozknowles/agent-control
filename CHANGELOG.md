@@ -1,5 +1,16 @@
 # Changelog
 
+## [Unreleased] — POE conversational operator
+
+- Renames the resident conversational helper to **POE** and adds an original state-driven dashboard concierge integrated with the existing six-member Crew. `IDLE`, `LISTENING`, `INVESTIGATING`, `THINKING`, `EXPLAINING`, `OBSERVING_CREW`, `DESIGNING_EXPERIMENT`, `WAITING_FOR_APPROVAL`, and `SPEAKING` derive from durable POE activity rather than simulated work.
+- Adds durable channel-scoped POE conversations, focused authoritative evidence adapters, explicit unavailable-state answers, human-readable transcript projection, contextual **Ask POE about this** controls, secret rejection, and prompt-injection containment. POE cannot grant authority or override governors, protected resources, credentials, release, deployment, or Live Shell controls.
+- Adds an optional provider-neutral response-model port. Model Registry roles separately select inexpensive status/explanation and stronger experiment-design routes; actual provider/account/model/node identity and usage/cost authority are retained. Invalid grounded citations or failed selected routes use a visibly labelled deterministic renderer without silently selecting another model.
+- Adds fair benchmark proposals with immutable fixture, tools, context, cache, authority, time, software/hardware/quantisation/endpoint disclosures, objective versus `HUMAN_EVALUATION` metrics, bounded conversational draft amendments, explicit revisions, stable SHA-256 freezing, exact approval, and materialised repetitions.
+- Connects approved proposals only to the existing `WorkParcelCoordinator` and registered Jobs. Request origin records `poe/dashboard`, conversation, proposal, frozen hash, actor, and request identity; normal capability routing, safety, execution, independent verification, accounting, and league evidence remain authoritative.
+- Adds optional original designed OmniVoice output, authoritative STT transcript retention, latency fields, and TTS-only barge-in. Cloned voices are rejected. Adds authenticated `POE: <question>` support to the existing WhatsApp Social & Voice path without widening consequential voice or command authority.
+- Adds focused deterministic coverage for grounding, unavailable records, model-role routing, invalid citations, channel provenance, WhatsApp idempotency, secret exclusion, fairness defects, draft revision, stale/hash-mismatched approval, normal Work Parcel execution, repetition materialisation, verification, voice latency, and interruption isolation.
+- Physical dashboard/OmniVoice qualification remains pending. No merge, tag, release, deployment, or physical-pass claim is part of this change.
+
 ## [4.0.0] — 2026-09-08
 
 - Integrates the governed Social & Voice/OpenWA ingress, canonical Work Parcel, adaptive Model/Workflow Leagues, token governor, sealed-baton handoff, independent verification, protected-resource policy, operational Crew/WOPR dashboard and Live Shell session projection on one isolated branch.

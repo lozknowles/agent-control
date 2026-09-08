@@ -483,6 +483,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelector('#systems-workspace').hidden = view !== 'systems';
     document.querySelector('#models-workspace').hidden = view !== 'models';
     document.querySelector('#crew-workspace').hidden = view !== 'crew';
+    document.querySelector('#poe-workspace').hidden = view !== 'poe';
     document.querySelector('#configuration-workspace').hidden = view !== 'configuration';
     document.querySelector('#routing-workspace').hidden = view !== 'routing';
     if(view==='configuration')loadConfiguration().catch(showError);

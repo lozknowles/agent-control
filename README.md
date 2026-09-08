@@ -73,6 +73,14 @@ Agent Control is provider-, model-, platform- and execution-environment-agnostic
 
 The dashboard is an observer and authenticated operator client over the same control service. Run and Lane **Execution history** correlates durable operator/system/provider/tool/governor/baton/error activity with telemetry, accounting and verification. It is not raw provider traffic, unredacted logs or hidden model reasoning.
 
+## POE conversational operator (development branch)
+
+POE is Agent Control's original resident conversational operator, evidence explainer, Crew liaison, benchmark designer, and optional OmniVoice interface. The Crew execute work; POE retrieves focused canonical records, explains what is known, admits what is unavailable, and turns an agreed experiment into a frozen proposal that still requires explicit operator approval. Approval submits registered Jobs through the normal Work Parcel, routing, governor, safety, verification, accounting, and league lifecycle—POE has no private execution path and no authority to overrule those controls.
+
+The dashboard adds a live POE workspace and contextual **Ask POE about this** controls. Authenticated WhatsApp supports `POE: <question>` through the existing enrolled/idempotent Social & Voice edge with a separate channel-scoped conversation. Optional OmniVoice uses an original designed voice, records available turn-latency fields, and treats barge-in as speech interruption rather than Work Parcel cancellation. A qualified conversational model can be selected with Model Registry roles; otherwise POE explicitly uses its deterministic grounded renderer. It never silently substitutes another model.
+
+See [POE operation and architecture](docs/poe.md), [dashboard operation](docs/web-dashboard.md), [Social & Voice](docs/social-voice/README.md), [Work Parcels](docs/work-parcels.md), and [adaptive orchestration](docs/adaptive-multi-model-orchestration.md). This isolated branch is implemented and deterministically tested but is not merged, released, deployed, or physically qualified.
+
 ## Protected-resource mutation governance
 
 The `RuntimeSafetySupervisor` allows natural Work Parcel constraints to become machine-enforced resource capabilities. For example, `origin/master must remain completely unchanged` compiles to a durable read-only `git-ref:origin/master` policy. A typed governed Git Action normalizes wrappers, chains, refspecs, force/delete/mirror forms and alternate working directories into semantic effects before dispatch. An intersecting mutation is denied before any handler or subprocess starts; an allowed feature-ref operation retains explicit external commit truth and independent verification evidence.
