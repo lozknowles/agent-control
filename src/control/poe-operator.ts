@@ -133,7 +133,7 @@ export class PoeOperatorRuntime {
       const row = matches[0]!;
       return {...this.result(row.name, 'Collection, staging and publication require distinct governed actions. Missing device, session, source-authorisation or publication evidence remains unavailable.', [this.fact('Registered definition', row, `job:${row.id}`, 'CONFIGURED_CAPABILITY'), this.fact('Live preflight', row.readiness, `workers:preflight:${row.id}`)], [{kind: 'job', id: row.id.split('@')[0]!}]), reference: {kind: 'job', id: row.id.split('@')[0]!}};
     }
-    if (/\b(?:how|explain|purpose|what.*(?:is|are))\b/i.test(text)) {
+    if (/\b(?:how|what|who|which|explain|purpose)\b/i.test(text)) {
       const selected = this.options.topics.filter(topic => topic.terms.some(term => text.toLowerCase().includes(term)));
       if (selected.length) return this.result('How Agent Control works', 'The following is versioned documentation, not a claim that those capabilities are ready on a particular machine.', selected.map(topic => this.fact(topic.title, topic.text, topic.source, 'DOCUMENTATION')));
     }

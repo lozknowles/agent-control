@@ -36,6 +36,64 @@ fixtures to physical qualification.
 | Full and public videos | Full recording remains private. Public edit, captions, transcript, complete intelligibility/sync/privacy review and public playback are pending. |
 | Release and deployment | No 4.1 release tag, merge or production rollout is claimed. |
 
+## Continuation evidence, 8 September 2026
+
+The version consistency repair passed the full suite at `c639187` (1,072 tests).
+The approved-benchmark handover/completion repair passed at `f432be4` (1,073
+tests, zero failures or skips). It reconciles only server-owned, approved
+benchmark parcels belonging to the authenticated conversation, along with that
+conversation's ordinary job requests. Its integration check executes the normal
+two-stage runtime, observes a real sealed baton and receipt, checks isolation and
+one-time announcements, and prevents early completion.
+
+An isolated clean configuration started successfully at `f432be4`: the API and
+CLI both reported 4.1.0, the dashboard loaded, private conversation access returned
+401 without authentication, and authenticated conversation/configuration reads
+succeeded. The owned test process stopped afterward. Package dry-run inspection
+found no credential/state directories in its 873-file, approximately 90.6 MB
+source archive. These results precede subsequent conversation-quality fixes;
+the final candidate requires a fresh runner and installation record.
+
+The real Windows Edge conversation
+`poe-conversation:264c1497-42ae-4c07-9b5b-77ba1dc4bb00` contains all 20 requested
+typed questions, a repeated role question after correction, and the exact
+registered-job follow-up. Its source packets distinguish the commits used by
+each answer. The original role answer described an internal response port;
+the corrected answer introduces the conversational operator and part-time tour
+guide. An approval question exposed a missing natural-language topic match,
+subsequently repaired with a regression check.
+
+The operator reviewed the actual `operator-system-observation@1.1.0` proposal and
+approved it through the interface at 20:51:50 UTC. Work Parcel
+`parcel-social-24c40a95958fefc1369d4ee9edb7e00df3cbaf4d01fe9c761d3bfb02f510c413`
+completed its observation and separate persisted-artifact verification, followed
+by POE's reconciled completion at 20:51:51 UTC. This deterministic control job
+invoked no model. Its verifier is a separate checking step, not an independent
+model agent. Private evidence retains the complete transcript, approval seal,
+source observations, parcel and verification records under
+`typed-browser-20260908/`.
+
+These typed and approval checks do not satisfy the audiovisual gate. The next
+native capture attempt failed its minimum-HD guard; Windows capture returned
+`IGraphicsCaptureItemInterop.CreateForMonitor` error `0x80070057`, and native
+window activation failed. The attempt was stopped. The user has been asked to
+restore the unlocked display and complete real microphone input, interruption
+and human voice/intelligibility confirmation. No accepted full recording, public
+edit or physical barge-in is claimed.
+
+Production discovery identified the isolated qualification dashboard but no
+existing general production dashboard supervisor/state target. Separate
+Collingham and monitoring units are preserved. The requested production target
+identity remains necessary to prepare its exact state backup and rollback.
+
+The separate website candidate `58405a9` adds the Agent Control link immediately
+after Murmuration for desktop and mobile, and a native-video overview page.
+The publication privacy build and all 13 existing Python tests pass. Headless
+1920, 390 and 320 pixel checks verify link order, layout and media references;
+desktop overview and narrow mobile homepage screenshots were visually reviewed.
+Accepted media, captions/transcript, release links and public playback are still
+pending. No website deployment has occurred.
+
 ## Discovered defects retained in evidence
 
 Previous video attempts captured the wrong physical tab, incorrect monitor bounds
