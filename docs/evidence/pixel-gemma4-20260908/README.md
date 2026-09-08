@@ -1,0 +1,27 @@
+# Pixel Gemma 4 qualification evidence — 2026-09-08
+
+Checkpoint: E2B physical text inference and a real Agent Control 4.0 job are proven. E4B download/qualification is still in progress. This is not a release gate or production-routing approval.
+
+Source release: v4.0.0 at `ff7ed114c08b71583e2a2d67b40d081f0b0a4c33`. The accepted E2B dashboard job ran product code at `6fab04d5f8184d56d371d9320d80441cb78223bd` in an isolated worktree. The existing daily dashboard remained its separate 3.9.0 deployment. Neither source tag nor earlier hpubuntu model work is Pixel inference evidence.
+
+Pixel: Pixel 8 Pro, Android 17, enrolled Termux SSH 8022 over Tailscale. Runtime: physical Android CPU build of llama.cpp `895c045fd104ced72132160245edcd6a86e50ba0`, b10856, Clang 21.1.8, four threads, one slot, no GPU layers, reasoning off. Runtime binary SHA-256 `202b42092b6bdce81e2cdc0fa430ce5706a25821a4003a9007aceedcdfbd8e56`.
+
+E2B: official identity `google/gemma-4-E2B-it`; maintainer GGUF revision `b4243c156154b6dca9324415f8c7ccc098b4aed1`; Q4_0 artifact SHA-256 `8e30dff3ac4c8434c49a7036fa15564bdbb6044e42bf04550bf1a096ad7e6a52`. The full hash was verified on the Pixel before loading.
+
+The frozen five-task suite ran three times at context 2048, with exact requests, complete outputs, SSE events and executable-check results under `e2b-benchmark-01`. Score: 9/15. All instruction, summary and uncertainty cases passed; JSON-only formatting and sorting code failed all repetitions. The Python verifier ran in a controller bubblewrap sandbox with no network. Assistant reviews are explicitly labelled. Model claims are not test results.
+
+Process-cold E2B load: 17,276.892 ms to health, including default warmup; OS page cache uncontrolled. Runtime generation rate: 8.901–14.071 tokens/s, median 13.194. Controller first-content latency: 1,102.468–1,777.869 ms. Total response: 1,369.801–6,879.925 ms. Sampled RSS max: 3,073,780 KiB. All 15 requests completed and the recorded runtime PID survived. Runtime-reported tokens, estimated context occupancy and character counts remain distinct. No starting charge, battery drain, temperature or sustained thermal limit was measurable under the current Android permissions. Three repetitions with transport/telemetry gaps do not establish continuous-duty thermal safety.
+
+Accepted E2B integration: `e2b-integration-04`, Job Run `7f8a1820-017b-4464-aa6b-46ef588a03a6`, Work Parcel `parcel-3ece97b8-6410-4895-a898-eebddcf1f9ec`. Authenticated dashboard input led through normal Work Parcels, the provider-neutral client, physical Pixel inference, independent review validation and the normal product transcript. Outcome `SUCCEEDED_WITH_FINDINGS`; 308 input / 405 output / 713 total runtime-reported tokens; no fallback. Workload/evidence verification runs on the controller; model inference runs on Pixel. The 4096-context integration run overlapped the separate E4B download and is not a clean performance benchmark.
+
+The unedited accepted dashboard MP4 SHA-256 is `0ff1c96ef04b86709623dde64e0cf1766c295008eb45c544d2d32723965fee30`; the full file is in the user evidence outputs and the controller evidence directory. Source WebM, raw transport, screenshots, ledger and full transcript are retained. Video is transcoded without cuts or speed changes.
+
+`e2b-disconnect-01` closes only the exact owned SSH forward after healthy preflight. The normal job records a provider failure, schedules one same-route retry, then fails; usage remains unavailable and no replacement model is used. `e2b-cancel-01` uses the authenticated dashboard Cancel Run during reconnect backoff. The product reports `DISCONNECTED`, cancellation cleanup unproven. This is truthful fail-closed behaviour, not proof of successful remote cancellation. Its observation was bounded and the controller capture was stopped without rewriting job status. The generic client lacks authoritative remote cancellation/reconciliation evidence in this path.
+
+Earlier integration attempts are retained in the full raw archive: 01 completed inference but lacked the original dashboard origin and had incomplete recording; 02 restored origin but exposed incorrect locality/fallback display defaults; 03 was an unsuccessful account-profile setup and dashboard startup failed. 04 supersedes these for accepted success evidence. No result was fabricated to fill a gap.
+
+The minimal product fixes preserve authenticated dashboard origin durably and show configured remote locality and sealed fallback policy accurately. The focused checks passed, and the full canonical check passed 1,015 tests after the final product changes. Harness/tool changes are isolated opt-in qualification tooling. Models remain experimental, `routingEligible: false`, with no automatic roles. No merge, tag, release or existing-service deployment is part of this work.
+
+Gallery's installed versionCode is 43. Upstream supports Gemma 4 LiteRT-LM packages, but qualified ADB is paired-disconnected with no current service. Gallery UI inference, installed runtime/backend and any serving API remain blocked/unproven. Its packages are different conversions from GGUF Q4_0 and cannot support an equivalent-quantisation speed claim.
+
+Ed's Flip7 needs its own runtime/build, memory, performance, thermal/battery, Android lifecycle, transport, genuine Agent Control jobs, transcripts, recording and recovery tests. Pixel results do not qualify it.

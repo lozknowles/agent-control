@@ -1,0 +1,26 @@
+{
+  "rss_sample_kib_min": 2568724,
+  "rss_sample_kib_max": 3073780,
+  "mem_available_sample_kib_min": 2336868,
+  "runtime_generation_rate_tps_min": 8.901323352895702,
+  "runtime_generation_rate_tps_median": 13.193530288552402,
+  "runtime_generation_rate_tps_max": 14.070713779168589,
+  "client_first_content_ms_min": 1102.4683630093932,
+  "client_first_content_ms_max": 1777.8690159902908,
+  "response_ms_min": 1369.8010170191992,
+  "response_ms_max": 6879.924590990413,
+  "wall_response_sum_ms_by_repetition": [
+    19505.53939305246,
+    19902.31319196755,
+    17165.95130501082
+  ],
+  "median_tps_by_repetition": [
+    12.460934968872584,
+    12.747265074278314,
+    13.948784712131957
+  ],
+  "failures": 0,
+  "temperature_c": null,
+  "charging": null,
+  "battery_percentage": null
+}

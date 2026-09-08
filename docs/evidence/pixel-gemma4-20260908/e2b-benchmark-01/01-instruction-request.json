@@ -1,0 +1,20 @@
+{
+  "model": "google/gemma-4-E2B-it",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Return exactly three lines, with no other text: first the word red, then the word green, then the word blue."
+    }
+  ],
+  "temperature": 0,
+  "seed": 42,
+  "max_tokens": 256,
+  "stream": true,
+  "stream_options": {
+    "include_usage": true
+  },
+  "cache_prompt": false,
+  "chat_template_kwargs": {
+    "enable_thinking": false
+  }
+}

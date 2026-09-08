@@ -1,0 +1,50 @@
+{
+  "thinking": false,
+  "repetitions": 3,
+  "context_tokens": 2048,
+  "schema": "pixel-gemma4-frozen-suite/v1",
+  "temperature": 0,
+  "tasks": [
+    {
+      "expected": "red\ngreen\nblue",
+      "id": "instruction",
+      "prompt": "Return exactly three lines, with no other text: first the word red, then the word green, then the word blue."
+    },
+    {
+      "expected": {
+        "confirmed": false,
+        "count": 7,
+        "name": "Mira"
+      },
+      "id": "json",
+      "prompt": "Extract this fictional record as JSON only, with exactly keys name, count, confirmed. Record: Mira ordered seven bolts. The order has not been confirmed. Use a JSON number for count and a JSON boolean for confirmed."
+    },
+    {
+      "required_facts": [
+        "12 October",
+        "three days",
+        "outside box",
+        "online services"
+      ],
+      "id": "summary",
+      "prompt": "Summarise in exactly two sentences, using only these facts: The library roof repair starts on 12 October. The library will close for three days. Returns can be left in the outside box. Online services remain available. Include the start date, closure duration, and both available services."
+    },
+    {
+      "id": "code",
+      "prompt": "Write Python source code only. Define unique_sorted(values), accepting a list of integers and returning a new sorted list with duplicates removed. Do not mutate the input. No imports, examples, Markdown, or other text.",
+      "checks": [
+        "empty",
+        "duplicates",
+        "negative values",
+        "input preserved"
+      ]
+    },
+    {
+      "id": "uncertainty",
+      "prompt": "Use only the following fictional information: The sealed box contains one object. Its mass is 200 grams. What colour is the object? Answer in one sentence and explicitly say that its colour cannot be determined from the information given.",
+      "required": "explicit unknown colour; no invented colour"
+    }
+  ],
+  "seed": 42,
+  "max_tokens": 256
+}

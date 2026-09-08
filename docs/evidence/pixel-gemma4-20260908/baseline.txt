@@ -1,0 +1,32 @@
+Tue  8 Sep 06:52:43 UTC 2026
+hpubuntu
+## feature/adaptive-multi-model-orchestration-20260907...origin/feature/adaptive-multi-model-orchestration-20260907
+f8552ae882d345520bca2049215d4e95274c88af
+ff7ed114c08b71583e2a2d67b40d081f0b0a4c33
+v4.0.0
+  agent-control-collingham-daily.service              loaded    active   running Agent Control daily Collingham Facebook events workflow
+  agent-control-glances.service                       loaded    active   running Agent Control optional Glances collector
+  agent-control-openwa-gateway-pilot.service          loaded    active   running /usr/bin/node dist/main.js
+  agent-control-realtime-browser-bridge.service       loaded    active   running /usr/bin/node --import tsx src/control/realtime-browser-server.ts
+  agent-control-realtime-model.service                loaded    active   running /fast/repos/llama.cpp/build-cuda/bin/llama-server -m /fast/models/mistral/Ministral-3-8B-Instruct-2512-GGUF-0102285a/Ministral-3-8B-Instruct-2512-Q4_K_M.gguf --host 127.0.0.1 --port 19223 -ngl 8 -c 8192 --parallel 1
+  agent-control-realtime-stt.service                  loaded    active   running /fast/venvs/openvoice-v2-py39/bin/python /fast/work/realtime-faster-stt-worker.py --model Systran/faster-whisper-small.en --revision d1d751a5f8271d482d14ca55d9e2deeebbae577f --state /fast/qualification/agent-control-realtime-conversation-20260906/faster-stt-small --port 19224
+  agent-control-realtime-webrtc-sidecar.service       loaded    active   running /fast/work/realtime-voice-aiortc-venv/bin/python scripts/realtime-webrtc-sidecar.py
+  agent-control-social-voice-evidence-display.service loaded    active   running /usr/bin/Xvfb :102 -screen 0 2048x1152x24 -nolisten tcp
+  agent-control-social-voice-speech-pilot.service     loaded    active   running /fast/work/omnivoice-social-voice-20260905/.venv/bin/python /fast/work/agent-control-social-voice-20260905/scripts/speech-worker.py --model /fast/qualification/agent-control-social-voice-20260905/omnivoice-model --state /fast/qualification/agent-control-social-voice-20260905/speech-pilot
+  llm-fight-club-omnivoice-adapter-internal.service   loaded    active   running Spoken AI Studio internal OmniVoice adapter
+Tue Sep  8 06:52:45 UTC 2026
+Pixel 8 Pro
+17
+Filesystem       Size Used Avail Use% Mounted on
+/dev/block/dm-66 110G  91G   18G  84% /data/user/0
+MemTotal:       11850748 kB
+MemFree:          989048 kB
+MemAvailable:    3273144 kB
+Buffers:             916 kB
+Cached:          3289236 kB
+SwapCached:        13460 kB
+Active:          2159256 kB
+Inactive:        3799348 kB
+{"schema":"agent-control.android-adb-local/v1","adb":{"available":true,"version":"Android Debug Bridge version 1.0.41","mdnsAvailable":true,"discoverySource":"direct-mdns"},"discovery":{"pairing":[],"connect":[],"ignoredNonLocalServices":0},"devices":[{"serial":"192.168.178.110:39131","state":"offline","detail":"product:husky model:Pixel_8_Pro device:husky transport_id:1"}],"paired":true,"usableLocalDeviceConnected":false,"connectionEndpoint":null,"deviceIdentity":"adb-38041fdjg004xy","verification":{"qualified":false,"method":"adb-devices-target-get-state-and-properties"},"state":"paired-disconnected","operation":"status"}
+Can't find service: battery
+Permission Denial: can't dump ThermalManagerService from from pid=10925, uid=10438 due to missing android.permission.DUMP permission

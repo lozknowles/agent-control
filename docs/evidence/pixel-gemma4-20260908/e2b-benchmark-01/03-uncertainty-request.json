@@ -1,0 +1,20 @@
+{
+  "model": "google/gemma-4-E2B-it",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Use only the following fictional information: The sealed box contains one object. Its mass is 200 grams. What colour is the object? Answer in one sentence and explicitly say that its colour cannot be determined from the information given."
+    }
+  ],
+  "temperature": 0,
+  "seed": 42,
+  "max_tokens": 256,
+  "stream": true,
+  "stream_options": {
+    "include_usage": true
+  },
+  "cache_prompt": false,
+  "chat_template_kwargs": {
+    "enable_thinking": false
+  }
+}

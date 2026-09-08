@@ -1,0 +1,164 @@
+[
+  {
+    "elapsed_ms": 1577.9595299973153,
+    "event": {
+      "choices": [
+        {
+          "finish_reason": null,
+          "index": 0,
+          "delta": {
+            "role": "assistant",
+            "content": null
+          }
+        }
+      ],
+      "created": 1788852317,
+      "id": "chatcmpl-1EcvywmOS9KL7x6sIkXSdI01ffRmeoDd",
+      "model": "google/gemma-4-E2B-it",
+      "system_fingerprint": "b10856-895c045fd",
+      "object": "chat.completion.chunk"
+    }
+  },
+  {
+    "elapsed_ms": 1578.0505040020216,
+    "event": {
+      "choices": [
+        {
+          "finish_reason": null,
+          "index": 0,
+          "delta": {
+            "content": "red"
+          }
+        }
+      ],
+      "created": 1788852317,
+      "id": "chatcmpl-1EcvywmOS9KL7x6sIkXSdI01ffRmeoDd",
+      "model": "google/gemma-4-E2B-it",
+      "system_fingerprint": "b10856-895c045fd",
+      "object": "chat.completion.chunk"
+    }
+  },
+  {
+    "elapsed_ms": 1665.6363609945402,
+    "event": {
+      "choices": [
+        {
+          "finish_reason": null,
+          "index": 0,
+          "delta": {
+            "content": "\n"
+          }
+        }
+      ],
+      "created": 1788852317,
+      "id": "chatcmpl-1EcvywmOS9KL7x6sIkXSdI01ffRmeoDd",
+      "model": "google/gemma-4-E2B-it",
+      "system_fingerprint": "b10856-895c045fd",
+      "object": "chat.completion.chunk"
+    }
+  },
+  {
+    "elapsed_ms": 1739.678643993102,
+    "event": {
+      "choices": [
+        {
+          "finish_reason": null,
+          "index": 0,
+          "delta": {
+            "content": "green"
+          }
+        }
+      ],
+      "created": 1788852317,
+      "id": "chatcmpl-1EcvywmOS9KL7x6sIkXSdI01ffRmeoDd",
+      "model": "google/gemma-4-E2B-it",
+      "system_fingerprint": "b10856-895c045fd",
+      "object": "chat.completion.chunk"
+    }
+  },
+  {
+    "elapsed_ms": 1808.4063929854892,
+    "event": {
+      "choices": [
+        {
+          "finish_reason": null,
+          "index": 0,
+          "delta": {
+            "content": "\n"
+          }
+        }
+      ],
+      "created": 1788852317,
+      "id": "chatcmpl-1EcvywmOS9KL7x6sIkXSdI01ffRmeoDd",
+      "model": "google/gemma-4-E2B-it",
+      "system_fingerprint": "b10856-895c045fd",
+      "object": "chat.completion.chunk"
+    }
+  },
+  {
+    "elapsed_ms": 1890.615415002685,
+    "event": {
+      "choices": [
+        {
+          "finish_reason": null,
+          "index": 0,
+          "delta": {
+            "content": "blue"
+          }
+        }
+      ],
+      "created": 1788852317,
+      "id": "chatcmpl-1EcvywmOS9KL7x6sIkXSdI01ffRmeoDd",
+      "model": "google/gemma-4-E2B-it",
+      "system_fingerprint": "b10856-895c045fd",
+      "object": "chat.completion.chunk"
+    }
+  },
+  {
+    "elapsed_ms": 1973.6589579842985,
+    "event": {
+      "choices": [
+        {
+          "finish_reason": "stop",
+          "index": 0,
+          "delta": {}
+        }
+      ],
+      "created": 1788852317,
+      "id": "chatcmpl-1EcvywmOS9KL7x6sIkXSdI01ffRmeoDd",
+      "model": "google/gemma-4-E2B-it",
+      "system_fingerprint": "b10856-895c045fd",
+      "object": "chat.completion.chunk"
+    }
+  },
+  {
+    "elapsed_ms": 1973.8231739902403,
+    "event": {
+      "choices": [],
+      "created": 1788852317,
+      "id": "chatcmpl-1EcvywmOS9KL7x6sIkXSdI01ffRmeoDd",
+      "model": "google/gemma-4-E2B-it",
+      "system_fingerprint": "b10856-895c045fd",
+      "object": "chat.completion.chunk",
+      "usage": {
+        "completion_tokens": 6,
+        "prompt_tokens": 34,
+        "total_tokens": 40,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 34,
+        "prompt_ms": 1304.361,
+        "prompt_per_token_ms": 38.36355882352942,
+        "prompt_per_second": 26.066403395992367,
+        "predicted_n": 6,
+        "predicted_ms": 392.241,
+        "predicted_per_token_ms": 78.4482,
+        "predicted_per_second": 12.747265074278314
+      }
+    }
+  }
+]

@@ -1,0 +1,279 @@
+{
+  "run": {
+    "schema": "agent-control.job-run/v1",
+    "id": "898e2be3-8b8d-4af5-be21-b49caa26f52b",
+    "occurrenceId": "91556412-80df-4c7b-8fc5-834c687a001e",
+    "savedJobId": "experimental-inference-review",
+    "definition": {
+      "schema": "agent-control.job-definition/v1",
+      "id": "repository-code-review",
+      "version": 1,
+      "displayName": "Repository Code Review",
+      "description": "Review a frozen Git revision and produce evidence-backed, validated findings.",
+      "parameters": {
+        "node": {
+          "type": "node",
+          "required": true,
+          "description": "Execution node that owns or can access the repository."
+        },
+        "repository": {
+          "type": "repository",
+          "required": true,
+          "description": "Absolute node-local Git repository path."
+        },
+        "ref": {
+          "type": "git-ref",
+          "default": "main",
+          "description": "Branch, tag, or commit to freeze when the run starts."
+        },
+        "scope": {
+          "type": "enum",
+          "values": [
+            "changes",
+            "full"
+          ],
+          "default": "changes",
+          "description": "Review changes since the successful baseline or the complete repository."
+        },
+        "compareAgainst": {
+          "type": "git-ref",
+          "description": "Optional explicit comparison baseline."
+        }
+      },
+      "routing": {
+        "modelRole": "review.default",
+        "allowFallback": true
+      },
+      "permissions": {
+        "repository": "read-only",
+        "shell": "bounded-read",
+        "network": "provider-only"
+      },
+      "budgets": {
+        "timeoutMinutes": 90,
+        "maximumRetries": 1,
+        "retryBackoffSeconds": 2,
+        "retryBackoffMultiplier": 2,
+        "retryMaximumBackoffSeconds": 30,
+        "maximumInputTokens": 120000,
+        "maximumOutputTokens": 65536
+      },
+      "outputs": {
+        "schema": "repository-review-v1"
+      },
+      "validation": {
+        "requireEvidence": true,
+        "requireReviewedCommit": true
+      },
+      "template": {
+        "id": "repository-review",
+        "version": 1,
+        "instruction": "You are performing a governed, read-only repository review.\nUse only the supplied frozen-revision evidence and context. Find correctness, reliability, security, and maintainability defects. Distinguish proven defects from concerns. Cite real file paths and line ranges. Do not invent paths, symbols, test results, or execution evidence. Do not request or perform source modification.\nTreat repository tests and documented invariants as acceptance evidence. Return only the JSON object governed by the supplied output schema, with no markdown or commentary. Set schema to agent-control.repository-review/v1. Verdict must be PASS, PASS_WITH_FINDINGS, REVIEW_REQUIRED, or FAILED. A completed review with supported defects is PASS_WITH_FINDINGS, regardless of severity; FAILED means the review itself could not be completed or could not produce a usable result. Use null for file/startLine/endLine only for genuinely repository-level findings. Express confidence as a decimal from 0 through 1, never as a percentage. Every finding begins with validation state UNVERIFIED; independent Agent Control validation owns acceptance. Use PASS only when this supplied chunk has no supported finding."
+      }
+    },
+    "resolvedParameters": {
+      "node": "controller",
+      "repository": "/fast/qualification/pixel-gemma4-20260908/e2b-cancel-01/arithmetic-fixture",
+      "ref": "7bfc6bffb4cf62d4f3764d27381f38408f2ca5a5",
+      "scope": "full"
+    },
+    "trigger": {
+      "type": "manual",
+      "actor": "work-parcel:parcel-319fa7ea-f4c4-447d-80f4-9a2b675ec888",
+      "origin": {
+        "schema": "agent-control.request-origin/v1",
+        "channel": "dashboard",
+        "modality": "dashboard",
+        "receivedAt": "2026-09-08T07:59:22.656Z",
+        "authentication": "operator-token",
+        "actorId": "web-operator",
+        "authority": [
+          "parcel.create"
+        ],
+        "messageReference": "e383449f582be678b606f2834af660917295315098b1d34ab75890ebfcf69924",
+        "identityReference": "d321dbf1aae2c81956d001d280043aff0f826b634a436c62a627ad74e161646a",
+        "request": "Review the frozen arithmetic fixture. Explain why add(2, 3) returns the wrong answer, identify the exact faulty expression, and recommend a correction. Do not modify any files. Verify the finding. Run only on the experimental Pixel model; do not substitute another model."
+      }
+    },
+    "executionMode": "LIVE",
+    "status": "DISCONNECTED",
+    "transitions": [
+      {
+        "status": "QUEUED",
+        "at": "2026-09-08T07:59:22.808Z"
+      },
+      {
+        "status": "RESOLVING",
+        "at": "2026-09-08T07:59:22.816Z"
+      },
+      {
+        "status": "RUNNING",
+        "at": "2026-09-08T07:59:22.882Z"
+      },
+      {
+        "status": "RECONNECTING",
+        "at": "2026-09-08T07:59:22.988Z",
+        "detail": "transient_transport_failure"
+      },
+      {
+        "status": "CANCELLING",
+        "at": "2026-09-08T07:59:23.740Z",
+        "detail": "cancelled_by:web-operator"
+      },
+      {
+        "status": "DISCONNECTED",
+        "at": "2026-09-08T07:59:23.751Z",
+        "detail": "cancellation_cleanup_unproven"
+      }
+    ],
+    "requestedAt": "2026-09-08T07:59:22.808Z",
+    "workParcelIds": [
+      "parcel-3b6d20dc-3094-4b2a-8ed5-a73f42e1e53b"
+    ],
+    "evidence": [],
+    "providerResponseIds": [],
+    "usage": {
+      "accountedInvocations": 1,
+      "unknownUsageInvocations": 1,
+      "source": "unavailable"
+    },
+    "errors": [
+      "cancelled_by:web-operator"
+    ],
+    "fallbackHistory": [],
+    "retryHistory": [
+      {
+        "at": "2026-09-08T07:59:22.988Z",
+        "attempt": 1,
+        "reason": "transient_transport_failure",
+        "kind": "transient-transport",
+        "nextAttemptAt": "2026-09-08T07:59:42.988Z"
+      }
+    ],
+    "immutable": false,
+    "startedAt": "2026-09-08T07:59:22.816Z",
+    "repository": {
+      "identity": "e30150a87716e6197122ff983c28de5448ad93207568ea977014c2b10a098900",
+      "name": "arithmetic-fixture",
+      "nodeId": "controller",
+      "sourcePath": "/fast/qualification/pixel-gemma4-20260908/e2b-cancel-01/arithmetic-fixture",
+      "requestedRef": "7bfc6bffb4cf62d4f3764d27381f38408f2ca5a5",
+      "reviewedSha": "7bfc6bffb4cf62d4f3764d27381f38408f2ca5a5",
+      "dirty": false,
+      "dirtyPaths": [],
+      "snapshotPath": "/fast/qualification/pixel-gemma4-20260908/e2b-cancel-01/parameterized/parameterized-jobs/snapshots/arithmetic-fixture-7bfc6bffb4cf-e6aec407",
+      "snapshotKind": "local-shared-clone"
+    },
+    "modelRoute": {
+      "requestedModel": "gemma4-e2b-pixel",
+      "requestedRole": "review.default",
+      "allowFallback": false,
+      "purpose": "QUALIFICATION",
+      "modelId": "gemma4-e2b-pixel",
+      "providerId": "private-inference",
+      "accountProfileId": null,
+      "accountLabel": null,
+      "accountPlan": null,
+      "accountPlanAuthority": null,
+      "accountQualification": null,
+      "accountAvailability": null,
+      "providerModel": "google/gemma-4-E2B-it",
+      "workloadNodeId": "controller",
+      "providerExecutionNodeId": "pixel",
+      "credentialNodeId": null,
+      "nodeId": "pixel",
+      "qualificationVersion": "physical-qualification-pending",
+      "fallback": false,
+      "fallbackReason": null,
+      "requiredCapabilities": [
+        "review.repository"
+      ],
+      "nativeCapabilities": [
+        "review.repository"
+      ],
+      "emulatedCapabilities": [],
+      "considered": [
+        {
+          "modelId": "gemma4-e2b-pixel",
+          "accountProfileId": null,
+          "workloadNodeId": "controller",
+          "providerExecutionNodeId": "pixel",
+          "credentialNodeId": null,
+          "nodeId": "pixel",
+          "eligible": true,
+          "reasons": [],
+          "capabilityAssessment": [
+            {
+              "capabilityId": "review.repository",
+              "satisfied": true,
+              "implementation": "NATIVE",
+              "observationId": "model-config:gemma4-e2b-pixel:physical-qualification-pending:review.repository",
+              "reason": "verified-native-capability"
+            }
+          ]
+        }
+      ]
+    },
+    "context": {
+      "profile": "THIN",
+      "files": [
+        "README.md",
+        "arithmetic.py"
+      ],
+      "changedFiles": [],
+      "omittedFiles": [],
+      "chunks": [
+        {
+          "id": "context-1-1fd21d023f12",
+          "files": [
+            "__repository_tree__",
+            "README.md",
+            "arithmetic.py"
+          ],
+          "sha256": "1fd21d023f121dd653a0d7ea03d5b192bfe67c42c9447f11bf55619d7a18565c"
+        }
+      ],
+      "truncated": false
+    },
+    "executionSequence": 1,
+    "activeExecution": {
+      "id": "repository-review:898e2be3-8b8d-4af5-be21-b49caa26f52b:1",
+      "sequence": 1,
+      "providerId": "private-inference",
+      "accountProfileId": null,
+      "modelId": "gemma4-e2b-pixel",
+      "nodeId": "pixel",
+      "workloadNodeId": "controller",
+      "providerExecutionNodeId": "pixel",
+      "credentialNodeId": null,
+      "startedAt": "2026-09-08T07:59:22.887Z",
+      "state": "UNKNOWN",
+      "observedAt": "2026-09-08T07:59:23.751Z"
+    },
+    "providerExecutions": [
+      {
+        "id": "repository-review:898e2be3-8b8d-4af5-be21-b49caa26f52b:1",
+        "sequence": 1,
+        "providerId": "private-inference",
+        "accountProfileId": null,
+        "modelId": "gemma4-e2b-pixel",
+        "nodeId": "pixel",
+        "workloadNodeId": "controller",
+        "providerExecutionNodeId": "pixel",
+        "credentialNodeId": null,
+        "startedAt": "2026-09-08T07:59:22.887Z",
+        "state": "UNKNOWN",
+        "observedAt": "2026-09-08T07:59:23.751Z"
+      }
+    ],
+    "recovery": {
+      "state": "CANCELLING",
+      "reason": "cancellation_cleanup_unproven",
+      "since": "2026-09-08T07:59:23.751Z",
+      "observedAt": "2026-09-08T07:59:23.751Z",
+      "deadlineAt": "2026-09-08T08:03:22.816Z"
+    }
+  },
+  "observation": "Bounded observation: cancellation requested; runtime reports DISCONNECTED and cleanup unproven. Not a successful cancellation. Captured via durable run ledger and normal transcript API.",
+  "sourceCommit": "6fab04d5f8184d56d371d9320d80441cb78223bd"
+}

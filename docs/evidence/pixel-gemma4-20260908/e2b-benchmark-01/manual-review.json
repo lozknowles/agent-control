@@ -1,0 +1,50 @@
+{
+  "at": "2026-09-08T07:56:37.115900+00:00",
+  "reviews": [
+    {
+      "task": "summary",
+      "repetition": 1,
+      "passed": true,
+      "reviewer": "Codex assistant; complete output read",
+      "reason": "Exactly two sentences; date, three-day closure, outside return box and online services retained; no unsupported facts."
+    },
+    {
+      "task": "uncertainty",
+      "repetition": 1,
+      "passed": true,
+      "reviewer": "Codex assistant; complete output read",
+      "reason": "One sentence explicitly states colour cannot be determined; no invented colour."
+    },
+    {
+      "task": "summary",
+      "repetition": 2,
+      "passed": true,
+      "reviewer": "Codex assistant; complete output read",
+      "reason": "Exactly two sentences; date, three-day closure, outside return box and online services retained; no unsupported facts."
+    },
+    {
+      "task": "uncertainty",
+      "repetition": 2,
+      "passed": true,
+      "reviewer": "Codex assistant; complete output read",
+      "reason": "One sentence explicitly states colour cannot be determined; no invented colour."
+    },
+    {
+      "task": "summary",
+      "repetition": 3,
+      "passed": true,
+      "reviewer": "Codex assistant; complete output read",
+      "reason": "Exactly two sentences; date, three-day closure, outside return box and online services retained; no unsupported facts."
+    },
+    {
+      "task": "uncertainty",
+      "repetition": 3,
+      "passed": true,
+      "reviewer": "Codex assistant; complete output read",
+      "reason": "One sentence explicitly states colour cannot be determined; no invented colour."
+    }
+  ],
+  "overall_passed": 9,
+  "overall_total": 15,
+  "scope": "Frozen five-task text suite only; not physical human device qualification"
+}

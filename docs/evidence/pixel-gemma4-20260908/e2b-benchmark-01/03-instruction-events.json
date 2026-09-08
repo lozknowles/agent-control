@@ -1,0 +1,164 @@
+[
+  {
+    "elapsed_ms": 1102.34756799764,
+    "event": {
+      "choices": [
+        {
+          "finish_reason": null,
+          "index": 0,
+          "delta": {
+            "role": "assistant",
+            "content": null
+          }
+        }
+      ],
+      "created": 1788852355,
+      "id": "chatcmpl-YjAsMldw1i8LWqKjU4oUmIfZcsSnNPOR",
+      "model": "google/gemma-4-E2B-it",
+      "system_fingerprint": "b10856-895c045fd",
+      "object": "chat.completion.chunk"
+    }
+  },
+  {
+    "elapsed_ms": 1102.461739006685,
+    "event": {
+      "choices": [
+        {
+          "finish_reason": null,
+          "index": 0,
+          "delta": {
+            "content": "red"
+          }
+        }
+      ],
+      "created": 1788852355,
+      "id": "chatcmpl-YjAsMldw1i8LWqKjU4oUmIfZcsSnNPOR",
+      "model": "google/gemma-4-E2B-it",
+      "system_fingerprint": "b10856-895c045fd",
+      "object": "chat.completion.chunk"
+    }
+  },
+  {
+    "elapsed_ms": 1111.566733015934,
+    "event": {
+      "choices": [
+        {
+          "finish_reason": null,
+          "index": 0,
+          "delta": {
+            "content": "\n"
+          }
+        }
+      ],
+      "created": 1788852355,
+      "id": "chatcmpl-YjAsMldw1i8LWqKjU4oUmIfZcsSnNPOR",
+      "model": "google/gemma-4-E2B-it",
+      "system_fingerprint": "b10856-895c045fd",
+      "object": "chat.completion.chunk"
+    }
+  },
+  {
+    "elapsed_ms": 1220.7214439986274,
+    "event": {
+      "choices": [
+        {
+          "finish_reason": null,
+          "index": 0,
+          "delta": {
+            "content": "green"
+          }
+        }
+      ],
+      "created": 1788852355,
+      "id": "chatcmpl-YjAsMldw1i8LWqKjU4oUmIfZcsSnNPOR",
+      "model": "google/gemma-4-E2B-it",
+      "system_fingerprint": "b10856-895c045fd",
+      "object": "chat.completion.chunk"
+    }
+  },
+  {
+    "elapsed_ms": 1220.8861340186559,
+    "event": {
+      "choices": [
+        {
+          "finish_reason": null,
+          "index": 0,
+          "delta": {
+            "content": "\n"
+          }
+        }
+      ],
+      "created": 1788852355,
+      "id": "chatcmpl-YjAsMldw1i8LWqKjU4oUmIfZcsSnNPOR",
+      "model": "google/gemma-4-E2B-it",
+      "system_fingerprint": "b10856-895c045fd",
+      "object": "chat.completion.chunk"
+    }
+  },
+  {
+    "elapsed_ms": 1298.1743620184716,
+    "event": {
+      "choices": [
+        {
+          "finish_reason": null,
+          "index": 0,
+          "delta": {
+            "content": "blue"
+          }
+        }
+      ],
+      "created": 1788852355,
+      "id": "chatcmpl-YjAsMldw1i8LWqKjU4oUmIfZcsSnNPOR",
+      "model": "google/gemma-4-E2B-it",
+      "system_fingerprint": "b10856-895c045fd",
+      "object": "chat.completion.chunk"
+    }
+  },
+  {
+    "elapsed_ms": 1369.447447010316,
+    "event": {
+      "choices": [
+        {
+          "finish_reason": "stop",
+          "index": 0,
+          "delta": {}
+        }
+      ],
+      "created": 1788852355,
+      "id": "chatcmpl-YjAsMldw1i8LWqKjU4oUmIfZcsSnNPOR",
+      "model": "google/gemma-4-E2B-it",
+      "system_fingerprint": "b10856-895c045fd",
+      "object": "chat.completion.chunk"
+    }
+  },
+  {
+    "elapsed_ms": 1369.5770479971543,
+    "event": {
+      "choices": [],
+      "created": 1788852355,
+      "id": "chatcmpl-YjAsMldw1i8LWqKjU4oUmIfZcsSnNPOR",
+      "model": "google/gemma-4-E2B-it",
+      "system_fingerprint": "b10856-895c045fd",
+      "object": "chat.completion.chunk",
+      "usage": {
+        "completion_tokens": 6,
+        "prompt_tokens": 34,
+        "total_tokens": 40,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 34,
+        "prompt_ms": 805.405,
+        "prompt_per_token_ms": 23.688382352941176,
+        "prompt_per_second": 42.214786349724676,
+        "predicted_n": 6,
+        "predicted_ms": 355.348,
+        "predicted_per_token_ms": 71.06960000000001,
+        "predicted_per_second": 14.070713779168589
+      }
+    }
+  }
+]
