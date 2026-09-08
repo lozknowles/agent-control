@@ -260,7 +260,10 @@ try {
   if (ingress === 'openwa') {
     socialPhase = await waitPhase('SOCIAL_CHANNEL_READY', 45_000);
     socialIngressEvidence = await sendPhysicalSocialRequest();
-    taskPhase = await waitPhase('TASK_RECEIVED', 45_000);
+    // WhatsApp delivery can legitimately lag after a handset/network wake. Keep
+    // the physical listener alive long enough for the gateway's bounded retry
+    // window; this still fails closed and never substitutes a synthetic event.
+    taskPhase = await waitPhase('TASK_RECEIVED', 180_000);
     await page.waitForFunction(() => /start governed-adaptive-crew|governed adaptive crew/i.test(document.querySelector('#work-parcel-list')?.textContent || document.body.textContent || ''), undefined, {timeout: 15_000});
     screenshots.push(await screenshot(page, '02-authenticated-social-work-parcel-request.png'));
     journey.push({at: new Date().toISOString(), view: 'jobs', outcome: 'real enrolled-device OpenWA command accepted through SocialVoiceCoordinator and shown as a live Work Parcel'});
@@ -354,8 +357,11 @@ try {
   completePhase = await waitPhase('QUALIFICATION_COMPLETE', 60_000);
   await page.click('[data-view="models"]'); await page.evaluate(() => scrollTo(0, 0));
   await page.waitForFunction(() => /COMPLETED/.test(document.querySelector('#persistent-usage-summary')?.textContent || '') && /total/i.test(document.querySelector('.persistent-usage-chain')?.textContent || ''), undefined, {timeout: 10_000});
-  const finalChainBox = await page.locator('.persistent-usage-chain').boundingBox();
-  if (!finalChainBox || finalChainBox.y < 0 || finalChainBox.y + finalChainBox.height > 1080) throw new Error(`final_model_chain_not_visible:${JSON.stringify(finalChainBox)}`);
+  const finalChainBox = await page.evaluate(() => {
+    const rect = [...document.querySelectorAll('.persistent-usage-chain')].map(node => node.getBoundingClientRect()).find(item => item.width > 0 && item.height > 0 && item.y >= 0 && item.bottom <= innerHeight);
+    return rect ? {x: rect.x, y: rect.y, width: rect.width, height: rect.height} : null;
+  });
+  if (!finalChainBox) throw new Error('final_model_chain_not_visible');
   completedDashboard = await currentDashboard(page);
   screenshots.push(await screenshot(page, '13-completed-reconciled-model-chain.png'));
   await page.click('[data-view="jobs"]');
