@@ -29,7 +29,7 @@ export class RoutedPoeResponseModel implements PoeResponseModelPort {
     private readonly fetcher: typeof fetch = fetch,
   ) {}
 
-  describe(){try{const route=this.route('STATUS_LOOKUP');return {state:'ELIGIBLE',route:{providerId:route.providerId,accountProfileId:route.accountProfileId??undefined,modelId:route.modelId,nodeId:route.providerExecutionNodeId}};}catch{return {state:'UNAVAILABLE',reason:'Configured reasoning route is unavailable; no alternative selected.'};}}
+  describe(){try{const route=this.route('STATUS_LOOKUP');return {state:'ELIGIBLE',route:{providerId:route.providerId,accountProfileId:route.accountProfileId??undefined,modelId:route.modelId,providerModel:this.models.model(route.modelId)?.providerModel,nodeId:route.providerExecutionNodeId}};}catch{return {state:'UNAVAILABLE',reason:'Configured reasoning route is unavailable; no alternative selected.'};}}
 
   async respond(input: Parameters<PoeResponseModelPort['respond']>[0]) {
     const route = this.route(input.purpose), provider = this.models.provider(route.providerId), model = this.models.model(route.modelId);
@@ -48,7 +48,7 @@ export class RoutedPoeResponseModel implements PoeResponseModelPort {
     return {
       text: parsed.text,
       citations: parsed.citations,
-      route: {providerId: route.providerId, ...(route.accountProfileId ? {accountProfileId: route.accountProfileId} : {}), modelId: route.modelId, nodeId: route.providerExecutionNodeId},
+      route: {providerId: route.providerId, ...(route.accountProfileId ? {accountProfileId: route.accountProfileId} : {}), modelId: route.modelId, providerModel:model.providerModel, nodeId: route.providerExecutionNodeId},
       usage: {
         inputTokens: result.usage.inputTokens,
         outputTokens: result.usage.outputTokens,

@@ -785,7 +785,15 @@ Benchmark proposals seal the operator question, evidence need, complete conditio
 
 OmniVoice remains behind existing STT/TTS contracts. POE accepts only an original designed voice, retains the transcription as untrusted content, records available turn-latency boundaries, and aborts only synthesis on barge-in. The Social & Voice coordinator accepts authenticated `POE:` questions into a distinct identity-hashed WhatsApp conversation; consequential work remains governed by existing template/text-confirmation or frozen-proposal approval flows. Live Shell remains independently authoritative for attachment and steering.
 
-The detailed contract, configuration, API, security, and qualification boundary are in [`docs/poe.md`](docs/poe.md).
+The floating browser companion is a client of this same service. Its compact panel leaves underlying dashboard navigation usable. Explicit tour selection unlocks browser audio, navigates and highlights a real component, requests a sourced explanation, and keeps Next disabled until the audio element emits completion. Autoplay, decoding and synthesis failures pause the tour; interruption invalidates older playback. Mouth movement uses the actual audio analyser, while runtime states and references drive restrained poses. Reduced motion disables these transforms and mouth modulation.
+
+`PoeOperatorRuntime` exposes real executable-job and schedule catalogues and an allowlisted default-input proposal adapter. Approval rechecks the actor, sealed request, definition/policy hashes, expiry and live worker capability before normal Work Parcel submission. `PoeKnowledgeIndex` reads only approved, bounded repository sources, hashes their contents and overlays live/configured observations. A retrieved instruction never becomes approval. Read-only remote registries do not grant remote execution or establish device/session readiness.
+
+`reconcilePoeBatch` requires terminal parents, no active children and no outstanding verification criteria before a final requested-set announcement. `poeParcelHandovers` reads actual sealed v2 batons and observes destination Run identity/start time before reporting receipt. Relay/Verity presentation labels do not imply a separate autonomous model. A harmless observation's separate deterministic artifact verifier proves artifact structure and integrity, not Facebook or remote-device readiness.
+
+The optional external full-test runner publishes bounded atomic progress with exact Git commit, phase, emitted counts, elapsed time and exit status. Its authenticated read-only projection is labelled `EXTERNAL_TEST_RUNNER` and never creates a Work Parcel. Totals and remaining counts stay null until discovered. POE narrates snapshots as observations because complete-audio synthesis introduces delay.
+
+The detailed contract, [event-to-animation mapping](docs/poe-dashboard-operator.md#state-and-animation-provenance), [4.1 runbook](docs/installation-deployment-4.1.md) and [qualification record](docs/evidence/agent-control-4.1-qualification.md) define the configuration and acceptance boundary.
 
 ## Release boundary
 

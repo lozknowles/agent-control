@@ -1,4 +1,4 @@
-# POE dashboard operator development
+# POE dashboard companion and operator
 
 This feature extends the reconciled conversational POE checkpoint `86b79677bbc5243056d94919b76aacfe36f3806a` on an isolated feature branch. It is development work, not a release or deployment.
 
@@ -45,7 +45,7 @@ Audio requires an explicit browser unlock. Denied microphone/autoplay access exp
 | Succeeded | Real parcel terminal success observed | Small downward head pose |
 | Reduced motion | Browser preference | Transform animation and audio mouth modulation disabled |
 
-Distinct watch-check scheduling, sealed-baton handoff, named-Crew directional gestures, security-refusal posture and prolonged-inactivity sleep are not implemented as distinct animation states. Generic operational poses must not be described as qualification of those requested gestures. The avatar is original vector artwork, not an actor likeness.
+Scheduling and handoff have dedicated restrained poses; the tour directs the head and arm toward the highlighted area. Security refusals use a labelled blocked state. These are presentation mappings, not proof that an operation occurred. Prolonged-inactivity sleep and independently voiced autonomous Crew agents are not claimed. The avatar is original vector artwork, not an actor likeness.
 
 ## Verification boundary
 
@@ -59,10 +59,16 @@ POE uses the provider-neutral response port and configured `poe.status` / `poe.r
 
 ## Compact greeting, voice and reconciliation
 
-The character occupies a compact header dock beside the conversation. Authenticated sessions receive an idempotent written greeting; browser audio requires an explicit unlock. New conversations greet again. `config/poe-voice-v2.json` defines an original designed male British voice using OmniVoice-supported instruction tokens. Point the private worker's `--voice-config` and each channel's configured voice identity at this same versioned identity. The browser and social adapter accept the same VoiceIdentity contract; this code does not change an already-running WhatsApp worker or deploy its configuration.
+The collapsed full-body character sits near the upper right, with keyboard and pointer repositioning. Clicking opens a 440-pixel conversation panel capped at 70% viewport height; a deliberate Expand control is separate. On narrow screens the duplicate launcher is hidden while the panel is open, preserving access to audio controls. Authenticated sessions receive an idempotent written greeting; browser audio requires an explicit unlock. New conversations greet again. `config/poe-voice-v2.json` defines an original designed male British voice using OmniVoice-supported instruction tokens. Point the private worker's `--voice-config` and each channel's configured voice identity at this same versioned identity. The browser and social adapter accept the same VoiceIdentity contract; this code does not change an already-running WhatsApp worker or deploy its configuration.
 
 Speech generation and independent transcription finish before playback. CPU generation can be substantially slower than real time. Content validation does not establish perceived gender, intelligibility through physical speakers, microphone quality or barge-in timing; those require real audiovisual qualification.
 
 Owned submitted parcels are reconciled as a requested set. A final summary requires terminal parent records, no active children and no pending verification criteria. Completion does not imply publication. Real sealed stage batons expose source, destination, digest and observed receipt. Relay and Verity labels are presentation roles; they do not claim separate autonomous model invocations. Handoff presentation has deterministic integration coverage; it must not be described as observed audiovisual behaviour unless an actual handoff occurs.
 
 The registered harmless System observation 1.1.0 job reads worker status and then runs a separate deterministic artifact verifier. This verifies artifact integrity and structure, not remote device or social-session readiness. Remote Facebook registries remain read-only discovery here; this adapter cannot submit their collection or publication jobs.
+
+## Spoken guided tour and full regression
+
+**Introduce POE and show me Agent Control** opens a fifteen-feature tour of genuine dashboard views. POE explains the highlighted feature through the configured male voice; each step waits for actual playback completion. Failed or interrupted narration pauses with an explicit retry. The long written greeting appears immediately, speaks after audio unlock, and is not repeated by telemetry refreshes.
+
+**Narrate test progress** reads only the configured owner-started full regression runner. Counts, phase, elapsed time and exact tested commit come from its emitted evidence. Unknown remaining totals are not guessed. Narration describes the supplied snapshot as a past observation; it never converts the external test runner into a Work Parcel. See the [installation/deployment runbook](installation-deployment-4.1.md) and [current qualification gates](evidence/agent-control-4.1-qualification.md).
