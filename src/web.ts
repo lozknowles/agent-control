@@ -30,6 +30,9 @@ import {ProviderNeutralModelEvaluationExecutor, startModelEvaluationScheduler} f
 import {ProviderCatalogRuntime, ProviderCatalogStore} from './control/provider-catalog.js';
 import {AGENT_CONTROL_VERSION} from './version.js';
 import {ExecutionSessionRuntime} from './control/execution-session.js';
+import {PoeKnowledgeService} from './control/poe-knowledge.js';
+import {PoeRegistrySource} from './control/poe-registry-source.js';
+import {PoeOperatorRuntime} from './control/poe-operator.js';
 import {PoeRuntime} from './control/poe.js';
 import {RoutedPoeResponseModel} from './control/poe-model.js';
 import {governedRequestOrigin} from './control/request-origin.js';
@@ -115,7 +118,21 @@ if (process.env.AGENT_CONTROL_POE_VOICE_CONFIG) {
     poeSpeech=provider;poeRecognition=provider;poeVoice=settings.voice;
   } catch {process.stderr.write('Optional POE voice configuration unavailable; text conversation remains active.\n');}
 }
-const poe = new PoeRuntime({
+const knowledge = new PoeKnowledgeService({root:process.cwd(),version:AGENT_CONTROL_VERSION,sources:JSON.parse(fs.readFileSync('config/poe-knowledge-sources.json','utf8')),configuration:()=>({jobs:jobRuntime.catalog.listJobs(),schedules:jobRuntime.catalog.listSchedules(),models:service.models(),routing:config.modelRouting}),live:category=>{
+  const snapshot=service.snapshot();
+  if(category==='crew')return snapshot.characterCrew.members.map(member=>({id:member.id,name:member.name,role:member.role,state:member.operationalState,summary:member.summary,freshness:member.freshness}));
+  if(category==='models')return {models:service.models(),providers:snapshot.providers,routing:config.modelRouting};
+  if(category==='lanes')return {systems:service.systems(),lanes:snapshot.lanes.map(lane=>({id:lane.id,name:lane.name,status:lane.status,model:lane.model,baton:lane.baton}))};
+  if(category==='work')return service.parcels().slice(-20).map(parcel=>({id:parcel.id,status:parcel.status,stages:parcel.stages.map(stage=>({id:stage.id,name:stage.name,job:stage.job,status:stage.status,runId:stage.runId,route:stage.actualRoute})),verification:parcel.context?.criteria.map(c=>({id:c.id,status:c.status,evidence:c.evidence}))}));
+  if(category==='handoffs')return {handoffs:service.runtime().handoffs,decisions:service.tokenRouting().decisions.slice(-12)};
+  throw new Error('knowledge_category_unavailable');
+}});
+const operator = new PoeOperatorRuntime({knowledge,registries:process.env.AGENT_CONTROL_POE_REGISTRY_SOURCES?JSON.parse(fs.readFileSync(process.env.AGENT_CONTROL_POE_REGISTRY_SOURCES,'utf8')).map((config:import('./control/poe-registry-source.js').RegistrySourceConfig)=>new PoeRegistrySource(config)):[],runtime:jobRuntime,parcels:jobRuntime.workParcels,
+  file:path.join(stateRoot,'poe','operator.json'),
+  registrations:JSON.parse(fs.readFileSync(path.resolve('config/poe-operator-jobs.json'),'utf8')),
+  topics:JSON.parse(fs.readFileSync(path.resolve('config/poe-system-topics.json'),'utf8')),
+  sources:{systems:()=>service.systems(),savedJobs:()=>service.savedJobs(),parameterizedSchedules:()=>service.parameterizedSchedules(),overview:()=>service.poeEvidence(),resolve:reference=>service.poeEvidence(reference)}});
+const poe = new PoeRuntime({operator,
   file:path.join(stateRoot,'poe','conversations.json'),
   evidence:{overview:()=>service.poeEvidence(),resolve:reference=>service.poeEvidence(reference)},
   ...(process.env.AGENT_CONTROL_POE_STATUS_MODEL_ROLE?{responseModel:new RoutedPoeResponseModel(modelRegistry,codexNodeExecution,{status:process.env.AGENT_CONTROL_POE_STATUS_MODEL_ROLE,reasoning:process.env.AGENT_CONTROL_POE_REASONING_MODEL_ROLE??process.env.AGENT_CONTROL_POE_STATUS_MODEL_ROLE})}:{}),

@@ -46,7 +46,7 @@ const DOMAIN_STATUS = new Map<string, number>([
   ['runtime_safety_decision_missing', 404], ['runtime_safety_decision_not_approvable', 409], ['runtime_safety_snapshot_invalid', 409],
   ['adaptive_orchestration_unconfigured', 503], ['adaptive_decision_missing', 404],
   ['poe_unconfigured', 503], ['poe_conversation_missing', 404], ['poe_proposal_missing', 404], ['poe_conversation_invalid', 400], ['poe_turn_invalid', 400], ['poe_channel_provenance_mismatch', 409], ['poe_conversation_actor_mismatch', 403],
-  ['poe_proposal_revision_conflict', 409], ['poe_proposal_approval_stale', 409], ['poe_benchmark_unfair', 409], ['poe_benchmark_execution_unconfigured', 503], ['poe_benchmark_plan_invalid', 400], ['poe_benchmark_condition_invalid', 400], ['poe_benchmark_metric_invalid', 400], ['poe_voice_unconfigured', 503],
+  ['poe_operation_ownership_denied',403], ['poe_operation_approval_stale',409], ['poe_operation_readiness_blocked',409], ['poe_operator_unconfigured',503], ['poe_speech_validation_failed',502], ['poe_speech_interrupted',409], ['poe_proposal_revision_conflict', 409], ['poe_proposal_approval_stale', 409], ['poe_benchmark_unfair', 409], ['poe_benchmark_execution_unconfigured', 503], ['poe_benchmark_plan_invalid', 400], ['poe_benchmark_condition_invalid', 400], ['poe_benchmark_metric_invalid', 400], ['poe_voice_unconfigured', 503],
     ['provider_missing', 404], ['model_missing', 404], ['model_role_missing', 404], ['model_registry_unconfigured', 503], ['model_route_unconfigured', 409], ['model_route_unavailable', 409], ['model_fallback_disabled', 409], ['provider_authentication_required', 409], ['account_profile_missing', 404], ['account_profile_unavailable', 409],
     ['provider_catalog_unconfigured', 503], ['provider_catalog_model_missing', 404], ['provider_catalog_model_unavailable', 409], ['provider_discovery_disabled', 409], ['provider_discovery_adapter_unavailable', 409], ['provider_catalog_model_not_qualified', 409], ['provider_credential_format_invalid', 400], ['provider_catalog_adjudication_invalid', 400], ['provider_catalog_adjudication_exists', 409],
     ['identity_control_plane_unconfigured', 503], ['session_missing', 404], ['execution_missing', 404],
@@ -64,7 +64,7 @@ export function startWebDashboard(service: AgentControlService, options: WebServ
 async function handle(service: AgentControlService, request: IncomingMessage, response: ServerResponse, options: Required<Pick<WebServerOptions, 'host' | 'port' | 'assetsDir'>> & WebServerOptions) {
   response.setHeader('X-Content-Type-Options', 'nosniff');
   response.setHeader('Referrer-Policy', 'no-referrer');
-  response.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
+  response.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; media-src 'self' blob:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
   response.setHeader('Cache-Control', 'no-store');
   const url = new URL(request.url ?? '/', `http://${request.headers.host ?? `${options.host}:${options.port}`}`);
   const method = request.method ?? 'GET';
@@ -117,6 +117,21 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   }
 
   if (method === 'GET' && url.pathname === '/api/status') return json(response, 200, service.snapshot());
+  if(method==='GET'&&url.pathname==='/api/poe/knowledge'){validateOperatorRequest(request,options);return json(response,200,service.poeKnowledge());}
+  const knowledgeSource=url.pathname.match(/^\/api\/poe\/knowledge\/sources\/([^/]+)$/);if(method==='GET'&&knowledgeSource){validateOperatorRequest(request,options);return json(response,200,service.poeKnowledgeSource(decodeURIComponent(knowledgeSource[1])));}
+  const greetingMatch=url.pathname.match(/^\/api\/poe\/conversations\/([^/]+)\/greeting$/);if(method==='POST'&&greetingMatch){validateOrigin(request,options);validateOperatorRequest(request,options);return json(response,200,service.greetPoe(decodeURIComponent(greetingMatch[1]),'web-operator'));}
+  const operatorApi=url.pathname.match(/^\/api\/poe\/conversations\/([^/]+)\/(operator|approve-job|speech|transcribe|greeting)$/);
+  if(operatorApi){
+    validateOperatorRequest(request,options); const id=decodeURIComponent(operatorApi[1]!);
+    if(method==='GET'&&operatorApi[2]==='operator')return json(response,200,await service.poeOperator(id,'web-operator'));
+    if(method==='POST'){
+      validateOrigin(request,options);
+      if(operatorApi[2]==='transcribe') {const bytes=await readBounded(request,8*1024*1024);return json(response,200,await service.transcribePoe(id,bytes,String(request.headers['content-type']??'').split(';')[0]!, 'web-operator'));}
+      const body=await readJson(request);
+      if(operatorApi[2]==='approve-job')return json(response,202,service.approvePoeOperator(id,String(body.proposalId??''),String(body.hash??''),'web-operator'));
+      if(operatorApi[2]==='speech'){const audio=await service.speakPoe(id,String(body.turnId??''),'web-operator');return json(response,200,{...audio,bytes:Buffer.from(audio.bytes).toString('base64')});}
+    }
+  }
   if (method === 'GET' && url.pathname === '/api/poe') { validateOperatorRequest(request, options); return json(response, 200, service.poeProjection()); }
   if (method === 'GET' && url.pathname === '/api/operator-auth') return json(response, 200, operatorAuthentication(request, options));
   if (method === 'GET' && url.pathname === '/api/configuration') { validateOperatorRequest(request, options); return json(response, 200, new ConfigurationStore(options.configFile ?? configPath()).read()); }
@@ -206,7 +221,7 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   if (method === 'POST') {
     validateMutationRequest(request, options);
     const body = await readJson(request), actor = 'web-operator';
-    if(url.pathname==='/api/poe/conversations')return json(response,201,service.createPoeConversation(String(body.channel??'dashboard') as never,actor));
+    if(url.pathname==='/api/poe/conversations'){if(body.channel&&body.channel!=='dashboard')return json(response,403,{error:'poe_channel_provenance_mismatch'});return json(response,201,service.createPoeConversation('dashboard',actor));}
     if(poeConversationMatch?.[2]==='turns')return json(response,201,await service.askPoe(decodeURIComponent(poeConversationMatch[1]),String(body.text??''),actor,body.reference&&typeof body.reference==='object'&&!Array.isArray(body.reference)?body.reference as never:undefined));
     if(poeConversationMatch?.[2]==='proposals')return json(response,201,service.proposePoeBenchmark(decodeURIComponent(poeConversationMatch[1]),body as never,actor));
     if(poeConversationMatch?.[2]==='interrupt')return json(response,200,service.interruptPoe(decodeURIComponent(poeConversationMatch[1]),actor,typeof body.playbackTurnId==='string'?body.playbackTurnId:undefined));

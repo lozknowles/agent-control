@@ -1,3 +1,5 @@
+import type {PoeOperatorRuntime, InformationKind} from './poe-operator.js';
+import {prepareSpokenText, speechContentCoverage} from './speech-text.js';
 import {createHash, randomUUID} from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -6,13 +8,13 @@ import type {WorkParcelPlan, WorkParcelPlanStage} from './work-parcels.js';
 import type {SpeechProvider, SpeechRecognitionProvider, VoiceIdentity} from './social-voice-providers.js';
 import {validateAudio, validateVoice} from './social-voice-providers.js';
 
-export type PoeState = 'IDLE' | 'LISTENING' | 'INVESTIGATING' | 'THINKING' | 'EXPLAINING' | 'OBSERVING_CREW' | 'DESIGNING_EXPERIMENT' | 'WAITING_FOR_APPROVAL' | 'SPEAKING';
+export type PoeState = 'HANDOFF' | 'SCHEDULING' | 'BLOCKED' | 'FAILED' | 'INTERRUPTED' | 'WORKING' | 'SUCCEEDED' | 'IDLE' | 'LISTENING' | 'INVESTIGATING' | 'THINKING' | 'EXPLAINING' | 'OBSERVING_CREW' | 'DESIGNING_EXPERIMENT' | 'WAITING_FOR_APPROVAL' | 'SPEAKING';
 export type PoeChannel = 'dashboard' | 'whatsapp' | 'voice' | 'mobile';
 export type PoeAuthority = 'AGENT_CONTROL' | 'OPERATOR' | 'PROVIDER_REPORTED' | 'ESTIMATED' | 'UNAVAILABLE';
-export type PoeObjectKind = 'model' | 'league-row' | 'workflow' | 'job' | 'run' | 'parcel' | 'crew-member' | 'lane' | 'routing-decision' | 'governor-decision' | 'capability-manifest' | 'baton' | 'execution-session' | 'verification' | 'benchmark' | 'human-evaluation';
+export type PoeObjectKind = 'system' | 'schedule' | 'model' | 'league-row' | 'workflow' | 'job' | 'run' | 'parcel' | 'crew-member' | 'lane' | 'routing-decision' | 'governor-decision' | 'capability-manifest' | 'baton' | 'execution-session' | 'verification' | 'benchmark' | 'human-evaluation';
 
 export interface PoeObjectReference {kind: PoeObjectKind; id: string; label?: string;}
-export interface PoeGroundedFact {label: string; value: string | number | boolean | null; authority: PoeAuthority; observedAt?: string | null; evidence: string[]; limitation?: string;}
+export interface PoeGroundedFact {informationKind?: InformationKind; label: string; value: string | number | boolean | null; authority: PoeAuthority; observedAt?: string | null; evidence: string[]; limitation?: string;}
 export interface PoeEvidenceResult {reference?: PoeObjectReference; title: string; summary: string; facts: PoeGroundedFact[]; related: PoeObjectReference[]; unavailable?: string;}
 export interface PoeEvidencePort {
   overview(): PoeEvidenceResult;
@@ -21,7 +23,8 @@ export interface PoeEvidencePort {
 
 export type PoeResponsePurpose = 'STATUS_LOOKUP' | 'EVIDENCE_EXPLANATION' | 'EXPERIMENT_DESIGN';
 export interface PoeResponseModelPort {
-  respond(input: {purpose: PoeResponsePurpose; operatorText: string; evidence: PoeEvidenceResult; channel: PoeChannel}): Promise<{text: string; citations: string[]; route: PoeRouteIdentity; usage: {inputTokens: number | null; outputTokens: number | null; totalTokens: number | null; cost: number | null; currency: string | null; authority: PoeAuthority}}>;
+  describe?(): {state:string;route?:PoeRouteIdentity;reason?:string};
+  respond(input: {purpose: PoeResponsePurpose; operatorText: string; evidence: PoeEvidenceResult; channel: PoeChannel; history?:Array<{actor:string;text:string}>}): Promise<{text: string; citations: string[]; route: PoeRouteIdentity; usage: {inputTokens: number | null; outputTokens: number | null; totalTokens: number | null; cost: number | null; currency: string | null; authority: PoeAuthority}}>;
 }
 
 export interface PoeRouteIdentity {providerId: string; accountProfileId?: string; modelId: string; nodeId: string; label?: string;}
@@ -66,6 +69,8 @@ export interface PoeBenchmarkProposal extends PoeBenchmarkProposalInput {
   execution?: {parcelId: string; submittedAt: string; requestKey: string};
 }
 export interface PoeTurn {
+  purpose?: 'GREETING'|'RESULT'|'HANDOVER';
+  speech?: {spokenText:string;voiceId:string;voiceSha256:string;audioSha256:string;generatedAt:string;};
   id: string;
   conversationId: string;
   at: string;
@@ -83,10 +88,11 @@ export interface PoeTurn {
   latency?: {speechEndToTranscriptMs: number | null; transcriptToFirstResponseTokenMs: number | null; responseToFirstAudioMs: number | null; totalMs: number | null; authority: PoeAuthority};
 }
 export interface PoeConversation {
-  schema: 'agent-control.poe-conversation/v1'; id: string; actorId: string; channel: PoeChannel; state: PoeState; createdAt: string; updatedAt: string; turns: PoeTurn[]; proposalIds: string[]; lastReference?: PoeObjectReference; speaking?: {turnId: string; startedAt: string; interruptedAt?: string; completedAt?: string};
+  schema: 'agent-control.poe-conversation/v1'; id: string; actorId: string; channel: PoeChannel; state: PoeState; createdAt: string; updatedAt: string; turns: PoeTurn[]; proposalIds: string[]; completedOperationIds?:string[]; announcedBatchIds?:string[]; announcedHandoverIds?:string[]; lastReference?: PoeObjectReference; speaking?: {turnId: string; startedAt: string; interruptedAt?: string; completedAt?: string};
 }
 export interface PoeProjection {
   schema: 'agent-control.poe/v1';
+  reasoning?:{state:string;route?:PoeRouteIdentity;reason?:string};
   identity: {id: 'poe'; name: 'POE'; role: string; persona: string; factualPolicy: string; modelSelectable: boolean};
   state: PoeState;
   activeConversationId: string | null;
@@ -99,7 +105,7 @@ export interface PoeBenchmarkExecutionPort {submit(input: {proposal: PoeBenchmar
 export interface PoeEvent {type: 'conversation.changed' | 'proposal.changed' | 'speech.changed' | 'interrupted'; at: string; conversationId: string; proposalId?: string; state: PoeState; detail: Record<string, unknown>;}
 
 interface PoeSnapshot {schema: 'agent-control.poe-store/v1'; conversations: PoeConversation[]; proposals: PoeBenchmarkProposal[]; events: PoeEvent[];}
-interface PoeOptions {file?: string; clock?: () => string; evidence: PoeEvidencePort; responseModel?: PoeResponseModelPort; benchmark?: PoeBenchmarkExecutionPort; speech?: SpeechProvider; recognition?: SpeechRecognitionProvider; voice?: VoiceIdentity; onEvent?: (event: PoeEvent) => void;}
+interface PoeOptions {operator?: PoeOperatorRuntime; file?: string; clock?: () => string; evidence: PoeEvidencePort; responseModel?: PoeResponseModelPort; benchmark?: PoeBenchmarkExecutionPort; speech?: SpeechProvider; recognition?: SpeechRecognitionProvider; voice?: VoiceIdentity; onEvent?: (event: PoeEvent) => void;}
 
 const MAX_TURNS = 500, MAX_EVENTS = 1_000;
 const label = (route: PoeRouteIdentity) => `${route.providerId}/${route.accountProfileId ?? 'default'}/${route.modelId}@${route.nodeId}`;
@@ -125,15 +131,23 @@ export class PoeRuntime {
     const at = this.clock(), conversation: PoeConversation = {schema:'agent-control.poe-conversation/v1',id,actorId,channel:input.channel,state:'IDLE',createdAt:at,updatedAt:at,turns:[],proposalIds:[]};
     this.conversations.set(id, conversation); this.record(conversation, 'conversation.changed', {action:'created'}); return clone(conversation);
   }
+  greeting(id:string,actor:string){
+    const conversation=this.mustConversation(id);if(conversation.actorId!==actor||conversation.channel!=='dashboard')throw new Error('poe_conversation_actor_mismatch');
+    const existing=conversation.turns.find(turn=>turn.purpose==='GREETING');if(existing)return {turn:clone(existing),conversation:clone(conversation)};
+    this.setState(conversation,'LISTENING',{reason:'authenticated operator greeting'});
+    const turn=this.addTurn(conversation,{purpose:'GREETING',actor:'poe',channel:'dashboard',modality:'text',text:'Good day. I’m POE. How may I help you?',authority:'AGENT_CONTROL',contentTrust:'AGENT_CONTROL_EVIDENCE',references:[],evidence:[]});this.save();return {turn,conversation:clone(conversation)};
+  }
+  knowledge(){return this.options.operator?.knowledgeProjection()??null;}
+  knowledgeSource(id:string){if(!this.options.operator)throw new Error('poe_knowledge_source_missing');return this.options.operator.knowledgeSource(id);}
   conversation(id: string) {return clone(this.mustConversation(id));}
   proposal(id: string) {return clone(this.mustProposal(id));}
   projection(): PoeProjection {
     const conversations = [...this.conversations.values()].sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt));
     const active = conversations[0] ?? null, voice = this.options.voice;
-    return {schema:'agent-control.poe/v1',identity:{id:'poe',name:'POE',role:'Conversational operator, evidence guide and benchmark designer',persona:'Warm, exacting, literary, mildly gothic and dryly amused',factualPolicy:'Truth before clarity, usefulness or personality; unavailable evidence is stated as unavailable',modelSelectable:Boolean(this.options.responseModel)},state:active?.state ?? 'IDLE',activeConversationId:active?.id ?? null,conversations:conversations.map(({turns,...item})=>({...clone(item),turnCount:turns.length})),proposals:[...this.proposals.values()].sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt)).map(clone),voice:{configured:Boolean(voice),recognition:Boolean(this.options.recognition),synthesis:Boolean(this.options.speech),streaming:this.options.speech?.capabilities().streaming ?? false,bargeIn:true,identity:voice?.id ?? null,limitation:this.options.speech?.capabilities().streaming ? null : 'Provider exposes complete-audio synthesis; first audio is available only after synthesis completes.'},observedAt:this.clock()};
+    return {schema:'agent-control.poe/v1',reasoning:this.options.responseModel?.describe?.()??{state:this.options.responseModel?'CONFIGURED':'UNAVAILABLE',reason:this.options.responseModel?'Route is disclosed on each completed reply.':'No conversational model is configured.'},identity:{id:'poe',name:'POE',role:'Conversational operator, evidence guide and benchmark designer',persona:'Warm, exacting, literary, mildly gothic and dryly amused',factualPolicy:'Truth before clarity, usefulness or personality; unavailable evidence is stated as unavailable',modelSelectable:Boolean(this.options.responseModel)},state:active?.state ?? 'IDLE',activeConversationId:active?.id ?? null,conversations:conversations.map(({turns,...item})=>({...clone(item),turnCount:turns.length})),proposals:[...this.proposals.values()].sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt)).map(clone),voice:{configured:Boolean(voice),recognition:Boolean(this.options.recognition),synthesis:Boolean(this.options.speech),streaming:this.options.speech?.capabilities().streaming ?? false,bargeIn:true,identity:voice?.id ?? null,limitation:this.options.speech?.capabilities().streaming ? null : 'Provider exposes complete-audio synthesis; first audio is available only after synthesis completes.'},observedAt:this.clock()};
   }
   async ask(input: {conversationId: string; text: string; channel?: PoeChannel; modality?: 'text'|'voice'; reference?: PoeObjectReference; contentTrust?: PoeTurn['contentTrust']}) {
-    const conversation = this.mustConversation(input.conversationId), text = cleanText(input.text, 'poe_turn_invalid');
+    const conversation = this.mustConversation(input.conversationId); cleanText(input.text, 'poe_turn_invalid'); const text = input.text;
     if (input.channel && input.channel !== conversation.channel) throw new Error('poe_channel_provenance_mismatch');
     this.setState(conversation,'LISTENING',{reason:'operator turn accepted'});
     const operatorTurn = this.addTurn(conversation,{actor:'operator',channel:conversation.channel,modality:input.modality ?? 'text',text,authority:'OPERATOR',contentTrust:input.contentTrust ?? 'OPERATOR_REQUEST',references:input.reference?[input.reference]:[],evidence:[]});
@@ -142,13 +156,75 @@ export class PoeRuntime {
     if(draftId&&amendment){const draft=this.mustProposal(draftId);this.reviseBenchmark(draftId,draft.revision,amendment);reference={kind:'benchmark',id:draftId,label:'updated draft'};}
     this.setState(conversation, reference?.kind === 'crew-member' ? 'OBSERVING_CREW' : 'INVESTIGATING', {reference:reference?.kind ?? 'overview'});
     const ownProposal=reference?.kind==='benchmark'?this.proposals.get(reference.id):undefined;
-    const evidence = ownProposal ? proposalEvidence(ownProposal) : reference ? this.options.evidence.resolve(reference) : focusOverviewEvidence(this.options.evidence.overview(),text);
+    const priorAnswer=[...conversation.turns].reverse().find(turn=>turn.actor==='poe'&&turn.evidence.length);
+    const operatorEvidence = /(?:show|what).*evidence.*(?:that|answer)|sources.*(?:that|answer)/i.test(text)&&priorAnswer?{title:'Evidence supporting the previous answer',summary:'These are the exact retained sources and observations used for that answer, not newly inferred claims.',facts:priorAnswer.evidence,related:priorAnswer.references}:await this.options.operator?.query(text, clone(conversation), input.reference ?? conversation.lastReference);
+    const evidence = operatorEvidence ?? (ownProposal ? proposalEvidence(ownProposal) : reference ? this.options.evidence.resolve(reference) : focusOverviewEvidence(this.options.evidence.overview(),text));
+    if (operatorEvidence) reference = operatorEvidence.reference;
     conversation.lastReference = reference ? clone(reference) : undefined;
-    let response = groundedResponse(evidence), route:PoeRouteIdentity|undefined, usage:PoeTurn['usage'], responseMode:'DETERMINISTIC'|'MODEL'='DETERMINISTIC', authority:PoeAuthority='AGENT_CONTROL';
-    if(this.options.responseModel&&!evidence.unavailable){this.setState(conversation,'THINKING',{purpose:responsePurpose(reference)});try{const modeled=await this.options.responseModel.respond({purpose:responsePurpose(reference),operatorText:text,evidence:clone(evidence),channel:conversation.channel});validateModeledResponse(modeled,evidence);response=cleanText(modeled.text,'poe_model_response_invalid');route=clone(modeled.route);usage=clone(modeled.usage);responseMode='MODEL';authority='PROVIDER_REPORTED';}catch{response=`${response}\n\nThe selected conversational model route was unavailable or returned an invalid grounded response. I have used Agent Control's deterministic evidence rendering instead; no substitute model was silently selected.`;this.record(conversation,'conversation.changed',{modelResponse:'failed-closed',fallback:'deterministic-grounded-renderer'});}}
-    this.setState(conversation,'EXPLAINING',{evidence: evidence.facts.length, unavailable:Boolean(evidence.unavailable),responseMode});
+    let response = operatorEvidence ? `${evidence.title}\n\n${evidence.summary}\n\n${evidence.facts.map(fact=>`${fact.label}: ${fact.value===null?'unavailable':String(fact.value).length>240?'See the sourced record below.':String(fact.value)}`).join('\n')}` : groundedResponse(evidence), route:PoeRouteIdentity|undefined, usage:PoeTurn['usage'], responseMode:'DETERMINISTIC'|'MODEL'='DETERMINISTIC', authority:PoeAuthority='AGENT_CONTROL';
+    if(this.options.responseModel&&!evidence.unavailable&&evidence.title!=='Review job proposal'){this.setState(conversation,'THINKING',{purpose:responsePurpose(reference)});try{const modeled=await this.options.responseModel.respond({purpose:responsePurpose(reference),operatorText:text,evidence:clone(evidence),channel:conversation.channel,history:conversation.turns.slice(-7,-1).map(turn=>({actor:turn.actor,text:turn.text.slice(0,1600)}))});validateModeledResponse(modeled,evidence);response=cleanText(modeled.text,'poe_model_response_invalid');route=clone(modeled.route);usage=clone(modeled.usage);responseMode='MODEL';authority='PROVIDER_REPORTED';}catch{response=`${response}\n\nThe selected conversational model route was unavailable or returned an invalid grounded response. I have used Agent Control's deterministic evidence rendering instead; no substitute model was silently selected.`;this.record(conversation,'conversation.changed',{modelResponse:'failed-closed',fallback:'deterministic-grounded-renderer'});}}
+    this.setState(conversation, evidence.unavailable ? 'BLOCKED' : evidence.title === 'Review job proposal' ? 'WAITING_FOR_APPROVAL' : reference?.kind==='crew-member'?'OBSERVING_CREW':evidence.title==='Registered schedules'?'SCHEDULING':'EXPLAINING',{evidence: evidence.facts.length, unavailable:Boolean(evidence.unavailable),responseMode});
     const turn = this.addTurn(conversation,{actor:'poe',channel:conversation.channel,modality:input.modality ?? 'text',text:response,authority,contentTrust:'AGENT_CONTROL_EVIDENCE',references:[...(reference?[reference]:[]),...evidence.related],evidence:evidence.facts,responseMode,...(route?{route}:{}) ,...(usage?{usage}:{})});
     this.save(); return {operatorTurn,turn,conversation:clone(conversation),evidence};
+  }
+  async operatorProjection(id: string, actor: string) {
+    const conversation = this.mustConversation(id);
+    if(conversation.actorId !== actor || conversation.channel !== 'dashboard') throw new Error('poe_conversation_actor_mismatch');
+    const projection=await this.options.operator?.projection(actor,id);
+    if(!projection)return null;
+    for(const handover of projection.handovers){
+      if(conversation.announcedHandoverIds?.includes(handover.id))continue;
+      (conversation.announcedHandoverIds??=[]).push(handover.id);this.setState(conversation,'HANDOFF',{batonId:handover.batonId,received:handover.received});
+      this.addTurn(conversation,{purpose:'HANDOVER',actor:'poe',channel:'dashboard',modality:'text',text:handover.text,authority:'AGENT_CONTROL',contentTrust:'AGENT_CONTROL_EVIDENCE',references:[{kind:'parcel',id:handover.parcelId}],evidence:[{label:'Sealed handover',value:JSON.stringify(handover),authority:'AGENT_CONTROL',informationKind:'LIVE_OBSERVED',observedAt:this.clock(),evidence:[`parcel:${handover.parcelId}:baton:${handover.batonId}`]}]});
+    }
+    for(const item of projection.proposals){
+      if(item.executionStatus==='RUNNING'&&conversation.state!=='WORKING')this.setState(conversation,'WORKING',{operation:item.id,parcelId:item.parcelId,status:item.executionStatus});
+      if(!item.executionStatus||!['SUCCEEDED','FAILED','CANCELLED'].includes(item.executionStatus)||conversation.completedOperationIds?.includes(item.id))continue;
+      (conversation.completedOperationIds??=[]).push(item.id);
+      this.setState(conversation,item.executionStatus==='SUCCEEDED'?'SUCCEEDED':item.executionStatus==='CANCELLED'?'INTERRUPTED':'FAILED',{operation:item.id,parcelId:item.parcelId,status:item.executionStatus});
+      this.addTurn(conversation,{actor:'poe',channel:'dashboard',modality:'text',text:`Work Parcel ${item.parcelId} is ${item.executionStatus}. ${item.execution?.summary??'Inspect its governed execution record for the result.'}`,authority:'AGENT_CONTROL',contentTrust:'AGENT_CONTROL_EVIDENCE',references:[{kind:'parcel',id:item.parcelId!},...(item.execution?.related??[])],evidence:item.execution?.facts??[]});
+    }
+    if(projection.batch.reconciled&&!conversation.announcedBatchIds?.includes(projection.batch.id)){
+      (conversation.announcedBatchIds??=[]).push(projection.batch.id);
+      this.addTurn(conversation,{purpose:'RESULT',actor:'poe',channel:'dashboard',modality:'text',text:projection.batch.text+' No publication was requested through this adapter.',authority:'AGENT_CONTROL',contentTrust:'AGENT_CONTROL_EVIDENCE',references:projection.batch.parcelIds.map(id=>({kind:'parcel' as const,id})),evidence:[{label:'Reconciled requested set',value:JSON.stringify(projection.batch),authority:'AGENT_CONTROL',informationKind:'LIVE_OBSERVED',observedAt:this.clock(),evidence:projection.batch.parcelIds.map(id=>`parcel:${id}`)}]});
+    }
+    this.save();return projection;
+  }
+  approveOperator(id: string, proposalId: string, hash: string, actor: string) {
+    const conversation = this.mustConversation(id);
+    if(conversation.actorId !== actor || conversation.channel !== 'dashboard') throw new Error('poe_conversation_actor_mismatch');
+    if(!this.options.operator) throw new Error('poe_operator_unconfigured');
+    const proposal = this.options.operator.approve(proposalId, hash, clone(conversation));
+    this.setState(conversation,'OBSERVING_CREW',{parcelId:proposal.parcelId, operation:proposalId});
+    this.addTurn(conversation,{actor:'poe',channel:'dashboard',modality:'text',text:proposal.operation==='CANCEL'?`Cancellation requested for ${proposal.parcelId}. The runtime determines when cleanup is complete.`:`The approved request is submitted as ${proposal.parcelId}. The Work Parcel runtime now owns execution and verification.`,authority:'AGENT_CONTROL',contentTrust:'AGENT_CONTROL_EVIDENCE',references:[{kind:'parcel',id:proposal.parcelId!}],evidence:[]});
+    conversation.lastReference={kind:'parcel',id:proposal.parcelId!}; this.save();
+    return {proposal,conversation:clone(conversation)};
+  }
+  async speechForTurn(conversationId: string, turnId: string, actor: string) {
+    const conversation=this.mustConversation(conversationId);
+    if(conversation.actorId!==actor)throw new Error('poe_conversation_actor_mismatch');
+    if(!this.options.speech||!this.options.voice||!this.options.recognition)throw new Error('poe_voice_unconfigured');
+    const turn=conversation.turns.find(item=>item.id===turnId&&item.actor==='poe');
+    if(!turn)throw new Error('poe_turn_invalid');
+    this.speechControllers.get(conversationId)?.abort();
+    const controller=new AbortController(); this.speechControllers.set(conversationId,controller);
+    conversation.speaking={turnId,startedAt:this.clock()};
+    this.setState(conversation,'THINKING',{speech:'synthesizing',turnId});
+    const spokenText=prepareSpokenText(turn.text.split('\n\n').slice(0,2).join('. '));
+    try {
+      const signal=AbortSignal.any([controller.signal,AbortSignal.timeout(180_000)]);
+      const audio=await this.options.speech.synthesize({text:spokenText,voice:this.options.voice,signal});
+      validateAudio(audio.bytes,audio.mime);
+      const observed=await this.options.recognition.transcribe({bytes:audio.bytes,mime:audio.mime,signal});
+      if(!speechContentCoverage(spokenText,observed.text).matched)throw new Error('poe_speech_content_mismatch');
+      if(controller.signal.aborted)throw new Error('poe_speech_interrupted');
+      turn.speech={spokenText,voiceId:this.options.voice.id,voiceSha256:sha(this.options.voice),audioSha256:createHash('sha256').update(audio.bytes).digest('hex'),generatedAt:this.clock()};
+      conversation.speaking.completedAt=this.clock(); this.setState(conversation,'EXPLAINING',{speech:'ready',turnId});this.save();
+      return {turnId,spokenText,bytes:audio.bytes,mime:audio.mime,sha256:createHash('sha256').update(audio.bytes).digest('hex'),metrics:redactSensitiveValue(audio.metrics)};
+    } catch {
+      this.setState(conversation,controller.signal.aborted?'INTERRUPTED':'FAILED',{speech:controller.signal.aborted?'interrupted':'synthesis-or-content-validation-failed'});
+      throw new Error(controller.signal.aborted?'poe_speech_interrupted':'poe_speech_validation_failed');
+    } finally {if(this.speechControllers.get(conversationId)===controller)this.speechControllers.delete(conversationId);}
   }
   proposeBenchmark(conversationId: string, input: PoeBenchmarkProposalInput) {
     const conversation = this.mustConversation(conversationId); this.validateBenchmarkInput(input); this.setState(conversation,'DESIGNING_EXPERIMENT',{decision:input.decision});
@@ -162,13 +238,21 @@ export class PoeRuntime {
   }
   freezeBenchmark(id:string,revision:number){const proposal=this.mustProposal(id);if(proposal.state!=='DRAFT'||proposal.revision!==revision)throw new Error('poe_proposal_revision_conflict');if(!proposal.fairness.comparable)throw new Error('poe_benchmark_unfair');proposal.state='FROZEN';proposal.frozenAt=this.clock();proposal.updatedAt=proposal.frozenAt;proposal.frozenSha256=proposalHash(proposal);const conversation=this.mustConversation(proposal.conversationId);this.setState(conversation,'WAITING_FOR_APPROVAL',{proposalId:id,sha256:proposal.frozenSha256});this.record(conversation,'proposal.changed',{proposalId:id,state:proposal.state,sha256:proposal.frozenSha256},id);return clone(proposal);}
   approveBenchmark(id:string,input:{revision:number;frozenSha256:string;actor:string}){const proposal=this.mustProposal(id),actor=cleanText(input.actor,'poe_actor_invalid',192);if(proposal.state!=='FROZEN'||proposal.revision!==input.revision||proposal.frozenSha256!==input.frozenSha256||proposalHash(proposal)!==proposal.frozenSha256)throw new Error('poe_proposal_approval_stale');if(!this.options.benchmark)throw new Error('poe_benchmark_execution_unconfigured');const requestKey=sha({conversationId:proposal.conversationId,proposalId:proposal.id,revision:proposal.revision,frozenSha256:proposal.frozenSha256}),expanded=expandRepetitions(proposal.stages,proposal.repetitions),plan:WorkParcelPlan={objective:proposal.objective,constraints:proposal.constraints,successCriteria:benchmarkCriteria(proposal),planner:{kind:'deterministic',reason:`POE proposal ${proposal.id} was frozen, fairness-checked and explicitly approved by ${actor}; ${proposal.repetitions} repetition(s) materialized`},stages:expanded};let result:{parcelId:string};try{result=this.options.benchmark.submit({proposal:clone(proposal),actor,requestKey,plan});}catch(error){const conversation=this.mustConversation(proposal.conversationId);this.record(conversation,'proposal.changed',{proposalId:id,state:'FROZEN',execution:'failed-closed'},id);throw error;}proposal.state='APPROVED';proposal.approvedAt=this.clock();proposal.approvedBy=actor;proposal.updatedAt=proposal.approvedAt;proposal.state='SUBMITTED';proposal.execution={parcelId:result.parcelId,submittedAt:this.clock(),requestKey};proposal.updatedAt=proposal.execution.submittedAt;const conversation=this.mustConversation(proposal.conversationId);this.setState(conversation,'OBSERVING_CREW',{parcelId:result.parcelId});this.record(conversation,'proposal.changed',{proposalId:id,state:proposal.state,parcelId:result.parcelId,requestKey},id);return clone(proposal);}
+  async transcribeTurn(conversationId:string,bytes:Uint8Array,mime:string,actor:string) {
+    const conversation=this.mustConversation(conversationId);
+    if(conversation.actorId!==actor)throw new Error('poe_conversation_actor_mismatch');
+    if(!this.options.recognition)throw new Error('poe_voice_unconfigured');
+    validateAudio(bytes,mime); this.setState(conversation,'LISTENING',{speech:'transcribing'});
+    const result=await this.options.recognition.transcribe({bytes,mime,signal:AbortSignal.timeout(120_000)});
+    return this.ask({conversationId,text:result.text,modality:'voice',contentTrust:'UNTRUSTED_DATA'});
+  }
   async voiceTurn(input:{conversationId:string;bytes:Uint8Array;mime:string;speechEndedAt?:number}){
     const conversation=this.mustConversation(input.conversationId);if(!this.options.recognition||!this.options.speech||!this.options.voice)throw new Error('poe_voice_unconfigured');validateAudio(input.bytes,input.mime);const started=Date.now(),speechEnded=input.speechEndedAt??started,recognition=await this.options.recognition.transcribe({bytes:input.bytes,mime:input.mime,signal:AbortSignal.timeout(120_000)}),transcribed=Date.now(),answer=await this.ask({conversationId:conversation.id,text:recognition.text,modality:'voice',contentTrust:'UNTRUSTED_DATA'}),controller=new AbortController();this.speechControllers.set(conversation.id,controller);conversation.speaking={turnId:answer.turn.id,startedAt:this.clock()};this.setState(conversation,'SPEAKING',{turnId:answer.turn.id});
     try{const audio=await this.options.speech.synthesize({text:answer.turn.text,voice:this.options.voice,signal:controller.signal});validateAudio(audio.bytes,audio.mime);const completedAudio=Date.now(),streaming=this.options.speech.capabilities().streaming,latency={speechEndToTranscriptMs:Math.max(0,transcribed-speechEnded),transcriptToFirstResponseTokenMs:null,responseToFirstAudioMs:streaming&&Number.isFinite(audio.metrics.firstAudioMs)?audio.metrics.firstAudioMs:null,totalMs:Math.max(0,completedAudio-speechEnded),authority:'ESTIMATED' as const};const stored=this.mustConversation(conversation.id).turns.find(turn=>turn.id===answer.turn.id)!;stored.latency=latency;conversation.speaking.completedAt=this.clock();this.setState(conversation,'EXPLAINING',{speech:'completed'});this.speechControllers.delete(conversation.id);this.save();return {...answer,audio:{bytes:audio.bytes,mime:audio.mime,sha256:createHash('sha256').update(audio.bytes).digest('hex'),metrics:redactSensitiveValue(audio.metrics)},latency};}
     catch(error){this.speechControllers.delete(conversation.id);if(controller.signal.aborted){this.setState(conversation,'LISTENING',{speech:'interrupted'});throw new Error('poe_speech_interrupted');}this.setState(conversation,'EXPLAINING',{speech:'failed'});throw error;}
   }
-  bargeIn(conversationId:string,actor:string,playbackTurnId?:string){const conversation=this.mustConversation(conversationId);cleanText(actor,'poe_actor_invalid',192);const controller=this.speechControllers.get(conversationId),requested=playbackTurnId?cleanText(playbackTurnId,'poe_playback_turn_invalid',192):undefined,latestVoice=[...conversation.turns].reverse().find(turn=>turn.actor==='poe'&&turn.modality==='voice'),sameBoundary=Boolean(requested&&conversation.speaking?.turnId===requested),replaceableBoundary=!conversation.speaking||Boolean(conversation.speaking.completedAt||conversation.speaking.interruptedAt),playback=Boolean(requested&&latestVoice?.id===requested&&(sameBoundary?!conversation.speaking?.interruptedAt:replaceableBoundary));if(controller)controller.abort();if(playback&&conversation.speaking?.turnId!==requested)conversation.speaking={turnId:requested!,startedAt:latestVoice!.at};if(conversation.speaking&&(controller||playback))conversation.speaking.interruptedAt=this.clock();this.setState(conversation,'LISTENING',{speech:'interrupted',speechBoundary:controller?'synthesis':playback?'client-playback':'none',workParcelCancellation:false});this.record(conversation,'interrupted',{turnId:conversation.speaking?.turnId??null,speechBoundary:controller?'synthesis':playback?'client-playback':'none',workParcelCancellation:false});return {interrupted:Boolean(controller||playback),workParcelCancelled:false,conversation:clone(conversation)};}
-  transcript(conversationId:string){const conversation=this.mustConversation(conversationId);return `# POE conversation ${conversation.id}\n\nChannel: ${conversation.channel}\nActor: ${conversation.actorId}\nCreated: ${conversation.createdAt}\n\n${conversation.turns.map(turn=>`## ${turn.actor==='poe'?'POE':'Operator'} · ${turn.at}\n\n${turn.text}\n\nAuthority: ${turn.authority}\nResponse mode: ${turn.responseMode??'not applicable'}${turn.route?`\nRoute: ${label(turn.route)}`:''}${turn.usage?`\nUsage: input ${turn.usage.inputTokens??'unavailable'}; output ${turn.usage.outputTokens??'unavailable'}; total ${turn.usage.totalTokens??'unavailable'}; cost ${turn.usage.cost??'unavailable'} ${turn.usage.currency??''}; authority ${turn.usage.authority}`:''}\nReferences: ${turn.references.map(item=>`${item.kind}:${item.id}`).join(', ')||'none'}${turn.latency?`\nLatency: speech→transcript ${turn.latency.speechEndToTranscriptMs??'unavailable'}ms; transcript→response ${turn.latency.transcriptToFirstResponseTokenMs??'unavailable'}ms; response→audio ${turn.latency.responseToFirstAudioMs??'unavailable'}ms; total ${turn.latency.totalMs??'unavailable'}ms`:''}`).join('\n\n')}`;}
+  bargeIn(conversationId:string,actor:string,playbackTurnId?:string){const conversation=this.mustConversation(conversationId);cleanText(actor,'poe_actor_invalid',192);const controller=this.speechControllers.get(conversationId),requested=playbackTurnId?cleanText(playbackTurnId,'poe_playback_turn_invalid',192):undefined,latestVoice=[...conversation.turns].reverse().find(turn=>turn.actor==='poe'&&(turn.modality==='voice'||turn.id===conversation.speaking?.turnId)),sameBoundary=Boolean(requested&&conversation.speaking?.turnId===requested),replaceableBoundary=!conversation.speaking||Boolean(conversation.speaking.completedAt||conversation.speaking.interruptedAt),playback=Boolean(requested&&latestVoice?.id===requested&&(sameBoundary?!conversation.speaking?.interruptedAt:replaceableBoundary));if(controller)controller.abort();if(playback&&conversation.speaking?.turnId!==requested)conversation.speaking={turnId:requested!,startedAt:latestVoice!.at};if(conversation.speaking&&(controller||playback))conversation.speaking.interruptedAt=this.clock();this.setState(conversation,'LISTENING',{speech:'interrupted',speechBoundary:controller?'synthesis':playback?'client-playback':'none',workParcelCancellation:false});this.record(conversation,'interrupted',{turnId:conversation.speaking?.turnId??null,speechBoundary:controller?'synthesis':playback?'client-playback':'none',workParcelCancellation:false});return {interrupted:Boolean(controller||playback),workParcelCancelled:false,conversation:clone(conversation)};}
+  transcript(conversationId:string){const conversation=this.mustConversation(conversationId);return `# POE conversation ${conversation.id}\n\nChannel: ${conversation.channel}\nActor: ${conversation.actorId}\nCreated: ${conversation.createdAt}\n\n## Exact initiating operator prompt\n\n${conversation.turns.find(turn=>turn.actor!=='poe')?.text??'No operator prompt has been submitted.'}\n\n## Chronological interaction\n\n${conversation.turns.map(turn=>`## ${turn.actor==='poe'?'POE':'Operator'} · ${turn.at}\n\n${turn.text}\n\nAuthority: ${turn.authority}\nResponse mode: ${turn.responseMode??'not applicable'}${turn.route?`\nRoute: ${label(turn.route)}`:''}${turn.usage?`\nUsage: input ${turn.usage.inputTokens??'unavailable'}; output ${turn.usage.outputTokens??'unavailable'}; total ${turn.usage.totalTokens??'unavailable'}; cost ${turn.usage.cost??'unavailable'} ${turn.usage.currency??''}; authority ${turn.usage.authority}`:''}\nReferences: ${turn.references.map(item=>`${item.kind}:${item.id}`).join(', ')||'none'}${turn.speech?`\nSpoken output: ${turn.speech.spokenText}\nVoice: ${turn.speech.voiceId} (configuration SHA-256 ${turn.speech.voiceSha256})\nAudio SHA-256: ${turn.speech.audioSha256}`:''}\nEvidence: ${JSON.stringify(turn.evidence)}${turn.latency?`\nLatency: speech→transcript ${turn.latency.speechEndToTranscriptMs??'unavailable'}ms; transcript→response ${turn.latency.transcriptToFirstResponseTokenMs??'unavailable'}ms; response→audio ${turn.latency.responseToFirstAudioMs??'unavailable'}ms; total ${turn.latency.totalMs??'unavailable'}ms`:''}`).join('\n\n')}`;}
   private validateBenchmarkInput(input:PoeBenchmarkProposalInput){cleanText(input.decision,'poe_benchmark_decision_required');cleanText(input.objective,'poe_benchmark_objective_required');cleanText(input.whyNewEvidenceIsNeeded,'poe_benchmark_evidence_reason_required');if(input.conditions.length<2||input.stages.length<1||input.metrics.length<1||!Number.isSafeInteger(input.repetitions)||input.repetitions<1||input.repetitions>100)throw new Error('poe_benchmark_plan_invalid');assertNoSensitiveMaterial(JSON.stringify(input),'poe_credential_material_forbidden');for(const condition of input.conditions){if(!condition.route.providerId||!condition.route.modelId||!condition.route.nodeId||!condition.fixtureSha256.match(/^[a-f0-9]{64}$/)||condition.timeLimitMs<1)throw new Error('poe_benchmark_condition_invalid');}for(const metric of input.metrics)if(!metric.id||!metric.label||!metric.successCriterion||metric.stageId&&!input.stages.some(stage=>stage.id===metric.stageId))throw new Error('poe_benchmark_metric_invalid');}
   private addTurn(conversation:PoeConversation,input:Omit<PoeTurn,'id'|'conversationId'|'at'>){const turn:PoeTurn={id:`poe-turn:${randomUUID()}`,conversationId:conversation.id,at:this.clock(),...clone(input)};assertNoSensitiveMaterial(JSON.stringify(turn),'poe_credential_material_forbidden');conversation.turns.push(turn);if(conversation.turns.length>MAX_TURNS)conversation.turns.splice(0,conversation.turns.length-MAX_TURNS);conversation.updatedAt=turn.at;this.record(conversation,'conversation.changed',{turnId:turn.id,actor:turn.actor});return clone(turn);}
   private setState(conversation:PoeConversation,state:PoeState,detail:Record<string,unknown>){conversation.state=state;conversation.updatedAt=this.clock();this.record(conversation,'conversation.changed',{...detail,state});}
