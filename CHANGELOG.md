@@ -1,5 +1,15 @@
 # Changelog
 
+## [4.1.0] — candidate
+
+- Adds the compact floating POE companion: original SVG hotelier, keyboard/touch repositioning, responsive conversation panel, greeting, and operator-controlled spoken tour synchronized with actual playback and highlighted dashboard views.
+- Grounds initial conversation through the configured Codex reasoning route and an approved, versioned documentation index. Shows invoked model identity and measured turn usage; missing readiness, context and cost remain unavailable.
+- Projects real job and schedule registries, seals permitted default-input job proposals for explicit approval, and reconciles parent/child work and verification before completion announcements. Sealed handovers and receipts use canonical runtime events.
+- Adds real speech captions, interrupted-audio fencing and retry states; preserves technical identifiers in the transcript and renders grouped numerical counts accurately in speech.
+- Exposes owner-started full-regression progress with actual runner counts and exact tested SHA. Test output remains distinct from Work Parcels, and narrated progress is a time-bound observation.
+- Documents private installation, voice/reasoning configuration, authentication, private HTTPS access, upgrades, rollback, troubleshooting and physical evidence requirements.
+- Final full-suite, physical, audiovisual, release and deployment gates are tracked in `docs/evidence/agent-control-4.1-qualification.md`; no completed 4.1 release is claimed by this candidate entry.
+
 ## [Unreleased] — POE conversational operator
 
 - Renames the resident conversational helper to **POE** and adds an original state-driven dashboard concierge integrated with the existing six-member Crew. `IDLE`, `LISTENING`, `INVESTIGATING`, `THINKING`, `EXPLAINING`, `OBSERVING_CREW`, `DESIGNING_EXPERIMENT`, `WAITING_FOR_APPROVAL`, and `SPEAKING` derive from durable POE activity rather than simulated work.

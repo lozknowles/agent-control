@@ -23,6 +23,8 @@ test('provider-neutral POE model routing uses the configured inexpensive and rea
   const design=await model.respond({purpose:'EXPERIMENT_DESIGN',operatorText:'Explain benchmark evidence',evidence,channel:'dashboard'});
   assert.deepEqual(calls,['economy','reasoning']);
   assert.equal(status.route.modelId,'poe-economy');
+  assert.equal(status.route.providerModel,'economy');
+  assert.equal(model.describe().route?.providerModel,'economy');
   assert.equal(design.route.modelId,'poe-reasoning');
   assert.deepEqual(status.usage,{inputTokens:20,outputTokens:8,totalTokens:28,cost:.000036,currency:'USD',authority:'ESTIMATED'});
 });

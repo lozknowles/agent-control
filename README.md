@@ -1,4 +1,4 @@
-# Agent Control 4.0.0
+# Agent Control 4.1.0 candidate
 
 Agent Control runs governed parameterised jobs against qualified execution and model resources. It is an infrastructure-neutral, policy-controlled adaptive harness for durable work by heterogeneous agents and models. Its executable harness core composes a task-appropriate worker, provider/model route, prompt profile, minimum qualified skills, restricted tools, context strategy, runtime settings, authority snapshot, resource limits and verification/escalation policy into a fingerprinted execution recipe.
 
@@ -73,13 +73,13 @@ Agent Control is provider-, model-, platform- and execution-environment-agnostic
 
 The dashboard is an observer and authenticated operator client over the same control service. Run and Lane **Execution history** correlates durable operator/system/provider/tool/governor/baton/error activity with telemetry, accounting and verification. It is not raw provider traffic, unredacted logs or hidden model reasoning.
 
-## POE conversational operator (development branch)
+## POE floating companion and spoken tour (4.1)
 
 POE is Agent Control's original resident conversational operator, evidence explainer, Crew liaison, benchmark designer, and optional OmniVoice interface. The Crew execute work; POE retrieves focused canonical records, explains what is known, admits what is unavailable, and turns an agreed experiment into a frozen proposal that still requires explicit operator approval. Approval submits registered Jobs through the normal Work Parcel, routing, governor, safety, verification, accounting, and league lifecycle—POE has no private execution path and no authority to overrule those controls.
 
-The dashboard adds a live POE workspace and contextual **Ask POE about this** controls. Authenticated WhatsApp supports `POE: <question>` through the existing enrolled/idempotent Social & Voice edge with a separate channel-scoped conversation. Optional OmniVoice uses an original designed voice, records available turn-latency fields, and treats barge-in as speech interruption rather than Work Parcel cancellation. A qualified conversational model can be selected with Model Registry roles; otherwise POE explicitly uses its deterministic grounded renderer. It never silently substitutes another model.
+The dashboard adds a small draggable SVG hotelier near the upper right, a compact conversation panel, and contextual **Ask POE about this** controls. The optional guided tour highlights real views while POE speaks; Next waits for browser playback to finish, and failures pause narration with a retry control. Captions preserve the complete spoken text, and reduced-motion preferences suppress animation. Authenticated WhatsApp supports `POE: <question>` through the existing enrolled/idempotent Social & Voice edge with a separate channel-scoped conversation. Optional OmniVoice uses an original designed voice, records available turn-latency fields, and treats barge-in as speech interruption rather than Work Parcel cancellation. A qualified conversational model can be selected with Model Registry roles; otherwise POE explicitly uses its deterministic grounded renderer. It never silently substitutes another model.
 
-See [POE operation and architecture](docs/poe.md), [dashboard operation](docs/web-dashboard.md), [Social & Voice](docs/social-voice/README.md), [Work Parcels](docs/work-parcels.md), and [adaptive orchestration](docs/adaptive-multi-model-orchestration.md). This isolated branch is implemented and deterministically tested but is not merged, released, deployed, or physically qualified.
+See [POE operation and architecture](docs/poe.md), [dashboard operation](docs/web-dashboard.md), [Social & Voice](docs/social-voice/README.md), [Work Parcels](docs/work-parcels.md), and [adaptive orchestration](docs/adaptive-multi-model-orchestration.md). The [4.1 qualification record](docs/evidence/agent-control-4.1-qualification.md) distinguishes historical checks from the final release gates. Follow the [4.1 installation/deployment runbook](docs/installation-deployment-4.1.md) for private startup, voice, authentication, qualification, upgrades and rollback. The candidate is not a completed release until those gates pass.
 
 ## Protected-resource mutation governance
 
@@ -277,7 +277,7 @@ Every specialist assignment and coordinator synthesis remains an ordinary Agent 
 
 ## Requirements
 
-- Node.js 20 or newer
+- Node.js 24 (qualification runtime; older versions are not qualified for this candidate)
 - npm
 - Git
 - Bash for shell-script validation and Android helpers

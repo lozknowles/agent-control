@@ -27,7 +27,7 @@ export interface PoeResponseModelPort {
   respond(input: {purpose: PoeResponsePurpose; operatorText: string; evidence: PoeEvidenceResult; channel: PoeChannel; history?:Array<{actor:string;text:string}>}): Promise<{text: string; citations: string[]; route: PoeRouteIdentity; usage: {inputTokens: number | null; outputTokens: number | null; totalTokens: number | null; cost: number | null; currency: string | null; authority: PoeAuthority}}>;
 }
 
-export interface PoeRouteIdentity {providerId: string; accountProfileId?: string; modelId: string; nodeId: string; label?: string;}
+export interface PoeRouteIdentity {providerId: string; accountProfileId?: string; modelId: string; providerModel?: string; nodeId: string; label?: string;}
 export interface PoeBenchmarkCondition {
   route: PoeRouteIdentity;
   tools: string[];
@@ -108,7 +108,7 @@ interface PoeSnapshot {schema: 'agent-control.poe-store/v1'; conversations: PoeC
 interface PoeOptions {regression?:()=>unknown;operator?: PoeOperatorRuntime; file?: string; clock?: () => string; evidence: PoeEvidencePort; responseModel?: PoeResponseModelPort; benchmark?: PoeBenchmarkExecutionPort; speech?: SpeechProvider; recognition?: SpeechRecognitionProvider; voice?: VoiceIdentity; onEvent?: (event: PoeEvent) => void;}
 
 const MAX_TURNS = 500, MAX_EVENTS = 1_000;
-const label = (route: PoeRouteIdentity) => `${route.providerId}/${route.accountProfileId ?? 'default'}/${route.modelId}@${route.nodeId}`;
+const label = (route: PoeRouteIdentity) => `${route.providerId}/${route.accountProfileId ?? 'default'}/${route.modelId}${route.providerModel?' ['+route.providerModel+']':''}@${route.nodeId}`;
 const sha = (value: unknown) => createHash('sha256').update(stable(value)).digest('hex');
 const stable = (value: unknown): string => Array.isArray(value) ? `[${value.map(stable).join(',')}]` : value && typeof value === 'object' ? `{${Object.entries(value).sort(([a], [b]) => a.localeCompare(b)).map(([key, item]) => `${JSON.stringify(key)}:${stable(item)}`).join(',')}}` : JSON.stringify(value);
 const cleanText = (value: unknown, code: string, maximum = 65_536) => {const text = String(value ?? '').trim(); if (!text || text.length > maximum) throw new Error(code); assertNoSensitiveMaterial(text, 'poe_credential_material_forbidden'); return text;};
