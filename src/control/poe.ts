@@ -159,7 +159,12 @@ export class PoeRuntime {
     const ownProposal=reference?.kind==='benchmark'?this.proposals.get(reference.id):undefined;
     const priorAnswer=[...conversation.turns].reverse().find(turn=>turn.actor==='poe'&&turn.evidence.length);
     const operatorEvidence = /(?:show|what).*evidence.*(?:that|answer)|sources.*(?:that|answer)/i.test(text)&&priorAnswer?{title:'Evidence supporting the previous answer',summary:'These are the exact retained sources and observations used for that answer, not newly inferred claims.',facts:priorAnswer.evidence,related:priorAnswer.references}:await this.options.operator?.query(text, clone(conversation), input.reference ?? conversation.lastReference);
-    const evidence = operatorEvidence ?? (ownProposal ? proposalEvidence(ownProposal) : reference ? this.options.evidence.resolve(reference) : focusOverviewEvidence(this.options.evidence.overview(),text));
+    const evidence = clone(operatorEvidence ?? (ownProposal ? proposalEvidence(ownProposal) : reference ? this.options.evidence.resolve(reference) : focusOverviewEvidence(this.options.evidence.overview(),text)));
+    if(/\btranscripts?\b|conversation history/i.test(text)){
+      const transcript=this.transcript(conversation.id);
+      evidence.facts.push({label:'Current natural transcript',value:JSON.stringify({conversationId:conversation.id,snapshotTurnCount:conversation.turns.length,bytes:Buffer.byteLength(transcript),sha256:createHash('sha256').update(transcript).digest('hex'),exportPath:`/api/poe/conversations/${encodeURIComponent(conversation.id)}/transcript`,snapshotBoundary:'Complete retained conversation before this answer; export requires the existing authenticated channel controls.'}),authority:'AGENT_CONTROL',informationKind:'LIVE_OBSERVED',observedAt:this.clock(),evidence:[`poe:conversation:${conversation.id}:transcript`]});
+      if(evidence.title==='Knowledge unavailable'){delete evidence.unavailable;evidence.title='Current natural transcript';evidence.summary='This conversation has a retained natural transcript. The snapshot below describes the real export before this answer is added.';}
+    }
     if (operatorEvidence) reference = operatorEvidence.reference;
     conversation.lastReference = reference ? clone(reference) : undefined;
     let response = operatorEvidence ? `${evidence.title}\n\n${evidence.summary}\n\n${evidence.facts.map(fact=>`${fact.label}: ${fact.value===null?'unavailable':String(fact.value).length>240?'See the sourced record below.':String(fact.value)}`).join('\n')}` : groundedResponse(evidence), route:PoeRouteIdentity|undefined, usage:PoeTurn['usage'], responseMode:'DETERMINISTIC'|'MODEL'='DETERMINISTIC', authority:PoeAuthority='AGENT_CONTROL';
