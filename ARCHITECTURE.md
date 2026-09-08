@@ -1,6 +1,6 @@
 # Agent Control architecture
 
-This is the authoritative source boundary for the Agent Control 3.9.0 candidate. Status labels matter:
+This is the authoritative source boundary for Agent Control 4.0.0. The physical 4.0 gate passed against product checkpoint `a08ccac5ced3cd399755bd084ff30fe224ab7860`; evidence/tooling commit `8ad56c031b92454b6364f7b502159e69242921e7` preserves the accepted artifacts without changing the tested product implementation. Status labels matter:
 
 - **implemented** means executable code and automated tests exist in this branch;
 - **experimental** means executable code exists but has not been qualified across every external substrate;
@@ -45,6 +45,34 @@ This is the authoritative source boundary for the Agent Control 3.9.0 candidate.
 35. Sending a cancellation signal is not cleanup completion. Terminal state and authority release require verified descendant/process-tree absence or an explicit uncertainty state.
 36. Every resource metric carries source, authority and freshness. Missing data is null; a derived fallback cannot silently become an admission-qualified measurement.
 37. Cache admission is an adapter capability, not a core assumption. Stable prompt structure is portable; provider-specific keys and breakpoints are emitted only after provider-and-model qualification.
+38. Every external ingress that starts governed work preserves a redacted `request-origin` envelope through the Run, Work Parcel, transcript and response association; channel identity and authentication are provenance, never execution authority by themselves.
+39. A baton transfers context and evidence, never authority. A child contract receives only an intersection with parent authority and inherits the parent's protected-resource envelope.
+40. Live Shell is an attachment to a proven execution-session identity, not a shell API. Protected-resource Actions are `WATCH_ONLY`; adapter capabilities cannot widen that policy.
+
+## Agent Control 4.0 integrated lifecycle
+
+```text
+authenticated dashboard / OpenWA text / confirmed voice / ACP
+                              |
+                              v
+           redacted request-origin + canonical Work Parcel
+                              |
+          classify capabilities, policy and authority envelope
+                              |
+               adaptive model/workflow decision record
+                              |
+            Lane + Crew projection + owned execution session
+                              |
+       models / typed tools / optional observable Live Shell
+                              |
+      token governor -> retry / compact / sealed-baton handoff
+                              |
+               independent verification and acceptance
+                              |
+       immutable transcript/evidence -> originating channel
+```
+
+The flow composes existing control-plane records. `GovernedRequestOrigin` records exact initiating text, safe channel/authentication metadata and opaque message/identity references. It does not grant a template or tool; the enrolled principal and normal policy still decide authority. `AdaptiveOrchestrationRuntime` ranks only eligible routes and workflows. `RuntimeSafetySupervisor` resolves semantic effects before process launch. `ExecutionSessionRuntime` projects the proven process with adapter-specific capabilities. `TokenAwareBatonRuntime` decides context/cost continuation, while `GovernedHandoffRuntime` intersects requested authority with the source contract and retains protected resources. Verification remains a separate actor and acceptance boundary. The dashboard/Crew/WOPR consume these same records over SSE and cannot mutate their meaning.
 
 ## Governed retrieval and context intelligence
 
@@ -86,6 +114,33 @@ Recovery classification is provider-neutral. Transient transport and expired-enr
 Every action receives an `OwnedExecution` capability rather than owning an untracked child process. On Linux the adapter launches a process group, captures `/proc/<pid>/stat` start identity, sends bounded TERM/KILL to the group and verifies absence. On Windows it enumerates a fixed CIM process tree, compares creation identity, invokes bounded tree termination and rechecks every captured process identity. Other substrates may stop the leader but must return `uncertain` when descendants cannot be proven absent. Contract, ordinary Job and parameterised-review cancellation/timeout paths therefore remain `CANCELLING`, `CLEANUP_UNCERTAIN`, `DISCONNECTED` or `ORPHANED` until cleanup evidence permits a terminal state; locks and write authority are not released on a mere signal attempt.
 
 Dashboard state is a projection of those durable records. Initial HTTP load and every SSE connection send/reload a full snapshot before incremental events. Reasons, source/observed time, freshness, retry/cancellation deadlines, remaining retry budget, execution identity and cleanup outcome are rendered directly. Locally advancing elapsed-time or countdown text is presentation between authoritative timestamps, never inferred state.
+
+The optional dashboard Crew is another read-only projection inside this boundary:
+
+```text
+canonical lanes / Runs / steps / Parcel DAGs / baton views
+workers / tools / systems / models / provider and routing events
+                              |
+              projectDashboardCharacterCrew
+                              |
+        versioned AgentControlService status snapshot
+                              |
+       existing HTTP status + SSE-triggered reconciliation
+                              |
+      Crew + explanation + linked engineering evidence
+```
+
+The `agent-control.dashboard-character-crew/v2` contract separates three layers. `operationalState` is canonical control truth; `activity` is current source-backed work plus its source ID and optional classified tool; `animationCue` is explicitly `presentation-only`. The browser can derive bounded idle expressions such as looking, sleeping and one-shot waking, but no animation value is accepted as projector input or returned to execution. Deterministic narration is built from the same source IDs and fixed templates, never another model.
+
+Core state is reduced deterministically to one primary presentation state per functional area, with concurrent conditions retained as typed count badges. Work Parcels additionally project their actual stage dependency graph, selected Run workers, routes and one visual worker per canonical `RUNNING` stage. A baton can move only from a token-governor handoff record, durable Parcel baton/audit record or typed lane-handoff event; source, destination, outcome and exact reason remain inspectable. Provider/model events retain explicit failure, HTTP and routing-eligibility facts, so discovery or evaluation completion cannot imply qualification.
+
+Active work can remain primary while blocked and queued work remains visible. A two-minute presentation freshness rule changes an otherwise-active pose to `stale`, never `failed`; recent event-derived activity is bounded to 30 seconds unless a Run/stage remains active. Canonical cancellation remains `cancelling` until cleanup is terminal. Initial load and reconnect reconciliation suppress transition-only completion acknowledgement. The browser-local gallery has no API writer and its simulated state is never merged into real workflow evidence.
+
+Characters have no model, scheduler, provider, worker, lease, PTY or verification capability. Motion uses browser-only SVG/CSS transform/opacity, pauses when hidden/off-screen, respects reduced motion and collapses to a horizontal worker strip on small screens. The source records and linked Level 3 views remain authoritative. The complete mapping, three disclosure levels and qualification boundary are documented in [dashboard operational Crew](docs/dashboard-characters.md).
+
+The Crew projection also owns a read-only `agent-control.dashboard-activity-panel/v1` view. It coalesces canonical controller/queue/lane/step/thread/handoff/verification/system facts and retained typed events into nine labelled Activity Matrix indicators. The browser may pulse an indicator only for `ACTIVE` or bounded `RECENT` state; it cannot synthesize traffic, token streaming or hardware work. Each row carries its event ID/time, lane, provider/model, source, meaning, persistence and stale/disconnected rule. A separate slow connection heartbeat has `presentation-only` authority and is visibly marked as non-work.
+
+The persistent usage strip is another read-only composition of the existing token-routing projection. It remains mounted across main dashboard views and stores only the selected thread/lane ID in browser-local storage. Current snapshots replace prior snapshots, so SSE reconnect and navigation neither reset nor add usage. It shows current-context occupancy only when the adapter supplies or defensibly estimates it, and separately retains cumulative fresh/cache-read/cache-write/input/output and Work Parcel model-chain totals. Unknown context and cost remain unavailable.
 
 Provider prompts have a generic ordered stable/volatile block representation plus a non-secret cache scope. The rendered text remains authoritative. A Responses adapter may derive a hashed key or explicit content breakpoint only when both its provider and exact model advertise `prompt-cache.key` or `prompt-cache.explicit`; unsupported adapters receive the unchanged rendered prompt. Cache reads, writes and fresh input are normalized separately, and configured cache-write cost is calculable only when the provider reports the write count. This preserves useful structure if any current provider disappears while keeping its wire controls behind its adapter.
 
@@ -193,7 +248,43 @@ AUTO policy permits only transitions inside the current contract authority, prot
 
 ## Provider and model lifecycle
 
-Logical providers are durable identities independent of a client or controller session. Discovery updates only observed capabilities and model IDs. Provider endpoint and credential reference remain immutable under one ID; credentials are indirect `env:`/`file-env:` references and never enter batons, telemetry or evidence.
+Logical providers are durable identities independent of a client or controller session. Their ordinary configuration contains endpoint/protocol/adapter policy and an indirect credential reference, never a secret. The existing credential-residency vocabulary covers `codex-home-env`, `api-key-env`, `bearer-file-env`, and `provider-secure-store`. The latter now has one concrete controller-local backend beneath the same abstraction; it is not an NVIDIA store or a second credential architecture.
+
+```text
+provider / optional account profile / model / execution node
+                         |
+               opaque credential reference
+                         |
+       metadata-only readiness (no credential read)
+                         |
+              governed invocation boundary
+                         |
+       late node-local resolution -> adapter header/env
+                         |
+         exact-secret + pattern response redaction
+                         |
+       normalized telemetry / evidence / dashboard
+```
+
+The secure-store backend hashes the opaque reference into an owner-only filename under the Agent Control state directory. Directories are `0700`, files are `0600`, writes are exclusive temporary-file plus atomic rename, and symlink, ownership or permission mismatches fail closed. Rotation replaces the same reference atomically; revocation removes it. Status is derived from safe file metadata and does not read the credential. The set operation may compute a display-only prefix/suffix fingerprint from its ephemeral input, but does not persist it.
+
+Resolution occurs inside the chosen provider invocation, after provider/account/model/node identity has been selected. A provider-level route resolves its provider reference. An account-bound API route resolves only that account's `credentialResidency.store`; it does not fall back to provider or ambient credentials, and a controller client refuses a remote-resident profile. Codex keeps its existing isolated `CODEX_HOME` flow. Only the adapter receives the resolved value, and only for its authorization header or isolated child environment. Exact runtime values plus recognized credential patterns are removed from returned content, tool arguments, model metadata and failures before any state/evidence boundary.
+
+Dynamic discovery is an observation, not qualification or callability. A provider adapter may call its documented catalogue endpoint and normalize only returned or safely derived metadata, preserving an authority per field. Missing context limits, modalities, capabilities, licence, pricing, quota and rate limits remain `UNKNOWN`. A discovered entry is registered as enabled for review but `routingEligible: false` and starts `DISCOVERED / UNQUALIFIED / inference UNTESTED`. An inference endpoint must separately accept the exact discovered ID before its state becomes `CONFIRMED`.
+
+```text
+DISCOVERED -> UNQUALIFIED / inference UNTESTED
+           -> bounded streaming callability / inference CONFIRMED
+           -> capability SMOKE_TESTED -> BENCHMARK_QUEUED
+           -> BENCHMARKED -> QUALIFIED / REJECTED / LIMITED
+           -> ROUTING_ELIGIBLE (explicit authenticated operator action)
+```
+
+The cheapest generic prerequisite is one bounded streaming callability request. It records HTTP acceptance, stream/event start, measured TTFT, partial-output signal, finish reason and normalized usage, separating timeout before first token from timeout during generation. Raw stream data, output and reasoning are never durable. Only confirmed endpoints enter capability smoke; its passing callability result can satisfy basic completion, leaving four bounded probes. Both contracts are versioned and content-hashed, and previous focused runs remain append-only history.
+
+Capability smoke retains requested budget, output length, normalized usage, latency, finish reason, provider-neutral failure class and response hashes—not prompts, response bodies or credentials. An adapter may supply a bounded, audited provider request extension when a provider's native invocation control is needed for the qualification contract; reserved governed fields cannot be overridden, and ordinary execution, benchmarks and core routing do not inherit that extension. A response that consumes its output budget is `OUTPUT_TRUNCATED` with safe partial usage/hash evidence rather than malformed transport. Frozen benchmark attempts and 7/30/90-day economics continue through the existing model-intelligence ledger. Routing admission requires current `QUALIFIED`/`PREFERRED` evidence plus explicit enablement; degradation, quarantine, retirement or loss of evidence automatically withdraws the dynamic route. This catalogue lifecycle feeds, rather than replaces, immutable model recipes and versioned role policy.
+
+The NVIDIA adapter is intentionally thin: it constrains the provider to NVIDIA's documented HTTPS hosted endpoint and validates the `nvapi-` credential form. OpenAI-compatible wire requests, discovery, secure references, smoke checks, telemetry, model intelligence, dashboard projection and routing are generic. Removing NVIDIA leaves those capabilities intact.
 
 Model recipes bind exact provider, provider model, model version, capability, context/output limit, tool, runtime and node requirements. Their fingerprints are immutable per recipe version. Evidence gates each transition through `DISCOVERED → BENCHMARKING → SHADOW → CANDIDATE → ACTIVE → PREFERRED → DEPRECATED`.
 
@@ -370,9 +461,9 @@ An authorised Linux/SSH resource may opt into the generic managed-node adapter. 
 
 Managed-node execution is split into read-only inspection and typed maintenance Actions. The controller validates operation, parameter form, service allowlist, runtime target, current heartbeat and approvals before streaming one reviewed action script. The remote script validates its typed operands again. It never receives `sh -c` or an operator-provided command. An active protected workload marks the node BUSY, blocks configured disruptive/competing scheduling capabilities and requires the stronger protected-workload override for maintenance. Job leases, locks, approval waits, cancellation, verification, artifacts and provenance remain in the existing control plane.
 
-Configuration rejects embedded secret-like fields and credentialed URLs. Credentials are supplied through separately named environment variables. State defaults to `.agent-control/`; the path is overrideable.
+Configuration rejects embedded secret-like fields and credentialed URLs. Credentials are supplied through separately named environment variables, referenced files, isolated CLI homes or the existing opaque `provider-secure-store` reference. State defaults to `.agent-control/`; the path is overrideable.
 
-`ConfigurationStore` is the sole dashboard-facing inventory writer. Its authenticated API reads the current file with a SHA-256 revision, applies one resource/provider/model/service upsert or complete model-role-map replacement, validates the resulting configuration, and atomically replaces the file. It never writes a supplied credential value: `auth.env`, `credentialEnv` and `credentialFileEnv` are names of runtime environment variables, while plaintext password, token, secret and API-key fields fail closed. Provider/model/route changes reload the canonical `ModelRegistry`; resource/service changes remain restart-required. The browser never mutates a registry directly.
+`ConfigurationStore` is the sole dashboard-facing inventory writer. Its authenticated API reads the current file with a SHA-256 revision, applies one resource/provider/model/service upsert or complete model-role-map replacement, validates the resulting configuration, and atomically replaces the file. It never writes a supplied credential value: environment/file forms name runtime references and `provider-secure-store` carries only an opaque lookup name, while plaintext password, token, secret and API-key fields fail closed. Provider/model/route changes reload the canonical `ModelRegistry`; resource/service changes remain restart-required. The browser never mutates a registry directly.
 
 ## 3.4 parameterised Jobs layer
 
@@ -437,7 +528,7 @@ The OpenAI-compatible adapter supports bounded non-streaming Responses and Chat 
 
 Work Parcel model routing remains downstream of worker placement but upstream of Run creation. A stage requesting `modelRole` or `model` is resolved against the worker selected for its first runnable Job step. The immutable Run trigger records the exact provider model, node, qualification version and fallback reason so model-backed Actions can consume the governed decision. Ordinary Jobs with no model request retain their existing behavior.
 
-Codex integration materializes one selected Responses-compatible provider and model into a mode-0600 temporary `CODEX_HOME/config.toml`, references the approved credential environment variable, and deletes the directory after execution. It does not edit or copy the user's Codex configuration. That generated configuration is the one exception to ignoring user config; it is still executed with project instructions and native execution tools disabled. Chat-Completions-only providers fail closed because current Codex custom-provider configuration supports the Responses wire API.
+Codex integration materializes one selected Responses-compatible provider and model into a mode-0600 temporary `CODEX_HOME/config.toml`, references the approved credential environment variable, and deletes the directory after execution. A secure-store value is resolved only at that boundary and supplied through a dedicated ephemeral child environment key; it is never written to the generated TOML. The path does not edit or copy the user's Codex configuration. That generated configuration is the one exception to ignoring user config; it is still executed with project instructions and native execution tools disabled. Chat-Completions-only providers fail closed because current Codex custom-provider configuration supports the Responses wire API.
 
 ## Scheduling and execution
 
@@ -571,11 +662,23 @@ The sealed baton is written before the existing governed handoff runtime changes
 
 The production parameterized repository-review path now supplies the concrete integration boundary. After one immutable context chunk returns a schema-valid result, `DirectRepositoryReviewExecutor` assesses the live source thread if another bounded chunk remains. An approved route creates the sealed token baton and uses `GovernedHandoffRuntime` `DELEGATE` to create a capability-bounded child `ContractExecution`. The child invokes the exact registry-resolved destination over the next frozen chunk. Destination failure marks that child failed and invokes the same chunk on the still-active source route; success makes the child the verification owner. Existing `ParameterizedJobEngine` repository validation independently verifies the consolidated result and records its pass/fail meaning only on the successful attempt's Work Parcels and surviving contract. A durable monotonically increasing execution sequence prevents token-thread identity reuse after process restart. Source, destination and recovery usage remains additive in the same parcel; configured monetary ceilings fail closed if neither provider reporting nor configured pricing can measure cost. See [Token-Aware Baton Routing](docs/token-aware-baton-routing.md).
 
+The same production boundary can optionally receive a preconfigured independent `RepositoryReviewQualityGate`. The gate sees only the frozen request/chunk, schema-valid result, sealed route and response hash; it cannot inspect private reasoning or choose an arbitrary provider. A rejection enters the generic governor as a typed `QUALITY_GATE` trigger with a stable code, bounded evidence and unresolved criteria. The governor chooses only a registry-declared, qualified fallback in policy order, then seals the source result and exact next action before dispatch. This route change is independently distinguishable from context pressure, timeout and provider failure. The destination must pass the same gate, and any route-identity mismatch or unsuccessful handoff fails closed while retaining source recoverability.
+
+Transient provider exhaustion uses the same production boundary through a distinct `PROVIDER_FAILURE` trigger:
+
+`sealed route → provider invocation → safe transient classification → bounded same-route retry → retry exhausted → governor capability/account/node filtering → sealed failure baton → governed destination → destination invocation → independent verification`
+
+The failed invocation remains a failed Work Parcel leg with its own duration and whatever usage the provider actually reported. It is not converted into model-quality evidence and is not removed when a later retry or fallback succeeds. The failure baton records the immutable repository SHA, clean/dirty state, completed preparation, failure classification, evidence references, unresolved review work, exact next action, source route and aggregate accounting. A destination must match the governor-sealed provider/account/model/node identity. No candidate means fail closed; destination failure leaves the original thread recoverable. Parameterised Run accounting adds every known leg and carries an explicit unknown-invocation count when any failed provider attempt lacks usage or cost.
+
+OpenAI-compatible HTTP waits use a dedicated dispatcher whose header/body timers do not pre-empt Agent Control's bounded invocation `AbortSignal`. Native Undici timeout codes and opaque transport failures are normalized at the adapter boundary, not interpreted by core routing policy. This does not claim control over provider-side, proxy or network deadlines: an external timeout remains an observed provider/transport boundary and is classified from the available evidence.
+
 ## Human-readable execution history (3.8.2)
 
 `Durable Job Run + Work Parcel audit + token/governor evidence + sealed baton state → bounded redacted projection → AgentControlService → existing HTTP/SSE dashboard`
 
 `ExecutionHistoryProjection` is an operator view, not an event store, scheduler, verifier, provider transcript or policy engine. A Saved Job Run selects only the Work Parcel IDs already sealed into that Run; a Lane selects only its own lane state. The projection orders those associated records deterministically and labels their original actor class. Reloading or reconnecting rebuilds the same view from durable sources, while new SSE notifications cause the dashboard to fetch the updated canonical projection.
+
+`ExecutionTranscriptRuntime` materialises the `mode: complete` Run projection as Markdown whenever its Run, associated Work Parcel, token/governor record or baton changes. Unlike the bounded dashboard card list, the transcript projection has no entry-count cap. Each document has a SHA-256 over the rendered content and a separate SHA-256 over the deterministic source projection; its adjacent manifest records Run, Saved Job, terminal state, Work Parcel IDs and entry count. Startup refresh reconstructs the same document from durable records and an integrity check rejects a changed file. The transcript is still a projection rather than a second event ledger, and it receives neither raw provider transport output nor hidden reasoning.
 
 The complete association is `Saved Job → immutable Run → owned Work Parcel IDs → provider invocation/audit + token governor + baton/handoff evidence → independent verification/accounting → Run history`, alongside the Lane-local objective, route, baton and verification projection. Similar timestamps or display labels never associate records across Run, Parcel or Lane boundaries.
 
@@ -624,8 +727,40 @@ Success criteria carry stable identity, type, source provenance, scope, required
 
 `RuntimeSafetySupervisor` is injected into the existing `JobRuntime` boundary. It independently evaluates requested scope and action metadata, persists the decision and approval trail, and returns `ALLOW`, `ALLOW_WITH_AUDIT`, `REQUIRE_APPROVAL`, `DENY`, `PAUSE` or `ESCALATE`. Provider-native safety can add evidence but cannot replace this decision or grant authority.
 
+For consequential repository operations, an Action registration may also provide a typed semantic-effect resolver. `JobRuntime` invokes it before safety assessment, compiles immutable Work Parcel constraints into resource capabilities, and supplies the governed plan to the Action only after the supervisor allows it:
+
+`proposal → action normalization → semantic effect resolution → resource/capability intersection → runtime safety decision → dispatch → external-state reconciliation`
+
+The first adapter is `repository.git-governed@1.0.0`. It resolves remote Git writes to logical resources such as `git-ref:origin/master`, including explicit refspec, force, delete, mirror, wrapper, chain, remote-alias and `git -C` forms. A read-only resource policy denies every intersecting `CREATE`, `UPDATE`, `FORCE_UPDATE`, `DELETE` or `REWRITE` effect before subprocess creation. Accepted operations are argv-only and shell-free. Ambiguous destinations and unresolved execution semantics fail closed; this is an adapter boundary, not a core command blacklist.
+
+`repository.git-propose@1.0.0` is the model-facing Action. It performs bounded read-only inspection and obtains a strict structured proposal through the existing provider registry and adaptive harness. The exact provider/account/model/node route is sealed in the proposal artifact and checked again before governed execution. `repository.git-protected-ref.verify@1.0.0` owns independent remote-ref verification. This preserves the boundary: model intelligence proposes work; Agent Control grants or denies effects.
+
+Consequential effects carry operation-level truth independently of Run completion: `PROPOSED → AUTHORISED → EXECUTING → EXTERNALLY_COMMITTED`, with `CANCELLED_BEFORE_COMMIT`, `COMMIT_STATE_UNCERTAIN` and `FAILED` alternatives. Remote-ref observation reconciles interrupted Git operations where possible; uncertainty remains explicit. The Run and safety ledgers preserve the proposal effect, resource, policy, actor/stage/route identity, governor decision, reason, state and timestamps without retaining hidden reasoning. See [protected-resource mutation governance](docs/protected-resource-governance.md).
+
 The web dashboard is a redacted projection of these same stores. Existing SSE events refresh Work Parcel context, questions, criteria, steering, capability candidates/observations, frozen batches, historical metrics, regression warnings, leader slots and safety decisions. Event-stream startup is independent of optional panel availability, and a missing optional subsystem is shown locally rather than disabling live control-plane updates.
+
+## Evidence-driven adaptive orchestration
+
+The adaptive workstream adds a provider-neutral evidence layer around the existing Work Parcel lifecycle:
+
+`classify → compile required capabilities → apply policy → enumerate eligible models/workflows → consult task-specific leagues → compare quality/cost/latency → select → execute → quality gate → verify → update evidence`
+
+The **harness profile** (`THIN`, `STANDARD`, `DEEP`) controls context, tools and execution envelope. The **model execution class** (`LOCAL`, `SPARK`, `STANDARD`, `FRONTIER`) controls the governed model tier. The adaptive leagues are neither of these classifications: they rank qualified route identities and complete workflow strategies for the current task class. Token-aware context pressure remains a separate governor; high pressure alone does not cause a cheaper route, and difficult unfinished reasoning remains on the stronger route unless policy and evidence permit a handoff.
+
+`AdaptiveOrchestrationRuntime` persists a snapshot under the configured state directory. Its model league key includes task class, provider, opaque account profile, model, execution node and model version. Its workflow league key includes strategy ID and version. Each evidence record retains its source class (`BENCHMARK`, `QUALIFICATION` or `PRODUCTION_WORK_PARCEL`), usage/cost authority, quality-gate result, retries/escalations, latency, reliability, evidence age and trend. Benchmark and qualification measurements are visible alongside production observations but are not silently collapsed into one untraceable score. Age decay, minimum samples, confidence and policy quality floors prevent a sparse or stale winner from becoming a universal default; when multiple routes have some verified evidence but remain below the preference threshold, the configured exploration rate permits a bounded deterministic sample, while no-evidence routes retain declared-order precedence.
+
+Every parcel receives an immutable-at-decision operational tree with parent-linked nodes for request, classification, required capabilities, policy, eligible candidates, league evidence, trade-off, route, execution, quality gate, verification, escalation and evidence update. Facts include timestamps, candidate identities, scores, sample/confidence, authority markers, policy constraints, reason codes and resulting actions. Prompts and private model chain-of-thought are not part of this tree. A human-readable report and dashboard view are projections of the same stored record, so historical decisions remain reconstructable after later league updates.
+
+In the normal `WorkParcelCoordinator`, the selected adaptive route is handed to the existing `ModelRegistry` and `JobRuntime`; worker placement, locks, approvals, provider qualification, node availability, action execution and independent verification remain authoritative. In the repository-review executor, the same decision record observes provider invocations and records the existing token governor, baton and contract/handoff events. A destination or workflow failure is classified as operational evidence and does not reduce model quality unless an independent quality gate produces a verified model outcome. The original parcel and source route remain recoverable.
+
+The dashboard's **Routing** tab reads `/api/orchestration/models`, `/api/orchestration/workflows` and the persisted decision/report endpoints. Filters are evaluated server-side from canonical evidence. The existing SSE stream and dashboard refresh keep this read-only view current. Adding a future fast model or provider requires an adapter, qualification and candidate registration; core league scoring and decision-tree reconstruction do not change. If Codex disappears, the same stores, policy and Work Parcel integration continue to operate with any qualified local, API, edge or future provider.
+
+Detailed configuration, API filters, evidence semantics and deterministic qualification are in [`docs/adaptive-multi-model-orchestration.md`](docs/adaptive-multi-model-orchestration.md). This workstream does not claim a physical provider qualification merely because the deterministic suite passes.
 
 ## Release boundary
 
-Earlier version tags remain immutable source releases. The 3.9.0 branch is a review candidate; this qualification task does not merge, tag, publish, deploy services, expose a remote ACP listener, create credentials, broaden sharing, enable Spark or enable Saved Jobs/Schedules. Real evidence covers dashboard/SSE reload and concurrent work, Linux process-group cleanup, Windows process-tree cancellation/timeout/uncertainty, controller-restart and bounded recovery, and the Pixel hidden-stdin pair/disconnect/same- and changed-endpoint reconnect/governed-execution/session-resume lifecycle. The pairing ceremony altered only the Pixel's existing local Wireless Debugging authorization and did not deploy Agent Control. The matched cache comparison preserved independent quality but consumed more tokens and time; explicit Responses controls, cache writes, current context and billed cost remain unavailable on the tested CLI, so no repeatable token, latency or monetary saving is claimed. These boundaries remain visible in implementation status and release review.
+Earlier version tags remain immutable source releases. Agent Control 4.0.0 integrates Crew/WOPR, adaptive orchestration, protected-resource governance, Social & Voice/OpenWA provenance and Live Shell. The source release does not deploy services, expose a remote ACP listener, broaden sharing, enable Spark, enable Saved Jobs/Schedules or admit NVIDIA routing. Its controller-local NVIDIA credential exists only in the owner-only runtime store and is not source or evidence. The accepted 4.0 evidence adds protected-resource proof and a physical Pixel social request through adaptive Qwen-to-Codex baton handoff, independent verification, terminal delivery, dashboard/video reconciliation and additive token accounting. Current context and billed cost remain unavailable on the tested routes, so no monetary or context-occupancy claim is made. The NVIDIA catalogue remains routing-disabled: Nemotron/Muse callability is observed, MiniMax is indeterminate and Kimi K2.6 endpoint-unavailable. See the [4.0 qualification](docs/evidence/agent-control-4.0-qualification.md), [Pixel continuation](docs/evidence/agent-control-4.0-pixel-social-continuation.md), [initial NVIDIA qualification](docs/evidence/agent-control-3.9-nvidia-hosted-qualification-20260906.md) and [focused diagnostics](docs/evidence/agent-control-3.9-nvidia-focused-diagnostics-20260906.md).
+
+## Optional messaging adapters
+
+The channel-neutral messaging command contract binds immutable approved Job definitions and finite argument values to enrolled operator grants. OpenWA verifies signed message provenance, pairs a separate human through authenticated dashboard confirmation, and calls the existing application service. Durable command identities reconcile with the RunLedger across interrupted acknowledgements. SQLite stores an independent outbound queue and safe audit metadata; gateway failure never owns scheduler state or approvals. See [OpenWA architecture and recovery](docs/openwa/README.md).

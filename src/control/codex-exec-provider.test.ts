@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {AdaptiveHarness, SkillCatalog, ToolPolicy, type RecipeRequest} from './adaptive-harness.js';
-import {CODEX_0153_CONTEXT_CAPABILITIES, CodexExecProviderFactory, codexReadOnlyStructuredArguments, normalizeCodex0153TelemetryEvent, runCodexWithRegisteredModel} from './codex-exec-provider.js';
+import {CODEX_0153_CONTEXT_CAPABILITIES, CodexExecProviderFactory, codexExecutionSessionOutputLine, codexReadOnlyStructuredArguments, normalizeCodex0153TelemetryEvent, runCodexWithRegisteredModel} from './codex-exec-provider.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -57,6 +57,14 @@ test('Codex 0.153 native app-server usage and compaction normalize behind the pr
   assert.deepEqual(compact?.contextLifecycle, {kind: 'COMPACTION', contextId: 'compact-1', authority: 'authoritative', source: 'codex_app_server_contextCompaction'});
   assert.equal(CODEX_0153_CONTEXT_CAPABILITIES.nativeNewContext, 'eligible-chatgpt-codex-sessions-excluding-temporary-structured');
   assert.equal(CODEX_0153_CONTEXT_CAPABILITIES.agentControlExecNativeContextManagement, false);
+});
+
+test('Codex live-session projection exposes real public events without private reasoning', () => {
+  assert.equal(codexExecutionSessionOutputLine('stdout', JSON.stringify({type: 'thread.started', thread_id: 'thread-real'})), 'Codex thread started · thread-real');
+  assert.equal(codexExecutionSessionOutputLine('stdout', JSON.stringify({type: 'item.completed', item: {type: 'reasoning', text: 'private-analysis-must-not-appear'}})), 'Codex reasoning completed · private content withheld');
+  assert.equal(codexExecutionSessionOutputLine('stdout', JSON.stringify({type: 'item.completed', item: {type: 'agent_message', text: 'Public governed result'}})), 'Codex agent output:\nPublic governed result');
+  assert.equal(codexExecutionSessionOutputLine('stdout', JSON.stringify({type: 'turn.completed', usage: {input_tokens: 12, output_tokens: 3, account: 'forbidden'}})), 'Codex turn completed · usage {"input_tokens":12,"output_tokens":3}');
+  assert.equal(codexExecutionSessionOutputLine('stderr', 'authorization=secret-value'), 'Codex diagnostic: authorization=[REDACTED]');
 });
 
 test('Codex fallback fails closed for missing ChatGPT auth and opaque file changes', async () => {

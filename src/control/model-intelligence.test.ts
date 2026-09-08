@@ -73,6 +73,14 @@ test('fresh, cached and equivalent-uncached economics remain separate and unknow
   assert.equal(unavailable.freshInputTokens, null); assert.equal(unavailable.cacheHitRatio, null); assert.equal(unavailable.costPerSuccessfulTask, null); assert.deepEqual(unavailable.cacheCoverage, {knownAttempts: 0, totalAttempts: 1});
 });
 
+test('harness and invalid-test outcomes remain durable but cannot contaminate model quality or reliability', () => {
+  const suite=smallSuite(),ledger=new ModelIntelligenceLedger(),route=candidate('attribution');ledger.createBatch({id:'batch-attribution',suite,candidates:[route],requestedBy:'operator',reason:'attribution proof'});
+  record(ledger,'batch-attribution',suite,route,'model-pass','2026-09-05T10:00:00Z');
+  record(ledger,'batch-attribution',suite,route,'harness-failure','2026-09-05T10:01:00Z',false,{failureClass:'ARCHITECTURE_REGRESSION',outcomeAttribution:'HARNESS_FAILURE'});
+  const metrics=aggregateModelAttempts(ledger.attemptsList());
+  assert.equal(metrics.attempts,2);assert.equal(metrics.executed,2);assert.equal(metrics.completed,1);assert.equal(metrics.excludedAttempts,1);assert.equal(metrics.passed,1);assert.equal(metrics.reliability,1);assert.equal(metrics.quality,1);assert.equal(metrics.totalTokens,120);assert.equal(metrics.attribution.HARNESS_FAILURE,1);assert.equal(metrics.attribution.MODEL_SUCCESS,1);
+});
+
 test('promotion requires enough durable history and explicit approval before PREFERRED', () => {
   const suite = smallSuite(), ledger = new ModelIntelligenceLedger(undefined, () => '2026-09-08T12:00:00Z'), route = candidate('qualified'), routeKey = modelRouteKey(route); ledger.createBatch({id: 'batch-promotion', suite, candidates: [route], requestedBy: 'operator', reason: 'promotion proof'});
   ['2026-08-31','2026-09-02','2026-09-04','2026-09-06','2026-09-07','2026-09-08'].forEach((day, index) => record(ledger, 'batch-promotion', suite, route, `promotion-${index}`, `${day}T10:00:00Z`));

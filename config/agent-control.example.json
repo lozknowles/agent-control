@@ -37,6 +37,21 @@
     "allowRemote": false,
     "zgExecutable": "zg"
   },
+  "adaptiveOrchestration": {
+    "enabled": true,
+    "minimumSamplesForPreference": 3,
+    "minimumQualityScore": 0.7,
+    "maxEvidenceAgeDays": 90,
+    "policyQualityFloor": 0.6,
+    "maxRouteCost": null,
+    "maxRouteLatencyMs": null,
+    "qualityWeight": 0.5,
+    "reliabilityWeight": 0.2,
+    "costWeight": 0.15,
+    "latencyWeight": 0.1,
+    "confidenceWeight": 0.05,
+    "explorationRate": 0.1
+  },
   "harnessEfficiency": {
     "routingMode": "observe",
     "minimumVerifiedRuns": 10,
@@ -163,6 +178,19 @@
       "credentialEnv": "OPENROUTER_API_KEY",
       "credentialFileEnv": "OPENROUTER_API_KEY_FILE",
       "capabilities": ["coding", "reasoning", "tool-use"]
+    },
+    {
+      "id": "nvidia-hosted",
+      "name": "NVIDIA hosted models",
+      "kind": "openai-compatible",
+      "adapter": "nvidia-hosted-v1",
+      "baseUrl": "https://integrate.api.nvidia.com/v1",
+      "wireApi": "chat-completions",
+      "enabled": true,
+      "auth": {"type": "provider-secure-store", "reference": "provider:nvidia-hosted"},
+      "discovery": {"enabled": true, "path": "models"},
+      "requiresAuth": true,
+      "capabilities": ["chat-completions", "streaming"]
     },
     {
       "id": "local-model",

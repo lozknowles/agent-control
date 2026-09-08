@@ -57,6 +57,36 @@ For a dashboard recording, set an existing Chromium executable and a qualificati
 
 Acceptance covers A–E from the release plan: historical failure retrieval after baton exclusion; a question blocking only dependent work; two real model/runtime candidates running all 17 frozen tasks three times; a required capability excluding one candidate; and a second complete batch surviving ledger reload. Unsupported evaluator classes remain explicit unavailable. Review the [physical report](evidence/agent-control-3.9-provider-neutral-qualification.md), raw [JSON](evidence/agent-control-3.9-provider-neutral-qualification.json) and [video manifest](evidence/agent-control-3.9-provider-neutral-dashboard-video.json).
 
+## Dynamic provider and credential qualification
+
+Before accepting any real API credential, run the deterministic boundary suite:
+
+```bash
+node --import tsx --test --test-concurrency=1 \
+  src/control/provider-credential-store.test.ts \
+  src/provider-credential.test.ts \
+  src/control/security-redaction.test.ts \
+  src/control/provider-catalog.test.ts \
+  src/control/openai-compatible-provider.test.ts \
+  src/control/model-registry.test.ts \
+  src/control/model-evaluation-runtime.test.ts \
+  src/control/direct-repository-review-executor.test.ts \
+  src/control/work-parcels.test.ts \
+  src/control/job-runtime.test.ts \
+  src/control/parameterized-jobs.test.ts \
+  src/control/web-server.test.ts
+```
+
+Acceptance requires owner-only atomic storage, metadata-only status, environment/file/store compatibility, late resolution, account isolation with no provider fallback, remote-resolution refusal, exact runtime-secret redaction, deliberate provider-echo failures, and no value in configuration, process arguments, Work Parcels, Jobs, artifacts, model evidence, catalogue persistence, API, SSE or dashboard assets. Run `npm run check`, the Markdown/link gate, `git diff --check` and a changed-file credential scan before the credential ceremony.
+
+For NVIDIA, configure `nvidia-hosted` as documented in [NVIDIA-HOSTED.md](models/NVIDIA-HOSTED.md), then run `agent-control providers credential set nvidia-hosted` and enter the key only through hidden input. Verify `status` reports `CONFIGURED`, then perform one authenticated discovery. Do not infer model count, pricing, limits or family availability from documentation when live catalogue data differs.
+
+Select a small representative set from the returned canonical IDs. First run **Check Callability** once per model. Only an inference-confirmed model proceeds to **Capability Smoke**, which reuses that callability result and makes four further bounded requests. Preserve only sanitized projections, hashes, output lengths, requested budgets, normalized usage, finish reasons and timeout phase. Reconcile dashboard/API/SSE values with the durable provider catalogue and model-intelligence ledger. Only after smoke evidence should selected models enter the frozen benchmark queue; only qualified evidence plus explicit operator enablement can grant routing eligibility.
+
+The first physical proof must cover `Agent Control → credential reference → authenticated NVIDIA discovery → dynamic model registry → one controlled real inference → normalized telemetry → benchmark evidence → dashboard`, while confirming no key or raw response is retained. Report the discovered count and estimate full-catalogue request/time volume, then obtain separate authorization before a mass benchmark.
+
+That bounded proof was recorded on 2026-09-06 in [Agent Control 3.9 NVIDIA hosted qualification](evidence/agent-control-3.9-nvidia-hosted-qualification-20260906.md): 81 IDs discovered, four representative smoke targets, one partial frozen Nemotron batch, zero routing-eligible NVIDIA models, and successful protected-ledger/API/SSE reconciliation. The [focused diagnostic follow-up](evidence/agent-control-3.9-nvidia-focused-diagnostics-20260906.md) preserves that result, corrects an ambiguous marker contract and insufficient smoke budgets, classifies MiniMax before-first-token timeout and Kimi endpoint absence, and proves staged callability on Muse and Nemotron. A model-list response is never inference proof. Full-catalogue callability, smoke or benchmarking remains separately authorized work.
+
 ## Token-aware baton-routing development qualification
 
 Run the deterministic routing and adapter/dashboard coverage before any provider exercise:

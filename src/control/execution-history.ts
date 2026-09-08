@@ -1,8 +1,10 @@
 import type {LaneState} from '../state.js';
 import type {RouteDecision} from './routing.js';
 import type {ParameterizedJobRun, SavedJob} from './parameterized-job-types.js';
-import {DEFAULT_TOKEN_GOVERNOR_POLICY, governorFor, type TokenGovernorPolicy, type VerifiedBaton, type TokenRoutingDecision, type ThreadTokenRecord} from './token-aware-baton-routing.js';
+import {DEFAULT_TOKEN_GOVERNOR_POLICY, governorFor, type ContextLifecycleRecord, type TokenGovernorPolicy, type VerifiedBaton, type TokenRoutingDecision, type ThreadTokenRecord} from './token-aware-baton-routing.js';
 import type {WorkParcel} from './work-parcels.js';
+import {redactSensitiveText} from './security-redaction.js';
+import type {GovernedRequestOrigin} from './request-origin.js';
 
 export type ExecutionHistoryActor = 'OPERATOR' | 'SYSTEM EVENT' | 'AGENT / PROVIDER' | 'TOOL / ACTION' | 'GOVERNOR' | 'BATON' | 'ERROR';
 export type ExecutionHistoryOutcome = 'INFO' | 'RUNNING' | 'SUCCEEDED' | 'FAILED' | 'RECOMMENDED' | 'UNAVAILABLE';
@@ -48,8 +50,9 @@ export interface ExecutionHistoryProjection {
   savedJobId: string | null;
   jobName: string;
   workParcelIds: string[];
+  origin?: GovernedRequestOrigin;
   entries: ExecutionHistoryEntry[];
-  retention: {mode: 'derived-durable'; maximumEntries: number; source: string};
+  retention: {mode: 'derived-durable' | 'complete-durable'; maximumEntries: number | null; source: string};
 }
 
 export interface TokenHistoryEvidence {
@@ -57,7 +60,10 @@ export interface TokenHistoryEvidence {
   threads: ThreadTokenRecord[];
   batons: VerifiedBaton[];
   decisions: TokenRoutingDecision[];
+  contextLifecycle?: ContextLifecycleRecord[];
 }
+
+export interface ExecutionHistoryOptions {mode?: 'dashboard' | 'complete';}
 
 const MAX_ENTRIES = 160;
 const SECRET_VALUE = /\b(?:sk|rk|pk)-[A-Za-z0-9_-]{12,}\b/g;
@@ -66,43 +72,88 @@ const CODEX_PATH = /\bCODEX_HOME\s*[:=]\s*[^\s,;]+|[A-Za-z]:\\Users\\[^\s]+\\(?:
 const EMAIL = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi;
 
 export function safeHistoryText(value: unknown, maximum = 1_600) {
-  const text = String(value ?? '').replace(SECRET_VALUE, '[REDACTED]').replace(AUTH_VALUE, '[REDACTED]').replace(CODEX_PATH, '[REDACTED]').replace(EMAIL, '[REDACTED]').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').replace(/\s+/g, ' ').trim();
+  const text = redactSensitiveText(String(value ?? '')).replace(SECRET_VALUE, '[REDACTED]').replace(AUTH_VALUE, '[REDACTED]').replace(CODEX_PATH, '[REDACTED]').replace(EMAIL, '[REDACTED]').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').replace(/\s+/g, ' ').trim();
   return text.length <= maximum ? text : `${text.slice(0, maximum - 1)}…`;
 }
 
-export function projectParameterizedRunHistory(input: {run: ParameterizedJobRun; savedJob?: SavedJob; parcels: WorkParcel[]; tokenEvidence?: TokenHistoryEvidence}): ExecutionHistoryProjection {
-  const {run, savedJob} = input, parcels = input.parcels.filter(parcel => run.workParcelIds.includes(parcel.id));
-  const parcelIds = new Set(run.workParcelIds), threads = (input.tokenEvidence?.threads ?? []).filter(thread => parcelIds.has(thread.parcelId));
+export function safeTranscriptText(value: unknown, maximum = 65_536) {
+  const text = redactSensitiveText(String(value ?? '')).replace(SECRET_VALUE, '[REDACTED]').replace(AUTH_VALUE, '[REDACTED]').replace(CODEX_PATH, '[REDACTED]').replace(EMAIL, '[REDACTED]').replace(/\r\n?/g, '\n').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').trim();
+  return text.length <= maximum ? text : `${text.slice(0, maximum - 1)}…`;
+}
+
+export function projectParameterizedRunHistory(input: {run: ParameterizedJobRun; savedJob?: SavedJob; parcels: WorkParcel[]; tokenEvidence?: TokenHistoryEvidence; options?: ExecutionHistoryOptions}): ExecutionHistoryProjection {
+  const {run, savedJob} = input, complete = input.options?.mode === 'complete';
+  const parcels = input.parcels.filter(parcel => run.workParcelIds.includes(parcel.id) || parcel.provenance.some(item => item.type === 'job-run' && item.detail === run.id));
+  const parcelIds = new Set([...run.workParcelIds, ...parcels.map(parcel => parcel.id)]), threads = (input.tokenEvidence?.threads ?? []).filter(thread => parcelIds.has(thread.parcelId));
+  const origin = run.trigger.origin ?? parcels.find(parcel => parcel.origin)?.origin;
   const batons = (input.tokenEvidence?.batons ?? []).filter(baton => parcelIds.has(baton.parcelId));
   const decisions = (input.tokenEvidence?.decisions ?? []).filter(decision => parcelIds.has(decision.parcelId));
   const entries: ExecutionHistoryEntry[] = [];
-  const add = (entry: ExecutionHistoryEntry) => entries.push({...entry, title: safeHistoryText(entry.title, 240), content: safeHistoryText(entry.content), accountLabel: entry.accountLabel ? safeHistoryText(entry.accountLabel, 120) : undefined, route: entry.route ? safeHistoryText(entry.route, 320) : undefined, evidenceRefs: entry.evidenceRefs?.map(value => safeHistoryText(value, 256))});
+  const add = (entry: ExecutionHistoryEntry) => entries.push({...entry, title: safeHistoryText(entry.title, 240), content: complete ? safeTranscriptText(entry.content) : safeHistoryText(entry.content), accountLabel: entry.accountLabel ? safeHistoryText(entry.accountLabel, 120) : undefined, route: entry.route ? safeHistoryText(entry.route, 320) : undefined, evidenceRefs: entry.evidenceRefs?.map(value => safeHistoryText(value, 256))});
   const jobName = savedJob?.name ?? run.definition.displayName;
 
   add({id: `${run.id}:requested`, at: run.requestedAt, actor: 'OPERATOR', type: 'JOB_REQUEST', title: `${jobName} requested`, content: `${run.definition.description} Scope ${String(run.resolvedParameters.scope ?? 'configured')}; requested ref ${String(run.resolvedParameters.ref ?? 'configured')}.`, outcome: 'INFO', jobRunId: run.id});
+  if (complete) add({id: `${run.id}:operator-objective`, at: run.requestedAt, actor: 'OPERATOR', type: 'OPERATOR_OBJECTIVE', title: 'Exact governed review instruction', content: run.definition.template.instruction, outcome: 'INFO', jobRunId: run.id});
   for (const transition of run.transitions) add({id: `${run.id}:transition:${transition.at}:${transition.status}`, at: transition.at, actor: transition.status === 'FAILED' ? 'ERROR' : 'SYSTEM EVENT', type: `JOB_${transition.status}`, title: transitionTitle(transition.status), content: transition.detail ? transitionDetail(transition.detail) : transitionSummary(transition.status), outcome: transitionOutcome(transition.status), jobRunId: run.id});
 
   if (run.repository) add({id: `${run.id}:repository`, at: run.startedAt ?? run.requestedAt, actor: 'TOOL / ACTION', type: 'REPOSITORY_SNAPSHOT', title: 'Immutable repository revision resolved', content: `${run.repository.name} at ${run.repository.reviewedSha}; requested ref ${run.repository.requestedRef}; ${run.repository.dirty ? 'frozen dirty state recorded' : 'snapshot clean'}.`, outcome: 'SUCCEEDED', jobRunId: run.id, evidenceRefs: [run.repository.reviewedSha]});
   if (run.context) add({id: `${run.id}:context`, at: run.startedAt ?? run.requestedAt, actor: 'TOOL / ACTION', type: 'CONTEXT_COMPILED', title: `${run.context.profile} review context compiled`, content: `${run.context.chunks.length} bounded chunk(s), ${run.context.files.length} file(s), ${run.context.omittedFiles.length} omitted file(s). Provider input is represented by the governed instruction and frozen context manifest; raw repository context is not duplicated into transcript storage.`, outcome: 'SUCCEEDED', jobRunId: run.id, evidenceRefs: run.context.chunks.map(chunk => chunk.sha256)});
   if (run.modelRoute) {
     const route = routeLabel(run);
-    add({id: `${run.id}:route`, at: run.startedAt ?? run.requestedAt, actor: 'SYSTEM EVENT', type: 'ROUTE_SELECTED', title: 'Qualified provider route selected', content: `${route}. Qualification ${run.modelRoute.qualificationVersion}; fallback ${run.modelRoute.fallback ? `yes — ${run.modelRoute.fallbackReason ?? 'reason unavailable'}` : 'no'}.`, outcome: 'SUCCEEDED', jobRunId: run.id, provider: run.modelRoute.providerId, accountLabel: run.modelRoute.accountLabel ?? undefined, model: run.modelRoute.modelId, route});
+    const purpose = run.modelRoute.purpose ?? 'EXECUTION';
+    const caveat = purpose === 'QUALIFICATION' ? ' A qualification-purpose selection does not grant production routing admission.' : '';
+    add({id: `${run.id}:route`, at: run.startedAt ?? run.requestedAt, actor: 'SYSTEM EVENT', type: 'ROUTE_SELECTED', title: purpose === 'QUALIFICATION' ? 'Governed qualification route selected' : 'Governed provider route selected', content: `${route}. Route purpose ${purpose}; qualification evidence ${run.modelRoute.qualificationVersion}; initial route fallback ${run.modelRoute.fallback ? `yes — ${run.modelRoute.fallbackReason ?? 'reason unavailable'}` : 'no'}.${caveat}`, outcome: 'SUCCEEDED', jobRunId: run.id, provider: run.modelRoute.providerId, accountLabel: run.modelRoute.accountLabel ?? undefined, model: run.modelRoute.modelId, route});
     add({id: `${run.id}:provider-request`, at: run.startedAt ?? run.requestedAt, actor: 'AGENT / PROVIDER', type: 'PROVIDER_REQUEST', title: 'Read-only structured review requested', content: `${run.definition.template.instruction.split('\n')[0]} Input used ${run.context?.chunks.length ?? 0} frozen context chunk(s). Credentials, environment values, hidden reasoning, and raw prompt payloads are not retained in this human-readable projection.`, outcome: run.status === 'RUNNING' ? 'RUNNING' : 'INFO', jobRunId: run.id, provider: run.modelRoute.providerId, accountLabel: run.modelRoute.accountLabel ?? undefined, model: run.modelRoute.modelId, route});
   }
 
   for (const parcel of parcels) {
+    if (complete) {
+      add({id: `${run.id}:parcel:${parcel.id}:created`, at: parcel.createdAt, actor: 'SYSTEM EVENT', type: 'WORK_PARCEL_CREATED', title: `Work Parcel ${parcel.id} created`, content: `Objective: ${parcel.objective}\nPlanner: ${parcel.planner.kind} — ${parcel.planner.reason}\nExecution owner: ${parcel.executionOwner ?? 'legacy/unreported'}\nCurrent durable status at transcript projection: ${parcel.status}`, outcome: 'INFO', jobRunId: run.id, workParcelId: parcel.id});
+      for (const stage of parcel.stages) {
+        const requested = stage.requestedRoute ? `Requested route: provider ${stage.requestedRoute.provider ?? 'policy-selected'}; account ${stage.requestedRoute.accountProfile ?? 'policy-selected'}; model ${stage.requestedRoute.model ?? 'policy-selected'}; role ${stage.requestedRoute.modelRole ?? 'policy-selected'}; fallback ${stage.requestedRoute.allowFallback === false ? 'disabled' : 'allowed'}; purpose ${stage.requestedRoute.purpose ?? 'EXECUTION'}.` : 'Requested route: normal Agent Control policy.';
+        const actual = stage.actualRoute ? `Actual route: provider ${stage.actualRoute.provider ?? 'none'}; account ${stage.actualRoute.accountLabel ?? stage.actualRoute.accountProfile ?? 'default'}; model ${stage.actualRoute.model ?? 'none'}; workload node ${stage.actualRoute.workloadNodeId ?? 'unreported'}; execution node ${stage.actualRoute.providerExecutionNodeId ?? stage.actualRoute.workers[0] ?? 'unreported'}.` : 'Actual route: not yet resolved.';
+        add({id: `${run.id}:parcel:${parcel.id}:stage:${stage.id}`, at: stage.endedAt ?? stage.startedAt ?? parcel.createdAt, actor: stage.status === 'FAILED' ? 'ERROR' : 'SYSTEM EVENT', type: `STAGE_${stage.status}`, title: `${stage.name}: ${stage.status}`, content: `Job ${stage.job}. Dependencies: ${stage.dependsOn.join(', ') || 'none'}. Required capabilities: ${stage.requiredCapabilities.join(', ') || 'none'}. ${requested} ${actual}${stage.waitingReason ? ` Waiting reason: ${stage.waitingReason}.` : ''}${stage.error ? ` Error: ${stage.error}.` : ''}`, outcome: stage.status === 'FAILED' ? 'FAILED' : stage.status === 'SUCCEEDED' ? 'SUCCEEDED' : stage.status === 'RUNNING' ? 'RUNNING' : 'INFO', jobRunId: run.id, workParcelId: parcel.id, provider: stage.actualRoute?.provider, accountLabel: stage.actualRoute?.accountLabel, model: stage.actualRoute?.model});
+      }
+      for (const invocation of parcel.audit.invocations) {
+        const route = `${invocation.provider} / ${invocation.accountLabel ?? invocation.accountProfileId ?? 'default account'} / ${invocation.model} @ ${invocation.providerExecutionNodeId ?? invocation.node ?? 'unreported'}`;
+        add({id: `${run.id}:parcel:${parcel.id}:invocation:${invocation.id}`, at: invocation.completedAt ?? invocation.startedAt, actor: 'AGENT / PROVIDER', type: 'MODEL_INVOCATION_ACCOUNTED', title: `${invocation.provider}/${invocation.model} invocation accounted`, content: `Outcome ${invocation.outcome}; verifier ${invocation.verifierResult}; harness profile ${invocation.profile}; provider invocation profile ${invocation.invocationProfile ?? 'provider-default'}; request dispatched ${invocation.requestDispatched === null || invocation.requestDispatched === undefined ? 'unavailable' : invocation.requestDispatched ? 'yes' : 'no'}; usage authority ${invocation.usageAuthority ?? 'unavailable'}; elapsed ${number(invocation.elapsedMs)} ms. Lifetime usage ${number(invocation.inputTokens)} input (${number(invocation.freshInputTokens)} fresh + ${number(invocation.cachedInputTokens)} cached + ${number(invocation.cacheWriteTokens)} cache write), ${number(invocation.outputTokens)} output, ${number(invocation.reasoningTokens)} reasoning, ${number(invocation.totalTokens)} total. Provider cost ${money(invocation.providerReportedCost, invocation.currency)}; calculated cost ${money(invocation.calculatedCost, invocation.currency)}; selected basis ${invocation.costBasis}.`, outcome: invocation.outcome.toLowerCase().includes('fail') ? 'FAILED' : 'SUCCEEDED', jobRunId: run.id, workParcelId: parcel.id, provider: invocation.provider, accountLabel: invocation.accountLabel ?? undefined, model: invocation.model, route, evidenceRefs: [invocation.id]});
+      }
+      for (const provenance of parcel.provenance) add({id: `${run.id}:parcel:${parcel.id}:provenance:${provenance.at}:${provenance.type}:${entries.length}`, at: provenance.at, actor: 'SYSTEM EVENT', type: `PROVENANCE_${provenance.type.toUpperCase().replaceAll('.', '_')}`, title: `Provenance: ${provenance.type}`, content: provenance.detail, outcome: provenance.type.includes('failed') ? 'FAILED' : 'INFO', jobRunId: run.id, workParcelId: parcel.id, evidenceRefs: [provenance.detail]});
+    }
     for (const event of parcel.audit.timeline) add({id: `${run.id}:parcel:${event.id}`, at: event.at, actor: parcelActor(event.type), type: `PARCEL_${event.type.toUpperCase().replaceAll('.', '_')}`, title: event.summary, content: event.detail, outcome: parcelEventOutcome(event.type), jobRunId: run.id, workParcelId: parcel.id});
   }
 
   for (const thread of threads) {
     const first = thread.samples[0], last = thread.latest, route = threadRoute(thread);
     const policy = input.tokenEvidence?.policy ?? DEFAULT_TOKEN_GOVERNOR_POLICY, firstGovernor = governorFor(first.contextPercent, policy).state, lastGovernor = governorFor(last.contextPercent, policy).state;
-    add({id: `${run.id}:telemetry-start:${thread.id}`, at: first.at, actor: 'SYSTEM EVENT', type: 'TELEMETRY_STARTED', title: first.context.authority === 'unavailable' ? 'Live token measurement pending provider completion' : 'Live token measurement started', content: telemetryText(first, firstGovernor, true), outcome: first.context.authority === 'unavailable' ? 'UNAVAILABLE' : 'INFO', jobRunId: run.id, workParcelId: thread.parcelId, provider: thread.providerId, accountLabel: thread.accountLabel, model: thread.modelId, route, telemetry: telemetry(first, firstGovernor)});
-    if (last.at !== first.at || last.cumulative.totalTokens !== first.cumulative.totalTokens) add({id: `${run.id}:telemetry-end:${thread.id}`, at: last.at, actor: 'SYSTEM EVENT', type: 'TELEMETRY_RECORDED', title: 'Provider usage and context estimate recorded', content: telemetryText(last, lastGovernor, false), outcome: 'SUCCEEDED', jobRunId: run.id, workParcelId: thread.parcelId, provider: thread.providerId, accountLabel: thread.accountLabel, model: thread.modelId, route, telemetry: telemetry(last, lastGovernor)});
+    if (complete) {
+      thread.samples.forEach((point, index) => {
+        const governor = governorFor(point.contextPercent, policy).state;
+        add({id: `${run.id}:telemetry:${thread.id}:${index}`, at: point.at, actor: 'SYSTEM EVENT', type: index === 0 ? 'TELEMETRY_STARTED' : 'TELEMETRY_SAMPLE', title: index === 0 ? (point.context.authority === 'unavailable' ? 'Live token measurement pending provider completion' : 'Live token measurement started') : `Live telemetry sample ${index + 1}`, content: telemetryText(point, governor, index === 0), outcome: point.context.authority === 'unavailable' && index === 0 ? 'UNAVAILABLE' : 'INFO', jobRunId: run.id, workParcelId: thread.parcelId, provider: thread.providerId, accountLabel: thread.accountLabel, model: thread.modelId, route, telemetry: telemetry(point, governor)});
+      });
+    } else {
+      add({id: `${run.id}:telemetry-start:${thread.id}`, at: first.at, actor: 'SYSTEM EVENT', type: 'TELEMETRY_STARTED', title: first.context.authority === 'unavailable' ? 'Live token measurement pending provider completion' : 'Live token measurement started', content: telemetryText(first, firstGovernor, true), outcome: first.context.authority === 'unavailable' ? 'UNAVAILABLE' : 'INFO', jobRunId: run.id, workParcelId: thread.parcelId, provider: thread.providerId, accountLabel: thread.accountLabel, model: thread.modelId, route, telemetry: telemetry(first, firstGovernor)});
+      if (last.at !== first.at || last.cumulative.totalTokens !== first.cumulative.totalTokens) add({id: `${run.id}:telemetry-end:${thread.id}`, at: last.at, actor: 'SYSTEM EVENT', type: 'TELEMETRY_RECORDED', title: 'Provider usage and context estimate recorded', content: telemetryText(last, lastGovernor, false), outcome: 'SUCCEEDED', jobRunId: run.id, workParcelId: thread.parcelId, provider: thread.providerId, accountLabel: thread.accountLabel, model: thread.modelId, route, telemetry: telemetry(last, lastGovernor)});
+    }
+  }
+
+  if (complete) for (const lifecycle of (input.tokenEvidence?.contextLifecycle ?? []).filter(item => parcelIds.has(item.parcelId))) {
+    const thread = threads.find(item => item.id === lifecycle.threadId);
+    add({id: `${run.id}:context-lifecycle:${lifecycle.id}`, at: lifecycle.at, actor: 'GOVERNOR', type: `CONTEXT_${lifecycle.kind}`, title: `Context lifecycle: ${lifecycle.kind}`, content: `Context ${lifecycle.contextId ?? 'identity unavailable'}; authority ${lifecycle.authority}; source ${lifecycle.source}. Work Parcel lifetime usage at this boundary remained ${number(lifecycle.cumulative.totalTokens)} total tokens and was not reset.`, outcome: 'SUCCEEDED', jobRunId: run.id, workParcelId: lifecycle.parcelId, provider: thread?.providerId, accountLabel: thread?.accountLabel, model: thread?.modelId, route: thread ? threadRoute(thread) : undefined, evidenceRefs: [lifecycle.id]});
   }
 
   for (const decision of decisions) add(governorEntry(run.id, decision, threads.find(thread => thread.id === decision.threadId)));
   for (const baton of batons) add({id: `${run.id}:baton:${baton.id}`, at: baton.createdAt, actor: 'BATON', type: 'BATON_CREATED', title: 'Verified baton created and sealed', content: `Objective: ${baton.objective}. Next action: ${baton.nextAction}. SHA-256 ${baton.sha256}. Creation does not by itself mean dispatch, acceptance, destination execution, or completed handoff.`, outcome: 'SUCCEEDED', jobRunId: run.id, workParcelId: baton.parcelId, provider: baton.providerId, accountLabel: baton.accountLabel, model: baton.modelId, evidenceRefs: [baton.id, baton.sha256]});
+
+  if (complete) {
+    for (const execution of run.providerExecutions ?? []) {
+      const route = `${execution.providerId} / ${execution.accountProfileId ?? 'default account'} / ${execution.modelId} @ ${execution.providerExecutionNodeId}`;
+      add({id: `${run.id}:execution:${execution.id}`, at: execution.observedAt, actor: execution.state === 'FAILED' ? 'ERROR' : 'AGENT / PROVIDER', type: `PROVIDER_EXECUTION_${execution.state}`, title: `Route-bound provider attempt ${execution.sequence}: ${execution.state}`, content: `Execution ${execution.id}; started ${execution.startedAt}; workload node ${execution.workloadNodeId}; provider execution node ${execution.providerExecutionNodeId}; credential node ${execution.credentialNodeId ?? 'provider default'}; active turn ${execution.activeTurnId ?? 'not reported'}.`, outcome: execution.state === 'FAILED' ? 'FAILED' : execution.state === 'COMPLETED' ? 'SUCCEEDED' : execution.state === 'RUNNING' || execution.state === 'STARTING' ? 'RUNNING' : 'INFO', jobRunId: run.id, provider: execution.providerId, model: execution.modelId, route, evidenceRefs: [execution.id]});
+    }
+    for (const retry of run.retryHistory) add({id: `${run.id}:retry:${retry.at}:${retry.attempt}`, at: retry.at, actor: 'SYSTEM EVENT', type: 'RETRY_SCHEDULED', title: `Bounded same-route retry ${retry.attempt} scheduled`, content: `Classification ${retry.kind ?? 'unreported'}; reason ${retry.reason}; next attempt ${retry.nextAttemptAt ?? 'immediate/unreported'}. This retry retained the sealed route identity.`, outcome: 'RECOMMENDED', jobRunId: run.id});
+    for (const [index, fallback] of run.fallbackHistory.entries()) add({id: `${run.id}:fallback:${fallback.at}:${index}`, at: fallback.at, actor: 'GOVERNOR', type: 'GOVERNED_FALLBACK_RECORDED', title: `Governed fallback selected ${fallback.selectedModel}`, content: `Reason ${fallback.reason}; provider ${fallback.selectedProvider ?? 'unreported'}; failure classification ${fallback.failureKind ?? 'not applicable'}; baton ${fallback.batonId ?? 'not recorded for initial route fallback'}.`, outcome: 'SUCCEEDED', jobRunId: run.id, provider: fallback.selectedProvider, model: fallback.selectedModel, evidenceRefs: fallback.batonId ? [fallback.batonId] : []});
+    for (const [index, error] of run.errors.entries()) add({id: `${run.id}:error:${index}`, at: run.completedAt ?? run.transitions.at(-1)?.at ?? run.requestedAt, actor: 'ERROR', type: 'RUN_ERROR', title: `Recorded run error ${index + 1}`, content: error, outcome: 'FAILED', jobRunId: run.id});
+  }
 
   if (run.providerResponseIds.length || run.evidence.some(value => value.startsWith('provider_response_'))) {
     const refs = [...new Set([...run.providerResponseIds, ...run.evidence.filter(value => value.startsWith('provider_response_'))])];
@@ -111,18 +162,24 @@ export function projectParameterizedRunHistory(input: {run: ParameterizedJobRun;
     add({id: `${run.id}:provider-response`, at: run.completedAt ?? run.transitions.at(-1)?.at ?? run.requestedAt, actor: failedSchema ? 'ERROR' : 'AGENT / PROVIDER', type: failedSchema ? 'PROVIDER_RESPONSE_REJECTED' : 'PROVIDER_RESPONSE', title: failedSchema ? 'Provider output rejected by the validation boundary' : 'Provider output recorded', content: failedSchema ? `The provider returned output and accounting evidence was retained, but the response did not satisfy the repository-review schema. Agent Control failed closed.${diagnostic} Raw rejected output is not exposed through the transcript.` : run.result ? run.result.executiveSummary : 'Provider response evidence was retained by hash; no validated human-readable result is available.', outcome: failedSchema ? 'FAILED' : 'SUCCEEDED', jobRunId: run.id, provider: run.modelRoute?.providerId, accountLabel: run.modelRoute?.accountLabel ?? undefined, model: run.modelRoute?.modelId, evidenceRefs: refs});
   }
 
-  if (run.usage.totalTokens !== undefined || run.usage.cost !== undefined) {
+  if (complete && run.result) {
+    add({id: `${run.id}:validated-result`, at: run.completedAt ?? run.transitions.at(-1)?.at ?? run.requestedAt, actor: 'AGENT / PROVIDER', type: 'VALIDATED_RESULT', title: `Validated repository-review result: ${run.result.verdict}`, content: `${run.result.executiveSummary}\n\nAreas reviewed: ${run.result.areasReviewed.join(', ') || 'none reported'}\nAreas not reviewed: ${run.result.areasNotReviewed.join(', ') || 'none'}\nPositive observations: ${run.result.positiveObservations.join('; ') || 'none reported'}`, outcome: ['PASS','PASS_WITH_FINDINGS'].includes(run.result.verdict) ? 'SUCCEEDED' : 'FAILED', jobRunId: run.id, provider: run.modelRoute?.providerId, accountLabel: run.modelRoute?.accountLabel ?? undefined, model: run.modelRoute?.modelId, evidenceRefs: run.providerResponseIds});
+    for (const finding of run.result.findings) add({id: `${run.id}:finding:${finding.id}`, at: run.completedAt ?? run.transitions.at(-1)?.at ?? run.requestedAt, actor: 'AGENT / PROVIDER', type: 'VALIDATED_FINDING', title: `${finding.severity.toUpperCase()} — ${finding.title}`, content: `Location: ${finding.file ?? 'repository-level'}${finding.startLine ? `:${finding.startLine}${finding.endLine ? `-${finding.endLine}` : ''}` : ''}\nCategory: ${finding.category}\nEvidence: ${finding.evidence}\nOperational reasoning: ${finding.reasoning}\nImpact: ${finding.impact}\nSuggested remediation: ${finding.suggestedRemediation}\nConfidence: ${finding.confidence}\nValidation: ${finding.validation.state} — ${finding.validation.reasons.join('; ') || 'no additional reasons'}`, outcome: finding.validation.state === 'REJECTED' ? 'FAILED' : 'INFO', jobRunId: run.id, evidenceRefs: [finding.id]});
+  }
+
+  if ((run.usage.accountedInvocations ?? 0) > 0 || run.usage.totalTokens !== undefined || run.usage.cost !== undefined || parcels.some(parcel => parcel.audit.invocations.length > 0)) {
     const parcelTotal = sumParcelUsage(parcels);
-    const reconciled = parcelTotal.totalTokens === run.usage.totalTokens && amountsEqual(parcelTotal.cost, run.usage.cost ?? null);
+    const reconciled = run.usage.totalTokens !== undefined && parcelTotal.totalTokens !== null && parcelTotal.totalTokens === run.usage.totalTokens && amountsEqual(parcelTotal.cost, run.usage.cost ?? null) && (run.usage.unknownUsageInvocations ?? 0) === 0;
     const parcelInput = parcelTotal.inputTokens === null
       ? `${number(parcelTotal.freshInputTokens)} reported/fresh input; cached-input component unavailable`
       : `${number(parcelTotal.inputTokens)} input (${number(parcelTotal.freshInputTokens)} fresh + ${number(parcelTotal.cachedInputTokens)} cached)`;
     const jobInput = run.usage.freshInputTokens === undefined || run.usage.cachedInputTokens === undefined ? `${number(run.usage.inputTokens)} input; fresh/cache split unavailable` : `${number(run.usage.inputTokens)} input (${number(run.usage.freshInputTokens)} fresh + ${number(run.usage.cachedInputTokens)} cached)`;
-    add({id: `${run.id}:ledger`, at: run.completedAt ?? run.transitions.at(-1)?.at ?? run.requestedAt, actor: 'SYSTEM EVENT', type: 'LEDGER_RECONCILIATION', title: reconciled ? 'Job and Work Parcel accounting reconcile' : 'Accounting reconciliation incomplete', content: `Job ledger: ${jobInput} + ${number(run.usage.outputTokens)} output = ${number(run.usage.totalTokens)} total; ${money(run.usage.cost ?? null, run.usage.currency ?? null)}. Work Parcel ledger: ${parcelInput} + ${number(parcelTotal.outputTokens)} output = ${number(parcelTotal.totalTokens)} total; ${money(parcelTotal.cost, parcelTotal.currency)}.`, outcome: reconciled ? 'SUCCEEDED' : 'UNAVAILABLE', jobRunId: run.id, evidenceRefs: run.workParcelIds});
+    add({id: `${run.id}:ledger`, at: run.completedAt ?? run.transitions.at(-1)?.at ?? run.requestedAt, actor: 'SYSTEM EVENT', type: 'LEDGER_RECONCILIATION', title: reconciled ? 'Job and Work Parcel accounting reconcile' : 'Accounting reconciliation incomplete', content: `Job ledger: ${jobInput} + ${number(run.usage.outputTokens)} output = ${number(run.usage.totalTokens)} total; ${money(run.usage.cost ?? null, run.usage.currency ?? null)}. Work Parcel ledger: ${parcelInput} + ${number(parcelTotal.outputTokens)} output = ${number(parcelTotal.totalTokens)} total; ${money(parcelTotal.cost, parcelTotal.currency)}. Accounted invocations ${number(run.usage.accountedInvocations)}; invocations with unavailable token usage ${number(run.usage.unknownUsageInvocations)}.${reconciled ? '' : ' Agent Control does not manufacture exact aggregate usage when any dispatched attempt lacks authoritative usage.'}`, outcome: reconciled ? 'SUCCEEDED' : 'UNAVAILABLE', jobRunId: run.id, evidenceRefs: run.workParcelIds});
   }
 
-  const ordered = entries.sort((left, right) => left.at.localeCompare(right.at) || left.id.localeCompare(right.id)).slice(-MAX_ENTRIES);
-  return {schema: 'agent-control.execution-history/v1', jobRunId: run.id, savedJobId: run.savedJobId ?? null, jobName, workParcelIds: [...run.workParcelIds], entries: ordered, retention: {mode: 'derived-durable', maximumEntries: MAX_ENTRIES, source: 'Job Run + Work Parcel audit + token/governor/baton evidence'}};
+  const ordered = entries.map((entry, sequence) => ({entry, sequence})).sort((left, right) => left.entry.at.localeCompare(right.entry.at) || left.sequence - right.sequence).map(item => item.entry);
+  const retained = complete ? ordered : ordered.slice(-MAX_ENTRIES);
+  return {schema: 'agent-control.execution-history/v1', jobRunId: run.id, savedJobId: run.savedJobId ?? null, jobName, workParcelIds: [...parcelIds], ...(origin?{origin:structuredClone(origin)}:{}), entries: retained, retention: {mode: complete ? 'complete-durable' : 'derived-durable', maximumEntries: complete ? null : MAX_ENTRIES, source: complete ? 'Complete deterministic projection of Job Run + Work Parcel audit/provenance + every retained token/governor/baton record' : 'Job Run + Work Parcel audit + token/governor/baton evidence'}};
 }
 
 export function projectLaneHistory(lane: LaneState, route?: RouteDecision): ExecutionHistoryEntry[] {

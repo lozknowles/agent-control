@@ -52,6 +52,26 @@ test('provider credentials are references and qualification metadata is durable 
   assert.throws(() => validateConfig({schemaVersion: 1, resources: [], providers: [{id: 'ox', kind: 'responses', credentialEnv: 'bad-name'}], services: [], lanes: []}), /invalid_provider_credentialEnv/);
 });
 
+test('provider authentication reuses generic environment, file and opaque store references', () => {
+  const base = {schemaVersion: 1 as const, resources: [], models: [], modelRouting: {roles: {}}, services: [], lanes: []};
+  const providers = [
+    {id: 'environment', kind: 'openai-compatible' as const, baseUrl: 'https://environment.example/v1', auth: {type: 'api-key-env' as const, env: 'PROVIDER_API_KEY'}},
+    {id: 'file', kind: 'openai-compatible' as const, baseUrl: 'https://file.example/v1', auth: {type: 'bearer-file-env' as const, env: 'PROVIDER_API_KEY_FILE'}},
+    {id: 'opaque', kind: 'openai-compatible' as const, baseUrl: 'https://opaque.example/v1', auth: {type: 'provider-secure-store' as const, reference: 'provider:opaque:primary'}, discovery: {enabled: true, path: 'models'}},
+  ];
+  const config = validateConfig({...base, providers});
+  assert.deepEqual(config.providers.map(provider => provider.auth?.type), ['api-key-env','bearer-file-env','provider-secure-store']);
+  assert.equal(config.providers[2].auth?.type === 'provider-secure-store' ? config.providers[2].auth.reference : null, 'provider:opaque:primary');
+  assert.throws(() => validateConfig({...base, providers: [{...providers[2], auth: {type: 'provider-secure-store', reference: '../escape'}}]}), /invalid_provider_auth_reference/);
+  assert.throws(() => validateConfig({...base, providers: [{...providers[2], discovery: {path: '../models'}}]}), /invalid_provider_discovery_path/);
+});
+
+test('configuration rejects literal NVIDIA credentials while accepting opaque references', () => {
+  const secret = ['nvapi', 'fixture', 'C'.repeat(24)].join('-'), base = {schemaVersion: 1 as const, resources: [], models: [], modelRouting: {roles: {}}, services: [], lanes: []};
+  assert.throws(() => validateConfig({...base, providers: [{id: 'unsafe', kind: 'openai-compatible', baseUrl: 'https://integrate.api.nvidia.com/v1', note: secret}]}), /secret_material_forbidden/);
+  assert.doesNotThrow(() => validateConfig({...base, providers: [{id: 'safe', kind: 'openai-compatible', baseUrl: 'https://integrate.api.nvidia.com/v1', auth: {type: 'provider-secure-store', reference: 'provider:nvidia-hosted'}}]}));
+});
+
 test('Codex account profiles contain only opaque identity and credential-store references', () => {
   const provider = {id: 'codex', kind: 'cli' as const, accountProfiles: [
     {id: 'lawrence-pro', label: 'Lawrence Pro', plan: 'ChatGPT Pro', planAuthority: 'operator-configured' as const, capabilities: ['codex-chatgpt'], credentialStore: {type: 'codex-home-env' as const, env: 'CODEX_HOME_LAWRENCE_PRO'}, qualification: {state: 'UNTESTED' as const, version: 'configured-v1'}},
@@ -167,3 +187,12 @@ test('Spark fast-execution configuration is conservative and fail-closed', () =>
 });
 
 test('governed retrieval is opt-in, bounded, local-first and keeps zg optional',()=>{const base={schemaVersion:1 as const,resources:[],providers:[],models:[],modelRouting:{roles:{}},services:[],lanes:[]};const config=validateConfig({...base,retrieval:{enabled:true,providers:['exact','lexical','zg'],maximumCalls:4,maximumEvidenceItems:12,maximumEvidenceTokens:4096,minimumConfidence:.5,requiredCoverage:.6,contextPressurePercent:75,contextPressureEvidenceFraction:.5,allowRemote:false,zgExecutable:'zg'}});assert.equal(config.retrieval?.enabled,true);assert.equal(config.retrieval?.allowRemote,false);assert.throws(()=>validateConfig({...base,retrieval:{maximumCalls:0}}),/maximum_calls/);assert.throws(()=>validateConfig({...base,retrieval:{zgExecutable:'/tmp/zg'}}),/zg_executable/);});
+
+test('adaptive orchestration policy accepts nullable ceilings and rejects unsafe values', () => {
+  const base = {schemaVersion: 1 as const, resources: [], providers: [], models: [], modelRouting: {roles: {}}, services: [], lanes: []};
+  const config = validateConfig({...base, adaptiveOrchestration: {enabled: true, minimumSamplesForPreference: 3, minimumQualityScore: .7, maxEvidenceAgeDays: 90, policyQualityFloor: .6, maxRouteCost: null, maxRouteLatencyMs: null, qualityWeight: .5, reliabilityWeight: .2, costWeight: .15, latencyWeight: .1, confidenceWeight: .05, explorationRate: .1}});
+  assert.equal(config.adaptiveOrchestration?.maxRouteCost, null);
+  assert.equal(config.adaptiveOrchestration?.maxRouteLatencyMs, null);
+  assert.throws(() => validateConfig({...base, adaptiveOrchestration: {maxRouteCost: -1}}), /adaptive_orchestration_cost/);
+  assert.throws(() => validateConfig({...base, adaptiveOrchestration: {maxRouteLatencyMs: 86_400_001}}), /adaptive_orchestration_latency/);
+});

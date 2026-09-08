@@ -30,8 +30,14 @@ import type {GovernedRetrievalRuntime, RetrievalProjection} from './governed-ret
 import {projectLaneHistory, projectParameterizedRunHistory, type ExecutionHistoryEntry} from './execution-history.js';
 import type {CapabilityCandidateClassification, CapabilityCandidateState, CapabilityIntelligenceStore} from './capability-intelligence.js';
 import type {FrozenQualificationSuite, ModelIntelligenceLedger} from './model-intelligence.js';
+import {projectDashboardCharacterCrew, type DashboardCharacterCrewProjection} from './dashboard-characters.js';
+import {providerCatalogEventNarrative, type CatalogEvidenceAdjudicationInput, type ProviderCatalogRuntime} from './provider-catalog.js';
+import {redactSensitiveValue} from './security-redaction.js';
+import type {AdaptiveLeagueFilter, AdaptiveOrchestrationRuntime} from './adaptive-orchestration.js';
+import type {ExecutionSessionMode, ExecutionSessionRuntime, ExecutionSessionSignal} from './execution-session.js';
 
 export type ControlEventType =
+  | 'social.activity'
   | 'system.snapshot'
   | 'lane.status_changed'
   | 'lane.priority_changed'
@@ -44,6 +50,7 @@ export type ControlEventType =
   | 'ownership.returned'
   | 'verification.changed'
   | 'provider.health_changed'
+  | 'provider.catalog_changed'
   | 'resource.node_changed'
   | 'system.paused_changed'
   | 'job.run_created'
@@ -58,6 +65,7 @@ export type ControlEventType =
   | 'work.parcel_changed'
   | 'capability.intelligence_changed'
   | 'model.intelligence_changed'
+  | 'provider.catalog_changed'
   | 'runtime.safety_changed'
   | 'configuration.changed'
   | 'token.telemetry'
@@ -74,6 +82,8 @@ export type ControlEventType =
   | 'retrieval.invalidated'
   | 'retrieval.fallback'
   | 'retrieval.failed'
+  | 'execution.session_changed'
+  | 'execution.session_output'
   | 'failure';
 
 export interface ControlEvent {id: number; at: string; type: ControlEventType; laneId?: number; actor?: string; payload: Record<string, unknown>;}
@@ -122,6 +132,8 @@ export interface SystemProjection {
   tokenBatonRouting: TokenRoutingProjection;
   retrieval: RetrievalProjection;
   harnessEfficiency: HarnessEfficiencyMetrics;
+  characterCrew: DashboardCharacterCrewProjection;
+  executionSessions: Array<{id: string; incarnation: string; state: string; adapterId: string; scope: {runId: string; jobId: string; jobVersion: string; stepId: string; workerId: string; nodeId: string; parcelId?: string; laneId?: string; crewRole?: string; providerId?: string; accountLabel?: string; modelId?: string}; command: string; cwd: string; pid?: number; capabilities: import('./execution-session.js').ExecutionSessionCapabilities; control: {owner: 'agent' | 'human'; actorId: string; generation: number; reconciliationRequired: boolean}; activeAttachments: Array<{id: string; actorId: string; mode: ExecutionSessionMode; attachedAt: string}>; createdAt: string; startedAt: string; updatedAt: string; endedAt?: string; exitCode?: number | null; exitSignal?: string | null; outputBytes: number; outputTruncated: boolean; lastOutputAt?: string; lastError?: string}>;
 }
 
 export class ControlEventBus {
@@ -129,10 +141,10 @@ export class ControlEventBus {
   private readonly listeners = new Set<(event: ControlEvent) => void>();
   private readonly recentEvents: ControlEvent[] = [];
   emit(type: ControlEventType, payload: Record<string, unknown> = {}, laneId?: number, actor?: string) {
-    const event: ControlEvent = {id: this.nextId++, at: new Date().toISOString(), type, laneId, actor, payload};
+    const event: ControlEvent = {id: this.nextId++, at: new Date().toISOString(), type, laneId, actor, payload: redactSensitiveValue(payload)};
     this.recentEvents.push(event);
     if (this.recentEvents.length > 250) this.recentEvents.shift();
-    appendEvent(`control.${type}`, {laneId, actor, payload});
+    appendEvent(`control.${type}`, {laneId, actor, payload: event.payload});
     for (const listener of this.listeners) listener(event);
     return event;
   }
@@ -166,6 +178,9 @@ export class AgentControlService {
   private capabilityIntelligence?: CapabilityIntelligenceStore;
   private modelIntelligence?: ModelIntelligenceLedger;
   private qualificationSuite?: FrozenQualificationSuite;
+  private providerCatalog?: ProviderCatalogRuntime;
+  private adaptiveOrchestration?: AdaptiveOrchestrationRuntime;
+  private executionSessions?: ExecutionSessionRuntime;
 
   constructor(
     readonly state: WorkspaceState,
@@ -178,7 +193,7 @@ export class AgentControlService {
     this.verification = new VerificationService(state, persist);
   }
 
-  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; services?: RegisteredService[]; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService; tokenBatonRouting?: TokenAwareBatonRuntime; governedRetrieval?: GovernedRetrievalRuntime; codexNodeExecution?: CodexNodeExecutionPort; harnessEfficiency?: HarnessEfficiencyLedgerPort; workParcels?: WorkParcelCoordinator; modelRegistry?: ModelRegistry; parameterizedJobs?: ParameterizedJobEngine; identity?: IdentityControlPlane; defaultSessionId?: string; fastExecution?: FastExecutionLedgerPort; runtimeObservability?: RuntimeObservability; capabilityIntelligence?: CapabilityIntelligenceStore; modelIntelligence?: ModelIntelligenceLedger; qualificationSuite?: FrozenQualificationSuite}) {
+  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; services?: RegisteredService[]; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService; tokenBatonRouting?: TokenAwareBatonRuntime; governedRetrieval?: GovernedRetrievalRuntime; codexNodeExecution?: CodexNodeExecutionPort; harnessEfficiency?: HarnessEfficiencyLedgerPort; workParcels?: WorkParcelCoordinator; modelRegistry?: ModelRegistry; parameterizedJobs?: ParameterizedJobEngine; identity?: IdentityControlPlane; defaultSessionId?: string; fastExecution?: FastExecutionLedgerPort; runtimeObservability?: RuntimeObservability; capabilityIntelligence?: CapabilityIntelligenceStore; modelIntelligence?: ModelIntelligenceLedger; qualificationSuite?: FrozenQualificationSuite; providerCatalog?: ProviderCatalogRuntime; adaptiveOrchestration?: AdaptiveOrchestrationRuntime; executionSessions?: ExecutionSessionRuntime}) {
     if (extras.approvalCount) this.approvalCount = extras.approvalCount;
     if (extras.resources) this.resourceRows = structuredClone(extras.resources);
     if (extras.services) this.serviceRows = structuredClone(extras.services);
@@ -200,16 +215,24 @@ export class AgentControlService {
     if (extras.capabilityIntelligence) this.capabilityIntelligence = extras.capabilityIntelligence;
     if (extras.modelIntelligence) this.modelIntelligence = extras.modelIntelligence;
     if (extras.qualificationSuite) this.qualificationSuite = structuredClone(extras.qualificationSuite);
+    if (extras.providerCatalog) this.providerCatalog = extras.providerCatalog;
+    if (extras.adaptiveOrchestration) this.adaptiveOrchestration = extras.adaptiveOrchestration;
+    if (extras.executionSessions) this.executionSessions = extras.executionSessions;
     return this;
   }
 
   snapshot(): SystemProjection {
+    const observedAt = new Date().toISOString();
     const lanes = this.state.lanes.map(lane => this.projectLane(lane));
     const providerRows = this.providers?.list().map(provider => ({id: provider.id, name: provider.name, kind: provider.kind, health: this.providers?.health(provider.id)?.health ?? 'unknown', capabilities: [...provider.capabilities]})) ?? [];
     const workers = new Map((this.jobRuntime?.workers.list() ?? []).map(worker => [worker.id, worker]));
     const resourceRows = this.resourceRows.map(resource => { const worker = workers.get(resource.id), node = this.managedNodes?.get(resource.id); return {...resource, capabilities: node?.capabilities ?? resource.capabilities, health: node?.health ?? worker?.health ?? 'unknown', capacity: worker?.capacity, active: worker?.active, observedAt: node?.lastProbeAt ?? worker?.observedAt ?? null, ...(node ? {node} : {})}; });
     const degraded = this.state.lanes.some(lane => lane.status === 'error') || providerRows.some(provider => provider.health === 'offline') || resourceRows.some(resource => ['degraded', 'offline'].includes(resource.health));
     const jobRuns = this.jobRuntime?.ledger.list() ?? [], jobDefinitions = this.jobRuntime?.catalog.listJobs() ?? [], schedules = this.jobRuntime?.catalog.listSchedules() ?? [], savedJobs = this.parameterizedJobs?.savedJobs.list() ?? [], parameterizedRuns = this.parameterizedJobs?.runs.list() ?? [];
+    const outstandingApprovals = this.approvalCount(), tokenBatonRouting = this.tokenRouting(), systems = this.systems();
+    const models = this.modelRegistry?.list().map(model => ({id: model.id, provider: model.provider, enabled: model.enabled, qualificationState: model.qualification.state, accountAvailability: model.account?.availability, checkedAt: model.qualification.checkedAt})) ?? [];
+    const modelBatches = this.modelIntelligence?.projection(observedAt).queue ?? [];
+    const characterCrew = projectDashboardCharacterCrew({observedAt, paused: this.state.paused, lanes, runs: jobRuns, parameterizedRuns, parcels: this.workParcels?.list() ?? [], systems, models, modelBatches, tokenRouting: tokenBatonRouting, events: this.events.history(), outstandingApprovals});
     return {
       schema: 'agent-control.system-status/v1',
       authority: 'AgentControlService',
@@ -220,9 +243,9 @@ export class AgentControlService {
       lanes,
       providers: providerRows,
       resources: structuredClone(resourceRows),
-      outstandingApprovals: this.approvalCount(),
+      outstandingApprovals,
       lastRestorePoint: this.state.lastRestorePoint,
-      observedAt: new Date().toISOString(),
+      observedAt,
       jobs: {
         total: jobDefinitions.length + savedJobs.length,
         enabled: jobDefinitions.filter(job => job.spec.enabled !== false).length + savedJobs.filter(job => job.enabled).length,
@@ -239,9 +262,11 @@ export class AgentControlService {
         schedulesEnabled: schedules.filter(schedule => this.jobRuntime?.ledger.schedule(schedule.metadata.id)?.enabled).length + savedJobs.filter(job => job.schedule?.enabled).length,
       },
       tokenAwareOutput: this.commandOutputMetrics(),
-      tokenBatonRouting: this.tokenRouting(),
+      tokenBatonRouting,
       retrieval: this.retrievalProjection(),
       harnessEfficiency: this.harnessEfficiencyMetrics(),
+      characterCrew,
+      executionSessions: this.executionSessionProjection(),
     };
   }
 
@@ -249,7 +274,7 @@ export class AgentControlService {
   job(id: string) { const values = this.jobs().filter(job => job.metadata.id === id); if (!values.length) throw new Error('job_missing'); return values.sort((a, b) => b.metadata.version.localeCompare(a.metadata.version))[0]; }
   runs(jobId?: string) { return this.mustJobRuntime().ledger.list(jobId); }
   run(id: string) { const value = this.mustJobRuntime().ledger.get(id); if (!value) throw new Error('run_missing'); return value; }
-  createJobRun(id: string, parameters: Record<string, unknown>, actor: string) { const job = this.job(id); const run = this.mustJobRuntime().createRun(`${job.metadata.id}@${job.metadata.version}`, parameters, {type: 'manual', actor}); this.events.emit('job.run_created', {runId: run.id, jobId: run.jobId, trigger: 'manual'}, undefined, actor); return run; }
+  createJobRun(id: string, parameters: Record<string, unknown>, actor: string, requestKey?: string) { const job = this.job(id); const run = this.mustJobRuntime().createRun(`${job.metadata.id}@${job.metadata.version}`, parameters, {type: 'manual', actor}, undefined, requestKey); this.events.emit('job.run_created', {runId: run.id, jobId: run.jobId, trigger: 'manual'}, undefined, actor); return run; }
   cancelJobRun(id: string, actor: string) { const run = this.mustJobRuntime().cancel(id, `cancelled_by:${actor}`); this.events.emit('job.run_cancelled', {runId: id}, undefined, actor); return run; }
   retryJobRun(id: string, actor: string) { const run = this.mustJobRuntime().retry(id); this.events.emit('job.run_retried', {sourceRunId: id, runId: run.id}, undefined, actor); return run; }
   approveJobRun(id: string, policy: string, actor: string) { if (!policy.trim()) throw new Error('approval_policy_required'); const run = this.mustJobRuntime().approve(id, policy, actor); this.events.emit('job.run_approved', {runId: id, approval: policy}, undefined, actor); return run; }
@@ -257,6 +282,16 @@ export class AgentControlService {
   setScheduleEnabled(id: string, enabled: boolean, actor: string) { const state = this.mustJobRuntime().setScheduleEnabled(id, enabled); this.events.emit('job.schedule_changed', {scheduleId: id, enabled}, undefined, actor); return state; }
   jobQueue() { return this.mustJobRuntime().queueProjection(); }
   workers() { return this.mustJobRuntime().workers.list(); }
+  executionSessionProjection() { return (this.executionSessions?.list() ?? []).map(session => ({id: session.id, incarnation: session.incarnation, state: session.state, adapterId: session.adapterId, scope: structuredClone(session.scope), command: session.command, cwd: session.cwd, ...(session.pid === undefined ? {} : {pid: session.pid}), capabilities: structuredClone(session.capabilities), control: structuredClone(session.control), activeAttachments: session.attachments.filter(item => !item.detachedAt).map(item => ({id: item.id, actorId: item.actorId, mode: item.mode, attachedAt: item.attachedAt})), createdAt: session.createdAt, startedAt: session.startedAt, updatedAt: session.updatedAt, ...(session.endedAt ? {endedAt: session.endedAt} : {}), ...(session.exitCode === undefined ? {} : {exitCode: session.exitCode}), ...(session.exitSignal === undefined ? {} : {exitSignal: session.exitSignal}), outputBytes: session.outputBytes, outputTruncated: session.outputTruncated, ...(session.lastOutputAt ? {lastOutputAt: session.lastOutputAt} : {}), ...(session.lastError ? {lastError: session.lastError} : {})})); }
+  executionSession(id: string) { return this.mustExecutionSessions().get(id); }
+  executionSessionEvents(id: string, after = 0) { return this.mustExecutionSessions().events(id, after); }
+  executionSessionTranscript(id: string) { return {sessionId: id, content: this.mustExecutionSessions().transcript(id)}; }
+  attachExecutionSession(id: string, mode: ExecutionSessionMode, actor: string) { return this.mustExecutionSessions().attach(id, mode, sessionAuthority(actor)); }
+  detachExecutionSession(id: string, attachmentId: string, actor: string) { return this.mustExecutionSessions().detach(id, attachmentId, sessionAuthority(actor)); }
+  inputExecutionSession(id: string, attachmentId: string, value: string, sensitive: boolean, actor: string) { return this.mustExecutionSessions().input(id, attachmentId, value, sessionAuthority(actor), sensitive); }
+  resizeExecutionSession(id: string, attachmentId: string, columns: number, rows: number, actor: string) { return this.mustExecutionSessions().resize(id, attachmentId, columns, rows, sessionAuthority(actor)); }
+  signalExecutionSession(id: string, attachmentId: string, signal: ExecutionSessionSignal, actor: string) { return this.mustExecutionSessions().signal(id, attachmentId, signal, sessionAuthority(actor)); }
+  returnExecutionSessionControl(id: string, attachmentId: string, reconciliation: {summary: string; batonId?: string}, actor: string) { return this.mustExecutionSessions().returnControl(id, attachmentId, sessionAuthority(actor), reconciliation); }
   nodes() { return this.managedNodes?.list() ?? []; }
   resourceLocks() { return this.mustJobRuntime().locks.list(); }
   artifacts(runId?: string) { return this.mustJobRuntime().artifacts.list(runId).map(value => { const {storageRef: _storageRef, ...metadata} = value; return {...metadata, storage: 'agent-control-managed'}; }); }
@@ -281,14 +316,33 @@ export class AgentControlService {
   runtime() { return this.runtimeObservability?.snapshot() ?? new RuntimeObservability().snapshot(); }
   capabilityIntelligenceProjection() { return this.mustCapabilityIntelligence().projection(); }
   modelIntelligenceProjection() { return this.mustModelIntelligence().projection(); }
+  providerCatalogProjection() { return this.mustProviderCatalog().projection(); }
+  async discoverProviderModels(providerId: string, actor: string) {
+    const pending = this.mustProviderCatalog().discover(providerId), action = 'discovering'; this.events.emit('provider.catalog_changed', {providerId, action, stage: 'DISCOVER', narrative: providerCatalogEventNarrative({providerId, action})}, undefined, actor);
+    try { const value = await pending, completedAction = 'discovered'; this.events.emit('provider.catalog_changed', {providerId, action: completedAction, stage: 'DISCOVERED', models: value.discovered, narrative: providerCatalogEventNarrative({providerId, action: completedAction, models: value.discovered})}, undefined, actor); return value; }
+    catch (error) { this.events.emit('provider.catalog_changed', {providerId, action: 'discovery-failed'}, undefined, actor); throw error; }
+  }
+  async smokeProviderModel(providerId: string, canonicalModelId: string, actor: string) {
+    const pending = this.mustProviderCatalog().smoke(providerId, canonicalModelId), action = 'smoke-testing'; this.events.emit('provider.catalog_changed', {providerId, canonicalModelId, action, stage: 'CAPABILITY_TESTING', narrative: providerCatalogEventNarrative({providerId, canonicalModelId, action})}, undefined, actor);
+    try { const value = await pending, completedAction = 'smoke-tested'; this.events.emit('provider.catalog_changed', {providerId, canonicalModelId, action: completedAction, stage: value.status === 'PASS' ? 'CAPABILITY_CONFIRMED' : value.status, status: value.status, narrative: providerCatalogEventNarrative({providerId, canonicalModelId, action: completedAction, status: value.status})}, undefined, actor); return value; }
+    catch (error) { this.events.emit('provider.catalog_changed', {providerId, canonicalModelId, action: 'smoke-failed'}, undefined, actor); throw error; }
+  }
+  async probeProviderModelCallability(providerId: string, canonicalModelId: string, actor: string) {
+    const pending = this.mustProviderCatalog().probeCallability(providerId, canonicalModelId), action = 'callability-testing'; this.events.emit('provider.catalog_changed', {providerId, canonicalModelId, action, stage: 'TESTING_CALLABILITY', narrative: providerCatalogEventNarrative({providerId, canonicalModelId, action})}, undefined, actor);
+    try { const value = await pending, completedAction = 'callability-tested'; this.events.emit('provider.catalog_changed', {providerId, canonicalModelId, action: completedAction, stage: value.status === 'PASS' ? 'CONFIRMED' : value.inferenceEndpointStatus === 'NOT_AVAILABLE' ? 'FAILED' : 'LIMITED', status: value.status, inferenceEndpointStatus: value.inferenceEndpointStatus, failureClass: value.failureClass, narrative: providerCatalogEventNarrative({providerId, canonicalModelId, action: completedAction, status: value.status, failureClass: value.failureClass})}, undefined, actor); return value; }
+    catch (error) { this.events.emit('provider.catalog_changed', {providerId, canonicalModelId, action: 'callability-failed'}, undefined, actor); throw error; }
+  }
+  adjudicateProviderEvidence(providerId: string, canonicalModelId: string, input: CatalogEvidenceAdjudicationInput, actor: string) { const value = this.mustProviderCatalog().recordEvidenceAdjudication(providerId, canonicalModelId, input), action = 'evidence-adjudicated'; this.events.emit('provider.catalog_changed', {providerId, canonicalModelId, action, attribution: value.attribution, scoreDisposition: value.scoreDisposition, evidenceReference: value.evidenceReference, narrative: providerCatalogEventNarrative({providerId, canonicalModelId, action, status: value.attribution})}, undefined, actor); return value; }
+  setProviderModelRoutingEligibility(providerId: string, canonicalModelId: string, enabled: boolean, actor: string) { const value = this.mustProviderCatalog().setRoutingEligibility(providerId, canonicalModelId, enabled); this.events.emit('provider.catalog_changed', {providerId, canonicalModelId, action: enabled ? 'routing-enabled' : 'routing-disabled'}, undefined, actor); return value; }
   runtimeSafetyDecisions(runId?: string) { return this.mustJobRuntime().safetyDecisions(runId); }
   discoverCapability(input: {id?: string; title: string; source: string; providerRuntime: string; claimedCapability: string; whyItMatters: string; agentControlEquivalent: string; evidence?: string[]}, actor: string) { const candidate = this.mustCapabilityIntelligence().discoverCandidate({...input, evidence: input.evidence ?? [], actor}); this.events.emit('capability.intelligence_changed', {candidateId: candidate.id, state: candidate.state}, undefined, actor); return candidate; }
   transitionCapability(id: string, input: {to: CapabilityCandidateState; reason: string; classification?: CapabilityCandidateClassification; experiment?: string; measuredOutcome?: string; finalDecision?: string; evidence?: string[]}, actor: string) { const candidate = this.mustCapabilityIntelligence().transitionCandidate(id, {...input, actor}); this.events.emit('capability.intelligence_changed', {candidateId: candidate.id, state: candidate.state}, undefined, actor); return candidate; }
   queueModelEvaluation(modelIds: string[], reason: string, actor: string) {
     if (!modelIds.length) throw new Error('model_evaluation_candidates_required'); const suite = this.mustQualificationSuite(), registry = this.mustModelRegistry();
     const candidates = modelIds.map(id => { const model = registry.list().find(item => item.id === id); if (!model) throw new Error('model_missing'); const provider = registry.provider(model.provider); if (!provider) throw new Error('provider_missing'); const nodeId = model.account?.providerExecutionNodeId ?? model.qualification.nodes[0] ?? model.nodes?.[0] ?? 'controller'; return {providerId: model.provider, ...(model.accountProfile ? {accountProfileId: model.accountProfile} : {}), modelId: model.id, providerModel: model.providerModel, runtimeId: provider.kind, runtimeVersion: null, modelVersion: null, nodeId}; });
-    const batch = this.mustModelIntelligence().createBatch({suite, candidates, requestedBy: actor, reason}); this.events.emit('model.intelligence_changed', {batchId: batch.id, status: batch.status}, undefined, actor); return batch;
+    const batch = this.mustModelIntelligence().createBatch({suite, candidates, requestedBy: actor, reason}); this.providerCatalog?.markBenchmarkQueued(modelIds, batch.id); this.events.emit('model.intelligence_changed', {batchId: batch.id, status: batch.status}, undefined, actor); for (const modelId of modelIds) { const item = this.providerCatalog?.modelByRegistryId(modelId); if (item) this.events.emit('provider.catalog_changed', {providerId: item.providerId, canonicalModelId: item.canonicalModelId, action: 'benchmark-queued', stage: 'BENCHMARKING', batchId: batch.id, narrative: providerCatalogEventNarrative({providerId:item.providerId,canonicalModelId:item.canonicalModelId,action:'benchmark-queued'})}, undefined, actor); } return batch;
   }
+  reconcileProviderBenchmark(batchId: string, status: string, actor: string) { const models = this.mustProviderCatalog().projection().models.filter(model=>model.benchmarkBatchIds.includes(batchId)); for (const model of models) { const action='benchmark-completed'; this.events.emit('provider.catalog_changed',{providerId:model.providerId,canonicalModelId:model.canonicalModelId,action,stage:model.qualificationStage,status,batchId,routingEligible:model.routingEligible,narrative:providerCatalogEventNarrative({providerId:model.providerId,canonicalModelId:model.canonicalModelId,action,status:model.qualificationStage})},undefined,actor); } return models.map(model=>({providerId:model.providerId,canonicalModelId:model.canonicalModelId,qualificationStage:model.qualificationStage,reviewState:model.reviewState,routingEligible:model.routingEligible})); }
   transitionModelRoute(routeKey: string, to: Parameters<ModelIntelligenceLedger['transition']>[0]['to'], reason: string, actor: string, approved = false, evidence: string[] = []) { const value = this.mustModelIntelligence().transition({routeKey, to, reason, actor, approved, evidence}); this.events.emit('model.intelligence_changed', {routeKey, state: value.to}, undefined, actor); return value; }
   modelProviders() { return this.mustModelRegistry().providersList(); }
   modelAccountProfiles() { return this.mustModelRegistry().accountProfilesList(); }
@@ -301,12 +355,13 @@ export class AgentControlService {
   createSavedJob(input: Omit<SavedJob, 'schema' | 'revision' | 'createdAt' | 'updatedAt'>, actor: string) { const job = this.mustParameterizedJobs().savedJobs.create(input); this.events.emit('job.saved_changed', {savedJobId: job.id, action: 'created'}, undefined, actor); return job; }
   updateSavedJob(id: string, revision: number, changes: Partial<Omit<SavedJob, 'schema' | 'id' | 'revision' | 'createdAt'>>, actor: string) { const job = this.mustParameterizedJobs().savedJobs.update(id, revision, changes); this.events.emit('job.saved_changed', {savedJobId: id, action: 'updated', revision: job.revision}, undefined, actor); return job; }
   setSavedJobEnabled(id: string, enabled: boolean, revision: number, actor: string) { const job = this.mustParameterizedJobs().savedJobs.setEnabled(id, enabled, revision); this.events.emit('job.saved_changed', {savedJobId: id, action: enabled ? 'enabled' : 'disabled'}, undefined, actor); return job; }
-  runSavedJob(id: string, actor: string) { const run = this.mustParameterizedJobs().runNow(id, actor); this.events.emit('job.run_created', {runId: run.id, savedJobId: id, trigger: 'manual'}, undefined, actor); return run; }
+  runSavedJob(id: string, actor: string, requestKey?: string, origin?: import('./request-origin.js').GovernedRequestOrigin) { const run = this.mustParameterizedJobs().runNow(id, actor, requestKey, origin); this.events.emit('job.run_created', {runId: run.id, savedJobId: id, trigger: 'manual'}, undefined, actor); return run; }
   parameterizedRuns(savedJobId?: string) {
     const jobs = this.mustParameterizedJobs(), savedJobs = jobs.savedJobs.list();
     const parcels = this.workParcels?.list() ?? [], tokenEvidence = this.tokenBatonRouting?.evidence();
     return jobs.runs.list(savedJobId).map(run => ({
       ...run,
+      executionTranscript: jobs.transcripts?.metadata(run.id),
       executionHistory: projectParameterizedRunHistory({
         run,
         savedJob: savedJobs.find(job => job.id === run.savedJobId),
@@ -316,12 +371,13 @@ export class AgentControlService {
     }));
   }
   parameterizedRun(id: string) { const run = this.parameterizedRuns().find(item => item.id === id); if (!run) throw new Error('job_run_missing'); return run; }
+  parameterizedRunTranscript(id: string) { const transcripts = this.mustParameterizedJobs().transcripts; if (!transcripts) throw new Error('execution_transcript_runtime_unavailable'); return transcripts.read(id); }
   cancelParameterizedRun(id: string, actor: string) { const run = this.mustParameterizedJobs().cancel(id, actor); this.events.emit('job.run_cancelled', {runId: id, savedJobId: run.savedJobId}, undefined, actor); return run; }
   resumeParameterizedRunAuthentication(id: string, actor: string) { const run = this.mustParameterizedJobs().resumeAuthentication(id, actor); this.events.emit('job.run_authentication_resumed', {runId: id, savedJobId: run.savedJobId, providerId: run.modelRoute?.providerId, accountProfileId: run.modelRoute?.accountProfileId, modelId: run.modelRoute?.modelId, nodeId: run.modelRoute?.providerExecutionNodeId}, undefined, actor); return run; }
   parameterizedSchedules() { return this.savedJobs().filter(job => job.schedule).map(job => ({savedJobId: job.id, name: job.name, schedule: job.schedule, nextRun: job.nextRun, lastRun: job.lastRun})); }
   model(id: string) { const value = this.models().find(model => model.id === id); if (!value) throw new Error('model_missing'); return value; }
   modelRoutes() { return this.mustModelRegistry().routes(); }
-  reloadModels(providers: ProviderConfig[], models: ModelConfig[], routing: ModelRoutingConfig, actor: string) { this.mustModelRegistry().reload(providers, models, routing); this.events.emit('configuration.changed', {kind: 'model-registry', models: models.length, restartRequired: false}, undefined, actor); return {models: this.models(), routes: this.modelRoutes()}; }
+  reloadModels(providers: ProviderConfig[], models: ModelConfig[], routing: ModelRoutingConfig, actor: string) { this.mustModelRegistry().reload(providers, models, routing); this.providerCatalog?.reloadProviders(providers); this.events.emit('configuration.changed', {kind: 'model-registry', models: models.length, restartRequired: false}, undefined, actor); return {models: this.models(), routes: this.modelRoutes()}; }
   routeModel(request: ModelRouteRequest) { return this.mustModelRegistry().route(request); }
   qualifyModel(id: string, nodeId: string) { return qualifyModel({registry: this.mustModelRegistry(), modelId: id, nodeId}); }
   qualifyModelAccount(providerId: string, accountProfileId: string) {
@@ -340,7 +396,17 @@ export class AgentControlService {
     throw new Error('system_missing');
   }
   parcels() { return this.mustWorkParcels().list(); }
+  createSocialParcel(jobId:string,parameters:Record<string,unknown>,actor:string,requestKey:string,prompt?:string,origin?:import('./request-origin.js').GovernedRequestOrigin) {
+    const job=this.job(jobId),parcel=this.mustWorkParcels().submitApprovedPlan(prompt??`Approved social task: ${job.metadata.id}`,actor,requestKey,{objective:job.metadata.name,planner:{kind:'deterministic',reason:'Explicit enrolled sender selected a hash-pinned approved template'},stages:[{id:'execute',name:job.metadata.name,job:`${job.metadata.id}@${job.metadata.version}`,parameters,dependsOn:[]}]},origin);
+    this.events.emit('work.parcel_created',{parcelId:parcel.id,status:parcel.status},undefined,actor);return parcel;
+  }
   parcel(id: string) { return this.mustWorkParcels().get(id); }
+  adaptiveModelLeague(taskClass?: string, filter?: AdaptiveLeagueFilter) { return this.adaptiveOrchestration?.modelLeague(taskClass, undefined, filter) ?? []; }
+  adaptiveWorkflowLeague(taskClass?: string, filter?: AdaptiveLeagueFilter) { return this.adaptiveOrchestration?.workflowLeague(taskClass, undefined, filter) ?? []; }
+  adaptiveDecisions() { return this.adaptiveOrchestration?.decisions() ?? []; }
+  adaptiveDecision(id: string) { if (!this.adaptiveOrchestration) throw new Error('adaptive_orchestration_unconfigured'); return this.adaptiveOrchestration.decision(id); }
+  adaptiveReport(id: string) { if (!this.adaptiveOrchestration) throw new Error('adaptive_orchestration_unconfigured'); return this.adaptiveOrchestration.report(id); }
+  adaptiveParcelReport(id: string) { const parcel = this.parcel(id), decisionId = parcel.audit.orchestrationDecisionId; if (!decisionId) throw new Error('adaptive_decision_missing'); return this.adaptiveReport(decisionId); }
   async submitNaturalTask(prompt: string, actor: string) {
     let attribution: WorkAttribution;
     if (this.identity && this.defaultSessionId) {
@@ -526,5 +592,9 @@ export class AgentControlService {
   private mustParameterizedJobs() { if (!this.parameterizedJobs) throw new Error('parameterized_jobs_unconfigured'); return this.parameterizedJobs; }
   private mustCapabilityIntelligence() { if (!this.capabilityIntelligence) throw new Error('capability_intelligence_unconfigured'); return this.capabilityIntelligence; }
   private mustModelIntelligence() { if (!this.modelIntelligence) throw new Error('model_intelligence_unconfigured'); return this.modelIntelligence; }
+  private mustProviderCatalog() { if (!this.providerCatalog) throw new Error('provider_catalog_unconfigured'); return this.providerCatalog; }
   private mustQualificationSuite() { if (!this.qualificationSuite) throw new Error('model_qualification_suite_unconfigured'); return this.qualificationSuite; }
+  private mustExecutionSessions() { if (!this.executionSessions) throw new Error('execution_session_runtime_unconfigured'); return this.executionSessions; }
 }
+
+function sessionAuthority(actor: string) { return {actorId: actor.startsWith('human:') ? actor : `human:${actor}`, roles: ['operator' as const]}; }

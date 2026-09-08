@@ -7,6 +7,10 @@ import {nextSavedJobOccurrence, ParameterizedJobError, ParameterizedJobRegistry,
 import {buildRepositoryContext, LocalRepositoryResolver, ReviewBaselineStore, validateRepositoryReview, type RepositoryResolver} from './repository-review-runtime.js';
 import type {JobBudgetPolicy, ParameterizedExecutionIdentity, ParameterizedJobRun, ParameterizedRunStatus, RepositoryReviewExecutor, ReviewExecutionResponse, SavedJob} from './parameterized-job-types.js';
 import {boundedRecoveryDelay, classifyExecutionFailure, recoveryDeadlineAllows} from './execution-recovery.js';
+import {ExecutionTranscriptRuntime} from './execution-transcript.js';
+import type {TokenAwareBatonRuntime} from './token-aware-baton-routing.js';
+import type {WorkParcelStore} from './work-parcels.js';
+import type {GovernedRequestOrigin} from './request-origin.js';
 
 function hash(value: string) { return createHash('sha256').update(value).digest('hex'); }
 function terminal(status: ParameterizedRunStatus) { return ['SUCCEEDED', 'SUCCEEDED_WITH_FINDINGS', 'FAILED', 'CANCELLED', 'DEGRADED'].includes(status); }
@@ -33,17 +37,18 @@ export class ParameterizedJobEngine {
     readonly executor: RepositoryReviewExecutor,
     readonly options: ParameterizedJobEngineOptions,
     readonly repositories: RepositoryResolver = new LocalRepositoryResolver(),
+    readonly transcripts?: ExecutionTranscriptRuntime,
   ) { this.clock = options.clock ?? (() => new Date()); this.wait = options.wait ?? abortableDelay; this.recoverInterruptedRuns(); }
 
-  runNow(savedJobId: string, actor: string) { const job = this.savedJobs.get(savedJobId); if (!job.enabled) throw new ParameterizedJobError('saved_job_disabled', savedJobId); return this.createRun(job, {type: 'manual', actor}); }
+  runNow(savedJobId: string, actor: string, requestKey?: string, origin?: GovernedRequestOrigin) { const job = this.savedJobs.get(savedJobId); if (!job.enabled) throw new ParameterizedJobError('saved_job_disabled', savedJobId); return this.createRun(job, {type: 'manual', actor, ...(requestKey?{id:requestKey}:{}), ...(origin?{origin:structuredClone(origin)}:{})}); }
   createRun(job: SavedJob, trigger: ParameterizedJobRun['trigger']) {
-    const definition = this.definitions.resolve(job), scheduledFor = trigger.scheduledFor ?? this.clock().toISOString(), occurrenceId = trigger.type === 'schedule' ? hash(`${job.id}\n${scheduledFor}`) : randomUUID();
-    const existing = this.runs.occurrence(occurrenceId); if (existing) return existing;
+    const definition = this.definitions.resolve(job), scheduledFor = trigger.scheduledFor ?? this.clock().toISOString(), occurrenceId = trigger.type === 'schedule' ? hash(`${job.id}\n${scheduledFor}`) : trigger.id ? hash(`command\n${trigger.actor}\n${trigger.id}`) : randomUUID();
+    const existing = this.runs.occurrence(occurrenceId); if (existing) { if(existing.savedJobId!==job.id)throw new ParameterizedJobError('request_key_conflict');return existing; }
     const concurrent = this.runs.list(job.id).filter(run => !terminal(run.status));
     if (concurrent.length && job.concurrency === 'forbid-overlap') throw new ParameterizedJobError('saved_job_overlap_forbidden', concurrent[0].id);
     const at = this.clock().toISOString(), run: ParameterizedJobRun = {
       schema: 'agent-control.job-run/v1', id: randomUUID(), occurrenceId, savedJobId: job.id, definition, resolvedParameters: resolveParameters(definition, job.parameters), trigger,
-      status: 'QUEUED', transitions: [{status: 'QUEUED', at}], requestedAt: at, workParcelIds: [], evidence: [], providerResponseIds: [], usage: {source: 'unavailable'}, errors: [], fallbackHistory: [], retryHistory: [], immutable: false,
+      executionMode: job.executionMode ?? 'LIVE', status: 'QUEUED', transitions: [{status: 'QUEUED', at}], requestedAt: at, workParcelIds: [], evidence: [], providerResponseIds: [], usage: {source: 'unavailable'}, errors: [], fallbackHistory: [], retryHistory: [], immutable: false,
     };
     return this.runs.add(run);
   }
@@ -92,7 +97,7 @@ export class ParameterizedJobEngine {
       const modelRole = saved?.routing?.modelRole ?? run.definition.routing.modelRole, sealedRoute = run.modelRoute;
       const route = sealedRoute
         ? this.revalidateRoute(sealedRoute)
-        : this.models.route({model: saved?.routing?.model, modelRole, accountProfile: saved?.routing?.accountProfile, nodeId, workloadNodeId: nodeId, requiredCapabilities: ['repository-review'], allowFallback: saved?.routing?.allowFallback ?? run.definition.routing.allowFallback});
+        : this.models.route({model: saved?.routing?.model, modelRole, accountProfile: saved?.routing?.accountProfile, nodeId, workloadNodeId: nodeId, requiredCapabilities: ['repository-review'], allowFallback: saved?.routing?.allowFallback ?? run.definition.routing.allowFallback, purpose: saved?.routing?.purpose});
       run.modelRoute = route; if (!sealedRoute && route.fallback) run.fallbackHistory.push({at: this.clock().toISOString(), reason: route.fallbackReason ?? 'primary unavailable', selectedModel: route.modelId});
       const context = buildRepositoryContext(repository, saved?.contextProfile ?? 'STANDARD', budgets.maximumInputTokens); run.context = context.summary;
       run = this.transition(run, 'RUNNING'); this.runs.update(run);
@@ -112,7 +117,7 @@ export class ParameterizedJobEngine {
           const partial = error as Error & {workParcelIds?: string[]; evidence?: string[]; providerResponseIds?: string[]; usage?: ParameterizedJobRun['usage']}, parcelIds = partial.workParcelIds ?? [];
           run = this.mustRun(run.id); this.updateExecution(run, controller.signal.aborted ? 'UNKNOWN' : 'FAILED');
           run.workParcelIds = [...new Set([...run.workParcelIds, ...parcelIds])];
-          run.evidence = [...new Set([...run.evidence, ...(partial.evidence ?? [])])]; run.providerResponseIds = [...new Set([...run.providerResponseIds, ...(partial.providerResponseIds ?? [])])]; if (partial.usage) run.usage = partial.usage;
+          run.evidence = [...new Set([...run.evidence, ...(partial.evidence ?? [])])]; run.providerResponseIds = [...new Set([...run.providerResponseIds, ...(partial.providerResponseIds ?? [])])]; if (partial.usage) run.usage = mergeRunUsage(run.usage, partial.usage);
           this.runs.update(run);
           if (controller.signal.aborted) throw error;
           const disposition = classifyExecutionFailure(error);
@@ -208,9 +213,9 @@ export class ParameterizedJobEngine {
   private finalizeResponse(run: ParameterizedJobRun, response: ReviewExecutionResponse, budgets: JobBudgetPolicy, saved?: SavedJob) {
     const repository = run.repository; if (!repository) throw new ParameterizedJobError('frozen_repository_snapshot_unavailable');
     if (!response.workParcelIds.length) throw new ParameterizedJobError('repository_review_work_parcel_missing');
-    run.workParcelIds = [...new Set([...run.workParcelIds, ...response.workParcelIds])]; run.evidence = [...new Set([...run.evidence, ...response.evidence])]; run.providerResponseIds = [...new Set([...run.providerResponseIds, ...response.providerResponseIds])]; run.usage = response.usage; this.updateExecution(run, 'COMPLETED'); this.runs.update(run);
-    if (budgets.maxCost !== undefined && response.usage.cost === undefined) throw new ParameterizedJobError('job_cost_budget_unenforceable');
-    if (budgets.maxCost !== undefined && response.usage.cost! > budgets.maxCost) throw new ParameterizedJobError('job_cost_budget_exceeded');
+    run.workParcelIds = [...new Set([...run.workParcelIds, ...response.workParcelIds])]; run.evidence = [...new Set([...run.evidence, ...response.evidence])]; run.providerResponseIds = [...new Set([...run.providerResponseIds, ...response.providerResponseIds])]; run.fallbackHistory = [...run.fallbackHistory, ...(response.governedFallbacks ?? [])]; run.usage = mergeRunUsage(run.usage, response.usage); this.updateExecution(run, 'COMPLETED'); this.runs.update(run);
+    if (budgets.maxCost !== undefined && run.usage.cost === undefined) throw new ParameterizedJobError('job_cost_budget_unenforceable');
+    if (budgets.maxCost !== undefined && run.usage.cost! > budgets.maxCost) throw new ParameterizedJobError('job_cost_budget_exceeded');
     run = this.transition(run, 'VALIDATING'); this.runs.update(run); run.result = validateRepositoryReview(response.result, repository);
     run.status = run.result.verdict === 'PASS' ? 'SUCCEEDED' : run.result.verdict === 'PASS_WITH_FINDINGS' ? 'SUCCEEDED_WITH_FINDINGS' : run.result.verdict === 'REVIEW_REQUIRED' ? 'DEGRADED' : 'FAILED';
     this.executor.recordVerification?.(response.workParcelIds, run.result.verdict);
@@ -232,7 +237,7 @@ export class ParameterizedJobEngine {
   }
   private transition(run: ParameterizedJobRun, status: ParameterizedRunStatus) { run.status = status; run.transitions.push({status, at: this.clock().toISOString()}); return run; }
   private revalidateRoute(sealed: NonNullable<ParameterizedJobRun['modelRoute']>) {
-    const current = this.models.route({model: sealed.modelId, accountProfile: sealed.accountProfileId ?? undefined, nodeId: sealed.workloadNodeId, workloadNodeId: sealed.workloadNodeId, providerExecutionNodeId: sealed.providerExecutionNodeId, requiredCapabilities: sealed.requiredCapabilities ?? ['repository-review'], allowFallback: false});
+    const current = this.models.route({model: sealed.modelId, accountProfile: sealed.accountProfileId ?? undefined, nodeId: sealed.workloadNodeId, workloadNodeId: sealed.workloadNodeId, providerExecutionNodeId: sealed.providerExecutionNodeId, requiredCapabilities: sealed.requiredCapabilities ?? ['repository-review'], allowFallback: false, purpose: sealed.purpose});
     const identity = (route: typeof sealed) => [route.providerId, route.accountProfileId, route.modelId, route.workloadNodeId, route.providerExecutionNodeId, route.credentialNodeId];
     if (JSON.stringify(identity(current)) !== JSON.stringify(identity(sealed))) throw new ParameterizedJobError('recovery_route_identity_changed', sealed.modelId);
     return {...sealed, accountLabel: current.accountLabel, accountPlan: current.accountPlan, accountPlanAuthority: current.accountPlanAuthority, accountQualification: current.accountQualification, accountAvailability: current.accountAvailability, qualificationVersion: current.qualificationVersion, nativeCapabilities: current.nativeCapabilities, emulatedCapabilities: current.emulatedCapabilities, considered: current.considered};
@@ -245,8 +250,19 @@ function isAncestor(repository: string, prior: string, current: string) { try { 
 function abortableDelay(milliseconds: number, signal?: AbortSignal) { return new Promise<void>((resolve, reject) => { if (signal?.aborted) { reject(signal.reason ?? new Error('recovery_cancelled')); return; } const timer = setTimeout(() => { signal?.removeEventListener('abort', aborted); resolve(); }, milliseconds); const aborted = () => { clearTimeout(timer); reject(signal?.reason ?? new Error('recovery_cancelled')); }; signal?.addEventListener('abort', aborted, {once: true}); }); }
 function safeReason(value: unknown) { return String(value).replace(/(?:bearer\s+|sk-)[A-Za-z0-9._-]{8,}/gi, '[REDACTED]').replace(/(password|api[_-]?key|access[_-]?token|refresh[_-]?token)\s*[:=]\s*\S+/gi, '$1=[REDACTED]').replace(/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/g, '[REDACTED_ACCOUNT]').slice(0, 1024); }
 
-export function createParameterizedJobEngine(root: string, definitions: ParameterizedJobRegistry, models: ModelRegistry, executor: RepositoryReviewExecutor, options: Omit<ParameterizedJobEngineOptions, 'snapshotsRoot'> & {snapshotsRoot?: string}, repositories?: RepositoryResolver) {
+function mergeRunUsage(left: ParameterizedJobRun['usage'], right: ParameterizedJobRun['usage']): ParameterizedJobRun['usage'] {
+  const observed = (value: ParameterizedJobRun['usage']) => (value.accountedInvocations ?? 0) > 0 || ['inputTokens','outputTokens','totalTokens','providerReportedCost','calculatedCost','cost'].some(field => value[field as keyof typeof value] !== undefined);
+  if (!observed(left)) return structuredClone(right);
+  if (!observed(right)) return structuredClone(left);
+  const sum = (field: 'inputTokens'|'freshInputTokens'|'cachedInputTokens'|'cacheWriteTokens'|'outputTokens'|'totalTokens'|'providerReportedCost'|'calculatedCost'|'cost') => left[field] === undefined || right[field] === undefined ? undefined : left[field]! + right[field]!;
+  const unknownUsageInvocations = (left.unknownUsageInvocations ?? 0) + (right.unknownUsageInvocations ?? 0), cost = sum('cost'), providerReportedCost = sum('providerReportedCost'), calculatedCost = sum('calculatedCost');
+  const source = cost === undefined ? 'unavailable' as const : left.source === 'provider' && right.source === 'provider' ? 'provider' as const : 'calculated' as const;
+  return {inputTokens: sum('inputTokens'), freshInputTokens: sum('freshInputTokens'), cachedInputTokens: sum('cachedInputTokens'), cacheWriteTokens: sum('cacheWriteTokens'), outputTokens: sum('outputTokens'), totalTokens: sum('totalTokens'), providerReportedCost, calculatedCost, cost, ...(left.currency && right.currency && left.currency === right.currency ? {currency: left.currency} : {}), accountedInvocations: (left.accountedInvocations ?? 1) + (right.accountedInvocations ?? 1), unknownUsageInvocations, source};
+}
+
+export function createParameterizedJobEngine(root: string, definitions: ParameterizedJobRegistry, models: ModelRegistry, executor: RepositoryReviewExecutor, options: Omit<ParameterizedJobEngineOptions, 'snapshotsRoot'> & {snapshotsRoot?: string}, repositories?: RepositoryResolver, transcriptSources?: {parcels: WorkParcelStore; tokenRouting?: TokenAwareBatonRuntime}) {
   const jobsRoot = path.join(root, 'parameterized-jobs'); fs.mkdirSync(jobsRoot, {recursive: true});
   const savedJobs = new SavedJobStore(path.join(jobsRoot, 'saved-jobs.json'), definitions, options.clock), runs = new ParameterizedRunStore(path.join(jobsRoot, 'runs.json')), baselines = new ReviewBaselineStore(path.join(jobsRoot, 'review-baselines.json'));
-  return new ParameterizedJobEngine(definitions, savedJobs, runs, baselines, models, executor, {...options, snapshotsRoot: options.snapshotsRoot ?? path.join(jobsRoot, 'snapshots')}, repositories);
+  const transcripts = transcriptSources ? new ExecutionTranscriptRuntime(path.join(jobsRoot, 'execution-transcripts'), runs, savedJobs, transcriptSources.parcels, transcriptSources.tokenRouting) : undefined;
+  return new ParameterizedJobEngine(definitions, savedJobs, runs, baselines, models, executor, {...options, snapshotsRoot: options.snapshotsRoot ?? path.join(jobsRoot, 'snapshots')}, repositories, transcripts);
 }

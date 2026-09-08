@@ -4,6 +4,7 @@ import type {ModelConfig, ModelQualificationState, ModelRoutingConfig, ProviderA
 import {accountCredentialResidency, accountProviderExecutionNode} from './provider-account-profile.js';
 import {normalizeCapabilityId, type CapabilityIntelligenceStore, type CapabilityRequirementAssessment} from './capability-intelligence.js';
 import type {ModelIntelligenceLedger, ModelLifecycleState, ModelWindowMetrics} from './model-intelligence.js';
+import {credentialReferenceStatus, providerCredentialStatus} from './provider-credential-store.js';
 
 export interface ModelQualificationRecord {
   modelId: string;
@@ -22,6 +23,10 @@ export interface ModelRouteRequest {model?: string; modelRole?: string; accountP
 export interface ModelRouteDecision {
   requestedModel: string | null;
   requestedRole: string | null;
+  /** Whether a later governed lifecycle decision may select a configured alternate route. */
+  allowFallback?: boolean;
+  /** Explicit qualification runs may inspect disabled-for-production candidates without admitting them. */
+  purpose?: 'EXECUTION' | 'QUALIFICATION';
   modelId: string;
   providerId: string;
   accountProfileId: string | null;
@@ -87,22 +92,36 @@ export class ModelRegistry {
   private providers = new Map<string, ProviderConfig>();
   private models = new Map<string, ModelConfig>();
   private routing: ModelRoutingConfig = {roles: {}};
+  private configuredModelIds = new Set<string>();
   constructor(providers: ProviderConfig[], models: ModelConfig[], routing: ModelRoutingConfig, readonly qualifications = new ModelQualificationStore(), readonly accountQualifications = new AccountProfileQualificationStore(), private readonly environment: NodeJS.ProcessEnv = process.env, readonly capabilityIntelligence?: CapabilityIntelligenceStore, readonly modelIntelligence?: ModelIntelligenceLedger) { this.reload(providers, models, routing); }
   reload(providers: ProviderConfig[], models: ModelConfig[], routing: ModelRoutingConfig) {
     this.providers = new Map(providers.map(provider => [provider.id, structuredClone(provider)]));
     this.models = new Map(models.map(model => [model.id, structuredClone(model)]));
+    this.configuredModelIds = new Set(models.map(model => model.id));
     this.routing = structuredClone(routing);
     this.harvestCapabilities();
   }
   provider(id: string) { const value = this.providers.get(id); return value ? structuredClone(value) : undefined; }
   model(id: string) { const value = this.models.get(id); return value ? structuredClone(value) : undefined; }
-  providersList() { return [...this.providers.values()].map(value => ({...safeProvider(value), accountProfiles: (value.accountProfiles ?? []).map(account => this.accountView(value, account))})); }
+  providersList() { return [...this.providers.values()].map(value => ({...safeProvider(value, this.environment), accountProfiles: (value.accountProfiles ?? []).map(account => this.accountView(value, account))})); }
   accountProfilesList() { return [...this.providers.values()].flatMap(provider => (provider.accountProfiles ?? []).map(account => this.accountView(provider, account))); }
   accountProfile(providerId: string, accountProfileId: string) { const provider = this.providers.get(providerId), account = provider?.accountProfiles?.find(value => value.id === accountProfileId); return provider && account ? structuredClone(account) : undefined; }
   list(): ModelRegistryRow[] {
     return [...this.models.values()].map(model => { const provider = this.providers.get(model.provider), account = model.accountProfile && provider ? provider.accountProfiles?.find(value => value.id === model.accountProfile) : undefined; return {...structuredClone(model), providerDisplayName: provider?.name ?? model.provider, qualification: this.qualification(model), assignedRoles: this.rolesFor(model.id), account: provider && account ? this.accountView(provider, account) : null}; });
   }
   routes() { return structuredClone(this.routing); }
+  registerDiscoveredModel(model: ModelConfig) {
+    const provider = this.providers.get(model.provider); if (!provider) throw new Error('provider_missing');
+    const current = this.models.get(model.id);
+    if (current && (current.provider !== model.provider || current.providerModel !== model.providerModel)) throw new Error('discovered_model_identity_conflict');
+    if (this.configuredModelIds.has(model.id)) return this.model(model.id)!;
+    this.models.set(model.id, structuredClone(model)); this.harvestModelCapabilities(model, this.qualification(model)); return this.model(model.id)!;
+  }
+  setDiscoveredRoutingEligibility(modelId: string, eligible: boolean) {
+    if (this.configuredModelIds.has(modelId)) throw new Error('configured_model_routing_managed_by_configuration');
+    const model = this.models.get(modelId); if (!model) throw new Error('model_missing');
+    model.routingEligible = eligible; this.models.set(modelId, model); return this.model(modelId)!;
+  }
   governedAlternatives(modelId: string, requestedRole?: string | null) {
     const roles = requestedRole ? [requestedRole] : Object.keys(this.routing.roles).filter(role => this.expandRole(role).includes(modelId));
     return [...new Set(roles.flatMap(role => this.expandRole(role)))];
@@ -149,7 +168,7 @@ export class ModelRegistry {
     const qualification = this.qualification(selected), accountView = account ? this.accountView(provider, account) : undefined;
     const providerExecutionNodeId = account ? accountProviderExecutionNode(account) : request.providerExecutionNodeId ?? (request.workloadNodeId === undefined ? request.nodeId : qualification.nodes[0] ?? selected.nodes?.[0] ?? request.nodeId);
     return {
-      requestedModel: request.model ?? null, requestedRole: requestedRole ?? null, modelId: selected.id, providerId: selected.provider, accountProfileId: account?.id ?? null, accountLabel: account?.label ?? null, accountPlan: account?.plan ?? null, accountPlanAuthority: account?.planAuthority ?? null, accountQualification: accountView?.qualification.state ?? null, accountAvailability: accountView?.availability ?? null,
+      requestedModel: request.model ?? null, requestedRole: requestedRole ?? null, allowFallback: request.allowFallback !== false, purpose: request.purpose ?? 'EXECUTION', modelId: selected.id, providerId: selected.provider, accountProfileId: account?.id ?? null, accountLabel: account?.label ?? null, accountPlan: account?.plan ?? null, accountPlanAuthority: account?.planAuthority ?? null, accountQualification: accountView?.qualification.state ?? null, accountAvailability: accountView?.availability ?? null,
       providerModel: selected.providerModel, workloadNodeId: request.workloadNodeId ?? request.nodeId, providerExecutionNodeId, credentialNodeId: account ? accountCredentialResidency(account).nodeId : null, nodeId: providerExecutionNodeId, qualificationVersion: qualification.state === 'QUALIFIED' ? qualification.version : selectedAssessment.intelligence?.qualificationVersion ?? qualification.version,
       fallback: selectedIndex > 0, fallbackReason: selectedIndex > 0 ? considered.slice(0, selectedIndex).map(item => `${item.modelId}:${item.reasons.join('+')}`).join(',') : null,
       requiredCapabilities: effectiveRequest.requiredCapabilities.map(normalizeCapabilityId), nativeCapabilities: selectedAssessment.capabilityAssessment?.filter(item => item.satisfied && item.implementation === 'NATIVE').map(item => item.capabilityId) ?? [], emulatedCapabilities: selectedAssessment.capabilityAssessment?.filter(item => item.satisfied && item.implementation === 'AGENT_CONTROL_EMULATED').map(item => item.capabilityId) ?? [],
@@ -173,6 +192,7 @@ export class ModelRegistry {
     if (!provider) reasons.push('provider-missing');
     const qualificationRun = request.purpose === 'QUALIFICATION';
     if (model.enabled === false || qualification.state === 'DISABLED') reasons.push('model-disabled');
+    if (model.routingEligible === false && !qualificationRun) reasons.push('model-routing-disabled');
     const account = model.accountProfile ? provider?.accountProfiles?.find(value => value.id === model.accountProfile) : undefined;
     if (request.accountProfile && model.accountProfile !== request.accountProfile) reasons.push('account-profile-policy-mismatch');
     if (model.accountProfile && !account) reasons.push('account-profile-missing');
@@ -205,7 +225,7 @@ export class ModelRegistry {
   private credentialConfigured(account: ProviderAccountProfileConfig, qualification: AccountProfileQualificationRecord) {
     const residency = accountCredentialResidency(account);
     if (residency.nodeId !== 'controller') return (qualification.credentialNodeId ?? qualification.nodeId) === residency.nodeId && ['QUALIFIED', 'DEGRADED'].includes(qualification.state);
-    if (residency.store.type === 'provider-secure-store') return ['QUALIFIED', 'DEGRADED'].includes(qualification.state);
+    if (residency.store.type === 'provider-secure-store') return credentialReferenceStatus(residency.store, this.environment) === 'CONFIGURED';
     const value = this.environment[residency.store.env]?.trim();
     if (!value) return false;
     if (residency.store.type === 'api-key-env') return true;
@@ -243,6 +263,7 @@ function key(providerId: string, accountProfileId: string) { return `${providerI
 
 function historicalRouteScore(metrics: ModelWindowMetrics) { return (metrics.quality ?? 0) * 4 + (metrics.reliability ?? 0) * 3 + (metrics.costPerSuccessfulTask === null ? 0 : 1 / (1 + metrics.costPerSuccessfulTask)) + (metrics.timePerSuccessfulTaskMs === null ? 0 : 1 / (1 + metrics.timePerSuccessfulTaskMs / 1_000)); }
 
-function safeProvider(provider: ProviderConfig) {
-  return {id: provider.id, name: provider.name ?? provider.id, kind: provider.kind, enabled: provider.enabled !== false, baseUrl: provider.baseUrl, wireApi: provider.wireApi, auth: provider.auth ? {type: provider.auth.type, configured: provider.auth.type === 'none' || Boolean(provider.auth.env && process.env[provider.auth.env])} : undefined, capabilities: [...(provider.capabilities ?? [])]};
+function safeProvider(provider: ProviderConfig, environment: NodeJS.ProcessEnv) {
+  const status = providerCredentialStatus(provider, environment);
+  return {id: provider.id, name: provider.name ?? provider.id, kind: provider.kind, enabled: provider.enabled !== false, baseUrl: provider.baseUrl, adapter: provider.adapter, wireApi: provider.wireApi, auth: provider.auth ? {type: provider.auth.type, configured: ['NOT_REQUIRED','CONFIGURED'].includes(status), status} : undefined, discovery: provider.discovery ? structuredClone(provider.discovery) : undefined, capabilities: [...(provider.capabilities ?? [])]};
 }

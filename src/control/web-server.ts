@@ -9,12 +9,17 @@ import {JobManifestError} from './job-catalog.js';
 import {configPath, loadConfig} from './config.js';
 import {ConfigurationStore} from './configuration-store.js';
 import {ParameterizedJobError} from './parameterized-job-registry.js';
+import type {OpenWAAdapter} from './openwa.js';
+import type {SocialVoiceCoordinator} from './social-voice.js';
+import {redactSensitiveText} from './security-redaction.js';
+import type {AdaptiveEvidenceKind, AdaptiveLeagueFilter} from './adaptive-orchestration.js';
+import type {ExecutionSessionMode, ExecutionSessionSignal} from './execution-session.js';
 
-export interface WebServerOptions {host?: string; port?: number; operatorToken?: string; allowedOrigins?: string[]; assetsDir?: string; configFile?: string;}
+export interface WebServerOptions {host?: string; port?: number; operatorToken?: string; allowedOrigins?: string[]; assetsDir?: string; configFile?: string; openwa?: OpenWAAdapter; socialVoice?: SocialVoiceCoordinator;}
 const MAX_BODY = 64 * 1024;
 const SECRET_KEY = /token|secret|password|credential|authorization|cookie|api[-_]?key/i;
-const SAFE_TOKEN_ACCOUNTING_KEY = /^(?:tokenAwareOutput|tokenBatonRouting|contextTokens|contextLimitTokens|contextTokensAvoided|contextTokensSaved|evidenceTokens|estimatedTokensOriginal|estimatedTokensReturned|estimatedTokensSaved|estimatedOriginalTokens|estimatedReturnedTokens|estimatedTokensAvoided|expansionTokensReturned|inputTokens|freshInputTokens|cachedInputTokens|cacheWriteTokens|outputTokens|maximumOutputTokens|maximumContextTokens|maximumEvidenceTokens|reasoningTokens|totalTokens|totalProcessedTokens|startupContextTokens|taskContextTokens|retrievedContextTokens|repositoryContextTokens|conversationHistoryTokens|totalEstimatedContextTokens|repeatedContextCostEstimate|tokensPerVerifiedOutcome|freshTokensPerVerifiedOutcome|estimatedTokens|limitTokens|contextPercent|continuePercent|prepareBatonPercent|compactPercent|handoffPercent)$/;
-const SAFE_CONFIG_REFERENCE_KEY = /^(?:credentialEnv|credentialFileEnv|credentialStore|credentialConfigured|credentialNodeId|identityFile)$/;
+const SAFE_TOKEN_ACCOUNTING_KEY = /^(?:tokenAwareOutput|tokenBatonRouting|providerReportedTokens|contextTokens|contextLimitTokens|contextTokensAvoided|contextTokensSaved|evidenceTokens|estimatedTokensOriginal|estimatedTokensReturned|estimatedTokensSaved|estimatedOriginalTokens|estimatedReturnedTokens|estimatedTokensAvoided|expansionTokensReturned|inputTokens|freshInputTokens|cachedInputTokens|cacheWriteTokens|outputTokens|maximumOutputTokens|maximumContextTokens|maximumEvidenceTokens|reasoningTokens|totalTokens|totalProcessedTokens|startupContextTokens|taskContextTokens|retrievedContextTokens|repositoryContextTokens|conversationHistoryTokens|totalEstimatedContextTokens|repeatedContextCostEstimate|tokenEfficiency|tokensPerSuccessfulTask|freshTokensPerSuccessfulTask|tokensPerVerifiedOutcome|freshTokensPerVerifiedOutcome|estimatedTokens|limitTokens|tokensLimit|tokensRemaining|contextPercent|continuePercent|prepareBatonPercent|compactPercent|handoffPercent)$/;
+const SAFE_CONFIG_REFERENCE_KEY = /^(?:credentialEnv|credentialFileEnv|credentialStore|credentialConfigured|credentialStatus|credentialReference|credentialNodeId|identityFile)$/;
 const DOMAIN_STATUS = new Map<string, number>([
   ['approval_policy_required', 400], ['approval_policy_not_waiting', 409], ['run_not_retryable', 409], ['job_disabled', 409],
   ['job_missing', 404], ['run_missing', 404], ['schedule_missing', 404], ['artifact_missing', 404], ['system_missing', 404], ['system_check_unavailable', 409],
@@ -24,6 +29,12 @@ const DOMAIN_STATUS = new Map<string, number>([
   ['output_expansion_files_invalid', 400], ['output_expansion_lines_invalid', 400], ['output_expansion_range_invalid', 400],
   ['output_expansion_selector_unsupported', 400], ['output_expansion_selector_outside_result', 403],
   ['output_scope_invalid', 400], ['output_scope_unknown_field', 400], ['output_scope_identity_missing', 400], ['output_scope_generation_invalid', 400],
+  ['execution_session_missing', 404], ['execution_session_runtime_unconfigured', 503], ['execution_session_adapter_unavailable', 503],
+  ['execution_session_identity_invalid', 400], ['execution_session_text_required', 400], ['execution_session_sequence_invalid', 400], ['execution_session_input_invalid', 400],
+  ['execution_session_observer_authority_required', 403], ['execution_session_operator_authority_required', 403], ['execution_session_attachment_actor_mismatch', 403], ['execution_session_watch_read_only', 403], ['execution_session_write_fenced', 403],
+  ['execution_session_not_live', 409], ['execution_session_identity_mismatch', 409], ['execution_session_attachment_missing', 409], ['execution_session_interactive_attachment_held', 409],
+  ['execution_session_mode_unsupported', 409], ['execution_session_input_unsupported', 409], ['execution_session_resize_unsupported', 409], ['execution_session_signal_unsupported', 409],
+  ['execution_session_take_control_unsupported', 409], ['execution_session_take_control_reconciliation_unavailable', 409], ['execution_session_take_control_not_active', 409], ['execution_session_control_return_required', 409],
   ['work_parcel_prompt_required', 400], ['work_parcel_plan_empty', 400], ['work_parcel_stage_id_invalid', 400], ['work_parcel_stage_invalid', 400], ['work_parcel_route_invalid', 400], ['work_parcel_reasoning_plan_invalid', 400], ['work_parcel_dependency_cycle', 400],
   ['work_parcel_reasoning_planner_unconfigured', 503], ['work_parcel_missing', 404], ['work_parcel_exists', 409], ['work_parcels_unconfigured', 503],
   ['parcel_success_criterion_invalid', 400], ['parcel_success_criterion_exists', 409], ['parcel_success_criterion_missing', 404], ['parcel_success_criterion_stage_missing', 404], ['parcel_success_criterion_evaluation_invalid', 400],
@@ -33,8 +44,11 @@ const DOMAIN_STATUS = new Map<string, number>([
   ['model_intelligence_unconfigured', 503], ['model_qualification_suite_unconfigured', 503], ['model_intelligence_snapshot_invalid', 409], ['model_evaluation_batch_exists', 409], ['model_evaluation_batch_missing', 404], ['model_evaluation_batch_not_queued', 409], ['model_evaluation_batch_terminal', 409], ['model_evaluation_candidates_required', 400], ['model_evaluation_candidate_duplicate', 400], ['model_evaluation_suite_identity_mismatch', 409], ['model_status_transition_invalid', 409], ['model_qualified_transition_evidence_insufficient', 409], ['model_preferred_transition_requires_approval', 403], ['model_preferred_transition_evidence_insufficient', 409],
   ['job_runtime_unconfigured', 503],
   ['runtime_safety_decision_missing', 404], ['runtime_safety_decision_not_approvable', 409], ['runtime_safety_snapshot_invalid', 409],
+  ['adaptive_orchestration_unconfigured', 503], ['adaptive_decision_missing', 404],
     ['provider_missing', 404], ['model_missing', 404], ['model_role_missing', 404], ['model_registry_unconfigured', 503], ['model_route_unconfigured', 409], ['model_route_unavailable', 409], ['model_fallback_disabled', 409], ['provider_authentication_required', 409], ['account_profile_missing', 404], ['account_profile_unavailable', 409],
+    ['provider_catalog_unconfigured', 503], ['provider_catalog_model_missing', 404], ['provider_catalog_model_unavailable', 409], ['provider_discovery_disabled', 409], ['provider_discovery_adapter_unavailable', 409], ['provider_catalog_model_not_qualified', 409], ['provider_credential_format_invalid', 400], ['provider_catalog_adjudication_invalid', 400], ['provider_catalog_adjudication_exists', 409],
     ['identity_control_plane_unconfigured', 503], ['session_missing', 404], ['execution_missing', 404],
+    ['execution_session_runtime_unconfigured', 503], ['execution_session_missing', 404], ['execution_session_attachment_missing', 404], ['execution_session_not_live', 409], ['execution_session_identity_mismatch', 409], ['execution_session_interactive_attachment_held', 409], ['execution_session_control_return_required', 409], ['execution_session_operator_authority_required', 403], ['execution_session_attachment_actor_mismatch', 403], ['execution_session_watch_read_only', 403], ['execution_session_write_fenced', 403], ['execution_session_input_invalid', 400], ['execution_session_resize_unsupported', 409], ['execution_session_signal_unsupported', 409], ['execution_session_input_unsupported', 409], ['execution_session_take_control_unsupported', 409], ['execution_session_take_control_reconciliation_unavailable', 409], ['execution_session_take_control_not_active', 409],
 ]);
 
 export function startWebDashboard(service: AgentControlService, options: WebServerOptions = {}) {
@@ -52,6 +66,53 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   response.setHeader('Cache-Control', 'no-store');
   const url = new URL(request.url ?? '/', `http://${request.headers.host ?? `${options.host}:${options.port}`}`);
   const method = request.method ?? 'GET';
+  if(url.pathname==='/api/social-voice/summary' || url.pathname==='/api/social-voice/approval' || url.pathname==='/api/social-voice/approval-grant'){
+    validateOperatorRequest(request,options);validateMutationRequest(request,options);
+    if(method!=='POST')return json(response,405,{error:'method_not_allowed'});
+    const body=await readJson(request);
+    if(!options.openwa||!options.socialVoice||typeof body.sender!=='string')return json(response,400,{error:'social_configuration_required'});
+    if(url.pathname.endsWith('/summary')){if(typeof body.reference!=='string'||typeof body.requestKey!=='string')return json(response,400,{error:'invalid_summary'});return json(response,200,await options.socialVoice.requestSummary({channel:'openwa',account:options.openwa.config.sessionId,sender:body.sender,conversation:body.sender},body.reference,body.requestKey));}
+    if(url.pathname.endsWith('approval-grant')){if(typeof body.enabled!=='boolean')return json(response,400,{error:'invalid_grant'});return json(response,200,options.openwa.grantSocialApproval(body.sender,body.enabled));}
+    if(typeof body.parcel!=='string'||typeof body.run!=='string'||typeof body.action!=='string')return json(response,400,{error:'invalid_approval'});
+    return json(response,200,await options.socialVoice.requestApproval({channel:'openwa',account:options.openwa.config.sessionId,sender:body.sender,conversation:body.sender},body.parcel,body.run,body.action));
+  }
+  if(url.pathname==='/api/social-voice'||url.pathname==='/api/social-voice/transcript'){
+    validateOperatorRequest(request,options);
+    if(method!=='GET')return json(response,405,{error:'method_not_allowed'});
+    return json(response,200,url.pathname.endsWith('/transcript')?{transcript:options.socialVoice?.transcript()??''}:options.socialVoice?.projection()??{state:'not_configured'});
+  }
+
+  if (url.pathname === '/api/integrations/openwa/webhook' && method === 'POST') {
+    if (!options.openwa) return json(response,503,{error:'integration_disabled'});
+    const chunks: Buffer[] = []; let size=0;
+    for await(const chunk of request) { size+=chunk.length; if(size>MAX_BODY) throw httpError(413,'request_too_large'); chunks.push(Buffer.from(chunk)); }
+    try { return json(response,200,options.openwa.receive(Buffer.concat(chunks),request.headers)); }
+    catch { return json(response,403,{error:'webhook_rejected'}); }
+  }
+  if (url.pathname.startsWith('/api/integrations/openwa')) {
+    validateOperatorRequest(request,options);
+    if (!options.openwa) return json(response,200,{enabled:false,state:'not_configured'});
+    const action=url.pathname.slice('/api/integrations/openwa'.length);
+    if(method==='GET' && !action) return json(response,200,options.openwa.status());
+    if(method==='POST') {
+      validateMutationRequest(request,options); const body=await readJson(request);
+      try {
+        let result: unknown = {ok:true};
+        if(action==='/enabled' && typeof body.enabled==='boolean') options.openwa.setEnabled(body.enabled);
+        else if(action==='/health') result=await options.openwa.checkHealth();
+        else if(action==='/qr') result=await options.openwa.qr();
+        else if(action==='/reconnect') result=await options.openwa.reconnectSession();
+        else if(action==='/pair') result=options.openwa.beginPairing();
+        else if(action==='/confirm' && typeof body.hash==='string' && Array.isArray(body.grants) && body.grants.every(v=>typeof v==='string')) result=options.openwa.confirmPairing(body.hash,body.grants as string[]);
+        else if(action==='/revoke' && typeof body.sender==='string') options.openwa.revoke(body.sender);
+        else if(action==='/preferences' && typeof body.sender==='string' && typeof body.progress==='boolean') options.openwa.preferences(body.sender,body.progress);
+        else if(action==='/retry' && Number.isSafeInteger(body.id)) options.openwa.retry(body.id as number,body.acknowledgeUncertain===true);
+        else return json(response,400,{error:'invalid_integration_request'});
+        return json(response,200,result);
+      } catch { return json(response,409,{error:'integration_action_unavailable_check_connection_pairing_and_grants'}); }
+    }
+    return json(response,404,{error:'not_found'});
+  }
 
   if (method === 'GET' && url.pathname === '/api/status') return json(response, 200, service.snapshot());
   if (method === 'GET' && url.pathname === '/api/operator-auth') return json(response, 200, operatorAuthentication(request, options));
@@ -64,6 +125,7 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   if (method === 'GET' && url.pathname === '/api/models/routes') return json(response, 200, service.modelRoutes());
   if (method === 'GET' && url.pathname === '/api/capability-intelligence') return json(response, 200, service.capabilityIntelligenceProjection());
   if (method === 'GET' && url.pathname === '/api/model-intelligence') return json(response, 200, service.modelIntelligenceProjection());
+  if (method === 'GET' && url.pathname === '/api/provider-catalog') return json(response, 200, service.providerCatalogProjection());
   if (method === 'GET' && url.pathname === '/api/runtime-safety') return json(response, 200, service.runtimeSafetyDecisions(url.searchParams.get('runId') ?? undefined));
   if (method === 'GET' && url.pathname === '/api/sessions') return json(response, 200, service.sessions());
   if (method === 'GET' && url.pathname === '/api/context-transfers') return json(response, 200, service.contextTransfers(url.searchParams.get('sessionId') ?? undefined));
@@ -93,20 +155,37 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   if (method === 'GET' && url.pathname === '/api/command-output') return json(response, 200, service.commandOutputs());
   if (method === 'GET' && url.pathname === '/api/command-output/metrics') return json(response, 200, service.commandOutputMetrics());
   if (method === 'GET' && url.pathname === '/api/efficiency') return json(response, 200, service.harnessEfficiencyMetrics());
+  if (method === 'GET' && url.pathname === '/api/orchestration/models') return json(response, 200, service.adaptiveModelLeague(url.searchParams.get('taskClass') ?? undefined, adaptiveLeagueFilter(url)));
+  if (method === 'GET' && url.pathname === '/api/orchestration/workflows') return json(response, 200, service.adaptiveWorkflowLeague(url.searchParams.get('taskClass') ?? undefined, adaptiveLeagueFilter(url)));
+  if (method === 'GET' && url.pathname === '/api/orchestration/decisions') return json(response, 200, service.adaptiveDecisions());
   if (method === 'GET' && url.pathname === '/api/efficiency/invocations') {
     const requestedLimit = Number(url.searchParams.get('limit') ?? 200);
     const limit = Number.isSafeInteger(requestedLimit) && requestedLimit > 0 ? Math.min(1_000, requestedLimit) : 200;
     return json(response, 200, service.modelInvocations({limit, runId: url.searchParams.get('runId') ?? undefined, jobId: url.searchParams.get('jobId') ?? undefined}));
   }
-  const jobMatch = url.pathname.match(/^\/api\/jobs\/([^/]+)(?:\/(runs|run))?$/), runMatch = url.pathname.match(/^\/api\/runs\/([^/]+)(?:\/(cancel|retry|approve))?$/), definitionMatch = url.pathname.match(/^\/api\/job-definitions\/([^/]+)(?:\/([0-9]+))?$/), savedJobMatch = url.pathname.match(/^\/api\/saved-jobs\/([^/]+)(?:\/(run|enable|disable|export))?$/), parameterizedRunMatch = url.pathname.match(/^\/api\/job-runs\/([^/]+)(?:\/(cancel|resume-authentication))?$/), parcelMatch = url.pathname.match(/^\/api\/parcels\/([^/]+)(?:\/(cancel))?$/), parcelQuestionsMatch = url.pathname.match(/^\/api\/parcels\/([^/]+)\/questions(?:\/([^/]+)\/answer)?$/), parcelCriteriaMatch = url.pathname.match(/^\/api\/parcels\/([^/]+)\/criteria(?:\/([^/]+)\/evaluate)?$/), parcelSteeringMatch = url.pathname.match(/^\/api\/parcels\/([^/]+)\/steering$/), parcelRetrievalMatch = url.pathname.match(/^\/api\/parcels\/([^/]+)\/context\/retrieve$/), capabilityCandidateMatch = url.pathname.match(/^\/api\/capability-candidates(?:\/([^/]+)\/transition)?$/), modelIntelligenceRouteMatch = url.pathname.match(/^\/api\/model-intelligence\/routes\/([^/]+)\/transition$/), systemMatch = url.pathname.match(/^\/api\/systems\/([^/]+)(?:\/(check))?$/), accountMatch = url.pathname.match(/^\/api\/models\/accounts\/([^/]+)\/([^/]+)\/(qualify)$/), modelMatch = url.pathname.match(/^\/api\/models\/([^/]+)(?:\/(qualify|route))?$/), sessionMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)$/), executionMatch = url.pathname.match(/^\/api\/executions\/([^/]+)$/), scheduleMatch = url.pathname.match(/^\/api\/schedules\/([^/]+)\/(enable|disable)$/), artifactMatch = url.pathname.match(/^\/api\/artifacts\/([^/]+)$/), outputExpansionMatch = url.pathname.match(/^\/api\/command-output\/([^/]+)\/expand$/);
+  if (method === 'GET' && url.pathname === '/api/execution-sessions') { validateOperatorRequest(request, options); return json(response, 200, service.executionSessionProjection()); }
+  const liveSessionMatch = url.pathname.match(/^\/api\/execution-sessions\/([^/]+)(?:\/(events|stream|transcript|attach|detach|input|resize|signal|return-control))?$/);
+  if (method === 'GET' && liveSessionMatch) {
+    validateOperatorRequest(request, options); const id = decodeURIComponent(liveSessionMatch[1]), action = liveSessionMatch[2];
+    if (!action) return json(response, 200, service.executionSession(id));
+    if (action === 'events') return json(response, 200, service.executionSessionEvents(id, Number(url.searchParams.get('after') ?? 0)));
+    if (action === 'transcript') return json(response, 200, service.executionSessionTranscript(id));
+    if (action === 'stream') return executionSessionStream(service, id, Number(url.searchParams.get('after') ?? 0), request, response);
+  }
+  const jobMatch = url.pathname.match(/^\/api\/jobs\/([^/]+)(?:\/(runs|run))?$/), runMatch = url.pathname.match(/^\/api\/runs\/([^/]+)(?:\/(cancel|retry|approve))?$/), definitionMatch = url.pathname.match(/^\/api\/job-definitions\/([^/]+)(?:\/([0-9]+))?$/), savedJobMatch = url.pathname.match(/^\/api\/saved-jobs\/([^/]+)(?:\/(run|enable|disable|export))?$/), parameterizedRunMatch = url.pathname.match(/^\/api\/job-runs\/([^/]+)(?:\/(cancel|resume-authentication|transcript))?$/), parcelMatch = url.pathname.match(/^\/api\/parcels\/([^/]+)(?:\/(cancel))?$/), parcelQuestionsMatch = url.pathname.match(/^\/api\/parcels\/([^/]+)\/questions(?:\/([^/]+)\/answer)?$/), parcelCriteriaMatch = url.pathname.match(/^\/api\/parcels\/([^/]+)\/criteria(?:\/([^/]+)\/evaluate)?$/), parcelSteeringMatch = url.pathname.match(/^\/api\/parcels\/([^/]+)\/steering$/), parcelRetrievalMatch = url.pathname.match(/^\/api\/parcels\/([^/]+)\/context\/retrieve$/), decisionMatch = url.pathname.match(/^\/api\/orchestration\/decisions\/([^/]+)(?:\/(report))?$/), parcelDecisionMatch = url.pathname.match(/^\/api\/parcels\/([^/]+)\/(decision-tree|decision-report)$/), capabilityCandidateMatch = url.pathname.match(/^\/api\/capability-candidates(?:\/([^/]+)\/transition)?$/), modelIntelligenceRouteMatch = url.pathname.match(/^\/api\/model-intelligence\/routes\/([^/]+)\/transition$/), providerCatalogMatch = url.pathname.match(/^\/api\/provider-catalog\/providers\/([^/]+)(?:\/models\/([^/]+)\/(callability|smoke|adjudications|routing-enable|routing-disable)|\/(discover))?$/), systemMatch = url.pathname.match(/^\/api\/systems\/([^/]+)(?:\/(check))?$/), accountMatch = url.pathname.match(/^\/api\/models\/accounts\/([^/]+)\/([^/]+)\/(qualify)$/), modelMatch = url.pathname.match(/^\/api\/models\/([^/]+)(?:\/(qualify|route))?$/), sessionMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)$/), executionMatch = url.pathname.match(/^\/api\/executions\/([^/]+)$/), scheduleMatch = url.pathname.match(/^\/api\/schedules\/([^/]+)\/(enable|disable)$/), artifactMatch = url.pathname.match(/^\/api\/artifacts\/([^/]+)$/), outputExpansionMatch = url.pathname.match(/^\/api\/command-output\/([^/]+)\/expand$/);
   if (method === 'GET' && definitionMatch) return json(response, 200, service.jobDefinition(decodeURIComponent(definitionMatch[1]), definitionMatch[2] ? Number(definitionMatch[2]) : undefined));
   if (method === 'GET' && savedJobMatch?.[2] === 'export') return json(response, 200, service.exportSavedJob(decodeURIComponent(savedJobMatch[1])));
   if (method === 'GET' && savedJobMatch && !savedJobMatch[2]) return json(response, 200, service.savedJob(decodeURIComponent(savedJobMatch[1])));
+  if (method === 'GET' && parameterizedRunMatch?.[2] === 'transcript') return json(response, 200, service.parameterizedRunTranscript(decodeURIComponent(parameterizedRunMatch[1])));
   if (method === 'GET' && parameterizedRunMatch && !parameterizedRunMatch[2]) return json(response, 200, service.parameterizedRun(decodeURIComponent(parameterizedRunMatch[1])));
   if (method === 'GET' && jobMatch && !jobMatch[2]) return json(response, 200, service.job(decodeURIComponent(jobMatch[1])));
   if (method === 'GET' && jobMatch?.[2] === 'runs') return json(response, 200, service.runs(decodeURIComponent(jobMatch[1])));
   if (method === 'GET' && runMatch && !runMatch[2]) return json(response, 200, service.run(decodeURIComponent(runMatch[1])));
   if (method === 'GET' && parcelMatch && !parcelMatch[2]) return json(response, 200, service.parcel(decodeURIComponent(parcelMatch[1])));
+  if (method === 'GET' && decisionMatch && !decisionMatch[2]) return json(response, 200, service.adaptiveDecision(decodeURIComponent(decisionMatch[1])));
+  if (method === 'GET' && decisionMatch?.[2] === 'report') return json(response, 200, service.adaptiveReport(decodeURIComponent(decisionMatch[1])));
+  if (method === 'GET' && parcelDecisionMatch?.[2] === 'decision-tree') return json(response, 200, service.adaptiveDecision(decodeURIComponent(service.parcel(decodeURIComponent(parcelDecisionMatch[1])).audit.orchestrationDecisionId ?? '')));
+  if (method === 'GET' && parcelDecisionMatch?.[2] === 'decision-report') return json(response, 200, service.adaptiveParcelReport(decodeURIComponent(parcelDecisionMatch[1])));
   if (method === 'GET' && systemMatch && !systemMatch[2]) return json(response, 200, service.system(decodeURIComponent(systemMatch[1])));
   if (method === 'GET' && modelMatch && !modelMatch[2]) return json(response, 200, service.model(decodeURIComponent(modelMatch[1])));
   if (method === 'GET' && sessionMatch) return json(response, 200, service.session(decodeURIComponent(sessionMatch[1])));
@@ -119,6 +198,12 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   if (method === 'POST') {
     validateMutationRequest(request, options);
     const body = await readJson(request), actor = 'web-operator';
+    if (liveSessionMatch?.[2] === 'attach') return json(response, 201, await service.attachExecutionSession(decodeURIComponent(liveSessionMatch[1]), String(body.mode ?? '') as ExecutionSessionMode, actor));
+    if (liveSessionMatch?.[2] === 'detach') return json(response, 200, service.detachExecutionSession(decodeURIComponent(liveSessionMatch[1]), String(body.attachmentId ?? ''), actor));
+    if (liveSessionMatch?.[2] === 'input') return json(response, 200, await service.inputExecutionSession(decodeURIComponent(liveSessionMatch[1]), String(body.attachmentId ?? ''), String(body.value ?? ''), body.sensitive === true, actor));
+    if (liveSessionMatch?.[2] === 'resize') return json(response, 200, await service.resizeExecutionSession(decodeURIComponent(liveSessionMatch[1]), String(body.attachmentId ?? ''), Number(body.columns), Number(body.rows), actor));
+    if (liveSessionMatch?.[2] === 'signal') return json(response, 200, await service.signalExecutionSession(decodeURIComponent(liveSessionMatch[1]), String(body.attachmentId ?? ''), String(body.signal ?? '') as ExecutionSessionSignal, actor));
+    if (liveSessionMatch?.[2] === 'return-control') return json(response, 200, await service.returnExecutionSessionControl(decodeURIComponent(liveSessionMatch[1]), String(body.attachmentId ?? ''), {summary: String(body.summary ?? ''), ...(typeof body.batonId === 'string' ? {batonId: body.batonId} : {})}, actor));
     if (url.pathname === '/api/saved-jobs') { const {actor: _actor, ...input} = body; return json(response, 201, service.createSavedJob(input as never, actor)); }
     if (savedJobMatch && !savedJobMatch[2]) return json(response, 200, service.updateSavedJob(decodeURIComponent(savedJobMatch[1]), Number(body.revision), body.changes && typeof body.changes === 'object' && !Array.isArray(body.changes) ? body.changes as never : {}, actor));
     if (savedJobMatch?.[2] === 'run') return json(response, 201, service.runSavedJob(decodeURIComponent(savedJobMatch[1]), actor));
@@ -142,12 +227,22 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
       service.events.emit('configuration.changed', {kind: 'spark', id: 'fast-execution', restartRequired: true}, undefined, actor);
       return json(response, 200, result);
     }
+    if (url.pathname === '/api/configuration/adaptive-orchestration') {
+      const file = options.configFile ?? configPath(), result = new ConfigurationStore(file).updateAdaptiveOrchestration({revision: body.revision, adaptiveOrchestration: body.adaptiveOrchestration});
+      service.events.emit('configuration.changed', {kind: 'adaptive-orchestration', id: 'adaptive-orchestration', restartRequired: true}, undefined, actor);
+      return json(response, 200, result);
+    }
     if (jobMatch?.[2] === 'run') return json(response, 201, service.createJobRun(decodeURIComponent(jobMatch[1]), body.parameters && typeof body.parameters === 'object' && !Array.isArray(body.parameters) ? body.parameters as Record<string, unknown> : {}, actor));
     if (url.pathname === '/api/parcels') return json(response, 201, await service.submitNaturalTask(String(body.prompt ?? ''), actor));
     if (capabilityCandidateMatch && !capabilityCandidateMatch[1]) return json(response, 201, service.discoverCapability({id: typeof body.id === 'string' ? body.id : undefined, title: String(body.title ?? ''), source: String(body.source ?? ''), providerRuntime: String(body.providerRuntime ?? ''), claimedCapability: String(body.claimedCapability ?? ''), whyItMatters: String(body.whyItMatters ?? ''), agentControlEquivalent: String(body.agentControlEquivalent ?? ''), evidence: Array.isArray(body.evidence) ? body.evidence.map(String) : []}, actor));
     if (capabilityCandidateMatch?.[1]) return json(response, 200, service.transitionCapability(decodeURIComponent(capabilityCandidateMatch[1]), {to: String(body.to ?? '') as never, reason: String(body.reason ?? ''), classification: typeof body.classification === 'string' ? body.classification as never : undefined, experiment: typeof body.experiment === 'string' ? body.experiment : undefined, measuredOutcome: typeof body.measuredOutcome === 'string' ? body.measuredOutcome : undefined, finalDecision: typeof body.finalDecision === 'string' ? body.finalDecision : undefined, evidence: Array.isArray(body.evidence) ? body.evidence.map(String) : []}, actor));
     if (url.pathname === '/api/model-evaluations') return json(response, 201, service.queueModelEvaluation(Array.isArray(body.modelIds) ? body.modelIds.map(String) : [], String(body.reason ?? 'Operator requested frozen qualification'), actor));
     if (modelIntelligenceRouteMatch) return json(response, 200, service.transitionModelRoute(decodeURIComponent(modelIntelligenceRouteMatch[1]), String(body.to ?? '') as never, String(body.reason ?? ''), actor, body.approved === true, Array.isArray(body.evidence) ? body.evidence.map(String) : []));
+    if (providerCatalogMatch?.[4] === 'discover') return json(response, 200, await service.discoverProviderModels(decodeURIComponent(providerCatalogMatch[1]), actor));
+    if (providerCatalogMatch?.[3] === 'callability') return json(response, 200, await service.probeProviderModelCallability(decodeURIComponent(providerCatalogMatch[1]), decodeURIComponent(providerCatalogMatch[2]), actor));
+    if (providerCatalogMatch?.[3] === 'smoke') return json(response, 200, await service.smokeProviderModel(decodeURIComponent(providerCatalogMatch[1]), decodeURIComponent(providerCatalogMatch[2]), actor));
+    if (providerCatalogMatch?.[3] === 'adjudications') return json(response, 201, service.adjudicateProviderEvidence(decodeURIComponent(providerCatalogMatch[1]), decodeURIComponent(providerCatalogMatch[2]), {evidenceKind: String(body.evidenceKind ?? '') as never, evidenceReference: String(body.evidenceReference ?? ''), attribution: String(body.attribution ?? '') as never, scoreDisposition: String(body.scoreDisposition ?? '') as never, reason: String(body.reason ?? ''), supersededBy: typeof body.supersededBy === 'string' ? body.supersededBy : undefined, supportingEvidence: Array.isArray(body.supportingEvidence) ? body.supportingEvidence.map(String) : []}, actor));
+    if (providerCatalogMatch?.[3] === 'routing-enable' || providerCatalogMatch?.[3] === 'routing-disable') return json(response, 200, service.setProviderModelRoutingEligibility(decodeURIComponent(providerCatalogMatch[1]), decodeURIComponent(providerCatalogMatch[2]), providerCatalogMatch[3] === 'routing-enable', actor));
     if (systemMatch?.[2] === 'check') return json(response, 200, await service.checkSystem(decodeURIComponent(systemMatch[1]), actor));
     if (accountMatch?.[3] === 'qualify') return json(response, 200, await service.qualifyModelAccount(decodeURIComponent(accountMatch[1]), decodeURIComponent(accountMatch[2])));
     if (modelMatch?.[2] === 'qualify') return json(response, 200, await service.qualifyModel(decodeURIComponent(modelMatch[1]), String(body.nodeId ?? 'controller')));
@@ -235,9 +330,52 @@ function eventStream(service: AgentControlService, request: IncomingMessage, res
   request.on('close', () => { clearInterval(heartbeat); unsubscribe(); });
 }
 
+function adaptiveLeagueFilter(url: URL): AdaptiveLeagueFilter {
+  const evidence = url.searchParams.get('evidenceKind'), sort = url.searchParams.get('sort'), minQuality = optionalFraction(url.searchParams.get('minQuality')), maxAgeDays = optionalNumber(url.searchParams.get('maxAgeDays'), 0, 3_650);
+  return {
+    ...(url.searchParams.get('capability') ? {capability: url.searchParams.get('capability')!} : {}),
+    ...(url.searchParams.get('providerId') ? {providerId: url.searchParams.get('providerId')!} : {}),
+    ...(url.searchParams.get('modelId') ? {modelId: url.searchParams.get('modelId')!} : {}),
+    ...(url.searchParams.get('modelVersion') ? {modelVersion: url.searchParams.get('modelVersion')!} : {}),
+    ...(url.searchParams.get('location') && ['local', 'remote'].includes(url.searchParams.get('location')!) ? {location: url.searchParams.get('location') as 'local' | 'remote'} : {}),
+    ...(evidence && ['BENCHMARK', 'QUALIFICATION', 'PRODUCTION_WORK_PARCEL'].includes(evidence) ? {evidenceKind: evidence as AdaptiveEvidenceKind} : {}),
+    ...(minQuality === undefined ? {} : {minQuality}),
+    ...(maxAgeDays === undefined ? {} : {maxAgeDays}),
+    ...(sort && ['quality', 'cost', 'latency', 'reliability', 'confidence', 'samples', 'recent'].includes(sort) ? {sort: sort as AdaptiveLeagueFilter['sort']} : {}),
+  };
+}
+
+function optionalFraction(value: string | null) { if (value === null || value === '') return undefined; const parsed = Number(value); return Number.isFinite(parsed) && parsed >= 0 && parsed <= 1 ? parsed : undefined; }
+function optionalNumber(value: string | null, minimum: number, maximum: number) { if (value === null || value === '') return undefined; const parsed = Number(value); return Number.isFinite(parsed) && parsed >= minimum && parsed <= maximum ? parsed : undefined; }
+
+function executionSessionStream(service: AgentControlService, id: string, requestedAfter: number, request: IncomingMessage, response: ServerResponse) {
+  if (!Number.isSafeInteger(requestedAfter) || requestedAfter < 0) throw httpError(400, 'execution_session_sequence_invalid');
+  // Resolve the session before committing response headers so a stale/missing
+  // reference receives an ordinary authenticated JSON error.
+  service.executionSession(id);
+  response.writeHead(200, {
+    'Content-Type': 'text/event-stream; charset=utf-8',
+    'Cache-Control': 'no-cache, no-transform',
+    Connection: 'keep-alive',
+    'X-Accel-Buffering': 'no',
+  });
+  let cursor = requestedAfter, closed = false;
+  const send = () => {
+    if (closed) return;
+    for (const event of service.executionSessionEvents(id, cursor)) {
+      cursor = event.sequence;
+      response.write(`id: ${event.sequence}\nevent: ${event.type}\ndata: ${JSON.stringify(redact(event))}\n\n`);
+    }
+  };
+  send();
+  const polling = setInterval(send, 100), heartbeat = setInterval(() => response.write(': keepalive\n\n'), 15_000);
+  polling.unref(); heartbeat.unref();
+  request.on('close', () => { closed = true; clearInterval(polling); clearInterval(heartbeat); });
+}
+
 function serveAsset(response: ServerResponse, assetsDir: string, pathname: string) {
   const asset = pathname === '/' ? 'index.html' : pathname.replace(/^\//, '');
-  if (!['index.html', 'dashboard.css', 'dashboard-fixes.css', 'dashboard-jobs.css', 'dashboard.js', 'dashboard-parameters.js', 'dashboard-running-state.js', 'dashboard-enhancements.js', 'dashboard-parameterized-jobs.js', 'dashboard-models.js', 'dashboard-sessions.js'].includes(asset)) throw httpError(404, 'not_found');
+  if (!['dashboard-social-voice.css', 'social-voice.html', 'dashboard-social-voice.js', 'dashboard-openwa.css', 'openwa.html', 'dashboard-openwa.js', 'index.html', 'dashboard.css', 'dashboard-fixes.css', 'dashboard-jobs.css', 'dashboard-bots.css', 'dashboard-wopr.css', 'dashboard-adaptive-orchestration.css', 'dashboard-live-shell.css', 'dashboard.js', 'dashboard-parameters.js', 'dashboard-running-state.js', 'dashboard-enhancements.js', 'dashboard-parameterized-jobs.js', 'dashboard-models.js', 'dashboard-sessions.js', 'dashboard-bots.js', 'dashboard-wopr.js', 'dashboard-adaptive-orchestration.js', 'dashboard-live-shell.js'].includes(asset)) throw httpError(404, 'not_found');
   const file = path.join(assetsDir, asset);
   if (!fs.existsSync(file)) throw httpError(404, 'dashboard_asset_missing');
   const type = asset.endsWith('.html') ? 'text/html; charset=utf-8' : asset.endsWith('.css') ? 'text/css; charset=utf-8' : 'text/javascript; charset=utf-8';
@@ -260,7 +398,7 @@ function secretEqual(left: string, right: string) { const a = createHash('sha256
 function redact(value: unknown, key = '', ancestors: string[] = []): unknown {
   const safeContextTokenCount = key === 'tokens' && ancestors.at(-1) === 'context';
   if (SECRET_KEY.test(key) && !safeContextTokenCount && !SAFE_TOKEN_ACCOUNTING_KEY.test(key) && !SAFE_CONFIG_REFERENCE_KEY.test(key)) return '[REDACTED]';
-  if (typeof value === 'string') return value.replace(/\b(?:sk|rk|pk)-[A-Za-z0-9_-]{12,}\b/g, '[REDACTED]');
+  if (typeof value === 'string') return redactSensitiveText(value);
   if (Array.isArray(value)) return value.map(item => redact(item, '', ancestors));
   if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([name, item]) => [name, redact(item, name, [...ancestors, key])]));
   return value;

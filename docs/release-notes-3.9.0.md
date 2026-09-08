@@ -88,3 +88,7 @@ External-provider qualification is opt-in and requires an already qualified indi
 ## Review boundary
 
 The final candidate gate results, package metadata and clean-install result are recorded in the consolidated [qualification report](evidence/agent-control-3.9-qualification.md) after all physical fixes. Exact Windows, recovery, Android and cache evidence hashes are preserved there alongside the earlier provider-neutral evidence. The release reviewer must still authorise merge and tag separately. Current evidence does not qualify browser/computer model capability, automatic model promotion, universal provider reattachment or any cache-saving claim.
+
+## Live qualification update — 5 September 2026
+
+The enrolled human's actual voice request and subsequent text confirmation created AC-3, which completed a governed typecheck and returned text plus an Ogg/Opus voice note. After a noisy numeric summary was diagnosed before transport, one-sentence summaries with spelled-out job numbers were confirmed clear on the handset. Speech now plays at 0.9 speed; detailed output stays in text/dashboard. The full gate passed 871 tests. Speech outage retained text and did not stop a real runtime job; cancellation confirmed process cleanup. See docs/social-voice/qualification.md for physical evidence and limitations. This supersedes earlier voice-pending statements. Repository review, model handoff, multi-lane video, general speech quality and production readiness remain unqualified.

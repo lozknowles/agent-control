@@ -1,6 +1,6 @@
 # Model registry
 
-Agent Control separates six concerns:
+Agent Control separates seven concerns:
 
 1. a **provider** supplies an endpoint, protocol and credential reference;
 2. a **model** supplies a stable Agent Control ID and provider-native model ID;
@@ -8,6 +8,7 @@ Agent Control separates six concerns:
 4. a **role** supplies an ordered primary/fallback policy;
 5. worker placement selects the node independently of model routing.
 6. **capability intelligence** preserves verified native/emulated observations and historical task economics independently of configuration.
+7. a **provider catalogue** observes changing remote model inventories without granting qualification or routing eligibility.
 
 A configured model starts `UNTESTED` unless durable evidence says otherwise. Only `QUALIFIED` models can route. `QUALIFYING`, `FAILED`, `DISABLED`, wrong-node and capability-unproven candidates remain visible and fail closed.
 
@@ -41,6 +42,29 @@ A configured model starts `UNTESTED` unless durable evidence says otherwise. Onl
 
 When both references are declared, the primary bearer environment reference is used when present; otherwise the provider resolves the path named by `credentialFileEnv`. The referenced file must remain outside source control. Agent Control never projects its path or value into telemetry or evidence.
 
+For an owner-only Agent Control-managed value, use the same generic opaque reference supported by account-profile credential residency:
+
+```json
+"auth": {"type": "provider-secure-store", "reference": "provider:external"}
+```
+
+Then run `agent-control providers credential set external`. The value is read from hidden stdin, not from command arguments, and resolved only at an authenticated provider call. Environment, referenced-file and secure-store references use one resolver. An account-bound API model resolves only its selected account profile's reference; no provider/global fallback is attempted.
+
+## Dynamic provider catalogue
+
+Providers with `discovery.enabled` enter the generic catalogue exposed by `GET /api/provider-catalog`. Authenticated `Discover Models` calls the configured adapter's size- and time-bounded catalogue operation. Each returned canonical model ID becomes a dynamic registry model with observed metadata and `routingEligible: false`; fields that the latest successful response does not return are `UNKNOWN` with `UNKNOWN` authority rather than stale or guessed. Explicit cost classification is provider-reported; a classification inferred from provider-returned numeric pricing is marked adapter-derived.
+
+The review lifecycle is:
+
+```text
+DISCOVERED → UNQUALIFIED → SMOKE_TESTED → BENCHMARK_QUEUED
+→ BENCHMARKED → QUALIFIED / REJECTED / LIMITED → ROUTING_ELIGIBLE
+```
+
+Smoke success is not routing qualification. Frozen model-intelligence evidence must establish `QUALIFIED` or `PREFERRED`, then an authenticated operator must explicitly enable the route. Degradation, loss of qualifying evidence, or absence from the latest successful provider catalogue withdraws eligibility automatically. A later reappearance returns the model to `UNQUALIFIED`; it is never silently re-enabled. See [provider/model lifecycle](../provider-model-lifecycle.md) and [NVIDIA hosted models](NVIDIA-HOSTED.md).
+
+The first physical use of this path discovered 81 NVIDIA hosted IDs and ran a conservative four-model smoke sample. A partial frozen Nemotron batch passed its nine provider-executed attempts, while 42 capability-gated attempts remained unavailable; it therefore stayed `CANDIDATE` and routing-disabled. Discovery availability is not inference or routing availability: two advertised representative IDs timed out or returned HTTP 404 during smoke. See the [2026-09-06 qualification evidence](../evidence/agent-control-3.9-nvidia-hosted-qualification-20260906.md).
+
 The example is a registration, not proof that the provider currently exposes that model. Confirm the provider-native model ID and qualify it before routing. Do not add pricing unless its source and effective date are known.
 
 ## Qualification states
@@ -71,11 +95,15 @@ Read-only projections:
 - `GET /api/models`
 - `GET /api/models/:id`
 - `GET /api/models/routes`
+- `GET /api/provider-catalog`
 
 Operator-authenticated operations:
 
 - `POST /api/models/:id/qualify` with `{"nodeId":"controller"}`
 - `POST /api/models/:id/route` with node, capabilities and fallback policy
+- `POST /api/provider-catalog/providers/:provider/discover`
+- `POST /api/provider-catalog/providers/:provider/models/:model/smoke`
+- `POST /api/provider-catalog/providers/:provider/models/:model/routing-enable` or `routing-disable`
 - `POST /api/configuration/systems` for provider/model upserts
 
 On 3.7, a CLI provider may also contain safe account-profile metadata and a model may bind `accountProfile`. The effective account route is `provider/account/model/node`; account and model qualification are separate and both must agree on the execution node. `GET /api/models/accounts` exposes only opaque ID, node ID, friendly label, plan authority, availability and qualification. `POST /api/models/accounts/{provider}/{account}/qualify` performs an authenticated, operator-triggered profile check on that profile's node. Codex login, local isolation and restricted Windows-node execution are documented in [CODEX-INTEGRATION.md](CODEX-INTEGRATION.md).

@@ -27,7 +27,7 @@ test('an untested exact model can run only through the qualification purpose and
   const candidate: ModelCandidateIdentity = {providerId: 'api', modelId: 'candidate', providerModel: 'vendor/candidate', runtimeId: 'openai-compatible', runtimeVersion: '1', modelVersion: null, nodeId: 'controller'};
   const batch = {schema: 'agent-control.model-evaluation-batch/v1' as const, id: 'batch-api', suiteId: suite.id, suiteVersion: suite.version, suiteSha256: suite.sha256, candidates: [candidate], status: 'RUNNING' as const, attemptIds: [], createdAt: '2026-09-05T00:00:00Z', startedAt: '2026-09-05T00:00:01Z', completedAt: null, requestedBy: 'operator', reason: 'test'};
   const result = await executor.execute({batch, suite, task, candidate, repetition: 1});
-  assert.equal(result.passed, true); assert.equal(result.score, 100); assert.deepEqual(events, ['STARTED','COMPLETED']);
+  assert.equal(result.passed, true); assert.equal(result.score, 100); assert.deepEqual(events, ['STARTED','REQUEST_STARTED','REQUEST_COMPLETED','COMPLETED']);
   assert.equal((requestBody?.text as {format?: {strict?: boolean}})?.format?.strict, true);
   assert.equal(result.observation.costAccounting?.cloud?.pricingBasis.tableId, 'model-config:candidate');
   assert.equal(result.observation.usage.freshInputTokens, 80);
@@ -64,6 +64,19 @@ test('a candidate missing a required model capability is classified before gener
   const batch = {schema: 'agent-control.model-evaluation-batch/v1' as const, id: 'batch-missing-capability', suiteId: suite.id, suiteVersion: suite.version, suiteSha256: suite.sha256, candidates: [candidate], status: 'RUNNING' as const, attemptIds: [], createdAt: '2026-09-05T00:00:00Z', startedAt: '2026-09-05T00:00:01Z', completedAt: null, requestedBy: 'operator', reason: 'test'};
   const executor = new ProviderNeutralModelEvaluationExecutor(registry, capabilities, unusedNodePort, async () => { throw new Error('unexpected_fetch'); });
   await assert.rejects(() => executor.execute({batch, suite, task, candidate, repetition: 1}), /capability_unavailable:code\.modify/);
+});
+
+test('provider request lifecycle events count a failed physical invocation without counting capability-gated work', async () => {
+  const suite = oneTaskSuite('coding-v1'), task = suite.tasks[0], capabilities = new CapabilityIntelligenceStore();
+  const registry = new ModelRegistry(
+    [{id: 'api', kind: 'openai-compatible', baseUrl: 'https://provider.example/v1', wireApi: 'responses', auth: {type: 'none'}}],
+    [{id: 'candidate', provider: 'api', providerModel: 'vendor/candidate', capabilities: ['code.modify'], nodes: ['controller'], qualification: {state: 'UNTESTED'}}],
+    {roles: {}}, undefined, undefined, {}, capabilities,
+  );
+  const phases: string[] = [], executor = new ProviderNeutralModelEvaluationExecutor(registry, capabilities, unusedNodePort, async () => new Response('unavailable', {status: 503}), event => phases.push(event.phase));
+  const candidate: ModelCandidateIdentity = {providerId: 'api', modelId: 'candidate', providerModel: 'vendor/candidate', runtimeId: 'openai-compatible', runtimeVersion: '1', modelVersion: null, nodeId: 'controller'}, batch = {schema: 'agent-control.model-evaluation-batch/v1' as const, id: 'batch-failed-request', suiteId: suite.id, suiteVersion: suite.version, suiteSha256: suite.sha256, candidates: [candidate], status: 'RUNNING' as const, attemptIds: [], createdAt: '2026-09-05T00:00:00Z', startedAt: '2026-09-05T00:00:01Z', completedAt: null, requestedBy: 'operator', reason: 'test'};
+  await assert.rejects(() => executor.execute({batch, suite, task, candidate, repetition: 1}), /provider_unavailable/);
+  assert.deepEqual(phases, ['STARTED','REQUEST_STARTED','REQUEST_FAILED']);
 });
 
 test('repeated frozen batches append distinct capability evidence instead of colliding', async () => {

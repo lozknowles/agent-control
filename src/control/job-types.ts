@@ -1,6 +1,7 @@
 import type {CapabilityRequest} from './capabilities.js';
 import type {ExecutionCleanupReport, OwnedExecution} from './owned-process.js';
 import type {ParcelBatonView} from './parcel-context.js';
+import type {ActionGovernancePlan, ExternalOperationRecord} from './action-governance.js';
 
 export type JobPriority = 'background' | 'low' | 'normal' | 'high' | 'urgent';
 export type ConcurrencyPolicy = 'allow' | 'no-overlap' | 'replace-running' | 'queue';
@@ -56,12 +57,13 @@ export interface ArtifactRecord {
   provenance: {jobId: string; jobVersion: string; action: string; workerId: string};
 }
 export type RecoveryFailureKind = 'transient-transport' | 'expired-enrolment' | 'authentication-required' | 'permanent-configuration' | 'execution';
-export interface StepAttempt {attempt: number; startedAt: string; endedAt?: string; workerId?: string; outcome?: string; retryable?: boolean; errorClass?: ActionFailureClass; recoveryKind?: RecoveryFailureKind; efficiencyInvocationIds?: string[]; timeoutSeconds?: number; elapsedMs?: number; terminalReason?: string; cleanup?: ExecutionCleanupReport;}
+export interface StepAttempt {attempt: number; startedAt: string; endedAt?: string; workerId?: string; outcome?: string; retryable?: boolean; errorClass?: ActionFailureClass; recoveryKind?: RecoveryFailureKind; efficiencyInvocationIds?: string[]; executionSessionIds?: string[]; timeoutSeconds?: number; elapsedMs?: number; terminalReason?: string; cleanup?: ExecutionCleanupReport;}
 export type ActionFailureClass = 'execution' | 'capability_unavailable' | 'authentication' | 'policy_rejection' | 'verification' | 'configuration';
 export interface RunStep {
   id: string; action: string; status: StepStatus; dependsOn: string[]; capabilityRequest: CapabilityRequest; resources: string[];
   attempts: StepAttempt[]; artifactIds: string[]; placement?: PlacementRationale; waitingReason?: string; approval?: string;
   startedAt?: string; endedAt?: string; nextAttemptAt?: string; recoveryDeadlineAt?: string; remainingRetryBudget?: number; cleanup?: ExecutionCleanupReport; error?: string; verification?: {required: string[]; passed: string[]; failed: string[]};
+  governance?: ActionGovernancePlan; externalOperations?: ExternalOperationRecord[];
 }
 export interface RunRecord {
   id: string; jobId: string; jobVersion: string; trigger: {type: 'manual' | 'schedule' | 'retry'; id?: string; actor: string; modelRoute?: {requestedModel: string | null; requestedRole: string | null; modelId: string; providerId: string; accountProfileId?: string | null; accountLabel?: string | null; accountPlan?: string | null; accountPlanAuthority?: 'operator-configured' | 'provider-reported' | null; accountQualification?: string | null; accountAvailability?: string | null; providerModel: string; nodeId: string; workloadNodeId?: string; providerExecutionNodeId?: string; credentialNodeId?: string | null; qualificationVersion: string; fallback: boolean; fallbackReason: string | null}; parcelContext?: {schema: 'agent-control.run-parcel-context/v1'; parcelId: string; stageId: string; originalGoal: string; currentInterpretation: string; effectiveInstructions: string[]; constraints: string[]; successCriteria: Array<{id: string; description: string; status: string}>; baton: ParcelBatonView | null}};
@@ -70,8 +72,8 @@ export interface RunRecord {
   effectiveJob: JobDefinition; selectedWorkers: string[]; approvals: string[]; provenance: Array<{type: string; at: string; detail: string}>;
   lineage?: {replacesRunId?: string; replacedByRunId?: string; retryOfRunId?: string; retriedByRunId?: string};
 }
-export interface ActionContext {run: RunRecord; step: RunStep; worker: WorkerRegistration; parameters: Record<string, unknown>; inputArtifacts: ArtifactRecord[]; readArtifact: (id: string) => unknown; signal: AbortSignal; ownedExecution: OwnedExecution;}
-export interface ActionOutput {artifacts?: Array<{name: string; value: unknown; type?: string; schema?: string; version?: string; retention?: string}>; evidence?: string[]; verification?: string[]; detail?: string; efficiencyInvocationIds?: string[]; executionState?: 'verification-pending';}
+export interface ActionContext {run: RunRecord; step: RunStep; worker: WorkerRegistration; parameters: Record<string, unknown>; inputArtifacts: ArtifactRecord[]; readArtifact: (id: string) => unknown; signal: AbortSignal; ownedExecution: OwnedExecution; governance?: ActionGovernancePlan;}
+export interface ActionOutput {artifacts?: Array<{name: string; value: unknown; type?: string; schema?: string; version?: string; retention?: string}>; evidence?: string[]; verification?: string[]; detail?: string; efficiencyInvocationIds?: string[]; executionState?: 'verification-pending'; externalOperationStates?: Array<{effectId: string; state: ExternalOperationRecord['state']; reason?: string}>;}
 export type ActionHandler = (context: ActionContext) => Promise<ActionOutput>;
 export interface AgentActionHandler {readonly path: 'adaptive-harness'; execute(context: ActionContext): Promise<ActionOutput>;}
 
