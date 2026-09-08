@@ -28,3 +28,16 @@ test('guided Work Parcel question retains documented parent and child relationsh
  assert.match(passage,/dependencies succeed/);
  assert.ok(passage.length<=2800);
 });
+
+ test('voice questions receive scoped configuration rather than inferred channel health',()=>{
+ const calls:string[]=[];
+ const service=new PoeKnowledgeService({root:process.cwd(),version:'4.1.test',revision:()=>({commit:'a'.repeat(40),dirty:false}),configuration:()=>({}),sources:[],live:category=>{calls.push(category);return {channel:'poe/dashboard',configured:true,identity:'poe-original-male-hotelier-v2',readiness:'CONFIGURED_NOT_A_HEALTH_PROBE',whatsapp:'SEPARATE_CHANNEL_NOT_OBSERVED'};}});
+ const answer=service.enrich('Explain social and voice channels, WhatsApp and OmniVoice availability.');
+ const voice=answer.facts.find(fact=>fact.label==='Configured POE voice');
+ assert.ok(voice);assert.equal(voice.informationKind,'CONFIGURED_CAPABILITY');
+ assert.match(String(voice.value),/poe-original-male-hotelier-v2/);
+ assert.match(String(voice.value),/CONFIGURED_NOT_A_HEALTH_PROBE/);
+ assert.match(String(voice.value),/SEPARATE_CHANNEL_NOT_OBSERVED/);
+ assert.ok(calls.includes('voice'));
+ calls.length=0;service.enrich('Explain Work Parcels');assert.ok(!calls.includes('voice'));
+});
