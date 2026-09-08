@@ -16,6 +16,7 @@ const chromiumExecutable = process.env.AGENT_CONTROL_CHROMIUM ?? '/snap/bin/chro
 const ffmpeg = process.env.AGENT_CONTROL_FFMPEG ?? 'ffmpeg';
 const ffprobe = process.env.AGENT_CONTROL_FFPROBE ?? 'ffprobe';
 const ingress = process.env.AGENT_CONTROL_QUALIFICATION_INGRESS === 'openwa' ? 'openwa' : 'dashboard';
+const operatorAssisted = process.env.AGENT_CONTROL_QUALIFICATION_OPERATOR_ASSISTED === 'true';
 const dashboardPort = ingress === 'openwa' ? Number(process.env.AGENT_CONTROL_QUALIFICATION_PORT ?? 19191) : 0;
 const socialConversationLabel = process.env.AGENT_CONTROL_QUALIFICATION_SOCIAL_LABEL ?? 'Collingham';
 const pixel = ingress === 'openwa' ? {
@@ -24,7 +25,7 @@ const pixel = ingress === 'openwa' ? {
   port: Number(process.env.AGENT_CONTROL_PIXEL_PORT ?? 8022),
   identity: process.env.AGENT_CONTROL_PIXEL_IDENTITY,
 } : null;
-if (pixel && (!pixel.host || !pixel.user || !pixel.identity || !process.env.AGENT_CONTROL_QUALIFICATION_OPENWA_CONFIG || !process.env.AGENT_CONTROL_QUALIFICATION_OPENWA_ENROLMENT)) throw new Error('qualification_social_transport_configuration_required');
+if (pixel && ((!operatorAssisted && (!pixel.host || !pixel.user || !pixel.identity)) || !process.env.AGENT_CONTROL_QUALIFICATION_OPENWA_CONFIG || !process.env.AGENT_CONTROL_QUALIFICATION_OPENWA_ENROLMENT)) throw new Error('qualification_social_transport_configuration_required');
 const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-crew-wopr-escalation-'));
 const rawVideoDir = path.join(stateDir, 'raw-video');
 const operatorToken = randomBytes(32).toString('hex');
@@ -259,11 +260,12 @@ try {
   await page.click('[data-view="jobs"]');
   if (ingress === 'openwa') {
     socialPhase = await waitPhase('SOCIAL_CHANNEL_READY', 45_000);
-    socialIngressEvidence = await sendPhysicalSocialRequest();
+    socialIngressEvidence = operatorAssisted ? {node:'physical Android operator device',transport:'authenticated OpenWA over existing mobile/private-overlay connectivity',adb:'UNAVAILABLE_IN_4G_ONLY_CONFIGURATION',action:'operator-assisted physical WhatsApp interaction',request:'awaited from enrolled sender; no replay or synthetic ingress'} : await sendPhysicalSocialRequest();
+    if(operatorAssisted){await page.click('[data-view="poe"]');await page.waitForSelector('#poe-workspace');journey.push({at:new Date().toISOString(),view:'poe',outcome:'waiting for authentic enrolled-device WhatsApp/OmniVoice conversation; no ADB or replay'});}
     // WhatsApp delivery can legitimately lag after a handset/network wake. Keep
     // the physical listener alive long enough for the gateway's bounded retry
     // window; this still fails closed and never substitutes a synthetic event.
-    taskPhase = await waitPhase('TASK_RECEIVED', 180_000);
+    taskPhase = await waitPhase('TASK_RECEIVED', operatorAssisted ? 15 * 60_000 : 180_000);
     await page.waitForFunction(() => /start governed-adaptive-crew|governed adaptive crew/i.test(document.querySelector('#work-parcel-list')?.textContent || document.body.textContent || ''), undefined, {timeout: 15_000});
     screenshots.push(await screenshot(page, '02-authenticated-social-work-parcel-request.png'));
     journey.push({at: new Date().toISOString(), view: 'jobs', outcome: 'real enrolled-device OpenWA command accepted through SocialVoiceCoordinator and shown as a live Work Parcel'});
