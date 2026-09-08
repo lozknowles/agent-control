@@ -502,6 +502,22 @@ async function main() {
   }
   if (parent.status !== 'SUCCEEDED') throw new Error(`qualification_timeout:${parent.status}`);
 
+  let outboundResponse: Record<string, unknown> | null = null;
+  if (social && openwa) {
+    const responseDeadline = Date.now() + 30_000;
+    while (Date.now() < responseDeadline) {
+      await social.tick();
+      const job = social.db.prepare('SELECT number,status FROM jobs WHERE parcel=?').get(parent.id) as {number?: number; status?: string} | undefined;
+      const delivery = openwa.db.prepare("SELECT kind,state,attempts,code,remoteId IS NOT NULL AS hasRemoteId FROM outbox WHERE kind='social' AND body LIKE ? ORDER BY id DESC LIMIT 1").get(`Job AC-${job?.number ?? 0}: SUCCEEDED%`) as {kind?: string; state?: string; attempts?: number; code?: string; hasRemoteId?: number} | undefined;
+      if (job?.status === 'SUCCEEDED' && delivery?.state === 'submitted' && delivery.hasRemoteId === 1) {
+        outboundResponse = {jobReference: `AC-${job.number}`, status: job.status, kind: delivery.kind, deliveryState: delivery.state, attempts: delivery.attempts, deliveryCode: delivery.code, gatewayAccepted: true};
+        break;
+      }
+      await delay(200);
+    }
+    if (!outboundResponse) throw new Error('qualification_terminal_social_response_not_submitted');
+  }
+
   const completedAt = now(), routingEvidence = tokenRouting.evidence(), routingProjection = tokenRouting.projection(), source = qualityObservations.find(item => !item.accepted), destination = qualityObservations.find(item => item.accepted), baton = routingEvidence.batons[0], nestedRun = parameterizedJobs.runs.get(parameterizedRunId), nestedParcelId = nestedRun?.workParcelIds[0], nestedParcel = nestedParcelId ? parcels.get(nestedParcelId) : undefined, verificationStage = parent.stages.find(stage => stage.id === 'verify'), verificationRun = verificationStage?.runId ? runtime.ledger.get(verificationStage.runId) : undefined, verificationArtifactId = verificationRun?.artifacts[0], verification = verificationArtifactId ? runtime.artifacts.read(verificationArtifactId) as Record<string, unknown> : undefined;
   assert.ok(source && destination && baton && nestedRun && nestedParcel && verification);
   const handoff = handoffs.list().find(item => item.batonSha256 === sha256(JSON.stringify({tokenBatonId: baton.id, tokenBatonSha256: baton.sha256}))) ?? handoffs.list()[0];
@@ -554,6 +570,19 @@ async function main() {
   assert.ok(liveShellEvents.some(item => item.type === 'attachment.closed'));
   assert.equal(liveShellSession.capabilities.modes.intervene, true);
   fs.writeFileSync(options.transcriptFile, transcriptText, {mode: 0o600});
+  const messageReference = parent.origin?.messageReference;
+  const idempotency = options.ingress === 'openwa' && messageReference ? {
+    messageReference,
+    acceptedInboxRows: Number((social?.db.prepare('SELECT count(*) AS count FROM inbox WHERE key=?').get(messageReference) as {count?: number} | undefined)?.count ?? 0),
+    socialJobRows: Number((social?.db.prepare('SELECT count(*) AS count FROM jobs WHERE key=?').get(messageReference) as {count?: number} | undefined)?.count ?? 0),
+    matchingRootWorkParcels: parcels.list().filter(item => item.origin?.messageReference === messageReference && item.executionOwner === 'work-parcel-coordinator').length,
+    matchingLineageWorkParcels: parcels.list().filter(item => item.origin?.messageReference === messageReference).length,
+    deterministicParcelIdentity: parent.id === `parcel-social-${messageReference}`,
+    existingControlledReplayEvidence: 'docs/openwa/live-qualification.md',
+    existingRestartRepairCoverage: 'src/control/work-parcels.test.ts',
+    additionalReplayManufactured: false,
+  } : null;
+  if (idempotency && (idempotency.acceptedInboxRows !== 1 || idempotency.socialJobRows !== 1 || idempotency.matchingRootWorkParcels !== 1 || !idempotency.deterministicParcelIdentity)) throw new Error('qualification_social_idempotency_reconciliation_failed');
   const evidence = {
     schema: 'agent-control.crew-wopr-escalation-qualification/v1', verdict: 'PASS', startedAt, completedAt,
     repository: {candidateHead: command(process.cwd(), 'git', ['rev-parse', 'HEAD']), candidateBranch: command(process.cwd(), 'git', ['branch', '--show-current']), fixtureCommit: fixture.commit, fixtureFiles: fixture.files, immutable: true, protectedRef: 'refs/heads/main', protectedRefBefore: fixture.protectedRef, protectedRefAfter, protectedRefUnchanged: true},
@@ -575,6 +604,8 @@ async function main() {
     assertions: {normalProductionCallPath: true, socialIngressPhysicallyAuthenticated: options.ingress === 'openwa', socialIngressAdaptiveConvergence: Boolean(parentAdaptiveDecisionId), modelAndWorkflowLeaguesConsulted: nestedAdaptiveReport.steps.some(item => item.kind === 'LEAGUE_EVIDENCE') && Boolean(parentAdaptiveReport.selectedWorkflow), exactInitiatingRequestFirstInTranscript: true, twoRealConcurrentControlLanes: concurrentEmitted, liveShellWatchInterveneDetach: true, protectedRefUnchanged: true, sourceResponseSchemaValid: true, sourceRejectedOnlyByIndependentQualityGate: true, qualityTriggeredAtLowContext: routingEvidence.decisions.some(item => item.trigger?.kind === 'QUALITY_GATE' && (item.contextPercent ?? 0) < 75), sealedBatonCreated: /^[a-f0-9]{64}$/.test(baton.sha256), crossProviderDestinationContinued: true, destinationPassedSameGate: true, sourceThreadRecoverable: true, independentVerificationPassed: verification.passed === true, lifetimeTokensReconciled: nestedRun.usage.totalTokens === totals.totalTokens && nestedParcel.audit.totals.totalTokens === totals.totalTokens, currentContextSeparateFromLifetime: routingEvidence.threads.every(thread => thread.latest.context.tokens !== thread.latest.cumulative.totalTokens || thread.latest.context.authority === 'estimated'), missingValuesNotCoercedToZero: routingEvidence.threads.some(thread => thread.latest.context.authority === 'unavailable'), credentialsAbsent: true, productionStateUntouched: true},
     boundaries: {real: [options.ingress === 'openwa' ? 'authenticated OpenWA social task submission from enrolled operator device' : 'browser-authenticated task submission', 'deterministic concurrent Jobs', 'real PTY WATCH then governed harmless INTERVENE and detach', 'live local Qwen provider response', 'schema parsing and application validation', 'independent quality rejection', 'quality governor decision below context thresholds', 'durable sealed baton', 'cross-provider Codex destination continuation', 'independent quality acceptance', 'final repository validation', 'protected origin/main before/after equality', 'token and model-chain reconciliation', 'typed SSE dashboard updates', 'product-generated complete execution transcript'], unavailable: ['Neither provider exposes authoritative mid-turn current-context occupancy.', 'Neither provider reports an authoritative monetary cost for these routes.'], simulated: []},
     security: {credentialMaterialPersisted: false, codexHomePathPersisted: false, providerRawTransportPersisted: false, privateReasoningPersisted: false, liveDeploymentTouched: false, releaseActionPerformed: false},
+    idempotency,
+    outboundResponse,
     initialAcceptance,
     transcript: {file: path.relative(process.cwd(), options.transcriptFile), sha256: sha256(transcriptText), sourceSha256: transcriptDocument.sourceSha256, entryCount: transcriptDocument.entryCount, generatedDuringExecution: transcriptDocument.generatedDuringExecution, restartReconstructible: transcriptDocument.restartReconstructible},
   };

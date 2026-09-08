@@ -1,10 +1,12 @@
 # Agent Control 4.0 governed adaptive Crew qualification
 
-Status: **PARTIAL — RELEASE-CANDIDATE PHYSICAL SOCIAL RERUN BLOCKED BY OFFLINE PIXEL**
+Status: **PASS — AGENT CONTROL 4.0 RELEASE QUALIFICATION COMPLETE**
 
 Branch: `integration/4.0-governed-adaptive-crew`  
 Product checkpoint: `6a44c3b`  
 Formal release action: none
+
+The sole physical dependency recorded below was closed on the same product implementation by [the Pixel social continuation](agent-control-4.0-pixel-social-continuation.md). The historical `PARTIAL` finding and its reason remain documented below rather than being rewritten.
 
 ## Integration result
 
@@ -56,7 +58,7 @@ The focused Work Parcel suite passed 20/20, including both social convergence te
 
 Documentation validation examined 137 Markdown documents and 822 local links with zero broken links. `git diff --check` passed. The protected JSON/transcript had zero matches for credential-home paths, OAuth/access/refresh token assignments, bearer values or private keys.
 
-## Remaining gate and external state
+## Historical remaining gate and external state
 
 The final post-fix social/video run was attempted twice. The first attempt stopped before Work Parcel creation because the recorder checked for the newly queued WhatsApp notification before delivery; `01d1718` replaces that single check with a bounded fail-closed wait. The second attempt stopped before Work Parcel creation when the configured Pixel Termux SSH endpoint timed out. Independent checks then showed the Pixel offline in Tailscale with no response on its configured SSH port. Agent Control, OpenWA, the controller, providers and the protected-resource qualifier remained healthy.
 
@@ -74,4 +76,16 @@ When the Pixel returns online, the remaining run must prove in one continuous ca
 8. product-generated complete transcript beginning with the exact initiating request;
 9. 1920×1080 continuous MP4 and reconciled screenshot/video manifest.
 
-Until that fresh run passes, the integration branch is reviewable but the 4.0 physical release-candidate gate remains open. No merge, tag, GitHub Release or deployment is authorized or performed.
+At that checkpoint the integration branch was reviewable, but the 4.0 physical release-candidate gate remained open. No merge, tag, GitHub Release or deployment was authorized or performed.
+
+## Pixel continuation and final gate
+
+The Pixel returned online and the exact frozen `start governed-adaptive-crew` command was sent from the enrolled physical device. The fresh run entered normal adaptive orchestration, consulted Model and Workflow League evidence, ran concurrent governed stages, rejected a schema-valid but incomplete local Qwen review at the independent quality gate, created a sealed baton, continued under the distinct Codex destination route, passed independent verification, reconciled 10,401 tokens across both model legs, preserved the protected ref, generated the complete origin-first transcript, and returned `AC-1: SUCCEEDED` through WhatsApp.
+
+Machine evidence, the complete transcript, an 83.28-second 1920×1080 continuous video, screenshot manifest, idempotency reconciliation, terminal response evidence and attempt history are in [the continuation addendum](agent-control-4.0-pixel-social-continuation.md).
+
+**RELEASE GATE: PASS**
+
+**READY TO MERGE/TAG/RELEASE: YES**
+
+No merge, tag, GitHub Release or deployment was performed. Those remain subject to separate operator approval.
