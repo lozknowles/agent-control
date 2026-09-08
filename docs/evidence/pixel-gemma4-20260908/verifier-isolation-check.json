@@ -1,0 +1,1 @@
+{"scope": "Verifier infrastructure self-check only; not Pixel model inference", "exit": 0, "stdout": "PASS: clean environment and no controller home mount\n", "stderr": ""}

@@ -5,6 +5,7 @@ const [mode,file]=process.argv.slice(2),config=JSON.parse(fs.readFileSync(file,'
 const root=path.dirname(file),pidFile=path.join(root,'runtime-pid.json');
 const identity=pid=>fs.readFileSync(`/proc/${pid}/stat`,'utf8').split(') ')[1].split(' ')[19];
 if(mode==='start'){
+ for(const entry of fs.readdirSync('/proc')){if(!/^\d+$/.test(entry))continue;try{const command=fs.readFileSync(`/proc/${entry}/cmdline`,'utf8').split('\0');if(command[0]===config.binary)throw new Error('refuse_second_owned_model_process:'+entry);}catch(e){if(e.message?.startsWith('refuse_second_owned_model_process:'))throw e;if(!['ENOENT','EACCES','ESRCH'].includes(e.code))throw e;}}
  if(fs.existsSync(pidFile)){const old=JSON.parse(fs.readFileSync(pidFile));try{if(identity(old.pid)===old.startTicks)throw new Error('runtime_already_active');}catch(e){if(e.code!=='ENOENT')throw e;}}
  const args=['--model',config.modelPath,'--alias',config.modelId,'--host','127.0.0.1','--port',String(config.port),'--ctx-size',String(config.contextTokens),'--threads','4','--threads-batch','4','--parallel','1','--n-gpu-layers','0','--jinja','--reasoning','off'];
  const log=fs.openSync(path.join(root,'runtime.log'),'a');

@@ -27,7 +27,7 @@ Sources:
 
 ## Physical setup evidence
 
-Pixel identity: Pixel 8 Pro / Android 17, confirmed through enrolled Termux SSH on port 8022 via hpubuntu and Tailscale. Initial inspection showed 11,850,748 kB total RAM, 3,022,740 kB available RAM, and approximately 19 GiB free storage. Later snapshots must be read at their own timestamps.
+Pixel identity: Pixel 8 Pro / Android 17, confirmed through enrolled Termux SSH on port 8022 via qualification controller and Tailscale. Initial inspection showed 11,850,748 kB total RAM, 3,022,740 kB available RAM, and approximately 19 GiB free storage. Later snapshots must be read at their own timestamps.
 
 llama.cpp was compiled physically on the Pixel at revision 895c045fd104ced72132160245edcd6a86e50ba0. It identifies itself as 0.4.0-dev, build 10856, Clang 21.1.8, Android aarch64. Binary SHA-256: 202b42092b6bdce81e2cdc0fa430ce5706a25821a4003a9007aceedcdfbd8e56.
 
@@ -49,9 +49,9 @@ Generated Python is intended to execute under bubblewrap with no network, read-o
 
 Source release v4.0.0: ff7ed114c08b71583e2a2d67b40d081f0b0a4c33. Source release evidence identifies product checkpoint a08ccac5ced3cd399755bd084ff30fe224ab7860; the Pixel social continuation proves remote social ingress, not Pixel inference.
 
-The primary development checkout was clean at f8552ae882d345520bca2049215d4e95274c88af on feature/adaptive-multi-model-orchestration-20260907. The existing daily workflow dashboard at hpubuntu loopback port 19310 was running from a separate 3.9.0 runtime. Source release and live deployment are therefore different facts.
+The primary development checkout was clean at f8552ae882d345520bca2049215d4e95274c88af on feature/adaptive-multi-model-orchestration-20260907. The existing daily workflow dashboard at qualification controller loopback port 19310 was running from a separate 3.9.0 runtime. Source release and live deployment are therefore different facts.
 
-An isolated worktree was created at /fast/work/agent-control-pixel-gemma4-20260908 on qualification/pixel-gemma4-20260908 from v4.0.0. Existing OpenWA, WhatsApp, OmniVoice and Agent Control services were left in place. The canonical regression check passed 1,014 tests. This is software regression evidence only.
+An isolated worktree was created at the isolated experimental worktree on qualification/pixel-gemma4-20260908 from v4.0.0. Existing OpenWA, WhatsApp, OmniVoice and Agent Control services were left in place. The canonical regression check passed 1,014 tests. This is software regression evidence only.
 
 The existing provider-neutral OpenAI-compatible interface already supports explicit Pixel execution identity, routingEligible=false, and purpose=QUALIFICATION. The prepared harness uses those controls, a normal authenticated dashboard Work Parcel, the normal repository-review executor and product transcript runtime, plus an independent arithmetic root-cause gate. It does not introduce a model-specific adapter. It requires a real endpoint/model inventory before startup. No live integration pass is implied by preparation.
 

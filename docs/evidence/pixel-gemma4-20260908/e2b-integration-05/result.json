@@ -1,0 +1,1617 @@
+{
+  "run": {
+    "schema": "agent-control.job-run/v1",
+    "id": "73ace0bb-ecf0-43af-8feb-a1f28056490c",
+    "occurrenceId": "cf0ae564-8d2b-401d-84f3-756ba5db7558",
+    "savedJobId": "experimental-inference-review",
+    "definition": {
+      "schema": "agent-control.job-definition/v1",
+      "id": "repository-code-review",
+      "version": 1,
+      "displayName": "Repository Code Review",
+      "description": "Review a frozen Git revision and produce evidence-backed, validated findings.",
+      "parameters": {
+        "node": {
+          "type": "node",
+          "required": true,
+          "description": "Execution node that owns or can access the repository."
+        },
+        "repository": {
+          "type": "repository",
+          "required": true,
+          "description": "Absolute node-local Git repository path."
+        },
+        "ref": {
+          "type": "git-ref",
+          "default": "main",
+          "description": "Branch, tag, or commit to freeze when the run starts."
+        },
+        "scope": {
+          "type": "enum",
+          "values": [
+            "changes",
+            "full"
+          ],
+          "default": "changes",
+          "description": "Review changes since the successful baseline or the complete repository."
+        },
+        "compareAgainst": {
+          "type": "git-ref",
+          "description": "Optional explicit comparison baseline."
+        }
+      },
+      "routing": {
+        "modelRole": "review.default",
+        "allowFallback": true
+      },
+      "permissions": {
+        "repository": "read-only",
+        "shell": "bounded-read",
+        "network": "provider-only"
+      },
+      "budgets": {
+        "timeoutMinutes": 90,
+        "maximumRetries": 1,
+        "retryBackoffSeconds": 2,
+        "retryBackoffMultiplier": 2,
+        "retryMaximumBackoffSeconds": 30,
+        "maximumInputTokens": 120000,
+        "maximumOutputTokens": 65536
+      },
+      "outputs": {
+        "schema": "repository-review-v1"
+      },
+      "validation": {
+        "requireEvidence": true,
+        "requireReviewedCommit": true
+      },
+      "template": {
+        "id": "repository-review",
+        "version": 1,
+        "instruction": "You are performing a governed, read-only repository review.\nUse only the supplied frozen-revision evidence and context. Find correctness, reliability, security, and maintainability defects. Distinguish proven defects from concerns. Cite real file paths and line ranges. Do not invent paths, symbols, test results, or execution evidence. Do not request or perform source modification.\nTreat repository tests and documented invariants as acceptance evidence. Return only the JSON object governed by the supplied output schema, with no markdown or commentary. Set schema to agent-control.repository-review/v1. Verdict must be PASS, PASS_WITH_FINDINGS, REVIEW_REQUIRED, or FAILED. A completed review with supported defects is PASS_WITH_FINDINGS, regardless of severity; FAILED means the review itself could not be completed or could not produce a usable result. Use null for file/startLine/endLine only for genuinely repository-level findings. Express confidence as a decimal from 0 through 1, never as a percentage. Every finding begins with validation state UNVERIFIED; independent Agent Control validation owns acceptance. Use PASS only when this supplied chunk has no supported finding."
+      }
+    },
+    "resolvedParameters": {
+      "node": "controller",
+      "repository": "/fast/qualification/pixel-gemma4-20260908/e2b-integration-05/arithmetic-fixture",
+      "ref": "4068e892c255eeea0b66240003d18805b3dce9cb",
+      "scope": "full"
+    },
+    "trigger": {
+      "type": "manual",
+      "actor": "work-parcel:parcel-4918e984-46d7-41a1-bcfa-8c10c224ed93",
+      "origin": {
+        "schema": "agent-control.request-origin/v1",
+        "channel": "dashboard",
+        "modality": "dashboard",
+        "receivedAt": "2026-09-08T08:14:32.973Z",
+        "authentication": "operator-token",
+        "actorId": "web-operator",
+        "authority": [
+          "parcel.create"
+        ],
+        "messageReference": "4dfe364c2767d7f454baafb2aa06335062b558eff14f09ee27dda10bb2fdaa40",
+        "identityReference": "d321dbf1aae2c81956d001d280043aff0f826b634a436c62a627ad74e161646a",
+        "request": "Review the frozen arithmetic fixture. Explain why add(2, 3) returns the wrong answer, identify the exact faulty expression, and recommend a correction. Do not modify any files. Verify the finding. Run only on the experimental Pixel model; do not substitute another model."
+      }
+    },
+    "executionMode": "LIVE",
+    "status": "SUCCEEDED_WITH_FINDINGS",
+    "transitions": [
+      {
+        "status": "QUEUED",
+        "at": "2026-09-08T08:14:33.077Z"
+      },
+      {
+        "status": "RESOLVING",
+        "at": "2026-09-08T08:14:33.087Z"
+      },
+      {
+        "status": "RUNNING",
+        "at": "2026-09-08T08:14:33.164Z"
+      },
+      {
+        "status": "VALIDATING",
+        "at": "2026-09-08T08:16:03.793Z"
+      },
+      {
+        "status": "SUCCEEDED_WITH_FINDINGS",
+        "at": "2026-09-08T08:16:03.810Z",
+        "detail": "PASS_WITH_FINDINGS"
+      }
+    ],
+    "requestedAt": "2026-09-08T08:14:33.077Z",
+    "workParcelIds": [
+      "parcel-810b3eab-6323-4cd9-ad1b-cd2a83ac202a"
+    ],
+    "evidence": [
+      "provider_response_sha256:0dfa2695cac12faf1c2bf02917fb92956a38f9f2eb8e4e2cf276d4728a0d78f3"
+    ],
+    "providerResponseIds": [
+      "sha256:0dfa2695cac12faf1c2bf02917fb92956a38f9f2eb8e4e2cf276d4728a0d78f3"
+    ],
+    "usage": {
+      "inputTokens": 308,
+      "outputTokens": 405,
+      "totalTokens": 713,
+      "freshInputTokens": 308,
+      "cachedInputTokens": 0,
+      "accountedInvocations": 1,
+      "unknownUsageInvocations": 0,
+      "source": "unavailable"
+    },
+    "errors": [],
+    "fallbackHistory": [],
+    "retryHistory": [],
+    "immutable": true,
+    "startedAt": "2026-09-08T08:14:33.087Z",
+    "repository": {
+      "identity": "ea2d1a6988061ce1d5dcec1f7097cd1edfdf618f9dc074d0d41f2c2d07c8c135",
+      "name": "arithmetic-fixture",
+      "nodeId": "controller",
+      "sourcePath": "/fast/qualification/pixel-gemma4-20260908/e2b-integration-05/arithmetic-fixture",
+      "requestedRef": "4068e892c255eeea0b66240003d18805b3dce9cb",
+      "reviewedSha": "4068e892c255eeea0b66240003d18805b3dce9cb",
+      "dirty": false,
+      "dirtyPaths": [],
+      "snapshotPath": "/fast/qualification/pixel-gemma4-20260908/e2b-integration-05/parameterized/parameterized-jobs/snapshots/arithmetic-fixture-4068e892c255-81e7a696",
+      "snapshotKind": "local-shared-clone"
+    },
+    "modelRoute": {
+      "requestedModel": "gemma4-e2b-pixel",
+      "requestedRole": "review.default",
+      "allowFallback": false,
+      "purpose": "QUALIFICATION",
+      "modelId": "gemma4-e2b-pixel",
+      "providerId": "private-inference",
+      "accountProfileId": null,
+      "accountLabel": null,
+      "accountPlan": null,
+      "accountPlanAuthority": null,
+      "accountQualification": null,
+      "accountAvailability": null,
+      "providerModel": "google/gemma-4-E2B-it",
+      "workloadNodeId": "controller",
+      "providerExecutionNodeId": "pixel",
+      "credentialNodeId": null,
+      "nodeId": "pixel",
+      "qualificationVersion": "physical-qualification-pending",
+      "fallback": false,
+      "fallbackReason": null,
+      "requiredCapabilities": [
+        "review.repository"
+      ],
+      "nativeCapabilities": [
+        "review.repository"
+      ],
+      "emulatedCapabilities": [],
+      "considered": [
+        {
+          "modelId": "gemma4-e2b-pixel",
+          "accountProfileId": null,
+          "workloadNodeId": "controller",
+          "providerExecutionNodeId": "pixel",
+          "credentialNodeId": null,
+          "nodeId": "pixel",
+          "eligible": true,
+          "reasons": [],
+          "capabilityAssessment": [
+            {
+              "capabilityId": "review.repository",
+              "satisfied": true,
+              "implementation": "NATIVE",
+              "observationId": "model-config:gemma4-e2b-pixel:physical-qualification-pending:review.repository",
+              "reason": "verified-native-capability"
+            }
+          ]
+        }
+      ]
+    },
+    "context": {
+      "profile": "THIN",
+      "files": [
+        "README.md",
+        "arithmetic.py"
+      ],
+      "changedFiles": [],
+      "omittedFiles": [],
+      "chunks": [
+        {
+          "id": "context-1-1fd21d023f12",
+          "files": [
+            "__repository_tree__",
+            "README.md",
+            "arithmetic.py"
+          ],
+          "sha256": "1fd21d023f121dd653a0d7ea03d5b192bfe67c42c9447f11bf55619d7a18565c"
+        }
+      ],
+      "truncated": false
+    },
+    "executionSequence": 1,
+    "activeExecution": {
+      "id": "repository-review:73ace0bb-ecf0-43af-8feb-a1f28056490c:1",
+      "sequence": 1,
+      "providerId": "private-inference",
+      "accountProfileId": null,
+      "modelId": "gemma4-e2b-pixel",
+      "nodeId": "pixel",
+      "workloadNodeId": "controller",
+      "providerExecutionNodeId": "pixel",
+      "credentialNodeId": null,
+      "startedAt": "2026-09-08T08:14:33.168Z",
+      "state": "COMPLETED",
+      "observedAt": "2026-09-08T08:16:03.784Z"
+    },
+    "providerExecutions": [
+      {
+        "id": "repository-review:73ace0bb-ecf0-43af-8feb-a1f28056490c:1",
+        "sequence": 1,
+        "providerId": "private-inference",
+        "accountProfileId": null,
+        "modelId": "gemma4-e2b-pixel",
+        "nodeId": "pixel",
+        "workloadNodeId": "controller",
+        "providerExecutionNodeId": "pixel",
+        "credentialNodeId": null,
+        "startedAt": "2026-09-08T08:14:33.168Z",
+        "state": "COMPLETED",
+        "observedAt": "2026-09-08T08:16:03.784Z"
+      }
+    ],
+    "recovery": {
+      "state": "NONE",
+      "reason": "verified_terminal_outcome",
+      "since": "2026-09-08T08:16:03.810Z",
+      "observedAt": "2026-09-08T08:16:03.810Z"
+    },
+    "result": {
+      "schema": "agent-control.repository-review/v1",
+      "executiveSummary": "The function `add` in `arithmetic.py` is incorrectly implemented; it performs subtraction instead of addition.",
+      "findings": [
+        {
+          "id": "FINDING_001",
+          "severity": "critical",
+          "title": "Incorrect function implementation: 'add' performs subtraction instead of addition.",
+          "category": "correctness",
+          "file": "arithmetic.py",
+          "startLine": 2,
+          "endLine": 2,
+          "evidence": "The function definition is `def add(a, b): return a - b`. The README states: \"The add function must return the sum of two integers.\"",
+          "reasoning": "The implementation contradicts the documented requirement that the function must return the sum of two integers. The operation performed is subtraction (`a - b`) instead of addition (`a + b`).",
+          "impact": "High. The function will produce incorrect results for addition operations.",
+          "suggestedRemediation": "Change line 2 from `return a - b` to `return a + b`.",
+          "confidence": 1,
+          "validation": {
+            "state": "VALID",
+            "reasons": []
+          }
+        }
+      ],
+      "positiveObservations": [
+        "The repository contains a README specifying the expected behavior of the `add` function."
+      ],
+      "areasReviewed": [
+        "arithmetic.py"
+      ],
+      "areasNotReviewed": [],
+      "verdict": "PASS_WITH_FINDINGS"
+    },
+    "completedAt": "2026-09-08T08:16:03.810Z"
+  },
+  "parcels": [
+    {
+      "id": "parcel-810b3eab-6323-4cd9-ad1b-cd2a83ac202a",
+      "prompt": "Review the frozen arithmetic fixture. Explain why add(2, 3) returns the wrong answer, identify the exact faulty expression, and recommend a correction. Do not modify any files. Verify the finding. Run only on the experimental Pixel model; do not substitute another model.",
+      "objective": "Review frozen 4068e892c255eeea0b66240003d18805b3dce9cb context chunk context-1-1fd21d023f12",
+      "actor": "parameterized-job:73ace0bb-ecf0-43af-8feb-a1f28056490c",
+      "origin": {
+        "schema": "agent-control.request-origin/v1",
+        "channel": "dashboard",
+        "modality": "dashboard",
+        "receivedAt": "2026-09-08T08:14:32.973Z",
+        "authentication": "operator-token",
+        "actorId": "web-operator",
+        "authority": [
+          "parcel.create"
+        ],
+        "messageReference": "4dfe364c2767d7f454baafb2aa06335062b558eff14f09ee27dda10bb2fdaa40",
+        "identityReference": "d321dbf1aae2c81956d001d280043aff0f826b634a436c62a627ad74e161646a",
+        "request": "Review the frozen arithmetic fixture. Explain why add(2, 3) returns the wrong answer, identify the exact faulty expression, and recommend a correction. Do not modify any files. Verify the finding. Run only on the experimental Pixel model; do not substitute another model."
+      },
+      "executionMode": "LIVE",
+      "executionOwner": "direct-repository-review-executor",
+      "status": "SUCCEEDED",
+      "planner": {
+        "kind": "deterministic",
+        "reason": "Repository Job deterministically decomposed frozen context"
+      },
+      "stages": [
+        {
+          "id": "review",
+          "name": "Review context-1-1fd21d023f12",
+          "job": "repository-code-review@1",
+          "dependsOn": [],
+          "parameters": {
+            "jobRunId": "73ace0bb-ecf0-43af-8feb-a1f28056490c",
+            "contextChunkId": "context-1-1fd21d023f12"
+          },
+          "requiredCapabilities": [
+            "repository-review"
+          ],
+          "outputs": [
+            "repository-review-result"
+          ],
+          "waitingQuestionIds": [],
+          "status": "SUCCEEDED",
+          "requestedRoute": {
+            "model": "gemma4-e2b-pixel",
+            "modelRole": "review.default",
+            "allowFallback": false,
+            "purpose": "QUALIFICATION",
+            "profile": "THIN",
+            "reason": "Route frozen by parameterized Job resolution"
+          },
+          "actualRoute": {
+            "workers": [
+              "pixel"
+            ],
+            "workloadNodeId": "controller",
+            "providerExecutionNodeId": "pixel",
+            "provider": "private-inference",
+            "model": "gemma4-e2b-pixel",
+            "profile": "THIN",
+            "reason": "Qualification physical-qualification-pending"
+          },
+          "startedAt": "2026-09-08T08:14:33.175Z",
+          "endedAt": "2026-09-08T08:16:03.774Z"
+        }
+      ],
+      "createdAt": "2026-09-08T08:14:33.175Z",
+      "updatedAt": "2026-09-08T08:16:03.803Z",
+      "telemetry": {
+        "inputTokens": 308,
+        "freshInputTokens": 308,
+        "cachedInputTokens": 0,
+        "cacheWriteTokens": null,
+        "outputTokens": 405,
+        "reasoningTokens": null,
+        "totalTokens": 713,
+        "cost": null,
+        "currency": null,
+        "elapsedMs": 90530
+      },
+      "audit": {
+        "schema": "agent-control.work-parcel-audit/v1",
+        "recordedAt": "2026-09-08T08:14:33.175Z",
+        "classification": "Frozen repository context review",
+        "selectedExecution": "Work Parcel",
+        "planningRationale": "Deterministic decomposition owned by repository-code-review definition",
+        "planner": {
+          "kind": "deterministic",
+          "provider": null,
+          "model": null
+        },
+        "alternatives": [],
+        "timeline": [
+          {
+            "id": "audit-89feb877-90a0-430f-b176-89c6d92692ae",
+            "at": "2026-09-08T08:14:33.175Z",
+            "type": "task.received",
+            "summary": "Frozen review chunk received",
+            "detail": "context-1-1fd21d023f12"
+          },
+          {
+            "id": "audit-721fef00-90bd-4290-96b2-71fcea4422a0",
+            "at": "2026-09-08T08:14:33.175Z",
+            "type": "route.resolved",
+            "stageId": "review",
+            "summary": "private-inference/default/gemma4-e2b-pixel@pixel",
+            "detail": "Qualification physical-qualification-pending; fallback false; purpose QUALIFICATION"
+          },
+          {
+            "id": "audit-2732f3f0-c6e5-4b7e-8656-540b6684aff4",
+            "at": "2026-09-08T08:14:33.181Z",
+            "type": "readiness.checked",
+            "stageId": "review",
+            "summary": "Governed retrieval unavailable; controlled frozen context retained",
+            "detail": "retrieval_disabled"
+          },
+          {
+            "id": "audit-0251e89e-f5ef-4291-b129-c6ad98d333b1",
+            "at": "2026-09-08T08:14:33.190Z",
+            "type": "invocation.started",
+            "stageId": "review",
+            "summary": "private-inference/default/gemma4-e2b-pixel@pixel provider invocation started",
+            "detail": "Thread repository-review:73ace0bb-ecf0-43af-8feb-a1f28056490c:1:context-1-1fd21d023f12; frozen context context-1-1fd21d023f12; structured schema agent-control.repository-review/v1; invocation profile provider-default"
+          },
+          {
+            "id": "audit-99c8dd5f-e976-4d91-a570-b801727e91ba",
+            "at": "2026-09-08T08:16:03.760Z",
+            "type": "invocation.completed",
+            "stageId": "review",
+            "summary": "private-inference/default/gemma4-e2b-pixel@pixel returned structured review output",
+            "detail": "Response sha256:0dfa2695cac12faf1c2bf02917fb92956a38f9f2eb8e4e2cf276d4728a0d78f3; finish stop"
+          },
+          {
+            "id": "audit-872cddd5-dd9e-458e-bcde-53e524fc7c0c",
+            "at": "2026-09-08T08:16:03.770Z",
+            "type": "verification.completed",
+            "stageId": "review",
+            "summary": "Independent quality gate accepted private-inference/gemma4-e2b-pixel",
+            "detail": "arithmetic-subtraction-v1; Identified subtraction instead of addition; evidence fixture:4068e892c255eeea0b66240003d18805b3dce9cb; unresolved none"
+          },
+          {
+            "id": "audit-954da2bf-3761-468f-b84b-70dba3d9eb42",
+            "at": "2026-09-08T08:16:03.803Z",
+            "type": "verification.completed",
+            "stageId": "review",
+            "summary": "Independent repository validation: PASS_WITH_FINDINGS",
+            "detail": "Parameterized Job validation accepted the consolidated repository-review result"
+          }
+        ],
+        "invocations": [
+          {
+            "id": "sha256:0dfa2695cac12faf1c2bf02917fb92956a38f9f2eb8e4e2cf276d4728a0d78f3",
+            "stageId": "review",
+            "runId": "73ace0bb-ecf0-43af-8feb-a1f28056490c",
+            "route": "direct-provider.repository-review",
+            "provider": "private-inference",
+            "accountProfileId": null,
+            "accountLabel": null,
+            "accountPlan": null,
+            "model": "gemma4-e2b-pixel",
+            "logicalRole": "review.default",
+            "registryModelId": "gemma4-e2b-pixel",
+            "providerModel": "google/gemma-4-E2B-it",
+            "qualificationVersion": "physical-qualification-pending",
+            "invocationProfile": null,
+            "node": "pixel",
+            "workloadNodeId": "controller",
+            "providerExecutionNodeId": "pixel",
+            "credentialNodeId": null,
+            "profile": "THIN",
+            "startedAt": "2026-09-08T08:14:33.230Z",
+            "completedAt": "2026-09-08T08:16:03.760Z",
+            "elapsedMs": 90530,
+            "requestDispatched": true,
+            "usageAuthority": "authoritative",
+            "inputTokens": 308,
+            "freshInputTokens": 308,
+            "cachedInputTokens": 0,
+            "cacheWriteTokens": null,
+            "outputTokens": 405,
+            "reasoningTokens": null,
+            "totalTokens": 713,
+            "providerReportedCost": null,
+            "calculatedCost": null,
+            "costBasis": "unavailable",
+            "currency": null,
+            "verifierResult": "PASS_WITH_FINDINGS",
+            "outcome": "stop"
+          }
+        ],
+        "totals": {
+          "models": [
+            "gemma4-e2b-pixel"
+          ],
+          "invocations": 1,
+          "inputTokens": 308,
+          "freshInputTokens": 308,
+          "cachedInputTokens": 0,
+          "cacheWriteTokens": null,
+          "outputTokens": 405,
+          "reasoningTokens": null,
+          "totalTokens": 713,
+          "providerReportedCost": null,
+          "calculatedCost": null,
+          "cost": null,
+          "costBasis": "unavailable",
+          "currency": null,
+          "modelExecutionMs": 90530,
+          "wallClockMs": 90585
+        }
+      },
+      "provenance": [
+        {
+          "at": "2026-09-08T08:14:33.175Z",
+          "type": "job-run",
+          "detail": "73ace0bb-ecf0-43af-8feb-a1f28056490c"
+        },
+        {
+          "at": "2026-09-08T08:14:33.175Z",
+          "type": "request-origin",
+          "detail": "dashboard:4dfe364c2767d7f454baafb2aa06335062b558eff14f09ee27dda10bb2fdaa40"
+        },
+        {
+          "at": "2026-09-08T08:14:33.175Z",
+          "type": "execution-mode",
+          "detail": "LIVE"
+        },
+        {
+          "at": "2026-09-08T08:14:33.175Z",
+          "type": "reviewed-sha",
+          "detail": "4068e892c255eeea0b66240003d18805b3dce9cb"
+        },
+        {
+          "at": "2026-09-08T08:14:33.175Z",
+          "type": "execution-locality",
+          "detail": "workload=controller;provider=pixel;credential=none"
+        },
+        {
+          "at": "2026-09-08T08:14:33.181Z",
+          "type": "retrieval.fallback",
+          "detail": "frozen-context"
+        },
+        {
+          "at": "2026-09-08T08:16:03.760Z",
+          "type": "provider-response",
+          "detail": "sha256:0dfa2695cac12faf1c2bf02917fb92956a38f9f2eb8e4e2cf276d4728a0d78f3"
+        },
+        {
+          "at": "2026-09-08T08:16:03.770Z",
+          "type": "quality-gate-passed",
+          "detail": "arithmetic-subtraction-v1:sha256:0dfa2695cac12faf1c2bf02917fb92956a38f9f2eb8e4e2cf276d4728a0d78f3"
+        },
+        {
+          "at": "2026-09-08T08:16:03.774Z",
+          "type": "provider-completed",
+          "detail": "Provider private-inference; model gemma4-e2b-pixel; structured review returned"
+        },
+        {
+          "at": "2026-09-08T08:16:03.803Z",
+          "type": "verification.completed",
+          "detail": "PASS_WITH_FINDINGS"
+        }
+      ],
+      "context": {
+        "schema": "agent-control.parcel-context/v1",
+        "active": {
+          "originalGoal": "Review frozen 4068e892c255eeea0b66240003d18805b3dce9cb context chunk context-1-1fd21d023f12",
+          "currentInterpretation": "Review frozen 4068e892c255eeea0b66240003d18805b3dce9cb context chunk context-1-1fd21d023f12",
+          "effectiveInstructions": [],
+          "constraints": [],
+          "plan": [
+            {
+              "id": "review",
+              "name": "Review context-1-1fd21d023f12",
+              "dependencies": [],
+              "state": "SUCCEEDED"
+            }
+          ],
+          "currentStageIds": [],
+          "unresolvedQuestionIds": [],
+          "approvalIds": [],
+          "updatedAt": "2026-09-08T08:16:03.803Z"
+        },
+        "events": [
+          {
+            "id": "context-event-b8916dfe-865a-4608-95fe-83ac2ac610ff",
+            "sequence": 1,
+            "at": "2026-09-08T08:14:33.175Z",
+            "type": "goal.recorded",
+            "summary": "Original goal recorded",
+            "detail": {
+              "actor": "parameterized-job:73ace0bb-ecf0-43af-8feb-a1f28056490c"
+            },
+            "tags": [
+              "goal"
+            ],
+            "evidence": [],
+            "previousHash": null,
+            "sha256": "603d97beecc9a2a33df0ca7bc656547007f5be6e6b938979adb72b944e715cdd"
+          },
+          {
+            "id": "context-event-6f3d5225-5c88-4a02-a167-df10b76aa92f",
+            "sequence": 2,
+            "at": "2026-09-08T08:14:33.175Z",
+            "type": "plan.recorded",
+            "summary": "1 governed stage(s) recorded",
+            "detail": {
+              "stageIds": [
+                "review"
+              ]
+            },
+            "tags": [
+              "plan"
+            ],
+            "evidence": [],
+            "previousHash": "603d97beecc9a2a33df0ca7bc656547007f5be6e6b938979adb72b944e715cdd",
+            "sha256": "6b90c4999f51457a00d3e0f1e7f53b4d941e3d89084a6385da579eb36ec76988"
+          }
+        ],
+        "questions": [],
+        "amendments": [],
+        "criteria": [],
+        "batonViews": [],
+        "metrics": {
+          "eventLedgerBytes": 753,
+          "latestBatonBytes": 0,
+          "latestBatonEstimatedTokens": 0,
+          "historicalBytesExcludedFromLatestBaton": 753,
+          "estimatedHistoricalTokensExcluded": 189,
+          "retrievals": 0,
+          "retrievedEvents": 0
+        }
+      },
+      "endedAt": "2026-09-08T08:16:03.774Z",
+      "decision": {
+        "outcome": "COMPLETE",
+        "title": "Why Agent Control completed",
+        "summary": "Every planned Job completed through the normal Agent Control verification boundary.",
+        "evidence": [
+          "Review context-1-1fd21d023f12: SUCCEEDED"
+        ],
+        "blockedStages": [],
+        "authority": "Agent Control"
+      }
+    },
+    {
+      "id": "parcel-4918e984-46d7-41a1-bcfa-8c10c224ed93",
+      "prompt": "Review the frozen arithmetic fixture. Explain why add(2, 3) returns the wrong answer, identify the exact faulty expression, and recommend a correction. Do not modify any files. Verify the finding. Run only on the experimental Pixel model; do not substitute another model.",
+      "objective": "Review the frozen arithmetic fixture. Explain why add(2, 3) returns the wrong answer, identify the exact faulty expression, and recommend a correction. Do not modify any files. Verify the finding. Run only on the experimental Pixel model; do not substitute another model.",
+      "actor": "web-operator",
+      "origin": {
+        "schema": "agent-control.request-origin/v1",
+        "channel": "dashboard",
+        "modality": "dashboard",
+        "receivedAt": "2026-09-08T08:14:32.973Z",
+        "authentication": "operator-token",
+        "actorId": "web-operator",
+        "authority": [
+          "parcel.create"
+        ],
+        "messageReference": "4dfe364c2767d7f454baafb2aa06335062b558eff14f09ee27dda10bb2fdaa40",
+        "identityReference": "d321dbf1aae2c81956d001d280043aff0f826b634a436c62a627ad74e161646a",
+        "request": "Review the frozen arithmetic fixture. Explain why add(2, 3) returns the wrong answer, identify the exact faulty expression, and recommend a correction. Do not modify any files. Verify the finding. Run only on the experimental Pixel model; do not substitute another model."
+      },
+      "attribution": {
+        "schema": "agent-control.work-attribution/v1",
+        "actorId": "legacy-actor:0b47759fbd15c5e0e33b",
+        "sessionId": "legacy-session:8c3dcee82eb7faa30d11",
+        "authority": [],
+        "createdAt": "2026-09-08T08:14:32.973Z",
+        "legacy": true
+      },
+      "executionMode": "LIVE",
+      "executionOwner": "work-parcel-coordinator",
+      "status": "SUCCEEDED",
+      "planner": {
+        "kind": "deterministic",
+        "reason": "Frozen qualification request"
+      },
+      "stages": [
+        {
+          "id": "review",
+          "name": "Pixel-backed arithmetic review",
+          "job": "experimental-review@1.0.0",
+          "dependsOn": [],
+          "parameters": {},
+          "requiredCapabilities": [],
+          "outputs": [],
+          "waitingQuestionIds": [],
+          "status": "SUCCEEDED",
+          "baton": {
+            "schema": "agent-control.work-parcel-baton/v2",
+            "id": "parcel-baton-36b70a8e-5679-4be2-85b3-56d742cfed8b",
+            "createdAt": "2026-09-08T08:16:03.844Z",
+            "sourceStageIds": [
+              "review"
+            ],
+            "objective": "Review the frozen arithmetic fixture. Explain why add(2, 3) returns the wrong answer, identify the exact faulty expression, and recommend a correction. Do not modify any files. Verify the finding. Run only on the experimental Pixel model; do not substitute another model.",
+            "currentInterpretation": "Review the frozen arithmetic fixture. Explain why add(2, 3) returns the wrong answer, identify the exact faulty expression, and recommend a correction. Do not modify any files. Verify the finding. Run only on the experimental Pixel model; do not substitute another model.",
+            "effectiveInstructions": [],
+            "constraints": [],
+            "successCriteria": [
+              {
+                "id": "criterion:stage:review",
+                "description": "Pixel-backed arithmetic review completes through its declared verification boundary",
+                "status": "PENDING"
+              }
+            ],
+            "completedStages": [],
+            "nextAction": "Continue with stages depending on Pixel-backed arithmetic review",
+            "artifactIds": [
+              "artifact-da3f04b5-c558-4396-bfef-1d28f0bd015e"
+            ],
+            "outputTypes": [
+              "application/json"
+            ],
+            "eventRefs": [
+              {
+                "id": "context-event-838268f6-7aae-4c1d-86bc-ad15ba05be4e",
+                "sequence": 1,
+                "type": "goal.recorded",
+                "summary": "Original goal recorded",
+                "sha256": "afdcb170578aed2b1bb8ebf681566d3673526a949d0a61c92cc06d9047bf4105"
+              },
+              {
+                "id": "context-event-75fb75f2-d296-4c42-86f5-9141f31bfd19",
+                "sequence": 2,
+                "type": "plan.recorded",
+                "summary": "1 governed stage(s) recorded",
+                "sha256": "9f4b833c138b0f7bb51b9eec1f22a7c339be8d04368b221670372ee671911b94"
+              },
+              {
+                "id": "context-event-5c2dd5bd-d4ac-49b6-95bd-681f8a3fc724",
+                "sequence": 3,
+                "type": "criterion.added",
+                "summary": "Pixel-backed arithmetic review completes through its declared verification boundary",
+                "sha256": "43aa619cd091fda1fcdeef4e01f30b4135db9572e0b6ca8ddd12edbbba3e058a"
+              },
+              {
+                "id": "context-event-533e9666-932a-4564-a186-ea151f65c7cf",
+                "sequence": 4,
+                "type": "baton.created",
+                "summary": "Bounded baton view created for review",
+                "sha256": "a84104acb4868ecbddec77e864866e612fecb08051991267dda777633d48b80b"
+              },
+              {
+                "id": "context-event-ccd63293-127d-44d4-bf4b-dc78b6826202",
+                "sequence": 5,
+                "type": "stage.started",
+                "summary": "Pixel-backed arithmetic review dispatched",
+                "sha256": "be11273b85b26c992dcaafe6cdaec1432c6b58173fb3380af3bd09a49c7f5e60"
+              }
+            ],
+            "unresolvedQuestions": [],
+            "approvals": [],
+            "previousBatonIds": [
+              "parcel-baton-d647d803-a9a5-489e-9fa9-12bfc108245a"
+            ],
+            "sizeBytes": 2550,
+            "estimatedTokens": 638,
+            "sha256": "94f6060d6e0afe2b666934675dd27547cb427bb2137ec52adda4ab2e177f8bf6"
+          },
+          "runId": "run-d6b77c07-a1e6-458b-b6e8-7cdfa5aa9bc3",
+          "startedAt": "2026-09-08T08:14:33.062Z",
+          "executor": "agent-control-job-runtime",
+          "actualRoute": {
+            "workers": [
+              "controller"
+            ],
+            "reason": "satisfies:qualification.review, healthy, available"
+          },
+          "endedAt": "2026-09-08T08:16:03.839Z"
+        }
+      ],
+      "context": {
+        "schema": "agent-control.parcel-context/v1",
+        "active": {
+          "originalGoal": "Review the frozen arithmetic fixture. Explain why add(2, 3) returns the wrong answer, identify the exact faulty expression, and recommend a correction. Do not modify any files. Verify the finding. Run only on the experimental Pixel model; do not substitute another model.",
+          "currentInterpretation": "Review the frozen arithmetic fixture. Explain why add(2, 3) returns the wrong answer, identify the exact faulty expression, and recommend a correction. Do not modify any files. Verify the finding. Run only on the experimental Pixel model; do not substitute another model.",
+          "effectiveInstructions": [],
+          "constraints": [],
+          "plan": [
+            {
+              "id": "review",
+              "name": "Pixel-backed arithmetic review",
+              "dependencies": [],
+              "state": "SUCCEEDED"
+            }
+          ],
+          "currentStageIds": [],
+          "unresolvedQuestionIds": [],
+          "approvalIds": [],
+          "updatedAt": "2026-09-08T08:16:03.847Z",
+          "currentRoute": "Workers controller; provider no model; account default; model no model; profile control action; satisfies:qualification.review, healthy, available",
+          "currentNode": "controller"
+        },
+        "events": [
+          {
+            "id": "context-event-838268f6-7aae-4c1d-86bc-ad15ba05be4e",
+            "sequence": 1,
+            "at": "2026-09-08T08:14:32.974Z",
+            "type": "goal.recorded",
+            "summary": "Original goal recorded",
+            "detail": {
+              "actor": "web-operator"
+            },
+            "tags": [
+              "goal"
+            ],
+            "evidence": [],
+            "previousHash": null,
+            "sha256": "afdcb170578aed2b1bb8ebf681566d3673526a949d0a61c92cc06d9047bf4105"
+          },
+          {
+            "id": "context-event-75fb75f2-d296-4c42-86f5-9141f31bfd19",
+            "sequence": 2,
+            "at": "2026-09-08T08:14:32.980Z",
+            "type": "plan.recorded",
+            "summary": "1 governed stage(s) recorded",
+            "detail": {
+              "stageIds": [
+                "review"
+              ],
+              "planner": "deterministic",
+              "interpretation": "Review the frozen arithmetic fixture. Explain why add(2, 3) returns the wrong answer, identify the exact faulty expression, and recommend a correction. Do not modify any files. Verify the finding. Run only on the experimental Pixel model; do not substitute another model."
+            },
+            "tags": [
+              "plan"
+            ],
+            "evidence": [],
+            "previousHash": "afdcb170578aed2b1bb8ebf681566d3673526a949d0a61c92cc06d9047bf4105",
+            "sha256": "9f4b833c138b0f7bb51b9eec1f22a7c339be8d04368b221670372ee671911b94"
+          },
+          {
+            "id": "context-event-5c2dd5bd-d4ac-49b6-95bd-681f8a3fc724",
+            "sequence": 3,
+            "at": "2026-09-08T08:14:32.981Z",
+            "type": "criterion.added",
+            "stageId": "review",
+            "summary": "Pixel-backed arithmetic review completes through its declared verification boundary",
+            "detail": {
+              "criterionId": "criterion:stage:review",
+              "kind": "STAGE_VERIFIED",
+              "source": "INFERRED",
+              "sourceActor": "agent-control-policy"
+            },
+            "tags": [
+              "criterion",
+              "stage_verified"
+            ],
+            "evidence": [],
+            "previousHash": "9f4b833c138b0f7bb51b9eec1f22a7c339be8d04368b221670372ee671911b94",
+            "sha256": "43aa619cd091fda1fcdeef4e01f30b4135db9572e0b6ca8ddd12edbbba3e058a"
+          },
+          {
+            "id": "context-event-533e9666-932a-4564-a186-ea151f65c7cf",
+            "sequence": 4,
+            "at": "2026-09-08T08:14:33.055Z",
+            "type": "baton.created",
+            "stageId": "review",
+            "summary": "Bounded baton view created for review",
+            "detail": {
+              "batonId": "parcel-baton-d647d803-a9a5-489e-9fa9-12bfc108245a",
+              "sha256": "cb15367e544fd383bf08eb21c1ef281ffdcf02590175b70fa038922b0ecab85f",
+              "sizeBytes": 2058,
+              "estimatedTokens": 515,
+              "selectedEventIds": [
+                "context-event-838268f6-7aae-4c1d-86bc-ad15ba05be4e",
+                "context-event-75fb75f2-d296-4c42-86f5-9141f31bfd19",
+                "context-event-5c2dd5bd-d4ac-49b6-95bd-681f8a3fc724"
+              ]
+            },
+            "tags": [
+              "baton"
+            ],
+            "evidence": [
+              "cb15367e544fd383bf08eb21c1ef281ffdcf02590175b70fa038922b0ecab85f"
+            ],
+            "previousHash": "43aa619cd091fda1fcdeef4e01f30b4135db9572e0b6ca8ddd12edbbba3e058a",
+            "sha256": "a84104acb4868ecbddec77e864866e612fecb08051991267dda777633d48b80b"
+          },
+          {
+            "id": "context-event-ccd63293-127d-44d4-bf4b-dc78b6826202",
+            "sequence": 5,
+            "at": "2026-09-08T08:14:33.062Z",
+            "type": "stage.started",
+            "stageId": "review",
+            "summary": "Pixel-backed arithmetic review dispatched",
+            "detail": {
+              "runId": "run-d6b77c07-a1e6-458b-b6e8-7cdfa5aa9bc3",
+              "job": "experimental-review@1.0.0",
+              "executor": "agent-control-job-runtime"
+            },
+            "tags": [
+              "stage"
+            ],
+            "evidence": [
+              "cb15367e544fd383bf08eb21c1ef281ffdcf02590175b70fa038922b0ecab85f"
+            ],
+            "previousHash": "a84104acb4868ecbddec77e864866e612fecb08051991267dda777633d48b80b",
+            "sha256": "be11273b85b26c992dcaafe6cdaec1432c6b58173fb3380af3bd09a49c7f5e60"
+          },
+          {
+            "id": "context-event-6513be70-bced-49d3-bed4-f552e2008ccf",
+            "sequence": 6,
+            "at": "2026-09-08T08:16:03.844Z",
+            "type": "baton.created",
+            "summary": "Bounded baton view created for next executor",
+            "detail": {
+              "batonId": "parcel-baton-36b70a8e-5679-4be2-85b3-56d742cfed8b",
+              "sha256": "94f6060d6e0afe2b666934675dd27547cb427bb2137ec52adda4ab2e177f8bf6",
+              "sizeBytes": 2550,
+              "estimatedTokens": 638,
+              "selectedEventIds": [
+                "context-event-838268f6-7aae-4c1d-86bc-ad15ba05be4e",
+                "context-event-75fb75f2-d296-4c42-86f5-9141f31bfd19",
+                "context-event-5c2dd5bd-d4ac-49b6-95bd-681f8a3fc724",
+                "context-event-533e9666-932a-4564-a186-ea151f65c7cf",
+                "context-event-ccd63293-127d-44d4-bf4b-dc78b6826202"
+              ]
+            },
+            "tags": [
+              "baton"
+            ],
+            "evidence": [
+              "94f6060d6e0afe2b666934675dd27547cb427bb2137ec52adda4ab2e177f8bf6"
+            ],
+            "previousHash": "be11273b85b26c992dcaafe6cdaec1432c6b58173fb3380af3bd09a49c7f5e60",
+            "sha256": "ca057de557f016fb5258bb8501fb832c9ec26c6565393fbdd8ad766dd65a38db"
+          },
+          {
+            "id": "context-event-18069b1c-ab9b-469c-9e80-74f4a23a3536",
+            "sequence": 7,
+            "at": "2026-09-08T08:16:03.839Z",
+            "type": "stage.completed",
+            "stageId": "review",
+            "summary": "Pixel-backed arithmetic review completed through verification",
+            "detail": {
+              "runId": "run-d6b77c07-a1e6-458b-b6e8-7cdfa5aa9bc3",
+              "artifactIds": [
+                "artifact-da3f04b5-c558-4396-bfef-1d28f0bd015e"
+              ],
+              "batonId": "parcel-baton-36b70a8e-5679-4be2-85b3-56d742cfed8b"
+            },
+            "tags": [
+              "stage",
+              "verified"
+            ],
+            "evidence": [
+              "94f6060d6e0afe2b666934675dd27547cb427bb2137ec52adda4ab2e177f8bf6",
+              "artifact-da3f04b5-c558-4396-bfef-1d28f0bd015e"
+            ],
+            "previousHash": "ca057de557f016fb5258bb8501fb832c9ec26c6565393fbdd8ad766dd65a38db",
+            "sha256": "2ae98a9bccc95a87bbbe0288ea57e98198a6e03f029adc123d89af75b0ae421c"
+          },
+          {
+            "id": "context-event-7876ddfd-2398-401b-b6c9-a7faa30598a2",
+            "sequence": 8,
+            "at": "2026-09-08T08:16:03.839Z",
+            "type": "criterion.evaluated",
+            "stageId": "review",
+            "summary": "Pixel-backed arithmetic review completes through its declared verification boundary: PASS",
+            "detail": {
+              "criterionId": "criterion:stage:review",
+              "status": "PASS",
+              "actor": "agent-control-verifier"
+            },
+            "tags": [
+              "criterion",
+              "pass"
+            ],
+            "evidence": [
+              "stage:review:verified",
+              "artifact-da3f04b5-c558-4396-bfef-1d28f0bd015e"
+            ],
+            "previousHash": "2ae98a9bccc95a87bbbe0288ea57e98198a6e03f029adc123d89af75b0ae421c",
+            "sha256": "27061b5872ce7bee999a550e2ea83d5c9ada3b7aa2cff6249671e68add4f2a7a"
+          }
+        ],
+        "questions": [],
+        "amendments": [],
+        "criteria": [
+          {
+            "id": "criterion:stage:review",
+            "kind": "STAGE_VERIFIED",
+            "description": "Pixel-backed arithmetic review completes through its declared verification boundary",
+            "source": "INFERRED",
+            "sourceActor": "agent-control-policy",
+            "stageId": "review",
+            "requiredEvidence": [
+              "stage:review:verified"
+            ],
+            "status": "PASS",
+            "evidence": [
+              "stage:review:verified",
+              "artifact-da3f04b5-c558-4396-bfef-1d28f0bd015e"
+            ],
+            "createdAt": "2026-09-08T08:14:32.981Z",
+            "evaluatedAt": "2026-09-08T08:16:03.839Z"
+          }
+        ],
+        "batonViews": [
+          {
+            "schema": "agent-control.work-parcel-baton/v2",
+            "id": "parcel-baton-d647d803-a9a5-489e-9fa9-12bfc108245a",
+            "createdAt": "2026-09-08T08:14:33.055Z",
+            "sourceStageIds": [],
+            "targetStageId": "review",
+            "objective": "Review the frozen arithmetic fixture. Explain why add(2, 3) returns the wrong answer, identify the exact faulty expression, and recommend a correction. Do not modify any files. Verify the finding. Run only on the experimental Pixel model; do not substitute another model.",
+            "currentInterpretation": "Review the frozen arithmetic fixture. Explain why add(2, 3) returns the wrong answer, identify the exact faulty expression, and recommend a correction. Do not modify any files. Verify the finding. Run only on the experimental Pixel model; do not substitute another model.",
+            "effectiveInstructions": [],
+            "constraints": [],
+            "successCriteria": [
+              {
+                "id": "criterion:stage:review",
+                "description": "Pixel-backed arithmetic review completes through its declared verification boundary",
+                "status": "PENDING"
+              }
+            ],
+            "completedStages": [],
+            "nextAction": "Execute Pixel-backed arithmetic review through experimental-review@1.0.0 and satisfy its declared verification boundary",
+            "artifactIds": [],
+            "outputTypes": [],
+            "eventRefs": [
+              {
+                "id": "context-event-838268f6-7aae-4c1d-86bc-ad15ba05be4e",
+                "sequence": 1,
+                "type": "goal.recorded",
+                "summary": "Original goal recorded",
+                "sha256": "afdcb170578aed2b1bb8ebf681566d3673526a949d0a61c92cc06d9047bf4105"
+              },
+              {
+                "id": "context-event-75fb75f2-d296-4c42-86f5-9141f31bfd19",
+                "sequence": 2,
+                "type": "plan.recorded",
+                "summary": "1 governed stage(s) recorded",
+                "sha256": "9f4b833c138b0f7bb51b9eec1f22a7c339be8d04368b221670372ee671911b94"
+              },
+              {
+                "id": "context-event-5c2dd5bd-d4ac-49b6-95bd-681f8a3fc724",
+                "sequence": 3,
+                "type": "criterion.added",
+                "summary": "Pixel-backed arithmetic review completes through its declared verification boundary",
+                "sha256": "43aa619cd091fda1fcdeef4e01f30b4135db9572e0b6ca8ddd12edbbba3e058a"
+              }
+            ],
+            "unresolvedQuestions": [],
+            "approvals": [],
+            "previousBatonIds": [],
+            "sizeBytes": 2058,
+            "estimatedTokens": 515,
+            "sha256": "cb15367e544fd383bf08eb21c1ef281ffdcf02590175b70fa038922b0ecab85f"
+          },
+          {
+            "schema": "agent-control.work-parcel-baton/v2",
+            "id": "parcel-baton-36b70a8e-5679-4be2-85b3-56d742cfed8b",
+            "createdAt": "2026-09-08T08:16:03.844Z",
+            "sourceStageIds": [
+              "review"
+            ],
+            "objective": "Review the frozen arithmetic fixture. Explain why add(2, 3) returns the wrong answer, identify the exact faulty expression, and recommend a correction. Do not modify any files. Verify the finding. Run only on the experimental Pixel model; do not substitute another model.",
+            "currentInterpretation": "Review the frozen arithmetic fixture. Explain why add(2, 3) returns the wrong answer, identify the exact faulty expression, and recommend a correction. Do not modify any files. Verify the finding. Run only on the experimental Pixel model; do not substitute another model.",
+            "effectiveInstructions": [],
+            "constraints": [],
+            "successCriteria": [
+              {
+                "id": "criterion:stage:review",
+                "description": "Pixel-backed arithmetic review completes through its declared verification boundary",
+                "status": "PENDING"
+              }
+            ],
+            "completedStages": [],
+            "nextAction": "Continue with stages depending on Pixel-backed arithmetic review",
+            "artifactIds": [
+              "artifact-da3f04b5-c558-4396-bfef-1d28f0bd015e"
+            ],
+            "outputTypes": [
+              "application/json"
+            ],
+            "eventRefs": [
+              {
+                "id": "context-event-838268f6-7aae-4c1d-86bc-ad15ba05be4e",
+                "sequence": 1,
+                "type": "goal.recorded",
+                "summary": "Original goal recorded",
+                "sha256": "afdcb170578aed2b1bb8ebf681566d3673526a949d0a61c92cc06d9047bf4105"
+              },
+              {
+                "id": "context-event-75fb75f2-d296-4c42-86f5-9141f31bfd19",
+                "sequence": 2,
+                "type": "plan.recorded",
+                "summary": "1 governed stage(s) recorded",
+                "sha256": "9f4b833c138b0f7bb51b9eec1f22a7c339be8d04368b221670372ee671911b94"
+              },
+              {
+                "id": "context-event-5c2dd5bd-d4ac-49b6-95bd-681f8a3fc724",
+                "sequence": 3,
+                "type": "criterion.added",
+                "summary": "Pixel-backed arithmetic review completes through its declared verification boundary",
+                "sha256": "43aa619cd091fda1fcdeef4e01f30b4135db9572e0b6ca8ddd12edbbba3e058a"
+              },
+              {
+                "id": "context-event-533e9666-932a-4564-a186-ea151f65c7cf",
+                "sequence": 4,
+                "type": "baton.created",
+                "summary": "Bounded baton view created for review",
+                "sha256": "a84104acb4868ecbddec77e864866e612fecb08051991267dda777633d48b80b"
+              },
+              {
+                "id": "context-event-ccd63293-127d-44d4-bf4b-dc78b6826202",
+                "sequence": 5,
+                "type": "stage.started",
+                "summary": "Pixel-backed arithmetic review dispatched",
+                "sha256": "be11273b85b26c992dcaafe6cdaec1432c6b58173fb3380af3bd09a49c7f5e60"
+              }
+            ],
+            "unresolvedQuestions": [],
+            "approvals": [],
+            "previousBatonIds": [
+              "parcel-baton-d647d803-a9a5-489e-9fa9-12bfc108245a"
+            ],
+            "sizeBytes": 2550,
+            "estimatedTokens": 638,
+            "sha256": "94f6060d6e0afe2b666934675dd27547cb427bb2137ec52adda4ab2e177f8bf6"
+          }
+        ],
+        "metrics": {
+          "eventLedgerBytes": 5283,
+          "latestBatonBytes": 2550,
+          "latestBatonEstimatedTokens": 638,
+          "historicalBytesExcludedFromLatestBaton": 2733,
+          "estimatedHistoricalTokensExcluded": 684,
+          "retrievals": 0,
+          "retrievedEvents": 0
+        }
+      },
+      "createdAt": "2026-09-08T08:14:32.974Z",
+      "updatedAt": "2026-09-08T08:16:03.847Z",
+      "telemetry": {
+        "inputTokens": null,
+        "freshInputTokens": null,
+        "cachedInputTokens": null,
+        "cacheWriteTokens": null,
+        "outputTokens": null,
+        "reasoningTokens": null,
+        "totalTokens": null,
+        "cost": null,
+        "currency": null,
+        "elapsedMs": 90873
+      },
+      "audit": {
+        "schema": "agent-control.work-parcel-audit/v1",
+        "recordedAt": "2026-09-08T08:14:32.979Z",
+        "classification": "Registered Job request",
+        "selectedExecution": "Work Parcel",
+        "planningRationale": "Frozen qualification request",
+        "planner": {
+          "kind": "deterministic",
+          "provider": null,
+          "model": null
+        },
+        "alternatives": [
+          {
+            "stageId": "review",
+            "candidate": "controller",
+            "eligible": true,
+            "reasons": [
+              "satisfies:qualification.review",
+              "healthy",
+              "available"
+            ]
+          },
+          {
+            "stageId": "review",
+            "candidate": "pixel",
+            "eligible": false,
+            "reasons": [
+              "missing:qualification.review"
+            ]
+          }
+        ],
+        "timeline": [
+          {
+            "id": "audit-1266c94d-723f-4c6d-a1b5-51f5dfe758a9",
+            "at": "2026-09-08T08:14:32.974Z",
+            "type": "task.received",
+            "summary": "Natural-language task accepted",
+            "detail": "Verbatim prompt retained before planning"
+          },
+          {
+            "id": "audit-91ba3aa0-eb9c-4ae1-9aad-d9644760970e",
+            "at": "2026-09-08T08:14:32.974Z",
+            "type": "task.classified",
+            "summary": "Task queued for governed planning",
+            "detail": "Registered Job selection remains authoritative"
+          },
+          {
+            "id": "audit-a6eb6407-5f49-40a2-8084-0a49fdf70a72",
+            "at": "2026-09-08T08:14:32.974Z",
+            "type": "target.resolving",
+            "summary": "Resolving target: Pixel 8 Pro",
+            "detail": "pixel"
+          },
+          {
+            "id": "audit-994cb1fb-034b-4ddc-9aed-26bbc4943040",
+            "at": "2026-09-08T08:14:32.974Z",
+            "type": "target.found",
+            "summary": "Target found",
+            "detail": "machine:pixel"
+          },
+          {
+            "id": "audit-20d719ff-09e1-433d-9555-c4e646ed5042",
+            "at": "2026-09-08T08:14:32.974Z",
+            "type": "readiness.checked",
+            "summary": "Execution state: AVAILABLE",
+            "detail": "Reachability: yes; Authentication: unknown; Capabilities: model.execute"
+          },
+          {
+            "id": "audit-89e08727-deed-4e72-889d-5934a8355b12",
+            "at": "2026-09-08T08:14:32.974Z",
+            "type": "planning.started",
+            "summary": "Selecting registered Job",
+            "detail": "Planner may only select Jobs present in the canonical catalog"
+          },
+          {
+            "id": "audit-a7dec961-72d3-45f9-898c-4ff8d56c77e3",
+            "at": "2026-09-08T08:14:32.979Z",
+            "type": "plan.selected",
+            "summary": "Work Parcel selected",
+            "detail": "Frozen qualification request"
+          },
+          {
+            "id": "audit-b0cd8a5c-c949-4dc5-8cce-7609a891325d",
+            "at": "2026-09-08T08:14:32.979Z",
+            "type": "route.requested",
+            "stageId": "review",
+            "summary": "Pixel-backed arithmetic review route requested",
+            "detail": "Normal Agent Control placement and routing policy"
+          },
+          {
+            "id": "audit-70d3cd6d-7f94-48ba-a994-b7e4c895971b",
+            "at": "2026-09-08T08:14:33.055Z",
+            "type": "baton.created",
+            "stageId": "review",
+            "summary": "Bounded operational baton view sealed",
+            "detail": "parcel-baton-d647d803-a9a5-489e-9fa9-12bfc108245a; sha256 cb15367e544fd383bf08eb21c1ef281ffdcf02590175b70fa038922b0ecab85f; 2058 bytes; full history remains in parcel ledger"
+          },
+          {
+            "id": "audit-c49a9eaf-8a2c-49be-8e86-164b64b2a6cc",
+            "at": "2026-09-08T08:14:33.062Z",
+            "type": "stage.dispatched",
+            "stageId": "review",
+            "summary": "Pixel-backed arithmetic review dispatched",
+            "detail": "Job experimental-review@1.0.0; Run run-d6b77c07-a1e6-458b-b6e8-7cdfa5aa9bc3; requested route Normal Agent Control placement and routing policy"
+          },
+          {
+            "id": "audit-27ebc121-e765-4ee0-9a4d-cc42225e2914",
+            "at": "2026-09-08T08:14:33.074Z",
+            "type": "route.resolved",
+            "stageId": "review",
+            "summary": "Pixel-backed arithmetic review actual route recorded",
+            "detail": "Workers controller; provider no model; account default; model no model; profile control action; satisfies:qualification.review, healthy, available"
+          }
+        ],
+        "invocations": [],
+        "totals": {
+          "models": [],
+          "invocations": 0,
+          "inputTokens": null,
+          "freshInputTokens": null,
+          "cachedInputTokens": null,
+          "cacheWriteTokens": null,
+          "outputTokens": null,
+          "reasoningTokens": null,
+          "totalTokens": null,
+          "providerReportedCost": null,
+          "calculatedCost": null,
+          "cost": null,
+          "costBasis": "unavailable",
+          "currency": null,
+          "modelExecutionMs": 0,
+          "wallClockMs": 90873
+        }
+      },
+      "provenance": [
+        {
+          "at": "2026-09-08T08:14:32.974Z",
+          "type": "submitted",
+          "detail": "Natural-language request durably accepted before planning"
+        },
+        {
+          "at": "2026-09-08T08:14:32.981Z",
+          "type": "planned",
+          "detail": "Registered stages selected; planner=deterministic"
+        },
+        {
+          "at": "2026-09-08T08:14:33.062Z",
+          "type": "stage.started",
+          "detail": "review:run-d6b77c07-a1e6-458b-b6e8-7cdfa5aa9bc3"
+        }
+      ],
+      "endedAt": "2026-09-08T08:16:03.847Z",
+      "decision": {
+        "outcome": "COMPLETE",
+        "title": "Why Agent Control completed",
+        "summary": "Every planned Job completed through the normal Agent Control verification boundary.",
+        "evidence": [
+          "Pixel-backed arithmetic review: SUCCEEDED"
+        ],
+        "blockedStages": [],
+        "authority": "Agent Control"
+      }
+    }
+  ],
+  "quality": [
+    {
+      "at": "2026-09-08T08:16:03.769Z",
+      "route": {
+        "requestedModel": "gemma4-e2b-pixel",
+        "requestedRole": "review.default",
+        "allowFallback": false,
+        "purpose": "QUALIFICATION",
+        "modelId": "gemma4-e2b-pixel",
+        "providerId": "private-inference",
+        "accountProfileId": null,
+        "accountLabel": null,
+        "accountPlan": null,
+        "accountPlanAuthority": null,
+        "accountQualification": null,
+        "accountAvailability": null,
+        "providerModel": "google/gemma-4-E2B-it",
+        "workloadNodeId": "controller",
+        "providerExecutionNodeId": "pixel",
+        "credentialNodeId": null,
+        "nodeId": "pixel",
+        "qualificationVersion": "physical-qualification-pending",
+        "fallback": false,
+        "fallbackReason": null,
+        "requiredCapabilities": [
+          "review.repository"
+        ],
+        "nativeCapabilities": [
+          "review.repository"
+        ],
+        "emulatedCapabilities": [],
+        "considered": [
+          {
+            "modelId": "gemma4-e2b-pixel",
+            "accountProfileId": null,
+            "workloadNodeId": "controller",
+            "providerExecutionNodeId": "pixel",
+            "credentialNodeId": null,
+            "nodeId": "pixel",
+            "eligible": true,
+            "reasons": [],
+            "capabilityAssessment": [
+              {
+                "capabilityId": "review.repository",
+                "satisfied": true,
+                "implementation": "NATIVE",
+                "observationId": "model-config:gemma4-e2b-pixel:physical-qualification-pending:review.repository",
+                "reason": "verified-native-capability"
+              }
+            ]
+          }
+        ]
+      },
+      "result": {
+        "accepted": true,
+        "code": "arithmetic-subtraction-v1",
+        "summary": "Identified subtraction instead of addition",
+        "evidence": [
+          "fixture:4068e892c255eeea0b66240003d18805b3dce9cb"
+        ],
+        "unresolvedCriteria": [],
+        "nextAction": "No fallback configured; preserve failure"
+      },
+      "responseHash": "sha256:0dfa2695cac12faf1c2bf02917fb92956a38f9f2eb8e4e2cf276d4728a0d78f3",
+      "output": {
+        "schema": "agent-control.repository-review/v1",
+        "executiveSummary": "The function `add` in `arithmetic.py` is incorrectly implemented; it performs subtraction instead of addition.",
+        "findings": [
+          {
+            "id": "FINDING_001",
+            "severity": "critical",
+            "title": "Incorrect function implementation: 'add' performs subtraction instead of addition.",
+            "category": "correctness",
+            "file": "arithmetic.py",
+            "startLine": 2,
+            "endLine": 2,
+            "evidence": "The function definition is `def add(a, b): return a - b`. The README states: \"The add function must return the sum of two integers.\"",
+            "reasoning": "The implementation contradicts the documented requirement that the function must return the sum of two integers. The operation performed is subtraction (`a - b`) instead of addition (`a + b`).",
+            "impact": "High. The function will produce incorrect results for addition operations.",
+            "suggestedRemediation": "Change line 2 from `return a - b` to `return a + b`.",
+            "confidence": 1,
+            "validation": {
+              "state": "VALID",
+              "reasons": []
+            }
+          }
+        ],
+        "positiveObservations": [
+          "The repository contains a README specifying the expected behavior of the `add` function."
+        ],
+        "areasReviewed": [
+          "arithmetic.py"
+        ],
+        "areasNotReviewed": [],
+        "verdict": "PASS_WITH_FINDINGS"
+      }
+    }
+  ],
+  "events": [
+    {
+      "id": 1,
+      "at": "2026-09-08T08:14:32.978Z",
+      "type": "work.parcel_created",
+      "actor": "web-operator",
+      "payload": {
+        "parcelId": "parcel-4918e984-46d7-41a1-bcfa-8c10c224ed93",
+        "status": "PLANNING",
+        "actorId": "legacy-actor:0b47759fbd15c5e0e33b",
+        "sessionId": "legacy-session:8c3dcee82eb7faa30d11"
+      }
+    },
+    {
+      "id": 2,
+      "at": "2026-09-08T08:14:33.061Z",
+      "type": "job.run_changed",
+      "actor": "job-runtime",
+      "payload": {
+        "runId": "run-d6b77c07-a1e6-458b-b6e8-7cdfa5aa9bc3",
+        "type": "run.created",
+        "status": "QUEUED"
+      }
+    },
+    {
+      "id": 3,
+      "at": "2026-09-08T08:14:33.072Z",
+      "type": "job.run_changed",
+      "actor": "job-runtime",
+      "payload": {
+        "runId": "run-d6b77c07-a1e6-458b-b6e8-7cdfa5aa9bc3",
+        "type": "step.dispatched",
+        "status": "RUNNING"
+      }
+    },
+    {
+      "id": 4,
+      "at": "2026-09-08T08:14:33.085Z",
+      "type": "job.run_changed",
+      "actor": "job-runtime",
+      "payload": {
+        "runId": "73ace0bb-ecf0-43af-8feb-a1f28056490c",
+        "status": "QUEUED",
+        "kind": "parameterized"
+      }
+    },
+    {
+      "id": 5,
+      "at": "2026-09-08T08:14:33.090Z",
+      "type": "job.run_changed",
+      "actor": "job-runtime",
+      "payload": {
+        "runId": "73ace0bb-ecf0-43af-8feb-a1f28056490c",
+        "status": "RESOLVING",
+        "kind": "parameterized"
+      }
+    },
+    {
+      "id": 6,
+      "at": "2026-09-08T08:14:33.167Z",
+      "type": "job.run_changed",
+      "actor": "job-runtime",
+      "payload": {
+        "runId": "73ace0bb-ecf0-43af-8feb-a1f28056490c",
+        "status": "RUNNING",
+        "kind": "parameterized"
+      }
+    },
+    {
+      "id": 7,
+      "at": "2026-09-08T08:14:33.174Z",
+      "type": "job.run_changed",
+      "actor": "job-runtime",
+      "payload": {
+        "runId": "73ace0bb-ecf0-43af-8feb-a1f28056490c",
+        "status": "RUNNING",
+        "kind": "parameterized"
+      }
+    },
+    {
+      "id": 8,
+      "at": "2026-09-08T08:14:33.210Z",
+      "type": "token.telemetry",
+      "actor": "token-runtime",
+      "payload": {
+        "threadId": "repository-review:73ace0bb-ecf0-43af-8feb-a1f28056490c:1:context-1-1fd21d023f12",
+        "parcelId": "parcel-810b3eab-6323-4cd9-ad1b-cd2a83ac202a"
+      }
+    },
+    {
+      "id": 9,
+      "at": "2026-09-08T08:14:33.213Z",
+      "type": "token.telemetry",
+      "actor": "token-runtime",
+      "payload": {
+        "threadId": "repository-review:73ace0bb-ecf0-43af-8feb-a1f28056490c:1:context-1-1fd21d023f12",
+        "parcelId": "parcel-810b3eab-6323-4cd9-ad1b-cd2a83ac202a"
+      }
+    },
+    {
+      "id": 10,
+      "at": "2026-09-08T08:14:33.218Z",
+      "type": "token.telemetry",
+      "actor": "token-runtime",
+      "payload": {
+        "threadId": "repository-review:73ace0bb-ecf0-43af-8feb-a1f28056490c:1:context-1-1fd21d023f12",
+        "parcelId": "parcel-810b3eab-6323-4cd9-ad1b-cd2a83ac202a"
+      }
+    },
+    {
+      "id": 11,
+      "at": "2026-09-08T08:16:03.758Z",
+      "type": "token.telemetry",
+      "actor": "token-runtime",
+      "payload": {
+        "threadId": "repository-review:73ace0bb-ecf0-43af-8feb-a1f28056490c:1:context-1-1fd21d023f12",
+        "parcelId": "parcel-810b3eab-6323-4cd9-ad1b-cd2a83ac202a"
+      }
+    },
+    {
+      "id": 12,
+      "at": "2026-09-08T08:16:03.783Z",
+      "type": "job.run_changed",
+      "actor": "job-runtime",
+      "payload": {
+        "runId": "73ace0bb-ecf0-43af-8feb-a1f28056490c",
+        "status": "RUNNING",
+        "kind": "parameterized"
+      }
+    },
+    {
+      "id": 13,
+      "at": "2026-09-08T08:16:03.793Z",
+      "type": "job.run_changed",
+      "actor": "job-runtime",
+      "payload": {
+        "runId": "73ace0bb-ecf0-43af-8feb-a1f28056490c",
+        "status": "RUNNING",
+        "kind": "parameterized"
+      }
+    },
+    {
+      "id": 14,
+      "at": "2026-09-08T08:16:03.801Z",
+      "type": "job.run_changed",
+      "actor": "job-runtime",
+      "payload": {
+        "runId": "73ace0bb-ecf0-43af-8feb-a1f28056490c",
+        "status": "VALIDATING",
+        "kind": "parameterized"
+      }
+    },
+    {
+      "id": 15,
+      "at": "2026-09-08T08:16:03.822Z",
+      "type": "job.run_changed",
+      "actor": "job-runtime",
+      "payload": {
+        "runId": "73ace0bb-ecf0-43af-8feb-a1f28056490c",
+        "status": "SUCCEEDED_WITH_FINDINGS",
+        "kind": "parameterized"
+      }
+    },
+    {
+      "id": 16,
+      "at": "2026-09-08T08:16:03.834Z",
+      "type": "job.run_changed",
+      "actor": "job-runtime",
+      "payload": {
+        "runId": "run-d6b77c07-a1e6-458b-b6e8-7cdfa5aa9bc3",
+        "type": "step.verifying",
+        "status": "VERIFYING"
+      }
+    },
+    {
+      "id": 17,
+      "at": "2026-09-08T08:16:03.839Z",
+      "type": "job.run_changed",
+      "actor": "job-runtime",
+      "payload": {
+        "runId": "run-d6b77c07-a1e6-458b-b6e8-7cdfa5aa9bc3",
+        "type": "step.succeeded",
+        "status": "VERIFYING"
+      }
+    },
+    {
+      "id": 18,
+      "at": "2026-09-08T08:16:03.842Z",
+      "type": "job.run_changed",
+      "actor": "job-runtime",
+      "payload": {
+        "runId": "run-d6b77c07-a1e6-458b-b6e8-7cdfa5aa9bc3",
+        "type": "run.finished",
+        "status": "SUCCEEDED"
+      }
+    }
+  ],
+  "observation": "Terminal execution observed",
+  "sourceCommit": "b3d913d7a1f9007ff6babf218d3de1305b3bb640",
+  "fixtureUnchanged": true,
+  "routingEligible": false
+}

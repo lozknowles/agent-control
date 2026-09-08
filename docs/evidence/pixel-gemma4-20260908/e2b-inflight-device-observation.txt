@@ -1,0 +1,24 @@
+Tue Sep  8 08:26:11 UTC 2026
+5.09.575.260 I srv    operator(): operator(): cleaning up before exit...
+warning: no usable GPU found, --gpu-layers option will be ignored
+warning: one possible reason is that llama.cpp was compiled without GPU support
+warning: consult docs/build.md for compilation instructions
+0.00.042.183 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+0.00.045.193 W srv  llama_server: -----------------
+0.00.045.241 W srv  llama_server: CORS is set to allow all origins ('*') and no API key is set
+0.00.045.247 W srv  llama_server: this can be a security risk (cross-origin attacks)
+0.00.045.251 W srv  llama_server: more info: https://github.com/ggml-org/llama.cpp/pull/25655
+0.00.045.255 W srv  llama_server: -----------------
+0.00.047.731 I srv    load_model: loading model '/data/data/com.termux/files/home/.cache/ac-pixel-gemma4-20260908/models/gemma-4-E2B-it-Q4_0.gguf'
+0.02.597.140 W load: control-looking token:     50 '<|tool_response>' was not control-type; this is probably a bug in the model. its type will be overridden
+0.02.608.246 W load: control-looking token:    212 '</s>' was not control-type; this is probably a bug in the model. its type will be overridden
+0.02.662.002 W load: special_eog_ids contains '<|tool_response>', removing '</s>' token from EOG list
+0.06.792.260 I cmn          init: llama threadpool init, n_threads = 4
+0.07.392.021 I srv    load_model: initializing, n_slots = 1, n_ctx_slot = 4096, kv_unified = 'false'
+0.07.431.638 I srv  llama_server: model loaded
+0.07.431.680 I srv  llama_server: listening on http://127.0.0.1:19084
+0.55.099.054 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = -1
+0.55.106.514 I slot launch_slot_: id  0 | task 0 | processing task, is_child = 0
+1.00.109.202 W srv          stop: cancel task, id_task = 0
+1.02.167.310 I slot      release: id  0 | task 0 | stop processing: n_tokens = 304, truncated = 0
+{"pid":1851,"startTicks":"1301311","binary":"/data/data/com.termux/files/home/.cache/ac-pixel-gemma4-20260908/llama.cpp/build-pixel/bin/llama-server","args":["--model","/data/data/com.termux/files/home/.cache/ac-pixel-gemma4-20260908/models/gemma-4-E2B-it-Q4_0.gguf","--alias","google/gemma-4-E2B-it","--host","127.0.0.1","--port","19084","--ctx-size","4096","--threads","4","--threads-batch","4","--parallel","1","--n-gpu-layers","0","--jinja","--reasoning","off"],"startedAt":"2026-09-08T08:24:38.089Z","identityMatches":true,"status":"Name:\tllama-server\nUmask:\t0077\nState:\tS (sleeping)\nTgid:\t1851\nNgid:\t0\nPid:\t1851\nPPid:\t1\nTracerPid:\t0\nUid:\t10438\t10438\t10438\t10438\nGid:\t10438\t10438\t10438\t10438\nFDSize:\t64\nGroups:\t3003 9997 20438 50438 \nVmPeak:\t15929260 kB\nVmSize:\t15929260 kB\nVmLck:\t       0 kB\nVmPin:\t       0 kB\nVmHWM:\t 2958120 kB\nVmRSS:\t 2272040 kB\nRssAnon:\t 1594228 kB\nRssFile:\t  677508 kB\nRssShmem:\t     304 kB\nVmData:\t 1826956 kB\nVmStk:\t     136 kB\nVmExe:\t       4 kB\nVmLib:\t   25428 kB\nVmPTE:\t    9040 kB\nVmSwap:\t   79040 kB\nCoreDumping:\t0\nTHP_enabled:\t1\nThreads:\t16\nSigQ:\t0/41614\nSigPnd:\t0000000000000000\nShdPnd:\t0000000000000000\nSigBlk:\t0000000080000000\nSigIgn:\t0000002000001000\nSigCgt:\t0000004c4000c4fa\nCapInh:\t0000000000000000\nCapPrm:\t0000000000000000\nCapEff:\t0000000000000000\nCapBnd:\t0000000000000000\nCapAmb:\t0000000000000000\nNoNewPrivs:\t0\nSeccomp:\t2\nSeccomp_filters:\t1\nSpeculation_Store_Bypass:\tthread vulnerable\nSpeculationIndirectBranch:\tunknown\nCpus_allowed:\t0ff\nCpus_allowed_list:\t0-7\nMems_allowed:\t1\nMems_allowed_list:\t0\nvoluntary_ctxt_switches:\t796\nnonvoluntary_ctxt_switches:\t3402\n"}

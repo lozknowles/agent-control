@@ -1,0 +1,8 @@
+{
+  "at": 1788856111.434606,
+  "pid": 1122730,
+  "startTicks": "25237697",
+  "phase": "after healthy preflight; before dashboard submission",
+  "action": "SIGTERM owned private SSH forward only",
+  "fallbackAllowed": false
+}

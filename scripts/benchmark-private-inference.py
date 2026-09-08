@@ -21,7 +21,7 @@ def verify(task,out,stem):
         src=root/(stem+'.py'); src.write_text(out)
         check="import runpy\nf=runpy.run_path('/candidate.py')['unique_sorted']\nfor v in [[],[3,1,3,2],[-3,0,-3,2],[7,7]]:\n old=v.copy(); result=f(v); assert result==sorted(set(v)); assert v==old; assert result is not v\nprint('PASS: four cases and input preservation')\n"
         test=root/'check.py'; test.write_text(check)
-        cmd=['prlimit','--as=536870912','--cpu=3','--','bwrap','--unshare-all','--die-with-parent','--new-session','--ro-bind','/usr','/usr','--ro-bind','/lib','/lib','--ro-bind','/lib64','/lib64','--proc','/proc','--dev','/dev','--tmpfs','/tmp','--ro-bind',str(src.resolve()),'/candidate.py','--ro-bind',str(test.resolve()),'/check.py','/usr/bin/python3','-I','/check.py']
+        cmd=['prlimit','--as=536870912','--cpu=3','--','bwrap','--clearenv','--setenv','PATH','/usr/bin:/bin','--unshare-all','--die-with-parent','--new-session','--ro-bind','/usr','/usr','--ro-bind','/lib','/lib','--ro-bind','/lib64','/lib64','--proc','/proc','--dev','/dev','--tmpfs','/tmp','--ro-bind',str(src.resolve()),'/candidate.py','--ro-bind',str(test.resolve()),'/check.py','/usr/bin/python3','-I','/check.py']
         try:
             r=subprocess.run(cmd,capture_output=True,text=True,timeout=5)
             return {'passed':r.returncode==0,'method':'network and filesystem isolated bubblewrap Python execution','exit':r.returncode,'stdout':r.stdout,'stderr':r.stderr}

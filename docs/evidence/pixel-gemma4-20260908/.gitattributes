@@ -1,1 +1,3 @@
+# Preserve immutable input and product-generated transcript bytes.
 frozen-suite.json -text
+*/transcript.md -text -whitespace
