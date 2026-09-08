@@ -1,4 +1,4 @@
-import {createHash, timingSafeEqual} from 'node:crypto';
+import {createHash, randomUUID, timingSafeEqual} from 'node:crypto';
 import fs from 'node:fs';
 import http, {type IncomingMessage, type ServerResponse} from 'node:http';
 import path from 'node:path';
@@ -11,6 +11,7 @@ import {ConfigurationStore} from './configuration-store.js';
 import {ParameterizedJobError} from './parameterized-job-registry.js';
 import type {OpenWAAdapter} from './openwa.js';
 import type {SocialVoiceCoordinator} from './social-voice.js';
+import {governedRequestOrigin} from './request-origin.js';
 import {redactSensitiveText} from './security-redaction.js';
 import type {AdaptiveEvidenceKind, AdaptiveLeagueFilter} from './adaptive-orchestration.js';
 import type {ExecutionSessionMode, ExecutionSessionSignal} from './execution-session.js';
@@ -233,7 +234,17 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
       return json(response, 200, result);
     }
     if (jobMatch?.[2] === 'run') return json(response, 201, service.createJobRun(decodeURIComponent(jobMatch[1]), body.parameters && typeof body.parameters === 'object' && !Array.isArray(body.parameters) ? body.parameters as Record<string, unknown> : {}, actor));
-    if (url.pathname === '/api/parcels') return json(response, 201, await service.submitNaturalTask(String(body.prompt ?? ''), actor));
+    if (url.pathname === '/api/parcels') {
+      const prompt = String(body.prompt ?? ''), receivedAt = new Date().toISOString();
+      const origin = governedRequestOrigin({
+        channel: 'dashboard', modality: 'dashboard', receivedAt,
+        authentication: 'operator-token', actorId: actor, authority: ['parcel.create'],
+        messageReference: createHash('sha256').update(randomUUID()).digest('hex'),
+        identityReference: createHash('sha256').update(`dashboard:${actor}`).digest('hex'),
+        request: prompt,
+      });
+      return json(response, 201, await service.submitNaturalTask(prompt, actor, origin));
+    }
     if (capabilityCandidateMatch && !capabilityCandidateMatch[1]) return json(response, 201, service.discoverCapability({id: typeof body.id === 'string' ? body.id : undefined, title: String(body.title ?? ''), source: String(body.source ?? ''), providerRuntime: String(body.providerRuntime ?? ''), claimedCapability: String(body.claimedCapability ?? ''), whyItMatters: String(body.whyItMatters ?? ''), agentControlEquivalent: String(body.agentControlEquivalent ?? ''), evidence: Array.isArray(body.evidence) ? body.evidence.map(String) : []}, actor));
     if (capabilityCandidateMatch?.[1]) return json(response, 200, service.transitionCapability(decodeURIComponent(capabilityCandidateMatch[1]), {to: String(body.to ?? '') as never, reason: String(body.reason ?? ''), classification: typeof body.classification === 'string' ? body.classification as never : undefined, experiment: typeof body.experiment === 'string' ? body.experiment : undefined, measuredOutcome: typeof body.measuredOutcome === 'string' ? body.measuredOutcome : undefined, finalDecision: typeof body.finalDecision === 'string' ? body.finalDecision : undefined, evidence: Array.isArray(body.evidence) ? body.evidence.map(String) : []}, actor));
     if (url.pathname === '/api/model-evaluations') return json(response, 201, service.queueModelEvaluation(Array.isArray(body.modelIds) ? body.modelIds.map(String) : [], String(body.reason ?? 'Operator requested frozen qualification'), actor));

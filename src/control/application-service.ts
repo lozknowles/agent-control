@@ -407,13 +407,13 @@ export class AgentControlService {
   adaptiveDecision(id: string) { if (!this.adaptiveOrchestration) throw new Error('adaptive_orchestration_unconfigured'); return this.adaptiveOrchestration.decision(id); }
   adaptiveReport(id: string) { if (!this.adaptiveOrchestration) throw new Error('adaptive_orchestration_unconfigured'); return this.adaptiveOrchestration.report(id); }
   adaptiveParcelReport(id: string) { const parcel = this.parcel(id), decisionId = parcel.audit.orchestrationDecisionId; if (!decisionId) throw new Error('adaptive_decision_missing'); return this.adaptiveReport(decisionId); }
-  async submitNaturalTask(prompt: string, actor: string) {
+  async submitNaturalTask(prompt: string, actor: string, origin?: import('./request-origin.js').GovernedRequestOrigin) {
     let attribution: WorkAttribution;
     if (this.identity && this.defaultSessionId) {
       this.identity.authorize(this.defaultSessionId, actor, 'parcel.create');
       attribution = {schema: 'agent-control.work-attribution/v1', actorId: actor, sessionId: this.defaultSessionId, authority: this.identity.session(this.defaultSessionId).participants.find(value => value.actorId === actor)?.capabilities ?? [], createdAt: new Date().toISOString(), legacy: false};
     } else attribution = legacyAttribution(actor, `parcel-pending:${prompt}`);
-    let parcel = this.mustWorkParcels().accept(prompt, actor, this.systems(), attribution);
+    let parcel = this.mustWorkParcels().accept(prompt, actor, this.systems(), attribution, origin);
     const finalAttribution: WorkAttribution = {...attribution, parcelId: parcel.id}; parcel.attribution = finalAttribution; parcel = this.mustWorkParcels().store.update(parcel);
     this.events.emit('work.parcel_created', {parcelId: parcel.id, status: parcel.status, actorId: finalAttribution.actorId, sessionId: finalAttribution.sessionId}, undefined, actor); return parcel;
   }
