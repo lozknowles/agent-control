@@ -117,6 +117,7 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   }
 
   if (method === 'GET' && url.pathname === '/api/status') return json(response, 200, service.snapshot());
+  if(method==='GET'&&url.pathname==='/api/poe/regression'){validateOperatorRequest(request,options);return json(response,200,service.poeRegression());}
   if(method==='GET'&&url.pathname==='/api/poe/knowledge'){validateOperatorRequest(request,options);return json(response,200,service.poeKnowledge());}
   const knowledgeSource=url.pathname.match(/^\/api\/poe\/knowledge\/sources\/([^/]+)$/);if(method==='GET'&&knowledgeSource){validateOperatorRequest(request,options);return json(response,200,service.poeKnowledgeSource(decodeURIComponent(knowledgeSource[1])));}
   const greetingMatch=url.pathname.match(/^\/api\/poe\/conversations\/([^/]+)\/greeting$/);if(method==='POST'&&greetingMatch){validateOrigin(request,options);validateOperatorRequest(request,options);return json(response,200,service.greetPoe(decodeURIComponent(greetingMatch[1]),'web-operator'));}

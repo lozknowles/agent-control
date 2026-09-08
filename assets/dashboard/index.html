@@ -25,6 +25,7 @@
     <div class="persistent-usage-heading"><span><b>Live usage</b><small>Authoritative values where available</small></span><label for="persistent-usage-select">Run, thread or lane<select id="persistent-usage-select" aria-label="Select run, token thread or lane telemetry"><option value="">Awaiting telemetry</option></select></label></div>
     <div id="persistent-usage-summary" class="persistent-usage-summary"><span class="usage-awaiting">Waiting for an Agent Control snapshot.</span></div>
   </section>
+  <section id="poe-regression-progress" class="poe-regression-progress" aria-label="Live regression progress" aria-live="polite" hidden></section>
   <main id="lanes-workspace" class="shell" hidden>
     <aside class="lanes-panel panel">
       <div class="panel-heading"><div><span class="eyebrow">Control plane</span><h1>Lanes</h1></div><span id="lane-count" class="count">0</span></div>
@@ -140,13 +141,13 @@
       <section class="crew-vocabulary" aria-labelledby="crew-vocabulary-title"><h3 id="crew-vocabulary-title">Supported state vocabulary</h3><div id="crew-state-vocabulary" class="crew-state-chips"></div></section>
     </section>
   </main>
-  <button id="poe-launcher" type="button" class="button poe-launcher" aria-controls="poe-workspace" aria-expanded="false">Talk to POE</button>
+  <button id="poe-launcher" type="button" class="button poe-launcher" aria-controls="poe-workspace" aria-expanded="false" aria-label="Talk to POE. Use arrow keys to reposition the companion."><span id="poe-pet-art" aria-hidden="true"></span><span id="poe-pet-state">IDLE</span><span>Talk to POE</span></button><p id="poe-pet-bubble" role="status" hidden></p>
   <main id="poe-workspace" class="poe-shell" hidden>
     <aside class="panel poe-residence">
-      <div class="poe-room" aria-hidden="true"><div class="poe-window"></div><div id="poe-character" class="poe-character" data-state="IDLE"><svg viewBox="0 0 300 390" role="img" aria-label="POE, an original moustached digital hotelier in a dark waistcoat" xmlns="http://www.w3.org/2000/svg">
+      <div class="poe-room" aria-hidden="true"><div class="poe-window"></div><div id="poe-character" class="poe-character" data-state="IDLE"><svg viewBox="0 0 300 440" role="img" aria-label="POE, an original moustached digital hotelier in a dark waistcoat" xmlns="http://www.w3.org/2000/svg">
 <defs><linearGradient id="poe-waistcoat" x2="1" y2="1"><stop stop-color="#42404a"/><stop offset="1" stop-color="#161a24"/></linearGradient><linearGradient id="poe-skin" x2="1" y2="1"><stop stop-color="#e9bc94"/><stop offset="1" stop-color="#b78162"/></linearGradient></defs>
 <ellipse cx="151" cy="367" rx="106" ry="12" fill="#080c11" opacity=".6"/>
-<g class="poe-body"><path d="M99 198 Q68 207 58 252 L55 335 93 346 108 261M201 198 Q232 207 242 252 L245 335 207 346 192 261" fill="#d7d1c4" stroke="#a19b90" stroke-width="2"/>
+<g class="poe-body"><path d="M105 337L102 411 139 411 152 350 166 411 201 411 196 337Z" fill="#232630"/><path d="M101 402L139 404 143 420 86 420Q83 407 101 402M166 404L200 402Q220 406 220 420H164Z" fill="#141920"/><path d="M99 198 Q68 207 58 252 L55 335 93 346 108 261M201 198 Q232 207 242 252 L245 335 207 346 192 261" fill="#d7d1c4" stroke="#a19b90" stroke-width="2"/>
 <path d="M109 186L192 186 212 347Q153 370 87 347Z" fill="url(#poe-waistcoat)" stroke="#747079" stroke-width="2"/>
 <path d="M109 184L150 242 192 184 170 191 150 205 129 191Z" fill="#f0e9dc"/>
 <path d="M141 209L158 209 167 240 151 259 137 240Z" fill="#743b44" stroke="#bd7b72"/>
@@ -173,17 +174,17 @@
       <div class="poe-audio-controls"><button id="poe-interrupt" class="button warning" type="button" disabled>Stop speaking</button><button id="poe-close" class="button secondary" type="button">Close panel</button><button id="poe-enable-audio" class="button secondary" type="button">Enable audio</button><button id="poe-play-reply" class="button secondary" type="button" hidden>Play reply</button></div><p id="poe-audio-message" role="status">Typed conversation is available. Enable audio to hear OmniVoice replies.</p><p id="poe-audio-caption" class="poe-caption"></p>
     </aside>
     <section class="panel poe-conversation-panel">
-      <header class="poe-heading"><div><span class="eyebrow">Grounded conversation</span><small class="poe-route" id="poe-reasoning-route"></small><h2 id="poe-conversation-title">Conversation</h2></div><div><button id="poe-new-conversation" class="button secondary" type="button">New conversation</button><button id="poe-download-transcript" class="button secondary" type="button">Transcript</button></div></header>
-      <div id="poe-reference" class="poe-reference" hidden></div>
+      <header class="poe-heading"><div><span class="eyebrow">Grounded conversation</span><small class="poe-route" id="poe-reasoning-route"></small><h2 id="poe-conversation-title">Conversation</h2></div><div><button id="poe-new-conversation" class="button secondary" type="button">New conversation</button><button id="poe-expand" class="button secondary" type="button" aria-pressed="false">Expand</button><button id="poe-download-transcript" class="button secondary" type="button">Transcript</button></div></header>
+      <div class="poe-tour-controls"><button id="poe-tour-start" class="text-button" type="button">Introduce POE and show me Agent Control</button><button id="poe-tour-next" type="button" class="text-button" hidden>Next feature</button><button id="poe-tour-retry" class="button secondary" type="button" hidden>Retry narration</button><button id="poe-tour-stop" type="button" class="text-button" hidden>End tour</button><span id="poe-tour-position"></span><button id="poe-narrate-tests" type="button" class="text-button" aria-pressed="false">Narrate test progress</button></div><div id="poe-reference" class="poe-reference" hidden></div>
       <ol id="poe-turns" class="poe-turns" aria-live="polite"></ol>
       <form id="poe-form" class="poe-form"><label for="poe-input">Ask POE</label><textarea id="poe-input" rows="3" placeholder="Ask what Agent Control knows, why it routed work, or whether a fair experiment would answer your question." required></textarea><div><small>POE can explain and propose. Consequential work still requires an approved Work Parcel.</small><button id="poe-speak" class="button secondary" type="button" disabled>Hold to speak</button><button class="button" type="submit">Ask</button></div></form>
     </section>
-    <aside class="panel poe-benchmark-panel">
+    <details id="poe-extra"><summary>Jobs, schedules, approvals &amp; evidence</summary><aside class="panel poe-benchmark-panel">
       <div class="panel-heading"><div><span class="eyebrow">Approval-gated experiment design</span><h2>Benchmark proposals</h2></div><span id="poe-proposal-count" class="count">0</span></div>
       <p class="poe-benchmark-note">A draft does nothing. Freeze seals conditions; approval submits registered Jobs through a normal Work Parcel.</p>
       <details class="poe-builder"><summary>Design a benchmark</summary><form id="poe-benchmark-form"><label>Decision<textarea id="poe-benchmark-decision" rows="2" required placeholder="Which route should handle bounded repository reviews?"></textarea></label><label>Objective<textarea id="poe-benchmark-objective" rows="2" required></textarea></label><label>Why new evidence is needed<textarea id="poe-benchmark-reason" rows="2" required></textarea></label><label>Conditions, stages and metrics (validated JSON)<textarea id="poe-benchmark-json" rows="16" spellcheck="false" required></textarea></label><button class="button" type="submit">Create draft</button></form></details>
       <p id="poe-batch-summary" class="poe-benchmark-note"></p><div id="poe-handover-list"></div><details id="poe-source-details"><summary>Selected knowledge source</summary><pre id="poe-source-text"></pre></details><div id="poe-job-proposals" class="poe-proposals"></div><details id="poe-catalogue" class="poe-builder"></details><details id="poe-schedules" class="poe-builder"></details><div id="poe-proposals" class="poe-proposals"></div>
-    </aside>
+    </aside></details>
   </main>
   <main id="configuration-workspace" class="configuration-shell" hidden>
     <aside class="panel configuration-list-panel">
