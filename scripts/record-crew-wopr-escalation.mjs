@@ -265,7 +265,7 @@ try {
     // WhatsApp delivery can legitimately lag after a handset/network wake. Keep
     // the physical listener alive long enough for the gateway's bounded retry
     // window; this still fails closed and never substitutes a synthetic event.
-    taskPhase = await waitPhase('TASK_RECEIVED', operatorAssisted ? 60 * 60_000 : 180_000);
+    taskPhase = await waitPhase('TASK_RECEIVED', operatorAssisted ? 240 * 60_000 : 180_000);
     await page.waitForFunction(() => /start governed-adaptive-crew|governed adaptive crew/i.test(document.querySelector('#work-parcel-list')?.textContent || document.body.textContent || ''), undefined, {timeout: 15_000});
     screenshots.push(await screenshot(page, '02-authenticated-social-work-parcel-request.png'));
     journey.push({at: new Date().toISOString(), view: 'jobs', outcome: 'real enrolled-device OpenWA command accepted through SocialVoiceCoordinator and shown as a live Work Parcel'});
