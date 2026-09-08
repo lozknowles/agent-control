@@ -432,7 +432,7 @@ async function main() {
   parameterizedJobs.savedJobs.create({id: 'crew-wopr-quality-review', name: 'Crew/WOPR quality-escalation review', definition: {id: 'repository-code-review', version: 1, follow: 'pinned'}, parameters: {node: 'controller', repository: fixture.repository, ref: fixture.commit, scope: 'full'}, routing: {model: SOURCE_MODEL_ID, allowFallback: false}, contextProfile: 'THIN', budgets: {timeoutMinutes: 4, maximumRetries: 0, maximumInputTokens: 12_000, maximumOutputTokens: 1_800}, concurrency: 'forbid-overlap', enabled: true});
 
   const state: WorkspaceState = {version: 1, paused: false, lastRestorePoint: null, lanes: []};
-  const control = new AgentControlService(state, new PtyRegistry(), undefined, '4.0.0-rc.1', () => {}).configureProjection({
+  const control = new AgentControlService(state, new PtyRegistry(), undefined, '4.0.0', () => {}).configureProjection({
     jobRuntime: runtime,
     workParcels: parcels,
     modelRegistry: registry,

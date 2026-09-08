@@ -1,6 +1,6 @@
 # Changelog
 
-## [4.0.0-rc.1] — 2026-09-07 (release candidate; not released)
+## [4.0.0] — 2026-09-08
 
 - Integrates the governed Social & Voice/OpenWA ingress, canonical Work Parcel, adaptive Model/Workflow Leagues, token governor, sealed-baton handoff, independent verification, protected-resource policy, operational Crew/WOPR dashboard and Live Shell session projection on one isolated branch.
 - Adds `agent-control.request-origin/v1`. Exact initiating text or retained voice transcription, channel, authentication classification, granted template authority and one-way message/identity references now survive into the immutable Run, Work Parcel and complete transcript. Voice transcription remains untrusted until independently confirmed by authenticated text; phone numbers, JIDs, email addresses, cookies and credentials are excluded.
