@@ -161,8 +161,9 @@ if (process.env.AGENT_CONTROL_OPENWA_CONFIG) {
           const conversationId=`poe-whatsapp:${createHash('sha256').update(identityReference).digest('hex')}`;
           try{poe.conversation(conversationId);}catch{poe.createConversation({id:conversationId,actorId:actor,channel:'whatsapp'});}
           const result=await poe.ask({conversationId,text,channel:'whatsapp',modality,contentTrust:modality==='voice'?'UNTRUSTED_DATA':'OPERATOR_REQUEST'});
-          return{conversationId,text:result.turn.text};
+          return{conversationId,turnId:result.turn.id,text:result.turn.text};
         },
+        interrupt:({actor,conversationId,turnId})=>poe.bargeIn(conversationId,actor,turnId),
       });
       openwa.social=socialVoice;socialTimer=setInterval(()=>void socialVoice?.tick().catch(()=>{}),1000);socialTimer.unref();
       } catch {process.stderr.write('Optional Social & Voice configuration unavailable; existing WhatsApp remains active.\n');}
