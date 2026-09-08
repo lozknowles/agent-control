@@ -42,3 +42,19 @@ test('a routed conversational model must cite supplied evidence and invalid outp
 test('operator conversation may revise a draft but untrusted voice transcription cannot mutate it',async()=>{const runtime=new PoeRuntime({evidence}),conversation=runtime.createConversation({actorId:'web-operator',channel:'dashboard'}),draft=runtime.proposeBenchmark(conversation.id,plan());const answer=await runtime.ask({conversationId:conversation.id,text:'Change the repetitions to 3'});assert.equal(runtime.proposal(draft.id).repetitions,3);assert.equal(runtime.proposal(draft.id).revision,2);assert.match(answer.turn.text,/Repetitions: 3/);await runtime.ask({conversationId:conversation.id,text:'Change the repetitions to 9',contentTrust:'UNTRUSTED_DATA'});assert.equal(runtime.proposal(draft.id).repetitions,3);});
 
 test('approved repetitions materialize distinct Job stages and verification criteria in the normal Work Parcel plan',()=>{let submitted:any;const runtime=new PoeRuntime({evidence,benchmark:{submit:input=>{submitted=input;return{parcelId:'parcel:repeated'}}}}),conversation=runtime.createConversation({actorId:'web-operator',channel:'dashboard'}),input=plan();input.repetitions=2;input.metrics[0]!.stageId='review-a';const draft=runtime.proposeBenchmark(conversation.id,input),frozen=runtime.freezeBenchmark(draft.id,draft.revision);runtime.approveBenchmark(frozen.id,{revision:frozen.revision,frozenSha256:frozen.frozenSha256!,actor:'web-operator'});assert.deepEqual(submitted.plan.stages.map((stage:any)=>stage.id),['review-a-r1','review-a-r2']);assert.deepEqual(submitted.plan.successCriteria.map((criterion:any)=>criterion.stageId),['review-a-r1','review-a-r2']);});
+
+ test('natural transcript questions receive a real scoped export snapshot',async()=>{
+ const runtime=new PoeRuntime({evidence:{overview:()=>({title:'Knowledge unavailable',summary:'No document matched.',facts:[],related:[],unavailable:'No document matched.'}),resolve:evidence.resolve}});
+ const conversation=runtime.createConversation({actorId:'web-operator',channel:'dashboard'});
+ const question='Show my complete natural transcript';
+ const result=await runtime.ask({conversationId:conversation.id,text:question});
+ const fact=result.turn.evidence.find(item=>item.label==='Current natural transcript');assert.ok(fact);
+ assert.equal(fact.informationKind,'LIVE_OBSERVED');const value=JSON.parse(String(fact.value));
+ assert.equal(value.conversationId,conversation.id);assert.equal(value.snapshotTurnCount,1);
+ assert.ok(value.bytes>0);assert.match(value.sha256,/^[a-f0-9]{64}$/);
+ assert.match(value.exportPath,/\/transcript$/);assert.equal(result.conversation.state,'EXPLAINING');
+ assert.match(runtime.transcript(conversation.id),/Show my complete natural transcript/);
+ const other=runtime.createConversation({actorId:'web-operator',channel:'dashboard'});
+ const second=await runtime.ask({conversationId:other.id,text:question});
+ assert.ok(!JSON.stringify(second.turn.evidence).includes(conversation.id));
+});
