@@ -32,6 +32,15 @@ export function spokenJobSummary(number:number,result:{status:string;durationMs?
   const reference=Number.isSafeInteger(number)&&number>0&&number<1000000?'job '+spokenNumber(number):'job';
   return `Agent Control ${reference} ${outcome[result.status]??'has an update'}.`;
 }
+export function prepareSpokenText(text:string) {
+  const lines=text.split('\n').map(line=>line.trim()).filter(line=>line&&!/^https?:|^Work Parcel:/.test(line)).map(line=>line.replace(/\s+\((?:agent control|operator|provider reported|estimated|unavailable)\)\s*$/i,'').replace(/:\s*/g,', ').replace(/[.!?]+$/,'')).filter(Boolean);
+  return `${lines.join('. ').replace(/\b\d{1,6}\b/g,value=>spokenNumber(Number(value))).replace(/\s+/g,' ').trim().slice(0,999)}.`;
+}
+function speechContentCoverage(expected:string,observed:string) {
+  const tokens=(value:string)=>new Set((value.toLowerCase().match(/[a-z]+|\d+/g)??[]).flatMap(token=>/^\d+$/.test(token)?spokenNumber(Number(token)).split(' '):[token]));
+  const target=tokens(expected),actual=tokens(observed),matched=[...target].filter(token=>actual.has(token)).length,coverage=target.size?matched/target.size:0;
+  return {matched:coverage>=0.55,coverage};
+}
 type Row = Record<string, any>;
 const hash=(value:string)=>createHash('sha256').update(value).digest('hex');
 const terminal=(status:string)=>['SUCCEEDED','FAILED','CANCELLED','DEGRADED'].includes(status);
@@ -143,7 +152,7 @@ export class SocialVoiceCoordinator {
     if(!this.speech||!this.voice){this.audit('speech.text_fallback',who(m.identity),{reason:'provider_unconfigured'});return;}
     if(this.db.prepare('SELECT key FROM spoken WHERE key=?').get(key))return;
     this.db.prepare("INSERT INTO spoken VALUES (?,'sending')").run(key);
-    try{const safe=text.split('\n').filter(line=>!/^https?:|^Work Parcel:/.test(line)).join(' ').slice(0,1000);const audio=await this.speech.synthesize({text:safe,voice:this.voice,signal:AbortSignal.timeout(180000)});validateAudio(audio.bytes,audio.mime);const receipt=await this.provider.sendArtifact(m.identity,audio.bytes,audio.mime,key+':audio');this.audit('speech.synthesized',who(m.identity),{text:safe,metrics:audio.metrics,voice:this.voice,receipt,audioSha256:createHash('sha256').update(audio.bytes).digest('hex')});this.db.prepare("UPDATE spoken SET state='queued' WHERE key=?").run(key);return{metrics:audio.metrics};}catch{this.db.prepare("UPDATE spoken SET state='failed' WHERE key=?").run(key);this.audit('speech.text_fallback',who(m.identity),{reason:'synthesis_or_delivery_failed'});}
+    try{const safe=prepareSpokenText(text),audio=await this.speech.synthesize({text:safe,voice:this.voice,signal:AbortSignal.timeout(180000)});validateAudio(audio.bytes,audio.mime);let contentValidation:{state:'VERIFIED'|'UNAVAILABLE';authority:'INDEPENDENT_TRANSCRIPTION'|'UNAVAILABLE';coverage:number|null;metrics?:unknown}={state:'UNAVAILABLE',authority:'UNAVAILABLE',coverage:null};if(this.recognition){const observed=await this.recognition.transcribe({bytes:audio.bytes,mime:audio.mime,signal:AbortSignal.timeout(120000)}),comparison=speechContentCoverage(safe,observed.text);if(!comparison.matched)throw new Error('speech_content_mismatch');contentValidation={state:'VERIFIED',authority:'INDEPENDENT_TRANSCRIPTION',coverage:comparison.coverage,metrics:observed.metrics};}const receipt=await this.provider.sendArtifact(m.identity,audio.bytes,audio.mime,key+':audio');this.audit('speech.synthesized',who(m.identity),{text:safe,metrics:audio.metrics,contentValidation,voice:this.voice,receipt,audioSha256:createHash('sha256').update(audio.bytes).digest('hex')});this.db.prepare("UPDATE spoken SET state='queued' WHERE key=?").run(key);return{metrics:audio.metrics};}catch(error){this.db.prepare("UPDATE spoken SET state='failed' WHERE key=?").run(key);this.audit('speech.text_fallback',who(m.identity),{reason:error instanceof Error&&error.message==='speech_content_mismatch'?'synthesis_content_mismatch':'synthesis_or_delivery_failed'});}
   }
   async requestSummary(identity:SocialIdentity,reference:string,requestKey:string){
     if(!this.execution.principal(identity)||!/^[-a-zA-Z0-9]{8,80}$/.test(requestKey))throw new Error('summary_request_denied');
