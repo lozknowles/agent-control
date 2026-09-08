@@ -209,7 +209,7 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
     if(url.pathname==='/api/poe/conversations')return json(response,201,service.createPoeConversation(String(body.channel??'dashboard') as never,actor));
     if(poeConversationMatch?.[2]==='turns')return json(response,201,await service.askPoe(decodeURIComponent(poeConversationMatch[1]),String(body.text??''),actor,body.reference&&typeof body.reference==='object'&&!Array.isArray(body.reference)?body.reference as never:undefined));
     if(poeConversationMatch?.[2]==='proposals')return json(response,201,service.proposePoeBenchmark(decodeURIComponent(poeConversationMatch[1]),body as never,actor));
-    if(poeConversationMatch?.[2]==='interrupt')return json(response,200,service.interruptPoe(decodeURIComponent(poeConversationMatch[1]),actor));
+    if(poeConversationMatch?.[2]==='interrupt')return json(response,200,service.interruptPoe(decodeURIComponent(poeConversationMatch[1]),actor,typeof body.playbackTurnId==='string'?body.playbackTurnId:undefined));
     if(poeProposalMatch&&!poeProposalMatch[2])return json(response,200,service.revisePoeBenchmark(decodeURIComponent(poeProposalMatch[1]),Number(body.revision),body.changes&&typeof body.changes==='object'&&!Array.isArray(body.changes)?body.changes as never:{},actor));
     if(poeProposalMatch?.[2]==='freeze')return json(response,200,service.freezePoeBenchmark(decodeURIComponent(poeProposalMatch[1]),Number(body.revision),actor));
     if(poeProposalMatch?.[2]==='approve')return json(response,202,service.approvePoeBenchmark(decodeURIComponent(poeProposalMatch[1]),Number(body.revision),String(body.frozenSha256??''),actor));

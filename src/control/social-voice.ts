@@ -107,7 +107,7 @@ export class SocialVoiceCoordinator {
     if((match=text.match(/^(?:poe|ask poe)(?:[, :]\s*)(.+)$/i))){
       if(!this.poe){await this.reply(m,key,'POE is unavailable on this channel. The authenticated dashboard remains available.');this.audit('poe.unavailable',identity,{reason:'channel_adapter_unconfigured'});return;}
       const answer=await this.poe.ask({actor:principal.actor,identityReference:identity,text:match[1]!.trim(),modality:m.kind==='audio'?'voice':'text'});
-      await this.reply(m,key,answer.text);this.audit('poe.response',identity,{conversationId:answer.conversationId,channel:this.provider.id,modality:m.kind==='audio'?'voice':'text',authority:'agent-control-evidence'});
+      await this.reply(m,key,answer.text);if(m.kind==='audio')await this.speak(m,`${key}:poe`,answer.text);this.audit('poe.response',identity,{conversationId:answer.conversationId,channel:this.provider.id,modality:m.kind==='audio'?'voice':'text',spoken:m.kind==='audio',authority:'agent-control-evidence'});
     }else if(/^(status|health|models|nodes|what'?s agent control doing\??)$/i.test(text)){
       const kind=/^(health|models|nodes)$/i.test(text)?text.toLowerCase() as 'health'|'models'|'nodes':'status';await this.reply(m,key,this.execution.overview(kind,principal.actor));
     }else if(/^jobs$/i.test(text)){const jobs=this.db.prepare('SELECT number,parcel FROM jobs WHERE identity=? AND parcel IS NOT NULL').all(identity) as Row[];await this.reply(m,key,jobs.map(j=>`AC-${j.number}: ${this.execution.observe(j.parcel).status}`).join('\n')||'No Social & Voice jobs yet.');
