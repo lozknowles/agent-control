@@ -2,8 +2,8 @@
 
 ## Scope and provenance
 
-- Repository: `/fast/repos/agent-control`
-- Isolated worktree: `/fast/work/agent-control-4.1-poe-20260908`
+- Repository: `agent-control`
+- Isolated worktree: local isolated POE worktree; the host-specific path is intentionally not distributed
 - Branch: `feature/poe-conversational-operator-20260908`
 - Base release: `v4.0.0`
 - Base commit: `ff7ed114c08b71583e2a2d67b40d081f0b0a4c33`
