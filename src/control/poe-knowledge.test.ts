@@ -17,3 +17,14 @@ test('approved documentation symlink cannot retrieve outside repository',t=>{
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'poe-link-')),outside=fs.mkdtempSync(path.join(os.tmpdir(),'poe-outside-'));t.after(()=>{fs.rmSync(root,{recursive:true,force:true});fs.rmSync(outside,{recursive:true,force:true});});fs.mkdirSync(path.join(root,'docs'));fs.writeFileSync(path.join(outside,'reference.md'),'OUTSIDE_REFERENCE');fs.symlinkSync(path.join(outside,'reference.md'),path.join(root,'docs/link.md'));
  const service=new PoeKnowledgeService({root,version:'test',revision:()=>({commit:'a',dirty:false}),configuration:()=>({}),sources:[{id:'link',path:'docs/link.md',terms:['link']}],live:()=>({})});assert.equal(service.source('link').available,false);assert.doesNotMatch(service.source('link').text,/OUTSIDE_REFERENCE/);
 });
+
+test('guided Work Parcel question retains documented parent and child relationships',()=>{
+ const service=new PoeKnowledgeService({root:process.cwd(),version:'4.1.test',revision:()=>({commit:'a'.repeat(40),dirty:false}),configuration:()=>({}),sources:[{id:'parcels',path:'docs/work-parcels.md',terms:['parcel','parent','child']}],live:()=>({})});
+ const question="[Operator-selected guided tour: Work Parcels] As Agent Control's part-time tour guide, briefly explain the highlighted Work Parcels area and what the operator can see or do there. Explain Work Parcels and parent child relationships. Use authoritative evidence only, distinguish unavailable features, and keep the spoken explanation to two concise sentences.";
+ const fact=service.enrich(question).facts.find(f=>f.label==='Documentation: parcels')!;
+ const passage=JSON.parse(String(fact.value)).text;
+ assert.match(passage,/parent orchestration/);
+ assert.match(passage,/child Run ID/);
+ assert.match(passage,/dependencies succeed/);
+ assert.ok(passage.length<=2800);
+});
