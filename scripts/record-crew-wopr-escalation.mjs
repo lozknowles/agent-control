@@ -406,7 +406,8 @@ try {
   await page.waitForSelector('pre[aria-label="Complete Agent Control execution transcript"]');
   const productTranscript = page.locator('pre[aria-label="Complete Agent Control execution transcript"]');
   await productTranscript.evaluate(node => { node.scrollTop = 0; node.scrollIntoView({block: 'start'}); });
-  await page.waitForFunction(() => /## Origin[\s\S]*## Authoritative initiating request[\s\S]*start governed-adaptive-crew/.test(document.querySelector('pre[aria-label="Complete Agent Control execution transcript"]')?.textContent || ''));
+  const expectedInitiatingRequest = ingress === 'openwa' ? 'start governed-adaptive-crew' : dashboardReady.prompt;
+  await page.waitForFunction(expected => {const transcript=document.querySelector('pre[aria-label="Complete Agent Control execution transcript"]')?.textContent||'';return transcript.includes('## Origin')&&transcript.includes('## Authoritative initiating request')&&transcript.includes(expected);}, expectedInitiatingRequest);
   screenshots.push(await screenshot(page, '14-product-transcript-origin-and-exact-request.png'));
   await productTranscript.evaluate(node => { const text=node.textContent||'',needle='HANDOFF_COMPLETED',line=text.slice(0,text.indexOf(needle)).split('\n').length; node.scrollTop=Math.max(0,(line-12)*16); });
   screenshots.push(await screenshot(page, '15-product-transcript-model-change-and-handoff.png'));

@@ -18,4 +18,5 @@ test('continuous recorder visits every primary operational view and POE', () => 
   }
   assert.match(recorder, /poeVisibleAndAnimated: true/);
   assert.match(recorder, /allPrimaryViewsVisited: true/);
+  assert.match(recorder, /ingress === 'openwa' \? 'start governed-adaptive-crew' : dashboardReady\.prompt/);
 });
