@@ -47,8 +47,11 @@ const records = parcels.map((parcel, index) => {
   const expectedArm = ['cold', 'warm', 'changed-prefix-control'][index % 3];
   const runId = parcel.stages[0]?.runId;
   const artifact = artifactsIndex.find(item => item.runId === runId && item.name === 'verification-report');
+  const attemptArtifact = artifactsIndex.find(item => item.runId === runId && item.name === 'mutation-attempt');
   if (!artifact) throw new Error(`verification_artifact_missing:${runId}`);
+  if (!attemptArtifact) throw new Error(`attempt_artifact_missing:${runId}`);
   const content = readJson(path.join(stateDir, 'jobs', 'artifact-store', 'objects', `${artifact.id}.json`));
+  const attempt = readJson(path.join(stateDir, 'jobs', 'artifact-store', 'objects', `${attemptArtifact.id}.json`));
   const providerEvents = content.transcript.filter(item => item.type === 'provider');
   const firstInvocation = parcel.audit.invocations[0];
   const boundary = boundaries[index];
@@ -67,6 +70,8 @@ const records = parcels.map((parcel, index) => {
     slotScope: boundary.slots,
     backendPid: boundary.backendPid,
     boundaryAt: boundary.at,
+    startingRevision: attempt.startingRevision,
+    fixtureSha256: attempt.fixtureSha256,
     requestPrefixSha256: firstInvocation.cacheEvidence?.requestPrefixSha256 ?? null,
     firstInvocation: {
       reusedTokens: firstInvocation.cacheEvidence?.reusedTokens ?? null,
@@ -125,7 +130,7 @@ const evidence = {
     cacheConfiguration: {cachePrompt: true, cacheReuseThresholdTokens: 0, contextTokens: 8192, parallelSlots: 1, host: 'loopback-only'},
     perInvocationSlotIdentity: 'unavailable; isolated backend exposed one slot (id 0) but responses did not carry a slot identifier',
   },
-  controls: {executionOrder: records.map(record => ({cycle: record.cycle, arm: record.arm, parcelId: record.parcelId, runId: record.runId})), boundaries, stableTask: 'MUT-001', stableStartingRevision: [...new Set(records.map(record => record.verifier?.taskId))], cacheWrites: 'unavailable', timeToFirstToken: 'unavailable'},
+  controls: {executionOrder: records.map(record => ({cycle: record.cycle, arm: record.arm, parcelId: record.parcelId, runId: record.runId})), boundaries, stableTask: 'MUT-001', stableStartingRevision: [...new Set(records.map(record => record.startingRevision))], fixtureSha256: [...new Set(records.map(record => record.fixtureSha256))], cacheWrites: 'unavailable', timeToFirstToken: 'unavailable'},
   comparison,
   records,
   notes: [
