@@ -22,6 +22,8 @@ The normal Work Parcel path remains authoritative: model qualification, capabili
 
 Configure the feature under `cacheAwareExperts` or through **Configuration → Warm Experts**. Derived preference is disabled by default. See [Cache-Aware Expert Delegation](docs/cache-aware-expert-delegation.md), [dashboard usage](docs/web-dashboard.md), [non-OpenAI cache qualification](docs/non-openai-cache-qualification.md) and [ARCHITECTURE.md](ARCHITECTURE.md).
 
+Physical A–F qualification is now complete on the isolated development branch: a measured `HOT/HIGH` non-OpenAI Warm Expert changed a genuine governed route, incompatible context received no bonus, material context invalidated prior warmth, a restarted backend inherited no cache claim, and every model invocation and routing decision passed independent verification. See the [physical qualification record](docs/evidence/agent-control-4.3-cache-aware-expert-qualification-20260909.md). This is qualification evidence, not a merge, tag or release claim.
+
 A warm cache improves efficiency but does not confer correctness or authority. Capability, integrity and governance always outrank cache warmth.
 
 ## Identity, sessions and delegation
