@@ -4,11 +4,12 @@ import type {ModelConfig, ProviderConfig} from './config.js';
 import {providerPromptBoundary, renderProviderPrompt, type ProviderPromptInput} from './provider-prompt.js';
 import {resolveProviderCredential} from './provider-credential-store.js';
 import {redactSensitiveText} from './security-redaction.js';
+import {normalizeCacheEvidence, type CacheEvidence} from './cache-evidence.js';
 
 export const PROMPT_CACHE_KEY_CAPABILITY = 'prompt-cache.key';
 export const PROMPT_CACHE_EXPLICIT_CAPABILITY = 'prompt-cache.explicit';
 
-export interface CacheEvidence {reusedTokens: number | null; processedPromptTokens: number | null; cacheWriteTokens: number | null; promptProcessingMs: number | null; generationMs: number | null; authority: 'authoritative' | 'unavailable'; source: string;}
+export type {CacheEvidence} from './cache-evidence.js';
 export interface NormalizedModelUsage {inputTokens: number | null; outputTokens: number | null; cachedInputTokens: number | null; cacheWriteTokens?: number | null; totalTokens: number | null; providerReportedCost: number | null; calculatedCost: number | null; currency: string | null; cacheEvidence?: CacheEvidence;}
 export interface ModelInvocationResult {providerId: string; accountProfileId?: string; nodeId?: string; modelId: string; providerModel: string; invocationProfile?: string | null; output: string; elapsedMs: number; usage: NormalizedModelUsage; responseModel: string | null; finishReason: string | null; toolCall: {name: string; arguments: string} | null;}
 export interface PartialModelInvocation extends ModelInvocationResult {responseHash: string;}
@@ -211,11 +212,9 @@ function extractToolCall(payload: Record<string, unknown>, wire: string) {
 export function normalizeModelUsage(value: unknown, model: ModelConfig, timingsValue?: unknown): NormalizedModelUsage {
   const usage = value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
   const inputDetails = usage.input_tokens_details as Record<string, unknown> | undefined;
-  const timings = timingsValue && typeof timingsValue === 'object' && !Array.isArray(timingsValue) ? timingsValue as Record<string, unknown> : undefined;
-  const input = number(usage.input_tokens ?? usage.prompt_tokens), output = number(usage.output_tokens ?? usage.completion_tokens), cached = number(usage.cached_input_tokens ?? usage.cachedInputTokens ?? inputDetails?.cached_tokens ?? (usage.prompt_tokens_details as Record<string, unknown> | undefined)?.cached_tokens) ?? number(timings?.cache_n), cacheWrite = number(usage.cache_write_tokens ?? usage.cacheWriteTokens ?? usage.cache_creation_input_tokens ?? inputDetails?.cache_write_tokens), total = number(usage.total_tokens) ?? (input !== null && output !== null ? input + output : null);
+  const cacheEvidence = normalizeCacheEvidence({usage, timings: timingsValue, timingSource: 'llama.cpp.response.timings'});
+  const input = number(usage.input_tokens ?? usage.prompt_tokens), output = number(usage.output_tokens ?? usage.completion_tokens), cached = cacheEvidence?.reusedTokens ?? number(usage.cached_input_tokens ?? usage.cachedInputTokens ?? inputDetails?.cached_tokens ?? (usage.prompt_tokens_details as Record<string, unknown> | undefined)?.cached_tokens), cacheWrite = cacheEvidence?.cacheWriteTokens ?? number(usage.cache_write_tokens ?? usage.cacheWriteTokens ?? usage.cache_creation_input_tokens ?? inputDetails?.cache_write_tokens), total = number(usage.total_tokens) ?? (input !== null && output !== null ? input + output : null);
   const calculated = calculateModelUsageCost(input, output, cached, model.pricing, cacheWrite);
-  const processedPromptTokens = number(timings?.prompt_n), promptProcessingMs = number(timings?.prompt_ms), generationMs = number(timings?.predicted_ms);
-  const cacheEvidence = timings ? {reusedTokens: cached, processedPromptTokens, cacheWriteTokens: cacheWrite, promptProcessingMs, generationMs, authority: cached !== null && processedPromptTokens !== null ? 'authoritative' as const : 'unavailable' as const, source: 'llama.cpp.response.timings'} : undefined;
   return {inputTokens: input, outputTokens: output, cachedInputTokens: cached, cacheWriteTokens: cacheWrite, totalTokens: total, providerReportedCost: number(usage.cost), calculatedCost: calculated, currency: model.pricing?.currency ?? null, ...(cacheEvidence ? {cacheEvidence} : {})};
 }
 
