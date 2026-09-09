@@ -425,6 +425,25 @@ Profile escalation is monotonic (`THIN -> STANDARD -> DEEP`), reason-coded and r
 
 Real-mutation qualification reuses this path rather than introducing a second scheduler or executor. A frozen task is copied into a disposable Git workspace, `HarnessDispatcher` provides a bounded structured tool loop through the existing `ToolPolicy`, and an independent verifier evaluates the resulting diff. The outcome ledger links prediction, context packet, attempts, escalations, provider usage, tool observations, patches and verifier checks. Cumulative metrics include every failed precursor attempt.
 
+### Prompt/KV cache evidence boundary
+
+Prompt/KV reuse is provider capability evidence, not a scheduler assumption. Provider adapters may normalize direct backend fields into the generic `CacheEvidence` contract: reused prompt tokens, newly processed prompt tokens, cache writes, prompt/generation timing, authority, source and request-prefix fingerprint. `HarnessDispatcher` persists the observation, Work Parcel audit retains it, and the dashboard renders the same fields. Missing values remain unavailable. Core policy never derives reuse from response latency or cumulative token subtraction.
+
+```text
+provider response / runtime event
+        -> provider adapter normalization
+        -> CacheEvidence + raw bounded artifact
+        -> invocation ledger
+        -> Work Parcel audit
+        -> dashboard / authenticated transcript / qualification report
+```
+
+For llama.cpp, `timings.cache_n` is the direct reused-prefix count and `timings.prompt_n` is newly evaluated prompt input. A repeated transcript, resent conversation history, persisted application data, or cached final answer is not equivalent to reusable KV state. Backend-specific fields remain in the adapter and bounded evidence artifact; the normalized contract remains provider-neutral.
+
+Qualification-only Jobs are registered only under an explicit environment gate, accept only a loopback backend, use one frozen real-mutation fixture, and pass all model tool requests through the existing typed `ToolPolicy` gateway. Independent verification owns acceptance. The managed artifact-content API requires operator authentication, verifies the artifact checksum, removes storage paths and applies the ordinary API redactor before a complete transcript is displayed.
+
+Cache affinity is not routing authority. The current production router does not select an agent merely because a backend slot may contain relevant state. A future warm-expert policy would need explicit retained-context identity, relevance, authority, capability and verifier evidence; it cannot be inferred from basic provider caching.
+
 This evidence is not routing authority. The production gate requires a sufficient deterministic task sample, no verified-success regression against STANDARD, bounded classified escalation, a measured cumulative-resource improvement and all existing policy/fencing checks. The first recorded mutation run fails the sample-size and resource-improvement criteria, so production applies the observational STANDARD fallback; no production profile-selection code path is enabled by the experiment.
 
 ## Routing and qualification
