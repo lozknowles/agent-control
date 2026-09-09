@@ -3,6 +3,7 @@
 ## 4.3.0 (release candidate)
 
 - Integrated the 4.2 Transport Context and 4.3 Warm Expert lines onto current 4.1 main without replacing either runtime wholesale; preserved POE, Crew/WOPR, Live Shell, protected-resource governance, provider/account routing, retries, recovery and human-readable execution history.
+- Corrected the integrated production bootstrap so the shared efficiency ledger reaches the opt-in non-OpenAI cache actions. The pre-fix integrated candidate failed closed at startup; a focused production-definition regression now covers the enabled path.
 - Replaced keyword-granted Action authority with explicit read-only, declared consequential or typed resolver-derived effects. Missing, unknown, ambiguous and inconsistent effects deny before execution; approval cannot override a denial.
 - Canonicalized approved filesystem/repository paths on the execution platform, denied symlink escapes, traversal, sibling-prefix confusion, unresolved remote/foreign-platform paths and unsafe prospective outputs, and revalidated governed Git working directories at execution.
 - Confined governed Git execution by disabling repository hooks and filesystem-monitor helpers, disabling terminal credential prompts, treating remote reads as external effects and rejecting Git configuration mutation through the governed route.

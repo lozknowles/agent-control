@@ -52,6 +52,17 @@ metadata identify version 4.3.0.
 - Provider/model execution remains behind existing typed adapters; no new raw
   shell or generic transport authority was introduced.
 
+The first fresh physical attempt exposed a qualification-discovered integration
+defect before a Work Parcel was submitted. The combined registration expression
+passed the shared efficiency ledger to the protected-resource registrar but not
+to the outer opt-in non-OpenAI cache registrar, so production startup failed
+closed with `non_openai_cache_efficiency_ledger_required`. Registration is now
+spelled out as ordered typed steps and the ledger is supplied to both consumers.
+A focused production-definition test enables the real cache qualification
+registration and proves both actions are present. The failed attempt produced no
+release evidence; fresh A–F qualification restarts from pristine state against
+the revised candidate.
+
 The complete execution-route inventory and containment matrix are maintained
 in [Runtime safety and containment](../runtime-safety-and-containment.md).
 
@@ -60,7 +71,8 @@ in [Runtime safety and containment](../runtime-safety-and-containment.md).
 - Focused runtime safety, JobRuntime, Git containment and ignored-state tests:
   `69/69` passed.
 - OpenAI-compatible cache normalization tests: `34/34` passed.
-- Complete repository suite: `1118/1118` passed.
+- Complete repository suite before the qualification-discovered bootstrap fix:
+  `1118/1118` passed. Revised-candidate regression is pending below.
 - TypeScript, bootstrap syntax, dashboard syntax, infrastructure neutrality,
   implementation-status consistency and documentation-link checks: required
   as part of the final release validation.
