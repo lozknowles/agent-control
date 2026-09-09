@@ -70,6 +70,7 @@ test('task, branch, instruction, tool and governance context changes are incompa
 test('a completed incompatible invocation invalidates retained context in the same backend scope', () => {
   const runtime=new CacheAwareExpertRuntime(new FileCacheExpertStore(),{},()=> '2026-09-09T10:02:00.000Z');warm(runtime,'warm','2026-09-09T10:00:00.000Z',{context:context({dependencyContextSha256:'deps-old'})});
   warm(runtime,'warm','2026-09-09T10:01:00.000Z',{invocationId:'replacement',context:context({dependencyContextSha256:'deps-new'})});
+  warm(runtime,'warm','2026-09-09T10:00:00.000Z',{context:context({dependencyContextSha256:'deps-old'})});
   const records=runtime.records();
   assert.equal(records.length,2);
   assert.equal(records.find(item=>item.context.dependencyContextSha256==='deps-old')?.state,'INVALIDATED');
