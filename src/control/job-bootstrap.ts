@@ -38,7 +38,16 @@ import {cacheAwareExpertQualificationPlanner} from './cache-aware-expert-qualifi
 export function buildJobRuntimeDefinition(config: AgentControlConfig, manifestDir = process.env.AGENT_CONTROL_JOB_DIR || path.resolve('config/jobs'), harnessEfficiency?: HarnessEfficiencyLedgerPort, modelRegistry?: ModelRegistry, codexNodeExecution?: CodexNodeExecutionPort) {
   const parcelJobs = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../config/work-parcels/jobs');
   const operatorJobs = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../config/operator-jobs');
-  const workers = WorkerRegistry.fromConfig(config.resources), managedNodes = new ManagedNodeManager(config.resources, workers, new SshManagedNodeTransport()), actions = registerNonOpenAiCacheQualificationActions(registerProtectedResourceModelActions(config, modelRegistry, codexNodeExecution, registerOperatorReviewActions(config, registerFreeTokenQualificationActions(registerManagedNodeActions(managedNodes, registerBrowserActions(registerRepositoryTestActions(registerReferenceActions(), config)))), harnessEfficiency), harnessEfficiency)), catalog = new JobCatalog(actions.ids()).loadDirectory(manifestDir).loadDirectory(parcelJobs);
+  const workers = WorkerRegistry.fromConfig(config.resources), managedNodes = new ManagedNodeManager(config.resources, workers, new SshManagedNodeTransport());
+  let actions = registerReferenceActions();
+  actions = registerRepositoryTestActions(actions, config);
+  actions = registerBrowserActions(actions);
+  actions = registerManagedNodeActions(managedNodes, actions);
+  actions = registerFreeTokenQualificationActions(actions);
+  actions = registerOperatorReviewActions(config, actions, harnessEfficiency);
+  actions = registerProtectedResourceModelActions(config, modelRegistry, codexNodeExecution, actions, harnessEfficiency);
+  actions = registerNonOpenAiCacheQualificationActions(actions, harnessEfficiency);
+  const catalog = new JobCatalog(actions.ids()).loadDirectory(manifestDir).loadDirectory(parcelJobs);
   registerOperatorObservation(actions, catalog, workers);
   if (process.env.AGENT_CONTROL_ENABLE_OPERATOR_REVIEW === 'true') catalog.loadDirectory(operatorJobs);
   return {workers, managedNodes, actions, catalog};
