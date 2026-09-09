@@ -24,7 +24,7 @@
     "restartedWarmBackendInstanceId": "3971517",
     "llamaBinarySha256": "3f1000482d759661cadb1dc9b59f6292f52408ee0d2906298fa001837517fb4e",
     "modelSha256": "3da3afe6cf5c674ac195803ea0dd6fee7e1c228c2105c1ce8c66890d1d4ab460",
-    "node": "hpubuntu"
+    "node": "controller-local"
   },
   "measurements": {
     "cold": {
@@ -473,7 +473,7 @@
     "resources": [
       {
         "id": "controller-cache-expert-qualification",
-        "name": "hpubuntu isolated cache-aware expert worker",
+        "name": "controller-local isolated cache-aware expert worker",
         "platform": "linux",
         "transport": "local",
         "capabilities": [
