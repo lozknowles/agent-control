@@ -10,8 +10,8 @@
 - Added the dedicated **Warm Cache Runtime** dashboard tab with a real Work Parcel lane timeline, observation heatmap, agent/process utilization, ranked Warm Experts, observed compatibility matrix, active candidate routes, governed route explanation, recent events and explicit cross-lane cache boundaries. Every value comes from runtime projections or is labelled derived/unavailable; the page retains `CACHE STATE UNKNOWN`, `MONETARY SAVING UNAVAILABLE` and the full human-readable routing transcript generated from the durable decision.
 - Added revision-checked **Configuration → Warm Experts** policy controls. Derived preference is disabled by default.
 - Added deterministic coverage for creation, evidence authority, expiry, staleness, incompatible context, provider/session/backend isolation, capability/integrity/health priority, route wins/losses, restart recovery, Work Parcel/baton metadata, dashboard projection, transcript and independent decision verification.
-- Physical A–F non-OpenAI routing qualification and HD video remain a release gate; this development entry does not claim 4.3 released.
 - Integrates the 4.2 Transport Context Contract and authoritative non-OpenAI cache evidence with the complete 4.1 POE, Crew, Live Shell, recovery and protected-resource runtime.
+- Historical physical A–F evidence passed against `bfec203`, but remains historical after integration. Fresh qualification against the exact integrated candidate is still required and no 4.3 release is claimed.
 
 ## [4.1.0] — 2026-09-09
 
