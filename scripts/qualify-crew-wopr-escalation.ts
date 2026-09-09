@@ -14,6 +14,7 @@ import {LocalCodexNodeExecutionPort} from '../src/control/codex-node-execution.j
 import type {RepositoryReviewQualityGate, RepositoryReviewQualityGateResult} from '../src/control/direct-repository-review-executor.js';
 import {ExecutionSessionRuntime} from '../src/control/execution-session.js';
 import {GovernedHandoffRuntime} from '../src/control/handoff-runtime.js';
+import {IdentityControlPlane} from '../src/control/identity-control-plane.js';
 import {buildParameterizedJobRuntime} from '../src/control/job-bootstrap.js';
 import {JobCatalog} from '../src/control/job-catalog.js';
 import {ActionFailure, ActionRegistry, ArtifactStore, JobRuntime, ResourceLockManager, RunLedger, WorkerRegistry} from '../src/control/job-runtime.js';
@@ -440,6 +441,9 @@ async function main() {
   parameterizedJobs.savedJobs.create({id: 'crew-wopr-quality-review', name: 'Crew/WOPR quality-escalation review', definition: {id: 'repository-code-review', version: 1, follow: 'pinned'}, parameters: {node: 'controller', repository: fixture.repository, ref: fixture.commit, scope: 'full'}, routing: {model: SOURCE_MODEL_ID, allowFallback: false}, contextProfile: 'THIN', budgets: {timeoutMinutes: 4, maximumRetries: 0, maximumInputTokens: 12_000, maximumOutputTokens: 1_800}, concurrency: 'forbid-overlap', enabled: true});
 
   const state: WorkspaceState = {version: 1, paused: false, lastRestorePoint: null, lanes: []};
+  const identity = new IdentityControlPlane(path.join(options.stateDir, 'identity', 'control-plane.json'));
+  identity.registerActor({id: 'web-operator', type: 'human', displayName: 'Authenticated demo operator', principalId: 'operator:web', authenticationSource: 'dashboard-bearer', roles: ['operator'], capabilities: [], metadata: {surface: 'isolated-demonstration'}});
+  identity.createSession({id: 'session:crew-wopr-demo', creatorActorId: 'web-operator', mode: 'operator-controlled', permissions: {capabilities: ['session.observe', 'session.manage', 'parcel.create', 'parcel.execute', 'parcel.approve', 'agent.delegate', 'model.invoke', 'node.execute'], allowedModels: [SOURCE_MODEL_ID, DESTINATION_MODEL_ID], allowedNodes: ['controller'], filesystem: 'read', network: 'provider-only', production: false}, contextPolicy: 'compiled', visibility: 'operator', metadata: {purpose: 'normal-uninterrupted-crew-wopr-demonstration'}});
   const control = new AgentControlService(state, new PtyRegistry(), undefined, '4.0.0', () => {}).configureProjection({
     jobRuntime: runtime,
     workParcels: parcels,
@@ -448,6 +452,8 @@ async function main() {
     tokenBatonRouting: tokenRouting,
     adaptiveOrchestration,
     executionSessions,
+    identity,
+    defaultSessionId: 'session:crew-wopr-demo',
     resources: workers.list().map(worker => ({id: worker.id, name: worker.id.replaceAll('-', ' '), platform: 'linux', transport: 'local', capabilities: worker.capabilities})),
   });
   const poeEvidence = {overview: () => control.poeEvidence(), resolve: (reference: import('../src/control/poe.js').PoeObjectReference) => control.poeEvidence(reference)};
