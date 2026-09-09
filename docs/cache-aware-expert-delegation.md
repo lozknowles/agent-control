@@ -115,3 +115,9 @@ The views update through the same Work Parcel SSE events and periodic reconcilia
 - Missing pricing: show `MONETARY SAVING UNAVAILABLE` and make no billing claim.
 
 Provider adapters may differ in what they can report, but core lifecycle, compatibility, scoring, audit and fail-closed behavior do not depend on llama.cpp, OpenAI or any particular model. The feature still functions as an honest no-preference registry when every provider reports cache evidence as unavailable.
+
+## Physical qualification
+
+The 2026-09-09 A–F qualification ran two isolated non-OpenAI llama.cpp/Qwen routes through the normal Work Parcel lifecycle. The cold first invocation reported `0 reused / 1,328 processed`; the compatible follow-on reported `1,327 reused / 1 processed`. Its verified `HOT/HIGH` cache evidence raised the warm candidate from base `0.9500` to `1.0551`, above the equally capable cold candidate at `1.0000`, so Agent Control deliberately changed the route. The incompatible task gave the prior warm candidate no bonus, material context invalidated the displaced record, and a replacement backend process appeared as `CACHE STATE UNKNOWN` rather than inheriting warmth. All stages, provider invocations and route decisions passed their independent checks.
+
+The same run measured a `65.32×` prompt-processing improvement for the matched cold/warm first invocation and a `3.17×` end-to-end invocation improvement. `MONETARY SAVING UNAVAILABLE` remains the truthful result because the local backend supplied no authoritative billing data. See the [tracked qualification record](evidence/agent-control-4.3-cache-aware-expert-qualification-20260909.md); the checksummed complete transcript, machine record, dashboard screenshot and 1920×1080 video remain in the protected qualification evidence root recorded there.
