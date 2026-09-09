@@ -1,4 +1,5 @@
 import {createHash} from 'node:crypto';
+import fs from 'node:fs';
 import path from 'node:path';
 import type {ArtifactRecord, RunRecord, RunStep, WorkerRegistration} from './job-types.js';
 
@@ -159,12 +160,16 @@ export function resolveGitEffects(operations: NormalizedActionOperation[]): Gove
     const args = operation.args, subcommandIndex = args.findIndex(item => !item.startsWith('-') || item === '--');
     const subcommand = args[subcommandIndex]?.toLowerCase();
     if (!subcommand) throw new Error('governed_git_subcommand_required');
-    if (subcommand !== 'push') return [{id: `effect-${operationIndex}-local`, kind: readOnlyGitSubcommands.has(subcommand) ? 'READ' : 'LOCAL_WRITE', resource: {kind: 'repository', id: `repository:${operation.cwd}`, repositoryPath: operation.cwd}, external: false, consequential: !readOnlyGitSubcommands.has(subcommand), summary: `${subcommand} affects only the governed local repository`} satisfies GovernedEffect];
+    if (subcommand !== 'push') {
+      const external = remoteReadGitSubcommands.has(subcommand), readOnly = readOnlyGitSubcommands.has(subcommand);
+      return [{id: `effect-${operationIndex}-local`, kind: readOnly ? 'READ' : 'LOCAL_WRITE', resource: {kind: 'repository', id: `repository:${operation.cwd}`, repositoryPath: operation.cwd}, external, consequential: !readOnly, summary: external ? `${subcommand} reads a configured remote and may update the governed local repository` : `${subcommand} affects only the governed local repository`} satisfies GovernedEffect];
+    }
     return resolvePushEffects(operation, args.slice(subcommandIndex + 1), operationIndex);
   });
 }
 
 const readOnlyGitSubcommands = new Set(['status', 'diff', 'show', 'log', 'rev-parse', 'ls-remote', 'branch', 'remote', 'describe']);
+const remoteReadGitSubcommands = new Set(['fetch', 'ls-remote']);
 function resolvePushEffects(operation: NormalizedActionOperation, rawArgs: string[], operationIndex: number): GovernedEffect[] {
   let force = false, deleteMode = false, mirror = false, remote = 'origin'; const positional: string[] = [];
   for (let index = 0; index < rawArgs.length; index++) {
@@ -196,7 +201,7 @@ function gitEffect(operation: number, index: number, kind: GovernedEffectKind, r
   return {id: `effect-${operation}-${index}-${remote}-${ref.replace(/[^a-z0-9]+/gi, '-')}`, kind, resource: {kind: 'git-ref', id: gitRefResourceId(remote, ref), repositoryPath, remote, ref}, external: true, consequential: true, summary};
 }
 
-function canonicalCwd(value: string) { if (!path.isAbsolute(value)) throw new Error('governed_git_cwd_must_be_absolute'); return path.resolve(value); }
+function canonicalCwd(value: string) { if (!path.isAbsolute(value)) throw new Error('governed_git_cwd_must_be_absolute'); try { return fs.realpathSync.native(value); } catch { throw new Error('governed_git_cwd_unresolvable'); } }
 function redactedArg(value: string) { return /(?:token|password|secret|key)=/i.test(value) ? '[REDACTED]' : JSON.stringify(value); }
 function splitShellChain(line: string) {
   const segments: string[] = []; let quote = '', escaped = false, current = '';

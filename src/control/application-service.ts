@@ -36,6 +36,7 @@ import {redactSensitiveValue} from './security-redaction.js';
 import type {AdaptiveLeagueFilter, AdaptiveOrchestrationRuntime} from './adaptive-orchestration.js';
 import type {ExecutionSessionMode, ExecutionSessionRuntime, ExecutionSessionSignal} from './execution-session.js';
 import type {PoeBenchmarkProposalInput, PoeEvidenceResult, PoeObjectReference, PoeProjection, PoeRuntime} from './poe.js';
+import type {CacheAwareExpertRuntime} from './cache-aware-expert.js';
 
 export type ControlEventType =
   | 'social.activity'
@@ -68,6 +69,7 @@ export type ControlEventType =
   | 'model.intelligence_changed'
   | 'provider.catalog_changed'
   | 'runtime.safety_changed'
+  | 'cache.expert_invalidated'
   | 'configuration.changed'
   | 'token.telemetry'
   | 'token.governor_transition'
@@ -188,6 +190,7 @@ export class AgentControlService {
   private adaptiveOrchestration?: AdaptiveOrchestrationRuntime;
   private executionSessions?: ExecutionSessionRuntime;
   private poe?: PoeRuntime;
+  private cacheExperts?: CacheAwareExpertRuntime;
 
   constructor(
     readonly state: WorkspaceState,
@@ -200,7 +203,7 @@ export class AgentControlService {
     this.verification = new VerificationService(state, persist);
   }
 
-  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; services?: RegisteredService[]; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService; tokenBatonRouting?: TokenAwareBatonRuntime; governedRetrieval?: GovernedRetrievalRuntime; codexNodeExecution?: CodexNodeExecutionPort; harnessEfficiency?: HarnessEfficiencyLedgerPort; workParcels?: WorkParcelCoordinator; modelRegistry?: ModelRegistry; parameterizedJobs?: ParameterizedJobEngine; identity?: IdentityControlPlane; defaultSessionId?: string; fastExecution?: FastExecutionLedgerPort; runtimeObservability?: RuntimeObservability; capabilityIntelligence?: CapabilityIntelligenceStore; modelIntelligence?: ModelIntelligenceLedger; qualificationSuite?: FrozenQualificationSuite; providerCatalog?: ProviderCatalogRuntime; adaptiveOrchestration?: AdaptiveOrchestrationRuntime; executionSessions?: ExecutionSessionRuntime; poe?: PoeRuntime}) {
+  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; services?: RegisteredService[]; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService; tokenBatonRouting?: TokenAwareBatonRuntime; governedRetrieval?: GovernedRetrievalRuntime; codexNodeExecution?: CodexNodeExecutionPort; harnessEfficiency?: HarnessEfficiencyLedgerPort; workParcels?: WorkParcelCoordinator; modelRegistry?: ModelRegistry; parameterizedJobs?: ParameterizedJobEngine; identity?: IdentityControlPlane; defaultSessionId?: string; fastExecution?: FastExecutionLedgerPort; runtimeObservability?: RuntimeObservability; capabilityIntelligence?: CapabilityIntelligenceStore; modelIntelligence?: ModelIntelligenceLedger; qualificationSuite?: FrozenQualificationSuite; providerCatalog?: ProviderCatalogRuntime; adaptiveOrchestration?: AdaptiveOrchestrationRuntime; executionSessions?: ExecutionSessionRuntime; poe?: PoeRuntime; cacheExperts?: CacheAwareExpertRuntime}) {
     if (extras.approvalCount) this.approvalCount = extras.approvalCount;
     if (extras.resources) this.resourceRows = structuredClone(extras.resources);
     if (extras.services) this.serviceRows = structuredClone(extras.services);
@@ -226,6 +229,7 @@ export class AgentControlService {
     if (extras.adaptiveOrchestration) this.adaptiveOrchestration = extras.adaptiveOrchestration;
     if (extras.executionSessions) this.executionSessions = extras.executionSessions;
     if (extras.poe) this.poe = extras.poe;
+    if (extras.cacheExperts) this.cacheExperts = extras.cacheExperts;
     return this;
   }
 
@@ -345,6 +349,7 @@ export class AgentControlService {
   resourceLocks() { return this.mustJobRuntime().locks.list(); }
   artifacts(runId?: string) { return this.mustJobRuntime().artifacts.list(runId).map(value => { const {storageRef: _storageRef, ...metadata} = value; return {...metadata, storage: 'agent-control-managed'}; }); }
   artifact(id: string) { const value = this.mustJobRuntime().artifacts.get(id); if (!value) throw new Error('artifact_missing'); const {storageRef: _storageRef, ...metadata} = value; return {...metadata, storage: 'agent-control-managed'}; }
+  artifactContent(id: string) { const runtime = this.mustJobRuntime(), value = runtime.artifacts.get(id); if (!value) throw new Error('artifact_missing'); const {storageRef: _storageRef, ...metadata} = value; return {artifact: {...metadata, storage: 'agent-control-managed'}, content: runtime.artifacts.read(id)}; }
   commandOutputs() { return this.tokenAwareOutput?.list() ?? []; }
   commandOutputMetrics(): TokenAwareOutputMetrics { return this.tokenAwareOutput?.metrics() ?? {commandsObserved: 0, commandsCompacted: 0, rgSearchesCompacted: 0, originalOutputBytes: 0, returnedOutputBytes: 0, estimatedTokensOriginal: 0, estimatedTokensReturned: 0, estimatedTokensSaved: 0, contextTokensAvoided: 0, expansionRequests: 0, fullResultRequests: 0, expansionTokensReturned: 0, byJob: {}, byLane: {}, byAgentModel: {}}; }
   tokenRouting(): TokenRoutingProjection { return this.tokenBatonRouting?.projection() ?? {schema: 'agent-control.token-aware-baton-routing/v1', observedAt: new Date().toISOString(), policy: {continuePercent: 60, prepareBatonPercent: 75, compactPercent: 85, handoffPercent: 90, sampleRetention: 240}, threads: [], parcels: [], decisions: [], contextLifecycle: []}; }
@@ -453,6 +458,15 @@ export class AgentControlService {
   adaptiveModelLeague(taskClass?: string, filter?: AdaptiveLeagueFilter) { return this.adaptiveOrchestration?.modelLeague(taskClass, undefined, filter) ?? []; }
   adaptiveWorkflowLeague(taskClass?: string, filter?: AdaptiveLeagueFilter) { return this.adaptiveOrchestration?.workflowLeague(taskClass, undefined, filter) ?? []; }
   adaptiveDecisions() { return this.adaptiveOrchestration?.decisions() ?? []; }
+  cacheExpertRegistry() { const decisions = this.cacheExperts?.decisions() ?? []; return {schema: 'agent-control.cache-expert-registry-projection/v1', policy: this.cacheExperts?.policy ?? null, experts: this.cacheExperts?.records() ?? [], decisions: decisions.map(item => ({...item, humanReadable: this.cacheExperts!.humanReadable(item.id)})), observedAt: new Date().toISOString()}; }
+  invalidateCacheExperts(input: {providerId?: string; modelId?: string; sessionId?: string; cacheScopeId?: string; backendInstanceId?: string; reason?: string}, actor: string) {
+    if (!this.cacheExperts) throw new Error('cache_experts_unconfigured');
+    const filters=Object.fromEntries(Object.entries(input).filter(([key,value])=>key!=='reason'&&typeof value==='string'&&value.trim()).map(([key,value])=>[key,String(value).trim()]));
+    if (!Object.keys(filters).length) throw new Error('cache_expert_invalidation_scope_required');
+    const reason=String(input.reason??'').trim();if(!reason||reason.length>200)throw new Error('cache_expert_invalidation_reason_invalid');
+    const count=this.cacheExperts.invalidate({...filters,reason} as Parameters<CacheAwareExpertRuntime['invalidate']>[0]);
+    this.events.emit('cache.expert_invalidated',{count,reason,...filters},undefined,actor);return {count,reason,...filters};
+  }
   adaptiveDecision(id: string) { if (!this.adaptiveOrchestration) throw new Error('adaptive_orchestration_unconfigured'); return this.adaptiveOrchestration.decision(id); }
   adaptiveReport(id: string) { if (!this.adaptiveOrchestration) throw new Error('adaptive_orchestration_unconfigured'); return this.adaptiveOrchestration.report(id); }
   adaptiveParcelReport(id: string) { const parcel = this.parcel(id), decisionId = parcel.audit.orchestrationDecisionId; if (!decisionId) throw new Error('adaptive_decision_missing'); return this.adaptiveReport(decisionId); }

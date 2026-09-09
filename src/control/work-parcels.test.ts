@@ -12,6 +12,7 @@ import type {SystemReadiness} from './system-readiness.js';
 import {ModelRegistry} from './model-registry.js';
 import {governedRequestOrigin} from './request-origin.js';
 import {AdaptiveOrchestrationRuntime, FileAdaptiveOrchestrationStore} from './adaptive-orchestration.js';
+import {CacheAwareExpertRuntime, FileCacheExpertStore} from './cache-aware-expert.js';
 
 const job = (id: string, action: string, output = true): JobDefinition => ({apiVersion: 'agent-control/v1', kind: 'Job', metadata: {id, name: id, version: '1.0.0'}, spec: {priority: 'normal', concurrency: 'queue', steps: [{id: 'work', action, requires: ['qualification.local'], outputs: output ? [{name: 'result', type: 'application/json', schema: `${id}/v1`, version: '1.0.0'}] : undefined, verification: output ? ['passed'] : []}]}});
 function setup(failSecond = false, blockFirst = false) {
@@ -101,6 +102,24 @@ test('model role is qualified and bound to the selected node before Job dispatch
   const stage = coordinator.get(parcel.id).stages[0], run = runtime.ledger.get(stage.runId!);
   assert.equal(run?.trigger.modelRoute?.modelId, 'fast'); assert.equal(run?.trigger.modelRoute?.nodeId, 'host'); assert.equal(run?.trigger.modelRoute?.qualificationVersion, 'qual-v1');
   assert.equal(stage.actualRoute?.provider, 'external'); assert.equal(stage.actualRoute?.model, 'fast');
+});
+
+test('production Work Parcel routing selects a compatible Warm Expert and seals the decision into the baton', async () => {
+  const {runtime, plan, storeFile, root} = setup();
+  const cacheContext = {repositoryRef:'agent-control@abc',repositoryIdentitySha256:'repo-abc',immutableContextSha256:'bundle-abc',promptPrefixSha256:'prefix-abc',transportContextSha256:'transport-abc',contextTags:['repository:agent-control','task:typescript']};
+  const cacheScope = {sessionId:'qualification-session',cacheScopeId:'slot-0',backendInstanceId:'llama-process-1'};
+  plan.stages = [{...plan.stages[0], requestedRoute: {modelRole:'coding.fast',allowFallback:true,reason:'choose a governed compatible expert',cacheContext,cacheScopeByModel:{cold:{sessionId:'cold-session',cacheScopeId:'cold-slot',backendInstanceId:'cold-process'},warm:cacheScope}}}];
+  const registry = new ModelRegistry(
+    [{id:'local',kind:'openai-compatible',baseUrl:'http://127.0.0.1:19091/v1',enabled:true}],
+    [{id:'cold',provider:'local',providerModel:'qwen-cold',capabilities:['coding'],qualification:{state:'QUALIFIED',version:'q1',capabilities:['coding'],nodes:['host']}},{id:'warm',provider:'local',providerModel:'qwen-warm',capabilities:['coding'],qualification:{state:'QUALIFIED',version:'q1',capabilities:['coding'],nodes:['host']}}],
+    {roles:{'coding.fast':{primary:'cold',fallback:['warm'],requires:['coding']}}},
+  );
+  const experts = new CacheAwareExpertRuntime(new FileCacheExpertStore(path.join(root,'cache-experts.json')),{maximumScoreBonus:.2},()=> '2026-09-09T10:01:00.000Z');
+  experts.observe({invocationId:'prior-warm',route:{workerId:'host',providerId:'local',modelId:'warm',nodeId:'host',...cacheScope},context:cacheContext,cacheEvidence:{reusedTokens:900,processedPromptTokens:100,cacheWriteTokens:null,promptProcessingMs:10,generationMs:20,authority:'authoritative',source:'llama.cpp.timings'},observedAt:'2026-09-09T10:00:00.000Z',taskClass:'coding',capabilities:['coding'],outcome:'COMPLETE',verifierResult:'PASS',health:'healthy'});
+  const coordinator = new WorkParcelCoordinator(runtime,new WorkParcelStore(storeFile),{plan:()=>plan},undefined,registry,undefined,experts);
+  const parcel = await coordinator.submit('continue the compatible repository task','operator'); await coordinator.tick();
+  let stage=coordinator.get(parcel.id).stages[0],run=runtime.ledger.get(stage.runId!); assert.equal(run?.trigger.modelRoute?.modelId,'warm'); assert.ok(stage.cacheExpertDecisionId); assert.equal(experts.decision(stage.cacheExpertDecisionId!).selectedRoute?.backendInstanceId,'llama-process-1'); assert.ok(coordinator.get(parcel.id).audit.timeline.some(item=>item.type==='cache.expert_selected'&&/Warm Expert/.test(item.summary)));
+  await runtime.tick(); await coordinator.tick(); stage=coordinator.get(parcel.id).stages[0]; assert.equal(stage.baton?.cacheExpertDecisionId,stage.cacheExpertDecisionId); assert.equal(stage.baton?.cacheExpertId,experts.decision(stage.cacheExpertDecisionId!).selectedExpertId);
 });
 
 test('failed gate blocks every downstream stage and survives coordinator restart', async () => {

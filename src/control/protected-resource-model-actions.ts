@@ -63,7 +63,7 @@ export function registerProtectedResourceModelActions(config: AgentControlConfig
       const value = parseProposalResult(result.execution.resultRef);
       return {artifacts: [{name: 'git-proposal', value: {schema: 'agent-control.git-proposal/v1', objective: task, route: safeRoute(route), ...value}}], evidence: result.execution.evidence, detail: `Model proposed ${value.commands.length} Git operation${value.commands.length === 1 ? '' : 's'}; execution remains pending semantic governance`};
     }};
-  }));
+  }), ['EXTERNAL_COMMUNICATION', 'CREDENTIAL_USE']);
   return registry;
 }
 

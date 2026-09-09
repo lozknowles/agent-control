@@ -14,7 +14,7 @@ export async function runPersistentTeammatesDemo(root = fs.mkdtempSync(path.join
   store.saveRoutine('researcher', {id: 'evidence-first', name: 'Evidence first', instructions: 'Lead with directly supported facts and label inference.', source: 'operator'});
 
   const telemetry = new MemoryHarnessEfficiencyLedger(), actions = new ActionRegistry();
-  actions.registerControl('demo.teammate.execute@1.0.0', async context => {
+  actions.registerReadOnly('demo.teammate.execute@1.0.0', async context => {
     const startedAt = new Date().toISOString(), teammateId = String(context.parameters.teammateId), phase = String(context.parameters.phase), task = String(context.parameters.task), contextPacket = JSON.parse(String(context.parameters.context)) as {priorResults?: Array<{teammateId: string; result: string}>};
     const result = phase === 'synthesis'
       ? `Verified combined result for ${task}: ${(contextPacket.priorResults ?? []).map(value => `${value.teammateId} => ${value.result}`).join(' | ')}`

@@ -5,6 +5,7 @@ import {redactSensitiveText} from './context-readers.js';
 import {estimateTokens} from './token-aware-output.js';
 import type {HarnessEfficiencyConfig} from './config.js';
 import {calculateVersionedApiCost, type InvocationCostAccounting, type VersionedModelPricing} from './cost-accounting.js';
+import type {CacheEvidence} from './cache-evidence.js';
 
 export type HarnessProfileName = 'THIN' | 'STANDARD' | 'DEEP';
 export type HarnessRoutingMode = 'OBSERVE' | 'ENFORCE' | 'EXPERIMENT';
@@ -420,6 +421,7 @@ export interface ModelInvocationObservation {
   phaseUpdatedAt?: string;
   startup: StartupContextBreakdown;
   usage: NormalizedProviderUsage;
+  cacheEvidence?: CacheEvidence;
   providerReportedCost: number | null;
   calculatedCost: number | null;
   currency: string | null;
@@ -462,6 +464,7 @@ export interface InvocationObservationInput {
   completedAt: string;
   startupSources?: ContextPacketSource[];
   rawUsage?: unknown;
+  cacheEvidence?: CacheEvidence;
   providerReportedCost?: number;
   pricing?: InvocationPricing;
   costAccounting?: InvocationCostAccounting;
@@ -493,7 +496,7 @@ export function createInvocationObservation(input: InvocationObservationInput): 
     schema: 'agent-control.model-invocation/v1', id: input.id ?? `inv-${randomUUID()}`, jobId: input.jobId, runId: input.runId ?? null, stepId: input.stepId ?? null, taskId: input.taskId, laneId: input.laneId,
     model: input.model, provider: input.provider, ...(input.accountProfileId ? {accountProfileId: input.accountProfileId} : {}), harnessProfile: input.harnessProfile, harnessId: input.harnessId ?? 'adaptive-harness', executionStrategy: input.executionStrategy, turnNumber,
     startedAt: input.startedAt, completedAt: input.completedAt, elapsedMs: completed - started, state: input.outcome === 'CANCELLED' || /cancel/i.test(input.error ?? '') ? 'CANCELLED' : /timeout|timed out/i.test(input.error ?? '') ? 'TIMED_OUT' : input.outcome === 'FAILED' ? 'FAILED' : 'COMPLETE', phase: input.phase ?? 'complete', phaseUpdatedAt: input.completedAt,
-    startup, usage,
+    startup, usage, ...(input.cacheEvidence ? {cacheEvidence: structuredClone(input.cacheEvidence)} : {}),
     providerReportedCost: input.providerReportedCost ?? null,
     calculatedCost, currency: versionedPricing?.currency ?? input.pricing?.currency ?? null,
     ...(input.costAccounting ? {costAccounting: structuredClone(input.costAccounting)} : {}),

@@ -235,8 +235,8 @@ export function registerOperatorReviewActions(config: AgentControlConfig, regist
         return {artifacts: [{name: 'review-result', value}], evidence: result.execution.evidence, detail: value.providerStatus === 'completed' ? 'provider response retained; independent verification pending' : 'provider attempt retained; independent verification pending'};
       },
     };
-  }));
-  registry.registerControl('operator.large-context.verify@1.0.0', async context => {
+  }), ['EXTERNAL_COMMUNICATION', 'CREDENTIAL_USE']);
+  registry.registerReadOnly('operator.large-context.verify@1.0.0', async context => {
     const artifact = context.inputArtifacts.find(item => item.name === 'review-result');
     if (!artifact) throw new ActionFailure('review_result_artifact_required', 'configuration');
     const value = context.readArtifact(artifact.id) as {providerStatus?: string; responseText?: string; providerResponseId?: string};

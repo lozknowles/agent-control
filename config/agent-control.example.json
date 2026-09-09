@@ -52,6 +52,18 @@
     "confidenceWeight": 0.05,
     "explorationRate": 0.1
   },
+  "cacheAwareExperts": {
+    "enabled": true,
+    "hotMinutes": 10,
+    "warmMinutes": 60,
+    "expiryMinutes": 240,
+    "hotReuseRatio": 0.7,
+    "minimumReuseRatio": 0.25,
+    "highCompatibilityMaximumDelta": 0.25,
+    "partialCompatibilityMaximumDelta": 0.6,
+    "maximumScoreBonus": 0.15,
+    "allowDerivedPreference": false
+  },
   "harnessEfficiency": {
     "routingMode": "observe",
     "minimumVerifiedRuns": 10,
