@@ -15,7 +15,7 @@ this candidate.
 - Previously qualified 4.3 implementation: `bfec20317361fd20f886bba5a1b752d570fc2cbe`
 - Preserved historical evidence HEAD: `a6d35253bb40c2da049945430ebc1960cde4468b`
 - Integration branch: `release/4.3.0-integration-20260909`
-- Frozen candidate SHA: recorded after the candidate commit below
+- Frozen product candidate SHA: `f59aab4e1150bc054a53c9df2af83435a2087e6a`
 
 The remote was fetched immediately before the candidate freeze and
 `origin/main` remained at the integration base above.
