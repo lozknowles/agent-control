@@ -74,6 +74,17 @@ test('a completed incompatible invocation invalidates retained context in the sa
   assert.equal(records.find(item=>item.context.dependencyContextSha256==='deps-new')?.state,'HOT');
 });
 
+test('explicit incompatible route does not claim Warm Expert selection and final verification updates task history', () => {
+  const runtime=new CacheAwareExpertRuntime(new FileCacheExpertStore(),{},()=> '2026-09-09T10:02:00.000Z');
+  warm(runtime,'warm','2026-09-09T10:00:00.000Z');
+  const decision=runtime.assess({parcelId:'parcel',stageId:'explicit-incompatible',context:context({repositoryIdentitySha256:'different-repository'}),candidates:[candidate('warm')]});
+  assert.equal(decision.candidates[0].compatibility,'INCOMPATIBLE'); assert.equal(decision.candidates[0].cacheScore,0); assert.equal(decision.selectedExpertId,null);
+  const confirmed=runtime.confirmSelection(decision.id,route('warm'),'Explicit governed route retained'); assert.equal(confirmed.selectedExpertId,null);
+  warm(runtime,'verified-later','2026-09-09T10:01:00.000Z',{invocationId:'same-invocation',verifierResult:'UNKNOWN'});
+  warm(runtime,'verified-later','2026-09-09T10:01:00.000Z',{invocationId:'same-invocation',verifierResult:'PASS'});
+  assert.equal(runtime.records().find(item=>item.route.modelId==='verified-later')?.taskHistory[0].verifierResult,'PASS');
+});
+
 test('capability, integrity, health and base governance outrank cache warmth', () => {
   const runtime = new CacheAwareExpertRuntime(new FileCacheExpertStore(), {maximumScoreBonus:1}, () => '2026-09-09T10:01:00.000Z'); warm(runtime);
   for (const broken of [{capabilityQualified:false},{integrityQualified:false},{health:'degraded' as const},{eligible:false}]) {
