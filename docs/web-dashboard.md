@@ -2,7 +2,15 @@
 
 The web dashboard is an operator interface over `AgentControlService`. It is not a web scheduler and does not own lane, lease, PTY, verification or provider state.
 
-The default **Jobs** area contains four separate platform views: **Job Definitions**, **Saved Jobs**, **Schedules**, and **Runs**. These sit alongside the existing catalog/Run-ledger projection rather than replacing its Action/DAG workflows. **Lanes** retains the interactive multi-agent control room. **Sessions** projects persistent Actor, participant, delegation, ACP, contract/PTY, handoff, model/runtime, Live Shell and evidence identity. **Systems** shows canonical configured inventory plus ACP transport and lifecycle-recipe readiness. **Models** shows the canonical provider-neutral model registry and immutable lifecycle state. **Routing** shows the evidence-conditioned Model Capability League, Workflow League and persisted per-Work-Parcel Decision Tree. **Crew** shows the same operational state through navigable characters plus an isolated simulated inspection gallery. **Configuration** provides authenticated, validated inventory and fast-execution/adaptive-routing policy editing. No view parses terminal text for Run state.
+The default **Jobs** area contains four separate platform views: **Job Definitions**, **Saved Jobs**, **Schedules**, and **Runs**. These sit alongside the existing catalog/Run-ledger projection rather than replacing its Action/DAG workflows. **Lanes** retains the interactive multi-agent control room. **Sessions** projects persistent Actor, participant, delegation, ACP, contract/PTY, handoff, model/runtime, Live Shell and evidence identity. **Systems** shows canonical configured inventory plus ACP transport and lifecycle-recipe readiness. **Models** shows the canonical provider-neutral model registry and immutable lifecycle state. **Routing** shows the evidence-conditioned Model Capability League, Workflow League and persisted per-Work-Parcel Decision Tree. **Crew** shows the same operational state through navigable characters plus an isolated simulated inspection gallery. **POE** is the authenticated conversational/evidence and benchmark-proposal workspace; it is not a generic chat executor. **Configuration** provides authenticated, validated inventory and fast-execution/adaptive-routing policy editing. No view parses terminal text for Run state.
+
+## POE workspace
+
+POE answers from focused `AgentControlService` records and states when evidence is unavailable. Contextual **Ask POE about this** controls on native model, Job, Run, Work Parcel, lane, Crew, routing, baton, and Live Shell views pass a typed stable reference rather than copying the whole page. POE may explain a governor or verification record but cannot change it.
+
+The character's state and animation reflect the durable conversation lifecycle. `THINKING` appears only while a configured Model Registry response route is active; without one, the turn uses the labelled deterministic grounded renderer. A model-generated turn shows its provider/account/model/node and token/cost authority. The dashboard never labels unavailable usage or cost as zero and never claims a fallback model was used when it was not.
+
+Benchmark drafts are editable and harmless. Freeze seals the exact revision and fairness conditions; **Approve & submit Work Parcel** presents a separate confirmation and calls the existing governed Work Parcel API. The submitted Parcel retains the POE conversation, proposal, frozen hash, and request identity. Use the transcript control for a human-readable conversation projection; the complete execution record remains under the resulting Run and Work Parcel. See [`poe.md`](poe.md).
 
 ## Parameterised Jobs
 
@@ -108,6 +116,7 @@ Read projections:
 - `GET /api/router`
 - `GET /api/evidence`
 - `GET /api/events` (SSE)
+- `GET /api/poe`, `GET /api/poe/conversations/:id`, and `GET /api/poe/conversations/:id/transcript` (operator authenticated)
 - `GET /api/jobs`, `GET /api/jobs/:id`, `GET /api/jobs/:id/runs`
 - `GET /api/schedules`, `GET /api/runs`, `GET /api/runs/:id`
 - `GET /api/job-definitions`, `GET /api/job-definitions/:id`
@@ -125,6 +134,8 @@ Read projections:
 - `GET /api/orchestration/decisions`, `GET /api/orchestration/decisions/:id`, `GET /api/orchestration/decisions/:id/report`, `GET /api/parcels/:id/decision-tree`, and `GET /api/parcels/:id/decision-report` (persisted machine-readable and human-readable operational routing records)
 
 Authenticated legacy Job requests are `POST /api/jobs/:id/run`, schedule `enable`/`disable`, and Run `cancel`, `retry` and `approve`. Parameterised Job requests are `POST /api/saved-jobs`, `POST /api/saved-jobs/:id` (update), `POST /api/saved-jobs/:id/run`, `POST /api/saved-jobs/:id/enable`, `POST /api/saved-jobs/:id/disable`, and `POST /api/job-runs/:id/cancel`. Saved Job updates require the current revision. Scoped command-result expansion is `POST /api/command-output/:handle/expand`; operator authentication is necessary but not sufficient, because the supplied task/lane/worker/lease/ownership scope must exactly match the retained result. These calls enter `AgentControlService`. The HTTP layer cannot register a worker, grant a capability, edit a definition, acquire a resource lock, dispatch an Action or write a PTY.
+
+POE mutations are `POST /api/poe/conversations`, conversation `turns`, `voice`, and `interrupt`, plus proposal create/revise/freeze/approve endpoints documented in [`poe.md`](poe.md). They require the same operator authentication and origin policy as other dashboard mutations. POE has no endpoint for arbitrary shell, tool dispatch, authority widening, release, deployment, or credential access.
 
 Authenticated inventory changes use `POST /api/configuration/systems` with the current `revision`, a `kind` of `resource`, `provider`, `model` or `service`, an optional `originalId`, and the complete replacement `item`. Model role maps use `POST /api/configuration/model-routing`; fast-execution policy uses `POST /api/configuration/spark`; adaptive orchestration policy uses `POST /api/configuration/adaptive-orchestration`. The server rejects stale revisions, embedded secret material and invalid schema, writes the complete configuration atomically and emits `configuration.changed`. Provider/model/route updates return `restartRequired: false`; resources/services/Spark/adaptive policy return `true`.
 
@@ -150,6 +161,7 @@ When a selected Session has fast-execution telemetry, its **Fast execution** pan
 - Browser token retention: current tab only; no cookie and no server-side browser session.
 - Response protection: no-store, CSP, frame denial, referrer suppression and secret-like key/value redaction.
 - Audit: accepted service commands append typed records to the Agent Control event journal.
+- POE: full conversations and proposals are authenticated private state; the unauthenticated snapshot contains only a safe identity/state/voice summary. Model output must cite supplied evidence or fails closed to a visibly labelled deterministic rendering.
 - Output handles: random, expiring, authority-scoped references that select only data captured by the original result; they are not file paths or repository readers.
 
 Remote binding is not a turnkey security boundary. If explicitly enabled, place the listener behind authenticated TLS, restrict network reachability, set an exact `AGENT_CONTROL_WEB_ALLOWED_ORIGINS` list, rotate the operator token, and verify the reverse proxy does not buffer SSE. Never publish it directly to the public internet.

@@ -1,5 +1,26 @@
 # Changelog
 
+## [4.1.0] — 2026-09-09
+
+- Adds the compact floating POE companion: original SVG hotelier, keyboard/touch repositioning, responsive conversation panel, greeting, and operator-controlled spoken tour synchronized with actual playback and highlighted dashboard views.
+- Grounds initial conversation through the configured Codex reasoning route and an approved, versioned documentation index. Shows invoked model identity and measured turn usage; missing readiness, context and cost remain unavailable.
+- Projects real job and schedule registries, seals permitted default-input job proposals for explicit approval, and reconciles parent/child work and verification before completion announcements. Sealed handovers and receipts use canonical runtime events.
+- Adds real speech captions, interrupted-audio fencing and retry states; preserves technical identifiers in the transcript and renders grouped numerical counts accurately in speech.
+- Exposes owner-started full-regression progress with actual runner counts and exact tested SHA. Test output remains distinct from Work Parcels, and narrated progress is a time-bound observation.
+- Documents private installation, voice/reasoning configuration, authentication, private HTTPS access, upgrades, rollback, troubleshooting and physical evidence requirements.
+- Qualified product: 1,083 passing tests, isolated installation, real Windows microphone/audio/barge-in, and four verified governed jobs. The operator accepted the existing evidence and edited 6:12 tour for release; review methods and limits are retained in `docs/evidence/agent-control-4.1-qualification.md`.
+
+### POE conversational operator included in 4.1
+
+- Renames the resident conversational helper to **POE** and adds an original state-driven dashboard concierge integrated with the existing six-member Crew. `IDLE`, `LISTENING`, `INVESTIGATING`, `THINKING`, `EXPLAINING`, `OBSERVING_CREW`, `DESIGNING_EXPERIMENT`, `WAITING_FOR_APPROVAL`, and `SPEAKING` derive from durable POE activity rather than simulated work.
+- Adds durable channel-scoped POE conversations, focused authoritative evidence adapters, explicit unavailable-state answers, human-readable transcript projection, contextual **Ask POE about this** controls, secret rejection, and prompt-injection containment. POE cannot grant authority or override governors, protected resources, credentials, release, deployment, or Live Shell controls.
+- Adds an optional provider-neutral response-model port. Model Registry roles separately select inexpensive status/explanation and stronger experiment-design routes; actual provider/account/model/node identity and usage/cost authority are retained. Invalid grounded citations or failed selected routes use a visibly labelled deterministic renderer without silently selecting another model.
+- Adds fair benchmark proposals with immutable fixture, tools, context, cache, authority, time, software/hardware/quantisation/endpoint disclosures, objective versus `HUMAN_EVALUATION` metrics, bounded conversational draft amendments, explicit revisions, stable SHA-256 freezing, exact approval, and materialised repetitions.
+- Connects approved proposals only to the existing `WorkParcelCoordinator` and registered Jobs. Request origin records `poe/dashboard`, conversation, proposal, frozen hash, actor, and request identity; normal capability routing, safety, execution, independent verification, accounting, and league evidence remain authoritative.
+- Adds optional original designed OmniVoice output, authoritative STT transcript retention, latency fields, and TTS-only barge-in. Cloned voices are rejected. Adds authenticated `POE: <question>` support to the existing WhatsApp Social & Voice path without widening consequential voice or command authority.
+- Adds focused deterministic coverage for grounding, unavailable records, model-role routing, invalid citations, channel provenance, WhatsApp idempotency, secret exclusion, fairness defects, draft revision, stale/hash-mismatched approval, normal Work Parcel execution, repetition materialisation, verification, voice latency, and interruption isolation.
+- The final product passed 1,083 regression tests, isolated startup/authentication and responsive checks. Real Windows qualification includes microphone input, interruption, a narrated tour and two approved two-stage observation parcels. The current qualification record tracks remaining media listening/review and deployment gates.
+
 ## [4.0.0] — 2026-09-08
 
 - Integrates the governed Social & Voice/OpenWA ingress, canonical Work Parcel, adaptive Model/Workflow Leagues, token governor, sealed-baton handoff, independent verification, protected-resource policy, operational Crew/WOPR dashboard and Live Shell session projection on one isolated branch.

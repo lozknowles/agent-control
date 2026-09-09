@@ -16,6 +16,9 @@ refresh = async () => {
   Object.assign(jobState, {jobs, parcels, runs, queue, workers, resources: state.snapshot?.resources || [], locks, systems, artifacts, outputMetrics, efficiencyMetrics, invocations});
   const linkedRun = new URL(location.href).searchParams.get('messagingRun');
   if(linkedRun && !jobState.selectedRun){const run=runs.find(item=>item.id===linkedRun);if(run){jobState.selectedJob=run.jobId;jobState.selectedRun=run.id;}}
+  const linkedJob=new URL(location.href).searchParams.get('job');if(linkedJob&&jobs.some(job=>job.metadata.id===linkedJob))jobState.selectedJob=linkedJob;
+  const linkedSystem=new URL(location.href).searchParams.get('system');if(linkedSystem&&systems.some(system=>system.id===linkedSystem))jobState.selectedSystem=linkedSystem;
+  const linkedLane=Number(new URL(location.href).searchParams.get('lane'));if(linkedLane&&state.snapshot?.lanes?.some(lane=>lane.id===linkedLane))state.selected=linkedLane;
   if (!jobState.selectedJob && jobs.length) jobState.selectedJob = jobs[0].metadata.id;
   if (jobState.selectedJob && !jobs.some(job => job.metadata.id === jobState.selectedJob)) jobState.selectedJob = jobs[0]?.metadata.id ?? null;
   if (!jobState.selectedSystem && systems.length) jobState.selectedSystem = systems[0].id;
@@ -477,12 +480,14 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('[data-view]').forEach(button => button.addEventListener('click', () => {
     document.querySelectorAll('[data-view]').forEach(item => item.classList.toggle('active', item === button));
     const view = button.dataset.view;
+    if(view==='poe'){document.dispatchEvent(new Event('poe:open'));return;}
     document.querySelector('#jobs-workspace').hidden = view !== 'jobs';
     document.querySelector('#lanes-workspace').hidden = view !== 'lanes';
     document.querySelector('#sessions-workspace').hidden = view !== 'sessions';
     document.querySelector('#systems-workspace').hidden = view !== 'systems';
     document.querySelector('#models-workspace').hidden = view !== 'models';
     document.querySelector('#crew-workspace').hidden = view !== 'crew';
+    document.querySelector('#poe-workspace').hidden = view !== 'poe';
     document.querySelector('#configuration-workspace').hidden = view !== 'configuration';
     document.querySelector('#routing-workspace').hidden = view !== 'routing';
     if(view==='configuration')loadConfiguration().catch(showError);

@@ -21,8 +21,10 @@ import type {JobDefinition} from '../src/control/job-types.js';
 import {ModelRegistry} from '../src/control/model-registry.js';
 import {OpenWAAdapter, openwaConfigSchema, type OpenWAConfig} from '../src/control/openwa.js';
 import {openwaExecutionPort, OpenWASocialProvider} from '../src/control/openwa-social-provider.js';
+import {PoeRuntime} from '../src/control/poe.js';
 import {PtyRegistry} from '../src/control/pty.js';
 import {SocialVoiceCoordinator} from '../src/control/social-voice.js';
+import {PrivateSpeechProvider} from '../src/control/speech-http-provider.js';
 import {TokenAwareBatonRuntime} from '../src/control/token-aware-baton-routing.js';
 import {WorkParcelCoordinator, WorkParcelStore, type WorkParcelPlan, type WorkParcelPlanner} from '../src/control/work-parcels.js';
 import {startWebDashboard} from '../src/control/web-server.js';
@@ -49,6 +51,8 @@ interface Options {
   ingress: 'dashboard' | 'openwa';
   openwaConfigFile?: string;
   openwaEnrolmentFile?: string;
+  poeVoiceConfigFile?: string;
+  physicalPoe: boolean;
 }
 
 interface QualityObservation {
@@ -92,6 +96,8 @@ function readOptions(): Options {
     ingress: process.env.AGENT_CONTROL_QUALIFICATION_INGRESS === 'openwa' ? 'openwa' : 'dashboard',
     ...(process.env.AGENT_CONTROL_QUALIFICATION_OPENWA_CONFIG ? {openwaConfigFile: path.resolve(process.env.AGENT_CONTROL_QUALIFICATION_OPENWA_CONFIG)} : {}),
     ...(process.env.AGENT_CONTROL_QUALIFICATION_OPENWA_ENROLMENT ? {openwaEnrolmentFile: path.resolve(process.env.AGENT_CONTROL_QUALIFICATION_OPENWA_ENROLMENT)} : {}),
+    ...(process.env.AGENT_CONTROL_QUALIFICATION_POE_VOICE_CONFIG ? {poeVoiceConfigFile: path.resolve(process.env.AGENT_CONTROL_QUALIFICATION_POE_VOICE_CONFIG)} : {}),
+    physicalPoe: process.env.AGENT_CONTROL_QUALIFICATION_PHYSICAL_POE === 'true',
   };
 }
 
@@ -219,8 +225,8 @@ function acceptanceQualityGate(observations: QualityObservation[]): RepositoryRe
   }};
 }
 
-function job(id: string, name: string, action: string, capability: string, verification: string, output: {name: string; type: string; schema: string}, timeoutSeconds = 60): JobDefinition {
-  return {apiVersion: 'agent-control/v1', kind: 'Job', metadata: {id, name, version: '1.0.0', description: `Bounded physical ${name.toLowerCase()} for Crew/WOPR escalation qualification`}, spec: {priority: 'normal', concurrency: 'allow', steps: [{id: 'work', action, requires: [capability], timeoutSeconds, outputs: [{...output, version: '1'}], verification: [verification]}]}};
+function job(id: string, name: string, action: string, capability: string, verification: string, output: {name: string; type: string; schema: string}, timeoutSeconds = 60, approval?: string): JobDefinition {
+  return {apiVersion: 'agent-control/v1', kind: 'Job', metadata: {id, name, version: '1.0.0', description: `Bounded physical ${name.toLowerCase()} for Crew/WOPR escalation qualification`}, spec: {priority: 'normal', concurrency: 'allow', steps: [{id: 'work', action, requires: [capability], timeoutSeconds, ...(approval ? {approval} : {}), outputs: [{...output, version: '1'}], verification: [verification]}]}};
 }
 
 function safeCrew(control: AgentControlService) {
@@ -410,7 +416,7 @@ async function main() {
   const jobDefinitions = [
     job('crew-wopr-baseline', 'Acceptance baseline', 'qualification.acceptance-baseline@1.0.0', 'qualification.baseline', 'two-known-failures-confirmed', {name: 'acceptance-baseline', type: 'qualification-acceptance-baseline', schema: 'agent-control.qualification-acceptance/v1'}),
     job('crew-wopr-inventory', 'Frozen source inventory', 'qualification.frozen-inventory@1.0.0', 'qualification.inventory', 'frozen-sha-and-files-confirmed', {name: 'frozen-inventory', type: 'qualification-frozen-inventory', schema: 'agent-control.qualification-inventory/v1'}),
-    job('crew-wopr-review', 'Token-aware repository review', 'qualification.repository-review@1.0.0', 'qualification.review', 'quality-escalation-and-review-verified', {name: 'repository-review-result', type: 'qualification-repository-review', schema: 'agent-control.qualification-repository-review/v1'}, 300),
+    job('crew-wopr-review', 'Token-aware repository review', 'qualification.repository-review@1.0.0', 'qualification.review', 'quality-escalation-and-review-verified', {name: 'repository-review-result', type: 'qualification-repository-review', schema: 'agent-control.qualification-repository-review/v1'}, 300, options.physicalPoe ? 'poe-physical-review' : undefined),
     job('crew-wopr-verify', 'Independent outcome verification', 'qualification.outcome-verify@1.0.0', 'qualification.verify', 'independent-outcome-verification-passed', {name: 'verified-outcome', type: 'qualification-verified-outcome', schema: 'agent-control.qualification-verified-outcome/v1'}, 60),
   ];
   const catalog = new JobCatalog(actions.ids()); for (const definition of jobDefinitions) catalog.addJob(definition);
@@ -442,6 +448,16 @@ async function main() {
     executionSessions,
     resources: workers.list().map(worker => ({id: worker.id, name: worker.id.replaceAll('-', ' '), platform: 'linux', transport: 'local', capabilities: worker.capabilities})),
   });
+  let poe: PoeRuntime | undefined;
+  if (options.physicalPoe) {
+    if (!options.poeVoiceConfigFile) throw new Error('qualification_poe_voice_configuration_required');
+    const voiceSettings = JSON.parse(fs.readFileSync(options.poeVoiceConfigFile, 'utf8')) as {speechUrl?: string; tokenEnv?: string; voice?: import('../src/control/social-voice-providers.js').VoiceIdentity};
+    const speechToken = voiceSettings.tokenEnv ? process.env[voiceSettings.tokenEnv] : undefined;
+    if (!voiceSettings.speechUrl || !voiceSettings.tokenEnv || !speechToken || !voiceSettings.voice) throw new Error('qualification_poe_voice_configuration_invalid');
+    const speech = new PrivateSpeechProvider(voiceSettings.voice.provider, voiceSettings.speechUrl, speechToken, voiceSettings.voice);
+    poe = new PoeRuntime({file: path.join(options.stateDir, 'poe', 'conversations.json'), evidence: {overview: () => control.poeEvidence(), resolve: reference => control.poeEvidence(reference)}, speech, recognition: speech, voice: voiceSettings.voice, onEvent: event => control.events.emit(event.type === 'conversation.changed' ? 'poe.conversation_changed' : event.type === 'proposal.changed' ? 'poe.proposal_changed' : event.type === 'speech.changed' ? 'poe.speech_changed' : 'poe.interrupted', {conversationId: event.conversationId, proposalId: event.proposalId, state: event.state, detail: event.detail, observedAt: event.at}, undefined, 'poe')});
+    control.configureProjection({poe});
+  }
   runtime.ledger.subscribe((runId, type, status) => control.events.emit('job.run_changed', {runId, type, status}, undefined, 'qualification-job-runtime'));
   parameterizedJobs.runs.subscribe(run => control.events.emit('job.run_changed', {runId: run.id, status: run.status, kind: 'parameterized'}, undefined, 'qualification-parameterized-runtime'));
   tokenRouting.subscribe(event => control.events.emit(eventName(event.type), {threadId: event.threadId, parcelId: event.parcelId, observedAt: event.at}, undefined, 'qualification-token-runtime'));
@@ -461,7 +477,10 @@ async function main() {
     openwa.db.prepare('INSERT OR REPLACE INTO operators(sender,grants,active,progress) VALUES (?,?,1,1)').run(operator.sender, JSON.stringify([socialTemplate.name]));
     socialIdentity = {channel: 'openwa', account: openwaConfig.sessionId, sender: operator.sender, conversation: operator.sender};
     const standard = openwaExecutionPort(openwa);
-    social = new SocialVoiceCoordinator(path.join(options.stateDir, 'messaging', 'social-voice.sqlite'), new OpenWASocialProvider(openwa), {...standard, start(_template, actor, key, request) { return parcels.submitApprovedPlan(request.prompt, actor, key, plan, request.origin); }});
+    const voiceSettings = options.physicalPoe && options.poeVoiceConfigFile ? JSON.parse(fs.readFileSync(options.poeVoiceConfigFile, 'utf8')) as {speechUrl: string; tokenEnv: string; voice: import('../src/control/social-voice-providers.js').VoiceIdentity} : undefined;
+    const speechToken = voiceSettings ? process.env[voiceSettings.tokenEnv] : undefined;
+    const speech = voiceSettings && speechToken ? new PrivateSpeechProvider(voiceSettings.voice.provider, voiceSettings.speechUrl, speechToken, voiceSettings.voice) : undefined;
+    social = new SocialVoiceCoordinator(path.join(options.stateDir, 'messaging', 'social-voice.sqlite'), new OpenWASocialProvider(openwa), {...standard, start(_template, actor, key, request) { return parcels.submitApprovedPlan(request.prompt, actor, key, plan, request.origin); }}, speech, speech, voiceSettings?.voice, Date.now, event => control.events.emit('social.activity', {event}, undefined, 'social-voice'), poe ? {ask: async ({actor, identityReference, text, modality}) => {const conversationId = `poe-whatsapp:${sha256(identityReference)}`;try{poe!.conversation(conversationId);}catch{poe!.createConversation({id: conversationId, actorId: actor, channel: 'whatsapp'});}const result = await poe!.ask({conversationId, text, channel: 'whatsapp', modality, contentTrust: modality === 'voice' ? 'UNTRUSTED_DATA' : 'OPERATOR_REQUEST'});return {conversationId, turnId: result.turn.id, text: result.turn.text};}, interrupt: ({actor, conversationId, turnId}) => poe!.bargeIn(conversationId, actor, turnId)} : undefined);
     openwa.social = social;
   }
   const server = startWebDashboard(control, {host: options.host, port: options.port, operatorToken: options.operatorToken, allowedOrigins, assetsDir: path.resolve('assets/dashboard'), openwa, socialVoice: social});
@@ -476,11 +495,11 @@ async function main() {
     if (health.state !== 'connected_verified') throw new Error(`qualification_openwa_unavailable:${health.state}`);
     emit({phase: 'SOCIAL_CHANNEL_READY', command: QUALIFICATION_SOCIAL_COMMAND, channel: 'openwa', at: now()});
     await delay(2_000);
-    openwa.queueSocial(socialIdentity, `Agent Control 4.0 qualification is ready. Reply with exactly:\n${QUALIFICATION_SOCIAL_COMMAND}`, `qualification-ready:${sha256(startedAt)}`);
+    openwa.queueSocial(socialIdentity, options.physicalPoe ? 'POE physical qualification is ready. Begin with the voice instruction supplied by the operator.' : `Agent Control 4.0 qualification is ready. Reply with exactly:\n${QUALIFICATION_SOCIAL_COMMAND}`, `qualification-ready:${sha256(startedAt)}`);
   }
 
-  const deadline = Date.now() + 6 * 60_000, inFlight = new Set<Promise<unknown>>(), trace: Array<{at: string; label: string; crew: ReturnType<typeof safeCrew>; activityPanel: ReturnType<AgentControlService['snapshot']>['characterCrew']['activityPanel']}> = [];
-  let parent = parcels.list().find(item => item.executionOwner === 'work-parcel-coordinator'), lastSignature = '', concurrentEmitted = false, sourceEmitted = false, rejectionEmitted = false, destinationEmitted = false, verificationEmitted = false;
+  const deadline = Date.now() + (options.physicalPoe ? 240 : 6) * 60_000, inFlight = new Set<Promise<unknown>>(), trace: Array<{at: string; label: string; crew: ReturnType<typeof safeCrew>; activityPanel: ReturnType<AgentControlService['snapshot']>['characterCrew']['activityPanel']}> = [];
+  let parent = parcels.list().find(item => item.executionOwner === 'work-parcel-coordinator'), lastSignature = '', concurrentEmitted = false, sourceEmitted = false, rejectionEmitted = false, destinationEmitted = false, verificationEmitted = false, approvalRequested = false;
   const sample = (label: string) => { const snapshot = control.snapshot(), signature = snapshot.characterCrew.members.map(item => item.transitionKey).join('|') + snapshot.characterCrew.activityPanel.groups.flatMap(group => group.indicators.map(item => `${item.id}:${item.state}:${item.count}`)).join('|'); if (signature !== lastSignature || label !== 'poll') { lastSignature = signature; trace.push({at: now(), label, crew: safeCrew(control), activityPanel: snapshot.characterCrew.activityPanel}); } return snapshot; };
   const launch = () => { for (;;) { const dispatch = runtime.dispatch(); if (!dispatch) break; const completion = dispatch.completion.finally(() => inFlight.delete(completion)); inFlight.add(completion); } };
   while (!parent && Date.now() < deadline) { await social?.tick(); await delay(100); parent = parcels.list().find(item => item.executionOwner === 'work-parcel-coordinator'); sample('poll'); }
@@ -489,7 +508,8 @@ async function main() {
 
   while (Date.now() < deadline) {
     await social?.tick(); await parcels.tick(); launch(); parent = parcels.get(parent.id); const snapshot = sample('poll'), routing = tokenRouting.projection();
-    const activeParentStages = parent.stages.filter(stage => stage.status === 'RUNNING'), sourceThread = routing.threads.find(thread => thread.providerId === sourceProvider.id), destinationThread = routing.threads.find(thread => thread.providerId === destinationProvider.id), rejected = qualityObservations.find(item => !item.accepted), baton = tokenRouting.evidence().batons[0];
+    const activeParentStages = parent.stages.filter(stage => stage.status === 'RUNNING'), sourceThread = routing.threads.find(thread => thread.providerId === sourceProvider.id), destinationThread = routing.threads.find(thread => thread.providerId === destinationProvider.id), rejected = qualityObservations.find(item => !item.accepted), baton = tokenRouting.evidence().batons[0], reviewStage = parent.stages.find(stage => stage.id === 'review'), reviewRun = reviewStage?.runId ? runtime.ledger.get(reviewStage.runId) : undefined;
+    if(options.physicalPoe&&!approvalRequested&&social&&socialIdentity&&reviewRun?.steps.some(step=>step.status==='WAITING_FOR_APPROVAL'&&step.approval==='poe-physical-review')){const approval=await social.requestApproval(socialIdentity,parent.id,reviewRun.id,'poe-physical-review',300_000);approvalRequested=true;emit({phase:'EXPLICIT_APPROVAL_REQUIRED',parcelId:parent.id,runId:reviewRun.id,approvalNumber:approval.number,command:approval.command,at:now()});}
     if (!concurrentEmitted && activeParentStages.some(stage => stage.id === 'baseline') && activeParentStages.some(stage => stage.id === 'inventory')) { concurrentEmitted = true; emit({phase: 'CONCURRENT_STATE_READY', parcelId: parent.id, activeStages: activeParentStages.map(stage => stage.id), at: now()}); }
     if (!sourceEmitted && sourceThread?.active) { sourceEmitted = true; emit({phase: 'SOURCE_MODEL_ACTIVE', parcelId: sourceThread.parcelId, threadId: sourceThread.id, providerId: sourceThread.providerId, modelId: sourceThread.modelId, contextAuthority: sourceThread.latest.context.authority, at: now()}); }
     if (!rejectionEmitted && rejected && baton) { rejectionEmitted = true; emit({phase: 'QUALITY_GATE_REJECTED', parcelId: baton.parcelId, code: rejected.code, summary: rejected.summary, unresolvedCriteria: rejected.unresolvedCriteria, batonId: baton.id, batonSha256: baton.sha256, at: now()}); }
@@ -552,13 +572,13 @@ async function main() {
   const parentRunsById = new Map(parentRuns.map(run => [run.id, run]));
   const transcriptDocument = parameterizedJobs.transcripts?.read(nestedRun.id);
   if (!transcriptDocument) throw new Error('qualification_product_transcript_unavailable');
-  const transcriptText = transcriptDocument.content;
-  assert.match(transcriptText, /^# Agent Control Natural Execution Transcript/m);
-  assert.match(transcriptText, /## Origin\n/);
-  assert.match(transcriptText, /## Authoritative initiating request\n\n> start governed-adaptive-crew/);
-  assert.ok(transcriptText.indexOf('## Authoritative initiating request') < transcriptText.indexOf('- Schema:'));
-  assert.match(transcriptText, /BATON_CREATED/);
-  assert.match(transcriptText, /HANDOFF_COMPLETED/);
+  const executionTranscriptText = transcriptDocument.content;
+  assert.match(executionTranscriptText, /^# Agent Control Natural Execution Transcript/m);
+  assert.match(executionTranscriptText, /## Origin\n/);
+  assert.match(executionTranscriptText, /## Authoritative initiating request\n\n> start governed-adaptive-crew/);
+  assert.ok(executionTranscriptText.indexOf('## Authoritative initiating request') < executionTranscriptText.indexOf('- Schema:'));
+  assert.match(executionTranscriptText, /BATON_CREATED/);
+  assert.match(executionTranscriptText, /HANDOFF_COMPLETED/);
   const protectedRefAfter = command(fixture.repository, 'git', ['ls-remote', '--refs', 'origin', 'refs/heads/main']).split(/\s+/)[0]!;
   assert.equal(protectedRefAfter, fixture.protectedRef);
   const sessions = executionSessions.list(), liveShellSession = sessions.find(item => item.adapterId === 'qualification-linux-pty');
@@ -569,6 +589,14 @@ async function main() {
   assert.ok(liveShellEvents.some(item => item.type === 'human.input'));
   assert.ok(liveShellEvents.some(item => item.type === 'attachment.closed'));
   assert.equal(liveShellSession.capabilities.modes.intervene, true);
+  const poeConversations = poe ? poe.projection().conversations.map(item => poe!.conversation(item.id)) : [];
+  const poeTranscriptText = poe ? poeConversations.map(item => poe!.transcript(item.id)).join('\n\n---\n\n') : '';
+  const socialTranscriptText = social?.transcript() ?? '';
+  const poeInterruptionCount = Number((social?.db.prepare("SELECT count(*) AS count FROM history WHERE event='poe.interrupted'").get() as {count?: number} | undefined)?.count ?? 0);
+  const poeVoiceOperatorTurns = poeConversations.flatMap(item => item.turns).filter(turn => turn.actor === 'operator' && turn.modality === 'voice').length;
+  const explicitApproval = parentRuns.find(run => run.id === parent.stages.find(stage => stage.id === 'review')?.runId)?.approvals.includes('poe-physical-review') ?? false;
+  if(options.physicalPoe){assert.ok(poeVoiceOperatorTurns >= 3,'qualification_requires_several_physical_voice_turns');assert.ok(poeInterruptionCount >= 2,'qualification_requires_two_physical_barge_ins');assert.equal(explicitApproval,true,'qualification_requires_explicit_social_approval');}
+  const transcriptText = options.physicalPoe ? `# Agent Control POE physical qualification — complete user-visible record\n\n## Authenticated social and speech chronology\n\n${socialTranscriptText}\n\n## POE conversations\n\n${poeTranscriptText}\n\n## Governed Work Parcel execution\n\n${executionTranscriptText}` : executionTranscriptText;
   fs.writeFileSync(options.transcriptFile, transcriptText, {mode: 0o600});
   const messageReference = parent.origin?.messageReference;
   const idempotency = options.ingress === 'openwa' && messageReference ? {
@@ -601,6 +629,7 @@ async function main() {
     verification,
     executionSessions: {liveShellSession, events: liveShellEvents, transcriptSha256: sha256(executionSessions.transcript(liveShellSession.id)), harmlessIntervention: true, inputContentPersisted: false},
     dashboard: {urlAuthority: 'isolated loopback qualification server', sseEventCount: control.events.history().length, sseEventTypes: [...new Set(control.events.history().map(event => event.type))], finalActivityPanel: finalSnapshot.characterCrew.activityPanel, finalCrew: finalSnapshot.characterCrew.members, characterTrace: trace},
+    poe: options.physicalPoe ? {projection: poe?.projection(), conversations: poeConversations, socialTranscriptSha256: sha256(socialTranscriptText), interruptionCount: poeInterruptionCount, voiceOperatorTurns: poeVoiceOperatorTurns, explicitApproval, speechSynthesisCount: Number((social?.db.prepare("SELECT count(*) AS count FROM history WHERE event='speech.synthesized'").get() as {count?: number} | undefined)?.count ?? 0)} : null,
     assertions: {normalProductionCallPath: true, socialIngressPhysicallyAuthenticated: options.ingress === 'openwa', socialIngressAdaptiveConvergence: Boolean(parentAdaptiveDecisionId), modelAndWorkflowLeaguesConsulted: nestedAdaptiveReport.steps.some(item => item.kind === 'LEAGUE_EVIDENCE') && Boolean(parentAdaptiveReport.selectedWorkflow), exactInitiatingRequestFirstInTranscript: true, twoRealConcurrentControlLanes: concurrentEmitted, liveShellWatchInterveneDetach: true, protectedRefUnchanged: true, sourceResponseSchemaValid: true, sourceRejectedOnlyByIndependentQualityGate: true, qualityTriggeredAtLowContext: routingEvidence.decisions.some(item => item.trigger?.kind === 'QUALITY_GATE' && (item.contextPercent ?? 0) < 75), sealedBatonCreated: /^[a-f0-9]{64}$/.test(baton.sha256), crossProviderDestinationContinued: true, destinationPassedSameGate: true, sourceThreadRecoverable: true, independentVerificationPassed: verification.passed === true, lifetimeTokensReconciled: nestedRun.usage.totalTokens === totals.totalTokens && nestedParcel.audit.totals.totalTokens === totals.totalTokens, currentContextSeparateFromLifetime: routingEvidence.threads.every(thread => thread.latest.context.tokens !== thread.latest.cumulative.totalTokens || thread.latest.context.authority === 'estimated'), missingValuesNotCoercedToZero: routingEvidence.threads.some(thread => thread.latest.context.authority === 'unavailable'), credentialsAbsent: true, productionStateUntouched: true},
     boundaries: {real: [options.ingress === 'openwa' ? 'authenticated OpenWA social task submission from enrolled operator device' : 'browser-authenticated task submission', 'deterministic concurrent Jobs', 'real PTY WATCH then governed harmless INTERVENE and detach', 'live local Qwen provider response', 'schema parsing and application validation', 'independent quality rejection', 'quality governor decision below context thresholds', 'durable sealed baton', 'cross-provider Codex destination continuation', 'independent quality acceptance', 'final repository validation', 'protected origin/main before/after equality', 'token and model-chain reconciliation', 'typed SSE dashboard updates', 'product-generated complete execution transcript'], unavailable: ['Neither provider exposes authoritative mid-turn current-context occupancy.', 'Neither provider reports an authoritative monetary cost for these routes.'], simulated: []},
     security: {credentialMaterialPersisted: false, codexHomePathPersisted: false, providerRawTransportPersisted: false, privateReasoningPersisted: false, liveDeploymentTouched: false, releaseActionPerformed: false},

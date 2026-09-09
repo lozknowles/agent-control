@@ -45,6 +45,8 @@ const DOMAIN_STATUS = new Map<string, number>([
   ['job_runtime_unconfigured', 503],
   ['runtime_safety_decision_missing', 404], ['runtime_safety_decision_not_approvable', 409], ['runtime_safety_snapshot_invalid', 409],
   ['adaptive_orchestration_unconfigured', 503], ['adaptive_decision_missing', 404],
+  ['poe_unconfigured', 503], ['poe_conversation_missing', 404], ['poe_proposal_missing', 404], ['poe_conversation_invalid', 400], ['poe_turn_invalid', 400], ['poe_channel_provenance_mismatch', 409], ['poe_conversation_actor_mismatch', 403],
+  ['poe_operation_ownership_denied',403], ['poe_operation_approval_stale',409], ['poe_operation_readiness_blocked',409], ['poe_operator_unconfigured',503], ['poe_speech_validation_failed',502], ['poe_speech_interrupted',409], ['poe_proposal_revision_conflict', 409], ['poe_proposal_approval_stale', 409], ['poe_benchmark_unfair', 409], ['poe_benchmark_execution_unconfigured', 503], ['poe_benchmark_plan_invalid', 400], ['poe_benchmark_condition_invalid', 400], ['poe_benchmark_metric_invalid', 400], ['poe_voice_unconfigured', 503],
     ['provider_missing', 404], ['model_missing', 404], ['model_role_missing', 404], ['model_registry_unconfigured', 503], ['model_route_unconfigured', 409], ['model_route_unavailable', 409], ['model_fallback_disabled', 409], ['provider_authentication_required', 409], ['account_profile_missing', 404], ['account_profile_unavailable', 409],
     ['provider_catalog_unconfigured', 503], ['provider_catalog_model_missing', 404], ['provider_catalog_model_unavailable', 409], ['provider_discovery_disabled', 409], ['provider_discovery_adapter_unavailable', 409], ['provider_catalog_model_not_qualified', 409], ['provider_credential_format_invalid', 400], ['provider_catalog_adjudication_invalid', 400], ['provider_catalog_adjudication_exists', 409],
     ['identity_control_plane_unconfigured', 503], ['session_missing', 404], ['execution_missing', 404],
@@ -62,7 +64,7 @@ export function startWebDashboard(service: AgentControlService, options: WebServ
 async function handle(service: AgentControlService, request: IncomingMessage, response: ServerResponse, options: Required<Pick<WebServerOptions, 'host' | 'port' | 'assetsDir'>> & WebServerOptions) {
   response.setHeader('X-Content-Type-Options', 'nosniff');
   response.setHeader('Referrer-Policy', 'no-referrer');
-  response.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
+  response.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; media-src 'self' blob:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
   response.setHeader('Cache-Control', 'no-store');
   const url = new URL(request.url ?? '/', `http://${request.headers.host ?? `${options.host}:${options.port}`}`);
   const method = request.method ?? 'GET';
@@ -115,6 +117,23 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   }
 
   if (method === 'GET' && url.pathname === '/api/status') return json(response, 200, service.snapshot());
+  if(method==='GET'&&url.pathname==='/api/poe/regression'){validateOperatorRequest(request,options);return json(response,200,service.poeRegression());}
+  if(method==='GET'&&url.pathname==='/api/poe/knowledge'){validateOperatorRequest(request,options);return json(response,200,service.poeKnowledge());}
+  const knowledgeSource=url.pathname.match(/^\/api\/poe\/knowledge\/sources\/([^/]+)$/);if(method==='GET'&&knowledgeSource){validateOperatorRequest(request,options);return json(response,200,service.poeKnowledgeSource(decodeURIComponent(knowledgeSource[1])));}
+  const greetingMatch=url.pathname.match(/^\/api\/poe\/conversations\/([^/]+)\/greeting$/);if(method==='POST'&&greetingMatch){validateOrigin(request,options);validateOperatorRequest(request,options);return json(response,200,service.greetPoe(decodeURIComponent(greetingMatch[1]),'web-operator'));}
+  const operatorApi=url.pathname.match(/^\/api\/poe\/conversations\/([^/]+)\/(operator|approve-job|speech|transcribe|greeting)$/);
+  if(operatorApi){
+    validateOperatorRequest(request,options); const id=decodeURIComponent(operatorApi[1]!);
+    if(method==='GET'&&operatorApi[2]==='operator')return json(response,200,await service.poeOperator(id,'web-operator'));
+    if(method==='POST'){
+      validateOrigin(request,options);
+      if(operatorApi[2]==='transcribe') {const bytes=await readBounded(request,8*1024*1024);return json(response,200,await service.transcribePoe(id,bytes,String(request.headers['content-type']??'').split(';')[0]!, 'web-operator'));}
+      const body=await readJson(request);
+      if(operatorApi[2]==='approve-job')return json(response,202,service.approvePoeOperator(id,String(body.proposalId??''),String(body.hash??''),'web-operator'));
+      if(operatorApi[2]==='speech'){const audio=await service.speakPoe(id,String(body.turnId??''),'web-operator');return json(response,200,{...audio,bytes:Buffer.from(audio.bytes).toString('base64')});}
+    }
+  }
+  if (method === 'GET' && url.pathname === '/api/poe') { validateOperatorRequest(request, options); return json(response, 200, service.poeProjection()); }
   if (method === 'GET' && url.pathname === '/api/operator-auth') return json(response, 200, operatorAuthentication(request, options));
   if (method === 'GET' && url.pathname === '/api/configuration') { validateOperatorRequest(request, options); return json(response, 200, new ConfigurationStore(options.configFile ?? configPath()).read()); }
   if (method === 'GET' && url.pathname === '/api/lanes') return json(response, 200, service.snapshot().lanes);
@@ -172,7 +191,12 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
     if (action === 'transcript') return json(response, 200, service.executionSessionTranscript(id));
     if (action === 'stream') return executionSessionStream(service, id, Number(url.searchParams.get('after') ?? 0), request, response);
   }
-  const jobMatch = url.pathname.match(/^\/api\/jobs\/([^/]+)(?:\/(runs|run))?$/), runMatch = url.pathname.match(/^\/api\/runs\/([^/]+)(?:\/(cancel|retry|approve))?$/), definitionMatch = url.pathname.match(/^\/api\/job-definitions\/([^/]+)(?:\/([0-9]+))?$/), savedJobMatch = url.pathname.match(/^\/api\/saved-jobs\/([^/]+)(?:\/(run|enable|disable|export))?$/), parameterizedRunMatch = url.pathname.match(/^\/api\/job-runs\/([^/]+)(?:\/(cancel|resume-authentication|transcript))?$/), parcelMatch = url.pathname.match(/^\/api\/parcels\/([^/]+)(?:\/(cancel))?$/), parcelQuestionsMatch = url.pathname.match(/^\/api\/parcels\/([^/]+)\/questions(?:\/([^/]+)\/answer)?$/), parcelCriteriaMatch = url.pathname.match(/^\/api\/parcels\/([^/]+)\/criteria(?:\/([^/]+)\/evaluate)?$/), parcelSteeringMatch = url.pathname.match(/^\/api\/parcels\/([^/]+)\/steering$/), parcelRetrievalMatch = url.pathname.match(/^\/api\/parcels\/([^/]+)\/context\/retrieve$/), decisionMatch = url.pathname.match(/^\/api\/orchestration\/decisions\/([^/]+)(?:\/(report))?$/), parcelDecisionMatch = url.pathname.match(/^\/api\/parcels\/([^/]+)\/(decision-tree|decision-report)$/), capabilityCandidateMatch = url.pathname.match(/^\/api\/capability-candidates(?:\/([^/]+)\/transition)?$/), modelIntelligenceRouteMatch = url.pathname.match(/^\/api\/model-intelligence\/routes\/([^/]+)\/transition$/), providerCatalogMatch = url.pathname.match(/^\/api\/provider-catalog\/providers\/([^/]+)(?:\/models\/([^/]+)\/(callability|smoke|adjudications|routing-enable|routing-disable)|\/(discover))?$/), systemMatch = url.pathname.match(/^\/api\/systems\/([^/]+)(?:\/(check))?$/), accountMatch = url.pathname.match(/^\/api\/models\/accounts\/([^/]+)\/([^/]+)\/(qualify)$/), modelMatch = url.pathname.match(/^\/api\/models\/([^/]+)(?:\/(qualify|route))?$/), sessionMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)$/), executionMatch = url.pathname.match(/^\/api\/executions\/([^/]+)$/), scheduleMatch = url.pathname.match(/^\/api\/schedules\/([^/]+)\/(enable|disable)$/), artifactMatch = url.pathname.match(/^\/api\/artifacts\/([^/]+)$/), outputExpansionMatch = url.pathname.match(/^\/api\/command-output\/([^/]+)\/expand$/);
+  const jobMatch = url.pathname.match(/^\/api\/jobs\/([^/]+)(?:\/(runs|run))?$/), runMatch = url.pathname.match(/^\/api\/runs\/([^/]+)(?:\/(cancel|retry|approve))?$/), definitionMatch = url.pathname.match(/^\/api\/job-definitions\/([^/]+)(?:\/([0-9]+))?$/), savedJobMatch = url.pathname.match(/^\/api\/saved-jobs\/([^/]+)(?:\/(run|enable|disable|export))?$/), parameterizedRunMatch = url.pathname.match(/^\/api\/job-runs\/([^/]+)(?:\/(cancel|resume-authentication|transcript))?$/), parcelMatch = url.pathname.match(/^\/api\/parcels\/([^/]+)(?:\/(cancel))?$/), parcelQuestionsMatch = url.pathname.match(/^\/api\/parcels\/([^/]+)\/questions(?:\/([^/]+)\/answer)?$/), parcelCriteriaMatch = url.pathname.match(/^\/api\/parcels\/([^/]+)\/criteria(?:\/([^/]+)\/evaluate)?$/), parcelSteeringMatch = url.pathname.match(/^\/api\/parcels\/([^/]+)\/steering$/), parcelRetrievalMatch = url.pathname.match(/^\/api\/parcels\/([^/]+)\/context\/retrieve$/), decisionMatch = url.pathname.match(/^\/api\/orchestration\/decisions\/([^/]+)(?:\/(report))?$/), parcelDecisionMatch = url.pathname.match(/^\/api\/parcels\/([^/]+)\/(decision-tree|decision-report)$/), capabilityCandidateMatch = url.pathname.match(/^\/api\/capability-candidates(?:\/([^/]+)\/transition)?$/), modelIntelligenceRouteMatch = url.pathname.match(/^\/api\/model-intelligence\/routes\/([^/]+)\/transition$/), providerCatalogMatch = url.pathname.match(/^\/api\/provider-catalog\/providers\/([^/]+)(?:\/models\/([^/]+)\/(callability|smoke|adjudications|routing-enable|routing-disable)|\/(discover))?$/), systemMatch = url.pathname.match(/^\/api\/systems\/([^/]+)(?:\/(check))?$/), accountMatch = url.pathname.match(/^\/api\/models\/accounts\/([^/]+)\/([^/]+)\/(qualify)$/), modelMatch = url.pathname.match(/^\/api\/models\/([^/]+)(?:\/(qualify|route))?$/), sessionMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)$/), executionMatch = url.pathname.match(/^\/api\/executions\/([^/]+)$/), scheduleMatch = url.pathname.match(/^\/api\/schedules\/([^/]+)\/(enable|disable)$/), artifactMatch = url.pathname.match(/^\/api\/artifacts\/([^/]+)$/), outputExpansionMatch = url.pathname.match(/^\/api\/command-output\/([^/]+)\/expand$/), poeConversationMatch=url.pathname.match(/^\/api\/poe\/conversations\/([^/]+)(?:\/(turns|voice|transcript|proposals|interrupt))?$/), poeProposalMatch=url.pathname.match(/^\/api\/poe\/proposals\/([^/]+)(?:\/(freeze|approve))?$/);
+  if(method==='GET'&&poeConversationMatch){validateOperatorRequest(request,options);const id=decodeURIComponent(poeConversationMatch[1]);if(poeConversationMatch[2]==='transcript')return json(response,200,{transcript:service.poeTranscript(id,'web-operator')});if(!poeConversationMatch[2])return json(response,200,service.poeConversation(id));}
+  if(method==='POST'&&poeConversationMatch?.[2]==='voice'){
+    validateOperatorRequest(request,options);validateOrigin(request,options);const mime=String(request.headers['content-type']??'').split(';')[0],bytes=await readBounded(request,8*1024*1024),result=await service.voicePoe(decodeURIComponent(poeConversationMatch[1]),bytes,mime,'web-operator',Number(request.headers['x-speech-ended-at']??Date.now()));
+    return json(response,200,{...result,audio:{...result.audio,bytes:Buffer.from(result.audio.bytes).toString('base64')}});
+  }
   if (method === 'GET' && definitionMatch) return json(response, 200, service.jobDefinition(decodeURIComponent(definitionMatch[1]), definitionMatch[2] ? Number(definitionMatch[2]) : undefined));
   if (method === 'GET' && savedJobMatch?.[2] === 'export') return json(response, 200, service.exportSavedJob(decodeURIComponent(savedJobMatch[1])));
   if (method === 'GET' && savedJobMatch && !savedJobMatch[2]) return json(response, 200, service.savedJob(decodeURIComponent(savedJobMatch[1])));
@@ -198,6 +222,13 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   if (method === 'POST') {
     validateMutationRequest(request, options);
     const body = await readJson(request), actor = 'web-operator';
+    if(url.pathname==='/api/poe/conversations'){if(body.channel&&body.channel!=='dashboard')return json(response,403,{error:'poe_channel_provenance_mismatch'});return json(response,201,service.createPoeConversation('dashboard',actor));}
+    if(poeConversationMatch?.[2]==='turns')return json(response,201,await service.askPoe(decodeURIComponent(poeConversationMatch[1]),String(body.text??''),actor,body.reference&&typeof body.reference==='object'&&!Array.isArray(body.reference)?body.reference as never:undefined));
+    if(poeConversationMatch?.[2]==='proposals')return json(response,201,service.proposePoeBenchmark(decodeURIComponent(poeConversationMatch[1]),body as never,actor));
+    if(poeConversationMatch?.[2]==='interrupt')return json(response,200,service.interruptPoe(decodeURIComponent(poeConversationMatch[1]),actor,typeof body.playbackTurnId==='string'?body.playbackTurnId:undefined));
+    if(poeProposalMatch&&!poeProposalMatch[2])return json(response,200,service.revisePoeBenchmark(decodeURIComponent(poeProposalMatch[1]),Number(body.revision),body.changes&&typeof body.changes==='object'&&!Array.isArray(body.changes)?body.changes as never:{},actor));
+    if(poeProposalMatch?.[2]==='freeze')return json(response,200,service.freezePoeBenchmark(decodeURIComponent(poeProposalMatch[1]),Number(body.revision),actor));
+    if(poeProposalMatch?.[2]==='approve')return json(response,202,service.approvePoeBenchmark(decodeURIComponent(poeProposalMatch[1]),Number(body.revision),String(body.frozenSha256??''),actor));
     if (liveSessionMatch?.[2] === 'attach') return json(response, 201, await service.attachExecutionSession(decodeURIComponent(liveSessionMatch[1]), String(body.mode ?? '') as ExecutionSessionMode, actor));
     if (liveSessionMatch?.[2] === 'detach') return json(response, 200, service.detachExecutionSession(decodeURIComponent(liveSessionMatch[1]), String(body.attachmentId ?? ''), actor));
     if (liveSessionMatch?.[2] === 'input') return json(response, 200, await service.inputExecutionSession(decodeURIComponent(liveSessionMatch[1]), String(body.attachmentId ?? ''), String(body.value ?? ''), body.sensitive === true, actor));
@@ -293,11 +324,10 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
 function validateMutationRequest(request: IncomingMessage, options: WebServerOptions & {host: string; port: number}) {
   if (!options.operatorToken) throw httpError(503, 'operator_auth_not_configured');
   if ((request.headers['content-type'] ?? '').split(';')[0] !== 'application/json') throw httpError(415, 'json_content_type_required');
-  const origin = request.headers.origin;
-  const allowed = new Set(options.allowedOrigins ?? [`http://${options.host}:${options.port}`, `http://localhost:${options.port}`]);
-  if (origin && !allowed.has(origin)) throw httpError(403, 'origin_denied');
+  validateOrigin(request,options);
   validateOperatorRequest(request, options);
 }
+function validateOrigin(request: IncomingMessage, options: WebServerOptions & {host: string; port: number}) {const origin=request.headers.origin,allowed=new Set(options.allowedOrigins??[`http://${options.host}:${options.port}`,`http://localhost:${options.port}`]);if(origin&&!allowed.has(origin))throw httpError(403,'origin_denied');}
 
 function validateOperatorRequest(request: IncomingMessage, options: WebServerOptions) {
   if (!options.operatorToken) throw httpError(503, 'operator_auth_not_configured');
@@ -318,6 +348,7 @@ async function readJson(request: IncomingMessage): Promise<Record<string, unknow
   try { const value = JSON.parse(Buffer.concat(chunks).toString('utf8')); if (!value || Array.isArray(value) || typeof value !== 'object') throw new Error(); return value; }
   catch { throw httpError(400, 'invalid_json'); }
 }
+async function readBounded(request:IncomingMessage,limit:number){const chunks:Buffer[]=[];let size=0;for await(const chunk of request){const buffer=Buffer.from(chunk);size+=buffer.length;if(size>limit)throw httpError(413,'request_too_large');chunks.push(buffer);}return Buffer.concat(chunks);}
 
 function eventStream(service: AgentControlService, request: IncomingMessage, response: ServerResponse) {
   response.writeHead(200, {'Content-Type': 'text/event-stream; charset=utf-8', Connection: 'keep-alive', 'X-Accel-Buffering': 'no'});
@@ -375,7 +406,7 @@ function executionSessionStream(service: AgentControlService, id: string, reques
 
 function serveAsset(response: ServerResponse, assetsDir: string, pathname: string) {
   const asset = pathname === '/' ? 'index.html' : pathname.replace(/^\//, '');
-  if (!['dashboard-social-voice.css', 'social-voice.html', 'dashboard-social-voice.js', 'dashboard-openwa.css', 'openwa.html', 'dashboard-openwa.js', 'index.html', 'dashboard.css', 'dashboard-fixes.css', 'dashboard-jobs.css', 'dashboard-bots.css', 'dashboard-wopr.css', 'dashboard-adaptive-orchestration.css', 'dashboard-live-shell.css', 'dashboard.js', 'dashboard-parameters.js', 'dashboard-running-state.js', 'dashboard-enhancements.js', 'dashboard-parameterized-jobs.js', 'dashboard-models.js', 'dashboard-sessions.js', 'dashboard-bots.js', 'dashboard-wopr.js', 'dashboard-adaptive-orchestration.js', 'dashboard-live-shell.js'].includes(asset)) throw httpError(404, 'not_found');
+  if (!['dashboard-social-voice.css', 'social-voice.html', 'dashboard-social-voice.js', 'dashboard-openwa.css', 'openwa.html', 'dashboard-openwa.js', 'index.html', 'dashboard.css', 'dashboard-fixes.css', 'dashboard-jobs.css', 'dashboard-bots.css', 'dashboard-wopr.css', 'dashboard-adaptive-orchestration.css', 'dashboard-live-shell.css', 'dashboard-poe.css', 'dashboard.js', 'dashboard-parameters.js', 'dashboard-running-state.js', 'dashboard-enhancements.js', 'dashboard-parameterized-jobs.js', 'dashboard-models.js', 'dashboard-sessions.js', 'dashboard-bots.js', 'dashboard-wopr.js', 'dashboard-adaptive-orchestration.js', 'dashboard-live-shell.js', 'dashboard-poe.js'].includes(asset)) throw httpError(404, 'not_found');
   const file = path.join(assetsDir, asset);
   if (!fs.existsSync(file)) throw httpError(404, 'dashboard_asset_missing');
   const type = asset.endsWith('.html') ? 'text/html; charset=utf-8' : asset.endsWith('.css') ? 'text/css; charset=utf-8' : 'text/javascript; charset=utf-8';
