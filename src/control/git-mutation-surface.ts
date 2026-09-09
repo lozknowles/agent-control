@@ -18,6 +18,9 @@ export interface GitMutationSurface {
   sha256: string;
 }
 
+export interface IgnoredFileState {path: string; kind: 'file' | 'symlink'; size: number; sha256: string;}
+export interface GitIgnoredState {entries: IgnoredFileState[]; sha256: string; disposableRoots: string[];}
+
 /**
  * Captures the complete non-ignored working-tree mutation surface. Git's
  * NUL-delimited porcelain format is the authority for paths, including rename
@@ -47,6 +50,40 @@ export async function inspectGitMutationSurface(root: string): Promise<GitMutati
   const touchedFiles = [...new Set(entries.map(entry => entry.path))].sort();
   const digest = createHash('sha256').update(trackedDiff).update('\0').update(JSON.stringify(untrackedManifest)).digest('hex');
   return {entries, touchedFiles, untrackedFiles: [...untrackedFiles].sort(), changedLines, sha256: digest};
+}
+
+/**
+ * Captures ignored files which must survive an execution. Callers must name
+ * disposable roots explicitly; ignored does not mean disposable. The bounded
+ * content digest makes silent mutation visible without deleting or restoring
+ * operator state.
+ */
+export async function inspectGitIgnoredState(root: string, disposableRoots: string[] = []): Promise<GitIgnoredState> {
+  const canonicalRoot = fs.realpathSync.native(root);
+  const normalizedDisposable = disposableRoots.map(normalizeDisposableRoot);
+  const listed = await git(canonicalRoot, ['ls-files', '--others', '--ignored', '--exclude-standard', '-z']);
+  const paths = listed.toString('utf8').split('\0').filter(Boolean).filter(relative => !normalizedDisposable.some(prefix => relative === prefix || relative.startsWith(`${prefix}/`))).sort();
+  const entries: IgnoredFileState[] = []; let bytes = 0;
+  for (const relative of paths) {
+    const absolute = path.resolve(canonicalRoot, relative), parent = fs.realpathSync.native(path.dirname(absolute));
+    if (path.relative(canonicalRoot, parent).startsWith('..')) throw new Error('ignored_state_path_escaped_repository');
+    const stat = fs.lstatSync(absolute);
+    const content = stat.isSymbolicLink() ? Buffer.from(fs.readlinkSync(absolute)) : fs.readFileSync(absolute);
+    bytes += content.length; if (bytes > 64 * 1024 * 1024) throw new Error('ignored_state_capture_limit_exceeded');
+    entries.push({path: relative, kind: stat.isSymbolicLink() ? 'symlink' : 'file', size: content.length, sha256: createHash('sha256').update(content).digest('hex')});
+  }
+  return {entries, sha256: createHash('sha256').update(JSON.stringify(entries)).digest('hex'), disposableRoots: normalizedDisposable};
+}
+
+export function changedIgnoredPaths(before: GitIgnoredState, after: GitIgnoredState) {
+  const left = new Map(before.entries.map(item => [item.path, `${item.kind}:${item.size}:${item.sha256}`])), right = new Map(after.entries.map(item => [item.path, `${item.kind}:${item.size}:${item.sha256}`]));
+  return [...new Set([...left.keys(), ...right.keys()].filter(item => left.get(item) !== right.get(item)))].sort();
+}
+
+function normalizeDisposableRoot(value: string) {
+  const normalized = value.replace(/\\/g, '/').replace(/^\.\//, '').replace(/\/$/, '');
+  if (!normalized || normalized.startsWith('/') || normalized === '..' || normalized.startsWith('../') || normalized.includes('/../')) throw new Error('ignored_state_disposable_root_invalid');
+  return normalized;
 }
 
 export function parsePorcelainV1Z(value: Buffer): GitMutationEntry[] {

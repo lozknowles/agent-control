@@ -30,10 +30,11 @@ function fixture() {
 
 function trigger(): RunRecord['trigger'] { return {type: 'manual', actor: 'operator', parcelContext: {schema: 'agent-control.run-parcel-context/v1', parcelId: 'parcel-protected-ref', stageId: 'stage-maintenance', originalGoal: 'Perform repository maintenance while origin/master must remain completely unchanged.', currentInterpretation: 'Inspect and maintain the repository without changing origin/master.', effectiveInstructions: ['Use governed Git operations only.'], constraints: ['origin/master must remain completely unchanged'], successCriteria: [{id: 'protected', description: 'origin/master SHA is unchanged', status: 'PENDING'}], baton: null}}; }
 function remoteRef(repository: string, ref: string) { return git(repository, 'ls-remote', '--refs', 'origin', `refs/heads/${ref}`).split(/\s+/)[0] || null; }
-async function runProposal(setup: ReturnType<typeof fixture>, proposal: string) { const created = setup.runtime.createRun('governed-git-operation@1.0.0', {repositoryPath: setup.repository, proposal}, trigger()); await setup.runtime.tick(); return setup.ledger.get(created.id)!; }
+async function settleWithExplicitApprovals(runtime: JobRuntime, ledger: RunLedger, runId: string) { for (let count = 0; count < 12; count++) { await runtime.tick(); const run = ledger.get(runId)!; if (['SUCCEEDED', 'FAILED', 'CANCELLED'].includes(run.status)) return run; const waiting = run.steps.find(step => step.status === 'WAITING_FOR_APPROVAL' && step.approval); if (waiting?.approval) runtime.approve(run.id, waiting.approval, 'qualification-operator'); } return ledger.get(runId)!; }
+async function runProposal(setup: ReturnType<typeof fixture>, proposal: string) { const created = setup.runtime.createRun('governed-git-operation@1.0.0', {repositoryPath: setup.repository, proposal}, trigger()); return settleWithExplicitApprovals(setup.runtime, setup.ledger, created.id); }
 
 test('semantic Git effect resolution covers direct, refspec, force, mirror, delete, wrappers, chains and alternate cwd', () => {
-  const repository = '/srv/repository', run = {trigger: trigger()} as RunRecord, policy = compileResourcePolicies(run)[0];
+  const repository = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-governed-parse-')), run = {trigger: trigger()} as RunRecord, policy = compileResourcePolicies(run)[0];
   const proposals = [
     'git push origin master',
     'git push origin HEAD:master',
@@ -50,6 +51,7 @@ test('semantic Git effect resolution covers direct, refspec, force, mirror, dele
     const operations = parseGovernedGitProposal(proposal, repository), effects = resolveGitEffects(operations);
     assert.ok(effects.some(effect => policyProtectsEffect(policy, effect)), proposal);
   }
+  fs.rmSync(repository, {recursive: true, force: true});
 });
 
 test('production JobRuntime denies every protected-ref mutation before execution and preserves durable evidence', async () => {
@@ -67,14 +69,16 @@ test('production JobRuntime denies every protected-ref mutation before execution
 });
 
 test('production JobRuntime permits an authorised feature ref and records confirmed external commit', async () => {
-  const setup = fixture(), run = await runProposal(setup, 'git push origin HEAD:qualified-feature');
+  const setup = fixture(), hook = path.join(setup.repository, '.git', 'hooks', 'pre-push'), marker = path.join(setup.root, 'hook-marker'); fs.writeFileSync(hook, `#!/bin/sh\ntouch ${JSON.stringify(marker)}\nexit 0\n`); fs.chmodSync(hook, 0o700);
+  const run = await runProposal(setup, 'git push origin HEAD:qualified-feature');
   assert.equal(run.status, 'SUCCEEDED'); assert.equal(remoteRef(setup.repository, 'master'), setup.master); assert.equal(remoteRef(setup.repository, 'qualified-feature'), git(setup.repository, 'rev-parse', 'HEAD')); assert.deepEqual(run.steps[0].externalOperations?.map(item => item.state), ['EXTERNALLY_COMMITTED']);
+  assert.equal(fs.existsSync(marker), false); assert.ok(run.provenance.some(item => item.type === 'evidence' && item.detail === 'git-hooks:disabled'));
   const decision = setup.safety.list()[0]; assert.equal(decision.outcome, 'ALLOW_WITH_AUDIT'); assert.equal(decision.effects?.[0].resource.id, 'git-ref:origin/qualified-feature');
 });
 
-test('unsupported shell and implicit push forms fail closed during effect resolution', async () => {
+test('unsupported shell, configuration mutation and implicit push forms fail closed during effect resolution', async () => {
   const setup = fixture();
-  for (const proposal of ['git push', 'git push origin HEAD', 'git push origin @', 'git push origin feature:HEAD', 'git status | git push origin HEAD:master', 'git status > /tmp/result', 'git $(echo push) origin HEAD:master']) {
+  for (const proposal of ['git config core.hooksPath /tmp/hooks', 'git push', 'git push origin HEAD', 'git push origin @', 'git push origin feature:HEAD', 'git status | git push origin HEAD:master', 'git status > /tmp/result', 'git $(echo push) origin HEAD:master']) {
     const run = await runProposal(setup, proposal); assert.equal(run.status, 'FAILED'); assert.match(run.steps[0].error ?? '', /^action_effect_resolution_failed:/); assert.equal(remoteRef(setup.repository, 'master'), setup.master);
   }
 });
@@ -86,7 +90,7 @@ test('cancelled governed execution can prove cancellation before external commit
   }), () => ({schema: 'agent-control.action-governance-plan/v1', operations: [{executable: 'git', args: ['push', 'origin', 'HEAD:feature'], cwd: repository, source: 'STRUCTURED', display: 'git push origin HEAD:feature'}], effects: [{id: 'effect-cancel', kind: 'UPDATE', resource: {kind: 'git-ref', id: 'git-ref:origin/feature', repositoryPath: repository, remote: 'origin', ref: 'feature'}, external: true, consequential: true, summary: 'Update origin/feature'}], policies: []}));
   const definition: JobDefinition = {...job, metadata: {...job.metadata, id: 'cancel-external'}, spec: {...job.spec, parameters: {}, steps: [{id: 'execute', action: 'test.external@1.0.0', requires: ['repository.git'], verification: []}]}};
   const catalog = new JobCatalog(actions.ids()); catalog.addJob(definition); const workers = new WorkerRegistry().register({id: 'controller', capabilities: ['repository.git'], health: 'healthy', capacity: 1, active: 0, observedAt: '2026-09-07T10:00:00.000Z'}), ledger = new RunLedger(path.join(root, 'runs.json'));
-  const runtime = new JobRuntime(catalog, actions, workers, ledger, new ArtifactStore(path.join(root, 'artifacts')), new ResourceLockManager(path.join(root, 'locks.json')), {safety: new RuntimeSafetySupervisor({id: 'cancel-policy', approvedRepositoryRoots: [repository]})});
+  const runtime = new JobRuntime(catalog, actions, workers, ledger, new ArtifactStore(path.join(root, 'artifacts')), new ResourceLockManager(path.join(root, 'locks.json')), {safety: new RuntimeSafetySupervisor({id: 'cancel-policy', approvedRepositoryRoots: [repository], requireApprovalForExternalCommunication: false})});
   const created = runtime.createRun('cancel-external@1.0.0', {}, {type: 'manual', actor: 'operator'}), dispatch = runtime.dispatch(); assert.ok(dispatch); await new Promise(resolve => setImmediate(resolve)); runtime.cancel(created.id); await dispatch.completion;
   const run = ledger.get(created.id)!; assert.equal(run.status, 'CANCELLED'); assert.equal(run.steps[0].externalOperations?.[0].state, 'CANCELLED_BEFORE_COMMIT');
 });
@@ -103,8 +107,7 @@ test('real model-backed Job path seals a proposal artifact before semantic gover
   const runtime = new JobRuntime(catalog, actions, workers, ledger, artifacts, new ResourceLockManager(path.join(state, 'locks.json')), {safety: new RuntimeSafetySupervisor({id: 'model-protected-ref-test', approvedRepositoryRoots: [setup.repository]})});
   const modelRoute = {requestedModel: 'model-a', requestedRole: null, modelId: 'model-a', providerId: 'provider-a', accountProfileId: 'account-a', providerModel: 'provider-model-a', nodeId: 'controller', providerExecutionNodeId: 'controller', qualificationVersion: 'qualification-v1', fallback: false, fallbackReason: null};
   const created = runtime.createRun('model-governed-git@1.0.0', {repositoryPath: setup.repository, task: 'Create an isolated maintenance marker branch and publish that branch for review.', expectedProtectedSha: setup.master}, {...trigger(), modelRoute});
-  await runtime.tick(); await runtime.tick(); await runtime.tick();
-  const run = ledger.get(created.id)!; assert.equal(run.status, 'SUCCEEDED', JSON.stringify({errors: run.errors, steps: run.steps.map(step => ({id: step.id, status: step.status, error: step.error, verification: step.verification}))})); assert.equal(invocations, 1); assert.equal(remoteRef(setup.repository, 'master'), setup.master); assert.equal(remoteRef(setup.repository, 'model-maintenance'), git(setup.repository, 'rev-parse', 'HEAD'));
+  const run = await settleWithExplicitApprovals(runtime, ledger, created.id); assert.equal(run.status, 'SUCCEEDED', JSON.stringify({errors: run.errors, steps: run.steps.map(step => ({id: step.id, status: step.status, error: step.error, verification: step.verification}))})); assert.equal(invocations, 1); assert.equal(remoteRef(setup.repository, 'master'), setup.master); assert.equal(remoteRef(setup.repository, 'model-maintenance'), git(setup.repository, 'rev-parse', 'HEAD'));
   const proposal = artifacts.read(run.steps[0].artifactIds[0]) as {route: Record<string, unknown>; commands: unknown[]}; assert.deepEqual(proposal.route, {providerId: 'provider-a', accountProfileId: 'account-a', modelId: 'model-a', nodeId: 'controller', qualificationVersion: 'qualification-v1'}); assert.equal(proposal.commands.length, 3);
   assert.equal(run.steps[1].governance?.effects.some(effect => effect.resource.id === 'git-ref:origin/model-maintenance'), true); assert.equal(run.steps[1].externalOperations?.[0].state, 'EXTERNALLY_COMMITTED'); assert.equal(run.steps[2].verification?.failed.length, 0); assert.match(JSON.stringify(run.provenance), /agent:repository\.git-propose@1\.0\.0:adaptive-harness/);
 });

@@ -24,19 +24,19 @@ function failure(error: unknown): never {
 }
 
 export function registerManagedNodeActions(manager: ManagedNodeManager, registry = new ActionRegistry()) {
-  registry.registerControl('managed-node.inspect@1.0.0', async context => {
+  registry.registerConsequentialControl('managed-node.inspect@1.0.0', async context => {
     try {
       const operation = request(context.parameters, INSPECTION_OPERATIONS), result = await manager.execute(context.worker.id, operation, context.run.approvals, context.signal);
       if (result.exitCode !== 0) throw new ActionFailure(`managed_node_operation_failed:${result.operation}:${result.exitCode}:${result.stderr.trim().slice(0, 160)}`, 'execution', true);
       return {artifacts: [{name: 'result', value: result}], evidence: [`Typed read-only operation ${result.operation} completed on worker ${context.worker.id}`], verification: ['managed-node-result-v1'], detail: `${result.operation} completed`};
     } catch (error) { if (error instanceof ActionFailure) throw error; return failure(error); }
-  });
-  registry.registerControl('managed-node.maintain@1.0.0', async context => {
+  }, ['REMOTE_NODE']);
+  registry.registerConsequentialControl('managed-node.maintain@1.0.0', async context => {
     try {
       const operation = request(context.parameters, MAINTENANCE_OPERATIONS), result = await manager.execute(context.worker.id, operation, context.run.approvals, context.signal);
       if (result.exitCode !== 0) throw new ActionFailure(`managed_node_operation_failed:${result.operation}:${result.exitCode}:${result.stderr.trim().slice(0, 160)}`, result.exitCode === 77 ? 'authentication' : 'execution');
       return {artifacts: [{name: 'result', value: result}], evidence: [`Approved typed maintenance operation ${result.operation} completed on worker ${context.worker.id}`], verification: ['managed-node-maintenance-result-v1'], detail: `${result.operation} completed`};
     } catch (error) { if (error instanceof ActionFailure) throw error; return failure(error); }
-  });
+  }, ['REMOTE_NODE', 'FILESYSTEM_WRITE', 'DESTRUCTIVE']);
   return registry;
 }

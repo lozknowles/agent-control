@@ -99,9 +99,9 @@ export function registerNonOpenAiCacheQualificationActions(registry: ActionRegis
         prepared.workspace.cleanup(); workspaces.delete(context.run.id); throw error;
       }
     },
-  });
+  }, ['FILESYSTEM_WRITE']);
 
-  registry.registerControl('qualification.non-openai-cache.verify@1.0.0', async context => {
+  registry.registerConsequentialControl('qualification.non-openai-cache.verify@1.0.0', async context => {
     const retained = workspaces.get(context.run.id);
     if (!retained) throw new ActionFailure('non_openai_cache_workspace_missing', 'verification');
     try {
@@ -114,7 +114,7 @@ export function registerNonOpenAiCacheQualificationActions(registry: ActionRegis
     } finally {
       retained.workspace.cleanup(); workspaces.delete(context.run.id);
     }
-  });
+  }, ['FILESYSTEM_WRITE']);
   return registry;
 }
 

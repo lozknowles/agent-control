@@ -2,7 +2,32 @@
 
 Agent Control runs governed parameterised jobs against qualified execution and model resources. It is an infrastructure-neutral, policy-controlled adaptive harness for durable work by heterogeneous agents and models. Its executable harness core composes a task-appropriate worker, provider/model route, prompt profile, minimum qualified skills, restricted tools, context strategy, runtime settings, authority snapshot, resource limits and verification/escalation policy into a fingerprinted execution recipe.
 
-## Agent Control 4.1 qualification status
+## Agent Control 4.3 release-candidate status
+
+Agent Control 4.3 integrates the 4.2 Transport Context integrity gate and
+provider-neutral Cache-Aware Expert Delegation with the complete 4.1 POE,
+Crew, Live Shell, recovery and protected-resource runtime. The dedicated
+**Warm Cache Runtime** dashboard streams real Work Parcel lanes, provider
+invocations, cache observations, route candidates, compatibility, invalidation
+and verification; unavailable values remain visibly unavailable.
+
+The 4.3 hardening pass also makes Action effects authoritative. Actions are
+registered as explicit read-only operations, declared consequential categories,
+or typed effect resolvers. Missing or inconsistent effects fail closed and a
+hard denial cannot be converted into authority by approval. Approved local paths
+are canonicalized against the execution filesystem, symlink escapes and unsafe
+prospective outputs are denied, governed Git disables repository hooks and
+filesystem-monitor helpers, and fast-execution containment detects valuable
+ignored-file changes. Explicitly disposable roots remain distinct from ignored
+operator state.
+
+Historical 4.1 and pre-integration 4.3 qualification remain evidence for those
+exact commits only. Release requires fresh regression and physical A–F evidence
+against the final integrated SHA. See [4.3 release notes](docs/release-notes-4.3.0.md),
+[4.3 migration](docs/migration-4.3.md), [runtime safety and route containment](docs/runtime-safety-and-containment.md),
+and [deployment, upgrade and rollback](docs/DEPLOYMENT.md).
+
+## Historical Agent Control 4.1 qualification
 
 The 4.1 release adds the compact floating POE companion, actual spoken feature
 tours, grounded job/schedule explanations and event-backed Crew handovers. The
@@ -15,7 +40,7 @@ source reconciliation are retained in the qualification record and release manif
 
 See [4.1 release notes](docs/release-notes-4.1.0.md),
 [current qualification](docs/evidence/agent-control-4.1-qualification.md) and
-[installation, deployment and rollback](docs/installation-deployment-4.1.md).
+[historical 4.1 installation and qualification runbook](docs/installation-deployment-4.1.md).
 
 Agent Control 4.0.0 integrates the previously separate adaptive-routing, protected-resource, Social & Voice/OpenWA, operational Crew/WOPR and Live Shell workstreams into one governed lifecycle:
 
@@ -94,7 +119,7 @@ POE is Agent Control's original resident conversational operator, evidence expla
 
 The dashboard adds a small draggable SVG hotelier near the upper right, a compact conversation panel, and contextual **Ask POE about this** controls. The optional guided tour highlights real views while POE speaks; Next waits for browser playback to finish, and failures pause narration with a retry control. Captions preserve the complete spoken text, and reduced-motion preferences suppress animation. Authenticated WhatsApp supports `POE: <question>` through the existing enrolled/idempotent Social & Voice edge with a separate channel-scoped conversation. Optional OmniVoice uses an original designed voice, records available turn-latency fields, and treats barge-in as speech interruption rather than Work Parcel cancellation. A qualified conversational model can be selected with Model Registry roles; otherwise POE explicitly uses its deterministic grounded renderer. It never silently substitutes another model.
 
-See [POE operation and architecture](docs/poe.md), [dashboard operation](docs/web-dashboard.md), [Social & Voice](docs/social-voice/README.md), [Work Parcels](docs/work-parcels.md), and [adaptive orchestration](docs/adaptive-multi-model-orchestration.md). The [4.1 qualification record](docs/evidence/agent-control-4.1-qualification.md) distinguishes historical checks from the final release gates. Follow the [4.1 installation/deployment runbook](docs/installation-deployment-4.1.md) for private startup, voice, authentication, qualification, upgrades and rollback. The release manifest records the accepted source and deployment evidence.
+See [POE operation and architecture](docs/poe.md), [dashboard operation](docs/web-dashboard.md), [Social & Voice](docs/social-voice/README.md), [Work Parcels](docs/work-parcels.md), and [adaptive orchestration](docs/adaptive-multi-model-orchestration.md). The [4.1 qualification record](docs/evidence/agent-control-4.1-qualification.md) remains historical evidence. Follow the current [deployment, upgrade and rollback guide](docs/DEPLOYMENT.md); the release manifest records the accepted source and evidence.
 
 ## Protected-resource mutation governance
 

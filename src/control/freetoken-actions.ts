@@ -16,16 +16,16 @@ async function inventory(parameters: Record<string, unknown>) {
 }
 
 export function registerFreeTokenQualificationActions(actions: ActionRegistry) {
-  actions.registerControl('qualification.freetoken.inventory@1.0.0', async context => ({artifacts: [{name: 'inventory', value: await inventory(context.parameters)}], verification: ['freetoken-inventory-v1'], detail: 'Read-only GPU, service, port and existing-model inventory'}));
-  actions.registerControl('qualification.freetoken.gate@1.0.0', async context => {
+  actions.registerReadOnly('qualification.freetoken.inventory@1.0.0', async context => ({artifacts: [{name: 'inventory', value: await inventory(context.parameters)}], verification: ['freetoken-inventory-v1'], detail: 'Read-only GPU, service, port and existing-model inventory'}));
+  actions.registerReadOnly('qualification.freetoken.gate@1.0.0', async context => {
     const result = await inventory(context.parameters), fields = result.gpu.split(',').map(value => value.trim()), freeMiB = Number(fields[3]), requiredMiB = Number(context.parameters.minimumFreeVramMiB ?? 8192), compatible = result.assets.some(asset => /(?:\.safetensors|\.ftw)$/i.test(asset.name));
     if (!Number.isFinite(freeMiB) || freeMiB < requiredMiB) throw new ActionFailure(`freetoken_capacity_gate_failed:free_vram_mib=${Number.isFinite(freeMiB) ? freeMiB : 'unknown'}:required=${requiredMiB}`, 'policy_rejection');
     if (!compatible) throw new ActionFailure('freetoken_asset_gate_failed:qwen_requires_hf_or_ftw_checkpoint:existing_assets_are_not_compatible', 'configuration');
     return {artifacts: [{name: 'gate', value: {...result, freeMiB, compatibleCheckpoint: true}}], verification: ['freetoken-capacity-safe', 'freetoken-compatible-checkpoint'], detail: 'Compatibility and workload gate passed'};
   });
   const unavailable = (stage: string) => async () => { throw new ActionFailure(`freetoken_${stage}_requires_successful_readiness_gate_and_isolated_runner`, 'policy_rejection'); };
-  actions.registerControl('qualification.freetoken.isolated@1.0.0', unavailable('isolated'));
-  actions.registerControl('qualification.freetoken.benchmark@1.0.0', unavailable('benchmark'));
-  actions.registerControl('qualification.freetoken.provider@1.0.0', unavailable('provider'));
+  actions.registerReadOnly('qualification.freetoken.isolated@1.0.0', unavailable('isolated'));
+  actions.registerReadOnly('qualification.freetoken.benchmark@1.0.0', unavailable('benchmark'));
+  actions.registerReadOnly('qualification.freetoken.provider@1.0.0', unavailable('provider'));
   return actions;
 }

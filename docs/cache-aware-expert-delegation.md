@@ -1,5 +1,8 @@
 # Cache-Aware Expert Delegation
 
+This is the Agent Control 4.3 operator and architecture guide for Warm Experts
+and the **Warm Cache Runtime** dashboard.
+
 Agent Control 4.3 treats a route as a temporary Warm Expert only after a genuine, independently verified model invocation supplies reusable-context evidence. The identity is the complete `worker + provider + account profile + model + node + session + cache scope + backend instance` tuple. Expertise belongs to that tuple and a hashed context domain; it is never a permanent model label.
 
 > A warm cache improves efficiency but does not confer correctness or authority. Capability, integrity and governance always outrank cache warmth.

@@ -1,6 +1,6 @@
 # Agent Control architecture
 
-This is the authoritative source boundary for Agent Control 4.0.0. The physical 4.0 gate passed against product checkpoint `a08ccac5ced3cd399755bd084ff30fe224ab7860`; evidence/tooling commit `8ad56c031b92454b6364f7b502159e69242921e7` preserves the accepted artifacts without changing the tested product implementation. Status labels matter:
+This is the authoritative source boundary for Agent Control 4.3.0. Historical physical evidence remains bound to its recorded product SHA; the integrated 4.3 candidate requires fresh A–F qualification before release. Status labels matter:
 
 - **implemented** means executable code and automated tests exist in this branch;
 - **experimental** means executable code exists but has not been qualified across every external substrate;
@@ -843,7 +843,7 @@ The floating browser companion is a client of this same service. Its compact pan
 
 The optional external full-test runner publishes bounded atomic progress with exact Git commit, phase, emitted counts, elapsed time and exit status. Its authenticated read-only projection is labelled `EXTERNAL_TEST_RUNNER` and never creates a Work Parcel. Totals and remaining counts stay null until discovered. POE narrates snapshots as observations because complete-audio synthesis introduces delay.
 
-The detailed contract, [event-to-animation mapping](docs/poe-dashboard-operator.md#state-and-animation-provenance), [4.1 runbook](docs/installation-deployment-4.1.md) and [qualification record](docs/evidence/agent-control-4.1-qualification.md) define the configuration and acceptance boundary.
+The detailed contract, [event-to-animation mapping](docs/poe-dashboard-operator.md#state-and-animation-provenance), current [4.3 deployment guide](docs/DEPLOYMENT.md) and historical [4.1 qualification record](docs/evidence/agent-control-4.1-qualification.md) define the configuration and acceptance boundary.
 
 ## Release boundary
 
@@ -870,3 +870,39 @@ state-consistent backup and the previous startup identity support rollback.
 The [4.1 qualification record](docs/evidence/agent-control-4.1-qualification.md)
 reconciles physical component hashes and the exact full-suite product SHA with
 any later documentation-only release commit.
+## 4.3 effect authority and filesystem containment
+
+The production Job boundary admits an Action only when its registration supplies
+one of three authoritative contracts: explicitly read-only, explicit
+consequential categories, or a typed effect resolver. Names, goals, descriptions,
+capability labels and parameter keys can make a decision more restrictive, but
+cannot grant authority. An absent, empty, ambiguous or inconsistent declaration
+becomes `UNKNOWN` and is denied before the handler starts. `DENY` has no approval
+transition; approval can resume only an explicitly approvable policy outcome and
+cannot expand the parent Work Parcel contract.
+
+Approved local paths are checked against the filesystem seen by the execution
+node. Existing roots and targets use canonical filesystem identities. A new
+output is evaluated by resolving its nearest existing parent and appending the
+remaining lexical path. This rejects traversal, sibling-prefix confusion and
+symlink escape. A controller cannot claim containment for a Windows or other
+remote path it cannot resolve; the typed node adapter must enforce it locally or
+the route fails closed. Canonicalization is not described as eliminating races:
+handlers revalidate at execution, use typed operations, fixed argv/data channels
+and provider/OS sandboxes where qualified. Routes lacking a required enforcement
+capability are not silently run unrestricted.
+
+Governed Git resolves semantic effects before dispatch, compiles protected-ref
+policy, requires approval where configured, and reconciles external commit state.
+Its execution adapter revalidates the canonical working directory, disables
+repository hooks and filesystem-monitor helpers, suppresses terminal credential
+prompts and rejects configuration mutation. External CLI internals that cannot be
+moderated remain a declared limitation rather than being represented as ToolPolicy
+coverage. See [runtime safety and route containment](docs/runtime-safety-and-containment.md).
+
+Cleanup follows ownership and provenance. Ordinary tracked/untracked mutations,
+valuable ignored files and explicitly disposable generated roots are separate
+classes. Fast execution hashes valuable ignored state before and after execution;
+only named disposable roots such as its dependency installation are excluded.
+Unexpected ignored mutation is an out-of-scope change and escalates without
+deleting or committing operator state.
