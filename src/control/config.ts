@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {normalizeGovernorPolicy} from './token-aware-baton-routing.js';
 import type {AdaptiveOrchestrationConfig} from './adaptive-orchestration.js';
+import type {CacheExpertPolicyConfig} from './cache-aware-expert.js';
 
 export type Platform = 'linux' | 'windows' | 'android' | 'macos' | 'remote' | 'unknown';
 export type TransportType = 'local' | 'ssh' | 'http' | 'orca';
@@ -222,6 +223,7 @@ export interface AgentControlConfig {
   harnessEfficiency?: HarnessEfficiencyConfig;
   spark?: SparkConfig;
   adaptiveOrchestration?: AdaptiveOrchestrationConfig;
+  cacheAwareExperts?: CacheExpertPolicyConfig;
   jobs?: ParameterizedJobsConfig;
 }
 
@@ -287,6 +289,7 @@ export function validateConfig(raw: unknown): AgentControlConfig {
     harnessEfficiency: input.harnessEfficiency,
     spark: input.spark,
     adaptiveOrchestration: input.adaptiveOrchestration,
+    cacheAwareExperts: input.cacheAwareExperts,
     jobs: input.jobs,
   };
   if (config.jobs) {
@@ -527,6 +530,15 @@ export function validateConfig(raw: unknown): AgentControlConfig {
       if (value !== undefined && (!Number.isFinite(value) || value < 0 || value > 1)) throw new Error(`invalid_adaptive_orchestration_${key}`);
     }
     if (adaptive.maxRouteCost !== undefined && adaptive.maxRouteCost !== null && (!Number.isFinite(adaptive.maxRouteCost) || adaptive.maxRouteCost < 0)) throw new Error('invalid_adaptive_orchestration_cost');
+  }
+  if (config.cacheAwareExperts !== undefined) {
+    const cache = config.cacheAwareExperts;
+    if (!cache || typeof cache !== 'object' || Array.isArray(cache)) throw new Error('invalid_cache_aware_experts');
+    for (const key of ['enabled','allowDerivedPreference'] as const) if (cache[key] !== undefined && typeof cache[key] !== 'boolean') throw new Error(`invalid_cache_aware_experts_${key}`);
+    for (const key of ['hotMinutes','warmMinutes','expiryMinutes'] as const) if (cache[key] !== undefined && (!Number.isFinite(cache[key]) || cache[key]! <= 0)) throw new Error(`invalid_cache_aware_experts_${key}`);
+    for (const key of ['hotReuseRatio','minimumReuseRatio','highCompatibilityMaximumDelta','partialCompatibilityMaximumDelta','maximumScoreBonus'] as const) if (cache[key] !== undefined && (!Number.isFinite(cache[key]) || cache[key]! < 0 || cache[key]! > 1)) throw new Error(`invalid_cache_aware_experts_${key}`);
+    if ((cache.hotMinutes ?? 10) > (cache.warmMinutes ?? 60) || (cache.warmMinutes ?? 60) > (cache.expiryMinutes ?? 240)) throw new Error('invalid_cache_aware_experts_lifecycle_order');
+    if ((cache.highCompatibilityMaximumDelta ?? .25) > (cache.partialCompatibilityMaximumDelta ?? .6)) throw new Error('invalid_cache_aware_experts_compatibility_order');
   }
   return config;
 }

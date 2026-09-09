@@ -31,8 +31,8 @@ export function registerNonOpenAiCacheQualificationActions(registry: ActionRegis
   if (environment.AGENT_CONTROL_ENABLE_NON_OPENAI_CACHE_QUALIFICATION !== 'true') return registry;
   if (!efficiency) throw new Error('non_openai_cache_efficiency_ledger_required');
   const baseUrl = required(environment.AGENT_CONTROL_NON_OPENAI_CACHE_BASE_URL, 'non_openai_cache_base_url').replace(/\/$/, '');
-  const endpoint = new URL(baseUrl);
-  if (!['127.0.0.1', 'localhost', '::1'].includes(endpoint.hostname)) throw new Error('non_openai_cache_endpoint_must_be_loopback');
+  const routeBaseUrls = parseRouteBaseUrls(environment.AGENT_CONTROL_NON_OPENAI_CACHE_ROUTE_BASE_URLS);
+  for (const value of [baseUrl, ...Object.values(routeBaseUrls)]) { const endpoint = new URL(value); if (!['127.0.0.1', 'localhost', '::1'].includes(endpoint.hostname)) throw new Error('non_openai_cache_endpoint_must_be_loopback'); }
   const modelId = required(environment.AGENT_CONTROL_NON_OPENAI_CACHE_MODEL, 'non_openai_cache_model');
   const repositoryRoot = path.resolve(environment.AGENT_CONTROL_NON_OPENAI_CACHE_REPOSITORY_ROOT ?? process.cwd());
   const suiteFile = path.join(repositoryRoot, 'benchmarks', 'harness-mutation-jobs.json');
@@ -46,6 +46,7 @@ export function registerNonOpenAiCacheQualificationActions(registry: ActionRegis
   registry.registerAgent('qualification.non-openai-cache.mutate@1.0.0', {
     path: 'adaptive-harness',
     execute: async context => {
+      const governedRoute = context.run.trigger.modelRoute, selectedProviderId = governedRoute?.providerId ?? 'local-llama-cache-qualification', selectedModelId = governedRoute?.modelId ?? modelId, selectedBaseUrl = (routeBaseUrls[selectedProviderId] ?? baseUrl).replace(/\/$/, '');
       const prefixVariant = String(context.parameters.prefixVariant ?? 'stable');
       if (!['stable', 'changed-prefix-control'].includes(prefixVariant)) throw new ActionFailure('non_openai_cache_prefix_variant_invalid', 'configuration');
       const prepared = MutationWorkspace.prepare(fixtureRoot, task, context.signal);
@@ -64,8 +65,8 @@ export function registerNonOpenAiCacheQualificationActions(registry: ActionRegis
       const toolPolicy = new ToolPolicy(MUTATION_TOOL_DEFINITIONS);
       const dispatcher = new HarnessDispatcher(new AdaptiveHarness(new SkillCatalog(), toolPolicy, undefined, new HarnessProfileRouter({mode: 'EXPERIMENT', minimumVerifiedRuns: 20, minimumSuccessRate: .95, minimumSameModelControlledRuns: 20})), toolPolicy, createToolHandlerRegistry(bindings), () => ({authority, workerId: context.worker.id, availableToolIds: MUTATION_TOOL_DEFINITIONS.map(tool => tool.id), approvedRisks: ['read', 'write']}), new MemoryRecipeDispatchStore(), undefined, undefined, efficiency);
       const providerFactory = new StructuredChatProviderFactory({
-        provider: {id: 'local-llama-cache-qualification', name: 'Local llama.cpp cache qualification', kind: 'local', baseUrl, requiresAuth: false, parallelism: 1, costClass: 'free', capabilities: ['structured-output', 'tool-request']},
-        workerId: context.worker.id, modelId,
+        provider: {id: selectedProviderId, name: 'Local llama.cpp cache qualification', kind: 'local', baseUrl: selectedBaseUrl, requiresAuth: false, parallelism: 1, costClass: 'free', capabilities: ['structured-output', 'tool-request']},
+        workerId: context.worker.id, modelId: selectedModelId,
         workerCapabilities: context.worker.capabilities,
         modelCapabilities: ['structured-output', 'tool-request'],
         availableToolIds: MUTATION_TOOL_DEFINITIONS.map(tool => tool.id),
@@ -80,7 +81,7 @@ export function registerNonOpenAiCacheQualificationActions(registry: ActionRegis
         transcript.push({type: 'provider', at: new Date().toISOString(), requestPrefixSha256: sha256(stableJson(requestBody)), assistantOutput: typeof message.content === 'string' ? message.content : null, providerResponseId: typeof body.id === 'string' ? body.id : null, responseModel: typeof body.model === 'string' ? body.model : null, finishReason: typeof choice.finish_reason === 'string' ? choice.finish_reason : null, usage: safeUsage(body.usage), timings: safeTimings(body.timings)});
         return response;
       };
-      const loop = new StructuredChatLoopProvider({providerId: 'local-llama-cache-qualification', modelId, baseUrl, toolSchemas: MUTATION_TOOL_SCHEMAS, finishToolId: MUTATION_TOOL_IDS.finish, maximumOutputTokens: 768, timeoutMs: task.timeoutMs, executionStrategy: 'non-openai-cache.real-repository-mutation', fetch: fetcher});
+      const loop = new StructuredChatLoopProvider({providerId: selectedProviderId, modelId: selectedModelId, baseUrl: selectedBaseUrl, toolSchemas: MUTATION_TOOL_SCHEMAS, finishToolId: MUTATION_TOOL_IDS.finish, maximumOutputTokens: 768, timeoutMs: task.timeoutMs, executionStrategy: 'non-openai-cache.real-repository-mutation', cacheRetention: environment.AGENT_CONTROL_NON_OPENAI_CACHE_DERIVED_RETENTION === 'true' ? {enabled:true,authority:'derived',source:'qualified-llama.cpp-single-slot-cache-prompt'} : undefined, fetch: fetcher});
       const sources = buildMutationContextSources(suite, task, fixtureRoot);
       const packet = buildMutationContextPacket('THIN', sources, Math.min(8_000, task.tokenBudget));
       const selectedSources = selectMutationPacketSources(packet, sources);
@@ -125,3 +126,9 @@ function sha256(value: string) { return createHash('sha256').update(value).diges
 function stableJson(value: unknown): string { if (Array.isArray(value)) return `[${value.map(stableJson).join(',')}]`; if (value && typeof value === 'object') return `{${Object.entries(value).sort(([left], [right]) => left.localeCompare(right)).map(([key, item]) => `${JSON.stringify(key)}:${stableJson(item)}`).join(',')}}`; return JSON.stringify(value); }
 function safeUsage(value: unknown) { if (!value || typeof value !== 'object' || Array.isArray(value)) return null; const source = value as Record<string, unknown>; return Object.fromEntries(['prompt_tokens','completion_tokens','total_tokens','input_tokens','output_tokens','prompt_tokens_details','input_tokens_details'].filter(key => key in source).map(key => [key, structuredClone(source[key])])); }
 function safeTimings(value: unknown) { if (!value || typeof value !== 'object' || Array.isArray(value)) return null; const source = value as Record<string, unknown>; return Object.fromEntries(['cache_n','prompt_n','prompt_ms','prompt_per_token_ms','prompt_per_second','predicted_n','predicted_ms','predicted_per_token_ms','predicted_per_second'].filter(key => typeof source[key] === 'number').map(key => [key, source[key]])); }
+function parseRouteBaseUrls(value: string | undefined) {
+  if (!value?.trim()) return {} as Record<string,string>;
+  const parsed = JSON.parse(value) as unknown; if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('non_openai_cache_route_base_urls_invalid');
+  const output: Record<string,string> = {}; for (const [key,item] of Object.entries(parsed)) { if (!/^[a-z0-9][a-z0-9._-]{0,127}$/i.test(key) || typeof item !== 'string') throw new Error('non_openai_cache_route_base_urls_invalid'); output[key]=item.replace(/\/$/,''); }
+  return output;
+}

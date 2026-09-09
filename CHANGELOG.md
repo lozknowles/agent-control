@@ -1,5 +1,17 @@
 # Changelog
 
+## 4.3.0 (development)
+
+- Added a provider-neutral Cache Expert Registry derived only from genuine terminal invocation telemetry, with complete route/session/cache/backend identity, hashed context domains, bounded task history and `HOT`, `WARM`, `COOLING`, `EXPIRED` and `INVALIDATED` lifecycle states.
+- Added `AUTHORITATIVE`, qualified opt-in `DERIVED` and `UNAVAILABLE` cache evidence. Cold retained-state expectations remain separate from actual reuse; provider counters remain authoritative after execution.
+- Wired cache-aware assessment into the normal Work Parcel model route without bypassing model qualification, capability/placement, worker health/load, transport integrity, adaptive quality/cost/latency policy, approvals or independent verification.
+- Added strict `EXACT`, `HIGH`, `PARTIAL`, `INCOMPATIBLE` and `UNKNOWN` compatibility, estimated context delta, material-context invalidation, session/backend isolation, restart invalidation and a bounded configurable cache bonus.
+- Added cache decision/expert identity to stage batons and append-only Work Parcel audits, including all candidates, scores, reasons, expected benefit, actual cache result and verifier outcome.
+- Added the **Warm Experts** dashboard/API projection, Crew route language, ranking changes, explicit `CACHE STATE UNKNOWN` and `MONETARY SAVING UNAVAILABLE` labels, and a full human-readable routing transcript generated from the durable decision.
+- Added revision-checked **Configuration → Warm Experts** policy controls. Derived preference is disabled by default.
+- Added deterministic coverage for creation, evidence authority, expiry, staleness, incompatible context, provider/session/backend isolation, capability/integrity/health priority, route wins/losses, restart recovery, Work Parcel/baton metadata, dashboard projection, transcript and independent decision verification.
+- Physical A–F non-OpenAI routing qualification and HD video remain a release gate; this development entry does not claim 4.3 released.
+
 ## 4.2.0 (development)
 
 - Added the provider/model-neutral Transport Context Contract and canonical SHA-256 binding for qualifying Work Parcels and token-aware batons.

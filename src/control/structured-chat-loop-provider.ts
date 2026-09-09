@@ -30,6 +30,7 @@ export interface StructuredChatLoopOptions {
   signalForRecipe?: (recipe: ExecutionRecipe) => AbortSignal | undefined;
   pricing?: InvocationPricing;
   fetch?: typeof globalThis.fetch;
+  cacheRetention?: {enabled: boolean; authority: 'authoritative' | 'derived'; source: string};
 }
 
 interface ChatMessage {role: 'system' | 'user' | 'assistant'; content: string;}
@@ -187,7 +188,7 @@ export class StructuredChatLoopProvider {
       jobId: recipe.jobId ?? recipe.taskId, runId: recipe.runId, taskId: recipe.taskId, laneId: recipe.authority.laneId,
       model: body.model ?? this.options.modelId, provider: this.options.providerId, harnessProfile: recipe.harness?.profile ?? 'STANDARD',
       executionStrategy: this.options.executionStrategy ?? 'structured-chat.bounded-json-tool-loop', turnNumber: turn,
-      startedAt, completedAt, startupSources, rawUsage: body.usage, cacheEvidence: normalizeCacheEvidence({usage: body.usage, timings: body.timings, timingSource: 'llama.cpp.response.timings', requestPrefixSha256}), pricing: this.options.pricing,
+      startedAt, completedAt, startupSources, rawUsage: body.usage, cacheEvidence: this.cacheEvidence(body, requestPrefixSha256), pricing: this.options.pricing,
       toolIds, filesContextSupplied: sources.filter(source => ['repository_instructions', 'workspace_bootstrap'].includes(source.kind)).length,
       retrievedContextTokens: sources.filter(source => ['task_context', 'memory_shared_context', 'other'].includes(source.kind)).reduce((sum, source) => sum + (source.estimatedTokens ?? estimateTokens(source.content ?? '')), 0),
       repositoryContextTokens: sources.filter(source => ['repository_instructions', 'workspace_bootstrap'].includes(source.kind)).reduce((sum, source) => sum + (source.estimatedTokens ?? estimateTokens(source.content ?? '')), 0),
@@ -195,6 +196,12 @@ export class StructuredChatLoopProvider {
       recipeFingerprint: recipe.fingerprint, contextPacketId: recipe.harness?.contextPacketId,
       evidenceIds: [`provider_response_sha256:${responseHash}`],
     });
+  }
+
+  private cacheEvidence(body: ChatResponse, requestPrefixSha256?: string) {
+    const evidence = normalizeCacheEvidence({usage: body.usage, timings: body.timings, timingSource: 'llama.cpp.response.timings', requestPrefixSha256});
+    if (!evidence || !this.options.cacheRetention?.enabled || evidence.processedPromptTokens === null) return evidence;
+    return {...evidence, retainedPromptTokens: (evidence.reusedTokens ?? 0) + evidence.processedPromptTokens, retentionAuthority: this.options.cacheRetention.authority, retentionSource: this.options.cacheRetention.source};
   }
 }
 

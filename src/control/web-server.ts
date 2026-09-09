@@ -87,6 +87,7 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   if (method === 'GET' && url.pathname === '/api/orchestration/models') return json(response, 200, service.adaptiveModelLeague(url.searchParams.get('taskClass') ?? undefined, adaptiveLeagueFilter(url)));
   if (method === 'GET' && url.pathname === '/api/orchestration/workflows') return json(response, 200, service.adaptiveWorkflowLeague(url.searchParams.get('taskClass') ?? undefined, adaptiveLeagueFilter(url)));
   if (method === 'GET' && url.pathname === '/api/orchestration/decisions') return json(response, 200, service.adaptiveDecisions());
+  if (method === 'GET' && url.pathname === '/api/cache-experts') return json(response, 200, service.cacheExpertRegistry());
   if (method === 'GET' && url.pathname === '/api/efficiency/invocations') {
     const requestedLimit = Number(url.searchParams.get('limit') ?? 200);
     const limit = Number.isSafeInteger(requestedLimit) && requestedLimit > 0 ? Math.min(1_000, requestedLimit) : 200;
@@ -145,6 +146,12 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
       service.events.emit('configuration.changed', {kind: 'adaptive-orchestration', id: 'adaptive-orchestration', restartRequired: true}, undefined, actor);
       return json(response, 200, result);
     }
+    if (url.pathname === '/api/configuration/cache-aware-experts') {
+      const file = options.configFile ?? configPath(), result = new ConfigurationStore(file).updateCacheAwareExperts({revision: body.revision, cacheAwareExperts: body.cacheAwareExperts});
+      service.events.emit('configuration.changed', {kind: 'cache-aware-experts', id: 'cache-aware-experts', restartRequired: true}, undefined, actor);
+      return json(response, 200, result);
+    }
+    if (url.pathname === '/api/cache-experts/invalidate') return json(response, 200, service.invalidateCacheExperts({providerId:typeof body.providerId==='string'?body.providerId:undefined,modelId:typeof body.modelId==='string'?body.modelId:undefined,sessionId:typeof body.sessionId==='string'?body.sessionId:undefined,cacheScopeId:typeof body.cacheScopeId==='string'?body.cacheScopeId:undefined,backendInstanceId:typeof body.backendInstanceId==='string'?body.backendInstanceId:undefined,reason:typeof body.reason==='string'?body.reason:undefined},actor));
     if (jobMatch?.[2] === 'run') return json(response, 201, service.createJobRun(decodeURIComponent(jobMatch[1]), body.parameters && typeof body.parameters === 'object' && !Array.isArray(body.parameters) ? body.parameters as Record<string, unknown> : {}, actor));
     if (url.pathname === '/api/parcels') return json(response, 201, await service.submitNaturalTask(String(body.prompt ?? ''), actor));
     if (systemMatch?.[2] === 'check') return json(response, 200, await service.checkSystem(decodeURIComponent(systemMatch[1]), actor));
@@ -248,7 +255,7 @@ function optionalNumber(value: string | null, minimum: number, maximum: number) 
 
 function serveAsset(response: ServerResponse, assetsDir: string, pathname: string) {
   const asset = pathname === '/' ? 'index.html' : pathname.replace(/^\//, '');
-  if (!['index.html', 'dashboard.css', 'dashboard-fixes.css', 'dashboard-jobs.css', 'dashboard-adaptive-orchestration.css', 'dashboard.js', 'dashboard-parameters.js', 'dashboard-running-state.js', 'dashboard-enhancements.js', 'dashboard-parameterized-jobs.js', 'dashboard-models.js', 'dashboard-sessions.js', 'dashboard-adaptive-orchestration.js'].includes(asset)) throw httpError(404, 'not_found');
+  if (!['index.html', 'dashboard.css', 'dashboard-fixes.css', 'dashboard-jobs.css', 'dashboard-adaptive-orchestration.css', 'dashboard.js', 'dashboard-parameters.js', 'dashboard-running-state.js', 'dashboard-enhancements.js', 'dashboard-parameterized-jobs.js', 'dashboard-models.js', 'dashboard-sessions.js', 'dashboard-adaptive-orchestration.js', 'dashboard-cache-experts.js'].includes(asset)) throw httpError(404, 'not_found');
   const file = path.join(assetsDir, asset);
   if (!fs.existsSync(file)) throw httpError(404, 'dashboard_asset_missing');
   const type = asset.endsWith('.html') ? 'text/html; charset=utf-8' : asset.endsWith('.css') ? 'text/css; charset=utf-8' : 'text/javascript; charset=utf-8';

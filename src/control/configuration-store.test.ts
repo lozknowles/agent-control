@@ -51,3 +51,11 @@ test('configuration store persists the adaptive orchestration policy with nullab
   assert.equal(updated.adaptiveOrchestration?.maxRouteCost, null);
   assert.deepEqual(new ConfigurationStore(store.file).read().adaptiveOrchestration, updated.adaptiveOrchestration);
 });
+
+test('configuration store persists the Warm Expert policy through the existing revision gate', t => {
+  const {root, store} = setup(); t.after(() => fs.rmSync(root, {recursive: true, force: true}));
+  const policy={enabled:true,hotMinutes:10,warmMinutes:60,expiryMinutes:240,hotReuseRatio:.7,minimumReuseRatio:.25,highCompatibilityMaximumDelta:.25,partialCompatibilityMaximumDelta:.6,maximumScoreBonus:.15,allowDerivedPreference:false};
+  const updated=store.updateCacheAwareExperts({revision:store.read().revision,cacheAwareExperts:policy});
+  assert.equal(updated.restartRequired,true);assert.deepEqual(updated.cacheAwareExperts,policy);assert.deepEqual(new ConfigurationStore(store.file).read().cacheAwareExperts,policy);
+  assert.throws(()=>store.updateCacheAwareExperts({revision:updated.revision,cacheAwareExperts:{...policy,warmMinutes:5}}),/invalid_cache_aware_experts_lifecycle_order/);
+});

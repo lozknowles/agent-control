@@ -382,6 +382,7 @@ function configurationItems() {
     ...jobState.configuration.services.map(item=>({kind:'service',label:'service',item})),
     ...(jobState.configuration.spark?[{kind:'spark',label:'fast execution',item:{id:'fast-execution',...jobState.configuration.spark}}]:[]),
     ...(jobState.configuration.adaptiveOrchestration?[{kind:'adaptive',label:'adaptive routing',item:{id:'adaptive-orchestration',name:'Adaptive multi-model orchestration',...jobState.configuration.adaptiveOrchestration}}]:[]),
+    ...(jobState.configuration.cacheAwareExperts?[{kind:'cache-experts',label:'Warm Expert policy',item:{id:'cache-aware-experts',name:'Cache-Aware Expert Delegation',...jobState.configuration.cacheAwareExperts}}]:[]),
   ].sort((a,b)=>(a.item.name||a.item.id).localeCompare(b.item.name||b.item.id));
 }
 
@@ -391,6 +392,7 @@ function configurationTemplate(kind) {
   if(kind==='service') return {id:'new-service',name:'New service',healthUrl:'https://service.example/health',optional:true,requiresAuth:true,credentialEnv:'SERVICE_API_KEY'};
   if(kind==='spark') return {id:'fast-execution',enabled:false,model:'gpt-5.3-codex-spark',modelRole:'fast-execution',maximumFiles:1,maximumChangedLines:80,maximumAttempts:1,maximumSubagents:0,maximumContextTokens:2048,verificationRequired:true};
   if(kind==='adaptive') return {id:'adaptive-orchestration',name:'Adaptive multi-model orchestration',enabled:true,minimumSamplesForPreference:3,minimumQualityScore:0.7,maxEvidenceAgeDays:90,policyQualityFloor:0.6,maxRouteCost:null,maxRouteLatencyMs:null,qualityWeight:0.5,reliabilityWeight:0.2,costWeight:0.15,latencyWeight:0.1,confidenceWeight:0.05,explorationRate:0.1};
+  if(kind==='cache-experts') return {id:'cache-aware-experts',name:'Cache-Aware Expert Delegation',enabled:true,hotMinutes:10,warmMinutes:60,expiryMinutes:240,hotReuseRatio:0.7,minimumReuseRatio:0.25,highCompatibilityMaximumDelta:0.25,partialCompatibilityMaximumDelta:0.6,maximumScoreBonus:0.15,allowDerivedPreference:false};
   return {id:'new-system',name:'New system',platform:'unknown',transport:{type:'ssh',host:'hostname',user:'operator'},capabilities:[]};
 }
 
@@ -428,12 +430,13 @@ async function saveConfiguration() {
   const kind=document.querySelector('#configuration-kind').value, originalId=document.querySelector('#configuration-original-id').value||undefined;
   const spark=kind==='spark'?Object.fromEntries(Object.entries(item).filter(([key])=>key!=='id')):null;
   const adaptive=kind==='adaptive'?Object.fromEntries(Object.entries(item).filter(([key])=>!['id','name'].includes(key))):null;
-  const response=await fetch(kind==='spark'?'/api/configuration/spark':kind==='adaptive'?'/api/configuration/adaptive-orchestration':'/api/configuration/systems',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${state.token}`},body:JSON.stringify(kind==='spark'?{revision:jobState.configuration.revision,spark,actor:'web-operator'}:kind==='adaptive'?{revision:jobState.configuration.revision,adaptiveOrchestration:adaptive,actor:'web-operator'}:{revision:jobState.configuration.revision,kind,originalId,item,actor:'web-operator'})});
+  const cacheAwareExperts=kind==='cache-experts'?Object.fromEntries(Object.entries(item).filter(([key])=>!['id','name'].includes(key))):null;
+  const response=await fetch(kind==='spark'?'/api/configuration/spark':kind==='adaptive'?'/api/configuration/adaptive-orchestration':kind==='cache-experts'?'/api/configuration/cache-aware-experts':'/api/configuration/systems',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${state.token}`},body:JSON.stringify(kind==='spark'?{revision:jobState.configuration.revision,spark,actor:'web-operator'}:kind==='adaptive'?{revision:jobState.configuration.revision,adaptiveOrchestration:adaptive,actor:'web-operator'}:kind==='cache-experts'?{revision:jobState.configuration.revision,cacheAwareExperts,actor:'web-operator'}:{revision:jobState.configuration.revision,kind,originalId,item,actor:'web-operator'})});
   if(response.status===401){authenticationExpired();throw new Error('Operator authentication required')}
   const result=await response.json(); if(!response.ok){if(response.status===409)await loadConfiguration();throw new Error(result.error||`HTTP ${response.status}`)}
-  jobState.configuration=result;jobState.configurationRestartRequired=result.restartRequired;const savedItem=kind==='adaptive'?{id:'adaptive-orchestration',name:'Adaptive multi-model orchestration',...(result.adaptiveOrchestration||adaptive)}:item;jobState.selectedConfiguration={kind,id:savedItem.id,item:structuredClone(savedItem)};
+  jobState.configuration=result;jobState.configurationRestartRequired=result.restartRequired;const savedItem=kind==='adaptive'?{id:'adaptive-orchestration',name:'Adaptive multi-model orchestration',...(result.adaptiveOrchestration||adaptive)}:kind==='cache-experts'?{id:'cache-aware-experts',name:'Cache-Aware Expert Delegation',...(result.cacheAwareExperts||cacheAwareExperts)}:item;jobState.selectedConfiguration={kind,id:savedItem.id,item:structuredClone(savedItem)};
   const note=document.querySelector('#configuration-auth-note');note.hidden=false;note.className='configuration-notice success';note.textContent=result.restartRequired?`Saved ${item.id}. Restart Agent Control to apply the new inventory and readiness probes.`:`Saved ${item.id}. The model registry was validated and reloaded.`;
-  document.querySelector('#configuration-save-state').textContent=result.restartRequired?'RESTART REQUIRED':'CURRENT';document.querySelector('#configuration-original-id').value=savedItem.id;renderConfiguration();toast(kind==='spark'?'Fast execution configuration saved':kind==='adaptive'?'Adaptive routing configuration saved':'System configuration saved');
+  document.querySelector('#configuration-save-state').textContent=result.restartRequired?'RESTART REQUIRED':'CURRENT';document.querySelector('#configuration-original-id').value=savedItem.id;renderConfiguration();toast(kind==='spark'?'Fast execution configuration saved':kind==='adaptive'?'Adaptive routing configuration saved':kind==='cache-experts'?'Warm Expert policy saved':'System configuration saved');
 }
 
 async function jobCommand(url, body) {
@@ -459,6 +462,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelector('#models-workspace').hidden = view !== 'models';
     document.querySelector('#configuration-workspace').hidden = view !== 'configuration';
     document.querySelector('#routing-workspace').hidden = view !== 'routing';
+    document.querySelector('#experts-workspace').hidden = view !== 'experts';
     if(view==='configuration')loadConfiguration().catch(showError);
   }));
   document.querySelector('#health').addEventListener('click',()=>document.querySelector('[data-view="systems"]').click());
