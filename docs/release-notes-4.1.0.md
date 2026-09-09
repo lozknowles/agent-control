@@ -1,7 +1,8 @@
 # Agent Control 4.1.0
 
-Release preparation: product checks have passed; media review and deployment are
-tracked in the [qualification record](evidence/agent-control-4.1-qualification.md).
+The qualified product and edited 6:12 tour were accepted for release using the
+existing evidence. Exact revisions, review methods and limitations are tracked
+in the [qualification record](evidence/agent-control-4.1-qualification.md).
 
 POE is a compact floating conversational operator and part-time tour guide. The
 original moustached, waistcoated SVG companion speaks through the configured
@@ -51,6 +52,9 @@ credential, public dashboard binding or automatic provider routing is required.
   tour did not publish Facebook events.
 - Crew characters present accountable runtime roles rather than additional model
   agents. The harmless observation job did not invoke a model.
+- Export privacy was reviewed across the full timeline using sampled frames;
+  full human listening was not separately attested. The operator accepted the
+  existing qualification evidence for release.
 - Configuration evidence for private tailnet access is distinct from an
   independent off-tailnet connectivity test.
 
