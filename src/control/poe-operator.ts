@@ -94,7 +94,7 @@ export class PoeOperatorRuntime {
     const remoteJobs=registries.flatMap(source=>source.jobs.map(job=>({source,job})));
     const remoteMatch=remoteJobs.filter(({job})=>words(text).filter(word=>!['the','what','does','job','events','daily','start','run'].includes(word)).some(word=>words(`${job.metadata.id} ${job.metadata.name}`).includes(word)));
     if(/\blane master\b/i.test(text)&&!/\b(?:cancel|start|run|publish)\b/i.test(text))return this.options.sources.resolve({kind:'crew-member',id:'lane-master'});
-    if(reference&&/\b(?:this|it|that|found|result)\b/i.test(text)&&!/\b(?:start|run|launch|cancel|pause|resume|publish|stage|delete|deploy|enable|disable|list|show.*jobs)\b/i.test(text))return this.options.sources.resolve(reference);
+    if(reference&&(/\b(?:this|it|that|found|result)\b/i.test(text)||text.includes(reference.id))&&!/\b(?:start|run|launch|cancel|pause|resume|publish|stage|delete|deploy|enable|disable|list|show.*jobs)\b/i.test(text))return this.options.sources.resolve(reference);
     const control = /\b(?:start|launch|execute|cancel|pause|resume|publish|stage|delete|deploy|enable|disable)\b/i.test(text) || /^\s*(?:please\s+)?run\b/i.test(text);
     if (control) {
       if(/^\s*(?:please\s+)?cancel\b/i.test(text))return this.proposeCancellation(text,conversation,reference);
