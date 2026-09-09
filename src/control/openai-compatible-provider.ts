@@ -2,7 +2,8 @@ import fs from 'node:fs';
 import {createHash} from 'node:crypto';
 import type {ModelConfig, ProviderConfig} from './config.js';
 
-export interface NormalizedModelUsage {inputTokens: number | null; outputTokens: number | null; cachedInputTokens: number | null; totalTokens: number | null; providerReportedCost: number | null; calculatedCost: number | null; currency: string | null;}
+export interface CacheEvidence {reusedTokens: number | null; processedPromptTokens: number | null; cacheWriteTokens: number | null; promptProcessingMs: number | null; generationMs: number | null; authority: 'authoritative' | 'unavailable'; source: string;}
+export interface NormalizedModelUsage {inputTokens: number | null; outputTokens: number | null; cachedInputTokens: number | null; totalTokens: number | null; providerReportedCost: number | null; calculatedCost: number | null; currency: string | null; cacheEvidence?: CacheEvidence;}
 export interface ModelInvocationResult {providerId: string; accountProfileId?: string; modelId: string; providerModel: string; output: string; elapsedMs: number; usage: NormalizedModelUsage; responseModel: string | null; finishReason: string | null; toolCall: {name: string; arguments: string} | null;}
 export interface PartialModelInvocation extends ModelInvocationResult {responseHash: string;}
 export type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
@@ -31,7 +32,7 @@ export class OpenAICompatibleProviderClient {
       if (!response.ok) throw providerError(response.status);
       let payload: Record<string, unknown>;
       try { payload = await response.json() as Record<string, unknown>; } catch { throw new Error('provider_malformed_response'); }
-      const toolCall = extractToolCall(payload, wire), output = extractOutput(payload, wire), partial: PartialModelInvocation = {providerId: this.provider.id, modelId: model.id, providerModel: model.providerModel, output, elapsedMs: Date.now() - started, usage: normalizeModelUsage(payload.usage, model), responseModel: typeof payload.model === 'string' ? payload.model : null, finishReason: extractFinishReason(payload, wire), toolCall, responseHash:`sha256:${createHash('sha256').update(JSON.stringify(payload)).digest('hex')}`};
+      const toolCall = extractToolCall(payload, wire), output = extractOutput(payload, wire), partial: PartialModelInvocation = {providerId: this.provider.id, modelId: model.id, providerModel: model.providerModel, output, elapsedMs: Date.now() - started, usage: normalizeModelUsage(payload.usage, model, payload.timings), responseModel: typeof payload.model === 'string' ? payload.model : null, finishReason: extractFinishReason(payload, wire), toolCall, responseHash:`sha256:${createHash('sha256').update(JSON.stringify(payload)).digest('hex')}`};
       if (!output && !toolCall) throw Object.assign(new Error('provider_malformed_response'),{partialInvocation:partial});
       const {responseHash: _responseHash, ...result}=partial, limitTokens=model.limits?.contextTokens ?? this.provider.qualification?.advertisedContextLimitTokens ?? null, estimatedContext=result.usage.totalTokens !== null && limitTokens !== null;
       options.onTelemetry?.({phase: 'completed', providerId: this.provider.id, modelId: model.id, elapsedMs: result.elapsedMs, usage: result.usage, context: {tokens: estimatedContext ? result.usage.totalTokens : null, limitTokens, authority: estimatedContext ? 'estimated' : 'unavailable', source: estimatedContext ? 'ephemeral_single_turn_usage_estimate' : 'provider_did_not_report_current_context'}}); return result;
@@ -70,11 +71,14 @@ function extractToolCall(payload: Record<string, unknown>, wire: string) {
   const output = Array.isArray(payload.output) ? payload.output : [], call = output.find(item => item && typeof item === 'object' && (item as Record<string, unknown>).type === 'function_call') as Record<string, unknown> | undefined;
   return call && typeof call.name === 'string' && typeof call.arguments === 'string' ? {name: call.name, arguments: call.arguments} : null;
 }
-export function normalizeModelUsage(value: unknown, model: ModelConfig): NormalizedModelUsage {
+export function normalizeModelUsage(value: unknown, model: ModelConfig, timingsValue?: unknown): NormalizedModelUsage {
   const usage = value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
   const input = number(usage.input_tokens ?? usage.prompt_tokens), output = number(usage.output_tokens ?? usage.completion_tokens), cached = number((usage.input_tokens_details as Record<string, unknown> | undefined)?.cached_tokens ?? (usage.prompt_tokens_details as Record<string, unknown> | undefined)?.cached_tokens), total = number(usage.total_tokens) ?? (input !== null && output !== null ? input + output : null);
   const calculated = model.pricing && input !== null && output !== null ? ((input - (cached ?? 0)) * model.pricing.inputPerMillionTokens + (cached ?? 0) * (model.pricing.cachedInputPerMillionTokens ?? model.pricing.inputPerMillionTokens) + output * model.pricing.outputPerMillionTokens) / 1_000_000 : null;
-  return {inputTokens: input, outputTokens: output, cachedInputTokens: cached, totalTokens: total, providerReportedCost: number(usage.cost), calculatedCost: calculated, currency: model.pricing?.currency ?? null};
+  const timings = timingsValue && typeof timingsValue === 'object' && !Array.isArray(timingsValue) ? timingsValue as Record<string, unknown> : undefined;
+  const timingCache = number(timings?.cache_n), reused = cached ?? timingCache, promptProcessed = number(timings?.prompt_n), promptMs = number(timings?.prompt_ms), generationMs = number(timings?.predicted_ms);
+  const cacheEvidence = timings ? {reusedTokens: reused, processedPromptTokens: promptProcessed, cacheWriteTokens: null, promptProcessingMs: promptMs, generationMs, authority: reused !== null && promptProcessed !== null ? 'authoritative' as const : 'unavailable' as const, source: 'llama.cpp.response.timings'} : undefined;
+  return {inputTokens: input, outputTokens: output, cachedInputTokens: reused, totalTokens: total, providerReportedCost: number(usage.cost), calculatedCost: calculated, currency: model.pricing?.currency ?? null, ...(cacheEvidence ? {cacheEvidence} : {})};
 }
 function number(value: unknown) { return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null; }
 function providerError(status: number) { return new Error(status === 401 || status === 403 ? 'provider_authentication_failed' : status === 429 ? 'provider_rate_limited' : status >= 500 ? 'provider_unavailable' : `provider_request_failed:${status}`); }

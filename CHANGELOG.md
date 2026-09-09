@@ -6,6 +6,7 @@
 - Added dependency freshness, identity/hash checks, deterministic `COMPLETE`/`DEGRADED`/`BLOCKED`/`ESCALATED` gate states, append-only repairs and independent-inspection metadata.
 - Wired repository-review execution to create and persist transport-integrity evidence before provider invocation and bind it to destination baton routes.
 - Legacy parcels remain visible as explicitly unbound. No global enforcement or provider-specific secret store was introduced.
+- Preserved authoritative llama.cpp prompt/KV timing evidence in generic provider telemetry and Work Parcel audit; physical non-OpenAI cache qualification remains explicitly unqualified until matched cold/warm/negative-control Work Parcels are run.
 
 ## Unreleased — evidence-driven adaptive orchestration
 
