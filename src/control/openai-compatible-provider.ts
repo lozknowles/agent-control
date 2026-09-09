@@ -1,8 +1,9 @@
 import fs from 'node:fs';
 import {createHash} from 'node:crypto';
 import type {ModelConfig, ProviderConfig} from './config.js';
+import {normalizeCacheEvidence, type CacheEvidence} from './cache-evidence.js';
 
-export interface CacheEvidence {reusedTokens: number | null; processedPromptTokens: number | null; cacheWriteTokens: number | null; promptProcessingMs: number | null; generationMs: number | null; authority: 'authoritative' | 'unavailable'; source: string;}
+export type {CacheEvidence} from './cache-evidence.js';
 export interface NormalizedModelUsage {inputTokens: number | null; outputTokens: number | null; cachedInputTokens: number | null; totalTokens: number | null; providerReportedCost: number | null; calculatedCost: number | null; currency: string | null; cacheEvidence?: CacheEvidence;}
 export interface ModelInvocationResult {providerId: string; accountProfileId?: string; modelId: string; providerModel: string; output: string; elapsedMs: number; usage: NormalizedModelUsage; responseModel: string | null; finishReason: string | null; toolCall: {name: string; arguments: string} | null;}
 export interface PartialModelInvocation extends ModelInvocationResult {responseHash: string;}
@@ -73,11 +74,8 @@ function extractToolCall(payload: Record<string, unknown>, wire: string) {
 }
 export function normalizeModelUsage(value: unknown, model: ModelConfig, timingsValue?: unknown): NormalizedModelUsage {
   const usage = value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
-  const input = number(usage.input_tokens ?? usage.prompt_tokens), output = number(usage.output_tokens ?? usage.completion_tokens), cached = number((usage.input_tokens_details as Record<string, unknown> | undefined)?.cached_tokens ?? (usage.prompt_tokens_details as Record<string, unknown> | undefined)?.cached_tokens), total = number(usage.total_tokens) ?? (input !== null && output !== null ? input + output : null);
-  const calculated = model.pricing && input !== null && output !== null ? ((input - (cached ?? 0)) * model.pricing.inputPerMillionTokens + (cached ?? 0) * (model.pricing.cachedInputPerMillionTokens ?? model.pricing.inputPerMillionTokens) + output * model.pricing.outputPerMillionTokens) / 1_000_000 : null;
-  const timings = timingsValue && typeof timingsValue === 'object' && !Array.isArray(timingsValue) ? timingsValue as Record<string, unknown> : undefined;
-  const timingCache = number(timings?.cache_n), reused = cached ?? timingCache, promptProcessed = number(timings?.prompt_n), promptMs = number(timings?.prompt_ms), generationMs = number(timings?.predicted_ms);
-  const cacheEvidence = timings ? {reusedTokens: reused, processedPromptTokens: promptProcessed, cacheWriteTokens: null, promptProcessingMs: promptMs, generationMs, authority: reused !== null && promptProcessed !== null ? 'authoritative' as const : 'unavailable' as const, source: 'llama.cpp.response.timings'} : undefined;
+  const input = number(usage.input_tokens ?? usage.prompt_tokens), output = number(usage.output_tokens ?? usage.completion_tokens), cacheEvidence = normalizeCacheEvidence({usage, timings: timingsValue, timingSource: 'llama.cpp.response.timings'}), reused = cacheEvidence?.reusedTokens ?? null, total = number(usage.total_tokens) ?? (input !== null && output !== null ? input + output : null);
+  const calculated = model.pricing && input !== null && output !== null ? ((input - (reused ?? 0)) * model.pricing.inputPerMillionTokens + (reused ?? 0) * (model.pricing.cachedInputPerMillionTokens ?? model.pricing.inputPerMillionTokens) + output * model.pricing.outputPerMillionTokens) / 1_000_000 : null;
   return {inputTokens: input, outputTokens: output, cachedInputTokens: reused, totalTokens: total, providerReportedCost: number(usage.cost), calculatedCost: calculated, currency: model.pricing?.currency ?? null, ...(cacheEvidence ? {cacheEvidence} : {})};
 }
 function number(value: unknown) { return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null; }

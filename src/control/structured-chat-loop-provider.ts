@@ -8,6 +8,7 @@ import {
   type ModelInvocationObservation,
 } from './harness-efficiency.js';
 import {estimateTokens} from './token-aware-output.js';
+import {normalizeCacheEvidence} from './cache-evidence.js';
 
 export interface StructuredChatToolSchema {
   id: string;
@@ -37,6 +38,7 @@ interface ChatResponse {
   model?: string;
   choices?: Array<{finish_reason?: string; message?: {content?: string | null}}>;
   usage?: Record<string, unknown>;
+  timings?: Record<string, unknown>;
   error?: {message?: string};
 }
 interface ToolRequest {tool: string; input?: unknown;}
@@ -97,7 +99,7 @@ export class StructuredChatLoopProvider {
       const remainingMs = deadline - Date.now();
       if (remainingMs <= 0) return failed('structured_chat_loop_timeout', observations, evidence);
       const startedAt = new Date().toISOString();
-      let response: {body: ChatResponse};
+      let response: {body: ChatResponse; requestPrefixSha256: string};
       try { tools.lifecycle?.('waiting for provider'); response = await withLifecycleHeartbeat(tools, () => this.request(messages, Math.max(1, remainingMs), externalSignal)); tools.lifecycle?.('response received'); }
       catch (error) {
         const detail = boundedError(error);
@@ -111,10 +113,10 @@ export class StructuredChatLoopProvider {
       let request: ToolRequest;
       try { request = parseToolRequest(content); }
       catch (error) {
-        observations.push(this.observation(recipe, contextSources, messages, turn, startedAt, completedAt, response.body, [], responseHash, boundedError(error)));
+        observations.push(this.observation(recipe, contextSources, messages, turn, startedAt, completedAt, response.body, [], responseHash, boundedError(error), response.requestPrefixSha256));
         return failed(boundedError(error), observations, [...evidence, `provider_response_sha256:${responseHash}`]);
       }
-      observations.push(this.observation(recipe, contextSources, messages, turn, startedAt, completedAt, response.body, [request.tool], responseHash));
+      observations.push(this.observation(recipe, contextSources, messages, turn, startedAt, completedAt, response.body, [request.tool], responseHash, undefined, response.requestPrefixSha256));
       evidence.push(`provider_response:${response.body.id ?? responseHash.slice(0, 16)}`, `provider_response_sha256:${responseHash}`);
       messages.push({role: 'assistant', content});
       let output: unknown;
@@ -150,11 +152,12 @@ export class StructuredChatLoopProvider {
     const signal = externalSignal ? AbortSignal.any([timeout, externalSignal]) : timeout;
     const authorization = this.options.authorization?.();
     let response: Response;
+    const requestBody = {model: this.options.modelId, messages, response_format: {type: 'json_object'}, temperature: 0, max_tokens: this.options.maximumOutputTokens ?? 768, stream: false};
     try {
       response = await fetcher(this.endpoint, {
         method: 'POST',
         headers: {'content-type': 'application/json', ...(authorization ? {authorization: `Bearer ${authorization}`} : {})},
-        body: JSON.stringify({model: this.options.modelId, messages, response_format: {type: 'json_object'}, temperature: 0, max_tokens: this.options.maximumOutputTokens ?? 768, stream: false}),
+        body: JSON.stringify(requestBody),
         signal,
       });
     } catch (error) {
@@ -164,10 +167,10 @@ export class StructuredChatLoopProvider {
     }
     const body = await response.json() as ChatResponse;
     if (!response.ok) throw new Error(`provider_http_error:${response.status}:${body.error?.message ?? 'unknown'}`);
-    return {body};
+    return {body, requestPrefixSha256: createHash('sha256').update(stableJson(requestBody)).digest('hex')};
   }
 
-  private observation(recipe: ExecutionRecipe, sources: ContextPacketSource[], messages: ChatMessage[], turn: number, startedAt: string, completedAt: string, body: ChatResponse, toolIds: string[], responseHash: string, error?: string) {
+  private observation(recipe: ExecutionRecipe, sources: ContextPacketSource[], messages: ChatMessage[], turn: number, startedAt: string, completedAt: string, body: ChatResponse, toolIds: string[], responseHash: string, error?: string, requestPrefixSha256?: string) {
     const conversation = turn > 1 ? [{
       id: `${recipe.id}:conversation:${turn}`, kind: 'conversation_history' as const,
       content: messages.slice(2).map(message => `${message.role}:${message.content}`).join('\n'),
@@ -184,7 +187,7 @@ export class StructuredChatLoopProvider {
       jobId: recipe.jobId ?? recipe.taskId, runId: recipe.runId, taskId: recipe.taskId, laneId: recipe.authority.laneId,
       model: body.model ?? this.options.modelId, provider: this.options.providerId, harnessProfile: recipe.harness?.profile ?? 'STANDARD',
       executionStrategy: this.options.executionStrategy ?? 'structured-chat.bounded-json-tool-loop', turnNumber: turn,
-      startedAt, completedAt, startupSources, rawUsage: body.usage, pricing: this.options.pricing,
+      startedAt, completedAt, startupSources, rawUsage: body.usage, cacheEvidence: normalizeCacheEvidence({usage: body.usage, timings: body.timings, timingSource: 'llama.cpp.response.timings', requestPrefixSha256}), pricing: this.options.pricing,
       toolIds, filesContextSupplied: sources.filter(source => ['repository_instructions', 'workspace_bootstrap'].includes(source.kind)).length,
       retrievedContextTokens: sources.filter(source => ['task_context', 'memory_shared_context', 'other'].includes(source.kind)).reduce((sum, source) => sum + (source.estimatedTokens ?? estimateTokens(source.content ?? '')), 0),
       repositoryContextTokens: sources.filter(source => ['repository_instructions', 'workspace_bootstrap'].includes(source.kind)).reduce((sum, source) => sum + (source.estimatedTokens ?? estimateTokens(source.content ?? '')), 0),
