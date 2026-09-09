@@ -6,7 +6,7 @@ import path from 'node:path';
 import type {SparkConfig} from './config.js';
 import {ContextPacketBuilder, type ContextPacket, type ContextPacketSource} from './harness-efficiency.js';
 import type {ModelRegistry, ModelRouteDecision} from './model-registry.js';
-import {inspectGitMutationSurface} from './git-mutation-surface.js';
+import {changedIgnoredPaths, inspectGitIgnoredState, inspectGitMutationSurface} from './git-mutation-surface.js';
 
 export type ExecutionClass = 'LOCAL' | 'SPARK' | 'STANDARD' | 'FRONTIER';
 export type TrivialTaskKind = 'documentation' | 'configuration' | 'symbol-rename' | 'single-file-bug' | 'lint' | 'test-addition' | 'repository-search';
@@ -151,6 +151,7 @@ export class CodexFastExecutionRunner implements FastExecutionRunner {
   async execute(input: {model: string; providerId: string; baton: SparkBaton; attempt: number}): Promise<FastExecutionResult> {
     if (input.attempt !== 1) throw new Error('spark_retry_forbidden');
     const before = await capture('git', ['status', '--porcelain=v1'], this.cwd, 10_000); if (before.code !== 0) throw new Error('spark_workspace_git_required'); if (before.stdout.trim()) throw new Error('spark_workspace_not_clean');
+    const ignoredBefore = await inspectGitIgnoredState(this.cwd, ['node_modules']);
     const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-spark-')), schema = path.join(temporary, 'result.schema.json');
     try {
       fs.writeFileSync(schema, JSON.stringify({type: 'object', properties: {status: {type: 'string', enum: ['SUCCEEDED','FAILED','ESCALATE']}, summary: {type: 'string'}, confidence: {type: 'number', minimum: 0, maximum: 1}, requestedMoreContext: {type: 'boolean'}}, required: ['status','summary','confidence','requestedMoreContext'], additionalProperties: false}), {mode: 0o600});
@@ -160,10 +161,10 @@ export class CodexFastExecutionRunner implements FastExecutionRunner {
       const completed = [...events].reverse().find(event => event.type === 'turn.completed'), message = [...events].reverse().map(event => event.item).find(item => item && typeof item === 'object' && !Array.isArray(item) && (item as Record<string, unknown>).type === 'agent_message') as Record<string, unknown> | undefined;
       let output: {status: FastExecutionResult['status']; summary: string; confidence: number; requestedMoreContext: boolean} = {status: 'FAILED', summary: run.code === 0 ? 'spark_result_missing' : `codex_exec_failed:${run.code}`, confidence: 0, requestedMoreContext: false};
       if (typeof message?.text === 'string') try { const parsed = JSON.parse(message.text) as typeof output; if (['SUCCEEDED','FAILED','ESCALATE'].includes(parsed.status) && typeof parsed.summary === 'string' && typeof parsed.confidence === 'number' && typeof parsed.requestedMoreContext === 'boolean') output = parsed; } catch { output = {...output, summary: 'spark_result_invalid_json'}; }
-      const mutations = await inspectGitMutationSurface(this.cwd);
-      const touchedFiles = mutations.touchedFiles, changedLines = mutations.changedLines;
+      const mutations = await inspectGitMutationSurface(this.cwd), ignoredAfter = await inspectGitIgnoredState(this.cwd, ['node_modules']), ignoredChanges = changedIgnoredPaths(ignoredBefore, ignoredAfter);
+      const touchedFiles = [...new Set([...mutations.touchedFiles, ...ignoredChanges])].sort(), changedLines = mutations.changedLines + ignoredChanges.length * 1_000_000;
       const usage = completed?.usage && typeof completed.usage === 'object' && !Array.isArray(completed.usage) ? completed.usage as Record<string, unknown> : undefined;
-      const evidence = [`model:${input.model}`, `provider:${input.providerId}`, `baton:${input.baton.contextHash}`, `diff-sha256:${mutations.sha256}`];
+      const evidence = [`model:${input.model}`, `provider:${input.providerId}`, `baton:${input.baton.contextHash}`, `diff-sha256:${mutations.sha256}`, `ignored-state-before:${ignoredBefore.sha256}`, `ignored-state-after:${ignoredAfter.sha256}`];
       return {...output, touchedFiles, changedLines, usage, evidence, actualModel: input.model, actualProviderId: input.providerId};
     } finally { fs.rmSync(temporary, {recursive: true, force: true}); }
   }

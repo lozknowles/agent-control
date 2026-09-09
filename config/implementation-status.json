@@ -1,7 +1,7 @@
 {
   "schema": "agent-control.implementation-status/v1",
-  "release": "4.0.0",
-  "updated": "2026-09-08",
+  "release": "4.3.0",
+  "updated": "2026-09-09",
   "capabilities": [
     {
       "id": "operator.poe-conversational-interface",
@@ -201,8 +201,8 @@
     {
       "id": "runtime.independent-safety-supervisor",
       "title": "Independent runtime safety supervision",
-      "status": "QUALIFIED",
-      "summary": "A provider-independent supervisor evaluates requested goal, action class, repository/filesystem scope, remote node, credential use, external communication and destructive/deployment consequences before Job execution. ALLOW, ALLOW_WITH_AUDIT, REQUIRE_APPROVAL, DENY, PAUSE and ESCALATE decisions plus reasons and approvals are durable and do not delegate governance to provider safety systems.",
+      "status": "PARTIAL",
+      "summary": "A provider-independent supervisor requires explicit read-only, declared consequential or typed resolver-derived Action effects before Job execution. Unknown or inconsistent effects deny; approved local scopes use execution-filesystem identity; remote node, credential, communication, destructive and deployment consequences remain durable and provider-independent.",
       "sources": [
         "src/control/runtime-safety-supervisor.ts",
         "src/control/job-runtime.ts"
@@ -212,9 +212,11 @@
         "src/control/job-runtime.test.ts"
       ],
       "evidence": [
+        "docs/runtime-safety-and-containment.md",
         "docs/evidence/agent-control-3.9-provider-neutral-qualification.md",
-        "docs/evidence/agent-control-3.9-provider-neutral-qualification.json"
-      ]
+        "docs/evidence/agent-control-4.3-integrated-qualification-20260909.md"
+      ],
+      "limitation": "Agent Control 4.3 deterministic containment tests and the physical A-F local model-mutation route pass. Remote filesystem containment still requires node-local typed enforcement; a controller cannot prove an unresolved remote path and therefore fails closed."
     },
     {
       "id": "runtime.protected-resource-mutation-governance",
@@ -444,7 +446,7 @@
         "docs/evidence/agent-control-3.8.1-high-remediation-physical.json",
         "docs/evidence/agent-control-3.8.1-final-glm-review.md"
       ],
-      "limitation": "Remote Windows-node-to-controller immutable repository transfer, two-account baton continuation/fallback, remote account-status, and a GLM whole-repository review are physically qualified. Spark remains disabled by default; intentionally ignored and .git-internal mutations remain outside its mutation ledger and are a documented deferred hardening risk."
+      "limitation": "Remote Windows-node-to-controller immutable repository transfer, two-account baton continuation/fallback, remote account-status, and a GLM whole-repository review remain historical route-specific evidence. Spark remains disabled by default. Agent Control 4.3 compares valuable ignored state around fast execution while treating only explicitly named roots as disposable."
     },
     {
       "id": "context.governed-retrieval",
@@ -691,6 +693,16 @@
       "sources": ["src/control/adaptive-orchestration.ts", "src/control/work-parcels.ts", "src/control/direct-repository-review-executor.ts", "src/control/job-bootstrap.ts", "src/control/application-service.ts", "src/control/web-server.ts", "assets/dashboard/dashboard-adaptive-orchestration.js", "assets/dashboard/dashboard-adaptive-orchestration.css"],
       "tests": ["src/control/adaptive-orchestration.test.ts", "src/control/web-server.test.ts", "src/control/config.test.ts", "src/control/configuration-store.test.ts"],
       "limitation": "Physical provider/workflow qualification through the live dashboard and runtime remains a separate gate; this workstream does not claim that adaptive production routing has been physically qualified."
+    },
+    {
+      "id": "routing.cache-aware-experts",
+      "title": "Cache-Aware Expert Delegation",
+      "status": "QUALIFIED",
+      "summary": "A provider-neutral runtime registry derives temporary Warm Experts from genuine terminal invocation telemetry, binds evidence to exact worker/provider/account/model/node/session/cache/backend identity and hashed context, enforces strict compatibility and lifecycle decay, and contributes a bounded cache score only after capability, placement, health and transport-integrity gates. Normal Work Parcels persist candidate decisions, selected expert identity, batons, actual cache observations and independent verification; the dashboard/API exposes the same durable facts and natural operational transcript.",
+      "sources": ["src/control/cache-aware-expert.ts", "src/control/cache-evidence.ts", "src/control/structured-chat-loop-provider.ts", "src/control/work-parcels.ts", "src/control/job-bootstrap.ts", "src/control/application-service.ts", "src/control/config.ts", "src/control/configuration-store.ts", "src/control/web-server.ts", "assets/dashboard/dashboard-cache-experts.js", "assets/dashboard/dashboard-enhancements.js"],
+      "tests": ["src/control/cache-aware-expert.test.ts", "src/control/structured-chat-loop-provider.test.ts", "src/control/work-parcels.test.ts", "src/control/config.test.ts", "src/control/configuration-store.test.ts", "src/control/web-server.test.ts"],
+      "evidence": ["docs/cache-aware-expert-delegation.md", "docs/non-openai-cache-qualification.md", "docs/evidence/agent-control-4.3-integrated-qualification-20260909.md", "docs/evidence/agent-control-4.3-integrated-qualification-20260909.json", "docs/evidence/agent-control-4.3-integrated-transcript-20260909.md", "docs/evidence/agent-control-4.3-integrated-qualification-20260909.mp4"],
+      "limitation": "Physical A-F proves governed delegation and authoritative local llama.cpp cache reuse. Monetary saving remains unavailable because this backend supplies no billing data; cross-provider cache portability is not claimed."
     },
     {
       "id": "models.fast-execution-spark",

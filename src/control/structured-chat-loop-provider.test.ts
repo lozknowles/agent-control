@@ -33,6 +33,18 @@ test('bounded structured loop executes multiple typed turns and stops only on fi
   assert.deepEqual(phases,['waiting for provider','response received','processing','waiting for provider','response received','processing']);
 });
 
+test('llama.cpp timing evidence survives the real bounded tool-loop adapter', async () => {
+  const provider = new StructuredChatLoopProvider({providerId: 'local-llama', modelId: 'qwen', baseUrl: 'http://127.0.0.1:8081/v1', toolSchemas: schemas, finishToolId: 'mutation.finish', fetch: async () => new Response(JSON.stringify({id: 'cache-proof', model: 'qwen', choices: [{finish_reason: 'stop', message: {content: '{"tool":"mutation.finish","input":{}}'}}], usage: {prompt_tokens: 244, prompt_tokens_details: {cached_tokens: 236}, completion_tokens: 8, total_tokens: 252}, timings: {cache_n: 236, prompt_n: 8, prompt_ms: 4.25, predicted_ms: 19}}), {status: 200})});
+  const result = await provider.executor('Repeat the governed task.').execute(recipe(1), {invoke: async () => ({stopped: true})});
+  assert.deepEqual(result.invocations?.[0].cacheEvidence, {reusedTokens: 236, processedPromptTokens: 8, cacheWriteTokens: null, promptProcessingMs: 4.25, generationMs: 19, authority: 'authoritative', source: 'llama.cpp.response.timings', requestPrefixSha256: result.invocations?.[0].cacheEvidence?.requestPrefixSha256});
+  assert.match(result.invocations?.[0].cacheEvidence?.requestPrefixSha256 ?? '', /^[a-f0-9]{64}$/);
+});
+
+test('qualified backend retention is exposed as derived expected state without rewriting actual reuse', async () => {
+  const provider=new StructuredChatLoopProvider({providerId:'local-llama',modelId:'qwen',baseUrl:'http://127.0.0.1:8081/v1',toolSchemas:schemas,finishToolId:'mutation.finish',cacheRetention:{enabled:true,authority:'derived',source:'qualified-single-slot-cache'},fetch:async()=>new Response(JSON.stringify({choices:[{message:{content:'{"tool":"mutation.finish","input":{}}'}}],usage:{prompt_tokens:1000,completion_tokens:8,total_tokens:1008},timings:{cache_n:0,prompt_n:1000,prompt_ms:40,predicted_ms:20}}),{status:200})});
+  const result=await provider.executor('Populate the qualified cache.').execute(recipe(1),{invoke:async()=>({stopped:true})}),cache=result.invocations?.[0].cacheEvidence;assert.equal(cache?.reusedTokens,0);assert.equal(cache?.processedPromptTokens,1000);assert.equal(cache?.retainedPromptTokens,1000);assert.equal(cache?.retentionAuthority,'derived');assert.equal(cache?.retentionSource,'qualified-single-slot-cache');
+});
+
 test('loop stops at the governed turn limit without claiming verification', async () => {
   const provider = new StructuredChatLoopProvider({providerId: 'provider', modelId: 'model', baseUrl: 'http://127.0.0.1:8081/v1', toolSchemas: schemas, finishToolId: 'mutation.finish', fetch: async () => new Response(JSON.stringify({choices: [{message: {content: '{"tool":"repository.read","input":{"path":"src/a.js"}}'}}], usage: {prompt_tokens: 10, completion_tokens: 2}}), {status: 200})});
   const result = await provider.executor('Inspect.').execute(recipe(2), {invoke: async () => ({content: 'bounded'})});

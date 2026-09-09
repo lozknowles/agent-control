@@ -4,8 +4,8 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import {emptyConfig} from './config.js';
-import {createInvocationObservation} from './harness-efficiency.js';
-import {buildJobRuntime, runJobSchedulerTick} from './job-bootstrap.js';
+import {createInvocationObservation, FileHarnessEfficiencyLedger} from './harness-efficiency.js';
+import {buildJobRuntime, buildJobRuntimeDefinition, runJobSchedulerTick} from './job-bootstrap.js';
 
 test('production bootstrap wires persistent telemetry and configured harness policy', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-harness-bootstrap-'));
@@ -31,4 +31,22 @@ test('scheduler boundary reports an unexpected tick failure and remains callable
   assert.deepEqual(failures, ['scheduler_fixture_failure']);
   assert.equal(calls, 2);
   assert.deepEqual(changes, []);
+});
+
+test('production definition supplies the efficiency ledger to enabled cache qualification actions', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-cache-bootstrap-'));
+  const names = ['AGENT_CONTROL_ENABLE_NON_OPENAI_CACHE_QUALIFICATION', 'AGENT_CONTROL_NON_OPENAI_CACHE_BASE_URL', 'AGENT_CONTROL_NON_OPENAI_CACHE_MODEL', 'AGENT_CONTROL_NON_OPENAI_CACHE_REPOSITORY_ROOT'] as const;
+  const previous = Object.fromEntries(names.map(name => [name, process.env[name]]));
+  try {
+    process.env.AGENT_CONTROL_ENABLE_NON_OPENAI_CACHE_QUALIFICATION = 'true';
+    process.env.AGENT_CONTROL_NON_OPENAI_CACHE_BASE_URL = 'http://127.0.0.1:19091/v1';
+    process.env.AGENT_CONTROL_NON_OPENAI_CACHE_MODEL = 'fixture-cache-model';
+    process.env.AGENT_CONTROL_NON_OPENAI_CACHE_REPOSITORY_ROOT = process.cwd();
+    const definition = buildJobRuntimeDefinition(emptyConfig(), path.resolve('config/cache-qualification-jobs'), new FileHarnessEfficiencyLedger(path.join(root, 'invocations.json')));
+    assert.ok(definition.actions.ids().has('qualification.non-openai-cache.mutate@1.0.0'));
+    assert.ok(definition.actions.ids().has('qualification.non-openai-cache.verify@1.0.0'));
+  } finally {
+    for (const name of names) { const value = previous[name]; if (value === undefined) delete process.env[name]; else process.env[name] = value; }
+    fs.rmSync(root, {recursive: true, force: true});
+  }
 });

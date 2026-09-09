@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import {inspectGitMutationSurface} from './git-mutation-surface.js';
+import {changedIgnoredPaths, inspectGitIgnoredState, inspectGitMutationSurface} from './git-mutation-surface.js';
 
 function git(root: string, ...args: string[]) { return execFileSync('git', args, {cwd: root, encoding: 'utf8'}).trim(); }
 function repository() {
@@ -38,4 +38,22 @@ test('staged additions and unusual filenames are parsed without line-oriented fi
   assert.deepEqual(surface.touchedFiles, [unusual]);
   assert.deepEqual(surface.untrackedFiles, []);
   assert.equal(surface.changedLines, 1);
+});
+
+test('ignored state is preserved unless its root is explicitly disposable', async t => {
+  const root = repository(); t.after(() => fs.rmSync(root, {recursive: true, force: true}));
+  fs.writeFileSync(path.join(root, 'ignored.tmp'), 'valuable operator state\n');
+  fs.mkdirSync(path.join(root, 'node_modules')); fs.writeFileSync(path.join(root, 'node_modules', 'cache.bin'), 'disposable\n');
+  fs.appendFileSync(path.join(root, '.gitignore'), 'node_modules/\n'); git(root, 'add', '.gitignore'); git(root, 'commit', '-qm', 'ignore dependencies');
+  const before = await inspectGitIgnoredState(root, ['node_modules']);
+  fs.writeFileSync(path.join(root, 'ignored.tmp'), 'changed operator state\n'); fs.writeFileSync(path.join(root, 'node_modules', 'cache.bin'), 'changed disposable state\n');
+  const after = await inspectGitIgnoredState(root, ['node_modules']);
+  assert.deepEqual(changedIgnoredPaths(before, after), ['ignored.tmp']);
+  assert.equal(after.entries.some(item => item.path.startsWith('node_modules/')), false);
+});
+
+test('disposable ignored roots reject traversal and absolute paths', async t => {
+  const root = repository(); t.after(() => fs.rmSync(root, {recursive: true, force: true}));
+  await assert.rejects(inspectGitIgnoredState(root, ['../outside']), /disposable_root_invalid/);
+  await assert.rejects(inspectGitIgnoredState(root, ['/tmp']), /disposable_root_invalid/);
 });

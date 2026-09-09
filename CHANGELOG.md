@@ -1,5 +1,25 @@
 # Changelog
 
+## [4.3.0] — 2026-09-09
+
+- Integrated the 4.2 Transport Context and 4.3 Warm Expert lines onto current 4.1 main without replacing either runtime wholesale; preserved POE, Crew/WOPR, Live Shell, protected-resource governance, provider/account routing, retries, recovery and human-readable execution history.
+- Corrected the integrated production bootstrap so the shared efficiency ledger reaches the opt-in non-OpenAI cache actions. The pre-fix integrated candidate failed closed at startup; a focused production-definition regression now covers the enabled path.
+- Replaced keyword-granted Action authority with explicit read-only, declared consequential or typed resolver-derived effects. Missing, unknown, ambiguous and inconsistent effects deny before execution; approval cannot override a denial.
+- Canonicalized approved filesystem/repository paths on the execution platform, denied symlink escapes, traversal, sibling-prefix confusion, unresolved remote/foreign-platform paths and unsafe prospective outputs, and revalidated governed Git working directories at execution.
+- Confined governed Git execution by disabling repository hooks and filesystem-monitor helpers, disabling terminal credential prompts, treating remote reads as external effects and rejecting Git configuration mutation through the governed route.
+- Added bounded ignored-file state capture to fast execution. Valuable ignored state is included in before/after containment evidence while `node_modules` is an explicit disposable root; ignored no longer means disposable.
+- Added the execution-route containment matrix and 4.3 deployment/rollback guide. Physical claims remain scoped to the exact candidate and no historical recording is promoted as integrated-candidate evidence.
+- Added a provider-neutral Cache Expert Registry derived only from genuine terminal invocation telemetry, with complete route/session/cache/backend identity, hashed context domains, bounded task history and `HOT`, `WARM`, `COOLING`, `EXPIRED` and `INVALIDATED` lifecycle states.
+- Added `AUTHORITATIVE`, qualified opt-in `DERIVED` and `UNAVAILABLE` cache evidence. Cold retained-state expectations remain separate from actual reuse; provider counters remain authoritative after execution.
+- Wired cache-aware assessment into the normal Work Parcel model route without bypassing model qualification, capability/placement, worker health/load, transport integrity, adaptive quality/cost/latency policy, approvals or independent verification.
+- Added strict `EXACT`, `HIGH`, `PARTIAL`, `INCOMPATIBLE` and `UNKNOWN` compatibility, estimated context delta, material-context invalidation, session/backend isolation, restart invalidation and a bounded configurable cache bonus.
+- Added cache decision/expert identity to stage batons and append-only Work Parcel audits, including all candidates, scores, reasons, expected benefit, actual cache result and verifier outcome.
+- Added the dedicated **Warm Cache Runtime** dashboard tab with a real Work Parcel lane timeline, observation heatmap, agent/process utilization, ranked Warm Experts, observed compatibility matrix, active candidate routes, governed route explanation, recent events and explicit cross-lane cache boundaries. Every value comes from runtime projections or is labelled derived/unavailable; the page retains `CACHE STATE UNKNOWN`, `MONETARY SAVING UNAVAILABLE` and the full human-readable routing transcript generated from the durable decision.
+- Added revision-checked **Configuration → Warm Experts** policy controls. Derived preference is disabled by default.
+- Added deterministic coverage for creation, evidence authority, expiry, staleness, incompatible context, provider/session/backend isolation, capability/integrity/health priority, route wins/losses, restart recovery, Work Parcel/baton metadata, dashboard projection, transcript and independent decision verification.
+- Integrates the 4.2 Transport Context Contract and authoritative non-OpenAI cache evidence with the complete 4.1 POE, Crew, Live Shell, recovery and protected-resource runtime.
+- Preserved the historical `bfec203` qualification and repeated all physical A–F gates against integrated product candidate `27bc4c596bbde1db2696d62d38ca17d8bf8cab21`: cold `0/1,328`, warm `1,327/1`, `66.39×` prompt-processing improvement, verified warm route selection, incompatible-context rejection, invalidation and restart isolation. All 1,119 tests pass; monetary saving remains unavailable because the local backend reports no billing data.
+
 ## [4.1.0] — 2026-09-09
 
 - Adds the compact floating POE companion: original SVG hotelier, keyboard/touch repositioning, responsive conversation panel, greeting, and operator-controlled spoken tour synchronized with actual playback and highlighted dashboard views.
@@ -152,6 +172,16 @@
 - Final review makes persisted Evidence Packet SHA-256 and item-content hashes executable integrity gates and rejects post-capture symlink replacement before rehydration.
 
 ### Evidence-driven adaptive orchestration
+## 4.2.0 (development)
+
+- Added the provider/model-neutral Transport Context Contract and canonical SHA-256 binding for qualifying Work Parcels and token-aware batons.
+- Added dependency freshness, identity/hash checks, deterministic `COMPLETE`/`DEGRADED`/`BLOCKED`/`ESCALATED` gate states, append-only repairs and independent-inspection metadata.
+- Wired repository-review execution to create and persist transport-integrity evidence before provider invocation and bind it to destination baton routes.
+- Legacy parcels remain visible as explicitly unbound. No global enforcement or provider-specific secret store was introduced.
+- Preserved authoritative llama.cpp prompt/KV timing evidence in generic provider telemetry and Work Parcel audit. Three matched physical Qwen trials through the normal Work Parcel path measured cold `0/1328`, warm `1327/1` and changed-prefix `497/839` reused/processed first-turn tokens; all nine real mutations passed independent verification.
+- Added an operator-authenticated, API-redacted managed-artifact viewer so the dashboard can show the original initiating prompt, complete natural provider/tool transcript, raw cache measurements and independent verifier result without exposing storage paths or credential-like fields.
+
+## Unreleased — evidence-driven adaptive orchestration
 
 - Adds a persistent, task-conditioned Model Capability League and a separate Workflow League. Both retain verified quality, success, reliability, confidence, recency/version, latency, token/cache, cost, local-compute and escalation evidence without creating a global best-model ranking.
 - Keeps `BENCHMARK`, `QUALIFICATION` and `PRODUCTION_WORK_PARCEL` evidence classes distinguishable. Provider, infrastructure, policy, cancellation and insufficient-evidence failures remain operational observations and do not silently reduce model-quality scores.

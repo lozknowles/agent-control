@@ -143,6 +143,7 @@ export interface ParameterizedJobRun {
   evidence: string[];
   providerResponseIds: string[];
   usage: JobRunUsage;
+  transportIntegrity?: {recordId: string; contractSha256: string; state: 'COMPLETE' | 'DEGRADED' | 'BLOCKED' | 'ESCALATED'; batonSha256?: string};
   result?: RepositoryReviewResult;
   errors: string[];
   fallbackHistory: Array<{at: string; reason: string; selectedModel: string; selectedProvider?: string; batonId?: string; failureKind?: string}>;
@@ -173,6 +174,7 @@ export interface ReviewExecutionResponse {
   evidence: string[];
   providerResponseIds: string[];
   workParcelIds: string[];
+  transportIntegrity?: {recordId: string; contractSha256: string; state: 'COMPLETE' | 'DEGRADED' | 'BLOCKED' | 'ESCALATED'; batonSha256?: string};
   governedFallbacks?: Array<{at: string; reason: string; selectedModel: string; selectedProvider: string; batonId: string; failureKind: string}>;
 }
 export interface ReviewExecutionReconciliation {

@@ -1,8 +1,36 @@
-# Agent Control 4.1.0
+# Agent Control 4.3.0
 
 Agent Control runs governed parameterised jobs against qualified execution and model resources. It is an infrastructure-neutral, policy-controlled adaptive harness for durable work by heterogeneous agents and models. Its executable harness core composes a task-appropriate worker, provider/model route, prompt profile, minimum qualified skills, restricted tools, context strategy, runtime settings, authority snapshot, resource limits and verification/escalation policy into a fingerprinted execution recipe.
 
-## Agent Control 4.1 qualification status
+## Agent Control 4.3 release-qualified status
+
+Agent Control 4.3 integrates the 4.2 Transport Context integrity gate and
+provider-neutral Cache-Aware Expert Delegation with the complete 4.1 POE,
+Crew, Live Shell, recovery and protected-resource runtime. The dedicated
+**Warm Cache Runtime** dashboard streams real Work Parcel lanes, provider
+invocations, cache observations, route candidates, compatibility, invalidation
+and verification; unavailable values remain visibly unavailable.
+
+The 4.3 hardening pass also makes Action effects authoritative. Actions are
+registered as explicit read-only operations, declared consequential categories,
+or typed effect resolvers. Missing or inconsistent effects fail closed and a
+hard denial cannot be converted into authority by approval. Approved local paths
+are canonicalized against the execution filesystem, symlink escapes and unsafe
+prospective outputs are denied, governed Git disables repository hooks and
+filesystem-monitor helpers, and fast-execution containment detects valuable
+ignored-file changes. Explicitly disposable roots remain distinct from ignored
+operator state.
+
+Historical 4.1 and pre-integration 4.3 qualification remain evidence for those
+exact commits only. The integrated 4.3 product candidate
+`27bc4c596bbde1db2696d62d38ca17d8bf8cab21` passed the full 1,119-test suite and
+fresh physical A–F qualification. See the [integrated qualification](docs/evidence/agent-control-4.3-integrated-qualification-20260909.md),
+[complete transcript](docs/evidence/agent-control-4.3-integrated-transcript-20260909.md),
+[4.3 release notes](docs/release-notes-4.3.0.md),
+[4.3 migration](docs/migration-4.3.md), [runtime safety and route containment](docs/runtime-safety-and-containment.md),
+and [deployment, upgrade and rollback](docs/DEPLOYMENT.md).
+
+## Historical Agent Control 4.1 qualification
 
 The 4.1 release adds the compact floating POE companion, actual spoken feature
 tours, grounded job/schedule explanations and event-backed Crew handovers. The
@@ -15,7 +43,7 @@ source reconciliation are retained in the qualification record and release manif
 
 See [4.1 release notes](docs/release-notes-4.1.0.md),
 [current qualification](docs/evidence/agent-control-4.1-qualification.md) and
-[installation, deployment and rollback](docs/installation-deployment-4.1.md).
+[historical 4.1 installation and qualification runbook](docs/installation-deployment-4.1.md).
 
 Agent Control 4.0.0 integrates the previously separate adaptive-routing, protected-resource, Social & Voice/OpenWA, operational Crew/WOPR and Live Shell workstreams into one governed lifecycle:
 
@@ -94,7 +122,7 @@ POE is Agent Control's original resident conversational operator, evidence expla
 
 The dashboard adds a small draggable SVG hotelier near the upper right, a compact conversation panel, and contextual **Ask POE about this** controls. The optional guided tour highlights real views while POE speaks; Next waits for browser playback to finish, and failures pause narration with a retry control. Captions preserve the complete spoken text, and reduced-motion preferences suppress animation. Authenticated WhatsApp supports `POE: <question>` through the existing enrolled/idempotent Social & Voice edge with a separate channel-scoped conversation. Optional OmniVoice uses an original designed voice, records available turn-latency fields, and treats barge-in as speech interruption rather than Work Parcel cancellation. A qualified conversational model can be selected with Model Registry roles; otherwise POE explicitly uses its deterministic grounded renderer. It never silently substitutes another model.
 
-See [POE operation and architecture](docs/poe.md), [dashboard operation](docs/web-dashboard.md), [Social & Voice](docs/social-voice/README.md), [Work Parcels](docs/work-parcels.md), and [adaptive orchestration](docs/adaptive-multi-model-orchestration.md). The [4.1 qualification record](docs/evidence/agent-control-4.1-qualification.md) distinguishes historical checks from the final release gates. Follow the [4.1 installation/deployment runbook](docs/installation-deployment-4.1.md) for private startup, voice, authentication, qualification, upgrades and rollback. The release manifest records the accepted source and deployment evidence.
+See [POE operation and architecture](docs/poe.md), [dashboard operation](docs/web-dashboard.md), [Social & Voice](docs/social-voice/README.md), [Work Parcels](docs/work-parcels.md), and [adaptive orchestration](docs/adaptive-multi-model-orchestration.md). The [4.1 qualification record](docs/evidence/agent-control-4.1-qualification.md) remains historical evidence. Follow the current [deployment, upgrade and rollback guide](docs/DEPLOYMENT.md); the release manifest records the accepted source and evidence.
 
 ## Protected-resource mutation governance
 
@@ -125,6 +153,26 @@ The frozen 12-task Qwen2.5 Coder 3B mutation comparison verified 2/12 outcomes i
 A lane owns its task; recipes, agents, models, skills, tools, execution providers and operator interfaces are replaceable and remain below the control boundary. Agent Control remains authoritative for scheduling, priorities, leases, ownership, unconditional human takeover, batons, handoffs, clones, shared tasks, provider qualification, routing, approvals, recovery validation, verification and conflict policy. In 3.1.0, ordinary `WorkExecutor` agent work can no longer accept a raw handler: it builds and records an `ExecutionRecipe`, dispatches it through `AdaptiveHarness`, and exposes only a live-authority `ToolPolicy` gateway.
 
 Orca is available behind a narrow execution-provider contract. Orca may execute processes, terminals and worktrees, but it does not receive Agent Control policy authority.
+
+## Agent Control 4.2 transport integrity
+
+Qualifying Work Parcels carry a versioned, provider-neutral Transport Context Contract. Agent Control canonicalizes and hashes the contract, verifies declared context dependencies, and records an explainable `COMPLETE`, `DEGRADED`, `BLOCKED` or `ESCALATED` integrity state before provider execution. Missing required context fails closed; stale or contradictory context escalates for repair. The existing token-aware baton receives the contract hash across handoffs, so destination work cannot silently lose the initiating request, frozen repository identity, criteria or security constraints.
+
+See [transport integrity](docs/transport-integrity.md) and [ARCHITECTURE.md](ARCHITECTURE.md). Legacy parcels remain visible and explicitly unbound.
+
+Non-OpenAI prompt/KV cache qualification is documented in [docs/non-openai-cache-qualification.md](docs/non-openai-cache-qualification.md). Three matched physical llama.cpp/Qwen trials now prove reusable prompt/KV state through authoritative backend counters, real coding mutations and independent verification. Cache reuse is never claimed from latency, repeated prompts, or missing usage fields.
+
+## Agent Control 4.3 Cache-Aware Expert Delegation
+
+The 4.3 development branch turns qualified cache observations into a bounded routing input. After a genuine verified invocation, Agent Control can recognise the exact worker/provider/model/session/cache-scope/backend route as a temporary Warm Expert for a hashed context domain. Before compatible follow-on work, it compares repository, branch/dependency, transport, instruction, tool and governance context, classifies compatibility as `EXACT`, `HIGH`, `PARTIAL`, `INCOMPATIBLE` or `UNKNOWN`, and may add a small policy-bounded score only for safe `EXACT`/`HIGH` routes.
+
+The normal Work Parcel path remains authoritative: model qualification, capabilities, worker health/load, transport integrity, adaptive quality/cost/latency policy, approvals and independent verification all outrank cache affinity. Candidate scores, decision reasons, expected benefit, actual provider counters and verifier results are durable; selected decision/expert IDs travel in the stage baton. The dashboard’s **Warm Cache Runtime** tab updates from the same live runtime and presents the lane timeline, cache heatmap, agent/process utilization, ranked Warm Experts, observed compatibility matrix, candidate routes, route explanation, recent events and cross-lane evidence boundary. It distinguishes `AUTHORITATIVE`, qualified `DERIVED` and `UNAVAILABLE` evidence. A missing measurement is shown as `CACHE STATE UNKNOWN`, never zero.
+
+Configure the feature under `cacheAwareExperts` or through **Configuration → Warm Experts**. Derived preference is disabled by default. See [Cache-Aware Expert Delegation](docs/cache-aware-expert-delegation.md), [dashboard usage](docs/web-dashboard.md), [non-OpenAI cache qualification](docs/non-openai-cache-qualification.md) and [ARCHITECTURE.md](ARCHITECTURE.md).
+
+Fresh integrated A–F qualification is complete: a measured `HOT/HIGH` non-OpenAI Warm Expert changed a genuine governed route, incompatible context received no bonus, material context invalidated prior warmth, a restarted backend inherited no cache claim, and every model invocation and routing decision passed independent verification. See the [integrated physical qualification](docs/evidence/agent-control-4.3-integrated-qualification-20260909.md); the earlier [development-branch qualification](docs/evidence/agent-control-4.3-cache-aware-expert-qualification-20260909.md) remains historical.
+
+A warm cache improves efficiency but does not confer correctness or authority. Capability, integrity and governance always outrank cache warmth.
 
 ## Identity, sessions and delegation
 
