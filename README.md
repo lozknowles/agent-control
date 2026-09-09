@@ -12,7 +12,7 @@ Qualifying Work Parcels carry a versioned, provider-neutral Transport Context Co
 
 See [transport integrity](docs/transport-integrity.md) and [ARCHITECTURE.md](ARCHITECTURE.md). Legacy parcels remain visible and explicitly unbound.
 
-Non-OpenAI prompt/KV cache qualification is documented in [docs/non-openai-cache-qualification.md](docs/non-openai-cache-qualification.md). Cache reuse is not claimed from latency, repeated prompts, or missing usage fields.
+Non-OpenAI prompt/KV cache qualification is documented in [docs/non-openai-cache-qualification.md](docs/non-openai-cache-qualification.md). Three matched physical llama.cpp/Qwen trials now prove reusable prompt/KV state through authoritative backend counters, real coding mutations and independent verification. Cache reuse is never claimed from latency, repeated prompts, or missing usage fields.
 
 ## Identity, sessions and delegation
 
