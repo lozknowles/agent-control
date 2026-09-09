@@ -1,0 +1,105 @@
+{
+  "schema": "agent-control.poe-physical-qualification/v1",
+  "verdict": "BLOCKED",
+  "testedCommit": "e9ba94a31d3caf538fde2fc15ae2683d93e82605",
+  "branch": "feature/poe-conversational-operator-20260908",
+  "observationWindow": {
+    "firstAuthoritativeEventAt": "2026-09-08T12:33:42.982Z",
+    "completedAt": "2026-09-08T12:38:41Z"
+  },
+  "productCodeChanged": false,
+  "prerequisites": {
+    "tailscale": {
+      "state": "REACHABLE",
+      "authority": "tailscale-status-and-ping",
+      "detail": "The configured physical Pixel was online; the bounded ping used a relay and did not establish a direct path."
+    },
+    "termuxSsh": {
+      "state": "REACHABLE",
+      "port": 8022,
+      "authority": "strict-host-key-batch-ssh",
+      "detail": "TCP and the enrolled SSH identity both succeeded."
+    },
+    "androidAdb": {
+      "state": "PAIRED_DISCONNECTED",
+      "operation": "ensure-connected",
+      "ok": false,
+      "reason": "matching-device-service-unavailable",
+      "adbVersion": "Android Debug Bridge version 1.0.41",
+      "mdnsAvailable": true,
+      "discoverySource": "direct-mdns",
+      "pairingServices": 0,
+      "connectServices": 0,
+      "usableLocalDeviceConnected": false,
+      "verificationQualified": false,
+      "authority": "agent-control.android-adb-local/v1"
+    },
+    "openwa": {
+      "state": "CONNECTED_VERIFIED",
+      "sessionStatus": "ready",
+      "accountMatch": true,
+      "activeEnrolledOperators": 1,
+      "checkedAt": "2026-09-08T12:34:31.092Z",
+      "authority": "authenticated-openwa-session-and-owner-only-enrolment-store"
+    },
+    "omnivoice": {
+      "state": "READY",
+      "device": "cuda:0",
+      "voiceId": "agent-control-designed-v1",
+      "voiceKind": "designed",
+      "diagnosticOnly": true,
+      "synthesis": {
+        "modelRevision": "c5fdb5ccb189668d56333f77ba2629f4cd7535f4",
+        "audioSeconds": 2.29,
+        "elapsedMs": 1180.2388029755093,
+        "streaming": false,
+        "audioSha256": "ff6a954bae4089a376c74d15c8221839bda16a9630c2723b05c355da06fe30a7"
+      },
+      "transcription": {
+        "provider": "whisper",
+        "model": "openai/whisper-tiny.en",
+        "elapsedMs": 702.8357450035401,
+        "expectedPhraseMatched": true
+      },
+      "checkedAt": "2026-09-08T12:37:20.979Z",
+      "authority": "fresh-authenticated-component-round-trip"
+    }
+  },
+  "session": {
+    "started": false,
+    "reason": "Physical Pixel WhatsApp initiation could not be controlled without a verified local ADB device. No alternate ingress was substituted.",
+    "conversationDurationMs": 0,
+    "turns": 0,
+    "bargeIns": 0,
+    "workParcelId": null,
+    "runIds": [],
+    "approvalId": null,
+    "providerRoutes": [],
+    "handoff": null,
+    "verification": null,
+    "transcript": null,
+    "video": null
+  },
+  "measurements": {
+    "tokens": "UNAVAILABLE_NOT_EXECUTED",
+    "cost": "UNAVAILABLE_NOT_EXECUTED",
+    "contextOccupancy": "UNAVAILABLE_NOT_EXECUTED"
+  },
+  "protectedRefs": {
+    "main": "ff7ed114c08b71583e2a2d67b40d081f0b0a4c33",
+    "annotatedTagObject": "28083f1bc77af9699efc321814f0d033bf7ad0cd",
+    "tagCommit": "ff7ed114c08b71583e2a2d67b40d081f0b0a4c33",
+    "unchanged": true
+  },
+  "security": {
+    "credentialValuesRecorded": false,
+    "personalWhatsAppContentRecorded": false,
+    "syntheticPhysicalEvidenceCreated": false
+  },
+  "blocker": {
+    "classification": "EXTERNAL_DEVICE_STATE",
+    "code": "pixel_local_adb_connect_service_unavailable",
+    "requiredChange": "The physical Pixel must advertise its already-paired wireless-debugging connect service so the existing bounded helper can verify the local ADB target.",
+    "productFixJustified": false
+  }
+}

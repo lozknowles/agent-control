@@ -23,7 +23,7 @@ export interface GovernedRequestOrigin {
   transcriptionAuthority?: 'untrusted-confirmed-by-text';
 }
 
-const LABEL = /^[a-zA-Z0-9][a-zA-Z0-9:._-]{0,191}$/;
+const LABEL = /^[a-zA-Z0-9][a-zA-Z0-9:._/-]{0,191}$/;
 const REFERENCE = /^[a-f0-9]{64}$/;
 
 export function governedRequestOrigin(input: Omit<GovernedRequestOrigin, 'schema'>): GovernedRequestOrigin {
@@ -37,4 +37,3 @@ export function governedRequestOrigin(input: Omit<GovernedRequestOrigin, 'schema
   assertNoSensitiveMaterial(JSON.stringify(value), 'request_origin_credential_material_forbidden');
   return value;
 }
-

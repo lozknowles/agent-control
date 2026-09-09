@@ -757,6 +757,44 @@ The dashboard's **Routing** tab reads `/api/orchestration/models`, `/api/orchest
 
 Detailed configuration, API filters, evidence semantics and deterministic qualification are in [`docs/adaptive-multi-model-orchestration.md`](docs/adaptive-multi-model-orchestration.md). This workstream does not claim a physical provider qualification merely because the deterministic suite passes.
 
+## POE conversational operator
+
+POE is a presentation and proposal layer above `AgentControlService`, never a replacement scheduler, governor, execution provider, verifier, credential resolver, or authority service:
+
+```text
+authenticated dashboard / WhatsApp / OmniVoice / mobile
+                            |
+                 channel-scoped conversation
+                            |
+             focused typed evidence references
+                            |
+       deterministic renderer or routed response-model port
+                            |
+       explanation / versioned benchmark proposal
+                            |
+          freeze SHA-256 -> explicit approval
+                            |
+ WorkParcelCoordinator -> registered Job DAG -> normal control lifecycle
+```
+
+`PoeRuntime` persists bounded turns, real UI state transitions, proposal revisions, speech boundaries, and transcript metadata in an owner-only store. The public system snapshot exposes only a safe POE summary; authenticated endpoints expose the operator's own conversations. An evidence port maps stable object references to bounded facts and source IDs from models, Jobs, Runs, Work Parcels, lanes, Crew, routing/governor decisions, capabilities, batons, Live Shell, verification, benchmarks, and human evaluation. Missing records remain unavailable. Provider output and repository/log content remain untrusted data and cannot redefine POE's authority.
+
+The optional `PoeResponseModelPort` keeps conversational generation provider neutral. `RoutedPoeResponseModel` asks the existing Model Registry for either a status or experiment-design role and then uses the existing Codex or OpenAI-compatible adapter. It requires strict structured output, known evidence citations, no hidden reasoning, and records the actual provider/account/model/provider-execution-node route plus token/cost authority. Failure does not silently select another model: the turn explicitly changes to the deterministic grounded renderer. This also bounds cost by allowing routine lookups and difficult design explanations to use different qualified roles without changing the POE persona.
+
+Benchmark proposals seal the operator question, evidence need, complete condition matrix, Job stages, metrics, repetitions, and constraints. Fairness blocks unequal immutable fixture, tools, context, authority, cache, or time limits and discloses software, hardware, quantisation, and endpoint confounders. Objective metrics become Work Parcel success criteria; `HUMAN_EVALUATION` remains separate. Repetitions materialise as distinct Job stages. Freeze creates no execution authority, and approval must match the exact revision and hash. The resulting origin binds `poe/dashboard`, conversation, proposal, frozen hash, actor, and request key before entering `WorkParcelCoordinator.submitApprovedPlan`.
+
+OmniVoice remains behind existing STT/TTS contracts. POE accepts only an original designed voice, retains the transcription as untrusted content, records available turn-latency boundaries, and aborts only synthesis on barge-in. The Social & Voice coordinator accepts authenticated `POE:` questions into a distinct identity-hashed WhatsApp conversation; consequential work remains governed by existing template/text-confirmation or frozen-proposal approval flows. Live Shell remains independently authoritative for attachment and steering.
+
+The floating browser companion is a client of this same service. Its compact panel leaves underlying dashboard navigation usable. Explicit tour selection unlocks browser audio, navigates and highlights a real component, requests a sourced explanation, and keeps Next disabled until the audio element emits completion. Autoplay, decoding and synthesis failures pause the tour; interruption invalidates older playback. Mouth movement uses the actual audio analyser, while runtime states and references drive restrained poses. Reduced motion disables these transforms and mouth modulation.
+
+`PoeOperatorRuntime` exposes real executable-job and schedule catalogues and an allowlisted default-input proposal adapter. Approval rechecks the actor, sealed request, definition/policy hashes, expiry and live worker capability before normal Work Parcel submission. `PoeKnowledgeIndex` reads only approved, bounded repository sources, hashes their contents and overlays live/configured observations. A retrieved instruction never becomes approval. Read-only remote registries do not grant remote execution or establish device/session readiness.
+
+`reconcilePoeBatch` requires terminal parents, no active children and no outstanding verification criteria before a final requested-set announcement. `poeParcelHandovers` reads actual sealed v2 batons and observes destination Run identity/start time before reporting receipt. Relay/Verity presentation labels do not imply a separate autonomous model. A harmless observation's separate deterministic artifact verifier proves artifact structure and integrity, not Facebook or remote-device readiness.
+
+The optional external full-test runner publishes bounded atomic progress with exact Git commit, phase, emitted counts, elapsed time and exit status. Its authenticated read-only projection is labelled `EXTERNAL_TEST_RUNNER` and never creates a Work Parcel. Totals and remaining counts stay null until discovered. POE narrates snapshots as observations because complete-audio synthesis introduces delay.
+
+The detailed contract, [event-to-animation mapping](docs/poe-dashboard-operator.md#state-and-animation-provenance), [4.1 runbook](docs/installation-deployment-4.1.md) and [qualification record](docs/evidence/agent-control-4.1-qualification.md) define the configuration and acceptance boundary.
+
 ## Release boundary
 
 Earlier version tags remain immutable source releases. Agent Control 4.0.0 integrates Crew/WOPR, adaptive orchestration, protected-resource governance, Social & Voice/OpenWA provenance and Live Shell. The source release does not deploy services, expose a remote ACP listener, broaden sharing, enable Spark, enable Saved Jobs/Schedules or admit NVIDIA routing. Its controller-local NVIDIA credential exists only in the owner-only runtime store and is not source or evidence. The accepted 4.0 evidence adds protected-resource proof and a physical Pixel social request through adaptive Qwen-to-Codex baton handoff, independent verification, terminal delivery, dashboard/video reconciliation and additive token accounting. Current context and billed cost remain unavailable on the tested routes, so no monetary or context-occupancy claim is made. The NVIDIA catalogue remains routing-disabled: Nemotron/Muse callability is observed, MiniMax is indeterminate and Kimi K2.6 endpoint-unavailable. See the [4.0 qualification](docs/evidence/agent-control-4.0-qualification.md), [Pixel continuation](docs/evidence/agent-control-4.0-pixel-social-continuation.md), [initial NVIDIA qualification](docs/evidence/agent-control-3.9-nvidia-hosted-qualification-20260906.md) and [focused diagnostics](docs/evidence/agent-control-3.9-nvidia-focused-diagnostics-20260906.md).
@@ -764,3 +802,21 @@ Earlier version tags remain immutable source releases. Agent Control 4.0.0 integ
 ## Optional messaging adapters
 
 The channel-neutral messaging command contract binds immutable approved Job definitions and finite argument values to enrolled operator grants. OpenWA verifies signed message provenance, pairs a separate human through authenticated dashboard confirmation, and calls the existing application service. Durable command identities reconcile with the RunLedger across interrupted acknowledgements. SQLite stores an independent outbound queue and safe audit metadata; gateway failure never owns scheduler state or approvals. See [OpenWA architecture and recovery](docs/openwa/README.md).
+
+### POE 4.1 evidence and deployment boundaries
+
+The browser projects recorded conversation, Work Parcel, job, receipt and
+verification state; it does not create execution authority. The original-male
+speech worker produces and validates complete audio before browser playback.
+Audio-ended progression and playback-attempt fencing keep tour navigation and
+interruption attached to the current audio element. Edited demonstration media
+removes waiting time and must not be treated as a synthesis-latency measurement.
+
+Deployment separates immutable source from mutable controller state and
+credential references. One supervised controller owns each state directory;
+the optional loopback speech worker has separate ownership. Existing monitoring,
+social and scheduled-job controllers are not repointed by a POE rollout. A
+state-consistent backup and the previous startup identity support rollback.
+The [4.1 qualification record](docs/evidence/agent-control-4.1-qualification.md)
+reconciles physical component hashes and the exact full-suite product SHA with
+any later documentation-only release commit.
