@@ -112,6 +112,7 @@ export interface ParameterizedJobRun {
   evidence: string[];
   providerResponseIds: string[];
   usage: JobRunUsage;
+  transportIntegrity?: {recordId: string; contractSha256: string; state: 'COMPLETE' | 'DEGRADED' | 'BLOCKED' | 'ESCALATED'; batonSha256?: string};
   result?: RepositoryReviewResult;
   errors: string[];
   fallbackHistory: Array<{at: string; reason: string; selectedModel: string}>;
@@ -128,5 +129,5 @@ export interface ReviewExecutionRequest {
   maximumCost?: number;
   signal: AbortSignal;
 }
-export interface ReviewExecutionResponse {result: RepositoryReviewResult; usage: JobRunUsage; evidence: string[]; providerResponseIds: string[]; workParcelIds: string[];}
+export interface ReviewExecutionResponse {result: RepositoryReviewResult; usage: JobRunUsage; evidence: string[]; providerResponseIds: string[]; workParcelIds: string[]; transportIntegrity?: {recordId: string; contractSha256: string; state: 'COMPLETE' | 'DEGRADED' | 'BLOCKED' | 'ESCALATED'; batonSha256?: string};}
 export interface RepositoryReviewExecutor {execute(request: ReviewExecutionRequest): Promise<ReviewExecutionResponse>; recordVerification?(workParcelIds: string[], verdict: RepositoryReviewResult['verdict']): void;}

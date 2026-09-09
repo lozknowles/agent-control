@@ -13,6 +13,7 @@ import {repositoryCodeReviewDefinition} from './repository-review-definition.js'
 import type {ParameterizedJobRun} from './parameterized-job-types.js';
 import {WorkParcelCoordinator, WorkParcelStore} from './work-parcels.js';
 import {TokenAwareBatonRuntime} from './token-aware-baton-routing.js';
+import {TransportIntegrityRuntime} from './transport-integrity.js';
 
 test('repository review invokes the selected provider directly and persists attributable Work Parcels, usage and response evidence', async () => {
   const root=fs.mkdtempSync(path.join(os.tmpdir(),'agent-control-direct-review-')),originalFetch=globalThis.fetch;let requestBody:Record<string,unknown>|undefined;
@@ -58,7 +59,8 @@ test('production Work Parcel lifecycle assesses pressure, seals a baton, delegat
     const handoffs = new GovernedHandoffRuntime(contracts, path.join(root, 'handoffs.json'));
     const calls: Array<{model: string; prompt: string}> = [];
     const clients = fakeReviewClients(calls);
-    const executor = new DirectRepositoryReviewExecutor(models, store, routing, {routing, contracts, handoffs}, clients);
+    const transportIntegrity = new TransportIntegrityRuntime(path.join(root, 'transport-integrity.json'));
+    const executor = new DirectRepositoryReviewExecutor(models, store, routing, {routing, contracts, handoffs}, clients, undefined, undefined, transportIntegrity);
 
     const response = await executor.execute(reviewRequest(route));
 
@@ -72,6 +74,8 @@ test('production Work Parcel lifecycle assesses pressure, seals a baton, delegat
     assert.equal(response.result.areasReviewed.includes('second.ts'), true);
 
     const parcel = store.get(response.workParcelIds[0])!;
+    assert.equal(parcel.transportIntegrity?.state, 'COMPLETE');
+    assert.equal(parcel.transportIntegrity?.contractSha256.length, 64);
     assert.deepEqual(parcel.audit.invocations.map(item => item.model), ['source-model', 'cheap-model']);
     assert.equal(parcel.audit.totals.invocations, 2);
     assert.equal(parcel.audit.totals.totalTokens, 220);

@@ -107,6 +107,8 @@ export interface VerifiedBaton extends AccountRouteIdentity {
   parcelTotals: ParcelTokenTotals;
   createdAt: string;
   sha256: string;
+  transportContextSha256?: string;
+  transportIntegrityState?: string;
 }
 
 export interface BatonInput extends Omit<VerifiedBaton, 'schema' | 'id' | 'tokenState' | 'parcelTotals' | 'createdAt' | 'sha256'> {}

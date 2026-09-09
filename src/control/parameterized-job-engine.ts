@@ -109,7 +109,7 @@ export class ParameterizedJobEngine {
         }
       }
       if (!response.workParcelIds.length) throw new ParameterizedJobError('repository_review_work_parcel_missing');
-      run.workParcelIds = [...new Set([...run.workParcelIds, ...response.workParcelIds])]; run.evidence = response.evidence; run.providerResponseIds = response.providerResponseIds; run.usage = response.usage; this.runs.update(run);
+      run.workParcelIds = [...new Set([...run.workParcelIds, ...response.workParcelIds])]; run.evidence = response.evidence; run.providerResponseIds = response.providerResponseIds; run.usage = response.usage; run.transportIntegrity = response.transportIntegrity; this.runs.update(run);
       if (budgets.maxCost !== undefined && response.usage.cost !== undefined && response.usage.cost > budgets.maxCost) throw new ParameterizedJobError('job_cost_budget_exceeded');
       run = this.transition(run, 'VALIDATING'); this.runs.update(run); run.result = validateRepositoryReview(response.result, repository);
       run.status = run.result.verdict === 'PASS' ? 'SUCCEEDED' : run.result.verdict === 'PASS_WITH_FINDINGS' ? 'SUCCEEDED_WITH_FINDINGS' : run.result.verdict === 'REVIEW_REQUIRED' ? 'DEGRADED' : 'FAILED';

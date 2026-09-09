@@ -2,6 +2,10 @@
 
 Agent Control remains the authority boundary. ACP clients, browser sessions, model providers, processes, PTYs, agents and lifecycle discovery can request or execute bounded work; none can grant itself scheduler ownership, capabilities, protected-resource access, approval, write control or verified completion.
 
+## Transport integrity
+
+Transport Context Contracts contain only bounded, redacted request/context metadata and opaque credential references. Contract hashes, dependency statuses, baton bindings and inspection results are safe durable evidence; credential values, resolved paths and raw provider/transport output are not. Required missing context blocks, stale or contradictory context escalates, and self-review cannot satisfy independent inspection.
+
 ## ACP transport
 
 Stable ACP v1 stdio uses newline-delimited JSON-RPC on process streams and requires a pre-registered Actor. Protocol stdout is framing-only. Remote HTTP/WebSocket is opt-in, bearer-authenticated before parsing/upgrade, Origin-restricted, size-bounded and loopback by default. Non-loopback binding requires TLS certificate/key file references. ACP v2 is not imported or claimed.

@@ -1,5 +1,12 @@
 # Changelog
 
+## 4.2.0 (development)
+
+- Added the provider/model-neutral Transport Context Contract and canonical SHA-256 binding for qualifying Work Parcels and token-aware batons.
+- Added dependency freshness, identity/hash checks, deterministic `COMPLETE`/`DEGRADED`/`BLOCKED`/`ESCALATED` gate states, append-only repairs and independent-inspection metadata.
+- Wired repository-review execution to create and persist transport-integrity evidence before provider invocation and bind it to destination baton routes.
+- Legacy parcels remain visible as explicitly unbound. No global enforcement or provider-specific secret store was introduced.
+
 ## Unreleased — evidence-driven adaptive orchestration
 
 - Adds a persistent, task-conditioned Model Capability League and a separate Workflow League. Both retain verified quality, success, reliability, confidence, recency/version, latency, token/cache, cost, local-compute and escalation evidence without creating a global best-model ranking.

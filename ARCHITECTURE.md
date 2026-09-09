@@ -18,6 +18,14 @@ This is the authoritative source boundary for Agent Control 3.7.0. Status labels
 8. Missing configuration fails closed to `UNCONFIGURED`, never to private defaults.
 9. The TUI and web dashboard are clients of one `AgentControlService`; neither owns scheduler, lease, ownership or PTY state.
 10. An agent claim, collected evidence, verification and acceptance are distinct durable states.
+
+## Transport Context and Integrity Gate (4.2)
+
+After a Work Parcel resolves its frozen repository and context, the production review path creates a provider-neutral Transport Context Contract. It contains the initiating request (with security redaction), acceptance criteria, repository identity/commit/dirty state, bounded scope, architecture and security rules, route capabilities, policy limits, provenance and freshness. A stable canonical representation is hashed with SHA-256 and bound to the parcel and any sealed baton.
+
+Each dependency declares requiredness, source, provenance, freshness and expected identity/hash. The deterministic gate is `COMPLETE` when required dependencies are satisfied, `DEGRADED` when only optional context is missing, `BLOCKED` when required context is missing/unretrievable/claimed-but-not-loaded, and `ESCALATED` when required context is stale or contradictory. Repairs append evidence; blocked workers do not improvise. Independent inspection records a distinct verifier and rejects generator self-approval.
+
+This layer composes with, rather than replaces, Work Parcel audit, token telemetry/governor, contract runtime, governed handoff and repository validation. The baton carries the transport-contract hash across provider/model/node changes. Legacy parcels are visible as unbound and are not silently rewritten. See [docs/transport-integrity.md](docs/transport-integrity.md).
 11. Every material routing decision is capability-qualified, fail closed and inspectable.
 12. An Action is a versioned executable capability; a Job is a declarative workflow; a Trigger creates a durable Run through one authoritative path.
 13. Job manifests can request capabilities, resources and approvals but cannot confer them.

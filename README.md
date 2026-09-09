@@ -6,6 +6,12 @@ A lane owns its task; recipes, agents, models, skills, tools, execution provider
 
 Orca is available behind a narrow execution-provider contract. Orca may execute processes, terminals and worktrees, but it does not receive Agent Control policy authority.
 
+## Agent Control 4.2 transport integrity
+
+Qualifying Work Parcels carry a versioned, provider-neutral Transport Context Contract. Agent Control canonicalizes and hashes the contract, verifies declared context dependencies, and records an explainable `COMPLETE`, `DEGRADED`, `BLOCKED` or `ESCALATED` integrity state before provider execution. Missing required context fails closed; stale or contradictory context escalates for repair. The existing token-aware baton receives the contract hash across handoffs, so destination work cannot silently lose the initiating request, frozen repository identity, criteria or security constraints.
+
+See [transport integrity](docs/transport-integrity.md) and [ARCHITECTURE.md](ARCHITECTURE.md). Legacy parcels remain visible and explicitly unbound.
+
 ## Identity, sessions and delegation
 
 3.5 adds a persistent identity control plane with an explicit chain:
