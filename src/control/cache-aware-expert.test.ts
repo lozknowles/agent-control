@@ -36,7 +36,10 @@ test('session, backend and transport changes prevent unsafe reuse and explicit r
   const changedSession = runtime.assess({parcelId:'p1',stageId:'s1',context:context(),candidates:[candidate('warm',.8,{route:route('warm',{sessionId:'new-session'})})]});
   assert.equal(changedSession.candidates[0].cacheScore, 0); assert.equal(changedSession.candidates[0].evidenceAuthority, 'UNAVAILABLE');
   assert.equal(runtime.invalidate({backendInstanceId:'process-warm',reason:'backend-restarted'}),1);
+  warm(runtime);
   const restarted = runtime.assess({parcelId:'p2',stageId:'s2',context:context(),candidates:[candidate('warm')]}); assert.equal(restarted.candidates[0].state,'INVALIDATED'); assert.equal(restarted.candidates[0].cacheScore,0);
+  warm(runtime,'warm','2026-09-09T10:02:00.000Z',{invocationId:'new-post-restart-invocation'});
+  assert.equal(runtime.records()[0].state,'HOT');
 });
 
 test('provider and model route identity isolate warm state', () => {
