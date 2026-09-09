@@ -1,0 +1,7 @@
+# Non-OpenAI prompt/KV cache qualification
+
+Agent Control preserves backend cache evidence through the generic provider invocation contract. For llama.cpp, the OpenAI-compatible response can include `timings.cache_n` (prompt tokens reused from the KV cache), `timings.prompt_n` (prompt tokens actually processed), `timings.prompt_ms`, and `timings.predicted_ms`. These are backend measurements, not estimates derived from latency or cumulative usage. The normalized invocation records their source as `llama.cpp.response.timings` and marks the evidence authoritative only when the reuse and processed-token fields are present.
+
+The adapter does not claim cache reuse when a provider omits these fields. Sending the same prompt, saving a transcript, or receiving a fast response is not sufficient evidence. A valid qualification requires matched cold/warm/negative-control Work Parcels, an isolated cache scope, real code changes and independent tests, with cache population included in the economics. The current non-OpenAI physical qualification remains unqualified until that experiment is run and its machine-readable evidence and native dashboard transcript are captured.
+
+The dashboard displays per-invocation reuse and processed prompt counts when supplied, and `cache evidence unavailable` otherwise. Hosted-provider billing and local compute measurements remain separate; no monetary saving is inferred for local inference.

@@ -132,6 +132,8 @@ Qualifying Work Parcels carry a versioned, provider-neutral Transport Context Co
 
 See [transport integrity](docs/transport-integrity.md) and [ARCHITECTURE.md](ARCHITECTURE.md). Legacy parcels remain visible and explicitly unbound.
 
+Non-OpenAI prompt/KV cache qualification is documented in [docs/non-openai-cache-qualification.md](docs/non-openai-cache-qualification.md). Cache reuse is not claimed from latency, repeated prompts, or missing usage fields.
+
 ## Identity, sessions and delegation
 
 3.5 adds a persistent identity control plane with an explicit chain:
