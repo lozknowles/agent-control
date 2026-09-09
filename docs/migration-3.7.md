@@ -2,6 +2,8 @@
 
 Agent Control 3.7.0 adds token-aware baton routing, account/node-bound routes, live token telemetry and the production repository-review handoff lifecycle. Existing 3.5 and 3.6 state remains readable; new token-routing and account-qualification records are additive.
 
+Agent Control 4.2 development adds an optional `transport-integrity/records.json` store. New repository-review parcels bind a hashed Transport Context Contract and deterministic integrity state; legacy parcels remain readable and visibly unbound. No global enforcement is enabled by migration alone.
+
 ## Upgrade
 
 1. Stop the target Agent Control process and back up its configured state directory.

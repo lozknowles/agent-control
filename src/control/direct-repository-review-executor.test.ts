@@ -20,6 +20,7 @@ import {WorkParcelCoordinator, WorkParcelStore} from './work-parcels.js';
 import {TokenAwareBatonRuntime} from './token-aware-baton-routing.js';
 import {GovernedRetrievalRuntime, RepositoryTextRetrievalProvider} from './governed-retrieval.js';
 import {governedRequestOrigin} from './request-origin.js';
+import {TransportIntegrityRuntime} from './transport-integrity.js';
 
 test('production repository review compiles governed evidence and preserves retrieval provenance',async()=>{const root=fs.mkdtempSync(path.join(os.tmpdir(),'agent-control-production-retrieval-'));try{fs.writeFileSync(path.join(root,'first.ts'),`export function routeModel() { return 'qualified'; }\n${'irrelevant broad context\n'.repeat(500)}`);const {models,route}=handoffRegistry(),store=new WorkParcelStore(path.join(root,'parcels.json')),retrieval=new GovernedRetrievalRuntime([new RepositoryTextRetrievalProvider('exact')],{enabled:true,progression:['EXACT'],minimumConfidence:0,requiredCoverage:0,maximumEvidenceTokens:256}),calls:Array<{model:string;prompt:string}>=[],executor=new DirectRepositoryReviewExecutor(models,store,undefined,undefined,fakeReviewClients(calls),undefined,retrieval),request=reviewRequest(route);request.run.repository!.snapshotPath=root;request.run.repository!.identity='retrieval-fixture';request.contextChunks=[{id:'context-1',content:`===== first.ts =====\n${fs.readFileSync(path.join(root,'first.ts'),'utf8')}`,files:['first.ts'],sha256:'one'}];request.instruction='Review routeModel';const response=await executor.execute(request);assert.match(calls[0].prompt,/Governed Evidence Packet:/);assert.ok(calls[0].prompt.indexOf('export function routeModel')<calls[0].prompt.indexOf('Governed Evidence Packet:'));assert.ok(calls[0].prompt.length<1000);assert.ok(response.evidence.some(item=>item.startsWith('evidence-packet:')));const parcel=store.get(response.workParcelIds[0])!;assert.ok(parcel.provenance.some(item=>item.type==='retrieval.evidence'));assert.ok(retrieval.projection().totals.contextTokensSaved>0);}finally{fs.rmSync(root,{recursive:true,force:true});}});
 
@@ -86,7 +87,6 @@ test('exhausted transient provider retries seal a failure baton and continue on 
   assert.equal(models.qualification('source-model').state,'QUALIFIED');
   assert.equal(models.qualification('cheap-model').state,'QUALIFIED');
 });
-
 test('repository review invokes the selected provider directly and persists attributable Work Parcels, usage and response evidence', async () => {
   const root=fs.mkdtempSync(path.join(os.tmpdir(),'agent-control-direct-review-')),originalFetch=globalThis.fetch;let requestBody:Record<string,unknown>|undefined;
   globalThis.fetch=async(_input,init)=>{requestBody=JSON.parse(String(init?.body));return new Response(JSON.stringify({id:'provider-response-secret-id',model:'vendor/reviewer',choices:[{finish_reason:'stop',message:{content:JSON.stringify({schema:'agent-control.repository-review/v1',executiveSummary:'Reviewed one frozen chunk.',findings:[],positiveObservations:['Typed boundary'],areasReviewed:['index.ts'],areasNotReviewed:[],verdict:'PASS'})}}],usage:{prompt_tokens:80,completion_tokens:20,total_tokens:100,cost:.002}}),{status:200,headers:{'content-type':'application/json'}})};
@@ -192,7 +192,8 @@ test('production Work Parcel lifecycle assesses pressure, seals a baton, delegat
     const handoffs = new GovernedHandoffRuntime(contracts, path.join(root, 'handoffs.json'));
     const calls: Array<{model: string; prompt: string}> = [];
     const clients = fakeReviewClients(calls);
-    const executor = new DirectRepositoryReviewExecutor(models, store, routing, {routing, contracts, handoffs}, clients);
+    const transportIntegrity = new TransportIntegrityRuntime(path.join(root, 'transport-integrity.json'));
+    const executor = new DirectRepositoryReviewExecutor(models, store, routing, {routing, contracts, handoffs}, clients, undefined, undefined, undefined, undefined, undefined, undefined, transportIntegrity);
 
     const response = await executor.execute(reviewRequest(route));
 
@@ -206,6 +207,8 @@ test('production Work Parcel lifecycle assesses pressure, seals a baton, delegat
     assert.equal(response.result.areasReviewed.includes('second.ts'), true);
 
     const parcel = store.get(response.workParcelIds[0])!;
+    assert.equal(parcel.transportIntegrity?.state, 'COMPLETE');
+    assert.equal(parcel.transportIntegrity?.contractSha256.length, 64);
     assert.deepEqual(parcel.audit.invocations.map(item => item.model), ['source-model', 'cheap-model']);
     assert.equal(parcel.audit.totals.invocations, 2);
     assert.equal(parcel.audit.totals.totalTokens, 220);
