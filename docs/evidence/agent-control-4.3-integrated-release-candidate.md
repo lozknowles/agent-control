@@ -15,7 +15,8 @@ this candidate.
 - Previously qualified 4.3 implementation: `bfec20317361fd20f886bba5a1b752d570fc2cbe`
 - Preserved historical evidence HEAD: `a6d35253bb40c2da049945430ebc1960cde4468b`
 - Integration branch: `release/4.3.0-integration-20260909`
-- Frozen product candidate SHA: `f59aab4e1150bc054a53c9df2af83435a2087e6a`
+- Superseded pre-physical candidate SHA: `f59aab4e1150bc054a53c9df2af83435a2087e6a`
+- Revised frozen product candidate SHA: `27bc4c596bbde1db2696d62d38ca17d8bf8cab21`
 
 The remote was fetched immediately before the candidate freeze and
 `origin/main` remained at the integration base above.
@@ -71,8 +72,7 @@ in [Runtime safety and containment](../runtime-safety-and-containment.md).
 - Focused runtime safety, JobRuntime, Git containment and ignored-state tests:
   `69/69` passed.
 - OpenAI-compatible cache normalization tests: `34/34` passed.
-- Complete repository suite before the qualification-discovered bootstrap fix:
-  `1118/1118` passed. Revised-candidate regression is pending below.
+- Complete revised-candidate repository suite: `1119/1119` passed.
 - TypeScript, bootstrap syntax, dashboard syntax, infrastructure neutrality,
   implementation-status consistency and documentation-link checks: required
   as part of the final release validation.
