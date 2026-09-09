@@ -321,6 +321,8 @@ Pre-run context delta is estimated and labelled. Completed provider counters are
 
 A warm cache improves efficiency but does not confer correctness or authority. Capability, integrity and governance always outrank cache warmth. See [Cache-Aware Expert Delegation](docs/cache-aware-expert-delegation.md).
 
+The dashboard projects this state through one dedicated **Warm Cache Runtime** tab. It joins the read-only Cache Expert projection with current Work Parcel stages, batons and invocation audit already fetched by the dashboard. The timeline never becomes a scheduler: lanes and step blocks are derived from persisted stage/audit identity; cache colors come from provider-normalized evidence; route scores and compatibility come from durable decisions; invalidation comes from registry lifecycle. The heatmap uses discrete recorded invocation observations rather than inferring continuous backend warmth. The compatibility matrix contains only evaluated candidate relationships, marks context percentages as derived, and leaves unobserved cross-lane relationships `UNKNOWN`. SSE-triggered refresh and periodic reconciliation update every view without granting the browser routing authority.
+
 This evidence is not routing authority. The production gate requires a sufficient deterministic task sample, no verified-success regression against STANDARD, bounded classified escalation, a measured cumulative-resource improvement and all existing policy/fencing checks. The first recorded mutation run fails the sample-size and resource-improvement criteria, so production applies the observational STANDARD fallback; no production profile-selection code path is enabled by the experiment.
 
 ## Routing and qualification

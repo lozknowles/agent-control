@@ -91,7 +91,17 @@ Configure `cacheAwareExperts` in the canonical Agent Control JSON file or use **
 
 Keep `allowDerivedPreference` false unless the specific backend retention mechanism has been independently qualified. Set `enabled` false to preserve registry observations while removing cache affinity from route scoring.
 
-Open **Warm Experts** to see worker/crew route, model, context domain, lifecycle, age, actual and expected reuse, processed tokens, authority, health, task history, verifier outcome, economics and invalidation reason. The decision cards show candidate ranking changes and the complete natural operational transcript generated from the durable decision record. They update through the same Work Parcel SSE events and periodic reconciliation as the rest of the live dashboard; no browser state becomes routing authority.
+Open **Warm Cache Runtime** for the live operational projection:
+
+- **Runtime Timeline** joins actual Work Parcel stages, model invocations, queue/wait state, sealed batons, warm/cold results, invalidation and fallback activation.
+- **Cache Heatmap** plots discrete provider observations by exact route. Blank cells are `UNKNOWN`; gaps are not treated as warm time.
+- **Agent & Process Utilization** reports measured stage count, invocation latency, cache-use percentage and route distribution.
+- **Warm Experts** ranks the exact worker/provider/account/model/node/session/cache/backend records by the current governed decision.
+- **Compatibility Matrix** contains only route relationships evaluated by durable decisions. Any compatibility percentage is explicitly derived from estimated context delta.
+- **Candidate Routes** and **Route Explanation** show qualification, compatibility, cache state, reuse, score components, final selection and the full human-readable operational transcript.
+- **Cross-lane Visibility** distinguishes exact same-session scope, observed compatible reuse, invalidated relationships and unavailable/unknown relationships.
+
+The views update through the same Work Parcel SSE events and periodic reconciliation as the rest of the dashboard; no browser state becomes routing authority. Values are sourced from provider-normalized invocation evidence, the Cache Expert Registry, Work Parcel audit and durable route decisions. Latency, cost or cross-lane benefit that was not reported is shown as unavailable rather than estimated silently.
 
 ## Failure modes and provider differences
 
@@ -105,4 +115,3 @@ Open **Warm Experts** to see worker/crew route, model, context domain, lifecycle
 - Missing pricing: show `MONETARY SAVING UNAVAILABLE` and make no billing claim.
 
 Provider adapters may differ in what they can report, but core lifecycle, compatibility, scoring, audit and fail-closed behavior do not depend on llama.cpp, OpenAI or any particular model. The feature still functions as an honest no-preference registry when every provider reports cache evidence as unavailable.
-

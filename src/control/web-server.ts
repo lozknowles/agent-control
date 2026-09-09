@@ -255,7 +255,7 @@ function optionalNumber(value: string | null, minimum: number, maximum: number) 
 
 function serveAsset(response: ServerResponse, assetsDir: string, pathname: string) {
   const asset = pathname === '/' ? 'index.html' : pathname.replace(/^\//, '');
-  if (!['index.html', 'dashboard.css', 'dashboard-fixes.css', 'dashboard-jobs.css', 'dashboard-adaptive-orchestration.css', 'dashboard.js', 'dashboard-parameters.js', 'dashboard-running-state.js', 'dashboard-enhancements.js', 'dashboard-parameterized-jobs.js', 'dashboard-models.js', 'dashboard-sessions.js', 'dashboard-adaptive-orchestration.js', 'dashboard-cache-experts.js'].includes(asset)) throw httpError(404, 'not_found');
+  if (!['index.html', 'dashboard.css', 'dashboard-fixes.css', 'dashboard-jobs.css', 'dashboard-adaptive-orchestration.css', 'dashboard-cache-runtime.css', 'dashboard.js', 'dashboard-parameters.js', 'dashboard-running-state.js', 'dashboard-enhancements.js', 'dashboard-parameterized-jobs.js', 'dashboard-models.js', 'dashboard-sessions.js', 'dashboard-adaptive-orchestration.js', 'dashboard-cache-experts.js'].includes(asset)) throw httpError(404, 'not_found');
   const file = path.join(assetsDir, asset);
   if (!fs.existsSync(file)) throw httpError(404, 'dashboard_asset_missing');
   const type = asset.endsWith('.html') ? 'text/html; charset=utf-8' : asset.endsWith('.css') ? 'text/css; charset=utf-8' : 'text/javascript; charset=utf-8';
