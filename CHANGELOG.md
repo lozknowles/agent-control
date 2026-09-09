@@ -2,6 +2,12 @@
 
 ## 4.3.0 (release candidate)
 
+- Integrated the 4.2 Transport Context and 4.3 Warm Expert lines onto current 4.1 main without replacing either runtime wholesale; preserved POE, Crew/WOPR, Live Shell, protected-resource governance, provider/account routing, retries, recovery and human-readable execution history.
+- Replaced keyword-granted Action authority with explicit read-only, declared consequential or typed resolver-derived effects. Missing, unknown, ambiguous and inconsistent effects deny before execution; approval cannot override a denial.
+- Canonicalized approved filesystem/repository paths on the execution platform, denied symlink escapes, traversal, sibling-prefix confusion, unresolved remote/foreign-platform paths and unsafe prospective outputs, and revalidated governed Git working directories at execution.
+- Confined governed Git execution by disabling repository hooks and filesystem-monitor helpers, disabling terminal credential prompts, treating remote reads as external effects and rejecting Git configuration mutation through the governed route.
+- Added bounded ignored-file state capture to fast execution. Valuable ignored state is included in before/after containment evidence while `node_modules` is an explicit disposable root; ignored no longer means disposable.
+- Added the execution-route containment matrix and 4.3 deployment/rollback guide. Physical claims remain scoped to the exact candidate and no historical recording is promoted as integrated-candidate evidence.
 - Added a provider-neutral Cache Expert Registry derived only from genuine terminal invocation telemetry, with complete route/session/cache/backend identity, hashed context domains, bounded task history and `HOT`, `WARM`, `COOLING`, `EXPIRED` and `INVALIDATED` lifecycle states.
 - Added `AUTHORITATIVE`, qualified opt-in `DERIVED` and `UNAVAILABLE` cache evidence. Cold retained-state expectations remain separate from actual reuse; provider counters remain authoritative after execution.
 - Wired cache-aware assessment into the normal Work Parcel model route without bypassing model qualification, capability/placement, worker health/load, transport integrity, adaptive quality/cost/latency policy, approvals or independent verification.

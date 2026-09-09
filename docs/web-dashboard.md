@@ -1,4 +1,4 @@
-# Agent Control web dashboard
+# Agent Control 4.3 web dashboard
 
 The web dashboard is an operator interface over `AgentControlService`. It is not a web scheduler and does not own lane, lease, PTY, verification or provider state.
 

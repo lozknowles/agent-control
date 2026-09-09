@@ -8,7 +8,7 @@ import {jobPriorityRank, type ActionFailureClass, type ActionHandler, type Actio
 import type {HarnessEfficiencyLedgerPort, InvocationFinalResult} from './harness-efficiency.js';
 import {OwnedProcessManager, type ExecutionCleanupReport, type OwnedExecution} from './owned-process.js';
 import type {ExecutionSessionRuntime, ExecutionSessionScope} from './execution-session.js';
-import {deriveRuntimeActionIntent, type RuntimeSafetySupervisorPort} from './runtime-safety-supervisor.js';
+import {deriveRuntimeActionIntent, type RuntimeActionCategory, type RuntimeEffectDeclaration, type RuntimeSafetySupervisorPort} from './runtime-safety-supervisor.js';
 import {compileResourcePolicies, isExternalMutation, type ActionGovernancePlan, type ActionGovernanceResolver, type ExternalOperationRecord, type ExternalOperationState} from './action-governance.js';
 
 function writeJsonAtomic(file: string, value: unknown, durable = false) { fs.mkdirSync(path.dirname(file), {recursive: true}); const temporary = `${file}.tmp`; fs.writeFileSync(temporary, `${JSON.stringify(redactSensitiveValue(value), null, 2)}\n`, {mode: 0o600, flush: durable}); fs.renameSync(temporary, file); if (durable && process.platform !== 'win32') { const fd=fs.openSync(path.dirname(file),'r'); try { fs.fsyncSync(fd); } finally { fs.closeSync(fd); } } }
@@ -26,13 +26,15 @@ export class ActionFailure extends Error {
 }
 class StepTimeoutError extends Error { constructor(readonly timeoutSeconds: number, readonly elapsedMs: number) { super(`step_timeout:${timeoutSeconds}s:${elapsedMs}ms`); this.name = 'StepTimeoutError'; } }
 export class ActionRegistry {
-  private readonly actions = new Map<string, {kind: 'control'; handler: ActionHandler; governance?: ActionGovernanceResolver} | {kind: 'agent'; handler: AgentActionHandler; governance?: ActionGovernanceResolver}>();
-  /** Existing deterministic/control-plane Actions remain explicitly outside model execution. */
+  private readonly actions = new Map<string, ({kind: 'control'; handler: ActionHandler; governance?: ActionGovernanceResolver} | {kind: 'agent'; handler: AgentActionHandler; governance?: ActionGovernanceResolver}) & {effectDeclaration: RuntimeEffectDeclaration}>();
+  /** Legacy registration is deliberately UNKNOWN when runtime safety is active. */
   register(id: string, handler: ActionHandler) { return this.registerControl(id, handler); }
-  registerControl(id: string, handler: ActionHandler) { this.assertRegistration(id); this.actions.set(id, {kind: 'control', handler}); return this; }
-  registerGovernedControl(id: string, handler: ActionHandler, governance: ActionGovernanceResolver) { this.assertRegistration(id); this.actions.set(id, {kind: 'control', handler, governance}); return this; }
+  registerReadOnly(id: string, handler: ActionHandler) { this.assertRegistration(id); this.actions.set(id, {kind: 'control', handler, effectDeclaration: {mode: 'READ_ONLY'}}); return this; }
+  registerControl(id: string, handler: ActionHandler) { this.assertRegistration(id); this.actions.set(id, {kind: 'control', handler, effectDeclaration: {mode: 'UNKNOWN'}}); return this; }
+  registerConsequentialControl(id: string, handler: ActionHandler, categories: RuntimeActionCategory[]) { this.assertRegistration(id); this.actions.set(id, {kind: 'control', handler, effectDeclaration: {mode: 'CATEGORIES', categories: [...new Set(categories)]}}); return this; }
+  registerGovernedControl(id: string, handler: ActionHandler, governance: ActionGovernanceResolver) { this.assertRegistration(id); this.actions.set(id, {kind: 'control', handler, governance, effectDeclaration: {mode: 'RESOLVED_EFFECTS'}}); return this; }
   /** Model-backed Actions can only be registered through an adaptive-harness handler. */
-  registerAgent(id: string, handler: AgentActionHandler) { this.assertRegistration(id); if (handler.path !== 'adaptive-harness') throw new Error('agent_action_must_use_adaptive_harness'); this.actions.set(id, {kind: 'agent', handler}); return this; }
+  registerAgent(id: string, handler: AgentActionHandler, categories?: RuntimeActionCategory[]) { this.assertRegistration(id); if (handler.path !== 'adaptive-harness') throw new Error('agent_action_must_use_adaptive_harness'); if (categories?.includes('READ_ONLY')) throw new Error('agent_action_effect_declaration_invalid'); this.actions.set(id, {kind: 'agent', handler, effectDeclaration: categories?.length ? {mode: 'CATEGORIES', categories: [...new Set(categories)]} : {mode: 'UNKNOWN'}}); return this; }
   has(id: string) { return this.actions.has(id); }
   ids() { return new Set(this.actions.keys()); }
   kind(id: string) { return this.resolve(id).kind; }
@@ -249,7 +251,7 @@ export class JobRuntime {
       }
     }
     if (this.safety) {
-      const route = run.trigger.modelRoute, decision = this.safety.assess(deriveRuntimeActionIntent({runId: run.id, parcelId: run.trigger.parcelContext?.parcelId, stageId: run.trigger.parcelContext?.stageId, stepId: step.id, actor: run.trigger.actor, action: step.action, goal: run.trigger.parcelContext?.currentInterpretation ?? run.effectiveJob.metadata.description ?? run.jobId, parameters: run.parameters, requestedCapabilities: required, resources: step.resources, workerId: worker.id, crewRole: 'resource-guardian', providerId: route?.providerId, accountProfileId: route?.accountProfileId ?? undefined, modelId: route?.modelId, nodeId: route?.providerExecutionNodeId ?? worker.id, effects: step.governance?.effects, resourcePolicies: step.governance?.policies}));
+      const route = run.trigger.modelRoute, decision = this.safety.assess(deriveRuntimeActionIntent({runId: run.id, parcelId: run.trigger.parcelContext?.parcelId, stageId: run.trigger.parcelContext?.stageId, stepId: step.id, actor: run.trigger.actor, action: step.action, goal: run.trigger.parcelContext?.currentInterpretation ?? run.effectiveJob.metadata.description ?? run.jobId, parameters: run.parameters, requestedCapabilities: required, resources: step.resources, workerId: worker.id, crewRole: 'resource-guardian', providerId: route?.providerId, accountProfileId: route?.accountProfileId ?? undefined, modelId: route?.modelId, nodeId: route?.providerExecutionNodeId ?? worker.id, effectDeclaration: registeredAction.effectDeclaration, effects: step.governance?.effects, resourcePolicies: step.governance?.policies}));
       for (const operation of step.externalOperations ?? []) { operation.decisionId = decision.id; operation.updatedAt = this.clock().toISOString(); }
       const safetyDetail = `${decision.outcome}:${decision.id}:${decision.reason}`; if (!run.provenance.some(item => item.type === 'runtime-safety' && item.detail === safetyDetail)) run.provenance.push({type: 'runtime-safety', at: decision.at, detail: safetyDetail});
       if (decision.outcome === 'DENY') { const at = this.clock().toISOString(); for (const operation of step.externalOperations ?? []) { operation.reason = decision.reason; operation.transitions[0].reason = decision.reason; } step.status = 'FAILED'; step.error = `runtime_safety_denied:${decision.id}`; step.endedAt = at; this.cancelDependents(run, step.id); run.status = 'FAILED'; run.endedAt = at; run.errors.push(`${step.id}:policy:${step.error}`); this.locks.release(run.id, step.id); this.ledger.update(run, 'step.safety_denied', {decisionId: decision.id, outcome: decision.outcome, policyId: decision.policyId}); return; }

@@ -115,3 +115,13 @@ test('real Spark runner reports and containment rejects an untracked out-of-scop
   assert.equal(outcome.telemetry.escalationReason, 'unapproved-file-touched');
   assert.deepEqual(outcome.result?.touchedFiles, ['outside scope.txt']);
 });
+
+test('real Spark runner detects mutation of valuable ignored state', async t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-spark-ignored-')); t.after(() => fs.rmSync(root, {recursive: true, force: true}));
+  execFileSync('git', ['init', '-q', '-b', 'main'], {cwd: root}); execFileSync('git', ['config', 'user.email', 'test@example.invalid'], {cwd: root}); execFileSync('git', ['config', 'user.name', 'Agent Control Test'], {cwd: root});
+  fs.mkdirSync(path.join(root, 'docs')); fs.writeFileSync(path.join(root, 'docs/guide.md'), 'guide\n'); fs.writeFileSync(path.join(root, '.gitignore'), 'operator.state\n'); execFileSync('git', ['add', '.'], {cwd: root}); execFileSync('git', ['commit', '-qm', 'fixture'], {cwd: root}); fs.writeFileSync(path.join(root, 'operator.state'), 'valuable\n');
+  const command = path.join(root, 'fake-codex.mjs');
+  fs.writeFileSync(command, `#!/usr/bin/env node\nimport fs from 'node:fs';\nfs.writeFileSync('operator.state', 'silently changed\\n');\nconsole.log(JSON.stringify({type:'item.completed',item:{type:'agent_message',text:JSON.stringify({status:'SUCCEEDED',summary:'done',confidence:.99,requestedMoreContext:false})}}));\nconsole.log(JSON.stringify({type:'turn.completed',usage:{input_tokens:1,output_tokens:1}}));\n`); fs.chmodSync(command, 0o700); execFileSync('git', ['add', '-f', command], {cwd: root}); execFileSync('git', ['commit', '-qm', 'runner'], {cwd: root});
+  const outcome = await new FastExecutionCoordinator(registry(), available, new CodexFastExecutionRunner(root, command), {verify: async () => ({passed: true, evidence: ['must-not-run']})}, enabled).execute(request(), 'controller');
+  assert.equal(outcome.telemetry.outcome, 'ESCALATED'); assert.equal(outcome.telemetry.escalationReason, 'unapproved-file-touched'); assert.deepEqual(outcome.result?.touchedFiles, ['operator.state']);
+});

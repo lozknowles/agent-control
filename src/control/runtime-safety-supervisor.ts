@@ -6,6 +6,7 @@ import {policyProtectsEffect, type GovernedEffect, type ResourceCapabilityPolicy
 
 export type RuntimeSafetyOutcome = 'ALLOW' | 'ALLOW_WITH_AUDIT' | 'REQUIRE_APPROVAL' | 'DENY' | 'PAUSE' | 'ESCALATE';
 export type RuntimeActionCategory = 'READ_ONLY' | 'REPOSITORY_WRITE' | 'FILESYSTEM_WRITE' | 'REMOTE_NODE' | 'DESTRUCTIVE' | 'DEPLOYMENT' | 'CREDENTIAL_USE' | 'EXTERNAL_COMMUNICATION' | 'UNKNOWN';
+export type RuntimeEffectDeclaration = {mode: 'READ_ONLY' | 'UNKNOWN' | 'RESOLVED_EFFECTS'} | {mode: 'CATEGORIES'; categories: RuntimeActionCategory[]};
 
 export interface RuntimeActionIntent {
   runId: string;
@@ -101,6 +102,7 @@ export class RuntimeSafetySupervisor implements RuntimeSafetySupervisorPort {
     const protectedEffect = intent.effects?.find(effect => intent.resourcePolicies?.some(policy => policyProtectsEffect(policy, effect)));
     if (protectedEffect) return {outcome: 'DENY', reason: `Resolved ${protectedEffect.kind} effect conflicts with read-only resource policy for ${protectedEffect.resource.id}`, evidence: [...evidence, `effect:${protectedEffect.kind}:${protectedEffect.resource.id}`, 'execution:not-started']};
     if (intent.sensitiveMaterialDetected) return {outcome: 'DENY', reason: 'Plain credential material is forbidden; only opaque credential references may cross the control boundary', evidence};
+    if (intent.categories.includes('UNKNOWN')) return {outcome: 'DENY', reason: 'Action effects are missing, ambiguous, or inconsistent; execution fails closed', evidence: [...evidence, 'execution:not-started']};
     if (!insideApprovedScopes(intent.filesystemScope, this.policy.approvedFilesystemRoots) || !insideApprovedScopes(intent.repositoryScope, this.policy.approvedRepositoryRoots)) return {outcome: 'DENY', reason: 'Requested filesystem or repository target falls outside configured scope', evidence};
     if (this.policy.approvedRemoteNodes.length && intent.remoteNodeIds.some(id => !this.policy.approvedRemoteNodes.includes(id))) return {outcome: 'DENY', reason: 'Requested remote node is outside configured scope', evidence};
     if (intent.destructive || intent.categories.includes('DESTRUCTIVE')) return this.policy.denyDestructiveWithoutApproval ? {outcome: 'REQUIRE_APPROVAL', reason: 'Destructive action requires explicit Agent Control approval', evidence} : {outcome: 'ALLOW_WITH_AUDIT', reason: 'Destructive action allowed by configured policy with durable audit', evidence};
@@ -115,13 +117,36 @@ export class RuntimeSafetySupervisor implements RuntimeSafetySupervisorPort {
   private publish(decision: RuntimeSafetyDecision) { for (const listener of this.listeners) listener(structuredClone(decision)); }
 }
 
-export function deriveRuntimeActionIntent(input: {runId: string; parcelId?: string; stageId?: string; stepId: string; actor: string; action: string; goal: string; parameters: Record<string, unknown>; requestedCapabilities: string[]; resources: string[]; workerId?: string; crewRole?: string; providerId?: string; accountProfileId?: string; modelId?: string; nodeId?: string; effects?: GovernedEffect[]; resourcePolicies?: ResourceCapabilityPolicy[]}) {
-  const text = `${input.action} ${input.goal} ${input.requestedCapabilities.join(' ')}`.toLowerCase(), categories = new Set<RuntimeActionCategory>();
-  if (/delete|destroy|wipe|drop|force-push|reset-hard|remove-recursive/.test(text)) categories.add('DESTRUCTIVE'); if (/deploy|release|publish|production|promote/.test(text)) categories.add('DEPLOYMENT'); if (/repository\.write|repo.*write|git\.mutation|code.*modify/.test(text)) categories.add('REPOSITORY_WRITE'); if (/file.*write|filesystem\.write|package\.install/.test(text)) categories.add('FILESYSTEM_WRITE'); if (/remote|ssh|adb|node\./.test(text) || input.workerId && input.workerId !== 'controller') categories.add('REMOTE_NODE'); if (/credential|oauth|auth|api.?key/.test(text)) categories.add('CREDENTIAL_USE'); if (/email|message|post|external\.communication/.test(text)) categories.add('EXTERNAL_COMMUNICATION'); if (!categories.size) categories.add('READ_ONLY');
+export function deriveRuntimeActionIntent(input: {runId: string; parcelId?: string; stageId?: string; stepId: string; actor: string; action: string; goal: string; parameters: Record<string, unknown>; requestedCapabilities: string[]; resources: string[]; workerId?: string; crewRole?: string; providerId?: string; accountProfileId?: string; modelId?: string; nodeId?: string; effectDeclaration?: RuntimeEffectDeclaration; effects?: GovernedEffect[]; resourcePolicies?: ResourceCapabilityPolicy[]}) {
+  const text = `${input.action} ${input.goal} ${input.requestedCapabilities.join(' ')}`.toLowerCase(), categories = declaredCategories(input.effectDeclaration, input.effects);
+  // Text is never authority to grant execution. It can only detect a declaration
+  // mismatch and make the decision more restrictive.
+  const suspicious = /delete|destroy|wipe|drop|force-push|reset-hard|remove-recursive|deploy|release|publish|production|promote|repository\.write|repo.*write|git\.mutation|code.*modify|file.*write|filesystem\.write|package\.install|remote|ssh|adb|credential|oauth|api.?key|email|message|external\.communication/.test(text);
+  if (suspicious && categories.size === 1 && categories.has('READ_ONLY')) { categories.delete('READ_ONLY'); categories.add('UNKNOWN'); }
+  if (input.workerId && input.workerId !== 'controller') categories.add('REMOTE_NODE');
   const entries = flatten(input.parameters), filesystemScope = entries.filter(item => /(?:path|file|directory|cwd)$/i.test(item.key) && typeof item.value === 'string').map(item => String(item.value)), repositoryScope = entries.filter(item => /repo(?:sitory)?(?:root|path)?$/i.test(item.key) && typeof item.value === 'string').map(item => String(item.value)), credentialReferences = entries.filter(item => /(?:credential|auth|token|key).*ref|(?:credential|auth).*env/i.test(item.key) && typeof item.value === 'string').map(item => String(item.value)), externalDestinations = entries.filter(item => /(?:url|destination|recipient|endpoint)$/i.test(item.key) && typeof item.value === 'string').map(item => String(item.value));
-  if (input.effects?.some(effect => effect.external && effect.consequential)) categories.add('REPOSITORY_WRITE');
+  if (categories.size > 1) categories.delete('READ_ONLY');
   const raw: RuntimeActionIntent = {runId: input.runId, ...(input.parcelId ? {parcelId: input.parcelId} : {}), ...(input.stageId ? {stageId: input.stageId} : {}), stepId: input.stepId, actor: input.actor, action: input.action, goal: input.goal, categories: [...categories], filesystemScope, repositoryScope, remoteNodeIds: input.workerId ? [input.workerId] : [], credentialReferences, externalDestinations, production: categories.has('DEPLOYMENT'), destructive: categories.has('DESTRUCTIVE'), requestedCapabilities: input.requestedCapabilities, ...(input.crewRole ? {crewRole: input.crewRole} : {}), ...(input.providerId ? {providerId: input.providerId} : {}), ...(input.accountProfileId ? {accountProfileId: input.accountProfileId} : {}), ...(input.modelId ? {modelId: input.modelId} : {}), ...(input.nodeId ? {nodeId: input.nodeId} : {}), sensitiveMaterialDetected: containsSecretMaterial(input.parameters), ...(input.effects?.length ? {effects: input.effects} : {}), ...(input.resourcePolicies?.length ? {resourcePolicies: input.resourcePolicies} : {})};
   return sanitizeIntent(raw);
+}
+
+function declaredCategories(declaration: RuntimeEffectDeclaration | undefined, effects: GovernedEffect[] | undefined) {
+  const categories = new Set<RuntimeActionCategory>();
+  if (!declaration || declaration.mode === 'UNKNOWN') categories.add('UNKNOWN');
+  else if (declaration.mode === 'READ_ONLY') categories.add('READ_ONLY');
+  else if (declaration.mode === 'CATEGORIES') {
+    for (const category of declaration.categories) categories.add(category);
+    if (!categories.size || categories.has('READ_ONLY') && categories.size > 1) { categories.clear(); categories.add('UNKNOWN'); }
+  } else if (!effects?.length) categories.add('UNKNOWN');
+  else for (const effect of effects) {
+    if (effect.kind === 'READ' && !effect.consequential) categories.add('READ_ONLY');
+    else if (effect.kind === 'LOCAL_WRITE') categories.add('REPOSITORY_WRITE');
+    else if (['CREATE', 'UPDATE', 'FORCE_UPDATE', 'DELETE', 'REWRITE'].includes(effect.kind)) categories.add('REPOSITORY_WRITE');
+    else categories.add('UNKNOWN');
+    if (['FORCE_UPDATE', 'DELETE', 'REWRITE'].includes(effect.kind)) categories.add('DESTRUCTIVE');
+    if (effect.external) categories.add('EXTERNAL_COMMUNICATION');
+  }
+  return categories;
 }
 
 function sanitizeIntent(input: RuntimeActionIntent): RuntimeActionIntent { return {...input, runId: safeIdentifier(input.runId), ...(input.parcelId ? {parcelId: safeIdentifier(input.parcelId)} : {}), ...(input.stageId ? {stageId: safeIdentifier(input.stageId)} : {}), stepId: safeIdentifier(input.stepId), actor: safeIdentifier(input.actor), action: safeIdentifier(input.action), goal: safeText(input.goal, 8_192), categories: [...new Set(input.categories)], filesystemScope: safeList(input.filesystemScope), repositoryScope: safeList(input.repositoryScope), remoteNodeIds: input.remoteNodeIds.map(safeIdentifier), credentialReferences: input.credentialReferences.map(value => safeIdentifier(value)), externalDestinations: input.externalDestinations.map(value => safeText(value, 512)), requestedCapabilities: input.requestedCapabilities.map(safeIdentifier), ...(input.crewRole ? {crewRole: safeIdentifier(input.crewRole)} : {}), ...(input.providerId ? {providerId: safeIdentifier(input.providerId)} : {}), ...(input.accountProfileId ? {accountProfileId: safeIdentifier(input.accountProfileId)} : {}), ...(input.modelId ? {modelId: safeIdentifier(input.modelId)} : {}), ...(input.nodeId ? {nodeId: safeIdentifier(input.nodeId)} : {}), ...(input.effects?.length ? {effects: structuredClone(input.effects)} : {}), ...(input.resourcePolicies?.length ? {resourcePolicies: structuredClone(input.resourcePolicies)} : {}), ...(input.sensitiveMaterialDetected ? {sensitiveMaterialDetected: true} : {})}; }
@@ -141,15 +166,21 @@ function insideApprovedScopes(values: string[], approved: string[]) {
   return values.every(value => approved.some(root => scopeContains(root, value)));
 }
 function scopeContains(root: string, candidate: string) {
-  const windows = path.win32.isAbsolute(root) || path.win32.isAbsolute(candidate), api = windows ? path.win32 : path.posix;
-  if (!api.isAbsolute(root) || !api.isAbsolute(candidate)) return false;
-  const normalizedRoot = api.normalize(root), normalizedCandidate = api.normalize(candidate);
-  if (windows) {
-    const foldedRelative = api.relative(normalizedRoot.toLowerCase(), normalizedCandidate.toLowerCase());
-    return foldedRelative === '' || (!foldedRelative.startsWith('..') && !api.isAbsolute(foldedRelative));
-  }
-  const relative = api.relative(normalizedRoot, normalizedCandidate);
-  return relative === '' || (!relative.startsWith('..') && !api.isAbsolute(relative));
+  const windowsSyntax = /^[a-z]:[\\/]|^\\\\/i.test(root) || /^[a-z]:[\\/]|^\\\\/i.test(candidate);
+  if (windowsSyntax !== (process.platform === 'win32')) return false;
+  if (!path.isAbsolute(root) || !path.isAbsolute(candidate)) return false;
+  try {
+    const canonicalRoot = fs.realpathSync.native(root), canonicalCandidate = canonicalizeProspectivePath(candidate);
+    const normalizedRoot = process.platform === 'win32' ? canonicalRoot.toLowerCase() : canonicalRoot;
+    const normalizedCandidate = process.platform === 'win32' ? canonicalCandidate.toLowerCase() : canonicalCandidate;
+    const relative = path.relative(normalizedRoot, normalizedCandidate);
+    return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
+  } catch { return false; }
+}
+function canonicalizeProspectivePath(value: string) {
+  let cursor = path.resolve(value); const suffix: string[] = [];
+  while (!fs.existsSync(cursor)) { const parent = path.dirname(cursor); if (parent === cursor) throw new Error('scope_path_has_no_existing_parent'); suffix.unshift(path.basename(cursor)); cursor = parent; }
+  return path.resolve(fs.realpathSync.native(cursor), ...suffix);
 }
 function flatten(value: unknown, prefix = ''): Array<{key: string; value: unknown}> { if (!value || typeof value !== 'object' || Array.isArray(value)) return [{key: prefix, value}]; return Object.entries(value).flatMap(([key, item]) => flatten(item, prefix ? `${prefix}.${key}` : key)); }
 function safeList(values: string[]) { return [...new Set(values.map(value => safeText(value, 2_048)).filter(Boolean))]; }
