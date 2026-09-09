@@ -23,7 +23,7 @@ function fixture(t:TestContext) {
   const operator=new PoeOperatorRuntime({runtime,parcels,sources,registrations:[registration],topics:[{id:'purpose',title:'Purpose',terms:['system works'],text:'Jobs execute through governed Work Parcels.',source:'config/poe-system-topics.json#purpose'},{id:'approvals',title:'Approval boundaries',terms:['approval'],text:'Job starts require review of the sealed request.',source:'config/poe-system-topics.json#approvals'}],file:path.join(root,'operator.json')});
   const poe=new PoeRuntime({operator,evidence:sources,file:path.join(root,'poe.json'),benchmark:{submit:({actor,requestKey,plan,proposal})=>({parcelId:parcels.submitApprovedPlan(proposal.objective,actor,requestKey,plan).id})}}),conversation=poe.createConversation({actorId:'web-operator',channel:'dashboard'});
   const ask=(text:string)=>poe.ask({conversationId:conversation.id,text});
-  return {operator,poe,conversation,ask,runtime,parcels,registration,catalog,workers};
+  return {operator,poe,conversation,ask,runtime,parcels,registration,catalog,workers,sources};
 }
 test('catalogue and schedules come from real registrations, including disabled schedules',async t=>{
   const f=fixture(t);f.catalog.addSchedule({apiVersion:'agent-control/v1',kind:'Schedule',metadata:{id:'daily',name:'Daily observation'},spec:{job:f.registration.job,enabled:false,cron:'0 9 * * *',timezone:'Europe/London',missedRunPolicy:'skip'}});
@@ -135,4 +135,19 @@ test('approved benchmark handovers and completion remain scoped to the owning co
  assert.equal(f.runtime.ledger.list().length,0);
  const docs=await f.ask('Explain how the system works');
  assert.equal(docs.turn.evidence[0]?.informationKind,'DOCUMENTATION');
+});
+
+test('an explicit parcel explanation resolves its recorded result instead of generic documentation',async t=>{
+ const f=fixture(t);await f.ask('Start System observation');
+ const proposal=(await f.operator.projection('web-operator',f.conversation.id)).proposals[0]!;
+ const approved=f.poe.approveOperator(f.conversation.id,proposal.id,proposal.hash,'web-operator');
+ for(let i=0;i<8;i++){await f.parcels.tick();await f.runtime.tick();}
+ const parcel=f.parcels.get(approved.proposal.parcelId!);assert.equal(parcel.status,'SUCCEEDED');
+ let resolved=0;f.sources.resolve=()=>{resolved++;return {title:`Selected parcel ${parcel.id}`,summary:`Recorded status: ${parcel.status}`,facts:[],related:[]};};
+ const result=await f.operator.query(`Explain parcel ${parcel.id}`,f.conversation,{kind:'parcel',id:parcel.id});
+ assert.equal(result?.title,`Selected parcel ${parcel.id}`);assert.equal(resolved,1);
+ assert.ok(result);assert.match(result.summary,/SUCCEEDED/);
+ const blocked=await f.operator.query(`Delete this parcel ${parcel.id}`,f.conversation,{kind:'parcel',id:parcel.id});
+ assert.equal(blocked?.title,'Operation requires its governed control');assert.equal(resolved,1);
+ assert.equal(f.parcels.list().length,1);assert.equal(f.parcels.get(parcel.id).status,'SUCCEEDED');
 });
