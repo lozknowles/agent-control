@@ -10,7 +10,7 @@
 - Documents private installation, voice/reasoning configuration, authentication, private HTTPS access, upgrades, rollback, troubleshooting and physical evidence requirements.
 - Final full-suite, physical, audiovisual, release and deployment gates are tracked in `docs/evidence/agent-control-4.1-qualification.md`; no completed 4.1 release is claimed by this candidate entry.
 
-## [Unreleased] — POE conversational operator
+### POE conversational operator included in 4.1
 
 - Renames the resident conversational helper to **POE** and adds an original state-driven dashboard concierge integrated with the existing six-member Crew. `IDLE`, `LISTENING`, `INVESTIGATING`, `THINKING`, `EXPLAINING`, `OBSERVING_CREW`, `DESIGNING_EXPERIMENT`, `WAITING_FOR_APPROVAL`, and `SPEAKING` derive from durable POE activity rather than simulated work.
 - Adds durable channel-scoped POE conversations, focused authoritative evidence adapters, explicit unavailable-state answers, human-readable transcript projection, contextual **Ask POE about this** controls, secret rejection, and prompt-injection containment. POE cannot grant authority or override governors, protected resources, credentials, release, deployment, or Live Shell controls.
@@ -19,7 +19,7 @@
 - Connects approved proposals only to the existing `WorkParcelCoordinator` and registered Jobs. Request origin records `poe/dashboard`, conversation, proposal, frozen hash, actor, and request identity; normal capability routing, safety, execution, independent verification, accounting, and league evidence remain authoritative.
 - Adds optional original designed OmniVoice output, authoritative STT transcript retention, latency fields, and TTS-only barge-in. Cloned voices are rejected. Adds authenticated `POE: <question>` support to the existing WhatsApp Social & Voice path without widening consequential voice or command authority.
 - Adds focused deterministic coverage for grounding, unavailable records, model-role routing, invalid citations, channel provenance, WhatsApp idempotency, secret exclusion, fairness defects, draft revision, stale/hash-mismatched approval, normal Work Parcel execution, repetition materialisation, verification, voice latency, and interruption isolation.
-- Physical dashboard/OmniVoice qualification remains pending. No merge, tag, release, deployment, or physical-pass claim is part of this change.
+- The final product passed 1,083 regression tests, isolated startup/authentication and responsive checks. Real Windows qualification includes microphone input, interruption, a narrated tour and two approved two-stage observation parcels. The current qualification record tracks remaining media listening/review and deployment gates.
 
 ## [4.0.0] — 2026-09-08
 

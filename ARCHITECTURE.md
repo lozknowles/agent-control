@@ -802,3 +802,21 @@ Earlier version tags remain immutable source releases. Agent Control 4.0.0 integ
 ## Optional messaging adapters
 
 The channel-neutral messaging command contract binds immutable approved Job definitions and finite argument values to enrolled operator grants. OpenWA verifies signed message provenance, pairs a separate human through authenticated dashboard confirmation, and calls the existing application service. Durable command identities reconcile with the RunLedger across interrupted acknowledgements. SQLite stores an independent outbound queue and safe audit metadata; gateway failure never owns scheduler state or approvals. See [OpenWA architecture and recovery](docs/openwa/README.md).
+
+### POE 4.1 evidence and deployment boundaries
+
+The browser projects recorded conversation, Work Parcel, job, receipt and
+verification state; it does not create execution authority. The original-male
+speech worker produces and validates complete audio before browser playback.
+Audio-ended progression and playback-attempt fencing keep tour navigation and
+interruption attached to the current audio element. Edited demonstration media
+removes waiting time and must not be treated as a synthesis-latency measurement.
+
+Deployment separates immutable source from mutable controller state and
+credential references. One supervised controller owns each state directory;
+the optional loopback speech worker has separate ownership. Existing monitoring,
+social and scheduled-job controllers are not repointed by a POE rollout. A
+state-consistent backup and the previous startup identity support rollback.
+The [4.1 qualification record](docs/evidence/agent-control-4.1-qualification.md)
+reconciles physical component hashes and the exact full-suite product SHA with
+any later documentation-only release commit.

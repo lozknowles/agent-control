@@ -2,6 +2,20 @@
 
 Agent Control runs governed parameterised jobs against qualified execution and model resources. It is an infrastructure-neutral, policy-controlled adaptive harness for durable work by heterogeneous agents and models. Its executable harness core composes a task-appropriate worker, provider/model route, prompt profile, minimum qualified skills, restricted tools, context strategy, runtime settings, authority snapshot, resource limits and verification/escalation policy into a fingerprinted execution recipe.
 
+## Agent Control 4.1 qualification status
+
+The 4.1 candidate adds the compact floating POE companion, actual spoken feature
+tours, grounded job/schedule explanations and event-backed Crew handovers. The
+tested product `de1525f` passed **1,083 tests with no failures or skips**, isolated
+installation/authentication and responsive checks. Real Windows evidence includes
+microphone input, speech interruption and four verified jobs across two explicitly
+approved read-only Work Parcels. Public media review and rollout remain pending;
+the historical 4.0/3.9 evidence below does not replace the current release gates.
+
+See [4.1 release notes](docs/release-notes-4.1.0.md),
+[current qualification](docs/evidence/agent-control-4.1-qualification.md) and
+[installation, deployment and rollback](docs/installation-deployment-4.1.md).
+
 Agent Control 4.0.0 integrates the previously separate adaptive-routing, protected-resource, Social & Voice/OpenWA, operational Crew/WOPR and Live Shell workstreams into one governed lifecycle:
 
 `authenticated channel → canonical Work Parcel → capability/authority-qualified adaptive route → Crew/lane execution → token governor → retry or sealed-baton handoff → independent verification → immutable evidence → originating channel`
