@@ -7,6 +7,9 @@ export interface CacheEvidence {
   authority: 'authoritative' | 'unavailable';
   source: string;
   requestPrefixSha256?: string;
+  retainedPromptTokens?: number;
+  retentionAuthority?: 'authoritative' | 'derived' | 'unavailable';
+  retentionSource?: string;
 }
 
 export function normalizeCacheEvidence(input: {

@@ -1,4 +1,4 @@
-# Agent Control 4.1.0
+# Agent Control 4.3.0
 
 Agent Control runs governed parameterised jobs against qualified execution and model resources. It is an infrastructure-neutral, policy-controlled adaptive harness for durable work by heterogeneous agents and models. Its executable harness core composes a task-appropriate worker, provider/model route, prompt profile, minimum qualified skills, restricted tools, context strategy, runtime settings, authority snapshot, resource limits and verification/escalation policy into a fingerprinted execution recipe.
 
@@ -133,6 +133,16 @@ Qualifying Work Parcels carry a versioned, provider-neutral Transport Context Co
 See [transport integrity](docs/transport-integrity.md) and [ARCHITECTURE.md](ARCHITECTURE.md). Legacy parcels remain visible and explicitly unbound.
 
 Non-OpenAI prompt/KV cache qualification is documented in [docs/non-openai-cache-qualification.md](docs/non-openai-cache-qualification.md). Three matched physical llama.cpp/Qwen trials now prove reusable prompt/KV state through authoritative backend counters, real coding mutations and independent verification. Cache reuse is never claimed from latency, repeated prompts, or missing usage fields.
+
+## Agent Control 4.3 Cache-Aware Expert Delegation
+
+The 4.3 development branch turns qualified cache observations into a bounded routing input. After a genuine verified invocation, Agent Control can recognise the exact worker/provider/model/session/cache-scope/backend route as a temporary Warm Expert for a hashed context domain. Before compatible follow-on work, it compares repository, branch/dependency, transport, instruction, tool and governance context, classifies compatibility as `EXACT`, `HIGH`, `PARTIAL`, `INCOMPATIBLE` or `UNKNOWN`, and may add a small policy-bounded score only for safe `EXACT`/`HIGH` routes.
+
+The normal Work Parcel path remains authoritative: model qualification, capabilities, worker health/load, transport integrity, adaptive quality/cost/latency policy, approvals and independent verification all outrank cache affinity. Candidate scores, decision reasons, expected benefit, actual provider counters and verifier results are durable; selected decision/expert IDs travel in the stage baton. The dashboard’s **Warm Experts** view updates from the same live runtime and distinguishes `AUTHORITATIVE`, qualified `DERIVED` and `UNAVAILABLE` evidence. A missing measurement is shown as `CACHE STATE UNKNOWN`, never zero.
+
+Configure the feature under `cacheAwareExperts` or through **Configuration → Warm Experts**. Derived preference is disabled by default. See [Cache-Aware Expert Delegation](docs/cache-aware-expert-delegation.md), [dashboard usage](docs/web-dashboard.md), [non-OpenAI cache qualification](docs/non-openai-cache-qualification.md) and [ARCHITECTURE.md](ARCHITECTURE.md).
+
+A warm cache improves efficiency but does not confer correctness or authority. Capability, integrity and governance always outrank cache warmth.
 
 ## Identity, sessions and delegation
 
