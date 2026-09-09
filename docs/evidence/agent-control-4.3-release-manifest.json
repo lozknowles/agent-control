@@ -1,0 +1,81 @@
+{
+  "schema": "agent-control.release-manifest/v1",
+  "release": {
+    "name": "Agent Control 4.3.0",
+    "version": "4.3.0",
+    "tag": "v4.3.0",
+    "date": "2026-09-09"
+  },
+  "provenance": {
+    "originMainBase": "3c906bd3ec55b97815dd79cc79661bed4a255b33",
+    "qualifiedProductCommit": "27bc4c596bbde1db2696d62d38ca17d8bf8cab21",
+    "qualificationEvidenceParent": "545ad1b497bb93acaaa43edfb1032ffcff924c68",
+    "releaseCommitAuthority": "The annotated v4.3.0 tag and GitHub Release identify the final evidence-containing release commit."
+  },
+  "validation": {
+    "command": "npm run check",
+    "tests": {
+      "passed": 1119,
+      "failed": 0
+    },
+    "physicalQualification": "PASS_A_THROUGH_F",
+    "independentVerification": "PASS"
+  },
+  "dependencies": {
+    "packageJsonSha256": "d76af5720e0f19f743aa956763d90312c9afe9f2b601e2ec99656cba8a022360",
+    "typescriptConfigSha256": "246e14ac1be183f758b0ba77744fe279952d4bdbd50b1d8364f5a2b11865bd8c",
+    "lockfile": null,
+    "lockfileAuthority": "UNAVAILABLE",
+    "note": "This repository does not contain a dependency lockfile; package metadata and the tested installed dependency state remain the available authorities."
+  },
+  "qualification": {
+    "cold": {
+      "reusedPromptTokens": 0,
+      "processedPromptTokens": 1328
+    },
+    "warm": {
+      "reusedPromptTokens": 1327,
+      "processedPromptTokens": 1
+    },
+    "promptProcessingSpeedup": 66.390997,
+    "monetarySaving": {
+      "value": null,
+      "authority": "UNAVAILABLE",
+      "reason": "The qualified local backend exposes no authoritative billing data."
+    }
+  },
+  "runtimeArtifacts": {
+    "llamaBinarySha256": "3f1000482d759661cadb1dc9b59f6292f52408ee0d2906298fa001837517fb4e",
+    "modelSha256": "3da3afe6cf5c674ac195803ea0dd6fee7e1c228c2105c1ce8c66890d1d4ab460",
+    "repositoryArchiveSha256": "8538ecea1cf57aad7d966455744277055f421f4c0acbc4e649955044f932f437"
+  },
+  "evidence": [
+    {
+      "path": "docs/evidence/agent-control-4.3-integrated-qualification-20260909.json",
+      "sha256": "803c8319fe7bdfcd2244d545d191cf62c789568859cc2c6b240d1007da2d50f0"
+    },
+    {
+      "path": "docs/evidence/agent-control-4.3-integrated-qualification-20260909.md",
+      "sha256": "94adc82e33439e80b360acee3be0be841c36f5e6e11b623d4e34298f0e79d6e4"
+    },
+    {
+      "path": "docs/evidence/agent-control-4.3-integrated-transcript-20260909.md",
+      "sha256": "5fe743c6d219d6dc543e87fa7123cce1104537d1a4e3e4f6116bf92988cf0897"
+    },
+    {
+      "path": "docs/evidence/agent-control-4.3-integrated-dashboard-20260909.png",
+      "sha256": "92307b32f6cff5625c0b688b9ab0df33b5252a9bdc07774681c2674dc3860902"
+    },
+    {
+      "path": "docs/evidence/agent-control-4.3-integrated-qualification-20260909.mp4",
+      "sha256": "321db46fe76ecfb0e781d9037e802bdd52ca354c343e8c86288e9fd3cca8931c",
+      "media": {
+        "width": 1920,
+        "height": 1080,
+        "framesPerSecond": 30,
+        "durationSeconds": 99.166667,
+        "bytes": 13589836
+      }
+    }
+  ]
+}
