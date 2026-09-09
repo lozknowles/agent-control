@@ -1,6 +1,6 @@
 # Installing and operating Agent Control 4.1
 
-This is the 4.1 candidate runbook. Publication and production rollout require the
+This is the 4.1 installation and operating runbook. Publication and production rollout require the
 final regression, physical browser, audiovisual and privacy gates in
 [the qualification record](evidence/agent-control-4.1-qualification.md).
 An installed package or healthy HTTP listener does not satisfy those gates.
@@ -8,20 +8,20 @@ An installed package or healthy HTTP listener does not satisfy those gates.
 ## Prerequisites and installation
 
 Use Node.js 24, npm, Git and Bash. Node 24 is the qualification runtime; older
-Node versions are not part of this candidate's installation proof. Python,
+Node versions are not part of this release's installation proof. Python,
 FFmpeg, model packages, SSH and a private HTTPS proxy are optional integrations.
 Do not install a speech model or discover machines merely to run the core.
 
 For an existing installation, first record its exact source revision, service
 definition, configuration references and state directory. Use a separate
 checkout and state directory for qualification. The final published release uses
-the repository's `v4.1.0` tag convention; do not assume that tag exists while the
-candidate is pending.
+the repository's `v4.1.0` tag convention; select that tag after cloning.
 
 ```bash
 git clone https://github.com/lozknowles/agent-control.git
 cd agent-control
-# Select the exact approved candidate or published tag before installing.
+# Select the published release.
+git checkout --detach v4.1.0
 npm install --ignore-scripts
 npm run init
 npm run check

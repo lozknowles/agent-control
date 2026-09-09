@@ -1,6 +1,6 @@
 # Changelog
 
-## [4.1.0] — candidate
+## [4.1.0] — 2026-09-09
 
 - Adds the compact floating POE companion: original SVG hotelier, keyboard/touch repositioning, responsive conversation panel, greeting, and operator-controlled spoken tour synchronized with actual playback and highlighted dashboard views.
 - Grounds initial conversation through the configured Codex reasoning route and an approved, versioned documentation index. Shows invoked model identity and measured turn usage; missing readiness, context and cost remain unavailable.
@@ -8,7 +8,7 @@
 - Adds real speech captions, interrupted-audio fencing and retry states; preserves technical identifiers in the transcript and renders grouped numerical counts accurately in speech.
 - Exposes owner-started full-regression progress with actual runner counts and exact tested SHA. Test output remains distinct from Work Parcels, and narrated progress is a time-bound observation.
 - Documents private installation, voice/reasoning configuration, authentication, private HTTPS access, upgrades, rollback, troubleshooting and physical evidence requirements.
-- Final full-suite, physical, audiovisual, release and deployment gates are tracked in `docs/evidence/agent-control-4.1-qualification.md`; no completed 4.1 release is claimed by this candidate entry.
+- Qualified product: 1,083 passing tests, isolated installation, real Windows microphone/audio/barge-in, and four verified governed jobs. The operator accepted the existing evidence and edited 6:12 tour for release; review methods and limits are retained in `docs/evidence/agent-control-4.1-qualification.md`.
 
 ### POE conversational operator included in 4.1
 

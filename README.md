@@ -1,16 +1,17 @@
-# Agent Control 4.1.0 candidate
+# Agent Control 4.1.0
 
 Agent Control runs governed parameterised jobs against qualified execution and model resources. It is an infrastructure-neutral, policy-controlled adaptive harness for durable work by heterogeneous agents and models. Its executable harness core composes a task-appropriate worker, provider/model route, prompt profile, minimum qualified skills, restricted tools, context strategy, runtime settings, authority snapshot, resource limits and verification/escalation policy into a fingerprinted execution recipe.
 
 ## Agent Control 4.1 qualification status
 
-The 4.1 candidate adds the compact floating POE companion, actual spoken feature
+The 4.1 release adds the compact floating POE companion, actual spoken feature
 tours, grounded job/schedule explanations and event-backed Crew handovers. The
 tested product `de1525f` passed **1,083 tests with no failures or skips**, isolated
 installation/authentication and responsive checks. Real Windows evidence includes
 microphone input, speech interruption and four verified jobs across two explicitly
-approved read-only Work Parcels. Public media review and rollout remain pending;
-the historical 4.0/3.9 evidence below does not replace the current release gates.
+approved read-only Work Parcels. The operator accepted the existing qualification
+evidence and edited 6:12 public tour for release. Review limitations and exact
+source reconciliation are retained in the qualification record and release manifest.
 
 See [4.1 release notes](docs/release-notes-4.1.0.md),
 [current qualification](docs/evidence/agent-control-4.1-qualification.md) and
@@ -93,7 +94,7 @@ POE is Agent Control's original resident conversational operator, evidence expla
 
 The dashboard adds a small draggable SVG hotelier near the upper right, a compact conversation panel, and contextual **Ask POE about this** controls. The optional guided tour highlights real views while POE speaks; Next waits for browser playback to finish, and failures pause narration with a retry control. Captions preserve the complete spoken text, and reduced-motion preferences suppress animation. Authenticated WhatsApp supports `POE: <question>` through the existing enrolled/idempotent Social & Voice edge with a separate channel-scoped conversation. Optional OmniVoice uses an original designed voice, records available turn-latency fields, and treats barge-in as speech interruption rather than Work Parcel cancellation. A qualified conversational model can be selected with Model Registry roles; otherwise POE explicitly uses its deterministic grounded renderer. It never silently substitutes another model.
 
-See [POE operation and architecture](docs/poe.md), [dashboard operation](docs/web-dashboard.md), [Social & Voice](docs/social-voice/README.md), [Work Parcels](docs/work-parcels.md), and [adaptive orchestration](docs/adaptive-multi-model-orchestration.md). The [4.1 qualification record](docs/evidence/agent-control-4.1-qualification.md) distinguishes historical checks from the final release gates. Follow the [4.1 installation/deployment runbook](docs/installation-deployment-4.1.md) for private startup, voice, authentication, qualification, upgrades and rollback. The candidate is not a completed release until those gates pass.
+See [POE operation and architecture](docs/poe.md), [dashboard operation](docs/web-dashboard.md), [Social & Voice](docs/social-voice/README.md), [Work Parcels](docs/work-parcels.md), and [adaptive orchestration](docs/adaptive-multi-model-orchestration.md). The [4.1 qualification record](docs/evidence/agent-control-4.1-qualification.md) distinguishes historical checks from the final release gates. Follow the [4.1 installation/deployment runbook](docs/installation-deployment-4.1.md) for private startup, voice, authentication, qualification, upgrades and rollback. The release manifest records the accepted source and deployment evidence.
 
 ## Protected-resource mutation governance
 
@@ -291,7 +292,7 @@ Every specialist assignment and coordinator synthesis remains an ordinary Agent 
 
 ## Requirements
 
-- Node.js 24 (qualification runtime; older versions are not qualified for this candidate)
+- Node.js 24 (qualification runtime; older versions are not qualified for this release)
 - npm
 - Git
 - Bash for shell-script validation and Android helpers

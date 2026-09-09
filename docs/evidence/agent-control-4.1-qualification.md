@@ -1,11 +1,14 @@
 # Agent Control 4.1 qualification
 
-Status: **PRODUCT CHECKS PASSED; PUBLIC MEDIA REVIEW AND ROLLOUT PENDING**.
+Status: **QUALIFIED PRODUCT AND EDITED MEDIA ACCEPTED FOR AUTHORIZED RELEASE**.
+
+Rollout and public delivery are recorded separately in the release manifest and deployment evidence.
 
 This record supersedes the earlier continuation status below the same filename.
 It distinguishes physical browser evidence, automated checks, configuration
-observations and human listening. Release and deployment are authorized after
-the remaining required gates pass; neither has happened at this checkpoint.
+observations and human listening. The operator explicitly directed release and deployment using the existing
+qualification evidence on 9 September 2026. No additional listening attestation
+is inferred from that direction; the evidence limitations remain explicit.
 
 ## Candidate and regression
 
@@ -137,9 +140,10 @@ Remove only this listener if it remains solely a qualification listener.
 
 Separate Collingham, monitoring and Social & Voice workers were preserved.
 Only the owned qualification dashboard and original-male worker were changed.
-Production discovery found no existing general POE dashboard unit; a scoped
-production supervisor, state backup and rollback must be prepared without
-repointing those unrelated services.
+Production discovery found no existing general POE dashboard unit. The prepared
+cutover uses two dedicated user-systemd units, an immutable versioned release
+and a quiesced private state backup. The existing private Serve listener is
+retained as the production route. Unrelated services are not repointed.
 
 ## Findings corrected and retained
 
@@ -158,16 +162,20 @@ repointing those unrelated services.
 - Earlier non-HD/wrong-tab captures were rejected. They remain historical
   failure evidence and are not substituted for the accepted actual recordings.
 
-## Remaining release gates
+## Release reconciliation and rollout record
 
-1. Complete human listening review of the shortened export; its technical
-   privacy/synchronization checks and exact hashes are retained.
-2. Reconcile the tested product with the final documentation/tag SHA; follow the
-   repository's review/merge workflow and publish `v4.1.0` only afterward.
-3. Deploy the scoped POE service with state backup/rollback and perform actual
-   post-deployment browser conversation and audio checks.
-4. Publish the reviewed overview through the existing website process and
-   verify public playback, seeking, captions, transcript and mobile navigation.
+The final documentation revision must remain product-byte-identical to the
+tested `de1525f` checkpoint. The release manifest records that comparison, the
+merged/tagged commit and package hashes. Existing physical evidence and the
+edited media are accepted by the operator; no new human listening result is
+fabricated. The release has documented limits for non-streaming TTS, sampled
+export review and off-tailnet testing.
+
+Production acceptance requires authenticated browser conversation and actual
+audio after the scoped cutover. Public delivery requires the published MP4,
+audio, captions, seeking, transcript and desktop/mobile navigation checks.
+Their actual outcomes and rollback locations are retained with the final
+release/deployment evidence, separately from this pre-rollout source record.
 
 See [installation and deployment](../installation-deployment-4.1.md),
 [release notes](../release-notes-4.1.0.md) and
