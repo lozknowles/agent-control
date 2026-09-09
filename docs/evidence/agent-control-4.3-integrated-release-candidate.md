@@ -1,6 +1,6 @@
 # Agent Control 4.3 integrated release candidate
 
-Status: **IMPLEMENTATION FROZEN PENDING FRESH PHYSICAL A–F QUALIFICATION**
+Status: **RELEASE QUALIFIED — FRESH PHYSICAL A–F PASS**
 
 This record distinguishes deterministic integration evidence from the fresh
 physical release evidence still required for Agent Control 4.3.0. Historical
@@ -78,14 +78,25 @@ in [Runtime safety and containment](../runtime-safety-and-containment.md).
   as part of the final release validation.
 - `git diff --check`: passed before candidate freeze.
 
-## Remaining release gate
+## Physical A–F result
 
-The exact frozen commit must pass fresh physical gates A–F through normal
-production Work Parcels, with independent verification, reconciled cache and
-route evidence, complete natural transcript and a genuine 1920×1080 recording.
+The exact frozen product candidate passed fresh physical gates A–F through normal
+production Work Parcels. Cold execution measured `0 reused / 1,328 processed`;
+the compatible warm follow-on measured `1,327 reused / 1 processed` and changed
+the governed route after scoring `1.055146` against the cold route's `1.000000`.
+Incompatible context received no warm bonus, material context invalidated prior
+warmth and a restarted backend inherited no cache claim. Every stage, invocation,
+routing decision and independent verifier passed. Prompt processing improved
+`66.39×`; monetary saving is unavailable because billing data is unavailable.
+
+Evidence: [qualification](agent-control-4.3-integrated-qualification-20260909.md),
+[complete transcript](agent-control-4.3-integrated-transcript-20260909.md),
+[machine record](agent-control-4.3-integrated-qualification-20260909.json),
+[dashboard screenshot](agent-control-4.3-integrated-dashboard-20260909.png) and
+[1920×1080, 30fps recording](agent-control-4.3-integrated-qualification-20260909.mp4).
 The required operator-facing statement is:
 
 > A warm cache improves efficiency but does not confer correctness or authority. Capability, integrity and governance always outrank cache warmth.
 
-No merge, tag, GitHub Release or POE showcase publication is authorised by this
-implementation-only record.
+Release publication remains conditional on final regression, clean-tree and
+main-line reconciliation checks.

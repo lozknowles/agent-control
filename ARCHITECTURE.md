@@ -1,6 +1,6 @@
 # Agent Control architecture
 
-This is the authoritative source boundary for Agent Control 4.3.0. Historical physical evidence remains bound to its recorded product SHA; the integrated 4.3 candidate requires fresh A–F qualification before release. Status labels matter:
+This is the authoritative source boundary for Agent Control 4.3.0. Historical physical evidence remains bound to its recorded product SHA; the integrated product candidate `27bc4c596bbde1db2696d62d38ca17d8bf8cab21` passed fresh physical A–F qualification and the complete 1,119-test suite. Status labels matter:
 
 - **implemented** means executable code and automated tests exist in this branch;
 - **experimental** means executable code exists but has not been qualified across every external substrate;

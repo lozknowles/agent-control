@@ -1,6 +1,6 @@
 # Changelog
 
-## 4.3.0 (release candidate)
+## [4.3.0] — 2026-09-09
 
 - Integrated the 4.2 Transport Context and 4.3 Warm Expert lines onto current 4.1 main without replacing either runtime wholesale; preserved POE, Crew/WOPR, Live Shell, protected-resource governance, provider/account routing, retries, recovery and human-readable execution history.
 - Corrected the integrated production bootstrap so the shared efficiency ledger reaches the opt-in non-OpenAI cache actions. The pre-fix integrated candidate failed closed at startup; a focused production-definition regression now covers the enabled path.
@@ -18,7 +18,7 @@
 - Added revision-checked **Configuration → Warm Experts** policy controls. Derived preference is disabled by default.
 - Added deterministic coverage for creation, evidence authority, expiry, staleness, incompatible context, provider/session/backend isolation, capability/integrity/health priority, route wins/losses, restart recovery, Work Parcel/baton metadata, dashboard projection, transcript and independent decision verification.
 - Integrates the 4.2 Transport Context Contract and authoritative non-OpenAI cache evidence with the complete 4.1 POE, Crew, Live Shell, recovery and protected-resource runtime.
-- Historical physical A–F evidence passed against `bfec203`, but remains historical after integration. Fresh qualification against the exact integrated candidate is still required and no 4.3 release is claimed.
+- Preserved the historical `bfec203` qualification and repeated all physical A–F gates against integrated product candidate `27bc4c596bbde1db2696d62d38ca17d8bf8cab21`: cold `0/1,328`, warm `1,327/1`, `66.39×` prompt-processing improvement, verified warm route selection, incompatible-context rejection, invalidation and restart isolation. All 1,119 tests pass; monetary saving remains unavailable because the local backend reports no billing data.
 
 ## [4.1.0] — 2026-09-09
 

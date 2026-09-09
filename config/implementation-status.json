@@ -213,9 +213,10 @@
       ],
       "evidence": [
         "docs/runtime-safety-and-containment.md",
-        "docs/evidence/agent-control-3.9-provider-neutral-qualification.md"
+        "docs/evidence/agent-control-3.9-provider-neutral-qualification.md",
+        "docs/evidence/agent-control-4.3-integrated-qualification-20260909.md"
       ],
-      "limitation": "4.3 deterministic negative and positive tests pass. Fresh integrated-candidate physical route qualification is pending; a controller cannot prove containment for an unresolved remote filesystem path."
+      "limitation": "Agent Control 4.3 deterministic containment tests and the physical A-F local model-mutation route pass. Remote filesystem containment still requires node-local typed enforcement; a controller cannot prove an unresolved remote path and therefore fails closed."
     },
     {
       "id": "runtime.protected-resource-mutation-governance",
@@ -445,7 +446,7 @@
         "docs/evidence/agent-control-3.8.1-high-remediation-physical.json",
         "docs/evidence/agent-control-3.8.1-final-glm-review.md"
       ],
-      "limitation": "Remote Windows-node-to-controller immutable repository transfer, two-account baton continuation/fallback, remote account-status, and a GLM whole-repository review are historical physical evidence. Spark remains disabled by default. Agent Control 4.3 now compares valuable ignored state around fast execution while treating only explicitly named roots as disposable; fresh integrated-candidate qualification remains pending."
+      "limitation": "Remote Windows-node-to-controller immutable repository transfer, two-account baton continuation/fallback, remote account-status, and a GLM whole-repository review remain historical route-specific evidence. Spark remains disabled by default. Agent Control 4.3 compares valuable ignored state around fast execution while treating only explicitly named roots as disposable."
     },
     {
       "id": "context.governed-retrieval",
@@ -696,12 +697,12 @@
     {
       "id": "routing.cache-aware-experts",
       "title": "Cache-Aware Expert Delegation",
-      "status": "PARTIAL",
+      "status": "QUALIFIED",
       "summary": "A provider-neutral runtime registry derives temporary Warm Experts from genuine terminal invocation telemetry, binds evidence to exact worker/provider/account/model/node/session/cache/backend identity and hashed context, enforces strict compatibility and lifecycle decay, and contributes a bounded cache score only after capability, placement, health and transport-integrity gates. Normal Work Parcels persist candidate decisions, selected expert identity, batons, actual cache observations and independent verification; the dashboard/API exposes the same durable facts and natural operational transcript.",
       "sources": ["src/control/cache-aware-expert.ts", "src/control/cache-evidence.ts", "src/control/structured-chat-loop-provider.ts", "src/control/work-parcels.ts", "src/control/job-bootstrap.ts", "src/control/application-service.ts", "src/control/config.ts", "src/control/configuration-store.ts", "src/control/web-server.ts", "assets/dashboard/dashboard-cache-experts.js", "assets/dashboard/dashboard-enhancements.js"],
       "tests": ["src/control/cache-aware-expert.test.ts", "src/control/structured-chat-loop-provider.test.ts", "src/control/work-parcels.test.ts", "src/control/config.test.ts", "src/control/configuration-store.test.ts", "src/control/web-server.test.ts"],
-      "evidence": ["docs/cache-aware-expert-delegation.md", "docs/non-openai-cache-qualification.md"],
-      "limitation": "Deterministic implementation is present, but the required physical A-F non-OpenAI experiment, independent evidence reconciliation and genuine HD recording have not yet passed. Cache reuse alone is not accepted as proof that delegation changed."
+      "evidence": ["docs/cache-aware-expert-delegation.md", "docs/non-openai-cache-qualification.md", "docs/evidence/agent-control-4.3-integrated-qualification-20260909.md", "docs/evidence/agent-control-4.3-integrated-qualification-20260909.json", "docs/evidence/agent-control-4.3-integrated-transcript-20260909.md", "docs/evidence/agent-control-4.3-integrated-qualification-20260909.mp4"],
+      "limitation": "Physical A-F proves governed delegation and authoritative local llama.cpp cache reuse. Monetary saving remains unavailable because this backend supplies no billing data; cross-provider cache portability is not claimed."
     },
     {
       "id": "models.fast-execution-spark",

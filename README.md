@@ -2,7 +2,7 @@
 
 Agent Control runs governed parameterised jobs against qualified execution and model resources. It is an infrastructure-neutral, policy-controlled adaptive harness for durable work by heterogeneous agents and models. Its executable harness core composes a task-appropriate worker, provider/model route, prompt profile, minimum qualified skills, restricted tools, context strategy, runtime settings, authority snapshot, resource limits and verification/escalation policy into a fingerprinted execution recipe.
 
-## Agent Control 4.3 release-candidate status
+## Agent Control 4.3 release-qualified status
 
 Agent Control 4.3 integrates the 4.2 Transport Context integrity gate and
 provider-neutral Cache-Aware Expert Delegation with the complete 4.1 POE,
@@ -22,8 +22,11 @@ ignored-file changes. Explicitly disposable roots remain distinct from ignored
 operator state.
 
 Historical 4.1 and pre-integration 4.3 qualification remain evidence for those
-exact commits only. Release requires fresh regression and physical A–F evidence
-against the final integrated SHA. See [4.3 release notes](docs/release-notes-4.3.0.md),
+exact commits only. The integrated 4.3 product candidate
+`27bc4c596bbde1db2696d62d38ca17d8bf8cab21` passed the full 1,119-test suite and
+fresh physical A–F qualification. See the [integrated qualification](docs/evidence/agent-control-4.3-integrated-qualification-20260909.md),
+[complete transcript](docs/evidence/agent-control-4.3-integrated-transcript-20260909.md),
+[4.3 release notes](docs/release-notes-4.3.0.md),
 [4.3 migration](docs/migration-4.3.md), [runtime safety and route containment](docs/runtime-safety-and-containment.md),
 and [deployment, upgrade and rollback](docs/DEPLOYMENT.md).
 
@@ -167,7 +170,7 @@ The normal Work Parcel path remains authoritative: model qualification, capabili
 
 Configure the feature under `cacheAwareExperts` or through **Configuration → Warm Experts**. Derived preference is disabled by default. See [Cache-Aware Expert Delegation](docs/cache-aware-expert-delegation.md), [dashboard usage](docs/web-dashboard.md), [non-OpenAI cache qualification](docs/non-openai-cache-qualification.md) and [ARCHITECTURE.md](ARCHITECTURE.md).
 
-Physical A–F qualification is now complete on the isolated development branch: a measured `HOT/HIGH` non-OpenAI Warm Expert changed a genuine governed route, incompatible context received no bonus, material context invalidated prior warmth, a restarted backend inherited no cache claim, and every model invocation and routing decision passed independent verification. See the [physical qualification record](docs/evidence/agent-control-4.3-cache-aware-expert-qualification-20260909.md). This is qualification evidence, not a merge, tag or release claim.
+Fresh integrated A–F qualification is complete: a measured `HOT/HIGH` non-OpenAI Warm Expert changed a genuine governed route, incompatible context received no bonus, material context invalidated prior warmth, a restarted backend inherited no cache claim, and every model invocation and routing decision passed independent verification. See the [integrated physical qualification](docs/evidence/agent-control-4.3-integrated-qualification-20260909.md); the earlier [development-branch qualification](docs/evidence/agent-control-4.3-cache-aware-expert-qualification-20260909.md) remains historical.
 
 A warm cache improves efficiency but does not confer correctness or authority. Capability, integrity and governance always outrank cache warmth.
 

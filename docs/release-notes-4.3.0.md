@@ -17,8 +17,14 @@ path containment use execution-platform filesystem identity; governed Git disabl
 hooks/fsmonitor and configuration mutation; and fast execution detects valuable
 ignored-state changes. See [runtime safety and route containment](runtime-safety-and-containment.md).
 
-Upgrade and rollback instructions are in [DEPLOYMENT.md](DEPLOYMENT.md). The final
-release manifest will identify the exact tested product SHA, dependency inventory,
-physical A–F evidence, recording/transcript hashes and any evidence-only commit.
-Historical 4.3 branch evidence is not evidence for a materially different merged
-candidate.
+Upgrade and rollback instructions are in [DEPLOYMENT.md](DEPLOYMENT.md). Fresh
+physical A–F qualification passed against product candidate
+`27bc4c596bbde1db2696d62d38ca17d8bf8cab21`: cold `0/1,328`, warm `1,327/1`,
+`66.39×` prompt-processing improvement, governed warm-route selection,
+incompatible-context rejection, invalidation, backend restart isolation and
+independent verification all passed. The full suite passed 1,119/1,119. See the
+[qualification](evidence/agent-control-4.3-integrated-qualification-20260909.md),
+[complete transcript](evidence/agent-control-4.3-integrated-transcript-20260909.md)
+and [1920×1080 recording](evidence/agent-control-4.3-integrated-qualification-20260909.mp4).
+Monetary saving is unavailable because the local backend supplies no authoritative
+billing data. Historical branch evidence is not attributed to this candidate.
