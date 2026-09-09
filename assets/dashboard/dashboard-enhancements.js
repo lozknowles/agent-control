@@ -240,6 +240,7 @@ function renderJobDetail(job) {
   document.querySelector('#run-job').addEventListener('click', () => { const form = document.querySelector('#run-parameters'); if (!form.reportValidity()) return; let parameters; try { parameters = window.AgentControlDashboardParameters.collect(job.spec.parameters || {}, form); } catch (error) { showError(error); return; } jobCommand(`/api/jobs/${encodeURIComponent(job.metadata.id)}/run`, {parameters}).then(result => { window.AgentControlDashboardParameters.clear(job.metadata.id, form); jobState.selectedRun = result.id; renderJobs(); }).catch(showError); });
   document.querySelectorAll('[data-schedule]').forEach(button => button.addEventListener('click', () => jobCommand(`/api/schedules/${encodeURIComponent(button.dataset.schedule)}/${button.dataset.scheduleCommand}`, {}).catch(showError)));
   bindRunCommands(selectedRun);
+  bindArtifactContentButtons();
 }
 
 function renderParameterField(name, definition) {
@@ -295,13 +296,33 @@ function renderJobRunLanes() {
 
 function renderRunEvidence(run) {
   const artifactRows = jobState.artifacts.filter(item => item.runId === run.id);
-  const artifacts = artifactRows.length ? artifactRows.map(item => `<div class="artifact-row"><span class="artifact-chip">${esc(item.name)}</span><span>${esc(item.type)} · ${esc(item.schema)} · ${esc(item.size)} bytes</span><code>sha256:${esc(item.sha256)}</code><small>${esc(item.provenance.action)} · ${esc(item.provenance.workerId)} · ${esc(item.retention)}</small></div>`).join('') : '<span class="muted">No artifacts</span>';
+  const artifacts = artifactRows.length ? artifactRows.map(item => `<div class="artifact-row"><span class="artifact-chip">${esc(item.name)}</span><span>${esc(item.type)} · ${esc(item.schema)} · ${esc(item.size)} bytes</span><code>sha256:${esc(item.sha256)}</code><small>${esc(item.provenance.action)} · ${esc(item.provenance.workerId)} · ${esc(item.retention)}</small><button type="button" class="button secondary" data-artifact-content="${esc(item.id)}">Open complete content</button></div>`).join('') : '<span class="muted">No artifacts</span>';
   const rationale = run.steps.flatMap(step => step.placement ? [`${step.id}: ${step.placement.selected || 'none'} — ${step.placement.reasons.join(', ')}${step.placement.rejected.length ? `; rejected ${step.placement.rejected.map(item => `${item.workerId} (${item.reasons.join(', ')})`).join('; ')}` : ''}`] : []).join('\n');
   const verification = run.steps.map(step => `${step.id}: ${(step.verification?.passed || []).join(', ') || 'no passing evidence'}${step.verification?.failed.length ? `; failed ${step.verification.failed.join(', ')}` : ''}`).join('\n');
   const provenance = run.provenance.map(item => `${timeLabel(item.at)} · ${item.type}: ${item.detail}`).join('\n');
   const governance=run.steps.flatMap(step=>(step.externalOperations||[]).map(item=>`${step.id}: ${item.effect} ${item.resource.id} → ${item.state}${item.decisionId?` · decision ${item.decisionId}`:''}${item.reason?` · ${item.reason}`:''}`)).join('\n');
   return `<div class="run-evidence"><div class="data-card full-width"><label>Artifacts</label><div>${artifacts}</div></div><div class="data-card"><label>Verification</label><p>${esc(verification || 'No verification observations')}</p></div><div class="data-card"><label>Worker placement</label><p>${esc(rationale || 'Not placed')}</p></div><div class="data-card"><label>External operation truth</label><p>${esc(governance||'No consequential external operation proposed')}</p></div><div class="data-card"><label>Errors</label><p>${esc(run.errors.join(', ') || 'None')}</p></div><div class="data-card"><label>Structured log / provenance</label><p>${esc(provenance || 'No events recorded')}</p></div></div>`;
 }
+
+function artifactTranscriptMarkup(value) {
+  const artifact = value.artifact || {}, content = value.content || {}, parcel = jobState.parcels.find(item => item.stages.some(stage => stage.runId === artifact.runId));
+  const original = parcel ? `<article><span class="eyebrow">Original initiating prompt</span><pre>${esc(parcel.prompt)}</pre></article>` : '';
+  const events = Array.isArray(content.transcript) ? content.transcript.map((event, index) => `<article><span class="eyebrow">${esc(`${index + 1}. ${event.type || 'event'} · ${event.at || 'time unavailable'}`)}</span><pre>${esc(JSON.stringify(event, null, 2))}</pre></article>`).join('') : '';
+  const remainder = {...content}; delete remainder.transcript;
+  return `<header><div><span class="eyebrow">Agent Control managed evidence</span><h2>Complete native transcript</h2><p>${esc(artifact.name || artifact.id)} · sha256:${esc(artifact.sha256 || 'unavailable')}</p></div><button type="button" class="button secondary" data-close-artifact>Close</button></header><div class="artifact-transcript-body">${original}${events}<article><span class="eyebrow">Independent verification, mutation and remaining artifact fields</span><pre>${esc(JSON.stringify(remainder, null, 2))}</pre></article></div>`;
+}
+
+async function openArtifactContent(id) {
+  if (state.operatorAuth !== 'authenticated') { openOperator('Authenticate as operator before opening managed artifact content.'); return; }
+  const response = await fetch(`/api/artifacts/${encodeURIComponent(id)}/content`, {headers: {Authorization: `Bearer ${state.token}`}}), value = await response.json();
+  if (response.status === 401) { authenticationExpired(); throw new Error('Operator authentication required'); }
+  if (!response.ok) throw new Error(value.error || `HTTP ${response.status}`);
+  let dialog = document.querySelector('#artifact-content-dialog');
+  if (!dialog) { dialog = document.createElement('dialog'); dialog.id = 'artifact-content-dialog'; dialog.className = 'artifact-content-dialog'; document.body.append(dialog); }
+  dialog.innerHTML = artifactTranscriptMarkup(value); dialog.querySelector('[data-close-artifact]').addEventListener('click', () => dialog.close()); dialog.showModal();
+}
+
+function bindArtifactContentButtons() { document.querySelectorAll('[data-artifact-content]').forEach(button => button.addEventListener('click', () => openArtifactContent(button.dataset.artifactContent).catch(showError))); }
 
 function renderQueue() {
   const rows = jobState.queue;
@@ -355,7 +376,8 @@ function renderRunEfficiency(run) {
 function renderInvocationHistory(run) {
   const values = jobState.invocations.filter(item => item.runId === run.id);
   const rows = values.length ? values.map(item => {
-    const usage = item.state === 'RUNNING' ? 'awaiting completion' : item.usage.totalProcessedTokens === null ? 'usage unavailable' : `${item.usage.freshInputTokens ?? 'unknown'} in · ${item.usage.outputTokens ?? 'unknown'} out · ${item.usage.totalProcessedTokens} total`;
+    const cache = item.cacheEvidence ? `cache ${item.cacheEvidence.reusedTokens ?? 'unavailable'} reused / ${item.cacheEvidence.processedPromptTokens ?? 'unavailable'} processed · ${item.cacheEvidence.authority}` : `cache ${item.usage.cachedInputTokens ?? 'unavailable'} · evidence unavailable`;
+    const usage = item.state === 'RUNNING' ? 'awaiting completion' : item.usage.totalProcessedTokens === null ? `usage unavailable · ${cache}` : `${item.usage.freshInputTokens ?? 'unknown'} in · ${item.usage.outputTokens ?? 'unknown'} out · ${item.usage.totalProcessedTokens} total · ${cache}`;
     const cost = item.costAccounting?.billingMode === 'SUBSCRIPTION_QUOTA' && item.calculatedCost === null && item.providerReportedCost === null ? `SUBSCRIPTION / QUOTA CONSUMPTION${item.costAccounting.subscription?.unitsConsumed === null || item.costAccounting.subscription?.unitsConsumed === undefined ? '' : ` · ${item.costAccounting.subscription.unitsConsumed} ${item.costAccounting.subscription.unitLabel}`}` : item.costSource === 'reported' ? `${item.currency || ''} ${item.providerReportedCost}`.trim() + ' reported' : item.costSource === 'estimated' ? `${item.currency || ''} ${item.calculatedCost}`.trim() + ' estimated' : 'cost unavailable';
     const routing = item.routing ? `${item.routing.activeTier} · ${item.routing.stage}${item.routing.escalationReason ? ` · ${item.routing.escalationReason}` : ''}` : item.phase;
     return `<tr><td><code>${esc(item.id)}</code><br><small>${esc(item.laneId)} · ${esc(item.stepId || item.taskId)}</small></td><td>${esc(item.provider)}<br><small>${esc(item.model)}</small></td><td>${esc(item.state)}<br><small>${esc(routing)}</small></td><td>${esc(timeLabel(item.startedAt))}<br><small>${esc(durationLabel(item.startedAt, item.completedAt))}</small></td><td>${esc(usage)}<br><small>${esc(item.usageSource)}</small></td><td>${esc(cost)}</td><td>${esc(item.outcome)}<br><small>verification ${esc(item.verifierResult)}</small></td></tr>`;
