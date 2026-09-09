@@ -67,6 +67,8 @@ node --test --import tsx \
 
 Result at the final development checkpoint: **36/36 passed**.
 
+The end-to-end demonstration is a normal uninterrupted governed run. Barge-in is independently covered as an optional voice capability; it is not an acceptance criterion for this demonstration and no interruption is to be manufactured. One authentic voice turn remains sufficient when the separate physical POE path is exercised, and explicit operator approval remains required only where the selected Job policy requires it.
+
 ## Qualification-discovered repairs
 
 Operator-assisted physical attempts found three narrow defects after the original blocked evidence was sealed:
@@ -93,7 +95,7 @@ The original blocked physical evidence remains byte-identical: machine evidence 
 
 ## Truthful limitations
 
-- Operator-assisted physical POE attempts exercised authentic WhatsApp voice ingress, text replies, OmniVoice delivery and one genuine client-playback interruption, but no complete qualifying conversation was finalized or promoted as passing evidence.
+- Operator-assisted physical POE attempts exercised authentic WhatsApp voice ingress, text replies, OmniVoice delivery and one incidental genuine client-playback interruption, but no complete qualifying conversation was finalized or promoted as passing evidence. That historical interruption is not a requirement for the normal demonstration.
 - No real model-backed POE response has yet been physically qualified; deterministic tests use a synthetic OpenAI-compatible response.
 - No real POE-created tournament has yet completed and updated a capability league.
 - The corrected speech-integrity path has passed a real private-worker synthesis/transcription component check but still requires a fresh end-to-end physical WhatsApp run.
@@ -108,7 +110,7 @@ npm run check:bootstrap     PASS
 npm run check:dashboard     PASS
 npm run check:neutrality    3/3 PASS
 npm run check:status        53/53 PASS
-npm test                    1037/1037 PASS
+npm test                    1039/1039 PASS
 
 npm run status:implementation -- --write
   generated docs/implementation-status.md

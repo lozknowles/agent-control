@@ -17,6 +17,7 @@ const ffmpeg = process.env.AGENT_CONTROL_FFMPEG ?? 'ffmpeg';
 const ffprobe = process.env.AGENT_CONTROL_FFPROBE ?? 'ffprobe';
 const ingress = process.env.AGENT_CONTROL_QUALIFICATION_INGRESS === 'openwa' ? 'openwa' : 'dashboard';
 const operatorAssisted = process.env.AGENT_CONTROL_QUALIFICATION_OPERATOR_ASSISTED === 'true';
+const evidenceClass = process.env.AGENT_CONTROL_EVIDENCE_CLASS === 'demonstration' ? 'demonstration' : 'qualification';
 const dashboardPort = ingress === 'openwa' ? Number(process.env.AGENT_CONTROL_QUALIFICATION_PORT ?? 19191) : 0;
 const socialConversationLabel = process.env.AGENT_CONTROL_QUALIFICATION_SOCIAL_LABEL ?? 'Collingham';
 const pixel = ingress === 'openwa' ? {
@@ -37,7 +38,7 @@ for (const directory of [path.dirname(evidenceFile), path.dirname(transcriptFile
 
 const child = spawn(process.execPath, ['--import', 'tsx', 'scripts/qualify-crew-wopr-escalation.ts', '--host', '127.0.0.1', '--port', String(dashboardPort), '--state-dir', stateDir, '--evidence-file', evidenceFile, '--transcript-file', transcriptFile, '--hold-ms', '45000'], {
   cwd: root,
-  env: {...process.env, AGENT_CONTROL_STATE_DIR: stateDir, AGENT_CONTROL_QUALIFICATION_OPERATOR_TOKEN: operatorToken, CODEX_HOME_COTTAGE_PLUS: codexHome},
+  env: {...process.env, AGENT_CONTROL_STATE_DIR: stateDir, AGENT_CONTROL_QUALIFICATION_OPERATOR_TOKEN: operatorToken, AGENT_CONTROL_EVIDENCE_CLASS: evidenceClass, CODEX_HOME_COTTAGE_PLUS: codexHome},
   stdio: ['ignore', 'pipe', 'pipe'],
 });
 
@@ -214,7 +215,7 @@ function mediaInfo(file) {
 let browser, context, page, video, cdp;
 const screenshots = [], consoleErrors = [], httpErrors = [], expectedOptionalHttp = [], expectedOptionalConsole = [], journey = [], receivedEvents = [];
 let dashboardReady, socialPhase, taskPhase, concurrentPhase, sourcePhase, rejectionPhase, destinationPhase, verificationPhase, completePhase;
-let idleMotion, concurrentMotion, sourceDashboard, handoffDashboard, destinationDashboard, completedDashboard, eventLatency, performance, reducedMotion, mobile;
+let idleMotion, poeMotion, concurrentMotion, sourceDashboard, handoffDashboard, destinationDashboard, completedDashboard, eventLatency, performance, reducedMotion, mobile;
 let socialIngressEvidence, liveShellEvidence;
 
 try {
@@ -247,6 +248,19 @@ try {
   await page.click('#operator-button'); await page.fill('#operator-token', operatorToken); await page.click('#operator-form button[type="submit"]');
   await page.getByRole('button', {name: 'Operator authenticated', exact: true}).waitFor({timeout: 10_000});
   journey.push({at: new Date().toISOString(), view: 'authentication', outcome: 'operator boundary accepted'});
+
+  await page.click('[data-view="poe"]');
+  await page.waitForSelector('#poe-workspace:not([hidden])');
+  await page.waitForFunction(() => document.querySelector('#poe-conversation-title')?.textContent?.includes('dashboard'));
+  poeMotion = await page.evaluate(async () => {
+    const head = document.querySelector('.poe-head'), before = head ? getComputedStyle(head).transform : 'none';
+    await new Promise(resolve => setTimeout(resolve, 1_100));
+    const after = head ? getComputedStyle(head).transform : 'none';
+    return {state: document.querySelector('#poe-state')?.textContent, animationName: head ? getComputedStyle(head).animationName : 'none', before, after, changed: before !== after};
+  });
+  if (poeMotion.animationName === 'none' || !poeMotion.changed) throw new Error(`poe_character_animation_missing:${JSON.stringify(poeMotion)}`);
+  screenshots.push(await screenshot(page, '01a-poe-resident-operator-animated.png'));
+  journey.push({at: new Date().toISOString(), view: 'poe', outcome: 'resident POE workspace and genuine idle character animation shown; no interruption requested'});
 
   await page.click('[data-view="crew"]');
   await page.waitForSelector('#crew-live-grid .bot-card');
@@ -313,10 +327,20 @@ try {
   await page.click('#live-shell-close');
   journey.push({at: new Date().toISOString(), view: 'crew/live-shell', outcome: 'WATCH → governed harmless INTERVENE → detached on the real qualification PTY; input content withheld from durable evidence'});
 
+  await page.click('[data-view="sessions"]');
+  await page.waitForSelector('#sessions-list');
+  screenshots.push(await screenshot(page, '06b-execution-sessions.png'));
+  journey.push({at: new Date().toISOString(), view: 'sessions', outcome: 'real governed PTY session and lifecycle shown'});
+
   await page.click('[data-view="systems"]');
   await page.waitForSelector('#systems-list');
   screenshots.push(await screenshot(page, '07-configured-systems-and-node-state.png'));
   journey.push({at: new Date().toISOString(), view: 'systems', outcome: 'configured execution system and availability shown during the live run'});
+
+  await page.click('[data-view="configuration"]');
+  await page.waitForSelector('#configuration-workspace');
+  screenshots.push(await screenshot(page, '07a-governed-configuration.png'));
+  journey.push({at: new Date().toISOString(), view: 'configuration', outcome: 'governed provider, model and system configuration view shown without credential material'});
 
   await page.click('[data-view="routing"]');
   await page.waitForFunction(() => document.querySelectorAll('#orchestration-decision-list [data-adaptive-decision]').length > 0, undefined, {timeout: 10_000});
@@ -331,6 +355,13 @@ try {
   sourceDashboard = await currentDashboard(page);
   screenshots.push(await screenshot(page, '08-source-model-live-usage-across-models-view.png'));
   journey.push({at: new Date().toISOString(), view: 'models', outcome: 'persistent strip showed live Qwen provider/model, governor, elapsed time, context authority and unavailable values honestly'});
+
+  await page.click('[data-view="poe"]');
+  await page.fill('#poe-input', 'Explain the current Work Parcel and model route.');
+  await page.click('#poe-form button[type="submit"]');
+  await page.waitForFunction(() => document.querySelectorAll('#poe-turns .poe-turn').length >= 2, undefined, {timeout: 10_000});
+  screenshots.push(await screenshot(page, '08b-poe-grounded-live-work-explanation.png'));
+  journey.push({at: new Date().toISOString(), view: 'poe', outcome: 'POE answered from live Agent Control evidence while the normal Work Parcel ran'});
 
   rejectionPhase = await waitPhase('QUALITY_GATE_REJECTED', 120_000);
   destinationPhase = await waitPhase('DESTINATION_MODEL_ACTIVE', 30_000);
@@ -409,15 +440,15 @@ try {
   execFileSync(ffmpeg, ['-y', '-i', rawVideo, '-an', '-c:v', 'libx264', '-preset', 'slow', '-crf', '18', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', videoFile], {stdio: ['ignore', 'ignore', 'pipe'], maxBuffer: 4 * 1024 * 1024});
   const info = mediaInfo(videoFile), videoBytes = fs.readFileSync(videoFile), evidenceBytes = fs.readFileSync(evidenceFile), transcriptBytes = fs.readFileSync(transcriptFile);
   const manifest = {
-    schema: 'agent-control.crew-wopr-escalation-video/v1', verdict: 'PASS', recordedAt: new Date().toISOString(), continuousCapture: true, editedOrSpliced: false, playbackSpeed: 1,
+    schema: 'agent-control.crew-wopr-escalation-video/v1', verdict: 'PASS', evidenceClass, releaseQualificationEligible: evidenceClass === 'qualification', normalUninterruptedRun: true, interruptionsRequired: false, recordedAt: new Date().toISOString(), continuousCapture: true, editedOrSpliced: false, playbackSpeed: 1,
     video: {file: path.relative(path.dirname(manifestFile), videoFile), sha256: sha256(videoBytes), bytes: videoBytes.length, media: info},
     evidence: {file: path.relative(path.dirname(manifestFile), evidenceFile), qualificationPayloadSha256BeforeVideoAttachment: sha256(evidenceBytes)},
     transcript: {file: path.relative(path.dirname(manifestFile), transcriptFile), sha256: sha256(transcriptBytes)},
     browser: {engine: 'Chromium', version: browser.version(), viewport: {width: 1920, height: 1080}, executableRecordedAs: 'configured Chromium executable'},
     phases: {dashboardReady, socialPhase, taskPhase, concurrentPhase, sourcePhase, rejectionPhase, destinationPhase, verificationPhase, completePhase},
-    journey, screenshots, animation: {idle: idleMotion, concurrent: concurrentMotion},
+    journey, screenshots, animation: {poe: poeMotion, idle: idleMotion, concurrent: concurrentMotion},
     liveEvidence: {source: sourceDashboard, handoff: handoffDashboard, destination: destinationDashboard, completed: completedDashboard, eventLatency},
-    checks: {allSixCharactersVisibleAndAnimated: true, genuineSocialIngress: ingress === 'openwa', exactInitiatingRequestVisible: true, jobsLanesModelsSystemsCrewVisited: true, liveShellEvidence, twoConcurrentLanesVisible: true, eventBackedWoprIndicatorsInspected: true, sourceDifficultyVisible: true, qualityGateReasonVisible: true, sealedBatonVisible: true, destinationRouteVisible: true, persistentUsageAcrossViews: true, finalModelChainVisible: true, productGeneratedCompleteTranscriptVisible: true, reducedMotion, mobile, performance, consoleErrors, httpErrors, expectedOptionalHttp, expectedOptionalConsole},
+    checks: {poeVisibleAndAnimated: true, allSixCharactersVisibleAndAnimated: true, genuineSocialIngress: ingress === 'openwa', exactInitiatingRequestVisible: true, allPrimaryViewsVisited: true, jobsLanesModelsSystemsCrewVisited: true, liveShellEvidence, twoConcurrentLanesVisible: true, eventBackedWoprIndicatorsInspected: true, sourceDifficultyVisible: true, qualityGateReasonVisible: true, sealedBatonVisible: true, destinationRouteVisible: true, persistentUsageAcrossViews: true, finalModelChainVisible: true, productGeneratedCompleteTranscriptVisible: true, reducedMotion, mobile, performance, consoleErrors, httpErrors, expectedOptionalHttp, expectedOptionalConsole},
     socialIngress: socialIngressEvidence,
     security: {operatorTokenPersisted: false, codexHomePathPersisted: false, credentialsVisibleInVideo: false, privateReasoningVisible: false},
   };
