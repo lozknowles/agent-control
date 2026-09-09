@@ -2,9 +2,16 @@
 
 ## 4.3.0 (release candidate)
 
-- Adds provider-neutral cache-aware expert delegation, governed compatibility scoring, durable invalidation and a real-time Warm Cache Runtime dashboard while preserving capability, integrity, authority and independent-verification priority.
+- Added a provider-neutral Cache Expert Registry derived only from genuine terminal invocation telemetry, with complete route/session/cache/backend identity, hashed context domains, bounded task history and `HOT`, `WARM`, `COOLING`, `EXPIRED` and `INVALIDATED` lifecycle states.
+- Added `AUTHORITATIVE`, qualified opt-in `DERIVED` and `UNAVAILABLE` cache evidence. Cold retained-state expectations remain separate from actual reuse; provider counters remain authoritative after execution.
+- Wired cache-aware assessment into the normal Work Parcel model route without bypassing model qualification, capability/placement, worker health/load, transport integrity, adaptive quality/cost/latency policy, approvals or independent verification.
+- Added strict `EXACT`, `HIGH`, `PARTIAL`, `INCOMPATIBLE` and `UNKNOWN` compatibility, estimated context delta, material-context invalidation, session/backend isolation, restart invalidation and a bounded configurable cache bonus.
+- Added cache decision/expert identity to stage batons and append-only Work Parcel audits, including all candidates, scores, reasons, expected benefit, actual cache result and verifier outcome.
+- Added the dedicated **Warm Cache Runtime** dashboard tab with a real Work Parcel lane timeline, observation heatmap, agent/process utilization, ranked Warm Experts, observed compatibility matrix, active candidate routes, governed route explanation, recent events and explicit cross-lane cache boundaries. Every value comes from runtime projections or is labelled derived/unavailable; the page retains `CACHE STATE UNKNOWN`, `MONETARY SAVING UNAVAILABLE` and the full human-readable routing transcript generated from the durable decision.
+- Added revision-checked **Configuration → Warm Experts** policy controls. Derived preference is disabled by default.
+- Added deterministic coverage for creation, evidence authority, expiry, staleness, incompatible context, provider/session/backend isolation, capability/integrity/health priority, route wins/losses, restart recovery, Work Parcel/baton metadata, dashboard projection, transcript and independent decision verification.
+- Physical A–F non-OpenAI routing qualification and HD video remain a release gate; this development entry does not claim 4.3 released.
 - Integrates the 4.2 Transport Context Contract and authoritative non-OpenAI cache evidence with the complete 4.1 POE, Crew, Live Shell, recovery and protected-resource runtime.
-- Physical A–F qualification remains required against the exact integrated candidate before release.
 
 ## [4.1.0] — 2026-09-09
 
