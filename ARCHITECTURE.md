@@ -442,7 +442,28 @@ For llama.cpp, `timings.cache_n` is the direct reused-prefix count and `timings.
 
 Qualification-only Jobs are registered only under an explicit environment gate, accept only a loopback backend, use one frozen real-mutation fixture, and pass all model tool requests through the existing typed `ToolPolicy` gateway. Independent verification owns acceptance. The managed artifact-content API requires operator authentication, verifies the artifact checksum, removes storage paths and applies the ordinary API redactor before a complete transcript is displayed.
 
-Cache affinity is not routing authority. The current production router does not select an agent merely because a backend slot may contain relevant state. A future warm-expert policy would need explicit retained-context identity, relevance, authority, capability and verifier evidence; it cannot be inferred from basic provider caching.
+### Cache-Aware Expert Delegation
+
+Agent Control 4.3 adds that previously gated Warm Expert policy through the normal Work Parcel route. A Warm Expert is not a worker label: it is temporary evidence attached to the exact worker, provider, account, model, node, session, cache scope and backend instance plus a hashed context domain. The registry is populated only by terminal provider invocation observations and keeps actual reuse separate from qualified expected retention.
+
+```text
+qualified model candidates
+  -> capability / placement / health / transport-integrity gates
+  -> adaptive quality, history, cost and latency policy
+  -> exact route identity + context compatibility
+  -> bounded cache-affinity score
+  -> independent decision check
+  -> dispatch -> provider counters -> independent task verification
+  -> registry + baton + Work Parcel audit + dashboard transcript
+```
+
+Compatibility compares repository, task type, branch/dependency, transport, instruction, tool and governance hashes and returns `EXACT`, `HIGH`, `PARTIAL`, `INCOMPATIBLE` or `UNKNOWN`. Only verified, fresh `EXACT`/`HIGH` records with allowed `AUTHORITATIVE` or explicitly qualified `DERIVED` evidence can add a cache bonus. Route identity prevents evidence crossing providers, models, sessions, cache scopes or backend processes. Intervening incompatible work in one scope invalidates displaced context; process/session loss and explicit eviction use the same invalidation boundary.
+
+The bonus is bounded by policy and multiplied by compatibility, freshness and expected reuse. Worker placement already owns capability/load admission, while adaptive orchestration owns task-conditioned success, quality, latency and sourced cost. The final route is written back into the cache decision even when those higher-order policies override cache order. Decision/expert IDs are sealed into the stage baton; candidate evidence, compatibility, scores, decision reason, actual cache result and verifier result remain linked in durable audit records.
+
+Pre-run context delta is estimated and labelled. Completed provider counters are authoritative where exposed. `UNAVAILABLE` is not zero. Cost saving is calculated only with complete counters and authoritative pricing; otherwise the operator sees `MONETARY SAVING UNAVAILABLE`. Raw prompts are absent from the Cache Expert Registry.
+
+A warm cache improves efficiency but does not confer correctness or authority. Capability, integrity and governance always outrank cache warmth. See [Cache-Aware Expert Delegation](docs/cache-aware-expert-delegation.md).
 
 This evidence is not routing authority. The production gate requires a sufficient deterministic task sample, no verified-success regression against STANDARD, bounded classified escalation, a measured cumulative-resource improvement and all existing policy/fencing checks. The first recorded mutation run fails the sample-size and resource-improvement criteria, so production applies the observational STANDARD fallback; no production profile-selection code path is enabled by the experiment.
 

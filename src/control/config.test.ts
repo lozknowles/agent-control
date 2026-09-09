@@ -196,3 +196,12 @@ test('adaptive orchestration policy accepts nullable ceilings and rejects unsafe
   assert.throws(() => validateConfig({...base, adaptiveOrchestration: {maxRouteCost: -1}}), /adaptive_orchestration_cost/);
   assert.throws(() => validateConfig({...base, adaptiveOrchestration: {maxRouteLatencyMs: 86_400_001}}), /adaptive_orchestration_latency/);
 });
+
+test('cache-aware expert decay and compatibility policy is provider-neutral and ordered', () => {
+  const base={schemaVersion:1 as const,resources:[],providers:[],models:[],modelRouting:{roles:{}},services:[],lanes:[]};
+  const config=validateConfig({...base,cacheAwareExperts:{enabled:true,hotMinutes:5,warmMinutes:30,expiryMinutes:120,hotReuseRatio:.8,minimumReuseRatio:.3,highCompatibilityMaximumDelta:.2,partialCompatibilityMaximumDelta:.5,maximumScoreBonus:.1,allowDerivedPreference:false}});
+  assert.equal(config.cacheAwareExperts?.warmMinutes,30);assert.equal(config.cacheAwareExperts?.allowDerivedPreference,false);
+  assert.throws(()=>validateConfig({...base,cacheAwareExperts:{hotMinutes:60,warmMinutes:30}}),/lifecycle_order/);
+  assert.throws(()=>validateConfig({...base,cacheAwareExperts:{highCompatibilityMaximumDelta:.8,partialCompatibilityMaximumDelta:.5}}),/compatibility_order/);
+  assert.throws(()=>validateConfig({...base,cacheAwareExperts:{maximumScoreBonus:2}}),/maximumScoreBonus/);
+});

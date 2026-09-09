@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.3.0 (release candidate)
+
+- Adds provider-neutral cache-aware expert delegation, governed compatibility scoring, durable invalidation and a real-time Warm Cache Runtime dashboard while preserving capability, integrity, authority and independent-verification priority.
+- Integrates the 4.2 Transport Context Contract and authoritative non-OpenAI cache evidence with the complete 4.1 POE, Crew, Live Shell, recovery and protected-resource runtime.
+- Physical A–F qualification remains required against the exact integrated candidate before release.
+
 ## [4.1.0] — 2026-09-09
 
 - Adds the compact floating POE companion: original SVG hotelier, keyboard/touch repositioning, responsive conversation panel, greeting, and operator-controlled spoken tour synchronized with actual playback and highlighted dashboard views.

@@ -1,7 +1,7 @@
 {
   "schema": "agent-control.implementation-status/v1",
-  "release": "4.0.0",
-  "updated": "2026-09-08",
+  "release": "4.3.0",
+  "updated": "2026-09-09",
   "capabilities": [
     {
       "id": "operator.poe-conversational-interface",
@@ -691,6 +691,16 @@
       "sources": ["src/control/adaptive-orchestration.ts", "src/control/work-parcels.ts", "src/control/direct-repository-review-executor.ts", "src/control/job-bootstrap.ts", "src/control/application-service.ts", "src/control/web-server.ts", "assets/dashboard/dashboard-adaptive-orchestration.js", "assets/dashboard/dashboard-adaptive-orchestration.css"],
       "tests": ["src/control/adaptive-orchestration.test.ts", "src/control/web-server.test.ts", "src/control/config.test.ts", "src/control/configuration-store.test.ts"],
       "limitation": "Physical provider/workflow qualification through the live dashboard and runtime remains a separate gate; this workstream does not claim that adaptive production routing has been physically qualified."
+    },
+    {
+      "id": "routing.cache-aware-experts",
+      "title": "Cache-Aware Expert Delegation",
+      "status": "PARTIAL",
+      "summary": "A provider-neutral runtime registry derives temporary Warm Experts from genuine terminal invocation telemetry, binds evidence to exact worker/provider/account/model/node/session/cache/backend identity and hashed context, enforces strict compatibility and lifecycle decay, and contributes a bounded cache score only after capability, placement, health and transport-integrity gates. Normal Work Parcels persist candidate decisions, selected expert identity, batons, actual cache observations and independent verification; the dashboard/API exposes the same durable facts and natural operational transcript.",
+      "sources": ["src/control/cache-aware-expert.ts", "src/control/cache-evidence.ts", "src/control/structured-chat-loop-provider.ts", "src/control/work-parcels.ts", "src/control/job-bootstrap.ts", "src/control/application-service.ts", "src/control/config.ts", "src/control/configuration-store.ts", "src/control/web-server.ts", "assets/dashboard/dashboard-cache-experts.js", "assets/dashboard/dashboard-enhancements.js"],
+      "tests": ["src/control/cache-aware-expert.test.ts", "src/control/structured-chat-loop-provider.test.ts", "src/control/work-parcels.test.ts", "src/control/config.test.ts", "src/control/configuration-store.test.ts", "src/control/web-server.test.ts"],
+      "evidence": ["docs/cache-aware-expert-delegation.md", "docs/non-openai-cache-qualification.md"],
+      "limitation": "Deterministic implementation is present, but the required physical A-F non-OpenAI experiment, independent evidence reconciliation and genuine HD recording have not yet passed. Cache reuse alone is not accepted as proof that delegation changed."
     },
     {
       "id": "models.fast-execution-spark",
