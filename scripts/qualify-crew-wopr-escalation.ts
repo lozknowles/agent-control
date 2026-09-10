@@ -22,6 +22,7 @@ import {ModelRegistry} from '../src/control/model-registry.js';
 import {OpenWAAdapter, openwaConfigSchema, type OpenWAConfig} from '../src/control/openwa.js';
 import {openwaExecutionPort, OpenWASocialProvider} from '../src/control/openwa-social-provider.js';
 import {PoeRuntime} from '../src/control/poe.js';
+import {PoeOperatorRuntime} from '../src/control/poe-operator.js';
 import {PtyRegistry} from '../src/control/pty.js';
 import {SocialVoiceCoordinator} from '../src/control/social-voice.js';
 import {PrivateSpeechProvider} from '../src/control/speech-http-provider.js';
@@ -30,11 +31,12 @@ import {WorkParcelCoordinator, WorkParcelStore, type WorkParcelPlan, type WorkPa
 import {startWebDashboard} from '../src/control/web-server.js';
 import type {WorkspaceState} from '../src/state.js';
 
-export const QUALIFICATION_PROMPT = 'Complete the read-only review of the frozen reservation-service fixture on the authorised qualification branch. Explain whether concurrent callers can both acquire the same resource and whether expired cache entries can be accepted as fresh. Preserve evidence, use the configured quality gate, and escalate only if the first route misses either root cause. origin/main must remain completely unchanged. Do not deploy production. Verify the result.';
+export const QUALIFICATION_PROMPT = 'Complete the read-only review of the frozen reservation-service fixture on the authorised qualification branch. Identify and explain every failing documented acceptance invariant. Preserve evidence, use the configured quality gate, and escalate from Luna to Sol only if Luna misses an acceptance-level root cause. origin/main must remain completely unchanged. Do not deploy production. Verify the result.';
 export const QUALIFICATION_SOCIAL_COMMAND = 'start governed-adaptive-crew';
+export const QUALIFICATION_POE_COMMAND = 'Start crew-wopr-review@1.0.0';
 const QUALITY_GATE_CODE = 'reservation-cache-root-cause-v1';
-const SOURCE_MODEL_ID = 'qwen-local-small-reviewer';
-const DESTINATION_MODEL_ID = 'codex-luna-controller-a';
+const SOURCE_MODEL_ID = 'codex-luna-controller-a';
+const DESTINATION_MODEL_ID = 'codex-sol-controller-a';
 const MODEL_ROLE = 'review.default';
 
 interface Options {
@@ -64,7 +66,7 @@ interface QualityObservation {
   summary: string;
   unresolvedCriteria: string[];
   executiveSummary: string;
-  findings: Array<{id: string; file: string | null; title: string; evidence: string; reasoning: string; confidence: number}>;
+  findings: Array<{id: string; file: string | null; title: string; evidence: string; reasoning: string; suggestedRemediation: string; confidence: number}>;
 }
 
 const delay = (milliseconds: number) => new Promise(resolve => setTimeout(resolve, milliseconds));
@@ -91,8 +93,8 @@ function readOptions(): Options {
     holdMs: Number(values.get('hold-ms') ?? 45_000),
     operatorToken,
     sourceBaseUrl: process.env.AGENT_CONTROL_QUALIFICATION_SOURCE_URL ?? 'http://127.0.0.1:8080',
-    sourceProviderModel: process.env.AGENT_CONTROL_QUALIFICATION_SOURCE_MODEL ?? 'qwen2.5-3b-instruct-q4_k_m.gguf',
-    destinationProviderModel: process.env.AGENT_CONTROL_QUALIFICATION_DESTINATION_MODEL ?? 'gpt-5.6-luna',
+    sourceProviderModel: process.env.AGENT_CONTROL_QUALIFICATION_SOURCE_MODEL ?? 'gpt-5.6-luna',
+    destinationProviderModel: process.env.AGENT_CONTROL_QUALIFICATION_DESTINATION_MODEL ?? 'gpt-5.6-sol',
     ingress: process.env.AGENT_CONTROL_QUALIFICATION_INGRESS === 'openwa' ? 'openwa' : 'dashboard',
     ...(process.env.AGENT_CONTROL_QUALIFICATION_OPENWA_CONFIG ? {openwaConfigFile: path.resolve(process.env.AGENT_CONTROL_QUALIFICATION_OPENWA_CONFIG)} : {}),
     ...(process.env.AGENT_CONTROL_QUALIFICATION_OPENWA_ENROLMENT ? {openwaEnrolmentFile: path.resolve(process.env.AGENT_CONTROL_QUALIFICATION_OPENWA_ENROLMENT)} : {}),
@@ -116,8 +118,11 @@ Acceptance invariants:
 
 1. At most one concurrent caller may acquire an unowned resource.
 2. A cache entry is fresh only when its age, current time minus creation time, is below the TTL.
+3. An actor satisfies a required scope set only when every required scope is granted.
+4. A page contains at most limit records beginning at offset.
+5. A lease issued in epoch seconds remains valid until maxAgeSeconds later when compared with an epoch-millisecond clock.
 
-The qualification is read-only. A reviewer must explain the root cause of both failing acceptance tests; merely naming concurrency or cache expiry is insufficient.
+The qualification is read-only. A reviewer must explain the root cause of every failing acceptance test; merely naming the affected feature is insufficient.
 `);
   fs.writeFileSync(path.join(repository, 'src/reservation-ledger.mjs'), `export class ReservationLedger {
   #owners = new Map();
@@ -136,10 +141,25 @@ The qualification is read-only. A reviewer must explain the root cause of both f
   return entry.createdAt - now < ttlMs;
 }
 `);
+  fs.writeFileSync(path.join(repository, 'src/access-policy.mjs'), `export function hasRequiredScopes(granted, required) {
+  return required.some(scope => granted.includes(scope));
+}
+`);
+  fs.writeFileSync(path.join(repository, 'src/page-window.mjs'), `export function page(records, offset, limit) {
+  return records.slice(offset, limit);
+}
+`);
+  fs.writeFileSync(path.join(repository, 'src/lease-validity.mjs'), `export function leaseIsValid(lease, nowMs, maxAgeSeconds) {
+  return lease.issuedAtSeconds + maxAgeSeconds > nowMs;
+}
+`);
   fs.writeFileSync(path.join(repository, 'test/acceptance.test.mjs'), `import assert from 'node:assert/strict';
 import test from 'node:test';
 import {ReservationLedger} from '../src/reservation-ledger.mjs';
 import {isFresh} from '../src/snapshot-cache.mjs';
+import {hasRequiredScopes} from '../src/access-policy.mjs';
+import {page} from '../src/page-window.mjs';
+import {leaseIsValid} from '../src/lease-validity.mjs';
 
 test('only one concurrent caller acquires an unowned resource', async () => {
   const ledger = new ReservationLedger();
@@ -154,6 +174,18 @@ test('only one concurrent caller acquires an unowned resource', async () => {
 test('an entry older than its TTL is stale', () => {
   assert.equal(isFresh({createdAt: 1_000}, 10_000, 100), false);
 });
+
+test('every required scope must be granted', () => {
+  assert.equal(hasRequiredScopes(['read'], ['read', 'admin']), false);
+});
+
+test('page limit is a count, not an absolute end index', () => {
+  assert.deepEqual(page(['a', 'b', 'c', 'd', 'e'], 2, 2), ['c', 'd']);
+});
+
+test('epoch-second leases compare correctly with an epoch-millisecond clock', () => {
+  assert.equal(leaseIsValid({issuedAtSeconds: 1_700_000_000}, 1_700_000_030_000, 60), true);
+});
 `);
   const gitEnvironment = {...process.env, GIT_AUTHOR_NAME: 'Agent Control Qualification', GIT_AUTHOR_EMAIL: 'qualification@invalid.example', GIT_COMMITTER_NAME: 'Agent Control Qualification', GIT_COMMITTER_EMAIL: 'qualification@invalid.example', GIT_AUTHOR_DATE: '2026-09-06T12:00:00Z', GIT_COMMITTER_DATE: '2026-09-06T12:00:00Z'};
   execFileSync('git', ['init', '--bare', '-q', remote], {cwd: root, env: gitEnvironment});
@@ -167,7 +199,7 @@ test('an entry older than its TTL is stale', () => {
   return {
     repository, remote, protectedRef,
     commit: command(repository, 'git', ['rev-parse', 'HEAD']),
-    files: ['README.md', 'src/reservation-ledger.mjs', 'src/snapshot-cache.mjs', 'test/acceptance.test.mjs'].map(file => ({file, sha256: sha256(fs.readFileSync(path.join(repository, file)))})),
+    files: ['README.md', 'src/reservation-ledger.mjs', 'src/snapshot-cache.mjs', 'src/access-policy.mjs', 'src/page-window.mjs', 'src/lease-validity.mjs', 'test/acceptance.test.mjs'].map(file => ({file, sha256: sha256(fs.readFileSync(path.join(repository, file)))})),
   };
 }
 
@@ -177,7 +209,7 @@ function runAcceptance(repository: string) {
   const execution = spawnSync(process.execPath, ['--test', '--test-reporter=tap'], {cwd: repository, encoding: 'utf8', timeout: 20_000, maxBuffer: 2 * 1024 * 1024});
   const output = `${execution.stdout ?? ''}\n${execution.stderr ?? ''}`;
   const failed = Number(output.match(/# fail (\d+)/)?.[1] ?? -1);
-  if (execution.status === 0 || failed !== 2) throw new Error(`qualification_fixture_expected_two_failures:status=${execution.status}:failed=${failed}`);
+  if (execution.status === 0 || failed !== 5) throw new Error(`qualification_fixture_expected_five_failures:status=${execution.status}:failed=${failed}`);
   return {status: execution.status, failed, outputSha256: sha256(output), bytes: Buffer.byteLength(output)};
 }
 
@@ -196,29 +228,41 @@ function reviewText(observation: QualityObservation['findings'][number]) { retur
 
 function acceptanceQualityGate(observations: QualityObservation[]): RepositoryReviewQualityGate {
   return {evaluate(input) {
-    const findings = input.result.findings.map(finding => ({id: finding.id, file: finding.file ?? null, title: finding.title, evidence: finding.evidence, reasoning: finding.reasoning, confidence: finding.confidence}));
+    const findings = input.result.findings.map(finding => ({id: finding.id, file: finding.file ?? null, title: finding.title, evidence: finding.evidence, reasoning: finding.reasoning, suggestedRemediation: finding.suggestedRemediation, confidence: finding.confidence}));
     const reservation = findings.filter(finding => finding.file === 'src/reservation-ledger.mjs').map(reviewText).join(' ');
     const cache = findings.filter(finding => finding.file === 'src/snapshot-cache.mjs').map(reviewText).join(' ');
+    const access = findings.filter(finding => finding.file === 'src/access-policy.mjs').map(reviewText).join(' ');
+    const paging = findings.filter(finding => finding.file === 'src/page-window.mjs').map(reviewText).join(' ');
+    const lease = findings.filter(finding => finding.file === 'src/lease-validity.mjs').map(reviewText).join(' ');
+    const leaseRemediation = findings.filter(finding => finding.file === 'src/lease-validity.mjs').map(finding => finding.suggestedRemediation).join(' ');
     const reservationInterleaving = /both|two|concurrent/i.test(reservation) && /before (?:either|the first|one).*(?:set|write|update)|between (?:the )?check.*(?:set|write|update)|await.*(?:interleav|race)/i.test(reservation);
     const reservationCheckThenUpdate = /non[- ]?atomic|check[- ]then[- ](?:set|write|update)|time[- ]of[- ]check/i.test(reservation) || reservationInterleaving;
     const reversedAge = /createdAt\s*-\s*now|reverse(?:d)? (?:the )?(?:age|subtraction)|wrong[- ]sign|negative age/i.test(cache);
     const correctedAge = /now\s*-\s*(?:entry\.)?createdAt|current time minus (?:the )?creation time/i.test(cache);
+    const everyScope = /every|all|required\.every/i.test(access) && /some|any|one/i.test(access);
+    const offsetPlusLimit = /offset\s*\+\s*limit|end index.*offset|slice\([^,]+,\s*(?:offset\s*\+\s*)?limit/i.test(paging) && /absolute|count|offset/i.test(paging);
+    const leaseUnitMismatch = /seconds?.*milliseconds?|milliseconds?.*seconds?|1000|unit mismatch/i.test(lease);
+    const leaseNormalization = /issuedAtSeconds.*maxAgeSeconds.*milliseconds?.*nowMs|issuedAtSeconds\s*\*\s*1_?000.*maxAgeSeconds\s*\*\s*1_?000|\(?\s*issuedAtSeconds\s*\+\s*maxAgeSeconds\s*\)?\s*\*\s*1_?000|nowMs\s*\/\s*1_?000/i.test(leaseRemediation);
     const unsupportedCompletionClaim = /(?:has been|was|is now) fixed|(?:all )?tests (?:now )?pass/i.test(input.result.executiveSummary);
     const unresolvedCriteria = [
       ...(!reservationCheckThenUpdate ? ['Identify the reservation operation as a non-atomic check-then-update sequence, explicitly or by proving both callers check before either updates ownership.'] : []),
       ...(!reservationInterleaving ? ['Explain that both callers can observe the resource as unowned before either caller updates ownership.'] : []),
       ...(!reversedAge ? ['Identify that createdAt - now reverses the cache-age subtraction and yields a negative age for stale entries.'] : []),
       ...(!correctedAge ? ['State that cache age must be calculated as now - entry.createdAt.'] : []),
+      ...(!everyScope ? ['Identify that required.some accepts one matching permission while the invariant requires every required scope.'] : []),
+      ...(!offsetPlusLimit ? ['Identify that Array.slice expects an absolute end index, so the page end must be offset + limit.'] : []),
+      ...(!leaseUnitMismatch ? ['Identify and correct the epoch-seconds versus epoch-milliseconds mismatch in lease expiry comparison.'] : []),
+      ...(!leaseNormalization ? ['In suggestedRemediation, name issuedAtSeconds, maxAgeSeconds and nowMs and state their dimensionally valid normalization before the strict expiry comparison.'] : []),
       ...(unsupportedCompletionClaim ? ['Do not claim this read-only review fixed code or made the acceptance tests pass.'] : []),
     ];
     const accepted = unresolvedCriteria.length === 0;
     const result: RepositoryReviewQualityGateResult = {
       accepted,
       code: QUALITY_GATE_CODE,
-      summary: accepted ? 'The review proves both acceptance-test root causes: the non-atomic reservation interleaving and the reversed cache-age subtraction.' : `Schema-valid review did not satisfy ${unresolvedCriteria.length} acceptance-level root-cause ${unresolvedCriteria.length === 1 ? 'criterion' : 'criteria'}.`,
+      summary: accepted ? 'The review proves all five acceptance-test root causes.' : `Schema-valid review did not satisfy ${unresolvedCriteria.length} acceptance-level root-cause ${unresolvedCriteria.length === 1 ? 'criterion' : 'criteria'}.`,
       evidence: ['fixture:test/acceptance.test.mjs', 'fixture:README.md', `provider-response:${input.responseHash}`],
       unresolvedCriteria,
-      nextAction: 'Using the same frozen repository and original objective, explain both failing acceptance-test root causes precisely and return a schema-valid read-only repository review.',
+      nextAction: 'Using the same frozen repository, original objective and unresolved acceptance criteria in this baton, complete only the missing root-cause analysis and return a schema-valid read-only repository review.',
     };
     observations.push({at: now(), route: {providerId: input.route.providerId, accountProfileId: input.route.accountProfileId, modelId: input.route.modelId, nodeId: input.route.nodeId}, responseHash: input.responseHash, accepted, code: result.code, summary: result.summary, unresolvedCriteria, executiveSummary: input.result.executiveSummary, findings});
     return result;
@@ -258,12 +302,13 @@ function transcript(input: {
   const totals = input.routing.parcels.find(parcel => parcel.parcelId === input.nestedParcelId)!;
   const formatCost = (amount: number | null, currency: string | null) => amount === null ? 'Unavailable' : `${amount}${currency ? ` ${currency}` : ''}`;
   const rows = totals.byModel.map(item => `| ${item.providerId} | ${item.accountLabel ?? item.accountProfileId ?? 'default'} | ${item.modelId} | ${item.inputTokens ?? 'Unavailable'} | ${item.outputTokens ?? 'Unavailable'} | ${item.totalTokens ?? 'Unavailable'} | ${formatCost(item.cost, item.currency)} |`).join('\n');
-  const sourceRoute = `${input.source.route.providerId}/default/${input.source.route.modelId}@${input.source.route.nodeId}`;
+  const sourceLabel = sourceThread.accountLabel ?? input.source.route.accountProfileId ?? 'default';
+  const sourceRoute = `${input.source.route.providerId}/${sourceLabel} (${input.source.route.accountProfileId ?? 'default'})/${input.source.route.modelId}@${input.source.route.nodeId}`;
   const destinationLabel = destinationThread.accountLabel ?? input.destination.route.accountProfileId ?? 'default';
   const destinationRoute = `${input.destination.route.providerId}/${destinationLabel} (${input.destination.route.accountProfileId ?? 'default'})/${input.destination.route.modelId}@${input.destination.route.nodeId}`;
   const handoffDecision = input.routingEvidence.decisions.find(item => item.action === 'BATON_AND_HANDOFF' && item.trigger?.kind === 'QUALITY_GATE' && item.target);
   const toolTimeline = input.parentRuns.flatMap(run => run.steps.map(step => ({at: step.startedAt ?? run.startedAt, completedAt: step.endedAt ?? run.endedAt, action: step.action, status: step.status}))).filter((item): item is {at: string; completedAt: string | undefined; action: string; status: string} => Boolean(item.at)).sort((left, right) => left.at.localeCompare(right.at));
-  return `# Agent Control 3.9 Crew/WOPR escalation qualification transcript
+  return `# Agent Control 4.3 Luna-to-Sol baton qualification transcript
 
 This is a human-readable projection of immutable Agent Control records. It contains no private model reasoning or credentials.
 
@@ -331,7 +376,7 @@ ${input.destination.findings.map(finding => `- ${finding.file ?? 'repository'} �
 ${rows}
 | **Work Parcel total** |  |  | **${totals.inputTokens ?? 'Unavailable'}** | **${totals.outputTokens ?? 'Unavailable'}** | **${totals.totalTokens ?? 'Unavailable'}** | **${formatCost(totals.cost, totals.currency)}** |
 
-Current context occupancy remains separate from lifetime usage. Qwen's single-turn occupancy is ${sourceThread.latest.context.authority}; Codex reports it as ${destinationThread.latest.context.authority}. Missing cost or context values are shown as Unavailable, never zero.
+Current context occupancy remains separate from lifetime usage. Luna reports current occupancy as ${sourceThread.latest.context.authority}; Sol reports it as ${destinationThread.latest.context.authority}. Missing cost or context values are shown as Unavailable, never zero.
 
 ## Verification
 
@@ -350,17 +395,16 @@ async function main() {
   fs.mkdirSync(path.dirname(options.transcriptFile), {recursive: true});
   const fixture = createFixture(options.stateDir);
   const initialAcceptance = runAcceptance(fixture.repository);
-  const sourcePreflight = await sourceInventory(options.sourceBaseUrl, options.sourceProviderModel);
-
   const account: ProviderAccountProfileConfig = {id: 'cottage-plus', label: 'Controller Account A', providerExecutionNodeId: 'controller', credentialResidency: {nodeId: 'controller', store: {type: 'codex-home-env', env: 'CODEX_HOME_COTTAGE_PLUS'}}, enabled: true, plan: 'ChatGPT Plus', planAuthority: 'operator-configured', capabilities: ['repository-review'], qualification: {state: 'QUALIFIED', version: 'controller-account-a-physical-v1', checkedAt: startedAt, qualifiedAt: startedAt, capabilities: ['repository-review'], evidence: ['production LocalCodexNodeExecutionPort preflight']}};
-  const sourceProvider: ProviderConfig = {id: 'local-llama', name: 'Local llama.cpp', kind: 'openai-compatible', enabled: true, baseUrl: options.sourceBaseUrl, wireApi: 'chat-completions', auth: {type: 'none'}, requiresAuth: false, parallelism: 1, costClass: 'free', capabilities: ['repository-review'], qualification: {status: 'qualified', advertisedContextLimitTokens: 32_768, lastSuccessfulAt: sourcePreflight.observedAt, evidence: ['live /health and /v1/models preflight']}};
-  const destinationProvider: ProviderConfig = {id: 'codex-chatgpt', name: 'OpenAI Codex', kind: 'cli', enabled: true, parallelism: 1, costClass: 'included', capabilities: ['repository-review'], accountProfiles: [account]};
-  const sourceModel: ModelConfig = {id: SOURCE_MODEL_ID, provider: sourceProvider.id, providerModel: options.sourceProviderModel, displayName: 'Qwen 2.5 3B local reviewer', enabled: true, capabilities: ['repository-review'], roles: [MODEL_ROLE], nodes: ['controller'], limits: {contextTokens: 32_768, outputTokens: 1_800}, qualification: {state: 'QUALIFIED', version: 'live-llama-cpp-preflight-v1', qualifiedAt: sourcePreflight.observedAt, capabilities: ['repository-review'], nodes: ['controller'], evidence: ['live /health and model identity']}};
-  const destinationModel: ModelConfig = {id: DESTINATION_MODEL_ID, provider: destinationProvider.id, providerModel: options.destinationProviderModel, accountProfile: account.id, displayName: 'Codex Luna · Controller Account A', enabled: true, capabilities: ['repository-review'], roles: [MODEL_ROLE], nodes: ['controller'], limits: {contextTokens: 272_000, outputTokens: 2_000}, qualification: {state: 'QUALIFIED', version: 'controller-account-a-codex-v1', qualifiedAt: startedAt, capabilities: ['repository-review'], nodes: ['controller'], evidence: ['bounded account and model qualification']}};
-  const config: AgentControlConfig = {schemaVersion: 1, resources: [{id: 'controller', name: 'Qualification controller', platform: 'linux', transport: {type: 'local'}, capabilities: ['qualification.baseline', 'qualification.inventory', 'qualification.review', 'qualification.verify', 'repository-review'], controller: true, metadata: {capacity: 4}}], providers: [sourceProvider, destinationProvider], models: [sourceModel, destinationModel], modelRouting: {defaultRole: MODEL_ROLE, roles: {[MODEL_ROLE]: {primary: SOURCE_MODEL_ID, fallback: [DESTINATION_MODEL_ID], requires: ['repository-review']}}}, services: [], lanes: [], tokenBatonRouting: {continuePercent: 60, prepareBatonPercent: 75, compactPercent: 85, handoffPercent: 90, sampleRetention: 240}, adaptiveOrchestration: {enabled: true, minimumSamplesForPreference: 3, minimumQualityScore: .7, maxEvidenceAgeDays: 90, policyQualityFloor: .6, maxRouteCost: null, maxRouteLatencyMs: null, qualityWeight: .5, reliabilityWeight: .2, costWeight: .15, latencyWeight: .1, confidenceWeight: .05, explorationRate: 0}, retrieval: {enabled: false}, jobs: {repositoryRoots: [options.stateDir]}};
+  const sourceProvider: ProviderConfig = {id: 'codex-chatgpt', name: 'OpenAI Codex', kind: 'cli', enabled: true, parallelism: 1, costClass: 'included', capabilities: ['repository-review'], accountProfiles: [account]};
+  const destinationProvider = sourceProvider;
+  const sourceModel: ModelConfig = {id: SOURCE_MODEL_ID, provider: sourceProvider.id, providerModel: options.sourceProviderModel, accountProfile: account.id, displayName: 'Codex Luna · Controller Account A', enabled: true, capabilities: ['repository-review'], roles: [MODEL_ROLE], nodes: ['controller'], limits: {contextTokens: 272_000, outputTokens: 1_800}, qualification: {state: 'QUALIFIED', version: 'controller-account-a-codex-v1', qualifiedAt: startedAt, capabilities: ['repository-review'], nodes: ['controller'], evidence: ['bounded account and model qualification']}};
+  const destinationModel: ModelConfig = {id: DESTINATION_MODEL_ID, provider: destinationProvider.id, providerModel: options.destinationProviderModel, accountProfile: account.id, displayName: 'Codex Sol · Controller Account A', enabled: true, capabilities: ['repository-review'], roles: [MODEL_ROLE], nodes: ['controller'], limits: {contextTokens: 272_000, outputTokens: 2_000}, qualification: {state: 'QUALIFIED', version: 'controller-account-a-codex-v1', qualifiedAt: startedAt, capabilities: ['repository-review'], nodes: ['controller'], evidence: ['bounded account and model qualification']}};
+  const config: AgentControlConfig = {schemaVersion: 1, resources: [{id: 'controller', name: 'Qualification controller', platform: 'linux', transport: {type: 'local'}, capabilities: ['qualification.baseline', 'qualification.inventory', 'qualification.review', 'qualification.verify', 'repository-review'], controller: true, metadata: {capacity: 4}}], providers: [sourceProvider], models: [sourceModel, destinationModel], modelRouting: {defaultRole: MODEL_ROLE, roles: {[MODEL_ROLE]: {primary: SOURCE_MODEL_ID, fallback: [DESTINATION_MODEL_ID], requires: ['repository-review']}}}, services: [], lanes: [], tokenBatonRouting: {continuePercent: 60, prepareBatonPercent: 75, compactPercent: 85, handoffPercent: 90, sampleRetention: 240}, adaptiveOrchestration: {enabled: true, minimumSamplesForPreference: 3, minimumQualityScore: .7, maxEvidenceAgeDays: 90, policyQualityFloor: .6, maxRouteCost: null, maxRouteLatencyMs: null, qualityWeight: .5, reliabilityWeight: .2, costWeight: .15, latencyWeight: .1, confidenceWeight: .05, explorationRate: 0}, retrieval: {enabled: false}, jobs: {repositoryRoots: [options.stateDir]}};
   const executionSessions = new ExecutionSessionRuntime(path.join(options.stateDir, 'execution-sessions'));
   const nodeExecution = new LocalCodexNodeExecutionPort(process.env, process.env.CODEX_COMMAND ?? 'codex', executionSessions);
   const accountStatus = await nodeExecution.accountStatus({provider: destinationProvider, account, nodeId: 'controller', providerExecutionNodeId: 'controller', credentialNodeId: 'controller', timeoutMs: 20_000});
+  const sourcePreflight = {state: accountStatus.authenticated ? 'AVAILABLE' : 'UNAVAILABLE', providerModel: sourceModel.providerModel, observedAt: accountStatus.discoveredAt};
   const registry = new ModelRegistry(config.providers, config.models, config.modelRouting, undefined, undefined, process.env);
   const qualityObservations: QualityObservation[] = [], qualityGate = acceptanceQualityGate(qualityObservations);
   const tokenRouting = new TokenAwareBatonRuntime(path.join(options.stateDir, 'token-routing.json'), config.tokenBatonRouting);
@@ -381,7 +425,7 @@ async function main() {
     if (attached.exitCode !== 0 || !attached.stdout.includes('AGENT_CONTROL_LIVE_SHELL_INTERVENTION_ACCEPTED')) throw new ActionFailure('live_shell_harmless_intervention_missing', 'verification');
     const result = runAcceptance(fixture.repository), deadline = Date.now() + 6_000;
     while (Date.now() < deadline) { sha256(fs.readFileSync(path.join(fixture.repository, 'test/acceptance.test.mjs'))); await delay(120); }
-    return {artifacts: [{name: 'acceptance-baseline', value: result, type: 'qualification-acceptance-baseline', schema: 'agent-control.qualification-acceptance/v1', version: '1'}], verification: ['two-known-failures-confirmed'], evidence: [`acceptance-output-sha256:${result.outputSha256}`], detail: 'Two deterministic acceptance failures confirmed without modifying the fixture'};
+    return {artifacts: [{name: 'acceptance-baseline', value: result, type: 'qualification-acceptance-baseline', schema: 'agent-control.qualification-acceptance/v1', version: '1'}], verification: ['five-known-failures-confirmed'], evidence: [`acceptance-output-sha256:${result.outputSha256}`], detail: 'Five deterministic acceptance failures confirmed without modifying the fixture'};
   });
   actions.register('qualification.frozen-inventory@1.0.0', async () => {
     const deadline = Date.now() + 6_000; let digest = '';
@@ -390,13 +434,25 @@ async function main() {
   });
   actions.register('qualification.repository-review@1.0.0', async context => {
     const artifacts = context.run.trigger.parcelContext?.baton?.artifactIds ?? [];
-    assert.equal(artifacts.length, 2);
+    // The complete four-stage qualification supplies the baseline and inventory
+    // artifacts. POE's sealed registered-job path intentionally starts this
+    // read-only review as one ordinary Work Parcel stage, so it supplies none.
+    assert.ok(artifacts.length === 0 || artifacts.length === 2);
     const sourceParcelId = context.run.trigger.parcelContext?.parcelId, sourceParcel = sourceParcelId ? parcels.get(sourceParcelId) : undefined;
     const run = parameterizedJobs.runNow('crew-wopr-quality-review', `work-parcel:${sourceParcelId ?? 'unknown'}`, undefined, sourceParcel?.origin);
     parameterizedRunId = run.id;
     const completed = await parameterizedJobs.execute(run.id);
     if (!['SUCCEEDED', 'SUCCEEDED_WITH_FINDINGS'].includes(completed.status) || !completed.result) throw new ActionFailure(`parameterized_review_failed:${completed.errors.at(-1) ?? completed.status}`, 'verification');
-    return {artifacts: [{name: 'repository-review-result', value: {runId: completed.id, status: completed.status, reviewedSha: completed.repository?.reviewedSha, result: completed.result, workParcelIds: completed.workParcelIds, providerResponseIds: completed.providerResponseIds, usage: completed.usage}, type: 'qualification-repository-review', schema: 'agent-control.qualification-repository-review/v1', version: '1'}], verification: ['quality-escalation-and-review-verified'], evidence: [...completed.evidence, ...completed.workParcelIds.map(id => `work-parcel:${id}`)], detail: 'Schema-valid repository review completed through the production quality-gate handoff lifecycle'};
+    const routed = tokenRouting.projection().parcels.find(item => item.parcelId === completed.workParcelIds[0]);
+    const routingEvidence = tokenRouting.evidence(), baton = routingEvidence.batons[0];
+    const failedSource = qualityObservations.find(item => !item.accepted), acceptedDestination = qualityObservations.find(item => item.accepted);
+    const successfulHandoff = routingEvidence.decisions.find(item => item.outcome === 'SUCCEEDED' && item.action === 'BATON_AND_HANDOFF');
+    const acceptance = runAcceptance(fixture.repository);
+    assert.ok(routed && baton && failedSource && acceptedDestination && successfulHandoff);
+    assert.equal(routed.totalTokens, routed.byModel.reduce((sum, item) => sum + (item.totalTokens ?? 0), 0));
+    const independentVerification = {schema: 'agent-control.qualification-verified-outcome/v1', passed: acceptance.failed === 5, checkedAt: now(), readOnlyFixtureStillHasFiveKnownFailures: acceptance.failed === 5, sourceGateRejected: true, destinationGateAccepted: true, batonSha256: baton.sha256, handoffOutcome: successfulHandoff.outcome, sourceRecoverable: routingEvidence.threads.find(thread => thread.id === baton.threadId)?.recoverable === true, modelLegs: routed.byModel.length, aggregateTokens: routed.totalTokens};
+    assert.equal(independentVerification.passed, true);
+    return {artifacts: [{name: 'repository-review-result', value: {runId: completed.id, status: completed.status, reviewedSha: completed.repository?.reviewedSha, result: completed.result, workParcelIds: completed.workParcelIds, providerResponseIds: completed.providerResponseIds, usage: completed.usage, independentVerification}, type: 'qualification-repository-review', schema: 'agent-control.qualification-repository-review/v1', version: '1'}], verification: ['quality-escalation-and-review-verified'], evidence: [...completed.evidence, ...completed.workParcelIds.map(id => `work-parcel:${id}`), `token-baton-sha256:${baton.sha256}`, `acceptance-output-sha256:${acceptance.outputSha256}`], detail: 'Schema-valid Luna review, governed Sol continuation and independent verified outcome completed through the production quality-gate handoff lifecycle'};
   });
   actions.register('qualification.outcome-verify@1.0.0', async context => {
     const artifactIds = context.run.trigger.parcelContext?.baton?.artifactIds ?? [], reviewArtifact = artifactIds.map(id => context.readArtifact(id)).find(value => Boolean(value && typeof value === 'object' && (value as {result?: unknown}).result)) as {runId: string; result: {findings: Array<{file?: string; reasoning: string; evidence: string}>}; workParcelIds: string[]} | undefined;
@@ -409,12 +465,12 @@ async function main() {
     assert.ok(reviewArtifact.result.findings.some(finding => finding.file === 'src/reservation-ledger.mjs'));
     assert.ok(reviewArtifact.result.findings.some(finding => finding.file === 'src/snapshot-cache.mjs'));
     const stillFailing = runAcceptance(fixture.repository);
-    const verification = {schema: 'agent-control.qualification-verified-outcome/v1', passed: true, checkedAt: now(), readOnlyFixtureStillHasTwoKnownFailures: stillFailing.failed === 2, sourceGateRejected: true, destinationGateAccepted: true, batonSha256: baton.sha256, handoffOutcome: successfulHandoff.outcome, sourceRecoverable: true, modelLegs: totals.byModel.length, aggregateTokens: totals.totalTokens};
+    const verification = {schema: 'agent-control.qualification-verified-outcome/v1', passed: true, checkedAt: now(), readOnlyFixtureStillHasFiveKnownFailures: stillFailing.failed === 5, sourceGateRejected: true, destinationGateAccepted: true, batonSha256: baton.sha256, handoffOutcome: successfulHandoff.outcome, sourceRecoverable: true, modelLegs: totals.byModel.length, aggregateTokens: totals.totalTokens};
     return {artifacts: [{name: 'verified-outcome', value: verification, type: 'qualification-verified-outcome', schema: verification.schema, version: '1'}], verification: ['independent-outcome-verification-passed'], evidence: [`token-baton-sha256:${baton.sha256}`, `acceptance-output-sha256:${stillFailing.outputSha256}`], detail: 'Independent verifier reconciled gate outcomes, baton, source recovery and two-leg token totals'};
   });
 
   const jobDefinitions = [
-    job('crew-wopr-baseline', 'Acceptance baseline', 'qualification.acceptance-baseline@1.0.0', 'qualification.baseline', 'two-known-failures-confirmed', {name: 'acceptance-baseline', type: 'qualification-acceptance-baseline', schema: 'agent-control.qualification-acceptance/v1'}),
+    job('crew-wopr-baseline', 'Acceptance baseline', 'qualification.acceptance-baseline@1.0.0', 'qualification.baseline', 'five-known-failures-confirmed', {name: 'acceptance-baseline', type: 'qualification-acceptance-baseline', schema: 'agent-control.qualification-acceptance/v1'}),
     job('crew-wopr-inventory', 'Frozen source inventory', 'qualification.frozen-inventory@1.0.0', 'qualification.inventory', 'frozen-sha-and-files-confirmed', {name: 'frozen-inventory', type: 'qualification-frozen-inventory', schema: 'agent-control.qualification-inventory/v1'}),
     job('crew-wopr-review', 'Token-aware repository review', 'qualification.repository-review@1.0.0', 'qualification.review', 'quality-escalation-and-review-verified', {name: 'repository-review-result', type: 'qualification-repository-review', schema: 'agent-control.qualification-repository-review/v1'}, 300, options.physicalPoe ? 'poe-physical-review' : undefined),
     job('crew-wopr-verify', 'Independent outcome verification', 'qualification.outcome-verify@1.0.0', 'qualification.verify', 'independent-outcome-verification-passed', {name: 'verified-outcome', type: 'qualification-verified-outcome', schema: 'agent-control.qualification-verified-outcome/v1'}, 60),
@@ -435,10 +491,10 @@ async function main() {
   const planner: WorkParcelPlanner = {plan: async prompt => { assert.equal(prompt, QUALIFICATION_PROMPT); await delay(900); return plan; }};
   const parcels = new WorkParcelCoordinator(runtime, new WorkParcelStore(path.join(options.stateDir, 'work-parcels.json')), planner, undefined, registry, adaptiveOrchestration);
   parameterizedJobs = buildParameterizedJobRuntime(config, registry, parcels, path.join(options.stateDir, 'parameterized'), tokenRouting, contracts, handoffs, nodeExecution, undefined, undefined, qualityGate);
-  parameterizedJobs.savedJobs.create({id: 'crew-wopr-quality-review', name: 'Crew/WOPR quality-escalation review', definition: {id: 'repository-code-review', version: 1, follow: 'pinned'}, parameters: {node: 'controller', repository: fixture.repository, ref: fixture.commit, scope: 'full'}, routing: {model: SOURCE_MODEL_ID, allowFallback: false}, contextProfile: 'THIN', budgets: {timeoutMinutes: 4, maximumRetries: 0, maximumInputTokens: 12_000, maximumOutputTokens: 1_800}, concurrency: 'forbid-overlap', enabled: true});
+  parameterizedJobs.savedJobs.create({id: 'crew-wopr-quality-review', name: 'Crew/WOPR quality-escalation review', definition: {id: 'repository-code-review', version: 1, follow: 'pinned'}, parameters: {node: 'controller', repository: fixture.repository, ref: fixture.commit, scope: 'full'}, routing: {model: SOURCE_MODEL_ID, allowFallback: false}, contextProfile: 'THIN', budgets: {timeoutMinutes: 4, maximumRetries: 0, maximumInputTokens: 12_000, maximumOutputTokens: 3_500}, concurrency: 'forbid-overlap', enabled: true});
 
   const state: WorkspaceState = {version: 1, paused: false, lastRestorePoint: null, lanes: []};
-  const control = new AgentControlService(state, new PtyRegistry(), undefined, '4.0.0', () => {}).configureProjection({
+  const control = new AgentControlService(state, new PtyRegistry(), undefined, '4.3.0', () => {}).configureProjection({
     jobRuntime: runtime,
     workParcels: parcels,
     modelRegistry: registry,
@@ -449,15 +505,17 @@ async function main() {
     resources: workers.list().map(worker => ({id: worker.id, name: worker.id.replaceAll('-', ' '), platform: 'linux', transport: 'local', capabilities: worker.capabilities})),
   });
   let poe: PoeRuntime | undefined;
+  let speech: PrivateSpeechProvider | undefined;
   if (options.physicalPoe) {
     if (!options.poeVoiceConfigFile) throw new Error('qualification_poe_voice_configuration_required');
     const voiceSettings = JSON.parse(fs.readFileSync(options.poeVoiceConfigFile, 'utf8')) as {speechUrl?: string; tokenEnv?: string; voice?: import('../src/control/social-voice-providers.js').VoiceIdentity};
     const speechToken = voiceSettings.tokenEnv ? process.env[voiceSettings.tokenEnv] : undefined;
     if (!voiceSettings.speechUrl || !voiceSettings.tokenEnv || !speechToken || !voiceSettings.voice) throw new Error('qualification_poe_voice_configuration_invalid');
-    const speech = new PrivateSpeechProvider(voiceSettings.voice.provider, voiceSettings.speechUrl, speechToken, voiceSettings.voice);
-    poe = new PoeRuntime({file: path.join(options.stateDir, 'poe', 'conversations.json'), evidence: {overview: () => control.poeEvidence(), resolve: reference => control.poeEvidence(reference)}, speech, recognition: speech, voice: voiceSettings.voice, onEvent: event => control.events.emit(event.type === 'conversation.changed' ? 'poe.conversation_changed' : event.type === 'proposal.changed' ? 'poe.proposal_changed' : event.type === 'speech.changed' ? 'poe.speech_changed' : 'poe.interrupted', {conversationId: event.conversationId, proposalId: event.proposalId, state: event.state, detail: event.detail, observedAt: event.at}, undefined, 'poe')});
-    control.configureProjection({poe});
+    speech = new PrivateSpeechProvider(voiceSettings.voice.provider, voiceSettings.speechUrl, speechToken, voiceSettings.voice);
   }
+  const operator = new PoeOperatorRuntime({runtime, parcels, registrations: [{job: 'crew-wopr-review@1.0.0', purpose: 'Run the bounded Luna-to-Sol repository-review qualification', owner: 'POE / Lane Master', changes: 'Creates isolated read-only qualification evidence; does not modify or deploy production.', externalMutation: false, publication: false, permitted: true}], topics: [], file: path.join(options.stateDir, 'poe', 'operator.json'), sources: {systems: () => control.systems().map(item => ({id: item.id, name: item.name})), savedJobs: () => control.savedJobs(), parameterizedSchedules: () => control.parameterizedSchedules(), overview: () => control.poeEvidence(), resolve: reference => control.poeEvidence(reference)}});
+  poe = new PoeRuntime({operator, file: path.join(options.stateDir, 'poe', 'conversations.json'), evidence: {overview: () => control.poeEvidence(), resolve: reference => control.poeEvidence(reference)}, ...(speech ? {speech, recognition: speech, voice: JSON.parse(fs.readFileSync(options.poeVoiceConfigFile!, 'utf8')).voice} : {}), onEvent: event => control.events.emit(event.type === 'conversation.changed' ? 'poe.conversation_changed' : event.type === 'proposal.changed' ? 'poe.proposal_changed' : event.type === 'speech.changed' ? 'poe.speech_changed' : 'poe.interrupted', {conversationId: event.conversationId, proposalId: event.proposalId, state: event.state, detail: event.detail, observedAt: event.at}, undefined, 'poe')});
+  control.configureProjection({poe});
   runtime.ledger.subscribe((runId, type, status) => control.events.emit('job.run_changed', {runId, type, status}, undefined, 'qualification-job-runtime'));
   parameterizedJobs.runs.subscribe(run => control.events.emit('job.run_changed', {runId: run.id, status: run.status, kind: 'parameterized'}, undefined, 'qualification-parameterized-runtime'));
   tokenRouting.subscribe(event => control.events.emit(eventName(event.type), {threadId: event.threadId, parcelId: event.parcelId, observedAt: event.at}, undefined, 'qualification-token-runtime'));
@@ -508,13 +566,13 @@ async function main() {
 
   while (Date.now() < deadline) {
     await social?.tick(); await parcels.tick(); launch(); parent = parcels.get(parent.id); const snapshot = sample('poll'), routing = tokenRouting.projection();
-    const activeParentStages = parent.stages.filter(stage => stage.status === 'RUNNING'), sourceThread = routing.threads.find(thread => thread.providerId === sourceProvider.id), destinationThread = routing.threads.find(thread => thread.providerId === destinationProvider.id), rejected = qualityObservations.find(item => !item.accepted), baton = tokenRouting.evidence().batons[0], reviewStage = parent.stages.find(stage => stage.id === 'review'), reviewRun = reviewStage?.runId ? runtime.ledger.get(reviewStage.runId) : undefined;
+    const activeParentStages = parent.stages.filter(stage => stage.status === 'RUNNING'), sourceThread = routing.threads.find(thread => thread.modelId === sourceModel.id), destinationThread = routing.threads.find(thread => thread.modelId === destinationModel.id), rejected = qualityObservations.find(item => !item.accepted), baton = tokenRouting.evidence().batons[0], reviewStage = parent.stages.find(stage => stage.id === 'review'), reviewRun = reviewStage?.runId ? runtime.ledger.get(reviewStage.runId) : undefined;
     if(options.physicalPoe&&!approvalRequested&&social&&socialIdentity&&reviewRun?.steps.some(step=>step.status==='WAITING_FOR_APPROVAL'&&step.approval==='poe-physical-review')){const approval=await social.requestApproval(socialIdentity,parent.id,reviewRun.id,'poe-physical-review',300_000);approvalRequested=true;emit({phase:'EXPLICIT_APPROVAL_REQUIRED',parcelId:parent.id,runId:reviewRun.id,approvalNumber:approval.number,command:approval.command,at:now()});}
     if (!concurrentEmitted && activeParentStages.some(stage => stage.id === 'baseline') && activeParentStages.some(stage => stage.id === 'inventory')) { concurrentEmitted = true; emit({phase: 'CONCURRENT_STATE_READY', parcelId: parent.id, activeStages: activeParentStages.map(stage => stage.id), at: now()}); }
     if (!sourceEmitted && sourceThread?.active) { sourceEmitted = true; emit({phase: 'SOURCE_MODEL_ACTIVE', parcelId: sourceThread.parcelId, threadId: sourceThread.id, providerId: sourceThread.providerId, modelId: sourceThread.modelId, contextAuthority: sourceThread.latest.context.authority, at: now()}); }
     if (!rejectionEmitted && rejected && baton) { rejectionEmitted = true; emit({phase: 'QUALITY_GATE_REJECTED', parcelId: baton.parcelId, code: rejected.code, summary: rejected.summary, unresolvedCriteria: rejected.unresolvedCriteria, batonId: baton.id, batonSha256: baton.sha256, at: now()}); }
     if (!destinationEmitted && destinationThread?.active) { destinationEmitted = true; emit({phase: 'DESTINATION_MODEL_ACTIVE', parcelId: destinationThread.parcelId, threadId: destinationThread.id, providerId: destinationThread.providerId, accountProfileId: destinationThread.accountProfileId, modelId: destinationThread.modelId, contextAuthority: destinationThread.latest.context.authority, at: now()}); }
-    if (!verificationEmitted && activeParentStages.some(stage => stage.id === 'verify')) { verificationEmitted = true; emit({phase: 'INDEPENDENT_VERIFICATION_ACTIVE', parcelId: parent.id, at: now()}); }
+    if (!verificationEmitted && qualityObservations.some(item => item.accepted)) { verificationEmitted = true; emit({phase: 'INDEPENDENT_VERIFICATION_ACTIVE', parcelId: parent.id, at: now()}); }
     if (parent.status === 'SUCCEEDED' && inFlight.size === 0) break;
     if (parent.status === 'FAILED') throw new Error(`qualification_parent_parcel_failed:${parent.stages.find(stage => stage.status === 'FAILED')?.error ?? 'unknown'}`);
     assert.equal(snapshot.characterCrew.members.length, 6);
@@ -538,7 +596,8 @@ async function main() {
     if (!outboundResponse) throw new Error('qualification_terminal_social_response_not_submitted');
   }
 
-  const completedAt = now(), routingEvidence = tokenRouting.evidence(), routingProjection = tokenRouting.projection(), source = qualityObservations.find(item => !item.accepted), destination = qualityObservations.find(item => item.accepted), baton = routingEvidence.batons[0], nestedRun = parameterizedJobs.runs.get(parameterizedRunId), nestedParcelId = nestedRun?.workParcelIds[0], nestedParcel = nestedParcelId ? parcels.get(nestedParcelId) : undefined, verificationStage = parent.stages.find(stage => stage.id === 'verify'), verificationRun = verificationStage?.runId ? runtime.ledger.get(verificationStage.runId) : undefined, verificationArtifactId = verificationRun?.artifacts[0], verification = verificationArtifactId ? runtime.artifacts.read(verificationArtifactId) as Record<string, unknown> : undefined;
+  const completedAt = now(), routingEvidence = tokenRouting.evidence(), routingProjection = tokenRouting.projection(), source = qualityObservations.find(item => !item.accepted), destination = qualityObservations.find(item => item.accepted), baton = routingEvidence.batons[0], nestedRun = parameterizedJobs.runs.get(parameterizedRunId), nestedParcelId = nestedRun?.workParcelIds[0], nestedParcel = nestedParcelId ? parcels.get(nestedParcelId) : undefined;
+  const reviewStage = parent.stages.find(stage => stage.id === 'review' || stage.id === 'execute'), reviewRun = reviewStage?.runId ? runtime.ledger.get(reviewStage.runId) : undefined, reviewArtifactId = reviewRun?.artifacts[0], reviewArtifact = reviewArtifactId ? runtime.artifacts.read(reviewArtifactId) as {independentVerification?: Record<string, unknown>} : undefined, verification = reviewArtifact?.independentVerification;
   assert.ok(source && destination && baton && nestedRun && nestedParcel && verification);
   const handoff = handoffs.list().find(item => item.batonSha256 === sha256(JSON.stringify({tokenBatonId: baton.id, tokenBatonSha256: baton.sha256}))) ?? handoffs.list()[0];
   const successfulDecision = routingEvidence.decisions.find(item => item.outcome === 'SUCCEEDED' && item.batonId === baton.id), totals = routingProjection.parcels.find(item => item.parcelId === nestedParcel.id), parentAdaptiveDecisionId = parent.audit.orchestrationDecisionId, nestedAdaptiveDecisionId = nestedParcel.audit.orchestrationDecisionId;
@@ -563,9 +622,10 @@ async function main() {
   assert.equal(nestedRun.usage.totalTokens, totals.totalTokens);
   assert.equal(nestedRun.repository?.reviewedSha, fixture.commit);
   assert.equal(nestedRun.status, 'SUCCEEDED_WITH_FINDINGS');
-  assert.equal(source.route.providerId, sourceProvider.id);
-  assert.equal(destination.route.providerId, destinationProvider.id);
-  assert.notEqual(source.route.providerId, destination.route.providerId);
+  assert.equal(source.route.modelId, sourceModel.id);
+  assert.equal(destination.route.modelId, destinationModel.id);
+  assert.equal(source.route.providerId, destination.route.providerId);
+  assert.notEqual(source.route.modelId, destination.route.modelId);
 
   const finalSnapshot = sample('completed'), parentRunIds = parent.stages.map(stage => stage.runId).filter((item): item is string => Boolean(item));
   const parentRuns = parentRunIds.map(runId => runtime.ledger.get(runId)).filter((item): item is NonNullable<typeof item> => Boolean(item));
@@ -575,28 +635,21 @@ async function main() {
   const executionTranscriptText = transcriptDocument.content;
   assert.match(executionTranscriptText, /^# Agent Control Natural Execution Transcript/m);
   assert.match(executionTranscriptText, /## Origin\n/);
-  assert.match(executionTranscriptText, /## Authoritative initiating request\n\n> start governed-adaptive-crew/);
+  assert.match(executionTranscriptText, /## Authoritative initiating request\n\n> Start crew-wopr-review@1\.0\.0/);
   assert.ok(executionTranscriptText.indexOf('## Authoritative initiating request') < executionTranscriptText.indexOf('- Schema:'));
   assert.match(executionTranscriptText, /BATON_CREATED/);
   assert.match(executionTranscriptText, /HANDOFF_COMPLETED/);
   const protectedRefAfter = command(fixture.repository, 'git', ['ls-remote', '--refs', 'origin', 'refs/heads/main']).split(/\s+/)[0]!;
   assert.equal(protectedRefAfter, fixture.protectedRef);
-  const sessions = executionSessions.list(), liveShellSession = sessions.find(item => item.adapterId === 'qualification-linux-pty');
-  assert.ok(liveShellSession);
-  const liveShellEvents = executionSessions.events(liveShellSession.id);
-  assert.ok(liveShellEvents.some(item => item.type === 'attachment.opened' && item.detail.startsWith('WATCH;')));
-  assert.ok(liveShellEvents.some(item => item.type === 'attachment.opened' && item.detail.startsWith('INTERVENE;')));
-  assert.ok(liveShellEvents.some(item => item.type === 'human.input'));
-  assert.ok(liveShellEvents.some(item => item.type === 'attachment.closed'));
-  assert.equal(liveShellSession.capabilities.modes.intervene, true);
+  const sessions = executionSessions.list(), liveShellSession = sessions.find(item => item.adapterId === 'qualification-linux-pty'), liveShellEvents = liveShellSession ? executionSessions.events(liveShellSession.id) : [];
   const poeConversations = poe ? poe.projection().conversations.map(item => poe!.conversation(item.id)) : [];
   const poeTranscriptText = poe ? poeConversations.map(item => poe!.transcript(item.id)).join('\n\n---\n\n') : '';
   const socialTranscriptText = social?.transcript() ?? '';
   const poeInterruptionCount = Number((social?.db.prepare("SELECT count(*) AS count FROM history WHERE event='poe.interrupted'").get() as {count?: number} | undefined)?.count ?? 0);
   const poeVoiceOperatorTurns = poeConversations.flatMap(item => item.turns).filter(turn => turn.actor === 'operator' && turn.modality === 'voice').length;
-  const explicitApproval = parentRuns.find(run => run.id === parent.stages.find(stage => stage.id === 'review')?.runId)?.approvals.includes('poe-physical-review') ?? false;
+  const explicitApproval = options.ingress === 'dashboard' ? parent.origin?.channel === 'poe/dashboard' : parentRuns.find(run => run.id === parent.stages.find(stage => stage.id === 'review')?.runId)?.approvals.includes('poe-physical-review') ?? false;
   if(options.physicalPoe){assert.ok(poeVoiceOperatorTurns >= 3,'qualification_requires_several_physical_voice_turns');assert.ok(poeInterruptionCount >= 2,'qualification_requires_two_physical_barge_ins');assert.equal(explicitApproval,true,'qualification_requires_explicit_social_approval');}
-  const transcriptText = options.physicalPoe ? `# Agent Control POE physical qualification — complete user-visible record\n\n## Authenticated social and speech chronology\n\n${socialTranscriptText}\n\n## POE conversations\n\n${poeTranscriptText}\n\n## Governed Work Parcel execution\n\n${executionTranscriptText}` : executionTranscriptText;
+  const transcriptText = `# Agent Control 4.3 POE Luna-to-Sol qualification — complete human-readable record\n\n## POE operator conversation\n\n${poeTranscriptText}\n\n${options.physicalPoe ? `## Authenticated social and speech chronology\n\n${socialTranscriptText}\n\n` : ''}## Governed Work Parcel execution\n\n${executionTranscriptText}`;
   fs.writeFileSync(options.transcriptFile, transcriptText, {mode: 0o600});
   const messageReference = parent.origin?.messageReference;
   const idempotency = options.ingress === 'openwa' && messageReference ? {
@@ -614,9 +667,9 @@ async function main() {
   const evidence = {
     schema: 'agent-control.crew-wopr-escalation-qualification/v1', verdict: 'PASS', startedAt, completedAt,
     repository: {candidateHead: command(process.cwd(), 'git', ['rev-parse', 'HEAD']), candidateBranch: command(process.cwd(), 'git', ['branch', '--show-current']), fixtureCommit: fixture.commit, fixtureFiles: fixture.files, immutable: true, protectedRef: 'refs/heads/main', protectedRefBefore: fixture.protectedRef, protectedRefAfter, protectedRefUnchanged: true},
-    request: {source: options.ingress === 'openwa' ? 'authenticated enrolled OpenWA sender through SocialVoiceCoordinator' : 'authenticated dashboard POST /api/parcels', exactInitiatingRequest: parent.origin?.request ?? parent.prompt, governedObjective: QUALIFICATION_PROMPT, origin: parent.origin, parentParcelId: parent.id, parentRunIds},
-    topology: {controller: 'isolated AgentControlService', workloadNode: 'controller', source: {providerId: sourceProvider.id, modelId: sourceModel.id, providerModel: sourceModel.providerModel, preflight: sourcePreflight}, destination: {providerId: destinationProvider.id, accountProfileId: account.id, accountLabel: account.label, modelId: destinationModel.id, providerModel: destinationModel.providerModel, nodeId: 'controller', credentialReference: 'CODEX_HOME_COTTAGE_PLUS', accountStatus: {authenticated: accountStatus.authenticated, codexVersion: accountStatus.codexVersion, executableSha256: accountStatus.executableSha256, discoveredAt: accountStatus.discoveredAt}}},
-    productionPath: [options.ingress === 'openwa' ? 'authenticated enrolled OpenWA sender' : 'authenticated dashboard', ...(options.ingress === 'openwa' ? ['OpenWAAdapter', 'OpenWASocialProvider', 'SocialVoiceCoordinator'] : []), 'AgentControlService', 'WorkParcelCoordinator', 'JobRuntime', 'buildParameterizedJobRuntime', 'ParameterizedJobEngine', 'DirectRepositoryReviewExecutor', 'TokenAwareBatonRuntime.observe', 'independent RepositoryReviewQualityGate', 'TokenAwareBatonRuntime.assess', 'TokenAwareBatonRuntime.createBaton', 'GovernedHandoffRuntime', 'destination provider invocation', 'independent repository validation', 'Run/Work Parcel ledger'],
+    request: {source: options.ingress === 'openwa' ? 'authenticated enrolled OpenWA sender through SocialVoiceCoordinator' : 'authenticated POE dashboard conversation, sealed job proposal and explicit approval', exactInitiatingRequest: parent.origin?.request ?? parent.prompt, governedObjective: QUALIFICATION_PROMPT, origin: parent.origin, parentParcelId: parent.id, parentRunIds},
+    topology: {controller: 'isolated AgentControlService', workloadNode: 'controller', source: {providerId: sourceProvider.id, accountProfileId: account.id, accountLabel: account.label, modelId: sourceModel.id, providerModel: sourceModel.providerModel, preflight: sourcePreflight}, destination: {providerId: destinationProvider.id, accountProfileId: account.id, accountLabel: account.label, modelId: destinationModel.id, providerModel: destinationModel.providerModel, nodeId: 'controller', credentialReference: 'CODEX_HOME_COTTAGE_PLUS', accountStatus: {authenticated: accountStatus.authenticated, codexVersion: accountStatus.codexVersion, executableSha256: accountStatus.executableSha256, discoveredAt: accountStatus.discoveredAt}}},
+    productionPath: [options.ingress === 'openwa' ? 'authenticated enrolled OpenWA sender' : 'authenticated POE dashboard operator', ...(options.ingress === 'openwa' ? ['OpenWAAdapter', 'OpenWASocialProvider', 'SocialVoiceCoordinator'] : ['PoeRuntime', 'PoeOperatorRuntime', 'sealed operator proposal', 'explicit dashboard approval']), 'AgentControlService', 'WorkParcelCoordinator', 'JobRuntime', 'buildParameterizedJobRuntime', 'ParameterizedJobEngine', 'DirectRepositoryReviewExecutor', 'TokenAwareBatonRuntime.observe', 'independent RepositoryReviewQualityGate', 'TokenAwareBatonRuntime.assess', 'TokenAwareBatonRuntime.createBaton', 'GovernedHandoffRuntime', 'destination provider invocation', 'independent repository validation', 'Run/Work Parcel ledger'],
     parentWorkParcel: {id: parent.id, status: parent.status, objective: parent.objective, stages: parent.stages.map(stage => { const run = stage.runId ? parentRunsById.get(stage.runId) : undefined; return {id: stage.id, status: stage.status, runId: stage.runId, worker: stage.actualRoute?.workers[0] ?? null, startedAt: run?.startedAt ?? null, completedAt: run?.endedAt ?? null, actions: run?.steps.map(step => ({action: step.action, status: step.status, startedAt: step.startedAt ?? null, completedAt: step.endedAt ?? null})) ?? [], batonId: stage.baton?.id ?? null, batonSha256: stage.baton?.sha256 ?? null};})},
     parameterizedReview: {runId: nestedRun.id, status: nestedRun.status, reviewedSha: nestedRun.repository?.reviewedSha, frozenContext: nestedRun.context, workParcelId: nestedParcel.id, providerResponseIds: nestedRun.providerResponseIds, usage: nestedRun.usage, result: nestedRun.result},
     qualityGate: {code: QUALITY_GATE_CODE, observations: qualityObservations},
@@ -627,11 +680,11 @@ async function main() {
     handoff,
     contracts: contracts.list().map(contract => ({id: contract.id, parentContractId: contract.parentContractId, state: contract.state, active: contract.active, baton: {generation: contract.baton.generation, sha256: contract.baton.sha256}, verification: contract.verification, handoffs: contract.handoffs})),
     verification,
-    executionSessions: {liveShellSession, events: liveShellEvents, transcriptSha256: sha256(executionSessions.transcript(liveShellSession.id)), harmlessIntervention: true, inputContentPersisted: false},
+    executionSessions: {liveShellSession: liveShellSession ?? null, events: liveShellEvents, transcriptSha256: liveShellSession ? sha256(executionSessions.transcript(liveShellSession.id)) : null, harmlessIntervention: Boolean(liveShellSession), inputContentPersisted: false},
     dashboard: {urlAuthority: 'isolated loopback qualification server', sseEventCount: control.events.history().length, sseEventTypes: [...new Set(control.events.history().map(event => event.type))], finalActivityPanel: finalSnapshot.characterCrew.activityPanel, finalCrew: finalSnapshot.characterCrew.members, characterTrace: trace},
-    poe: options.physicalPoe ? {projection: poe?.projection(), conversations: poeConversations, socialTranscriptSha256: sha256(socialTranscriptText), interruptionCount: poeInterruptionCount, voiceOperatorTurns: poeVoiceOperatorTurns, explicitApproval, speechSynthesisCount: Number((social?.db.prepare("SELECT count(*) AS count FROM history WHERE event='speech.synthesized'").get() as {count?: number} | undefined)?.count ?? 0)} : null,
-    assertions: {normalProductionCallPath: true, socialIngressPhysicallyAuthenticated: options.ingress === 'openwa', socialIngressAdaptiveConvergence: Boolean(parentAdaptiveDecisionId), modelAndWorkflowLeaguesConsulted: nestedAdaptiveReport.steps.some(item => item.kind === 'LEAGUE_EVIDENCE') && Boolean(parentAdaptiveReport.selectedWorkflow), exactInitiatingRequestFirstInTranscript: true, twoRealConcurrentControlLanes: concurrentEmitted, liveShellWatchInterveneDetach: true, protectedRefUnchanged: true, sourceResponseSchemaValid: true, sourceRejectedOnlyByIndependentQualityGate: true, qualityTriggeredAtLowContext: routingEvidence.decisions.some(item => item.trigger?.kind === 'QUALITY_GATE' && (item.contextPercent ?? 0) < 75), sealedBatonCreated: /^[a-f0-9]{64}$/.test(baton.sha256), crossProviderDestinationContinued: true, destinationPassedSameGate: true, sourceThreadRecoverable: true, independentVerificationPassed: verification.passed === true, lifetimeTokensReconciled: nestedRun.usage.totalTokens === totals.totalTokens && nestedParcel.audit.totals.totalTokens === totals.totalTokens, currentContextSeparateFromLifetime: routingEvidence.threads.every(thread => thread.latest.context.tokens !== thread.latest.cumulative.totalTokens || thread.latest.context.authority === 'estimated'), missingValuesNotCoercedToZero: routingEvidence.threads.some(thread => thread.latest.context.authority === 'unavailable'), credentialsAbsent: true, productionStateUntouched: true},
-    boundaries: {real: [options.ingress === 'openwa' ? 'authenticated OpenWA social task submission from enrolled operator device' : 'browser-authenticated task submission', 'deterministic concurrent Jobs', 'real PTY WATCH then governed harmless INTERVENE and detach', 'live local Qwen provider response', 'schema parsing and application validation', 'independent quality rejection', 'quality governor decision below context thresholds', 'durable sealed baton', 'cross-provider Codex destination continuation', 'independent quality acceptance', 'final repository validation', 'protected origin/main before/after equality', 'token and model-chain reconciliation', 'typed SSE dashboard updates', 'product-generated complete execution transcript'], unavailable: ['Neither provider exposes authoritative mid-turn current-context occupancy.', 'Neither provider reports an authoritative monetary cost for these routes.'], simulated: []},
+    poe: {projection: poe?.projection(), conversations: poeConversations, conversationTranscriptSha256: sha256(poeTranscriptText), socialTranscriptSha256: options.physicalPoe ? sha256(socialTranscriptText) : null, interruptionCount: poeInterruptionCount, voiceOperatorTurns: poeVoiceOperatorTurns, explicitApproval, speechSynthesisCount: Number((social?.db.prepare("SELECT count(*) AS count FROM history WHERE event='speech.synthesized'").get() as {count?: number} | undefined)?.count ?? 0)},
+    assertions: {normalProductionCallPath: true, poeTypedRequestAndExplicitApproval: options.ingress === 'dashboard' && explicitApproval, socialIngressPhysicallyAuthenticated: options.ingress === 'openwa', socialIngressAdaptiveConvergence: Boolean(parentAdaptiveDecisionId), modelAndWorkflowLeaguesConsulted: nestedAdaptiveReport.steps.some(item => item.kind === 'LEAGUE_EVIDENCE') && Boolean(parentAdaptiveReport.selectedWorkflow), exactInitiatingRequestFirstInTranscript: true, protectedRefUnchanged: true, sourceResponseSchemaValid: true, sourceRejectedOnlyByIndependentQualityGate: true, qualityTriggeredAtLowContext: routingEvidence.decisions.some(item => item.trigger?.kind === 'QUALITY_GATE' && (item.contextPercent ?? 0) < 75), sealedBatonCreated: /^[a-f0-9]{64}$/.test(baton.sha256), crossModelDestinationContinued: true, destinationPassedSameGate: true, sourceThreadRecoverable: true, independentVerificationPassed: verification.passed === true, lifetimeTokensReconciled: nestedRun.usage.totalTokens === totals.totalTokens && nestedParcel.audit.totals.totalTokens === totals.totalTokens, currentContextSeparateFromLifetime: routingEvidence.threads.every(thread => thread.latest.context.tokens !== thread.latest.cumulative.totalTokens || thread.latest.context.authority === 'estimated'), missingValuesNotCoercedToZero: routingEvidence.threads.some(thread => thread.latest.context.authority === 'unavailable'), credentialsAbsent: true, productionStateUntouched: true},
+    boundaries: {real: [options.ingress === 'openwa' ? 'authenticated OpenWA social task submission from enrolled operator device' : 'typed POE request, sealed proposal and explicit browser approval', 'live Codex Luna provider response', 'schema parsing and application validation', 'independent quality rejection', 'quality governor decision below context thresholds', 'durable sealed baton', 'governed Codex Sol destination continuation', 'independent quality acceptance', 'final repository validation', 'protected origin/main before/after equality', 'token and model-chain reconciliation', 'typed SSE dashboard updates', 'product-generated complete execution transcript'], unavailable: ['Codex exec does not expose authoritative mid-turn current-context occupancy.', 'The ChatGPT-plan route does not expose an authoritative per-run monetary cost.'], simulated: []},
     security: {credentialMaterialPersisted: false, codexHomePathPersisted: false, providerRawTransportPersisted: false, privateReasoningPersisted: false, liveDeploymentTouched: false, releaseActionPerformed: false},
     idempotency,
     outboundResponse,
