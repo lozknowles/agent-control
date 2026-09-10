@@ -120,15 +120,20 @@ export class RunLedger {
   private save() { writeJsonAtomic(this.file, {version: 1, runs: this.list(), schedules: this.scheduleStates()} satisfies LedgerSnapshot, true); }
 }
 
-export interface JobRuntimeOptions {now?: () => Date; approval?: (policy: string, run: RunRecord) => boolean; efficiency?: HarnessEfficiencyLedgerPort; safety?: RuntimeSafetySupervisorPort; defaultRecoveryDeadlineSeconds?: number; ownedExecutionFactory?: (scope: ExecutionSessionScope) => OwnedExecution; executionSessions?: ExecutionSessionRuntime;}
+export interface JobLaneExecutionPort {
+  started(input: {runId: string; stepId: string; worker: WorkerRegistration; modelId: string | null; at: string}): void;
+  finished(input: {runId: string; stepId: string; worker: WorkerRegistration; status: StepStatus; at: string}): void;
+}
+export interface JobRuntimeOptions {now?: () => Date; approval?: (policy: string, run: RunRecord) => boolean; efficiency?: HarnessEfficiencyLedgerPort; safety?: RuntimeSafetySupervisorPort; defaultRecoveryDeadlineSeconds?: number; ownedExecutionFactory?: (scope: ExecutionSessionScope) => OwnedExecution; executionSessions?: ExecutionSessionRuntime; laneExecution?: JobLaneExecutionPort;}
 export interface JobDispatch {runId: string; completion: Promise<RunRecord | undefined>;}
 export class JobRuntime {
   private readonly controllers = new Map<string, AbortController>();
   private readonly clock: () => Date;
-  constructor(readonly catalog: JobCatalog, readonly actions: ActionRegistry, readonly workers: WorkerRegistry, readonly ledger: RunLedger, readonly artifacts: ArtifactStore, readonly locks: ResourceLockManager, options: JobRuntimeOptions = {}) { this.clock = options.now ?? (() => new Date()); this.approval = options.approval ?? (() => false); this.efficiency = options.efficiency; this.safety = options.safety; this.defaultRecoveryDeadlineSeconds = options.defaultRecoveryDeadlineSeconds ?? 900; this.ownedExecutionFactory = options.ownedExecutionFactory ?? (scope => new OwnedProcessManager(undefined, options.executionSessions, scope)); }
+  constructor(readonly catalog: JobCatalog, readonly actions: ActionRegistry, readonly workers: WorkerRegistry, readonly ledger: RunLedger, readonly artifacts: ArtifactStore, readonly locks: ResourceLockManager, options: JobRuntimeOptions = {}) { this.clock = options.now ?? (() => new Date()); this.approval = options.approval ?? (() => false); this.efficiency = options.efficiency; this.safety = options.safety; this.laneExecution = options.laneExecution; this.defaultRecoveryDeadlineSeconds = options.defaultRecoveryDeadlineSeconds ?? 900; this.ownedExecutionFactory = options.ownedExecutionFactory ?? (scope => new OwnedProcessManager(undefined, options.executionSessions, scope)); }
   private readonly approval: (policy: string, run: RunRecord) => boolean;
   private readonly efficiency?: HarnessEfficiencyLedgerPort;
   readonly safety?: RuntimeSafetySupervisorPort;
+  private readonly laneExecution?: JobLaneExecutionPort;
   private readonly defaultRecoveryDeadlineSeconds: number;
   private readonly ownedExecutionFactory: (scope: ExecutionSessionScope) => OwnedExecution;
 
@@ -262,6 +267,7 @@ export class JobRuntime {
     const controller = new AbortController(), sessionScope: ExecutionSessionScope = {runId: run.id, jobId: run.jobId, jobVersion: run.jobVersion, stepId: step.id, actionId: step.action, workerId: worker.id, nodeId: run.trigger.modelRoute?.nodeId ?? worker.id, ...(run.trigger.parcelContext?.parcelId ? {parcelId: run.trigger.parcelContext.parcelId} : {}), crewRole: crewRole(step.action), ...(run.trigger.modelRoute?.providerId ? {providerId: run.trigger.modelRoute.providerId} : {}), ...(run.trigger.modelRoute?.accountLabel ? {accountLabel: run.trigger.modelRoute.accountLabel} : {}), ...(run.trigger.modelRoute?.modelId ? {modelId: run.trigger.modelRoute.modelId} : {}),interactionPolicy:registeredAction.governance?'WATCH_ONLY':'GOVERNED_INTERVENTION'}, ownedExecution = this.ownedExecutionFactory(sessionScope), retry = definition.retry ?? run.effectiveJob.spec.retry ?? {attempts: 0, backoffSeconds: 0}, attemptStartedAt = this.clock().toISOString();
     this.controllers.set(run.id, controller); this.workers.claim(worker.id); step.status = 'RUNNING'; step.waitingReason = undefined; step.nextAttemptAt = undefined; step.startedAt ??= attemptStartedAt; run.startedAt ??= step.startedAt; run.status = 'RUNNING';
     if (!run.selectedWorkers.includes(worker.id)) run.selectedWorkers.push(worker.id);
+    this.laneExecution?.started({runId: run.id, stepId: step.id, worker: structuredClone(worker), modelId: run.trigger.modelRoute?.modelId ?? null, at: attemptStartedAt});
     if (retry.attempts > 0) { step.recoveryDeadlineAt ??= new Date(this.clock().getTime() + (retry.overallDeadlineSeconds ?? this.defaultRecoveryDeadlineSeconds) * 1000).toISOString(); step.remainingRetryBudget = Math.max(0, retry.attempts - step.attempts.length); }
     const attempt: StepAttempt = {attempt: step.attempts.length + 1, startedAt: attemptStartedAt, workerId: worker.id}; step.attempts.push(attempt); this.setExternalOperationState(step, 'EXECUTING'); this.ledger.update(run, 'step.dispatched');
     const timeoutSeconds = definition.timeoutSeconds, wallStartedAt = Date.now();
@@ -333,7 +339,7 @@ export class JobRuntime {
           step.status = 'FAILED'; step.endedAt = this.clock().toISOString(); step.remainingRetryBudget = Math.max(0, retry.attempts - step.attempts.length + 1); this.cancelDependents(run, step.id); run.errors.push(`${step.id}:${failure.failureClass}:${safeFailureMessage(failure.message)}${failure.retryable && !retryAt ? ':recovery_deadline_exhausted' : ''}`); run.status = failure.failureClass === 'verification' ? 'DEGRADED' : 'FAILED'; run.endedAt = step.endedAt; const ids = this.invocationIds(run); if (ids.length) { this.efficiency?.finalizePending(ids, 'FAILED', failure.message, 'executor_failure', run.endedAt); this.efficiency?.markVerification(ids, 'FAIL', run.status); } this.ledger.update(run, 'step.failed', {recoveryKind: failure.recoveryKind, recoveryDeadlineAt: step.recoveryDeadlineAt, remainingRetryBudget: step.remainingRetryBudget});
         }
       }
-    } finally { if (timeoutTimer) clearTimeout(timeoutTimer); if (controller.signal.aborted && !attempt.cleanup) { const cleanup = await ownedExecution.terminateAll('execution_aborted'); attempt.cleanup = cleanup; step.cleanup = cleanup; if (cleanup.outcome !== 'confirmed') safeToReleaseWorker = false; } if (safeToReleaseWorker) this.workers.release(worker.id); this.controllers.delete(run.id); }
+    } finally { if (timeoutTimer) clearTimeout(timeoutTimer); if (controller.signal.aborted && !attempt.cleanup) { const cleanup = await ownedExecution.terminateAll('execution_aborted'); attempt.cleanup = cleanup; step.cleanup = cleanup; if (cleanup.outcome !== 'confirmed') safeToReleaseWorker = false; } this.laneExecution?.finished({runId: run.id, stepId: step.id, worker: structuredClone(worker), status: step.status, at: this.clock().toISOString()}); if (safeToReleaseWorker) this.workers.release(worker.id); this.controllers.delete(run.id); }
   }
 
   private nextRetryAt(step: RunRecord['steps'][number], retry: RetryPolicy) {

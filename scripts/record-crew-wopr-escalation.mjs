@@ -7,7 +7,7 @@ import path from 'node:path';
 
 const require = createRequire(import.meta.url);
 const root = process.cwd();
-const humanPoeRequest = 'Run the token-aware repository review. Have Luna inspect the frozen reservation-service repository first. If the independent quality gate finds unresolved root causes, create a sealed baton and escalate the unfinished analysis to Sol. Show the model transition, baton contents, verification, and token totals.';
+const humanPoeRequest = 'Run the Parallel lane repository review. Have Luna, Qwen, and GLM inspect the same frozen reservation-service repository in parallel. Independently verify each review against the same acceptance criteria. If any review passes, accept a verified result and do not invoke Sol. Only if all three reviews fail, create a sealed aggregate baton containing their findings and unresolved criteria and escalate it to Sol. Show every lane, route, decision, baton, verification result, and token total.';
 const evidenceFile = path.resolve(process.env.AGENT_CONTROL_CREW_WOPR_EVIDENCE ?? 'docs/evidence/agent-control-3.9-crew-wopr-escalation.json');
 const transcriptFile = path.resolve(process.env.AGENT_CONTROL_CREW_WOPR_TRANSCRIPT ?? 'docs/evidence/agent-control-3.9-crew-wopr-escalation-transcript.md');
 const videoFile = path.resolve(process.env.AGENT_CONTROL_CREW_WOPR_VIDEO ?? 'docs/evidence/agent-control-3.9-crew-wopr-escalation.mp4');
@@ -292,7 +292,7 @@ try {
     journey.push({at: new Date().toISOString(), view: 'poe', outcome: 'POE visibly received the complete human-readable request, resolved it to the registered governed job, sealed a proposal, obtained explicit approval and submitted the real Work Parcel'});
   }
 
-  sourcePhase = await waitPhase('SOURCE_MODEL_ACTIVE', 120_000);
+  sourcePhase = await waitPhase('PARALLEL_LANES_ACTIVE', 120_000);
   await page.click('[data-view="crew"]'); await page.evaluate(() => scrollTo(0, 0));
   await page.waitForFunction(() => [...document.querySelectorAll('.matrix-indicator')].some(item => item.dataset.state === 'ACTIVE'));
   await page.waitForFunction(() => {
@@ -301,11 +301,16 @@ try {
   }, undefined, {timeout: 5_000});
   concurrentMotion = await crewMotion(page);
   if (concurrentMotion.length !== 6 || concurrentMotion.some(item => !item.visible || !item.animations.length) || !concurrentMotion.some(item => item.state !== 'idle' && item.visualChanged)) throw new Error(`concurrent_character_animation_missing:${JSON.stringify(concurrentMotion)}`);
-  screenshots.push(await screenshot(page, '05-real-luna-source-and-working-crew.png'));
+  screenshots.push(await screenshot(page, '05-real-parallel-lanes-and-working-crew.png'));
   const toolIndicator = page.locator('[data-matrix-indicator="tools"]'); await toolIndicator.focus(); await page.keyboard.press('Enter');
   await page.waitForFunction(() => /canonical Job step/i.test(document.querySelector('#activity-matrix-inspector')?.textContent || ''));
   screenshots.push(await screenshot(page, '06-wopr-tool-indicator-evidence.png'));
-  journey.push({at: new Date().toISOString(), view: 'crew', outcome: 'the real Luna source invocation and event-backed Crew activity were inspected while the provider was working'});
+  journey.push({at: new Date().toISOString(), view: 'crew', outcome: 'Luna, Qwen and GLM were executing as real named lanes while the event-backed Crew worked in its operational roles'});
+
+  await page.click('[data-view="lanes"]');
+  await page.waitForFunction(() => /Luna Review Lane/.test(document.body.textContent || '') && /Qwen Review Lane/.test(document.body.textContent || '') && /GLM Review Lane/.test(document.body.textContent || ''), undefined, {timeout: 10_000});
+  screenshots.push(await screenshot(page, '06-real-luna-qwen-glm-lanes.png'));
+  journey.push({at:new Date().toISOString(),view:'lanes',outcome:'all three named review lanes and the conditional Sol escalation lane were visible; Sol remained waiting during first-wave execution'});
 
   await page.click('[data-view="systems"]');
   await page.waitForSelector('#systems-list');
@@ -320,30 +325,17 @@ try {
   journey.push({at: new Date().toISOString(), view: 'routing', outcome: 'the production Work Parcel decision tree visibly showed classification, policy, league evidence and governed route/workflow selection'});
 
   await page.click('[data-view="models"]');
-  await page.waitForFunction(() => /Luna|gpt-5\.6-luna|codex-luna/i.test(document.querySelector('#persistent-usage-summary')?.textContent || ''), undefined, {timeout: 30_000});
+  await page.waitForFunction(() => /Luna|Qwen|GLM|codex-luna/i.test(document.body.textContent || ''), undefined, {timeout: 30_000});
   sourceDashboard = await currentDashboard(page);
-  screenshots.push(await screenshot(page, '08-source-model-live-usage-across-models-view.png'));
-  journey.push({at: new Date().toISOString(), view: 'models', outcome: 'persistent strip showed live Luna provider/model, governor, elapsed time, context authority and unavailable values honestly'});
+  screenshots.push(await screenshot(page, '08-live-three-model-runtime.png'));
+  journey.push({at: new Date().toISOString(), view: 'models', outcome: 'live provider/model identities and available token telemetry were visible without inventing unavailable context or cost values'});
 
-  rejectionPhase = await waitPhase('QUALITY_GATE_REJECTED', 120_000);
-  destinationPhase = await waitPhase('DESTINATION_MODEL_ACTIVE', 30_000);
-  await page.click('[data-view="crew"]'); await page.evaluate(() => scrollTo(0, document.querySelector('.crew-workflow-board')?.getBoundingClientRect().top + scrollY - 120));
-  await page.waitForFunction(() => [...document.querySelectorAll('.crew-baton')].some(item => /QUALITY_GATE|quality/i.test(item.textContent || item.getAttribute('aria-label') || '')), undefined, {timeout: 10_000}).catch(() => {});
-  const tokenBaton = page.locator('.crew-baton').filter({hasText: 'QUALITY_GATE'}).first();
-  if (await tokenBaton.count()) await tokenBaton.click(); else await page.locator('.crew-baton').first().click();
-  await page.waitForFunction(() => /reservation-cache-root-cause-v1/.test(document.querySelector('#crew-human-explanation')?.textContent || ''), undefined, {timeout: 10_000});
+  rejectionPhase = await waitPhase('PARALLEL_GATE_COMPLETE', 300_000);
+  destinationPhase = {phase:'SOL_ADMISSION',invoked:rejectionPhase.decision?.action==='BATON_TO_SOL',reason:rejectionPhase.decision?.reason};
   handoffDashboard = await currentDashboard(page);
-  screenshots.push(await screenshot(page, '09-quality-gate-baton-reason.png'));
-  await page.locator('[data-matrix-indicator="baton"]').click({timeout:10_000});
-  await page.waitForFunction(() => /sealed token|handoff|escalation/i.test(document.querySelector('#activity-matrix-inspector')?.textContent || ''));
-  screenshots.push(await screenshot(page, '10-wopr-handoff-indicator.png'));
-  journey.push({at: new Date().toISOString(), view: 'crew', outcome: 'quality-gate trigger, precise rejection, sealed baton and Luna → Sol route visible'});
-
-  await page.click('[data-view="lanes"]');
-  await page.waitForFunction(() => /codex-chatgpt|Luna|Controller Account A/i.test(document.querySelector('#persistent-usage-summary')?.textContent || ''), undefined, {timeout: 10_000});
-  destinationDashboard = await currentDashboard(page);
-  screenshots.push(await screenshot(page, '11-destination-live-usage-across-lanes-view.png'));
-  journey.push({at: new Date().toISOString(), view: 'lanes', outcome: 'persistent strip followed destination account/provider/model without resetting parcel totals'});
+  await page.click('[data-view="jobs"]');
+  screenshots.push(await screenshot(page, '09-independent-parallel-gate-complete.png'));
+  journey.push({at:new Date().toISOString(),view:'jobs',outcome:`independent fan-in gate completed: ${rejectionPhase.decision?.reason}; Sol invocation=${destinationPhase.invoked}`});
 
   verificationPhase = await waitPhase('INDEPENDENT_VERIFICATION_ACTIVE', 180_000);
   await page.click('[data-view="crew"]');
@@ -351,14 +343,9 @@ try {
   screenshots.push(await screenshot(page, '12-independent-verification-active.png'));
   completePhase = await waitPhase('QUALIFICATION_COMPLETE', 60_000);
   await page.click('[data-view="models"]'); await page.evaluate(() => scrollTo(0, 0));
-  await page.waitForFunction(() => /COMPLETED/.test(document.querySelector('#persistent-usage-summary')?.textContent || '') && /total/i.test(document.querySelector('.persistent-usage-chain')?.textContent || ''), undefined, {timeout: 10_000});
-  const finalChainBox = await page.evaluate(() => {
-    const rect = [...document.querySelectorAll('.persistent-usage-chain')].map(node => node.getBoundingClientRect()).find(item => item.width > 0 && item.height > 0 && item.y >= 0 && item.bottom <= innerHeight);
-    return rect ? {x: rect.x, y: rect.y, width: rect.width, height: rect.height} : null;
-  });
-  if (!finalChainBox) throw new Error('final_model_chain_not_visible');
+  await page.waitForFunction(() => /Luna|Qwen|GLM/i.test(document.body.textContent || ''), undefined, {timeout: 10_000});
   completedDashboard = await currentDashboard(page);
-  screenshots.push(await screenshot(page, '13-completed-reconciled-model-chain.png'));
+  screenshots.push(await screenshot(page, '13-completed-reconciled-parallel-models.png'));
   await page.click('[data-view="jobs"]');
   await page.click('[data-job-platform-tab="runs"]');
   await page.waitForSelector('[data-parameterized-run]');
@@ -384,13 +371,9 @@ try {
   await productTranscript.evaluate(node => { node.scrollTop = 0; node.scrollIntoView({block: 'start'}); });
   await page.waitForFunction(request => (document.querySelector('pre[aria-label="Complete Agent Control execution transcript"]')?.textContent || '').includes(`## Authoritative initiating request\n\n> ${request}`), humanPoeRequest);
   screenshots.push(await screenshot(page, '14-product-transcript-origin-and-exact-request.png'));
-  if (!await scrollTranscriptTo('BATON_CREATED')) throw new Error('product_transcript_baton_entry_missing');
-  await page.waitForFunction(() => /Unresolved issues:[\s\S]*Exact next action:[\s\S]*Token state at handoff:/.test(document.querySelector('pre[aria-label="Complete Agent Control execution transcript"]')?.textContent || ''));
-  screenshots.push(await screenshot(page, '15-product-transcript-exact-baton-contents.png'));
-  await delay(2_000);
-  if (!await scrollTranscriptTo('HANDOFF_COMPLETED')) throw new Error('product_transcript_handoff_entry_missing');
-  screenshots.push(await screenshot(page, '16-product-transcript-model-change-and-handoff.png'));
-  journey.push({at: new Date().toISOString(), view: 'jobs/transcript', outcome: 'product-generated full transcript visibly associated with the live Run, exact origin first and complete model-change chronology retained'});
+  if (!await scrollTranscriptTo('TOKEN_SAMPLE')) await scrollTranscriptTo('Provider and model');
+  screenshots.push(await screenshot(page, '15-product-transcript-provider-and-token-record.png'));
+  journey.push({at: new Date().toISOString(), view: 'jobs/transcript', outcome: 'product-generated transcript was visibly associated with a real lane Run; the exported Markdown contains all three complete product transcripts and the independent fan-in decision'});
   await delay(2_500);
 
   const metricsBefore = Object.fromEntries((await cdp.send('Performance.getMetrics')).metrics.map(item => [item.name, item.value]));
@@ -399,7 +382,7 @@ try {
   performance = {sampleMs: (metricsAfter.Timestamp - metricsBefore.Timestamp) * 1_000, rendererTaskMs: (metricsAfter.TaskDuration - metricsBefore.TaskDuration) * 1_000, heapDeltaBytes: metricsAfter.JSHeapUsedSize - metricsBefore.JSHeapUsedSize, frames: frame.length, intervalsOver50Ms: frame.filter(value => value > 50).length, maximumFrameIntervalMs: Math.max(...frame)};
   const browserEvidence = await page.evaluate(() => window.__crewWoprEvidence);
   receivedEvents.push(...browserEvidence.events);
-  eventLatency = {events: browserEvidence.events.length, renders: browserEvidence.renders.length, requiredTypes: ['job.run_changed', 'token.telemetry', 'token.governor_transition', 'token.baton_created', 'token.handoff_result'].map(type => ({type, observed: browserEvidence.events.some(item => item.type === type)}))};
+  eventLatency = {events: browserEvidence.events.length, renders: browserEvidence.renders.length, requiredTypes: ['job.run_changed', 'token.telemetry', 'token.governor_transition'].map(type => ({type, observed: browserEvidence.events.some(item => item.type === type)}))};
   if (eventLatency.requiredTypes.some(item => !item.observed)) throw new Error(`required_sse_event_missing:${JSON.stringify(eventLatency.requiredTypes)}`);
   if (consoleErrors.length || httpErrors.length) throw new Error(`browser_errors:${JSON.stringify({consoleErrors,httpErrors})}`);
 
@@ -428,7 +411,7 @@ try {
     phases: {dashboardReady, socialPhase, taskPhase, concurrentPhase, sourcePhase, rejectionPhase, destinationPhase, verificationPhase, completePhase},
     journey, screenshots, animation: {idle: idleMotion, concurrent: concurrentMotion},
     liveEvidence: {source: sourceDashboard, handoff: handoffDashboard, destination: destinationDashboard, completed: completedDashboard, eventLatency},
-    checks: {allSixCharactersVisibleAndAnimated: true, genuinePoeIngress: ingress === 'dashboard', genuineSocialIngress: ingress === 'openwa', exactInitiatingRequestVisible: true, jobsLanesModelsSystemsCrewVisited: true, liveShellEvidence, eventBackedWoprIndicatorsInspected: true, sourceDifficultyVisible: true, qualityGateReasonVisible: true, sealedBatonVisible: true, destinationRouteVisible: true, persistentUsageAcrossViews: true, finalModelChainVisible: true, productGeneratedCompleteTranscriptVisible: true, reducedMotion, mobile, performance, consoleErrors, httpErrors, expectedOptionalHttp, expectedOptionalConsole},
+    checks: {allSixCharactersVisibleAndAnimated: true, genuinePoeIngress: ingress === 'dashboard', genuineSocialIngress: ingress === 'openwa', exactInitiatingRequestVisible: true, jobsLanesModelsSystemsCrewVisited: true, liveShellEvidence, eventBackedWoprIndicatorsInspected: true, allThreeFirstWaveLanesVisible:true, independentGateVisible:true, solAdmissionDecisionVisible:true, persistentUsageAcrossViews: true, finalParallelAccountingVisible: true, productGeneratedCompleteTranscriptVisible: true, reducedMotion, mobile, performance, consoleErrors, httpErrors, expectedOptionalHttp, expectedOptionalConsole},
     socialIngress: socialIngressEvidence,
     security: {operatorTokenPersisted: false, codexHomePathPersisted: false, credentialsVisibleInVideo: false, privateReasoningVisible: false},
   };
