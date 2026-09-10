@@ -33,7 +33,7 @@ import type {WorkspaceState} from '../src/state.js';
 
 export const QUALIFICATION_PROMPT = 'Complete the read-only review of the frozen reservation-service fixture on the authorised qualification branch. Identify and explain every failing documented acceptance invariant. Preserve evidence, use the configured quality gate, and escalate from Luna to Sol only if Luna misses an acceptance-level root cause. origin/main must remain completely unchanged. Do not deploy production. Verify the result.';
 export const QUALIFICATION_SOCIAL_COMMAND = 'start governed-adaptive-crew';
-export const QUALIFICATION_POE_COMMAND = 'Start crew-wopr-review@1.0.0';
+export const QUALIFICATION_POE_COMMAND = 'Run the token-aware repository review. Have Luna inspect the frozen reservation-service repository first. If the independent quality gate finds unresolved root causes, create a sealed baton and escalate the unfinished analysis to Sol. Show the model transition, baton contents, verification, and token totals.';
 const QUALITY_GATE_CODE = 'reservation-cache-root-cause-v1';
 const SOURCE_MODEL_ID = 'codex-luna-controller-a';
 const DESTINATION_MODEL_ID = 'codex-sol-controller-a';
@@ -635,7 +635,7 @@ async function main() {
   const executionTranscriptText = transcriptDocument.content;
   assert.match(executionTranscriptText, /^# Agent Control Natural Execution Transcript/m);
   assert.match(executionTranscriptText, /## Origin\n/);
-  assert.match(executionTranscriptText, /## Authoritative initiating request\n\n> Start crew-wopr-review@1\.0\.0/);
+  assert.ok(executionTranscriptText.includes(`## Authoritative initiating request\n\n> ${QUALIFICATION_POE_COMMAND}`));
   assert.ok(executionTranscriptText.indexOf('## Authoritative initiating request') < executionTranscriptText.indexOf('- Schema:'));
   assert.match(executionTranscriptText, /BATON_CREATED/);
   assert.match(executionTranscriptText, /HANDOFF_COMPLETED/);

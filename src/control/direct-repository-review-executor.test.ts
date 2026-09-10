@@ -145,9 +145,9 @@ test('repository review instruction distinguishes severe findings from an unusab
 test('production review escalates a real quality-gate failure through a sealed baton while context remains low', async () => {
   const root=fs.mkdtempSync(path.join(os.tmpdir(),'agent-control-quality-escalation-'));
   try {
-    const {models,route}=qualityHandoffRegistry(),store=new WorkParcelStore(path.join(root,'parcels.json')),routing=new TokenAwareBatonRuntime(path.join(root,'routing.json')),contracts=new ContractExecutionRuntime(path.join(root,'contracts.json')),handoffs=new GovernedHandoffRuntime(contracts,path.join(root,'handoffs.json')),calls:string[]=[];
-    const clients:RepositoryReviewProviderClientFactory=provider=>({invoke:async(model,_input,options)=>{
-      calls.push(model.id);const destination=model.id==='strong-reviewer',usage={inputTokens:destination?140:80,outputTokens:destination?40:10,cachedInputTokens:0,cacheWriteTokens:0,totalTokens:destination?180:90,providerReportedCost:null,calculatedCost:destination?.02:0,currency:'USD'};
+    const {models,route}=qualityHandoffRegistry(),store=new WorkParcelStore(path.join(root,'parcels.json')),routing=new TokenAwareBatonRuntime(path.join(root,'routing.json')),contracts=new ContractExecutionRuntime(path.join(root,'contracts.json')),handoffs=new GovernedHandoffRuntime(contracts,path.join(root,'handoffs.json')),calls:Array<{model:string;prompt:string}>=[];
+    const clients:RepositoryReviewProviderClientFactory=provider=>({invoke:async(model,input,options)=>{
+      calls.push({model:model.id,prompt:renderProviderPrompt(input)});const destination=model.id==='strong-reviewer',usage={inputTokens:destination?140:80,outputTokens:destination?40:10,cachedInputTokens:0,cacheWriteTokens:0,totalTokens:destination?180:90,providerReportedCost:null,calculatedCost:destination?.02:0,currency:'USD'};
       options?.onTelemetry?.({phase:'started',providerId:provider.id,modelId:model.id,elapsedMs:0,context:{tokens:10,limitTokens:100,authority:'authoritative',source:'fixture-provider'}});
       options?.onTelemetry?.({phase:'completed',providerId:provider.id,modelId:model.id,elapsedMs:10,usage,context:{tokens:12,limitTokens:100,authority:'authoritative',source:'fixture-provider'}});
       const findings=destination?[qualityFinding()]:[];
@@ -156,9 +156,10 @@ test('production review escalates a real quality-gate failure through a sealed b
     const gate={evaluate:({result,responseHash}:{result:{findings:Array<{title:string}>};responseHash:string})=>{const accepted=result.findings.some(item=>/non-atomic reservation/i.test(item.title));return{accepted,code:'reservation-race-acceptance',summary:accepted?'The result explains the predeclared concurrent reservation failure.':'The result does not explain the predeclared concurrent reservation failure.',evidence:['acceptance-test:reservation-concurrency',responseHash],unresolvedCriteria:accepted?[]:['Explain why concurrent callers can both reserve one seat'],nextAction:'Review the same frozen chunk and explain the concurrency failure with file-backed evidence.'};}};
     const executor=new DirectRepositoryReviewExecutor(models,store,routing,{routing,contracts,handoffs},clients,undefined,undefined,undefined,gate),request=reviewRequest(route);request.contextChunks=request.contextChunks.slice(0,1);request.maximumCost=10;
     const response=await executor.execute(request),parcel=store.get(response.workParcelIds[0])!,evidence=routing.evidence(),baton=evidence.batons[0];
-    assert.deepEqual(calls,['small-reviewer','strong-reviewer']);
+    assert.deepEqual(calls.map(call=>call.model),['small-reviewer','strong-reviewer']);
+    assert.match(calls[1].prompt,/Unresolved issues: Explain why concurrent callers can both reserve one seat/);
     assert.equal(response.result.findings[0].title,'Non-atomic reservation permits duplicate ownership');
-    assert.equal(parcel.audit.invocations.length,2);assert.deepEqual(parcel.audit.invocations.map(item=>item.model),calls);
+    assert.equal(parcel.audit.invocations.length,2);assert.deepEqual(parcel.audit.invocations.map(item=>item.model),calls.map(call=>call.model));
     assert.ok(parcel.audit.timeline.some(item=>item.summary.includes('quality gate rejected local-small/small-reviewer')));
     assert.ok(parcel.audit.timeline.some(item=>item.summary.includes('destination passed independently')));
     const selected=evidence.decisions.find(item=>item.reason.startsWith('quality_gate_failed_governed_fallback_selected'))!;

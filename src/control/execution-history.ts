@@ -143,7 +143,7 @@ export function projectParameterizedRunHistory(input: {run: ParameterizedJobRun;
   }
 
   for (const decision of decisions) add(governorEntry(run.id, decision, threads.find(thread => thread.id === decision.threadId)));
-  for (const baton of batons) add({id: `${run.id}:baton:${baton.id}`, at: baton.createdAt, actor: 'BATON', type: 'BATON_CREATED', title: 'Verified baton created and sealed', content: `Objective: ${baton.objective}. Next action: ${baton.nextAction}. SHA-256 ${baton.sha256}. Creation does not by itself mean dispatch, acceptance, destination execution, or completed handoff.`, outcome: 'SUCCEEDED', jobRunId: run.id, workParcelId: baton.parcelId, provider: baton.providerId, accountLabel: baton.accountLabel, model: baton.modelId, evidenceRefs: [baton.id, baton.sha256]});
+  for (const baton of batons) add({id: `${run.id}:baton:${baton.id}`, at: baton.createdAt, actor: 'BATON', type: 'BATON_CREATED', title: 'Verified baton created and sealed', content: complete ? completeBatonContent(baton) : `Objective: ${baton.objective}. Next action: ${baton.nextAction}. SHA-256 ${baton.sha256}. Creation does not by itself mean dispatch, acceptance, destination execution, or completed handoff.`, outcome: 'SUCCEEDED', jobRunId: run.id, workParcelId: baton.parcelId, provider: baton.providerId, accountLabel: baton.accountLabel, model: baton.modelId, evidenceRefs: [baton.id, baton.sha256]});
 
   if (complete) {
     for (const execution of run.providerExecutions ?? []) {
@@ -201,6 +201,25 @@ function governorEntry(runId: string, decision: TokenRoutingDecision, thread?: T
   if (decision.action === 'BATON_AND_HANDOFF' && decision.outcome === 'SUCCEEDED') { type = 'HANDOFF_COMPLETED'; title = 'Governed handoff completed'; outcome = 'SUCCEEDED'; }
   if (decision.outcome === 'FAILED') { type = 'HANDOFF_FAILED'; title = 'Governed handoff failed; source remains recoverable'; outcome = 'FAILED'; clarification = ' The handoff is not marked complete and the source thread remains recoverable.'; }
   return {id: `${runId}:governor:${decision.id}`, at: decision.at, actor: 'GOVERNOR', type, title, content: `State ${decision.state}; action ${decision.action}; outcome ${decision.outcome}; reason ${decision.reason}.${clarification}`, outcome, jobRunId: runId, workParcelId: decision.parcelId, provider: thread?.providerId, accountLabel: thread?.accountLabel, model: thread?.modelId, route, evidenceRefs: [decision.id, ...(decision.batonId ? [decision.batonId] : [])]};
+}
+
+function completeBatonContent(baton: VerifiedBaton) {
+  return [
+    `Baton ID: ${baton.id}`,
+    `SHA-256: ${baton.sha256}`,
+    `Origin route: ${baton.providerId} / ${baton.accountLabel ?? baton.accountProfileId ?? 'default account'} / ${baton.modelId} @ ${baton.providerExecutionNodeId ?? baton.nodeId ?? 'controller'}; thread ${baton.threadId}`,
+    `Objective: ${baton.objective}`,
+    `Completed work: ${baton.completedWork.join('; ') || 'none recorded'}`,
+    `Decisions: ${baton.decisions.join('; ') || 'none recorded'}`,
+    `Files changed: ${baton.filesChanged.join(', ') || 'none'}`,
+    `Git state: ${baton.git.sha}; dirty ${baton.git.dirty}; ${baton.git.diffSummary}`,
+    `Tests and evidence: ${baton.testsAndEvidence.join('; ') || 'none recorded'}`,
+    `Unresolved issues: ${baton.unresolvedIssues.join('; ') || 'none'}`,
+    `Exact next action: ${baton.nextAction}`,
+    `Token state at handoff: ${number(baton.tokenState.cumulative.inputTokens)} input, ${number(baton.tokenState.cumulative.outputTokens)} output, ${number(baton.tokenState.cumulative.totalTokens)} total; current context ${number(baton.tokenState.context.tokens)} / ${number(baton.tokenState.context.limitTokens)} (${baton.tokenState.context.authority}).`,
+    `Work Parcel usage at handoff: ${number(baton.parcelTotals.inputTokens)} input, ${number(baton.parcelTotals.outputTokens)} output, ${number(baton.parcelTotals.totalTokens)} total.`,
+    'Creation does not by itself mean dispatch, acceptance, destination execution, or completed handoff.',
+  ].join('\n');
 }
 
 function telemetry(point: ThreadTokenRecord['latest'], governorState: string): ExecutionHistoryTelemetry { return {inputTokens: point.cumulative.inputTokens, freshInputTokens: point.cumulative.freshInputTokens, cachedInputTokens: point.cumulative.cachedInputTokens, outputTokens: point.cumulative.outputTokens, totalTokens: point.cumulative.totalTokens, contextTokens: point.context.tokens, contextLimitTokens: point.context.limitTokens, contextPercent: point.contextPercent, contextAuthority: point.context.authority, cost: point.cost.amount, currency: point.cost.currency, costAuthority: point.cost.authority, governorState}; }

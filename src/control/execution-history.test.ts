@@ -88,6 +88,16 @@ test('telemetry keeps lifetime and context distinct and explains completion-only
   assert.doesNotMatch(reportedEntry.content, /clamped/);
 });
 
+test('complete natural transcript expands the exact durable baton passed between models', () => {
+  const entry = projectParameterizedRunHistory({run: run(), savedJob: saved(), parcels: [parcel()], tokenEvidence: {threads: [thread()], decisions: [decision()], batons: [baton()]}, options: {mode: 'complete'}}).entries.find(item => item.type === 'BATON_CREATED');
+  assert.match(entry?.content ?? '', /Origin route: openai \/ Primary \/ sol @ msi; thread thread-a/);
+  assert.match(entry?.content ?? '', /Completed work: Inspected context/);
+  assert.match(entry?.content ?? '', /Unresolved issues: Validate output/);
+  assert.match(entry?.content ?? '', /Exact next action: Validate structured response/);
+  assert.match(entry?.content ?? '', /Token state at handoff: 100 input, 20 output, 120 total/);
+  assert.match(entry?.content ?? '', /Work Parcel usage at handoff: 100 input, 20 output, 120 total/);
+});
+
 test('history redaction excludes credentials, account emails and CODEX_HOME paths after persistence reload', () => {
   const contaminated = run();
   contaminated.definition = {...contaminated.definition, description: 'Bearer super-secret-value Authorization=token123 password=hunter2 user@example.com CODEX_HOME=C:\\Users\\Loz\\.local\\share\\agent-control\\codex-profiles\\primary'};

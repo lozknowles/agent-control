@@ -7,6 +7,7 @@ import path from 'node:path';
 
 const require = createRequire(import.meta.url);
 const root = process.cwd();
+const humanPoeRequest = 'Run the token-aware repository review. Have Luna inspect the frozen reservation-service repository first. If the independent quality gate finds unresolved root causes, create a sealed baton and escalate the unfinished analysis to Sol. Show the model transition, baton contents, verification, and token totals.';
 const evidenceFile = path.resolve(process.env.AGENT_CONTROL_CREW_WOPR_EVIDENCE ?? 'docs/evidence/agent-control-3.9-crew-wopr-escalation.json');
 const transcriptFile = path.resolve(process.env.AGENT_CONTROL_CREW_WOPR_TRANSCRIPT ?? 'docs/evidence/agent-control-3.9-crew-wopr-escalation-transcript.md');
 const videoFile = path.resolve(process.env.AGENT_CONTROL_CREW_WOPR_VIDEO ?? 'docs/evidence/agent-control-3.9-crew-wopr-escalation.mp4');
@@ -273,8 +274,8 @@ try {
   } else {
     await page.click('#poe-launcher');
     await page.waitForSelector('#poe-input', {state: 'visible'});
-    await page.locator('#poe-input').pressSequentially('Start crew-wopr-review@1.0.0', {delay: 55});
-    screenshots.push(await screenshot(page, '02-poe-types-exact-job-command.png'));
+    await page.locator('#poe-input').pressSequentially(humanPoeRequest, {delay: 12});
+    screenshots.push(await screenshot(page, '02-poe-types-human-readable-request.png'));
     await delay(1_000);
     await page.locator('#poe-form button[type="submit"]').click();
     await page.locator('#poe-extra > summary').click();
@@ -288,7 +289,7 @@ try {
     taskPhase = await waitPhase('TASK_RECEIVED', 30_000);
     await page.waitForFunction(() => /Work Parcel runtime now owns execution/i.test(document.querySelector('#poe-turns')?.textContent || ''), undefined, {timeout: 10_000});
     screenshots.push(await screenshot(page, '04-poe-approved-work-parcel.png'));
-    journey.push({at: new Date().toISOString(), view: 'poe', outcome: 'POE visibly received the typed exact command, sealed a registered-job proposal, obtained explicit approval and submitted the real Work Parcel'});
+    journey.push({at: new Date().toISOString(), view: 'poe', outcome: 'POE visibly received the complete human-readable request, resolved it to the registered governed job, sealed a proposal, obtained explicit approval and submitted the real Work Parcel'});
   }
 
   sourcePhase = await waitPhase('SOURCE_MODEL_ACTIVE', 120_000);
@@ -366,11 +367,29 @@ try {
   await transcriptButton.scrollIntoViewIfNeeded(); await transcriptButton.click();
   await page.waitForSelector('pre[aria-label="Complete Agent Control execution transcript"]');
   const productTranscript = page.locator('pre[aria-label="Complete Agent Control execution transcript"]');
+  const scrollTranscriptTo = target => productTranscript.evaluate((node, needle) => {
+    const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+    let textNode;
+    while ((textNode = walker.nextNode())) {
+      const index = textNode.data.indexOf(needle);
+      if (index < 0) continue;
+      const range = document.createRange();
+      range.setStart(textNode, index); range.setEnd(textNode, Math.min(textNode.length, index + needle.length));
+      const match = range.getBoundingClientRect(), box = node.getBoundingClientRect();
+      node.scrollTop += match.top - box.top - 24;
+      return true;
+    }
+    return false;
+  }, target);
   await productTranscript.evaluate(node => { node.scrollTop = 0; node.scrollIntoView({block: 'start'}); });
-  await page.waitForFunction(() => /## Origin[\s\S]*## Authoritative initiating request[\s\S]*Start crew-wopr-review@1\.0\.0/.test(document.querySelector('pre[aria-label="Complete Agent Control execution transcript"]')?.textContent || ''));
+  await page.waitForFunction(request => (document.querySelector('pre[aria-label="Complete Agent Control execution transcript"]')?.textContent || '').includes(`## Authoritative initiating request\n\n> ${request}`), humanPoeRequest);
   screenshots.push(await screenshot(page, '14-product-transcript-origin-and-exact-request.png'));
-  await productTranscript.evaluate(node => { const text=node.textContent||'',needle='HANDOFF_COMPLETED',line=text.slice(0,text.indexOf(needle)).split('\n').length; node.scrollTop=Math.max(0,(line-12)*16); });
-  screenshots.push(await screenshot(page, '15-product-transcript-model-change-and-handoff.png'));
+  if (!await scrollTranscriptTo('BATON_CREATED')) throw new Error('product_transcript_baton_entry_missing');
+  await page.waitForFunction(() => /Unresolved issues:[\s\S]*Exact next action:[\s\S]*Token state at handoff:/.test(document.querySelector('pre[aria-label="Complete Agent Control execution transcript"]')?.textContent || ''));
+  screenshots.push(await screenshot(page, '15-product-transcript-exact-baton-contents.png'));
+  await delay(2_000);
+  if (!await scrollTranscriptTo('HANDOFF_COMPLETED')) throw new Error('product_transcript_handoff_entry_missing');
+  screenshots.push(await screenshot(page, '16-product-transcript-model-change-and-handoff.png'));
   journey.push({at: new Date().toISOString(), view: 'jobs/transcript', outcome: 'product-generated full transcript visibly associated with the live Run, exact origin first and complete model-change chronology retained'});
   await delay(2_500);
 

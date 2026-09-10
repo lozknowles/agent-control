@@ -625,7 +625,7 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
     // the cacheable prompt prefix.
     const stable = `${request.instruction}\n\n${chunk.content}`;
     const provenance = `${rehydrated}${prepared.evidencePacketId ? `\n\nGoverned Evidence Packet: ${prepared.evidencePacketId}` : ''}`;
-    const continuation = baton ? `${provenance}\n\nGoverned continuation baton\nBaton ID: ${baton.id}\nBaton SHA-256: ${baton.sha256}\nObjective: ${baton.objective}\nCompleted work: ${baton.completedWork.join('; ')}\nDecisions: ${baton.decisions.join('; ')}\nEvidence references: ${(baton.evidenceReferences ?? []).join('; ') || 'none'}\nExact next action: ${baton.nextAction}\nOrigin: ${routeLabel(baton)} thread ${baton.threadId}\nParcel tokens at handoff: ${baton.parcelTotals.totalTokens ?? 'unavailable'}` : provenance;
+    const continuation = baton ? `${provenance}\n\nGoverned continuation baton\nBaton ID: ${baton.id}\nBaton SHA-256: ${baton.sha256}\nObjective: ${baton.objective}\nCompleted work: ${baton.completedWork.join('; ')}\nDecisions: ${baton.decisions.join('; ')}\nUnresolved issues: ${baton.unresolvedIssues.join('; ') || 'none'}\nEvidence references: ${(baton.evidenceReferences ?? []).join('; ') || 'none'}\nExact next action: ${baton.nextAction}\nOrigin: ${routeLabel(baton)} thread ${baton.threadId}\nParcel tokens at handoff: ${baton.parcelTotals.totalTokens ?? 'unavailable'}` : provenance;
     return {
       schema: 'agent-control.provider-prompt/v1',
       cacheScope: createHash('sha256').update(`repository-review/v1\u0000${request.run.repository?.identity ?? 'unresolved'}`).digest('hex'),
