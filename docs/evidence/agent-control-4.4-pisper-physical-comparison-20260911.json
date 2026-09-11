@@ -1,0 +1,198 @@
+{
+  "schema": "agent-control.pisper-runtime-comparison/v1",
+  "startedAt": "2026-09-11T15:29:25.616Z",
+  "completedAt": "2026-09-11T15:29:26.045Z",
+  "scope": "Same deterministic three-branch fan-out and join through each runtime scheduler; provider quality is intentionally out of scope.",
+  "pinnedSources": {
+    "agentControl": "0a3d136c38ec2c75afb4fb946fba1fb12a9dd5f8",
+    "pisper": "e3ef30f0744907f0a92578313c28c9679b56206e"
+  },
+  "agentControl": {
+    "runtime": "Agent Control 4.4",
+    "schedulerPath": "WorkParcelCoordinator -> JobRuntime.dispatch",
+    "status": "SUCCEEDED",
+    "wallClockMs": 412,
+    "serialBranchMs": 660,
+    "maximumConcurrentInvocations": 3,
+    "modelCalls": 3,
+    "failures": 0,
+    "retries": 0,
+    "invocations": [
+      {
+        "branch": "left",
+        "startedAt": "2026-09-11T15:29:25.703Z",
+        "endedAt": "2026-09-11T15:29:25.883Z",
+        "elapsedMs": 180,
+        "sessionId": "ac-run-left"
+      },
+      {
+        "branch": "centre",
+        "startedAt": "2026-09-11T15:29:25.703Z",
+        "endedAt": "2026-09-11T15:29:25.923Z",
+        "elapsedMs": 220,
+        "sessionId": "ac-run-centre"
+      },
+      {
+        "branch": "right",
+        "startedAt": "2026-09-11T15:29:25.703Z",
+        "endedAt": "2026-09-11T15:29:25.963Z",
+        "elapsedMs": 260,
+        "sessionId": "ac-run-right"
+      }
+    ],
+    "branchIsolation": {
+      "distinctRunIds": true,
+      "workerCapacity": 3
+    },
+    "join": {
+      "status": "SUCCEEDED",
+      "batonSha256": "232f6f419b98193e42889f90aa3bfb18ec0e01f0745d990c213583b96c2eea1a"
+    },
+    "evidence": {
+      "parcelId": "parcel-2aa78478-07e4-47d5-bb19-6cb1a5fb71da",
+      "auditEvents": 20,
+      "criteria": [
+        {
+          "id": "criterion:stage:left",
+          "status": "PASS"
+        },
+        {
+          "id": "criterion:stage:centre",
+          "status": "PASS"
+        },
+        {
+          "id": "criterion:stage:right",
+          "status": "PASS"
+        },
+        {
+          "id": "criterion:stage:join",
+          "status": "PASS"
+        }
+      ]
+    },
+    "recovery": {
+      "exercisedInMatchedRun": false,
+      "reason": "The identical success workload did not inject a failure; restart, retry and failed-dependency behavior remains covered by the full production suite."
+    },
+    "usage": {
+      "authority": "unavailable",
+      "inputTokens": null,
+      "outputTokens": null,
+      "cachedTokens": null,
+      "contextTokens": null,
+      "contextLimit": null,
+      "cost": null,
+      "reason": "Deterministic scheduler adapter made no external provider call; no token, cache, context or billing values were inferred."
+    }
+  },
+  "pisper": {
+    "runtime": "Pisper 0.5.41",
+    "schedulerPath": "WorkflowService.execute -> memoized executeNode promises",
+    "status": "completed",
+    "wallClockMs": 330,
+    "serialBranchMs": 660,
+    "maximumConcurrentInvocations": 3,
+    "modelCalls": 3,
+    "failures": 0,
+    "retries": 0,
+    "invocations": [
+      {
+        "branch": "left",
+        "startedAt": "2026-09-11T15:29:25.723Z",
+        "endedAt": "2026-09-11T15:29:25.904Z",
+        "elapsedMs": 181,
+        "sessionId": "pisper-session-left"
+      },
+      {
+        "branch": "centre",
+        "startedAt": "2026-09-11T15:29:25.724Z",
+        "endedAt": "2026-09-11T15:29:25.944Z",
+        "elapsedMs": 220,
+        "sessionId": "pisper-session-centre"
+      },
+      {
+        "branch": "right",
+        "startedAt": "2026-09-11T15:29:25.726Z",
+        "endedAt": "2026-09-11T15:29:26.034Z",
+        "elapsedMs": 308,
+        "sessionId": "pisper-session-right"
+      }
+    ],
+    "branchIsolation": {
+      "distinctSessionIds": true,
+      "isolatedContext": true
+    },
+    "join": {
+      "status": "completed"
+    },
+    "evidence": {
+      "workflowId": "c1ab4fdd-92e0-41d3-9b1f-d5431b5d7ec2",
+      "runId": "7dd02242-6dc9-4994-9d6e-4b4f00438c26",
+      "persistedRun": true,
+      "nodeStates": [
+        {
+          "id": "trigger",
+          "status": "completed",
+          "attempts": 0
+        },
+        {
+          "id": "parallel",
+          "status": "completed",
+          "attempts": 0
+        },
+        {
+          "id": "left",
+          "status": "completed",
+          "attempts": 1
+        },
+        {
+          "id": "centre",
+          "status": "completed",
+          "attempts": 1
+        },
+        {
+          "id": "right",
+          "status": "completed",
+          "attempts": 1
+        },
+        {
+          "id": "join",
+          "status": "completed",
+          "attempts": 0
+        }
+      ]
+    },
+    "recovery": {
+      "exercisedInMatchedRun": false,
+      "reason": "The identical success workload did not inject a failure; restart, retry and interrupted-run behavior remains covered by the full Pisper suite."
+    },
+    "usage": {
+      "authority": "unavailable",
+      "inputTokens": null,
+      "outputTokens": null,
+      "cachedTokens": null,
+      "contextTokens": null,
+      "contextLimit": null,
+      "cost": null,
+      "reason": "Deterministic scheduler adapter made no external provider call; no token, cache, context or billing values were inferred."
+    }
+  },
+  "toolGateway": {
+    "kind": "synthetic schema-footprint probe",
+    "catalogTools": 49,
+    "residentTools": 9,
+    "fullSchemaBytes": 11034,
+    "residentSchemaBytes": 1874,
+    "reductionBytes": 9160,
+    "reductionPercent": 83.02,
+    "limits": "This proves the footprint mechanism on an equal synthetic catalog; it is not a measured Agent Control production-token saving. Agent Control already sends only recipe-granted tools."
+  },
+  "interpretation": {
+    "bothActuallyConcurrent": true,
+    "measurementLimits": [
+      "Adapter invocations are scheduler probes, not external model calls.",
+      "Token, cache, context-window and monetary values are unavailable and were not estimated.",
+      "Wall-clock values include local persistence and 10 ms Pisper completion polling."
+    ]
+  }
+}
