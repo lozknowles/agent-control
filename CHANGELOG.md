@@ -3,6 +3,7 @@
 ## [4.5.0] — Unreleased candidate
 
 - Adds an experimental generic `ProjectMemoryPort` and structured Markdown backend for **Your Memories** portability qualification. Records are scoped, content-hashed, provenance-bound, freshness checked and advisory only; contradictory current facts fail closed and all rejection reasons remain visible. Obsidian is not a core dependency.
+- Adds reproducible physical cross-model qualification harnesses and a sealed POE/UX evidence recorder. Qwen, GLM-5.3-Flash, Codex/Luna, Sol and Pixel Gemma 4 E4B were invoked through existing provider abstractions; 5/12 requested writer→cold-reader cells passed. A complete POE-initiated Sol→Luna memory continuation passed with 24,444 reconciled tokens. Strong-model consolidation reduced size but regressed average reconstruction by 16.67 points, so the capability remains experimental.
 
 - Adds a provider-, model-, framework-, hardware- and runtime-neutral learned-skill lifecycle: `OBSERVE → IDENTIFY → DATASET → BASELINE → TRAIN → QUALIFY → REGISTER → ROUTE → MONITOR → RETIRE/RETRAIN`.
 - Adds a durable Skill Adapter Registry binding exact base, adaptation, dataset, runtime and frozen-evaluation identities, qualification metrics, limitations, compatibility, provenance and rollback state.

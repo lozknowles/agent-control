@@ -2,6 +2,8 @@
 
 Status: experimental. Normal user-facing UX calls this capability **Your Memories**. `ProjectMemoryPort` and backend names are technical terms used only in architecture, diagnostics, and evidence.
 
+The 2026-09-11 [physical cross-model qualification](evidence/agent-control-4.5-cross-model-memory-qualification-20260911.md) retained this status. Five of twelve requested writer→cold-reader pairs passed, one real POE-initiated Sol→Luna continuation passed end to end, and strong-model consolidation reduced bytes without improving verified reconstruction. No provider-native ChatGPT personal memory was inferred, and no failed edge/desktop cell was presented as a pass.
+
 Agent Control treats durable memory as advisory context. A memory cannot alter a Work Parcel, approve work, grant authority, replace a baton, or satisfy verification. Current repository and physical evidence outrank remembered claims. Assistant memory is an untrusted source and follows the same checks.
 
 ```mermaid
@@ -28,9 +30,9 @@ Each node writes to a node-local staging namespace using an exclusive writer loc
 
 The discovered vaults are independent:
 
-- hpubuntu: `/home/loz/knowledge-vault` (small local Git repository, no remote);
-- MSI experiment vault: `D:\obsidian\knowledge_vault` (local vault, no Git repository at discovery time);
-- MSI's separate OneDrive-backed vault is out of scope and remains untouched.
+- controller node: an operator-configured local vault (small local Git repository, no remote);
+- remote desktop experiment vault: an operator-configured node-local Obsidian vault (no Git repository at discovery time);
+- any separate cloud-synchronised vault is out of scope and remains untouched.
 
 The isolated namespace is `Agent Control/4.5-memory-portability`. No existing notes are overwritten.
 

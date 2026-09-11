@@ -63,7 +63,10 @@
     "benchmark:fast-execution": "node --import tsx scripts/benchmark-fast-execution.ts",
     "benchmark:capability-routing": "node --import tsx scripts/benchmark-capability-routing.ts",
     "qualify:edge-context-runtime": "node --import tsx scripts/qualify-edge-context-runtime.ts",
-    "qualify:ux-session-replay": "node --import tsx scripts/qualify-ux-session-replay.ts"
+    "qualify:ux-session-replay": "node --import tsx scripts/qualify-ux-session-replay.ts",
+    "qualify:cross-model-memory": "node --import tsx scripts/qualify-cross-model-memory-4.5.ts",
+    "qualify:memory-consolidation": "node --import tsx scripts/qualify-memory-conditions-consolidation-4.5.ts",
+    "record:cross-model-memory": "node --import tsx scripts/record-cross-model-memory-4.5.ts"
   },
   "dependencies": {
     "@agentclientprotocol/sdk": "1.4.0",

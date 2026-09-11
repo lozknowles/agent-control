@@ -1,0 +1,57 @@
+{
+  "schema": "agent-control.cross-model-memory-ux-evidence/v1",
+  "verdict": "PASS_PHYSICAL_POE_CROSS_MODEL_MEMORY_UX",
+  "qualifiedAt": "2026-09-11T19:14:20.338Z",
+  "implementationCommit": "565aff41c1afc07995163ed4ec1d490d628970bf",
+  "source": {
+    "file": "/fast/qualification/agent-control-4.5-cross-model-memory-poe-success-20260911/cross-model-memory-qualification.json",
+    "sha256": "752ddfa2780f717b2cd2519cba502bf5ab449bc3721667f6ea7b22696c76d5c5",
+    "parcelId": "parcel-social-82062acbd50b5c74f9ad18cd109d13d467f92d22de00ddb4f379f1ef21803fec",
+    "writerRunId": "run-6c9eb702-6eb8-40fe-9f14-cd3509f53e1b",
+    "readerRunId": "run-eba028d0-3812-41df-9813-c292d8b6fb0f",
+    "memorySha256": "4ed7dd21153dc97eb67cf9c7ff7032bbf30ed3d3f93b355c864a54331dab7564",
+    "batonSha256": "cabdead6bf45d9f8e5e1c3f43b4d12bb0288389b0e12b9f56d57c206a0feecb5"
+  },
+  "session": {
+    "id": "ux-agent-control-4.5-cross-model-memory",
+    "sha256": "0437e0a65766d3c0348758707af5d23ee641b573a2d325267b31d0089943e2d0"
+  },
+  "generated": [
+    {
+      "file": "canonical-session.json",
+      "bytes": 11340,
+      "sha256": "bb3e675afc13720295228dddbfc33aec1b70b781919d272359b759c9993cccc5"
+    },
+    {
+      "file": "complete-human-readable-transcript.md",
+      "bytes": 7485,
+      "sha256": "091685bda5d4ccb5610dcccad1deb2e418f28150e6a5a3ae1ae3bcec6beacf4e"
+    },
+    {
+      "file": "cross-model-memory-replay.png",
+      "bytes": 929932,
+      "sha256": "d49b7ea5c68e7a5bac2732097c8864bd5f895a099a2628c50ae1affed3d56b7c"
+    },
+    {
+      "file": "agent-control-4.5-cross-model-memory.mp4",
+      "bytes": 4277393,
+      "sha256": "c313b9c1129283bee300e33f0ed26b4074275917601937bcbf01f43395bf5b4d"
+    }
+  ],
+  "videoInfo": {
+    "programs": [],
+    "streams": [
+      {
+        "codec_name": "h264",
+        "width": 1920,
+        "height": 1080,
+        "r_frame_rate": "25/1"
+      }
+    ],
+    "format": {
+      "duration": "30.040000",
+      "size": "4277393"
+    }
+  },
+  "browserErrors": []
+}
