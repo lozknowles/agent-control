@@ -1,0 +1,15 @@
+{
+  "schema": "agent-control.learned-specialists-dashboard-capture/v1",
+  "url": "http://127.0.0.1:19450",
+  "capturedAt": "2026-09-11T16:52:23.565Z",
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
+  "visible": true,
+  "heading": "Learned Specialists",
+  "specialists": 1,
+  "routes": 7,
+  "consoleErrors": [],
+  "screenshot": "dashboard-learned-specialists.png"
+}

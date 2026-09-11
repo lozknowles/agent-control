@@ -1,0 +1,107 @@
+{
+  "version": 1,
+  "paused": false,
+  "lastRestorePoint": null,
+  "lanes": [
+    {
+      "id": 1,
+      "name": "Primary",
+      "status": "idle",
+      "model": "unassigned",
+      "reasoning": "medium",
+      "context": "0",
+      "lines": [
+        "Ready.",
+        "Awaiting task..."
+      ],
+      "contract": {
+        "version": 2,
+        "laneId": 1,
+        "goal": "Await task",
+        "constraints": [],
+        "cwd": "/fast/work/agent-control-4.5-skill-learning",
+        "priority": 1,
+        "mode": "auto",
+        "capabilities": {
+          "requires": [],
+          "prefers": []
+        },
+        "resourceLocks": {},
+        "modelLock": null,
+        "sharedTaskIds": [],
+        "updatedAt": "2026-09-11T16:52:04.216Z"
+      },
+      "baton": {
+        "version": 1,
+        "laneId": 1,
+        "revision": 1,
+        "status": "Await task",
+        "progress": [],
+        "hypothesis": "",
+        "evidence": [],
+        "changes": [],
+        "nextAction": "Await command",
+        "openQuestions": [],
+        "model": "unassigned",
+        "reasoning": "medium",
+        "updatedAt": "2026-09-11T16:52:04.216Z"
+      },
+      "lease": {
+        "laneId": 1,
+        "holder": null,
+        "acquiredAt": null,
+        "expiresAt": null
+      }
+    },
+    {
+      "id": 2,
+      "name": "Review",
+      "status": "idle",
+      "model": "unassigned",
+      "reasoning": "medium",
+      "context": "0",
+      "lines": [
+        "Ready.",
+        "Awaiting task..."
+      ],
+      "contract": {
+        "version": 2,
+        "laneId": 2,
+        "goal": "Await task",
+        "constraints": [],
+        "cwd": "/fast/work/agent-control-4.5-skill-learning",
+        "priority": 1,
+        "mode": "manual",
+        "capabilities": {
+          "requires": [],
+          "prefers": []
+        },
+        "resourceLocks": {},
+        "modelLock": null,
+        "sharedTaskIds": [],
+        "updatedAt": "2026-09-11T16:52:04.216Z"
+      },
+      "baton": {
+        "version": 1,
+        "laneId": 2,
+        "revision": 1,
+        "status": "Await task",
+        "progress": [],
+        "hypothesis": "",
+        "evidence": [],
+        "changes": [],
+        "nextAction": "Await command",
+        "openQuestions": [],
+        "model": "unassigned",
+        "reasoning": "medium",
+        "updatedAt": "2026-09-11T16:52:04.216Z"
+      },
+      "lease": {
+        "laneId": 2,
+        "holder": null,
+        "acquiredAt": null,
+        "expiresAt": null
+      }
+    }
+  ]
+}

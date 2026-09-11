@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "laneId": 1,
+  "goal": "Await task",
+  "constraints": [],
+  "cwd": "/fast/work/agent-control-4.5-skill-learning",
+  "priority": 1,
+  "mode": "auto",
+  "capabilities": {
+    "requires": [],
+    "prefers": []
+  },
+  "resourceLocks": {},
+  "modelLock": null,
+  "sharedTaskIds": [],
+  "updatedAt": "2026-09-11T16:52:04.216Z"
+}

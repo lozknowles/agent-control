@@ -1,0 +1,100 @@
+{
+  "schema": "agent-control.skill-learning-qualification/v1",
+  "status": "QUALIFIED",
+  "observedAt": "2026-09-11T16:51:23.108Z",
+  "branch": "feature/4.5-governed-skill-learning",
+  "base": {
+    "id": "HuggingFaceTB/SmolLM2-135M-Instruct",
+    "revision": "12fd25f77366fa6b3b4b768ec3050bf629380bac",
+    "sha256": "e427f347ce7a0a1accb6f6879da583f19d8ab9f9b2fcffd010a664f9109ed558"
+  },
+  "adapter": {
+    "id": "route-intent-lora",
+    "version": "1",
+    "sha256": "7e6f36b34998cb26971b8f528984a8e1cadc9d6e591120596baafac6c1bd5802",
+    "sizeBytes": 8517793
+  },
+  "dataset": {
+    "id": "route-intent-v1",
+    "version": "1",
+    "trainingExamples": 120,
+    "evaluationExamples": 40,
+    "trainingSha256": "b5e48d4d31c2a2adb73a9583f6926ae4883d4e8906b99c2d3d242875e740afa8",
+    "evaluationSha256": "f28e3610701bb8d3cfa16062f7761c793983ac78254c45c2143b6d7cfa50cce7",
+    "contaminationCount": 0,
+    "humanReview": "APPROVED"
+  },
+  "measurement": {
+    "baseline": {
+      "accuracy": 0,
+      "schemaValidity": 0,
+      "elapsedSeconds": 31.630508184432983
+    },
+    "specialist": {
+      "accuracy": 0.4,
+      "schemaValidity": 1,
+      "elapsedSeconds": 29.2531681060791
+    },
+    "accuracyImprovement": 0.4,
+    "trainingElapsedSeconds": 185.0544364452362,
+    "monetaryCost": {
+      "value": null,
+      "authority": "UNAVAILABLE"
+    },
+    "energy": {
+      "value": null,
+      "authority": "UNAVAILABLE"
+    }
+  },
+  "production": {
+    "positive": {
+      "parcelId": "parcel-b2649b2f-1357-4d9f-a4cd-8d95e4d96648",
+      "runId": "run-40e03e14-13ed-4176-b3b1-9172d8d9941b",
+      "status": "SUCCEEDED",
+      "batonSha256": "8d7f74027b6cd0a81c1dbb56c365a695e657463182eaf87cc41f7dceda649e57",
+      "routeDecisionId": "skill-route-339851e3-8e3f-4cf4-9438-97e2ed4b9261",
+      "output": {
+        "lane": "LANE_REVIEW"
+      },
+      "usage": {
+        "inputTokens": 59,
+        "outputTokens": 10,
+        "totalTokens": 69
+      },
+      "elapsedMs": 1162,
+      "verification": "PASSED"
+    },
+    "inappropriate": {
+      "parcelId": "parcel-0fedd96c-da30-46cf-bc8a-428c35efbbc5",
+      "runId": "run-9daa169b-1536-4b85-be6b-7676d6d39626",
+      "status": "FAILED",
+      "error": "execute:capability_unavailable:learned_specialist_route_unavailable",
+      "executionInvoked": false
+    }
+  },
+  "failureCases": {
+    "wrongBaseSelected": null,
+    "incompatibleRuntimeSelected": null,
+    "staleSelected": null
+  },
+  "environment": {
+    "python": "3.12.3",
+    "platform": "Linux-6.8.0-139-generic-x86_64-with-glibc2.39",
+    "torch": "2.8.0+cpu",
+    "transformers": "4.56.1",
+    "peft": "0.17.1",
+    "device": "cpu",
+    "protectedGpuServicesDisturbed": false
+  },
+  "evidence": {
+    "baselineSha256": "72ab479358a887db33f4345b7a3ac52e7c5808f87d4f4c109caf160d69eb497b",
+    "specialistSha256": "a1838b50746c1dab7f66d49e9dddb67122118b340557112540e6897b26bb3967",
+    "registrySha256": "ac46134376f1511075d529a330497f39b77372a04e14e25eb8998ef97670e860",
+    "workParcelLedgerSha256": "efea22d501fbf963ca3584b28f9e9853d13539c7e5372989ae40a48bc98877c8"
+  },
+  "limitations": [
+    "Frozen exact accuracy is 0.40; ordinary routing remains the fallback.",
+    "No energy or monetary-cost measurement is available.",
+    "Qualified only for route-intent-json on the exact base/runtime identity."
+  ]
+}

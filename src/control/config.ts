@@ -4,6 +4,7 @@ import {normalizeGovernorPolicy} from './token-aware-baton-routing.js';
 import {containsSensitiveMaterial} from './security-redaction.js';
 import type {AdaptiveOrchestrationConfig} from './adaptive-orchestration.js';
 import type {CacheExpertPolicyConfig} from './cache-aware-expert.js';
+import type {LearnedSkillPolicyConfig} from './skill-learning.js';
 
 export type Platform = 'linux' | 'windows' | 'android' | 'macos' | 'remote' | 'unknown';
 export type TransportType = 'local' | 'ssh' | 'http' | 'orca';
@@ -261,6 +262,7 @@ export interface AgentControlConfig {
   spark?: SparkConfig;
   adaptiveOrchestration?: AdaptiveOrchestrationConfig;
   cacheAwareExperts?: CacheExpertPolicyConfig;
+  learnedSkills?: LearnedSkillPolicyConfig;
   jobs?: ParameterizedJobsConfig;
 }
 
@@ -329,6 +331,7 @@ export function validateConfig(raw: unknown): AgentControlConfig {
     spark: input.spark,
     adaptiveOrchestration: input.adaptiveOrchestration,
     cacheAwareExperts: input.cacheAwareExperts,
+    learnedSkills: input.learnedSkills,
     jobs: input.jobs,
   };
   if (config.jobs) {
@@ -608,6 +611,13 @@ export function validateConfig(raw: unknown): AgentControlConfig {
     for (const key of ['hotReuseRatio','minimumReuseRatio','highCompatibilityMaximumDelta','partialCompatibilityMaximumDelta','maximumScoreBonus'] as const) if (cache[key] !== undefined && (!Number.isFinite(cache[key]) || cache[key]! < 0 || cache[key]! > 1)) throw new Error(`invalid_cache_aware_experts_${key}`);
     if ((cache.hotMinutes ?? 10) > (cache.warmMinutes ?? 60) || (cache.warmMinutes ?? 60) > (cache.expiryMinutes ?? 240)) throw new Error('invalid_cache_aware_experts_lifecycle_order');
     if ((cache.highCompatibilityMaximumDelta ?? .25) > (cache.partialCompatibilityMaximumDelta ?? .6)) throw new Error('invalid_cache_aware_experts_compatibility_order');
+  }
+  if (config.learnedSkills !== undefined) {
+    const learned = config.learnedSkills;
+    if (!learned || typeof learned !== 'object' || Array.isArray(learned)) throw new Error('invalid_learned_skills');
+    for (const key of ['enabled','routingEnabled','requireHumanDatasetApproval'] as const) if (learned[key] !== undefined && typeof learned[key] !== 'boolean') throw new Error(`invalid_learned_skills_${key}`);
+    if (learned.minimumImprovement !== undefined && (!Number.isFinite(learned.minimumImprovement) || learned.minimumImprovement < 0 || learned.minimumImprovement > 1)) throw new Error('invalid_learned_skills_minimum_improvement');
+    assertIntegerRange(learned.maximumQualificationAgeDays, 'learned_skills_maximum_qualification_age_days', 1, 3_650);
   }
   return config;
 }

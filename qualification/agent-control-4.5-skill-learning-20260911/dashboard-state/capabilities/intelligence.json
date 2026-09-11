@@ -1,0 +1,821 @@
+{
+  "schema": "agent-control.capability-intelligence/v1",
+  "observations": [
+    {
+      "schema": "agent-control.capability-observation/v1",
+      "id": "agent-control-core:context.retrieval",
+      "capabilityId": "context.retrieval",
+      "subject": {
+        "providerId": "agent-control",
+        "runtimeId": "agent-control-core"
+      },
+      "support": "SUPPORTED",
+      "implementation": "AGENT_CONTROL_EMULATED",
+      "verification": "VERIFIED",
+      "confidence": 1,
+      "observedAt": "2026-09-11T16:52:04.246Z",
+      "qualifiedAt": "2026-09-11T16:52:04.246Z",
+      "limitations": [
+        "Governed exact/relevance history retrieval"
+      ],
+      "evidence": [
+        "implementation:context.retrieval"
+      ],
+      "source": "AGENT_CONTROL_CORE"
+    },
+    {
+      "schema": "agent-control.capability-observation/v1",
+      "id": "agent-control-core:execution.mid-task-steering",
+      "capabilityId": "execution.mid-task-steering",
+      "subject": {
+        "providerId": "agent-control",
+        "runtimeId": "agent-control-core"
+      },
+      "support": "SUPPORTED",
+      "implementation": "AGENT_CONTROL_EMULATED",
+      "verification": "VERIFIED",
+      "confidence": 1,
+      "observedAt": "2026-09-11T16:52:04.246Z",
+      "qualifiedAt": "2026-09-11T16:52:04.246Z",
+      "limitations": [
+        "Durable steering amendments preserve the original goal"
+      ],
+      "evidence": [
+        "implementation:execution.mid-task-steering"
+      ],
+      "source": "AGENT_CONTROL_CORE"
+    },
+    {
+      "schema": "agent-control.capability-observation/v1",
+      "id": "agent-control-core:execution.async-questions",
+      "capabilityId": "execution.async-questions",
+      "subject": {
+        "providerId": "agent-control",
+        "runtimeId": "agent-control-core"
+      },
+      "support": "SUPPORTED",
+      "implementation": "AGENT_CONTROL_EMULATED",
+      "verification": "VERIFIED",
+      "confidence": 1,
+      "observedAt": "2026-09-11T16:52:04.246Z",
+      "qualifiedAt": "2026-09-11T16:52:04.246Z",
+      "limitations": [
+        "Dependency-scoped questions pause only affected stages"
+      ],
+      "evidence": [
+        "implementation:execution.async-questions"
+      ],
+      "source": "AGENT_CONTROL_CORE"
+    },
+    {
+      "schema": "agent-control.capability-observation/v1",
+      "id": "agent-control-core:execution.parallel",
+      "capabilityId": "execution.parallel",
+      "subject": {
+        "providerId": "agent-control",
+        "runtimeId": "agent-control-core"
+      },
+      "support": "SUPPORTED",
+      "implementation": "AGENT_CONTROL_EMULATED",
+      "verification": "VERIFIED",
+      "confidence": 1,
+      "observedAt": "2026-09-11T16:52:04.246Z",
+      "qualifiedAt": "2026-09-11T16:52:04.246Z",
+      "limitations": [
+        "Independent Work Parcel stages dispatch concurrently"
+      ],
+      "evidence": [
+        "implementation:execution.parallel"
+      ],
+      "source": "AGENT_CONTROL_CORE"
+    },
+    {
+      "schema": "agent-control.capability-observation/v1",
+      "id": "agent-control-core:execution.remote",
+      "capabilityId": "execution.remote",
+      "subject": {
+        "providerId": "agent-control",
+        "runtimeId": "agent-control-core"
+      },
+      "support": "SUPPORTED",
+      "implementation": "AGENT_CONTROL_EMULATED",
+      "verification": "VERIFIED",
+      "confidence": 1,
+      "observedAt": "2026-09-11T16:52:04.246Z",
+      "qualifiedAt": "2026-09-11T16:52:04.246Z",
+      "limitations": [
+        "Managed-node transport executes governed remote work"
+      ],
+      "evidence": [
+        "implementation:execution.remote"
+      ],
+      "source": "AGENT_CONTROL_CORE"
+    },
+    {
+      "schema": "agent-control.capability-observation/v1",
+      "id": "agent-control-core:execution.resume",
+      "capabilityId": "execution.resume",
+      "subject": {
+        "providerId": "agent-control",
+        "runtimeId": "agent-control-core"
+      },
+      "support": "SUPPORTED",
+      "implementation": "AGENT_CONTROL_EMULATED",
+      "verification": "VERIFIED",
+      "confidence": 1,
+      "observedAt": "2026-09-11T16:52:04.246Z",
+      "qualifiedAt": "2026-09-11T16:52:04.246Z",
+      "limitations": [
+        "Durable ledgers retain recoverable execution state"
+      ],
+      "evidence": [
+        "implementation:execution.resume"
+      ],
+      "source": "AGENT_CONTROL_CORE"
+    },
+    {
+      "schema": "agent-control.capability-observation/v1",
+      "id": "agent-control-core:execution.long-running",
+      "capabilityId": "execution.long-running",
+      "subject": {
+        "providerId": "agent-control",
+        "runtimeId": "agent-control-core"
+      },
+      "support": "SUPPORTED",
+      "implementation": "AGENT_CONTROL_EMULATED",
+      "verification": "VERIFIED",
+      "confidence": 1,
+      "observedAt": "2026-09-11T16:52:04.246Z",
+      "qualifiedAt": "2026-09-11T16:52:04.246Z",
+      "limitations": [
+        "Persistent Work Parcels survive individual invocations"
+      ],
+      "evidence": [
+        "implementation:execution.long-running"
+      ],
+      "source": "AGENT_CONTROL_CORE"
+    },
+    {
+      "schema": "agent-control.capability-observation/v1",
+      "id": "agent-control-core:execution.background",
+      "capabilityId": "execution.background",
+      "subject": {
+        "providerId": "agent-control",
+        "runtimeId": "agent-control-core"
+      },
+      "support": "SUPPORTED",
+      "implementation": "AGENT_CONTROL_EMULATED",
+      "verification": "VERIFIED",
+      "confidence": 1,
+      "observedAt": "2026-09-11T16:52:04.246Z",
+      "qualifiedAt": "2026-09-11T16:52:04.246Z",
+      "limitations": [
+        "Scheduler-owned execution continues without a live UI"
+      ],
+      "evidence": [
+        "implementation:execution.background"
+      ],
+      "source": "AGENT_CONTROL_CORE"
+    },
+    {
+      "schema": "agent-control.capability-observation/v1",
+      "id": "agent-control-core:context.lifecycle",
+      "capabilityId": "context.lifecycle",
+      "subject": {
+        "providerId": "agent-control",
+        "runtimeId": "agent-control-core"
+      },
+      "support": "SUPPORTED",
+      "implementation": "AGENT_CONTROL_EMULATED",
+      "verification": "VERIFIED",
+      "confidence": 1,
+      "observedAt": "2026-09-11T16:52:04.246Z",
+      "qualifiedAt": "2026-09-11T16:52:04.246Z",
+      "limitations": [
+        "Active state, immutable events, retrieval and baton views are separated"
+      ],
+      "evidence": [
+        "implementation:context.lifecycle"
+      ],
+      "source": "AGENT_CONTROL_CORE"
+    },
+    {
+      "schema": "agent-control.capability-observation/v1",
+      "id": "agent-control-core:tool.structured-calls",
+      "capabilityId": "tool.structured-calls",
+      "subject": {
+        "providerId": "agent-control",
+        "runtimeId": "agent-control-core"
+      },
+      "support": "SUPPORTED",
+      "implementation": "AGENT_CONTROL_EMULATED",
+      "verification": "VERIFIED",
+      "confidence": 1,
+      "observedAt": "2026-09-11T16:52:04.246Z",
+      "qualifiedAt": "2026-09-11T16:52:04.246Z",
+      "limitations": [
+        "Typed registered Actions form the tool boundary"
+      ],
+      "evidence": [
+        "implementation:tool.structured-calls"
+      ],
+      "source": "AGENT_CONTROL_CORE"
+    },
+    {
+      "schema": "agent-control.capability-observation/v1",
+      "id": "provider-config:codex-chatgpt:trivial.coding",
+      "capabilityId": "trivial.coding",
+      "subject": {
+        "providerId": "codex-chatgpt",
+        "runtimeId": "cli"
+      },
+      "support": "SUPPORTED",
+      "implementation": "NATIVE",
+      "verification": "UNVERIFIED",
+      "confidence": 0.5,
+      "observedAt": "2026-09-11T16:52:04.255Z",
+      "limitations": [
+        "Configured or advertised capability has not completed qualification"
+      ],
+      "evidence": [
+        "provider-config:codex-chatgpt"
+      ],
+      "source": "ADAPTER",
+      "adapterCapability": "trivial.coding"
+    },
+    {
+      "schema": "agent-control.capability-observation/v1",
+      "id": "provider-config:openai-api:code.modify",
+      "capabilityId": "code.modify",
+      "subject": {
+        "providerId": "openai-api",
+        "runtimeId": "responses"
+      },
+      "support": "SUPPORTED",
+      "implementation": "NATIVE",
+      "verification": "UNVERIFIED",
+      "confidence": 0.5,
+      "observedAt": "2026-09-11T16:52:04.255Z",
+      "limitations": [
+        "Configured or advertised capability has not completed qualification"
+      ],
+      "evidence": [
+        "provider-config:openai-api"
+      ],
+      "source": "ADAPTER",
+      "adapterCapability": "coding"
+    },
+    {
+      "schema": "agent-control.capability-observation/v1",
+      "id": "provider-config:openai-api:reasoning.general",
+      "capabilityId": "reasoning.general",
+      "subject": {
+        "providerId": "openai-api",
+        "runtimeId": "responses"
+      },
+      "support": "SUPPORTED",
+      "implementation": "NATIVE",
+      "verification": "UNVERIFIED",
+      "confidence": 0.5,
+      "observedAt": "2026-09-11T16:52:04.256Z",
+      "limitations": [
+        "Configured or advertised capability has not completed qualification"
+      ],
+      "evidence": [
+        "provider-config:openai-api"
+      ],
+      "source": "ADAPTER",
+      "adapterCapability": "reasoning"
+    },
+    {
+      "schema": "agent-control.capability-observation/v1",
+      "id": "provider-config:openai-api:tool.structured-calls",
+      "capabilityId": "tool.structured-calls",
+      "subject": {
+        "providerId": "openai-api",
+        "runtimeId": "responses"
+      },
+      "support": "SUPPORTED",
+      "implementation": "NATIVE",
+      "verification": "UNVERIFIED",
+      "confidence": 0.5,
+      "observedAt": "2026-09-11T16:52:04.257Z",
+      "limitations": [
+        "Configured or advertised capability has not completed qualification"
+      ],
+      "evidence": [
+        "provider-config:openai-api"
+      ],
+      "source": "ADAPTER",
+      "adapterCapability": "tool-use"
+    },
+    {
+      "schema": "agent-control.capability-observation/v1",
+      "id": "provider-config:openai-api:output.structured",
+      "capabilityId": "output.structured",
+      "subject": {
+        "providerId": "openai-api",
+        "runtimeId": "responses"
+      },
+      "support": "SUPPORTED",
+      "implementation": "NATIVE",
+      "verification": "UNVERIFIED",
+      "confidence": 0.5,
+      "observedAt": "2026-09-11T16:52:04.257Z",
+      "limitations": [
+        "Configured or advertised capability has not completed qualification"
+      ],
+      "evidence": [
+        "provider-config:openai-api"
+      ],
+      "source": "ADAPTER",
+      "adapterCapability": "structured-output"
+    },
+    {
+      "schema": "agent-control.capability-observation/v1",
+      "id": "provider-config:openrouter:code.modify",
+      "capabilityId": "code.modify",
+      "subject": {
+        "providerId": "openrouter",
+        "runtimeId": "openai-compatible"
+      },
+      "support": "SUPPORTED",
+      "implementation": "NATIVE",
+      "verification": "UNVERIFIED",
+      "confidence": 0.5,
+      "observedAt": "2026-09-11T16:52:04.258Z",
+      "limitations": [
+        "Configured or advertised capability has not completed qualification"
+      ],
+      "evidence": [
+        "provider-config:openrouter"
+      ],
+      "source": "ADAPTER",
+      "adapterCapability": "coding"
+    },
+    {
+      "schema": "agent-control.capability-observation/v1",
+      "id": "provider-config:openrouter:reasoning.general",
+      "capabilityId": "reasoning.general",
+      "subject": {
+        "providerId": "openrouter",
+        "runtimeId": "openai-compatible"
+      },
+      "support": "SUPPORTED",
+      "implementation": "NATIVE",
+      "verification": "UNVERIFIED",
+      "confidence": 0.5,
+      "observedAt": "2026-09-11T16:52:04.258Z",
+      "limitations": [
+        "Configured or advertised capability has not completed qualification"
+      ],
+      "evidence": [
+        "provider-config:openrouter"
+      ],
+      "source": "ADAPTER",
+      "adapterCapability": "reasoning"
+    },
+    {
+      "schema": "agent-control.capability-observation/v1",
+      "id": "provider-config:openrouter:tool.structured-calls",
+      "capabilityId": "tool.structured-calls",
+      "subject": {
+        "providerId": "openrouter",
+        "runtimeId": "openai-compatible"
+      },
+      "support": "SUPPORTED",
+      "implementation": "NATIVE",
+      "verification": "UNVERIFIED",
+      "confidence": 0.5,
+      "observedAt": "2026-09-11T16:52:04.259Z",
+      "limitations": [
+        "Configured or advertised capability has not completed qualification"
+      ],
+      "evidence": [
+        "provider-config:openrouter"
+      ],
+      "source": "ADAPTER",
+      "adapterCapability": "tool-use"
+    },
+    {
+      "schema": "agent-control.capability-observation/v1",
+      "id": "provider-config:nvidia-hosted:chat-completions",
+      "capabilityId": "chat-completions",
+      "subject": {
+        "providerId": "nvidia-hosted",
+        "runtimeId": "openai-compatible"
+      },
+      "support": "SUPPORTED",
+      "implementation": "NATIVE",
+      "verification": "UNVERIFIED",
+      "confidence": 0.5,
+      "observedAt": "2026-09-11T16:52:04.260Z",
+      "limitations": [
+        "Configured or advertised capability has not completed qualification"
+      ],
+      "evidence": [
+        "provider-config:nvidia-hosted"
+      ],
+      "source": "ADAPTER",
+      "adapterCapability": "chat-completions"
+    },
+    {
+      "schema": "agent-control.capability-observation/v1",
+      "id": "provider-config:nvidia-hosted:streaming",
+      "capabilityId": "streaming",
+      "subject": {
+        "providerId": "nvidia-hosted",
+        "runtimeId": "openai-compatible"
+      },
+      "support": "SUPPORTED",
+      "implementation": "NATIVE",
+      "verification": "UNVERIFIED",
+      "confidence": 0.5,
+      "observedAt": "2026-09-11T16:52:04.260Z",
+      "limitations": [
+        "Configured or advertised capability has not completed qualification"
+      ],
+      "evidence": [
+        "provider-config:nvidia-hosted"
+      ],
+      "source": "ADAPTER",
+      "adapterCapability": "streaming"
+    },
+    {
+      "schema": "agent-control.capability-observation/v1",
+      "id": "provider-config:local-model:text",
+      "capabilityId": "text",
+      "subject": {
+        "providerId": "local-model",
+        "runtimeId": "local"
+      },
+      "support": "SUPPORTED",
+      "implementation": "NATIVE",
+      "verification": "UNVERIFIED",
+      "confidence": 0.5,
+      "observedAt": "2026-09-11T16:52:04.264Z",
+      "limitations": [
+        "Configured or advertised capability has not completed qualification"
+      ],
+      "evidence": [
+        "provider-config:local-model"
+      ],
+      "source": "ADAPTER",
+      "adapterCapability": "text"
+    },
+    {
+      "schema": "agent-control.capability-observation/v1",
+      "id": "provider-config:local-model:tools",
+      "capabilityId": "tools",
+      "subject": {
+        "providerId": "local-model",
+        "runtimeId": "local"
+      },
+      "support": "SUPPORTED",
+      "implementation": "NATIVE",
+      "verification": "UNVERIFIED",
+      "confidence": 0.5,
+      "observedAt": "2026-09-11T16:52:04.264Z",
+      "limitations": [
+        "Configured or advertised capability has not completed qualification"
+      ],
+      "evidence": [
+        "provider-config:local-model"
+      ],
+      "source": "ADAPTER",
+      "adapterCapability": "tools"
+    },
+    {
+      "schema": "agent-control.capability-observation/v1",
+      "id": "model-config:spark-fast-execution:configured-v1:trivial.coding",
+      "capabilityId": "trivial.coding",
+      "subject": {
+        "providerId": "codex-chatgpt",
+        "modelId": "spark-fast-execution",
+        "accountProfileId": "primary-pro"
+      },
+      "support": "SUPPORTED",
+      "implementation": "NATIVE",
+      "verification": "UNVERIFIED",
+      "confidence": 0.5,
+      "observedAt": "2026-09-11T16:52:04.265Z",
+      "limitations": [
+        "Configured or advertised capability has not completed qualification"
+      ],
+      "evidence": [
+        "model-config:spark-fast-execution"
+      ],
+      "source": "ADAPTER",
+      "adapterCapability": "trivial.coding"
+    },
+    {
+      "schema": "agent-control.capability-observation/v1",
+      "id": "model-config:openai-default:migration-v1:code.modify",
+      "capabilityId": "code.modify",
+      "subject": {
+        "providerId": "openai-api",
+        "modelId": "openai-default"
+      },
+      "support": "SUPPORTED",
+      "implementation": "NATIVE",
+      "verification": "UNVERIFIED",
+      "confidence": 0.5,
+      "observedAt": "2026-09-11T16:52:04.266Z",
+      "limitations": [
+        "Configured or advertised capability has not completed qualification"
+      ],
+      "evidence": [
+        "model-config:openai-default"
+      ],
+      "source": "ADAPTER",
+      "adapterCapability": "coding"
+    },
+    {
+      "schema": "agent-control.capability-observation/v1",
+      "id": "model-config:openai-default:migration-v1:reasoning.general",
+      "capabilityId": "reasoning.general",
+      "subject": {
+        "providerId": "openai-api",
+        "modelId": "openai-default"
+      },
+      "support": "SUPPORTED",
+      "implementation": "NATIVE",
+      "verification": "UNVERIFIED",
+      "confidence": 0.5,
+      "observedAt": "2026-09-11T16:52:04.267Z",
+      "limitations": [
+        "Configured or advertised capability has not completed qualification"
+      ],
+      "evidence": [
+        "model-config:openai-default"
+      ],
+      "source": "ADAPTER",
+      "adapterCapability": "reasoning"
+    },
+    {
+      "schema": "agent-control.capability-observation/v1",
+      "id": "model-config:openai-default:migration-v1:tool.structured-calls",
+      "capabilityId": "tool.structured-calls",
+      "subject": {
+        "providerId": "openai-api",
+        "modelId": "openai-default"
+      },
+      "support": "SUPPORTED",
+      "implementation": "NATIVE",
+      "verification": "UNVERIFIED",
+      "confidence": 0.5,
+      "observedAt": "2026-09-11T16:52:04.267Z",
+      "limitations": [
+        "Configured or advertised capability has not completed qualification"
+      ],
+      "evidence": [
+        "model-config:openai-default"
+      ],
+      "source": "ADAPTER",
+      "adapterCapability": "tool-use"
+    },
+    {
+      "schema": "agent-control.capability-observation/v1",
+      "id": "model-config:openai-default:migration-v1:review.repository",
+      "capabilityId": "review.repository",
+      "subject": {
+        "providerId": "openai-api",
+        "modelId": "openai-default"
+      },
+      "support": "SUPPORTED",
+      "implementation": "NATIVE",
+      "verification": "UNVERIFIED",
+      "confidence": 0.5,
+      "observedAt": "2026-09-11T16:52:04.268Z",
+      "limitations": [
+        "Configured or advertised capability has not completed qualification"
+      ],
+      "evidence": [
+        "model-config:openai-default"
+      ],
+      "source": "ADAPTER",
+      "adapterCapability": "repository-review"
+    },
+    {
+      "schema": "agent-control.capability-observation/v1",
+      "id": "model-config:glm-5.3-flash:configured-v1:reasoning.general",
+      "capabilityId": "reasoning.general",
+      "subject": {
+        "providerId": "openrouter",
+        "modelId": "glm-5.3-flash"
+      },
+      "support": "SUPPORTED",
+      "implementation": "NATIVE",
+      "verification": "UNVERIFIED",
+      "confidence": 0.5,
+      "observedAt": "2026-09-11T16:52:04.269Z",
+      "limitations": [
+        "Configured or advertised capability has not completed qualification"
+      ],
+      "evidence": [
+        "model-config:glm-5.3-flash"
+      ],
+      "source": "ADAPTER",
+      "adapterCapability": "reasoning"
+    },
+    {
+      "schema": "agent-control.capability-observation/v1",
+      "id": "model-config:glm-5.3-flash:configured-v1:code.modify",
+      "capabilityId": "code.modify",
+      "subject": {
+        "providerId": "openrouter",
+        "modelId": "glm-5.3-flash"
+      },
+      "support": "SUPPORTED",
+      "implementation": "NATIVE",
+      "verification": "UNVERIFIED",
+      "confidence": 0.5,
+      "observedAt": "2026-09-11T16:52:04.269Z",
+      "limitations": [
+        "Configured or advertised capability has not completed qualification"
+      ],
+      "evidence": [
+        "model-config:glm-5.3-flash"
+      ],
+      "source": "ADAPTER",
+      "adapterCapability": "coding"
+    },
+    {
+      "schema": "agent-control.capability-observation/v1",
+      "id": "model-config:glm-5.3-flash:configured-v1:tool.structured-calls",
+      "capabilityId": "tool.structured-calls",
+      "subject": {
+        "providerId": "openrouter",
+        "modelId": "glm-5.3-flash"
+      },
+      "support": "SUPPORTED",
+      "implementation": "NATIVE",
+      "verification": "UNVERIFIED",
+      "confidence": 0.5,
+      "observedAt": "2026-09-11T16:52:04.270Z",
+      "limitations": [
+        "Configured or advertised capability has not completed qualification"
+      ],
+      "evidence": [
+        "model-config:glm-5.3-flash"
+      ],
+      "source": "ADAPTER",
+      "adapterCapability": "tool-use"
+    },
+    {
+      "schema": "agent-control.capability-observation/v1",
+      "id": "model-config:glm-5.3-flash:configured-v1:review.repository",
+      "capabilityId": "review.repository",
+      "subject": {
+        "providerId": "openrouter",
+        "modelId": "glm-5.3-flash"
+      },
+      "support": "SUPPORTED",
+      "implementation": "NATIVE",
+      "verification": "UNVERIFIED",
+      "confidence": 0.5,
+      "observedAt": "2026-09-11T16:52:04.271Z",
+      "limitations": [
+        "Configured or advertised capability has not completed qualification"
+      ],
+      "evidence": [
+        "model-config:glm-5.3-flash"
+      ],
+      "source": "ADAPTER",
+      "adapterCapability": "repository-review"
+    },
+    {
+      "schema": "agent-control.capability-observation/v1",
+      "id": "model-config:glm-5.3:configured-v1:reasoning.general",
+      "capabilityId": "reasoning.general",
+      "subject": {
+        "providerId": "openrouter",
+        "modelId": "glm-5.3"
+      },
+      "support": "SUPPORTED",
+      "implementation": "NATIVE",
+      "verification": "UNVERIFIED",
+      "confidence": 0.5,
+      "observedAt": "2026-09-11T16:52:04.272Z",
+      "limitations": [
+        "Configured or advertised capability has not completed qualification"
+      ],
+      "evidence": [
+        "model-config:glm-5.3"
+      ],
+      "source": "ADAPTER",
+      "adapterCapability": "reasoning"
+    },
+    {
+      "schema": "agent-control.capability-observation/v1",
+      "id": "model-config:glm-5.3:configured-v1:code.modify",
+      "capabilityId": "code.modify",
+      "subject": {
+        "providerId": "openrouter",
+        "modelId": "glm-5.3"
+      },
+      "support": "SUPPORTED",
+      "implementation": "NATIVE",
+      "verification": "UNVERIFIED",
+      "confidence": 0.5,
+      "observedAt": "2026-09-11T16:52:04.273Z",
+      "limitations": [
+        "Configured or advertised capability has not completed qualification"
+      ],
+      "evidence": [
+        "model-config:glm-5.3"
+      ],
+      "source": "ADAPTER",
+      "adapterCapability": "coding"
+    },
+    {
+      "schema": "agent-control.capability-observation/v1",
+      "id": "model-config:glm-5.3:configured-v1:tool.structured-calls",
+      "capabilityId": "tool.structured-calls",
+      "subject": {
+        "providerId": "openrouter",
+        "modelId": "glm-5.3"
+      },
+      "support": "SUPPORTED",
+      "implementation": "NATIVE",
+      "verification": "UNVERIFIED",
+      "confidence": 0.5,
+      "observedAt": "2026-09-11T16:52:04.273Z",
+      "limitations": [
+        "Configured or advertised capability has not completed qualification"
+      ],
+      "evidence": [
+        "model-config:glm-5.3"
+      ],
+      "source": "ADAPTER",
+      "adapterCapability": "tool-use"
+    },
+    {
+      "schema": "agent-control.capability-observation/v1",
+      "id": "model-config:glm-5.3:configured-v1:long-context",
+      "capabilityId": "long-context",
+      "subject": {
+        "providerId": "openrouter",
+        "modelId": "glm-5.3"
+      },
+      "support": "SUPPORTED",
+      "implementation": "NATIVE",
+      "verification": "UNVERIFIED",
+      "confidence": 0.5,
+      "observedAt": "2026-09-11T16:52:04.274Z",
+      "limitations": [
+        "Configured or advertised capability has not completed qualification"
+      ],
+      "evidence": [
+        "model-config:glm-5.3"
+      ],
+      "source": "ADAPTER",
+      "adapterCapability": "long-context"
+    },
+    {
+      "schema": "agent-control.capability-observation/v1",
+      "id": "model-config:glm-5.3:configured-v1:review.repository",
+      "capabilityId": "review.repository",
+      "subject": {
+        "providerId": "openrouter",
+        "modelId": "glm-5.3"
+      },
+      "support": "SUPPORTED",
+      "implementation": "NATIVE",
+      "verification": "UNVERIFIED",
+      "confidence": 0.5,
+      "observedAt": "2026-09-11T16:52:04.275Z",
+      "limitations": [
+        "Configured or advertised capability has not completed qualification"
+      ],
+      "evidence": [
+        "model-config:glm-5.3"
+      ],
+      "source": "ADAPTER",
+      "adapterCapability": "repository-review"
+    },
+    {
+      "schema": "agent-control.capability-observation/v1",
+      "id": "model-config:pixel-local-example:future-v1:code.modify",
+      "capabilityId": "code.modify",
+      "subject": {
+        "providerId": "local-pixel",
+        "modelId": "pixel-local-example"
+      },
+      "support": "SUPPORTED",
+      "implementation": "NATIVE",
+      "verification": "UNVERIFIED",
+      "confidence": 0.5,
+      "observedAt": "2026-09-11T16:52:04.276Z",
+      "limitations": [
+        "Configured or advertised capability has not completed qualification"
+      ],
+      "evidence": [
+        "model-config:pixel-local-example"
+      ],
+      "source": "ADAPTER",
+      "adapterCapability": "coding"
+    }
+  ],
+  "candidates": []
+}

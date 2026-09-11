@@ -4,6 +4,7 @@ import path from 'node:path';
 import {emptyConfig, loadConfig, validateConfig, type AgentControlConfig, type ModelConfig, type ModelRoutingConfig, type ProviderConfig, type ResourceConfig, type ServiceConfig, type SparkConfig} from './config.js';
 import type {AdaptiveOrchestrationConfig} from './adaptive-orchestration.js';
 import type {CacheExpertPolicyConfig} from './cache-aware-expert.js';
+import type {LearnedSkillPolicyConfig} from './skill-learning.js';
 
 export type ConfiguredSystemKind = 'resource' | 'provider' | 'model' | 'service';
 export interface ConfigurationSnapshot {
@@ -16,6 +17,7 @@ export interface ConfigurationSnapshot {
   spark?: SparkConfig;
   adaptiveOrchestration?: AdaptiveOrchestrationConfig;
   cacheAwareExperts?: CacheExpertPolicyConfig;
+  learnedSkills?: LearnedSkillPolicyConfig;
 }
 
 export class ConfigurationStoreError extends Error {
@@ -94,6 +96,17 @@ export class ConfigurationStore {
     return {...snapshot(next), restartRequired: true, changed: {kind: 'cache-aware-experts' as const, id: 'cache-aware-experts'}};
   }
 
+  updateLearnedSkills(input: {revision?: unknown; learnedSkills?: unknown}) {
+    const current = this.current(), currentRevision = revision(current);
+    if (typeof input.revision !== 'string' || input.revision !== currentRevision) throw new ConfigurationStoreError('configuration_revision_conflict', 409);
+    if (!input.learnedSkills || typeof input.learnedSkills !== 'object' || Array.isArray(input.learnedSkills)) throw new ConfigurationStoreError('configuration_learned_skills_invalid', 400);
+    let next: AgentControlConfig;
+    try { next = validateConfig({...current, learnedSkills: structuredClone(input.learnedSkills) as LearnedSkillPolicyConfig}); }
+    catch (error) { throw new ConfigurationStoreError((error as Error).message || 'configuration_invalid', 400); }
+    this.write(next);
+    return {...snapshot(next), restartRequired: true, changed: {kind: 'learned-skills' as const, id: 'learned-skills'}};
+  }
+
   private current() {
     try { return fs.existsSync(this.file) ? loadConfig(this.file) : emptyConfig(); }
     catch (error) { throw new ConfigurationStoreError((error as Error).message || 'configuration_read_failed', 500); }
@@ -120,5 +133,5 @@ function revision(config: AgentControlConfig) {
 }
 
 function snapshot(config: AgentControlConfig): ConfigurationSnapshot {
-  return {revision: revision(config), resources: structuredClone(config.resources), providers: structuredClone(config.providers), models: structuredClone(config.models), modelRouting: structuredClone(config.modelRouting), services: structuredClone(config.services), ...(config.spark ? {spark: structuredClone(config.spark)} : {}), ...(config.adaptiveOrchestration ? {adaptiveOrchestration: structuredClone(config.adaptiveOrchestration)} : {}), ...(config.cacheAwareExperts ? {cacheAwareExperts: structuredClone(config.cacheAwareExperts)} : {})};
+  return {revision: revision(config), resources: structuredClone(config.resources), providers: structuredClone(config.providers), models: structuredClone(config.models), modelRouting: structuredClone(config.modelRouting), services: structuredClone(config.services), ...(config.spark ? {spark: structuredClone(config.spark)} : {}), ...(config.adaptiveOrchestration ? {adaptiveOrchestration: structuredClone(config.adaptiveOrchestration)} : {}), ...(config.cacheAwareExperts ? {cacheAwareExperts: structuredClone(config.cacheAwareExperts)} : {}), ...(config.learnedSkills ? {learnedSkills: structuredClone(config.learnedSkills)} : {})};
 }

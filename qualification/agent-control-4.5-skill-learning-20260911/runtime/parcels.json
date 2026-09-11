@@ -1,0 +1,2058 @@
+{
+  "version": 1,
+  "parcels": [
+    {
+      "id": "parcel-0fedd96c-da30-46cf-bc8a-428c35efbbc5",
+      "prompt": "NEGATIVE: Translate this poem into French.",
+      "objective": "Classify a bounded Agent Control request with a qualified learned specialist.",
+      "actor": "qualification-operator",
+      "executionMode": "LIVE",
+      "executionOwner": "work-parcel-coordinator",
+      "status": "FAILED",
+      "planner": {
+        "kind": "deterministic",
+        "reason": "Frozen 4.5 qualification route"
+      },
+      "stages": [
+        {
+          "id": "classify",
+          "name": "Classify route intent",
+          "job": "qualified-route-intent-specialist@1.0.0",
+          "parameters": {
+            "taskClass": "unrelated-task",
+            "input": "Translate this poem into French."
+          },
+          "dependsOn": [],
+          "requiredCapabilities": [],
+          "outputs": [],
+          "waitingQuestionIds": [],
+          "status": "FAILED",
+          "baton": {
+            "schema": "agent-control.work-parcel-baton/v2",
+            "id": "parcel-baton-e73a0a45-f579-4ed6-afe8-69526f23168c",
+            "createdAt": "2026-09-11T16:51:23.087Z",
+            "sourceStageIds": [],
+            "targetStageId": "classify",
+            "objective": "NEGATIVE: Translate this poem into French.",
+            "currentInterpretation": "Classify a bounded Agent Control request with a qualified learned specialist.",
+            "effectiveInstructions": [],
+            "constraints": [
+              "No deployment",
+              "Independent verification required"
+            ],
+            "successCriteria": [
+              {
+                "id": "criterion:stage:classify",
+                "description": "Classify route intent completes through its declared verification boundary",
+                "status": "PENDING"
+              }
+            ],
+            "completedStages": [],
+            "nextAction": "Execute Classify route intent through qualified-route-intent-specialist@1.0.0 and satisfy its declared verification boundary",
+            "artifactIds": [],
+            "outputTypes": [],
+            "eventRefs": [
+              {
+                "id": "context-event-81cd2a29-d7cf-48ae-b637-bd449c53ba75",
+                "sequence": 1,
+                "type": "goal.recorded",
+                "summary": "Original goal recorded",
+                "sha256": "7166bb956ddc38b61d76d6524cbf3472330baa83e01dfd8f6cd110432c232b00"
+              },
+              {
+                "id": "context-event-8909f1ba-b708-4c2d-b9ff-99145f5846b9",
+                "sequence": 2,
+                "type": "plan.recorded",
+                "summary": "1 governed stage(s) recorded",
+                "sha256": "629782801f4d5927cc8c37bef325cbbb97d013460204380619361e69b983e970"
+              },
+              {
+                "id": "context-event-c877f6ec-ae87-497a-94e9-f740d96fee0a",
+                "sequence": 3,
+                "type": "criterion.added",
+                "summary": "Classify route intent completes through its declared verification boundary",
+                "sha256": "0187f67c1e352056105d4353a1987ed83f3b400e7435eb1cbb2e0c3aa4a0ffb2"
+              }
+            ],
+            "unresolvedQuestions": [],
+            "approvals": [],
+            "previousBatonIds": [],
+            "sizeBytes": 1677,
+            "estimatedTokens": 420,
+            "sha256": "8671b83d5fc0246b08a930093aeace4fb141aafe97e3f9f64122a95cb3e8bcbc"
+          },
+          "runId": "run-9daa169b-1536-4b85-be6b-7676d6d39626",
+          "startedAt": "2026-09-11T16:51:23.092Z",
+          "executor": "agent-control-job-runtime",
+          "error": "execute:capability_unavailable:learned_specialist_route_unavailable",
+          "actualRoute": {
+            "workers": [
+              "controller-cpu"
+            ],
+            "reason": "satisfies:qualification.local, healthy, available"
+          },
+          "endedAt": "2026-09-11T16:51:23.099Z"
+        }
+      ],
+      "context": {
+        "schema": "agent-control.parcel-context/v1",
+        "active": {
+          "originalGoal": "NEGATIVE: Translate this poem into French.",
+          "currentInterpretation": "Classify a bounded Agent Control request with a qualified learned specialist.",
+          "effectiveInstructions": [],
+          "constraints": [
+            "No deployment",
+            "Independent verification required"
+          ],
+          "plan": [
+            {
+              "id": "classify",
+              "name": "Classify route intent",
+              "dependencies": [],
+              "state": "FAILED"
+            }
+          ],
+          "currentStageIds": [],
+          "unresolvedQuestionIds": [],
+          "approvalIds": [],
+          "updatedAt": "2026-09-11T16:51:23.104Z"
+        },
+        "events": [
+          {
+            "id": "context-event-81cd2a29-d7cf-48ae-b637-bd449c53ba75",
+            "sequence": 1,
+            "at": "2026-09-11T16:51:23.084Z",
+            "type": "goal.recorded",
+            "summary": "Original goal recorded",
+            "detail": {
+              "actor": "qualification-operator"
+            },
+            "tags": [
+              "goal"
+            ],
+            "evidence": [],
+            "previousHash": null,
+            "sha256": "7166bb956ddc38b61d76d6524cbf3472330baa83e01dfd8f6cd110432c232b00"
+          },
+          {
+            "id": "context-event-8909f1ba-b708-4c2d-b9ff-99145f5846b9",
+            "sequence": 2,
+            "at": "2026-09-11T16:51:23.084Z",
+            "type": "plan.recorded",
+            "summary": "1 governed stage(s) recorded",
+            "detail": {
+              "stageIds": [
+                "classify"
+              ]
+            },
+            "tags": [
+              "plan"
+            ],
+            "evidence": [],
+            "previousHash": "7166bb956ddc38b61d76d6524cbf3472330baa83e01dfd8f6cd110432c232b00",
+            "sha256": "629782801f4d5927cc8c37bef325cbbb97d013460204380619361e69b983e970"
+          },
+          {
+            "id": "context-event-c877f6ec-ae87-497a-94e9-f740d96fee0a",
+            "sequence": 3,
+            "at": "2026-09-11T16:51:23.084Z",
+            "type": "criterion.added",
+            "stageId": "classify",
+            "summary": "Classify route intent completes through its declared verification boundary",
+            "detail": {
+              "criterionId": "criterion:stage:classify",
+              "kind": "STAGE_VERIFIED",
+              "source": "INFERRED",
+              "sourceActor": "agent-control-policy"
+            },
+            "tags": [
+              "criterion",
+              "stage_verified"
+            ],
+            "evidence": [],
+            "previousHash": "629782801f4d5927cc8c37bef325cbbb97d013460204380619361e69b983e970",
+            "sha256": "0187f67c1e352056105d4353a1987ed83f3b400e7435eb1cbb2e0c3aa4a0ffb2"
+          },
+          {
+            "id": "context-event-b8b4e989-51e8-4b29-bb43-98ba3a6076a2",
+            "sequence": 4,
+            "at": "2026-09-11T16:51:23.087Z",
+            "type": "baton.created",
+            "stageId": "classify",
+            "summary": "Bounded baton view created for classify",
+            "detail": {
+              "batonId": "parcel-baton-e73a0a45-f579-4ed6-afe8-69526f23168c",
+              "sha256": "8671b83d5fc0246b08a930093aeace4fb141aafe97e3f9f64122a95cb3e8bcbc",
+              "sizeBytes": 1677,
+              "estimatedTokens": 420,
+              "selectedEventIds": [
+                "context-event-81cd2a29-d7cf-48ae-b637-bd449c53ba75",
+                "context-event-8909f1ba-b708-4c2d-b9ff-99145f5846b9",
+                "context-event-c877f6ec-ae87-497a-94e9-f740d96fee0a"
+              ]
+            },
+            "tags": [
+              "baton"
+            ],
+            "evidence": [
+              "8671b83d5fc0246b08a930093aeace4fb141aafe97e3f9f64122a95cb3e8bcbc"
+            ],
+            "previousHash": "0187f67c1e352056105d4353a1987ed83f3b400e7435eb1cbb2e0c3aa4a0ffb2",
+            "sha256": "be1ef9db389882f626448909cb3fd8ff28a0e44f6ac9107c977fc1ff4f5a650c"
+          },
+          {
+            "id": "context-event-d48c3662-0e19-4c14-be6b-aecc00e62d75",
+            "sequence": 5,
+            "at": "2026-09-11T16:51:23.092Z",
+            "type": "stage.started",
+            "stageId": "classify",
+            "summary": "Classify route intent dispatched",
+            "detail": {
+              "runId": "run-9daa169b-1536-4b85-be6b-7676d6d39626",
+              "job": "qualified-route-intent-specialist@1.0.0",
+              "executor": "agent-control-job-runtime"
+            },
+            "tags": [
+              "stage"
+            ],
+            "evidence": [
+              "8671b83d5fc0246b08a930093aeace4fb141aafe97e3f9f64122a95cb3e8bcbc"
+            ],
+            "previousHash": "be1ef9db389882f626448909cb3fd8ff28a0e44f6ac9107c977fc1ff4f5a650c",
+            "sha256": "5ef8cae921fb47585e28cce19adca3f7d9688e6962aac4e1083435e815a4219f"
+          },
+          {
+            "id": "context-event-2fb3190f-608a-4acb-85ff-a736c4259d65",
+            "sequence": 6,
+            "at": "2026-09-11T16:51:23.099Z",
+            "type": "stage.failed",
+            "stageId": "classify",
+            "summary": "Classify route intent failed",
+            "detail": {
+              "runId": "run-9daa169b-1536-4b85-be6b-7676d6d39626",
+              "reason": "execute:capability_unavailable:learned_specialist_route_unavailable"
+            },
+            "tags": [
+              "stage",
+              "failure"
+            ],
+            "evidence": [],
+            "previousHash": "5ef8cae921fb47585e28cce19adca3f7d9688e6962aac4e1083435e815a4219f",
+            "sha256": "3595989b516ccd206cc663756e041f69e7689f6306e1a22051825188e6f43e38"
+          }
+        ],
+        "questions": [],
+        "amendments": [],
+        "criteria": [
+          {
+            "id": "criterion:stage:classify",
+            "kind": "STAGE_VERIFIED",
+            "description": "Classify route intent completes through its declared verification boundary",
+            "source": "INFERRED",
+            "sourceActor": "agent-control-policy",
+            "stageId": "classify",
+            "requiredEvidence": [
+              "stage:classify:verified"
+            ],
+            "status": "PENDING",
+            "evidence": [],
+            "createdAt": "2026-09-11T16:51:23.084Z"
+          }
+        ],
+        "batonViews": [
+          {
+            "schema": "agent-control.work-parcel-baton/v2",
+            "id": "parcel-baton-e73a0a45-f579-4ed6-afe8-69526f23168c",
+            "createdAt": "2026-09-11T16:51:23.087Z",
+            "sourceStageIds": [],
+            "targetStageId": "classify",
+            "objective": "NEGATIVE: Translate this poem into French.",
+            "currentInterpretation": "Classify a bounded Agent Control request with a qualified learned specialist.",
+            "effectiveInstructions": [],
+            "constraints": [
+              "No deployment",
+              "Independent verification required"
+            ],
+            "successCriteria": [
+              {
+                "id": "criterion:stage:classify",
+                "description": "Classify route intent completes through its declared verification boundary",
+                "status": "PENDING"
+              }
+            ],
+            "completedStages": [],
+            "nextAction": "Execute Classify route intent through qualified-route-intent-specialist@1.0.0 and satisfy its declared verification boundary",
+            "artifactIds": [],
+            "outputTypes": [],
+            "eventRefs": [
+              {
+                "id": "context-event-81cd2a29-d7cf-48ae-b637-bd449c53ba75",
+                "sequence": 1,
+                "type": "goal.recorded",
+                "summary": "Original goal recorded",
+                "sha256": "7166bb956ddc38b61d76d6524cbf3472330baa83e01dfd8f6cd110432c232b00"
+              },
+              {
+                "id": "context-event-8909f1ba-b708-4c2d-b9ff-99145f5846b9",
+                "sequence": 2,
+                "type": "plan.recorded",
+                "summary": "1 governed stage(s) recorded",
+                "sha256": "629782801f4d5927cc8c37bef325cbbb97d013460204380619361e69b983e970"
+              },
+              {
+                "id": "context-event-c877f6ec-ae87-497a-94e9-f740d96fee0a",
+                "sequence": 3,
+                "type": "criterion.added",
+                "summary": "Classify route intent completes through its declared verification boundary",
+                "sha256": "0187f67c1e352056105d4353a1987ed83f3b400e7435eb1cbb2e0c3aa4a0ffb2"
+              }
+            ],
+            "unresolvedQuestions": [],
+            "approvals": [],
+            "previousBatonIds": [],
+            "sizeBytes": 1677,
+            "estimatedTokens": 420,
+            "sha256": "8671b83d5fc0246b08a930093aeace4fb141aafe97e3f9f64122a95cb3e8bcbc"
+          }
+        ],
+        "metrics": {
+          "eventLedgerBytes": 3251,
+          "latestBatonBytes": 1677,
+          "latestBatonEstimatedTokens": 420,
+          "historicalBytesExcludedFromLatestBaton": 1574,
+          "estimatedHistoricalTokensExcluded": 394,
+          "retrievals": 0,
+          "retrievedEvents": 0
+        }
+      },
+      "createdAt": "2026-09-11T16:51:23.084Z",
+      "updatedAt": "2026-09-11T16:51:23.104Z",
+      "telemetry": {
+        "inputTokens": null,
+        "freshInputTokens": null,
+        "cachedInputTokens": null,
+        "cacheWriteTokens": null,
+        "outputTokens": null,
+        "reasoningTokens": null,
+        "totalTokens": null,
+        "cost": null,
+        "currency": null,
+        "elapsedMs": 20
+      },
+      "audit": {
+        "schema": "agent-control.work-parcel-audit/v1",
+        "recordedAt": "2026-09-11T16:51:23.084Z",
+        "classification": "Registered Job request",
+        "selectedExecution": "Work Parcel",
+        "planningRationale": "Frozen 4.5 qualification route",
+        "planner": {
+          "kind": "deterministic",
+          "provider": null,
+          "model": null
+        },
+        "alternatives": [
+          {
+            "stageId": "classify",
+            "candidate": "controller-cpu",
+            "eligible": true,
+            "reasons": [
+              "satisfies:qualification.local",
+              "healthy",
+              "available"
+            ]
+          },
+          {
+            "stageId": "classify",
+            "candidate": "controller-cpu",
+            "eligible": true,
+            "reasons": [
+              "satisfies:qualification.local",
+              "healthy",
+              "available"
+            ]
+          }
+        ],
+        "timeline": [
+          {
+            "id": "audit-68343c1a-7558-49e2-8164-f9a8843a27ab",
+            "at": "2026-09-11T16:51:23.084Z",
+            "type": "task.received",
+            "summary": "Task received",
+            "detail": "NEGATIVE: Translate this poem into French."
+          },
+          {
+            "id": "audit-b6d924c5-d987-49cc-b976-9c0adceab98f",
+            "at": "2026-09-11T16:51:23.084Z",
+            "type": "task.classified",
+            "summary": "Classified: Registered Job request",
+            "detail": "Observable inputs: 1 stage(s); planner=deterministic"
+          },
+          {
+            "id": "audit-985c145b-a42a-4906-b077-662265c61463",
+            "at": "2026-09-11T16:51:23.084Z",
+            "type": "plan.selected",
+            "summary": "Work Parcel selected",
+            "detail": "Frozen 4.5 qualification route"
+          },
+          {
+            "id": "audit-f77e912f-2258-43cd-9cd3-0aa614587614",
+            "at": "2026-09-11T16:51:23.084Z",
+            "type": "route.requested",
+            "stageId": "classify",
+            "summary": "Classify route intent route requested",
+            "detail": "Normal Agent Control placement and routing policy"
+          },
+          {
+            "id": "audit-60af4920-badb-4934-99bd-87b1f83867a6",
+            "at": "2026-09-11T16:51:23.087Z",
+            "type": "baton.created",
+            "stageId": "classify",
+            "summary": "Bounded operational baton view sealed",
+            "detail": "parcel-baton-e73a0a45-f579-4ed6-afe8-69526f23168c; sha256 8671b83d5fc0246b08a930093aeace4fb141aafe97e3f9f64122a95cb3e8bcbc; 1677 bytes; full history remains in parcel ledger"
+          },
+          {
+            "id": "audit-d490c42e-6107-4d56-9769-f108664dc494",
+            "at": "2026-09-11T16:51:23.092Z",
+            "type": "stage.dispatched",
+            "stageId": "classify",
+            "summary": "Classify route intent dispatched",
+            "detail": "Job qualified-route-intent-specialist@1.0.0; Run run-9daa169b-1536-4b85-be6b-7676d6d39626; requested route Normal Agent Control placement and routing policy"
+          },
+          {
+            "id": "audit-63d9a865-09d8-4e6c-8a88-cff15af491dc",
+            "at": "2026-09-11T16:51:23.103Z",
+            "type": "route.resolved",
+            "stageId": "classify",
+            "summary": "Classify route intent actual route recorded",
+            "detail": "Workers controller-cpu; provider no model; account default; model no model; profile control action; satisfies:qualification.local, healthy, available"
+          }
+        ],
+        "invocations": [],
+        "totals": {
+          "models": [],
+          "invocations": 0,
+          "inputTokens": null,
+          "freshInputTokens": null,
+          "cachedInputTokens": null,
+          "cacheWriteTokens": null,
+          "outputTokens": null,
+          "reasoningTokens": null,
+          "totalTokens": null,
+          "providerReportedCost": null,
+          "calculatedCost": null,
+          "cost": null,
+          "costBasis": "unavailable",
+          "currency": null,
+          "modelExecutionMs": 0,
+          "wallClockMs": 20
+        }
+      },
+      "provenance": [
+        {
+          "at": "2026-09-11T16:51:23.084Z",
+          "type": "submitted",
+          "detail": "Natural-language request accepted; planner=deterministic"
+        },
+        {
+          "at": "2026-09-11T16:51:23.092Z",
+          "type": "stage.started",
+          "detail": "classify:run-9daa169b-1536-4b85-be6b-7676d6d39626"
+        }
+      ],
+      "endedAt": "2026-09-11T16:51:23.104Z"
+    },
+    {
+      "id": "parcel-b2649b2f-1357-4d9f-a4cd-8d95e4d96648",
+      "prompt": "Please review the release evidence without making changes.",
+      "objective": "Classify a bounded Agent Control request with a qualified learned specialist.",
+      "actor": "qualification-operator",
+      "executionMode": "LIVE",
+      "executionOwner": "work-parcel-coordinator",
+      "status": "SUCCEEDED",
+      "planner": {
+        "kind": "deterministic",
+        "reason": "Frozen 4.5 qualification route"
+      },
+      "stages": [
+        {
+          "id": "classify",
+          "name": "Classify route intent",
+          "job": "qualified-route-intent-specialist@1.0.0",
+          "parameters": {
+            "taskClass": "route-intent-json",
+            "input": "Please review the release evidence without making changes."
+          },
+          "dependsOn": [],
+          "requiredCapabilities": [],
+          "outputs": [],
+          "waitingQuestionIds": [],
+          "status": "SUCCEEDED",
+          "baton": {
+            "schema": "agent-control.work-parcel-baton/v2",
+            "id": "parcel-baton-e462b944-d233-4d45-bdaa-ac24e01e442c",
+            "createdAt": "2026-09-11T16:51:23.079Z",
+            "sourceStageIds": [
+              "classify"
+            ],
+            "objective": "Please review the release evidence without making changes.",
+            "currentInterpretation": "Classify a bounded Agent Control request with a qualified learned specialist.",
+            "effectiveInstructions": [],
+            "constraints": [
+              "No deployment",
+              "Independent verification required"
+            ],
+            "successCriteria": [
+              {
+                "id": "criterion:stage:classify",
+                "description": "Classify route intent completes through its declared verification boundary",
+                "status": "PENDING"
+              }
+            ],
+            "completedStages": [],
+            "nextAction": "Continue with stages depending on Classify route intent",
+            "artifactIds": [
+              "artifact-c5055035-333a-4994-a10c-448e11da38de",
+              "artifact-d9b5db50-ee00-4ab0-a78f-bbc287418607"
+            ],
+            "outputTypes": [
+              "application/json"
+            ],
+            "eventRefs": [
+              {
+                "id": "context-event-b23aa4c8-4062-4378-bb2b-240e2b65348a",
+                "sequence": 1,
+                "type": "goal.recorded",
+                "summary": "Original goal recorded",
+                "sha256": "0910511aa8d377824210c5cb2e7b37582e2f0bba8d0f2bcb26a2dcd808e619a4"
+              },
+              {
+                "id": "context-event-6ed55c53-39b6-446d-ae14-140da0683775",
+                "sequence": 2,
+                "type": "plan.recorded",
+                "summary": "1 governed stage(s) recorded",
+                "sha256": "29fd977c245c7c67578f2b5678a190ae61bcbee49656b6728ea4bc2c569020d7"
+              },
+              {
+                "id": "context-event-c775bc7c-69cb-4cd7-a84e-b9ac430587bf",
+                "sequence": 3,
+                "type": "criterion.added",
+                "summary": "Classify route intent completes through its declared verification boundary",
+                "sha256": "40ea883114b5b50461aa3066cc00610a466f855ed61432e57d457af4ac5aa019"
+              },
+              {
+                "id": "context-event-2223fb44-c05b-4cbf-b72d-69de8e094ce0",
+                "sequence": 4,
+                "type": "baton.created",
+                "summary": "Bounded baton view created for classify",
+                "sha256": "2c6e1f993026ae80cf62612992a61b636f4ac2b49e52c34c6810ddb8b5d76476"
+              },
+              {
+                "id": "context-event-1a926134-5870-4b60-87ca-a577d34f431c",
+                "sequence": 5,
+                "type": "stage.started",
+                "summary": "Classify route intent dispatched",
+                "sha256": "b583dbd62f34e66729266b4ed8382822bb755d07a62b43029a5abfa4ecdc88aa"
+              }
+            ],
+            "unresolvedQuestions": [],
+            "approvals": [],
+            "previousBatonIds": [
+              "parcel-baton-5deac6b2-ba57-48f4-9951-204d70652a60"
+            ],
+            "sizeBytes": 2212,
+            "estimatedTokens": 553,
+            "sha256": "8d7f74027b6cd0a81c1dbb56c365a695e657463182eaf87cc41f7dceda649e57"
+          },
+          "runId": "run-40e03e14-13ed-4176-b3b1-9172d8d9941b",
+          "startedAt": "2026-09-11T16:51:17.087Z",
+          "executor": "agent-control-job-runtime",
+          "actualRoute": {
+            "workers": [
+              "controller-cpu"
+            ],
+            "reason": "satisfies:qualification.local, healthy, available, satisfies:qualification.local, healthy, available"
+          },
+          "endedAt": "2026-09-11T16:51:23.075Z"
+        }
+      ],
+      "context": {
+        "schema": "agent-control.parcel-context/v1",
+        "active": {
+          "originalGoal": "Please review the release evidence without making changes.",
+          "currentInterpretation": "Classify a bounded Agent Control request with a qualified learned specialist.",
+          "effectiveInstructions": [],
+          "constraints": [
+            "No deployment",
+            "Independent verification required"
+          ],
+          "plan": [
+            {
+              "id": "classify",
+              "name": "Classify route intent",
+              "dependencies": [],
+              "state": "SUCCEEDED"
+            }
+          ],
+          "currentStageIds": [],
+          "unresolvedQuestionIds": [],
+          "approvalIds": [],
+          "updatedAt": "2026-09-11T16:51:23.081Z",
+          "currentRoute": "Workers controller-cpu; provider no model; account default; model no model; profile control action; satisfies:qualification.local, healthy, available",
+          "currentNode": "controller-cpu"
+        },
+        "events": [
+          {
+            "id": "context-event-b23aa4c8-4062-4378-bb2b-240e2b65348a",
+            "sequence": 1,
+            "at": "2026-09-11T16:51:17.074Z",
+            "type": "goal.recorded",
+            "summary": "Original goal recorded",
+            "detail": {
+              "actor": "qualification-operator"
+            },
+            "tags": [
+              "goal"
+            ],
+            "evidence": [],
+            "previousHash": null,
+            "sha256": "0910511aa8d377824210c5cb2e7b37582e2f0bba8d0f2bcb26a2dcd808e619a4"
+          },
+          {
+            "id": "context-event-6ed55c53-39b6-446d-ae14-140da0683775",
+            "sequence": 2,
+            "at": "2026-09-11T16:51:17.074Z",
+            "type": "plan.recorded",
+            "summary": "1 governed stage(s) recorded",
+            "detail": {
+              "stageIds": [
+                "classify"
+              ]
+            },
+            "tags": [
+              "plan"
+            ],
+            "evidence": [],
+            "previousHash": "0910511aa8d377824210c5cb2e7b37582e2f0bba8d0f2bcb26a2dcd808e619a4",
+            "sha256": "29fd977c245c7c67578f2b5678a190ae61bcbee49656b6728ea4bc2c569020d7"
+          },
+          {
+            "id": "context-event-c775bc7c-69cb-4cd7-a84e-b9ac430587bf",
+            "sequence": 3,
+            "at": "2026-09-11T16:51:17.074Z",
+            "type": "criterion.added",
+            "stageId": "classify",
+            "summary": "Classify route intent completes through its declared verification boundary",
+            "detail": {
+              "criterionId": "criterion:stage:classify",
+              "kind": "STAGE_VERIFIED",
+              "source": "INFERRED",
+              "sourceActor": "agent-control-policy"
+            },
+            "tags": [
+              "criterion",
+              "stage_verified"
+            ],
+            "evidence": [],
+            "previousHash": "29fd977c245c7c67578f2b5678a190ae61bcbee49656b6728ea4bc2c569020d7",
+            "sha256": "40ea883114b5b50461aa3066cc00610a466f855ed61432e57d457af4ac5aa019"
+          },
+          {
+            "id": "context-event-2223fb44-c05b-4cbf-b72d-69de8e094ce0",
+            "sequence": 4,
+            "at": "2026-09-11T16:51:17.082Z",
+            "type": "baton.created",
+            "stageId": "classify",
+            "summary": "Bounded baton view created for classify",
+            "detail": {
+              "batonId": "parcel-baton-5deac6b2-ba57-48f4-9951-204d70652a60",
+              "sha256": "e88c235f8c7ec6de83d69500b08c2fa910ec60530ff912880abcc6ae50f290a6",
+              "sizeBytes": 1693,
+              "estimatedTokens": 424,
+              "selectedEventIds": [
+                "context-event-b23aa4c8-4062-4378-bb2b-240e2b65348a",
+                "context-event-6ed55c53-39b6-446d-ae14-140da0683775",
+                "context-event-c775bc7c-69cb-4cd7-a84e-b9ac430587bf"
+              ]
+            },
+            "tags": [
+              "baton"
+            ],
+            "evidence": [
+              "e88c235f8c7ec6de83d69500b08c2fa910ec60530ff912880abcc6ae50f290a6"
+            ],
+            "previousHash": "40ea883114b5b50461aa3066cc00610a466f855ed61432e57d457af4ac5aa019",
+            "sha256": "2c6e1f993026ae80cf62612992a61b636f4ac2b49e52c34c6810ddb8b5d76476"
+          },
+          {
+            "id": "context-event-1a926134-5870-4b60-87ca-a577d34f431c",
+            "sequence": 5,
+            "at": "2026-09-11T16:51:17.087Z",
+            "type": "stage.started",
+            "stageId": "classify",
+            "summary": "Classify route intent dispatched",
+            "detail": {
+              "runId": "run-40e03e14-13ed-4176-b3b1-9172d8d9941b",
+              "job": "qualified-route-intent-specialist@1.0.0",
+              "executor": "agent-control-job-runtime"
+            },
+            "tags": [
+              "stage"
+            ],
+            "evidence": [
+              "e88c235f8c7ec6de83d69500b08c2fa910ec60530ff912880abcc6ae50f290a6"
+            ],
+            "previousHash": "2c6e1f993026ae80cf62612992a61b636f4ac2b49e52c34c6810ddb8b5d76476",
+            "sha256": "b583dbd62f34e66729266b4ed8382822bb755d07a62b43029a5abfa4ecdc88aa"
+          },
+          {
+            "id": "context-event-2e2cd2ff-809e-4aae-a5fc-e018789ef1da",
+            "sequence": 6,
+            "at": "2026-09-11T16:51:23.079Z",
+            "type": "baton.created",
+            "summary": "Bounded baton view created for next executor",
+            "detail": {
+              "batonId": "parcel-baton-e462b944-d233-4d45-bdaa-ac24e01e442c",
+              "sha256": "8d7f74027b6cd0a81c1dbb56c365a695e657463182eaf87cc41f7dceda649e57",
+              "sizeBytes": 2212,
+              "estimatedTokens": 553,
+              "selectedEventIds": [
+                "context-event-b23aa4c8-4062-4378-bb2b-240e2b65348a",
+                "context-event-6ed55c53-39b6-446d-ae14-140da0683775",
+                "context-event-c775bc7c-69cb-4cd7-a84e-b9ac430587bf",
+                "context-event-2223fb44-c05b-4cbf-b72d-69de8e094ce0",
+                "context-event-1a926134-5870-4b60-87ca-a577d34f431c"
+              ]
+            },
+            "tags": [
+              "baton"
+            ],
+            "evidence": [
+              "8d7f74027b6cd0a81c1dbb56c365a695e657463182eaf87cc41f7dceda649e57"
+            ],
+            "previousHash": "b583dbd62f34e66729266b4ed8382822bb755d07a62b43029a5abfa4ecdc88aa",
+            "sha256": "6a02e472d1393002563d8e35589fbee7990fc733d69729acd96103bfe9bedc63"
+          },
+          {
+            "id": "context-event-442f94e0-a39b-40b7-b54c-799239c96f5f",
+            "sequence": 7,
+            "at": "2026-09-11T16:51:23.075Z",
+            "type": "stage.completed",
+            "stageId": "classify",
+            "summary": "Classify route intent completed through verification",
+            "detail": {
+              "runId": "run-40e03e14-13ed-4176-b3b1-9172d8d9941b",
+              "artifactIds": [
+                "artifact-c5055035-333a-4994-a10c-448e11da38de",
+                "artifact-d9b5db50-ee00-4ab0-a78f-bbc287418607"
+              ],
+              "batonId": "parcel-baton-e462b944-d233-4d45-bdaa-ac24e01e442c"
+            },
+            "tags": [
+              "stage",
+              "verified"
+            ],
+            "evidence": [
+              "8d7f74027b6cd0a81c1dbb56c365a695e657463182eaf87cc41f7dceda649e57",
+              "artifact-c5055035-333a-4994-a10c-448e11da38de",
+              "artifact-d9b5db50-ee00-4ab0-a78f-bbc287418607"
+            ],
+            "previousHash": "6a02e472d1393002563d8e35589fbee7990fc733d69729acd96103bfe9bedc63",
+            "sha256": "673a7592132ed806364dc1281fb6582f0bdf0d0e81efd7797d5c6cdc8a7fdc30"
+          },
+          {
+            "id": "context-event-aaa9050d-4021-402f-ba95-04235c490d34",
+            "sequence": 8,
+            "at": "2026-09-11T16:51:23.075Z",
+            "type": "criterion.evaluated",
+            "stageId": "classify",
+            "summary": "Classify route intent completes through its declared verification boundary: PASS",
+            "detail": {
+              "criterionId": "criterion:stage:classify",
+              "status": "PASS",
+              "actor": "agent-control-verifier"
+            },
+            "tags": [
+              "criterion",
+              "pass"
+            ],
+            "evidence": [
+              "stage:classify:verified",
+              "artifact-c5055035-333a-4994-a10c-448e11da38de",
+              "artifact-d9b5db50-ee00-4ab0-a78f-bbc287418607"
+            ],
+            "previousHash": "673a7592132ed806364dc1281fb6582f0bdf0d0e81efd7797d5c6cdc8a7fdc30",
+            "sha256": "efcccf9a9574a2a5fcbec988019b5a2b498d2e8657ff6786900b2f4cfd6041fd"
+          },
+          {
+            "id": "context-event-23f8c484-60dd-466c-b4ea-ebd461023173",
+            "sequence": 9,
+            "at": "2026-09-11T16:51:23.081Z",
+            "type": "verification.result",
+            "summary": "Work Parcel verification complete",
+            "detail": {
+              "status": "PASS",
+              "criteria": [
+                "criterion:stage:classify"
+              ]
+            },
+            "tags": [
+              "verification",
+              "pass"
+            ],
+            "evidence": [
+              "stage:classify:verified",
+              "artifact-c5055035-333a-4994-a10c-448e11da38de",
+              "artifact-d9b5db50-ee00-4ab0-a78f-bbc287418607"
+            ],
+            "previousHash": "efcccf9a9574a2a5fcbec988019b5a2b498d2e8657ff6786900b2f4cfd6041fd",
+            "sha256": "981cb0f499495490e79ade5c724df4f4af34ce0c1ae7a5eb2cf5bd6395874572"
+          }
+        ],
+        "questions": [],
+        "amendments": [],
+        "criteria": [
+          {
+            "id": "criterion:stage:classify",
+            "kind": "STAGE_VERIFIED",
+            "description": "Classify route intent completes through its declared verification boundary",
+            "source": "INFERRED",
+            "sourceActor": "agent-control-policy",
+            "stageId": "classify",
+            "requiredEvidence": [
+              "stage:classify:verified"
+            ],
+            "status": "PASS",
+            "evidence": [
+              "stage:classify:verified",
+              "artifact-c5055035-333a-4994-a10c-448e11da38de",
+              "artifact-d9b5db50-ee00-4ab0-a78f-bbc287418607"
+            ],
+            "createdAt": "2026-09-11T16:51:17.074Z",
+            "evaluatedAt": "2026-09-11T16:51:23.075Z"
+          }
+        ],
+        "batonViews": [
+          {
+            "schema": "agent-control.work-parcel-baton/v2",
+            "id": "parcel-baton-5deac6b2-ba57-48f4-9951-204d70652a60",
+            "createdAt": "2026-09-11T16:51:17.082Z",
+            "sourceStageIds": [],
+            "targetStageId": "classify",
+            "objective": "Please review the release evidence without making changes.",
+            "currentInterpretation": "Classify a bounded Agent Control request with a qualified learned specialist.",
+            "effectiveInstructions": [],
+            "constraints": [
+              "No deployment",
+              "Independent verification required"
+            ],
+            "successCriteria": [
+              {
+                "id": "criterion:stage:classify",
+                "description": "Classify route intent completes through its declared verification boundary",
+                "status": "PENDING"
+              }
+            ],
+            "completedStages": [],
+            "nextAction": "Execute Classify route intent through qualified-route-intent-specialist@1.0.0 and satisfy its declared verification boundary",
+            "artifactIds": [],
+            "outputTypes": [],
+            "eventRefs": [
+              {
+                "id": "context-event-b23aa4c8-4062-4378-bb2b-240e2b65348a",
+                "sequence": 1,
+                "type": "goal.recorded",
+                "summary": "Original goal recorded",
+                "sha256": "0910511aa8d377824210c5cb2e7b37582e2f0bba8d0f2bcb26a2dcd808e619a4"
+              },
+              {
+                "id": "context-event-6ed55c53-39b6-446d-ae14-140da0683775",
+                "sequence": 2,
+                "type": "plan.recorded",
+                "summary": "1 governed stage(s) recorded",
+                "sha256": "29fd977c245c7c67578f2b5678a190ae61bcbee49656b6728ea4bc2c569020d7"
+              },
+              {
+                "id": "context-event-c775bc7c-69cb-4cd7-a84e-b9ac430587bf",
+                "sequence": 3,
+                "type": "criterion.added",
+                "summary": "Classify route intent completes through its declared verification boundary",
+                "sha256": "40ea883114b5b50461aa3066cc00610a466f855ed61432e57d457af4ac5aa019"
+              }
+            ],
+            "unresolvedQuestions": [],
+            "approvals": [],
+            "previousBatonIds": [],
+            "sizeBytes": 1693,
+            "estimatedTokens": 424,
+            "sha256": "e88c235f8c7ec6de83d69500b08c2fa910ec60530ff912880abcc6ae50f290a6"
+          },
+          {
+            "schema": "agent-control.work-parcel-baton/v2",
+            "id": "parcel-baton-e462b944-d233-4d45-bdaa-ac24e01e442c",
+            "createdAt": "2026-09-11T16:51:23.079Z",
+            "sourceStageIds": [
+              "classify"
+            ],
+            "objective": "Please review the release evidence without making changes.",
+            "currentInterpretation": "Classify a bounded Agent Control request with a qualified learned specialist.",
+            "effectiveInstructions": [],
+            "constraints": [
+              "No deployment",
+              "Independent verification required"
+            ],
+            "successCriteria": [
+              {
+                "id": "criterion:stage:classify",
+                "description": "Classify route intent completes through its declared verification boundary",
+                "status": "PENDING"
+              }
+            ],
+            "completedStages": [],
+            "nextAction": "Continue with stages depending on Classify route intent",
+            "artifactIds": [
+              "artifact-c5055035-333a-4994-a10c-448e11da38de",
+              "artifact-d9b5db50-ee00-4ab0-a78f-bbc287418607"
+            ],
+            "outputTypes": [
+              "application/json"
+            ],
+            "eventRefs": [
+              {
+                "id": "context-event-b23aa4c8-4062-4378-bb2b-240e2b65348a",
+                "sequence": 1,
+                "type": "goal.recorded",
+                "summary": "Original goal recorded",
+                "sha256": "0910511aa8d377824210c5cb2e7b37582e2f0bba8d0f2bcb26a2dcd808e619a4"
+              },
+              {
+                "id": "context-event-6ed55c53-39b6-446d-ae14-140da0683775",
+                "sequence": 2,
+                "type": "plan.recorded",
+                "summary": "1 governed stage(s) recorded",
+                "sha256": "29fd977c245c7c67578f2b5678a190ae61bcbee49656b6728ea4bc2c569020d7"
+              },
+              {
+                "id": "context-event-c775bc7c-69cb-4cd7-a84e-b9ac430587bf",
+                "sequence": 3,
+                "type": "criterion.added",
+                "summary": "Classify route intent completes through its declared verification boundary",
+                "sha256": "40ea883114b5b50461aa3066cc00610a466f855ed61432e57d457af4ac5aa019"
+              },
+              {
+                "id": "context-event-2223fb44-c05b-4cbf-b72d-69de8e094ce0",
+                "sequence": 4,
+                "type": "baton.created",
+                "summary": "Bounded baton view created for classify",
+                "sha256": "2c6e1f993026ae80cf62612992a61b636f4ac2b49e52c34c6810ddb8b5d76476"
+              },
+              {
+                "id": "context-event-1a926134-5870-4b60-87ca-a577d34f431c",
+                "sequence": 5,
+                "type": "stage.started",
+                "summary": "Classify route intent dispatched",
+                "sha256": "b583dbd62f34e66729266b4ed8382822bb755d07a62b43029a5abfa4ecdc88aa"
+              }
+            ],
+            "unresolvedQuestions": [],
+            "approvals": [],
+            "previousBatonIds": [
+              "parcel-baton-5deac6b2-ba57-48f4-9951-204d70652a60"
+            ],
+            "sizeBytes": 2212,
+            "estimatedTokens": 553,
+            "sha256": "8d7f74027b6cd0a81c1dbb56c365a695e657463182eaf87cc41f7dceda649e57"
+          }
+        ],
+        "metrics": {
+          "eventLedgerBytes": 5688,
+          "latestBatonBytes": 2212,
+          "latestBatonEstimatedTokens": 553,
+          "historicalBytesExcludedFromLatestBaton": 3476,
+          "estimatedHistoricalTokensExcluded": 869,
+          "retrievals": 0,
+          "retrievedEvents": 0
+        }
+      },
+      "createdAt": "2026-09-11T16:51:17.074Z",
+      "updatedAt": "2026-09-11T16:51:23.081Z",
+      "telemetry": {
+        "inputTokens": null,
+        "freshInputTokens": null,
+        "cachedInputTokens": null,
+        "cacheWriteTokens": null,
+        "outputTokens": null,
+        "reasoningTokens": null,
+        "totalTokens": null,
+        "cost": null,
+        "currency": null,
+        "elapsedMs": 6007
+      },
+      "audit": {
+        "schema": "agent-control.work-parcel-audit/v1",
+        "recordedAt": "2026-09-11T16:51:17.074Z",
+        "classification": "Registered Job request",
+        "selectedExecution": "Work Parcel",
+        "planningRationale": "Frozen 4.5 qualification route",
+        "planner": {
+          "kind": "deterministic",
+          "provider": null,
+          "model": null
+        },
+        "alternatives": [
+          {
+            "stageId": "classify",
+            "candidate": "controller-cpu",
+            "eligible": true,
+            "reasons": [
+              "satisfies:qualification.local",
+              "healthy",
+              "available"
+            ]
+          },
+          {
+            "stageId": "classify",
+            "candidate": "controller-cpu",
+            "eligible": true,
+            "reasons": [
+              "satisfies:qualification.local",
+              "healthy",
+              "available"
+            ]
+          }
+        ],
+        "timeline": [
+          {
+            "id": "audit-a58641a5-8634-4e61-89e9-0b3b1aa55022",
+            "at": "2026-09-11T16:51:17.074Z",
+            "type": "task.received",
+            "summary": "Task received",
+            "detail": "Please review the release evidence without making changes."
+          },
+          {
+            "id": "audit-f8b5b097-9fbe-4449-8e56-add7c94beb4f",
+            "at": "2026-09-11T16:51:17.074Z",
+            "type": "task.classified",
+            "summary": "Classified: Registered Job request",
+            "detail": "Observable inputs: 1 stage(s); planner=deterministic"
+          },
+          {
+            "id": "audit-3bdc7695-f1f4-4156-9367-89543a7f9cd3",
+            "at": "2026-09-11T16:51:17.074Z",
+            "type": "plan.selected",
+            "summary": "Work Parcel selected",
+            "detail": "Frozen 4.5 qualification route"
+          },
+          {
+            "id": "audit-a3c0f7b8-08cb-4b1a-b94d-b60486a434a9",
+            "at": "2026-09-11T16:51:17.074Z",
+            "type": "route.requested",
+            "stageId": "classify",
+            "summary": "Classify route intent route requested",
+            "detail": "Normal Agent Control placement and routing policy"
+          },
+          {
+            "id": "audit-77e09f2b-d8a8-42ce-94ef-96df6cf49005",
+            "at": "2026-09-11T16:51:17.082Z",
+            "type": "baton.created",
+            "stageId": "classify",
+            "summary": "Bounded operational baton view sealed",
+            "detail": "parcel-baton-5deac6b2-ba57-48f4-9951-204d70652a60; sha256 e88c235f8c7ec6de83d69500b08c2fa910ec60530ff912880abcc6ae50f290a6; 1693 bytes; full history remains in parcel ledger"
+          },
+          {
+            "id": "audit-0a1c9abf-1f14-49d0-a4e7-71efc76fa17f",
+            "at": "2026-09-11T16:51:17.087Z",
+            "type": "stage.dispatched",
+            "stageId": "classify",
+            "summary": "Classify route intent dispatched",
+            "detail": "Job qualified-route-intent-specialist@1.0.0; Run run-40e03e14-13ed-4176-b3b1-9172d8d9941b; requested route Normal Agent Control placement and routing policy"
+          },
+          {
+            "id": "audit-9b86399b-83b7-46c5-8d5a-efb792e633f3",
+            "at": "2026-09-11T16:51:23.056Z",
+            "type": "route.resolved",
+            "stageId": "classify",
+            "summary": "Classify route intent actual route recorded",
+            "detail": "Workers controller-cpu; provider no model; account default; model no model; profile control action; satisfies:qualification.local, healthy, available"
+          },
+          {
+            "id": "audit-7a3d3aa4-1976-4f04-91f1-eb824df5332f",
+            "at": "2026-09-11T16:51:23.078Z",
+            "type": "route.resolved",
+            "stageId": "classify",
+            "summary": "Classify route intent actual route recorded",
+            "detail": "Workers controller-cpu; provider no model; account default; model no model; profile control action; satisfies:qualification.local, healthy, available, satisfies:qualification.local, healthy, available"
+          },
+          {
+            "id": "audit-726c1d56-6ca4-4b42-ab4b-8186d29d3f95",
+            "at": "2026-09-11T16:51:23.081Z",
+            "type": "verification.completed",
+            "summary": "All declared verification criteria passed",
+            "detail": "1 criterion/criteria passed through the normal Work Parcel boundary"
+          }
+        ],
+        "invocations": [],
+        "totals": {
+          "models": [],
+          "invocations": 0,
+          "inputTokens": null,
+          "freshInputTokens": null,
+          "cachedInputTokens": null,
+          "cacheWriteTokens": null,
+          "outputTokens": null,
+          "reasoningTokens": null,
+          "totalTokens": null,
+          "providerReportedCost": null,
+          "calculatedCost": null,
+          "cost": null,
+          "costBasis": "unavailable",
+          "currency": null,
+          "modelExecutionMs": 0,
+          "wallClockMs": 6007
+        }
+      },
+      "provenance": [
+        {
+          "at": "2026-09-11T16:51:17.074Z",
+          "type": "submitted",
+          "detail": "Natural-language request accepted; planner=deterministic"
+        },
+        {
+          "at": "2026-09-11T16:51:17.087Z",
+          "type": "stage.started",
+          "detail": "classify:run-40e03e14-13ed-4176-b3b1-9172d8d9941b"
+        }
+      ],
+      "endedAt": "2026-09-11T16:51:23.081Z"
+    },
+    {
+      "id": "parcel-8416b2fa-348d-4a7c-b2f8-327ddf13e207",
+      "prompt": "NEGATIVE: Translate this poem into French.",
+      "objective": "Classify a bounded Agent Control request with a qualified learned specialist.",
+      "actor": "qualification-operator",
+      "executionMode": "LIVE",
+      "executionOwner": "work-parcel-coordinator",
+      "status": "FAILED",
+      "planner": {
+        "kind": "deterministic",
+        "reason": "Frozen 4.5 qualification route"
+      },
+      "stages": [
+        {
+          "id": "classify",
+          "name": "Classify route intent",
+          "job": "qualified-route-intent-specialist@1.0.0",
+          "parameters": {
+            "taskClass": "unrelated-task",
+            "input": "Translate this poem into French."
+          },
+          "dependsOn": [],
+          "requiredCapabilities": [],
+          "outputs": [],
+          "waitingQuestionIds": [],
+          "status": "FAILED",
+          "baton": {
+            "schema": "agent-control.work-parcel-baton/v2",
+            "id": "parcel-baton-6a8cc620-6034-4109-815f-b5a77a8eba49",
+            "createdAt": "2026-09-11T16:49:19.781Z",
+            "sourceStageIds": [],
+            "targetStageId": "classify",
+            "objective": "NEGATIVE: Translate this poem into French.",
+            "currentInterpretation": "Classify a bounded Agent Control request with a qualified learned specialist.",
+            "effectiveInstructions": [],
+            "constraints": [
+              "No deployment",
+              "Independent verification required"
+            ],
+            "successCriteria": [
+              {
+                "id": "criterion:stage:classify",
+                "description": "Classify route intent completes through its declared verification boundary",
+                "status": "PENDING"
+              }
+            ],
+            "completedStages": [],
+            "nextAction": "Execute Classify route intent through qualified-route-intent-specialist@1.0.0 and satisfy its declared verification boundary",
+            "artifactIds": [],
+            "outputTypes": [],
+            "eventRefs": [
+              {
+                "id": "context-event-86aa90f3-b253-4662-805e-1e66c37bb10f",
+                "sequence": 1,
+                "type": "goal.recorded",
+                "summary": "Original goal recorded",
+                "sha256": "ca3e62853da9e3c3e6e3adcd64af4ae6a735adfd5515263eae73f171f1a22ba4"
+              },
+              {
+                "id": "context-event-2d37e675-a1e5-4377-996e-b95c0977e84e",
+                "sequence": 2,
+                "type": "plan.recorded",
+                "summary": "1 governed stage(s) recorded",
+                "sha256": "8a447be4c3fdc4ef8e720cf2d869ec6068305e130970d9c81fb508060ff250ed"
+              },
+              {
+                "id": "context-event-33d5fd16-b4c8-4aae-96f7-bcf930a3d0a6",
+                "sequence": 3,
+                "type": "criterion.added",
+                "summary": "Classify route intent completes through its declared verification boundary",
+                "sha256": "9ec6aa2a8d036b7d561c1ba3df4f939753d2ad1964c3a1abef772308514ef2cb"
+              }
+            ],
+            "unresolvedQuestions": [],
+            "approvals": [],
+            "previousBatonIds": [],
+            "sizeBytes": 1677,
+            "estimatedTokens": 420,
+            "sha256": "9b75677c4cc75db2370d5846d682ffa742d6fa43c5d706f41a571a7107ecaf8a"
+          },
+          "runId": "run-672b4261-822f-48b9-a348-83314c6fffa4",
+          "startedAt": "2026-09-11T16:49:19.785Z",
+          "executor": "agent-control-job-runtime",
+          "error": "execute:capability_unavailable:learned_specialist_route_unavailable",
+          "actualRoute": {
+            "workers": [
+              "controller-cpu"
+            ],
+            "reason": "satisfies:qualification.local, healthy, available"
+          },
+          "endedAt": "2026-09-11T16:49:19.790Z"
+        }
+      ],
+      "context": {
+        "schema": "agent-control.parcel-context/v1",
+        "active": {
+          "originalGoal": "NEGATIVE: Translate this poem into French.",
+          "currentInterpretation": "Classify a bounded Agent Control request with a qualified learned specialist.",
+          "effectiveInstructions": [],
+          "constraints": [
+            "No deployment",
+            "Independent verification required"
+          ],
+          "plan": [
+            {
+              "id": "classify",
+              "name": "Classify route intent",
+              "dependencies": [],
+              "state": "FAILED"
+            }
+          ],
+          "currentStageIds": [],
+          "unresolvedQuestionIds": [],
+          "approvalIds": [],
+          "updatedAt": "2026-09-11T16:49:19.794Z"
+        },
+        "events": [
+          {
+            "id": "context-event-86aa90f3-b253-4662-805e-1e66c37bb10f",
+            "sequence": 1,
+            "at": "2026-09-11T16:49:19.778Z",
+            "type": "goal.recorded",
+            "summary": "Original goal recorded",
+            "detail": {
+              "actor": "qualification-operator"
+            },
+            "tags": [
+              "goal"
+            ],
+            "evidence": [],
+            "previousHash": null,
+            "sha256": "ca3e62853da9e3c3e6e3adcd64af4ae6a735adfd5515263eae73f171f1a22ba4"
+          },
+          {
+            "id": "context-event-2d37e675-a1e5-4377-996e-b95c0977e84e",
+            "sequence": 2,
+            "at": "2026-09-11T16:49:19.778Z",
+            "type": "plan.recorded",
+            "summary": "1 governed stage(s) recorded",
+            "detail": {
+              "stageIds": [
+                "classify"
+              ]
+            },
+            "tags": [
+              "plan"
+            ],
+            "evidence": [],
+            "previousHash": "ca3e62853da9e3c3e6e3adcd64af4ae6a735adfd5515263eae73f171f1a22ba4",
+            "sha256": "8a447be4c3fdc4ef8e720cf2d869ec6068305e130970d9c81fb508060ff250ed"
+          },
+          {
+            "id": "context-event-33d5fd16-b4c8-4aae-96f7-bcf930a3d0a6",
+            "sequence": 3,
+            "at": "2026-09-11T16:49:19.778Z",
+            "type": "criterion.added",
+            "stageId": "classify",
+            "summary": "Classify route intent completes through its declared verification boundary",
+            "detail": {
+              "criterionId": "criterion:stage:classify",
+              "kind": "STAGE_VERIFIED",
+              "source": "INFERRED",
+              "sourceActor": "agent-control-policy"
+            },
+            "tags": [
+              "criterion",
+              "stage_verified"
+            ],
+            "evidence": [],
+            "previousHash": "8a447be4c3fdc4ef8e720cf2d869ec6068305e130970d9c81fb508060ff250ed",
+            "sha256": "9ec6aa2a8d036b7d561c1ba3df4f939753d2ad1964c3a1abef772308514ef2cb"
+          },
+          {
+            "id": "context-event-fff436d9-d118-482c-84c8-6bbf437b407f",
+            "sequence": 4,
+            "at": "2026-09-11T16:49:19.781Z",
+            "type": "baton.created",
+            "stageId": "classify",
+            "summary": "Bounded baton view created for classify",
+            "detail": {
+              "batonId": "parcel-baton-6a8cc620-6034-4109-815f-b5a77a8eba49",
+              "sha256": "9b75677c4cc75db2370d5846d682ffa742d6fa43c5d706f41a571a7107ecaf8a",
+              "sizeBytes": 1677,
+              "estimatedTokens": 420,
+              "selectedEventIds": [
+                "context-event-86aa90f3-b253-4662-805e-1e66c37bb10f",
+                "context-event-2d37e675-a1e5-4377-996e-b95c0977e84e",
+                "context-event-33d5fd16-b4c8-4aae-96f7-bcf930a3d0a6"
+              ]
+            },
+            "tags": [
+              "baton"
+            ],
+            "evidence": [
+              "9b75677c4cc75db2370d5846d682ffa742d6fa43c5d706f41a571a7107ecaf8a"
+            ],
+            "previousHash": "9ec6aa2a8d036b7d561c1ba3df4f939753d2ad1964c3a1abef772308514ef2cb",
+            "sha256": "a6bec9bb79e2012a04c9c584f4d64c5393e98f2b0b101cdc437d80b3015f9363"
+          },
+          {
+            "id": "context-event-84ed95d6-afd2-469e-ba0e-03f42ccb25ac",
+            "sequence": 5,
+            "at": "2026-09-11T16:49:19.785Z",
+            "type": "stage.started",
+            "stageId": "classify",
+            "summary": "Classify route intent dispatched",
+            "detail": {
+              "runId": "run-672b4261-822f-48b9-a348-83314c6fffa4",
+              "job": "qualified-route-intent-specialist@1.0.0",
+              "executor": "agent-control-job-runtime"
+            },
+            "tags": [
+              "stage"
+            ],
+            "evidence": [
+              "9b75677c4cc75db2370d5846d682ffa742d6fa43c5d706f41a571a7107ecaf8a"
+            ],
+            "previousHash": "a6bec9bb79e2012a04c9c584f4d64c5393e98f2b0b101cdc437d80b3015f9363",
+            "sha256": "206997f3e5c3d85c1c2832b130f3c33c8c28969b09e9e9a39ad8ba37f8db885e"
+          },
+          {
+            "id": "context-event-c3627e19-5cc4-40de-90f0-49b92c230970",
+            "sequence": 6,
+            "at": "2026-09-11T16:49:19.790Z",
+            "type": "stage.failed",
+            "stageId": "classify",
+            "summary": "Classify route intent failed",
+            "detail": {
+              "runId": "run-672b4261-822f-48b9-a348-83314c6fffa4",
+              "reason": "execute:capability_unavailable:learned_specialist_route_unavailable"
+            },
+            "tags": [
+              "stage",
+              "failure"
+            ],
+            "evidence": [],
+            "previousHash": "206997f3e5c3d85c1c2832b130f3c33c8c28969b09e9e9a39ad8ba37f8db885e",
+            "sha256": "089948265e40d6b86ae27e1e79634d923f7f93294adac76070c560d1e92765ff"
+          }
+        ],
+        "questions": [],
+        "amendments": [],
+        "criteria": [
+          {
+            "id": "criterion:stage:classify",
+            "kind": "STAGE_VERIFIED",
+            "description": "Classify route intent completes through its declared verification boundary",
+            "source": "INFERRED",
+            "sourceActor": "agent-control-policy",
+            "stageId": "classify",
+            "requiredEvidence": [
+              "stage:classify:verified"
+            ],
+            "status": "PENDING",
+            "evidence": [],
+            "createdAt": "2026-09-11T16:49:19.778Z"
+          }
+        ],
+        "batonViews": [
+          {
+            "schema": "agent-control.work-parcel-baton/v2",
+            "id": "parcel-baton-6a8cc620-6034-4109-815f-b5a77a8eba49",
+            "createdAt": "2026-09-11T16:49:19.781Z",
+            "sourceStageIds": [],
+            "targetStageId": "classify",
+            "objective": "NEGATIVE: Translate this poem into French.",
+            "currentInterpretation": "Classify a bounded Agent Control request with a qualified learned specialist.",
+            "effectiveInstructions": [],
+            "constraints": [
+              "No deployment",
+              "Independent verification required"
+            ],
+            "successCriteria": [
+              {
+                "id": "criterion:stage:classify",
+                "description": "Classify route intent completes through its declared verification boundary",
+                "status": "PENDING"
+              }
+            ],
+            "completedStages": [],
+            "nextAction": "Execute Classify route intent through qualified-route-intent-specialist@1.0.0 and satisfy its declared verification boundary",
+            "artifactIds": [],
+            "outputTypes": [],
+            "eventRefs": [
+              {
+                "id": "context-event-86aa90f3-b253-4662-805e-1e66c37bb10f",
+                "sequence": 1,
+                "type": "goal.recorded",
+                "summary": "Original goal recorded",
+                "sha256": "ca3e62853da9e3c3e6e3adcd64af4ae6a735adfd5515263eae73f171f1a22ba4"
+              },
+              {
+                "id": "context-event-2d37e675-a1e5-4377-996e-b95c0977e84e",
+                "sequence": 2,
+                "type": "plan.recorded",
+                "summary": "1 governed stage(s) recorded",
+                "sha256": "8a447be4c3fdc4ef8e720cf2d869ec6068305e130970d9c81fb508060ff250ed"
+              },
+              {
+                "id": "context-event-33d5fd16-b4c8-4aae-96f7-bcf930a3d0a6",
+                "sequence": 3,
+                "type": "criterion.added",
+                "summary": "Classify route intent completes through its declared verification boundary",
+                "sha256": "9ec6aa2a8d036b7d561c1ba3df4f939753d2ad1964c3a1abef772308514ef2cb"
+              }
+            ],
+            "unresolvedQuestions": [],
+            "approvals": [],
+            "previousBatonIds": [],
+            "sizeBytes": 1677,
+            "estimatedTokens": 420,
+            "sha256": "9b75677c4cc75db2370d5846d682ffa742d6fa43c5d706f41a571a7107ecaf8a"
+          }
+        ],
+        "metrics": {
+          "eventLedgerBytes": 3251,
+          "latestBatonBytes": 1677,
+          "latestBatonEstimatedTokens": 420,
+          "historicalBytesExcludedFromLatestBaton": 1574,
+          "estimatedHistoricalTokensExcluded": 394,
+          "retrievals": 0,
+          "retrievedEvents": 0
+        }
+      },
+      "createdAt": "2026-09-11T16:49:19.778Z",
+      "updatedAt": "2026-09-11T16:49:19.794Z",
+      "telemetry": {
+        "inputTokens": null,
+        "freshInputTokens": null,
+        "cachedInputTokens": null,
+        "cacheWriteTokens": null,
+        "outputTokens": null,
+        "reasoningTokens": null,
+        "totalTokens": null,
+        "cost": null,
+        "currency": null,
+        "elapsedMs": 16
+      },
+      "audit": {
+        "schema": "agent-control.work-parcel-audit/v1",
+        "recordedAt": "2026-09-11T16:49:19.778Z",
+        "classification": "Registered Job request",
+        "selectedExecution": "Work Parcel",
+        "planningRationale": "Frozen 4.5 qualification route",
+        "planner": {
+          "kind": "deterministic",
+          "provider": null,
+          "model": null
+        },
+        "alternatives": [
+          {
+            "stageId": "classify",
+            "candidate": "controller-cpu",
+            "eligible": true,
+            "reasons": [
+              "satisfies:qualification.local",
+              "healthy",
+              "available"
+            ]
+          },
+          {
+            "stageId": "classify",
+            "candidate": "controller-cpu",
+            "eligible": true,
+            "reasons": [
+              "satisfies:qualification.local",
+              "healthy",
+              "available"
+            ]
+          }
+        ],
+        "timeline": [
+          {
+            "id": "audit-c99d8b9e-e24b-445c-9e13-2ce224f89a20",
+            "at": "2026-09-11T16:49:19.778Z",
+            "type": "task.received",
+            "summary": "Task received",
+            "detail": "NEGATIVE: Translate this poem into French."
+          },
+          {
+            "id": "audit-1e6bb615-1610-4e87-8d5e-090802b70c0d",
+            "at": "2026-09-11T16:49:19.778Z",
+            "type": "task.classified",
+            "summary": "Classified: Registered Job request",
+            "detail": "Observable inputs: 1 stage(s); planner=deterministic"
+          },
+          {
+            "id": "audit-19e75244-0ea1-4f88-9f07-d01909c99cbb",
+            "at": "2026-09-11T16:49:19.778Z",
+            "type": "plan.selected",
+            "summary": "Work Parcel selected",
+            "detail": "Frozen 4.5 qualification route"
+          },
+          {
+            "id": "audit-0cd26d5e-e212-4efd-8c0c-5c2bd327f024",
+            "at": "2026-09-11T16:49:19.778Z",
+            "type": "route.requested",
+            "stageId": "classify",
+            "summary": "Classify route intent route requested",
+            "detail": "Normal Agent Control placement and routing policy"
+          },
+          {
+            "id": "audit-8ac85d6e-5778-48de-8bc8-baa185efba6d",
+            "at": "2026-09-11T16:49:19.781Z",
+            "type": "baton.created",
+            "stageId": "classify",
+            "summary": "Bounded operational baton view sealed",
+            "detail": "parcel-baton-6a8cc620-6034-4109-815f-b5a77a8eba49; sha256 9b75677c4cc75db2370d5846d682ffa742d6fa43c5d706f41a571a7107ecaf8a; 1677 bytes; full history remains in parcel ledger"
+          },
+          {
+            "id": "audit-04a2f1e0-a615-4aba-9843-cc90a49d65f6",
+            "at": "2026-09-11T16:49:19.785Z",
+            "type": "stage.dispatched",
+            "stageId": "classify",
+            "summary": "Classify route intent dispatched",
+            "detail": "Job qualified-route-intent-specialist@1.0.0; Run run-672b4261-822f-48b9-a348-83314c6fffa4; requested route Normal Agent Control placement and routing policy"
+          },
+          {
+            "id": "audit-889837b4-5782-4792-ab20-2c1978452f83",
+            "at": "2026-09-11T16:49:19.793Z",
+            "type": "route.resolved",
+            "stageId": "classify",
+            "summary": "Classify route intent actual route recorded",
+            "detail": "Workers controller-cpu; provider no model; account default; model no model; profile control action; satisfies:qualification.local, healthy, available"
+          }
+        ],
+        "invocations": [],
+        "totals": {
+          "models": [],
+          "invocations": 0,
+          "inputTokens": null,
+          "freshInputTokens": null,
+          "cachedInputTokens": null,
+          "cacheWriteTokens": null,
+          "outputTokens": null,
+          "reasoningTokens": null,
+          "totalTokens": null,
+          "providerReportedCost": null,
+          "calculatedCost": null,
+          "cost": null,
+          "costBasis": "unavailable",
+          "currency": null,
+          "modelExecutionMs": 0,
+          "wallClockMs": 16
+        }
+      },
+      "provenance": [
+        {
+          "at": "2026-09-11T16:49:19.778Z",
+          "type": "submitted",
+          "detail": "Natural-language request accepted; planner=deterministic"
+        },
+        {
+          "at": "2026-09-11T16:49:19.785Z",
+          "type": "stage.started",
+          "detail": "classify:run-672b4261-822f-48b9-a348-83314c6fffa4"
+        }
+      ],
+      "endedAt": "2026-09-11T16:49:19.794Z"
+    },
+    {
+      "id": "parcel-608d49b1-7c87-43bf-8fde-ff446f241ef0",
+      "prompt": "Please review the Agent Control 4.5 qualification evidence without making changes.",
+      "objective": "Classify a bounded Agent Control request with a qualified learned specialist.",
+      "actor": "qualification-operator",
+      "executionMode": "LIVE",
+      "executionOwner": "work-parcel-coordinator",
+      "status": "FAILED",
+      "planner": {
+        "kind": "deterministic",
+        "reason": "Frozen 4.5 qualification route"
+      },
+      "stages": [
+        {
+          "id": "classify",
+          "name": "Classify route intent",
+          "job": "qualified-route-intent-specialist@1.0.0",
+          "parameters": {
+            "taskClass": "route-intent-json",
+            "input": "Please review the Agent Control 4.5 qualification evidence without making changes."
+          },
+          "dependsOn": [],
+          "requiredCapabilities": [],
+          "outputs": [],
+          "waitingQuestionIds": [],
+          "status": "FAILED",
+          "baton": {
+            "schema": "agent-control.work-parcel-baton/v2",
+            "id": "parcel-baton-76a59104-d6f4-4282-beca-7d17b02192dc",
+            "createdAt": "2026-09-11T16:49:13.105Z",
+            "sourceStageIds": [],
+            "targetStageId": "classify",
+            "objective": "Please review the Agent Control 4.5 qualification evidence without making changes.",
+            "currentInterpretation": "Classify a bounded Agent Control request with a qualified learned specialist.",
+            "effectiveInstructions": [],
+            "constraints": [
+              "No deployment",
+              "Independent verification required"
+            ],
+            "successCriteria": [
+              {
+                "id": "criterion:stage:classify",
+                "description": "Classify route intent completes through its declared verification boundary",
+                "status": "PENDING"
+              }
+            ],
+            "completedStages": [],
+            "nextAction": "Execute Classify route intent through qualified-route-intent-specialist@1.0.0 and satisfy its declared verification boundary",
+            "artifactIds": [],
+            "outputTypes": [],
+            "eventRefs": [
+              {
+                "id": "context-event-b1a80d1f-f31d-468d-a9df-5e9d52b968c4",
+                "sequence": 1,
+                "type": "goal.recorded",
+                "summary": "Original goal recorded",
+                "sha256": "4ebe3c6d55961418afb6d0c66eef2939583ed03d940722f932469d5ef37e6c50"
+              },
+              {
+                "id": "context-event-caba23d0-70dd-4c94-be2f-346c303793db",
+                "sequence": 2,
+                "type": "plan.recorded",
+                "summary": "1 governed stage(s) recorded",
+                "sha256": "f0bf6b2e90da753d97e1d0d65d7d86261716a37ac8e958b24eedbe6a34ed7701"
+              },
+              {
+                "id": "context-event-abee8d8e-c5b9-404a-921f-d55c99d31b1d",
+                "sequence": 3,
+                "type": "criterion.added",
+                "summary": "Classify route intent completes through its declared verification boundary",
+                "sha256": "10c3d0c63a2e2cbcfed60f2fc2a03bbbc17d455b6c0289fe0936be6026262264"
+              }
+            ],
+            "unresolvedQuestions": [],
+            "approvals": [],
+            "previousBatonIds": [],
+            "sizeBytes": 1717,
+            "estimatedTokens": 430,
+            "sha256": "6c02a718e4c0eae29fb48cf11c2e226b102501db1b7646e58cadc7b4139a2d1c"
+          },
+          "runId": "run-598bf155-b76a-4a6c-8208-e61d05987f6c",
+          "startedAt": "2026-09-11T16:49:13.109Z",
+          "executor": "agent-control-job-runtime",
+          "error": "verify:verification:learned_specialist_independent_verification_failed",
+          "actualRoute": {
+            "workers": [
+              "controller-cpu"
+            ],
+            "reason": "satisfies:qualification.local, healthy, available, satisfies:qualification.local, healthy, available"
+          },
+          "endedAt": "2026-09-11T16:49:19.772Z"
+        }
+      ],
+      "context": {
+        "schema": "agent-control.parcel-context/v1",
+        "active": {
+          "originalGoal": "Please review the Agent Control 4.5 qualification evidence without making changes.",
+          "currentInterpretation": "Classify a bounded Agent Control request with a qualified learned specialist.",
+          "effectiveInstructions": [],
+          "constraints": [
+            "No deployment",
+            "Independent verification required"
+          ],
+          "plan": [
+            {
+              "id": "classify",
+              "name": "Classify route intent",
+              "dependencies": [],
+              "state": "FAILED"
+            }
+          ],
+          "currentStageIds": [],
+          "unresolvedQuestionIds": [],
+          "approvalIds": [],
+          "updatedAt": "2026-09-11T16:49:19.776Z",
+          "currentRoute": "Workers controller-cpu; provider no model; account default; model no model; profile control action; satisfies:qualification.local, healthy, available",
+          "currentNode": "controller-cpu"
+        },
+        "events": [
+          {
+            "id": "context-event-b1a80d1f-f31d-468d-a9df-5e9d52b968c4",
+            "sequence": 1,
+            "at": "2026-09-11T16:49:13.089Z",
+            "type": "goal.recorded",
+            "summary": "Original goal recorded",
+            "detail": {
+              "actor": "qualification-operator"
+            },
+            "tags": [
+              "goal"
+            ],
+            "evidence": [],
+            "previousHash": null,
+            "sha256": "4ebe3c6d55961418afb6d0c66eef2939583ed03d940722f932469d5ef37e6c50"
+          },
+          {
+            "id": "context-event-caba23d0-70dd-4c94-be2f-346c303793db",
+            "sequence": 2,
+            "at": "2026-09-11T16:49:13.089Z",
+            "type": "plan.recorded",
+            "summary": "1 governed stage(s) recorded",
+            "detail": {
+              "stageIds": [
+                "classify"
+              ]
+            },
+            "tags": [
+              "plan"
+            ],
+            "evidence": [],
+            "previousHash": "4ebe3c6d55961418afb6d0c66eef2939583ed03d940722f932469d5ef37e6c50",
+            "sha256": "f0bf6b2e90da753d97e1d0d65d7d86261716a37ac8e958b24eedbe6a34ed7701"
+          },
+          {
+            "id": "context-event-abee8d8e-c5b9-404a-921f-d55c99d31b1d",
+            "sequence": 3,
+            "at": "2026-09-11T16:49:13.089Z",
+            "type": "criterion.added",
+            "stageId": "classify",
+            "summary": "Classify route intent completes through its declared verification boundary",
+            "detail": {
+              "criterionId": "criterion:stage:classify",
+              "kind": "STAGE_VERIFIED",
+              "source": "INFERRED",
+              "sourceActor": "agent-control-policy"
+            },
+            "tags": [
+              "criterion",
+              "stage_verified"
+            ],
+            "evidence": [],
+            "previousHash": "f0bf6b2e90da753d97e1d0d65d7d86261716a37ac8e958b24eedbe6a34ed7701",
+            "sha256": "10c3d0c63a2e2cbcfed60f2fc2a03bbbc17d455b6c0289fe0936be6026262264"
+          },
+          {
+            "id": "context-event-51323cb2-2768-469d-95a0-be6f25544ce1",
+            "sequence": 4,
+            "at": "2026-09-11T16:49:13.105Z",
+            "type": "baton.created",
+            "stageId": "classify",
+            "summary": "Bounded baton view created for classify",
+            "detail": {
+              "batonId": "parcel-baton-76a59104-d6f4-4282-beca-7d17b02192dc",
+              "sha256": "6c02a718e4c0eae29fb48cf11c2e226b102501db1b7646e58cadc7b4139a2d1c",
+              "sizeBytes": 1717,
+              "estimatedTokens": 430,
+              "selectedEventIds": [
+                "context-event-b1a80d1f-f31d-468d-a9df-5e9d52b968c4",
+                "context-event-caba23d0-70dd-4c94-be2f-346c303793db",
+                "context-event-abee8d8e-c5b9-404a-921f-d55c99d31b1d"
+              ]
+            },
+            "tags": [
+              "baton"
+            ],
+            "evidence": [
+              "6c02a718e4c0eae29fb48cf11c2e226b102501db1b7646e58cadc7b4139a2d1c"
+            ],
+            "previousHash": "10c3d0c63a2e2cbcfed60f2fc2a03bbbc17d455b6c0289fe0936be6026262264",
+            "sha256": "5ee60eb4c390ce0984c30c409be88df408e943af1929e9917f6e4e31eb24488a"
+          },
+          {
+            "id": "context-event-c0c4dc0d-f2e6-4956-a1a3-f2ea1e1ab3ba",
+            "sequence": 5,
+            "at": "2026-09-11T16:49:13.109Z",
+            "type": "stage.started",
+            "stageId": "classify",
+            "summary": "Classify route intent dispatched",
+            "detail": {
+              "runId": "run-598bf155-b76a-4a6c-8208-e61d05987f6c",
+              "job": "qualified-route-intent-specialist@1.0.0",
+              "executor": "agent-control-job-runtime"
+            },
+            "tags": [
+              "stage"
+            ],
+            "evidence": [
+              "6c02a718e4c0eae29fb48cf11c2e226b102501db1b7646e58cadc7b4139a2d1c"
+            ],
+            "previousHash": "5ee60eb4c390ce0984c30c409be88df408e943af1929e9917f6e4e31eb24488a",
+            "sha256": "95d71644e007bb9c38b17a7a1d5ce806edb2b51258001bd5cdd9ea3751ab2378"
+          },
+          {
+            "id": "context-event-6a263b96-6f2b-48c9-ba5a-000c67b7d6d9",
+            "sequence": 6,
+            "at": "2026-09-11T16:49:19.772Z",
+            "type": "stage.failed",
+            "stageId": "classify",
+            "summary": "Classify route intent failed",
+            "detail": {
+              "runId": "run-598bf155-b76a-4a6c-8208-e61d05987f6c",
+              "reason": "verify:verification:learned_specialist_independent_verification_failed"
+            },
+            "tags": [
+              "stage",
+              "failure"
+            ],
+            "evidence": [],
+            "previousHash": "95d71644e007bb9c38b17a7a1d5ce806edb2b51258001bd5cdd9ea3751ab2378",
+            "sha256": "7f38039e723a97ff43fe3963c996bcb6fe90c28c4379e43d71e0217f16b5600e"
+          }
+        ],
+        "questions": [],
+        "amendments": [],
+        "criteria": [
+          {
+            "id": "criterion:stage:classify",
+            "kind": "STAGE_VERIFIED",
+            "description": "Classify route intent completes through its declared verification boundary",
+            "source": "INFERRED",
+            "sourceActor": "agent-control-policy",
+            "stageId": "classify",
+            "requiredEvidence": [
+              "stage:classify:verified"
+            ],
+            "status": "PENDING",
+            "evidence": [],
+            "createdAt": "2026-09-11T16:49:13.089Z"
+          }
+        ],
+        "batonViews": [
+          {
+            "schema": "agent-control.work-parcel-baton/v2",
+            "id": "parcel-baton-76a59104-d6f4-4282-beca-7d17b02192dc",
+            "createdAt": "2026-09-11T16:49:13.105Z",
+            "sourceStageIds": [],
+            "targetStageId": "classify",
+            "objective": "Please review the Agent Control 4.5 qualification evidence without making changes.",
+            "currentInterpretation": "Classify a bounded Agent Control request with a qualified learned specialist.",
+            "effectiveInstructions": [],
+            "constraints": [
+              "No deployment",
+              "Independent verification required"
+            ],
+            "successCriteria": [
+              {
+                "id": "criterion:stage:classify",
+                "description": "Classify route intent completes through its declared verification boundary",
+                "status": "PENDING"
+              }
+            ],
+            "completedStages": [],
+            "nextAction": "Execute Classify route intent through qualified-route-intent-specialist@1.0.0 and satisfy its declared verification boundary",
+            "artifactIds": [],
+            "outputTypes": [],
+            "eventRefs": [
+              {
+                "id": "context-event-b1a80d1f-f31d-468d-a9df-5e9d52b968c4",
+                "sequence": 1,
+                "type": "goal.recorded",
+                "summary": "Original goal recorded",
+                "sha256": "4ebe3c6d55961418afb6d0c66eef2939583ed03d940722f932469d5ef37e6c50"
+              },
+              {
+                "id": "context-event-caba23d0-70dd-4c94-be2f-346c303793db",
+                "sequence": 2,
+                "type": "plan.recorded",
+                "summary": "1 governed stage(s) recorded",
+                "sha256": "f0bf6b2e90da753d97e1d0d65d7d86261716a37ac8e958b24eedbe6a34ed7701"
+              },
+              {
+                "id": "context-event-abee8d8e-c5b9-404a-921f-d55c99d31b1d",
+                "sequence": 3,
+                "type": "criterion.added",
+                "summary": "Classify route intent completes through its declared verification boundary",
+                "sha256": "10c3d0c63a2e2cbcfed60f2fc2a03bbbc17d455b6c0289fe0936be6026262264"
+              }
+            ],
+            "unresolvedQuestions": [],
+            "approvals": [],
+            "previousBatonIds": [],
+            "sizeBytes": 1717,
+            "estimatedTokens": 430,
+            "sha256": "6c02a718e4c0eae29fb48cf11c2e226b102501db1b7646e58cadc7b4139a2d1c"
+          }
+        ],
+        "metrics": {
+          "eventLedgerBytes": 3254,
+          "latestBatonBytes": 1717,
+          "latestBatonEstimatedTokens": 430,
+          "historicalBytesExcludedFromLatestBaton": 1537,
+          "estimatedHistoricalTokensExcluded": 385,
+          "retrievals": 0,
+          "retrievedEvents": 0
+        }
+      },
+      "createdAt": "2026-09-11T16:49:13.089Z",
+      "updatedAt": "2026-09-11T16:49:19.776Z",
+      "telemetry": {
+        "inputTokens": null,
+        "freshInputTokens": null,
+        "cachedInputTokens": null,
+        "cacheWriteTokens": null,
+        "outputTokens": null,
+        "reasoningTokens": null,
+        "totalTokens": null,
+        "cost": null,
+        "currency": null,
+        "elapsedMs": 6687
+      },
+      "audit": {
+        "schema": "agent-control.work-parcel-audit/v1",
+        "recordedAt": "2026-09-11T16:49:13.089Z",
+        "classification": "Registered Job request",
+        "selectedExecution": "Work Parcel",
+        "planningRationale": "Frozen 4.5 qualification route",
+        "planner": {
+          "kind": "deterministic",
+          "provider": null,
+          "model": null
+        },
+        "alternatives": [
+          {
+            "stageId": "classify",
+            "candidate": "controller-cpu",
+            "eligible": true,
+            "reasons": [
+              "satisfies:qualification.local",
+              "healthy",
+              "available"
+            ]
+          },
+          {
+            "stageId": "classify",
+            "candidate": "controller-cpu",
+            "eligible": true,
+            "reasons": [
+              "satisfies:qualification.local",
+              "healthy",
+              "available"
+            ]
+          }
+        ],
+        "timeline": [
+          {
+            "id": "audit-e9889957-b9fd-4e65-b2c2-901d0ea8d5da",
+            "at": "2026-09-11T16:49:13.089Z",
+            "type": "task.received",
+            "summary": "Task received",
+            "detail": "Please review the Agent Control 4.5 qualification evidence without making changes."
+          },
+          {
+            "id": "audit-248eb15c-aa8c-4924-a1df-b2cd336377f0",
+            "at": "2026-09-11T16:49:13.089Z",
+            "type": "task.classified",
+            "summary": "Classified: Registered Job request",
+            "detail": "Observable inputs: 1 stage(s); planner=deterministic"
+          },
+          {
+            "id": "audit-d89bd82f-ed49-45f7-a8c4-3bd17d4010cf",
+            "at": "2026-09-11T16:49:13.089Z",
+            "type": "plan.selected",
+            "summary": "Work Parcel selected",
+            "detail": "Frozen 4.5 qualification route"
+          },
+          {
+            "id": "audit-f0b05f2a-cb25-404f-8b82-aede0eaf77c0",
+            "at": "2026-09-11T16:49:13.089Z",
+            "type": "route.requested",
+            "stageId": "classify",
+            "summary": "Classify route intent route requested",
+            "detail": "Normal Agent Control placement and routing policy"
+          },
+          {
+            "id": "audit-970babcf-35c0-4867-96a1-7bbd0c527844",
+            "at": "2026-09-11T16:49:13.105Z",
+            "type": "baton.created",
+            "stageId": "classify",
+            "summary": "Bounded operational baton view sealed",
+            "detail": "parcel-baton-76a59104-d6f4-4282-beca-7d17b02192dc; sha256 6c02a718e4c0eae29fb48cf11c2e226b102501db1b7646e58cadc7b4139a2d1c; 1717 bytes; full history remains in parcel ledger"
+          },
+          {
+            "id": "audit-add2afe8-1129-4cc9-95d2-d45c13f1c38b",
+            "at": "2026-09-11T16:49:13.109Z",
+            "type": "stage.dispatched",
+            "stageId": "classify",
+            "summary": "Classify route intent dispatched",
+            "detail": "Job qualified-route-intent-specialist@1.0.0; Run run-598bf155-b76a-4a6c-8208-e61d05987f6c; requested route Normal Agent Control placement and routing policy"
+          },
+          {
+            "id": "audit-b1a394da-9dac-48f7-9266-ac06a5466429",
+            "at": "2026-09-11T16:49:19.761Z",
+            "type": "route.resolved",
+            "stageId": "classify",
+            "summary": "Classify route intent actual route recorded",
+            "detail": "Workers controller-cpu; provider no model; account default; model no model; profile control action; satisfies:qualification.local, healthy, available"
+          },
+          {
+            "id": "audit-0a376ba8-5f3a-432a-be1b-6dea40b0fefa",
+            "at": "2026-09-11T16:49:19.775Z",
+            "type": "route.resolved",
+            "stageId": "classify",
+            "summary": "Classify route intent actual route recorded",
+            "detail": "Workers controller-cpu; provider no model; account default; model no model; profile control action; satisfies:qualification.local, healthy, available, satisfies:qualification.local, healthy, available"
+          }
+        ],
+        "invocations": [],
+        "totals": {
+          "models": [],
+          "invocations": 0,
+          "inputTokens": null,
+          "freshInputTokens": null,
+          "cachedInputTokens": null,
+          "cacheWriteTokens": null,
+          "outputTokens": null,
+          "reasoningTokens": null,
+          "totalTokens": null,
+          "providerReportedCost": null,
+          "calculatedCost": null,
+          "cost": null,
+          "costBasis": "unavailable",
+          "currency": null,
+          "modelExecutionMs": 0,
+          "wallClockMs": 6687
+        }
+      },
+      "provenance": [
+        {
+          "at": "2026-09-11T16:49:13.089Z",
+          "type": "submitted",
+          "detail": "Natural-language request accepted; planner=deterministic"
+        },
+        {
+          "at": "2026-09-11T16:49:13.109Z",
+          "type": "stage.started",
+          "detail": "classify:run-598bf155-b76a-4a6c-8208-e61d05987f6c"
+        }
+      ],
+      "endedAt": "2026-09-11T16:49:19.776Z"
+    }
+  ]
+}

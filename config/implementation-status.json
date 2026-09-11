@@ -1,6 +1,6 @@
 {
   "schema": "agent-control.implementation-status/v1",
-  "release": "4.4.0",
+  "release": "4.5.0",
   "updated": "2026-09-11",
   "capabilities": [
     {
@@ -1075,6 +1075,28 @@
         "qualification/agent-control-4.4-ux-session-replay-20260911/evidence-manifest.json"
       ],
       "limitation": "Your Memories is advisory. Automatic memory consolidation and idle model swapping are not released; MARM remains optional."
+    },
+    {
+      "id": "models.governed-learned-specialists",
+      "title": "Governed local skill learning and learned specialist routing",
+      "status": "QUALIFIED",
+      "summary": "A provider-neutral lifecycle freezes reviewed datasets and an unadapted baseline, records bounded training through an interchangeable adapter, independently qualifies exact base-plus-adaptation identity, and admits only materially improved current compositions to the existing adaptive-harness Job and Work Parcel path. Learned adaptation remains separate from Warm Expert cache state.",
+      "sources": [
+        "src/control/skill-learning.ts",
+        "src/control/skill-specialist-actions.ts",
+        "src/control/peft-specialist-execution.ts",
+        "assets/dashboard/dashboard-learned-specialists.js"
+      ],
+      "tests": [
+        "src/control/skill-learning.test.ts",
+        "src/control/skill-specialist-actions.test.ts"
+      ],
+      "evidence": [
+        "docs/skill-learning.md",
+        "docs/evidence/agent-control-4.5-governed-skill-learning-20260911.md",
+        "qualification/agent-control-4.5-skill-learning-20260911/qualification-report.json"
+      ],
+      "limitation": "The first qualification is narrow route-intent JSON on one pinned 135M CPU base. Frozen accuracy improved from 0.00 to 0.40 and schema validity from 0.00 to 1.00; this does not establish broad expertise. Monetary cost, energy, adapter composition, automatic training and automatic promotion remain unavailable or unimplemented."
     },
     {
       "id": "skills.qualified-selection",

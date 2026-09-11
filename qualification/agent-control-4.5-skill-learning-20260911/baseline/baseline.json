@@ -1,0 +1,373 @@
+{
+  "schema": "agent-control.skill-evaluation/v1",
+  "kind": "baseline",
+  "model": "HuggingFaceTB/SmolLM2-135M-Instruct",
+  "revision": "12fd25f77366fa6b3b4b768ec3050bf629380bac",
+  "adapter": false,
+  "examples": 40,
+  "accuracy": 0.0,
+  "schemaValidity": 0.0,
+  "elapsedSeconds": 31.630508184432983,
+  "rows": [
+    {
+      "id": "review-01",
+      "expected": {
+        "lane": "LANE_REVIEW"
+      },
+      "raw": "{\n  \"request\": {\n    \"type\": \"request\",",
+      "schemaValid": false,
+      "correct": false
+    },
+    {
+      "id": "review-06",
+      "expected": {
+        "lane": "LANE_REVIEW"
+      },
+      "raw": "{\n  \"request\": {\n    \"type\": \"Request\",",
+      "schemaValid": false,
+      "correct": false
+    },
+    {
+      "id": "review-11",
+      "expected": {
+        "lane": "LANE_REVIEW"
+      },
+      "raw": "{\n  \"request\": {\n    \"request_id\": \"",
+      "schemaValid": false,
+      "correct": false
+    },
+    {
+      "id": "review-16",
+      "expected": {
+        "lane": "LANE_REVIEW"
+      },
+      "raw": "{\n  \"request\": {\n    \"type\": \"Request\",",
+      "schemaValid": false,
+      "correct": false
+    },
+    {
+      "id": "review-17",
+      "expected": {
+        "lane": "LANE_REVIEW"
+      },
+      "raw": "{\n  \"request\": {\n    \"type\": \"request\",",
+      "schemaValid": false,
+      "correct": false
+    },
+    {
+      "id": "review-22",
+      "expected": {
+        "lane": "LANE_REVIEW"
+      },
+      "raw": "{\n  \"request\": {\n    \"type\": \"Request\",",
+      "schemaValid": false,
+      "correct": false
+    },
+    {
+      "id": "review-27",
+      "expected": {
+        "lane": "LANE_REVIEW"
+      },
+      "raw": "{\n  \"request\": {\n    \"request_id\": \"",
+      "schemaValid": false,
+      "correct": false
+    },
+    {
+      "id": "review-32",
+      "expected": {
+        "lane": "LANE_REVIEW"
+      },
+      "raw": "{\n  \"request\": {\n    \"type\": \"Request\",",
+      "schemaValid": false,
+      "correct": false
+    },
+    {
+      "id": "review-33",
+      "expected": {
+        "lane": "LANE_REVIEW"
+      },
+      "raw": "{\n  \"request\": {\n    \"type\": \"request\",",
+      "schemaValid": false,
+      "correct": false
+    },
+    {
+      "id": "review-38",
+      "expected": {
+        "lane": "LANE_REVIEW"
+      },
+      "raw": "{\n  \"request\": {\n    \"type\": \"Request\",",
+      "schemaValid": false,
+      "correct": false
+    },
+    {
+      "id": "operate-01",
+      "expected": {
+        "lane": "LANE_OPERATE"
+      },
+      "raw": "{\n  \"request\": {\n    \"type\": \"Request\",",
+      "schemaValid": false,
+      "correct": false
+    },
+    {
+      "id": "operate-06",
+      "expected": {
+        "lane": "LANE_OPERATE"
+      },
+      "raw": "{\n  \"package\": {\n    \"package_name\": \"",
+      "schemaValid": false,
+      "correct": false
+    },
+    {
+      "id": "operate-11",
+      "expected": {
+        "lane": "LANE_OPERATE"
+      },
+      "raw": "{\n  \"request\": {\n    \"type\": \"Request\",",
+      "schemaValid": false,
+      "correct": false
+    },
+    {
+      "id": "operate-16",
+      "expected": {
+        "lane": "LANE_OPERATE"
+      },
+      "raw": "{\n  \"request\": {\n    \"type\": \"request\",",
+      "schemaValid": false,
+      "correct": false
+    },
+    {
+      "id": "operate-17",
+      "expected": {
+        "lane": "LANE_OPERATE"
+      },
+      "raw": "{\n  \"request\": {\n    \"request_type\": \"",
+      "schemaValid": false,
+      "correct": false
+    },
+    {
+      "id": "operate-22",
+      "expected": {
+        "lane": "LANE_OPERATE"
+      },
+      "raw": "{\n  \"action\": \"deploy\",\n  \"action_type",
+      "schemaValid": false,
+      "correct": false
+    },
+    {
+      "id": "operate-27",
+      "expected": {
+        "lane": "LANE_OPERATE"
+      },
+      "raw": "{\n  \"request\": {\n    \"request_type\": \"",
+      "schemaValid": false,
+      "correct": false
+    },
+    {
+      "id": "operate-32",
+      "expected": {
+        "lane": "LANE_OPERATE"
+      },
+      "raw": "{\n  \"request\": {\n    \"type\": \"request\",",
+      "schemaValid": false,
+      "correct": false
+    },
+    {
+      "id": "operate-33",
+      "expected": {
+        "lane": "LANE_OPERATE"
+      },
+      "raw": "{\n  \"request\": {\n    \"request_type\": \"",
+      "schemaValid": false,
+      "correct": false
+    },
+    {
+      "id": "operate-38",
+      "expected": {
+        "lane": "LANE_OPERATE"
+      },
+      "raw": "{\n  \"action\": \"deploy\",\n  \"action_type",
+      "schemaValid": false,
+      "correct": false
+    },
+    {
+      "id": "verify-01",
+      "expected": {
+        "lane": "LANE_VERIFY"
+      },
+      "raw": "{\n  \"request\": {\n    \"request_type\": \"",
+      "schemaValid": false,
+      "correct": false
+    },
+    {
+      "id": "verify-06",
+      "expected": {
+        "lane": "LANE_VERIFY"
+      },
+      "raw": "{\n  \"model\": \"Vehicle\",\n  \"model_",
+      "schemaValid": false,
+      "correct": false
+    },
+    {
+      "id": "verify-11",
+      "expected": {
+        "lane": "LANE_VERIFY"
+      },
+      "raw": "{\n  \"request\": {\n    \"type\": \"request\",",
+      "schemaValid": false,
+      "correct": false
+    },
+    {
+      "id": "verify-16",
+      "expected": {
+        "lane": "LANE_VERIFY"
+      },
+      "raw": "{\n  \"request\": {\n    \"type\": \"request\",",
+      "schemaValid": false,
+      "correct": false
+    },
+    {
+      "id": "verify-17",
+      "expected": {
+        "lane": "LANE_VERIFY"
+      },
+      "raw": "{\n  \"request\": {\n    \"request_type\": \"",
+      "schemaValid": false,
+      "correct": false
+    },
+    {
+      "id": "verify-22",
+      "expected": {
+        "lane": "LANE_VERIFY"
+      },
+      "raw": "{\n  \"model\": \"M1000\",",
+      "schemaValid": false,
+      "correct": false
+    },
+    {
+      "id": "verify-27",
+      "expected": {
+        "lane": "LANE_VERIFY"
+      },
+      "raw": "{\n  \"request\": {\n    \"type\": \"request\",",
+      "schemaValid": false,
+      "correct": false
+    },
+    {
+      "id": "verify-32",
+      "expected": {
+        "lane": "LANE_VERIFY"
+      },
+      "raw": "{\n  \"request\": {\n    \"type\": \"Request\",",
+      "schemaValid": false,
+      "correct": false
+    },
+    {
+      "id": "verify-33",
+      "expected": {
+        "lane": "LANE_VERIFY"
+      },
+      "raw": "{\n  \"request\": {\n    \"request_id\": \"",
+      "schemaValid": false,
+      "correct": false
+    },
+    {
+      "id": "verify-38",
+      "expected": {
+        "lane": "LANE_VERIFY"
+      },
+      "raw": "{\n  \"model\": \"M1000\",",
+      "schemaValid": false,
+      "correct": false
+    },
+    {
+      "id": "research-01",
+      "expected": {
+        "lane": "LANE_RESEARCH"
+      },
+      "raw": "{\n  \"request\": {\n    \"type\": \"request\",",
+      "schemaValid": false,
+      "correct": false
+    },
+    {
+      "id": "research-06",
+      "expected": {
+        "lane": "LANE_RESEARCH"
+      },
+      "raw": "{\n  \"request\": {\n    \"request_type\": \"",
+      "schemaValid": false,
+      "correct": false
+    },
+    {
+      "id": "research-11",
+      "expected": {
+        "lane": "LANE_RESEARCH"
+      },
+      "raw": "{\n  \"request\": {\n    \"type\": \"Request\",",
+      "schemaValid": false,
+      "correct": false
+    },
+    {
+      "id": "research-16",
+      "expected": {
+        "lane": "LANE_RESEARCH"
+      },
+      "raw": "{\n  \"request\": {\n    \"request_type\": \"",
+      "schemaValid": false,
+      "correct": false
+    },
+    {
+      "id": "research-17",
+      "expected": {
+        "lane": "LANE_RESEARCH"
+      },
+      "raw": "{\n  \"request\": {\n    \"request_type\": \"",
+      "schemaValid": false,
+      "correct": false
+    },
+    {
+      "id": "research-22",
+      "expected": {
+        "lane": "LANE_RESEARCH"
+      },
+      "raw": "{\n  \"request\": {\n    \"request_type\": \"",
+      "schemaValid": false,
+      "correct": false
+    },
+    {
+      "id": "research-27",
+      "expected": {
+        "lane": "LANE_RESEARCH"
+      },
+      "raw": "{\n  \"request\": {\n    \"type\": \"Request\",",
+      "schemaValid": false,
+      "correct": false
+    },
+    {
+      "id": "research-32",
+      "expected": {
+        "lane": "LANE_RESEARCH"
+      },
+      "raw": "{\n  \"request\": {\n    \"request_type\": \"",
+      "schemaValid": false,
+      "correct": false
+    },
+    {
+      "id": "research-33",
+      "expected": {
+        "lane": "LANE_RESEARCH"
+      },
+      "raw": "{\n  \"request\": {\n    \"type\": \"Request\",",
+      "schemaValid": false,
+      "correct": false
+    },
+    {
+      "id": "research-38",
+      "expected": {
+        "lane": "LANE_RESEARCH"
+      },
+      "raw": "{\n  \"action\": \"compare\",\n  \"action_type",
+      "schemaValid": false,
+      "correct": false
+    }
+  ]
+}

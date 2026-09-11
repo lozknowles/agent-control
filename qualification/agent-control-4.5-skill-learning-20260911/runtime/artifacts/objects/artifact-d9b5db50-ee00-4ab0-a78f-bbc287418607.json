@@ -1,0 +1,6 @@
+{
+  "schema": "agent-control.learned-specialist-verification/v1",
+  "passed": true,
+  "summary": "Independent lexical oracle accepted LANE_REVIEW.",
+  "routeDecisionId": "skill-route-339851e3-8e3f-4cf4-9438-97e2ed4b9261"
+}

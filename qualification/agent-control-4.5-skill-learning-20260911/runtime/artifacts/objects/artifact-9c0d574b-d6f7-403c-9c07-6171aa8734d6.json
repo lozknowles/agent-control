@@ -1,0 +1,25 @@
+{
+  "schema": "agent-control.learned-specialist-result/v1",
+  "taskClass": "route-intent-json",
+  "request": "Please review the Agent Control 4.5 qualification evidence without making changes.",
+  "result": {
+    "actual": {
+      "baseModelId": "HuggingFaceTB/SmolLM2-135M-Instruct",
+      "baseModelSha256": "e427f347ce7a0a1accb6f6879da583f19d8ab9f9b2fcffd010a664f9109ed558",
+      "runtimeId": "transformers-cpu",
+      "adapterId": "route-intent-lora",
+      "adapterVersion": "1",
+      "adapterSha256": "7e6f36b34998cb26971b8f528984a8e1cadc9d6e591120596baafac6c1bd5802"
+    },
+    "output": {
+      "lane": "LANE_OPERATE"
+    },
+    "usage": {
+      "inputTokens": 65,
+      "outputTokens": 11,
+      "totalTokens": 76
+    },
+    "elapsedMs": 1253
+  },
+  "routeDecisionId": "skill-route-9c33e141-a5a0-47da-bea1-0ff02d387d21"
+}

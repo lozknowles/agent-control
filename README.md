@@ -1,4 +1,25 @@
-# Agent Control 4.4.0
+# Agent Control 4.5.0 candidate
+
+Agent Control 4.5 adds governed local skill learning: a repeated bounded task may
+be proposed as a candidate, but training begins only after an approved,
+provenance-bound dataset and frozen baseline exist. A learned specialist is the
+explicit composition of an immutable base model, a versioned adaptation and
+independent qualification evidence. Only materially improved, current and
+compatible compositions may enter ordinary governed routing; the base route
+remains available and inappropriate tasks fail closed before adapter loading.
+
+The initial physical qualification uses CPU LoRA over a pinned 135M-parameter
+base for strict route-intent JSON. It keeps active GPU-backed voice and model
+services untouched and distinguishes learned adaptation from transient Warm
+Expert/cache state. The **Learned Specialists** dashboard and POE expose the
+candidate lifecycle, exact identity, measured improvement, limitations and route
+decisions without implying uncontrolled online learning. See the
+[operator guide](docs/skill-learning.md), [architecture decision](docs/agent-control-4.5-skill-learning-architecture-review.md),
+[qualification](docs/evidence/agent-control-4.5-governed-skill-learning-20260911.md)
+and [deployment guide](docs/DEPLOYMENT.md).
+
+Agent Control 4.4.0 remains the latest formally released baseline until a
+separate release decision, merge, tag and publication are authorized.
 
 **Your Memories** is the user-facing Agent Control capability for finding relevant prior context, checking its governance and provenance, rejecting stale or unrelated memories, and safely presenting accepted context in a session. Memories remain advisory and cannot override Work Parcels, batons, policy, authoritative evidence or execution state. The 4.4 release includes the governed UX Session Capture/Replay projection and the qualified memory architecture; MARM remains one optional backend and automatic memory consolidation/model swapping is not a released runtime feature.
 

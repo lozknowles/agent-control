@@ -1,0 +1,85 @@
+{
+  "schema": "agent-control.identity/v1",
+  "actors": [
+    {
+      "id": "web-operator",
+      "type": "human",
+      "displayName": "Authenticated web operator",
+      "principalId": "operator:web",
+      "authenticationSource": "dashboard-bearer",
+      "roles": [
+        "operator"
+      ],
+      "capabilities": [],
+      "metadata": {
+        "surface": "dashboard"
+      },
+      "createdAt": "2026-09-11T16:52:04.279Z"
+    }
+  ],
+  "agents": [],
+  "sessions": [
+    {
+      "id": "session:web-operator",
+      "creatorActorId": "web-operator",
+      "createdAt": "2026-09-11T16:52:04.280Z",
+      "participants": [
+        {
+          "actorId": "web-operator",
+          "joinedAt": "2026-09-11T16:52:04.280Z",
+          "joinedBy": "web-operator",
+          "capabilities": [
+            "session.observe",
+            "session.manage",
+            "parcel.create",
+            "parcel.execute",
+            "parcel.approve",
+            "agent.delegate",
+            "model.invoke",
+            "node.execute"
+          ]
+        }
+      ],
+      "mode": "operator-controlled",
+      "permissions": {
+        "capabilities": [
+          "session.observe",
+          "session.manage",
+          "parcel.create",
+          "parcel.execute",
+          "parcel.approve",
+          "agent.delegate",
+          "model.invoke",
+          "node.execute"
+        ],
+        "allowedModels": [
+          "spark-fast-execution",
+          "openai-default",
+          "glm-5.3-flash",
+          "glm-5.3",
+          "pixel-local-example"
+        ],
+        "allowedNodes": [
+          "controller",
+          "worker-1",
+          "windows-codex-1",
+          "android-1"
+        ],
+        "allowedSecrets": [],
+        "filesystem": "none",
+        "network": "provider-only",
+        "production": false
+      },
+      "contextPolicy": "compiled",
+      "visibility": "operator",
+      "status": "ACTIVE",
+      "metadata": {
+        "surface": "dashboard"
+      }
+    }
+  ],
+  "contextTransfers": [],
+  "delegations": [],
+  "executions": [],
+  "secretUses": []
+}

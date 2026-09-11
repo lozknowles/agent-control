@@ -1,0 +1,14 @@
+{
+  "model": "HuggingFaceTB/SmolLM2-135M-Instruct",
+  "revision": "12fd25f77366fa6b3b4b768ec3050bf629380bac",
+  "epochs": 4,
+  "seed": 45,
+  "rank": 8,
+  "alpha": 16,
+  "precision": "fp32",
+  "device": "cpu",
+  "gradientAccumulationSteps": 4,
+  "gradientCheckpointing": false,
+  "trainSha256": "a9f0c1ea6ed4b807b4d0eb8f55eca46e1bee537fbf6826f953c318593dfc0cbd",
+  "evalSha256": "99bdaed5fdeec9e44244859e80eaafb07f04940900d8f3be3619cda9dc7bb93c"
+}

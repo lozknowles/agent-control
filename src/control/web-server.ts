@@ -200,6 +200,7 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   if (method === 'GET' && url.pathname === '/api/orchestration/workflows') return json(response, 200, service.adaptiveWorkflowLeague(url.searchParams.get('taskClass') ?? undefined, adaptiveLeagueFilter(url)));
   if (method === 'GET' && url.pathname === '/api/orchestration/decisions') return json(response, 200, service.adaptiveDecisions());
   if (method === 'GET' && url.pathname === '/api/cache-experts') return json(response, 200, service.cacheExpertRegistry());
+  if (method === 'GET' && url.pathname === '/api/learned-specialists') return json(response, 200, service.learnedSpecialists());
   if (method === 'GET' && url.pathname === '/api/efficiency/invocations') {
     const requestedLimit = Number(url.searchParams.get('limit') ?? 200);
     const limit = Number.isSafeInteger(requestedLimit) && requestedLimit > 0 ? Math.min(1_000, requestedLimit) : 200;
@@ -290,6 +291,11 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
     if (url.pathname === '/api/configuration/cache-aware-experts') {
       const file = options.configFile ?? configPath(), result = new ConfigurationStore(file).updateCacheAwareExperts({revision: body.revision, cacheAwareExperts: body.cacheAwareExperts});
       service.events.emit('configuration.changed', {kind: 'cache-aware-experts', id: 'cache-aware-experts', restartRequired: true}, undefined, actor);
+      return json(response, 200, result);
+    }
+    if (url.pathname === '/api/configuration/learned-skills') {
+      const file = options.configFile ?? configPath(), result = new ConfigurationStore(file).updateLearnedSkills({revision: body.revision, learnedSkills: body.learnedSkills});
+      service.events.emit('configuration.changed', {kind: 'learned-skills', id: 'learned-skills', restartRequired: true}, undefined, actor);
       return json(response, 200, result);
     }
     if (url.pathname === '/api/cache-experts/invalidate') return json(response, 200, service.invalidateCacheExperts({providerId:typeof body.providerId==='string'?body.providerId:undefined,modelId:typeof body.modelId==='string'?body.modelId:undefined,sessionId:typeof body.sessionId==='string'?body.sessionId:undefined,cacheScopeId:typeof body.cacheScopeId==='string'?body.cacheScopeId:undefined,backendInstanceId:typeof body.backendInstanceId==='string'?body.backendInstanceId:undefined,reason:typeof body.reason==='string'?body.reason:undefined},actor));
@@ -436,7 +442,7 @@ function executionSessionStream(service: AgentControlService, id: string, reques
 
 function serveAsset(response: ServerResponse, assetsDir: string, pathname: string) {
   const asset = pathname === '/' ? 'index.html' : pathname.replace(/^\//, '');
-  if (!['dashboard-social-voice.css', 'social-voice.html', 'dashboard-social-voice.js', 'dashboard-openwa.css', 'openwa.html', 'dashboard-openwa.js', 'index.html', 'dashboard.css', 'dashboard-fixes.css', 'dashboard-jobs.css', 'dashboard-bots.css', 'dashboard-wopr.css', 'dashboard-adaptive-orchestration.css', 'dashboard-live-shell.css', 'dashboard-poe.css', 'dashboard-cache-runtime.css', 'dashboard.js', 'dashboard-parameters.js', 'dashboard-running-state.js', 'dashboard-enhancements.js', 'dashboard-parameterized-jobs.js', 'dashboard-models.js', 'dashboard-sessions.js', 'dashboard-bots.js', 'dashboard-wopr.js', 'dashboard-adaptive-orchestration.js', 'dashboard-live-shell.js', 'dashboard-poe.js', 'dashboard-cache-experts.js'].includes(asset)) throw httpError(404, 'not_found');
+  if (!['dashboard-social-voice.css', 'social-voice.html', 'dashboard-social-voice.js', 'dashboard-openwa.css', 'openwa.html', 'dashboard-openwa.js', 'index.html', 'dashboard.css', 'dashboard-fixes.css', 'dashboard-jobs.css', 'dashboard-bots.css', 'dashboard-wopr.css', 'dashboard-adaptive-orchestration.css', 'dashboard-live-shell.css', 'dashboard-poe.css', 'dashboard-cache-runtime.css', 'dashboard-learned-specialists.css', 'dashboard.js', 'dashboard-parameters.js', 'dashboard-running-state.js', 'dashboard-enhancements.js', 'dashboard-parameterized-jobs.js', 'dashboard-models.js', 'dashboard-sessions.js', 'dashboard-bots.js', 'dashboard-wopr.js', 'dashboard-adaptive-orchestration.js', 'dashboard-live-shell.js', 'dashboard-poe.js', 'dashboard-cache-experts.js', 'dashboard-learned-specialists.js'].includes(asset)) throw httpError(404, 'not_found');
   const file = path.join(assetsDir, asset);
   if (!fs.existsSync(file)) throw httpError(404, 'dashboard_asset_missing');
   const type = asset.endsWith('.html') ? 'text/html; charset=utf-8' : asset.endsWith('.css') ? 'text/css; charset=utf-8' : 'text/javascript; charset=utf-8';

@@ -1,0 +1,600 @@
+{
+  "schema": "agent-control.skill-learning/v1",
+  "candidates": [
+    {
+      "schema": "agent-control.skill-candidate/v1",
+      "id": "skill-candidate-1875f496-fd09-4c1b-981d-6e4e2bfa20eb",
+      "label": "Agent Control route-intent specialist",
+      "taskClass": "route-intent-json",
+      "capabilities": [
+        "route.intent.classify"
+      ],
+      "state": "REGISTER",
+      "discoveredFrom": [
+        "qualification:repeated-bounded-routing"
+      ],
+      "observedAt": "2026-09-11T16:49:13.080Z",
+      "updatedAt": "2026-09-11T16:49:13.084Z",
+      "proposal": {
+        "reason": "Repeated strict route-intent classification is bounded and objectively verifiable.",
+        "expectedBenefit": "Increase exact frozen-holdout accuracy and schema validity.",
+        "requestedBy": "qualification-operator"
+      },
+      "events": [
+        {
+          "at": "2026-09-11T16:49:13.080Z",
+          "from": null,
+          "to": "OBSERVE",
+          "actor": "qualification-operator",
+          "reason": "Repeated strict route-intent classification is bounded and objectively verifiable.",
+          "evidence": [
+            "qualification:repeated-bounded-routing"
+          ]
+        },
+        {
+          "at": "2026-09-11T16:49:13.081Z",
+          "from": "OBSERVE",
+          "to": "IDENTIFY",
+          "actor": "qualification-operator",
+          "reason": "Bounded candidate approved for isolated experiment",
+          "evidence": []
+        },
+        {
+          "at": "2026-09-11T16:49:13.082Z",
+          "from": "IDENTIFY",
+          "to": "DATASET",
+          "actor": "qualification-operator",
+          "reason": "Disjoint synthetic dataset reviewed and frozen",
+          "evidence": [
+            "dataset:b5e48d4d31c2a2adb73a9583f6926ae4883d4e8906b99c2d3d242875e740afa8",
+            "eval:f28e3610701bb8d3cfa16062f7761c793983ac78254c45c2143b6d7cfa50cce7"
+          ]
+        },
+        {
+          "at": "2026-09-11T16:49:13.083Z",
+          "from": "DATASET",
+          "to": "BASELINE",
+          "actor": "independent-evaluator",
+          "reason": "Unadapted base measured on frozen holdout",
+          "evidence": [
+            "baseline:72ab479358a887db33f4345b7a3ac52e7c5808f87d4f4c109caf160d69eb497b"
+          ]
+        },
+        {
+          "at": "2026-09-11T16:49:13.083Z",
+          "from": "BASELINE",
+          "to": "TRAIN",
+          "actor": "qualification-operator",
+          "reason": "Approved CPU-only LoRA run protected active GPU services",
+          "evidence": []
+        },
+        {
+          "at": "2026-09-11T16:49:13.084Z",
+          "from": "TRAIN",
+          "to": "QUALIFY",
+          "actor": "isolated-peft-trainer",
+          "reason": "Bounded training completed",
+          "evidence": [
+            "adapter:7e6f36b34998cb26971b8f528984a8e1cadc9d6e591120596baafac6c1bd5802"
+          ]
+        },
+        {
+          "at": "2026-09-11T16:49:13.084Z",
+          "from": "QUALIFY",
+          "to": "REGISTER",
+          "actor": "independent-evaluator",
+          "reason": "Material +0.40 exact-accuracy improvement and +1.00 schema-validity improvement on the frozen holdout",
+          "evidence": [
+            "eval:f28e3610701bb8d3cfa16062f7761c793983ac78254c45c2143b6d7cfa50cce7",
+            "specialist:a1838b50746c1dab7f66d49e9dddb67122118b340557112540e6897b26bb3967"
+          ]
+        }
+      ],
+      "dataset": {
+        "schema": "agent-control.skill-dataset/v1",
+        "id": "route-intent-v1",
+        "version": "1",
+        "taskClass": "route-intent-json",
+        "trainingExampleIds": [
+          "review-02",
+          "review-03",
+          "review-04",
+          "review-05",
+          "review-07",
+          "review-08",
+          "review-09",
+          "review-10",
+          "review-12",
+          "review-13",
+          "review-14",
+          "review-15",
+          "review-18",
+          "review-19",
+          "review-20",
+          "review-21",
+          "review-23",
+          "review-24",
+          "review-25",
+          "review-26",
+          "review-28",
+          "review-29",
+          "review-30",
+          "review-31",
+          "review-34",
+          "review-35",
+          "review-36",
+          "review-37",
+          "review-39",
+          "review-40",
+          "operate-02",
+          "operate-03",
+          "operate-04",
+          "operate-05",
+          "operate-07",
+          "operate-08",
+          "operate-09",
+          "operate-10",
+          "operate-12",
+          "operate-13",
+          "operate-14",
+          "operate-15",
+          "operate-18",
+          "operate-19",
+          "operate-20",
+          "operate-21",
+          "operate-23",
+          "operate-24",
+          "operate-25",
+          "operate-26",
+          "operate-28",
+          "operate-29",
+          "operate-30",
+          "operate-31",
+          "operate-34",
+          "operate-35",
+          "operate-36",
+          "operate-37",
+          "operate-39",
+          "operate-40",
+          "verify-02",
+          "verify-03",
+          "verify-04",
+          "verify-05",
+          "verify-07",
+          "verify-08",
+          "verify-09",
+          "verify-10",
+          "verify-12",
+          "verify-13",
+          "verify-14",
+          "verify-15",
+          "verify-18",
+          "verify-19",
+          "verify-20",
+          "verify-21",
+          "verify-23",
+          "verify-24",
+          "verify-25",
+          "verify-26",
+          "verify-28",
+          "verify-29",
+          "verify-30",
+          "verify-31",
+          "verify-34",
+          "verify-35",
+          "verify-36",
+          "verify-37",
+          "verify-39",
+          "verify-40",
+          "research-02",
+          "research-03",
+          "research-04",
+          "research-05",
+          "research-07",
+          "research-08",
+          "research-09",
+          "research-10",
+          "research-12",
+          "research-13",
+          "research-14",
+          "research-15",
+          "research-18",
+          "research-19",
+          "research-20",
+          "research-21",
+          "research-23",
+          "research-24",
+          "research-25",
+          "research-26",
+          "research-28",
+          "research-29",
+          "research-30",
+          "research-31",
+          "research-34",
+          "research-35",
+          "research-36",
+          "research-37",
+          "research-39",
+          "research-40"
+        ],
+        "evaluationExampleIds": [
+          "review-01",
+          "review-06",
+          "review-11",
+          "review-16",
+          "review-17",
+          "review-22",
+          "review-27",
+          "review-32",
+          "review-33",
+          "review-38",
+          "operate-01",
+          "operate-06",
+          "operate-11",
+          "operate-16",
+          "operate-17",
+          "operate-22",
+          "operate-27",
+          "operate-32",
+          "operate-33",
+          "operate-38",
+          "verify-01",
+          "verify-06",
+          "verify-11",
+          "verify-16",
+          "verify-17",
+          "verify-22",
+          "verify-27",
+          "verify-32",
+          "verify-33",
+          "verify-38",
+          "research-01",
+          "research-06",
+          "research-11",
+          "research-16",
+          "research-17",
+          "research-22",
+          "research-27",
+          "research-32",
+          "research-33",
+          "research-38"
+        ],
+        "trainingSha256": "b5e48d4d31c2a2adb73a9583f6926ae4883d4e8906b99c2d3d242875e740afa8",
+        "evaluationSha256": "f28e3610701bb8d3cfa16062f7761c793983ac78254c45c2143b6d7cfa50cce7",
+        "schemaSha256": "3e9bd4c060771129c4ef3ffa80b1d8fdd14d2dc718529f9bc875f09613ec583b",
+        "provenance": [
+          {
+            "sourceId": "agent-control-4.5-approved-route-intent-fixture",
+            "sourceSha256": "d9d6f30f360f3ff815eef7567e32422318caa4883ba74403343b27462a166626",
+            "authority": "operator-authorised-qualification-fixture"
+          }
+        ],
+        "duplicateCount": 0,
+        "malformedCount": 0,
+        "disagreementCount": 0,
+        "contaminationCount": 0,
+        "humanReview": {
+          "state": "APPROVED",
+          "actor": "agent-control-qualification-operator",
+          "at": "2026-09-11T16:41:10.902Z",
+          "reason": "Synthetic bounded routing intents contain no production content or secrets and are disjoint by ID and text."
+        },
+        "createdAt": "2026-09-11T16:41:10.902Z"
+      },
+      "baseline": {
+        "metrics": [
+          {
+            "name": "frozen_accuracy",
+            "value": 0,
+            "unit": "ratio",
+            "authority": "MEASURED",
+            "direction": "HIGHER_IS_BETTER"
+          },
+          {
+            "name": "schema_validity",
+            "value": 0,
+            "unit": "ratio",
+            "authority": "MEASURED",
+            "direction": "HIGHER_IS_BETTER"
+          }
+        ],
+        "at": "2026-09-11T16:49:13.083Z",
+        "evidence": [
+          "baseline:72ab479358a887db33f4345b7a3ac52e7c5808f87d4f4c109caf160d69eb497b"
+        ]
+      },
+      "training": {
+        "identity": {
+          "method": "lora",
+          "framework": "peft",
+          "frameworkVersion": "0.17.1",
+          "runtimeId": "transformers-cpu",
+          "runtimeVersion": "4.56.1",
+          "precision": "fp32",
+          "quantization": null,
+          "rank": 8,
+          "gradientAccumulationSteps": 4,
+          "gradientCheckpointing": false,
+          "seed": 45,
+          "configurationSha256": "a6cab168665cfc0641f8aaa8b9780e0a0ce7998dbcad573eab679e3f08b4025f",
+          "environmentSha256": "2581c72f04aba59a06de830d3c4c1f1e44e68e263acd0e70057c857e021187b5"
+        },
+        "startedAt": "2026-09-11T16:49:13.083Z",
+        "completedAt": "2026-09-11T16:49:13.084Z",
+        "checkpointRef": null,
+        "checkpointSha256": null,
+        "resultRef": "managed://learned-skills/adapter",
+        "resultSha256": "7e6f36b34998cb26971b8f528984a8e1cadc9d6e591120596baafac6c1bd5802",
+        "failure": null
+      },
+      "adapterId": "route-intent-lora"
+    }
+  ],
+  "adapters": [
+    {
+      "schema": "agent-control.skill-adapter/v1",
+      "id": "route-intent-lora",
+      "version": "1",
+      "label": "Agent Control route-intent specialist",
+      "taskClass": "route-intent-json",
+      "capabilities": [
+        "route.intent.classify"
+      ],
+      "base": {
+        "modelId": "HuggingFaceTB/SmolLM2-135M-Instruct",
+        "modelVersion": "12fd25f77366fa6b3b4b768ec3050bf629380bac",
+        "modelSha256": "e427f347ce7a0a1accb6f6879da583f19d8ab9f9b2fcffd010a664f9109ed558"
+      },
+      "adapter": {
+        "id": "route-intent-lora",
+        "version": "1",
+        "format": "peft-lora",
+        "artefactSha256": "7e6f36b34998cb26971b8f528984a8e1cadc9d6e591120596baafac6c1bd5802",
+        "sizeBytes": 8517793,
+        "storageRef": "managed://learned-skills/adapter"
+      },
+      "dataset": {
+        "id": "route-intent-v1",
+        "version": "1",
+        "trainingSha256": "b5e48d4d31c2a2adb73a9583f6926ae4883d4e8906b99c2d3d242875e740afa8",
+        "evaluationSha256": "f28e3610701bb8d3cfa16062f7761c793983ac78254c45c2143b6d7cfa50cce7"
+      },
+      "training": {
+        "method": "lora",
+        "framework": "peft",
+        "frameworkVersion": "0.17.1",
+        "runtimeId": "transformers-cpu",
+        "runtimeVersion": "4.56.1",
+        "precision": "fp32",
+        "quantization": null,
+        "rank": 8,
+        "gradientAccumulationSteps": 4,
+        "gradientCheckpointing": false,
+        "seed": 45,
+        "configurationSha256": "a6cab168665cfc0641f8aaa8b9780e0a0ce7998dbcad573eab679e3f08b4025f",
+        "environmentSha256": "2581c72f04aba59a06de830d3c4c1f1e44e68e263acd0e70057c857e021187b5"
+      },
+      "qualification": {
+        "state": "QUALIFIED",
+        "qualifiedAt": "2026-09-11T16:49:13.084Z",
+        "evaluatorId": "frozen-holdout-exact-match-v1",
+        "evidence": [
+          "eval:f28e3610701bb8d3cfa16062f7761c793983ac78254c45c2143b6d7cfa50cce7",
+          "skill-route:skill-route-339851e3-8e3f-4cf4-9438-97e2ed4b9261",
+          "skill-route:skill-route-9c33e141-a5a0-47da-bea1-0ff02d387d21",
+          "specialist:a1838b50746c1dab7f66d49e9dddb67122118b340557112540e6897b26bb3967"
+        ],
+        "baseline": [
+          {
+            "name": "frozen_accuracy",
+            "value": 0,
+            "unit": "ratio",
+            "authority": "MEASURED",
+            "direction": "HIGHER_IS_BETTER"
+          },
+          {
+            "name": "schema_validity",
+            "value": 0,
+            "unit": "ratio",
+            "authority": "MEASURED",
+            "direction": "HIGHER_IS_BETTER"
+          }
+        ],
+        "specialist": [
+          {
+            "name": "frozen_accuracy",
+            "value": 0.4,
+            "unit": "ratio",
+            "authority": "MEASURED",
+            "direction": "HIGHER_IS_BETTER"
+          },
+          {
+            "name": "schema_validity",
+            "value": 1,
+            "unit": "ratio",
+            "authority": "MEASURED",
+            "direction": "HIGHER_IS_BETTER"
+          }
+        ],
+        "improvement": 0.4,
+        "protectedRegressions": [],
+        "reason": "Material +0.40 exact-accuracy improvement and +1.00 schema-validity improvement on the frozen holdout"
+      },
+      "compatibility": {
+        "runtimeIds": [
+          "transformers-cpu"
+        ],
+        "minimumRuntimeVersions": {
+          "transformers-cpu": "4.56.1"
+        },
+        "baseModelSha256": "e427f347ce7a0a1accb6f6879da583f19d8ab9f9b2fcffd010a664f9109ed558"
+      },
+      "lifecycle": {
+        "state": "MONITOR",
+        "registeredAt": "2026-09-11T16:49:13.084Z",
+        "lastUsedAt": "2026-09-11T16:51:23.044Z",
+        "retiredAt": null,
+        "reason": "Verified composed identity executed through governed specialist port"
+      },
+      "rollback": {
+        "previousAdapterId": null,
+        "previousVersion": null
+      },
+      "limitations": [
+        "Frozen exact accuracy is 0.40; ordinary routing remains the fallback.",
+        "No energy or monetary-cost measurement is available.",
+        "Qualified only for route-intent-json on the exact base/runtime identity."
+      ]
+    }
+  ],
+  "routing": [
+    {
+      "schema": "agent-control.skill-routing-decision/v1",
+      "id": "skill-route-9c33e141-a5a0-47da-bea1-0ff02d387d21",
+      "parcelId": "parcel-608d49b1-7c87-43bf-8fde-ff446f241ef0",
+      "stageId": "classify",
+      "at": "2026-09-11T16:49:13.116Z",
+      "taskClass": "route-intent-json",
+      "baseModelId": "HuggingFaceTB/SmolLM2-135M-Instruct",
+      "candidates": [
+        {
+          "adapterId": "route-intent-lora",
+          "version": "1",
+          "eligible": true,
+          "reasons": [],
+          "qualificationState": "QUALIFIED",
+          "improvement": 0.4,
+          "lastUsedAt": null
+        }
+      ],
+      "selected": {
+        "adapterId": "route-intent-lora",
+        "version": "1",
+        "artefactSha256": "7e6f36b34998cb26971b8f528984a8e1cadc9d6e591120596baafac6c1bd5802"
+      },
+      "reason": "Selected qualified learned specialist route-intent-lora@1; material improvement 0.4000 and exact base/runtime compatibility passed."
+    },
+    {
+      "schema": "agent-control.skill-routing-decision/v1",
+      "id": "skill-route-810ecc9d-8d4d-412d-bd4a-fb2085948cd7",
+      "parcelId": "parcel-8416b2fa-348d-4a7c-b2f8-327ddf13e207",
+      "stageId": "classify",
+      "at": "2026-09-11T16:49:19.790Z",
+      "taskClass": "unrelated-task",
+      "baseModelId": "HuggingFaceTB/SmolLM2-135M-Instruct",
+      "candidates": [],
+      "selected": null,
+      "reason": "No learned specialist passed qualification, task, base, runtime and freshness gates; use the ordinary governed route."
+    },
+    {
+      "schema": "agent-control.skill-routing-decision/v1",
+      "id": "skill-route-339851e3-8e3f-4cf4-9438-97e2ed4b9261",
+      "parcelId": "parcel-b2649b2f-1357-4d9f-a4cd-8d95e4d96648",
+      "stageId": "classify",
+      "at": "2026-09-11T16:51:17.097Z",
+      "taskClass": "route-intent-json",
+      "baseModelId": "HuggingFaceTB/SmolLM2-135M-Instruct",
+      "candidates": [
+        {
+          "adapterId": "route-intent-lora",
+          "version": "1",
+          "eligible": true,
+          "reasons": [],
+          "qualificationState": "QUALIFIED",
+          "improvement": 0.4,
+          "lastUsedAt": "2026-09-11T16:49:19.753Z"
+        }
+      ],
+      "selected": {
+        "adapterId": "route-intent-lora",
+        "version": "1",
+        "artefactSha256": "7e6f36b34998cb26971b8f528984a8e1cadc9d6e591120596baafac6c1bd5802"
+      },
+      "reason": "Selected qualified learned specialist route-intent-lora@1; material improvement 0.4000 and exact base/runtime compatibility passed."
+    },
+    {
+      "schema": "agent-control.skill-routing-decision/v1",
+      "id": "skill-route-f5da67a9-8194-4722-9afd-127d5f9f672b",
+      "parcelId": "parcel-0fedd96c-da30-46cf-bc8a-428c35efbbc5",
+      "stageId": "classify",
+      "at": "2026-09-11T16:51:23.098Z",
+      "taskClass": "unrelated-task",
+      "baseModelId": "HuggingFaceTB/SmolLM2-135M-Instruct",
+      "candidates": [],
+      "selected": null,
+      "reason": "No learned specialist passed qualification, task, base, runtime and freshness gates; use the ordinary governed route."
+    },
+    {
+      "schema": "agent-control.skill-routing-decision/v1",
+      "id": "skill-route-e3a73a80-f2d5-4cfd-8271-7cf18643cba5",
+      "parcelId": "failure-wrong-base",
+      "stageId": "classify",
+      "at": "2026-09-11T16:51:23.107Z",
+      "taskClass": "route-intent-json",
+      "baseModelId": "HuggingFaceTB/SmolLM2-135M-Instruct",
+      "candidates": [
+        {
+          "adapterId": "route-intent-lora",
+          "version": "1",
+          "eligible": false,
+          "reasons": [
+            "base-model-identity-mismatch"
+          ],
+          "qualificationState": "QUALIFIED",
+          "improvement": 0.4,
+          "lastUsedAt": "2026-09-11T16:51:23.044Z"
+        }
+      ],
+      "selected": null,
+      "reason": "No learned specialist passed qualification, task, base, runtime and freshness gates; use the ordinary governed route."
+    },
+    {
+      "schema": "agent-control.skill-routing-decision/v1",
+      "id": "skill-route-bc372396-8a86-46e0-8005-4b3d557d8264",
+      "parcelId": "failure-runtime",
+      "stageId": "classify",
+      "at": "2026-09-11T16:51:23.107Z",
+      "taskClass": "route-intent-json",
+      "baseModelId": "HuggingFaceTB/SmolLM2-135M-Instruct",
+      "candidates": [
+        {
+          "adapterId": "route-intent-lora",
+          "version": "1",
+          "eligible": false,
+          "reasons": [
+            "runtime-incompatible"
+          ],
+          "qualificationState": "QUALIFIED",
+          "improvement": 0.4,
+          "lastUsedAt": "2026-09-11T16:51:23.044Z"
+        }
+      ],
+      "selected": null,
+      "reason": "No learned specialist passed qualification, task, base, runtime and freshness gates; use the ordinary governed route."
+    },
+    {
+      "schema": "agent-control.skill-routing-decision/v1",
+      "id": "skill-route-04ea093a-e337-4b49-9644-3e283fcaeeb1",
+      "parcelId": "failure-stale",
+      "stageId": "classify",
+      "at": "2026-12-11T16:49:13.084Z",
+      "taskClass": "route-intent-json",
+      "baseModelId": "HuggingFaceTB/SmolLM2-135M-Instruct",
+      "candidates": [
+        {
+          "adapterId": "route-intent-lora",
+          "version": "1",
+          "eligible": false,
+          "reasons": [
+            "qualification-stale"
+          ],
+          "qualificationState": "QUALIFIED",
+          "improvement": 0.4,
+          "lastUsedAt": "2026-09-11T16:51:23.044Z"
+        }
+      ],
+      "selected": null,
+      "reason": "No learned specialist passed qualification, task, base, runtime and freshness gates; use the ordinary governed route."
+    }
+  ]
+}

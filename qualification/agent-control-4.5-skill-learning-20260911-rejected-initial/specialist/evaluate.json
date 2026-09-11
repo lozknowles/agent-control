@@ -1,0 +1,373 @@
+{
+  "schema": "agent-control.skill-evaluation/v1",
+  "kind": "evaluate",
+  "model": "HuggingFaceTB/SmolLM2-135M-Instruct",
+  "revision": "12fd25f77366fa6b3b4b768ec3050bf629380bac",
+  "adapter": true,
+  "examples": 40,
+  "accuracy": 0.175,
+  "schemaValidity": 1.0,
+  "elapsedSeconds": 36.0948600769043,
+  "rows": [
+    {
+      "id": "review-04",
+      "expected": {
+        "lane": "LANE_REVIEW"
+      },
+      "raw": "{\"lane\":\"LANE_RESEARCH\"}",
+      "schemaValid": true,
+      "correct": false
+    },
+    {
+      "id": "review-08",
+      "expected": {
+        "lane": "LANE_REVIEW"
+      },
+      "raw": "{\"lane\":\"LANE_RESEARCH\"}",
+      "schemaValid": true,
+      "correct": false
+    },
+    {
+      "id": "review-12",
+      "expected": {
+        "lane": "LANE_REVIEW"
+      },
+      "raw": "{\"lane\":\"LANE_RESEARCH\"}",
+      "schemaValid": true,
+      "correct": false
+    },
+    {
+      "id": "review-16",
+      "expected": {
+        "lane": "LANE_REVIEW"
+      },
+      "raw": "{\"lane\":\"LANE_RESEARCH\"}",
+      "schemaValid": true,
+      "correct": false
+    },
+    {
+      "id": "review-20",
+      "expected": {
+        "lane": "LANE_REVIEW"
+      },
+      "raw": "{\"lane\":\"LANE_RESEARCH\"}",
+      "schemaValid": true,
+      "correct": false
+    },
+    {
+      "id": "review-24",
+      "expected": {
+        "lane": "LANE_REVIEW"
+      },
+      "raw": "{\"lane\":\"LANE_RESEARCH\"}",
+      "schemaValid": true,
+      "correct": false
+    },
+    {
+      "id": "review-28",
+      "expected": {
+        "lane": "LANE_REVIEW"
+      },
+      "raw": "{\"lane\":\"LANE_RESEARCH\"}",
+      "schemaValid": true,
+      "correct": false
+    },
+    {
+      "id": "review-32",
+      "expected": {
+        "lane": "LANE_REVIEW"
+      },
+      "raw": "{\"lane\":\"LANE_RESEARCH\"}",
+      "schemaValid": true,
+      "correct": false
+    },
+    {
+      "id": "review-36",
+      "expected": {
+        "lane": "LANE_REVIEW"
+      },
+      "raw": "{\"lane\":\"LANE_RESEARCH\"}",
+      "schemaValid": true,
+      "correct": false
+    },
+    {
+      "id": "review-40",
+      "expected": {
+        "lane": "LANE_REVIEW"
+      },
+      "raw": "{\"lane\":\"LANE_RESEARCH\"}",
+      "schemaValid": true,
+      "correct": false
+    },
+    {
+      "id": "operate-04",
+      "expected": {
+        "lane": "LANE_OPERATE"
+      },
+      "raw": "{\"lane\":\"LANE_RESEARCH\"}",
+      "schemaValid": true,
+      "correct": false
+    },
+    {
+      "id": "operate-08",
+      "expected": {
+        "lane": "LANE_OPERATE"
+      },
+      "raw": "{\"lane\":\"LANE_REVIEW\"}",
+      "schemaValid": true,
+      "correct": false
+    },
+    {
+      "id": "operate-12",
+      "expected": {
+        "lane": "LANE_OPERATE"
+      },
+      "raw": "{\"lane\":\"LANE_REVIEW\"}",
+      "schemaValid": true,
+      "correct": false
+    },
+    {
+      "id": "operate-16",
+      "expected": {
+        "lane": "LANE_OPERATE"
+      },
+      "raw": "{\"lane\":\"LANE_REVIEW\"}",
+      "schemaValid": true,
+      "correct": false
+    },
+    {
+      "id": "operate-20",
+      "expected": {
+        "lane": "LANE_OPERATE"
+      },
+      "raw": "{\"lane\":\"LANE_VERIFY\"}",
+      "schemaValid": true,
+      "correct": false
+    },
+    {
+      "id": "operate-24",
+      "expected": {
+        "lane": "LANE_OPERATE"
+      },
+      "raw": "{\"lane\":\"LANE_REVIEW\"}",
+      "schemaValid": true,
+      "correct": false
+    },
+    {
+      "id": "operate-28",
+      "expected": {
+        "lane": "LANE_OPERATE"
+      },
+      "raw": "{\"lane\":\"LANE_RESEARCH\"}",
+      "schemaValid": true,
+      "correct": false
+    },
+    {
+      "id": "operate-32",
+      "expected": {
+        "lane": "LANE_OPERATE"
+      },
+      "raw": "{\"lane\":\"LANE_REVIEW\"}",
+      "schemaValid": true,
+      "correct": false
+    },
+    {
+      "id": "operate-36",
+      "expected": {
+        "lane": "LANE_OPERATE"
+      },
+      "raw": "{\"lane\":\"LANE_RESEARCH\"}",
+      "schemaValid": true,
+      "correct": false
+    },
+    {
+      "id": "operate-40",
+      "expected": {
+        "lane": "LANE_OPERATE"
+      },
+      "raw": "{\"lane\":\"LANE_REVIEW\"}",
+      "schemaValid": true,
+      "correct": false
+    },
+    {
+      "id": "verify-04",
+      "expected": {
+        "lane": "LANE_VERIFY"
+      },
+      "raw": "{\"lane\":\"LANE_RESEARCH\"}",
+      "schemaValid": true,
+      "correct": false
+    },
+    {
+      "id": "verify-08",
+      "expected": {
+        "lane": "LANE_VERIFY"
+      },
+      "raw": "{\"lane\":\"LANE_VERIFY\"}",
+      "schemaValid": true,
+      "correct": true
+    },
+    {
+      "id": "verify-12",
+      "expected": {
+        "lane": "LANE_VERIFY"
+      },
+      "raw": "{\"lane\":\"LANE_RESEARCH\"}",
+      "schemaValid": true,
+      "correct": false
+    },
+    {
+      "id": "verify-16",
+      "expected": {
+        "lane": "LANE_VERIFY"
+      },
+      "raw": "{\"lane\":\"LANE_VERIFY\"}",
+      "schemaValid": true,
+      "correct": true
+    },
+    {
+      "id": "verify-20",
+      "expected": {
+        "lane": "LANE_VERIFY"
+      },
+      "raw": "{\"lane\":\"LANE_RESEARCH\"}",
+      "schemaValid": true,
+      "correct": false
+    },
+    {
+      "id": "verify-24",
+      "expected": {
+        "lane": "LANE_VERIFY"
+      },
+      "raw": "{\"lane\":\"LANE_OPERATE\"}",
+      "schemaValid": true,
+      "correct": false
+    },
+    {
+      "id": "verify-28",
+      "expected": {
+        "lane": "LANE_VERIFY"
+      },
+      "raw": "{\"lane\":\"LANE_RESEARCH\"}",
+      "schemaValid": true,
+      "correct": false
+    },
+    {
+      "id": "verify-32",
+      "expected": {
+        "lane": "LANE_VERIFY"
+      },
+      "raw": "{\"lane\":\"LANE_VERIFY\"}",
+      "schemaValid": true,
+      "correct": true
+    },
+    {
+      "id": "verify-36",
+      "expected": {
+        "lane": "LANE_VERIFY"
+      },
+      "raw": "{\"lane\":\"LANE_RESEARCH\"}",
+      "schemaValid": true,
+      "correct": false
+    },
+    {
+      "id": "verify-40",
+      "expected": {
+        "lane": "LANE_VERIFY"
+      },
+      "raw": "{\"lane\":\"LANE_OPERATE\"}",
+      "schemaValid": true,
+      "correct": false
+    },
+    {
+      "id": "research-04",
+      "expected": {
+        "lane": "LANE_RESEARCH"
+      },
+      "raw": "{\"lane\":\"LANE_RESEARCH\"}",
+      "schemaValid": true,
+      "correct": true
+    },
+    {
+      "id": "research-08",
+      "expected": {
+        "lane": "LANE_RESEARCH"
+      },
+      "raw": "{\"lane\":\"LANE_OPERATE\"}",
+      "schemaValid": true,
+      "correct": false
+    },
+    {
+      "id": "research-12",
+      "expected": {
+        "lane": "LANE_RESEARCH"
+      },
+      "raw": "{\"lane\":\"LANE_RESEARCH\"}",
+      "schemaValid": true,
+      "correct": true
+    },
+    {
+      "id": "research-16",
+      "expected": {
+        "lane": "LANE_RESEARCH"
+      },
+      "raw": "{\"lane\":\"LANE_REVIEW\"}",
+      "schemaValid": true,
+      "correct": false
+    },
+    {
+      "id": "research-20",
+      "expected": {
+        "lane": "LANE_RESEARCH"
+      },
+      "raw": "{\"lane\":\"LANE_REVIEW\"}",
+      "schemaValid": true,
+      "correct": false
+    },
+    {
+      "id": "research-24",
+      "expected": {
+        "lane": "LANE_RESEARCH"
+      },
+      "raw": "{\"lane\":\"LANE_REVIEW\"}",
+      "schemaValid": true,
+      "correct": false
+    },
+    {
+      "id": "research-28",
+      "expected": {
+        "lane": "LANE_RESEARCH"
+      },
+      "raw": "{\"lane\":\"LANE_RESEARCH\"}",
+      "schemaValid": true,
+      "correct": true
+    },
+    {
+      "id": "research-32",
+      "expected": {
+        "lane": "LANE_RESEARCH"
+      },
+      "raw": "{\"lane\":\"LANE_OPERATE\"}",
+      "schemaValid": true,
+      "correct": false
+    },
+    {
+      "id": "research-36",
+      "expected": {
+        "lane": "LANE_RESEARCH"
+      },
+      "raw": "{\"lane\":\"LANE_RESEARCH\"}",
+      "schemaValid": true,
+      "correct": true
+    },
+    {
+      "id": "research-40",
+      "expected": {
+        "lane": "LANE_RESEARCH"
+      },
+      "raw": "{\"lane\":\"LANE_REVIEW\"}",
+      "schemaValid": true,
+      "correct": false
+    }
+  ]
+}

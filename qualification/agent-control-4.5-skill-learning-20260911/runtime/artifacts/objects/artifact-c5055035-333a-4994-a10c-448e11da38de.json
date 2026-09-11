@@ -1,0 +1,25 @@
+{
+  "schema": "agent-control.learned-specialist-result/v1",
+  "taskClass": "route-intent-json",
+  "request": "Please review the release evidence without making changes.",
+  "result": {
+    "actual": {
+      "baseModelId": "HuggingFaceTB/SmolLM2-135M-Instruct",
+      "baseModelSha256": "e427f347ce7a0a1accb6f6879da583f19d8ab9f9b2fcffd010a664f9109ed558",
+      "runtimeId": "transformers-cpu",
+      "adapterId": "route-intent-lora",
+      "adapterVersion": "1",
+      "adapterSha256": "7e6f36b34998cb26971b8f528984a8e1cadc9d6e591120596baafac6c1bd5802"
+    },
+    "output": {
+      "lane": "LANE_REVIEW"
+    },
+    "usage": {
+      "inputTokens": 59,
+      "outputTokens": 10,
+      "totalTokens": 69
+    },
+    "elapsedMs": 1162
+  },
+  "routeDecisionId": "skill-route-339851e3-8e3f-4cf4-9438-97e2ed4b9261"
+}
