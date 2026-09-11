@@ -113,6 +113,7 @@ const service = new AgentControlService(state, ptys, providers).configureProject
   executionSessions,
   cacheExperts: jobRuntime.cacheExperts,
   learnedSkills: jobRuntime.learnedSkills,
+  energyTelemetry: jobRuntime.energyTelemetry,
 });
 let poeSpeech: import('./control/social-voice-providers.js').SpeechProvider | undefined;
 let poeRecognition: import('./control/social-voice-providers.js').SpeechRecognitionProvider | undefined;

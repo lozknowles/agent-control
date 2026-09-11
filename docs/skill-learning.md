@@ -6,6 +6,8 @@ new provider and is not the unmodified base model. Its route identity binds:
 
 `base model ID/version/SHA-256 + adaptation ID/version/SHA-256 + runtime + frozen qualification`
 
+Energy efficiency is not inferred from parameter count. Baseline, training, held-out qualification, and repeated specialist inference may attach measured energy through the generic telemetry contract. Promotion requires quality first; training break-even is shown only when all compared values share a valid measurement boundary. See [energy-aware intelligence](energy-aware-intelligence.md).
+
 ## Operator lifecycle
 
 1. **Observe** evidence of a repeated bounded task.

@@ -201,6 +201,7 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   if (method === 'GET' && url.pathname === '/api/orchestration/decisions') return json(response, 200, service.adaptiveDecisions());
   if (method === 'GET' && url.pathname === '/api/cache-experts') return json(response, 200, service.cacheExpertRegistry());
   if (method === 'GET' && url.pathname === '/api/learned-specialists') return json(response, 200, service.learnedSpecialists());
+  if (method === 'GET' && url.pathname === '/api/energy') return json(response, 200, service.energyProjection());
   if (method === 'GET' && url.pathname === '/api/efficiency/invocations') {
     const requestedLimit = Number(url.searchParams.get('limit') ?? 200);
     const limit = Number.isSafeInteger(requestedLimit) && requestedLimit > 0 ? Math.min(1_000, requestedLimit) : 200;
