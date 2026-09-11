@@ -1,7 +1,7 @@
 {
   "schema": "agent-control.implementation-status/v1",
-  "release": "4.3.0",
-  "updated": "2026-09-09",
+  "release": "4.4.0",
+  "updated": "2026-09-11",
   "capabilities": [
     {
       "id": "operator.poe-conversational-interface",
@@ -1052,6 +1052,29 @@
         "src/control/orca-execution-provider.test.ts"
       ],
       "limitation": "Keep provider-specific native surfaces disabled where the workload does not require them; add authoritative per-action mediation or immediate process suspension before claiming universal ToolPolicy coverage for an opaque CLI."
+    },
+    {
+      "id": "ux.governed-session-replay",
+      "title": "Governed UX Session Capture and Interactive Replay",
+      "status": "QUALIFIED",
+      "summary": "Terminal Job Runs project existing durable execution evidence into an immutable SHA-256-bound UX session. Audience-scoped read-only shares, interactive replay, conventional video, transcript and digest retain one identity; shares grant no operational or rerun authority. Normal memory presentation uses Your Memories while implementation backends remain hidden.",
+      "sources": [
+        "src/control/ux-session.ts",
+        "src/control/web-server.ts",
+        "src/web.ts",
+        "assets/session-player/index.html",
+        "assets/session-player/session-player.js",
+        "assets/session-player/session-player.css"
+      ],
+      "tests": [
+        "src/control/ux-session.test.ts",
+        "src/control/ux-session-web.test.ts"
+      ],
+      "evidence": [
+        "docs/evidence/agent-control-4.4-ux-session-replay-20260911.md",
+        "qualification/agent-control-4.4-ux-session-replay-20260911/evidence-manifest.json"
+      ],
+      "limitation": "Your Memories is advisory. Automatic memory consolidation and idle model swapping are not released; MARM remains optional."
     },
     {
       "id": "skills.qualified-selection",

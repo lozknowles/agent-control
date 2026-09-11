@@ -1,6 +1,6 @@
 # Agent Control architecture
 
-This is the authoritative source boundary for Agent Control 4.3.0. Historical physical evidence remains bound to its recorded product SHA; the integrated product candidate `27bc4c596bbde1db2696d62d38ca17d8bf8cab21` passed fresh physical A–F qualification and the complete 1,119-test suite. Status labels matter:
+This is the authoritative source boundary for Agent Control 4.4.0. The 4.4 UX/session implementation `3b0f89653784f90e092c07f61123ba1f9249a42b` passed physical browser qualification and the complete 1,125-test suite; its evidence is frozen at `574c53f4e3db0d71cf59a3bdb3340f2aa2a7f181`. Historical physical evidence remains bound to its recorded product SHA. Status labels matter:
 
 - **implemented** means executable code and automated tests exist in this branch;
 - **experimental** means executable code exists but has not been qualified across every external substrate;
@@ -721,6 +721,58 @@ Transient provider exhaustion uses the same production boundary through a distin
 The failed invocation remains a failed Work Parcel leg with its own duration and whatever usage the provider actually reported. It is not converted into model-quality evidence and is not removed when a later retry or fallback succeeds. The failure baton records the immutable repository SHA, clean/dirty state, completed preparation, failure classification, evidence references, unresolved review work, exact next action, source route and aggregate accounting. A destination must match the governor-sealed provider/account/model/node identity. No candidate means fail closed; destination failure leaves the original thread recoverable. Parameterised Run accounting adds every known leg and carries an explicit unknown-invocation count when any failed provider attempt lacks usage or cost.
 
 OpenAI-compatible HTTP waits use a dedicated dispatcher whose header/body timers do not pre-empt Agent Control's bounded invocation `AbortSignal`. Native Undici timeout codes and opaque transport failures are normalized at the adapter boundary, not interpreted by core routing policy. This does not claim control over provider-side, proxy or network deadlines: an external timeout remains an observed provider/transport boundary and is classified from the available evidence.
+
+## Governed UX Session Capture and Interactive Replay (4.4)
+
+`UxSessionRecord` is an immutable, content-hashed projection of evidence Agent
+Control already owns. It is not a scheduler, screen recorder, provider log,
+telemetry database or second event ledger. Live Runs continue to own Job, Work
+Parcel, route, baton, gate, provider, token, cache, memory and verification
+facts. `ExecutionHistoryProjection` remains the generic source for ordinary
+Runs; historical qualification import binds an exact Git object and its
+SHA-256. Unknown facts remain unavailable.
+
+```text
+Run / Work Parcel / POE / Crew / provider / ContextGraph / evidence
+                              |
+                  deterministic safe projection
+                              v
+                 sealed UxSessionRecord + SHA-256
+                    /        |        |        \
+          interactive      MP4   transcript   digest
+             replay                    |
+                    common session ID + manifest
+```
+
+Audience policy is applied when a representation is rendered, not by weakening
+canonical evidence. `UX_ONLY` and `UX_INTERACTIONS` are intentionally sparse;
+`EXECUTION_OVERVIEW` adds route/lane/gate outcome; `SANITISED_DIAGNOSTIC` adds
+declared bounded input/output and tool detail; `AUTHORISED_FULL_EVIDENCE`
+remains operator-authenticated. Every projection is independently passed
+through the ordinary credential redactor and sensitive-material assertion.
+Undeclared fields fail closed by construction.
+
+A share record contains session identity/hash, audience, expiry/revocation and
+only the SHA-256 of a random capability. The one-time capability travels in the
+URL fragment, so it is not sent in the initial HTTP request or referrer; the
+player moves it into a bearer header for the bounded share API and removes it
+from browser history. The API is read-only and exposes no dashboard mutation,
+shell, repository, filesystem or rerun route. Annotations are a separate
+overlay tied to session and event hashes; operator authority may associate one
+with a later Work Parcel without altering the session.
+
+Memory replay is provider-neutral. It records requested, provenance-validated,
+accepted/rejected and supplied lifecycle decisions while keeping memory content
+hidden unless separately authorised. MARM can satisfy a future generic memory
+port, but neither the record nor player depends on MARM.
+
+The presentation contract is deliberately distinct from those implementation
+terms: **Your Memories** is the user-facing Agent Control capability; the
+generic memory abstraction is the internal architecture; MARM is one optional
+backend. Normal POE, dashboard and replay views use only `Your Memories`.
+
+See [UX Session Replay](docs/ux-session-replay.md) and the
+[physical qualification](docs/evidence/agent-control-4.4-ux-session-replay-20260911.md).
 
 ## Human-readable execution history (3.8.2)
 

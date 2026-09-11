@@ -14,8 +14,9 @@ import type {SocialVoiceCoordinator} from './social-voice.js';
 import {redactSensitiveText} from './security-redaction.js';
 import type {AdaptiveEvidenceKind, AdaptiveLeagueFilter} from './adaptive-orchestration.js';
 import type {ExecutionSessionMode, ExecutionSessionSignal} from './execution-session.js';
+import {projectUxSession, UX_SESSION_AUDIENCES, type UxSessionAnnotationStore, type UxSessionAudience, type UxSessionShareStore, type UxSessionStore} from './ux-session.js';
 
-export interface WebServerOptions {host?: string; port?: number; operatorToken?: string; allowedOrigins?: string[]; assetsDir?: string; configFile?: string; openwa?: OpenWAAdapter; socialVoice?: SocialVoiceCoordinator;}
+export interface WebServerOptions {host?: string; port?: number; operatorToken?: string; allowedOrigins?: string[]; assetsDir?: string; configFile?: string; openwa?: OpenWAAdapter; socialVoice?: SocialVoiceCoordinator; uxSessions?: UxSessionStore; uxSessionShares?: UxSessionShareStore; uxSessionAnnotations?: UxSessionAnnotationStore; uxSessionPlayerDir?: string;}
 const MAX_BODY = 64 * 1024;
 const SECRET_KEY = /token|secret|password|credential|authorization|cookie|api[-_]?key/i;
 const SAFE_TOKEN_ACCOUNTING_KEY = /^(?:tokenAwareOutput|tokenBatonRouting|providerReportedTokens|contextTokens|contextLimitTokens|contextTokensAvoided|contextTokensSaved|evidenceTokens|estimatedTokensOriginal|estimatedTokensReturned|estimatedTokensSaved|estimatedOriginalTokens|estimatedReturnedTokens|estimatedTokensAvoided|expansionTokensReturned|inputTokens|freshInputTokens|cachedInputTokens|reusedTokens|processedPromptTokens|retainedPromptTokens|cacheWriteTokens|outputTokens|maximumOutputTokens|maximumContextTokens|maximumEvidenceTokens|reasoningTokens|totalTokens|totalProcessedTokens|startupContextTokens|taskContextTokens|retrievedContextTokens|repositoryContextTokens|conversationHistoryTokens|totalEstimatedContextTokens|repeatedContextCostEstimate|tokenEfficiency|tokensPerSuccessfulTask|freshTokensPerSuccessfulTask|tokensPerVerifiedOutcome|freshTokensPerVerifiedOutcome|estimatedTokens|limitTokens|tokensLimit|tokensRemaining|contextPercent|continuePercent|prepareBatonPercent|compactPercent|handoffPercent|prompt_tokens|completion_tokens|input_tokens|output_tokens|reasoning_tokens|total_tokens|cached_tokens|prompt_tokens_details|input_tokens_details|prompt_per_token_ms|predicted_per_token_ms)$/;
@@ -35,6 +36,7 @@ const DOMAIN_STATUS = new Map<string, number>([
   ['execution_session_not_live', 409], ['execution_session_identity_mismatch', 409], ['execution_session_attachment_missing', 409], ['execution_session_interactive_attachment_held', 409],
   ['execution_session_mode_unsupported', 409], ['execution_session_input_unsupported', 409], ['execution_session_resize_unsupported', 409], ['execution_session_signal_unsupported', 409],
   ['execution_session_take_control_unsupported', 409], ['execution_session_take_control_reconciliation_unavailable', 409], ['execution_session_take_control_not_active', 409], ['execution_session_control_return_required', 409],
+  ['ux_session_missing',404],['ux_session_share_missing',404],['ux_session_share_denied',401],['ux_session_share_revoked',410],['ux_session_share_expired',410],['ux_session_event_missing',404],['ux_session_audience_invalid',400],['ux_session_annotation_empty',400],
   ['work_parcel_prompt_required', 400], ['work_parcel_plan_empty', 400], ['work_parcel_stage_id_invalid', 400], ['work_parcel_stage_invalid', 400], ['work_parcel_route_invalid', 400], ['work_parcel_reasoning_plan_invalid', 400], ['work_parcel_dependency_cycle', 400],
   ['work_parcel_reasoning_planner_unconfigured', 503], ['work_parcel_missing', 404], ['work_parcel_exists', 409], ['work_parcels_unconfigured', 503],
   ['parcel_success_criterion_invalid', 400], ['parcel_success_criterion_exists', 409], ['parcel_success_criterion_missing', 404], ['parcel_success_criterion_stage_missing', 404], ['parcel_success_criterion_evaluation_invalid', 400],
@@ -68,6 +70,26 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   response.setHeader('Cache-Control', 'no-store');
   const url = new URL(request.url ?? '/', `http://${request.headers.host ?? `${options.host}:${options.port}`}`);
   const method = request.method ?? 'GET';
+  const sharedSession=url.pathname.match(/^\/api\/share\/ux\/([^/]+)$/);
+  if(method==='GET'&&sharedSession){
+    if(!options.uxSessions||!options.uxSessionShares)throw httpError(503,'ux_session_runtime_unconfigured');
+    const token=request.headers.authorization?.replace(/^Bearer\s+/i,'')??'',share=options.uxSessionShares.resolve(decodeURIComponent(sharedSession[1]),token),record=readUxSession(options.uxSessions,share.sessionId);
+    if(record.sha256!==share.sessionSha256)throw httpError(409,'ux_session_share_integrity_failed');
+    return json(response,200,{...projectUxSession(record,share.audience),annotations:options.uxSessionAnnotations?.list(record.id,share.audience)??[]});
+  }
+  if(method==='GET'&&(/^\/share\/ux\/[^/]+$/.test(url.pathname)||['/session-player.css','/session-player.js'].includes(url.pathname))){
+    const root=options.uxSessionPlayerDir??path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../../assets/session-player');
+    const asset=url.pathname.endsWith('.css')?'session-player.css':url.pathname.endsWith('.js')?'session-player.js':'index.html';
+    return serveUxPlayerAsset(response,root,asset);
+  }
+  const uxSessionMatch=url.pathname.match(/^\/api\/ux-sessions\/([^/]+)(?:\/(shares|annotations))?$/);
+  if(method==='GET'&&url.pathname==='/api/ux-sessions'){validateOperatorRequest(request,options);if(!options.uxSessions)throw httpError(503,'ux_session_runtime_unconfigured');return json(response,200,options.uxSessions.list().map(record=>({id:record.id,title:record.title,startedAt:record.startedAt,completedAt:record.completedAt,sha256:record.sha256,outcome:record.outcome})));}
+  if(method==='GET'&&uxSessionMatch&&!uxSessionMatch[2]){validateOperatorRequest(request,options);if(!options.uxSessions)throw httpError(503,'ux_session_runtime_unconfigured');return json(response,200,projectUxSession(readUxSession(options.uxSessions,decodeURIComponent(uxSessionMatch[1])),'AUTHORISED_FULL_EVIDENCE'));}
+  if(method==='POST'&&uxSessionMatch){
+    validateMutationRequest(request,options);if(!options.uxSessions)throw httpError(503,'ux_session_runtime_unconfigured');const record=readUxSession(options.uxSessions,decodeURIComponent(uxSessionMatch[1])),body=await readJson(request);
+    if(uxSessionMatch[2]==='shares'){if(!options.uxSessionShares)throw httpError(503,'ux_session_runtime_unconfigured');const audience=String(body.audience??'EXECUTION_OVERVIEW') as UxSessionAudience;if(!UX_SESSION_AUDIENCES.includes(audience))throw httpError(400,'ux_session_audience_invalid');return json(response,201,options.uxSessionShares.create(record,audience,{expiresAt:typeof body.expiresAt==='string'?body.expiresAt:undefined}));}
+    if(uxSessionMatch[2]==='annotations'){if(!options.uxSessionAnnotations)throw httpError(503,'ux_session_runtime_unconfigured');const audience=String(body.audience??'AUTHORISED_FULL_EVIDENCE') as UxSessionAudience;if(!UX_SESSION_AUDIENCES.includes(audience))throw httpError(400,'ux_session_audience_invalid');return json(response,201,options.uxSessionAnnotations.add(record,{eventId:String(body.eventId??''),reviewerId:'web-operator',comment:String(body.comment??''),audience,workParcelId:typeof body.workParcelId==='string'?body.workParcelId:undefined}));}
+  }
   if(url.pathname==='/api/social-voice/summary' || url.pathname==='/api/social-voice/approval' || url.pathname==='/api/social-voice/approval-grant'){
     validateOperatorRequest(request,options);validateMutationRequest(request,options);
     if(method!=='POST')return json(response,405,{error:'method_not_allowed'});
@@ -420,6 +442,14 @@ function serveAsset(response: ServerResponse, assetsDir: string, pathname: strin
   const type = asset.endsWith('.html') ? 'text/html; charset=utf-8' : asset.endsWith('.css') ? 'text/css; charset=utf-8' : 'text/javascript; charset=utf-8';
   response.writeHead(200, {'Content-Type': type}); response.end(fs.readFileSync(file));
 }
+
+function serveUxPlayerAsset(response:ServerResponse,root:string,asset:string){
+  if(!['index.html','session-player.css','session-player.js'].includes(asset))throw httpError(404,'not_found');
+  const file=path.join(root,asset);if(!fs.existsSync(file))throw httpError(404,'ux_session_player_asset_missing');
+  const type=asset.endsWith('.html')?'text/html; charset=utf-8':asset.endsWith('.css')?'text/css; charset=utf-8':'text/javascript; charset=utf-8';
+  response.writeHead(200,{'Content-Type':type});response.end(fs.readFileSync(file));
+}
+function readUxSession(store:UxSessionStore,id:string){try{return store.read(id);}catch(error){if((error as NodeJS.ErrnoException).code==='ENOENT')throw httpError(404,'ux_session_missing');throw error;}}
 
 function json(response: ServerResponse, status: number, value: unknown) { response.writeHead(status, {'Content-Type': 'application/json; charset=utf-8'}); response.end(`${JSON.stringify(redact(value))}\n`); }
 function replyError(response: ServerResponse, error: unknown) {
