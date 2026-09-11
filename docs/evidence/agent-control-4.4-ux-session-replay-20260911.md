@@ -44,6 +44,12 @@ detail and reached the verified outcome. There were no browser errors. A second
 session showed memory requested → provenance validated → accepted/rejected →
 bounded context supplied, with memory contents hidden.
 
+Normal replay presents that second flow as **Your Memories**: relevant memories
+found → governance/provenance checked → accepted or rejected → used in this
+session. The browser/API qualification rejects MARM, generic-memory and
+memory-optimisation terminology in the normal shared view. Those terms remain
+available only in architecture, technical evidence and authorised diagnostics.
+
 ## Security and integrity
 
 - Session records are immutable and SHA-256 verified on every read.
