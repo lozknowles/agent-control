@@ -1,6 +1,6 @@
 # Agent Control architecture
 
-This is the authoritative source boundary for Agent Control 4.3.0. Historical physical evidence remains bound to its recorded product SHA; the integrated product candidate `27bc4c596bbde1db2696d62d38ca17d8bf8cab21` passed fresh physical A–F qualification and the complete 1,119-test suite. Status labels matter:
+This is the authoritative source boundary for Agent Control 4.4.0. The 4.4 UX/session implementation `3b0f89653784f90e092c07f61123ba1f9249a42b` passed physical browser qualification and the complete 1,125-test suite; its evidence is frozen at `574c53f4e3db0d71cf59a3bdb3340f2aa2a7f181`. Historical physical evidence remains bound to its recorded product SHA. Status labels matter:
 
 - **implemented** means executable code and automated tests exist in this branch;
 - **experimental** means executable code exists but has not been qualified across every external substrate;
@@ -722,7 +722,7 @@ The failed invocation remains a failed Work Parcel leg with its own duration and
 
 OpenAI-compatible HTTP waits use a dedicated dispatcher whose header/body timers do not pre-empt Agent Control's bounded invocation `AbortSignal`. Native Undici timeout codes and opaque transport failures are normalized at the adapter boundary, not interpreted by core routing policy. This does not claim control over provider-side, proxy or network deadlines: an external timeout remains an observed provider/transport boundary and is classified from the available evidence.
 
-## Governed UX Session Capture and Interactive Replay (4.4 development)
+## Governed UX Session Capture and Interactive Replay (4.4)
 
 `UxSessionRecord` is an immutable, content-hashed projection of evidence Agent
 Control already owns. It is not a scheduler, screen recorder, provider log,

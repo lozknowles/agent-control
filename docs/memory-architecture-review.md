@@ -1,6 +1,6 @@
 # Agent Control 4.4 memory architecture review
 
-Status: architectural recommendation backed by an isolated physical experiment; not a released runtime capability.
+Status: architectural recommendation released with Agent Control 4.4.0 and backed by an isolated physical experiment. The generic automatic memory runtime remains unimplemented.
 
 ## Decision
 

@@ -1,6 +1,6 @@
 # Implementation status
 
-Release boundary: **4.3.0**. Registry updated: **2026-09-09**.
+Release boundary: **4.4.0**. Registry updated: **2026-09-11**.
 
 This document is generated from `config/implementation-status.json`. Update the registry and run `npm run status:implementation -- --write`; do not edit this projection directly. `IMPLEMENTED` means executable source and focused tests exist. `QUALIFIED` additionally requires recorded real evidence. `PARTIAL`, `PLANNED` and `NOT_IMPLEMENTED` remain explicit gaps.
 
@@ -57,6 +57,7 @@ This document is generated from `config/implementation-status.json`. Update the 
 | Codex execution with ChatGPT-plan authentication (`providers.openai-codex-chatgpt-plan`) | **QUALIFIED** | Real Codex Jobs use saved ChatGPT authentication under a strict ephemeral read-only envelope. Immutable structured review ignores user/rule/project context, disables known native action-capable tool surfaces, preserves provider-reported total/fresh/cached usage, and leaves current context unavailable when Codex exposes only cumulative turn usage; returned Agent Control tool requests still use the central gateway. | None recorded. |
 | Universal verification-to-acceptance coverage (`verification.universal-adapter-coverage`) | **PARTIAL** | Claim, evidence, verification and acceptance are distinct and model-backed Jobs are gated, but every adapter and task type is not yet universally covered. | Add task-specific verification policies and enforce them across every adapter and Action family. |
 | Opaque CLI internal-tool mediation (`executors.opaque-cli-internal-tools`) | **PARTIAL** | CLI processes can be constrained by an approved capability envelope, and immutable Codex review now disables its known native shell, multi-agent, retrieval and interactive action surfaces under strict config validation. Internal CLI actions are still not individually authorised by ToolPolicy; observed item types are post-run evidence only. | Keep provider-specific native surfaces disabled where the workload does not require them; add authoritative per-action mediation or immediate process suspension before claiming universal ToolPolicy coverage for an opaque CLI. |
+| Governed UX Session Capture and Interactive Replay (`ux.governed-session-replay`) | **QUALIFIED** | Terminal Job Runs project existing durable execution evidence into an immutable SHA-256-bound UX session. Audience-scoped read-only shares, interactive replay, conventional video, transcript and digest retain one identity; shares grant no operational or rerun authority. Normal memory presentation uses Your Memories while implementation backends remain hidden. | Your Memories is advisory. Automatic memory consolidation and idle model swapping are not released; MARM remains optional. |
 | Qualified skill selection (`skills.qualified-selection`) | **IMPLEMENTED** | Only qualified, evidence-carrying skills may satisfy recipe capability requirements and skills cannot expand tool authority. | None recorded. |
 | Governed skill proposal and promotion (`skills.governed-lifecycle`) | **PLANNED** | Agents may eventually propose skills, but Agent Control must statically check, sandbox-test, qualify, approve and grant them. | No proposal, security-review, sandbox-qualification or promotion workflow is implemented. |
 | Automatic governed recipe learning (`recipes.automatic-learning`) | **PLANNED** | Successive halving exists, but winners are not automatically promoted into a durable governed recipe catalog. | Persist qualification evidence and require policy approval before learned recipes influence routing. |
@@ -360,6 +361,12 @@ This document is generated from `config/implementation-status.json`. Update the 
 
 - Source: [`src/control/codex-exec-provider.ts`](../src/control/codex-exec-provider.ts), [`src/control/execution-provider.ts`](../src/control/execution-provider.ts)
 - Tests: [`src/control/codex-exec-provider.test.ts`](../src/control/codex-exec-provider.test.ts), [`src/control/orca-execution-provider.test.ts`](../src/control/orca-execution-provider.test.ts)
+
+### Governed UX Session Capture and Interactive Replay
+
+- Source: [`src/control/ux-session.ts`](../src/control/ux-session.ts), [`src/control/web-server.ts`](../src/control/web-server.ts), [`src/web.ts`](../src/web.ts), [`assets/session-player/index.html`](../assets/session-player/index.html), [`assets/session-player/session-player.js`](../assets/session-player/session-player.js), [`assets/session-player/session-player.css`](../assets/session-player/session-player.css)
+- Tests: [`src/control/ux-session.test.ts`](../src/control/ux-session.test.ts), [`src/control/ux-session-web.test.ts`](../src/control/ux-session-web.test.ts)
+- Qualification evidence: [`docs/evidence/agent-control-4.4-ux-session-replay-20260911.md`](../docs/evidence/agent-control-4.4-ux-session-replay-20260911.md), [`qualification/agent-control-4.4-ux-session-replay-20260911/evidence-manifest.json`](../qualification/agent-control-4.4-ux-session-replay-20260911/evidence-manifest.json)
 
 ### Qualified skill selection
 
