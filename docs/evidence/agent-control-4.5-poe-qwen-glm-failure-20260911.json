@@ -1,0 +1,321 @@
+{
+  "schema": "agent-control.cross-model-memory-qualification/v1",
+  "startedAt": "2026-09-11T19:11:19.329Z",
+  "completedAt": "2026-09-11T19:11:48.703Z",
+  "implementationCommit": "565aff41c1afc07995163ed4ec1d490d628970bf",
+  "packetSha256": "168e639a56adf1fe8252b114d19b3a19554d4ee9a6d4091294b1a24ed99e0731",
+  "verdict": "PARTIAL",
+  "workParcels": [
+    {
+      "id": "parcel-social-18ee9b1f60336c77af2855533a76322ca3ef3a4dce6998444b7f88b66369a2f0",
+      "status": "FAILED",
+      "stages": [
+        {
+          "id": "qwen-to-glm-writer",
+          "status": "SUCCEEDED",
+          "runId": "run-c195256a-8766-4494-b00a-c9674cd8b597",
+          "batonSha256": "67cb35d9667e636672ac40b66459b33d6d697a90f09f0153cf8c5ad47d02198c",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "workloadNodeId": "hpubuntu",
+            "providerExecutionNodeId": "hpubuntu",
+            "provider": "local-qwen",
+            "model": "qwen-hpubuntu",
+            "reason": "satisfies:route.hpubuntu, healthy, available"
+          },
+          "error": null
+        },
+        {
+          "id": "qwen-to-glm-persist",
+          "status": "SUCCEEDED",
+          "runId": "run-d7ecfc71-f7b5-47e3-922a-760563eb9f57",
+          "batonSha256": "6adc241c1ce13899a620fecbe1f8242d5f32e9e01e10151d2af374763903941c",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "reason": "satisfies:memory.control, healthy, available"
+          },
+          "error": null
+        },
+        {
+          "id": "qwen-to-glm-reader",
+          "status": "FAILED",
+          "runId": "run-01b381ed-4ec1-477d-8c18-f9445291affe",
+          "batonSha256": "98e89536e2d3be6c93bf06f65047142d78c0413228ea155ec9206d4179ba88e5",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "workloadNodeId": "hpubuntu",
+            "providerExecutionNodeId": "hpubuntu",
+            "provider": "openrouter",
+            "model": "glm-5.3-flash",
+            "reason": "satisfies:route.hpubuntu, healthy, available"
+          },
+          "error": "execute:execution:reader_verification_failed:currentState:missing:565aff41c1afc07995163ed4ec1d490d628970bf"
+        },
+        {
+          "id": "qwen-to-glm-continue",
+          "status": "BLOCKED",
+          "runId": null,
+          "batonSha256": null,
+          "actualRoute": null,
+          "error": null
+        }
+      ]
+    }
+  ],
+  "routes": [
+    {
+      "id": "qwen-hpubuntu",
+      "label": "Qwen on hpubuntu",
+      "provider": "local-qwen",
+      "exactModel": "qwen2.5-3b-instruct-q4_k_m.gguf",
+      "qualificationVersion": "physical-20260911",
+      "node": "hpubuntu",
+      "endpoint": "http://127.0.0.1:8080/v1",
+      "runtime": "llama.cpp",
+      "credentialResidency": "not required",
+      "adapter": "llama.cpp OpenAI-compatible adapter",
+      "physicalAvailability": "AVAILABLE"
+    },
+    {
+      "id": "glm-5.3-flash",
+      "label": "GLM-5.3-Flash",
+      "provider": "openrouter",
+      "exactModel": "z-ai/glm-5.3-flash",
+      "qualificationVersion": "physical-20260911",
+      "node": "hpubuntu",
+      "endpoint": "https://openrouter.ai/api/v1",
+      "runtime": "OpenRouter hosted runtime",
+      "credentialResidency": "hpubuntu owner-only file reference; value resolved only by adapter",
+      "adapter": "OpenAI-compatible Responses adapter",
+      "physicalAvailability": "AVAILABLE"
+    },
+    {
+      "id": "codex-luna",
+      "label": "Codex CLI / Luna",
+      "provider": "codex-chatgpt",
+      "exactModel": "gpt-5.6-luna",
+      "qualificationVersion": "physical-20260911",
+      "node": "hpubuntu",
+      "endpoint": "local executable discovered from PATH",
+      "runtime": "Codex CLI",
+      "credentialResidency": "opaque CODEX_HOME environment reference on hpubuntu",
+      "adapter": "LocalCodexNodeExecutionPort",
+      "physicalAvailability": "AVAILABLE"
+    },
+    {
+      "id": "gpt-5.6-sol",
+      "label": "GPT-5.6 Sol",
+      "provider": "codex-chatgpt",
+      "exactModel": "gpt-5.6-sol",
+      "qualificationVersion": "physical-20260911",
+      "node": "hpubuntu",
+      "endpoint": "local executable discovered from PATH",
+      "runtime": "Codex CLI",
+      "credentialResidency": "opaque CODEX_HOME environment reference on hpubuntu",
+      "adapter": "LocalCodexNodeExecutionPort",
+      "physicalAvailability": "AVAILABLE"
+    },
+    {
+      "id": "pixel-gemma-e4b",
+      "label": "Google Gemma 4 E4B on Pixel 8 Pro",
+      "provider": "pixel-llama",
+      "exactModel": "google/gemma-4-E4B-it",
+      "qualificationVersion": "physical-20260911",
+      "node": "pixel-8-pro",
+      "endpoint": "http://100.100.97.118:19084/v1",
+      "runtime": "llama.cpp",
+      "credentialResidency": "not required",
+      "adapter": "llama.cpp OpenAI-compatible adapter",
+      "physicalAvailability": "AVAILABLE"
+    }
+  ],
+  "blockedRoutes": [
+    {
+      "id": "msi-cottage-plus",
+      "nodeId": "msi",
+      "provider": "codex-chatgpt",
+      "model": "unavailable",
+      "status": "BLOCKED",
+      "reason": "codex_chatgpt_auth_required through production ResourceCodexNodeExecutionPort"
+    },
+    {
+      "id": "msi-lawrence-pro",
+      "nodeId": "msi",
+      "provider": "codex-chatgpt",
+      "model": "unavailable",
+      "status": "BLOCKED",
+      "reason": "codex_chatgpt_auth_required through production ResourceCodexNodeExecutionPort"
+    }
+  ],
+  "matrix": [
+    {
+      "writer": "Qwen on hpubuntu",
+      "reader": "GLM-5.3-Flash",
+      "writerRoute": "local-qwen/default/qwen-hpubuntu@hpubuntu",
+      "readerRoute": "openrouter/default/glm-5.3-flash@hpubuntu",
+      "writerNode": "hpubuntu",
+      "readerNode": "hpubuntu",
+      "memorySource": "ProjectMemoryPort / structured Markdown vault",
+      "memoryId": "memory-qwen-to-glm",
+      "memorySha256": "d3253f595a5604481dbd76832eb506d8ef9276ad8d820a52755a52597da3025b",
+      "reconstructionAccuracy": 91.11,
+      "writerScore": 92.5,
+      "continuationSuccess": false,
+      "contextInjectedTokens": 278,
+      "writerUsage": {
+        "inputTokens": 1472,
+        "outputTokens": 694,
+        "totalTokens": 2166,
+        "cachedInputTokens": 1418,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "readerUsage": {
+        "inputTokens": 1594,
+        "outputTokens": 1473,
+        "totalTokens": 3067,
+        "cachedInputTokens": 64,
+        "cost": 0.0009679199999999999,
+        "currency": null,
+        "authority": "authoritative"
+      },
+      "usage": {
+        "inputTokens": 3066,
+        "outputTokens": 2167,
+        "totalTokens": 5233,
+        "cachedInputTokens": 1482,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "latencyMs": 29093,
+      "contradictionsDetected": [
+        "Memory is advisory only, yet the cold reader must rely on it exclusively for reconstruction without the writer transcript; any drift (as in the first failed reconstruction) cannot be cross-checked against live writer context, so integrity checks must arbitrate."
+      ],
+      "writerRunId": "run-c195256a-8766-4494-b00a-c9674cd8b597",
+      "readerRunId": "run-01b381ed-4ec1-477d-8c18-f9445291affe",
+      "batonSha256": "98e89536e2d3be6c93bf06f65047142d78c0413228ea155ec9206d4179ba88e5",
+      "persistBatonSha256": "6adc241c1ce13899a620fecbe1f8242d5f32e9e01e10151d2af374763903941c",
+      "continuationBatonSha256": null,
+      "failures": [
+        "currentState:missing:565aff41c1afc07995163ed4ec1d490d628970bf"
+      ],
+      "result": "FAIL"
+    }
+  ],
+  "totals": {
+    "inputTokens": 3066,
+    "outputTokens": 2167,
+    "totalTokens": 5233,
+    "cachedInputTokens": 1482,
+    "cost": null,
+    "currency": null,
+    "authority": "unavailable"
+  },
+  "projectMemory": {
+    "backend": "structured Markdown directory viewed by Obsidian",
+    "namespace": "/fast/qualification/agent-control-4.5-cross-model-memory-poe-20260911/vault/Agent Control/4.5-cross-model-memory",
+    "records": 1,
+    "commonSchema": "agent-control.project-memory/v1"
+  },
+  "poe": {
+    "conversation": {
+      "schema": "agent-control.poe-conversation/v1",
+      "id": "poe-conversation:f450c3c3-0ab0-4305-83ee-fa3041a8dea2",
+      "actorId": "operator",
+      "channel": "dashboard",
+      "state": "OBSERVING_CREW",
+      "createdAt": "2026-09-11T19:11:19.347Z",
+      "updatedAt": "2026-09-11T19:11:19.394Z",
+      "turns": [
+        {
+          "id": "poe-turn:187ad9ca-1ef4-4e68-98ee-40d63da538c5",
+          "conversationId": "poe-conversation:f450c3c3-0ab0-4305-83ee-fa3041a8dea2",
+          "at": "2026-09-11T19:11:19.349Z",
+          "purpose": "GREETING",
+          "actor": "poe",
+          "channel": "dashboard",
+          "modality": "text",
+          "text": "Good day. I’m POE. How may I help you?",
+          "authority": "AGENT_CONTROL",
+          "contentTrust": "AGENT_CONTROL_EVIDENCE",
+          "references": [],
+          "evidence": []
+        },
+        {
+          "id": "poe-turn:5a99cdfc-ad40-4429-99c2-3d88fdc50fbc",
+          "conversationId": "poe-conversation:f450c3c3-0ab0-4305-83ee-fa3041a8dea2",
+          "at": "2026-09-11T19:11:19.351Z",
+          "actor": "operator",
+          "channel": "dashboard",
+          "modality": "text",
+          "text": "POE, run the Agent Control 4.5 physical cross-model Your Memories pair qwen-to-glm. Have the writer persist governed project memory, start the different reader cold without its transcript, reconstruct the work, execute the exact next action, and independently verify it.",
+          "authority": "OPERATOR",
+          "contentTrust": "OPERATOR_REQUEST",
+          "references": [],
+          "evidence": []
+        },
+        {
+          "id": "poe-turn:2147c8b6-b01e-4ae2-ae7e-d09708ae40ab",
+          "conversationId": "poe-conversation:f450c3c3-0ab0-4305-83ee-fa3041a8dea2",
+          "at": "2026-09-11T19:11:19.354Z",
+          "actor": "poe",
+          "channel": "dashboard",
+          "modality": "text",
+          "text": "Qualification Work Parcel\n\nThe exact Work Parcel is retained in Agent Control durable evidence.\n\nCurrent natural transcript: {\"conversationId\":\"poe-conversation:f450c3c3-0ab0-4305-83ee-fa3041a8dea2\",\"snapshotTurnCount\":2,\"bytes\":1039,\"sha256\":\"c01ea76c22eb55147eb06f49b31b2f9ac5ef77286244c0e533bc4b9ed217b3ef\",\"dashboardControl\":\"Transcript\",\"exportPath\":\"/api/poe/conversations/poe-conversation%3Af450c3c3-0ab0-4305-83ee-fa3041a8dea2/transcript\",\"snapshotBoundary\":\"Complete retained conversation before this answer; export requires the existing authenticated channel controls.\"} (agent control)",
+          "authority": "AGENT_CONTROL",
+          "contentTrust": "AGENT_CONTROL_EVIDENCE",
+          "references": [
+            {
+              "kind": "run",
+              "id": "the"
+            }
+          ],
+          "evidence": [
+            {
+              "label": "Current natural transcript",
+              "value": "{\"conversationId\":\"poe-conversation:f450c3c3-0ab0-4305-83ee-fa3041a8dea2\",\"snapshotTurnCount\":2,\"bytes\":1039,\"sha256\":\"c01ea76c22eb55147eb06f49b31b2f9ac5ef77286244c0e533bc4b9ed217b3ef\",\"dashboardControl\":\"Transcript\",\"exportPath\":\"/api/poe/conversations/poe-conversation%3Af450c3c3-0ab0-4305-83ee-fa3041a8dea2/transcript\",\"snapshotBoundary\":\"Complete retained conversation before this answer; export requires the existing authenticated channel controls.\"}",
+              "authority": "AGENT_CONTROL",
+              "informationKind": "LIVE_OBSERVED",
+              "observedAt": "2026-09-11T19:11:19.354Z",
+              "evidence": [
+                "poe:conversation:poe-conversation:f450c3c3-0ab0-4305-83ee-fa3041a8dea2:transcript"
+              ]
+            }
+          ],
+          "responseMode": "DETERMINISTIC"
+        }
+      ],
+      "proposalIds": [
+        "poe-benchmark:2c48ab48-8e99-49e3-81ba-c2707df3ce5d"
+      ],
+      "lastReference": {
+        "kind": "run",
+        "id": "the"
+      }
+    },
+    "transcript": "# POE conversation poe-conversation:f450c3c3-0ab0-4305-83ee-fa3041a8dea2\n\nChannel: dashboard\nActor: operator\nCreated: 2026-09-11T19:11:19.347Z\n\n## Exact initiating operator prompt\n\nPOE, run the Agent Control 4.5 physical cross-model Your Memories pair qwen-to-glm. Have the writer persist governed project memory, start the different reader cold without its transcript, reconstruct the work, execute the exact next action, and independently verify it.\n\n## Chronological interaction\n\n## POE · 2026-09-11T19:11:19.349Z\n\nGood day. I’m POE. How may I help you?\n\nAuthority: AGENT_CONTROL\nResponse mode: not applicable\nReferences: none\nEvidence: []\n\n## Operator · 2026-09-11T19:11:19.351Z\n\nPOE, run the Agent Control 4.5 physical cross-model Your Memories pair qwen-to-glm. Have the writer persist governed project memory, start the different reader cold without its transcript, reconstruct the work, execute the exact next action, and independently verify it.\n\nAuthority: OPERATOR\nResponse mode: not applicable\nReferences: none\nEvidence: []\n\n## POE · 2026-09-11T19:11:19.354Z\n\nQualification Work Parcel\n\nThe exact Work Parcel is retained in Agent Control durable evidence.\n\nCurrent natural transcript: {\"conversationId\":\"poe-conversation:f450c3c3-0ab0-4305-83ee-fa3041a8dea2\",\"snapshotTurnCount\":2,\"bytes\":1039,\"sha256\":\"c01ea76c22eb55147eb06f49b31b2f9ac5ef77286244c0e533bc4b9ed217b3ef\",\"dashboardControl\":\"Transcript\",\"exportPath\":\"/api/poe/conversations/poe-conversation%3Af450c3c3-0ab0-4305-83ee-fa3041a8dea2/transcript\",\"snapshotBoundary\":\"Complete retained conversation before this answer; export requires the existing authenticated channel controls.\"} (agent control)\n\nAuthority: AGENT_CONTROL\nResponse mode: DETERMINISTIC\nReferences: run:the\nEvidence: [{\"label\":\"Current natural transcript\",\"value\":\"{\\\"conversationId\\\":\\\"poe-conversation:f450c3c3-0ab0-4305-83ee-fa3041a8dea2\\\",\\\"snapshotTurnCount\\\":2,\\\"bytes\\\":1039,\\\"sha256\\\":\\\"c01ea76c22eb55147eb06f49b31b2f9ac5ef77286244c0e533bc4b9ed217b3ef\\\",\\\"dashboardControl\\\":\\\"Transcript\\\",\\\"exportPath\\\":\\\"/api/poe/conversations/poe-conversation%3Af450c3c3-0ab0-4305-83ee-fa3041a8dea2/transcript\\\",\\\"snapshotBoundary\\\":\\\"Complete retained conversation before this answer; export requires the existing authenticated channel controls.\\\"}\",\"authority\":\"AGENT_CONTROL\",\"informationKind\":\"LIVE_OBSERVED\",\"observedAt\":\"2026-09-11T19:11:19.354Z\",\"evidence\":[\"poe:conversation:poe-conversation:f450c3c3-0ab0-4305-83ee-fa3041a8dea2:transcript\"]}]",
+    "productionFlow": true
+  },
+  "pisper": {
+    "decision": "DEFER",
+    "reason": "Governed Turn Snapshot Branching is a useful immutable provenance primitive but is not required for stateless writer-to-reader qualification and would broaden 4.5 scope."
+  },
+  "limitations": [
+    "ChatGPT product-level personal memory is not exposed as a controllable Codex CLI input, so no claim is made for proprietary assistant-memory injection.",
+    "The requested Google/Gemini E4B route is physically the exact Google Gemma 4 E4B local artifact; Gemini was not silently substituted.",
+    "MSI account profiles are reachable but currently authentication-blocked; no MSI model-transition cell is claimed."
+  ],
+  "security": {
+    "writerTranscriptSuppliedToReader": false,
+    "credentialValuesPersisted": false,
+    "providerOutputStoredAsSanitizedStructuredArtifacts": true
+  }
+}

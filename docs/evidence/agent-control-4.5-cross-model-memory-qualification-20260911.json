@@ -1,0 +1,1563 @@
+{
+  "schema": "agent-control.cross-model-memory-qualification/v1",
+  "startedAt": "2026-09-11T18:47:58.708Z",
+  "completedAt": "2026-09-11T19:18:06.296Z",
+  "implementationCommit": "565aff41c1afc07995163ed4ec1d490d628970bf",
+  "packetSha256": "168e639a56adf1fe8252b114d19b3a19554d4ee9a6d4091294b1a24ed99e0731",
+  "verdict": "PARTIAL",
+  "workParcels": [
+    {
+      "id": "parcel-52a75ed7-ba23-4ec8-8590-b49a5bf7576f",
+      "status": "FAILED",
+      "stages": [
+        {
+          "id": "glm-to-qwen-writer",
+          "status": "SUCCEEDED",
+          "runId": "run-9370d97a-8b79-4033-9091-1f2e250565fe",
+          "batonSha256": "73a7a2117235590bc83527a14cca4bc36042715e8b27739a30528d14ee419fd8",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "workloadNodeId": "hpubuntu",
+            "providerExecutionNodeId": "hpubuntu",
+            "provider": "openrouter",
+            "model": "glm-5.3-flash",
+            "reason": "satisfies:route.hpubuntu, healthy, available"
+          },
+          "error": null
+        },
+        {
+          "id": "glm-to-qwen-persist",
+          "status": "SUCCEEDED",
+          "runId": "run-914d2006-a91d-4c23-9a85-025f83c0efe6",
+          "batonSha256": "6fb2eafe427b34a10bd09aa33933a12af19b01cc872f10b7fb8408e41c0d4e09",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "reason": "satisfies:memory.control, healthy, available"
+          },
+          "error": null
+        },
+        {
+          "id": "glm-to-qwen-reader",
+          "status": "FAILED",
+          "runId": "run-31fe3848-5be0-4a93-8a65-841c600ba49e",
+          "batonSha256": "06d42fc6ca15aa61784bd94984cc04fcac66c99999127ba726e450693cd37c8e",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "workloadNodeId": "hpubuntu",
+            "providerExecutionNodeId": "hpubuntu",
+            "provider": "local-qwen",
+            "model": "qwen-hpubuntu",
+            "reason": "satisfies:route.hpubuntu, healthy, available"
+          },
+          "error": "execute:execution:reader_verification_failed:alreadyHappened:missing:hpubuntu|alreadyHappened:missing:msi|importantDecisions:missing:content-hash|rejectedApproaches:missing:canonical note"
+        },
+        {
+          "id": "glm-to-qwen-continue",
+          "status": "BLOCKED",
+          "runId": null,
+          "batonSha256": null,
+          "actualRoute": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "parcel-fe42af7b-9a06-41f8-8040-3588f2950869",
+      "status": "SUCCEEDED",
+      "stages": [
+        {
+          "id": "qwen-to-glm-writer",
+          "status": "SUCCEEDED",
+          "runId": "run-c5217847-227a-45a9-9cf6-109782dbb5dd",
+          "batonSha256": "d55adefaf36edbbebe9ba922b047f23eaf664b42961d1b871736deb968226b54",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "workloadNodeId": "hpubuntu",
+            "providerExecutionNodeId": "hpubuntu",
+            "provider": "local-qwen",
+            "model": "qwen-hpubuntu",
+            "reason": "satisfies:route.hpubuntu, healthy, available"
+          },
+          "error": null
+        },
+        {
+          "id": "qwen-to-glm-persist",
+          "status": "SUCCEEDED",
+          "runId": "run-78b9df76-5ebe-4c2f-95f5-c895e85afbb3",
+          "batonSha256": "09a248254edd3434461547c359bd46fa64a2368a8284fe7a250e465b824e3401",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "reason": "satisfies:memory.control, healthy, available"
+          },
+          "error": null
+        },
+        {
+          "id": "qwen-to-glm-reader",
+          "status": "SUCCEEDED",
+          "runId": "run-7b108f67-a6d2-43b3-8b54-44094a2c3e25",
+          "batonSha256": "1b48a733998e93bf0a9e96731762fd3d7b4696a66dcb48073c9b3903f8db52d9",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "workloadNodeId": "hpubuntu",
+            "providerExecutionNodeId": "hpubuntu",
+            "provider": "openrouter",
+            "model": "glm-5.3-flash",
+            "reason": "satisfies:route.hpubuntu, healthy, available"
+          },
+          "error": null
+        },
+        {
+          "id": "qwen-to-glm-continue",
+          "status": "SUCCEEDED",
+          "runId": "run-afb3647b-0ffc-4883-a7e7-bee3e8549e5c",
+          "batonSha256": "3b0efedcfed0f562f4ecbbe9677d1860a2e563122e6ae776d33d1ad83bad1582",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "reason": "satisfies:memory.control, healthy, available"
+          },
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "parcel-34f6ff99-a663-44a5-becd-5e487e99de42",
+      "status": "FAILED",
+      "stages": [
+        {
+          "id": "codex-to-qwen-writer",
+          "status": "SUCCEEDED",
+          "runId": "run-7cdecfee-e79f-4275-8783-9a3aa4c9a101",
+          "batonSha256": "399351fb74a7ee7a644c1bc7380929704f8209b269cebf793c95f335eb1a69cc",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "workloadNodeId": "hpubuntu",
+            "providerExecutionNodeId": "hpubuntu",
+            "credentialNodeId": "hpubuntu",
+            "provider": "codex-chatgpt",
+            "accountProfile": "controller-codex",
+            "accountLabel": "Controller Codex",
+            "accountPlan": "ChatGPT authenticated",
+            "accountPlanAuthority": "operator-configured",
+            "accountQualification": "QUALIFIED",
+            "accountAvailability": "AVAILABLE",
+            "model": "codex-luna",
+            "reason": "satisfies:route.hpubuntu, healthy, available"
+          },
+          "error": null
+        },
+        {
+          "id": "codex-to-qwen-persist",
+          "status": "SUCCEEDED",
+          "runId": "run-6d521a0f-a089-462a-b994-66e4568e87f4",
+          "batonSha256": "0155c85313eab962755e86713b12a1eb4a92e969e212811918d8278a2dd9b0cf",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "reason": "satisfies:memory.control, healthy, available"
+          },
+          "error": null
+        },
+        {
+          "id": "codex-to-qwen-reader",
+          "status": "FAILED",
+          "runId": "run-29b83e53-dd11-4a4e-bbb7-044b255fd17e",
+          "batonSha256": "3fb42f0fd6f4ad0cd300e2712c2fbf25c28dedd8acbde9eb068d2087f8fd36cb",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "workloadNodeId": "hpubuntu",
+            "providerExecutionNodeId": "hpubuntu",
+            "provider": "local-qwen",
+            "model": "qwen-hpubuntu",
+            "reason": "satisfies:route.hpubuntu, healthy, available"
+          },
+          "error": "execute:execution:reader_verification_failed:alreadyHappened:missing:hpubuntu|alreadyHappened:missing:msi|alreadyHappened:missing:D:/obsidian/knowledge_vault|importantDecisions:missing:node-local|importantDecisions:missing:content-hash|currentState:missing:v4.4.0|supportingEvidence:missing:f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2"
+        },
+        {
+          "id": "codex-to-qwen-continue",
+          "status": "BLOCKED",
+          "runId": null,
+          "batonSha256": null,
+          "actualRoute": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "parcel-b2bf3622-36b4-4ad0-9b78-b3dea4ba46aa",
+      "status": "FAILED",
+      "stages": [
+        {
+          "id": "qwen-to-codex-writer",
+          "status": "SUCCEEDED",
+          "runId": "run-112de119-f053-412b-a9aa-f4081117b47f",
+          "batonSha256": "01773b0c4d95d74fc50643fa64170ba4cd4d3177cbff0bf959e3843353381331",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "workloadNodeId": "hpubuntu",
+            "providerExecutionNodeId": "hpubuntu",
+            "provider": "local-qwen",
+            "model": "qwen-hpubuntu",
+            "reason": "satisfies:route.hpubuntu, healthy, available"
+          },
+          "error": null
+        },
+        {
+          "id": "qwen-to-codex-persist",
+          "status": "SUCCEEDED",
+          "runId": "run-a1969bbb-9b56-43dd-a6ac-4bc8bfb52824",
+          "batonSha256": "321c03c7fc6c267a82cf62e6b7a77eae48d7a9839b0e550d4eee629eb9442b9c",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "reason": "satisfies:memory.control, healthy, available"
+          },
+          "error": null
+        },
+        {
+          "id": "qwen-to-codex-reader",
+          "status": "FAILED",
+          "runId": "run-5ad6711b-1b1b-40d5-b1d1-0b6a7400c456",
+          "batonSha256": "c29e4f81344579f15ba1662cf209fc5e01d5cc86e6a94edb7f27c852f7de08d8",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "workloadNodeId": "hpubuntu",
+            "providerExecutionNodeId": "hpubuntu",
+            "credentialNodeId": "hpubuntu",
+            "provider": "codex-chatgpt",
+            "accountProfile": "controller-codex",
+            "accountLabel": "Controller Codex",
+            "accountPlan": "ChatGPT authenticated",
+            "accountPlanAuthority": "operator-configured",
+            "accountQualification": "QUALIFIED",
+            "accountAvailability": "AVAILABLE",
+            "model": "codex-luna",
+            "reason": "satisfies:route.hpubuntu, healthy, available"
+          },
+          "error": "execute:execution:reader_verification_failed:currentState:missing:v4.4.0"
+        },
+        {
+          "id": "qwen-to-codex-continue",
+          "status": "BLOCKED",
+          "runId": null,
+          "batonSha256": null,
+          "actualRoute": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "parcel-9597cc17-0c42-4c16-9f27-2b5b901a46ae",
+      "status": "SUCCEEDED",
+      "stages": [
+        {
+          "id": "sol-to-glm-writer",
+          "status": "SUCCEEDED",
+          "runId": "run-1b8a5b6b-94f9-4f35-9c77-46e6e008e732",
+          "batonSha256": "6193767236a3b8aa4a65eb3bcb0b2b8bd343e55d46745e4f775ac54813e04514",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "workloadNodeId": "hpubuntu",
+            "providerExecutionNodeId": "hpubuntu",
+            "credentialNodeId": "hpubuntu",
+            "provider": "codex-chatgpt",
+            "accountProfile": "controller-codex",
+            "accountLabel": "Controller Codex",
+            "accountPlan": "ChatGPT authenticated",
+            "accountPlanAuthority": "operator-configured",
+            "accountQualification": "QUALIFIED",
+            "accountAvailability": "AVAILABLE",
+            "model": "gpt-5.6-sol",
+            "reason": "satisfies:route.hpubuntu, healthy, available"
+          },
+          "error": null
+        },
+        {
+          "id": "sol-to-glm-persist",
+          "status": "SUCCEEDED",
+          "runId": "run-dc43db8c-09a7-496e-9c27-a93aa2f8ce04",
+          "batonSha256": "aaf6efe6874eae1ed92a5802be54abf005086adc07fd29d59073a791a5fdc590",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "reason": "satisfies:memory.control, healthy, available"
+          },
+          "error": null
+        },
+        {
+          "id": "sol-to-glm-reader",
+          "status": "SUCCEEDED",
+          "runId": "run-75980e87-ecc7-4f1e-b4d7-35af17b59fef",
+          "batonSha256": "b06d958f065163c15868d1cf18ad5b0ea538da90033565d4b7c690279d674049",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "workloadNodeId": "hpubuntu",
+            "providerExecutionNodeId": "hpubuntu",
+            "provider": "openrouter",
+            "model": "glm-5.3-flash",
+            "reason": "satisfies:route.hpubuntu, healthy, available"
+          },
+          "error": null
+        },
+        {
+          "id": "sol-to-glm-continue",
+          "status": "SUCCEEDED",
+          "runId": "run-ddee18b8-bca9-441d-ad50-369968528f60",
+          "batonSha256": "a6f0ff567ab9e98d6d98ecc2105432a976ae5ee1b155bdd1073530462f8b2247",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "reason": "satisfies:memory.control, healthy, available"
+          },
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "parcel-b0abb0ae-d331-4690-8c86-8e4d05a72ac6",
+      "status": "SUCCEEDED",
+      "stages": [
+        {
+          "id": "glm-to-sol-writer",
+          "status": "SUCCEEDED",
+          "runId": "run-6ec6d183-6b1e-4096-b69a-ae22aa31ec98",
+          "batonSha256": "e407e8997c64282a93f9538b42d10780dbcf46765208d96467265605826ea61f",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "workloadNodeId": "hpubuntu",
+            "providerExecutionNodeId": "hpubuntu",
+            "provider": "openrouter",
+            "model": "glm-5.3-flash",
+            "reason": "satisfies:route.hpubuntu, healthy, available"
+          },
+          "error": null
+        },
+        {
+          "id": "glm-to-sol-persist",
+          "status": "SUCCEEDED",
+          "runId": "run-e5a3f68b-94f9-421e-b0fc-38088c575892",
+          "batonSha256": "0ab34d7c291a380c54e4a600557fde6d404d0e139be876375cc0fa46bf6407c7",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "reason": "satisfies:memory.control, healthy, available"
+          },
+          "error": null
+        },
+        {
+          "id": "glm-to-sol-reader",
+          "status": "SUCCEEDED",
+          "runId": "run-23c92a88-2f4a-451b-91cd-d901723daa40",
+          "batonSha256": "490aed9183a0ab13b28a127f027b67cb1709d1976b417f9f616055be27f9625b",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "workloadNodeId": "hpubuntu",
+            "providerExecutionNodeId": "hpubuntu",
+            "credentialNodeId": "hpubuntu",
+            "provider": "codex-chatgpt",
+            "accountProfile": "controller-codex",
+            "accountLabel": "Controller Codex",
+            "accountPlan": "ChatGPT authenticated",
+            "accountPlanAuthority": "operator-configured",
+            "accountQualification": "QUALIFIED",
+            "accountAvailability": "AVAILABLE",
+            "model": "gpt-5.6-sol",
+            "reason": "satisfies:route.hpubuntu, healthy, available"
+          },
+          "error": null
+        },
+        {
+          "id": "glm-to-sol-continue",
+          "status": "SUCCEEDED",
+          "runId": "run-9bfc1192-542c-4ceb-bbb1-fac97f9bbe28",
+          "batonSha256": "96aa2e1317729acc245c381225337d60c3bde42b79e3ebfd8ec6dc4665a765f0",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "reason": "satisfies:memory.control, healthy, available"
+          },
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "parcel-650bb7f1-b214-4516-b730-4f2087e542cb",
+      "status": "SUCCEEDED",
+      "stages": [
+        {
+          "id": "codex-to-sol-writer",
+          "status": "SUCCEEDED",
+          "runId": "run-6518c4cd-7a30-4749-9801-4f669c45bfc9",
+          "batonSha256": "29d6f2cee6378ec7c1c0ce44bd620ddf91cc838508b79f12d91ffad06a6731a1",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "workloadNodeId": "hpubuntu",
+            "providerExecutionNodeId": "hpubuntu",
+            "credentialNodeId": "hpubuntu",
+            "provider": "codex-chatgpt",
+            "accountProfile": "controller-codex",
+            "accountLabel": "Controller Codex",
+            "accountPlan": "ChatGPT authenticated",
+            "accountPlanAuthority": "operator-configured",
+            "accountQualification": "QUALIFIED",
+            "accountAvailability": "AVAILABLE",
+            "model": "codex-luna",
+            "reason": "satisfies:route.hpubuntu, healthy, available"
+          },
+          "error": null
+        },
+        {
+          "id": "codex-to-sol-persist",
+          "status": "SUCCEEDED",
+          "runId": "run-308921bd-0f53-455f-bf43-3b810542cac5",
+          "batonSha256": "0899b5721f9146464392284100e2165ec79d24f8627d4c7cc7ec155ce3b004c4",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "reason": "satisfies:memory.control, healthy, available"
+          },
+          "error": null
+        },
+        {
+          "id": "codex-to-sol-reader",
+          "status": "SUCCEEDED",
+          "runId": "run-aafdcfa9-8e7f-4c99-a798-58be8294b946",
+          "batonSha256": "05167d6e2d08a9e1ca80fab79583c5e825cb83e257dcecd0189327bd01c09bd1",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "workloadNodeId": "hpubuntu",
+            "providerExecutionNodeId": "hpubuntu",
+            "credentialNodeId": "hpubuntu",
+            "provider": "codex-chatgpt",
+            "accountProfile": "controller-codex",
+            "accountLabel": "Controller Codex",
+            "accountPlan": "ChatGPT authenticated",
+            "accountPlanAuthority": "operator-configured",
+            "accountQualification": "QUALIFIED",
+            "accountAvailability": "AVAILABLE",
+            "model": "gpt-5.6-sol",
+            "reason": "satisfies:route.hpubuntu, healthy, available"
+          },
+          "error": null
+        },
+        {
+          "id": "codex-to-sol-continue",
+          "status": "SUCCEEDED",
+          "runId": "run-c1cf7e0f-7aed-4873-a514-24c4d7048d09",
+          "batonSha256": "6bb2c9fbbeb9be3ca8b0f974d6dfd4950035d13755b4dee82847a35de1ba30fa",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "reason": "satisfies:memory.control, healthy, available"
+          },
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "parcel-a0ffec6a-b5b1-409b-9bd4-9ea811809f45",
+      "status": "SUCCEEDED",
+      "stages": [
+        {
+          "id": "sol-to-codex-writer",
+          "status": "SUCCEEDED",
+          "runId": "run-46a683fb-be2e-4e5a-b8b2-1eb71e15b9ff",
+          "batonSha256": "209ec2b658275e65c8feb66c556e41f537405c52ec3539354f820acfe1939074",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "workloadNodeId": "hpubuntu",
+            "providerExecutionNodeId": "hpubuntu",
+            "credentialNodeId": "hpubuntu",
+            "provider": "codex-chatgpt",
+            "accountProfile": "controller-codex",
+            "accountLabel": "Controller Codex",
+            "accountPlan": "ChatGPT authenticated",
+            "accountPlanAuthority": "operator-configured",
+            "accountQualification": "QUALIFIED",
+            "accountAvailability": "AVAILABLE",
+            "model": "gpt-5.6-sol",
+            "reason": "satisfies:route.hpubuntu, healthy, available"
+          },
+          "error": null
+        },
+        {
+          "id": "sol-to-codex-persist",
+          "status": "SUCCEEDED",
+          "runId": "run-ec4c7ff2-6007-4813-bbda-c43014a66410",
+          "batonSha256": "e226b7653c288241da6a1da5ff4a7f683487eb46396a350c96f63e30e017ea8f",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "reason": "satisfies:memory.control, healthy, available"
+          },
+          "error": null
+        },
+        {
+          "id": "sol-to-codex-reader",
+          "status": "SUCCEEDED",
+          "runId": "run-1abe389f-5bc2-4996-9d59-903539f8981e",
+          "batonSha256": "4544ed13c6f3da62885e650ce694676662d961ba5cca856ed356217868a8e708",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "workloadNodeId": "hpubuntu",
+            "providerExecutionNodeId": "hpubuntu",
+            "credentialNodeId": "hpubuntu",
+            "provider": "codex-chatgpt",
+            "accountProfile": "controller-codex",
+            "accountLabel": "Controller Codex",
+            "accountPlan": "ChatGPT authenticated",
+            "accountPlanAuthority": "operator-configured",
+            "accountQualification": "QUALIFIED",
+            "accountAvailability": "AVAILABLE",
+            "model": "codex-luna",
+            "reason": "satisfies:route.hpubuntu, healthy, available"
+          },
+          "error": null
+        },
+        {
+          "id": "sol-to-codex-continue",
+          "status": "SUCCEEDED",
+          "runId": "run-dc09c4e5-ebbe-486c-b329-bdd3e93cc87d",
+          "batonSha256": "5cb3d55d2fd308715993ac0030acdc11f302a149de3293c875e059069054fda0",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "reason": "satisfies:memory.control, healthy, available"
+          },
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "parcel-d7bf061a-fd62-4c55-884c-191220864f5b",
+      "status": "FAILED",
+      "stages": [
+        {
+          "id": "pixel-to-hpubuntu-writer",
+          "status": "FAILED",
+          "runId": "run-06ba8a67-d279-4804-a3b2-f06f8bc2a2a0",
+          "batonSha256": "9a2522d96bf9806266e051eb49af8bae617931d40e195d7cff77170ea80cb167",
+          "actualRoute": {
+            "workers": [
+              "pixel-8-pro"
+            ],
+            "workloadNodeId": "pixel-8-pro",
+            "providerExecutionNodeId": "pixel-8-pro",
+            "provider": "pixel-llama",
+            "model": "pixel-gemma-e4b",
+            "reason": "satisfies:route.pixel-8-pro, healthy, available"
+          },
+          "error": "execute:execution:provider_json_missing"
+        },
+        {
+          "id": "pixel-to-hpubuntu-persist",
+          "status": "BLOCKED",
+          "runId": null,
+          "batonSha256": null,
+          "actualRoute": null,
+          "error": null
+        },
+        {
+          "id": "pixel-to-hpubuntu-reader",
+          "status": "BLOCKED",
+          "runId": null,
+          "batonSha256": null,
+          "actualRoute": null,
+          "error": null
+        },
+        {
+          "id": "pixel-to-hpubuntu-continue",
+          "status": "BLOCKED",
+          "runId": null,
+          "batonSha256": null,
+          "actualRoute": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "parcel-f6bb6aec-5e10-4190-8098-37919b34ee4f",
+      "status": "FAILED",
+      "stages": [
+        {
+          "id": "hpubuntu-to-pixel-writer",
+          "status": "SUCCEEDED",
+          "runId": "run-f98b4efa-5b6b-461e-822c-3b86f06d942f",
+          "batonSha256": "261581f55e123236634ccc0087498016428846eea7301e467361ce8094c36d28",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "workloadNodeId": "hpubuntu",
+            "providerExecutionNodeId": "hpubuntu",
+            "provider": "local-qwen",
+            "model": "qwen-hpubuntu",
+            "reason": "satisfies:route.hpubuntu, healthy, available"
+          },
+          "error": null
+        },
+        {
+          "id": "hpubuntu-to-pixel-persist",
+          "status": "SUCCEEDED",
+          "runId": "run-6aefcf22-b0d1-4a7f-ad59-36d8399c9df2",
+          "batonSha256": "a3f355e00797576b069571baaf68c865a154a363a7df8abd2e61eb292041732c",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "reason": "satisfies:memory.control, healthy, available"
+          },
+          "error": null
+        },
+        {
+          "id": "hpubuntu-to-pixel-reader",
+          "status": "FAILED",
+          "runId": "run-1f1a9675-0a1b-446f-8d92-608fc29cc0dc",
+          "batonSha256": "8947cd6b7f458ea1b783cbde8a78706a373cc6cd11a118c8a2f74de69011cab3",
+          "actualRoute": {
+            "workers": [
+              "pixel-8-pro"
+            ],
+            "workloadNodeId": "pixel-8-pro",
+            "providerExecutionNodeId": "pixel-8-pro",
+            "provider": "pixel-llama",
+            "model": "pixel-gemma-e4b",
+            "reason": "satisfies:route.pixel-8-pro, healthy, available"
+          },
+          "error": "execute:execution:reader_verification_failed:what:missing:cross-model|alreadyHappened:missing:hpubuntu|alreadyHappened:missing:msi|alreadyHappened:missing:D:/obsidian/knowledge_vault"
+        },
+        {
+          "id": "hpubuntu-to-pixel-continue",
+          "status": "BLOCKED",
+          "runId": null,
+          "batonSha256": null,
+          "actualRoute": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "parcel-d2adba25-7c8b-4343-9a8d-3aa8544bb37a",
+      "status": "FAILED",
+      "stages": [
+        {
+          "id": "gemma-e4b-to-local-writer",
+          "status": "FAILED",
+          "runId": "run-f3f2ecf7-78de-45fd-9d35-ade24fd62ae7",
+          "batonSha256": "d336c855c0356f527a331a621cee6f5b9460a51867a71469673f6780276fd1e6",
+          "actualRoute": {
+            "workers": [
+              "pixel-8-pro"
+            ],
+            "workloadNodeId": "pixel-8-pro",
+            "providerExecutionNodeId": "pixel-8-pro",
+            "provider": "pixel-llama",
+            "model": "pixel-gemma-e4b",
+            "reason": "satisfies:route.pixel-8-pro, healthy, available"
+          },
+          "error": "execute:execution:provider_json_missing"
+        },
+        {
+          "id": "gemma-e4b-to-local-persist",
+          "status": "BLOCKED",
+          "runId": null,
+          "batonSha256": null,
+          "actualRoute": null,
+          "error": null
+        },
+        {
+          "id": "gemma-e4b-to-local-reader",
+          "status": "BLOCKED",
+          "runId": null,
+          "batonSha256": null,
+          "actualRoute": null,
+          "error": null
+        },
+        {
+          "id": "gemma-e4b-to-local-continue",
+          "status": "BLOCKED",
+          "runId": null,
+          "batonSha256": null,
+          "actualRoute": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "parcel-8cc42282-1904-422e-9905-18840cbfa557",
+      "status": "FAILED",
+      "stages": [
+        {
+          "id": "local-to-gemma-e4b-writer",
+          "status": "SUCCEEDED",
+          "runId": "run-550bd92c-54b1-4b59-a3e9-44e97b27d239",
+          "batonSha256": "cc5c5d97d68946ffb5435069bf61a24907438760f4d21b4b2d046925946fd83a",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "workloadNodeId": "hpubuntu",
+            "providerExecutionNodeId": "hpubuntu",
+            "provider": "local-qwen",
+            "model": "qwen-hpubuntu",
+            "reason": "satisfies:route.hpubuntu, healthy, available"
+          },
+          "error": null
+        },
+        {
+          "id": "local-to-gemma-e4b-persist",
+          "status": "SUCCEEDED",
+          "runId": "run-bcd8bef4-d130-40fe-84db-a96ec3ed5bef",
+          "batonSha256": "1a2edb4a2d3d13227fd3de7570a9e48ab551b52fd24d86d283751207cc4bf608",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "reason": "satisfies:memory.control, healthy, available"
+          },
+          "error": null
+        },
+        {
+          "id": "local-to-gemma-e4b-reader",
+          "status": "FAILED",
+          "runId": "run-de056268-d8db-40b4-876d-2cd36132ed0b",
+          "batonSha256": "f260942215641ee4f0a6a339d831a90bdff34ddd047d2688385c1997d42e487c",
+          "actualRoute": {
+            "workers": [
+              "pixel-8-pro"
+            ],
+            "workloadNodeId": "pixel-8-pro",
+            "providerExecutionNodeId": "pixel-8-pro",
+            "provider": "pixel-llama",
+            "model": "pixel-gemma-e4b",
+            "reason": "satisfies:route.pixel-8-pro, healthy, available"
+          },
+          "error": "execute:execution:reader_verification_failed:alreadyHappened:missing:hpubuntu|alreadyHappened:missing:msi"
+        },
+        {
+          "id": "local-to-gemma-e4b-continue",
+          "status": "BLOCKED",
+          "runId": null,
+          "batonSha256": null,
+          "actualRoute": null,
+          "error": null
+        }
+      ]
+    }
+  ],
+  "routes": [
+    {
+      "id": "qwen-hpubuntu",
+      "label": "Qwen on hpubuntu",
+      "provider": "local-qwen",
+      "exactModel": "qwen2.5-3b-instruct-q4_k_m.gguf",
+      "qualificationVersion": "physical-20260911",
+      "node": "hpubuntu",
+      "endpoint": "http://127.0.0.1:8080/v1",
+      "runtime": "llama.cpp",
+      "credentialResidency": "not required",
+      "adapter": "llama.cpp OpenAI-compatible adapter",
+      "physicalAvailability": "AVAILABLE"
+    },
+    {
+      "id": "glm-5.3-flash",
+      "label": "GLM-5.3-Flash",
+      "provider": "openrouter",
+      "exactModel": "z-ai/glm-5.3-flash",
+      "qualificationVersion": "physical-20260911",
+      "node": "hpubuntu",
+      "endpoint": "https://openrouter.ai/api/v1",
+      "runtime": "OpenRouter hosted runtime",
+      "credentialResidency": "hpubuntu owner-only file reference; value resolved only by adapter",
+      "adapter": "OpenAI-compatible Responses adapter",
+      "physicalAvailability": "AVAILABLE"
+    },
+    {
+      "id": "codex-luna",
+      "label": "Codex CLI / Luna",
+      "provider": "codex-chatgpt",
+      "exactModel": "gpt-5.6-luna",
+      "qualificationVersion": "physical-20260911",
+      "node": "hpubuntu",
+      "endpoint": "local executable discovered from PATH",
+      "runtime": "Codex CLI",
+      "credentialResidency": "opaque CODEX_HOME environment reference on hpubuntu",
+      "adapter": "LocalCodexNodeExecutionPort",
+      "physicalAvailability": "AVAILABLE"
+    },
+    {
+      "id": "gpt-5.6-sol",
+      "label": "GPT-5.6 Sol",
+      "provider": "codex-chatgpt",
+      "exactModel": "gpt-5.6-sol",
+      "qualificationVersion": "physical-20260911",
+      "node": "hpubuntu",
+      "endpoint": "local executable discovered from PATH",
+      "runtime": "Codex CLI",
+      "credentialResidency": "opaque CODEX_HOME environment reference on hpubuntu",
+      "adapter": "LocalCodexNodeExecutionPort",
+      "physicalAvailability": "AVAILABLE"
+    },
+    {
+      "id": "pixel-gemma-e4b",
+      "label": "Google Gemma 4 E4B on Pixel 8 Pro",
+      "provider": "pixel-llama",
+      "exactModel": "google/gemma-4-E4B-it",
+      "qualificationVersion": "physical-20260911",
+      "node": "pixel-8-pro",
+      "endpoint": "http://100.100.97.118:19084/v1",
+      "runtime": "llama.cpp",
+      "credentialResidency": "not required",
+      "adapter": "llama.cpp OpenAI-compatible adapter",
+      "physicalAvailability": "AVAILABLE"
+    }
+  ],
+  "blockedRoutes": [
+    {
+      "id": "msi-cottage-plus",
+      "nodeId": "msi",
+      "provider": "codex-chatgpt",
+      "model": "unavailable",
+      "status": "BLOCKED",
+      "reason": "codex_chatgpt_auth_required through production ResourceCodexNodeExecutionPort"
+    },
+    {
+      "id": "msi-lawrence-pro",
+      "nodeId": "msi",
+      "provider": "codex-chatgpt",
+      "model": "unavailable",
+      "status": "BLOCKED",
+      "reason": "codex_chatgpt_auth_required through production ResourceCodexNodeExecutionPort"
+    }
+  ],
+  "matrix": [
+    {
+      "writer": "GLM-5.3-Flash",
+      "reader": "Qwen on hpubuntu",
+      "writerRoute": "openrouter/default/glm-5.3-flash@hpubuntu",
+      "readerRoute": "local-qwen/default/qwen-hpubuntu@hpubuntu",
+      "writerNode": "hpubuntu",
+      "readerNode": "hpubuntu",
+      "memorySource": "ProjectMemoryPort / structured Markdown vault",
+      "memoryId": "memory-glm-to-qwen",
+      "memorySha256": "a6a9490d18451e2f9954b5a3a202d8b364aa6a045201c6407f3c9a33ecd4f6af",
+      "reconstructionAccuracy": 64.44,
+      "writerScore": 92.5,
+      "continuationSuccess": false,
+      "contextInjectedTokens": 446,
+      "writerUsage": {
+        "inputTokens": 631,
+        "outputTokens": 511,
+        "totalTokens": 1142,
+        "cachedInputTokens": 512,
+        "cost": 0.00028871,
+        "currency": null,
+        "authority": "authoritative"
+      },
+      "readerUsage": {
+        "inputTokens": 1422,
+        "outputTokens": 717,
+        "totalTokens": 2139,
+        "cachedInputTokens": 794,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "usage": {
+        "inputTokens": 2053,
+        "outputTokens": 1228,
+        "totalTokens": 3281,
+        "cachedInputTokens": 1306,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "latencyMs": 24113,
+      "contradictionsDetected": [
+        "missing:cross-model",
+        "missing:D:/obsidian/knowledge_vault",
+        "missing:node-local",
+        "missing:content-hash",
+        "missing:concurrently edited"
+      ],
+      "writerRunId": "run-9370d97a-8b79-4033-9091-1f2e250565fe",
+      "readerRunId": "run-31fe3848-5be0-4a93-8a65-841c600ba49e",
+      "batonSha256": "06d42fc6ca15aa61784bd94984cc04fcac66c99999127ba726e450693cd37c8e",
+      "persistBatonSha256": "6fb2eafe427b34a10bd09aa33933a12af19b01cc872f10b7fb8408e41c0d4e09",
+      "continuationBatonSha256": null,
+      "failures": [
+        "alreadyHappened:missing:hpubuntu",
+        "alreadyHappened:missing:msi",
+        "importantDecisions:missing:content-hash",
+        "rejectedApproaches:missing:canonical note"
+      ],
+      "result": "FAIL"
+    },
+    {
+      "writer": "Qwen on hpubuntu",
+      "reader": "GLM-5.3-Flash",
+      "writerRoute": "local-qwen/default/qwen-hpubuntu@hpubuntu",
+      "readerRoute": "openrouter/default/glm-5.3-flash@hpubuntu",
+      "writerNode": "hpubuntu",
+      "readerNode": "hpubuntu",
+      "memorySource": "ProjectMemoryPort / structured Markdown vault",
+      "memoryId": "memory-qwen-to-glm",
+      "memorySha256": "d3253f595a5604481dbd76832eb506d8ef9276ad8d820a52755a52597da3025b",
+      "reconstructionAccuracy": 100,
+      "writerScore": 92.5,
+      "continuationSuccess": true,
+      "contextInjectedTokens": 278,
+      "writerUsage": {
+        "inputTokens": 1472,
+        "outputTokens": 694,
+        "totalTokens": 2166,
+        "cachedInputTokens": 1418,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "readerUsage": {
+        "inputTokens": 1624,
+        "outputTokens": 1740,
+        "totalTokens": 3364,
+        "cachedInputTokens": 128,
+        "cost": 0.00109824,
+        "currency": null,
+        "authority": "authoritative"
+      },
+      "usage": {
+        "inputTokens": 3096,
+        "outputTokens": 2434,
+        "totalTokens": 5530,
+        "cachedInputTokens": 1546,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "latencyMs": 30424,
+      "contradictionsDetected": [
+        "Memory says the vault is 'concurrently edited' while the decision mandates independent node-local namespaces; resolved by treating the concurrently edited note as the rejected single-canonical approach, with the authoritative copy living in the node-local D:/obsidian/knowledge_vault namespace under content-hash synchronization."
+      ],
+      "writerRunId": "run-c5217847-227a-45a9-9cf6-109782dbb5dd",
+      "readerRunId": "run-7b108f67-a6d2-43b3-8b54-44094a2c3e25",
+      "batonSha256": "1b48a733998e93bf0a9e96731762fd3d7b4696a66dcb48073c9b3903f8db52d9",
+      "persistBatonSha256": "09a248254edd3434461547c359bd46fa64a2368a8284fe7a250e465b824e3401",
+      "continuationBatonSha256": "3b0efedcfed0f562f4ecbbe9677d1860a2e563122e6ae776d33d1ad83bad1582",
+      "failures": [],
+      "result": "PASS"
+    },
+    {
+      "writer": "Codex CLI / Luna",
+      "reader": "Qwen on hpubuntu",
+      "writerRoute": "codex-chatgpt/controller-codex/codex-luna@hpubuntu",
+      "readerRoute": "local-qwen/default/qwen-hpubuntu@hpubuntu",
+      "writerNode": "hpubuntu",
+      "readerNode": "hpubuntu",
+      "memorySource": "ProjectMemoryPort / structured Markdown vault",
+      "memoryId": "memory-codex-to-qwen",
+      "memorySha256": "4231eb9744451f3ce1c0aea5033389e44c79a1d4e6c7f47d5a95f3b3e9c618ca",
+      "reconstructionAccuracy": 37.78,
+      "writerScore": 92.5,
+      "continuationSuccess": false,
+      "contextInjectedTokens": 517,
+      "writerUsage": {
+        "inputTokens": 7219,
+        "outputTokens": 604,
+        "totalTokens": 7823,
+        "cachedInputTokens": 0,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "readerUsage": {
+        "inputTokens": 1669,
+        "outputTokens": 702,
+        "totalTokens": 2371,
+        "cachedInputTokens": 791,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "usage": {
+        "inputTokens": 8888,
+        "outputTokens": 1306,
+        "totalTokens": 10194,
+        "cachedInputTokens": 791,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "latencyMs": 15308,
+      "contradictionsDetected": [
+        "The provided checkpoint and version identifiers are missing or not found in the provided memory."
+      ],
+      "writerRunId": "run-7cdecfee-e79f-4275-8783-9a3aa4c9a101",
+      "readerRunId": "run-29b83e53-dd11-4a4e-bbb7-044b255fd17e",
+      "batonSha256": "3fb42f0fd6f4ad0cd300e2712c2fbf25c28dedd8acbde9eb068d2087f8fd36cb",
+      "persistBatonSha256": "0155c85313eab962755e86713b12a1eb4a92e969e212811918d8278a2dd9b0cf",
+      "continuationBatonSha256": null,
+      "failures": [
+        "alreadyHappened:missing:hpubuntu",
+        "alreadyHappened:missing:msi",
+        "alreadyHappened:missing:D:/obsidian/knowledge_vault",
+        "importantDecisions:missing:node-local",
+        "importantDecisions:missing:content-hash",
+        "currentState:missing:v4.4.0",
+        "supportingEvidence:missing:f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2"
+      ],
+      "result": "FAIL"
+    },
+    {
+      "writer": "Qwen on hpubuntu",
+      "reader": "Codex CLI / Luna",
+      "writerRoute": "local-qwen/default/qwen-hpubuntu@hpubuntu",
+      "readerRoute": "codex-chatgpt/controller-codex/codex-luna@hpubuntu",
+      "writerNode": "hpubuntu",
+      "readerNode": "hpubuntu",
+      "memorySource": "ProjectMemoryPort / structured Markdown vault",
+      "memoryId": "memory-qwen-to-codex",
+      "memorySha256": "d3253f595a5604481dbd76832eb506d8ef9276ad8d820a52755a52597da3025b",
+      "reconstructionAccuracy": 91.11,
+      "writerScore": 92.5,
+      "continuationSuccess": false,
+      "contextInjectedTokens": 278,
+      "writerUsage": {
+        "inputTokens": 1472,
+        "outputTokens": 694,
+        "totalTokens": 2166,
+        "cachedInputTokens": 1418,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "readerUsage": {
+        "inputTokens": 14198,
+        "outputTokens": 983,
+        "totalTokens": 15181,
+        "cachedInputTokens": 6912,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "usage": {
+        "inputTokens": 15670,
+        "outputTokens": 1677,
+        "totalTokens": 17347,
+        "cachedInputTokens": 8330,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "latencyMs": 14074,
+      "contradictionsDetected": [],
+      "writerRunId": "run-112de119-f053-412b-a9aa-f4081117b47f",
+      "readerRunId": "run-5ad6711b-1b1b-40d5-b1d1-0b6a7400c456",
+      "batonSha256": "c29e4f81344579f15ba1662cf209fc5e01d5cc86e6a94edb7f27c852f7de08d8",
+      "persistBatonSha256": "321c03c7fc6c267a82cf62e6b7a77eae48d7a9839b0e550d4eee629eb9442b9c",
+      "continuationBatonSha256": null,
+      "failures": [
+        "currentState:missing:v4.4.0"
+      ],
+      "result": "FAIL"
+    },
+    {
+      "writer": "GPT-5.6 Sol",
+      "reader": "GLM-5.3-Flash",
+      "writerRoute": "codex-chatgpt/controller-codex/gpt-5.6-sol@hpubuntu",
+      "readerRoute": "openrouter/default/glm-5.3-flash@hpubuntu",
+      "writerNode": "hpubuntu",
+      "readerNode": "hpubuntu",
+      "memorySource": "ProjectMemoryPort / structured Markdown vault",
+      "memoryId": "memory-sol-to-glm",
+      "memorySha256": "86a8043315555d4110ccb7fa341c5c13e0d80d481ba66b188cc62990a0b9e56a",
+      "reconstructionAccuracy": 100,
+      "writerScore": 92.5,
+      "continuationSuccess": true,
+      "contextInjectedTokens": 505,
+      "writerUsage": {
+        "inputTokens": 8360,
+        "outputTokens": 557,
+        "totalTokens": 8917,
+        "cachedInputTokens": 0,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "readerUsage": {
+        "inputTokens": 1420,
+        "outputTokens": 2028,
+        "totalTokens": 3448,
+        "cachedInputTokens": 0,
+        "cost": 0.001227,
+        "currency": null,
+        "authority": "authoritative"
+      },
+      "usage": {
+        "inputTokens": 9780,
+        "outputTokens": 2585,
+        "totalTokens": 12365,
+        "cachedInputTokens": 0,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "latencyMs": 24828,
+      "contradictionsDetected": [
+        "This reconstruction was not independently verifiable; this response was generated by an LLM inside the same orchestration pipeline as the surrounding context, not by a truly disjoint cross-model reader, so its self-attestations may not be trustworthy.",
+        "Reasoning trace availability, if any, is a governed disclosure decision reserved to the original pipeline operator, not something this reply can resolve."
+      ],
+      "writerRunId": "run-1b8a5b6b-94f9-4f35-9c77-46e6e008e732",
+      "readerRunId": "run-75980e87-ecc7-4f1e-b4d7-35af17b59fef",
+      "batonSha256": "b06d958f065163c15868d1cf18ad5b0ea538da90033565d4b7c690279d674049",
+      "persistBatonSha256": "aaf6efe6874eae1ed92a5802be54abf005086adc07fd29d59073a791a5fdc590",
+      "continuationBatonSha256": "a6f0ff567ab9e98d6d98ecc2105432a976ae5ee1b155bdd1073530462f8b2247",
+      "failures": [],
+      "result": "PASS"
+    },
+    {
+      "writer": "GLM-5.3-Flash",
+      "reader": "GPT-5.6 Sol",
+      "writerRoute": "openrouter/default/glm-5.3-flash@hpubuntu",
+      "readerRoute": "codex-chatgpt/controller-codex/gpt-5.6-sol@hpubuntu",
+      "writerNode": "hpubuntu",
+      "readerNode": "hpubuntu",
+      "memorySource": "ProjectMemoryPort / structured Markdown vault",
+      "memoryId": "memory-glm-to-sol",
+      "memorySha256": "714b66f0cebdc0096a295c61b4cd26ec28027018283ea49dfb356734884aca02",
+      "reconstructionAccuracy": 100,
+      "writerScore": 92.5,
+      "continuationSuccess": true,
+      "contextInjectedTokens": 577,
+      "writerUsage": {
+        "inputTokens": 631,
+        "outputTokens": 658,
+        "totalTokens": 1289,
+        "cachedInputTokens": 0,
+        "cost": 0.00042365,
+        "currency": null,
+        "authority": "authoritative"
+      },
+      "readerUsage": {
+        "inputTokens": 16994,
+        "outputTokens": 1057,
+        "totalTokens": 18051,
+        "cachedInputTokens": 0,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "usage": {
+        "inputTokens": 17625,
+        "outputTokens": 1715,
+        "totalTokens": 19340,
+        "cachedInputTokens": 0,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "latencyMs": 5223,
+      "contradictionsDetected": [],
+      "writerRunId": "run-6ec6d183-6b1e-4096-b69a-ae22aa31ec98",
+      "readerRunId": "run-23c92a88-2f4a-451b-91cd-d901723daa40",
+      "batonSha256": "490aed9183a0ab13b28a127f027b67cb1709d1976b417f9f616055be27f9625b",
+      "persistBatonSha256": "0ab34d7c291a380c54e4a600557fde6d404d0e139be876375cc0fa46bf6407c7",
+      "continuationBatonSha256": "96aa2e1317729acc245c381225337d60c3bde42b79e3ebfd8ec6dc4665a765f0",
+      "failures": [],
+      "result": "PASS"
+    },
+    {
+      "writer": "Codex CLI / Luna",
+      "reader": "GPT-5.6 Sol",
+      "writerRoute": "codex-chatgpt/controller-codex/codex-luna@hpubuntu",
+      "readerRoute": "codex-chatgpt/controller-codex/gpt-5.6-sol@hpubuntu",
+      "writerNode": "hpubuntu",
+      "readerNode": "hpubuntu",
+      "memorySource": "ProjectMemoryPort / structured Markdown vault",
+      "memoryId": "memory-codex-to-sol",
+      "memorySha256": "4c371dc4f7b8d081fb422e4f9366be382649efbe48510c851f4229cac48f29c8",
+      "reconstructionAccuracy": 100,
+      "writerScore": 92.5,
+      "continuationSuccess": true,
+      "contextInjectedTokens": 417,
+      "writerUsage": {
+        "inputTokens": 7219,
+        "outputTokens": 524,
+        "totalTokens": 7743,
+        "cachedInputTokens": 0,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "readerUsage": {
+        "inputTokens": 8316,
+        "outputTokens": 531,
+        "totalTokens": 8847,
+        "cachedInputTokens": 0,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "usage": {
+        "inputTokens": 15535,
+        "outputTokens": 1055,
+        "totalTokens": 16590,
+        "cachedInputTokens": 0,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "latencyMs": 1,
+      "contradictionsDetected": [],
+      "writerRunId": "run-6518c4cd-7a30-4749-9801-4f669c45bfc9",
+      "readerRunId": "run-aafdcfa9-8e7f-4c99-a798-58be8294b946",
+      "batonSha256": "05167d6e2d08a9e1ca80fab79583c5e825cb83e257dcecd0189327bd01c09bd1",
+      "persistBatonSha256": "0899b5721f9146464392284100e2165ec79d24f8627d4c7cc7ec155ce3b004c4",
+      "continuationBatonSha256": "6bb2c9fbbeb9be3ca8b0f974d6dfd4950035d13755b4dee82847a35de1ba30fa",
+      "failures": [],
+      "result": "PASS"
+    },
+    {
+      "writer": "GPT-5.6 Sol",
+      "reader": "Codex CLI / Luna",
+      "writerRoute": "codex-chatgpt/controller-codex/gpt-5.6-sol@hpubuntu",
+      "readerRoute": "codex-chatgpt/controller-codex/codex-luna@hpubuntu",
+      "writerNode": "hpubuntu",
+      "readerNode": "hpubuntu",
+      "memorySource": "ProjectMemoryPort / structured Markdown vault",
+      "memoryId": "memory-sol-to-codex",
+      "memorySha256": "6bceaa93ee86acdcd09411c24d03717ffe7c0092fe29b94fdf7004008b191b51",
+      "reconstructionAccuracy": 100,
+      "writerScore": 92.5,
+      "continuationSuccess": true,
+      "contextInjectedTokens": 444,
+      "writerUsage": {
+        "inputTokens": 8360,
+        "outputTokens": 476,
+        "totalTokens": 8836,
+        "cachedInputTokens": 0,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "readerUsage": {
+        "inputTokens": 14481,
+        "outputTokens": 811,
+        "totalTokens": 15292,
+        "cachedInputTokens": 0,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "usage": {
+        "inputTokens": 22841,
+        "outputTokens": 1287,
+        "totalTokens": 24128,
+        "cachedInputTokens": 0,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "latencyMs": 1,
+      "contradictionsDetected": [],
+      "writerRunId": "run-46a683fb-be2e-4e5a-b8b2-1eb71e15b9ff",
+      "readerRunId": "run-1abe389f-5bc2-4996-9d59-903539f8981e",
+      "batonSha256": "4544ed13c6f3da62885e650ce694676662d961ba5cca856ed356217868a8e708",
+      "persistBatonSha256": "e226b7653c288241da6a1da5ff4a7f683487eb46396a350c96f63e30e017ea8f",
+      "continuationBatonSha256": "5cb3d55d2fd308715993ac0030acdc11f302a149de3293c875e059069054fda0",
+      "failures": [],
+      "result": "PASS"
+    },
+    {
+      "writer": "Google Gemma 4 E4B on Pixel 8 Pro",
+      "reader": "Qwen on hpubuntu",
+      "writerRoute": "pixel-llama/default/pixel-gemma-e4b@pixel-8-pro",
+      "readerRoute": "local-qwen/default/qwen-hpubuntu@hpubuntu",
+      "writerNode": "pixel-8-pro",
+      "readerNode": "hpubuntu",
+      "memorySource": "ProjectMemoryPort / structured Markdown vault",
+      "memoryId": null,
+      "memorySha256": null,
+      "reconstructionAccuracy": 0,
+      "writerScore": 0,
+      "continuationSuccess": false,
+      "contextInjectedTokens": null,
+      "writerUsage": {
+        "inputTokens": null,
+        "outputTokens": null,
+        "totalTokens": null,
+        "cachedInputTokens": null,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "readerUsage": {
+        "inputTokens": null,
+        "outputTokens": null,
+        "totalTokens": null,
+        "cachedInputTokens": null,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "usage": {
+        "inputTokens": null,
+        "outputTokens": null,
+        "totalTokens": null,
+        "cachedInputTokens": null,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "latencyMs": 0,
+      "contradictionsDetected": [],
+      "writerRunId": "run-06ba8a67-d279-4804-a3b2-f06f8bc2a2a0",
+      "readerRunId": null,
+      "batonSha256": null,
+      "persistBatonSha256": null,
+      "continuationBatonSha256": null,
+      "failures": [],
+      "result": "FAIL"
+    },
+    {
+      "writer": "Qwen on hpubuntu",
+      "reader": "Google Gemma 4 E4B on Pixel 8 Pro",
+      "writerRoute": "local-qwen/default/qwen-hpubuntu@hpubuntu",
+      "readerRoute": "pixel-llama/default/pixel-gemma-e4b@pixel-8-pro",
+      "writerNode": "hpubuntu",
+      "readerNode": "pixel-8-pro",
+      "memorySource": "ProjectMemoryPort / structured Markdown vault",
+      "memoryId": "memory-hpubuntu-to-pixel",
+      "memorySha256": "d3253f595a5604481dbd76832eb506d8ef9276ad8d820a52755a52597da3025b",
+      "reconstructionAccuracy": 64.44,
+      "writerScore": 92.5,
+      "continuationSuccess": false,
+      "contextInjectedTokens": 278,
+      "writerUsage": {
+        "inputTokens": 1472,
+        "outputTokens": 694,
+        "totalTokens": 2166,
+        "cachedInputTokens": 1418,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "readerUsage": {
+        "inputTokens": 1359,
+        "outputTokens": 606,
+        "totalTokens": 1965,
+        "cachedInputTokens": 580,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "usage": {
+        "inputTokens": 2831,
+        "outputTokens": 1300,
+        "totalTokens": 4131,
+        "cachedInputTokens": 1998,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "latencyMs": 570001,
+      "contradictionsDetected": [
+        "The initial cold reconstruction failed validation due to missing state identifiers."
+      ],
+      "writerRunId": "run-f98b4efa-5b6b-461e-822c-3b86f06d942f",
+      "readerRunId": "run-1f1a9675-0a1b-446f-8d92-608fc29cc0dc",
+      "batonSha256": "8947cd6b7f458ea1b783cbde8a78706a373cc6cd11a118c8a2f74de69011cab3",
+      "persistBatonSha256": "a3f355e00797576b069571baaf68c865a154a363a7df8abd2e61eb292041732c",
+      "continuationBatonSha256": null,
+      "failures": [
+        "what:missing:cross-model",
+        "alreadyHappened:missing:hpubuntu",
+        "alreadyHappened:missing:msi",
+        "alreadyHappened:missing:D:/obsidian/knowledge_vault"
+      ],
+      "result": "FAIL"
+    },
+    {
+      "writer": "Google Gemma 4 E4B on Pixel 8 Pro",
+      "reader": "Qwen on hpubuntu",
+      "writerRoute": "pixel-llama/default/pixel-gemma-e4b@pixel-8-pro",
+      "readerRoute": "local-qwen/default/qwen-hpubuntu@hpubuntu",
+      "writerNode": "pixel-8-pro",
+      "readerNode": "hpubuntu",
+      "memorySource": "ProjectMemoryPort / structured Markdown vault",
+      "memoryId": null,
+      "memorySha256": null,
+      "reconstructionAccuracy": 0,
+      "writerScore": 0,
+      "continuationSuccess": false,
+      "contextInjectedTokens": null,
+      "writerUsage": {
+        "inputTokens": null,
+        "outputTokens": null,
+        "totalTokens": null,
+        "cachedInputTokens": null,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "readerUsage": {
+        "inputTokens": null,
+        "outputTokens": null,
+        "totalTokens": null,
+        "cachedInputTokens": null,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "usage": {
+        "inputTokens": null,
+        "outputTokens": null,
+        "totalTokens": null,
+        "cachedInputTokens": null,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "latencyMs": 0,
+      "contradictionsDetected": [],
+      "writerRunId": "run-f3f2ecf7-78de-45fd-9d35-ade24fd62ae7",
+      "readerRunId": null,
+      "batonSha256": null,
+      "persistBatonSha256": null,
+      "continuationBatonSha256": null,
+      "failures": [],
+      "result": "FAIL"
+    },
+    {
+      "writer": "Qwen on hpubuntu",
+      "reader": "Google Gemma 4 E4B on Pixel 8 Pro",
+      "writerRoute": "local-qwen/default/qwen-hpubuntu@hpubuntu",
+      "readerRoute": "pixel-llama/default/pixel-gemma-e4b@pixel-8-pro",
+      "writerNode": "hpubuntu",
+      "readerNode": "pixel-8-pro",
+      "memorySource": "ProjectMemoryPort / structured Markdown vault",
+      "memoryId": "memory-local-to-gemma-e4b",
+      "memorySha256": "d3253f595a5604481dbd76832eb506d8ef9276ad8d820a52755a52597da3025b",
+      "reconstructionAccuracy": 82.22,
+      "writerScore": 92.5,
+      "continuationSuccess": false,
+      "contextInjectedTokens": 278,
+      "writerUsage": {
+        "inputTokens": 1472,
+        "outputTokens": 694,
+        "totalTokens": 2166,
+        "cachedInputTokens": 1418,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "readerUsage": {
+        "inputTokens": 1385,
+        "outputTokens": 596,
+        "totalTokens": 1981,
+        "cachedInputTokens": 584,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "usage": {
+        "inputTokens": 2857,
+        "outputTokens": 1290,
+        "totalTokens": 4147,
+        "cachedInputTokens": 2002,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "latencyMs": 438377,
+      "contradictionsDetected": [
+        "The initial cold reconstruction failed deterministic validation for several key fields."
+      ],
+      "writerRunId": "run-550bd92c-54b1-4b59-a3e9-44e97b27d239",
+      "readerRunId": "run-de056268-d8db-40b4-876d-2cd36132ed0b",
+      "batonSha256": "f260942215641ee4f0a6a339d831a90bdff34ddd047d2688385c1997d42e487c",
+      "persistBatonSha256": "1a2edb4a2d3d13227fd3de7570a9e48ab551b52fd24d86d283751207cc4bf608",
+      "continuationBatonSha256": null,
+      "failures": [
+        "alreadyHappened:missing:hpubuntu",
+        "alreadyHappened:missing:msi"
+      ],
+      "result": "FAIL"
+    }
+  ],
+  "totals": {
+    "inputTokens": null,
+    "outputTokens": null,
+    "totalTokens": null,
+    "cachedInputTokens": null,
+    "cost": null,
+    "currency": null,
+    "authority": "unavailable"
+  },
+  "projectMemory": {
+    "backend": "structured Markdown directory viewed by Obsidian",
+    "namespace": "/fast/qualification/agent-control-4.5-cross-model-memory-20260911/vault/Agent Control/4.5-cross-model-memory",
+    "records": 10,
+    "commonSchema": "agent-control.project-memory/v1"
+  },
+  "pisper": {
+    "decision": "DEFER",
+    "reason": "Governed Turn Snapshot Branching is a useful immutable provenance primitive but is not required for stateless writer-to-reader qualification and would broaden 4.5 scope."
+  },
+  "limitations": [
+    "ChatGPT product-level personal memory is not exposed as a controllable Codex CLI input, so no claim is made for proprietary assistant-memory injection.",
+    "The requested Google/Gemini E4B route is physically the exact Google Gemma 4 E4B local artifact; Gemini was not silently substituted.",
+    "MSI account profiles are reachable but currently authentication-blocked; no MSI model-transition cell is claimed."
+  ],
+  "security": {
+    "writerTranscriptSuppliedToReader": false,
+    "credentialValuesPersisted": false,
+    "providerOutputStoredAsSanitizedStructuredArtifacts": true
+  }
+}

@@ -18,7 +18,7 @@ decisions without implying uncontrolled online learning. See the
 [qualification](docs/evidence/agent-control-4.5-governed-skill-learning-20260911.md)
 and [deployment guide](docs/DEPLOYMENT.md).
 
-The separate 4.5 **Your Memories** portability experiment adds a provider-neutral structured-Markdown memory port with bounded metadata/lexical recall, provenance and freshness checks, explicit conflict rejection, atomic node-local writes and content-addressed synchronization rules. Obsidian is one viewable storage substrate, not a core dependency. See the [memory portability guide](docs/project-memory-portability.md).
+The separate 4.5 **Your Memories** portability experiment adds a provider-neutral structured-Markdown memory port with bounded metadata/lexical recall, provenance and freshness checks, explicit conflict rejection, atomic node-local writes and content-addressed synchronization rules. Obsidian is one viewable storage substrate, not a core dependency. The [physical cross-model qualification](docs/evidence/agent-control-4.5-cross-model-memory-qualification-20260911.md) passed 5/12 requested matrix cells and one complete POE→Sol→memory→Luna→verification lifecycle; its recommendation remains **EXPERIMENTAL**, not release-ready. See the [memory portability guide](docs/project-memory-portability.md).
 
 Agent Control 4.4.0 remains the latest formally released baseline until a
 separate release decision, merge, tag and publication are authorized.
