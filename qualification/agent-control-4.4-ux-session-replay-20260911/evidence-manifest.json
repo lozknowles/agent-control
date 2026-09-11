@@ -1,8 +1,8 @@
 {
   "schema": "agent-control.ux-session-qualification/v1",
   "verdict": "PASS_PHYSICAL_UX_SESSION_REPLAY",
-  "qualifiedAt": "2026-09-11T12:19:28.424Z",
-  "implementationCommit": "9989c589dc8f7ecb29fe86016d22118e820a2970",
+  "qualifiedAt": "2026-09-11T12:54:03.098Z",
+  "implementationCommit": "3b0f89653784f90e092c07f61123ba1f9249a42b",
   "sources": {
     "parallel": {
       "commit": "fcb4127d049408af2177c1e5104b638160933e7e",
@@ -23,7 +23,7 @@
     },
     {
       "id": "ux-memory-qualification-20260911",
-      "sha256": "a6c847b8e5a17b33770aa94acd24eda23c2bd060ce837c19ffef9f964adc1fa0"
+      "sha256": "fb13c9776178b67ab40aed8715020bf8ff8e637fe0dd26ced223d2ee483f3d0b"
     }
   ],
   "representations": [
@@ -34,8 +34,8 @@
     },
     {
       "file": "memory-session.json",
-      "sha256": "cf19e59839438fb634906d02218e75490d36453dc7d77b176d90eba46aece6bb",
-      "bytes": 6238
+      "sha256": "7adb17b7a1dd34607300f1d093e9aeec8abd58f28bb9e668d5ad04c90a4c7fb5",
+      "bytes": 6168
     },
     {
       "file": "sanitised-external-view.json",
@@ -53,9 +53,14 @@
       "bytes": 948987
     },
     {
+      "file": "your-memories-replay.png",
+      "sha256": "2b8014d939ed4c8569934b6b11ebc9bb2eeee57ce025e418e5fd36f870225416",
+      "bytes": 881422
+    },
+    {
       "file": "agent-control-4.4-ux-session-replay.mp4",
-      "sha256": "9c5ffbff034f7e6a4e03bfb79df4325bc784ad11b183a4aab7a093d1614066d2",
-      "bytes": 4147196
+      "sha256": "53ef0707f0549dac48531fc8dc14edbfeedf9812dae97fb59e9b1adf6af6003d",
+      "bytes": 5163170
     },
     {
       "file": "complete-transcript.md",
@@ -79,8 +84,8 @@
       }
     ],
     "format": {
-      "duration": "30.880000",
-      "size": "4147196"
+      "duration": "42.760000",
+      "size": "5163170"
     }
   },
   "checks": {
@@ -102,6 +107,8 @@
     "diagnosticDrilldown": true,
     "memoryProvenanceFlow": true,
     "memoryContentsExposed": false,
+    "userFacingMemoryName": "Your Memories",
+    "implementationTerminologyAbsentFromNormalMemoryView": true,
     "annotationOverlaySeparate": true,
     "browserErrors": []
   }

@@ -1,7 +1,7 @@
 {
   "schema": "agent-control.ux-session/v1",
   "id": "ux-memory-qualification-20260911",
-  "title": "Governed Memory — Provenance Before Context",
+  "title": "Your Memories — Relevant Context, Safely Governed",
   "startedAt": "2026-09-11T08:59:18.473Z",
   "completedAt": "2026-09-11T08:59:43.821Z",
   "sources": [
@@ -18,8 +18,8 @@
       "at": "2026-09-11T08:59:18.473Z",
       "layer": "AGENT_CONTROL",
       "kind": "MEMORY",
-      "title": "Fresh-agent memory was requested",
-      "summary": "The governed experiment requested relevant consolidated memory for eight real historical questions.",
+      "title": "Your Memories checked for relevant context",
+      "summary": "Agent Control looked for relevant memories for eight real historical questions.",
       "outcome": "PASSED",
       "parentIds": [],
       "evidenceRefs": [
@@ -39,8 +39,8 @@
       "at": "2026-09-11T08:59:18.473Z",
       "layer": "AGENT_CONTROL",
       "kind": "MEMORY",
-      "title": "Memory provenance was validated",
-      "summary": "Current source hashes and project/session boundaries were checked before any memory could enter context.",
+      "title": "Your Memories passed governance and provenance checks",
+      "summary": "Current evidence, project and session boundaries were checked before any memory could enter context.",
       "outcome": "PASSED",
       "parentIds": [
         "memory-requested"
@@ -62,8 +62,8 @@
       "at": "2026-09-11T08:59:18.473Z",
       "layer": "AGENT_CONTROL",
       "kind": "MEMORY",
-      "title": "Verified memory was accepted",
-      "summary": "Eligible current memories were accepted; content remains hidden in this replay.",
+      "title": "Relevant memories were accepted",
+      "summary": "Eligible, current memories were accepted; their contents remain hidden in this replay.",
       "outcome": "PASSED",
       "parentIds": [
         "memory-validated"
@@ -85,8 +85,8 @@
       "at": "2026-09-11T08:59:18.473Z",
       "layer": "AGENT_CONTROL",
       "kind": "MEMORY",
-      "title": "Unsafe memory was rejected",
-      "summary": "Stale, superseded, cross-project, cross-session, unverified, incomplete and incorrect memories failed closed.",
+      "title": "Unsafe or irrelevant memories were rejected",
+      "summary": "Stale, superseded, unrelated, unverified, incomplete and incorrect memories were rejected.",
       "outcome": "FAILED",
       "parentIds": [
         "memory-validated"
@@ -108,7 +108,7 @@
       "at": "2026-09-11T08:59:43.821Z",
       "layer": "AGENT_CONTROL",
       "kind": "MEMORY",
-      "title": "Bounded memory context supplied",
+      "title": "Your Memories supplied bounded context",
       "summary": "Supplied context fell from 6,022 to 550 estimated tokens while correctness remained 8/8.",
       "outcome": "PASSED",
       "parentIds": [
@@ -132,8 +132,8 @@
       "at": "2026-09-11T08:59:43.821Z",
       "layer": "TELEMETRY",
       "kind": "OUTCOME",
-      "title": "Independent memory comparison passed",
-      "summary": "Provider input fell from 7,844 to 1,608 tokens; correctness remained unchanged; memory remained advisory.",
+      "title": "Your Memories comparison independently passed",
+      "summary": "Provider input fell from 7,844 to 1,608 tokens; correctness remained unchanged; memories remained advisory.",
       "outcome": "PASSED",
       "parentIds": [
         "memory-supplied"
@@ -155,9 +155,9 @@
   "lanes": [
     {
       "id": "memory",
-      "name": "Fresh-agent memory recall",
-      "provider": "provider-neutral",
-      "model": "qualified test routes",
+      "name": "Your Memories",
+      "provider": "Agent Control",
+      "model": "Your Memories",
       "outcome": "PASSED",
       "inputTokens": 1608,
       "outputTokens": 277,
@@ -168,7 +168,7 @@
   ],
   "outcome": {
     "verdict": "PASS_PHYSICAL_MEMORY_EXPERIMENT",
-    "summary": "8/8 correct with bounded, provenance-validated memory.",
+    "summary": "8/8 correct with bounded, provenance-checked memories.",
     "selectedLaneId": "memory",
     "escalationInvoked": false
   },
@@ -183,11 +183,11 @@
   "artifacts": [
     {
       "kind": "manifest",
-      "file": "git:e449cd4d40fb570bacbd79ce64a2e5892f4372fa:docs/evidence/agent-control-4.4-marm-memory-qualification-20260911.json",
+      "file": "governed-memory-evidence.json",
       "sha256": "a7bdce9a6852484d4460a48defb16211f036019a3f67dfb3e6fc926dd99a2c6a",
       "bytes": 267403
     }
   ],
   "immutable": true,
-  "sha256": "a6c847b8e5a17b33770aa94acd24eda23c2bd060ce837c19ffef9f964adc1fa0"
+  "sha256": "fb13c9776178b67ab40aed8715020bf8ff8e637fe0dd26ced223d2ee483f3d0b"
 }

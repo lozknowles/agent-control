@@ -7,8 +7,9 @@
 This qualifies the isolated 4.4 development capability. It does not merge,
 tag, release or deploy Agent Control 4.4.
 
-- Qualified implementation: `9989c589dc8f7ecb29fe86016d22118e820a2970`.
+- Qualified implementation: `3b0f89653784f90e092c07f61123ba1f9249a42b`.
 - Canonical parallel session SHA-256: `c9a79159d2702eae2300b28cd65eb0b490f5c8e6ce1642a8db051b6f4d4a2ddb`.
+- Canonical Your Memories session SHA-256: `fb13c9776178b67ab40aed8715020bf8ff8e637fe0dd26ced223d2ee483f3d0b`.
 - Full regression: 1,125 passed; 0 failed; 0 skipped.
 - Focused UX/session/security integration: 6 passed; 0 failed.
 
@@ -40,9 +41,10 @@ not inferred.
 
 The recorded Chromium journey loaded a capability URL, showed all route cards,
 played the complete event timeline, filtered telemetry, opened diagnostic
-detail and reached the verified outcome. There were no browser errors. A second
-session showed memory requested → provenance validated → accepted/rejected →
-bounded context supplied, with memory contents hidden.
+detail and reached the verified outcome. It then visibly opened and played the
+second **Your Memories** session through request → provenance checked →
+accepted/rejected → bounded context supplied, with contents hidden. There were
+no browser errors.
 
 Normal replay presents that second flow as **Your Memories**: relevant memories
 found → governance/provenance checked → accepted or rejected → used in this
@@ -70,14 +72,15 @@ See `qualification/agent-control-4.4-ux-session-replay-20260911/`:
 - `sanitised-external-view.json`
 - `authorised-diagnostic-view.json`
 - `interactive-replay.png`
+- `your-memories-replay.png`
 - `agent-control-4.4-ux-session-replay.mp4`
 - `complete-transcript.md`
 - `human-readable-digest.md`
 - `evidence-manifest.json`
 
 The manifest contains exact hashes, sizes, media properties and source-object
-hashes. The replay video is 1920×1080 H.264, 30.88 seconds, SHA-256
-`9c5ffbff034f7e6a4e03bfb79df4325bc784ad11b183a4aab7a093d1614066d2`.
+hashes. The replay video is 1920×1080 H.264, 42.76 seconds, SHA-256
+`53ef0707f0549dac48531fc8dc14edbfeedf9812dae97fb59e9b1adf6af6003d`.
 The original 4.3 MP4 remains
 preserved at its original checkpoint and is bound into the canonical session by
 SHA-256; it is not replaced by the replay recording.
