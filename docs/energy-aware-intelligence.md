@@ -2,6 +2,12 @@
 
 Status: **experimental**. Agent Control optimises for correct, independently verified outcomes. Energy is an additional governed measurement and routing dimension; it never overrides capability, policy, quality, confidence, privacy, or verification.
 
+The first comparable physical specialist study disproved an energy saving for
+the qualified route-intent adapter on the measured controller. Warm Qwen used 20.426 J per
+verified result, the retained specialist used 22.674 J, the cold specialist used
+85.673 J, and the real ProjectMemoryPort variant used 85.865 J. Deterministic
+zero-LLM routing used 0.121 J. See the [physical specialist-energy evidence](evidence/agent-control-4.5-specialist-energy-qualification-20260911.md).
+
 The intended hierarchy is:
 
 `Remember → Retrieve → Reuse → Specialist → Small Generalist → Strong Generalist → Premium Reasoner`
@@ -20,7 +26,11 @@ Unknown energy is neutral and visibly marked; it is not assigned a manufactured 
 
 ## Physical result, 2026-09-11
 
-The controller exposed authoritative Quadro P5000 board-power telemetry through `nvidia-smi`, but no readable CPU package or whole-system energy counter. A bounded real Qwen route-intent invocation returned HTTP 200, used 53 tokens, and passed its deterministic lane verifier.
+The initial probe below established authoritative Quadro P5000 board-power
+telemetry. A subsequent privileged qualification established a common
+measured-component boundary using Intel package + DRAM RAPL and NVIDIA board
+power. That boundary is not whole-node power and excludes motherboard, storage,
+PSU losses, displays, networking, and peripherals.
 
 | Measurement | Result |
 | --- | ---: |
@@ -31,12 +41,24 @@ The controller exposed authoritative Quadro P5000 board-power telemetry through 
 | Energy per token | 0.000111742 Wh |
 | Whole-node energy | UNKNOWN |
 
-The already-qualified 135M route-intent specialist executes on CPU. Because CPU and whole-node energy were unavailable, the experiment cannot truthfully prove that specialist + memory has lower total energy than the general-model baseline, or calculate its training break-even. The 4.5 power-aware success criterion is therefore **PARTIAL**, pending a qualified whole-system meter or CPU package energy source and a same-task Work Parcel comparison.
+The later 75-run comparison showed that the qualified 135M route-intent
+specialist was correct but consumed more energy than warm Qwen in both cold-load
+and retained-process modes. Real bounded ProjectMemoryPort retrieval did not
+produce a saving. Training consumed 5,232.820 incremental measured-component
+joules and there is no positive break-even because the per-result saving is
+negative. The 4.5 power-aware release gate is therefore **not met**.
 
 Reproduce the bounded sensor/provider probe with:
 
 ```bash
 npm run qualify:energy-efficiency
+npm run qualify:specialist-energy
 ```
+
+`poeEnergyDigest` provides the human-readable operator result. It reports
+measured J/Wh and scope, or `UNAVAILABLE`; it never labels estimated or
+incomparable savings as measured. A physical POE-initiated Work Parcel selected
+the deterministic route, executed it, and passed a separate exact verifier; see
+the [complete transcript](evidence/agent-control-4.5-power-aware-poe-transcript-20260911.md).
 
 It does not stop, unload, suspend, or reconfigure any model or machine.

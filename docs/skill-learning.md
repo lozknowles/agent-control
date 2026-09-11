@@ -8,6 +8,13 @@ new provider and is not the unmodified base model. Its route identity binds:
 
 Energy efficiency is not inferred from parameter count. Baseline, training, held-out qualification, and repeated specialist inference may attach measured energy through the generic telemetry contract. Promotion requires quality first; training break-even is shown only when all compared values share a valid measurement boundary. See [energy-aware intelligence](energy-aware-intelligence.md).
 
+Energy-aware admission is separate from quality qualification. A specialist that
+improves the frozen quality baseline can still lose on joules per verified
+outcome. The first 4.5 physical study found exactly that, including with real
+bounded Your Memories retrieval. Operators must retain the negative evidence
+and prefer deterministic or stronger routes when expected total energy,
+including failure and fallback, is lower. See the [specialist-energy qualification](evidence/agent-control-4.5-specialist-energy-qualification-20260911.md).
+
 ## Operator lifecycle
 
 1. **Observe** evidence of a repeated bounded task.
