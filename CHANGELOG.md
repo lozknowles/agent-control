@@ -2,6 +2,8 @@
 
 ## [4.5.0] — Unreleased candidate
 
+- Adds an experimental generic `ProjectMemoryPort` and structured Markdown backend for **Your Memories** portability qualification. Records are scoped, content-hashed, provenance-bound, freshness checked and advisory only; contradictory current facts fail closed and all rejection reasons remain visible. Obsidian is not a core dependency.
+
 - Adds a provider-, model-, framework-, hardware- and runtime-neutral learned-skill lifecycle: `OBSERVE → IDENTIFY → DATASET → BASELINE → TRAIN → QUALIFY → REGISTER → ROUTE → MONITOR → RETIRE/RETRAIN`.
 - Adds a durable Skill Adapter Registry binding exact base, adaptation, dataset, runtime and frozen-evaluation identities, qualification metrics, limitations, compatibility, provenance and rollback state.
 - Requires explicit dataset review, disjoint frozen evaluation, objective unadapted baseline, material improvement and independent verification. Observation never starts training and runtime outcomes never silently mutate a model.

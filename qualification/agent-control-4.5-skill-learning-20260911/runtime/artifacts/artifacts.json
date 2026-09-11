@@ -12,7 +12,7 @@
       "createdAt": "2026-09-11T16:49:19.754Z",
       "size": 833,
       "sha256": "09d8b5ae524d21820421abd13486de0ecb48944cbfdf221e53931c718d84d970",
-      "storageRef": "/fast/work/agent-control-4.5-skill-learning/qualification/agent-control-4.5-skill-learning-20260911/runtime/artifacts/objects/artifact-9c0d574b-d6f7-403c-9c07-6171aa8734d6.json",
+      "storageRef": "<workspace>/qualification/agent-control-4.5-skill-learning-20260911/runtime/artifacts/objects/artifact-9c0d574b-d6f7-403c-9c07-6171aa8734d6.json",
       "retention": "run-history",
       "provenance": {
         "jobId": "qualified-route-intent-specialist",
@@ -32,7 +32,7 @@
       "createdAt": "2026-09-11T16:51:23.045Z",
       "size": 808,
       "sha256": "094a178c44d7d47d01a9dba4d064d523043d66bdb56f7cd339e9ba7c208d6891",
-      "storageRef": "/fast/work/agent-control-4.5-skill-learning/qualification/agent-control-4.5-skill-learning-20260911/runtime/artifacts/objects/artifact-c5055035-333a-4994-a10c-448e11da38de.json",
+      "storageRef": "<workspace>/qualification/agent-control-4.5-skill-learning-20260911/runtime/artifacts/objects/artifact-c5055035-333a-4994-a10c-448e11da38de.json",
       "retention": "run-history",
       "provenance": {
         "jobId": "qualified-route-intent-specialist",
@@ -52,7 +52,7 @@
       "createdAt": "2026-09-11T16:51:23.069Z",
       "size": 223,
       "sha256": "ad922015f42b8f657e8545e694b2dbace07ebfdab0dde9fa570e599359d199c9",
-      "storageRef": "/fast/work/agent-control-4.5-skill-learning/qualification/agent-control-4.5-skill-learning-20260911/runtime/artifacts/objects/artifact-d9b5db50-ee00-4ab0-a78f-bbc287418607.json",
+      "storageRef": "<workspace>/qualification/agent-control-4.5-skill-learning-20260911/runtime/artifacts/objects/artifact-d9b5db50-ee00-4ab0-a78f-bbc287418607.json",
       "retention": "run-history",
       "provenance": {
         "jobId": "qualified-route-intent-specialist",

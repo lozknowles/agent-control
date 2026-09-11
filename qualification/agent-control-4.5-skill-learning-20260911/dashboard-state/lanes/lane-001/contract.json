@@ -3,7 +3,7 @@
   "laneId": 1,
   "goal": "Await task",
   "constraints": [],
-  "cwd": "/fast/work/agent-control-4.5-skill-learning",
+  "cwd": "<workspace>",
   "priority": 1,
   "mode": "auto",
   "capabilities": {

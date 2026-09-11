@@ -12,7 +12,7 @@
       "createdAt": "2026-09-11T17:01:52.737Z",
       "size": 650,
       "sha256": "1b543829cc2c89793f946529512b48dfc95c3b1c882109299082abcd7274f77b",
-      "storageRef": "/fast/work/agent-control-4.5-skill-learning/qualification/agent-control-4.5-skill-learning-20260911/governed-training-runtime/artifacts/objects/artifact-bd06a755-1776-4c1d-adb2-ea5a0dea9173.json",
+      "storageRef": "<workspace>/qualification/agent-control-4.5-skill-learning-20260911/governed-training-runtime/artifacts/objects/artifact-bd06a755-1776-4c1d-adb2-ea5a0dea9173.json",
       "retention": "run-history",
       "provenance": {
         "jobId": "governed-skill-training",
