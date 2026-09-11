@@ -23,8 +23,16 @@ remain visible together, so a reviewer can understand fan-out, independent
 failure/success and aggregation without reading the complete transcript.
 
 Telemetry is shown only when reported. Current context, cache reuse, monetary
-cost or memory content remain `unavailable` when no authority supplied them.
+cost or content from Your Memories remain `unavailable` when no authority supplied them.
 Lifetime tokens are never presented as current-context occupancy.
+
+Normal replay uses **Your Memories** as the Agent Control capability name:
+
+`Your Memories → relevant memories found → governance/provenance checked → accepted or rejected → used in this session`
+
+It may explain relevance, rejection reason, human-readable provenance and
+measured context/token reduction. Backend names and implementation terminology
+appear only in architecture, evidence and authorised technical diagnostics.
 
 ## Audience levels
 

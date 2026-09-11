@@ -766,6 +766,11 @@ accepted/rejected and supplied lifecycle decisions while keeping memory content
 hidden unless separately authorised. MARM can satisfy a future generic memory
 port, but neither the record nor player depends on MARM.
 
+The presentation contract is deliberately distinct from those implementation
+terms: **Your Memories** is the user-facing Agent Control capability; the
+generic memory abstraction is the internal architecture; MARM is one optional
+backend. Normal POE, dashboard and replay views use only `Your Memories`.
+
 See [UX Session Replay](docs/ux-session-replay.md) and the
 [physical qualification](docs/evidence/agent-control-4.4-ux-session-replay-20260911.md).
 
