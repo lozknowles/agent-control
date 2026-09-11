@@ -46,6 +46,10 @@ outcomes may only propose a new governed candidate/version. See
 [the architecture decision](docs/agent-control-4.5-skill-learning-architecture-review.md)
 and [operator guide](docs/skill-learning.md).
 
+## Portable project memory experiment (4.5)
+
+The optional `ProjectMemoryPort` implements the generic memory boundary chosen in 4.4. Its first backend is a structured Markdown directory that Obsidian can view, but Agent Control core has no Obsidian dependency. Metadata scope and lexical retrieval precede any future semantic adapter. Provenance, verification, expiry, supersession and contradiction checks run before a memory can become advisory `ContextGraph`/Context Packet input. Memory cannot override Work Parcels, batons, policy, evidence, approvals, execution state or independent verification. See [project-memory portability](docs/project-memory-portability.md).
+
 ## Transport Context and Integrity Gate (4.2)
 
 After a Work Parcel resolves its frozen repository and context, the production review path creates a provider-neutral Transport Context Contract. It contains the initiating request (with security redaction), acceptance criteria, repository identity/commit/dirty state, bounded scope, architecture and security rules, route capabilities, policy limits, provenance and freshness. A stable canonical representation is hashed with SHA-256 and bound to the parcel and any sealed baton.
