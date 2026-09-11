@@ -1,6 +1,6 @@
-# Agent Control 4.3 deployment, upgrade and rollback
+# Agent Control 4.4 deployment, upgrade and rollback
 
-This is the canonical deployment guide for Agent Control 4.3. Source publication
+This is the canonical deployment guide for Agent Control 4.4. Source publication
 and production deployment are separate events. A healthy listener alone does not
 prove release qualification.
 
@@ -14,7 +14,7 @@ release evidence.
 ```bash
 git clone https://github.com/lozknowles/agent-control.git
 cd agent-control
-git checkout --detach v4.3.0
+git checkout --detach v4.4.0
 npm install --ignore-scripts
 npm run init
 npm run check
@@ -45,21 +45,23 @@ delivery mechanism. Do not place credentials in URLs, Git, transcripts or videos
 
 1. Freeze the candidate SHA and resolved dependency inventory.
 2. Run `npm run check` from a clean isolated checkout.
-3. Confirm the recorded fresh 4.3 physical A–F qualification matches the exact
-   release tree, including
-   route/cache/invalidation/accounting evidence, complete transcript and reviewed
-   1920×1080 recording.
+3. Confirm the 4.3 A–F foundation remains intact and the recorded 4.4 physical
+   browser qualification matches the release tree, including immutable session
+   identity, parallel lanes, accounting, the Your Memories lifecycle, complete
+   transcript and reviewed 1920×1080 recording.
 4. Verify state/config compatibility and create an owner-only stopped-controller
    backup.
 5. Merge through the repository workflow, verify the merge contains the qualified
-   tree, tag `v4.3.0`, push, and create the GitHub Release with manifest hashes.
+   tree, tag `v4.4.0`, push, and create the GitHub Release with manifest hashes.
 6. Stop only the scoped existing controller, select the immutable release, retain
    existing state and credential references, and restart through its established
    supervisor.
 7. Verify version, source provenance, health, authentication, SSE updates, Jobs,
    Lanes, Models, Crew, Warm Cache Runtime and a harmless governed operation.
 
-The accepted integrated candidate and checksummed A–F evidence are recorded in
+The 4.4 checksummed replay evidence is recorded in
+[the 4.4 qualification](evidence/agent-control-4.4-ux-session-replay-20260911.md),
+with the retained foundation in
 [the 4.3 qualification](evidence/agent-control-4.3-integrated-qualification-20260909.md).
 If main changes the product tree between qualification and tag, reconcile and
 rerun affected regression/physical gates. Never label historical evidence as the
@@ -68,9 +70,9 @@ new candidate's result.
 ## Rollback
 
 Retain the previous immutable release SHA/package, supervisor definition and
-matching owner-only state backup. If acceptance fails, stop the 4.3 controller,
+matching owner-only state backup. If acceptance fails, stop the 4.4 controller,
 restore the matching previous state only if migration changed it, select the
-previous immutable release, restart the same scoped service and recheck health,
+previous immutable release (`v4.3.0`), restart the same scoped service and recheck health,
 authentication and a harmless read-only operation. Never run old and new versions
 against one state directory or move credential stores with source archives.
 

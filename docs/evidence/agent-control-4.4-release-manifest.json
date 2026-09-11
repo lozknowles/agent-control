@@ -1,0 +1,83 @@
+{
+  "schema": "agent-control.release-manifest/v1",
+  "release": {
+    "name": "Agent Control 4.4.0",
+    "version": "4.4.0",
+    "tag": "v4.4.0",
+    "date": "2026-09-11"
+  },
+  "provenance": {
+    "originMainBase": "c389a7a2fc79caeea021226532ec7fff05de7420",
+    "qualifiedImplementationCommit": "3b0f89653784f90e092c07f61123ba1f9249a42b",
+    "qualificationEvidenceCommit": "574c53f4e3db0d71cf59a3bdb3340f2aa2a7f181",
+    "releaseCommitAuthority": "The annotated v4.4.0 tag and GitHub Release identify the final documentation- and evidence-containing release commit."
+  },
+  "validation": {
+    "command": "npm run check",
+    "tests": {
+      "passed": 1125,
+      "failed": 0,
+      "skipped": 0
+    },
+    "physicalQualification": "PASS_PHYSICAL_UX_SESSION_REPLAY",
+    "memoryExperiment": "PASS_PHYSICAL_MEMORY_EXPERIMENT"
+  },
+  "dependencies": {
+    "packageJsonSha256": "d9f679e3e067aa62593b3a76e40d38563772012297bdba8970c99103451020ed",
+    "typescriptConfigSha256": "246e14ac1be183f758b0ba77744fe279952d4bdbd50b1d8364f5a2b11865bd8c",
+    "lockfile": null,
+    "lockfileAuthority": "UNAVAILABLE",
+    "note": "This repository contains no dependency lockfile; package metadata and the tested installed dependency state are the available authorities."
+  },
+  "claims": {
+    "userFacingMemoryCapability": "Your Memories",
+    "memoryAuthority": "ADVISORY",
+    "marmRequired": false,
+    "automaticMemoryConsolidationReleased": false,
+    "automaticIdleModelSwappingReleased": false,
+    "monetarySaving": {
+      "value": null,
+      "authority": "UNAVAILABLE"
+    }
+  },
+  "evidence": [
+    {
+      "path": "docs/evidence/agent-control-4.4-marm-memory-manifest-20260911.json",
+      "sha256": "e4fff4128552d1ae20c59c92cfed2e4dfee7cd7645feb02a61677c518178d2fc"
+    },
+    {
+      "path": "docs/evidence/agent-control-4.4-marm-memory-qualification-20260911.json",
+      "sha256": "a7bdce9a6852484d4460a48defb16211f036019a3f67dfb3e6fc926dd99a2c6a"
+    },
+    {
+      "path": "docs/evidence/agent-control-4.4-marm-memory-qualification-20260911.md",
+      "sha256": "bf5b3196ae3e942468752994830c91be507bebeb969c1d39821371ade5d979fc"
+    },
+    {
+      "path": "docs/evidence/agent-control-4.4-ux-session-replay-20260911.md",
+      "sha256": "59e49d9713aaf20719b8fd37a61fa6e6fc59f9bcbc3814703bc790c09e9de23e"
+    },
+    {
+      "path": "qualification/agent-control-4.4-ux-session-replay-20260911/evidence-manifest.json",
+      "sha256": "ad1a4811661560a8973d3de5d6ae4ba8719320e8d19569a53f2c6b664fc258ba"
+    },
+    {
+      "path": "qualification/agent-control-4.4-ux-session-replay-20260911/agent-control-4.4-ux-session-replay.mp4",
+      "sha256": "53ef0707f0549dac48531fc8dc14edbfeedf9812dae97fb59e9b1adf6af6003d",
+      "media": {
+        "width": 1920,
+        "height": 1080,
+        "durationSeconds": 42.76,
+        "bytes": 5163170
+      }
+    },
+    {
+      "path": "qualification/agent-control-4.4-ux-session-replay-20260911/complete-transcript.md",
+      "sha256": "78d3bed68065388f7dfdd7641194d2a54fd5cded1f498e326f7ec59102a0e98f"
+    },
+    {
+      "path": "qualification/agent-control-4.4-ux-session-replay-20260911/your-memories-replay.png",
+      "sha256": "2b8014d939ed4c8569934b6b11ebc9bb2eeee57ce025e418e5fd36f870225416"
+    }
+  ]
+}

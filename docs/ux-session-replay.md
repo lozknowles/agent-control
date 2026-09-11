@@ -1,6 +1,6 @@
 # UX Session Capture, Replay and Sharing
 
-Status: qualified Agent Control 4.4 development prototype; not released or deployed.
+Status: released in Agent Control 4.4.0. Deployment remains a separate operator action.
 
 ## Purpose
 
