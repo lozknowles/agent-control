@@ -1096,7 +1096,7 @@
         "docs/evidence/agent-control-4.5-governed-skill-learning-20260911.md",
         "qualification/agent-control-4.5-skill-learning-20260911/qualification-report.json"
       ],
-      "limitation": "The first qualification is narrow route-intent JSON on one pinned 135M CPU base. Frozen accuracy improved from 0.00 to 0.40 and schema validity from 0.00 to 1.00; this does not establish broad expertise. Monetary cost, energy, adapter composition, automatic training and automatic promotion remain unavailable or unimplemented."
+      "limitation": "The first qualification is narrow route-intent JSON on one pinned 135M CPU base. Frozen accuracy improved from 0.00 to 0.40 and schema validity from 0.00 to 1.00; this does not establish broad expertise. Monetary cost, adapter composition and automatic training remain unavailable or unimplemented. The separate deterministic-skill promotion lifecycle does not automatically promote a model adapter."
     },
     {
       "id": "skills.qualified-selection",
@@ -1113,13 +1113,26 @@
     {
       "id": "skills.governed-lifecycle",
       "title": "Governed skill proposal and promotion",
-      "status": "PLANNED",
-      "summary": "Agents may eventually propose skills, but Agent Control must statically check, sandbox-test, qualify, approve and grant them.",
-      "sources": [],
-      "tests": [
-        "src/control/adaptive-harness.test.ts"
+      "status": "QUALIFIED",
+      "summary": "Repeated independently verified reasoning may be nominated as a versioned deterministic skill backed by a pre-registered hash-identified handler. Distinct source Work Parcels, originating route, assumptions, typed contracts, scope, freshness, invalidation conditions, explicit validation and operator promotion are durable; novelty, stale evidence, changed identity and failed verification fail closed to a recorded model escalation.",
+      "sources": [
+        "src/control/deterministic-skill.ts",
+        "src/control/deterministic-skill-actions.ts",
+        "config/work-parcels/jobs/deterministic-skill-execution.job.yaml",
+        "assets/dashboard/dashboard-learned-specialists.js"
       ],
-      "limitation": "No proposal, security-review, sandbox-qualification or promotion workflow is implemented."
+      "tests": [
+        "src/control/deterministic-skill.test.ts",
+        "src/control/deterministic-skill-actions.test.ts",
+        "src/control/runtime-safety-supervisor.test.ts"
+      ],
+      "evidence": [
+        "docs/deterministic-skill-promotion.md",
+        "docs/evidence/agent-control-4.5-deterministic-skill-promotion-20260911.md",
+        "qualification/agent-control-4.5-deterministic-skill-20260911/qualification.json",
+        "qualification/agent-control-4.5-deterministic-skill-20260911/ux-evidence/evidence-manifest.json"
+      ],
+      "limitation": "Qualification covers three bounded Agent Control operations on one measured node. General procedure synthesis, automatic code installation and automatic promotion remain forbidden; the independent cross-model memory matrix remains 5/12."
     },
     {
       "id": "recipes.automatic-learning",

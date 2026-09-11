@@ -1,5 +1,10 @@
 # Governed learned specialists
 
+This model-adaptation lifecycle is distinct from [governed deterministic skill
+promotion](deterministic-skill-promotion.md). Agent Control tries validated
+deterministic execution first when the task can be represented exactly; a learned
+specialist remains useful for fuzzy, variable bounded domains that cannot.
+
 Agent Control can manufacture a narrowly qualified local specialist without
 turning training into an uncontrolled background activity. A specialist is not a
 new provider and is not the unmodified base model. Its route identity binds:

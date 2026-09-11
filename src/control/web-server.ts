@@ -201,6 +201,7 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   if (method === 'GET' && url.pathname === '/api/orchestration/decisions') return json(response, 200, service.adaptiveDecisions());
   if (method === 'GET' && url.pathname === '/api/cache-experts') return json(response, 200, service.cacheExpertRegistry());
   if (method === 'GET' && url.pathname === '/api/learned-specialists') return json(response, 200, service.learnedSpecialists());
+  if (method === 'GET' && url.pathname === '/api/deterministic-skills') return json(response,200,service.deterministicSkillProjection());
   if (method === 'GET' && url.pathname === '/api/energy') return json(response, 200, service.energyProjection());
   if (method === 'GET' && url.pathname === '/api/efficiency/invocations') {
     const requestedLimit = Number(url.searchParams.get('limit') ?? 200);
@@ -299,6 +300,7 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
       service.events.emit('configuration.changed', {kind: 'learned-skills', id: 'learned-skills', restartRequired: true}, undefined, actor);
       return json(response, 200, result);
     }
+    if(url.pathname==='/api/configuration/deterministic-skills'){const file=options.configFile??configPath(),result=new ConfigurationStore(file).updateDeterministicSkills({revision:body.revision,deterministicSkills:body.deterministicSkills});service.events.emit('configuration.changed',{kind:'deterministic-skills',id:'deterministic-skills',restartRequired:true},undefined,actor);return json(response,200,result);}
     if (url.pathname === '/api/cache-experts/invalidate') return json(response, 200, service.invalidateCacheExperts({providerId:typeof body.providerId==='string'?body.providerId:undefined,modelId:typeof body.modelId==='string'?body.modelId:undefined,sessionId:typeof body.sessionId==='string'?body.sessionId:undefined,cacheScopeId:typeof body.cacheScopeId==='string'?body.cacheScopeId:undefined,backendInstanceId:typeof body.backendInstanceId==='string'?body.backendInstanceId:undefined,reason:typeof body.reason==='string'?body.reason:undefined},actor));
     if (jobMatch?.[2] === 'run') return json(response, 201, service.createJobRun(decodeURIComponent(jobMatch[1]), body.parameters && typeof body.parameters === 'object' && !Array.isArray(body.parameters) ? body.parameters as Record<string, unknown> : {}, actor));
     if (url.pathname === '/api/parcels') return json(response, 201, await service.submitNaturalTask(String(body.prompt ?? ''), actor));

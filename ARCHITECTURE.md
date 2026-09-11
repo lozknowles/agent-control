@@ -933,6 +933,35 @@ The optional external full-test runner publishes bounded atomic progress with ex
 
 The detailed contract, [event-to-animation mapping](docs/poe-dashboard-operator.md#state-and-animation-provenance), current [4.3 deployment guide](docs/DEPLOYMENT.md) and historical [4.1 qualification record](docs/evidence/agent-control-4.1-qualification.md) define the configuration and acceptance boundary.
 
+## 4.5 energy-minimal deterministic skill promotion
+
+Agent Control keeps three forms of reuse separate: **Your Memories** answers
+what is known, a deterministic skill answers what can already be done inside a
+validated contract, and a model reasons about novelty. The preferred hierarchy
+is deterministic result/rule → deterministic tool → validated memory retrieval
+→ governed deterministic skill → specialist → progressively stronger general
+models. Capability, confidence, policy, freshness and verification always outrank
+energy.
+
+The provider-neutral promotion lifecycle is `reason → verify → observe repeated
+Work Parcels → candidate → validate → explicit promote → deterministic reuse →
+periodic revalidation/invalidation`. Durable records bind source parcels,
+originating route, evidence, assumptions, typed contracts, scope, version,
+freshness, invalidation conditions and a hash-identified pre-registered handler.
+Models may propose but cannot install executable code or promote themselves.
+
+The production Work Parcel Action rechecks handler identity and applicability
+before execution and runs an independent deterministic invariant afterward.
+Novel fields, stale evidence, conflicting or invalid memory, environment/contract
+change and failed verification result in a durable `ESCALATE_MODEL` decision.
+Successful escalations become candidate evidence only after governance; there is
+no online self-modification.
+
+Project memory may retrieve a validated skill identity without injecting memory
+text into a model. Learned specialist adapters remain a separate layer for fuzzy
+bounded domains that cannot safely become deterministic. Warm-cache state is
+orthogonal to both.
+
 ## Release boundary
 
 Earlier version tags remain immutable source releases. Agent Control 4.0.0 integrates Crew/WOPR, adaptive orchestration, protected-resource governance, Social & Voice/OpenWA provenance and Live Shell. The source release does not deploy services, expose a remote ACP listener, broaden sharing, enable Spark, enable Saved Jobs/Schedules or admit NVIDIA routing. Its controller-local NVIDIA credential exists only in the owner-only runtime store and is not source or evidence. The accepted 4.0 evidence adds protected-resource proof and a physical Pixel social request through adaptive Qwen-to-Codex baton handoff, independent verification, terminal delivery, dashboard/video reconciliation and additive token accounting. Current context and billed cost remain unavailable on the tested routes, so no monetary or context-occupancy claim is made. The NVIDIA catalogue remains routing-disabled: Nemotron/Muse callability is observed, MiniMax is indeterminate and Kimi K2.6 endpoint-unavailable. See the [4.0 qualification](docs/evidence/agent-control-4.0-qualification.md), [Pixel continuation](docs/evidence/agent-control-4.0-pixel-social-continuation.md), [initial NVIDIA qualification](docs/evidence/agent-control-3.9-nvidia-hosted-qualification-20260906.md) and [focused diagnostics](docs/evidence/agent-control-3.9-nvidia-focused-diagnostics-20260906.md).
