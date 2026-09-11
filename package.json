@@ -67,7 +67,9 @@
     "qualify:cross-model-memory": "node --import tsx scripts/qualify-cross-model-memory-4.5.ts",
     "qualify:memory-consolidation": "node --import tsx scripts/qualify-memory-conditions-consolidation-4.5.ts",
     "record:cross-model-memory": "node --import tsx scripts/record-cross-model-memory-4.5.ts",
-    "qualify:energy-efficiency": "node --import tsx scripts/qualify-energy-efficiency-4.5.ts"
+    "qualify:energy-efficiency": "node --import tsx scripts/qualify-energy-efficiency-4.5.ts",
+    "qualify:specialist-energy": "node --import tsx scripts/qualify-specialist-energy-4.5.ts",
+    "qualify:power-aware-poe": "node --import tsx scripts/qualify-power-aware-poe-4.5.ts"
   },
   "dependencies": {
     "@agentclientprotocol/sdk": "1.4.0",
