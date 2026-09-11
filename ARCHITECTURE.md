@@ -722,6 +722,53 @@ The failed invocation remains a failed Work Parcel leg with its own duration and
 
 OpenAI-compatible HTTP waits use a dedicated dispatcher whose header/body timers do not pre-empt Agent Control's bounded invocation `AbortSignal`. Native Undici timeout codes and opaque transport failures are normalized at the adapter boundary, not interpreted by core routing policy. This does not claim control over provider-side, proxy or network deadlines: an external timeout remains an observed provider/transport boundary and is classified from the available evidence.
 
+## Governed UX Session Capture and Interactive Replay (4.4 development)
+
+`UxSessionRecord` is an immutable, content-hashed projection of evidence Agent
+Control already owns. It is not a scheduler, screen recorder, provider log,
+telemetry database or second event ledger. Live Runs continue to own Job, Work
+Parcel, route, baton, gate, provider, token, cache, memory and verification
+facts. `ExecutionHistoryProjection` remains the generic source for ordinary
+Runs; historical qualification import binds an exact Git object and its
+SHA-256. Unknown facts remain unavailable.
+
+```text
+Run / Work Parcel / POE / Crew / provider / ContextGraph / evidence
+                              |
+                  deterministic safe projection
+                              v
+                 sealed UxSessionRecord + SHA-256
+                    /        |        |        \
+          interactive      MP4   transcript   digest
+             replay                    |
+                    common session ID + manifest
+```
+
+Audience policy is applied when a representation is rendered, not by weakening
+canonical evidence. `UX_ONLY` and `UX_INTERACTIONS` are intentionally sparse;
+`EXECUTION_OVERVIEW` adds route/lane/gate outcome; `SANITISED_DIAGNOSTIC` adds
+declared bounded input/output and tool detail; `AUTHORISED_FULL_EVIDENCE`
+remains operator-authenticated. Every projection is independently passed
+through the ordinary credential redactor and sensitive-material assertion.
+Undeclared fields fail closed by construction.
+
+A share record contains session identity/hash, audience, expiry/revocation and
+only the SHA-256 of a random capability. The one-time capability travels in the
+URL fragment, so it is not sent in the initial HTTP request or referrer; the
+player moves it into a bearer header for the bounded share API and removes it
+from browser history. The API is read-only and exposes no dashboard mutation,
+shell, repository, filesystem or rerun route. Annotations are a separate
+overlay tied to session and event hashes; operator authority may associate one
+with a later Work Parcel without altering the session.
+
+Memory replay is provider-neutral. It records requested, provenance-validated,
+accepted/rejected and supplied lifecycle decisions while keeping memory content
+hidden unless separately authorised. MARM can satisfy a future generic memory
+port, but neither the record nor player depends on MARM.
+
+See [UX Session Replay](docs/ux-session-replay.md) and the
+[physical qualification](docs/evidence/agent-control-4.4-ux-session-replay-20260911.md).
+
 ## Human-readable execution history (3.8.2)
 
 `Durable Job Run + Work Parcel audit + token/governor evidence + sealed baton state → bounded redacted projection → AgentControlService → existing HTTP/SSE dashboard`
