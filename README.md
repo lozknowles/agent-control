@@ -1,5 +1,7 @@
 # Agent Control 4.3.0
 
+> 4.4 development note: an isolated MARM-backed physical experiment has qualified provenance-preserving consolidated memory as a useful provider-neutral technique, not as authoritative state or a mandatory dependency. The same local model retained 8/8 correct answers while supplied context fell 90.87% and provider input fell 79.50%; retrieval latency increased and monetary saving remained unavailable. See the [memory architecture review](docs/memory-architecture-review.md) and [physical evidence](docs/evidence/agent-control-4.4-marm-memory-qualification-20260911.md). No 4.4 memory runtime is released from this branch.
+
 Agent Control runs governed parameterised jobs against qualified execution and model resources. It is an infrastructure-neutral, policy-controlled adaptive harness for durable work by heterogeneous agents and models. Its executable harness core composes a task-appropriate worker, provider/model route, prompt profile, minimum qualified skills, restricted tools, context strategy, runtime settings, authority snapshot, resource limits and verification/escalation policy into a fingerprinted execution recipe.
 
 ## Agent Control 4.3 release-qualified status

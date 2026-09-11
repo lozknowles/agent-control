@@ -1,5 +1,12 @@
 # Changelog
 
+## [Unreleased] — Agent Control 4.4 memory architecture experiment
+
+- Inspects MARM 2.48.0 source at pinned upstream commit `0b4013de9e854fccd211d7fdb8e35ff6596ec4a1` and compares its persistence, recall, deduplication, compaction, scoping, concurrency and lifecycle mechanisms with Agent Control's existing governed retrieval, ContextGraph, Work Parcels, batons and evidence.
+- Adds an isolated six-stage governed A/B qualification over real Agent Control history. Both arms passed 8/8 frozen questions; provenance-bound semantic memory reduced supplied context by 90.87% and provider input by 79.50%, but did not reduce represented source files or latency and provided no monetary-cost evidence.
+- Physically rejects stale-source, superseded, cross-project, cross-session, unverified, incomplete and incorrect memories. Models propose compact text only; Agent Control binds and revalidates authoritative Evidence Packet provenance.
+- Recommends **C — GENERIC MEMORY ABSTRACTION** with MARM as an optional backend. This branch contains the review and qualification harness, not a released memory runtime or automatic idle model swapping.
+
 ## [4.3.0] — 2026-09-09
 
 - Integrated the 4.2 Transport Context and 4.3 Warm Expert lines onto current 4.1 main without replacing either runtime wholesale; preserved POE, Crew/WOPR, Live Shell, protected-resource governance, provider/account routing, retries, recovery and human-readable execution history.
