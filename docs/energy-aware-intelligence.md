@@ -8,9 +8,13 @@ verified result, the retained specialist used 22.674 J, the cold specialist used
 85.673 J, and the real ProjectMemoryPort variant used 85.865 J. Deterministic
 zero-LLM routing used 0.121 J. See the [physical specialist-energy evidence](evidence/agent-control-4.5-specialist-energy-qualification-20260911.md).
 
-The intended hierarchy is:
+The qualified working hierarchy is:
 
-`Remember → Retrieve → Reuse → Specialist → Small Generalist → Strong Generalist → Premium Reasoner`
+`Known deterministic result/rule → deterministic tool → validated Your Memories retrieval → governed deterministic skill → specialist → small generalist → strong generalist → premium reasoner`
+
+A lower layer is bypassed whenever capability, confidence, policy, freshness or
+verification requires escalation. The objective is expected energy to verified
+completion, including failed-attempt and fallback energy—not model size.
 
 ## Measurement contract
 
@@ -48,11 +52,21 @@ produce a saving. Training consumed 5,232.820 incremental measured-component
 joules and there is no positive break-even because the per-result saving is
 negative. The 4.5 power-aware release gate is therefore **not met**.
 
+The subsequent deterministic-skill experiment does not reverse that specialist
+finding. It physically measured three recurring operations. Repository state
+averaged 13.188 J for a Qwen teacher result and 0.072 J for deterministic reuse
+(99.45% reduction); test-result interpretation averaged 20.070 J versus 0.127 J
+(99.37%). Both amortised the first reasoned result on occurrence two.
+Baton-integrity reuse measured zero *incremental* joules after idle-baseline
+subtraction; this is not a zero-gross-energy claim. A novel repository field
+rejected the deterministic route and a 27.941 J Qwen escalation passed.
+
 Reproduce the bounded sensor/provider probe with:
 
 ```bash
 npm run qualify:energy-efficiency
 npm run qualify:specialist-energy
+npm run qualify:deterministic-skills
 ```
 
 `poeEnergyDigest` provides the human-readable operator result. It reports

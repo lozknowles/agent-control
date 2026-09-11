@@ -254,6 +254,12 @@
     "maximumQualificationAgeDays": 90,
     "requireHumanDatasetApproval": true
   },
+  "deterministicSkills": {
+    "enabled": true,
+    "routingEnabled": false,
+    "minimumDistinctParcels": 3,
+    "maximumValidationAgeDays": 90
+  },
   "services": [
     {
       "id": "local-model-service",

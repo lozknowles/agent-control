@@ -1,5 +1,16 @@
 # Agent Control 4.5.0 candidate
 
+Agent Control 4.5 now tests an energy-minimal execution hierarchy: known
+deterministic result, deterministic tool, validated **Your Memories** lookup,
+governed deterministic skill, specialist model, small general model, stronger
+general model, then premium reasoner. Repeated verified model reasoning can be
+nominated—but never automatically promoted—as a versioned deterministic skill
+whose handler identity, source Work Parcels, contracts, assumptions, freshness,
+invalidation conditions and independent verifier are durable. Contract mismatch,
+novel state, stale evidence or failed verification escalates instead of forcing
+reuse. See the [skill promotion guide](docs/deterministic-skill-promotion.md) and
+[physical evidence](docs/evidence/agent-control-4.5-deterministic-skill-promotion-20260911.md).
+
 Agent Control 4.5 adds governed local skill learning: a repeated bounded task may
 be proposed as a candidate, but training begins only after an approved,
 provenance-bound dataset and frozen baseline exist. A learned specialist is the

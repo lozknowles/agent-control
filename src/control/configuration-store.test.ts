@@ -59,3 +59,7 @@ test('configuration store persists the Warm Expert policy through the existing r
   assert.equal(updated.restartRequired,true);assert.deepEqual(updated.cacheAwareExperts,policy);assert.deepEqual(new ConfigurationStore(store.file).read().cacheAwareExperts,policy);
   assert.throws(()=>store.updateCacheAwareExperts({revision:updated.revision,cacheAwareExperts:{...policy,warmMinutes:5}}),/invalid_cache_aware_experts_lifecycle_order/);
 });
+
+test('configuration store persists deterministic skill policy through the revision gate',t=>{
+  const{root,store}=setup();t.after(()=>fs.rmSync(root,{recursive:true,force:true}));const policy={enabled:true,routingEnabled:false,minimumDistinctParcels:3,maximumValidationAgeDays:90},updated=store.updateDeterministicSkills({revision:store.read().revision,deterministicSkills:policy});assert.equal(updated.restartRequired,true);assert.deepEqual(updated.deterministicSkills,policy);assert.deepEqual(new ConfigurationStore(store.file).read().deterministicSkills,policy);
+});

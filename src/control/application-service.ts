@@ -39,6 +39,7 @@ import type {PoeBenchmarkProposalInput, PoeEvidenceResult, PoeObjectReference, P
 import type {CacheAwareExpertRuntime} from './cache-aware-expert.js';
 import type {SkillLearningRuntime} from './skill-learning.js';
 import type {EnergyTelemetryRuntime} from './energy-telemetry.js';
+import type {DeterministicSkillRuntime} from './deterministic-skill.js';
 
 export type ControlEventType =
   | 'social.activity'
@@ -198,6 +199,7 @@ export class AgentControlService {
   private cacheExperts?: CacheAwareExpertRuntime;
   private learnedSkills?: SkillLearningRuntime;
   private energyTelemetry?: EnergyTelemetryRuntime;
+  private deterministicSkills?: DeterministicSkillRuntime;
 
   constructor(
     readonly state: WorkspaceState,
@@ -210,7 +212,7 @@ export class AgentControlService {
     this.verification = new VerificationService(state, persist);
   }
 
-  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; services?: RegisteredService[]; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService; tokenBatonRouting?: TokenAwareBatonRuntime; governedRetrieval?: GovernedRetrievalRuntime; codexNodeExecution?: CodexNodeExecutionPort; harnessEfficiency?: HarnessEfficiencyLedgerPort; workParcels?: WorkParcelCoordinator; modelRegistry?: ModelRegistry; parameterizedJobs?: ParameterizedJobEngine; identity?: IdentityControlPlane; defaultSessionId?: string; fastExecution?: FastExecutionLedgerPort; runtimeObservability?: RuntimeObservability; capabilityIntelligence?: CapabilityIntelligenceStore; modelIntelligence?: ModelIntelligenceLedger; qualificationSuite?: FrozenQualificationSuite; providerCatalog?: ProviderCatalogRuntime; adaptiveOrchestration?: AdaptiveOrchestrationRuntime; executionSessions?: ExecutionSessionRuntime; poe?: PoeRuntime; cacheExperts?: CacheAwareExpertRuntime; learnedSkills?: SkillLearningRuntime; energyTelemetry?: EnergyTelemetryRuntime}) {
+  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; services?: RegisteredService[]; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService; tokenBatonRouting?: TokenAwareBatonRuntime; governedRetrieval?: GovernedRetrievalRuntime; codexNodeExecution?: CodexNodeExecutionPort; harnessEfficiency?: HarnessEfficiencyLedgerPort; workParcels?: WorkParcelCoordinator; modelRegistry?: ModelRegistry; parameterizedJobs?: ParameterizedJobEngine; identity?: IdentityControlPlane; defaultSessionId?: string; fastExecution?: FastExecutionLedgerPort; runtimeObservability?: RuntimeObservability; capabilityIntelligence?: CapabilityIntelligenceStore; modelIntelligence?: ModelIntelligenceLedger; qualificationSuite?: FrozenQualificationSuite; providerCatalog?: ProviderCatalogRuntime; adaptiveOrchestration?: AdaptiveOrchestrationRuntime; executionSessions?: ExecutionSessionRuntime; poe?: PoeRuntime; cacheExperts?: CacheAwareExpertRuntime; learnedSkills?: SkillLearningRuntime; deterministicSkills?:DeterministicSkillRuntime; energyTelemetry?: EnergyTelemetryRuntime}) {
     if (extras.approvalCount) this.approvalCount = extras.approvalCount;
     if (extras.resources) this.resourceRows = structuredClone(extras.resources);
     if (extras.services) this.serviceRows = structuredClone(extras.services);
@@ -239,6 +241,7 @@ export class AgentControlService {
     if (extras.cacheExperts) this.cacheExperts = extras.cacheExperts;
     if (extras.learnedSkills) this.learnedSkills = extras.learnedSkills;
     if (extras.energyTelemetry) this.energyTelemetry = extras.energyTelemetry;
+    if (extras.deterministicSkills) this.deterministicSkills=extras.deterministicSkills;
     return this;
   }
 
@@ -469,6 +472,7 @@ export class AgentControlService {
   adaptiveDecisions() { return this.adaptiveOrchestration?.decisions() ?? []; }
   cacheExpertRegistry() { const decisions = this.cacheExperts?.decisions() ?? []; return {schema: 'agent-control.cache-expert-registry-projection/v1', policy: this.cacheExperts?.policy ?? null, experts: this.cacheExperts?.records() ?? [], decisions: decisions.map(item => ({...item, humanReadable: this.cacheExperts!.humanReadable(item.id)})), observedAt: new Date().toISOString()}; }
   learnedSpecialists() { return this.learnedSkills?.projection() ?? {schema:'agent-control.learned-specialists/v1',observedAt:new Date().toISOString(),policy:null,candidates:[],specialists:[],routing:[]}; }
+  deterministicSkillProjection(){return this.deterministicSkills?.projection()??{schema:'agent-control.deterministic-skills/v1',observedAt:new Date().toISOString(),policy:null,skills:[],decisions:[],executions:[]};}
   energyProjection() { return this.energyTelemetry?.projection() ?? {schema:'agent-control.energy-telemetry/v1',observedAt:new Date().toISOString(),baselines:[],executions:[],decisions:[],totals:{measuredExecutions:0,verifiedSuccessful:0,wholeNodeMeasurements:0}}; }
   invalidateCacheExperts(input: {providerId?: string; modelId?: string; sessionId?: string; cacheScopeId?: string; backendInstanceId?: string; reason?: string}, actor: string) {
     if (!this.cacheExperts) throw new Error('cache_experts_unconfigured');

@@ -1,0 +1,339 @@
+{
+  "version": 1,
+  "decisions": [
+    {
+      "schema": "agent-control.adaptive-decision/v1",
+      "id": "orchestration-a9fae4f6-3cce-4050-b7e0-13dcc4fe579e",
+      "parcelId": "parcel-social-85570271f55c9a401f48a34d980cba69980758e8dbe856e80d0173f4598cf2af",
+      "createdAt": "2026-09-11T21:19:36.553Z",
+      "updatedAt": "2026-09-11T21:19:36.603Z",
+      "request": {
+        "objectiveFingerprint": "sha256:6e7f1bfe4c44064db3f4bc4d37446ba01aff5783b42c707a9c8097908d49aa4e",
+        "taskClass": "other",
+        "requiredCapabilities": [],
+        "policy": {
+          "enabled": true,
+          "minimumSamplesForPreference": 3,
+          "minimumQualityScore": 0.7,
+          "maxEvidenceAgeDays": 90,
+          "policyQualityFloor": 0.6,
+          "maxRouteCost": null,
+          "maxRouteLatencyMs": null,
+          "qualityWeight": 0.5,
+          "reliabilityWeight": 0.2,
+          "costWeight": 0.15,
+          "latencyWeight": 0.1,
+          "confidenceWeight": 0.05,
+          "explorationRate": 0.1
+        },
+        "workflowId": "work-parcel-coordinator"
+      },
+      "nodes": [
+        {
+          "id": "decision-node-d36f036a-fab9-4a02-9427-4541796df807",
+          "at": "2026-09-11T21:19:36.554Z",
+          "kind": "REQUEST",
+          "status": "OBSERVED",
+          "facts": {
+            "parcelId": "parcel-social-85570271f55c9a401f48a34d980cba69980758e8dbe856e80d0173f4598cf2af",
+            "objectiveFingerprint": "sha256:6e7f1bfe4c44064db3f4bc4d37446ba01aff5783b42c707a9c8097908d49aa4e"
+          }
+        },
+        {
+          "id": "decision-node-cddd00f1-4b71-44c7-995d-edba76d20ae9",
+          "at": "2026-09-11T21:19:36.554Z",
+          "parentId": "decision-node-d36f036a-fab9-4a02-9427-4541796df807",
+          "kind": "CLASSIFICATION",
+          "status": "SELECTED",
+          "facts": {
+            "taskClass": "other",
+            "method": "governed-task-classifier"
+          }
+        },
+        {
+          "id": "decision-node-5515c879-7659-458b-9873-c2e4629b134a",
+          "at": "2026-09-11T21:19:36.554Z",
+          "parentId": "decision-node-cddd00f1-4b71-44c7-995d-edba76d20ae9",
+          "kind": "REQUIRED_CAPABILITIES",
+          "status": "OBSERVED",
+          "facts": {
+            "capabilities": []
+          }
+        },
+        {
+          "id": "decision-node-ae7f6bd7-aee2-46f4-afbf-998c4f4c71a4",
+          "at": "2026-09-11T21:19:36.554Z",
+          "parentId": "decision-node-5515c879-7659-458b-9873-c2e4629b134a",
+          "kind": "POLICY",
+          "status": "PASSED",
+          "facts": {
+            "enabled": true,
+            "minimumSamplesForPreference": 3,
+            "minimumQualityScore": 0.7,
+            "maxEvidenceAgeDays": 90,
+            "policyQualityFloor": 0.6,
+            "maxRouteCost": null,
+            "maxRouteLatencyMs": null,
+            "qualityWeight": 0.5,
+            "reliabilityWeight": 0.2,
+            "costWeight": 0.15,
+            "latencyWeight": 0.1,
+            "confidenceWeight": 0.05,
+            "explorationRate": 0.1
+          }
+        },
+        {
+          "id": "decision-node-18ec7399-4d1e-436b-a7ec-85ba2927a4dd",
+          "at": "2026-09-11T21:19:36.561Z",
+          "parentId": "decision-node-ae7f6bd7-aee2-46f4-afbf-998c4f4c71a4",
+          "kind": "ELIGIBLE_CANDIDATES",
+          "status": "REJECTED",
+          "facts": {
+            "stageId": "repository-state",
+            "candidates": []
+          }
+        },
+        {
+          "id": "decision-node-93b0c9c9-12ad-49aa-8ccc-b1bd127483c1",
+          "at": "2026-09-11T21:19:36.561Z",
+          "parentId": "decision-node-18ec7399-4d1e-436b-a7ec-85ba2927a4dd",
+          "kind": "LEAGUE_EVIDENCE",
+          "status": "EXCLUDED",
+          "facts": {
+            "stageId": "repository-state",
+            "evidence": []
+          }
+        },
+        {
+          "id": "decision-node-98b476fa-1c83-4890-a213-4ddaf42b1f45",
+          "at": "2026-09-11T21:19:36.561Z",
+          "parentId": "decision-node-93b0c9c9-12ad-49aa-8ccc-b1bd127483c1",
+          "kind": "TRADEOFF",
+          "status": "REJECTED",
+          "facts": {
+            "stageId": "repository-state",
+            "selected": "none",
+            "reason": "No eligible qualified route",
+            "score": null,
+            "estimatedCost": null,
+            "costAuthority": "unavailable",
+            "latencyMs": null,
+            "quality": null,
+            "confidence": 0
+          }
+        },
+        {
+          "id": "decision-node-302d1bb6-877d-4210-b4e5-61f1f5638334",
+          "at": "2026-09-11T21:19:36.561Z",
+          "parentId": "decision-node-98b476fa-1c83-4890-a213-4ddaf42b1f45",
+          "kind": "ROUTE",
+          "status": "REJECTED",
+          "facts": {
+            "stageId": "repository-state",
+            "reason": "No eligible qualified route"
+          }
+        },
+        {
+          "id": "decision-node-15d76bbf-eda7-4dfe-9a74-67e54e17c456",
+          "at": "2026-09-11T21:19:36.562Z",
+          "parentId": "decision-node-302d1bb6-877d-4210-b4e5-61f1f5638334",
+          "kind": "ELIGIBLE_CANDIDATES",
+          "status": "PASSED",
+          "facts": {
+            "stageId": "repository-state",
+            "workflows": [
+              {
+                "workflow": "work-parcel-coordinator@1",
+                "status": "eligible",
+                "reasons": [],
+                "evidenceSample": 0,
+                "confidence": 0,
+                "quality": null,
+                "score": 0.475,
+                "estimatedCost": null,
+                "costAuthority": "unavailable",
+                "latencyMs": null
+              }
+            ]
+          }
+        },
+        {
+          "id": "decision-node-9eb6efa2-0d3f-4d86-b0ff-d143cfd93bf0",
+          "at": "2026-09-11T21:19:36.562Z",
+          "parentId": "decision-node-15d76bbf-eda7-4dfe-9a74-67e54e17c456",
+          "kind": "LEAGUE_EVIDENCE",
+          "status": "OBSERVED",
+          "facts": {
+            "stageId": "repository-state",
+            "workflows": [
+              {
+                "workflow": "work-parcel-coordinator@1",
+                "evidenceSample": 0,
+                "totalObservations": 0,
+                "confidence": 0,
+                "quality": null,
+                "evidenceAgeDays": null,
+                "trend": "unknown"
+              }
+            ]
+          }
+        },
+        {
+          "id": "decision-node-3ee5a6d6-9434-45e0-bb70-4eca4a368f34",
+          "at": "2026-09-11T21:19:36.563Z",
+          "parentId": "decision-node-9eb6efa2-0d3f-4d86-b0ff-d143cfd93bf0",
+          "kind": "TRADEOFF",
+          "status": "SELECTED",
+          "facts": {
+            "stageId": "repository-state",
+            "workflow": "work-parcel-coordinator@1",
+            "score": 0.475,
+            "evidenceSample": 0,
+            "sparseEvidence": true,
+            "exploration": false,
+            "reason": "No workflow candidate has sufficient evidence; declared policy order retained"
+          }
+        },
+        {
+          "id": "decision-node-981beff6-1575-4368-ac2b-73ea26054e3e",
+          "at": "2026-09-11T21:19:36.603Z",
+          "parentId": "decision-node-3ee5a6d6-9434-45e0-bb70-4eca4a368f34",
+          "kind": "EXECUTION",
+          "status": "OBSERVED",
+          "facts": {
+            "stageId": "repository-state",
+            "route": "workflow-only",
+            "outcome": "SUCCEEDED",
+            "evidenceKind": "PRODUCTION_WORK_PARCEL",
+            "evidenceId": "parcel-social-85570271f55c9a401f48a34d980cba69980758e8dbe856e80d0173f4598cf2af:repository-state:workflow:work-parcel-coordinator@1:SUCCEEDED",
+            "verified": true,
+            "qualityScore": null,
+            "qualityGatePass": true,
+            "latencyMs": null,
+            "tokens": {
+              "inputTokens": null,
+              "outputTokens": null,
+              "totalTokens": null,
+              "cachedInputTokens": null
+            },
+            "cost": {
+              "amount": null,
+              "currency": null,
+              "authority": "unavailable",
+              "localComputeCost": null,
+              "localAuthority": "unavailable"
+            },
+            "failureClass": null
+          }
+        },
+        {
+          "id": "decision-node-40831ca2-c153-4d3c-bd74-50335cc2ed33",
+          "at": "2026-09-11T21:19:36.603Z",
+          "parentId": "decision-node-981beff6-1575-4368-ac2b-73ea26054e3e",
+          "kind": "QUALITY_GATE",
+          "status": "PASSED",
+          "facts": {
+            "stageId": "repository-state",
+            "verified": true,
+            "qualityGatePass": true,
+            "countsTowardQuality": true,
+            "failureClass": "none"
+          }
+        },
+        {
+          "id": "decision-node-7a04bf0c-3386-4468-b8ef-d1b444fce904",
+          "at": "2026-09-11T21:19:36.603Z",
+          "parentId": "decision-node-40831ca2-c153-4d3c-bd74-50335cc2ed33",
+          "kind": "VERIFICATION",
+          "status": "PASSED",
+          "facts": {
+            "stageId": "repository-state",
+            "outcome": "SUCCEEDED",
+            "authority": "independent-verifier"
+          }
+        },
+        {
+          "id": "decision-node-4e73aed3-74ba-4656-93de-dde2490ab4a9",
+          "at": "2026-09-11T21:19:36.603Z",
+          "parentId": "decision-node-7a04bf0c-3386-4468-b8ef-d1b444fce904",
+          "kind": "EVIDENCE_UPDATE",
+          "status": "PASSED",
+          "facts": {
+            "stageId": "repository-state",
+            "evidenceId": "parcel-social-85570271f55c9a401f48a34d980cba69980758e8dbe856e80d0173f4598cf2af:repository-state:workflow:work-parcel-coordinator@1:SUCCEEDED",
+            "modelLeagueUpdated": false,
+            "workflowLeagueUpdated": true,
+            "operationalFailureRecorded": false
+          }
+        }
+      ],
+      "routeHistory": [],
+      "outcomes": [
+        {
+          "id": "parcel-social-85570271f55c9a401f48a34d980cba69980758e8dbe856e80d0173f4598cf2af:repository-state:workflow:work-parcel-coordinator@1:SUCCEEDED",
+          "at": "2026-09-11T21:19:36.603Z",
+          "stageId": "repository-state",
+          "route": null,
+          "workflow": {
+            "id": "work-parcel-coordinator",
+            "version": "1"
+          },
+          "outcome": "SUCCEEDED",
+          "verified": true,
+          "countsTowardQuality": true,
+          "failureClass": null
+        }
+      ],
+      "selectedWorkflow": {
+        "workflow": {
+          "id": "work-parcel-coordinator",
+          "version": "1"
+        },
+        "score": 0.475,
+        "reason": "No workflow candidate has sufficient evidence; declared policy order retained",
+        "evidenceSample": 0,
+        "sparseEvidence": true
+      }
+    }
+  ],
+  "modelEvidence": [],
+  "workflowEvidence": [
+    {
+      "id": "parcel-social-85570271f55c9a401f48a34d980cba69980758e8dbe856e80d0173f4598cf2af:repository-state:workflow:work-parcel-coordinator@1:SUCCEEDED",
+      "decisionId": "orchestration-a9fae4f6-3cce-4050-b7e0-13dcc4fe579e",
+      "parcelId": "parcel-social-85570271f55c9a401f48a34d980cba69980758e8dbe856e80d0173f4598cf2af",
+      "stageId": "repository-state",
+      "taskClass": "other",
+      "evidenceKind": "PRODUCTION_WORK_PARCEL",
+      "route": null,
+      "capabilities": [],
+      "workflow": {
+        "id": "work-parcel-coordinator",
+        "version": "1"
+      },
+      "outcome": "SUCCEEDED",
+      "verified": true,
+      "countsTowardQuality": true,
+      "qualityScore": null,
+      "qualityGatePass": true,
+      "firstPass": null,
+      "retryCount": 0,
+      "escalationCount": 0,
+      "latencyMs": null,
+      "usage": {
+        "inputTokens": null,
+        "outputTokens": null,
+        "totalTokens": null,
+        "cachedInputTokens": null,
+        "localComputeCost": null
+      },
+      "cost": null,
+      "currency": null,
+      "costAuthority": "unavailable",
+      "localComputeCost": null,
+      "localCostAuthority": "unavailable",
+      "failureClass": null,
+      "observedAt": "2026-09-11T21:19:36.603Z"
+    }
+  ]
+}

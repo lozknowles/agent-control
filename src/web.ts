@@ -113,6 +113,7 @@ const service = new AgentControlService(state, ptys, providers).configureProject
   executionSessions,
   cacheExperts: jobRuntime.cacheExperts,
   learnedSkills: jobRuntime.learnedSkills,
+  deterministicSkills: jobRuntime.deterministicSkills,
   energyTelemetry: jobRuntime.energyTelemetry,
 });
 let poeSpeech: import('./control/social-voice-providers.js').SpeechProvider | undefined;
@@ -132,7 +133,7 @@ const knowledge = new PoeKnowledgeService({root:process.cwd(),version:AGENT_CONT
   if(category==='voice')return {channel:'poe/dashboard',configured:Boolean(poeVoice&&poeSpeech&&poeRecognition),identity:poeVoice?.id??null,synthesisProvider:poeVoice?.provider??null,recognitionEngine:'Not established by this configuration; do not infer from the synthesis provider.',recognitionConfigured:Boolean(poeRecognition),synthesisConfigured:Boolean(poeSpeech),streaming:poeSpeech?.capabilities().streaming??false,readiness:'CONFIGURED_NOT_A_HEALTH_PROBE',whatsapp:'SEPARATE_CHANNEL_NOT_OBSERVED'};
   if(category==='regression')return readPoeRegression(process.env.AGENT_CONTROL_POE_REGRESSION_FILE);
   if(category==='crew')return snapshot.characterCrew.members.map(member=>({id:member.id,name:member.name,role:member.role,state:member.operationalState,summary:member.summary,freshness:member.freshness}));
-  if(category==='models')return {models:service.models(),providers:snapshot.providers,routing:config.modelRouting,learnedSpecialists:service.learnedSpecialists()};
+  if(category==='models')return {models:service.models(),providers:snapshot.providers,routing:config.modelRouting,learnedSpecialists:service.learnedSpecialists(),deterministicSkills:service.deterministicSkillProjection()};
   if(category==='lanes')return {systems:service.systems(),lanes:snapshot.lanes.map(lane=>({id:lane.id,name:lane.name,status:lane.status,model:lane.model,baton:lane.baton}))};
   if(category==='work')return service.parcels().slice(-20).map(parcel=>({id:parcel.id,status:parcel.status,stages:parcel.stages.map(stage=>({id:stage.id,name:stage.name,job:stage.job,status:stage.status,runId:stage.runId,route:stage.actualRoute})),verification:parcel.context?.criteria.map(c=>({id:c.id,status:c.status,evidence:c.evidence}))}));
   if(category==='handoffs')return {handoffs:service.runtime().handoffs,decisions:service.tokenRouting().decisions.slice(-12)};

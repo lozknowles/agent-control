@@ -7,7 +7,7 @@ test('implementation-status registry resolves every executable claim to source a
   const registry = loadImplementationStatus();
   assert.ok(registry.capabilities.length >= 10);
   assert.ok(registry.capabilities.some(item => item.id === 'jobs.model-backed-action' && item.status === 'QUALIFIED'));
-  assert.ok(registry.capabilities.some(item => item.id === 'skills.governed-lifecycle' && item.status === 'PLANNED'));
+  assert.ok(registry.capabilities.some(item => item.id === 'skills.governed-lifecycle' && item.status === 'QUALIFIED'));
   assert.equal(fs.readFileSync('docs/implementation-status.md', 'utf8'), renderImplementationStatus(registry));
 });
 

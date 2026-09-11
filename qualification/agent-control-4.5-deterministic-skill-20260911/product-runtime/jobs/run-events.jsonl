@@ -1,0 +1,6 @@
+{"at":"2026-09-11T21:19:36.565Z","runId":"run-e9dc57a3-bee3-4ab7-ba7a-07d7db2638f5","type":"run.created","status":"QUEUED"}
+{"at":"2026-09-11T21:19:36.580Z","runId":"run-e9dc57a3-bee3-4ab7-ba7a-07d7db2638f5","type":"step.safety_allowed_with_audit","status":"QUEUED","evidence":{"decisionId":"safety-829c4f97-f241-4144-9039-0cb2682919d5","outcome":"ALLOW_WITH_AUDIT","policyId":"agent-control.runtime-safety/v1"}}
+{"at":"2026-09-11T21:19:36.583Z","runId":"run-e9dc57a3-bee3-4ab7-ba7a-07d7db2638f5","type":"step.dispatched","status":"RUNNING"}
+{"at":"2026-09-11T21:19:36.593Z","runId":"run-e9dc57a3-bee3-4ab7-ba7a-07d7db2638f5","type":"step.verifying","status":"VERIFYING"}
+{"at":"2026-09-11T21:19:36.595Z","runId":"run-e9dc57a3-bee3-4ab7-ba7a-07d7db2638f5","type":"step.succeeded","status":"VERIFYING"}
+{"at":"2026-09-11T21:19:36.598Z","runId":"run-e9dc57a3-bee3-4ab7-ba7a-07d7db2638f5","type":"run.finished","status":"SUCCEEDED"}

@@ -1,0 +1,47 @@
+{
+  "schema": "agent-control.deterministic-skill-video-evidence/v1",
+  "verdict": "PASS_PHYSICAL_VIDEO",
+  "qualifiedAt": "2026-09-11T21:21:45.768Z",
+  "session": {
+    "id": "ux-agent-control-4.5-deterministic-skills",
+    "sha256": "8ccea10f198c84a2583c8ccf78373fc6eb9beb5d5fd8b957ab76bb6b94b1314e"
+  },
+  "generated": [
+    {
+      "file": "agent-control-4.5-deterministic-skill-promotion.mp4",
+      "bytes": 4361179,
+      "sha256": "5691a1c4d5b8402cfcb02d016fa494e01182b79fd3b302b8fbcdd07c58717b1a"
+    },
+    {
+      "file": "deterministic-skill-replay.png",
+      "bytes": 977011,
+      "sha256": "01a34af4b44485a265708d9597295edbd0581ba9111583ceb8450ea225163675"
+    },
+    {
+      "file": "canonical-session.json",
+      "bytes": 11232,
+      "sha256": "4c1404179be8e8f23b071c5668bd52d036369ba48c34d2ff324cef4b2c327b63"
+    },
+    {
+      "file": "complete-human-readable-transcript.md",
+      "bytes": 7155,
+      "sha256": "e22e784a68d4166654973c6ce182552df31cc3582bcf4d9ea99d46027509fd9b"
+    }
+  ],
+  "videoInfo": {
+    "programs": [],
+    "streams": [
+      {
+        "codec_name": "h264",
+        "width": 1920,
+        "height": 1080,
+        "r_frame_rate": "25/1"
+      }
+    ],
+    "format": {
+      "duration": "33.960000",
+      "size": "4361179"
+    }
+  },
+  "browserErrors": []
+}

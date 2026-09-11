@@ -1,0 +1,337 @@
+{
+  "schema": "agent-control.ux-session/v1",
+  "id": "ux-agent-control-4.5-deterministic-skills",
+  "title": "Reason Once, Execute Many — Physical Qualification",
+  "startedAt": "2026-09-11T21:19:36.546Z",
+  "completedAt": "2026-09-11T21:19:36.611Z",
+  "sources": [
+    {
+      "kind": "qualification-evidence",
+      "reference": "/fast/work/agent-control-4.5-skill-learning/qualification/agent-control-4.5-deterministic-skill-20260911/qualification.json",
+      "sha256": "b79a19cb2aea31266eb6ac171ffbdd86f9adcf1f78c7130161db20dea04f36e2",
+      "authority": "Measured physical provider calls, deterministic executions, energy samples and production Work Parcel"
+    }
+  ],
+  "events": [
+    {
+      "parentIds": [],
+      "evidenceRefs": [],
+      "id": "audit-3bf62f30-dfa5-462a-9062-ca2722d060ca",
+      "at": "2026-09-11T21:19:36.546Z",
+      "layer": "UX",
+      "kind": "POE",
+      "title": "Task received",
+      "summary": "POE, run the governed repository-state validation for branch feature/4.5-governed-skill-learning at checkpoint a1ec025 using the lowest-energy qualified route. Show whether a model was invoked and independently verify the result.",
+      "outcome": "INFO",
+      "laneId": "poe"
+    },
+    {
+      "parentIds": [],
+      "evidenceRefs": [],
+      "id": "audit-962508cf-356b-415e-b463-288d6f1cecde",
+      "at": "2026-09-11T21:19:36.546Z",
+      "layer": "UX",
+      "kind": "POE",
+      "title": "Classified: Registered Job request",
+      "summary": "Observable inputs: 1 stage(s); planner=deterministic",
+      "outcome": "INFO",
+      "laneId": "poe"
+    },
+    {
+      "parentIds": [],
+      "evidenceRefs": [],
+      "id": "audit-2253b439-8063-4705-a33a-7afa6c2871b9",
+      "at": "2026-09-11T21:19:36.546Z",
+      "layer": "UX",
+      "kind": "POE",
+      "title": "Work Parcel selected",
+      "summary": "POE requested the lowest-energy already-qualified route",
+      "outcome": "INFO",
+      "laneId": "poe"
+    },
+    {
+      "parentIds": [],
+      "evidenceRefs": [],
+      "id": "repository-state:reason",
+      "at": "2026-09-11T21:10:42.474Z",
+      "layer": "AGENT_CONTROL",
+      "kind": "MODEL",
+      "title": "Qwen reasons about repository-state",
+      "summary": "Three distinct teacher Work Parcels independently passed. Mean measured energy 13.188 J/success.",
+      "outcome": "PASSED",
+      "laneId": "teacher",
+      "provider": "local-openai-compatible",
+      "model": "qwen2.5-3b-instruct-q4_k_m.gguf",
+      "telemetry": {
+        "inputTokens": 244,
+        "outputTokens": 33,
+        "totalTokens": 277,
+        "cachedTokens": null,
+        "cost": null,
+        "currency": null,
+        "authority": "AUTHORITATIVE"
+      }
+    },
+    {
+      "parentIds": [],
+      "evidenceRefs": [],
+      "id": "repository-state:promote",
+      "at": "2026-09-11T21:10:43.702Z",
+      "layer": "AGENT_CONTROL",
+      "kind": "SKILL",
+      "title": "Governed skill promoted — repository-state@1",
+      "summary": "Repeated evidence, typed contract, assumptions, freshness, handler SHA-256 and independent validation passed; operator explicitly promoted the bounded skill.",
+      "outcome": "PASSED",
+      "laneId": "skills"
+    },
+    {
+      "parentIds": [],
+      "evidenceRefs": [],
+      "id": "repository-state:reuse",
+      "at": "2026-09-11T21:10:43.804Z",
+      "layer": "AGENT_CONTROL",
+      "kind": "TOOL",
+      "title": "15 deterministic repetitions — repository-state",
+      "summary": "15/15 verified; 0.072 J/success; 99.45% measured reduction; break-even occurrence 2. No LLM was invoked.",
+      "outcome": "PASSED",
+      "laneId": "skills",
+      "telemetry": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "cachedTokens": null,
+        "cost": 0,
+        "currency": null,
+        "authority": "AUTHORITATIVE"
+      }
+    },
+    {
+      "parentIds": [],
+      "evidenceRefs": [],
+      "id": "test-result:reason",
+      "at": "2026-09-11T21:10:45.210Z",
+      "layer": "AGENT_CONTROL",
+      "kind": "MODEL",
+      "title": "Qwen reasons about test-result",
+      "summary": "Three distinct teacher Work Parcels independently passed. Mean measured energy 20.070 J/success.",
+      "outcome": "PASSED",
+      "laneId": "teacher",
+      "provider": "local-openai-compatible",
+      "model": "qwen2.5-3b-instruct-q4_k_m.gguf",
+      "telemetry": {
+        "inputTokens": 247,
+        "outputTokens": 38,
+        "totalTokens": 285,
+        "cachedTokens": null,
+        "cost": null,
+        "currency": null,
+        "authority": "AUTHORITATIVE"
+      }
+    },
+    {
+      "parentIds": [],
+      "evidenceRefs": [],
+      "id": "test-result:promote",
+      "at": "2026-09-11T21:10:46.574Z",
+      "layer": "AGENT_CONTROL",
+      "kind": "SKILL",
+      "title": "Governed skill promoted — test-result@1",
+      "summary": "Repeated evidence, typed contract, assumptions, freshness, handler SHA-256 and independent validation passed; operator explicitly promoted the bounded skill.",
+      "outcome": "PASSED",
+      "laneId": "skills"
+    },
+    {
+      "parentIds": [],
+      "evidenceRefs": [],
+      "id": "test-result:reuse",
+      "at": "2026-09-11T21:10:46.679Z",
+      "layer": "AGENT_CONTROL",
+      "kind": "TOOL",
+      "title": "15 deterministic repetitions — test-result",
+      "summary": "15/15 verified; 0.127 J/success; 99.37% measured reduction; break-even occurrence 2. No LLM was invoked.",
+      "outcome": "PASSED",
+      "laneId": "skills",
+      "telemetry": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "cachedTokens": null,
+        "cost": 0,
+        "currency": null,
+        "authority": "AUTHORITATIVE"
+      }
+    },
+    {
+      "parentIds": [],
+      "evidenceRefs": [],
+      "id": "baton-integrity:reason",
+      "at": "2026-09-11T21:10:48.414Z",
+      "layer": "AGENT_CONTROL",
+      "kind": "MODEL",
+      "title": "Qwen reasons about baton-integrity",
+      "summary": "Three distinct teacher Work Parcels independently passed. Mean measured energy 45.807 J/success.",
+      "outcome": "PASSED",
+      "laneId": "teacher",
+      "provider": "local-openai-compatible",
+      "model": "qwen2.5-3b-instruct-q4_k_m.gguf",
+      "telemetry": {
+        "inputTokens": 498,
+        "outputTokens": 81,
+        "totalTokens": 579,
+        "cachedTokens": null,
+        "cost": null,
+        "currency": null,
+        "authority": "AUTHORITATIVE"
+      }
+    },
+    {
+      "parentIds": [],
+      "evidenceRefs": [],
+      "id": "baton-integrity:promote",
+      "at": "2026-09-11T21:10:50.796Z",
+      "layer": "AGENT_CONTROL",
+      "kind": "SKILL",
+      "title": "Governed skill promoted — baton-integrity@1",
+      "summary": "Repeated evidence, typed contract, assumptions, freshness, handler SHA-256 and independent validation passed; operator explicitly promoted the bounded skill.",
+      "outcome": "PASSED",
+      "laneId": "skills"
+    },
+    {
+      "parentIds": [],
+      "evidenceRefs": [],
+      "id": "baton-integrity:reuse",
+      "at": "2026-09-11T21:10:50.890Z",
+      "layer": "AGENT_CONTROL",
+      "kind": "TOOL",
+      "title": "15 deterministic repetitions — baton-integrity",
+      "summary": "15/15 verified; 0.000 J/success; 100.00% measured reduction; break-even occurrence 1. No LLM was invoked.",
+      "outcome": "PASSED",
+      "laneId": "skills",
+      "telemetry": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "cachedTokens": null,
+        "cost": 0,
+        "currency": null,
+        "authority": "AUTHORITATIVE"
+      }
+    },
+    {
+      "parentIds": [],
+      "evidenceRefs": [],
+      "id": "novelty:rejected",
+      "at": "2026-09-11T21:10:52.272Z",
+      "layer": "AGENT_CONTROL",
+      "kind": "ROUTING",
+      "title": "Changed input rejected by deterministic applicability gate",
+      "summary": "Deterministic skill rejected; escalate to governed model (unexpected:submodules).",
+      "outcome": "BLOCKED",
+      "laneId": "skills"
+    },
+    {
+      "parentIds": [],
+      "evidenceRefs": [],
+      "id": "novelty:escalation",
+      "at": "2026-09-11T21:10:52.275Z",
+      "layer": "AGENT_CONTROL",
+      "kind": "MODEL",
+      "title": "Novel case escalated to Qwen",
+      "summary": "Model handled the unknown submodules field; independent verification PASS; measured energy 27.941 J. The skill was not automatically changed.",
+      "outcome": "PASSED",
+      "laneId": "teacher",
+      "provider": "local-openai-compatible",
+      "model": "qwen2.5-3b-instruct-q4_k_m.gguf",
+      "telemetry": {
+        "inputTokens": 87,
+        "outputTokens": 19,
+        "totalTokens": 106,
+        "cachedTokens": null,
+        "cost": null,
+        "currency": null,
+        "authority": "AUTHORITATIVE"
+      }
+    },
+    {
+      "parentIds": [],
+      "evidenceRefs": [
+        "parcel-social-85570271f55c9a401f48a34d980cba69980758e8dbe856e80d0173f4598cf2af"
+      ],
+      "id": "poe:work-parcel",
+      "at": "2026-09-11T21:19:36.611Z",
+      "layer": "AGENT_CONTROL",
+      "kind": "OUTCOME",
+      "title": "POE production Work Parcel independently verified",
+      "summary": "parcel-social-85570271f55c9a401f48a34d980cba69980758e8dbe856e80d0173f4598cf2af SUCCEEDED via deterministic skill repository-state@1. Model invocation avoided; energy unavailable for this orchestration-only confirmation.",
+      "outcome": "PASSED",
+      "laneId": "verifier"
+    }
+  ],
+  "lanes": [
+    {
+      "id": "poe",
+      "name": "POE",
+      "provider": "Agent Control",
+      "model": "deterministic evidence guide",
+      "outcome": "PASSED",
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "totalTokens": 0,
+      "cost": 0,
+      "currency": null
+    },
+    {
+      "id": "teacher",
+      "name": "Reasoning Teacher",
+      "provider": "local-openai-compatible",
+      "model": "qwen2.5-3b-instruct-q4_k_m.gguf",
+      "outcome": "PASSED",
+      "inputTokens": 1076,
+      "outputTokens": 171,
+      "totalTokens": 1247,
+      "cost": null,
+      "currency": null
+    },
+    {
+      "id": "skills",
+      "name": "Deterministic Skills",
+      "provider": "Agent Control",
+      "model": "three hash-identified handlers",
+      "outcome": "PASSED",
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "totalTokens": 0,
+      "cost": 0,
+      "currency": null
+    },
+    {
+      "id": "verifier",
+      "name": "Independent Verifier",
+      "provider": "Agent Control",
+      "model": "typed invariants",
+      "outcome": "PASSED",
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "totalTokens": 0,
+      "cost": 0,
+      "currency": null
+    }
+  ],
+  "outcome": {
+    "verdict": "PASS",
+    "summary": "Three skills promoted after repeated verified reasoning; 45/45 deterministic repetitions passed; novelty rejected and escalated; POE production Work Parcel passed.",
+    "selectedLaneId": "skills",
+    "escalationInvoked": true
+  },
+  "totals": {
+    "inputTokens": 1076,
+    "outputTokens": 171,
+    "totalTokens": 1247,
+    "cost": null,
+    "currency": null,
+    "authority": "AUTHORITATIVE"
+  },
+  "artifacts": [],
+  "immutable": true,
+  "sha256": "8ccea10f198c84a2583c8ccf78373fc6eb9beb5d5fd8b957ab76bb6b94b1314e"
+}

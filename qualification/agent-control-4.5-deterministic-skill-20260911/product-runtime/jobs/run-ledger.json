@@ -1,0 +1,252 @@
+{
+  "version": 1,
+  "runs": [
+    {
+      "id": "run-e9dc57a3-bee3-4ab7-ba7a-07d7db2638f5",
+      "jobId": "deterministic-skill-execution",
+      "jobVersion": "1.0.0",
+      "trigger": {
+        "type": "manual",
+        "actor": "work-parcel:parcel-social-85570271f55c9a401f48a34d980cba69980758e8dbe856e80d0173f4598cf2af",
+        "parcelContext": {
+          "schema": "agent-control.run-parcel-context/v1",
+          "parcelId": "parcel-social-85570271f55c9a401f48a34d980cba69980758e8dbe856e80d0173f4598cf2af",
+          "stageId": "repository-state",
+          "originalGoal": "POE, run the governed repository-state validation for branch feature/4.5-governed-skill-learning at checkpoint a1ec025 using the lowest-energy qualified route. Show whether a model was invoked and independently verify the result.",
+          "currentInterpretation": "Execute a previously promoted repository-state skill through the ordinary governed Work Parcel lifecycle.",
+          "effectiveInstructions": [],
+          "constraints": [
+            "No LLM on a matching promoted skill",
+            "Independent verification required",
+            "No merge, tag, release or deployment"
+          ],
+          "successCriteria": [
+            {
+              "id": "skill-verified",
+              "description": "Promoted deterministic skill executes and independently verifies",
+              "status": "PENDING"
+            },
+            {
+              "id": "criterion:stage:repository-state",
+              "description": "Governed repository-state validation completes through its declared verification boundary",
+              "status": "PENDING"
+            }
+          ],
+          "baton": {
+            "schema": "agent-control.work-parcel-baton/v2",
+            "id": "parcel-baton-735cb128-e24c-4d9f-9fe4-999916cf2d19",
+            "createdAt": "2026-09-11T21:19:36.559Z",
+            "sourceStageIds": [],
+            "targetStageId": "repository-state",
+            "objective": "POE, run the governed repository-state validation for branch feature/4.5-governed-skill-learning at checkpoint a1ec025 using the lowest-energy qualified route. Show whether a model was invoked and independently verify the result.",
+            "currentInterpretation": "Execute a previously promoted repository-state skill through the ordinary governed Work Parcel lifecycle.",
+            "effectiveInstructions": [],
+            "constraints": [
+              "No LLM on a matching promoted skill",
+              "Independent verification required",
+              "No merge, tag, release or deployment"
+            ],
+            "successCriteria": [
+              {
+                "id": "skill-verified",
+                "description": "Promoted deterministic skill executes and independently verifies",
+                "status": "PENDING"
+              },
+              {
+                "id": "criterion:stage:repository-state",
+                "description": "Governed repository-state validation completes through its declared verification boundary",
+                "status": "PENDING"
+              }
+            ],
+            "completedStages": [],
+            "nextAction": "Execute Governed repository-state validation through deterministic-skill-execution@1.0.0 and satisfy its declared verification boundary",
+            "artifactIds": [],
+            "outputTypes": [],
+            "eventRefs": [
+              {
+                "id": "context-event-7840c961-0a88-4f01-b991-66d1edaa07c5",
+                "sequence": 1,
+                "type": "goal.recorded",
+                "summary": "Original goal recorded",
+                "sha256": "b6e732ed47630795e8f3edf6195354bbf6d8dd9a25c674e2f4843387c86c727d"
+              },
+              {
+                "id": "context-event-b743cb01-38f6-464c-846e-e73e1f252232",
+                "sequence": 2,
+                "type": "plan.recorded",
+                "summary": "1 governed stage(s) recorded",
+                "sha256": "eb408cfe7a3d35a822bc6b5bc85dd4b91e82b2e36d058e13c7109f0a45d50efc"
+              },
+              {
+                "id": "context-event-c105d780-d99f-4b3b-9052-1ae557b8a07b",
+                "sequence": 3,
+                "type": "criterion.added",
+                "summary": "Promoted deterministic skill executes and independently verifies",
+                "sha256": "3f26716baeb452454a46aa66326f566b106b81eacd8aa3856e42914693eb6082"
+              },
+              {
+                "id": "context-event-fe9a8c34-af95-40cd-ae67-a1fbc9ca3e90",
+                "sequence": 4,
+                "type": "criterion.added",
+                "summary": "Governed repository-state validation completes through its declared verification boundary",
+                "sha256": "7d26ccd11dc99c4810b19a90ab1174ed45f27543a5f9c502ad3f1312ac9e7b2b"
+              }
+            ],
+            "unresolvedQuestions": [],
+            "approvals": [],
+            "previousBatonIds": [],
+            "sizeBytes": 2385,
+            "estimatedTokens": 597,
+            "sha256": "596ea62dea149cc2f1ae50c248bd9bbd6d68d897fa4adfee125df73996c88a7d"
+          }
+        },
+        "id": "parcel-social-85570271f55c9a401f48a34d980cba69980758e8dbe856e80d0173f4598cf2af:repository-state"
+      },
+      "requestedAt": "2026-09-11T21:19:36.564Z",
+      "status": "SUCCEEDED",
+      "priority": "normal",
+      "concurrency": "allow",
+      "parameters": {
+        "taskClass": "repository-state",
+        "input": "{\"branch\":\"feature/4.5-governed-skill-learning\",\"head\":\"a1ec025\",\"porcelain\":\"\"}"
+      },
+      "steps": [
+        {
+          "id": "execute",
+          "action": "deterministic-skill.execute@1.0.0",
+          "status": "SUCCEEDED",
+          "dependsOn": [],
+          "capabilityRequest": {
+            "requires": [
+              {
+                "id": "qualification.local"
+              }
+            ]
+          },
+          "resources": [],
+          "attempts": [
+            {
+              "attempt": 1,
+              "startedAt": "2026-09-11T21:19:36.582Z",
+              "workerId": "hpubuntu",
+              "efficiencyInvocationIds": [],
+              "endedAt": "2026-09-11T21:19:36.595Z",
+              "outcome": "Selected promoted deterministic skill repository-state@1: input contract, freshness, handler identity and applicability passed. Independent deterministic verification PASS; LLM invocation avoided."
+            }
+          ],
+          "artifactIds": [
+            "artifact-3f4df7c4-af31-4f31-b672-00d621e88972"
+          ],
+          "verification": {
+            "required": [
+              "deterministic-skill-independent-verification"
+            ],
+            "passed": [
+              "deterministic-skill-independent-verification"
+            ],
+            "failed": []
+          },
+          "placement": {
+            "selected": "hpubuntu",
+            "eligible": [
+              "hpubuntu"
+            ],
+            "rejected": [],
+            "reasons": [
+              "satisfies:qualification.local",
+              "healthy",
+              "available"
+            ]
+          },
+          "startedAt": "2026-09-11T21:19:36.582Z",
+          "endedAt": "2026-09-11T21:19:36.595Z"
+        }
+      ],
+      "artifacts": [
+        "artifact-3f4df7c4-af31-4f31-b672-00d621e88972"
+      ],
+      "errors": [],
+      "effectiveJob": {
+        "apiVersion": "agent-control/v1",
+        "kind": "Job",
+        "metadata": {
+          "id": "deterministic-skill-execution",
+          "name": "Governed deterministic skill execution",
+          "version": "1.0.0",
+          "description": "Execute a previously promoted, hash-identified deterministic skill when its exact typed contract and freshness gates pass."
+        },
+        "spec": {
+          "enabled": true,
+          "priority": "normal",
+          "concurrency": "allow",
+          "parameters": {
+            "taskClass": {
+              "type": "string",
+              "required": true
+            },
+            "input": {
+              "type": "string",
+              "required": true
+            }
+          },
+          "steps": [
+            {
+              "id": "execute",
+              "action": "deterministic-skill.execute@1.0.0",
+              "requires": [
+                "qualification.local"
+              ],
+              "outputs": [
+                {
+                  "name": "deterministic-skill-result",
+                  "type": "application/json",
+                  "schema": "agent-control.deterministic-skill-result/v1",
+                  "version": "1.0.0"
+                }
+              ],
+              "verification": [
+                "deterministic-skill-independent-verification"
+              ],
+              "timeoutSeconds": 30
+            }
+          ]
+        }
+      },
+      "selectedWorkers": [
+        "hpubuntu"
+      ],
+      "approvals": [],
+      "provenance": [
+        {
+          "type": "trigger",
+          "at": "2026-09-11T21:19:36.564Z",
+          "detail": "manual:work-parcel:parcel-social-85570271f55c9a401f48a34d980cba69980758e8dbe856e80d0173f4598cf2af"
+        },
+        {
+          "type": "runtime-safety",
+          "at": "2026-09-11T21:19:36.578Z",
+          "detail": "ALLOW_WITH_AUDIT:safety-829c4f97-f241-4144-9039-0cb2682919d5:Scoped governed action is allowed with durable independent audit"
+        },
+        {
+          "type": "action-dispatch",
+          "at": "2026-09-11T21:19:36.585Z",
+          "detail": "control:deterministic-skill.execute@1.0.0"
+        },
+        {
+          "type": "evidence",
+          "at": "2026-09-11T21:19:36.595Z",
+          "detail": "deterministic-skill:repository-state@1"
+        },
+        {
+          "type": "evidence",
+          "at": "2026-09-11T21:19:36.595Z",
+          "detail": "deterministic-route:det-skill-route-a61bbf53-6b9b-4d55-aee5-bd0d8dc848cb"
+        }
+      ],
+      "updatedAt": "2026-09-11T21:19:36.598Z",
+      "startedAt": "2026-09-11T21:19:36.582Z",
+      "endedAt": "2026-09-11T21:19:36.597Z"
+    }
+  ],
+  "schedules": []
+}

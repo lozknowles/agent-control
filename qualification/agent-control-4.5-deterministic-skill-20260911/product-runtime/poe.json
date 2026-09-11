@@ -1,0 +1,251 @@
+{
+  "schema": "agent-control.poe-store/v1",
+  "conversations": [
+    {
+      "schema": "agent-control.poe-conversation/v1",
+      "id": "poe-conversation:bcdbf974-c6d2-45eb-91f6-fef7c73dfab9",
+      "actorId": "operator",
+      "channel": "dashboard",
+      "state": "EXPLAINING",
+      "createdAt": "2026-09-11T21:19:36.538Z",
+      "updatedAt": "2026-09-11T21:19:36.610Z",
+      "turns": [
+        {
+          "id": "poe-turn:d04ccd98-b391-44bb-885b-4f0c42fcc3de",
+          "conversationId": "poe-conversation:bcdbf974-c6d2-45eb-91f6-fef7c73dfab9",
+          "at": "2026-09-11T21:19:36.540Z",
+          "purpose": "GREETING",
+          "actor": "poe",
+          "channel": "dashboard",
+          "modality": "text",
+          "text": "Good day. I’m POE. How may I help you?",
+          "authority": "AGENT_CONTROL",
+          "contentTrust": "AGENT_CONTROL_EVIDENCE",
+          "references": [],
+          "evidence": []
+        },
+        {
+          "id": "poe-turn:4f385257-98c6-4c23-a64b-43378f6d80f8",
+          "conversationId": "poe-conversation:bcdbf974-c6d2-45eb-91f6-fef7c73dfab9",
+          "at": "2026-09-11T21:19:36.542Z",
+          "actor": "operator",
+          "channel": "dashboard",
+          "modality": "text",
+          "text": "POE, run the governed repository-state validation for branch feature/4.5-governed-skill-learning at checkpoint a1ec025 using the lowest-energy qualified route. Show whether a model was invoked and independently verify the result.",
+          "authority": "OPERATOR",
+          "contentTrust": "OPERATOR_REQUEST",
+          "references": [],
+          "evidence": []
+        },
+        {
+          "id": "poe-turn:06296a07-5d13-4663-a75b-81cbcb6769ab",
+          "conversationId": "poe-conversation:bcdbf974-c6d2-45eb-91f6-fef7c73dfab9",
+          "at": "2026-09-11T21:19:36.543Z",
+          "actor": "poe",
+          "channel": "dashboard",
+          "modality": "text",
+          "text": "Deterministic skill Work Parcel\n\nAwaiting execution.\n\nResult: Awaiting execution. (agent control)",
+          "authority": "AGENT_CONTROL",
+          "contentTrust": "AGENT_CONTROL_EVIDENCE",
+          "references": [
+            {
+              "kind": "run",
+              "id": "the"
+            }
+          ],
+          "evidence": [
+            {
+              "label": "Result",
+              "value": "Awaiting execution.",
+              "authority": "AGENT_CONTROL",
+              "evidence": []
+            }
+          ],
+          "responseMode": "DETERMINISTIC"
+        },
+        {
+          "id": "poe-turn:a2cbd733-7306-4bd9-829b-2e910181ce48",
+          "conversationId": "poe-conversation:bcdbf974-c6d2-45eb-91f6-fef7c73dfab9",
+          "at": "2026-09-11T21:19:36.608Z",
+          "actor": "operator",
+          "channel": "dashboard",
+          "modality": "text",
+          "text": "POE, give me the final human-readable route, verification, energy and model-avoidance result.",
+          "authority": "OPERATOR",
+          "contentTrust": "OPERATOR_REQUEST",
+          "references": [],
+          "evidence": []
+        },
+        {
+          "id": "poe-turn:9c88208a-2af7-439c-bb2b-d7e425af9765",
+          "conversationId": "poe-conversation:bcdbf974-c6d2-45eb-91f6-fef7c73dfab9",
+          "at": "2026-09-11T21:19:36.610Z",
+          "actor": "poe",
+          "channel": "dashboard",
+          "modality": "text",
+          "text": "Deterministic skill Work Parcel\n\nTask: repository-state validation\nRoute: deterministic skill repository-state@1\nReason: Selected promoted deterministic skill repository-state@1: input contract, freshness, handler identity and applicability passed.\nVerification: PASS\nEnergy: UNAVAILABLE\nLLM invocation avoided: yes\nWork Parcel: parcel-social-85570271f55c9a401f48a34d980cba69980758e8dbe856e80d0173f4598cf2af SUCCEEDED\n\nResult: Task: repository-state validation\nRoute: deterministic skill repository-state@1\nReason: Selected promoted deterministic skill repository-state@1: input contract, freshness, handler identity and applicability passed.\nVerification: PASS\nEnergy: UNAVAILABLE\nLLM invocation avoided: yes\nWork Parcel: parcel-social-85570271f55c9a401f48a34d980cba69980758e8dbe856e80d0173f4598cf2af SUCCEEDED (agent control)",
+          "authority": "AGENT_CONTROL",
+          "contentTrust": "AGENT_CONTROL_EVIDENCE",
+          "references": [
+            {
+              "kind": "run",
+              "id": "the"
+            }
+          ],
+          "evidence": [
+            {
+              "label": "Result",
+              "value": "Task: repository-state validation\nRoute: deterministic skill repository-state@1\nReason: Selected promoted deterministic skill repository-state@1: input contract, freshness, handler identity and applicability passed.\nVerification: PASS\nEnergy: UNAVAILABLE\nLLM invocation avoided: yes\nWork Parcel: parcel-social-85570271f55c9a401f48a34d980cba69980758e8dbe856e80d0173f4598cf2af SUCCEEDED",
+              "authority": "AGENT_CONTROL",
+              "evidence": [
+                "parcel:parcel-social-85570271f55c9a401f48a34d980cba69980758e8dbe856e80d0173f4598cf2af"
+              ]
+            }
+          ],
+          "responseMode": "DETERMINISTIC"
+        }
+      ],
+      "proposalIds": [],
+      "lastReference": {
+        "kind": "run",
+        "id": "the"
+      }
+    }
+  ],
+  "proposals": [],
+  "events": [
+    {
+      "type": "conversation.changed",
+      "at": "2026-09-11T21:19:36.538Z",
+      "conversationId": "poe-conversation:bcdbf974-c6d2-45eb-91f6-fef7c73dfab9",
+      "state": "IDLE",
+      "detail": {
+        "action": "created"
+      }
+    },
+    {
+      "type": "conversation.changed",
+      "at": "2026-09-11T21:19:36.539Z",
+      "conversationId": "poe-conversation:bcdbf974-c6d2-45eb-91f6-fef7c73dfab9",
+      "state": "LISTENING",
+      "detail": {
+        "reason": "authenticated operator greeting",
+        "state": "LISTENING"
+      }
+    },
+    {
+      "type": "conversation.changed",
+      "at": "2026-09-11T21:19:36.540Z",
+      "conversationId": "poe-conversation:bcdbf974-c6d2-45eb-91f6-fef7c73dfab9",
+      "state": "LISTENING",
+      "detail": {
+        "turnId": "poe-turn:d04ccd98-b391-44bb-885b-4f0c42fcc3de",
+        "actor": "poe"
+      }
+    },
+    {
+      "type": "conversation.changed",
+      "at": "2026-09-11T21:19:36.541Z",
+      "conversationId": "poe-conversation:bcdbf974-c6d2-45eb-91f6-fef7c73dfab9",
+      "state": "LISTENING",
+      "detail": {
+        "reason": "operator turn accepted",
+        "state": "LISTENING"
+      }
+    },
+    {
+      "type": "conversation.changed",
+      "at": "2026-09-11T21:19:36.542Z",
+      "conversationId": "poe-conversation:bcdbf974-c6d2-45eb-91f6-fef7c73dfab9",
+      "state": "LISTENING",
+      "detail": {
+        "turnId": "poe-turn:4f385257-98c6-4c23-a64b-43378f6d80f8",
+        "actor": "operator"
+      }
+    },
+    {
+      "type": "conversation.changed",
+      "at": "2026-09-11T21:19:36.542Z",
+      "conversationId": "poe-conversation:bcdbf974-c6d2-45eb-91f6-fef7c73dfab9",
+      "state": "INVESTIGATING",
+      "detail": {
+        "reference": "run",
+        "state": "INVESTIGATING"
+      }
+    },
+    {
+      "type": "conversation.changed",
+      "at": "2026-09-11T21:19:36.543Z",
+      "conversationId": "poe-conversation:bcdbf974-c6d2-45eb-91f6-fef7c73dfab9",
+      "state": "EXPLAINING",
+      "detail": {
+        "evidence": 1,
+        "unavailable": false,
+        "responseMode": "DETERMINISTIC",
+        "state": "EXPLAINING"
+      }
+    },
+    {
+      "type": "conversation.changed",
+      "at": "2026-09-11T21:19:36.543Z",
+      "conversationId": "poe-conversation:bcdbf974-c6d2-45eb-91f6-fef7c73dfab9",
+      "state": "EXPLAINING",
+      "detail": {
+        "turnId": "poe-turn:06296a07-5d13-4663-a75b-81cbcb6769ab",
+        "actor": "poe"
+      }
+    },
+    {
+      "type": "conversation.changed",
+      "at": "2026-09-11T21:19:36.608Z",
+      "conversationId": "poe-conversation:bcdbf974-c6d2-45eb-91f6-fef7c73dfab9",
+      "state": "LISTENING",
+      "detail": {
+        "reason": "operator turn accepted",
+        "state": "LISTENING"
+      }
+    },
+    {
+      "type": "conversation.changed",
+      "at": "2026-09-11T21:19:36.608Z",
+      "conversationId": "poe-conversation:bcdbf974-c6d2-45eb-91f6-fef7c73dfab9",
+      "state": "LISTENING",
+      "detail": {
+        "turnId": "poe-turn:a2cbd733-7306-4bd9-829b-2e910181ce48",
+        "actor": "operator"
+      }
+    },
+    {
+      "type": "conversation.changed",
+      "at": "2026-09-11T21:19:36.609Z",
+      "conversationId": "poe-conversation:bcdbf974-c6d2-45eb-91f6-fef7c73dfab9",
+      "state": "INVESTIGATING",
+      "detail": {
+        "reference": "run",
+        "state": "INVESTIGATING"
+      }
+    },
+    {
+      "type": "conversation.changed",
+      "at": "2026-09-11T21:19:36.610Z",
+      "conversationId": "poe-conversation:bcdbf974-c6d2-45eb-91f6-fef7c73dfab9",
+      "state": "EXPLAINING",
+      "detail": {
+        "evidence": 1,
+        "unavailable": false,
+        "responseMode": "DETERMINISTIC",
+        "state": "EXPLAINING"
+      }
+    },
+    {
+      "type": "conversation.changed",
+      "at": "2026-09-11T21:19:36.610Z",
+      "conversationId": "poe-conversation:bcdbf974-c6d2-45eb-91f6-fef7c73dfab9",
+      "state": "EXPLAINING",
+      "detail": {
+        "turnId": "poe-turn:9c88208a-2af7-439c-bb2b-d7e425af9765",
+        "actor": "poe"
+      }
+    }
+  ]
+}
