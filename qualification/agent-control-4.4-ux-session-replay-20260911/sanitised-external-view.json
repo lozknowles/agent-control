@@ -1,0 +1,455 @@
+{
+  "schema": "agent-control.ux-session-view/v1",
+  "sessionId": "ux-parallel-lanes-20260910",
+  "sessionSha256": "c9a79159d2702eae2300b28cd65eb0b490f5c8e6ce1642a8db051b6f4d4a2ddb",
+  "audience": "EXECUTION_OVERVIEW",
+  "title": "Parallel Review — Two Failures, One Verified Result",
+  "startedAt": "2026-09-10T21:15:40.957Z",
+  "completedAt": "2026-09-10T21:17:04.855Z",
+  "lanes": [
+    {
+      "id": "glm",
+      "name": "GLM Review Lane",
+      "provider": "openrouter",
+      "model": "glm-5.3-flash-parallel-reviewer",
+      "outcome": "PASSED",
+      "inputTokens": 1098,
+      "outputTokens": 2064,
+      "totalTokens": 3162,
+      "cost": 0.00074516,
+      "currency": null
+    },
+    {
+      "id": "luna",
+      "name": "Luna Review Lane",
+      "provider": "codex-chatgpt",
+      "model": "codex-luna-controller-a",
+      "outcome": "FAILED",
+      "inputTokens": 7885,
+      "outputTokens": 1346,
+      "totalTokens": 9231,
+      "cost": null,
+      "currency": null
+    },
+    {
+      "id": "qwen",
+      "name": "Qwen Review Lane",
+      "provider": "local-qwen",
+      "model": "qwen-parallel-reviewer",
+      "outcome": "FAILED",
+      "inputTokens": 1136,
+      "outputTokens": 1368,
+      "totalTokens": 2504,
+      "cost": null,
+      "currency": null
+    },
+    {
+      "id": "sol",
+      "name": "Sol Escalation Lane",
+      "provider": "codex-chatgpt",
+      "model": "sol",
+      "outcome": "SKIPPED",
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "totalTokens": 0,
+      "cost": 0,
+      "currency": null
+    }
+  ],
+  "events": [
+    {
+      "id": "poe-turn:974b2404-a30c-4205-ac38-9a2227f3b03d",
+      "at": "2026-09-10T21:15:43.543Z",
+      "layer": "UX",
+      "kind": "POE",
+      "title": "POE welcomed the operator",
+      "summary": "Good day. I’m POE, your resident conversational operator. I can explain Agent Control, show recorded work, list available and scheduled jobs, guide approvals, and help begin governed work. How may I help you?",
+      "outcome": "INFO",
+      "interaction": {
+        "actor": "poe",
+        "action": "greeting"
+      },
+      "parentIds": [],
+      "evidenceRefs": []
+    },
+    {
+      "id": "poe-turn:6a0998d8-d3b9-4155-b641-3723d824dcfe",
+      "at": "2026-09-10T21:15:57.783Z",
+      "layer": "UX",
+      "kind": "USER_INTERACTION",
+      "title": "Operator requested a parallel governed review",
+      "summary": "Run the Parallel lane repository review. Have Luna, Qwen, and GLM inspect the same frozen reservation-service repository in parallel. Independently verify each review against the same acceptance criteria. If any review passes, accept a verified result and do not invoke Sol. Only if all three reviews fail, create a sealed aggregate baton containing their findings and unresolved criteria and escalate it to Sol. Show every lane, route, decision, baton, verification result, and token total.",
+      "outcome": "INFO",
+      "interaction": {
+        "actor": "operator",
+        "action": "submit request"
+      },
+      "parentIds": [
+        "poe-turn:974b2404-a30c-4205-ac38-9a2227f3b03d"
+      ],
+      "evidenceRefs": []
+    },
+    {
+      "id": "proposal-approved",
+      "at": "2026-09-10T21:15:58.562Z",
+      "layer": "AGENT_CONTROL",
+      "kind": "JOB",
+      "title": "POE proposal explicitly approved",
+      "summary": "The bounded crew-wopr-review Job was approved and submitted to the Work Parcel runtime.",
+      "outcome": "PASSED",
+      "parentIds": [
+        "poe-turn:6a0998d8-d3b9-4155-b641-3723d824dcfe"
+      ],
+      "evidenceRefs": [
+        "parcel-social-39a33c88d6fca15e6664ae50c21a6644382353569a15be5e844234d4e2aa274b"
+      ]
+    },
+    {
+      "id": "parallel-fan-out",
+      "at": "2026-09-10T21:15:40.957Z",
+      "layer": "AGENT_CONTROL",
+      "kind": "ROUTING",
+      "title": "One immutable repository bundle fanned out to three lanes",
+      "summary": "Luna, Qwen and GLM received the same frozen bundle and the same independent acceptance gate.",
+      "outcome": "RUNNING",
+      "parentIds": [
+        "proposal-approved"
+      ],
+      "evidenceRefs": [
+        "00bfe3b6d7ed5c53a84702617c3e61d70b23dea4fa98c85e4b442b75ad222bc1"
+      ]
+    },
+    {
+      "id": "a7cb8831-e032-459b-860e-6ae930a519a2:started",
+      "at": "2026-09-10T21:15:40.957Z",
+      "layer": "AGENT_CONTROL",
+      "kind": "LANE",
+      "title": "GLM Review Lane invoked",
+      "summary": "openrouter / glm-5.3-flash-parallel-reviewer began independent review of the immutable bundle.",
+      "outcome": "RUNNING",
+      "laneId": "glm",
+      "provider": "openrouter",
+      "model": "glm-5.3-flash-parallel-reviewer",
+      "parentIds": [
+        "parallel-fan-out"
+      ],
+      "evidenceRefs": [
+        "00bfe3b6d7ed5c53a84702617c3e61d70b23dea4fa98c85e4b442b75ad222bc1"
+      ]
+    },
+    {
+      "id": "a7cb8831-e032-459b-860e-6ae930a519a2:model",
+      "at": "2026-09-10T21:17:04.285Z",
+      "layer": "TELEMETRY",
+      "kind": "MODEL",
+      "title": "GLM Review Lane provider execution completed",
+      "summary": "Provider returned a structured repository review. Token use is provider reported where available; monetary cost remains unavailable unless the provider reported it.",
+      "outcome": "PASSED",
+      "laneId": "glm",
+      "provider": "openrouter",
+      "model": "glm-5.3-flash-parallel-reviewer",
+      "parentIds": [
+        "a7cb8831-e032-459b-860e-6ae930a519a2:started"
+      ],
+      "evidenceRefs": [
+        "provider_response_sha256:5764ed608f34ddfe07f36cb7c5c2f6d614a7ee113e38b6c7550d39c113a01a03",
+        "sha256:5764ed608f34ddfe07f36cb7c5c2f6d614a7ee113e38b6c7550d39c113a01a03",
+        "reviewed-sha:d289f66c13a48f6eebbaae6af99ec7c5edd75b91",
+        "gate:reservation-cache-root-cause-v1:passed"
+      ],
+      "telemetry": {
+        "inputTokens": 1098,
+        "outputTokens": 2064,
+        "totalTokens": 3162,
+        "cachedTokens": null,
+        "cost": 0.00074516,
+        "currency": null,
+        "authority": "AUTHORITATIVE"
+      }
+    },
+    {
+      "id": "a7cb8831-e032-459b-860e-6ae930a519a2:gate",
+      "at": "2026-09-10T21:17:04.285Z",
+      "layer": "AGENT_CONTROL",
+      "kind": "GATE",
+      "title": "GLM Review Lane: PASS",
+      "summary": "Independent gate accepted every required criterion.",
+      "outcome": "PASSED",
+      "laneId": "glm",
+      "provider": "openrouter",
+      "model": "glm-5.3-flash-parallel-reviewer",
+      "parentIds": [
+        "a7cb8831-e032-459b-860e-6ae930a519a2:model"
+      ],
+      "evidenceRefs": [
+        "provider_response_sha256:5764ed608f34ddfe07f36cb7c5c2f6d614a7ee113e38b6c7550d39c113a01a03",
+        "sha256:5764ed608f34ddfe07f36cb7c5c2f6d614a7ee113e38b6c7550d39c113a01a03",
+        "reviewed-sha:d289f66c13a48f6eebbaae6af99ec7c5edd75b91",
+        "gate:reservation-cache-root-cause-v1:passed"
+      ]
+    },
+    {
+      "id": "f00e3eb5-c6cc-46f3-a57c-179cda0b469d:started",
+      "at": "2026-09-10T21:15:40.957Z",
+      "layer": "AGENT_CONTROL",
+      "kind": "LANE",
+      "title": "Luna Review Lane invoked",
+      "summary": "codex-chatgpt / codex-luna-controller-a began independent review of the immutable bundle.",
+      "outcome": "RUNNING",
+      "laneId": "luna",
+      "provider": "codex-chatgpt",
+      "model": "codex-luna-controller-a",
+      "parentIds": [
+        "parallel-fan-out"
+      ],
+      "evidenceRefs": [
+        "00bfe3b6d7ed5c53a84702617c3e61d70b23dea4fa98c85e4b442b75ad222bc1"
+      ]
+    },
+    {
+      "id": "f00e3eb5-c6cc-46f3-a57c-179cda0b469d:model",
+      "at": "2026-09-10T21:16:26.847Z",
+      "layer": "TELEMETRY",
+      "kind": "MODEL",
+      "title": "Luna Review Lane provider execution completed",
+      "summary": "Provider returned a structured repository review. Token use is provider reported where available; monetary cost remains unavailable unless the provider reported it.",
+      "outcome": "PASSED",
+      "laneId": "luna",
+      "provider": "codex-chatgpt",
+      "model": "codex-luna-controller-a",
+      "parentIds": [
+        "f00e3eb5-c6cc-46f3-a57c-179cda0b469d:started"
+      ],
+      "evidenceRefs": [
+        "provider_response_sha256:5fdd81666383925d98af6d84c238be0ab4e216ec14934e1676f60d5fdec33952",
+        "sha256:5fdd81666383925d98af6d84c238be0ab4e216ec14934e1676f60d5fdec33952",
+        "reviewed-sha:d289f66c13a48f6eebbaae6af99ec7c5edd75b91",
+        "gate:reservation-cache-root-cause-v1:failed"
+      ],
+      "telemetry": {
+        "inputTokens": 7885,
+        "outputTokens": 1346,
+        "totalTokens": 9231,
+        "cachedTokens": null,
+        "cost": null,
+        "currency": null,
+        "authority": "AUTHORITATIVE"
+      }
+    },
+    {
+      "id": "f00e3eb5-c6cc-46f3-a57c-179cda0b469d:gate",
+      "at": "2026-09-10T21:16:26.847Z",
+      "layer": "AGENT_CONTROL",
+      "kind": "GATE",
+      "title": "Luna Review Lane: FAIL",
+      "summary": "Independent gate rejected the result with 2 unresolved criterion/criteria.",
+      "outcome": "FAILED",
+      "laneId": "luna",
+      "provider": "codex-chatgpt",
+      "model": "codex-luna-controller-a",
+      "parentIds": [
+        "f00e3eb5-c6cc-46f3-a57c-179cda0b469d:model"
+      ],
+      "evidenceRefs": [
+        "provider_response_sha256:5fdd81666383925d98af6d84c238be0ab4e216ec14934e1676f60d5fdec33952",
+        "sha256:5fdd81666383925d98af6d84c238be0ab4e216ec14934e1676f60d5fdec33952",
+        "reviewed-sha:d289f66c13a48f6eebbaae6af99ec7c5edd75b91",
+        "gate:reservation-cache-root-cause-v1:failed"
+      ]
+    },
+    {
+      "id": "b22573a5-c442-43f3-a7f9-7f985f975a1e:started",
+      "at": "2026-09-10T21:15:40.957Z",
+      "layer": "AGENT_CONTROL",
+      "kind": "LANE",
+      "title": "Qwen Review Lane invoked",
+      "summary": "local-qwen / qwen-parallel-reviewer began independent review of the immutable bundle.",
+      "outcome": "RUNNING",
+      "laneId": "qwen",
+      "provider": "local-qwen",
+      "model": "qwen-parallel-reviewer",
+      "parentIds": [
+        "parallel-fan-out"
+      ],
+      "evidenceRefs": [
+        "00bfe3b6d7ed5c53a84702617c3e61d70b23dea4fa98c85e4b442b75ad222bc1"
+      ]
+    },
+    {
+      "id": "b22573a5-c442-43f3-a7f9-7f985f975a1e:model",
+      "at": "2026-09-10T21:16:27.198Z",
+      "layer": "TELEMETRY",
+      "kind": "MODEL",
+      "title": "Qwen Review Lane provider execution completed",
+      "summary": "Provider returned a structured repository review. Token use is provider reported where available; monetary cost remains unavailable unless the provider reported it.",
+      "outcome": "PASSED",
+      "laneId": "qwen",
+      "provider": "local-qwen",
+      "model": "qwen-parallel-reviewer",
+      "parentIds": [
+        "b22573a5-c442-43f3-a7f9-7f985f975a1e:started"
+      ],
+      "evidenceRefs": [
+        "provider_response_sha256:7445af3337da686a0baba7238c17998ace387e7c4f599b799f92773bdfcb377e",
+        "sha256:7445af3337da686a0baba7238c17998ace387e7c4f599b799f92773bdfcb377e",
+        "reviewed-sha:d289f66c13a48f6eebbaae6af99ec7c5edd75b91",
+        "gate:reservation-cache-root-cause-v1:failed"
+      ],
+      "telemetry": {
+        "inputTokens": 1136,
+        "outputTokens": 1368,
+        "totalTokens": 2504,
+        "cachedTokens": null,
+        "cost": null,
+        "currency": null,
+        "authority": "AUTHORITATIVE"
+      }
+    },
+    {
+      "id": "b22573a5-c442-43f3-a7f9-7f985f975a1e:gate",
+      "at": "2026-09-10T21:16:27.198Z",
+      "layer": "AGENT_CONTROL",
+      "kind": "GATE",
+      "title": "Qwen Review Lane: FAIL",
+      "summary": "Independent gate rejected the result with 8 unresolved criterion/criteria.",
+      "outcome": "FAILED",
+      "laneId": "qwen",
+      "provider": "local-qwen",
+      "model": "qwen-parallel-reviewer",
+      "parentIds": [
+        "b22573a5-c442-43f3-a7f9-7f985f975a1e:model"
+      ],
+      "evidenceRefs": [
+        "provider_response_sha256:7445af3337da686a0baba7238c17998ace387e7c4f599b799f92773bdfcb377e",
+        "sha256:7445af3337da686a0baba7238c17998ace387e7c4f599b799f92773bdfcb377e",
+        "reviewed-sha:d289f66c13a48f6eebbaae6af99ec7c5edd75b91",
+        "gate:reservation-cache-root-cause-v1:failed"
+      ]
+    },
+    {
+      "id": "aggregate-decision",
+      "at": "2026-09-10T21:17:04.855Z",
+      "layer": "AGENT_CONTROL",
+      "kind": "GATE",
+      "title": "Aggregate decision: accept GLM",
+      "summary": "One of three first-wave lanes passed. GLM was accepted as the independently verified result; Luna and Qwen remained truthful failures.",
+      "outcome": "PASSED",
+      "laneId": "glm",
+      "parentIds": [
+        "a7cb8831-e032-459b-860e-6ae930a519a2:gate",
+        "f00e3eb5-c6cc-46f3-a57c-179cda0b469d:gate",
+        "b22573a5-c442-43f3-a7f9-7f985f975a1e:gate"
+      ],
+      "evidenceRefs": [
+        "gate:reservation-cache-root-cause-v1:failed",
+        "gate:reservation-cache-root-cause-v1:passed",
+        "provider_response_sha256:5764ed608f34ddfe07f36cb7c5c2f6d614a7ee113e38b6c7550d39c113a01a03",
+        "provider_response_sha256:5fdd81666383925d98af6d84c238be0ab4e216ec14934e1676f60d5fdec33952",
+        "provider_response_sha256:7445af3337da686a0baba7238c17998ace387e7c4f599b799f92773bdfcb377e",
+        "reviewed-sha:d289f66c13a48f6eebbaae6af99ec7c5edd75b91",
+        "sha256:5764ed608f34ddfe07f36cb7c5c2f6d614a7ee113e38b6c7550d39c113a01a03",
+        "sha256:5fdd81666383925d98af6d84c238be0ab4e216ec14934e1676f60d5fdec33952",
+        "sha256:7445af3337da686a0baba7238c17998ace387e7c4f599b799f92773bdfcb377e"
+      ]
+    },
+    {
+      "id": "sol-not-invoked",
+      "at": "2026-09-10T21:17:04.855Z",
+      "layer": "AGENT_CONTROL",
+      "kind": "ROUTING",
+      "title": "Sol was deliberately not invoked",
+      "summary": "1_of_3_first_wave_lanes_passed;sol_not_invoked",
+      "outcome": "SKIPPED",
+      "laneId": "sol",
+      "parentIds": [
+        "aggregate-decision"
+      ],
+      "evidenceRefs": []
+    },
+    {
+      "id": "accounting",
+      "at": "2026-09-10T21:17:04.855Z",
+      "layer": "TELEMETRY",
+      "kind": "TELEMETRY",
+      "title": "Work Parcel token accounting reconciled",
+      "summary": "The three lane totals reconcile with the aggregate Work Parcel total. Current-context occupancy was not reported and is therefore unavailable.",
+      "outcome": "PASSED",
+      "parentIds": [
+        "aggregate-decision"
+      ],
+      "evidenceRefs": [
+        "gate:reservation-cache-root-cause-v1:failed",
+        "gate:reservation-cache-root-cause-v1:passed",
+        "provider_response_sha256:5764ed608f34ddfe07f36cb7c5c2f6d614a7ee113e38b6c7550d39c113a01a03",
+        "provider_response_sha256:5fdd81666383925d98af6d84c238be0ab4e216ec14934e1676f60d5fdec33952",
+        "provider_response_sha256:7445af3337da686a0baba7238c17998ace387e7c4f599b799f92773bdfcb377e",
+        "reviewed-sha:d289f66c13a48f6eebbaae6af99ec7c5edd75b91",
+        "sha256:5764ed608f34ddfe07f36cb7c5c2f6d614a7ee113e38b6c7550d39c113a01a03",
+        "sha256:5fdd81666383925d98af6d84c238be0ab4e216ec14934e1676f60d5fdec33952",
+        "sha256:7445af3337da686a0baba7238c17998ace387e7c4f599b799f92773bdfcb377e"
+      ],
+      "telemetry": {
+        "inputTokens": 10119,
+        "outputTokens": 4778,
+        "totalTokens": 14897,
+        "cachedTokens": null,
+        "cost": null,
+        "currency": null,
+        "authority": "AUTHORITATIVE"
+      }
+    },
+    {
+      "id": "verification",
+      "at": "2026-09-10T21:17:04.855Z",
+      "layer": "AGENT_CONTROL",
+      "kind": "OUTCOME",
+      "title": "Physical qualification verified",
+      "summary": "All three real lanes executed against the same immutable bundle, independent gates were applied, the correct result was selected, and conditional Sol admission was correct.",
+      "outcome": "PASSED",
+      "parentIds": [
+        "accounting",
+        "sol-not-invoked"
+      ],
+      "evidenceRefs": [
+        "a77e48abd8a3045054c2cc475a111c8659a23d86b1d519c59ecc14ee00ba672f",
+        "db80f34f3c992990ad9766c7793f45047ba3def2ee607fe0a4464f0675e1496d",
+        "57bfb46490c6d213bb20e8f6c8c148d33a10997f9f2fdedecbddee4e55128a0b"
+      ]
+    }
+  ],
+  "outcome": {
+    "verdict": "PASS",
+    "summary": "Luna FAIL · Qwen FAIL · GLM PASS → accept GLM; Sol not invoked.",
+    "selectedLaneId": "glm",
+    "escalationInvoked": false
+  },
+  "totals": {
+    "inputTokens": 10119,
+    "outputTokens": 4778,
+    "totalTokens": 14897,
+    "cost": null,
+    "currency": null,
+    "authority": "PARTIAL"
+  },
+  "artifacts": [
+    {
+      "kind": "screen-capture",
+      "file": "fcb4127d049408af2177c1e5104b638160933e7e:docs/evidence/agent-control-4.3-parallel-lanes-qualification.mp4",
+      "sha256": "57bfb46490c6d213bb20e8f6c8c148d33a10997f9f2fdedecbddee4e55128a0b",
+      "bytes": 10094555
+    },
+    {
+      "kind": "manifest",
+      "file": "fcb4127d049408af2177c1e5104b638160933e7e:docs/evidence/agent-control-4.3-parallel-lanes-qualification.json",
+      "sha256": "a77e48abd8a3045054c2cc475a111c8659a23d86b1d519c59ecc14ee00ba672f",
+      "bytes": 6446615
+    }
+  ],
+  "capabilities": {
+    "readOnly": true,
+    "operationalAccess": false,
+    "rerun": false,
+    "sourceAccess": false,
+    "annotations": true
+  }
+}
