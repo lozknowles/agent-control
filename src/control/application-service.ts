@@ -37,6 +37,7 @@ import type {AdaptiveLeagueFilter, AdaptiveOrchestrationRuntime} from './adaptiv
 import type {ExecutionSessionMode, ExecutionSessionRuntime, ExecutionSessionSignal} from './execution-session.js';
 import type {PoeBenchmarkProposalInput, PoeEvidenceResult, PoeObjectReference, PoeProjection, PoeRuntime} from './poe.js';
 import type {CacheAwareExpertRuntime} from './cache-aware-expert.js';
+import type {SkillLearningRuntime} from './skill-learning.js';
 
 export type ControlEventType =
   | 'social.activity'
@@ -70,6 +71,7 @@ export type ControlEventType =
   | 'provider.catalog_changed'
   | 'runtime.safety_changed'
   | 'cache.expert_invalidated'
+  | 'skill.learning_changed'
   | 'configuration.changed'
   | 'token.telemetry'
   | 'token.governor_transition'
@@ -191,6 +193,7 @@ export class AgentControlService {
   private executionSessions?: ExecutionSessionRuntime;
   private poe?: PoeRuntime;
   private cacheExperts?: CacheAwareExpertRuntime;
+  private learnedSkills?: SkillLearningRuntime;
 
   constructor(
     readonly state: WorkspaceState,
@@ -203,7 +206,7 @@ export class AgentControlService {
     this.verification = new VerificationService(state, persist);
   }
 
-  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; services?: RegisteredService[]; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService; tokenBatonRouting?: TokenAwareBatonRuntime; governedRetrieval?: GovernedRetrievalRuntime; codexNodeExecution?: CodexNodeExecutionPort; harnessEfficiency?: HarnessEfficiencyLedgerPort; workParcels?: WorkParcelCoordinator; modelRegistry?: ModelRegistry; parameterizedJobs?: ParameterizedJobEngine; identity?: IdentityControlPlane; defaultSessionId?: string; fastExecution?: FastExecutionLedgerPort; runtimeObservability?: RuntimeObservability; capabilityIntelligence?: CapabilityIntelligenceStore; modelIntelligence?: ModelIntelligenceLedger; qualificationSuite?: FrozenQualificationSuite; providerCatalog?: ProviderCatalogRuntime; adaptiveOrchestration?: AdaptiveOrchestrationRuntime; executionSessions?: ExecutionSessionRuntime; poe?: PoeRuntime; cacheExperts?: CacheAwareExpertRuntime}) {
+  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; services?: RegisteredService[]; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService; tokenBatonRouting?: TokenAwareBatonRuntime; governedRetrieval?: GovernedRetrievalRuntime; codexNodeExecution?: CodexNodeExecutionPort; harnessEfficiency?: HarnessEfficiencyLedgerPort; workParcels?: WorkParcelCoordinator; modelRegistry?: ModelRegistry; parameterizedJobs?: ParameterizedJobEngine; identity?: IdentityControlPlane; defaultSessionId?: string; fastExecution?: FastExecutionLedgerPort; runtimeObservability?: RuntimeObservability; capabilityIntelligence?: CapabilityIntelligenceStore; modelIntelligence?: ModelIntelligenceLedger; qualificationSuite?: FrozenQualificationSuite; providerCatalog?: ProviderCatalogRuntime; adaptiveOrchestration?: AdaptiveOrchestrationRuntime; executionSessions?: ExecutionSessionRuntime; poe?: PoeRuntime; cacheExperts?: CacheAwareExpertRuntime; learnedSkills?: SkillLearningRuntime}) {
     if (extras.approvalCount) this.approvalCount = extras.approvalCount;
     if (extras.resources) this.resourceRows = structuredClone(extras.resources);
     if (extras.services) this.serviceRows = structuredClone(extras.services);
@@ -230,6 +233,7 @@ export class AgentControlService {
     if (extras.executionSessions) this.executionSessions = extras.executionSessions;
     if (extras.poe) this.poe = extras.poe;
     if (extras.cacheExperts) this.cacheExperts = extras.cacheExperts;
+    if (extras.learnedSkills) this.learnedSkills = extras.learnedSkills;
     return this;
   }
 
@@ -459,6 +463,7 @@ export class AgentControlService {
   adaptiveWorkflowLeague(taskClass?: string, filter?: AdaptiveLeagueFilter) { return this.adaptiveOrchestration?.workflowLeague(taskClass, undefined, filter) ?? []; }
   adaptiveDecisions() { return this.adaptiveOrchestration?.decisions() ?? []; }
   cacheExpertRegistry() { const decisions = this.cacheExperts?.decisions() ?? []; return {schema: 'agent-control.cache-expert-registry-projection/v1', policy: this.cacheExperts?.policy ?? null, experts: this.cacheExperts?.records() ?? [], decisions: decisions.map(item => ({...item, humanReadable: this.cacheExperts!.humanReadable(item.id)})), observedAt: new Date().toISOString()}; }
+  learnedSpecialists() { return this.learnedSkills?.projection() ?? {schema:'agent-control.learned-specialists/v1',observedAt:new Date().toISOString(),policy:null,candidates:[],specialists:[],routing:[]}; }
   invalidateCacheExperts(input: {providerId?: string; modelId?: string; sessionId?: string; cacheScopeId?: string; backendInstanceId?: string; reason?: string}, actor: string) {
     if (!this.cacheExperts) throw new Error('cache_experts_unconfigured');
     const filters=Object.fromEntries(Object.entries(input).filter(([key,value])=>key!=='reason'&&typeof value==='string'&&value.trim()).map(([key,value])=>[key,String(value).trim()]));

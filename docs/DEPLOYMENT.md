@@ -1,6 +1,6 @@
-# Agent Control 4.4 deployment, upgrade and rollback
+# Agent Control 4.5 deployment, upgrade and rollback
 
-This is the canonical deployment guide for Agent Control 4.4. Source publication
+This is the canonical deployment guide for the Agent Control 4.5 candidate. Source publication
 and production deployment are separate events. A healthy listener alone does not
 prove release qualification.
 
@@ -14,11 +14,28 @@ release evidence.
 ```bash
 git clone https://github.com/lozknowles/agent-control.git
 cd agent-control
-git checkout --detach v4.4.0
+git checkout --detach v4.4.0 # released baseline; use an immutable 4.5 SHA only after release
 npm install --ignore-scripts
 npm run init
 npm run check
 ```
+
+Learned Specialists are disabled for routing unless explicitly configured and
+qualified. Keep adaptation files and `AGENT_CONTROL_STATE_DIR` outside disposable
+source checkouts, owner-readable, and backed up with the exact registry snapshot.
+Never copy an adaptation to a different base/runtime and retain its qualification.
+The deployment must provide the framework adapter locally; Agent Control core
+does not install training dependencies or download models at runtime.
+
+Example safe policy:
+
+```json
+{"learnedSkills":{"enabled":true,"routingEnabled":false,"minimumImprovement":0.1,"maximumQualificationAgeDays":90,"requireHumanDatasetApproval":true}}
+```
+
+Enable `routingEnabled` only after the target installation can verify the exact
+base and adapter hashes and the recorded frozen qualification. Roll back by
+disabling learned routing first; the immutable base route remains available.
 
 ## Keep mutable state outside the release
 

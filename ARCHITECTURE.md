@@ -1,6 +1,6 @@
 # Agent Control architecture
 
-This is the authoritative source boundary for Agent Control 4.4.0. The 4.4 UX/session implementation `3b0f89653784f90e092c07f61123ba1f9249a42b` passed physical browser qualification and the complete 1,125-test suite; its evidence is frozen at `574c53f4e3db0d71cf59a3bdb3340f2aa2a7f181`. Historical physical evidence remains bound to its recorded product SHA. Status labels matter:
+This is the authoritative source boundary for the Agent Control 4.5.0 candidate. Agent Control 4.4.0 remains the latest formally released baseline. Historical physical evidence remains bound to its recorded product SHA. Status labels matter:
 
 - **implemented** means executable code and automated tests exist in this branch;
 - **experimental** means executable code exists but has not been qualified across every external substrate;
@@ -18,6 +18,33 @@ This is the authoritative source boundary for Agent Control 4.4.0. The 4.4 UX/se
 8. Missing configuration fails closed to `UNCONFIGURED`, never to private defaults.
 9. The TUI and web dashboard are clients of one `AgentControlService`; neither owns scheduler, lease, ownership or PTY state.
 10. An agent claim, collected evidence, verification and acceptance are distinct durable states.
+
+## Governed learned specialists (4.5)
+
+The provider-neutral identity is:
+
+`qualified base model + versioned learned adaptation + independent qualification evidence = specialist routing candidate`
+
+The base remains immutable and independently addressable. The adaptation grants
+no tools, authority or policy. `SkillLearningRuntime` enforces legal lifecycle
+transitions, frozen dataset/evaluation hashes, human review, material improvement,
+freshness and exact base/runtime compatibility. Registration is not route
+admission; routing is separately enabled and remains subordinate to ordinary
+capability, policy, health, placement, cost and verification gates.
+
+Framework-specific training and loading remain ports. The first adapter uses
+PEFT LoRA on CPU, but core records contain no Hugging Face, PEFT, CUDA, model-family
+or hardware assumption. Production inference enters the existing model-backed
+adaptive-harness Action boundary, executes in a normal Job/Work Parcel, preserves
+the baton and artifacts, and requires an independent read-only verification step.
+The local PEFT adapter recomputes on-disk base and adapter hashes before loading.
+
+Learned capability and runtime warmth are orthogonal: a learned specialist can be
+cold or warm, while a warm route may be unadapted. Multiple-adapter composition,
+automatic online learning and automatic promotion are not implemented. Runtime
+outcomes may only propose a new governed candidate/version. See
+[the architecture decision](docs/agent-control-4.5-skill-learning-architecture-review.md)
+and [operator guide](docs/skill-learning.md).
 
 ## Transport Context and Integrity Gate (4.2)
 

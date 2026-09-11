@@ -247,6 +247,13 @@
       "local-code": {"primary":"pixel-local-example","fallback":["openai-default"],"requires":["coding"]}
     }
   },
+  "learnedSkills": {
+    "enabled": true,
+    "routingEnabled": false,
+    "minimumImprovement": 0.1,
+    "maximumQualificationAgeDays": 90,
+    "requireHumanDatasetApproval": true
+  },
   "services": [
     {
       "id": "local-model-service",

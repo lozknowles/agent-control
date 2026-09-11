@@ -1,5 +1,16 @@
 # Changelog
 
+## [4.5.0] — Unreleased candidate
+
+- Adds a provider-, model-, framework-, hardware- and runtime-neutral learned-skill lifecycle: `OBSERVE → IDENTIFY → DATASET → BASELINE → TRAIN → QUALIFY → REGISTER → ROUTE → MONITOR → RETIRE/RETRAIN`.
+- Adds a durable Skill Adapter Registry binding exact base, adaptation, dataset, runtime and frozen-evaluation identities, qualification metrics, limitations, compatibility, provenance and rollback state.
+- Requires explicit dataset review, disjoint frozen evaluation, objective unadapted baseline, material improvement and independent verification. Observation never starts training and runtime outcomes never silently mutate a model.
+- Integrates qualified specialists through the existing adaptive-harness Action boundary, Job runtime, Work Parcel scheduler, sealed baton, artifact store and independent verification; wrong task/base/runtime, stale qualification and execution-identity mismatch fail closed.
+- Adds one isolated CPU LoRA/PEFT runtime adapter as an interchangeable implementation, with exact on-disk base and adaptation SHA-256 verification before invocation. Protected GPU services are not stopped.
+- Adds **Learned Specialists** dashboard and POE projections plus revision-checked policy configuration. Learned adaptation and Warm Expert/cache state remain separate.
+- Records a frozen physical route-intent experiment and its limitations. No broad model expertise, monetary saving, energy saving, adapter composition or uncontrolled online learning is claimed.
+- This entry describes an isolated candidate only; 4.5 is not merged, tagged, released or deployed by this workstream.
+
 ## [4.4.0] — 2026-09-11
 
 - Adds a provider-neutral, immutable `UxSessionRecord` projection over existing governed execution evidence rather than a second recorder or event ledger. Session SHA-256 binds interactive replay, MP4, transcript, digest and evidence manifest to the same execution.
