@@ -1,5 +1,17 @@
 # Changelog
 
+## [4.4.0] — 2026-09-11
+
+- Adds a provider-neutral, immutable `UxSessionRecord` projection over existing governed execution evidence rather than a second recorder or event ledger. Session SHA-256 binds interactive replay, MP4, transcript, digest and evidence manifest to the same execution.
+- Adds a read-only UX Session Player with progressive `UX → Agent Control → lane → baton/gate → tool → sanitised diagnostic → evidence` drill-down, parallel-lane visualization, token/accounting detail and explicit unavailable fields.
+- Adds policy-controlled `UX_ONLY`, `UX_INTERACTIONS`, `EXECUTION_OVERVIEW`, `SANITISED_DIAGNOSTIC` and `AUTHORISED_FULL_EVIDENCE` projections. Share capabilities are random, stored only as hashes, optional-expiry and revocable; the capability is carried in a URL fragment and never grants operational or rerun access.
+- Keeps timestamped reviewer comments as a separately persisted overlay tied to the immutable session/event hash. The overlay can retain a governed Work Parcel reference without mutating evidence.
+- Physically replays the immutable 4.3 Luna/Qwen/GLM run: Luna and Qwen fail independent gates, GLM passes, aggregation accepts GLM, Sol is not invoked, and 10,119 input + 4,778 output = 14,897 total tokens reconcile. A second replay presents the genuine 4.4 request/validation/accept/reject/supply sequence as **Your Memories** without revealing memory content or backend identity.
+- Inspects MARM 2.48.0 source at pinned upstream commit `0b4013de9e854fccd211d7fdb8e35ff6596ec4a1` and compares its persistence, recall, deduplication, compaction, scoping, concurrency and lifecycle mechanisms with Agent Control's existing governed retrieval, ContextGraph, Work Parcels, batons and evidence.
+- Adds an isolated six-stage governed A/B qualification over real Agent Control history. Both arms passed 8/8 frozen questions; provenance-bound semantic memory reduced supplied context by 90.87% and provider input by 79.50%, but did not reduce represented source files or latency and provided no monetary-cost evidence.
+- Physically rejects stale-source, superseded, cross-project, cross-session, unverified, incomplete and incorrect memories. Models propose compact text only; Agent Control binds and revalidates authoritative Evidence Packet provenance.
+- Recommends **C — GENERIC MEMORY ABSTRACTION** with MARM as an optional backend. The released session/replay projection presents the capability as **Your Memories**; automatic memory consolidation and idle model swapping remain out of scope.
+
 ## [4.3.0] — 2026-09-09
 
 - Integrated the 4.2 Transport Context and 4.3 Warm Expert lines onto current 4.1 main without replacing either runtime wholesale; preserved POE, Crew/WOPR, Live Shell, protected-resource governance, provider/account routing, retries, recovery and human-readable execution history.

@@ -1,8 +1,22 @@
-# Agent Control 4.3.0
+# Agent Control 4.4.0
+
+**Your Memories** is the user-facing Agent Control capability for finding relevant prior context, checking its governance and provenance, rejecting stale or unrelated memories, and safely presenting accepted context in a session. Memories remain advisory and cannot override Work Parcels, batons, policy, authoritative evidence or execution state. The 4.4 release includes the governed UX Session Capture/Replay projection and the qualified memory architecture; MARM remains one optional backend and automatic memory consolidation/model swapping is not a released runtime feature.
+
+Agent Control 4.4 seals completed sessions over existing execution history and qualification evidence, then renders audience-bounded [interactive replay](docs/ux-session-replay.md), conventional video, complete transcript and concise digest from the same identity. Read-only capability links grant neither dashboard nor rerun access, support expiry and revocation, and apply fail-closed presentation redaction. See the [memory architecture review](docs/memory-architecture-review.md), [physical memory evidence](docs/evidence/agent-control-4.4-marm-memory-qualification-20260911.md), [replay qualification](docs/evidence/agent-control-4.4-ux-session-replay-20260911.md), [4.4 release notes](docs/release-notes-4.4.0.md), [4.4 migration](docs/migration-4.4.md), and [deployment guide](docs/DEPLOYMENT.md).
 
 Agent Control runs governed parameterised jobs against qualified execution and model resources. It is an infrastructure-neutral, policy-controlled adaptive harness for durable work by heterogeneous agents and models. Its executable harness core composes a task-appropriate worker, provider/model route, prompt profile, minimum qualified skills, restricted tools, context strategy, runtime settings, authority snapshot, resource limits and verification/escalation policy into a fingerprinted execution recipe.
 
-## Agent Control 4.3 release-qualified status
+## Agent Control 4.4 release-qualified status
+
+The 4.4 UX/session boundary is qualified at implementation commit
+`3b0f89653784f90e092c07f61123ba1f9249a42b`; the checksummed evidence checkpoint
+is `574c53f4e3db0d71cf59a3bdb3340f2aa2a7f181`. Physical Chromium replay passed
+without browser errors, including visible parallel lane/gate/accounting history
+and the governed **Your Memories** lifecycle. The complete suite passed 1,125 of
+1,125 tests with no failures or skips. Historical evidence remains bound to its
+recorded source commits and is not relabelled as newly executed provider work.
+
+## Agent Control 4.3 foundation
 
 Agent Control 4.3 integrates the 4.2 Transport Context integrity gate and
 provider-neutral Cache-Aware Expert Delegation with the complete 4.1 POE,

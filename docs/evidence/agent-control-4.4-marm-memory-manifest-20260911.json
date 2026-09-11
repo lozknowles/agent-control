@@ -1,0 +1,79 @@
+{
+  "schema": "agent-control.memory-qualification-manifest/v1",
+  "createdAt": "2026-09-11T08:59:43.821Z",
+  "classification": "C_GENERIC_MEMORY_ABSTRACTION",
+  "agentControl": {
+    "repository": "agent-control",
+    "branch": "feature/4.4-marm-memory-qualification",
+    "sourceCommit": "c389a7a2fc79caeea021226532ec7fff05de7420",
+    "sourceTree": "46bbb130290a808bc3abbca58b2edea705df351c",
+    "sourceTag": "v4.3.0"
+  },
+  "marm": {
+    "repository": "https://github.com/Lyellr88/marm-memory",
+    "commit": "0b4013de9e854fccd211d7fdb8e35ff6596ec4a1",
+    "packageVersion": "2.48.0",
+    "requiredAtRuntime": false
+  },
+  "runtime": {
+    "model": "Qwen2.5-Coder-3B-Instruct-Q4_K_M.gguf",
+    "provider": "local llama.cpp-compatible loopback",
+    "gpu": "Quadro P5000",
+    "freeVramMiBAtStart": 1546,
+    "protectedServicesStopped": false,
+    "currentContextOccupancyAuthority": "unavailable",
+    "monetaryCostAuthority": "unavailable"
+  },
+  "workParcel": {
+    "id": "parcel-97ea84f4-551c-4897-a428-37d9fe8d790a",
+    "status": "SUCCEEDED",
+    "stages": 6
+  },
+  "commands": [
+    "git fetch --all --tags --prune",
+    "git worktree add -b feature/4.4-marm-memory-qualification <isolated-worktree> origin/main",
+    "python -m venv /fast/qualification/agent-control-4.4-marm-memory-20260911/marm-venv",
+    "pip install <pinned-marm-checkout>",
+    "npm run typecheck",
+    "npx tsx scripts/qualify-marm-memory.ts",
+    "npm run check"
+  ],
+  "artifacts": [
+    {
+      "path": "docs/evidence/agent-control-4.4-marm-memory-qualification-20260911.json",
+      "sha256": "a7bdce9a6852484d4460a48defb16211f036019a3f67dfb3e6fc926dd99a2c6a",
+      "bytes": 267403
+    },
+    {
+      "path": "scripts/qualify-marm-memory.ts",
+      "sha256": "b19bbfdb008ccf2c64e50216b609a628ac153e8dc7d5806c61eea51a340211a0"
+    },
+    {
+      "path": "scripts/marm-memory-experiment-backend.py",
+      "sha256": "0511e8a3b7a7f0dfabc43366f62d53aea705a1f452acd477c6517947db97531e"
+    },
+    {
+      "externalPath": "/fast/qualification/agent-control-4.4-marm-memory-20260911/marm-memory.db",
+      "sha256": "64328a8809279f13d6ff6bfb0e063635b8224e3d0c6a8c5437645170373c158d",
+      "bytes": 262144,
+      "productDependency": false
+    }
+  ],
+  "results": {
+    "fullSuite": {
+      "tests": 1119,
+      "passed": 1119,
+      "failed": 0
+    },
+    "baselineVerified": "8/8",
+    "memoryVerified": "8/8",
+    "baselineEstimatedContextTokens": 6022,
+    "memoryEstimatedContextTokens": 550,
+    "contextReductionFraction": 0.9086682165393557,
+    "baselineProviderInputTokens": 7844,
+    "memoryProviderInputTokens": 1608,
+    "providerInputReductionFraction": 0.7950025497195309,
+    "provenanceCorrect": true,
+    "allSafetyControlsPassed": true
+  }
+}

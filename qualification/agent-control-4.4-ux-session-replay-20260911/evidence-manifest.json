@@ -1,0 +1,115 @@
+{
+  "schema": "agent-control.ux-session-qualification/v1",
+  "verdict": "PASS_PHYSICAL_UX_SESSION_REPLAY",
+  "qualifiedAt": "2026-09-11T12:54:03.098Z",
+  "implementationCommit": "3b0f89653784f90e092c07f61123ba1f9249a42b",
+  "sources": {
+    "parallel": {
+      "commit": "fcb4127d049408af2177c1e5104b638160933e7e",
+      "evidenceSha256": "a77e48abd8a3045054c2cc475a111c8659a23d86b1d519c59ecc14ee00ba672f",
+      "transcriptSha256": "db80f34f3c992990ad9766c7793f45047ba3def2ee607fe0a4464f0675e1496d",
+      "videoSha256": "57bfb46490c6d213bb20e8f6c8c148d33a10997f9f2fdedecbddee4e55128a0b",
+      "transcriptLines": 2066
+    },
+    "memory": {
+      "commit": "e449cd4d40fb570bacbd79ce64a2e5892f4372fa",
+      "evidenceSha256": "a7bdce9a6852484d4460a48defb16211f036019a3f67dfb3e6fc926dd99a2c6a"
+    }
+  },
+  "sessions": [
+    {
+      "id": "ux-parallel-lanes-20260910",
+      "sha256": "c9a79159d2702eae2300b28cd65eb0b490f5c8e6ce1642a8db051b6f4d4a2ddb"
+    },
+    {
+      "id": "ux-memory-qualification-20260911",
+      "sha256": "fb13c9776178b67ab40aed8715020bf8ff8e637fe0dd26ced223d2ee483f3d0b"
+    }
+  ],
+  "representations": [
+    {
+      "file": "canonical-session.json",
+      "sha256": "b94bad952234a98b9601391d38ae36ff4704f9f788424d243eefcef1ff1651db",
+      "bytes": 37395
+    },
+    {
+      "file": "memory-session.json",
+      "sha256": "7adb17b7a1dd34607300f1d093e9aeec8abd58f28bb9e668d5ad04c90a4c7fb5",
+      "bytes": 6168
+    },
+    {
+      "file": "sanitised-external-view.json",
+      "sha256": "9c92747da042b0f64f62b43fc6f3ce1b8af8fc1d8f24c0a3150f599363f9c253",
+      "bytes": 17110
+    },
+    {
+      "file": "authorised-diagnostic-view.json",
+      "sha256": "7e434472a59ce52766bd19c5285f011ff7e640befc09fe0ea124989f7b8dd8c5",
+      "bytes": 19635
+    },
+    {
+      "file": "interactive-replay.png",
+      "sha256": "7f4296992d3b23d14148faddefa5ac84fc08ced8f15fdaa365c2bacc1667f04b",
+      "bytes": 948987
+    },
+    {
+      "file": "your-memories-replay.png",
+      "sha256": "2b8014d939ed4c8569934b6b11ebc9bb2eeee57ce025e418e5fd36f870225416",
+      "bytes": 881422
+    },
+    {
+      "file": "agent-control-4.4-ux-session-replay.mp4",
+      "sha256": "53ef0707f0549dac48531fc8dc14edbfeedf9812dae97fb59e9b1adf6af6003d",
+      "bytes": 5163170
+    },
+    {
+      "file": "complete-transcript.md",
+      "sha256": "78d3bed68065388f7dfdd7641194d2a54fd5cded1f498e326f7ec59102a0e98f",
+      "bytes": 10603
+    },
+    {
+      "file": "human-readable-digest.md",
+      "sha256": "8486ffd4c21ad97ddc59c7925e4c28b1abdeb09e9204636c2b635b5994fe3f60",
+      "bytes": 847
+    }
+  ],
+  "videoInfo": {
+    "programs": [],
+    "streams": [
+      {
+        "codec_name": "h264",
+        "width": 1920,
+        "height": 1080,
+        "r_frame_rate": "25/1"
+      }
+    ],
+    "format": {
+      "duration": "42.760000",
+      "size": "5163170"
+    }
+  },
+  "checks": {
+    "immutableSession": true,
+    "sameSessionProvenance": true,
+    "parallelLaneOutcomes": {
+      "glm": "PASSED",
+      "luna": "FAILED",
+      "qwen": "FAILED",
+      "sol": "SKIPPED"
+    },
+    "aggregateSelected": "glm",
+    "solInvoked": false,
+    "totalTokens": 14897,
+    "readOnlyShare": true,
+    "expiryAndRevocationCoveredByFocusedTests": true,
+    "externalSourceRecovery": false,
+    "externalCredentialRecovery": false,
+    "diagnosticDrilldown": true,
+    "memoryProvenanceFlow": true,
+    "memoryContentsExposed": false,
+    "userFacingMemoryName": "Your Memories",
+    "implementationTerminologyAbsentFromNormalMemoryView": true,
+    "annotationOverlaySeparate": true,
+    "browserErrors": []
+  }
+}

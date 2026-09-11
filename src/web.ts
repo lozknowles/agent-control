@@ -37,6 +37,7 @@ import {PoeOperatorRuntime} from './control/poe-operator.js';
 import {PoeRuntime} from './control/poe.js';
 import {RoutedPoeResponseModel} from './control/poe-model.js';
 import {governedRequestOrigin} from './control/request-origin.js';
+import {UxSessionAnnotationStore,UxSessionCaptureRuntime,UxSessionShareStore,UxSessionStore} from './control/ux-session.js';
 
 const now = () => new Date().toISOString();
 const configurationFile = configPath(), config = loadConfig(configurationFile);
@@ -76,6 +77,10 @@ catch (error) {
 const jobRuntime = buildJobRuntime(config, stateRoot, undefined, undefined, modelRegistry, codexNodeExecution, executionSessions);
 const governedRetrieval = buildGovernedRetrievalRuntime(config,stateRoot);
 const parameterizedJobs = buildParameterizedJobRuntime(config, modelRegistry, jobRuntime.workParcels, stateRoot, tokenBatonRouting, contracts, handoffs, codexNodeExecution, governedRetrieval);
+const uxSessions=new UxSessionStore(path.join(stateRoot,'ux-sessions','records'));
+const uxSessionShares=new UxSessionShareStore(path.join(stateRoot,'ux-sessions','shares.json'));
+const uxSessionAnnotations=new UxSessionAnnotationStore(path.join(stateRoot,'ux-sessions','annotations.json'));
+const uxSessionCapture=new UxSessionCaptureRuntime(uxSessions,parameterizedJobs.runs,parameterizedJobs.savedJobs,jobRuntime.workParcels.store,tokenBatonRouting);
 const commandOutputRoot = path.resolve(stateRoot, 'command-output');
 const tokenAwareOutput = new TokenAwareOutputService(new FileCommandResultStore(commandOutputRoot), {
   policy: config.tokenAwareOutput,
@@ -192,7 +197,7 @@ if (process.env.AGENT_CONTROL_OPENWA_CONFIG) {
     openwa.start();
   } catch { process.stderr.write('Optional OpenWA adapter unavailable; dashboard and jobs remain active. Check private integration configuration.\n'); }
 }
-const server = startWebDashboard(service, {host, port, openwa, socialVoice, operatorToken: process.env.AGENT_CONTROL_WEB_OPERATOR_TOKEN, allowedOrigins: process.env.AGENT_CONTROL_WEB_ALLOWED_ORIGINS?.split(',').map(value => value.trim()).filter(Boolean), configFile: configurationFile});
-server.on('close',()=>{if(socialTimer)clearInterval(socialTimer);openwa?.close();});
+const server = startWebDashboard(service, {host, port, openwa, socialVoice, operatorToken: process.env.AGENT_CONTROL_WEB_OPERATOR_TOKEN, allowedOrigins: process.env.AGENT_CONTROL_WEB_ALLOWED_ORIGINS?.split(',').map(value => value.trim()).filter(Boolean), configFile: configurationFile,uxSessions,uxSessionShares,uxSessionAnnotations});
+server.on('close',()=>{if(socialTimer)clearInterval(socialTimer);openwa?.close();uxSessionCapture.dispose();});
 server.on('listening', () => process.stdout.write(`Agent Control ${service.version} web dashboard: http://${host}:${port} (${process.env.AGENT_CONTROL_WEB_OPERATOR_TOKEN ? 'operator authenticated' : 'observer only'})\n`));
 server.on('error', error => { process.stderr.write(`Dashboard failed: ${error.message}\n`); process.exitCode = 1; });

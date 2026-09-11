@@ -1,0 +1,193 @@
+{
+  "schema": "agent-control.ux-session/v1",
+  "id": "ux-memory-qualification-20260911",
+  "title": "Your Memories — Relevant Context, Safely Governed",
+  "startedAt": "2026-09-11T08:59:18.473Z",
+  "completedAt": "2026-09-11T08:59:43.821Z",
+  "sources": [
+    {
+      "kind": "qualification-evidence",
+      "reference": "git:e449cd4d40fb570bacbd79ce64a2e5892f4372fa:docs/evidence/agent-control-4.4-marm-memory-qualification-20260911.json",
+      "sha256": "a7bdce9a6852484d4460a48defb16211f036019a3f67dfb3e6fc926dd99a2c6a",
+      "authority": "Agent Control 4.4 physical memory qualification"
+    }
+  ],
+  "events": [
+    {
+      "id": "memory-requested",
+      "at": "2026-09-11T08:59:18.473Z",
+      "layer": "AGENT_CONTROL",
+      "kind": "MEMORY",
+      "title": "Your Memories checked for relevant context",
+      "summary": "Agent Control looked for relevant memories for eight real historical questions.",
+      "outcome": "PASSED",
+      "parentIds": [],
+      "evidenceRefs": [
+        "a7bdce9a6852484d4460a48defb16211f036019a3f67dfb3e6fc926dd99a2c6a"
+      ],
+      "memory": {
+        "operation": "REQUESTED",
+        "contentExposed": false,
+        "provenance": [
+          "git:e449cd4d40fb570bacbd79ce64a2e5892f4372fa",
+          "a7bdce9a6852484d4460a48defb16211f036019a3f67dfb3e6fc926dd99a2c6a"
+        ]
+      }
+    },
+    {
+      "id": "memory-validated",
+      "at": "2026-09-11T08:59:18.473Z",
+      "layer": "AGENT_CONTROL",
+      "kind": "MEMORY",
+      "title": "Your Memories passed governance and provenance checks",
+      "summary": "Current evidence, project and session boundaries were checked before any memory could enter context.",
+      "outcome": "PASSED",
+      "parentIds": [
+        "memory-requested"
+      ],
+      "evidenceRefs": [
+        "a7bdce9a6852484d4460a48defb16211f036019a3f67dfb3e6fc926dd99a2c6a"
+      ],
+      "memory": {
+        "operation": "VALIDATED",
+        "contentExposed": false,
+        "provenance": [
+          "git:e449cd4d40fb570bacbd79ce64a2e5892f4372fa",
+          "a7bdce9a6852484d4460a48defb16211f036019a3f67dfb3e6fc926dd99a2c6a"
+        ]
+      }
+    },
+    {
+      "id": "memory-accepted",
+      "at": "2026-09-11T08:59:18.473Z",
+      "layer": "AGENT_CONTROL",
+      "kind": "MEMORY",
+      "title": "Relevant memories were accepted",
+      "summary": "Eligible, current memories were accepted; their contents remain hidden in this replay.",
+      "outcome": "PASSED",
+      "parentIds": [
+        "memory-validated"
+      ],
+      "evidenceRefs": [
+        "a7bdce9a6852484d4460a48defb16211f036019a3f67dfb3e6fc926dd99a2c6a"
+      ],
+      "memory": {
+        "operation": "ACCEPTED",
+        "contentExposed": false,
+        "provenance": [
+          "git:e449cd4d40fb570bacbd79ce64a2e5892f4372fa",
+          "a7bdce9a6852484d4460a48defb16211f036019a3f67dfb3e6fc926dd99a2c6a"
+        ]
+      }
+    },
+    {
+      "id": "memory-rejected",
+      "at": "2026-09-11T08:59:18.473Z",
+      "layer": "AGENT_CONTROL",
+      "kind": "MEMORY",
+      "title": "Unsafe or irrelevant memories were rejected",
+      "summary": "Stale, superseded, unrelated, unverified, incomplete and incorrect memories were rejected.",
+      "outcome": "FAILED",
+      "parentIds": [
+        "memory-validated"
+      ],
+      "evidenceRefs": [
+        "a7bdce9a6852484d4460a48defb16211f036019a3f67dfb3e6fc926dd99a2c6a"
+      ],
+      "memory": {
+        "operation": "REJECTED",
+        "contentExposed": false,
+        "provenance": [
+          "git:e449cd4d40fb570bacbd79ce64a2e5892f4372fa",
+          "a7bdce9a6852484d4460a48defb16211f036019a3f67dfb3e6fc926dd99a2c6a"
+        ]
+      }
+    },
+    {
+      "id": "memory-supplied",
+      "at": "2026-09-11T08:59:43.821Z",
+      "layer": "AGENT_CONTROL",
+      "kind": "MEMORY",
+      "title": "Your Memories supplied bounded context",
+      "summary": "Supplied context fell from 6,022 to 550 estimated tokens while correctness remained 8/8.",
+      "outcome": "PASSED",
+      "parentIds": [
+        "memory-accepted",
+        "memory-rejected"
+      ],
+      "evidenceRefs": [
+        "a7bdce9a6852484d4460a48defb16211f036019a3f67dfb3e6fc926dd99a2c6a"
+      ],
+      "memory": {
+        "operation": "SUPPLIED",
+        "contentExposed": false,
+        "provenance": [
+          "git:e449cd4d40fb570bacbd79ce64a2e5892f4372fa",
+          "a7bdce9a6852484d4460a48defb16211f036019a3f67dfb3e6fc926dd99a2c6a"
+        ]
+      }
+    },
+    {
+      "id": "memory-outcome",
+      "at": "2026-09-11T08:59:43.821Z",
+      "layer": "TELEMETRY",
+      "kind": "OUTCOME",
+      "title": "Your Memories comparison independently passed",
+      "summary": "Provider input fell from 7,844 to 1,608 tokens; correctness remained unchanged; memories remained advisory.",
+      "outcome": "PASSED",
+      "parentIds": [
+        "memory-supplied"
+      ],
+      "evidenceRefs": [
+        "a7bdce9a6852484d4460a48defb16211f036019a3f67dfb3e6fc926dd99a2c6a"
+      ],
+      "telemetry": {
+        "inputTokens": 1608,
+        "outputTokens": 277,
+        "totalTokens": 1885,
+        "cachedTokens": 497,
+        "cost": null,
+        "currency": null,
+        "authority": "AUTHORITATIVE"
+      }
+    }
+  ],
+  "lanes": [
+    {
+      "id": "memory",
+      "name": "Your Memories",
+      "provider": "Agent Control",
+      "model": "Your Memories",
+      "outcome": "PASSED",
+      "inputTokens": 1608,
+      "outputTokens": 277,
+      "totalTokens": 1885,
+      "cost": null,
+      "currency": null
+    }
+  ],
+  "outcome": {
+    "verdict": "PASS_PHYSICAL_MEMORY_EXPERIMENT",
+    "summary": "8/8 correct with bounded, provenance-checked memories.",
+    "selectedLaneId": "memory",
+    "escalationInvoked": false
+  },
+  "totals": {
+    "inputTokens": 1608,
+    "outputTokens": 277,
+    "totalTokens": 1885,
+    "cost": null,
+    "currency": null,
+    "authority": "PARTIAL"
+  },
+  "artifacts": [
+    {
+      "kind": "manifest",
+      "file": "governed-memory-evidence.json",
+      "sha256": "a7bdce9a6852484d4460a48defb16211f036019a3f67dfb3e6fc926dd99a2c6a",
+      "bytes": 267403
+    }
+  ],
+  "immutable": true,
+  "sha256": "fb13c9776178b67ab40aed8715020bf8ff8e637fe0dd26ced223d2ee483f3d0b"
+}
