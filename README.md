@@ -566,8 +566,9 @@ dashboard. Open **Morrow**, type this exact request, and select **Ask**:
 Start operator-system-observation@1.1.0
 ```
 
-Morrow must show the sealed request and must not start it immediately. Review
-the displayed job identity, empty inputs and SHA-256, then select **Approve this job**.
+Morrow must show **Review job proposal** and must not start it immediately. Expand
+**Jobs, schedules, approvals & evidence**, review the displayed job identity,
+empty inputs and SHA-256, then select **Approve this job**.
 Open its Work Parcel and choose **Runtime Map → Process Map**. The genuine
 run contains `observe → verify`: it records registered worker health as a local
 JSON artifact, then a separate deterministic verifier checks that artifact.

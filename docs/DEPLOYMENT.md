@@ -25,7 +25,8 @@ state root and contain references/status only, never credential values. See
 For a new provider-free controller, the documented first execution is the
 registered `operator-system-observation@1.1.0` Job. In the authenticated Morrow
 view, ask `Start operator-system-observation@1.1.0`, inspect the sealed proposal,
-select **Approve this job**, and follow its Work Parcel in **Runtime Map → Process Map**.
+expand **Jobs, schedules, approvals & evidence**, select **Approve this job**,
+and follow its Work Parcel in **Runtime Map → Process Map**.
 The `observe → verify` stages must finish `SUCCEEDED`; this checks only the
 local governed execution and independent artifact-verification boundary. A fresh
 empty configuration exposes one built-in controller-local worker restricted to

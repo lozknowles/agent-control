@@ -22,7 +22,8 @@
   genuine resources into an unreadable strip.
 - Adds the missing provider-free first governed-job walkthrough: the documented
   Morrow request now leads an operator through sealed review, explicit approval,
-  the real `observe → verify` Work Parcel and its Process Map.
+  the real `observe → verify` Work Parcel and its Process Map, including the
+  approval disclosure that must be expanded before the button is visible.
 - Fixes the virgin-install execution gap found by that walkthrough: the runtime
   now registers one built-in controller-local worker restricted to the
   `agent-control.operator-observation.read` capability. It can run only the

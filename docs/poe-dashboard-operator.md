@@ -71,8 +71,9 @@ The registered harmless System observation 1.1.0 job reads worker status and the
 
 After the README first-run discovery, open the authenticated **Morrow** view and
 enter `Start operator-system-observation@1.1.0`. Morrow creates a sealed proposal
-but does not execute it. Verify the exact Job identity, `{}` inputs and displayed
-SHA-256, then choose **Approve this job**. Follow the resulting Work Parcel in
+but does not execute it. Expand **Jobs, schedules, approvals & evidence**, verify
+the exact Job identity, `{}` inputs and displayed SHA-256, then choose **Approve this job**.
+Follow the resulting Work Parcel in
 **Runtime Map → Process Map**. Its two real stages are `observe → verify`, and a
 passing first-run result is `SUCCEEDED` with independent artifact verification.
 The eligible worker is built into the controller and is restricted to
