@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import type {ChildProcess} from 'node:child_process';
-import {OwnedProcessManager, type OwnedProcessIdentity, type ProcessTerminationAdapter} from './owned-process.js';
+import {OwnedProcessManager, processTerminationAdapterFor, type OwnedProcessIdentity, type ProcessTerminationAdapter} from './owned-process.js';
 import {ExecutionSessionRuntime, type ExecutionSessionScope} from './execution-session.js';
 
 class FixtureTerminationAdapter implements ProcessTerminationAdapter {
@@ -35,6 +35,13 @@ class DelayedCaptureTerminationAdapter implements ProcessTerminationAdapter {
     return {identity, outcome: 'confirmed' as const, reason, signals: ['fixture-tree-kill'], requestedAt: new Date().toISOString(), verifiedAt: new Date().toISOString(), detail: 'captured_tree_absent'};
   }
 }
+
+test('Android selects the procfs-backed process-group termination adapter', async () => {
+  const adapter = processTerminationAdapterFor('android'), identity = await adapter.capture(process.pid);
+  assert.equal(adapter.platform, 'android');
+  assert.equal(identity.platform, 'android');
+  assert.ok(identity.startedAtToken);
+});
 
 test('platform termination adapter reports confirmed tree cleanup without requiring Windows', async () => {
   const manager = new OwnedProcessManager(new FixtureTerminationAdapter('confirmed')), controller = new AbortController();

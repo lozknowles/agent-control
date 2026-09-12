@@ -29,10 +29,13 @@ test('large-context review gate does not reject a substantive verdict that quote
 });
 
 test('provider heartbeat remains active until response body consumption completes', async () => {
-  const phases:string[]=[]; let release!:()=>void;
+  const phases:string[]=[]; let release!:()=>void, observed!:()=>void;
   const bodyPending=new Promise<void>(resolve=>{release=resolve});
-  const operation=withLifecycleHeartbeat({assertActive: () => undefined, invoke:async()=>undefined,lifecycle:phase=>phases.push(phase)},async()=>{await bodyPending;return 'complete'},5);
-  await new Promise(resolve=>setTimeout(resolve,18)); assert.ok(phases.length>=2); release(); assert.equal(await operation,'complete');
+  const twoHeartbeats=new Promise<void>(resolve=>{observed=resolve});
+  const operation=withLifecycleHeartbeat({assertActive: () => undefined, invoke:async()=>undefined,lifecycle:phase=>{phases.push(phase);if(phases.length>=2)observed();}},async()=>{await bodyPending;return 'complete'},5);
+  try { await Promise.race([twoHeartbeats,new Promise<never>((_resolve,reject)=>setTimeout(()=>reject(new Error('heartbeat_not_observed')),2_000))]); assert.ok(phases.length>=2); }
+  finally { release(); }
+  assert.equal(await operation,'complete');
   const stopped=phases.length; await new Promise(resolve=>setTimeout(resolve,12)); assert.equal(phases.length,stopped);
 });
 

@@ -139,7 +139,7 @@ function signalLinuxGroup(pid: number, signal: NodeJS.Signals) {
 }
 
 class LinuxTerminationAdapter implements ProcessTerminationAdapter {
-  readonly platform = 'linux' as const;
+  constructor(readonly platform: 'linux' | 'android' = 'linux') {}
   async capture(pid: number): Promise<OwnedProcessIdentity> { return {pid, platform: this.platform, startedAtToken: readLinuxStat(pid)?.startedAtToken ?? null, capturedAt: timestamp()}; }
   async terminate(identity: OwnedProcessIdentity, child: ChildProcess, reason: string): Promise<ProcessCleanupResult> {
     const requestedAt = timestamp(), signals: string[] = [], current = readLinuxStat(identity.pid);
@@ -225,8 +225,12 @@ class PortableTerminationAdapter implements ProcessTerminationAdapter {
   }
 }
 
+export function processTerminationAdapterFor(platform: NodeJS.Platform): ProcessTerminationAdapter {
+  return platform === 'linux' || platform === 'android' ? new LinuxTerminationAdapter(platform) : platform === 'win32' ? new WindowsTerminationAdapter() : new PortableTerminationAdapter();
+}
+
 export function defaultProcessTerminationAdapter(): ProcessTerminationAdapter {
-  return process.platform === 'linux' ? new LinuxTerminationAdapter() : process.platform === 'win32' ? new WindowsTerminationAdapter() : new PortableTerminationAdapter();
+  return processTerminationAdapterFor(process.platform);
 }
 
 const cleanupRank: Record<CleanupOutcome, number> = {confirmed: 0, uncertain: 1, 'identity-mismatch': 2, failed: 3};

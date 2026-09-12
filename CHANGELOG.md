@@ -12,6 +12,9 @@
   installation fix.
 - Adds a no-overwrite exclusive-copy fallback for Android/Termux filesystems
   that deny hard-link creation during first-run configuration initialization.
+- Treats Node's `android` platform as a procfs/POSIX process-group host for
+  governed owned-process cleanup, so Termux timeouts can prove that child trees
+  are gone instead of retaining resources as cleanup-uncertain.
 
 - Makes the documented Linux bootstrap directly executable and aligns Linux
   and Windows installation with the repository's intentional no-lock,
