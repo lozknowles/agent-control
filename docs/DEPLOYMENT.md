@@ -10,6 +10,12 @@ explicit install mode uses `npm install --ignore-scripts --no-package-lock` and
 the idempotent initializer. It does not install Ollama, llama.cpp, Codex, Claude
 Code, Gemini CLI, GPU drivers or other optional tools.
 
+A fresh Termux environment normally lacks the required Git, Node.js and npm
+commands. Install and verify the exact prerequisites documented in
+[the Android guide](../android/README.md#fresh-termux-prerequisites) before
+running the repository clone. This prerequisite step does not activate the
+Android node, dashboard, boot hook, ADB or any provider.
+
 Before starting the dashboard, configure `AGENT_CONTROL_WEB_OPERATOR_TOKEN`
 through the README's hidden-prompt procedure. Authenticate the browser with that
 same private token; Environment Discovery is intentionally unavailable to an

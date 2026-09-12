@@ -29,6 +29,10 @@
   `agent-control.operator-observation.read` capability. It can run only the
   read-only observation/verification placement contract and does not invent or
   authorize a provider, model, shell, remote worker or service.
+- Adds the previously missing fresh-Termux prerequisite procedure after a real
+  Android 15 installation stopped at the documented clone command with Git,
+  Node.js and npm absent. The Android guide now installs and verifies Git,
+  Node.js 24 LTS and npm before returning to the same generic bootstrap.
 - Replaces the ambiguous manual dependency sequence with one documented
   check/install path and explicit expected results and troubleshooting.
 

@@ -500,6 +500,9 @@ Every specialist assignment and coordinator synthesis remains an ordinary Agent 
 - Optional: ripgrep for typed repository search, Orca, SSH, Android/Termux, and provider services when configured
 
 No host, device, provider, port, GPU, overlay network or absolute repository path is built in.
+For a fresh Android/Termux installation, complete the explicit
+[Termux prerequisites](android/README.md#fresh-termux-prerequisites) before the
+clone command below.
 
 ## Install
 

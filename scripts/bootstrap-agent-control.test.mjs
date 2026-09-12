@@ -14,6 +14,18 @@ test('published Linux bootstrap is executable and has no lockfile or build assum
   assert.doesNotMatch(source, /package-lock\.json|\bnpm --prefix "\$target" ci\b|run build/);
 });
 
+test('published Android guide provides fresh Termux prerequisites before clone', () => {
+  const androidGuide = fs.readFileSync(path.join(repositoryRoot, 'android/README.md'), 'utf8');
+  const readme = fs.readFileSync(path.join(repositoryRoot, 'README.md'), 'utf8');
+  const deployment = fs.readFileSync(path.join(repositoryRoot, 'docs/DEPLOYMENT.md'), 'utf8');
+
+  assert.match(androidGuide, /pkg install git nodejs-lts npm/);
+  assert.match(androidGuide, /Node\.js version must be 24\.x/);
+  assert.match(androidGuide, /\.\.\/README\.md#install/);
+  assert.match(readme, /android\/README\.md#fresh-termux-prerequisites/);
+  assert.match(deployment, /Android guide\]\(\.\.\/android\/README\.md#fresh-termux-prerequisites\)/);
+});
+
 test('published Linux bootstrap installs and initializes a clean project without a lockfile or build script', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-bootstrap-'));
   try {
