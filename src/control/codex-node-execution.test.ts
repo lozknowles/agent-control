@@ -58,6 +58,15 @@ test('Windows Codex node execution sends one fixed PowerShell program and treats
   assert.equal(result.nodeId, node.id);
 });
 
+test('remote structured output permits governed repository paths but fails closed on credential-profile paths', async () => {
+  const model = {id: 'model-a', provider: provider.id, accountProfile: account.id, providerModel: 'gpt-example', capabilities: []};
+  const safeExecutor: SshExecutor = async () => ({status: 0, stdout: JSON.stringify({schema: 'agent-control.codex-node-result/v1', operation: 'execReadOnlyStructured', ok: true, codexVersion: 'codex-cli 0.153.4', executableSha256: hash, discoveredAt: '2026-09-12T04:00:00.000Z', finalMessage: '{"vault":"D:/obsidian/knowledge_vault"}', observedItemTypes: ['agent_message']}), stderr: ''});
+  const result = await new ResourceCodexNodeExecutionPort([node], {}, safeExecutor).execReadOnlyStructured({provider, account, nodeId: node.id, model, instruction: 'bounded', outputSchema: {type: 'object'}, timeoutMs: 1_000});
+  assert.match(result.finalMessage, /D:\/obsidian\/knowledge_vault/);
+  const unsafeExecutor: SshExecutor = async () => ({status: 0, stdout: JSON.stringify({schema: 'agent-control.codex-node-result/v1', operation: 'execReadOnlyStructured', ok: true, codexVersion: 'codex-cli 0.153.4', executableSha256: hash, discoveredAt: '2026-09-12T04:00:00.000Z', finalMessage: '{"profile":"C:\\Users\\Loz\\.local\\share\\agent-control\\codex-profiles\\cottage-plus"}', observedItemTypes: ['agent_message']}), stderr: ''});
+  await assert.rejects(() => new ResourceCodexNodeExecutionPort([node], {}, unsafeExecutor).execReadOnlyStructured({provider, account, nodeId: node.id, model, instruction: 'bounded', outputSchema: {type: 'object'}, timeoutMs: 1_000}), /codex_exec_sensitive_output_rejected/);
+});
+
 test('remote account execution never resolves the controller credential environment or exposes transport stderr', async () => {
   const executor: SshExecutor = async () => ({status: 23, stdout: '', stderr: 'C:\\Users\\operator\\secret-profile auth-token-value'});
   const port = new ResourceCodexNodeExecutionPort([node], {CODEX_HOME_ACCOUNT_A: '/controller/forbidden'}, executor);
@@ -92,11 +101,19 @@ test('the audited Windows runner discovers versioned Codex bundles without a har
   assert.match(script, /--version/);
   assert.doesNotMatch(script, /[a-f0-9]{16,}\\codex\.exe/i);
   assert.doesNotMatch(script, /Invoke-Expression|\biex\b/i);
-  assert.match(script, /\$statusProcess = Start-Process/);
-  assert.match(script, /RedirectStandardOutput \$statusStdoutFile/);
-  assert.match(script, /RedirectStandardError \$statusStderrFile/);
+  assert.match(script, /Diagnostics\.ProcessStartInfo/);
+  assert.match(script, /Arguments = 'login status'/);
+  assert.match(script, /RedirectStandardInput = \$true/);
+  assert.match(script, /RedirectStandardOutput = \$true/);
+  assert.match(script, /RedirectStandardError = \$true/);
+  assert.match(script, /StandardInput\.Close\(\)/);
+  assert.match(script, /ReadToEndAsync\(\)/);
   assert.match(script, /\$statusProcess\.WaitForExit/);
-  assert.match(script, /\$statusProcess\.Kill\(\)/);
+  assert.match(script, /WaitForExit\(\[int\]\$statusTimeoutMilliseconds\)[\s\S]+\$statusProcess\.WaitForExit\(\)[\s\S]+GetAwaiter\(\)\.GetResult\(\)/);
+  assert.match(script, /function Stop-ProcessTree/);
+  assert.match(script, /taskkill\.exe.*\/PID.*\/T.*\/F/);
+  assert.match(script, /Stop-ProcessTree \$statusProcess/);
+  assert.match(script, /Stop-ProcessTree \$process/);
   assert.match(script, /codex_chatgpt_auth_required/);
   assert.match(script, /UTF8Encoding\(\$false\)/);
   assert.match(script, /--skip-git-repo-check/);
@@ -104,7 +121,7 @@ test('the audited Windows runner discovers versioned Codex bundles without a har
   assert.match(script, /--ignore-user-config/);
   assert.match(script, /--ignore-rules/);
   assert.match(script, /project_doc_max_bytes=0/);
-  assert.match(script, /web_search="disabled"/);
+  assert.match(script, /web_search=disabled/);
   assert.match(script, /features\.shell_tool=false/);
   assert.match(script, /features\.unified_exec=false/);
   assert.match(script, /features\.multi_agent=false/);
@@ -116,14 +133,17 @@ test('the audited Windows runner discovers versioned Codex bundles without a har
   assert.match(script, /features\.workspace_dependencies=false/);
   assert.match(script, /--output-last-message/);
   assert.match(script, /ReadAllText\(\$lastMessageFile\)/);
-  assert.match(script, /Start-Process -FilePath \$selected\.Path/);
-  assert.match(script, /-RedirectStandardInput \$promptFile/);
-  assert.match(script, /-RedirectStandardOutput \$stdoutFile/);
+  assert.match(script, /\$start\.FileName = \$selected\.Path/);
+  assert.match(script, /\$start\.RedirectStandardInput = \$true/);
+  assert.match(script, /\$start\.RedirectStandardOutput = \$true/);
+  assert.match(script, /\$process\.StandardInput\.Write/);
+  assert.match(script, /\$process\.StandardInput\.Close/);
+  assert.match(script, /\$process\.StandardOutput\.ReadToEndAsync/);
   assert.match(script, /\$process\.WaitForExit/);
   assert.match(script, /codex_node_context_limit_exceeded/);
   assert.match(script, /codex_node_rate_limited/);
   assert.match(script, /item\.type -eq 'error'/);
-  assert.doesNotMatch(script, /Start-Job|ReadToEndAsync/);
+  assert.doesNotMatch(script, /Start-Job/);
 });
 
 test('destination execution fails closed when the execution port reports a different account or node', async () => {
