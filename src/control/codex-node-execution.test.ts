@@ -37,8 +37,9 @@ test('Windows Codex node execution sends one fixed PowerShell program and treats
   let observed: {args: string[]; source: string; payload: Record<string, unknown>; bootstrap: string} | undefined;
   const executor: SshExecutor = async (command, args, input) => {
     assert.equal(command, 'ssh');
-    const lines = input.trimEnd().split(/\r?\n/), encoded = lines.shift()!;
-    const source = lines.join('\n'), payload = JSON.parse(Buffer.from(encoded, 'base64').toString('utf8')) as Record<string, unknown>;
+    const lines = input.trimEnd().split(/\r?\n/), encoded = lines.shift()!, encodedSource = lines.shift()!;
+    assert.equal(lines.length, 0);
+    const source = Buffer.from(encodedSource, 'base64').toString('utf8'), payload = JSON.parse(Buffer.from(encoded, 'base64').toString('utf8')) as Record<string, unknown>;
     const bootstrap = Buffer.from(args.at(-1)!, 'base64').toString('utf16le');
     observed = {args, source, payload, bootstrap};
     return {status: 0, stdout: JSON.stringify({schema: 'agent-control.codex-node-result/v1', operation: 'execReadOnlyStructured', ok: true, codexVersion: 'codex-cli 0.152.1', executableSha256: hash, discoveredAt: '2026-09-03T10:00:00.000Z', threadId: 'thread-safe', finalMessage: '{"ok":true}', usage: {input_tokens: 4, output_tokens: 2, total_tokens: 6}, observedItemTypes: ['agent_message'], telemetry: [{type: 'turn.completed', elapsedMs: 9, usage: {input_tokens: 4, output_tokens: 2, total_tokens: 6}}]}), stderr: 'raw remote stderr must not be returned'};
@@ -47,7 +48,8 @@ test('Windows Codex node execution sends one fixed PowerShell program and treats
   const result = await port.execReadOnlyStructured({provider, account, nodeId: node.id, model: {id: 'model-a', provider: provider.id, accountProfile: account.id, providerModel: 'gpt-example', capabilities: []}, instruction: secretInstruction, outputSchema: {type: 'object'}, timeoutMs: 1_000});
   assert.deepEqual(observed?.args.slice(-5, -1), ['powershell.exe', '-NoProfile', '-NonInteractive', '-EncodedCommand']);
   assert.match(observed?.bootstrap ?? '', /ReadLine\(\)/);
-  assert.match(observed?.bootstrap ?? '', /ReadToEnd\(\)/);
+  assert.doesNotMatch(observed?.bootstrap ?? '', /ReadToEnd\(\)/);
+  assert.match(observed?.bootstrap ?? '', /FromBase64String\(\$encodedSource\)/);
   assert.match(observed?.source ?? '', /^param\(\[string\]\$PayloadLine\)/);
   assert.equal(observed?.source.includes(secretInstruction), false);
   assert.equal(observed?.source.includes(account.id), false);
