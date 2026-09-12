@@ -1,0 +1,78 @@
+{
+  "schema": "agent-control.release-candidate-manifest/v1",
+  "release": {
+    "name": "Agent Control 4.5.0 release candidate",
+    "version": "4.5.0",
+    "proposedStableTag": "v4.5.0",
+    "status": "EXPERIMENTAL",
+    "date": "2026-09-12"
+  },
+  "provenance": {
+    "releasedBaseline": "v4.4.0",
+    "originMainBase": "0a3d136c38ec2c75afb4fb946fba1fb12a9dd5f8",
+    "qualifiedImplementationCommit": "de3009bf51f59149e185cab62093ab38dc442d9c",
+    "qualificationEvidenceCommit": "354fa8bd4a17b40403447009bb7705347e9d95bd",
+    "releaseAuthority": "The operator authorized progress toward release. Stable merge, tag and publication remain conditional on every mandatory gate becoming proven."
+  },
+  "validation": {
+    "command": "npm run check",
+    "tests": {
+      "passed": 1154,
+      "failed": 0,
+      "skipped": 0
+    },
+    "releaseGateRecommendation": "EXPERIMENTAL",
+    "gateSummary": {
+      "proven": 5,
+      "partial": 2,
+      "disproven": 2,
+      "blocked": 2,
+      "notTested": 0
+    }
+  },
+  "dependencies": {
+    "packageJsonSha256": "17002aa97a1a6a8344a9c633606abea7cce22edd04ca4ad165e671067b81f0c5",
+    "typescriptConfigSha256": "246e14ac1be183f758b0ba77744fe279952d4bdbd50b1d8364f5a2b11865bd8c",
+    "lockfile": null,
+    "lockfileAuthority": "UNAVAILABLE"
+  },
+  "claims": {
+    "deterministicSkillLifecycle": "PROVEN",
+    "yourMemoriesCrossModelMatrix": "PARTIAL",
+    "msiCrossNodeMemoryTransition": "BLOCKED",
+    "strongModelMemoryConsolidation": "DISPROVEN",
+    "specialistModelEnergyAdvantage": "DISPROVEN",
+    "deterministicReuseBenefit": "PROVEN",
+    "wholeNodePower": "BLOCKED",
+    "learnedSpecialistRoutingDefault": "DISABLED"
+  },
+  "evidence": [
+    {
+      "path": "docs/evidence/agent-control-4.5-release-gate-20260912.md",
+      "sha256": "c0fa90b84d530dbc0f07c6b2bd33bd8505216fdd614cb0943465046da54bfc39"
+    },
+    {
+      "path": "qualification/agent-control-4.5-release-gate-20260912/release-gate.json",
+      "sha256": "546d9729cc6be81f4823f1a3a7c5e033d956c2f7041810f1ba6e53a4db037819"
+    },
+    {
+      "path": "qualification/agent-control-4.5-release-gate-20260912/evidence-manifest.json",
+      "sha256": "114a331e6e3d5b13fa3a6f0c77c2f6dfa4c6ecca6cad3739e4435c82c488e8d7"
+    },
+    {
+      "path": "qualification/agent-control-4.5-release-gate-20260912/complete-human-readable-transcript.md",
+      "sha256": "69982ecf03b9a9450640de9e852d203c3d5736856cdba77de810deb6b5faf0b5"
+    },
+    {
+      "path": "qualification/agent-control-4.5-release-gate-20260912/live-poe-run/agent-control-4.5-live-poe-memory-qualification.mp4",
+      "sha256": "256f5cbe52f6fe030dc5d045f98cd98e16753593966b88b06f9b968f8150cfff",
+      "media": {
+        "width": 1920,
+        "height": 1080,
+        "framesPerSecond": 25,
+        "durationSeconds": 36.92,
+        "bytes": 3214902
+      }
+    }
+  ]
+}
