@@ -16,7 +16,7 @@ Date: 2026-09-12. Scope: original Morrow identity replacing the public POE prese
 | Check | Result |
 | --- | --- |
 | `npm run check` | PASS: TypeScript, bootstrap, dashboard, neutrality, implementation status, and 1,157 tests; 0 failed, 0 skipped |
-| Final focused host-model, knowledge and robot-renderer tests | PASS; see [follow-up log](focused-checks.log) |
+| Final focused host-model, knowledge and robot-renderer tests | PASS; see [follow-up log](focused-checks.txt) |
 | Legacy conversation restoration | PASS: historical greeting, actor/schema identifiers and sealed proposal hash retained |
 | New and legacy text/voice invocation | PASS with controlled transcription fixtures; no Work Parcel created by read-only questions |
 | Morrow voice interruption | PASS with controlled speech fixture; targets existing playback, no work cancellation |
@@ -36,4 +36,4 @@ The currently configured designed voice, seed and hash are preserved. No new voi
 
 The replacement is prepared for normal integration review on its own branch. It has not been deployed into the running Agent Control instance. Complete the normal browser/device checks during an agreed integration window, without restarting a service that is executing active 4.5 work.
 
-See [machine-readable evidence](validation.json), [full check log](full-check.log), and [identity/compatibility guide](../../morrow.md).
+See [machine-readable evidence](validation.json), [full check log](full-check.txt), and [identity/compatibility guide](../../morrow.md).

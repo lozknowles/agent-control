@@ -22,8 +22,14 @@
   },
   "evidenceSha256": {
     "morrow-and-crew.png": "45d221af7908a427bc683e2f11b22a048724fc93df90014718e53745d3598558",
-    "full-check.log": "7d25a35302a09132213cc6dff9892c8102d5343d21619aaa88445d21b1c8d9fd",
-    "preview.html": "41695856bd2986e6459e5f2a161e3c07dcaf61779f0c568eaced984a01a0c74a",
-    "focused-checks.log": "340d683d70af6e44d6ec73ff00b3cad49a4785e14ff1830aed82ca18da2cac83"
+    "full-check.txt": "7d25a35302a09132213cc6dff9892c8102d5343d21619aaa88445d21b1c8d9fd",
+    "focused-checks.txt": "340d683d70af6e44d6ec73ff00b3cad49a4785e14ff1830aed82ca18da2cac83",
+    "preview.html": "41695856bd2986e6459e5f2a161e3c07dcaf61779f0c568eaced984a01a0c74a"
+  },
+  "publication": "BLOCKED_BY_AUTOMATIC_APPROVAL_REVIEW: pushing the branch requires explicit user approval",
+  "finalFocusedCheck": {
+    "passed": 17,
+    "failed": 0,
+    "skipped": 0
   }
 }
