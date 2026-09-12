@@ -69,37 +69,7 @@ After a Work Parcel resolves its frozen repository and context, the production r
 
 Each dependency declares requiredness, source, provenance, freshness and expected identity/hash. The deterministic gate is `COMPLETE` when required dependencies are satisfied, `DEGRADED` when only optional context is missing, `BLOCKED` when required context is missing/unretrievable/claimed-but-not-loaded, and `ESCALATED` when required context is stale or contradictory. Repairs append evidence; blocked workers do not improvise. Independent inspection records a distinct verifier and rejects generator self-approval.
 
-This layer composes with, rather than replaces, Work Parcel audit, token telemetry/governor, contract runtime, governed handoff and repository validation. The baton carries the transport-contract hash across provider/model/node changes. Legacy parcels are visible as unbound and are not silently rewritten. See [docs/transport-integrity.md](docs/transport-integrity.md).
-11. Every material routing decision is capability-qualified, fail closed and inspectable.
-12. An Action is a versioned executable capability; a Job is a declarative workflow; a Trigger creates a durable Run through one authoritative path.
-13. Job manifests can request capabilities, resources and approvals but cannot confer them.
-14. Process completion, collected evidence, verification and Run success are separate states.
-15. An agent may request or propose capability; only Agent Control policy may qualify and grant it.
-16. A recipe constructs an execution environment but cannot schedule work, acquire authority, write a PTY or accept a result.
-17. A managed node is a configured resource plus discovered capabilities; its hostname, transport, hardware and workload identity never become control-plane policy.
-18. Remote maintenance is a typed Action with approval and evidence, never an arbitrary SSH command string.
-19. Provider registration, model registration, model qualification, logical role mapping and worker placement are distinct state and decisions.
-20. A declared capability or pricing field is not qualification evidence; unavailable usage and cost remain unknown rather than zero.
-21. Actor, Agent, Model, Provider, Runtime, Node and Resource identities are separate; one must never stand in for another.
-22. A Session has one immutable creator and an attributed participant set; joining a session never grants authority beyond the actor, parent delegation or session envelope.
-23. Every context handoff records source and transferred hashes, token budget, selection/omission reason and receiving agent/model without persisting raw secret material.
-24. Missing sandbox, local execution, governed runner, required node or required model fails closed unless an explicit fallback policy names the replacement.
-25. ACP and other interoperability adapters terminate at AgentControlService/Work Parcel ports. They cannot become alternate scheduler, shell, tool or acceptance paths.
-26. `THIN` describes context shape; `SPARK` describes an execution class. Neither implies the other.
-27. Fast execution is one attempt, independently verified, scope-limited and visibly escalated. Protected or sensitive work never enters it.
-28. Retrieval is governed separately from model execution; search/inspect authority never implies index, configuration or repository mutation.
-29. Retrieved evidence is content-addressed, repository-state-bound and explicitly CURRENT, POSSIBLY_STALE or INVALID.
-30. Token pressure may narrow retrieval before expansion/compaction/handoff, but cumulative lifetime use never substitutes for active context occupancy.
-31. Provider rank is not calibrated confidence; evidence sufficiency derives from observable exact, path, coverage, diversity and freshness signals.
-32. A baton evidence reference is portable only when rehydration revalidates repository identity, path boundary, source existence and whole-file content hash.
-33. Index search and index mutation are distinct authorities; resource policy may recommend a build but cannot grant it.
-34. A remembered Run, PID or network connection is not execution continuity. Recovery requires the adapter to reconcile the exact durable execution identity and route.
-35. Sending a cancellation signal is not cleanup completion. Terminal state and authority release require verified descendant/process-tree absence or an explicit uncertainty state.
-36. Every resource metric carries source, authority and freshness. Missing data is null; a derived fallback cannot silently become an admission-qualified measurement.
-37. Cache admission is an adapter capability, not a core assumption. Stable prompt structure is portable; provider-specific keys and breakpoints are emitted only after provider-and-model qualification.
-38. Every external ingress that starts governed work preserves a redacted `request-origin` envelope through the Run, Work Parcel, transcript and response association; channel identity and authentication are provenance, never execution authority by themselves.
-39. A baton transfers context and evidence, never authority. A child contract receives only an intersection with parent authority and inherits the parent's protected-resource envelope.
-40. Live Shell is an attachment to a proven execution-session identity, not a shell API. Protected-resource Actions are `WATCH_ONLY`; adapter capabilities cannot widen that policy.
+This layer composes with, rather than replaces, Work Parcel audit, token telemetry/governor, contract runtime, governed handoff and repository validation. The baton carries the transport-contract hash across provider/model/node changes. Legacy parcels are visible as unbound and are not silently rewritten. See [docs/transport-integrity.md](docs/transport-integrity.md). 11. Every material routing decision is capability-qualified, fail closed and inspectable. 12. An Action is a versioned executable capability; a Job is a declarative workflow; a Trigger creates a durable Run through one authoritative path. 13. Job manifests can request capabilities, resources and approvals but cannot confer them. 14. Process completion, collected evidence, verification and Run success are separate states. 15. An agent may request or propose capability; only Agent Control policy may qualify and grant it. 16. A recipe constructs an execution environment but cannot schedule work, acquire authority, write a PTY or accept a result. 17. A managed node is a configured resource plus discovered capabilities; its hostname, transport, hardware and workload identity never become control-plane policy. 18. Remote maintenance is a typed Action with approval and evidence, never an arbitrary SSH command string. 19. Provider registration, model registration, model qualification, logical role mapping and worker placement are distinct state and decisions. 20. A declared capability or pricing field is not qualification evidence; unavailable usage and cost remain unknown rather than zero. 21. Actor, Agent, Model, Provider, Runtime, Node and Resource identities are separate; one must never stand in for another. 22. A Session has one immutable creator and an attributed participant set; joining a session never grants authority beyond the actor, parent delegation or session envelope. 23. Every context handoff records source and transferred hashes, token budget, selection/omission reason and receiving agent/model without persisting raw secret material. 24. Missing sandbox, local execution, governed runner, required node or required model fails closed unless an explicit fallback policy names the replacement. 25. ACP and other interoperability adapters terminate at AgentControlService/Work Parcel ports. They cannot become alternate scheduler, shell, tool or acceptance paths. 26. `THIN` describes context shape; `SPARK` describes an execution class. Neither implies the other. 27. Fast execution is one attempt, independently verified, scope-limited and visibly escalated. Protected or sensitive work never enters it. 28. Retrieval is governed separately from model execution; search/inspect authority never implies index, configuration or repository mutation. 29. Retrieved evidence is content-addressed, repository-state-bound and explicitly CURRENT, POSSIBLY_STALE or INVALID. 30. Token pressure may narrow retrieval before expansion/compaction/handoff, but cumulative lifetime use never substitutes for active context occupancy. 31. Provider rank is not calibrated confidence; evidence sufficiency derives from observable exact, path, coverage, diversity and freshness signals. 32. A baton evidence reference is portable only when rehydration revalidates repository identity, path boundary, source existence and whole-file content hash. 33. Index search and index mutation are distinct authorities; resource policy may recommend a build but cannot grant it. 34. A remembered Run, PID or network connection is not execution continuity. Recovery requires the adapter to reconcile the exact durable execution identity and route. 35. Sending a cancellation signal is not cleanup completion. Terminal state and authority release require verified descendant/process-tree absence or an explicit uncertainty state. 36. Every resource metric carries source, authority and freshness. Missing data is null; a derived fallback cannot silently become an admission-qualified measurement. 37. Cache admission is an adapter capability, not a core assumption. Stable prompt structure is portable; provider-specific keys and breakpoints are emitted only after provider-and-model qualification. 38. Every external ingress that starts governed work preserves a redacted `request-origin` envelope through the Run, Work Parcel, transcript and response association; channel identity and authentication are provenance, never execution authority by themselves. 39. A baton transfers context and evidence, never authority. A child contract receives only an intersection with parent authority and inherits the parent's protected-resource envelope. 40. Live Shell is an attachment to a proven execution-session identity, not a shell API. Protected-resource Actions are `WATCH_ONLY`; adapter capabilities cannot widen that policy.
 
 ## Agent Control 4.0 integrated lifecycle
 
@@ -387,12 +357,12 @@ The policy names `FAST_EXECUTION_MODEL`; Spark is its current model identity, no
 
 Harness profile and execution class are orthogonal:
 
-| Harness/context profile | Execution-class consequence |
-| --- | --- |
-| `THIN` + trivial + low-risk + deterministic verifier | Spark candidate, subject to all availability and qualification gates |
-| `THIN` + sensitive, ambiguous or protected work | Not Spark; retain governed STANDARD/FRONTIER policy |
-| `STANDARD` parent with one isolated trivial child | Child may receive a separate minimal Spark baton; parent model is unchanged |
-| `DEEP` | Never directly Spark-eligible; use the existing capable-model route |
+| Harness/context profile                              | Execution-class consequence                                                 |
+| ---------------------------------------------------- | --------------------------------------------------------------------------- |
+| `THIN` + trivial + low-risk + deterministic verifier | Spark candidate, subject to all availability and qualification gates        |
+| `THIN` + sensitive, ambiguous or protected work      | Not Spark; retain governed STANDARD/FRONTIER policy                         |
+| `STANDARD` parent with one isolated trivial child    | Child may receive a separate minimal Spark baton; parent model is unchanged |
+| `DEEP`                                               | Never directly Spark-eligible; use the existing capable-model route         |
 
 Availability and registry qualification are independent and both required. `probeCodexSparkAvailability` checks the installed Codex version, ChatGPT authentication and one bounded read-only exact-model invocation expecting a fixed probe response. A configured slug, CLI version or successful login alone is not availability evidence. Failure records the reason and leaves existing governed routing authoritative; no other model may be reported as Spark.
 
@@ -995,6 +965,7 @@ state-consistent backup and the previous startup identity support rollback.
 The [4.1 qualification record](docs/evidence/agent-control-4.1-qualification.md)
 reconciles physical component hashes and the exact full-suite product SHA with
 any later documentation-only release commit.
+
 ## 4.3 effect authority and filesystem containment
 
 The production Job boundary admits an Action only when its registration supplies
@@ -1031,3 +1002,37 @@ classes. Fast execution hashes valuable ignored state before and after execution
 only named disposable roots such as its dependency installation are excluded.
 Unexpected ignored mutation is an out-of-scope change and escalates without
 deleting or committing operator state.
+
+## Agent Control 4.5 Cross-Device Session Vault
+
+Session Vault is an evidence subsystem beneath governed continuation, not a
+memory replacement and not an execution authority:
+
+```text
+provider-native session bytes
+  → provider capability adapter
+  → immutable content-addressed object + sealed redacted event index
+  → historical search / repository provenance / replication
+  → governed lease + repository verification
+  → sealed continuation sources
+  → existing governed session + Work Parcel + independent verification
+
+approved, independently validated finding
+  → existing ProjectMemoryPort (Your Memories; Obsidian optional)
+  → advisory retrieval with native evidence link
+```
+
+Core storage, policy, search, replication, leases, attribution and continuation
+contracts are provider-neutral. Codex JSONL parsing is isolated in
+`CodexSessionAdapter`; another provider declares what it can authoritatively
+expose and unavailable fields remain unavailable. Raw bytes are never rewritten
+to fit the common event model. The normalized index is a convenience projection
+whose events retain native object and sequence provenance.
+
+Cross-device continuation is contextual, not hidden-state transport. It binds
+the source object, redacted index, repository state, Work Parcel and any
+validated Your Memories records. An exclusive lease prevents split-brain
+mutation; acquisition, renewal, release, forced release and denial are durable
+hash-verified events. Read-only retrieval remains safe during a conflicting
+continuation attempt. See [Session Vault architecture](docs/session-vault.md)
+and [threat model](docs/session-vault-threat-model.md).

@@ -20,6 +20,7 @@ export interface PoeEvidencePort {
   overview(): PoeEvidenceResult;
   resolve(reference: PoeObjectReference): PoeEvidenceResult;
 }
+export interface PoeSessionVaultPort {search(query:string,limit?:number):Array<{sessionId:string;providerId:string;nodeId:string;completeness:string;score:number;matches:Array<{eventId:string;kind:string;at:string;summary:string;authority:string}>;sourceObjectSha256:string}>;}
 
 export type PoeResponsePurpose = 'STATUS_LOOKUP' | 'EVIDENCE_EXPLANATION' | 'EXPERIMENT_DESIGN';
 export interface PoeResponseModelPort {
@@ -105,7 +106,7 @@ export interface PoeBenchmarkExecutionPort {submit(input: {proposal: PoeBenchmar
 export interface PoeEvent {type: 'conversation.changed' | 'proposal.changed' | 'speech.changed' | 'interrupted'; at: string; conversationId: string; proposalId?: string; state: PoeState; detail: Record<string, unknown>;}
 
 interface PoeSnapshot {schema: 'agent-control.poe-store/v1'; conversations: PoeConversation[]; proposals: PoeBenchmarkProposal[]; events: PoeEvent[];}
-interface PoeOptions {regression?:()=>unknown;operator?: PoeOperatorRuntime; file?: string; clock?: () => string; evidence: PoeEvidencePort; responseModel?: PoeResponseModelPort; benchmark?: PoeBenchmarkExecutionPort; speech?: SpeechProvider; recognition?: SpeechRecognitionProvider; voice?: VoiceIdentity; onEvent?: (event: PoeEvent) => void;}
+interface PoeOptions {regression?:()=>unknown;operator?: PoeOperatorRuntime; file?: string; clock?: () => string; evidence: PoeEvidencePort; sessionVault?:PoeSessionVaultPort; responseModel?: PoeResponseModelPort; benchmark?: PoeBenchmarkExecutionPort; speech?: SpeechProvider; recognition?: SpeechRecognitionProvider; voice?: VoiceIdentity; onEvent?: (event: PoeEvent) => void;}
 
 const MAX_TURNS = 500, MAX_EVENTS = 1_000;
 const label = (route: PoeRouteIdentity) => `${route.providerId}/${route.accountProfileId ?? 'default'}/${route.modelId}${route.providerModel?' ['+route.providerModel+']':''}@${route.nodeId}`;
@@ -158,7 +159,9 @@ export class PoeRuntime {
     this.setState(conversation, reference?.kind === 'crew-member' ? 'OBSERVING_CREW' : 'INVESTIGATING', {reference:reference?.kind ?? 'overview'});
     const ownProposal=reference?.kind==='benchmark'?this.proposals.get(reference.id):undefined;
     const priorAnswer=[...conversation.turns].reverse().find(turn=>turn.actor==='poe'&&turn.evidence.length);
-    const operatorEvidence = /(?:show|what).*evidence.*(?:that|answer)|sources.*(?:that|answer)/i.test(text)&&priorAnswer?{title:'Evidence supporting the previous answer',summary:'These are the exact retained sources and observations used for that answer, not newly inferred claims.',facts:priorAnswer.evidence,related:priorAnswer.references}:await this.options.operator?.query(text, clone(conversation), input.reference ?? conversation.lastReference);
+    const vaultRequest=/\b(?:session|history|historical|previous work|why (?:did|was)|which commit|past decision)\b/i.test(text),vaultMatches=vaultRequest?this.options.sessionVault?.search(text,8):undefined;
+    const vaultEvidence:PoeEvidenceResult|undefined=vaultMatches?.length?{title:'Session Vault history',summary:`Found ${vaultMatches.length} immutable historical session record${vaultMatches.length===1?'':'s'}. These indexed summaries link to provider-native evidence; they do not replace it or grant execution authority.`,facts:vaultMatches.flatMap(match=>match.matches.slice(0,3).map(event=>({label:`${match.providerId}@${match.nodeId} · ${event.kind}`,value:event.summary,authority:'AGENT_CONTROL' as const,informationKind:'HISTORICAL_EVIDENCE' as const,observedAt:event.at,evidence:[`session-vault:${match.sessionId}:${event.eventId}`,`sha256:${match.sourceObjectSha256}`]}))),related:[]}:undefined;
+    const operatorEvidence:PoeEvidenceResult|undefined = vaultEvidence??(/(?:show|what).*evidence.*(?:that|answer)|sources.*(?:that|answer)/i.test(text)&&priorAnswer?{title:'Evidence supporting the previous answer',summary:'These are the exact retained sources and observations used for that answer, not newly inferred claims.',facts:priorAnswer.evidence,related:priorAnswer.references}:await this.options.operator?.query(text, clone(conversation), input.reference ?? conversation.lastReference));
     const evidence = clone(operatorEvidence ?? (ownProposal ? proposalEvidence(ownProposal) : reference ? this.options.evidence.resolve(reference) : focusOverviewEvidence(this.options.evidence.overview(),text)));
     if(/\btranscripts?\b|conversation history/i.test(text)){
       const transcript=this.transcript(conversation.id);

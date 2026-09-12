@@ -1,5 +1,25 @@
 # Agent Control 4.5 deployment, upgrade and rollback
 
+## Experimental Session Vault configuration
+
+The web entry point uses `${AGENT_CONTROL_STATE_DIR:-.agent-control}/session-vault`
+and discovers Codex history beneath `${CODEX_HOME:-$HOME/.codex}/sessions` and
+`archived_sessions`. The dashboard API remains operator-authenticated. Do not
+expose the state directory through a static web server or shared filesystem.
+
+Cross-node replicas must use an existing governed SSH resource and a node-local
+absolute destination root. The fixed audited helper accepts object/record data
+through stdin; it does not expose a generic shell API. Use node-local encryption
+and retention policy appropriate to the captured sensitivity. Removing an
+optional Obsidian Markdown view does not remove the immutable Session Vault.
+
+Before upgrade, copy the state directory without rewriting objects and run the
+integrity verifier. Rollback restores the previous application build while
+preserving the append-only vault. A schema reader that does not recognize a
+newer record must stop rather than migrate or discard it. Full procedures are in
+[Session Vault recovery](session-vault-recovery.md) and
+[replication](session-vault-replication.md).
+
 This is the canonical deployment guide for the Agent Control 4.5 candidate. Source publication
 and production deployment are separate events. A healthy listener alone does not
 prove release qualification.
@@ -30,7 +50,15 @@ does not install training dependencies or download models at runtime.
 Example safe policy:
 
 ```json
-{"learnedSkills":{"enabled":true,"routingEnabled":false,"minimumImprovement":0.1,"maximumQualificationAgeDays":90,"requireHumanDatasetApproval":true}}
+{
+  "learnedSkills": {
+    "enabled": true,
+    "routingEnabled": false,
+    "minimumImprovement": 0.1,
+    "maximumQualificationAgeDays": 90,
+    "requireHumanDatasetApproval": true
+  }
+}
 ```
 
 Enable `routingEnabled` only after the target installation can verify the exact

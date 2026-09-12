@@ -2,6 +2,30 @@
 
 ## [4.5.0] — Unreleased candidate
 
+- Adds the experimental provider-neutral Cross-Device Session Vault: exact
+  provider-native bytes are retained as immutable content-addressed evidence;
+  ordinary search and dashboard views use a redacted normalized index.
+- Adds Codex 0.154 JSONL discovery/capture as the first adapter, an explicit
+  capability matrix for incomplete providers, append/checkpoint lineage,
+  encrypted/local-only/metadata-only policy, retention metadata and fail-closed
+  integrity verification.
+- Adds incremental hash-preserving cross-node replication over the existing
+  governed SSH resource transport, retry state, exact repository/decision
+  attribution, exclusive continuation leases and a tamper-evident denial audit.
+- Adds governed continuation through the existing session and Work Parcel
+  abstractions. A sealed continuation binds native evidence, index, repository,
+  Work Parcel and accepted Your Memories sources; conflicting mutable
+  continuations are denied while read-only search remains available.
+- Extends the existing Your Memories `ProjectMemoryPort`; no parallel memory
+  database is introduced. Promotion requires explicit approval and independent
+  validation. Obsidian remains optional and removal does not disable Session
+  Vault search or provenance.
+- Adds authenticated Session Vault APIs, six operational dashboard views and
+  POE historical-evidence answers. Physical A–H qualification passes on
+  hpubuntu and macomarchy with a real Codex session and verified Work Parcel;
+  MSI Obsidian application access remains blocked by unavailable SSH
+  authentication, so the feature and 4.5 recommendation remain EXPERIMENTAL.
+
 - Adds one canonical provider-neutral `ProjectMemoryExchange` contract across writer, reader and consolidation flows. Application-schema validity and semantic reconstruction remain separate fail-closed gates; exact topology state, provenance, decision, rejection risk and next action are still required.
 - Repairs the bounded Pixel reader path after physical `finish_reason=length` evidence and repairs Windows OpenSSH execution by replacing channel-EOF framing with two explicit base64 records. Remote profile homes and raw transport output remain node-local and absent from evidence.
 - Physically qualifies both controller directions, two repeated Pixel Gemma 4 E4B→Qwen trials, both isolated MSI Codex profiles, and a POE-initiated `Cottage Plus/Luna → Lawrence Pro/Sol` cross-node continuation. All 12 requested cells have terminal classifications: nine PASS/FIXED, two Qwen→Pixel aliases UNSUPPORTED, and current GLM→Qwen BLOCKED_EXTERNAL.
@@ -215,6 +239,7 @@
 - Final review makes persisted Evidence Packet SHA-256 and item-content hashes executable integrity gates and rejects post-capture symlink replacement before rehydration.
 
 ### Evidence-driven adaptive orchestration
+
 ## 4.2.0 (development)
 
 - Added the provider/model-neutral Transport Context Contract and canonical SHA-256 binding for qualifying Work Parcels and token-aware batons.

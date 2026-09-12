@@ -5,6 +5,16 @@ promotion, provider-neutral **Your Memories** portability experiments and
 power-aware execution evidence. It is currently an **EXPERIMENTAL release
 candidate**, not a stable release.
 
+The candidate also includes an experimental Cross-Device Session Vault. It
+preserves exact provider-native session evidence, exposes redacted historical
+search and repository provenance, replicates content-addressed objects, and
+creates lease-protected governed continuations through existing Work Parcels.
+It extends the existing Your Memories/ProjectMemoryPort path; Obsidian remains
+optional. Physical A–H qualification passed across two governed Linux nodes, but
+the configured Windows Obsidian application was not physically exercised because
+SSH authentication was unavailable. This does not change the candidate's
+EXPERIMENTAL recommendation.
+
 Repeated verified reasoning may be nominated as a deterministic skill only when
 its source Work Parcels, originating route, contracts, assumptions, handler
 identity, freshness, invalidation conditions and independent verifier are

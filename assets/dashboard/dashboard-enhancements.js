@@ -516,6 +516,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelector('#jobs-workspace').hidden = view !== 'jobs';
     document.querySelector('#lanes-workspace').hidden = view !== 'lanes';
     document.querySelector('#sessions-workspace').hidden = view !== 'sessions';
+    document.querySelector('#vault-workspace').hidden = view !== 'vault';
     document.querySelector('#systems-workspace').hidden = view !== 'systems';
     document.querySelector('#models-workspace').hidden = view !== 'models';
     document.querySelector('#crew-workspace').hidden = view !== 'crew';

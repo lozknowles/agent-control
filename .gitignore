@@ -13,3 +13,5 @@ qualification/agent-control-4.5-skill-learning-20260911-rejected-initial/trainin
 .env
 .env.*
 !.env.example
+qualification/agent-control-session-vault-20260912/source-repository/
+qualification/agent-control-session-vault-20260912/state/

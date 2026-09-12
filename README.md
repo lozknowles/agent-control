@@ -1,5 +1,18 @@
 # Agent Control 4.5.0 candidate
 
+The experimental 4.5 **Cross-Device Session Vault** preserves provider-native
+session history as immutable, content-addressed evidence and makes its redacted
+index available for historical search, repository attribution and governed
+continuation on another node. It extends—not replaces—**Your Memories**:
+reusable knowledge reaches the existing `ProjectMemoryPort` only after approval
+and independent validation, retaining links to the native evidence SHA-256.
+Obsidian remains an optional Markdown view/backend. The production dashboard
+includes Session, Decision, Repository Provenance, Continuation, Replication and
+Policy views, and POE can answer historical questions without treating history
+as current execution authority. See the [operator and architecture guide](docs/session-vault.md),
+[threat model](docs/session-vault-threat-model.md), [recovery guide](docs/session-vault-recovery.md)
+and [physical qualification](docs/evidence/agent-control-4.5-session-vault-physical-qualification-20260912.md).
+
 Agent Control 4.5 now tests an energy-minimal execution hierarchy: known
 deterministic result, deterministic tool, validated **Your Memories** lookup,
 governed deterministic skill, specialist model, small general model, stronger
@@ -138,8 +151,11 @@ API credentials reuse the existing `provider-secure-store` credential-residency 
   "adapter": "nvidia-hosted-v1",
   "baseUrl": "https://integrate.api.nvidia.com/v1",
   "wireApi": "chat-completions",
-  "auth": {"type": "provider-secure-store", "reference": "provider:nvidia-hosted"},
-  "discovery": {"enabled": true, "path": "models"}
+  "auth": {
+    "type": "provider-secure-store",
+    "reference": "provider:nvidia-hosted"
+  },
+  "discovery": { "enabled": true, "path": "models" }
 }
 ```
 
@@ -197,7 +213,15 @@ Managed-node measurements carry `value`, `source`, `authority`, `freshness`, obs
 3.8 adds an opt-in provider-neutral path: `Work Parcel → Retrieval Intent → Retrieval Governor → Retrieval Provider → Evidence Packet → ContextGraph/ContextPacketBuilder → Model → Verification/Baton`. It starts with bounded local exact/BM25 evidence, can use optional semantic/hybrid adapters such as zg, reacts to the 3.7 token governor's context pressure, streams redacted retrieval lifecycle metrics over the existing SSE dashboard, and revalidates content-addressed evidence references after baton handoff or restart. Search authority never grants index mutation, remote retrieval is denied by default, stale evidence is explicit, and insufficient or failed retrieval retains the immutable frozen context.
 
 ```json
-{"retrieval":{"enabled":true,"providers":["exact","lexical"],"maximumCalls":4,"maximumEvidenceTokens":8192,"allowRemote":false}}
+{
+  "retrieval": {
+    "enabled": true,
+    "providers": ["exact", "lexical"],
+    "maximumCalls": 4,
+    "maximumEvidenceTokens": 8192,
+    "allowRemote": false
+  }
+}
 ```
 
 zg is optional and normal startup has no new dependency. Built-in retrieval is deliberately constrained: only observable exact/path/query coverage can establish sufficiency; provider rank is not treated as calibrated confidence, and weak evidence escalates or falls back. A generic resource policy chooses provider use, built-in retrieval, authorized index build, or deferral from memory, storage, repository size, index state and expected task duration. See [architecture review](docs/agent-control-3.8-architecture-review.md), [configuration and operation](docs/governed-retrieval.md), [Phase 2 qualification](docs/evidence/agent-control-3.8-phase2-qualification.md), and [3.8 migration](docs/migration-3.8.md).

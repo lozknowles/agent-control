@@ -43,7 +43,7 @@ test('operator conversation may revise a draft but untrusted voice transcription
 
 test('approved repetitions materialize distinct Job stages and verification criteria in the normal Work Parcel plan',()=>{let submitted:any;const runtime=new PoeRuntime({evidence,benchmark:{submit:input=>{submitted=input;return{parcelId:'parcel:repeated'}}}}),conversation=runtime.createConversation({actorId:'web-operator',channel:'dashboard'}),input=plan();input.repetitions=2;input.metrics[0]!.stageId='review-a';const draft=runtime.proposeBenchmark(conversation.id,input),frozen=runtime.freezeBenchmark(draft.id,draft.revision);runtime.approveBenchmark(frozen.id,{revision:frozen.revision,frozenSha256:frozen.frozenSha256!,actor:'web-operator'});assert.deepEqual(submitted.plan.stages.map((stage:any)=>stage.id),['review-a-r1','review-a-r2']);assert.deepEqual(submitted.plan.successCriteria.map((criterion:any)=>criterion.stageId),['review-a-r1','review-a-r2']);});
 
- test('natural transcript questions receive a real scoped export snapshot',async()=>{
+test('natural transcript questions receive a real scoped export snapshot',async()=>{
  const runtime=new PoeRuntime({evidence:{overview:()=>({title:'Knowledge unavailable',summary:'No document matched.',facts:[],related:[],unavailable:'No document matched.'}),resolve:evidence.resolve}});
  const conversation=runtime.createConversation({actorId:'web-operator',channel:'dashboard'});
  const question='Show my complete natural transcript';
@@ -58,3 +58,5 @@ test('approved repetitions materialize distinct Job stages and verification crit
  const second=await runtime.ask({conversationId:other.id,text:question});
  assert.ok(!JSON.stringify(second.turn.evidence).includes(conversation.id));
 });
+
+test('POE answers historical questions from Session Vault provenance without treating it as current authority',async()=>{const runtime=new PoeRuntime({evidence,sessionVault:{search:()=>[{sessionId:'session:codex:node-a:one',providerId:'codex',nodeId:'node-a',completeness:'COMPLETED',score:4,sourceObjectSha256:'a'.repeat(64),matches:[{eventId:'event:decision',kind:'DECISION',at:'2026-09-12T09:00:00Z',summary:'Changed routing after stale qualification evidence.',authority:'EXPLICIT'}]}]}}),conversation=runtime.createConversation({actorId:'web-operator',channel:'dashboard'}),answer=await runtime.ask({conversationId:conversation.id,text:'Why did we change the routing policy in the previous session?'});assert.match(answer.turn.text,/Session Vault history/);assert.match(answer.turn.text,/stale qualification evidence/);assert.equal(answer.turn.evidence[0]?.informationKind,'HISTORICAL_EVIDENCE');assert.deepEqual(answer.turn.evidence[0]?.evidence,[`session-vault:session:codex:node-a:one:event:decision`,`sha256:${'a'.repeat(64)}`]);});
