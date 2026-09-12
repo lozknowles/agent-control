@@ -19,6 +19,42 @@ export interface CpuCounterFrame {
   counters: Array<{cpu: string; online: boolean; idle: number; total?: number}>;
 }
 
+/** Provider-neutral execution memory evidence. Hardware adapters populate this shape. */
+export interface ExecutionResourceSample {
+  observedAt: string;
+  elapsedMs: number;
+  process: {
+    pid: number;
+    identityToken: string;
+    state: 'same' | 'absent' | 'reused';
+    rssBytes: number | null;
+    peakRssBytes: number | null;
+  };
+  accelerator: {
+    processBytes: number | null;
+    deviceUsedBytes: number | null;
+    utilizationPercent: number | null;
+    source: string;
+    limitations: string[];
+  };
+}
+
+export interface ExecutionResourceSummary {
+  cpuMs: number | null;
+  gpuMs: number | null;
+  peakRamBytes: number | null;
+  peakVramBytes: number | null;
+  energyWh: number | null;
+  authority: 'MEASURED' | 'ESTIMATED' | 'UNAVAILABLE';
+  sampleCount: number;
+  attributedSampleCount: number;
+  samplingIntervalMs: number;
+  baseline: {ramBytes: number | null; processVramBytes: number | null; deviceVramBytes: number | null};
+  devicePeakVramBytes: number | null;
+  source: string;
+  limitations: string[];
+}
+
 export function unavailableMeasurement<T>(observedAt: string, source: string, limitation: string): ResourceMeasurement<T> {
   return {value: null, source, authority: 'unavailable', freshness: 'unavailable', observedAt, limitations: [limitation], qualifiedForAdmission: false};
 }

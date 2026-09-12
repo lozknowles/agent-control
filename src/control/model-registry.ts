@@ -18,8 +18,19 @@ export interface ModelQualificationRecord {
   successRate?: number;
   evidence: string[];
   detail?: string;
+  configuration?: {
+    providerModel: string;
+    modelRevision: string;
+    artifactSha256: string;
+    quantization: string;
+    runtime: string;
+    runtimeRevision: string;
+    runtimeBinarySha256?: string[];
+  };
+  /** Task-specific outcomes prevent unrelated evidence from admitting a failed workload. */
+  taskQualifications?: Array<{taskClass: string; state: ModelQualificationState; checkedAt: string; evidence: string[]; detail?: string}>;
 }
-export interface ModelRouteRequest {model?: string; modelRole?: string; accountProfile?: string; nodeId: string; workloadNodeId?: string; providerExecutionNodeId?: string; requiredCapabilities?: string[]; allowFallback?: boolean; purpose?: 'EXECUTION' | 'QUALIFICATION';}
+export interface ModelRouteRequest {model?: string; modelRole?: string; taskClass?: string; accountProfile?: string; nodeId: string; workloadNodeId?: string; providerExecutionNodeId?: string; requiredCapabilities?: string[]; allowFallback?: boolean; purpose?: 'EXECUTION' | 'QUALIFICATION';}
 export interface ModelRouteDecision {
   requestedModel: string | null;
   requestedRole: string | null;
@@ -74,11 +85,11 @@ export class ModelQualificationStore {
     if (!file || !fs.existsSync(file)) return;
     const value = JSON.parse(fs.readFileSync(file, 'utf8')) as {version: 1; records: ModelQualificationRecord[]};
     if (value.version !== 1 || !Array.isArray(value.records)) throw new Error('model_qualification_state_invalid');
-    for (const record of value.records) this.records.set(record.modelId, structuredClone(record));
+    for (const record of value.records) { validateModelQualificationRecord(record); this.records.set(record.modelId, structuredClone(record)); }
   }
   get(modelId: string) { const value = this.records.get(modelId); return value ? structuredClone(value) : undefined; }
   list() { return [...this.records.values()].map(value => structuredClone(value)); }
-  set(record: ModelQualificationRecord) { this.records.set(record.modelId, structuredClone(record)); this.save(); return this.get(record.modelId)!; }
+  set(record: ModelQualificationRecord) { validateModelQualificationRecord(record); this.records.set(record.modelId, structuredClone(record)); this.save(); return this.get(record.modelId)!; }
   private save() {
     if (!this.file) return;
     fs.mkdirSync(path.dirname(this.file), {recursive: true});
@@ -207,7 +218,10 @@ export class ModelRegistry {
       else if (accountQualification.state !== 'QUALIFIED') reasons.push(`account-profile-qualification-${accountQualification.state.toLowerCase()}`);
     }
     const executionNode = account ? accountProviderExecutionNode(account) : request.providerExecutionNodeId ?? (request.workloadNodeId === undefined ? request.nodeId : qualification.nodes[0] ?? model.nodes?.[0] ?? request.nodeId), credentialNode = account ? accountCredentialResidency(account).nodeId : null;
-    const intelligence = this.intelligenceFor(model, executionNode), historicallyQualified = Boolean(this.capabilityIntelligence && intelligence && ['QUALIFIED','PREFERRED'].includes(intelligence.state));
+    const taskQualification = request.taskClass ? qualification.taskQualifications?.find(item => item.taskClass === request.taskClass) : undefined;
+    const taskFailed = Boolean(taskQualification && ['FAILED','DISABLED'].includes(taskQualification.state));
+    if (taskFailed) reasons.push(`task-qualification-${request.taskClass}-${taskQualification!.state.toLowerCase()}`);
+    const intelligence = this.intelligenceFor(model, executionNode), historicallyQualified = Boolean(this.capabilityIntelligence && intelligence && ['QUALIFIED','PREFERRED'].includes(intelligence.state) && qualification.state !== 'FAILED' && !taskFailed);
     if (qualificationRun ? !['UNTESTED','QUALIFYING','QUALIFIED','DEGRADED'].includes(qualification.state) : qualification.state !== 'QUALIFIED' && !historicallyQualified) reasons.push(`qualification-${qualification.state.toLowerCase()}`);
     const nodes = qualification.nodes.length ? qualification.nodes : model.nodes ?? [];
     if (nodes.length && !nodes.includes(executionNode)) reasons.push('provider-execution-node-unavailable');
@@ -260,6 +274,16 @@ export class ModelRegistry {
 }
 
 function key(providerId: string, accountProfileId: string) { return `${providerId}\u0000${accountProfileId}`; }
+
+function validateModelQualificationRecord(record: ModelQualificationRecord) {
+  if (!record.modelId.trim() || !record.version.trim() || !Number.isFinite(Date.parse(record.checkedAt)) || !Array.isArray(record.capabilities) || !Array.isArray(record.nodes) || !Array.isArray(record.evidence)) throw new Error('model_qualification_record_invalid');
+  if (record.configuration && (!record.configuration.providerModel.trim() || !record.configuration.modelRevision.trim() || !/^[a-f0-9]{64}$/.test(record.configuration.artifactSha256) || !record.configuration.quantization.trim() || !record.configuration.runtime.trim() || !record.configuration.runtimeRevision.trim() || record.configuration.runtimeBinarySha256?.some(value => !/^[a-f0-9]{64}$/.test(value)))) throw new Error('model_qualification_configuration_invalid');
+  const taskClasses = new Set<string>();
+  for (const task of record.taskQualifications ?? []) {
+    if (!task.taskClass.trim() || taskClasses.has(task.taskClass) || !Number.isFinite(Date.parse(task.checkedAt)) || !Array.isArray(task.evidence)) throw new Error('model_task_qualification_invalid');
+    taskClasses.add(task.taskClass);
+  }
+}
 
 function historicalRouteScore(metrics: ModelWindowMetrics) { return (metrics.quality ?? 0) * 4 + (metrics.reliability ?? 0) * 3 + (metrics.costPerSuccessfulTask === null ? 0 : 1 / (1 + metrics.costPerSuccessfulTask)) + (metrics.timePerSuccessfulTaskMs === null ? 0 : 1 / (1 + metrics.timePerSuccessfulTaskMs / 1_000)); }
 

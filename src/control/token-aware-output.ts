@@ -538,15 +538,17 @@ export interface TokenAwareToolRegistryPort {
 }
 
 export function createTokenAwareToolResultInterceptor(service: TokenAwareOutputService): ToolResultInterceptor {
-  return async ({result, recipe}) => isCommandResultEnvelope(result) ? service.capture(result, scopeFromRecipe(recipe)) : result;
+  return async ({result, recipe, control}) => { control.assertActive(); return isCommandResultEnvelope(result) ? service.capture(result, scopeFromRecipe(recipe)) : result; };
 }
 
 export function registerOutputExpansionTool<T extends TokenAwareToolRegistryPort>(registry: T, service: TokenAwareOutputService): T {
-  const handler: RawToolHandler = async (input, recipe) => {
+  const handler: RawToolHandler = async (input, recipe, control) => {
+    control.assertActive();
     if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('output_expansion_request_invalid');
     const value = input as Record<string, unknown>;
     if (typeof value.handle !== 'string') throw new Error('output_expansion_handle_required');
     const request = parseOutputExpansionRequest(value);
+    control.assertActive();
     return service.expand(value.handle, request, scopeFromRecipe(recipe));
   };
   return registry.register('command.output.expand', handler);

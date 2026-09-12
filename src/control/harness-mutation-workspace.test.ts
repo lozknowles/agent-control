@@ -15,12 +15,12 @@ test('disposable workspace preserves fixture identity and exposes compact inspec
     assert.match(prepared.startingRevision, /^[a-f0-9]{40}$/);
     const registry = createToolHandlerRegistry(prepared.workspace.toolBindings());
     const recipe = {} as never;
-    const search = await registry.invoke(MUTATION_TOOL_IDS.search, {query: 'DEFAULT_JOB_TIMEOUT_MS'}, recipe) as any;
+    const search = await registry.invoke(MUTATION_TOOL_IDS.search, {query: 'DEFAULT_JOB_TIMEOUT_MS'}, recipe, {assertActive: () => undefined}) as any;
     assert.ok(search.totalMatches >= 1);
     assert.ok(search.compactIndex.every((item: any) => Array.isArray(item.lines)));
-    const read = await registry.invoke(MUTATION_TOOL_IDS.read, {path: 'src/constants.js', startLine: 1, endLine: 4}, recipe) as any;
+    const read = await registry.invoke(MUTATION_TOOL_IDS.read, {path: 'src/constants.js', startLine: 1, endLine: 4}, recipe, {assertActive: () => undefined}) as any;
     assert.match(read.content, /DEFAULT_JOB_TIMEOUT_MS/);
-    await registry.invoke(MUTATION_TOOL_IDS.replace, {path: 'src/constants.js', oldText: '30_000', newText: '45_000'}, recipe);
+    await registry.invoke(MUTATION_TOOL_IDS.replace, {path: 'src/constants.js', oldText: '30_000', newText: '45_000'}, recipe, {assertActive: () => undefined});
     assert.deepEqual(prepared.workspace.changedFiles(), ['src/constants.js']);
     assert.match(prepared.workspace.diff(), /45_000/);
   } finally { prepared.workspace.cleanup(); }
@@ -30,9 +30,9 @@ test('mutation workspace rejects path escape, forbidden writes and duplicate rep
   const prepared = MutationWorkspace.prepare(path.join(root, suite.fixturePath), suite.tasks[0]);
   try {
     const registry = createToolHandlerRegistry(prepared.workspace.toolBindings()), recipe = {} as never;
-    await assert.rejects(() => registry.invoke(MUTATION_TOOL_IDS.read, {path: '../outside'}, recipe), /path_invalid/);
-    await assert.rejects(() => registry.invoke(MUTATION_TOOL_IDS.write, {path: 'src/policy.js', content: 'unsafe'}, recipe), /scope_violation/);
-    await assert.rejects(() => registry.invoke(MUTATION_TOOL_IDS.replace, {path: 'src/constants.js', oldText: "'FAILED'", newText: "'BROKEN'"}, recipe), /occurrences/);
+    await assert.rejects(() => registry.invoke(MUTATION_TOOL_IDS.read, {path: '../outside'}, recipe, {assertActive: () => undefined}), /path_invalid/);
+    await assert.rejects(() => registry.invoke(MUTATION_TOOL_IDS.write, {path: 'src/policy.js', content: 'unsafe'}, recipe, {assertActive: () => undefined}), /scope_violation/);
+    await assert.rejects(() => registry.invoke(MUTATION_TOOL_IDS.replace, {path: 'src/constants.js', oldText: "'FAILED'", newText: "'BROKEN'"}, recipe, {assertActive: () => undefined}), /occurrences/);
   } finally { prepared.workspace.cleanup(); }
 });
 
@@ -40,7 +40,7 @@ test('new allowlisted files become authoritative Git diff content and cleanup is
   const task = suite.tasks.find(item => item.id === 'MUT-003')!, prepared = MutationWorkspace.prepare(path.join(root, suite.fixturePath), task);
   const temporaryRoot = path.dirname(prepared.workspace.root);
   const registry = createToolHandlerRegistry(prepared.workspace.toolBindings());
-  await registry.invoke(MUTATION_TOOL_IDS.write, {path: 'test/human-takeover.test.js', content: "export const marker = 'test';\n"}, {} as never);
+  await registry.invoke(MUTATION_TOOL_IDS.write, {path: 'test/human-takeover.test.js', content: "export const marker = 'test';\n"}, {} as never, {assertActive: () => undefined});
   assert.deepEqual(prepared.workspace.changedFiles(), ['test/human-takeover.test.js']);
   assert.match(prepared.workspace.diff(), /new file mode/);
   prepared.workspace.cleanup();

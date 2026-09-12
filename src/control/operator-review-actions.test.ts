@@ -31,7 +31,7 @@ test('large-context review gate does not reject a substantive verdict that quote
 test('provider heartbeat remains active until response body consumption completes', async () => {
   const phases:string[]=[]; let release!:()=>void;
   const bodyPending=new Promise<void>(resolve=>{release=resolve});
-  const operation=withLifecycleHeartbeat({invoke:async()=>undefined,lifecycle:phase=>phases.push(phase)},async()=>{await bodyPending;return 'complete'},5);
+  const operation=withLifecycleHeartbeat({assertActive: () => undefined, invoke:async()=>undefined,lifecycle:phase=>phases.push(phase)},async()=>{await bodyPending;return 'complete'},5);
   await new Promise(resolve=>setTimeout(resolve,18)); assert.ok(phases.length>=2); release(); assert.equal(await operation,'complete');
   const stopped=phases.length; await new Promise(resolve=>setTimeout(resolve,12)); assert.equal(phases.length,stopped);
 });

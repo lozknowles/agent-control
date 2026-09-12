@@ -5,7 +5,7 @@ import path from 'node:path';
 import test from 'node:test';
 import {validateConfig} from './config.js';
 import {CapabilityIntelligenceStore} from './capability-intelligence.js';
-import {ModelRegistry} from './model-registry.js';
+import {ModelQualificationStore, ModelRegistry} from './model-registry.js';
 import {SecureProviderCredentialStore} from './provider-credential-store.js';
 import type {ModelIntelligenceLedger} from './model-intelligence.js';
 
@@ -44,6 +44,32 @@ test('historical qualification becomes routable only with separately verified ca
   assert.equal(decision.qualificationVersion, 'model-intelligence:frozen@1.0.0:aaaaaaaaaaaaaaaa');
 });
 test('disabled and capability-unproven models cannot route', () => { const disabled = {...models[0], enabled: false}; const registry = new ModelRegistry(providers, [disabled], {roles: {review: {primary: 'fast'}}}); assert.throws(() => registry.route({modelRole: 'review', nodeId: 'node-a', requiredCapabilities: ['review']}), /model_route_unavailable/); });
+
+test('a failed task qualification cannot be bypassed by unrelated qualification history', () => {
+  const capabilities = new CapabilityIntelligenceStore();
+  for (const capabilityId of ['coding', 'structured-output']) capabilities.observe({id: `qualified:${capabilityId}`, capabilityId, subject: {providerId: 'external', modelId: 'scoped', nodeId: 'node-a'}, support: 'SUPPORTED', implementation: 'NATIVE', verification: 'VERIFIED', confidence: 1, observedAt: '2026-09-12T10:00:00Z', qualifiedAt: '2026-09-12T10:00:00Z', limitations: [], evidence: ['other-task:pass'], source: 'QUALIFICATION'});
+  const metrics = {attempts: 8, completed: 8, passed: 8, reliability: 1, quality: 1, criticalFailures: 0, retries: 0, inputTokens: 80, freshInputTokens: 80, cachedInputTokens: 0, cacheWriteTokens: 0, outputTokens: 8, totalTokens: 88, cacheHitRatio: 0, cacheCoverage: {knownAttempts: 8, totalAttempts: 8}, estimatedCacheSavings: null, actualCost: null, calculatedCost: null, equivalentUncachedCost: null, currency: null, elapsedMs: 800, costPerSuccessfulTask: null, tokensPerSuccessfulTask: 11, freshTokensPerSuccessfulTask: 10, timePerSuccessfulTaskMs: 100, retriesPerSuccessfulTask: 0, resourceCoverage: {measuredAttempts: 0, totalAttempts: 8}};
+  const intelligence = {projection: () => ({routes: [{routeKey: 'external/default/scoped@node-a/openai-compatible', identity: {providerId: 'external', modelId: 'scoped', providerModel: 'vendor/scoped', runtimeId: 'openai-compatible', runtimeVersion: '1', modelVersion: 'current', nodeId: 'node-a'}, state: 'PREFERRED', current: metrics}]}), attemptsList: () => [{suiteId: 'other-suite', suiteVersion: '1', suiteSha256: 'a'.repeat(64)}]} as unknown as ModelIntelligenceLedger;
+  const qualification = new ModelQualificationStore();
+  qualification.set({modelId: 'scoped', state: 'QUALIFIED', version: 'other-task-v1', checkedAt: '2026-09-12T10:00:00Z', qualifiedAt: '2026-09-12T10:00:00Z', capabilities: ['coding', 'structured-output'], nodes: ['node-a'], evidence: ['other-task:pass'], taskQualifications: [{taskClass: 'governed-code-repair', state: 'FAILED', checkedAt: '2026-09-12T10:00:00Z', evidence: ['repair:0/3']}]});
+  const model = {id: 'scoped', provider: 'external', providerModel: 'vendor/scoped', enabled: true, capabilities: ['coding', 'structured-output'], nodes: ['node-a']};
+  const registry = new ModelRegistry(providers, [model], {roles: {structured: {primary: 'scoped'}, repair: {primary: 'scoped'}}}, qualification, undefined, process.env, capabilities, intelligence);
+  assert.equal(registry.route({modelRole: 'structured', taskClass: 'structured-extraction', nodeId: 'node-a', requiredCapabilities: ['structured-output']}).modelId, 'scoped');
+  try { registry.route({modelRole: 'repair', taskClass: 'governed-code-repair', nodeId: 'node-a', requiredCapabilities: ['coding']}); assert.fail('failed task class routed'); }
+  catch (error) { assert.match(JSON.stringify((error as {considered?: unknown}).considered), /task-qualification-governed-code-repair-failed/); }
+});
+
+test('the immutable MiniCPM record denies only its exact configuration and leaves the family sibling unqualified', () => {
+  const file = path.resolve('qualification/minicpm5-2b-q4-k-m-20260912/model-qualification.json'), store = new ModelQualificationStore(file), exactId = 'openbmb-minicpm5-2b-gguf-q4-k-m-d00c954e';
+  const node = store.get(exactId)!.nodes[0]!;
+  const exact = {id: exactId, provider: 'external', providerModel: 'openbmb/MiniCPM5-2B-GGUF@d00c954e:Q4_K_M', enabled: true, capabilities: ['coding'], nodes: [node]};
+  const sibling = {id: 'openbmb-minicpm-family-unqualified-sibling', provider: 'external', providerModel: 'openbmb/other-minicpm', enabled: true, capabilities: ['coding'], nodes: [node], qualification: {state: 'UNTESTED' as const}};
+  const registry = new ModelRegistry(providers, [exact, sibling], {roles: {repair: {primary: exactId, fallback: [sibling.id]}}}, store);
+  assert.equal(store.get(exactId)?.configuration?.artifactSha256, 'ec2d5801640099e97d8d7e8003ad4d81f336e757811f03a26173dddf386602fd');
+  try { registry.route({model: exactId, taskClass: 'governed-code-repair', nodeId: node, requiredCapabilities: ['coding']}); assert.fail('failed MiniCPM configuration routed'); }
+  catch (error) { assert.match(JSON.stringify((error as {considered?: unknown}).considered), /qualification-failed/); }
+  assert.equal(registry.qualification(sibling).state, 'UNTESTED');
+});
 test('configuration rejects duplicate model IDs, unknown provider, and fallback cycles', () => {
   const base = {schemaVersion: 1 as const, resources: [], services: [], lanes: [], providers, models, modelRouting: {roles: {}}};
   assert.throws(() => validateConfig({...base, models: [models[0], models[0]]}), /duplicate_model_id/);

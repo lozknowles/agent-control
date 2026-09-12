@@ -304,7 +304,9 @@ export class OwnedProcessManager implements OwnedExecution {
     };
     const result = new Promise<OwnedProcessResult>((resolve, reject) => {
       child.once('error', error => { finishSession({exitCode: null, signal: null, failed: true, detail: error.message}); reject(error); });
-      child.once('exit', (exitCode, childSignal) => {
+      // Exit can precede the final stdout/stderr data events, including inherited
+      // pipes. Seal results and durable session output only after both streams close.
+      child.once('close', (exitCode, childSignal) => {
         exposeSessionOutput('stdout', '', true); exposeSessionOutput('stderr', '', true);
         if (stdoutRemainder) request.onStdoutLine?.(session ? this.executionSessions!.redactRuntimeOutput(session.id, stdoutRemainder) : redactSensitiveText(stdoutRemainder, credentials));
         const stdoutText = Buffer.concat(stdout).toString('utf8'), stderrText = Buffer.concat(stderr).toString('utf8');
