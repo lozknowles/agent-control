@@ -5,8 +5,10 @@
 Use `scripts/bootstrap-agent-control.sh --check` on Linux/macOS or
 `scripts/bootstrap-agent-control.ps1 -Mode check` on Windows before installation.
 The check is read-only and stops on missing prerequisites, a dirty checkout or
-divergence. Explicit install mode uses `npm ci`; it does not install Ollama,
-llama.cpp, Codex, Claude Code, Gemini CLI, GPU drivers or other optional tools.
+divergence. This repository intentionally has no package lock or build step;
+explicit install mode uses `npm install --ignore-scripts --no-package-lock` and
+the idempotent initializer. It does not install Ollama, llama.cpp, Codex, Claude
+Code, Gemini CLI, GPU drivers or other optional tools.
 
 After the dashboard starts, use **Settings → Installation** to verify provenance,
 then **Environment Discovery** for First Run Setup. Remote discovery is opt-in
@@ -67,11 +69,18 @@ release evidence.
 ```bash
 git clone https://github.com/lozknowles/agent-control.git
 cd agent-control
-git checkout --detach v4.4.0 # released baseline; use a reviewed immutable 4.5 candidate SHA only for isolated evaluation
-npm install --ignore-scripts
-npm run init
+git checkout --detach v4.5.0
+./scripts/bootstrap-agent-control.sh --check --target "$PWD"
+./scripts/bootstrap-agent-control.sh --install --role control --target "$PWD"
 npm run check
 ```
+
+Before the tag exists, release qualification uses the exact reviewed candidate
+SHA in place of `v4.5.0`. The bootstrap check should report a verified
+repository and available dashboard. Install reports no-lock dependency
+installation and whether the existing configuration was initialized or
+preserved. Do not bypass a bootstrap failure with an undocumented `chmod`,
+package-manager command or build step.
 
 Learned Specialists are disabled for routing unless explicitly configured and
 qualified. Keep adaptation files and `AGENT_CONTROL_STATE_DIR` outside disposable

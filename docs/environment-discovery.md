@@ -105,10 +105,12 @@ Portable entry points:
 .\scripts\bootstrap-agent-control.ps1 -Mode check -Target C:\path\to\agent-control
 ```
 
-Install mode uses the committed lockfile (`npm ci`) and build script. Dirty or
-diverged repositories stop; bootstrap does not pull, reset, overwrite config or
-install optional model runtimes. Repair reports the boundary and leaves the
-operator to choose a reviewed recovery action.
+The repository intentionally has no package lock or build step. Install mode
+uses `npm install --ignore-scripts --no-package-lock`, then the existing
+idempotent `npm run init`. Dirty or diverged repositories stop; bootstrap does
+not pull, reset, overwrite config or install optional model runtimes. Repair
+reports the boundary and leaves the operator to choose a reviewed recovery
+action.
 
 ## Security and limitations
 

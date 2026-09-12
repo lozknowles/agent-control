@@ -2,6 +2,19 @@
 
 ## [4.5.0] — Unreleased candidate
 
+### Virgin-install remediation
+
+- Makes the documented Linux bootstrap directly executable and aligns Linux
+  and Windows installation with the repository's intentional no-lock,
+  runtime-TypeScript architecture: install dependencies with lifecycle scripts
+  disabled, create or preserve the schema-valid configuration, and require no
+  nonexistent build step.
+- Adds deterministic no-lock installation and repeat-bootstrap coverage, and
+  makes bootstrap accept both ordinary clones and Git worktrees while retaining
+  clean-checkout and prerequisite gates.
+- Replaces the ambiguous manual dependency sequence with one documented
+  check/install path and explicit expected results and troubleshooting.
+
 ### Release-closure checkpoint (`d229ce4b7dd3bd704a331f81ca59600541430682`)
 
 - Freezes the integrated 4.5 candidate and reconciles every row from the

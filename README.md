@@ -503,15 +503,32 @@ No host, device, provider, port, GPU, overlay network or absolute repository pat
 
 ## Install
 
+Clone the public release and select its immutable tag. During pre-release
+qualification, the reviewer substitutes the exact reviewed candidate SHA for
+`v4.5.0`; ordinary users should use the published tag.
+
 ```bash
 git clone https://github.com/lozknowles/agent-control.git
 cd agent-control
-npm install
-npm run init
+git checkout --detach v4.5.0
+./scripts/bootstrap-agent-control.sh --check --target "$PWD"
+./scripts/bootstrap-agent-control.sh --install --role control --target "$PWD"
 npm run check
 ```
 
-`npm run init` creates only a schema-valid empty `.agent-control/config.json`. It is idempotent, never discovers infrastructure and never overwrites existing operator configuration. Use `config/agent-control.example.json` only as an illustrative reference after replacing every example endpoint, path and command.
+The read-only check should report `repository: verified` and
+`dashboard: available`. Install should finish with `dependencies:
+installed-no-lock` and `configuration: initialized-or-preserved`. If either
+command stops, use its exact error rather than bypassing the check: confirm Node
+24, npm and Git are on `PATH`, that the checkout is clean, and that the selected
+commit exists. The project intentionally has no package lock or build step.
+
+Bootstrap runs `npm install --ignore-scripts --no-package-lock` and the
+idempotent initializer. `npm run init` creates only a schema-valid empty
+`.agent-control/config.json`; rerunning bootstrap never overwrites existing
+operator configuration. Use `config/agent-control.example.json` only as an
+illustrative reference after replacing every example endpoint, path and
+command.
 
 Edit `.agent-control/config.json` for the installation. Runtime state and credentials remain ignored. A different path can be selected with `AGENT_CONTROL_CONFIG`. Do not put credentials in JSON; configuration stores only an environment, referenced-file, isolated-home or opaque secure-store reference.
 
@@ -519,10 +536,24 @@ With no configuration file, Agent Control starts with a safe local lane and repo
 
 ## Run and monitor
 
+Start one headless controller from the installed checkout:
+
+```bash
+npm run web
+```
+
+The terminal should report the local dashboard address. Open that address from
+the same machine, then use **Settings → Installation** to confirm source
+provenance and **Settings → Environment Discovery → First Run Setup** to perform
+the first read-only scan. If the page is unavailable, keep the terminal open and
+check its startup error; do not expose the listener publicly to work around a
+local connection problem.
+
+Other operator commands are:
+
 ```bash
 npm start
-npm run web
-agent-control status
+npm run status
 npm run up
 npm run qualify
 ```

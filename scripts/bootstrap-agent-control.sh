@@ -22,13 +22,19 @@ if [[ ! -d "$target" ]]; then
   [[ "$mode" == "install" && -n "$repository" ]] || { echo "target_missing_no_changes_made" >&2; exit 1; }
   git clone -- "$repository" "$target"
 fi
-[[ -d "$target/.git" ]] || { echo "repository_not_git" >&2; exit 1; }
+git -C "$target" rev-parse --is-inside-work-tree >/dev/null 2>&1 || { echo "repository_not_git" >&2; exit 1; }
 dirty="$(git -C "$target" status --porcelain)"
 [[ -z "$dirty" ]] || { echo "repository_dirty_no_changes_made" >&2; exit 1; }
 git -C "$target" rev-parse --verify HEAD >/dev/null
-[[ -f "$target/package-lock.json" ]] || { echo "lockfile_missing" >&2; exit 1; }
+dashboard="$([[ -f "$target/assets/dashboard/index.html" ]] && echo available || echo missing)"
+[[ "$dashboard" == "available" ]] || { echo "dashboard_missing_no_changes_made" >&2; exit 1; }
 if [[ "$mode" == "install" ]]; then
-  npm --prefix "$target" ci
-  npm --prefix "$target" run build
+  npm --prefix "$target" install --ignore-scripts --no-package-lock
+  npm --prefix "$target" run init
 fi
-printf '{"schema":"agent-control.bootstrap/v1","mode":"%s","role":"%s","repository":"verified","dashboard":"%s"}\n' "$mode" "$role" "$([[ -f "$target/assets/dashboard/index.html" ]] && echo available || echo missing)"
+printf '{"schema":"agent-control.bootstrap/v1","mode":"%s","role":"%s","repository":"verified","dependencies":"%s","configuration":"%s","dashboard":"%s","next":"npm run check, then npm run web"}\n' \
+  "$mode" \
+  "$role" \
+  "$([[ "$mode" == "install" ]] && echo installed-no-lock || echo unchecked)" \
+  "$([[ "$mode" == "install" ]] && echo initialized-or-preserved || echo unchecked)" \
+  "$dashboard"
