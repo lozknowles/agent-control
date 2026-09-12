@@ -71,7 +71,8 @@ type RemoteWireResult = {
 const WINDOWS_STDIN_BOOTSTRAP = [
   '$ErrorActionPreference = "Stop"',
   '$payload = [Console]::In.ReadLine()',
-  '$source = [Console]::In.ReadToEnd()',
+  '$encodedSource = [Console]::In.ReadLine()',
+  '$source = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($encodedSource))',
   '& ([ScriptBlock]::Create($source)) $payload',
   '',
 ].join('\n');
@@ -114,8 +115,13 @@ export class ResourceCodexNodeExecutionPort implements CodexNodeExecutionPort {
   private async windows(resource: ResourceConfig, operation: RemoteWireResult['operation'], payload: Record<string, unknown>, timeoutMs: number, signal?: AbortSignal, executionSessionScope?: ExecutionSessionScope): Promise<RemoteWireResult> {
     if (resource.platform !== 'windows' || resource.transport.type !== 'ssh') throw new Error('codex_execution_node_transport_unsupported');
     const encoded = Buffer.from(JSON.stringify(payload), 'utf8').toString('base64');
+    const encodedScript = Buffer.from(this.script, 'utf8').toString('base64');
     const bootstrap = Buffer.from(WINDOWS_STDIN_BOOTSTRAP, 'utf16le').toString('base64');
-    const input = `${encoded}\n${this.script.trimEnd()}\n`;
+    // Windows OpenSSH does not consistently propagate channel EOF to a
+    // detached noninteractive PowerShell child. Two bounded records avoid
+    // using EOF as a protocol delimiter while keeping variable data out of
+    // executable PowerShell source.
+    const input = `${encoded}\n${encodedScript}\n`;
     let result;
     const ownedExecution = executionSessionScope && this.executionSessions
       ? new OwnedProcessManager(undefined, this.executionSessions, executionSessionScope)
