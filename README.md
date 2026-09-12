@@ -535,7 +535,7 @@ command.
 
 Edit `.agent-control/config.json` for the installation. Runtime state and credentials remain ignored. A different path can be selected with `AGENT_CONTROL_CONFIG`. Do not put credentials in JSON; configuration stores only an environment, referenced-file, isolated-home or opaque secure-store reference.
 
-With no configuration file, Agent Control starts with a safe local lane and reports infrastructure as `UNCONFIGURED`. It does not invent providers, machines or services.
+With no configuration file, Agent Control reports infrastructure as `UNCONFIGURED` and registers only its built-in controller-local worker for the read-only System observation Job. That worker cannot execute models or arbitrary tools. Agent Control does not invent providers, machines, external workers or services.
 
 ## Run and monitor
 
@@ -572,8 +572,10 @@ Open its Work Parcel and choose **Runtime Map → Process Map**. The genuine
 run contains `observe → verify`: it records registered worker health as a local
 JSON artifact, then a separate deterministic verifier checks that artifact.
 Successful completion is **SUCCEEDED** with both stages visible and independently
-verified. This proves the local governed lifecycle only; it does not qualify a
-provider, remote machine or model.
+verified. Both stages require the built-in `agent-control.operator-observation.read`
+capability; the worker has no model, shell or remote-node capability. This proves
+the local governed lifecycle only; it does not qualify a provider, remote machine
+or model.
 
 Other operator commands are:
 

@@ -75,6 +75,9 @@ but does not execute it. Verify the exact Job identity, `{}` inputs and displaye
 SHA-256, then choose **Approve this job**. Follow the resulting Work Parcel in
 **Runtime Map → Process Map**. Its two real stages are `observe → verify`, and a
 passing first-run result is `SUCCEEDED` with independent artifact verification.
+The eligible worker is built into the controller and is restricted to
+`agent-control.operator-observation.read`; it does not grant model, shell or
+remote-node execution authority to an otherwise empty installation.
 
 ## Spoken guided tour and full regression
 

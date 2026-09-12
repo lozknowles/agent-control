@@ -780,7 +780,7 @@ Invariant 1 is enforced in `WorkExecutor`; invariant 2 is enforced for gateway-b
 
 ## Bootstrap and monitoring
 
-Bootstrap is configuration-driven, health-first and idempotent. `up` may start only configured recipes; `down` may stop only recorded owned processes. Occupied/unhealthy unknown services are never killed. With no configuration, status/up return `UNCONFIGURED` without network discovery or external mutation.
+Bootstrap is configuration-driven, health-first and idempotent. `up` may start only configured recipes; `down` may stop only recorded owned processes. Occupied/unhealthy unknown services are never killed. With no configuration, status/up return `UNCONFIGURED` without network discovery or external mutation. The web runtime additionally registers one internal controller-local worker with only `agent-control.operator-observation.read`; it exists solely so the two read-only stages of `operator-system-observation@1.1.0` can exercise placement, artifacts and independent verification on a fresh installation. It is not a configured estate resource and cannot satisfy model, shell, provider or remote-node capabilities.
 
 The TUI presents lanes, batons, queue state, resources, providers, PTY assignment, context/evidence and optional Android recovery. The web dashboard presents the same core projection plus typed live events, Git and verification detail. Qualification evidence is written outside the tracked tree by default.
 

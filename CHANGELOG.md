@@ -23,6 +23,11 @@
 - Adds the missing provider-free first governed-job walkthrough: the documented
   Morrow request now leads an operator through sealed review, explicit approval,
   the real `observe → verify` Work Parcel and its Process Map.
+- Fixes the virgin-install execution gap found by that walkthrough: the runtime
+  now registers one built-in controller-local worker restricted to the
+  `agent-control.operator-observation.read` capability. It can run only the
+  read-only observation/verification placement contract and does not invent or
+  authorize a provider, model, shell, remote worker or service.
 - Replaces the ambiguous manual dependency sequence with one documented
   check/install path and explicit expected results and troubleshooting.
 
