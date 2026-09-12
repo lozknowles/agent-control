@@ -1,0 +1,152 @@
+{
+  "schema": "agent-control.4.5-energy-reconciliation/v1",
+  "specialistEnergy": {
+    "status": "DISPROVEN",
+    "source": "docs/evidence/agent-control-4.5-specialist-energy-qualification-20260911.json",
+    "reason": "The qualified specialist used more measured-component energy per verified result than warm Qwen."
+  },
+  "residency": {
+    "status": "PARTIAL",
+    "schema": "agent-control.model-residency-qualification/v1",
+    "observedAt": "2026-09-12T00:43:46.365Z",
+    "boundary": "Intel package + DRAM + NVIDIA GPU board; excludes motherboard, storage, PSU losses and peripherals",
+    "repetitions": 5,
+    "intervalSeconds": 5,
+    "model": {
+      "base": "SmolLM2-135M-Instruct",
+      "adaptation": "qualified route-intent LoRA",
+      "device": "CPU"
+    },
+    "residentLoadMs": 885,
+    "samples": [
+      {
+        "phase": "BASELINE",
+        "index": 1,
+        "seconds": 5.094,
+        "packageJoules": 103.97,
+        "dramJoules": 12.53,
+        "gpuJoules": 27.343202727272732,
+        "measuredComponentJoules": 143.84320272727274,
+        "measuredComponentWatts": 28.237770460791662
+      },
+      {
+        "phase": "BASELINE",
+        "index": 2,
+        "seconds": 5.083,
+        "packageJoules": 123.73,
+        "dramJoules": 13.8,
+        "gpuJoules": 28.85295636363637,
+        "measuredComponentJoules": 166.38295636363637,
+        "measuredComponentWatts": 32.73321982365461
+      },
+      {
+        "phase": "BASELINE",
+        "index": 3,
+        "seconds": 5.087,
+        "packageJoules": 96.34,
+        "dramJoules": 12.06,
+        "gpuJoules": 25.608420454545453,
+        "measuredComponentJoules": 134.00842045454544,
+        "measuredComponentWatts": 26.343310488410744
+      },
+      {
+        "phase": "BASELINE",
+        "index": 4,
+        "seconds": 5.08,
+        "packageJoules": 120.48,
+        "dramJoules": 13.52,
+        "gpuJoules": 27.32347272727273,
+        "measuredComponentJoules": 161.32347272727273,
+        "measuredComponentWatts": 31.756589119541875
+      },
+      {
+        "phase": "BASELINE",
+        "index": 5,
+        "seconds": 5.091,
+        "packageJoules": 105.15,
+        "dramJoules": 12.58,
+        "gpuJoules": 28.65307363636364,
+        "measuredComponentJoules": 146.38307363636363,
+        "measuredComponentWatts": 28.753304583846717
+      },
+      {
+        "phase": "WARM_RESIDENT",
+        "index": 1,
+        "seconds": 5.084,
+        "packageJoules": 102.14,
+        "dramJoules": 12.55,
+        "gpuJoules": 26.321254545454547,
+        "measuredComponentJoules": 141.01125454545453,
+        "measuredComponentWatts": 27.7362813818754
+      },
+      {
+        "phase": "WARM_RESIDENT",
+        "index": 2,
+        "seconds": 5.079,
+        "packageJoules": 136.42,
+        "dramJoules": 14.71,
+        "gpuJoules": 26.544700909090913,
+        "measuredComponentJoules": 177.67470090909092,
+        "measuredComponentWatts": 34.98222108861802
+      },
+      {
+        "phase": "WARM_RESIDENT",
+        "index": 3,
+        "seconds": 5.082,
+        "packageJoules": 100.69,
+        "dramJoules": 12.37,
+        "gpuJoules": 28.597800000000007,
+        "measuredComponentJoules": 141.6578,
+        "measuredComponentWatts": 27.874419519874067
+      },
+      {
+        "phase": "WARM_RESIDENT",
+        "index": 4,
+        "seconds": 5.077,
+        "packageJoules": 129.01,
+        "dramJoules": 14.18,
+        "gpuJoules": 28.964284999999997,
+        "measuredComponentJoules": 172.154285,
+        "measuredComponentWatts": 33.908663580854835
+      },
+      {
+        "phase": "WARM_RESIDENT",
+        "index": 5,
+        "seconds": 5.075,
+        "packageJoules": 95.09,
+        "dramJoules": 11.97,
+        "gpuJoules": 25.518022727272726,
+        "measuredComponentJoules": 132.57802272727272,
+        "measuredComponentWatts": 26.12374832064487
+      }
+    ],
+    "baseline": {
+      "mean": 29.564838895249125,
+      "standardDeviation": 2.6287045572655323,
+      "standardError": 1.1755924165618437
+    },
+    "warm": {
+      "mean": 30.12506677837344,
+      "standardDeviation": 4.021498816055629,
+      "standardError": 1.7984689448270617
+    },
+    "deltaWatts": 0.5602278831243162,
+    "uncertaintyWatts95Approx": 4.297212154588172,
+    "loadPenaltyJoules": 62.999,
+    "breakEvenSeconds": null,
+    "verdict": "PARTIAL_RESIDENCY_EFFECT_UNRESOLVED",
+    "routingAdmission": "NOT_ADMITTED",
+    "limitations": [
+      "not_whole_node",
+      "shared_gpu_processes_present",
+      "sequential_intervals_not_lab_isolated",
+      "five_interval_approximate_uncertainty",
+      "no_automatic_shutdown_or_route_policy_change"
+    ]
+  },
+  "wholeNode": {
+    "status": "BLOCKED",
+    "reason": "No synchronized whole-node meter was available; component measurements are not relabelled as whole-system energy."
+  },
+  "routingPolicyChanged": false
+}

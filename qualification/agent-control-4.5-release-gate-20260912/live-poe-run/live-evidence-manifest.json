@@ -1,0 +1,55 @@
+{
+  "schema": "agent-control.live-memory-evidence/v1",
+  "verdict": "PASS_GENUINE_RUNTIME_ACTIVITY_RECORDED",
+  "implementationCommit": "9bf63bac4a00c4619e8ce581c294806e95844d74",
+  "qualificationExitCode": 0,
+  "browserErrors": [],
+  "providerOutputPersistedOnlyThroughSanitizedQualificationEvidence": true,
+  "files": [
+    {
+      "file": "cross-model-memory-qualification.json",
+      "bytes": 21087,
+      "sha256": "96c20cecac20157b2f085dd13a97d09e246b548f87c015dd1f7bda36ee865acd"
+    },
+    {
+      "file": "cross-model-memory-transcript.md",
+      "bytes": 1440,
+      "sha256": "6fa8b67a4a89549491c01c0e5b9666f7be2e26952dc0e36d1ad7d3d517941db1"
+    },
+    {
+      "file": "live-runtime-final.png",
+      "bytes": 233184,
+      "sha256": "a6951f34d7ded18b060b29ee009d1920c0341022028e1b70f0c3918382488f7e"
+    },
+    {
+      "file": "live-runtime-snapshots.json",
+      "bytes": 11912,
+      "sha256": "bb70eeff25604e6a1964c2c688a5d84e2d73dc1c497c1b225f2fb93a5fe9d992"
+    },
+    {
+      "file": "agent-control-4.5-live-poe-memory-qualification.mp4",
+      "bytes": 3214902,
+      "sha256": "256f5cbe52f6fe030dc5d045f98cd98e16753593966b88b06f9b968f8150cfff"
+    }
+  ],
+  "video": {
+    "programs": [],
+    "streams": [
+      {
+        "codec_name": "h264",
+        "width": 1920,
+        "height": 1080,
+        "r_frame_rate": "25/1"
+      }
+    ],
+    "format": {
+      "duration": "36.920000",
+      "size": "3214902"
+    }
+  },
+  "liveObservation": {
+    "rawSampleCount": 37,
+    "durableTransitions": 6,
+    "compaction": "Consecutive and repeated full-store observations reduced to distinct state transitions; final durable stores remain preserved."
+  }
+}

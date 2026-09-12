@@ -1,0 +1,85 @@
+{
+  "version": 1,
+  "artifacts": [
+    {
+      "id": "artifact-53f0b0c5-be79-48c1-8ea8-339c4dcf3d58",
+      "runId": "run-391b1a18-bd3c-4ae9-8263-39054cf6db89",
+      "stepId": "execute",
+      "name": "writer-memory",
+      "type": "agent-control-memory-writer",
+      "schema": "agent-control.memory-writer/v1",
+      "version": "1",
+      "createdAt": "2026-09-12T00:53:48.057Z",
+      "size": 3088,
+      "sha256": "165d2687abf01a1ee15719ae07354c656e95991a0983203d5136495440ffd2c1",
+      "storageRef": "/fast/work/agent-control-4.5-skill-learning/qualification/agent-control-4.5-release-gate-20260912/live-poe-run/runtime/artifacts/objects/artifact-53f0b0c5-be79-48c1-8ea8-339c4dcf3d58.json",
+      "retention": "run-history",
+      "provenance": {
+        "jobId": "cross-memory-writer-qwen-hpubuntu",
+        "jobVersion": "1.0.0",
+        "action": "qualification.cross-memory-writer@1.0.0",
+        "workerId": "hpubuntu"
+      }
+    },
+    {
+      "id": "artifact-cdf8df9e-4e91-423b-b0d6-f3f09167860a",
+      "runId": "run-e52303b3-ffa3-4a13-bd64-e1d9ec34cb7f",
+      "stepId": "execute",
+      "name": "governed-memory",
+      "type": "agent-control-project-memory",
+      "schema": "agent-control.project-memory/v1",
+      "version": "1",
+      "createdAt": "2026-09-12T00:53:48.145Z",
+      "size": 407,
+      "sha256": "211344815ec3b2ad207f3fc5aaaf802a060e05d5f5d5a70bb02bf5192bc812b9",
+      "storageRef": "/fast/work/agent-control-4.5-skill-learning/qualification/agent-control-4.5-release-gate-20260912/live-poe-run/runtime/artifacts/objects/artifact-cdf8df9e-4e91-423b-b0d6-f3f09167860a.json",
+      "retention": "run-history",
+      "provenance": {
+        "jobId": "cross-memory-persist",
+        "jobVersion": "1.0.0",
+        "action": "qualification.cross-memory-persist@1.0.0",
+        "workerId": "hpubuntu"
+      }
+    },
+    {
+      "id": "artifact-7f99eb7e-5dce-4b4a-a49e-1fdfb438ebf1",
+      "runId": "run-d54d5e4b-b165-479c-9021-c59365ef88c6",
+      "stepId": "execute",
+      "name": "reader-reconstruction",
+      "type": "agent-control-memory-reader",
+      "schema": "agent-control.memory-reader/v1",
+      "version": "1",
+      "createdAt": "2026-09-12T00:53:58.469Z",
+      "size": 3642,
+      "sha256": "181459f3ba51757257145d4178a1245fadbfb366a09169d101b0e99d75d4f614",
+      "storageRef": "/fast/work/agent-control-4.5-skill-learning/qualification/agent-control-4.5-release-gate-20260912/live-poe-run/runtime/artifacts/objects/artifact-7f99eb7e-5dce-4b4a-a49e-1fdfb438ebf1.json",
+      "retention": "run-history",
+      "provenance": {
+        "jobId": "cross-memory-reader-codex-luna",
+        "jobVersion": "1.0.0",
+        "action": "qualification.cross-memory-reader@1.0.0",
+        "workerId": "hpubuntu"
+      }
+    },
+    {
+      "id": "artifact-a14f84b6-2926-49ff-bf8a-20c6dca458ee",
+      "runId": "run-f2a98e44-917d-434c-bd7a-086623cab1d8",
+      "stepId": "execute",
+      "name": "continuation-result",
+      "type": "agent-control-memory-continuation",
+      "schema": "agent-control.memory-continuation/v1",
+      "version": "1",
+      "createdAt": "2026-09-12T00:53:58.542Z",
+      "size": 316,
+      "sha256": "68bda78c6101f57d02ba6e2d9410d634b3d6de75bbb149b9b2f1b566db6713e7",
+      "storageRef": "/fast/work/agent-control-4.5-skill-learning/qualification/agent-control-4.5-release-gate-20260912/live-poe-run/runtime/artifacts/objects/artifact-a14f84b6-2926-49ff-bf8a-20c6dca458ee.json",
+      "retention": "run-history",
+      "provenance": {
+        "jobId": "cross-memory-continuation",
+        "jobVersion": "1.0.0",
+        "action": "qualification.cross-memory-continuation@1.0.0",
+        "workerId": "hpubuntu"
+      }
+    }
+  ]
+}

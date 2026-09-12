@@ -1,0 +1,8 @@
+{
+  "pairId": "qwen-to-codex",
+  "operation": "EXECUTE_MEMORY_INTEGRITY_CHECK",
+  "memoryId": "memory-qwen-to-codex",
+  "contentSha256": "d3253f595a5604481dbd76832eb506d8ef9276ad8d820a52755a52597da3025b",
+  "provenanceSha256": "e9d242402509c5e93bc49d5282314a30703e069a9d5f82da79bd341182caf2f6",
+  "result": "PASS"
+}

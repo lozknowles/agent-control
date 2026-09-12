@@ -1,0 +1,363 @@
+{
+  "schema": "agent-control.poe-store/v1",
+  "conversations": [
+    {
+      "schema": "agent-control.poe-conversation/v1",
+      "id": "poe-conversation:9f4ceef5-fa55-46f4-89b8-04b6456318c4",
+      "actorId": "operator",
+      "channel": "dashboard",
+      "state": "OBSERVING_CREW",
+      "createdAt": "2026-09-12T00:53:33.129Z",
+      "updatedAt": "2026-09-12T00:53:33.175Z",
+      "turns": [
+        {
+          "id": "poe-turn:9b7d3f9e-eb3c-44d3-981a-71fbe8fb3d32",
+          "conversationId": "poe-conversation:9f4ceef5-fa55-46f4-89b8-04b6456318c4",
+          "at": "2026-09-12T00:53:33.132Z",
+          "purpose": "GREETING",
+          "actor": "poe",
+          "channel": "dashboard",
+          "modality": "text",
+          "text": "Good day. I’m POE. How may I help you?",
+          "authority": "AGENT_CONTROL",
+          "contentTrust": "AGENT_CONTROL_EVIDENCE",
+          "references": [],
+          "evidence": []
+        },
+        {
+          "id": "poe-turn:fa6c288e-a3a4-49cc-a13c-95d077b7ef10",
+          "conversationId": "poe-conversation:9f4ceef5-fa55-46f4-89b8-04b6456318c4",
+          "at": "2026-09-12T00:53:33.134Z",
+          "actor": "operator",
+          "channel": "dashboard",
+          "modality": "text",
+          "text": "POE, run the Agent Control 4.5 physical cross-model Your Memories pair qwen-to-codex. Have the writer persist governed project memory, start the different reader cold without its transcript, reconstruct the work, execute the exact next action, and independently verify it.",
+          "authority": "OPERATOR",
+          "contentTrust": "OPERATOR_REQUEST",
+          "references": [],
+          "evidence": []
+        },
+        {
+          "id": "poe-turn:3a0b177d-a146-4e88-9d19-20119c8f0113",
+          "conversationId": "poe-conversation:9f4ceef5-fa55-46f4-89b8-04b6456318c4",
+          "at": "2026-09-12T00:53:33.137Z",
+          "actor": "poe",
+          "channel": "dashboard",
+          "modality": "text",
+          "text": "Qualification Work Parcel\n\nThe exact Work Parcel is retained in Agent Control durable evidence.\n\nCurrent natural transcript: {\"conversationId\":\"poe-conversation:9f4ceef5-fa55-46f4-89b8-04b6456318c4\",\"snapshotTurnCount\":2,\"bytes\":1043,\"sha256\":\"431e0368b6cc8f350211c1882c26d60f02df871bf5f4e5d23222ba2f8f6c83fc\",\"dashboardControl\":\"Transcript\",\"exportPath\":\"/api/poe/conversations/poe-conversation%3A9f4ceef5-fa55-46f4-89b8-04b6456318c4/transcript\",\"snapshotBoundary\":\"Complete retained conversation before this answer; export requires the existing authenticated channel controls.\"} (agent control)",
+          "authority": "AGENT_CONTROL",
+          "contentTrust": "AGENT_CONTROL_EVIDENCE",
+          "references": [
+            {
+              "kind": "run",
+              "id": "the"
+            }
+          ],
+          "evidence": [
+            {
+              "label": "Current natural transcript",
+              "value": "{\"conversationId\":\"poe-conversation:9f4ceef5-fa55-46f4-89b8-04b6456318c4\",\"snapshotTurnCount\":2,\"bytes\":1043,\"sha256\":\"431e0368b6cc8f350211c1882c26d60f02df871bf5f4e5d23222ba2f8f6c83fc\",\"dashboardControl\":\"Transcript\",\"exportPath\":\"/api/poe/conversations/poe-conversation%3A9f4ceef5-fa55-46f4-89b8-04b6456318c4/transcript\",\"snapshotBoundary\":\"Complete retained conversation before this answer; export requires the existing authenticated channel controls.\"}",
+              "authority": "AGENT_CONTROL",
+              "informationKind": "LIVE_OBSERVED",
+              "observedAt": "2026-09-12T00:53:33.136Z",
+              "evidence": [
+                "poe:conversation:poe-conversation:9f4ceef5-fa55-46f4-89b8-04b6456318c4:transcript"
+              ]
+            }
+          ],
+          "responseMode": "DETERMINISTIC"
+        }
+      ],
+      "proposalIds": [
+        "poe-benchmark:d9bd3714-d98e-4ab4-8729-d81647a2f5c9"
+      ],
+      "lastReference": {
+        "kind": "run",
+        "id": "the"
+      }
+    }
+  ],
+  "proposals": [
+    {
+      "schema": "agent-control.poe-benchmark-proposal/v1",
+      "id": "poe-benchmark:d9bd3714-d98e-4ab4-8729-d81647a2f5c9",
+      "conversationId": "poe-conversation:9f4ceef5-fa55-46f4-89b8-04b6456318c4",
+      "revision": 1,
+      "state": "SUBMITTED",
+      "decision": "Run cross-model memory pair qwen-to-codex",
+      "objective": "Physically prove provider-neutral project-memory reconstruction and continuation for qwen-to-codex.",
+      "whyNewEvidenceIsNeeded": "Physical evidence is required that a new provider context can reconstruct and continue from provider-neutral governed memory.",
+      "conditions": [
+        {
+          "route": {
+            "providerId": "local-qwen",
+            "modelId": "qwen-hpubuntu",
+            "nodeId": "hpubuntu"
+          },
+          "tools": [],
+          "contextPolicy": "Cold reader receives project/task identity and bounded ProjectMemoryPort recall only.",
+          "fixtureSha256": "e9d242402509c5e93bc49d5282314a30703e069a9d5f82da79bd341182caf2f6",
+          "softwareVersion": "9bf63bac4a00c4619e8ce581c294806e95844d74",
+          "hardwareClass": "hpubuntu",
+          "quantization": null,
+          "cacheState": "COLD",
+          "providerEndpoint": "governed-provider-adapter",
+          "authority": "physical qualification configuration",
+          "timeLimitMs": 660000
+        },
+        {
+          "route": {
+            "providerId": "codex-chatgpt",
+            "accountProfileId": "controller-codex",
+            "modelId": "codex-luna",
+            "nodeId": "hpubuntu"
+          },
+          "tools": [],
+          "contextPolicy": "Cold reader receives project/task identity and bounded ProjectMemoryPort recall only.",
+          "fixtureSha256": "e9d242402509c5e93bc49d5282314a30703e069a9d5f82da79bd341182caf2f6",
+          "softwareVersion": "9bf63bac4a00c4619e8ce581c294806e95844d74",
+          "hardwareClass": "hpubuntu",
+          "quantization": null,
+          "cacheState": "COLD",
+          "providerEndpoint": "governed-provider-adapter",
+          "authority": "physical qualification configuration",
+          "timeLimitMs": 660000
+        }
+      ],
+      "stages": [
+        {
+          "id": "qwen-to-codex-writer",
+          "name": "Qwen on hpubuntu writes governed memory",
+          "job": "cross-memory-writer-qwen-hpubuntu@1.0.0",
+          "parameters": {
+            "pairId": "qwen-to-codex"
+          },
+          "requestedRoute": {
+            "model": "qwen-hpubuntu",
+            "reason": "Explicit physical writer route; substitution forbidden"
+          }
+        },
+        {
+          "id": "qwen-to-codex-persist",
+          "name": "ProjectMemoryPort verifies and persists memory",
+          "job": "cross-memory-persist@1.0.0",
+          "parameters": {
+            "pairId": "qwen-to-codex"
+          },
+          "dependsOn": [
+            "qwen-to-codex-writer"
+          ]
+        },
+        {
+          "id": "qwen-to-codex-reader",
+          "name": "Codex CLI / Luna reconstructs cold",
+          "job": "cross-memory-reader-codex-luna@1.0.0",
+          "parameters": {
+            "pairId": "qwen-to-codex"
+          },
+          "dependsOn": [
+            "qwen-to-codex-persist"
+          ],
+          "requestedRoute": {
+            "model": "codex-luna",
+            "reason": "Explicit physically distinct cold-reader route; substitution forbidden"
+          }
+        },
+        {
+          "id": "qwen-to-codex-continue",
+          "name": "Execute and independently verify next Work Parcel",
+          "job": "cross-memory-continuation@1.0.0",
+          "parameters": {
+            "pairId": "qwen-to-codex"
+          },
+          "dependsOn": [
+            "qwen-to-codex-reader",
+            "qwen-to-codex-persist"
+          ]
+        }
+      ],
+      "metrics": [
+        {
+          "id": "criterion-qwen-to-codex",
+          "label": "Cold continuation",
+          "kind": "OBJECTIVE",
+          "successCriterion": "Reader reconstruction and exact next action pass independent verification.",
+          "stageId": "qwen-to-codex-continue"
+        }
+      ],
+      "repetitions": 1,
+      "constraints": [
+        "No model substitution",
+        "Reader execution is stateless and receives no writer transcript",
+        "Memories are advisory and cannot override evidence",
+        "No merge, tag, release or deployment"
+      ],
+      "fairness": {
+        "comparable": true,
+        "findings": []
+      },
+      "createdAt": "2026-09-12T00:53:33.139Z",
+      "updatedAt": "2026-09-12T00:53:33.175Z",
+      "frozenAt": "2026-09-12T00:53:33.140Z",
+      "frozenSha256": "1e875878471ca20ba731eae120bb292bd00e813152d0360f8eef2b7b975aa609",
+      "approvedAt": "2026-09-12T00:53:33.175Z",
+      "approvedBy": "operator",
+      "execution": {
+        "parcelId": "parcel-social-57a6c9bb96d74b4879443cf48d38094b0a90f52e65107488d198ed78d0b065ce",
+        "submittedAt": "2026-09-12T00:53:33.175Z",
+        "requestKey": "57a6c9bb96d74b4879443cf48d38094b0a90f52e65107488d198ed78d0b065ce"
+      }
+    }
+  ],
+  "events": [
+    {
+      "type": "conversation.changed",
+      "at": "2026-09-12T00:53:33.129Z",
+      "conversationId": "poe-conversation:9f4ceef5-fa55-46f4-89b8-04b6456318c4",
+      "state": "IDLE",
+      "detail": {
+        "action": "created"
+      }
+    },
+    {
+      "type": "conversation.changed",
+      "at": "2026-09-12T00:53:33.131Z",
+      "conversationId": "poe-conversation:9f4ceef5-fa55-46f4-89b8-04b6456318c4",
+      "state": "LISTENING",
+      "detail": {
+        "reason": "authenticated operator greeting",
+        "state": "LISTENING"
+      }
+    },
+    {
+      "type": "conversation.changed",
+      "at": "2026-09-12T00:53:33.132Z",
+      "conversationId": "poe-conversation:9f4ceef5-fa55-46f4-89b8-04b6456318c4",
+      "state": "LISTENING",
+      "detail": {
+        "turnId": "poe-turn:9b7d3f9e-eb3c-44d3-981a-71fbe8fb3d32",
+        "actor": "poe"
+      }
+    },
+    {
+      "type": "conversation.changed",
+      "at": "2026-09-12T00:53:33.133Z",
+      "conversationId": "poe-conversation:9f4ceef5-fa55-46f4-89b8-04b6456318c4",
+      "state": "LISTENING",
+      "detail": {
+        "reason": "operator turn accepted",
+        "state": "LISTENING"
+      }
+    },
+    {
+      "type": "conversation.changed",
+      "at": "2026-09-12T00:53:33.134Z",
+      "conversationId": "poe-conversation:9f4ceef5-fa55-46f4-89b8-04b6456318c4",
+      "state": "LISTENING",
+      "detail": {
+        "turnId": "poe-turn:fa6c288e-a3a4-49cc-a13c-95d077b7ef10",
+        "actor": "operator"
+      }
+    },
+    {
+      "type": "conversation.changed",
+      "at": "2026-09-12T00:53:33.135Z",
+      "conversationId": "poe-conversation:9f4ceef5-fa55-46f4-89b8-04b6456318c4",
+      "state": "INVESTIGATING",
+      "detail": {
+        "reference": "run",
+        "state": "INVESTIGATING"
+      }
+    },
+    {
+      "type": "conversation.changed",
+      "at": "2026-09-12T00:53:33.136Z",
+      "conversationId": "poe-conversation:9f4ceef5-fa55-46f4-89b8-04b6456318c4",
+      "state": "EXPLAINING",
+      "detail": {
+        "evidence": 1,
+        "unavailable": false,
+        "responseMode": "DETERMINISTIC",
+        "state": "EXPLAINING"
+      }
+    },
+    {
+      "type": "conversation.changed",
+      "at": "2026-09-12T00:53:33.137Z",
+      "conversationId": "poe-conversation:9f4ceef5-fa55-46f4-89b8-04b6456318c4",
+      "state": "EXPLAINING",
+      "detail": {
+        "turnId": "poe-turn:3a0b177d-a146-4e88-9d19-20119c8f0113",
+        "actor": "poe"
+      }
+    },
+    {
+      "type": "conversation.changed",
+      "at": "2026-09-12T00:53:33.138Z",
+      "conversationId": "poe-conversation:9f4ceef5-fa55-46f4-89b8-04b6456318c4",
+      "state": "DESIGNING_EXPERIMENT",
+      "detail": {
+        "decision": "Run cross-model memory pair qwen-to-codex",
+        "state": "DESIGNING_EXPERIMENT"
+      }
+    },
+    {
+      "type": "proposal.changed",
+      "at": "2026-09-12T00:53:33.139Z",
+      "conversationId": "poe-conversation:9f4ceef5-fa55-46f4-89b8-04b6456318c4",
+      "state": "DESIGNING_EXPERIMENT",
+      "detail": {
+        "proposalId": "poe-benchmark:d9bd3714-d98e-4ab4-8729-d81647a2f5c9",
+        "state": "DRAFT",
+        "comparable": true
+      },
+      "proposalId": "poe-benchmark:d9bd3714-d98e-4ab4-8729-d81647a2f5c9"
+    },
+    {
+      "type": "conversation.changed",
+      "at": "2026-09-12T00:53:33.152Z",
+      "conversationId": "poe-conversation:9f4ceef5-fa55-46f4-89b8-04b6456318c4",
+      "state": "WAITING_FOR_APPROVAL",
+      "detail": {
+        "proposalId": "poe-benchmark:d9bd3714-d98e-4ab4-8729-d81647a2f5c9",
+        "sha256": "1e875878471ca20ba731eae120bb292bd00e813152d0360f8eef2b7b975aa609",
+        "state": "WAITING_FOR_APPROVAL"
+      }
+    },
+    {
+      "type": "proposal.changed",
+      "at": "2026-09-12T00:53:33.153Z",
+      "conversationId": "poe-conversation:9f4ceef5-fa55-46f4-89b8-04b6456318c4",
+      "state": "WAITING_FOR_APPROVAL",
+      "detail": {
+        "proposalId": "poe-benchmark:d9bd3714-d98e-4ab4-8729-d81647a2f5c9",
+        "state": "FROZEN",
+        "sha256": "1e875878471ca20ba731eae120bb292bd00e813152d0360f8eef2b7b975aa609"
+      },
+      "proposalId": "poe-benchmark:d9bd3714-d98e-4ab4-8729-d81647a2f5c9"
+    },
+    {
+      "type": "conversation.changed",
+      "at": "2026-09-12T00:53:33.175Z",
+      "conversationId": "poe-conversation:9f4ceef5-fa55-46f4-89b8-04b6456318c4",
+      "state": "OBSERVING_CREW",
+      "detail": {
+        "parcelId": "parcel-social-57a6c9bb96d74b4879443cf48d38094b0a90f52e65107488d198ed78d0b065ce",
+        "state": "OBSERVING_CREW"
+      }
+    },
+    {
+      "type": "proposal.changed",
+      "at": "2026-09-12T00:53:33.176Z",
+      "conversationId": "poe-conversation:9f4ceef5-fa55-46f4-89b8-04b6456318c4",
+      "state": "OBSERVING_CREW",
+      "detail": {
+        "proposalId": "poe-benchmark:d9bd3714-d98e-4ab4-8729-d81647a2f5c9",
+        "state": "SUBMITTED",
+        "parcelId": "parcel-social-57a6c9bb96d74b4879443cf48d38094b0a90f52e65107488d198ed78d0b065ce",
+        "requestKey": "57a6c9bb96d74b4879443cf48d38094b0a90f52e65107488d198ed78d0b065ce"
+      },
+      "proposalId": "poe-benchmark:d9bd3714-d98e-4ab4-8729-d81647a2f5c9"
+    }
+  ]
+}

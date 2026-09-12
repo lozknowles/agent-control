@@ -1,0 +1,44 @@
+{
+  "pairId": "qwen-to-codex",
+  "route": {
+    "providerId": "local-qwen",
+    "modelId": "qwen-hpubuntu",
+    "nodeId": "hpubuntu"
+  },
+  "packetSha256": "e9d242402509c5e93bc49d5282314a30703e069a9d5f82da79bd341182caf2f6",
+  "output": {
+    "memory": "Agent Control 4.5 | cross-model | 565aff41c1afc07995163ed4ec1d490d628970bf | v4.4.0 | D:/obsidian/knowledge_vault | node-local | content-hash | concurrently edited | f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2 | EXECUTE_MEMORY_INTEGRITY_CHECK",
+    "completedWork": [
+      "ProjectMemoryPort and its structured Markdown backend are implemented; hpubuntu to MSI byte-identical transfer into the authoritative D:/obsidian/knowledge_vault was physically proven."
+    ],
+    "decisions": [
+      "Use independent node-local vault namespaces and governed content-hash synchronization."
+    ],
+    "rejectedApproaches": [
+      "Do not use one concurrently edited canonical note across nodes because it creates split-brain and write-conflict risk."
+    ],
+    "outstandingWork": [
+      "Complete the real writer-to-cold-reader model matrix, verify each continuation, preserve failures, and present the evidence for review."
+    ],
+    "supportingEvidence": [
+      "Portable-memory checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf; transferred topology note SHA-256 f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2."
+    ],
+    "nextAction": "EXECUTE_MEMORY_INTEGRITY_CHECK"
+  },
+  "call": {
+    "output": "{\n  \"memory\": \"Agent Control 4.5 | cross-model | 565aff41c1afc07995163ed4ec1d490d628970bf | v4.4.0 | D:/obsidian/knowledge_vault | node-local | content-hash | concurrently edited | f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2 | EXECUTE_MEMORY_INTEGRITY_CHECK\",\n  \"completedWork\": [\n    \"ProjectMemoryPort and its structured Markdown backend are implemented; hpubuntu to MSI byte-identical transfer into the authoritative D:/obsidian/knowledge_vault was physically proven.\"\n  ],\n  \"decisions\": [\n    \"Use independent node-local vault namespaces and governed content-hash synchronization.\"\n  ],\n  \"rejectedApproaches\": [\n    \"Do not use one concurrently edited canonical note across nodes because it creates split-brain and write-conflict risk.\"\n  ],\n  \"outstandingWork\": [\n    \"Complete the real writer-to-cold-reader model matrix, verify each continuation, preserve failures, and present the evidence for review.\"\n  ],\n  \"supportingEvidence\": [\n    \"Portable-memory checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf; transferred topology note SHA-256 f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2.\"\n  ],\n  \"nextAction\": \"EXECUTE_MEMORY_INTEGRITY_CHECK\"\n}",
+    "usage": {
+      "inputTokens": 1481,
+      "outputTokens": 711,
+      "totalTokens": 2192,
+      "cachedInputTokens": 1422,
+      "cost": null,
+      "currency": null,
+      "authority": "unavailable"
+    },
+    "elapsedMs": 14837,
+    "responseModel": "qwen2.5-3b-instruct-q4_k_m.gguf",
+    "finishReason": "stop",
+    "threadIdHash": null
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "schema": "agent-control.msi-memory-transition-qualification/v1",
+  "startedAt": "2026-09-12T00:44:18.424Z",
+  "completedAt": "2026-09-12T00:44:20.706Z",
+  "resource": {
+    "nodeId": "windows-codex-node",
+    "platform": "windows",
+    "transport": "governed SSH ResourceCodexNodeExecutionPort"
+  },
+  "profiles": [
+    {
+      "profileId": "cottage-plus",
+      "nodeId": "windows-codex-node",
+      "status": "BLOCKED",
+      "authenticated": false,
+      "reason": "codex_chatgpt_auth_required",
+      "credentialReference": "CODEX_HOME_COTTAGE_PLUS"
+    },
+    {
+      "profileId": "lawrence-pro",
+      "nodeId": "windows-codex-node",
+      "status": "BLOCKED",
+      "authenticated": false,
+      "reason": "codex_chatgpt_auth_required",
+      "credentialReference": "CODEX_HOME_LAWRENCE_PRO"
+    }
+  ],
+  "transition": {
+    "status": "BLOCKED",
+    "reason": "One or more required isolated account profiles are not authenticated."
+  },
+  "credentialSafety": {
+    "credentialContentsObserved": false,
+    "windowsProfilePathsPersisted": false,
+    "rawTransportOutputPersisted": false
+  },
+  "verdict": "BLOCKED_AUTHENTICATION_UNAVAILABLE"
+}

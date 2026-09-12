@@ -1,0 +1,132 @@
+{
+  "schema": "agent-control.4.5-evidence-manifest/v1",
+  "generatedAt": "2026-09-12T01:14:41.370Z",
+  "implementationHead": "9bf63bac4a00c4619e8ce581c294806e95844d74",
+  "files": [
+    {
+      "file": "complete-human-readable-transcript.md",
+      "bytes": 47415,
+      "sha256": "69982ecf03b9a9450640de9e852d203c3d5736856cdba77de810deb6b5faf0b5"
+    },
+    {
+      "file": "energy-evidence.json",
+      "bytes": 4839,
+      "sha256": "31cb247ab9126e3605342c4f0282f4991341539c5ec3eec876cb114e347d5eb3"
+    },
+    {
+      "file": "failure-analysis.json",
+      "bytes": 46687,
+      "sha256": "39dcce7d169692518dd8be92ae96e789621c723cd65b4b8a518e5c27e757b389"
+    },
+    {
+      "file": "live-poe-run/agent-control-4.5-live-poe-memory-qualification.mp4",
+      "bytes": 3214902,
+      "sha256": "256f5cbe52f6fe030dc5d045f98cd98e16753593966b88b06f9b968f8150cfff"
+    },
+    {
+      "file": "live-poe-run/cross-model-memory-qualification.json",
+      "bytes": 21087,
+      "sha256": "96c20cecac20157b2f085dd13a97d09e246b548f87c015dd1f7bda36ee865acd"
+    },
+    {
+      "file": "live-poe-run/cross-model-memory-transcript.md",
+      "bytes": 1440,
+      "sha256": "6fa8b67a4a89549491c01c0e5b9666f7be2e26952dc0e36d1ad7d3d517941db1"
+    },
+    {
+      "file": "live-poe-run/live-runtime-final.png",
+      "bytes": 233184,
+      "sha256": "a6951f34d7ded18b060b29ee009d1920c0341022028e1b70f0c3918382488f7e"
+    },
+    {
+      "file": "live-poe-run/live-runtime-snapshots.json",
+      "bytes": 11912,
+      "sha256": "bb70eeff25604e6a1964c2c688a5d84e2d73dc1c497c1b225f2fb93a5fe9d992"
+    },
+    {
+      "file": "live-poe-run/runtime/artifacts/artifacts.json",
+      "bytes": 3695,
+      "sha256": "7ecf41ab0e80c527c8fc586522ac444a8d05d367faf7ccbe3a35e1a56986ce78"
+    },
+    {
+      "file": "live-poe-run/runtime/artifacts/objects/artifact-53f0b0c5-be79-48c1-8ea8-339c4dcf3d58.json",
+      "bytes": 3088,
+      "sha256": "165d2687abf01a1ee15719ae07354c656e95991a0983203d5136495440ffd2c1"
+    },
+    {
+      "file": "live-poe-run/runtime/artifacts/objects/artifact-7f99eb7e-5dce-4b4a-a49e-1fdfb438ebf1.json",
+      "bytes": 3642,
+      "sha256": "181459f3ba51757257145d4178a1245fadbfb366a09169d101b0e99d75d4f614"
+    },
+    {
+      "file": "live-poe-run/runtime/artifacts/objects/artifact-a14f84b6-2926-49ff-bf8a-20c6dca458ee.json",
+      "bytes": 316,
+      "sha256": "68bda78c6101f57d02ba6e2d9410d634b3d6de75bbb149b9b2f1b566db6713e7"
+    },
+    {
+      "file": "live-poe-run/runtime/artifacts/objects/artifact-cdf8df9e-4e91-423b-b0d6-f3f09167860a.json",
+      "bytes": 407,
+      "sha256": "211344815ec3b2ad207f3fc5aaaf802a060e05d5f5d5a70bb02bf5192bc812b9"
+    },
+    {
+      "file": "live-poe-run/runtime/locks.json",
+      "bytes": 34,
+      "sha256": "dc8d39153c0e0e67aee3abea031749238848c3d77345d19559d1610b7f8347eb"
+    },
+    {
+      "file": "live-poe-run/runtime/poe.json",
+      "bytes": 14210,
+      "sha256": "91cc318b906f7943a2893989901105115715c42ea6a729c3bbadb3ffd6c246c9"
+    },
+    {
+      "file": "live-poe-run/runtime/run-events.jsonl",
+      "bytes": 2564,
+      "sha256": "e9b568188ed6cd32177684c27dd734be4153d2f7039f3545dbbc37d0d9df11dd"
+    },
+    {
+      "file": "live-poe-run/runtime/runs.json",
+      "bytes": 58856,
+      "sha256": "66a539c919ccd795a5c80fa9b9af1932de8db57be59a7d22ba7b5349588fb793"
+    },
+    {
+      "file": "live-poe-run/runtime/work-parcels.json",
+      "bytes": 154870,
+      "sha256": "88fdc69eda8efc80b27b64fc819fa389b097960c2fa613b45bac41c6d2534527"
+    },
+    {
+      "file": "live-poe-run/vault/Agent Control/4.5-cross-model-memory/memory-qwen-to-codex.md",
+      "bytes": 3200,
+      "sha256": "a081f187ea5c1c165c9829b9e663b9e6d696a4777eee47e47c4920821fecdf70"
+    },
+    {
+      "file": "memory-matrix.json",
+      "bytes": 46771,
+      "sha256": "a4673fdd8a24012bcde4d3f17c6bb528d125f52c744977c25b81a6d83889c4c6"
+    },
+    {
+      "file": "release-gate.json",
+      "bytes": 52562,
+      "sha256": "e9defe8ec5bb057b3221e2a3186ab66399c98a6c36fade944b63577c834e6bd8"
+    },
+    {
+      "file": "source-reruns/field-mapping-v3.json",
+      "bytes": 16577,
+      "sha256": "0ada99aaae8fc265b352c6fee2f31b6cab3bbc6583c3a82d01c619038c169753"
+    },
+    {
+      "file": "source-reruns/glm-final.json",
+      "bytes": 15727,
+      "sha256": "c6bda8d796e0c78da4f253106ee96586b906a8da525e4f9b04508e2dbb70884e"
+    },
+    {
+      "file": "source-reruns/pixel-final.json",
+      "bytes": 40712,
+      "sha256": "536b0f8d5c00befc334684be5fbed1c7fce821af568ff2200616a6abdbf8c201"
+    },
+    {
+      "file": "source-reruns/prompt-repair-v2.json",
+      "bytes": 40413,
+      "sha256": "f93bca2d7dbd9f21a2dccbe29d5da3c324c88a84ff19f362d94fa5174ff580da"
+    }
+  ]
+}

@@ -1,0 +1,1416 @@
+{
+  "version": 1,
+  "runs": [
+    {
+      "id": "run-f2a98e44-917d-434c-bd7a-086623cab1d8",
+      "jobId": "cross-memory-continuation",
+      "jobVersion": "1.0.0",
+      "trigger": {
+        "type": "manual",
+        "actor": "work-parcel:parcel-social-57a6c9bb96d74b4879443cf48d38094b0a90f52e65107488d198ed78d0b065ce",
+        "parcelContext": {
+          "schema": "agent-control.run-parcel-context/v1",
+          "parcelId": "parcel-social-57a6c9bb96d74b4879443cf48d38094b0a90f52e65107488d198ed78d0b065ce",
+          "stageId": "qwen-to-codex-continue",
+          "originalGoal": "Physically prove provider-neutral project-memory reconstruction and continuation for qwen-to-codex.",
+          "currentInterpretation": "Physically prove provider-neutral project-memory reconstruction and continuation for qwen-to-codex.",
+          "effectiveInstructions": [],
+          "constraints": [
+            "No model substitution",
+            "Reader execution is stateless and receives no writer transcript",
+            "Memories are advisory and cannot override evidence",
+            "No merge, tag, release or deployment"
+          ],
+          "successCriteria": [
+            {
+              "id": "criterion-qwen-to-codex",
+              "description": "Reader reconstruction and exact next action pass independent verification.",
+              "status": "PENDING"
+            },
+            {
+              "id": "criterion:stage:qwen-to-codex-writer",
+              "description": "Qwen on hpubuntu writes governed memory completes through its declared verification boundary",
+              "status": "PASS"
+            },
+            {
+              "id": "criterion:stage:qwen-to-codex-persist",
+              "description": "ProjectMemoryPort verifies and persists memory completes through its declared verification boundary",
+              "status": "PASS"
+            },
+            {
+              "id": "criterion:stage:qwen-to-codex-reader",
+              "description": "Codex CLI / Luna reconstructs cold completes through its declared verification boundary",
+              "status": "PASS"
+            },
+            {
+              "id": "criterion:stage:qwen-to-codex-continue",
+              "description": "Execute and independently verify next Work Parcel completes through its declared verification boundary",
+              "status": "PENDING"
+            }
+          ],
+          "baton": {
+            "schema": "agent-control.work-parcel-baton/v2",
+            "id": "parcel-baton-3b1a5f5a-9494-4d2d-b37f-0f3a58c3b884",
+            "createdAt": "2026-09-12T00:53:58.498Z",
+            "sourceStageIds": [
+              "qwen-to-codex-reader",
+              "qwen-to-codex-persist"
+            ],
+            "targetStageId": "qwen-to-codex-continue",
+            "objective": "Physically prove provider-neutral project-memory reconstruction and continuation for qwen-to-codex.",
+            "currentInterpretation": "Physically prove provider-neutral project-memory reconstruction and continuation for qwen-to-codex.",
+            "effectiveInstructions": [],
+            "constraints": [
+              "No model substitution",
+              "Reader execution is stateless and receives no writer transcript",
+              "Memories are advisory and cannot override evidence",
+              "No merge, tag, release or deployment"
+            ],
+            "successCriteria": [
+              {
+                "id": "criterion-qwen-to-codex",
+                "description": "Reader reconstruction and exact next action pass independent verification.",
+                "status": "PENDING"
+              },
+              {
+                "id": "criterion:stage:qwen-to-codex-writer",
+                "description": "Qwen on hpubuntu writes governed memory completes through its declared verification boundary",
+                "status": "PASS"
+              },
+              {
+                "id": "criterion:stage:qwen-to-codex-persist",
+                "description": "ProjectMemoryPort verifies and persists memory completes through its declared verification boundary",
+                "status": "PASS"
+              },
+              {
+                "id": "criterion:stage:qwen-to-codex-reader",
+                "description": "Codex CLI / Luna reconstructs cold completes through its declared verification boundary",
+                "status": "PASS"
+              },
+              {
+                "id": "criterion:stage:qwen-to-codex-continue",
+                "description": "Execute and independently verify next Work Parcel completes through its declared verification boundary",
+                "status": "PENDING"
+              }
+            ],
+            "completedStages": [
+              {
+                "id": "qwen-to-codex-writer",
+                "name": "Qwen on hpubuntu writes governed memory",
+                "state": "SUCCEEDED"
+              },
+              {
+                "id": "qwen-to-codex-persist",
+                "name": "ProjectMemoryPort verifies and persists memory",
+                "state": "SUCCEEDED"
+              },
+              {
+                "id": "qwen-to-codex-reader",
+                "name": "Codex CLI / Luna reconstructs cold",
+                "state": "SUCCEEDED"
+              }
+            ],
+            "nextAction": "Execute Execute and independently verify next Work Parcel through cross-memory-continuation@1.0.0 and satisfy its declared verification boundary",
+            "artifactIds": [
+              "artifact-cdf8df9e-4e91-423b-b0d6-f3f09167860a",
+              "artifact-7f99eb7e-5dce-4b4a-a49e-1fdfb438ebf1"
+            ],
+            "outputTypes": [
+              "agent-control-project-memory",
+              "agent-control-memory-reader"
+            ],
+            "eventRefs": [
+              {
+                "id": "context-event-2b738981-7e7c-4d9e-b59e-0d5bc2f754be",
+                "sequence": 5,
+                "type": "criterion.added",
+                "summary": "ProjectMemoryPort verifies and persists memory completes through its declared verification boundary",
+                "sha256": "5a96819cb4f0199d7cbe7adc444c6a488ac76120ec3d099356163776ab2808c6"
+              },
+              {
+                "id": "context-event-fe07ba57-e242-4d30-9d28-8f184bdf3c2a",
+                "sequence": 6,
+                "type": "criterion.added",
+                "summary": "Codex CLI / Luna reconstructs cold completes through its declared verification boundary",
+                "sha256": "06f99466af1c613c6d1fe7d3de12e48e8b5a9a6f9cf0acea322549f49473490b"
+              },
+              {
+                "id": "context-event-42515d15-50c9-481e-bfd0-e267947d07a7",
+                "sequence": 9,
+                "type": "route.selected",
+                "summary": "local-qwen/default/qwen-hpubuntu@hpubuntu",
+                "sha256": "18b9129cd82cbbb6358d3922878892d019e89b1d2d24ddddfea9640e2df6ef6a"
+              },
+              {
+                "id": "context-event-abf21bf7-66ad-459b-93c7-eff8dcb345ec",
+                "sequence": 14,
+                "type": "baton.created",
+                "summary": "Bounded baton view created for qwen-to-codex-persist",
+                "sha256": "8bd21d3e897679389a6539007400acc2e407050e53dd55b5fca54e7451e5b614"
+              },
+              {
+                "id": "context-event-fd425d20-d534-422e-950c-66240487a1d5",
+                "sequence": 15,
+                "type": "stage.started",
+                "summary": "ProjectMemoryPort verifies and persists memory dispatched",
+                "sha256": "94aba45fa9742d0094029534b9588cf300a9fb1dfc315577c5918437e98d9c30"
+              },
+              {
+                "id": "context-event-0dabf4b8-d5e3-4640-9918-880985f298be",
+                "sequence": 17,
+                "type": "stage.completed",
+                "summary": "ProjectMemoryPort verifies and persists memory completed through verification",
+                "sha256": "71710389132f3a0699a60b9a14e3c95cd84ad9584c81a8487fb00c745832fe85"
+              },
+              {
+                "id": "context-event-54101340-4f17-4bfa-9066-04219cf80fed",
+                "sequence": 18,
+                "type": "criterion.evaluated",
+                "summary": "ProjectMemoryPort verifies and persists memory completes through its declared verification boundary: PASS",
+                "sha256": "b340d0dee3bafb0acb6e91a9161f14e8a37ec58a32b2adc2144d09412881c26f"
+              },
+              {
+                "id": "context-event-a106c5a0-60a3-428d-999d-523605d6b207",
+                "sequence": 19,
+                "type": "baton.created",
+                "summary": "Bounded baton view created for qwen-to-codex-reader",
+                "sha256": "f8e65c58168ba7cb8012176b83c24f171d8fc0df75226ee8bf898abd6295ac02"
+              },
+              {
+                "id": "context-event-c511aa4f-24f5-4d37-9cc6-5eb029f722cc",
+                "sequence": 20,
+                "type": "route.selected",
+                "summary": "codex-chatgpt/controller-codex/codex-luna@hpubuntu",
+                "sha256": "24a588ee590d41be561b8490065081ec4205fc9c67d2f3726212e09840fa4862"
+              },
+              {
+                "id": "context-event-a1f29d9c-ed54-4ad5-9f04-19e5cf132b1d",
+                "sequence": 21,
+                "type": "stage.started",
+                "summary": "Codex CLI / Luna reconstructs cold dispatched",
+                "sha256": "0b68e6b25fc6106862b45f4b972fadcbd0426ff536e912f48ece95df09e11536"
+              },
+              {
+                "id": "context-event-0b065351-44c3-4c7d-b383-b4a5e9a84422",
+                "sequence": 23,
+                "type": "stage.completed",
+                "summary": "Codex CLI / Luna reconstructs cold completed through verification",
+                "sha256": "6fff7b149d289a99fe6830ca11bc2d397c2ba675801b9de5d25a60134cf6ca72"
+              },
+              {
+                "id": "context-event-6d7ef3ed-77f6-4b7b-8458-d5c4cec61cbb",
+                "sequence": 24,
+                "type": "criterion.evaluated",
+                "summary": "Codex CLI / Luna reconstructs cold completes through its declared verification boundary: PASS",
+                "sha256": "b757e6b22fef77db6ee4873eb86f7570187795cdb4223c9cff76ab57f2e84d72"
+              }
+            ],
+            "unresolvedQuestions": [],
+            "approvals": [],
+            "previousBatonIds": [
+              "parcel-baton-dbb357e0-904f-412b-ade7-d53b27e52256",
+              "parcel-baton-32a37cf2-b948-4110-b4be-3132a4bd31c4",
+              "parcel-baton-ca461f51-d3af-4aff-a561-cd4035de4709",
+              "parcel-baton-e717797c-13c9-4ed8-acc2-55e73d2ab215"
+            ],
+            "sizeBytes": 5721,
+            "estimatedTokens": 1431,
+            "sha256": "1900f3ed8fd5ef8d63feaa6b9ab2318c0ac164488ca261eb4b5a8c8c444eed99"
+          }
+        },
+        "id": "parcel-social-57a6c9bb96d74b4879443cf48d38094b0a90f52e65107488d198ed78d0b065ce:qwen-to-codex-continue"
+      },
+      "requestedAt": "2026-09-12T00:53:58.501Z",
+      "status": "SUCCEEDED",
+      "priority": "normal",
+      "concurrency": "allow",
+      "parameters": {
+        "pairId": "qwen-to-codex"
+      },
+      "steps": [
+        {
+          "id": "execute",
+          "action": "qualification.cross-memory-continuation@1.0.0",
+          "status": "SUCCEEDED",
+          "dependsOn": [],
+          "capabilityRequest": {
+            "requires": [
+              {
+                "id": "memory.control"
+              }
+            ]
+          },
+          "resources": [],
+          "attempts": [
+            {
+              "attempt": 1,
+              "startedAt": "2026-09-12T00:53:58.521Z",
+              "workerId": "hpubuntu",
+              "efficiencyInvocationIds": [],
+              "endedAt": "2026-09-12T00:53:58.554Z",
+              "outcome": "Reader-selected next governed Work Parcel action completed and independently verified memory integrity"
+            }
+          ],
+          "artifactIds": [
+            "artifact-a14f84b6-2926-49ff-bf8a-20c6dca458ee"
+          ],
+          "verification": {
+            "required": [
+              "continuation-verified"
+            ],
+            "passed": [
+              "continuation-verified"
+            ],
+            "failed": []
+          },
+          "placement": {
+            "selected": "hpubuntu",
+            "eligible": [
+              "hpubuntu"
+            ],
+            "rejected": [
+              {
+                "workerId": "pixel-8-pro",
+                "reasons": [
+                  "missing:memory.control"
+                ]
+              }
+            ],
+            "reasons": [
+              "satisfies:memory.control",
+              "healthy",
+              "available"
+            ]
+          },
+          "startedAt": "2026-09-12T00:53:58.521Z",
+          "endedAt": "2026-09-12T00:53:58.554Z"
+        }
+      ],
+      "artifacts": [
+        "artifact-a14f84b6-2926-49ff-bf8a-20c6dca458ee"
+      ],
+      "errors": [],
+      "effectiveJob": {
+        "apiVersion": "agent-control/v1",
+        "kind": "Job",
+        "metadata": {
+          "id": "cross-memory-continuation",
+          "name": "Execute reader-selected integrity check",
+          "version": "1.0.0"
+        },
+        "spec": {
+          "enabled": true,
+          "priority": "normal",
+          "concurrency": "allow",
+          "parameters": {
+            "pairId": {
+              "type": "string",
+              "required": true
+            }
+          },
+          "steps": [
+            {
+              "id": "execute",
+              "name": "Execute reader-selected integrity check",
+              "action": "qualification.cross-memory-continuation@1.0.0",
+              "requires": [
+                "memory.control"
+              ],
+              "outputs": [
+                {
+                  "name": "continuation-result",
+                  "type": "agent-control-memory-continuation",
+                  "schema": "agent-control.memory-continuation/v1",
+                  "version": "1"
+                }
+              ],
+              "timeoutSeconds": 300,
+              "verification": [
+                "continuation-verified"
+              ]
+            }
+          ]
+        }
+      },
+      "selectedWorkers": [
+        "hpubuntu"
+      ],
+      "approvals": [],
+      "provenance": [
+        {
+          "type": "trigger",
+          "at": "2026-09-12T00:53:58.501Z",
+          "detail": "manual:work-parcel:parcel-social-57a6c9bb96d74b4879443cf48d38094b0a90f52e65107488d198ed78d0b065ce"
+        },
+        {
+          "type": "action-dispatch",
+          "at": "2026-09-12T00:53:58.526Z",
+          "detail": "control:qualification.cross-memory-continuation@1.0.0"
+        },
+        {
+          "type": "evidence",
+          "at": "2026-09-12T00:53:58.554Z",
+          "detail": "continuation:qwen-to-codex:PASS"
+        }
+      ],
+      "updatedAt": "2026-09-12T00:53:58.562Z",
+      "startedAt": "2026-09-12T00:53:58.521Z",
+      "endedAt": "2026-09-12T00:53:58.562Z"
+    },
+    {
+      "id": "run-d54d5e4b-b165-479c-9021-c59365ef88c6",
+      "jobId": "cross-memory-reader-codex-luna",
+      "jobVersion": "1.0.0",
+      "trigger": {
+        "type": "manual",
+        "actor": "work-parcel:parcel-social-57a6c9bb96d74b4879443cf48d38094b0a90f52e65107488d198ed78d0b065ce",
+        "modelRoute": {
+          "requestedModel": "codex-luna",
+          "requestedRole": null,
+          "allowFallback": true,
+          "purpose": "EXECUTION",
+          "modelId": "codex-luna",
+          "providerId": "codex-chatgpt",
+          "accountProfileId": "controller-codex",
+          "accountLabel": "Controller Codex",
+          "accountPlan": "ChatGPT authenticated",
+          "accountPlanAuthority": "operator-configured",
+          "accountQualification": "QUALIFIED",
+          "accountAvailability": "AVAILABLE",
+          "providerModel": "gpt-5.6-luna",
+          "workloadNodeId": "hpubuntu",
+          "providerExecutionNodeId": "hpubuntu",
+          "credentialNodeId": "hpubuntu",
+          "nodeId": "hpubuntu",
+          "qualificationVersion": "physical-20260911",
+          "fallback": false,
+          "fallbackReason": null,
+          "requiredCapabilities": [],
+          "nativeCapabilities": [],
+          "emulatedCapabilities": [],
+          "considered": [
+            {
+              "modelId": "codex-luna",
+              "accountProfileId": "controller-codex",
+              "workloadNodeId": "hpubuntu",
+              "providerExecutionNodeId": "hpubuntu",
+              "credentialNodeId": "hpubuntu",
+              "nodeId": "hpubuntu",
+              "eligible": true,
+              "reasons": []
+            }
+          ]
+        },
+        "parcelContext": {
+          "schema": "agent-control.run-parcel-context/v1",
+          "parcelId": "parcel-social-57a6c9bb96d74b4879443cf48d38094b0a90f52e65107488d198ed78d0b065ce",
+          "stageId": "qwen-to-codex-reader",
+          "originalGoal": "Physically prove provider-neutral project-memory reconstruction and continuation for qwen-to-codex.",
+          "currentInterpretation": "Physically prove provider-neutral project-memory reconstruction and continuation for qwen-to-codex.",
+          "effectiveInstructions": [],
+          "constraints": [
+            "No model substitution",
+            "Reader execution is stateless and receives no writer transcript",
+            "Memories are advisory and cannot override evidence",
+            "No merge, tag, release or deployment"
+          ],
+          "successCriteria": [
+            {
+              "id": "criterion-qwen-to-codex",
+              "description": "Reader reconstruction and exact next action pass independent verification.",
+              "status": "PENDING"
+            },
+            {
+              "id": "criterion:stage:qwen-to-codex-writer",
+              "description": "Qwen on hpubuntu writes governed memory completes through its declared verification boundary",
+              "status": "PASS"
+            },
+            {
+              "id": "criterion:stage:qwen-to-codex-persist",
+              "description": "ProjectMemoryPort verifies and persists memory completes through its declared verification boundary",
+              "status": "PASS"
+            },
+            {
+              "id": "criterion:stage:qwen-to-codex-reader",
+              "description": "Codex CLI / Luna reconstructs cold completes through its declared verification boundary",
+              "status": "PENDING"
+            },
+            {
+              "id": "criterion:stage:qwen-to-codex-continue",
+              "description": "Execute and independently verify next Work Parcel completes through its declared verification boundary",
+              "status": "PENDING"
+            }
+          ],
+          "baton": {
+            "schema": "agent-control.work-parcel-baton/v2",
+            "id": "parcel-baton-ca461f51-d3af-4aff-a561-cd4035de4709",
+            "createdAt": "2026-09-12T00:53:48.203Z",
+            "sourceStageIds": [
+              "qwen-to-codex-persist"
+            ],
+            "targetStageId": "qwen-to-codex-reader",
+            "objective": "Physically prove provider-neutral project-memory reconstruction and continuation for qwen-to-codex.",
+            "currentInterpretation": "Physically prove provider-neutral project-memory reconstruction and continuation for qwen-to-codex.",
+            "effectiveInstructions": [],
+            "constraints": [
+              "No model substitution",
+              "Reader execution is stateless and receives no writer transcript",
+              "Memories are advisory and cannot override evidence",
+              "No merge, tag, release or deployment"
+            ],
+            "successCriteria": [
+              {
+                "id": "criterion-qwen-to-codex",
+                "description": "Reader reconstruction and exact next action pass independent verification.",
+                "status": "PENDING"
+              },
+              {
+                "id": "criterion:stage:qwen-to-codex-writer",
+                "description": "Qwen on hpubuntu writes governed memory completes through its declared verification boundary",
+                "status": "PASS"
+              },
+              {
+                "id": "criterion:stage:qwen-to-codex-persist",
+                "description": "ProjectMemoryPort verifies and persists memory completes through its declared verification boundary",
+                "status": "PASS"
+              },
+              {
+                "id": "criterion:stage:qwen-to-codex-reader",
+                "description": "Codex CLI / Luna reconstructs cold completes through its declared verification boundary",
+                "status": "PENDING"
+              },
+              {
+                "id": "criterion:stage:qwen-to-codex-continue",
+                "description": "Execute and independently verify next Work Parcel completes through its declared verification boundary",
+                "status": "PENDING"
+              }
+            ],
+            "completedStages": [
+              {
+                "id": "qwen-to-codex-writer",
+                "name": "Qwen on hpubuntu writes governed memory",
+                "state": "SUCCEEDED"
+              },
+              {
+                "id": "qwen-to-codex-persist",
+                "name": "ProjectMemoryPort verifies and persists memory",
+                "state": "SUCCEEDED"
+              }
+            ],
+            "nextAction": "Execute Codex CLI / Luna reconstructs cold through cross-memory-reader-codex-luna@1.0.0 and satisfy its declared verification boundary",
+            "artifactIds": [
+              "artifact-cdf8df9e-4e91-423b-b0d6-f3f09167860a"
+            ],
+            "outputTypes": [
+              "agent-control-project-memory"
+            ],
+            "eventRefs": [
+              {
+                "id": "context-event-2b738981-7e7c-4d9e-b59e-0d5bc2f754be",
+                "sequence": 5,
+                "type": "criterion.added",
+                "summary": "ProjectMemoryPort verifies and persists memory completes through its declared verification boundary",
+                "sha256": "5a96819cb4f0199d7cbe7adc444c6a488ac76120ec3d099356163776ab2808c6"
+              },
+              {
+                "id": "context-event-4554e43d-2ef9-4b11-9ecf-ae8ffa014304",
+                "sequence": 8,
+                "type": "baton.created",
+                "summary": "Bounded baton view created for qwen-to-codex-writer",
+                "sha256": "762fd9ba4b0c92e543cf300ede8ef39e3765ce7da09ddf94b366688ad28d385f"
+              },
+              {
+                "id": "context-event-42515d15-50c9-481e-bfd0-e267947d07a7",
+                "sequence": 9,
+                "type": "route.selected",
+                "summary": "local-qwen/default/qwen-hpubuntu@hpubuntu",
+                "sha256": "18b9129cd82cbbb6358d3922878892d019e89b1d2d24ddddfea9640e2df6ef6a"
+              },
+              {
+                "id": "context-event-1dfe55cd-0163-4ba9-8e40-6135bd90ee3b",
+                "sequence": 10,
+                "type": "stage.started",
+                "summary": "Qwen on hpubuntu writes governed memory dispatched",
+                "sha256": "d4bd89741a2a11c39ba8408e01175ac99f9f2b6f611839f0148cc2d1b77f1364"
+              },
+              {
+                "id": "context-event-61243617-2974-4984-8d76-2a0b70c9d6b5",
+                "sequence": 11,
+                "type": "baton.created",
+                "summary": "Bounded baton view created for next executor",
+                "sha256": "11e0498f9f9e3bb9cd1dfdc81fde4c53c1740a1b7b68890fa301ba634aa91325"
+              },
+              {
+                "id": "context-event-df2d13d3-d3c7-4542-8c37-45a130d0244c",
+                "sequence": 12,
+                "type": "stage.completed",
+                "summary": "Qwen on hpubuntu writes governed memory completed through verification",
+                "sha256": "377f0a270f29b188bfde2041298ed3f1afff1bd7748b47f7dacd55976aa466ee"
+              },
+              {
+                "id": "context-event-b8e1f4f6-ca2b-4b4f-9b38-41c7add58855",
+                "sequence": 13,
+                "type": "criterion.evaluated",
+                "summary": "Qwen on hpubuntu writes governed memory completes through its declared verification boundary: PASS",
+                "sha256": "8f6df4fd41ffb72efadb3f46f846d4188c0de08356446438a2d1c577e6b7671e"
+              },
+              {
+                "id": "context-event-abf21bf7-66ad-459b-93c7-eff8dcb345ec",
+                "sequence": 14,
+                "type": "baton.created",
+                "summary": "Bounded baton view created for qwen-to-codex-persist",
+                "sha256": "8bd21d3e897679389a6539007400acc2e407050e53dd55b5fca54e7451e5b614"
+              },
+              {
+                "id": "context-event-fd425d20-d534-422e-950c-66240487a1d5",
+                "sequence": 15,
+                "type": "stage.started",
+                "summary": "ProjectMemoryPort verifies and persists memory dispatched",
+                "sha256": "94aba45fa9742d0094029534b9588cf300a9fb1dfc315577c5918437e98d9c30"
+              },
+              {
+                "id": "context-event-82c85f7c-08f8-4634-87bd-7243d362de00",
+                "sequence": 16,
+                "type": "baton.created",
+                "summary": "Bounded baton view created for next executor",
+                "sha256": "b30158e6caee2bb8b3dd32802642cdedc4bf242759f9a49c30083028b099c442"
+              },
+              {
+                "id": "context-event-0dabf4b8-d5e3-4640-9918-880985f298be",
+                "sequence": 17,
+                "type": "stage.completed",
+                "summary": "ProjectMemoryPort verifies and persists memory completed through verification",
+                "sha256": "71710389132f3a0699a60b9a14e3c95cd84ad9584c81a8487fb00c745832fe85"
+              },
+              {
+                "id": "context-event-54101340-4f17-4bfa-9066-04219cf80fed",
+                "sequence": 18,
+                "type": "criterion.evaluated",
+                "summary": "ProjectMemoryPort verifies and persists memory completes through its declared verification boundary: PASS",
+                "sha256": "b340d0dee3bafb0acb6e91a9161f14e8a37ec58a32b2adc2144d09412881c26f"
+              }
+            ],
+            "unresolvedQuestions": [],
+            "approvals": [],
+            "previousBatonIds": [
+              "parcel-baton-da484591-02d1-4ac6-9310-3b5be752b6a8",
+              "parcel-baton-4c9225cf-f889-4cf1-b2e8-fd135af6d8d8",
+              "parcel-baton-dbb357e0-904f-412b-ade7-d53b27e52256",
+              "parcel-baton-32a37cf2-b948-4110-b4be-3132a4bd31c4"
+            ],
+            "sizeBytes": 5480,
+            "estimatedTokens": 1370,
+            "sha256": "83c02308b53e3b5372f9d54d2c95c37e0258ff254b80b3f557e4ba01d13f9cc2"
+          }
+        },
+        "id": "parcel-social-57a6c9bb96d74b4879443cf48d38094b0a90f52e65107488d198ed78d0b065ce:qwen-to-codex-reader"
+      },
+      "requestedAt": "2026-09-12T00:53:48.211Z",
+      "status": "SUCCEEDED",
+      "priority": "normal",
+      "concurrency": "allow",
+      "parameters": {
+        "pairId": "qwen-to-codex"
+      },
+      "steps": [
+        {
+          "id": "execute",
+          "action": "qualification.cross-memory-reader@1.0.0",
+          "status": "SUCCEEDED",
+          "dependsOn": [],
+          "capabilityRequest": {
+            "requires": [
+              {
+                "id": "route.hpubuntu"
+              }
+            ]
+          },
+          "resources": [],
+          "attempts": [
+            {
+              "attempt": 1,
+              "startedAt": "2026-09-12T00:53:48.232Z",
+              "workerId": "hpubuntu",
+              "efficiencyInvocationIds": [],
+              "endedAt": "2026-09-12T00:53:58.475Z",
+              "outcome": "Codex CLI / Luna reconstructed the project cold from governed memory only"
+            }
+          ],
+          "artifactIds": [
+            "artifact-7f99eb7e-5dce-4b4a-a49e-1fdfb438ebf1"
+          ],
+          "verification": {
+            "required": [
+              "reader-reconstruction-verified"
+            ],
+            "passed": [
+              "reader-reconstruction-verified"
+            ],
+            "failed": []
+          },
+          "placement": {
+            "selected": "hpubuntu",
+            "eligible": [
+              "hpubuntu"
+            ],
+            "rejected": [
+              {
+                "workerId": "pixel-8-pro",
+                "reasons": [
+                  "missing:route.hpubuntu"
+                ]
+              }
+            ],
+            "reasons": [
+              "satisfies:route.hpubuntu",
+              "healthy",
+              "available"
+            ]
+          },
+          "startedAt": "2026-09-12T00:53:48.232Z",
+          "endedAt": "2026-09-12T00:53:58.475Z"
+        }
+      ],
+      "artifacts": [
+        "artifact-7f99eb7e-5dce-4b4a-a49e-1fdfb438ebf1"
+      ],
+      "errors": [],
+      "effectiveJob": {
+        "apiVersion": "agent-control/v1",
+        "kind": "Job",
+        "metadata": {
+          "id": "cross-memory-reader-codex-luna",
+          "name": "Cold memory reader · Codex CLI / Luna",
+          "version": "1.0.0"
+        },
+        "spec": {
+          "enabled": true,
+          "priority": "normal",
+          "concurrency": "allow",
+          "parameters": {
+            "pairId": {
+              "type": "string",
+              "required": true
+            }
+          },
+          "steps": [
+            {
+              "id": "execute",
+              "name": "Cold memory reader · Codex CLI / Luna",
+              "action": "qualification.cross-memory-reader@1.0.0",
+              "requires": [
+                "route.hpubuntu"
+              ],
+              "outputs": [
+                {
+                  "name": "reader-reconstruction",
+                  "type": "agent-control-memory-reader",
+                  "schema": "agent-control.memory-reader/v1",
+                  "version": "1"
+                }
+              ],
+              "timeoutSeconds": 300,
+              "verification": [
+                "reader-reconstruction-verified"
+              ]
+            }
+          ]
+        }
+      },
+      "selectedWorkers": [
+        "hpubuntu"
+      ],
+      "approvals": [],
+      "provenance": [
+        {
+          "type": "trigger",
+          "at": "2026-09-12T00:53:48.211Z",
+          "detail": "manual:work-parcel:parcel-social-57a6c9bb96d74b4879443cf48d38094b0a90f52e65107488d198ed78d0b065ce"
+        },
+        {
+          "type": "action-dispatch",
+          "at": "2026-09-12T00:53:48.247Z",
+          "detail": "control:qualification.cross-memory-reader@1.0.0"
+        },
+        {
+          "type": "evidence",
+          "at": "2026-09-12T00:53:58.475Z",
+          "detail": "reader:codex-chatgpt/controller-codex/codex-luna@hpubuntu:sha256:2de4d002fe9e23ae3ace958482360ad94ac66dbd8f8024c41fdf156328bef85b"
+        }
+      ],
+      "updatedAt": "2026-09-12T00:53:58.482Z",
+      "startedAt": "2026-09-12T00:53:48.232Z",
+      "endedAt": "2026-09-12T00:53:58.482Z"
+    },
+    {
+      "id": "run-e52303b3-ffa3-4a13-bd64-e1d9ec34cb7f",
+      "jobId": "cross-memory-persist",
+      "jobVersion": "1.0.0",
+      "trigger": {
+        "type": "manual",
+        "actor": "work-parcel:parcel-social-57a6c9bb96d74b4879443cf48d38094b0a90f52e65107488d198ed78d0b065ce",
+        "parcelContext": {
+          "schema": "agent-control.run-parcel-context/v1",
+          "parcelId": "parcel-social-57a6c9bb96d74b4879443cf48d38094b0a90f52e65107488d198ed78d0b065ce",
+          "stageId": "qwen-to-codex-persist",
+          "originalGoal": "Physically prove provider-neutral project-memory reconstruction and continuation for qwen-to-codex.",
+          "currentInterpretation": "Physically prove provider-neutral project-memory reconstruction and continuation for qwen-to-codex.",
+          "effectiveInstructions": [],
+          "constraints": [
+            "No model substitution",
+            "Reader execution is stateless and receives no writer transcript",
+            "Memories are advisory and cannot override evidence",
+            "No merge, tag, release or deployment"
+          ],
+          "successCriteria": [
+            {
+              "id": "criterion-qwen-to-codex",
+              "description": "Reader reconstruction and exact next action pass independent verification.",
+              "status": "PENDING"
+            },
+            {
+              "id": "criterion:stage:qwen-to-codex-writer",
+              "description": "Qwen on hpubuntu writes governed memory completes through its declared verification boundary",
+              "status": "PASS"
+            },
+            {
+              "id": "criterion:stage:qwen-to-codex-persist",
+              "description": "ProjectMemoryPort verifies and persists memory completes through its declared verification boundary",
+              "status": "PENDING"
+            },
+            {
+              "id": "criterion:stage:qwen-to-codex-reader",
+              "description": "Codex CLI / Luna reconstructs cold completes through its declared verification boundary",
+              "status": "PENDING"
+            },
+            {
+              "id": "criterion:stage:qwen-to-codex-continue",
+              "description": "Execute and independently verify next Work Parcel completes through its declared verification boundary",
+              "status": "PENDING"
+            }
+          ],
+          "baton": {
+            "schema": "agent-control.work-parcel-baton/v2",
+            "id": "parcel-baton-dbb357e0-904f-412b-ade7-d53b27e52256",
+            "createdAt": "2026-09-12T00:53:48.082Z",
+            "sourceStageIds": [
+              "qwen-to-codex-writer"
+            ],
+            "targetStageId": "qwen-to-codex-persist",
+            "objective": "Physically prove provider-neutral project-memory reconstruction and continuation for qwen-to-codex.",
+            "currentInterpretation": "Physically prove provider-neutral project-memory reconstruction and continuation for qwen-to-codex.",
+            "effectiveInstructions": [],
+            "constraints": [
+              "No model substitution",
+              "Reader execution is stateless and receives no writer transcript",
+              "Memories are advisory and cannot override evidence",
+              "No merge, tag, release or deployment"
+            ],
+            "successCriteria": [
+              {
+                "id": "criterion-qwen-to-codex",
+                "description": "Reader reconstruction and exact next action pass independent verification.",
+                "status": "PENDING"
+              },
+              {
+                "id": "criterion:stage:qwen-to-codex-writer",
+                "description": "Qwen on hpubuntu writes governed memory completes through its declared verification boundary",
+                "status": "PASS"
+              },
+              {
+                "id": "criterion:stage:qwen-to-codex-persist",
+                "description": "ProjectMemoryPort verifies and persists memory completes through its declared verification boundary",
+                "status": "PENDING"
+              },
+              {
+                "id": "criterion:stage:qwen-to-codex-reader",
+                "description": "Codex CLI / Luna reconstructs cold completes through its declared verification boundary",
+                "status": "PENDING"
+              },
+              {
+                "id": "criterion:stage:qwen-to-codex-continue",
+                "description": "Execute and independently verify next Work Parcel completes through its declared verification boundary",
+                "status": "PENDING"
+              }
+            ],
+            "completedStages": [
+              {
+                "id": "qwen-to-codex-writer",
+                "name": "Qwen on hpubuntu writes governed memory",
+                "state": "SUCCEEDED"
+              }
+            ],
+            "nextAction": "Execute ProjectMemoryPort verifies and persists memory through cross-memory-persist@1.0.0 and satisfy its declared verification boundary",
+            "artifactIds": [
+              "artifact-53f0b0c5-be79-48c1-8ea8-339c4dcf3d58"
+            ],
+            "outputTypes": [
+              "agent-control-memory-writer"
+            ],
+            "eventRefs": [
+              {
+                "id": "context-event-fbe571c3-e452-443f-90a8-f63dfb97f9e0",
+                "sequence": 2,
+                "type": "plan.recorded",
+                "summary": "4 governed stage(s) recorded",
+                "sha256": "f3ff8f417b8171095da8c374542828d689facb05296dedb056bf48298a68492d"
+              },
+              {
+                "id": "context-event-d3d101b6-0bd5-499a-bdc2-8291dcdfc413",
+                "sequence": 3,
+                "type": "criterion.added",
+                "summary": "Reader reconstruction and exact next action pass independent verification.",
+                "sha256": "11dc9a0ce242e5fa93f9ba780f8a35857dcbc5a5f5a2e6f7728886462146ed4a"
+              },
+              {
+                "id": "context-event-fcd0b6e0-d1b6-41cc-a193-89880536e9e3",
+                "sequence": 4,
+                "type": "criterion.added",
+                "summary": "Qwen on hpubuntu writes governed memory completes through its declared verification boundary",
+                "sha256": "16f417372850f84f6dfc27166819a96a8bb2d998db61fa8cdb7b06a56479e68e"
+              },
+              {
+                "id": "context-event-2b738981-7e7c-4d9e-b59e-0d5bc2f754be",
+                "sequence": 5,
+                "type": "criterion.added",
+                "summary": "ProjectMemoryPort verifies and persists memory completes through its declared verification boundary",
+                "sha256": "5a96819cb4f0199d7cbe7adc444c6a488ac76120ec3d099356163776ab2808c6"
+              },
+              {
+                "id": "context-event-fe07ba57-e242-4d30-9d28-8f184bdf3c2a",
+                "sequence": 6,
+                "type": "criterion.added",
+                "summary": "Codex CLI / Luna reconstructs cold completes through its declared verification boundary",
+                "sha256": "06f99466af1c613c6d1fe7d3de12e48e8b5a9a6f9cf0acea322549f49473490b"
+              },
+              {
+                "id": "context-event-6f6aa489-7de8-4423-8098-f73489907f55",
+                "sequence": 7,
+                "type": "criterion.added",
+                "summary": "Execute and independently verify next Work Parcel completes through its declared verification boundary",
+                "sha256": "5de4d7cf9658b2225d46a9bf55c6a87a5fd7dd858b6ba3fda645694efb910db7"
+              },
+              {
+                "id": "context-event-4554e43d-2ef9-4b11-9ecf-ae8ffa014304",
+                "sequence": 8,
+                "type": "baton.created",
+                "summary": "Bounded baton view created for qwen-to-codex-writer",
+                "sha256": "762fd9ba4b0c92e543cf300ede8ef39e3765ce7da09ddf94b366688ad28d385f"
+              },
+              {
+                "id": "context-event-42515d15-50c9-481e-bfd0-e267947d07a7",
+                "sequence": 9,
+                "type": "route.selected",
+                "summary": "local-qwen/default/qwen-hpubuntu@hpubuntu",
+                "sha256": "18b9129cd82cbbb6358d3922878892d019e89b1d2d24ddddfea9640e2df6ef6a"
+              },
+              {
+                "id": "context-event-1dfe55cd-0163-4ba9-8e40-6135bd90ee3b",
+                "sequence": 10,
+                "type": "stage.started",
+                "summary": "Qwen on hpubuntu writes governed memory dispatched",
+                "sha256": "d4bd89741a2a11c39ba8408e01175ac99f9f2b6f611839f0148cc2d1b77f1364"
+              },
+              {
+                "id": "context-event-61243617-2974-4984-8d76-2a0b70c9d6b5",
+                "sequence": 11,
+                "type": "baton.created",
+                "summary": "Bounded baton view created for next executor",
+                "sha256": "11e0498f9f9e3bb9cd1dfdc81fde4c53c1740a1b7b68890fa301ba634aa91325"
+              },
+              {
+                "id": "context-event-df2d13d3-d3c7-4542-8c37-45a130d0244c",
+                "sequence": 12,
+                "type": "stage.completed",
+                "summary": "Qwen on hpubuntu writes governed memory completed through verification",
+                "sha256": "377f0a270f29b188bfde2041298ed3f1afff1bd7748b47f7dacd55976aa466ee"
+              },
+              {
+                "id": "context-event-b8e1f4f6-ca2b-4b4f-9b38-41c7add58855",
+                "sequence": 13,
+                "type": "criterion.evaluated",
+                "summary": "Qwen on hpubuntu writes governed memory completes through its declared verification boundary: PASS",
+                "sha256": "8f6df4fd41ffb72efadb3f46f846d4188c0de08356446438a2d1c577e6b7671e"
+              }
+            ],
+            "unresolvedQuestions": [],
+            "approvals": [],
+            "previousBatonIds": [
+              "parcel-baton-da484591-02d1-4ac6-9310-3b5be752b6a8",
+              "parcel-baton-4c9225cf-f889-4cf1-b2e8-fd135af6d8d8"
+            ],
+            "sizeBytes": 5316,
+            "estimatedTokens": 1329,
+            "sha256": "919b846109bc2aa741bdb475c4547a8ae1ba44f5a79131c3e58911d1241ef6e4"
+          }
+        },
+        "id": "parcel-social-57a6c9bb96d74b4879443cf48d38094b0a90f52e65107488d198ed78d0b065ce:qwen-to-codex-persist"
+      },
+      "requestedAt": "2026-09-12T00:53:48.086Z",
+      "status": "SUCCEEDED",
+      "priority": "normal",
+      "concurrency": "allow",
+      "parameters": {
+        "pairId": "qwen-to-codex"
+      },
+      "steps": [
+        {
+          "id": "execute",
+          "action": "qualification.cross-memory-persist@1.0.0",
+          "status": "SUCCEEDED",
+          "dependsOn": [],
+          "capabilityRequest": {
+            "requires": [
+              {
+                "id": "memory.control"
+              }
+            ]
+          },
+          "resources": [],
+          "attempts": [
+            {
+              "attempt": 1,
+              "startedAt": "2026-09-12T00:53:48.108Z",
+              "workerId": "hpubuntu",
+              "efficiencyInvocationIds": [],
+              "endedAt": "2026-09-12T00:53:48.153Z",
+              "outcome": "Verified writer output persisted atomically through ProjectMemoryPort"
+            }
+          ],
+          "artifactIds": [
+            "artifact-cdf8df9e-4e91-423b-b0d6-f3f09167860a"
+          ],
+          "verification": {
+            "required": [
+              "memory-write-verified"
+            ],
+            "passed": [
+              "memory-write-verified"
+            ],
+            "failed": []
+          },
+          "placement": {
+            "selected": "hpubuntu",
+            "eligible": [
+              "hpubuntu"
+            ],
+            "rejected": [
+              {
+                "workerId": "pixel-8-pro",
+                "reasons": [
+                  "missing:memory.control"
+                ]
+              }
+            ],
+            "reasons": [
+              "satisfies:memory.control",
+              "healthy",
+              "available"
+            ]
+          },
+          "startedAt": "2026-09-12T00:53:48.108Z",
+          "endedAt": "2026-09-12T00:53:48.153Z"
+        }
+      ],
+      "artifacts": [
+        "artifact-cdf8df9e-4e91-423b-b0d6-f3f09167860a"
+      ],
+      "errors": [],
+      "effectiveJob": {
+        "apiVersion": "agent-control/v1",
+        "kind": "Job",
+        "metadata": {
+          "id": "cross-memory-persist",
+          "name": "Persist governed memory",
+          "version": "1.0.0"
+        },
+        "spec": {
+          "enabled": true,
+          "priority": "normal",
+          "concurrency": "allow",
+          "parameters": {
+            "pairId": {
+              "type": "string",
+              "required": true
+            }
+          },
+          "steps": [
+            {
+              "id": "execute",
+              "name": "Persist governed memory",
+              "action": "qualification.cross-memory-persist@1.0.0",
+              "requires": [
+                "memory.control"
+              ],
+              "outputs": [
+                {
+                  "name": "governed-memory",
+                  "type": "agent-control-project-memory",
+                  "schema": "agent-control.project-memory/v1",
+                  "version": "1"
+                }
+              ],
+              "timeoutSeconds": 300,
+              "verification": [
+                "memory-write-verified"
+              ]
+            }
+          ]
+        }
+      },
+      "selectedWorkers": [
+        "hpubuntu"
+      ],
+      "approvals": [],
+      "provenance": [
+        {
+          "type": "trigger",
+          "at": "2026-09-12T00:53:48.086Z",
+          "detail": "manual:work-parcel:parcel-social-57a6c9bb96d74b4879443cf48d38094b0a90f52e65107488d198ed78d0b065ce"
+        },
+        {
+          "type": "action-dispatch",
+          "at": "2026-09-12T00:53:48.120Z",
+          "detail": "control:qualification.cross-memory-persist@1.0.0"
+        },
+        {
+          "type": "evidence",
+          "at": "2026-09-12T00:53:48.153Z",
+          "detail": "memory:memory-qwen-to-codex:sha256:d3253f595a5604481dbd76832eb506d8ef9276ad8d820a52755a52597da3025b"
+        }
+      ],
+      "updatedAt": "2026-09-12T00:53:48.157Z",
+      "startedAt": "2026-09-12T00:53:48.108Z",
+      "endedAt": "2026-09-12T00:53:48.157Z"
+    },
+    {
+      "id": "run-391b1a18-bd3c-4ae9-8263-39054cf6db89",
+      "jobId": "cross-memory-writer-qwen-hpubuntu",
+      "jobVersion": "1.0.0",
+      "trigger": {
+        "type": "manual",
+        "actor": "work-parcel:parcel-social-57a6c9bb96d74b4879443cf48d38094b0a90f52e65107488d198ed78d0b065ce",
+        "modelRoute": {
+          "requestedModel": "qwen-hpubuntu",
+          "requestedRole": null,
+          "allowFallback": true,
+          "purpose": "EXECUTION",
+          "modelId": "qwen-hpubuntu",
+          "providerId": "local-qwen",
+          "accountProfileId": null,
+          "accountLabel": null,
+          "accountPlan": null,
+          "accountPlanAuthority": null,
+          "accountQualification": null,
+          "accountAvailability": null,
+          "providerModel": "qwen2.5-3b-instruct-q4_k_m.gguf",
+          "workloadNodeId": "hpubuntu",
+          "providerExecutionNodeId": "hpubuntu",
+          "credentialNodeId": null,
+          "nodeId": "hpubuntu",
+          "qualificationVersion": "physical-20260911",
+          "fallback": false,
+          "fallbackReason": null,
+          "requiredCapabilities": [],
+          "nativeCapabilities": [],
+          "emulatedCapabilities": [],
+          "considered": [
+            {
+              "modelId": "qwen-hpubuntu",
+              "accountProfileId": null,
+              "workloadNodeId": "hpubuntu",
+              "providerExecutionNodeId": "hpubuntu",
+              "credentialNodeId": null,
+              "nodeId": "hpubuntu",
+              "eligible": true,
+              "reasons": []
+            }
+          ]
+        },
+        "parcelContext": {
+          "schema": "agent-control.run-parcel-context/v1",
+          "parcelId": "parcel-social-57a6c9bb96d74b4879443cf48d38094b0a90f52e65107488d198ed78d0b065ce",
+          "stageId": "qwen-to-codex-writer",
+          "originalGoal": "Physically prove provider-neutral project-memory reconstruction and continuation for qwen-to-codex.",
+          "currentInterpretation": "Physically prove provider-neutral project-memory reconstruction and continuation for qwen-to-codex.",
+          "effectiveInstructions": [],
+          "constraints": [
+            "No model substitution",
+            "Reader execution is stateless and receives no writer transcript",
+            "Memories are advisory and cannot override evidence",
+            "No merge, tag, release or deployment"
+          ],
+          "successCriteria": [
+            {
+              "id": "criterion-qwen-to-codex",
+              "description": "Reader reconstruction and exact next action pass independent verification.",
+              "status": "PENDING"
+            },
+            {
+              "id": "criterion:stage:qwen-to-codex-writer",
+              "description": "Qwen on hpubuntu writes governed memory completes through its declared verification boundary",
+              "status": "PENDING"
+            },
+            {
+              "id": "criterion:stage:qwen-to-codex-persist",
+              "description": "ProjectMemoryPort verifies and persists memory completes through its declared verification boundary",
+              "status": "PENDING"
+            },
+            {
+              "id": "criterion:stage:qwen-to-codex-reader",
+              "description": "Codex CLI / Luna reconstructs cold completes through its declared verification boundary",
+              "status": "PENDING"
+            },
+            {
+              "id": "criterion:stage:qwen-to-codex-continue",
+              "description": "Execute and independently verify next Work Parcel completes through its declared verification boundary",
+              "status": "PENDING"
+            }
+          ],
+          "baton": {
+            "schema": "agent-control.work-parcel-baton/v2",
+            "id": "parcel-baton-da484591-02d1-4ac6-9310-3b5be752b6a8",
+            "createdAt": "2026-09-12T00:53:33.182Z",
+            "sourceStageIds": [],
+            "targetStageId": "qwen-to-codex-writer",
+            "objective": "Physically prove provider-neutral project-memory reconstruction and continuation for qwen-to-codex.",
+            "currentInterpretation": "Physically prove provider-neutral project-memory reconstruction and continuation for qwen-to-codex.",
+            "effectiveInstructions": [],
+            "constraints": [
+              "No model substitution",
+              "Reader execution is stateless and receives no writer transcript",
+              "Memories are advisory and cannot override evidence",
+              "No merge, tag, release or deployment"
+            ],
+            "successCriteria": [
+              {
+                "id": "criterion-qwen-to-codex",
+                "description": "Reader reconstruction and exact next action pass independent verification.",
+                "status": "PENDING"
+              },
+              {
+                "id": "criterion:stage:qwen-to-codex-writer",
+                "description": "Qwen on hpubuntu writes governed memory completes through its declared verification boundary",
+                "status": "PENDING"
+              },
+              {
+                "id": "criterion:stage:qwen-to-codex-persist",
+                "description": "ProjectMemoryPort verifies and persists memory completes through its declared verification boundary",
+                "status": "PENDING"
+              },
+              {
+                "id": "criterion:stage:qwen-to-codex-reader",
+                "description": "Codex CLI / Luna reconstructs cold completes through its declared verification boundary",
+                "status": "PENDING"
+              },
+              {
+                "id": "criterion:stage:qwen-to-codex-continue",
+                "description": "Execute and independently verify next Work Parcel completes through its declared verification boundary",
+                "status": "PENDING"
+              }
+            ],
+            "completedStages": [],
+            "nextAction": "Execute Qwen on hpubuntu writes governed memory through cross-memory-writer-qwen-hpubuntu@1.0.0 and satisfy its declared verification boundary",
+            "artifactIds": [],
+            "outputTypes": [],
+            "eventRefs": [
+              {
+                "id": "context-event-98c07cef-aa81-40b3-bf5a-0693e5f82f1f",
+                "sequence": 1,
+                "type": "goal.recorded",
+                "summary": "Original goal recorded",
+                "sha256": "7d96d346b2717755ee19d533a0dc35dc271920ae4861ccac8dfdb99500ad0ff5"
+              },
+              {
+                "id": "context-event-fbe571c3-e452-443f-90a8-f63dfb97f9e0",
+                "sequence": 2,
+                "type": "plan.recorded",
+                "summary": "4 governed stage(s) recorded",
+                "sha256": "f3ff8f417b8171095da8c374542828d689facb05296dedb056bf48298a68492d"
+              },
+              {
+                "id": "context-event-d3d101b6-0bd5-499a-bdc2-8291dcdfc413",
+                "sequence": 3,
+                "type": "criterion.added",
+                "summary": "Reader reconstruction and exact next action pass independent verification.",
+                "sha256": "11dc9a0ce242e5fa93f9ba780f8a35857dcbc5a5f5a2e6f7728886462146ed4a"
+              },
+              {
+                "id": "context-event-fcd0b6e0-d1b6-41cc-a193-89880536e9e3",
+                "sequence": 4,
+                "type": "criterion.added",
+                "summary": "Qwen on hpubuntu writes governed memory completes through its declared verification boundary",
+                "sha256": "16f417372850f84f6dfc27166819a96a8bb2d998db61fa8cdb7b06a56479e68e"
+              },
+              {
+                "id": "context-event-2b738981-7e7c-4d9e-b59e-0d5bc2f754be",
+                "sequence": 5,
+                "type": "criterion.added",
+                "summary": "ProjectMemoryPort verifies and persists memory completes through its declared verification boundary",
+                "sha256": "5a96819cb4f0199d7cbe7adc444c6a488ac76120ec3d099356163776ab2808c6"
+              },
+              {
+                "id": "context-event-fe07ba57-e242-4d30-9d28-8f184bdf3c2a",
+                "sequence": 6,
+                "type": "criterion.added",
+                "summary": "Codex CLI / Luna reconstructs cold completes through its declared verification boundary",
+                "sha256": "06f99466af1c613c6d1fe7d3de12e48e8b5a9a6f9cf0acea322549f49473490b"
+              },
+              {
+                "id": "context-event-6f6aa489-7de8-4423-8098-f73489907f55",
+                "sequence": 7,
+                "type": "criterion.added",
+                "summary": "Execute and independently verify next Work Parcel completes through its declared verification boundary",
+                "sha256": "5de4d7cf9658b2225d46a9bf55c6a87a5fd7dd858b6ba3fda645694efb910db7"
+              }
+            ],
+            "unresolvedQuestions": [],
+            "approvals": [],
+            "previousBatonIds": [],
+            "sizeBytes": 3754,
+            "estimatedTokens": 939,
+            "sha256": "1c240c248a91b8667f265029af2a4953c500d6ced540afb1d469cb3826e78789"
+          }
+        },
+        "id": "parcel-social-57a6c9bb96d74b4879443cf48d38094b0a90f52e65107488d198ed78d0b065ce:qwen-to-codex-writer"
+      },
+      "requestedAt": "2026-09-12T00:53:33.190Z",
+      "status": "SUCCEEDED",
+      "priority": "normal",
+      "concurrency": "allow",
+      "parameters": {
+        "pairId": "qwen-to-codex"
+      },
+      "steps": [
+        {
+          "id": "execute",
+          "action": "qualification.cross-memory-writer@1.0.0",
+          "status": "SUCCEEDED",
+          "dependsOn": [],
+          "capabilityRequest": {
+            "requires": [
+              {
+                "id": "route.hpubuntu"
+              }
+            ]
+          },
+          "resources": [],
+          "attempts": [
+            {
+              "attempt": 1,
+              "startedAt": "2026-09-12T00:53:33.206Z",
+              "workerId": "hpubuntu",
+              "efficiencyInvocationIds": [],
+              "endedAt": "2026-09-12T00:53:48.062Z",
+              "outcome": "Qwen on hpubuntu produced verified bounded memory"
+            }
+          ],
+          "artifactIds": [
+            "artifact-53f0b0c5-be79-48c1-8ea8-339c4dcf3d58"
+          ],
+          "verification": {
+            "required": [
+              "writer-output-verified"
+            ],
+            "passed": [
+              "writer-output-verified"
+            ],
+            "failed": []
+          },
+          "placement": {
+            "selected": "hpubuntu",
+            "eligible": [
+              "hpubuntu"
+            ],
+            "rejected": [
+              {
+                "workerId": "pixel-8-pro",
+                "reasons": [
+                  "missing:route.hpubuntu"
+                ]
+              }
+            ],
+            "reasons": [
+              "satisfies:route.hpubuntu",
+              "healthy",
+              "available"
+            ]
+          },
+          "startedAt": "2026-09-12T00:53:33.206Z",
+          "endedAt": "2026-09-12T00:53:48.062Z"
+        }
+      ],
+      "artifacts": [
+        "artifact-53f0b0c5-be79-48c1-8ea8-339c4dcf3d58"
+      ],
+      "errors": [],
+      "effectiveJob": {
+        "apiVersion": "agent-control/v1",
+        "kind": "Job",
+        "metadata": {
+          "id": "cross-memory-writer-qwen-hpubuntu",
+          "name": "Memory writer · Qwen on hpubuntu",
+          "version": "1.0.0"
+        },
+        "spec": {
+          "enabled": true,
+          "priority": "normal",
+          "concurrency": "allow",
+          "parameters": {
+            "pairId": {
+              "type": "string",
+              "required": true
+            }
+          },
+          "steps": [
+            {
+              "id": "execute",
+              "name": "Memory writer · Qwen on hpubuntu",
+              "action": "qualification.cross-memory-writer@1.0.0",
+              "requires": [
+                "route.hpubuntu"
+              ],
+              "outputs": [
+                {
+                  "name": "writer-memory",
+                  "type": "agent-control-memory-writer",
+                  "schema": "agent-control.memory-writer/v1",
+                  "version": "1"
+                }
+              ],
+              "timeoutSeconds": 300,
+              "verification": [
+                "writer-output-verified"
+              ]
+            }
+          ]
+        }
+      },
+      "selectedWorkers": [
+        "hpubuntu"
+      ],
+      "approvals": [],
+      "provenance": [
+        {
+          "type": "trigger",
+          "at": "2026-09-12T00:53:33.190Z",
+          "detail": "manual:work-parcel:parcel-social-57a6c9bb96d74b4879443cf48d38094b0a90f52e65107488d198ed78d0b065ce"
+        },
+        {
+          "type": "action-dispatch",
+          "at": "2026-09-12T00:53:33.209Z",
+          "detail": "control:qualification.cross-memory-writer@1.0.0"
+        },
+        {
+          "type": "evidence",
+          "at": "2026-09-12T00:53:48.062Z",
+          "detail": "writer:local-qwen/default/qwen-hpubuntu@hpubuntu:sha256:36ce691dc927ee4f3277ba6e67b9e4b51acde2b419344420e33362f3dbe6ec5f"
+        }
+      ],
+      "updatedAt": "2026-09-12T00:53:48.067Z",
+      "startedAt": "2026-09-12T00:53:33.206Z",
+      "endedAt": "2026-09-12T00:53:48.067Z"
+    }
+  ],
+  "schedules": []
+}
