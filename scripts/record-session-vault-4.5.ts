@@ -33,6 +33,9 @@ const root = path.resolve("qualification/agent-control-session-vault-20260912"),
 
 assert.ok(fs.existsSync(path.join(root, "physical-qualification.json")));
 assert.ok(fs.existsSync(vaultRoot), "qualified Session Vault state is missing");
+const physical = JSON.parse(
+  fs.readFileSync(path.join(root, "physical-qualification.json"), "utf8"),
+);
 fs.rmSync(rawVideoRoot, { recursive: true, force: true });
 fs.rmSync(path.join(root, "poe-video-conversation.json"), { force: true });
 fs.mkdirSync(rawVideoRoot, { recursive: true });
@@ -66,8 +69,8 @@ const now = new Date().toISOString(),
       revision: 1,
       status: "verified",
       progress: [
-        `${report.nodes.source.id} capture`,
-        `${report.nodes.destination.id} continuation`,
+        `${physical.nodes.source.id} capture`,
+        `${physical.nodes.destination.id} continuation`,
       ],
       hypothesis: "Immutable native evidence supports safe continuation",
       evidence: ["Session Vault SHA-256", "Work Parcel verification"],
@@ -254,9 +257,6 @@ const poeStore = JSON.parse(
   ),
   recordedConversation = poeStore.conversations.find(
     (conversation: any) => conversation.turns?.length >= 3,
-  ),
-  physical = JSON.parse(
-    fs.readFileSync(path.join(root, "physical-qualification.json"), "utf8"),
   );
 assert.ok(recordedConversation);
 fs.writeFileSync(
