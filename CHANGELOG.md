@@ -16,6 +16,10 @@
   first dashboard cannot inherit test lanes, events or model evidence.
 - Corrects the first-run walkthrough so operator authentication is configured
   before the documented Environment Discovery action.
+- Keeps dense first-run Estate Maps legible by deriving explicitly labelled,
+  evidence-linked resource-category groups and initially collapsing them; an
+  expanded category wraps into bounded columns instead of shrinking dozens of
+  genuine resources into an unreadable strip.
 - Replaces the ambiguous manual dependency sequence with one documented
   check/install path and explicit expected results and troubleshooting.
 

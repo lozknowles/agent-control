@@ -180,7 +180,23 @@ test("estate projection remains bounded for fifty-plus resources", () => {
     ],
     started = performance.now(),
     projection = projectEstateMap(scan(items), "2026-09-12T12:00:30.000Z");
-  assert.equal(projection.nodes.length, 62);
+  assert.equal(projection.nodes.length, 63);
+  assert.equal(projection.summary.nodes, 62);
   assert.ok(performance.now() - started < 250);
   assert.equal(projection.summary.groups, 1);
+  const group = projection.nodes.find(
+      (node) => node.detail.projectionGroup === true,
+    ),
+    groupedModels = projection.nodes.filter(
+      (node) => node.type === "model" && node.parentId === group?.id,
+    );
+  assert.equal(group?.label, "Models · 60");
+  assert.equal(group?.detail.resourceCount, 60);
+  assert.equal(group?.detail.authority, "Derived only from this discovery scan");
+  assert.equal(groupedModels.length, 60);
+  assert.ok(
+    projection.edges.some(
+      (edge) => edge.from === "machine:controller" && edge.to === group?.id,
+    ),
+  );
 });

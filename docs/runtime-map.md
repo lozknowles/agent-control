@@ -69,10 +69,13 @@ transition. Aggregation remains waiting until its real dependencies complete.
 
 Choose **Process Map** or **Estate Map** at the top of the same workspace. Estate
 Map adds search, type filtering, hierarchical machine/transport/runtime/model
-expansion and a freshness-based heartbeat. A known but stale resource remains
-visible in grey as not currently verified. Selecting an edge opens the governed
-connection evidence; authentication is always a fixed-length mask and no secret
-is sent to the browser.
+expansion and a freshness-based heartbeat. Dense same-kind resources are shown
+first as explicitly derived category groups (for example, **Tools · 21**) linked
+to the same discovery scan. Expand a group to inspect every real resource; the
+wrapped layout remains readable without dropping inventory. A known but stale
+resource remains visible in grey as not currently verified. Selecting an edge
+opens the governed connection evidence; authentication is always a fixed-length
+mask and no secret is sent to the browser.
 
 State is conveyed by text and symbol as well as colour:
 

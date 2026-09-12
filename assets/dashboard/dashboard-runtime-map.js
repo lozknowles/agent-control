@@ -146,6 +146,11 @@
           rt.autoClustered = false;
           rt.selected = null;
         }
+        if (rt.projection.nodes.length > 30 && !rt.autoClustered) {
+          for (const node of rt.projection.nodes)
+            if (node.detail?.projectionGroup === true) rt.collapsed.add(node.id);
+          rt.autoClustered = true;
+        }
         render();
         return;
       }
@@ -252,18 +257,26 @@
       row.push(n);
       columns.set(d, row);
     }
-    const positions = new Map();
-    for (const [d, row] of columns)
+    const positions = new Map(),
+      ordered = [...columns.entries()].sort(([left], [right]) => left - right),
+      maximumRows = rt.surface === "estate" ? 8 : Infinity;
+    let horizontalColumn = 0,
+      widestRow = 0;
+    for (const [, row] of ordered) {
+      const layerColumns = Math.max(1, Math.ceil(row.length / maximumRows));
       row.forEach((n, i) =>
-        positions.set(n.id, { x: 36 + d * 244, y: 36 + i * 112 }),
+        positions.set(n.id, {
+          x: 36 + (horizontalColumn + Math.floor(i / maximumRows)) * 244,
+          y: 36 + (i % maximumRows) * 112,
+        }),
       );
+      horizontalColumn += layerColumns;
+      widestRow = Math.max(widestRow, Math.min(row.length, maximumRows));
+    }
     return {
       positions,
-      width: Math.max(900, (Math.max(0, ...columns.keys()) + 1) * 244 + 80),
-      height: Math.max(
-        520,
-        Math.max(0, ...[...columns.values()].map((x) => x.length)) * 112 + 80,
-      ),
+      width: Math.max(900, horizontalColumn * 244 + 80),
+      height: Math.max(520, widestRow * 112 + 80),
     };
   }
   function render() {

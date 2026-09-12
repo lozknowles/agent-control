@@ -33,6 +33,24 @@ export const ESTATE_FRESHNESS_MS: Record<DiscoveryKind, number> = {
 const digest = (value: unknown) =>
   createHash("sha256").update(JSON.stringify(value)).digest("hex");
 const safe = <T>(value: T) => redactSensitiveValue(value) as T;
+const ESTATE_GROUP_THRESHOLD = 4;
+const GROUP_LABELS: Record<DiscoveryKind, string> = {
+  MACHINE: "Machines",
+  GPU: "GPUs",
+  RUNTIME: "Runtimes",
+  MODEL: "Models",
+  PROVIDER: "Providers",
+  CREDENTIAL: "Credentials",
+  AGENT: "Agents",
+  TOOL: "Tools",
+  SKILL: "Skills",
+  MCP: "MCP servers",
+  PLUGIN: "Plugins",
+  MEMORY: "Memory sources",
+  ENDPOINT: "Endpoints",
+  JOB: "Jobs",
+  ROUTE: "Routes",
+};
 const typeFor = (item: DiscoveryItem): RuntimeMapNodeType =>
   (
     ({
@@ -75,6 +93,14 @@ function stateFor(item: DiscoveryItem, fresh: boolean): RuntimeMapState {
   if (item.health === "OFFLINE")
     return item.configuredId ? "FAILED" : "WAITING";
   return "WAITING";
+}
+function groupedState(states: RuntimeMapState[]): RuntimeMapState {
+  if (states.includes("FAILED")) return "FAILED";
+  if (states.includes("DEGRADED")) return "DEGRADED";
+  if (states.includes("RUNNING")) return "RUNNING";
+  if (states.some((state) => ["WAITING", "BLOCKED"].includes(state)))
+    return "WAITING";
+  return "SUCCEEDED";
 }
 function relation(
   from: string,
@@ -127,13 +153,66 @@ export function projectEstateMap(
       .filter((item) => item.kind === "MACHINE")
       .map((item) => [item.nodeId, item.id]),
   );
+  const baseParentFor = (item: DiscoveryItem) =>
+      item.kind === "MACHINE" ? root : (machineIds.get(item.nodeId) ?? root),
+    groupedItems = new Map<string, DiscoveryItem[]>(),
+    groupParents = new Map<string, string>();
+  for (const item of scan.items) {
+    if (item.kind === "MACHINE") continue;
+    const parent = baseParentFor(item),
+      key = `${parent}|${item.kind}`,
+      values = groupedItems.get(key) ?? [];
+    values.push(item);
+    groupedItems.set(key, values);
+  }
+  for (const [key, items] of groupedItems) {
+    if (items.length < ESTATE_GROUP_THRESHOLD) continue;
+    const [parent, kind] = key.split("|") as [string, DiscoveryKind],
+      id = `estate-group:${digest([parent, kind]).slice(0, 16)}`,
+      states = items.map((item) =>
+        stateFor(
+          item,
+          Number.isFinite(Date.parse(observedAt(item, scan))) &&
+            time - Date.parse(observedAt(item, scan)) <=
+              ESTATE_FRESHNESS_MS[item.kind],
+        ),
+      ),
+      counts = Object.fromEntries(
+        [...new Set(states)].map((state) => [
+          state,
+          states.filter((value) => value === state).length,
+        ]),
+      );
+    groupParents.set(key, id);
+    nodes.push({
+      id,
+      type: "estate",
+      label: `${GROUP_LABELS[kind]} · ${items.length}`,
+      subtitle: "Derived view group · expand to inspect",
+      state: groupedState(states),
+      parentId: parent,
+      groupId: items[0].nodeId,
+      expandable: true,
+      detail: {
+        projectionGroup: true,
+        resourceKind: kind,
+        resourceNodeType: typeFor(items[0]),
+        resourceCount: items.length,
+        stateCounts: counts,
+        authority: "Derived only from this discovery scan",
+      },
+      evidence: [{ kind: "environment-discovery-scan", id: scan.id }],
+    });
+    edges.push(relation(parent, id, "contains", `groups ${kind.toLowerCase()}`));
+  }
   for (const item of scan.items) {
     const last = observedAt(item, scan),
       fresh =
         Number.isFinite(Date.parse(last)) &&
         time - Date.parse(last) <= ESTATE_FRESHNESS_MS[item.kind],
+      baseParent = baseParentFor(item),
       parent =
-        item.kind === "MACHINE" ? root : (machineIds.get(item.nodeId) ?? root);
+        groupParents.get(`${baseParent}|${item.kind}`) ?? baseParent;
     nodes.push(
       safe({
         id: item.id,
@@ -333,16 +412,19 @@ export function projectEstateMap(
         .map((item) => observedAt(item, scan))
         .sort()
         .at(-1) ?? scan.completedAt,
+    resourceNodes = nodes.filter(
+      (node) => node.detail.projectionGroup !== true,
+    ),
     summary = {
-      nodes: nodes.length,
+      nodes: resourceNodes.length,
       edges: uniqueEdges.length,
-      running: nodes.filter((n) => n.state === "RUNNING").length,
-      waiting: nodes.filter((n) =>
+      running: resourceNodes.filter((n) => n.state === "RUNNING").length,
+      waiting: resourceNodes.filter((n) =>
         ["WAITING", "QUEUED", "BLOCKED"].includes(n.state),
       ).length,
-      succeeded: nodes.filter((n) => n.state === "SUCCEEDED").length,
-      failed: nodes.filter((n) => n.state === "FAILED").length,
-      degraded: nodes.filter((n) => n.state === "DEGRADED").length,
+      succeeded: resourceNodes.filter((n) => n.state === "SUCCEEDED").length,
+      failed: resourceNodes.filter((n) => n.state === "FAILED").length,
+      degraded: resourceNodes.filter((n) => n.state === "DEGRADED").length,
       groups: new Set(nodes.map((n) => n.groupId).filter(Boolean)).size,
     };
   const anyCurrent = scan.items.some(

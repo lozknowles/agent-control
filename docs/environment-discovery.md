@@ -83,6 +83,12 @@ explicit node, provider, runtime or `relatedIds` evidence. Selecting a transport
 edge shows source, destination, address, port, username, authentication method,
 credential status, health and last verification when authorised.
 
+When one parent has four or more resources of the same kind, Estate Map derives
+an evidence-linked category group and initially collapses it. The group is a
+view-only summary, is labelled as derived, does not increase the resource count
+and never changes the discovery inventory. Expanding it restores every observed
+resource in a bounded wrapped layout.
+
 Discovery is not aliveness. Machines/agents use short heartbeat windows;
 runtimes/endpoints use bounded service-health windows; models require recent
 runtime availability; static hardware metadata has a longer inventory window.
