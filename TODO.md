@@ -86,3 +86,11 @@ Unresolved risks and physical gates:
       in a reproducible evidence bundle.
 - [ ] Update canonical 4.5 documentation, run the complete validation suite, and
       commit/push the isolated feature branch. Do not merge, tag, release or deploy.
+
+## Morrow integration follow-up
+
+- [x] Combine the original Morrow identity and coordinated six-robot artwork with the completed 4.5 route-governance branch.
+- [x] Preserve the existing qualification bundle and its experimental recommendation.
+- [ ] Qualify the combined candidate on desktop/mobile with reduced/off motion, physical voice/social invocation and a harmless governed Work Parcel. Keep new evidence separate from historical POE runs.
+
+See the [combined integration record](docs/evidence/morrow-4.5-integration/validation.md) for automated checks and the exact source parents. Earlier unchecked items above describe the original skill-learning workstream; the [completion report](docs/evidence/agent-control-4.5-release-gate-completion-20260912.md) records its later qualification outcomes.

@@ -25,6 +25,7 @@
   hpubuntu and macomarchy with a real Codex session and verified Work Parcel;
   MSI Obsidian application access remains blocked by unavailable SSH
   authentication, so the feature and 4.5 recommendation remain EXPERIMENTAL.
+- Introduces Morrow as the original chief steward and refreshes Cadence, Quill, Relay, Lumen, Rook and Verity with coordinated robotic artwork. Public names, grounded persona and social invocation are updated while legacy `poe` APIs, events, storage, saved conversations, approval hashes, crew roles and the designed voice remain compatible. Integrated with the completed 4.5 route-governance branch for experimental testing; historical physical evidence retains its original candidate identity.
 
 - Adds one canonical provider-neutral `ProjectMemoryExchange` contract across writer, reader and consolidation flows. Application-schema validity and semantic reconstruction remain separate fail-closed gates; exact topology state, provenance, decision, rejection risk and next action are still required.
 - Repairs the bounded Pixel reader path after physical `finish_reason=length` evidence and repairs Windows OpenSSH execution by replacing channel-EOF framing with two explicit base64 records. Remote profile homes and raw transport output remain node-local and absent from evidence.

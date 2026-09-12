@@ -21,7 +21,7 @@
 <body>
   <header class="topbar">
     <div class="brand"><span class="brand-mark" aria-hidden="true">AC</span><div><strong>Agent Control</strong><small id="version">connecting</small></div></div>
-    <a class="button secondary" href="/social-voice.html">Social &amp; Voice</a><nav class="primary-nav" aria-label="Control views"><button class="primary-tab active" data-view="jobs">Jobs</button><button class="primary-tab" data-view="lanes">Lanes</button><button class="primary-tab" data-view="sessions">Sessions</button><button class="primary-tab" data-view="vault">Session Vault</button><button class="primary-tab" data-view="systems">Systems</button><button class="primary-tab" data-view="models">Models</button><button class="primary-tab" data-view="routing">Routing</button><button class="primary-tab" data-view="experts">Warm Cache Runtime</button><button class="primary-tab" data-view="specialists">Learned Specialists</button><button class="primary-tab" data-view="crew">Crew</button><button class="primary-tab poe-nav" data-view="poe">POE</button><button class="primary-tab" data-view="configuration">Configuration</button></nav>
+    <a class="button secondary" href="/social-voice.html">Social &amp; Voice</a><nav class="primary-nav" aria-label="Control views"><button class="primary-tab active" data-view="jobs">Jobs</button><button class="primary-tab" data-view="lanes">Lanes</button><button class="primary-tab" data-view="sessions">Sessions</button><button class="primary-tab" data-view="vault">Session Vault</button><button class="primary-tab" data-view="systems">Systems</button><button class="primary-tab" data-view="models">Models</button><button class="primary-tab" data-view="routing">Routing</button><button class="primary-tab" data-view="experts">Warm Cache Runtime</button><button class="primary-tab" data-view="specialists">Learned Specialists</button><button class="primary-tab" data-view="crew">Crew</button><button class="primary-tab poe-nav" data-view="poe">Morrow</button><button class="primary-tab" data-view="configuration">Configuration</button></nav>
     <div class="topbar-status"><span id="stream-state" class="status-pill neutral">CONNECTING</span><button id="health" class="status-pill neutral" title="Agent Control health; open downstream Systems readiness">UNKNOWN</button><button id="operator-button" class="button secondary">Operator authentication required</button></div>
   </header>
   <section id="persistent-usage" class="persistent-usage" aria-label="Persistent live model usage" aria-live="polite">
@@ -98,7 +98,7 @@
   <main id="experts-workspace" class="cache-runtime-shell" hidden>
     <header class="cache-runtime-hero">
       <div><div class="cache-runtime-title-row"><h1>Warm Cache Runtime</h1><span class="cache-live"><i></i> LIVE</span></div><p>Real-time view of governed execution, cache usage, and model routing.</p></div>
-      <aside class="poe-cache-guide" aria-label="POE operational guidance"><span>POE · Crew guide</span><strong>Same context. Faster crew.</strong><small>Warm routes stay subordinate to capability, integrity, and governance.</small></aside>
+      <aside class="poe-cache-guide" aria-label="Morrow operational guidance"><span>Morrow · Crew guide</span><strong>Same context. Faster crew.</strong><small>Warm routes stay subordinate to capability, integrity, and governance.</small></aside>
     </header>
     <section id="cache-runtime-metrics" class="cache-runtime-metrics" aria-label="Warm cache metrics"></section>
     <section class="cache-runtime-layout">
@@ -191,43 +191,64 @@
       <section class="crew-vocabulary" aria-labelledby="crew-vocabulary-title"><h3 id="crew-vocabulary-title">Supported state vocabulary</h3><div id="crew-state-vocabulary" class="crew-state-chips"></div></section>
     </section>
   </main>
-  <button id="poe-launcher" type="button" class="button poe-launcher" aria-controls="poe-workspace" aria-expanded="false" aria-label="Talk to POE. Use arrow keys to reposition the companion."><span id="poe-pet-art" aria-hidden="true"></span><span id="poe-pet-state">IDLE</span><span>Talk to POE</span></button><p id="poe-pet-bubble" role="status" hidden></p>
+  <button id="poe-launcher" type="button" class="button poe-launcher" aria-controls="poe-workspace" aria-expanded="false" aria-label="Talk to Morrow. Use arrow keys to reposition the companion."><span id="poe-pet-art" aria-hidden="true"></span><span id="poe-pet-state">IDLE</span><span>Talk to Morrow</span></button><p id="poe-pet-bubble" role="status" hidden></p>
   <main id="poe-workspace" class="poe-shell" hidden>
     <aside class="panel poe-residence">
-      <div class="poe-room" aria-hidden="true"><div class="poe-window"></div><div id="poe-character" class="poe-character" data-state="IDLE"><svg viewBox="0 0 300 440" role="img" aria-label="POE, an original moustached digital hotelier in a dark waistcoat" xmlns="http://www.w3.org/2000/svg">
-<defs><linearGradient id="poe-waistcoat" x2="1" y2="1"><stop stop-color="#42404a"/><stop offset="1" stop-color="#161a24"/></linearGradient><linearGradient id="poe-skin" x2="1" y2="1"><stop stop-color="#e9bc94"/><stop offset="1" stop-color="#b78162"/></linearGradient></defs>
-<ellipse cx="151" cy="367" rx="106" ry="12" fill="#080c11" opacity=".6"/>
-<g class="poe-body"><path d="M105 337L102 411 139 411 152 350 166 411 201 411 196 337Z" fill="#232630"/><path d="M101 402L139 404 143 420 86 420Q83 407 101 402M166 404L200 402Q220 406 220 420H164Z" fill="#141920"/><path d="M99 198 Q68 207 58 252 L55 335 93 346 108 261M201 198 Q232 207 242 252 L245 335 207 346 192 261" fill="#d7d1c4" stroke="#a19b90" stroke-width="2"/>
-<path d="M109 186L192 186 212 347Q153 370 87 347Z" fill="url(#poe-waistcoat)" stroke="#747079" stroke-width="2"/>
-<path d="M109 184L150 242 192 184 170 191 150 205 129 191Z" fill="#f0e9dc"/>
-<path d="M141 209L158 209 167 240 151 259 137 240Z" fill="#743b44" stroke="#bd7b72"/>
-<path d="M109 193L150 253 191 193M151 254L151 346" fill="none" stroke="#8b8176" stroke-width="2"/>
-<g fill="#b89a5d"><circle cx="153" cy="270" r="3"/><circle cx="153" cy="293" r="3"/><circle cx="153" cy="316" r="3"/></g>
-<path d="M167 289Q208 336 200 279" fill="none" stroke="#c6a763" stroke-width="2"/><path d="M176 275H204" stroke="#9f8d73" stroke-width="3"/>
-<g class="poe-arm-left"><path d="M78 234Q48 264 49 314L81 319 106 258" fill="#dad4c5" stroke="#948e84" stroke-width="2"/><path d="M49 305L84 311 83 329 48 325Z" fill="#f0ebdf"/><path d="M51 326Q43 350 55 358L75 358 79 329" fill="url(#poe-skin)" stroke="#805a4a"/></g>
-<g class="poe-arm-right"><path d="M220 234Q246 261 238 306L208 302 196 256" fill="#dad4c5" stroke="#948e84" stroke-width="2"/><path d="M207 294L239 298 237 316 205 312Z" fill="#f0ebdf"/><path d="M209 314Q200 334 213 345L232 343 234 317" fill="url(#poe-skin)" stroke="#805a4a"/><path d="M211 330L218 337M219 326L226 337" stroke="#8f6451" fill="none"/></g>
-<g class="poe-head-group"><path d="M132 166L131 195 151 208 174 194 170 166" fill="url(#poe-skin)"/>
-<ellipse cx="102" cy="128" rx="12" ry="21" fill="#bf8b6c"/><ellipse cx="199" cy="128" rx="12" ry="21" fill="#bf8b6c"/>
-<path d="M102 99Q98 52 148 51 202 49 202 100L195 151Q190 180 150 190 113 181 107 154Z" fill="url(#poe-skin)" stroke="#87614e" stroke-width="2"/>
-<path d="M102 117Q80 62 112 45 153 24 187 50 214 58 201 117L189 80Q155 88 122 68L113 109Z" fill="#32313a"/><path d="M110 65Q151 32 186 63M106 84L101 109M194 77L200 104" fill="none" stroke="#777179" stroke-width="3"/>
-<g class="poe-brows" fill="none" stroke="#41353a" stroke-width="5" stroke-linecap="round"><path d="M118 112Q130 103 141 110"/><path d="M160 110Q173 103 185 113"/></g>
-<g class="poe-eyes"><path d="M117 123Q130 114 141 123Q129 130 117 123M160 123Q173 114 186 123Q174 130 160 123" fill="#f2e1c9"/><circle cx="131" cy="122" r="4" fill="#514939"/><circle cx="172" cy="122" r="4" fill="#514939"/><circle cx="132" cy="121" r="1.4" fill="#fff"/><circle cx="173" cy="121" r="1.4" fill="#fff"/></g>
-<path d="M152 121L146 143Q151 148 158 143" stroke="#9b6850" fill="none" stroke-width="2"/>
-<ellipse class="poe-mouth" cx="151" cy="164" rx="13" ry="2.3" fill="#613d39"/>
-<path d="M150 148Q140 143 132 151 122 159 114 149Q115 168 135 161L151 155 166 162Q188 168 189 149 179 161 169 151 161 143 150 148Z" fill="#3e3034"/>
-<path d="M136 177Q150 181 165 176" fill="none" stroke="#a7765d"/>
-</g></g>
-<g class="poe-digital" fill="none" stroke="#cfa960" opacity=".6"><path d="M24 85V59H52M248 59H276V85M24 327V353H42M259 353H277V327"/><circle cx="254" cy="184" r="14"/><path d="M254 174V184L262 188"/></g>
+      <div class="poe-room" aria-hidden="true"><div class="poe-window"></div><div id="poe-character" class="poe-character" data-character="morrow" data-state="IDLE"><svg viewBox="0 0 300 400" role="img" aria-label="Morrow, Agent Control’s silver-haired chief steward in a teal jacket with a copper badge" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <linearGradient id="morrow-skin" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#b9825e"/><stop offset=".55" stop-color="#966044"/><stop offset="1" stop-color="#724631"/></linearGradient>
+  <linearGradient id="morrow-jacket" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#315967"/><stop offset=".55" stop-color="#203e49"/><stop offset="1" stop-color="#142b34"/></linearGradient>
+  <linearGradient id="morrow-hair" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#eee8df"/><stop offset=".55" stop-color="#b8bec0"/><stop offset="1" stop-color="#777f85"/></linearGradient>
+</defs>
+<ellipse cx="151" cy="387" rx="84" ry="9" fill="#060d12" opacity=".3"/>
+<g class="poe-body">
+  <path d="M99 309L98 376 134 376 150 323 166 376 205 376 201 309Z" fill="#26313a" stroke="#111e27" stroke-width="3"/>
+  <path d="M97 369L134 369 138 386 81 386Q80 375 97 369M167 369L205 369Q220 374 219 386H165Z" fill="#12202a"/>
+  <path d="M105 194Q150 179 194 194L218 222 210 315Q151 329 90 315L82 222Z" fill="url(#morrow-jacket)" stroke="#102d37" stroke-width="3"/>
+  <path d="M129 187L173 187 182 226 151 240 121 224Z" fill="#162c35"/>
+  <path d="M105 194L122 185 133 221 151 237 124 233Z" fill="#3b6570"/>
+  <path d="M194 194L177 185 169 216 151 237 182 227Z" fill="#2b505d"/>
+  <path d="M181 228L128 262 128 311" stroke="#ce976b" stroke-width="3" fill="none"/>
+  <path d="M95 299H118M148 298H199" stroke="#42616b" stroke-width="3" stroke-linecap="round"/>
+  <g class="morrow-badge"><circle cx="184" cy="245" r="14" fill="#263c43" stroke="#d49b6a" stroke-width="3"/><g class="morrow-status" fill="#edb476"><circle cx="179" cy="241" r="2.8"/><circle cx="188" cy="246" r="2.8"/><circle cx="179" cy="250" r="2.8"/></g></g>
+  <g class="poe-arm-left">
+    <path d="M85 211Q59 221 56 265L51 297 81 308 106 244" fill="url(#morrow-jacket)" stroke="#183540" stroke-width="3"/>
+    <path d="M52 287L85 299 80 314 48 302Z" fill="#39606c"/>
+    <path d="M50 301Q37 308 36 326L46 341Q51 345 54 339L49 326 54 331Q62 338 69 331L78 313Z" fill="url(#morrow-skin)" stroke="#724932" stroke-width="2"/>
+  </g>
+  <g class="poe-arm-right">
+    <path d="M216 211Q240 223 244 265L249 298 218 308 195 244" fill="url(#morrow-jacket)" stroke="#183540" stroke-width="3"/>
+    <path d="M216 299L248 287 252 304 220 315Z" fill="#39606c"/>
+    <path d="M222 313L230 333Q237 340 244 332L248 326 245 339Q248 345 253 340L263 325Q262 311 250 303Z" fill="url(#morrow-skin)" stroke="#724932" stroke-width="2"/>
+  </g>
+</g>
+<g class="poe-head-group">
+  <path d="M130 162L129 195Q151 213 174 194L171 160" fill="url(#morrow-skin)" stroke="#724932" stroke-width="2"/>
+  <path d="M132 176Q151 188 172 176L171 185Q152 197 130 185Z" fill="#67432f" opacity=".4"/>
+  <path d="M101 106Q86 99 89 121L96 141 107 139M199 106Q214 99 211 121L204 141 193 139" fill="url(#morrow-skin)" stroke="#724932" stroke-width="2"/>
+  <path d="M101 91Q101 56 150 56 199 56 200 94L198 139Q195 174 169 185 151 194 131 184 107 174 103 144Z" fill="url(#morrow-skin)" stroke="#754c36" stroke-width="2"/>
+  <path d="M102 116Q92 92 101 71 110 52 137 52 135 44 133 42 160 39 177 50 192 46 201 59 211 78 199 116L192 96 188 77Q161 89 134 76 116 86 107 95Z" fill="url(#morrow-hair)" stroke="#7c878c" stroke-width="2"/>
+  <path d="M109 77Q123 59 147 62M126 72Q156 69 165 53M143 78Q173 78 188 65" fill="none" stroke="#f2eee5" stroke-width="3" stroke-linecap="round" opacity=".75"/>
+  <path d="M106 99L108 125 100 115 98 98M193 99L191 125 201 115 202 97" fill="#a5acae"/>
+  <path d="M125 94Q149 90 175 95M131 100Q152 97 171 101" stroke="#774e39" stroke-width="1.5" fill="none" opacity=".55"/>
+  <g class="poe-brows" fill="none" stroke="#5e5149" stroke-width="6" stroke-linecap="round"><path class="morrow-brow-left" d="M116 113Q130 105 142 111"/><path class="morrow-brow-right" d="M160 109Q174 102 187 111"/></g>
+  <g class="poe-eyes"><path d="M116 124Q129 116 142 123Q132 132 118 127M160 123Q174 115 187 122L185 126Q174 131 161 125" fill="#f1dfc7"/><g fill="#483b2e"><circle cx="132" cy="124" r="4.7"/><circle cx="174" cy="123" r="4.7"/></g><g fill="#fff8e9"><circle cx="133" cy="122" r="1.6"/><circle cx="175" cy="121" r="1.6"/></g></g>
+  <path d="M151 124L145 145Q151 149 158 144" fill="none" stroke="#724631" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M116 135L122 138M185 134L180 138M124 150Q120 157 125 164M179 149Q184 155 179 162" fill="none" stroke="#7d5039" stroke-width="2" stroke-linecap="round"/>
+  <path class="morrow-smile" d="M134 160Q150 169 169 158" fill="none" stroke="#613f30" stroke-width="3" stroke-linecap="round"/>
+  <ellipse class="poe-mouth" cx="152" cy="162" rx="11" ry="2.3" fill="#633e31"/>
+  <path d="M142 176Q153 179 165 173" fill="none" stroke="#c08a64" stroke-width="2" stroke-linecap="round"/>
+</g>
 </svg></div><div class="poe-desk"></div></div>
-      <div class="poe-identity"><span class="eyebrow">Resident conversational operator</span><h1>POE</h1><p>Evidence guide, benchmark designer and liaison to the Agent Control Crew.</p><span id="poe-state" class="status-pill neutral">IDLE</span></div>
+      <div class="poe-identity"><span class="eyebrow">Chief steward</span><h1>Morrow</h1><p>Evidence guide, benchmark designer and liaison to the Agent Control Crew.</p><span id="poe-state" class="status-pill neutral">IDLE</span></div>
       <div id="poe-grounding" class="poe-grounding">Truth precedes charm. Records absent from Agent Control remain unavailable.</div>
       <div class="poe-audio-controls"><button id="poe-interrupt" class="button warning" type="button" disabled>Stop speaking</button><button id="poe-close" class="button secondary" type="button">Close panel</button><button id="poe-enable-audio" class="button secondary" type="button">Enable audio</button><button id="poe-play-reply" class="button secondary" type="button" hidden>Play reply</button></div><p id="poe-audio-message" role="status">Typed conversation is available. Enable audio to hear OmniVoice replies.</p><p id="poe-audio-caption" class="poe-caption"></p>
     </aside>
     <section class="panel poe-conversation-panel">
       <header class="poe-heading"><div><span class="eyebrow">Grounded conversation</span><small class="poe-route" id="poe-reasoning-route"></small><h2 id="poe-conversation-title">Conversation</h2></div><div><button id="poe-new-conversation" class="button secondary" type="button">New conversation</button><button id="poe-expand" class="button secondary" type="button" aria-pressed="false">Expand</button><button id="poe-download-transcript" class="button secondary" type="button">Transcript</button></div></header>
-      <div class="poe-tour-controls"><button id="poe-tour-start" class="text-button" type="button">Introduce POE and show me Agent Control</button><button id="poe-tour-next" type="button" class="text-button" hidden>Next feature</button><button id="poe-tour-retry" class="button secondary" type="button" hidden>Retry narration</button><button id="poe-tour-stop" type="button" class="text-button" hidden>End tour</button><span id="poe-tour-position"></span><button id="poe-narrate-tests" type="button" class="text-button" aria-pressed="false">Narrate test progress</button></div><div id="poe-reference" class="poe-reference" hidden></div>
+      <div class="poe-tour-controls"><button id="poe-tour-start" class="text-button" type="button">Introduce Morrow and show me Agent Control</button><button id="poe-tour-next" type="button" class="text-button" hidden>Next feature</button><button id="poe-tour-retry" class="button secondary" type="button" hidden>Retry narration</button><button id="poe-tour-stop" type="button" class="text-button" hidden>End tour</button><span id="poe-tour-position"></span><button id="poe-narrate-tests" type="button" class="text-button" aria-pressed="false">Narrate test progress</button></div><div id="poe-reference" class="poe-reference" hidden></div>
       <ol id="poe-turns" class="poe-turns" aria-live="polite"></ol>
-      <form id="poe-form" class="poe-form"><label for="poe-input">Ask POE</label><textarea id="poe-input" rows="3" placeholder="Ask what Agent Control knows, why it routed work, or whether a fair experiment would answer your question." required></textarea><div><small>POE can explain and propose. Consequential work still requires an approved Work Parcel.</small><button id="poe-speak" class="button secondary" type="button" disabled>Hold to speak</button><button class="button" type="submit">Ask</button></div></form>
+      <form id="poe-form" class="poe-form"><label for="poe-input">Ask Morrow</label><textarea id="poe-input" rows="3" placeholder="Ask what Agent Control knows, why it routed work, or whether a fair experiment would answer your question." required></textarea><div><small>Morrow can explain and propose. Consequential work still requires an approved Work Parcel.</small><button id="poe-speak" class="button secondary" type="button" disabled>Hold to speak</button><button class="button" type="submit">Ask</button></div></form>
     </section>
     <details id="poe-extra"><summary>Jobs, schedules, approvals &amp; evidence</summary><aside class="panel poe-benchmark-panel">
       <div class="panel-heading"><div><span class="eyebrow">Approval-gated experiment design</span><h2>Benchmark proposals</h2></div><span id="poe-proposal-count" class="count">0</span></div>

@@ -5,9 +5,9 @@
   "capabilities": [
     {
       "id": "operator.poe-conversational-interface",
-      "title": "POE grounded conversational operator and benchmark designer",
+      "title": "Morrow grounded conversational operator and benchmark designer",
       "status": "IMPLEMENTED",
-      "summary": "An original state-driven POE dashboard and channel-scoped runtime explain focused Agent Control evidence, explicitly preserve unknowns, route optional model phrasing through qualified Model Registry roles, design/fairness-check/version/freeze benchmark proposals, and submit only exact operator-approved plans through the normal registered Job and Work Parcel lifecycle. Authenticated WhatsApp questions reuse the same persona without widening command authority; optional designed OmniVoice records latency and isolates barge-in from executing work.",
+      "summary": "An original state-driven Morrow dashboard and channel-scoped runtime explain focused Agent Control evidence, explicitly preserve unknowns, route optional model phrasing through qualified Model Registry roles, design/fairness-check/version/freeze benchmark proposals, and submit only exact operator-approved plans through the normal registered Job and Work Parcel lifecycle. Authenticated WhatsApp questions reuse the same persona without widening command authority; optional designed OmniVoice records latency and isolates barge-in from executing work.",
       "sources": [
         "src/control/poe.ts",
         "src/control/poe-model.ts",
