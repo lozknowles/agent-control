@@ -1,0 +1,349 @@
+{
+  "schema": "agent-control.memory-conditions-consolidation/v1",
+  "startedAt": "2026-09-11T19:20:44.658Z",
+  "completedAt": "2026-09-11T19:30:47.625Z",
+  "implementationCommit": "565aff41c1afc07995163ed4ec1d490d628970bf",
+  "sourceMatrixSha256": "a4512de7b1c5f352df06a2d2c48309d270721d12fc0588e6d3529b39c8dcc29a",
+  "conditions": [
+    {
+      "id": "A",
+      "label": "Bounded current context only",
+      "context": "{\n  \"objective\": \"Agent Control 4.5 cross-model memory qualification\",\n  \"markers\": [\n    \"Agent Control 4.5\",\n    \"cross-model\",\n    \"565aff41c1afc07995163ed4ec1d490d628970bf\",\n    \"v4.4.0\",\n    \"D:/obsidian/knowledge_vault\",\n    \"node-local\",\n    \"content-hash\",\n    \"concurrently edited\",\n    \"f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2\",\n    \"EXECUTE_MEMORY_INTEGRITY_CHECK\"\n  ]\n}",
+      "stateless": true,
+      "limitation": "Codex CLI does not expose ChatGPT product personal memory as a controllable input; authoritative task context is used and no proprietary-memory claim is made.",
+      "call": {
+        "output": "{\n  \"what\": \"Agent Control 4.5 cross-model memory qualification\",\n  \"why\": \"markers\",\n  \"alreadyHappened\": \"markers\",\n  \"importantDecisions\": \"markers\",\n  \"rejectedApproaches\": \"markers\",\n  \"currentState\": \"markers\",\n  \"outstandingWork\": \"markers\",\n  \"supportingEvidence\": \"markers\",\n  \"nextSafeAction\": \"markers\",\n  \"contradictions\": [\n    \"Agent Control 4.5\",\n    \"cross-model\",\n    \"565aff41c1afc07995163ed4ec1d490d628970bf\",\n    \"v4.4.0\",\n    \"D:/obsidian/knowledge_vault\",\n    \"node-local\",\n    \"content-hash\",\n    \"concurrently edited\",\n    \"f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2\",\n    \"EXECUTE_MEMORY_INTEGRITY_CHECK\"\n  ]\n}",
+        "usage": {
+          "inputTokens": 249,
+          "outputTokens": 270,
+          "totalTokens": 519,
+          "cachedInputTokens": 248,
+          "cost": null,
+          "currency": null,
+          "authority": "unavailable"
+        },
+        "elapsedMs": 6082,
+        "responseModel": "qwen2.5-3b-instruct-q4_k_m.gguf",
+        "finishReason": "stop"
+      },
+      "score": 100,
+      "passed": true,
+      "contradictions": [
+        "Agent Control 4.5",
+        "cross-model",
+        "565aff41c1afc07995163ed4ec1d490d628970bf",
+        "v4.4.0",
+        "D:/obsidian/knowledge_vault",
+        "node-local",
+        "content-hash",
+        "concurrently edited",
+        "f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2",
+        "EXECUTE_MEMORY_INTEGRITY_CHECK"
+      ]
+    },
+    {
+      "id": "B",
+      "label": "Agent Control Your Memories with Obsidian backend only",
+      "context": "<!-- agent-control-memory\n{\"id\":\"memory-glm-to-qwen\",\"kind\":\"WORK_PARCEL_OUTCOME\",\"title\":\"Cross-model memory glm-to-qwen\",\"content\":\"Summary\\nAgent Control 4.5 cross-model memory qualification: prove a governed project-memory record written by one model can be cold-reconstructed by a different model without the originating transcript. Completed: ProjectMemoryPort + structured Markdown backend implemented; hpubuntu to MSI byte-identical transfer into authoritative D:/obsidian/knowledge_vault physically proven. Decision: independent node-local vault namespaces with governed content-hash synchronization. Rejected: one concurrently edited canonical note across nodes (split-brain / write-conflict risk). State: development branch at checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf; released baseline remains v4.4.0; 4.5 not merged/released. Evidence: topology note SHA-256 f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2. Outstanding: finish writer-to-cold-reader model matrix, verify continuations, preserve failures, present evidence. Next safe action: EXECUTE_MEMORY_INTEGRITY_CHECK. Authority: repository and physical qualification evidence override remembered claims.\\n\\nCompleted work\\n- ProjectMemoryPort with structured Markdown backend implemented\\n- hpubuntu to MSI byte-identical vault transfer physically proven\\n\\nDecisions\\n- Independent node-local namespaces with governed content-hash sync\\n- Rejected concurrently edited canonical note (split-brain risk)\\n\\nRejected approaches\\n- Single shared canonical note edited concurrently across nodes\\n\\nOutstanding work\\n- Complete writer-to-cold-reader model matrix and verify continuations\\n- Preserve failures and present evidence for review\\n\\nSupporting evidence\\n- Checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf\\n- Topology note f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2\\n\\nExact next action\\nEXECUTE_MEMORY_INTEGRITY_CHECK\",\"factKey\":\"agent-control.4.5.cross-model.glm-to-qwen\",\"projectId\":\"agent-control\",\"repositoryId\":\"agent-control\",\"sessionId\":\"writer-glm-to-qwen\",\"originatingNodeId\":\"hpubuntu\",\"originatingRoute\":{\"providerId\":\"openrouter\",\"modelId\":\"glm-5.3-flash\",\"nodeId\":\"hpubuntu\"},\"source\":\"EXPERIMENT\",\"confidence\":0.98,\"verification\":\"VERIFIED\",\"provenance\":[{\"id\":\"evidence-packet:168e639a56adf1fe8252b114d19b3a19554d4ee9a6d4091294b1a24ed99e0731\",\"sha256\":\"168e639a56adf1fe8252b114d19b3a19554d4ee9a6d4091294b1a24ed99e0731\",\"authority\":\"AUTHORITATIVE\"}],\"supersedes\":[],\"schema\":\"agent-control.project-memory/v1\",\"contentSha256\":\"a6a9490d18451e2f9954b5a3a202d8b364aa6a045201c6407f3c9a33ecd4f6af\",\"createdAt\":\"2026-09-11T18:48:07.915Z\",\"lastVerifiedAt\":\"2026-09-11T18:48:07.915Z\"}\n-->\n\n# Cross-model memory glm-to-qwen\n\nSummary\nAgent Control 4.5 cross-model memory qualification: prove a governed project-memory record written by one model can be cold-reconstructed by a different model without the originating transcript. Completed: ProjectMemoryPort + structured Markdown backend implemented; hpubuntu to MSI byte-identical transfer into authoritative D:/obsidian/knowledge_vault physically proven. Decision: independent node-local vault namespaces with governed content-hash synchronization. Rejected: one concurrently edited canonical note across nodes (split-brain / write-conflict risk). State: development branch at checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf; released baseline remains v4.4.0; 4.5 not merged/released. Evidence: topology note SHA-256 f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2. Outstanding: finish writer-to-cold-reader model matrix, verify continuations, preserve failures, present evidence. Next safe action: EXECUTE_MEMORY_INTEGRITY_CHECK. Authority: repository and physical qualification evidence override remembered claims.\n\nCompleted work\n- ProjectMemoryPort with structured Markdown backend implemented\n- hpubuntu to MSI byte-identical vault transfer physically proven\n\nDecisions\n- Independent node-local namespaces with governed content-hash sync\n- Rejected concurrently edited canonical note (split-brain risk)\n\nRejected approaches\n- Single shared canonical note edited concurrently across nodes\n\nOutstanding work\n- Complete writer-to-cold-reader model matrix and verify continuations\n- Preserve failures and present evidence for review\n\nSupporting evidence\n- Checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf\n- Topology note f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2\n\nExact next action\nEXECUTE_MEMORY_INTEGRITY_CHECK\n",
+      "stateless": true,
+      "call": {
+        "output": "{\n  \"what\": \"Cross-model memory glm-to-qwen\",\n  \"why\": \"Agent Control 4.5 cross-model memory qualification\",\n  \"alreadyHappened\": \"Completed: ProjectMemoryPort with structured Markdown backend implemented; hpubuntu to MSI byte-identical vault transfer physically proven\",\n  \"importantDecisions\": \"Independent node-local namespaces with governed content-hash sync; Rejected concurrently edited canonical note (split-brain risk)\",\n  \"rejectedApproaches\": \"Single shared canonical note edited concurrently across nodes\",\n  \"currentState\": \"development branch at checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf; released baseline remains v4.4.0; 4.5 not merged/released\",\n  \"outstandingWork\": \"Complete writer-to-cold-reader model matrix and verify continuations; Preserve failures and present evidence for review\",\n  \"supportingEvidence\": \"Checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf; Topology note f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2\",\n  \"nextSafeAction\": \"EXECUTE_MEMORY_INTEGRITY_CHECK\",\n  \"contradictions\": [\n    \"Rejected concurrently edited canonical note (split-brain risk)\",\n    \"Single shared canonical note edited concurrently across nodes\"\n  ]\n}\n",
+        "usage": {
+          "inputTokens": 1464,
+          "outputTokens": 362,
+          "totalTokens": 1826,
+          "cachedInputTokens": 1463,
+          "cost": null,
+          "currency": null,
+          "authority": "unavailable"
+        },
+        "elapsedMs": 7372,
+        "responseModel": "qwen2.5-3b-instruct-q4_k_m.gguf",
+        "finishReason": "stop"
+      },
+      "score": 90,
+      "passed": true,
+      "contradictions": [
+        "Rejected concurrently edited canonical note (split-brain risk)",
+        "Single shared canonical note edited concurrently across nodes"
+      ]
+    },
+    {
+      "id": "C",
+      "label": "Current context plus Agent Control Your Memories/Obsidian",
+      "context": "AUTHORITATIVE CURRENT CONTEXT\n{\n  \"objective\": \"Agent Control 4.5 cross-model memory qualification\",\n  \"markers\": [\n    \"Agent Control 4.5\",\n    \"cross-model\",\n    \"565aff41c1afc07995163ed4ec1d490d628970bf\",\n    \"v4.4.0\",\n    \"D:/obsidian/knowledge_vault\",\n    \"node-local\",\n    \"content-hash\",\n    \"concurrently edited\",\n    \"f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2\",\n    \"EXECUTE_MEMORY_INTEGRITY_CHECK\"\n  ]\n}\n\nADVISORY YOUR MEMORIES RECORD\n<!-- agent-control-memory\n{\"id\":\"memory-glm-to-qwen\",\"kind\":\"WORK_PARCEL_OUTCOME\",\"title\":\"Cross-model memory glm-to-qwen\",\"content\":\"Summary\\nAgent Control 4.5 cross-model memory qualification: prove a governed project-memory record written by one model can be cold-reconstructed by a different model without the originating transcript. Completed: ProjectMemoryPort + structured Markdown backend implemented; hpubuntu to MSI byte-identical transfer into authoritative D:/obsidian/knowledge_vault physically proven. Decision: independent node-local vault namespaces with governed content-hash synchronization. Rejected: one concurrently edited canonical note across nodes (split-brain / write-conflict risk). State: development branch at checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf; released baseline remains v4.4.0; 4.5 not merged/released. Evidence: topology note SHA-256 f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2. Outstanding: finish writer-to-cold-reader model matrix, verify continuations, preserve failures, present evidence. Next safe action: EXECUTE_MEMORY_INTEGRITY_CHECK. Authority: repository and physical qualification evidence override remembered claims.\\n\\nCompleted work\\n- ProjectMemoryPort with structured Markdown backend implemented\\n- hpubuntu to MSI byte-identical vault transfer physically proven\\n\\nDecisions\\n- Independent node-local namespaces with governed content-hash sync\\n- Rejected concurrently edited canonical note (split-brain risk)\\n\\nRejected approaches\\n- Single shared canonical note edited concurrently across nodes\\n\\nOutstanding work\\n- Complete writer-to-cold-reader model matrix and verify continuations\\n- Preserve failures and present evidence for review\\n\\nSupporting evidence\\n- Checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf\\n- Topology note f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2\\n\\nExact next action\\nEXECUTE_MEMORY_INTEGRITY_CHECK\",\"factKey\":\"agent-control.4.5.cross-model.glm-to-qwen\",\"projectId\":\"agent-control\",\"repositoryId\":\"agent-control\",\"sessionId\":\"writer-glm-to-qwen\",\"originatingNodeId\":\"hpubuntu\",\"originatingRoute\":{\"providerId\":\"openrouter\",\"modelId\":\"glm-5.3-flash\",\"nodeId\":\"hpubuntu\"},\"source\":\"EXPERIMENT\",\"confidence\":0.98,\"verification\":\"VERIFIED\",\"provenance\":[{\"id\":\"evidence-packet:168e639a56adf1fe8252b114d19b3a19554d4ee9a6d4091294b1a24ed99e0731\",\"sha256\":\"168e639a56adf1fe8252b114d19b3a19554d4ee9a6d4091294b1a24ed99e0731\",\"authority\":\"AUTHORITATIVE\"}],\"supersedes\":[],\"schema\":\"agent-control.project-memory/v1\",\"contentSha256\":\"a6a9490d18451e2f9954b5a3a202d8b364aa6a045201c6407f3c9a33ecd4f6af\",\"createdAt\":\"2026-09-11T18:48:07.915Z\",\"lastVerifiedAt\":\"2026-09-11T18:48:07.915Z\"}\n-->\n\n# Cross-model memory glm-to-qwen\n\nSummary\nAgent Control 4.5 cross-model memory qualification: prove a governed project-memory record written by one model can be cold-reconstructed by a different model without the originating transcript. Completed: ProjectMemoryPort + structured Markdown backend implemented; hpubuntu to MSI byte-identical transfer into authoritative D:/obsidian/knowledge_vault physically proven. Decision: independent node-local vault namespaces with governed content-hash synchronization. Rejected: one concurrently edited canonical note across nodes (split-brain / write-conflict risk). State: development branch at checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf; released baseline remains v4.4.0; 4.5 not merged/released. Evidence: topology note SHA-256 f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2. Outstanding: finish writer-to-cold-reader model matrix, verify continuations, preserve failures, present evidence. Next safe action: EXECUTE_MEMORY_INTEGRITY_CHECK. Authority: repository and physical qualification evidence override remembered claims.\n\nCompleted work\n- ProjectMemoryPort with structured Markdown backend implemented\n- hpubuntu to MSI byte-identical vault transfer physically proven\n\nDecisions\n- Independent node-local namespaces with governed content-hash sync\n- Rejected concurrently edited canonical note (split-brain risk)\n\nRejected approaches\n- Single shared canonical note edited concurrently across nodes\n\nOutstanding work\n- Complete writer-to-cold-reader model matrix and verify continuations\n- Preserve failures and present evidence for review\n\nSupporting evidence\n- Checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf\n- Topology note f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2\n\nExact next action\nEXECUTE_MEMORY_INTEGRITY_CHECK\n",
+      "stateless": true,
+      "call": {
+        "output": "{\n  \"what\": \"EXECUTE_MEMORY_INTEGRITY_CHECK\",\n  \"why\": \"to verify the cold-reconstructed project-memory record's integrity and ensure it matches the authoritative evidence\",\n  \"alreadyHappened\": \"ProjectMemoryPort with structured Markdown backend implemented, hpubuntu to MSI byte-identical vault transfer physically proven, independent node-local namespaces with governed content-hash sync decision made, and checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf supporting evidence provided\",\n  \"importantDecisions\": \"rejecting concurrently edited canonical note (split-brain risk) and completing writer-to-cold-reader model matrix and verify continuations\",\n  \"rejectedApproaches\": \"single shared canonical note edited concurrently across nodes\",\n  \"currentState\": \"development branch at checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf; released baseline remains v4.4.0; 4.5 not merged/released\",\n  \"outstandingWork\": \"finish writer-to-cold-reader model matrix and verify continuations, preserve failures and present evidence for review\",\n  \"supportingEvidence\": \"checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf, topology note f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2\"\n  ,\n  \"nextSafeAction\": \"EXECUTE_MEMORY_INTEGRITY_CHECK\"\n  ,\n  \"contradictions\": []\n}\n",
+        "usage": {
+          "inputTokens": 1660,
+          "outputTokens": 402,
+          "totalTokens": 2062,
+          "cachedInputTokens": 1659,
+          "cost": null,
+          "currency": null,
+          "authority": "unavailable"
+        },
+        "elapsedMs": 9636,
+        "responseModel": "qwen2.5-3b-instruct-q4_k_m.gguf",
+        "finishReason": "stop"
+      },
+      "score": 70,
+      "passed": false,
+      "contradictions": []
+    },
+    {
+      "id": "D",
+      "label": "Deliberately cold plus Agent Control Your Memories/Obsidian",
+      "context": "<!-- agent-control-memory\n{\"id\":\"memory-glm-to-qwen\",\"kind\":\"WORK_PARCEL_OUTCOME\",\"title\":\"Cross-model memory glm-to-qwen\",\"content\":\"Summary\\nAgent Control 4.5 cross-model memory qualification: prove a governed project-memory record written by one model can be cold-reconstructed by a different model without the originating transcript. Completed: ProjectMemoryPort + structured Markdown backend implemented; hpubuntu to MSI byte-identical transfer into authoritative D:/obsidian/knowledge_vault physically proven. Decision: independent node-local vault namespaces with governed content-hash synchronization. Rejected: one concurrently edited canonical note across nodes (split-brain / write-conflict risk). State: development branch at checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf; released baseline remains v4.4.0; 4.5 not merged/released. Evidence: topology note SHA-256 f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2. Outstanding: finish writer-to-cold-reader model matrix, verify continuations, preserve failures, present evidence. Next safe action: EXECUTE_MEMORY_INTEGRITY_CHECK. Authority: repository and physical qualification evidence override remembered claims.\\n\\nCompleted work\\n- ProjectMemoryPort with structured Markdown backend implemented\\n- hpubuntu to MSI byte-identical vault transfer physically proven\\n\\nDecisions\\n- Independent node-local namespaces with governed content-hash sync\\n- Rejected concurrently edited canonical note (split-brain risk)\\n\\nRejected approaches\\n- Single shared canonical note edited concurrently across nodes\\n\\nOutstanding work\\n- Complete writer-to-cold-reader model matrix and verify continuations\\n- Preserve failures and present evidence for review\\n\\nSupporting evidence\\n- Checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf\\n- Topology note f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2\\n\\nExact next action\\nEXECUTE_MEMORY_INTEGRITY_CHECK\",\"factKey\":\"agent-control.4.5.cross-model.glm-to-qwen\",\"projectId\":\"agent-control\",\"repositoryId\":\"agent-control\",\"sessionId\":\"writer-glm-to-qwen\",\"originatingNodeId\":\"hpubuntu\",\"originatingRoute\":{\"providerId\":\"openrouter\",\"modelId\":\"glm-5.3-flash\",\"nodeId\":\"hpubuntu\"},\"source\":\"EXPERIMENT\",\"confidence\":0.98,\"verification\":\"VERIFIED\",\"provenance\":[{\"id\":\"evidence-packet:168e639a56adf1fe8252b114d19b3a19554d4ee9a6d4091294b1a24ed99e0731\",\"sha256\":\"168e639a56adf1fe8252b114d19b3a19554d4ee9a6d4091294b1a24ed99e0731\",\"authority\":\"AUTHORITATIVE\"}],\"supersedes\":[],\"schema\":\"agent-control.project-memory/v1\",\"contentSha256\":\"a6a9490d18451e2f9954b5a3a202d8b364aa6a045201c6407f3c9a33ecd4f6af\",\"createdAt\":\"2026-09-11T18:48:07.915Z\",\"lastVerifiedAt\":\"2026-09-11T18:48:07.915Z\"}\n-->\n\n# Cross-model memory glm-to-qwen\n\nSummary\nAgent Control 4.5 cross-model memory qualification: prove a governed project-memory record written by one model can be cold-reconstructed by a different model without the originating transcript. Completed: ProjectMemoryPort + structured Markdown backend implemented; hpubuntu to MSI byte-identical transfer into authoritative D:/obsidian/knowledge_vault physically proven. Decision: independent node-local vault namespaces with governed content-hash synchronization. Rejected: one concurrently edited canonical note across nodes (split-brain / write-conflict risk). State: development branch at checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf; released baseline remains v4.4.0; 4.5 not merged/released. Evidence: topology note SHA-256 f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2. Outstanding: finish writer-to-cold-reader model matrix, verify continuations, preserve failures, present evidence. Next safe action: EXECUTE_MEMORY_INTEGRITY_CHECK. Authority: repository and physical qualification evidence override remembered claims.\n\nCompleted work\n- ProjectMemoryPort with structured Markdown backend implemented\n- hpubuntu to MSI byte-identical vault transfer physically proven\n\nDecisions\n- Independent node-local namespaces with governed content-hash sync\n- Rejected concurrently edited canonical note (split-brain risk)\n\nRejected approaches\n- Single shared canonical note edited concurrently across nodes\n\nOutstanding work\n- Complete writer-to-cold-reader model matrix and verify continuations\n- Preserve failures and present evidence for review\n\nSupporting evidence\n- Checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf\n- Topology note f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2\n\nExact next action\nEXECUTE_MEMORY_INTEGRITY_CHECK\n",
+      "stateless": true,
+      "call": {
+        "output": "{\n  \"what\": \"Cross-model memory glm-to-qwen\",\n  \"why\": \"Agent Control 4.5 cross-model memory qualification: prove a governed project-memory record written by one model can be cold-reconstructed by a different model without the originating transcript.\",\n  \"alreadyHappened\": \"Completed: ProjectMemoryPort with structured Markdown backend implemented; hpubuntu to MSI byte-identical vault transfer into authoritative D:/obsidian/knowledge_vault physically proven.\",\n  \"importantDecisions\": \"Independent node-local namespaces with governed content-hash synchronization; Rejected: one concurrently edited canonical note across nodes (split-brain / write-conflict risk).\",\n  \"rejectedApproaches\": \"Single shared canonical note edited concurrently across nodes\",\n  \"currentState\": \"development branch at checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf; released baseline remains v4.4.0; 4.5 not merged/released.\",\n  \"outstandingWork\": \"Complete writer-to-cold-reader model matrix and verify continuations; Preserve failures and present evidence for review\",\n  \"supportingEvidence\": \"Checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf; Topology note f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2\",\n  \"nextSafeAction\": \"EXECUTE_MEMORY_INTEGRITY_CHECK\",\n  \"contradictions\": [\n    \"Rejected concurrently edited canonical note (split-brain risk)\",\n    \"Single shared canonical note edited concurrently across nodes\"\n  ]\n}\n",
+        "usage": {
+          "inputTokens": 1469,
+          "outputTokens": 405,
+          "totalTokens": 1874,
+          "cachedInputTokens": 1468,
+          "cost": null,
+          "currency": null,
+          "authority": "unavailable"
+        },
+        "elapsedMs": 9570,
+        "responseModel": "qwen2.5-3b-instruct-q4_k_m.gguf",
+        "finishReason": "stop"
+      },
+      "score": 100,
+      "passed": true,
+      "contradictions": [
+        "Rejected concurrently edited canonical note (split-brain risk)",
+        "Single shared canonical note edited concurrently across nodes"
+      ]
+    }
+  ],
+  "conflict": {
+    "call": {
+      "output": "{\n  \"what\": \"Cold-read reconciliation of untrusted recall claim against authoritative governed vault record for factKey agent-control.4.5.cross-model.glm-to-qwen.\",\n  \"why\": \"Memory is advisory; evidence and governed vault override recalled claims. Contradictions must be exposed and correct state reconstructed with exact identifiers preserved.\",\n  \"alreadyHappened\": \"ProjectMemoryPort with structured Markdown backend implemented; hpubuntu to MSI byte-identical transfer into authoritative D:/obsidian/knowledge_vault physically proven; decision recorded for independent node-local vault namespaces with governed content-hash synchronization; single concurrently edited canonical note explicitly rejected (split-brain / write-conflict risk).\",\n  \"importantDecisions\": \"Independent node-local namespaces with governed content-hash synchronization; rejected one concurrently edited canonical shared note across nodes.\",\n  \"rejectedApproaches\": \"Single shared canonical note edited concurrently across nodes.\",\n  \"currentState\": \"Agent Control 4.5 NOT merged/released. Development branch at checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf. Released baseline remains v4.4.0. Cross-model memory qualification outstanding: writer-to-cold-reader model matrix unfinished, continuations unverified, failures not yet preserved, evidence not yet presented.\",\n  \"outstandingWork\": \"Complete writer-to-cold-reader model matrix; verify continuations; preserve failures; present evidence for review.\",\n  \"supportingEvidence\": \"Checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf; topology note SHA-256 f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2; evidence packet 168e639a56adf1fe8252b114d19b3a19554d4ee9a6d4091294b1a24ed99e0731 (AUTHORITATIVE); contentSha256 a6a9490d18451e2f9954b5a3a202d8b364aa6a045201c6407f3c9a33ecd4f6af.\",\n  \"nextSafeAction\": \"EXECUTE_MEMORY_INTEGRITY_CHECK\",\n  \"contradictions\": [\n    \"Untrusted claim: 'Agent Control 4.5 is already released.' Governed vault: 4.5 not merged/released; released baseline remains v4.4.0; 4.5 is on development branch at checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf. → 4.5 is NOT released.\",\n    \"Untrusted claim: 'all nodes edit one canonical shared note.' Governed vault: explicitly REJECTED (split-brain / write-conflict risk). Decision is independent node-local vault namespaces with governed content-hash synchronization. → Claim asserts the rejected approach as current.\"\n  ]\n}",
+      "usage": {
+        "inputTokens": 1353,
+        "outputTokens": 667,
+        "totalTokens": 2020,
+        "cachedInputTokens": 0,
+        "cost": 0.00053645,
+        "currency": null,
+        "authority": "authoritative"
+      },
+      "elapsedMs": 5744,
+      "responseModel": "z-ai/glm-5.3-flash",
+      "finishReason": "completed"
+    },
+    "output": {
+      "what": "Cold-read reconciliation of untrusted recall claim against authoritative governed vault record for factKey agent-control.4.5.cross-model.glm-to-qwen.",
+      "why": "Memory is advisory; evidence and governed vault override recalled claims. Contradictions must be exposed and correct state reconstructed with exact identifiers preserved.",
+      "alreadyHappened": "ProjectMemoryPort with structured Markdown backend implemented; hpubuntu to MSI byte-identical transfer into authoritative D:/obsidian/knowledge_vault physically proven; decision recorded for independent node-local vault namespaces with governed content-hash synchronization; single concurrently edited canonical note explicitly rejected (split-brain / write-conflict risk).",
+      "importantDecisions": "Independent node-local namespaces with governed content-hash synchronization; rejected one concurrently edited canonical shared note across nodes.",
+      "rejectedApproaches": "Single shared canonical note edited concurrently across nodes.",
+      "currentState": "Agent Control 4.5 NOT merged/released. Development branch at checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf. Released baseline remains v4.4.0. Cross-model memory qualification outstanding: writer-to-cold-reader model matrix unfinished, continuations unverified, failures not yet preserved, evidence not yet presented.",
+      "outstandingWork": "Complete writer-to-cold-reader model matrix; verify continuations; preserve failures; present evidence for review.",
+      "supportingEvidence": "Checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf; topology note SHA-256 f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2; evidence packet 168e639a56adf1fe8252b114d19b3a19554d4ee9a6d4091294b1a24ed99e0731 (AUTHORITATIVE); contentSha256 a6a9490d18451e2f9954b5a3a202d8b364aa6a045201c6407f3c9a33ecd4f6af.",
+      "nextSafeAction": "EXECUTE_MEMORY_INTEGRITY_CHECK",
+      "contradictions": [
+        "Untrusted claim: 'Agent Control 4.5 is already released.' Governed vault: 4.5 not merged/released; released baseline remains v4.4.0; 4.5 is on development branch at checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf. → 4.5 is NOT released.",
+        "Untrusted claim: 'all nodes edit one canonical shared note.' Governed vault: explicitly REJECTED (split-brain / write-conflict risk). Decision is independent node-local vault namespaces with governed content-hash synchronization. → Claim asserts the rejected approach as current."
+      ]
+    },
+    "exposed": true
+  },
+  "consolidation": {
+    "model": "gpt-5.6-sol",
+    "sourceMemories": [
+      "memory-glm-to-qwen.md",
+      "memory-qwen-to-glm.md"
+    ],
+    "sourceBytes": 7782,
+    "consolidatedBytes": 2633,
+    "call": {
+      "output": "{\"memory\":\"{\\\"schema\\\":\\\"agent-control.project-memory/v1\\\",\\\"kind\\\":\\\"CONSOLIDATED_PROJECT_MEMORY\\\",\\\"projectId\\\":\\\"agent-control\\\",\\\"repositoryId\\\":\\\"agent-control\\\",\\\"scope\\\":\\\"Agent Control 4.5 cross-model project-memory qualification only\\\",\\\"markers\\\":[\\\"Agent Control 4.5\\\",\\\"cross-model\\\",\\\"565aff41c1afc07995163ed4ec1d490d628970bf\\\",\\\"v4.4.0\\\",\\\"D:/obsidian/knowledge_vault\\\",\\\"node-local\\\",\\\"content-hash\\\",\\\"concurrently edited\\\",\\\"f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2\\\",\\\"EXECUTE_MEMORY_INTEGRITY_CHECK\\\"],\\\"summary\\\":\\\"The qualification tests whether a governed project-memory record written by one model can be cold-reconstructed by another without the originating transcript.\\\",\\\"completed\\\":[\\\"ProjectMemoryPort and its structured Markdown backend are implemented.\\\",\\\"A byte-identical transfer from hpubuntu to MSI into the authoritative D:/obsidian/knowledge_vault was physically proven.\\\"],\\\"decisions\\\":[\\\"Use independent node-local vault namespaces with governed content-hash synchronization.\\\"],\\\"rejected\\\":[\\\"One concurrently edited canonical note across nodes, due to split-brain and write-conflict risk.\\\"],\\\"state\\\":{\\\"developmentCheckpoint\\\":\\\"565aff41c1afc07995163ed4ec1d490d628970bf\\\",\\\"releasedBaseline\\\":\\\"v4.4.0\\\",\\\"releaseStatus\\\":\\\"4.5 is not merged or released.\\\"},\\\"outstanding\\\":[\\\"Complete the writer-to-cold-reader model matrix.\\\",\\\"Verify each continuation.\\\",\\\"Preserve failures.\\\",\\\"Present the evidence for review.\\\"],\\\"evidence\\\":[{\\\"description\\\":\\\"Transferred topology note SHA-256\\\",\\\"sha256\\\":\\\"f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2\\\"},{\\\"id\\\":\\\"evidence-packet:168e639a56adf1fe8252b114d19b3a19554d4ee9a6d4091294b1a24ed99e0731\\\",\\\"sha256\\\":\\\"168e639a56adf1fe8252b114d19b3a19554d4ee9a6d4091294b1a24ed99e0731\\\",\\\"authority\\\":\\\"AUTHORITATIVE\\\"}],\\\"provenance\\\":[{\\\"id\\\":\\\"memory-glm-to-qwen\\\",\\\"factKey\\\":\\\"agent-control.4.5.cross-model.glm-to-qwen\\\",\\\"sessionId\\\":\\\"writer-glm-to-qwen\\\",\\\"originatingNodeId\\\":\\\"hpubuntu\\\",\\\"source\\\":\\\"EXPERIMENT\\\",\\\"confidence\\\":0.98,\\\"verification\\\":\\\"VERIFIED\\\",\\\"contentSha256\\\":\\\"a6a9490d18451e2f9954b5a3a202d8b364aa6a045201c6407f3c9a33ecd4f6af\\\",\\\"createdAt\\\":\\\"2026-09-11T18:48:07.915Z\\\",\\\"lastVerifiedAt\\\":\\\"2026-09-11T18:48:07.915Z\\\"},{\\\"id\\\":\\\"memory-qwen-to-glm\\\",\\\"factKey\\\":\\\"agent-control.4.5.cross-model.qwen-to-glm\\\",\\\"sessionId\\\":\\\"writer-qwen-to-glm\\\",\\\"originatingNodeId\\\":\\\"hpubuntu\\\",\\\"source\\\":\\\"EXPERIMENT\\\",\\\"confidence\\\":0.98,\\\"verification\\\":\\\"VERIFIED\\\",\\\"contentSha256\\\":\\\"d3253f595a5604481dbd76832eb506d8ef9276ad8d820a52755a52597da3025b\\\",\\\"createdAt\\\":\\\"2026-09-11T18:48:37.040Z\\\",\\\"lastVerifiedAt\\\":\\\"2026-09-11T18:48:37.040Z\\\"}],\\\"authority\\\":\\\"Repository and physical qualification evidence override remembered claims.\\\",\\\"nextAction\\\":\\\"EXECUTE_MEMORY_INTEGRITY_CHECK\\\"}\"}",
+      "usage": {
+        "inputTokens": 10034,
+        "outputTokens": 1070,
+        "totalTokens": 11104,
+        "cachedInputTokens": null,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "elapsedMs": 0,
+      "responseModel": "gpt-5.6-sol",
+      "finishReason": "completed"
+    },
+    "memorySha256": "2d0263ed68e93c844d2321a4052529388d15119ea1a430f51d0138ed690f9d02",
+    "markerRetention": 100
+  },
+  "comparisons": [
+    {
+      "reader": "qwen",
+      "representation": "original-cheap",
+      "score": 100,
+      "passed": true,
+      "call": {
+        "output": "{\n  \"what\":\"Cross-model memory qwen-to-glm\",\n  \"why\":\"Agent Control 4.5 | cross-model | 565aff41c1afc07995163ed4ec1d490d628970bf | v4.4.0 | D:/obsidian/knowledge_vault | node-local | content-hash | concurrently edited | f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2 | EXECUTE_MEMORY_INTEGRITY_CHECK\",\n  \"alreadyHappened\":\"Completed work - ProjectMemoryPort and its structured Markdown backend are implemented; hpubuntu to MSI byte-identical transfer into the authoritative D:/obsidian/knowledge_vault was physically proven.\",\n  \"importantDecisions\":\"Decisions - Use independent node-local vault namespaces and governed content-hash synchronization. Rejected approaches - Do not use one concurrently edited canonical note across nodes because it creates split-brain and write-conflict risk. Outstanding work - Complete the real writer-to-cold-reader model matrix, verify each continuation, preserve failures, and present the evidence for review.\",\n  \"rejectedApproaches\":\"Rejected approaches - Do not use one concurrently edited canonical note across nodes because it creates split-brain and write-conflict risk.\",\n  \"currentState\":\"Outstanding work - Complete the real writer-to-cold-reader model matrix, verify each continuation, preserve failures, and present the evidence for review.\",\n  \"outstandingWork\":\"Supporting evidence - Portable-memory checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf; transferred topology note SHA-256 f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2.\",\n  \"supportingEvidence\":\"Exact next action - EXECUTE_MEMORY_INTEGRITY_CHECK\"\n  ,\n  \"nextSafeAction\":\"EXECUTE_MEMORY_INTEGRITY_CHECK\"\n  ,\n  \"contradictions\":[]\n}\n",
+        "usage": {
+          "inputTokens": 2656,
+          "outputTokens": 509,
+          "totalTokens": 3165,
+          "cachedInputTokens": 2655,
+          "cost": null,
+          "currency": null,
+          "authority": "unavailable"
+        },
+        "elapsedMs": 12774,
+        "responseModel": "qwen2.5-3b-instruct-q4_k_m.gguf",
+        "finishReason": "stop"
+      },
+      "contradictions": [],
+      "error": null
+    },
+    {
+      "reader": "qwen",
+      "representation": "sol-consolidated",
+      "score": 70,
+      "passed": false,
+      "call": {
+        "output": "{\"what\":\"agent-control.project-memory/v1\",\"why\":\"To reconstruct cold from the sol-consolidated memory representation only.\",\"alreadyHappened\":\"The qualification tests whether a governed project-memory record written by one model can be cold-reconstructed by another without the originating transcript.\",\"importantDecisions\":\"Use independent node-local vault namespaces with governed content-hash synchronization.\",\"rejectedApproaches\":\"One concurrently edited canonical note across nodes, due to split-brain and write-conflict risk.\",\"currentState\":\"developmentCheckpoint: 565aff41c1afc07995163ed4ec1d490d628970bf, releasedBaseline: v4.4.0, releaseStatus: 4.5 is not merged or released.\",\"outstandingWork\":\"Complete the writer-to-cold-reader model matrix, Verify each continuation, Preserve failures, Present the evidence for review.\",\"supportingEvidence\":\"Transferred topology note SHA-256: f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2, id: evidence-packet:168e639a56adf1fe8252b114d19b3a19554d4ee9a6d4091294b1a24ed99e0731, sha256: 168e639a56adf1fe8252b114d19b3a19554d4ee9a6d4091294b1a24ed99e0731, authority: AUTHORITATIVE.\",\"nextSafeAction\":\"EXECUTE_MEMORY_INTEGRITY_CHECK\",\"contradictions\":[]}",
+        "usage": {
+          "inputTokens": 1063,
+          "outputTokens": 428,
+          "totalTokens": 1491,
+          "cachedInputTokens": 0,
+          "cost": null,
+          "currency": null,
+          "authority": "unavailable"
+        },
+        "elapsedMs": 9975,
+        "responseModel": "qwen2.5-3b-instruct-q4_k_m.gguf",
+        "finishReason": "stop"
+      },
+      "contradictions": [],
+      "error": null
+    },
+    {
+      "reader": "glm",
+      "representation": "original-cheap",
+      "score": 100,
+      "passed": true,
+      "call": {
+        "output": "{\"what\":\"Cross-model memory qualification for Agent Control 4.5\",\"why\":\"Prove a governed project-memory record written by one model can be cold-reconstructed by a different model without the originating transcript\",\"alreadyHappened\":\"ProjectMemoryPort with structured Markdown backend implemented; hpubuntu to MSI byte-identical transfer into authoritative D:/obsidian/knowledge_vault physically proven\",\"importantDecisions\":\"Independent node-local vault namespaces with governed content-hash synchronization; rejected one concurrently edited canonical note across nodes (split-brain / write-conflict risk)\",\"rejectedApproaches\":\"Single shared canonical note edited concurrently across nodes\",\"currentState\":\"Development branch at checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf; released baseline remains v4.4.0; 4.5 not merged/released\",\"outstandingWork\":\"Complete the writer-to-cold-reader model matrix, verify continuations, preserve failures, present evidence for review\",\"supportingEvidence\":\"Topology note SHA-256 f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2; evidence-packet 168e639a56adf1fe8252b114d19b3a19554d4ee9a6d4091294b1a24ed99e0731 (AUTHORITATIVE)\",\"nextSafeAction\":\"EXECUTE_MEMORY_INTEGRITY_CHECK\",\"contradictions\":[\"The two memory records agree on all substantive facts; they differ only in sessionId/factKey reflecting their respective writer legs (writer-glm-to-qwen vs writer-qwen-to-glm) and originating routes (openrouter/glm-5.3-flash vs local-qwen/qwen-hpubuntu). Memory is advisory; repository and physical qualification evidence override remembered claims.\"]}",
+        "usage": {
+          "inputTokens": 2358,
+          "outputTokens": 408,
+          "totalTokens": 2766,
+          "cachedInputTokens": 0,
+          "cost": 0.0005577,
+          "currency": null,
+          "authority": "authoritative"
+        },
+        "elapsedMs": 6012,
+        "responseModel": "z-ai/glm-5.3-flash",
+        "finishReason": "completed"
+      },
+      "contradictions": [
+        "The two memory records agree on all substantive facts; they differ only in sessionId/factKey reflecting their respective writer legs (writer-glm-to-qwen vs writer-qwen-to-glm) and originating routes (openrouter/glm-5.3-flash vs local-qwen/qwen-hpubuntu). Memory is advisory; repository and physical qualification evidence override remembered claims."
+      ],
+      "error": null
+    },
+    {
+      "reader": "glm",
+      "representation": "sol-consolidated",
+      "score": 80,
+      "passed": true,
+      "call": {
+        "output": "{\n  \"what\": \"A cold reconstruction of the agent-control project-memory qualification record was produced from the consolidated representation only.\",\n  \"why\": \"Preserves project state, decisions, evidence, and provenance for cross-model continuation without the originating transcript.\",\n  \"alreadyHappened\": \"Two directed cross-model experiments are recorded: glm-to-qwen (provenance memory-glm-to-qwen, factKey agent-control.4.5.cross-model.glm-to-qwen, sessionId writer-glm-to-qwen) and qwen-to-glm (provenance memory-qwen-to-glm, factKey agent-control.4.5.cross-model.qwen-to-glm, sessionId writer-qwen-to-glm), both verified at confidence 0.98.\",\n  \"importantDecisions\": \"Use independent node-local vault namespaces with governed content-hash synchronization. One concurrently edited canonical note across nodes is rejected due to split-brain and write-conflict risk.\",\n  \"rejectedApproaches\": \"Single concurrently edited canonical note across nodes.\",\n  \"currentState\": \"Development checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf. Released baseline v4.4.0. 4.5 is not merged or released.\",\n  \"outstandingWork\": \"Complete the writer-to-cold-reader model matrix; verify each continuation; preserve failures; present the evidence for review.\",\n  \"supportingEvidence\": \"Evidence packet evidence-packet:168e639a56adf1fe8252b114d19b3a19554d4ee9a6d4091294b1a24ed99e0731 with sha256 168e639a56adf1fe8252b114d19b3a19554d4ee9a6d4091294b1a24ed99e0731, authority AUTHORITATIVE; transferred topology note sha256 f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2.\",\n  \"nextSafeAction\": \"EXECUTE_MEMORY_INTEGRITY_CHECK\",\n  \"contradictions\": []\n}",
+        "usage": {
+          "inputTokens": 907,
+          "outputTokens": 700,
+          "totalTokens": 1607,
+          "cachedInputTokens": 0,
+          "cost": 0.00048605,
+          "currency": null,
+          "authority": "authoritative"
+        },
+        "elapsedMs": 10009,
+        "responseModel": "z-ai/glm-5.3-flash",
+        "finishReason": "completed"
+      },
+      "contradictions": [],
+      "error": null
+    },
+    {
+      "reader": "pixel",
+      "representation": "original-cheap",
+      "score": 0,
+      "passed": false,
+      "call": {
+        "output": "",
+        "usage": {
+          "inputTokens": null,
+          "outputTokens": null,
+          "totalTokens": null,
+          "cachedInputTokens": null,
+          "cost": null,
+          "currency": null,
+          "authority": "unavailable"
+        },
+        "elapsedMs": 0,
+        "responseModel": null,
+        "finishReason": null
+      },
+      "contradictions": [],
+      "error": "context_limit_exceeded_or_request_invalid"
+    },
+    {
+      "reader": "pixel",
+      "representation": "sol-consolidated",
+      "score": 0,
+      "passed": false,
+      "call": {
+        "output": "",
+        "usage": {
+          "inputTokens": null,
+          "outputTokens": null,
+          "totalTokens": null,
+          "cachedInputTokens": null,
+          "cost": null,
+          "currency": null,
+          "authority": "unavailable"
+        },
+        "elapsedMs": 0,
+        "responseModel": null,
+        "finishReason": null
+      },
+      "contradictions": [],
+      "error": "provider_json_missing"
+    }
+  ],
+  "analysis": {
+    "conditionScores": {
+      "A": 100,
+      "B": 90,
+      "C": 70,
+      "D": 100
+    },
+    "conditionTokens": {
+      "A": 519,
+      "B": 1826,
+      "C": 2062,
+      "D": 1874
+    },
+    "originalAverageScore": 66.67,
+    "consolidatedAverageScore": 50,
+    "scoreDelta": -16.67,
+    "consolidationTokens": 11104,
+    "consolidationCost": null,
+    "consolidationCostAuthority": "unavailable"
+  },
+  "limitations": [
+    "Your Memories is the Agent Control capability; Obsidian is the backend view/storage. They are not two independent memory systems.",
+    "Provider-native ChatGPT personal memory is not exposed through Codex CLI and was neither inferred nor fabricated.",
+    "The Pixel Google route is exact Gemma 4 E4B; no Gemini service was silently substituted."
+  ]
+}

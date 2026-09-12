@@ -1,4 +1,44 @@
-# Agent Control 4.4.0
+# Agent Control 4.5.0 candidate
+
+Agent Control 4.5 now tests an energy-minimal execution hierarchy: known
+deterministic result, deterministic tool, validated **Your Memories** lookup,
+governed deterministic skill, specialist model, small general model, stronger
+general model, then premium reasoner. Repeated verified model reasoning can be
+nominated—but never automatically promoted—as a versioned deterministic skill
+whose handler identity, source Work Parcels, contracts, assumptions, freshness,
+invalidation conditions and independent verifier are durable. Contract mismatch,
+novel state, stale evidence or failed verification escalates instead of forcing
+reuse. See the [skill promotion guide](docs/deterministic-skill-promotion.md) and
+[physical evidence](docs/evidence/agent-control-4.5-deterministic-skill-promotion-20260911.md).
+
+Agent Control 4.5 adds governed local skill learning: a repeated bounded task may
+be proposed as a candidate, but training begins only after an approved,
+provenance-bound dataset and frozen baseline exist. A learned specialist is the
+explicit composition of an immutable base model, a versioned adaptation and
+independent qualification evidence. Only materially improved, current and
+compatible compositions may enter ordinary governed routing; the base route
+remains available and inappropriate tasks fail closed before adapter loading.
+
+The initial physical qualification uses CPU LoRA over a pinned 135M-parameter
+base for strict route-intent JSON. It keeps active GPU-backed voice and model
+services untouched and distinguishes learned adaptation from transient Warm
+Expert/cache state. The **Learned Specialists** dashboard and POE expose the
+candidate lifecycle, exact identity, measured improvement, limitations and route
+decisions without implying uncontrolled online learning. See the
+[operator guide](docs/skill-learning.md), [architecture decision](docs/agent-control-4.5-skill-learning-architecture-review.md),
+[qualification](docs/evidence/agent-control-4.5-governed-skill-learning-20260911.md)
+and [deployment guide](docs/DEPLOYMENT.md).
+
+The separate 4.5 **Your Memories** portability experiment adds a provider-neutral structured-Markdown memory port with bounded metadata/lexical recall, provenance and freshness checks, explicit conflict rejection, atomic node-local writes and content-addressed synchronization rules. Obsidian is one viewable storage substrate, not a core dependency. The [physical cross-model qualification](docs/evidence/agent-control-4.5-cross-model-memory-qualification-20260911.md) passed 5/12 requested matrix cells and one complete POE→Sol→memory→Luna→verification lifecycle; its recommendation remains **EXPERIMENTAL**, not release-ready. See the [memory portability guide](docs/project-memory-portability.md).
+
+The [authoritative follow-up release-gate reconciliation](docs/evidence/agent-control-4.5-release-gate-20260912.md) classifies all seven historical failed memory cells, preserves provider failures, and reruns every physically available route without weakening semantic verification. It also records the governed MSI authentication block, bounded warm-residency measurement, and a fresh live POE→Work Parcel→memory→cold-reader→verification recording. The result remains **EXPERIMENTAL**: some prompt/schema defects were repaired, but real model-capability failures, unavailable MSI authentication, disproven specialist energy advantage, and unavailable whole-node energy evidence remain. The [4.5 release-candidate notes](docs/release-notes-4.5.0.md) and [candidate manifest](docs/evidence/agent-control-4.5-release-manifest.json) preserve those limits for release review.
+
+The isolated programme also includes [energy-aware intelligence](docs/energy-aware-intelligence.md): scope-safe power telemetry, idle-baseline accounting, expected-total-energy routing, and specialist training break-even. Comparable Intel-package, DRAM and NVIDIA-board measurements **disproved** an energy saving for the current route-intent specialist: retained-process execution remained above warm Qwen, real bounded Your Memories retrieval did not improve it, and deterministic no-LLM routing was lowest. This remains experimental; see the [specialist-energy evidence](docs/evidence/agent-control-4.5-specialist-energy-qualification-20260911.md).
+
+Agent Control 4.4.0 remains the latest formally released baseline. Agent Control
+4.5.0 is an experimental release candidate; it must not be tagged as a stable
+release while the mandatory open gates in the authoritative reconciliation
+remain unresolved.
 
 **Your Memories** is the user-facing Agent Control capability for finding relevant prior context, checking its governance and provenance, rejecting stale or unrelated memories, and safely presenting accepted context in a session. Memories remain advisory and cannot override Work Parcels, batons, policy, authoritative evidence or execution state. The 4.4 release includes the governed UX Session Capture/Replay projection and the qualified memory architecture; MARM remains one optional backend and automatic memory consolidation/model swapping is not a released runtime feature.
 

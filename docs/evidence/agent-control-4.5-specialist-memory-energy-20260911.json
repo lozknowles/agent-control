@@ -1,0 +1,1068 @@
+{
+  "schema": "agent-control.specialist-energy-qualification/v1",
+  "observedAt": "2026-09-11T20:26:36.416Z",
+  "boundary": "Intel package + DRAM + NVIDIA GPU board; excludes motherboard, storage, PSU losses and peripherals",
+  "baseline": {
+    "nodeId": "controller",
+    "scope": "MEASURED_COMPONENTS",
+    "averageWatts": 15.121352529469547,
+    "sampleCount": 32,
+    "startedAt": "2026-09-11T20:25:02.702Z",
+    "completedAt": "2026-09-11T20:25:05.729Z",
+    "authority": "MEASURED",
+    "source": "intel-rapl-package+dram+nvidia-smi-board-power",
+    "limitations": [
+      "excludes_motherboard_storage_psu_and_peripherals",
+      "cpu_power_is_interval_average",
+      "shared_gpu_processes_present"
+    ]
+  },
+  "tasks": [
+    {
+      "id": "release-review",
+      "input": "Please review the repository release notes using read-only evidence.",
+      "lane": "LANE_REVIEW"
+    },
+    {
+      "id": "provider-verification",
+      "input": "Please verify the provider route against frozen criteria.",
+      "lane": "LANE_VERIFY"
+    },
+    {
+      "id": "telemetry-research",
+      "input": "Please research the dashboard telemetry without changing systems.",
+      "lane": "LANE_RESEARCH"
+    }
+  ],
+  "repeats": 5,
+  "results": [
+    {
+      "task": "release-review",
+      "route": "specialist-memory",
+      "repeat": 0,
+      "passed": true,
+      "output": {
+        "lane": "LANE_REVIEW"
+      },
+      "memory": {
+        "backend": "ProjectMemoryPort/structured-markdown-vault",
+        "accepted": [
+          "route-release-review"
+        ],
+        "bytesInjected": 125,
+        "estimatedTokens": 32,
+        "retrievalLatencyMs": 16
+      },
+      "usage": {
+        "input": 102,
+        "output": 10,
+        "total": 112
+      },
+      "energy": {
+        "schema": "agent-control.energy-execution/v1",
+        "id": "energy-fcbb1a87-232b-4f81-923c-0b3b0a9a6959",
+        "parcelId": "energy-release-review-specialist-memory-0",
+        "stageId": "release-review",
+        "route": {
+          "providerId": "learned-specialist",
+          "modelId": "specialist-memory",
+          "nodeId": "controller",
+          "accountProfileId": null
+        },
+        "kind": "INFERENCE",
+        "startedAt": "2026-09-11T20:25:05.757Z",
+        "completedAt": "2026-09-11T20:25:12.019Z",
+        "elapsedMs": 6262,
+        "scope": "MEASURED_COMPONENTS",
+        "authority": "MEASURED",
+        "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+        "sampleCount": 64,
+        "averageWatts": 30.559930101185216,
+        "peakWatts": 31.72630825512963,
+        "grossWh": 0.053157300637117176,
+        "incrementalWh": 0.026854547987245424,
+        "joules": 96.67637275408353,
+        "idleBaselineWatts": 15.121352529469547,
+        "tokens": 112,
+        "whPerToken": 0.00023977274988611985,
+        "whPerSuccessfulParcel": 0.026854547987245424,
+        "verified": true,
+        "successful": true,
+        "limitations": [
+          "excludes_motherboard_storage_psu_and_peripherals",
+          "cpu_power_is_interval_average",
+          "shared_gpu_processes_present",
+          "measurement_not_whole_node"
+        ],
+        "evidence": [
+          "held-out:release-review",
+          "verifier:PASS",
+          "project-memory:route-release-review",
+          "memory-bytes:125"
+        ],
+        "sha256": "7f955727b8c357e4db0ef1690eaaf0f6012e393e54e4f3ba7186f1297f684591"
+      }
+    },
+    {
+      "task": "release-review",
+      "route": "specialist-memory",
+      "repeat": 1,
+      "passed": true,
+      "output": {
+        "lane": "LANE_REVIEW"
+      },
+      "memory": {
+        "backend": "ProjectMemoryPort/structured-markdown-vault",
+        "accepted": [
+          "route-release-review"
+        ],
+        "bytesInjected": 125,
+        "estimatedTokens": 32,
+        "retrievalLatencyMs": 11
+      },
+      "usage": {
+        "input": 102,
+        "output": 10,
+        "total": 112
+      },
+      "energy": {
+        "schema": "agent-control.energy-execution/v1",
+        "id": "energy-bf7448e6-3e6e-47b7-a176-c2b92bce25d3",
+        "parcelId": "energy-release-review-specialist-memory-1",
+        "stageId": "release-review",
+        "route": {
+          "providerId": "learned-specialist",
+          "modelId": "specialist-memory",
+          "nodeId": "controller",
+          "accountProfileId": null
+        },
+        "kind": "INFERENCE",
+        "startedAt": "2026-09-11T20:25:12.057Z",
+        "completedAt": "2026-09-11T20:25:18.100Z",
+        "elapsedMs": 6043,
+        "scope": "MEASURED_COMPONENTS",
+        "authority": "MEASURED",
+        "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+        "sampleCount": 62,
+        "averageWatts": 29.237910691898144,
+        "peakWatts": 31.294627554383652,
+        "grossWh": 0.049079081753094576,
+        "incrementalWh": 0.02369621138209889,
+        "joules": 85.306360975556,
+        "idleBaselineWatts": 15.121352529469547,
+        "tokens": 112,
+        "whPerToken": 0.00021157331591159723,
+        "whPerSuccessfulParcel": 0.02369621138209889,
+        "verified": true,
+        "successful": true,
+        "limitations": [
+          "excludes_motherboard_storage_psu_and_peripherals",
+          "cpu_power_is_interval_average",
+          "shared_gpu_processes_present",
+          "measurement_not_whole_node"
+        ],
+        "evidence": [
+          "held-out:release-review",
+          "verifier:PASS",
+          "project-memory:route-release-review",
+          "memory-bytes:125"
+        ],
+        "sha256": "ed5a3050005f9eae6eeba526636782b2b1df8bcce855279ba391c8035cef471e"
+      }
+    },
+    {
+      "task": "release-review",
+      "route": "specialist-memory",
+      "repeat": 2,
+      "passed": true,
+      "output": {
+        "lane": "LANE_REVIEW"
+      },
+      "memory": {
+        "backend": "ProjectMemoryPort/structured-markdown-vault",
+        "accepted": [
+          "route-release-review"
+        ],
+        "bytesInjected": 125,
+        "estimatedTokens": 32,
+        "retrievalLatencyMs": 14
+      },
+      "usage": {
+        "input": 102,
+        "output": 10,
+        "total": 112
+      },
+      "energy": {
+        "schema": "agent-control.energy-execution/v1",
+        "id": "energy-0106b832-af18-473e-b8d6-a584d479a802",
+        "parcelId": "energy-release-review-specialist-memory-2",
+        "stageId": "release-review",
+        "route": {
+          "providerId": "learned-specialist",
+          "modelId": "specialist-memory",
+          "nodeId": "controller",
+          "accountProfileId": null
+        },
+        "kind": "INFERENCE",
+        "startedAt": "2026-09-11T20:25:18.125Z",
+        "completedAt": "2026-09-11T20:25:23.758Z",
+        "elapsedMs": 5633,
+        "scope": "MEASURED_COMPONENTS",
+        "authority": "MEASURED",
+        "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+        "sampleCount": 58,
+        "averageWatts": 27.43192700887438,
+        "peakWatts": 28.808339222614837,
+        "grossWh": 0.042923345789163715,
+        "incrementalWh": 0.019262629456246506,
+        "joules": 69.34546604248742,
+        "idleBaselineWatts": 15.121352529469547,
+        "tokens": 112,
+        "whPerToken": 0.00017198776300220094,
+        "whPerSuccessfulParcel": 0.019262629456246506,
+        "verified": true,
+        "successful": true,
+        "limitations": [
+          "excludes_motherboard_storage_psu_and_peripherals",
+          "cpu_power_is_interval_average",
+          "shared_gpu_processes_present",
+          "measurement_not_whole_node"
+        ],
+        "evidence": [
+          "held-out:release-review",
+          "verifier:PASS",
+          "project-memory:route-release-review",
+          "memory-bytes:125"
+        ],
+        "sha256": "b24085222824a4c646faf078960583619ebb15502c88abf0827dbdf7995a4981"
+      }
+    },
+    {
+      "task": "release-review",
+      "route": "specialist-memory",
+      "repeat": 3,
+      "passed": true,
+      "output": {
+        "lane": "LANE_REVIEW"
+      },
+      "memory": {
+        "backend": "ProjectMemoryPort/structured-markdown-vault",
+        "accepted": [
+          "route-release-review"
+        ],
+        "bytesInjected": 125,
+        "estimatedTokens": 32,
+        "retrievalLatencyMs": 10
+      },
+      "usage": {
+        "input": 102,
+        "output": 10,
+        "total": 112
+      },
+      "energy": {
+        "schema": "agent-control.energy-execution/v1",
+        "id": "energy-1c91c8b5-fb50-4344-ac98-9c715d1a5c41",
+        "parcelId": "energy-release-review-specialist-memory-3",
+        "stageId": "release-review",
+        "route": {
+          "providerId": "learned-specialist",
+          "modelId": "specialist-memory",
+          "nodeId": "controller",
+          "accountProfileId": null
+        },
+        "kind": "INFERENCE",
+        "startedAt": "2026-09-11T20:25:23.786Z",
+        "completedAt": "2026-09-11T20:25:30.222Z",
+        "elapsedMs": 6436,
+        "scope": "MEASURED_COMPONENTS",
+        "authority": "MEASURED",
+        "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+        "sampleCount": 66,
+        "averageWatts": 30.939779165984092,
+        "peakWatts": 32.715251509054326,
+        "grossWh": 0.05531344964229823,
+        "incrementalWh": 0.028279831620168783,
+        "joules": 101.80739383260762,
+        "idleBaselineWatts": 15.121352529469547,
+        "tokens": 112,
+        "whPerToken": 0.00025249849660864985,
+        "whPerSuccessfulParcel": 0.028279831620168783,
+        "verified": true,
+        "successful": true,
+        "limitations": [
+          "excludes_motherboard_storage_psu_and_peripherals",
+          "cpu_power_is_interval_average",
+          "shared_gpu_processes_present",
+          "measurement_not_whole_node"
+        ],
+        "evidence": [
+          "held-out:release-review",
+          "verifier:PASS",
+          "project-memory:route-release-review",
+          "memory-bytes:125"
+        ],
+        "sha256": "80f0d71d47289e9b8ebc7a2c6e951cb9da28ebe63109e632f0428f4fb17113e1"
+      }
+    },
+    {
+      "task": "release-review",
+      "route": "specialist-memory",
+      "repeat": 4,
+      "passed": true,
+      "output": {
+        "lane": "LANE_REVIEW"
+      },
+      "memory": {
+        "backend": "ProjectMemoryPort/structured-markdown-vault",
+        "accepted": [
+          "route-release-review"
+        ],
+        "bytesInjected": 125,
+        "estimatedTokens": 32,
+        "retrievalLatencyMs": 12
+      },
+      "usage": {
+        "input": 102,
+        "output": 10,
+        "total": 112
+      },
+      "energy": {
+        "schema": "agent-control.energy-execution/v1",
+        "id": "energy-01f277c5-1d0e-46ac-9c5b-97cfb9ab2ab8",
+        "parcelId": "energy-release-review-specialist-memory-4",
+        "stageId": "release-review",
+        "route": {
+          "providerId": "learned-specialist",
+          "modelId": "specialist-memory",
+          "nodeId": "controller",
+          "accountProfileId": null
+        },
+        "kind": "INFERENCE",
+        "startedAt": "2026-09-11T20:25:30.248Z",
+        "completedAt": "2026-09-11T20:25:35.680Z",
+        "elapsedMs": 5432,
+        "scope": "MEASURED_COMPONENTS",
+        "authority": "MEASURED",
+        "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+        "sampleCount": 56,
+        "averageWatts": 26.044294338642743,
+        "peakWatts": 27.13617302052786,
+        "grossWh": 0.03929794634652983,
+        "incrementalWh": 0.016481505529841338,
+        "joules": 59.33341990742882,
+        "idleBaselineWatts": 15.121352529469547,
+        "tokens": 112,
+        "whPerToken": 0.00014715629937358336,
+        "whPerSuccessfulParcel": 0.016481505529841338,
+        "verified": true,
+        "successful": true,
+        "limitations": [
+          "excludes_motherboard_storage_psu_and_peripherals",
+          "cpu_power_is_interval_average",
+          "shared_gpu_processes_present",
+          "measurement_not_whole_node"
+        ],
+        "evidence": [
+          "held-out:release-review",
+          "verifier:PASS",
+          "project-memory:route-release-review",
+          "memory-bytes:125"
+        ],
+        "sha256": "6b948b4557559dc9971b6bf13e49a7e358ad53f7c5c3fd4c485feefb6347cce5"
+      }
+    },
+    {
+      "task": "provider-verification",
+      "route": "specialist-memory",
+      "repeat": 0,
+      "passed": true,
+      "output": {
+        "lane": "LANE_VERIFY"
+      },
+      "memory": {
+        "backend": "ProjectMemoryPort/structured-markdown-vault",
+        "accepted": [
+          "route-provider-verification"
+        ],
+        "bytesInjected": 132,
+        "estimatedTokens": 33,
+        "retrievalLatencyMs": 13
+      },
+      "usage": {
+        "input": 101,
+        "output": 11,
+        "total": 112
+      },
+      "energy": {
+        "schema": "agent-control.energy-execution/v1",
+        "id": "energy-235e6d44-6314-48da-87fa-8d19536611a4",
+        "parcelId": "energy-provider-verification-specialist-memory-0",
+        "stageId": "provider-verification",
+        "route": {
+          "providerId": "learned-specialist",
+          "modelId": "specialist-memory",
+          "nodeId": "controller",
+          "accountProfileId": null
+        },
+        "kind": "INFERENCE",
+        "startedAt": "2026-09-11T20:25:35.705Z",
+        "completedAt": "2026-09-11T20:25:42.240Z",
+        "elapsedMs": 6535,
+        "scope": "MEASURED_COMPONENTS",
+        "authority": "MEASURED",
+        "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+        "sampleCount": 67,
+        "averageWatts": 32.452036638447005,
+        "peakWatts": 34.235214144185335,
+        "grossWh": 0.0589094609534031,
+        "incrementalWh": 0.031460005736713245,
+        "joules": 113.25602065216768,
+        "idleBaselineWatts": 15.121352529469547,
+        "tokens": 112,
+        "whPerToken": 0.0002808929083635111,
+        "whPerSuccessfulParcel": 0.031460005736713245,
+        "verified": true,
+        "successful": true,
+        "limitations": [
+          "excludes_motherboard_storage_psu_and_peripherals",
+          "cpu_power_is_interval_average",
+          "shared_gpu_processes_present",
+          "measurement_not_whole_node"
+        ],
+        "evidence": [
+          "held-out:provider-verification",
+          "verifier:PASS",
+          "project-memory:route-provider-verification",
+          "memory-bytes:132"
+        ],
+        "sha256": "178faee40e78b7e86711c61f18cff03b1ce5579edd5b7c5bde6bf4e525c05cb0"
+      }
+    },
+    {
+      "task": "provider-verification",
+      "route": "specialist-memory",
+      "repeat": 1,
+      "passed": true,
+      "output": {
+        "lane": "LANE_VERIFY"
+      },
+      "memory": {
+        "backend": "ProjectMemoryPort/structured-markdown-vault",
+        "accepted": [
+          "route-provider-verification"
+        ],
+        "bytesInjected": 132,
+        "estimatedTokens": 33,
+        "retrievalLatencyMs": 12
+      },
+      "usage": {
+        "input": 101,
+        "output": 11,
+        "total": 112
+      },
+      "energy": {
+        "schema": "agent-control.energy-execution/v1",
+        "id": "energy-195dbd98-a6e8-4f73-a794-01de145956f4",
+        "parcelId": "energy-provider-verification-specialist-memory-1",
+        "stageId": "provider-verification",
+        "route": {
+          "providerId": "learned-specialist",
+          "modelId": "specialist-memory",
+          "nodeId": "controller",
+          "accountProfileId": null
+        },
+        "kind": "INFERENCE",
+        "startedAt": "2026-09-11T20:25:42.267Z",
+        "completedAt": "2026-09-11T20:25:48.704Z",
+        "elapsedMs": 6437,
+        "scope": "MEASURED_COMPONENTS",
+        "authority": "MEASURED",
+        "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+        "sampleCount": 66,
+        "averageWatts": 31.42026707674145,
+        "peakWatts": 32.710993346742995,
+        "grossWh": 0.05618118310360687,
+        "incrementalWh": 0.02914336470577479,
+        "joules": 104.91611294078925,
+        "idleBaselineWatts": 15.121352529469547,
+        "tokens": 112,
+        "whPerToken": 0.00026020861344441777,
+        "whPerSuccessfulParcel": 0.02914336470577479,
+        "verified": true,
+        "successful": true,
+        "limitations": [
+          "excludes_motherboard_storage_psu_and_peripherals",
+          "cpu_power_is_interval_average",
+          "shared_gpu_processes_present",
+          "measurement_not_whole_node"
+        ],
+        "evidence": [
+          "held-out:provider-verification",
+          "verifier:PASS",
+          "project-memory:route-provider-verification",
+          "memory-bytes:132"
+        ],
+        "sha256": "c9eb49a98a8f5632b59728837a0c664626cd7a41f5ba2cdbf74d8ab6e230e6d8"
+      }
+    },
+    {
+      "task": "provider-verification",
+      "route": "specialist-memory",
+      "repeat": 2,
+      "passed": true,
+      "output": {
+        "lane": "LANE_VERIFY"
+      },
+      "memory": {
+        "backend": "ProjectMemoryPort/structured-markdown-vault",
+        "accepted": [
+          "route-provider-verification"
+        ],
+        "bytesInjected": 132,
+        "estimatedTokens": 33,
+        "retrievalLatencyMs": 16
+      },
+      "usage": {
+        "input": 101,
+        "output": 11,
+        "total": 112
+      },
+      "energy": {
+        "schema": "agent-control.energy-execution/v1",
+        "id": "energy-8692c133-b68f-4d26-af61-d8e95b1d4fc4",
+        "parcelId": "energy-provider-verification-specialist-memory-2",
+        "stageId": "provider-verification",
+        "route": {
+          "providerId": "learned-specialist",
+          "modelId": "specialist-memory",
+          "nodeId": "controller",
+          "accountProfileId": null
+        },
+        "kind": "INFERENCE",
+        "startedAt": "2026-09-11T20:25:48.731Z",
+        "completedAt": "2026-09-11T20:25:54.331Z",
+        "elapsedMs": 5600,
+        "scope": "MEASURED_COMPONENTS",
+        "authority": "MEASURED",
+        "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+        "sampleCount": 57,
+        "averageWatts": 27.491507936507936,
+        "peakWatts": 28.85822222222222,
+        "grossWh": 0.04276456790123457,
+        "incrementalWh": 0.019242463966504163,
+        "joules": 69.27287027941499,
+        "idleBaselineWatts": 15.121352529469547,
+        "tokens": 112,
+        "whPerToken": 0.0001718077139866443,
+        "whPerSuccessfulParcel": 0.019242463966504163,
+        "verified": true,
+        "successful": true,
+        "limitations": [
+          "excludes_motherboard_storage_psu_and_peripherals",
+          "cpu_power_is_interval_average",
+          "shared_gpu_processes_present",
+          "measurement_not_whole_node"
+        ],
+        "evidence": [
+          "held-out:provider-verification",
+          "verifier:PASS",
+          "project-memory:route-provider-verification",
+          "memory-bytes:132"
+        ],
+        "sha256": "516ac1efbebb44c25968b0541db79a103697f15b98975c9d0e94825ed56e94bf"
+      }
+    },
+    {
+      "task": "provider-verification",
+      "route": "specialist-memory",
+      "repeat": 3,
+      "passed": true,
+      "output": {
+        "lane": "LANE_VERIFY"
+      },
+      "memory": {
+        "backend": "ProjectMemoryPort/structured-markdown-vault",
+        "accepted": [
+          "route-provider-verification"
+        ],
+        "bytesInjected": 132,
+        "estimatedTokens": 33,
+        "retrievalLatencyMs": 11
+      },
+      "usage": {
+        "input": 101,
+        "output": 11,
+        "total": 112
+      },
+      "energy": {
+        "schema": "agent-control.energy-execution/v1",
+        "id": "energy-f1afadde-db04-42a4-a214-00f4d1901143",
+        "parcelId": "energy-provider-verification-specialist-memory-3",
+        "stageId": "provider-verification",
+        "route": {
+          "providerId": "learned-specialist",
+          "modelId": "specialist-memory",
+          "nodeId": "controller",
+          "accountProfileId": null
+        },
+        "kind": "INFERENCE",
+        "startedAt": "2026-09-11T20:25:54.357Z",
+        "completedAt": "2026-09-11T20:26:00.782Z",
+        "elapsedMs": 6425,
+        "scope": "MEASURED_COMPONENTS",
+        "authority": "MEASURED",
+        "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+        "sampleCount": 66,
+        "averageWatts": 31.680923011492176,
+        "peakWatts": 33.42418604651162,
+        "grossWh": 0.05654164731912145,
+        "incrementalWh": 0.029554233429720942,
+        "joules": 106.3952403469954,
+        "idleBaselineWatts": 15.121352529469547,
+        "tokens": 112,
+        "whPerToken": 0.00026387708419393696,
+        "whPerSuccessfulParcel": 0.029554233429720942,
+        "verified": true,
+        "successful": true,
+        "limitations": [
+          "excludes_motherboard_storage_psu_and_peripherals",
+          "cpu_power_is_interval_average",
+          "shared_gpu_processes_present",
+          "measurement_not_whole_node"
+        ],
+        "evidence": [
+          "held-out:provider-verification",
+          "verifier:PASS",
+          "project-memory:route-provider-verification",
+          "memory-bytes:132"
+        ],
+        "sha256": "3e7a61064933874ac08ed9fc2ac5cb7d6d4500c58c85d331272a5fdaf92287ca"
+      }
+    },
+    {
+      "task": "provider-verification",
+      "route": "specialist-memory",
+      "repeat": 4,
+      "passed": true,
+      "output": {
+        "lane": "LANE_VERIFY"
+      },
+      "memory": {
+        "backend": "ProjectMemoryPort/structured-markdown-vault",
+        "accepted": [
+          "route-provider-verification"
+        ],
+        "bytesInjected": 132,
+        "estimatedTokens": 33,
+        "retrievalLatencyMs": 10
+      },
+      "usage": {
+        "input": 101,
+        "output": 11,
+        "total": 112
+      },
+      "energy": {
+        "schema": "agent-control.energy-execution/v1",
+        "id": "energy-63612cbd-835c-4eb9-991d-dc3cfd126a50",
+        "parcelId": "energy-provider-verification-specialist-memory-4",
+        "stageId": "provider-verification",
+        "route": {
+          "providerId": "learned-specialist",
+          "modelId": "specialist-memory",
+          "nodeId": "controller",
+          "accountProfileId": null
+        },
+        "kind": "INFERENCE",
+        "startedAt": "2026-09-11T20:26:00.808Z",
+        "completedAt": "2026-09-11T20:26:06.503Z",
+        "elapsedMs": 5695,
+        "scope": "MEASURED_COMPONENTS",
+        "authority": "MEASURED",
+        "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+        "sampleCount": 58,
+        "averageWatts": 26.613978376320784,
+        "peakWatts": 27.944125874125877,
+        "grossWh": 0.04210183523698524,
+        "incrementalWh": 0.018180695610504942,
+        "joules": 65.45050419781779,
+        "idleBaselineWatts": 15.121352529469547,
+        "tokens": 112,
+        "whPerToken": 0.0001623276393795084,
+        "whPerSuccessfulParcel": 0.018180695610504942,
+        "verified": true,
+        "successful": true,
+        "limitations": [
+          "excludes_motherboard_storage_psu_and_peripherals",
+          "cpu_power_is_interval_average",
+          "shared_gpu_processes_present",
+          "measurement_not_whole_node"
+        ],
+        "evidence": [
+          "held-out:provider-verification",
+          "verifier:PASS",
+          "project-memory:route-provider-verification",
+          "memory-bytes:132"
+        ],
+        "sha256": "875323f65bd673b467acc6c81e38842e70ecb53a96506e09585c5f629c4f1cbd"
+      }
+    },
+    {
+      "task": "telemetry-research",
+      "route": "specialist-memory",
+      "repeat": 0,
+      "passed": true,
+      "output": {
+        "lane": "LANE_RESEARCH"
+      },
+      "memory": {
+        "backend": "ProjectMemoryPort/structured-markdown-vault",
+        "accepted": [
+          "route-telemetry-research"
+        ],
+        "bytesInjected": 131,
+        "estimatedTokens": 33,
+        "retrievalLatencyMs": 12
+      },
+      "usage": {
+        "input": 102,
+        "output": 11,
+        "total": 113
+      },
+      "energy": {
+        "schema": "agent-control.energy-execution/v1",
+        "id": "energy-e02df8f2-106f-4525-b053-e52cd72e0c85",
+        "parcelId": "energy-telemetry-research-specialist-memory-0",
+        "stageId": "telemetry-research",
+        "route": {
+          "providerId": "learned-specialist",
+          "modelId": "specialist-memory",
+          "nodeId": "controller",
+          "accountProfileId": null
+        },
+        "kind": "INFERENCE",
+        "startedAt": "2026-09-11T20:26:06.529Z",
+        "completedAt": "2026-09-11T20:26:12.509Z",
+        "elapsedMs": 5980,
+        "scope": "MEASURED_COMPONENTS",
+        "authority": "MEASURED",
+        "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+        "sampleCount": 61,
+        "averageWatts": 29.978078493674438,
+        "peakWatts": 31.24082431307244,
+        "grossWh": 0.04979691927560365,
+        "incrementalWh": 0.024678672573873683,
+        "joules": 88.84322126594526,
+        "idleBaselineWatts": 15.121352529469547,
+        "tokens": 113,
+        "whPerToken": 0.00021839533251215648,
+        "whPerSuccessfulParcel": 0.024678672573873683,
+        "verified": true,
+        "successful": true,
+        "limitations": [
+          "excludes_motherboard_storage_psu_and_peripherals",
+          "cpu_power_is_interval_average",
+          "shared_gpu_processes_present",
+          "measurement_not_whole_node"
+        ],
+        "evidence": [
+          "held-out:telemetry-research",
+          "verifier:PASS",
+          "project-memory:route-telemetry-research",
+          "memory-bytes:131"
+        ],
+        "sha256": "0a9cc814172fa60a8f059bcfbd7dc0d8bbcbd0c15ca4a8f3630424514fb7363b"
+      }
+    },
+    {
+      "task": "telemetry-research",
+      "route": "specialist-memory",
+      "repeat": 1,
+      "passed": true,
+      "output": {
+        "lane": "LANE_RESEARCH"
+      },
+      "memory": {
+        "backend": "ProjectMemoryPort/structured-markdown-vault",
+        "accepted": [
+          "route-telemetry-research"
+        ],
+        "bytesInjected": 131,
+        "estimatedTokens": 33,
+        "retrievalLatencyMs": 12
+      },
+      "usage": {
+        "input": 102,
+        "output": 11,
+        "total": 113
+      },
+      "energy": {
+        "schema": "agent-control.energy-execution/v1",
+        "id": "energy-83b2784a-3226-4ddd-903f-ded22c87be08",
+        "parcelId": "energy-telemetry-research-specialist-memory-1",
+        "stageId": "telemetry-research",
+        "route": {
+          "providerId": "learned-specialist",
+          "modelId": "specialist-memory",
+          "nodeId": "controller",
+          "accountProfileId": null
+        },
+        "kind": "INFERENCE",
+        "startedAt": "2026-09-11T20:26:12.535Z",
+        "completedAt": "2026-09-11T20:26:18.814Z",
+        "elapsedMs": 6279,
+        "scope": "MEASURED_COMPONENTS",
+        "authority": "MEASURED",
+        "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+        "sampleCount": 64,
+        "averageWatts": 30.44567341949598,
+        "peakWatts": 31.479263959390863,
+        "grossWh": 0.053102328722504234,
+        "incrementalWh": 0.026728169685687763,
+        "joules": 96.22141086847594,
+        "idleBaselineWatts": 15.121352529469547,
+        "tokens": 113,
+        "whPerToken": 0.00023653247509458197,
+        "whPerSuccessfulParcel": 0.026728169685687763,
+        "verified": true,
+        "successful": true,
+        "limitations": [
+          "excludes_motherboard_storage_psu_and_peripherals",
+          "cpu_power_is_interval_average",
+          "shared_gpu_processes_present",
+          "measurement_not_whole_node"
+        ],
+        "evidence": [
+          "held-out:telemetry-research",
+          "verifier:PASS",
+          "project-memory:route-telemetry-research",
+          "memory-bytes:131"
+        ],
+        "sha256": "901933ffe5d6ca5821b58a2c7c07e4756dd5c346f471e09bc953f305f9466415"
+      }
+    },
+    {
+      "task": "telemetry-research",
+      "route": "specialist-memory",
+      "repeat": 2,
+      "passed": true,
+      "output": {
+        "lane": "LANE_RESEARCH"
+      },
+      "memory": {
+        "backend": "ProjectMemoryPort/structured-markdown-vault",
+        "accepted": [
+          "route-telemetry-research"
+        ],
+        "bytesInjected": 131,
+        "estimatedTokens": 33,
+        "retrievalLatencyMs": 12
+      },
+      "usage": {
+        "input": 102,
+        "output": 11,
+        "total": 113
+      },
+      "energy": {
+        "schema": "agent-control.energy-execution/v1",
+        "id": "energy-b8f2045b-a5b3-472f-983b-6fc337c271ed",
+        "parcelId": "energy-telemetry-research-specialist-memory-2",
+        "stageId": "telemetry-research",
+        "route": {
+          "providerId": "learned-specialist",
+          "modelId": "specialist-memory",
+          "nodeId": "controller",
+          "accountProfileId": null
+        },
+        "kind": "INFERENCE",
+        "startedAt": "2026-09-11T20:26:18.840Z",
+        "completedAt": "2026-09-11T20:26:24.392Z",
+        "elapsedMs": 5552,
+        "scope": "MEASURED_COMPONENTS",
+        "authority": "MEASURED",
+        "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+        "sampleCount": 57,
+        "averageWatts": 26.7551583060496,
+        "peakWatts": 28.894043392504933,
+        "grossWh": 0.04126239969866317,
+        "incrementalWh": 0.01794191379765902,
+        "joules": 64.59088967157247,
+        "idleBaselineWatts": 15.121352529469547,
+        "tokens": 113,
+        "whPerToken": 0.00015877799820937185,
+        "whPerSuccessfulParcel": 0.01794191379765902,
+        "verified": true,
+        "successful": true,
+        "limitations": [
+          "excludes_motherboard_storage_psu_and_peripherals",
+          "cpu_power_is_interval_average",
+          "shared_gpu_processes_present",
+          "measurement_not_whole_node"
+        ],
+        "evidence": [
+          "held-out:telemetry-research",
+          "verifier:PASS",
+          "project-memory:route-telemetry-research",
+          "memory-bytes:131"
+        ],
+        "sha256": "6c80153ac6291007e679b9ff2d71ab2ae6dc3539f516da599a2cc72e72424f40"
+      }
+    },
+    {
+      "task": "telemetry-research",
+      "route": "specialist-memory",
+      "repeat": 3,
+      "passed": true,
+      "output": {
+        "lane": "LANE_RESEARCH"
+      },
+      "memory": {
+        "backend": "ProjectMemoryPort/structured-markdown-vault",
+        "accepted": [
+          "route-telemetry-research"
+        ],
+        "bytesInjected": 131,
+        "estimatedTokens": 33,
+        "retrievalLatencyMs": 11
+      },
+      "usage": {
+        "input": 102,
+        "output": 11,
+        "total": 113
+      },
+      "energy": {
+        "schema": "agent-control.energy-execution/v1",
+        "id": "energy-a4bed517-b10b-4385-a2b1-5158986f6b1a",
+        "parcelId": "energy-telemetry-research-specialist-memory-3",
+        "stageId": "telemetry-research",
+        "route": {
+          "providerId": "learned-specialist",
+          "modelId": "specialist-memory",
+          "nodeId": "controller",
+          "accountProfileId": null
+        },
+        "kind": "INFERENCE",
+        "startedAt": "2026-09-11T20:26:24.418Z",
+        "completedAt": "2026-09-11T20:26:30.703Z",
+        "elapsedMs": 6285,
+        "scope": "MEASURED_COMPONENTS",
+        "authority": "MEASURED",
+        "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+        "sampleCount": 64,
+        "averageWatts": 31.025164771101178,
+        "peakWatts": 32.25077654516641,
+        "grossWh": 0.054164766829547475,
+        "incrementalWh": 0.027765405538515225,
+        "joules": 99.95545993865481,
+        "idleBaselineWatts": 15.121352529469547,
+        "tokens": 113,
+        "whPerToken": 0.0002457115534381878,
+        "whPerSuccessfulParcel": 0.027765405538515225,
+        "verified": true,
+        "successful": true,
+        "limitations": [
+          "excludes_motherboard_storage_psu_and_peripherals",
+          "cpu_power_is_interval_average",
+          "shared_gpu_processes_present",
+          "measurement_not_whole_node"
+        ],
+        "evidence": [
+          "held-out:telemetry-research",
+          "verifier:PASS",
+          "project-memory:route-telemetry-research",
+          "memory-bytes:131"
+        ],
+        "sha256": "e99a9e9e239a40cd33769498294e00073c829fac4a7525b9d03962ecfcf1d111"
+      }
+    },
+    {
+      "task": "telemetry-research",
+      "route": "specialist-memory",
+      "repeat": 4,
+      "passed": true,
+      "output": {
+        "lane": "LANE_RESEARCH"
+      },
+      "memory": {
+        "backend": "ProjectMemoryPort/structured-markdown-vault",
+        "accepted": [
+          "route-telemetry-research"
+        ],
+        "bytesInjected": 131,
+        "estimatedTokens": 33,
+        "retrievalLatencyMs": 12
+      },
+      "usage": {
+        "input": 102,
+        "output": 11,
+        "total": 113
+      },
+      "energy": {
+        "schema": "agent-control.energy-execution/v1",
+        "id": "energy-d1873b9c-fb8c-4fb5-894b-065a98b76462",
+        "parcelId": "energy-telemetry-research-specialist-memory-4",
+        "stageId": "telemetry-research",
+        "route": {
+          "providerId": "learned-specialist",
+          "modelId": "specialist-memory",
+          "nodeId": "controller",
+          "accountProfileId": null
+        },
+        "kind": "INFERENCE",
+        "startedAt": "2026-09-11T20:26:30.729Z",
+        "completedAt": "2026-09-11T20:26:36.392Z",
+        "elapsedMs": 5663,
+        "scope": "MEASURED_COMPONENTS",
+        "authority": "MEASURED",
+        "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+        "sampleCount": 58,
+        "averageWatts": 26.88298731147208,
+        "peakWatts": 27.850914205344587,
+        "grossWh": 0.04228843254024066,
+        "incrementalWh": 0.018501704936244538,
+        "joules": 66.60613777048033,
+        "idleBaselineWatts": 15.121352529469547,
+        "tokens": 113,
+        "whPerToken": 0.00016373190209065963,
+        "whPerSuccessfulParcel": 0.018501704936244538,
+        "verified": true,
+        "successful": true,
+        "limitations": [
+          "excludes_motherboard_storage_psu_and_peripherals",
+          "cpu_power_is_interval_average",
+          "shared_gpu_processes_present",
+          "measurement_not_whole_node"
+        ],
+        "evidence": [
+          "held-out:telemetry-research",
+          "verifier:PASS",
+          "project-memory:route-telemetry-research",
+          "memory-bytes:131"
+        ],
+        "sha256": "b2976dbf234e7f35acdc0a1c1e01637bc3db4446f8d679f973f4c872df347da9"
+      }
+    }
+  ],
+  "summary": [
+    {
+      "route": "specialist-memory",
+      "runs": 15,
+      "successes": 15,
+      "successRate": 1,
+      "meanJ": 85.86512542963182,
+      "medianJ": 88.84322126594526,
+      "joulesPerVerifiedSuccess": 85.86512542963182,
+      "meanMs": 6017.133333333333,
+      "totalTokens": 1685
+    }
+  ],
+  "training": {
+    "energy": "MEASURED_SEPARATELY",
+    "reason": "Training energy is recorded in the consolidated qualification evidence and must not be inferred from inference measurements."
+  },
+  "memory": {
+    "method": "bounded validated retrieval through the real ProjectMemoryPort followed by specialist inference",
+    "retrievalEnergy": "included inside the same measured process boundary",
+    "note": "Retrieved memory remains advisory and output correctness is independently checked."
+  },
+  "verdict": "PARTIAL"
+}

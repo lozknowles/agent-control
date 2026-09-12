@@ -71,3 +71,11 @@ test('remote nodes and external communication obey separate policy dimensions', 
   assert.equal(supervisor.assess(intent({stepId: 'remote-bad', categories: ['REMOTE_NODE'], remoteNodeIds: ['unknown']})).outcome, 'DENY');
   assert.equal(supervisor.assess(intent({stepId: 'message', categories: ['EXTERNAL_COMMUNICATION'], externalDestinations: ['https://example.test']})).outcome, 'REQUIRE_APPROVAL');
 });
+
+test('read-only skill promotion terminology is not confused with release promotion',()=>{
+  const supervisor=new RuntimeSafetySupervisor({id:'skill-promotion'});
+  const skill=deriveRuntimeActionIntent({runId:'skill',stepId:'execute',actor:'operator',action:'deterministic-skill.execute@1.0.0',goal:'Execute a previously promoted deterministic skill',parameters:{taskClass:'repository-state'},requestedCapabilities:['qualification.local'],resources:[],workerId:'controller',effectDeclaration:{mode:'READ_ONLY'}});
+  assert.equal(supervisor.assess(skill).outcome,'ALLOW');
+  const release=deriveRuntimeActionIntent({runId:'release',stepId:'promote',actor:'operator',action:'candidate.promote@1.0.0',goal:'Promote release candidate to production',parameters:{},requestedCapabilities:[],resources:[],effectDeclaration:{mode:'READ_ONLY'}});
+  assert.equal(supervisor.assess(release).outcome,'DENY');
+});

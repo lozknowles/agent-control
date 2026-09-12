@@ -15,11 +15,12 @@
   <link rel="stylesheet" href="/dashboard-live-shell.css">
   <link rel="stylesheet" href="/dashboard-poe.css">
   <link rel="stylesheet" href="/dashboard-cache-runtime.css">
+  <link rel="stylesheet" href="/dashboard-learned-specialists.css">
 </head>
 <body>
   <header class="topbar">
     <div class="brand"><span class="brand-mark" aria-hidden="true">AC</span><div><strong>Agent Control</strong><small id="version">connecting</small></div></div>
-    <a class="button secondary" href="/social-voice.html">Social &amp; Voice</a><nav class="primary-nav" aria-label="Control views"><button class="primary-tab active" data-view="jobs">Jobs</button><button class="primary-tab" data-view="lanes">Lanes</button><button class="primary-tab" data-view="sessions">Sessions</button><button class="primary-tab" data-view="systems">Systems</button><button class="primary-tab" data-view="models">Models</button><button class="primary-tab" data-view="routing">Routing</button><button class="primary-tab" data-view="experts">Warm Cache Runtime</button><button class="primary-tab" data-view="crew">Crew</button><button class="primary-tab poe-nav" data-view="poe">POE</button><button class="primary-tab" data-view="configuration">Configuration</button></nav>
+    <a class="button secondary" href="/social-voice.html">Social &amp; Voice</a><nav class="primary-nav" aria-label="Control views"><button class="primary-tab active" data-view="jobs">Jobs</button><button class="primary-tab" data-view="lanes">Lanes</button><button class="primary-tab" data-view="sessions">Sessions</button><button class="primary-tab" data-view="systems">Systems</button><button class="primary-tab" data-view="models">Models</button><button class="primary-tab" data-view="routing">Routing</button><button class="primary-tab" data-view="experts">Warm Cache Runtime</button><button class="primary-tab" data-view="specialists">Learned Specialists</button><button class="primary-tab" data-view="crew">Crew</button><button class="primary-tab poe-nav" data-view="poe">POE</button><button class="primary-tab" data-view="configuration">Configuration</button></nav>
     <div class="topbar-status"><span id="stream-state" class="status-pill neutral">CONNECTING</span><button id="health" class="status-pill neutral" title="Agent Control health; open downstream Systems readiness">UNKNOWN</button><button id="operator-button" class="button secondary">Operator authentication required</button></div>
   </header>
   <section id="persistent-usage" class="persistent-usage" aria-label="Persistent live model usage" aria-live="polite">
@@ -122,6 +123,18 @@
   <main id="systems-workspace" class="systems-shell" hidden>
     <aside class="panel systems-list-panel"><div class="panel-heading"><div><span class="eyebrow">Execution inventory</span><h1>Systems</h1></div><span id="system-count" class="count">0</span></div><div class="bot-slot" data-bot-slot="resource-guardian"></div><p class="systems-health-note">Global HEALTHY describes Agent Control itself. Each downstream system is assessed independently for dispatch readiness.</p><div id="systems-list" class="systems-list"></div></aside>
     <section class="panel system-detail-panel"><div id="system-detail-empty" class="empty-state"><div class="empty-icon">◉</div><h2>No system selected</h2><p>Select a machine, provider, model or service to inspect its canonical readiness.</p></div><div id="system-detail" hidden></div></section>
+  </main>
+  <main id="specialists-workspace" class="specialist-shell" hidden>
+    <header class="specialist-hero"><div><span class="eyebrow">Governed adaptation lifecycle</span><h1>Learned Specialists</h1><p>Qualified base model + learned skill + independent evidence. Learning never grants tools or authority.</p></div><div id="specialist-policy" class="status-pill neutral">AWAITING STATE</div></header>
+    <section id="specialist-metrics" class="specialist-metrics" aria-live="polite"></section>
+    <section class="specialist-layout">
+      <article class="panel"><div class="panel-heading"><div><span class="eyebrow">Lifecycle</span><h2>Candidates &amp; Training</h2></div><span id="specialist-candidate-count" class="count">0</span></div><div id="specialist-candidates" class="specialist-list"></div></article>
+      <article class="panel"><div class="panel-heading"><div><span class="eyebrow">Independently qualified</span><h2>Skill Adapter Registry</h2></div><span id="specialist-count" class="count">0</span></div><div id="specialist-registry" class="specialist-list"></div></article>
+      <article class="panel specialist-routing"><div class="panel-heading"><div><span class="eyebrow">Production decisions</span><h2>Specialist Routing</h2></div><span id="specialist-route-count" class="count">0</span></div><div id="specialist-routing" class="specialist-list"></div></article>
+      <article class="panel specialist-routing"><div class="panel-heading"><div><span class="eyebrow">Reason once, execute many</span><h2>Governed Deterministic Skills</h2><p>Memory says what we know. Skills say what we can already do. Models reason about novelty.</p></div><span id="deterministic-skill-count" class="count">0</span></div><div id="deterministic-skills" class="specialist-list" aria-live="polite"></div></article>
+      <article class="panel specialist-routing"><div class="panel-heading"><div><span class="eyebrow">Energy-minimal execution</span><h2>Deterministic Routes &amp; Escalations</h2></div><span id="deterministic-route-count" class="count">0</span></div><div id="deterministic-routes" class="specialist-list" aria-live="polite"></div></article>
+    </section>
+    <footer class="specialist-footer"><strong>Three different forms of reuse remain distinct.</strong> Your Memories retrieve governed knowledge; Deterministic Skills execute validated procedures; Learned Specialists provide versioned model adaptation. Novelty or failed applicability escalates to a model.</footer>
   </main>
   <main id="sessions-workspace" class="systems-shell" hidden>
     <aside class="panel systems-list-panel"><div class="panel-heading"><div><span class="eyebrow">Identity and authority</span><h1>Sessions</h1></div><span id="session-count" class="count">0</span></div><p class="systems-health-note">Every participant, delegation, model invocation and runtime remains attributable to a governed session.</p><div id="sessions-list" class="systems-list"></div></aside>
@@ -269,5 +282,6 @@
   <script src="/dashboard-live-shell.js" defer></script>
   <script src="/dashboard-poe.js" defer></script>
   <script src="/dashboard-cache-experts.js" defer></script>
+  <script src="/dashboard-learned-specialists.js" defer></script>
 </body>
 </html>

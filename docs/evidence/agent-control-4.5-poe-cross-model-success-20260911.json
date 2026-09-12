@@ -1,0 +1,336 @@
+{
+  "schema": "agent-control.cross-model-memory-qualification/v1",
+  "startedAt": "2026-09-11T19:12:53.536Z",
+  "completedAt": "2026-09-11T19:13:32.209Z",
+  "implementationCommit": "565aff41c1afc07995163ed4ec1d490d628970bf",
+  "packetSha256": "168e639a56adf1fe8252b114d19b3a19554d4ee9a6d4091294b1a24ed99e0731",
+  "verdict": "PASS_PHYSICAL_CROSS_MODEL_MEMORY",
+  "workParcels": [
+    {
+      "id": "parcel-social-82062acbd50b5c74f9ad18cd109d13d467f92d22de00ddb4f379f1ef21803fec",
+      "status": "SUCCEEDED",
+      "stages": [
+        {
+          "id": "sol-to-codex-writer",
+          "status": "SUCCEEDED",
+          "runId": "run-6c9eb702-6eb8-40fe-9f14-cd3509f53e1b",
+          "batonSha256": "cd84b9c5eae584ca369c9b342aed63bf86f60127ee69ab9e645cae0c264415b3",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "workloadNodeId": "hpubuntu",
+            "providerExecutionNodeId": "hpubuntu",
+            "credentialNodeId": "hpubuntu",
+            "provider": "codex-chatgpt",
+            "accountProfile": "controller-codex",
+            "accountLabel": "Controller Codex",
+            "accountPlan": "ChatGPT authenticated",
+            "accountPlanAuthority": "operator-configured",
+            "accountQualification": "QUALIFIED",
+            "accountAvailability": "AVAILABLE",
+            "model": "gpt-5.6-sol",
+            "reason": "satisfies:route.hpubuntu, healthy, available"
+          },
+          "error": null
+        },
+        {
+          "id": "sol-to-codex-persist",
+          "status": "SUCCEEDED",
+          "runId": "run-d6d1aefd-47fc-4d2f-add9-7f2255da8133",
+          "batonSha256": "8dd132fb2d850c7fd08a0d5a1240b7f7e9c551e31fb608f1fd3e00a096a79873",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "reason": "satisfies:memory.control, healthy, available"
+          },
+          "error": null
+        },
+        {
+          "id": "sol-to-codex-reader",
+          "status": "SUCCEEDED",
+          "runId": "run-eba028d0-3812-41df-9813-c292d8b6fb0f",
+          "batonSha256": "cabdead6bf45d9f8e5e1c3f43b4d12bb0288389b0e12b9f56d57c206a0feecb5",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "workloadNodeId": "hpubuntu",
+            "providerExecutionNodeId": "hpubuntu",
+            "credentialNodeId": "hpubuntu",
+            "provider": "codex-chatgpt",
+            "accountProfile": "controller-codex",
+            "accountLabel": "Controller Codex",
+            "accountPlan": "ChatGPT authenticated",
+            "accountPlanAuthority": "operator-configured",
+            "accountQualification": "QUALIFIED",
+            "accountAvailability": "AVAILABLE",
+            "model": "codex-luna",
+            "reason": "satisfies:route.hpubuntu, healthy, available"
+          },
+          "error": null
+        },
+        {
+          "id": "sol-to-codex-continue",
+          "status": "SUCCEEDED",
+          "runId": "run-d158adf9-aa58-419a-a537-96235d9935ee",
+          "batonSha256": "d41280738aa47fd3756589960f49eef8e8f7898d04414d846593db9b5d3abd91",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "reason": "satisfies:memory.control, healthy, available"
+          },
+          "error": null
+        }
+      ]
+    }
+  ],
+  "routes": [
+    {
+      "id": "qwen-hpubuntu",
+      "label": "Qwen on hpubuntu",
+      "provider": "local-qwen",
+      "exactModel": "qwen2.5-3b-instruct-q4_k_m.gguf",
+      "qualificationVersion": "physical-20260911",
+      "node": "hpubuntu",
+      "endpoint": "http://127.0.0.1:8080/v1",
+      "runtime": "llama.cpp",
+      "credentialResidency": "not required",
+      "adapter": "llama.cpp OpenAI-compatible adapter",
+      "physicalAvailability": "AVAILABLE"
+    },
+    {
+      "id": "glm-5.3-flash",
+      "label": "GLM-5.3-Flash",
+      "provider": "openrouter",
+      "exactModel": "z-ai/glm-5.3-flash",
+      "qualificationVersion": "physical-20260911",
+      "node": "hpubuntu",
+      "endpoint": "https://openrouter.ai/api/v1",
+      "runtime": "OpenRouter hosted runtime",
+      "credentialResidency": "hpubuntu owner-only file reference; value resolved only by adapter",
+      "adapter": "OpenAI-compatible Responses adapter",
+      "physicalAvailability": "AVAILABLE"
+    },
+    {
+      "id": "codex-luna",
+      "label": "Codex CLI / Luna",
+      "provider": "codex-chatgpt",
+      "exactModel": "gpt-5.6-luna",
+      "qualificationVersion": "physical-20260911",
+      "node": "hpubuntu",
+      "endpoint": "local executable discovered from PATH",
+      "runtime": "Codex CLI",
+      "credentialResidency": "opaque CODEX_HOME environment reference on hpubuntu",
+      "adapter": "LocalCodexNodeExecutionPort",
+      "physicalAvailability": "AVAILABLE"
+    },
+    {
+      "id": "gpt-5.6-sol",
+      "label": "GPT-5.6 Sol",
+      "provider": "codex-chatgpt",
+      "exactModel": "gpt-5.6-sol",
+      "qualificationVersion": "physical-20260911",
+      "node": "hpubuntu",
+      "endpoint": "local executable discovered from PATH",
+      "runtime": "Codex CLI",
+      "credentialResidency": "opaque CODEX_HOME environment reference on hpubuntu",
+      "adapter": "LocalCodexNodeExecutionPort",
+      "physicalAvailability": "AVAILABLE"
+    },
+    {
+      "id": "pixel-gemma-e4b",
+      "label": "Google Gemma 4 E4B on Pixel 8 Pro",
+      "provider": "pixel-llama",
+      "exactModel": "google/gemma-4-E4B-it",
+      "qualificationVersion": "physical-20260911",
+      "node": "pixel-8-pro",
+      "endpoint": "http://100.100.97.118:19084/v1",
+      "runtime": "llama.cpp",
+      "credentialResidency": "not required",
+      "adapter": "llama.cpp OpenAI-compatible adapter",
+      "physicalAvailability": "AVAILABLE"
+    }
+  ],
+  "blockedRoutes": [
+    {
+      "id": "msi-cottage-plus",
+      "nodeId": "msi",
+      "provider": "codex-chatgpt",
+      "model": "unavailable",
+      "status": "BLOCKED",
+      "reason": "codex_chatgpt_auth_required through production ResourceCodexNodeExecutionPort"
+    },
+    {
+      "id": "msi-lawrence-pro",
+      "nodeId": "msi",
+      "provider": "codex-chatgpt",
+      "model": "unavailable",
+      "status": "BLOCKED",
+      "reason": "codex_chatgpt_auth_required through production ResourceCodexNodeExecutionPort"
+    }
+  ],
+  "matrix": [
+    {
+      "writer": "GPT-5.6 Sol",
+      "reader": "Codex CLI / Luna",
+      "writerRoute": "codex-chatgpt/controller-codex/gpt-5.6-sol@hpubuntu",
+      "readerRoute": "codex-chatgpt/controller-codex/codex-luna@hpubuntu",
+      "writerNode": "hpubuntu",
+      "readerNode": "hpubuntu",
+      "memorySource": "ProjectMemoryPort / structured Markdown vault",
+      "memoryId": "memory-sol-to-codex",
+      "memorySha256": "4ed7dd21153dc97eb67cf9c7ff7032bbf30ed3d3f93b355c864a54331dab7564",
+      "reconstructionAccuracy": 100,
+      "writerScore": 92.5,
+      "continuationSuccess": true,
+      "contextInjectedTokens": 523,
+      "writerUsage": {
+        "inputTokens": 8360,
+        "outputTokens": 534,
+        "totalTokens": 8894,
+        "cachedInputTokens": 0,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "readerUsage": {
+        "inputTokens": 14517,
+        "outputTokens": 1033,
+        "totalTokens": 15550,
+        "cachedInputTokens": 0,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "usage": {
+        "inputTokens": 22877,
+        "outputTokens": 1567,
+        "totalTokens": 24444,
+        "cachedInputTokens": 0,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "latencyMs": 0,
+      "contradictionsDetected": [],
+      "writerRunId": "run-6c9eb702-6eb8-40fe-9f14-cd3509f53e1b",
+      "readerRunId": "run-eba028d0-3812-41df-9813-c292d8b6fb0f",
+      "batonSha256": "cabdead6bf45d9f8e5e1c3f43b4d12bb0288389b0e12b9f56d57c206a0feecb5",
+      "persistBatonSha256": "8dd132fb2d850c7fd08a0d5a1240b7f7e9c551e31fb608f1fd3e00a096a79873",
+      "continuationBatonSha256": "d41280738aa47fd3756589960f49eef8e8f7898d04414d846593db9b5d3abd91",
+      "failures": [],
+      "result": "PASS"
+    }
+  ],
+  "totals": {
+    "inputTokens": 22877,
+    "outputTokens": 1567,
+    "totalTokens": 24444,
+    "cachedInputTokens": 0,
+    "cost": null,
+    "currency": null,
+    "authority": "unavailable"
+  },
+  "projectMemory": {
+    "backend": "structured Markdown directory viewed by Obsidian",
+    "namespace": "/fast/qualification/agent-control-4.5-cross-model-memory-poe-success-20260911/vault/Agent Control/4.5-cross-model-memory",
+    "records": 1,
+    "commonSchema": "agent-control.project-memory/v1"
+  },
+  "poe": {
+    "conversation": {
+      "schema": "agent-control.poe-conversation/v1",
+      "id": "poe-conversation:828d9bdb-a402-4809-b62a-bf004fbe5110",
+      "actorId": "operator",
+      "channel": "dashboard",
+      "state": "OBSERVING_CREW",
+      "createdAt": "2026-09-11T19:12:53.549Z",
+      "updatedAt": "2026-09-11T19:12:53.580Z",
+      "turns": [
+        {
+          "id": "poe-turn:af0cebf9-b302-4534-a07a-5f180416ef71",
+          "conversationId": "poe-conversation:828d9bdb-a402-4809-b62a-bf004fbe5110",
+          "at": "2026-09-11T19:12:53.550Z",
+          "purpose": "GREETING",
+          "actor": "poe",
+          "channel": "dashboard",
+          "modality": "text",
+          "text": "Good day. I’m POE. How may I help you?",
+          "authority": "AGENT_CONTROL",
+          "contentTrust": "AGENT_CONTROL_EVIDENCE",
+          "references": [],
+          "evidence": []
+        },
+        {
+          "id": "poe-turn:69313388-5fd0-4c6c-ac0d-9ea39baf691f",
+          "conversationId": "poe-conversation:828d9bdb-a402-4809-b62a-bf004fbe5110",
+          "at": "2026-09-11T19:12:53.552Z",
+          "actor": "operator",
+          "channel": "dashboard",
+          "modality": "text",
+          "text": "POE, run the Agent Control 4.5 physical cross-model Your Memories pair sol-to-codex. Have the writer persist governed project memory, start the different reader cold without its transcript, reconstruct the work, execute the exact next action, and independently verify it.",
+          "authority": "OPERATOR",
+          "contentTrust": "OPERATOR_REQUEST",
+          "references": [],
+          "evidence": []
+        },
+        {
+          "id": "poe-turn:6a4f65e0-9c6e-4b02-b0a8-8fb0d12a881f",
+          "conversationId": "poe-conversation:828d9bdb-a402-4809-b62a-bf004fbe5110",
+          "at": "2026-09-11T19:12:53.554Z",
+          "actor": "poe",
+          "channel": "dashboard",
+          "modality": "text",
+          "text": "Qualification Work Parcel\n\nThe exact Work Parcel is retained in Agent Control durable evidence.\n\nCurrent natural transcript: {\"conversationId\":\"poe-conversation:828d9bdb-a402-4809-b62a-bf004fbe5110\",\"snapshotTurnCount\":2,\"bytes\":1041,\"sha256\":\"e117be77576f540814dc93fb6a9ec24b95b46c9c05178e3e4c7e15a75dcbb0a6\",\"dashboardControl\":\"Transcript\",\"exportPath\":\"/api/poe/conversations/poe-conversation%3A828d9bdb-a402-4809-b62a-bf004fbe5110/transcript\",\"snapshotBoundary\":\"Complete retained conversation before this answer; export requires the existing authenticated channel controls.\"} (agent control)",
+          "authority": "AGENT_CONTROL",
+          "contentTrust": "AGENT_CONTROL_EVIDENCE",
+          "references": [
+            {
+              "kind": "run",
+              "id": "the"
+            }
+          ],
+          "evidence": [
+            {
+              "label": "Current natural transcript",
+              "value": "{\"conversationId\":\"poe-conversation:828d9bdb-a402-4809-b62a-bf004fbe5110\",\"snapshotTurnCount\":2,\"bytes\":1041,\"sha256\":\"e117be77576f540814dc93fb6a9ec24b95b46c9c05178e3e4c7e15a75dcbb0a6\",\"dashboardControl\":\"Transcript\",\"exportPath\":\"/api/poe/conversations/poe-conversation%3A828d9bdb-a402-4809-b62a-bf004fbe5110/transcript\",\"snapshotBoundary\":\"Complete retained conversation before this answer; export requires the existing authenticated channel controls.\"}",
+              "authority": "AGENT_CONTROL",
+              "informationKind": "LIVE_OBSERVED",
+              "observedAt": "2026-09-11T19:12:53.554Z",
+              "evidence": [
+                "poe:conversation:poe-conversation:828d9bdb-a402-4809-b62a-bf004fbe5110:transcript"
+              ]
+            }
+          ],
+          "responseMode": "DETERMINISTIC"
+        }
+      ],
+      "proposalIds": [
+        "poe-benchmark:f0617457-c5fd-464e-a326-86d0ba52f6c6"
+      ],
+      "lastReference": {
+        "kind": "run",
+        "id": "the"
+      }
+    },
+    "transcript": "# POE conversation poe-conversation:828d9bdb-a402-4809-b62a-bf004fbe5110\n\nChannel: dashboard\nActor: operator\nCreated: 2026-09-11T19:12:53.549Z\n\n## Exact initiating operator prompt\n\nPOE, run the Agent Control 4.5 physical cross-model Your Memories pair sol-to-codex. Have the writer persist governed project memory, start the different reader cold without its transcript, reconstruct the work, execute the exact next action, and independently verify it.\n\n## Chronological interaction\n\n## POE · 2026-09-11T19:12:53.550Z\n\nGood day. I’m POE. How may I help you?\n\nAuthority: AGENT_CONTROL\nResponse mode: not applicable\nReferences: none\nEvidence: []\n\n## Operator · 2026-09-11T19:12:53.552Z\n\nPOE, run the Agent Control 4.5 physical cross-model Your Memories pair sol-to-codex. Have the writer persist governed project memory, start the different reader cold without its transcript, reconstruct the work, execute the exact next action, and independently verify it.\n\nAuthority: OPERATOR\nResponse mode: not applicable\nReferences: none\nEvidence: []\n\n## POE · 2026-09-11T19:12:53.554Z\n\nQualification Work Parcel\n\nThe exact Work Parcel is retained in Agent Control durable evidence.\n\nCurrent natural transcript: {\"conversationId\":\"poe-conversation:828d9bdb-a402-4809-b62a-bf004fbe5110\",\"snapshotTurnCount\":2,\"bytes\":1041,\"sha256\":\"e117be77576f540814dc93fb6a9ec24b95b46c9c05178e3e4c7e15a75dcbb0a6\",\"dashboardControl\":\"Transcript\",\"exportPath\":\"/api/poe/conversations/poe-conversation%3A828d9bdb-a402-4809-b62a-bf004fbe5110/transcript\",\"snapshotBoundary\":\"Complete retained conversation before this answer; export requires the existing authenticated channel controls.\"} (agent control)\n\nAuthority: AGENT_CONTROL\nResponse mode: DETERMINISTIC\nReferences: run:the\nEvidence: [{\"label\":\"Current natural transcript\",\"value\":\"{\\\"conversationId\\\":\\\"poe-conversation:828d9bdb-a402-4809-b62a-bf004fbe5110\\\",\\\"snapshotTurnCount\\\":2,\\\"bytes\\\":1041,\\\"sha256\\\":\\\"e117be77576f540814dc93fb6a9ec24b95b46c9c05178e3e4c7e15a75dcbb0a6\\\",\\\"dashboardControl\\\":\\\"Transcript\\\",\\\"exportPath\\\":\\\"/api/poe/conversations/poe-conversation%3A828d9bdb-a402-4809-b62a-bf004fbe5110/transcript\\\",\\\"snapshotBoundary\\\":\\\"Complete retained conversation before this answer; export requires the existing authenticated channel controls.\\\"}\",\"authority\":\"AGENT_CONTROL\",\"informationKind\":\"LIVE_OBSERVED\",\"observedAt\":\"2026-09-11T19:12:53.554Z\",\"evidence\":[\"poe:conversation:poe-conversation:828d9bdb-a402-4809-b62a-bf004fbe5110:transcript\"]}]",
+    "productionFlow": true
+  },
+  "pisper": {
+    "decision": "DEFER",
+    "reason": "Governed Turn Snapshot Branching is a useful immutable provenance primitive but is not required for stateless writer-to-reader qualification and would broaden 4.5 scope."
+  },
+  "limitations": [
+    "ChatGPT product-level personal memory is not exposed as a controllable Codex CLI input, so no claim is made for proprietary assistant-memory injection.",
+    "The requested Google/Gemini E4B route is physically the exact Google Gemma 4 E4B local artifact; Gemini was not silently substituted.",
+    "MSI account profiles are reachable but currently authentication-blocked; no MSI model-transition cell is claimed."
+  ],
+  "security": {
+    "writerTranscriptSuppliedToReader": false,
+    "credentialValuesPersisted": false,
+    "providerOutputStoredAsSanitizedStructuredArtifacts": true
+  }
+}

@@ -33,9 +33,13 @@ import {TransportIntegrityRuntime} from './transport-integrity.js';
 import {registerNonOpenAiCacheQualificationActions} from './non-openai-cache-qualification.js';
 import {CacheAwareExpertRuntime, FileCacheExpertStore} from './cache-aware-expert.js';
 import {cacheAwareExpertQualificationPlanner} from './cache-aware-expert-qualification.js';
+import {FileSkillLearningStore, SkillLearningRuntime} from './skill-learning.js';
+import {EnergyTelemetryRuntime, FileEnergyTelemetryStore} from './energy-telemetry.js';
+import {DeterministicSkillRuntime,FileDeterministicSkillStore,registerCoreDeterministicHandlers} from './deterministic-skill.js';
+import {registerDeterministicSkillActions} from './deterministic-skill-actions.js';
 
 /** Shared production definition path so qualification cannot drift from registered typed Actions. */
-export function buildJobRuntimeDefinition(config: AgentControlConfig, manifestDir = process.env.AGENT_CONTROL_JOB_DIR || path.resolve('config/jobs'), harnessEfficiency?: HarnessEfficiencyLedgerPort, modelRegistry?: ModelRegistry, codexNodeExecution?: CodexNodeExecutionPort) {
+export function buildJobRuntimeDefinition(config: AgentControlConfig, manifestDir = process.env.AGENT_CONTROL_JOB_DIR || path.resolve('config/jobs'), harnessEfficiency?: HarnessEfficiencyLedgerPort, modelRegistry?: ModelRegistry, codexNodeExecution?: CodexNodeExecutionPort, deterministicSkills?:DeterministicSkillRuntime) {
   const parcelJobs = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../config/work-parcels/jobs');
   const operatorJobs = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../config/operator-jobs');
   const workers = WorkerRegistry.fromConfig(config.resources), managedNodes = new ManagedNodeManager(config.resources, workers, new SshManagedNodeTransport());
@@ -47,6 +51,7 @@ export function buildJobRuntimeDefinition(config: AgentControlConfig, manifestDi
   actions = registerOperatorReviewActions(config, actions, harnessEfficiency);
   actions = registerProtectedResourceModelActions(config, modelRegistry, codexNodeExecution, actions, harnessEfficiency);
   actions = registerNonOpenAiCacheQualificationActions(actions, harnessEfficiency);
+  actions=registerDeterministicSkillActions(actions,deterministicSkills??registerCoreDeterministicHandlers(new DeterministicSkillRuntime()));
   const catalog = new JobCatalog(actions.ids()).loadDirectory(manifestDir).loadDirectory(parcelJobs);
   registerOperatorObservation(actions, catalog, workers);
   if (process.env.AGENT_CONTROL_ENABLE_OPERATOR_REVIEW === 'true') catalog.loadDirectory(operatorJobs);
@@ -57,14 +62,17 @@ export function buildJobRuntime(config: AgentControlConfig, stateRoot = process.
   const harnessEfficiency = new FileHarnessEfficiencyLedger(path.join(stateRoot, 'harness-efficiency', 'model-invocations.json'));
   const adaptiveOrchestration = new AdaptiveOrchestrationRuntime(new FileAdaptiveOrchestrationStore(path.join(stateRoot, 'adaptive-orchestration', 'state.json')), config.adaptiveOrchestration);
   const cacheExperts = new CacheAwareExpertRuntime(new FileCacheExpertStore(path.join(stateRoot, 'cache-aware-experts', 'state.json')), config.cacheAwareExperts);
-  const {workers, managedNodes, actions, catalog} = buildJobRuntimeDefinition(config, manifestDir, harnessEfficiency, modelRegistry, codexNodeExecution);
+  const learnedSkills = new SkillLearningRuntime(new FileSkillLearningStore(path.join(stateRoot, 'learned-skills', 'state.json')), config.learnedSkills);
+  const energyTelemetry = new EnergyTelemetryRuntime(new FileEnergyTelemetryStore(path.join(stateRoot, 'energy-telemetry', 'state.json')));
+  const deterministicSkills=registerCoreDeterministicHandlers(new DeterministicSkillRuntime(new FileDeterministicSkillStore(path.join(stateRoot,'deterministic-skills','state.json')),config.deterministicSkills));
+  const {workers, managedNodes, actions, catalog} = buildJobRuntimeDefinition(config, manifestDir, harnessEfficiency, modelRegistry, codexNodeExecution,deterministicSkills);
   const harnessProfiles = configuredHarnessProfiles(config.harnessEfficiency), harnessProfileRouter = configuredHarnessProfileRouter(config.harnessEfficiency), contextPacketBuilder = new ContextPacketBuilder(harnessProfiles);
   for (const resource of config.resources) if (resource.transport.type === 'local') workers.setHealth(resource.id, 'healthy');
   const repositoryRoots = config.jobs?.repositoryRoots ?? [path.resolve('.')];
   const safety = new RuntimeSafetySupervisor({id: 'agent-control.runtime-safety/v1', approvedRepositoryRoots: repositoryRoots.map(root => path.resolve(root)), approvedRemoteNodes: config.resources.map(resource => resource.id)}, path.join(stateRoot, 'runtime-safety', 'decisions.json'));
   const runtime = createJobRuntime(stateRoot, catalog, actions, workers, {efficiency: harnessEfficiency, safety, executionSessions});
   const workParcels = new WorkParcelCoordinator(runtime, new WorkParcelStore(path.join(stateRoot, 'work-parcels', 'parcels.json')), new CatalogNaturalLanguagePlanner(runtime, reasoningPlanner ?? cacheAwareExpertQualificationPlanner()), harnessEfficiency, modelRegistry, adaptiveOrchestration, cacheExperts);
-  return Object.assign(runtime, {managedNodes, harnessEfficiency, harnessProfiles, harnessProfileRouter, contextPacketBuilder, workParcels, adaptiveOrchestration, cacheExperts});
+  return Object.assign(runtime, {managedNodes, harnessEfficiency, harnessProfiles, harnessProfileRouter, contextPacketBuilder, workParcels, adaptiveOrchestration, cacheExperts, learnedSkills, deterministicSkills, energyTelemetry});
 }
 
 export function startManagedNodeMonitoring(runtime: ReturnType<typeof buildJobRuntime>, onChange?: (snapshot: ManagedNodeSnapshot) => void, onError?: (error: Error) => void) { return runtime.managedNodes.start(onChange, onError); }
