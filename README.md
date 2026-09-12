@@ -522,6 +522,9 @@ installed-no-lock` and `configuration: initialized-or-preserved`. If either
 command stops, use its exact error rather than bypassing the check: confirm Node
 24, npm and Git are on `PATH`, that the checkout is clean, and that the selected
 commit exists. The project intentionally has no package lock or build step.
+The validation command creates an isolated temporary test-state directory and
+removes it when the suite exits; it does not add test lanes, events or runtime
+records to the initialized `.agent-control` installation state.
 
 Bootstrap runs `npm install --ignore-scripts --no-package-lock` and the
 idempotent initializer. `npm run init` creates only a schema-valid empty

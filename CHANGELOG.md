@@ -12,6 +12,8 @@
 - Adds deterministic no-lock installation and repeat-bootstrap coverage, and
   makes bootstrap accept both ordinary clones and Git worktrees while retaining
   clean-checkout and prerequisite gates.
+- Isolates the published validation suite from initialized runtime state so a
+  first dashboard cannot inherit test lanes, events or model evidence.
 - Replaces the ambiguous manual dependency sequence with one documented
   check/install path and explicit expected results and troubleshooting.
 

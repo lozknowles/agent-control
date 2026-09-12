@@ -79,8 +79,9 @@ Before the tag exists, release qualification uses the exact reviewed candidate
 SHA in place of `v4.5.0`. The bootstrap check should report a verified
 repository and available dashboard. Install reports no-lock dependency
 installation and whether the existing configuration was initialized or
-preserved. Do not bypass a bootstrap failure with an undocumented `chmod`,
-package-manager command or build step.
+preserved. The validation suite uses disposable test state and leaves the
+installation's `.agent-control` state untouched. Do not bypass a bootstrap
+failure with an undocumented `chmod`, package-manager command or build step.
 
 Learned Specialists are disabled for routing unless explicitly configured and
 qualified. Keep adaptation files and `AGENT_CONTROL_STATE_DIR` outside disposable
