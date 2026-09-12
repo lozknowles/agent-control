@@ -1,5 +1,16 @@
 # Agent Control 4.5.0 candidate
 
+The 4.5 candidate now includes a governed **Setup & Environment Discovery**
+wizard and a live **Estate Map** alongside Process Map. It inventories real
+machines, accelerators, runtimes, models, CLI agents, providers, tools and
+credential presence through pluggable read-only adapters; detects change; and
+separates discovered, qualified, recommended, approved and active state. The
+shared graph answers either “what is Agent Control doing?” or “what can Agent
+Control currently see and use?” without treating stale discovery as aliveness.
+User-supplied executables and portable capability definitions follow a gated
+review/test/approval lifecycle. See the [setup, discovery, capability and Estate
+Map guide](docs/environment-discovery.md) and [Runtime Map guide](docs/runtime-map.md).
+
 Agent Control 4.5 now includes an experimental **Runtime Map** and **Control
 Room**: a live, accessible graph projected from the existing Work Parcel, Run,
 execution-session, baton, model, cache, memory and verification records. It

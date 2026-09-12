@@ -5,6 +5,11 @@ execution records. It is not a scheduler, execution engine or audit ledger.
 The executive graph and every drill-down resolve to the existing Work Parcel,
 Run, execution-session, token-routing, retrieval and evidence records.
 
+In 4.5 the same graph renderer also provides **Estate Map**. Process Map answers
+what Agent Control is doing; Estate Map answers what it can currently see and
+use. Estate nodes come from governed Environment Discovery and resource-health
+evidence, never from decorative fixtures. See [Environment Discovery](environment-discovery.md).
+
 ## Architecture and source-of-truth analysis
 
 ```text
@@ -17,6 +22,15 @@ Token governor + retrieval evidence + baton/audit timeline
                     authenticated HTTP + SSE
                               |
       Runtime Map / Control Room / inspector / Replay timeline
+```
+
+```text
+Environment Discovery + managed-node/resource health
+                              |
+                              v
+                 same RuntimeMapProjection schema
+                              |
+           Estate Map / resource + connection inspector
 ```
 
 The existing runtime already supplied authoritative parcel stages, dependency
@@ -47,6 +61,13 @@ shows the request, planner, parcel, dynamically created branches, aggregation,
 verification and result. Large maps automatically collapse job and lane groups;
 use the `+`/`-` marker to progressively reveal a branch. Use the mouse or touch
 surface to pan and the wheel to zoom; **Fit** restores the full topology.
+
+Choose **Process Map** or **Estate Map** at the top of the same workspace. Estate
+Map adds search, type filtering, hierarchical machine/transport/runtime/model
+expansion and a freshness-based heartbeat. A known but stale resource remains
+visible in grey as not currently verified. Selecting an edge opens the governed
+connection evidence; authentication is always a fixed-length mask and no secret
+is sent to the browser.
 
 State is conveyed by text and symbol as well as colour:
 

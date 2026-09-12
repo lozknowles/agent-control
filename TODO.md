@@ -1,5 +1,18 @@
 # Agent Control 4.5 work plan
 
+## Environment Discovery and unified Estate Map (4.5)
+
+- [x] Add read-only local/configured/edge adapter contracts, non-secret scan
+      history, change reconciliation and explicit qualification/apply gates.
+- [x] Add user-defined capability registry and safe import/export lifecycle.
+- [x] Reuse the Runtime Map schema and renderer for Process Map and Estate Map,
+      including freshness-aware Estate heartbeat and connection inspection.
+- [x] Add bootstrap/install inspection and portable Linux/Windows entry points.
+- [ ] Qualify each configured remote/mobile adapter and paid provider separately;
+      absence from the isolated controller run is not a product failure.
+- [ ] Agent Control 4.6: add primitive approved desired-state/remediation actions.
+      Do not present this planned capability as 4.5 Estate Map functionality.
+
 ## Runtime Map / Process Explorer workstream
 
 - [x] Project authoritative Work Parcels, Runs, workers, model calls, terminal

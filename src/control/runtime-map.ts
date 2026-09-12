@@ -31,7 +31,19 @@ export type RuntimeMapNodeType =
   | "baton"
   | "aggregation"
   | "consensus"
-  | "result";
+  | "result"
+  | "estate"
+  | "machine"
+  | "device"
+  | "gpu"
+  | "storage"
+  | "runtime"
+  | "model"
+  | "provider"
+  | "endpoint"
+  | "transport"
+  | "credential"
+  | "mcp-server";
 export type RuntimeMapState =
   | "WAITING"
   | "QUEUED"
@@ -80,7 +92,8 @@ export interface RuntimeMapEvent {
 }
 export interface RuntimeMapProjection {
   schema: "agent-control.runtime-map/v1";
-  authority: "Agent Control authoritative runtime records";
+  authority: "Agent Control authoritative runtime records" | "Agent Control governed discovery inventory";
+  mapKind?: "PROCESS" | "ESTATE";
   mode: "LIVE" | "REPLAY";
   parcelId: string | null;
   observedAt: string;

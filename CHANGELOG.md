@@ -2,6 +2,28 @@
 
 ## [4.5.0] — Unreleased candidate
 
+- Adds governed First Run/Rescan/Add Resource Environment Discovery with
+  read-only machine, accelerator, inference-runtime, model, CLI-agent,
+  provider/credential-presence and Agent Control resource adapters.
+- Adds persistent non-secret inventory history, explicit change classification,
+  qualification choices and revision/hash-bound recommendations whose material
+  application enters a normal approved Work Parcel; discovery never activates a
+  route.
+- Adds user/community capability definitions for non-standard executables and
+  endpoints, fixed safe probes and the gated `REVIEW → VALIDATE → TEST → APPROVE
+→ ENABLE` lifecycle. Portable exports exclude machine paths, bindings and
+  credentials; untrusted imports cannot bring executable contracts.
+- Extends the existing Runtime Map graph and renderer with **Process Map** and
+  live **Estate Map** modes, resource-specific freshness, Estate heartbeat,
+  explicit topology/transport edges, search/filter and resource/connection
+  inspectors. Discovery is not labelled alive without recent appropriate
+  evidence; fixed credential masks never encode secret length.
+- Adds read-only installation provenance/state inspection and portable Linux and
+  Windows bootstrap entry points. Dirty/diverged repositories fail closed and
+  optional third-party tools are never installed automatically.
+- 4.5 Estate visibility is experimental. Active desired-state management and
+  automatic remediation remain planned for 4.6 and are not released features.
+
 - Adds the first-class **Runtime Map** and adaptive **Control Room** as read-only
   projections of authoritative Work Parcel, Run, execution-session, baton,
   provider/model, cache, Your Memories and verification evidence.

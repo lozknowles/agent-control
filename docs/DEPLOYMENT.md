@@ -1,5 +1,22 @@
 # Agent Control 4.5 deployment, upgrade and rollback
 
+## Bootstrap and Environment Discovery
+
+Use `scripts/bootstrap-agent-control.sh --check` on Linux/macOS or
+`scripts/bootstrap-agent-control.ps1 -Mode check` on Windows before installation.
+The check is read-only and stops on missing prerequisites, a dirty checkout or
+divergence. Explicit install mode uses `npm ci`; it does not install Ollama,
+llama.cpp, Codex, Claude Code, Gemini CLI, GPU drivers or other optional tools.
+
+After the dashboard starts, use **Settings → Installation** to verify provenance,
+then **Environment Discovery** for First Run Setup. Remote discovery is opt-in
+and bounded to configured hosts. Review the resulting inventory and qualification
+before approving any configuration Work Parcel. Estate Map needs no extra
+service: it is a second projection rendered by the existing Runtime Map assets.
+Inventory and capability-registry state live beneath the configured Agent Control
+state root and contain references/status only, never credential values. See
+[the operator guide](environment-discovery.md).
+
 ## Runtime Map
 
 Runtime Map requires no second service or database. It is served by the normal

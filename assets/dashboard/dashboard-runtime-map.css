@@ -23,6 +23,72 @@
   gap: 8px;
   flex-wrap: wrap;
 }
+.runtime-map-surfaces {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.runtime-map-surfaces button {
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: #0d1825;
+  color: var(--muted);
+  padding: 8px 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.runtime-map-surfaces button.active {
+  border-color: #50dbcb;
+  color: #72f0e2;
+  background: #102c31;
+  box-shadow: 0 0 18px #2bd7c522;
+}
+.runtime-estate-heartbeat {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(100px, 1fr));
+  gap: 8px;
+  margin: 0 0 12px;
+}
+.runtime-estate-heartbeat article {
+  padding: 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: #0d1825;
+}
+.runtime-estate-heartbeat strong,
+.runtime-estate-heartbeat span {
+  display: block;
+}
+.runtime-estate-heartbeat strong {
+  font-size: 18px;
+}
+.runtime-estate-heartbeat span {
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.runtime-map-toolbar input[type="search"] {
+  min-width: 190px;
+}
+.runtime-edge {
+  pointer-events: stroke;
+  cursor: pointer;
+}
+.runtime-edge.selected {
+  stroke-width: 5px;
+}
+.runtime-graph-node.type-machine rect,
+.runtime-graph-node.type-device rect {
+  stroke-width: 2px;
+}
+.runtime-graph-node.type-transport rect {
+  stroke-dasharray: 5 3;
+}
+.runtime-graph-node.type-credential rect {
+  stroke-dasharray: 2 3;
+}
 .runtime-map-modes button,
 .runtime-map-toolbar select {
   background: #101d2a;

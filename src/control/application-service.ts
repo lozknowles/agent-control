@@ -41,6 +41,10 @@ import type {SkillLearningRuntime} from './skill-learning.js';
 import type {EnergyTelemetryRuntime} from './energy-telemetry.js';
 import type {DeterministicSkillRuntime} from './deterministic-skill.js';
 import {compareRuntimeMaps,projectRuntimeMap,type RuntimeMapProjection} from './runtime-map.js';
+import {DefaultDiscoveryProbe,type DiscoveryMode,type DiscoveryTesting,type EnvironmentDiscoveryRuntime} from './environment-discovery.js';
+import type {CapabilityAdapterDefinition,CapabilityAdapterRegistry,CapabilityAdapterState,CapabilityBinding} from './capability-adapter-registry.js';
+import {projectEstateMap} from './estate-map.js';
+import type {InstallationLifecycle,InstallationMode,InstallationRole} from './installation-lifecycle.js';
 
 export type ControlEventType =
   | 'social.activity'
@@ -78,6 +82,7 @@ export type ControlEventType =
   | 'energy.telemetry'
   | 'energy.routing_decision'
   | 'configuration.changed'
+  | 'environment.discovery_changed'
   | 'token.telemetry'
   | 'token.governor_transition'
   | 'token.context_lifecycle'
@@ -201,6 +206,9 @@ export class AgentControlService {
   private learnedSkills?: SkillLearningRuntime;
   private energyTelemetry?: EnergyTelemetryRuntime;
   private deterministicSkills?: DeterministicSkillRuntime;
+  private environmentDiscovery?: EnvironmentDiscoveryRuntime;
+  private capabilityAdapters?:CapabilityAdapterRegistry;
+  private installation?:InstallationLifecycle;
 
   constructor(
     readonly state: WorkspaceState,
@@ -213,7 +221,7 @@ export class AgentControlService {
     this.verification = new VerificationService(state, persist);
   }
 
-  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; services?: RegisteredService[]; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService; tokenBatonRouting?: TokenAwareBatonRuntime; governedRetrieval?: GovernedRetrievalRuntime; codexNodeExecution?: CodexNodeExecutionPort; harnessEfficiency?: HarnessEfficiencyLedgerPort; workParcels?: WorkParcelCoordinator; modelRegistry?: ModelRegistry; parameterizedJobs?: ParameterizedJobEngine; identity?: IdentityControlPlane; defaultSessionId?: string; fastExecution?: FastExecutionLedgerPort; runtimeObservability?: RuntimeObservability; capabilityIntelligence?: CapabilityIntelligenceStore; modelIntelligence?: ModelIntelligenceLedger; qualificationSuite?: FrozenQualificationSuite; providerCatalog?: ProviderCatalogRuntime; adaptiveOrchestration?: AdaptiveOrchestrationRuntime; executionSessions?: ExecutionSessionRuntime; poe?: PoeRuntime; cacheExperts?: CacheAwareExpertRuntime; learnedSkills?: SkillLearningRuntime; deterministicSkills?:DeterministicSkillRuntime; energyTelemetry?: EnergyTelemetryRuntime}) {
+  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; services?: RegisteredService[]; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService; tokenBatonRouting?: TokenAwareBatonRuntime; governedRetrieval?: GovernedRetrievalRuntime; codexNodeExecution?: CodexNodeExecutionPort; harnessEfficiency?: HarnessEfficiencyLedgerPort; workParcels?: WorkParcelCoordinator; modelRegistry?: ModelRegistry; parameterizedJobs?: ParameterizedJobEngine; identity?: IdentityControlPlane; defaultSessionId?: string; fastExecution?: FastExecutionLedgerPort; runtimeObservability?: RuntimeObservability; capabilityIntelligence?: CapabilityIntelligenceStore; modelIntelligence?: ModelIntelligenceLedger; qualificationSuite?: FrozenQualificationSuite; providerCatalog?: ProviderCatalogRuntime; adaptiveOrchestration?: AdaptiveOrchestrationRuntime; executionSessions?: ExecutionSessionRuntime; poe?: PoeRuntime; cacheExperts?: CacheAwareExpertRuntime; learnedSkills?: SkillLearningRuntime; deterministicSkills?:DeterministicSkillRuntime; energyTelemetry?: EnergyTelemetryRuntime; environmentDiscovery?:EnvironmentDiscoveryRuntime; capabilityAdapters?:CapabilityAdapterRegistry; installation?:InstallationLifecycle}) {
     if (extras.approvalCount) this.approvalCount = extras.approvalCount;
     if (extras.resources) this.resourceRows = structuredClone(extras.resources);
     if (extras.services) this.serviceRows = structuredClone(extras.services);
@@ -243,6 +251,9 @@ export class AgentControlService {
     if (extras.learnedSkills) this.learnedSkills = extras.learnedSkills;
     if (extras.energyTelemetry) this.energyTelemetry = extras.energyTelemetry;
     if (extras.deterministicSkills) this.deterministicSkills=extras.deterministicSkills;
+    if (extras.environmentDiscovery) this.environmentDiscovery=extras.environmentDiscovery;
+    if(extras.capabilityAdapters)this.capabilityAdapters=extras.capabilityAdapters;
+    if(extras.installation)this.installation=extras.installation;
     return this;
   }
 
@@ -311,6 +322,22 @@ export class AgentControlService {
   executionSessionProjection() { return (this.executionSessions?.list() ?? []).map(session => ({id: session.id, incarnation: session.incarnation, state: session.state, adapterId: session.adapterId, scope: structuredClone(session.scope), command: session.command, cwd: session.cwd, ...(session.pid === undefined ? {} : {pid: session.pid}), capabilities: structuredClone(session.capabilities), control: structuredClone(session.control), activeAttachments: session.attachments.filter(item => !item.detachedAt).map(item => ({id: item.id, actorId: item.actorId, mode: item.mode, attachedAt: item.attachedAt})), createdAt: session.createdAt, startedAt: session.startedAt, updatedAt: session.updatedAt, ...(session.endedAt ? {endedAt: session.endedAt} : {}), ...(session.exitCode === undefined ? {} : {exitCode: session.exitCode}), ...(session.exitSignal === undefined ? {} : {exitSignal: session.exitSignal}), outputBytes: session.outputBytes, outputTruncated: session.outputTruncated, ...(session.lastOutputAt ? {lastOutputAt: session.lastOutputAt} : {}), ...(session.lastError ? {lastError: session.lastError} : {})})); }
   runtimeMap(parcelId?:string,replayAt?:string):RuntimeMapProjection {const parcels=this.workParcels?.list()??[],parcel=parcelId?parcels.find(item=>item.id===parcelId):parcels.find(item=>!item.endedAt)??parcels[0];if(parcelId&&!parcel)throw new Error('work_parcel_missing');const sessions=this.executionSessions?.list({parcelId:parcel?.id})??[];return projectRuntimeMap({parcel,runs:this.jobRuntime?.ledger.list()??[],sessions,sessionEvents:id=>this.executionSessions?.events(id)??[],tokenRouting:this.tokenRouting(),retrieval:this.retrievalProjection(),...(replayAt?{replayAt}:{})});}
   compareRuntimeMaps(leftParcelId:string,rightParcelId:string){return compareRuntimeMaps(this.runtimeMap(leftParcelId),this.runtimeMap(rightParcelId));}
+  environmentDiscoveryProjection(){return this.mustEnvironmentDiscovery().projection();}
+  estateMap(){return projectEstateMap(this.mustEnvironmentDiscovery().projection().latest);}
+  installationProjection(){return this.mustInstallation().projection();}
+  inspectInstallation(mode:InstallationMode,role:InstallationRole){return this.mustInstallation().inspect(mode,role);}
+  discoverEnvironment(input:{mode:DiscoveryMode;testing?:DiscoveryTesting;includeRemote?:boolean;includeMemory?:boolean}){return this.mustEnvironmentDiscovery().discover(input);}
+  createEnvironmentProposal(scanId:string,recommendationIds:string[],actor:string){return this.mustEnvironmentDiscovery().createProposal(scanId,recommendationIds,actor);}
+  saveEnvironmentProposal(id:string,sha256:string){return this.mustEnvironmentDiscovery().saveProposal(id,sha256);}
+  cancelEnvironmentProposal(id:string,sha256:string){return this.mustEnvironmentDiscovery().cancelProposal(id,sha256);}
+  approveEnvironmentProposal(id:string,sha256:string,actor:string){return this.mustEnvironmentDiscovery().approveProposal(id,sha256,actor);}
+  applyEnvironmentProposal(id:string,sha256:string,actor:string){return this.mustEnvironmentDiscovery().applyProposal(id,sha256,actor);}
+  capabilityAdapterProjection(){return{schema:'agent-control.capability-adapter-registry/v1',records:this.mustCapabilityAdapters().list()};}
+  addCapabilityAdapter(definition:CapabilityAdapterDefinition,binding:CapabilityBinding){return this.mustCapabilityAdapters().add(definition,binding);}
+  importCapabilityAdapter(definition:CapabilityAdapterDefinition,binding:CapabilityBinding){return this.mustCapabilityAdapters().importDefinition(definition,binding);}
+  exportCapabilityAdapter(id:string){return this.mustCapabilityAdapters().exportDefinition(id);}
+  transitionCapabilityAdapter(id:string,sha256:string,state:CapabilityAdapterState){return this.mustCapabilityAdapters().transition(id,sha256,state);}
+  testCapabilityAdapter(id:string,sha256:string){return this.mustCapabilityAdapters().test(id,sha256,new DefaultDiscoveryProbe());}
   poeRegression(){return this.mustPoe().regression();}
   poeKnowledge(){return this.mustPoe().knowledge();}
   poeKnowledgeSource(id:string){return this.mustPoe().knowledgeSource(id);}
@@ -678,6 +705,9 @@ export class AgentControlService {
   private mustQualificationSuite() { if (!this.qualificationSuite) throw new Error('model_qualification_suite_unconfigured'); return this.qualificationSuite; }
   private mustExecutionSessions() { if (!this.executionSessions) throw new Error('execution_session_runtime_unconfigured'); return this.executionSessions; }
   private mustPoe() { if (!this.poe) throw new Error('poe_unconfigured'); return this.poe; }
+  private mustEnvironmentDiscovery(){if(!this.environmentDiscovery)throw new Error('environment_discovery_unconfigured');return this.environmentDiscovery;}
+  private mustCapabilityAdapters(){if(!this.capabilityAdapters)throw new Error('capability_adapters_unconfigured');return this.capabilityAdapters;}
+  private mustInstallation(){if(!this.installation)throw new Error('installation_runtime_unconfigured');return this.installation;}
 }
 
 function sessionAuthority(actor: string) { return {actorId: actor.startsWith('human:') ? actor : `human:${actor}`, roles: ['operator' as const]}; }

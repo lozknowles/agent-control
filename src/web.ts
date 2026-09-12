@@ -39,6 +39,10 @@ import {RoutedPoeResponseModel} from './control/poe-model.js';
 import {governedRequestOrigin} from './control/request-origin.js';
 import {UxSessionAnnotationStore,UxSessionCaptureRuntime,UxSessionShareStore,UxSessionStore} from './control/ux-session.js';
 import {CodexSessionAdapter,ImmutableSessionVault,SessionVaultRuntime} from './control/session-vault.js';
+import {EnvironmentDiscoveryRuntime} from './control/environment-discovery.js';
+import {ConfigurationStore} from './control/configuration-store.js';
+import {CapabilityAdapterRegistry,RegisteredCapabilityDiscoveryAdapter} from './control/capability-adapter-registry.js';
+import {InstallationLifecycle} from './control/installation-lifecycle.js';
 
 const now = () => new Date().toISOString();
 const configurationFile = configPath(), config = loadConfig(configurationFile);
@@ -119,6 +123,26 @@ const service = new AgentControlService(state, ptys, providers).configureProject
   deterministicSkills: jobRuntime.deterministicSkills,
   energyTelemetry: jobRuntime.energyTelemetry,
 });
+const capabilityAdapters=new CapabilityAdapterRegistry(path.join(stateRoot,'environment-discovery','capability-adapters.json'));
+const installation=new InstallationLifecycle(path.join(stateRoot,'installation','state.json'),process.cwd());
+const environmentDiscovery=new EnvironmentDiscoveryRuntime({
+  file:path.join(stateRoot,'environment-discovery','inventory.json'),
+  config:()=>loadConfig(configurationFile),
+  configurationRevision:()=>new ConfigurationStore(configurationFile).read().revision,
+  managedNodes:()=>jobRuntime.managedNodes.list(),
+  additionalAdapters:[new RegisteredCapabilityDiscoveryAdapter(capabilityAdapters)],
+  runtimeInventory:()=>({
+    jobs:jobRuntime.catalog.listJobs().map(job=>({id:job.metadata.id,name:job.metadata.name,version:job.metadata.version})),
+    agents:jobRuntime.workers.list().map(worker=>({id:worker.id,health:worker.health,capabilities:[...worker.capabilities]})),
+    tools:[...jobRuntime.actions.ids()],
+    skills:[...jobRuntime.deterministicSkills.records().map(skill=>({id:`deterministic:${skill.id}@${skill.version}`,state:skill.state,kind:'deterministic'})),...jobRuntime.learnedSkills.adapters().map(skill=>({id:`learned:${skill.id}@${skill.version}`,state:skill.lifecycle.state,kind:'learned'}))],
+    mcpServers:[],plugins:[],
+  }),
+  createWorkParcel:proposal=>{const parcel=jobRuntime.workParcels.recordConfigurationProposal({proposalId:proposal.id,scanId:proposal.scanId,sha256:proposal.sha256,operationCount:proposal.operations.length,actor:proposal.actor});service.events.emit('work.parcel_created',{parcelId:parcel.id,status:parcel.status,kind:'environment-configuration'},undefined,proposal.actor);return parcel.id;},
+  applyConfiguration:proposal=>{const result=new ConfigurationStore(configurationFile).applyDiscoveryOperations({revision:proposal.configurationRevision,operations:proposal.operations});if(proposal.workParcelId)jobRuntime.workParcels.recordConfigurationApplied(proposal.workParcelId,`configuration-revision:${result.revision}`);service.events.emit('configuration.changed',{kind:'environment-discovery',ids:result.changed.ids,restartRequired:true},undefined,proposal.actor);},
+  onEvent:(type,payload)=>service.events.emit('environment.discovery_changed',{eventType:type,...payload},undefined,'environment-discovery'),
+});
+service.configureProjection({environmentDiscovery,capabilityAdapters,installation});
 let poeSpeech: import('./control/social-voice-providers.js').SpeechProvider | undefined;
 let poeRecognition: import('./control/social-voice-providers.js').SpeechRecognitionProvider | undefined;
 let poeVoice: import('./control/social-voice-providers.js').VoiceIdentity | undefined;

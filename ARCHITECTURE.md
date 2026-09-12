@@ -75,6 +75,36 @@ This layer composes with, rather than replaces, Work Parcel audit, token telemet
 
 ## Runtime Map projection (4.5 experimental)
 
+Runtime Map now has two projections over one provider-neutral graph language:
+**Process Map** projects current governed execution and **Estate Map** projects
+the latest Environment Discovery topology plus resource-appropriate evidence
+freshness. They share nodes/edges, layout, status vocabulary, progressive
+disclosure, inspector and evidence references. Neither owns execution or estate
+state.
+
+```text
+runtime ledgers/events ──> Process Map ┐
+                                      ├─> shared runtime-map schema/renderer
+discovery inventory + health ─> Estate Map ┘
+```
+
+`EnvironmentDiscoveryRuntime` runs isolated read-only adapters, normalizes
+resource classes and provenance, persists non-secret scan history and computes
+changes. Remote/edge observations enter through generic adapter contracts and
+require explicit configured scope. `CapabilityAdapterRegistry` separates
+portable definitions from machine bindings and enforces draft, review,
+validation, bounded test, approval and enablement. Imported community contracts
+cannot execute arbitrary commands. Configuration proposals bind scan,
+configuration revision and SHA-256, then use the existing Work Parcel boundary.
+
+Estate “alive” status is not discovery presence: machine/agent heartbeat,
+runtime/endpoint health, model availability and static inventory each have
+appropriate freshness windows. Stale topology remains visible but unavailable.
+Credential values are resolved nowhere in the projection; only reference/status
+and a constant-length mask cross the server boundary. Desired-state management
+and remediation are explicitly 4.6 work, not 4.5 Estate Map behavior. See
+[Environment Discovery](docs/environment-discovery.md).
+
 ```text
 authoritative Work Parcels / Runs / sessions / token and retrieval evidence
                                   |

@@ -6,6 +6,7 @@ import type {AdaptiveOrchestrationConfig} from './adaptive-orchestration.js';
 import type {CacheExpertPolicyConfig} from './cache-aware-expert.js';
 import type {LearnedSkillPolicyConfig} from './skill-learning.js';
 import type {DeterministicSkillPolicyConfig} from './deterministic-skill.js';
+import type {DiscoveryConfigurationOperation} from './environment-discovery.js';
 
 export type ConfiguredSystemKind = 'resource' | 'provider' | 'model' | 'service';
 export interface ConfigurationSnapshot {
@@ -111,6 +112,14 @@ export class ConfigurationStore {
 
   updateDeterministicSkills(input:{revision?:unknown;deterministicSkills?:unknown}){
     const current=this.current(),currentRevision=revision(current);if(typeof input.revision!=='string'||input.revision!==currentRevision)throw new ConfigurationStoreError('configuration_revision_conflict',409);if(!input.deterministicSkills||typeof input.deterministicSkills!=='object'||Array.isArray(input.deterministicSkills))throw new ConfigurationStoreError('configuration_deterministic_skills_invalid',400);let next:AgentControlConfig;try{next=validateConfig({...current,deterministicSkills:structuredClone(input.deterministicSkills) as DeterministicSkillPolicyConfig});}catch(error){throw new ConfigurationStoreError((error as Error).message||'configuration_invalid',400);}this.write(next);return{...snapshot(next),restartRequired:true,changed:{kind:'deterministic-skills' as const,id:'deterministic-skills'}};
+  }
+
+  applyDiscoveryOperations(input:{revision?:unknown;operations?:unknown}){
+    const current=this.current(),currentRevision=revision(current);if(typeof input.revision!=='string'||input.revision!==currentRevision)throw new ConfigurationStoreError('configuration_revision_conflict',409);
+    if(!Array.isArray(input.operations)||!input.operations.length)throw new ConfigurationStoreError('environment_discovery_operations_required',400);
+    const next=structuredClone(current);
+    for(const raw of input.operations){if(!raw||typeof raw!=='object'||Array.isArray(raw))throw new ConfigurationStoreError('environment_discovery_operation_invalid',400);const operation=raw as DiscoveryConfigurationOperation;if(!['resource','provider','model','service'].includes(operation.kind)||!operation.item||typeof operation.item!=='object'||Array.isArray(operation.item))throw new ConfigurationStoreError('environment_discovery_operation_invalid',400);const key=collection(operation.kind),values=next[key] as Array<ResourceConfig|ProviderConfig|ModelConfig|ServiceConfig>;if(values.some(value=>value.id===operation.item.id))throw new ConfigurationStoreError(`duplicate_id:${operation.item.id}`,409);values.push(structuredClone(operation.item) as never);}
+    let validated:AgentControlConfig;try{validated=validateConfig(next);}catch(error){throw new ConfigurationStoreError((error as Error).message||'configuration_invalid',400);}this.write(validated);return{...snapshot(validated),restartRequired:true,changed:{kind:'environment-discovery' as const,ids:input.operations.map(operation=>(operation as DiscoveryConfigurationOperation).item.id)}};
   }
 
   private current() {

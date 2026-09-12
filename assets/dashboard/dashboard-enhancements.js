@@ -523,10 +523,12 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelector('#crew-workspace').hidden = view !== 'crew';
     document.querySelector('#poe-workspace').hidden = view !== 'poe';
     document.querySelector('#configuration-workspace').hidden = view !== 'configuration';
+    document.querySelector('#environment-workspace').hidden = view !== 'environment';
     document.querySelector('#routing-workspace').hidden = view !== 'routing';
     document.querySelector('#experts-workspace').hidden = view !== 'experts';
     document.querySelector('#specialists-workspace').hidden = view !== 'specialists';
     if(view==='configuration')loadConfiguration().catch(showError);
+    if(view==='environment')window.AgentControlEnvironmentDiscovery?.activate();
     if(view==='runtime-map')window.AgentControlRuntimeMap?.activate();
   }));
   document.querySelector('#health').addEventListener('click',()=>document.querySelector('[data-view="systems"]').click());

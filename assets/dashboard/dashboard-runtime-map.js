@@ -4,6 +4,9 @@
     projection: null,
     parcels: [],
     parcelId: "",
+    surface: "process",
+    search: "",
+    filter: "ALL",
     mode: "map",
     selected: null,
     collapsed: new Set(),
@@ -51,6 +54,18 @@
       aggregation: "⋈",
       consensus: "∑",
       result: "◎",
+      estate: "⌂",
+      machine: "▰",
+      device: "▯",
+      gpu: "▥",
+      storage: "▱",
+      runtime: "◈",
+      model: "✧",
+      provider: "☁",
+      endpoint: "◎",
+      transport: "⇄",
+      credential: "⌾",
+      "mcp-server": "⌘",
     };
   const headers = () => ({ Authorization: `Bearer ${state.token}` });
   async function get(url) {
@@ -87,6 +102,17 @@
   async function load() {
     if (!rt.active) return;
     try {
+      if (rt.surface === "estate") {
+        const previous = rt.projection;
+        rt.projection = await get("/api/estate-map");
+        if (!previous || previous.parcelId !== rt.projection.parcelId) {
+          rt.collapsed.clear();
+          rt.autoClustered = false;
+          rt.selected = null;
+        }
+        render();
+        return;
+      }
       if (!rt.parcels.length) await loadParcels();
       if (!rt.parcelId) {
         empty("No Work Parcels have authoritative runtime records yet.");
@@ -126,7 +152,16 @@
   function visibleNodes() {
     const all = rt.projection.nodes;
     return all.filter(
-      (node) => !node.parentId || !ancestorCollapsed(node, all),
+      (node) =>
+        (!node.parentId || !ancestorCollapsed(node, all)) &&
+        (rt.surface !== "estate" ||
+          ((rt.filter === "ALL" ||
+            node.type === rt.filter ||
+            node.type === "estate") &&
+            (!rt.search ||
+              `${node.label} ${node.subtitle || ""} ${JSON.stringify(node.detail || {})}`
+                .toLowerCase()
+                .includes(rt.search.toLowerCase())))),
     );
   }
   function ancestorCollapsed(node, all) {
@@ -175,9 +210,46 @@
     $("runtime-map-health").className =
       `runtime-map-health ${p.freshness.state.toLowerCase()}`;
     $("runtime-map-health").innerHTML =
-      `<strong>${safe(p.mode)} · ${safe(p.freshness.state)}</strong><span>${safe(p.parcelId)} · authoritative ${safe(p.freshness.lastAuthoritativeAt ? new Date(p.freshness.lastAuthoritativeAt).toLocaleTimeString() : "unavailable")}</span>${stale ? "<b>Dashboard data is stale; execution authority is unaffected.</b>" : ""}`;
+      `<strong>${safe(rt.surface === "estate" ? "ESTATE" : p.mode)} · ${safe(p.freshness.state)}</strong><span>${safe(p.parcelId)} · authoritative ${safe(p.freshness.lastAuthoritativeAt ? new Date(p.freshness.lastAuthoritativeAt).toLocaleTimeString() : "unavailable")}</span>${stale ? `<b>${rt.surface === "estate" ? "Known resources are stale or not currently verified; discovery is not proof of availability." : "Dashboard data is stale; execution authority is unaffected."}</b>` : ""}`;
     $("runtime-map-summary").textContent =
-      `${p.summary.running} running · ${p.summary.waiting} waiting · ${p.summary.succeeded} succeeded · ${p.summary.degraded} degraded · ${p.summary.failed} failed · ${p.summary.nodes} operations`;
+      `${p.summary.running} active · ${p.summary.waiting} waiting/stale · ${p.summary.succeeded} healthy/succeeded · ${p.summary.degraded} degraded · ${p.summary.failed} failed · ${p.summary.nodes} ${rt.surface === "estate" ? "resources" : "operations"}`;
+    $("runtime-map-title").textContent =
+      rt.surface === "estate" ? "Estate Map" : "Process Map";
+    $("runtime-map-eyebrow").textContent =
+      rt.surface === "estate"
+        ? "Live governed resource topology"
+        : "Authoritative governed execution";
+    $("runtime-map-description").textContent =
+      rt.surface === "estate"
+        ? "WHAT CAN AGENT CONTROL SEE AND USE RIGHT NOW? Alive requires recent, resource-appropriate evidence."
+        : "WHAT IS AGENT CONTROL DOING RIGHT NOW? Executive map at the top; engineering evidence at the bottom. WATCH is read-only.";
+    $("runtime-parcel-field").hidden = rt.surface === "estate";
+    $("runtime-search-field").hidden = rt.surface !== "estate";
+    $("runtime-filter-field").hidden = rt.surface !== "estate";
+    if (rt.surface === "estate") {
+      const filter = $("runtime-filter"),
+        prior = rt.filter,
+        types = [
+          ...new Set(
+            p.nodes
+              .map((node) => node.type)
+              .filter((type) => type !== "estate"),
+          ),
+        ].sort();
+      filter.innerHTML = `<option value="ALL">All resources</option>${types.map((type) => `<option value="${safe(type)}">${safe(type.replaceAll("-", " "))}</option>`).join("")}`;
+      filter.value = types.includes(prior) ? prior : "ALL";
+      rt.filter = filter.value;
+    }
+    const heartbeat = $("runtime-estate-heartbeat");
+    heartbeat.hidden = rt.surface !== "estate";
+    if (rt.surface === "estate" && p.estateCounts)
+      heartbeat.innerHTML = Object.entries(p.estateCounts)
+        .map(([key, value]) =>
+          key === "warnings"
+            ? `<article><span>Warnings</span><strong>${safe(value)}</strong></article>`
+            : `<article><span>${safe(key)}</span><strong>${safe(value.alive)} / ${safe(value.total)}</strong></article>`,
+        )
+        .join("");
     document.querySelector(".runtime-replay-control").hidden =
       rt.mode !== "replay";
     if (rt.mode === "replay")
@@ -212,7 +284,7 @@
           x2 = b.x,
           y2 = b.y + 34,
           m = (x1 + x2) / 2;
-        return `<path class="runtime-edge state-${safe(e.state)} kind-${safe(e.kind)}" d="M${x1},${y1} C${m},${y1} ${m},${y2} ${x2},${y2}"><title>${safe(e.label || e.kind)}</title></path>`;
+        return `<path class="runtime-edge state-${safe(e.state)} kind-${safe(e.kind)} ${rt.selected === e.id ? "selected" : ""}" data-runtime-edge="${safe(e.id)}" d="M${x1},${y1} C${m},${y1} ${m},${y2} ${x2},${y2}"><title>${safe(e.label || e.kind)}</title></path>`;
       })
       .join("")}${nodes
       .map((n) => {
@@ -233,6 +305,14 @@
         }
         rt.selected = button.dataset.runtimeNode;
         inspect(p.nodes.find((n) => n.id === rt.selected));
+        renderGraph();
+      }),
+    );
+    canvas.querySelectorAll("[data-runtime-edge]").forEach((path) =>
+      path.addEventListener("click", (event) => {
+        event.stopPropagation();
+        rt.selected = path.dataset.runtimeEdge;
+        inspectEdge(p.edges.find((edge) => edge.id === rt.selected));
         renderGraph();
       }),
     );
@@ -289,6 +369,29 @@
           );
       });
   }
+  function inspectEdge(edge) {
+    if (!edge) return;
+    const from = rt.projection.nodes.find((node) => node.id === edge.from),
+      to = rt.projection.nodes.find((node) => node.id === edge.to);
+    $("runtime-breadcrumbs").innerHTML =
+      `<button data-runtime-back>${rt.surface === "estate" ? "Estate Map" : "Process Map"}</button> › connection › <strong>${safe(edge.label || edge.kind)}</strong>`;
+    const connection =
+      to?.type === "transport"
+        ? Object.entries(to.detail || {})
+            .map(
+              ([key, value]) => `<dt>${safe(key)}</dt><dd>${safe(value)}</dd>`,
+            )
+            .join("")
+        : "";
+    $("runtime-inspector").innerHTML =
+      `<header><span class="runtime-node-state state-${safe(edge.state)}">⇄ ${safe(edge.state)}</span><h2>${safe(edge.label || edge.kind)}</h2><p>${safe(from?.label || edge.from)} → ${safe(to?.label || edge.to)}</p></header><dl><dt>Relationship</dt><dd>${safe(edge.kind)}</dd><dt>Source</dt><dd>${safe(from?.label || edge.from)}</dd><dt>Destination</dt><dd>${safe(to?.label || edge.to)}</dd>${connection}</dl><h3>Authoritative evidence</h3><ul class="runtime-evidence">${evidenceList(edge.evidence)}</ul>`;
+    $("runtime-breadcrumbs").querySelector("[data-runtime-back]").onclick =
+      () => {
+        rt.selected = null;
+        inspect(null);
+        renderGraph();
+      };
+  }
   function renderControl() {
     $("runtime-control-room").innerHTML = rt.projection.controlRoom.length
       ? rt.projection.controlRoom
@@ -328,9 +431,9 @@
   }
   function activate() {
     rt.active = true;
-    loadParcels()
-      .then(load)
-      .catch((error) => empty(error.message));
+    (rt.surface === "estate" ? load() : loadParcels().then(load)).catch(
+      (error) => empty(error.message),
+    );
   }
   document.addEventListener("DOMContentLoaded", () => {
     $("runtime-parcel").addEventListener("change", (e) => {
@@ -345,6 +448,34 @@
         load();
       }),
     );
+    document.querySelectorAll("[data-runtime-surface]").forEach((button) =>
+      button.addEventListener("click", () => {
+        rt.surface = button.dataset.runtimeSurface;
+        rt.mode = "map";
+        rt.selected = null;
+        rt.collapsed.clear();
+        document
+          .querySelectorAll("[data-runtime-surface]")
+          .forEach((value) =>
+            value.classList.toggle("active", value === button),
+          );
+        document
+          .querySelectorAll(
+            '[data-runtime-mode="control"], [data-runtime-mode="replay"]',
+          )
+          .forEach((value) => (value.hidden = rt.surface === "estate"));
+        modeButtons();
+        load();
+      }),
+    );
+    $("runtime-search").addEventListener("input", (event) => {
+      rt.search = event.target.value;
+      renderGraph();
+    });
+    $("runtime-filter").addEventListener("change", (event) => {
+      rt.filter = event.target.value;
+      renderGraph();
+    });
     $("runtime-replay").addEventListener("input", schedule);
     $("runtime-fit").addEventListener("click", fit);
     const canvas = $("runtime-map-canvas");
