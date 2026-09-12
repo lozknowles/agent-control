@@ -133,12 +133,12 @@ test('the audited Windows runner discovers versioned Codex bundles without a har
   assert.match(script, /features\.workspace_dependencies=false/);
   assert.match(script, /--output-last-message/);
   assert.match(script, /ReadAllText\(\$lastMessageFile\)/);
-  assert.match(script, /\$start\.FileName = \$selected\.Path/);
-  assert.match(script, /\$start\.RedirectStandardInput = \$true/);
-  assert.match(script, /\$start\.RedirectStandardOutput = \$true/);
-  assert.match(script, /\$process\.StandardInput\.Write/);
-  assert.match(script, /\$process\.StandardInput\.Close/);
-  assert.match(script, /\$process\.StandardOutput\.ReadToEndAsync/);
+  assert.match(script, /\$start\.FileName = Join-Path \$env:SystemRoot 'System32\\cmd\.exe'/);
+  assert.match(script, /\$start\.Arguments = '\/d \/s \/c/);
+  assert.match(script, /< \"' \+ \$promptFile/);
+  assert.match(script, /> \"' \+ \$stdoutFile/);
+  assert.match(script, /2> \"' \+ \$stderrFile/);
+  assert.doesNotMatch(script, /\$start\.Arguments[^\n]+request\.instruction/);
   assert.match(script, /\$process\.WaitForExit/);
   assert.match(script, /codex_node_context_limit_exceeded/);
   assert.match(script, /codex_node_rate_limited/);

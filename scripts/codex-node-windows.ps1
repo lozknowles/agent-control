@@ -92,37 +92,34 @@ param([string]$PayloadLine)
     New-Item -ItemType Directory -Path $temporary | Out-Null
     try {
       $schemaFile = Join-Path $temporary 'output.schema.json'
+      $promptFile = Join-Path $temporary 'prompt.txt'
+      $stdoutFile = Join-Path $temporary 'events.jsonl'
+      $stderrFile = Join-Path $temporary 'stderr.txt'
       $lastMessageFile = Join-Path $temporary 'last-message.json'
       $schemaJson = $request.outputSchema | ConvertTo-Json -Depth 30 -Compress
       $utf8NoBom = New-Object Text.UTF8Encoding($false)
       [IO.File]::WriteAllText($schemaFile, $schemaJson, $utf8NoBom)
+      [IO.File]::WriteAllText($promptFile, [string]$request.instruction, $utf8NoBom)
       $arguments = @('exec', '--ephemeral', '--json', '--strict-config', '--sandbox', 'read-only', '--skip-git-repo-check', '--ignore-user-config', '--ignore-rules', '--config', 'project_doc_max_bytes=0', '--config', 'web_search=disabled', '--config', 'features.shell_tool=false', '--config', 'features.unified_exec=false', '--config', 'features.multi_agent=false', '--config', 'features.browser_use=false', '--config', 'features.computer_use=false', '--config', 'features.in_app_browser=false', '--config', 'features.apps=false', '--config', 'features.image_generation=false', '--config', 'features.workspace_dependencies=false', '--model', [string]$request.providerModel, '--output-schema', $schemaFile, '--output-last-message', $lastMessageFile, '-')
       $stopwatch = [Diagnostics.Stopwatch]::StartNew()
-      # Start the exact executable directly, deliver the prompt through a
-      # finite stdin stream and drain both provider streams asynchronously.
-      # Start-Process may delegate a bundled desktop executable and lose the
-      # process identity needed for bounded tree cleanup.
+      # Run through one supervised cmd.exe tree. Work Parcel content remains
+      # in a node-local stdin file and never enters command source or argv.
+      # This matches the native invocation proven for the bundled CLI while
+      # retaining a stable process-tree root for bounded cancellation.
       $start = New-Object Diagnostics.ProcessStartInfo
-      $start.FileName = $selected.Path
-      $start.Arguments = (@($arguments | ForEach-Object { Quote-NativeArgument ([string]$_) }) -join ' ')
+      $start.FileName = Join-Path $env:SystemRoot 'System32\cmd.exe'
+      $nativeArguments = @($arguments | ForEach-Object { Quote-NativeArgument ([string]$_) }) -join ' '
+      $start.Arguments = '/d /s /c ""' + $selected.Path + '" ' + $nativeArguments + ' < "' + $promptFile + '" > "' + $stdoutFile + '" 2> "' + $stderrFile + '""'
       $start.UseShellExecute = $false
       $start.CreateNoWindow = $true
-      $start.RedirectStandardInput = $true
-      $start.RedirectStandardOutput = $true
-      $start.RedirectStandardError = $true
       $process = New-Object Diagnostics.Process
       $process.StartInfo = $start
       if (-not $process.Start()) { Fail $operation 'codex_node_transport_failed' }
-      $process.StandardInput.Write([string]$request.instruction)
-      $process.StandardInput.Close()
-      $stdoutTask = $process.StandardOutput.ReadToEndAsync()
-      $stderrTask = $process.StandardError.ReadToEndAsync()
       $timeoutMilliseconds = [Math]::Max(1000, [Math]::Min(1800000, [int64]$request.timeoutMs))
       if (-not $process.WaitForExit([int]$timeoutMilliseconds)) { Stop-ProcessTree $process; Fail $operation 'codex_node_exec_timeout' }
       $process.WaitForExit()
-      if (-not [Threading.Tasks.Task]::WaitAll(@($stdoutTask, $stderrTask), 5000)) { Stop-ProcessTree $process; Fail $operation 'codex_node_exec_stream_incomplete' }
-      $stdout = $stdoutTask.GetAwaiter().GetResult()
-      $standardError = $stderrTask.GetAwaiter().GetResult()
+      $stdout = if (Test-Path -LiteralPath $stdoutFile -PathType Leaf) { [IO.File]::ReadAllText($stdoutFile) } else { '' }
+      $standardError = if (Test-Path -LiteralPath $stderrFile -PathType Leaf) { [IO.File]::ReadAllText($stderrFile) } else { '' }
       $stopwatch.Stop()
       $lines = @($stdout -split '[\r\n]+' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
       $events = @()
