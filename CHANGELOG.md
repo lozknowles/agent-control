@@ -2,6 +2,12 @@
 
 ## [4.5.0] — Unreleased candidate
 
+- Adds one canonical provider-neutral `ProjectMemoryExchange` contract across writer, reader and consolidation flows. Application-schema validity and semantic reconstruction remain separate fail-closed gates; exact topology state, provenance, decision, rejection risk and next action are still required.
+- Repairs the bounded Pixel reader path after physical `finish_reason=length` evidence and repairs Windows OpenSSH execution by replacing channel-EOF framing with two explicit base64 records. Remote profile homes and raw transport output remain node-local and absent from evidence.
+- Physically qualifies both controller directions, Pixel Gemma 4 E4B→Qwen, both isolated MSI Codex profiles, and a POE-initiated `Cottage Plus/Luna → Lawrence Pro/Sol` cross-node continuation. The reconciled requested matrix is 9/12; Qwen→Pixel remains a semantic model limitation and GLM→Qwen remains authentication-blocked.
+- Repeats strong-model consolidation with Qwen and Sol: average semantic reconstruction improves from 86.37% to 90.91%. A separate 15/15-per-route batch measurement again disproves an energy advantage for the current specialist, and no whole-node claim is made.
+- Adds checksummed completion evidence and independent verification. The exact completion candidate passes 1,157/1,157 automated tests but has no new HD recording, so 4.5 remains experimental and no stable merge, tag, release or deployment is authorized.
+
 - Adds a separate governed deterministic-skill lifecycle: `OBSERVE → CANDIDATE → VALIDATE → PROMOTE → REUSE → REVALIDATE/INVALIDATE`. Promotion requires distinct verified source Work Parcels and explicit operator action; model output cannot install executable code.
 - Adds hash-identified pre-registered handlers, typed input/output contracts, assumptions, scope, freshness and invalidation evidence. Unknown fields, changed handler identity, stale evidence and failed verification fail closed to a recorded governed-model escalation.
 - Adds the energy-minimal execution hierarchy and a production read-only Work Parcel Action/Job for deterministic skill reuse. The Learned Specialists dashboard now distinguishes Your Memories, deterministic skills and learned model adaptations and explains selections/rejections without fabricated savings.

@@ -2,7 +2,7 @@
 
 Status: experimental. Normal user-facing UX calls this capability **Your Memories**. `ProjectMemoryPort` and backend names are technical terms used only in architecture, diagnostics, and evidence.
 
-The 2026-09-11 [physical cross-model qualification](evidence/agent-control-4.5-cross-model-memory-qualification-20260911.md) retained this status. Five of twelve requested writer→cold-reader pairs passed, one real POE-initiated Sol→Luna continuation passed end to end, and strong-model consolidation reduced bytes without improving verified reconstruction. No provider-native ChatGPT personal memory was inferred, and no failed edge/desktop cell was presented as a pass.
+The 2026-09-11 [physical cross-model qualification](evidence/agent-control-4.5-cross-model-memory-qualification-20260911.md) initially passed five of twelve requested writer→cold-reader cells. The [completion qualification](evidence/agent-control-4.5-release-gate-completion-20260912.md) reconciles nine of twelve after fixing the shared application contract and bounded transports. It includes both controller directions, Pixel Gemma 4 E4B→Qwen, and a real POE-initiated transition between isolated MSI Codex profiles. Qwen→Pixel remains a semantic model limitation and GLM→Qwen remains blocked by authentication; neither is counted as a pass. Strong-model consolidation now improves the measured Qwen/Sol average by 4.54 points. No provider-native ChatGPT personal memory was inferred.
 
 Agent Control treats durable memory as advisory context. A memory cannot alter a Work Parcel, approve work, grant authority, replace a baton, or satisfy verification. Current repository and physical evidence outrank remembered claims. Assistant memory is an untrusted source and follows the same checks.
 

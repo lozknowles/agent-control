@@ -78,8 +78,10 @@ delivery mechanism. Do not place credentials in URLs, Git, transcripts or videos
 7. Verify version, source provenance, health, authentication, SSE updates, Jobs,
    Lanes, Models, Crew, Warm Cache Runtime and a harmless governed operation.
 
-The authoritative 4.5 candidate gate and its open limitations are recorded in
-[the 4.5 reconciliation](evidence/agent-control-4.5-release-gate-20260912.md).
+The current 4.5 candidate gate and its open limitations are recorded in
+[the completion reconciliation](evidence/agent-control-4.5-release-gate-completion-20260912.md).
+The earlier [4.5 reconciliation](evidence/agent-control-4.5-release-gate-20260912.md)
+remains immutable historical evidence for its recorded implementation.
 The 4.4 checksummed replay evidence is recorded in
 [the 4.4 qualification](evidence/agent-control-4.4-ux-session-replay-20260911.md),
 with the retained foundation in

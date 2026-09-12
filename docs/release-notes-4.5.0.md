@@ -24,9 +24,12 @@ The provider-neutral ProjectMemoryPort stores advisory structured memories with
 provenance, freshness, conflict handling and content-addressed synchronization.
 The user-facing capability remains **Your Memories**; Obsidian and MARM are
 optional backends rather than Agent Control's memory identity. The physical
-cross-model matrix remains partial. A fresh Qwen-to-Luna POE Work Parcel passed
-independent verification and reconciled 9,760 tokens, while real GLM/Qwen and
-Pixel Gemma limitations remain preserved.
+cross-model matrix remains partial at 9/12 reconciled cells. Both controller
+directions, Pixel Gemma 4 E4B→Qwen and a POE-initiated MSI
+`Cottage Plus/Luna → Lawrence Pro/Sol` Work Parcel passed independent
+verification. The MSI transition reconciled 15,570 tokens and preserved sealed
+route and baton identities. Qwen→Pixel remains a real semantic model limitation,
+and GLM→Qwen remains authentication-blocked.
 
 Power evidence distinguishes measured Intel package/DRAM and NVIDIA board values
 from unavailable whole-node energy. Deterministic reuse reduced measured energy
@@ -35,18 +38,19 @@ specialist consumed more energy per verified result than warm Qwen, and the warm
 residency delta remained inside measurement uncertainty. No automatic power,
 shutdown or residency policy is released.
 
-The complete deterministic suite passed 1,154/1,154 at the qualified checkpoint.
-The candidate includes an HD recording, complete human-readable transcript,
-machine-readable gate matrix, failure analysis and checksummed evidence manifest.
-See the [authoritative release-gate reconciliation](evidence/agent-control-4.5-release-gate-20260912.md),
+The complete deterministic suite passed 1,157/1,157 at the completion checkpoint.
+The historical candidate includes an HD recording; the exact completion candidate
+does not have a new recording and does not reuse that video as current evidence.
+It includes a complete human-readable transcript, machine-readable gate matrix,
+failure analysis and checksummed evidence manifest. See the [completion gate](evidence/agent-control-4.5-release-gate-completion-20260912.md), the [historical release-gate reconciliation](evidence/agent-control-4.5-release-gate-20260912.md),
 [skill-learning architecture](agent-control-4.5-skill-learning-architecture-review.md),
 [deterministic skill guide](deterministic-skill-promotion.md),
 [Your Memories portability guide](project-memory-portability.md),
 [energy guide](energy-aware-intelligence.md), and
 [deployment/rollback guide](DEPLOYMENT.md).
 
-Stable `v4.5.0` publication remains gated by the unresolved physical criteria in
-the authoritative reconciliation. In particular, this candidate does not claim
-complete cross-model portability, an MSI cross-node transition, a beneficial
-specialist-energy route, a beneficial strong-model consolidation, or whole-node
-power measurement.
+Stable `v4.5.0` publication remains gated by unresolved physical criteria. The
+candidate now proves the MSI cross-node transition and beneficial strong-model
+consolidation, but does not claim complete cross-model portability, a beneficial
+specialist-energy route, whole-node power measurement, or an exact-candidate HD
+recording.
