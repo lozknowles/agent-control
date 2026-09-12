@@ -1,8 +1,8 @@
 {
   "schema": "agent-control.4.5-release-gate/v1",
-  "generatedAt": "2026-09-12T01:14:41.344Z",
+  "generatedAt": "2026-09-12T01:15:18.170Z",
   "branch": "feature/4.5-governed-skill-learning",
-  "implementationHead": "9bf63bac4a00c4619e8ce581c294806e95844d74",
+  "implementationHead": "de3009bf51f59149e185cab62093ab38dc442d9c",
   "runtimeSourceFiles": [
     {
       "file": "scripts/qualify-cross-model-memory-4.5.ts",
@@ -119,7 +119,7 @@
   },
   "memory": {
     "schema": "agent-control.4.5-memory-gap-matrix/v1",
-    "generatedAt": "2026-09-12T01:14:41.342Z",
+    "generatedAt": "2026-09-12T01:15:18.167Z",
     "historical": {
       "passed": 5,
       "total": 12

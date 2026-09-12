@@ -1,7 +1,7 @@
 {
   "schema": "agent-control.4.5-evidence-manifest/v1",
-  "generatedAt": "2026-09-12T01:14:41.370Z",
-  "implementationHead": "9bf63bac4a00c4619e8ce581c294806e95844d74",
+  "generatedAt": "2026-09-12T01:15:18.209Z",
+  "implementationHead": "de3009bf51f59149e185cab62093ab38dc442d9c",
   "files": [
     {
       "file": "complete-human-readable-transcript.md",
@@ -101,12 +101,12 @@
     {
       "file": "memory-matrix.json",
       "bytes": 46771,
-      "sha256": "a4673fdd8a24012bcde4d3f17c6bb528d125f52c744977c25b81a6d83889c4c6"
+      "sha256": "1633af3bad17db299ddf3d38fa5bac1e2fa01b7383888fd5b55423109d8726aa"
     },
     {
       "file": "release-gate.json",
       "bytes": 52562,
-      "sha256": "e9defe8ec5bb057b3221e2a3186ab66399c98a6c36fade944b63577c834e6bd8"
+      "sha256": "546d9729cc6be81f4823f1a3a7c5e033d956c2f7041810f1ba6e53a4db037819"
     },
     {
       "file": "source-reruns/field-mapping-v3.json",
