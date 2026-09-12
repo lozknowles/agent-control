@@ -536,7 +536,7 @@ test("configured mobile edge observations remain transport-neutral and do not in
           nodeId: "pixel",
           adapterId: "fixture-mobile-companion",
           transportClass: "PRIVATE",
-          transportLabel: "Tailscale + SSH",
+          transportLabel: "Private overlay + SSH",
           authority: "AUTHORITATIVE",
           observedAt: "2026-09-12T12:00:00Z",
           device: {

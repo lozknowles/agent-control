@@ -114,7 +114,7 @@ authoritative Work Parcels / Runs / sessions / token and retrieval evidence
                                   |
         Runtime Map <-> Control Room <-> inspector / Live Shell
                                   |
-                       timestamp-bounded Replay
+                 timestamp-bounded Replay / Compare
 ```
 
 `RuntimeMapProjection` is a provider-neutral view, never execution authority.
@@ -123,6 +123,15 @@ references remain content-addressed. Live Shell remains a separately governed
 execution-session attachment. Dashboard disconnect cannot stop work, and stale
 state is labelled until a fresh projection reconciles. Redaction occurs before
 the projection/API boundary. See [Runtime Map](docs/runtime-map.md).
+
+Graphical Compare projects each completed Work Parcel independently and then
+compares explicit route and evidence facets. It does not align nodes by display
+label. Process/Estate navigation likewise requires configured model, provider,
+worker or node identity; when no exact identity exists, the cross-link fails
+closed. Dashboard request origin and attribution are part of the initial durable
+parcel write so asynchronous planning cannot erase POE/dashboard provenance.
+The map remains WATCH-only: existing Live Shell and other control-plane APIs keep
+their own authority, confirmation and audit boundaries.
 
 ```text
 authenticated dashboard / OpenWA text / confirmed voice / ACP

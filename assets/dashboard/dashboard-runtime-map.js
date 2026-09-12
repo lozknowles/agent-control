@@ -2,8 +2,13 @@
   "use strict";
   const rt = {
     projection: null,
+    processProjection: null,
+    estateProjection: null,
+    comparison: null,
     parcels: [],
     parcelId: "",
+    compareLeft: "",
+    compareRight: "",
     surface: "process",
     search: "",
     filter: "ALL",
@@ -16,6 +21,8 @@
     panY: 0,
     drag: null,
     timer: null,
+    replayTimer: null,
+    replayPlaying: false,
     active: false,
   };
   const $ = (id) => document.getElementById(id),
@@ -91,6 +98,34 @@
       ? prior
       : (rt.parcels.find((p) => !p.endedAt)?.id ?? rt.parcels[0]?.id ?? "");
     select.value = rt.parcelId;
+    const completed = rt.parcels.filter((parcel) => parcel.endedAt),
+      options = completed
+        .map(
+          (parcel) =>
+            `<option value="${safe(parcel.id)}">${safe(parcel.objective.slice(0, 58))} · ${safe(parcel.status)}</option>`,
+        )
+        .join("");
+    $("runtime-compare-left").innerHTML = options;
+    $("runtime-compare-right").innerHTML = options;
+    rt.compareRight = completed.some((parcel) => parcel.id === rt.compareRight)
+      ? rt.compareRight
+      : (completed.find((parcel) => parcel.id === rt.parcelId)?.id ??
+        completed[0]?.id ??
+        "");
+    rt.compareLeft = completed.some((parcel) => parcel.id === rt.compareLeft)
+      ? rt.compareLeft
+      : (completed.find((parcel) => parcel.id !== rt.compareRight)?.id ??
+        rt.compareRight);
+    if (rt.compareLeft === rt.compareRight && completed.length > 1) {
+      rt.compareRight =
+        completed.find((parcel) => parcel.id === rt.parcelId)?.id ??
+        completed[0].id;
+      rt.compareLeft =
+        completed.find((parcel) => parcel.id !== rt.compareRight)?.id ??
+        rt.compareRight;
+    }
+    $("runtime-compare-left").value = rt.compareLeft;
+    $("runtime-compare-right").value = rt.compareRight;
   }
   function replayAt() {
     if (rt.mode !== "replay" || !rt.projection?.range.startedAt) return "";
@@ -105,6 +140,7 @@
       if (rt.surface === "estate") {
         const previous = rt.projection;
         rt.projection = await get("/api/estate-map");
+        rt.estateProjection = rt.projection;
         if (!previous || previous.parcelId !== rt.projection.parcelId) {
           rt.collapsed.clear();
           rt.autoClustered = false;
@@ -113,7 +149,11 @@
         render();
         return;
       }
-      if (!rt.parcels.length) await loadParcels();
+      await loadParcels();
+      if (rt.mode === "compare") {
+        await loadComparison();
+        return;
+      }
       if (!rt.parcelId) {
         empty("No Work Parcels have authoritative runtime records yet.");
         return;
@@ -125,6 +165,7 @@
         }),
         previous = rt.projection;
       rt.projection = await get(`/api/runtime-map?${query}`);
+      rt.processProjection = rt.projection;
       if (!previous || previous.parcelId !== rt.projection.parcelId) {
         rt.collapsed.clear();
         rt.autoClustered = false;
@@ -142,6 +183,27 @@
     } catch (error) {
       empty(error.message || String(error));
     }
+  }
+  async function loadComparison() {
+    if (!rt.compareLeft || !rt.compareRight) {
+      empty("Two completed Work Parcels are required for graphical comparison.");
+      return;
+    }
+    const leftQuery = new URLSearchParams({ parcelId: rt.compareLeft }),
+      rightQuery = new URLSearchParams({ parcelId: rt.compareRight }),
+      compareQuery = new URLSearchParams({
+        left: rt.compareLeft,
+        right: rt.compareRight,
+      }),
+      [left, right, difference] = await Promise.all([
+        get(`/api/runtime-map?${leftQuery}`),
+        get(`/api/runtime-map?${rightQuery}`),
+        get(`/api/runtime-map/compare?${compareQuery}`),
+      ]);
+    rt.comparison = { left, right, difference };
+    rt.projection = right;
+    rt.processProjection = right;
+    render();
   }
   function empty(message) {
     $("runtime-map-health").className = "runtime-map-health disconnected";
@@ -223,7 +285,10 @@
       rt.surface === "estate"
         ? "WHAT CAN AGENT CONTROL SEE AND USE RIGHT NOW? Alive requires recent, resource-appropriate evidence."
         : "WHAT IS AGENT CONTROL DOING RIGHT NOW? Executive map at the top; engineering evidence at the bottom. WATCH is read-only.";
-    $("runtime-parcel-field").hidden = rt.surface === "estate";
+    $("runtime-parcel-field").hidden =
+      rt.surface === "estate" || rt.mode === "compare";
+    $("runtime-compare-controls").hidden =
+      rt.surface === "estate" || rt.mode !== "compare";
     $("runtime-search-field").hidden = rt.surface !== "estate";
     $("runtime-filter-field").hidden = rt.surface !== "estate";
     if (rt.surface === "estate") {
@@ -242,6 +307,9 @@
     }
     const heartbeat = $("runtime-estate-heartbeat");
     heartbeat.hidden = rt.surface !== "estate";
+    const processKpis = $("runtime-process-kpis");
+    processKpis.hidden = rt.surface === "estate";
+    if (rt.surface !== "estate") renderProcessKpis();
     if (rt.surface === "estate" && p.estateCounts)
       heartbeat.innerHTML = Object.entries(p.estateCounts)
         .map(([key, value]) =>
@@ -256,14 +324,46 @@
       $("runtime-replay-time").textContent = new Date(
         p.replayAt,
       ).toLocaleTimeString();
-    $("runtime-map-canvas").hidden = rt.mode === "control";
+    const stage = document.querySelector(".runtime-map-stage");
+    stage.classList.toggle("compare-active", rt.mode === "compare");
+    $("runtime-map-canvas").hidden = ["control", "compare"].includes(rt.mode);
     $("runtime-control-room").hidden = rt.mode !== "control";
+    $("runtime-compare").hidden = rt.mode !== "compare";
     if (rt.mode === "control") {
       renderControl();
       return;
     }
+    if (rt.mode === "compare") {
+      renderCompare();
+      return;
+    }
     renderGraph();
     if (rt.selected) inspect(p.nodes.find((n) => n.id === rt.selected));
+  }
+  function renderProcessKpis() {
+    const p = rt.projection,
+      jobs = p.nodes.filter((node) => node.type === "job"),
+      lanes = p.nodes.filter((node) => node.type === "parallel-lane"),
+      roots = lanes.filter((node) => !node.detail.dependsOn?.length),
+      active = roots.filter((node) => node.state === "RUNNING"),
+      attention = p.nodes.find((node) =>
+        ["FAILED", "BLOCKED", "DEGRADED"].includes(node.state),
+      ),
+      aggregation = p.nodes.find((node) => node.type === "aggregation"),
+      latest = p.events.at(-1),
+      cards = [
+        ["Parallel work", `${active.length} / ${roots.length}`, `${lanes.length} total governed stages`, active.length ? "is-running" : ""],
+        ["Completed", jobs.filter((node) => node.state === "SUCCEEDED").length, `${p.summary.waiting} operations waiting`, ""],
+        ["Attention", attention ? attention.state : "CLEAR", attention?.label ?? "No failed or degraded operation", attention ? "is-degraded" : ""],
+        ["Aggregation", aggregation?.state ?? "NOT REQUIRED", aggregation?.subtitle ?? "Single execution path", aggregation?.state === "RUNNING" ? "is-running" : ""],
+        ["Latest transition", latest ? new Date(latest.at).toLocaleTimeString() : "NONE", latest?.summary ?? "No authoritative event yet", ""],
+      ];
+    $("runtime-process-kpis").innerHTML = cards
+      .map(
+        ([label, value, note, className]) =>
+          `<article class="${safe(className)}"><span>${safe(label)}</span><strong>${safe(value)}</strong><small title="${safe(note)}">${safe(note)}</small></article>`,
+      )
+      .join("");
   }
   function renderGraph() {
     const p = rt.projection,
@@ -317,6 +417,96 @@
       }),
     );
   }
+  function leaderNodes(projection) {
+    const types = new Set([
+      "request",
+      "poe",
+      "planner",
+      "work-parcel",
+      "parallel-lane",
+      "aggregation",
+      "result",
+    ]);
+    return projection.nodes.filter((node) => types.has(node.type));
+  }
+  function compareGraph(projection, side) {
+    const nodes = leaderNodes(projection),
+      ids = new Set(nodes.map((node) => node.id)),
+      edges = projection.edges.filter(
+        (edge) => ids.has(edge.from) && ids.has(edge.to),
+      ),
+      map = layout(nodes, edges);
+    return `<div class="runtime-compare-viewport" data-runtime-compare-viewport="${safe(side)}"><svg class="runtime-map-world" width="${map.width}" height="${map.height}" viewBox="0 0 ${map.width} ${map.height}" preserveAspectRatio="xMinYMin meet" role="img" aria-label="${safe(side)} authoritative process topology">${edges
+      .map((edge) => {
+        const a = map.positions.get(edge.from),
+          b = map.positions.get(edge.to);
+        if (!a || !b) return "";
+        const x1 = a.x + 184,
+          y1 = a.y + 34,
+          x2 = b.x,
+          y2 = b.y + 34,
+          middle = (x1 + x2) / 2;
+        return `<path class="runtime-edge state-${safe(edge.state)} kind-${safe(edge.kind)}" d="M${x1},${y1} C${middle},${y1} ${middle},${y2} ${x2},${y2}"><title>${safe(edge.label || edge.kind)}</title></path>`;
+      })
+      .join("")}${nodes
+      .map((node) => {
+        const position = map.positions.get(node.id);
+        return `<g class="runtime-graph-node type-${safe(node.type)} state-${safe(node.state)}" transform="translate(${position.x} ${position.y})"><rect width="184" height="76" rx="10"/><text class="runtime-node-icon" x="13" y="25">${safe(icons[node.type] || "◇")}</text><text class="runtime-node-label" x="42" y="22">${safe(short(node.label, 21))}</text><text class="runtime-node-subtitle" x="42" y="42">${safe(short(node.subtitle || node.type, 24))}</text><text class="runtime-node-status" x="13" y="64">${safe(node.state)}</text></g>`;
+      })
+      .join("")}</svg></div>`;
+  }
+  function signed(value, unit = "") {
+    if (value === null || value === undefined) return "unavailable";
+    return `${value > 0 ? "+" : ""}${Number(value).toLocaleString()}${unit}`;
+  }
+  function renderCompare() {
+    const value = rt.comparison;
+    if (!value) {
+      $("runtime-compare").innerHTML =
+        '<div class="runtime-map-empty">Select two completed Work Parcels.</div>';
+      return;
+    }
+    const compactDifference = (values, prefix) => {
+        const visible = values.slice(0, 6),
+          remaining = Math.max(0, values.length - visible.length);
+        return values.length
+          ? `<code>${prefix} ${safe(visible.map((item) => short(item, 72)).join(`\n${prefix} `))}${remaining ? `\n… ${remaining} more authoritative difference${remaining === 1 ? "" : "s"}` : ""}</code>`
+          : "";
+      },
+      { left, right, difference } = value,
+      facetRows = Object.entries(difference.facets)
+        .filter(([, facet]) => facet.added.length || facet.removed.length)
+        .map(
+          ([name, facet]) =>
+            `<article><header><strong>${safe(name)}</strong><span>+${facet.added.length} / −${facet.removed.length}</span></header>${compactDifference(facet.added, "Candidate +")}${compactDifference(facet.removed, "Baseline −")}</article>`,
+        )
+        .join("");
+    $("runtime-compare").innerHTML =
+      `<section class="runtime-compare-summary"><article><span>Topology</span><strong>${signed(difference.deltas.nodes)} nodes · ${signed(difference.deltas.edges)} edges</strong></article><article><span>Duration</span><strong>${signed(difference.deltas.durationMs, " ms")}</strong></article><article><span>Model / cache / memory</span><strong>${signed(difference.deltas.modelCalls)} · ${signed(difference.deltas.cacheOperations)} · ${signed(difference.deltas.memoryOperations)}</strong></article><article><span>Batons / retries / failures</span><strong>${signed(difference.deltas.batons)} · ${signed(difference.deltas.retries)} · ${signed(difference.deltas.failures)}</strong></article><article><span>Tokens / cost</span><strong>${signed(difference.deltas.totalTokens)} · ${signed(difference.deltas.cost)}</strong></article></section><section class="runtime-compare-graphs"><article class="runtime-compare-card"><header><strong>BASELINE · ${safe(left.parcelId)}</strong><small>${left.summary.nodes} operations · ${safe(left.freshness.state)}</small></header>${compareGraph(left, "baseline")}</article><article class="runtime-compare-card"><header><strong>CANDIDATE · ${safe(right.parcelId)}</strong><small>${right.summary.nodes} operations · ${safe(right.freshness.state)}</small></header>${compareGraph(right, "candidate")}</article></section><section class="runtime-compare-differences"><h3>Evidence-identity differences</h3><p>${safe(difference.identity.note)}</p><div class="runtime-compare-facets">${facetRows || "<article><strong>No authoritative facet difference recorded.</strong></article>"}</div></section>`;
+    const viewports = [
+      ...$("runtime-compare").querySelectorAll(
+        "[data-runtime-compare-viewport]",
+      ),
+    ];
+    for (const viewport of viewports)
+      viewport.addEventListener("scroll", () => {
+        if (viewport.dataset.syncing === "true") return;
+        const other = viewports.find((candidate) => candidate !== viewport);
+        if (!other) return;
+        const xMaximum = viewport.scrollWidth - viewport.clientWidth,
+          yMaximum = viewport.scrollHeight - viewport.clientHeight;
+        other.dataset.syncing = "true";
+        other.scrollLeft = xMaximum
+          ? (viewport.scrollLeft / xMaximum) *
+            (other.scrollWidth - other.clientWidth)
+          : 0;
+        other.scrollTop = yMaximum
+          ? (viewport.scrollTop / yMaximum) *
+            (other.scrollHeight - other.clientHeight)
+          : 0;
+        requestAnimationFrame(() => delete other.dataset.syncing);
+      });
+  }
   function short(value, maximum) {
     const text = String(value ?? "");
     return text.length > maximum ? `${text.slice(0, maximum - 1)}…` : text;
@@ -346,8 +536,15 @@
         )
         .join(""),
       session = node.type === "terminal" ? node.detail.sessionId : null;
+    const children = rt.projection.nodes.filter(
+        (candidate) => candidate.parentId === node.id,
+      ).length,
+      resource = node.detail?.resourceIdentity,
+      parent = node.parentId
+        ? rt.projection.nodes.find((candidate) => candidate.id === node.parentId)
+        : null;
     $("runtime-inspector").innerHTML =
-      `<header><span class="runtime-node-state state-${safe(node.state)}">${safe(icons[node.type] || "◇")} ${safe(node.state)}</span><h2>${safe(node.label)}</h2><p>${safe(node.subtitle || node.type)}</p></header>${session ? `<button class="button" data-runtime-session="${safe(session)}">${node.state === "RUNNING" ? "Watch live session" : "Open recorded transcript"}</button>` : ""}<dl>${detail}</dl><h3>Authoritative evidence</h3><ul class="runtime-evidence">${evidenceList(node.evidence)}</ul>`;
+      `<header><span class="runtime-node-state state-${safe(node.state)}">${safe(icons[node.type] || "◇")} ${safe(node.state)}</span><h2>${safe(node.label)}</h2><p>${safe(node.subtitle || node.type)}</p></header><div class="runtime-inspector-actions">${children ? `<button class="button secondary" data-runtime-expand="${safe(node.id)}">${rt.collapsed.has(node.id) ? "Expand branch" : "Collapse branch"} · ${children}</button>` : ""}${parent ? `<button class="button secondary" data-runtime-parent="${safe(parent.id)}">Up to ${safe(parent.label)}</button>` : ""}${session ? `<button class="button" data-runtime-session="${safe(session)}">${node.state === "RUNNING" ? "Watch live session" : "Open recorded transcript"}</button>` : ""}${rt.surface === "process" && resource ? '<button class="button secondary" data-runtime-resource>View Estate resource</button>' : ""}${rt.surface === "estate" ? '<button class="button secondary" data-runtime-work>View current work</button>' : ""}</div><dl>${detail}</dl><h3>Authoritative evidence</h3><ul class="runtime-evidence">${evidenceList(node.evidence)}</ul>`;
     $("runtime-breadcrumbs")
       .querySelector("[data-runtime-back]")
       .addEventListener("click", () => {
@@ -368,6 +565,120 @@
             "Execution Session is recorded but not currently projected in Live Shell.",
           );
       });
+    $("runtime-inspector")
+      .querySelector("[data-runtime-expand]")
+      ?.addEventListener("click", () => {
+        rt.collapsed.has(node.id)
+          ? rt.collapsed.delete(node.id)
+          : rt.collapsed.add(node.id);
+        inspect(node);
+        renderGraph();
+      });
+    $("runtime-inspector")
+      .querySelector("[data-runtime-parent]")
+      ?.addEventListener("click", (event) => {
+        rt.selected = event.currentTarget.dataset.runtimeParent;
+        inspect(rt.projection.nodes.find((item) => item.id === rt.selected));
+        renderGraph();
+      });
+    $("runtime-inspector")
+      .querySelector("[data-runtime-resource]")
+      ?.addEventListener("click", () => viewEstateResource(node));
+    $("runtime-inspector")
+      .querySelector("[data-runtime-work]")
+      ?.addEventListener("click", () => viewCurrentWork(node));
+  }
+  function exactResourceMatch(identity, estateNode) {
+    const detail = estateNode.detail || {},
+      sameNode = !identity.nodeId || detail.nodeId === identity.nodeId,
+      configured = detail.configuredId;
+    if (!sameNode) return false;
+    if (identity.modelId && estateNode.type === "model")
+      return configured === identity.modelId;
+    if (identity.providerId && estateNode.type === "provider")
+      return configured === identity.providerId;
+    if (identity.workerId && estateNode.type === "worker")
+      return configured === identity.workerId;
+    return false;
+  }
+  function uncollapseAncestors(node, projection) {
+    let parent = node?.parentId;
+    while (parent) {
+      rt.collapsed.delete(parent);
+      parent = projection.nodes.find((candidate) => candidate.id === parent)
+        ?.parentId;
+    }
+  }
+  async function viewEstateResource(node) {
+    const identity = node.detail.resourceIdentity || {};
+    rt.estateProjection = rt.estateProjection ?? (await get("/api/estate-map"));
+    const target =
+      rt.estateProjection.nodes.find((candidate) =>
+        exactResourceMatch(identity, candidate),
+      ) ??
+      rt.estateProjection.nodes.find(
+        (candidate) =>
+          ["machine", "device"].includes(candidate.type) &&
+          identity.nodeId &&
+          candidate.detail.nodeId === identity.nodeId,
+      );
+    if (!target) {
+      toast("No exact Estate identity is present in the latest discovery record.");
+      return;
+    }
+    rt.surface = "estate";
+    rt.mode = "map";
+    rt.projection = rt.estateProjection;
+    rt.selected = target.id;
+    uncollapseAncestors(target, rt.projection);
+    surfaceButtons();
+    modeButtons();
+    render();
+  }
+  async function viewCurrentWork(node) {
+    if (!rt.parcelId) {
+      toast("No current Work Parcel is selected.");
+      return;
+    }
+    const query = new URLSearchParams({ parcelId: rt.parcelId });
+    rt.processProjection =
+      rt.processProjection ?? (await get(`/api/runtime-map?${query}`));
+    const identity = {
+      nodeId: node.detail.nodeId,
+      ...(node.detail.configuredId && node.type === "model"
+        ? { modelId: node.detail.configuredId }
+        : {}),
+      ...(node.detail.configuredId && node.type === "provider"
+        ? { providerId: node.detail.configuredId }
+        : {}),
+      ...(node.detail.configuredId && node.type === "worker"
+        ? { workerId: node.detail.configuredId }
+        : {}),
+    };
+    const candidates = rt.processProjection.nodes.filter((candidate) => {
+      const resource = candidate.detail?.resourceIdentity;
+      if (!resource) return false;
+      if (identity.modelId && resource.modelId !== identity.modelId) return false;
+      if (identity.providerId && resource.providerId !== identity.providerId)
+        return false;
+      if (identity.workerId && resource.workerId !== identity.workerId) return false;
+      return !identity.nodeId || resource.nodeId === identity.nodeId;
+    });
+    const target =
+      candidates.find((candidate) => candidate.state === "RUNNING") ??
+      candidates[0];
+    if (!target) {
+      toast("No exact current Work Parcel resource identity matches this item.");
+      return;
+    }
+    rt.surface = "process";
+    rt.mode = "map";
+    rt.projection = rt.processProjection;
+    rt.selected = target.id;
+    uncollapseAncestors(target, rt.projection);
+    surfaceButtons();
+    modeButtons();
+    render();
   }
   function inspectEdge(edge) {
     if (!edge) return;
@@ -397,7 +708,7 @@
       ? rt.projection.controlRoom
           .map(
             (tile) =>
-              `<button class="runtime-tile state-${safe(tile.state)}" data-runtime-tile="${safe(tile.id)}"><span>${safe(tile.state)}</span><strong>${safe(tile.job)}</strong><small>${safe(tile.worker)} · ${safe(tile.model)}</small><p>${safe(tile.activity)}</p><pre>${safe(tile.latestSafeOutput || "No safe session output recorded.")}</pre></button>`,
+              `<button class="runtime-tile state-${safe(tile.state)}" data-runtime-tile="${safe(tile.id)}"><span>${safe(tile.state)}</span><span class="runtime-tile-elapsed">${safe(elapsed(tile.startedAt, tile.state))}</span><strong>${safe(tile.job)}</strong><small>${safe(tile.worker)} · ${safe(tile.model)}</small><p>${safe(tile.activity)}</p><pre>${safe(tile.latestSafeOutput || "No safe session output recorded.")}</pre></button>`,
           )
           .join("")
       : '<div class="runtime-map-empty">No jobs belong to this Work Parcel.</div>';
@@ -408,9 +719,25 @@
           rt.mode = "map";
           modeButtons();
           rt.selected = b.dataset.runtimeTile;
+          const target = rt.projection.nodes.find(
+            (node) => node.id === rt.selected,
+          );
+          if (target) {
+            rt.collapsed.delete(target.id);
+            uncollapseAncestors(target, rt.projection);
+          }
           render();
         }),
       );
+  }
+  function elapsed(startedAt, state) {
+    if (!startedAt) return "not started";
+    const node = rt.projection?.nodes.find(
+        (candidate) => candidate.startedAt === startedAt,
+      ),
+      end = node?.endedAt ? Date.parse(node.endedAt) : Date.now(),
+      seconds = Math.max(0, Math.round((end - Date.parse(startedAt)) / 1000));
+    return `${state === "RUNNING" ? "live · " : ""}${Math.floor(seconds / 60)}m ${String(seconds % 60).padStart(2, "0")}s`;
   }
   function modeButtons() {
     document
@@ -418,6 +745,21 @@
       .forEach((b) =>
         b.classList.toggle("active", b.dataset.runtimeMode === rt.mode),
       );
+  }
+  function surfaceButtons() {
+    document
+      .querySelectorAll("[data-runtime-surface]")
+      .forEach((button) =>
+        button.classList.toggle(
+          "active",
+          button.dataset.runtimeSurface === rt.surface,
+        ),
+      );
+    document
+      .querySelectorAll(
+        '[data-runtime-mode="control"], [data-runtime-mode="replay"], [data-runtime-mode="compare"]',
+      )
+      .forEach((button) => (button.hidden = rt.surface === "estate"));
   }
   function schedule() {
     clearTimeout(rt.timer);
@@ -428,6 +770,33 @@
     rt.panX = 0;
     rt.panY = 0;
     renderGraph();
+  }
+  function stopReplay() {
+    clearInterval(rt.replayTimer);
+    rt.replayTimer = null;
+    rt.replayPlaying = false;
+    $("runtime-replay-play").textContent = "Play";
+    $("runtime-replay-play").setAttribute("aria-pressed", "false");
+  }
+  function toggleReplay() {
+    if (rt.replayPlaying) {
+      stopReplay();
+      return;
+    }
+    if (Number($("runtime-replay").value) >= 1000)
+      $("runtime-replay").value = "0";
+    rt.replayPlaying = true;
+    $("runtime-replay-play").textContent = "Pause";
+    $("runtime-replay-play").setAttribute("aria-pressed", "true");
+    rt.replayTimer = setInterval(() => {
+      const next = Math.min(
+        1000,
+        Number($("runtime-replay").value) + 35,
+      );
+      $("runtime-replay").value = String(next);
+      schedule();
+      if (next >= 1000) stopReplay();
+    }, 700);
   }
   function activate() {
     rt.active = true;
@@ -443,6 +812,8 @@
     });
     document.querySelectorAll("[data-runtime-mode]").forEach((b) =>
       b.addEventListener("click", () => {
+        if (rt.mode === "replay" && b.dataset.runtimeMode !== "replay")
+          stopReplay();
         rt.mode = b.dataset.runtimeMode;
         modeButtons();
         load();
@@ -454,16 +825,8 @@
         rt.mode = "map";
         rt.selected = null;
         rt.collapsed.clear();
-        document
-          .querySelectorAll("[data-runtime-surface]")
-          .forEach((value) =>
-            value.classList.toggle("active", value === button),
-          );
-        document
-          .querySelectorAll(
-            '[data-runtime-mode="control"], [data-runtime-mode="replay"]',
-          )
-          .forEach((value) => (value.hidden = rt.surface === "estate"));
+        stopReplay();
+        surfaceButtons();
         modeButtons();
         load();
       }),
@@ -477,6 +840,15 @@
       renderGraph();
     });
     $("runtime-replay").addEventListener("input", schedule);
+    $("runtime-replay-play").addEventListener("click", toggleReplay);
+    $("runtime-compare-left").addEventListener("change", (event) => {
+      rt.compareLeft = event.target.value;
+      load();
+    });
+    $("runtime-compare-right").addEventListener("change", (event) => {
+      rt.compareRight = event.target.value;
+      load();
+    });
     $("runtime-fit").addEventListener("click", fit);
     const canvas = $("runtime-map-canvas");
     canvas.addEventListener(

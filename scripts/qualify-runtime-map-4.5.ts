@@ -7,7 +7,12 @@ import path from "node:path";
 import type { AddressInfo } from "node:net";
 import { createRequire } from "node:module";
 import { AgentControlService } from "../src/control/application-service.js";
-import type { ProviderConfig, ModelConfig } from "../src/control/config.js";
+import {
+  emptyConfig,
+  type ProviderConfig,
+  type ModelConfig,
+} from "../src/control/config.js";
+import { EnvironmentDiscoveryRuntime } from "../src/control/environment-discovery.js";
 import { ExecutionSessionRuntime } from "../src/control/execution-session.js";
 import {
   createInvocationObservation,
@@ -26,6 +31,7 @@ import {
 import type { JobDefinition } from "../src/control/job-types.js";
 import { OpenAICompatibleProviderClient } from "../src/control/openai-compatible-provider.js";
 import { PtyRegistry } from "../src/control/pty.js";
+import { PoeRuntime } from "../src/control/poe.js";
 import {
   WorkParcelCoordinator,
   WorkParcelStore,
@@ -39,7 +45,7 @@ const require = createRequire(import.meta.url),
   delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const output = path.resolve(
     process.env.AGENT_CONTROL_RUNTIME_MAP_EVIDENCE ??
-      "qualification/agent-control-runtime-map-20260912",
+      "qualification/agent-control-runtime-map-visual-acceptance-20260912",
   ),
   stateRoot = path.join(output, "runtime"),
   token = "runtime-map-qualification-operator",
@@ -47,8 +53,21 @@ const output = path.resolve(
     process.env.AGENT_CONTROL_RUNTIME_MAP_PROVIDER ??
     "http://127.0.0.1:8081/v1";
 const prompt =
-  "Use Agent Control to inspect this repository through four governed parallel jobs, run a real local model assessment and real terminal checks, aggregate the evidence, independently verify the result, and retain the complete runtime trail for replay.";
+  "Use Agent Control to inspect this repository through six meaningful governed jobs running in parallel: a real local model assessment, repository integrity inspection, Runtime Map tests, Estate Map tests, dashboard validation, and a safe recovery probe. Aggregate their evidence, independently verify the result, and retain the complete runtime trail for replay and comparison.";
+const baselinePrompt =
+  "Use Agent Control to record a bounded single-job repository identity baseline for Runtime Map comparison.";
+const expectedScreenshots = [
+  "runtime-map-six-jobs-running.png",
+  "runtime-map-control-room.png",
+  "runtime-map-live-session.png",
+  "runtime-map-estate-cross-link.png",
+  "runtime-map-poe-grounded-status.png",
+  "runtime-map-complete.png",
+  "runtime-map-replay-fan-out.png",
+  "runtime-map-graphical-compare.png",
+];
 const startedAt = new Date().toISOString(),
+  initialRssBytes = process.memoryUsage().rss,
   hash = (value: string | Buffer) =>
     createHash("sha256").update(value).digest("hex");
 function job(
@@ -88,6 +107,14 @@ function job(
 
 async function main() {
   fs.mkdirSync(output, { recursive: true, mode: 0o700 });
+  for (const name of [
+    ...expectedScreenshots,
+    "agent-control-4.5-runtime-map-six-job-visual-acceptance.mp4",
+    "qualification.json",
+    "complete-human-readable-transcript.md",
+  ])
+    fs.rmSync(path.join(output, name), { force: true });
+  fs.rmSync(path.join(output, "raw-video"), { recursive: true, force: true });
   fs.rmSync(stateRoot, { recursive: true, force: true });
   fs.mkdirSync(stateRoot, { recursive: true, mode: 0o700 });
   const provider: ProviderConfig = {
@@ -159,10 +186,26 @@ async function main() {
       undefined,
       { nodeId: "controller" },
     );
-  let retryAttempt = 0;
+  let retryAttempt = 0,
+    branchArrivals = 0,
+    releaseBranches!: () => void;
+  const branchesReady = new Promise<void>((resolve) => {
+      releaseBranches = resolve;
+    }),
+    joinSixWayQualification = async () => {
+      branchArrivals++;
+      if (branchArrivals === 6) setTimeout(releaseBranches, 3500);
+      await Promise.race([
+        branchesReady,
+        delay(15_000).then(() => {
+          throw new Error("six_way_qualification_barrier_timeout");
+        }),
+      ]);
+    };
   actions.registerReadOnly(
     "runtime-map.model-review@1.0.0",
     async (context) => {
+      await joinSixWayQualification();
       const began = new Date().toISOString(),
         result = await client.invoke(
           model,
@@ -251,12 +294,11 @@ async function main() {
   actions.registerReadOnly(
     "runtime-map.repository-inspect@1.0.0",
     async (context) => {
-      const script =
-          "console.log('Repository Inspector: reading canonical Git state');setTimeout(()=>console.log('Repository Inspector: checking Runtime Map source and tests'),1200);setTimeout(()=>console.log('Repository Inspector: evidence hash verified'),2400);setTimeout(()=>process.exit(0),3600)",
-        result = await context.ownedExecution.runProcess(
+      await joinSixWayQualification();
+      const result = await context.ownedExecution.runProcess(
           {
-            command: process.execPath,
-            args: ["-e", script],
+            command: "git",
+            args: ["fsck", "--no-progress", "--connectivity-only"],
             cwd: process.cwd(),
           },
           context.signal,
@@ -271,10 +313,13 @@ async function main() {
               head: execFileSync("git", ["rev-parse", "HEAD"], {
                 encoding: "utf8",
               }).trim(),
-              dirty: true,
+              dirty:
+                execFileSync("git", ["status", "--short"], {
+                  encoding: "utf8",
+                }).trim().length > 0,
               checked: [
-                "src/control/runtime-map.ts",
-                "assets/dashboard/dashboard-runtime-map.js",
+                "Git object connectivity",
+                "current repository HEAD",
               ],
             },
           },
@@ -285,10 +330,16 @@ async function main() {
     },
   );
   actions.registerReadOnly("runtime-map.test-gate@1.0.0", async (context) => {
+    await joinSixWayQualification();
     const result = await context.ownedExecution.runProcess(
       {
         command: process.execPath,
-        args: ["--test", "--import", "tsx", "src/control/runtime-map.test.ts"],
+        args: [
+          "--test",
+          "--import",
+          "tsx",
+          "src/control/runtime-map.test.ts",
+        ],
         cwd: process.cwd(),
       },
       context.signal,
@@ -308,7 +359,73 @@ async function main() {
       verification: ["focused-tests-passed"],
     };
   });
+  actions.registerReadOnly("runtime-map.estate-gate@1.0.0", async (context) => {
+    await joinSixWayQualification();
+    const result = await context.ownedExecution.runProcess(
+      {
+        command: process.execPath,
+        args: [
+          "--test",
+          "--import",
+          "tsx",
+          "src/control/estate-map.test.ts",
+          "src/control/environment-discovery-web.test.ts",
+        ],
+        cwd: process.cwd(),
+      },
+      context.signal,
+    );
+    if (result.exitCode !== 0) throw new Error("estate_test_gate_failed");
+    return {
+      artifacts: [
+        {
+          name: "estate-test-result",
+          value: {
+            exitCode: result.exitCode,
+            command:
+              "node --test --import tsx src/control/estate-map.test.ts src/control/environment-discovery-web.test.ts",
+          },
+        },
+      ],
+      evidence: ["focused-estate-map-tests-pass"],
+      verification: ["estate-tests-passed"],
+    };
+  });
+  actions.registerReadOnly(
+    "runtime-map.dashboard-gate@1.0.0",
+    async (context) => {
+      await joinSixWayQualification();
+      const result = await context.ownedExecution.runProcess(
+        {
+          command: "bash",
+          args: [
+            "-lc",
+            "set -euo pipefail; printf 'Dashboard gate: TypeScript validation started\\n'; npm run typecheck; printf 'Dashboard gate: syntax validation started\\n'; npm run check:dashboard; printf 'Dashboard gate: web integration tests started\\n'; node --test --import tsx src/control/runtime-map-web.test.ts src/control/environment-discovery-web.test.ts",
+          ],
+          cwd: process.cwd(),
+        },
+        context.signal,
+      );
+      if (result.exitCode !== 0)
+        throw new Error("dashboard_syntax_gate_failed");
+      return {
+        artifacts: [
+          {
+            name: "dashboard-validation",
+            value: {
+              exitCode: result.exitCode,
+              command:
+                "npm run typecheck; npm run check:dashboard; Runtime Map and Environment web integration tests",
+            },
+          },
+        ],
+        evidence: ["dashboard-syntax-check-pass"],
+        verification: ["dashboard-validation-passed"],
+      };
+    },
+  );
   actions.registerReadOnly("runtime-map.retry-probe@1.0.0", async () => {
+    await joinSixWayQualification();
     retryAttempt++;
     await delay(1200);
     if (retryAttempt === 1)
@@ -329,6 +446,30 @@ async function main() {
       verification: ["retry-recovered"],
     };
   });
+  actions.registerReadOnly(
+    "runtime-map.baseline@1.0.0",
+    async (context) => {
+      const result = await context.ownedExecution.runProcess(
+        {
+          command: "git",
+          args: ["rev-parse", "HEAD"],
+          cwd: process.cwd(),
+        },
+        context.signal,
+      );
+      if (result.exitCode !== 0) throw new Error("baseline_identity_failed");
+      return {
+        artifacts: [
+          {
+            name: "baseline-identity",
+            value: { head: result.stdout.trim(), exitCode: result.exitCode },
+          },
+        ],
+        evidence: ["baseline-git-head-observed"],
+        verification: ["baseline-identity-recorded"],
+      };
+    },
+  );
   actions.registerReadOnly("runtime-map.aggregate@1.0.0", async (context) => {
     const ids = context.run.trigger.parcelContext?.baton?.artifactIds ?? [],
       values = ids.map((id) => context.readArtifact(id));
@@ -423,6 +564,32 @@ async function main() {
         ],
       ),
       job(
+        "runtime-map-estate-gate",
+        "runtime-map.estate-gate@1.0.0",
+        ["estate-tests-passed"],
+        [
+          {
+            name: "estate-test-result",
+            type: "application/json",
+            schema: "agent-control.runtime-map-estate-tests/v1",
+            version: "1",
+          },
+        ],
+      ),
+      job(
+        "runtime-map-dashboard-gate",
+        "runtime-map.dashboard-gate@1.0.0",
+        ["dashboard-validation-passed"],
+        [
+          {
+            name: "dashboard-validation",
+            type: "application/json",
+            schema: "agent-control.runtime-map-dashboard-validation/v1",
+            version: "1",
+          },
+        ],
+      ),
+      job(
         "runtime-map-retry-probe",
         "runtime-map.retry-probe@1.0.0",
         ["retry-recovered"],
@@ -435,6 +602,19 @@ async function main() {
           },
         ],
         { attempts: 1, backoffSeconds: 2, overallDeadlineSeconds: 30 },
+      ),
+      job(
+        "runtime-map-baseline",
+        "runtime-map.baseline@1.0.0",
+        ["baseline-identity-recorded"],
+        [
+          {
+            name: "baseline-identity",
+            type: "application/json",
+            schema: "agent-control.runtime-map-baseline/v1",
+            version: "1",
+          },
+        ],
       ),
       job(
         "runtime-map-aggregate",
@@ -488,6 +668,16 @@ async function main() {
         job: "runtime-map-test-gate@1.0.0",
       },
       {
+        id: "estate",
+        name: "Estate Map test gate",
+        job: "runtime-map-estate-gate@1.0.0",
+      },
+      {
+        id: "dashboard",
+        name: "Dashboard validation",
+        job: "runtime-map-dashboard-gate@1.0.0",
+      },
+      {
         id: "retry",
         name: "Recovery probe",
         job: "runtime-map-retry-probe@1.0.0",
@@ -496,7 +686,14 @@ async function main() {
         id: "aggregate",
         name: "Evidence aggregation",
         job: "runtime-map-aggregate@1.0.0",
-        dependsOn: ["model", "repository", "tests", "retry"],
+        dependsOn: [
+          "model",
+          "repository",
+          "tests",
+          "estate",
+          "dashboard",
+          "retry",
+        ],
       },
       {
         id: "verify",
@@ -517,11 +714,35 @@ async function main() {
       },
     ],
   };
+  const baselinePlan: WorkParcelPlan = {
+    objective: "Record an authoritative single-job repository identity baseline",
+    planner: {
+      kind: "deterministic",
+      reason: "Bounded baseline for evidence-identity graphical comparison",
+    },
+    stages: [
+      {
+        id: "baseline",
+        name: "Repository identity baseline",
+        job: "runtime-map-baseline@1.0.0",
+      },
+    ],
+    successCriteria: [
+      {
+        id: "baseline-recorded",
+        kind: "STAGE_VERIFIED",
+        description: "Repository identity baseline is recorded",
+        source: "USER",
+        stageId: "baseline",
+        requiredEvidence: ["baseline-git-head-observed"],
+      },
+    ],
+  };
   const planner: WorkParcelPlanner = {
       plan: (input) => {
-        if (input !== prompt)
-          throw new Error("qualification_prompt_identity_mismatch");
-        return plan;
+        if (input === prompt) return plan;
+        if (input === baselinePrompt) return baselinePlan;
+        throw new Error("qualification_prompt_identity_mismatch");
       },
     },
     store = new WorkParcelStore(path.join(stateRoot, "parcels.json")),
@@ -540,6 +761,27 @@ async function main() {
       planner,
       efficiency,
     ),
+    discovery = new EnvironmentDiscoveryRuntime({
+      file: path.join(stateRoot, "environment-discovery.json"),
+      config: () => emptyConfig(),
+      configurationRevision: () => "runtime-map-qualification-read-only",
+      runtimeInventory: () => ({
+        jobs: catalog.listJobs().map((definition) => ({
+          id: definition.metadata.id,
+          name: definition.metadata.name,
+          version: definition.metadata.version,
+        })),
+        agents: workers.list().map((worker) => ({
+          id: worker.id,
+          health: worker.health,
+          capabilities: worker.capabilities,
+        })),
+        tools: actions.ids(),
+        skills: [],
+        mcpServers: [],
+        plugins: [],
+      }),
+    }),
     state: WorkspaceState = {
       version: 1,
       paused: false,
@@ -557,6 +799,7 @@ async function main() {
       workParcels: coordinator,
       harnessEfficiency: efficiency,
       executionSessions: sessions,
+      environmentDiscovery: discovery,
       resources: [
         {
           id: "controller",
@@ -567,6 +810,31 @@ async function main() {
         },
       ],
     });
+  await discovery.discover({
+    mode: "QUICK_RESCAN",
+    testing: "QUICK_TEST",
+    includeRemote: false,
+    includeMemory: false,
+  });
+  const poe = new PoeRuntime({
+    file: path.join(stateRoot, "poe.json"),
+    evidence: {
+      overview: () => service.poeEvidence(),
+      resolve: (reference) => service.poeEvidence(reference),
+    },
+    onEvent: (event) =>
+      service.events.emit(
+        `poe.${event.type.replaceAll(".", "_")}` as never,
+        {
+          conversationId: event.conversationId,
+          state: event.state,
+          detail: event.detail,
+        },
+        undefined,
+        "poe-runtime",
+      ),
+  });
+  service.configureProjection({ poe });
   ledger.subscribe((runId, type, status) =>
     service.events.emit(
       "job.run_changed",
@@ -591,14 +859,29 @@ async function main() {
       event.actorId,
     ),
   );
-  store.subscribe((parcel) =>
+  let maximumConcurrentJobs = 0;
+  const lastConcurrencyByParcel = new Map<string, number>();
+  const concurrencySamples: Array<{
+    at: string;
+    parcelId: string;
+    running: number;
+  }> = [];
+  store.subscribe((parcel) => {
+    const running = parcel.stages.filter(
+      (stage) => stage.status === "RUNNING",
+    ).length;
+    maximumConcurrentJobs = Math.max(maximumConcurrentJobs, running);
+    if (lastConcurrencyByParcel.get(parcel.id) !== running) {
+      concurrencySamples.push({at:new Date().toISOString(),parcelId:parcel.id,running});
+      lastConcurrencyByParcel.set(parcel.id,running);
+    }
     service.events.emit(
       "work.parcel_changed",
       { parcelId: parcel.id, status: parcel.status },
       undefined,
       "work-parcel-coordinator",
-    ),
-  );
+    );
+  });
   const server = startWebDashboard(service, {
     host: "127.0.0.1",
     port: 43179,
@@ -620,11 +903,24 @@ async function main() {
       await delay(100);
     }
   })();
+  const baseline = await coordinator.submit(baselinePrompt, "web-operator");
+  const baselineDeadline = Date.now() + 30_000;
+  while (store.get(baseline.id)?.status !== "SUCCEEDED") {
+    if (store.get(baseline.id)?.status === "FAILED")
+      throw new Error("runtime_map_baseline_failed");
+    if (Date.now() > baselineDeadline)
+      throw new Error("runtime_map_baseline_timeout");
+    await delay(100);
+  }
   let browser: any,
     context: any,
     video: any,
     page: any,
     rawVideo = "",
+    eventLatencyMs: number | null = null,
+    browserRenderMs: number | null = null,
+    liveSessionVerified = false,
+    estateCrossLinkVerified = false,
     renderedNodeBounds: Array<{
       label: string;
       x: number;
@@ -657,8 +953,11 @@ async function main() {
       token,
     );
     await page.goto(base, { waitUntil: "networkidle" });
-    await page.fill("#natural-task-prompt", prompt);
-    await page.waitForTimeout(1000);
+    await page.click("#natural-task-prompt");
+    await page.locator("#natural-task-prompt").pressSequentially(prompt, {
+      delay: 3,
+    });
+    await page.waitForTimeout(1200);
     const [, submission] = await Promise.all([
       page.click("#natural-task-submit"),
       page.waitForResponse(
@@ -677,34 +976,167 @@ async function main() {
     await page.waitForSelector(".runtime-graph-node", { timeout: 15000 });
     const parcelId = store.list()[0]!.id;
     await page.selectOption("#runtime-parcel", parcelId);
-    await page.route("**/api/runtime-map?**", (route) => route.abort());
+    await page.waitForFunction(
+      () =>
+        document.querySelectorAll(
+          ".runtime-graph-node.type-parallel-lane.state-RUNNING",
+        ).length >= 6,
+      undefined,
+      { timeout: 15_000 },
+    );
+    await page.waitForTimeout(250);
+    await page.screenshot({
+      path: path.join(output, "runtime-map-six-jobs-running.png"),
+      fullPage: true,
+    });
+    const eventReceived = page.evaluate(
+      () =>
+        new Promise<number>((resolve) => {
+          document.addEventListener(
+            "agent-control:event-received",
+            (event: Event) => {
+              const detail = (event as CustomEvent).detail;
+              if (detail?.type === "work.parcel_changed") resolve(Date.now());
+            },
+            { once: true },
+          );
+        }),
+    );
+    const emittedAt = Date.now();
     service.events.emit(
       "work.parcel_changed",
       { parcelId, status: store.get(parcelId)?.status },
       undefined,
-      "disconnect-test",
+      "latency-probe",
+    );
+    eventLatencyMs = (await eventReceived) - emittedAt;
+    await page.click('[data-runtime-mode="control"]');
+    await page.waitForSelector(".runtime-tile", { timeout: 10_000 });
+    await page.waitForTimeout(250);
+    await page.screenshot({
+      path: path.join(output, "runtime-map-control-room.png"),
+      fullPage: true,
+    });
+    const liveTile = page
+      .locator(".runtime-tile")
+      .filter({ hasText: "runtime-map-dashboard-gate" });
+    assert.ok(await liveTile.count(), "dashboard qualification tile missing");
+    await liveTile.first().click();
+    await page.click("#runtime-fit");
+    await page.waitForTimeout(300);
+    const workerNode = page.locator(".runtime-graph-node.type-worker").first();
+    await workerNode.waitFor({ state: "attached", timeout: 10_000 });
+    await workerNode.click({ force: true });
+    await page.waitForTimeout(450);
+    const stepNode = page.locator(".runtime-graph-node.type-tool").first();
+    await stepNode.waitFor({ state: "attached", timeout: 5_000 });
+    await stepNode.click({ force: true });
+    await page.waitForTimeout(450);
+    const dashboardRunId = store
+      .get(parcelId)
+      ?.stages.find((stage) => stage.id === "dashboard")?.runId;
+    assert.ok(dashboardRunId, "dashboard qualification run missing");
+    let liveSessionId = "";
+    const sessionDeadline = Date.now() + 10_000;
+    while (!liveSessionId) {
+      liveSessionId =
+        sessions
+          .list()
+          .find(
+            (session) =>
+              session.scope.runId === dashboardRunId &&
+              session.state === "RUNNING",
+          )?.id ?? "";
+      if (Date.now() > sessionDeadline)
+        throw new Error("dashboard_live_execution_session_timeout");
+      if (!liveSessionId) await delay(50);
+    }
+    await page.click('[data-runtime-mode="map"]');
+    const terminal = page.locator(
+      `[data-runtime-node="terminal:${liveSessionId}"]`,
+    );
+    await terminal.waitFor({ state: "attached", timeout: 10_000 });
+    assert.match((await terminal.getAttribute("aria-label")) ?? "", /RUNNING/);
+    await terminal.click({ force: true });
+    const watch = page.locator("[data-runtime-session]").first();
+    await watch.waitFor({ state: "visible", timeout: 5_000 });
+    await watch.click();
+    await page.waitForSelector("#live-shell-dialog[open]", {
+      timeout: 10_000,
+    });
+    await page.waitForFunction(
+      () =>
+        (document.querySelector("#live-shell-output")?.textContent?.length ??
+          0) > 0,
+      undefined,
+      { timeout: 10_000 },
+    );
+    const firstOutputLength = await page.locator("#live-shell-output").evaluate(
+      (element: HTMLElement) => element.textContent?.length ?? 0,
+    );
+    await page.waitForFunction(
+      (length) =>
+        (document.querySelector("#live-shell-output")?.textContent?.length ??
+          0) > length,
+      firstOutputLength,
+      { timeout: 20_000 },
+    );
+    liveSessionVerified = await page.evaluate(() => {
+      const dialog = document.querySelector("#live-shell-dialog"),
+        mode = document.querySelector("#live-shell-mode")?.textContent,
+        output = document.querySelector("#live-shell-output")?.textContent;
+      return Boolean(
+        dialog?.hasAttribute("open") && mode === "WATCH" && output?.trim(),
+      );
+    });
+    assert.equal(liveSessionVerified, true);
+    await page.waitForTimeout(500);
+    await page.screenshot({
+      path: path.join(output, "runtime-map-live-session.png"),
+      fullPage: true,
+    });
+    await page.click("#live-shell-close");
+    await page.locator("[data-runtime-resource]").click();
+    await page.waitForFunction(() =>
+      document
+        .querySelector('[data-runtime-surface="estate"]')
+        ?.classList.contains("active"),
+    );
+    estateCrossLinkVerified = await page.evaluate(() =>
+      Boolean(
+        document.querySelector('[data-runtime-surface="estate"].active') &&
+          document.querySelector("#runtime-inspector [data-runtime-work]"),
+      ),
+    );
+    assert.equal(estateCrossLinkVerified, true);
+    await page.waitForTimeout(900);
+    await page.screenshot({
+      path: path.join(output, "runtime-map-estate-cross-link.png"),
+      fullPage: true,
+    });
+    await page.locator("#runtime-inspector [data-runtime-work]").click();
+    await page.waitForFunction(() =>
+      document
+        .querySelector('[data-runtime-surface="process"]')
+        ?.classList.contains("active"),
+    );
+    await page.waitForTimeout(800);
+    await page.click('[data-view="poe"]');
+    await page.waitForSelector("#poe-input", { timeout: 10_000 });
+    await page.fill("#poe-input", `Explain runtime map ${parcelId}`);
+    const priorTurns = await page.locator("#poe-turns .poe-turn").count();
+    await page.click('#poe-form button[type="submit"]');
+    await page.waitForFunction(
+      (count) =>
+        document.querySelectorAll("#poe-turns .poe-turn").length >= count + 2,
+      priorTurns,
+      { timeout: 15_000 },
     );
     await page.waitForTimeout(1400);
-    await page.unroute("**/api/runtime-map?**");
-    service.events.emit(
-      "work.parcel_changed",
-      { parcelId, status: store.get(parcelId)?.status },
-      undefined,
-      "reconnect-test",
-    );
-    await page.waitForTimeout(2200);
-    await page.click('[data-runtime-mode="control"]');
-    await page.waitForTimeout(3200);
-    await page.click('[data-runtime-mode="map"]');
-    await page.waitForTimeout(1200);
-    const terminal = page.locator(".runtime-graph-node.type-terminal").first();
-    if (await terminal.count()) {
-      await terminal.click();
-      await page.waitForTimeout(1500);
-      const watch = page.locator("[data-runtime-session]").first();
-      if (await watch.count()) await watch.click();
-      await page.waitForTimeout(2200);
-    }
+    await page.screenshot({
+      path: path.join(output, "runtime-map-poe-grounded-status.png"),
+      fullPage: true,
+    });
     await page.click('[data-view="runtime-map"]');
     const deadline = Date.now() + 180000;
     while (store.get(parcelId)?.status !== "SUCCEEDED") {
@@ -714,9 +1146,21 @@ async function main() {
         throw new Error(`qualification_timeout:${store.get(parcelId)?.status}`);
       await page.waitForTimeout(500);
     }
+    await page.waitForFunction(() =>
+      document
+        .querySelector("#runtime-parcel option:checked")
+        ?.textContent?.includes("SUCCEEDED"),
+    );
     await page.waitForTimeout(2200);
     await page.click("#runtime-fit");
     await page.waitForTimeout(1200);
+    browserRenderMs = await page.evaluate(async () => {
+      const started = performance.now();
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      );
+      return performance.now() - started;
+    });
     renderedNodeBounds = await page.locator(".runtime-graph-node").evaluateAll(
       (nodes) =>
         nodes.map((node) => {
@@ -746,12 +1190,44 @@ async function main() {
       path: path.join(output, "runtime-map-complete.png"),
       fullPage: true,
     });
+    await page.route("**/api/runtime-map?**", (route) => route.abort());
+    service.events.emit(
+      "work.parcel_changed",
+      { parcelId, status: store.get(parcelId)?.status },
+      undefined,
+      "disconnect-test",
+    );
+    await page.waitForTimeout(1100);
+    await page.unroute("**/api/runtime-map?**");
+    service.events.emit(
+      "work.parcel_changed",
+      { parcelId, status: store.get(parcelId)?.status },
+      undefined,
+      "reconnect-test",
+    );
+    await page.waitForTimeout(1600);
     await page.click('[data-runtime-mode="replay"]');
-    await page.waitForTimeout(1000);
-    await page.locator("#runtime-replay").fill("420");
-    await page.waitForTimeout(2200);
-    await page.locator("#runtime-replay").fill("1000");
+    await page.waitForTimeout(900);
+    await page.locator("#runtime-replay").fill("0");
+    await page.waitForTimeout(1200);
+    await page.click("#runtime-replay-play");
+    await page.waitForTimeout(3500);
+    await page.click("#runtime-replay-play");
+    await page.locator("#runtime-replay").fill("520");
     await page.waitForTimeout(1800);
+    await page.screenshot({
+      path: path.join(output, "runtime-map-replay-fan-out.png"),
+      fullPage: true,
+    });
+    await page.locator("#runtime-replay").fill("1000");
+    await page.waitForTimeout(1300);
+    await page.click('[data-runtime-mode="compare"]');
+    await page.waitForSelector(".runtime-compare-card", { timeout: 12_000 });
+    await page.waitForTimeout(1400);
+    await page.screenshot({
+      path: path.join(output, "runtime-map-graphical-compare.png"),
+      fullPage: true,
+    });
     await context.close();
     context = undefined;
     rawVideo = await video.path();
@@ -768,26 +1244,75 @@ async function main() {
   const parcel = store.list()[0]!,
     projection = service.runtimeMap(parcel.id),
     replay = service.runtimeMap(parcel.id, parcel.createdAt),
+    comparison = service.compareRuntimeMaps(baseline.id, parcel.id),
     terminalNodes = projection.nodes.filter((node) => node.type === "terminal"),
-    modelNodes = projection.nodes.filter((node) => node.type === "model-call");
+    modelNodes = projection.nodes.filter((node) => node.type === "model-call"),
+    poeConversationSummary = poe.projection().conversations[0],
+    poeConversation = poeConversationSummary
+      ? poe.conversation(poeConversationSummary.id)
+      : null,
+    projectionDurations: number[] = [];
+  const projectionCpuStarted = process.cpuUsage();
+  for (let index = 0; index < 100; index++) {
+    const began = performance.now();
+    service.runtimeMap(parcel.id);
+    projectionDurations.push(performance.now() - began);
+  }
+  const projectionCpu = process.cpuUsage(projectionCpuStarted);
+  projectionDurations.sort((left, right) => left - right);
+  const elapsedSeconds = Math.max(
+      0.001,
+      (Date.parse(parcel.endedAt!) - Date.parse(parcel.createdAt)) / 1000,
+    ),
+    completedRssBytes = process.memoryUsage().rss,
+    firstSix = parcel.stages.slice(0, 6),
+    sixWayOverlapMs =
+      Math.min(...firstSix.map((stage) => Date.parse(stage.endedAt!))) -
+      Math.max(...firstSix.map((stage) => Date.parse(stage.startedAt!)));
   assert.equal(parcel.status, "SUCCEEDED");
+  assert.equal(firstSix.length, 6);
+  assert.ok(firstSix.every((stage) => stage.status === "SUCCEEDED"));
+  assert.ok(sixWayOverlapMs > 0, `six-way overlap ${sixWayOverlapMs}ms`);
+  assert.ok(maximumConcurrentJobs >= 6, `maximum concurrent ${maximumConcurrentJobs}`);
   assert.ok(modelNodes.length >= 1);
-  assert.ok(terminalNodes.length >= 2);
+  assert.ok(terminalNodes.length >= 4);
   assert.ok(projection.nodes.some((node) => node.type === "retry"));
   assert.ok(projection.nodes.some((node) => node.type === "baton"));
   assert.ok(projection.nodes.some((node) => node.type === "aggregation"));
+  assert.ok(projection.nodes.some((node) => node.type === "poe"));
+  assert.equal(parcel.origin?.channel, "dashboard");
+  assert.equal(parcel.attribution?.parcelId, parcel.id);
+  assert.equal(liveSessionVerified, true);
+  assert.equal(estateCrossLinkVerified, true);
   assert.ok(
     replay.nodes
       .filter((node) => node.type === "parallel-lane")
       .every((node) => node.state === "WAITING"),
   );
+  assert.deepEqual(consoleErrors, []);
+  for (const name of expectedScreenshots)
+    assert.ok(
+      fs.existsSync(path.join(output, name)),
+      `missing screenshot ${name}`,
+    );
   assert.equal(
     replay.nodes.find((node) => node.type === "result")?.state,
     "WAITING",
   );
+  assert.ok(comparison.deltas.nodes > 0);
+  assert.equal(comparison.identity.labelMatching, false);
+  assert.ok(
+    poeConversation?.turns.some(
+      (turn) =>
+        turn.actor === "poe" &&
+        turn.evidence.some((fact) =>
+          fact.evidence.includes(`runtime-map:${parcel.id}`),
+        ),
+    ),
+  );
   const videoFile = path.join(
     output,
-    "agent-control-4.5-runtime-map-physical-qualification.mp4",
+    "agent-control-4.5-runtime-map-six-job-visual-acceptance.mp4",
   );
   execFileSync("ffmpeg", [
     "-nostdin",
@@ -826,7 +1351,7 @@ async function main() {
     ),
   );
   const report = {
-    schema: "agent-control.runtime-map-physical-qualification/v1",
+    schema: "agent-control.runtime-map-visual-acceptance/v1",
     verdict: "PASS",
     startedAt,
     completedAt: new Date().toISOString(),
@@ -847,7 +1372,10 @@ async function main() {
     },
     workParcel: {
       id: parcel.id,
+      baselineId: baseline.id,
       status: parcel.status,
+      maximumConcurrentJobs,
+      sixWayOverlapMs,
       stages: parcel.stages.map((stage) => ({
         id: stage.id,
         status: stage.status,
@@ -874,8 +1402,34 @@ async function main() {
         costBasis: node.detail.costBasis,
       })),
       replayVerified: true,
+      graphicalCompareVerified: true,
+      compare: comparison,
+      poeGroundedObservationVerified: true,
+      estateCrossLinkVerified,
+      liveSessionVerified,
       disconnectDidNotAffectExecution: true,
       renderedNodeBounds,
+    },
+    performance: {
+      projectionSamples: projectionDurations.length,
+      projectionAverageMs:
+        projectionDurations.reduce((sum, value) => sum + value, 0) /
+        projectionDurations.length,
+      projectionP95Ms:
+        projectionDurations[
+          Math.floor(projectionDurations.length * 0.95) - 1
+        ],
+      projectionCpuUserMs: projectionCpu.user / 1000,
+      projectionCpuSystemMs: projectionCpu.system / 1000,
+      projectionCpuScope:
+        "Agent Control controller process during 100 projection calls; browser, model and subprocess CPU excluded",
+      authoritativeEventsPerSecond: projection.events.length / elapsedSeconds,
+      sseEventLatencyMs: eventLatencyMs,
+      browserTwoFrameRenderMs: browserRenderMs,
+      rssBeforeBytes: initialRssBytes,
+      rssAfterBytes: completedRssBytes,
+      rssDeltaBytes: completedRssBytes - initialRssBytes,
+      concurrencySamples,
     },
     security: { consoleErrors },
     video: {
@@ -883,15 +1437,12 @@ async function main() {
       sha256: hash(fs.readFileSync(videoFile)),
       probe,
     },
-    screenshot: {
-      path: path.relative(
-        process.cwd(),
-        path.join(output, "runtime-map-complete.png"),
-      ),
-      sha256: hash(
-        fs.readFileSync(path.join(output, "runtime-map-complete.png")),
-      ),
-    },
+    screenshots: expectedScreenshots
+      .filter((name) => fs.existsSync(path.join(output, name)))
+      .map((name) => ({
+        path: path.relative(process.cwd(), path.join(output, name)),
+        sha256: hash(fs.readFileSync(path.join(output, name))),
+      })),
   };
   fs.writeFileSync(
     path.join(output, "qualification.json"),
@@ -900,7 +1451,7 @@ async function main() {
   );
   fs.writeFileSync(
     path.join(output, "complete-human-readable-transcript.md"),
-    `# Agent Control Runtime Map physical qualification\n\n## Exact operator request\n\n${prompt}\n\n## Authoritative execution\n\n${parcel.audit.timeline.map((item) => `- ${item.at} — **${item.type}** — ${item.summary}: ${item.detail}`).join("\n")}\n\n## Model calls\n\n${modelNodes.map((node) => `- ${node.detail.provider} / ${node.label}: ${node.detail.inputTokens ?? "unavailable"} input, ${node.detail.cachedInputTokens ?? "unavailable"} cached, ${node.detail.outputTokens ?? "unavailable"} output, ${node.detail.totalTokens ?? "unavailable"} total; cost ${node.detail.cost ?? "unavailable"} (${node.detail.costBasis})`).join("\n")}\n\n## Final result\n\n${parcel.decision?.summary}\n`,
+    `# Agent Control Runtime Map six-job visual acceptance\n\n## Exact operator request\n\n${prompt}\n\n## Concurrency\n\n- Maximum concurrent governed Jobs: ${maximumConcurrentJobs}\n- Interval in which all six independent Jobs overlapped: ${sixWayOverlapMs} ms\n\n## Authoritative execution\n\n${parcel.audit.timeline.map((item) => `- ${item.at} — **${item.type}** — ${item.summary}: ${item.detail}`).join("\n")}\n\n## Job and session evidence\n\n${parcel.stages.map((stage) => `### ${stage.name}\n\n- Stage: ${stage.id}\n- Status: ${stage.status}\n- Run: ${stage.runId ?? "unavailable"}\n- Baton SHA-256: ${stage.baton?.sha256 ?? "unavailable"}\n${stage.runId ? terminalNodes.filter((node) => (node.detail.scope as {runId?: string})?.runId === stage.runId).map((node) => `\n#### Execution Session ${node.detail.sessionId}\n\n\`\`\`text\n${sessions.transcript(String(node.detail.sessionId))}\n\`\`\``).join("\n") : ""}`).join("\n\n")}\n\n## Model calls\n\n${modelNodes.map((node) => `- ${node.detail.provider} / ${node.label}: ${node.detail.inputTokens ?? "unavailable"} input, ${node.detail.cachedInputTokens ?? "unavailable"} cached, ${node.detail.outputTokens ?? "unavailable"} output, ${node.detail.totalTokens ?? "unavailable"} total; cost ${node.detail.cost ?? "unavailable"} (${node.detail.costBasis})`).join("\n")}\n\n## Grounded POE observation\n\n${poeConversation?.turns.map((turn) => `- ${turn.at} — **${turn.actor === "poe" ? "Morrow" : "Operator"}**: ${turn.text}`).join("\n") ?? "Unavailable"}\n\n## Final result\n\n${parcel.decision?.summary}\n`,
     { mode: 0o600 },
   );
   console.log(

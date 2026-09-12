@@ -147,6 +147,7 @@ export function projectEstateMap(
         expandable: true,
         detail: {
           kind: item.kind,
+          configuredId: item.configuredId ?? null,
           nodeId: item.nodeId,
           health: item.health,
           availability:

@@ -22,8 +22,9 @@
       Control Room, drill-down, authenticated session links and Replay.
 - [x] Add grounded Morrow references, redaction/access boundaries, 50+ job tests,
       physical parallel qualification, HD video and complete transcript.
-- [ ] Add synchronized graphical dual-run Compare when the historical evidence
-      model can support aligned replay without compromising Live/Replay.
+- [x] Add synchronized graphical dual-run Compare over independently projected
+      authoritative runs, with explicit evidence/route facets and no label-based
+      identity inference.
 - [ ] Add governed map-originated pause/cancel/retry/approval controls only by
       delegating to existing authorization and audit APIs; WATCH remains the
       default and current Runtime Map authority.

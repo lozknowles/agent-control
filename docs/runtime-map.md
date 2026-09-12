@@ -50,9 +50,11 @@ Gaps found during inspection:
   did not mark its authority; the audit now records `authoritative`, `estimated`
   or `unavailable` from the existing observation;
 - no prior cross-ledger graph/replay projection existed;
-- synchronized side-by-side graphical Compare is not yet supported. The
-  authenticated compare endpoint reports structural, duration, model, cache,
-  retry and failure deltas without changing either run.
+- the authenticated Compare API and dashboard now project both completed runs
+  independently, synchronize their graphical viewports and report explicit
+  route, model, provider, machine, worker, decision, cache, memory, baton,
+  retry, failure, duration, token and cost facets. It never aligns work by
+  display label.
 
 ## Operator guide
 
@@ -61,6 +63,9 @@ shows the request, planner, parcel, dynamically created branches, aggregation,
 verification and result. Large maps automatically collapse job and lane groups;
 use the `+`/`-` marker to progressively reveal a branch. Use the mouse or touch
 surface to pan and the wheel to zoom; **Fit** restores the full topology.
+The KPI row separates concurrently running root Jobs from total governed stages,
+completed work, attention state, aggregation state and the latest authoritative
+transition. Aggregation remains waiting until its real dependencies complete.
 
 Choose **Process Map** or **Estate Map** at the top of the same workspace. Estate
 Map adds search, type filtering, hierarchical machine/transport/runtime/model
@@ -93,6 +98,12 @@ boundary.
 model, activity, elapsed state and latest safe session output where available.
 Selecting a tile returns to the corresponding graph branch.
 
+**Compare** accepts two completed Work Parcels. Each side remains its own
+authoritative graph; scroll position is synchronized for inspection convenience,
+while differences are computed only from explicit route/resource fields and
+evidence identities. If one run lacks token or cost authority, the delta remains
+unavailable rather than treating the missing value as zero.
+
 **Replay** evaluates the same projection at a selected authoritative timestamp.
 Nodes that had not started are restored to waiting, active nodes to running and
 completed nodes to their terminal state. Recorded terminal output is bounded to
@@ -101,6 +112,11 @@ the replay time. Replay never resumes or mutates work.
 Morrow/POE can resolve a Runtime Map reference and describe counts and the
 latest transition from the same projection. It cannot invent a transition or
 explain protected model reasoning.
+
+When a Process Map worker, model, provider or node has an exact configured
+resource identity, **View Estate resource** focuses that object in Estate Map.
+**View current work** performs the inverse lookup. Similar names are never enough
+to establish identity; missing exact identity produces no link.
 
 ## Failure, scalability and overhead
 
@@ -126,5 +142,6 @@ Run the focused qualification with a qualified local OpenAI-compatible model:
 npm run qualify:runtime-map
 ```
 
-See the [physical qualification report](evidence/agent-control-4.5-runtime-map-physical-qualification-20260912.md)
+See the [six-job visual acceptance report](evidence/agent-control-4.5-runtime-map-visual-acceptance-20260912.md),
+the earlier [physical qualification](evidence/agent-control-4.5-runtime-map-physical-qualification-20260912.md),
 and [Live Shell guide](live-shell.md).

@@ -1161,6 +1161,29 @@
       "limitation": "Core A-H qualification passed across two governed nodes, but the configured Windows Obsidian application was not physically exercised because node authentication was unavailable. Session Vault and Your Memories remain distinct; Obsidian is optional. The feature remains experimental for 4.5 release decisions."
     },
     {
+      "id": "runtime.process-map",
+      "title": "Live Runtime Map, Control Room, Replay and Compare",
+      "status": "QUALIFIED",
+      "summary": "One redacted projection of authoritative Work Parcel, Run, model, session, baton, cache, memory and verification evidence drives leader KPIs, fan-out/fan-in graph, progressive drill-down, read-only Live Shell, adaptive Control Room, time-bounded Replay and independent-identity graphical Compare. Exact configured identities link current work to Estate resources.",
+      "sources": [
+        "src/control/runtime-map.ts",
+        "src/control/application-service.ts",
+        "assets/dashboard/dashboard-runtime-map.js",
+        "assets/dashboard/dashboard-runtime-map.css"
+      ],
+      "tests": [
+        "src/control/runtime-map.test.ts",
+        "src/control/runtime-map-web.test.ts",
+        "src/control/work-parcels.test.ts"
+      ],
+      "evidence": [
+        "docs/runtime-map.md",
+        "docs/evidence/agent-control-4.5-runtime-map-visual-acceptance-20260912.md",
+        "qualification/agent-control-runtime-map-visual-acceptance-20260912/qualification.json"
+      ],
+      "limitation": "The visual qualification proved six concurrent root Jobs, advancing real terminal output, retry/recovery, aggregation, verification, replay, comparison and Estate cross-linking. Map-originated pause/cancel/retry/approval remains intentionally unavailable until a node-scoped adapter can delegate to existing permission and audit APIs; WATCH grants no control authority."
+    },
+    {
       "id": "environment.discovery-estate-map",
       "title": "Setup, Environment Discovery and unified Estate Map",
       "status": "PARTIAL",

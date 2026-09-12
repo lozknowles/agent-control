@@ -33,13 +33,22 @@
 - Adds authenticated Runtime Map and structural Compare APIs plus SSE refreshes
   for real execution-session output. Dashboard failure is isolated from runtime
   authority and reconnect reconciles against current records.
+- Completes graphical **Compare** with two independently projected runs,
+  synchronized graph viewports, explicit route/model/provider/machine/worker/
+  decision/cache/memory/baton/retry/failure facets and truthful unavailable
+  token/cost deltas. Display labels are never treated as execution identity.
+- Adds leader-level parallel/completion/attention/aggregation/transition KPIs,
+  exact Process Map ↔ Estate Map resource links and durable dashboard request
+  provenance written before asynchronous planning begins.
 - Records token-usage authority in generic Work Parcel invocation audits and
   keeps unavailable cost unavailable. Adds deterministic 1/6/20/55-job,
   nested-fan-out, retry, baton, cache, memory, replay, redaction and access tests.
-- Physically qualifies a 54-node real Work Parcel with four concurrent branches,
-  local Qwen model execution, three terminal sessions, recovered retry, six
-  batons, aggregation, independent verification, viewer disconnect/reconnect
-  and Replay. Synchronized visual dual-run Compare remains deferred.
+- Physically qualifies a real eight-stage Work Parcel whose six meaningful root
+  Jobs overlap concurrently, with local Qwen model execution, real terminal
+  output advancing under WATCH, controlled retry/recovery, eight sealed batons,
+  aggregation, independent verification, viewer disconnect/reconnect, Replay,
+  graphical Compare and Process/Estate cross-linking. Map-originated mutation
+  remains deliberately deferred because no node-scoped governance adapter exists.
 
 - Adds the experimental provider-neutral Cross-Device Session Vault: exact
   provider-native bytes are retained as immutable content-addressed evidence;

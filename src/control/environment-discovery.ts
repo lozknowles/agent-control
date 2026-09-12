@@ -1644,16 +1644,19 @@ function privateTransportLabel(
   resource: ResourceConfig,
   snapshot?: ManagedNodeSnapshot,
 ) {
-  const configured = (resource.managedNode?.connectivity ?? []).find((value) =>
-      /private|tailscale|zerotier/i.test(
-        `${value.id} ${value.label ?? ""} ${value.capability}`,
-      ),
+  const isPrivateTransport = (value: {
+      id: string;
+      label?: string;
+      capability: string;
+    }) =>
+      value.capability === "transport.secure-overlay" ||
+      /private|secure[- ]?overlay/i.test(`${value.id} ${value.label ?? ""}`),
+    configured = (resource.managedNode?.connectivity ?? []).find(
+      isPrivateTransport,
     ),
     observed = snapshot?.connectivity.find(
       (value) =>
-        /private|tailscale|zerotier/i.test(
-          `${value.id} ${value.label} ${value.capability}`,
-        ) && value.state === "RUNNING",
+        isPrivateTransport(value) && value.state === "RUNNING",
     );
   return observed?.label ?? configured?.label ?? configured?.id;
 }

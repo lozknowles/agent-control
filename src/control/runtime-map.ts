@@ -129,6 +129,66 @@ export interface RuntimeMapProjection {
   }>;
   limitations: string[];
 }
+export interface RuntimeMapComparisonFacet {
+  left: string[];
+  right: string[];
+  added: string[];
+  removed: string[];
+}
+export interface RuntimeMapComparison {
+  schema: "agent-control.runtime-map-compare/v1";
+  leftParcelId: string | null;
+  rightParcelId: string | null;
+  identity: {
+    strategy: "independent-authoritative-facets";
+    labelMatching: false;
+    note: string;
+  };
+  left: RuntimeMapComparisonSide;
+  right: RuntimeMapComparisonSide;
+  deltas: {
+    nodes: number;
+    edges: number;
+    durationMs: number | null;
+    modelCalls: number;
+    cacheOperations: number;
+    memoryOperations: number;
+    batons: number;
+    retries: number;
+    failures: number;
+    totalTokens: number | null;
+    cost: number | null;
+  };
+  facets: Record<
+    | "routes"
+    | "models"
+    | "providers"
+    | "machines"
+    | "workers"
+    | "decisions"
+    | "cache"
+    | "memory"
+    | "batons"
+    | "retries"
+    | "failures",
+    RuntimeMapComparisonFacet
+  >;
+}
+export interface RuntimeMapComparisonSide {
+  parcelId: string | null;
+  durationMs: number | null;
+  nodes: number;
+  edges: number;
+  modelCalls: number;
+  cacheOperations: number;
+  memoryOperations: number;
+  batons: number;
+  retries: number;
+  failures: number;
+  totalTokens: number | null;
+  cost: number | null;
+  costBasis: string;
+}
 export interface RuntimeMapSource {
   parcel?: WorkParcel;
   runs: RunRecord[];
@@ -384,12 +444,25 @@ export function projectRuntimeMap(
         parentId: parcelId,
         groupId: `group:${sid}`,
         expandable: true,
-        detail: {
-          stageId: stage.id,
-          dependsOn: stage.dependsOn,
-          route: stage.actualRoute ?? stage.requestedRoute ?? null,
-          waitingReason: stage.waitingReason ?? null,
-          error: stage.error ?? null,
+          detail: {
+            stageId: stage.id,
+            dependsOn: stage.dependsOn,
+            route: stage.actualRoute ?? stage.requestedRoute ?? null,
+            resourceIdentity: {
+              nodeId:
+                stage.actualRoute?.providerExecutionNodeId ??
+                stage.actualRoute?.workloadNodeId ??
+                stage.actualRoute?.workers[0] ??
+                null,
+              providerId:
+                stage.actualRoute?.provider ??
+                stage.requestedRoute?.provider ??
+                null,
+              modelId:
+                stage.actualRoute?.model ?? stage.requestedRoute?.model ?? null,
+            },
+            waitingReason: stage.waitingReason ?? null,
+            error: stage.error ?? null,
         },
         evidence: [pe, se],
       });
@@ -469,7 +542,11 @@ export function projectRuntimeMap(
               parentId: stepId,
               groupId: `group:${sid}`,
               expandable: true,
-              detail: { workerId: worker, placement: step.placement ?? null },
+              detail: {
+                workerId: worker,
+                placement: step.placement ?? null,
+                resourceIdentity: { workerId: worker },
+              },
               evidence: [re],
             });
             edges.push(edge(stepId, wid, "contains"));
@@ -527,6 +604,11 @@ export function projectRuntimeMap(
           costBasis: invocation.costBasis,
           requestDispatched: invocation.requestDispatched ?? null,
           verifierResult: invocation.verifierResult,
+          resourceIdentity: {
+            nodeId: invocation.node,
+            providerId: invocation.provider,
+            modelId: invocation.model,
+          },
         },
         evidence: [ie],
       });
@@ -714,6 +796,7 @@ export function projectRuntimeMap(
     );
     const aggregateId = `aggregate:${parcel.id}`;
     if (parcel.stages.length > 1) {
+      const rootStages = parcel.stages.filter((stage) => !stage.dependsOn.length);
       const ended = finalDeps.every((x) => x.endedAt)
         ? finalDeps
             .map((x) => x.endedAt!)
@@ -724,9 +807,13 @@ export function projectRuntimeMap(
         id: aggregateId,
         type: "aggregation",
         label: "Aggregation / consensus",
-        subtitle: `${parcel.stages.length} governed branches`,
+        subtitle: `${rootStages.length} parallel roots · ${parcel.stages.length} governed stages`,
         state: temporal(
-          parcel.decision ? "SUCCEEDED" : "WAITING",
+          parcel.decision?.outcome === "COMPLETE"
+            ? "SUCCEEDED"
+            : parcel.decision?.outcome === "FAIL_CLOSED"
+              ? "FAILED"
+              : "WAITING",
           ended,
           parcel.endedAt,
           at,
@@ -736,7 +823,8 @@ export function projectRuntimeMap(
         parentId: parcelId,
         expandable: true,
         detail: {
-          branches: parcel.stages.length,
+          branches: rootStages.length,
+          stages: parcel.stages.length,
           blocked: parcel.decision?.blockedStages ?? [],
         },
         evidence: [pe],
@@ -895,6 +983,12 @@ export function projectRuntimeMap(
         outputBytes: session.outputBytes,
         outputTruncated: session.outputTruncated,
         latestSafeOutput: latestOutput(sessionEvents, at),
+        resourceIdentity: {
+          nodeId: session.scope.nodeId,
+          workerId: session.scope.workerId,
+          providerId: session.scope.providerId ?? null,
+          modelId: session.scope.modelId ?? null,
+        },
       },
       evidence: [se],
     });
@@ -997,7 +1091,8 @@ export function projectRuntimeMap(
     limitations: [
       "Protected reasoning and credentials are never projected.",
       "Terminal bytes require the existing authenticated Execution Session viewer.",
-      "Compare mode reports structural deltas; synchronized visual comparison remains deferred.",
+      "Compare uses independent authoritative facets and never equates nodes by display label.",
+      "Runtime Map remains WATCH-only unless an existing governed control is explicitly opened.",
     ],
   };
 }
@@ -1026,30 +1121,182 @@ function stateForSession(type: string): RuntimeMapState {
 export function compareRuntimeMaps(
   left: RuntimeMapProjection,
   right: RuntimeMapProjection,
-) {
+): RuntimeMapComparison {
   const count = (map: RuntimeMapProjection, type: RuntimeMapNodeType) =>
-      map.nodes.filter((n) => n.type === type).length,
-    duration = (map: RuntimeMapProjection) =>
-      map.range.endedAt && map.range.startedAt
-        ? Date.parse(map.range.endedAt) - Date.parse(map.range.startedAt)
-        : null,
-    leftDuration = duration(left),
-    rightDuration = duration(right);
+      map.nodes.filter((n) => n.type === type).length;
+  const duration = (map: RuntimeMapProjection) =>
+    map.range.endedAt && map.range.startedAt
+      ? Date.parse(map.range.endedAt) - Date.parse(map.range.startedAt)
+      : null;
+  const resultTotals = (map: RuntimeMapProjection) => {
+    const totals = map.nodes.find((node) => node.type === "result")?.detail
+      .totals as Record<string, unknown> | undefined;
+    return {
+      totalTokens:
+        typeof totals?.totalTokens === "number" ? totals.totalTokens : null,
+      cost:
+        typeof totals?.cost === "number"
+          ? totals.cost
+          : typeof totals?.providerReportedCost === "number"
+            ? totals.providerReportedCost
+            : typeof totals?.calculatedCost === "number"
+              ? totals.calculatedCost
+              : null,
+      costBasis: String(totals?.costBasis ?? "unavailable"),
+    };
+  };
+  const side = (map: RuntimeMapProjection): RuntimeMapComparisonSide => ({
+    parcelId: map.parcelId,
+    durationMs: duration(map),
+    nodes: map.nodes.length,
+    edges: map.edges.length,
+    modelCalls: count(map, "model-call"),
+    cacheOperations: count(map, "cache"),
+    memoryOperations: count(map, "memory"),
+    batons: count(map, "baton"),
+    retries: count(map, "retry"),
+    failures: map.summary.failed,
+    ...resultTotals(map),
+  });
+  const strings = (values: unknown[]) =>
+    [
+      ...new Set(
+        values
+          .filter((value): value is string =>
+            Boolean(typeof value === "string" && value.trim()),
+          )
+          .map((value) => value.trim()),
+      ),
+    ].sort();
+  const evidenceIdentities = (
+    map: RuntimeMapProjection,
+    types: RuntimeMapNodeType[],
+  ) =>
+    strings(
+      map.nodes
+        .filter((node) => types.includes(node.type))
+        .flatMap((node) =>
+          node.evidence.map((item) =>
+            item.sha256
+              ? `${item.kind}:sha256:${item.sha256}`
+              : `${item.kind}:id:${item.id}`,
+          ),
+        ),
+    );
+  const values = (
+    map: RuntimeMapProjection,
+    types: RuntimeMapNodeType[],
+    key: string,
+  ) =>
+    strings(
+      map.nodes
+        .filter((node) => types.includes(node.type))
+        .map((node) => node.detail[key]),
+    );
+  const facet = (a: string[], b: string[]): RuntimeMapComparisonFacet => ({
+    left: a,
+    right: b,
+    added: b.filter((value) => !a.includes(value)),
+    removed: a.filter((value) => !b.includes(value)),
+  });
+  const routes = (map: RuntimeMapProjection) =>
+    strings(
+      map.nodes
+        .filter((node) => node.type === "model-call")
+        .map((node) => node.detail.route),
+    );
+  const models = (map: RuntimeMapProjection) =>
+    strings(
+      map.nodes
+        .filter((node) => node.type === "model-call")
+        .map(
+          (node) =>
+            (
+              node.detail.resourceIdentity as
+                | { modelId?: unknown }
+                | undefined
+            )?.modelId,
+        ),
+    );
+  const machines = (map: RuntimeMapProjection) =>
+    strings([
+      ...values(map, ["model-call"], "node"),
+      ...map.nodes
+        .filter((node) => node.type === "terminal")
+        .map((node) =>
+          (node.detail.scope as Record<string, unknown> | undefined)?.nodeId,
+        ),
+    ]);
+  const leftSide = side(left),
+    rightSide = side(right),
+    difference = (a: number | null, b: number | null) =>
+      a === null || b === null ? null : b - a;
   return safe({
     schema: "agent-control.runtime-map-compare/v1",
     leftParcelId: left.parcelId,
     rightParcelId: right.parcelId,
-    topology: {
-      nodes: right.nodes.length - left.nodes.length,
-      edges: right.edges.length - left.edges.length,
+    identity: {
+      strategy: "independent-authoritative-facets",
+      labelMatching: false,
+      note: "Each side is projected independently. Differences use explicit route/resource fields or evidence identities; display labels are never treated as node identity.",
     },
-    durationMs:
-      leftDuration === null || rightDuration === null
-        ? null
-        : rightDuration - leftDuration,
-    modelCalls: count(right, "model-call") - count(left, "model-call"),
-    cacheOperations: count(right, "cache") - count(left, "cache"),
-    retries: count(right, "retry") - count(left, "retry"),
-    failures: right.summary.failed - left.summary.failed,
+    left: leftSide,
+    right: rightSide,
+    deltas: {
+      nodes: rightSide.nodes - leftSide.nodes,
+      edges: rightSide.edges - leftSide.edges,
+      durationMs: difference(leftSide.durationMs, rightSide.durationMs),
+      modelCalls: rightSide.modelCalls - leftSide.modelCalls,
+      cacheOperations: rightSide.cacheOperations - leftSide.cacheOperations,
+      memoryOperations: rightSide.memoryOperations - leftSide.memoryOperations,
+      batons: rightSide.batons - leftSide.batons,
+      retries: rightSide.retries - leftSide.retries,
+      failures: rightSide.failures - leftSide.failures,
+      totalTokens: difference(leftSide.totalTokens, rightSide.totalTokens),
+      cost: difference(leftSide.cost, rightSide.cost),
+    },
+    facets: {
+      routes: facet(routes(left), routes(right)),
+      models: facet(models(left), models(right)),
+      providers: facet(
+        values(left, ["model-call"], "provider"),
+        values(right, ["model-call"], "provider"),
+      ),
+      machines: facet(machines(left), machines(right)),
+      workers: facet(
+        values(left, ["worker"], "workerId"),
+        values(right, ["worker"], "workerId"),
+      ),
+      decisions: facet(
+        evidenceIdentities(left, ["decision"]),
+        evidenceIdentities(right, ["decision"]),
+      ),
+      cache: facet(
+        evidenceIdentities(left, ["cache"]),
+        evidenceIdentities(right, ["cache"]),
+      ),
+      memory: facet(
+        evidenceIdentities(left, ["memory"]),
+        evidenceIdentities(right, ["memory"]),
+      ),
+      batons: facet(
+        evidenceIdentities(left, ["baton"]),
+        evidenceIdentities(right, ["baton"]),
+      ),
+      retries: facet(
+        evidenceIdentities(left, ["retry"]),
+        evidenceIdentities(right, ["retry"]),
+      ),
+      failures: facet(
+        evidenceIdentities(
+          { ...left, nodes: left.nodes.filter((node) => node.state === "FAILED") },
+          left.nodes.filter((node) => node.state === "FAILED").map((node) => node.type),
+        ),
+        evidenceIdentities(
+          { ...right, nodes: right.nodes.filter((node) => node.state === "FAILED") },
+          right.nodes.filter((node) => node.state === "FAILED").map((node) => node.type),
+        ),
+      ),
+    },
   });
 }

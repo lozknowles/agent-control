@@ -45,6 +45,8 @@ import {DefaultDiscoveryProbe,type DiscoveryMode,type DiscoveryTesting,type Envi
 import type {CapabilityAdapterDefinition,CapabilityAdapterRegistry,CapabilityAdapterState,CapabilityBinding} from './capability-adapter-registry.js';
 import {projectEstateMap} from './estate-map.js';
 import type {InstallationLifecycle,InstallationMode,InstallationRole} from './installation-lifecycle.js';
+import {createHash} from 'node:crypto';
+import {governedRequestOrigin} from './request-origin.js';
 
 export type ControlEventType =
   | 'social.activity'
@@ -522,8 +524,8 @@ export class AgentControlService {
       this.identity.authorize(this.defaultSessionId, actor, 'parcel.create');
       attribution = {schema: 'agent-control.work-attribution/v1', actorId: actor, sessionId: this.defaultSessionId, authority: this.identity.session(this.defaultSessionId).participants.find(value => value.actorId === actor)?.capabilities ?? [], createdAt: new Date().toISOString(), legacy: false};
     } else attribution = legacyAttribution(actor, `parcel-pending:${prompt}`);
-    let parcel = this.mustWorkParcels().accept(prompt, actor, this.systems(), attribution);
-    const finalAttribution: WorkAttribution = {...attribution, parcelId: parcel.id}; parcel.attribution = finalAttribution; parcel = this.mustWorkParcels().store.update(parcel);
+    const receivedAt=new Date().toISOString(), digest=(value:string)=>createHash('sha256').update(value).digest('hex'), origin=governedRequestOrigin({channel:'dashboard',modality:'dashboard',receivedAt,authentication:'operator-authenticated',actorId:actor,authority:attribution.authority.length?attribution.authority:['parcel.create'],messageReference:digest(`${receivedAt}\0${actor}\0${prompt}`),identityReference:digest(`dashboard\0${actor}`),request:prompt});
+    const parcel = this.mustWorkParcels().accept(prompt, actor, this.systems(), attribution, origin), finalAttribution=parcel.attribution!;
     this.events.emit('work.parcel_created', {parcelId: parcel.id, status: parcel.status, actorId: finalAttribution.actorId, sessionId: finalAttribution.sessionId}, undefined, actor); return parcel;
   }
   cancelParcel(id: string, actor: string) { const parcel = this.mustWorkParcels().cancel(id, actor); this.events.emit('work.parcel_changed', {parcelId: id, status: parcel.status}, undefined, actor); return parcel; }
