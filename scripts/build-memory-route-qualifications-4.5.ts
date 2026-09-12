@@ -1,0 +1,36 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import {PROJECT_MEMORY_EXCHANGE_VERSION,type MemoryRouteIdentity} from '../src/control/project-memory.js';
+import {MemoryRouteQualificationStore,type MemoryPairQualificationRecord,type MemoryRoleQualification,type MemoryRouteQualificationRecord} from '../src/control/project-memory-route-qualification.js';
+
+const output=path.resolve(process.env.AGENT_CONTROL_MEMORY_QUALIFICATION_OUTPUT??'/fast/qualification/agent-control-4.5-memory-route-qualifications-20260912.json');
+const controller=read(process.env.AGENT_CONTROL_CONTROLLER_MEMORY_EVIDENCE??'/fast/qualification/agent-control-4.5-controller-cross-model-final-20260912/cross-model-memory-qualification.json');
+const pixel=read(process.env.AGENT_CONTROL_PIXEL_MEMORY_EVIDENCE??'/fast/qualification/agent-control-4.5-pixel-writer-repeated-20260912/cross-model-memory-qualification.json');
+const priorPixel=read(process.env.AGENT_CONTROL_PRIOR_PIXEL_MEMORY_EVIDENCE??'/fast/qualification/agent-control-4.5-memory-completion-final-20260912/cross-model-memory-qualification.json');
+const qualifiedAt=new Date(Math.max(Date.parse(controller.completedAt),Date.parse(pixel.completedAt),Date.parse(priorPixel.completedAt))).toISOString(),expiresAt=new Date(Date.parse(qualifiedAt)+30*86_400_000).toISOString();
+const qwen:MemoryRouteIdentity={providerId:'local-qwen',modelId:'qwen-hpubuntu',nodeId:'hpubuntu'},luna:MemoryRouteIdentity={providerId:'codex-chatgpt',accountProfileId:'controller-codex',modelId:'codex-luna',nodeId:'hpubuntu'},gemma:MemoryRouteIdentity={providerId:'pixel-llama',modelId:'pixel-gemma-e4b',nodeId:'pixel-8-pro'},glm:MemoryRouteIdentity={providerId:'openrouter',modelId:'glm-5.3-flash',nodeId:'hpubuntu'};
+const physical=(...values:string[])=>values;
+const qualified=(maximumProvenMemoryBytes:number,reason:string):MemoryRoleQualification=>({eligibility:'QUALIFIED',maximumProvenMemoryBytes,permittedRepairCount:1,reason});
+const unsupported=(reason:string):MemoryRoleQualification=>({eligibility:'UNSUPPORTED',maximumProvenMemoryBytes:null,permittedRepairCount:1,reason});
+const blocked=(reason:string):MemoryRoleQualification=>({eligibility:'BLOCKED_EXTERNAL',maximumProvenMemoryBytes:null,permittedRepairCount:0,reason});
+const maxBytes=(report:any,model:string,role:'writer'|'reader')=>Math.max(...report.matrix.filter((row:any)=>row.result==='PASS'&&(role==='writer'?row.writerRoute:row.readerRoute).includes(model)).map((row:any)=>memoryBytes(report,row)),1);
+const records:MemoryRouteQualificationRecord[]=[
+  routeRecord(qwen,'llama.cpp/current',qualified(Math.max(maxBytes(controller,'qwen-hpubuntu','writer'),maxBytes(pixel,'qwen-hpubuntu','writer')),'Repeated current-contract writer success'),qualified(Math.max(maxBytes(controller,'qwen-hpubuntu','reader'),maxBytes(pixel,'qwen-hpubuntu','reader')),'Repeated current-contract cold-reader success'),'PASS',physical('controller-memory.json','pixel-writer-repeated.json')),
+  routeRecord(luna,'codex-cli/current',qualified(maxBytes(controller,'codex-luna','writer'),'Current-contract writer success'),qualified(maxBytes(controller,'codex-luna','reader'),'Current-contract cold-reader success'),'FIXED',physical('controller-memory.json')),
+  routeRecord(gemma,'llama.cpp/pixel-current',qualified(maxBytes(pixel,'pixel-gemma-e4b','writer'),'Repeated complete current-contract writer success after bounded output repair'),unsupported('Three bounded semantic reader trials omitted the exact required next action after repair'),'UNSUPPORTED',physical('pixel-writer-repeated.json','prior-pixel-memory.json'),luna),
+  routeRecord(glm,'openrouter/current',blocked('Current credential prerequisite unavailable'),blocked('Current credential prerequisite unavailable'),'BLOCKED_EXTERNAL',physical('historical-memory-matrix.json')),
+];
+const pairings:MemoryPairQualificationRecord[]=[
+  pairRecord(luna,qwen,'QUALIFIED','FIXED',Math.min(records[0].reader.maximumProvenMemoryBytes!,records[1].writer.maximumProvenMemoryBytes!),'Repeated current-contract success',physical('controller-memory.json')),
+  pairRecord(qwen,luna,'QUALIFIED','FIXED',Math.min(records[0].writer.maximumProvenMemoryBytes!,records[1].reader.maximumProvenMemoryBytes!),'Repeated current-contract success',physical('controller-memory.json')),
+  pairRecord(gemma,qwen,'QUALIFIED','FIXED',Math.min(records[2].writer.maximumProvenMemoryBytes!,records[0].reader.maximumProvenMemoryBytes!),'Repeated complete writer and independently verified cold-reader continuation',physical('pixel-writer-repeated.json','prior-pixel-memory.json')),
+  pairRecord(qwen,gemma,'UNSUPPORTED','UNSUPPORTED',records[0].writer.maximumProvenMemoryBytes!,'Repeated semantic reconstruction failure under the unchanged contract',physical('prior-pixel-memory.json'),{writer:qwen,reader:luna}),
+  pairRecord(glm,qwen,'BLOCKED_EXTERNAL','BLOCKED_EXTERNAL',null,'Current OpenRouter authentication prerequisite unavailable; no current-contract result inferred',physical('historical-memory-matrix.json')),
+];
+fs.rmSync(output,{force:true});const store=new MemoryRouteQualificationStore(output);for(const record of records)store.set(record);for(const pairing of pairings)store.setPair(pairing);
+process.stdout.write(`${JSON.stringify({output,qualifiedAt,expiresAt,routes:records.length,pairings:pairings.length,unsupported:pairings.filter(item=>item.eligibility==='UNSUPPORTED').length,blockedExternal:pairings.filter(item=>item.eligibility==='BLOCKED_EXTERNAL').length},null,2)}\n`);
+
+function routeRecord(route:MemoryRouteIdentity,runtimeVersion:string,writer:MemoryRoleQualification,reader:MemoryRoleQualification,terminalClassification:MemoryRouteQualificationRecord['terminalClassification'],evidence:string[],requiredEscalationRoute?:MemoryRouteIdentity):MemoryRouteQualificationRecord{return{schema:'agent-control.memory-route-qualification/v1',route,runtimeVersion,contractVersion:PROJECT_MEMORY_EXCHANGE_VERSION,writer,reader,terminalClassification,qualifiedAt,expiresAt,...(requiredEscalationRoute?{requiredEscalationRoute}:{}),evidence};}
+function pairRecord(writer:MemoryRouteIdentity,reader:MemoryRouteIdentity,eligibility:MemoryPairQualificationRecord['eligibility'],terminalClassification:MemoryPairQualificationRecord['terminalClassification'],maximumProvenMemoryBytes:number|null,reason:string,evidence:string[],requiredEscalationPair?:MemoryPairQualificationRecord['requiredEscalationPair']):MemoryPairQualificationRecord{return{schema:'agent-control.memory-pair-qualification/v1',writer,reader,contractVersion:PROJECT_MEMORY_EXCHANGE_VERSION,eligibility,terminalClassification,maximumProvenMemoryBytes,permittedRepairCount:eligibility==='BLOCKED_EXTERNAL'?0:1,qualifiedAt,expiresAt,reason,...(requiredEscalationPair?{requiredEscalationPair}:{}),evidence};}
+function memoryBytes(report:any,row:any){const file=path.join(report.projectMemory.namespace,`${row.memoryId}.md`),text=fs.readFileSync(file,'utf8'),match=/^<!-- agent-control-memory\n([^\n]+)\n-->/.exec(text);if(!match)throw new Error(`memory_evidence_document_invalid:${row.memoryId}`);const record=JSON.parse(match[1]);return Buffer.byteLength(record.content);}
+function read(file:string){return JSON.parse(fs.readFileSync(file,'utf8'));}

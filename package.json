@@ -66,6 +66,7 @@
     "qualify:ux-session-replay": "node --import tsx scripts/qualify-ux-session-replay.ts",
     "qualify:cross-model-memory": "node --import tsx scripts/qualify-cross-model-memory-4.5.ts",
     "qualify:memory-consolidation": "node --import tsx scripts/qualify-memory-conditions-consolidation-4.5.ts",
+    "qualify:memory-route-records": "node --import tsx scripts/build-memory-route-qualifications-4.5.ts",
     "record:cross-model-memory": "node --import tsx scripts/record-cross-model-memory-4.5.ts",
     "record:live-memory-qualification": "node scripts/record-live-memory-qualification-4.5.mjs",
     "reconcile:release-gate-4.5": "node scripts/reconcile-release-gate-4.5.mjs",
