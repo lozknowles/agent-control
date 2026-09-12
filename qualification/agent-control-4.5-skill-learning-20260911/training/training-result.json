@@ -1,0 +1,22 @@
+{
+  "schema": "agent-control.skill-training-result/v1",
+  "status": "COMPLETE",
+  "adapter": "qualification/agent-control-4.5-skill-learning-20260911/training/adapter",
+  "artefactSha256": "7e6f36b34998cb26971b8f528984a8e1cadc9d6e591120596baafac6c1bd5802",
+  "sizeBytes": 8517793,
+  "configSha256": "a6cab168665cfc0641f8aaa8b9780e0a0ce7998dbcad573eab679e3f08b4025f",
+  "environmentSha256": "2581c72f04aba59a06de830d3c4c1f1e44e68e263acd0e70057c857e021187b5",
+  "elapsedSeconds": 185.0544364452362,
+  "trainMetrics": {
+    "train_runtime": 184.5044,
+    "train_samples_per_second": 2.602,
+    "train_steps_per_second": 0.173,
+    "total_flos": 22000058500608.0,
+    "train_loss": 0.8007438201457262,
+    "epoch": 4.0
+  },
+  "base": {
+    "model": "HuggingFaceTB/SmolLM2-135M-Instruct",
+    "revision": "12fd25f77366fa6b3b4b768ec3050bf629380bac"
+  }
+}

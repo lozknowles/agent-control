@@ -1,0 +1,16 @@
+{
+  "schema": "agent-control.skill-training-result/v1",
+  "candidateId": "skill-candidate-73e81cbd-cafc-4c0f-ab19-da0f92594b23",
+  "result": {
+    "status": "COMPLETE",
+    "adapter": {
+      "format": "peft-lora",
+      "artefactSha256": "19b3b94e1178bc1cb90eeaf1447198e1926aade5d25049c96efae1b273fa5473",
+      "sizeBytes": 8518072,
+      "storageRef": "managed://skill-training/governed-training/adapter"
+    },
+    "configurationSha256": "a6cab168665cfc0641f8aaa8b9780e0a0ce7998dbcad573eab679e3f08b4025f",
+    "environmentSha256": "2581c72f04aba59a06de830d3c4c1f1e44e68e263acd0e70057c857e021187b5",
+    "elapsedSeconds": 177.04871916770935
+  }
+}

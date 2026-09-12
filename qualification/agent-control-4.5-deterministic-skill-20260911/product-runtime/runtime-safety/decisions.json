@@ -1,0 +1,31 @@
+{
+  "schema": "agent-control.runtime-safety-ledger/v1",
+  "decisions": [
+    {
+      "schema": "agent-control.runtime-safety-decision/v1",
+      "id": "safety-829c4f97-f241-4144-9039-0cb2682919d5",
+      "at": "2026-09-11T21:19:36.578Z",
+      "intentHash": "8bcd9ebf1f1110320e9396b93e6cced9c5bd8c45500c023f368018795d36109c",
+      "runId": "run-e9dc57a3-bee3-4ab7-ba7a-07d7db2638f5",
+      "parcelId": "parcel-social-85570271f55c9a401f48a34d980cba69980758e8dbe856e80d0173f4598cf2af",
+      "stageId": "repository-state",
+      "stepId": "execute",
+      "action": "deterministic-skill.execute@1.0.0",
+      "actor": "work-parcel:parcel-social-85570271f55c9a401f48a34d980cba69980758e8dbe856e80d0173f4598cf2af",
+      "crewRole": "resource-guardian",
+      "nodeId": "hpubuntu",
+      "categories": [
+        "REMOTE_NODE"
+      ],
+      "outcome": "ALLOW_WITH_AUDIT",
+      "reason": "Scoped governed action is allowed with durable independent audit",
+      "policyId": "agent-control.runtime-safety/v1",
+      "evidence": [
+        "goal:6e7f1bfe4c44064d",
+        "action:deterministic-skill.execute@1.0.0",
+        "category:REMOTE_NODE"
+      ]
+    }
+  ],
+  "approvals": []
+}

@@ -1,0 +1,48 @@
+{
+  "schema": "agent-control.deterministic-skill-result/v1",
+  "decision": {
+    "schema": "agent-control.deterministic-skill-decision/v1",
+    "id": "det-skill-route-a61bbf53-6b9b-4d55-aee5-bd0d8dc848cb",
+    "parcelId": "parcel-social-85570271f55c9a401f48a34d980cba69980758e8dbe856e80d0173f4598cf2af",
+    "stageId": "repository-state",
+    "taskClass": "repository-state",
+    "at": "2026-09-11T21:19:36.585Z",
+    "selected": {
+      "id": "repository-state",
+      "version": "1",
+      "handlerId": "repository-state-v1"
+    },
+    "candidates": [
+      {
+        "id": "repository-state",
+        "version": "1",
+        "eligible": true,
+        "reasons": []
+      }
+    ],
+    "route": "DETERMINISTIC_SKILL",
+    "reason": "Selected promoted deterministic skill repository-state@1: input contract, freshness, handler identity and applicability passed."
+  },
+  "execution": {
+    "schema": "agent-control.deterministic-skill-execution/v1",
+    "id": "det-skill-exec-d33d3cc7-3cd0-43a5-a2ef-73e07bcfe0e0",
+    "decisionId": "det-skill-route-a61bbf53-6b9b-4d55-aee5-bd0d8dc848cb",
+    "skillId": "repository-state",
+    "skillVersion": "1",
+    "parcelId": "parcel-social-85570271f55c9a401f48a34d980cba69980758e8dbe856e80d0173f4598cf2af",
+    "stageId": "repository-state",
+    "startedAt": "2026-09-11T21:19:36.587Z",
+    "completedAt": "2026-09-11T21:19:36.587Z",
+    "verified": true,
+    "output": {
+      "clean": true,
+      "branch": "feature/4.5-governed-skill-learning",
+      "head": "a1ec025",
+      "status": "CLEAN"
+    },
+    "energyJoules": null,
+    "verification": [
+      "deterministic:repository-state-invariant"
+    ]
+  }
+}

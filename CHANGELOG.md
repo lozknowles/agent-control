@@ -1,5 +1,29 @@
 # Changelog
 
+## [4.5.0] — Unreleased candidate
+
+- Adds a separate governed deterministic-skill lifecycle: `OBSERVE → CANDIDATE → VALIDATE → PROMOTE → REUSE → REVALIDATE/INVALIDATE`. Promotion requires distinct verified source Work Parcels and explicit operator action; model output cannot install executable code.
+- Adds hash-identified pre-registered handlers, typed input/output contracts, assumptions, scope, freshness and invalidation evidence. Unknown fields, changed handler identity, stale evidence and failed verification fail closed to a recorded governed-model escalation.
+- Adds the energy-minimal execution hierarchy and a production read-only Work Parcel Action/Job for deterministic skill reuse. The Learned Specialists dashboard now distinguishes Your Memories, deterministic skills and learned model adaptations and explains selections/rejections without fabricated savings.
+- Physically qualifies repository-state interpretation, test-result interpretation and baton-integrity procedure selection. Three teacher examples per task passed, followed by 15/15 deterministic executions per task. Repository-state and test-result reuse reduced measured-component energy by 99.45% and 99.37%; both break even on the second occurrence. A changed repository input was rejected and escalated to Qwen with independent PASS.
+- Preserves the negative specialist result: the current specialist remains more expensive than warm Qwen and has no training break-even. Specialist support remains available for tasks that cannot be represented deterministically.
+
+- Adds an experimental generic `ProjectMemoryPort` and structured Markdown backend for **Your Memories** portability qualification. Records are scoped, content-hashed, provenance-bound, freshness checked and advisory only; contradictory current facts fail closed and all rejection reasons remain visible. Obsidian is not a core dependency.
+- Adds reproducible physical cross-model qualification harnesses and a sealed POE/UX evidence recorder. Qwen, GLM-5.3-Flash, Codex/Luna, Sol and Pixel Gemma 4 E4B were invoked through existing provider abstractions; 5/12 requested writer→cold-reader cells passed. A complete POE-initiated Sol→Luna memory continuation passed with 24,444 reconciled tokens. Strong-model consolidation reduced size but regressed average reconstruction by 16.67 points, so the capability remains experimental.
+- Adds a release-gate follow-up that preserves and classifies all seven failed memory cells. Provider-neutral semantic field mapping plus one bounded repair resolved the historical Luna→Qwen and Qwen→Luna prompt/schema defects without accepting keyword-only output; GLM→Qwen and Pixel limitations remain failed evidence. MSI profiles remain authentication-blocked. A synchronized component-level residency series did not distinguish warm-idle power from noise, so no route-policy change or whole-node claim is made.
+- Adds a fresh 1920×1080 live qualification observer recording over an actual POE-created Work Parcel. It polls durable runtime state while Qwen writes memory, Agent Control persists and seals batons, Luna reconstructs cold, and independent verification completes; it is explicitly evidence of genuine runtime activity rather than a replay or production-dashboard substitute.
+- Adds experimental scope-safe power telemetry, idle-baseline and incremental-Wh accounting, expected-total-energy routing, specialist training break-even, `/api/energy`, and a POE digest that cannot label estimated or incomparable reductions as measured.
+- Records a 75-run Intel-package + DRAM + NVIDIA-board comparison over three held-out routing intents. Warm Qwen passed 15/15 at 20.426 J per verified result; the retained specialist passed 15/15 at 22.674 J, cold specialist at 85.673 J, and deterministic no-LLM routing at 0.121 J. A real ProjectMemoryPort run passed 15/15 at 85.865 J and showed no energy benefit. Training consumed 5,232.820 incremental measured-component joules, so no positive break-even exists and the power-aware release gate is not met.
+
+- Adds a provider-, model-, framework-, hardware- and runtime-neutral learned-skill lifecycle: `OBSERVE → IDENTIFY → DATASET → BASELINE → TRAIN → QUALIFY → REGISTER → ROUTE → MONITOR → RETIRE/RETRAIN`.
+- Adds a durable Skill Adapter Registry binding exact base, adaptation, dataset, runtime and frozen-evaluation identities, qualification metrics, limitations, compatibility, provenance and rollback state.
+- Requires explicit dataset review, disjoint frozen evaluation, objective unadapted baseline, material improvement and independent verification. Observation never starts training and runtime outcomes never silently mutate a model.
+- Integrates qualified specialists through the existing adaptive-harness Action boundary, Job runtime, Work Parcel scheduler, sealed baton, artifact store and independent verification; wrong task/base/runtime, stale qualification and execution-identity mismatch fail closed.
+- Adds one isolated CPU LoRA/PEFT runtime adapter as an interchangeable implementation, with exact on-disk base and adaptation SHA-256 verification before invocation. Protected GPU services are not stopped.
+- Adds **Learned Specialists** dashboard and POE projections plus revision-checked policy configuration. Learned adaptation and Warm Expert/cache state remain separate.
+- Records a frozen physical route-intent experiment and its limitations. No broad model expertise, monetary saving, energy saving, adapter composition or uncontrolled online learning is claimed.
+- This entry describes an isolated candidate only; 4.5 is not merged, tagged, released or deployed by this workstream.
+
 ## [4.4.0] — 2026-09-11
 
 - Adds a provider-neutral, immutable `UxSessionRecord` projection over existing governed execution evidence rather than a second recorder or event ledger. Session SHA-256 binds interactive replay, MP4, transcript, digest and evidence manifest to the same execution.

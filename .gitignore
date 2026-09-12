@@ -4,6 +4,11 @@ qualification-results/
 package-lock.json
 *.log
 artifacts/harness-mutation-partial.json
+.local-skill-artefacts/
+qualification/agent-control-4.5-skill-learning-20260911/training/adapter/
+qualification/agent-control-4.5-skill-learning-20260911/training/checkpoints/
+qualification/agent-control-4.5-skill-learning-20260911/governed-training/
+qualification/agent-control-4.5-skill-learning-20260911-rejected-initial/training/
 .pdf-review/
 .env
 .env.*

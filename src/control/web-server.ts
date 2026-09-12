@@ -200,6 +200,9 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   if (method === 'GET' && url.pathname === '/api/orchestration/workflows') return json(response, 200, service.adaptiveWorkflowLeague(url.searchParams.get('taskClass') ?? undefined, adaptiveLeagueFilter(url)));
   if (method === 'GET' && url.pathname === '/api/orchestration/decisions') return json(response, 200, service.adaptiveDecisions());
   if (method === 'GET' && url.pathname === '/api/cache-experts') return json(response, 200, service.cacheExpertRegistry());
+  if (method === 'GET' && url.pathname === '/api/learned-specialists') return json(response, 200, service.learnedSpecialists());
+  if (method === 'GET' && url.pathname === '/api/deterministic-skills') return json(response,200,service.deterministicSkillProjection());
+  if (method === 'GET' && url.pathname === '/api/energy') return json(response, 200, service.energyProjection());
   if (method === 'GET' && url.pathname === '/api/efficiency/invocations') {
     const requestedLimit = Number(url.searchParams.get('limit') ?? 200);
     const limit = Number.isSafeInteger(requestedLimit) && requestedLimit > 0 ? Math.min(1_000, requestedLimit) : 200;
@@ -292,6 +295,12 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
       service.events.emit('configuration.changed', {kind: 'cache-aware-experts', id: 'cache-aware-experts', restartRequired: true}, undefined, actor);
       return json(response, 200, result);
     }
+    if (url.pathname === '/api/configuration/learned-skills') {
+      const file = options.configFile ?? configPath(), result = new ConfigurationStore(file).updateLearnedSkills({revision: body.revision, learnedSkills: body.learnedSkills});
+      service.events.emit('configuration.changed', {kind: 'learned-skills', id: 'learned-skills', restartRequired: true}, undefined, actor);
+      return json(response, 200, result);
+    }
+    if(url.pathname==='/api/configuration/deterministic-skills'){const file=options.configFile??configPath(),result=new ConfigurationStore(file).updateDeterministicSkills({revision:body.revision,deterministicSkills:body.deterministicSkills});service.events.emit('configuration.changed',{kind:'deterministic-skills',id:'deterministic-skills',restartRequired:true},undefined,actor);return json(response,200,result);}
     if (url.pathname === '/api/cache-experts/invalidate') return json(response, 200, service.invalidateCacheExperts({providerId:typeof body.providerId==='string'?body.providerId:undefined,modelId:typeof body.modelId==='string'?body.modelId:undefined,sessionId:typeof body.sessionId==='string'?body.sessionId:undefined,cacheScopeId:typeof body.cacheScopeId==='string'?body.cacheScopeId:undefined,backendInstanceId:typeof body.backendInstanceId==='string'?body.backendInstanceId:undefined,reason:typeof body.reason==='string'?body.reason:undefined},actor));
     if (jobMatch?.[2] === 'run') return json(response, 201, service.createJobRun(decodeURIComponent(jobMatch[1]), body.parameters && typeof body.parameters === 'object' && !Array.isArray(body.parameters) ? body.parameters as Record<string, unknown> : {}, actor));
     if (url.pathname === '/api/parcels') return json(response, 201, await service.submitNaturalTask(String(body.prompt ?? ''), actor));
@@ -436,7 +445,7 @@ function executionSessionStream(service: AgentControlService, id: string, reques
 
 function serveAsset(response: ServerResponse, assetsDir: string, pathname: string) {
   const asset = pathname === '/' ? 'index.html' : pathname.replace(/^\//, '');
-  if (!['dashboard-social-voice.css', 'social-voice.html', 'dashboard-social-voice.js', 'dashboard-openwa.css', 'openwa.html', 'dashboard-openwa.js', 'index.html', 'dashboard.css', 'dashboard-fixes.css', 'dashboard-jobs.css', 'dashboard-bots.css', 'dashboard-wopr.css', 'dashboard-adaptive-orchestration.css', 'dashboard-live-shell.css', 'dashboard-poe.css', 'dashboard-cache-runtime.css', 'dashboard.js', 'dashboard-parameters.js', 'dashboard-running-state.js', 'dashboard-enhancements.js', 'dashboard-parameterized-jobs.js', 'dashboard-models.js', 'dashboard-sessions.js', 'dashboard-bots.js', 'dashboard-wopr.js', 'dashboard-adaptive-orchestration.js', 'dashboard-live-shell.js', 'dashboard-poe.js', 'dashboard-cache-experts.js'].includes(asset)) throw httpError(404, 'not_found');
+  if (!['dashboard-social-voice.css', 'social-voice.html', 'dashboard-social-voice.js', 'dashboard-openwa.css', 'openwa.html', 'dashboard-openwa.js', 'index.html', 'dashboard.css', 'dashboard-fixes.css', 'dashboard-jobs.css', 'dashboard-bots.css', 'dashboard-wopr.css', 'dashboard-adaptive-orchestration.css', 'dashboard-live-shell.css', 'dashboard-poe.css', 'dashboard-cache-runtime.css', 'dashboard-learned-specialists.css', 'dashboard.js', 'dashboard-parameters.js', 'dashboard-running-state.js', 'dashboard-enhancements.js', 'dashboard-parameterized-jobs.js', 'dashboard-models.js', 'dashboard-sessions.js', 'dashboard-bots.js', 'dashboard-wopr.js', 'dashboard-adaptive-orchestration.js', 'dashboard-live-shell.js', 'dashboard-poe.js', 'dashboard-cache-experts.js', 'dashboard-learned-specialists.js'].includes(asset)) throw httpError(404, 'not_found');
   const file = path.join(assetsDir, asset);
   if (!fs.existsSync(file)) throw httpError(404, 'dashboard_asset_missing');
   const type = asset.endsWith('.html') ? 'text/html; charset=utf-8' : asset.endsWith('.css') ? 'text/css; charset=utf-8' : 'text/javascript; charset=utf-8';

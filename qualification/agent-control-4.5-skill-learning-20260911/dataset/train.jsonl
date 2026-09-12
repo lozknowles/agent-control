@@ -1,0 +1,120 @@
+{"id":"review-02","input":"Please audit the managed node health with independent evidence.","output":{"lane":"LANE_REVIEW"}}
+{"id":"review-03","input":"Please inspect the provider route and cite findings.","output":{"lane":"LANE_REVIEW"}}
+{"id":"review-04","input":"Please assess the dashboard telemetry without making changes.","output":{"lane":"LANE_REVIEW"}}
+{"id":"review-05","input":"Please review the token ledger against current policy.","output":{"lane":"LANE_REVIEW"}}
+{"id":"review-07","input":"Please inspect the deployment manifest with independent evidence.","output":{"lane":"LANE_REVIEW"}}
+{"id":"review-08","input":"Please assess the model qualification and cite findings.","output":{"lane":"LANE_REVIEW"}}
+{"id":"review-09","input":"Please review the repository release notes without making changes.","output":{"lane":"LANE_REVIEW"}}
+{"id":"review-10","input":"Please audit the managed node health against current policy.","output":{"lane":"LANE_REVIEW"}}
+{"id":"review-12","input":"Please assess the dashboard telemetry with independent evidence.","output":{"lane":"LANE_REVIEW"}}
+{"id":"review-13","input":"Please review the token ledger and cite findings.","output":{"lane":"LANE_REVIEW"}}
+{"id":"review-14","input":"Please audit the cache evidence without making changes.","output":{"lane":"LANE_REVIEW"}}
+{"id":"review-15","input":"Please inspect the deployment manifest against current policy.","output":{"lane":"LANE_REVIEW"}}
+{"id":"review-18","input":"Please audit the managed node health and cite findings.","output":{"lane":"LANE_REVIEW"}}
+{"id":"review-19","input":"Please inspect the provider route without making changes.","output":{"lane":"LANE_REVIEW"}}
+{"id":"review-20","input":"Please assess the dashboard telemetry against current policy.","output":{"lane":"LANE_REVIEW"}}
+{"id":"review-21","input":"Please review the token ledger using read-only evidence.","output":{"lane":"LANE_REVIEW"}}
+{"id":"review-23","input":"Please inspect the deployment manifest and cite findings.","output":{"lane":"LANE_REVIEW"}}
+{"id":"review-24","input":"Please assess the model qualification without making changes.","output":{"lane":"LANE_REVIEW"}}
+{"id":"review-25","input":"Please review the repository release notes against current policy.","output":{"lane":"LANE_REVIEW"}}
+{"id":"review-26","input":"Please audit the managed node health using read-only evidence.","output":{"lane":"LANE_REVIEW"}}
+{"id":"review-28","input":"Please assess the dashboard telemetry and cite findings.","output":{"lane":"LANE_REVIEW"}}
+{"id":"review-29","input":"Please review the token ledger without making changes.","output":{"lane":"LANE_REVIEW"}}
+{"id":"review-30","input":"Please audit the cache evidence against current policy.","output":{"lane":"LANE_REVIEW"}}
+{"id":"review-31","input":"Please inspect the deployment manifest using read-only evidence.","output":{"lane":"LANE_REVIEW"}}
+{"id":"review-34","input":"Please audit the managed node health without making changes.","output":{"lane":"LANE_REVIEW"}}
+{"id":"review-35","input":"Please inspect the provider route against current policy.","output":{"lane":"LANE_REVIEW"}}
+{"id":"review-36","input":"Please assess the dashboard telemetry using read-only evidence.","output":{"lane":"LANE_REVIEW"}}
+{"id":"review-37","input":"Please review the token ledger with independent evidence.","output":{"lane":"LANE_REVIEW"}}
+{"id":"review-39","input":"Please inspect the deployment manifest without making changes.","output":{"lane":"LANE_REVIEW"}}
+{"id":"review-40","input":"Please assess the model qualification against current policy.","output":{"lane":"LANE_REVIEW"}}
+{"id":"operate-02","input":"Please execute the provider route with explicit approval.","output":{"lane":"LANE_OPERATE"}}
+{"id":"operate-03","input":"Please restart the dashboard telemetry within declared scope.","output":{"lane":"LANE_OPERATE"}}
+{"id":"operate-04","input":"Please deploy the token ledger using governed execution.","output":{"lane":"LANE_OPERATE"}}
+{"id":"operate-05","input":"Please run the cache evidence with rollback ready.","output":{"lane":"LANE_OPERATE"}}
+{"id":"operate-07","input":"Please restart the model qualification with explicit approval.","output":{"lane":"LANE_OPERATE"}}
+{"id":"operate-08","input":"Please deploy the repository release notes within declared scope.","output":{"lane":"LANE_OPERATE"}}
+{"id":"operate-09","input":"Please run the managed node health using governed execution.","output":{"lane":"LANE_OPERATE"}}
+{"id":"operate-10","input":"Please execute the provider route with rollback ready.","output":{"lane":"LANE_OPERATE"}}
+{"id":"operate-12","input":"Please deploy the token ledger with explicit approval.","output":{"lane":"LANE_OPERATE"}}
+{"id":"operate-13","input":"Please run the cache evidence within declared scope.","output":{"lane":"LANE_OPERATE"}}
+{"id":"operate-14","input":"Please execute the deployment manifest using governed execution.","output":{"lane":"LANE_OPERATE"}}
+{"id":"operate-15","input":"Please restart the model qualification with rollback ready.","output":{"lane":"LANE_OPERATE"}}
+{"id":"operate-18","input":"Please execute the provider route within declared scope.","output":{"lane":"LANE_OPERATE"}}
+{"id":"operate-19","input":"Please restart the dashboard telemetry using governed execution.","output":{"lane":"LANE_OPERATE"}}
+{"id":"operate-20","input":"Please deploy the token ledger with rollback ready.","output":{"lane":"LANE_OPERATE"}}
+{"id":"operate-21","input":"Please run the cache evidence and verify completion.","output":{"lane":"LANE_OPERATE"}}
+{"id":"operate-23","input":"Please restart the model qualification within declared scope.","output":{"lane":"LANE_OPERATE"}}
+{"id":"operate-24","input":"Please deploy the repository release notes using governed execution.","output":{"lane":"LANE_OPERATE"}}
+{"id":"operate-25","input":"Please run the managed node health with rollback ready.","output":{"lane":"LANE_OPERATE"}}
+{"id":"operate-26","input":"Please execute the provider route and verify completion.","output":{"lane":"LANE_OPERATE"}}
+{"id":"operate-28","input":"Please deploy the token ledger within declared scope.","output":{"lane":"LANE_OPERATE"}}
+{"id":"operate-29","input":"Please run the cache evidence using governed execution.","output":{"lane":"LANE_OPERATE"}}
+{"id":"operate-30","input":"Please execute the deployment manifest with rollback ready.","output":{"lane":"LANE_OPERATE"}}
+{"id":"operate-31","input":"Please restart the model qualification and verify completion.","output":{"lane":"LANE_OPERATE"}}
+{"id":"operate-34","input":"Please execute the provider route using governed execution.","output":{"lane":"LANE_OPERATE"}}
+{"id":"operate-35","input":"Please restart the dashboard telemetry with rollback ready.","output":{"lane":"LANE_OPERATE"}}
+{"id":"operate-36","input":"Please deploy the token ledger and verify completion.","output":{"lane":"LANE_OPERATE"}}
+{"id":"operate-37","input":"Please run the cache evidence with explicit approval.","output":{"lane":"LANE_OPERATE"}}
+{"id":"operate-39","input":"Please restart the model qualification using governed execution.","output":{"lane":"LANE_OPERATE"}}
+{"id":"operate-40","input":"Please deploy the repository release notes with rollback ready.","output":{"lane":"LANE_OPERATE"}}
+{"id":"verify-02","input":"Please qualify the dashboard telemetry using exact checks.","output":{"lane":"LANE_VERIFY"}}
+{"id":"verify-03","input":"Please test the token ledger and preserve evidence.","output":{"lane":"LANE_VERIFY"}}
+{"id":"verify-04","input":"Please prove the cache evidence independently.","output":{"lane":"LANE_VERIFY"}}
+{"id":"verify-05","input":"Please verify the deployment manifest without altering the result.","output":{"lane":"LANE_VERIFY"}}
+{"id":"verify-07","input":"Please test the repository release notes using exact checks.","output":{"lane":"LANE_VERIFY"}}
+{"id":"verify-08","input":"Please prove the managed node health and preserve evidence.","output":{"lane":"LANE_VERIFY"}}
+{"id":"verify-09","input":"Please verify the provider route independently.","output":{"lane":"LANE_VERIFY"}}
+{"id":"verify-10","input":"Please qualify the dashboard telemetry without altering the result.","output":{"lane":"LANE_VERIFY"}}
+{"id":"verify-12","input":"Please prove the cache evidence using exact checks.","output":{"lane":"LANE_VERIFY"}}
+{"id":"verify-13","input":"Please verify the deployment manifest and preserve evidence.","output":{"lane":"LANE_VERIFY"}}
+{"id":"verify-14","input":"Please qualify the model qualification independently.","output":{"lane":"LANE_VERIFY"}}
+{"id":"verify-15","input":"Please test the repository release notes without altering the result.","output":{"lane":"LANE_VERIFY"}}
+{"id":"verify-18","input":"Please qualify the dashboard telemetry and preserve evidence.","output":{"lane":"LANE_VERIFY"}}
+{"id":"verify-19","input":"Please test the token ledger independently.","output":{"lane":"LANE_VERIFY"}}
+{"id":"verify-20","input":"Please prove the cache evidence without altering the result.","output":{"lane":"LANE_VERIFY"}}
+{"id":"verify-21","input":"Please verify the deployment manifest against frozen criteria.","output":{"lane":"LANE_VERIFY"}}
+{"id":"verify-23","input":"Please test the repository release notes and preserve evidence.","output":{"lane":"LANE_VERIFY"}}
+{"id":"verify-24","input":"Please prove the managed node health independently.","output":{"lane":"LANE_VERIFY"}}
+{"id":"verify-25","input":"Please verify the provider route without altering the result.","output":{"lane":"LANE_VERIFY"}}
+{"id":"verify-26","input":"Please qualify the dashboard telemetry against frozen criteria.","output":{"lane":"LANE_VERIFY"}}
+{"id":"verify-28","input":"Please prove the cache evidence and preserve evidence.","output":{"lane":"LANE_VERIFY"}}
+{"id":"verify-29","input":"Please verify the deployment manifest independently.","output":{"lane":"LANE_VERIFY"}}
+{"id":"verify-30","input":"Please qualify the model qualification without altering the result.","output":{"lane":"LANE_VERIFY"}}
+{"id":"verify-31","input":"Please test the repository release notes against frozen criteria.","output":{"lane":"LANE_VERIFY"}}
+{"id":"verify-34","input":"Please qualify the dashboard telemetry independently.","output":{"lane":"LANE_VERIFY"}}
+{"id":"verify-35","input":"Please test the token ledger without altering the result.","output":{"lane":"LANE_VERIFY"}}
+{"id":"verify-36","input":"Please prove the cache evidence against frozen criteria.","output":{"lane":"LANE_VERIFY"}}
+{"id":"verify-37","input":"Please verify the deployment manifest using exact checks.","output":{"lane":"LANE_VERIFY"}}
+{"id":"verify-39","input":"Please test the repository release notes independently.","output":{"lane":"LANE_VERIFY"}}
+{"id":"verify-40","input":"Please prove the managed node health without altering the result.","output":{"lane":"LANE_VERIFY"}}
+{"id":"research-02","input":"Please compare the token ledger and compare alternatives.","output":{"lane":"LANE_RESEARCH"}}
+{"id":"research-03","input":"Please investigate the cache evidence and separate facts from inference.","output":{"lane":"LANE_RESEARCH"}}
+{"id":"research-04","input":"Please find the deployment manifest with cited evidence.","output":{"lane":"LANE_RESEARCH"}}
+{"id":"research-05","input":"Please research the model qualification using primary sources.","output":{"lane":"LANE_RESEARCH"}}
+{"id":"research-07","input":"Please investigate the managed node health and compare alternatives.","output":{"lane":"LANE_RESEARCH"}}
+{"id":"research-08","input":"Please find the provider route and separate facts from inference.","output":{"lane":"LANE_RESEARCH"}}
+{"id":"research-09","input":"Please research the dashboard telemetry with cited evidence.","output":{"lane":"LANE_RESEARCH"}}
+{"id":"research-10","input":"Please compare the token ledger using primary sources.","output":{"lane":"LANE_RESEARCH"}}
+{"id":"research-12","input":"Please find the deployment manifest and compare alternatives.","output":{"lane":"LANE_RESEARCH"}}
+{"id":"research-13","input":"Please research the model qualification and separate facts from inference.","output":{"lane":"LANE_RESEARCH"}}
+{"id":"research-14","input":"Please compare the repository release notes with cited evidence.","output":{"lane":"LANE_RESEARCH"}}
+{"id":"research-15","input":"Please investigate the managed node health using primary sources.","output":{"lane":"LANE_RESEARCH"}}
+{"id":"research-18","input":"Please compare the token ledger and separate facts from inference.","output":{"lane":"LANE_RESEARCH"}}
+{"id":"research-19","input":"Please investigate the cache evidence with cited evidence.","output":{"lane":"LANE_RESEARCH"}}
+{"id":"research-20","input":"Please find the deployment manifest using primary sources.","output":{"lane":"LANE_RESEARCH"}}
+{"id":"research-21","input":"Please research the model qualification without changing systems.","output":{"lane":"LANE_RESEARCH"}}
+{"id":"research-23","input":"Please investigate the managed node health and separate facts from inference.","output":{"lane":"LANE_RESEARCH"}}
+{"id":"research-24","input":"Please find the provider route with cited evidence.","output":{"lane":"LANE_RESEARCH"}}
+{"id":"research-25","input":"Please research the dashboard telemetry using primary sources.","output":{"lane":"LANE_RESEARCH"}}
+{"id":"research-26","input":"Please compare the token ledger without changing systems.","output":{"lane":"LANE_RESEARCH"}}
+{"id":"research-28","input":"Please find the deployment manifest and separate facts from inference.","output":{"lane":"LANE_RESEARCH"}}
+{"id":"research-29","input":"Please research the model qualification with cited evidence.","output":{"lane":"LANE_RESEARCH"}}
+{"id":"research-30","input":"Please compare the repository release notes using primary sources.","output":{"lane":"LANE_RESEARCH"}}
+{"id":"research-31","input":"Please investigate the managed node health without changing systems.","output":{"lane":"LANE_RESEARCH"}}
+{"id":"research-34","input":"Please compare the token ledger with cited evidence.","output":{"lane":"LANE_RESEARCH"}}
+{"id":"research-35","input":"Please investigate the cache evidence using primary sources.","output":{"lane":"LANE_RESEARCH"}}
+{"id":"research-36","input":"Please find the deployment manifest without changing systems.","output":{"lane":"LANE_RESEARCH"}}
+{"id":"research-37","input":"Please research the model qualification and compare alternatives.","output":{"lane":"LANE_RESEARCH"}}
+{"id":"research-39","input":"Please investigate the managed node health with cited evidence.","output":{"lane":"LANE_RESEARCH"}}
+{"id":"research-40","input":"Please find the provider route using primary sources.","output":{"lane":"LANE_RESEARCH"}}

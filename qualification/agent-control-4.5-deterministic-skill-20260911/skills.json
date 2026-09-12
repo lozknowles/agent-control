@@ -1,0 +1,2285 @@
+{
+  "schema": "agent-control.deterministic-skills/v1",
+  "skills": [
+    {
+      "schema": "agent-control.deterministic-skill/v1",
+      "id": "repository-state",
+      "version": "1",
+      "label": "repository-state",
+      "taskClass": "repository-state",
+      "handlerId": "repository-state-v1",
+      "handlerSha256": "6c131b5564d26a8fa1c0863768e32285a75a08748f3509b5a9d6dd4dba9590a5",
+      "state": "PROMOTED",
+      "sourceParcels": [
+        "reason-repository-state-1",
+        "reason-repository-state-2",
+        "reason-repository-state-3"
+      ],
+      "originatingReasoning": [
+        {
+          "parcelId": "reason-repository-state-1",
+          "providerId": "local-openai-compatible",
+          "modelId": "qwen2.5-3b-instruct-q4_k_m.gguf",
+          "nodeId": "hpubuntu",
+          "evidence": [
+            "energy:ff9de3ab6b2bc060e1e6c10f9504136db696cd3dcc2e575eab4769ea5bdcac7b"
+          ]
+        },
+        {
+          "parcelId": "reason-repository-state-2",
+          "providerId": "local-openai-compatible",
+          "modelId": "qwen2.5-3b-instruct-q4_k_m.gguf",
+          "nodeId": "hpubuntu",
+          "evidence": [
+            "energy:d03842e67a274350a23e74b9a8f1b965c7c4c77ad039175dccc880d08b63f6cb"
+          ]
+        },
+        {
+          "parcelId": "reason-repository-state-3",
+          "providerId": "local-openai-compatible",
+          "modelId": "qwen2.5-3b-instruct-q4_k_m.gguf",
+          "nodeId": "hpubuntu",
+          "evidence": [
+            "energy:bac5fc6f931298c85b001223e754b200918aa9f3053c72a7000a4cc1d2e77215"
+          ]
+        }
+      ],
+      "assumptions": [
+        "exact typed contract"
+      ],
+      "inputContract": {
+        "schema": "repository-state/v1",
+        "required": [
+          "branch",
+          "head",
+          "porcelain"
+        ],
+        "allowed": [
+          "branch",
+          "head",
+          "porcelain"
+        ]
+      },
+      "outputContract": {
+        "schema": "repository-state-result/v1",
+        "required": [
+          "result"
+        ],
+        "allowed": [
+          "result"
+        ]
+      },
+      "verificationMethod": "independent deterministic invariant",
+      "scope": [
+        "agent-control"
+      ],
+      "createdAt": "2026-09-11T21:10:42.912Z",
+      "validatedAt": "2026-09-11T21:10:43.702Z",
+      "promotedAt": "2026-09-11T21:10:43.702Z",
+      "lastUsedAt": "2026-09-11T21:10:45.207Z",
+      "expiresAt": "2026-12-10T00:00:00Z",
+      "invalidationConditions": [
+        "contract mismatch",
+        "expired evidence",
+        "failed verification",
+        "unexpected state"
+      ],
+      "validationEvidence": [
+        "held-out:repository-state:15-cases",
+        "operator:promotion-approved"
+      ],
+      "reason": "operator: Explicit governed promotion for bounded scope"
+    },
+    {
+      "schema": "agent-control.deterministic-skill/v1",
+      "id": "test-result",
+      "version": "1",
+      "label": "test-result",
+      "taskClass": "test-result",
+      "handlerId": "test-result-v1",
+      "handlerSha256": "1a7db203216782b2f7ad83f4efa6a5b78c811d7971aa819448f02736f4376d95",
+      "state": "PROMOTED",
+      "sourceParcels": [
+        "reason-test-result-1",
+        "reason-test-result-2",
+        "reason-test-result-3"
+      ],
+      "originatingReasoning": [
+        {
+          "parcelId": "reason-test-result-1",
+          "providerId": "local-openai-compatible",
+          "modelId": "qwen2.5-3b-instruct-q4_k_m.gguf",
+          "nodeId": "hpubuntu",
+          "evidence": [
+            "energy:4133566f6a0074323694e9f5e71c657a5bb770ace6117e906293ded895ddb260"
+          ]
+        },
+        {
+          "parcelId": "reason-test-result-2",
+          "providerId": "local-openai-compatible",
+          "modelId": "qwen2.5-3b-instruct-q4_k_m.gguf",
+          "nodeId": "hpubuntu",
+          "evidence": [
+            "energy:6dc376d7123e85197c1b62a51856c684e5dd5e25b30e115ff015450e69b8a8ee"
+          ]
+        },
+        {
+          "parcelId": "reason-test-result-3",
+          "providerId": "local-openai-compatible",
+          "modelId": "qwen2.5-3b-instruct-q4_k_m.gguf",
+          "nodeId": "hpubuntu",
+          "evidence": [
+            "energy:18642093a95a33bcb67d4e57ea66e7b2e7a0024faa6ff2760085f6b021df2e3f"
+          ]
+        }
+      ],
+      "assumptions": [
+        "exact typed contract"
+      ],
+      "inputContract": {
+        "schema": "test-result/v1",
+        "required": [
+          "exitCode",
+          "failed",
+          "passed",
+          "skipped"
+        ],
+        "allowed": [
+          "exitCode",
+          "failed",
+          "passed",
+          "skipped"
+        ]
+      },
+      "outputContract": {
+        "schema": "test-result-result/v1",
+        "required": [
+          "result"
+        ],
+        "allowed": [
+          "result"
+        ]
+      },
+      "verificationMethod": "independent deterministic invariant",
+      "scope": [
+        "agent-control"
+      ],
+      "createdAt": "2026-09-11T21:10:45.664Z",
+      "validatedAt": "2026-09-11T21:10:46.574Z",
+      "promotedAt": "2026-09-11T21:10:46.574Z",
+      "lastUsedAt": "2026-09-11T21:10:48.409Z",
+      "expiresAt": "2026-12-10T00:00:00Z",
+      "invalidationConditions": [
+        "contract mismatch",
+        "expired evidence",
+        "failed verification",
+        "unexpected state"
+      ],
+      "validationEvidence": [
+        "held-out:test-result:15-cases",
+        "operator:promotion-approved"
+      ],
+      "reason": "operator: Explicit governed promotion for bounded scope"
+    },
+    {
+      "schema": "agent-control.deterministic-skill/v1",
+      "id": "baton-integrity",
+      "version": "1",
+      "label": "baton-integrity",
+      "taskClass": "baton-integrity",
+      "handlerId": "baton-integrity-v1",
+      "handlerSha256": "12859e7e5e3a2dae651db3909ccef08608857eeb18495f086ce4b1495472be63",
+      "state": "PROMOTED",
+      "sourceParcels": [
+        "reason-baton-integrity-1",
+        "reason-baton-integrity-2",
+        "reason-baton-integrity-3"
+      ],
+      "originatingReasoning": [
+        {
+          "parcelId": "reason-baton-integrity-1",
+          "providerId": "local-openai-compatible",
+          "modelId": "qwen2.5-3b-instruct-q4_k_m.gguf",
+          "nodeId": "hpubuntu",
+          "evidence": [
+            "energy:c402ef280eb82e513119fb4f9f8b0685f4934c462ebbd5869b95a216553e2e02"
+          ]
+        },
+        {
+          "parcelId": "reason-baton-integrity-2",
+          "providerId": "local-openai-compatible",
+          "modelId": "qwen2.5-3b-instruct-q4_k_m.gguf",
+          "nodeId": "hpubuntu",
+          "evidence": [
+            "energy:c8d2e050c3b52b6f00ff47cb2132ed1e21a9e23780fb22d8be278a4f5f3c3dd3"
+          ]
+        },
+        {
+          "parcelId": "reason-baton-integrity-3",
+          "providerId": "local-openai-compatible",
+          "modelId": "qwen2.5-3b-instruct-q4_k_m.gguf",
+          "nodeId": "hpubuntu",
+          "evidence": [
+            "energy:8e98830db2ea66c254a8462f923516a2ab5173e43d90a7e8834f3a7a00e777d9"
+          ]
+        }
+      ],
+      "assumptions": [
+        "exact typed contract"
+      ],
+      "inputContract": {
+        "schema": "baton-integrity/v1",
+        "required": [
+          "baton",
+          "expectedSha256"
+        ],
+        "allowed": [
+          "baton",
+          "expectedSha256"
+        ]
+      },
+      "outputContract": {
+        "schema": "baton-integrity-result/v1",
+        "required": [
+          "result"
+        ],
+        "allowed": [
+          "result"
+        ]
+      },
+      "verificationMethod": "independent deterministic invariant",
+      "scope": [
+        "agent-control"
+      ],
+      "createdAt": "2026-09-11T21:10:49.270Z",
+      "validatedAt": "2026-09-11T21:10:50.795Z",
+      "promotedAt": "2026-09-11T21:10:50.796Z",
+      "lastUsedAt": "2026-09-11T21:10:52.270Z",
+      "expiresAt": "2026-12-10T00:00:00Z",
+      "invalidationConditions": [
+        "contract mismatch",
+        "expired evidence",
+        "failed verification",
+        "unexpected state"
+      ],
+      "validationEvidence": [
+        "held-out:baton-integrity:15-cases",
+        "operator:promotion-approved"
+      ],
+      "reason": "operator: Explicit governed promotion for bounded scope"
+    }
+  ],
+  "decisions": [
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-eda578ae-d733-46ee-9809-d4dafbc9e84d",
+      "parcelId": "reuse-repository-state-1",
+      "stageId": "execute",
+      "taskClass": "repository-state",
+      "at": "2026-09-11T21:10:43.803Z",
+      "selected": {
+        "id": "repository-state",
+        "version": "1",
+        "handlerId": "repository-state-v1"
+      },
+      "candidates": [
+        {
+          "id": "repository-state",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill repository-state@1: input contract, freshness, handler identity and applicability passed."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-a1186087-f037-4633-b4c1-fb14f340db5b",
+      "parcelId": "reuse-repository-state-2",
+      "stageId": "execute",
+      "taskClass": "repository-state",
+      "at": "2026-09-11T21:10:43.900Z",
+      "selected": {
+        "id": "repository-state",
+        "version": "1",
+        "handlerId": "repository-state-v1"
+      },
+      "candidates": [
+        {
+          "id": "repository-state",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill repository-state@1: input contract, freshness, handler identity and applicability passed."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-efbd8502-4f4f-470a-95cb-e1edb72ed930",
+      "parcelId": "reuse-repository-state-3",
+      "stageId": "execute",
+      "taskClass": "repository-state",
+      "at": "2026-09-11T21:10:44.002Z",
+      "selected": {
+        "id": "repository-state",
+        "version": "1",
+        "handlerId": "repository-state-v1"
+      },
+      "candidates": [
+        {
+          "id": "repository-state",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill repository-state@1: input contract, freshness, handler identity and applicability passed."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-4a242d10-c129-40f4-8baf-bb6763606665",
+      "parcelId": "reuse-repository-state-4",
+      "stageId": "execute",
+      "taskClass": "repository-state",
+      "at": "2026-09-11T21:10:44.128Z",
+      "selected": {
+        "id": "repository-state",
+        "version": "1",
+        "handlerId": "repository-state-v1"
+      },
+      "candidates": [
+        {
+          "id": "repository-state",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill repository-state@1: input contract, freshness, handler identity and applicability passed."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-d949bf0f-255d-44cc-8741-ba5e864cae49",
+      "parcelId": "reuse-repository-state-5",
+      "stageId": "execute",
+      "taskClass": "repository-state",
+      "at": "2026-09-11T21:10:44.224Z",
+      "selected": {
+        "id": "repository-state",
+        "version": "1",
+        "handlerId": "repository-state-v1"
+      },
+      "candidates": [
+        {
+          "id": "repository-state",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill repository-state@1: input contract, freshness, handler identity and applicability passed."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-c1b8bef5-cc82-41fe-be9e-c4168b0de81d",
+      "parcelId": "reuse-repository-state-6",
+      "stageId": "execute",
+      "taskClass": "repository-state",
+      "at": "2026-09-11T21:10:44.327Z",
+      "selected": {
+        "id": "repository-state",
+        "version": "1",
+        "handlerId": "repository-state-v1"
+      },
+      "candidates": [
+        {
+          "id": "repository-state",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill repository-state@1: input contract, freshness, handler identity and applicability passed."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-4a609d9e-9cbc-4c6f-8422-834faae2ad6f",
+      "parcelId": "reuse-repository-state-7",
+      "stageId": "execute",
+      "taskClass": "repository-state",
+      "at": "2026-09-11T21:10:44.417Z",
+      "selected": {
+        "id": "repository-state",
+        "version": "1",
+        "handlerId": "repository-state-v1"
+      },
+      "candidates": [
+        {
+          "id": "repository-state",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill repository-state@1: input contract, freshness, handler identity and applicability passed."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-74fff3ac-d6b2-42e9-8dbe-9549f8bc9036",
+      "parcelId": "reuse-repository-state-8",
+      "stageId": "execute",
+      "taskClass": "repository-state",
+      "at": "2026-09-11T21:10:44.508Z",
+      "selected": {
+        "id": "repository-state",
+        "version": "1",
+        "handlerId": "repository-state-v1"
+      },
+      "candidates": [
+        {
+          "id": "repository-state",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill repository-state@1: input contract, freshness, handler identity and applicability passed."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-a17df385-1232-4085-9ba0-5c366f47f2fa",
+      "parcelId": "reuse-repository-state-9",
+      "stageId": "execute",
+      "taskClass": "repository-state",
+      "at": "2026-09-11T21:10:44.629Z",
+      "selected": {
+        "id": "repository-state",
+        "version": "1",
+        "handlerId": "repository-state-v1"
+      },
+      "candidates": [
+        {
+          "id": "repository-state",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill repository-state@1: input contract, freshness, handler identity and applicability passed."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-61d34281-68ee-470b-a778-99d2fd44bb10",
+      "parcelId": "reuse-repository-state-10",
+      "stageId": "execute",
+      "taskClass": "repository-state",
+      "at": "2026-09-11T21:10:44.723Z",
+      "selected": {
+        "id": "repository-state",
+        "version": "1",
+        "handlerId": "repository-state-v1"
+      },
+      "candidates": [
+        {
+          "id": "repository-state",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill repository-state@1: input contract, freshness, handler identity and applicability passed."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-6bd895b4-a978-4f97-ad19-e476213183b5",
+      "parcelId": "reuse-repository-state-11",
+      "stageId": "execute",
+      "taskClass": "repository-state",
+      "at": "2026-09-11T21:10:44.813Z",
+      "selected": {
+        "id": "repository-state",
+        "version": "1",
+        "handlerId": "repository-state-v1"
+      },
+      "candidates": [
+        {
+          "id": "repository-state",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill repository-state@1: input contract, freshness, handler identity and applicability passed."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-b6360ed9-1cf1-4454-90f9-28eb60a83cea",
+      "parcelId": "reuse-repository-state-12",
+      "stageId": "execute",
+      "taskClass": "repository-state",
+      "at": "2026-09-11T21:10:44.908Z",
+      "selected": {
+        "id": "repository-state",
+        "version": "1",
+        "handlerId": "repository-state-v1"
+      },
+      "candidates": [
+        {
+          "id": "repository-state",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill repository-state@1: input contract, freshness, handler identity and applicability passed."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-253689aa-25ab-436d-a70c-0bef0aca65d6",
+      "parcelId": "reuse-repository-state-13",
+      "stageId": "execute",
+      "taskClass": "repository-state",
+      "at": "2026-09-11T21:10:45.006Z",
+      "selected": {
+        "id": "repository-state",
+        "version": "1",
+        "handlerId": "repository-state-v1"
+      },
+      "candidates": [
+        {
+          "id": "repository-state",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill repository-state@1: input contract, freshness, handler identity and applicability passed."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-c31c2297-6d9c-40f6-914a-6dbd7dbf479f",
+      "parcelId": "reuse-repository-state-14",
+      "stageId": "execute",
+      "taskClass": "repository-state",
+      "at": "2026-09-11T21:10:45.108Z",
+      "selected": {
+        "id": "repository-state",
+        "version": "1",
+        "handlerId": "repository-state-v1"
+      },
+      "candidates": [
+        {
+          "id": "repository-state",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill repository-state@1: input contract, freshness, handler identity and applicability passed."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-20ac4ad4-4bd0-48fc-b424-18022e6a7038",
+      "parcelId": "reuse-repository-state-15",
+      "stageId": "execute",
+      "taskClass": "repository-state",
+      "at": "2026-09-11T21:10:45.206Z",
+      "selected": {
+        "id": "repository-state",
+        "version": "1",
+        "handlerId": "repository-state-v1"
+      },
+      "candidates": [
+        {
+          "id": "repository-state",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill repository-state@1: input contract, freshness, handler identity and applicability passed."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-e1b0a445-b226-42a0-9418-97f51dffeed9",
+      "parcelId": "reuse-test-result-1",
+      "stageId": "execute",
+      "taskClass": "test-result",
+      "at": "2026-09-11T21:10:46.678Z",
+      "selected": {
+        "id": "test-result",
+        "version": "1",
+        "handlerId": "test-result-v1"
+      },
+      "candidates": [
+        {
+          "id": "test-result",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill test-result@1: input contract, freshness, handler identity and applicability passed."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-f1e9e92c-6f07-4a36-8327-a492fc5dea31",
+      "parcelId": "reuse-test-result-2",
+      "stageId": "execute",
+      "taskClass": "test-result",
+      "at": "2026-09-11T21:10:46.777Z",
+      "selected": {
+        "id": "test-result",
+        "version": "1",
+        "handlerId": "test-result-v1"
+      },
+      "candidates": [
+        {
+          "id": "test-result",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill test-result@1: input contract, freshness, handler identity and applicability passed."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-a8eef191-c65b-4163-926c-648019cc091f",
+      "parcelId": "reuse-test-result-3",
+      "stageId": "execute",
+      "taskClass": "test-result",
+      "at": "2026-09-11T21:10:46.881Z",
+      "selected": {
+        "id": "test-result",
+        "version": "1",
+        "handlerId": "test-result-v1"
+      },
+      "candidates": [
+        {
+          "id": "test-result",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill test-result@1: input contract, freshness, handler identity and applicability passed."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-c43b5676-6a26-4b8a-bd6d-330165f6b481",
+      "parcelId": "reuse-test-result-4",
+      "stageId": "execute",
+      "taskClass": "test-result",
+      "at": "2026-09-11T21:10:46.980Z",
+      "selected": {
+        "id": "test-result",
+        "version": "1",
+        "handlerId": "test-result-v1"
+      },
+      "candidates": [
+        {
+          "id": "test-result",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill test-result@1: input contract, freshness, handler identity and applicability passed."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-2724ed51-7136-46df-a6d8-03d28e4457ac",
+      "parcelId": "reuse-test-result-5",
+      "stageId": "execute",
+      "taskClass": "test-result",
+      "at": "2026-09-11T21:10:47.138Z",
+      "selected": {
+        "id": "test-result",
+        "version": "1",
+        "handlerId": "test-result-v1"
+      },
+      "candidates": [
+        {
+          "id": "test-result",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill test-result@1: input contract, freshness, handler identity and applicability passed."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-4cab1deb-6816-4d45-aaa2-c621ef18a68c",
+      "parcelId": "reuse-test-result-6",
+      "stageId": "execute",
+      "taskClass": "test-result",
+      "at": "2026-09-11T21:10:47.239Z",
+      "selected": {
+        "id": "test-result",
+        "version": "1",
+        "handlerId": "test-result-v1"
+      },
+      "candidates": [
+        {
+          "id": "test-result",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill test-result@1: input contract, freshness, handler identity and applicability passed."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-1c497771-1f63-4410-b7b9-bbe43fa5045d",
+      "parcelId": "reuse-test-result-7",
+      "stageId": "execute",
+      "taskClass": "test-result",
+      "at": "2026-09-11T21:10:47.353Z",
+      "selected": {
+        "id": "test-result",
+        "version": "1",
+        "handlerId": "test-result-v1"
+      },
+      "candidates": [
+        {
+          "id": "test-result",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill test-result@1: input contract, freshness, handler identity and applicability passed."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-5062822b-6765-4432-b971-98c5ac3877ab",
+      "parcelId": "reuse-test-result-8",
+      "stageId": "execute",
+      "taskClass": "test-result",
+      "at": "2026-09-11T21:10:47.457Z",
+      "selected": {
+        "id": "test-result",
+        "version": "1",
+        "handlerId": "test-result-v1"
+      },
+      "candidates": [
+        {
+          "id": "test-result",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill test-result@1: input contract, freshness, handler identity and applicability passed."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-c516a561-f54a-4b4a-a5a9-bb5bf8da1df7",
+      "parcelId": "reuse-test-result-9",
+      "stageId": "execute",
+      "taskClass": "test-result",
+      "at": "2026-09-11T21:10:47.578Z",
+      "selected": {
+        "id": "test-result",
+        "version": "1",
+        "handlerId": "test-result-v1"
+      },
+      "candidates": [
+        {
+          "id": "test-result",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill test-result@1: input contract, freshness, handler identity and applicability passed."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-77a9ac2c-9fa4-43ef-a9d1-83b3bffcb5c5",
+      "parcelId": "reuse-test-result-10",
+      "stageId": "execute",
+      "taskClass": "test-result",
+      "at": "2026-09-11T21:10:47.690Z",
+      "selected": {
+        "id": "test-result",
+        "version": "1",
+        "handlerId": "test-result-v1"
+      },
+      "candidates": [
+        {
+          "id": "test-result",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill test-result@1: input contract, freshness, handler identity and applicability passed."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-3c55ac1b-5ced-46af-b3bc-df1dfe5616c6",
+      "parcelId": "reuse-test-result-11",
+      "stageId": "execute",
+      "taskClass": "test-result",
+      "at": "2026-09-11T21:10:47.812Z",
+      "selected": {
+        "id": "test-result",
+        "version": "1",
+        "handlerId": "test-result-v1"
+      },
+      "candidates": [
+        {
+          "id": "test-result",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill test-result@1: input contract, freshness, handler identity and applicability passed."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-35b96cf0-0e53-4b3d-9240-f6ba7cf6de50",
+      "parcelId": "reuse-test-result-12",
+      "stageId": "execute",
+      "taskClass": "test-result",
+      "at": "2026-09-11T21:10:47.936Z",
+      "selected": {
+        "id": "test-result",
+        "version": "1",
+        "handlerId": "test-result-v1"
+      },
+      "candidates": [
+        {
+          "id": "test-result",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill test-result@1: input contract, freshness, handler identity and applicability passed."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-1d427a67-090b-4d00-ac27-2975943ab02a",
+      "parcelId": "reuse-test-result-13",
+      "stageId": "execute",
+      "taskClass": "test-result",
+      "at": "2026-09-11T21:10:48.064Z",
+      "selected": {
+        "id": "test-result",
+        "version": "1",
+        "handlerId": "test-result-v1"
+      },
+      "candidates": [
+        {
+          "id": "test-result",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill test-result@1: input contract, freshness, handler identity and applicability passed."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-192cb07c-f990-4a6c-8818-5e22a1321adf",
+      "parcelId": "reuse-test-result-14",
+      "stageId": "execute",
+      "taskClass": "test-result",
+      "at": "2026-09-11T21:10:48.236Z",
+      "selected": {
+        "id": "test-result",
+        "version": "1",
+        "handlerId": "test-result-v1"
+      },
+      "candidates": [
+        {
+          "id": "test-result",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill test-result@1: input contract, freshness, handler identity and applicability passed."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-86362740-bb7b-4b74-afcd-f407102d67e9",
+      "parcelId": "reuse-test-result-15",
+      "stageId": "execute",
+      "taskClass": "test-result",
+      "at": "2026-09-11T21:10:48.407Z",
+      "selected": {
+        "id": "test-result",
+        "version": "1",
+        "handlerId": "test-result-v1"
+      },
+      "candidates": [
+        {
+          "id": "test-result",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill test-result@1: input contract, freshness, handler identity and applicability passed."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-27536db9-544e-42e7-aafc-dd28a247f273",
+      "parcelId": "reuse-baton-integrity-1",
+      "stageId": "execute",
+      "taskClass": "baton-integrity",
+      "at": "2026-09-11T21:10:50.889Z",
+      "selected": {
+        "id": "baton-integrity",
+        "version": "1",
+        "handlerId": "baton-integrity-v1"
+      },
+      "candidates": [
+        {
+          "id": "baton-integrity",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill baton-integrity@1: input contract, freshness, handler identity and applicability passed."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-896b05d4-66d4-4e9d-a2a7-c5b06e8a1533",
+      "parcelId": "reuse-baton-integrity-2",
+      "stageId": "execute",
+      "taskClass": "baton-integrity",
+      "at": "2026-09-11T21:10:50.987Z",
+      "selected": {
+        "id": "baton-integrity",
+        "version": "1",
+        "handlerId": "baton-integrity-v1"
+      },
+      "candidates": [
+        {
+          "id": "baton-integrity",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill baton-integrity@1: input contract, freshness, handler identity and applicability passed."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-d77d70cb-f790-446c-a5fd-8d4c7554e8ce",
+      "parcelId": "reuse-baton-integrity-3",
+      "stageId": "execute",
+      "taskClass": "baton-integrity",
+      "at": "2026-09-11T21:10:51.096Z",
+      "selected": {
+        "id": "baton-integrity",
+        "version": "1",
+        "handlerId": "baton-integrity-v1"
+      },
+      "candidates": [
+        {
+          "id": "baton-integrity",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill baton-integrity@1: input contract, freshness, handler identity and applicability passed."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-49cd9477-3fc7-4322-a83a-a0286c5ca11c",
+      "parcelId": "reuse-baton-integrity-4",
+      "stageId": "execute",
+      "taskClass": "baton-integrity",
+      "at": "2026-09-11T21:10:51.198Z",
+      "selected": {
+        "id": "baton-integrity",
+        "version": "1",
+        "handlerId": "baton-integrity-v1"
+      },
+      "candidates": [
+        {
+          "id": "baton-integrity",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill baton-integrity@1: input contract, freshness, handler identity and applicability passed."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-c582d324-2586-44d7-af61-be155efe9a87",
+      "parcelId": "reuse-baton-integrity-5",
+      "stageId": "execute",
+      "taskClass": "baton-integrity",
+      "at": "2026-09-11T21:10:51.295Z",
+      "selected": {
+        "id": "baton-integrity",
+        "version": "1",
+        "handlerId": "baton-integrity-v1"
+      },
+      "candidates": [
+        {
+          "id": "baton-integrity",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill baton-integrity@1: input contract, freshness, handler identity and applicability passed."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-75f0b43d-bc1e-493e-9563-2483b4ccb83e",
+      "parcelId": "reuse-baton-integrity-6",
+      "stageId": "execute",
+      "taskClass": "baton-integrity",
+      "at": "2026-09-11T21:10:51.389Z",
+      "selected": {
+        "id": "baton-integrity",
+        "version": "1",
+        "handlerId": "baton-integrity-v1"
+      },
+      "candidates": [
+        {
+          "id": "baton-integrity",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill baton-integrity@1: input contract, freshness, handler identity and applicability passed."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-6b0d5b59-b30c-4d47-a507-b6bb7da3efb6",
+      "parcelId": "reuse-baton-integrity-7",
+      "stageId": "execute",
+      "taskClass": "baton-integrity",
+      "at": "2026-09-11T21:10:51.486Z",
+      "selected": {
+        "id": "baton-integrity",
+        "version": "1",
+        "handlerId": "baton-integrity-v1"
+      },
+      "candidates": [
+        {
+          "id": "baton-integrity",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill baton-integrity@1: input contract, freshness, handler identity and applicability passed."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-52295667-eaf2-4dff-abbd-369b19d1790b",
+      "parcelId": "reuse-baton-integrity-8",
+      "stageId": "execute",
+      "taskClass": "baton-integrity",
+      "at": "2026-09-11T21:10:51.580Z",
+      "selected": {
+        "id": "baton-integrity",
+        "version": "1",
+        "handlerId": "baton-integrity-v1"
+      },
+      "candidates": [
+        {
+          "id": "baton-integrity",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill baton-integrity@1: input contract, freshness, handler identity and applicability passed."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-aa73cb30-520d-4158-a9f8-6ac95b568f28",
+      "parcelId": "reuse-baton-integrity-9",
+      "stageId": "execute",
+      "taskClass": "baton-integrity",
+      "at": "2026-09-11T21:10:51.677Z",
+      "selected": {
+        "id": "baton-integrity",
+        "version": "1",
+        "handlerId": "baton-integrity-v1"
+      },
+      "candidates": [
+        {
+          "id": "baton-integrity",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill baton-integrity@1: input contract, freshness, handler identity and applicability passed."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-6f0cc05a-2057-4421-a844-57b4fdf9452e",
+      "parcelId": "reuse-baton-integrity-10",
+      "stageId": "execute",
+      "taskClass": "baton-integrity",
+      "at": "2026-09-11T21:10:51.796Z",
+      "selected": {
+        "id": "baton-integrity",
+        "version": "1",
+        "handlerId": "baton-integrity-v1"
+      },
+      "candidates": [
+        {
+          "id": "baton-integrity",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill baton-integrity@1: input contract, freshness, handler identity and applicability passed."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-cccc0b5f-a5e4-4392-b6e3-8ba7853d09c7",
+      "parcelId": "reuse-baton-integrity-11",
+      "stageId": "execute",
+      "taskClass": "baton-integrity",
+      "at": "2026-09-11T21:10:51.895Z",
+      "selected": {
+        "id": "baton-integrity",
+        "version": "1",
+        "handlerId": "baton-integrity-v1"
+      },
+      "candidates": [
+        {
+          "id": "baton-integrity",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill baton-integrity@1: input contract, freshness, handler identity and applicability passed."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-7fab0885-434b-42a2-a123-ebf31f77015b",
+      "parcelId": "reuse-baton-integrity-12",
+      "stageId": "execute",
+      "taskClass": "baton-integrity",
+      "at": "2026-09-11T21:10:51.987Z",
+      "selected": {
+        "id": "baton-integrity",
+        "version": "1",
+        "handlerId": "baton-integrity-v1"
+      },
+      "candidates": [
+        {
+          "id": "baton-integrity",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill baton-integrity@1: input contract, freshness, handler identity and applicability passed."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-cce44380-03e0-4bea-8a19-22961f628e47",
+      "parcelId": "reuse-baton-integrity-13",
+      "stageId": "execute",
+      "taskClass": "baton-integrity",
+      "at": "2026-09-11T21:10:52.079Z",
+      "selected": {
+        "id": "baton-integrity",
+        "version": "1",
+        "handlerId": "baton-integrity-v1"
+      },
+      "candidates": [
+        {
+          "id": "baton-integrity",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill baton-integrity@1: input contract, freshness, handler identity and applicability passed."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-e123ea60-a2ca-4fc0-b20a-2c621d4e69a4",
+      "parcelId": "reuse-baton-integrity-14",
+      "stageId": "execute",
+      "taskClass": "baton-integrity",
+      "at": "2026-09-11T21:10:52.173Z",
+      "selected": {
+        "id": "baton-integrity",
+        "version": "1",
+        "handlerId": "baton-integrity-v1"
+      },
+      "candidates": [
+        {
+          "id": "baton-integrity",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill baton-integrity@1: input contract, freshness, handler identity and applicability passed."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-2626b937-74eb-4a92-96b1-63482bf4d153",
+      "parcelId": "reuse-baton-integrity-15",
+      "stageId": "execute",
+      "taskClass": "baton-integrity",
+      "at": "2026-09-11T21:10:52.268Z",
+      "selected": {
+        "id": "baton-integrity",
+        "version": "1",
+        "handlerId": "baton-integrity-v1"
+      },
+      "candidates": [
+        {
+          "id": "baton-integrity",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill baton-integrity@1: input contract, freshness, handler identity and applicability passed."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-4be612b1-05fa-4f0b-9662-8a34e8fc94ea",
+      "parcelId": "changed-case",
+      "stageId": "execute",
+      "taskClass": "repository-state",
+      "at": "2026-09-11T21:10:52.272Z",
+      "selected": null,
+      "candidates": [
+        {
+          "id": "repository-state",
+          "version": "1",
+          "eligible": false,
+          "reasons": [
+            "unexpected:submodules"
+          ]
+        }
+      ],
+      "route": "ESCALATE_MODEL",
+      "reason": "Deterministic skill rejected; escalate to governed model (unexpected:submodules)."
+    },
+    {
+      "schema": "agent-control.deterministic-skill-decision/v1",
+      "id": "det-skill-route-b4e7b413-0caa-4545-9741-e2e91397c356",
+      "parcelId": "memory-route",
+      "stageId": "execute",
+      "taskClass": "repository-state",
+      "at": "2026-09-11T21:10:52.849Z",
+      "selected": {
+        "id": "repository-state",
+        "version": "1",
+        "handlerId": "repository-state-v1"
+      },
+      "candidates": [
+        {
+          "id": "repository-state",
+          "version": "1",
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "route": "DETERMINISTIC_SKILL",
+      "reason": "Selected promoted deterministic skill repository-state@1: input contract, freshness, handler identity and applicability passed."
+    }
+  ],
+  "executions": [
+    {
+      "schema": "agent-control.deterministic-skill-execution/v1",
+      "id": "det-skill-exec-3eb33112-0424-423f-ae0a-69a15bba041d",
+      "decisionId": "det-skill-route-eda578ae-d733-46ee-9809-d4dafbc9e84d",
+      "skillId": "repository-state",
+      "skillVersion": "1",
+      "parcelId": "reuse-repository-state-1",
+      "stageId": "execute",
+      "startedAt": "2026-09-11T21:10:43.804Z",
+      "completedAt": "2026-09-11T21:10:43.804Z",
+      "verified": true,
+      "output": {
+        "clean": true,
+        "branch": "feature/a",
+        "head": "a1-0",
+        "status": "CLEAN"
+      },
+      "energyJoules": 0.040419187377371046,
+      "verification": [
+        "deterministic:repository-state-invariant"
+      ]
+    },
+    {
+      "schema": "agent-control.deterministic-skill-execution/v1",
+      "id": "det-skill-exec-0d540f52-1b2c-4f60-b3a4-88d2fbf04e18",
+      "decisionId": "det-skill-route-a1186087-f037-4633-b4c1-fb14f340db5b",
+      "skillId": "repository-state",
+      "skillVersion": "1",
+      "parcelId": "reuse-repository-state-2",
+      "stageId": "execute",
+      "startedAt": "2026-09-11T21:10:43.900Z",
+      "completedAt": "2026-09-11T21:10:43.900Z",
+      "verified": true,
+      "output": {
+        "clean": false,
+        "branch": "feature/b",
+        "head": "b2-1",
+        "status": "DIRTY"
+      },
+      "energyJoules": 0,
+      "verification": [
+        "deterministic:repository-state-invariant"
+      ]
+    },
+    {
+      "schema": "agent-control.deterministic-skill-execution/v1",
+      "id": "det-skill-exec-148cb190-c36c-45a0-9c2e-a1af1449c88e",
+      "decisionId": "det-skill-route-efbd8502-4f4f-470a-95cb-e1edb72ed930",
+      "skillId": "repository-state",
+      "skillVersion": "1",
+      "parcelId": "reuse-repository-state-3",
+      "stageId": "execute",
+      "startedAt": "2026-09-11T21:10:44.003Z",
+      "completedAt": "2026-09-11T21:10:44.003Z",
+      "verified": true,
+      "output": {
+        "clean": true,
+        "branch": "main",
+        "head": "c3-2",
+        "status": "CLEAN"
+      },
+      "energyJoules": 0,
+      "verification": [
+        "deterministic:repository-state-invariant"
+      ]
+    },
+    {
+      "schema": "agent-control.deterministic-skill-execution/v1",
+      "id": "det-skill-exec-57a2bfeb-61ff-4b13-8150-aa254bf656eb",
+      "decisionId": "det-skill-route-4a242d10-c129-40f4-8baf-bb6763606665",
+      "skillId": "repository-state",
+      "skillVersion": "1",
+      "parcelId": "reuse-repository-state-4",
+      "stageId": "execute",
+      "startedAt": "2026-09-11T21:10:44.129Z",
+      "completedAt": "2026-09-11T21:10:44.129Z",
+      "verified": true,
+      "output": {
+        "clean": true,
+        "branch": "feature/a",
+        "head": "a1-3",
+        "status": "CLEAN"
+      },
+      "energyJoules": 0.3644522766303103,
+      "verification": [
+        "deterministic:repository-state-invariant"
+      ]
+    },
+    {
+      "schema": "agent-control.deterministic-skill-execution/v1",
+      "id": "det-skill-exec-deef3198-1e00-4297-92d0-a409be04410f",
+      "decisionId": "det-skill-route-d949bf0f-255d-44cc-8741-ba5e864cae49",
+      "skillId": "repository-state",
+      "skillVersion": "1",
+      "parcelId": "reuse-repository-state-5",
+      "stageId": "execute",
+      "startedAt": "2026-09-11T21:10:44.224Z",
+      "completedAt": "2026-09-11T21:10:44.224Z",
+      "verified": true,
+      "output": {
+        "clean": false,
+        "branch": "feature/b",
+        "head": "b2-4",
+        "status": "DIRTY"
+      },
+      "energyJoules": 0.09437032980653798,
+      "verification": [
+        "deterministic:repository-state-invariant"
+      ]
+    },
+    {
+      "schema": "agent-control.deterministic-skill-execution/v1",
+      "id": "det-skill-exec-b36cfb92-6c7c-42f7-8846-d9ad100d0624",
+      "decisionId": "det-skill-route-c1b8bef5-cc82-41fe-be9e-c4168b0de81d",
+      "skillId": "repository-state",
+      "skillVersion": "1",
+      "parcelId": "reuse-repository-state-6",
+      "stageId": "execute",
+      "startedAt": "2026-09-11T21:10:44.327Z",
+      "completedAt": "2026-09-11T21:10:44.327Z",
+      "verified": true,
+      "output": {
+        "clean": true,
+        "branch": "main",
+        "head": "c3-5",
+        "status": "CLEAN"
+      },
+      "energyJoules": 0.10652391356222009,
+      "verification": [
+        "deterministic:repository-state-invariant"
+      ]
+    },
+    {
+      "schema": "agent-control.deterministic-skill-execution/v1",
+      "id": "det-skill-exec-570423b5-b1d3-4039-ab9a-ad2f622199d4",
+      "decisionId": "det-skill-route-4a609d9e-9cbc-4c6f-8422-834faae2ad6f",
+      "skillId": "repository-state",
+      "skillVersion": "1",
+      "parcelId": "reuse-repository-state-7",
+      "stageId": "execute",
+      "startedAt": "2026-09-11T21:10:44.417Z",
+      "completedAt": "2026-09-11T21:10:44.417Z",
+      "verified": true,
+      "output": {
+        "clean": true,
+        "branch": "feature/a",
+        "head": "a1-6",
+        "status": "CLEAN"
+      },
+      "energyJoules": 0,
+      "verification": [
+        "deterministic:repository-state-invariant"
+      ]
+    },
+    {
+      "schema": "agent-control.deterministic-skill-execution/v1",
+      "id": "det-skill-exec-f4c8a361-131b-4598-896c-a1a5f493e29c",
+      "decisionId": "det-skill-route-74fff3ac-d6b2-42e9-8dbe-9549f8bc9036",
+      "skillId": "repository-state",
+      "skillVersion": "1",
+      "parcelId": "reuse-repository-state-8",
+      "stageId": "execute",
+      "startedAt": "2026-09-11T21:10:44.509Z",
+      "completedAt": "2026-09-11T21:10:44.509Z",
+      "verified": true,
+      "output": {
+        "clean": false,
+        "branch": "feature/b",
+        "head": "b2-7",
+        "status": "DIRTY"
+      },
+      "energyJoules": 0,
+      "verification": [
+        "deterministic:repository-state-invariant"
+      ]
+    },
+    {
+      "schema": "agent-control.deterministic-skill-execution/v1",
+      "id": "det-skill-exec-43f61dfd-ff24-4861-86b2-0cbc8e37b44e",
+      "decisionId": "det-skill-route-a17df385-1232-4085-9ba0-5c366f47f2fa",
+      "skillId": "repository-state",
+      "skillVersion": "1",
+      "parcelId": "reuse-repository-state-9",
+      "stageId": "execute",
+      "startedAt": "2026-09-11T21:10:44.629Z",
+      "completedAt": "2026-09-11T21:10:44.630Z",
+      "verified": true,
+      "output": {
+        "clean": true,
+        "branch": "main",
+        "head": "c3-8",
+        "status": "CLEAN"
+      },
+      "energyJoules": 0.36807239527330454,
+      "verification": [
+        "deterministic:repository-state-invariant"
+      ]
+    },
+    {
+      "schema": "agent-control.deterministic-skill-execution/v1",
+      "id": "det-skill-exec-d4ee753f-5ae0-4c36-a3c0-46ae2b5da8f7",
+      "decisionId": "det-skill-route-61d34281-68ee-470b-a778-99d2fd44bb10",
+      "skillId": "repository-state",
+      "skillVersion": "1",
+      "parcelId": "reuse-repository-state-10",
+      "stageId": "execute",
+      "startedAt": "2026-09-11T21:10:44.723Z",
+      "completedAt": "2026-09-11T21:10:44.723Z",
+      "verified": true,
+      "output": {
+        "clean": true,
+        "branch": "feature/a",
+        "head": "a1-9",
+        "status": "CLEAN"
+      },
+      "energyJoules": 0,
+      "verification": [
+        "deterministic:repository-state-invariant"
+      ]
+    },
+    {
+      "schema": "agent-control.deterministic-skill-execution/v1",
+      "id": "det-skill-exec-abacf1e8-260e-4610-9c68-f135ad36f8f7",
+      "decisionId": "det-skill-route-6bd895b4-a978-4f97-ad19-e476213183b5",
+      "skillId": "repository-state",
+      "skillVersion": "1",
+      "parcelId": "reuse-repository-state-11",
+      "stageId": "execute",
+      "startedAt": "2026-09-11T21:10:44.813Z",
+      "completedAt": "2026-09-11T21:10:44.813Z",
+      "verified": true,
+      "output": {
+        "clean": false,
+        "branch": "feature/b",
+        "head": "b2-10",
+        "status": "DIRTY"
+      },
+      "energyJoules": 0,
+      "verification": [
+        "deterministic:repository-state-invariant"
+      ]
+    },
+    {
+      "schema": "agent-control.deterministic-skill-execution/v1",
+      "id": "det-skill-exec-85837410-6d4d-401f-9d19-bd0cea00d6f8",
+      "decisionId": "det-skill-route-b6360ed9-1cf1-4454-90f9-28eb60a83cea",
+      "skillId": "repository-state",
+      "skillVersion": "1",
+      "parcelId": "reuse-repository-state-12",
+      "stageId": "execute",
+      "startedAt": "2026-09-11T21:10:44.908Z",
+      "completedAt": "2026-09-11T21:10:44.908Z",
+      "verified": true,
+      "output": {
+        "clean": true,
+        "branch": "main",
+        "head": "c3-11",
+        "status": "CLEAN"
+      },
+      "energyJoules": 0,
+      "verification": [
+        "deterministic:repository-state-invariant"
+      ]
+    },
+    {
+      "schema": "agent-control.deterministic-skill-execution/v1",
+      "id": "det-skill-exec-811ebfef-d6d6-4532-8992-11ff624c426f",
+      "decisionId": "det-skill-route-253689aa-25ab-436d-a70c-0bef0aca65d6",
+      "skillId": "repository-state",
+      "skillVersion": "1",
+      "parcelId": "reuse-repository-state-13",
+      "stageId": "execute",
+      "startedAt": "2026-09-11T21:10:45.007Z",
+      "completedAt": "2026-09-11T21:10:45.007Z",
+      "verified": true,
+      "output": {
+        "clean": true,
+        "branch": "feature/a",
+        "head": "a1-12",
+        "status": "CLEAN"
+      },
+      "energyJoules": 0,
+      "verification": [
+        "deterministic:repository-state-invariant"
+      ]
+    },
+    {
+      "schema": "agent-control.deterministic-skill-execution/v1",
+      "id": "det-skill-exec-6d5c1e7b-906c-4be3-a7ac-46365392ce87",
+      "decisionId": "det-skill-route-c31c2297-6d9c-40f6-914a-6dbd7dbf479f",
+      "skillId": "repository-state",
+      "skillVersion": "1",
+      "parcelId": "reuse-repository-state-14",
+      "stageId": "execute",
+      "startedAt": "2026-09-11T21:10:45.108Z",
+      "completedAt": "2026-09-11T21:10:45.108Z",
+      "verified": true,
+      "output": {
+        "clean": false,
+        "branch": "feature/b",
+        "head": "b2-13",
+        "status": "DIRTY"
+      },
+      "energyJoules": 0,
+      "verification": [
+        "deterministic:repository-state-invariant"
+      ]
+    },
+    {
+      "schema": "agent-control.deterministic-skill-execution/v1",
+      "id": "det-skill-exec-5453da01-6cee-4888-b25e-8d2f55a6e415",
+      "decisionId": "det-skill-route-20ac4ad4-4bd0-48fc-b424-18022e6a7038",
+      "skillId": "repository-state",
+      "skillVersion": "1",
+      "parcelId": "reuse-repository-state-15",
+      "stageId": "execute",
+      "startedAt": "2026-09-11T21:10:45.207Z",
+      "completedAt": "2026-09-11T21:10:45.207Z",
+      "verified": true,
+      "output": {
+        "clean": true,
+        "branch": "main",
+        "head": "c3-14",
+        "status": "CLEAN"
+      },
+      "energyJoules": 0.11192599738391179,
+      "verification": [
+        "deterministic:repository-state-invariant"
+      ]
+    },
+    {
+      "schema": "agent-control.deterministic-skill-execution/v1",
+      "id": "det-skill-exec-56ab462d-6dec-4779-974e-1598406ab42e",
+      "decisionId": "det-skill-route-e1b0a445-b226-42a0-9418-97f51dffeed9",
+      "skillId": "test-result",
+      "skillVersion": "1",
+      "parcelId": "reuse-test-result-1",
+      "stageId": "execute",
+      "startedAt": "2026-09-11T21:10:46.679Z",
+      "completedAt": "2026-09-11T21:10:46.679Z",
+      "verified": true,
+      "output": {
+        "verdict": "PASS",
+        "total": 13
+      },
+      "energyJoules": 0.06093418830711009,
+      "verification": [
+        "deterministic:test-result-invariant"
+      ]
+    },
+    {
+      "schema": "agent-control.deterministic-skill-execution/v1",
+      "id": "det-skill-exec-f436d7dc-a958-4b3b-affd-bb5129b47a8a",
+      "decisionId": "det-skill-route-f1e9e92c-6f07-4a36-8327-a492fc5dea31",
+      "skillId": "test-result",
+      "skillVersion": "1",
+      "parcelId": "reuse-test-result-2",
+      "stageId": "execute",
+      "startedAt": "2026-09-11T21:10:46.778Z",
+      "completedAt": "2026-09-11T21:10:46.778Z",
+      "verified": true,
+      "output": {
+        "verdict": "FAIL",
+        "total": 11
+      },
+      "energyJoules": 0,
+      "verification": [
+        "deterministic:test-result-invariant"
+      ]
+    },
+    {
+      "schema": "agent-control.deterministic-skill-execution/v1",
+      "id": "det-skill-exec-704c7308-859c-422e-86b2-cbb82dcc4ee1",
+      "decisionId": "det-skill-route-a8eef191-c65b-4163-926c-648019cc091f",
+      "skillId": "test-result",
+      "skillVersion": "1",
+      "parcelId": "reuse-test-result-3",
+      "stageId": "execute",
+      "startedAt": "2026-09-11T21:10:46.882Z",
+      "completedAt": "2026-09-11T21:10:46.882Z",
+      "verified": true,
+      "output": {
+        "verdict": "PASS",
+        "total": 1146
+      },
+      "energyJoules": 0.011276860644697864,
+      "verification": [
+        "deterministic:test-result-invariant"
+      ]
+    },
+    {
+      "schema": "agent-control.deterministic-skill-execution/v1",
+      "id": "det-skill-exec-05e2e48a-604e-4315-b397-901395f6b151",
+      "decisionId": "det-skill-route-c43b5676-6a26-4b8a-bd6d-330165f6b481",
+      "skillId": "test-result",
+      "skillVersion": "1",
+      "parcelId": "reuse-test-result-4",
+      "stageId": "execute",
+      "startedAt": "2026-09-11T21:10:46.980Z",
+      "completedAt": "2026-09-11T21:10:46.980Z",
+      "verified": true,
+      "output": {
+        "verdict": "PASS",
+        "total": 16
+      },
+      "energyJoules": 0.05423849738391247,
+      "verification": [
+        "deterministic:test-result-invariant"
+      ]
+    },
+    {
+      "schema": "agent-control.deterministic-skill-execution/v1",
+      "id": "det-skill-exec-ed8651b0-7ba8-4752-ae83-0c107e7d189e",
+      "decisionId": "det-skill-route-2724ed51-7136-46df-a6d8-03d28e4457ac",
+      "skillId": "test-result",
+      "skillVersion": "1",
+      "parcelId": "reuse-test-result-5",
+      "stageId": "execute",
+      "startedAt": "2026-09-11T21:10:47.138Z",
+      "completedAt": "2026-09-11T21:10:47.138Z",
+      "verified": true,
+      "output": {
+        "verdict": "FAIL",
+        "total": 14
+      },
+      "energyJoules": 0.291506771519849,
+      "verification": [
+        "deterministic:test-result-invariant"
+      ]
+    },
+    {
+      "schema": "agent-control.deterministic-skill-execution/v1",
+      "id": "det-skill-exec-73377716-dd8b-43c9-a3c6-e14cdd03d8d0",
+      "decisionId": "det-skill-route-4cab1deb-6816-4d45-aaa2-c621ef18a68c",
+      "skillId": "test-result",
+      "skillVersion": "1",
+      "parcelId": "reuse-test-result-6",
+      "stageId": "execute",
+      "startedAt": "2026-09-11T21:10:47.240Z",
+      "completedAt": "2026-09-11T21:10:47.240Z",
+      "verified": true,
+      "output": {
+        "verdict": "PASS",
+        "total": 1149
+      },
+      "energyJoules": 0,
+      "verification": [
+        "deterministic:test-result-invariant"
+      ]
+    },
+    {
+      "schema": "agent-control.deterministic-skill-execution/v1",
+      "id": "det-skill-exec-4fd405c3-be3a-4d81-a40c-8d4995724135",
+      "decisionId": "det-skill-route-1c497771-1f63-4410-b7b9-bbe43fa5045d",
+      "skillId": "test-result",
+      "skillVersion": "1",
+      "parcelId": "reuse-test-result-7",
+      "stageId": "execute",
+      "startedAt": "2026-09-11T21:10:47.354Z",
+      "completedAt": "2026-09-11T21:10:47.354Z",
+      "verified": true,
+      "output": {
+        "verdict": "PASS",
+        "total": 19
+      },
+      "energyJoules": 0.17642678715995425,
+      "verification": [
+        "deterministic:test-result-invariant"
+      ]
+    },
+    {
+      "schema": "agent-control.deterministic-skill-execution/v1",
+      "id": "det-skill-exec-a1f44fc4-1d49-4d49-a490-0c01b0d3c3f9",
+      "decisionId": "det-skill-route-5062822b-6765-4432-b971-98c5ac3877ab",
+      "skillId": "test-result",
+      "skillVersion": "1",
+      "parcelId": "reuse-test-result-8",
+      "stageId": "execute",
+      "startedAt": "2026-09-11T21:10:47.458Z",
+      "completedAt": "2026-09-11T21:10:47.458Z",
+      "verified": true,
+      "output": {
+        "verdict": "FAIL",
+        "total": 17
+      },
+      "energyJoules": 0,
+      "verification": [
+        "deterministic:test-result-invariant"
+      ]
+    },
+    {
+      "schema": "agent-control.deterministic-skill-execution/v1",
+      "id": "det-skill-exec-243e006b-79ba-49bf-a35e-5fcfb33d1e27",
+      "decisionId": "det-skill-route-c516a561-f54a-4b4a-a5a9-bb5bf8da1df7",
+      "skillId": "test-result",
+      "skillVersion": "1",
+      "parcelId": "reuse-test-result-9",
+      "stageId": "execute",
+      "startedAt": "2026-09-11T21:10:47.579Z",
+      "completedAt": "2026-09-11T21:10:47.579Z",
+      "verified": true,
+      "output": {
+        "verdict": "PASS",
+        "total": 1152
+      },
+      "energyJoules": 0.39508339085797906,
+      "verification": [
+        "deterministic:test-result-invariant"
+      ]
+    },
+    {
+      "schema": "agent-control.deterministic-skill-execution/v1",
+      "id": "det-skill-exec-1d98ed6e-54b0-43ac-9951-7973310ff154",
+      "decisionId": "det-skill-route-77a9ac2c-9fa4-43ef-a9d1-83b3bffcb5c5",
+      "skillId": "test-result",
+      "skillVersion": "1",
+      "parcelId": "reuse-test-result-10",
+      "stageId": "execute",
+      "startedAt": "2026-09-11T21:10:47.692Z",
+      "completedAt": "2026-09-11T21:10:47.692Z",
+      "verified": true,
+      "output": {
+        "verdict": "PASS",
+        "total": 22
+      },
+      "energyJoules": 0.010881162734534613,
+      "verification": [
+        "deterministic:test-result-invariant"
+      ]
+    },
+    {
+      "schema": "agent-control.deterministic-skill-execution/v1",
+      "id": "det-skill-exec-6333a982-2410-4c22-85b8-2f2215c1b83e",
+      "decisionId": "det-skill-route-3c55ac1b-5ced-46af-b3bc-df1dfe5616c6",
+      "skillId": "test-result",
+      "skillVersion": "1",
+      "parcelId": "reuse-test-result-11",
+      "stageId": "execute",
+      "startedAt": "2026-09-11T21:10:47.813Z",
+      "completedAt": "2026-09-11T21:10:47.813Z",
+      "verified": true,
+      "output": {
+        "verdict": "FAIL",
+        "total": 20
+      },
+      "energyJoules": 0.21067305222954666,
+      "verification": [
+        "deterministic:test-result-invariant"
+      ]
+    },
+    {
+      "schema": "agent-control.deterministic-skill-execution/v1",
+      "id": "det-skill-exec-80c696dd-0947-48e6-9033-21a4b9b52bf1",
+      "decisionId": "det-skill-route-35b96cf0-0e53-4b3d-9240-f6ba7cf6de50",
+      "skillId": "test-result",
+      "skillVersion": "1",
+      "parcelId": "reuse-test-result-12",
+      "stageId": "execute",
+      "startedAt": "2026-09-11T21:10:47.937Z",
+      "completedAt": "2026-09-11T21:10:47.937Z",
+      "verified": true,
+      "output": {
+        "verdict": "PASS",
+        "total": 1155
+      },
+      "energyJoules": 0.2876707690211479,
+      "verification": [
+        "deterministic:test-result-invariant"
+      ]
+    },
+    {
+      "schema": "agent-control.deterministic-skill-execution/v1",
+      "id": "det-skill-exec-9bb15c62-9627-40cd-a864-9fa94243ddae",
+      "decisionId": "det-skill-route-1d427a67-090b-4d00-ac27-2975943ab02a",
+      "skillId": "test-result",
+      "skillVersion": "1",
+      "parcelId": "reuse-test-result-13",
+      "stageId": "execute",
+      "startedAt": "2026-09-11T21:10:48.066Z",
+      "completedAt": "2026-09-11T21:10:48.066Z",
+      "verified": true,
+      "output": {
+        "verdict": "PASS",
+        "total": 25
+      },
+      "energyJoules": 0.19702263734467165,
+      "verification": [
+        "deterministic:test-result-invariant"
+      ]
+    },
+    {
+      "schema": "agent-control.deterministic-skill-execution/v1",
+      "id": "det-skill-exec-79c5bf4b-ceca-4504-8425-b885c63a9fb0",
+      "decisionId": "det-skill-route-192cb07c-f990-4a6c-8818-5e22a1321adf",
+      "skillId": "test-result",
+      "skillVersion": "1",
+      "parcelId": "reuse-test-result-14",
+      "stageId": "execute",
+      "startedAt": "2026-09-11T21:10:48.238Z",
+      "completedAt": "2026-09-11T21:10:48.238Z",
+      "verified": true,
+      "output": {
+        "verdict": "FAIL",
+        "total": 23
+      },
+      "energyJoules": 0.201952055498461,
+      "verification": [
+        "deterministic:test-result-invariant"
+      ]
+    },
+    {
+      "schema": "agent-control.deterministic-skill-execution/v1",
+      "id": "det-skill-exec-8c242be5-20f6-424c-879a-a7b2195c8a95",
+      "decisionId": "det-skill-route-86362740-bb7b-4b74-afcd-f407102d67e9",
+      "skillId": "test-result",
+      "skillVersion": "1",
+      "parcelId": "reuse-test-result-15",
+      "stageId": "execute",
+      "startedAt": "2026-09-11T21:10:48.409Z",
+      "completedAt": "2026-09-11T21:10:48.409Z",
+      "verified": true,
+      "output": {
+        "verdict": "PASS",
+        "total": 1158
+      },
+      "energyJoules": 0,
+      "verification": [
+        "deterministic:test-result-invariant"
+      ]
+    },
+    {
+      "schema": "agent-control.deterministic-skill-execution/v1",
+      "id": "det-skill-exec-54db243b-ecb0-4dcd-bc2c-d9405c68397f",
+      "decisionId": "det-skill-route-27536db9-544e-42e7-aafc-dd28a247f273",
+      "skillId": "baton-integrity",
+      "skillVersion": "1",
+      "parcelId": "reuse-baton-integrity-1",
+      "stageId": "execute",
+      "startedAt": "2026-09-11T21:10:50.890Z",
+      "completedAt": "2026-09-11T21:10:50.890Z",
+      "verified": true,
+      "output": {
+        "valid": true,
+        "actualSha256": "518e3b172f7a3cd813bafee0dbf24a63ff2a769b619dacca11b26c4ec548baa1"
+      },
+      "energyJoules": 0,
+      "verification": [
+        "deterministic:baton-hash-recomputed"
+      ]
+    },
+    {
+      "schema": "agent-control.deterministic-skill-execution/v1",
+      "id": "det-skill-exec-b354d3e6-274d-4aef-9b12-8d43ebc86f3a",
+      "decisionId": "det-skill-route-896b05d4-66d4-4e9d-a2a7-c5b06e8a1533",
+      "skillId": "baton-integrity",
+      "skillVersion": "1",
+      "parcelId": "reuse-baton-integrity-2",
+      "stageId": "execute",
+      "startedAt": "2026-09-11T21:10:50.989Z",
+      "completedAt": "2026-09-11T21:10:50.989Z",
+      "verified": true,
+      "output": {
+        "valid": true,
+        "actualSha256": "8b3cc2af75f42ac78e32270f740cfc2128342249e6f5787ba440aa182d47f8ef"
+      },
+      "energyJoules": 0,
+      "verification": [
+        "deterministic:baton-hash-recomputed"
+      ]
+    },
+    {
+      "schema": "agent-control.deterministic-skill-execution/v1",
+      "id": "det-skill-exec-c92c84bc-a299-49ad-a5e8-673f85b7fb39",
+      "decisionId": "det-skill-route-d77d70cb-f790-446c-a5fd-8d4c7554e8ce",
+      "skillId": "baton-integrity",
+      "skillVersion": "1",
+      "parcelId": "reuse-baton-integrity-3",
+      "stageId": "execute",
+      "startedAt": "2026-09-11T21:10:51.097Z",
+      "completedAt": "2026-09-11T21:10:51.097Z",
+      "verified": true,
+      "output": {
+        "valid": false,
+        "actualSha256": "f388f916ea7b7c5b0effb7c24e877a850aff332337d63ab42c0e2b860bd915f2"
+      },
+      "energyJoules": 0,
+      "verification": [
+        "deterministic:baton-hash-recomputed"
+      ]
+    },
+    {
+      "schema": "agent-control.deterministic-skill-execution/v1",
+      "id": "det-skill-exec-25c5090c-0943-4755-9a69-3d1aa8e0a87e",
+      "decisionId": "det-skill-route-49cd9477-3fc7-4322-a83a-a0286c5ca11c",
+      "skillId": "baton-integrity",
+      "skillVersion": "1",
+      "parcelId": "reuse-baton-integrity-4",
+      "stageId": "execute",
+      "startedAt": "2026-09-11T21:10:51.199Z",
+      "completedAt": "2026-09-11T21:10:51.199Z",
+      "verified": true,
+      "output": {
+        "valid": true,
+        "actualSha256": "518e3b172f7a3cd813bafee0dbf24a63ff2a769b619dacca11b26c4ec548baa1"
+      },
+      "energyJoules": 0,
+      "verification": [
+        "deterministic:baton-hash-recomputed"
+      ]
+    },
+    {
+      "schema": "agent-control.deterministic-skill-execution/v1",
+      "id": "det-skill-exec-428e6160-a249-4abd-8810-8e79f82a773c",
+      "decisionId": "det-skill-route-c582d324-2586-44d7-af61-be155efe9a87",
+      "skillId": "baton-integrity",
+      "skillVersion": "1",
+      "parcelId": "reuse-baton-integrity-5",
+      "stageId": "execute",
+      "startedAt": "2026-09-11T21:10:51.296Z",
+      "completedAt": "2026-09-11T21:10:51.296Z",
+      "verified": true,
+      "output": {
+        "valid": true,
+        "actualSha256": "8b3cc2af75f42ac78e32270f740cfc2128342249e6f5787ba440aa182d47f8ef"
+      },
+      "energyJoules": 0,
+      "verification": [
+        "deterministic:baton-hash-recomputed"
+      ]
+    },
+    {
+      "schema": "agent-control.deterministic-skill-execution/v1",
+      "id": "det-skill-exec-768234c5-a6ec-403d-85f0-00838ad8769c",
+      "decisionId": "det-skill-route-75f0b43d-bc1e-493e-9563-2483b4ccb83e",
+      "skillId": "baton-integrity",
+      "skillVersion": "1",
+      "parcelId": "reuse-baton-integrity-6",
+      "stageId": "execute",
+      "startedAt": "2026-09-11T21:10:51.390Z",
+      "completedAt": "2026-09-11T21:10:51.390Z",
+      "verified": true,
+      "output": {
+        "valid": false,
+        "actualSha256": "f388f916ea7b7c5b0effb7c24e877a850aff332337d63ab42c0e2b860bd915f2"
+      },
+      "energyJoules": 0,
+      "verification": [
+        "deterministic:baton-hash-recomputed"
+      ]
+    },
+    {
+      "schema": "agent-control.deterministic-skill-execution/v1",
+      "id": "det-skill-exec-96b16d61-8b5e-4740-a81f-1c1ec3269a33",
+      "decisionId": "det-skill-route-6b0d5b59-b30c-4d47-a507-b6bb7da3efb6",
+      "skillId": "baton-integrity",
+      "skillVersion": "1",
+      "parcelId": "reuse-baton-integrity-7",
+      "stageId": "execute",
+      "startedAt": "2026-09-11T21:10:51.487Z",
+      "completedAt": "2026-09-11T21:10:51.487Z",
+      "verified": true,
+      "output": {
+        "valid": true,
+        "actualSha256": "518e3b172f7a3cd813bafee0dbf24a63ff2a769b619dacca11b26c4ec548baa1"
+      },
+      "energyJoules": 0,
+      "verification": [
+        "deterministic:baton-hash-recomputed"
+      ]
+    },
+    {
+      "schema": "agent-control.deterministic-skill-execution/v1",
+      "id": "det-skill-exec-627ca343-f5eb-4d5c-8bbf-cc0f17e7bb0c",
+      "decisionId": "det-skill-route-52295667-eaf2-4dff-abbd-369b19d1790b",
+      "skillId": "baton-integrity",
+      "skillVersion": "1",
+      "parcelId": "reuse-baton-integrity-8",
+      "stageId": "execute",
+      "startedAt": "2026-09-11T21:10:51.581Z",
+      "completedAt": "2026-09-11T21:10:51.581Z",
+      "verified": true,
+      "output": {
+        "valid": true,
+        "actualSha256": "8b3cc2af75f42ac78e32270f740cfc2128342249e6f5787ba440aa182d47f8ef"
+      },
+      "energyJoules": 0,
+      "verification": [
+        "deterministic:baton-hash-recomputed"
+      ]
+    },
+    {
+      "schema": "agent-control.deterministic-skill-execution/v1",
+      "id": "det-skill-exec-4d676ac5-9b78-4b0f-827b-a4c6a70a3930",
+      "decisionId": "det-skill-route-aa73cb30-520d-4158-a9f8-6ac95b568f28",
+      "skillId": "baton-integrity",
+      "skillVersion": "1",
+      "parcelId": "reuse-baton-integrity-9",
+      "stageId": "execute",
+      "startedAt": "2026-09-11T21:10:51.679Z",
+      "completedAt": "2026-09-11T21:10:51.679Z",
+      "verified": true,
+      "output": {
+        "valid": false,
+        "actualSha256": "f388f916ea7b7c5b0effb7c24e877a850aff332337d63ab42c0e2b860bd915f2"
+      },
+      "energyJoules": 0,
+      "verification": [
+        "deterministic:baton-hash-recomputed"
+      ]
+    },
+    {
+      "schema": "agent-control.deterministic-skill-execution/v1",
+      "id": "det-skill-exec-28cb7f39-e590-40e4-b6c2-e467a53b5bf9",
+      "decisionId": "det-skill-route-6f0cc05a-2057-4421-a844-57b4fdf9452e",
+      "skillId": "baton-integrity",
+      "skillVersion": "1",
+      "parcelId": "reuse-baton-integrity-10",
+      "stageId": "execute",
+      "startedAt": "2026-09-11T21:10:51.798Z",
+      "completedAt": "2026-09-11T21:10:51.798Z",
+      "verified": true,
+      "output": {
+        "valid": true,
+        "actualSha256": "518e3b172f7a3cd813bafee0dbf24a63ff2a769b619dacca11b26c4ec548baa1"
+      },
+      "energyJoules": 0,
+      "verification": [
+        "deterministic:baton-hash-recomputed"
+      ]
+    },
+    {
+      "schema": "agent-control.deterministic-skill-execution/v1",
+      "id": "det-skill-exec-5dcb3f34-42e5-49aa-b3e3-593f09e86aa7",
+      "decisionId": "det-skill-route-cccc0b5f-a5e4-4392-b6e3-8ba7853d09c7",
+      "skillId": "baton-integrity",
+      "skillVersion": "1",
+      "parcelId": "reuse-baton-integrity-11",
+      "stageId": "execute",
+      "startedAt": "2026-09-11T21:10:51.896Z",
+      "completedAt": "2026-09-11T21:10:51.896Z",
+      "verified": true,
+      "output": {
+        "valid": true,
+        "actualSha256": "8b3cc2af75f42ac78e32270f740cfc2128342249e6f5787ba440aa182d47f8ef"
+      },
+      "energyJoules": 0,
+      "verification": [
+        "deterministic:baton-hash-recomputed"
+      ]
+    },
+    {
+      "schema": "agent-control.deterministic-skill-execution/v1",
+      "id": "det-skill-exec-e340c408-3150-4f3d-91a2-53d2477916cc",
+      "decisionId": "det-skill-route-7fab0885-434b-42a2-a123-ebf31f77015b",
+      "skillId": "baton-integrity",
+      "skillVersion": "1",
+      "parcelId": "reuse-baton-integrity-12",
+      "stageId": "execute",
+      "startedAt": "2026-09-11T21:10:51.988Z",
+      "completedAt": "2026-09-11T21:10:51.988Z",
+      "verified": true,
+      "output": {
+        "valid": false,
+        "actualSha256": "f388f916ea7b7c5b0effb7c24e877a850aff332337d63ab42c0e2b860bd915f2"
+      },
+      "energyJoules": 0,
+      "verification": [
+        "deterministic:baton-hash-recomputed"
+      ]
+    },
+    {
+      "schema": "agent-control.deterministic-skill-execution/v1",
+      "id": "det-skill-exec-fca95cc0-4976-4ae6-bc33-0dd02e933e56",
+      "decisionId": "det-skill-route-cce44380-03e0-4bea-8a19-22961f628e47",
+      "skillId": "baton-integrity",
+      "skillVersion": "1",
+      "parcelId": "reuse-baton-integrity-13",
+      "stageId": "execute",
+      "startedAt": "2026-09-11T21:10:52.080Z",
+      "completedAt": "2026-09-11T21:10:52.080Z",
+      "verified": true,
+      "output": {
+        "valid": true,
+        "actualSha256": "518e3b172f7a3cd813bafee0dbf24a63ff2a769b619dacca11b26c4ec548baa1"
+      },
+      "energyJoules": 0,
+      "verification": [
+        "deterministic:baton-hash-recomputed"
+      ]
+    },
+    {
+      "schema": "agent-control.deterministic-skill-execution/v1",
+      "id": "det-skill-exec-f2a137ed-0187-48df-85b7-7876d736d5c5",
+      "decisionId": "det-skill-route-e123ea60-a2ca-4fc0-b20a-2c621d4e69a4",
+      "skillId": "baton-integrity",
+      "skillVersion": "1",
+      "parcelId": "reuse-baton-integrity-14",
+      "stageId": "execute",
+      "startedAt": "2026-09-11T21:10:52.174Z",
+      "completedAt": "2026-09-11T21:10:52.174Z",
+      "verified": true,
+      "output": {
+        "valid": true,
+        "actualSha256": "8b3cc2af75f42ac78e32270f740cfc2128342249e6f5787ba440aa182d47f8ef"
+      },
+      "energyJoules": 0,
+      "verification": [
+        "deterministic:baton-hash-recomputed"
+      ]
+    },
+    {
+      "schema": "agent-control.deterministic-skill-execution/v1",
+      "id": "det-skill-exec-e5cf7855-7d33-45fe-9c72-93537d8aa3a8",
+      "decisionId": "det-skill-route-2626b937-74eb-4a92-96b1-63482bf4d153",
+      "skillId": "baton-integrity",
+      "skillVersion": "1",
+      "parcelId": "reuse-baton-integrity-15",
+      "stageId": "execute",
+      "startedAt": "2026-09-11T21:10:52.270Z",
+      "completedAt": "2026-09-11T21:10:52.270Z",
+      "verified": true,
+      "output": {
+        "valid": false,
+        "actualSha256": "f388f916ea7b7c5b0effb7c24e877a850aff332337d63ab42c0e2b860bd915f2"
+      },
+      "energyJoules": 0,
+      "verification": [
+        "deterministic:baton-hash-recomputed"
+      ]
+    }
+  ]
+}

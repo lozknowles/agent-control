@@ -1,0 +1,2233 @@
+{
+  "schema": "agent-control.energy-telemetry/v1",
+  "baselines": [
+    {
+      "nodeId": "hpubuntu",
+      "scope": "MEASURED_COMPONENTS",
+      "averageWatts": 48.37607750163504,
+      "sampleCount": 32,
+      "startedAt": "2026-09-11T21:10:39.418Z",
+      "completedAt": "2026-09-11T21:10:42.448Z",
+      "authority": "MEASURED",
+      "source": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present"
+      ]
+    }
+  ],
+  "executions": [
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-e38a7c0a-4122-403f-9edd-f19b0d8f049c",
+      "parcelId": "reason-repository-state-1",
+      "stageId": "reason",
+      "route": {
+        "providerId": "local-openai-compatible",
+        "modelId": "qwen2.5-3b-instruct-q4_k_m.gguf",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:42.474Z",
+      "completedAt": "2026-09-11T21:10:42.868Z",
+      "elapsedMs": 394,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 5,
+      "averageWatts": 70.36875071175025,
+      "peakWatts": 107.37128878281624,
+      "grossWh": 0.00770146882789711,
+      "incrementalWh": 0.0024069759013292755,
+      "joules": 8.665113244785392,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 92,
+      "whPerToken": 0.000026162781536187777,
+      "whPerSuccessfulParcel": 0.0024069759013292755,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "teacher:repository-state:1",
+        "verifier:PASS"
+      ],
+      "sha256": "ff9de3ab6b2bc060e1e6c10f9504136db696cd3dcc2e575eab4769ea5bdcac7b"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-d2a1a815-acce-4df5-8a64-fb569328f212",
+      "parcelId": "reason-repository-state-2",
+      "stageId": "reason",
+      "route": {
+        "providerId": "local-openai-compatible",
+        "modelId": "qwen2.5-3b-instruct-q4_k_m.gguf",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:42.915Z",
+      "completedAt": "2026-09-11T21:10:43.288Z",
+      "elapsedMs": 373,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 5,
+      "averageWatts": 88.67419470004177,
+      "peakWatts": 118.77301507537689,
+      "grossWh": 0.009187631839754328,
+      "incrementalWh": 0.0041753326986126976,
+      "joules": 15.03119771500571,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 94,
+      "whPerToken": 0.000044418432963964865,
+      "whPerSuccessfulParcel": 0.0041753326986126976,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "teacher:repository-state:2",
+        "verifier:PASS"
+      ],
+      "sha256": "d03842e67a274350a23e74b9a8f1b965c7c4c77ad039175dccc880d08b63f6cb"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-6c4e24f4-31d9-49ba-8da6-652014b0d84c",
+      "parcelId": "reason-repository-state-3",
+      "stageId": "reason",
+      "route": {
+        "providerId": "local-openai-compatible",
+        "modelId": "qwen2.5-3b-instruct-q4_k_m.gguf",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:43.314Z",
+      "completedAt": "2026-09-11T21:10:43.675Z",
+      "elapsedMs": 361,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 5,
+      "averageWatts": 92.3347701618387,
+      "peakWatts": 125.67819121447027,
+      "grossWh": 0.009259125563451048,
+      "incrementalWh": 0.004408080013981534,
+      "joules": 15.869088050333522,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 91,
+      "whPerToken": 0.00004844043971408279,
+      "whPerSuccessfulParcel": 0.004408080013981534,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "teacher:repository-state:3",
+        "verifier:PASS"
+      ],
+      "sha256": "bac5fc6f931298c85b001223e754b200918aa9f3053c72a7000a4cc1d2e77215"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-aa650756-be10-4f8b-820a-d0a1cdf0590d",
+      "parcelId": "reuse-repository-state-1",
+      "stageId": "execute",
+      "route": {
+        "providerId": "deterministic-skill",
+        "modelId": "repository-state@1",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:43.704Z",
+      "completedAt": "2026-09-11T21:10:43.779Z",
+      "elapsedMs": 75,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 2,
+      "averageWatts": 48.914999999999985,
+      "peakWatts": 48.97,
+      "grossWh": 0.0010190624999999998,
+      "incrementalWh": 0.000011227552049269734,
+      "joules": 0.040419187377371046,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 0,
+      "whPerToken": null,
+      "whPerSuccessfulParcel": 0.000011227552049269734,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "qualification-companion-process"
+      ],
+      "sha256": "e2a53fbf1129376bb4768b784d86da04d1cefe23b18f48f0dec58abcd36c6078"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-bd0d6b0c-d42d-4346-a1b6-295c95bae272",
+      "parcelId": "reuse-repository-state-2",
+      "stageId": "execute",
+      "route": {
+        "providerId": "deterministic-skill",
+        "modelId": "repository-state@1",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:43.806Z",
+      "completedAt": "2026-09-11T21:10:43.875Z",
+      "elapsedMs": 69,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 2,
+      "averageWatts": 47.60184210526317,
+      "peakWatts": 47.646842105263154,
+      "grossWh": 0.0009123686403508773,
+      "incrementalWh": 0,
+      "joules": 0,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 0,
+      "whPerToken": null,
+      "whPerSuccessfulParcel": 0,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "qualification-companion-process"
+      ],
+      "sha256": "2856fc2a9a53aa8ef57d8345a092f5d787c64496266358460907a98377521063"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-0ffc447d-8138-4c6a-b67d-982dfeb8c124",
+      "parcelId": "reuse-repository-state-3",
+      "stageId": "execute",
+      "route": {
+        "providerId": "deterministic-skill",
+        "modelId": "repository-state@1",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:43.903Z",
+      "completedAt": "2026-09-11T21:10:43.979Z",
+      "elapsedMs": 76,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 2,
+      "averageWatts": 48.12133663366336,
+      "peakWatts": 48.14633663366337,
+      "grossWh": 0.0010158948844884487,
+      "incrementalWh": 0,
+      "joules": 0,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 0,
+      "whPerToken": null,
+      "whPerSuccessfulParcel": 0,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "qualification-companion-process"
+      ],
+      "sha256": "69cd5ba3f995def81afad813a81c473781d9eecdcec83421fb014eb63be7a70d"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-23271db1-197e-44b0-aed5-4923bf4bbd20",
+      "parcelId": "reuse-repository-state-4",
+      "stageId": "execute",
+      "route": {
+        "providerId": "deterministic-skill",
+        "modelId": "repository-state@1",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:44.005Z",
+      "completedAt": "2026-09-11T21:10:44.093Z",
+      "elapsedMs": 88,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 2,
+      "averageWatts": 52.517580645161296,
+      "peakWatts": 52.5225806451613,
+      "grossWh": 0.001283763082437276,
+      "incrementalWh": 0.00010123674350841954,
+      "joules": 0.3644522766303103,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 0,
+      "whPerToken": null,
+      "whPerSuccessfulParcel": 0.00010123674350841954,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "qualification-companion-process"
+      ],
+      "sha256": "b39ad157277f831be3bff215ba1059ae5da91f180d29eba1db21c4698b82d32f"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-bc29e1b5-8f3a-4ada-80f7-1fe26c7a43ed",
+      "parcelId": "reuse-repository-state-5",
+      "stageId": "execute",
+      "route": {
+        "providerId": "deterministic-skill",
+        "modelId": "repository-state@1",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:44.132Z",
+      "completedAt": "2026-09-11T21:10:44.201Z",
+      "elapsedMs": 69,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 2,
+      "averageWatts": 49.74376344086023,
+      "peakWatts": 49.75376344086022,
+      "grossWh": 0.0009534221326164877,
+      "incrementalWh": 0.000026213980501816106,
+      "joules": 0.09437032980653798,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 0,
+      "whPerToken": null,
+      "whPerSuccessfulParcel": 0.000026213980501816106,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "qualification-companion-process"
+      ],
+      "sha256": "48f6af1bd390592ad8719e4177ba235e7b574b579e63edf3feffcff4d2d5e10c"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-af9ff99e-990c-4248-905d-e85e3d12eb6c",
+      "parcelId": "reuse-repository-state-6",
+      "stageId": "execute",
+      "route": {
+        "providerId": "deterministic-skill",
+        "modelId": "repository-state@1",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:44.226Z",
+      "completedAt": "2026-09-11T21:10:44.303Z",
+      "elapsedMs": 77,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 2,
+      "averageWatts": 49.759504950495035,
+      "peakWatts": 49.80950495049505,
+      "grossWh": 0.001064300522552255,
+      "incrementalWh": 0.00002958997598950558,
+      "joules": 0.10652391356222009,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 0,
+      "whPerToken": null,
+      "whPerSuccessfulParcel": 0.00002958997598950558,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "qualification-companion-process"
+      ],
+      "sha256": "b28fa6216ca4ef37a5ba7f3b151c6122f851b14cc806cc413ddbaddda4f8fd8d"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-6ee8b56d-74c7-41a6-b61b-743c24424f90",
+      "parcelId": "reuse-repository-state-7",
+      "stageId": "execute",
+      "route": {
+        "providerId": "deterministic-skill",
+        "modelId": "repository-state@1",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:44.330Z",
+      "completedAt": "2026-09-11T21:10:44.393Z",
+      "elapsedMs": 63,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 2,
+      "averageWatts": 46.59681818181818,
+      "peakWatts": 46.64181818181818,
+      "grossWh": 0.0008154443181818182,
+      "incrementalWh": 0,
+      "joules": 0,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 0,
+      "whPerToken": null,
+      "whPerSuccessfulParcel": 0,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "qualification-companion-process"
+      ],
+      "sha256": "dee8ee4aafaf8ed0e645365be395983c450abe3e95670e69a8ab8db4aea9ef63"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-dd75028c-e9da-46fd-b480-22ef4e7b4cb5",
+      "parcelId": "reuse-repository-state-8",
+      "stageId": "execute",
+      "route": {
+        "providerId": "deterministic-skill",
+        "modelId": "repository-state@1",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:44.420Z",
+      "completedAt": "2026-09-11T21:10:44.484Z",
+      "elapsedMs": 64,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 2,
+      "averageWatts": 48.25050561797753,
+      "peakWatts": 48.27550561797753,
+      "grossWh": 0.0008577867665418228,
+      "incrementalWh": 0,
+      "joules": 0,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 0,
+      "whPerToken": null,
+      "whPerSuccessfulParcel": 0,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "qualification-companion-process"
+      ],
+      "sha256": "df0e377e97a99c568dbc09f1ce32bd9940ebf2b69e7d96aa8ce6ac8a3df72333"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-7115d4db-85e4-42a0-b6ff-16f47212fb0f",
+      "parcelId": "reuse-repository-state-9",
+      "stageId": "execute",
+      "route": {
+        "providerId": "deterministic-skill",
+        "modelId": "repository-state@1",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:44.512Z",
+      "completedAt": "2026-09-11T21:10:44.604Z",
+      "elapsedMs": 92,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 2,
+      "averageWatts": 52.37686440677966,
+      "peakWatts": 52.39186440677966,
+      "grossWh": 0.001338519868173258,
+      "incrementalWh": 0.00010224233202036238,
+      "joules": 0.36807239527330454,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 0,
+      "whPerToken": null,
+      "whPerSuccessfulParcel": 0.00010224233202036238,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "qualification-companion-process"
+      ],
+      "sha256": "0556da9537bc797e2898973ed5d5a57c139f225cc8bbdfa44ac7706864305c3d"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-bddc44c4-4730-4a1f-ba4d-7bda375779fb",
+      "parcelId": "reuse-repository-state-10",
+      "stageId": "execute",
+      "route": {
+        "providerId": "deterministic-skill",
+        "modelId": "repository-state@1",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:44.632Z",
+      "completedAt": "2026-09-11T21:10:44.699Z",
+      "elapsedMs": 67,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 2,
+      "averageWatts": 47.81217391304348,
+      "peakWatts": 47.842173913043474,
+      "grossWh": 0.0008898376811594203,
+      "incrementalWh": 0,
+      "joules": 0,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 0,
+      "whPerToken": null,
+      "whPerSuccessfulParcel": 0,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "qualification-companion-process"
+      ],
+      "sha256": "9ca824e08a09ea62422982b1fc0d446801d4bca28b7dbdd022fd4f44a67cd488"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-6e546e96-a81d-4185-9db8-742eb163df3a",
+      "parcelId": "reuse-repository-state-11",
+      "stageId": "execute",
+      "route": {
+        "providerId": "deterministic-skill",
+        "modelId": "repository-state@1",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:44.725Z",
+      "completedAt": "2026-09-11T21:10:44.790Z",
+      "elapsedMs": 65,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 2,
+      "averageWatts": 48.162727272727274,
+      "peakWatts": 48.192727272727275,
+      "grossWh": 0.0008696047979797981,
+      "incrementalWh": 0,
+      "joules": 0,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 0,
+      "whPerToken": null,
+      "whPerSuccessfulParcel": 0,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "qualification-companion-process"
+      ],
+      "sha256": "f00b027e85fc4b7fb978f704f1d2eac25b1a24135421f70cbfa6de97b4f849b7"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-d01d5e08-efbb-47e2-a3ae-a618da4143b1",
+      "parcelId": "reuse-repository-state-12",
+      "stageId": "execute",
+      "route": {
+        "providerId": "deterministic-skill",
+        "modelId": "repository-state@1",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:44.816Z",
+      "completedAt": "2026-09-11T21:10:44.883Z",
+      "elapsedMs": 67,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 2,
+      "averageWatts": 47.56322580645161,
+      "peakWatts": 47.61322580645162,
+      "grossWh": 0.0008852044802867383,
+      "incrementalWh": 0,
+      "joules": 0,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 0,
+      "whPerToken": null,
+      "whPerSuccessfulParcel": 0,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "qualification-companion-process"
+      ],
+      "sha256": "a0523f1138069fba6968a4e39437ea156d20f20272f8d8dc28286f34705a7f40"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-d6ab9caa-e779-4e00-ac63-91d5b7c21173",
+      "parcelId": "reuse-repository-state-13",
+      "stageId": "execute",
+      "route": {
+        "providerId": "deterministic-skill",
+        "modelId": "repository-state@1",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:44.910Z",
+      "completedAt": "2026-09-11T21:10:44.982Z",
+      "elapsedMs": 72,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 2,
+      "averageWatts": 46.76994845360825,
+      "peakWatts": 46.79494845360825,
+      "grossWh": 0.000935398969072165,
+      "incrementalWh": 0,
+      "joules": 0,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 0,
+      "whPerToken": null,
+      "whPerSuccessfulParcel": 0,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "qualification-companion-process"
+      ],
+      "sha256": "003a86bd7d3d39f501b1bedb52a411ccf2263f58bf0dc73c642da7e18633d50c"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-aa45cd6b-10c9-46a5-80b3-e39019e87ba6",
+      "parcelId": "reuse-repository-state-14",
+      "stageId": "execute",
+      "route": {
+        "providerId": "deterministic-skill",
+        "modelId": "repository-state@1",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:45.009Z",
+      "completedAt": "2026-09-11T21:10:45.084Z",
+      "elapsedMs": 75,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 2,
+      "averageWatts": 45.339999999999996,
+      "peakWatts": 45.36,
+      "grossWh": 0.0009445833333333332,
+      "incrementalWh": 0,
+      "joules": 0,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 0,
+      "whPerToken": null,
+      "whPerSuccessfulParcel": 0,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "qualification-companion-process"
+      ],
+      "sha256": "fc5b15b8898dcd18f808a2cfd84b2e8a715b02fc6035b42645eaab3fd8bd1a83"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-b1804538-dcbc-4ff9-9f82-8ad95881ee50",
+      "parcelId": "reuse-repository-state-15",
+      "stageId": "execute",
+      "route": {
+        "providerId": "deterministic-skill",
+        "modelId": "repository-state@1",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:45.111Z",
+      "completedAt": "2026-09-11T21:10:45.182Z",
+      "elapsedMs": 71,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 2,
+      "averageWatts": 49.952499999999986,
+      "peakWatts": 49.9625,
+      "grossWh": 0.0009851743055555554,
+      "incrementalWh": 0.000031090554828864386,
+      "joules": 0.11192599738391179,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 0,
+      "whPerToken": null,
+      "whPerSuccessfulParcel": 0.000031090554828864386,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "qualification-companion-process"
+      ],
+      "sha256": "fc18da7bebb162de85a8715ff55a1ccf0f7265460c26875006552d7153efe385"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-d802ba20-c9ef-4a1e-ab93-a0f364156050",
+      "parcelId": "reason-test-result-1",
+      "stageId": "reason",
+      "route": {
+        "providerId": "local-openai-compatible",
+        "modelId": "qwen2.5-3b-instruct-q4_k_m.gguf",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:45.210Z",
+      "completedAt": "2026-09-11T21:10:45.635Z",
+      "elapsedMs": 425,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 6,
+      "averageWatts": 92.57923076923079,
+      "peakWatts": 127.30923076923077,
+      "grossWh": 0.010929492521367523,
+      "incrementalWh": 0.005218427816313387,
+      "joules": 18.786340138728193,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 94,
+      "whPerToken": 0.000055515189535248796,
+      "whPerSuccessfulParcel": 0.005218427816313387,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "teacher:test-result:1",
+        "verifier:PASS"
+      ],
+      "sha256": "4133566f6a0074323694e9f5e71c657a5bb770ace6117e906293ded895ddb260"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-16ee1e0f-fad7-4ce3-bdf5-dcf139529bfc",
+      "parcelId": "reason-test-result-2",
+      "stageId": "reason",
+      "route": {
+        "providerId": "local-openai-compatible",
+        "modelId": "qwen2.5-3b-instruct-q4_k_m.gguf",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:45.667Z",
+      "completedAt": "2026-09-11T21:10:46.058Z",
+      "elapsedMs": 391,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 5,
+      "averageWatts": 91.59257133962853,
+      "peakWatts": 122.52909307875896,
+      "grossWh": 0.009947970942720765,
+      "incrementalWh": 0.004693791414070959,
+      "joules": 16.897649090655452,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 93,
+      "whPerToken": 0.00005047087542011784,
+      "whPerSuccessfulParcel": 0.004693791414070959,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "teacher:test-result:2",
+        "verifier:PASS"
+      ],
+      "sha256": "6dc376d7123e85197c1b62a51856c684e5dd5e25b30e115ff015450e69b8a8ee"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-3b641817-877e-4a55-9a0b-71df49318077",
+      "parcelId": "reason-test-result-3",
+      "stageId": "reason",
+      "route": {
+        "providerId": "local-openai-compatible",
+        "modelId": "qwen2.5-3b-instruct-q4_k_m.gguf",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:46.088Z",
+      "completedAt": "2026-09-11T21:10:46.548Z",
+      "elapsedMs": 460,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 6,
+      "averageWatts": 101.69091584491261,
+      "peakWatts": 129.94494845360825,
+      "grossWh": 0.012993839246849943,
+      "incrementalWh": 0.0068124515660854664,
+      "joules": 24.52482563790768,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 98,
+      "whPerToken": 0.00006951481189883129,
+      "whPerSuccessfulParcel": 0.0068124515660854664,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "teacher:test-result:3",
+        "verifier:PASS"
+      ],
+      "sha256": "18642093a95a33bcb67d4e57ea66e7b2e7a0024faa6ff2760085f6b021df2e3f"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-29fcff5d-7a7c-41b5-9158-31d02e5ccc6e",
+      "parcelId": "reuse-test-result-1",
+      "stageId": "execute",
+      "route": {
+        "providerId": "deterministic-skill",
+        "modelId": "test-result@1",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:46.577Z",
+      "completedAt": "2026-09-11T21:10:46.653Z",
+      "elapsedMs": 76,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 2,
+      "averageWatts": 49.17784313725491,
+      "peakWatts": 49.3678431372549,
+      "grossWh": 0.0010381989106753814,
+      "incrementalWh": 0.00001692616341864169,
+      "joules": 0.06093418830711009,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 0,
+      "whPerToken": null,
+      "whPerSuccessfulParcel": 0.00001692616341864169,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "qualification-companion-process"
+      ],
+      "sha256": "80e6bd5fb865a0d26bf8a48cfcc9c0261a6ecbae4228e1b5db29172ae1f34c12"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-3ac16381-12e7-4dd8-a13a-ce1c981a1808",
+      "parcelId": "reuse-test-result-2",
+      "stageId": "execute",
+      "route": {
+        "providerId": "deterministic-skill",
+        "modelId": "test-result@1",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:46.682Z",
+      "completedAt": "2026-09-11T21:10:46.753Z",
+      "elapsedMs": 71,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 2,
+      "averageWatts": 48.31249999999999,
+      "peakWatts": 48.3625,
+      "grossWh": 0.000952829861111111,
+      "incrementalWh": 0,
+      "joules": 0,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 0,
+      "whPerToken": null,
+      "whPerSuccessfulParcel": 0,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "qualification-companion-process"
+      ],
+      "sha256": "3bb8ba6889940b74abd91d4b08ad9e7e7f95c23a1c2d680d1a7ffc10e453997d"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-442c5e10-0f00-46da-9d50-6c77de13c636",
+      "parcelId": "reuse-test-result-3",
+      "stageId": "execute",
+      "route": {
+        "providerId": "deterministic-skill",
+        "modelId": "test-result@1",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:46.782Z",
+      "completedAt": "2026-09-11T21:10:46.857Z",
+      "elapsedMs": 75,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 2,
+      "averageWatts": 48.52643564356435,
+      "peakWatts": 48.556435643564356,
+      "grossWh": 0.001010967409240924,
+      "incrementalWh": 0.000003132461290193851,
+      "joules": 0.011276860644697864,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 0,
+      "whPerToken": null,
+      "whPerSuccessfulParcel": 0.000003132461290193851,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "qualification-companion-process"
+      ],
+      "sha256": "11d6d759c5ccb1a8c80034b3701140c79e278ae4b2f97b6ed89314764645313a"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-d4d4c4f3-4fdb-4e4a-bdd1-ff769c768a9c",
+      "parcelId": "reuse-test-result-4",
+      "stageId": "execute",
+      "route": {
+        "providerId": "deterministic-skill",
+        "modelId": "test-result@1",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:46.884Z",
+      "completedAt": "2026-09-11T21:10:46.955Z",
+      "elapsedMs": 71,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 2,
+      "averageWatts": 49.14,
+      "peakWatts": 49.15,
+      "grossWh": 0.00096915,
+      "incrementalWh": 0.00001506624927330902,
+      "joules": 0.05423849738391247,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 0,
+      "whPerToken": null,
+      "whPerSuccessfulParcel": 0.00001506624927330902,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "qualification-companion-process"
+      ],
+      "sha256": "b37d853b2390d4b0aeb5a30941b349f8b9ccec81a7351eca94c44a514a4fcaa9"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-4e4d01a6-ba7f-4199-b0d6-38ae681646e2",
+      "parcelId": "reuse-test-result-5",
+      "stageId": "execute",
+      "route": {
+        "providerId": "deterministic-skill",
+        "modelId": "test-result@1",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:46.984Z",
+      "completedAt": "2026-09-11T21:10:47.113Z",
+      "elapsedMs": 129,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 3,
+      "averageWatts": 50.63581991651758,
+      "peakWatts": 50.6725641025641,
+      "grossWh": 0.0018144502136752136,
+      "incrementalWh": 0.00008097410319995806,
+      "joules": 0.291506771519849,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 0,
+      "whPerToken": null,
+      "whPerSuccessfulParcel": 0.00008097410319995806,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "qualification-companion-process"
+      ],
+      "sha256": "fb4aff80cac5ab8bd6a451e89c4e80ac5ee783ba230d994888ca364062636263"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-5b7e0330-d75b-433c-874b-feac1d4cdeb0",
+      "parcelId": "reuse-test-result-6",
+      "stageId": "execute",
+      "route": {
+        "providerId": "deterministic-skill",
+        "modelId": "test-result@1",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:47.141Z",
+      "completedAt": "2026-09-11T21:10:47.213Z",
+      "elapsedMs": 72,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 2,
+      "averageWatts": 48.044393939393935,
+      "peakWatts": 48.07939393939394,
+      "grossWh": 0.0009608878787878787,
+      "incrementalWh": 0,
+      "joules": 0,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 0,
+      "whPerToken": null,
+      "whPerSuccessfulParcel": 0,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "qualification-companion-process"
+      ],
+      "sha256": "93e9dc5d50948e9058a3bb471408c8b1ca4b8fbca272f0bc7f9a87a7a8781a0b"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-2abd31b3-18c1-4e1e-8b90-d45ace5f4d73",
+      "parcelId": "reuse-test-result-7",
+      "stageId": "execute",
+      "route": {
+        "providerId": "deterministic-skill",
+        "modelId": "test-result@1",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:47.243Z",
+      "completedAt": "2026-09-11T21:10:47.327Z",
+      "elapsedMs": 84,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 2,
+      "averageWatts": 50.4763963963964,
+      "peakWatts": 50.5363963963964,
+      "grossWh": 0.0011777825825825827,
+      "incrementalWh": 0.00004900744087776507,
+      "joules": 0.17642678715995425,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 0,
+      "whPerToken": null,
+      "whPerSuccessfulParcel": 0.00004900744087776507,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "qualification-companion-process"
+      ],
+      "sha256": "80da064186bf3c663d75eb4fbde28276d9278565a3891b460256e274eacb9020"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-b9f8992d-ee70-40a7-9bb0-f93ca8b9c384",
+      "parcelId": "reuse-test-result-8",
+      "stageId": "execute",
+      "route": {
+        "providerId": "deterministic-skill",
+        "modelId": "test-result@1",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:47.356Z",
+      "completedAt": "2026-09-11T21:10:47.428Z",
+      "elapsedMs": 72,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 2,
+      "averageWatts": 46.97117647058823,
+      "peakWatts": 47.02117647058823,
+      "grossWh": 0.0009394235294117646,
+      "incrementalWh": 0,
+      "joules": 0,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 0,
+      "whPerToken": null,
+      "whPerSuccessfulParcel": 0,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "qualification-companion-process"
+      ],
+      "sha256": "0404790fcef3803b2671561f88a66ab5eebcb69ca82871968476a41abea9ddfe"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-63c45248-bc1a-4948-8f7e-788bdda0bd87",
+      "parcelId": "reuse-test-result-9",
+      "stageId": "execute",
+      "route": {
+        "providerId": "deterministic-skill",
+        "modelId": "test-result@1",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:47.461Z",
+      "completedAt": "2026-09-11T21:10:47.553Z",
+      "elapsedMs": 92,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 2,
+      "averageWatts": 52.67046218487395,
+      "peakWatts": 52.695462184873946,
+      "grossWh": 0.0013460229225023342,
+      "incrementalWh": 0.00010974538634943862,
+      "joules": 0.39508339085797906,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 0,
+      "whPerToken": null,
+      "whPerSuccessfulParcel": 0.00010974538634943862,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "qualification-companion-process"
+      ],
+      "sha256": "d8881009a519f35742a875404bd49022e42392e9e0744946541b78e8e7277528"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-17b9b652-bcd9-492a-a90b-c00988daba43",
+      "parcelId": "reuse-test-result-10",
+      "stageId": "execute",
+      "route": {
+        "providerId": "deterministic-skill",
+        "modelId": "test-result@1",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:47.582Z",
+      "completedAt": "2026-09-11T21:10:47.663Z",
+      "elapsedMs": 81,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 2,
+      "averageWatts": 48.5104128440367,
+      "peakWatts": 48.5354128440367,
+      "grossWh": 0.0010914842889908258,
+      "incrementalWh": 0.0000030225452040373926,
+      "joules": 0.010881162734534613,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 0,
+      "whPerToken": null,
+      "whPerSuccessfulParcel": 0.0000030225452040373926,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "qualification-companion-process"
+      ],
+      "sha256": "b60a86e83aa3c46bd5dff37807b16872d3ebc2566b1668fe98a2fa3f20a60a18"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-c3bbca0b-ac56-46d1-9f19-c3817fe926ae",
+      "parcelId": "reuse-test-result-11",
+      "stageId": "execute",
+      "route": {
+        "providerId": "deterministic-skill",
+        "modelId": "test-result@1",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:47.695Z",
+      "completedAt": "2026-09-11T21:10:47.782Z",
+      "elapsedMs": 87,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 2,
+      "averageWatts": 50.797606837606835,
+      "peakWatts": 50.797606837606835,
+      "grossWh": 0.0012276088319088318,
+      "incrementalWh": 0.000058520292285985185,
+      "joules": 0.21067305222954666,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 0,
+      "whPerToken": null,
+      "whPerSuccessfulParcel": 0.000058520292285985185,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "qualification-companion-process"
+      ],
+      "sha256": "e85a97503840993b9dbab96efd1c30cdbe5eb7e773154bf61f185f2dc59eaeb6"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-9d179d93-59c6-4197-bbd2-09765db4398a",
+      "parcelId": "reuse-test-result-12",
+      "stageId": "execute",
+      "route": {
+        "providerId": "deterministic-skill",
+        "modelId": "test-result@1",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:47.817Z",
+      "completedAt": "2026-09-11T21:10:47.906Z",
+      "elapsedMs": 89,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 2,
+      "averageWatts": 51.60833333333333,
+      "peakWatts": 51.67333333333333,
+      "grossWh": 0.0012758726851851852,
+      "incrementalWh": 0.00007990854695031887,
+      "joules": 0.2876707690211479,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 0,
+      "whPerToken": null,
+      "whPerSuccessfulParcel": 0.00007990854695031887,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "qualification-companion-process"
+      ],
+      "sha256": "902408cb4056219ed14739a7af7f95b4de35280923c0e08e6f3031dbdbadc934"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-6a6fcd93-f7fe-45cd-bfb1-f7106c81e300",
+      "parcelId": "reuse-test-result-13",
+      "stageId": "execute",
+      "route": {
+        "providerId": "deterministic-skill",
+        "modelId": "test-result@1",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:47.941Z",
+      "completedAt": "2026-09-11T21:10:48.036Z",
+      "elapsedMs": 95,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 2,
+      "averageWatts": 50.45000000000001,
+      "peakWatts": 50.49000000000001,
+      "grossWh": 0.0013313194444444447,
+      "incrementalWh": 0.000054728510373519904,
+      "joules": 0.19702263734467165,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 0,
+      "whPerToken": null,
+      "whPerSuccessfulParcel": 0.000054728510373519904,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "qualification-companion-process"
+      ],
+      "sha256": "f7b2511c9011b76aec087e345586c31f52931f718ade11fc55a1ce5216ad84ce"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-e8e2a258-559e-459f-bdc2-8a98f99c79c0",
+      "parcelId": "reuse-test-result-14",
+      "stageId": "execute",
+      "route": {
+        "providerId": "deterministic-skill",
+        "modelId": "test-result@1",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:48.070Z",
+      "completedAt": "2026-09-11T21:10:48.202Z",
+      "elapsedMs": 132,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 3,
+      "averageWatts": 49.90601731601732,
+      "peakWatts": 49.92238095238095,
+      "grossWh": 0.0018298873015873017,
+      "incrementalWh": 0.00005609779319401694,
+      "joules": 0.201952055498461,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 0,
+      "whPerToken": null,
+      "whPerSuccessfulParcel": 0.00005609779319401694,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "qualification-companion-process"
+      ],
+      "sha256": "990afaa5df3c1809b973e1ed2197182f638e1e01c663b2e68f463d2bd01cd225"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-720b3cb4-7f48-4e35-985a-1345e3f6708a",
+      "parcelId": "reuse-test-result-15",
+      "stageId": "execute",
+      "route": {
+        "providerId": "deterministic-skill",
+        "modelId": "test-result@1",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:48.243Z",
+      "completedAt": "2026-09-11T21:10:48.374Z",
+      "elapsedMs": 131,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 3,
+      "averageWatts": 47.93736641221375,
+      "peakWatts": 47.96,
+      "grossWh": 0.0017443875000000002,
+      "incrementalWh": 0,
+      "joules": 0,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 0,
+      "whPerToken": null,
+      "whPerSuccessfulParcel": 0,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "qualification-companion-process"
+      ],
+      "sha256": "0a4fb1bb05d6450f3f97a4741c5b01ee869e31131bc2de1a4424b85b61580aa5"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-bef22ca2-c594-4ddd-bfde-675ab06f10cf",
+      "parcelId": "reason-baton-integrity-1",
+      "stageId": "reason",
+      "route": {
+        "providerId": "local-openai-compatible",
+        "modelId": "qwen2.5-3b-instruct-q4_k_m.gguf",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:48.414Z",
+      "completedAt": "2026-09-11T21:10:49.242Z",
+      "elapsedMs": 828,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 10,
+      "averageWatts": 111.65357046447673,
+      "peakWatts": 143.85915017462165,
+      "grossWh": 0.02568032120682965,
+      "incrementalWh": 0.01455382338145359,
+      "joules": 52.393764173232924,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 188,
+      "whPerToken": 0.00007741395415666804,
+      "whPerSuccessfulParcel": 0.01455382338145359,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "teacher:baton-integrity:1",
+        "verifier:PASS"
+      ],
+      "sha256": "c402ef280eb82e513119fb4f9f8b0685f4934c462ebbd5869b95a216553e2e02"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-96b8d1b0-5046-4296-aea7-41be3a327c00",
+      "parcelId": "reason-baton-integrity-2",
+      "stageId": "reason",
+      "route": {
+        "providerId": "local-openai-compatible",
+        "modelId": "qwen2.5-3b-instruct-q4_k_m.gguf",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:49.274Z",
+      "completedAt": "2026-09-11T21:10:50.013Z",
+      "elapsedMs": 739,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 9,
+      "averageWatts": 112.55470766737463,
+      "peakWatts": 134.7315344603381,
+      "grossWh": 0.02310498026838607,
+      "incrementalWh": 0.013174446581244878,
+      "joules": 47.42800769248156,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 192,
+      "whPerToken": 0.00006861690927731708,
+      "whPerSuccessfulParcel": 0.013174446581244878,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "teacher:baton-integrity:2",
+        "verifier:PASS"
+      ],
+      "sha256": "c8d2e050c3b52b6f00ff47cb2132ed1e21a9e23780fb22d8be278a4f5f3c3dd3"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-0219491d-72d1-439a-ba51-adee2dcabba7",
+      "parcelId": "reason-baton-integrity-3",
+      "stageId": "reason",
+      "route": {
+        "providerId": "local-openai-compatible",
+        "modelId": "qwen2.5-3b-instruct-q4_k_m.gguf",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:50.046Z",
+      "completedAt": "2026-09-11T21:10:50.770Z",
+      "elapsedMs": 724,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 9,
+      "averageWatts": 100.30958253316393,
+      "peakWatts": 122.7375935828877,
+      "grossWh": 0.020173371598336303,
+      "incrementalWh": 0.010444404900785256,
+      "joules": 37.599857642826926,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 199,
+      "whPerToken": 0.00005248444673761435,
+      "whPerSuccessfulParcel": 0.010444404900785256,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "teacher:baton-integrity:3",
+        "verifier:PASS"
+      ],
+      "sha256": "8e98830db2ea66c254a8462f923516a2ab5173e43d90a7e8834f3a7a00e777d9"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-14d29ed7-3dd3-48c5-8511-833b08da05de",
+      "parcelId": "reuse-baton-integrity-1",
+      "stageId": "execute",
+      "route": {
+        "providerId": "deterministic-skill",
+        "modelId": "baton-integrity@1",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:50.798Z",
+      "completedAt": "2026-09-11T21:10:50.865Z",
+      "elapsedMs": 67,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 2,
+      "averageWatts": 43.56956043956044,
+      "peakWatts": 43.71956043956044,
+      "grossWh": 0.0008108779304029304,
+      "incrementalWh": 0,
+      "joules": 0,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 0,
+      "whPerToken": null,
+      "whPerSuccessfulParcel": 0,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "qualification-companion-process"
+      ],
+      "sha256": "96725088c278cecd49d3cf6bd6387d64ec79fb2dcdb4c3ffa877ead8995eb8db"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-c3587288-d4f7-4936-82cd-b7bb64d6a310",
+      "parcelId": "reuse-baton-integrity-2",
+      "stageId": "execute",
+      "route": {
+        "providerId": "deterministic-skill",
+        "modelId": "baton-integrity@1",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:50.892Z",
+      "completedAt": "2026-09-11T21:10:50.960Z",
+      "elapsedMs": 68,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 2,
+      "averageWatts": 43.41166666666667,
+      "peakWatts": 43.486666666666665,
+      "grossWh": 0.0008199981481481481,
+      "incrementalWh": 0,
+      "joules": 0,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 0,
+      "whPerToken": null,
+      "whPerSuccessfulParcel": 0,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "qualification-companion-process"
+      ],
+      "sha256": "b99ce76e9c9994c53502f56ef38c3e00793244c33b2064695a2ef99ac52b8ef9"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-e11a17f5-368d-4f1a-9273-3757c2d52b32",
+      "parcelId": "reuse-baton-integrity-3",
+      "stageId": "execute",
+      "route": {
+        "providerId": "deterministic-skill",
+        "modelId": "baton-integrity@1",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:50.992Z",
+      "completedAt": "2026-09-11T21:10:51.073Z",
+      "elapsedMs": 81,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 2,
+      "averageWatts": 45.160714285714285,
+      "peakWatts": 45.175714285714285,
+      "grossWh": 0.0010161160714285715,
+      "incrementalWh": 0,
+      "joules": 0,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 0,
+      "whPerToken": null,
+      "whPerSuccessfulParcel": 0,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "qualification-companion-process"
+      ],
+      "sha256": "2ba030af5d710752015c0fdb5f5a2697c5834795ca4d646bf92bf709f1b01024"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-a8c537c2-8fb9-4619-98a9-f02dc3a50390",
+      "parcelId": "reuse-baton-integrity-4",
+      "stageId": "execute",
+      "route": {
+        "providerId": "deterministic-skill",
+        "modelId": "baton-integrity@1",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:51.100Z",
+      "completedAt": "2026-09-11T21:10:51.174Z",
+      "elapsedMs": 74,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 2,
+      "averageWatts": 45.75929292929292,
+      "peakWatts": 45.759292929292926,
+      "grossWh": 0.0009406076879910211,
+      "incrementalWh": 0,
+      "joules": 0,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 0,
+      "whPerToken": null,
+      "whPerSuccessfulParcel": 0,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "qualification-companion-process"
+      ],
+      "sha256": "51083a8e10ee2a898605ced7752287f7efb51f74bb353d523528569e2a83c07b"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-d038f590-dc0b-49d6-b4ee-f6001f8d7ed9",
+      "parcelId": "reuse-baton-integrity-5",
+      "stageId": "execute",
+      "route": {
+        "providerId": "deterministic-skill",
+        "modelId": "baton-integrity@1",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:51.202Z",
+      "completedAt": "2026-09-11T21:10:51.271Z",
+      "elapsedMs": 69,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 2,
+      "averageWatts": 44.56851063829788,
+      "peakWatts": 44.598510638297874,
+      "grossWh": 0.0008542297872340427,
+      "incrementalWh": 0,
+      "joules": 0,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 0,
+      "whPerToken": null,
+      "whPerSuccessfulParcel": 0,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "qualification-companion-process"
+      ],
+      "sha256": "4b7f7974241553c0eaa3e248be081ffe74210452134bfd33d25372b0791ec359"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-bf62c050-a36e-4e54-9fa9-c77692bf3409",
+      "parcelId": "reuse-baton-integrity-6",
+      "stageId": "execute",
+      "route": {
+        "providerId": "deterministic-skill",
+        "modelId": "baton-integrity@1",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:51.298Z",
+      "completedAt": "2026-09-11T21:10:51.365Z",
+      "elapsedMs": 67,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 2,
+      "averageWatts": 43.002391304347825,
+      "peakWatts": 43.047391304347826,
+      "grossWh": 0.0008003222826086957,
+      "incrementalWh": 0,
+      "joules": 0,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 0,
+      "whPerToken": null,
+      "whPerSuccessfulParcel": 0,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "qualification-companion-process"
+      ],
+      "sha256": "ca50db283fcf0f3d574372c582f54da198bd80721f00b12731e1ea38040ff141"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-a5ec618d-3b81-4abe-ae1a-b20360aa316f",
+      "parcelId": "reuse-baton-integrity-7",
+      "stageId": "execute",
+      "route": {
+        "providerId": "deterministic-skill",
+        "modelId": "baton-integrity@1",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:51.392Z",
+      "completedAt": "2026-09-11T21:10:51.462Z",
+      "elapsedMs": 70,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 2,
+      "averageWatts": 43.316315789473684,
+      "peakWatts": 43.35631578947368,
+      "grossWh": 0.0008422616959064328,
+      "incrementalWh": 0,
+      "joules": 0,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 0,
+      "whPerToken": null,
+      "whPerSuccessfulParcel": 0,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "qualification-companion-process"
+      ],
+      "sha256": "dd0757b2d24ad4ebf02d06b58fbb3a304b9d98c1f34d8fdeec49b9e0eef54c4a"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-a11b80f7-4fcc-4f56-9bfb-148be9cf2d6d",
+      "parcelId": "reuse-baton-integrity-8",
+      "stageId": "execute",
+      "route": {
+        "providerId": "deterministic-skill",
+        "modelId": "baton-integrity@1",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:51.490Z",
+      "completedAt": "2026-09-11T21:10:51.557Z",
+      "elapsedMs": 67,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 2,
+      "averageWatts": 43.149560439560446,
+      "peakWatts": 43.18956043956044,
+      "grossWh": 0.0008030612637362638,
+      "incrementalWh": 0,
+      "joules": 0,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 0,
+      "whPerToken": null,
+      "whPerSuccessfulParcel": 0,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "qualification-companion-process"
+      ],
+      "sha256": "f5492374629b56d11eed027377d5b080bee94316a040f29111a267ec89e0c4f6"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-77e323c1-2aa2-41b4-82dd-ec223352b5aa",
+      "parcelId": "reuse-baton-integrity-9",
+      "stageId": "execute",
+      "route": {
+        "providerId": "deterministic-skill",
+        "modelId": "baton-integrity@1",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:51.584Z",
+      "completedAt": "2026-09-11T21:10:51.651Z",
+      "elapsedMs": 67,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 2,
+      "averageWatts": 43.54021505376345,
+      "peakWatts": 43.56021505376344,
+      "grossWh": 0.0008103317801672641,
+      "incrementalWh": 0,
+      "joules": 0,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 0,
+      "whPerToken": null,
+      "whPerSuccessfulParcel": 0,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "qualification-companion-process"
+      ],
+      "sha256": "e215822111863a23a0a8d0989e49ee5542aa805ce0227b779bc31d930b23192e"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-85bc3a56-7fc9-4a8e-876b-548c1edc07cb",
+      "parcelId": "reuse-baton-integrity-10",
+      "stageId": "execute",
+      "route": {
+        "providerId": "deterministic-skill",
+        "modelId": "baton-integrity@1",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:51.683Z",
+      "completedAt": "2026-09-11T21:10:51.772Z",
+      "elapsedMs": 89,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 2,
+      "averageWatts": 46.57464912280701,
+      "peakWatts": 46.61964912280701,
+      "grossWh": 0.0011514288255360622,
+      "incrementalWh": 0,
+      "joules": 0,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 0,
+      "whPerToken": null,
+      "whPerSuccessfulParcel": 0,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "qualification-companion-process"
+      ],
+      "sha256": "29a3669d7af0079258f5a48fc8271efd9a95140ab62ee196086b539ab362e6ba"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-22e4eb99-4565-4427-bcd2-3eaf6b8cf2ff",
+      "parcelId": "reuse-baton-integrity-11",
+      "stageId": "execute",
+      "route": {
+        "providerId": "deterministic-skill",
+        "modelId": "baton-integrity@1",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:51.801Z",
+      "completedAt": "2026-09-11T21:10:51.871Z",
+      "elapsedMs": 70,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 2,
+      "averageWatts": 43.522105263157904,
+      "peakWatts": 43.572105263157894,
+      "grossWh": 0.000846263157894737,
+      "incrementalWh": 0,
+      "joules": 0,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 0,
+      "whPerToken": null,
+      "whPerSuccessfulParcel": 0,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "qualification-companion-process"
+      ],
+      "sha256": "427de91c5a2df1ff7f1b96299ec1dea579d983b3e25cd3af33fdada2fd4d23de"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-31cd2afd-158b-48c1-a59a-1bec8d2f48e6",
+      "parcelId": "reuse-baton-integrity-12",
+      "stageId": "execute",
+      "route": {
+        "providerId": "deterministic-skill",
+        "modelId": "baton-integrity@1",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:51.899Z",
+      "completedAt": "2026-09-11T21:10:51.962Z",
+      "elapsedMs": 63,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 2,
+      "averageWatts": 42.70499999999999,
+      "peakWatts": 42.75,
+      "grossWh": 0.0007473374999999999,
+      "incrementalWh": 0,
+      "joules": 0,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 0,
+      "whPerToken": null,
+      "whPerSuccessfulParcel": 0,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "qualification-companion-process"
+      ],
+      "sha256": "4c646b4f5d8cb3a4c83197c98d2c4e87224e8ecbfaa3c982907abc931c2dddc8"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-a4603f8c-08b0-4882-9f2b-c305381feefa",
+      "parcelId": "reuse-baton-integrity-13",
+      "stageId": "execute",
+      "route": {
+        "providerId": "deterministic-skill",
+        "modelId": "baton-integrity@1",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:51.991Z",
+      "completedAt": "2026-09-11T21:10:52.055Z",
+      "elapsedMs": 64,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 2,
+      "averageWatts": 42.71,
+      "peakWatts": 42.75,
+      "grossWh": 0.0007592888888888889,
+      "incrementalWh": 0,
+      "joules": 0,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 0,
+      "whPerToken": null,
+      "whPerSuccessfulParcel": 0,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "qualification-companion-process"
+      ],
+      "sha256": "d95ac95f51894ebc64aada433315c4c2346efc2e31fbf47e9943ebffe3255224"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-1322cc8f-51ce-4701-9794-6dbb45573c97",
+      "parcelId": "reuse-baton-integrity-14",
+      "stageId": "execute",
+      "route": {
+        "providerId": "deterministic-skill",
+        "modelId": "baton-integrity@1",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:52.082Z",
+      "completedAt": "2026-09-11T21:10:52.148Z",
+      "elapsedMs": 66,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 2,
+      "averageWatts": 42.854780219780224,
+      "peakWatts": 42.88978021978022,
+      "grossWh": 0.0007856709706959708,
+      "incrementalWh": 0,
+      "joules": 0,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 0,
+      "whPerToken": null,
+      "whPerSuccessfulParcel": 0,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "qualification-companion-process"
+      ],
+      "sha256": "7b9504113efb00dc7a6ae321325f80e12fc082633b40a124c5115b53f707f9ce"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-1a4719b0-3120-486f-9a3d-322c0c1cf32b",
+      "parcelId": "reuse-baton-integrity-15",
+      "stageId": "execute",
+      "route": {
+        "providerId": "deterministic-skill",
+        "modelId": "baton-integrity@1",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:52.177Z",
+      "completedAt": "2026-09-11T21:10:52.244Z",
+      "elapsedMs": 67,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 2,
+      "averageWatts": 43.124782608695654,
+      "peakWatts": 43.13478260869566,
+      "grossWh": 0.000802600120772947,
+      "incrementalWh": 0,
+      "joules": 0,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 0,
+      "whPerToken": null,
+      "whPerSuccessfulParcel": 0,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "qualification-companion-process"
+      ],
+      "sha256": "524fcc7ee7d9e3343f9d4413779913990d1fb67d60a3ed26978ec163cb8d2e12"
+    },
+    {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-ae16e4e6-0740-4eac-b27b-a9122695c31a",
+      "parcelId": "changed-case",
+      "stageId": "model-escalation",
+      "route": {
+        "providerId": "local-openai-compatible",
+        "modelId": "qwen2.5-3b-instruct-q4_k_m.gguf",
+        "nodeId": "hpubuntu",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T21:10:52.275Z",
+      "completedAt": "2026-09-11T21:10:52.822Z",
+      "elapsedMs": 547,
+      "scope": "MEASURED_COMPONENTS",
+      "authority": "MEASURED",
+      "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+      "sampleCount": 7,
+      "averageWatts": 99.45705213433733,
+      "peakWatts": 120.4706993006993,
+      "grossWh": 0.015111946532634033,
+      "incrementalWh": 0.00776147031224671,
+      "joules": 27.941293124088155,
+      "idleBaselineWatts": 48.37607750163504,
+      "tokens": 106,
+      "whPerToken": 0.0000732214180400633,
+      "whPerSuccessfulParcel": 0.00776147031224671,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "excludes_motherboard_storage_psu_and_peripherals",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "novelty-rejection",
+        "model-escalation",
+        "independent-verifier"
+      ],
+      "sha256": "d56c301487ef2257bb3b1b4c2a256c0db1185e06678fca6a8400ad82b8595f35"
+    }
+  ],
+  "decisions": []
+}

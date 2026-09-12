@@ -1,0 +1,6 @@
+{"at":"2026-09-11T16:52:04.432Z","type":"control.resource.node_changed","payload":{"actor":"managed-node-monitor","payload":{"resourceId":"worker-1","state":"OFFLINE","health":"offline","currentWorkload":null}}}
+{"at":"2026-09-11T16:52:34.403Z","type":"control.resource.node_changed","payload":{"actor":"managed-node-monitor","payload":{"resourceId":"worker-1","state":"OFFLINE","health":"offline","currentWorkload":null}}}
+{"at":"2026-09-11T16:53:04.404Z","type":"control.resource.node_changed","payload":{"actor":"managed-node-monitor","payload":{"resourceId":"worker-1","state":"OFFLINE","health":"offline","currentWorkload":null}}}
+{"at":"2026-09-11T16:53:34.405Z","type":"control.resource.node_changed","payload":{"actor":"managed-node-monitor","payload":{"resourceId":"worker-1","state":"OFFLINE","health":"offline","currentWorkload":null}}}
+{"at":"2026-09-11T16:54:04.405Z","type":"control.resource.node_changed","payload":{"actor":"managed-node-monitor","payload":{"resourceId":"worker-1","state":"OFFLINE","health":"offline","currentWorkload":null}}}
+{"at":"2026-09-11T16:54:34.440Z","type":"control.resource.node_changed","payload":{"actor":"managed-node-monitor","payload":{"resourceId":"worker-1","state":"OFFLINE","health":"offline","currentWorkload":null}}}

@@ -1,6 +1,6 @@
-# Agent Control 4.4 deployment, upgrade and rollback
+# Agent Control 4.5 deployment, upgrade and rollback
 
-This is the canonical deployment guide for Agent Control 4.4. Source publication
+This is the canonical deployment guide for the Agent Control 4.5 candidate. Source publication
 and production deployment are separate events. A healthy listener alone does not
 prove release qualification.
 
@@ -14,11 +14,28 @@ release evidence.
 ```bash
 git clone https://github.com/lozknowles/agent-control.git
 cd agent-control
-git checkout --detach v4.4.0
+git checkout --detach v4.4.0 # released baseline; use a reviewed immutable 4.5 candidate SHA only for isolated evaluation
 npm install --ignore-scripts
 npm run init
 npm run check
 ```
+
+Learned Specialists are disabled for routing unless explicitly configured and
+qualified. Keep adaptation files and `AGENT_CONTROL_STATE_DIR` outside disposable
+source checkouts, owner-readable, and backed up with the exact registry snapshot.
+Never copy an adaptation to a different base/runtime and retain its qualification.
+The deployment must provide the framework adapter locally; Agent Control core
+does not install training dependencies or download models at runtime.
+
+Example safe policy:
+
+```json
+{"learnedSkills":{"enabled":true,"routingEnabled":false,"minimumImprovement":0.1,"maximumQualificationAgeDays":90,"requireHumanDatasetApproval":true}}
+```
+
+Enable `routingEnabled` only after the target installation can verify the exact
+base and adapter hashes and the recorded frozen qualification. Roll back by
+disabling learned routing first; the immutable base route remains available.
 
 ## Keep mutable state outside the release
 
@@ -51,14 +68,18 @@ delivery mechanism. Do not place credentials in URLs, Git, transcripts or videos
    transcript and reviewed 1920×1080 recording.
 4. Verify state/config compatibility and create an owner-only stopped-controller
    backup.
-5. Merge through the repository workflow, verify the merge contains the qualified
-   tree, tag `v4.4.0`, push, and create the GitHub Release with manifest hashes.
+5. Merge through the repository workflow only after every mandatory 4.5 gate is
+   proven, verify the merge contains the qualified tree, tag `v4.5.0`, push, and
+   create the GitHub Release with manifest hashes. A draft pull request or an
+   experimental candidate is not a stable release.
 6. Stop only the scoped existing controller, select the immutable release, retain
    existing state and credential references, and restart through its established
    supervisor.
 7. Verify version, source provenance, health, authentication, SSE updates, Jobs,
    Lanes, Models, Crew, Warm Cache Runtime and a harmless governed operation.
 
+The authoritative 4.5 candidate gate and its open limitations are recorded in
+[the 4.5 reconciliation](evidence/agent-control-4.5-release-gate-20260912.md).
 The 4.4 checksummed replay evidence is recorded in
 [the 4.4 qualification](evidence/agent-control-4.4-ux-session-replay-20260911.md),
 with the retained foundation in

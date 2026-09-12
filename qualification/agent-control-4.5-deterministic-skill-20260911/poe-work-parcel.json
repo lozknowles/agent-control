@@ -1,0 +1,821 @@
+{
+  "schema": "agent-control.deterministic-skill-poe-work-parcel/v1",
+  "observedAt": "2026-09-11T21:19:36.611Z",
+  "prompt": "POE, run the governed repository-state validation for branch feature/4.5-governed-skill-learning at checkpoint a1ec025 using the lowest-energy qualified route. Show whether a model was invoked and independently verify the result.",
+  "conversationId": "poe-conversation:bcdbf974-c6d2-45eb-91f6-fef7c73dfab9",
+  "parcelId": "parcel-social-85570271f55c9a401f48a34d980cba69980758e8dbe856e80d0173f4598cf2af",
+  "parcel": {
+    "id": "parcel-social-85570271f55c9a401f48a34d980cba69980758e8dbe856e80d0173f4598cf2af",
+    "prompt": "POE, run the governed repository-state validation for branch feature/4.5-governed-skill-learning at checkpoint a1ec025 using the lowest-energy qualified route. Show whether a model was invoked and independently verify the result.",
+    "objective": "Execute a previously promoted repository-state skill through the ordinary governed Work Parcel lifecycle.",
+    "actor": "operator",
+    "origin": {
+      "schema": "agent-control.request-origin/v1",
+      "channel": "poe/dashboard",
+      "modality": "dashboard",
+      "receivedAt": "2026-09-11T21:19:36.544Z",
+      "authentication": "dashboard-bearer",
+      "actorId": "operator",
+      "authority": [
+        "conversation:poe-conversation:bcdbf974-c6d2-45eb-91f6-fef7c73dfab9"
+      ],
+      "messageReference": "85570271f55c9a401f48a34d980cba69980758e8dbe856e80d0173f4598cf2af",
+      "identityReference": "06e55b633481f7bb072957eabcf110c972e86691c3cfedabe088024bffe42f23",
+      "request": "POE, run the governed repository-state validation for branch feature/4.5-governed-skill-learning at checkpoint a1ec025 using the lowest-energy qualified route. Show whether a model was invoked and independently verify the result."
+    },
+    "executionMode": "LIVE",
+    "executionOwner": "work-parcel-coordinator",
+    "status": "SUCCEEDED",
+    "planner": {
+      "kind": "deterministic",
+      "reason": "POE requested the lowest-energy already-qualified route"
+    },
+    "stages": [
+      {
+        "id": "repository-state",
+        "name": "Governed repository-state validation",
+        "job": "deterministic-skill-execution@1.0.0",
+        "parameters": {
+          "taskClass": "repository-state",
+          "input": "{\"branch\":\"feature/4.5-governed-skill-learning\",\"head\":\"a1ec025\",\"porcelain\":\"\"}"
+        },
+        "dependsOn": [],
+        "requiredCapabilities": [],
+        "outputs": [],
+        "waitingQuestionIds": [],
+        "status": "SUCCEEDED",
+        "baton": {
+          "schema": "agent-control.work-parcel-baton/v2",
+          "id": "parcel-baton-a0038def-80c5-4109-9555-cc2cdbb23d8d",
+          "createdAt": "2026-09-11T21:19:36.600Z",
+          "sourceStageIds": [
+            "repository-state"
+          ],
+          "objective": "POE, run the governed repository-state validation for branch feature/4.5-governed-skill-learning at checkpoint a1ec025 using the lowest-energy qualified route. Show whether a model was invoked and independently verify the result.",
+          "currentInterpretation": "Execute a previously promoted repository-state skill through the ordinary governed Work Parcel lifecycle.",
+          "effectiveInstructions": [],
+          "constraints": [
+            "No LLM on a matching promoted skill",
+            "Independent verification required",
+            "No merge, tag, release or deployment"
+          ],
+          "successCriteria": [
+            {
+              "id": "skill-verified",
+              "description": "Promoted deterministic skill executes and independently verifies",
+              "status": "PENDING"
+            },
+            {
+              "id": "criterion:stage:repository-state",
+              "description": "Governed repository-state validation completes through its declared verification boundary",
+              "status": "PENDING"
+            }
+          ],
+          "completedStages": [],
+          "nextAction": "Continue with stages depending on Governed repository-state validation",
+          "artifactIds": [
+            "artifact-3f4df7c4-af31-4f31-b672-00d621e88972"
+          ],
+          "outputTypes": [
+            "application/json"
+          ],
+          "eventRefs": [
+            {
+              "id": "context-event-7840c961-0a88-4f01-b991-66d1edaa07c5",
+              "sequence": 1,
+              "type": "goal.recorded",
+              "summary": "Original goal recorded",
+              "sha256": "b6e732ed47630795e8f3edf6195354bbf6d8dd9a25c674e2f4843387c86c727d"
+            },
+            {
+              "id": "context-event-b743cb01-38f6-464c-846e-e73e1f252232",
+              "sequence": 2,
+              "type": "plan.recorded",
+              "summary": "1 governed stage(s) recorded",
+              "sha256": "eb408cfe7a3d35a822bc6b5bc85dd4b91e82b2e36d058e13c7109f0a45d50efc"
+            },
+            {
+              "id": "context-event-c105d780-d99f-4b3b-9052-1ae557b8a07b",
+              "sequence": 3,
+              "type": "criterion.added",
+              "summary": "Promoted deterministic skill executes and independently verifies",
+              "sha256": "3f26716baeb452454a46aa66326f566b106b81eacd8aa3856e42914693eb6082"
+            },
+            {
+              "id": "context-event-fe9a8c34-af95-40cd-ae67-a1fbc9ca3e90",
+              "sequence": 4,
+              "type": "criterion.added",
+              "summary": "Governed repository-state validation completes through its declared verification boundary",
+              "sha256": "7d26ccd11dc99c4810b19a90ab1174ed45f27543a5f9c502ad3f1312ac9e7b2b"
+            },
+            {
+              "id": "context-event-0c53f38c-53a6-4053-acb0-9e8f1bb1af1d",
+              "sequence": 5,
+              "type": "baton.created",
+              "summary": "Bounded baton view created for repository-state",
+              "sha256": "fdd7e4a55dfcadc5d038a7d8ee0b244b40bc3d1b4e3cbe05dd0239759c601198"
+            },
+            {
+              "id": "context-event-8bb822e6-417f-4a9d-bd59-43fa0e1d5945",
+              "sequence": 6,
+              "type": "stage.started",
+              "summary": "Governed repository-state validation dispatched",
+              "sha256": "8eb8e4d84fa020aa7c61e031897a0cdc7a91fddf2a297dc5c440ae8fd311ee79"
+            }
+          ],
+          "unresolvedQuestions": [],
+          "approvals": [],
+          "previousBatonIds": [
+            "parcel-baton-735cb128-e24c-4d9f-9fe4-999916cf2d19"
+          ],
+          "sizeBytes": 2883,
+          "estimatedTokens": 721,
+          "sha256": "2393d5f38cc5b0e1fcbcd69bf7e5881b35bb3328366bbc2190432a73dc1a5ff1"
+        },
+        "runId": "run-e9dc57a3-bee3-4ab7-ba7a-07d7db2638f5",
+        "startedAt": "2026-09-11T21:19:36.567Z",
+        "executor": "agent-control-job-runtime",
+        "actualRoute": {
+          "workers": [
+            "hpubuntu"
+          ],
+          "reason": "satisfies:qualification.local, healthy, available"
+        },
+        "endedAt": "2026-09-11T21:19:36.597Z"
+      }
+    ],
+    "context": {
+      "schema": "agent-control.parcel-context/v1",
+      "active": {
+        "originalGoal": "POE, run the governed repository-state validation for branch feature/4.5-governed-skill-learning at checkpoint a1ec025 using the lowest-energy qualified route. Show whether a model was invoked and independently verify the result.",
+        "currentInterpretation": "Execute a previously promoted repository-state skill through the ordinary governed Work Parcel lifecycle.",
+        "effectiveInstructions": [],
+        "constraints": [
+          "No LLM on a matching promoted skill",
+          "Independent verification required",
+          "No merge, tag, release or deployment"
+        ],
+        "plan": [
+          {
+            "id": "repository-state",
+            "name": "Governed repository-state validation",
+            "dependencies": [],
+            "state": "SUCCEEDED"
+          }
+        ],
+        "currentStageIds": [],
+        "unresolvedQuestionIds": [],
+        "approvalIds": [],
+        "updatedAt": "2026-09-11T21:19:36.605Z"
+      },
+      "events": [
+        {
+          "id": "context-event-7840c961-0a88-4f01-b991-66d1edaa07c5",
+          "sequence": 1,
+          "at": "2026-09-11T21:19:36.546Z",
+          "type": "goal.recorded",
+          "summary": "Original goal recorded",
+          "detail": {
+            "actor": "operator"
+          },
+          "tags": [
+            "goal"
+          ],
+          "evidence": [],
+          "previousHash": null,
+          "sha256": "b6e732ed47630795e8f3edf6195354bbf6d8dd9a25c674e2f4843387c86c727d"
+        },
+        {
+          "id": "context-event-b743cb01-38f6-464c-846e-e73e1f252232",
+          "sequence": 2,
+          "at": "2026-09-11T21:19:36.546Z",
+          "type": "plan.recorded",
+          "summary": "1 governed stage(s) recorded",
+          "detail": {
+            "stageIds": [
+              "repository-state"
+            ]
+          },
+          "tags": [
+            "plan"
+          ],
+          "evidence": [],
+          "previousHash": "b6e732ed47630795e8f3edf6195354bbf6d8dd9a25c674e2f4843387c86c727d",
+          "sha256": "eb408cfe7a3d35a822bc6b5bc85dd4b91e82b2e36d058e13c7109f0a45d50efc"
+        },
+        {
+          "id": "context-event-c105d780-d99f-4b3b-9052-1ae557b8a07b",
+          "sequence": 3,
+          "at": "2026-09-11T21:19:36.546Z",
+          "type": "criterion.added",
+          "stageId": "repository-state",
+          "summary": "Promoted deterministic skill executes and independently verifies",
+          "detail": {
+            "criterionId": "skill-verified",
+            "kind": "STAGE_VERIFIED",
+            "source": "INFERRED",
+            "sourceActor": "agent-control-planner"
+          },
+          "tags": [
+            "criterion",
+            "stage_verified"
+          ],
+          "evidence": [],
+          "previousHash": "eb408cfe7a3d35a822bc6b5bc85dd4b91e82b2e36d058e13c7109f0a45d50efc",
+          "sha256": "3f26716baeb452454a46aa66326f566b106b81eacd8aa3856e42914693eb6082"
+        },
+        {
+          "id": "context-event-fe9a8c34-af95-40cd-ae67-a1fbc9ca3e90",
+          "sequence": 4,
+          "at": "2026-09-11T21:19:36.546Z",
+          "type": "criterion.added",
+          "stageId": "repository-state",
+          "summary": "Governed repository-state validation completes through its declared verification boundary",
+          "detail": {
+            "criterionId": "criterion:stage:repository-state",
+            "kind": "STAGE_VERIFIED",
+            "source": "INFERRED",
+            "sourceActor": "agent-control-policy"
+          },
+          "tags": [
+            "criterion",
+            "stage_verified"
+          ],
+          "evidence": [],
+          "previousHash": "3f26716baeb452454a46aa66326f566b106b81eacd8aa3856e42914693eb6082",
+          "sha256": "7d26ccd11dc99c4810b19a90ab1174ed45f27543a5f9c502ad3f1312ac9e7b2b"
+        },
+        {
+          "id": "context-event-0c53f38c-53a6-4053-acb0-9e8f1bb1af1d",
+          "sequence": 5,
+          "at": "2026-09-11T21:19:36.559Z",
+          "type": "baton.created",
+          "stageId": "repository-state",
+          "summary": "Bounded baton view created for repository-state",
+          "detail": {
+            "batonId": "parcel-baton-735cb128-e24c-4d9f-9fe4-999916cf2d19",
+            "sha256": "596ea62dea149cc2f1ae50c248bd9bbd6d68d897fa4adfee125df73996c88a7d",
+            "sizeBytes": 2385,
+            "estimatedTokens": 597,
+            "selectedEventIds": [
+              "context-event-7840c961-0a88-4f01-b991-66d1edaa07c5",
+              "context-event-b743cb01-38f6-464c-846e-e73e1f252232",
+              "context-event-c105d780-d99f-4b3b-9052-1ae557b8a07b",
+              "context-event-fe9a8c34-af95-40cd-ae67-a1fbc9ca3e90"
+            ]
+          },
+          "tags": [
+            "baton"
+          ],
+          "evidence": [
+            "596ea62dea149cc2f1ae50c248bd9bbd6d68d897fa4adfee125df73996c88a7d"
+          ],
+          "previousHash": "7d26ccd11dc99c4810b19a90ab1174ed45f27543a5f9c502ad3f1312ac9e7b2b",
+          "sha256": "fdd7e4a55dfcadc5d038a7d8ee0b244b40bc3d1b4e3cbe05dd0239759c601198"
+        },
+        {
+          "id": "context-event-8bb822e6-417f-4a9d-bd59-43fa0e1d5945",
+          "sequence": 6,
+          "at": "2026-09-11T21:19:36.567Z",
+          "type": "stage.started",
+          "stageId": "repository-state",
+          "summary": "Governed repository-state validation dispatched",
+          "detail": {
+            "runId": "run-e9dc57a3-bee3-4ab7-ba7a-07d7db2638f5",
+            "job": "deterministic-skill-execution@1.0.0",
+            "executor": "agent-control-job-runtime"
+          },
+          "tags": [
+            "stage"
+          ],
+          "evidence": [
+            "596ea62dea149cc2f1ae50c248bd9bbd6d68d897fa4adfee125df73996c88a7d"
+          ],
+          "previousHash": "fdd7e4a55dfcadc5d038a7d8ee0b244b40bc3d1b4e3cbe05dd0239759c601198",
+          "sha256": "8eb8e4d84fa020aa7c61e031897a0cdc7a91fddf2a297dc5c440ae8fd311ee79"
+        },
+        {
+          "id": "context-event-5af44b77-7d93-4189-9cac-078c8c2693df",
+          "sequence": 7,
+          "at": "2026-09-11T21:19:36.600Z",
+          "type": "baton.created",
+          "summary": "Bounded baton view created for next executor",
+          "detail": {
+            "batonId": "parcel-baton-a0038def-80c5-4109-9555-cc2cdbb23d8d",
+            "sha256": "2393d5f38cc5b0e1fcbcd69bf7e5881b35bb3328366bbc2190432a73dc1a5ff1",
+            "sizeBytes": 2883,
+            "estimatedTokens": 721,
+            "selectedEventIds": [
+              "context-event-7840c961-0a88-4f01-b991-66d1edaa07c5",
+              "context-event-b743cb01-38f6-464c-846e-e73e1f252232",
+              "context-event-c105d780-d99f-4b3b-9052-1ae557b8a07b",
+              "context-event-fe9a8c34-af95-40cd-ae67-a1fbc9ca3e90",
+              "context-event-0c53f38c-53a6-4053-acb0-9e8f1bb1af1d",
+              "context-event-8bb822e6-417f-4a9d-bd59-43fa0e1d5945"
+            ]
+          },
+          "tags": [
+            "baton"
+          ],
+          "evidence": [
+            "2393d5f38cc5b0e1fcbcd69bf7e5881b35bb3328366bbc2190432a73dc1a5ff1"
+          ],
+          "previousHash": "8eb8e4d84fa020aa7c61e031897a0cdc7a91fddf2a297dc5c440ae8fd311ee79",
+          "sha256": "f21bed7dc03c8ffafdf36b00da37c1cc2632e8f0c6cb1a093a1d396ffa444009"
+        },
+        {
+          "id": "context-event-acbedecc-af6e-41a3-bf58-36e4ea99c49c",
+          "sequence": 8,
+          "at": "2026-09-11T21:19:36.597Z",
+          "type": "stage.completed",
+          "stageId": "repository-state",
+          "summary": "Governed repository-state validation completed through verification",
+          "detail": {
+            "runId": "run-e9dc57a3-bee3-4ab7-ba7a-07d7db2638f5",
+            "artifactIds": [
+              "artifact-3f4df7c4-af31-4f31-b672-00d621e88972"
+            ],
+            "batonId": "parcel-baton-a0038def-80c5-4109-9555-cc2cdbb23d8d"
+          },
+          "tags": [
+            "stage",
+            "verified"
+          ],
+          "evidence": [
+            "2393d5f38cc5b0e1fcbcd69bf7e5881b35bb3328366bbc2190432a73dc1a5ff1",
+            "artifact-3f4df7c4-af31-4f31-b672-00d621e88972"
+          ],
+          "previousHash": "f21bed7dc03c8ffafdf36b00da37c1cc2632e8f0c6cb1a093a1d396ffa444009",
+          "sha256": "ffe3d0ac1e8d48c8a404ebf4e0f436205497bcb4fb26fa36e4e99a13d6d8e349"
+        },
+        {
+          "id": "context-event-292fcc9e-52ce-4fc5-823b-0114de8a9768",
+          "sequence": 9,
+          "at": "2026-09-11T21:19:36.597Z",
+          "type": "criterion.evaluated",
+          "stageId": "repository-state",
+          "summary": "Promoted deterministic skill executes and independently verifies: PASS",
+          "detail": {
+            "criterionId": "skill-verified",
+            "status": "PASS",
+            "actor": "agent-control-verifier"
+          },
+          "tags": [
+            "criterion",
+            "pass"
+          ],
+          "evidence": [
+            "stage:repository-state:verified",
+            "artifact-3f4df7c4-af31-4f31-b672-00d621e88972"
+          ],
+          "previousHash": "ffe3d0ac1e8d48c8a404ebf4e0f436205497bcb4fb26fa36e4e99a13d6d8e349",
+          "sha256": "e371fa5ff0409f60efc7022246a014e5561abeaead3ad3bed88febdc6db832ee"
+        },
+        {
+          "id": "context-event-73d28f77-1b30-4693-8d71-9175aefd5be0",
+          "sequence": 10,
+          "at": "2026-09-11T21:19:36.597Z",
+          "type": "criterion.evaluated",
+          "stageId": "repository-state",
+          "summary": "Governed repository-state validation completes through its declared verification boundary: PASS",
+          "detail": {
+            "criterionId": "criterion:stage:repository-state",
+            "status": "PASS",
+            "actor": "agent-control-verifier"
+          },
+          "tags": [
+            "criterion",
+            "pass"
+          ],
+          "evidence": [
+            "stage:repository-state:verified",
+            "artifact-3f4df7c4-af31-4f31-b672-00d621e88972"
+          ],
+          "previousHash": "e371fa5ff0409f60efc7022246a014e5561abeaead3ad3bed88febdc6db832ee",
+          "sha256": "77fb5bc7d97db79ca9da4ac17898dcab6958fc00ab9b53fb1aa291f7d25a258d"
+        },
+        {
+          "id": "context-event-f434b107-76f4-48d8-ad4b-5cda4a05bafb",
+          "sequence": 11,
+          "at": "2026-09-11T21:19:36.604Z",
+          "type": "verification.result",
+          "summary": "Work Parcel verification complete",
+          "detail": {
+            "status": "PASS",
+            "criteria": [
+              "skill-verified",
+              "criterion:stage:repository-state"
+            ]
+          },
+          "tags": [
+            "verification",
+            "pass"
+          ],
+          "evidence": [
+            "stage:repository-state:verified",
+            "artifact-3f4df7c4-af31-4f31-b672-00d621e88972"
+          ],
+          "previousHash": "77fb5bc7d97db79ca9da4ac17898dcab6958fc00ab9b53fb1aa291f7d25a258d",
+          "sha256": "789ab0ecb3bb13591a335f73f5108cfb613b7d9ea3b2c6c8601456b3dcff24f4"
+        }
+      ],
+      "questions": [],
+      "amendments": [],
+      "criteria": [
+        {
+          "id": "skill-verified",
+          "kind": "STAGE_VERIFIED",
+          "description": "Promoted deterministic skill executes and independently verifies",
+          "source": "INFERRED",
+          "sourceActor": "agent-control-planner",
+          "stageId": "repository-state",
+          "requiredEvidence": [
+            "stage:repository-state:verified"
+          ],
+          "status": "PASS",
+          "evidence": [
+            "stage:repository-state:verified",
+            "artifact-3f4df7c4-af31-4f31-b672-00d621e88972"
+          ],
+          "createdAt": "2026-09-11T21:19:36.546Z",
+          "evaluatedAt": "2026-09-11T21:19:36.597Z"
+        },
+        {
+          "id": "criterion:stage:repository-state",
+          "kind": "STAGE_VERIFIED",
+          "description": "Governed repository-state validation completes through its declared verification boundary",
+          "source": "INFERRED",
+          "sourceActor": "agent-control-policy",
+          "stageId": "repository-state",
+          "requiredEvidence": [
+            "stage:repository-state:verified"
+          ],
+          "status": "PASS",
+          "evidence": [
+            "stage:repository-state:verified",
+            "artifact-3f4df7c4-af31-4f31-b672-00d621e88972"
+          ],
+          "createdAt": "2026-09-11T21:19:36.546Z",
+          "evaluatedAt": "2026-09-11T21:19:36.597Z"
+        }
+      ],
+      "batonViews": [
+        {
+          "schema": "agent-control.work-parcel-baton/v2",
+          "id": "parcel-baton-735cb128-e24c-4d9f-9fe4-999916cf2d19",
+          "createdAt": "2026-09-11T21:19:36.559Z",
+          "sourceStageIds": [],
+          "targetStageId": "repository-state",
+          "objective": "POE, run the governed repository-state validation for branch feature/4.5-governed-skill-learning at checkpoint a1ec025 using the lowest-energy qualified route. Show whether a model was invoked and independently verify the result.",
+          "currentInterpretation": "Execute a previously promoted repository-state skill through the ordinary governed Work Parcel lifecycle.",
+          "effectiveInstructions": [],
+          "constraints": [
+            "No LLM on a matching promoted skill",
+            "Independent verification required",
+            "No merge, tag, release or deployment"
+          ],
+          "successCriteria": [
+            {
+              "id": "skill-verified",
+              "description": "Promoted deterministic skill executes and independently verifies",
+              "status": "PENDING"
+            },
+            {
+              "id": "criterion:stage:repository-state",
+              "description": "Governed repository-state validation completes through its declared verification boundary",
+              "status": "PENDING"
+            }
+          ],
+          "completedStages": [],
+          "nextAction": "Execute Governed repository-state validation through deterministic-skill-execution@1.0.0 and satisfy its declared verification boundary",
+          "artifactIds": [],
+          "outputTypes": [],
+          "eventRefs": [
+            {
+              "id": "context-event-7840c961-0a88-4f01-b991-66d1edaa07c5",
+              "sequence": 1,
+              "type": "goal.recorded",
+              "summary": "Original goal recorded",
+              "sha256": "b6e732ed47630795e8f3edf6195354bbf6d8dd9a25c674e2f4843387c86c727d"
+            },
+            {
+              "id": "context-event-b743cb01-38f6-464c-846e-e73e1f252232",
+              "sequence": 2,
+              "type": "plan.recorded",
+              "summary": "1 governed stage(s) recorded",
+              "sha256": "eb408cfe7a3d35a822bc6b5bc85dd4b91e82b2e36d058e13c7109f0a45d50efc"
+            },
+            {
+              "id": "context-event-c105d780-d99f-4b3b-9052-1ae557b8a07b",
+              "sequence": 3,
+              "type": "criterion.added",
+              "summary": "Promoted deterministic skill executes and independently verifies",
+              "sha256": "3f26716baeb452454a46aa66326f566b106b81eacd8aa3856e42914693eb6082"
+            },
+            {
+              "id": "context-event-fe9a8c34-af95-40cd-ae67-a1fbc9ca3e90",
+              "sequence": 4,
+              "type": "criterion.added",
+              "summary": "Governed repository-state validation completes through its declared verification boundary",
+              "sha256": "7d26ccd11dc99c4810b19a90ab1174ed45f27543a5f9c502ad3f1312ac9e7b2b"
+            }
+          ],
+          "unresolvedQuestions": [],
+          "approvals": [],
+          "previousBatonIds": [],
+          "sizeBytes": 2385,
+          "estimatedTokens": 597,
+          "sha256": "596ea62dea149cc2f1ae50c248bd9bbd6d68d897fa4adfee125df73996c88a7d"
+        },
+        {
+          "schema": "agent-control.work-parcel-baton/v2",
+          "id": "parcel-baton-a0038def-80c5-4109-9555-cc2cdbb23d8d",
+          "createdAt": "2026-09-11T21:19:36.600Z",
+          "sourceStageIds": [
+            "repository-state"
+          ],
+          "objective": "POE, run the governed repository-state validation for branch feature/4.5-governed-skill-learning at checkpoint a1ec025 using the lowest-energy qualified route. Show whether a model was invoked and independently verify the result.",
+          "currentInterpretation": "Execute a previously promoted repository-state skill through the ordinary governed Work Parcel lifecycle.",
+          "effectiveInstructions": [],
+          "constraints": [
+            "No LLM on a matching promoted skill",
+            "Independent verification required",
+            "No merge, tag, release or deployment"
+          ],
+          "successCriteria": [
+            {
+              "id": "skill-verified",
+              "description": "Promoted deterministic skill executes and independently verifies",
+              "status": "PENDING"
+            },
+            {
+              "id": "criterion:stage:repository-state",
+              "description": "Governed repository-state validation completes through its declared verification boundary",
+              "status": "PENDING"
+            }
+          ],
+          "completedStages": [],
+          "nextAction": "Continue with stages depending on Governed repository-state validation",
+          "artifactIds": [
+            "artifact-3f4df7c4-af31-4f31-b672-00d621e88972"
+          ],
+          "outputTypes": [
+            "application/json"
+          ],
+          "eventRefs": [
+            {
+              "id": "context-event-7840c961-0a88-4f01-b991-66d1edaa07c5",
+              "sequence": 1,
+              "type": "goal.recorded",
+              "summary": "Original goal recorded",
+              "sha256": "b6e732ed47630795e8f3edf6195354bbf6d8dd9a25c674e2f4843387c86c727d"
+            },
+            {
+              "id": "context-event-b743cb01-38f6-464c-846e-e73e1f252232",
+              "sequence": 2,
+              "type": "plan.recorded",
+              "summary": "1 governed stage(s) recorded",
+              "sha256": "eb408cfe7a3d35a822bc6b5bc85dd4b91e82b2e36d058e13c7109f0a45d50efc"
+            },
+            {
+              "id": "context-event-c105d780-d99f-4b3b-9052-1ae557b8a07b",
+              "sequence": 3,
+              "type": "criterion.added",
+              "summary": "Promoted deterministic skill executes and independently verifies",
+              "sha256": "3f26716baeb452454a46aa66326f566b106b81eacd8aa3856e42914693eb6082"
+            },
+            {
+              "id": "context-event-fe9a8c34-af95-40cd-ae67-a1fbc9ca3e90",
+              "sequence": 4,
+              "type": "criterion.added",
+              "summary": "Governed repository-state validation completes through its declared verification boundary",
+              "sha256": "7d26ccd11dc99c4810b19a90ab1174ed45f27543a5f9c502ad3f1312ac9e7b2b"
+            },
+            {
+              "id": "context-event-0c53f38c-53a6-4053-acb0-9e8f1bb1af1d",
+              "sequence": 5,
+              "type": "baton.created",
+              "summary": "Bounded baton view created for repository-state",
+              "sha256": "fdd7e4a55dfcadc5d038a7d8ee0b244b40bc3d1b4e3cbe05dd0239759c601198"
+            },
+            {
+              "id": "context-event-8bb822e6-417f-4a9d-bd59-43fa0e1d5945",
+              "sequence": 6,
+              "type": "stage.started",
+              "summary": "Governed repository-state validation dispatched",
+              "sha256": "8eb8e4d84fa020aa7c61e031897a0cdc7a91fddf2a297dc5c440ae8fd311ee79"
+            }
+          ],
+          "unresolvedQuestions": [],
+          "approvals": [],
+          "previousBatonIds": [
+            "parcel-baton-735cb128-e24c-4d9f-9fe4-999916cf2d19"
+          ],
+          "sizeBytes": 2883,
+          "estimatedTokens": 721,
+          "sha256": "2393d5f38cc5b0e1fcbcd69bf7e5881b35bb3328366bbc2190432a73dc1a5ff1"
+        }
+      ],
+      "metrics": {
+        "eventLedgerBytes": 6945,
+        "latestBatonBytes": 2883,
+        "latestBatonEstimatedTokens": 721,
+        "historicalBytesExcludedFromLatestBaton": 4062,
+        "estimatedHistoricalTokensExcluded": 1016,
+        "retrievals": 0,
+        "retrievedEvents": 0
+      }
+    },
+    "createdAt": "2026-09-11T21:19:36.546Z",
+    "updatedAt": "2026-09-11T21:19:36.605Z",
+    "telemetry": {
+      "inputTokens": null,
+      "freshInputTokens": null,
+      "cachedInputTokens": null,
+      "cacheWriteTokens": null,
+      "outputTokens": null,
+      "reasoningTokens": null,
+      "totalTokens": null,
+      "cost": null,
+      "currency": null,
+      "elapsedMs": 58
+    },
+    "audit": {
+      "schema": "agent-control.work-parcel-audit/v1",
+      "recordedAt": "2026-09-11T21:19:36.546Z",
+      "classification": "Registered Job request",
+      "selectedExecution": "Work Parcel",
+      "planningRationale": "POE requested the lowest-energy already-qualified route",
+      "planner": {
+        "kind": "deterministic",
+        "provider": null,
+        "model": null
+      },
+      "alternatives": [
+        {
+          "stageId": "repository-state",
+          "candidate": "hpubuntu",
+          "eligible": true,
+          "reasons": [
+            "satisfies:qualification.local",
+            "healthy",
+            "available"
+          ]
+        }
+      ],
+      "timeline": [
+        {
+          "id": "audit-3bf62f30-dfa5-462a-9062-ca2722d060ca",
+          "at": "2026-09-11T21:19:36.546Z",
+          "type": "task.received",
+          "summary": "Task received",
+          "detail": "POE, run the governed repository-state validation for branch feature/4.5-governed-skill-learning at checkpoint a1ec025 using the lowest-energy qualified route. Show whether a model was invoked and independently verify the result."
+        },
+        {
+          "id": "audit-962508cf-356b-415e-b463-288d6f1cecde",
+          "at": "2026-09-11T21:19:36.546Z",
+          "type": "task.classified",
+          "summary": "Classified: Registered Job request",
+          "detail": "Observable inputs: 1 stage(s); planner=deterministic"
+        },
+        {
+          "id": "audit-2253b439-8063-4705-a33a-7afa6c2871b9",
+          "at": "2026-09-11T21:19:36.546Z",
+          "type": "plan.selected",
+          "summary": "Work Parcel selected",
+          "detail": "POE requested the lowest-energy already-qualified route"
+        },
+        {
+          "id": "audit-6fc4d1fe-c56b-4641-a301-6f0d29b5ae94",
+          "at": "2026-09-11T21:19:36.546Z",
+          "type": "route.requested",
+          "stageId": "repository-state",
+          "summary": "Governed repository-state validation route requested",
+          "detail": "Normal Agent Control placement and routing policy"
+        },
+        {
+          "id": "audit-ed866839-a118-4cdb-a65f-5087679bcce3",
+          "at": "2026-09-11T21:19:36.559Z",
+          "type": "baton.created",
+          "stageId": "repository-state",
+          "summary": "Bounded operational baton view sealed",
+          "detail": "parcel-baton-735cb128-e24c-4d9f-9fe4-999916cf2d19; sha256 596ea62dea149cc2f1ae50c248bd9bbd6d68d897fa4adfee125df73996c88a7d; 2385 bytes; full history remains in parcel ledger"
+        },
+        {
+          "id": "audit-bc934896-ddc8-4ff8-b72b-2776dd22f1b5",
+          "at": "2026-09-11T21:19:36.567Z",
+          "type": "stage.dispatched",
+          "stageId": "repository-state",
+          "summary": "Governed repository-state validation dispatched",
+          "detail": "Job deterministic-skill-execution@1.0.0; Run run-e9dc57a3-bee3-4ab7-ba7a-07d7db2638f5; requested route Normal Agent Control placement and routing policy"
+        },
+        {
+          "id": "audit-82d2edbe-2930-48a1-93e8-a5a8d8535e1d",
+          "at": "2026-09-11T21:19:36.600Z",
+          "type": "route.resolved",
+          "stageId": "repository-state",
+          "summary": "Governed repository-state validation actual route recorded",
+          "detail": "Workers hpubuntu; provider no model; account default; model no model; profile control action; satisfies:qualification.local, healthy, available"
+        },
+        {
+          "id": "audit-5e31b1fc-98bb-467e-87a3-b67b7fb4e0cc",
+          "at": "2026-09-11T21:19:36.604Z",
+          "type": "verification.completed",
+          "summary": "All declared verification criteria passed",
+          "detail": "2 criterion/criteria passed through the normal Work Parcel boundary"
+        }
+      ],
+      "invocations": [],
+      "totals": {
+        "models": [],
+        "invocations": 0,
+        "inputTokens": null,
+        "freshInputTokens": null,
+        "cachedInputTokens": null,
+        "cacheWriteTokens": null,
+        "outputTokens": null,
+        "reasoningTokens": null,
+        "totalTokens": null,
+        "providerReportedCost": null,
+        "calculatedCost": null,
+        "cost": null,
+        "costBasis": "unavailable",
+        "currency": null,
+        "modelExecutionMs": 0,
+        "wallClockMs": 58
+      },
+      "orchestrationDecisionId": "orchestration-a9fae4f6-3cce-4050-b7e0-13dcc4fe579e"
+    },
+    "provenance": [
+      {
+        "at": "2026-09-11T21:19:36.546Z",
+        "type": "submitted",
+        "detail": "Approved social template; durable request identity; existing runtime remains authoritative"
+      },
+      {
+        "at": "2026-09-11T21:19:36.567Z",
+        "type": "stage.started",
+        "detail": "repository-state:run-e9dc57a3-bee3-4ab7-ba7a-07d7db2638f5"
+      }
+    ],
+    "endedAt": "2026-09-11T21:19:36.604Z",
+    "decision": {
+      "outcome": "COMPLETE",
+      "title": "Why Agent Control completed",
+      "summary": "Every planned Job completed through the normal Agent Control verification boundary.",
+      "evidence": [
+        "Governed repository-state validation: SUCCEEDED"
+      ],
+      "blockedStages": [],
+      "authority": "Agent Control"
+    }
+  },
+  "decision": {
+    "schema": "agent-control.deterministic-skill-decision/v1",
+    "id": "det-skill-route-a61bbf53-6b9b-4d55-aee5-bd0d8dc848cb",
+    "parcelId": "parcel-social-85570271f55c9a401f48a34d980cba69980758e8dbe856e80d0173f4598cf2af",
+    "stageId": "repository-state",
+    "taskClass": "repository-state",
+    "at": "2026-09-11T21:19:36.585Z",
+    "selected": {
+      "id": "repository-state",
+      "version": "1",
+      "handlerId": "repository-state-v1"
+    },
+    "candidates": [
+      {
+        "id": "repository-state",
+        "version": "1",
+        "eligible": true,
+        "reasons": []
+      }
+    ],
+    "route": "DETERMINISTIC_SKILL",
+    "reason": "Selected promoted deterministic skill repository-state@1: input contract, freshness, handler identity and applicability passed."
+  },
+  "execution": {
+    "schema": "agent-control.deterministic-skill-execution/v1",
+    "id": "det-skill-exec-d33d3cc7-3cd0-43a5-a2ef-73e07bcfe0e0",
+    "decisionId": "det-skill-route-a61bbf53-6b9b-4d55-aee5-bd0d8dc848cb",
+    "skillId": "repository-state",
+    "skillVersion": "1",
+    "parcelId": "parcel-social-85570271f55c9a401f48a34d980cba69980758e8dbe856e80d0173f4598cf2af",
+    "stageId": "repository-state",
+    "startedAt": "2026-09-11T21:19:36.587Z",
+    "completedAt": "2026-09-11T21:19:36.587Z",
+    "verified": true,
+    "output": {
+      "clean": true,
+      "branch": "feature/4.5-governed-skill-learning",
+      "head": "a1ec025",
+      "status": "CLEAN"
+    },
+    "energyJoules": null,
+    "verification": [
+      "deterministic:repository-state-invariant"
+    ]
+  },
+  "transcript": "# POE conversation poe-conversation:bcdbf974-c6d2-45eb-91f6-fef7c73dfab9\n\nChannel: dashboard\nActor: operator\nCreated: 2026-09-11T21:19:36.538Z\n\n## Exact initiating operator prompt\n\nPOE, run the governed repository-state validation for branch feature/4.5-governed-skill-learning at checkpoint a1ec025 using the lowest-energy qualified route. Show whether a model was invoked and independently verify the result.\n\n## Chronological interaction\n\n## POE · 2026-09-11T21:19:36.540Z\n\nGood day. I’m POE. How may I help you?\n\nAuthority: AGENT_CONTROL\nResponse mode: not applicable\nReferences: none\nEvidence: []\n\n## Operator · 2026-09-11T21:19:36.542Z\n\nPOE, run the governed repository-state validation for branch feature/4.5-governed-skill-learning at checkpoint a1ec025 using the lowest-energy qualified route. Show whether a model was invoked and independently verify the result.\n\nAuthority: OPERATOR\nResponse mode: not applicable\nReferences: none\nEvidence: []\n\n## POE · 2026-09-11T21:19:36.543Z\n\nDeterministic skill Work Parcel\n\nAwaiting execution.\n\nResult: Awaiting execution. (agent control)\n\nAuthority: AGENT_CONTROL\nResponse mode: DETERMINISTIC\nReferences: run:the\nEvidence: [{\"label\":\"Result\",\"value\":\"Awaiting execution.\",\"authority\":\"AGENT_CONTROL\",\"evidence\":[]}]\n\n## Operator · 2026-09-11T21:19:36.608Z\n\nPOE, give me the final human-readable route, verification, energy and model-avoidance result.\n\nAuthority: OPERATOR\nResponse mode: not applicable\nReferences: none\nEvidence: []\n\n## POE · 2026-09-11T21:19:36.610Z\n\nDeterministic skill Work Parcel\n\nTask: repository-state validation\nRoute: deterministic skill repository-state@1\nReason: Selected promoted deterministic skill repository-state@1: input contract, freshness, handler identity and applicability passed.\nVerification: PASS\nEnergy: UNAVAILABLE\nLLM invocation avoided: yes\nWork Parcel: parcel-social-85570271f55c9a401f48a34d980cba69980758e8dbe856e80d0173f4598cf2af SUCCEEDED\n\nResult: Task: repository-state validation\nRoute: deterministic skill repository-state@1\nReason: Selected promoted deterministic skill repository-state@1: input contract, freshness, handler identity and applicability passed.\nVerification: PASS\nEnergy: UNAVAILABLE\nLLM invocation avoided: yes\nWork Parcel: parcel-social-85570271f55c9a401f48a34d980cba69980758e8dbe856e80d0173f4598cf2af SUCCEEDED (agent control)\n\nAuthority: AGENT_CONTROL\nResponse mode: DETERMINISTIC\nReferences: run:the\nEvidence: [{\"label\":\"Result\",\"value\":\"Task: repository-state validation\\nRoute: deterministic skill repository-state@1\\nReason: Selected promoted deterministic skill repository-state@1: input contract, freshness, handler identity and applicability passed.\\nVerification: PASS\\nEnergy: UNAVAILABLE\\nLLM invocation avoided: yes\\nWork Parcel: parcel-social-85570271f55c9a401f48a34d980cba69980758e8dbe856e80d0173f4598cf2af SUCCEEDED\",\"authority\":\"AGENT_CONTROL\",\"evidence\":[\"parcel:parcel-social-85570271f55c9a401f48a34d980cba69980758e8dbe856e80d0173f4598cf2af\"]}]",
+  "summary": "Task: repository-state validation\nRoute: deterministic skill repository-state@1\nReason: Selected promoted deterministic skill repository-state@1: input contract, freshness, handler identity and applicability passed.\nVerification: PASS\nEnergy: UNAVAILABLE\nLLM invocation avoided: yes\nWork Parcel: parcel-social-85570271f55c9a401f48a34d980cba69980758e8dbe856e80d0173f4598cf2af SUCCEEDED",
+  "verdict": "PASS_POE_PRODUCTION_WORK_PARCEL"
+}

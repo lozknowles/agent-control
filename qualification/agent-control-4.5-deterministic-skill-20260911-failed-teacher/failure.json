@@ -1,0 +1,12 @@
+{
+  "schema": "agent-control.deterministic-skill-teacher-failure/v1",
+  "task": "baton-integrity",
+  "example": 3,
+  "provider": "local-openai-compatible",
+  "model": "qwen2.5-3b-instruct-q4_k_m.gguf",
+  "providerOutput": {"valid": true},
+  "expected": {"valid": false},
+  "verification": "FAIL",
+  "disposition": "NOT_PROMOTED",
+  "reason": "The model guessed digest equality rather than recomputing the stable SHA-256. The failed output did not become a deterministic rule. The corrected qualification asks the teacher to select the integrity procedure; the deterministic handler computes and independently verifies positive and negative hashes."
+}

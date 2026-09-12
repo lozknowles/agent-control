@@ -1,0 +1,98 @@
+{
+  "schema": "agent-control.energy-qualification/v1",
+  "observedAt": "2026-09-11T19:46:29.389Z",
+  "status": "PARTIAL",
+  "route": {
+    "provider": "local-openai-compatible",
+    "model": "qwen2.5-3b-instruct-q4_k_m.gguf",
+    "node": "controller"
+  },
+  "providerResponse": {
+    "httpStatus": 200,
+    "verified": true,
+    "usage": {
+      "completion_tokens": 13,
+      "prompt_tokens": 40,
+      "total_tokens": 53,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      }
+    },
+    "elapsedMs": 685
+  },
+  "measurement": {
+    "baseline": {
+      "nodeId": "controller",
+      "scope": "GPU_ONLY",
+      "averageWatts": 4.845,
+      "sampleCount": 12,
+      "startedAt": "2026-09-11T19:46:25.643Z",
+      "completedAt": "2026-09-11T19:46:28.655Z",
+      "authority": "MEASURED",
+      "source": "nvidia-smi:power.draw",
+      "limitations": [
+        "gpu_board_power_only",
+        "cpu_and_platform_power_unavailable",
+        "shared_gpu_processes_present"
+      ]
+    },
+    "execution": {
+      "schema": "agent-control.energy-execution/v1",
+      "id": "energy-694caa70-9e37-47ab-bc3b-49bdb51383b2",
+      "parcelId": "parcel:energy-probe",
+      "stageId": "route-intent-general-baseline",
+      "route": {
+        "providerId": "local-openai-compatible",
+        "modelId": "qwen2.5-3b-instruct-q4_k_m.gguf",
+        "nodeId": "controller",
+        "accountProfileId": null
+      },
+      "kind": "INFERENCE",
+      "startedAt": "2026-09-11T19:46:28.679Z",
+      "completedAt": "2026-09-11T19:46:29.129Z",
+      "elapsedMs": 450,
+      "scope": "GPU_ONLY",
+      "authority": "MEASURED",
+      "measurementMethod": "nvidia-smi:power.draw",
+      "sampleCount": 3,
+      "averageWatts": 52.223644444444446,
+      "peakWatts": 75.9,
+      "grossWh": 0.006527955555555556,
+      "incrementalWh": 0.0059223305555555555,
+      "joules": 21.32039,
+      "idleBaselineWatts": 4.845,
+      "tokens": 53,
+      "whPerToken": 0.0001117420859538784,
+      "whPerSuccessfulParcel": 0.0059223305555555555,
+      "verified": true,
+      "successful": true,
+      "limitations": [
+        "gpu_board_power_only",
+        "cpu_and_platform_power_unavailable",
+        "shared_gpu_processes_present",
+        "measurement_not_whole_node"
+      ],
+      "evidence": [
+        "provider-http-status:200",
+        "deterministic-lane-verifier:PASS"
+      ],
+      "sha256": "2add40f67973fa84d659d7a87988158f1decf770b83bb9a1ce4cd2dba13cfb0d"
+    },
+    "wholeNodeEnergy": "UNKNOWN",
+    "reason": "Only qualified GPU board-power telemetry was available; CPU, memory, storage and platform power were not measured."
+  },
+  "specialistComparison": {
+    "routeIntentSpecialist": "Previously independently qualified through a governed Work Parcel",
+    "energy": "UNKNOWN",
+    "reason": "The specialist executes on CPU and this node exposes no readable CPU package or whole-system energy counter."
+  },
+  "successCriteria": {
+    "smallSpecialistUsefulWork": true,
+    "independentVerification": true,
+    "automaticGovernedSpecialistRoute": true,
+    "durableMemoryReducesReasoning": "NOT_PROVEN_IN_ENERGY_RUN",
+    "actualPhysicalEnergyMeasured": "GPU_ONLY",
+    "totalEnergyMateriallyLower": "NOT_PROVEN"
+  },
+  "conclusion": "Physical GPU energy telemetry is proven, but useful verified work per whole-node Wh and specialist break-even remain unproven without a whole-system meter or CPU package energy source."
+}

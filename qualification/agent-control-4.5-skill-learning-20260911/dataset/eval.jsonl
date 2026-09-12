@@ -1,0 +1,40 @@
+{"id":"review-01","input":"Please review the repository release notes using read-only evidence.","output":{"lane":"LANE_REVIEW"}}
+{"id":"review-06","input":"Please audit the cache evidence using read-only evidence.","output":{"lane":"LANE_REVIEW"}}
+{"id":"review-11","input":"Please inspect the provider route using read-only evidence.","output":{"lane":"LANE_REVIEW"}}
+{"id":"review-16","input":"Please assess the model qualification using read-only evidence.","output":{"lane":"LANE_REVIEW"}}
+{"id":"review-17","input":"Please review the repository release notes with independent evidence.","output":{"lane":"LANE_REVIEW"}}
+{"id":"review-22","input":"Please audit the cache evidence with independent evidence.","output":{"lane":"LANE_REVIEW"}}
+{"id":"review-27","input":"Please inspect the provider route with independent evidence.","output":{"lane":"LANE_REVIEW"}}
+{"id":"review-32","input":"Please assess the model qualification with independent evidence.","output":{"lane":"LANE_REVIEW"}}
+{"id":"review-33","input":"Please review the repository release notes and cite findings.","output":{"lane":"LANE_REVIEW"}}
+{"id":"review-38","input":"Please audit the cache evidence and cite findings.","output":{"lane":"LANE_REVIEW"}}
+{"id":"operate-01","input":"Please run the managed node health and verify completion.","output":{"lane":"LANE_OPERATE"}}
+{"id":"operate-06","input":"Please execute the deployment manifest and verify completion.","output":{"lane":"LANE_OPERATE"}}
+{"id":"operate-11","input":"Please restart the dashboard telemetry and verify completion.","output":{"lane":"LANE_OPERATE"}}
+{"id":"operate-16","input":"Please deploy the repository release notes and verify completion.","output":{"lane":"LANE_OPERATE"}}
+{"id":"operate-17","input":"Please run the managed node health with explicit approval.","output":{"lane":"LANE_OPERATE"}}
+{"id":"operate-22","input":"Please execute the deployment manifest with explicit approval.","output":{"lane":"LANE_OPERATE"}}
+{"id":"operate-27","input":"Please restart the dashboard telemetry with explicit approval.","output":{"lane":"LANE_OPERATE"}}
+{"id":"operate-32","input":"Please deploy the repository release notes with explicit approval.","output":{"lane":"LANE_OPERATE"}}
+{"id":"operate-33","input":"Please run the managed node health within declared scope.","output":{"lane":"LANE_OPERATE"}}
+{"id":"operate-38","input":"Please execute the deployment manifest within declared scope.","output":{"lane":"LANE_OPERATE"}}
+{"id":"verify-01","input":"Please verify the provider route against frozen criteria.","output":{"lane":"LANE_VERIFY"}}
+{"id":"verify-06","input":"Please qualify the model qualification against frozen criteria.","output":{"lane":"LANE_VERIFY"}}
+{"id":"verify-11","input":"Please test the token ledger against frozen criteria.","output":{"lane":"LANE_VERIFY"}}
+{"id":"verify-16","input":"Please prove the managed node health against frozen criteria.","output":{"lane":"LANE_VERIFY"}}
+{"id":"verify-17","input":"Please verify the provider route using exact checks.","output":{"lane":"LANE_VERIFY"}}
+{"id":"verify-22","input":"Please qualify the model qualification using exact checks.","output":{"lane":"LANE_VERIFY"}}
+{"id":"verify-27","input":"Please test the token ledger using exact checks.","output":{"lane":"LANE_VERIFY"}}
+{"id":"verify-32","input":"Please prove the managed node health using exact checks.","output":{"lane":"LANE_VERIFY"}}
+{"id":"verify-33","input":"Please verify the provider route and preserve evidence.","output":{"lane":"LANE_VERIFY"}}
+{"id":"verify-38","input":"Please qualify the model qualification and preserve evidence.","output":{"lane":"LANE_VERIFY"}}
+{"id":"research-01","input":"Please research the dashboard telemetry without changing systems.","output":{"lane":"LANE_RESEARCH"}}
+{"id":"research-06","input":"Please compare the repository release notes without changing systems.","output":{"lane":"LANE_RESEARCH"}}
+{"id":"research-11","input":"Please investigate the cache evidence without changing systems.","output":{"lane":"LANE_RESEARCH"}}
+{"id":"research-16","input":"Please find the provider route without changing systems.","output":{"lane":"LANE_RESEARCH"}}
+{"id":"research-17","input":"Please research the dashboard telemetry and compare alternatives.","output":{"lane":"LANE_RESEARCH"}}
+{"id":"research-22","input":"Please compare the repository release notes and compare alternatives.","output":{"lane":"LANE_RESEARCH"}}
+{"id":"research-27","input":"Please investigate the cache evidence and compare alternatives.","output":{"lane":"LANE_RESEARCH"}}
+{"id":"research-32","input":"Please find the provider route and compare alternatives.","output":{"lane":"LANE_RESEARCH"}}
+{"id":"research-33","input":"Please research the dashboard telemetry and separate facts from inference.","output":{"lane":"LANE_RESEARCH"}}
+{"id":"research-38","input":"Please compare the repository release notes and separate facts from inference.","output":{"lane":"LANE_RESEARCH"}}

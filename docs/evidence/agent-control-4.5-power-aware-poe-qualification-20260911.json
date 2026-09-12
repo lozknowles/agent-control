@@ -1,0 +1,2408 @@
+{
+  "schema": "agent-control.power-aware-poe-qualification/v1",
+  "observedAt": "2026-09-11T20:43:03.133Z",
+  "request": "POE, classify this genuine Agent Control request using the lowest-energy qualified route, execute it, and independently verify the result: Please review the repository release notes using read-only evidence.",
+  "conversationId": "poe-conversation:9d928c58-7a78-4b4e-9f1f-4d53a9dc6782",
+  "parcel": {
+    "id": "parcel-social-07785855c2e8b95b53c249a9f9e8eb541836bff0e640499c679d31ad3c84cebf",
+    "prompt": "Classify one genuine held-out Agent Control request using the lowest-energy qualified route and independently verify it.",
+    "objective": "Classify one genuine held-out Agent Control request using the lowest-energy qualified route and independently verify it.",
+    "actor": "operator",
+    "origin": {
+      "schema": "agent-control.request-origin/v1",
+      "channel": "poe/dashboard",
+      "modality": "dashboard",
+      "receivedAt": "2026-09-11T20:42:59.770Z",
+      "authentication": "dashboard-bearer",
+      "actorId": "operator",
+      "authority": [
+        "conversation:poe-conversation:9d928c58-7a78-4b4e-9f1f-4d53a9dc6782"
+      ],
+      "messageReference": "07785855c2e8b95b53c249a9f9e8eb541836bff0e640499c679d31ad3c84cebf",
+      "identityReference": "06e55b633481f7bb072957eabcf110c972e86691c3cfedabe088024bffe42f23",
+      "request": "Classify one genuine held-out Agent Control request using the lowest-energy qualified route and independently verify it."
+    },
+    "executionMode": "LIVE",
+    "executionOwner": "work-parcel-coordinator",
+    "status": "SUCCEEDED",
+    "planner": {
+      "kind": "deterministic",
+      "reason": "POE proposal poe-benchmark:da4c01fe-c9e4-4f7c-a1b2-a06048b811ae was frozen, fairness-checked and explicitly approved by operator; 1 repetition(s) materialized"
+    },
+    "stages": [
+      {
+        "id": "route",
+        "name": "Governed energy-aware route selection",
+        "job": "energy-route@1.0.0",
+        "parameters": {},
+        "dependsOn": [],
+        "requiredCapabilities": [],
+        "outputs": [],
+        "waitingQuestionIds": [],
+        "status": "SUCCEEDED",
+        "baton": {
+          "schema": "agent-control.work-parcel-baton/v2",
+          "id": "parcel-baton-7512a5e9-c8fa-424f-9ad1-0df715cd6adc",
+          "createdAt": "2026-09-11T20:42:59.823Z",
+          "sourceStageIds": [
+            "route"
+          ],
+          "objective": "Classify one genuine held-out Agent Control request using the lowest-energy qualified route and independently verify it.",
+          "currentInterpretation": "Classify one genuine held-out Agent Control request using the lowest-energy qualified route and independently verify it.",
+          "effectiveInstructions": [],
+          "constraints": [
+            "No route substitution",
+            "Measured energy cannot override capability or quality",
+            "No merge, tag, release, or deployment"
+          ],
+          "successCriteria": [
+            {
+              "id": "verified-route",
+              "description": "Exact deterministic verifier passes",
+              "status": "PENDING"
+            },
+            {
+              "id": "criterion:stage:route",
+              "description": "Governed energy-aware route selection completes through its declared verification boundary",
+              "status": "PENDING"
+            },
+            {
+              "id": "criterion:stage:execute",
+              "description": "Execute selected route completes through its declared verification boundary",
+              "status": "PENDING"
+            },
+            {
+              "id": "criterion:stage:verify",
+              "description": "Independent exact verification completes through its declared verification boundary",
+              "status": "PENDING"
+            }
+          ],
+          "completedStages": [],
+          "nextAction": "Continue with stages depending on Governed energy-aware route selection",
+          "artifactIds": [
+            "artifact-38ffadc7-6728-40c0-94a2-de63a7fb2824"
+          ],
+          "outputTypes": [
+            "agent-control-energy-route"
+          ],
+          "eventRefs": [
+            {
+              "id": "context-event-3615b3b8-d4fe-452f-8d79-a95c51f947c3",
+              "sequence": 1,
+              "type": "goal.recorded",
+              "summary": "Original goal recorded",
+              "sha256": "1fa38a41625df4e72c746a3eeff8be248730f4bde9aa4aad5d214be49122cd00"
+            },
+            {
+              "id": "context-event-53c11809-691f-4c45-bab5-761d69e9731d",
+              "sequence": 2,
+              "type": "plan.recorded",
+              "summary": "3 governed stage(s) recorded",
+              "sha256": "f92197ebd429c66befd03cb00bfd63cd4824b73245ae32b73409450c18090cc5"
+            },
+            {
+              "id": "context-event-2bf5d2d4-5f43-4171-8655-e7aa508690d6",
+              "sequence": 3,
+              "type": "criterion.added",
+              "summary": "Exact deterministic verifier passes",
+              "sha256": "9ccbb70fb678e97cd3bc42bde441c43662952fab0900c412ef071b449ff20ad4"
+            },
+            {
+              "id": "context-event-d0435b36-97b3-4328-a0c1-80920fc33cb5",
+              "sequence": 4,
+              "type": "criterion.added",
+              "summary": "Governed energy-aware route selection completes through its declared verification boundary",
+              "sha256": "55a70d1e4894aea1c478ab2de199745af74e73cb9892fb650dec2cd53f18e9a6"
+            },
+            {
+              "id": "context-event-4fde3de0-73ff-422a-9343-67720866460b",
+              "sequence": 5,
+              "type": "criterion.added",
+              "summary": "Execute selected route completes through its declared verification boundary",
+              "sha256": "e71cdc00a795f65f3ff4f8480cc848d95115e30d007ac47f44209773ef410703"
+            },
+            {
+              "id": "context-event-70d3211c-21a3-4c94-b2ea-7f02a91ea4fc",
+              "sequence": 6,
+              "type": "criterion.added",
+              "summary": "Independent exact verification completes through its declared verification boundary",
+              "sha256": "749fa8f8a68b4a42ab807da1f4abe9282c3e127ea9f6eb143c2f8aa230f74df3"
+            },
+            {
+              "id": "context-event-4190f337-7000-46e7-90bb-9fda5be6d9ed",
+              "sequence": 7,
+              "type": "baton.created",
+              "summary": "Bounded baton view created for route",
+              "sha256": "d075574b3b903d64ebc5e45aff046b2509b2e9536785dd80ea10c01f6ca896e5"
+            },
+            {
+              "id": "context-event-9b6fbe51-ac85-4c98-9772-0039dee6d527",
+              "sequence": 8,
+              "type": "stage.started",
+              "summary": "Governed energy-aware route selection dispatched",
+              "sha256": "2c7c3e8635eead5e63800805148fb00f10071b635cdbb256542b4099b7d48783"
+            }
+          ],
+          "unresolvedQuestions": [],
+          "approvals": [],
+          "previousBatonIds": [
+            "parcel-baton-9a03f700-6240-4679-9163-f25170fba559"
+          ],
+          "sizeBytes": 3546,
+          "estimatedTokens": 887,
+          "sha256": "d229838c3f43e3243310a4d9ce0c3164c4ee3918ef327e36d652db4ab6334841"
+        },
+        "runId": "run-5ce41879-b241-4846-81b9-184a6d136b22",
+        "startedAt": "2026-09-11T20:42:59.783Z",
+        "executor": "agent-control-job-runtime",
+        "actualRoute": {
+          "workers": [
+            "controller"
+          ],
+          "reason": "satisfies:energy.local, healthy, available"
+        },
+        "endedAt": "2026-09-11T20:42:59.798Z"
+      },
+      {
+        "id": "execute",
+        "name": "Execute selected route",
+        "job": "energy-execute@1.0.0",
+        "parameters": {},
+        "dependsOn": [
+          "route"
+        ],
+        "requiredCapabilities": [],
+        "outputs": [],
+        "waitingQuestionIds": [],
+        "status": "SUCCEEDED",
+        "baton": {
+          "schema": "agent-control.work-parcel-baton/v2",
+          "id": "parcel-baton-f7397a88-0d93-4396-91d4-8bc3ca914945",
+          "createdAt": "2026-09-11T20:43:03.063Z",
+          "sourceStageIds": [
+            "execute"
+          ],
+          "objective": "Classify one genuine held-out Agent Control request using the lowest-energy qualified route and independently verify it.",
+          "currentInterpretation": "Classify one genuine held-out Agent Control request using the lowest-energy qualified route and independently verify it.",
+          "effectiveInstructions": [],
+          "constraints": [
+            "No route substitution",
+            "Measured energy cannot override capability or quality",
+            "No merge, tag, release, or deployment"
+          ],
+          "successCriteria": [
+            {
+              "id": "verified-route",
+              "description": "Exact deterministic verifier passes",
+              "status": "PENDING"
+            },
+            {
+              "id": "criterion:stage:route",
+              "description": "Governed energy-aware route selection completes through its declared verification boundary",
+              "status": "PASS"
+            },
+            {
+              "id": "criterion:stage:execute",
+              "description": "Execute selected route completes through its declared verification boundary",
+              "status": "PENDING"
+            },
+            {
+              "id": "criterion:stage:verify",
+              "description": "Independent exact verification completes through its declared verification boundary",
+              "status": "PENDING"
+            }
+          ],
+          "completedStages": [
+            {
+              "id": "route",
+              "name": "Governed energy-aware route selection",
+              "state": "SUCCEEDED"
+            }
+          ],
+          "nextAction": "Continue with stages depending on Execute selected route",
+          "artifactIds": [
+            "artifact-c40ba540-5a97-4e11-adbd-42ffb24e03a2"
+          ],
+          "outputTypes": [
+            "agent-control-energy-execution"
+          ],
+          "eventRefs": [
+            {
+              "id": "context-event-53c11809-691f-4c45-bab5-761d69e9731d",
+              "sequence": 2,
+              "type": "plan.recorded",
+              "summary": "3 governed stage(s) recorded",
+              "sha256": "f92197ebd429c66befd03cb00bfd63cd4824b73245ae32b73409450c18090cc5"
+            },
+            {
+              "id": "context-event-2bf5d2d4-5f43-4171-8655-e7aa508690d6",
+              "sequence": 3,
+              "type": "criterion.added",
+              "summary": "Exact deterministic verifier passes",
+              "sha256": "9ccbb70fb678e97cd3bc42bde441c43662952fab0900c412ef071b449ff20ad4"
+            },
+            {
+              "id": "context-event-d0435b36-97b3-4328-a0c1-80920fc33cb5",
+              "sequence": 4,
+              "type": "criterion.added",
+              "summary": "Governed energy-aware route selection completes through its declared verification boundary",
+              "sha256": "55a70d1e4894aea1c478ab2de199745af74e73cb9892fb650dec2cd53f18e9a6"
+            },
+            {
+              "id": "context-event-4fde3de0-73ff-422a-9343-67720866460b",
+              "sequence": 5,
+              "type": "criterion.added",
+              "summary": "Execute selected route completes through its declared verification boundary",
+              "sha256": "e71cdc00a795f65f3ff4f8480cc848d95115e30d007ac47f44209773ef410703"
+            },
+            {
+              "id": "context-event-70d3211c-21a3-4c94-b2ea-7f02a91ea4fc",
+              "sequence": 6,
+              "type": "criterion.added",
+              "summary": "Independent exact verification completes through its declared verification boundary",
+              "sha256": "749fa8f8a68b4a42ab807da1f4abe9282c3e127ea9f6eb143c2f8aa230f74df3"
+            },
+            {
+              "id": "context-event-4190f337-7000-46e7-90bb-9fda5be6d9ed",
+              "sequence": 7,
+              "type": "baton.created",
+              "summary": "Bounded baton view created for route",
+              "sha256": "d075574b3b903d64ebc5e45aff046b2509b2e9536785dd80ea10c01f6ca896e5"
+            },
+            {
+              "id": "context-event-9b6fbe51-ac85-4c98-9772-0039dee6d527",
+              "sequence": 8,
+              "type": "stage.started",
+              "summary": "Governed energy-aware route selection dispatched",
+              "sha256": "2c7c3e8635eead5e63800805148fb00f10071b635cdbb256542b4099b7d48783"
+            },
+            {
+              "id": "context-event-6bf8c4de-e271-4ef0-9cb2-039e5e143762",
+              "sequence": 9,
+              "type": "baton.created",
+              "summary": "Bounded baton view created for next executor",
+              "sha256": "cb3e4151f73fd47ef82ee57eb97ea53c70741bf797f33d0b08bf5c4247255224"
+            },
+            {
+              "id": "context-event-ac61c93c-faae-4919-9c5b-3e3c28463085",
+              "sequence": 10,
+              "type": "stage.completed",
+              "summary": "Governed energy-aware route selection completed through verification",
+              "sha256": "fb0b8947e44bc941c4045469f3f562c6b3cebc494a9dabd937d03b84efa132c0"
+            },
+            {
+              "id": "context-event-28f7edc8-2a0a-4795-b518-44a85bf0b949",
+              "sequence": 11,
+              "type": "criterion.evaluated",
+              "summary": "Governed energy-aware route selection completes through its declared verification boundary: PASS",
+              "sha256": "800b434f7f6555c35138f84195f7810ec5082ab117e2854701087da18ad71423"
+            },
+            {
+              "id": "context-event-a9ff2c06-b578-414d-9922-d0cab617a53a",
+              "sequence": 12,
+              "type": "baton.created",
+              "summary": "Bounded baton view created for execute",
+              "sha256": "838b3891f916525a44908b66257bdbbf6d95a89eb365e5dd7a9e169000d2f63f"
+            },
+            {
+              "id": "context-event-1647d122-32cd-4c49-9e1c-a81eea7117a8",
+              "sequence": 13,
+              "type": "stage.started",
+              "summary": "Execute selected route dispatched",
+              "sha256": "eb2001b8b9a00d3f5ee1a92d8a042ced2f89402ec51870d65b52cb89c6e840c2"
+            }
+          ],
+          "unresolvedQuestions": [],
+          "approvals": [],
+          "previousBatonIds": [
+            "parcel-baton-9a03f700-6240-4679-9163-f25170fba559",
+            "parcel-baton-7512a5e9-c8fa-424f-9ad1-0df715cd6adc",
+            "parcel-baton-f5c524ed-0b00-4eae-b315-93d405efe978"
+          ],
+          "sizeBytes": 4729,
+          "estimatedTokens": 1183,
+          "sha256": "083227a5b8d83a151eafe907db241f2e41910ee8baca6443ef5ca8b1fad0f347"
+        },
+        "runId": "run-96cdb3ca-34a6-4912-9c98-124fe4179446",
+        "startedAt": "2026-09-11T20:42:59.829Z",
+        "executor": "agent-control-job-runtime",
+        "actualRoute": {
+          "workers": [
+            "controller"
+          ],
+          "reason": "satisfies:energy.local, healthy, available"
+        },
+        "endedAt": "2026-09-11T20:43:03.036Z"
+      },
+      {
+        "id": "verify",
+        "name": "Independent exact verification",
+        "job": "energy-verify@1.0.0",
+        "parameters": {},
+        "dependsOn": [
+          "execute"
+        ],
+        "requiredCapabilities": [],
+        "outputs": [],
+        "waitingQuestionIds": [],
+        "status": "SUCCEEDED",
+        "baton": {
+          "schema": "agent-control.work-parcel-baton/v2",
+          "id": "parcel-baton-b406eca1-6f3b-49e1-80a3-3abd4f114924",
+          "createdAt": "2026-09-11T20:43:03.118Z",
+          "sourceStageIds": [
+            "verify"
+          ],
+          "objective": "Classify one genuine held-out Agent Control request using the lowest-energy qualified route and independently verify it.",
+          "currentInterpretation": "Classify one genuine held-out Agent Control request using the lowest-energy qualified route and independently verify it.",
+          "effectiveInstructions": [],
+          "constraints": [
+            "No route substitution",
+            "Measured energy cannot override capability or quality",
+            "No merge, tag, release, or deployment"
+          ],
+          "successCriteria": [
+            {
+              "id": "verified-route",
+              "description": "Exact deterministic verifier passes",
+              "status": "PENDING"
+            },
+            {
+              "id": "criterion:stage:route",
+              "description": "Governed energy-aware route selection completes through its declared verification boundary",
+              "status": "PASS"
+            },
+            {
+              "id": "criterion:stage:execute",
+              "description": "Execute selected route completes through its declared verification boundary",
+              "status": "PASS"
+            },
+            {
+              "id": "criterion:stage:verify",
+              "description": "Independent exact verification completes through its declared verification boundary",
+              "status": "PENDING"
+            }
+          ],
+          "completedStages": [
+            {
+              "id": "route",
+              "name": "Governed energy-aware route selection",
+              "state": "SUCCEEDED"
+            },
+            {
+              "id": "execute",
+              "name": "Execute selected route",
+              "state": "SUCCEEDED"
+            }
+          ],
+          "nextAction": "Continue with stages depending on Independent exact verification",
+          "artifactIds": [
+            "artifact-c53e515a-bead-4585-8c9d-d3b5b48e8d04"
+          ],
+          "outputTypes": [
+            "agent-control-energy-verification"
+          ],
+          "eventRefs": [
+            {
+              "id": "context-event-2bf5d2d4-5f43-4171-8655-e7aa508690d6",
+              "sequence": 3,
+              "type": "criterion.added",
+              "summary": "Exact deterministic verifier passes",
+              "sha256": "9ccbb70fb678e97cd3bc42bde441c43662952fab0900c412ef071b449ff20ad4"
+            },
+            {
+              "id": "context-event-70d3211c-21a3-4c94-b2ea-7f02a91ea4fc",
+              "sequence": 6,
+              "type": "criterion.added",
+              "summary": "Independent exact verification completes through its declared verification boundary",
+              "sha256": "749fa8f8a68b4a42ab807da1f4abe9282c3e127ea9f6eb143c2f8aa230f74df3"
+            },
+            {
+              "id": "context-event-6bf8c4de-e271-4ef0-9cb2-039e5e143762",
+              "sequence": 9,
+              "type": "baton.created",
+              "summary": "Bounded baton view created for next executor",
+              "sha256": "cb3e4151f73fd47ef82ee57eb97ea53c70741bf797f33d0b08bf5c4247255224"
+            },
+            {
+              "id": "context-event-ac61c93c-faae-4919-9c5b-3e3c28463085",
+              "sequence": 10,
+              "type": "stage.completed",
+              "summary": "Governed energy-aware route selection completed through verification",
+              "sha256": "fb0b8947e44bc941c4045469f3f562c6b3cebc494a9dabd937d03b84efa132c0"
+            },
+            {
+              "id": "context-event-28f7edc8-2a0a-4795-b518-44a85bf0b949",
+              "sequence": 11,
+              "type": "criterion.evaluated",
+              "summary": "Governed energy-aware route selection completes through its declared verification boundary: PASS",
+              "sha256": "800b434f7f6555c35138f84195f7810ec5082ab117e2854701087da18ad71423"
+            },
+            {
+              "id": "context-event-a9ff2c06-b578-414d-9922-d0cab617a53a",
+              "sequence": 12,
+              "type": "baton.created",
+              "summary": "Bounded baton view created for execute",
+              "sha256": "838b3891f916525a44908b66257bdbbf6d95a89eb365e5dd7a9e169000d2f63f"
+            },
+            {
+              "id": "context-event-1647d122-32cd-4c49-9e1c-a81eea7117a8",
+              "sequence": 13,
+              "type": "stage.started",
+              "summary": "Execute selected route dispatched",
+              "sha256": "eb2001b8b9a00d3f5ee1a92d8a042ced2f89402ec51870d65b52cb89c6e840c2"
+            },
+            {
+              "id": "context-event-24b053c0-2841-45bc-a5c9-25844bc18e7b",
+              "sequence": 14,
+              "type": "baton.created",
+              "summary": "Bounded baton view created for next executor",
+              "sha256": "bcf309918e95e5f32ccbb7e98ce30dc95d9b9c4f481484f2513f05a49dca42e3"
+            },
+            {
+              "id": "context-event-61493fa3-026d-4ad5-bc92-0b1a6634df0f",
+              "sequence": 15,
+              "type": "stage.completed",
+              "summary": "Execute selected route completed through verification",
+              "sha256": "bc4a22d5498520dc43ce0a420f33ce5a4098329ff85e0170936be18189c12a05"
+            },
+            {
+              "id": "context-event-985757aa-ce3e-45f2-8978-c704a489ff8c",
+              "sequence": 16,
+              "type": "criterion.evaluated",
+              "summary": "Execute selected route completes through its declared verification boundary: PASS",
+              "sha256": "49b83e93cfd1ed5ac28c0bd6ec37a19ed2bb54abadc7b797cc7431ec2688c8a9"
+            },
+            {
+              "id": "context-event-ea69b4b5-4427-492c-a799-3b81fe31eea3",
+              "sequence": 17,
+              "type": "baton.created",
+              "summary": "Bounded baton view created for verify",
+              "sha256": "b0277be4f2379b84c0094598bdcdf046d72a29b3db3ad6eb9566a736aa84e367"
+            },
+            {
+              "id": "context-event-ef09217e-76eb-4a2d-afc0-0a80312c7e3b",
+              "sequence": 18,
+              "type": "stage.started",
+              "summary": "Independent exact verification dispatched",
+              "sha256": "07b131683ab9283817940c911c6096a1ad600e6b9d3c083051a4a82370d53518"
+            }
+          ],
+          "unresolvedQuestions": [],
+          "approvals": [],
+          "previousBatonIds": [
+            "parcel-baton-7512a5e9-c8fa-424f-9ad1-0df715cd6adc",
+            "parcel-baton-f5c524ed-0b00-4eae-b315-93d405efe978",
+            "parcel-baton-f7397a88-0d93-4396-91d4-8bc3ca914945",
+            "parcel-baton-39698826-093e-4d49-a9a2-76eda0b136ff"
+          ],
+          "sizeBytes": 4845,
+          "estimatedTokens": 1212,
+          "sha256": "f50eb1e9d880c1c28e3ca3cfdc173e89cbce10efb350beb0fbfb8472b37369db"
+        },
+        "runId": "run-6a1ce963-022f-4549-a570-6dec2443818b",
+        "startedAt": "2026-09-11T20:43:03.070Z",
+        "executor": "agent-control-job-runtime",
+        "actualRoute": {
+          "workers": [
+            "controller"
+          ],
+          "reason": "satisfies:energy.local, healthy, available"
+        },
+        "endedAt": "2026-09-11T20:43:03.089Z"
+      }
+    ],
+    "context": {
+      "schema": "agent-control.parcel-context/v1",
+      "active": {
+        "originalGoal": "Classify one genuine held-out Agent Control request using the lowest-energy qualified route and independently verify it.",
+        "currentInterpretation": "Classify one genuine held-out Agent Control request using the lowest-energy qualified route and independently verify it.",
+        "effectiveInstructions": [],
+        "constraints": [
+          "No route substitution",
+          "Measured energy cannot override capability or quality",
+          "No merge, tag, release, or deployment"
+        ],
+        "plan": [
+          {
+            "id": "route",
+            "name": "Governed energy-aware route selection",
+            "dependencies": [],
+            "state": "SUCCEEDED"
+          },
+          {
+            "id": "execute",
+            "name": "Execute selected route",
+            "dependencies": [
+              "route"
+            ],
+            "state": "SUCCEEDED"
+          },
+          {
+            "id": "verify",
+            "name": "Independent exact verification",
+            "dependencies": [
+              "execute"
+            ],
+            "state": "SUCCEEDED"
+          }
+        ],
+        "currentStageIds": [],
+        "unresolvedQuestionIds": [],
+        "approvalIds": [],
+        "updatedAt": "2026-09-11T20:43:03.123Z"
+      },
+      "events": [
+        {
+          "id": "context-event-3615b3b8-d4fe-452f-8d79-a95c51f947c3",
+          "sequence": 1,
+          "at": "2026-09-11T20:42:59.770Z",
+          "type": "goal.recorded",
+          "summary": "Original goal recorded",
+          "detail": {
+            "actor": "operator"
+          },
+          "tags": [
+            "goal"
+          ],
+          "evidence": [],
+          "previousHash": null,
+          "sha256": "1fa38a41625df4e72c746a3eeff8be248730f4bde9aa4aad5d214be49122cd00"
+        },
+        {
+          "id": "context-event-53c11809-691f-4c45-bab5-761d69e9731d",
+          "sequence": 2,
+          "at": "2026-09-11T20:42:59.770Z",
+          "type": "plan.recorded",
+          "summary": "3 governed stage(s) recorded",
+          "detail": {
+            "stageIds": [
+              "route",
+              "execute",
+              "verify"
+            ]
+          },
+          "tags": [
+            "plan"
+          ],
+          "evidence": [],
+          "previousHash": "1fa38a41625df4e72c746a3eeff8be248730f4bde9aa4aad5d214be49122cd00",
+          "sha256": "f92197ebd429c66befd03cb00bfd63cd4824b73245ae32b73409450c18090cc5"
+        },
+        {
+          "id": "context-event-2bf5d2d4-5f43-4171-8655-e7aa508690d6",
+          "sequence": 3,
+          "at": "2026-09-11T20:42:59.770Z",
+          "type": "criterion.added",
+          "stageId": "verify",
+          "summary": "Exact deterministic verifier passes",
+          "detail": {
+            "criterionId": "verified-route",
+            "kind": "STAGE_VERIFIED",
+            "source": "USER",
+            "sourceActor": "agent-control-planner"
+          },
+          "tags": [
+            "criterion",
+            "stage_verified"
+          ],
+          "evidence": [],
+          "previousHash": "f92197ebd429c66befd03cb00bfd63cd4824b73245ae32b73409450c18090cc5",
+          "sha256": "9ccbb70fb678e97cd3bc42bde441c43662952fab0900c412ef071b449ff20ad4"
+        },
+        {
+          "id": "context-event-d0435b36-97b3-4328-a0c1-80920fc33cb5",
+          "sequence": 4,
+          "at": "2026-09-11T20:42:59.770Z",
+          "type": "criterion.added",
+          "stageId": "route",
+          "summary": "Governed energy-aware route selection completes through its declared verification boundary",
+          "detail": {
+            "criterionId": "criterion:stage:route",
+            "kind": "STAGE_VERIFIED",
+            "source": "INFERRED",
+            "sourceActor": "agent-control-policy"
+          },
+          "tags": [
+            "criterion",
+            "stage_verified"
+          ],
+          "evidence": [],
+          "previousHash": "9ccbb70fb678e97cd3bc42bde441c43662952fab0900c412ef071b449ff20ad4",
+          "sha256": "55a70d1e4894aea1c478ab2de199745af74e73cb9892fb650dec2cd53f18e9a6"
+        },
+        {
+          "id": "context-event-4fde3de0-73ff-422a-9343-67720866460b",
+          "sequence": 5,
+          "at": "2026-09-11T20:42:59.770Z",
+          "type": "criterion.added",
+          "stageId": "execute",
+          "summary": "Execute selected route completes through its declared verification boundary",
+          "detail": {
+            "criterionId": "criterion:stage:execute",
+            "kind": "STAGE_VERIFIED",
+            "source": "INFERRED",
+            "sourceActor": "agent-control-policy"
+          },
+          "tags": [
+            "criterion",
+            "stage_verified"
+          ],
+          "evidence": [],
+          "previousHash": "55a70d1e4894aea1c478ab2de199745af74e73cb9892fb650dec2cd53f18e9a6",
+          "sha256": "e71cdc00a795f65f3ff4f8480cc848d95115e30d007ac47f44209773ef410703"
+        },
+        {
+          "id": "context-event-70d3211c-21a3-4c94-b2ea-7f02a91ea4fc",
+          "sequence": 6,
+          "at": "2026-09-11T20:42:59.770Z",
+          "type": "criterion.added",
+          "stageId": "verify",
+          "summary": "Independent exact verification completes through its declared verification boundary",
+          "detail": {
+            "criterionId": "criterion:stage:verify",
+            "kind": "STAGE_VERIFIED",
+            "source": "INFERRED",
+            "sourceActor": "agent-control-policy"
+          },
+          "tags": [
+            "criterion",
+            "stage_verified"
+          ],
+          "evidence": [],
+          "previousHash": "e71cdc00a795f65f3ff4f8480cc848d95115e30d007ac47f44209773ef410703",
+          "sha256": "749fa8f8a68b4a42ab807da1f4abe9282c3e127ea9f6eb143c2f8aa230f74df3"
+        },
+        {
+          "id": "context-event-4190f337-7000-46e7-90bb-9fda5be6d9ed",
+          "sequence": 7,
+          "at": "2026-09-11T20:42:59.779Z",
+          "type": "baton.created",
+          "stageId": "route",
+          "summary": "Bounded baton view created for route",
+          "detail": {
+            "batonId": "parcel-baton-9a03f700-6240-4679-9163-f25170fba559",
+            "sha256": "b1de6a41267b326c467760e76fe285e063b6f5a2f4244457aa78ac1a79e6e2bb",
+            "sizeBytes": 3031,
+            "estimatedTokens": 758,
+            "selectedEventIds": [
+              "context-event-3615b3b8-d4fe-452f-8d79-a95c51f947c3",
+              "context-event-53c11809-691f-4c45-bab5-761d69e9731d",
+              "context-event-2bf5d2d4-5f43-4171-8655-e7aa508690d6",
+              "context-event-d0435b36-97b3-4328-a0c1-80920fc33cb5",
+              "context-event-4fde3de0-73ff-422a-9343-67720866460b",
+              "context-event-70d3211c-21a3-4c94-b2ea-7f02a91ea4fc"
+            ]
+          },
+          "tags": [
+            "baton"
+          ],
+          "evidence": [
+            "b1de6a41267b326c467760e76fe285e063b6f5a2f4244457aa78ac1a79e6e2bb"
+          ],
+          "previousHash": "749fa8f8a68b4a42ab807da1f4abe9282c3e127ea9f6eb143c2f8aa230f74df3",
+          "sha256": "d075574b3b903d64ebc5e45aff046b2509b2e9536785dd80ea10c01f6ca896e5"
+        },
+        {
+          "id": "context-event-9b6fbe51-ac85-4c98-9772-0039dee6d527",
+          "sequence": 8,
+          "at": "2026-09-11T20:42:59.783Z",
+          "type": "stage.started",
+          "stageId": "route",
+          "summary": "Governed energy-aware route selection dispatched",
+          "detail": {
+            "runId": "run-5ce41879-b241-4846-81b9-184a6d136b22",
+            "job": "energy-route@1.0.0",
+            "executor": "agent-control-job-runtime"
+          },
+          "tags": [
+            "stage"
+          ],
+          "evidence": [
+            "b1de6a41267b326c467760e76fe285e063b6f5a2f4244457aa78ac1a79e6e2bb"
+          ],
+          "previousHash": "d075574b3b903d64ebc5e45aff046b2509b2e9536785dd80ea10c01f6ca896e5",
+          "sha256": "2c7c3e8635eead5e63800805148fb00f10071b635cdbb256542b4099b7d48783"
+        },
+        {
+          "id": "context-event-6bf8c4de-e271-4ef0-9cb2-039e5e143762",
+          "sequence": 9,
+          "at": "2026-09-11T20:42:59.823Z",
+          "type": "baton.created",
+          "summary": "Bounded baton view created for next executor",
+          "detail": {
+            "batonId": "parcel-baton-7512a5e9-c8fa-424f-9ad1-0df715cd6adc",
+            "sha256": "d229838c3f43e3243310a4d9ce0c3164c4ee3918ef327e36d652db4ab6334841",
+            "sizeBytes": 3546,
+            "estimatedTokens": 887,
+            "selectedEventIds": [
+              "context-event-3615b3b8-d4fe-452f-8d79-a95c51f947c3",
+              "context-event-53c11809-691f-4c45-bab5-761d69e9731d",
+              "context-event-2bf5d2d4-5f43-4171-8655-e7aa508690d6",
+              "context-event-d0435b36-97b3-4328-a0c1-80920fc33cb5",
+              "context-event-4fde3de0-73ff-422a-9343-67720866460b",
+              "context-event-70d3211c-21a3-4c94-b2ea-7f02a91ea4fc",
+              "context-event-4190f337-7000-46e7-90bb-9fda5be6d9ed",
+              "context-event-9b6fbe51-ac85-4c98-9772-0039dee6d527"
+            ]
+          },
+          "tags": [
+            "baton"
+          ],
+          "evidence": [
+            "d229838c3f43e3243310a4d9ce0c3164c4ee3918ef327e36d652db4ab6334841"
+          ],
+          "previousHash": "2c7c3e8635eead5e63800805148fb00f10071b635cdbb256542b4099b7d48783",
+          "sha256": "cb3e4151f73fd47ef82ee57eb97ea53c70741bf797f33d0b08bf5c4247255224"
+        },
+        {
+          "id": "context-event-ac61c93c-faae-4919-9c5b-3e3c28463085",
+          "sequence": 10,
+          "at": "2026-09-11T20:42:59.798Z",
+          "type": "stage.completed",
+          "stageId": "route",
+          "summary": "Governed energy-aware route selection completed through verification",
+          "detail": {
+            "runId": "run-5ce41879-b241-4846-81b9-184a6d136b22",
+            "artifactIds": [
+              "artifact-38ffadc7-6728-40c0-94a2-de63a7fb2824"
+            ],
+            "batonId": "parcel-baton-7512a5e9-c8fa-424f-9ad1-0df715cd6adc"
+          },
+          "tags": [
+            "stage",
+            "verified"
+          ],
+          "evidence": [
+            "d229838c3f43e3243310a4d9ce0c3164c4ee3918ef327e36d652db4ab6334841",
+            "artifact-38ffadc7-6728-40c0-94a2-de63a7fb2824"
+          ],
+          "previousHash": "cb3e4151f73fd47ef82ee57eb97ea53c70741bf797f33d0b08bf5c4247255224",
+          "sha256": "fb0b8947e44bc941c4045469f3f562c6b3cebc494a9dabd937d03b84efa132c0"
+        },
+        {
+          "id": "context-event-28f7edc8-2a0a-4795-b518-44a85bf0b949",
+          "sequence": 11,
+          "at": "2026-09-11T20:42:59.798Z",
+          "type": "criterion.evaluated",
+          "stageId": "route",
+          "summary": "Governed energy-aware route selection completes through its declared verification boundary: PASS",
+          "detail": {
+            "criterionId": "criterion:stage:route",
+            "status": "PASS",
+            "actor": "agent-control-verifier"
+          },
+          "tags": [
+            "criterion",
+            "pass"
+          ],
+          "evidence": [
+            "stage:route:verified",
+            "artifact-38ffadc7-6728-40c0-94a2-de63a7fb2824"
+          ],
+          "previousHash": "fb0b8947e44bc941c4045469f3f562c6b3cebc494a9dabd937d03b84efa132c0",
+          "sha256": "800b434f7f6555c35138f84195f7810ec5082ab117e2854701087da18ad71423"
+        },
+        {
+          "id": "context-event-a9ff2c06-b578-414d-9922-d0cab617a53a",
+          "sequence": 12,
+          "at": "2026-09-11T20:42:59.825Z",
+          "type": "baton.created",
+          "stageId": "execute",
+          "summary": "Bounded baton view created for execute",
+          "detail": {
+            "batonId": "parcel-baton-f5c524ed-0b00-4eae-b315-93d405efe978",
+            "sha256": "105ec5f3eb77bf083f5001d83b4a86729e132cc854d59b8ddefdc90e7faa5171",
+            "sizeBytes": 4511,
+            "estimatedTokens": 1128,
+            "selectedEventIds": [
+              "context-event-3615b3b8-d4fe-452f-8d79-a95c51f947c3",
+              "context-event-53c11809-691f-4c45-bab5-761d69e9731d",
+              "context-event-2bf5d2d4-5f43-4171-8655-e7aa508690d6",
+              "context-event-d0435b36-97b3-4328-a0c1-80920fc33cb5",
+              "context-event-4fde3de0-73ff-422a-9343-67720866460b",
+              "context-event-70d3211c-21a3-4c94-b2ea-7f02a91ea4fc",
+              "context-event-4190f337-7000-46e7-90bb-9fda5be6d9ed",
+              "context-event-9b6fbe51-ac85-4c98-9772-0039dee6d527",
+              "context-event-6bf8c4de-e271-4ef0-9cb2-039e5e143762",
+              "context-event-ac61c93c-faae-4919-9c5b-3e3c28463085",
+              "context-event-28f7edc8-2a0a-4795-b518-44a85bf0b949"
+            ]
+          },
+          "tags": [
+            "baton"
+          ],
+          "evidence": [
+            "105ec5f3eb77bf083f5001d83b4a86729e132cc854d59b8ddefdc90e7faa5171"
+          ],
+          "previousHash": "800b434f7f6555c35138f84195f7810ec5082ab117e2854701087da18ad71423",
+          "sha256": "838b3891f916525a44908b66257bdbbf6d95a89eb365e5dd7a9e169000d2f63f"
+        },
+        {
+          "id": "context-event-1647d122-32cd-4c49-9e1c-a81eea7117a8",
+          "sequence": 13,
+          "at": "2026-09-11T20:42:59.829Z",
+          "type": "stage.started",
+          "stageId": "execute",
+          "summary": "Execute selected route dispatched",
+          "detail": {
+            "runId": "run-96cdb3ca-34a6-4912-9c98-124fe4179446",
+            "job": "energy-execute@1.0.0",
+            "executor": "agent-control-job-runtime"
+          },
+          "tags": [
+            "stage"
+          ],
+          "evidence": [
+            "105ec5f3eb77bf083f5001d83b4a86729e132cc854d59b8ddefdc90e7faa5171"
+          ],
+          "previousHash": "838b3891f916525a44908b66257bdbbf6d95a89eb365e5dd7a9e169000d2f63f",
+          "sha256": "eb2001b8b9a00d3f5ee1a92d8a042ced2f89402ec51870d65b52cb89c6e840c2"
+        },
+        {
+          "id": "context-event-24b053c0-2841-45bc-a5c9-25844bc18e7b",
+          "sequence": 14,
+          "at": "2026-09-11T20:43:03.063Z",
+          "type": "baton.created",
+          "summary": "Bounded baton view created for next executor",
+          "detail": {
+            "batonId": "parcel-baton-f7397a88-0d93-4396-91d4-8bc3ca914945",
+            "sha256": "083227a5b8d83a151eafe907db241f2e41910ee8baca6443ef5ca8b1fad0f347",
+            "sizeBytes": 4729,
+            "estimatedTokens": 1183,
+            "selectedEventIds": [
+              "context-event-53c11809-691f-4c45-bab5-761d69e9731d",
+              "context-event-2bf5d2d4-5f43-4171-8655-e7aa508690d6",
+              "context-event-d0435b36-97b3-4328-a0c1-80920fc33cb5",
+              "context-event-4fde3de0-73ff-422a-9343-67720866460b",
+              "context-event-70d3211c-21a3-4c94-b2ea-7f02a91ea4fc",
+              "context-event-4190f337-7000-46e7-90bb-9fda5be6d9ed",
+              "context-event-9b6fbe51-ac85-4c98-9772-0039dee6d527",
+              "context-event-6bf8c4de-e271-4ef0-9cb2-039e5e143762",
+              "context-event-ac61c93c-faae-4919-9c5b-3e3c28463085",
+              "context-event-28f7edc8-2a0a-4795-b518-44a85bf0b949",
+              "context-event-a9ff2c06-b578-414d-9922-d0cab617a53a",
+              "context-event-1647d122-32cd-4c49-9e1c-a81eea7117a8"
+            ]
+          },
+          "tags": [
+            "baton"
+          ],
+          "evidence": [
+            "083227a5b8d83a151eafe907db241f2e41910ee8baca6443ef5ca8b1fad0f347"
+          ],
+          "previousHash": "eb2001b8b9a00d3f5ee1a92d8a042ced2f89402ec51870d65b52cb89c6e840c2",
+          "sha256": "bcf309918e95e5f32ccbb7e98ce30dc95d9b9c4f481484f2513f05a49dca42e3"
+        },
+        {
+          "id": "context-event-61493fa3-026d-4ad5-bc92-0b1a6634df0f",
+          "sequence": 15,
+          "at": "2026-09-11T20:43:03.036Z",
+          "type": "stage.completed",
+          "stageId": "execute",
+          "summary": "Execute selected route completed through verification",
+          "detail": {
+            "runId": "run-96cdb3ca-34a6-4912-9c98-124fe4179446",
+            "artifactIds": [
+              "artifact-c40ba540-5a97-4e11-adbd-42ffb24e03a2"
+            ],
+            "batonId": "parcel-baton-f7397a88-0d93-4396-91d4-8bc3ca914945"
+          },
+          "tags": [
+            "stage",
+            "verified"
+          ],
+          "evidence": [
+            "083227a5b8d83a151eafe907db241f2e41910ee8baca6443ef5ca8b1fad0f347",
+            "artifact-c40ba540-5a97-4e11-adbd-42ffb24e03a2"
+          ],
+          "previousHash": "bcf309918e95e5f32ccbb7e98ce30dc95d9b9c4f481484f2513f05a49dca42e3",
+          "sha256": "bc4a22d5498520dc43ce0a420f33ce5a4098329ff85e0170936be18189c12a05"
+        },
+        {
+          "id": "context-event-985757aa-ce3e-45f2-8978-c704a489ff8c",
+          "sequence": 16,
+          "at": "2026-09-11T20:43:03.036Z",
+          "type": "criterion.evaluated",
+          "stageId": "execute",
+          "summary": "Execute selected route completes through its declared verification boundary: PASS",
+          "detail": {
+            "criterionId": "criterion:stage:execute",
+            "status": "PASS",
+            "actor": "agent-control-verifier"
+          },
+          "tags": [
+            "criterion",
+            "pass"
+          ],
+          "evidence": [
+            "stage:execute:verified",
+            "artifact-c40ba540-5a97-4e11-adbd-42ffb24e03a2"
+          ],
+          "previousHash": "bc4a22d5498520dc43ce0a420f33ce5a4098329ff85e0170936be18189c12a05",
+          "sha256": "49b83e93cfd1ed5ac28c0bd6ec37a19ed2bb54abadc7b797cc7431ec2688c8a9"
+        },
+        {
+          "id": "context-event-ea69b4b5-4427-492c-a799-3b81fe31eea3",
+          "sequence": 17,
+          "at": "2026-09-11T20:43:03.066Z",
+          "type": "baton.created",
+          "stageId": "verify",
+          "summary": "Bounded baton view created for verify",
+          "detail": {
+            "batonId": "parcel-baton-39698826-093e-4d49-a9a2-76eda0b136ff",
+            "sha256": "10d4ab64a4836ef68ef86d96a052a3b05d3be581c824c557666423954df344ed",
+            "sizeBytes": 4961,
+            "estimatedTokens": 1241,
+            "selectedEventIds": [
+              "context-event-4fde3de0-73ff-422a-9343-67720866460b",
+              "context-event-70d3211c-21a3-4c94-b2ea-7f02a91ea4fc",
+              "context-event-4190f337-7000-46e7-90bb-9fda5be6d9ed",
+              "context-event-9b6fbe51-ac85-4c98-9772-0039dee6d527",
+              "context-event-6bf8c4de-e271-4ef0-9cb2-039e5e143762",
+              "context-event-ac61c93c-faae-4919-9c5b-3e3c28463085",
+              "context-event-28f7edc8-2a0a-4795-b518-44a85bf0b949",
+              "context-event-a9ff2c06-b578-414d-9922-d0cab617a53a",
+              "context-event-1647d122-32cd-4c49-9e1c-a81eea7117a8",
+              "context-event-24b053c0-2841-45bc-a5c9-25844bc18e7b",
+              "context-event-61493fa3-026d-4ad5-bc92-0b1a6634df0f",
+              "context-event-985757aa-ce3e-45f2-8978-c704a489ff8c"
+            ]
+          },
+          "tags": [
+            "baton"
+          ],
+          "evidence": [
+            "10d4ab64a4836ef68ef86d96a052a3b05d3be581c824c557666423954df344ed"
+          ],
+          "previousHash": "49b83e93cfd1ed5ac28c0bd6ec37a19ed2bb54abadc7b797cc7431ec2688c8a9",
+          "sha256": "b0277be4f2379b84c0094598bdcdf046d72a29b3db3ad6eb9566a736aa84e367"
+        },
+        {
+          "id": "context-event-ef09217e-76eb-4a2d-afc0-0a80312c7e3b",
+          "sequence": 18,
+          "at": "2026-09-11T20:43:03.070Z",
+          "type": "stage.started",
+          "stageId": "verify",
+          "summary": "Independent exact verification dispatched",
+          "detail": {
+            "runId": "run-6a1ce963-022f-4549-a570-6dec2443818b",
+            "job": "energy-verify@1.0.0",
+            "executor": "agent-control-job-runtime"
+          },
+          "tags": [
+            "stage"
+          ],
+          "evidence": [
+            "10d4ab64a4836ef68ef86d96a052a3b05d3be581c824c557666423954df344ed"
+          ],
+          "previousHash": "b0277be4f2379b84c0094598bdcdf046d72a29b3db3ad6eb9566a736aa84e367",
+          "sha256": "07b131683ab9283817940c911c6096a1ad600e6b9d3c083051a4a82370d53518"
+        },
+        {
+          "id": "context-event-9227b1ee-1d58-478d-a80c-9782ae5e78c1",
+          "sequence": 19,
+          "at": "2026-09-11T20:43:03.118Z",
+          "type": "baton.created",
+          "summary": "Bounded baton view created for next executor",
+          "detail": {
+            "batonId": "parcel-baton-b406eca1-6f3b-49e1-80a3-3abd4f114924",
+            "sha256": "f50eb1e9d880c1c28e3ca3cfdc173e89cbce10efb350beb0fbfb8472b37369db",
+            "sizeBytes": 4845,
+            "estimatedTokens": 1212,
+            "selectedEventIds": [
+              "context-event-2bf5d2d4-5f43-4171-8655-e7aa508690d6",
+              "context-event-70d3211c-21a3-4c94-b2ea-7f02a91ea4fc",
+              "context-event-6bf8c4de-e271-4ef0-9cb2-039e5e143762",
+              "context-event-ac61c93c-faae-4919-9c5b-3e3c28463085",
+              "context-event-28f7edc8-2a0a-4795-b518-44a85bf0b949",
+              "context-event-a9ff2c06-b578-414d-9922-d0cab617a53a",
+              "context-event-1647d122-32cd-4c49-9e1c-a81eea7117a8",
+              "context-event-24b053c0-2841-45bc-a5c9-25844bc18e7b",
+              "context-event-61493fa3-026d-4ad5-bc92-0b1a6634df0f",
+              "context-event-985757aa-ce3e-45f2-8978-c704a489ff8c",
+              "context-event-ea69b4b5-4427-492c-a799-3b81fe31eea3",
+              "context-event-ef09217e-76eb-4a2d-afc0-0a80312c7e3b"
+            ]
+          },
+          "tags": [
+            "baton"
+          ],
+          "evidence": [
+            "f50eb1e9d880c1c28e3ca3cfdc173e89cbce10efb350beb0fbfb8472b37369db"
+          ],
+          "previousHash": "07b131683ab9283817940c911c6096a1ad600e6b9d3c083051a4a82370d53518",
+          "sha256": "8344f7a7c0b1c86310c4d5c21bec6e20e6fad68fe21016cf5dff0dd26d9599c3"
+        },
+        {
+          "id": "context-event-4cc097d3-528b-4ef4-8e24-8de0280a2c24",
+          "sequence": 20,
+          "at": "2026-09-11T20:43:03.089Z",
+          "type": "stage.completed",
+          "stageId": "verify",
+          "summary": "Independent exact verification completed through verification",
+          "detail": {
+            "runId": "run-6a1ce963-022f-4549-a570-6dec2443818b",
+            "artifactIds": [
+              "artifact-c53e515a-bead-4585-8c9d-d3b5b48e8d04"
+            ],
+            "batonId": "parcel-baton-b406eca1-6f3b-49e1-80a3-3abd4f114924"
+          },
+          "tags": [
+            "stage",
+            "verified"
+          ],
+          "evidence": [
+            "f50eb1e9d880c1c28e3ca3cfdc173e89cbce10efb350beb0fbfb8472b37369db",
+            "artifact-c53e515a-bead-4585-8c9d-d3b5b48e8d04"
+          ],
+          "previousHash": "8344f7a7c0b1c86310c4d5c21bec6e20e6fad68fe21016cf5dff0dd26d9599c3",
+          "sha256": "3a76f4bf2eeec2d73a4fb749910c259c8e8cca32a72f941984625bf275c9cc3d"
+        },
+        {
+          "id": "context-event-6784e637-aa9f-4245-8af6-6e89ad1e65a5",
+          "sequence": 21,
+          "at": "2026-09-11T20:43:03.089Z",
+          "type": "criterion.evaluated",
+          "stageId": "verify",
+          "summary": "Exact deterministic verifier passes: PASS",
+          "detail": {
+            "criterionId": "verified-route",
+            "status": "PASS",
+            "actor": "agent-control-verifier"
+          },
+          "tags": [
+            "criterion",
+            "pass"
+          ],
+          "evidence": [
+            "stage:verify:verified",
+            "artifact-c53e515a-bead-4585-8c9d-d3b5b48e8d04"
+          ],
+          "previousHash": "3a76f4bf2eeec2d73a4fb749910c259c8e8cca32a72f941984625bf275c9cc3d",
+          "sha256": "4642dbe05996893a16ef504e434cddbf60729720530f4d730a7af874d615ebf3"
+        },
+        {
+          "id": "context-event-32978110-203c-45be-b824-3fafd86f206e",
+          "sequence": 22,
+          "at": "2026-09-11T20:43:03.089Z",
+          "type": "criterion.evaluated",
+          "stageId": "verify",
+          "summary": "Independent exact verification completes through its declared verification boundary: PASS",
+          "detail": {
+            "criterionId": "criterion:stage:verify",
+            "status": "PASS",
+            "actor": "agent-control-verifier"
+          },
+          "tags": [
+            "criterion",
+            "pass"
+          ],
+          "evidence": [
+            "stage:verify:verified",
+            "artifact-c53e515a-bead-4585-8c9d-d3b5b48e8d04"
+          ],
+          "previousHash": "4642dbe05996893a16ef504e434cddbf60729720530f4d730a7af874d615ebf3",
+          "sha256": "fa38fe2ea3b568b181ca8ac8c926c8d3a63cb062b7e9d0e07d33f6660fde9199"
+        },
+        {
+          "id": "context-event-c9262d28-42ff-4c18-adc8-d67d9d40de20",
+          "sequence": 23,
+          "at": "2026-09-11T20:43:03.122Z",
+          "type": "verification.result",
+          "summary": "Work Parcel verification complete",
+          "detail": {
+            "status": "PASS",
+            "criteria": [
+              "verified-route",
+              "criterion:stage:route",
+              "criterion:stage:execute",
+              "criterion:stage:verify"
+            ]
+          },
+          "tags": [
+            "verification",
+            "pass"
+          ],
+          "evidence": [
+            "stage:verify:verified",
+            "artifact-c53e515a-bead-4585-8c9d-d3b5b48e8d04",
+            "stage:route:verified",
+            "artifact-38ffadc7-6728-40c0-94a2-de63a7fb2824",
+            "stage:execute:verified",
+            "artifact-c40ba540-5a97-4e11-adbd-42ffb24e03a2"
+          ],
+          "previousHash": "fa38fe2ea3b568b181ca8ac8c926c8d3a63cb062b7e9d0e07d33f6660fde9199",
+          "sha256": "b0a25d3ca06ed1565a33d24b1c3af5278678565b950a8aff591c619f59d7a9f9"
+        }
+      ],
+      "questions": [],
+      "amendments": [],
+      "criteria": [
+        {
+          "id": "verified-route",
+          "kind": "STAGE_VERIFIED",
+          "description": "Exact deterministic verifier passes",
+          "source": "USER",
+          "sourceActor": "agent-control-planner",
+          "stageId": "verify",
+          "requiredEvidence": [
+            "stage:verify:verified"
+          ],
+          "status": "PASS",
+          "evidence": [
+            "stage:verify:verified",
+            "artifact-c53e515a-bead-4585-8c9d-d3b5b48e8d04"
+          ],
+          "createdAt": "2026-09-11T20:42:59.770Z",
+          "evaluatedAt": "2026-09-11T20:43:03.089Z"
+        },
+        {
+          "id": "criterion:stage:route",
+          "kind": "STAGE_VERIFIED",
+          "description": "Governed energy-aware route selection completes through its declared verification boundary",
+          "source": "INFERRED",
+          "sourceActor": "agent-control-policy",
+          "stageId": "route",
+          "requiredEvidence": [
+            "stage:route:verified"
+          ],
+          "status": "PASS",
+          "evidence": [
+            "stage:route:verified",
+            "artifact-38ffadc7-6728-40c0-94a2-de63a7fb2824"
+          ],
+          "createdAt": "2026-09-11T20:42:59.770Z",
+          "evaluatedAt": "2026-09-11T20:42:59.798Z"
+        },
+        {
+          "id": "criterion:stage:execute",
+          "kind": "STAGE_VERIFIED",
+          "description": "Execute selected route completes through its declared verification boundary",
+          "source": "INFERRED",
+          "sourceActor": "agent-control-policy",
+          "stageId": "execute",
+          "requiredEvidence": [
+            "stage:execute:verified"
+          ],
+          "status": "PASS",
+          "evidence": [
+            "stage:execute:verified",
+            "artifact-c40ba540-5a97-4e11-adbd-42ffb24e03a2"
+          ],
+          "createdAt": "2026-09-11T20:42:59.770Z",
+          "evaluatedAt": "2026-09-11T20:43:03.036Z"
+        },
+        {
+          "id": "criterion:stage:verify",
+          "kind": "STAGE_VERIFIED",
+          "description": "Independent exact verification completes through its declared verification boundary",
+          "source": "INFERRED",
+          "sourceActor": "agent-control-policy",
+          "stageId": "verify",
+          "requiredEvidence": [
+            "stage:verify:verified"
+          ],
+          "status": "PASS",
+          "evidence": [
+            "stage:verify:verified",
+            "artifact-c53e515a-bead-4585-8c9d-d3b5b48e8d04"
+          ],
+          "createdAt": "2026-09-11T20:42:59.770Z",
+          "evaluatedAt": "2026-09-11T20:43:03.089Z"
+        }
+      ],
+      "batonViews": [
+        {
+          "schema": "agent-control.work-parcel-baton/v2",
+          "id": "parcel-baton-9a03f700-6240-4679-9163-f25170fba559",
+          "createdAt": "2026-09-11T20:42:59.779Z",
+          "sourceStageIds": [],
+          "targetStageId": "route",
+          "objective": "Classify one genuine held-out Agent Control request using the lowest-energy qualified route and independently verify it.",
+          "currentInterpretation": "Classify one genuine held-out Agent Control request using the lowest-energy qualified route and independently verify it.",
+          "effectiveInstructions": [],
+          "constraints": [
+            "No route substitution",
+            "Measured energy cannot override capability or quality",
+            "No merge, tag, release, or deployment"
+          ],
+          "successCriteria": [
+            {
+              "id": "verified-route",
+              "description": "Exact deterministic verifier passes",
+              "status": "PENDING"
+            },
+            {
+              "id": "criterion:stage:route",
+              "description": "Governed energy-aware route selection completes through its declared verification boundary",
+              "status": "PENDING"
+            },
+            {
+              "id": "criterion:stage:execute",
+              "description": "Execute selected route completes through its declared verification boundary",
+              "status": "PENDING"
+            },
+            {
+              "id": "criterion:stage:verify",
+              "description": "Independent exact verification completes through its declared verification boundary",
+              "status": "PENDING"
+            }
+          ],
+          "completedStages": [],
+          "nextAction": "Execute Governed energy-aware route selection through energy-route@1.0.0 and satisfy its declared verification boundary",
+          "artifactIds": [],
+          "outputTypes": [],
+          "eventRefs": [
+            {
+              "id": "context-event-3615b3b8-d4fe-452f-8d79-a95c51f947c3",
+              "sequence": 1,
+              "type": "goal.recorded",
+              "summary": "Original goal recorded",
+              "sha256": "1fa38a41625df4e72c746a3eeff8be248730f4bde9aa4aad5d214be49122cd00"
+            },
+            {
+              "id": "context-event-53c11809-691f-4c45-bab5-761d69e9731d",
+              "sequence": 2,
+              "type": "plan.recorded",
+              "summary": "3 governed stage(s) recorded",
+              "sha256": "f92197ebd429c66befd03cb00bfd63cd4824b73245ae32b73409450c18090cc5"
+            },
+            {
+              "id": "context-event-2bf5d2d4-5f43-4171-8655-e7aa508690d6",
+              "sequence": 3,
+              "type": "criterion.added",
+              "summary": "Exact deterministic verifier passes",
+              "sha256": "9ccbb70fb678e97cd3bc42bde441c43662952fab0900c412ef071b449ff20ad4"
+            },
+            {
+              "id": "context-event-d0435b36-97b3-4328-a0c1-80920fc33cb5",
+              "sequence": 4,
+              "type": "criterion.added",
+              "summary": "Governed energy-aware route selection completes through its declared verification boundary",
+              "sha256": "55a70d1e4894aea1c478ab2de199745af74e73cb9892fb650dec2cd53f18e9a6"
+            },
+            {
+              "id": "context-event-4fde3de0-73ff-422a-9343-67720866460b",
+              "sequence": 5,
+              "type": "criterion.added",
+              "summary": "Execute selected route completes through its declared verification boundary",
+              "sha256": "e71cdc00a795f65f3ff4f8480cc848d95115e30d007ac47f44209773ef410703"
+            },
+            {
+              "id": "context-event-70d3211c-21a3-4c94-b2ea-7f02a91ea4fc",
+              "sequence": 6,
+              "type": "criterion.added",
+              "summary": "Independent exact verification completes through its declared verification boundary",
+              "sha256": "749fa8f8a68b4a42ab807da1f4abe9282c3e127ea9f6eb143c2f8aa230f74df3"
+            }
+          ],
+          "unresolvedQuestions": [],
+          "approvals": [],
+          "previousBatonIds": [],
+          "sizeBytes": 3031,
+          "estimatedTokens": 758,
+          "sha256": "b1de6a41267b326c467760e76fe285e063b6f5a2f4244457aa78ac1a79e6e2bb"
+        },
+        {
+          "schema": "agent-control.work-parcel-baton/v2",
+          "id": "parcel-baton-7512a5e9-c8fa-424f-9ad1-0df715cd6adc",
+          "createdAt": "2026-09-11T20:42:59.823Z",
+          "sourceStageIds": [
+            "route"
+          ],
+          "objective": "Classify one genuine held-out Agent Control request using the lowest-energy qualified route and independently verify it.",
+          "currentInterpretation": "Classify one genuine held-out Agent Control request using the lowest-energy qualified route and independently verify it.",
+          "effectiveInstructions": [],
+          "constraints": [
+            "No route substitution",
+            "Measured energy cannot override capability or quality",
+            "No merge, tag, release, or deployment"
+          ],
+          "successCriteria": [
+            {
+              "id": "verified-route",
+              "description": "Exact deterministic verifier passes",
+              "status": "PENDING"
+            },
+            {
+              "id": "criterion:stage:route",
+              "description": "Governed energy-aware route selection completes through its declared verification boundary",
+              "status": "PENDING"
+            },
+            {
+              "id": "criterion:stage:execute",
+              "description": "Execute selected route completes through its declared verification boundary",
+              "status": "PENDING"
+            },
+            {
+              "id": "criterion:stage:verify",
+              "description": "Independent exact verification completes through its declared verification boundary",
+              "status": "PENDING"
+            }
+          ],
+          "completedStages": [],
+          "nextAction": "Continue with stages depending on Governed energy-aware route selection",
+          "artifactIds": [
+            "artifact-38ffadc7-6728-40c0-94a2-de63a7fb2824"
+          ],
+          "outputTypes": [
+            "agent-control-energy-route"
+          ],
+          "eventRefs": [
+            {
+              "id": "context-event-3615b3b8-d4fe-452f-8d79-a95c51f947c3",
+              "sequence": 1,
+              "type": "goal.recorded",
+              "summary": "Original goal recorded",
+              "sha256": "1fa38a41625df4e72c746a3eeff8be248730f4bde9aa4aad5d214be49122cd00"
+            },
+            {
+              "id": "context-event-53c11809-691f-4c45-bab5-761d69e9731d",
+              "sequence": 2,
+              "type": "plan.recorded",
+              "summary": "3 governed stage(s) recorded",
+              "sha256": "f92197ebd429c66befd03cb00bfd63cd4824b73245ae32b73409450c18090cc5"
+            },
+            {
+              "id": "context-event-2bf5d2d4-5f43-4171-8655-e7aa508690d6",
+              "sequence": 3,
+              "type": "criterion.added",
+              "summary": "Exact deterministic verifier passes",
+              "sha256": "9ccbb70fb678e97cd3bc42bde441c43662952fab0900c412ef071b449ff20ad4"
+            },
+            {
+              "id": "context-event-d0435b36-97b3-4328-a0c1-80920fc33cb5",
+              "sequence": 4,
+              "type": "criterion.added",
+              "summary": "Governed energy-aware route selection completes through its declared verification boundary",
+              "sha256": "55a70d1e4894aea1c478ab2de199745af74e73cb9892fb650dec2cd53f18e9a6"
+            },
+            {
+              "id": "context-event-4fde3de0-73ff-422a-9343-67720866460b",
+              "sequence": 5,
+              "type": "criterion.added",
+              "summary": "Execute selected route completes through its declared verification boundary",
+              "sha256": "e71cdc00a795f65f3ff4f8480cc848d95115e30d007ac47f44209773ef410703"
+            },
+            {
+              "id": "context-event-70d3211c-21a3-4c94-b2ea-7f02a91ea4fc",
+              "sequence": 6,
+              "type": "criterion.added",
+              "summary": "Independent exact verification completes through its declared verification boundary",
+              "sha256": "749fa8f8a68b4a42ab807da1f4abe9282c3e127ea9f6eb143c2f8aa230f74df3"
+            },
+            {
+              "id": "context-event-4190f337-7000-46e7-90bb-9fda5be6d9ed",
+              "sequence": 7,
+              "type": "baton.created",
+              "summary": "Bounded baton view created for route",
+              "sha256": "d075574b3b903d64ebc5e45aff046b2509b2e9536785dd80ea10c01f6ca896e5"
+            },
+            {
+              "id": "context-event-9b6fbe51-ac85-4c98-9772-0039dee6d527",
+              "sequence": 8,
+              "type": "stage.started",
+              "summary": "Governed energy-aware route selection dispatched",
+              "sha256": "2c7c3e8635eead5e63800805148fb00f10071b635cdbb256542b4099b7d48783"
+            }
+          ],
+          "unresolvedQuestions": [],
+          "approvals": [],
+          "previousBatonIds": [
+            "parcel-baton-9a03f700-6240-4679-9163-f25170fba559"
+          ],
+          "sizeBytes": 3546,
+          "estimatedTokens": 887,
+          "sha256": "d229838c3f43e3243310a4d9ce0c3164c4ee3918ef327e36d652db4ab6334841"
+        },
+        {
+          "schema": "agent-control.work-parcel-baton/v2",
+          "id": "parcel-baton-f5c524ed-0b00-4eae-b315-93d405efe978",
+          "createdAt": "2026-09-11T20:42:59.825Z",
+          "sourceStageIds": [
+            "route"
+          ],
+          "targetStageId": "execute",
+          "objective": "Classify one genuine held-out Agent Control request using the lowest-energy qualified route and independently verify it.",
+          "currentInterpretation": "Classify one genuine held-out Agent Control request using the lowest-energy qualified route and independently verify it.",
+          "effectiveInstructions": [],
+          "constraints": [
+            "No route substitution",
+            "Measured energy cannot override capability or quality",
+            "No merge, tag, release, or deployment"
+          ],
+          "successCriteria": [
+            {
+              "id": "verified-route",
+              "description": "Exact deterministic verifier passes",
+              "status": "PENDING"
+            },
+            {
+              "id": "criterion:stage:route",
+              "description": "Governed energy-aware route selection completes through its declared verification boundary",
+              "status": "PASS"
+            },
+            {
+              "id": "criterion:stage:execute",
+              "description": "Execute selected route completes through its declared verification boundary",
+              "status": "PENDING"
+            },
+            {
+              "id": "criterion:stage:verify",
+              "description": "Independent exact verification completes through its declared verification boundary",
+              "status": "PENDING"
+            }
+          ],
+          "completedStages": [
+            {
+              "id": "route",
+              "name": "Governed energy-aware route selection",
+              "state": "SUCCEEDED"
+            }
+          ],
+          "nextAction": "Execute Execute selected route through energy-execute@1.0.0 and satisfy its declared verification boundary",
+          "artifactIds": [
+            "artifact-38ffadc7-6728-40c0-94a2-de63a7fb2824"
+          ],
+          "outputTypes": [
+            "agent-control-energy-route"
+          ],
+          "eventRefs": [
+            {
+              "id": "context-event-3615b3b8-d4fe-452f-8d79-a95c51f947c3",
+              "sequence": 1,
+              "type": "goal.recorded",
+              "summary": "Original goal recorded",
+              "sha256": "1fa38a41625df4e72c746a3eeff8be248730f4bde9aa4aad5d214be49122cd00"
+            },
+            {
+              "id": "context-event-53c11809-691f-4c45-bab5-761d69e9731d",
+              "sequence": 2,
+              "type": "plan.recorded",
+              "summary": "3 governed stage(s) recorded",
+              "sha256": "f92197ebd429c66befd03cb00bfd63cd4824b73245ae32b73409450c18090cc5"
+            },
+            {
+              "id": "context-event-2bf5d2d4-5f43-4171-8655-e7aa508690d6",
+              "sequence": 3,
+              "type": "criterion.added",
+              "summary": "Exact deterministic verifier passes",
+              "sha256": "9ccbb70fb678e97cd3bc42bde441c43662952fab0900c412ef071b449ff20ad4"
+            },
+            {
+              "id": "context-event-d0435b36-97b3-4328-a0c1-80920fc33cb5",
+              "sequence": 4,
+              "type": "criterion.added",
+              "summary": "Governed energy-aware route selection completes through its declared verification boundary",
+              "sha256": "55a70d1e4894aea1c478ab2de199745af74e73cb9892fb650dec2cd53f18e9a6"
+            },
+            {
+              "id": "context-event-4fde3de0-73ff-422a-9343-67720866460b",
+              "sequence": 5,
+              "type": "criterion.added",
+              "summary": "Execute selected route completes through its declared verification boundary",
+              "sha256": "e71cdc00a795f65f3ff4f8480cc848d95115e30d007ac47f44209773ef410703"
+            },
+            {
+              "id": "context-event-70d3211c-21a3-4c94-b2ea-7f02a91ea4fc",
+              "sequence": 6,
+              "type": "criterion.added",
+              "summary": "Independent exact verification completes through its declared verification boundary",
+              "sha256": "749fa8f8a68b4a42ab807da1f4abe9282c3e127ea9f6eb143c2f8aa230f74df3"
+            },
+            {
+              "id": "context-event-4190f337-7000-46e7-90bb-9fda5be6d9ed",
+              "sequence": 7,
+              "type": "baton.created",
+              "summary": "Bounded baton view created for route",
+              "sha256": "d075574b3b903d64ebc5e45aff046b2509b2e9536785dd80ea10c01f6ca896e5"
+            },
+            {
+              "id": "context-event-9b6fbe51-ac85-4c98-9772-0039dee6d527",
+              "sequence": 8,
+              "type": "stage.started",
+              "summary": "Governed energy-aware route selection dispatched",
+              "sha256": "2c7c3e8635eead5e63800805148fb00f10071b635cdbb256542b4099b7d48783"
+            },
+            {
+              "id": "context-event-6bf8c4de-e271-4ef0-9cb2-039e5e143762",
+              "sequence": 9,
+              "type": "baton.created",
+              "summary": "Bounded baton view created for next executor",
+              "sha256": "cb3e4151f73fd47ef82ee57eb97ea53c70741bf797f33d0b08bf5c4247255224"
+            },
+            {
+              "id": "context-event-ac61c93c-faae-4919-9c5b-3e3c28463085",
+              "sequence": 10,
+              "type": "stage.completed",
+              "summary": "Governed energy-aware route selection completed through verification",
+              "sha256": "fb0b8947e44bc941c4045469f3f562c6b3cebc494a9dabd937d03b84efa132c0"
+            },
+            {
+              "id": "context-event-28f7edc8-2a0a-4795-b518-44a85bf0b949",
+              "sequence": 11,
+              "type": "criterion.evaluated",
+              "summary": "Governed energy-aware route selection completes through its declared verification boundary: PASS",
+              "sha256": "800b434f7f6555c35138f84195f7810ec5082ab117e2854701087da18ad71423"
+            }
+          ],
+          "unresolvedQuestions": [],
+          "approvals": [],
+          "previousBatonIds": [
+            "parcel-baton-9a03f700-6240-4679-9163-f25170fba559",
+            "parcel-baton-7512a5e9-c8fa-424f-9ad1-0df715cd6adc"
+          ],
+          "sizeBytes": 4511,
+          "estimatedTokens": 1128,
+          "sha256": "105ec5f3eb77bf083f5001d83b4a86729e132cc854d59b8ddefdc90e7faa5171"
+        },
+        {
+          "schema": "agent-control.work-parcel-baton/v2",
+          "id": "parcel-baton-f7397a88-0d93-4396-91d4-8bc3ca914945",
+          "createdAt": "2026-09-11T20:43:03.063Z",
+          "sourceStageIds": [
+            "execute"
+          ],
+          "objective": "Classify one genuine held-out Agent Control request using the lowest-energy qualified route and independently verify it.",
+          "currentInterpretation": "Classify one genuine held-out Agent Control request using the lowest-energy qualified route and independently verify it.",
+          "effectiveInstructions": [],
+          "constraints": [
+            "No route substitution",
+            "Measured energy cannot override capability or quality",
+            "No merge, tag, release, or deployment"
+          ],
+          "successCriteria": [
+            {
+              "id": "verified-route",
+              "description": "Exact deterministic verifier passes",
+              "status": "PENDING"
+            },
+            {
+              "id": "criterion:stage:route",
+              "description": "Governed energy-aware route selection completes through its declared verification boundary",
+              "status": "PASS"
+            },
+            {
+              "id": "criterion:stage:execute",
+              "description": "Execute selected route completes through its declared verification boundary",
+              "status": "PENDING"
+            },
+            {
+              "id": "criterion:stage:verify",
+              "description": "Independent exact verification completes through its declared verification boundary",
+              "status": "PENDING"
+            }
+          ],
+          "completedStages": [
+            {
+              "id": "route",
+              "name": "Governed energy-aware route selection",
+              "state": "SUCCEEDED"
+            }
+          ],
+          "nextAction": "Continue with stages depending on Execute selected route",
+          "artifactIds": [
+            "artifact-c40ba540-5a97-4e11-adbd-42ffb24e03a2"
+          ],
+          "outputTypes": [
+            "agent-control-energy-execution"
+          ],
+          "eventRefs": [
+            {
+              "id": "context-event-53c11809-691f-4c45-bab5-761d69e9731d",
+              "sequence": 2,
+              "type": "plan.recorded",
+              "summary": "3 governed stage(s) recorded",
+              "sha256": "f92197ebd429c66befd03cb00bfd63cd4824b73245ae32b73409450c18090cc5"
+            },
+            {
+              "id": "context-event-2bf5d2d4-5f43-4171-8655-e7aa508690d6",
+              "sequence": 3,
+              "type": "criterion.added",
+              "summary": "Exact deterministic verifier passes",
+              "sha256": "9ccbb70fb678e97cd3bc42bde441c43662952fab0900c412ef071b449ff20ad4"
+            },
+            {
+              "id": "context-event-d0435b36-97b3-4328-a0c1-80920fc33cb5",
+              "sequence": 4,
+              "type": "criterion.added",
+              "summary": "Governed energy-aware route selection completes through its declared verification boundary",
+              "sha256": "55a70d1e4894aea1c478ab2de199745af74e73cb9892fb650dec2cd53f18e9a6"
+            },
+            {
+              "id": "context-event-4fde3de0-73ff-422a-9343-67720866460b",
+              "sequence": 5,
+              "type": "criterion.added",
+              "summary": "Execute selected route completes through its declared verification boundary",
+              "sha256": "e71cdc00a795f65f3ff4f8480cc848d95115e30d007ac47f44209773ef410703"
+            },
+            {
+              "id": "context-event-70d3211c-21a3-4c94-b2ea-7f02a91ea4fc",
+              "sequence": 6,
+              "type": "criterion.added",
+              "summary": "Independent exact verification completes through its declared verification boundary",
+              "sha256": "749fa8f8a68b4a42ab807da1f4abe9282c3e127ea9f6eb143c2f8aa230f74df3"
+            },
+            {
+              "id": "context-event-4190f337-7000-46e7-90bb-9fda5be6d9ed",
+              "sequence": 7,
+              "type": "baton.created",
+              "summary": "Bounded baton view created for route",
+              "sha256": "d075574b3b903d64ebc5e45aff046b2509b2e9536785dd80ea10c01f6ca896e5"
+            },
+            {
+              "id": "context-event-9b6fbe51-ac85-4c98-9772-0039dee6d527",
+              "sequence": 8,
+              "type": "stage.started",
+              "summary": "Governed energy-aware route selection dispatched",
+              "sha256": "2c7c3e8635eead5e63800805148fb00f10071b635cdbb256542b4099b7d48783"
+            },
+            {
+              "id": "context-event-6bf8c4de-e271-4ef0-9cb2-039e5e143762",
+              "sequence": 9,
+              "type": "baton.created",
+              "summary": "Bounded baton view created for next executor",
+              "sha256": "cb3e4151f73fd47ef82ee57eb97ea53c70741bf797f33d0b08bf5c4247255224"
+            },
+            {
+              "id": "context-event-ac61c93c-faae-4919-9c5b-3e3c28463085",
+              "sequence": 10,
+              "type": "stage.completed",
+              "summary": "Governed energy-aware route selection completed through verification",
+              "sha256": "fb0b8947e44bc941c4045469f3f562c6b3cebc494a9dabd937d03b84efa132c0"
+            },
+            {
+              "id": "context-event-28f7edc8-2a0a-4795-b518-44a85bf0b949",
+              "sequence": 11,
+              "type": "criterion.evaluated",
+              "summary": "Governed energy-aware route selection completes through its declared verification boundary: PASS",
+              "sha256": "800b434f7f6555c35138f84195f7810ec5082ab117e2854701087da18ad71423"
+            },
+            {
+              "id": "context-event-a9ff2c06-b578-414d-9922-d0cab617a53a",
+              "sequence": 12,
+              "type": "baton.created",
+              "summary": "Bounded baton view created for execute",
+              "sha256": "838b3891f916525a44908b66257bdbbf6d95a89eb365e5dd7a9e169000d2f63f"
+            },
+            {
+              "id": "context-event-1647d122-32cd-4c49-9e1c-a81eea7117a8",
+              "sequence": 13,
+              "type": "stage.started",
+              "summary": "Execute selected route dispatched",
+              "sha256": "eb2001b8b9a00d3f5ee1a92d8a042ced2f89402ec51870d65b52cb89c6e840c2"
+            }
+          ],
+          "unresolvedQuestions": [],
+          "approvals": [],
+          "previousBatonIds": [
+            "parcel-baton-9a03f700-6240-4679-9163-f25170fba559",
+            "parcel-baton-7512a5e9-c8fa-424f-9ad1-0df715cd6adc",
+            "parcel-baton-f5c524ed-0b00-4eae-b315-93d405efe978"
+          ],
+          "sizeBytes": 4729,
+          "estimatedTokens": 1183,
+          "sha256": "083227a5b8d83a151eafe907db241f2e41910ee8baca6443ef5ca8b1fad0f347"
+        },
+        {
+          "schema": "agent-control.work-parcel-baton/v2",
+          "id": "parcel-baton-39698826-093e-4d49-a9a2-76eda0b136ff",
+          "createdAt": "2026-09-11T20:43:03.066Z",
+          "sourceStageIds": [
+            "execute"
+          ],
+          "targetStageId": "verify",
+          "objective": "Classify one genuine held-out Agent Control request using the lowest-energy qualified route and independently verify it.",
+          "currentInterpretation": "Classify one genuine held-out Agent Control request using the lowest-energy qualified route and independently verify it.",
+          "effectiveInstructions": [],
+          "constraints": [
+            "No route substitution",
+            "Measured energy cannot override capability or quality",
+            "No merge, tag, release, or deployment"
+          ],
+          "successCriteria": [
+            {
+              "id": "verified-route",
+              "description": "Exact deterministic verifier passes",
+              "status": "PENDING"
+            },
+            {
+              "id": "criterion:stage:route",
+              "description": "Governed energy-aware route selection completes through its declared verification boundary",
+              "status": "PASS"
+            },
+            {
+              "id": "criterion:stage:execute",
+              "description": "Execute selected route completes through its declared verification boundary",
+              "status": "PASS"
+            },
+            {
+              "id": "criterion:stage:verify",
+              "description": "Independent exact verification completes through its declared verification boundary",
+              "status": "PENDING"
+            }
+          ],
+          "completedStages": [
+            {
+              "id": "route",
+              "name": "Governed energy-aware route selection",
+              "state": "SUCCEEDED"
+            },
+            {
+              "id": "execute",
+              "name": "Execute selected route",
+              "state": "SUCCEEDED"
+            }
+          ],
+          "nextAction": "Execute Independent exact verification through energy-verify@1.0.0 and satisfy its declared verification boundary",
+          "artifactIds": [
+            "artifact-c40ba540-5a97-4e11-adbd-42ffb24e03a2"
+          ],
+          "outputTypes": [
+            "agent-control-energy-execution"
+          ],
+          "eventRefs": [
+            {
+              "id": "context-event-4fde3de0-73ff-422a-9343-67720866460b",
+              "sequence": 5,
+              "type": "criterion.added",
+              "summary": "Execute selected route completes through its declared verification boundary",
+              "sha256": "e71cdc00a795f65f3ff4f8480cc848d95115e30d007ac47f44209773ef410703"
+            },
+            {
+              "id": "context-event-70d3211c-21a3-4c94-b2ea-7f02a91ea4fc",
+              "sequence": 6,
+              "type": "criterion.added",
+              "summary": "Independent exact verification completes through its declared verification boundary",
+              "sha256": "749fa8f8a68b4a42ab807da1f4abe9282c3e127ea9f6eb143c2f8aa230f74df3"
+            },
+            {
+              "id": "context-event-4190f337-7000-46e7-90bb-9fda5be6d9ed",
+              "sequence": 7,
+              "type": "baton.created",
+              "summary": "Bounded baton view created for route",
+              "sha256": "d075574b3b903d64ebc5e45aff046b2509b2e9536785dd80ea10c01f6ca896e5"
+            },
+            {
+              "id": "context-event-9b6fbe51-ac85-4c98-9772-0039dee6d527",
+              "sequence": 8,
+              "type": "stage.started",
+              "summary": "Governed energy-aware route selection dispatched",
+              "sha256": "2c7c3e8635eead5e63800805148fb00f10071b635cdbb256542b4099b7d48783"
+            },
+            {
+              "id": "context-event-6bf8c4de-e271-4ef0-9cb2-039e5e143762",
+              "sequence": 9,
+              "type": "baton.created",
+              "summary": "Bounded baton view created for next executor",
+              "sha256": "cb3e4151f73fd47ef82ee57eb97ea53c70741bf797f33d0b08bf5c4247255224"
+            },
+            {
+              "id": "context-event-ac61c93c-faae-4919-9c5b-3e3c28463085",
+              "sequence": 10,
+              "type": "stage.completed",
+              "summary": "Governed energy-aware route selection completed through verification",
+              "sha256": "fb0b8947e44bc941c4045469f3f562c6b3cebc494a9dabd937d03b84efa132c0"
+            },
+            {
+              "id": "context-event-28f7edc8-2a0a-4795-b518-44a85bf0b949",
+              "sequence": 11,
+              "type": "criterion.evaluated",
+              "summary": "Governed energy-aware route selection completes through its declared verification boundary: PASS",
+              "sha256": "800b434f7f6555c35138f84195f7810ec5082ab117e2854701087da18ad71423"
+            },
+            {
+              "id": "context-event-a9ff2c06-b578-414d-9922-d0cab617a53a",
+              "sequence": 12,
+              "type": "baton.created",
+              "summary": "Bounded baton view created for execute",
+              "sha256": "838b3891f916525a44908b66257bdbbf6d95a89eb365e5dd7a9e169000d2f63f"
+            },
+            {
+              "id": "context-event-1647d122-32cd-4c49-9e1c-a81eea7117a8",
+              "sequence": 13,
+              "type": "stage.started",
+              "summary": "Execute selected route dispatched",
+              "sha256": "eb2001b8b9a00d3f5ee1a92d8a042ced2f89402ec51870d65b52cb89c6e840c2"
+            },
+            {
+              "id": "context-event-24b053c0-2841-45bc-a5c9-25844bc18e7b",
+              "sequence": 14,
+              "type": "baton.created",
+              "summary": "Bounded baton view created for next executor",
+              "sha256": "bcf309918e95e5f32ccbb7e98ce30dc95d9b9c4f481484f2513f05a49dca42e3"
+            },
+            {
+              "id": "context-event-61493fa3-026d-4ad5-bc92-0b1a6634df0f",
+              "sequence": 15,
+              "type": "stage.completed",
+              "summary": "Execute selected route completed through verification",
+              "sha256": "bc4a22d5498520dc43ce0a420f33ce5a4098329ff85e0170936be18189c12a05"
+            },
+            {
+              "id": "context-event-985757aa-ce3e-45f2-8978-c704a489ff8c",
+              "sequence": 16,
+              "type": "criterion.evaluated",
+              "summary": "Execute selected route completes through its declared verification boundary: PASS",
+              "sha256": "49b83e93cfd1ed5ac28c0bd6ec37a19ed2bb54abadc7b797cc7431ec2688c8a9"
+            }
+          ],
+          "unresolvedQuestions": [],
+          "approvals": [],
+          "previousBatonIds": [
+            "parcel-baton-9a03f700-6240-4679-9163-f25170fba559",
+            "parcel-baton-7512a5e9-c8fa-424f-9ad1-0df715cd6adc",
+            "parcel-baton-f5c524ed-0b00-4eae-b315-93d405efe978",
+            "parcel-baton-f7397a88-0d93-4396-91d4-8bc3ca914945"
+          ],
+          "sizeBytes": 4961,
+          "estimatedTokens": 1241,
+          "sha256": "10d4ab64a4836ef68ef86d96a052a3b05d3be581c824c557666423954df344ed"
+        },
+        {
+          "schema": "agent-control.work-parcel-baton/v2",
+          "id": "parcel-baton-b406eca1-6f3b-49e1-80a3-3abd4f114924",
+          "createdAt": "2026-09-11T20:43:03.118Z",
+          "sourceStageIds": [
+            "verify"
+          ],
+          "objective": "Classify one genuine held-out Agent Control request using the lowest-energy qualified route and independently verify it.",
+          "currentInterpretation": "Classify one genuine held-out Agent Control request using the lowest-energy qualified route and independently verify it.",
+          "effectiveInstructions": [],
+          "constraints": [
+            "No route substitution",
+            "Measured energy cannot override capability or quality",
+            "No merge, tag, release, or deployment"
+          ],
+          "successCriteria": [
+            {
+              "id": "verified-route",
+              "description": "Exact deterministic verifier passes",
+              "status": "PENDING"
+            },
+            {
+              "id": "criterion:stage:route",
+              "description": "Governed energy-aware route selection completes through its declared verification boundary",
+              "status": "PASS"
+            },
+            {
+              "id": "criterion:stage:execute",
+              "description": "Execute selected route completes through its declared verification boundary",
+              "status": "PASS"
+            },
+            {
+              "id": "criterion:stage:verify",
+              "description": "Independent exact verification completes through its declared verification boundary",
+              "status": "PENDING"
+            }
+          ],
+          "completedStages": [
+            {
+              "id": "route",
+              "name": "Governed energy-aware route selection",
+              "state": "SUCCEEDED"
+            },
+            {
+              "id": "execute",
+              "name": "Execute selected route",
+              "state": "SUCCEEDED"
+            }
+          ],
+          "nextAction": "Continue with stages depending on Independent exact verification",
+          "artifactIds": [
+            "artifact-c53e515a-bead-4585-8c9d-d3b5b48e8d04"
+          ],
+          "outputTypes": [
+            "agent-control-energy-verification"
+          ],
+          "eventRefs": [
+            {
+              "id": "context-event-2bf5d2d4-5f43-4171-8655-e7aa508690d6",
+              "sequence": 3,
+              "type": "criterion.added",
+              "summary": "Exact deterministic verifier passes",
+              "sha256": "9ccbb70fb678e97cd3bc42bde441c43662952fab0900c412ef071b449ff20ad4"
+            },
+            {
+              "id": "context-event-70d3211c-21a3-4c94-b2ea-7f02a91ea4fc",
+              "sequence": 6,
+              "type": "criterion.added",
+              "summary": "Independent exact verification completes through its declared verification boundary",
+              "sha256": "749fa8f8a68b4a42ab807da1f4abe9282c3e127ea9f6eb143c2f8aa230f74df3"
+            },
+            {
+              "id": "context-event-6bf8c4de-e271-4ef0-9cb2-039e5e143762",
+              "sequence": 9,
+              "type": "baton.created",
+              "summary": "Bounded baton view created for next executor",
+              "sha256": "cb3e4151f73fd47ef82ee57eb97ea53c70741bf797f33d0b08bf5c4247255224"
+            },
+            {
+              "id": "context-event-ac61c93c-faae-4919-9c5b-3e3c28463085",
+              "sequence": 10,
+              "type": "stage.completed",
+              "summary": "Governed energy-aware route selection completed through verification",
+              "sha256": "fb0b8947e44bc941c4045469f3f562c6b3cebc494a9dabd937d03b84efa132c0"
+            },
+            {
+              "id": "context-event-28f7edc8-2a0a-4795-b518-44a85bf0b949",
+              "sequence": 11,
+              "type": "criterion.evaluated",
+              "summary": "Governed energy-aware route selection completes through its declared verification boundary: PASS",
+              "sha256": "800b434f7f6555c35138f84195f7810ec5082ab117e2854701087da18ad71423"
+            },
+            {
+              "id": "context-event-a9ff2c06-b578-414d-9922-d0cab617a53a",
+              "sequence": 12,
+              "type": "baton.created",
+              "summary": "Bounded baton view created for execute",
+              "sha256": "838b3891f916525a44908b66257bdbbf6d95a89eb365e5dd7a9e169000d2f63f"
+            },
+            {
+              "id": "context-event-1647d122-32cd-4c49-9e1c-a81eea7117a8",
+              "sequence": 13,
+              "type": "stage.started",
+              "summary": "Execute selected route dispatched",
+              "sha256": "eb2001b8b9a00d3f5ee1a92d8a042ced2f89402ec51870d65b52cb89c6e840c2"
+            },
+            {
+              "id": "context-event-24b053c0-2841-45bc-a5c9-25844bc18e7b",
+              "sequence": 14,
+              "type": "baton.created",
+              "summary": "Bounded baton view created for next executor",
+              "sha256": "bcf309918e95e5f32ccbb7e98ce30dc95d9b9c4f481484f2513f05a49dca42e3"
+            },
+            {
+              "id": "context-event-61493fa3-026d-4ad5-bc92-0b1a6634df0f",
+              "sequence": 15,
+              "type": "stage.completed",
+              "summary": "Execute selected route completed through verification",
+              "sha256": "bc4a22d5498520dc43ce0a420f33ce5a4098329ff85e0170936be18189c12a05"
+            },
+            {
+              "id": "context-event-985757aa-ce3e-45f2-8978-c704a489ff8c",
+              "sequence": 16,
+              "type": "criterion.evaluated",
+              "summary": "Execute selected route completes through its declared verification boundary: PASS",
+              "sha256": "49b83e93cfd1ed5ac28c0bd6ec37a19ed2bb54abadc7b797cc7431ec2688c8a9"
+            },
+            {
+              "id": "context-event-ea69b4b5-4427-492c-a799-3b81fe31eea3",
+              "sequence": 17,
+              "type": "baton.created",
+              "summary": "Bounded baton view created for verify",
+              "sha256": "b0277be4f2379b84c0094598bdcdf046d72a29b3db3ad6eb9566a736aa84e367"
+            },
+            {
+              "id": "context-event-ef09217e-76eb-4a2d-afc0-0a80312c7e3b",
+              "sequence": 18,
+              "type": "stage.started",
+              "summary": "Independent exact verification dispatched",
+              "sha256": "07b131683ab9283817940c911c6096a1ad600e6b9d3c083051a4a82370d53518"
+            }
+          ],
+          "unresolvedQuestions": [],
+          "approvals": [],
+          "previousBatonIds": [
+            "parcel-baton-7512a5e9-c8fa-424f-9ad1-0df715cd6adc",
+            "parcel-baton-f5c524ed-0b00-4eae-b315-93d405efe978",
+            "parcel-baton-f7397a88-0d93-4396-91d4-8bc3ca914945",
+            "parcel-baton-39698826-093e-4d49-a9a2-76eda0b136ff"
+          ],
+          "sizeBytes": 4845,
+          "estimatedTokens": 1212,
+          "sha256": "f50eb1e9d880c1c28e3ca3cfdc173e89cbce10efb350beb0fbfb8472b37369db"
+        }
+      ],
+      "metrics": {
+        "eventLedgerBytes": 17270,
+        "latestBatonBytes": 4845,
+        "latestBatonEstimatedTokens": 1212,
+        "historicalBytesExcludedFromLatestBaton": 12425,
+        "estimatedHistoricalTokensExcluded": 3107,
+        "retrievals": 0,
+        "retrievedEvents": 0
+      }
+    },
+    "createdAt": "2026-09-11T20:42:59.770Z",
+    "updatedAt": "2026-09-11T20:43:03.123Z",
+    "telemetry": {
+      "inputTokens": null,
+      "freshInputTokens": null,
+      "cachedInputTokens": null,
+      "cacheWriteTokens": null,
+      "outputTokens": null,
+      "reasoningTokens": null,
+      "totalTokens": null,
+      "cost": null,
+      "currency": null,
+      "elapsedMs": 3352
+    },
+    "audit": {
+      "schema": "agent-control.work-parcel-audit/v1",
+      "recordedAt": "2026-09-11T20:42:59.770Z",
+      "classification": "Deterministic multi-stage governed workflow",
+      "selectedExecution": "Work Parcel",
+      "planningRationale": "POE proposal poe-benchmark:da4c01fe-c9e4-4f7c-a1b2-a06048b811ae was frozen, fairness-checked and explicitly approved by operator; 1 repetition(s) materialized",
+      "planner": {
+        "kind": "deterministic",
+        "provider": null,
+        "model": null
+      },
+      "alternatives": [
+        {
+          "stageId": "route",
+          "candidate": "controller",
+          "eligible": true,
+          "reasons": [
+            "satisfies:energy.local",
+            "healthy",
+            "available"
+          ]
+        },
+        {
+          "stageId": "execute",
+          "candidate": "controller",
+          "eligible": true,
+          "reasons": [
+            "satisfies:energy.local",
+            "healthy",
+            "available"
+          ]
+        },
+        {
+          "stageId": "verify",
+          "candidate": "controller",
+          "eligible": true,
+          "reasons": [
+            "satisfies:energy.local",
+            "healthy",
+            "available"
+          ]
+        }
+      ],
+      "timeline": [
+        {
+          "id": "audit-8daaa14c-6f71-4f60-ab3f-5f625332f99f",
+          "at": "2026-09-11T20:42:59.770Z",
+          "type": "task.received",
+          "summary": "Task received",
+          "detail": "Classify one genuine held-out Agent Control request using the lowest-energy qualified route and independently verify it."
+        },
+        {
+          "id": "audit-d63404fc-d04f-4d84-9361-395a9dd48759",
+          "at": "2026-09-11T20:42:59.770Z",
+          "type": "task.classified",
+          "summary": "Classified: Deterministic multi-stage governed workflow",
+          "detail": "Observable inputs: 3 stage(s); planner=deterministic"
+        },
+        {
+          "id": "audit-d962eaf6-2913-46d4-b9e3-35fa2f1903f9",
+          "at": "2026-09-11T20:42:59.770Z",
+          "type": "plan.selected",
+          "summary": "Work Parcel selected",
+          "detail": "POE proposal poe-benchmark:da4c01fe-c9e4-4f7c-a1b2-a06048b811ae was frozen, fairness-checked and explicitly approved by operator; 1 repetition(s) materialized"
+        },
+        {
+          "id": "audit-13b789ff-ebf9-48ab-a923-639d53f7903f",
+          "at": "2026-09-11T20:42:59.770Z",
+          "type": "route.requested",
+          "stageId": "route",
+          "summary": "Governed energy-aware route selection route requested",
+          "detail": "Normal Agent Control placement and routing policy"
+        },
+        {
+          "id": "audit-3bc854ed-f537-48a3-8132-b1f3a74eeaa7",
+          "at": "2026-09-11T20:42:59.770Z",
+          "type": "route.requested",
+          "stageId": "execute",
+          "summary": "Execute selected route route requested",
+          "detail": "Normal Agent Control placement and routing policy"
+        },
+        {
+          "id": "audit-9ac889eb-390f-4877-b075-61b26f5a5fb1",
+          "at": "2026-09-11T20:42:59.770Z",
+          "type": "route.requested",
+          "stageId": "verify",
+          "summary": "Independent exact verification route requested",
+          "detail": "Normal Agent Control placement and routing policy"
+        },
+        {
+          "id": "audit-5527ea3b-e33d-409e-b540-aeff326f1cf6",
+          "at": "2026-09-11T20:42:59.779Z",
+          "type": "baton.created",
+          "stageId": "route",
+          "summary": "Bounded operational baton view sealed",
+          "detail": "parcel-baton-9a03f700-6240-4679-9163-f25170fba559; sha256 b1de6a41267b326c467760e76fe285e063b6f5a2f4244457aa78ac1a79e6e2bb; 3031 bytes; full history remains in parcel ledger"
+        },
+        {
+          "id": "audit-fceb26e2-8e14-47b9-9ed2-f9d7a12d473d",
+          "at": "2026-09-11T20:42:59.783Z",
+          "type": "stage.dispatched",
+          "stageId": "route",
+          "summary": "Governed energy-aware route selection dispatched",
+          "detail": "Job energy-route@1.0.0; Run run-5ce41879-b241-4846-81b9-184a6d136b22; requested route Normal Agent Control placement and routing policy"
+        },
+        {
+          "id": "audit-03a43ee1-211d-4633-baf0-29278729f9f7",
+          "at": "2026-09-11T20:42:59.800Z",
+          "type": "route.resolved",
+          "stageId": "route",
+          "summary": "Governed energy-aware route selection actual route recorded",
+          "detail": "Workers controller; provider no model; account default; model no model; profile control action; satisfies:energy.local, healthy, available"
+        },
+        {
+          "id": "audit-8d93b5a8-7d91-4aca-a729-8db7820a33e7",
+          "at": "2026-09-11T20:42:59.825Z",
+          "type": "baton.created",
+          "stageId": "execute",
+          "summary": "Bounded operational baton view sealed",
+          "detail": "parcel-baton-f5c524ed-0b00-4eae-b315-93d405efe978; sha256 105ec5f3eb77bf083f5001d83b4a86729e132cc854d59b8ddefdc90e7faa5171; 4511 bytes; full history remains in parcel ledger"
+        },
+        {
+          "id": "audit-834a328a-1113-47b1-8849-dd20076241db",
+          "at": "2026-09-11T20:42:59.829Z",
+          "type": "stage.dispatched",
+          "stageId": "execute",
+          "summary": "Execute selected route dispatched",
+          "detail": "Job energy-execute@1.0.0; Run run-96cdb3ca-34a6-4912-9c98-124fe4179446; requested route Normal Agent Control placement and routing policy"
+        },
+        {
+          "id": "audit-fb84a5a2-3d74-45f8-9b1d-a0bc74a080e9",
+          "at": "2026-09-11T20:43:03.039Z",
+          "type": "route.resolved",
+          "stageId": "execute",
+          "summary": "Execute selected route actual route recorded",
+          "detail": "Workers controller; provider no model; account default; model no model; profile control action; satisfies:energy.local, healthy, available"
+        },
+        {
+          "id": "audit-52a870e6-eedf-4807-8cdc-fe0595652819",
+          "at": "2026-09-11T20:43:03.066Z",
+          "type": "baton.created",
+          "stageId": "verify",
+          "summary": "Bounded operational baton view sealed",
+          "detail": "parcel-baton-39698826-093e-4d49-a9a2-76eda0b136ff; sha256 10d4ab64a4836ef68ef86d96a052a3b05d3be581c824c557666423954df344ed; 4961 bytes; full history remains in parcel ledger"
+        },
+        {
+          "id": "audit-0f228e73-85ee-4848-b852-236c94564196",
+          "at": "2026-09-11T20:43:03.070Z",
+          "type": "stage.dispatched",
+          "stageId": "verify",
+          "summary": "Independent exact verification dispatched",
+          "detail": "Job energy-verify@1.0.0; Run run-6a1ce963-022f-4549-a570-6dec2443818b; requested route Normal Agent Control placement and routing policy"
+        },
+        {
+          "id": "audit-eb170241-7ba4-4663-9ec6-0cadd68a58d7",
+          "at": "2026-09-11T20:43:03.092Z",
+          "type": "route.resolved",
+          "stageId": "verify",
+          "summary": "Independent exact verification actual route recorded",
+          "detail": "Workers controller; provider no model; account default; model no model; profile control action; satisfies:energy.local, healthy, available"
+        },
+        {
+          "id": "audit-4401a8f8-e244-43e4-82cb-9827b1518850",
+          "at": "2026-09-11T20:43:03.122Z",
+          "type": "verification.completed",
+          "summary": "All declared verification criteria passed",
+          "detail": "4 criterion/criteria passed through the normal Work Parcel boundary"
+        }
+      ],
+      "invocations": [],
+      "totals": {
+        "models": [],
+        "invocations": 0,
+        "inputTokens": null,
+        "freshInputTokens": null,
+        "cachedInputTokens": null,
+        "cacheWriteTokens": null,
+        "outputTokens": null,
+        "reasoningTokens": null,
+        "totalTokens": null,
+        "providerReportedCost": null,
+        "calculatedCost": null,
+        "cost": null,
+        "costBasis": "unavailable",
+        "currency": null,
+        "modelExecutionMs": 0,
+        "wallClockMs": 3352
+      }
+    },
+    "provenance": [
+      {
+        "at": "2026-09-11T20:42:59.770Z",
+        "type": "submitted",
+        "detail": "Approved social template; durable request identity; existing runtime remains authoritative"
+      },
+      {
+        "at": "2026-09-11T20:42:59.783Z",
+        "type": "stage.started",
+        "detail": "route:run-5ce41879-b241-4846-81b9-184a6d136b22"
+      },
+      {
+        "at": "2026-09-11T20:42:59.829Z",
+        "type": "stage.started",
+        "detail": "execute:run-96cdb3ca-34a6-4912-9c98-124fe4179446"
+      },
+      {
+        "at": "2026-09-11T20:43:03.070Z",
+        "type": "stage.started",
+        "detail": "verify:run-6a1ce963-022f-4549-a570-6dec2443818b"
+      }
+    ],
+    "endedAt": "2026-09-11T20:43:03.122Z",
+    "decision": {
+      "outcome": "COMPLETE",
+      "title": "Why Agent Control completed",
+      "summary": "Every planned Job completed through the normal Agent Control verification boundary.",
+      "evidence": [
+        "Governed energy-aware route selection: SUCCEEDED",
+        "Execute selected route: SUCCEEDED",
+        "Independent exact verification: SUCCEEDED"
+      ],
+      "blockedStages": [],
+      "authority": "Agent Control"
+    }
+  },
+  "poeTranscript": "# POE conversation poe-conversation:9d928c58-7a78-4b4e-9f1f-4d53a9dc6782\n\nChannel: dashboard\nActor: operator\nCreated: 2026-09-11T20:42:59.745Z\n\n## Exact initiating operator prompt\n\nPOE, classify this genuine Agent Control request using the lowest-energy qualified route, execute it, and independently verify the result: Please review the repository release notes using read-only evidence.\n\n## Chronological interaction\n\n## POE · 2026-09-11T20:42:59.746Z\n\nGood day. I’m POE. How may I help you?\n\nAuthority: AGENT_CONTROL\nResponse mode: not applicable\nReferences: none\nEvidence: []\n\n## Operator · 2026-09-11T20:42:59.749Z\n\nPOE, classify this genuine Agent Control request using the lowest-energy qualified route, execute it, and independently verify the result: Please review the repository release notes using read-only evidence.\n\nAuthority: OPERATOR\nResponse mode: not applicable\nReferences: none\nEvidence: []\n\n## POE · 2026-09-11T20:42:59.750Z\n\nAgent Control 4.5 power-aware qualification\n\nNo physical result is available yet.\n\nPhysical result: No physical result is available yet. (agent control)\n\nAuthority: AGENT_CONTROL\nResponse mode: DETERMINISTIC\nReferences: none\nEvidence: [{\"label\":\"Physical result\",\"value\":\"No physical result is available yet.\",\"authority\":\"AGENT_CONTROL\",\"evidence\":[\"qualification:4.5:power-aware\"]}]\n\n## Operator · 2026-09-11T20:43:03.129Z\n\nPOE, report the verified physical result and energy digest.\n\nAuthority: OPERATOR\nResponse mode: not applicable\nReferences: none\nEvidence: []\n\n## POE · 2026-09-11T20:43:03.131Z\n\nAgent Control 4.5 power-aware qualification\n\nTask completed: PASS\nRoute: deterministic / route-policy-v1\nEnergy measured: 0.101 J / 0.000028 Wh (MEASURED_COMPONENTS)\nGeneral-model baseline: 20.426 J (MEASURED, MEASURED_COMPONENTS)\nEnergy reduction: 99.5%\nMemory reused: no\nEscalation: no\n\nPhysical result: Task completed: PASS\nRoute: deterministic / route-policy-v1\nEnergy measured: 0.101 J / 0.000028 Wh (MEASURED_COMPONENTS)\nGeneral-model baseline: 20.426 J (MEASURED, MEASURED_COMPONENTS)\nEnergy reduction: 99.5%\nMemory reused: no\nEscalation: no (agent control)\n\nAuthority: AGENT_CONTROL\nResponse mode: DETERMINISTIC\nReferences: none\nEvidence: [{\"label\":\"Physical result\",\"value\":\"Task completed: PASS\\nRoute: deterministic / route-policy-v1\\nEnergy measured: 0.101 J / 0.000028 Wh (MEASURED_COMPONENTS)\\nGeneral-model baseline: 20.426 J (MEASURED, MEASURED_COMPONENTS)\\nEnergy reduction: 99.5%\\nMemory reused: no\\nEscalation: no\",\"authority\":\"AGENT_CONTROL\",\"evidence\":[\"qualification:4.5:power-aware\"]}]",
+  "energy": {
+    "schema": "agent-control.energy-telemetry/v1",
+    "baselines": [
+      {
+        "nodeId": "controller",
+        "scope": "MEASURED_COMPONENTS",
+        "averageWatts": 10.805974460199808,
+        "sampleCount": 32,
+        "startedAt": "2026-09-11T20:42:59.838Z",
+        "completedAt": "2026-09-11T20:43:02.894Z",
+        "authority": "MEASURED",
+        "source": "intel-rapl-package+dram+nvidia-smi-board-power",
+        "limitations": [
+          "excludes_motherboard_storage_psu_and_peripherals",
+          "shared_gpu_processes_present"
+        ]
+      }
+    ],
+    "executions": [
+      {
+        "schema": "agent-control.energy-execution/v1",
+        "id": "energy-8d7022f7-745b-49de-bb67-594eb29e6a12",
+        "parcelId": "parcel-social-07785855c2e8b95b53c249a9f9e8eb541836bff0e640499c679d31ad3c84cebf",
+        "stageId": "execute",
+        "route": {
+          "providerId": "deterministic",
+          "modelId": "route-policy-v1",
+          "nodeId": "controller",
+          "accountProfileId": null
+        },
+        "kind": "INFERENCE",
+        "startedAt": "2026-09-11T20:43:02.944Z",
+        "completedAt": "2026-09-11T20:43:03.007Z",
+        "elapsedMs": 63,
+        "scope": "MEASURED_COMPONENTS",
+        "authority": "MEASURED",
+        "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+        "sampleCount": 2,
+        "averageWatts": 12.416363636363638,
+        "peakWatts": 12.806363636363637,
+        "grossWh": 0.00021728636363636366,
+        "incrementalWh": 0.000028181810582867002,
+        "joules": 0.1014545180983212,
+        "idleBaselineWatts": 10.805974460199808,
+        "tokens": 0,
+        "whPerToken": null,
+        "whPerSuccessfulParcel": 0.000028181810582867002,
+        "verified": true,
+        "successful": true,
+        "limitations": [
+          "excludes_motherboard_storage_psu_and_peripherals",
+          "shared_gpu_processes_present",
+          "measurement_not_whole_node"
+        ],
+        "evidence": [
+          "exact-held-out-request",
+          "independent-verifier:PASS"
+        ],
+        "sha256": "592c67d92140cb2daa59952e415319012ac001f24ff46e48089f2d7df1fdb1e7"
+      }
+    ],
+    "decisions": [
+      {
+        "schema": "agent-control.energy-route-decision/v1",
+        "id": "energy-route-ded56b24-c619-4555-a11b-3765ae985fca",
+        "parcelId": "pending",
+        "stageId": "route",
+        "at": "2026-09-11T20:42:59.791Z",
+        "candidates": [
+          {
+            "id": "zero-llm",
+            "capable": true,
+            "qualified": true,
+            "quality": 1,
+            "confidence": 1,
+            "latencyMs": 64.733,
+            "monetaryCost": 0,
+            "expectedEnergyWh": 0.00003361833333333333,
+            "energyAuthority": "MEASURED",
+            "successProbability": 1,
+            "locality": 1,
+            "privacy": 1,
+            "declaredOrder": 0,
+            "eligible": true,
+            "expectedTotalEnergyWh": 0.00003361833333333333,
+            "score": 1.275,
+            "reasons": []
+          },
+          {
+            "id": "specialist",
+            "capable": true,
+            "qualified": true,
+            "quality": 1,
+            "confidence": 1,
+            "latencyMs": 5742.2,
+            "monetaryCost": 0,
+            "expectedEnergyWh": 0.023798040555555556,
+            "energyAuthority": "MEASURED",
+            "successProbability": 1,
+            "locality": 1,
+            "privacy": 1,
+            "declaredOrder": 1,
+            "eligible": true,
+            "expectedTotalEnergyWh": 0.023798040555555556,
+            "score": 0.675,
+            "reasons": []
+          },
+          {
+            "id": "general",
+            "capable": true,
+            "qualified": true,
+            "quality": 1,
+            "confidence": 1,
+            "latencyMs": 341.733,
+            "monetaryCost": 0,
+            "expectedEnergyWh": 0.0056739425,
+            "energyAuthority": "MEASURED",
+            "successProbability": 1,
+            "locality": 1,
+            "privacy": 1,
+            "declaredOrder": 2,
+            "eligible": true,
+            "expectedTotalEnergyWh": 0.0056739425,
+            "score": 1.1514494605093781,
+            "reasons": []
+          }
+        ],
+        "selectedId": "zero-llm",
+        "reason": "Selected zero-llm by governed capability, quality, confidence, expected total energy, latency, monetary cost, locality, privacy and memory affinity. Failed-attempt energy is included when evidence exists."
+      }
+    ],
+    "observedAt": "2026-09-11T20:43:03.133Z",
+    "totals": {
+      "measuredExecutions": 1,
+      "verifiedSuccessful": 1,
+      "wholeNodeMeasurements": 0
+    }
+  },
+  "digest": "Task completed: PASS\nRoute: deterministic / route-policy-v1\nEnergy measured: 0.101 J / 0.000028 Wh (MEASURED_COMPONENTS)\nGeneral-model baseline: 20.426 J (MEASURED, MEASURED_COMPONENTS)\nEnergy reduction: 99.5%\nMemory reused: no\nEscalation: no",
+  "verdict": "PASS_PHYSICAL_POE_POWER_AWARE_ROUTE"
+}

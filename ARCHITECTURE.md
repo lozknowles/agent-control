@@ -1,6 +1,6 @@
 # Agent Control architecture
 
-This is the authoritative source boundary for Agent Control 4.4.0. The 4.4 UX/session implementation `3b0f89653784f90e092c07f61123ba1f9249a42b` passed physical browser qualification and the complete 1,125-test suite; its evidence is frozen at `574c53f4e3db0d71cf59a3bdb3340f2aa2a7f181`. Historical physical evidence remains bound to its recorded product SHA. Status labels matter:
+This is the authoritative source boundary for the Agent Control 4.5.0 candidate. Agent Control 4.4.0 remains the latest formally released baseline. Historical physical evidence remains bound to its recorded product SHA. Status labels matter:
 
 - **implemented** means executable code and automated tests exist in this branch;
 - **experimental** means executable code exists but has not been qualified across every external substrate;
@@ -18,6 +18,44 @@ This is the authoritative source boundary for Agent Control 4.4.0. The 4.4 UX/se
 8. Missing configuration fails closed to `UNCONFIGURED`, never to private defaults.
 9. The TUI and web dashboard are clients of one `AgentControlService`; neither owns scheduler, lease, ownership or PTY state.
 10. An agent claim, collected evidence, verification and acceptance are distinct durable states.
+
+## Governed learned specialists (4.5)
+
+The provider-neutral identity is:
+
+`qualified base model + versioned learned adaptation + independent qualification evidence = specialist routing candidate`
+
+The base remains immutable and independently addressable. The adaptation grants
+no tools, authority or policy. `SkillLearningRuntime` enforces legal lifecycle
+transitions, frozen dataset/evaluation hashes, human review, material improvement,
+freshness and exact base/runtime compatibility. Registration is not route
+admission; routing is separately enabled and remains subordinate to ordinary
+capability, policy, health, placement, cost and verification gates.
+
+Framework-specific training and loading remain ports. The first adapter uses
+PEFT LoRA on CPU, but core records contain no Hugging Face, PEFT, CUDA, model-family
+or hardware assumption. Production inference enters the existing model-backed
+adaptive-harness Action boundary, executes in a normal Job/Work Parcel, preserves
+the baton and artifacts, and requires an independent read-only verification step.
+The local PEFT adapter recomputes on-disk base and adapter hashes before loading.
+
+Learned capability and runtime warmth are orthogonal: a learned specialist can be
+cold or warm, while a warm route may be unadapted. Multiple-adapter composition,
+automatic online learning and automatic promotion are not implemented. Runtime
+outcomes may only propose a new governed candidate/version. See
+[the architecture decision](docs/agent-control-4.5-skill-learning-architecture-review.md)
+and [operator guide](docs/skill-learning.md).
+
+## Portable project memory experiment (4.5)
+
+The optional `ProjectMemoryPort` implements the generic memory boundary chosen in 4.4. Its first backend is a structured Markdown directory that Obsidian can view, but Agent Control core has no Obsidian dependency. Metadata scope and lexical retrieval precede any future semantic adapter. Provenance, verification, expiry, supersession and contradiction checks run before a memory can become advisory `ContextGraph`/Context Packet input. Memory cannot override Work Parcels, batons, policy, evidence, approvals, execution state or independent verification. See [project-memory portability](docs/project-memory-portability.md).
+
+The provider-neutral [energy telemetry boundary](docs/energy-aware-intelligence.md) retains timestamped power, scope, authority, method, idle baseline, limitations, and verified outcome identity. It integrates gross and incremental Wh and supports expected-total-energy route assessment, including failed-attempt and fallback energy. Capability, quality, confidence, policy, privacy, and independent verification remain hard gates. GPU-only, CPU-package, measured-components, battery, whole-node, estimated, and unavailable energy are never conflated. Physical evidence may reject a small-model route: the first 4.5 study found the retained 135M specialist consumed more measured energy than warm Qwen, while deterministic execution was lowest. Parameter count never substitutes for joules per verified outcome.
+
+Physical 4.5 qualification exercises the unchanged provider-neutral flow as
+`writer route → verified memory record → sealed stage baton → distinct cold reader route → independently verified continuation`. Provider-native personal-memory APIs are optional adapter capabilities, not assumed core state. A backend such as Obsidian is not a second memory capability. Measured qualification currently supports an **EXPERIMENTAL** status: five of twelve requested route pairs passed, while Pixel and MSI limitations remain explicit. See the [cross-model evidence](docs/evidence/agent-control-4.5-cross-model-memory-qualification-20260911.md).
+
+The follow-up [release-gate reconciliation](docs/evidence/agent-control-4.5-release-gate-20260912.md) makes provider-response validation two separate gates: transport/application-schema validity and semantic reconstruction. One governed repair attempt may correct a malformed or misplaced response, but exact state, provenance, decision, rejection-risk and next-action semantics remain independently required. A valid JSON object or copied keyword list cannot pass by itself. Attempts retain bounded sanitized output, finish reason, hashes and exact schema/semantic failures. Model limitations remain failures; unavailable node authentication remains `BLOCKED`.
 
 ## Transport Context and Integrity Gate (4.2)
 
@@ -896,6 +934,35 @@ The floating browser companion is a client of this same service. Its compact pan
 The optional external full-test runner publishes bounded atomic progress with exact Git commit, phase, emitted counts, elapsed time and exit status. Its authenticated read-only projection is labelled `EXTERNAL_TEST_RUNNER` and never creates a Work Parcel. Totals and remaining counts stay null until discovered. POE narrates snapshots as observations because complete-audio synthesis introduces delay.
 
 The detailed contract, [event-to-animation mapping](docs/poe-dashboard-operator.md#state-and-animation-provenance), current [4.3 deployment guide](docs/DEPLOYMENT.md) and historical [4.1 qualification record](docs/evidence/agent-control-4.1-qualification.md) define the configuration and acceptance boundary.
+
+## 4.5 energy-minimal deterministic skill promotion
+
+Agent Control keeps three forms of reuse separate: **Your Memories** answers
+what is known, a deterministic skill answers what can already be done inside a
+validated contract, and a model reasons about novelty. The preferred hierarchy
+is deterministic result/rule → deterministic tool → validated memory retrieval
+→ governed deterministic skill → specialist → progressively stronger general
+models. Capability, confidence, policy, freshness and verification always outrank
+energy.
+
+The provider-neutral promotion lifecycle is `reason → verify → observe repeated
+Work Parcels → candidate → validate → explicit promote → deterministic reuse →
+periodic revalidation/invalidation`. Durable records bind source parcels,
+originating route, evidence, assumptions, typed contracts, scope, version,
+freshness, invalidation conditions and a hash-identified pre-registered handler.
+Models may propose but cannot install executable code or promote themselves.
+
+The production Work Parcel Action rechecks handler identity and applicability
+before execution and runs an independent deterministic invariant afterward.
+Novel fields, stale evidence, conflicting or invalid memory, environment/contract
+change and failed verification result in a durable `ESCALATE_MODEL` decision.
+Successful escalations become candidate evidence only after governance; there is
+no online self-modification.
+
+Project memory may retrieve a validated skill identity without injecting memory
+text into a model. Learned specialist adapters remain a separate layer for fuzzy
+bounded domains that cannot safely become deterministic. Warm-cache state is
+orthogonal to both.
 
 ## Release boundary
 

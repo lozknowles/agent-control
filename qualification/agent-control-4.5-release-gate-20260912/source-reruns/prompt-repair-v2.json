@@ -1,0 +1,689 @@
+{
+  "schema": "agent-control.cross-model-memory-qualification/v1",
+  "startedAt": "2026-09-12T00:36:30.722Z",
+  "completedAt": "2026-09-12T00:37:58.857Z",
+  "implementationCommit": "9bf63bac4a00c4619e8ce581c294806e95844d74",
+  "packetSha256": "e9d242402509c5e93bc49d5282314a30703e069a9d5f82da79bd341182caf2f6",
+  "verdict": "PARTIAL",
+  "workParcels": [
+    {
+      "id": "parcel-363998bf-5ea2-41d5-8486-26cc5d17c108",
+      "status": "FAILED",
+      "stages": [
+        {
+          "id": "glm-to-qwen-writer",
+          "status": "SUCCEEDED",
+          "runId": "run-affc0f03-e1b3-4022-9ec6-4f4b5963bc6f",
+          "batonSha256": "7fd70bd087699f0282d7f1b448f353103a9c0d8e7f84202124f0335c7e3bbfd2",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "workloadNodeId": "hpubuntu",
+            "providerExecutionNodeId": "hpubuntu",
+            "provider": "openrouter",
+            "model": "glm-5.3-flash",
+            "reason": "satisfies:route.hpubuntu, healthy, available"
+          },
+          "error": null
+        },
+        {
+          "id": "glm-to-qwen-persist",
+          "status": "SUCCEEDED",
+          "runId": "run-dc774a2d-7d55-4b83-a010-c4e75a7455b5",
+          "batonSha256": "34290cd854c15a0b0ba8fd07233c863cb8e89c666def1041f9659f261b22a9fc",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "reason": "satisfies:memory.control, healthy, available"
+          },
+          "error": null
+        },
+        {
+          "id": "glm-to-qwen-reader",
+          "status": "FAILED",
+          "runId": "run-22ffca8c-ea2e-4a08-9e35-55588bddfe24",
+          "batonSha256": "44433bff38ef15d577fbffcb8e0069e3f60984a3b5101006c52b8d6a53e12ab4",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "workloadNodeId": "hpubuntu",
+            "providerExecutionNodeId": "hpubuntu",
+            "provider": "local-qwen",
+            "model": "qwen-hpubuntu",
+            "reason": "satisfies:route.hpubuntu, healthy, available"
+          },
+          "error": "execute:execution:reader_verification_failed:importantDecisions:missing:content-hash|rejectedApproaches:missing:concurrently edited|rejectedApproaches:missing:canonical note|currentState:missing:v4.4.0|outstandingWork:missing:writer-to-cold-reader|supportingEvidence:missing:f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2"
+        },
+        {
+          "id": "glm-to-qwen-continue",
+          "status": "BLOCKED",
+          "runId": null,
+          "batonSha256": null,
+          "actualRoute": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "parcel-0a1f4993-2d8b-4231-9ffd-f8b0b82ee762",
+      "status": "FAILED",
+      "stages": [
+        {
+          "id": "codex-to-qwen-writer",
+          "status": "SUCCEEDED",
+          "runId": "run-66006df9-998f-4efe-bb2d-eea7129b50fa",
+          "batonSha256": "d9c01f692faa20614225fa0b2c97b72c943cf5e7f232610b96ce45ffbfd33665",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "workloadNodeId": "hpubuntu",
+            "providerExecutionNodeId": "hpubuntu",
+            "credentialNodeId": "hpubuntu",
+            "provider": "codex-chatgpt",
+            "accountProfile": "controller-codex",
+            "accountLabel": "Controller Codex",
+            "accountPlan": "ChatGPT authenticated",
+            "accountPlanAuthority": "operator-configured",
+            "accountQualification": "QUALIFIED",
+            "accountAvailability": "AVAILABLE",
+            "model": "codex-luna",
+            "reason": "satisfies:route.hpubuntu, healthy, available"
+          },
+          "error": null
+        },
+        {
+          "id": "codex-to-qwen-persist",
+          "status": "SUCCEEDED",
+          "runId": "run-28531652-4190-4669-a622-ce72538f6ae3",
+          "batonSha256": "28026546fa77d11bc287ba11448f79eb3fb0dfa16b83a55a042c68f988fdc7c8",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "reason": "satisfies:memory.control, healthy, available"
+          },
+          "error": null
+        },
+        {
+          "id": "codex-to-qwen-reader",
+          "status": "FAILED",
+          "runId": "run-39e37369-fed5-479e-b587-6c961628d87a",
+          "batonSha256": "a3e48b8fbe4db8caf2df3cc1de5b417ff510406a1744068a64b9eaa0b71dfb0c",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "workloadNodeId": "hpubuntu",
+            "providerExecutionNodeId": "hpubuntu",
+            "provider": "local-qwen",
+            "model": "qwen-hpubuntu",
+            "reason": "satisfies:route.hpubuntu, healthy, available"
+          },
+          "error": "execute:execution:reader_verification_failed:alreadyHappened:missing:hpubuntu|alreadyHappened:missing:msi|alreadyHappened:missing:D:/obsidian/knowledge_vault|importantDecisions:missing:node-local|importantDecisions:missing:content-hash|rejectedApproaches:missing:concurrently edited|rejectedApproaches:missing:canonical note|currentState:missing:565aff41c1afc07995163ed4ec1d490d628970bf|currentState:missing:v4.4.0"
+        },
+        {
+          "id": "codex-to-qwen-continue",
+          "status": "BLOCKED",
+          "runId": null,
+          "batonSha256": null,
+          "actualRoute": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "parcel-959ebf3f-d1ac-4b05-9a78-470bb4438064",
+      "status": "SUCCEEDED",
+      "stages": [
+        {
+          "id": "qwen-to-codex-writer",
+          "status": "SUCCEEDED",
+          "runId": "run-926f11ca-18c0-42eb-8d14-5fb6b106afae",
+          "batonSha256": "79843b9480fb129019600dedf50c343a977cf51bebac5a88845357862a82cbb9",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "workloadNodeId": "hpubuntu",
+            "providerExecutionNodeId": "hpubuntu",
+            "provider": "local-qwen",
+            "model": "qwen-hpubuntu",
+            "reason": "satisfies:route.hpubuntu, healthy, available"
+          },
+          "error": null
+        },
+        {
+          "id": "qwen-to-codex-persist",
+          "status": "SUCCEEDED",
+          "runId": "run-0e4dd875-67d5-422b-8471-4bc28ac36231",
+          "batonSha256": "4cbfa4d5d65390833deee1a184a5bc2d8efbb9d4d7e5228ae17bf545dd12923d",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "reason": "satisfies:memory.control, healthy, available"
+          },
+          "error": null
+        },
+        {
+          "id": "qwen-to-codex-reader",
+          "status": "SUCCEEDED",
+          "runId": "run-d4a2f6dd-0789-4b2b-a095-753d1e4042ed",
+          "batonSha256": "785283cab30ea6bb37b3c8b689cfeafe8a5c709d55ac6474697f76e90b4bb778",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "workloadNodeId": "hpubuntu",
+            "providerExecutionNodeId": "hpubuntu",
+            "credentialNodeId": "hpubuntu",
+            "provider": "codex-chatgpt",
+            "accountProfile": "controller-codex",
+            "accountLabel": "Controller Codex",
+            "accountPlan": "ChatGPT authenticated",
+            "accountPlanAuthority": "operator-configured",
+            "accountQualification": "QUALIFIED",
+            "accountAvailability": "AVAILABLE",
+            "model": "codex-luna",
+            "reason": "satisfies:route.hpubuntu, healthy, available"
+          },
+          "error": null
+        },
+        {
+          "id": "qwen-to-codex-continue",
+          "status": "SUCCEEDED",
+          "runId": "run-4dce3e53-a2e5-43b0-b195-93296665f11b",
+          "batonSha256": "d38c7506e461e82b1def5f565734953f385e13e0085e1164ee4bcb5143e83012",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "reason": "satisfies:memory.control, healthy, available"
+          },
+          "error": null
+        }
+      ]
+    }
+  ],
+  "routes": [
+    {
+      "id": "qwen-hpubuntu",
+      "label": "Qwen on hpubuntu",
+      "provider": "local-qwen",
+      "exactModel": "qwen2.5-3b-instruct-q4_k_m.gguf",
+      "qualificationVersion": "physical-20260911",
+      "node": "hpubuntu",
+      "endpoint": "http://127.0.0.1:8080/v1",
+      "runtime": "llama.cpp",
+      "credentialResidency": "not required",
+      "adapter": "llama.cpp OpenAI-compatible adapter",
+      "physicalAvailability": "AVAILABLE"
+    },
+    {
+      "id": "glm-5.3-flash",
+      "label": "GLM-5.3-Flash",
+      "provider": "openrouter",
+      "exactModel": "z-ai/glm-5.3-flash",
+      "qualificationVersion": "physical-20260911",
+      "node": "hpubuntu",
+      "endpoint": "https://openrouter.ai/api/v1",
+      "runtime": "OpenRouter hosted runtime",
+      "credentialResidency": "hpubuntu owner-only file reference; value resolved only by adapter",
+      "adapter": "OpenAI-compatible Responses adapter",
+      "physicalAvailability": "AVAILABLE"
+    },
+    {
+      "id": "codex-luna",
+      "label": "Codex CLI / Luna",
+      "provider": "codex-chatgpt",
+      "exactModel": "gpt-5.6-luna",
+      "qualificationVersion": "physical-20260911",
+      "node": "hpubuntu",
+      "endpoint": "local executable discovered from PATH",
+      "runtime": "Codex CLI",
+      "credentialResidency": "opaque CODEX_HOME environment reference on hpubuntu",
+      "adapter": "LocalCodexNodeExecutionPort",
+      "physicalAvailability": "AVAILABLE"
+    },
+    {
+      "id": "gpt-5.6-sol",
+      "label": "GPT-5.6 Sol",
+      "provider": "codex-chatgpt",
+      "exactModel": "gpt-5.6-sol",
+      "qualificationVersion": "physical-20260911",
+      "node": "hpubuntu",
+      "endpoint": "local executable discovered from PATH",
+      "runtime": "Codex CLI",
+      "credentialResidency": "opaque CODEX_HOME environment reference on hpubuntu",
+      "adapter": "LocalCodexNodeExecutionPort",
+      "physicalAvailability": "AVAILABLE"
+    },
+    {
+      "id": "pixel-gemma-e4b",
+      "label": "Google Gemma 4 E4B on Pixel 8 Pro",
+      "provider": "pixel-llama",
+      "exactModel": "google/gemma-4-E4B-it",
+      "qualificationVersion": "physical-20260911",
+      "node": "pixel-8-pro",
+      "endpoint": "http://100.100.97.118:19084/v1",
+      "runtime": "llama.cpp",
+      "credentialResidency": "not required",
+      "adapter": "llama.cpp OpenAI-compatible adapter",
+      "physicalAvailability": "AVAILABLE"
+    }
+  ],
+  "blockedRoutes": [
+    {
+      "id": "msi-cottage-plus",
+      "nodeId": "msi",
+      "provider": "codex-chatgpt",
+      "model": "unavailable",
+      "status": "BLOCKED",
+      "reason": "codex_chatgpt_auth_required through production ResourceCodexNodeExecutionPort"
+    },
+    {
+      "id": "msi-lawrence-pro",
+      "nodeId": "msi",
+      "provider": "codex-chatgpt",
+      "model": "unavailable",
+      "status": "BLOCKED",
+      "reason": "codex_chatgpt_auth_required through production ResourceCodexNodeExecutionPort"
+    }
+  ],
+  "matrix": [
+    {
+      "writer": "GLM-5.3-Flash",
+      "reader": "Qwen on hpubuntu",
+      "writerRoute": "openrouter/default/glm-5.3-flash@hpubuntu",
+      "readerRoute": "local-qwen/default/qwen-hpubuntu@hpubuntu",
+      "writerNode": "hpubuntu",
+      "readerNode": "hpubuntu",
+      "memorySource": "ProjectMemoryPort / structured Markdown vault",
+      "memoryId": "memory-glm-to-qwen",
+      "memorySha256": "3efe21b11f312691b91e5a299234153baea4c27f0ebaa2e48c5d164671f376bd",
+      "reconstructionAccuracy": 46.67,
+      "writerScore": 92.5,
+      "continuationSuccess": false,
+      "contextInjectedTokens": 520,
+      "writerUsage": {
+        "inputTokens": 634,
+        "outputTokens": 575,
+        "totalTokens": 1209,
+        "cachedInputTokens": 0,
+        "cost": 0.0003826,
+        "currency": null,
+        "authority": "authoritative"
+      },
+      "readerUsage": {
+        "inputTokens": 1618,
+        "outputTokens": 778,
+        "totalTokens": 2396,
+        "cachedInputTokens": 757,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "usage": {
+        "inputTokens": 2252,
+        "outputTokens": 1353,
+        "totalTokens": 3605,
+        "cachedInputTokens": 757,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "latencyMs": 21983,
+      "contradictionsDetected": [
+        "Agent Control 4.5 development branch at checkpoint 9bf63bac4a00c4619e8ce581c294806e95844d74; released baseline remains v4.4.0; 4.5 not merged or released",
+        "Completed work includes implementing ProjectMemoryPort and its structured Markdown backend, and physically proven hpubuntu to MSI byte-identical transfer into D:/obsidian/knowledge_vault",
+        "Next safe action: EXECUTE_MEMORY_INTEGRITY_CHECK"
+      ],
+      "writerRunId": "run-affc0f03-e1b3-4022-9ec6-4f4b5963bc6f",
+      "readerRunId": "run-22ffca8c-ea2e-4a08-9e35-55588bddfe24",
+      "batonSha256": "44433bff38ef15d577fbffcb8e0069e3f60984a3b5101006c52b8d6a53e12ab4",
+      "persistBatonSha256": "34290cd854c15a0b0ba8fd07233c863cb8e89c666def1041f9659f261b22a9fc",
+      "continuationBatonSha256": null,
+      "writerAttempts": [
+        {
+          "attempt": 1,
+          "responseReceived": true,
+          "bytes": 2179,
+          "sha256": "f0ffb114d2997482b3d18a548adf425876794618b780f52ec491f4cb84604ceb",
+          "finishReason": "completed",
+          "responseModel": "z-ai/glm-5.3-flash",
+          "validJson": true,
+          "applicationSchemaValid": true,
+          "schemaFailures": [],
+          "semanticFailures": [],
+          "sanitizedOutput": "{\n  \"memory\": \"Agent Control 4.5 physical cross-model memory qualification. Objective: prove a common governed project-memory record written by one model can be reconstructed cold by a different model without the originating transcript. Completed: ProjectMemoryPort and its structured Markdown backend are implemented; hpubuntu-to-MSI byte-identical transfer into the authoritative D:/obsidian/knowledge_vault was physically proven. Decision: use independent node-local vault namespaces with governed content-hash synchronization. Rejected: one concurrently edited canonical note across nodes, due to split-brain and write-conflict risk. Evidence: portable-memory checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf; transferred topology note SHA-256 f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2. State: 4.5 development branch at checkpoint 9bf63bac4a00c4619e8ce581c294806e95844d74; released baseline remains v4.4.0; 4.5 not merged or released. Outstanding: complete the real writer-to-cold-reader model matrix, verify each continuation, preserve failures, present evidence for review. Next safe action: EXECUTE_MEMORY_INTEGRITY_CHECK. Authority: repository and physical qualification evidence override remembered claims.\",\n  \"completedWork\": [\n    \"Implemented ProjectMemoryPort and its structured Markdown backend\",\n    \"Physically proven hpubuntu to MSI byte-identical transfer into D:/obsidian/knowledge_vault\"\n  ],\n  \"decisions\": [\n    \"Use independent node-local vault namespaces with governed content-hash synchronization\",\n    \"Rejected one concurrently edited canonical note across nodes (split-brain, write-conflict risk)\"\n  ],\n  \"rejectedApproaches\": [\n    \"Single concurrently edited canonical note shared across nodes\"\n  ],\n  \"outstandingWork\": [\n    \"Complete real writer-to-cold-reader model matrix\",\n    \"Verify each continuation, preserve failures, present evidence for review\"\n  ],\n  \"supportingEvidence\": [\n    \"Portable-memory checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf\",\n    \"Transferred topology note SHA-256 f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2\"\n  ],\n  \"nextAction\": \"EXECUTE_MEMORY_INTEGRITY_CHECK\"\n}"
+        }
+      ],
+      "readerAttempts": [
+        {
+          "attempt": 1,
+          "responseReceived": true,
+          "bytes": 1269,
+          "sha256": "936d038ad592500b6b050dd050af48824afaeb957f5a16409099f6cec8e9e39a",
+          "finishReason": "stop",
+          "responseModel": "qwen2.5-3b-instruct-q4_k_m.gguf",
+          "validJson": true,
+          "applicationSchemaValid": true,
+          "schemaFailures": [],
+          "semanticFailures": [
+            "what:missing:cross-model",
+            "importantDecisions:missing:node-local",
+            "importantDecisions:missing:content-hash",
+            "currentState:missing:565aff41c1afc07995163ed4ec1d490d628970bf"
+          ],
+          "sanitizedOutput": "{\n  \"what\": \"EXECUTE_MEMORY_INTEGRITY_CHECK\",\n  \"why\": \"To verify the correctness and consistency of the memory data after the implementation and transfer of the ProjectMemoryPort and its structured Markdown backend, as well as the physical transfer of the hpubuntu to MSI.\",\n  \"alreadyHappened\": \"Implemented ProjectMemoryPort and its structured Markdown backend, and physically proven hpubuntu to MSI byte-identical transfer into D:/obsidian/knowledge_vault\",\n  \"importantDecisions\": \"Rejected one concurrently edited canonical note across nodes due to split-brain and write-conflict risk\",\n  \"rejectedApproaches\": \"Single concurrently edited canonical note shared across nodes\",\n  \"currentState\": \"4.5 development branch at checkpoint 9bf63bac4a00c4619e8ce581c294806e95844d74; released baseline remains v4.4.0; 4.5 not merged or released\",\n  \"outstandingWork\": \"Complete real writer-to-cold-reader model matrix, verify each continuation, preserve failures, present evidence for review\",\n  \"supportingEvidence\": \"Portable-memory checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf, Transferred topology note SHA-256 f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2\"\n  ,\n  \"nextSafeAction\": \"EXECUTE_MEMORY_INTEGRITY_CHECK\"\n  ,\n  \"contradictions\": []\n}\n"
+        },
+        {
+          "attempt": 2,
+          "responseReceived": true,
+          "bytes": 1338,
+          "sha256": "dc7172ad4e0a40016f100c71675e92d49ca05673b4355d7b18df39d6c539dbd7",
+          "finishReason": "stop",
+          "responseModel": "qwen2.5-3b-instruct-q4_k_m.gguf",
+          "validJson": true,
+          "applicationSchemaValid": true,
+          "schemaFailures": [],
+          "semanticFailures": [
+            "importantDecisions:missing:content-hash",
+            "rejectedApproaches:missing:concurrently edited",
+            "rejectedApproaches:missing:canonical note",
+            "currentState:missing:v4.4.0",
+            "outstandingWork:missing:writer-to-cold-reader",
+            "supportingEvidence:missing:f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2"
+          ],
+          "sanitizedOutput": "{\n  \"what\": \"missing:cross-model\",\n  \"why\": \"Agent Control 4.5 cross-model memory qualification has not been fully executed. The project-memory record written by one model cannot be reconstructed cold by a different model without the originating transcript.\",\n  \"alreadyHappened\": \"Completed work includes implementing ProjectMemoryPort and its structured Markdown backend, and physically proven hpubuntu to MSI byte-identical transfer into D:/obsidian/knowledge_vault.\",\n  \"importantDecisions\": \"missing:node-local\",\n  \"rejectedApproaches\": \"missing:content-hash\",\n  \"currentState\": \"missing:565aff41c1afc07995163ed4ec1d490d628970bf\",\n  \"outstandingWork\": \"missing:cross-model model matrix, verify each continuation, preserve failures, present evidence for review\",\n  \"supportingEvidence\": \"missing:565aff41c1afc07995163ed4ec1d490d628970bf\",\n  \"nextSafeAction\": \"EXECUTE_MEMORY_INTEGRITY_CHECK\"\n  ,\n  \"contradictions\": [\n    \"Agent Control 4.5 development branch at checkpoint 9bf63bac4a00c4619e8ce581c294806e95844d74; released baseline remains v4.4.0; 4.5 not merged or released\",\n    \"Completed work includes implementing ProjectMemoryPort and its structured Markdown backend, and physically proven hpubuntu to MSI byte-identical transfer into D:/obsidian/knowledge_vault\",\n    \"Next safe action: EXECUTE_MEMORY_INTEGRITY_CHECK\"\n  ]\n}\n"
+        }
+      ],
+      "failures": [
+        "importantDecisions:missing:content-hash",
+        "rejectedApproaches:missing:concurrently edited",
+        "rejectedApproaches:missing:canonical note",
+        "currentState:missing:v4.4.0",
+        "outstandingWork:missing:writer-to-cold-reader",
+        "supportingEvidence:missing:f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2"
+      ],
+      "failureClass": "model capability",
+      "result": "FAIL"
+    },
+    {
+      "writer": "Codex CLI / Luna",
+      "reader": "Qwen on hpubuntu",
+      "writerRoute": "codex-chatgpt/controller-codex/codex-luna@hpubuntu",
+      "readerRoute": "local-qwen/default/qwen-hpubuntu@hpubuntu",
+      "writerNode": "hpubuntu",
+      "readerNode": "hpubuntu",
+      "memorySource": "ProjectMemoryPort / structured Markdown vault",
+      "memoryId": "memory-codex-to-qwen",
+      "memorySha256": "9e77bf218169a2c36d635ef53743579bda1a07040caf0153fb00be2ddd8825a3",
+      "reconstructionAccuracy": 20,
+      "writerScore": 92.5,
+      "continuationSuccess": false,
+      "contextInjectedTokens": 481,
+      "writerUsage": {
+        "inputTokens": 7217,
+        "outputTokens": 563,
+        "totalTokens": 7780,
+        "cachedInputTokens": 0,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "readerUsage": {
+        "inputTokens": 1583,
+        "outputTokens": 695,
+        "totalTokens": 2278,
+        "cachedInputTokens": 851,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "usage": {
+        "inputTokens": 8800,
+        "outputTokens": 1258,
+        "totalTokens": 10058,
+        "cachedInputTokens": 851,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "latencyMs": 15239,
+      "contradictionsDetected": [
+        "currentState:missing:565aff41c1afc07995163ed4ec1d490d628970bf",
+        "currentState:missing:v4.4.0"
+      ],
+      "writerRunId": "run-66006df9-998f-4efe-bb2d-eea7129b50fa",
+      "readerRunId": "run-39e37369-fed5-479e-b587-6c961628d87a",
+      "batonSha256": "a3e48b8fbe4db8caf2df3cc1de5b417ff510406a1744068a64b9eaa0b71dfb0c",
+      "persistBatonSha256": "28026546fa77d11bc287ba11448f79eb3fb0dfa16b83a55a042c68f988fdc7c8",
+      "continuationBatonSha256": null,
+      "writerAttempts": [
+        {
+          "attempt": 1,
+          "responseReceived": true,
+          "bytes": 1933,
+          "sha256": "14afac74961a1b52e69a9b1b25163fc99397860621ed080351d6edcd32c4a3fa",
+          "finishReason": "completed",
+          "responseModel": "gpt-5.6-luna",
+          "validJson": true,
+          "applicationSchemaValid": true,
+          "schemaFailures": [],
+          "semanticFailures": [],
+          "sanitizedOutput": "{\"memory\":\"Agent Control 4.5 is undergoing physical cross-model memory qualification: prove a governed project-memory record can be written by one model and reconstructed cold by another without the originating transcript. ProjectMemoryPort and its structured Markdown backend are implemented, and hpubuntu-to-MSI transfer into D:/obsidian/knowledge_vault was physically proven byte-identical. Use independent node-local vault namespaces with governed content-hash synchronization; avoid a concurrently edited canonical note because of split-brain and write-conflict risk. The development checkpoint is 9bf63bac4a00c4619e8ce581c294806e95844d74; released baseline is v4.4.0, and 4.5 is not merged or released. Remaining work is the writer-to-cold-reader model matrix, continuation verification, failure preservation, and review evidence. Markers: Agent Control 4.5 | cross-model | 565aff41c1afc07995163ed4ec1d490d628970bf | v4.4.0 | D:/obsidian/knowledge_vault | node-local | content-hash | concurrently edited | f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2 | EXECUTE_MEMORY_INTEGRITY_CHECK\",\"completedWork\":[\"ProjectMemoryPort and its structured Markdown backend are implemented; hpubuntu-to-MSI byte-identical transfer into the authoritative vault was physically proven.\"],\"decisions\":[\"Use independent node-local vault namespaces and governed content-hash synchronization.\"],\"rejectedApproaches\":[\"Do not use one concurrently edited canonical note across nodes because it creates split-brain and write-conflict risk.\"],\"outstandingWork\":[\"Complete the real writer-to-cold-reader model matrix, verify each continuation, preserve failures, and present evidence for review.\"],\"supportingEvidence\":[\"Portable-memory checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf; transferred topology note SHA-256 f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2.\"],\"nextAction\":\"EXECUTE_MEMORY_INTEGRITY_CHECK\"}"
+        }
+      ],
+      "readerAttempts": [
+        {
+          "attempt": 1,
+          "responseReceived": true,
+          "bytes": 1249,
+          "sha256": "cf61a76d79e1072163eaa06c7c556b5982a757d6668188261550dc330ed171b0",
+          "finishReason": "stop",
+          "responseModel": "qwen2.5-3b-instruct-q4_k_m.gguf",
+          "validJson": true,
+          "applicationSchemaValid": true,
+          "schemaFailures": [],
+          "semanticFailures": [
+            "what:missing:cross-model",
+            "alreadyHappened:missing:D:/obsidian/knowledge_vault",
+            "currentState:missing:565aff41c1afc07995163ed4ec1d490d628970bf",
+            "currentState:missing:v4.4.0"
+          ],
+          "sanitizedOutput": "{\n  \"what\": \"EXECUTE_MEMORY_INTEGRITY_CHECK\",\n  \"why\": \"To verify that the memory qualification process is consistent and that the memory from the writer can be accurately reconstructed by the cold reader model.\",\n  \"alreadyHappened\": \"ProjectMemoryPort and its structured Markdown backend are implemented; hpubuntu-to-MSI byte-identical transfer into the authoritative vault was physically proven.\",\n  \"importantDecisions\": \"Use independent node-local vault namespaces and governed content-hash synchronization.\",\n  \"rejectedApproaches\": \"Do not use one concurrently edited canonical note across nodes because it creates split-brain and write-conflict risk.\",\n  \"currentState\": \"Remaining work is the writer-to-cold-reader model matrix, continuation verification, failure preservation, and review evidence.\",\n  \"outstandingWork\": \"Complete the real writer-to-cold-reader model matrix, verify each continuation, preserve failures, and present evidence for review.\"\n  ,\n  \"supportingEvidence\": \"Portable-memory checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf; transferred topology note SHA-256 f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2.\"\n  ,\n  \"nextSafeAction\": \"EXECUTE_MEMORY_INTEGRITY_CHECK\"\n  ,\n  \"contradictions\": []\n}\n"
+        },
+        {
+          "attempt": 2,
+          "responseReceived": true,
+          "bytes": 877,
+          "sha256": "1613518fd836b8349756a85778811a26705cb77089231cdf8c71e89e1f16a317",
+          "finishReason": "stop",
+          "responseModel": "qwen2.5-3b-instruct-q4_k_m.gguf",
+          "validJson": true,
+          "applicationSchemaValid": true,
+          "schemaFailures": [],
+          "semanticFailures": [
+            "alreadyHappened:missing:hpubuntu",
+            "alreadyHappened:missing:msi",
+            "alreadyHappened:missing:D:/obsidian/knowledge_vault",
+            "importantDecisions:missing:node-local",
+            "importantDecisions:missing:content-hash",
+            "rejectedApproaches:missing:concurrently edited",
+            "rejectedApproaches:missing:canonical note",
+            "currentState:missing:565aff41c1afc07995163ed4ec1d490d628970bf",
+            "currentState:missing:v4.4.0"
+          ],
+          "sanitizedOutput": "{\n  \"what\": \"missing:cross-model\",\n  \"why\": \"alreadyHappened:missing:D:/obsidian/knowledge_vault\",\n  \"alreadyHappened\": \"missing:565aff41c1afc07995163ed4ec1d490d628970bf\",\n  \"importantDecisions\": \"currentState:v4.4.0\",\n  \"rejectedApproaches\": \"EXECUTE_MEMORY_INTEGRITY_CHECK\",\n  \"currentState\": \"EXECUTE_MEMORY_INTEGRITY_CHECK\",\n  \"outstandingWork\": \"missing:complete the real writer-to-cold-reader model matrix, verify each continuation, preserve failures, and present evidence for review\",\n  \"supportingEvidence\": \"Portable-memory checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf; transferred topology note SHA-256 f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2\"\n  ,\n  \"nextSafeAction\": \"EXECUTE_MEMORY_INTEGRITY_CHECK\"\n  ,\n  \"contradictions\": [\n    \"currentState:missing:565aff41c1afc07995163ed4ec1d490d628970bf\",\n    \"currentState:missing:v4.4.0\"\n  ]\n}\n"
+        }
+      ],
+      "failures": [
+        "alreadyHappened:missing:hpubuntu",
+        "alreadyHappened:missing:msi",
+        "alreadyHappened:missing:D:/obsidian/knowledge_vault",
+        "importantDecisions:missing:node-local",
+        "importantDecisions:missing:content-hash",
+        "rejectedApproaches:missing:concurrently edited",
+        "rejectedApproaches:missing:canonical note",
+        "currentState:missing:565aff41c1afc07995163ed4ec1d490d628970bf",
+        "currentState:missing:v4.4.0"
+      ],
+      "failureClass": "model capability",
+      "result": "FAIL"
+    },
+    {
+      "writer": "Qwen on hpubuntu",
+      "reader": "Codex CLI / Luna",
+      "writerRoute": "local-qwen/default/qwen-hpubuntu@hpubuntu",
+      "readerRoute": "codex-chatgpt/controller-codex/codex-luna@hpubuntu",
+      "writerNode": "hpubuntu",
+      "readerNode": "hpubuntu",
+      "memorySource": "ProjectMemoryPort / structured Markdown vault",
+      "memoryId": "memory-qwen-to-codex",
+      "memorySha256": "d3253f595a5604481dbd76832eb506d8ef9276ad8d820a52755a52597da3025b",
+      "reconstructionAccuracy": 100,
+      "writerScore": 92.5,
+      "continuationSuccess": true,
+      "contextInjectedTokens": 278,
+      "writerUsage": {
+        "inputTokens": 1481,
+        "outputTokens": 715,
+        "totalTokens": 2196,
+        "cachedInputTokens": 1422,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "readerUsage": {
+        "inputTokens": 14253,
+        "outputTokens": 979,
+        "totalTokens": 15232,
+        "cachedInputTokens": 0,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "usage": {
+        "inputTokens": 15734,
+        "outputTokens": 1694,
+        "totalTokens": 17428,
+        "cachedInputTokens": 1422,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "latencyMs": 14421,
+      "contradictionsDetected": [],
+      "writerRunId": "run-926f11ca-18c0-42eb-8d14-5fb6b106afae",
+      "readerRunId": "run-d4a2f6dd-0789-4b2b-a095-753d1e4042ed",
+      "batonSha256": "785283cab30ea6bb37b3c8b689cfeafe8a5c709d55ac6474697f76e90b4bb778",
+      "persistBatonSha256": "4cbfa4d5d65390833deee1a184a5bc2d8efbb9d4d7e5228ae17bf545dd12923d",
+      "continuationBatonSha256": "d38c7506e461e82b1def5f565734953f385e13e0085e1164ee4bcb5143e83012",
+      "writerAttempts": [
+        {
+          "attempt": 1,
+          "responseReceived": true,
+          "bytes": 932,
+          "sha256": "ef023952aad64e5f02716f37d3d5eb158027d117c75ea1cd9c68af498e33a09a",
+          "finishReason": "stop",
+          "responseModel": "qwen2.5-3b-instruct-q4_k_m.gguf",
+          "validJson": true,
+          "applicationSchemaValid": true,
+          "schemaFailures": [],
+          "semanticFailures": [
+            "missing:Agent Control 4.5",
+            "missing:cross-model",
+            "missing:v4.4.0",
+            "memory-too-short"
+          ],
+          "sanitizedOutput": "{\n  \"memory\": \"565aff41c1afc07995163ed4ec1d490d628970bf\",\n  \"completedWork\": [\"ProjectMemoryPort and its structured Markdown backend are implemented; hpubuntu to MSI byte-identical transfer into the authoritative D:/obsidian/knowledge_vault was physically proven.\"],\n  \"decisions\": [\"Use independent node-local vault namespaces and governed content-hash synchronization.\"],\n  \"rejectedApproaches\": [\"Do not use one concurrently edited canonical note across nodes because it creates split-brain and write-conflict risk.\"],\n  \"outstandingWork\": [\"Complete the real writer-to-cold-reader model matrix, verify each continuation, preserve failures, and present the evidence for review.\"],\n  \"supportingEvidence\": [\"Portable-memory checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf; transferred topology note SHA-256 f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2.\"],\n  \"nextAction\": \"EXECUTE_MEMORY_INTEGRITY_CHECK\"\n}\n"
+        },
+        {
+          "attempt": 2,
+          "responseReceived": true,
+          "bytes": 1194,
+          "sha256": "d127227417b1c847caa979d22c6b106cf8cddb4f7c2c03117238e80f5eba05cc",
+          "finishReason": "stop",
+          "responseModel": "qwen2.5-3b-instruct-q4_k_m.gguf",
+          "validJson": true,
+          "applicationSchemaValid": true,
+          "schemaFailures": [],
+          "semanticFailures": [],
+          "sanitizedOutput": "{\n  \"memory\": \"Agent Control 4.5 | cross-model | 565aff41c1afc07995163ed4ec1d490d628970bf | v4.4.0 | D:/obsidian/knowledge_vault | node-local | content-hash | concurrently edited | f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2 | EXECUTE_MEMORY_INTEGRITY_CHECK\",\n  \"completedWork\": [\n    \"ProjectMemoryPort and its structured Markdown backend are implemented; hpubuntu to MSI byte-identical transfer into the authoritative D:/obsidian/knowledge_vault was physically proven.\"\n  ],\n  \"decisions\": [\n    \"Use independent node-local vault namespaces and governed content-hash synchronization.\"\n  ],\n  \"rejectedApproaches\": [\n    \"Do not use one concurrently edited canonical note across nodes because it creates split-brain and write-conflict risk.\"\n  ],\n  \"outstandingWork\": [\n    \"Complete the real writer-to-cold-reader model matrix, verify each continuation, preserve failures, and present the evidence for review.\"\n  ],\n  \"supportingEvidence\": [\n    \"Portable-memory checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf; transferred topology note SHA-256 f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2.\"\n  ],\n  \"nextAction\": \"EXECUTE_MEMORY_INTEGRITY_CHECK\"\n}\n"
+        }
+      ],
+      "readerAttempts": [
+        {
+          "attempt": 1,
+          "responseReceived": true,
+          "bytes": 1601,
+          "sha256": "f261c419390ec1095c2d1ea4651da4753fcd4f42792859fb3c7603dc93072d0e",
+          "finishReason": "completed",
+          "responseModel": "gpt-5.6-luna",
+          "validJson": true,
+          "applicationSchemaValid": true,
+          "schemaFailures": [],
+          "semanticFailures": [
+            "alreadyHappened:missing:hpubuntu",
+            "alreadyHappened:missing:msi",
+            "alreadyHappened:missing:D:/obsidian/knowledge_vault",
+            "currentState:missing:565aff41c1afc07995163ed4ec1d490d628970bf",
+            "currentState:missing:v4.4.0"
+          ],
+          "sanitizedOutput": "{\"what\":\"Agent Control 4.5 cross-model memory qualification. ProjectMemoryPort and its structured Markdown backend are implemented, with byte-identical hpubuntu-to-MSI transfer into D:/obsidian/knowledge_vault proven.\",\"why\":\"The remaining goal is to qualify real writer-to-cold-reader continuation across the model matrix and preserve evidence, including failures, for review.\",\"alreadyHappened\":\"Independent node-local vault namespaces and governed content-hash synchronization were established. Portable-memory checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf was transferred; the topology note hash is f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2.\",\"importantDecisions\":\"Use independent node-local vault namespaces with governed content-hash synchronization.\",\"rejectedApproaches\":\"Do not use one concurrently edited canonical note across nodes because it creates split-brain and write-conflict risk.\",\"currentState\":\"Implementation and physical transfer integrity are complete; cross-model writer-to-cold-reader qualification remains outstanding.\",\"outstandingWork\":\"Complete the real writer-to-cold-reader model matrix, verify every continuation, preserve failures, and present the evidence for review.\",\"supportingEvidence\":\"Advisory governed memory: memory-qwen-to-codex, SHA-256 d3253f595a5604481dbd76832eb506d8ef9276ad8d820a52755a52597da3025b. Checkpoint: 565aff41c1afc07995163ed4ec1d490d628970bf. Transferred topology note SHA-256: f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2.\",\"nextSafeAction\":\"EXECUTE_MEMORY_INTEGRITY_CHECK\",\"contradictions\":[]}"
+        },
+        {
+          "attempt": 2,
+          "responseReceived": true,
+          "bytes": 1454,
+          "sha256": "02b632087ef2c9e1e728e77271241cbc8a1d42bba84403ff8b2aabbc80efd05e",
+          "finishReason": "completed",
+          "responseModel": "gpt-5.6-luna",
+          "validJson": true,
+          "applicationSchemaValid": true,
+          "schemaFailures": [],
+          "semanticFailures": [],
+          "sanitizedOutput": "{\"what\":\"Agent Control 4.5 cross-model memory qualification; ProjectMemoryPort and its structured Markdown backend are implemented.\",\"why\":\"Memory uses independent node-local vault namespaces with governed content-hash synchronization to avoid split-brain and write conflicts.\",\"alreadyHappened\":\"The hpubuntu-to-MSI transfer into the authoritative D:/obsidian/knowledge_vault was physically proven byte-identical.\",\"importantDecisions\":\"Use independent node-local vault namespaces and governed content-hash synchronization.\",\"rejectedApproaches\":\"Do not use one concurrently edited canonical note across nodes because it creates split-brain and write-conflict risk.\",\"currentState\":\"Checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf; version v4.4.0; topology is node-local, content-hash, and concurrently edited; transferred topology note hash is f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2.\",\"outstandingWork\":\"Complete the real writer-to-cold-reader model matrix, verify each continuation, preserve failures, and present the evidence for review.\",\"supportingEvidence\":\"Portable-memory checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf; transferred topology note SHA-256 f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2; governed memory identifier memory-qwen-to-codex sha256:d3253f595a5604481dbd76832eb506d8ef9276ad8d820a52755a52597da3025b.\",\"nextSafeAction\":\"EXECUTE_MEMORY_INTEGRITY_CHECK\",\"contradictions\":[]}"
+        }
+      ],
+      "failures": [],
+      "failureClass": null,
+      "result": "PASS"
+    }
+  ],
+  "totals": {
+    "inputTokens": 26786,
+    "outputTokens": 4305,
+    "totalTokens": 31091,
+    "cachedInputTokens": 3030,
+    "cost": null,
+    "currency": null,
+    "authority": "unavailable"
+  },
+  "projectMemory": {
+    "backend": "structured Markdown directory viewed by Obsidian",
+    "namespace": "/fast/qualification/agent-control-4.5-memory-gap-rerun-v2-20260912/vault/Agent Control/4.5-cross-model-memory",
+    "records": 3,
+    "commonSchema": "agent-control.project-memory/v1"
+  },
+  "poe": null,
+  "pisper": {
+    "decision": "DEFER",
+    "reason": "Governed Turn Snapshot Branching is a useful immutable provenance primitive but is not required for stateless writer-to-reader qualification and would broaden 4.5 scope."
+  },
+  "limitations": [
+    "ChatGPT product-level personal memory is not exposed as a controllable Codex CLI input, so no claim is made for proprietary assistant-memory injection.",
+    "The requested Google/Gemini E4B route is physically the exact Google Gemma 4 E4B local artifact; Gemini was not silently substituted.",
+    "MSI account profiles are reachable but currently authentication-blocked; no MSI model-transition cell is claimed."
+  ],
+  "security": {
+    "writerTranscriptSuppliedToReader": false,
+    "credentialValuesPersisted": false,
+    "providerOutputStoredAsSanitizedStructuredArtifacts": true
+  }
+}

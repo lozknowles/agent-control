@@ -1,0 +1,214 @@
+{
+  "version": 1,
+  "runs": [
+    {
+      "id": "run-e46a98a2-e335-416c-952d-73d34162fd2f",
+      "jobId": "governed-skill-training",
+      "jobVersion": "1.0.0",
+      "trigger": {
+        "type": "manual",
+        "actor": "work-parcel:parcel-cbd4c7e8-b039-49b4-96f0-3c5b2bd7c201",
+        "parcelContext": {
+          "schema": "agent-control.run-parcel-context/v1",
+          "parcelId": "parcel-cbd4c7e8-b039-49b4-96f0-3c5b2bd7c201",
+          "stageId": "train",
+          "originalGoal": "Train the approved Agent Control route-intent specialist through the governed Work Parcel.",
+          "currentInterpretation": "Train the approved bounded route-intent LoRA adaptation.",
+          "effectiveInstructions": [],
+          "constraints": [
+            "CPU only",
+            "Protected GPU services must remain untouched",
+            "Frozen dataset and baseline identities"
+          ],
+          "successCriteria": [
+            {
+              "id": "criterion:stage:train",
+              "description": "Train approved learned skill completes through its declared verification boundary",
+              "status": "PENDING"
+            }
+          ],
+          "baton": {
+            "schema": "agent-control.work-parcel-baton/v2",
+            "id": "parcel-baton-b38b0254-2e10-457e-9346-847592b7cae5",
+            "createdAt": "2026-09-11T16:58:49.942Z",
+            "sourceStageIds": [],
+            "targetStageId": "train",
+            "objective": "Train the approved Agent Control route-intent specialist through the governed Work Parcel.",
+            "currentInterpretation": "Train the approved bounded route-intent LoRA adaptation.",
+            "effectiveInstructions": [],
+            "constraints": [
+              "CPU only",
+              "Protected GPU services must remain untouched",
+              "Frozen dataset and baseline identities"
+            ],
+            "successCriteria": [
+              {
+                "id": "criterion:stage:train",
+                "description": "Train approved learned skill completes through its declared verification boundary",
+                "status": "PENDING"
+              }
+            ],
+            "completedStages": [],
+            "nextAction": "Execute Train approved learned skill through governed-skill-training@1.0.0 and satisfy its declared verification boundary",
+            "artifactIds": [],
+            "outputTypes": [],
+            "eventRefs": [
+              {
+                "id": "context-event-49d049c1-8d38-4e57-9d7c-c1456fa79f4e",
+                "sequence": 1,
+                "type": "goal.recorded",
+                "summary": "Original goal recorded",
+                "sha256": "4ec79c0d4ee5e923494e5096b09b4f1bbfbe1631f3caf9128be243beac49a4fb"
+              },
+              {
+                "id": "context-event-c892f6b1-96ba-427d-811f-3b6d4dce1c97",
+                "sequence": 2,
+                "type": "plan.recorded",
+                "summary": "1 governed stage(s) recorded",
+                "sha256": "8e0d47e3272f0a73898bb2f63a3cbf215a92df60f1d534181b4b7f9f3db86c2b"
+              },
+              {
+                "id": "context-event-3b3a1cc1-d669-4633-b8cf-1d1630ed4aa0",
+                "sequence": 3,
+                "type": "criterion.added",
+                "summary": "Train approved learned skill completes through its declared verification boundary",
+                "sha256": "69b9d7d4e6657a8243f852689b6c5ecf41153f9d778daca17d7914629ebd81e9"
+              }
+            ],
+            "unresolvedQuestions": [],
+            "approvals": [],
+            "previousBatonIds": [],
+            "sizeBytes": 1756,
+            "estimatedTokens": 439,
+            "sha256": "4c3e870967886ce2be943b58e72ab6b3be875c5261570aada098a52622a935cc"
+          }
+        }
+      },
+      "requestedAt": "2026-09-11T16:58:49.944Z",
+      "status": "SUCCEEDED",
+      "priority": "low",
+      "concurrency": "no-overlap",
+      "parameters": {},
+      "steps": [
+        {
+          "id": "train",
+          "action": "learned-specialist.train@1.0.0",
+          "status": "SUCCEEDED",
+          "dependsOn": [],
+          "capabilityRequest": {
+            "requires": [
+              {
+                "id": "training.cpu"
+              }
+            ]
+          },
+          "resources": [
+            "training:route-intent"
+          ],
+          "attempts": [
+            {
+              "attempt": 1,
+              "startedAt": "2026-09-11T16:58:49.951Z",
+              "workerId": "isolated-controller-cpu",
+              "efficiencyInvocationIds": [],
+              "endedAt": "2026-09-11T17:01:52.740Z",
+              "outcome": "Governed learned-skill training completed; qualification remains separate."
+            }
+          ],
+          "artifactIds": [
+            "artifact-bd06a755-1776-4c1d-adb2-ea5a0dea9173"
+          ],
+          "approval": "qualification.skill-training",
+          "verification": {
+            "required": [],
+            "passed": [],
+            "failed": []
+          },
+          "placement": {
+            "selected": "isolated-controller-cpu",
+            "eligible": [
+              "isolated-controller-cpu"
+            ],
+            "rejected": [],
+            "reasons": [
+              "satisfies:training.cpu",
+              "healthy",
+              "available"
+            ]
+          },
+          "startedAt": "2026-09-11T16:58:49.951Z",
+          "endedAt": "2026-09-11T17:01:52.740Z"
+        }
+      ],
+      "artifacts": [
+        "artifact-bd06a755-1776-4c1d-adb2-ea5a0dea9173"
+      ],
+      "errors": [],
+      "effectiveJob": {
+        "apiVersion": "agent-control/v1",
+        "kind": "Job",
+        "metadata": {
+          "id": "governed-skill-training",
+          "name": "Governed skill training",
+          "version": "1.0.0"
+        },
+        "spec": {
+          "priority": "low",
+          "concurrency": "no-overlap",
+          "steps": [
+            {
+              "id": "train",
+              "action": "learned-specialist.train@1.0.0",
+              "requires": [
+                "training.cpu"
+              ],
+              "resources": [
+                "training:route-intent"
+              ],
+              "timeoutSeconds": 600,
+              "approval": "qualification.skill-training",
+              "outputs": [
+                {
+                  "name": "skill-training-result",
+                  "type": "application/json",
+                  "schema": "agent-control.skill-training-result/v1",
+                  "version": "1.0.0"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "selectedWorkers": [
+        "isolated-controller-cpu"
+      ],
+      "approvals": [],
+      "provenance": [
+        {
+          "type": "trigger",
+          "at": "2026-09-11T16:58:49.944Z",
+          "detail": "manual:work-parcel:parcel-cbd4c7e8-b039-49b4-96f0-3c5b2bd7c201"
+        },
+        {
+          "type": "action-dispatch",
+          "at": "2026-09-11T16:58:49.953Z",
+          "detail": "control:learned-specialist.train@1.0.0"
+        },
+        {
+          "type": "evidence",
+          "at": "2026-09-11T17:01:52.740Z",
+          "detail": "skill-candidate:skill-candidate-73e81cbd-cafc-4c0f-ab19-da0f92594b23"
+        },
+        {
+          "type": "evidence",
+          "at": "2026-09-11T17:01:52.740Z",
+          "detail": "adapter:19b3b94e1178bc1cb90eeaf1447198e1926aade5d25049c96efae1b273fa5473"
+        }
+      ],
+      "updatedAt": "2026-09-11T17:01:52.742Z",
+      "startedAt": "2026-09-11T16:58:49.951Z",
+      "endedAt": "2026-09-11T17:01:52.742Z"
+    }
+  ],
+  "schedules": []
+}

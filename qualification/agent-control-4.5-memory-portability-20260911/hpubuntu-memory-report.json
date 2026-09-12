@@ -1,0 +1,51 @@
+{
+  "schema": "agent-control.project-memory-qualification/v1",
+  "observedAt": "2026-09-11T17:11:47.064Z",
+  "nodeId": "hpubuntu",
+  "backend": "markdown-vault",
+  "namespace": "4.5-memory-portability",
+  "written": [
+    {
+      "id": "ac45-objective",
+      "sha256": "7743b7927de47104834d867cab3923935cd68f4f43d51d640012563ea2607979"
+    },
+    {
+      "id": "ac45-memory-topology",
+      "sha256": "51df896022eb76ad22b1bee32e039ddd848ab769df4c6e86a48ac769641f135b"
+    }
+  ],
+  "recall": {
+    "candidates": 2,
+    "accepted": [
+      {
+        "id": "ac45-memory-topology",
+        "score": 0.5265714285714286,
+        "method": "METADATA",
+        "provenance": [
+          {
+            "id": "physical:vault-discovery",
+            "sha256": "0cc047e0dc97043bfae138ad4d0b1db2d2222f517568bdb795602a4d82c3566e",
+            "authority": "AUTHORITATIVE"
+          }
+        ]
+      },
+      {
+        "id": "ac45-objective",
+        "score": 0.5265714285714286,
+        "method": "METADATA",
+        "provenance": [
+          {
+            "id": "git:4a969a7",
+            "sha256": "cdac727719b88edbc9cd0e0683a0579e0219a96d34a189ef2034c194ff42c809",
+            "authority": "AUTHORITATIVE"
+          }
+        ]
+      }
+    ],
+    "rejected": [],
+    "conflicts": [],
+    "bytesInjected": 246,
+    "estimatedTokens": 62,
+    "latencyMs": 14
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "artifacts": [
+    {
+      "id": "artifact-3f4df7c4-af31-4f31-b672-00d621e88972",
+      "runId": "run-e9dc57a3-bee3-4ab7-ba7a-07d7db2638f5",
+      "stepId": "execute",
+      "name": "deterministic-skill-result",
+      "type": "application/json",
+      "schema": "agent-control.deterministic-skill-result/v1",
+      "version": "1.0.0",
+      "createdAt": "2026-09-11T21:19:36.590Z",
+      "size": 1652,
+      "sha256": "a06bbaf6499db763ef17cb6adc18ad9e44070cdab7a5d9dc38a697fded4bce1a",
+      "storageRef": "/fast/work/agent-control-4.5-skill-learning/qualification/agent-control-4.5-deterministic-skill-20260911/product-runtime/jobs/artifact-store/objects/artifact-3f4df7c4-af31-4f31-b672-00d621e88972.json",
+      "retention": "run-history",
+      "provenance": {
+        "jobId": "deterministic-skill-execution",
+        "jobVersion": "1.0.0",
+        "action": "deterministic-skill.execute@1.0.0",
+        "workerId": "hpubuntu"
+      }
+    }
+  ]
+}

@@ -205,3 +205,20 @@ test('cache-aware expert decay and compatibility policy is provider-neutral and 
   assert.throws(()=>validateConfig({...base,cacheAwareExperts:{highCompatibilityMaximumDelta:.8,partialCompatibilityMaximumDelta:.5}}),/compatibility_order/);
   assert.throws(()=>validateConfig({...base,cacheAwareExperts:{maximumScoreBonus:2}}),/maximumScoreBonus/);
 });
+
+test('learned skill policy is opt-in for routing and bounded independently of training framework',()=>{
+  const base={schemaVersion:1 as const,resources:[],providers:[],models:[],modelRouting:{roles:{}},services:[],lanes:[]};
+  const config=validateConfig({...base,learnedSkills:{enabled:true,routingEnabled:false,minimumImprovement:.15,maximumQualificationAgeDays:60,requireHumanDatasetApproval:true}});
+  assert.equal(config.learnedSkills?.routingEnabled,false);assert.equal(config.learnedSkills?.minimumImprovement,.15);
+  assert.throws(()=>validateConfig({...base,learnedSkills:{minimumImprovement:1.1}}),/minimum_improvement/);
+  assert.throws(()=>validateConfig({...base,learnedSkills:{maximumQualificationAgeDays:0}}),/maximum_qualification_age_days/);
+  assert.throws(()=>validateConfig({...base,learnedSkills:{routingEnabled:'yes'}}),/routingEnabled/);
+});
+
+test('deterministic skill promotion policy requires repeated evidence and conservative routing',()=>{
+  const base={schemaVersion:1 as const,resources:[],providers:[],models:[],modelRouting:{roles:{}},services:[],lanes:[]};
+  const config=validateConfig({...base,deterministicSkills:{enabled:true,routingEnabled:false,minimumDistinctParcels:3,maximumValidationAgeDays:90}});
+  assert.equal(config.deterministicSkills?.routingEnabled,false);assert.equal(config.deterministicSkills?.minimumDistinctParcels,3);
+  assert.throws(()=>validateConfig({...base,deterministicSkills:{minimumDistinctParcels:1}}),/minimum_distinct_parcels/);
+  assert.throws(()=>validateConfig({...base,deterministicSkills:{routingEnabled:'yes'}}),/routingEnabled/);
+});

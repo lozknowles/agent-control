@@ -1,0 +1,1116 @@
+{
+  "version": 1,
+  "runs": [
+    {
+      "id": "run-9daa169b-1536-4b85-be6b-7676d6d39626",
+      "jobId": "qualified-route-intent-specialist",
+      "jobVersion": "1.0.0",
+      "trigger": {
+        "type": "manual",
+        "actor": "work-parcel:parcel-0fedd96c-da30-46cf-bc8a-428c35efbbc5",
+        "parcelContext": {
+          "schema": "agent-control.run-parcel-context/v1",
+          "parcelId": "parcel-0fedd96c-da30-46cf-bc8a-428c35efbbc5",
+          "stageId": "classify",
+          "originalGoal": "NEGATIVE: Translate this poem into French.",
+          "currentInterpretation": "Classify a bounded Agent Control request with a qualified learned specialist.",
+          "effectiveInstructions": [],
+          "constraints": [
+            "No deployment",
+            "Independent verification required"
+          ],
+          "successCriteria": [
+            {
+              "id": "criterion:stage:classify",
+              "description": "Classify route intent completes through its declared verification boundary",
+              "status": "PENDING"
+            }
+          ],
+          "baton": {
+            "schema": "agent-control.work-parcel-baton/v2",
+            "id": "parcel-baton-e73a0a45-f579-4ed6-afe8-69526f23168c",
+            "createdAt": "2026-09-11T16:51:23.087Z",
+            "sourceStageIds": [],
+            "targetStageId": "classify",
+            "objective": "NEGATIVE: Translate this poem into French.",
+            "currentInterpretation": "Classify a bounded Agent Control request with a qualified learned specialist.",
+            "effectiveInstructions": [],
+            "constraints": [
+              "No deployment",
+              "Independent verification required"
+            ],
+            "successCriteria": [
+              {
+                "id": "criterion:stage:classify",
+                "description": "Classify route intent completes through its declared verification boundary",
+                "status": "PENDING"
+              }
+            ],
+            "completedStages": [],
+            "nextAction": "Execute Classify route intent through qualified-route-intent-specialist@1.0.0 and satisfy its declared verification boundary",
+            "artifactIds": [],
+            "outputTypes": [],
+            "eventRefs": [
+              {
+                "id": "context-event-81cd2a29-d7cf-48ae-b637-bd449c53ba75",
+                "sequence": 1,
+                "type": "goal.recorded",
+                "summary": "Original goal recorded",
+                "sha256": "7166bb956ddc38b61d76d6524cbf3472330baa83e01dfd8f6cd110432c232b00"
+              },
+              {
+                "id": "context-event-8909f1ba-b708-4c2d-b9ff-99145f5846b9",
+                "sequence": 2,
+                "type": "plan.recorded",
+                "summary": "1 governed stage(s) recorded",
+                "sha256": "629782801f4d5927cc8c37bef325cbbb97d013460204380619361e69b983e970"
+              },
+              {
+                "id": "context-event-c877f6ec-ae87-497a-94e9-f740d96fee0a",
+                "sequence": 3,
+                "type": "criterion.added",
+                "summary": "Classify route intent completes through its declared verification boundary",
+                "sha256": "0187f67c1e352056105d4353a1987ed83f3b400e7435eb1cbb2e0c3aa4a0ffb2"
+              }
+            ],
+            "unresolvedQuestions": [],
+            "approvals": [],
+            "previousBatonIds": [],
+            "sizeBytes": 1677,
+            "estimatedTokens": 420,
+            "sha256": "8671b83d5fc0246b08a930093aeace4fb141aafe97e3f9f64122a95cb3e8bcbc"
+          }
+        }
+      },
+      "requestedAt": "2026-09-11T16:51:23.089Z",
+      "status": "FAILED",
+      "priority": "normal",
+      "concurrency": "queue",
+      "parameters": {
+        "taskClass": "unrelated-task",
+        "input": "Translate this poem into French."
+      },
+      "steps": [
+        {
+          "id": "execute",
+          "action": "learned-specialist.execute@1.0.0",
+          "status": "FAILED",
+          "dependsOn": [],
+          "capabilityRequest": {
+            "requires": [
+              {
+                "id": "qualification.local"
+              }
+            ]
+          },
+          "resources": [],
+          "attempts": [
+            {
+              "attempt": 1,
+              "startedAt": "2026-09-11T16:51:23.095Z",
+              "workerId": "controller-cpu",
+              "endedAt": "2026-09-11T16:51:23.099Z",
+              "outcome": "learned_specialist_route_unavailable",
+              "retryable": false,
+              "errorClass": "capability_unavailable",
+              "recoveryKind": "execution"
+            }
+          ],
+          "artifactIds": [],
+          "verification": {
+            "required": [],
+            "passed": [],
+            "failed": []
+          },
+          "placement": {
+            "selected": "controller-cpu",
+            "eligible": [
+              "controller-cpu"
+            ],
+            "rejected": [],
+            "reasons": [
+              "satisfies:qualification.local",
+              "healthy",
+              "available"
+            ]
+          },
+          "startedAt": "2026-09-11T16:51:23.095Z",
+          "error": "learned_specialist_route_unavailable",
+          "endedAt": "2026-09-11T16:51:23.099Z",
+          "remainingRetryBudget": 0
+        },
+        {
+          "id": "verify",
+          "action": "learned-specialist.verify@1.0.0",
+          "status": "CANCELLED",
+          "dependsOn": [
+            "execute"
+          ],
+          "capabilityRequest": {
+            "requires": [
+              {
+                "id": "qualification.local"
+              }
+            ]
+          },
+          "resources": [],
+          "attempts": [],
+          "artifactIds": [],
+          "verification": {
+            "required": [
+              "learned-specialist-independent-verification"
+            ],
+            "passed": [],
+            "failed": []
+          },
+          "error": "upstream_failed",
+          "endedAt": "2026-09-11T16:51:23.099Z"
+        }
+      ],
+      "artifacts": [],
+      "errors": [
+        "execute:capability_unavailable:learned_specialist_route_unavailable"
+      ],
+      "effectiveJob": {
+        "apiVersion": "agent-control/v1",
+        "kind": "Job",
+        "metadata": {
+          "id": "qualified-route-intent-specialist",
+          "name": "Qualified route-intent specialist",
+          "version": "1.0.0"
+        },
+        "spec": {
+          "priority": "normal",
+          "concurrency": "queue",
+          "parameters": {
+            "taskClass": {
+              "type": "string",
+              "required": true
+            },
+            "input": {
+              "type": "string",
+              "required": true
+            }
+          },
+          "steps": [
+            {
+              "id": "execute",
+              "action": "learned-specialist.execute@1.0.0",
+              "requires": [
+                "qualification.local"
+              ],
+              "outputs": [
+                {
+                  "name": "specialist-result",
+                  "type": "application/json",
+                  "schema": "agent-control.learned-specialist-result/v1",
+                  "version": "1.0.0"
+                }
+              ]
+            },
+            {
+              "id": "verify",
+              "action": "learned-specialist.verify@1.0.0",
+              "requires": [
+                "qualification.local"
+              ],
+              "dependsOn": [
+                "execute"
+              ],
+              "inputs": {
+                "result": "execute.specialist-result"
+              },
+              "outputs": [
+                {
+                  "name": "specialist-verification",
+                  "type": "application/json",
+                  "schema": "agent-control.learned-specialist-verification/v1",
+                  "version": "1.0.0"
+                }
+              ],
+              "verification": [
+                "learned-specialist-independent-verification"
+              ]
+            }
+          ]
+        }
+      },
+      "selectedWorkers": [
+        "controller-cpu"
+      ],
+      "approvals": [],
+      "provenance": [
+        {
+          "type": "trigger",
+          "at": "2026-09-11T16:51:23.089Z",
+          "detail": "manual:work-parcel:parcel-0fedd96c-da30-46cf-bc8a-428c35efbbc5"
+        },
+        {
+          "type": "action-dispatch",
+          "at": "2026-09-11T16:51:23.098Z",
+          "detail": "agent:learned-specialist.execute@1.0.0:adaptive-harness"
+        }
+      ],
+      "updatedAt": "2026-09-11T16:51:23.099Z",
+      "startedAt": "2026-09-11T16:51:23.095Z",
+      "endedAt": "2026-09-11T16:51:23.099Z"
+    },
+    {
+      "id": "run-40e03e14-13ed-4176-b3b1-9172d8d9941b",
+      "jobId": "qualified-route-intent-specialist",
+      "jobVersion": "1.0.0",
+      "trigger": {
+        "type": "manual",
+        "actor": "work-parcel:parcel-b2649b2f-1357-4d9f-a4cd-8d95e4d96648",
+        "parcelContext": {
+          "schema": "agent-control.run-parcel-context/v1",
+          "parcelId": "parcel-b2649b2f-1357-4d9f-a4cd-8d95e4d96648",
+          "stageId": "classify",
+          "originalGoal": "Please review the release evidence without making changes.",
+          "currentInterpretation": "Classify a bounded Agent Control request with a qualified learned specialist.",
+          "effectiveInstructions": [],
+          "constraints": [
+            "No deployment",
+            "Independent verification required"
+          ],
+          "successCriteria": [
+            {
+              "id": "criterion:stage:classify",
+              "description": "Classify route intent completes through its declared verification boundary",
+              "status": "PENDING"
+            }
+          ],
+          "baton": {
+            "schema": "agent-control.work-parcel-baton/v2",
+            "id": "parcel-baton-5deac6b2-ba57-48f4-9951-204d70652a60",
+            "createdAt": "2026-09-11T16:51:17.082Z",
+            "sourceStageIds": [],
+            "targetStageId": "classify",
+            "objective": "Please review the release evidence without making changes.",
+            "currentInterpretation": "Classify a bounded Agent Control request with a qualified learned specialist.",
+            "effectiveInstructions": [],
+            "constraints": [
+              "No deployment",
+              "Independent verification required"
+            ],
+            "successCriteria": [
+              {
+                "id": "criterion:stage:classify",
+                "description": "Classify route intent completes through its declared verification boundary",
+                "status": "PENDING"
+              }
+            ],
+            "completedStages": [],
+            "nextAction": "Execute Classify route intent through qualified-route-intent-specialist@1.0.0 and satisfy its declared verification boundary",
+            "artifactIds": [],
+            "outputTypes": [],
+            "eventRefs": [
+              {
+                "id": "context-event-b23aa4c8-4062-4378-bb2b-240e2b65348a",
+                "sequence": 1,
+                "type": "goal.recorded",
+                "summary": "Original goal recorded",
+                "sha256": "0910511aa8d377824210c5cb2e7b37582e2f0bba8d0f2bcb26a2dcd808e619a4"
+              },
+              {
+                "id": "context-event-6ed55c53-39b6-446d-ae14-140da0683775",
+                "sequence": 2,
+                "type": "plan.recorded",
+                "summary": "1 governed stage(s) recorded",
+                "sha256": "29fd977c245c7c67578f2b5678a190ae61bcbee49656b6728ea4bc2c569020d7"
+              },
+              {
+                "id": "context-event-c775bc7c-69cb-4cd7-a84e-b9ac430587bf",
+                "sequence": 3,
+                "type": "criterion.added",
+                "summary": "Classify route intent completes through its declared verification boundary",
+                "sha256": "40ea883114b5b50461aa3066cc00610a466f855ed61432e57d457af4ac5aa019"
+              }
+            ],
+            "unresolvedQuestions": [],
+            "approvals": [],
+            "previousBatonIds": [],
+            "sizeBytes": 1693,
+            "estimatedTokens": 424,
+            "sha256": "e88c235f8c7ec6de83d69500b08c2fa910ec60530ff912880abcc6ae50f290a6"
+          }
+        }
+      },
+      "requestedAt": "2026-09-11T16:51:17.084Z",
+      "status": "SUCCEEDED",
+      "priority": "normal",
+      "concurrency": "queue",
+      "parameters": {
+        "taskClass": "route-intent-json",
+        "input": "Please review the release evidence without making changes."
+      },
+      "steps": [
+        {
+          "id": "execute",
+          "action": "learned-specialist.execute@1.0.0",
+          "status": "SUCCEEDED",
+          "dependsOn": [],
+          "capabilityRequest": {
+            "requires": [
+              {
+                "id": "qualification.local"
+              }
+            ]
+          },
+          "resources": [],
+          "attempts": [
+            {
+              "attempt": 1,
+              "startedAt": "2026-09-11T16:51:17.094Z",
+              "workerId": "controller-cpu",
+              "efficiencyInvocationIds": [],
+              "endedAt": "2026-09-11T16:51:23.049Z",
+              "outcome": "Qualified learned specialist route-intent-lora@1 completed typed execution; independent verification remains required."
+            }
+          ],
+          "artifactIds": [
+            "artifact-c5055035-333a-4994-a10c-448e11da38de"
+          ],
+          "verification": {
+            "required": [],
+            "passed": [],
+            "failed": []
+          },
+          "placement": {
+            "selected": "controller-cpu",
+            "eligible": [
+              "controller-cpu"
+            ],
+            "rejected": [],
+            "reasons": [
+              "satisfies:qualification.local",
+              "healthy",
+              "available"
+            ]
+          },
+          "startedAt": "2026-09-11T16:51:17.094Z",
+          "endedAt": "2026-09-11T16:51:23.049Z"
+        },
+        {
+          "id": "verify",
+          "action": "learned-specialist.verify@1.0.0",
+          "status": "SUCCEEDED",
+          "dependsOn": [
+            "execute"
+          ],
+          "capabilityRequest": {
+            "requires": [
+              {
+                "id": "qualification.local"
+              }
+            ]
+          },
+          "resources": [],
+          "attempts": [
+            {
+              "attempt": 1,
+              "startedAt": "2026-09-11T16:51:23.065Z",
+              "workerId": "controller-cpu",
+              "efficiencyInvocationIds": [],
+              "endedAt": "2026-09-11T16:51:23.072Z",
+              "outcome": "Independent lexical oracle accepted LANE_REVIEW."
+            }
+          ],
+          "artifactIds": [
+            "artifact-d9b5db50-ee00-4ab0-a78f-bbc287418607"
+          ],
+          "verification": {
+            "required": [
+              "learned-specialist-independent-verification"
+            ],
+            "passed": [
+              "learned-specialist-independent-verification"
+            ],
+            "failed": []
+          },
+          "placement": {
+            "selected": "controller-cpu",
+            "eligible": [
+              "controller-cpu"
+            ],
+            "rejected": [],
+            "reasons": [
+              "satisfies:qualification.local",
+              "healthy",
+              "available"
+            ]
+          },
+          "startedAt": "2026-09-11T16:51:23.065Z",
+          "endedAt": "2026-09-11T16:51:23.072Z"
+        }
+      ],
+      "artifacts": [
+        "artifact-c5055035-333a-4994-a10c-448e11da38de",
+        "artifact-d9b5db50-ee00-4ab0-a78f-bbc287418607"
+      ],
+      "errors": [],
+      "effectiveJob": {
+        "apiVersion": "agent-control/v1",
+        "kind": "Job",
+        "metadata": {
+          "id": "qualified-route-intent-specialist",
+          "name": "Qualified route-intent specialist",
+          "version": "1.0.0"
+        },
+        "spec": {
+          "priority": "normal",
+          "concurrency": "queue",
+          "parameters": {
+            "taskClass": {
+              "type": "string",
+              "required": true
+            },
+            "input": {
+              "type": "string",
+              "required": true
+            }
+          },
+          "steps": [
+            {
+              "id": "execute",
+              "action": "learned-specialist.execute@1.0.0",
+              "requires": [
+                "qualification.local"
+              ],
+              "outputs": [
+                {
+                  "name": "specialist-result",
+                  "type": "application/json",
+                  "schema": "agent-control.learned-specialist-result/v1",
+                  "version": "1.0.0"
+                }
+              ]
+            },
+            {
+              "id": "verify",
+              "action": "learned-specialist.verify@1.0.0",
+              "requires": [
+                "qualification.local"
+              ],
+              "dependsOn": [
+                "execute"
+              ],
+              "inputs": {
+                "result": "execute.specialist-result"
+              },
+              "outputs": [
+                {
+                  "name": "specialist-verification",
+                  "type": "application/json",
+                  "schema": "agent-control.learned-specialist-verification/v1",
+                  "version": "1.0.0"
+                }
+              ],
+              "verification": [
+                "learned-specialist-independent-verification"
+              ]
+            }
+          ]
+        }
+      },
+      "selectedWorkers": [
+        "controller-cpu"
+      ],
+      "approvals": [],
+      "provenance": [
+        {
+          "type": "trigger",
+          "at": "2026-09-11T16:51:17.084Z",
+          "detail": "manual:work-parcel:parcel-b2649b2f-1357-4d9f-a4cd-8d95e4d96648"
+        },
+        {
+          "type": "action-dispatch",
+          "at": "2026-09-11T16:51:17.096Z",
+          "detail": "agent:learned-specialist.execute@1.0.0:adaptive-harness"
+        },
+        {
+          "type": "evidence",
+          "at": "2026-09-11T16:51:23.049Z",
+          "detail": "skill-route:skill-route-339851e3-8e3f-4cf4-9438-97e2ed4b9261"
+        },
+        {
+          "type": "evidence",
+          "at": "2026-09-11T16:51:23.049Z",
+          "detail": "skill-adapter:route-intent-lora@1"
+        },
+        {
+          "type": "evidence",
+          "at": "2026-09-11T16:51:23.049Z",
+          "detail": "skill-adapter-sha256:7e6f36b34998cb26971b8f528984a8e1cadc9d6e591120596baafac6c1bd5802"
+        },
+        {
+          "type": "action-dispatch",
+          "at": "2026-09-11T16:51:23.068Z",
+          "detail": "control:learned-specialist.verify@1.0.0"
+        },
+        {
+          "type": "evidence",
+          "at": "2026-09-11T16:51:23.072Z",
+          "detail": "oracle:b8b3378999c258c3d1602ac9e4e3984340c34cd6755fa952093be526e4477084"
+        }
+      ],
+      "updatedAt": "2026-09-11T16:51:23.075Z",
+      "startedAt": "2026-09-11T16:51:17.094Z",
+      "endedAt": "2026-09-11T16:51:23.075Z"
+    },
+    {
+      "id": "run-672b4261-822f-48b9-a348-83314c6fffa4",
+      "jobId": "qualified-route-intent-specialist",
+      "jobVersion": "1.0.0",
+      "trigger": {
+        "type": "manual",
+        "actor": "work-parcel:parcel-8416b2fa-348d-4a7c-b2f8-327ddf13e207",
+        "parcelContext": {
+          "schema": "agent-control.run-parcel-context/v1",
+          "parcelId": "parcel-8416b2fa-348d-4a7c-b2f8-327ddf13e207",
+          "stageId": "classify",
+          "originalGoal": "NEGATIVE: Translate this poem into French.",
+          "currentInterpretation": "Classify a bounded Agent Control request with a qualified learned specialist.",
+          "effectiveInstructions": [],
+          "constraints": [
+            "No deployment",
+            "Independent verification required"
+          ],
+          "successCriteria": [
+            {
+              "id": "criterion:stage:classify",
+              "description": "Classify route intent completes through its declared verification boundary",
+              "status": "PENDING"
+            }
+          ],
+          "baton": {
+            "schema": "agent-control.work-parcel-baton/v2",
+            "id": "parcel-baton-6a8cc620-6034-4109-815f-b5a77a8eba49",
+            "createdAt": "2026-09-11T16:49:19.781Z",
+            "sourceStageIds": [],
+            "targetStageId": "classify",
+            "objective": "NEGATIVE: Translate this poem into French.",
+            "currentInterpretation": "Classify a bounded Agent Control request with a qualified learned specialist.",
+            "effectiveInstructions": [],
+            "constraints": [
+              "No deployment",
+              "Independent verification required"
+            ],
+            "successCriteria": [
+              {
+                "id": "criterion:stage:classify",
+                "description": "Classify route intent completes through its declared verification boundary",
+                "status": "PENDING"
+              }
+            ],
+            "completedStages": [],
+            "nextAction": "Execute Classify route intent through qualified-route-intent-specialist@1.0.0 and satisfy its declared verification boundary",
+            "artifactIds": [],
+            "outputTypes": [],
+            "eventRefs": [
+              {
+                "id": "context-event-86aa90f3-b253-4662-805e-1e66c37bb10f",
+                "sequence": 1,
+                "type": "goal.recorded",
+                "summary": "Original goal recorded",
+                "sha256": "ca3e62853da9e3c3e6e3adcd64af4ae6a735adfd5515263eae73f171f1a22ba4"
+              },
+              {
+                "id": "context-event-2d37e675-a1e5-4377-996e-b95c0977e84e",
+                "sequence": 2,
+                "type": "plan.recorded",
+                "summary": "1 governed stage(s) recorded",
+                "sha256": "8a447be4c3fdc4ef8e720cf2d869ec6068305e130970d9c81fb508060ff250ed"
+              },
+              {
+                "id": "context-event-33d5fd16-b4c8-4aae-96f7-bcf930a3d0a6",
+                "sequence": 3,
+                "type": "criterion.added",
+                "summary": "Classify route intent completes through its declared verification boundary",
+                "sha256": "9ec6aa2a8d036b7d561c1ba3df4f939753d2ad1964c3a1abef772308514ef2cb"
+              }
+            ],
+            "unresolvedQuestions": [],
+            "approvals": [],
+            "previousBatonIds": [],
+            "sizeBytes": 1677,
+            "estimatedTokens": 420,
+            "sha256": "9b75677c4cc75db2370d5846d682ffa742d6fa43c5d706f41a571a7107ecaf8a"
+          }
+        }
+      },
+      "requestedAt": "2026-09-11T16:49:19.782Z",
+      "status": "FAILED",
+      "priority": "normal",
+      "concurrency": "queue",
+      "parameters": {
+        "taskClass": "unrelated-task",
+        "input": "Translate this poem into French."
+      },
+      "steps": [
+        {
+          "id": "execute",
+          "action": "learned-specialist.execute@1.0.0",
+          "status": "FAILED",
+          "dependsOn": [],
+          "capabilityRequest": {
+            "requires": [
+              {
+                "id": "qualification.local"
+              }
+            ]
+          },
+          "resources": [],
+          "attempts": [
+            {
+              "attempt": 1,
+              "startedAt": "2026-09-11T16:49:19.787Z",
+              "workerId": "controller-cpu",
+              "endedAt": "2026-09-11T16:49:19.790Z",
+              "outcome": "learned_specialist_route_unavailable",
+              "retryable": false,
+              "errorClass": "capability_unavailable",
+              "recoveryKind": "execution"
+            }
+          ],
+          "artifactIds": [],
+          "verification": {
+            "required": [],
+            "passed": [],
+            "failed": []
+          },
+          "placement": {
+            "selected": "controller-cpu",
+            "eligible": [
+              "controller-cpu"
+            ],
+            "rejected": [],
+            "reasons": [
+              "satisfies:qualification.local",
+              "healthy",
+              "available"
+            ]
+          },
+          "startedAt": "2026-09-11T16:49:19.787Z",
+          "error": "learned_specialist_route_unavailable",
+          "endedAt": "2026-09-11T16:49:19.790Z",
+          "remainingRetryBudget": 0
+        },
+        {
+          "id": "verify",
+          "action": "learned-specialist.verify@1.0.0",
+          "status": "CANCELLED",
+          "dependsOn": [
+            "execute"
+          ],
+          "capabilityRequest": {
+            "requires": [
+              {
+                "id": "qualification.local"
+              }
+            ]
+          },
+          "resources": [],
+          "attempts": [],
+          "artifactIds": [],
+          "verification": {
+            "required": [
+              "learned-specialist-independent-verification"
+            ],
+            "passed": [],
+            "failed": []
+          },
+          "error": "upstream_failed",
+          "endedAt": "2026-09-11T16:49:19.790Z"
+        }
+      ],
+      "artifacts": [],
+      "errors": [
+        "execute:capability_unavailable:learned_specialist_route_unavailable"
+      ],
+      "effectiveJob": {
+        "apiVersion": "agent-control/v1",
+        "kind": "Job",
+        "metadata": {
+          "id": "qualified-route-intent-specialist",
+          "name": "Qualified route-intent specialist",
+          "version": "1.0.0"
+        },
+        "spec": {
+          "priority": "normal",
+          "concurrency": "queue",
+          "parameters": {
+            "taskClass": {
+              "type": "string",
+              "required": true
+            },
+            "input": {
+              "type": "string",
+              "required": true
+            }
+          },
+          "steps": [
+            {
+              "id": "execute",
+              "action": "learned-specialist.execute@1.0.0",
+              "requires": [
+                "qualification.local"
+              ],
+              "outputs": [
+                {
+                  "name": "specialist-result",
+                  "type": "application/json",
+                  "schema": "agent-control.learned-specialist-result/v1",
+                  "version": "1.0.0"
+                }
+              ]
+            },
+            {
+              "id": "verify",
+              "action": "learned-specialist.verify@1.0.0",
+              "requires": [
+                "qualification.local"
+              ],
+              "dependsOn": [
+                "execute"
+              ],
+              "inputs": {
+                "result": "execute.specialist-result"
+              },
+              "outputs": [
+                {
+                  "name": "specialist-verification",
+                  "type": "application/json",
+                  "schema": "agent-control.learned-specialist-verification/v1",
+                  "version": "1.0.0"
+                }
+              ],
+              "verification": [
+                "learned-specialist-independent-verification"
+              ]
+            }
+          ]
+        }
+      },
+      "selectedWorkers": [
+        "controller-cpu"
+      ],
+      "approvals": [],
+      "provenance": [
+        {
+          "type": "trigger",
+          "at": "2026-09-11T16:49:19.782Z",
+          "detail": "manual:work-parcel:parcel-8416b2fa-348d-4a7c-b2f8-327ddf13e207"
+        },
+        {
+          "type": "action-dispatch",
+          "at": "2026-09-11T16:49:19.789Z",
+          "detail": "agent:learned-specialist.execute@1.0.0:adaptive-harness"
+        }
+      ],
+      "updatedAt": "2026-09-11T16:49:19.790Z",
+      "startedAt": "2026-09-11T16:49:19.787Z",
+      "endedAt": "2026-09-11T16:49:19.790Z"
+    },
+    {
+      "id": "run-598bf155-b76a-4a6c-8208-e61d05987f6c",
+      "jobId": "qualified-route-intent-specialist",
+      "jobVersion": "1.0.0",
+      "trigger": {
+        "type": "manual",
+        "actor": "work-parcel:parcel-608d49b1-7c87-43bf-8fde-ff446f241ef0",
+        "parcelContext": {
+          "schema": "agent-control.run-parcel-context/v1",
+          "parcelId": "parcel-608d49b1-7c87-43bf-8fde-ff446f241ef0",
+          "stageId": "classify",
+          "originalGoal": "Please review the Agent Control 4.5 qualification evidence without making changes.",
+          "currentInterpretation": "Classify a bounded Agent Control request with a qualified learned specialist.",
+          "effectiveInstructions": [],
+          "constraints": [
+            "No deployment",
+            "Independent verification required"
+          ],
+          "successCriteria": [
+            {
+              "id": "criterion:stage:classify",
+              "description": "Classify route intent completes through its declared verification boundary",
+              "status": "PENDING"
+            }
+          ],
+          "baton": {
+            "schema": "agent-control.work-parcel-baton/v2",
+            "id": "parcel-baton-76a59104-d6f4-4282-beca-7d17b02192dc",
+            "createdAt": "2026-09-11T16:49:13.105Z",
+            "sourceStageIds": [],
+            "targetStageId": "classify",
+            "objective": "Please review the Agent Control 4.5 qualification evidence without making changes.",
+            "currentInterpretation": "Classify a bounded Agent Control request with a qualified learned specialist.",
+            "effectiveInstructions": [],
+            "constraints": [
+              "No deployment",
+              "Independent verification required"
+            ],
+            "successCriteria": [
+              {
+                "id": "criterion:stage:classify",
+                "description": "Classify route intent completes through its declared verification boundary",
+                "status": "PENDING"
+              }
+            ],
+            "completedStages": [],
+            "nextAction": "Execute Classify route intent through qualified-route-intent-specialist@1.0.0 and satisfy its declared verification boundary",
+            "artifactIds": [],
+            "outputTypes": [],
+            "eventRefs": [
+              {
+                "id": "context-event-b1a80d1f-f31d-468d-a9df-5e9d52b968c4",
+                "sequence": 1,
+                "type": "goal.recorded",
+                "summary": "Original goal recorded",
+                "sha256": "4ebe3c6d55961418afb6d0c66eef2939583ed03d940722f932469d5ef37e6c50"
+              },
+              {
+                "id": "context-event-caba23d0-70dd-4c94-be2f-346c303793db",
+                "sequence": 2,
+                "type": "plan.recorded",
+                "summary": "1 governed stage(s) recorded",
+                "sha256": "f0bf6b2e90da753d97e1d0d65d7d86261716a37ac8e958b24eedbe6a34ed7701"
+              },
+              {
+                "id": "context-event-abee8d8e-c5b9-404a-921f-d55c99d31b1d",
+                "sequence": 3,
+                "type": "criterion.added",
+                "summary": "Classify route intent completes through its declared verification boundary",
+                "sha256": "10c3d0c63a2e2cbcfed60f2fc2a03bbbc17d455b6c0289fe0936be6026262264"
+              }
+            ],
+            "unresolvedQuestions": [],
+            "approvals": [],
+            "previousBatonIds": [],
+            "sizeBytes": 1717,
+            "estimatedTokens": 430,
+            "sha256": "6c02a718e4c0eae29fb48cf11c2e226b102501db1b7646e58cadc7b4139a2d1c"
+          }
+        }
+      },
+      "requestedAt": "2026-09-11T16:49:13.106Z",
+      "status": "DEGRADED",
+      "priority": "normal",
+      "concurrency": "queue",
+      "parameters": {
+        "taskClass": "route-intent-json",
+        "input": "Please review the Agent Control 4.5 qualification evidence without making changes."
+      },
+      "steps": [
+        {
+          "id": "execute",
+          "action": "learned-specialist.execute@1.0.0",
+          "status": "SUCCEEDED",
+          "dependsOn": [],
+          "capabilityRequest": {
+            "requires": [
+              {
+                "id": "qualification.local"
+              }
+            ]
+          },
+          "resources": [],
+          "attempts": [
+            {
+              "attempt": 1,
+              "startedAt": "2026-09-11T16:49:13.113Z",
+              "workerId": "controller-cpu",
+              "efficiencyInvocationIds": [],
+              "endedAt": "2026-09-11T16:49:19.756Z",
+              "outcome": "Qualified learned specialist route-intent-lora@1 completed typed execution; independent verification remains required."
+            }
+          ],
+          "artifactIds": [
+            "artifact-9c0d574b-d6f7-403c-9c07-6171aa8734d6"
+          ],
+          "verification": {
+            "required": [],
+            "passed": [],
+            "failed": []
+          },
+          "placement": {
+            "selected": "controller-cpu",
+            "eligible": [
+              "controller-cpu"
+            ],
+            "rejected": [],
+            "reasons": [
+              "satisfies:qualification.local",
+              "healthy",
+              "available"
+            ]
+          },
+          "startedAt": "2026-09-11T16:49:13.113Z",
+          "endedAt": "2026-09-11T16:49:19.756Z"
+        },
+        {
+          "id": "verify",
+          "action": "learned-specialist.verify@1.0.0",
+          "status": "FAILED",
+          "dependsOn": [
+            "execute"
+          ],
+          "capabilityRequest": {
+            "requires": [
+              {
+                "id": "qualification.local"
+              }
+            ]
+          },
+          "resources": [],
+          "attempts": [
+            {
+              "attempt": 1,
+              "startedAt": "2026-09-11T16:49:19.768Z",
+              "workerId": "controller-cpu",
+              "endedAt": "2026-09-11T16:49:19.772Z",
+              "outcome": "learned_specialist_independent_verification_failed",
+              "retryable": false,
+              "errorClass": "verification",
+              "recoveryKind": "execution"
+            }
+          ],
+          "artifactIds": [],
+          "verification": {
+            "required": [
+              "learned-specialist-independent-verification"
+            ],
+            "passed": [],
+            "failed": []
+          },
+          "placement": {
+            "selected": "controller-cpu",
+            "eligible": [
+              "controller-cpu"
+            ],
+            "rejected": [],
+            "reasons": [
+              "satisfies:qualification.local",
+              "healthy",
+              "available"
+            ]
+          },
+          "startedAt": "2026-09-11T16:49:19.768Z",
+          "error": "learned_specialist_independent_verification_failed",
+          "endedAt": "2026-09-11T16:49:19.772Z",
+          "remainingRetryBudget": 0
+        }
+      ],
+      "artifacts": [
+        "artifact-9c0d574b-d6f7-403c-9c07-6171aa8734d6"
+      ],
+      "errors": [
+        "verify:verification:learned_specialist_independent_verification_failed"
+      ],
+      "effectiveJob": {
+        "apiVersion": "agent-control/v1",
+        "kind": "Job",
+        "metadata": {
+          "id": "qualified-route-intent-specialist",
+          "name": "Qualified route-intent specialist",
+          "version": "1.0.0"
+        },
+        "spec": {
+          "priority": "normal",
+          "concurrency": "queue",
+          "parameters": {
+            "taskClass": {
+              "type": "string",
+              "required": true
+            },
+            "input": {
+              "type": "string",
+              "required": true
+            }
+          },
+          "steps": [
+            {
+              "id": "execute",
+              "action": "learned-specialist.execute@1.0.0",
+              "requires": [
+                "qualification.local"
+              ],
+              "outputs": [
+                {
+                  "name": "specialist-result",
+                  "type": "application/json",
+                  "schema": "agent-control.learned-specialist-result/v1",
+                  "version": "1.0.0"
+                }
+              ]
+            },
+            {
+              "id": "verify",
+              "action": "learned-specialist.verify@1.0.0",
+              "requires": [
+                "qualification.local"
+              ],
+              "dependsOn": [
+                "execute"
+              ],
+              "inputs": {
+                "result": "execute.specialist-result"
+              },
+              "outputs": [
+                {
+                  "name": "specialist-verification",
+                  "type": "application/json",
+                  "schema": "agent-control.learned-specialist-verification/v1",
+                  "version": "1.0.0"
+                }
+              ],
+              "verification": [
+                "learned-specialist-independent-verification"
+              ]
+            }
+          ]
+        }
+      },
+      "selectedWorkers": [
+        "controller-cpu"
+      ],
+      "approvals": [],
+      "provenance": [
+        {
+          "type": "trigger",
+          "at": "2026-09-11T16:49:13.107Z",
+          "detail": "manual:work-parcel:parcel-608d49b1-7c87-43bf-8fde-ff446f241ef0"
+        },
+        {
+          "type": "action-dispatch",
+          "at": "2026-09-11T16:49:13.115Z",
+          "detail": "agent:learned-specialist.execute@1.0.0:adaptive-harness"
+        },
+        {
+          "type": "evidence",
+          "at": "2026-09-11T16:49:19.756Z",
+          "detail": "skill-route:skill-route-9c33e141-a5a0-47da-bea1-0ff02d387d21"
+        },
+        {
+          "type": "evidence",
+          "at": "2026-09-11T16:49:19.756Z",
+          "detail": "skill-adapter:route-intent-lora@1"
+        },
+        {
+          "type": "evidence",
+          "at": "2026-09-11T16:49:19.757Z",
+          "detail": "skill-adapter-sha256:7e6f36b34998cb26971b8f528984a8e1cadc9d6e591120596baafac6c1bd5802"
+        },
+        {
+          "type": "action-dispatch",
+          "at": "2026-09-11T16:49:19.771Z",
+          "detail": "control:learned-specialist.verify@1.0.0"
+        }
+      ],
+      "updatedAt": "2026-09-11T16:49:19.772Z",
+      "startedAt": "2026-09-11T16:49:13.113Z",
+      "endedAt": "2026-09-11T16:49:19.772Z"
+    }
+  ],
+  "schedules": []
+}
