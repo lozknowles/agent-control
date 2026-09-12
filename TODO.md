@@ -42,7 +42,7 @@ See the [combined integration record](docs/evidence/morrow-4.5-integration/valid
 - [x] Add authenticated Work Parcel instruction inspection and Morrow's evidence digest.
 - [x] Exercise production dependency-aware scheduling, independent identity, typed batons and authenticated inspection in automated integration tests.
 - [x] Record reproducible A–H shadow fixtures, regression results, preserved historical evidence and all known limitations.
-- [ ] Obtain explicit approval to publish the new feature branch to public GitHub; automatic approval review blocked the push. Implementation and evidence are committed locally.
+- [x] Obtain explicit approval to publish the new feature branch to public GitHub. The operator approved publication after the initial automatic-review block.
 - [ ] Reconnect Desktop Commander to the running MSI machine; confirm the real development checkout and isolated runtime before physical execution.
 - [ ] Physically run A–H on registered Astra, Sol and Luna routes and an available safe local/non-OpenAI route. Current matrix is BLOCKED; no model execution is claimed.
 - [ ] Complete a genuine Morrow-driven bounded development Job/Work Parcel, independent verification, instruction inspection and human-readable digest.

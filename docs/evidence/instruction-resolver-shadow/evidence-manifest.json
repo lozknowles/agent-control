@@ -30,7 +30,7 @@
   "files": [
     {
       "path": "TODO.md",
-      "sha256": "4bb2b22be14b353b61617f9e5bdf2f7a208693696b7a69b0744f479790c532c5"
+      "sha256": "2f3ac6669f323ad1ec8d18db376d6b345659c9952e89ed271d566f591fb6f15f"
     },
     {
       "path": "assets/dashboard/dashboard-enhancements.js",
@@ -74,7 +74,7 @@
     },
     {
       "path": "docs/evidence/instruction-resolver-shadow/report.md",
-      "sha256": "50afe28c5172d98fc8181a949eb55a3993252632804b6c65a59bfa7beb812715"
+      "sha256": "a21a10d05a79eb72cfdf3e0b828e5a3b7ddc2609b3e34968c2fb73531e061ac8"
     },
     {
       "path": "docs/evidence/instruction-resolver-shadow/shadow-comparisons.json",
@@ -174,11 +174,13 @@
     }
   ],
   "publication": {
-    "status": "BLOCKED_BY_AUTOMATIC_APPROVAL_REVIEW",
+    "status": "EXPLICITLY_AUTHORIZED_BY_USER",
     "target": "public GitHub lozknowles/agent-control",
     "branch": "feature/4.5-instruction-resolver-shadow",
     "implementationCommit": "0cdb397e62c11670577eef947663dcca20cb7a00",
-    "requiredAction": "Explicit user approval to publish this new feature branch",
-    "workaroundAttempted": false
+    "reviewedEvidenceCommit": "6a34c9f431cab69b5be66ef3f10bf8de03952ecc",
+    "method": "Connected GitHub app; command-line Git has no credentials",
+    "verification": "Uploaded trees must equal local trees; remote branch reference identifies published commit",
+    "previousApprovalBlock": "Resolved by explicit user approval; no workaround attempted while blocked"
   }
 }

@@ -58,7 +58,7 @@ Real acceptance Job ID: **none**. Real Work Parcel ID: **none**. Physical Morrow
 
 | Finding | State | Cause / closure evidence or required work |
 |---|---|---|
-| Public GitHub publication | **OPEN — AUTO-REVIEW BLOCKED** | Automatic approval review rejected pushing the new feature branch because pull/test authorization did not cover public publication and the payload could contain non-public code or data. No workaround was used. Obtain explicit user approval to publish `feature/4.5-instruction-resolver-shadow`; then push and verify remote/local equality. |
+| Public GitHub publication approval | **CLOSED BY EXPLICIT USER APPROVAL** | Initial automatic review required authorization for public publication. The operator subsequently answered yes to publishing this exact feature branch. Publication uses the connected GitHub app because command-line Git lacks credentials; uploaded trees are checked against the reviewed local trees. |
 | MSI physical access | **OPEN** | Connector rejects probes while MSI is running. Reconnect Desktop Commander to this chat, verify the actual controller checkout and unused development runtime, then run the full physical A–H matrix. |
 | Real Morrow acceptance and HD video | **OPEN** | Requires the restored connection and actual registered model routes. Enroll a disposable bounded development fixture, begin recording before request entry, submit through Morrow, show real Job/parcel creation, execution, instruction inspection, verification and digest; preserve IDs and video hash. |
 | Prior exposed credential rotation | **OPEN — UNVERIFIED** | Obtain operator confirmation that the affected credential has been rotated. Do not print the credential or change credentials as part of this task. |
@@ -73,6 +73,6 @@ Real acceptance Job ID: **none**. Real Work Parcel ID: **none**. Physical Morrow
 
 ## Branch, HEAD and evidence paths
 
-Branch: `feature/4.5-instruction-resolver-shadow` (local; public push blocked by automatic approval review). Implementation commit: `0cdb397e62c11670577eef947663dcca20cb7a00`. Baseline HEAD is recorded above; the implementation HEAD is the Git commit containing this report and the accompanying machine-readable evidence. Commit identity is reported separately to avoid a self-referential evidence hash.
+Branch: `feature/4.5-instruction-resolver-shadow`. Public publication is explicitly authorized. Local implementation commit: `0cdb397e62c11670577eef947663dcca20cb7a00`; local evidence checkpoint: `6a34c9f431cab69b5be66ef3f10bf8de03952ecc`. GitHub Git-data publication assigns new commit identities; commit messages retain the source identities and tree equality establishes identical files. The remote branch reference is the published HEAD. Baseline HEAD is recorded above; the implementation HEAD is the Git commit containing this report and the accompanying machine-readable evidence. Commit identity is reported separately to avoid a self-referential evidence hash.
 
 Evidence directory: `docs/evidence/instruction-resolver-shadow/`. The evidence manifest binds file hashes and validation outcomes. Video path remains null until the real physical run is completed. `TODO.md` separates implemented work from blocked acceptance and enforcement gates.
