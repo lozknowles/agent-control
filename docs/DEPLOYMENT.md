@@ -10,9 +10,12 @@ explicit install mode uses `npm install --ignore-scripts --no-package-lock` and
 the idempotent initializer. It does not install Ollama, llama.cpp, Codex, Claude
 Code, Gemini CLI, GPU drivers or other optional tools.
 
-After the dashboard starts, use **Settings → Installation** to verify provenance,
-then **Environment Discovery** for First Run Setup. Remote discovery is opt-in
-and bounded to configured hosts. Review the resulting inventory and qualification
+Before starting the dashboard, configure `AGENT_CONTROL_WEB_OPERATOR_TOKEN`
+through the README's hidden-prompt procedure. Authenticate the browser with that
+same private token; Environment Discovery is intentionally unavailable to an
+observer-only process. Then use **Settings → Installation** to verify provenance
+and **Environment Discovery** for First Run Setup. Remote discovery is opt-in and
+bounded to configured hosts. Review the resulting inventory and qualification
 before approving any configuration Work Parcel. Estate Map needs no extra
 service: it is a second projection rendered by the existing Runtime Map assets.
 Inventory and capability-registry state live beneath the configured Agent Control

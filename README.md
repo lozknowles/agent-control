@@ -539,18 +539,25 @@ With no configuration file, Agent Control starts with a safe local lane and repo
 
 ## Run and monitor
 
-Start one headless controller from the installed checkout:
+Environment Discovery and every other mutation require an authenticated operator
+session. Obtain a private random token of at least 32 characters from your
+password manager, enter it at the hidden prompt, and start one headless
+controller from the same shell:
 
 ```bash
+read -rsp "Agent Control operator token: " AGENT_CONTROL_WEB_OPERATOR_TOKEN
+printf '\n'
+export AGENT_CONTROL_WEB_OPERATOR_TOKEN
 npm run web
 ```
 
 The terminal should report the local dashboard address. Open that address from
-the same machine, then use **Settings → Installation** to confirm source
-provenance and **Settings → Environment Discovery → First Run Setup** to perform
-the first read-only scan. If the page is unavailable, keep the terminal open and
-check its startup error; do not expose the listener publicly to work around a
-local connection problem.
+the same machine, click the top-right operator button, and enter the same private
+token. The button must change to **Operator authenticated** before continuing.
+Then use **Settings → Installation** to confirm source provenance and **Settings
+→ Environment Discovery → First Run Setup** to perform the first read-only scan.
+If the page is unavailable, keep the terminal open and check its startup error;
+do not expose the listener publicly to work around a local connection problem.
 
 Other operator commands are:
 
@@ -565,14 +572,21 @@ Run `npm link` once per installed node to expose the cross-platform `agent-contr
 
 `npm start` opens the control-room TUI and its embedded web client. `npm run web` runs the same control service and web dashboard without the TUI for a headless operator host; run one authoritative control-plane process per state directory. `agent-control status` is read-only. `up` starts only explicitly configured services/processes and records ownership. `down` stops only processes that the same Agent Control state directory recorded as owned.
 
-The TUI also starts the web dashboard on `http://127.0.0.1:4310` by default. The browser is an observer unless an operator token is explicitly configured:
+The TUI also starts the web dashboard on `http://127.0.0.1:4310` by default. To
+use the TUI instead of the headless controller, set the token with the same
+hidden-prompt procedure above and run:
 
 ```bash
-export AGENT_CONTROL_WEB_OPERATOR_TOKEN="$(openssl rand -hex 32)"
 npm start
 ```
 
-Enter that token using **Observer mode** in the dashboard. It is retained only in the browser tab's session storage and sent as a bearer header; Agent Control does not create a browser authority cookie. Use `AGENT_CONTROL_WEB_ENABLED=0` to disable the dashboard or `AGENT_CONTROL_WEB_PORT` to select another port. Binding beyond localhost is an explicit security decision and should be placed behind authenticated TLS with a matching `AGENT_CONTROL_WEB_ALLOWED_ORIGINS` allowlist.
+Enter the token using the top-right operator button in the dashboard. It is
+retained only in the browser tab's session storage and sent as a bearer header;
+Agent Control does not create a browser authority cookie. Use
+`AGENT_CONTROL_WEB_ENABLED=0` to disable the dashboard or
+`AGENT_CONTROL_WEB_PORT` to select another port. Binding beyond localhost is an
+explicit security decision and should be placed behind authenticated TLS with a
+matching `AGENT_CONTROL_WEB_ALLOWED_ORIGINS` allowlist.
 
 Monitor either interface for the same authoritative lanes, scheduler projection, providers, resources, PTY ownership, routing rationale and claim/evidence/verification state. The web terminal panel is observer-only; it never receives a PTY write primitive. Qualification writes timestamped JSON beneath ignored `qualification-results/`.
 

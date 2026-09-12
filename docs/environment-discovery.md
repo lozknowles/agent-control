@@ -6,7 +6,14 @@ Desired-state estate management and automatic remediation are deferred to 4.6.
 
 ## What it does
 
-Open **Environment Discovery** from the dashboard Settings area. The wizard
+Start Agent Control with a private `AGENT_CONTROL_WEB_OPERATOR_TOKEN` of at least
+32 characters using the hidden-prompt procedure in the repository README. Open
+the dashboard, click the top-right operator button and enter that same token.
+Confirm the button reads **Operator authenticated**, then open **Environment
+Discovery** from the dashboard Settings area. An observer-only process can view
+safe status but cannot start a scan.
+
+The wizard
 supports First Run, Quick Rescan, Full Discovery, Add Machine, Add Provider, Add
 Local Runtime, Add Model and Import Configuration. A scan records non-secret
 inventory and provenance, compares it with the prior scan and labels resources
