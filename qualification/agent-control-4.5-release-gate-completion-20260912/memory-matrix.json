@@ -1,0 +1,149 @@
+{
+  "schema": "agent-control.4.5-completion-memory-matrix/v1",
+  "generatedAt": "2026-09-12T05:05:14.853Z",
+  "implementationHead": "d9f4238bd07da60b36b78e4898d4d3f3a5bc9212",
+  "contract": {
+    "semanticReconstructionRequired": true,
+    "keywordOnlyPassForbidden": true,
+    "verificationWeakened": false
+  },
+  "controller": [
+    {
+      "writerRoute": "codex-chatgpt/controller-codex/codex-luna@hpubuntu",
+      "readerRoute": "local-qwen/default/qwen-hpubuntu@hpubuntu",
+      "result": "PASS",
+      "failureClass": null,
+      "failures": [],
+      "reconstructionAccuracy": 100,
+      "continuationSuccess": true,
+      "usage": {
+        "inputTokens": 7677,
+        "outputTokens": 1121,
+        "totalTokens": 8798,
+        "cachedInputTokens": 0,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "batonSha256": "6344e1e2e735f069abc41c28d7dd336e698503e12f7fd50163be11ba35f02e62",
+      "memorySha256": "76b63bc716d26f6c57e52625dc3e46656022e54a4ff0970f70a485334b78ecd9"
+    },
+    {
+      "writerRoute": "local-qwen/default/qwen-hpubuntu@hpubuntu",
+      "readerRoute": "codex-chatgpt/controller-codex/codex-luna@hpubuntu",
+      "result": "PASS",
+      "failureClass": null,
+      "failures": [],
+      "reconstructionAccuracy": 100,
+      "continuationSuccess": true,
+      "usage": {
+        "inputTokens": 7624,
+        "outputTokens": 615,
+        "totalTokens": 8239,
+        "cachedInputTokens": 0,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "batonSha256": "28ead4679523a9a573a5e908990288d6389301935386b2d224ba3fdef5ba9d4d",
+      "memorySha256": "5cfaa72f58961699d5d9b961c682c84eb1f880fcd6b7bd89c44f885f16807b69"
+    }
+  ],
+  "pixel": [
+    {
+      "writerRoute": "pixel-llama/default/pixel-gemma-e4b@pixel-8-pro",
+      "readerRoute": "local-qwen/default/qwen-hpubuntu@hpubuntu",
+      "result": "PASS",
+      "failureClass": null,
+      "failures": [],
+      "reconstructionAccuracy": 100,
+      "continuationSuccess": true,
+      "usage": {
+        "inputTokens": 1100,
+        "outputTokens": 669,
+        "totalTokens": 1769,
+        "cachedInputTokens": 1,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "batonSha256": "8369a692eb7daf525477763693da424316876ac867c0758978ff2eb668321bd1",
+      "memorySha256": "057f2020abc23dea3ba6aea3ef852c4285dedc7f45690595be7551570d0cb4ab"
+    },
+    {
+      "writerRoute": "local-qwen/default/qwen-hpubuntu@hpubuntu",
+      "readerRoute": "pixel-llama/default/pixel-gemma-e4b@pixel-8-pro",
+      "result": "FAIL",
+      "failureClass": "model capability",
+      "failures": [
+        "nextAction:semantic:exact_operation_required"
+      ],
+      "reconstructionAccuracy": 93.85,
+      "continuationSuccess": false,
+      "usage": {
+        "inputTokens": 1624,
+        "outputTokens": 1066,
+        "totalTokens": 2690,
+        "cachedInputTokens": 480,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "batonSha256": "76780afe4b421e079b39acc41d3375fec6338b4406e1a41097b59edc8996788e",
+      "memorySha256": "057f2020abc23dea3ba6aea3ef852c4285dedc7f45690595be7551570d0cb4ab"
+    }
+  ],
+  "msi": [
+    {
+      "writerRoute": "codex-chatgpt/cottage-plus/msi-cottage-luna@windows-codex-node",
+      "readerRoute": "codex-chatgpt/lawrence-pro/msi-lawrence-sol@windows-codex-node",
+      "result": "PASS",
+      "failureClass": null,
+      "failures": [],
+      "reconstructionAccuracy": 100,
+      "continuationSuccess": true,
+      "usage": {
+        "inputTokens": 14916,
+        "outputTokens": 654,
+        "totalTokens": 15570,
+        "cachedInputTokens": 0,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "batonSha256": "bfd246d022fef4d8cde9666f4aace0faf458793bd45fda667c9db7de60e43812",
+      "memorySha256": "5cfaa72f58961699d5d9b961c682c84eb1f880fcd6b7bd89c44f885f16807b69"
+    }
+  ],
+  "historicalTwelveCellReconciliation": {
+    "passed": 9,
+    "total": 12,
+    "explanation": "Five historical passes + two freshly repeated controller-direction passes + the duplicated Pixel→Qwen aliases now proven. The two duplicated Qwen→Pixel aliases remain one genuine model limitation; GLM→Qwen is blocked by authentication."
+  },
+  "failed": [
+    {
+      "id": "glm-to-qwen",
+      "classification": "authentication unavailable",
+      "status": "BLOCKED",
+      "reason": "The configured OpenRouter credential was rejected; no unavailable route is counted as a pass."
+    },
+    {
+      "id": "qwen-to-pixel",
+      "classification": "model capability",
+      "status": "DISPROVEN",
+      "reason": "Exact Pixel E4B cold reader retained 93.85% but failed: nextAction:semantic:exact_operation_required"
+    },
+    {
+      "id": "specialist-energy",
+      "classification": "model capability",
+      "status": "DISPROVEN",
+      "reason": "The retained specialist was correct but consumed more measured-component energy per verified result than warm Qwen."
+    },
+    {
+      "id": "whole-node-power",
+      "classification": "evidence or verification defect",
+      "status": "BLOCKED",
+      "reason": "No synchronized whole-node meter is available; component measurements cannot support a whole-system claim."
+    }
+  ]
+}

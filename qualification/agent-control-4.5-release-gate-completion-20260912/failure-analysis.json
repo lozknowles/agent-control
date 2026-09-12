@@ -1,0 +1,48 @@
+{
+  "schema": "agent-control.4.5-completion-failure-analysis/v1",
+  "generatedAt": "2026-09-12T05:05:14.854Z",
+  "failures": [
+    {
+      "id": "glm-to-qwen",
+      "classification": "authentication unavailable",
+      "status": "BLOCKED",
+      "reason": "The configured OpenRouter credential was rejected; no unavailable route is counted as a pass."
+    },
+    {
+      "id": "qwen-to-pixel",
+      "classification": "model capability",
+      "status": "DISPROVEN",
+      "reason": "Exact Pixel E4B cold reader retained 93.85% but failed: nextAction:semantic:exact_operation_required"
+    },
+    {
+      "id": "specialist-energy",
+      "classification": "model capability",
+      "status": "DISPROVEN",
+      "reason": "The retained specialist was correct but consumed more measured-component energy per verified result than warm Qwen."
+    },
+    {
+      "id": "whole-node-power",
+      "classification": "evidence or verification defect",
+      "status": "BLOCKED",
+      "reason": "No synchronized whole-node meter is available; component measurements cannot support a whole-system claim."
+    }
+  ],
+  "qualificationDefectsFixed": [
+    {
+      "defect": "Writer and reader used incompatible application schemas.",
+      "fix": "One canonical provider-neutral ProjectMemoryExchange is now shared by writer, reader and consolidation."
+    },
+    {
+      "defect": "Pixel output cap truncated complete structured responses.",
+      "fix": "Bounded cap raised from 320 to 512 after finish_reason=length evidence."
+    },
+    {
+      "defect": "Windows OpenSSH bootstrap waited indefinitely for channel EOF.",
+      "fix": "Payload and audited script are two bounded base64 records; no EOF delimiter is required."
+    },
+    {
+      "defect": "Remote final messages containing legitimate repository paths were rejected.",
+      "fix": "Repository paths are accepted while credential-profile paths still fail closed."
+    }
+  ]
+}

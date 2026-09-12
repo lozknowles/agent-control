@@ -1,0 +1,438 @@
+{
+  "schema": "agent-control.cross-model-memory-qualification/v1",
+  "startedAt": "2026-09-12T04:38:22.090Z",
+  "completedAt": "2026-09-12T04:51:05.791Z",
+  "implementationCommit": "eb166c3674ff2ad4e8dda66c5b851f98b3c2c054",
+  "packetSha256": "73c5688010d67371daa5a9ee69113beb2f071704cdfc6f7c844214bcca783def",
+  "verdict": "PARTIAL",
+  "workParcels": [
+    {
+      "id": "parcel-760b95cc-0ace-4a0b-b8a2-4891c2ec4234",
+      "status": "SUCCEEDED",
+      "stages": [
+        {
+          "id": "pixel-to-hpubuntu-writer",
+          "status": "SUCCEEDED",
+          "runId": "run-44db5786-eca6-4f4a-8b3e-ee95b5fac0e3",
+          "batonSha256": "20a146afb5a56557f023c419721fb4024f1709f3880e2fe45c742fc28f5373a1",
+          "actualRoute": {
+            "workers": [
+              "pixel-8-pro"
+            ],
+            "workloadNodeId": "pixel-8-pro",
+            "providerExecutionNodeId": "pixel-8-pro",
+            "provider": "pixel-llama",
+            "model": "pixel-gemma-e4b",
+            "reason": "satisfies:route.pixel-8-pro, healthy, available"
+          },
+          "error": null
+        },
+        {
+          "id": "pixel-to-hpubuntu-persist",
+          "status": "SUCCEEDED",
+          "runId": "run-a986460a-5045-4d47-b8ea-767cd837c82f",
+          "batonSha256": "b8b750fe1cdd975f6d65e4124977ea1590e502239581e564677f01924d3735f2",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "reason": "satisfies:memory.control, healthy, available"
+          },
+          "error": null
+        },
+        {
+          "id": "pixel-to-hpubuntu-reader",
+          "status": "SUCCEEDED",
+          "runId": "run-5c41f16d-9f88-46ee-b62e-8c44594492bc",
+          "batonSha256": "8369a692eb7daf525477763693da424316876ac867c0758978ff2eb668321bd1",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "workloadNodeId": "hpubuntu",
+            "providerExecutionNodeId": "hpubuntu",
+            "provider": "local-qwen",
+            "model": "qwen-hpubuntu",
+            "reason": "satisfies:route.hpubuntu, healthy, available"
+          },
+          "error": null
+        },
+        {
+          "id": "pixel-to-hpubuntu-continue",
+          "status": "SUCCEEDED",
+          "runId": "run-1c7d22ed-c9ed-43cf-8d3b-92cef15499cd",
+          "batonSha256": "2bf57cf93114bb8c91892fd98c688fea35aed0761f2a1c4a2fda4293e3af86cc",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "reason": "satisfies:memory.control, healthy, available"
+          },
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "parcel-f515d5b6-53e8-4742-abd1-18b40cfe8be8",
+      "status": "FAILED",
+      "stages": [
+        {
+          "id": "hpubuntu-to-pixel-writer",
+          "status": "SUCCEEDED",
+          "runId": "run-d2ce11ed-8046-4618-a0f8-2c73f635b3ba",
+          "batonSha256": "59acb9ad16e8eaa080ac5b7642d2ece5d193e00f5ffe25eeabcb65a7968f9117",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "workloadNodeId": "hpubuntu",
+            "providerExecutionNodeId": "hpubuntu",
+            "provider": "local-qwen",
+            "model": "qwen-hpubuntu",
+            "reason": "satisfies:route.hpubuntu, healthy, available"
+          },
+          "error": null
+        },
+        {
+          "id": "hpubuntu-to-pixel-persist",
+          "status": "SUCCEEDED",
+          "runId": "run-4a8eab53-d7c9-4fbc-aa49-7d837c0cfdf9",
+          "batonSha256": "2ae92abba1a56d481e63671cccfdf63165b67bcd0b2d51c868cca32e1431a5fc",
+          "actualRoute": {
+            "workers": [
+              "hpubuntu"
+            ],
+            "reason": "satisfies:memory.control, healthy, available"
+          },
+          "error": null
+        },
+        {
+          "id": "hpubuntu-to-pixel-reader",
+          "status": "FAILED",
+          "runId": "run-b3a7340b-077f-4001-aeb0-55f188dd55d7",
+          "batonSha256": "76780afe4b421e079b39acc41d3375fec6338b4406e1a41097b59edc8996788e",
+          "actualRoute": {
+            "workers": [
+              "pixel-8-pro"
+            ],
+            "workloadNodeId": "pixel-8-pro",
+            "providerExecutionNodeId": "pixel-8-pro",
+            "provider": "pixel-llama",
+            "model": "pixel-gemma-e4b",
+            "reason": "satisfies:route.pixel-8-pro, healthy, available"
+          },
+          "error": "execute:execution:reader_verification_failed:nextAction:semantic:exact_operation_required"
+        },
+        {
+          "id": "hpubuntu-to-pixel-continue",
+          "status": "BLOCKED",
+          "runId": null,
+          "batonSha256": null,
+          "actualRoute": null,
+          "error": null
+        }
+      ]
+    }
+  ],
+  "routes": [
+    {
+      "id": "qwen-hpubuntu",
+      "label": "Qwen on hpubuntu",
+      "provider": "local-qwen",
+      "exactModel": "qwen2.5-3b-instruct-q4_k_m.gguf",
+      "qualificationVersion": "physical-20260911",
+      "node": "hpubuntu",
+      "endpoint": "http://127.0.0.1:8080/v1",
+      "runtime": "llama.cpp",
+      "credentialResidency": "not required",
+      "adapter": "llama.cpp OpenAI-compatible adapter",
+      "physicalAvailability": "AVAILABLE"
+    },
+    {
+      "id": "glm-5.3-flash",
+      "label": "GLM-5.3-Flash",
+      "provider": "openrouter",
+      "exactModel": "z-ai/glm-5.3-flash",
+      "qualificationVersion": "physical-20260911",
+      "node": "hpubuntu",
+      "endpoint": "https://openrouter.ai/api/v1",
+      "runtime": "OpenRouter hosted runtime",
+      "credentialResidency": "hpubuntu owner-only file reference; value resolved only by adapter",
+      "adapter": "OpenAI-compatible Responses adapter",
+      "physicalAvailability": "AVAILABLE"
+    },
+    {
+      "id": "codex-luna",
+      "label": "Codex CLI / Luna",
+      "provider": "codex-chatgpt",
+      "exactModel": "gpt-5.6-luna",
+      "qualificationVersion": "physical-20260911",
+      "node": "hpubuntu",
+      "endpoint": "local executable discovered from PATH",
+      "runtime": "Codex CLI",
+      "credentialResidency": "opaque CODEX_HOME environment reference on hpubuntu",
+      "adapter": "LocalCodexNodeExecutionPort",
+      "physicalAvailability": "AVAILABLE"
+    },
+    {
+      "id": "gpt-5.6-sol",
+      "label": "GPT-5.6 Sol",
+      "provider": "codex-chatgpt",
+      "exactModel": "gpt-5.6-sol",
+      "qualificationVersion": "physical-20260911",
+      "node": "hpubuntu",
+      "endpoint": "local executable discovered from PATH",
+      "runtime": "Codex CLI",
+      "credentialResidency": "opaque CODEX_HOME environment reference on hpubuntu",
+      "adapter": "LocalCodexNodeExecutionPort",
+      "physicalAvailability": "AVAILABLE"
+    },
+    {
+      "id": "pixel-gemma-e4b",
+      "label": "Google Gemma 4 E4B on Pixel 8 Pro",
+      "provider": "pixel-llama",
+      "exactModel": "google/gemma-4-E4B-it",
+      "qualificationVersion": "physical-20260911",
+      "node": "pixel-8-pro",
+      "endpoint": "http://127.0.0.1:19084/v1",
+      "runtime": "llama.cpp",
+      "credentialResidency": "not required",
+      "adapter": "llama.cpp OpenAI-compatible adapter",
+      "physicalAvailability": "AVAILABLE"
+    }
+  ],
+  "blockedRoutes": [
+    {
+      "id": "msi-cottage-plus",
+      "nodeId": "windows-codex-node",
+      "provider": "codex-chatgpt",
+      "model": "unavailable",
+      "status": "BLOCKED",
+      "reason": "MSI qualification resource not configured"
+    },
+    {
+      "id": "msi-lawrence-pro",
+      "nodeId": "windows-codex-node",
+      "provider": "codex-chatgpt",
+      "model": "unavailable",
+      "status": "BLOCKED",
+      "reason": "MSI qualification resource not configured"
+    }
+  ],
+  "matrix": [
+    {
+      "writer": "Google Gemma 4 E4B on Pixel 8 Pro",
+      "reader": "Qwen on hpubuntu",
+      "writerRoute": "pixel-llama/default/pixel-gemma-e4b@pixel-8-pro",
+      "readerRoute": "local-qwen/default/qwen-hpubuntu@hpubuntu",
+      "writerNode": "pixel-8-pro",
+      "readerNode": "hpubuntu",
+      "memorySource": "ProjectMemoryPort / structured Markdown vault",
+      "memoryId": "memory-pixel-to-hpubuntu",
+      "memorySha256": "057f2020abc23dea3ba6aea3ef852c4285dedc7f45690595be7551570d0cb4ab",
+      "reconstructionAccuracy": 100,
+      "writerScore": 100,
+      "continuationSuccess": true,
+      "contextInjectedTokens": 237,
+      "writerUsage": {
+        "inputTokens": 629,
+        "outputTokens": 339,
+        "totalTokens": 968,
+        "cachedInputTokens": 1,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "readerUsage": {
+        "inputTokens": 471,
+        "outputTokens": 330,
+        "totalTokens": 801,
+        "cachedInputTokens": 0,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "usage": {
+        "inputTokens": 1100,
+        "outputTokens": 669,
+        "totalTokens": 1769,
+        "cachedInputTokens": 1,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "latencyMs": 148803,
+      "contradictionsDetected": [],
+      "writerRunId": "run-44db5786-eca6-4f4a-8b3e-ee95b5fac0e3",
+      "readerRunId": "run-5c41f16d-9f88-46ee-b62e-8c44594492bc",
+      "batonSha256": "8369a692eb7daf525477763693da424316876ac867c0758978ff2eb668321bd1",
+      "persistBatonSha256": "b8b750fe1cdd975f6d65e4124977ea1590e502239581e564677f01924d3735f2",
+      "continuationBatonSha256": "2bf57cf93114bb8c91892fd98c688fea35aed0761f2a1c4a2fda4293e3af86cc",
+      "writerAttempts": [
+        {
+          "attempt": 1,
+          "responseReceived": true,
+          "bytes": 1000,
+          "sha256": "c09cab5879301c2989c41b4b99f95d4b38e4a2577cd9c75912e811fb076db1c2",
+          "finishReason": "stop",
+          "responseModel": "google/gemma-4-E4B-it",
+          "validJson": true,
+          "applicationSchemaValid": true,
+          "schemaFailures": [],
+          "semanticFailures": [],
+          "sanitizedOutput": "{\n  \"objective\": \"Agent Control 4.5 cross-model cold memory reconstruction without the writer transcript.\",\n  \"completedWork\": \"ProjectMemoryPort is implemented; hpubuntu to MSI transfer into D:/obsidian/knowledge_vault is physically proven.\",\n  \"decisions\": \"Use node-local vaults with governed content-hash synchronization.\",\n  \"rejectedApproaches\": \"Reject one concurrently edited canonical note because of split-brain and write-conflict risk.\",\n  \"currentState\": \"Candidate eb166c3674ff2ad4e8dda66c5b851f98b3c2c054 is on public main; stable baseline v4.4.0; v4.5.0 is not tagged or released.\",\n  \"outstandingWork\": \"Complete the writer-to-cold-reader matrix and verify every continuation.\",\n  \"supportingEvidence\": \"Checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf; topology SHA-256 f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2.\",\n  \"nextAction\": \"EXECUTE_MEMORY_INTEGRITY_CHECK\",\n  \"authority\": \"Repository and physical qualification evidence override remembered claims.\"\n}"
+        }
+      ],
+      "readerAttempts": [
+        {
+          "attempt": 1,
+          "responseReceived": true,
+          "bytes": 1017,
+          "sha256": "ce9e3921eec538b078d4d81051b4c44861a914d69747af47930d199eb9720014",
+          "finishReason": "stop",
+          "responseModel": "qwen2.5-3b-instruct-q4_k_m.gguf",
+          "validJson": true,
+          "applicationSchemaValid": true,
+          "schemaFailures": [],
+          "semanticFailures": [],
+          "sanitizedOutput": "{\n  \"objective\": \"Agent Control 4.5 cross-model cold memory reconstruction without the writer transcript\",\n  \"completedWork\": \"ProjectMemoryPort is implemented; hpubuntu to MSI transfer into D:/obsidian/knowledge_vault is physically proven\",\n  \"decisions\": \"Use node-local vaults with governed content-hash synchronization\",\n  \"rejectedApproaches\": \"Reject one concurrently edited canonical note because of split-brain and write-conflict risk\",\n  \"currentState\": \"Candidate eb166c3674ff2ad4e8dda66c5b851f98b3c2c054 is on public main; stable baseline v4.4.0; v4.5.0 is not tagged or released\",\n  \"outstandingWork\": \"Complete the writer-to-cold-reader matrix and verify every continuation\",\n  \"supportingEvidence\": \"Checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf; topology SHA-256 f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2\",\n  \"nextAction\": \"EXECUTE_MEMORY_INTEGRITY_CHECK\",\n  \"authority\": \"Repository and physical qualification evidence override remembered claims\",\n  \"contradictions\": []\n}\n"
+        }
+      ],
+      "failures": [],
+      "failureClass": null,
+      "result": "PASS"
+    },
+    {
+      "writer": "Qwen on hpubuntu",
+      "reader": "Google Gemma 4 E4B on Pixel 8 Pro",
+      "writerRoute": "local-qwen/default/qwen-hpubuntu@hpubuntu",
+      "readerRoute": "pixel-llama/default/pixel-gemma-e4b@pixel-8-pro",
+      "writerNode": "hpubuntu",
+      "readerNode": "pixel-8-pro",
+      "memorySource": "ProjectMemoryPort / structured Markdown vault",
+      "memoryId": "memory-hpubuntu-to-pixel",
+      "memorySha256": "057f2020abc23dea3ba6aea3ef852c4285dedc7f45690595be7551570d0cb4ab",
+      "reconstructionAccuracy": 93.85,
+      "writerScore": 100,
+      "continuationSuccess": false,
+      "contextInjectedTokens": 237,
+      "writerUsage": {
+        "inputTokens": 602,
+        "outputTokens": 318,
+        "totalTokens": 920,
+        "cachedInputTokens": 0,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "readerUsage": {
+        "inputTokens": 1022,
+        "outputTokens": 748,
+        "totalTokens": 1770,
+        "cachedInputTokens": 480,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "usage": {
+        "inputTokens": 1624,
+        "outputTokens": 1066,
+        "totalTokens": 2690,
+        "cachedInputTokens": 480,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "latencyMs": 614269,
+      "contradictionsDetected": [],
+      "writerRunId": "run-d2ce11ed-8046-4618-a0f8-2c73f635b3ba",
+      "readerRunId": "run-b3a7340b-077f-4001-aeb0-55f188dd55d7",
+      "batonSha256": "76780afe4b421e079b39acc41d3375fec6338b4406e1a41097b59edc8996788e",
+      "persistBatonSha256": "2ae92abba1a56d481e63671cccfdf63165b67bcd0b2d51c868cca32e1431a5fc",
+      "continuationBatonSha256": null,
+      "writerAttempts": [
+        {
+          "attempt": 1,
+          "responseReceived": true,
+          "bytes": 1000,
+          "sha256": "c09cab5879301c2989c41b4b99f95d4b38e4a2577cd9c75912e811fb076db1c2",
+          "finishReason": "stop",
+          "responseModel": "qwen2.5-3b-instruct-q4_k_m.gguf",
+          "validJson": true,
+          "applicationSchemaValid": true,
+          "schemaFailures": [],
+          "semanticFailures": [],
+          "sanitizedOutput": "{\n  \"objective\": \"Agent Control 4.5 cross-model cold memory reconstruction without the writer transcript.\",\n  \"completedWork\": \"ProjectMemoryPort is implemented; hpubuntu to MSI transfer into D:/obsidian/knowledge_vault is physically proven.\",\n  \"decisions\": \"Use node-local vaults with governed content-hash synchronization.\",\n  \"rejectedApproaches\": \"Reject one concurrently edited canonical note because of split-brain and write-conflict risk.\",\n  \"currentState\": \"Candidate eb166c3674ff2ad4e8dda66c5b851f98b3c2c054 is on public main; stable baseline v4.4.0; v4.5.0 is not tagged or released.\",\n  \"outstandingWork\": \"Complete the writer-to-cold-reader matrix and verify every continuation.\",\n  \"supportingEvidence\": \"Checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf; topology SHA-256 f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2.\",\n  \"nextAction\": \"EXECUTE_MEMORY_INTEGRITY_CHECK\",\n  \"authority\": \"Repository and physical qualification evidence override remembered claims.\"\n}"
+        }
+      ],
+      "readerAttempts": [
+        {
+          "attempt": 1,
+          "responseReceived": true,
+          "bytes": 1173,
+          "sha256": "7dfe82fb34c1222871f694526556ff46f5629c01ad1edd75fa1576e1d6050ed9",
+          "finishReason": "stop",
+          "responseModel": "google/gemma-4-E4B-it",
+          "validJson": true,
+          "applicationSchemaValid": true,
+          "schemaFailures": [],
+          "semanticFailures": [
+            "rejectedApproaches:missing:concurrently edited",
+            "nextAction:semantic:exact_operation_required",
+            "authority:semantic:evidence_precedence_missing"
+          ],
+          "sanitizedOutput": "{\n  \"objective\": \"Reconstruct Agent Control 4.5 cross-model cold memory without the writer transcript.\",\n  \"completedWork\": \"ProjectMemoryPort is implemented, and the hpubuntu to MSI transfer into D:/obsidian/knowledge_vault is physically proven.\",\n  \"decisions\": \"The system will utilize node-local vaults with governed content-hash synchronization.\",\n  \"rejectedApproaches\": \"Concurrent editing of canonical notes was rejected due to risks of split-brain and write-conflict.\",\n  \"currentState\": \"Candidate eb166c3674ff2ad4e8dda66c5b851f98b3c2c054 is on public main, while stable baseline v4.4.0 exists and v4.5.0 is not yet tagged or released.\",\n  \"outstandingWork\": \"The remaining tasks include completing the writer-to-cold-reader matrix and verifying every continuation.\",\n  \"supportingEvidence\": \"Supporting evidence includes Checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf and topology SHA-256 f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2.\",\n  \"nextAction\": \"The exact next action is to EXECUTE_MEMORY_INTEGRITY_CHECK.\",\n  \"authority\": \"Repository and physical qualification evidence supersede any remembered claims.\",\n  \"contradictions\": []\n}"
+        },
+        {
+          "attempt": 2,
+          "responseReceived": true,
+          "bytes": 1186,
+          "sha256": "daca5d439ea5c6a09cd41a95b00f89f9b045ad17b842d21301d4406d09b7efe4",
+          "finishReason": "stop",
+          "responseModel": "google/gemma-4-E4B-it",
+          "validJson": true,
+          "applicationSchemaValid": true,
+          "schemaFailures": [],
+          "semanticFailures": [
+            "nextAction:semantic:exact_operation_required"
+          ],
+          "sanitizedOutput": "{\n  \"objective\": \"Reconstruct Agent Control 4.5 cross-model cold memory without the writer transcript.\",\n  \"completedWork\": \"ProjectMemoryPort is implemented, and the hpubuntu to MSI transfer into D:/obsidian/knowledge_vault is physically proven.\",\n  \"decisions\": \"The system will use node-local vaults with governed content-hash synchronization.\",\n  \"rejectedApproaches\": \"The approach of using a concurrently edited canonical note was rejected due to split-brain and write-conflict risks.\",\n  \"currentState\": \"Candidate eb166c3674ff2ad4e8dda66c5b851f98b3c2c054 is on public main, while stable baseline v4.4.0 exists and v4.5.0 is not yet tagged or released.\",\n  \"outstandingWork\": \"The remaining tasks include completing the writer-to-cold-reader matrix and verifying every continuation.\",\n  \"supportingEvidence\": \"Supporting evidence includes Checkpoint 565aff41c1afc07995163ed4ec1d490d628970bf and topology SHA-256 f897f4f6c3dbb8e6434775a2df4f8e0a74425cf266d5e45d33b65b7acd9edc2.\",\n  \"nextAction\": \"The exact next action is to EXECUTE_MEMORY_INTEGRITY_CHECK.\",\n  \"authority\": \"Repository and physical qualification evidence override any remembered claims.\",\n  \"contradictions\": []\n}"
+        }
+      ],
+      "failures": [
+        "nextAction:semantic:exact_operation_required"
+      ],
+      "failureClass": "model capability",
+      "result": "FAIL"
+    }
+  ],
+  "totals": {
+    "inputTokens": 2724,
+    "outputTokens": 1735,
+    "totalTokens": 4459,
+    "cachedInputTokens": 481,
+    "cost": null,
+    "currency": null,
+    "authority": "unavailable"
+  },
+  "projectMemory": {
+    "backend": "structured Markdown directory viewed by Obsidian",
+    "namespace": "/fast/qualification/agent-control-4.5-memory-completion-final-20260912/vault/Agent Control/4.5-cross-model-memory",
+    "records": 2,
+    "commonSchema": "agent-control.project-memory/v1"
+  },
+  "poe": null,
+  "pisper": {
+    "decision": "DEFER",
+    "reason": "Governed Turn Snapshot Branching is a useful immutable provenance primitive but is not required for stateless writer-to-reader qualification and would broaden 4.5 scope."
+  },
+  "limitations": [
+    "ChatGPT product-level personal memory is not exposed as a controllable Codex CLI input, so no claim is made for proprietary assistant-memory injection.",
+    "The requested Google/Gemini E4B route is physically the exact Google Gemma 4 E4B local artifact; Gemini was not silently substituted."
+  ],
+  "security": {
+    "writerTranscriptSuppliedToReader": false,
+    "credentialValuesPersisted": false,
+    "providerOutputStoredAsSanitizedStructuredArtifacts": true
+  }
+}

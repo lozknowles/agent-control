@@ -1,0 +1,65 @@
+{
+  "schema": "agent-control.4.5-completion-energy/v1",
+  "generatedAt": "2026-09-12T05:05:14.854Z",
+  "specialist": {
+    "status": "DISPROVEN",
+    "boundary": "Intel package + DRAM + NVIDIA GPU board; excludes motherboard, storage, PSU losses and peripherals",
+    "summary": [
+      {
+        "route": "general-batch",
+        "batches": 5,
+        "verified": 15,
+        "total": 15,
+        "joules": 202.70879041733977,
+        "measuredJoulesPerVerifiedResult": 13.513919361155985,
+        "meanBatchMs": 687.6
+      },
+      {
+        "route": "specialist-batch",
+        "batches": 5,
+        "verified": 15,
+        "total": 15,
+        "joules": 332.2079580880148,
+        "measuredJoulesPerVerifiedResult": 22.147197205867652,
+        "meanBatchMs": 1825.2
+      }
+    ],
+    "pairedWins": [
+      {
+        "sRepeatJoules": 0,
+        "gRepeatJoules": 59.23398089407968,
+        "specialistLower": true
+      },
+      {
+        "sRepeatJoules": 105.85259018240416,
+        "gRepeatJoules": 32.89424807308127,
+        "specialistLower": false
+      },
+      {
+        "sRepeatJoules": 3.771372678997337,
+        "gRepeatJoules": 44.31696889068636,
+        "specialistLower": true
+      },
+      {
+        "sRepeatJoules": 139.89907430210135,
+        "gRepeatJoules": 32.94103511396344,
+        "specialistLower": false
+      },
+      {
+        "sRepeatJoules": 82.68492092451191,
+        "gRepeatJoules": 33.322557445529014,
+        "specialistLower": false
+      }
+    ],
+    "verdict": "FAIL_SPECIALIST_BATCH_ENERGY"
+  },
+  "residency": {
+    "status": "PARTIAL",
+    "source": "../agent-control-4.5-release-gate-20260912/energy-evidence.json"
+  },
+  "wholeNode": {
+    "status": "BLOCKED",
+    "reason": "No synchronized whole-node meter was available."
+  },
+  "routingPolicyChanged": false
+}

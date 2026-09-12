@@ -1,0 +1,82 @@
+{
+  "schema": "agent-control.4.5-completion-manifest/v1",
+  "generatedAt": "2026-09-12T05:05:14.861Z",
+  "implementationHead": "d9f4238bd07da60b36b78e4898d4d3f3a5bc9212",
+  "files": [
+    {
+      "file": "complete-human-readable-transcript.md",
+      "bytes": 20684,
+      "sha256": "1a3a96811b6d261b47e6779a1e295fa90bf1822df1c6bb749e420fd60d8d4f32"
+    },
+    {
+      "file": "consolidation-transcript.md",
+      "bytes": 1475,
+      "sha256": "78c1137b888e08dad85d58819f474ddb929affb93b662d16da239a433b90f43a"
+    },
+    {
+      "file": "consolidation.json",
+      "bytes": 28769,
+      "sha256": "954dadfdd1deca29558506c9204982cf898c77b2928ced893741d5a6d4d0f02d"
+    },
+    {
+      "file": "controller-memory-transcript.md",
+      "bytes": 1988,
+      "sha256": "e27995dc2cf771d647ae8065a99ce49f9ec341509014a8c50c44fed6805aa60b"
+    },
+    {
+      "file": "controller-memory.json",
+      "bytes": 19765,
+      "sha256": "48b1cfcf4c6e2c9dda1ecd0691ed334522deaaa881f74c0bcadbc81a9d613d97"
+    },
+    {
+      "file": "energy-evidence.json",
+      "bytes": 1810,
+      "sha256": "4b8b085a56e9de4e04a023306a6409885d64f40e7b8deaaf32740dd446835aa5"
+    },
+    {
+      "file": "failure-analysis.json",
+      "bytes": 1932,
+      "sha256": "2562fc584cae9c33fe2c75e2da056bd464d49f5517c9be900215f78f3f212357"
+    },
+    {
+      "file": "memory-matrix.json",
+      "bytes": 5348,
+      "sha256": "429bc147274336533f79df4cb27eb60c702ac87c152824320b82657d2560d170"
+    },
+    {
+      "file": "msi-account-status.json",
+      "bytes": 1430,
+      "sha256": "3efe267a318d3bd9cbb29c4e963e65f413f4fcedd16b42a64216710d57aa5de3"
+    },
+    {
+      "file": "msi-memory-transcript.md",
+      "bytes": 1280,
+      "sha256": "5824037e2226426bf3e0f4a3c11e63b7059839d836c9beaba92e310a97ff69d4"
+    },
+    {
+      "file": "msi-memory.json",
+      "bytes": 19911,
+      "sha256": "274b20399a34acae605269270562dfcf4ec30175f05b9e8916a7f6351983ccdd"
+    },
+    {
+      "file": "pixel-memory-transcript.md",
+      "bytes": 1964,
+      "sha256": "2b87d0a22af1436a7a36e182fae65b6f4c6639bb040d80aa8b14f0bd55fa8ea8"
+    },
+    {
+      "file": "pixel-memory.json",
+      "bytes": 21046,
+      "sha256": "db5fdf09a5fb255e2f815756d6a1acc6c11f85e0bbc025c81a108b72263789dc"
+    },
+    {
+      "file": "release-gate.json",
+      "bytes": 9961,
+      "sha256": "64894eb40390b5ddde4200a9d24b3dacf85154f6f32ef581ddc4ecf4140a9914"
+    },
+    {
+      "file": "specialist-batch-energy.json",
+      "bytes": 27293,
+      "sha256": "dfad1e9806698a9614656baa05945df4605cf1fde5fdba56c1e0bc0049616629"
+    }
+  ]
+}
