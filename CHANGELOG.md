@@ -2,6 +2,8 @@
 
 ## [4.5.0] — Unreleased candidate
 
+- Introduces Morrow as the original chief steward and refreshes Cadence, Quill, Relay, Lumen, Rook and Verity with coordinated robotic artwork. Public names, grounded persona and social invocation are updated while legacy `poe` APIs, events, storage, saved conversations, approval hashes, crew roles and the designed voice remain compatible. Integrated with the completed 4.5 route-governance branch for experimental testing; historical physical evidence retains its original candidate identity.
+
 - Adds one canonical provider-neutral `ProjectMemoryExchange` contract across writer, reader and consolidation flows. Application-schema validity and semantic reconstruction remain separate fail-closed gates; exact topology state, provenance, decision, rejection risk and next action are still required.
 - Repairs the bounded Pixel reader path after physical `finish_reason=length` evidence and repairs Windows OpenSSH execution by replacing channel-EOF framing with two explicit base64 records. Remote profile homes and raw transport output remain node-local and absent from evidence.
 - Physically qualifies both controller directions, two repeated Pixel Gemma 4 E4B→Qwen trials, both isolated MSI Codex profiles, and a POE-initiated `Cottage Plus/Luna → Lawrence Pro/Sol` cross-node continuation. All 12 requested cells have terminal classifications: nine PASS/FIXED, two Qwen→Pixel aliases UNSUPPORTED, and current GLM→Qwen BLOCKED_EXTERNAL.

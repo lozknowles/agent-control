@@ -813,7 +813,7 @@ port, but neither the record nor player depends on MARM.
 The presentation contract is deliberately distinct from those implementation
 terms: **Your Memories** is the user-facing Agent Control capability; the
 generic memory abstraction is the internal architecture; MARM is one optional
-backend. Normal POE, dashboard and replay views use only `Your Memories`.
+backend. Normal Morrow, dashboard and replay views use only `Your Memories`.
 
 See [UX Session Replay](docs/ux-session-replay.md) and the
 [physical qualification](docs/evidence/agent-control-4.4-ux-session-replay-20260911.md).
@@ -903,9 +903,11 @@ The dashboard's **Routing** tab reads `/api/orchestration/models`, `/api/orchest
 
 Detailed configuration, API filters, evidence semantics and deterministic qualification are in [`docs/adaptive-multi-model-orchestration.md`](docs/adaptive-multi-model-orchestration.md). This workstream does not claim a physical provider qualification merely because the deterministic suite passes.
 
-## POE conversational operator
+## Morrow conversational host
 
-POE is a presentation and proposal layer above `AgentControlService`, never a replacement scheduler, governor, execution provider, verifier, credential resolver, or authority service:
+The public identity is defined by `HOST_IDENTITY`. Stable `poe` API/event/storage identifiers and `Poe*` runtime types remain compatible; existing transcripts and approval hashes are never rewritten. The six robot roles remain projections of the existing crew state. See the [identity guide](docs/morrow.md).
+
+Morrow is a presentation and proposal layer above `AgentControlService`, never a replacement scheduler, governor, execution provider, verifier, credential resolver, or authority service:
 
 ```text
 authenticated dashboard / WhatsApp / OmniVoice / mobile
@@ -923,13 +925,13 @@ authenticated dashboard / WhatsApp / OmniVoice / mobile
  WorkParcelCoordinator -> registered Job DAG -> normal control lifecycle
 ```
 
-`PoeRuntime` persists bounded turns, real UI state transitions, proposal revisions, speech boundaries, and transcript metadata in an owner-only store. The public system snapshot exposes only a safe POE summary; authenticated endpoints expose the operator's own conversations. An evidence port maps stable object references to bounded facts and source IDs from models, Jobs, Runs, Work Parcels, lanes, Crew, routing/governor decisions, capabilities, batons, Live Shell, verification, benchmarks, and human evaluation. Missing records remain unavailable. Provider output and repository/log content remain untrusted data and cannot redefine POE's authority.
+`PoeRuntime` persists bounded turns, real UI state transitions, proposal revisions, speech boundaries, and transcript metadata in an owner-only store. The public system snapshot exposes only a safe Morrow summary; authenticated endpoints expose the operator's own conversations. An evidence port maps stable object references to bounded facts and source IDs from models, Jobs, Runs, Work Parcels, lanes, Crew, routing/governor decisions, capabilities, batons, Live Shell, verification, benchmarks, and human evaluation. Missing records remain unavailable. Provider output and repository/log content remain untrusted data and cannot redefine Morrow's authority.
 
-The optional `PoeResponseModelPort` keeps conversational generation provider neutral. `RoutedPoeResponseModel` asks the existing Model Registry for either a status or experiment-design role and then uses the existing Codex or OpenAI-compatible adapter. It requires strict structured output, known evidence citations, no hidden reasoning, and records the actual provider/account/model/provider-execution-node route plus token/cost authority. Failure does not silently select another model: the turn explicitly changes to the deterministic grounded renderer. This also bounds cost by allowing routine lookups and difficult design explanations to use different qualified roles without changing the POE persona.
+The optional `PoeResponseModelPort` keeps conversational generation provider neutral. `RoutedPoeResponseModel` asks the existing Model Registry for either a status or experiment-design role and then uses the existing Codex or OpenAI-compatible adapter. It requires strict structured output, known evidence citations, no hidden reasoning, and records the actual provider/account/model/provider-execution-node route plus token/cost authority. Failure does not silently select another model: the turn explicitly changes to the deterministic grounded renderer. This also bounds cost by allowing routine lookups and difficult design explanations to use different qualified roles without changing the Morrow persona.
 
 Benchmark proposals seal the operator question, evidence need, complete condition matrix, Job stages, metrics, repetitions, and constraints. Fairness blocks unequal immutable fixture, tools, context, authority, cache, or time limits and discloses software, hardware, quantisation, and endpoint confounders. Objective metrics become Work Parcel success criteria; `HUMAN_EVALUATION` remains separate. Repetitions materialise as distinct Job stages. Freeze creates no execution authority, and approval must match the exact revision and hash. The resulting origin binds `poe/dashboard`, conversation, proposal, frozen hash, actor, and request key before entering `WorkParcelCoordinator.submitApprovedPlan`.
 
-OmniVoice remains behind existing STT/TTS contracts. POE accepts only an original designed voice, retains the transcription as untrusted content, records available turn-latency boundaries, and aborts only synthesis on barge-in. The Social & Voice coordinator accepts authenticated `POE:` questions into a distinct identity-hashed WhatsApp conversation; consequential work remains governed by existing template/text-confirmation or frozen-proposal approval flows. Live Shell remains independently authoritative for attachment and steering.
+OmniVoice remains behind existing STT/TTS contracts. Morrow accepts only an original designed voice, retains the transcription as untrusted content, records available turn-latency boundaries, and aborts only synthesis on barge-in. The Social & Voice coordinator accepts authenticated `Morrow:` questions and legacy `POE:` aliases into a distinct identity-hashed WhatsApp conversation; consequential work remains governed by existing template/text-confirmation or frozen-proposal approval flows. Live Shell remains independently authoritative for attachment and steering.
 
 The floating browser companion is a client of this same service. Its compact panel leaves underlying dashboard navigation usable. Explicit tour selection unlocks browser audio, navigates and highlights a real component, requests a sourced explanation, and keeps Next disabled until the audio element emits completion. Autoplay, decoding and synthesis failures pause the tour; interruption invalidates older playback. Mouth movement uses the actual audio analyser, while runtime states and references drive restrained poses. Reduced motion disables these transforms and mouth modulation.
 
@@ -937,9 +939,9 @@ The floating browser companion is a client of this same service. Its compact pan
 
 `reconcilePoeBatch` requires terminal parents, no active children and no outstanding verification criteria before a final requested-set announcement. `poeParcelHandovers` reads actual sealed v2 batons and observes destination Run identity/start time before reporting receipt. Relay/Verity presentation labels do not imply a separate autonomous model. A harmless observation's separate deterministic artifact verifier proves artifact structure and integrity, not Facebook or remote-device readiness.
 
-The optional external full-test runner publishes bounded atomic progress with exact Git commit, phase, emitted counts, elapsed time and exit status. Its authenticated read-only projection is labelled `EXTERNAL_TEST_RUNNER` and never creates a Work Parcel. Totals and remaining counts stay null until discovered. POE narrates snapshots as observations because complete-audio synthesis introduces delay.
+The optional external full-test runner publishes bounded atomic progress with exact Git commit, phase, emitted counts, elapsed time and exit status. Its authenticated read-only projection is labelled `EXTERNAL_TEST_RUNNER` and never creates a Work Parcel. Totals and remaining counts stay null until discovered. Morrow narrates snapshots as observations because complete-audio synthesis introduces delay.
 
-The detailed contract, [event-to-animation mapping](docs/poe-dashboard-operator.md#state-and-animation-provenance), current [4.3 deployment guide](docs/DEPLOYMENT.md) and historical [4.1 qualification record](docs/evidence/agent-control-4.1-qualification.md) define the configuration and acceptance boundary.
+The detailed contract, [event-to-animation mapping](docs/poe-dashboard-operator.md#state-and-animation-provenance), current [deployment guide](docs/DEPLOYMENT.md) and historical [4.1 qualification record](docs/evidence/agent-control-4.1-qualification.md) define the configuration and acceptance boundary.
 
 ## 4.5 energy-minimal deterministic skill promotion
 

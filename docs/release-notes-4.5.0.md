@@ -5,6 +5,8 @@ promotion, provider-neutral **Your Memories** portability experiments and
 power-aware execution evidence. It is currently an **EXPERIMENTAL release
 candidate**, not a stable release.
 
+The candidate also introduces **Morrow**, Agent Control's original chief steward, and coordinated artwork for its six existing robotic crew members. Public identity, help text and social commands are updated with compatible legacy API, event and storage identifiers. See the [Morrow and crew guide](morrow.md) and [combined integration validation](evidence/morrow-4.5-integration/validation.md).
+
 Repeated verified reasoning may be nominated as a deterministic skill only when
 its source Work Parcels, originating route, contracts, assumptions, handler
 identity, freshness, invalidation conditions and independent verifier are
@@ -42,10 +44,11 @@ specialist consumed more energy per verified result than warm Qwen, and the warm
 residency delta remained inside measurement uncertainty. No automatic power,
 shutdown or residency policy is released.
 
-The complete deterministic suite passed 1,157/1,157 at the completion checkpoint.
-The historical candidate includes an HD recording; the exact completion candidate
-does not have a new recording and does not reuse that video as current evidence.
-It includes a complete human-readable transcript, machine-readable gate matrix,
+The route-governance completion candidate passed 1,161/1,161 tests and has a fresh
+HD production POE recording bound to implementation commit `544a4fb4c8a9f6702adb944ab43de90daa7e67d6`.
+The later Morrow integration has its own automated validation; the POE recording
+is preserved as historical evidence and does not qualify the combined candidate's
+new appearance or physical voice recognition. The completion bundle includes a complete human-readable transcript, machine-readable gate matrix,
 failure analysis and checksummed evidence manifest. See the [completion gate](evidence/agent-control-4.5-release-gate-completion-20260912.md), the [historical release-gate reconciliation](evidence/agent-control-4.5-release-gate-20260912.md),
 [skill-learning architecture](agent-control-4.5-skill-learning-architecture-review.md),
 [deterministic skill guide](deterministic-skill-promotion.md),
@@ -56,5 +59,5 @@ failure analysis and checksummed evidence manifest. See the [completion gate](ev
 Stable `v4.5.0` publication remains gated by unresolved physical criteria. The
 candidate now proves the MSI cross-node transition and beneficial strong-model
 consolidation, but does not claim complete cross-model portability, a beneficial
-specialist-energy route, whole-node power measurement, or an exact-candidate HD
-recording.
+specialist-energy route, whole-node power measurement, or a new HD
+recording of the combined Morrow candidate.

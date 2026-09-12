@@ -1,0 +1,35 @@
+{
+  "baseCommit": "2e74d88db57e3ad15ce1d85ec93220d087b9592f",
+  "branch": "feature/morrow-host-identity",
+  "comparedReleaseGateCommit": "544a4fb4c8a9f6702adb944ab43de90daa7e67d6",
+  "overlappingFiles": [],
+  "fullCheck": {
+    "command": "npm run check",
+    "passed": 1157,
+    "failed": 0,
+    "skipped": 0
+  },
+  "finalFocusedCommand": "node --import tsx --test src/control/poe-model.test.ts src/control/poe-knowledge.test.ts scripts/dashboard-bots.test.mjs",
+  "browserQualification": "NOT_COMPLETED: cloud browser rejected local preview URLs; no bypass attempted",
+  "visualVerification": "Offline SVG rendering inspected; not a browser screenshot or live runtime evidence",
+  "deployment": "NOT_PERFORMED",
+  "protectedFiles": {
+    "config/poe-voice-v2.json": "d6df186bf394b489ca5210b17df7591461e8845bc24461bcb518543352571f95",
+    "package.json": "17002aa97a1a6a8344a9c633606abea7cce22edd04ca4ad165e671067b81f0c5",
+    "src/control/dashboard-characters.ts": "fe28148e4cb3b15b338fe0f3b18e21e9026148a3826d1d05240faea5d2ef930b",
+    "src/control/project-memory.ts": "92da1e4ca0707def5f745bbdd8bc4b33e7fb0d08f584f6491c2f201a7761c9fe",
+    "src/control/skill-learning.ts": "d3cf8b1b67f240a3f3d15ed69e48aa90a488a6c4771df2896a91299d9ab685d2"
+  },
+  "evidenceSha256": {
+    "morrow-and-crew.png": "45d221af7908a427bc683e2f11b22a048724fc93df90014718e53745d3598558",
+    "full-check.txt": "7d25a35302a09132213cc6dff9892c8102d5343d21619aaa88445d21b1c8d9fd",
+    "focused-checks.txt": "340d683d70af6e44d6ec73ff00b3cad49a4785e14ff1830aed82ca18da2cac83",
+    "preview.html": "41695856bd2986e6459e5f2a161e3c07dcaf61779f0c568eaced984a01a0c74a"
+  },
+  "publication": "BLOCKED_BY_AUTOMATIC_APPROVAL_REVIEW: pushing the branch requires explicit user approval",
+  "finalFocusedCheck": {
+    "passed": 17,
+    "failed": 0,
+    "skipped": 0
+  }
+}

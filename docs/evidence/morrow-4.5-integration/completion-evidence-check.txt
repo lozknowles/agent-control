@@ -1,0 +1,18 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> agent-control@4.5.0 verify:release-gate-completion-4.5
+> node scripts/verify-release-gate-completion-4.5.mjs
+
+{
+  "verdict": "PASS_INDEPENDENT_COMPLETION_EVIDENCE_VERIFICATION",
+  "implementationHead": "544a4fb4c8a9f6702adb944ab43de90daa7e67d6",
+  "files": 24,
+  "matrix": {
+    "successful": 9,
+    "total": 12,
+    "terminallyClassified": 12,
+    "unsupported": 2,
+    "blockedExternal": 1
+  },
+  "recommendation": "EXPERIMENTAL"
+}
