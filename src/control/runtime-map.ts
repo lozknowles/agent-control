@@ -1,0 +1,1042 @@
+import { createHash } from "node:crypto";
+import type { RunRecord } from "./job-types.js";
+import type { WorkParcel } from "./work-parcels.js";
+import type {
+  ExecutionSessionEvent,
+  ExecutionSessionRecord,
+} from "./execution-session.js";
+import type { TokenRoutingProjection } from "./token-aware-baton-routing.js";
+import type { RetrievalProjection } from "./governed-retrieval.js";
+import { redactSensitiveValue } from "./security-redaction.js";
+
+export type RuntimeMapNodeType =
+  | "request"
+  | "poe"
+  | "planner"
+  | "decision"
+  | "work-parcel"
+  | "job"
+  | "parallel-lane"
+  | "worker"
+  | "model-call"
+  | "cache"
+  | "memory"
+  | "skill"
+  | "tool"
+  | "terminal"
+  | "validation"
+  | "retry"
+  | "escalation"
+  | "approval"
+  | "baton"
+  | "aggregation"
+  | "consensus"
+  | "result";
+export type RuntimeMapState =
+  | "WAITING"
+  | "QUEUED"
+  | "RUNNING"
+  | "SUCCEEDED"
+  | "FAILED"
+  | "DEGRADED"
+  | "BLOCKED"
+  | "SKIPPED"
+  | "HANDOFF";
+export interface RuntimeMapEvidenceRef {
+  kind: string;
+  id: string;
+  sha256?: string;
+}
+export interface RuntimeMapNode {
+  id: string;
+  type: RuntimeMapNodeType;
+  label: string;
+  subtitle?: string;
+  state: RuntimeMapState;
+  startedAt?: string;
+  endedAt?: string;
+  parentId?: string;
+  groupId?: string;
+  expandable: boolean;
+  detail: Record<string, unknown>;
+  evidence: RuntimeMapEvidenceRef[];
+}
+export interface RuntimeMapEdge {
+  id: string;
+  from: string;
+  to: string;
+  kind: "flow" | "dependency" | "contains" | "handoff" | "retry" | "evidence";
+  state: RuntimeMapState;
+  label?: string;
+  evidence: RuntimeMapEvidenceRef[];
+}
+export interface RuntimeMapEvent {
+  at: string;
+  kind: string;
+  nodeId: string;
+  state: RuntimeMapState;
+  summary: string;
+  evidence: RuntimeMapEvidenceRef[];
+}
+export interface RuntimeMapProjection {
+  schema: "agent-control.runtime-map/v1";
+  authority: "Agent Control authoritative runtime records";
+  mode: "LIVE" | "REPLAY";
+  parcelId: string | null;
+  observedAt: string;
+  replayAt: string | null;
+  range: { startedAt: string | null; endedAt: string | null };
+  freshness: {
+    state: "LIVE" | "HISTORICAL" | "STALE";
+    lastAuthoritativeAt: string | null;
+  };
+  summary: {
+    nodes: number;
+    edges: number;
+    running: number;
+    waiting: number;
+    succeeded: number;
+    failed: number;
+    degraded: number;
+    groups: number;
+  };
+  nodes: RuntimeMapNode[];
+  edges: RuntimeMapEdge[];
+  events: RuntimeMapEvent[];
+  controlRoom: Array<{
+    id: string;
+    job: string;
+    worker: string;
+    model: string;
+    activity: string;
+    state: RuntimeMapState;
+    startedAt?: string;
+    sessionId?: string;
+    latestSafeOutput?: string;
+  }>;
+  limitations: string[];
+}
+export interface RuntimeMapSource {
+  parcel?: WorkParcel;
+  runs: RunRecord[];
+  sessions: ExecutionSessionRecord[];
+  sessionEvents: (id: string) => ExecutionSessionEvent[];
+  tokenRouting?: TokenRoutingProjection;
+  retrieval?: RetrievalProjection;
+  now?: string;
+  replayAt?: string;
+}
+
+const terminal = new Set<RuntimeMapState>([
+  "SUCCEEDED",
+  "FAILED",
+  "DEGRADED",
+  "BLOCKED",
+  "SKIPPED",
+]);
+const sha = (value: string) => createHash("sha256").update(value).digest("hex");
+const safe = <T>(value: T) => redactSensitiveValue(value) as T;
+function state(value?: string): RuntimeMapState {
+  const v = (value ?? "WAITING").toUpperCase();
+  if (
+    [
+      "RUNNING",
+      "DISPATCHED",
+      "VERIFYING",
+      "RESOLVING",
+      "VALIDATING",
+      "ACTIVE",
+    ].includes(v)
+  )
+    return "RUNNING";
+  if (["QUEUED", "READY", "PLANNING"].includes(v)) return "QUEUED";
+  if (
+    [
+      "SUCCEEDED",
+      "COMPLETE",
+      "COMPLETED",
+      "EXITED",
+      "VERIFIED",
+      "ACCEPTED",
+      "PASS",
+    ].includes(v)
+  )
+    return "SUCCEEDED";
+  if (["FAILED", "ERROR", "CANCELLED", "MISSED", "DISCONNECTED"].includes(v))
+    return "FAILED";
+  if (["DEGRADED", "RETRY_PENDING", "RECONNECTING", "ESCALATED"].includes(v))
+    return "DEGRADED";
+  if (
+    [
+      "WAITING",
+      "WAITING_FOR_DEPENDENCY",
+      "WAITING_FOR_RESOURCE",
+      "WAITING_FOR_WORKER",
+      "WAITING_FOR_APPROVAL",
+      "AUTHENTICATION_BLOCKED",
+      "CLEANUP_UNCERTAIN",
+    ].includes(v)
+  )
+    return v === "WAITING" ? "WAITING" : "BLOCKED";
+  if (v === "SKIPPED") return "SKIPPED";
+  return "WAITING";
+}
+function temporal(
+  final: RuntimeMapState,
+  start: string | undefined,
+  end: string | undefined,
+  replayAt?: string,
+) {
+  if (!replayAt) return final;
+  const t = Date.parse(replayAt);
+  if (start && t < Date.parse(start)) return "WAITING";
+  if (start && (!end || t < Date.parse(end))) return "RUNNING";
+  return end && t >= Date.parse(end) ? final : "WAITING";
+}
+function edge(
+  from: string,
+  to: string,
+  kind: RuntimeMapEdge["kind"] = "flow",
+  label?: string,
+  evidence: RuntimeMapEvidenceRef[] = [],
+): RuntimeMapEdge {
+  return {
+    id: `edge:${sha(`${from}|${to}|${kind}|${label ?? ""}`).slice(0, 16)}`,
+    from,
+    to,
+    kind,
+    state: kind === "handoff" ? "HANDOFF" : "WAITING",
+    ...(label ? { label } : {}),
+    evidence,
+  };
+}
+function event(
+  at: string,
+  kind: string,
+  nodeId: string,
+  s: RuntimeMapState,
+  summary: string,
+  evidence: RuntimeMapEvidenceRef[] = [],
+): RuntimeMapEvent {
+  return { at, kind, nodeId, state: s, summary, evidence };
+}
+function latestOutput(events: ExecutionSessionEvent[], at?: string) {
+  const values = events
+    .filter(
+      (item) =>
+        item.type === "output" &&
+        (!at || Date.parse(item.at) <= Date.parse(at)),
+    )
+    .map((item) => (typeof item.text === "string" ? item.text : ""))
+    .filter(Boolean);
+  return values.at(-1)?.slice(-240);
+}
+
+export function projectRuntimeMap(
+  input: RuntimeMapSource,
+): RuntimeMapProjection {
+  const now = input.now ?? new Date().toISOString(),
+    at = input.replayAt,
+    parcel = input.parcel,
+    nodes: RuntimeMapNode[] = [],
+    edges: RuntimeMapEdge[] = [],
+    events: RuntimeMapEvent[] = [],
+    seen = new Set<string>();
+  const add = (node: RuntimeMapNode) => {
+    if (seen.has(node.id)) return;
+    seen.add(node.id);
+    nodes.push(safe(node));
+  };
+  const evidence = (
+    kind: string,
+    id: string,
+    content?: unknown,
+  ): RuntimeMapEvidenceRef => ({
+    kind,
+    id,
+    ...(content === undefined ? {} : { sha256: sha(JSON.stringify(content)) }),
+  });
+  if (parcel) {
+    const pe = evidence("work-parcel", parcel.id, parcel.audit),
+      requestId = `request:${parcel.id}`,
+      poeId = `poe:${parcel.id}`,
+      plannerId = `planner:${parcel.id}`,
+      parcelId = `parcel:${parcel.id}`;
+    add({
+      id: requestId,
+      type: "request",
+      label: "Request",
+      subtitle: parcel.objective,
+      state: temporal("SUCCEEDED", parcel.createdAt, parcel.createdAt, at),
+      startedAt: parcel.createdAt,
+      endedAt: parcel.createdAt,
+      expandable: false,
+      detail: {
+        actor: parcel.actor,
+        channel: parcel.origin?.channel ?? "dashboard",
+        requestHash: sha(parcel.prompt),
+      },
+      evidence: [pe],
+    });
+    const fromPoe =
+      parcel.origin?.channel === "dashboard" ||
+      parcel.origin?.channel === "voice" ||
+      parcel.origin?.channel === "whatsapp";
+    if (fromPoe) {
+      add({
+        id: poeId,
+        type: "poe",
+        label: "Morrow / POE",
+        subtitle: "Governed operator ingress",
+        state: temporal("SUCCEEDED", parcel.createdAt, parcel.createdAt, at),
+        startedAt: parcel.createdAt,
+        endedAt: parcel.createdAt,
+        expandable: true,
+        detail: {
+          channel: parcel.origin?.channel,
+          authentication: parcel.origin?.authentication ?? null,
+        },
+        evidence: [pe],
+      });
+      edges.push(edge(requestId, poeId));
+    }
+    add({
+      id: plannerId,
+      type: "planner",
+      label: "Plan and route",
+      subtitle: parcel.planner.reason,
+      state: temporal(
+        parcel.stages.length ? "SUCCEEDED" : "FAILED",
+        parcel.createdAt,
+        parcel.audit.timeline.find((x) => x.type === "plan.selected")?.at,
+        at,
+      ),
+      startedAt: parcel.createdAt,
+      endedAt: parcel.audit.timeline.find((x) => x.type === "plan.selected")
+        ?.at,
+      expandable: true,
+      detail: {
+        kind: parcel.planner.kind,
+        provider: parcel.planner.provider ?? null,
+        model: parcel.planner.model ?? null,
+      },
+      evidence: [pe],
+    });
+    edges.push(edge(fromPoe ? poeId : requestId, plannerId));
+    add({
+      id: parcelId,
+      type: "work-parcel",
+      label: "Work Parcel",
+      subtitle: parcel.id,
+      state: temporal(
+        state(parcel.status),
+        parcel.createdAt,
+        parcel.endedAt,
+        at,
+      ),
+      startedAt: parcel.createdAt,
+      endedAt: parcel.endedAt,
+      expandable: true,
+      detail: {
+        objective: parcel.objective,
+        status: parcel.status,
+        telemetry: parcel.telemetry,
+        decision: parcel.decision ?? null,
+      },
+      evidence: [pe],
+    });
+    edges.push(edge(plannerId, parcelId));
+    const stageIds = new Map(
+      parcel.stages.map((s) => [s.id, `stage:${parcel.id}:${s.id}`]),
+    );
+    for (const stage of parcel.stages) {
+      const sid = stageIds.get(stage.id)!,
+        run = stage.runId
+          ? input.runs.find((r) => r.id === stage.runId)
+          : undefined,
+        se = evidence("parcel-stage", `${parcel.id}:${stage.id}`, stage);
+      add({
+        id: sid,
+        type: "parallel-lane",
+        label: stage.name,
+        subtitle: stage.job,
+        state: temporal(
+          state(stage.status),
+          stage.startedAt,
+          stage.endedAt,
+          at,
+        ),
+        startedAt: stage.startedAt,
+        endedAt: stage.endedAt,
+        parentId: parcelId,
+        groupId: `group:${sid}`,
+        expandable: true,
+        detail: {
+          stageId: stage.id,
+          dependsOn: stage.dependsOn,
+          route: stage.actualRoute ?? stage.requestedRoute ?? null,
+          waitingReason: stage.waitingReason ?? null,
+          error: stage.error ?? null,
+        },
+        evidence: [pe, se],
+      });
+      if (!stage.dependsOn.length) edges.push(edge(parcelId, sid, "contains"));
+      for (const dep of stage.dependsOn)
+        if (stageIds.has(dep))
+          edges.push(edge(stageIds.get(dep)!, sid, "dependency"));
+      if (run) {
+        const rid = `run:${run.id}`,
+          re = evidence("run", run.id, run);
+        add({
+          id: rid,
+          type: "job",
+          label: run.jobId,
+          subtitle: `Run ${run.id}`,
+          state: temporal(state(run.status), run.requestedAt, run.endedAt, at),
+          startedAt: run.requestedAt,
+          endedAt: run.endedAt,
+          parentId: sid,
+          groupId: `group:${sid}`,
+          expandable: true,
+          detail: {
+            runId: run.id,
+            jobVersion: run.jobVersion,
+            trigger: run.trigger,
+            status: run.status,
+            errors: run.errors,
+            lineage: run.lineage ?? null,
+          },
+          evidence: [re, pe],
+        });
+        edges.push(edge(sid, rid, "contains"));
+        for (const step of run.steps) {
+          const stepId = `step:${run.id}:${step.id}`,
+            attempt = step.attempts.at(-1),
+            st = temporal(state(step.status), step.startedAt, step.endedAt, at),
+            type: RuntimeMapNodeType = step.action.includes("verify")
+              ? "validation"
+              : step.action.includes("skill")
+                ? "skill"
+                : "tool";
+          add({
+            id: stepId,
+            type,
+            label: step.id,
+            subtitle: step.action,
+            state: st,
+            startedAt: step.startedAt,
+            endedAt: step.endedAt,
+            parentId: rid,
+            groupId: `group:${sid}`,
+            expandable: true,
+            detail: {
+              action: step.action,
+              capabilities: step.capabilityRequest,
+              resources: step.resources,
+              attempts: step.attempts.length,
+              verification: step.verification,
+              error: step.error ?? null,
+            },
+            evidence: [re],
+          });
+          edges.push(edge(rid, stepId, "contains"));
+          for (const dep of step.dependsOn)
+            edges.push(edge(`step:${run.id}:${dep}`, stepId, "dependency"));
+          const worker = attempt?.workerId ?? step.placement?.selected;
+          if (worker) {
+            const wid = `worker:${run.id}:${step.id}:${worker}`;
+            add({
+              id: wid,
+              type: "worker",
+              label: String(worker),
+              subtitle: "Governed worker",
+              state: st,
+              startedAt: step.startedAt,
+              endedAt: step.endedAt,
+              parentId: stepId,
+              groupId: `group:${sid}`,
+              expandable: true,
+              detail: { workerId: worker, placement: step.placement ?? null },
+              evidence: [re],
+            });
+            edges.push(edge(stepId, wid, "contains"));
+          }
+          if (step.attempts.length > 1) {
+            const retryId = `retry:${run.id}:${step.id}`;
+            add({
+              id: retryId,
+              type: "retry",
+              label: `Retry ×${step.attempts.length - 1}`,
+              state: st === "FAILED" ? "FAILED" : "DEGRADED",
+              parentId: stepId,
+              groupId: `group:${sid}`,
+              expandable: true,
+              detail: { attempts: step.attempts },
+              evidence: [re],
+            });
+            edges.push(edge(stepId, retryId, "retry"));
+          }
+        }
+      }
+    }
+    for (const invocation of parcel.audit.invocations) {
+      const id = `model:${invocation.id}`,
+        sid = stageIds.get(invocation.stageId) ?? parcelId,
+        ie = evidence("model-invocation", invocation.id, invocation);
+      add({
+        id,
+        type: "model-call",
+        label: invocation.model,
+        subtitle: invocation.provider,
+        state: temporal(
+          state(invocation.outcome),
+          invocation.startedAt,
+          invocation.completedAt ?? undefined,
+          at,
+        ),
+        startedAt: invocation.startedAt,
+        endedAt: invocation.completedAt ?? undefined,
+        parentId: sid,
+        groupId: `group:${sid}`,
+        expandable: true,
+        detail: {
+          provider: invocation.provider,
+          accountProfileId: invocation.accountProfileId ?? null,
+          node: invocation.node,
+          route: invocation.route,
+          latencyMs: invocation.elapsedMs,
+          usageAuthority: invocation.usageAuthority ?? "unavailable",
+          inputTokens: invocation.inputTokens ?? null,
+          cachedInputTokens: invocation.cachedInputTokens,
+          outputTokens: invocation.outputTokens,
+          totalTokens: invocation.totalTokens,
+          cost: invocation.providerReportedCost ?? invocation.calculatedCost,
+          costBasis: invocation.costBasis,
+          requestDispatched: invocation.requestDispatched ?? null,
+          verifierResult: invocation.verifierResult,
+        },
+        evidence: [ie],
+      });
+      edges.push(edge(sid, id, "flow"));
+    }
+    for (const audit of parcel.audit.timeline) {
+      const nodeId = audit.stageId
+          ? (stageIds.get(audit.stageId) ?? parcelId)
+          : parcelId,
+        ae = evidence("parcel-audit-event", audit.id, audit);
+      events.push(
+        event(
+          audit.at,
+          audit.type,
+          nodeId,
+          stateForAudit(audit.type),
+          audit.summary,
+          [ae],
+        ),
+      );
+      if (audit.type === "baton.created" || audit.type.startsWith("handoff.")) {
+        const id = `baton:${audit.id}`;
+        add({
+          id,
+          type: "baton",
+          label:
+            audit.type === "baton.created"
+              ? "Sealed baton"
+              : "Governed handoff",
+          subtitle: audit.summary,
+          state: "HANDOFF",
+          startedAt: audit.at,
+          endedAt: audit.at,
+          parentId: nodeId,
+          expandable: true,
+          detail: { reason: audit.detail, integrity: ae.sha256 },
+          evidence: [ae],
+        });
+        edges.push(edge(nodeId, id, "handoff"));
+      }
+      if (audit.type.startsWith("cache.")) {
+        const id = `cache:${audit.id}`;
+        add({
+          id,
+          type: "cache",
+          label: audit.summary,
+          subtitle: audit.type,
+          state: stateForAudit(audit.type),
+          startedAt: audit.at,
+          endedAt: audit.at,
+          parentId: nodeId,
+          expandable: true,
+          detail: { detail: audit.detail },
+          evidence: [ae],
+        });
+        edges.push(edge(nodeId, id));
+      }
+      if (audit.type === "context.retrieved") {
+        const id = `memory:${audit.id}`;
+        add({
+          id,
+          type: "memory",
+          label: "Context / Your Memories retrieval",
+          subtitle: audit.summary,
+          state: "SUCCEEDED",
+          startedAt: audit.at,
+          endedAt: audit.at,
+          parentId: nodeId,
+          expandable: true,
+          detail: { detail: audit.detail },
+          evidence: [ae],
+        });
+        edges.push(edge(nodeId, id));
+      }
+    }
+    for (const audit of parcel.audit.timeline) {
+      const nodeId = audit.stageId
+          ? (stageIds.get(audit.stageId) ?? parcelId)
+          : parcelId,
+        ae = evidence("parcel-audit-event", audit.id, audit);
+      if (
+        audit.type === "governor.decision" ||
+        audit.type === "route.requested" ||
+        audit.type === "route.resolved" ||
+        audit.type === "route.changed"
+      ) {
+        const id = `decision:${audit.id}`;
+        add({
+          id,
+          type: "decision",
+          label: audit.summary,
+          subtitle: audit.type,
+          state:
+            audit.type === "route.requested"
+              ? "SUCCEEDED"
+              : stateForAudit(audit.type),
+          startedAt: audit.at,
+          endedAt: audit.at,
+          parentId: nodeId,
+          expandable: true,
+          detail: { reason: audit.detail },
+          evidence: [ae],
+        });
+        edges.push(
+          edge(nodeId, id, audit.type === "route.changed" ? "handoff" : "flow"),
+        );
+      }
+      if (audit.type === "question.created") {
+        const id = `approval:${audit.id}`;
+        add({
+          id,
+          type: "approval",
+          label: "Human decision required",
+          subtitle: audit.summary,
+          state: "BLOCKED",
+          startedAt: audit.at,
+          parentId: nodeId,
+          expandable: true,
+          detail: { request: audit.detail },
+          evidence: [ae],
+        });
+        edges.push(edge(nodeId, id));
+      }
+      if (
+        audit.type === "question.answered" ||
+        audit.type === "steering.accepted"
+      ) {
+        const id = `approval:${audit.id}`;
+        add({
+          id,
+          type: "approval",
+          label: "Governed operator decision",
+          subtitle: audit.summary,
+          state: "SUCCEEDED",
+          startedAt: audit.at,
+          endedAt: audit.at,
+          parentId: nodeId,
+          expandable: true,
+          detail: { decision: audit.detail },
+          evidence: [ae],
+        });
+        edges.push(edge(nodeId, id));
+      }
+      if (
+        audit.type === "verification.completed" ||
+        audit.type === "criterion.evaluated"
+      ) {
+        const id = `validation:${audit.id}`;
+        add({
+          id,
+          type: "validation",
+          label: audit.summary,
+          subtitle: audit.type,
+          state: stateForAudit(audit.type),
+          startedAt: audit.at,
+          endedAt: audit.at,
+          parentId: nodeId,
+          expandable: true,
+          detail: { result: audit.detail },
+          evidence: [ae],
+        });
+        edges.push(edge(nodeId, id));
+      }
+      if (audit.type === "retry.exhausted") {
+        const id = `escalation:${audit.id}`;
+        add({
+          id,
+          type: "escalation",
+          label: "Retry exhausted",
+          subtitle: audit.summary,
+          state: "DEGRADED",
+          startedAt: audit.at,
+          endedAt: audit.at,
+          parentId: nodeId,
+          expandable: true,
+          detail: { reason: audit.detail },
+          evidence: [ae],
+        });
+        edges.push(edge(nodeId, id, "retry"));
+      }
+    }
+    const finalDeps = parcel.stages.filter(
+      (candidate) =>
+        !parcel.stages.some((other) => other.dependsOn.includes(candidate.id)),
+    );
+    const aggregateId = `aggregate:${parcel.id}`;
+    if (parcel.stages.length > 1) {
+      const ended = finalDeps.every((x) => x.endedAt)
+        ? finalDeps
+            .map((x) => x.endedAt!)
+            .sort()
+            .at(-1)
+        : undefined;
+      add({
+        id: aggregateId,
+        type: "aggregation",
+        label: "Aggregation / consensus",
+        subtitle: `${parcel.stages.length} governed branches`,
+        state: temporal(
+          parcel.decision ? "SUCCEEDED" : "WAITING",
+          ended,
+          parcel.endedAt,
+          at,
+        ),
+        startedAt: ended,
+        endedAt: parcel.endedAt,
+        parentId: parcelId,
+        expandable: true,
+        detail: {
+          branches: parcel.stages.length,
+          blocked: parcel.decision?.blockedStages ?? [],
+        },
+        evidence: [pe],
+      });
+      for (const s of finalDeps)
+        edges.push(edge(stageIds.get(s.id)!, aggregateId, "dependency"));
+    }
+    const resultId = `result:${parcel.id}`;
+    add({
+      id: resultId,
+      type: "result",
+      label: parcel.decision?.title ?? "Result",
+      subtitle: parcel.decision?.summary ?? "Awaiting governed completion",
+      state: temporal(state(parcel.status), parcel.endedAt, parcel.endedAt, at),
+      startedAt: parcel.endedAt,
+      endedAt: parcel.endedAt,
+      expandable: true,
+      detail: {
+        decision: parcel.decision ?? null,
+        totals: parcel.audit.totals,
+      },
+      evidence: [pe],
+    });
+    edges.push(
+      edge(parcel.stages.length > 1 ? aggregateId : parcelId, resultId),
+    );
+    for (const decision of input.tokenRouting?.decisions.filter(
+      (item) => item.parcelId === parcel.id,
+    ) ?? []) {
+      if (at && Date.parse(decision.at) > Date.parse(at)) continue;
+      const id = `governor:${decision.id}`,
+        de = evidence("token-routing-decision", decision.id, decision),
+        parent = decision.batonId
+          ? (nodes.find(
+              (node) =>
+                node.type === "baton" &&
+                String(node.detail.integrity).length > 0,
+            )?.id ?? parcelId)
+          : parcelId;
+      add({
+        id,
+        type: decision.action === "BATON_AND_HANDOFF" ? "baton" : "decision",
+        label: decision.action.replaceAll("_", " "),
+        subtitle: decision.reason,
+        state:
+          decision.outcome === "FAILED"
+            ? "FAILED"
+            : decision.outcome === "SUCCEEDED"
+              ? "SUCCEEDED"
+              : decision.action === "BATON_AND_HANDOFF"
+                ? "HANDOFF"
+                : "RUNNING",
+        startedAt: decision.at,
+        endedAt: decision.outcome === "RECORDED" ? undefined : decision.at,
+        parentId: parent,
+        expandable: true,
+        detail: {
+          governorState: decision.state,
+          contextPercent: decision.contextPercent,
+          target: decision.target ?? null,
+          trigger: decision.trigger ?? null,
+          outcome: decision.outcome,
+          batonId: decision.batonId ?? null,
+        },
+        evidence: [de],
+      });
+      edges.push(
+        edge(
+          parent,
+          id,
+          decision.action === "BATON_AND_HANDOFF" ? "handoff" : "flow",
+        ),
+      );
+      events.push(
+        event(
+          decision.at,
+          "governor.decision",
+          id,
+          stateForAudit("governor.decision"),
+          `${decision.action}: ${decision.reason}`,
+          [de],
+        ),
+      );
+    }
+    for (const attempt of input.retrieval?.attempts.filter(
+      (item) => item.parcelId === parcel.id,
+    ) ?? []) {
+      if (at && Date.parse(attempt.at) > Date.parse(at)) continue;
+      const id = `retrieval:${attempt.id}`,
+        re = evidence("retrieval-attempt", attempt.id, attempt);
+      add({
+        id,
+        type: "memory",
+        label: "Your Memories / context retrieval",
+        subtitle: `${attempt.providerId} · ${attempt.strategy}`,
+        state:
+          attempt.outcome === "FAILED"
+            ? "FAILED"
+            : attempt.outcome === "INSUFFICIENT"
+              ? "DEGRADED"
+              : attempt.outcome === "SKIPPED"
+                ? "SKIPPED"
+                : "SUCCEEDED",
+        startedAt: attempt.at,
+        endedAt: attempt.at,
+        parentId: parcelId,
+        expandable: true,
+        detail: {
+          outcome: attempt.outcome,
+          reason: attempt.reason,
+          evidenceCount: attempt.evidenceCount,
+          evidenceTokens: attempt.evidenceTokens,
+          freshness: attempt.freshness,
+          indexState: attempt.indexState,
+          latencyMs: attempt.latencyMs,
+        },
+        evidence: [re],
+      });
+      edges.push(edge(parcelId, id));
+      events.push(
+        event(
+          attempt.at,
+          "context.retrieved",
+          id,
+          stateForAudit(attempt.outcome === "FAILED" ? "failed" : "completed"),
+          attempt.reason,
+          [re],
+        ),
+      );
+    }
+  }
+  for (const session of input.sessions.filter(
+    (s) => !parcel || s.scope.parcelId === parcel.id,
+  )) {
+    const id = `terminal:${session.id}`,
+      se = evidence("execution-session", session.id, session),
+      sessionNode = `step:${session.scope.runId}:${session.scope.stepId}`,
+      sessionEvents = input.sessionEvents(session.id),
+      final = state(session.state);
+    add({
+      id,
+      type: "terminal",
+      label: session.command,
+      subtitle: `${session.scope.workerId} · ${session.scope.nodeId}`,
+      state: temporal(final, session.startedAt, session.endedAt, at),
+      startedAt: session.startedAt,
+      endedAt: session.endedAt,
+      parentId: seen.has(sessionNode) ? sessionNode : undefined,
+      expandable: true,
+      detail: {
+        sessionId: session.id,
+        adapterId: session.adapterId,
+        scope: session.scope,
+        capabilities: session.capabilities,
+        control: session.control,
+        outputBytes: session.outputBytes,
+        outputTruncated: session.outputTruncated,
+        latestSafeOutput: latestOutput(sessionEvents, at),
+      },
+      evidence: [se],
+    });
+    if (seen.has(sessionNode)) edges.push(edge(sessionNode, id, "contains"));
+    for (const item of sessionEvents.filter(
+      (x) => !at || Date.parse(x.at) <= Date.parse(at),
+    ))
+      events.push(
+        event(item.at, item.type, id, stateForSession(item.type), item.detail, [
+          se,
+        ]),
+      );
+  }
+  for (const e of edges) {
+    const from = nodes.find((n) => n.id === e.from),
+      to = nodes.find((n) => n.id === e.to);
+    e.state =
+      e.kind === "handoff"
+        ? "HANDOFF"
+        : to?.state === "RUNNING"
+          ? "RUNNING"
+          : terminal.has(to?.state ?? "WAITING")
+            ? to!.state
+            : (from?.state ?? "WAITING");
+  }
+  events.sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
+  nodes.sort(
+    (a, b) =>
+      (a.startedAt ? Date.parse(a.startedAt) : 0) -
+        (b.startedAt ? Date.parse(b.startedAt) : 0) || a.id.localeCompare(b.id),
+  );
+  const relevantEvents = at
+      ? events.filter((e) => Date.parse(e.at) <= Date.parse(at))
+      : events,
+    last = relevantEvents.at(-1)?.at ?? parcel?.updatedAt ?? null,
+    isLive = !at && Boolean(parcel && !parcel.endedAt),
+    fresh =
+      isLive && last && Date.parse(now) - Date.parse(last) > 30_000
+        ? "STALE"
+        : isLive
+          ? "LIVE"
+          : "HISTORICAL";
+  const controlRoom = nodes
+    .filter((n) => n.type === "job")
+    .map((n) => {
+      const run = input.runs.find((r) => `run:${r.id}` === n.id),
+        session = input.sessions.find((s) => s.scope.runId === run?.id),
+        inv = parcel?.audit.invocations.find((i) => i.runId === run?.id);
+      return {
+        id: n.id,
+        job: n.label,
+        worker: run?.selectedWorkers.at(-1) ?? "unassigned",
+        model: inv?.model ?? "not reported",
+        activity:
+          run?.steps.find((s) => state(s.status) === "RUNNING")?.action ??
+          n.subtitle ??
+          "",
+        state: n.state,
+        ...(n.startedAt ? { startedAt: n.startedAt } : {}),
+        ...(session
+          ? {
+              sessionId: session.id,
+              latestSafeOutput: latestOutput(
+                input.sessionEvents(session.id),
+                at,
+              ),
+            }
+          : {}),
+      };
+    });
+  return {
+    schema: "agent-control.runtime-map/v1",
+    authority: "Agent Control authoritative runtime records",
+    mode: at ? "REPLAY" : "LIVE",
+    parcelId: parcel?.id ?? null,
+    observedAt: now,
+    replayAt: at ?? null,
+    range: {
+      startedAt: parcel?.createdAt ?? null,
+      endedAt: parcel?.endedAt ?? last,
+    },
+    freshness: { state: fresh, lastAuthoritativeAt: last },
+    summary: {
+      nodes: nodes.length,
+      edges: edges.length,
+      running: nodes.filter((n) => n.state === "RUNNING").length,
+      waiting: nodes.filter((n) =>
+        ["WAITING", "QUEUED", "BLOCKED"].includes(n.state),
+      ).length,
+      succeeded: nodes.filter((n) => n.state === "SUCCEEDED").length,
+      failed: nodes.filter((n) => ["FAILED", "BLOCKED"].includes(n.state))
+        .length,
+      degraded: nodes.filter((n) => n.state === "DEGRADED").length,
+      groups: new Set(nodes.map((n) => n.groupId).filter(Boolean)).size,
+    },
+    nodes,
+    edges,
+    events: relevantEvents,
+    controlRoom,
+    limitations: [
+      "Protected reasoning and credentials are never projected.",
+      "Terminal bytes require the existing authenticated Execution Session viewer.",
+      "Compare mode reports structural deltas; synchronized visual comparison remains deferred.",
+    ],
+  };
+}
+function stateForAudit(type: string): RuntimeMapState {
+  if (type.includes("failed") || type === "retry.exhausted") return "FAILED";
+  if (type.includes("retry") || type.includes("escalat")) return "DEGRADED";
+  if (
+    type.includes("handoff") ||
+    type === "baton.created" ||
+    type === "route.changed"
+  )
+    return "HANDOFF";
+  if (
+    type.includes("started") ||
+    type.includes("requested") ||
+    type.includes("dispatched")
+  )
+    return "RUNNING";
+  return "SUCCEEDED";
+}
+function stateForSession(type: string): RuntimeMapState {
+  if (type.includes("failed") || type.includes("disconnected")) return "FAILED";
+  if (type === "output" || type.includes("started")) return "RUNNING";
+  return "SUCCEEDED";
+}
+export function compareRuntimeMaps(
+  left: RuntimeMapProjection,
+  right: RuntimeMapProjection,
+) {
+  const count = (map: RuntimeMapProjection, type: RuntimeMapNodeType) =>
+      map.nodes.filter((n) => n.type === type).length,
+    duration = (map: RuntimeMapProjection) =>
+      map.range.endedAt && map.range.startedAt
+        ? Date.parse(map.range.endedAt) - Date.parse(map.range.startedAt)
+        : null,
+    leftDuration = duration(left),
+    rightDuration = duration(right);
+  return safe({
+    schema: "agent-control.runtime-map-compare/v1",
+    leftParcelId: left.parcelId,
+    rightParcelId: right.parcelId,
+    topology: {
+      nodes: right.nodes.length - left.nodes.length,
+      edges: right.edges.length - left.edges.length,
+    },
+    durationMs:
+      leftDuration === null || rightDuration === null
+        ? null
+        : rightDuration - leftDuration,
+    modelCalls: count(right, "model-call") - count(left, "model-call"),
+    cacheOperations: count(right, "cache") - count(left, "cache"),
+    retries: count(right, "retry") - count(left, "retry"),
+    failures: right.summary.failed - left.summary.failed,
+  });
+}

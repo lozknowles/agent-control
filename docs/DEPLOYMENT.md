@@ -1,5 +1,21 @@
 # Agent Control 4.5 deployment, upgrade and rollback
 
+## Runtime Map
+
+Runtime Map requires no second service or database. It is served by the normal
+authenticated dashboard and projects the existing state directory. Preserve the
+Work Parcel, Run and execution-session records during upgrade if historical
+Replay is required. The browser receives sanitized metadata through
+`/api/runtime-map` and the existing `/api/events` SSE stream; do not expose
+either endpoint without the operator-authentication boundary.
+
+The view is WATCH-only. Existing Live Shell and mutation endpoints retain their
+separate authority checks. A disconnected dashboard does not stop execution;
+operators must treat the visible state as stale until the banner returns to
+LIVE/HISTORICAL after reconciliation. No Runtime Map-specific rollback data is
+required because the graph is derived rather than authoritative. See the
+[operator guide](runtime-map.md).
+
 ## Experimental Session Vault configuration
 
 The web entry point uses `${AGENT_CONTROL_STATE_DIR:-.agent-control}/session-vault`

@@ -1,5 +1,20 @@
 # Agent Control 4.5 work plan
 
+## Runtime Map / Process Explorer workstream
+
+- [x] Project authoritative Work Parcels, Runs, workers, model calls, terminal
+      sessions, decisions, batons, cache, memory, retries and verification into
+      one provider-neutral graph schema.
+- [x] Add live accessible graph layout, automatic clustering, pan/zoom/fit,
+      Control Room, drill-down, authenticated session links and Replay.
+- [x] Add grounded Morrow references, redaction/access boundaries, 50+ job tests,
+      physical parallel qualification, HD video and complete transcript.
+- [ ] Add synchronized graphical dual-run Compare when the historical evidence
+      model can support aligned replay without compromising Live/Replay.
+- [ ] Add governed map-originated pause/cancel/retry/approval controls only by
+      delegating to existing authorization and audit APIs; WATCH remains the
+      default and current Runtime Map authority.
+
 This file records the implementation order for governed local skill learning. It
 is not a release declaration. Agent Control 4.4.0 remains the released baseline.
 

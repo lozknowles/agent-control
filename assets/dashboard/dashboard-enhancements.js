@@ -514,6 +514,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const view = button.dataset.view;
     if(view==='poe'){document.dispatchEvent(new Event('poe:open'));return;}
     document.querySelector('#jobs-workspace').hidden = view !== 'jobs';
+    document.querySelector('#runtime-map-workspace').hidden = view !== 'runtime-map';
     document.querySelector('#lanes-workspace').hidden = view !== 'lanes';
     document.querySelector('#sessions-workspace').hidden = view !== 'sessions';
     document.querySelector('#vault-workspace').hidden = view !== 'vault';
@@ -526,6 +527,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelector('#experts-workspace').hidden = view !== 'experts';
     document.querySelector('#specialists-workspace').hidden = view !== 'specialists';
     if(view==='configuration')loadConfiguration().catch(showError);
+    if(view==='runtime-map')window.AgentControlRuntimeMap?.activate();
   }));
   document.querySelector('#health').addEventListener('click',()=>document.querySelector('[data-view="systems"]').click());
   document.querySelector('#run-search').addEventListener('input', event => { jobState.search = event.target.value; renderRunHistory(); bindRunLinks(); });

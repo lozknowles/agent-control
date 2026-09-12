@@ -1,5 +1,15 @@
 # Agent Control 4.5.0 candidate
 
+Agent Control 4.5 now includes an experimental **Runtime Map** and **Control
+Room**: a live, accessible graph projected from the existing Work Parcel, Run,
+execution-session, baton, model, cache, memory and verification records. It
+supports dynamic parallel fan-out, nested grouping, semantic collapse,
+pan/zoom/fit, evidence drill-down, authenticated Live Shell links and historical
+Replay without creating another scheduler or audit source. Morrow can narrate
+only grounded transitions from the same projection. See the [Runtime Map
+operator and architecture guide](docs/runtime-map.md) and [physical
+qualification](docs/evidence/agent-control-4.5-runtime-map-physical-qualification-20260912.md).
+
 The experimental 4.5 **Cross-Device Session Vault** preserves provider-native
 session history as immutable, content-addressed evidence and makes its redacted
 index available for historical search, repository attribution and governed

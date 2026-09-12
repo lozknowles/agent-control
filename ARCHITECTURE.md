@@ -73,6 +73,27 @@ This layer composes with, rather than replaces, Work Parcel audit, token telemet
 
 ## Agent Control 4.0 integrated lifecycle
 
+## Runtime Map projection (4.5 experimental)
+
+```text
+authoritative Work Parcels / Runs / sessions / token and retrieval evidence
+                                  |
+                           sanitized projection
+                                  |
+               authenticated API + existing SSE event stream
+                                  |
+        Runtime Map <-> Control Room <-> inspector / Live Shell
+                                  |
+                       timestamp-bounded Replay
+```
+
+`RuntimeMapProjection` is a provider-neutral view, never execution authority.
+Node/edge state derives from existing timestamps and terminal states; evidence
+references remain content-addressed. Live Shell remains a separately governed
+execution-session attachment. Dashboard disconnect cannot stop work, and stale
+state is labelled until a fresh projection reconciles. Redaction occurs before
+the projection/API boundary. See [Runtime Map](docs/runtime-map.md).
+
 ```text
 authenticated dashboard / OpenWA text / confirmed voice / ACP
                               |

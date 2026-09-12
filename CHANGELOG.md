@@ -2,6 +2,23 @@
 
 ## [4.5.0] — Unreleased candidate
 
+- Adds the first-class **Runtime Map** and adaptive **Control Room** as read-only
+  projections of authoritative Work Parcel, Run, execution-session, baton,
+  provider/model, cache, Your Memories and verification evidence.
+- Adds dynamic parallel and nested topology, automatic clustering, accessible
+  state symbols, CSP-safe SVG layout, pan/zoom/fit, progressive branch and
+  evidence drill-down, authenticated Live Shell links and timestamped Replay.
+- Adds authenticated Runtime Map and structural Compare APIs plus SSE refreshes
+  for real execution-session output. Dashboard failure is isolated from runtime
+  authority and reconnect reconciles against current records.
+- Records token-usage authority in generic Work Parcel invocation audits and
+  keeps unavailable cost unavailable. Adds deterministic 1/6/20/55-job,
+  nested-fan-out, retry, baton, cache, memory, replay, redaction and access tests.
+- Physically qualifies a 54-node real Work Parcel with four concurrent branches,
+  local Qwen model execution, three terminal sessions, recovered retry, six
+  batons, aggregation, independent verification, viewer disconnect/reconnect
+  and Replay. Synchronized visual dual-run Compare remains deferred.
+
 - Adds the experimental provider-neutral Cross-Device Session Vault: exact
   provider-native bytes are retained as immutable content-addressed evidence;
   ordinary search and dashboard views use a redacted normalized index.
