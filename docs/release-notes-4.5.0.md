@@ -1,73 +1,79 @@
 # Agent Control 4.5.0 release candidate
 
-Agent Control 4.5 introduces governed skill learning, deterministic skill
-promotion, provider-neutral **Your Memories** portability experiments and
-power-aware execution evidence. It is currently an **EXPERIMENTAL release
-candidate**, not a stable release.
+Agent Control 4.5 is an **EXPERIMENTAL release candidate**, not a stable
+release. The frozen integrated implementation is
+`d229ce4b7dd3bd704a331f81ca59600541430682`; Agent Control 4.4.0 remains the
+latest formally released baseline.
 
-The candidate also includes an experimental Cross-Device Session Vault. It
-preserves exact provider-native session evidence, exposes redacted historical
-search and repository provenance, replicates content-addressed objects, and
-creates lease-protected governed continuations through existing Work Parcels.
-It extends the existing Your Memories/ProjectMemoryPort path; Obsidian remains
-optional. Physical A–H qualification passed across two governed Linux nodes, but
-the configured Windows Obsidian application was not physically exercised because
-SSH authentication was unavailable. This does not change the candidate's
-EXPERIMENTAL recommendation.
+## Candidate scope
 
-The candidate also introduces **Morrow**, Agent Control's original chief steward, and coordinated artwork for its six existing robotic crew members. Public identity, help text and social commands are updated with compatible legacy API, event and storage identifiers. See the [Morrow and crew guide](morrow.md) and [combined integration validation](evidence/morrow-4.5-integration/validation.md).
+The candidate includes governed skill learning and deterministic skill
+promotion, provider-neutral **Your Memories**, the Cross-Device Session Vault,
+power-aware evidence, Environment Discovery, the live Estate Map, Process Map,
+Control Room, Replay, graphical Compare, Morrow and the six crew roles. These
+features remain projections and governed extensions of the existing Work Parcel,
+route, execution, memory and evidence sources of truth.
 
-Repeated verified reasoning may be nominated as a deterministic skill only when
-its source Work Parcels, originating route, contracts, assumptions, handler
-identity, freshness, invalidation conditions and independent verifier are
-durable. Promotion remains explicit. Contract mismatch, novel state, stale
-evidence or failed verification rejects reuse and records a governed model
-fallback. Physical qualification passed 45/45 deterministic executions and the
-changed-input fallback.
+Discovery is read-only by default and separates discovered, qualified,
+recommended, approved and active state. Estate Map and Process Map share one
+graph language but do not own configuration or execution. Runtime Map WATCH is
+read-only; map-originated mutation remains deferred to 4.6 governance work.
 
-The learned-specialist lifecycle keeps the base model, adaptation, frozen
-dataset, framework/runtime compatibility and qualification evidence distinct.
-The initial 135M CPU LoRA experiment improved its frozen task but did not beat
-warm Qwen on measured-component energy per verified result. It therefore does
-not support a general specialist-energy-saving claim, and learned routing remains
-disabled by default.
+Your Memories remains advisory. Session Vault preserves exact source evidence;
+Obsidian is optional and does not replace Agent Control's provider-neutral
+memory architecture. Deterministic skills require repeated verified sources and
+explicit promotion. Model output cannot install executable code.
 
-The provider-neutral ProjectMemoryPort stores advisory structured memories with
-provenance, freshness, conflict handling and content-addressed synchronization.
-The user-facing capability remains **Your Memories**; Obsidian and MARM are
-optional backends rather than Agent Control's memory identity. The physical
-cross-model matrix now has terminal outcomes for all 12 cells: nine PASS/FIXED,
-two Qwen→Pixel aliases UNSUPPORTED, and current GLM→Qwen BLOCKED_EXTERNAL. Both controller
-directions, repeated Pixel Gemma 4 E4B→Qwen trials and a POE-initiated MSI
-`Cottage Plus/Luna → Lawrence Pro/Sol` Work Parcel passed independent
-verification. The MSI transition reconciled 15,570 tokens and preserved sealed
-route and baton identities. Provider-neutral route qualification now blocks or
-safely escalates exact unqualified writer/reader pairs before invocation. A fresh
-1920×1080 production POE recording demonstrates Qwen→Pixel escalating to qualified
-Qwen→Luna with tokens, baton and independent verification. Qwen→Pixel remains a real semantic model limitation,
-and the current GLM→Qwen contract cannot be requalified until an OpenRouter credential is available.
+## Frozen-candidate qualification
 
-Power evidence distinguishes measured Intel package/DRAM and NVIDIA board values
-from unavailable whole-node energy. Deterministic reuse reduced measured energy
-by 99.37–99.45% for the qualified bounded operations. The tested retained
-specialist consumed more energy per verified result than warm Qwen, and the warm
-residency delta remained inside measurement uncertainty. No automatic power,
-shutdown or residency policy is released.
+The exact candidate passed 1,312/1,312 automated tests. A fresh physical Runtime
+Map run exercised six concurrent jobs, a local Qwen model call, real terminal
+output, a controlled retry, eight sealed batons, aggregation, independent
+verification, Control Room, Replay, graphical Compare and Process/Estate
+cross-linking. The final projection had 71 nodes and 75 edges. A separate
+read-only discovery scan populated the Estate Map from nine genuine local
+resources with no configuration mutation. Real 1920×1080 screenshots from both
+runs are in the README.
 
-The route-governance completion candidate passed 1,161/1,161 tests and has a fresh
-HD production POE recording bound to implementation commit `544a4fb4c8a9f6702adb944ab43de90daa7e67d6`.
-The later Morrow integration has its own automated validation; the POE recording
-is preserved as historical evidence and does not qualify the combined candidate's
-new appearance or physical voice recognition. The completion bundle includes a complete human-readable transcript, machine-readable gate matrix,
-failure analysis and checksummed evidence manifest. See the [completion gate](evidence/agent-control-4.5-release-gate-completion-20260912.md), the [historical release-gate reconciliation](evidence/agent-control-4.5-release-gate-20260912.md),
+Every row of the historical 12-route Your Memories matrix remains accounted
+for. Eleven exact historical routes are now PASS/FIXED. The exact OpenRouter
+GLM-5.3-Flash→Qwen route remains `BLOCKED_EXTERNAL`; a separate production run
+proved the same exact GLM model→Qwen pair through the qualified NVIDIA-hosted
+adapter without relabelling the blocked route. Qwen→Pixel Gemma 4 E4B passed the
+unchanged semantic verifier after the expected bare `nextAction` representation
+was made explicit. Its two public aliases represent one physical route, not two
+runs. The MSI account-isolated Luna→Sol transition and beneficial Qwen/Sol
+consolidation remain preserved historical evidence.
+
+Token and cache use is reported with its authority. The fresh Runtime Map model
+call reported 68 input tokens, including 67 cached and one newly processed,
+plus 28 output and 96 total tokens. Monetary cost was unavailable and is not
+claimed.
+
+## Negative results and release boundary
+
+The exact `openbmb/MiniCPM5-2B-GGUF` Q4_K_M configuration remains `FAILED` for
+governed code repair: 0/3 controller-node GPU, 0/1 comparable remote Linux seed and 0/3
+CPU. Known-good and scripted real-path controls passed. Agent Control denies only
+that immutable configuration and does not label the MiniCPM family failed.
+
+The qualified route-intent specialist consumed more measured-component energy
+per verified result than warm Qwen. The specialist-energy advantage is therefore
+`DISPROVEN`. The warm-residency route effect is also `DISPROVEN` at the available
+measurement resolution. Synchronized whole-node energy remains
+`BLOCKED_EXTERNAL`; board and package readings are not whole-node measurements.
+No automatic energy, shutdown or residency policy is released.
+
+These were mandatory 4.5 physical acceptance criteria. Consequently the current
+verdict is **NOT READY FOR 4.5 RELEASE**. No merge, tag, GitHub Release or
+deployment is authorized.
+
+See the [release-closure audit](evidence/agent-control-4.5-release-closure-20260912.md),
+[completion gate](evidence/agent-control-4.5-release-gate-completion-20260912.md),
+[historical reconciliation](evidence/agent-control-4.5-release-gate-20260912.md),
 [skill-learning architecture](agent-control-4.5-skill-learning-architecture-review.md),
 [deterministic skill guide](deterministic-skill-promotion.md),
 [Your Memories portability guide](project-memory-portability.md),
+[Runtime Map guide](runtime-map.md), [Environment Discovery guide](environment-discovery.md),
 [energy guide](energy-aware-intelligence.md), and
 [deployment/rollback guide](DEPLOYMENT.md).
-
-Stable `v4.5.0` publication remains gated by unresolved physical criteria. The
-candidate now proves the MSI cross-node transition and beneficial strong-model
-consolidation, but does not claim complete cross-model portability, a beneficial
-specialist-energy route, whole-node power measurement, or a new HD
-recording of the combined Morrow candidate.

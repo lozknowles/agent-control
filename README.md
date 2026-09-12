@@ -23,6 +23,34 @@ narrate only grounded transitions from the same projection. See the [Runtime Map
 operator and architecture guide](docs/runtime-map.md) and [physical
 qualification](docs/evidence/agent-control-4.5-runtime-map-visual-acceptance-20260912.md).
 
+## Agent Control 4.5 in operation
+
+These are real 1920×1080 dashboard captures from the frozen 4.5 release-closure
+candidate `d229ce4b7dd3bd704a331f81ca59600541430682`. The fresh Runtime Map run
+executed six jobs concurrently and projected 71 authoritative operations; the
+Estate Map was built from a read-only physical discovery scan. They are not
+mockups or reconstructed marketing screens.
+
+### Dashboard overview and real Estate discovery
+
+![Agent Control 4.5 Environment Discovery dashboard populated from a real read-only scan](docs/images/agent-control-4.5/dashboard-overview.png)
+
+![Agent Control 4.5 Estate Map showing the resources established by the real discovery inventory](docs/images/agent-control-4.5/estate-map-real-discovery.png)
+
+### Six concurrent jobs and Control Room
+
+![Agent Control 4.5 Process Map with six governed jobs visibly running in parallel](docs/images/agent-control-4.5/process-map-six-jobs-running.png)
+
+![Agent Control 4.5 Control Room showing the same six real concurrent jobs](docs/images/agent-control-4.5/process-map-control-room.png)
+
+### Authoritative Replay/Compare
+
+![Agent Control 4.5 graphical Compare view showing a 13-operation baseline beside the 71-operation candidate](docs/images/agent-control-4.5/process-map-compare.png)
+
+The checksummed [release-closure report](docs/evidence/agent-control-4.5-release-closure-20260912.md)
+links the screenshots, HD recordings, complete transcripts, Work Parcels,
+batons, model usage and the 1,312-test regression result to the exact candidate.
+
 The experimental 4.5 **Cross-Device Session Vault** preserves provider-native
 session history as immutable, content-addressed evidence and makes its redacted
 index available for historical search, repository attribution and governed
@@ -65,16 +93,38 @@ decisions without implying uncontrolled online learning. See the
 [qualification](docs/evidence/agent-control-4.5-governed-skill-learning-20260911.md)
 and [deployment guide](docs/DEPLOYMENT.md).
 
-The separate 4.5 **Your Memories** portability experiment adds a provider-neutral structured-Markdown memory port with bounded metadata/lexical recall, provenance and freshness checks, explicit conflict rejection, atomic node-local writes and content-addressed synchronization rules. Obsidian is one viewable storage substrate, not a core dependency. The original [physical cross-model qualification](docs/evidence/agent-control-4.5-cross-model-memory-qualification-20260911.md) passed 5/12 requested matrix cells. The latest [completion evidence](docs/evidence/agent-control-4.5-release-gate-completion-20260912.md) terminally classifies all 12: nine PASS/FIXED, two Qwen→Pixel aliases UNSUPPORTED, and current GLM→Qwen BLOCKED_EXTERNAL. A durable route-qualification gate now denies or safely escalates known-incompatible writer/reader pairs before provider execution. Its recommendation remains **EXPERIMENTAL**, not release-ready. See the [memory portability guide](docs/project-memory-portability.md).
+The separate 4.5 **Your Memories** portability experiment adds a
+provider-neutral structured-Markdown memory port with bounded metadata/lexical
+recall, provenance and freshness checks, explicit conflict rejection, atomic
+node-local writes and content-addressed synchronization rules. Obsidian is one
+viewable storage substrate, not a core dependency. The original
+[physical cross-model qualification](docs/evidence/agent-control-4.5-cross-model-memory-qualification-20260911.md)
+passed 5/12 requested matrix cells, and the preserved
+[completion evidence](docs/evidence/agent-control-4.5-release-gate-completion-20260912.md)
+later classified nine as PASS/FIXED, two Pixel-reader aliases as UNSUPPORTED,
+and OpenRouter GLM→Qwen as BLOCKED_EXTERNAL. Against the frozen closure
+candidate, the exact Pixel reader passed the unchanged semantic verifier after
+the prompt made the bare `nextAction` representation explicit. The historical
+matrix is now 11/12 exact routes PASS/FIXED; OpenRouter GLM→Qwen remains
+externally blocked. A separate qualified NVIDIA-hosted execution proved the
+exact GLM-5.3-Flash→Qwen model pair without relabelling the blocked OpenRouter
+route. See the [release closure](docs/evidence/agent-control-4.5-release-closure-20260912.md)
+and [memory portability guide](docs/project-memory-portability.md).
 
-The original [release-gate reconciliation](docs/evidence/agent-control-4.5-release-gate-20260912.md) and its historical video remain unchanged. The later completion pass fixed the canonical exchange contract, bounded Pixel output, and Windows SSH bootstrap; qualified both isolated MSI profiles and a real `Cottage Plus/Luna → Lawrence Pro/Sol` continuation; repeated Pixel Gemma writer success; and proved beneficial Qwen/Sol consolidation. A fresh 1920×1080 production POE recording shows an unsupported Qwen→Pixel request being rejected and escalated to qualified Qwen→Luna execution. Stable release is still blocked by the unsupported Pixel reader, unavailable GLM authentication, disproven specialist-energy and warm-residency advantages, and unavailable whole-node measurement. The [4.5 release-candidate notes](docs/release-notes-4.5.0.md) preserve those limits for public review.
+The original [release-gate reconciliation](docs/evidence/agent-control-4.5-release-gate-20260912.md), completion report and historical videos remain unchanged. They truthfully retain the failures seen at those commits. Closure evidence records the later Pixel and alternate-provider GLM passes separately, including exact route identities, Work Parcel IDs, batons and authoritative tokens. Stable release remains blocked by the original mandatory power gate: the specialist-energy advantage and warm-residency route effect were **DISPROVEN**, while synchronized whole-node power remains **BLOCKED_EXTERNAL**. The [4.5 release-candidate notes](docs/release-notes-4.5.0.md) preserve those limits for public review.
 
 The isolated programme also includes [energy-aware intelligence](docs/energy-aware-intelligence.md): scope-safe power telemetry, idle-baseline accounting, expected-total-energy routing, and specialist training break-even. Comparable Intel-package, DRAM and NVIDIA-board measurements **disproved** an energy saving for the current route-intent specialist: retained-process execution remained above warm Qwen, real bounded Your Memories retrieval did not improve it, and deterministic no-LLM routing was lowest. This remains experimental; see the [specialist-energy evidence](docs/evidence/agent-control-4.5-specialist-energy-qualification-20260911.md).
 
+The exact `openbmb/MiniCPM5-2B-GGUF` Q4_K_M configuration also remains
+**FAILED** for governed code repair. Scripted and known-good controls passed, so
+the result is not hidden as a harness artefact; only that immutable configuration
+is denied routing, not the MiniCPM family. See the [MiniCPM closure](docs/evidence/minicpm5-2b-qualification-closure-20260912.md).
+
 Agent Control 4.4.0 remains the latest formally released baseline. Agent Control
-4.5.0 is an experimental release candidate; it must not be tagged as a stable
-release while the mandatory open gates in the authoritative reconciliation
-remain unresolved.
+4.5.0 is an experimental release candidate. The frozen candidate passes
+1,312/1,312 automated tests and the fresh dashboard, Estate, Runtime Map and
+memory-route physical checks, but it must not be tagged as stable while the
+mandatory physical power gate in the authoritative closure remains unresolved.
 
 **Your Memories** is the user-facing Agent Control capability for finding relevant prior context, checking its governance and provenance, rejecting stale or unrelated memories, and safely presenting accepted context in a session. Memories remain advisory and cannot override Work Parcels, batons, policy, authoritative evidence or execution state. The 4.4 release includes the governed UX Session Capture/Replay projection and the qualified memory architecture; MARM remains one optional backend and automatic memory consolidation/model swapping is not a released runtime feature.
 

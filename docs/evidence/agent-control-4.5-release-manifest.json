@@ -9,70 +9,94 @@
   },
   "provenance": {
     "releasedBaseline": "v4.4.0",
-    "originMainBase": "0a3d136c38ec2c75afb4fb946fba1fb12a9dd5f8",
-    "qualifiedImplementationCommit": "de3009bf51f59149e185cab62093ab38dc442d9c",
-    "qualificationEvidenceCommit": "354fa8bd4a17b40403447009bb7705347e9d95bd",
-    "releaseAuthority": "The operator authorized progress toward release. Stable merge, tag and publication remain conditional on every mandatory gate becoming proven."
+    "originMainBase": "2e74d88db57e3ad15ce1d85ec93220d087b9592f",
+    "qualifiedImplementationCommit": "d229ce4b7dd3bd704a331f81ca59600541430682",
+    "qualificationEvidenceCommit": null,
+    "releaseAuthority": "Release closure is authorized, but stable merge, tag, publication and deployment remain prohibited until every mandatory gate is proven and the operator separately approves the release operation."
   },
   "validation": {
-    "command": "npm run check",
+    "command": "npm test",
     "tests": {
-      "passed": 1154,
+      "passed": 1312,
       "failed": 0,
-      "skipped": 0
+      "skipped": 0,
+      "cancelled": 0,
+      "todo": 0
     },
-    "releaseGateRecommendation": "EXPERIMENTAL",
+    "releaseGateRecommendation": "NOT_READY_FOR_4_5_RELEASE",
     "gateSummary": {
-      "proven": 5,
-      "partial": 2,
+      "proven": 8,
+      "partial": 1,
       "disproven": 2,
-      "blocked": 2,
+      "blocked": 1,
       "notTested": 0
     }
   },
   "dependencies": {
-    "packageJsonSha256": "17002aa97a1a6a8344a9c633606abea7cce22edd04ca4ad165e671067b81f0c5",
+    "packageJsonSha256": "15aee28657ac7bb7190e291b85e3468ebb289e305c0f07d51fe57f2bb6f73a1b",
     "typescriptConfigSha256": "246e14ac1be183f758b0ba77744fe279952d4bdbd50b1d8364f5a2b11865bd8c",
     "lockfile": null,
     "lockfileAuthority": "UNAVAILABLE"
   },
   "claims": {
+    "estateDiscoveryAndMap": "PROVEN",
+    "processMapLiveReplayCompare": "PROVEN",
+    "parallelWorkParcelAndBatons": "PROVEN",
     "deterministicSkillLifecycle": "PROVEN",
-    "yourMemoriesCrossModelMatrix": "PARTIAL",
-    "msiCrossNodeMemoryTransition": "BLOCKED",
-    "strongModelMemoryConsolidation": "DISPROVEN",
+    "yourMemoriesCrossModelMatrix": "PARTIAL_11_OF_12_EXACT_ROUTES_WITH_ALTERNATE_PROVIDER_PASS",
+    "msiCrossNodeMemoryTransition": "PROVEN",
+    "strongModelMemoryConsolidation": "PROVEN",
+    "miniCpm5Q4KmCodeRepair": "FAILED_EXACT_CONFIGURATION",
     "specialistModelEnergyAdvantage": "DISPROVEN",
+    "warmResidencyRouteEffect": "DISPROVEN",
     "deterministicReuseBenefit": "PROVEN",
-    "wholeNodePower": "BLOCKED",
+    "wholeNodePower": "BLOCKED_EXTERNAL",
     "learnedSpecialistRoutingDefault": "DISABLED"
   },
+  "releaseBlockers": [
+    "The mandatory specialist-energy advantage is disproven for the qualified specialist.",
+    "The mandatory warm-residency route effect is disproven at available measurement resolution.",
+    "Synchronized whole-node power remains externally blocked because no suitable meter is available."
+  ],
   "evidence": [
     {
-      "path": "docs/evidence/agent-control-4.5-release-gate-20260912.md",
-      "sha256": "c0fa90b84d530dbc0f07c6b2bd33bd8505216fdd614cb0943465046da54bfc39"
+      "path": "docs/evidence/agent-control-4.5-release-closure-20260912.md",
+      "sha256": "8b3fb7bebd73d1a97d0c69ac93725c71936d45de0c6b5ccb0170618f2675ee3c"
     },
     {
-      "path": "qualification/agent-control-4.5-release-gate-20260912/release-gate.json",
-      "sha256": "546d9729cc6be81f4823f1a3a7c5e033d956c2f7041810f1ba6e53a4db037819"
+      "path": "qualification/agent-control-4.5-release-closure-20260912/release-closure.json",
+      "sha256": "d138275bfd76caf0a72d10d289a8fe41dccfa3c2c4acd52b8e7bac2919a480c7"
     },
     {
-      "path": "qualification/agent-control-4.5-release-gate-20260912/evidence-manifest.json",
-      "sha256": "114a331e6e3d5b13fa3a6f0c77c2f6dfa4c6ecca6cad3739e4435c82c488e8d7"
+      "path": "qualification/agent-control-4.5-release-closure-20260912/runtime-map/qualification.json",
+      "sha256": "431f1165a554810a9e22d84a6d318f69654bafb8337b9b9d0710d605cfa15ccf"
     },
     {
-      "path": "qualification/agent-control-4.5-release-gate-20260912/complete-human-readable-transcript.md",
-      "sha256": "69982ecf03b9a9450640de9e852d203c3d5736856cdba77de810deb6b5faf0b5"
+      "path": "qualification/agent-control-4.5-release-closure-20260912/runtime-map/agent-control-4.5-runtime-map-six-job-visual-acceptance.mp4",
+      "sha256": "b539bda2d58e4156f14a6eb34209e5b019df12399eb7229b5d5ad72c0a455256",
+      "media": {"width": 1920, "height": 1080, "framesPerSecond": 25, "durationSeconds": 63.84, "bytes": 13155335}
     },
     {
-      "path": "qualification/agent-control-4.5-release-gate-20260912/live-poe-run/agent-control-4.5-live-poe-memory-qualification.mp4",
-      "sha256": "256f5cbe52f6fe030dc5d045f98cd98e16753593966b88b06f9b968f8150cfff",
-      "media": {
-        "width": 1920,
-        "height": 1080,
-        "framesPerSecond": 25,
-        "durationSeconds": 36.92,
-        "bytes": 3214902
-      }
+      "path": "qualification/agent-control-4.5-release-closure-20260912/environment-discovery/evidence-manifest.json",
+      "sha256": "2e5d9a41c6632cc164e4ab9ad692387e6b9e1f7a41cea8d9224f4cd2f0394816"
+    },
+    {
+      "path": "qualification/agent-control-4.5-release-closure-20260912/environment-discovery/agent-control-environment-discovery-physical.mp4",
+      "sha256": "a644fb76332a3265082121d64f0788b19af074929783d9bfd916498b2290ebcf",
+      "media": {"width": 1920, "height": 1080, "framesPerSecond": 25, "durationSeconds": 7.76, "bytes": 2078595}
+    },
+    {
+      "path": "qualification/agent-control-4.5-release-closure-20260912/memory-glm-to-qwen/cross-model-memory-qualification.json",
+      "sha256": "2be6600bfd49520ec01f5d75de028bd0e23f672cbdb9ec30d97bc0686fb59f42"
+    },
+    {
+      "path": "qualification/agent-control-4.5-release-closure-20260912/memory-qwen-to-pixel/cross-model-memory-qualification.json",
+      "sha256": "41c6f52b86d70a160ec58ced55a521b2b369125e42881e928bd76b0053f918e7"
+    },
+    {
+      "path": "docs/evidence/minicpm5-2b-qualification-closure-20260912.md",
+      "sha256": "33a6e2a81543b82ae2b3edebb6da92cd57d4a59f9f9ce030d9d7a5822e8d6c3e"
     }
-  ]
+  ],
+  "releaseActionsPerformed": []
 }

@@ -177,6 +177,14 @@ make this candidate release-ready.
 
 The current 4.5 candidate gate and its open limitations are recorded in
 [the completion reconciliation](evidence/agent-control-4.5-release-gate-completion-20260912.md).
+The later [release-closure audit](evidence/agent-control-4.5-release-closure-20260912.md)
+is authoritative for frozen candidate
+`d229ce4b7dd3bd704a331f81ca59600541430682`. It records the complete 12-row
+memory reconciliation, 1,312-test regression, real Estate/Process Map evidence,
+the exact failed MiniCPM configuration and the still-unmet physical power gate.
+Its verdict is `NOT READY FOR 4.5 RELEASE`; do not run the merge/tag/publication
+steps above until a later separately approved audit closes those mandatory
+criteria.
 The earlier [4.5 reconciliation](evidence/agent-control-4.5-release-gate-20260912.md)
 remains immutable historical evidence for its recorded implementation.
 The 4.4 checksummed replay evidence is recorded in

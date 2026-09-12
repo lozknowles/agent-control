@@ -57,7 +57,25 @@ Physical 4.5 qualification exercises the provider-neutral flow as
 
 `MemoryRouteQualificationStore` records exact provider/account/model/node identity separately from the provider adapter. Each record binds runtime and exchange-contract versions, writer and reader eligibility, maximum physically proven memory bytes, bounded repair allowance, qualification freshness, evidence and terminal classification. Exact pair records prevent independent route successes from being incorrectly composed into an unproven pair. Admission is fail closed: a missing, stale, contract-mismatched, oversized, blocked or unsupported pair is denied; escalation occurs only when an explicitly qualified alternate pair is recorded. Secrets and provider output are not part of this store.
 
-The latest measured qualification supports an **EXPERIMENTAL** status: all twelve cells are terminally classified, with nine PASS/FIXED, two Qwen→Pixel aliases UNSUPPORTED, and current GLM→Qwen BLOCKED_EXTERNAL. A production POE run visibly exercised the safe escalation from unsupported Qwen→Pixel to qualified Qwen→Luna. See the [original cross-model evidence](docs/evidence/agent-control-4.5-cross-model-memory-qualification-20260911.md) and [completion evidence](docs/evidence/agent-control-4.5-release-gate-completion-20260912.md).
+The frozen release-closure candidate remains **EXPERIMENTAL**. Every historical
+matrix row is retained: 11/12 exact routes are now PASS/FIXED after a fresh
+Qwen→Pixel Gemma 4 E4B pass with the unchanged semantic verifier. The exact
+OpenRouter GLM-5.3-Flash→Qwen route remains `BLOCKED_EXTERNAL`; a separate
+NVIDIA-hosted GLM-5.3-Flash→Qwen execution proves provider-neutral portability
+without changing that historical route identity. The two public Pixel aliases
+refer to one physical route and are not presented as two executions. See the
+[original cross-model evidence](docs/evidence/agent-control-4.5-cross-model-memory-qualification-20260911.md),
+[completion evidence](docs/evidence/agent-control-4.5-release-gate-completion-20260912.md)
+and [release closure](docs/evidence/agent-control-4.5-release-closure-20260912.md).
+
+The power boundary deliberately preserves negative evidence. The qualified
+specialist did not beat warm Qwen on measured-component energy, warm residency
+did not produce a route-relevant effect above uncertainty, and synchronized
+whole-node energy is unavailable. Those results are respectively `DISPROVEN`,
+`DISPROVEN` and `BLOCKED_EXTERNAL`; GPU-board and CPU-package readings cannot be
+promoted to whole-node claims. The exact MiniCPM5-2B Q4_K_M code-repair
+configuration likewise remains `FAILED` while known-good and scripted controls
+pass, so fail-closed admission applies only to that immutable configuration.
 
 The follow-up [release-gate reconciliation](docs/evidence/agent-control-4.5-release-gate-20260912.md) makes provider-response validation two separate gates: transport/application-schema validity and semantic reconstruction. One governed repair attempt may correct a malformed or misplaced response, but exact state, provenance, decision, rejection-risk and next-action semantics remain independently required. A valid JSON object or copied keyword list cannot pass by itself. Attempts retain bounded sanitized output, finish reason, hashes and exact schema/semantic failures. Model limitations remain failures; unavailable node authentication remains `BLOCKED`.
 

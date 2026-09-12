@@ -2,6 +2,32 @@
 
 ## [4.5.0] — Unreleased candidate
 
+### Release-closure checkpoint (`d229ce4b7dd3bd704a331f81ca59600541430682`)
+
+- Freezes the integrated 4.5 candidate and reconciles every row from the
+  historical 12-route Your Memories matrix. Eleven exact historical routes are
+  now PASS/FIXED. OpenRouter GLM-5.3-Flash→Qwen remains `BLOCKED_EXTERNAL`; a
+  separate qualified NVIDIA-hosted run proves the exact GLM model→Qwen pair
+  without relabelling the blocked provider route.
+- Physically repairs Qwen→Pixel Gemma 4 E4B with the existing strict semantic
+  verifier by making the required bare `nextAction` representation explicit.
+  One physical route applies to the two public alias rows and is not counted as
+  two executions.
+- Physically requalifies the real dashboard against the frozen candidate: a
+  six-job Work Parcel projects 71 authoritative operations through Process Map,
+  Control Room, live session, Replay and graphical Compare; a separate read-only
+  scan populates the Estate Map without configuration mutation. Real 1920×1080
+  captures are included in the README.
+- Records 1,312/1,312 passing automated tests for the integrated candidate and
+  preserves all earlier evidence at its original commit.
+- Preserves the genuine `openbmb/MiniCPM5-2B-GGUF` Q4_K_M code-repair failure.
+  Known-good and scripted controls pass, so only the exact immutable model
+  configuration is denied; the family is not generalized as failed.
+- Keeps the specialist-energy advantage and warm-residency routing effect
+  `DISPROVEN`, and synchronized whole-node power `BLOCKED_EXTERNAL`. The stable
+  4.5 release gate therefore remains unmet. No merge, tag, release or deployment
+  is performed.
+
 - Adds governed First Run/Rescan/Add Resource Environment Discovery with
   read-only machine, accelerator, inference-runtime, model, CLI-agent,
   provider/credential-presence and Agent Control resource adapters.
@@ -74,6 +100,11 @@
   MSI Obsidian application access remains blocked by unavailable SSH
   authentication, so the feature and 4.5 recommendation remain EXPERIMENTAL.
 - Introduces Morrow as the original chief steward and refreshes Cadence, Quill, Relay, Lumen, Rook and Verity with coordinated robotic artwork. Public names, grounded persona and social invocation are updated while legacy `poe` APIs, events, storage, saved conversations, approval hashes, crew roles and the designed voice remain compatible. Integrated with the completed 4.5 route-governance branch for experimental testing; historical physical evidence retains its original candidate identity.
+
+### Historical route-governance completion checkpoint (`544a4fb4…`)
+
+The following results remain verbatim historical evidence for that earlier
+candidate. The release-closure section above records their later disposition.
 
 - Adds one canonical provider-neutral `ProjectMemoryExchange` contract across writer, reader and consolidation flows. Application-schema validity and semantic reconstruction remain separate fail-closed gates; exact topology state, provenance, decision, rejection risk and next action are still required.
 - Repairs the bounded Pixel reader path after physical `finish_reason=length` evidence and repairs Windows OpenSSH execution by replacing channel-EOF framing with two explicit base64 records. Remote profile homes and raw transport output remain node-local and absent from evidence.
