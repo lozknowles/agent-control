@@ -1,7 +1,7 @@
 # Agent Control 4.5 source-distribution remediation
 
 Date: 2026-09-12  
-Status: **REMEDIATION IMPLEMENTED; REMOTE REWRITE AND CLEAN-MOTO RETEST PENDING**  
+Status: **SOURCE REWRITE COMPLETE; CLEAN-MOTO BOOTSTRAP DEFECT UNDER REMEDIATION**
 Release status: `v4.5.0` remains paused.
 
 ## Qualification-discovered defect
@@ -41,11 +41,15 @@ The first complete run truthfully exposed one test that directly loaded a qualif
 
 The full rerun passed **1,325/1,325** tests, together with TypeScript, bootstrap syntax, dashboard syntax, infrastructure neutrality, implementation status, source-distribution policy, Markdown local links and `git diff --check`.
 
+The public source history was then rewritten with complete old/new commit and ref maps. A normal GitHub clone transferred 5.89 MiB, completed in 1.70 seconds and occupied 20,167,828 bytes including `.git`. The rewritten 4.5 candidate has the same tree identity as the pre-rewrite remediation commit: `77308f24ae786f531b845e9325c90d727707b102`. A fresh checkout of that history again passed **1,325/1,325** tests.
+
+The first clean Moto attempt after separation also transferred 5.89 MiB and produced a 20,168,738-byte checkout. The exact candidate and source-distribution check passed, as did bootstrap `--check`. Bootstrap `--install` then stopped during first configuration creation with `EACCES` because the Moto's F2FS/Termux environment permits owner-only file creation but denies hard links. This is a separate portable-bootstrap defect, not a recurrence of the repository packaging defect. A bounded physical primitive probe confirmed that exclusive copy is supported. The generic initializer now falls back from an unsupported hard link to `COPYFILE_EXCL`, retaining create-if-absent and no-overwrite semantics; focused and full validation plus a clean Moto restart remain required.
+
 ## Remaining acceptance work
 
-1. Rewrite every public branch/tag reachable by normal clones using the archived and rehearsed mapping; publish old/new ref provenance and require existing contributors to re-clone.
-2. Verify a fresh normal GitHub clone receives the reduced source-only history.
-3. Remove all prior diagnostic checkouts from the Moto and repeat the documented full clone and bootstrap from a genuinely clean Termux state, with no shallow/partial workaround.
-4. Record transferred bytes, checkout size and installation result before resuming the broader Moto discovery qualification.
+1. Validate the portable create-if-absent fallback without weakening overwrite protection.
+2. Publish the revised candidate and restart from a clean Moto checkout.
+3. Repeat the documented full clone and bootstrap with no shallow/partial workaround.
+4. Record the final installation result before resuming the broader Moto discovery qualification.
 
 This report does not authorize or claim the `v4.5.0` release.
