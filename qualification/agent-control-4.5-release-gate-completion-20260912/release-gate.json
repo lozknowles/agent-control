@@ -1,10 +1,11 @@
 {
-  "schema": "agent-control.4.5-release-gate-completion/v1",
-  "generatedAt": "2026-09-12T05:05:14.855Z",
+  "schema": "agent-control.4.5-release-gate-completion/v2",
+  "generatedAt": "2026-09-12T06:06:13.518Z",
   "branch": "feature/4.5-release-gate-completion",
-  "implementationHead": "d9f4238bd07da60b36b78e4898d4d3f3a5bc9212",
+  "implementationHead": "544a4fb4c8a9f6702adb944ab43de90daa7e67d6",
   "releasedBaseline": "v4.4.0",
   "recommendation": "EXPERIMENTAL",
+  "releaseReady": false,
   "gates": [
     {
       "name": "Governed deterministic-skill lifecycle",
@@ -13,8 +14,13 @@
     },
     {
       "name": "Your Memories cross-model matrix",
-      "status": "PARTIAL",
-      "evidence": "9/12 reconciled cells pass; Qwen→Pixel remains a semantic model limitation and GLM→Qwen is authentication-blocked."
+      "status": "BLOCKED_EXTERNAL",
+      "evidence": "9/12 cells pass or are fixed; two Pixel-reader aliases are terminally UNSUPPORTED and current GLM→Qwen is blocked by unavailable authentication."
+    },
+    {
+      "name": "Provider-neutral route qualification",
+      "status": "PROVEN",
+      "evidence": "Exact route records enforce contract/runtime freshness, payload bounds and safe deny/escalation before provider execution."
     },
     {
       "name": "MSI cross-node memory transition",
@@ -44,30 +50,28 @@
     {
       "name": "Production POE Work Parcel",
       "status": "PROVEN",
-      "evidence": "The MSI transition was initiated through POE conversation poe-conversation:d846a7de-ffdf-44b3-92bf-a4352e763386 and completed one four-stage production Work Parcel."
+      "evidence": "Live parcel parcel-social-31a9ac0971c66ccbc68608114807e6f1d917d8f8456d7ce36bd3c8a1809fc3fb requested Qwen→Pixel, rejected the unsupported reader, escalated to Luna, and completed with independent verification."
     },
     {
       "name": "Warm residency route effect",
-      "status": "PARTIAL",
-      "evidence": "Measured component delta remains below uncertainty; no routing policy change admitted."
+      "status": "DISPROVEN",
+      "evidence": "Measured bounded component delta remains below uncertainty; no routing policy change admitted."
     },
     {
       "name": "Whole-node power claim",
-      "status": "BLOCKED",
+      "status": "BLOCKED_EXTERNAL",
       "evidence": "No synchronized whole-node meter exists on the qualified estate."
     },
     {
       "name": "Exact-candidate HD recording",
-      "status": "NOT TESTED",
-      "evidence": "The historical 4.5 HD recording remains intact, but no new recording was fabricated for this completion candidate."
+      "status": "PROVEN",
+      "evidence": "Genuine 1920×1080 production POE runtime recording preserved with route-gate decision, model execution, Work Parcel state, token accounting and no browser errors."
     }
   ],
   "summary": {
-    "proven": 6,
-    "partial": 2,
-    "disproven": 1,
-    "blocked": 1,
-    "not_tested": 1
+    "proven": 8,
+    "disproven": 2,
+    "blocked_external": 2
   },
   "physical": {
     "controller": {
@@ -76,53 +80,27 @@
         "parcel-37e1e90f-55fd-4d5d-b19a-379451e42d97",
         "parcel-ff199a7c-9905-467c-9139-708a373288c2"
       ],
-      "rows": [
-        {
-          "writerRoute": "codex-chatgpt/controller-codex/codex-luna@hpubuntu",
-          "readerRoute": "local-qwen/default/qwen-hpubuntu@hpubuntu",
-          "result": "PASS",
-          "failureClass": null,
-          "failures": [],
-          "reconstructionAccuracy": 100,
-          "continuationSuccess": true,
-          "usage": {
-            "inputTokens": 7677,
-            "outputTokens": 1121,
-            "totalTokens": 8798,
-            "cachedInputTokens": 0,
-            "cost": null,
-            "currency": null,
-            "authority": "unavailable"
-          },
-          "batonSha256": "6344e1e2e735f069abc41c28d7dd336e698503e12f7fd50163be11ba35f02e62",
-          "memorySha256": "76b63bc716d26f6c57e52625dc3e46656022e54a4ff0970f70a485334b78ecd9"
-        },
-        {
-          "writerRoute": "local-qwen/default/qwen-hpubuntu@hpubuntu",
-          "readerRoute": "codex-chatgpt/controller-codex/codex-luna@hpubuntu",
-          "result": "PASS",
-          "failureClass": null,
-          "failures": [],
-          "reconstructionAccuracy": 100,
-          "continuationSuccess": true,
-          "usage": {
-            "inputTokens": 7624,
-            "outputTokens": 615,
-            "totalTokens": 8239,
-            "cachedInputTokens": 0,
-            "cost": null,
-            "currency": null,
-            "authority": "unavailable"
-          },
-          "batonSha256": "28ead4679523a9a573a5e908990288d6389301935386b2d224ba3fdef5ba9d4d",
-          "memorySha256": "5cfaa72f58961699d5d9b961c682c84eb1f880fcd6b7bd89c44f885f16807b69"
-        }
-      ],
       "totals": {
         "inputTokens": 15301,
         "outputTokens": 1736,
         "totalTokens": 17037,
         "cachedInputTokens": 0,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      }
+    },
+    "pixelRepeated": {
+      "verdict": "PASS_PHYSICAL_CROSS_MODEL_MEMORY",
+      "parcelIds": [
+        "parcel-98d21a11-dd37-4be3-86c8-cab19e056bb2",
+        "parcel-16d67c3e-c597-4f96-839e-2419db9ba050"
+      ],
+      "totals": {
+        "inputTokens": 2213,
+        "outputTokens": 1340,
+        "totalTokens": 3553,
+        "cachedInputTokens": 746,
         "cost": null,
         "currency": null,
         "authority": "unavailable"
@@ -188,52 +166,50 @@
         "authority": "unavailable"
       }
     },
-    "pixel": {
-      "verdict": "PARTIAL",
-      "rows": [
-        {
-          "writerRoute": "pixel-llama/default/pixel-gemma-e4b@pixel-8-pro",
-          "readerRoute": "local-qwen/default/qwen-hpubuntu@hpubuntu",
-          "result": "PASS",
-          "failureClass": null,
-          "failures": [],
-          "reconstructionAccuracy": 100,
-          "continuationSuccess": true,
-          "usage": {
-            "inputTokens": 1100,
-            "outputTokens": 669,
-            "totalTokens": 1769,
-            "cachedInputTokens": 1,
-            "cost": null,
-            "currency": null,
-            "authority": "unavailable"
-          },
-          "batonSha256": "8369a692eb7daf525477763693da424316876ac867c0758978ff2eb668321bd1",
-          "memorySha256": "057f2020abc23dea3ba6aea3ef852c4285dedc7f45690595be7551570d0cb4ab"
+    "livePoe": {
+      "verdict": "PASS_PHYSICAL_CROSS_MODEL_MEMORY",
+      "parcelId": "parcel-social-31a9ac0971c66ccbc68608114807e6f1d917d8f8456d7ce36bd3c8a1809fc3fb",
+      "requested": {
+        "writer": {
+          "providerId": "local-qwen",
+          "modelId": "qwen-hpubuntu",
+          "nodeId": "hpubuntu"
         },
-        {
-          "writerRoute": "local-qwen/default/qwen-hpubuntu@hpubuntu",
-          "readerRoute": "pixel-llama/default/pixel-gemma-e4b@pixel-8-pro",
-          "result": "FAIL",
-          "failureClass": "model capability",
-          "failures": [
-            "nextAction:semantic:exact_operation_required"
-          ],
-          "reconstructionAccuracy": 93.85,
-          "continuationSuccess": false,
-          "usage": {
-            "inputTokens": 1624,
-            "outputTokens": 1066,
-            "totalTokens": 2690,
-            "cachedInputTokens": 480,
-            "cost": null,
-            "currency": null,
-            "authority": "unavailable"
-          },
-          "batonSha256": "76780afe4b421e079b39acc41d3375fec6338b4406e1a41097b59edc8996788e",
-          "memorySha256": "057f2020abc23dea3ba6aea3ef852c4285dedc7f45690595be7551570d0cb4ab"
+        "reader": {
+          "providerId": "pixel-llama",
+          "modelId": "pixel-gemma-e4b",
+          "nodeId": "pixel-8-pro"
         }
-      ]
+      },
+      "decision": "ESCALATE",
+      "reasons": [
+        "reader-unsupported",
+        "pair-unsupported"
+      ],
+      "selected": {
+        "writer": {
+          "providerId": "local-qwen",
+          "modelId": "qwen-hpubuntu",
+          "nodeId": "hpubuntu"
+        },
+        "reader": {
+          "providerId": "codex-chatgpt",
+          "accountProfileId": "controller-codex",
+          "modelId": "codex-luna",
+          "nodeId": "hpubuntu"
+        }
+      },
+      "batonSha256": "daaaab63aeba2b986d682246cb68672fee8429e60999e02f85d2cf6b8f6c777f",
+      "usage": {
+        "inputTokens": 7618,
+        "outputTokens": 614,
+        "totalTokens": 8232,
+        "cachedInputTokens": 0,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "video": "live/agent-control-4.5-live-poe-memory-qualification.mp4"
     },
     "consolidation": {
       "conditionScores": {
@@ -259,14 +235,18 @@
   },
   "validation": {
     "fullSuite": {
-      "passed": 1157,
-      "total": 1157
+      "passed": 1161,
+      "total": 1161
     },
     "typeScript": "PASS",
     "bootstrap": "PASS",
     "dashboard": "PASS",
     "neutrality": "PASS",
-    "implementationStatus": "PASS"
+    "implementationStatus": "PASS",
+    "documentationLinks": "PASS",
+    "gitDiffCheck": "PASS",
+    "secretScan": "PASS",
+    "independentEvidence": "PASS"
   },
   "security": {
     "credentialsPersisted": false,

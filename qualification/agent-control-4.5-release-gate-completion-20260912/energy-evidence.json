@@ -1,6 +1,6 @@
 {
-  "schema": "agent-control.4.5-completion-energy/v1",
-  "generatedAt": "2026-09-12T05:05:14.854Z",
+  "schema": "agent-control.4.5-completion-energy/v2",
+  "generatedAt": "2026-09-12T06:06:13.518Z",
   "specialist": {
     "status": "DISPROVEN",
     "boundary": "Intel package + DRAM + NVIDIA GPU board; excludes motherboard, storage, PSU losses and peripherals",
@@ -54,11 +54,11 @@
     "verdict": "FAIL_SPECIALIST_BATCH_ENERGY"
   },
   "residency": {
-    "status": "PARTIAL",
-    "source": "../agent-control-4.5-release-gate-20260912/energy-evidence.json"
+    "status": "DISPROVEN",
+    "reason": "Measured bounded component delta remained below uncertainty; no residency route benefit is claimed."
   },
   "wholeNode": {
-    "status": "BLOCKED",
+    "status": "BLOCKED_EXTERNAL",
     "reason": "No synchronized whole-node meter was available."
   },
   "routingPolicyChanged": false

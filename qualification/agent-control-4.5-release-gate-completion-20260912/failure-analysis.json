@@ -1,18 +1,18 @@
 {
-  "schema": "agent-control.4.5-completion-failure-analysis/v1",
-  "generatedAt": "2026-09-12T05:05:14.854Z",
+  "schema": "agent-control.4.5-completion-failure-analysis/v2",
+  "generatedAt": "2026-09-12T06:06:13.518Z",
   "failures": [
     {
       "id": "glm-to-qwen",
       "classification": "authentication unavailable",
-      "status": "BLOCKED",
-      "reason": "The configured OpenRouter credential was rejected; no unavailable route is counted as a pass."
+      "status": "BLOCKED_EXTERNAL",
+      "reason": "Current OpenRouter credential prerequisite is unavailable; the historical semantic failure is preserved and no current-contract pass is inferred."
     },
     {
       "id": "qwen-to-pixel",
       "classification": "model capability",
-      "status": "DISPROVEN",
-      "reason": "Exact Pixel E4B cold reader retained 93.85% but failed: nextAction:semantic:exact_operation_required"
+      "status": "UNSUPPORTED",
+      "reason": "Repeated Pixel Gemma reader trials returned complete schema-valid output but failed the exact next-action semantic contract."
     },
     {
       "id": "specialist-energy",
@@ -22,15 +22,21 @@
     },
     {
       "id": "whole-node-power",
-      "classification": "evidence or verification defect",
-      "status": "BLOCKED",
+      "classification": "measurement unavailable",
+      "status": "BLOCKED_EXTERNAL",
       "reason": "No synchronized whole-node meter is available; component measurements cannot support a whole-system claim."
+    },
+    {
+      "id": "warm-residency-route-effect",
+      "classification": "measurement resolution",
+      "status": "DISPROVEN",
+      "reason": "Observed bounded component delta was below measurement uncertainty; residency is not admitted as a route benefit."
     }
   ],
   "qualificationDefectsFixed": [
     {
       "defect": "Writer and reader used incompatible application schemas.",
-      "fix": "One canonical provider-neutral ProjectMemoryExchange is now shared by writer, reader and consolidation."
+      "fix": "One canonical provider-neutral ProjectMemoryExchange is shared by writer, reader and consolidation."
     },
     {
       "defect": "Pixel output cap truncated complete structured responses.",
@@ -43,6 +49,10 @@
     {
       "defect": "Remote final messages containing legitimate repository paths were rejected.",
       "fix": "Repository paths are accepted while credential-profile paths still fail closed."
+    },
+    {
+      "defect": "Known-incompatible memory routes could still be attempted.",
+      "fix": "Durable provider-neutral route qualification records now admit, deny or escalate exact writer/reader routes before execution."
     }
   ]
 }

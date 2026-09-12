@@ -37,6 +37,23 @@ Enable `routingEnabled` only after the target installation can verify the exact
 base and adapter hashes and the recorded frozen qualification. Roll back by
 disabling learned routing first; the immutable base route remains available.
 
+Your Memories cross-model routing is separately fail closed. Generate or install
+an owner-only provider-neutral qualification file, then opt into enforcement:
+
+```bash
+npm run qualify:memory-route-records -- /path/to/private/memory-route-qualifications.json
+export AGENT_CONTROL_MEMORY_ROUTE_QUALIFICATIONS=/path/to/private/memory-route-qualifications.json
+export AGENT_CONTROL_MEMORY_ENFORCE_ROUTE_QUALIFICATION=1
+```
+
+The file contains route identity, runtime/contract versions, bounded proven
+payload size, role eligibility, freshness and evidence—not credentials or model
+output. A missing, stale, unsupported, oversized or contract-mismatched route is
+denied. An alternate route is used only when its exact pair is explicitly
+qualified. Rebuild and independently review the records after model, runtime,
+contract or relevant evidence changes; do not copy a qualification across nodes
+or account profiles.
+
 ## Keep mutable state outside the release
 
 Set `AGENT_CONTROL_CONFIG`, `AGENT_CONTROL_STATE_DIR` and
@@ -93,9 +110,9 @@ new candidate's result.
 ## Rollback
 
 Retain the previous immutable release SHA/package, supervisor definition and
-matching owner-only state backup. If acceptance fails, stop the 4.4 controller,
+matching owner-only state backup. If acceptance fails, stop the candidate controller,
 restore the matching previous state only if migration changed it, select the
-previous immutable release (`v4.3.0`), restart the same scoped service and recheck health,
+previous immutable release (`v4.4.0`), restart the same scoped service and recheck health,
 authentication and a harmless read-only operation. Never run old and new versions
 against one state directory or move credential stores with source archives.
 

@@ -1,12 +1,12 @@
 {
-  "schema": "agent-control.4.5-completion-manifest/v1",
-  "generatedAt": "2026-09-12T05:05:14.861Z",
-  "implementationHead": "d9f4238bd07da60b36b78e4898d4d3f3a5bc9212",
+  "schema": "agent-control.4.5-completion-manifest/v2",
+  "generatedAt": "2026-09-12T06:06:13.539Z",
+  "implementationHead": "544a4fb4c8a9f6702adb944ab43de90daa7e67d6",
   "files": [
     {
       "file": "complete-human-readable-transcript.md",
-      "bytes": 20684,
-      "sha256": "1a3a96811b6d261b47e6779a1e295fa90bf1822df1c6bb749e420fd60d8d4f32"
+      "bytes": 36944,
+      "sha256": "43f182ec4ef85e12437728fbe59109f48667218e8c3452c1a503b9f5316c2d85"
     },
     {
       "file": "consolidation-transcript.md",
@@ -30,18 +30,53 @@
     },
     {
       "file": "energy-evidence.json",
-      "bytes": 1810,
-      "sha256": "4b8b085a56e9de4e04a023306a6409885d64f40e7b8deaaf32740dd446835aa5"
+      "bytes": 1857,
+      "sha256": "57b830a05e52d02efbfb57d4fbfc25fbb96ac36840c509595125a6c3a559d112"
     },
     {
       "file": "failure-analysis.json",
-      "bytes": 1932,
-      "sha256": "2562fc584cae9c33fe2c75e2da056bd464d49f5517c9be900215f78f3f212357"
+      "bytes": 2515,
+      "sha256": "0ea59af2e3d4616184127811ff0fb4bfb0c26f5776ecb8d77b3130d43252b2f5"
+    },
+    {
+      "file": "historical-memory-matrix.json",
+      "bytes": 56172,
+      "sha256": "a4512de7b1c5f352df06a2d2c48309d270721d12fc0588e6d3529b39c8dcc29a"
+    },
+    {
+      "file": "live/agent-control-4.5-live-poe-memory-qualification.mp4",
+      "bytes": 2462626,
+      "sha256": "72f2462c42469076bb74fa1087d54c96ff91630c9c2aa0094e1b6700c3c2922d"
+    },
+    {
+      "file": "live/cross-model-memory-qualification.json",
+      "bytes": 23318,
+      "sha256": "43f1eb4d803e13e42ef2d700b90eafbd3370f337ac6bf16696769aea42ad238d"
+    },
+    {
+      "file": "live/cross-model-memory-transcript.md",
+      "bytes": 1401,
+      "sha256": "bb5baf7130ff8458bc0dce8934d8dbbc17430a96bf929bbf4ae301395d789254"
+    },
+    {
+      "file": "live/live-runtime-final.png",
+      "bytes": 243772,
+      "sha256": "0358b969a02f57b1c30eccc32e5b165d4d460099fa2530e81a36748873c39213"
+    },
+    {
+      "file": "live/live-runtime-snapshots.json",
+      "bytes": 3027328,
+      "sha256": "af68f65e2d89097600b0efaeedf2aa33ce2b4361d04d4c3853c216246c699f95"
     },
     {
       "file": "memory-matrix.json",
-      "bytes": 5348,
-      "sha256": "429bc147274336533f79df4cb27eb60c702ac87c152824320b82657d2560d170"
+      "bytes": 18754,
+      "sha256": "f1425aec95e62899bc07d41f352ba6df7f42a47bb074a105378ad28aefda2de3"
+    },
+    {
+      "file": "memory-route-qualifications.json",
+      "bytes": 8653,
+      "sha256": "bb45bb75147ac7bd16eecff25f1e4521b62cc68fc7178bda3f8d4a6849ef0c97"
     },
     {
       "file": "msi-account-status.json",
@@ -69,9 +104,19 @@
       "sha256": "db5fdf09a5fb255e2f815756d6a1acc6c11f85e0bbc025c81a108b72263789dc"
     },
     {
+      "file": "pixel-writer-repeated-transcript.md",
+      "bytes": 1990,
+      "sha256": "a324ed04a478eaa14f6d00219c6c7ce779e77ac4439ed6ff445336e87f9a6c4b"
+    },
+    {
+      "file": "pixel-writer-repeated.json",
+      "bytes": 19366,
+      "sha256": "915fa599fd024ff940b3f140c03e801b19883d97722111ebb15e59d9ca78ba70"
+    },
+    {
       "file": "release-gate.json",
-      "bytes": 9961,
-      "sha256": "64894eb40390b5ddde4200a9d24b3dacf85154f6f32ef581ddc4ecf4140a9914"
+      "bytes": 8938,
+      "sha256": "0325efb189872cdc84d3782dc0d51618b3c9f2da04f9be367b726524bc57fac3"
     },
     {
       "file": "specialist-batch-energy.json",
