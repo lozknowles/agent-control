@@ -1022,6 +1022,22 @@ orthogonal to both.
 
 ## Release boundary
 
+### Source distribution and qualification evidence
+
+The product Git repository and qualification evidence archive are separate
+delivery surfaces. Product history contains executable source, documentation,
+schemas, configuration, tests, lightweight fixtures and small reviewed evidence
+summaries. Heavy recordings, screenshots, binary captures, complete
+qualification working trees and oversized raw evidence are external artifacts
+identified by immutable SHA-256 and provenance manifests.
+
+This separation changes storage and transfer, not the evidence model. A
+lightweight source record may reference an external artifact, but the artifact
+remains authoritative at its recorded hash and historical verdict. The external
+archive also retains a complete pre-rewrite Git bundle and old/new ref mapping.
+Release packages are produced from the source tree only; evidence archives are
+separate release assets. See [qualification evidence archive](docs/evidence-archive.md).
+
 Earlier version tags remain immutable source releases. Agent Control 4.0.0 integrates Crew/WOPR, adaptive orchestration, protected-resource governance, Social & Voice/OpenWA provenance and Live Shell. The source release does not deploy services, expose a remote ACP listener, broaden sharing, enable Spark, enable Saved Jobs/Schedules or admit NVIDIA routing. Its controller-local NVIDIA credential exists only in the owner-only runtime store and is not source or evidence. The accepted 4.0 evidence adds protected-resource proof and a physical Pixel social request through adaptive Qwen-to-Codex baton handoff, independent verification, terminal delivery, dashboard/video reconciliation and additive token accounting. Current context and billed cost remain unavailable on the tested routes, so no monetary or context-occupancy claim is made. The NVIDIA catalogue remains routing-disabled: Nemotron/Muse callability is observed, MiniMax is indeterminate and Kimi K2.6 endpoint-unavailable. See the [4.0 qualification](docs/evidence/agent-control-4.0-qualification.md), [Pixel continuation](docs/evidence/agent-control-4.0-pixel-social-continuation.md), [initial NVIDIA qualification](docs/evidence/agent-control-3.9-nvidia-hosted-qualification-20260906.md) and [focused diagnostics](docs/evidence/agent-control-3.9-nvidia-focused-diagnostics-20260906.md).
 
 ## Optional messaging adapters

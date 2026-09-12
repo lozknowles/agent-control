@@ -88,7 +88,7 @@ The continuous Chromium capture is 1920×1080 H.264 at 25 fps, 83.28 seconds, no
 
 - [machine evidence](agent-control-4.0-pixel-social-continuation.json)
 - [complete execution transcript](agent-control-4.0-pixel-social-continuation-transcript.md)
-- [continuous video](agent-control-4.0-pixel-social-continuation.mp4)
+- [continuous video](../evidence-archive.md)
 - [video and screenshot manifest](agent-control-4.0-pixel-social-continuation-video.json)
 
 ## Evidence hashes

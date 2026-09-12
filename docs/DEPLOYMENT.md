@@ -84,7 +84,10 @@ prove release qualification.
 Prerequisites are Node.js 24, npm and Git. Optional browser, SSH, Android, speech
 and model integrations require their own qualified dependencies. The repository
 does not commit a package lock, so retain the resolved dependency inventory with
-release evidence.
+release evidence. The ordinary clone contains product source and lightweight
+records only; heavyweight qualification artifacts are retained in the separate
+[checksummed evidence archive](evidence-archive.md). Do not use a shallow or
+partial clone as an installation workaround.
 
 ```bash
 git clone https://github.com/lozknowles/agent-control.git
@@ -94,6 +97,10 @@ git checkout --detach v4.5.0
 ./scripts/bootstrap-agent-control.sh --install --role control --target "$PWD"
 npm run check
 ```
+
+`npm run check:distribution` is part of `npm run check`. It prevents historical
+qualification trees, dashboard media and oversized evidence objects from being
+reintroduced into product-source history.
 
 Before the tag exists, release qualification uses the exact reviewed candidate
 SHA in place of `v4.5.0`. The bootstrap check should report a verified

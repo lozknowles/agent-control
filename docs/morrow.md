@@ -45,7 +45,7 @@ node scripts/preview-morrow-crew.mjs
 
 Open the printed HTML file. Its states are explicitly simulated and it configures no providers, jobs, credentials or network requests. The included 390px frame is a visual aid, not evidence that the full dashboard passed a mobile browser test.
 
-See the [implementation artwork](evidence/morrow-host-identity/morrow-and-crew.png), [standalone preview](evidence/morrow-host-identity/preview.html) and [validation and integration record](evidence/morrow-host-identity/validation.md).
+See the [implementation artwork](./evidence-archive.md), [standalone preview](evidence/morrow-host-identity/preview.html) and [validation and integration record](evidence/morrow-host-identity/validation.md).
 
 ## Integration with the completed 4.5 work
 

@@ -78,6 +78,6 @@ The isolated governed qualification remains the reproducible proof of the comple
 - [qualification report](agent-control-dashboard-characters-qualification.md)
 - [machine-readable evidence](agent-control-dashboard-characters-qualification.json)
 - [video manifest](agent-control-dashboard-characters-video.json)
-- [43.48-second qualification video](agent-control-dashboard-characters.mp4), SHA-256 `4faba20d80e41e34d9ad6e1e699a95a93c4634a4ac6e6a6682c1e284ec0d8907`
+- [43.48-second qualification video](../evidence-archive.md), SHA-256 `4faba20d80e41e34d9ad6e1e699a95a93c4634a4ac6e6a6682c1e284ec0d8907`
 
 No release action was performed. The live activation is independently reversible to the recorded previous live commit.

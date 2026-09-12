@@ -59,13 +59,13 @@ credential mask `••••••••••••`.
 
 ## Evidence
 
-- [Machine-readable scan](../../qualification/agent-control-environment-discovery-20260912/physical-scan.json)
-- [Evidence manifest](../../qualification/agent-control-environment-discovery-20260912/evidence-manifest.json)
-- [Complete human-readable transcript](../../qualification/agent-control-environment-discovery-20260912/complete-human-readable-transcript.md)
-- [Environment dashboard](../../qualification/agent-control-environment-discovery-20260912/environment-discovery-dashboard.png)
-- [Environment drill-down](../../qualification/agent-control-environment-discovery-20260912/environment-discovery-drill-down.png)
-- [Estate Map](../../qualification/agent-control-environment-discovery-20260912/estate-map-dashboard.png)
-- [HD recording](../../qualification/agent-control-environment-discovery-20260912/agent-control-environment-discovery-physical.mp4)
+- [Machine-readable scan](../evidence-archive.md)
+- [Evidence manifest](../evidence-archive.md)
+- [Complete human-readable transcript](../evidence-archive.md)
+- [Environment dashboard](../evidence-archive.md)
+- [Environment drill-down](../evidence-archive.md)
+- [Estate Map](../evidence-archive.md)
+- [HD recording](../evidence-archive.md)
 
 The MP4 is H.264, 1920×1080 and 8.04 seconds. Its SHA-256 is
 `0153ba46129750bcc765916def3f8189147bd672661410f7d0f719de9944ad07`.

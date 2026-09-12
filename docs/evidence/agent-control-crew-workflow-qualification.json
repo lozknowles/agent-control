@@ -1,0 +1,12 @@
+{
+  "schema": "agent-control.external-evidence-reference/v1",
+  "originalPath": "docs/evidence/agent-control-crew-workflow-qualification.json",
+  "originalBytes": 1157216,
+  "originalGitBlob": "dd5c3fb9febcc798756c13e099feb8aac6b8aed2",
+  "originalSha256": "e3ee947aaf17f8f123acdc109d9123e796f5020a611c1954289215043f40e667",
+  "sourceCommit": "146ba9d2699ca9e1570762dea01e9b84da9374a8",
+  "archiveRelease": "https://github.com/lozknowles/agent-control-qualification-evidence/releases/tag/source-separation-20260912",
+  "archiveAsset": "agent-control-candidate-146ba9d-heavy-evidence.tar.zst",
+  "manifestAsset": "candidate-146ba9d-evidence.json",
+  "historicalVerdictUnchanged": true
+}

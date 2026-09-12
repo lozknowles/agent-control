@@ -59,7 +59,7 @@ The [human-readable transcript](agent-control-3.9-crew-wopr-escalation-transcrip
 
 ## Dashboard and recording
 
-- [Continuous 1920×1080 video](agent-control-3.9-crew-wopr-escalation.mp4), 57.64 seconds, H.264, 25 fps
+- [Continuous 1920×1080 video](../evidence-archive.md), 57.64 seconds, H.264, 25 fps
 - Video SHA-256: `cc8b1b19d36ce7d060306b3134b8f8076d3319ec2a4e1ef93dc62085dabaea46`
 - [Video/evidence manifest](agent-control-3.9-crew-wopr-escalation-video.json)
 - Manifest SHA-256: `f09977dedd2dfce2421434b03e1396852db84bfacc3a0bbf8d62e80f97da5f61`
@@ -67,7 +67,7 @@ The [human-readable transcript](agent-control-3.9-crew-wopr-escalation-transcrip
 - Lifecycle evidence SHA-256: `5c395122c13a857a257115fecb646b9a983c0c082774b6772db96669e65299be`
 - [Human-readable transcript](agent-control-3.9-crew-wopr-escalation-transcript.md)
 - Transcript SHA-256: `be0d9f6a598c7d06cec9f1232b25da63971204f79d1cf0fed81f770a7c0c5d2d`
-- [Thirteen source screenshots](agent-control-3.9-crew-wopr-escalation/)
+- [Thirteen source screenshots](../evidence-archive.md)
 
 The video is one continuous trial, unspliced and played at 1×. It shows the exact prompt, two concurrent control Jobs, all six animated Crew characters, an inspected event-backed tool indicator, live Qwen usage, the independent rejection and exact baton reason, destination account/provider/model activity, independent verification, final model chain and durable Job history. The Social & Voice navigation remains present and unchanged.
 

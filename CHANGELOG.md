@@ -4,6 +4,13 @@
 
 ### Virgin-install remediation
 
+- Separates heavyweight qualification videos, screenshots, binary captures,
+  complete qualification trees and oversized raw evidence from normal product
+  clones while preserving them in a checksummed public archive with full
+  pre-rewrite Git provenance. Adds a source-distribution gate and documents the
+  contributor re-clone boundary; shallow/partial clone is not accepted as the
+  installation fix.
+
 - Makes the documented Linux bootstrap directly executable and aligns Linux
   and Windows installation with the repository's intentional no-lock,
   runtime-TypeScript architecture: install dependencies with lifecycle scripts

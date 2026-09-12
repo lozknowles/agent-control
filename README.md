@@ -33,19 +33,19 @@ mockups or reconstructed marketing screens.
 
 ### Dashboard overview and real Estate discovery
 
-![Agent Control 4.5 Environment Discovery dashboard populated from a real read-only scan](docs/images/agent-control-4.5/dashboard-overview.png)
+![Agent Control 4.5 Environment Discovery dashboard populated from a real read-only scan](https://github.com/lozknowles/agent-control-qualification-evidence/releases/download/source-separation-20260912/dashboard-overview.png)
 
-![Agent Control 4.5 Estate Map showing the resources established by the real discovery inventory](docs/images/agent-control-4.5/estate-map-real-discovery.png)
+![Agent Control 4.5 Estate Map showing the resources established by the real discovery inventory](https://github.com/lozknowles/agent-control-qualification-evidence/releases/download/source-separation-20260912/estate-map-real-discovery.png)
 
 ### Six concurrent jobs and Control Room
 
-![Agent Control 4.5 Process Map with six governed jobs visibly running in parallel](docs/images/agent-control-4.5/process-map-six-jobs-running.png)
+![Agent Control 4.5 Process Map with six governed jobs visibly running in parallel](https://github.com/lozknowles/agent-control-qualification-evidence/releases/download/source-separation-20260912/process-map-six-jobs-running.png)
 
-![Agent Control 4.5 Control Room showing the same six real concurrent jobs](docs/images/agent-control-4.5/process-map-control-room.png)
+![Agent Control 4.5 Control Room showing the same six real concurrent jobs](https://github.com/lozknowles/agent-control-qualification-evidence/releases/download/source-separation-20260912/process-map-control-room.png)
 
 ### Authoritative Replay/Compare
 
-![Agent Control 4.5 graphical Compare view showing a 13-operation baseline beside the 71-operation candidate](docs/images/agent-control-4.5/process-map-compare.png)
+![Agent Control 4.5 graphical Compare view showing a 13-operation baseline beside the 71-operation candidate](https://github.com/lozknowles/agent-control-qualification-evidence/releases/download/source-separation-20260912/process-map-compare.png)
 
 The checksummed [release-closure report](docs/evidence/agent-control-4.5-release-closure-20260912.md)
 links the screenshots, HD recordings, complete transcripts, Work Parcels,
@@ -506,6 +506,11 @@ clone command below.
 
 ## Install
 
+The normal clone is deliberately source-only. Heavy historical videos,
+screenshots, binary captures and qualification working trees are preserved in a
+separate checksummed [qualification evidence archive](docs/evidence-archive.md),
+so installation never requires a partial or shallow clone workaround.
+
 Clone the public release and select its immutable tag. During pre-release
 qualification, the reviewer substitutes the exact reviewed candidate SHA for
 `v4.5.0`; ordinary users should use the published tag.
@@ -734,6 +739,7 @@ Android is one optional resource type, not a named device. The bundled Termux no
 npm run typecheck
 npm run check:bootstrap
 npm run check:neutrality
+npm run check:distribution
 npm test
 npm run check
 npm run qualify:jobs

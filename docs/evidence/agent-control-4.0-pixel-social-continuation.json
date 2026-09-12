@@ -1,0 +1,12 @@
+{
+  "schema": "agent-control.external-evidence-reference/v1",
+  "originalPath": "docs/evidence/agent-control-4.0-pixel-social-continuation.json",
+  "originalBytes": 4947666,
+  "originalGitBlob": "5175d3ca527ce73cf51d2f85b0d91b278603ddd4",
+  "originalSha256": "85333167e1dcbdd95f037f0cfc82903d0225e6a818609822b1d86978ded414c9",
+  "sourceCommit": "146ba9d2699ca9e1570762dea01e9b84da9374a8",
+  "archiveRelease": "https://github.com/lozknowles/agent-control-qualification-evidence/releases/tag/source-separation-20260912",
+  "archiveAsset": "agent-control-candidate-146ba9d-heavy-evidence.tar.zst",
+  "manifestAsset": "candidate-146ba9d-evidence.json",
+  "historicalVerdictUnchanged": true
+}

@@ -106,10 +106,10 @@ performance claims.
 
 ## Evidence
 
-- [Machine report](../../qualification/agent-control-runtime-map-visual-acceptance-20260912/qualification.json)
-- [Complete human-readable transcript](../../qualification/agent-control-runtime-map-visual-acceptance-20260912/complete-human-readable-transcript.md)
-- [Evidence manifest](../../qualification/agent-control-runtime-map-visual-acceptance-20260912/evidence-manifest.json)
-- [HD H.264 video](../../qualification/agent-control-runtime-map-visual-acceptance-20260912/agent-control-4.5-runtime-map-six-job-visual-acceptance.mp4) — 1920×1080, 25 fps, 59.76 s, SHA-256 `8b193460d5dc0240f9a863f48f96d22aed914ba2c565526faffaf99d437ad628`
+- [Machine report](../evidence-archive.md)
+- [Complete human-readable transcript](../evidence-archive.md)
+- [Evidence manifest](../evidence-archive.md)
+- [HD H.264 video](../evidence-archive.md) — 1920×1080, 25 fps, 59.76 s, SHA-256 `8b193460d5dc0240f9a863f48f96d22aed914ba2c565526faffaf99d437ad628`
 - Screenshots in the same qualification directory cover six running Jobs,
   Control Room, live terminal, Estate cross-link, grounded POE, completion,
   Replay and graphical Compare.

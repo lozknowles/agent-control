@@ -260,7 +260,7 @@
       "evidence": [
         "docs/evidence/agent-control-3.9-provider-neutral-qualification.md",
         "docs/evidence/agent-control-3.9-provider-neutral-dashboard-video.json",
-        "docs/evidence/agent-control-3.9-provider-neutral-dashboard.mp4"
+        "docs/evidence-archive.md"
       ]
     },
     {
@@ -701,7 +701,7 @@
       "summary": "A provider-neutral runtime registry derives temporary Warm Experts from genuine terminal invocation telemetry, binds evidence to exact worker/provider/account/model/node/session/cache/backend identity and hashed context, enforces strict compatibility and lifecycle decay, and contributes a bounded cache score only after capability, placement, health and transport-integrity gates. Normal Work Parcels persist candidate decisions, selected expert identity, batons, actual cache observations and independent verification; the dashboard/API exposes the same durable facts and natural operational transcript.",
       "sources": ["src/control/cache-aware-expert.ts", "src/control/cache-evidence.ts", "src/control/structured-chat-loop-provider.ts", "src/control/work-parcels.ts", "src/control/job-bootstrap.ts", "src/control/application-service.ts", "src/control/config.ts", "src/control/configuration-store.ts", "src/control/web-server.ts", "assets/dashboard/dashboard-cache-experts.js", "assets/dashboard/dashboard-enhancements.js"],
       "tests": ["src/control/cache-aware-expert.test.ts", "src/control/structured-chat-loop-provider.test.ts", "src/control/work-parcels.test.ts", "src/control/config.test.ts", "src/control/configuration-store.test.ts", "src/control/web-server.test.ts"],
-      "evidence": ["docs/cache-aware-expert-delegation.md", "docs/non-openai-cache-qualification.md", "docs/evidence/agent-control-4.3-integrated-qualification-20260909.md", "docs/evidence/agent-control-4.3-integrated-qualification-20260909.json", "docs/evidence/agent-control-4.3-integrated-transcript-20260909.md", "docs/evidence/agent-control-4.3-integrated-qualification-20260909.mp4"],
+      "evidence": ["docs/cache-aware-expert-delegation.md", "docs/non-openai-cache-qualification.md", "docs/evidence/agent-control-4.3-integrated-qualification-20260909.md", "docs/evidence/agent-control-4.3-integrated-qualification-20260909.json", "docs/evidence/agent-control-4.3-integrated-transcript-20260909.md", "docs/evidence-archive.md"],
       "limitation": "Physical A-F proves governed delegation and authoritative local llama.cpp cache reuse. Monetary saving remains unavailable because this backend supplies no billing data; cross-provider cache portability is not claimed."
     },
     {
@@ -1072,7 +1072,7 @@
       ],
       "evidence": [
         "docs/evidence/agent-control-4.4-ux-session-replay-20260911.md",
-        "qualification/agent-control-4.4-ux-session-replay-20260911/evidence-manifest.json"
+        "docs/evidence-archive.md"
       ],
       "limitation": "Your Memories is advisory. Automatic memory consolidation and idle model swapping are not released; MARM remains optional."
     },
@@ -1094,7 +1094,7 @@
       "evidence": [
         "docs/skill-learning.md",
         "docs/evidence/agent-control-4.5-governed-skill-learning-20260911.md",
-        "qualification/agent-control-4.5-skill-learning-20260911/qualification-report.json"
+        "docs/evidence-archive.md"
       ],
       "limitation": "The first qualification is narrow route-intent JSON on one pinned 135M CPU base. Frozen accuracy improved from 0.00 to 0.40 and schema validity from 0.00 to 1.00; this does not establish broad expertise. Monetary cost, adapter composition and automatic training remain unavailable or unimplemented. The separate deterministic-skill promotion lifecycle does not automatically promote a model adapter."
     },
@@ -1129,8 +1129,7 @@
       "evidence": [
         "docs/deterministic-skill-promotion.md",
         "docs/evidence/agent-control-4.5-deterministic-skill-promotion-20260911.md",
-        "qualification/agent-control-4.5-deterministic-skill-20260911/qualification.json",
-        "qualification/agent-control-4.5-deterministic-skill-20260911/ux-evidence/evidence-manifest.json"
+        "docs/evidence-archive.md"
       ],
       "limitation": "Qualification covers three bounded Agent Control operations on one measured node. General procedure synthesis, automatic code installation and automatic promotion remain forbidden. The separate cross-model Your Memories matrix has nine PASS/FIXED cells, two terminally UNSUPPORTED Pixel-reader aliases and one BLOCKED_EXTERNAL GLM route; it remains experimental."
     },
@@ -1155,8 +1154,7 @@
       "evidence": [
         "docs/session-vault.md",
         "docs/evidence/agent-control-4.5-session-vault-physical-qualification-20260912.md",
-        "qualification/agent-control-session-vault-20260912/physical-qualification.json",
-        "qualification/agent-control-session-vault-20260912/evidence-manifest.json"
+        "docs/evidence-archive.md"
       ],
       "limitation": "Core A-H qualification passed across two governed nodes, but the configured Windows Obsidian application was not physically exercised because node authentication was unavailable. Session Vault and Your Memories remain distinct; Obsidian is optional. The feature remains experimental for 4.5 release decisions."
     },
@@ -1179,7 +1177,7 @@
       "evidence": [
         "docs/runtime-map.md",
         "docs/evidence/agent-control-4.5-runtime-map-visual-acceptance-20260912.md",
-        "qualification/agent-control-runtime-map-visual-acceptance-20260912/qualification.json"
+        "docs/evidence-archive.md"
       ],
       "limitation": "The visual qualification proved six concurrent root Jobs, advancing real terminal output, retry/recovery, aggregation, verification, replay, comparison and Estate cross-linking. Map-originated pause/cancel/retry/approval remains intentionally unavailable until a node-scoped adapter can delegate to existing permission and audit APIs; WATCH grants no control authority."
     },
@@ -1206,7 +1204,7 @@
       "evidence": [
         "docs/environment-discovery.md",
         "docs/evidence/agent-control-4.5-environment-discovery-qualification-20260912.md",
-        "qualification/agent-control-environment-discovery-20260912/evidence-manifest.json"
+        "docs/evidence-archive.md"
       ],
       "limitation": "The physical run qualified only the local non-disruptive controller path. Configured remote/mobile transports, paid provider checks, real authentication actions and cross-device imported capabilities remain untested and cannot be counted as available. Desired-state estate management/remediation is planned for 4.6."
     },

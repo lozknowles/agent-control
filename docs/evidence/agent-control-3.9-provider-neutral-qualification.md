@@ -21,7 +21,7 @@ No merge, tag, release or deployment was performed.
 | Evidence | SHA-256 |
 | --- | --- |
 | [`agent-control-3.9-provider-neutral-qualification.json`](agent-control-3.9-provider-neutral-qualification.json) | `2bfc26e6ddd8d619ceada263860769f330ca5625ee40eb2d6f61f9fd33b4a678` |
-| [`agent-control-3.9-provider-neutral-dashboard.mp4`](agent-control-3.9-provider-neutral-dashboard.mp4) | `8828d3fe28e741f0694998629270d96498cd329177fe4f0824216f4d0fcdaaaa` |
+| [`agent-control-3.9-provider-neutral-dashboard.mp4`](../evidence-archive.md) | `8828d3fe28e741f0694998629270d96498cd329177fe4f0824216f4d0fcdaaaa` |
 | [`agent-control-3.9-provider-neutral-dashboard-video.json`](agent-control-3.9-provider-neutral-dashboard-video.json) | `91a1084d9477d0a3a963a2dbddd4bc851666950849447c325f234f575310b86f` |
 
 The final physical run began `2026-09-05T08:48:07.684Z` and completed `2026-09-05T08:53:02.147Z` against a clean tree (`git diff` SHA-256 `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`). The 311.12-second MP4 is H.264, 1920×1080, 10,354,528 bytes. Chromium 152.0.7977.64 observed the real dashboard SSE state as `LIVE` at `2026-09-05T08:48:09.667Z`.
@@ -116,7 +116,7 @@ There is no comparable pre-3.9 persistent-ledger baseline, so the report claims 
 The first physical checkpoint reused capability-observation IDs across frozen batches. Provider calls in batch 2 returned and were scored, but observation insertion raised `capability_observation_exists`; the evaluator then misclassified affected measured attempts as `CAPABILITY_UNAVAILABLE`. The original evidence is retained unchanged as:
 
 - [`agent-control-3.9-provider-neutral-qualification-before-repeat-fix.json`](agent-control-3.9-provider-neutral-qualification-before-repeat-fix.json)
-- [`agent-control-3.9-provider-neutral-dashboard-before-repeat-fix.mp4`](agent-control-3.9-provider-neutral-dashboard-before-repeat-fix.mp4)
+- [`agent-control-3.9-provider-neutral-dashboard-before-repeat-fix.mp4`](../evidence-archive.md)
 - [`agent-control-3.9-provider-neutral-dashboard-video-before-repeat-fix.json`](agent-control-3.9-provider-neutral-dashboard-video-before-repeat-fix.json)
 
 The fix includes `batch.id` in every evaluation observation ID, classifies a duplicate as `ARCHITECTURE_REGRESSION`, and adds deterministic repeated-batch coverage. Afterward, both batches retained identical measured/unavailable topology and all 204 attempts reloaded.

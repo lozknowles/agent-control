@@ -11,10 +11,10 @@ is not merged, tagged, released or deployed.
 - Idle baseline: 48.376 W
 - Limitations: excludes motherboard, storage, PSU losses and peripherals; shared
   GPU processes may contribute.
-- Evidence: [`qualification.json`](../../qualification/agent-control-4.5-deterministic-skill-20260911/qualification.json),
-  [`energy.json`](../../qualification/agent-control-4.5-deterministic-skill-20260911/energy.json),
-  [`skills.json`](../../qualification/agent-control-4.5-deterministic-skill-20260911/skills.json), and
-  [`transcript.md`](../../qualification/agent-control-4.5-deterministic-skill-20260911/transcript.md).
+- Evidence: [`qualification.json`](../evidence-archive.md),
+  [`energy.json`](../evidence-archive.md),
+  [`skills.json`](../evidence-archive.md), and
+  [`transcript.md`](../evidence-archive.md).
 
 ## Result
 
@@ -88,7 +88,7 @@ safety, sealed baton, typed Action, artifact store and verification boundary:
   remain the energy evidence; this orchestration-only check did not manufacture a value)
 
 The immutable 1920×1080 browser replay and complete transcript are under
-[`ux-evidence/`](../../qualification/agent-control-4.5-deterministic-skill-20260911/ux-evidence/).
+[`ux-evidence/`](../evidence-archive.md).
 The MP4 SHA-256 is
 `5691a1c4d5b8402cfcb02d016fa494e01182b79fd3b302b8fbcdd07c58717b1a`;
 the transcript SHA-256 is

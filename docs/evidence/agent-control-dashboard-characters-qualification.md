@@ -36,7 +36,7 @@ The recording then shows Relay and Verity settle to `completed`, Quill and Rook 
 
 ## Video and animation proof
 
-The [43.48-second MP4](agent-control-dashboard-characters.mp4) is H.264 at 1920×1080 and 25 fps. SHA-256: `4faba20d80e41e34d9ad6e1e699a95a93c4634a4ac6e6a6682c1e284ec0d8907`.
+The [43.48-second MP4](../evidence-archive.md) is H.264 at 1920×1080 and 25 fps. SHA-256: `4faba20d80e41e34d9ad6e1e699a95a93c4634a4ac6e6a6682c1e284ec0d8907`.
 
 At `2026-09-06T13:45:11.041Z`, all six operational cards were simultaneously inside the 1920×1080 viewport for a four-second recorded dwell. The browser sampled each Web Animation twice, approximately 650 ms apart. Every animation timeline advanced and every sampled transform changed:
 
@@ -55,14 +55,14 @@ The full bounds, timeline deltas, transform-change assertions, browser version, 
 
 ## Screenshots
 
-- [Initial authoritative Crew](agent-control-dashboard-characters/01-crew-initial.png)
-- [All six visible during real concurrent activity](agent-control-dashboard-characters/02-crew-concurrent-live.png)
-- [Rook navigation to resource evidence](agent-control-dashboard-characters/03-resource-navigation.png)
-- [All six visible after the governed exercise](agent-control-dashboard-characters/04-crew-completed.png)
-- [Reduced-motion setting](agent-control-dashboard-characters/05-crew-reduced-motion.png)
-- [Clearly simulated mixed gallery on a light canvas](agent-control-dashboard-characters/06-simulated-gallery-light.png)
-- [Clearly simulated stale gallery on a dark canvas](agent-control-dashboard-characters/07-simulated-gallery-stale-dark.png)
-- [Responsive 390×844 Crew and gallery](agent-control-dashboard-characters/08-crew-mobile.png)
+- [Initial authoritative Crew](../evidence-archive.md)
+- [All six visible during real concurrent activity](../evidence-archive.md)
+- [Rook navigation to resource evidence](../evidence-archive.md)
+- [All six visible after the governed exercise](../evidence-archive.md)
+- [Reduced-motion setting](../evidence-archive.md)
+- [Clearly simulated mixed gallery on a light canvas](../evidence-archive.md)
+- [Clearly simulated stale gallery on a dark canvas](../evidence-archive.md)
+- [Responsive 390×844 Crew and gallery](../evidence-archive.md)
 
 All screenshot hashes and dimensions are recorded in the video manifest.
 

@@ -15,8 +15,8 @@ This evidence does not merge, release, tag, deploy or alter the live Agent Contr
 - Recorded source dirty-diff SHA-256: `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` (the empty Git diff)
 - Machine evidence: [`agent-control-crew-workflow-qualification.json`](agent-control-crew-workflow-qualification.json)
 - Browser/video manifest: [`agent-control-crew-workflow-video.json`](agent-control-crew-workflow-video.json)
-- H.264 recording: [`agent-control-crew-workflow.mp4`](agent-control-crew-workflow.mp4)
-- Screenshots: [`agent-control-crew-workflow/`](agent-control-crew-workflow/)
+- H.264 recording: [`agent-control-crew-workflow.mp4`](../evidence-archive.md)
+- Screenshots: [external evidence archive](../evidence-archive.md)
 
 The JSON manifests are authoritative for generated IDs, timestamps, hashes, byte sizes and raw measurement samples. The machine evidence SHA-256 is `e3ee947aaf17f8f123acdc109d9123e796f5020a611c1954289215043f40e667`; the video SHA-256 is `607a38f92c9f3eb3d788d3b74d1780e8a1d71767bebba324b57fa093725fae66`.
 

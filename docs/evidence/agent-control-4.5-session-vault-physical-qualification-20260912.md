@@ -37,11 +37,11 @@ is a view of real retained runtime evidence, not a synthetic provider run.
 
 Primary evidence:
 
-- [machine-readable physical report](../../qualification/agent-control-session-vault-20260912/physical-qualification.json)
-- [complete human-readable transcript](../../qualification/agent-control-session-vault-20260912/human-readable-transcript.md)
-- [HD recording](../../qualification/agent-control-session-vault-20260912/agent-control-4.5-session-vault.mp4)
-- [dashboard screenshot](../../qualification/agent-control-session-vault-20260912/session-vault-dashboard.png)
-- [video evidence](../../qualification/agent-control-session-vault-20260912/video-evidence.json)
-- [evidence manifest](../../qualification/agent-control-session-vault-20260912/evidence-manifest.json)
+- [machine-readable physical report](../evidence-archive.md)
+- [complete human-readable transcript](../evidence-archive.md)
+- [HD recording](../evidence-archive.md)
+- [dashboard screenshot](../evidence-archive.md)
+- [video evidence](../evidence-archive.md)
+- [evidence manifest](../evidence-archive.md)
 
 Final recommendation: **EXPERIMENTAL**.

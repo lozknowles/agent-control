@@ -26,7 +26,7 @@ The user explicitly authorised merging and pushing the Morrow work after the oth
 
 The tests cover Morrow's new and legacy invocation, restored conversations and sealed proposal hashes, once-only new greetings, speech interruption, robot state/policy behaviour and repeated SVG gradient identities. These are automated checks; controlled transcriptions do not establish physical microphone recognition.
 
-The original seven-character [artwork board](../morrow-host-identity/morrow-and-crew.png) and [standalone preview](../morrow-host-identity/preview.html) use the implemented source artwork. The original [identity validation](../morrow-host-identity/validation.md) records its offline visual inspection and browser limitations. No new browser or device qualification is claimed for this integration.
+The original seven-character [artwork board](../../evidence-archive.md) and [standalone preview](../morrow-host-identity/preview.html) use the implemented source artwork. The original [identity validation](../morrow-host-identity/validation.md) records its offline visual inspection and browser limitations. No new browser or device qualification is claimed for this integration.
 
 ## Evidence and remaining testing
 

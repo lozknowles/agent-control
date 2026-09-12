@@ -92,8 +92,8 @@ routing decision and independent verifier passed. Prompt processing improved
 Evidence: [qualification](agent-control-4.3-integrated-qualification-20260909.md),
 [complete transcript](agent-control-4.3-integrated-transcript-20260909.md),
 [machine record](agent-control-4.3-integrated-qualification-20260909.json),
-[dashboard screenshot](agent-control-4.3-integrated-dashboard-20260909.png) and
-[1920×1080, 30fps recording](agent-control-4.3-integrated-qualification-20260909.mp4).
+[dashboard screenshot](../evidence-archive.md) and
+[1920×1080, 30fps recording](../evidence-archive.md).
 The required operator-facing statement is:
 
 > A warm cache improves efficiency but does not confer correctness or authority. Capability, integrity and governance always outrank cache warmth.

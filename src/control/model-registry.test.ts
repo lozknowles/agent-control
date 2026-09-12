@@ -60,7 +60,7 @@ test('a failed task qualification cannot be bypassed by unrelated qualification 
 });
 
 test('the immutable MiniCPM record denies only its exact configuration and leaves the family sibling unqualified', () => {
-  const file = path.resolve('qualification/minicpm5-2b-q4-k-m-20260912/model-qualification.json'), store = new ModelQualificationStore(file), exactId = 'openbmb-minicpm5-2b-gguf-q4-k-m-d00c954e';
+  const file = path.resolve('fixtures/model-qualification/minicpm5-2b-q4-k-m-failed.json'), store = new ModelQualificationStore(file), exactId = 'openbmb-minicpm5-2b-gguf-q4-k-m-d00c954e';
   const node = store.get(exactId)!.nodes[0]!;
   const exact = {id: exactId, provider: 'external', providerModel: 'openbmb/MiniCPM5-2B-GGUF@d00c954e:Q4_K_M', enabled: true, capabilities: ['coding'], nodes: [node]};
   const sibling = {id: 'openbmb-minicpm-family-unqualified-sibling', provider: 'external', providerModel: 'openbmb/other-minicpm', enabled: true, capabilities: ['coding'], nodes: [node], qualification: {state: 'UNTESTED' as const}};

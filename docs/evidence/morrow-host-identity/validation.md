@@ -32,7 +32,7 @@ The full check preceded the final added gradient-identity regression test and he
 
 ## Limits and next integration step
 
-The cloud browser rejected local HTTP and local-file preview URLs. No browser-policy bypass was attempted. The [artwork board](morrow-and-crew.png) is an offline SVG render, **not** a browser screenshot. The [standalone preview](preview.html) uses the current artwork and production robot renderer, with explicitly simulated state controls. Desktop/mobile layout, microphone recognition of “Morrow”, and physical OmniVoice playback are not newly qualified by this change.
+The cloud browser rejected local HTTP and local-file preview URLs. No browser-policy bypass was attempted. The [artwork board](../../evidence-archive.md) is an offline SVG render, **not** a browser screenshot. The [standalone preview](preview.html) uses the current artwork and production robot renderer, with explicitly simulated state controls. Desktop/mobile layout, microphone recognition of “Morrow”, and physical OmniVoice playback are not newly qualified by this change.
 
 The currently configured designed voice, seed and hash are preserved. No new voice was generated or deployed. Existing 4.5 qualification evidence is unchanged and does not establish physical validation of the new identity.
 

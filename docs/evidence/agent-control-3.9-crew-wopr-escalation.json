@@ -1,0 +1,12 @@
+{
+  "schema": "agent-control.external-evidence-reference/v1",
+  "originalPath": "docs/evidence/agent-control-3.9-crew-wopr-escalation.json",
+  "originalBytes": 4201339,
+  "originalGitBlob": "954417cd9838f298355b93dcbfd74c6203a26ab8",
+  "originalSha256": "5c395122c13a857a257115fecb646b9a983c0c082774b6772db96669e65299be",
+  "sourceCommit": "146ba9d2699ca9e1570762dea01e9b84da9374a8",
+  "archiveRelease": "https://github.com/lozknowles/agent-control-qualification-evidence/releases/tag/source-separation-20260912",
+  "archiveAsset": "agent-control-candidate-146ba9d-heavy-evidence.tar.zst",
+  "manifestAsset": "candidate-146ba9d-evidence.json",
+  "historicalVerdictUnchanged": true
+}
