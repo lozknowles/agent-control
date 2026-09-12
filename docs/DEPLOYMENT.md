@@ -14,7 +14,7 @@ release evidence.
 ```bash
 git clone https://github.com/lozknowles/agent-control.git
 cd agent-control
-git checkout --detach v4.4.0 # released baseline; use an immutable 4.5 SHA only after release
+git checkout --detach v4.4.0 # released baseline; use a reviewed immutable 4.5 candidate SHA only for isolated evaluation
 npm install --ignore-scripts
 npm run init
 npm run check
@@ -68,14 +68,18 @@ delivery mechanism. Do not place credentials in URLs, Git, transcripts or videos
    transcript and reviewed 1920×1080 recording.
 4. Verify state/config compatibility and create an owner-only stopped-controller
    backup.
-5. Merge through the repository workflow, verify the merge contains the qualified
-   tree, tag `v4.4.0`, push, and create the GitHub Release with manifest hashes.
+5. Merge through the repository workflow only after every mandatory 4.5 gate is
+   proven, verify the merge contains the qualified tree, tag `v4.5.0`, push, and
+   create the GitHub Release with manifest hashes. A draft pull request or an
+   experimental candidate is not a stable release.
 6. Stop only the scoped existing controller, select the immutable release, retain
    existing state and credential references, and restart through its established
    supervisor.
 7. Verify version, source provenance, health, authentication, SSE updates, Jobs,
    Lanes, Models, Crew, Warm Cache Runtime and a harmless governed operation.
 
+The authoritative 4.5 candidate gate and its open limitations are recorded in
+[the 4.5 reconciliation](evidence/agent-control-4.5-release-gate-20260912.md).
 The 4.4 checksummed replay evidence is recorded in
 [the 4.4 qualification](evidence/agent-control-4.4-ux-session-replay-20260911.md),
 with the retained foundation in
