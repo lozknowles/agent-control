@@ -11,7 +11,7 @@
     "releasedBaseline": "v4.4.0",
     "originMainBase": "2e74d88db57e3ad15ce1d85ec93220d087b9592f",
     "qualifiedImplementationCommit": "d229ce4b7dd3bd704a331f81ca59600541430682",
-    "qualificationEvidenceCommit": null,
+    "qualificationEvidenceCommit": "300f77cc97101dd6e25a76d7f0a1d1f4251f3931",
     "releaseAuthority": "Release closure is authorized, but stable merge, tag, publication and deployment remain prohibited until every mandatory gate is proven and the operator separately approves the release operation."
   },
   "validation": {
