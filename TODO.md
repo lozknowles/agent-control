@@ -1,5 +1,9 @@
 # Agent Control 4.5 work plan
 
+This is the canonical roadmap. Agent Control 4.5 release closure is occurring on
+`feature/4.5-release-closure`; the exact verdict belongs in the release-closure
+evidence rather than being inferred from checked boxes here.
+
 ## Environment Discovery and unified Estate Map (4.5)
 
 - [x] Add read-only local/configured/edge adapter contracts, non-secret scan
@@ -8,10 +12,9 @@
 - [x] Reuse the Runtime Map schema and renderer for Process Map and Estate Map,
       including freshness-aware Estate heartbeat and connection inspection.
 - [x] Add bootstrap/install inspection and portable Linux/Windows entry points.
-- [ ] Qualify each configured remote/mobile adapter and paid provider separately;
-      absence from the isolated controller run is not a product failure.
-- [ ] Agent Control 4.6: add primitive approved desired-state/remediation actions.
-      Do not present this planned capability as 4.5 Estate Map functionality.
+- [x] Physically qualify the configured controller, MSI, remote Linux and Pixel paths
+      used by 4.5 evidence. Undiscovered or operator-disabled resources remain
+      explicitly unavailable rather than being inferred healthy.
 
 ## Runtime Map / Process Explorer workstream
 
@@ -29,8 +32,9 @@
       delegating to existing authorization and audit APIs; WATCH remains the
       default and current Runtime Map authority.
 
-This file records the implementation order for governed local skill learning. It
-is not a release declaration. Agent Control 4.4.0 remains the released baseline.
+This file records implementation and deferred work. It is not a release
+declaration. Agent Control 4.4.0 remains the released baseline until a separate
+4.5 release operation is explicitly approved and completed.
 
 ## Cross-device Session Vault workstream
 
@@ -77,9 +81,10 @@ Checkpoint result: physical A–H pass across two governed Linux nodes, includin
 a real Codex 0.154 source session, governed continuation Work Parcel, immutable
 replication, split-brain denial audit, synthetic-secret and tamper gates, and a
 provider-neutral non-Codex adapter. The existing ProjectMemoryPort path and
-Obsidian-disabled survival pass. Direct exercise of the configured Windows Obsidian
-application remains blocked by unavailable SSH authentication, so the workstream
-recommendation remains EXPERIMENTAL.
+Obsidian-disabled survival pass. Later release-gate evidence qualified the two
+isolated MSI Codex profiles and a genuine Obsidian-backed cross-model
+continuation without exposing node-local credentials. The capability remains
+experimental pending the authoritative 4.5 release verdict.
 
 Unresolved risks and physical gates:
 
@@ -111,15 +116,51 @@ Unresolved risks and physical gates:
       without disturbing protected services.
 - [x] Physically prove positive specialist routing and an inappropriate-task
       rejection through the production Work Parcel path.
-- [ ] Reconcile metrics, hashes, environment, limitations and failure exercises
-      in a reproducible evidence bundle.
-- [ ] Update canonical 4.5 documentation, run the complete validation suite, and
-      commit/push the isolated feature branch. Do not merge, tag, release or deploy.
+- [x] Reconcile metrics, hashes, environment, limitations and failure exercises
+      in reproducible evidence bundles.
+- [x] Update canonical 4.5 documentation and run complete validation on the
+      governed candidate branches. Merge, tag, release and deployment remain a
+      separate operator-authorized operation.
 
 ## Morrow integration follow-up
 
 - [x] Combine the original Morrow identity and coordinated six-robot artwork with the completed 4.5 route-governance branch.
 - [x] Preserve the existing qualification bundle and its experimental recommendation.
-- [ ] Qualify the combined candidate on desktop/mobile with reduced/off motion, physical voice/social invocation and a harmless governed Work Parcel. Keep new evidence separate from historical POE runs.
+- [x] Qualify the combined candidate on desktop/mobile with reduced/off motion,
+      physical voice/social invocation and a harmless governed Work Parcel,
+      retaining evidence separately from historical POE runs.
 
 See the [combined integration record](docs/evidence/morrow-4.5-integration/validation.md) for automated checks and the exact source parents. Earlier unchecked items above describe the original skill-learning workstream; the [completion report](docs/evidence/agent-control-4.5-release-gate-completion-20260912.md) records its later qualification outcomes.
+
+## MiniCPM5 closure and integrated runtime safety
+
+- [x] Preserve the original exact MiniCPM5-2B Q4_K_M failure and follow-up
+      evidence without converting scripted controls into model success.
+- [x] Keep that exact failed configuration out of governed code-repair routing
+      without generalising the result to sibling models.
+- [x] Integrate provider-neutral execution authority, between-tool cancellation,
+      cleanup uncertainty and bounded Linux/NVIDIA process-resource sampling.
+- [x] Retain failed-attempt evidence and independently verify the focused and
+      complete suites. The failed MiniCPM configuration remains disabled.
+
+## Agent Control 4.6 backlog — Agent Orchestrator review
+
+The 4.5 Process Map remains the baseline. These are planned 4.6 investigations,
+not shipped 4.5 capabilities:
+
+- [ ] Perform a source-level comparison with
+      `Untrivial-ai/agent-orchestrator` and record licence/provenance boundaries.
+- [ ] Adopt only useful generic orchestration concepts that preserve Agent
+      Control's existing Work Parcel, policy, evidence and runtime sources of truth.
+- [ ] Deepen Process Map drill-down from jobs to workers, calls, tools, terminal
+      sessions and evidence.
+- [ ] Improve read-only live terminal/session WATCH behaviour; any control action
+      must continue through governed authorization and audit.
+- [ ] Improve Process Map ↔ Estate Map navigation and shared identity linking.
+- [ ] Improve event-driven live graph reconciliation, stale-state handling and
+      high-cardinality rendering.
+- [ ] Evaluate worker/session isolation improvements without replacing the 4.5
+      execution engine.
+- [ ] Refresh README visuals with any genuinely qualified 4.6 improvements.
+- [ ] Add primitive approved desired-state/remediation actions; do not present
+      these as 4.5 Estate Map functionality.
