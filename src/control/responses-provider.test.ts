@@ -13,7 +13,7 @@ test('Responses factory mediates an official function call and returns tool data
       return new Response(JSON.stringify({id: 'resp_test', model: 'qualified-model', status: 'completed', output: [{type: 'function_call', name: 'agent_control_tool_0', arguments: '{"value":"safe"}', call_id: 'call_test'}], usage: {total_tokens: 31}}), {status: 200});
     },
   });
-  const result = await factory.executor('Return safe data').execute({tools: [{id: 'qualification.return-data'}], resourceLimits: {}} as never, {invoke: async (id, input) => { invocations++; assert.equal(id, 'qualification.return-data'); assert.deepEqual(input, {value: 'safe'}); return {marker: 'WINDOWS-OPENAI-OK'}; }});
+  const result = await factory.executor('Return safe data').execute({tools: [{id: 'qualification.return-data'}], resourceLimits: {}} as never, {assertActive: () => undefined, invoke: async (id, input) => { invocations++; assert.equal(id, 'qualification.return-data'); assert.deepEqual(input, {value: 'safe'}); return {marker: 'WINDOWS-OPENAI-OK'}; }});
   assert.equal(endpoint, 'https://api.openai.com/v1/responses');
   assert.equal(authorization, 'Bearer test-token');
   assert.match(rawBody, /"store":false/);
@@ -28,10 +28,10 @@ test('Responses factory mediates an official function call and returns tool data
 
 test('Responses factory fails closed before any tool for missing auth or invalid output', async () => {
   const missingAuth = new ResponsesProviderFactory({provider, workerId: 'w', modelId: 'm', workerCapabilities: [], modelCapabilities: [], availableToolIds: ['x'], qualificationEvidence: ['proof'], health: 'healthy'});
-  await assert.rejects(() => missingAuth.executor('test').execute({tools: [{id: 'x'}], resourceLimits: {}} as never, {invoke: async () => 'unsafe'}), /authentication_required/);
+  await assert.rejects(() => missingAuth.executor('test').execute({tools: [{id: 'x'}], resourceLimits: {}} as never, {assertActive: () => undefined, invoke: async () => 'unsafe'}), /authentication_required/);
   let invoked = false;
   const multiple = new ResponsesProviderFactory({provider, workerId: 'w', modelId: 'm', workerCapabilities: [], modelCapabilities: [], availableToolIds: ['x'], qualificationEvidence: ['proof'], health: 'healthy', authorization: () => 'token', fetch: async () => new Response(JSON.stringify({output: [{type: 'function_call', name: 'agent_control_tool_0', arguments: '{}'}, {type: 'function_call', name: 'agent_control_tool_0', arguments: '{}'}]}), {status: 200})});
-  await assert.rejects(() => multiple.executor('test').execute({tools: [{id: 'x'}], resourceLimits: {}} as never, {invoke: async () => { invoked = true; }}), /function_call_count:2/);
+  await assert.rejects(() => multiple.executor('test').execute({tools: [{id: 'x'}], resourceLimits: {}} as never, {assertActive: () => undefined, invoke: async () => { invoked = true; }}), /function_call_count:2/);
   assert.equal(invoked, false);
 });
 

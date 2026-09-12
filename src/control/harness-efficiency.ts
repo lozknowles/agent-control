@@ -6,6 +6,7 @@ import {estimateTokens} from './token-aware-output.js';
 import type {HarnessEfficiencyConfig} from './config.js';
 import {calculateVersionedApiCost, type InvocationCostAccounting, type VersionedModelPricing} from './cost-accounting.js';
 import type {CacheEvidence} from './cache-evidence.js';
+import type {ExecutionResourceSummary} from './resource-telemetry.js';
 
 export type HarnessProfileName = 'THIN' | 'STANDARD' | 'DEEP';
 export type HarnessRoutingMode = 'OBSERVE' | 'ENFORCE' | 'EXPERIMENT';
@@ -427,6 +428,8 @@ export interface ModelInvocationObservation {
   currency: string | null;
   /** Immutable per-invocation price/quota/energy evidence; absent for legacy records. */
   costAccounting?: InvocationCostAccounting;
+  /** Optional measured execution resources. Values remain unavailable unless an adapter supplied evidence. */
+  resources?: ExecutionResourceSummary;
   usageSource: 'provider-reported' | 'transport' | 'estimated' | 'unknown';
   costSource: 'reported' | 'estimated' | 'unknown';
   finishReason: string | null;
@@ -468,6 +471,7 @@ export interface InvocationObservationInput {
   providerReportedCost?: number;
   pricing?: InvocationPricing;
   costAccounting?: InvocationCostAccounting;
+  resources?: ExecutionResourceSummary;
   toolIds?: string[];
   filesContextSupplied?: number;
   agentId?: string;
@@ -500,6 +504,7 @@ export function createInvocationObservation(input: InvocationObservationInput): 
     providerReportedCost: input.providerReportedCost ?? null,
     calculatedCost, currency: versionedPricing?.currency ?? input.pricing?.currency ?? null,
     ...(input.costAccounting ? {costAccounting: structuredClone(input.costAccounting)} : {}),
+    ...(input.resources ? {resources: structuredClone(input.resources)} : {}),
     usageSource: Object.values(usage).some(value => typeof value === 'number') ? 'provider-reported' : 'unknown',
     costSource: input.providerReportedCost !== undefined ? 'reported' : calculatedCost !== null ? 'estimated' : 'unknown', finishReason: input.finishReason ?? null,
     toolCalls: input.toolIds?.length ?? 0, toolIds: [...(input.toolIds ?? [])], agentId: input.agentId ?? null, filesContextSupplied: input.filesContextSupplied ?? null, contextSourceIds: [...(input.contextSourceIds ?? [])],
@@ -536,6 +541,7 @@ function normalizedPersistedInvocation(record: ModelInvocationObservation): Mode
     state: record.state ?? (record.outcome === 'FAILED' ? 'FAILED' : record.outcome === 'CANCELLED' ? 'CANCELLED' : 'COMPLETE'), phase: record.phase ?? 'complete', phaseUpdatedAt: record.phaseUpdatedAt ?? record.completedAt ?? record.startedAt,
     usageSource: record.usageSource ?? (usageKnown ? 'provider-reported' : 'unknown'), costSource: record.costSource ?? (record.providerReportedCost !== null ? 'reported' : record.calculatedCost !== null ? 'estimated' : 'unknown'),
     finishReason: record.finishReason ?? null,
+    ...(record.resources ? {resources: structuredClone(record.resources)} : {}),
   };
 }
 

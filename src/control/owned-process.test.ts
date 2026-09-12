@@ -117,3 +117,21 @@ async function waitFor(predicate: () => boolean, timeoutMs = 5_000) {
   const deadline = Date.now() + timeoutMs;
   while (!predicate()) { if (Date.now() >= deadline) throw new Error('fixture_wait_timeout'); await new Promise(resolve => setTimeout(resolve, 10)); }
 }
+
+for (const exitCode of [0, 7]) test('owned process drains inherited output before sealing exit ' + exitCode, {timeout: 10000}, async t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'owned-output-drain-')); t.after(() => fs.rmSync(root, {recursive: true, force: true}));
+  const sessions = new ExecutionSessionRuntime(path.join(root, 'sessions'));
+  const scope: ExecutionSessionScope = {runId: 'drain-run', jobId: 'drain-job', jobVersion: '1.0.0', stepId: 'drain', actionId: 'drain@1.0.0', workerId: 'drain-worker', nodeId: 'controller'};
+  const manager = new OwnedProcessManager(undefined, sessions, scope), lines: string[] = [];
+  const tail = "setTimeout(() => { process.stdout.write('late stdout'); process.stderr.write('late stderr'); }, 120)";
+  const source = "require('node:child_process').spawn(process.execPath, ['-e', " + JSON.stringify(tail) + "], {stdio: ['ignore', process.stdout, process.stderr]}); process.stdout.write(" + JSON.stringify('early' + String.fromCharCode(10)) + "); process.exit(" + exitCode + ")";
+  const result = await manager.runProcess({command: process.execPath, args: ['-e', source], onStdoutLine: line => lines.push(line), session: {terminal: 'pipe', transformOutputLine: (_stream, line) => line}});
+  assert.equal(result.exitCode, exitCode);
+  assert.equal(result.stdout, 'early\nlate stdout'); assert.equal(result.stderr, 'late stderr');
+  assert.deepEqual(lines, ['early', 'late stdout']); assert.deepEqual(manager.activePids(), []);
+  const id = manager.sessionIds()[0], transcript = sessions.transcript(id);
+  assert.match(transcript, /late stdout/); assert.match(transcript, /late stderr/);
+  const restarted = new ExecutionSessionRuntime(path.join(root, 'sessions'));
+  assert.equal(restarted.transcript(id), transcript);
+  assert.equal(restarted.get(id).state, exitCode === 0 ? 'EXITED' : 'FAILED');
+});

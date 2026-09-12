@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import type {OwnedExecution} from './owned-process.js';
 import {
   AdaptiveHarness,
   type ExecutionRecipe,
@@ -32,8 +33,10 @@ export interface RecipeExecutionResult {
   invocations?: ModelInvocationObservation[];
 }
 
+/** Trusted control-plane handlers must check this control at each effect boundary, including after every await. */
+export interface ToolExecutionControl {signal?: AbortSignal; assertActive(): void; ownedExecution?: OwnedExecution;}
 export interface RawToolHandler {
-  (input: unknown, recipe: ExecutionRecipe): Promise<unknown>;
+  (input: unknown, recipe: ExecutionRecipe, control: ToolExecutionControl): Promise<unknown>;
 }
 
 export interface ToolHandlerBinding {
@@ -42,6 +45,7 @@ export interface ToolHandlerBinding {
 }
 
 export interface ToolResultInterceptorContext {
+  control: ToolExecutionControl;
   toolId: string;
   input: unknown;
   recipe: ExecutionRecipe;
@@ -52,6 +56,10 @@ export interface ToolResultInterceptorContext {
 export type ToolResultInterceptor = (context: ToolResultInterceptorContext) => unknown | Promise<unknown>;
 
 export interface ToolInvocationGateway {
+  ownedExecution?: OwnedExecution;
+  /** Control-owned cancellation and live authority, never model-supplied. */
+  signal?: AbortSignal;
+  assertActive(): void;
   invoke(toolId: string, input?: unknown): Promise<unknown>;
   lifecycle?(phase: Extract<InvocationPhase, 'waiting for provider' | 'response received' | 'processing'>): void;
 }
@@ -67,6 +75,7 @@ export interface RecipeExecutor {
 }
 
 export interface ToolPolicyAuditEvent {
+  input?: unknown;
   at: string;
   recipeId: string;
   taskId: string;
@@ -99,11 +108,14 @@ export class ToolHandlerRegistry {
     return this;
   }
 
-  async invoke(toolId: string, input: unknown, recipe: ExecutionRecipe): Promise<unknown> {
+  async invoke(toolId: string, input: unknown, recipe: ExecutionRecipe, control: ToolExecutionControl): Promise<unknown> {
+    if (!control || typeof control.assertActive !== 'function') throw new Error('tool_execution_control_required');
     const handler = this.handlers.get(toolId);
     if (!handler) throw new Error(`tool_handler_missing:${toolId}`);
-    let result = await handler(input, recipe);
-    for (const interceptor of this.interceptors) result = await interceptor({toolId, input, recipe, result});
+    control.assertActive();
+    let result = await handler(input, recipe, control);
+    control.assertActive();
+    for (const interceptor of this.interceptors) { control.assertActive(); result = await interceptor({toolId, input, recipe, result, control}); control.assertActive(); }
     return result;
   }
 }
@@ -212,7 +224,13 @@ export class HarnessJobAgentAction implements AgentActionHandler {
     const plan = {...prepared.plan, request: {...prepared.plan.request, jobId: prepared.plan.request.jobId ?? context.run.jobId, runId: prepared.plan.request.runId ?? context.run.id, stepId: prepared.plan.request.stepId ?? context.step.id}};
     if (!plan.request.verification.requireIndependentCheck) throw new HarnessPolicyDeniedError(['agent_action_independent_check_required']);
     if (plan.placement.workerId !== context.worker.id) throw new HarnessPolicyDeniedError(['worker_placement_mismatch']);
-    const result = await this.dispatcher.dispatch(plan, prepared.executor);
+    context.signal?.throwIfAborted();
+    const result = await this.dispatcher.dispatch(plan, prepared.executor, context.signal, context.ownedExecution);
+    if (result.execution.error) {
+      const error = new Error(result.execution.error);
+      Object.assign(error, {efficiencyInvocationIds: result.invocationIds});
+      throw error;
+    }
     const mapped = prepared.toActionOutput?.(result) ?? {
       evidence: result.execution.evidence,
       detail: result.execution.resultRef ?? `recipe ${result.recipe.id} executed`,
@@ -265,7 +283,8 @@ export class HarnessDispatcher {
     private readonly efficiency?: HarnessEfficiencyLedgerPort,
   ) {}
 
-  async dispatch(plan: RecipeDispatchPlan, executor: RecipeExecutor): Promise<RecipeDispatchResult> {
+  async dispatch(plan: RecipeDispatchPlan, executor: RecipeExecutor, signal?: AbortSignal, ownedExecution?: OwnedExecution): Promise<RecipeDispatchResult> {
+    signal?.throwIfAborted();
     const placedCandidates = plan.candidates.filter(candidate => candidate.route.workerId === plan.placement.workerId);
     if (!placedCandidates.length) throw new HarnessPolicyDeniedError(['worker_placement_unavailable']);
     const built = this.harness.build(plan.request, placedCandidates);
@@ -282,19 +301,29 @@ export class HarnessDispatcher {
     record = {...record, phase: 'DISPATCHING', updatedAt: this.clock()};
     this.store.save(record);
     const gateway: ToolInvocationGateway = {
+      signal, ownedExecution,
+      assertActive: () => {
+        signal?.throwIfAborted();
+        const live = this.currentAuthorization(recipe).authority;
+        if (live.owner === 'human') throw new Error('tool_policy_denied:human_owns_execution');
+        if (live.owner !== 'agent' || live.laneId !== recipe.authority.laneId || live.leaseGeneration !== recipe.authority.leaseGeneration || live.ownershipGeneration !== recipe.authority.ownershipGeneration) throw new Error('tool_policy_denied:execution_authority_revoked');
+      },
       lifecycle: phase => { if (pendingInvocationId) this.efficiency?.setPhase([pendingInvocationId], phase); },
       invoke: async (toolId, input) => {
         const live = this.currentAuthorization(recipe);
-        const decision = this.toolPolicy.authorize(recipe, toolId, live);
+        const decision = signal?.aborted ? {allowed: false, reason: 'execution_cancelled'} : this.toolPolicy.authorize(recipe, toolId, live);
         this.audit({
-          at: this.clock(), recipeId: recipe.id, taskId: recipe.taskId, toolId,
+          at: this.clock(), recipeId: recipe.id, taskId: recipe.taskId, toolId, input: structuredClone(input),
           allowed: decision.allowed, reason: decision.reason,
           leaseGeneration: live.authority.leaseGeneration,
           ownershipGeneration: live.authority.ownershipGeneration,
         });
         if (!decision.allowed) throw new Error(`tool_policy_denied:${decision.reason}`);
+        gateway.assertActive!();
         invokedToolIds.push(toolId);
-        return this.tools.invoke(toolId, input, recipe);
+        const result = await this.tools.invoke(toolId, input, recipe, {signal, assertActive: gateway.assertActive!, ownedExecution});
+        gateway.assertActive!();
+        return result;
       },
     };
     try {

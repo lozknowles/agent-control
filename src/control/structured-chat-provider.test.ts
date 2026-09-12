@@ -16,7 +16,7 @@ test('structured chat factory creates a qualified candidate and mediates its JSO
   const candidate = factory.candidate();
   assert.equal(candidate.route.qualified, true);
   assert.match(candidate.route.qualificationReason, /fixture-live-proof/);
-  const result = await factory.executor('Inspect the safe fixture').execute({tools: [{id: 'qualification.inspect'}], resourceLimits: {}} as never, {invoke: async (id, input) => { invocations++; assert.equal(id, 'qualification.inspect'); assert.deepEqual(input, {target: 'fixture'}); return {marker: 'SAFE'}; }});
+  const result = await factory.executor('Inspect the safe fixture').execute({tools: [{id: 'qualification.inspect'}], resourceLimits: {}} as never, {assertActive: () => undefined, invoke: async (id, input) => { invocations++; assert.equal(id, 'qualification.inspect'); assert.deepEqual(input, {target: 'fixture'}); return {marker: 'SAFE'}; }});
   assert.equal(endpoint, 'http://127.0.0.1:18081/v1/chat/completions');
   assert.match(rawBody, /Do not claim the tool ran/);
   assert.equal(invocations, 1);
@@ -35,7 +35,7 @@ test('structured chat telemetry attributes an explicitly supplied context packet
     {id: 'packet-memory', kind: 'memory_shared_context' as const, content: 'verified historical evidence', persistent: true, relevance: 1, provenanceIds: ['evidence:memory']},
     {id: 'packet-task', kind: 'task_context' as const, content: 'bounded task', required: true, persistent: false, relevance: 1, provenanceIds: ['evidence:task']},
   ];
-  const result = await factory.executor('rendered packet', contextSources).execute({tools: [{id: 'qualification.inspect'}], resourceLimits: {}} as never, {invoke: async () => 'SAFE'});
+  const result = await factory.executor('rendered packet', contextSources).execute({tools: [{id: 'qualification.inspect'}], resourceLimits: {}} as never, {assertActive: () => undefined, invoke: async () => 'SAFE'});
   const observation = result.invocations?.[0];
   assert.equal(observation?.usage.freshInputTokens, 100);
   assert.equal(observation?.usage.cachedInputTokens, 20);
@@ -46,16 +46,16 @@ test('structured chat telemetry attributes an explicitly supplied context packet
 test('structured chat executor rejects malformed or expanded model output before the gateway', async () => {
   let invocations = 0;
   const factory = new StructuredChatProviderFactory({provider, workerId: 'worker-1', modelId: 'qwen-test', workerCapabilities: [], modelCapabilities: [], availableToolIds: ['qualification.inspect'], qualificationEvidence: ['fixture-live-proof'], health: 'healthy', fetch: async () => new Response(JSON.stringify({choices: [{message: {content: '{"tool":"qualification.inspect","input":{},"grant":"more"}'}}]}), {status: 200})});
-  await assert.rejects(() => factory.executor('test').execute({tools: [], resourceLimits: {}} as never, {invoke: async () => { invocations++; }}), /provider_tool_request_unknown_field/);
+  await assert.rejects(() => factory.executor('test').execute({tools: [], resourceLimits: {}} as never, {assertActive: () => undefined, invoke: async () => { invocations++; }}), /provider_tool_request_unknown_field/);
   assert.equal(invocations, 0);
 });
 
 test('structured chat executor accepts one isolated JSON code fence but no surrounding prose', async () => {
   const factory = new StructuredChatProviderFactory({provider, workerId: 'worker-1', modelId: 'qwen-test', workerCapabilities: [], modelCapabilities: [], availableToolIds: ['qualification.inspect'], qualificationEvidence: ['fixture-live-proof'], health: 'healthy', fetch: async () => new Response(JSON.stringify({choices: [{message: {content: '```json\n{"tool":"qualification.inspect","input":{"target":"fixture"}}\n```'}}]}), {status: 200})});
-  const result = await factory.executor('test').execute({tools: [], resourceLimits: {}} as never, {invoke: async () => 'SAFE'});
+  const result = await factory.executor('test').execute({tools: [], resourceLimits: {}} as never, {assertActive: () => undefined, invoke: async () => 'SAFE'});
   assert.match(result.resultRef ?? '', /SAFE/);
   const prose = new StructuredChatProviderFactory({provider, workerId: 'worker-1', modelId: 'qwen-test', workerCapabilities: [], modelCapabilities: [], availableToolIds: ['qualification.inspect'], qualificationEvidence: ['fixture-live-proof'], health: 'healthy', fetch: async () => new Response(JSON.stringify({choices: [{message: {content: 'Here is JSON: ```json\n{"tool":"qualification.inspect"}\n```'}}]}), {status: 200})});
-  await assert.rejects(() => prose.executor('test').execute({tools: [], resourceLimits: {}} as never, {invoke: async () => 'unsafe'}), /invalid_json/);
+  await assert.rejects(() => prose.executor('test').execute({tools: [], resourceLimits: {}} as never, {assertActive: () => undefined, invoke: async () => 'unsafe'}), /invalid_json/);
 });
 
 test('structured chat factory refuses credentialed URLs and unqualified candidates', () => {

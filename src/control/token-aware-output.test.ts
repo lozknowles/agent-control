@@ -227,13 +227,13 @@ test('remote command envelopes use the same central compaction and provenance pa
   const registry = new ToolHandlerRegistry();
   const authorised: string[] = [];
   configureTokenAwareRepositoryTools(registry, outputService, {workspace: {root: '/remote/repository-not-on-controller', authorizePath: value => { authorised.push(value); if (value !== '.') throw new Error('remote_workspace_scope_denied'); return value; }}, executor: new RemoteExecutor()});
-  const output = await registry.invoke('repository.search.ripgrep', {query: 'needle'}, recipe()) as {provenance: {backend: string; nodeId: string; cwd: string}; disposition: string};
+  const output = await registry.invoke('repository.search.ripgrep', {query: 'needle'}, recipe(), {assertActive: () => undefined}) as {provenance: {backend: string; nodeId: string; cwd: string}; disposition: string};
   assert.equal(output.disposition, 'COMPACTED');
   assert.equal(output.provenance.backend, 'ssh');
   assert.equal(output.provenance.nodeId, 'remote-capability-node');
   assert.equal(output.provenance.cwd, '/remote/repository-not-on-controller');
   assert.deepEqual(authorised, ['.']);
-  await assert.rejects(() => registry.invoke('repository.search.ripgrep', {query: 'needle', paths: ['../outside']}, recipe()), /repository_search_path_invalid/);
+  await assert.rejects(() => registry.invoke('repository.search.ripgrep', {query: 'needle', paths: ['../outside']}, recipe(), {assertActive: () => undefined}), /repository_search_path_invalid/);
 });
 
 test('generic oversized stdout uses labelled head-tail fallback with full recovery', () => {
@@ -320,7 +320,7 @@ test('file-backed authoritative result tampering fails checksum verification', (
 test('tool interception stays compatible for non-command results', async () => {
   const outputService = service();
   const registry = new ToolHandlerRegistry([createTokenAwareToolResultInterceptor(outputService)]).register('repository.metadata', async () => ({files: 7}));
-  assert.deepEqual(await registry.invoke('repository.metadata', {}, recipe()), {files: 7});
+  assert.deepEqual(await registry.invoke('repository.metadata', {}, recipe(), {assertActive: () => undefined}), {files: 7});
   assert.equal(outputService.metrics().commandsObserved, 0);
 });
 
@@ -329,9 +329,9 @@ test('search and expansion are first-class allowlisted tool operations', async (
   const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-tools-search-'));
   const outputService = service(), registry = new ToolHandlerRegistry();
   configureTokenAwareRepositoryTools(registry, outputService, {workspaceRoot: workspace, executor: new FixtureExecutor()});
-  const initial = await registry.invoke('repository.search.ripgrep', {query: 'needle'}, recipe()) as {handle: string; disposition: string};
+  const initial = await registry.invoke('repository.search.ripgrep', {query: 'needle'}, recipe(), {assertActive: () => undefined}) as {handle: string; disposition: string};
   assert.equal(initial.disposition, 'COMPACTED');
-  const expanded = await registry.invoke('command.output.expand', {handle: initial.handle, mode: 'all'}, recipe()) as {stdout: string; disposition: string};
+  const expanded = await registry.invoke('command.output.expand', {handle: initial.handle, mode: 'all'}, recipe(), {assertActive: () => undefined}) as {stdout: string; disposition: string};
   assert.equal(expanded.disposition, 'COMPLETE');
   assert.equal(expanded.stdout, broadStream(2, 30));
 });

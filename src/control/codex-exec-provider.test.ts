@@ -15,7 +15,7 @@ function factory(overrides: Partial<ConstructorParameters<typeof CodexExecProvid
 
 test('Codex ChatGPT-plan factory returns data only through the ToolPolicy gateway', async () => {
   let invocations = 0;
-  const result = await factory().executor('Return safe data').execute({tools: [{id: 'qualification.return-data'}], resourceLimits: {}} as never, {invoke: async (id, input) => { invocations++; assert.equal(id, 'qualification.return-data'); assert.deepEqual(input, {value: 'safe'}); return {marker: 'CODEX-CHATGPT-OK'}; }});
+  const result = await factory().executor('Return safe data').execute({tools: [{id: 'qualification.return-data'}], resourceLimits: {}} as never, {assertActive: () => undefined, invoke: async (id, input) => { invocations++; assert.equal(id, 'qualification.return-data'); assert.deepEqual(input, {value: 'safe'}); return {marker: 'CODEX-CHATGPT-OK'}; }});
   assert.equal(invocations, 1);
   assert.match(result.resultRef ?? '', /CODEX-CHATGPT-OK/);
   assert.ok(result.evidence?.includes('auth_mode:chatgpt'));
@@ -26,7 +26,7 @@ test('Codex ChatGPT-plan factory returns data only through the ToolPolicy gatewa
 });
 
 test('Codex usage retains nested cache and reasoning details for normalisation', async () => {
-  const result = await factory({runner: async request => ({threadId: 'thr_nested', finalMessage: JSON.stringify({tool: request.grantedToolIds[0], input_json: '{}'}), usage: {input_tokens: 100, input_tokens_details: {cached_tokens: 70, cache_write_tokens: 10}, output_tokens: 20, output_tokens_details: {reasoning_tokens: 8}, total_tokens: 120}, observedItemTypes: ['agent_message']})}).executor('Return safe data').execute({tools: [{id: 'qualification.return-data'}], resourceLimits: {}} as never, {invoke: async () => ({marker: 'SAFE'})});
+  const result = await factory({runner: async request => ({threadId: 'thr_nested', finalMessage: JSON.stringify({tool: request.grantedToolIds[0], input_json: '{}'}), usage: {input_tokens: 100, input_tokens_details: {cached_tokens: 70, cache_write_tokens: 10}, output_tokens: 20, output_tokens_details: {reasoning_tokens: 8}, total_tokens: 120}, observedItemTypes: ['agent_message']})}).executor('Return safe data').execute({tools: [{id: 'qualification.return-data'}], resourceLimits: {}} as never, {assertActive: () => undefined, invoke: async () => ({marker: 'SAFE'})});
   assert.equal(result.invocations?.[0].usage.freshInputTokens, 20);
   assert.equal(result.invocations?.[0].usage.cachedInputTokens, 70);
   assert.equal(result.invocations?.[0].usage.cacheWriteTokens, 10);
@@ -35,7 +35,7 @@ test('Codex usage retains nested cache and reasoning details for normalisation',
 
 test('Codex adapter forwards cache-aware JSONL telemetry and marks current context unavailable', async () => {
   const samples: Array<{threadId:string; fresh:number|null; cached:number|null; total:number|null; authority:string; active:boolean|undefined}> = [];
-  const result = await factory({telemetry: sample => samples.push({threadId: sample.threadId, fresh: sample.cumulative.freshInputTokens ?? null, cached: sample.cumulative.cachedInputTokens ?? null, total: sample.cumulative.totalTokens ?? null, authority: sample.context?.authority ?? 'missing', active: sample.active}), runner: async request => { request.onTelemetry?.({type: 'thread.started', threadId: 'thr_live', elapsedMs: 1, context: {tokens: null, authority: 'unavailable', source: 'fixture'}}); request.onTelemetry?.({type: 'turn.completed', threadId: 'thr_live', elapsedMs: 2, usage: {input_tokens: 40, cached_input_tokens: 30, output_tokens: 10, total_tokens: 50}, context: {tokens: null, authority: 'unavailable', source: 'fixture'}}); return {threadId: 'thr_live', finalMessage: JSON.stringify({tool: request.grantedToolIds[0], input_json: '{}'}), usage: {input_tokens: 40, cached_input_tokens: 30, output_tokens: 10, total_tokens: 50}, observedItemTypes: ['agent_message']}; }}).executor('Return safe data').execute({taskId: 'parcel:one', tools: [{id: 'qualification.return-data'}], resourceLimits: {}} as never, {invoke: async () => ({marker: 'SAFE'})});
+  const result = await factory({telemetry: sample => samples.push({threadId: sample.threadId, fresh: sample.cumulative.freshInputTokens ?? null, cached: sample.cumulative.cachedInputTokens ?? null, total: sample.cumulative.totalTokens ?? null, authority: sample.context?.authority ?? 'missing', active: sample.active}), runner: async request => { request.onTelemetry?.({type: 'thread.started', threadId: 'thr_live', elapsedMs: 1, context: {tokens: null, authority: 'unavailable', source: 'fixture'}}); request.onTelemetry?.({type: 'turn.completed', threadId: 'thr_live', elapsedMs: 2, usage: {input_tokens: 40, cached_input_tokens: 30, output_tokens: 10, total_tokens: 50}, context: {tokens: null, authority: 'unavailable', source: 'fixture'}}); return {threadId: 'thr_live', finalMessage: JSON.stringify({tool: request.grantedToolIds[0], input_json: '{}'}), usage: {input_tokens: 40, cached_input_tokens: 30, output_tokens: 10, total_tokens: 50}, observedItemTypes: ['agent_message']}; }}).executor('Return safe data').execute({taskId: 'parcel:one', tools: [{id: 'qualification.return-data'}], resourceLimits: {}} as never, {assertActive: () => undefined, invoke: async () => ({marker: 'SAFE'})});
   assert.ok(result.resultRef); assert.deepEqual(samples, [{threadId: 'thr_live', fresh: null, cached: null, total: null, authority: 'unavailable', active: true}, {threadId: 'thr_live', fresh: 10, cached: 30, total: 50, authority: 'unavailable', active: false}]);
 });
 
@@ -70,15 +70,15 @@ test('Codex live-session projection exposes real public events without private r
 test('Codex fallback fails closed for missing ChatGPT auth and opaque file changes', async () => {
   let invoked = false;
   const noAuth = factory({authProbe: async () => { throw new Error('codex_chatgpt_auth_required'); }});
-  await assert.rejects(() => noAuth.executor('test').execute({tools: [{id: 'qualification.return-data'}], resourceLimits: {}} as never, {invoke: async () => { invoked = true; }}), /chatgpt_auth_required/);
+  await assert.rejects(() => noAuth.executor('test').execute({tools: [{id: 'qualification.return-data'}], resourceLimits: {}} as never, {assertActive: () => undefined, invoke: async () => { invoked = true; }}), /chatgpt_auth_required/);
   const fileChange = factory({runner: async () => ({finalMessage: '{"tool":"qualification.return-data","input_json":"{}"}', observedItemTypes: ['file_change']})});
-  await assert.rejects(() => fileChange.executor('test').execute({tools: [{id: 'qualification.return-data'}], resourceLimits: {}} as never, {invoke: async () => { invoked = true; }}), /capability_envelope_violation/);
+  await assert.rejects(() => fileChange.executor('test').execute({tools: [{id: 'qualification.return-data'}], resourceLimits: {}} as never, {assertActive: () => undefined, invoke: async () => { invoked = true; }}), /capability_envelope_violation/);
   assert.equal(invoked, false);
 });
 
 test('an ungranted Codex return request is passed to the gateway and denied there', async () => {
   const ungranted = factory({runner: async () => ({finalMessage: '{"tool":"not.granted","input_json":"{}"}', observedItemTypes: ['agent_message']})});
-  await assert.rejects(() => ungranted.executor('test').execute({tools: [{id: 'qualification.return-data'}], resourceLimits: {}} as never, {invoke: async id => { throw new Error(`tool_policy_denied:tool_not_granted:${id}`); }}), /tool_policy_denied:tool_not_granted:not.granted/);
+  await assert.rejects(() => ungranted.executor('test').execute({tools: [{id: 'qualification.return-data'}], resourceLimits: {}} as never, {assertActive: () => undefined, invoke: async id => { throw new Error(`tool_policy_denied:tool_not_granted:${id}`); }}), /tool_policy_denied:tool_not_granted:not.granted/);
 });
 
 test('Codex ChatGPT-plan execution is fenced by live Agent Control ownership', async () => {
@@ -124,7 +124,7 @@ test('two Codex account profiles keep independent CODEX_HOME contexts and never 
   try {
     for (const accountProfile of profiles) {
       const expectedHome = accountProfile.id === 'lawrence-pro' ? proHome : plusHome;
-      const result = await factory({provider: accountProvider, accountProfile, environment, authProbe: async (_command, _cwd, _timeout, childEnvironment) => { assert.equal(childEnvironment?.CODEX_HOME, expectedHome); return {mode: 'chatgpt'}; }, runner: async request => { assert.equal(request.environment?.CODEX_HOME, expectedHome); observed.push(String(request.environment?.CODEX_HOME)); return {threadId: `thread-${accountProfile.id}`, finalMessage: JSON.stringify({tool: request.grantedToolIds[0], input_json: '{}'}), usage: {input_tokens: 1, output_tokens: 1}, observedItemTypes: ['agent_message']}; }}).executor('Return safe data').execute({tools: [{id: 'qualification.return-data'}], resourceLimits: {}} as never, {invoke: async () => ({safe: true})});
+      const result = await factory({provider: accountProvider, accountProfile, environment, authProbe: async (_command, _cwd, _timeout, childEnvironment) => { assert.equal(childEnvironment?.CODEX_HOME, expectedHome); return {mode: 'chatgpt'}; }, runner: async request => { assert.equal(request.environment?.CODEX_HOME, expectedHome); observed.push(String(request.environment?.CODEX_HOME)); return {threadId: `thread-${accountProfile.id}`, finalMessage: JSON.stringify({tool: request.grantedToolIds[0], input_json: '{}'}), usage: {input_tokens: 1, output_tokens: 1}, observedItemTypes: ['agent_message']}; }}).executor('Return safe data').execute({tools: [{id: 'qualification.return-data'}], resourceLimits: {}} as never, {assertActive: () => undefined, invoke: async () => ({safe: true})});
       assert.equal(result.invocations?.[0].accountProfileId, accountProfile.id);
       const publicEvidence = JSON.stringify(result);
       assert.equal(publicEvidence.includes(proSecret), false); assert.equal(publicEvidence.includes(plusSecret), false); assert.equal(publicEvidence.includes(root), false);
