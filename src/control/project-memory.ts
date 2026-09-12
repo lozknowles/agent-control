@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 export const PROJECT_MEMORY_SCHEMA='agent-control.project-memory/v1' as const;
+export const PROJECT_MEMORY_EXCHANGE_VERSION='agent-control.project-memory-exchange/v1' as const;
 export type MemoryKind='PROJECT_FACT'|'DECISION'|'EXPERIMENT'|'MACHINE_CAPABILITY'|'MODEL_QUALIFICATION'|'UNRESOLVED_QUESTION'|'WORK_PARCEL_OUTCOME'|'BATON_SUMMARY'|'LESSON'|'REJECTED_APPROACH';
 export type MemoryVerification='CANDIDATE'|'VERIFIED'|'SUPERSEDED'|'INVALID';
 export interface MemoryRouteIdentity{providerId:string;accountProfileId?:string;modelId:string;nodeId:string}
