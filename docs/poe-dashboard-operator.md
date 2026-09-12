@@ -1,10 +1,10 @@
-# POE dashboard companion and operator
+# Morrow dashboard companion and operator
 
-This feature extends the reconciled conversational POE checkpoint `86b79677bbc5243056d94919b76aacfe36f3806a` on an isolated feature branch. It is development work, not a release or deployment.
+This feature extends the reconciled conversational Morrow checkpoint `86b79677bbc5243056d94919b76aacfe36f3806a` on an isolated feature branch. It is development work, not a release or deployment.
 
 ## Reused runtime
 
-POE conversations, evidence resolution, benchmark proposals, shared original OmniVoice identity, speech recognition, worker capability resolution, the Job catalogue and ledger, Work Parcel planning/execution/verification, request provenance, dashboard authentication and runtime events remain the existing sources of authority. POE does not become a shell executor or select an unconfigured provider.
+Morrow conversations, evidence resolution, benchmark proposals, shared original OmniVoice identity, speech recognition, worker capability resolution, the Job catalogue and ledger, Work Parcel planning/execution/verification, request provenance, dashboard authentication and runtime events remain the existing sources of authority. Morrow does not become a shell executor or select an unconfigured provider.
 
 ## New adapter
 
@@ -18,11 +18,11 @@ A start request creates an expiring proposal containing the exact initiating tex
 
 `AGENT_CONTROL_POE_REGISTRY_SOURCES` can name an owner-controlled JSON array of `{id,name,url}` read-only registries. Only GET jobs/schedules is supported. HTTP requires loopback; HTTPS is permitted. Embedded credentials, redirects and oversized/invalid responses fail closed. Failed refresh clears prior observations rather than displaying them as live.
 
-The independently running Collingham daily service supplies its real collection and reviewed-publication job definitions and registered daily schedule. Its existing API does not provide a qualified idempotent Work Parcel bridge or device/session preflight contract. Consequently POE can explain this workflow but cannot start that remote job. Pixel transport, Termux, browser session and Facebook authentication remain unavailable from this bridge. Collection, review, staging and publication are distinct boundaries.
+The independently running Collingham daily service supplies its real collection and reviewed-publication job definitions and registered daily schedule. Its existing API does not provide a qualified idempotent Work Parcel bridge or device/session preflight contract. Consequently Morrow can explain this workflow but cannot start that remote job. Pixel transport, Termux, browser session and Facebook authentication remain unavailable from this bridge. Collection, review, staging and publication are distinct boundaries.
 
 ## Browser and speech
 
-The persistent dashboard launcher opens a responsive original vector hotelier with moustache, waistcoat and pocket watch. Conversation identity is scoped to the authenticated dashboard and stored per tab. Source references support native object links and follow-up focus.
+The persistent dashboard launcher opens Morrow, an original responsive vector host with short silver hair, a clean-shaven face, a teal utility jacket and a copper badge. The six robotic crew members share ceramic, teal and copper materials while retaining their established names, role colours, accessories and behaviour. See [Morrow identity and compatibility](morrow.md). Conversation identity is scoped to the authenticated dashboard and stored per tab. Source references support native object links and follow-up focus.
 
 New authenticated conversation endpoints are `operator`, `approve-job`, `transcribe` and `speech`; existing conversation, turn, transcript and interruption endpoints remain. Browser microphone capture uses MediaRecorder with bounded capture and releases its tracks. Recognition creates a visible untrusted voice turn before synthesis. Speech uses the established configured voice and independent content validation. A validation failure leaves the complete text available. The provider currently returns complete audio, so playback begins after synthesis and validation; this is not streaming TTS.
 
@@ -53,7 +53,7 @@ Scheduling and handoff have dedicated restrained poses; the tour directs the hea
 
 ## Versioned knowledge and reasoning
 
-POE uses the provider-neutral response port and configured `poe.status` / `poe.reasoning` roles. The qualification preference is the owner-selected Codex route; no fallback provider is selected. Live route eligibility is shown in the conversation. Every model answer retains its actual route and available usage. Missing cost or context telemetry remains unavailable.
+Morrow uses the provider-neutral response port and configured `poe.status` / `poe.reasoning` roles. The qualification preference is the owner-selected Codex route; no fallback provider is selected. Live route eligibility is shown in the conversation. Every model answer retains its actual route and available usage. Missing cost or context telemetry remains unavailable.
 
 `config/poe-knowledge-sources.json` is the approved documentation index. Retrieval records the exact Git revision, dirty state, configuration and source hashes, and live snapshot hashes. Sources outside the repository, oversized files and sensitive material are excluded. Retrieved text is untrusted reference data, never an executable operation or approval. Source priority is live records before versioned documentation; a documented capability alone does not establish current readiness. The source viewer requires dashboard authentication.
 
@@ -69,6 +69,6 @@ The registered harmless System observation 1.1.0 job reads worker status and the
 
 ## Spoken guided tour and full regression
 
-**Introduce POE and show me Agent Control** opens a fifteen-feature tour of genuine dashboard views. POE explains the highlighted feature through the configured male voice; each step waits for actual playback completion. Failed or interrupted narration pauses with an explicit retry. The long written greeting appears immediately, speaks after audio unlock, and is not repeated by telemetry refreshes.
+**Introduce Morrow and show me Agent Control** opens a fifteen-feature tour of genuine dashboard views. Morrow explains the highlighted feature through the configured male voice; each step waits for actual playback completion. Failed or interrupted narration pauses with an explicit retry. The long written greeting appears immediately, speaks after audio unlock, and is not repeated by telemetry refreshes.
 
 **Narrate test progress** reads only the configured owner-started full regression runner. Counts, phase, elapsed time and exact tested commit come from its emitted evidence. Unknown remaining totals are not guessed. Narration describes the supplied snapshot as a past observation; it never converts the external test runner into a Work Parcel. See the current [4.3 deployment runbook](DEPLOYMENT.md); the [4.1 qualification](evidence/agent-control-4.1-qualification.md) remains historical evidence for that release.
