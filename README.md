@@ -559,6 +559,22 @@ Then use **Settings → Installation** to confirm source provenance and **Settin
 If the page is unavailable, keep the terminal open and check its startup error;
 do not expose the listener publicly to work around a local connection problem.
 
+Complete the provider-free first-run check through the same authenticated
+dashboard. Open **Morrow**, type this exact request, and select **Ask**:
+
+```text
+Start operator-system-observation@1.1.0
+```
+
+Morrow must show the sealed request and must not start it immediately. Review
+the displayed job identity, empty inputs and SHA-256, then select **Approve this job**.
+Open its Work Parcel and choose **Runtime Map → Process Map**. The genuine
+run contains `observe → verify`: it records registered worker health as a local
+JSON artifact, then a separate deterministic verifier checks that artifact.
+Successful completion is **SUCCEEDED** with both stages visible and independently
+verified. This proves the local governed lifecycle only; it does not qualify a
+provider, remote machine or model.
+
 Other operator commands are:
 
 ```bash

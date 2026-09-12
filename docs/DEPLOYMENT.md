@@ -22,6 +22,13 @@ Inventory and capability-registry state live beneath the configured Agent Contro
 state root and contain references/status only, never credential values. See
 [the operator guide](environment-discovery.md).
 
+For a new provider-free controller, the documented first execution is the
+registered `operator-system-observation@1.1.0` Job. In the authenticated Morrow
+view, ask `Start operator-system-observation@1.1.0`, inspect the sealed proposal,
+select **Approve this job**, and follow its Work Parcel in **Runtime Map → Process Map**.
+The `observe → verify` stages must finish `SUCCEEDED`; this checks only the
+local governed execution and independent artifact-verification boundary.
+
 ## Runtime Map
 
 Runtime Map requires no second service or database. It is served by the normal

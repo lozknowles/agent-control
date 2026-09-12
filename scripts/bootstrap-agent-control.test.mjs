@@ -113,12 +113,22 @@ test('published first-run walkthrough establishes operator authentication before
   const startWeb = runSection.indexOf('npm run web');
   const authenticate = runSection.indexOf('Operator authenticated');
   const discovery = runSection.indexOf('Environment Discovery → First Run Setup');
+  const firstJob = runSection.indexOf('Start operator-system-observation@1.1.0');
+  const approval = runSection.indexOf('Approve this job');
+  const processMap = runSection.indexOf('Runtime Map → Process Map');
   assert.ok(hiddenPrompt >= 0);
   assert.ok(hiddenPrompt < exportToken && exportToken < startWeb);
   assert.ok(startWeb < authenticate && authenticate < discovery);
+  assert.ok(discovery < firstJob && firstJob < approval && approval < processMap);
   for (const file of ['docs/DEPLOYMENT.md', 'docs/environment-discovery.md']) {
     const guide = fs.readFileSync(path.join(repositoryRoot, file), 'utf8');
     assert.match(guide, /AGENT_CONTROL_WEB_OPERATOR_TOKEN/);
     assert.match(guide, /Operator authenticated|Authenticate the browser/);
+  }
+  for (const file of ['docs/DEPLOYMENT.md', 'docs/poe-dashboard-operator.md']) {
+    const guide = fs.readFileSync(path.join(repositoryRoot, file), 'utf8');
+    assert.match(guide, /Start operator-system-observation@1\.1\.0/);
+    assert.match(guide, /Approve this job/);
+    assert.match(guide, /observe → verify/);
   }
 });

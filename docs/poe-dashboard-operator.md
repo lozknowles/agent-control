@@ -67,6 +67,15 @@ Owned submitted parcels are reconciled as a requested set. A final summary requi
 
 The registered harmless System observation 1.1.0 job reads worker status and then runs a separate deterministic artifact verifier. This verifies artifact integrity and structure, not remote device or social-session readiness. Remote Facebook registries remain read-only discovery here; this adapter cannot submit their collection or publication jobs.
 
+### Provider-free first governed job
+
+After the README first-run discovery, open the authenticated **Morrow** view and
+enter `Start operator-system-observation@1.1.0`. Morrow creates a sealed proposal
+but does not execute it. Verify the exact Job identity, `{}` inputs and displayed
+SHA-256, then choose **Approve this job**. Follow the resulting Work Parcel in
+**Runtime Map → Process Map**. Its two real stages are `observe → verify`, and a
+passing first-run result is `SUCCEEDED` with independent artifact verification.
+
 ## Spoken guided tour and full regression
 
 **Introduce Morrow and show me Agent Control** opens a fifteen-feature tour of genuine dashboard views. Morrow explains the highlighted feature through the configured male voice; each step waits for actual playback completion. Failed or interrupted narration pauses with an explicit retry. The long written greeting appears immediately, speaks after audio unlock, and is not repeated by telemetry refreshes.

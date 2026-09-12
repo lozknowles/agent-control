@@ -20,6 +20,9 @@
   evidence-linked resource-category groups and initially collapsing them; an
   expanded category wraps into bounded columns instead of shrinking dozens of
   genuine resources into an unreadable strip.
+- Adds the missing provider-free first governed-job walkthrough: the documented
+  Morrow request now leads an operator through sealed review, explicit approval,
+  the real `observe → verify` Work Parcel and its Process Map.
 - Replaces the ambiguous manual dependency sequence with one documented
   check/install path and explicit expected results and troubleshooting.
 
