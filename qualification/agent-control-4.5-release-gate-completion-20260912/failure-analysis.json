@@ -1,0 +1,58 @@
+{
+  "schema": "agent-control.4.5-completion-failure-analysis/v2",
+  "generatedAt": "2026-09-12T06:06:13.518Z",
+  "failures": [
+    {
+      "id": "glm-to-qwen",
+      "classification": "authentication unavailable",
+      "status": "BLOCKED_EXTERNAL",
+      "reason": "Current OpenRouter credential prerequisite is unavailable; the historical semantic failure is preserved and no current-contract pass is inferred."
+    },
+    {
+      "id": "qwen-to-pixel",
+      "classification": "model capability",
+      "status": "UNSUPPORTED",
+      "reason": "Repeated Pixel Gemma reader trials returned complete schema-valid output but failed the exact next-action semantic contract."
+    },
+    {
+      "id": "specialist-energy",
+      "classification": "model capability",
+      "status": "DISPROVEN",
+      "reason": "The retained specialist was correct but consumed more measured-component energy per verified result than warm Qwen."
+    },
+    {
+      "id": "whole-node-power",
+      "classification": "measurement unavailable",
+      "status": "BLOCKED_EXTERNAL",
+      "reason": "No synchronized whole-node meter is available; component measurements cannot support a whole-system claim."
+    },
+    {
+      "id": "warm-residency-route-effect",
+      "classification": "measurement resolution",
+      "status": "DISPROVEN",
+      "reason": "Observed bounded component delta was below measurement uncertainty; residency is not admitted as a route benefit."
+    }
+  ],
+  "qualificationDefectsFixed": [
+    {
+      "defect": "Writer and reader used incompatible application schemas.",
+      "fix": "One canonical provider-neutral ProjectMemoryExchange is shared by writer, reader and consolidation."
+    },
+    {
+      "defect": "Pixel output cap truncated complete structured responses.",
+      "fix": "Bounded cap raised from 320 to 512 after finish_reason=length evidence."
+    },
+    {
+      "defect": "Windows OpenSSH bootstrap waited indefinitely for channel EOF.",
+      "fix": "Payload and audited script are two bounded base64 records; no EOF delimiter is required."
+    },
+    {
+      "defect": "Remote final messages containing legitimate repository paths were rejected.",
+      "fix": "Repository paths are accepted while credential-profile paths still fail closed."
+    },
+    {
+      "defect": "Known-incompatible memory routes could still be attempted.",
+      "fix": "Durable provider-neutral route qualification records now admit, deny or escalate exact writer/reader routes before execution."
+    }
+  ]
+}

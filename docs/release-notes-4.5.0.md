@@ -5,6 +5,8 @@ promotion, provider-neutral **Your Memories** portability experiments and
 power-aware execution evidence. It is currently an **EXPERIMENTAL release
 candidate**, not a stable release.
 
+The candidate also introduces **Morrow**, Agent Control's original chief steward, and coordinated artwork for its six existing robotic crew members. Public identity, help text and social commands are updated with compatible legacy API, event and storage identifiers. See the [Morrow and crew guide](morrow.md) and [combined integration validation](evidence/morrow-4.5-integration/validation.md).
+
 Repeated verified reasoning may be nominated as a deterministic skill only when
 its source Work Parcels, originating route, contracts, assumptions, handler
 identity, freshness, invalidation conditions and independent verifier are
@@ -24,9 +26,16 @@ The provider-neutral ProjectMemoryPort stores advisory structured memories with
 provenance, freshness, conflict handling and content-addressed synchronization.
 The user-facing capability remains **Your Memories**; Obsidian and MARM are
 optional backends rather than Agent Control's memory identity. The physical
-cross-model matrix remains partial. A fresh Qwen-to-Luna POE Work Parcel passed
-independent verification and reconciled 9,760 tokens, while real GLM/Qwen and
-Pixel Gemma limitations remain preserved.
+cross-model matrix now has terminal outcomes for all 12 cells: nine PASS/FIXED,
+two Qwen→Pixel aliases UNSUPPORTED, and current GLM→Qwen BLOCKED_EXTERNAL. Both controller
+directions, repeated Pixel Gemma 4 E4B→Qwen trials and a POE-initiated MSI
+`Cottage Plus/Luna → Lawrence Pro/Sol` Work Parcel passed independent
+verification. The MSI transition reconciled 15,570 tokens and preserved sealed
+route and baton identities. Provider-neutral route qualification now blocks or
+safely escalates exact unqualified writer/reader pairs before invocation. A fresh
+1920×1080 production POE recording demonstrates Qwen→Pixel escalating to qualified
+Qwen→Luna with tokens, baton and independent verification. Qwen→Pixel remains a real semantic model limitation,
+and the current GLM→Qwen contract cannot be requalified until an OpenRouter credential is available.
 
 Power evidence distinguishes measured Intel package/DRAM and NVIDIA board values
 from unavailable whole-node energy. Deterministic reuse reduced measured energy
@@ -35,18 +44,20 @@ specialist consumed more energy per verified result than warm Qwen, and the warm
 residency delta remained inside measurement uncertainty. No automatic power,
 shutdown or residency policy is released.
 
-The complete deterministic suite passed 1,154/1,154 at the qualified checkpoint.
-The candidate includes an HD recording, complete human-readable transcript,
-machine-readable gate matrix, failure analysis and checksummed evidence manifest.
-See the [authoritative release-gate reconciliation](evidence/agent-control-4.5-release-gate-20260912.md),
+The route-governance completion candidate passed 1,161/1,161 tests and has a fresh
+HD production POE recording bound to implementation commit `544a4fb4c8a9f6702adb944ab43de90daa7e67d6`.
+The later Morrow integration has its own automated validation; the POE recording
+is preserved as historical evidence and does not qualify the combined candidate's
+new appearance or physical voice recognition. The completion bundle includes a complete human-readable transcript, machine-readable gate matrix,
+failure analysis and checksummed evidence manifest. See the [completion gate](evidence/agent-control-4.5-release-gate-completion-20260912.md), the [historical release-gate reconciliation](evidence/agent-control-4.5-release-gate-20260912.md),
 [skill-learning architecture](agent-control-4.5-skill-learning-architecture-review.md),
 [deterministic skill guide](deterministic-skill-promotion.md),
 [Your Memories portability guide](project-memory-portability.md),
 [energy guide](energy-aware-intelligence.md), and
 [deployment/rollback guide](DEPLOYMENT.md).
 
-Stable `v4.5.0` publication remains gated by the unresolved physical criteria in
-the authoritative reconciliation. In particular, this candidate does not claim
-complete cross-model portability, an MSI cross-node transition, a beneficial
-specialist-energy route, a beneficial strong-model consolidation, or whole-node
-power measurement.
+Stable `v4.5.0` publication remains gated by unresolved physical criteria. The
+candidate now proves the MSI cross-node transition and beneficial strong-model
+consolidation, but does not claim complete cross-model portability, a beneficial
+specialist-energy route, whole-node power measurement, or a new HD
+recording of the combined Morrow candidate.

@@ -1,0 +1,889 @@
+{
+  "schema": "agent-control.specialist-batch-energy-qualification/v1",
+  "observedAt": "2026-09-12T03:52:12.643Z",
+  "checkpoint": "2e74d88db57e3ad15ce1d85ec93220d087b9592f",
+  "workflow": "homogeneous batch of three governed route-intent classifications, repeated five times",
+  "boundary": "Intel package + DRAM + NVIDIA GPU board; excludes motherboard, storage, PSU losses and peripherals",
+  "modelIdentity": {
+    "general": {
+      "model": "qwen2.5-3b-instruct-q4_k_m.gguf",
+      "endpoint": "controller-local configured OpenAI-compatible endpoint"
+    },
+    "specialist": {
+      "baseModel": "HuggingFaceTB/SmolLM2-135M-Instruct",
+      "adapterReference": "operator-supplied local qualified artifact",
+      "threads": 6
+    }
+  },
+  "results": [
+    {
+      "route": "specialist-batch",
+      "repeat": 1,
+      "output": {
+        "loadMs": 553,
+        "elapsedMs": 1534,
+        "mode": "batch",
+        "rows": [
+          {
+            "id": "release-review",
+            "output": {
+              "lane": "LANE_REVIEW"
+            },
+            "inputTokens": 62,
+            "outputTokens": 11,
+            "elapsedMs": 980
+          },
+          {
+            "id": "provider-verification",
+            "output": {
+              "lane": "LANE_VERIFY"
+            },
+            "inputTokens": 59,
+            "outputTokens": 11,
+            "elapsedMs": 980
+          },
+          {
+            "id": "telemetry-research",
+            "output": {
+              "lane": "LANE_RESEARCH"
+            },
+            "inputTokens": 60,
+            "outputTokens": 11,
+            "elapsedMs": 980
+          }
+        ]
+      },
+      "failures": [],
+      "verified": 3,
+      "energy": {
+        "schema": "agent-control.energy-execution/v1",
+        "id": "energy-a15ee04d-d7e4-4386-827b-06b17cbd5ed8",
+        "parcelId": "specialist-batch-energy-1",
+        "stageId": "specialist-batch",
+        "route": {
+          "providerId": "learned-specialist",
+          "modelId": "SmolLM2-135M+route-intent-lora",
+          "nodeId": "controller",
+          "accountProfileId": null
+        },
+        "kind": "INFERENCE",
+        "startedAt": "2026-09-12T03:51:19.366Z",
+        "completedAt": "2026-09-12T03:51:25.237Z",
+        "elapsedMs": 5871,
+        "scope": "MEASURED_COMPONENTS",
+        "authority": "MEASURED",
+        "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+        "sampleCount": 60,
+        "averageWatts": 28.872392397097386,
+        "peakWatts": 29.955801526717558,
+        "grossWh": 0.047086059934266324,
+        "incrementalWh": 0,
+        "joules": 0,
+        "idleBaselineWatts": 29.423705408515538,
+        "tokens": 214,
+        "whPerToken": 0,
+        "whPerSuccessfulParcel": 0,
+        "verified": true,
+        "successful": true,
+        "limitations": [
+          "excludes_motherboard_storage_psu_and_peripherals",
+          "cpu_power_is_interval_average",
+          "shared_gpu_processes_present",
+          "measurement_not_whole_node"
+        ],
+        "evidence": [
+          "batch:1",
+          "verifier:PASS"
+        ],
+        "sha256": "a8d507a3e5745372cc83c83139083bc24fe4105eac9abbaf5d7e7718989f28ea"
+      }
+    },
+    {
+      "route": "general-batch",
+      "repeat": 1,
+      "output": {
+        "mode": "sequential-resident-provider",
+        "elapsedMs": 740,
+        "rows": [
+          {
+            "id": "release-review",
+            "output": {
+              "lane": "LANE_REVIEW"
+            },
+            "inputTokens": 60,
+            "outputTokens": 10,
+            "elapsedMs": 324
+          },
+          {
+            "id": "provider-verification",
+            "output": {
+              "lane": "LANE_VERIFY"
+            },
+            "inputTokens": 58,
+            "outputTokens": 9,
+            "elapsedMs": 205
+          },
+          {
+            "id": "telemetry-research",
+            "output": {
+              "lane": "LANE_RESEARCH"
+            },
+            "inputTokens": 58,
+            "outputTokens": 10,
+            "elapsedMs": 210
+          }
+        ]
+      },
+      "failures": [],
+      "verified": 3,
+      "energy": {
+        "schema": "agent-control.energy-execution/v1",
+        "id": "energy-ea8d01ef-43f0-4ddc-aa6f-5c47a7dd1333",
+        "parcelId": "specialist-batch-energy-1",
+        "stageId": "general-batch",
+        "route": {
+          "providerId": "local-openai-compatible",
+          "modelId": "qwen2.5-3b-instruct-q4_k_m.gguf",
+          "nodeId": "controller",
+          "accountProfileId": null
+        },
+        "kind": "INFERENCE",
+        "startedAt": "2026-09-12T03:51:27.331Z",
+        "completedAt": "2026-09-12T03:51:28.215Z",
+        "elapsedMs": 884,
+        "scope": "MEASURED_COMPONENTS",
+        "authority": "MEASURED",
+        "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+        "sampleCount": 10,
+        "averageWatts": 85.97364403352101,
+        "peakWatts": 124.81974697469747,
+        "grossWh": 0.021111305923786825,
+        "incrementalWh": 0.0164538835816888,
+        "joules": 59.23398089407968,
+        "idleBaselineWatts": 18.966878316236297,
+        "tokens": 205,
+        "whPerToken": 0.00008026284673994537,
+        "whPerSuccessfulParcel": 0.0164538835816888,
+        "verified": true,
+        "successful": true,
+        "limitations": [
+          "excludes_motherboard_storage_psu_and_peripherals",
+          "cpu_power_is_interval_average",
+          "shared_gpu_processes_present",
+          "measurement_not_whole_node"
+        ],
+        "evidence": [
+          "batch:1",
+          "verifier:PASS"
+        ],
+        "sha256": "192312cf0d30ea0b1e1cb96ff29ff398931ca14028fa202fe4b20c21c1d2bd45"
+      }
+    },
+    {
+      "route": "general-batch",
+      "repeat": 2,
+      "output": {
+        "mode": "sequential-resident-provider",
+        "elapsedMs": 658,
+        "rows": [
+          {
+            "id": "release-review",
+            "output": {
+              "lane": "LANE_REVIEW"
+            },
+            "inputTokens": 60,
+            "outputTokens": 10,
+            "elapsedMs": 263
+          },
+          {
+            "id": "provider-verification",
+            "output": {
+              "lane": "LANE_VERIFY"
+            },
+            "inputTokens": 58,
+            "outputTokens": 9,
+            "elapsedMs": 190
+          },
+          {
+            "id": "telemetry-research",
+            "output": {
+              "lane": "LANE_RESEARCH"
+            },
+            "inputTokens": 58,
+            "outputTokens": 10,
+            "elapsedMs": 205
+          }
+        ]
+      },
+      "failures": [],
+      "verified": 3,
+      "energy": {
+        "schema": "agent-control.energy-execution/v1",
+        "id": "energy-df9de498-798a-41c4-bc49-84112895646a",
+        "parcelId": "specialist-batch-energy-2",
+        "stageId": "general-batch",
+        "route": {
+          "providerId": "local-openai-compatible",
+          "modelId": "qwen2.5-3b-instruct-q4_k_m.gguf",
+          "nodeId": "controller",
+          "accountProfileId": null
+        },
+        "kind": "INFERENCE",
+        "startedAt": "2026-09-12T03:51:30.292Z",
+        "completedAt": "2026-09-12T03:51:31.072Z",
+        "elapsedMs": 780,
+        "scope": "MEASURED_COMPONENTS",
+        "authority": "MEASURED",
+        "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+        "sampleCount": 9,
+        "averageWatts": 97.90034878165312,
+        "peakWatts": 124.16111801242236,
+        "grossWh": 0.021211742236024844,
+        "incrementalWh": 0.009137291131411464,
+        "joules": 32.89424807308127,
+        "idleBaselineWatts": 55.72823586744637,
+        "tokens": 205,
+        "whPerToken": 0.000044572151860543725,
+        "whPerSuccessfulParcel": 0.009137291131411464,
+        "verified": true,
+        "successful": true,
+        "limitations": [
+          "excludes_motherboard_storage_psu_and_peripherals",
+          "cpu_power_is_interval_average",
+          "shared_gpu_processes_present",
+          "measurement_not_whole_node"
+        ],
+        "evidence": [
+          "batch:2",
+          "verifier:PASS"
+        ],
+        "sha256": "4b27021f1d3e116998b5c564dd1fe53dbb12412c501d424f391633a25c185d81"
+      }
+    },
+    {
+      "route": "specialist-batch",
+      "repeat": 2,
+      "output": {
+        "loadMs": 718,
+        "elapsedMs": 1982,
+        "mode": "batch",
+        "rows": [
+          {
+            "id": "release-review",
+            "output": {
+              "lane": "LANE_REVIEW"
+            },
+            "inputTokens": 62,
+            "outputTokens": 11,
+            "elapsedMs": 1263
+          },
+          {
+            "id": "provider-verification",
+            "output": {
+              "lane": "LANE_VERIFY"
+            },
+            "inputTokens": 59,
+            "outputTokens": 11,
+            "elapsedMs": 1263
+          },
+          {
+            "id": "telemetry-research",
+            "output": {
+              "lane": "LANE_RESEARCH"
+            },
+            "inputTokens": 60,
+            "outputTokens": 11,
+            "elapsedMs": 1263
+          }
+        ]
+      },
+      "failures": [],
+      "verified": 3,
+      "energy": {
+        "schema": "agent-control.energy-execution/v1",
+        "id": "energy-9e509c12-f278-4484-93c7-4fa21b864dc4",
+        "parcelId": "specialist-batch-energy-2",
+        "stageId": "specialist-batch",
+        "route": {
+          "providerId": "learned-specialist",
+          "modelId": "SmolLM2-135M+route-intent-lora",
+          "nodeId": "controller",
+          "accountProfileId": null
+        },
+        "kind": "INFERENCE",
+        "startedAt": "2026-09-12T03:51:33.168Z",
+        "completedAt": "2026-09-12T03:51:39.218Z",
+        "elapsedMs": 6050,
+        "scope": "MEASURED_COMPONENTS",
+        "authority": "MEASURED",
+        "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+        "sampleCount": 62,
+        "averageWatts": 56.589051716978204,
+        "peakWatts": 56.77029634507738,
+        "grossWh": 0.09510104524658837,
+        "incrementalWh": 0.029403497272890045,
+        "joules": 105.85259018240416,
+        "idleBaselineWatts": 39.09275581906016,
+        "tokens": 214,
+        "whPerToken": 0.0001373995199667759,
+        "whPerSuccessfulParcel": 0.029403497272890045,
+        "verified": true,
+        "successful": true,
+        "limitations": [
+          "excludes_motherboard_storage_psu_and_peripherals",
+          "cpu_power_is_interval_average",
+          "shared_gpu_processes_present",
+          "measurement_not_whole_node"
+        ],
+        "evidence": [
+          "batch:2",
+          "verifier:PASS"
+        ],
+        "sha256": "6f08f7cc1bde2fc243236772f802d5057830ffd41bae623c535183050d588d03"
+      }
+    },
+    {
+      "route": "specialist-batch",
+      "repeat": 3,
+      "output": {
+        "loadMs": 566,
+        "elapsedMs": 1564,
+        "mode": "batch",
+        "rows": [
+          {
+            "id": "release-review",
+            "output": {
+              "lane": "LANE_REVIEW"
+            },
+            "inputTokens": 62,
+            "outputTokens": 11,
+            "elapsedMs": 997
+          },
+          {
+            "id": "provider-verification",
+            "output": {
+              "lane": "LANE_VERIFY"
+            },
+            "inputTokens": 59,
+            "outputTokens": 11,
+            "elapsedMs": 997
+          },
+          {
+            "id": "telemetry-research",
+            "output": {
+              "lane": "LANE_RESEARCH"
+            },
+            "inputTokens": 60,
+            "outputTokens": 11,
+            "elapsedMs": 997
+          }
+        ]
+      },
+      "failures": [],
+      "verified": 3,
+      "energy": {
+        "schema": "agent-control.energy-execution/v1",
+        "id": "energy-ef05a184-f029-433b-900b-e1cd7631b49c",
+        "parcelId": "specialist-batch-energy-3",
+        "stageId": "specialist-batch",
+        "route": {
+          "providerId": "learned-specialist",
+          "modelId": "SmolLM2-135M+route-intent-lora",
+          "nodeId": "controller",
+          "accountProfileId": null
+        },
+        "kind": "INFERENCE",
+        "startedAt": "2026-09-12T03:51:41.298Z",
+        "completedAt": "2026-09-12T03:51:46.936Z",
+        "elapsedMs": 5638,
+        "scope": "MEASURED_COMPONENTS",
+        "authority": "MEASURED",
+        "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+        "sampleCount": 58,
+        "averageWatts": 55.09017555815741,
+        "peakWatts": 55.1739667961851,
+        "grossWh": 0.08627733605469208,
+        "incrementalWh": 0.0010476035219437047,
+        "joules": 3.771372678997337,
+        "idleBaselineWatts": 54.42125525326254,
+        "tokens": 214,
+        "whPerToken": 0.000004895343560484601,
+        "whPerSuccessfulParcel": 0.0010476035219437047,
+        "verified": true,
+        "successful": true,
+        "limitations": [
+          "excludes_motherboard_storage_psu_and_peripherals",
+          "cpu_power_is_interval_average",
+          "shared_gpu_processes_present",
+          "measurement_not_whole_node"
+        ],
+        "evidence": [
+          "batch:3",
+          "verifier:PASS"
+        ],
+        "sha256": "a59043df96c02d3048f1da197faff3c398d9fa80eba372ceee919c4ecf138c6e"
+      }
+    },
+    {
+      "route": "general-batch",
+      "repeat": 3,
+      "output": {
+        "mode": "sequential-resident-provider",
+        "elapsedMs": 690,
+        "rows": [
+          {
+            "id": "release-review",
+            "output": {
+              "lane": "LANE_REVIEW"
+            },
+            "inputTokens": 60,
+            "outputTokens": 10,
+            "elapsedMs": 275
+          },
+          {
+            "id": "provider-verification",
+            "output": {
+              "lane": "LANE_VERIFY"
+            },
+            "inputTokens": 58,
+            "outputTokens": 9,
+            "elapsedMs": 204
+          },
+          {
+            "id": "telemetry-research",
+            "output": {
+              "lane": "LANE_RESEARCH"
+            },
+            "inputTokens": 58,
+            "outputTokens": 10,
+            "elapsedMs": 211
+          }
+        ]
+      },
+      "failures": [],
+      "verified": 3,
+      "energy": {
+        "schema": "agent-control.energy-execution/v1",
+        "id": "energy-902af588-23d9-4594-bcd9-26a2e3f9b582",
+        "parcelId": "specialist-batch-energy-3",
+        "stageId": "general-batch",
+        "route": {
+          "providerId": "local-openai-compatible",
+          "modelId": "qwen2.5-3b-instruct-q4_k_m.gguf",
+          "nodeId": "controller",
+          "accountProfileId": null
+        },
+        "kind": "INFERENCE",
+        "startedAt": "2026-09-12T03:51:49.015Z",
+        "completedAt": "2026-09-12T03:51:49.851Z",
+        "elapsedMs": 836,
+        "scope": "MEASURED_COMPONENTS",
+        "authority": "MEASURED",
+        "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+        "sampleCount": 10,
+        "averageWatts": 107.90223469867522,
+        "peakWatts": 131.83075144508672,
+        "grossWh": 0.025057296724470136,
+        "incrementalWh": 0.012310269136301767,
+        "joules": 44.31696889068636,
+        "idleBaselineWatts": 54.89150636053365,
+        "tokens": 205,
+        "whPerToken": 0.0000600500933478135,
+        "whPerSuccessfulParcel": 0.012310269136301767,
+        "verified": true,
+        "successful": true,
+        "limitations": [
+          "excludes_motherboard_storage_psu_and_peripherals",
+          "cpu_power_is_interval_average",
+          "shared_gpu_processes_present",
+          "measurement_not_whole_node"
+        ],
+        "evidence": [
+          "batch:3",
+          "verifier:PASS"
+        ],
+        "sha256": "a781581e4eba341de313c96333480c74797e6fa8a162bd58640b81f99f984be8"
+      }
+    },
+    {
+      "route": "general-batch",
+      "repeat": 4,
+      "output": {
+        "mode": "sequential-resident-provider",
+        "elapsedMs": 646,
+        "rows": [
+          {
+            "id": "release-review",
+            "output": {
+              "lane": "LANE_REVIEW"
+            },
+            "inputTokens": 60,
+            "outputTokens": 10,
+            "elapsedMs": 248
+          },
+          {
+            "id": "provider-verification",
+            "output": {
+              "lane": "LANE_VERIFY"
+            },
+            "inputTokens": 58,
+            "outputTokens": 9,
+            "elapsedMs": 190
+          },
+          {
+            "id": "telemetry-research",
+            "output": {
+              "lane": "LANE_RESEARCH"
+            },
+            "inputTokens": 58,
+            "outputTokens": 10,
+            "elapsedMs": 208
+          }
+        ]
+      },
+      "failures": [],
+      "verified": 3,
+      "energy": {
+        "schema": "agent-control.energy-execution/v1",
+        "id": "energy-14e5264c-dd17-4b9e-a943-6524680f1531",
+        "parcelId": "specialist-batch-energy-4",
+        "stageId": "general-batch",
+        "route": {
+          "providerId": "local-openai-compatible",
+          "modelId": "qwen2.5-3b-instruct-q4_k_m.gguf",
+          "nodeId": "controller",
+          "accountProfileId": null
+        },
+        "kind": "INFERENCE",
+        "startedAt": "2026-09-12T03:51:51.950Z",
+        "completedAt": "2026-09-12T03:51:52.716Z",
+        "elapsedMs": 766,
+        "scope": "MEASURED_COMPONENTS",
+        "authority": "MEASURED",
+        "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+        "sampleCount": 9,
+        "averageWatts": 91.4898036824194,
+        "peakWatts": 116.02801517067005,
+        "grossWh": 0.01946699711687035,
+        "incrementalWh": 0.00915028753165651,
+        "joules": 32.94103511396344,
+        "idleBaselineWatts": 48.4858413926499,
+        "tokens": 205,
+        "whPerToken": 0.000044635548934909805,
+        "whPerSuccessfulParcel": 0.00915028753165651,
+        "verified": true,
+        "successful": true,
+        "limitations": [
+          "excludes_motherboard_storage_psu_and_peripherals",
+          "cpu_power_is_interval_average",
+          "shared_gpu_processes_present",
+          "measurement_not_whole_node"
+        ],
+        "evidence": [
+          "batch:4",
+          "verifier:PASS"
+        ],
+        "sha256": "0a61eb43ea8f97a326dcc8c1386cc43ad5d174c3382f430870e2e4bc4c1764a8"
+      }
+    },
+    {
+      "route": "specialist-batch",
+      "repeat": 4,
+      "output": {
+        "loadMs": 675,
+        "elapsedMs": 2074,
+        "mode": "batch",
+        "rows": [
+          {
+            "id": "release-review",
+            "output": {
+              "lane": "LANE_REVIEW"
+            },
+            "inputTokens": 62,
+            "outputTokens": 11,
+            "elapsedMs": 1397
+          },
+          {
+            "id": "provider-verification",
+            "output": {
+              "lane": "LANE_VERIFY"
+            },
+            "inputTokens": 59,
+            "outputTokens": 11,
+            "elapsedMs": 1397
+          },
+          {
+            "id": "telemetry-research",
+            "output": {
+              "lane": "LANE_RESEARCH"
+            },
+            "inputTokens": 60,
+            "outputTokens": 11,
+            "elapsedMs": 1397
+          }
+        ]
+      },
+      "failures": [],
+      "verified": 3,
+      "energy": {
+        "schema": "agent-control.energy-execution/v1",
+        "id": "energy-e0a01cf7-9463-44a0-b247-ce22a3a9b038",
+        "parcelId": "specialist-batch-energy-4",
+        "stageId": "specialist-batch",
+        "route": {
+          "providerId": "learned-specialist",
+          "modelId": "SmolLM2-135M+route-intent-lora",
+          "nodeId": "controller",
+          "accountProfileId": null
+        },
+        "kind": "INFERENCE",
+        "startedAt": "2026-09-12T03:51:54.822Z",
+        "completedAt": "2026-09-12T03:52:01.457Z",
+        "elapsedMs": 6635,
+        "scope": "MEASURED_COMPONENTS",
+        "authority": "MEASURED",
+        "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+        "sampleCount": 68,
+        "averageWatts": 60.73803944193012,
+        "peakWatts": 60.877317512766595,
+        "grossWh": 0.11194358102700176,
+        "incrementalWh": 0.038860853972805934,
+        "joules": 139.89907430210135,
+        "idleBaselineWatts": 39.65302447552448,
+        "tokens": 214,
+        "whPerToken": 0.0001815927755738595,
+        "whPerSuccessfulParcel": 0.038860853972805934,
+        "verified": true,
+        "successful": true,
+        "limitations": [
+          "excludes_motherboard_storage_psu_and_peripherals",
+          "cpu_power_is_interval_average",
+          "shared_gpu_processes_present",
+          "measurement_not_whole_node"
+        ],
+        "evidence": [
+          "batch:4",
+          "verifier:PASS"
+        ],
+        "sha256": "da2fe8f6372d20649874db3d037352ef1806b3f7ffcea396949d5ce0f1ead9f3"
+      }
+    },
+    {
+      "route": "specialist-batch",
+      "repeat": 5,
+      "output": {
+        "loadMs": 712,
+        "elapsedMs": 1972,
+        "mode": "batch",
+        "rows": [
+          {
+            "id": "release-review",
+            "output": {
+              "lane": "LANE_REVIEW"
+            },
+            "inputTokens": 62,
+            "outputTokens": 11,
+            "elapsedMs": 1259
+          },
+          {
+            "id": "provider-verification",
+            "output": {
+              "lane": "LANE_VERIFY"
+            },
+            "inputTokens": 59,
+            "outputTokens": 11,
+            "elapsedMs": 1259
+          },
+          {
+            "id": "telemetry-research",
+            "output": {
+              "lane": "LANE_RESEARCH"
+            },
+            "inputTokens": 60,
+            "outputTokens": 11,
+            "elapsedMs": 1259
+          }
+        ]
+      },
+      "failures": [],
+      "verified": 3,
+      "energy": {
+        "schema": "agent-control.energy-execution/v1",
+        "id": "energy-cdcf692d-7f51-4e63-8963-de8fb0104533",
+        "parcelId": "specialist-batch-energy-5",
+        "stageId": "specialist-batch",
+        "route": {
+          "providerId": "learned-specialist",
+          "modelId": "SmolLM2-135M+route-intent-lora",
+          "nodeId": "controller",
+          "accountProfileId": null
+        },
+        "kind": "INFERENCE",
+        "startedAt": "2026-09-12T03:52:03.552Z",
+        "completedAt": "2026-09-12T03:52:09.684Z",
+        "elapsedMs": 6132,
+        "scope": "MEASURED_COMPONENTS",
+        "authority": "MEASURED",
+        "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+        "sampleCount": 63,
+        "averageWatts": 55.33143239201008,
+        "peakWatts": 58.65046288777002,
+        "grossWh": 0.0942478731743905,
+        "incrementalWh": 0.022968033590142198,
+        "joules": 82.68492092451191,
+        "idleBaselineWatts": 41.84726394378569,
+        "tokens": 214,
+        "whPerToken": 0.00010732725976701962,
+        "whPerSuccessfulParcel": 0.022968033590142198,
+        "verified": true,
+        "successful": true,
+        "limitations": [
+          "excludes_motherboard_storage_psu_and_peripherals",
+          "cpu_power_is_interval_average",
+          "shared_gpu_processes_present",
+          "measurement_not_whole_node"
+        ],
+        "evidence": [
+          "batch:5",
+          "verifier:PASS"
+        ],
+        "sha256": "d5f03f54fe0a361879dec7db15d089e63c793de186d78039e51d9b310acda5b2"
+      }
+    },
+    {
+      "route": "general-batch",
+      "repeat": 5,
+      "output": {
+        "mode": "sequential-resident-provider",
+        "elapsedMs": 704,
+        "rows": [
+          {
+            "id": "release-review",
+            "output": {
+              "lane": "LANE_REVIEW"
+            },
+            "inputTokens": 60,
+            "outputTokens": 10,
+            "elapsedMs": 296
+          },
+          {
+            "id": "provider-verification",
+            "output": {
+              "lane": "LANE_VERIFY"
+            },
+            "inputTokens": 58,
+            "outputTokens": 9,
+            "elapsedMs": 201
+          },
+          {
+            "id": "telemetry-research",
+            "output": {
+              "lane": "LANE_RESEARCH"
+            },
+            "inputTokens": 58,
+            "outputTokens": 10,
+            "elapsedMs": 207
+          }
+        ]
+      },
+      "failures": [],
+      "verified": 3,
+      "energy": {
+        "schema": "agent-control.energy-execution/v1",
+        "id": "energy-b599b2d9-a1db-4ee7-8d92-c6a45cf702d3",
+        "parcelId": "specialist-batch-energy-5",
+        "stageId": "general-batch",
+        "route": {
+          "providerId": "local-openai-compatible",
+          "modelId": "qwen2.5-3b-instruct-q4_k_m.gguf",
+          "nodeId": "controller",
+          "accountProfileId": null
+        },
+        "kind": "INFERENCE",
+        "startedAt": "2026-09-12T03:52:11.796Z",
+        "completedAt": "2026-09-12T03:52:12.620Z",
+        "elapsedMs": 824,
+        "scope": "MEASURED_COMPONENTS",
+        "authority": "MEASURED",
+        "measurementMethod": "intel-rapl-package+dram+nvidia-smi-board-power",
+        "sampleCount": 10,
+        "averageWatts": 86.46547215607256,
+        "peakWatts": 110.00962264150944,
+        "grossWh": 0.019790985849056607,
+        "incrementalWh": 0.009256265957091392,
+        "joules": 33.322557445529014,
+        "idleBaselineWatts": 46.02547525615871,
+        "tokens": 205,
+        "whPerToken": 0.000045152516863860445,
+        "whPerSuccessfulParcel": 0.009256265957091392,
+        "verified": true,
+        "successful": true,
+        "limitations": [
+          "excludes_motherboard_storage_psu_and_peripherals",
+          "cpu_power_is_interval_average",
+          "shared_gpu_processes_present",
+          "measurement_not_whole_node"
+        ],
+        "evidence": [
+          "batch:5",
+          "verifier:PASS"
+        ],
+        "sha256": "0ee6f0674d110676f61284d2412b960039f040756b9c56c1e62a8278729be92d"
+      }
+    }
+  ],
+  "summary": [
+    {
+      "route": "general-batch",
+      "batches": 5,
+      "verified": 15,
+      "total": 15,
+      "joules": 202.70879041733977,
+      "measuredJoulesPerVerifiedResult": 13.513919361155985,
+      "meanBatchMs": 687.6
+    },
+    {
+      "route": "specialist-batch",
+      "batches": 5,
+      "verified": 15,
+      "total": 15,
+      "joules": 332.2079580880148,
+      "measuredJoulesPerVerifiedResult": 22.147197205867652,
+      "meanBatchMs": 1825.2
+    }
+  ],
+  "pairedWins": [
+    {
+      "sRepeatJoules": 0,
+      "gRepeatJoules": 59.23398089407968,
+      "specialistLower": true
+    },
+    {
+      "sRepeatJoules": 105.85259018240416,
+      "gRepeatJoules": 32.89424807308127,
+      "specialistLower": false
+    },
+    {
+      "sRepeatJoules": 3.771372678997337,
+      "gRepeatJoules": 44.31696889068636,
+      "specialistLower": true
+    },
+    {
+      "sRepeatJoules": 139.89907430210135,
+      "gRepeatJoules": 32.94103511396344,
+      "specialistLower": false
+    },
+    {
+      "sRepeatJoules": 82.68492092451191,
+      "gRepeatJoules": 33.322557445529014,
+      "specialistLower": false
+    }
+  ],
+  "training": {
+    "joules": 5232.819580132289,
+    "authority": "PRIOR_PHYSICAL_EVIDENCE",
+    "breakEvenVerifiedResults": null
+  },
+  "conclusion": "No specialist energy saving was measured for this workflow.",
+  "verdict": "FAIL_SPECIALIST_BATCH_ENERGY"
+}

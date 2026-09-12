@@ -1,0 +1,127 @@
+{
+  "schema": "agent-control.4.5-completion-manifest/v2",
+  "generatedAt": "2026-09-12T06:06:13.539Z",
+  "implementationHead": "544a4fb4c8a9f6702adb944ab43de90daa7e67d6",
+  "files": [
+    {
+      "file": "complete-human-readable-transcript.md",
+      "bytes": 36944,
+      "sha256": "43f182ec4ef85e12437728fbe59109f48667218e8c3452c1a503b9f5316c2d85"
+    },
+    {
+      "file": "consolidation-transcript.md",
+      "bytes": 1475,
+      "sha256": "78c1137b888e08dad85d58819f474ddb929affb93b662d16da239a433b90f43a"
+    },
+    {
+      "file": "consolidation.json",
+      "bytes": 28769,
+      "sha256": "954dadfdd1deca29558506c9204982cf898c77b2928ced893741d5a6d4d0f02d"
+    },
+    {
+      "file": "controller-memory-transcript.md",
+      "bytes": 1988,
+      "sha256": "e27995dc2cf771d647ae8065a99ce49f9ec341509014a8c50c44fed6805aa60b"
+    },
+    {
+      "file": "controller-memory.json",
+      "bytes": 19765,
+      "sha256": "48b1cfcf4c6e2c9dda1ecd0691ed334522deaaa881f74c0bcadbc81a9d613d97"
+    },
+    {
+      "file": "energy-evidence.json",
+      "bytes": 1857,
+      "sha256": "57b830a05e52d02efbfb57d4fbfc25fbb96ac36840c509595125a6c3a559d112"
+    },
+    {
+      "file": "failure-analysis.json",
+      "bytes": 2515,
+      "sha256": "0ea59af2e3d4616184127811ff0fb4bfb0c26f5776ecb8d77b3130d43252b2f5"
+    },
+    {
+      "file": "historical-memory-matrix.json",
+      "bytes": 56172,
+      "sha256": "a4512de7b1c5f352df06a2d2c48309d270721d12fc0588e6d3529b39c8dcc29a"
+    },
+    {
+      "file": "live/agent-control-4.5-live-poe-memory-qualification.mp4",
+      "bytes": 2462626,
+      "sha256": "72f2462c42469076bb74fa1087d54c96ff91630c9c2aa0094e1b6700c3c2922d"
+    },
+    {
+      "file": "live/cross-model-memory-qualification.json",
+      "bytes": 23318,
+      "sha256": "43f1eb4d803e13e42ef2d700b90eafbd3370f337ac6bf16696769aea42ad238d"
+    },
+    {
+      "file": "live/cross-model-memory-transcript.md",
+      "bytes": 1401,
+      "sha256": "bb5baf7130ff8458bc0dce8934d8dbbc17430a96bf929bbf4ae301395d789254"
+    },
+    {
+      "file": "live/live-runtime-final.png",
+      "bytes": 243772,
+      "sha256": "0358b969a02f57b1c30eccc32e5b165d4d460099fa2530e81a36748873c39213"
+    },
+    {
+      "file": "live/live-runtime-snapshots.json",
+      "bytes": 3027328,
+      "sha256": "af68f65e2d89097600b0efaeedf2aa33ce2b4361d04d4c3853c216246c699f95"
+    },
+    {
+      "file": "memory-matrix.json",
+      "bytes": 18754,
+      "sha256": "f1425aec95e62899bc07d41f352ba6df7f42a47bb074a105378ad28aefda2de3"
+    },
+    {
+      "file": "memory-route-qualifications.json",
+      "bytes": 8653,
+      "sha256": "bb45bb75147ac7bd16eecff25f1e4521b62cc68fc7178bda3f8d4a6849ef0c97"
+    },
+    {
+      "file": "msi-account-status.json",
+      "bytes": 1430,
+      "sha256": "3efe267a318d3bd9cbb29c4e963e65f413f4fcedd16b42a64216710d57aa5de3"
+    },
+    {
+      "file": "msi-memory-transcript.md",
+      "bytes": 1280,
+      "sha256": "5824037e2226426bf3e0f4a3c11e63b7059839d836c9beaba92e310a97ff69d4"
+    },
+    {
+      "file": "msi-memory.json",
+      "bytes": 19911,
+      "sha256": "274b20399a34acae605269270562dfcf4ec30175f05b9e8916a7f6351983ccdd"
+    },
+    {
+      "file": "pixel-memory-transcript.md",
+      "bytes": 1964,
+      "sha256": "2b87d0a22af1436a7a36e182fae65b6f4c6639bb040d80aa8b14f0bd55fa8ea8"
+    },
+    {
+      "file": "pixel-memory.json",
+      "bytes": 21046,
+      "sha256": "db5fdf09a5fb255e2f815756d6a1acc6c11f85e0bbc025c81a108b72263789dc"
+    },
+    {
+      "file": "pixel-writer-repeated-transcript.md",
+      "bytes": 1990,
+      "sha256": "a324ed04a478eaa14f6d00219c6c7ce779e77ac4439ed6ff445336e87f9a6c4b"
+    },
+    {
+      "file": "pixel-writer-repeated.json",
+      "bytes": 19366,
+      "sha256": "915fa599fd024ff940b3f140c03e801b19883d97722111ebb15e59d9ca78ba70"
+    },
+    {
+      "file": "release-gate.json",
+      "bytes": 8938,
+      "sha256": "0325efb189872cdc84d3782dc0d51618b3c9f2da04f9be367b726524bc57fac3"
+    },
+    {
+      "file": "specialist-batch-energy.json",
+      "bytes": 27293,
+      "sha256": "dfad1e9806698a9614656baa05945df4605cf1fde5fdba56c1e0bc0049616629"
+    }
+  ]
+}

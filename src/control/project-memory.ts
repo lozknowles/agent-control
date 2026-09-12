@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 export const PROJECT_MEMORY_SCHEMA='agent-control.project-memory/v1' as const;
+export const PROJECT_MEMORY_EXCHANGE_VERSION='agent-control.project-memory-exchange/v1' as const;
 export type MemoryKind='PROJECT_FACT'|'DECISION'|'EXPERIMENT'|'MACHINE_CAPABILITY'|'MODEL_QUALIFICATION'|'UNRESOLVED_QUESTION'|'WORK_PARCEL_OUTCOME'|'BATON_SUMMARY'|'LESSON'|'REJECTED_APPROACH';
 export type MemoryVerification='CANDIDATE'|'VERIFIED'|'SUPERSEDED'|'INVALID';
 export interface MemoryRouteIdentity{providerId:string;accountProfileId?:string;modelId:string;nodeId:string}
@@ -13,6 +14,12 @@ export interface MemoryRecallIntent{projectId:string;query:string;repositoryId?:
 export interface MemoryRecallRejection{id:string;reason:'WRONG_SCOPE'|'UNVERIFIED'|'STALE'|'SUPERSEDED'|'CONFLICT'|'INVALID_PROVENANCE'|'LOW_RELEVANCE'}
 export interface MemoryRecallResult{candidates:number;accepted:Array<{memory:ProjectMemoryRecord;score:number;method:'METADATA'|'LEXICAL'}>;rejected:MemoryRecallRejection[];conflicts:Array<{factKey:string;memoryIds:string[]}>;bytesInjected:number;estimatedTokens:number;latencyMs:number}
 export interface ProjectMemoryPort{remember(candidate:MemoryCandidate):Promise<ProjectMemoryRecord>;recall(intent:MemoryRecallIntent):Promise<MemoryRecallResult>;invalidate(id:string,reason:string):Promise<void>;health():Promise<{backendId:string;available:boolean}>}
+
+/** Canonical bounded interchange shape for model-produced project memories. */
+export interface ProjectMemoryExchange{objective:string;completedWork:string;decisions:string;rejectedApproaches:string;currentState:string;outstandingWork:string;supportingEvidence:string;nextAction:string;authority:string}
+export const PROJECT_MEMORY_EXCHANGE_SCHEMA={type:'object',properties:{objective:{type:'string'},completedWork:{type:'string'},decisions:{type:'string'},rejectedApproaches:{type:'string'},currentState:{type:'string'},outstandingWork:{type:'string'},supportingEvidence:{type:'string'},nextAction:{type:'string'},authority:{type:'string'}},required:['objective','completedWork','decisions','rejectedApproaches','currentState','outstandingWork','supportingEvidence','nextAction','authority'],additionalProperties:false} as const;
+export function projectMemoryExchangeFailures(value:unknown){if(!record(value))return['application_schema:root:not_object'];const required=PROJECT_MEMORY_EXCHANGE_SCHEMA.required,failures=required.filter(key=>!(key in value)).map(key=>`application_schema:${key}:required`);for(const key of required)if(key in value&&(typeof value[key]!=='string'||!(value[key] as string).trim()))failures.push(`application_schema:${key}:non_empty_string`);for(const key of Object.keys(value))if(!required.includes(key as typeof required[number]))failures.push(`application_schema:${key}:additional_property`);return failures;}
+export function renderProjectMemoryExchange(value:ProjectMemoryExchange){const failures=projectMemoryExchangeFailures(value);if(failures.length)throw new Error(`project_memory_exchange_invalid:${failures.join('|')}`);return`Objective\n${value.objective.trim()}\n\nCompleted work\n${value.completedWork.trim()}\n\nDecisions\n${value.decisions.trim()}\n\nRejected approaches\n${value.rejectedApproaches.trim()}\n\nCurrent state\n${value.currentState.trim()}\n\nOutstanding work\n${value.outstandingWork.trim()}\n\nSupporting evidence\n${value.supportingEvidence.trim()}\n\nExact next action\n${value.nextAction.trim()}\n\nAuthority\n${value.authority.trim()}`;}
 
 /** Generic Markdown-directory backend. Obsidian can view it but is not a dependency. */
 export class MarkdownProjectMemoryPort implements ProjectMemoryPort{
@@ -32,5 +39,6 @@ function validateRecord(value:ProjectMemoryRecord){validateCandidate(value);if(v
 function render(record:ProjectMemoryRecord){return`<!-- agent-control-memory\n${JSON.stringify(record)}\n-->\n\n# ${record.title.replace(/[\r\n]+/g,' ')}\n\n${record.content.trim()}\n`;}
 function parse(text:string){const match=/^<!-- agent-control-memory\n([^\n]+)\n-->/.exec(text);if(!match)throw new Error('memory_document_invalid');return JSON.parse(match[1]) as ProjectMemoryRecord;}
 function hash(value:string){return createHash('sha256').update(value).digest('hex');}
+function record(value:unknown):value is Record<string,unknown>{return Boolean(value&&typeof value==='object'&&!Array.isArray(value));}
 function tokens(value:string){return [...new Set(value.toLowerCase().split(/[^a-z0-9._-]+/).filter(item=>item.length>1))];}
 function score(memory:ProjectMemoryRecord,terms:string[]){if(!terms.length)return memory.confidence;const haystack=`${memory.title} ${memory.content} ${memory.kind} ${memory.factKey??''}`.toLowerCase(),matches=terms.filter(term=>haystack.includes(term)).length;return matches/terms.length+.1*memory.confidence;}

@@ -5,9 +5,9 @@
   "capabilities": [
     {
       "id": "operator.poe-conversational-interface",
-      "title": "POE grounded conversational operator and benchmark designer",
+      "title": "Morrow grounded conversational operator and benchmark designer",
       "status": "IMPLEMENTED",
-      "summary": "An original state-driven POE dashboard and channel-scoped runtime explain focused Agent Control evidence, explicitly preserve unknowns, route optional model phrasing through qualified Model Registry roles, design/fairness-check/version/freeze benchmark proposals, and submit only exact operator-approved plans through the normal registered Job and Work Parcel lifecycle. Authenticated WhatsApp questions reuse the same persona without widening command authority; optional designed OmniVoice records latency and isolates barge-in from executing work.",
+      "summary": "An original state-driven Morrow dashboard and channel-scoped runtime explain focused Agent Control evidence, explicitly preserve unknowns, route optional model phrasing through qualified Model Registry roles, design/fairness-check/version/freeze benchmark proposals, and submit only exact operator-approved plans through the normal registered Job and Work Parcel lifecycle. Authenticated WhatsApp questions reuse the same persona without widening command authority; optional designed OmniVoice records latency and isolates barge-in from executing work.",
       "sources": [
         "src/control/poe.ts",
         "src/control/poe-model.ts",
@@ -1132,7 +1132,7 @@
         "qualification/agent-control-4.5-deterministic-skill-20260911/qualification.json",
         "qualification/agent-control-4.5-deterministic-skill-20260911/ux-evidence/evidence-manifest.json"
       ],
-      "limitation": "Qualification covers three bounded Agent Control operations on one measured node. General procedure synthesis, automatic code installation and automatic promotion remain forbidden; the independent cross-model memory matrix remains 5/12."
+      "limitation": "Qualification covers three bounded Agent Control operations on one measured node. General procedure synthesis, automatic code installation and automatic promotion remain forbidden. The separate cross-model Your Memories matrix has nine PASS/FIXED cells, two terminally UNSUPPORTED Pixel-reader aliases and one BLOCKED_EXTERNAL GLM route; it remains experimental."
     },
     {
       "id": "recipes.automatic-learning",

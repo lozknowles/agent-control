@@ -106,3 +106,17 @@ test('presentation script is served as a one-way projection and is absent from e
   assert.match(source, /const previousRefresh = refresh/);
   assert.doesNotMatch(source, /fetch\([^)]*method:\s*['"]POST/i);
 });
+
+test('crew artwork keeps gradients local to each repeated portrait under the strict dashboard CSP',()=>{
+  const ids=new Set();
+  for(let copy=0;copy<2;copy++)for(const id of Object.keys(bots.identities)){
+    const svg=bots.artwork({id,state:'working',activity:{tool:{kind:'CODE_EDIT'}}},'TYPING');
+    assert.match(svg,/data-animation-authority="presentation-only"/);
+    assert.match(svg,/data-art-style="morrow-crew"/);
+    assert.doesNotMatch(svg,/\sstyle=/);
+    const localIds=[...svg.matchAll(/\bid="([^"]+)"/g)].map(match=>match[1]);
+    for(const paint of localIds){assert.equal(ids.has(paint),false,paint);ids.add(paint);}
+    for(const reference of svg.matchAll(/url\(#([^)]+)\)/g))assert.ok(localIds.includes(reference[1]),reference[1]);
+    assert.match(svg,/bot-active-code/);
+  }
+});

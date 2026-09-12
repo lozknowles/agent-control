@@ -52,10 +52,16 @@ The optional `ProjectMemoryPort` implements the generic memory boundary chosen i
 
 The provider-neutral [energy telemetry boundary](docs/energy-aware-intelligence.md) retains timestamped power, scope, authority, method, idle baseline, limitations, and verified outcome identity. It integrates gross and incremental Wh and supports expected-total-energy route assessment, including failed-attempt and fallback energy. Capability, quality, confidence, policy, privacy, and independent verification remain hard gates. GPU-only, CPU-package, measured-components, battery, whole-node, estimated, and unavailable energy are never conflated. Physical evidence may reject a small-model route: the first 4.5 study found the retained 135M specialist consumed more measured energy than warm Qwen, while deterministic execution was lowest. Parameter count never substitutes for joules per verified outcome.
 
-Physical 4.5 qualification exercises the unchanged provider-neutral flow as
-`writer route → verified memory record → sealed stage baton → distinct cold reader route → independently verified continuation`. Provider-native personal-memory APIs are optional adapter capabilities, not assumed core state. A backend such as Obsidian is not a second memory capability. Measured qualification currently supports an **EXPERIMENTAL** status: five of twelve requested route pairs passed, while Pixel and MSI limitations remain explicit. See the [cross-model evidence](docs/evidence/agent-control-4.5-cross-model-memory-qualification-20260911.md).
+Physical 4.5 qualification exercises the provider-neutral flow as
+`route qualification → writer route → verified memory record → sealed stage baton → qualified cold reader route → independently verified continuation`. `ProjectMemoryExchange` is the canonical application contract shared by writer, reader and consolidation; provider adapters may translate transport envelopes but cannot weaken its semantic verifier. Provider-native personal-memory APIs are optional adapter capabilities, not assumed core state. A backend such as Obsidian is not a second memory capability.
+
+`MemoryRouteQualificationStore` records exact provider/account/model/node identity separately from the provider adapter. Each record binds runtime and exchange-contract versions, writer and reader eligibility, maximum physically proven memory bytes, bounded repair allowance, qualification freshness, evidence and terminal classification. Exact pair records prevent independent route successes from being incorrectly composed into an unproven pair. Admission is fail closed: a missing, stale, contract-mismatched, oversized, blocked or unsupported pair is denied; escalation occurs only when an explicitly qualified alternate pair is recorded. Secrets and provider output are not part of this store.
+
+The latest measured qualification supports an **EXPERIMENTAL** status: all twelve cells are terminally classified, with nine PASS/FIXED, two Qwen→Pixel aliases UNSUPPORTED, and current GLM→Qwen BLOCKED_EXTERNAL. A production POE run visibly exercised the safe escalation from unsupported Qwen→Pixel to qualified Qwen→Luna. See the [original cross-model evidence](docs/evidence/agent-control-4.5-cross-model-memory-qualification-20260911.md) and [completion evidence](docs/evidence/agent-control-4.5-release-gate-completion-20260912.md).
 
 The follow-up [release-gate reconciliation](docs/evidence/agent-control-4.5-release-gate-20260912.md) makes provider-response validation two separate gates: transport/application-schema validity and semantic reconstruction. One governed repair attempt may correct a malformed or misplaced response, but exact state, provenance, decision, rejection-risk and next-action semantics remain independently required. A valid JSON object or copied keyword list cannot pass by itself. Attempts retain bounded sanitized output, finish reason, hashes and exact schema/semantic failures. Model limitations remain failures; unavailable node authentication remains `BLOCKED`.
+
+Cross-node Codex execution retains `provider + account profile + model + node` in the sealed route. The Windows SSH adapter sends a fixed audited script and variable payload as two bounded base64 records, avoiding dependence on OpenSSH channel EOF. The destination resolves its own profile-home reference and executable locally; credential paths, credential values and raw PowerShell output never become Work Parcel, baton, telemetry or evidence fields.
 
 ## Transport Context and Integrity Gate (4.2)
 
@@ -807,7 +813,7 @@ port, but neither the record nor player depends on MARM.
 The presentation contract is deliberately distinct from those implementation
 terms: **Your Memories** is the user-facing Agent Control capability; the
 generic memory abstraction is the internal architecture; MARM is one optional
-backend. Normal POE, dashboard and replay views use only `Your Memories`.
+backend. Normal Morrow, dashboard and replay views use only `Your Memories`.
 
 See [UX Session Replay](docs/ux-session-replay.md) and the
 [physical qualification](docs/evidence/agent-control-4.4-ux-session-replay-20260911.md).
@@ -897,9 +903,11 @@ The dashboard's **Routing** tab reads `/api/orchestration/models`, `/api/orchest
 
 Detailed configuration, API filters, evidence semantics and deterministic qualification are in [`docs/adaptive-multi-model-orchestration.md`](docs/adaptive-multi-model-orchestration.md). This workstream does not claim a physical provider qualification merely because the deterministic suite passes.
 
-## POE conversational operator
+## Morrow conversational host
 
-POE is a presentation and proposal layer above `AgentControlService`, never a replacement scheduler, governor, execution provider, verifier, credential resolver, or authority service:
+The public identity is defined by `HOST_IDENTITY`. Stable `poe` API/event/storage identifiers and `Poe*` runtime types remain compatible; existing transcripts and approval hashes are never rewritten. The six robot roles remain projections of the existing crew state. See the [identity guide](docs/morrow.md).
+
+Morrow is a presentation and proposal layer above `AgentControlService`, never a replacement scheduler, governor, execution provider, verifier, credential resolver, or authority service:
 
 ```text
 authenticated dashboard / WhatsApp / OmniVoice / mobile
@@ -917,13 +925,13 @@ authenticated dashboard / WhatsApp / OmniVoice / mobile
  WorkParcelCoordinator -> registered Job DAG -> normal control lifecycle
 ```
 
-`PoeRuntime` persists bounded turns, real UI state transitions, proposal revisions, speech boundaries, and transcript metadata in an owner-only store. The public system snapshot exposes only a safe POE summary; authenticated endpoints expose the operator's own conversations. An evidence port maps stable object references to bounded facts and source IDs from models, Jobs, Runs, Work Parcels, lanes, Crew, routing/governor decisions, capabilities, batons, Live Shell, verification, benchmarks, and human evaluation. Missing records remain unavailable. Provider output and repository/log content remain untrusted data and cannot redefine POE's authority.
+`PoeRuntime` persists bounded turns, real UI state transitions, proposal revisions, speech boundaries, and transcript metadata in an owner-only store. The public system snapshot exposes only a safe Morrow summary; authenticated endpoints expose the operator's own conversations. An evidence port maps stable object references to bounded facts and source IDs from models, Jobs, Runs, Work Parcels, lanes, Crew, routing/governor decisions, capabilities, batons, Live Shell, verification, benchmarks, and human evaluation. Missing records remain unavailable. Provider output and repository/log content remain untrusted data and cannot redefine Morrow's authority.
 
-The optional `PoeResponseModelPort` keeps conversational generation provider neutral. `RoutedPoeResponseModel` asks the existing Model Registry for either a status or experiment-design role and then uses the existing Codex or OpenAI-compatible adapter. It requires strict structured output, known evidence citations, no hidden reasoning, and records the actual provider/account/model/provider-execution-node route plus token/cost authority. Failure does not silently select another model: the turn explicitly changes to the deterministic grounded renderer. This also bounds cost by allowing routine lookups and difficult design explanations to use different qualified roles without changing the POE persona.
+The optional `PoeResponseModelPort` keeps conversational generation provider neutral. `RoutedPoeResponseModel` asks the existing Model Registry for either a status or experiment-design role and then uses the existing Codex or OpenAI-compatible adapter. It requires strict structured output, known evidence citations, no hidden reasoning, and records the actual provider/account/model/provider-execution-node route plus token/cost authority. Failure does not silently select another model: the turn explicitly changes to the deterministic grounded renderer. This also bounds cost by allowing routine lookups and difficult design explanations to use different qualified roles without changing the Morrow persona.
 
 Benchmark proposals seal the operator question, evidence need, complete condition matrix, Job stages, metrics, repetitions, and constraints. Fairness blocks unequal immutable fixture, tools, context, authority, cache, or time limits and discloses software, hardware, quantisation, and endpoint confounders. Objective metrics become Work Parcel success criteria; `HUMAN_EVALUATION` remains separate. Repetitions materialise as distinct Job stages. Freeze creates no execution authority, and approval must match the exact revision and hash. The resulting origin binds `poe/dashboard`, conversation, proposal, frozen hash, actor, and request key before entering `WorkParcelCoordinator.submitApprovedPlan`.
 
-OmniVoice remains behind existing STT/TTS contracts. POE accepts only an original designed voice, retains the transcription as untrusted content, records available turn-latency boundaries, and aborts only synthesis on barge-in. The Social & Voice coordinator accepts authenticated `POE:` questions into a distinct identity-hashed WhatsApp conversation; consequential work remains governed by existing template/text-confirmation or frozen-proposal approval flows. Live Shell remains independently authoritative for attachment and steering.
+OmniVoice remains behind existing STT/TTS contracts. Morrow accepts only an original designed voice, retains the transcription as untrusted content, records available turn-latency boundaries, and aborts only synthesis on barge-in. The Social & Voice coordinator accepts authenticated `Morrow:` questions and legacy `POE:` aliases into a distinct identity-hashed WhatsApp conversation; consequential work remains governed by existing template/text-confirmation or frozen-proposal approval flows. Live Shell remains independently authoritative for attachment and steering.
 
 The floating browser companion is a client of this same service. Its compact panel leaves underlying dashboard navigation usable. Explicit tour selection unlocks browser audio, navigates and highlights a real component, requests a sourced explanation, and keeps Next disabled until the audio element emits completion. Autoplay, decoding and synthesis failures pause the tour; interruption invalidates older playback. Mouth movement uses the actual audio analyser, while runtime states and references drive restrained poses. Reduced motion disables these transforms and mouth modulation.
 
@@ -931,9 +939,9 @@ The floating browser companion is a client of this same service. Its compact pan
 
 `reconcilePoeBatch` requires terminal parents, no active children and no outstanding verification criteria before a final requested-set announcement. `poeParcelHandovers` reads actual sealed v2 batons and observes destination Run identity/start time before reporting receipt. Relay/Verity presentation labels do not imply a separate autonomous model. A harmless observation's separate deterministic artifact verifier proves artifact structure and integrity, not Facebook or remote-device readiness.
 
-The optional external full-test runner publishes bounded atomic progress with exact Git commit, phase, emitted counts, elapsed time and exit status. Its authenticated read-only projection is labelled `EXTERNAL_TEST_RUNNER` and never creates a Work Parcel. Totals and remaining counts stay null until discovered. POE narrates snapshots as observations because complete-audio synthesis introduces delay.
+The optional external full-test runner publishes bounded atomic progress with exact Git commit, phase, emitted counts, elapsed time and exit status. Its authenticated read-only projection is labelled `EXTERNAL_TEST_RUNNER` and never creates a Work Parcel. Totals and remaining counts stay null until discovered. Morrow narrates snapshots as observations because complete-audio synthesis introduces delay.
 
-The detailed contract, [event-to-animation mapping](docs/poe-dashboard-operator.md#state-and-animation-provenance), current [4.3 deployment guide](docs/DEPLOYMENT.md) and historical [4.1 qualification record](docs/evidence/agent-control-4.1-qualification.md) define the configuration and acceptance boundary.
+The detailed contract, [event-to-animation mapping](docs/poe-dashboard-operator.md#state-and-animation-provenance), current [deployment guide](docs/DEPLOYMENT.md) and historical [4.1 qualification record](docs/evidence/agent-control-4.1-qualification.md) define the configuration and acceptance boundary.
 
 ## 4.5 energy-minimal deterministic skill promotion
 

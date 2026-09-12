@@ -37,6 +37,23 @@ Enable `routingEnabled` only after the target installation can verify the exact
 base and adapter hashes and the recorded frozen qualification. Roll back by
 disabling learned routing first; the immutable base route remains available.
 
+Your Memories cross-model routing is separately fail closed. Generate or install
+an owner-only provider-neutral qualification file, then opt into enforcement:
+
+```bash
+npm run qualify:memory-route-records -- /path/to/private/memory-route-qualifications.json
+export AGENT_CONTROL_MEMORY_ROUTE_QUALIFICATIONS=/path/to/private/memory-route-qualifications.json
+export AGENT_CONTROL_MEMORY_ENFORCE_ROUTE_QUALIFICATION=1
+```
+
+The file contains route identity, runtime/contract versions, bounded proven
+payload size, role eligibility, freshness and evidence—not credentials or model
+output. A missing, stale, unsupported, oversized or contract-mismatched route is
+denied. An alternate route is used only when its exact pair is explicitly
+qualified. Rebuild and independently review the records after model, runtime,
+contract or relevant evidence changes; do not copy a qualification across nodes
+or account profiles.
+
 ## Keep mutable state outside the release
 
 Set `AGENT_CONTROL_CONFIG`, `AGENT_CONTROL_STATE_DIR` and
@@ -58,6 +75,25 @@ Keep the dashboard private through the installation's existing reverse proxy or
 tailnet. Set `AGENT_CONTROL_WEB_OPERATOR_TOKEN` through the existing secret
 delivery mechanism. Do not place credentials in URLs, Git, transcripts or videos.
 
+## Morrow integration testing
+
+The combined experimental source is on `feature/4.5-release-gate-completion`.
+Use an isolated checkout at its verified immutable commit, with separate private
+state/configuration and an unused loopback port. Follow the local startup above;
+never share a writable state directory with the running controller.
+
+Check the host name, all six robots, new and restored conversations, contextual
+help, reduced/off motion and narrow-screen layout. With an enrolled physical
+voice/social setup, exercise `Morrow: status`, the legacy `POE: status` alias and
+speech interruption. Confirm an approved harmless Work Parcel still follows
+normal dispatch, route qualification, execution and independent verification.
+Record the actual model, source commit and outcome. Existing POE videos and
+controlled transcription tests do not establish these physical Morrow checks.
+
+See the [integration record](evidence/morrow-4.5-integration/validation.md).
+Source integration and publication do not change the running installation or
+make this candidate release-ready.
+
 ## Pre-release and rollout gate
 
 1. Freeze the candidate SHA and resolved dependency inventory.
@@ -78,8 +114,10 @@ delivery mechanism. Do not place credentials in URLs, Git, transcripts or videos
 7. Verify version, source provenance, health, authentication, SSE updates, Jobs,
    Lanes, Models, Crew, Warm Cache Runtime and a harmless governed operation.
 
-The authoritative 4.5 candidate gate and its open limitations are recorded in
-[the 4.5 reconciliation](evidence/agent-control-4.5-release-gate-20260912.md).
+The current 4.5 candidate gate and its open limitations are recorded in
+[the completion reconciliation](evidence/agent-control-4.5-release-gate-completion-20260912.md).
+The earlier [4.5 reconciliation](evidence/agent-control-4.5-release-gate-20260912.md)
+remains immutable historical evidence for its recorded implementation.
 The 4.4 checksummed replay evidence is recorded in
 [the 4.4 qualification](evidence/agent-control-4.4-ux-session-replay-20260911.md),
 with the retained foundation in
@@ -91,9 +129,9 @@ new candidate's result.
 ## Rollback
 
 Retain the previous immutable release SHA/package, supervisor definition and
-matching owner-only state backup. If acceptance fails, stop the 4.4 controller,
+matching owner-only state backup. If acceptance fails, stop the candidate controller,
 restore the matching previous state only if migration changed it, select the
-previous immutable release (`v4.3.0`), restart the same scoped service and recheck health,
+previous immutable release (`v4.4.0`), restart the same scoped service and recheck health,
 authentication and a harmless read-only operation. Never run old and new versions
 against one state directory or move credential stores with source archives.
 
@@ -110,5 +148,5 @@ against one state directory or move credential stores with source archives.
 
 Detailed integration configuration remains in [the historical 4.1 runbook](installation-deployment-4.1.md),
 [model documentation](models/README.md), [managed nodes](managed-nodes.md),
-[dashboard operation](web-dashboard.md), [POE](poe.md), and
+[dashboard operation](web-dashboard.md), [Morrow](poe.md), and
 [Cache-Aware Expert Delegation](cache-aware-expert-delegation.md).

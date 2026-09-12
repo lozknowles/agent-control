@@ -1,0 +1,538 @@
+{
+  "schema": "agent-control.4.5-authoritative-memory-matrix/v2",
+  "generatedAt": "2026-09-12T06:06:13.517Z",
+  "implementationHead": "544a4fb4c8a9f6702adb944ab43de90daa7e67d6",
+  "contract": {
+    "version": "agent-control.project-memory-exchange/v1",
+    "semanticReconstructionRequired": true,
+    "keywordOnlyPassForbidden": true,
+    "verificationWeakened": false
+  },
+  "statusVocabulary": [
+    "PASS",
+    "FIXED",
+    "UNSUPPORTED",
+    "DISPROVEN",
+    "BLOCKED_EXTERNAL"
+  ],
+  "rows": [
+    {
+      "writerRoute": "openrouter/default/glm-5.3-flash@hpubuntu",
+      "readerRoute": "local-qwen/default/qwen-hpubuntu@hpubuntu",
+      "writerNode": "hpubuntu",
+      "readerNode": "hpubuntu",
+      "providerRuntime": {
+        "writer": "recorded in source evidence",
+        "reader": "recorded in source evidence"
+      },
+      "contractVersion": "agent-control.project-memory-exchange/v1",
+      "promptVersion": "historical preserved prompt",
+      "outputLimit": {
+        "writer": "source evidence",
+        "reader": "source evidence"
+      },
+      "attempts": {
+        "writer": 1,
+        "reader": 1
+      },
+      "reconstructionAccuracy": 64.44,
+      "structuralValid": false,
+      "semanticValid": false,
+      "continuationSuccess": false,
+      "usage": {
+        "inputTokens": 2053,
+        "outputTokens": 1228,
+        "totalTokens": 3281,
+        "cachedInputTokens": 1306,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "batonSha256": "06d42fc6ca15aa61784bd94984cc04fcac66c99999127ba726e450693cd37c8e",
+      "memorySha256": "a6a9490d18451e2f9954b5a3a202d8b364aa6a045201c6407f3c9a33ecd4f6af",
+      "failures": [
+        "alreadyHappened:missing:hpubuntu",
+        "alreadyHappened:missing:msi",
+        "importantDecisions:missing:content-hash",
+        "rejectedApproaches:missing:canonical note"
+      ],
+      "terminalClassification": "BLOCKED_EXTERNAL",
+      "terminalReason": "Current OpenRouter credential prerequisite is unavailable; the historical semantic failure is preserved and no current-contract pass is inferred.",
+      "evidence": [
+        "historical-memory-matrix.json",
+        "memory-route-qualifications.json"
+      ]
+    },
+    {
+      "writerRoute": "local-qwen/default/qwen-hpubuntu@hpubuntu",
+      "readerRoute": "openrouter/default/glm-5.3-flash@hpubuntu",
+      "writerNode": "hpubuntu",
+      "readerNode": "hpubuntu",
+      "providerRuntime": {
+        "writer": "recorded in source evidence",
+        "reader": "recorded in source evidence"
+      },
+      "contractVersion": "legacy qualification contract",
+      "promptVersion": "historical preserved prompt",
+      "outputLimit": {
+        "writer": "source evidence",
+        "reader": "source evidence"
+      },
+      "attempts": {
+        "writer": 1,
+        "reader": 1
+      },
+      "reconstructionAccuracy": 100,
+      "structuralValid": true,
+      "semanticValid": true,
+      "continuationSuccess": true,
+      "usage": {
+        "inputTokens": 3096,
+        "outputTokens": 2434,
+        "totalTokens": 5530,
+        "cachedInputTokens": 1546,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "batonSha256": "1b48a733998e93bf0a9e96731762fd3d7b4696a66dcb48073c9b3903f8db52d9",
+      "memorySha256": "d3253f595a5604481dbd76832eb506d8ef9276ad8d820a52755a52597da3025b",
+      "failures": [],
+      "terminalClassification": "PASS",
+      "terminalReason": "Historical physical route passed the semantic reconstruction and continuation contract; evidence remains preserved.",
+      "evidence": [
+        "historical-memory-matrix.json"
+      ]
+    },
+    {
+      "writerRoute": "codex-chatgpt/controller-codex/codex-luna@hpubuntu",
+      "readerRoute": "local-qwen/default/qwen-hpubuntu@hpubuntu",
+      "writerNode": "hpubuntu",
+      "readerNode": "hpubuntu",
+      "providerRuntime": {
+        "writer": "gpt-5.6-luna",
+        "reader": "qwen2.5-3b-instruct-q4_k_m.gguf"
+      },
+      "contractVersion": "agent-control.project-memory-exchange/v1",
+      "promptVersion": "current canonical exchange prompt",
+      "outputLimit": {
+        "writer": "source evidence",
+        "reader": "source evidence"
+      },
+      "attempts": {
+        "writer": 1,
+        "reader": 1
+      },
+      "reconstructionAccuracy": 100,
+      "structuralValid": true,
+      "semanticValid": true,
+      "continuationSuccess": true,
+      "usage": {
+        "inputTokens": 7677,
+        "outputTokens": 1121,
+        "totalTokens": 8798,
+        "cachedInputTokens": 0,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "batonSha256": "6344e1e2e735f069abc41c28d7dd336e698503e12f7fd50163be11ba35f02e62",
+      "memorySha256": "76b63bc716d26f6c57e52625dc3e46656022e54a4ff0970f70a485334b78ecd9",
+      "failures": [],
+      "terminalClassification": "FIXED",
+      "terminalReason": "Current canonical ProjectMemoryExchange repaired the historical writer/reader schema mismatch.",
+      "evidence": [
+        "controller-memory.json"
+      ]
+    },
+    {
+      "writerRoute": "local-qwen/default/qwen-hpubuntu@hpubuntu",
+      "readerRoute": "codex-chatgpt/controller-codex/codex-luna@hpubuntu",
+      "writerNode": "hpubuntu",
+      "readerNode": "hpubuntu",
+      "providerRuntime": {
+        "writer": "qwen2.5-3b-instruct-q4_k_m.gguf",
+        "reader": "gpt-5.6-luna"
+      },
+      "contractVersion": "agent-control.project-memory-exchange/v1",
+      "promptVersion": "current canonical exchange prompt",
+      "outputLimit": {
+        "writer": "source evidence",
+        "reader": "source evidence"
+      },
+      "attempts": {
+        "writer": 1,
+        "reader": 1
+      },
+      "reconstructionAccuracy": 100,
+      "structuralValid": true,
+      "semanticValid": true,
+      "continuationSuccess": true,
+      "usage": {
+        "inputTokens": 7624,
+        "outputTokens": 615,
+        "totalTokens": 8239,
+        "cachedInputTokens": 0,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "batonSha256": "28ead4679523a9a573a5e908990288d6389301935386b2d224ba3fdef5ba9d4d",
+      "memorySha256": "5cfaa72f58961699d5d9b961c682c84eb1f880fcd6b7bd89c44f885f16807b69",
+      "failures": [],
+      "terminalClassification": "FIXED",
+      "terminalReason": "Current canonical ProjectMemoryExchange repaired the historical writer/reader schema mismatch.",
+      "evidence": [
+        "controller-memory.json"
+      ]
+    },
+    {
+      "writerRoute": "codex-chatgpt/controller-codex/gpt-5.6-sol@hpubuntu",
+      "readerRoute": "openrouter/default/glm-5.3-flash@hpubuntu",
+      "writerNode": "hpubuntu",
+      "readerNode": "hpubuntu",
+      "providerRuntime": {
+        "writer": "recorded in source evidence",
+        "reader": "recorded in source evidence"
+      },
+      "contractVersion": "legacy qualification contract",
+      "promptVersion": "historical preserved prompt",
+      "outputLimit": {
+        "writer": "source evidence",
+        "reader": "source evidence"
+      },
+      "attempts": {
+        "writer": 1,
+        "reader": 1
+      },
+      "reconstructionAccuracy": 100,
+      "structuralValid": true,
+      "semanticValid": true,
+      "continuationSuccess": true,
+      "usage": {
+        "inputTokens": 9780,
+        "outputTokens": 2585,
+        "totalTokens": 12365,
+        "cachedInputTokens": 0,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "batonSha256": "b06d958f065163c15868d1cf18ad5b0ea538da90033565d4b7c690279d674049",
+      "memorySha256": "86a8043315555d4110ccb7fa341c5c13e0d80d481ba66b188cc62990a0b9e56a",
+      "failures": [],
+      "terminalClassification": "PASS",
+      "terminalReason": "Historical physical route passed the semantic reconstruction and continuation contract; evidence remains preserved.",
+      "evidence": [
+        "historical-memory-matrix.json"
+      ]
+    },
+    {
+      "writerRoute": "openrouter/default/glm-5.3-flash@hpubuntu",
+      "readerRoute": "codex-chatgpt/controller-codex/gpt-5.6-sol@hpubuntu",
+      "writerNode": "hpubuntu",
+      "readerNode": "hpubuntu",
+      "providerRuntime": {
+        "writer": "recorded in source evidence",
+        "reader": "recorded in source evidence"
+      },
+      "contractVersion": "legacy qualification contract",
+      "promptVersion": "historical preserved prompt",
+      "outputLimit": {
+        "writer": "source evidence",
+        "reader": "source evidence"
+      },
+      "attempts": {
+        "writer": 1,
+        "reader": 1
+      },
+      "reconstructionAccuracy": 100,
+      "structuralValid": true,
+      "semanticValid": true,
+      "continuationSuccess": true,
+      "usage": {
+        "inputTokens": 17625,
+        "outputTokens": 1715,
+        "totalTokens": 19340,
+        "cachedInputTokens": 0,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "batonSha256": "490aed9183a0ab13b28a127f027b67cb1709d1976b417f9f616055be27f9625b",
+      "memorySha256": "714b66f0cebdc0096a295c61b4cd26ec28027018283ea49dfb356734884aca02",
+      "failures": [],
+      "terminalClassification": "PASS",
+      "terminalReason": "Historical physical route passed the semantic reconstruction and continuation contract; evidence remains preserved.",
+      "evidence": [
+        "historical-memory-matrix.json"
+      ]
+    },
+    {
+      "writerRoute": "codex-chatgpt/controller-codex/codex-luna@hpubuntu",
+      "readerRoute": "codex-chatgpt/controller-codex/gpt-5.6-sol@hpubuntu",
+      "writerNode": "hpubuntu",
+      "readerNode": "hpubuntu",
+      "providerRuntime": {
+        "writer": "recorded in source evidence",
+        "reader": "recorded in source evidence"
+      },
+      "contractVersion": "legacy qualification contract",
+      "promptVersion": "historical preserved prompt",
+      "outputLimit": {
+        "writer": "source evidence",
+        "reader": "source evidence"
+      },
+      "attempts": {
+        "writer": 1,
+        "reader": 1
+      },
+      "reconstructionAccuracy": 100,
+      "structuralValid": true,
+      "semanticValid": true,
+      "continuationSuccess": true,
+      "usage": {
+        "inputTokens": 15535,
+        "outputTokens": 1055,
+        "totalTokens": 16590,
+        "cachedInputTokens": 0,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "batonSha256": "05167d6e2d08a9e1ca80fab79583c5e825cb83e257dcecd0189327bd01c09bd1",
+      "memorySha256": "4c371dc4f7b8d081fb422e4f9366be382649efbe48510c851f4229cac48f29c8",
+      "failures": [],
+      "terminalClassification": "PASS",
+      "terminalReason": "Historical physical route passed the semantic reconstruction and continuation contract; evidence remains preserved.",
+      "evidence": [
+        "historical-memory-matrix.json"
+      ]
+    },
+    {
+      "writerRoute": "codex-chatgpt/controller-codex/gpt-5.6-sol@hpubuntu",
+      "readerRoute": "codex-chatgpt/controller-codex/codex-luna@hpubuntu",
+      "writerNode": "hpubuntu",
+      "readerNode": "hpubuntu",
+      "providerRuntime": {
+        "writer": "recorded in source evidence",
+        "reader": "recorded in source evidence"
+      },
+      "contractVersion": "legacy qualification contract",
+      "promptVersion": "historical preserved prompt",
+      "outputLimit": {
+        "writer": "source evidence",
+        "reader": "source evidence"
+      },
+      "attempts": {
+        "writer": 1,
+        "reader": 1
+      },
+      "reconstructionAccuracy": 100,
+      "structuralValid": true,
+      "semanticValid": true,
+      "continuationSuccess": true,
+      "usage": {
+        "inputTokens": 22841,
+        "outputTokens": 1287,
+        "totalTokens": 24128,
+        "cachedInputTokens": 0,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "batonSha256": "4544ed13c6f3da62885e650ce694676662d961ba5cca856ed356217868a8e708",
+      "memorySha256": "6bceaa93ee86acdcd09411c24d03717ffe7c0092fe29b94fdf7004008b191b51",
+      "failures": [],
+      "terminalClassification": "PASS",
+      "terminalReason": "Historical physical route passed the semantic reconstruction and continuation contract; evidence remains preserved.",
+      "evidence": [
+        "historical-memory-matrix.json"
+      ]
+    },
+    {
+      "writerRoute": "pixel-llama/default/pixel-gemma-e4b@pixel-8-pro",
+      "readerRoute": "local-qwen/default/qwen-hpubuntu@hpubuntu",
+      "writerNode": "pixel-8-pro",
+      "readerNode": "hpubuntu",
+      "providerRuntime": {
+        "writer": "google/gemma-4-E4B-it",
+        "reader": "qwen2.5-3b-instruct-q4_k_m.gguf"
+      },
+      "contractVersion": "agent-control.project-memory-exchange/v1",
+      "promptVersion": "current canonical exchange prompt",
+      "outputLimit": {
+        "writer": "source evidence",
+        "reader": "source evidence"
+      },
+      "attempts": {
+        "writer": 1,
+        "reader": 1
+      },
+      "reconstructionAccuracy": 100,
+      "structuralValid": true,
+      "semanticValid": true,
+      "continuationSuccess": true,
+      "usage": {
+        "inputTokens": 1106,
+        "outputTokens": 670,
+        "totalTokens": 1776,
+        "cachedInputTokens": 1,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "batonSha256": "99835c43251a6ec78f81edf487bce0123f7e20d429e56a86ce3f273c7f3cae18",
+      "memorySha256": "6cb59ba4ebb26069346aab8885e67c8c075ae99cc1976cbcb5327b922fbf943c",
+      "failures": [],
+      "terminalClassification": "FIXED",
+      "terminalReason": "Repeated physical Pixel Gemma writer trial passed the current contract.",
+      "evidence": [
+        "pixel-writer-repeated.json"
+      ]
+    },
+    {
+      "writerRoute": "local-qwen/default/qwen-hpubuntu@hpubuntu",
+      "readerRoute": "pixel-llama/default/pixel-gemma-e4b@pixel-8-pro",
+      "writerNode": "hpubuntu",
+      "readerNode": "pixel-8-pro",
+      "providerRuntime": {
+        "writer": "qwen2.5-3b-instruct-q4_k_m.gguf",
+        "reader": "google/gemma-4-E4B-it"
+      },
+      "contractVersion": "agent-control.project-memory-exchange/v1",
+      "promptVersion": "current canonical exchange prompt",
+      "outputLimit": {
+        "writer": "source evidence",
+        "reader": "source evidence"
+      },
+      "attempts": {
+        "writer": 1,
+        "reader": 2
+      },
+      "reconstructionAccuracy": 93.85,
+      "structuralValid": true,
+      "semanticValid": false,
+      "continuationSuccess": false,
+      "usage": {
+        "inputTokens": 1624,
+        "outputTokens": 1066,
+        "totalTokens": 2690,
+        "cachedInputTokens": 480,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "batonSha256": "76780afe4b421e079b39acc41d3375fec6338b4406e1a41097b59edc8996788e",
+      "memorySha256": "057f2020abc23dea3ba6aea3ef852c4285dedc7f45690595be7551570d0cb4ab",
+      "failures": [
+        "nextAction:semantic:exact_operation_required"
+      ],
+      "terminalClassification": "UNSUPPORTED",
+      "terminalReason": "Repeated Pixel Gemma reader trials returned complete schema-valid output but failed the exact next-action semantic contract.",
+      "evidence": [
+        "pixel-memory.json",
+        "memory-route-qualifications.json"
+      ]
+    },
+    {
+      "writerRoute": "pixel-llama/default/pixel-gemma-e4b@pixel-8-pro",
+      "readerRoute": "local-qwen/default/qwen-hpubuntu@hpubuntu",
+      "writerNode": "pixel-8-pro",
+      "readerNode": "hpubuntu",
+      "providerRuntime": {
+        "writer": "google/gemma-4-E4B-it",
+        "reader": "qwen2.5-3b-instruct-q4_k_m.gguf"
+      },
+      "contractVersion": "agent-control.project-memory-exchange/v1",
+      "promptVersion": "current canonical exchange prompt",
+      "outputLimit": {
+        "writer": "source evidence",
+        "reader": "source evidence"
+      },
+      "attempts": {
+        "writer": 1,
+        "reader": 1
+      },
+      "reconstructionAccuracy": 100,
+      "structuralValid": true,
+      "semanticValid": true,
+      "continuationSuccess": true,
+      "usage": {
+        "inputTokens": 1107,
+        "outputTokens": 670,
+        "totalTokens": 1777,
+        "cachedInputTokens": 745,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "batonSha256": "e2e6f06f9ba41c83fbe346331fe442f638351f2065a4e25bb1a7aa13240ede86",
+      "memorySha256": "6cb59ba4ebb26069346aab8885e67c8c075ae99cc1976cbcb5327b922fbf943c",
+      "failures": [],
+      "terminalClassification": "FIXED",
+      "terminalReason": "Second public-alias physical Pixel Gemma writer trial passed the current contract.",
+      "evidence": [
+        "pixel-writer-repeated.json"
+      ]
+    },
+    {
+      "writerRoute": "local-qwen/default/qwen-hpubuntu@hpubuntu",
+      "readerRoute": "pixel-llama/default/pixel-gemma-e4b@pixel-8-pro",
+      "writerNode": "hpubuntu",
+      "readerNode": "pixel-8-pro",
+      "providerRuntime": {
+        "writer": "qwen2.5-3b-instruct-q4_k_m.gguf",
+        "reader": "google/gemma-4-E4B-it"
+      },
+      "contractVersion": "agent-control.project-memory-exchange/v1",
+      "promptVersion": "current canonical exchange prompt",
+      "outputLimit": {
+        "writer": "source evidence",
+        "reader": "source evidence"
+      },
+      "attempts": {
+        "writer": 1,
+        "reader": 2
+      },
+      "reconstructionAccuracy": 93.85,
+      "structuralValid": true,
+      "semanticValid": false,
+      "continuationSuccess": false,
+      "usage": {
+        "inputTokens": 1624,
+        "outputTokens": 1066,
+        "totalTokens": 2690,
+        "cachedInputTokens": 480,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "batonSha256": "76780afe4b421e079b39acc41d3375fec6338b4406e1a41097b59edc8996788e",
+      "memorySha256": "057f2020abc23dea3ba6aea3ef852c4285dedc7f45690595be7551570d0cb4ab",
+      "failures": [
+        "nextAction:semantic:exact_operation_required"
+      ],
+      "terminalClassification": "UNSUPPORTED",
+      "terminalReason": "Alias of the same physically disproven Pixel Gemma reader capability; route must escalate.",
+      "evidence": [
+        "pixel-memory.json",
+        "memory-route-qualifications.json"
+      ]
+    }
+  ],
+  "reconciliation": {
+    "successful": 9,
+    "total": 12,
+    "terminallyClassified": 12,
+    "unsupported": 2,
+    "blockedExternal": 1
+  },
+  "safeRouting": {
+    "pixelGemmaWriter": true,
+    "pixelGemmaReader": false,
+    "pixelGemmaReaderAction": "ESCALATE",
+    "glmCurrentContractAction": "DENY_UNTIL_REQUALIFIED",
+    "qualificationRecord": "memory-route-qualifications.json"
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "schema": "agent-control.live-memory-evidence/v1",
+  "verdict": "PASS_GENUINE_RUNTIME_ACTIVITY_RECORDED",
+  "implementationCommit": "544a4fb4c8a9f6702adb944ab43de90daa7e67d6",
+  "qualificationExitCode": 0,
+  "browserErrors": [],
+  "providerOutputPersistedOnlyThroughSanitizedQualificationEvidence": true,
+  "files": [
+    {
+      "file": "cross-model-memory-qualification.json",
+      "bytes": 23318,
+      "sha256": "43f1eb4d803e13e42ef2d700b90eafbd3370f337ac6bf16696769aea42ad238d"
+    },
+    {
+      "file": "cross-model-memory-transcript.md",
+      "bytes": 1401,
+      "sha256": "bb5baf7130ff8458bc0dce8934d8dbbc17430a96bf929bbf4ae301395d789254"
+    },
+    {
+      "file": "live-runtime-final.png",
+      "bytes": 243772,
+      "sha256": "0358b969a02f57b1c30eccc32e5b165d4d460099fa2530e81a36748873c39213"
+    },
+    {
+      "file": "live-runtime-snapshots.json",
+      "bytes": 3027328,
+      "sha256": "af68f65e2d89097600b0efaeedf2aa33ce2b4361d04d4c3853c216246c699f95"
+    },
+    {
+      "file": "agent-control-4.5-live-poe-memory-qualification.mp4",
+      "bytes": 2462626,
+      "sha256": "72f2462c42469076bb74fa1087d54c96ff91630c9c2aa0094e1b6700c3c2922d"
+    }
+  ],
+  "video": {
+    "programs": [],
+    "streams": [
+      {
+        "codec_name": "h264",
+        "width": 1920,
+        "height": 1080,
+        "r_frame_rate": "25/1"
+      }
+    ],
+    "format": {
+      "duration": "26.720000",
+      "size": "2462626"
+    }
+  }
+}

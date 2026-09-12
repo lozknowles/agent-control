@@ -1,0 +1,263 @@
+{
+  "schema": "agent-control.4.5-release-gate-completion/v2",
+  "generatedAt": "2026-09-12T06:06:13.518Z",
+  "branch": "feature/4.5-release-gate-completion",
+  "implementationHead": "544a4fb4c8a9f6702adb944ab43de90daa7e67d6",
+  "releasedBaseline": "v4.4.0",
+  "recommendation": "EXPERIMENTAL",
+  "releaseReady": false,
+  "gates": [
+    {
+      "name": "Governed deterministic-skill lifecycle",
+      "status": "PROVEN",
+      "evidence": "45/45 prior physical executions passed; deterministic rejection and fallback remain covered."
+    },
+    {
+      "name": "Your Memories cross-model matrix",
+      "status": "BLOCKED_EXTERNAL",
+      "evidence": "9/12 cells pass or are fixed; two Pixel-reader aliases are terminally UNSUPPORTED and current GLM→Qwen is blocked by unavailable authentication."
+    },
+    {
+      "name": "Provider-neutral route qualification",
+      "status": "PROVEN",
+      "evidence": "Exact route records enforce contract/runtime freshness, payload bounds and safe deny/escalation before provider execution."
+    },
+    {
+      "name": "MSI cross-node memory transition",
+      "status": "PROVEN",
+      "evidence": "codex-chatgpt/cottage-plus/msi-cottage-luna@windows-codex-node → codex-chatgpt/lawrence-pro/msi-lawrence-sol@windows-codex-node; 100% reconstruction and independently verified continuation."
+    },
+    {
+      "name": "Strong-model memory consolidation",
+      "status": "PROVEN",
+      "evidence": "Qwen/Sol average improved 4.54 points (86.37% → 90.91%); both consolidated readers passed."
+    },
+    {
+      "name": "Specialist-model energy advantage",
+      "status": "DISPROVEN",
+      "evidence": "All 15/15 results per route verified, but the specialist used more measured-component joules per result in every retained batch qualification variant."
+    },
+    {
+      "name": "Deterministic reuse benefit",
+      "status": "PROVEN",
+      "evidence": "Prior physical evidence remains valid and unchanged."
+    },
+    {
+      "name": "Fallback after deterministic rejection",
+      "status": "PROVEN",
+      "evidence": "Prior production POE Work Parcel fallback evidence remains valid and unchanged."
+    },
+    {
+      "name": "Production POE Work Parcel",
+      "status": "PROVEN",
+      "evidence": "Live parcel parcel-social-31a9ac0971c66ccbc68608114807e6f1d917d8f8456d7ce36bd3c8a1809fc3fb requested Qwen→Pixel, rejected the unsupported reader, escalated to Luna, and completed with independent verification."
+    },
+    {
+      "name": "Warm residency route effect",
+      "status": "DISPROVEN",
+      "evidence": "Measured bounded component delta remains below uncertainty; no routing policy change admitted."
+    },
+    {
+      "name": "Whole-node power claim",
+      "status": "BLOCKED_EXTERNAL",
+      "evidence": "No synchronized whole-node meter exists on the qualified estate."
+    },
+    {
+      "name": "Exact-candidate HD recording",
+      "status": "PROVEN",
+      "evidence": "Genuine 1920×1080 production POE runtime recording preserved with route-gate decision, model execution, Work Parcel state, token accounting and no browser errors."
+    }
+  ],
+  "summary": {
+    "proven": 8,
+    "disproven": 2,
+    "blocked_external": 2
+  },
+  "physical": {
+    "controller": {
+      "verdict": "PASS_PHYSICAL_CROSS_MODEL_MEMORY",
+      "parcelIds": [
+        "parcel-37e1e90f-55fd-4d5d-b19a-379451e42d97",
+        "parcel-ff199a7c-9905-467c-9139-708a373288c2"
+      ],
+      "totals": {
+        "inputTokens": 15301,
+        "outputTokens": 1736,
+        "totalTokens": 17037,
+        "cachedInputTokens": 0,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      }
+    },
+    "pixelRepeated": {
+      "verdict": "PASS_PHYSICAL_CROSS_MODEL_MEMORY",
+      "parcelIds": [
+        "parcel-98d21a11-dd37-4be3-86c8-cab19e056bb2",
+        "parcel-16d67c3e-c597-4f96-839e-2419db9ba050"
+      ],
+      "totals": {
+        "inputTokens": 2213,
+        "outputTokens": 1340,
+        "totalTokens": 3553,
+        "cachedInputTokens": 746,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      }
+    },
+    "msiAccountStatus": {
+      "schema": "agent-control.msi-memory-transition-qualification/v1",
+      "startedAt": "2026-09-12T04:52:51.559Z",
+      "completedAt": "2026-09-12T04:52:54.141Z",
+      "resource": {
+        "nodeId": "windows-codex-node",
+        "platform": "windows",
+        "transport": "governed SSH ResourceCodexNodeExecutionPort"
+      },
+      "profiles": [
+        {
+          "profileId": "cottage-plus",
+          "nodeId": "windows-codex-node",
+          "status": "QUALIFIED",
+          "authenticated": true,
+          "codexVersion": "codex-cli 0.153.4",
+          "executableSha256": "3d6ca7085c932b62ef4ee4877e92f15b050fb94b2eb8e6c10a346a06248c6004",
+          "discoveredAt": "2026-09-12T04:52:51.4819668Z",
+          "credentialReference": "CODEX_HOME_COTTAGE_PLUS"
+        },
+        {
+          "profileId": "lawrence-pro",
+          "nodeId": "windows-codex-node",
+          "status": "QUALIFIED",
+          "authenticated": true,
+          "codexVersion": "codex-cli 0.153.4",
+          "executableSha256": "3d6ca7085c932b62ef4ee4877e92f15b050fb94b2eb8e6c10a346a06248c6004",
+          "discoveredAt": "2026-09-12T04:52:52.7861754Z",
+          "credentialReference": "CODEX_HOME_LAWRENCE_PRO"
+        }
+      ],
+      "transition": {
+        "status": "NOT_TESTED",
+        "reason": "A qualified transition must be run as a separate governed Work Parcel."
+      },
+      "credentialSafety": {
+        "credentialContentsObserved": false,
+        "windowsProfilePathsPersisted": false,
+        "rawTransportOutputPersisted": false
+      },
+      "verdict": "REVIEW_REQUIRED"
+    },
+    "msiTransition": {
+      "verdict": "PASS_PHYSICAL_CROSS_MODEL_MEMORY",
+      "parcelId": "parcel-social-12affc6be1118f78caf2c16daf1af735e192608d18177caa410bed9e461b5b34",
+      "routes": [
+        "codex-chatgpt/cottage-plus/msi-cottage-luna@windows-codex-node",
+        "codex-chatgpt/lawrence-pro/msi-lawrence-sol@windows-codex-node"
+      ],
+      "batonSha256": "bfd246d022fef4d8cde9666f4aace0faf458793bd45fda667c9db7de60e43812",
+      "usage": {
+        "inputTokens": 14916,
+        "outputTokens": 654,
+        "totalTokens": 15570,
+        "cachedInputTokens": 0,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      }
+    },
+    "livePoe": {
+      "verdict": "PASS_PHYSICAL_CROSS_MODEL_MEMORY",
+      "parcelId": "parcel-social-31a9ac0971c66ccbc68608114807e6f1d917d8f8456d7ce36bd3c8a1809fc3fb",
+      "requested": {
+        "writer": {
+          "providerId": "local-qwen",
+          "modelId": "qwen-hpubuntu",
+          "nodeId": "hpubuntu"
+        },
+        "reader": {
+          "providerId": "pixel-llama",
+          "modelId": "pixel-gemma-e4b",
+          "nodeId": "pixel-8-pro"
+        }
+      },
+      "decision": "ESCALATE",
+      "reasons": [
+        "reader-unsupported",
+        "pair-unsupported"
+      ],
+      "selected": {
+        "writer": {
+          "providerId": "local-qwen",
+          "modelId": "qwen-hpubuntu",
+          "nodeId": "hpubuntu"
+        },
+        "reader": {
+          "providerId": "codex-chatgpt",
+          "accountProfileId": "controller-codex",
+          "modelId": "codex-luna",
+          "nodeId": "hpubuntu"
+        }
+      },
+      "batonSha256": "daaaab63aeba2b986d682246cb68672fee8429e60999e02f85d2cf6b8f6c777f",
+      "usage": {
+        "inputTokens": 7618,
+        "outputTokens": 614,
+        "totalTokens": 8232,
+        "cachedInputTokens": 0,
+        "cost": null,
+        "currency": null,
+        "authority": "unavailable"
+      },
+      "video": "live/agent-control-4.5-live-poe-memory-qualification.mp4"
+    },
+    "consolidation": {
+      "conditionScores": {
+        "A": 45.45,
+        "B": 72.73,
+        "C": 90.91,
+        "D": 72.73
+      },
+      "conditionTokens": {
+        "A": 446,
+        "B": 903,
+        "C": 1138,
+        "D": 907
+      },
+      "originalAverageScore": 86.37,
+      "consolidatedAverageScore": 90.91,
+      "scoreDelta": 4.54,
+      "consolidationTokens": 8967,
+      "consolidationCost": null,
+      "consolidationCostAuthority": "unavailable"
+    },
+    "specialistEnergy": "FAIL_SPECIALIST_BATCH_ENERGY"
+  },
+  "validation": {
+    "fullSuite": {
+      "passed": 1161,
+      "total": 1161
+    },
+    "typeScript": "PASS",
+    "bootstrap": "PASS",
+    "dashboard": "PASS",
+    "neutrality": "PASS",
+    "implementationStatus": "PASS",
+    "documentationLinks": "PASS",
+    "gitDiffCheck": "PASS",
+    "secretScan": "PASS",
+    "independentEvidence": "PASS"
+  },
+  "security": {
+    "credentialsPersisted": false,
+    "credentialPathsPersisted": false,
+    "rawTransportOutputPersisted": false,
+    "providerOutputsSanitized": true
+  },
+  "releaseActions": {
+    "merge": false,
+    "tag": false,
+    "release": false,
+    "deploy": false
+  }
+}

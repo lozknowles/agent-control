@@ -71,7 +71,8 @@ type RemoteWireResult = {
 const WINDOWS_STDIN_BOOTSTRAP = [
   '$ErrorActionPreference = "Stop"',
   '$payload = [Console]::In.ReadLine()',
-  '$source = [Console]::In.ReadToEnd()',
+  '$encodedSource = [Console]::In.ReadLine()',
+  '$source = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($encodedSource))',
   '& ([ScriptBlock]::Create($source)) $payload',
   '',
 ].join('\n');
@@ -108,20 +109,28 @@ export class ResourceCodexNodeExecutionPort implements CodexNodeExecutionPort {
     const wire = await this.windows(resource, 'execReadOnlyStructured', {operation: 'execReadOnlyStructured', providerId: request.provider.id, accountProfileId: request.account.id, modelId: request.model.id, providerModel: request.model.providerModel, nodeId: request.nodeId, credentialEnvironment: store.env, timeoutMs: request.timeoutMs, maximumOutputTokens: request.maximumOutputTokens, instruction: request.instruction, outputSchema: request.outputSchema}, request.timeoutMs, request.signal, request.executionSessionScope);
     if (!wire.ok) throw new Error(remoteError(wire.error, 'codex_node_exec_failed'));
     for (const event of wire.telemetry ?? []) request.onTelemetry?.({...event, context: {tokens: null, authority: 'unavailable', source: 'codex_jsonl_does_not_report_current_context'}});
-    return {providerId: request.provider.id, accountProfileId: request.account.id, modelId: request.model.id, nodeId: resource.id, providerExecutionNodeId: resource.id, credentialNodeId: resource.id, codexVersion: required(wire.codexVersion, 'codex_node_version_missing'), executableSha256: requiredHash(wire.executableSha256), discoveredAt: requiredTimestamp(wire.discoveredAt), threadId: wire.threadId, finalMessage: required(wire.finalMessage, 'codex_exec_missing_final_message'), usage: numericRecord(wire.usage), observedItemTypes: Array.isArray(wire.observedItemTypes) ? wire.observedItemTypes.filter(value => typeof value === 'string') : []};
+    return {providerId: request.provider.id, accountProfileId: request.account.id, modelId: request.model.id, nodeId: resource.id, providerExecutionNodeId: resource.id, credentialNodeId: resource.id, codexVersion: required(wire.codexVersion, 'codex_node_version_missing'), executableSha256: requiredHash(wire.executableSha256), discoveredAt: requiredTimestamp(wire.discoveredAt), threadId: wire.threadId, finalMessage: requiredMessage(wire.finalMessage), usage: numericRecord(wire.usage), observedItemTypes: Array.isArray(wire.observedItemTypes) ? wire.observedItemTypes.filter(value => typeof value === 'string') : []};
   }
   private resource(nodeId: string) { const resource = this.resources.get(nodeId); if (!resource) throw new Error('codex_execution_node_missing'); return resource; }
   private async windows(resource: ResourceConfig, operation: RemoteWireResult['operation'], payload: Record<string, unknown>, timeoutMs: number, signal?: AbortSignal, executionSessionScope?: ExecutionSessionScope): Promise<RemoteWireResult> {
     if (resource.platform !== 'windows' || resource.transport.type !== 'ssh') throw new Error('codex_execution_node_transport_unsupported');
     const encoded = Buffer.from(JSON.stringify(payload), 'utf8').toString('base64');
+    const encodedScript = Buffer.from(this.script, 'utf8').toString('base64');
     const bootstrap = Buffer.from(WINDOWS_STDIN_BOOTSTRAP, 'utf16le').toString('base64');
-    const input = `${encoded}\n${this.script.trimEnd()}\n`;
+    // Windows OpenSSH does not consistently propagate channel EOF to a
+    // detached noninteractive PowerShell child. Two bounded records avoid
+    // using EOF as a protocol delimiter while keeping variable data out of
+    // executable PowerShell source.
+    const input = `${encoded}\n${encodedScript}\n`;
     let result;
     const ownedExecution = executionSessionScope && this.executionSessions
       ? new OwnedProcessManager(undefined, this.executionSessions, executionSessionScope)
       : undefined;
     try { result = await this.executor('ssh', sshResourceArgs(resource, ['powershell.exe', '-NoProfile', '-NonInteractive', '-EncodedCommand', bootstrap]), input, {
-      timeoutMs: Math.min(Math.max(timeoutMs + 10_000, 20_000), 30 * 60_000), maxBytes: 4 * 1024 * 1024, signal,
+      // Leave a bounded cleanup/result margin beyond the node-local provider
+      // deadline so the audited runner can terminate its remote process tree
+      // and return a canonical timeout instead of being orphaned by SSH.
+      timeoutMs: Math.min(Math.max(timeoutMs + 45_000, 60_000), 30 * 60_000), maxBytes: 4 * 1024 * 1024, signal,
       ...(ownedExecution ? {ownedExecution, session: {terminal: 'pipe', interactiveInput: false, allowSignals: true, remoteTransport: true, adapterId: 'windows-ssh-codex', commandLabel: 'Remote Codex read-only structured execution', transformOutputLine: remoteCodexSessionOutputLine}} : {}),
     }); }
     catch { throw new Error('codex_node_transport_failed'); }
@@ -135,6 +144,7 @@ export class ResourceCodexNodeExecutionPort implements CodexNodeExecutionPort {
 }
 
 function required(value: unknown, error: string) { if (typeof value !== 'string' || !value.trim() || /[\\/]/.test(value)) throw new Error(error); return value; }
+function requiredMessage(value: unknown) { if (typeof value !== 'string' || !value.trim()) throw new Error('codex_exec_missing_final_message'); const safe=safeRemoteDiagnostic(value); if(safe.includes('[REDACTED'))throw new Error('codex_exec_sensitive_output_rejected'); return safe; }
 function assertLocalities(request: CodexAccountStatusRequest) {
   const executionNode = accountProviderExecutionNode(request.account), credentialNode = accountCredentialResidency(request.account).nodeId;
   if (request.nodeId !== executionNode || request.providerExecutionNodeId && request.providerExecutionNodeId !== executionNode) throw new Error('codex_account_execution_node_mismatch');

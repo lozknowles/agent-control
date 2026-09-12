@@ -1,0 +1,42 @@
+{
+  "schema": "agent-control.msi-memory-transition-qualification/v1",
+  "startedAt": "2026-09-12T04:52:51.559Z",
+  "completedAt": "2026-09-12T04:52:54.141Z",
+  "resource": {
+    "nodeId": "windows-codex-node",
+    "platform": "windows",
+    "transport": "governed SSH ResourceCodexNodeExecutionPort"
+  },
+  "profiles": [
+    {
+      "profileId": "cottage-plus",
+      "nodeId": "windows-codex-node",
+      "status": "QUALIFIED",
+      "authenticated": true,
+      "codexVersion": "codex-cli 0.153.4",
+      "executableSha256": "3d6ca7085c932b62ef4ee4877e92f15b050fb94b2eb8e6c10a346a06248c6004",
+      "discoveredAt": "2026-09-12T04:52:51.4819668Z",
+      "credentialReference": "CODEX_HOME_COTTAGE_PLUS"
+    },
+    {
+      "profileId": "lawrence-pro",
+      "nodeId": "windows-codex-node",
+      "status": "QUALIFIED",
+      "authenticated": true,
+      "codexVersion": "codex-cli 0.153.4",
+      "executableSha256": "3d6ca7085c932b62ef4ee4877e92f15b050fb94b2eb8e6c10a346a06248c6004",
+      "discoveredAt": "2026-09-12T04:52:52.7861754Z",
+      "credentialReference": "CODEX_HOME_LAWRENCE_PRO"
+    }
+  ],
+  "transition": {
+    "status": "NOT_TESTED",
+    "reason": "A qualified transition must be run as a separate governed Work Parcel."
+  },
+  "credentialSafety": {
+    "credentialContentsObserved": false,
+    "windowsProfilePathsPersisted": false,
+    "rawTransportOutputPersisted": false
+  },
+  "verdict": "REVIEW_REQUIRED"
+}

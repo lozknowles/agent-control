@@ -1,0 +1,264 @@
+{
+  "version": 1,
+  "records": [
+    {
+      "schema": "agent-control.memory-route-qualification/v1",
+      "route": {
+        "providerId": "codex-chatgpt",
+        "accountProfileId": "controller-codex",
+        "modelId": "codex-luna",
+        "nodeId": "hpubuntu"
+      },
+      "runtimeVersion": "codex-cli/current",
+      "contractVersion": "agent-control.project-memory-exchange/v1",
+      "writer": {
+        "eligibility": "QUALIFIED",
+        "maximumProvenMemoryBytes": 1018,
+        "permittedRepairCount": 1,
+        "reason": "Current-contract writer success"
+      },
+      "reader": {
+        "eligibility": "QUALIFIED",
+        "maximumProvenMemoryBytes": 945,
+        "permittedRepairCount": 1,
+        "reason": "Current-contract cold-reader success"
+      },
+      "terminalClassification": "FIXED",
+      "qualifiedAt": "2026-09-12T05:46:08.485Z",
+      "expiresAt": "2026-10-12T05:46:08.485Z",
+      "evidence": [
+        "controller-memory.json"
+      ]
+    },
+    {
+      "schema": "agent-control.memory-route-qualification/v1",
+      "route": {
+        "providerId": "local-qwen",
+        "modelId": "qwen-hpubuntu",
+        "nodeId": "hpubuntu"
+      },
+      "runtimeVersion": "llama.cpp/current",
+      "contractVersion": "agent-control.project-memory-exchange/v1",
+      "writer": {
+        "eligibility": "QUALIFIED",
+        "maximumProvenMemoryBytes": 945,
+        "permittedRepairCount": 1,
+        "reason": "Repeated current-contract writer success"
+      },
+      "reader": {
+        "eligibility": "QUALIFIED",
+        "maximumProvenMemoryBytes": 1018,
+        "permittedRepairCount": 1,
+        "reason": "Repeated current-contract cold-reader success"
+      },
+      "terminalClassification": "PASS",
+      "qualifiedAt": "2026-09-12T05:46:08.485Z",
+      "expiresAt": "2026-10-12T05:46:08.485Z",
+      "evidence": [
+        "controller-memory.json",
+        "pixel-writer-repeated.json"
+      ]
+    },
+    {
+      "schema": "agent-control.memory-route-qualification/v1",
+      "route": {
+        "providerId": "openrouter",
+        "modelId": "glm-5.3-flash",
+        "nodeId": "hpubuntu"
+      },
+      "runtimeVersion": "openrouter/current",
+      "contractVersion": "agent-control.project-memory-exchange/v1",
+      "writer": {
+        "eligibility": "BLOCKED_EXTERNAL",
+        "maximumProvenMemoryBytes": null,
+        "permittedRepairCount": 0,
+        "reason": "Current credential prerequisite unavailable"
+      },
+      "reader": {
+        "eligibility": "BLOCKED_EXTERNAL",
+        "maximumProvenMemoryBytes": null,
+        "permittedRepairCount": 0,
+        "reason": "Current credential prerequisite unavailable"
+      },
+      "terminalClassification": "BLOCKED_EXTERNAL",
+      "qualifiedAt": "2026-09-12T05:46:08.485Z",
+      "expiresAt": "2026-10-12T05:46:08.485Z",
+      "evidence": [
+        "historical-memory-matrix.json"
+      ]
+    },
+    {
+      "schema": "agent-control.memory-route-qualification/v1",
+      "route": {
+        "providerId": "pixel-llama",
+        "modelId": "pixel-gemma-e4b",
+        "nodeId": "pixel-8-pro"
+      },
+      "runtimeVersion": "llama.cpp/pixel-current",
+      "contractVersion": "agent-control.project-memory-exchange/v1",
+      "writer": {
+        "eligibility": "QUALIFIED",
+        "maximumProvenMemoryBytes": 945,
+        "permittedRepairCount": 1,
+        "reason": "Repeated complete current-contract writer success after bounded output repair"
+      },
+      "reader": {
+        "eligibility": "UNSUPPORTED",
+        "maximumProvenMemoryBytes": null,
+        "permittedRepairCount": 1,
+        "reason": "Three bounded semantic reader trials omitted the exact required next action after repair"
+      },
+      "terminalClassification": "UNSUPPORTED",
+      "qualifiedAt": "2026-09-12T05:46:08.485Z",
+      "expiresAt": "2026-10-12T05:46:08.485Z",
+      "requiredEscalationRoute": {
+        "providerId": "codex-chatgpt",
+        "accountProfileId": "controller-codex",
+        "modelId": "codex-luna",
+        "nodeId": "hpubuntu"
+      },
+      "evidence": [
+        "pixel-writer-repeated.json",
+        "prior-pixel-memory.json"
+      ]
+    }
+  ],
+  "pairings": [
+    {
+      "schema": "agent-control.memory-pair-qualification/v1",
+      "writer": {
+        "providerId": "codex-chatgpt",
+        "accountProfileId": "controller-codex",
+        "modelId": "codex-luna",
+        "nodeId": "hpubuntu"
+      },
+      "reader": {
+        "providerId": "local-qwen",
+        "modelId": "qwen-hpubuntu",
+        "nodeId": "hpubuntu"
+      },
+      "contractVersion": "agent-control.project-memory-exchange/v1",
+      "eligibility": "QUALIFIED",
+      "terminalClassification": "FIXED",
+      "maximumProvenMemoryBytes": 1018,
+      "permittedRepairCount": 1,
+      "qualifiedAt": "2026-09-12T05:46:08.485Z",
+      "expiresAt": "2026-10-12T05:46:08.485Z",
+      "reason": "Repeated current-contract success",
+      "evidence": [
+        "controller-memory.json"
+      ]
+    },
+    {
+      "schema": "agent-control.memory-pair-qualification/v1",
+      "writer": {
+        "providerId": "local-qwen",
+        "modelId": "qwen-hpubuntu",
+        "nodeId": "hpubuntu"
+      },
+      "reader": {
+        "providerId": "codex-chatgpt",
+        "accountProfileId": "controller-codex",
+        "modelId": "codex-luna",
+        "nodeId": "hpubuntu"
+      },
+      "contractVersion": "agent-control.project-memory-exchange/v1",
+      "eligibility": "QUALIFIED",
+      "terminalClassification": "FIXED",
+      "maximumProvenMemoryBytes": 945,
+      "permittedRepairCount": 1,
+      "qualifiedAt": "2026-09-12T05:46:08.485Z",
+      "expiresAt": "2026-10-12T05:46:08.485Z",
+      "reason": "Repeated current-contract success",
+      "evidence": [
+        "controller-memory.json"
+      ]
+    },
+    {
+      "schema": "agent-control.memory-pair-qualification/v1",
+      "writer": {
+        "providerId": "local-qwen",
+        "modelId": "qwen-hpubuntu",
+        "nodeId": "hpubuntu"
+      },
+      "reader": {
+        "providerId": "pixel-llama",
+        "modelId": "pixel-gemma-e4b",
+        "nodeId": "pixel-8-pro"
+      },
+      "contractVersion": "agent-control.project-memory-exchange/v1",
+      "eligibility": "UNSUPPORTED",
+      "terminalClassification": "UNSUPPORTED",
+      "maximumProvenMemoryBytes": 945,
+      "permittedRepairCount": 1,
+      "qualifiedAt": "2026-09-12T05:46:08.485Z",
+      "expiresAt": "2026-10-12T05:46:08.485Z",
+      "reason": "Repeated semantic reconstruction failure under the unchanged contract",
+      "requiredEscalationPair": {
+        "writer": {
+          "providerId": "local-qwen",
+          "modelId": "qwen-hpubuntu",
+          "nodeId": "hpubuntu"
+        },
+        "reader": {
+          "providerId": "codex-chatgpt",
+          "accountProfileId": "controller-codex",
+          "modelId": "codex-luna",
+          "nodeId": "hpubuntu"
+        }
+      },
+      "evidence": [
+        "prior-pixel-memory.json"
+      ]
+    },
+    {
+      "schema": "agent-control.memory-pair-qualification/v1",
+      "writer": {
+        "providerId": "openrouter",
+        "modelId": "glm-5.3-flash",
+        "nodeId": "hpubuntu"
+      },
+      "reader": {
+        "providerId": "local-qwen",
+        "modelId": "qwen-hpubuntu",
+        "nodeId": "hpubuntu"
+      },
+      "contractVersion": "agent-control.project-memory-exchange/v1",
+      "eligibility": "BLOCKED_EXTERNAL",
+      "terminalClassification": "BLOCKED_EXTERNAL",
+      "maximumProvenMemoryBytes": null,
+      "permittedRepairCount": 0,
+      "qualifiedAt": "2026-09-12T05:46:08.485Z",
+      "expiresAt": "2026-10-12T05:46:08.485Z",
+      "reason": "Current OpenRouter authentication prerequisite unavailable; no current-contract result inferred",
+      "evidence": [
+        "historical-memory-matrix.json"
+      ]
+    },
+    {
+      "schema": "agent-control.memory-pair-qualification/v1",
+      "writer": {
+        "providerId": "pixel-llama",
+        "modelId": "pixel-gemma-e4b",
+        "nodeId": "pixel-8-pro"
+      },
+      "reader": {
+        "providerId": "local-qwen",
+        "modelId": "qwen-hpubuntu",
+        "nodeId": "hpubuntu"
+      },
+      "contractVersion": "agent-control.project-memory-exchange/v1",
+      "eligibility": "QUALIFIED",
+      "terminalClassification": "FIXED",
+      "maximumProvenMemoryBytes": 945,
+      "permittedRepairCount": 1,
+      "qualifiedAt": "2026-09-12T05:46:08.485Z",
+      "expiresAt": "2026-10-12T05:46:08.485Z",
+      "reason": "Repeated complete writer and independently verified cold-reader continuation",
+      "evidence": [
+        "pixel-writer-repeated.json",
+        "prior-pixel-memory.json"
+      ]
+    }
+  ]
+}

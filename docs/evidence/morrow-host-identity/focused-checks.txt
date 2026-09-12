@@ -1,0 +1,25 @@
+✔ character runtime exports the complete shared state vocabulary and six non-colour identities (1.344141ms)
+✔ motion preference is user-controlled and system reduced motion safely caps Full (0.135641ms)
+✔ truthful idle state receives looking then sleeping presentation without changing state (0.225103ms)
+✔ a sleeping character wakes once for recorded work without changing operational state (0.16184ms)
+✔ completion acknowledgement occurs only on a fresh live transition, never initial load or reconnect (0.192164ms)
+✔ dashboard positions navigable characters at real areas and isolates the simulated gallery (0.309398ms)
+✔ visual layer has state text equivalents, role accessories, focus, mobile and motion safeguards (0.723152ms)
+✔ presentation script is served as a one-way projection and is absent from execution imports (0.592317ms)
+✔ crew artwork keeps gradients local to each repeated portrait under the strict dashboard CSP (0.935997ms)
+✔ knowledge retrieves bounded approved documentation with exact revision and live source hashes (9.827951ms)
+✔ knowledge refresh invalidates hashes and removes stale deleted sources (1.575985ms)
+✔ knowledge cannot escape the allowlisted documentation root (0.414734ms)
+✔ unknown knowledge remains unavailable and never implies an action (0.742821ms)
+✔ approved documentation symlink cannot retrieve outside repository (1.101421ms)
+✔ guided Work Parcel question retains documented parent and child relationships (1.11325ms)
+✔ voice questions receive scoped configuration rather than inferred channel health (0.49963ms)
+✔ provider-neutral POE model routing uses the configured inexpensive and reasoning roles and returns measured usage (7.081882ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 321.278516
