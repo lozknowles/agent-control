@@ -1132,7 +1132,7 @@
         "qualification/agent-control-4.5-deterministic-skill-20260911/qualification.json",
         "qualification/agent-control-4.5-deterministic-skill-20260911/ux-evidence/evidence-manifest.json"
       ],
-      "limitation": "Qualification covers three bounded Agent Control operations on one measured node. General procedure synthesis, automatic code installation and automatic promotion remain forbidden; the independent cross-model memory matrix remains 5/12."
+      "limitation": "Qualification covers three bounded Agent Control operations on one measured node. General procedure synthesis, automatic code installation and automatic promotion remain forbidden. The separate cross-model Your Memories matrix has nine PASS/FIXED cells, two terminally UNSUPPORTED Pixel-reader aliases and one BLOCKED_EXTERNAL GLM route; it remains experimental."
     },
     {
       "id": "recipes.automatic-learning",

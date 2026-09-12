@@ -24,12 +24,16 @@ The provider-neutral ProjectMemoryPort stores advisory structured memories with
 provenance, freshness, conflict handling and content-addressed synchronization.
 The user-facing capability remains **Your Memories**; Obsidian and MARM are
 optional backends rather than Agent Control's memory identity. The physical
-cross-model matrix remains partial at 9/12 reconciled cells. Both controller
-directions, Pixel Gemma 4 E4B→Qwen and a POE-initiated MSI
+cross-model matrix now has terminal outcomes for all 12 cells: nine PASS/FIXED,
+two Qwen→Pixel aliases UNSUPPORTED, and current GLM→Qwen BLOCKED_EXTERNAL. Both controller
+directions, repeated Pixel Gemma 4 E4B→Qwen trials and a POE-initiated MSI
 `Cottage Plus/Luna → Lawrence Pro/Sol` Work Parcel passed independent
 verification. The MSI transition reconciled 15,570 tokens and preserved sealed
-route and baton identities. Qwen→Pixel remains a real semantic model limitation,
-and GLM→Qwen remains authentication-blocked.
+route and baton identities. Provider-neutral route qualification now blocks or
+safely escalates exact unqualified writer/reader pairs before invocation. A fresh
+1920×1080 production POE recording demonstrates Qwen→Pixel escalating to qualified
+Qwen→Luna with tokens, baton and independent verification. Qwen→Pixel remains a real semantic model limitation,
+and the current GLM→Qwen contract cannot be requalified until an OpenRouter credential is available.
 
 Power evidence distinguishes measured Intel package/DRAM and NVIDIA board values
 from unavailable whole-node energy. Deterministic reuse reduced measured energy
