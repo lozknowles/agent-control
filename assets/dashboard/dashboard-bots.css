@@ -125,13 +125,11 @@ button.bot-card:focus-visible,
 
 .bot-shadow { fill: rgba(0, 0, 0, .28); }
 .bot-shell {
-  fill: color-mix(in srgb, var(--panel-2, #151d27) 75%, var(--bot-accent) 25%);
   stroke: color-mix(in srgb, var(--bot-accent) 62%, #dce7f3);
   stroke-width: 2;
 }
 .bot-panel,
 .bot-face {
-  fill: color-mix(in srgb, #071019 92%, var(--bot-accent));
   stroke: color-mix(in srgb, var(--bot-accent) 48%, var(--bot-outline));
   stroke-width: 1.5;
 }
@@ -171,7 +169,7 @@ button.bot-card:focus-visible,
 .bot-accent-fill,
 .bot-role-accessory .bot-accent-fill { fill: color-mix(in srgb, var(--bot-accent) 72%, transparent); stroke: var(--bot-accent); }
 .bot-accent-stroke { stroke: var(--bot-accent) !important; }
-.bot-hand { fill: color-mix(in srgb, var(--bot-accent) 28%, var(--panel-2, #151d27)); stroke: var(--bot-accent); stroke-width: 1.7; }
+.bot-hand { stroke: var(--bot-accent); stroke-width: 1.7; }
 .bot-tool { stroke: var(--bot-accent) !important; stroke-width: 3 !important; }
 .bot-paper { fill: color-mix(in srgb, #edf5ff 13%, var(--panel-2, #151d27)); }
 .bot-lens,
@@ -730,3 +728,31 @@ main[hidden] .crew-workflow-board * { animation: none !important; transition: no
   .crew-settings fieldset { width: 100%; justify-content: center; }
   .bot-setting { flex: 1; }
 }
+
+/* Shared Morrow crew materials: ceramic faces, teal armour and copper mechanics.
+   Role colours and all state, rest, motion and tool selectors remain authoritative. */
+.agent-bot[data-art-style="morrow-crew"]{filter:drop-shadow(0 3px 3px #0004)}
+.agent-bot[data-art-style="morrow-crew"] .bot-shell{stroke:#6c7977;stroke-width:1.2}
+.agent-bot[data-art-style="morrow-crew"] .bot-body .bot-shell{stroke:#56717a}
+.agent-bot[data-art-style="morrow-crew"] .bot-face{stroke:#f2e4ca;stroke-width:.7}
+.agent-bot[data-art-style="morrow-crew"] .bot-panel{stroke:#526a70;stroke-width:1}
+.bot-copper-seam,.bot-panel-seam{fill:none;stroke:#b98962;stroke-width:1;stroke-linecap:round}
+.bot-trim{fill:none;stroke:var(--bot-accent);stroke-width:2.5;stroke-linecap:round}
+.bot-temple>ellipse,.bot-shoulder{stroke:#715542;stroke-width:1.1}
+.bot-temple .bot-temple-inset{fill:#243b43;stroke:#e1b48b;stroke-width:.7}
+.bot-brow{fill:none;stroke:#54605e;stroke-width:3.5;stroke-linecap:round}
+.bot-eye-socket{fill:#344442}
+.bot-glint{fill:#fff4d9}
+.bot-fastener{fill:#71817e}
+.agent-bot[data-art-style="morrow-crew"] .bot-mouth{stroke:#4b5957;stroke-width:1.6}
+.agent-bot[data-art-style="morrow-crew"] .bot-sleep-eyes path{stroke:#506360}
+.agent-bot[data-art-style="morrow-crew"] .bot-arm{stroke:#ba936f;stroke-width:5}
+.agent-bot[data-art-style="morrow-crew"] .bot-hand{stroke:#9c785a;stroke-width:1}
+.agent-bot[data-art-style="morrow-crew"] .bot-foot{stroke:#7b999f;stroke-width:5}
+.bot-finger{fill:none;stroke:#8b755f;stroke-width:.8;stroke-linecap:round}
+.bot-crew-badge>circle:first-child{fill:#263c43;stroke:#d49b6a;stroke-width:1}
+.bot-badge-light{fill:var(--bot-accent)}
+.agent-bot[data-art-style="morrow-crew"] .bot-role-accessory .bot-accent-fill{fill:color-mix(in srgb,var(--bot-accent) 32%,#263e48);stroke:var(--bot-accent);stroke-width:1.4}
+.agent-bot[data-art-style="morrow-crew"] .bot-paper{fill:#e6d9c0;stroke:#b08d66}
+.agent-bot[data-art-style="morrow-crew"] .bot-editor>path:not(.bot-quill){stroke:#5d6260;stroke-width:1}
+.agent-bot[data-art-style="morrow-crew"] .bot-lens,.agent-bot[data-art-style="morrow-crew"] .bot-gauge{fill:color-mix(in srgb,var(--bot-accent) 15%,#263c43);stroke-width:2}

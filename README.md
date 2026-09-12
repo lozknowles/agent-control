@@ -22,7 +22,7 @@ remains available and inappropriate tasks fail closed before adapter loading.
 The initial physical qualification uses CPU LoRA over a pinned 135M-parameter
 base for strict route-intent JSON. It keeps active GPU-backed voice and model
 services untouched and distinguishes learned adaptation from transient Warm
-Expert/cache state. The **Learned Specialists** dashboard and POE expose the
+Expert/cache state. The **Learned Specialists** dashboard and Morrow expose the
 candidate lifecycle, exact identity, measured improvement, limitations and route
 decisions without implying uncontrolled online learning. See the
 [operator guide](docs/skill-learning.md), [architecture decision](docs/agent-control-4.5-skill-learning-architecture-review.md),
@@ -170,13 +170,15 @@ Agent Control is provider-, model-, platform- and execution-environment-agnostic
 
 The dashboard is an observer and authenticated operator client over the same control service. Run and Lane **Execution history** correlates durable operator/system/provider/tool/governor/baton/error activity with telemetry, accounting and verification. It is not raw provider traffic, unredacted logs or hidden model reasoning.
 
-## POE floating companion and spoken tour (4.1)
+## Morrow and the robotic crew (4.5 candidate)
 
-POE is Agent Control's original resident conversational operator, evidence explainer, Crew liaison, benchmark designer, and optional OmniVoice interface. The Crew execute work; POE retrieves focused canonical records, explains what is known, admits what is unavailable, and turns an agreed experiment into a frozen proposal that still requires explicit operator approval. Approval submits registered Jobs through the normal Work Parcel, routing, governor, safety, verification, accounting, and league lifecycle—POE has no private execution path and no authority to overrule those controls.
+Morrow is Agent Control's original chief steward: conversational host, evidence guide, crew liaison and optional OmniVoice interface. He retrieves focused canonical records, explains activity and helps prepare proposals. Approved work enters the existing Work Parcel, routing, governor, safety, execution, verification and accounting lifecycle.
 
-The dashboard adds a small draggable SVG hotelier near the upper right, a compact conversation panel, and contextual **Ask POE about this** controls. The optional guided tour highlights real views while POE speaks; Next waits for browser playback to finish, and failures pause narration with a retry control. Captions preserve the complete spoken text, and reduced-motion preferences suppress animation. Authenticated WhatsApp supports `POE: <question>` through the existing enrolled/idempotent Social & Voice edge with a separate channel-scoped conversation. Optional OmniVoice uses an original designed voice, records available turn-latency fields, and treats barge-in as speech interruption rather than Work Parcel cancellation. A qualified conversational model can be selected with Model Registry roles; otherwise POE explicitly uses its deterministic grounded renderer. It never silently substitutes another model.
+The compact floating host has silver hair, a teal utility jacket and a copper badge. Cadence, Quill, Relay, Lumen, Rook and Verity retain their robotic identities, established roles, colours and accessories, now with a shared ceramic, teal and copper appearance. The dashboard provides **Ask Morrow about this** controls. Authenticated social channels accept `Morrow: <question>` and retain legacy `POE:` commands. Guided narration, speech interruption, once-only introductions and reduced-motion controls retain their existing boundaries.
 
-See [POE operation and architecture](docs/poe.md), [dashboard operation](docs/web-dashboard.md), [Social & Voice](docs/social-voice/README.md), [Work Parcels](docs/work-parcels.md), and [adaptive orchestration](docs/adaptive-multi-model-orchestration.md). The [4.1 qualification record](docs/evidence/agent-control-4.1-qualification.md) remains historical evidence. Follow the current [deployment, upgrade and rollback guide](docs/DEPLOYMENT.md); the release manifest records the accepted source and evidence.
+The original designed OmniVoice configuration, internal `poe` routes/events/storage keys, saved conversations and sealed proposal hashes remain compatible. The public identity changes without a state migration or a change to execution authority. Historical POE recordings remain evidence for their recorded source commits; they do not physically qualify the new Morrow presentation.
+
+See the [identity and crew guide](docs/morrow.md), [Morrow operation and architecture](docs/poe.md), [4.5 integration record](docs/evidence/morrow-4.5-integration/validation.md), [dashboard operation](docs/web-dashboard.md), and [deployment, upgrade and rollback guide](docs/DEPLOYMENT.md). This combined candidate remains **EXPERIMENTAL** and is available for testing on `feature/4.5-release-gate-completion`.
 
 ## Protected-resource mutation governance
 

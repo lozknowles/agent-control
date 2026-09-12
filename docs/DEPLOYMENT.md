@@ -75,6 +75,25 @@ Keep the dashboard private through the installation's existing reverse proxy or
 tailnet. Set `AGENT_CONTROL_WEB_OPERATOR_TOKEN` through the existing secret
 delivery mechanism. Do not place credentials in URLs, Git, transcripts or videos.
 
+## Morrow integration testing
+
+The combined experimental source is on `feature/4.5-release-gate-completion`.
+Use an isolated checkout at its verified immutable commit, with separate private
+state/configuration and an unused loopback port. Follow the local startup above;
+never share a writable state directory with the running controller.
+
+Check the host name, all six robots, new and restored conversations, contextual
+help, reduced/off motion and narrow-screen layout. With an enrolled physical
+voice/social setup, exercise `Morrow: status`, the legacy `POE: status` alias and
+speech interruption. Confirm an approved harmless Work Parcel still follows
+normal dispatch, route qualification, execution and independent verification.
+Record the actual model, source commit and outcome. Existing POE videos and
+controlled transcription tests do not establish these physical Morrow checks.
+
+See the [integration record](evidence/morrow-4.5-integration/validation.md).
+Source integration and publication do not change the running installation or
+make this candidate release-ready.
+
 ## Pre-release and rollout gate
 
 1. Freeze the candidate SHA and resolved dependency inventory.
@@ -129,5 +148,5 @@ against one state directory or move credential stores with source archives.
 
 Detailed integration configuration remains in [the historical 4.1 runbook](installation-deployment-4.1.md),
 [model documentation](models/README.md), [managed nodes](managed-nodes.md),
-[dashboard operation](web-dashboard.md), [POE](poe.md), and
+[dashboard operation](web-dashboard.md), [Morrow](poe.md), and
 [Cache-Aware Expert Delegation](cache-aware-expert-delegation.md).
