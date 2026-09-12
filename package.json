@@ -17,7 +17,7 @@
     "init:teammates": "node --import tsx scripts/init-teammates.ts",
     "test": "node --import tsx --test --test-concurrency=1 src/*.test.ts src/control/*.test.ts src/ui/*.test.ts scripts/*.test.mjs android/*.test.mjs",
     "typecheck": "tsc --noEmit",
-    "check:bootstrap": "node --check scripts/agent-control.mjs scripts/status-client.mjs scripts/control-plane.mjs scripts/config.mjs scripts/qualify-all.mjs scripts/record-provider-neutral-qualification.mjs scripts/record-windows-cleanup-qualification.mjs scripts/record-recovery-qualification.mjs scripts/record-android-adb-qualification.mjs scripts/record-dashboard-characters.mjs scripts/record-crew-wopr-escalation.mjs scripts/record-nvidia-shortlist-tournament.mjs scripts/record-nvidia-tournament-reconciliation.mjs android/adb-local.mjs android/node-server.mjs && bash -n android/resource-agent.sh android/start-node.sh android/install-boot.sh android/termux-boot-agent-control.sh scripts/qualify-remote.sh scripts/managed-node-probe.sh scripts/managed-node-action.sh",
+    "check:bootstrap": "node --check scripts/agent-control.mjs scripts/status-client.mjs scripts/control-plane.mjs scripts/config.mjs scripts/qualify-all.mjs scripts/record-provider-neutral-qualification.mjs scripts/record-windows-cleanup-qualification.mjs scripts/record-recovery-qualification.mjs scripts/record-android-adb-qualification.mjs scripts/record-dashboard-characters.mjs scripts/record-crew-wopr-escalation.mjs scripts/record-nvidia-shortlist-tournament.mjs scripts/record-nvidia-tournament-reconciliation.mjs scripts/record-live-memory-qualification-4.5.mjs scripts/reconcile-release-gate-4.5.mjs scripts/verify-release-gate-4.5.mjs android/adb-local.mjs android/node-server.mjs && bash -n android/resource-agent.sh android/start-node.sh android/install-boot.sh android/termux-boot-agent-control.sh scripts/qualify-remote.sh scripts/managed-node-probe.sh scripts/managed-node-action.sh",
     "test:android-adb": "node --test android/adb-local.test.mjs",
     "check:neutrality": "node --test scripts/infrastructure-neutrality.test.mjs",
     "check:dashboard": "node --check assets/dashboard/dashboard-social-voice.js assets/dashboard/dashboard-openwa.js assets/dashboard/dashboard.js assets/dashboard/dashboard-parameters.js assets/dashboard/dashboard-running-state.js assets/dashboard/dashboard-enhancements.js assets/dashboard/dashboard-parameterized-jobs.js assets/dashboard/dashboard-models.js assets/dashboard/dashboard-sessions.js assets/dashboard/dashboard-bots.js assets/dashboard/dashboard-wopr.js assets/dashboard/dashboard-adaptive-orchestration.js assets/dashboard/dashboard-live-shell.js assets/dashboard/dashboard-poe.js assets/dashboard/dashboard-cache-experts.js assets/dashboard/dashboard-learned-specialists.js assets/session-player/session-player.js",
@@ -67,12 +67,17 @@
     "qualify:cross-model-memory": "node --import tsx scripts/qualify-cross-model-memory-4.5.ts",
     "qualify:memory-consolidation": "node --import tsx scripts/qualify-memory-conditions-consolidation-4.5.ts",
     "record:cross-model-memory": "node --import tsx scripts/record-cross-model-memory-4.5.ts",
+    "record:live-memory-qualification": "node scripts/record-live-memory-qualification-4.5.mjs",
+    "reconcile:release-gate-4.5": "node scripts/reconcile-release-gate-4.5.mjs",
+    "verify:release-gate-4.5": "node scripts/verify-release-gate-4.5.mjs",
     "qualify:energy-efficiency": "node --import tsx scripts/qualify-energy-efficiency-4.5.ts",
     "qualify:specialist-energy": "node --import tsx scripts/qualify-specialist-energy-4.5.ts",
     "qualify:power-aware-poe": "node --import tsx scripts/qualify-power-aware-poe-4.5.ts"
     ,"qualify:deterministic-skills": "node --import tsx scripts/qualify-deterministic-skill-promotion-4.5.ts"
     ,"qualify:deterministic-skills:poe": "node --import tsx scripts/qualify-deterministic-skill-poe-work-parcel-4.5.ts"
     ,"record:deterministic-skills": "node --import tsx scripts/record-deterministic-skill-promotion-4.5.ts"
+    ,"qualify:model-residency": "node --import tsx scripts/qualify-model-residency-4.5.ts"
+    ,"qualify:msi-memory": "node --import tsx scripts/qualify-msi-memory-transition-4.5.ts"
   },
   "dependencies": {
     "@agentclientprotocol/sdk": "1.4.0",
