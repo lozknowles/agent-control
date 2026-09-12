@@ -4,6 +4,17 @@ param([string]$PayloadLine)
   $ResultSchema = 'agent-control.codex-node-result/v1'
   function Emit-Result([hashtable]$Value) { $Value.schema = $ResultSchema; [Console]::Out.WriteLine(($Value | ConvertTo-Json -Depth 20 -Compress)) }
   function Fail([string]$Operation, [string]$Code) { Emit-Result @{ operation = $Operation; ok = $false; error = $Code }; exit 0 }
+  function Stop-ProcessTree([Diagnostics.Process]$Process) {
+    if ($null -eq $Process) { return }
+    try { & (Join-Path $env:SystemRoot 'System32\taskkill.exe') /PID $Process.Id /T /F *> $null } catch {}
+    try { if (-not $Process.HasExited) { $Process.Kill() } } catch {}
+    try { [void]$Process.WaitForExit(5000) } catch {}
+  }
+  function Quote-NativeArgument([string]$Value) {
+    if ($Value.Contains('"') -or $Value.Contains("`r") -or $Value.Contains("`n")) { throw 'unsafe_native_argument' }
+    if ($Value -notmatch '\s') { return $Value }
+    return '"' + $Value + '"'
+  }
   function Safe-Usage($Usage) {
     if ($null -eq $Usage) { return $null }
     $out = @{}
@@ -49,19 +60,28 @@ param([string]$PayloadLine)
     $executableSha256 = (Get-FileHash -LiteralPath $selected.Path -Algorithm SHA256).Hash.ToLowerInvariant()
     $env:CODEX_HOME = $codexHome
     if ($operation -eq 'accountStatus') {
-      $statusTemporary = Join-Path ([IO.Path]::GetTempPath()) ('agent-control-codex-status-' + [Guid]::NewGuid().ToString('N'))
-      New-Item -ItemType Directory -Path $statusTemporary | Out-Null
-      try {
-        $statusStdoutFile = Join-Path $statusTemporary 'stdout.txt'
-        $statusStderrFile = Join-Path $statusTemporary 'stderr.txt'
-        $statusProcess = Start-Process -FilePath $selected.Path -ArgumentList @('login', 'status') -WindowStyle Hidden -PassThru -RedirectStandardOutput $statusStdoutFile -RedirectStandardError $statusStderrFile
-        $statusTimeoutMilliseconds = [Math]::Max(1000, [Math]::Min(1800000, [int64]$request.timeoutMs))
-        if (-not $statusProcess.WaitForExit([int]$statusTimeoutMilliseconds)) { $statusProcess.Kill(); $statusProcess.WaitForExit(); Fail $operation 'codex_node_timeout' }
-        $statusStdout = if (Test-Path -LiteralPath $statusStdoutFile -PathType Leaf) { [IO.File]::ReadAllText($statusStdoutFile) } else { '' }
-        $statusStderr = if (Test-Path -LiteralPath $statusStderrFile -PathType Leaf) { [IO.File]::ReadAllText($statusStderrFile) } else { '' }
-        $statusText = $statusStdout + ' ' + $statusStderr
-        $authenticated = $statusProcess.ExitCode -eq 0 -and $statusText -match 'ChatGPT'
-      } finally { Remove-Item -LiteralPath $statusTemporary -Recurse -Force -ErrorAction SilentlyContinue }
+      $statusStart = New-Object Diagnostics.ProcessStartInfo
+      $statusStart.FileName = $selected.Path
+      $statusStart.Arguments = 'login status'
+      $statusStart.UseShellExecute = $false
+      $statusStart.CreateNoWindow = $true
+      $statusStart.RedirectStandardInput = $true
+      $statusStart.RedirectStandardOutput = $true
+      $statusStart.RedirectStandardError = $true
+      $statusProcess = New-Object Diagnostics.Process
+      $statusProcess.StartInfo = $statusStart
+      if (-not $statusProcess.Start()) { Fail $operation 'codex_node_transport_failed' }
+      $statusProcess.StandardInput.Close()
+      # Drain both streams asynchronously before the bounded wait. Start-Process
+      # with file redirection can retain inherited handles in the Codex Desktop
+      # process tree and falsely time out after the actual CLI has exited.
+      $statusStdoutTask = $statusProcess.StandardOutput.ReadToEndAsync()
+      $statusStderrTask = $statusProcess.StandardError.ReadToEndAsync()
+      $statusTimeoutMilliseconds = [Math]::Max(1000, [Math]::Min(1800000, [int64]$request.timeoutMs))
+      if (-not $statusProcess.WaitForExit([int]$statusTimeoutMilliseconds)) { Stop-ProcessTree $statusProcess; Fail $operation 'codex_node_timeout' }
+      $statusProcess.WaitForExit()
+      $statusText = $statusStdoutTask.GetAwaiter().GetResult() + ' ' + $statusStderrTask.GetAwaiter().GetResult()
+      $authenticated = $statusProcess.ExitCode -eq 0 -and $statusText -match 'ChatGPT'
       if (-not $authenticated) { Fail $operation 'codex_chatgpt_auth_required' }
       Emit-Result @{ operation = $operation; ok = $true; authenticated = $true; codexVersion = $selected.Version; executableSha256 = $executableSha256; discoveredAt = $discoveredAt }
       exit 0
@@ -72,27 +92,37 @@ param([string]$PayloadLine)
     New-Item -ItemType Directory -Path $temporary | Out-Null
     try {
       $schemaFile = Join-Path $temporary 'output.schema.json'
-      $promptFile = Join-Path $temporary 'prompt.txt'
-      $stdoutFile = Join-Path $temporary 'events.jsonl'
-      $stderrFile = Join-Path $temporary 'stderr.txt'
       $lastMessageFile = Join-Path $temporary 'last-message.json'
       $schemaJson = $request.outputSchema | ConvertTo-Json -Depth 30 -Compress
       $utf8NoBom = New-Object Text.UTF8Encoding($false)
       [IO.File]::WriteAllText($schemaFile, $schemaJson, $utf8NoBom)
-      [IO.File]::WriteAllText($promptFile, [string]$request.instruction, $utf8NoBom)
-      $arguments = @('exec', '--ephemeral', '--json', '--strict-config', '--sandbox', 'read-only', '--skip-git-repo-check', '--ignore-user-config', '--ignore-rules', '--config', 'project_doc_max_bytes=0', '--config', 'web_search="disabled"', '--config', 'features.shell_tool=false', '--config', 'features.unified_exec=false', '--config', 'features.multi_agent=false', '--config', 'features.browser_use=false', '--config', 'features.computer_use=false', '--config', 'features.in_app_browser=false', '--config', 'features.apps=false', '--config', 'features.image_generation=false', '--config', 'features.workspace_dependencies=false', '--model', [string]$request.providerModel, '--output-schema', $schemaFile, '--output-last-message', $lastMessageFile, '-')
+      $arguments = @('exec', '--ephemeral', '--json', '--strict-config', '--sandbox', 'read-only', '--skip-git-repo-check', '--ignore-user-config', '--ignore-rules', '--config', 'project_doc_max_bytes=0', '--config', 'web_search=disabled', '--config', 'features.shell_tool=false', '--config', 'features.unified_exec=false', '--config', 'features.multi_agent=false', '--config', 'features.browser_use=false', '--config', 'features.computer_use=false', '--config', 'features.in_app_browser=false', '--config', 'features.apps=false', '--config', 'features.image_generation=false', '--config', 'features.workspace_dependencies=false', '--model', [string]$request.providerModel, '--output-schema', $schemaFile, '--output-last-message', $lastMessageFile, '-')
       $stopwatch = [Diagnostics.Stopwatch]::StartNew()
-      # Codex always checks stdin for additional prompt input. A background
-      # PowerShell job leaves stdin open, so a fast refusal can be hidden until
-      # the outer timeout. A supervised native process receives a finite prompt
-      # through a finite node-local file. Provider streams also terminate in
-      # node-local files, so a persistent code-mode child cannot retain the SSH
-      # response pipe after the bounded Codex parent has exited.
-      $process = Start-Process -FilePath $selected.Path -ArgumentList $arguments -WindowStyle Hidden -PassThru -RedirectStandardInput $promptFile -RedirectStandardOutput $stdoutFile -RedirectStandardError $stderrFile
+      # Start the exact executable directly, deliver the prompt through a
+      # finite stdin stream and drain both provider streams asynchronously.
+      # Start-Process may delegate a bundled desktop executable and lose the
+      # process identity needed for bounded tree cleanup.
+      $start = New-Object Diagnostics.ProcessStartInfo
+      $start.FileName = $selected.Path
+      $start.Arguments = (@($arguments | ForEach-Object { Quote-NativeArgument ([string]$_) }) -join ' ')
+      $start.UseShellExecute = $false
+      $start.CreateNoWindow = $true
+      $start.RedirectStandardInput = $true
+      $start.RedirectStandardOutput = $true
+      $start.RedirectStandardError = $true
+      $process = New-Object Diagnostics.Process
+      $process.StartInfo = $start
+      if (-not $process.Start()) { Fail $operation 'codex_node_transport_failed' }
+      $process.StandardInput.Write([string]$request.instruction)
+      $process.StandardInput.Close()
+      $stdoutTask = $process.StandardOutput.ReadToEndAsync()
+      $stderrTask = $process.StandardError.ReadToEndAsync()
       $timeoutMilliseconds = [Math]::Max(1000, [Math]::Min(1800000, [int64]$request.timeoutMs))
-      if (-not $process.WaitForExit([int]$timeoutMilliseconds)) { $process.Kill(); $process.WaitForExit(); Fail $operation 'codex_node_exec_timeout' }
-      $stdout = if (Test-Path -LiteralPath $stdoutFile -PathType Leaf) { [IO.File]::ReadAllText($stdoutFile) } else { '' }
-      $standardError = if (Test-Path -LiteralPath $stderrFile -PathType Leaf) { [IO.File]::ReadAllText($stderrFile) } else { '' }
+      if (-not $process.WaitForExit([int]$timeoutMilliseconds)) { Stop-ProcessTree $process; Fail $operation 'codex_node_exec_timeout' }
+      $process.WaitForExit()
+      if (-not [Threading.Tasks.Task]::WaitAll(@($stdoutTask, $stderrTask), 5000)) { Stop-ProcessTree $process; Fail $operation 'codex_node_exec_stream_incomplete' }
+      $stdout = $stdoutTask.GetAwaiter().GetResult()
+      $standardError = $stderrTask.GetAwaiter().GetResult()
       $stopwatch.Stop()
       $lines = @($stdout -split '[\r\n]+' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
       $events = @()

@@ -72,6 +72,7 @@
     "verify:release-gate-4.5": "node scripts/verify-release-gate-4.5.mjs",
     "qualify:energy-efficiency": "node --import tsx scripts/qualify-energy-efficiency-4.5.ts",
     "qualify:specialist-energy": "node --import tsx scripts/qualify-specialist-energy-4.5.ts",
+    "qualify:specialist-batch-energy": "node --import tsx scripts/qualify-specialist-batch-energy-4.5.ts",
     "qualify:power-aware-poe": "node --import tsx scripts/qualify-power-aware-poe-4.5.ts"
     ,"qualify:deterministic-skills": "node --import tsx scripts/qualify-deterministic-skill-promotion-4.5.ts"
     ,"qualify:deterministic-skills:poe": "node --import tsx scripts/qualify-deterministic-skill-poe-work-parcel-4.5.ts"
