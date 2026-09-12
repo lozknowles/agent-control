@@ -1,3 +1,4 @@
+import {InstructionManifestStore, withInstructionScope, baseInstructionSources, instructionIdentity} from './instruction-observer.js';
 import {createHash, randomUUID} from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -120,12 +121,13 @@ export class RunLedger {
   private save() { writeJsonAtomic(this.file, {version: 1, runs: this.list(), schedules: this.scheduleStates()} satisfies LedgerSnapshot, true); }
 }
 
-export interface JobRuntimeOptions {now?: () => Date; approval?: (policy: string, run: RunRecord) => boolean; efficiency?: HarnessEfficiencyLedgerPort; safety?: RuntimeSafetySupervisorPort; defaultRecoveryDeadlineSeconds?: number; ownedExecutionFactory?: (scope: ExecutionSessionScope) => OwnedExecution; executionSessions?: ExecutionSessionRuntime;}
+export interface JobRuntimeOptions {instructions?: InstructionManifestStore;now?: () => Date; approval?: (policy: string, run: RunRecord) => boolean; efficiency?: HarnessEfficiencyLedgerPort; safety?: RuntimeSafetySupervisorPort; defaultRecoveryDeadlineSeconds?: number; ownedExecutionFactory?: (scope: ExecutionSessionScope) => OwnedExecution; executionSessions?: ExecutionSessionRuntime;}
 export interface JobDispatch {runId: string; completion: Promise<RunRecord | undefined>;}
 export class JobRuntime {
+  readonly instructions: InstructionManifestStore;
   private readonly controllers = new Map<string, AbortController>();
   private readonly clock: () => Date;
-  constructor(readonly catalog: JobCatalog, readonly actions: ActionRegistry, readonly workers: WorkerRegistry, readonly ledger: RunLedger, readonly artifacts: ArtifactStore, readonly locks: ResourceLockManager, options: JobRuntimeOptions = {}) { this.clock = options.now ?? (() => new Date()); this.approval = options.approval ?? (() => false); this.efficiency = options.efficiency; this.safety = options.safety; this.defaultRecoveryDeadlineSeconds = options.defaultRecoveryDeadlineSeconds ?? 900; this.ownedExecutionFactory = options.ownedExecutionFactory ?? (scope => new OwnedProcessManager(undefined, options.executionSessions, scope)); }
+  constructor(readonly catalog: JobCatalog, readonly actions: ActionRegistry, readonly workers: WorkerRegistry, readonly ledger: RunLedger, readonly artifacts: ArtifactStore, readonly locks: ResourceLockManager, options: JobRuntimeOptions = {}) { this.instructions=options.instructions??new InstructionManifestStore(path.join(path.dirname(ledger.file),'instruction-manifests')); this.clock = options.now ?? (() => new Date()); this.approval = options.approval ?? (() => false); this.efficiency = options.efficiency; this.safety = options.safety; this.defaultRecoveryDeadlineSeconds = options.defaultRecoveryDeadlineSeconds ?? 900; this.ownedExecutionFactory = options.ownedExecutionFactory ?? (scope => new OwnedProcessManager(undefined, options.executionSessions, scope)); }
   private readonly approval: (policy: string, run: RunRecord) => boolean;
   private readonly efficiency?: HarnessEfficiencyLedgerPort;
   readonly safety?: RuntimeSafetySupervisorPort;
@@ -270,7 +272,8 @@ export class JobRuntime {
       const action = registeredAction;
       run.provenance.push({type: 'action-dispatch', at: this.clock().toISOString(), detail: `${action.kind}:${step.action}${action.kind === 'agent' ? ':adaptive-harness' : ''}`});
       const actionContext = {run: structuredClone(run), step: structuredClone(step), worker, parameters: structuredClone(run.parameters), inputArtifacts: inputs, readArtifact: (id: string) => this.artifacts.read(id), signal: controller.signal, ownedExecution, ...(step.governance ? {governance: structuredClone(step.governance)} : {})};
-      const invocation = Promise.resolve().then(() => action.kind === 'control' ? action.handler(actionContext) : action.handler.execute(actionContext)).then(
+      const parcelContext=run.trigger.parcelContext, route=run.trigger.modelRoute;
+      const invocation = withInstructionScope({store:this.instructions,input:{identity:instructionIdentity(parcelContext?.parcelId??`job:${run.id}`,{runId:run.id,stageId:parcelContext?.stageId??step.id,workerId:worker.id,providerId:route?.providerId??null,modelId:route?.modelId??null,providerModel:route?.providerModel??null,accountProfileId:route?.accountProfileId??null,invocationId:`${run.id}:${step.id}:${attempt.attempt}`}),sources:[...baseInstructionSources(parcelContext?.originalGoal??run.effectiveJob.metadata.description??run.jobId,parcelContext?.effectiveInstructions??[],parcelContext?.baton),{type:'GOVERNANCE',uri:`agent-control://jobs/${run.jobId}/${step.id}`,revision:run.jobVersion,content:JSON.stringify({action:step.action,requires:required,verification:step.verification?.required??[],dependsOn:step.dependsOn})}],continuation:parcelContext?.baton?{id:parcelContext.baton.id,hash:parcelContext.baton.sha256}:null}},async () => action.kind === 'control' ? action.handler(actionContext) : action.handler.execute(actionContext)).then(
         output => timedOut ? new Promise<never>(() => undefined) : output,
         error => timedOut ? new Promise<never>(() => undefined) : Promise.reject(error),
       );

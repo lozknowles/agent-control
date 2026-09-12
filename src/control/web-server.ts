@@ -184,6 +184,8 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   if (method === 'GET' && url.pathname === '/api/saved-jobs') return json(response, 200, service.savedJobs());
   if (method === 'GET' && url.pathname === '/api/job-schedules') return json(response, 200, service.parameterizedSchedules());
   if (method === 'GET' && url.pathname === '/api/job-runs') return json(response, 200, service.parameterizedRuns(url.searchParams.get('savedJobId') ?? undefined));
+  const parcelInstructionsMatch=url.pathname.match(/^\/api\/parcels\/([^/]+)\/instructions$/);
+  if(method==='GET' && parcelInstructionsMatch){validateOperatorRequest(request,options);return json(response,200,service.parcelInstructions(decodeURIComponent(parcelInstructionsMatch[1])));}
   if (method === 'GET' && url.pathname === '/api/parcels') return json(response, 200, service.parcels());
   if (method === 'GET' && url.pathname === '/api/schedules') return json(response, 200, service.schedules());
   if (method === 'GET' && url.pathname === '/api/runs') return json(response, 200, service.runs(url.searchParams.get('jobId') ?? undefined));

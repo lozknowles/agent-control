@@ -1,0 +1,74 @@
+import assert from 'node:assert/strict';
+import {once} from 'node:events';
+import fs from 'node:fs';
+import type {AddressInfo} from 'node:net';
+import os from 'node:os';
+import path from 'node:path';
+import test from 'node:test';
+import {setTimeout as delay} from 'node:timers/promises';
+import {ActionRegistry, ArtifactStore, JobRuntime, ResourceLockManager, RunLedger, WorkerRegistry} from './job-runtime.js';
+import {JobCatalog} from './job-catalog.js';
+import {WorkParcelCoordinator, WorkParcelStore} from './work-parcels.js';
+import {InstructionManifestStore} from './instruction-observer.js';
+import {buildJobRuntime,startJobScheduler} from './job-bootstrap.js';
+import {observeProviderInstructions} from './instruction-observer.js';
+import {AgentControlService} from './application-service.js';
+import {PtyRegistry} from './pty.js';
+import {startWebDashboard} from './web-server.js';
+import type {JobDefinition} from './job-types.js';
+
+test('production scheduler preserves manifests, dependencies, batons and authenticated Morrow inspection', {timeout:10_000},async t=>{
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'instruction-scheduler-'));
+  t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+  const actions=new ActionRegistry(), jobs:JobDefinition[]=[];
+  const started:string[]=[],ended:string[]=[];
+  let release!:()=>void;const gate=new Promise<void>(resolve=>{release=resolve});t.after(release);
+  for(const side of ['left','right','join']) {
+    actions.register(`instruction-${side}@1.0.0`,async context=>{
+      started.push(side);
+      if(side!=='join')await gate;
+      else assert.deepEqual([...ended].sort(),['left','right']);
+      // A controlled action fixture exercises runtime integration, not a model or physical acceptance run.
+      observeProviderInstructions({adapter:'automated-fixture',operation:'Integration fixture only',current:side,actual:side,providerId:'fixture-provider',modelId:'fixture-model'})('COMPLETED');
+      ended.push(side);
+      return {artifacts:[{name:'result',value:{side}}],verification:['fixture-check']};
+    });
+    const job:JobDefinition={apiVersion:'agent-control/v1',kind:'Job',metadata:{id:`instruction-${side}`,name:side,version:'1.0.0'},spec:{priority:'normal',concurrency:'queue',steps:[{id:'work',action:`instruction-${side}@1.0.0`,requires:['instruction.fixture'],outputs:[{name:'result',type:'application/json',schema:'fixture/v1',version:'1.0.0'}],verification:['fixture-check']}]}};
+    jobs.push(job);
+  }
+  const catalog=new JobCatalog(actions.ids());for(const job of jobs)catalog.addJob(job);
+  const instructions=new InstructionManifestStore(path.join(root,'instruction-manifests'));
+  const baseRuntime=new JobRuntime(catalog,actions,new WorkerRegistry(),new RunLedger(path.join(root,'runs.json')),new ArtifactStore(path.join(root,'artifacts')),new ResourceLockManager(path.join(root,'locks.json')),{instructions});
+  const workParcels=new WorkParcelCoordinator(baseRuntime,new WorkParcelStore(path.join(root,'parcels.json'),instructions),{plan:()=>{throw new Error('Not used by approved test plan');}});
+  const runtime=Object.assign(baseRuntime,{workParcels}) as ReturnType<typeof buildJobRuntime>;
+  for(const side of ['one','two'])runtime.workers.register({id:`fixture-worker-${side}`,capabilities:['instruction.fixture'],health:'healthy',capacity:1,active:0,observedAt:new Date().toISOString()});
+  const parcel=runtime.workParcels.submitApprovedPlan('Run the independent fixture branches, then join them.','operator','a'.repeat(64),{objective:'Automated integration fixture',planner:{kind:'deterministic',reason:'Test fixture only'},stages:['left','right','join'].map(side=>({id:side,name:side,job:`instruction-${side}@1.0.0`,dependsOn:side==='join'?['left','right']:[]}))});
+  assert.ok(parcel.instructionManifestIds?.length);
+  const errors:Error[]=[];const stop=startJobScheduler(runtime,undefined,5,error=>errors.push(error));t.after(stop);
+  for(let n=0;n<300 && started.length<2;n++)await delay(5);
+  assert.deepEqual([...started].sort(),['left','right']);
+  assert.equal(runtime.workParcels.get(parcel.id).stages[2].status,'QUEUED');
+  release();
+  for(let n=0;n<300 && runtime.workParcels.get(parcel.id).status!=='SUCCEEDED';n++)await delay(5);
+  stop();assert.deepEqual(errors,[]);
+  const result=runtime.workParcels.get(parcel.id);assert.equal(result.status,'SUCCEEDED');
+  assert.deepEqual(result.stages[2].dependsOn,['left','right']);
+  const manifests=runtime.instructions.list(parcel.id),payloads=manifests.filter(item=>item.effectiveInstructionHash);
+  assert.equal(payloads.length,3);assert.ok(payloads.every(item=>item.identity.runId && item.identity.workerId && item.identity.providerId==='fixture-provider'));
+  assert.equal(new Set(payloads.slice(0,2).map(item=>item.identity.workerId)).size,2);
+  assert.ok(payloads.find(item=>item.identity.stageId==='join')?.continuation?.hash);
+  const runs=result.stages.map(stage=>runtime.ledger.get(stage.runId!)!);
+  assert.ok(runs.every(run=>run.startedAt && run.endedAt && run.status==='SUCCEEDED'));
+  assert.ok(Date.parse(runs[2].startedAt!)>=Math.max(Date.parse(runs[0].endedAt!),Date.parse(runs[1].endedAt!)));
+  const reloaded=new InstructionManifestStore(instructions.root);
+  assert.deepEqual(reloaded.list(parcel.id).sort((a,b)=>a.id.localeCompare(b.id)),manifests.slice().sort((a,b)=>a.id.localeCompare(b.id)));
+  const service=new AgentControlService({version:1,paused:false,lastRestorePoint:null,lanes:[]},new PtyRegistry(),undefined,'test',()=>{}).configureProjection({jobRuntime:runtime,workParcels:runtime.workParcels});
+  assert.match(service.poeEvidence({kind:'parcel',id:parcel.id}).summary,/shadow mode/);
+  const server=startWebDashboard(service,{host:'127.0.0.1',port:0,operatorToken:'unit-test-token'});await once(server,'listening');t.after(()=>server.close());
+  const base=`http://127.0.0.1:${(server.address() as AddressInfo).port}`,url=`${base}/api/parcels/${parcel.id}/instructions`;
+  assert.equal((await fetch(url)).status,401);
+  assert.equal((await fetch(url,{headers:{Authorization:'Bearer incorrect'}})).status,401);
+  const response=await fetch(url,{headers:{Authorization:'Bearer unit-test-token'}});assert.equal(response.status,200);
+  const view=await response.json();assert.equal(view.parcelId,parcel.id);assert.equal(view.manifests.length,manifests.length);
+  assert.match(view.digest,/fixture-provider/);assert.ok(!JSON.stringify(view).includes('Run the independent fixture branches, then join them.'));
+});

@@ -1,3 +1,6 @@
+import {observeProviderInstructions} from './instruction-observer.js';
+import {canonicalInstructionJson} from './instruction-resolver.js';
+import {recipeInstructionSources} from './instruction-context.js';
 import {createHash} from 'node:crypto';
 import type {ExecutionRecipe} from './adaptive-harness.js';
 import {withLifecycleHeartbeat, type RecipeExecutionResult, type RecipeExecutor, type ToolInvocationGateway} from './harness-dispatch.js';
@@ -101,7 +104,7 @@ export class StructuredChatLoopProvider {
       if (remainingMs <= 0) return failed('structured_chat_loop_timeout', observations, evidence);
       const startedAt = new Date().toISOString();
       let response: {body: ChatResponse; requestPrefixSha256: string};
-      try { tools.lifecycle?.('waiting for provider'); response = await withLifecycleHeartbeat(tools, () => this.request(messages, Math.max(1, remainingMs), externalSignal)); tools.lifecycle?.('response received'); }
+      try { tools.lifecycle?.('waiting for provider'); response = await withLifecycleHeartbeat(tools, () => this.request(messages, Math.max(1, remainingMs), recipe, contextSources, externalSignal)); tools.lifecycle?.('response received'); }
       catch (error) {
         const detail = boundedError(error);
         return failed(detail, observations, evidence, detail.includes('cancelled') ? 'CANCELLED' : 'FAILED');
@@ -147,13 +150,15 @@ export class StructuredChatLoopProvider {
     return failed(`structured_chat_loop_turn_limit:${maximumTurns}`, observations, evidence);
   }
 
-  private async request(messages: ChatMessage[], timeoutMs: number, externalSignal?: AbortSignal) {
+  private async request(messages: ChatMessage[], timeoutMs: number, recipe: ExecutionRecipe, contextSources: ContextPacketSource[], externalSignal?: AbortSignal) {
     const fetcher = this.options.fetch ?? globalThis.fetch;
     const timeout = AbortSignal.timeout(timeoutMs);
     const signal = externalSignal ? AbortSignal.any([timeout, externalSignal]) : timeout;
     const authorization = this.options.authorization?.();
     let response: Response;
     const requestBody = {model: this.options.modelId, messages, response_format: {type: 'json_object'}, temperature: 0, max_tokens: this.options.maximumOutputTokens ?? 768, stream: false};
+    const instructionReceipt=observeProviderInstructions({adapter:'structured-chat-loop/v1',operation:'Existing messages with bounded tool results',current:messages[1]?.content??'',actual:canonicalInstructionJson(messages),wire:requestBody,providerId:this.options.providerId,providerModel:this.options.modelId,sources:[{type:'PLATFORM_POLICY',uri:'agent-control://adapter/loop-system',content:messages[0]?.content},...recipeInstructionSources(recipe,contextSources)],selectedSkillIds:(recipe.skills??[]).map(skill=>skill.id)});
+    try {
     try {
       response = await fetcher(this.endpoint, {
         method: 'POST',
@@ -168,7 +173,8 @@ export class StructuredChatLoopProvider {
     }
     const body = await response.json() as ChatResponse;
     if (!response.ok) throw new Error(`provider_http_error:${response.status}:${body.error?.message ?? 'unknown'}`);
-    return {body, requestPrefixSha256: createHash('sha256').update(stableJson(requestBody)).digest('hex')};
+    instructionReceipt('COMPLETED');
+    return {body, requestPrefixSha256: createHash('sha256').update(stableJson(requestBody)).digest('hex')};    } catch(error) {instructionReceipt('FAILED');throw error;}
   }
 
   private observation(recipe: ExecutionRecipe, sources: ContextPacketSource[], messages: ChatMessage[], turn: number, startedAt: string, completedAt: string, body: ChatResponse, toolIds: string[], responseHash: string, error?: string, requestPrefixSha256?: string) {

@@ -1,0 +1,1511 @@
+{
+  "schema": "agent-control.instruction-shadow-qualification/v1",
+  "mode": "AUTOMATED_ONLY",
+  "physicalExecution": false,
+  "cases": [
+    {
+      "case": "A",
+      "description": "Concise repository instructions",
+      "evidenceKind": "AUTOMATED_SOURCE_FIXTURE",
+      "status": "PASS_WITH_LIMITATIONS",
+      "physicalExecution": false,
+      "orderingHashStable": true,
+      "manifest": {
+        "schema": "agent-control.effective-instruction-manifest/v1",
+        "mode": "SHADOW",
+        "identity": {
+          "accountProfileId": null,
+          "invocationId": null,
+          "modelId": null,
+          "parcelId": "automated-fixture-A",
+          "providerId": null,
+          "providerModel": null,
+          "runId": null,
+          "stageId": null,
+          "workerId": null
+        },
+        "repository": {
+          "id": "fixture",
+          "revision": "fixture-v1"
+        },
+        "targetPaths": [
+          "src/message.ts"
+        ],
+        "selectedSources": [
+          {
+            "id": "source-95431f2ea5e93e6765b19b7c",
+            "type": "GOVERNANCE",
+            "uri": "agent-control://governance/instruction-boundary",
+            "revision": "1",
+            "contentHash": "6cf49a6ac1cf00d00e31d89b6050a0ede5eee7204faec2fe1a428eb653037102",
+            "scope": ".",
+            "audience": [
+              "*"
+            ],
+            "domain": "AUTHORITY",
+            "precedence": 90,
+            "selection": "SELECTED",
+            "reason": "Applicable source selected by controller policy.",
+            "originalBytes": 247,
+            "renderedBytes": 247,
+            "renderedHash": "6cf49a6ac1cf00d00e31d89b6050a0ede5eee7204faec2fe1a428eb653037102",
+            "truncated": false,
+            "skillId": null,
+            "semanticAssessment": "BOUNDED_DIRECTIVES_ONLY"
+          },
+          {
+            "id": "source-85be257b9b926aa6f379658f",
+            "type": "USER_TASK",
+            "uri": "agent-control://current-user-task",
+            "revision": null,
+            "contentHash": "d91fb276fc8e557e38d9c23ca55b6279290f122259bd5c3078016d2e5cff84c8",
+            "scope": ".",
+            "audience": [
+              "*"
+            ],
+            "domain": "TASK",
+            "precedence": 80,
+            "selection": "SELECTED",
+            "reason": "Applicable source selected by controller policy.",
+            "originalBytes": 31,
+            "renderedBytes": 31,
+            "renderedHash": "d91fb276fc8e557e38d9c23ca55b6279290f122259bd5c3078016d2e5cff84c8",
+            "truncated": false,
+            "skillId": null,
+            "semanticAssessment": "BOUNDED_DIRECTIVES_ONLY"
+          },
+          {
+            "id": "source-d9413f4ff17f30a067e9f4da",
+            "type": "REPOSITORY",
+            "uri": "repo://fixture/AGENTS.md",
+            "revision": "fixture-v1",
+            "contentHash": "14e1877e0d79fbc38ea55b94481f3de45163b7f8f15e03a4223b724b5f862189",
+            "scope": ".",
+            "audience": [
+              "*"
+            ],
+            "domain": "GUIDANCE",
+            "precedence": 60,
+            "selection": "SELECTED",
+            "reason": "Applicable source selected by controller policy.",
+            "originalBytes": 40,
+            "renderedBytes": 67,
+            "renderedHash": "25345fecca702c17bf5a6781b659a835ea37b55aed4a29469d0b4456c6562b80",
+            "truncated": false,
+            "skillId": null,
+            "semanticAssessment": "BOUNDED_DIRECTIVES_ONLY"
+          }
+        ],
+        "excludedSources": [],
+        "precedenceDecisions": [
+          {
+            "target": "src/message.ts",
+            "key": "format",
+            "winningSourceId": "source-d9413f4ff17f30a067e9f4da",
+            "winningValueHash": "4813494d137e1631bba301d5acab6e7bb7aa74ce1185d456565ef51d737677b2",
+            "reason": "Higher source-class precedence; more-specific repository scope breaks repository ties."
+          }
+        ],
+        "conflicts": [],
+        "capabilities": [
+          {
+            "capability": "native_mid_turn_steering",
+            "outcome": "UNSUPPORTED",
+            "adapter": "unreported",
+            "reason": "No qualified mechanism reported by this invocation adapter.",
+            "evidence": [],
+            "requested": true
+          },
+          {
+            "capability": "dynamic_reasoning",
+            "outcome": "UNSUPPORTED",
+            "adapter": "unreported",
+            "reason": "No qualified mechanism reported by this invocation adapter.",
+            "evidence": [],
+            "requested": true
+          },
+          {
+            "capability": "async_tools",
+            "outcome": "UNSUPPORTED",
+            "adapter": "unreported",
+            "reason": "No qualified mechanism reported by this invocation adapter.",
+            "evidence": [],
+            "requested": true
+          },
+          {
+            "capability": "multi_agent",
+            "outcome": "UNSUPPORTED",
+            "adapter": "unreported",
+            "reason": "No qualified mechanism reported by this invocation adapter.",
+            "evidence": [],
+            "requested": true
+          }
+        ],
+        "transformations": [],
+        "temporaryInstructionIds": [],
+        "continuation": null,
+        "amendments": [],
+        "shadow": {
+          "currentHash": "d91fb276fc8e557e38d9c23ca55b6279290f122259bd5c3078016d2e5cff84c8",
+          "proposedHash": "a54f2e1cf303380b6a6b3330e95b5435d7e813fe43db58208f09e23190d6de82",
+          "actualHash": null,
+          "proposalTruncated": false,
+          "comparison": "DIFFERENT",
+          "sourceCoverage": [
+            {
+              "sourceId": "source-95431f2ea5e93e6765b19b7c",
+              "presentInCurrent": false
+            },
+            {
+              "sourceId": "source-85be257b9b926aa6f379658f",
+              "presentInCurrent": true
+            },
+            {
+              "sourceId": "source-d9413f4ff17f30a067e9f4da",
+              "presentInCurrent": false
+            }
+          ],
+          "applied": false
+        },
+        "effectiveInstructionHash": null,
+        "verification": {
+          "integrity": "VERIFIED",
+          "resolution": "PASS_WITH_LIMITATIONS",
+          "freeTextConflictCoverage": "NOT_EXHAUSTIVE",
+          "providerReceipt": "NOT_ATTESTED",
+          "warnings": [
+            "Shadow resolution does not replace the current prompt.",
+            "Natural-language contradictions require review; only instruction.key=value directives are compared."
+          ]
+        },
+        "id": "instructions-bfbb992579adefb3453d0c6ffc83b9964d0bb9a151a551940ee16c262c0537a3",
+        "hash": "bfbb992579adefb3453d0c6ffc83b9964d0bb9a151a551940ee16c262c0537a3"
+      }
+    },
+    {
+      "case": "B",
+      "description": "Oversized noisy instructions",
+      "evidenceKind": "AUTOMATED_SOURCE_FIXTURE",
+      "status": "PASS_WITH_LIMITATIONS",
+      "physicalExecution": false,
+      "orderingHashStable": true,
+      "manifest": {
+        "schema": "agent-control.effective-instruction-manifest/v1",
+        "mode": "SHADOW",
+        "identity": {
+          "accountProfileId": null,
+          "invocationId": null,
+          "modelId": null,
+          "parcelId": "automated-fixture-B",
+          "providerId": null,
+          "providerModel": null,
+          "runId": null,
+          "stageId": null,
+          "workerId": null
+        },
+        "repository": {
+          "id": "fixture",
+          "revision": "fixture-v1"
+        },
+        "targetPaths": [
+          "src/message.ts"
+        ],
+        "selectedSources": [
+          {
+            "id": "source-95431f2ea5e93e6765b19b7c",
+            "type": "GOVERNANCE",
+            "uri": "agent-control://governance/instruction-boundary",
+            "revision": "1",
+            "contentHash": "6cf49a6ac1cf00d00e31d89b6050a0ede5eee7204faec2fe1a428eb653037102",
+            "scope": ".",
+            "audience": [
+              "*"
+            ],
+            "domain": "AUTHORITY",
+            "precedence": 90,
+            "selection": "SELECTED",
+            "reason": "Applicable source selected by controller policy.",
+            "originalBytes": 247,
+            "renderedBytes": 247,
+            "renderedHash": "6cf49a6ac1cf00d00e31d89b6050a0ede5eee7204faec2fe1a428eb653037102",
+            "truncated": false,
+            "skillId": null,
+            "semanticAssessment": "BOUNDED_DIRECTIVES_ONLY"
+          },
+          {
+            "id": "source-85be257b9b926aa6f379658f",
+            "type": "USER_TASK",
+            "uri": "agent-control://current-user-task",
+            "revision": null,
+            "contentHash": "d91fb276fc8e557e38d9c23ca55b6279290f122259bd5c3078016d2e5cff84c8",
+            "scope": ".",
+            "audience": [
+              "*"
+            ],
+            "domain": "TASK",
+            "precedence": 80,
+            "selection": "SELECTED",
+            "reason": "Applicable source selected by controller policy.",
+            "originalBytes": 31,
+            "renderedBytes": 31,
+            "renderedHash": "d91fb276fc8e557e38d9c23ca55b6279290f122259bd5c3078016d2e5cff84c8",
+            "truncated": false,
+            "skillId": null,
+            "semanticAssessment": "BOUNDED_DIRECTIVES_ONLY"
+          },
+          {
+            "id": "source-fd786bb5ecc830f9b8b70e37",
+            "type": "REPOSITORY",
+            "uri": "repo://fixture/AGENTS.md",
+            "revision": "fixture-v1",
+            "contentHash": "12dfaf2d1a6df6d094327786fa1b9d00c6ce596daa87b7d79f1878bfe3daaa97",
+            "scope": ".",
+            "audience": [
+              "*"
+            ],
+            "domain": "GUIDANCE",
+            "precedence": 60,
+            "selection": "SELECTED",
+            "reason": "Applicable source selected by controller policy.",
+            "originalBytes": 64000,
+            "renderedBytes": 16384,
+            "renderedHash": "86e4fa97f613e5dce277bfa12e38d5bcc4f96995ac9acf2d192a74a98fbd2e97",
+            "truncated": true,
+            "skillId": null,
+            "semanticAssessment": "BOUNDED_DIRECTIVES_ONLY"
+          }
+        ],
+        "excludedSources": [],
+        "precedenceDecisions": [],
+        "conflicts": [],
+        "capabilities": [
+          {
+            "capability": "native_mid_turn_steering",
+            "outcome": "UNSUPPORTED",
+            "adapter": "unreported",
+            "reason": "No qualified mechanism reported by this invocation adapter.",
+            "evidence": [],
+            "requested": true
+          },
+          {
+            "capability": "dynamic_reasoning",
+            "outcome": "UNSUPPORTED",
+            "adapter": "unreported",
+            "reason": "No qualified mechanism reported by this invocation adapter.",
+            "evidence": [],
+            "requested": true
+          },
+          {
+            "capability": "async_tools",
+            "outcome": "UNSUPPORTED",
+            "adapter": "unreported",
+            "reason": "No qualified mechanism reported by this invocation adapter.",
+            "evidence": [],
+            "requested": true
+          },
+          {
+            "capability": "multi_agent",
+            "outcome": "UNSUPPORTED",
+            "adapter": "unreported",
+            "reason": "No qualified mechanism reported by this invocation adapter.",
+            "evidence": [],
+            "requested": true
+          }
+        ],
+        "transformations": [],
+        "temporaryInstructionIds": [],
+        "continuation": null,
+        "amendments": [],
+        "shadow": {
+          "currentHash": "d91fb276fc8e557e38d9c23ca55b6279290f122259bd5c3078016d2e5cff84c8",
+          "proposedHash": "27d4871711b71900695db98085ae250d0f52fbfb19064641ec94c563e6b8bec5",
+          "actualHash": null,
+          "proposalTruncated": false,
+          "comparison": "DIFFERENT",
+          "sourceCoverage": [
+            {
+              "sourceId": "source-95431f2ea5e93e6765b19b7c",
+              "presentInCurrent": false
+            },
+            {
+              "sourceId": "source-85be257b9b926aa6f379658f",
+              "presentInCurrent": true
+            },
+            {
+              "sourceId": "source-fd786bb5ecc830f9b8b70e37",
+              "presentInCurrent": false
+            }
+          ],
+          "applied": false
+        },
+        "effectiveInstructionHash": null,
+        "verification": {
+          "integrity": "VERIFIED",
+          "resolution": "PASS_WITH_LIMITATIONS",
+          "freeTextConflictCoverage": "NOT_EXHAUSTIVE",
+          "providerReceipt": "NOT_ATTESTED",
+          "warnings": [
+            "Shadow resolution does not replace the current prompt.",
+            "Natural-language contradictions require review; only instruction.key=value directives are compared."
+          ]
+        },
+        "id": "instructions-0d6026f678beeda838e5776b34349a0f2e9d423699ff3d13b72ebaca3ca95a63",
+        "hash": "0d6026f678beeda838e5776b34349a0f2e9d423699ff3d13b72ebaca3ca95a63"
+      }
+    },
+    {
+      "case": "C",
+      "description": "Conflicting nested instructions",
+      "evidenceKind": "AUTOMATED_SOURCE_FIXTURE",
+      "status": "PASS_WITH_LIMITATIONS",
+      "physicalExecution": false,
+      "orderingHashStable": true,
+      "manifest": {
+        "schema": "agent-control.effective-instruction-manifest/v1",
+        "mode": "SHADOW",
+        "identity": {
+          "accountProfileId": null,
+          "invocationId": null,
+          "modelId": null,
+          "parcelId": "automated-fixture-C",
+          "providerId": null,
+          "providerModel": null,
+          "runId": null,
+          "stageId": null,
+          "workerId": null
+        },
+        "repository": {
+          "id": "fixture",
+          "revision": "fixture-v1"
+        },
+        "targetPaths": [
+          "src/message.ts"
+        ],
+        "selectedSources": [
+          {
+            "id": "source-95431f2ea5e93e6765b19b7c",
+            "type": "GOVERNANCE",
+            "uri": "agent-control://governance/instruction-boundary",
+            "revision": "1",
+            "contentHash": "6cf49a6ac1cf00d00e31d89b6050a0ede5eee7204faec2fe1a428eb653037102",
+            "scope": ".",
+            "audience": [
+              "*"
+            ],
+            "domain": "AUTHORITY",
+            "precedence": 90,
+            "selection": "SELECTED",
+            "reason": "Applicable source selected by controller policy.",
+            "originalBytes": 247,
+            "renderedBytes": 247,
+            "renderedHash": "6cf49a6ac1cf00d00e31d89b6050a0ede5eee7204faec2fe1a428eb653037102",
+            "truncated": false,
+            "skillId": null,
+            "semanticAssessment": "BOUNDED_DIRECTIVES_ONLY"
+          },
+          {
+            "id": "source-85be257b9b926aa6f379658f",
+            "type": "USER_TASK",
+            "uri": "agent-control://current-user-task",
+            "revision": null,
+            "contentHash": "d91fb276fc8e557e38d9c23ca55b6279290f122259bd5c3078016d2e5cff84c8",
+            "scope": ".",
+            "audience": [
+              "*"
+            ],
+            "domain": "TASK",
+            "precedence": 80,
+            "selection": "SELECTED",
+            "reason": "Applicable source selected by controller policy.",
+            "originalBytes": 31,
+            "renderedBytes": 31,
+            "renderedHash": "d91fb276fc8e557e38d9c23ca55b6279290f122259bd5c3078016d2e5cff84c8",
+            "truncated": false,
+            "skillId": null,
+            "semanticAssessment": "BOUNDED_DIRECTIVES_ONLY"
+          },
+          {
+            "id": "source-b27969c5735280840e25f3f9",
+            "type": "REPOSITORY",
+            "uri": "repo://fixture/src/AGENTS.md",
+            "revision": "fixture-v1",
+            "contentHash": "b9f511f9ab498ccf9ca4a90ad35c8e6aa43708c06940ab756304ca30e5c65eb5",
+            "scope": "src",
+            "audience": [
+              "*"
+            ],
+            "domain": "GUIDANCE",
+            "precedence": 60,
+            "selection": "SELECTED",
+            "reason": "Applicable source selected by controller policy.",
+            "originalBytes": 25,
+            "renderedBytes": 52,
+            "renderedHash": "2655184757f927d24d2de82fcb4b8c30093769fd76f12d85668432d2df562625",
+            "truncated": false,
+            "skillId": null,
+            "semanticAssessment": "BOUNDED_DIRECTIVES_ONLY"
+          },
+          {
+            "id": "source-d9413f4ff17f30a067e9f4da",
+            "type": "REPOSITORY",
+            "uri": "repo://fixture/AGENTS.md",
+            "revision": "fixture-v1",
+            "contentHash": "14e1877e0d79fbc38ea55b94481f3de45163b7f8f15e03a4223b724b5f862189",
+            "scope": ".",
+            "audience": [
+              "*"
+            ],
+            "domain": "GUIDANCE",
+            "precedence": 60,
+            "selection": "SELECTED",
+            "reason": "Applicable source selected by controller policy.",
+            "originalBytes": 40,
+            "renderedBytes": 16,
+            "renderedHash": "b09770f7372a67e56a66b11c81f5acdedb04fa7db4ba411096e53f9427506705",
+            "truncated": false,
+            "skillId": null,
+            "semanticAssessment": "BOUNDED_DIRECTIVES_ONLY"
+          }
+        ],
+        "excludedSources": [],
+        "precedenceDecisions": [
+          {
+            "target": "src/message.ts",
+            "key": "format",
+            "winningSourceId": "source-b27969c5735280840e25f3f9",
+            "winningValueHash": "233562de1a0288b139c4fa40b7d189f806e906eeb048517aeb67f34ac0e2faf1",
+            "reason": "Higher source-class precedence; more-specific repository scope breaks repository ties."
+          }
+        ],
+        "conflicts": [
+          {
+            "target": "src/message.ts",
+            "key": "format",
+            "winningSourceId": "source-b27969c5735280840e25f3f9",
+            "losingSourceIds": [
+              "source-d9413f4ff17f30a067e9f4da"
+            ],
+            "resolution": "PRECEDENCE"
+          }
+        ],
+        "capabilities": [
+          {
+            "capability": "native_mid_turn_steering",
+            "outcome": "UNSUPPORTED",
+            "adapter": "unreported",
+            "reason": "No qualified mechanism reported by this invocation adapter.",
+            "evidence": [],
+            "requested": true
+          },
+          {
+            "capability": "dynamic_reasoning",
+            "outcome": "UNSUPPORTED",
+            "adapter": "unreported",
+            "reason": "No qualified mechanism reported by this invocation adapter.",
+            "evidence": [],
+            "requested": true
+          },
+          {
+            "capability": "async_tools",
+            "outcome": "UNSUPPORTED",
+            "adapter": "unreported",
+            "reason": "No qualified mechanism reported by this invocation adapter.",
+            "evidence": [],
+            "requested": true
+          },
+          {
+            "capability": "multi_agent",
+            "outcome": "UNSUPPORTED",
+            "adapter": "unreported",
+            "reason": "No qualified mechanism reported by this invocation adapter.",
+            "evidence": [],
+            "requested": true
+          }
+        ],
+        "transformations": [],
+        "temporaryInstructionIds": [],
+        "continuation": null,
+        "amendments": [],
+        "shadow": {
+          "currentHash": "d91fb276fc8e557e38d9c23ca55b6279290f122259bd5c3078016d2e5cff84c8",
+          "proposedHash": "d10cb7261b315a5527cb23135af1e504967f1a786be3a05d4d5d51faa6a07a57",
+          "actualHash": null,
+          "proposalTruncated": false,
+          "comparison": "DIFFERENT",
+          "sourceCoverage": [
+            {
+              "sourceId": "source-95431f2ea5e93e6765b19b7c",
+              "presentInCurrent": false
+            },
+            {
+              "sourceId": "source-85be257b9b926aa6f379658f",
+              "presentInCurrent": true
+            },
+            {
+              "sourceId": "source-b27969c5735280840e25f3f9",
+              "presentInCurrent": false
+            },
+            {
+              "sourceId": "source-d9413f4ff17f30a067e9f4da",
+              "presentInCurrent": false
+            }
+          ],
+          "applied": false
+        },
+        "effectiveInstructionHash": null,
+        "verification": {
+          "integrity": "VERIFIED",
+          "resolution": "PASS_WITH_LIMITATIONS",
+          "freeTextConflictCoverage": "NOT_EXHAUSTIVE",
+          "providerReceipt": "NOT_ATTESTED",
+          "warnings": [
+            "Shadow resolution does not replace the current prompt.",
+            "Natural-language contradictions require review; only instruction.key=value directives are compared."
+          ]
+        },
+        "id": "instructions-46e811b07e3511fce7462c5bc0cf99fb910d7f4341ecea2db53f78f2b9393506",
+        "hash": "46e811b07e3511fce7462c5bc0cf99fb910d7f4341ecea2db53f78f2b9393506"
+      }
+    },
+    {
+      "case": "D",
+      "description": "Current user takes precedence over repository",
+      "evidenceKind": "AUTOMATED_SOURCE_FIXTURE",
+      "status": "PASS_WITH_LIMITATIONS",
+      "physicalExecution": false,
+      "orderingHashStable": true,
+      "manifest": {
+        "schema": "agent-control.effective-instruction-manifest/v1",
+        "mode": "SHADOW",
+        "identity": {
+          "accountProfileId": null,
+          "invocationId": null,
+          "modelId": null,
+          "parcelId": "automated-fixture-D",
+          "providerId": null,
+          "providerModel": null,
+          "runId": null,
+          "stageId": null,
+          "workerId": null
+        },
+        "repository": {
+          "id": "fixture",
+          "revision": "fixture-v1"
+        },
+        "targetPaths": [
+          "src/message.ts"
+        ],
+        "selectedSources": [
+          {
+            "id": "source-95431f2ea5e93e6765b19b7c",
+            "type": "GOVERNANCE",
+            "uri": "agent-control://governance/instruction-boundary",
+            "revision": "1",
+            "contentHash": "6cf49a6ac1cf00d00e31d89b6050a0ede5eee7204faec2fe1a428eb653037102",
+            "scope": ".",
+            "audience": [
+              "*"
+            ],
+            "domain": "AUTHORITY",
+            "precedence": 90,
+            "selection": "SELECTED",
+            "reason": "Applicable source selected by controller policy.",
+            "originalBytes": 247,
+            "renderedBytes": 247,
+            "renderedHash": "6cf49a6ac1cf00d00e31d89b6050a0ede5eee7204faec2fe1a428eb653037102",
+            "truncated": false,
+            "skillId": null,
+            "semanticAssessment": "BOUNDED_DIRECTIVES_ONLY"
+          },
+          {
+            "id": "source-5d169f7922649b2dd03ebc18",
+            "type": "USER_TASK",
+            "uri": "agent-control://current-user-task",
+            "revision": null,
+            "contentHash": "ae5d198ae9a04b99a03164c7a1a8d44a6e86cd598631f95b74fdcc5e6ae4a99d",
+            "scope": ".",
+            "audience": [
+              "*"
+            ],
+            "domain": "TASK",
+            "precedence": 80,
+            "selection": "SELECTED",
+            "reason": "Applicable source selected by controller policy.",
+            "originalBytes": 26,
+            "renderedBytes": 53,
+            "renderedHash": "46657bce0776f87a6c2423c1d2cb691853ddcb7e364916dc0dd38d505a1bf5a3",
+            "truncated": false,
+            "skillId": null,
+            "semanticAssessment": "BOUNDED_DIRECTIVES_ONLY"
+          },
+          {
+            "id": "source-b27969c5735280840e25f3f9",
+            "type": "REPOSITORY",
+            "uri": "repo://fixture/src/AGENTS.md",
+            "revision": "fixture-v1",
+            "contentHash": "b9f511f9ab498ccf9ca4a90ad35c8e6aa43708c06940ab756304ca30e5c65eb5",
+            "scope": "src",
+            "audience": [
+              "*"
+            ],
+            "domain": "GUIDANCE",
+            "precedence": 60,
+            "selection": "SELECTED",
+            "reason": "Applicable source selected by controller policy.",
+            "originalBytes": 25,
+            "renderedBytes": 0,
+            "renderedHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "truncated": false,
+            "skillId": null,
+            "semanticAssessment": "BOUNDED_DIRECTIVES_ONLY"
+          },
+          {
+            "id": "source-d9413f4ff17f30a067e9f4da",
+            "type": "REPOSITORY",
+            "uri": "repo://fixture/AGENTS.md",
+            "revision": "fixture-v1",
+            "contentHash": "14e1877e0d79fbc38ea55b94481f3de45163b7f8f15e03a4223b724b5f862189",
+            "scope": ".",
+            "audience": [
+              "*"
+            ],
+            "domain": "GUIDANCE",
+            "precedence": 60,
+            "selection": "SELECTED",
+            "reason": "Applicable source selected by controller policy.",
+            "originalBytes": 40,
+            "renderedBytes": 16,
+            "renderedHash": "b09770f7372a67e56a66b11c81f5acdedb04fa7db4ba411096e53f9427506705",
+            "truncated": false,
+            "skillId": null,
+            "semanticAssessment": "BOUNDED_DIRECTIVES_ONLY"
+          }
+        ],
+        "excludedSources": [],
+        "precedenceDecisions": [
+          {
+            "target": "src/message.ts",
+            "key": "format",
+            "winningSourceId": "source-5d169f7922649b2dd03ebc18",
+            "winningValueHash": "97b0560280ed60a5a1eaa1bc45492543c8a986ad5a25b468c427eb83c3e88191",
+            "reason": "Higher source-class precedence; more-specific repository scope breaks repository ties."
+          }
+        ],
+        "conflicts": [
+          {
+            "target": "src/message.ts",
+            "key": "format",
+            "winningSourceId": "source-5d169f7922649b2dd03ebc18",
+            "losingSourceIds": [
+              "source-b27969c5735280840e25f3f9",
+              "source-d9413f4ff17f30a067e9f4da"
+            ],
+            "resolution": "PRECEDENCE"
+          }
+        ],
+        "capabilities": [
+          {
+            "capability": "native_mid_turn_steering",
+            "outcome": "UNSUPPORTED",
+            "adapter": "unreported",
+            "reason": "No qualified mechanism reported by this invocation adapter.",
+            "evidence": [],
+            "requested": true
+          },
+          {
+            "capability": "dynamic_reasoning",
+            "outcome": "UNSUPPORTED",
+            "adapter": "unreported",
+            "reason": "No qualified mechanism reported by this invocation adapter.",
+            "evidence": [],
+            "requested": true
+          },
+          {
+            "capability": "async_tools",
+            "outcome": "UNSUPPORTED",
+            "adapter": "unreported",
+            "reason": "No qualified mechanism reported by this invocation adapter.",
+            "evidence": [],
+            "requested": true
+          },
+          {
+            "capability": "multi_agent",
+            "outcome": "UNSUPPORTED",
+            "adapter": "unreported",
+            "reason": "No qualified mechanism reported by this invocation adapter.",
+            "evidence": [],
+            "requested": true
+          }
+        ],
+        "transformations": [],
+        "temporaryInstructionIds": [],
+        "continuation": null,
+        "amendments": [],
+        "shadow": {
+          "currentHash": "d91fb276fc8e557e38d9c23ca55b6279290f122259bd5c3078016d2e5cff84c8",
+          "proposedHash": "c44de03b0345edad1a41e83ed31be57aff0c86f828d0da0947c93cb9f006afd5",
+          "actualHash": null,
+          "proposalTruncated": false,
+          "comparison": "DIFFERENT",
+          "sourceCoverage": [
+            {
+              "sourceId": "source-95431f2ea5e93e6765b19b7c",
+              "presentInCurrent": false
+            },
+            {
+              "sourceId": "source-5d169f7922649b2dd03ebc18",
+              "presentInCurrent": false
+            },
+            {
+              "sourceId": "source-b27969c5735280840e25f3f9",
+              "presentInCurrent": false
+            },
+            {
+              "sourceId": "source-d9413f4ff17f30a067e9f4da",
+              "presentInCurrent": false
+            }
+          ],
+          "applied": false
+        },
+        "effectiveInstructionHash": null,
+        "verification": {
+          "integrity": "VERIFIED",
+          "resolution": "PASS_WITH_LIMITATIONS",
+          "freeTextConflictCoverage": "NOT_EXHAUSTIVE",
+          "providerReceipt": "NOT_ATTESTED",
+          "warnings": [
+            "Shadow resolution does not replace the current prompt.",
+            "Natural-language contradictions require review; only instruction.key=value directives are compared."
+          ]
+        },
+        "id": "instructions-fcc697f6f1cebe313232c1768b9aac1528e57ddd6333ecece0fa4be97a6361a3",
+        "hash": "fcc697f6f1cebe313232c1768b9aac1528e57ddd6333ecece0fa4be97a6361a3"
+      }
+    },
+    {
+      "case": "E",
+      "description": "Selected and irrelevant skills",
+      "evidenceKind": "AUTOMATED_SOURCE_FIXTURE",
+      "status": "PASS_WITH_LIMITATIONS",
+      "physicalExecution": false,
+      "orderingHashStable": true,
+      "manifest": {
+        "schema": "agent-control.effective-instruction-manifest/v1",
+        "mode": "SHADOW",
+        "identity": {
+          "accountProfileId": null,
+          "invocationId": null,
+          "modelId": null,
+          "parcelId": "automated-fixture-E",
+          "providerId": null,
+          "providerModel": null,
+          "runId": null,
+          "stageId": null,
+          "workerId": null
+        },
+        "repository": {
+          "id": "fixture",
+          "revision": "fixture-v1"
+        },
+        "targetPaths": [
+          "src/message.ts"
+        ],
+        "selectedSources": [
+          {
+            "id": "source-95431f2ea5e93e6765b19b7c",
+            "type": "GOVERNANCE",
+            "uri": "agent-control://governance/instruction-boundary",
+            "revision": "1",
+            "contentHash": "6cf49a6ac1cf00d00e31d89b6050a0ede5eee7204faec2fe1a428eb653037102",
+            "scope": ".",
+            "audience": [
+              "*"
+            ],
+            "domain": "AUTHORITY",
+            "precedence": 90,
+            "selection": "SELECTED",
+            "reason": "Applicable source selected by controller policy.",
+            "originalBytes": 247,
+            "renderedBytes": 247,
+            "renderedHash": "6cf49a6ac1cf00d00e31d89b6050a0ede5eee7204faec2fe1a428eb653037102",
+            "truncated": false,
+            "skillId": null,
+            "semanticAssessment": "BOUNDED_DIRECTIVES_ONLY"
+          },
+          {
+            "id": "source-85be257b9b926aa6f379658f",
+            "type": "USER_TASK",
+            "uri": "agent-control://current-user-task",
+            "revision": null,
+            "contentHash": "d91fb276fc8e557e38d9c23ca55b6279290f122259bd5c3078016d2e5cff84c8",
+            "scope": ".",
+            "audience": [
+              "*"
+            ],
+            "domain": "TASK",
+            "precedence": 80,
+            "selection": "SELECTED",
+            "reason": "Applicable source selected by controller policy.",
+            "originalBytes": 31,
+            "renderedBytes": 31,
+            "renderedHash": "d91fb276fc8e557e38d9c23ca55b6279290f122259bd5c3078016d2e5cff84c8",
+            "truncated": false,
+            "skillId": null,
+            "semanticAssessment": "BOUNDED_DIRECTIVES_ONLY"
+          },
+          {
+            "id": "source-2e6ad117c51079ece82c984a",
+            "type": "SKILL",
+            "uri": "skill://selected",
+            "revision": null,
+            "contentHash": "3ca7743bd295c949c2db9583173672131742199fde2921219138a85666529f81",
+            "scope": ".",
+            "audience": [
+              "*"
+            ],
+            "domain": "GUIDANCE",
+            "precedence": 50,
+            "selection": "SELECTED",
+            "reason": "Applicable source selected by controller policy.",
+            "originalBytes": 25,
+            "renderedBytes": 25,
+            "renderedHash": "3ca7743bd295c949c2db9583173672131742199fde2921219138a85666529f81",
+            "truncated": false,
+            "skillId": "selected",
+            "semanticAssessment": "BOUNDED_DIRECTIVES_ONLY"
+          }
+        ],
+        "excludedSources": [
+          {
+            "id": "source-58094df741775ae8e101a54c",
+            "type": "SKILL",
+            "uri": "skill://irrelevant",
+            "revision": null,
+            "contentHash": "81a94255b7be26a08df430eb5ed629aceb40f1f9a268b0c978b7047d09402544",
+            "scope": ".",
+            "audience": [
+              "*"
+            ],
+            "domain": "GUIDANCE",
+            "precedence": 50,
+            "selection": "EXCLUDED",
+            "reason": "SKILL_NOT_SELECTED",
+            "originalBytes": 18,
+            "renderedBytes": 0,
+            "renderedHash": null,
+            "truncated": false,
+            "skillId": "irrelevant",
+            "semanticAssessment": "BOUNDED_DIRECTIVES_ONLY"
+          }
+        ],
+        "precedenceDecisions": [],
+        "conflicts": [],
+        "capabilities": [
+          {
+            "capability": "native_mid_turn_steering",
+            "outcome": "UNSUPPORTED",
+            "adapter": "unreported",
+            "reason": "No qualified mechanism reported by this invocation adapter.",
+            "evidence": [],
+            "requested": true
+          },
+          {
+            "capability": "dynamic_reasoning",
+            "outcome": "UNSUPPORTED",
+            "adapter": "unreported",
+            "reason": "No qualified mechanism reported by this invocation adapter.",
+            "evidence": [],
+            "requested": true
+          },
+          {
+            "capability": "async_tools",
+            "outcome": "UNSUPPORTED",
+            "adapter": "unreported",
+            "reason": "No qualified mechanism reported by this invocation adapter.",
+            "evidence": [],
+            "requested": true
+          },
+          {
+            "capability": "multi_agent",
+            "outcome": "UNSUPPORTED",
+            "adapter": "unreported",
+            "reason": "No qualified mechanism reported by this invocation adapter.",
+            "evidence": [],
+            "requested": true
+          }
+        ],
+        "transformations": [],
+        "temporaryInstructionIds": [],
+        "continuation": null,
+        "amendments": [],
+        "shadow": {
+          "currentHash": "d91fb276fc8e557e38d9c23ca55b6279290f122259bd5c3078016d2e5cff84c8",
+          "proposedHash": "2a1af38fc01440b71efec68d696eeae55ebad59b73ff3afa6e17d2771680f578",
+          "actualHash": null,
+          "proposalTruncated": false,
+          "comparison": "DIFFERENT",
+          "sourceCoverage": [
+            {
+              "sourceId": "source-95431f2ea5e93e6765b19b7c",
+              "presentInCurrent": false
+            },
+            {
+              "sourceId": "source-85be257b9b926aa6f379658f",
+              "presentInCurrent": true
+            },
+            {
+              "sourceId": "source-2e6ad117c51079ece82c984a",
+              "presentInCurrent": false
+            }
+          ],
+          "applied": false
+        },
+        "effectiveInstructionHash": null,
+        "verification": {
+          "integrity": "VERIFIED",
+          "resolution": "PASS_WITH_LIMITATIONS",
+          "freeTextConflictCoverage": "NOT_EXHAUSTIVE",
+          "providerReceipt": "NOT_ATTESTED",
+          "warnings": [
+            "Shadow resolution does not replace the current prompt.",
+            "Natural-language contradictions require review; only instruction.key=value directives are compared."
+          ]
+        },
+        "id": "instructions-ef7ef984e829c1aeae9aa16107929d46a76596d3cca316a4644ec24464eb4b9e",
+        "hash": "ef7ef984e829c1aeae9aa16107929d46a76596d3cca316a4644ec24464eb4b9e"
+      }
+    },
+    {
+      "case": "F",
+      "description": "Accepted steering and sealed continuation",
+      "evidenceKind": "AUTOMATED_SOURCE_FIXTURE",
+      "status": "PASS_WITH_LIMITATIONS",
+      "physicalExecution": false,
+      "orderingHashStable": true,
+      "manifest": {
+        "schema": "agent-control.effective-instruction-manifest/v1",
+        "mode": "SHADOW",
+        "identity": {
+          "accountProfileId": null,
+          "invocationId": null,
+          "modelId": null,
+          "parcelId": "automated-fixture-F",
+          "providerId": null,
+          "providerModel": null,
+          "runId": null,
+          "stageId": null,
+          "workerId": null
+        },
+        "repository": {
+          "id": "fixture",
+          "revision": "fixture-v1"
+        },
+        "targetPaths": [
+          "src/message.ts"
+        ],
+        "selectedSources": [
+          {
+            "id": "source-95431f2ea5e93e6765b19b7c",
+            "type": "GOVERNANCE",
+            "uri": "agent-control://governance/instruction-boundary",
+            "revision": "1",
+            "contentHash": "6cf49a6ac1cf00d00e31d89b6050a0ede5eee7204faec2fe1a428eb653037102",
+            "scope": ".",
+            "audience": [
+              "*"
+            ],
+            "domain": "AUTHORITY",
+            "precedence": 90,
+            "selection": "SELECTED",
+            "reason": "Applicable source selected by controller policy.",
+            "originalBytes": 247,
+            "renderedBytes": 247,
+            "renderedHash": "6cf49a6ac1cf00d00e31d89b6050a0ede5eee7204faec2fe1a428eb653037102",
+            "truncated": false,
+            "skillId": null,
+            "semanticAssessment": "BOUNDED_DIRECTIVES_ONLY"
+          },
+          {
+            "id": "source-24e86cd2eeb8e4c1cc67cfdc",
+            "type": "TEMPORARY",
+            "uri": "agent-control://accepted-steering/0",
+            "revision": null,
+            "contentHash": "87daa1fad83688900cabb068f0789d38f81fe30c621d3025a091496d4f38a0a7",
+            "scope": ".",
+            "audience": [
+              "*"
+            ],
+            "domain": "TASK",
+            "precedence": 85,
+            "selection": "SELECTED",
+            "reason": "Accepted amendment projected from the governed parcel context.",
+            "originalBytes": 37,
+            "renderedBytes": 37,
+            "renderedHash": "87daa1fad83688900cabb068f0789d38f81fe30c621d3025a091496d4f38a0a7",
+            "truncated": false,
+            "skillId": null,
+            "semanticAssessment": "BOUNDED_DIRECTIVES_ONLY"
+          },
+          {
+            "id": "source-6d7d13368e282112e8899bfc",
+            "type": "USER_TASK",
+            "uri": "agent-control://current-user-task",
+            "revision": null,
+            "contentHash": "fbb76ef53c0f293ee9d3ce9b60086694820a3d300a8f2a218152aaf054c47716",
+            "scope": ".",
+            "audience": [
+              "*"
+            ],
+            "domain": "TASK",
+            "precedence": 80,
+            "selection": "SELECTED",
+            "reason": "Applicable source selected by controller policy.",
+            "originalBytes": 26,
+            "renderedBytes": 26,
+            "renderedHash": "fbb76ef53c0f293ee9d3ce9b60086694820a3d300a8f2a218152aaf054c47716",
+            "truncated": false,
+            "skillId": null,
+            "semanticAssessment": "BOUNDED_DIRECTIVES_ONLY"
+          },
+          {
+            "id": "source-539baefafefb7a93fcb84259",
+            "type": "CONTINUATION",
+            "uri": "agent-control://batons/fixture-baton",
+            "revision": "d8e7be151478a0c960d5647a70ed9bc36e52a72738311fdea4dba91cb458285f",
+            "contentHash": "c412d323a35ffff866e8565aa06f7c2d66a54858cde33e36065f8f10eebace88",
+            "scope": ".",
+            "audience": [
+              "*"
+            ],
+            "domain": "ADVISORY",
+            "precedence": 40,
+            "selection": "SELECTED",
+            "reason": "Applicable source selected by controller policy.",
+            "originalBytes": 163,
+            "renderedBytes": 163,
+            "renderedHash": "c412d323a35ffff866e8565aa06f7c2d66a54858cde33e36065f8f10eebace88",
+            "truncated": false,
+            "skillId": null,
+            "semanticAssessment": "NOT_PARSED"
+          }
+        ],
+        "excludedSources": [],
+        "precedenceDecisions": [],
+        "conflicts": [],
+        "capabilities": [
+          {
+            "capability": "native_mid_turn_steering",
+            "outcome": "UNSUPPORTED",
+            "adapter": "unreported",
+            "reason": "No qualified mechanism reported by this invocation adapter.",
+            "evidence": [],
+            "requested": true
+          },
+          {
+            "capability": "dynamic_reasoning",
+            "outcome": "UNSUPPORTED",
+            "adapter": "unreported",
+            "reason": "No qualified mechanism reported by this invocation adapter.",
+            "evidence": [],
+            "requested": true
+          },
+          {
+            "capability": "async_tools",
+            "outcome": "UNSUPPORTED",
+            "adapter": "unreported",
+            "reason": "No qualified mechanism reported by this invocation adapter.",
+            "evidence": [],
+            "requested": true
+          },
+          {
+            "capability": "multi_agent",
+            "outcome": "UNSUPPORTED",
+            "adapter": "unreported",
+            "reason": "No qualified mechanism reported by this invocation adapter.",
+            "evidence": [],
+            "requested": true
+          }
+        ],
+        "transformations": [],
+        "temporaryInstructionIds": [
+          "source-24e86cd2eeb8e4c1cc67cfdc"
+        ],
+        "continuation": {
+          "id": "fixture-baton",
+          "hash": "d8e7be151478a0c960d5647a70ed9bc36e52a72738311fdea4dba91cb458285f"
+        },
+        "amendments": [
+          {
+            "id": "fixture-amendment",
+            "hash": "e63f81b08ba93c26eca08143fd3c8ce127d246dc77a225afa5c10e4025036567",
+            "status": "ACCEPTED"
+          }
+        ],
+        "shadow": {
+          "currentHash": "d91fb276fc8e557e38d9c23ca55b6279290f122259bd5c3078016d2e5cff84c8",
+          "proposedHash": "373ba0fc2a5dcb5acec070a8046799ff8d5383ad212e0a5d8c7642025b5c8632",
+          "actualHash": null,
+          "proposalTruncated": false,
+          "comparison": "DIFFERENT",
+          "sourceCoverage": [
+            {
+              "sourceId": "source-95431f2ea5e93e6765b19b7c",
+              "presentInCurrent": false
+            },
+            {
+              "sourceId": "source-24e86cd2eeb8e4c1cc67cfdc",
+              "presentInCurrent": false
+            },
+            {
+              "sourceId": "source-6d7d13368e282112e8899bfc",
+              "presentInCurrent": false
+            },
+            {
+              "sourceId": "source-539baefafefb7a93fcb84259",
+              "presentInCurrent": false
+            }
+          ],
+          "applied": false
+        },
+        "effectiveInstructionHash": null,
+        "verification": {
+          "integrity": "VERIFIED",
+          "resolution": "PASS_WITH_LIMITATIONS",
+          "freeTextConflictCoverage": "NOT_EXHAUSTIVE",
+          "providerReceipt": "NOT_ATTESTED",
+          "warnings": [
+            "Shadow resolution does not replace the current prompt.",
+            "Natural-language contradictions require review; only instruction.key=value directives are compared."
+          ]
+        },
+        "id": "instructions-e1abe8802359b96bc7647baafc55ca44b49b8bb17f48a9dbba0fc8a7725fd7f9",
+        "hash": "e1abe8802359b96bc7647baafc55ca44b49b8bb17f48a9dbba0fc8a7725fd7f9"
+      }
+    },
+    {
+      "case": "G",
+      "description": "Memory remains advisory",
+      "evidenceKind": "AUTOMATED_SOURCE_FIXTURE",
+      "status": "PASS_WITH_LIMITATIONS",
+      "physicalExecution": false,
+      "orderingHashStable": true,
+      "manifest": {
+        "schema": "agent-control.effective-instruction-manifest/v1",
+        "mode": "SHADOW",
+        "identity": {
+          "accountProfileId": null,
+          "invocationId": null,
+          "modelId": null,
+          "parcelId": "automated-fixture-G",
+          "providerId": null,
+          "providerModel": null,
+          "runId": null,
+          "stageId": null,
+          "workerId": null
+        },
+        "repository": {
+          "id": "fixture",
+          "revision": "fixture-v1"
+        },
+        "targetPaths": [
+          "src/message.ts"
+        ],
+        "selectedSources": [
+          {
+            "id": "source-95431f2ea5e93e6765b19b7c",
+            "type": "GOVERNANCE",
+            "uri": "agent-control://governance/instruction-boundary",
+            "revision": "1",
+            "contentHash": "6cf49a6ac1cf00d00e31d89b6050a0ede5eee7204faec2fe1a428eb653037102",
+            "scope": ".",
+            "audience": [
+              "*"
+            ],
+            "domain": "AUTHORITY",
+            "precedence": 90,
+            "selection": "SELECTED",
+            "reason": "Applicable source selected by controller policy.",
+            "originalBytes": 247,
+            "renderedBytes": 247,
+            "renderedHash": "6cf49a6ac1cf00d00e31d89b6050a0ede5eee7204faec2fe1a428eb653037102",
+            "truncated": false,
+            "skillId": null,
+            "semanticAssessment": "BOUNDED_DIRECTIVES_ONLY"
+          },
+          {
+            "id": "source-1bea01e2aaf6b3e6b57b079a",
+            "type": "USER_TASK",
+            "uri": "agent-control://current-user-task",
+            "revision": null,
+            "contentHash": "6a528540c8f512c5175155dd620b48d1c2ba875f48d9581858420da8225ecf0d",
+            "scope": ".",
+            "audience": [
+              "*"
+            ],
+            "domain": "TASK",
+            "precedence": 80,
+            "selection": "SELECTED",
+            "reason": "Applicable source selected by controller policy.",
+            "originalBytes": 29,
+            "renderedBytes": 56,
+            "renderedHash": "dfbd5617229ccbdc223a8f7fd7047441a206a7a3a6a665a7f9edee919b40bb4d",
+            "truncated": false,
+            "skillId": null,
+            "semanticAssessment": "BOUNDED_DIRECTIVES_ONLY"
+          },
+          {
+            "id": "source-9dd31f9131a173d733528d5a",
+            "type": "MEMORY",
+            "uri": "memory://fixture",
+            "revision": null,
+            "contentHash": "000366f8263c4d389403991b0fdabd4bd2bde824ef5ec91f166268e4942be3c0",
+            "scope": ".",
+            "audience": [
+              "*"
+            ],
+            "domain": "ADVISORY",
+            "precedence": 20,
+            "selection": "SELECTED",
+            "reason": "Applicable source selected by controller policy.",
+            "originalBytes": 29,
+            "renderedBytes": 29,
+            "renderedHash": "000366f8263c4d389403991b0fdabd4bd2bde824ef5ec91f166268e4942be3c0",
+            "truncated": false,
+            "skillId": null,
+            "semanticAssessment": "NOT_PARSED"
+          }
+        ],
+        "excludedSources": [],
+        "precedenceDecisions": [
+          {
+            "target": "src/message.ts",
+            "key": "permission",
+            "winningSourceId": "source-1bea01e2aaf6b3e6b57b079a",
+            "winningValueHash": "c97ace4c8fef2cee8fa0f3c9f52aab18dbd4f42438afe362ffb8f75ce4c04b84",
+            "reason": "Higher source-class precedence; more-specific repository scope breaks repository ties."
+          }
+        ],
+        "conflicts": [],
+        "capabilities": [
+          {
+            "capability": "native_mid_turn_steering",
+            "outcome": "UNSUPPORTED",
+            "adapter": "unreported",
+            "reason": "No qualified mechanism reported by this invocation adapter.",
+            "evidence": [],
+            "requested": true
+          },
+          {
+            "capability": "dynamic_reasoning",
+            "outcome": "UNSUPPORTED",
+            "adapter": "unreported",
+            "reason": "No qualified mechanism reported by this invocation adapter.",
+            "evidence": [],
+            "requested": true
+          },
+          {
+            "capability": "async_tools",
+            "outcome": "UNSUPPORTED",
+            "adapter": "unreported",
+            "reason": "No qualified mechanism reported by this invocation adapter.",
+            "evidence": [],
+            "requested": true
+          },
+          {
+            "capability": "multi_agent",
+            "outcome": "UNSUPPORTED",
+            "adapter": "unreported",
+            "reason": "No qualified mechanism reported by this invocation adapter.",
+            "evidence": [],
+            "requested": true
+          }
+        ],
+        "transformations": [],
+        "temporaryInstructionIds": [],
+        "continuation": null,
+        "amendments": [],
+        "shadow": {
+          "currentHash": "d91fb276fc8e557e38d9c23ca55b6279290f122259bd5c3078016d2e5cff84c8",
+          "proposedHash": "ce8cbe9d33c353c337070f5d1b08576a29bea86a7580062de0ad79c073581928",
+          "actualHash": null,
+          "proposalTruncated": false,
+          "comparison": "DIFFERENT",
+          "sourceCoverage": [
+            {
+              "sourceId": "source-95431f2ea5e93e6765b19b7c",
+              "presentInCurrent": false
+            },
+            {
+              "sourceId": "source-1bea01e2aaf6b3e6b57b079a",
+              "presentInCurrent": false
+            },
+            {
+              "sourceId": "source-9dd31f9131a173d733528d5a",
+              "presentInCurrent": false
+            }
+          ],
+          "applied": false
+        },
+        "effectiveInstructionHash": null,
+        "verification": {
+          "integrity": "VERIFIED",
+          "resolution": "PASS_WITH_LIMITATIONS",
+          "freeTextConflictCoverage": "NOT_EXHAUSTIVE",
+          "providerReceipt": "NOT_ATTESTED",
+          "warnings": [
+            "Shadow resolution does not replace the current prompt.",
+            "Natural-language contradictions require review; only instruction.key=value directives are compared."
+          ]
+        },
+        "id": "instructions-1142d90db6a36e5fd2b4988acd6e43cf2b91556e0b67cde61a9f4ba520fadfb8",
+        "hash": "1142d90db6a36e5fd2b4988acd6e43cf2b91556e0b67cde61a9f4ba520fadfb8"
+      }
+    },
+    {
+      "case": "H",
+      "description": "Unreported provider capabilities are unsupported",
+      "evidenceKind": "AUTOMATED_SOURCE_FIXTURE",
+      "status": "PASS_WITH_LIMITATIONS",
+      "physicalExecution": false,
+      "orderingHashStable": true,
+      "manifest": {
+        "schema": "agent-control.effective-instruction-manifest/v1",
+        "mode": "SHADOW",
+        "identity": {
+          "accountProfileId": null,
+          "invocationId": null,
+          "modelId": null,
+          "parcelId": "automated-fixture-H",
+          "providerId": null,
+          "providerModel": null,
+          "runId": null,
+          "stageId": null,
+          "workerId": null
+        },
+        "repository": {
+          "id": "fixture",
+          "revision": "fixture-v1"
+        },
+        "targetPaths": [
+          "src/message.ts"
+        ],
+        "selectedSources": [
+          {
+            "id": "source-95431f2ea5e93e6765b19b7c",
+            "type": "GOVERNANCE",
+            "uri": "agent-control://governance/instruction-boundary",
+            "revision": "1",
+            "contentHash": "6cf49a6ac1cf00d00e31d89b6050a0ede5eee7204faec2fe1a428eb653037102",
+            "scope": ".",
+            "audience": [
+              "*"
+            ],
+            "domain": "AUTHORITY",
+            "precedence": 90,
+            "selection": "SELECTED",
+            "reason": "Applicable source selected by controller policy.",
+            "originalBytes": 247,
+            "renderedBytes": 247,
+            "renderedHash": "6cf49a6ac1cf00d00e31d89b6050a0ede5eee7204faec2fe1a428eb653037102",
+            "truncated": false,
+            "skillId": null,
+            "semanticAssessment": "BOUNDED_DIRECTIVES_ONLY"
+          },
+          {
+            "id": "source-85be257b9b926aa6f379658f",
+            "type": "USER_TASK",
+            "uri": "agent-control://current-user-task",
+            "revision": null,
+            "contentHash": "d91fb276fc8e557e38d9c23ca55b6279290f122259bd5c3078016d2e5cff84c8",
+            "scope": ".",
+            "audience": [
+              "*"
+            ],
+            "domain": "TASK",
+            "precedence": 80,
+            "selection": "SELECTED",
+            "reason": "Applicable source selected by controller policy.",
+            "originalBytes": 31,
+            "renderedBytes": 31,
+            "renderedHash": "d91fb276fc8e557e38d9c23ca55b6279290f122259bd5c3078016d2e5cff84c8",
+            "truncated": false,
+            "skillId": null,
+            "semanticAssessment": "BOUNDED_DIRECTIVES_ONLY"
+          }
+        ],
+        "excludedSources": [],
+        "precedenceDecisions": [],
+        "conflicts": [],
+        "capabilities": [
+          {
+            "capability": "native_mid_turn_steering",
+            "outcome": "UNSUPPORTED",
+            "adapter": "unreported",
+            "reason": "No qualified mechanism reported by this invocation adapter.",
+            "evidence": [],
+            "requested": true
+          },
+          {
+            "capability": "dynamic_reasoning",
+            "outcome": "UNSUPPORTED",
+            "adapter": "unreported",
+            "reason": "No qualified mechanism reported by this invocation adapter.",
+            "evidence": [],
+            "requested": true
+          },
+          {
+            "capability": "async_tools",
+            "outcome": "UNSUPPORTED",
+            "adapter": "unreported",
+            "reason": "No qualified mechanism reported by this invocation adapter.",
+            "evidence": [],
+            "requested": true
+          },
+          {
+            "capability": "multi_agent",
+            "outcome": "UNSUPPORTED",
+            "adapter": "unreported",
+            "reason": "No qualified mechanism reported by this invocation adapter.",
+            "evidence": [],
+            "requested": true
+          }
+        ],
+        "transformations": [],
+        "temporaryInstructionIds": [],
+        "continuation": null,
+        "amendments": [],
+        "shadow": {
+          "currentHash": "d91fb276fc8e557e38d9c23ca55b6279290f122259bd5c3078016d2e5cff84c8",
+          "proposedHash": "bd0cb3aae2f7877fb523ea7cc18420875a157039f4a3705dc6a0e5a1d790f55b",
+          "actualHash": null,
+          "proposalTruncated": false,
+          "comparison": "DIFFERENT",
+          "sourceCoverage": [
+            {
+              "sourceId": "source-95431f2ea5e93e6765b19b7c",
+              "presentInCurrent": false
+            },
+            {
+              "sourceId": "source-85be257b9b926aa6f379658f",
+              "presentInCurrent": true
+            }
+          ],
+          "applied": false
+        },
+        "effectiveInstructionHash": null,
+        "verification": {
+          "integrity": "VERIFIED",
+          "resolution": "PASS_WITH_LIMITATIONS",
+          "freeTextConflictCoverage": "NOT_EXHAUSTIVE",
+          "providerReceipt": "NOT_ATTESTED",
+          "warnings": [
+            "Shadow resolution does not replace the current prompt.",
+            "Natural-language contradictions require review; only instruction.key=value directives are compared."
+          ]
+        },
+        "id": "instructions-93b996e25af616c031590804e74de5020a8ff3fceb5ddf9d5c2643603eb970bc",
+        "hash": "93b996e25af616c031590804e74de5020a8ff3fceb5ddf9d5c2643603eb970bc"
+      }
+    }
+  ]
+}

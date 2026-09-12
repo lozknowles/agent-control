@@ -1,3 +1,5 @@
+import {withInstructionScope, baseInstructionSources, instructionIdentity} from './instruction-observer.js';
+import {discoverRepositoryInstructions} from './instruction-discovery.js';
 import {createHash, randomUUID} from 'node:crypto';
 import path from 'node:path';
 import type {ModelConfig, ProviderAccountProfileConfig, ProviderConfig} from './config.js';
@@ -573,7 +575,10 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
     this.observeTelemetry({phase: 'started', providerId: provider.id, modelId: model.id, elapsedMs: 0, context: {tokens: null, limitTokens: model.limits?.contextTokens ?? null, authority: 'unavailable', source: 'provider_not_yet_reported'}}, threadId, parcel.id, route);
     let invocation: ModelInvocationResult & {nodeId?: string};
     try {
-      invocation = await client.invoke(model, prompt, {
+      const repository=request.run.repository;
+      let discovered: import('./instruction-resolver.js').InstructionSource[]=[];
+      try{if(repository)discovered=discoverRepositoryInstructions({id:repository.identity,root:repository.snapshotPath,revision:repository.reviewedSha,approvedRoots:[repository.snapshotPath],targetPaths:chunk.files});}catch(error){this.parcels.instructions.failure(parcel.id,error);}
+      invocation = await withInstructionScope({store:this.parcels.instructions,input:{identity:instructionIdentity(parcel.id,{runId:request.run.id,stageId:chunk.id,workerId:route.workloadNodeId,providerId:provider.id,modelId:model.id,providerModel:model.providerModel,accountProfileId:account?.id??null,invocationId:threadId}),repository:repository?{id:repository.identity,revision:repository.reviewedSha}:undefined,targetPaths:chunk.files,sources:[...baseInstructionSources(parcel.prompt,parcel.context?.active.effectiveInstructions??[],baton),...discovered,{type:'MEMORY',uri:`agent-control://frozen-context/${chunk.id}`,content:chunk.content,reason:'Frozen repository/retrieved context remains advisory, not operational authority.'}],continuation:baton?{id:baton.id,hash:baton.sha256}:null}},()=>client.invoke(model, prompt, {
         structured: true,
         outputSchema: REPOSITORY_REVIEW_OUTPUT_SCHEMA,
         maximumOutputTokens: request.maximumOutputTokens,
@@ -581,7 +586,7 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
         signal: request.signal,
         requestExtension,
         onTelemetry: event => this.observeTelemetry(event, threadId, parcel.id, route),
-      });
+      }));
     } catch (error) {
       const failure = classifyExecutionFailure(error), failedAt = new Date().toISOString(), observation = failureObservation(error);
       this.observeTelemetry({phase: 'completed', providerId: provider.id, modelId: model.id, elapsedMs: observation?.elapsedMs ?? Math.max(0, Date.parse(failedAt) - Date.parse(startedAt)), ...(observation?.usage ? {usage: observation.usage} : {}), context: {tokens: null, limitTokens: model.limits?.contextTokens ?? null, authority: 'unavailable', source: observation?.usage ? `provider_failure_usage_${observation.usageAuthority}` : 'provider_failed_before_complete_usage'}}, threadId, parcel.id, route);

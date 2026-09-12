@@ -1,0 +1,22 @@
+✔ production scheduler preserves manifests, dependencies, batons and authenticated Morrow inspection (125.229785ms)
+✔ A/C/D: user instructions beat nested repository advice; nested advice wins only within its own scope (3.590148ms)
+✔ G: memory, continuation, persona and capability overlays never become directive authority (0.839354ms)
+✔ canonical hashes are stable under source ordering, target ordering and duplicate placement (5.397465ms)
+✔ ambiguous equal precedence and inconsistent source identity fail shadow verification (0.541072ms)
+✔ B: noisy sources are bounded, truncation is recorded, partial directives are not interpreted (0.777461ms)
+✔ E/F: selected skills, expiry, audience, exclusions, amendments and sealed baton remain explicit (1.051588ms)
+✔ H: capability negotiation requires explicit adapter evidence and never guesses native support (0.455946ms)
+✔ discovery reads canonical target ancestry only and rejects symlinks, escape, oversized and non-UTF8 files (2.906535ms)
+✔ hash-only persistence excludes raw prompts and secrets; corruption is visible without blocking current work (3.595014ms)
+✔ actual adapter bytes remain identical with shadow observation; transformed hashes and failures are retained (6.088688ms)
+✔ asynchronous scopes retain independent parcel and worker identity (1.785023ms)
+✔ the published manifest schema accepts canonical records and rejects raw prompt fields and enforcement (46.460816ms)
+✔ provider manifests inherit governed parcel amendment identities without changing the current prompt (5.062238ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 648.401737

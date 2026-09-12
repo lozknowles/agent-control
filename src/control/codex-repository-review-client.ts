@@ -1,3 +1,4 @@
+import {observeProviderInstructions} from './instruction-observer.js';
 import type {ModelConfig, ProviderAccountProfileConfig, ProviderConfig} from './config.js';
 import {LocalCodexNodeExecutionPort, type CodexNodeExecutionPort} from './codex-node-execution.js';
 import {normalizeModelUsage, type ModelInvocationResult, type ProviderInvocationTelemetry} from './openai-compatible-provider.js';
@@ -26,8 +27,10 @@ export class CodexRepositoryReviewClient {
     if (options.signal?.aborted) throw new Error('provider_cancelled');
     const started = Date.now();
     options.onTelemetry?.({phase: 'started', providerId: this.provider.id, modelId: model.id, elapsedMs: 0, context: {tokens: null, limitTokens: model.limits?.contextTokens ?? null, authority: 'unavailable', source: 'codex_jsonl_does_not_report_current_context'}});
+    const instruction=renderProviderPrompt(input), instructionReceipt=observeProviderInstructions({adapter:'codex-node-structured/v1',operation:'Structured node request; node-local read-only wrapper and ignore-rules retained',current:instruction,actual:instruction,providerId:this.provider.id,modelId:model.id,providerModel:model.providerModel,wire:{instruction,model:model.providerModel,outputSchema:options.outputSchema},boundary:'CONTROLLER_TO_EXECUTION_NODE'});
     let completionTelemetryEmitted = false;
-    const run = await this.nodeExecution.execReadOnlyStructured({provider: this.provider, account: this.account, model, nodeId: this.nodeId, instruction: renderProviderPrompt(input), outputSchema: options.outputSchema, maximumOutputTokens: options.maximumOutputTokens, timeoutMs: options.timeoutMs ?? 30_000, signal: options.signal, ...(this.executionSessionScope ? {executionSessionScope: this.executionSessionScope} : {}), onTelemetry: event => {
+    try {
+    const run = await this.nodeExecution.execReadOnlyStructured({provider: this.provider, account: this.account, model, nodeId: this.nodeId, instruction, outputSchema: options.outputSchema, maximumOutputTokens: options.maximumOutputTokens, timeoutMs: options.timeoutMs ?? 30_000, signal: options.signal, ...(this.executionSessionScope ? {executionSessionScope: this.executionSessionScope} : {}), onTelemetry: event => {
       if (event.type !== 'turn.completed') return;
       completionTelemetryEmitted = true;
       const usage = normalizeModelUsage(event.usage, model);
@@ -37,7 +40,9 @@ export class CodexRepositoryReviewClient {
     if (run.observedItemTypes.includes('file_change')) throw new Error('codex_exec_capability_envelope_violation:file_change');
     const elapsedMs = Date.now() - started, usage = normalizeModelUsage(run.usage, model);
     if (!completionTelemetryEmitted) options.onTelemetry?.({phase: 'completed', providerId: this.provider.id, modelId: model.id, elapsedMs, usage, context: unavailableExecContext(model.limits?.contextTokens)});
+    instructionReceipt('COMPLETED');
     return {providerId: this.provider.id, accountProfileId: this.account.id, modelId: model.id, nodeId: this.nodeId, providerModel: model.providerModel, output: run.finalMessage, elapsedMs, usage, responseModel: model.providerModel, finishReason: 'completed', toolCall: null};
+    } catch(error) {instructionReceipt('FAILED');throw error;}
   }
 }
 

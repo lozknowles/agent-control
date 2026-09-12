@@ -1,3 +1,6 @@
+import {observeProviderInstructions} from './instruction-observer.js';
+import {canonicalInstructionJson} from './instruction-resolver.js';
+import {recipeInstructionSources} from './instruction-context.js';
 import {createHash} from 'node:crypto';
 import type {HarnessCandidate} from './adaptive-harness.js';
 import type {RecipeExecutor, ToolInvocationGateway} from './harness-dispatch.js';
@@ -82,22 +85,26 @@ export class ResponsesProviderFactory {
     const systemInstructions = 'Call exactly one supplied function.';
     const agentControlInstructions = 'The function is only a request to Agent Control; do not claim it ran.';
     const toolDefinitions = [...names].map(([name, toolId]) => ({type: 'function', name, description: `Request Agent Control tool ${toolId}`, parameters: {type: 'object', additionalProperties: true}, strict: false}));
-    const startedAt = new Date().toISOString();
-    const response = await (this.options.fetch ?? globalThis.fetch)(this.endpoint, {
-      method: 'POST',
-      headers: {'content-type': 'application/json', ...(authorization ? {authorization: `Bearer ${authorization}`} : {})},
-      body: JSON.stringify({
+    const requestBody = {
         model: this.options.modelId,
         instructions: `${systemInstructions} ${agentControlInstructions}`,
         input: instruction,
         tools: toolDefinitions,
         tool_choice: 'required', parallel_tool_calls: false, max_output_tokens: 256, store: false,
-      }),
+      };
+    const instructionReceipt=observeProviderInstructions({adapter:'responses-function-call/v1',operation:'Existing governed tool-request envelope',current:instruction,actual:canonicalInstructionJson({instructions: requestBody.instructions, input: instruction}),wire:requestBody,providerId:this.options.provider.id,providerModel:this.options.modelId,sources:[{type:'PLATFORM_POLICY',uri:'agent-control://adapter/system',content:systemInstructions},{type:'GOVERNANCE',uri:'agent-control://adapter/tool-authority',content:agentControlInstructions},...recipeInstructionSources(recipe,[])],selectedSkillIds:(recipe.skills??[]).map(skill=>skill.id)});
+    try {
+    const startedAt = new Date().toISOString();
+    const response = await (this.options.fetch ?? globalThis.fetch)(this.endpoint, {
+      method: 'POST',
+      headers: {'content-type': 'application/json', ...(authorization ? {authorization: `Bearer ${authorization}`} : {})},
+      body: JSON.stringify(requestBody),
       signal: AbortSignal.timeout(Math.max(1, timeoutMs)),
     });
     const body = await response.json() as ResponsesBody;
     const providerCompletedAt = new Date().toISOString();
     if (!response.ok) throw new Error(`responses_provider_http_error:${response.status}:${body.error?.message ?? 'unknown'}`);
+    instructionReceipt('COMPLETED');
     const calls = body.output?.filter(item => item.type === 'function_call') ?? [];
     if (calls.length !== 1) throw new Error(`responses_provider_function_call_count:${calls.length}`);
     const call = calls[0];
@@ -124,5 +131,6 @@ export class ResponsesProviderFactory {
       evidence: [`provider_response:${responseIdentity}`, `provider_response_sha256:${responseHash}`, `tool_executed:${toolId}`],
       invocations: [invocation],
     };
+    } catch(error) {instructionReceipt('FAILED');throw error;}
   }
 }

@@ -1,3 +1,4 @@
+import {observeProviderInstructions} from './instruction-observer.js';
 import {createHash} from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -175,9 +176,11 @@ export async function probeCodexChatGptAuth(command: string, cwd: string, timeou
 export async function runCodexExec(request: CodexExecRequest): Promise<CodexExecResult> {
   const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-codex-schema-'));
   const schemaFile = path.join(temporary, 'output.schema.json');
+  let instructionReceipt: ((outcome:'COMPLETED'|'FAILED')=>void)|undefined;
   try {
     fs.writeFileSync(schemaFile, JSON.stringify(request.outputSchema ?? codexToolRequestSchema(request.grantedToolIds)), {mode: 0o600});
     const prompt = request.outputSchema ? request.instruction : `Return one Agent Control tool request as schema-constrained JSON. Put the tool input in input_json as a JSON-encoded string. Do not claim the tool ran. Do not modify files.\n\n${request.instruction}`;
+    instructionReceipt=observeProviderInstructions({adapter:'codex-read-only-structured/v1',operation:request.outputSchema?'Existing schema envelope; ignore-rules retained':'Existing tool-request wrapper; ignore-rules retained',current:request.instruction,actual:prompt,providerModel:request.modelId,wire:{model:request.modelId,prompt,outputSchema:request.outputSchema??codexToolRequestSchema(request.grantedToolIds),ignoreRules:true,projectDocMaxBytes:0}});
     const startedAt = Date.now(), liveEvents: Record<string, unknown>[] = []; let liveThreadId: string | undefined;
     const result = await captureProcess(request.command, codexReadOnlyStructuredArguments(request, schemaFile, prompt), request.cwd, request.timeoutMs, request.environment, !request.loadUserConfig, line => {
       let event: Record<string, unknown>; try { event = JSON.parse(line) as Record<string, unknown>; } catch { return; }
@@ -199,8 +202,9 @@ export async function runCodexExec(request: CodexExecRequest): Promise<CodexExec
     const observedItemTypes = [...new Set(events.map(event => event.item).filter((item): item is Record<string, unknown> => Boolean(item && typeof item === 'object' && !Array.isArray(item))).map(item => String(item.type ?? 'unknown')))];
     const rawUsage = completed.usage;
     const usage = rawUsage && typeof rawUsage === 'object' && !Array.isArray(rawUsage) ? sanitizeUsage(rawUsage as Record<string, unknown>) : undefined;
+    instructionReceipt?.('COMPLETED');
     return {threadId: typeof started?.thread_id === 'string' ? started.thread_id : undefined, finalMessage, usage, observedItemTypes};
-  } finally {
+  } catch(error) {instructionReceipt?.('FAILED');throw error;} finally {
     fs.rmSync(temporary, {recursive: true, force: true});
   }
 }

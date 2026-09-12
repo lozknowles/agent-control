@@ -1,3 +1,4 @@
+const parcelInstructionViews = new Map();
 const jobState = {jobs: [], parcels: [], runs: [], queue: [], workers: [], resources: [], systems: [], locks: [], artifacts: [], outputMetrics: null, efficiencyMetrics: null, invocations: [], configuration: null, selectedConfiguration: null, configurationRestartRequired: false, selectedJob: null, selectedRun: null, selectedSystem: null, search: ''};
 let tokenElapsedTimer = null;
 let linkedParcelScrolled = null;
@@ -179,9 +180,10 @@ function renderParcels() {
     const totals = parcel.audit?.totals;
     const summary = totals ? `<div class="parcel-cost-summary"><span>${esc(totals.models.length ? totals.models.join(', ') : 'Control action · no model')}</span><span>${esc(totals.invocations)} invocation${totals.invocations === 1 ? '' : 's'}</span><span>${esc(totals.totalTokens ?? 'tokens unavailable')}</span><span>${esc(totals.cost === null ? 'cost unavailable' : `${totals.currency || ''} ${totals.cost}`.trim())}</span><span>${esc(durationLabel(parcel.createdAt, parcel.endedAt))} wall</span></div>` : '';
     const integrity = parcel.transportIntegrity ? `<div class="parcel-integrity"><span>Transport integrity <b>${esc(parcel.transportIntegrity.state)}</b></span><span>score ${esc(parcel.transportIntegrity.score)}%</span><span>contract ${esc(parcel.transportIntegrity.contractSha256.slice(0, 16))}…</span></div>` : '<div class="parcel-integrity"><span>Transport integrity <b>LEGACY_UNBOUND</b></span></div>';
-    return `<article class="parcel-card ${parcel.status === 'RUNNING' ? 'is-running' : ''}"><div class="parcel-head"><strong>${esc(parcel.objective)}</strong><span class="status-pill ${statusClass(parcel.status)}">${esc(parcel.status)}</span><p>${esc(parcel.prompt)}</p></div><div class="parcel-metrics"><span>${esc(parcel.planner.kind)} planner</span><span>${esc(durationLabel(parcel.createdAt, parcel.endedAt))}</span><span>tokens ${esc(t.totalTokens ?? 'unavailable')}</span><span>cost ${esc(t.cost === null ? 'unavailable' : `${t.currency || ''} ${t.cost}`.trim())}</span></div>${integrity}${summary}${live}${decision}${renderParcelContext(parcel)}${stages}${renderParcelAudit(parcel)}</article>`;
+    return `<article class="parcel-card ${parcel.status === 'RUNNING' ? 'is-running' : ''}"><div class="parcel-head"><strong>${esc(parcel.objective)}</strong><span class="status-pill ${statusClass(parcel.status)}">${esc(parcel.status)}</span><p>${esc(parcel.prompt)}</p></div><div class="parcel-metrics"><span>${esc(parcel.planner.kind)} planner</span><span>${esc(durationLabel(parcel.createdAt, parcel.endedAt))}</span><span>tokens ${esc(t.totalTokens ?? 'unavailable')}</span><span>cost ${esc(t.cost === null ? 'unavailable' : `${t.currency || ''} ${t.cost}`.trim())}</span></div>${integrity}${summary}${live}${decision}${renderParcelContext(parcel)}${renderParcelInstructions(parcel)}${stages}${renderParcelAudit(parcel)}</article>`;
   }).join('') : '<div class="compact-empty">No natural-language work submitted yet.</div>';
   bindParcelContextControls();
+  bindParcelInstructionControls();
   document.querySelectorAll('.parcel-card').forEach((node,index)=>{node.dataset.parcelId=jobState.parcels[index]?.id||'';});
 }
 
@@ -534,3 +536,28 @@ document.addEventListener('DOMContentLoaded', () => {
   setInterval(() => { document.querySelectorAll('[data-live-start]').forEach(node => { node.textContent = durationLabel(node.dataset.liveStart); }); document.querySelectorAll('[data-live-activity]').forEach(node => { node.textContent = `${ageLabel(node.dataset.liveActivity)} ago`; }); document.querySelectorAll('[data-live-liveness]').forEach(node => { const live = window.AgentControlRunningState.liveness(node.dataset.liveState, node.dataset.liveLiveness); node.textContent = live.label; node.closest('.parcel-live, .active-run-telemetry')?.classList.toggle('is-stale', live.stale); }); document.querySelectorAll('[data-real-deadline]').forEach(node=>{node.textContent=deadlineLabel(node.dataset.realDeadline)}); }, 1000);
   setInterval(() => refresh().catch(showError), 5000);
 });
+
+
+function renderParcelInstructions(parcel) {
+  if (state.operatorAuth !== 'authenticated') parcelInstructionViews.clear();
+  const view = parcelInstructionViews.get(parcel.id);
+  const records = view?.manifests || [];
+  return `<section class="data-card"><button data-parcel-instructions="${esc(parcel.id)}">Effective instructions</button><small>Shadow comparison</small>${view ? `<p>${esc(view.digest)}</p>${records.map(item => `<details><summary>${esc(item.identity.workerId || 'Parcel plan')} · ${esc(item.identity.providerModel || item.identity.modelId || 'model not observed')} · ${esc(item.verification.resolution)}</summary><p>Manifest ${esc(item.id)}<br>SHA-256 ${esc(item.hash)}<br>Current ${esc(item.shadow.currentHash || 'unobserved')}<br>Proposed ${esc(item.shadow.proposedHash)}<br>Adapter payload ${esc(item.effectiveInstructionHash || 'unobserved')}</p><p>Comparison: ${esc(item.shadow.comparison)}. Existing prompt retained.</p><h4>Sources selected</h4><ul>${item.selectedSources.map(source => `<li>${esc(source.type)} · ${esc(source.uri)} · ${esc(source.domain)} · scope ${esc(source.scope)} · ${esc(source.reason)}${source.truncated ? ' · truncated' : ''}</li>`).join('')}</ul><h4>Sources excluded</h4><ul>${item.excludedSources.map(source => `<li>${esc(source.uri)} · ${esc(source.reason)}</li>`).join('') || '<li>None recorded</li>'}</ul><h4>Conflicts and provider capabilities</h4><ul>${item.conflicts.map(conflict => `<li>${esc(conflict.target)} · ${esc(conflict.key)} · ${esc(conflict.resolution)}</li>`).join('')}${item.capabilities.map(capability => `<li>${esc(capability.capability)} · ${esc(capability.outcome)} · ${esc(capability.reason)}</li>`).join('')}</ul><p>Continuation: ${esc(item.continuation?.id || 'none recorded')}. Free-text conflict coverage: ${esc(item.verification.freeTextConflictCoverage)}. Provider receipt: ${esc(item.verification.providerReceipt)}.</p></details>`).join('')}` : ''}</section>`;
+}
+function bindParcelInstructionControls() {
+  document.querySelectorAll('[data-parcel-instructions]').forEach(button => button.addEventListener('click', async () => {
+    if (state.operatorAuth !== 'authenticated') { openOperator(); return; }
+    button.disabled = true;
+    const token = state.token;
+    try {
+      const response = await fetch(`/api/parcels/${encodeURIComponent(button.dataset.parcelInstructions)}/instructions`, {headers: {Authorization: `Bearer ${token}`}});
+      if (response.status === 401) { authenticationExpired(); return; }
+      if (!response.ok) throw new Error('Instruction evidence could not be loaded.');
+      const view = await response.json();
+      if (state.operatorAuth !== 'authenticated' || state.token !== token) return;
+      parcelInstructionViews.set(button.dataset.parcelInstructions, view);
+      renderParcels();
+    } catch { button.textContent = 'Could not load instructions — retry'; }
+    finally { button.disabled = false; }
+  }));
+}

@@ -1,0 +1,16 @@
+{
+  "schema": "agent-control.physical-access-check/v1",
+  "checkedAt": "2026-09-12T07:39:32.736640+00:00",
+  "machine": "MSI",
+  "machineState": "USER_CONFIRMED_RUNNING",
+  "connector": "Desktop Commander",
+  "connectionResult": "UNAVAILABLE",
+  "probe": "hostname",
+  "probeResult": "No devices available; please connect a device to use remote tools",
+  "probeExecutedOnMSI": false,
+  "repeatProbeResult": "Same connection error",
+  "localCodexExecutableAvailable": false,
+  "browserAcceptance": "Not attempted through an alternative mechanism after local browser access was disallowed",
+  "secretsRead": false,
+  "credentialRotation": "UNVERIFIED"
+}

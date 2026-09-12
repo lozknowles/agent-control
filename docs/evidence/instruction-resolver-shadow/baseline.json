@@ -1,0 +1,21 @@
+{
+  "schema": "agent-control.instruction-resolver-baseline/v1",
+  "baselineHead": "0dc4fa30e9ee1f4d5218bdde956676201047ec9c",
+  "baselineTree": "d783e081be3673ea5b134379382b225f4af13440",
+  "branch": "feature/4.5-instruction-resolver-shadow",
+  "isolation": "Independent clone; no source checkout, deployment or stable branch modified",
+  "originalCheckout": "/workspace/scratch/acf319a4081b/agent-control-morrow",
+  "workingCheckout": "/workspace/scratch/acf319a4081b/agent-control-instruction-resolver",
+  "baselineTests": {
+    "passed": 1165,
+    "failed": 0,
+    "source": "../morrow-4.5-integration/validation.md",
+    "basis": "Previously tested identical baseline tree; baseline suite was not redundantly rerun before implementation"
+  },
+  "legacyEvidenceFilesUnchanged": 338,
+  "codexArgumentFunctionUnchanged": true,
+  "codexArgumentFunctionSha256": "ca69f52815612cb36f1d421a4e9d1a5e307484ce8176e78f99856bdc6914fdca",
+  "remote4_5Head": "0dc4fa30e9ee1f4d5218bdde956676201047ec9c",
+  "remoteMainHead": "2e74d88db57e3ad15ce1d85ec93220d087b9592f",
+  "credentialRotation": "UNVERIFIED; prior audit exposure must be followed up; credential never displayed"
+}

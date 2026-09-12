@@ -1,3 +1,6 @@
+import {observeProviderInstructions} from './instruction-observer.js';
+import {canonicalInstructionJson} from './instruction-resolver.js';
+import {recipeInstructionSources} from './instruction-context.js';
 import {createHash} from 'node:crypto';
 import type {HarnessCandidate} from './adaptive-harness.js';
 import type {RecipeExecutor, ToolInvocationGateway} from './harness-dispatch.js';
@@ -78,23 +81,27 @@ export class StructuredChatProviderFactory {
     const authorization = this.options.authorization?.();
     const systemInstructions = `Return only JSON with shape {"tool":"<id>","input":{...}}. Choose exactly one granted tool. Granted tool ids: ${grantedToolIds.join(', ')}.`;
     const agentControlInstructions = 'Do not claim the tool ran.';
-    const startedAt = new Date().toISOString();
-    const response = await fetcher(this.endpoint, {
-      method: 'POST',
-      headers: {'content-type': 'application/json', ...(authorization ? {authorization: `Bearer ${authorization}`} : {})},
-      body: JSON.stringify({
+    const requestBody = {
         model: this.options.modelId,
         messages: [
           {role: 'system', content: `${systemInstructions} ${agentControlInstructions}`},
           {role: 'user', content: instruction},
         ],
         response_format: {type: 'json_object'}, temperature: 0, max_tokens: 256, stream: false,
-      }),
+      };
+    const instructionReceipt=observeProviderInstructions({adapter:'structured-chat-tool-request/v1',operation:'Existing governed tool-request envelope',current:instruction,actual:canonicalInstructionJson(requestBody.messages),wire:requestBody,providerId:this.options.provider.id,providerModel:this.options.modelId,sources:[{type:'PLATFORM_POLICY',uri:'agent-control://adapter/system',content:systemInstructions},{type:'GOVERNANCE',uri:'agent-control://adapter/tool-authority',content:agentControlInstructions},...recipeInstructionSources(recipe,contextSources)],selectedSkillIds:(recipe.skills??[]).map(skill=>skill.id)});
+    try {
+    const startedAt = new Date().toISOString();
+    const response = await fetcher(this.endpoint, {
+      method: 'POST',
+      headers: {'content-type': 'application/json', ...(authorization ? {authorization: `Bearer ${authorization}`} : {})},
+      body: JSON.stringify(requestBody),
       signal: AbortSignal.timeout(Math.max(1, timeoutMs)),
     });
     const body = await response.json() as ChatResponse;
     const providerCompletedAt = new Date().toISOString();
     if (!response.ok) throw new Error(`provider_http_error:${response.status}:${body.error?.message ?? 'unknown'}`);
+    instructionReceipt('COMPLETED');
     const content = body.choices?.[0]?.message?.content;
     if (!content) throw new Error('provider_missing_tool_request');
     const request = parseToolRequest(content);
@@ -116,6 +123,7 @@ export class StructuredChatProviderFactory {
       evidence: [`provider_response:${body.id ?? responseHash.slice(0, 16)}`, `provider_response_sha256:${responseHash}`, `tool_executed:${request.tool}`],
       invocations: [invocation],
     };
+    } catch(error) {instructionReceipt('FAILED');throw error;}
   }
 }
 

@@ -1,0 +1,629 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:agent-control:effective-instruction-manifest:v1",
+  "title": "Effective Instruction Manifest (shadow only)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "mode",
+    "id",
+    "hash",
+    "identity",
+    "repository",
+    "targetPaths",
+    "selectedSources",
+    "excludedSources",
+    "precedenceDecisions",
+    "conflicts",
+    "capabilities",
+    "transformations",
+    "temporaryInstructionIds",
+    "continuation",
+    "amendments",
+    "shadow",
+    "effectiveInstructionHash",
+    "verification"
+  ],
+  "properties": {
+    "schema": {
+      "const": "agent-control.effective-instruction-manifest/v1"
+    },
+    "mode": {
+      "const": "SHADOW"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^instructions-[a-f0-9]{64}$"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "parcelId",
+        "runId",
+        "stageId",
+        "workerId",
+        "providerId",
+        "modelId",
+        "providerModel",
+        "accountProfileId",
+        "invocationId"
+      ],
+      "properties": {
+        "parcelId": {
+          "type": "string"
+        },
+        "runId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "stageId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "workerId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "providerId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "modelId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "providerModel": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "accountProfileId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "invocationId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "repository": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "revision"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "revision": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "targetPaths": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "selectedSources": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/source"
+      }
+    },
+    "excludedSources": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/source"
+      }
+    },
+    "precedenceDecisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "target",
+          "key",
+          "winningSourceId",
+          "winningValueHash",
+          "reason"
+        ],
+        "properties": {
+          "target": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "winningSourceId": {
+            "type": "string"
+          },
+          "winningValueHash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "conflicts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "target",
+          "key",
+          "winningSourceId",
+          "losingSourceIds",
+          "resolution"
+        ],
+        "properties": {
+          "target": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "winningSourceId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "losingSourceIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "resolution": {
+            "enum": [
+              "PRECEDENCE",
+              "UNRESOLVED_EQUAL_PRECEDENCE",
+              "SOURCE_IDENTITY_CONFLICT"
+            ]
+          }
+        }
+      }
+    },
+    "capabilities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "capability",
+          "outcome",
+          "adapter",
+          "reason",
+          "evidence",
+          "requested"
+        ],
+        "properties": {
+          "capability": {
+            "enum": [
+              "native_mid_turn_steering",
+              "dynamic_reasoning",
+              "async_tools",
+              "multi_agent"
+            ]
+          },
+          "outcome": {
+            "enum": [
+              "NATIVE",
+              "CONTINUATION",
+              "EMULATED",
+              "UNSUPPORTED"
+            ]
+          },
+          "adapter": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "requested": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "transformations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "adapter",
+          "operation",
+          "inputHash",
+          "outputHash",
+          "wireHash",
+          "boundary"
+        ],
+        "properties": {
+          "adapter": {
+            "type": "string"
+          },
+          "operation": {
+            "type": "string"
+          },
+          "inputHash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "outputHash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "wireHash": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "boundary": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "temporaryInstructionIds": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "continuation": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "hash"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "hash": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "amendments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "hash",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "hash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "shadow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "currentHash",
+        "proposedHash",
+        "actualHash",
+        "proposalTruncated",
+        "comparison",
+        "sourceCoverage",
+        "applied"
+      ],
+      "properties": {
+        "currentHash": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "proposedHash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "actualHash": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "proposalTruncated": {
+          "type": "boolean"
+        },
+        "comparison": {
+          "enum": [
+            "DIFFERENT",
+            "EQUAL",
+            "UNOBSERVED"
+          ]
+        },
+        "sourceCoverage": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "sourceId",
+              "presentInCurrent"
+            ],
+            "properties": {
+              "sourceId": {
+                "type": "string"
+              },
+              "presentInCurrent": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "applied": {
+          "const": false
+        }
+      }
+    },
+    "effectiveInstructionHash": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "integrity",
+        "resolution",
+        "freeTextConflictCoverage",
+        "providerReceipt",
+        "warnings"
+      ],
+      "properties": {
+        "integrity": {
+          "const": "VERIFIED"
+        },
+        "resolution": {
+          "enum": [
+            "PASS_WITH_LIMITATIONS",
+            "FAIL"
+          ]
+        },
+        "freeTextConflictCoverage": {
+          "const": "NOT_EXHAUSTIVE"
+        },
+        "providerReceipt": {
+          "const": "NOT_ATTESTED"
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type",
+        "uri",
+        "revision",
+        "contentHash",
+        "scope",
+        "audience",
+        "domain",
+        "precedence",
+        "selection",
+        "reason",
+        "originalBytes",
+        "renderedBytes",
+        "renderedHash",
+        "truncated",
+        "skillId",
+        "semanticAssessment"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "PLATFORM_POLICY",
+            "GOVERNANCE",
+            "USER_TASK",
+            "TEMPORARY",
+            "REPOSITORY",
+            "SKILL",
+            "CONTINUATION",
+            "PROVIDER_OVERLAY",
+            "MEMORY",
+            "PERSONA"
+          ]
+        },
+        "uri": {
+          "type": "string"
+        },
+        "revision": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "contentHash": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "scope": {
+          "type": "string"
+        },
+        "audience": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "domain": {
+          "enum": [
+            "AUTHORITY",
+            "TASK",
+            "GUIDANCE",
+            "CAPABILITY",
+            "ADVISORY",
+            "PERSONA"
+          ]
+        },
+        "precedence": {
+          "type": "integer"
+        },
+        "selection": {
+          "enum": [
+            "SELECTED",
+            "EXCLUDED"
+          ]
+        },
+        "reason": {
+          "type": "string"
+        },
+        "originalBytes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "renderedBytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "renderedHash": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "truncated": {
+          "type": "boolean"
+        },
+        "skillId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "semanticAssessment": {
+          "enum": [
+            "BOUNDED_DIRECTIVES_ONLY",
+            "NOT_PARSED"
+          ]
+        }
+      }
+    }
+  }
+}

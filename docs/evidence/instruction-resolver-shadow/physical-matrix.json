@@ -1,0 +1,397 @@
+{
+  "schema": "agent-control.instruction-physical-matrix/v1",
+  "status": "BLOCKED",
+  "accessCheckAttempted": true,
+  "physicalModelExecutionCount": 0,
+  "realAcceptanceJobId": null,
+  "realWorkParcelId": null,
+  "videoPath": null,
+  "videoSha256": null,
+  "morrowDigestPath": null,
+  "results": [
+    {
+      "requestedModel": "GPT-6 Astra",
+      "registeredModelId": null,
+      "providerId": null,
+      "case": "A",
+      "status": "BLOCKED",
+      "executionAttempted": false,
+      "reason": "MSI is running, but the chat remote connector cannot execute the access probe. No usable model route or real UI session is accessible from this isolated runtime.",
+      "evidence": [
+        "physical-access.json"
+      ]
+    },
+    {
+      "requestedModel": "GPT-6 Astra",
+      "registeredModelId": null,
+      "providerId": null,
+      "case": "B",
+      "status": "BLOCKED",
+      "executionAttempted": false,
+      "reason": "MSI is running, but the chat remote connector cannot execute the access probe. No usable model route or real UI session is accessible from this isolated runtime.",
+      "evidence": [
+        "physical-access.json"
+      ]
+    },
+    {
+      "requestedModel": "GPT-6 Astra",
+      "registeredModelId": null,
+      "providerId": null,
+      "case": "C",
+      "status": "BLOCKED",
+      "executionAttempted": false,
+      "reason": "MSI is running, but the chat remote connector cannot execute the access probe. No usable model route or real UI session is accessible from this isolated runtime.",
+      "evidence": [
+        "physical-access.json"
+      ]
+    },
+    {
+      "requestedModel": "GPT-6 Astra",
+      "registeredModelId": null,
+      "providerId": null,
+      "case": "D",
+      "status": "BLOCKED",
+      "executionAttempted": false,
+      "reason": "MSI is running, but the chat remote connector cannot execute the access probe. No usable model route or real UI session is accessible from this isolated runtime.",
+      "evidence": [
+        "physical-access.json"
+      ]
+    },
+    {
+      "requestedModel": "GPT-6 Astra",
+      "registeredModelId": null,
+      "providerId": null,
+      "case": "E",
+      "status": "BLOCKED",
+      "executionAttempted": false,
+      "reason": "MSI is running, but the chat remote connector cannot execute the access probe. No usable model route or real UI session is accessible from this isolated runtime.",
+      "evidence": [
+        "physical-access.json"
+      ]
+    },
+    {
+      "requestedModel": "GPT-6 Astra",
+      "registeredModelId": null,
+      "providerId": null,
+      "case": "F",
+      "status": "BLOCKED",
+      "executionAttempted": false,
+      "reason": "MSI is running, but the chat remote connector cannot execute the access probe. No usable model route or real UI session is accessible from this isolated runtime.",
+      "evidence": [
+        "physical-access.json"
+      ]
+    },
+    {
+      "requestedModel": "GPT-6 Astra",
+      "registeredModelId": null,
+      "providerId": null,
+      "case": "G",
+      "status": "BLOCKED",
+      "executionAttempted": false,
+      "reason": "MSI is running, but the chat remote connector cannot execute the access probe. No usable model route or real UI session is accessible from this isolated runtime.",
+      "evidence": [
+        "physical-access.json"
+      ]
+    },
+    {
+      "requestedModel": "GPT-6 Astra",
+      "registeredModelId": null,
+      "providerId": null,
+      "case": "H",
+      "status": "BLOCKED",
+      "executionAttempted": false,
+      "reason": "MSI is running, but the chat remote connector cannot execute the access probe. No usable model route or real UI session is accessible from this isolated runtime.",
+      "evidence": [
+        "physical-access.json"
+      ]
+    },
+    {
+      "requestedModel": "GPT-5.6 Sol",
+      "registeredModelId": null,
+      "providerId": null,
+      "case": "A",
+      "status": "BLOCKED",
+      "executionAttempted": false,
+      "reason": "MSI is running, but the chat remote connector cannot execute the access probe. No usable model route or real UI session is accessible from this isolated runtime.",
+      "evidence": [
+        "physical-access.json"
+      ]
+    },
+    {
+      "requestedModel": "GPT-5.6 Sol",
+      "registeredModelId": null,
+      "providerId": null,
+      "case": "B",
+      "status": "BLOCKED",
+      "executionAttempted": false,
+      "reason": "MSI is running, but the chat remote connector cannot execute the access probe. No usable model route or real UI session is accessible from this isolated runtime.",
+      "evidence": [
+        "physical-access.json"
+      ]
+    },
+    {
+      "requestedModel": "GPT-5.6 Sol",
+      "registeredModelId": null,
+      "providerId": null,
+      "case": "C",
+      "status": "BLOCKED",
+      "executionAttempted": false,
+      "reason": "MSI is running, but the chat remote connector cannot execute the access probe. No usable model route or real UI session is accessible from this isolated runtime.",
+      "evidence": [
+        "physical-access.json"
+      ]
+    },
+    {
+      "requestedModel": "GPT-5.6 Sol",
+      "registeredModelId": null,
+      "providerId": null,
+      "case": "D",
+      "status": "BLOCKED",
+      "executionAttempted": false,
+      "reason": "MSI is running, but the chat remote connector cannot execute the access probe. No usable model route or real UI session is accessible from this isolated runtime.",
+      "evidence": [
+        "physical-access.json"
+      ]
+    },
+    {
+      "requestedModel": "GPT-5.6 Sol",
+      "registeredModelId": null,
+      "providerId": null,
+      "case": "E",
+      "status": "BLOCKED",
+      "executionAttempted": false,
+      "reason": "MSI is running, but the chat remote connector cannot execute the access probe. No usable model route or real UI session is accessible from this isolated runtime.",
+      "evidence": [
+        "physical-access.json"
+      ]
+    },
+    {
+      "requestedModel": "GPT-5.6 Sol",
+      "registeredModelId": null,
+      "providerId": null,
+      "case": "F",
+      "status": "BLOCKED",
+      "executionAttempted": false,
+      "reason": "MSI is running, but the chat remote connector cannot execute the access probe. No usable model route or real UI session is accessible from this isolated runtime.",
+      "evidence": [
+        "physical-access.json"
+      ]
+    },
+    {
+      "requestedModel": "GPT-5.6 Sol",
+      "registeredModelId": null,
+      "providerId": null,
+      "case": "G",
+      "status": "BLOCKED",
+      "executionAttempted": false,
+      "reason": "MSI is running, but the chat remote connector cannot execute the access probe. No usable model route or real UI session is accessible from this isolated runtime.",
+      "evidence": [
+        "physical-access.json"
+      ]
+    },
+    {
+      "requestedModel": "GPT-5.6 Sol",
+      "registeredModelId": null,
+      "providerId": null,
+      "case": "H",
+      "status": "BLOCKED",
+      "executionAttempted": false,
+      "reason": "MSI is running, but the chat remote connector cannot execute the access probe. No usable model route or real UI session is accessible from this isolated runtime.",
+      "evidence": [
+        "physical-access.json"
+      ]
+    },
+    {
+      "requestedModel": "GPT-5.6 Luna",
+      "registeredModelId": null,
+      "providerId": null,
+      "case": "A",
+      "status": "BLOCKED",
+      "executionAttempted": false,
+      "reason": "MSI is running, but the chat remote connector cannot execute the access probe. No usable model route or real UI session is accessible from this isolated runtime.",
+      "evidence": [
+        "physical-access.json"
+      ]
+    },
+    {
+      "requestedModel": "GPT-5.6 Luna",
+      "registeredModelId": null,
+      "providerId": null,
+      "case": "B",
+      "status": "BLOCKED",
+      "executionAttempted": false,
+      "reason": "MSI is running, but the chat remote connector cannot execute the access probe. No usable model route or real UI session is accessible from this isolated runtime.",
+      "evidence": [
+        "physical-access.json"
+      ]
+    },
+    {
+      "requestedModel": "GPT-5.6 Luna",
+      "registeredModelId": null,
+      "providerId": null,
+      "case": "C",
+      "status": "BLOCKED",
+      "executionAttempted": false,
+      "reason": "MSI is running, but the chat remote connector cannot execute the access probe. No usable model route or real UI session is accessible from this isolated runtime.",
+      "evidence": [
+        "physical-access.json"
+      ]
+    },
+    {
+      "requestedModel": "GPT-5.6 Luna",
+      "registeredModelId": null,
+      "providerId": null,
+      "case": "D",
+      "status": "BLOCKED",
+      "executionAttempted": false,
+      "reason": "MSI is running, but the chat remote connector cannot execute the access probe. No usable model route or real UI session is accessible from this isolated runtime.",
+      "evidence": [
+        "physical-access.json"
+      ]
+    },
+    {
+      "requestedModel": "GPT-5.6 Luna",
+      "registeredModelId": null,
+      "providerId": null,
+      "case": "E",
+      "status": "BLOCKED",
+      "executionAttempted": false,
+      "reason": "MSI is running, but the chat remote connector cannot execute the access probe. No usable model route or real UI session is accessible from this isolated runtime.",
+      "evidence": [
+        "physical-access.json"
+      ]
+    },
+    {
+      "requestedModel": "GPT-5.6 Luna",
+      "registeredModelId": null,
+      "providerId": null,
+      "case": "F",
+      "status": "BLOCKED",
+      "executionAttempted": false,
+      "reason": "MSI is running, but the chat remote connector cannot execute the access probe. No usable model route or real UI session is accessible from this isolated runtime.",
+      "evidence": [
+        "physical-access.json"
+      ]
+    },
+    {
+      "requestedModel": "GPT-5.6 Luna",
+      "registeredModelId": null,
+      "providerId": null,
+      "case": "G",
+      "status": "BLOCKED",
+      "executionAttempted": false,
+      "reason": "MSI is running, but the chat remote connector cannot execute the access probe. No usable model route or real UI session is accessible from this isolated runtime.",
+      "evidence": [
+        "physical-access.json"
+      ]
+    },
+    {
+      "requestedModel": "GPT-5.6 Luna",
+      "registeredModelId": null,
+      "providerId": null,
+      "case": "H",
+      "status": "BLOCKED",
+      "executionAttempted": false,
+      "reason": "MSI is running, but the chat remote connector cannot execute the access probe. No usable model route or real UI session is accessible from this isolated runtime.",
+      "evidence": [
+        "physical-access.json"
+      ]
+    },
+    {
+      "requestedModel": "Local/non-OpenAI worker if safely available",
+      "registeredModelId": null,
+      "providerId": null,
+      "case": "A",
+      "status": "BLOCKED",
+      "executionAttempted": false,
+      "reason": "MSI is running, but the chat remote connector cannot execute the access probe. No usable model route or real UI session is accessible from this isolated runtime.",
+      "evidence": [
+        "physical-access.json"
+      ]
+    },
+    {
+      "requestedModel": "Local/non-OpenAI worker if safely available",
+      "registeredModelId": null,
+      "providerId": null,
+      "case": "B",
+      "status": "BLOCKED",
+      "executionAttempted": false,
+      "reason": "MSI is running, but the chat remote connector cannot execute the access probe. No usable model route or real UI session is accessible from this isolated runtime.",
+      "evidence": [
+        "physical-access.json"
+      ]
+    },
+    {
+      "requestedModel": "Local/non-OpenAI worker if safely available",
+      "registeredModelId": null,
+      "providerId": null,
+      "case": "C",
+      "status": "BLOCKED",
+      "executionAttempted": false,
+      "reason": "MSI is running, but the chat remote connector cannot execute the access probe. No usable model route or real UI session is accessible from this isolated runtime.",
+      "evidence": [
+        "physical-access.json"
+      ]
+    },
+    {
+      "requestedModel": "Local/non-OpenAI worker if safely available",
+      "registeredModelId": null,
+      "providerId": null,
+      "case": "D",
+      "status": "BLOCKED",
+      "executionAttempted": false,
+      "reason": "MSI is running, but the chat remote connector cannot execute the access probe. No usable model route or real UI session is accessible from this isolated runtime.",
+      "evidence": [
+        "physical-access.json"
+      ]
+    },
+    {
+      "requestedModel": "Local/non-OpenAI worker if safely available",
+      "registeredModelId": null,
+      "providerId": null,
+      "case": "E",
+      "status": "BLOCKED",
+      "executionAttempted": false,
+      "reason": "MSI is running, but the chat remote connector cannot execute the access probe. No usable model route or real UI session is accessible from this isolated runtime.",
+      "evidence": [
+        "physical-access.json"
+      ]
+    },
+    {
+      "requestedModel": "Local/non-OpenAI worker if safely available",
+      "registeredModelId": null,
+      "providerId": null,
+      "case": "F",
+      "status": "BLOCKED",
+      "executionAttempted": false,
+      "reason": "MSI is running, but the chat remote connector cannot execute the access probe. No usable model route or real UI session is accessible from this isolated runtime.",
+      "evidence": [
+        "physical-access.json"
+      ]
+    },
+    {
+      "requestedModel": "Local/non-OpenAI worker if safely available",
+      "registeredModelId": null,
+      "providerId": null,
+      "case": "G",
+      "status": "BLOCKED",
+      "executionAttempted": false,
+      "reason": "MSI is running, but the chat remote connector cannot execute the access probe. No usable model route or real UI session is accessible from this isolated runtime.",
+      "evidence": [
+        "physical-access.json"
+      ]
+    },
+    {
+      "requestedModel": "Local/non-OpenAI worker if safely available",
+      "registeredModelId": null,
+      "providerId": null,
+      "case": "H",
+      "status": "BLOCKED",
+      "executionAttempted": false,
+      "reason": "MSI is running, but the chat remote connector cannot execute the access probe. No usable model route or real UI session is accessible from this isolated runtime.",
+      "evidence": [
+        "physical-access.json"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,176 @@
+{
+  "schema": "agent-control.instruction-evidence-bundle/v1",
+  "baseCommit": "0dc4fa30e9ee1f4d5218bdde956676201047ec9c",
+  "branch": "feature/4.5-instruction-resolver-shadow",
+  "tests": {
+    "full": {
+      "passed": 1179,
+      "failed": 0
+    },
+    "focused": {
+      "passed": 14,
+      "failed": 0
+    }
+  },
+  "checks": {
+    "typecheck": "PASS",
+    "bootstrap": "PASS",
+    "dashboard": "PASS",
+    "neutrality": "PASS",
+    "implementationStatus": "PASS",
+    "historicalEvidenceVerification": "PASS",
+    "localMarkdownLinks": 15,
+    "credentialPatternScan": "PASS"
+  },
+  "physicalStatus": "BLOCKED",
+  "physicalModelExecutions": 0,
+  "videoPath": null,
+  "credentialRotation": "UNVERIFIED",
+  "recommendation": "EXPERIMENTAL \u2014 NOT RELEASE READY",
+  "files": [
+    {
+      "path": "TODO.md",
+      "sha256": "57735cd4a538469a31a6d12e000dc7f1a91c2aca99592d378a1e5f43a6f0b4f3"
+    },
+    {
+      "path": "assets/dashboard/dashboard-enhancements.js",
+      "sha256": "f0e477d654110461fcc4538145d8d1088998516280b1d0b9af90c72f92ef8366"
+    },
+    {
+      "path": "config/schemas/effective-instruction-manifest-v1.schema.json",
+      "sha256": "7ed536e65dbe8a58de52a99949027415eac62f505e5d7a6a657fb832750a5536"
+    },
+    {
+      "path": "docs/evidence/instruction-resolver-shadow/baseline.json",
+      "sha256": "e352dedeb3e37ed4f6717c536fd74ed4e8537a4c28a02a1c570a9d04cb5f3ee7"
+    },
+    {
+      "path": "docs/evidence/instruction-resolver-shadow/files-changed.txt",
+      "sha256": "e240fbe0034ed2e31493f627022a9071fe81b5dd9c1611aaafbc3443ea67dc72"
+    },
+    {
+      "path": "docs/evidence/instruction-resolver-shadow/focused-tests.txt",
+      "sha256": "5f9c37fb07af7c8ecc9ca6548a12573d259a710c785aff29990a2541b58cb300"
+    },
+    {
+      "path": "docs/evidence/instruction-resolver-shadow/full-check.txt",
+      "sha256": "51eb4ebf78446e095f8971e7df696eba1a6b0592376f597831c99ee4e1c3005d"
+    },
+    {
+      "path": "docs/evidence/instruction-resolver-shadow/initial-check-interrupted.txt",
+      "sha256": "03a4b7eb0a344e55839660c369a95817454326ad6716a68c7dfb203665fa64a2"
+    },
+    {
+      "path": "docs/evidence/instruction-resolver-shadow/legacy-evidence-verification.txt",
+      "sha256": "543828a7573dda0ea1240f1b5790b987383f2dfdde2ae6b384601cedb7ee18f0"
+    },
+    {
+      "path": "docs/evidence/instruction-resolver-shadow/physical-access.json",
+      "sha256": "bfdc0c9fe1fac3793931ea4fcaaebaffbe4252fd1a5790a48cf6fb1ae2a691bf"
+    },
+    {
+      "path": "docs/evidence/instruction-resolver-shadow/physical-matrix.json",
+      "sha256": "f89140e4da1d0356780dde8d159a40e89f0179b4a54d2964ef1db528722163ad"
+    },
+    {
+      "path": "docs/evidence/instruction-resolver-shadow/report.md",
+      "sha256": "7d9ce8b1989753d7ca5f5effd06518e1e374618bce9bb2d04d51fae3a357dd87"
+    },
+    {
+      "path": "docs/evidence/instruction-resolver-shadow/shadow-comparisons.json",
+      "sha256": "46dbc7261d8c9631e93ff07bb604f3af278c29ea6f9289a187347edeeff61e6a"
+    },
+    {
+      "path": "docs/instruction-resolver.md",
+      "sha256": "bfe4565a1aee1194aa2381bd28246537aeeda6daa542a7da6ceb747b9265fd3a"
+    },
+    {
+      "path": "scripts/qualify-instruction-resolver-shadow.ts",
+      "sha256": "c51eecbf8d29cdb74316b685dc560488d6a516b00b987d253366e6c8b2280b9b"
+    },
+    {
+      "path": "scripts/verify-instruction-resolver-shadow.ts",
+      "sha256": "dbbffc0d1921f6736af87f35ecdfc0da84ad209692637cb35eaebee996e67f29"
+    },
+    {
+      "path": "src/control/application-service.ts",
+      "sha256": "ae40a60d4e390a51a376b47372663e11fd2ebfe52687ae3e02ab43c5fefb8b70"
+    },
+    {
+      "path": "src/control/codex-exec-provider.ts",
+      "sha256": "b52257a89fc537772646cae6d43157ac6a1e94384b411809ec9da07206eb0fd5"
+    },
+    {
+      "path": "src/control/codex-repository-review-client.ts",
+      "sha256": "3ccabfeb11e75f3604e8799c95c0a9b9a2f3d83239d3398c29497ec4e8043dec"
+    },
+    {
+      "path": "src/control/direct-repository-review-executor.ts",
+      "sha256": "991550780f6792d9e2055e998f9d4acd9b930509f28c7ef25086bcefcfd880e4"
+    },
+    {
+      "path": "src/control/instruction-capabilities.ts",
+      "sha256": "94101f4d48ebb9b59e04544820ac32d3ba3eb5886b4c2c34015f7c8bbd964bc3"
+    },
+    {
+      "path": "src/control/instruction-context.ts",
+      "sha256": "b340d77d9e24afe6f98826a1e3fa4a9dac9431e77f1368286e0f4da8250ffc75"
+    },
+    {
+      "path": "src/control/instruction-discovery.ts",
+      "sha256": "ffa333acea9339fc48eb28c17327a0d241f1b92b6c0f1573c751a3896572e0db"
+    },
+    {
+      "path": "src/control/instruction-integration.test.ts",
+      "sha256": "3bc13dcb0a401b189eef81abafac575f0943dfc773e8d282179f9bb77107df17"
+    },
+    {
+      "path": "src/control/instruction-observer.ts",
+      "sha256": "5fdc6f60f90a3f72edeb4fbe78b5adbec0b0c467fdf07d6243d6495a765b918d"
+    },
+    {
+      "path": "src/control/instruction-resolver.test.ts",
+      "sha256": "f73786078ef4cd993fab4b0f244523b4a2d0210175778d5b84273bbae2ebd3b2"
+    },
+    {
+      "path": "src/control/instruction-resolver.ts",
+      "sha256": "ce52ba5ed52a82b31cbe6f9bcfb7345f2823b97103346ca4d71d3dccb7070d56"
+    },
+    {
+      "path": "src/control/job-bootstrap.ts",
+      "sha256": "b407c99da438a6b704e4c5cc152fcbeea0688026e69a4ed11f2ff7e08cdf535c"
+    },
+    {
+      "path": "src/control/job-runtime.ts",
+      "sha256": "bba4fb5f878d056c2a0fcc5d6ec52c0e61a410ad629496be573f39cb7f99ef5e"
+    },
+    {
+      "path": "src/control/openai-compatible-provider.ts",
+      "sha256": "a400b600b345deb785eebff77a041187e81bd220678d3d1799dbfc9eafda8e02"
+    },
+    {
+      "path": "src/control/operator-review-actions.test.ts",
+      "sha256": "5b8e2e496163469282a42b2725588ec5c15de902928c0e426dc8cda39f79fd9a"
+    },
+    {
+      "path": "src/control/responses-provider.ts",
+      "sha256": "9624045688764068bf17fb0ea42420be219346ac94384e3985b570d7a73cd12a"
+    },
+    {
+      "path": "src/control/structured-chat-loop-provider.ts",
+      "sha256": "2b746c7664724c69692e214ef2aa99b1e5d24e525cd89589b71ae2195d1030c1"
+    },
+    {
+      "path": "src/control/structured-chat-provider.ts",
+      "sha256": "c1857c31610a2b0a29dca7fc8f939bf429cca14130e0618919b22fc515521976"
+    },
+    {
+      "path": "src/control/web-server.ts",
+      "sha256": "485344f67297d33ab50e796de6af06ca0d4e7435a6ef4d81b9e9df9ce40dc1a0"
+    },
+    {
+      "path": "src/control/work-parcels.ts",
+      "sha256": "cb91211898c84961c63017b78860906100eda4aee65c2d6c37cc690d4e7a0bcb"
+    }
+  ]
+}
