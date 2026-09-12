@@ -30,7 +30,7 @@
   "files": [
     {
       "path": "TODO.md",
-      "sha256": "57735cd4a538469a31a6d12e000dc7f1a91c2aca99592d378a1e5f43a6f0b4f3"
+      "sha256": "4bb2b22be14b353b61617f9e5bdf2f7a208693696b7a69b0744f479790c532c5"
     },
     {
       "path": "assets/dashboard/dashboard-enhancements.js",
@@ -74,7 +74,7 @@
     },
     {
       "path": "docs/evidence/instruction-resolver-shadow/report.md",
-      "sha256": "7d9ce8b1989753d7ca5f5effd06518e1e374618bce9bb2d04d51fae3a357dd87"
+      "sha256": "50afe28c5172d98fc8181a949eb55a3993252632804b6c65a59bfa7beb812715"
     },
     {
       "path": "docs/evidence/instruction-resolver-shadow/shadow-comparisons.json",
@@ -172,5 +172,13 @@
       "path": "src/control/work-parcels.ts",
       "sha256": "cb91211898c84961c63017b78860906100eda4aee65c2d6c37cc690d4e7a0bcb"
     }
-  ]
+  ],
+  "publication": {
+    "status": "BLOCKED_BY_AUTOMATIC_APPROVAL_REVIEW",
+    "target": "public GitHub lozknowles/agent-control",
+    "branch": "feature/4.5-instruction-resolver-shadow",
+    "implementationCommit": "0cdb397e62c11670577eef947663dcca20cb7a00",
+    "requiredAction": "Explicit user approval to publish this new feature branch",
+    "workaroundAttempted": false
+  }
 }
