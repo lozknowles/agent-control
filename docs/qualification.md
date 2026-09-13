@@ -9,6 +9,31 @@ npm run qualify
 
 The harness always runs the local gate. It then reads the same configuration used by the control plane and performs only non-mutating health checks for configured services, resources and providers. Missing configuration is recorded as `SKIP configured-infrastructure`, not replaced by private defaults.
 
+## Mandatory installation and upgrade gate
+
+For every release that changes bootstrap, configuration loading, resource
+identity, discovery, placement, runtime safety, or execution, source validation
+alone is insufficient. Freeze one candidate and qualify both paths against that
+exact source identity:
+
+1. **Virgin install:** use the normal documented clone/bootstrap procedure in a
+   clean environment; start the authenticated dashboard; run First Run
+   Environment Discovery; inspect Estate; and complete the documented governed
+   `operator-system-observation@1.1.0` Job.
+2. **Supported upgrade:** preserve a copy of each declared supported prior
+   configuration/state; run the normal documented bootstrap without reset; start
+   the authenticated dashboard; rescan discovery; inspect Estate; and complete
+   the same governed `operator-system-observation@1.1.0` Job.
+
+Record source SHA, dependency inventory, configuration source version, bootstrap
+result, runtime version, worker identity/locality, runtime-safety decision, Run
+and Work Parcel identity, discovery scan, Estate relationship, and rollback
+artifact. A PASS on one path never substitutes for the other. For 4.5.1, the
+required prior configuration is the production-compatible v4.1 shape retained in
+`src/control/fixtures/v4.1-existing-configuration.json`; deterministic coverage
+is in `src/control/worker-locality-upgrade.test.ts`, while release qualification
+must additionally exercise the physical bootstrap/runtime path.
+
 For 3.7 validation, also run `npm run benchmark:capability-routing` and review its retained report. A classifier pass is not physical model evidence. Verify `GET /api/runtime` and `GET /api/token-routing` through the web tests and inspect the final diff for credential-shaped values. The token-aware lifecycle has bounded physical evidence, but neither it nor the separate Luna/local/GLM/Luna chain satisfies the 50-attempt automatic-routing gate. The completed checkpoint results and explicit limitations are retained in [`evidence/agent-control-3.6-development-qualification.md`](evidence/agent-control-3.6-development-qualification.md), [`evidence/agent-control-3.7-development-qualification.md`](evidence/agent-control-3.7-development-qualification.md), and [`evidence/agent-control-3.7-physical-qualification-20260902.md`](evidence/agent-control-3.7-physical-qualification-20260902.md).
 
 Optional SSH checks are explicit:

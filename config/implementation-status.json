@@ -1,7 +1,7 @@
 {
   "schema": "agent-control.implementation-status/v1",
-  "release": "4.5.0",
-  "updated": "2026-09-12",
+  "release": "4.5.1",
+  "updated": "2026-09-13",
   "capabilities": [
     {
       "id": "operator.poe-conversational-interface",
@@ -934,13 +934,16 @@
       "id": "workers.capability-registry",
       "title": "Capability-advertising Worker Registry",
       "status": "IMPLEMENTED",
-      "summary": "Workers advertise semantic capabilities and health separately from provider/model routing.",
+      "summary": "Workers advertise semantic capabilities and health separately from provider/model routing. Execution locality is established from trusted Agent Control registration or configured transport provenance, not worker names or self-declared labels; controller-local workers avoid remote-node policy while genuine remote workers remain governed and unknown or inconsistent identities fail closed.",
       "sources": [
         "src/control/job-runtime.ts",
-        "src/control/job-bootstrap.ts"
+        "src/control/job-bootstrap.ts",
+        "src/control/runtime-safety-supervisor.ts",
+        "src/control/environment-discovery.ts"
       ],
       "tests": [
-        "src/control/job-runtime.test.ts"
+        "src/control/job-runtime.test.ts",
+        "src/control/worker-locality-upgrade.test.ts"
       ]
     },
     {

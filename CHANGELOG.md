@@ -1,6 +1,48 @@
 # Changelog
 
-## [4.5.0] — Unreleased candidate
+## [4.5.1] — 2026-09-13
+
+### Existing-configuration upgrade correction
+
+- Corrects the worker-locality classification defect found during the genuine
+  v4.5.0 production upgrade smoke test. The built-in
+  `agent-control:operator-observer` is now established as controller-local by
+  the trusted registration path rather than being treated as remote merely
+  because its worker ID differs from `controller`.
+- Adds an explicit provider-neutral worker execution identity containing worker,
+  node, locality, authority, and controller relationship. Configured transport
+  and Agent Control-owned registration are authoritative; names and labels are
+  not.
+- Preserves the runtime-safety boundary: configured remote workers remain
+  `REMOTE_NODE` actions, unapproved remote workers are denied, and unknown,
+  inconsistent, or spoofed identities fail closed before execution.
+- Projects the same trusted locality and controller relationship through
+  Environment Discovery and Estate Map so the internal observer appears beneath
+  its actual controller rather than as a remote estate node.
+- Adds an authentic supported v4.1 configuration fixture and deterministic
+  upgrade coverage alongside the existing fresh-install regression. Relevant
+  future releases must physically qualify both virgin installation and upgrade
+  from each declared supported prior configuration.
+- Aligns the plain-JavaScript bootstrap validator with the authoritative
+  TypeScript loader for numeric token-accounting and model-limit metadata. This
+  corrects the physical v4.1 upgrade stop on `models[].limits.outputTokens`
+  while retaining recursive secret-value checks and fail-closed
+  credential-key checks.
+- Preserves the immutable v4.5.0 release, failed deployment evidence, known-good
+  v4.1 rollback, and every accepted 4.5 limitation.
+- Physically requalifies the exact revised candidate through both required
+  installation paths: an ordinary full-clone virgin install and a byte-preserved
+  authentic v4.1 configuration/state upgrade. Both real dashboard runs completed
+  discovery, truthful Estate projection, Morrow approval and the governed
+  observation Job with controller-local runtime-safety admission.
+- Passes the separately gated production upgrade from the preserved v4.1
+  configuration. The deployed 4.5.1 service retained the configuration
+  byte-for-byte, reported healthy authenticated live telemetry, rendered Jobs,
+  Lanes, Models, Warm Cache Runtime, Crew and Configuration, and completed the
+  same genuine governed observation Job with two controller-local `ALLOW`
+  decisions. Both the original and fresh v4.1 rollback artefacts remain retained.
+
+## [4.5.0] — 2026-09-13
 
 ### Final acceptance-contract and virgin-install closure
 
@@ -20,9 +62,9 @@
   unavailable/failed routes remain unroutable and no unsupported energy claim
   is enabled.
 - Records **PASS WITH LIMITATIONS — READY FOR 4.5 RELEASE** after the later
-  acceptance-contract audit and clean-install gates. Agent Control 4.4.0
-  remains the latest released version until the separately authorised release
-  operation actually merges and tags this candidate.
+  acceptance-contract audit and clean-install gates. Agent Control 4.5.0 was
+  subsequently published from the qualified tree; its later production-upgrade
+  failure and successful v4.1 rollback are preserved in the 4.5.1 entry above.
 
 ### Virgin-install remediation
 

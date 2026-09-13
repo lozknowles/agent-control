@@ -1,6 +1,6 @@
 # Agent Control architecture
 
-This is the authoritative source boundary for the Agent Control 4.5.0 candidate. Agent Control 4.4.0 remains the latest formally released baseline. Historical physical evidence remains bound to its recorded product SHA. Status labels matter:
+This is the authoritative source boundary for the Agent Control 4.5.1 maintenance release. Agent Control 4.5.0 remains immutable historical source evidence; 4.5.1 corrects its supported-existing-configuration upgrade path without weakening runtime safety. Historical physical evidence remains bound to its recorded product SHA. Status labels matter:
 
 - **implemented** means executable code and automated tests exist in this branch;
 - **experimental** means executable code exists but has not been qualified across every external substrate;
@@ -57,7 +57,7 @@ Physical 4.5 qualification exercises the provider-neutral flow as
 
 `MemoryRouteQualificationStore` records exact provider/account/model/node identity separately from the provider adapter. Each record binds runtime and exchange-contract versions, writer and reader eligibility, maximum physically proven memory bytes, bounded repair allowance, qualification freshness, evidence and terminal classification. Exact pair records prevent independent route successes from being incorrectly composed into an unproven pair. Admission is fail closed: a missing, stale, contract-mismatched, oversized, blocked or unsupported pair is denied; escalation occurs only when an explicitly qualified alternate pair is recorded. Secrets and provider output are not part of this store.
 
-The final 4.5 product candidate is **READY FOR RELEASE WITH LIMITATIONS** while
+The 4.5 release line is **PRODUCTION QUALIFIED WITH LIMITATIONS** while
 individual unqualified routes remain experimental or unavailable. Every
 historical matrix row is retained: 11/12 exact routes are now PASS/FIXED after a fresh
 Qwen→Pixel Gemma 4 E4B pass with the unchanged semantic verifier. The exact
@@ -608,7 +608,7 @@ An authorised Linux/SSH resource may opt into the generic managed-node adapter. 
 
 Managed-node execution is split into read-only inspection and typed maintenance Actions. The controller validates operation, parameter form, service allowlist, runtime target, current heartbeat and approvals before streaming one reviewed action script. The remote script validates its typed operands again. It never receives `sh -c` or an operator-provided command. An active protected workload marks the node BUSY, blocks configured disruptive/competing scheduling capabilities and requires the stronger protected-workload override for maintenance. Job leases, locks, approval waits, cancellation, verification, artifacts and provenance remain in the existing control plane.
 
-Configuration rejects embedded secret-like fields and credentialed URLs. Credentials are supplied through separately named environment variables, referenced files, isolated CLI homes or the existing opaque `provider-secure-store` reference. State defaults to `.agent-control/`; the path is overrideable.
+Configuration rejects embedded secret-like fields and credentialed URLs. Credentials are supplied through separately named environment variables, referenced files, isolated CLI homes or the existing opaque `provider-secure-store` reference. The TypeScript runtime loader and plain-JavaScript bootstrap initializer share the same distinction between credential-shaped fields and legitimate numeric token-accounting/model-limit metadata; values are recursively checked in either case. State defaults to `.agent-control/`; the path is overrideable.
 
 `ConfigurationStore` is the sole dashboard-facing inventory writer. Its authenticated API reads the current file with a SHA-256 revision, applies one resource/provider/model/service upsert or complete model-role-map replacement, validates the resulting configuration, and atomically replaces the file. It never writes a supplied credential value: environment/file forms name runtime references and `provider-secure-store` carries only an opaque lookup name, while plaintext password, token, secret and API-key fields fail closed. Provider/model/route changes reload the canonical `ModelRegistry`; resource/service changes remain restart-required. The browser never mutates a registry directly.
 
@@ -688,6 +688,25 @@ The scheduler selects capabilities, placement and priority before queue mutation
 Windows OpenAI execution uses an explicit authentication selector below this boundary. `auto` chooses the qualified Responses provider when an API key is configured and otherwise chooses official Codex non-interactive execution with ChatGPT-managed authentication. The Codex process receives an ephemeral read-only capability envelope with user-configured MCP tools disabled; its schema-constrained returned request still enters `ToolInvocationGateway`. Authentication choice never changes lease, ownership, scheduling, verification or takeover authority.
 
 `JobRuntime` is the workflow-level extension of that scheduler, not a parallel policy engine. It discovers due Schedule definitions, calls one `createRun` path, evaluates a Run DAG, resolves every step against the worker capability registry, acquires semantic resource locks, dispatches a registered Action, stores typed artifacts and requires declared verification before success. Model/provider routing remains a separate decision from worker placement. All dashboard/TUI mutations enter through `AgentControlService`.
+
+Worker capability and worker execution locality are separate facts. A
+`WorkerExecutionIdentity` binds the scheduler-visible worker ID to its execution
+node, locality, identity authority and controller relationship. Agent
+Control-owned workers are established only through the internal registration
+boundary; configured resources derive locality from their validated transport.
+Worker names, labels, host-like strings and remote self-declared metadata cannot
+grant local authority. A configured SSH/HTTP/Orca resource therefore remains a
+remote worker even if it claims to be a controller, while an ordinary
+unestablished registration remains `UNKNOWN` when runtime safety is active.
+
+`JobRuntime` supplies this trusted identity to `RuntimeSafetySupervisor`. A
+controller-local or local configured worker does not create a `REMOTE_NODE`
+effect merely because its worker ID differs from the controller resource ID. A
+genuine remote worker does create that effect and must satisfy the configured
+remote-node scope; an absent, mismatched or internally inconsistent identity adds
+`UNKNOWN` and fails closed. The same identity is projected into Environment
+Discovery and Estate Map, so execution safety and operator-visible topology use
+one provenance rather than competing locality guesses.
 
 The append-oriented Run ledger retains the effective Job version, parameters, trigger, worker assignments, execution identity, retries, recovery state, cleanup, artifacts, evidence, errors and provenance. A restart never assumes a live Action survived and never blindly requeues one: an in-flight step becomes `DISCONNECTED`/identity-unproven and its durable resource lock remains held while the configured adapter reconciles the exact execution ID. Proven continuity may enter `RECONNECTING`; an unknown or changed identity requires operator reconciliation. PID alone is not recovery evidence.
 

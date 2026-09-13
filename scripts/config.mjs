@@ -4,12 +4,16 @@ import {randomUUID} from 'node:crypto';
 
 export const emptyConfig = () => ({schemaVersion: 1, resources: [], providers: [], services: [], lanes: []});
 const idPattern = /^[a-z0-9][a-z0-9._-]{0,63}$/i;
+// Keep bootstrap's credential-key guard aligned with the authoritative
+// TypeScript configuration loader. These names are numeric policy/accounting
+// metadata; their values still pass the recursive secret-value scan.
+const safeTokenAccountingKeys = new Set(['tokenAwareOutput', 'tokenBatonRouting', 'completeMaxTokens', 'artifactOnlyAboveReturnedTokens', 'minimumCompleteTokens', 'harnessEfficiency', 'maximumInitialContextTokens', 'maximumContextTokens', 'maximumEvidenceTokens', 'advertisedContextLimitTokens', 'maximumObservedInputTokens', 'inputPerMillionTokens', 'outputPerMillionTokens', 'cachedInputPerMillionTokens', 'cacheWritePerMillionTokens', 'contextTokens', 'outputTokens', 'continuePercent', 'prepareBatonPercent', 'compactPercent', 'handoffPercent', 'sampleRetention']);
 
 function rejectSecrets(value, trail = 'config') {
   if (typeof value === 'string' && /\b(?:nvapi-|sk-(?:proj-)?|sk-ant-|gh[opusr]_)[A-Za-z0-9_-]{8,}\b|\bBearer\s+[A-Za-z0-9._~+/=-]{8,}/i.test(value)) throw new Error(`secret_material_forbidden:${trail}`);
   if (!value || typeof value !== 'object') return;
   for (const [key, child] of Object.entries(value)) {
-    if (/token|password|secret|api.?key/i.test(key) && !['credentialEnv','credentialFileEnv'].includes(key)) throw new Error(`secret_material_forbidden:${trail}.${key}`);
+    if (/token|password|secret|api.?key/i.test(key) && !['credentialEnv','credentialFileEnv'].includes(key) && !safeTokenAccountingKeys.has(key)) throw new Error(`secret_material_forbidden:${trail}.${key}`);
     rejectSecrets(child, `${trail}.${key}`);
   }
 }

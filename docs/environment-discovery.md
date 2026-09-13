@@ -1,7 +1,8 @@
 # Setup and Environment Discovery
 
-Status: **experimental Agent Control 4.5 candidate**. Environment Discovery is
-read-only by default. Agent Control 4.4.0 remains the latest stable release.
+Status: **experimental capability in the Agent Control 4.5.1 release**.
+Environment Discovery is read-only by default. The controller-local identity
+and supported-upgrade correction are production-qualified in 4.5.1.
 Desired-state estate management and automatic remediation are deferred to 4.6.
 
 ## What it does
@@ -101,6 +102,13 @@ counts currently evidenced devices, transports, runtimes, models and agents.
 An `ACTIVE` configuration or capability lifecycle means enabled/available; it
 does not render as running work. Estate nodes show `RUNNING` only when a current
 observation explicitly reports a running, busy or in-use workload.
+
+Worker placement uses the same trusted execution identity as runtime safety.
+Agent Control-owned in-process workers are attached to their controller resource;
+configured workers derive locality from validated transport. Estate does not
+turn a worker into a remote machine merely because its ID differs from the
+controller ID, and it does not accept names or self-declared labels as locality
+authority. Unknown relationships remain unknown rather than being guessed.
 
 Credential values never enter graph payloads. The client receives status and a
 fixed `••••••••••••` mask only; its length has no relationship to a credential.

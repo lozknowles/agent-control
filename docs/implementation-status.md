@@ -1,6 +1,6 @@
 # Implementation status
 
-Release boundary: **4.5.0**. Registry updated: **2026-09-12**.
+Release boundary: **4.5.1**. Registry updated: **2026-09-13**.
 
 This document is generated from `config/implementation-status.json`. Update the registry and run `npm run status:implementation -- --write`; do not edit this projection directly. `IMPLEMENTED` means executable source and focused tests exist. `QUALIFIED` additionally requires recorded real evidence. `PARTIAL`, `PLANNED` and `NOT_IMPLEMENTED` remain explicit gaps.
 
@@ -50,7 +50,7 @@ This document is generated from `config/implementation-status.json`. Update the 
 | Harness efficiency telemetry and context profiles (`harness.efficiency-context-routing`) | **PARTIAL** | Provider-neutral invocation telemetry, THIN/STANDARD/DEEP profiles, context packets, a neutral context-graph port, bounded structured mutation execution, deterministic diff verification, cumulative escalation outcomes and dashboard/API projections are executable; routing stays observational with STANDARD applied. | The 12-task same-model real-mutation run did not qualify THIN, immediate DEEP selection or adaptive escalation: only 2/12 STANDARD outcomes verified and adaptive fresh tokens per verified outcome were materially higher. Keep production routing observational with STANDARD applied until a larger deterministic suite demonstrates success non-regression and cumulative-resource improvement. |
 | Job Catalog, scheduler and Run Ledger (`jobs.catalog-scheduler-ledger`) | **IMPLEMENTED** | Versioned Jobs and Schedules produce durable Runs with capability placement, locks, retries, artifacts, approvals and recovery. | None recorded. |
 | Parameterised Jobs, schedules and repository review (`jobs.parameterized-platform`) | **QUALIFIED** | Versioned Job Definitions and typed parameters produce portable Saved Jobs, deterministic persistent schedules, immutable Runs and attributable Work Parcels; the built-in read-only repository review freezes exact Git revisions, handles successful delta baselines, routes a qualified provider directly, validates findings and preserves usage, cost and evidence. | None recorded. |
-| Capability-advertising Worker Registry (`workers.capability-registry`) | **IMPLEMENTED** | Workers advertise semantic capabilities and health separately from provider/model routing. | None recorded. |
+| Capability-advertising Worker Registry (`workers.capability-registry`) | **IMPLEMENTED** | Workers advertise semantic capabilities and health separately from provider/model routing. Execution locality is established from trusted Agent Control registration or configured transport provenance, not worker names or self-declared labels; controller-local workers avoid remote-node policy while genuine remote workers remain governed and unknown or inconsistent identities fail closed. | None recorded. |
 | Provider-neutral external model registry (`models.provider-neutral-registry`) | **QUALIFIED** | Configured providers, models, node-scoped qualification, logical roles, explicit fallbacks, normalized usage, ephemeral Codex provider materialization and dashboard/API projections are executable and fail closed; a real governed GLM-5.3-Flash route completed direct-provider repository reviews with structured evidence and cost accounting. | None recorded. |
 | Model-backed Job Action bridge (`jobs.model-backed-action`) | **QUALIFIED** | Agent Actions delegate through HarnessDispatcher, return tool requests through ToolPolicy and stop at the verification boundary. | None recorded. |
 | OpenAI Responses API execution (`providers.openai-responses`) | **QUALIFIED** | A real Responses API Job returned a policy-gated function call and a verified checksummed artifact. | None recorded. |
@@ -329,8 +329,8 @@ This document is generated from `config/implementation-status.json`. Update the 
 
 ### Capability-advertising Worker Registry
 
-- Source: [`src/control/job-runtime.ts`](../src/control/job-runtime.ts), [`src/control/job-bootstrap.ts`](../src/control/job-bootstrap.ts)
-- Tests: [`src/control/job-runtime.test.ts`](../src/control/job-runtime.test.ts)
+- Source: [`src/control/job-runtime.ts`](../src/control/job-runtime.ts), [`src/control/job-bootstrap.ts`](../src/control/job-bootstrap.ts), [`src/control/runtime-safety-supervisor.ts`](../src/control/runtime-safety-supervisor.ts), [`src/control/environment-discovery.ts`](../src/control/environment-discovery.ts)
+- Tests: [`src/control/job-runtime.test.ts`](../src/control/job-runtime.test.ts), [`src/control/worker-locality-upgrade.test.ts`](../src/control/worker-locality-upgrade.test.ts)
 
 ### Provider-neutral external model registry
 

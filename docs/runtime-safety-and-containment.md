@@ -1,4 +1,4 @@
-# Agent Control 4.3 runtime safety and route containment
+# Agent Control runtime safety and route containment
 
 Agent Control 4.3 authorises effects, not persuasive text. Production Actions
 must be explicitly read-only, declare consequential categories, or resolve typed
@@ -37,6 +37,26 @@ Direct argv prevents shell interpretation but is not a universal process,
 filesystem or network sandbox. Opaque CLI internal actions are not advertised as
 individually moderated. Route admission therefore depends on a qualified adapter
 capability envelope, explicit Action effects and independent verification.
+
+## Worker identity and locality
+
+Runtime safety receives a worker execution identity established by Agent Control,
+not inferred from the worker's display name. The identity separates:
+
+- `CONTROLLER_LOCAL` — an Agent Control-owned in-process worker or the explicit
+  configured controller resource;
+- `LOCAL_WORKER` — a configured local-transport worker;
+- `REMOTE_WORKER` — a configured SSH, HTTP or other remote-transport worker;
+- `UNKNOWN` — missing, inconsistent or untrusted provenance.
+
+Agent Control's internal registration boundary and validated resource transport
+are the only current identity authorities. Labels such as `local`, a worker named
+`controller`, or a remote resource claiming controller metadata do not grant
+locality. Remote workers add the `REMOTE_NODE` effect and remain subject to the
+configured remote-node scope. Unknown or inconsistent identities add `UNKNOWN`
+and are denied before the Action handler starts. The 4.5.1 upgrade remediation
+uses this rule for the built-in read-only observation worker and projects the
+same relationship into Environment Discovery and Estate Map.
 
 ## Cleanup and retained state
 

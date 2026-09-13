@@ -133,7 +133,7 @@ const environmentDiscovery=new EnvironmentDiscoveryRuntime({
   additionalAdapters:[new RegisteredCapabilityDiscoveryAdapter(capabilityAdapters)],
   runtimeInventory:()=>({
     jobs:jobRuntime.catalog.listJobs().map(job=>({id:job.metadata.id,name:job.metadata.name,version:job.metadata.version})),
-    agents:jobRuntime.workers.list().map(worker=>({id:worker.id,health:worker.health,capabilities:[...worker.capabilities]})),
+    agents:jobRuntime.workers.list().map(worker=>({id:worker.id,health:worker.health,capabilities:[...worker.capabilities],executionIdentity:jobRuntime.workers.executionIdentity(worker.id)})),
     tools:[...jobRuntime.actions.ids()],
     skills:[...jobRuntime.deterministicSkills.records().map(skill=>({id:`deterministic:${skill.id}@${skill.version}`,state:skill.state,kind:'deterministic'})),...jobRuntime.learnedSkills.adapters().map(skill=>({id:`learned:${skill.id}@${skill.version}`,state:skill.lifecycle.state,kind:'learned'}))],
     mcpServers:[],plugins:[],

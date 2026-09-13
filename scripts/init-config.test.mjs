@@ -66,6 +66,22 @@ test('initializer refuses to overwrite configured operator state', () => {
   assert.deepEqual(fs.readFileSync(file), before);
 });
 
+test('initializer preserves supported v4.1 token limits while credential-shaped keys remain forbidden', () => {
+  const root = state(), file = path.join(root, 'config.json');
+  const configured = JSON.parse(fs.readFileSync(path.resolve('src/control/fixtures/v4.1-existing-configuration.json'), 'utf8'));
+  fs.writeFileSync(file, `${JSON.stringify(configured, null, 2)}\n`, {mode: 0o600});
+  const before = fs.readFileSync(file);
+  const result = initializeConfig({environment: {...process.env, AGENT_CONTROL_CONFIG: file}, cwd: root});
+  assert.equal(result.result, 'PRESERVED_EXISTING');
+  assert.equal(result.created, false);
+  assert.equal(result.config.models[0].limits.outputTokens, 1_024);
+  assert.deepEqual(fs.readFileSync(file), before);
+
+  const unsafeRoot = state(), unsafeFile = path.join(unsafeRoot, 'config.json');
+  fs.writeFileSync(unsafeFile, `${JSON.stringify({...emptyConfig(), accessToken: 'synthetic-forbidden-value'}, null, 2)}\n`, {mode: 0o600});
+  assert.throws(() => initializeConfig({environment: {...process.env, AGENT_CONTROL_CONFIG: unsafeFile}, cwd: unsafeRoot}), /secret_material_forbidden:config.accessToken/);
+});
+
 test('initializer fails closed when existing configuration is invalid', () => {
   const root = state(), file = path.join(root, 'config.json');
   fs.writeFileSync(file, '{"schemaVersion":99}\n');

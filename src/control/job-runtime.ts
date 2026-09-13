@@ -5,7 +5,7 @@ import path from 'node:path';
 import {assertNoSensitiveMaterial, redactSensitiveValue} from './security-redaction.js';
 import type {ResourceConfig} from './config.js';
 import {effectiveParameters, nextCronOccurrence, type JobCatalog} from './job-catalog.js';
-import {jobPriorityRank, type ActionFailureClass, type ActionHandler, type ActionOutput, type AgentActionHandler, type ArtifactRecord, type PlacementRationale, type RecoveryFailureKind, type RetryPolicy, type RunRecord, type RunStatus, type ScheduleState, type StepAttempt, type StepStatus, type WorkerRegistration} from './job-types.js';
+import {jobPriorityRank, type ActionFailureClass, type ActionHandler, type ActionOutput, type AgentActionHandler, type ArtifactRecord, type PlacementRationale, type RecoveryFailureKind, type RetryPolicy, type RunRecord, type RunStatus, type ScheduleState, type StepAttempt, type StepStatus, type WorkerExecutionIdentity, type WorkerRegistration} from './job-types.js';
 import type {HarnessEfficiencyLedgerPort, InvocationFinalResult} from './harness-efficiency.js';
 import {OwnedProcessManager, type ExecutionCleanupReport, type OwnedExecution} from './owned-process.js';
 import type {ExecutionSessionRuntime, ExecutionSessionScope} from './execution-session.js';
@@ -46,10 +46,17 @@ export class ActionRegistry {
 
 export class WorkerRegistry {
   private readonly workers = new Map<string, WorkerRegistration>();
-  register(worker: WorkerRegistration) { if (this.workers.has(worker.id)) throw new Error('worker_exists'); this.workers.set(worker.id, structuredClone(worker)); return this; }
-  upsert(worker: WorkerRegistration) { this.workers.set(worker.id, structuredClone(worker)); return this; }
-  observe(worker: Omit<WorkerRegistration, 'active'>) { const current = this.workers.get(worker.id); this.workers.set(worker.id, structuredClone({...worker, active: current?.active ?? 0})); return this; }
+  private readonly identities = new Map<string, WorkerExecutionIdentity>();
+  constructor(private readonly controllerNodeId = 'controller') {}
+  /** Unqualified registrations remain schedulable but fail closed under runtime safety. */
+  register(worker: WorkerRegistration) { return this.registerEstablished(worker, unknownWorkerIdentity(worker.id)); }
+  /** Trusted product-code path for workers that execute inside this controller process. */
+  registerControllerInternal(worker: WorkerRegistration) { return this.registerEstablished(worker, {workerId: worker.id, nodeId: this.controllerNodeId, locality: 'CONTROLLER_LOCAL', authority: 'AGENT_CONTROL_INTERNAL', controllerRelationship: 'CONTROLLER_INTERNAL'}); }
+  upsert(worker: WorkerRegistration) { this.workers.set(worker.id, structuredClone(worker)); if (!this.identities.has(worker.id)) this.identities.set(worker.id, unknownWorkerIdentity(worker.id)); return this; }
+  observe(worker: Omit<WorkerRegistration, 'active'>) { const current = this.workers.get(worker.id); this.workers.set(worker.id, structuredClone({...worker, active: current?.active ?? 0})); if (!this.identities.has(worker.id)) this.identities.set(worker.id, unknownWorkerIdentity(worker.id)); return this; }
   list() { return [...this.workers.values()].map(worker => structuredClone(worker)); }
+  executionIdentity(id: string) { const identity = this.identities.get(id); return structuredClone(identity ?? unknownWorkerIdentity(id)); }
+  executionIdentities() { return [...this.identities.values()].map(identity => structuredClone(identity)); }
   setHealth(id: string, health: WorkerRegistration['health']) { const worker = this.workers.get(id); if (!worker) throw new Error('worker_missing'); worker.health = health; worker.observedAt = now(); }
   resolve(required: string[], at = new Date()): {worker?: WorkerRegistration; rationale: PlacementRationale} {
     const eligible: WorkerRegistration[] = [], rejected: PlacementRationale['rejected'] = [];
@@ -71,8 +78,22 @@ export class WorkerRegistry {
   claim(id: string) { const worker = this.workers.get(id); if (!worker || worker.health !== 'healthy' || worker.active >= worker.capacity) throw new Error('worker_not_claimable'); worker.active++; }
   release(id: string) { const worker = this.workers.get(id); if (worker) worker.active = Math.max(0, worker.active - 1); }
   schedulerCapacity() { return Math.max(1, Math.min(32, [...this.workers.values()].filter(worker => worker.health === 'healthy').reduce((total, worker) => total + worker.capacity, 0))); }
-  static fromConfig(resources: ResourceConfig[]) { const registry = new WorkerRegistry(); for (const resource of resources) registry.register({id: resource.id, capabilities: [...resource.capabilities], health: 'unknown', capacity: Number(resource.metadata?.capacity ?? 1), active: 0, labels: Object.fromEntries(Object.entries(resource.metadata ?? {}).map(([key, value]) => [key, String(value)])), observedAt: now()}); return registry; }
+  private registerEstablished(worker: WorkerRegistration, identity: WorkerExecutionIdentity) { if (this.workers.has(worker.id)) throw new Error('worker_exists'); this.workers.set(worker.id, structuredClone(worker)); this.identities.set(worker.id, structuredClone(identity)); return this; }
+  static fromConfig(resources: ResourceConfig[]) {
+    const explicitControllers = resources.filter(resource => resource.controller === true && resource.transport.type === 'local').sort((left, right) => left.id.localeCompare(right.id));
+    const registry = new WorkerRegistry(explicitControllers.length === 1 ? explicitControllers[0]!.id : 'controller');
+    for (const resource of resources) {
+      const local = resource.transport.type === 'local', controller = local && resource.controller === true;
+      registry.registerEstablished(
+        {id: resource.id, capabilities: [...resource.capabilities], health: 'unknown', capacity: Number(resource.metadata?.capacity ?? 1), active: 0, labels: Object.fromEntries(Object.entries(resource.metadata ?? {}).map(([key, value]) => [key, String(value)])), observedAt: now()},
+        {workerId: resource.id, nodeId: resource.id, locality: controller ? 'CONTROLLER_LOCAL' : local ? 'LOCAL_WORKER' : 'REMOTE_WORKER', authority: 'CONFIGURED_RESOURCE', controllerRelationship: controller ? 'CONTROLLER_RESOURCE' : local ? 'CONTROLLER_HOST_RESOURCE' : 'REMOTE_RESOURCE'},
+      );
+    }
+    return registry;
+  }
 }
+
+function unknownWorkerIdentity(workerId: string): WorkerExecutionIdentity { return {workerId, nodeId: null, locality: 'UNKNOWN', authority: 'UNVERIFIED', controllerRelationship: 'UNKNOWN'}; }
 
 interface LockSnapshot {version: 1; locks: Array<{resource: string; runId: string; stepId: string; acquiredAt: string; retained?: boolean}>;}
 export class ResourceLockManager {
@@ -257,7 +278,7 @@ export class JobRuntime {
       }
     }
     if (this.safety) {
-      const route = run.trigger.modelRoute, decision = this.safety.assess(deriveRuntimeActionIntent({runId: run.id, parcelId: run.trigger.parcelContext?.parcelId, stageId: run.trigger.parcelContext?.stageId, stepId: step.id, actor: run.trigger.actor, action: step.action, goal: run.trigger.parcelContext?.currentInterpretation ?? run.effectiveJob.metadata.description ?? run.jobId, parameters: run.parameters, requestedCapabilities: required, resources: step.resources, workerId: worker.id, crewRole: 'resource-guardian', providerId: route?.providerId, accountProfileId: route?.accountProfileId ?? undefined, modelId: route?.modelId, nodeId: route?.providerExecutionNodeId ?? worker.id, effectDeclaration: registeredAction.effectDeclaration, effects: step.governance?.effects, resourcePolicies: step.governance?.policies}));
+      const route = run.trigger.modelRoute, workerIdentity = this.workers.executionIdentity(worker.id), decision = this.safety.assess(deriveRuntimeActionIntent({runId: run.id, parcelId: run.trigger.parcelContext?.parcelId, stageId: run.trigger.parcelContext?.stageId, stepId: step.id, actor: run.trigger.actor, action: step.action, goal: run.trigger.parcelContext?.currentInterpretation ?? run.effectiveJob.metadata.description ?? run.jobId, parameters: run.parameters, requestedCapabilities: required, resources: step.resources, workerId: worker.id, workerIdentity, crewRole: 'resource-guardian', providerId: route?.providerId, accountProfileId: route?.accountProfileId ?? undefined, modelId: route?.modelId, nodeId: route?.providerExecutionNodeId ?? workerIdentity.nodeId ?? worker.id, effectDeclaration: registeredAction.effectDeclaration, effects: step.governance?.effects, resourcePolicies: step.governance?.policies}));
       for (const operation of step.externalOperations ?? []) { operation.decisionId = decision.id; operation.updatedAt = this.clock().toISOString(); }
       const safetyDetail = `${decision.outcome}:${decision.id}:${decision.reason}`; if (!run.provenance.some(item => item.type === 'runtime-safety' && item.detail === safetyDetail)) run.provenance.push({type: 'runtime-safety', at: decision.at, detail: safetyDetail});
       if (decision.outcome === 'DENY') { const at = this.clock().toISOString(); for (const operation of step.externalOperations ?? []) { operation.reason = decision.reason; operation.transitions[0].reason = decision.reason; } step.status = 'FAILED'; step.error = `runtime_safety_denied:${decision.id}`; step.endedAt = at; this.cancelDependents(run, step.id); run.status = 'FAILED'; run.endedAt = at; run.errors.push(`${step.id}:policy:${step.error}`); this.locks.release(run.id, step.id); this.ledger.update(run, 'step.safety_denied', {decisionId: decision.id, outcome: decision.outcome, policyId: decision.policyId}); return; }
