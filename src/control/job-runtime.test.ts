@@ -136,6 +136,9 @@ test('production Job dispatch fails closed before an out-of-scope action handler
   await governed.tick(); const failed = governed.ledger.get(run.id)!;
   assert.equal(failed.status, 'FAILED'); assert.equal(failed.steps[0].status, 'FAILED'); assert.match(failed.steps[0].error ?? '', /runtime_safety_denied/); assert.equal(calls, 0); assert.equal(safety.list()[0].outcome, 'DENY');
 });
+
+test('managed-node disruptive maintenance has a bounded step timeout',()=>{const source=fs.readFileSync(path.resolve('config/jobs/managed-node-maintenance.job.yaml'),'utf8');assert.match(source,/approval: managed-node\.protected-workload-override\s+timeoutSeconds: 300/);});
+
 test('reference workflow retains discovery artifact while publisher is unavailable then resumes across workers', async () => {
   const actions = registerReferenceActions(); registerBrowserActions(actions); registerProtectedResourceModelActions({} as AgentControlConfig, undefined, undefined, actions);
   actions.register('managed-node.inspect@1.0.0', async () => ({})); actions.register('managed-node.maintain@1.0.0', async () => ({}));

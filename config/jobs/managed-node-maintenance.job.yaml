@@ -27,6 +27,7 @@ spec:
       requires: [managed-node.maintenance]
       resources: [managed-node-maintenance]
       approval: managed-node.protected-workload-override
+      timeoutSeconds: 300
       outputs:
         - name: result
           type: application/json
