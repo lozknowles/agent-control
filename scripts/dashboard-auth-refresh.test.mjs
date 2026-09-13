@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import vm from 'node:vm';
 const source=fs.readFileSync(new URL('../assets/dashboard/dashboard.js',import.meta.url),'utf8');
-function setup(){const events=[],button={classList:{toggle(){}}};const context=vm.createContext({sessionStorage:{getItem:()=>''},document:{addEventListener(){},querySelector:selector=>selector==='#operator-button'?button:null,dispatchEvent:e=>events.push(e)},CustomEvent:class{constructor(type,init){this.type=type;this.detail=init.detail;}},setTimeout,clearTimeout});vm.runInContext(source,context);return {context,events};}
+function setup(){const events=[],button={classList:{toggle(){}}};const context=vm.createContext({fetch:()=>{},sessionStorage:{getItem:()=>''},document:{addEventListener(){},querySelector:selector=>selector==='#operator-button'?button:null,dispatchEvent:e=>events.push(e)},CustomEvent:class{constructor(type,init){this.type=type;this.detail=init.detail;}},setTimeout,clearTimeout});vm.runInContext(source,context);return {context,events};}
 test('an older in-flight unauthenticated refresh cannot overwrite a newly authenticated session',async()=>{
  const {context}=setup();let finish;context.fetch=()=>new Promise(resolve=>{finish=resolve;});vm.runInContext("operatorAuthentication=async()=> 'authentication_required';render=()=>{};",context);
  const pending=vm.runInContext('refresh()',context);vm.runInContext("state.token='new-session';state.operatorAuth='authenticated'",context);

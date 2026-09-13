@@ -1,6 +1,6 @@
 const state={snapshot:null,selected:null,events:[],token:sessionStorage.getItem('agent-control-operator-token')||'',operatorAuth:'checking'};
-const nativeFetch=window.fetch.bind(window);
-window.fetch=(input,options={})=>{
+const nativeFetch=globalThis.fetch.bind(globalThis);
+globalThis.fetch=(input,options={})=>{
   const target=new URL(input instanceof Request?input.url:String(input),location.href);
   if(target.origin!==location.origin||!target.pathname.startsWith('/api/')||target.pathname==='/api/operator-auth'||target.pathname.startsWith('/api/share/'))return nativeFetch(input,options);
   const headers=new Headers(input instanceof Request?input.headers:undefined);
