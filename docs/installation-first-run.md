@@ -1,8 +1,8 @@
-# Install Agent Control 4.6 candidate
+# Install Agent Control 4.6.0
 
 [Documentation](index.md) · [README](../README.md) · [Existing installation upgrade](upgrade-4.6.md)
 
-This guide targets **4.6.0-rc.1** on the public development branch. It is not a stable release. For stable **4.5.1**, use its [versioned deployment guide](https://github.com/lozknowles/agent-control/blob/v4.5.1/docs/DEPLOYMENT.md). Qualification results and the exact tested commit are in the [release report](public-release-readiness-4.6.md).
+This guide targets **Agent Control 4.6.0**. See the [final verification](release-verification-4.6.0.md), [accepted RC evidence](release-candidate-4.6.md) and [known limitations](known-limitations-4.6.md).
 
 ## Prerequisites
 
@@ -17,7 +17,7 @@ Linux is the physically tested journey in this report. Other platform bootstrap 
 Use a new directory rather than an existing dirty checkout.
 
 ```bash
-git clone --branch integration/4.6-release-20260913 https://github.com/lozknowles/agent-control.git
+git clone --branch v4.6.0 https://github.com/lozknowles/agent-control.git
 cd agent-control
 git rev-parse HEAD
 ./scripts/bootstrap-agent-control.sh --check --target "$PWD"
@@ -137,7 +137,7 @@ The [real Energy example](public-installation-journey.md#i--energy) is shared-GP
 | Remote resource unavailable | Check its configured transport and authorisation. The local first scan leaves remote probing disabled. |
 | Estate resource stale | Refresh discovery and inspect its latest check. Old discovery evidence is not current liveness. |
 | GPU not detected | Inspect the host's existing hardware/driver telemetry; containers may not expose a host GPU. Do not infer power from utilisation. |
-| Upgrade job blocked as remote | Use the qualified candidate path in the upgrade guide; preserve identity/configuration and inspect the denial rather than weakening safety rules. |
+| Upgrade job blocked as remote | Use the qualified release path in the upgrade guide; preserve identity/configuration and inspect the denial rather than weakening safety rules. |
 
 Keep the dashboard on loopback for this journey. No public firewall opening is needed.
 

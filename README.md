@@ -1,14 +1,14 @@
-# Agent Control
+# Agent Control 4.6.0
 
 Discover your AI tools, see what is available, and follow approved work from request to verified result.
 
-**Current stable release: [4.5.1](https://github.com/lozknowles/agent-control/releases/tag/v4.5.1).** This branch is **4.6.0-rc.1**, an unreleased candidate. Core release and showcase readiness are assessed separately in the [current integration report](docs/release-integration-4.6.md). See the prominent [4.6 Known Limitations](docs/known-limitations-4.6.md).
+**Current stable release: [4.6.0](https://github.com/lozknowles/agent-control/releases/tag/v4.6.0).** Core release: **PASS**. Showcase: **PASS WITH LIMITATIONS**. See the prominent [4.6 Known Limitations](docs/known-limitations-4.6.md) and [release verification](docs/release-verification-4.6.0.md).
 
-[Install Agent Control](docs/installation-first-run.md) · [Documentation](docs/index.md) · [Upgrade](docs/upgrade-4.6.md) · [Release notes](docs/release-notes-4.6.0-rc.1.md)
+[Install Agent Control](docs/installation-first-run.md) · [Documentation](docs/index.md) · [Upgrade](docs/upgrade-4.6.md) · [Release notes](docs/release-notes-4.6.0.md)
 
 [![Agent Control overview composed from actual product screens and crew assets](docs/media/4.6/public/overview.png)](docs/public-installation-journey.md)
 
-## Android standalone preview
+## Android standalone
 
 **Android phone → Termux → Agent Control → local dashboard → Discovery → Estate → local job.**
 
@@ -33,12 +33,12 @@ Mallow is your floating guide. The established crew helps explain dispatch, revi
 
 <a id="install"></a>
 
-## Try the candidate
+## Install Agent Control 4.6.0
 
-For the stable version, use the [4.5.1 installation documentation](https://github.com/lozknowles/agent-control/blob/v4.5.1/docs/DEPLOYMENT.md). To review this candidate on Linux with Node.js 24, npm, Git and Bash:
+Install on Linux with Node.js 24, npm, Git and Bash:
 
 ```bash
-git clone --branch integration/4.6-release-20260913 https://github.com/lozknowles/agent-control.git
+git clone --branch v4.6.0 https://github.com/lozknowles/agent-control.git
 cd agent-control
 git rev-parse HEAD
 ./scripts/bootstrap-agent-control.sh --check --target "$PWD"
@@ -83,7 +83,7 @@ Model Intelligence now reports real source coverage, initial versus follow-up ob
 
 ![Real Model Intelligence baseline and approval boundary](docs/media/4.6/integration/intelligence-baseline.png)
 
-[Current RC assessment](docs/release-candidate-4.6.md) · [Real source runs and Morning Brief](examples/showcase-4.6/release-integration/real-intelligence.json) · [Known Limitations and HELP WANTED](docs/known-limitations-4.6.md)
+[Accepted RC assessment](docs/release-candidate-4.6.md) · [Real source runs and Morning Brief](examples/showcase-4.6/release-integration/real-intelligence.json) · [Known Limitations and HELP WANTED](docs/known-limitations-4.6.md)
 
 ## Learn more
 
@@ -92,7 +92,7 @@ Model Intelligence now reports real source coverage, initial versus follow-up ob
 - [Safe existing-install upgrade](docs/upgrade-4.6.md)
 - [Architecture](docs/architecture-v2-agnostic.md)
 - [Security](SECURITY.md) and [contributing](CONTRIBUTING.md)
-- [Candidate release notes](docs/release-notes-4.6.0-rc.1.md)
-- [Current RC assessment and evidence](docs/release-candidate-4.6.md)
+- [Release notes](docs/release-notes-4.6.0.md)
+- [Accepted RC assessment and evidence](docs/release-candidate-4.6.md)
 
-Historical versioned reports remain available under `docs/`; use the installation guide above for this candidate.
+Historical versioned reports remain available under `docs/`; use the installation guide above for this release.

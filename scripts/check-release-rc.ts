@@ -5,7 +5,8 @@ const read=(file:string)=>JSON.parse(fs.readFileSync(path.join(root,file),'utf8'
 const files=execFileSync('git',['ls-files','-z'],{cwd:root}).toString().split('\0').filter(p=>p&&!p.startsWith('docs/')&&!p.startsWith('examples/')&&!/\.md$/i.test(p));
 const sourceDigest=createHash('sha256').update(JSON.stringify(files.sort().map(file=>[file,createHash('sha256').update(fs.readFileSync(path.join(root,file))).digest('hex')]))).digest('hex');
 if(process.argv.includes('--source-digest')){console.log(sourceDigest);process.exit(0);}
-const file='examples/showcase-4.6/release-integration/core-receipt.json',version=read('package.json').version;
+const finalReceipt='examples/showcase-4.6/final-release/core-receipt.json';
+const file=fs.existsSync(path.join(root,finalReceipt))?finalReceipt:'examples/showcase-4.6/release-integration/core-receipt.json',version=read('package.json').version;
 const receipt:CoreReceipt=fs.existsSync(path.join(root,file))?read(file):{version,sourceDigest:'UNVERIFIED',checks:{}};
 const invalid:string[]=[];
 for(const check of Object.values(receipt.checks))for(const file of check?.evidence??[]){const resolved=path.resolve(root,file);if(!resolved.startsWith(root+path.sep)||!fs.existsSync(resolved))invalid.push(file);}
