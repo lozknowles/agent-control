@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
+import {createHash} from 'node:crypto';
 import test from 'node:test';
 import {validateConfig} from './config.js';
 import {ModelRegistry} from './model-registry.js';
@@ -13,6 +14,7 @@ import type {SshExecutor} from './managed-node-ssh.js';
 
 const resource = (id: string, platform: 'linux' | 'windows', local = false) => ({id, platform, transport: local ? {type: 'local' as const} : {type: 'ssh' as const, host: `${id}.example`, user: 'operator'}, capabilities: ['repository.read', 'model.execute']});
 const qualified = (nodes: string[]) => ({state: 'QUALIFIED' as const, version: 'q1', qualifiedAt: '2026-09-03T00:00:00Z', capabilities: ['repository-review'], nodes});
+const remoteIdentity = (nodeId: string, repository: string) => createHash('sha256').update(`${nodeId}\n${path.win32.normalize(repository).replace(/[\\/]+$/, '').toLowerCase()}`).digest('hex');
 
 test('explicit credential residency separates workload, provider execution and credential nodes', () => {
   const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'ac-residency-'));
@@ -68,15 +70,16 @@ test('3.8 account.nodeId and credentialStore migrate to identical execution and 
 
 test('remote immutable snapshot crosses nodes as a verified archive without credential material', async () => {
   const source = fs.mkdtempSync(path.join(os.tmpdir(), 'ac-remote-source-')), snapshots = fs.mkdtempSync(path.join(os.tmpdir(), 'ac-remote-snapshots-'));
-  fs.writeFileSync(path.join(source, 'README.md'), '# Remote repository\n');
-  const archive = path.join(source, 'snapshot.tar'); execFileSync('tar', ['-cf', archive, '-C', source, 'README.md']); const bytes = fs.readFileSync(archive), archiveSha256 = (await import('node:crypto')).createHash('sha256').update(bytes).digest('hex');
+  execFileSync('git',['init'],{cwd:source});execFileSync('git',['config','user.email','fixture@example.invalid'],{cwd:source});execFileSync('git',['config','user.name','Fixture'],{cwd:source});fs.writeFileSync(path.join(source, 'README.md'), '# Remote repository\n');execFileSync('git',['add','README.md'],{cwd:source});execFileSync('git',['commit','-m','fixture'],{cwd:source});
+  const reviewedSha=execFileSync('git',['rev-parse','HEAD'],{cwd:source,encoding:'utf8'}).trim(),archive=path.join(os.tmpdir(),`ac-remote-${process.pid}.tar`);execFileSync('git',['archive','--format=tar',`--output=${archive}`,reviewedSha],{cwd:source}); const bytes = fs.readFileSync(archive), archiveSha256 = createHash('sha256').update(bytes).digest('hex');
   let payload: Record<string, unknown> | undefined;
-  const executor: SshExecutor = async (_command, _args, input) => { const lines = input.trimEnd().split(/\r?\n/); payload = JSON.parse(Buffer.from(lines.shift()!, 'base64').toString('utf8')); return {status: 0, stdout: JSON.stringify({schema: 'agent-control.repository-snapshot-result/v1', ok: true, nodeId: 'msi', sourceIdentity: '1'.repeat(64), reviewedSha: '2'.repeat(40), dirty: false, archiveSha256, archiveBase64: bytes.toString('base64'), createdAt: '2026-09-03T00:00:00Z'}), stderr: 'raw remote output forbidden'}; };
+  const executor: SshExecutor = async (_command, _args, input) => { const lines = input.trimEnd().split(/\r?\n/); payload = JSON.parse(Buffer.from(lines.shift()!, 'base64').toString('utf8')); return {status: 0, stdout: JSON.stringify({schema: 'agent-control.repository-snapshot-result/v1', ok: true, nodeId: 'msi', sourceIdentity: remoteIdentity('msi','C:\\work\\repo'), reviewedSha, dirty: false, archiveSha256, archiveBase64: bytes.toString('base64'), createdAt: '2026-09-03T00:00:00Z'}), stderr: 'raw remote output forbidden'}; };
   const resolver = new ResourceRepositoryResolver([resource('msi', 'windows')], new LocalRepositoryResolver(), executor, 'param([string]$PayloadLine)\n');
   const resolved = await resolver.resolve({nodeId: 'msi', repository: 'C:\\work\\repo', requestedRef: 'main', allowedRoots: ['C:\\work'], snapshotsRoot: snapshots});
   assert.equal(resolved.nodeId, 'msi'); assert.equal(resolved.snapshotKind, 'remote-immutable-archive'); assert.equal(resolved.bundleSha256, archiveSha256); assert.equal(fs.readFileSync(path.join(resolved.snapshotPath, 'README.md'), 'utf8'), '# Remote repository\n');
   assert.equal(JSON.stringify(payload).includes('CODEX_HOME'), false); assert.equal(JSON.stringify(payload).includes('credential'), false); assert.equal(JSON.stringify(resolved).includes('C:\\work\\repo'), false);
   assert.ok(buildRepositoryContext(resolved, 'THIN').chunks.some(chunk => chunk.files.includes('README.md')));
+  fs.rmSync(archive,{force:true});
 });
 
 test('Windows snapshot runner is fixed-purpose and never reads or emits provider credential references', () => {
@@ -88,12 +91,20 @@ test('Windows snapshot runner is fixed-purpose and never reads or emits provider
 
 test('remote snapshot import rejects a symlink that escapes the read-only extraction root', async () => {
   const source = fs.mkdtempSync(path.join(os.tmpdir(), 'ac-remote-unsafe-')), snapshots = fs.mkdtempSync(path.join(os.tmpdir(), 'ac-remote-unsafe-snapshots-'));
-  fs.symlinkSync('../../outside', path.join(source, 'escape'));
-  const archive = path.join(os.tmpdir(), `ac-unsafe-${process.pid}.tar`); execFileSync('tar', ['-cf', archive, '-C', source, 'escape']);
-  const bytes = fs.readFileSync(archive), archiveSha256 = (await import('node:crypto')).createHash('sha256').update(bytes).digest('hex');
-  const executor: SshExecutor = async () => ({status: 0, stdout: JSON.stringify({schema: 'agent-control.repository-snapshot-result/v1', ok: true, nodeId: 'msi', sourceIdentity: '1'.repeat(64), reviewedSha: '2'.repeat(40), archiveSha256, archiveBase64: bytes.toString('base64')}), stderr: ''});
+  execFileSync('git',['init'],{cwd:source});execFileSync('git',['config','user.email','fixture@example.invalid'],{cwd:source});execFileSync('git',['config','user.name','Fixture'],{cwd:source});fs.symlinkSync('../../outside', path.join(source, 'escape'));execFileSync('git',['add','escape'],{cwd:source});execFileSync('git',['commit','-m','unsafe fixture'],{cwd:source});const reviewedSha=execFileSync('git',['rev-parse','HEAD'],{cwd:source,encoding:'utf8'}).trim();
+  const archive = path.join(os.tmpdir(), `ac-unsafe-${process.pid}.tar`); execFileSync('git', ['archive','--format=tar',`--output=${archive}`,reviewedSha],{cwd:source});
+  const bytes = fs.readFileSync(archive), archiveSha256 = createHash('sha256').update(bytes).digest('hex');
+  const executor: SshExecutor = async () => ({status: 0, stdout: JSON.stringify({schema: 'agent-control.repository-snapshot-result/v1', ok: true, nodeId: 'msi', sourceIdentity: remoteIdentity('msi','C:\\work\\repo'), reviewedSha, archiveSha256, archiveBase64: bytes.toString('base64')}), stderr: ''});
   const resolver = new ResourceRepositoryResolver([resource('msi', 'windows')], new LocalRepositoryResolver(), executor, 'param([string]$PayloadLine)\n');
   await assert.rejects(() => resolver.resolve({nodeId: 'msi', repository: 'C:\\work\\repo', requestedRef: 'main', allowedRoots: ['C:\\work'], snapshotsRoot: snapshots}), /repository_snapshot_archive_invalid/);
   assert.deepEqual(fs.readdirSync(snapshots), []);
   fs.rmSync(archive, {force: true});
+});
+
+test('remote snapshot import binds source identity and Git archive commit to the requested repository', async () => {
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'ac-remote-binding-')),archive=path.join(root,'snapshot.tar'),snapshots=path.join(root,'snapshots');execFileSync('git',['init'],{cwd:root});execFileSync('git',['config','user.email','fixture@example.invalid'],{cwd:root});execFileSync('git',['config','user.name','Fixture'],{cwd:root});fs.writeFileSync(path.join(root,'bound.txt'),'bound\n');execFileSync('git',['add','bound.txt'],{cwd:root});execFileSync('git',['commit','-m','bound'],{cwd:root});const actual=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();execFileSync('git',['archive','--format=tar',`--output=${archive}`,actual],{cwd:root});const bytes=fs.readFileSync(archive),archiveSha256=createHash('sha256').update(bytes).digest('hex'),base={schema:'agent-control.repository-snapshot-result/v1',ok:true,nodeId:'msi',sourceIdentity:remoteIdentity('msi','C:\\work\\repo'),reviewedSha:actual,archiveSha256,archiveBase64:bytes.toString('base64')};
+  const resolve=(wire:Record<string,unknown>)=>new ResourceRepositoryResolver([resource('msi','windows')],new LocalRepositoryResolver(),async()=>({status:0,stdout:JSON.stringify(wire),stderr:''}),'param([string]$PayloadLine)\n').resolve({nodeId:'msi',repository:'C:\\work\\repo',requestedRef:'main',allowedRoots:['C:\\work'],snapshotsRoot:snapshots});
+  await assert.rejects(()=>resolve({...base,reviewedSha:'2'.repeat(40)}),/repository_snapshot_revision_mismatch/);
+  await assert.rejects(()=>resolve({...base,reviewedSha:'2'.repeat(45)}),/repository_snapshot_result_invalid/);
+  await assert.rejects(()=>resolve({...base,sourceIdentity:'1'.repeat(64)}),/repository_snapshot_result_invalid/);
 });

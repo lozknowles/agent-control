@@ -34,8 +34,12 @@ export class ResourceRepositoryResolver implements RepositoryResolver {
     if (result.status !== 0) throw new ParameterizedJobError('repository_snapshot_transport_failed');
     let wire: SnapshotWireResult; try { wire = JSON.parse(result.stdout.trim()) as SnapshotWireResult; } catch { throw new ParameterizedJobError('repository_snapshot_result_invalid'); }
     if (wire.schema !== 'agent-control.repository-snapshot-result/v1' || !wire.ok) throw new ParameterizedJobError(safeError(wire.error));
-    if (wire.nodeId !== input.nodeId || !hash(wire.sourceIdentity) || !hash(wire.reviewedSha) || !hash(wire.archiveSha256) || typeof wire.archiveBase64 !== 'string') throw new ParameterizedJobError('repository_snapshot_result_invalid');
+    if (wire.nodeId !== input.nodeId || wire.sourceIdentity !== remoteSourceIdentity(input.nodeId, input.repository) || !gitHash(wire.reviewedSha) || !sha256(wire.archiveSha256) || typeof wire.archiveBase64 !== 'string') throw new ParameterizedJobError('repository_snapshot_result_invalid');
     const archive = Buffer.from(wire.archiveBase64, 'base64'); if (!archive.length || createHash('sha256').update(archive).digest('hex') !== wire.archiveSha256) throw new ParameterizedJobError('repository_snapshot_hash_mismatch');
+    let archiveCommit: string;
+    try { archiveCommit = execFileSync('git', ['get-tar-commit-id'], {input: archive, encoding: 'utf8', maxBuffer: 1024}).trim(); }
+    catch { throw new ParameterizedJobError('repository_snapshot_revision_unbound'); }
+    if (archiveCommit !== wire.reviewedSha) throw new ParameterizedJobError('repository_snapshot_revision_mismatch');
     const root = input.snapshotsRoot ?? path.resolve('.agent-control/parameterized-jobs/snapshots'); fs.mkdirSync(root, {recursive: true});
     const snapshotPath = path.join(root, `remote-${wire.reviewedSha.slice(0, 12)}-${randomUUID().slice(0, 8)}`), archivePath = `${snapshotPath}.tar`;
     fs.mkdirSync(snapshotPath, {recursive: true}); fs.writeFileSync(archivePath, archive, {mode: 0o400});
@@ -53,7 +57,13 @@ export class ResourceRepositoryResolver implements RepositoryResolver {
   }
 }
 
-function hash(value: unknown): value is string { return typeof value === 'string' && /^[a-f0-9]{40,64}$/i.test(value); }
+function gitHash(value: unknown): value is string { return typeof value === 'string' && (/^[a-f0-9]{40}$/i.test(value) || /^[a-f0-9]{64}$/i.test(value)); }
+function sha256(value: unknown): value is string { return typeof value === 'string' && /^[a-f0-9]{64}$/i.test(value); }
+function remoteSourceIdentity(nodeId: string, repository: string) {
+  if (!path.win32.isAbsolute(repository)) throw new ParameterizedJobError('repository_path_invalid');
+  const normalized = path.win32.normalize(repository).replace(/[\\/]+$/, '').toLowerCase();
+  return createHash('sha256').update(`${nodeId}\n${normalized}`).digest('hex');
+}
 function safeError(value: unknown) { return typeof value === 'string' && /^repository_[a-z0-9_]+$/.test(value) ? value : 'repository_snapshot_failed'; }
 function makeReadOnly(root: string) {
   const walk = (directory: string): string[] => fs.readdirSync(directory,{withFileTypes:true}).flatMap(entry => {
