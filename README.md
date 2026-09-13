@@ -1,4 +1,4 @@
-# Agent Control 4.5.1 remediation candidate
+# Agent Control 4.5.1
 
 Agent Control 4.5.1 is the narrow production-upgrade remediation for the
 published 4.5.0 release. It corrects controller-local worker classification
@@ -10,7 +10,7 @@ closed. See the [4.5.1 migration guide](docs/migration-4.5.1.md), [deployment
 guide](docs/DEPLOYMENT.md), [release notes](docs/release-notes-4.5.1.md), and
 [dual-install qualification](docs/evidence/agent-control-4.5.1-controller-local-upgrade-qualification-20260913.md).
 
-The 4.5 candidate now includes a governed **Setup & Environment Discovery**
+The 4.5 release line includes a governed **Setup & Environment Discovery**
 wizard and a live **Estate Map** alongside Process Map. It inventories real
 machines, accelerators, runtimes, models, CLI agents, providers, tools and
 credential presence through pluggable read-only adapters; detects change; and
@@ -139,7 +139,9 @@ classification defect; runtime safety correctly denied that misclassified
 route and production rolled back safely to v4.1.0. The 4.5.1 remediation does
 not rewrite the 4.5.0 tag or its historical evidence. It adds the missed
 supported-existing-configuration upgrade gate while carrying forward every
-accepted 4.5 limitation.
+accepted 4.5 limitation. The corrected path passed ordinary full-clone install,
+an authentic v4.1 state/configuration upgrade, and the separately governed
+production smoke Job; see the [4.5.1 qualification](docs/evidence/agent-control-4.5.1-controller-local-upgrade-qualification-20260913.md).
 
 **Your Memories** is the user-facing Agent Control capability for finding relevant prior context, checking its governance and provenance, rejecting stale or unrelated memories, and safely presenting accepted context in a session. Memories remain advisory and cannot override Work Parcels, batons, policy, authoritative evidence or execution state. The 4.4 release includes the governed UX Session Capture/Replay projection and the qualified memory architecture; MARM remains one optional backend and automatic memory consolidation/model swapping is not a released runtime feature.
 
@@ -274,7 +276,7 @@ Agent Control is provider-, model-, platform- and execution-environment-agnostic
 
 The dashboard is an observer and authenticated operator client over the same control service. Run and Lane **Execution history** correlates durable operator/system/provider/tool/governor/baton/error activity with telemetry, accounting and verification. It is not raw provider traffic, unredacted logs or hidden model reasoning.
 
-## Morrow and the robotic crew (4.5 candidate)
+## Morrow and the robotic crew (4.5 release line)
 
 Morrow is Agent Control's original chief steward: conversational host, evidence guide, crew liaison and optional OmniVoice interface. He retrieves focused canonical records, explains activity and helps prepare proposals. Approved work enters the existing Work Parcel, routing, governor, safety, execution, verification and accounting lifecycle.
 
@@ -282,7 +284,7 @@ The compact floating host has silver hair, a teal utility jacket and a copper ba
 
 The original designed OmniVoice configuration, internal `poe` routes/events/storage keys, saved conversations and sealed proposal hashes remain compatible. The public identity changes without a state migration or a change to execution authority. Historical POE recordings remain evidence for their recorded source commits; they do not physically qualify the new Morrow presentation.
 
-See the [identity and crew guide](docs/morrow.md), [Morrow operation and architecture](docs/poe.md), [4.5 integration record](docs/evidence/morrow-4.5-integration/validation.md), [dashboard operation](docs/web-dashboard.md), and [deployment, upgrade and rollback guide](docs/DEPLOYMENT.md). The integration is included in the final `feature/4.5-release-closure` candidate; its grounded Runtime Map behavior is covered by the [final closure audit](docs/evidence/agent-control-4.5-final-release-closure-audit-20260913.md).
+See the [identity and crew guide](docs/morrow.md), [Morrow operation and architecture](docs/poe.md), [4.5 integration record](docs/evidence/morrow-4.5-integration/validation.md), [dashboard operation](docs/web-dashboard.md), and [deployment, upgrade and rollback guide](docs/DEPLOYMENT.md). Its grounded Runtime Map behavior is covered by the [final 4.5 closure audit](docs/evidence/agent-control-4.5-final-release-closure-audit-20260913.md), with the supported-upgrade correction and production smoke in the [4.5.1 qualification](docs/evidence/agent-control-4.5.1-controller-local-upgrade-qualification-20260913.md).
 
 ## Protected-resource mutation governance
 
@@ -526,14 +528,14 @@ screenshots, binary captures and qualification working trees are preserved in a
 separate checksummed [qualification evidence archive](docs/evidence-archive.md),
 so installation never requires a partial or shallow clone workaround.
 
-Clone the public release and select its immutable tag. During pre-release
-qualification, the reviewer substitutes the exact reviewed candidate SHA for
-`v4.5.0`; ordinary users should use the published tag.
+Clone the public release and select its immutable tag. Reviewers may substitute
+an exact candidate SHA during pre-release qualification; ordinary users should
+use the published tag.
 
 ```bash
 git clone https://github.com/lozknowles/agent-control.git
 cd agent-control
-git checkout --detach v4.5.0
+git checkout --detach v4.5.1
 ./scripts/bootstrap-agent-control.sh --check --target "$PWD"
 ./scripts/bootstrap-agent-control.sh --install --role control --target "$PWD"
 npm run check

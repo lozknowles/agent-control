@@ -31,5 +31,15 @@ Use the [migration guide](migration-4.5.1.md) and [deployment guide](DEPLOYMENT.
 for upgrade, acceptance and rollback. The
 [dual-install qualification record](evidence/agent-control-4.5.1-controller-local-upgrade-qualification-20260913.md)
 binds the clean-install and authentic v4.1-upgrade results to the exact revised
-candidate. Production deployment and its genuine smoke Job remain separate
-mandatory closure gates.
+candidate. The subsequent governed production upgrade preserved the authentic
+configuration byte-for-byte, started 4.5.1 from a clean immutable checkout and
+completed the same Morrow-initiated observation Job with both stages admitted as
+controller-local. Jobs, Lanes, Models, Warm Cache Runtime, Crew and Configuration
+also passed an authenticated LIVE dashboard sweep without browser errors.
+
+The selected dual-install evidence archive is 14,024,203 bytes, SHA-256
+`34c377c608872ad40d89f668bd86eeffcb1adcea4da431a8b730fd1ac8757277`.
+The selected production-smoke archive is 10,275,340 bytes, SHA-256
+`0110446f46a968e811a3ad5a5494c407d1fbd564157212562fcaaa8d01b6a74f`.
+Neither archive contains the authentic configuration, runtime credentials or
+mutable pre-upgrade state.

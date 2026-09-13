@@ -1,8 +1,8 @@
 # Setup and Environment Discovery
 
-Status: **experimental Agent Control 4.5 capability in the 4.5.1 remediation
-candidate**. Environment Discovery is read-only by default. Agent Control 4.5.0
-is the latest published source release while 4.5.1 undergoes upgrade qualification.
+Status: **experimental capability in the Agent Control 4.5.1 release**.
+Environment Discovery is read-only by default. The controller-local identity
+and supported-upgrade correction are production-qualified in 4.5.1.
 Desired-state estate management and automatic remediation are deferred to 4.6.
 
 ## What it does

@@ -1,6 +1,6 @@
 # Agent Control architecture
 
-This is the authoritative source boundary for the Agent Control 4.5.1 remediation candidate. Agent Control 4.5.0 is preserved as the latest formally published source release while the existing-configuration upgrade correction is requalified. Historical physical evidence remains bound to its recorded product SHA. Status labels matter:
+This is the authoritative source boundary for the Agent Control 4.5.1 maintenance release. Agent Control 4.5.0 remains immutable historical source evidence; 4.5.1 corrects its supported-existing-configuration upgrade path without weakening runtime safety. Historical physical evidence remains bound to its recorded product SHA. Status labels matter:
 
 - **implemented** means executable code and automated tests exist in this branch;
 - **experimental** means executable code exists but has not been qualified across every external substrate;
@@ -57,7 +57,7 @@ Physical 4.5 qualification exercises the provider-neutral flow as
 
 `MemoryRouteQualificationStore` records exact provider/account/model/node identity separately from the provider adapter. Each record binds runtime and exchange-contract versions, writer and reader eligibility, maximum physically proven memory bytes, bounded repair allowance, qualification freshness, evidence and terminal classification. Exact pair records prevent independent route successes from being incorrectly composed into an unproven pair. Admission is fail closed: a missing, stale, contract-mismatched, oversized, blocked or unsupported pair is denied; escalation occurs only when an explicitly qualified alternate pair is recorded. Secrets and provider output are not part of this store.
 
-The final 4.5 product candidate is **READY FOR RELEASE WITH LIMITATIONS** while
+The 4.5 release line is **PRODUCTION QUALIFIED WITH LIMITATIONS** while
 individual unqualified routes remain experimental or unavailable. Every
 historical matrix row is retained: 11/12 exact routes are now PASS/FIXED after a fresh
 Qwen→Pixel Gemma 4 E4B pass with the unchanged semantic verifier. The exact

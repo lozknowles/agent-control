@@ -8,8 +8,7 @@
   `b721513b99e6f2c1985e48c313247fb270b81e54`
 - Candidate tree: `6da0ddff39181d5bdb70afd6ca4d4f872ccaee63`
 - Branch: `fix/4.5.1-controller-local-worker-upgrade`
-- Current verdict: **PASS — DUAL INSTALLATION REQUALIFIED; PRODUCTION
-  DEPLOYMENT PENDING**
+- Verdict: **PASS — 4.5.1 PRODUCTION UPGRADE AND GOVERNED SMOKE QUALIFIED**
 
 This is the lightweight qualification record for the narrow 4.5.1 remediation.
 Heavy video, screenshots, complete transcripts and mutable runtime state remain
@@ -138,6 +137,48 @@ This closes the installation path that v4.5.0 had not qualified. Historical
 records already present in the v4.1 state remained available; the qualification
 added new append-only runtime evidence rather than resetting state.
 
+## Governed production upgrade and smoke
+
+Only after both isolated paths and the complete suite passed, the scoped
+`agent-control-poe.service` was stopped. Its production configuration was mode
+`0600`, 3,267 bytes and had the same v4.1 SHA-256 recorded above. A fresh
+owner-only stopped-state rollback archive was created before any deployment:
+
+- File: `poe-v4.1.0-pre-v4.5.1-20260913T062816Z.tar.zst`
+- Size: 181,325,455 bytes
+- SHA-256: `764a5505cd99585e87478db257d5060da3833603ff837af449b34ee3d9c411c6`
+
+The older pre-v4.5.0 rollback archive and immutable v4.1 source checkout also
+remain unchanged. Bootstrap against the exact evidence checkpoint
+`2f7061a2087c9847dc9fb737db9f6bd2ac1e4672` reported
+`PRESERVED_EXISTING`; configuration mode, size and digest remained identical.
+The same existing supervisor then started Agent Control 4.5.1 on its original
+loopback endpoint.
+
+| Production observation | Result |
+| --- | --- |
+| Service/version/source | active; `4.5.1`; clean `2f7061a2087c9847dc9fb737db9f6bd2ac1e4672` checkout |
+| HTTP / SSE / operator boundary | `200`; `200` live stream; authenticated |
+| Environment Discovery | `QUICK_RESCAN`, `COMPLETED`, 41 items, 0 failures |
+| Configuration application | none |
+| Estate Map | 46 nodes / 48 edges; observer beneath controller |
+| Human request | `Start operator-system-observation@1.1.0` |
+| Sealed proposal SHA-256 | `d68805fb3eedc7f9c693324f5af1d9a960b4de6e9b7869791813bdbee600dffb` |
+| Work Parcel | `parcel-social-09c36c5abf3b8c9689f73710628538b99a616a23b605adf05cbc0e59bfcb447e` |
+| Run | `run-1bc43069-ca36-4c73-ad9f-2dc3c2f075c9` |
+| Result | `SUCCEEDED` |
+| Runtime safety | `observe=ALLOW`, `verify=ALLOW`, controller-local `READ_ONLY`; no `REMOTE_NODE` |
+| Dashboard sweep | Jobs, Lanes, Models, Warm Cache Runtime, Crew and Configuration all rendered LIVE |
+| Browser errors | none in governed run or dashboard sweep |
+| Speech companion service | remained active |
+
+The production recording is H.264 1920×1080 at 25 fps, 14.04 seconds,
+3,279,937 bytes, SHA-256
+`10788cdfcd31cd5d8cb7be66de53fae8c5b2cbd44fe87aeef85deda3b2ed0022`.
+It records the actual existing service, Morrow proposal/approval, Process and
+Estate Maps, succeeded Work Parcel and complete natural transcript; it does not
+start a substitute qualification server.
+
 ## External evidence
 
 The operator-owned evidence root is
@@ -167,6 +208,15 @@ bytes, SHA-256
 It contains 32 entries and excludes the authentic configuration, prior runtime
 state, dependency tree and Git checkout.
 
+The production evidence is separately sealed as
+`agent-control-4.5.1-production-smoke-2f7061a.tar.zst`, 10,275,340 bytes,
+SHA-256
+`0110446f46a968e811a3ad5a5494c407d1fbd564157212562fcaaa8d01b6a74f`.
+Its 26 entries contain the sanitized production summary, governed-run report,
+complete transcript, HD recording, screenshots, dashboard sweep and audited
+read-only harnesses. It excludes credentials, production configuration, prior
+state, rollback archives, service definitions and raw server output.
+
 ## Security and release accounting
 
 - The browser token was ephemeral and is absent from durable evidence.
@@ -190,13 +240,13 @@ state, dependency tree and Git checkout.
 | Estate classification | `PASS` |
 | Isolated genuine governed smoke Jobs | `PASS` |
 | Known-good v4.1 rollback capability | `VERIFIED / RETAINED` |
-| Production deployment | `PENDING` |
-| Production genuine governed smoke Job | `PENDING` |
+| Production deployment | `PASS` |
+| Production genuine governed smoke Job | `PASS` |
 
-The candidate is ready for the separately gated production upgrade. It is not
-yet a released or production-qualified version. If production smoke fails, the
-required response remains: preserve the failure, perform one scoped rollback to
-v4.1.0, and return to remediation rather than patching production repeatedly.
+Every mandatory 4.5.1 runtime gate is now satisfied. The separately authorised
+repository merge, immutable tag and GitHub Release may proceed. The retained
+v4.1 source/state pair remains the rollback boundary until normal operational
+retention policy supersedes it.
 
 All previously accepted 4.5 limitations remain unchanged, including the 11/12
 historical memory matrix, OpenRouter GLM→Qwen `BLOCKED_EXTERNAL`, NVIDIA

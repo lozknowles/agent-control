@@ -1,6 +1,6 @@
 # Changelog
 
-## [4.5.1] — Remediation candidate
+## [4.5.1] — 2026-09-13
 
 ### Existing-configuration upgrade correction
 
@@ -34,8 +34,13 @@
   installation paths: an ordinary full-clone virgin install and a byte-preserved
   authentic v4.1 configuration/state upgrade. Both real dashboard runs completed
   discovery, truthful Estate projection, Morrow approval and the governed
-  observation Job with controller-local runtime-safety admission. Production
-  deployment remains a separate release gate.
+  observation Job with controller-local runtime-safety admission.
+- Passes the separately gated production upgrade from the preserved v4.1
+  configuration. The deployed 4.5.1 service retained the configuration
+  byte-for-byte, reported healthy authenticated live telemetry, rendered Jobs,
+  Lanes, Models, Warm Cache Runtime, Crew and Configuration, and completed the
+  same genuine governed observation Job with two controller-local `ALLOW`
+  decisions. Both the original and fresh v4.1 rollback artefacts remain retained.
 
 ## [4.5.0] — 2026-09-13
 

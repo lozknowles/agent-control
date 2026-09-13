@@ -2,9 +2,9 @@
 
 > **Existing-installation advisory:** the published `v4.5.0` source release
 > passed virgin installation but did not pass the later production upgrade from
-> the preserved v4.1 configuration. Keep an existing production installation on
-> its known-good version until `v4.5.1` has completed the dual installation gate
-> below. Do not reset configuration to imitate a fresh install.
+> the preserved v4.1 configuration. Upgrade existing installations to `v4.5.1`,
+> which adds the missing supported-configuration gate and passed that physical
+> production path. Do not reset configuration to imitate a fresh install.
 
 ## Bootstrap and Environment Discovery
 
@@ -81,7 +81,7 @@ newer record must stop rather than migrate or discard it. Full procedures are in
 [Session Vault recovery](session-vault-recovery.md) and
 [replication](session-vault-replication.md).
 
-This is the canonical deployment guide for the Agent Control 4.5.1 remediation candidate. Source publication
+This is the canonical deployment guide for Agent Control 4.5.1. Source publication
 and production deployment are separate events. A healthy listener alone does not
 prove release qualification.
 
@@ -98,7 +98,7 @@ partial clone as an installation workaround.
 ```bash
 git clone https://github.com/lozknowles/agent-control.git
 cd agent-control
-git checkout --detach v4.5.0
+git checkout --detach v4.5.1
 ./scripts/bootstrap-agent-control.sh --check --target "$PWD"
 ./scripts/bootstrap-agent-control.sh --install --role control --target "$PWD"
 npm run check
@@ -108,8 +108,8 @@ npm run check
 qualification trees, dashboard media and oversized evidence objects from being
 reintroduced into product-source history.
 
-Before the remediation tag exists, release qualification uses the exact reviewed
-4.5.1 candidate SHA in place of the published `v4.5.0` tag. The bootstrap check should report a verified
+Pre-release qualification uses the exact reviewed candidate SHA in place of the
+published tag. The bootstrap check should report a verified
 repository and available dashboard. Install reports no-lock dependency
 installation and whether the existing configuration was initialized or
 preserved. The validation suite uses disposable test state and leaves the
@@ -200,7 +200,7 @@ See the [integration record](evidence/morrow-4.5-integration/validation.md).
 Source integration and publication do not change the running installation or
 substitute for the dual installation and governed-smoke gates below.
 
-## Pre-release and rollout gate
+## Release and rollout gate
 
 1. Freeze the candidate SHA and resolved dependency inventory.
 2. Run `npm run check` from a clean isolated checkout.
@@ -221,15 +221,17 @@ substitute for the dual installation and governed-smoke gates below.
    transcript and reviewed 1920×1080 recording.
 6. Verify state/config compatibility and create an owner-only stopped-controller
    backup.
-7. Merge through the repository workflow only after every mandatory 4.5.1 gate
-   is proven, verify the merge contains the qualified tree, tag `v4.5.1`, push, and
-   create the GitHub Release with manifest hashes. A draft pull request or an
-   experimental candidate is not a stable release.
-8. Stop only the scoped existing controller, select the immutable release, retain
+7. Stop only the scoped existing controller, select the exact qualified candidate,
+   retain
    existing state and credential references, and restart through its established
    supervisor.
-9. Verify version, source provenance, health, authentication, SSE updates, Jobs,
+8. Verify version, source provenance, health, authentication, SSE updates, Jobs,
    Lanes, Models, Crew, Warm Cache Runtime and a harmless governed operation.
+9. Merge through the repository workflow only after every mandatory 4.5.1 gate,
+   including production smoke, is proven. Verify the merge contains the qualified
+   product tree, tag `v4.5.1`, push, and create the GitHub Release with manifest
+   hashes. A draft pull request or an experimental candidate is not a stable
+   release.
 
 The historical 4.5 candidate gate and its then-open limitations are recorded in
 [the completion reconciliation](evidence/agent-control-4.5-release-gate-completion-20260912.md)
@@ -255,6 +257,14 @@ with the retained foundation in
 If main changes the product tree between qualification and tag, reconcile and
 rerun affected regression/physical gates. Never label historical evidence as the
 new candidate's result.
+
+The authoritative 4.5.1 remediation record is the
+[dual-install and production qualification](evidence/agent-control-4.5.1-controller-local-upgrade-qualification-20260913.md).
+The exact implementation passed 1,337/1,337 tests, ordinary full-clone virgin
+installation, byte-preserved authentic v4.1 upgrade, production deployment,
+authenticated dashboard/SSE inspection and the genuine governed observation
+Job. Its separate checksummed archives keep heavyweight evidence out of normal
+source clones.
 
 ## Rollback
 
