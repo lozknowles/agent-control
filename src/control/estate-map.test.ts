@@ -130,6 +130,50 @@ test("discovered is not alive after resource-specific evidence expires", () => {
   assert.equal(projection.freshness.state, "STALE");
 });
 
+test("active capability lifecycle is not presented as active runtime work", () => {
+  const job = item({
+      id: "job:observation",
+      kind: "JOB",
+      label: "Observation",
+      lifecycle: "ACTIVE",
+      operationalState: "ACTIVE",
+      attributes: { source: "job-catalog" },
+    }),
+    tool = item({
+      id: "tool:observation",
+      kind: "TOOL",
+      label: "Observation tool",
+      lifecycle: "ACTIVE",
+      operationalState: "ACTIVE",
+      attributes: { source: "action-registry" },
+    }),
+    runtime = item({
+      id: "runtime:local",
+      kind: "RUNTIME",
+      label: "Local runtime",
+      lifecycle: "ACTIVE",
+      operationalState: "ACTIVE",
+      attributes: { running: true },
+    }),
+    projection = projectEstateMap(
+      scan([item({id:"machine:controller",kind:"MACHINE",label:"Controller"}), job, tool, runtime]),
+      "2026-09-12T12:00:30.000Z",
+    );
+  assert.equal(
+    projection.nodes.find((node) => node.id === job.id)?.state,
+    "SUCCEEDED",
+  );
+  assert.equal(
+    projection.nodes.find((node) => node.id === tool.id)?.state,
+    "SUCCEEDED",
+  );
+  assert.equal(
+    projection.nodes.find((node) => node.id === runtime.id)?.state,
+    "RUNNING",
+  );
+  assert.equal(projection.summary.running, 1);
+});
+
 test("unknown relationships are never inferred from similar labels", () => {
   const machine = item({
       id: "machine:a",

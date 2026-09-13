@@ -1,3 +1,5 @@
+> Historical 4.5 deployment reference. For this unreleased 4.6 candidate use [Install Agent Control](installation-first-run.md) and [Upgrade](upgrade-4.6.md). For stable 4.5.1 use its [versioned guide](https://github.com/lozknowles/agent-control/blob/v4.5.1/docs/DEPLOYMENT.md).
+
 # Agent Control 4.5 deployment, upgrade and rollback
 
 ## Bootstrap and Environment Discovery

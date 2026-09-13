@@ -705,7 +705,14 @@
       if (identity.providerId && resource.providerId !== identity.providerId)
         return false;
       if (identity.workerId && resource.workerId !== identity.workerId) return false;
-      return !identity.nodeId || resource.nodeId === identity.nodeId;
+      // A deterministic worker Run can authoritatively identify the globally
+      // registered worker without asserting a node. Match that stable identity,
+      // but fail closed whenever both projections assert different nodes.
+      return (
+        !identity.nodeId ||
+        !resource.nodeId ||
+        resource.nodeId === identity.nodeId
+      );
     });
     const target =
       candidates.find((candidate) => candidate.state === "RUNNING") ??

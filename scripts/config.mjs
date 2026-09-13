@@ -4,12 +4,16 @@ import {randomUUID} from 'node:crypto';
 
 export const emptyConfig = () => ({schemaVersion: 1, resources: [], providers: [], services: [], lanes: []});
 const idPattern = /^[a-z0-9][a-z0-9._-]{0,63}$/i;
+// Keep bootstrap's credential-key guard aligned with the authoritative
+// TypeScript configuration loader. These names are numeric policy/accounting
+// metadata; their values still pass the recursive secret-value scan.
+const safeTokenAccountingKeys = new Set(['tokenAwareOutput', 'tokenBatonRouting', 'completeMaxTokens', 'artifactOnlyAboveReturnedTokens', 'minimumCompleteTokens', 'harnessEfficiency', 'maximumInitialContextTokens', 'maximumContextTokens', 'maximumEvidenceTokens', 'advertisedContextLimitTokens', 'maximumObservedInputTokens', 'inputPerMillionTokens', 'outputPerMillionTokens', 'cachedInputPerMillionTokens', 'cacheWritePerMillionTokens', 'contextTokens', 'outputTokens', 'continuePercent', 'prepareBatonPercent', 'compactPercent', 'handoffPercent', 'sampleRetention']);
 
 function rejectSecrets(value, trail = 'config') {
   if (typeof value === 'string' && /\b(?:nvapi-|sk-(?:proj-)?|sk-ant-|gh[opusr]_)[A-Za-z0-9_-]{8,}\b|\bBearer\s+[A-Za-z0-9._~+/=-]{8,}/i.test(value)) throw new Error(`secret_material_forbidden:${trail}`);
   if (!value || typeof value !== 'object') return;
   for (const [key, child] of Object.entries(value)) {
-    if (/token|password|secret|api.?key/i.test(key) && !['credentialEnv','credentialFileEnv'].includes(key)) throw new Error(`secret_material_forbidden:${trail}.${key}`);
+    if (/token|password|secret|api.?key/i.test(key) && !['credentialEnv','credentialFileEnv'].includes(key) && !safeTokenAccountingKeys.has(key)) throw new Error(`secret_material_forbidden:${trail}.${key}`);
     rejectSecrets(child, `${trail}.${key}`);
   }
 }
@@ -56,41 +60,65 @@ function emptyCollections(config) {
   return ['resources', 'providers', 'services', 'lanes'].every(key => config[key].length === 0);
 }
 
+const unsupportedHardLinkErrors = new Set(['EACCES', 'EPERM', 'ENOSYS', 'ENOTSUP', 'EOPNOTSUPP', 'EXDEV']);
+
+function publishExclusive(fileSystem, temporary, target) {
+  try {
+    fileSystem.linkSync(temporary, target);
+    return;
+  } catch (error) {
+    if (!unsupportedHardLinkErrors.has(error?.code)) throw error;
+  }
+
+  // Android/Termux filesystems can permit ordinary owner-only files while
+  // denying hard-link creation. COPYFILE_EXCL retains the no-overwrite race
+  // boundary without weakening permissions or replacing an existing config.
+  fileSystem.copyFileSync(temporary, target, fileSystem.constants.COPYFILE_EXCL);
+  fileSystem.chmodSync(target, 0o600);
+  const descriptor = fileSystem.openSync(target, 'r');
+  try {
+    fileSystem.fsyncSync(descriptor);
+  } finally {
+    fileSystem.closeSync(descriptor);
+  }
+}
+
 /**
  * Create the smallest safe configuration without discovering infrastructure or
  * overwriting operator state. The completed temporary file is linked into place
- * atomically; link creation fails when another writer already created the target.
+ * atomically where hard links are supported. Filesystems that deny hard links
+ * use an exclusive copy, which preserves the same create-if-absent boundary.
  */
-export function initializeConfig({environment = process.env, cwd = process.cwd(), file = resolveConfigPath(environment, cwd)} = {}) {
+export function initializeConfig({environment = process.env, cwd = process.cwd(), file = resolveConfigPath(environment, cwd), fileSystem = fs} = {}) {
   const target = path.resolve(file);
-  if (fs.existsSync(target)) {
-    const config = validateConfig(JSON.parse(fs.readFileSync(target, 'utf8')));
+  if (fileSystem.existsSync(target)) {
+    const config = validateConfig(JSON.parse(fileSystem.readFileSync(target, 'utf8')));
     return {result: emptyCollections(config) ? 'UNCHANGED_EMPTY' : 'PRESERVED_EXISTING', created: false, file: target, config};
   }
 
   const directory = path.dirname(target);
-  fs.mkdirSync(directory, {recursive: true});
+  fileSystem.mkdirSync(directory, {recursive: true});
   const temporary = path.join(directory, `.${path.basename(target)}.${process.pid}.${randomUUID()}.tmp`);
   const config = emptyConfig();
   const payload = `${JSON.stringify(config, null, 2)}\n`;
   let descriptor;
   try {
-    descriptor = fs.openSync(temporary, 'wx', 0o600);
-    fs.writeFileSync(descriptor, payload, 'utf8');
-    fs.fsyncSync(descriptor);
-    fs.closeSync(descriptor);
+    descriptor = fileSystem.openSync(temporary, 'wx', 0o600);
+    fileSystem.writeFileSync(descriptor, payload, 'utf8');
+    fileSystem.fsyncSync(descriptor);
+    fileSystem.closeSync(descriptor);
     descriptor = undefined;
     try {
-      fs.linkSync(temporary, target);
+      publishExclusive(fileSystem, temporary, target);
       return {result: 'CREATED', created: true, file: target, config};
     } catch (error) {
       if (error?.code !== 'EEXIST') throw error;
-      const existing = validateConfig(JSON.parse(fs.readFileSync(target, 'utf8')));
+      const existing = validateConfig(JSON.parse(fileSystem.readFileSync(target, 'utf8')));
       return {result: emptyCollections(existing) ? 'UNCHANGED_EMPTY' : 'PRESERVED_EXISTING', created: false, file: target, config: existing};
     }
   } finally {
-    if (descriptor !== undefined) fs.closeSync(descriptor);
-    try { fs.unlinkSync(temporary); } catch (error) { if (error?.code !== 'ENOENT') throw error; }
+    if (descriptor !== undefined) fileSystem.closeSync(descriptor);
+    try { fileSystem.unlinkSync(temporary); } catch (error) { if (error?.code !== 'ENOENT') throw error; }
   }
 }
 

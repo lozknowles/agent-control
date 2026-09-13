@@ -77,7 +77,7 @@ export function classifyReadinessGaps(declared:DeclaredReadiness,scan:DiscoveryS
 }
 
 // Explicit graph-client metadata contract. Never forward arbitrary adapter attributes.
-const SAFE_KEYS=['platform','architecture','transport','privateTransport','port','authenticationMethod','authenticationState','authorizationState','credentialStatus','installed','configured','present','status','version','runtime','providerId','capabilities','cpuLogical','totalMemoryBytes','diskAvailableBytes','probePassed','lastSuccessfullyVerifiedAt','qualificationState','transportState'] as const;
+const SAFE_KEYS=['executionLocality','identityAuthority','controllerRelationship','platform','architecture','transport','privateTransport','port','authenticationMethod','authenticationState','authorizationState','credentialStatus','installed','configured','present','status','version','runtime','providerId','capabilities','cpuLogical','totalMemoryBytes','diskAvailableBytes','probePassed','lastSuccessfullyVerifiedAt','qualificationState','transportState'] as const;
 export function safeEstateAttributes(attributes:Record<string,unknown>) {
   const out:Record<string,string|number|boolean>={};
   for(const key of SAFE_KEYS) {
@@ -97,7 +97,7 @@ export function resourcePresentation(item:DiscoveryItem,scan:DiscoveryScan,now:D
   const observation=estateObservationState(item,+now),gaps=resourceGaps(item,scan,now);
   const alive=observation.alive&&!gaps.some(g=>g.code==='DEPENDENCY_UNAVAILABLE');
   const failure=observation.fresh&&gaps.some(g=>['AUTHENTICATION_REQUIRED','TRANSPORT_UNAVAILABLE','QUALIFICATION_FAILED'].includes(g.code)||g.code==='RESOURCE_OFFLINE'&&Boolean(item.configuredId));
-  const colour=failure?'RED':!alive?'GREY':gaps.length||item.operationalState==='ACTIVE'||item.lifecycle!=='QUALIFIED'?'ORANGE':'GREEN';
+  const colour=failure?'RED':!alive?'GREY':gaps.length||!['QUALIFIED','ACTIVE'].includes(item.lifecycle)?'ORANGE':'GREEN';
   return {alive,colour,blockers:gaps,markers:[...(gaps.some(g=>['QUALIFICATION_REQUIRED','QUALIFICATION_FAILED'].includes(g.code))?['UNQUALIFIED']:[]),...(item.change==='NEW'?['NEW']:[]),...(item.attributes.configured===false?['CONFIG']:[])],
     observationExpiresAt:observation.lastAuthoritativeObservation?new Date(Date.parse(observation.lastAuthoritativeObservation)+ESTATE_FRESHNESS_MS[item.kind]).toISOString():null};
 }

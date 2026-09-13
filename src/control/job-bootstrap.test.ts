@@ -16,6 +16,7 @@ test('fresh empty configuration supplies only the built-in read-only observation
     assert.deepEqual(worker?.capabilities,[OPERATOR_OBSERVATION_CAPABILITY]);
     assert.equal(worker?.health,'healthy');
     assert.equal(worker?.labels?.scope,'controller-local-read-only-observation');
+    assert.deepEqual(runtime.workers.executionIdentity(OPERATOR_OBSERVATION_WORKER_ID),{workerId:OPERATOR_OBSERVATION_WORKER_ID,nodeId:'controller',locality:'CONTROLLER_LOCAL',authority:'AGENT_CONTROL_INTERNAL',controllerRelationship:'CONTROLLER_INTERNAL'});
     assert.equal(runtime.workers.resolve(['model.execute']).worker,undefined);
     const definition=runtime.catalog.job('operator-system-observation@1.1.0');
     assert.ok(definition?.spec.steps.every(step=>step.requires?.length===1&&step.requires[0]===OPERATOR_OBSERVATION_CAPABILITY));
@@ -29,6 +30,7 @@ test('fresh empty configuration supplies only the built-in read-only observation
     ]);
     assert.ok(completed.artifacts.some(id=>runtime.artifacts.get(id)?.name==='system-observation'));
     assert.ok(completed.artifacts.some(id=>runtime.artifacts.get(id)?.name==='independent-verification'));
+    assert.ok(runtime.safety?.list().every(decision=>decision.outcome==='ALLOW'&&decision.workerLocality==='CONTROLLER_LOCAL'&&!decision.categories.includes('REMOTE_NODE')));
   } finally {
     fs.rmSync(root,{recursive:true,force:true});
   }

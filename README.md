@@ -1,81 +1,72 @@
-# AGENT CONTROL
+# Agent Control
 
-**Discover your AI estate. See what is running.**
+Discover your AI tools, see what is available, and follow approved work from request to verified result.
 
-Find new models. Benchmark them on your hardware and your workload. Wake up knowing whether anything better appeared overnight.
+**Current stable release: [4.5.1](https://github.com/lozknowles/agent-control/releases/tag/v4.5.1).** This branch is **4.6.0-rc.1**, an unreleased candidate. It is **not ready for the complete 4.6 release**; see the [release assessment](docs/public-release-readiness-4.6.md).
 
-[GET STARTED](docs/installation-first-run.md) · [HOW IT WORKS](#how-agent-control-governs-automation) · [LIVE ESTATE](#see-your-ai-estate) · [MODEL INTELLIGENCE](#wake-up-knowing-what-changed) · [BENCHMARKS](#find-the-best-model-for-your-workload) · [JOB LIBRARY](https://github.com/lozknowles/agent-control-jobs) · [ARCHITECTURE](docs/runtime-map.md) · [DOCUMENTATION](docs/README-4.5-history.md)
+[Install Agent Control](docs/installation-first-run.md) · [Documentation](docs/index.md) · [Upgrade](docs/upgrade-4.6.md) · [Release notes](docs/release-notes-4.6.0-rc.1.md)
 
-**4.6.0-rc.1 — unreleased showcase candidate.** The read-only intelligence and first-run journeys have real evidence. Target-model benchmarking still requires approval; no measured winner or completed overnight benchmark is claimed. The release SHOWCASE gate remains blocked until that evidence exists.
+## Discover → Observe → Run → Understand → Control
 
-![Real Usage and Cost dashboard from selected physical qualification records](docs/media/4.6/usage/01-overview.png)
+- **Discover** supported machines, agents, runtimes, models and integrations already in your environment.
+- **Observe** what is alive and available in the graphical Estate Map.
+- **Run** authorised jobs and follow their steps and evidence in Process Map.
+- **Understand** calls, tokens, retries, cache, cost availability and local component energy.
+- **Control** work through permissions, policies, readiness checks and explicit approvals.
 
-This is the real usage view for selected qualification runs, not an estate-wide spending claim.
+Mallow is your floating guide. The established crew helps explain dispatch, review, tools, model routing, resources and verification. [Meet the crew](docs/crew-guide.md).
 
-## See your AI estate
+## Try the candidate
 
-Find this computer and configured resources, then inspect what is alive, stale, unavailable or awaiting qualification. Device, transport, runtime and model relationships come from discovery records. Discovery does not grant execution permission.
+For the stable version, use the [4.5.1 installation documentation](https://github.com/lozknowles/agent-control/blob/v4.5.1/docs/DEPLOYMENT.md). To review this candidate on Linux with Node.js 24, npm, Git and Bash:
 
-Public Estate capture is pending final privacy and source-version review.
+```bash
+git clone --branch feature/4.6-model-intelligence-showcase https://github.com/lozknowles/agent-control.git
+cd agent-control
+git rev-parse HEAD
+./scripts/bootstrap-agent-control.sh --check --target "$PWD"
+./scripts/bootstrap-agent-control.sh --install --role control --target "$PWD"
+read -rsp "Agent Control operator token: " AGENT_CONTROL_WEB_OPERATOR_TOKEN
+printf '\n'
+export AGENT_CONTROL_WEB_OPERATOR_TOKEN
+npm run web
+```
 
-[Explore discovery and Estate Map](docs/environment-discovery.md). The public view substitutes role labels and excludes private connection details; the topology and status remain the captured runtime truth.
+Choose a private operator token of at least 32 characters and keep it in your password manager. Open **http://127.0.0.1:4310**, select **Discover my environment**, and authenticate with that token. Follow the [illustrated installation guide](docs/installation-first-run.md) through Discovery and the first governed job.
 
-## Ask Agent Control to do work
+A GPU, model server, paid API, Codex, VPN and Home Assistant are optional capabilities, not dashboard prerequisites.
 
-Start with a small objective. Agent Control turns approved plans into native Work Parcels and jobs, records execution and retains verification evidence. Process Map follows the work; Estate Map shows the resources it uses.
+## See what is available; follow what is happening
 
-The [captured Model Intelligence example](examples/showcase-4.6/README.md) ran six native phases and stopped at **APPROVAL_REQUIRED** before target acquisition. A new 4.6 screenshot of active benchmark execution is still an acceptance requirement; historical footage is not substituted for it.
+**Estate Map** shows known resources, relationships and current health. Discovered does not mean alive, authenticated or qualified. Select a resource to inspect its evidence and gaps.
 
-## Find the best model for your workload
+**Process Map** shows an actual job's execution and result. Job and worker links connect work back to its Estate resources.
 
-Create a small personal benchmark, define objective success checks and compare complete, comparable results. Quality, speed, measured memory and cost remain visible; missing measurements stay unavailable. Subjective judgements are separate.
+The [real installation journey](docs/public-installation-journey.md) shows the first screen, discovery progress, results, Estate, Process and Mallow. Screenshots are captured from the running product, not generated UI.
 
-**No target-model performance table has been published for this candidate.** The reviewed two-model plan is provisionable from an isolated empty target workspace, but model acquisition and inference await approval. A control-harness qualification is not a model benchmark.
+## Understand usage and local energy
 
-[Local benchmark workflow and approval boundary](docs/local-llm-benchmark.md) · [Current implementation and remaining limits](docs/model-intelligence-showcase.md)
+![Actual Usage dashboard from physical qualification](docs/media/4.6/usage-closure/01-overview.png)
 
-## Wake up knowing what changed
+Usage records distinguish model/provider, local/API execution, tokens, cache evidence, retries and billing availability. **Missing billing evidence is not zero cost.** Subscription-included Codex is non-metered for monetary billing qualification.
 
-The native metadata observation is linked below; the public screenshot gallery is pending source-version review.
+**Usage & Energy: PASS WITH LIMITATIONS.** Local token accounting, inference semantics and component interval energy have physical evidence. Normal runs had 100% measurement coverage; a controlled sampling gap had 66.96% coverage, with missing intervals excluded.
 
-The [real initial observation](examples/showcase-4.6/model-intelligence.json) recorded **17 changes, two relevant candidates and zero benchmarked models**. Other artifacts lacked reviewed context/resource evidence. The recommendation was: **no evidence-backed new leader established**.
+Metered API billing, positive physical cache billing, attributable job/baseline energy, physical tariff qualification and whole-node electricity remain **BLOCKED_EXTERNAL**. Component measurements do not establish whole-node or cloud energy. [Physical evidence and limitations](docs/usage-energy-physical-closure-4.6.md).
 
-This capture was a short initial baseline, not an overnight-duration run. Approved watches have bounded schedules and budgets; recommendations never automatically change production routing.
+## Start with a small job
 
-[Read the captured morning brief](examples/showcase-4.6/README.md#what-changed-while-i-slept)
+The [public Job Library](https://github.com/lozknowles/agent-control-jobs) contains simple objectives such as reviewing a change or diagnosing a service. Estate-based readiness identifies required configuration, connectors, credentials and approval. Contributions should remain understandable without learning Agent Control internals.
 
-## Build workflows with Mallow
+Model Intelligence and personal benchmark views are candidate features. Target-model qualification and overnight showcase evidence remain open; they are not implied by a working dashboard.
 
-The floating **Mallow guide** opens the existing Morrow/POE conversation system using the established companion artwork. Morrow and all six crew identities are retained. Natural-language requests prepare governed proposals; they do not grant download, execution or routing authority.
+## Learn more
 
-Ask: “Find the best local model for Python repair on this machine. Correctness matters most.” Review the workload, sources, machine and limits before approval.
+- [Installation and troubleshooting](docs/installation-first-run.md#troubleshooting)
+- [Safe existing-install upgrade](docs/upgrade-4.6.md)
+- [Architecture](docs/architecture-v2-agnostic.md)
+- [Security](SECURITY.md) and [contributing](CONTRIBUTING.md)
+- [Candidate release notes](docs/release-notes-4.6.0-rc.1.md)
+- [Complete release readiness and evidence](docs/public-release-readiness-4.6.md)
 
-## Job Library
-
-Small jobs are enough: fix a failing test, inspect a machine, detect model changes, validate a result or report the evidence. The public library supports simple community contributions with documented contracts and validation. Fixture tests are clearly separated from physical qualification.
-
-[Browse the public Job Library](https://github.com/lozknowles/agent-control-jobs) · [Contribute a job](https://github.com/lozknowles/agent-control-jobs/blob/main/CONTRIBUTING.md)
-
-## How Agent Control governs automation
-
-**DISCOVER → QUALIFY → APPROVE → EXECUTE → VERIFY → EVIDENCE**
-
-Capabilities, provider adapters and native runtime records supply the execution detail. Resource discovery, target-model qualification, operator authority and live execution remain distinct. Failed or interrupted work retains its evidence; uncertain effects require reconciliation.
-
-## Install
-
-Android: complete the [fresh Termux prerequisites](android/README.md#fresh-termux-prerequisites) before cloning.
-
-Follow the [first-run installation guide](docs/installation-first-run.md), including authentication and the discovery entry point. This candidate has not been tagged or deployed. Reviewers use the exact supplied candidate checkout; ordinary users should use an existing published release.
-
-[Full installation and operating reference](docs/README-4.5-history.md#install) · [Architecture and map controls](docs/runtime-map.md) · [Implementation status](docs/implementation-status.md)
-
-## Usage & Cost
-
-The 4.6 candidate adds a read-only Usage & Cost projection over the existing invocation and energy stores. It keeps currency, measurement authority, missing data and component energy boundaries visible. [Implementation and qualification status](docs/usage-energy-4.6.md).
-
-## Showcase integrity
-
-Run `npm run check:showcase` before release. It must fail when required real benchmark evidence, screenshots, matching version information or validated result records are missing. `npm run check:showcase:structure` checks the reviewable draft without claiming release acceptance.
-
-[Showcase status and evidence boundaries](docs/showcase-4.6-status.md). Earlier 4.5 captures and technical material are preserved in the [historical reference](docs/README-4.5-history.md); they are not relabelled as 4.6 qualification.
+Historical versioned reports remain available under `docs/`; use the installation guide above for this candidate.

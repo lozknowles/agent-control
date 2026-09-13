@@ -98,11 +98,29 @@ function observedAt(item: DiscoveryItem, scan: DiscoveryScan) {
       .at(-1) ?? scan.completedAt
   );
 }
+function hasObservedWork(item: DiscoveryItem) {
+  const state = String(
+    item.attributes.runtimeState ??
+      item.attributes.workloadState ??
+      item.attributes.status ??
+      item.attributes.state ??
+      "",
+  ).toUpperCase();
+  return (
+    item.attributes.running === true ||
+    item.attributes.busy === true ||
+    (typeof item.attributes.currentWorkload === "string" &&
+      item.attributes.currentWorkload.trim().length > 0) ||
+    (typeof item.attributes.activeJobs === "number" &&
+      item.attributes.activeJobs > 0) ||
+    ["RUNNING", "BUSY", "EXECUTING", "IN_USE"].includes(state)
+  );
+}
 function stateFor(item: DiscoveryItem, fresh: boolean): RuntimeMapState {
   if (!fresh) return "WAITING";
   if (!item.provenance.some(p=>p.authority==='AUTHORITATIVE')) return "WAITING";
   if (item.health === "HEALTHY")
-    return item.lifecycle === "ACTIVE" ? "RUNNING" : "SUCCEEDED";
+    return hasObservedWork(item) ? "RUNNING" : "SUCCEEDED";
   if (item.health === "NEEDS_QUALIFICATION") return "DEGRADED";
   if (item.health === "UNAVAILABLE")
     return item.configuredId ? "FAILED" : "WAITING";
@@ -231,7 +249,7 @@ export function projectEstateMap(
         type: typeFor(item),
         label: item.kind === "CREDENTIAL" ? (item.configuredId ?? item.id) : item.label.replace(/https?:\/\/[^\s]+/g, value=>String(safeEstateAttributes({url:value}).url??"[endpoint]")),
         subtitle: `${item.operationalState.replaceAll("_", " ")} · ${fresh ? "recently verified" : "stale / not currently verified"}`,
-        state: ({GREEN:"SUCCEEDED",ORANGE:"DEGRADED",RED:"FAILED",GREY:"WAITING"} as const)[resourcePresentation(item,scan,new Date(time)).colour]??"WAITING",
+        state: ({GREEN:hasObservedWork(item)?"RUNNING":"SUCCEEDED",ORANGE:"DEGRADED",RED:"FAILED",GREY:"WAITING"} as const)[resourcePresentation(item,scan,new Date(time)).colour]??"WAITING",
         startedAt: last,
         parentId: parent,
         groupId: item.nodeId,

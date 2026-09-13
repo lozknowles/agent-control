@@ -323,6 +323,41 @@ test("change detection distinguishes authentication model endpoint offline and r
   assert.equal(changes["machine:x"], "REMOVED");
 });
 
+test("a resource recovered after a missing observation is changed rather than unchanged", async (t) => {
+  let generation = 0;
+  const observation = (): DiscoveryObservation => ({
+    id: "endpoint:recovering",
+    kind: "ENDPOINT",
+    label: "Recovering endpoint",
+    nodeId: "controller",
+    health: "HEALTHY",
+    lifecycle: "QUALIFIED",
+    attributes: { scope: "loopback" },
+    provenance: [
+      {
+        adapter: "fixture",
+        method: "bounded-probe",
+        observedAt: "2026-01-01T00:00:00Z",
+        authority: "AUTHORITATIVE",
+      },
+    ],
+  });
+  const adapter: DiscoveryAdapter = {
+    id: "fixture",
+    discover: async () => (generation++ === 1 ? [] : [observation()]),
+  };
+  const s = setup(emptyConfig(), [adapter]);
+  t.after(() => fs.rmSync(s.root, { recursive: true, force: true }));
+  const healthy = await s.runtime.discover({ mode: "QUICK_RESCAN" });
+  assert.equal(healthy.items[0]?.change, "NEW");
+  const unavailable = await s.runtime.discover({ mode: "QUICK_RESCAN" });
+  assert.equal(unavailable.items[0]?.health, "OFFLINE");
+  assert.equal(unavailable.items[0]?.change, "REMOVED");
+  const recovered = await s.runtime.discover({ mode: "QUICK_RESCAN" });
+  assert.equal(recovered.items[0]?.health, "HEALTHY");
+  assert.equal(recovered.items[0]?.change, "CHANGED");
+});
+
 test("partial adapter failure is isolated and malformed model metadata is ignored", async (t) => {
   const adapters: DiscoveryAdapter[] = [
     {
