@@ -218,6 +218,7 @@
   "benchmarks": [],
   "acceptance": {
     "cleanInstall": "PASS_REVIEWED_README",
-    "overnight": "PENDING"
+    "overnight": "PENDING",
+    "androidStandalone": "BASE_PASS_WITH_LIMITATIONS_BENCHMARK_BLOCKED"
   }
 }

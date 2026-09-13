@@ -84,3 +84,10 @@ test('Morrow restores legacy POE records without changing saved greetings or sea
   assert.equal(restored.conversation(conversation.id).turns[0]?.actor,'poe');
   assert.equal(restored.proposal(frozen.id).frozenSha256,frozen.frozenSha256);
 });
+
+test('Mallow explains missing local benchmark capability without a model call or proposal',async()=>{
+ let calls=0;const runtime=new PoeRuntime({evidence,localBenchmarkUnavailable:async()=>{calls++;return 'Charging and thermal evidence are unavailable.';}});
+ const conversation=runtime.createConversation({actorId:'operator',channel:'dashboard'});
+ const result=await runtime.ask({conversationId:conversation.id,text:'Find the best local model and benchmark it for summarising documents.'});
+ assert.equal(calls,1);assert.match(result.turn.text,/Charging and thermal/);assert.match(result.turn.text,/No model has been downloaded/);assert.equal(runtime.projection().proposals.length,0);
+});
