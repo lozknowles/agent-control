@@ -657,3 +657,16 @@
 #runtime-inspector dt{margin-top:12px;font-size:12px;opacity:.75;overflow-wrap:anywhere}
 #runtime-inspector dd{margin:4px 0;white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%}
 #estate-job-picker{max-width:100%;min-width:240px}
+
+@media(max-width:650px){
+ .runtime-map-shell{grid-template-columns:minmax(0,1fr);max-width:100%;min-width:0}
+ .runtime-map-header,.runtime-map-health,.runtime-map-layout{min-width:0;max-width:100%;overflow-wrap:anywhere}
+ .runtime-map-layout{grid-template-columns:minmax(0,1fr)}
+ .runtime-estate-heartbeat{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .runtime-map-health{flex-wrap:wrap;gap:6px}
+ .runtime-map-toolbar label{flex-wrap:wrap;min-width:0}
+ .runtime-map-toolbar input,.runtime-map-toolbar select,#estate-job-picker{min-width:0;max-width:100%;width:100%}
+ .runtime-map-surfaces{justify-content:flex-start;flex-wrap:wrap}
+ .runtime-map-header h1{font-size:26px}
+ .runtime-map-canvas{height:420px}
+}
