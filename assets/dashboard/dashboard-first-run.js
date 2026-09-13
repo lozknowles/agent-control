@@ -29,7 +29,7 @@
   document.addEventListener('DOMContentLoaded',()=>{
     const publicMode=new URL(location.href).searchParams.get('presentation')==='public';byId('presentation-toggle').setAttribute('aria-pressed',String(publicMode));byId('presentation-toggle').textContent=publicMode?'Public Estate view on':'Public Estate view';byId('presentation-toggle').onclick=()=>{const url=new URL(location.href);if(publicMode)url.searchParams.delete('presentation');else url.searchParams.set('presentation','public');location.href=url.toString();};
     const nav=document.querySelector('.primary-nav'),advanced=document.createElement('details'),summary=document.createElement('summary');summary.textContent='Advanced';advanced.className='navigation-advanced';advanced.append(summary);
-    const primary=new Set(['home','runtime-map','jobs','models','model-watches','crew','poe','environment']);
+    const primary=new Set(['usage','home','runtime-map','jobs','models','model-watches','crew','poe','environment']);
     for(const button of [...nav.querySelectorAll('[data-view]')])if(!primary.has(button.dataset.view))advanced.append(button);nav.append(advanced);
     byId('home-discover').onclick=()=>{if(state.operatorAuth!=='authenticated'){openOperator();return;}go('environment');byId('environment-scan-form').scrollIntoView({block:'start'});};
     byId('home-estate').onclick=()=>window.AgentControlRuntimeMap.openEstate();

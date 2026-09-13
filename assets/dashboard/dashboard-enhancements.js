@@ -521,6 +521,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelector('#sessions-workspace').hidden = view !== 'sessions';
     document.querySelector('#vault-workspace').hidden = view !== 'vault';
     document.querySelector('#systems-workspace').hidden = view !== 'systems';
+    document.querySelector('#usage-workspace').hidden = view !== 'usage';
+    if(view==='usage')window.AgentControlUsage?.activate();
     document.querySelector('#model-watches-workspace').hidden = view !== 'model-watches';
     if(view==='model-watches')window.AgentControlModelWatches?.activate();
     document.querySelector('#models-workspace').hidden = view !== 'models';

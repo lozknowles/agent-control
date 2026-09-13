@@ -118,7 +118,8 @@ test('bootstrap fails closed before install when the dashboard product surface i
 });
 
 test('published first-run walkthrough establishes operator authentication before discovery', () => {
-  const readme = fs.readFileSync(path.join(repositoryRoot, 'README.md'), 'utf8');
+  assert.match(fs.readFileSync(path.join(repositoryRoot, 'README.md'), 'utf8'), /docs\/installation-first-run\.md/);
+  const readme = fs.readFileSync(path.join(repositoryRoot, 'docs/installation-first-run.md'), 'utf8');
   const runSection = readme.slice(readme.indexOf('## Run and monitor'), readme.indexOf('## Token-aware command output'));
   const hiddenPrompt = runSection.indexOf('read -rsp');
   const exportToken = runSection.indexOf('export AGENT_CONTROL_WEB_OPERATOR_TOKEN');

@@ -1,3 +1,4 @@
+import {usageProjection,usageAnswer,usageObservations,type UsageQuery} from './usage-projection.js';
 import {modelWatchPlan,type ModelWatchRuntime} from './model-watch-runtime.js';
 import {intelligenceHash} from './model-landscape.js';
 import type {LocalBenchmarkController} from './local-llm-benchmark-controller.js';
@@ -421,6 +422,10 @@ export class AgentControlService {
   commandOutputMetrics(): TokenAwareOutputMetrics { return this.tokenAwareOutput?.metrics() ?? {commandsObserved: 0, commandsCompacted: 0, rgSearchesCompacted: 0, originalOutputBytes: 0, returnedOutputBytes: 0, estimatedTokensOriginal: 0, estimatedTokensReturned: 0, estimatedTokensSaved: 0, contextTokensAvoided: 0, expansionRequests: 0, fullResultRequests: 0, expansionTokensReturned: 0, byJob: {}, byLane: {}, byAgentModel: {}}; }
   tokenRouting(): TokenRoutingProjection { return this.tokenBatonRouting?.projection() ?? {schema: 'agent-control.token-aware-baton-routing/v1', observedAt: new Date().toISOString(), policy: {continuePercent: 60, prepareBatonPercent: 75, compactPercent: 85, handoffPercent: 90, sampleRetention: 240}, threads: [], parcels: [], decisions: [], contextLifecycle: []}; }
   retrievalProjection(): RetrievalProjection { return this.governedRetrieval?.projection() ?? {schema:'agent-control.governed-retrieval/v1',observedAt:new Date().toISOString(),policy:{enabled:false,maximumCalls:4,maximumEvidenceItems:12,maximumEvidenceTokens:8192,minimumConfidence:.55,requiredCoverage:.6,contextPressurePercent:75,contextPressureEvidenceFraction:.5,allowedLocality:['LOCAL'],progression:['EXACT','LEXICAL','SEMANTIC','HYBRID']},attempts:[],packets:[],totals:{queries:0,escalations:0,evidenceCount:0,evidenceTokens:0,rawBytesAvoided:0,retrievalLatencyMs:0,contextTokensSaved:0}}; }
+  usage(query:UsageQuery={}){return usageProjection(this.harnessEfficiency,this.energyProjection().executions,query);}
+  usageAnswer(query:UsageQuery={}){return usageAnswer(this.usage(query));}
+  usageObservations(query:UsageQuery={}){return usageObservations(this.usage(query));}
+  resetUsage(confirmation:string,digest:string){if(!this.harnessEfficiency?.resetUsage)throw Error('usage_reset_unavailable');return this.harnessEfficiency.resetUsage(confirmation,digest,'authenticated-operator');}
   harnessEfficiencyMetrics(): HarnessEfficiencyMetrics { return this.harnessEfficiency?.metrics() ?? new MemoryHarnessEfficiencyLedger().metrics(); }
   modelInvocations(options: {limit?: number; runId?: string; jobId?: string} = {}) {
     const limit = Math.min(1_000, Math.max(1, Number.isSafeInteger(options.limit) ? options.limit! : 200));

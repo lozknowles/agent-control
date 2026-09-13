@@ -1,0 +1,15 @@
+{
+  "version": "4.6.0-rc.1",
+  "screenshots": [],
+  "intelligence": {
+    "file": "examples/showcase-4.6/model-intelligence.json",
+    "changesDetected": 17,
+    "relevantCandidates": 2,
+    "benchmarked": 0
+  },
+  "benchmarks": [],
+  "acceptance": {
+    "cleanInstall": "PENDING",
+    "overnight": "PENDING"
+  }
+}

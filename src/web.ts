@@ -1,3 +1,4 @@
+import {usageQuestionQuery} from './control/usage-projection.js';
 import {LocalWatchBenchmarkPort} from './control/local-watch-benchmark-port.js';
 import {IntelligenceJournal,ModelLandscape} from './control/model-landscape.js';
 import {ModelWatchRuntime,registerModelWatchJobs,modelWatchPlan} from './control/model-watch-runtime.js';
@@ -162,8 +163,9 @@ if (process.env.AGENT_CONTROL_POE_VOICE_CONFIG) {
     poeSpeech=provider;poeRecognition=provider;poeVoice=settings.voice;
   } catch {process.stderr.write('Optional POE voice configuration unavailable; text conversation remains active.\n');}
 }
-const knowledge = new PoeKnowledgeService({root:process.cwd(),version:AGENT_CONTROL_VERSION,sources:JSON.parse(fs.readFileSync('config/poe-knowledge-sources.json','utf8')),configuration:()=>({jobs:jobRuntime.catalog.listJobs(),schedules:jobRuntime.catalog.listSchedules(),models:service.models(),routing:config.modelRouting}),live:category=>{
+const knowledge = new PoeKnowledgeService({root:process.cwd(),version:AGENT_CONTROL_VERSION,sources:JSON.parse(fs.readFileSync('config/poe-knowledge-sources.json','utf8')),configuration:()=>({jobs:jobRuntime.catalog.listJobs(),schedules:jobRuntime.catalog.listSchedules(),models:service.models(),routing:config.modelRouting}),live:(category,question)=>{
   const snapshot=service.snapshot();
+  if(category==='usage')return service.usageAnswer(usageQuestionQuery(question??''));
   if(category==='voice')return {channel:'poe/dashboard',configured:Boolean(poeVoice&&poeSpeech&&poeRecognition),identity:poeVoice?.id??null,synthesisProvider:poeVoice?.provider??null,recognitionEngine:'Not established by this configuration; do not infer from the synthesis provider.',recognitionConfigured:Boolean(poeRecognition),synthesisConfigured:Boolean(poeSpeech),streaming:poeSpeech?.capabilities().streaming??false,readiness:'CONFIGURED_NOT_A_HEALTH_PROBE',whatsapp:'SEPARATE_CHANNEL_NOT_OBSERVED'};
   if(category==='regression')return readPoeRegression(process.env.AGENT_CONTROL_POE_REGRESSION_FILE);
   if(category==='crew')return snapshot.characterCrew.members.map(member=>({id:member.id,name:member.name,role:member.role,state:member.operationalState,summary:member.summary,freshness:member.freshness}));
