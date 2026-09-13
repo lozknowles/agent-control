@@ -5,7 +5,7 @@ import {
   validateCatalogue,
   boundedGet,
   sha256,
-  assessReadiness,
+  assessLegacyReadiness as assessReadiness,
   checkedPath,
 } from "./external-job-catalogue.mjs";
 const schema = {

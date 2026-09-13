@@ -6,7 +6,7 @@ import {
   boundedGet,
   sha256,
   ExternalJobCatalogue,
-  assessReadiness,
+  assessLegacyReadiness as assessReadiness,
 } from "./external-job-catalogue.mjs";
 import {
   EnvironmentDiscoveryRuntime,

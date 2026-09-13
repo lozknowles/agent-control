@@ -288,7 +288,7 @@ export class ExternalJobCatalogue {
 }
 
 // Consumes native DiscoveryScan directly. No parallel estate store or runtime grants.
-export function assessReadiness(
+export function assessLegacyReadiness(
   job,
   scan,
   { now = new Date(), bindings = {} } = {},
@@ -388,3 +388,6 @@ export function assessReadiness(
     qualification: job.qualification.status,
   };
 }
+
+// Technical readiness v2 is separate from the historical launch-compatibility projection.
+export { assessReadiness } from './capability-binding.mjs';
