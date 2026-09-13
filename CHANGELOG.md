@@ -2,6 +2,28 @@
 
 ## [4.5.0] — Unreleased candidate
 
+### Final acceptance-contract and virgin-install closure
+
+- Freezes product commit `31ccdf07f9aeb96cec0ea87a8cfb2bf1607ae86b`
+  and records the final 1,331/1,331 passing controller regression together with
+  the already-qualified physical Runtime Map, Estate Map, memory, skill,
+  source-distribution and virgin-install evidence.
+- Adds the single current-facing
+  [final release-closure audit](docs/evidence/agent-control-4.5-final-release-closure-audit-20260913.md),
+  including embedded real screenshots and a complete PASS / PASS WITH
+  LIMITATIONS / BLOCKED acceptance matrix. Historical evidence and its
+  then-current verdicts remain unchanged.
+- Retains the specialist-energy and warm-residency results as `DISPROVEN`, the
+  unavailable whole-node measurement as `BLOCKED_EXTERNAL`, OpenRouter
+  GLM-5.3-Flash→Qwen as `BLOCKED_EXTERNAL`, and the exact MiniCPM5-2B Q4_K_M
+  code-repair qualification as `FAILED`. None is relabelled as a success;
+  unavailable/failed routes remain unroutable and no unsupported energy claim
+  is enabled.
+- Records **PASS WITH LIMITATIONS — READY FOR 4.5 RELEASE** after the later
+  acceptance-contract audit and clean-install gates. Agent Control 4.4.0
+  remains the latest released version until the separately authorised release
+  operation actually merges and tags this candidate.
+
 ### Virgin-install remediation
 
 - Separates heavyweight qualification videos, screenshots, binary captures,
@@ -48,7 +70,7 @@
 - Replaces the ambiguous manual dependency sequence with one documented
   check/install path and explicit expected results and troubleshooting.
 
-### Release-closure checkpoint (`d229ce4b7dd3bd704a331f81ca59600541430682`)
+### Historical release-closure checkpoint (`d229ce4b7dd3bd704a331f81ca59600541430682`)
 
 - Freezes the integrated 4.5 candidate and reconciles every row from the
   historical 12-route Your Memories matrix. Eleven exact historical routes are
@@ -70,9 +92,11 @@
   Known-good and scripted controls pass, so only the exact immutable model
   configuration is denied; the family is not generalized as failed.
 - Keeps the specialist-energy advantage and warm-residency routing effect
-  `DISPROVEN`, and synchronized whole-node power `BLOCKED_EXTERNAL`. The stable
-  4.5 release gate therefore remains unmet. No merge, tag, release or deployment
-  is performed.
+  `DISPROVEN`, and synchronized whole-node power `BLOCKED_EXTERNAL`. At this
+  historical checkpoint they were treated as unmet stable gates. The later
+  acceptance-contract audit above retains the findings but supersedes that
+  release-readiness calculation. No merge, tag, release or deployment is
+  performed by either documentation checkpoint.
 
 - Adds governed First Run/Rescan/Add Resource Environment Discovery with
   read-only machine, accelerator, inference-runtime, model, CLI-agent,

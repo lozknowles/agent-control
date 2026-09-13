@@ -1,9 +1,10 @@
 # Agent Control 4.5.0 release candidate
 
-Agent Control 4.5 is an **EXPERIMENTAL release candidate**, not a stable
-release. The frozen integrated implementation is
-`d229ce4b7dd3bd704a331f81ca59600541430682`; Agent Control 4.4.0 remains the
-latest formally released baseline.
+Agent Control 4.5 is a **release-ready candidate**. The frozen product
+implementation is `31ccdf07f9aeb96cec0ea87a8cfb2bf1607ae86b`; its first
+evidence-only descendant is `8399cc657eb8be77bbcde61be8fcd2fbf16015bd`.
+Agent Control 4.4.0 remains the latest formally released baseline until the
+separate `v4.5.0` release operation is completed.
 
 ## Candidate scope
 
@@ -26,7 +27,7 @@ explicit promotion. Model output cannot install executable code.
 
 ## Frozen-candidate qualification
 
-The exact candidate passed 1,312/1,312 automated tests. A fresh physical Runtime
+The final candidate passed 1,331/1,331 automated tests. An earlier exact physical Runtime
 Map run exercised six concurrent jobs, a local Qwen model call, real terminal
 output, a controlled retry, eight sealed batons, aggregation, independent
 verification, Control Room, Replay, graphical Compare and Process/Estate
@@ -34,6 +35,15 @@ cross-linking. The final projection had 71 nodes and 75 edges. A separate
 read-only discovery scan populated the Estate Map from nine genuine local
 resources with no configuration mutation. Real 1920×1080 screenshots from both
 runs are in the README.
+
+The later source-distribution and virgin-install qualification used ordinary
+full clones rather than shallow/partial workarounds. A clean Android 15/Termux
+installation transferred 5.93 MiB, completed bootstrap and idempotent reinstall,
+started the dashboard before discovery, populated its Estate Map from actual
+observations, completed a genuine governed job and independently verified a
+real `HEALTHY → OFFLINE/REMOVED → HEALTHY/CHANGED` state transition. Historical
+heavy media remains publicly retained by immutable hash outside normal source
+clones.
 
 Every row of the historical 12-route Your Memories matrix remains accounted
 for. Eleven exact historical routes are now PASS/FIXED. The exact OpenRouter
@@ -64,11 +74,22 @@ measurement resolution. Synchronized whole-node energy remains
 `BLOCKED_EXTERNAL`; board and package readings are not whole-node measurements.
 No automatic energy, shutdown or residency policy is released.
 
-These were mandatory 4.5 physical acceptance criteria. Consequently the current
-verdict is **NOT READY FOR 4.5 RELEASE**. No merge, tag, GitHub Release or
-deployment is authorized.
+These experiments remain part of the 4.5 record, but their outcomes are not
+relabelled as product successes. The later acceptance-contract audit established
+that 4.5 was required to test the energy and residency hypotheses truthfully;
+it was not required to enable a disproven optimisation. Whole-node
+instrumentation blocks a whole-node claim, which 4.5 does not make. The tested
+specialist/residency energy routes remain disabled.
 
-See the [release-closure audit](evidence/agent-control-4.5-release-closure-20260912.md),
+The current verdict is **PASS WITH LIMITATIONS — READY FOR 4.5 RELEASE**.
+OpenRouter GLM-5.3-Flash→Qwen remains externally blocked, the exact MiniCPM
+configuration remains failed and unroutable, whole-node energy remains
+unavailable, and Runtime Map remains WATCH-only. These limitations fail closed
+and do not become active release claims. No merge, tag, GitHub Release or
+deployment is performed by these notes.
+
+See the [final release-closure audit](evidence/agent-control-4.5-final-release-closure-audit-20260913.md),
+[historical release-closure audit](evidence/agent-control-4.5-release-closure-20260912.md),
 [completion gate](evidence/agent-control-4.5-release-gate-completion-20260912.md),
 [historical reconciliation](evidence/agent-control-4.5-release-gate-20260912.md),
 [skill-learning architecture](agent-control-4.5-skill-learning-architecture-review.md),

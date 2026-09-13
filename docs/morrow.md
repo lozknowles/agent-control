@@ -49,8 +49,8 @@ See the [implementation artwork](./evidence-archive.md), [standalone preview](ev
 
 ## Integration with the completed 4.5 work
 
-The identity was developed independently on `feature/morrow-host-identity`, based on main commit `2e74d88db57e3ad15ce1d85ec93220d087b9592f`. It is now combined with release-gate evidence HEAD `5bd72802b6525a1ccce05df2a42be2e04c456d67` for testing on `feature/4.5-release-gate-completion`. The merge preserves the completed route qualification, memory and learning implementations and all recorded physical evidence. Only generated implementation-status files were touched by both branches.
+The identity was developed independently on `feature/morrow-host-identity`, based on main commit `2e74d88db57e3ad15ce1d85ec93220d087b9592f`, then combined with the 4.5 release-gate work. That integration is now present in final product candidate `31ccdf07f9aeb96cec0ea87a8cfb2bf1607ae86b`. The merge preserves the completed route qualification, memory and learning implementations and all recorded physical evidence.
 
-See the [combined integration record](evidence/morrow-4.5-integration/validation.md) and [testing guide](DEPLOYMENT.md#morrow-integration-testing). The candidate remains **EXPERIMENTAL**, not release-ready. No stable tag, release or deployment is performed by this integration. Runtime browser, physical voice and governed Work Parcel checks must identify the combined candidate they actually exercise.
+See the [combined integration record](evidence/morrow-4.5-integration/validation.md), [final 4.5 closure audit](evidence/agent-control-4.5-final-release-closure-audit-20260913.md) and [testing guide](DEPLOYMENT.md#morrow-integration-testing). Grounded Runtime Map narration and governed Work Parcel behavior are qualified in the final evidence. Historical physical voice evidence remains bound to its recorded candidate and is not relabelled. No stable tag, release or deployment is performed by this documentation update.
 
 Rollback of the identity is a normal revert of the original identity commit, followed by regeneration of implementation status and review of documentation; there is no database migration.

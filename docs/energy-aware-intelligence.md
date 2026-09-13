@@ -50,7 +50,11 @@ specialist was correct but consumed more energy than warm Qwen in both cold-load
 and retained-process modes. Real bounded ProjectMemoryPort retrieval did not
 produce a saving. Training consumed 5,232.820 incremental measured-component
 joules and there is no positive break-even because the per-result saving is
-negative. The 4.5 power-aware release gate is therefore **not met**.
+negative. The tested power-aware optimisation therefore does **not** graduate
+as an enabled energy-saving route. The
+[final 4.5 acceptance audit](evidence/agent-control-4.5-final-release-closure-audit-20260913.md)
+retains this `DISPROVEN` result while distinguishing it from overall product
+release readiness.
 
 The subsequent deterministic-skill experiment does not reverse that specialist
 finding. It physically measured three recurring operations. Repository state

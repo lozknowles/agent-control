@@ -212,16 +212,21 @@ make this candidate release-ready.
 7. Verify version, source provenance, health, authentication, SSE updates, Jobs,
    Lanes, Models, Crew, Warm Cache Runtime and a harmless governed operation.
 
-The current 4.5 candidate gate and its open limitations are recorded in
-[the completion reconciliation](evidence/agent-control-4.5-release-gate-completion-20260912.md).
-The later [release-closure audit](evidence/agent-control-4.5-release-closure-20260912.md)
-is authoritative for frozen candidate
-`d229ce4b7dd3bd704a331f81ca59600541430682`. It records the complete 12-row
-memory reconciliation, 1,312-test regression, real Estate/Process Map evidence,
-the exact failed MiniCPM configuration and the still-unmet physical power gate.
-Its verdict is `NOT READY FOR 4.5 RELEASE`; do not run the merge/tag/publication
-steps above until a later separately approved audit closes those mandatory
-criteria.
+The historical 4.5 candidate gate and its then-open limitations are recorded in
+[the completion reconciliation](evidence/agent-control-4.5-release-gate-completion-20260912.md)
+and [historical release-closure audit](evidence/agent-control-4.5-release-closure-20260912.md).
+The current authority is the
+[final release-closure audit](evidence/agent-control-4.5-final-release-closure-audit-20260913.md)
+for product candidate `31ccdf07f9aeb96cec0ea87a8cfb2bf1607ae86b`.
+It records the complete requirement matrix, 1,331-test regression, physical
+Estate/Process Map and virgin-install evidence, the exact failed MiniCPM
+configuration and the bounded power limitations. Its verdict is `PASS WITH
+LIMITATIONS — READY FOR 4.5 RELEASE`.
+
+That verdict is not itself a release action. Run the merge/tag/publication steps
+above only under separate current operator authorization, after rechecking
+candidate/evidence identity and remote parity. Do not enable unavailable model
+routes, energy/residency policy or map-originated control as part of release.
 The earlier [4.5 reconciliation](evidence/agent-control-4.5-release-gate-20260912.md)
 remains immutable historical evidence for its recorded implementation.
 The 4.4 checksummed replay evidence is recorded in

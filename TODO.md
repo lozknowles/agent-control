@@ -1,8 +1,9 @@
 # Agent Control 4.5 work plan
 
 This is the canonical roadmap. Agent Control 4.5 release closure is occurring on
-`feature/4.5-release-closure`; the exact verdict belongs in the release-closure
-evidence rather than being inferred from checked boxes here.
+`feature/4.5-release-closure`; the exact current verdict is
+[PASS WITH LIMITATIONS — READY FOR 4.5 RELEASE](docs/evidence/agent-control-4.5-final-release-closure-audit-20260913.md).
+No merge, tag, release or deployment is implied by checked boxes here.
 
 ## Environment Discovery and unified Estate Map (4.5)
 
@@ -83,8 +84,9 @@ replication, split-brain denial audit, synthetic-secret and tamper gates, and a
 provider-neutral non-Codex adapter. The existing ProjectMemoryPort path and
 Obsidian-disabled survival pass. Later release-gate evidence qualified the two
 isolated MSI Codex profiles and a genuine Obsidian-backed cross-model
-continuation without exposing node-local credentials. The capability remains
-experimental pending the authoritative 4.5 release verdict.
+continuation without exposing node-local credentials. The final 4.5 verdict is
+recorded in the release-closure audit; unavailable individual routes remain
+experimental and fail closed.
 
 Unresolved risks and physical gates:
 

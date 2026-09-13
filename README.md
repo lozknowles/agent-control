@@ -47,9 +47,11 @@ mockups or reconstructed marketing screens.
 
 ![Agent Control 4.5 graphical Compare view showing a 13-operation baseline beside the 71-operation candidate](https://github.com/lozknowles/agent-control-qualification-evidence/releases/download/source-separation-20260912/process-map-compare.png)
 
-The checksummed [release-closure report](docs/evidence/agent-control-4.5-release-closure-20260912.md)
-links the screenshots, HD recordings, complete transcripts, Work Parcels,
-batons, model usage and the 1,312-test regression result to the exact candidate.
+The [final release-closure audit](docs/evidence/agent-control-4.5-final-release-closure-audit-20260913.md)
+embeds the strongest real screenshots and reconciles the HD recordings,
+complete transcripts, Work Parcels, batons, model usage, later virgin-install
+evidence and the final 1,331-test regression result without rewriting the
+historical reports.
 
 The experimental 4.5 **Cross-Device Session Vault** preserves provider-native
 session history as immutable, content-addressed evidence and makes its redacted
@@ -111,7 +113,7 @@ exact GLM-5.3-Flash→Qwen model pair without relabelling the blocked OpenRouter
 route. See the [release closure](docs/evidence/agent-control-4.5-release-closure-20260912.md)
 and [memory portability guide](docs/project-memory-portability.md).
 
-The original [release-gate reconciliation](docs/evidence/agent-control-4.5-release-gate-20260912.md), completion report and historical videos remain unchanged. They truthfully retain the failures seen at those commits. Closure evidence records the later Pixel and alternate-provider GLM passes separately, including exact route identities, Work Parcel IDs, batons and authoritative tokens. Stable release remains blocked by the original mandatory power gate: the specialist-energy advantage and warm-residency route effect were **DISPROVEN**, while synchronized whole-node power remains **BLOCKED_EXTERNAL**. The [4.5 release-candidate notes](docs/release-notes-4.5.0.md) preserve those limits for public review.
+The original [release-gate reconciliation](docs/evidence/agent-control-4.5-release-gate-20260912.md), completion report and historical videos remain unchanged. They truthfully retain the failures seen at those commits. Later evidence records the Pixel and alternate-provider GLM passes separately, including exact route identities, Work Parcel IDs, batons and authoritative tokens. The [final acceptance-contract audit](docs/evidence/agent-control-4.5-final-release-closure-audit-20260913.md) preserves the specialist-energy and warm-residency hypotheses as **DISPROVEN** and whole-node power as **BLOCKED_EXTERNAL**, while correctly treating them as disabled/unclaimed experimental outcomes rather than hidden product successes or active release blockers.
 
 The isolated programme also includes [energy-aware intelligence](docs/energy-aware-intelligence.md): scope-safe power telemetry, idle-baseline accounting, expected-total-energy routing, and specialist training break-even. Comparable Intel-package, DRAM and NVIDIA-board measurements **disproved** an energy saving for the current route-intent specialist: retained-process execution remained above warm Qwen, real bounded Your Memories retrieval did not improve it, and deterministic no-LLM routing was lowest. This remains experimental; see the [specialist-energy evidence](docs/evidence/agent-control-4.5-specialist-energy-qualification-20260911.md).
 
@@ -121,10 +123,13 @@ the result is not hidden as a harness artefact; only that immutable configuratio
 is denied routing, not the MiniCPM family. See the [MiniCPM closure](docs/evidence/minicpm5-2b-qualification-closure-20260912.md).
 
 Agent Control 4.4.0 remains the latest formally released baseline. Agent Control
-4.5.0 is an experimental release candidate. The frozen candidate passes
-1,312/1,312 automated tests and the fresh dashboard, Estate, Runtime Map and
-memory-route physical checks, but it must not be tagged as stable while the
-mandatory physical power gate in the authoritative closure remains unresolved.
+4.5.0 is a release-ready candidate at implementation commit
+`31ccdf07f9aeb96cec0ea87a8cfb2bf1607ae86b`. It passes 1,331/1,331 automated
+tests plus the physical dashboard, Estate, Runtime Map, memory-route,
+source-distribution and virgin-install checks. The final verdict is **PASS WITH
+LIMITATIONS — READY FOR 4.5 RELEASE**: unavailable routes and measurements fail
+closed or remain outside active claims. No `v4.5.0` merge, tag, release or
+deployment has yet been performed.
 
 **Your Memories** is the user-facing Agent Control capability for finding relevant prior context, checking its governance and provenance, rejecting stale or unrelated memories, and safely presenting accepted context in a session. Memories remain advisory and cannot override Work Parcels, batons, policy, authoritative evidence or execution state. The 4.4 release includes the governed UX Session Capture/Replay projection and the qualified memory architecture; MARM remains one optional backend and automatic memory consolidation/model swapping is not a released runtime feature.
 
@@ -267,7 +272,7 @@ The compact floating host has silver hair, a teal utility jacket and a copper ba
 
 The original designed OmniVoice configuration, internal `poe` routes/events/storage keys, saved conversations and sealed proposal hashes remain compatible. The public identity changes without a state migration or a change to execution authority. Historical POE recordings remain evidence for their recorded source commits; they do not physically qualify the new Morrow presentation.
 
-See the [identity and crew guide](docs/morrow.md), [Morrow operation and architecture](docs/poe.md), [4.5 integration record](docs/evidence/morrow-4.5-integration/validation.md), [dashboard operation](docs/web-dashboard.md), and [deployment, upgrade and rollback guide](docs/DEPLOYMENT.md). This combined candidate remains **EXPERIMENTAL** and is available for testing on `feature/4.5-release-gate-completion`.
+See the [identity and crew guide](docs/morrow.md), [Morrow operation and architecture](docs/poe.md), [4.5 integration record](docs/evidence/morrow-4.5-integration/validation.md), [dashboard operation](docs/web-dashboard.md), and [deployment, upgrade and rollback guide](docs/DEPLOYMENT.md). The integration is included in the final `feature/4.5-release-closure` candidate; its grounded Runtime Map behavior is covered by the [final closure audit](docs/evidence/agent-control-4.5-final-release-closure-audit-20260913.md).
 
 ## Protected-resource mutation governance
 
