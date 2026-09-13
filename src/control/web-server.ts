@@ -1,3 +1,7 @@
+import {isAndroidUserspace,observeAndroid} from './android-environment.js';
+import {DefaultDiscoveryProbe} from './environment-discovery.js';
+import {usageQuerySchema} from './usage-projection.js';
+import {publicRuntimeMap,publicDiscoveryProjection} from './public-runtime-map.js';
 import {createHash, timingSafeEqual} from 'node:crypto';
 import fs from 'node:fs';
 import http, {type IncomingMessage, type ServerResponse} from 'node:http';
@@ -144,6 +148,7 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
     return json(response,404,{error:'not_found'});
   }
 
+  if(method==='GET'&&url.pathname==='/api/deployment'){validateOperatorRequest(request,options);return json(response,200,isAndroidUserspace()?await observeAndroid(new DefaultDiscoveryProbe()):{profile:'STANDARD',localModelRequired:false});}
   if (method === 'GET' && url.pathname === '/api/status') return json(response, 200, service.snapshot());
   if(method==='GET'&&url.pathname==='/api/poe/regression'){validateOperatorRequest(request,options);return json(response,200,service.poeRegression());}
   if(method==='GET'&&url.pathname==='/api/poe/knowledge'){validateOperatorRequest(request,options);return json(response,200,service.poeKnowledge());}
@@ -161,11 +166,14 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
       if(operatorApi[2]==='speech'){const audio=await service.speakPoe(id,String(body.turnId??''),'web-operator');return json(response,200,{...audio,bytes:Buffer.from(audio.bytes).toString('base64')});}
     }
   }
+  if(method==='GET'&&url.pathname==='/api/personal-league'){validateOperatorRequest(request,options);return json(response,200,service.personalLeague(String(url.searchParams.get('benchmark')??''),String(url.searchParams.get('comparison')??'')));}
+  if(method==='GET'&&url.pathname==='/api/model-watches'){validateOperatorRequest(request,options);return json(response,200,service.modelWatchProjection());}
   if (method === 'GET' && url.pathname === '/api/poe') { validateOperatorRequest(request, options); return json(response, 200, service.poeProjection()); }
   if (method === 'GET' && url.pathname === '/api/operator-auth') return json(response, 200, operatorAuthentication(request, options));
   if (method === 'GET' && url.pathname === '/api/configuration') { validateOperatorRequest(request, options); return json(response, 200, new ConfigurationStore(options.configFile ?? configPath()).read()); }
-  if (method === 'GET' && url.pathname === '/api/environment-discovery') { validateOperatorRequest(request, options); return json(response, 200, service.environmentDiscoveryProjection()); }
-  if (method === 'GET' && url.pathname === '/api/estate-map') { validateOperatorRequest(request, options); return json(response, 200, service.estateMap()); }
+  if (method === 'GET' && url.pathname === '/api/environment-discovery') { validateOperatorRequest(request, options); return json(response, 200, url.searchParams.get('privacy')==='public'?publicDiscoveryProjection(service.environmentDiscoveryProjection()):service.environmentDiscoveryProjection()); }
+  if (method === 'GET' && url.pathname === '/api/estate-heartbeat') { validateOperatorRequest(request, options); return json(response,200,service.estateHeartbeat()); }
+  if (method === 'GET' && url.pathname === '/api/estate-map') { validateOperatorRequest(request, options); return json(response, 200, url.searchParams.get('privacy')==='public'?publicRuntimeMap(service.estateMap()):service.estateMap()); }
   if (method === 'GET' && url.pathname === '/api/capability-adapters') { validateOperatorRequest(request, options); return json(response, 200, service.capabilityAdapterProjection()); }
   const capabilityAdapterExportMatch = url.pathname.match(/^\/api\/capability-adapters\/([^/]+)\/export$/);
   if (method === 'GET' && capabilityAdapterExportMatch) { validateOperatorRequest(request, options); return json(response, 200, service.exportCapabilityAdapter(decodeURIComponent(capabilityAdapterExportMatch[1]))); }
@@ -186,7 +194,7 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   if (method === 'GET' && url.pathname === '/api/executions') return json(response, 200, service.executionProvenance());
   if (method === 'GET' && url.pathname === '/api/fast-execution-attempts') return json(response, 200, service.fastExecutionAttempts());
   if (method === 'GET' && url.pathname === '/api/runtime') return json(response, 200, service.runtime());
-  if (method === 'GET' && url.pathname === '/api/runtime-map') { validateOperatorRequest(request, options); const replayAt=url.searchParams.get('at')??undefined;if(replayAt&&Number.isNaN(Date.parse(replayAt)))throw httpError(400,'runtime_map_replay_time_invalid');return json(response,200,service.runtimeMap(url.searchParams.get('parcelId')??undefined,replayAt)); }
+  if (method === 'GET' && url.pathname === '/api/runtime-map') { validateOperatorRequest(request, options); const replayAt=url.searchParams.get('at')??undefined;if(replayAt&&Number.isNaN(Date.parse(replayAt)))throw httpError(400,'runtime_map_replay_time_invalid');if(url.searchParams.has('runId'))return json(response,200,service.runtimeRunMap(url.searchParams.get('runId')!));return json(response,200,service.runtimeMap(url.searchParams.get('parcelId')??undefined,replayAt)); }
   if (method === 'GET' && url.pathname === '/api/runtime-map/compare') { validateOperatorRequest(request, options); const left=url.searchParams.get('left'),right=url.searchParams.get('right');if(!left||!right)throw httpError(400,'runtime_map_compare_ids_required');return json(response,200,service.compareRuntimeMaps(left,right)); }
   if (method === 'GET' && url.pathname === '/api/token-routing') return json(response, 200, service.tokenRouting());
   if (method === 'GET' && url.pathname === '/api/retrieval') return json(response, 200, service.retrievalProjection());
@@ -209,6 +217,8 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   if (method === 'GET' && url.pathname === '/api/artifacts') return json(response, 200, service.artifacts(url.searchParams.get('runId') ?? undefined));
   if (method === 'GET' && url.pathname === '/api/command-output') return json(response, 200, service.commandOutputs());
   if (method === 'GET' && url.pathname === '/api/command-output/metrics') return json(response, 200, service.commandOutputMetrics());
+  if(method==='POST'&&url.pathname==='/api/usage/reset'){validateMutationRequest(request,options);const body=await readJson(request);return json(response,200,service.resetUsage(String(body.confirmation??''),String(body.digest??'')));}
+  if(method==='GET'&&['/api/usage','/api/usage/answer','/api/usage/observations'].includes(url.pathname)){validateOperatorRequest(request,options);const query={period:url.searchParams.get('period')??'today',groupBy:url.searchParams.get('groupBy')??'model',...(url.searchParams.has('start')?{start:url.searchParams.get('start')}:{}),...(url.searchParams.has('end')?{end:url.searchParams.get('end')}:{}),...(url.searchParams.has('limit')?{limit:Number(url.searchParams.get('limit'))}:{}),filters:Object.fromEntries([...url.searchParams].filter(([k])=>k.startsWith('filter.')).map(([k,v])=>[k.slice(7),v]))};const parsed=usageQuerySchema.safeParse(query);if(!parsed.success)return json(response,400,{error:'usage_query_invalid'});return json(response,200,url.pathname.endsWith('/answer')?service.usageAnswer(parsed.data):url.pathname.endsWith('/observations')?service.usageObservations(parsed.data):service.usage(parsed.data));}
   if (method === 'GET' && url.pathname === '/api/efficiency') return json(response, 200, service.harnessEfficiencyMetrics());
   if (method === 'GET' && url.pathname === '/api/orchestration/models') return json(response, 200, service.adaptiveModelLeague(url.searchParams.get('taskClass') ?? undefined, adaptiveLeagueFilter(url)));
   if (method === 'GET' && url.pathname === '/api/orchestration/workflows') return json(response, 200, service.adaptiveWorkflowLeague(url.searchParams.get('taskClass') ?? undefined, adaptiveLeagueFilter(url)));
@@ -263,6 +273,11 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   if (method === 'POST') {
     validateMutationRequest(request, options);
     const body = await readJson(request), actor = 'web-operator';
+    if(url.pathname==='/api/model-watches/propose')return json(response,201,service.proposeModelWatch(body.watch));
+    if(url.pathname==='/api/model-watches/approve')return json(response,200,service.approveModelWatch(String(body.digest??''),actor));
+    if(url.pathname==='/api/model-watches/revoke')return json(response,200,service.revokeModelWatch(String(body.digest??''),actor));
+    if(url.pathname==='/api/model-watches/run')return json(response,201,service.runModelWatch(String(body.digest??''),actor));
+    if(url.pathname==='/api/personal-benchmarks')return json(response,201,service.definePersonalBenchmark(body.definition));
     if (url.pathname === '/api/environment-discovery/scans') return json(response, 201, await service.discoverEnvironment({mode:String(body.mode ?? 'QUICK_RESCAN') as never, testing:String(body.testing ?? 'SKIP_TESTING') as never, includeRemote:body.includeRemote === true, includeMemory:body.includeMemory === true}));
     if (url.pathname === '/api/environment-discovery/proposals') return json(response, 201, service.createEnvironmentProposal(String(body.scanId ?? ''), Array.isArray(body.recommendationIds) ? body.recommendationIds.map(String) : [], actor));
     if (url.pathname === '/api/installation/inspect') return json(response, 200, service.inspectInstallation(String(body.mode ?? 'UPDATE') as never, String(body.role ?? 'CONTROLLER') as never));
@@ -468,11 +483,11 @@ function executionSessionStream(service: AgentControlService, id: string, reques
 
 function serveAsset(response: ServerResponse, assetsDir: string, pathname: string) {
   const asset = pathname === '/' ? 'index.html' : pathname.replace(/^\//, '');
-  if (!['dashboard-social-voice.css', 'social-voice.html', 'dashboard-social-voice.js', 'dashboard-openwa.css', 'openwa.html', 'dashboard-openwa.js', 'index.html', 'dashboard.css', 'dashboard-fixes.css', 'dashboard-jobs.css', 'dashboard-bots.css', 'dashboard-wopr.css', 'dashboard-adaptive-orchestration.css', 'dashboard-live-shell.css', 'dashboard-poe.css', 'dashboard-cache-runtime.css', 'dashboard-learned-specialists.css', 'dashboard-session-vault.css', 'dashboard-runtime-map.css', 'dashboard-environment-discovery.css', 'dashboard.js', 'dashboard-parameters.js', 'dashboard-running-state.js', 'dashboard-enhancements.js', 'dashboard-parameterized-jobs.js', 'dashboard-models.js', 'dashboard-sessions.js', 'dashboard-bots.js', 'dashboard-wopr.js', 'dashboard-adaptive-orchestration.js', 'dashboard-live-shell.js', 'dashboard-poe.js', 'dashboard-cache-experts.js', 'dashboard-learned-specialists.js', 'dashboard-session-vault.js', 'dashboard-runtime-map.js', 'dashboard-environment-discovery.js', 'dashboard-installation.js'].includes(asset)) throw httpError(404, 'not_found');
+  if (!['dashboard-mobile.js','manifest.webmanifest','pwa-icon.svg','service-worker.js','offline.html','dashboard-pwa.js','dashboard-usage.js','dashboard-usage.css','dashboard-social-voice.css', 'social-voice.html', 'dashboard-social-voice.js', 'dashboard-openwa.css', 'openwa.html', 'dashboard-openwa.js', 'index.html', 'dashboard.css', 'dashboard-fixes.css', 'dashboard-jobs.css', 'dashboard-bots.css', 'dashboard-wopr.css', 'dashboard-adaptive-orchestration.css', 'dashboard-live-shell.css', 'dashboard-poe.css', 'dashboard-cache-runtime.css', 'dashboard-learned-specialists.css', 'dashboard-session-vault.css', 'dashboard-runtime-map.css', 'dashboard-environment-discovery.css', 'dashboard.js', 'dashboard-parameters.js', 'dashboard-running-state.js', 'dashboard-enhancements.js', 'dashboard-parameterized-jobs.js', 'dashboard-models.js', 'dashboard-first-run.js','dashboard-first-run.css','dashboard-model-watches.js', 'dashboard-model-watches.css', 'dashboard-sessions.js', 'dashboard-bots.js', 'dashboard-wopr.js', 'dashboard-adaptive-orchestration.js', 'dashboard-live-shell.js', 'dashboard-poe.js', 'dashboard-cache-experts.js', 'dashboard-learned-specialists.js', 'dashboard-session-vault.js', 'dashboard-runtime-map.js', 'dashboard-environment-discovery.js', 'dashboard-installation.js'].includes(asset)) throw httpError(404, 'not_found');
   const file = path.join(assetsDir, asset);
   if (!fs.existsSync(file)) throw httpError(404, 'dashboard_asset_missing');
-  const type = asset.endsWith('.html') ? 'text/html; charset=utf-8' : asset.endsWith('.css') ? 'text/css; charset=utf-8' : 'text/javascript; charset=utf-8';
-  response.writeHead(200, {'Content-Type': type}); response.end(fs.readFileSync(file));
+  const type = asset.endsWith('.webmanifest') ? 'application/manifest+json' : asset.endsWith('.svg') ? 'image/svg+xml' : asset.endsWith('.html') ? 'text/html; charset=utf-8' : asset.endsWith('.css') ? 'text/css; charset=utf-8' : 'text/javascript; charset=utf-8';
+  response.writeHead(200, {'Content-Type': type,'Cache-Control':'no-cache'}); response.end(fs.readFileSync(file));
 }
 
 function serveUxPlayerAsset(response:ServerResponse,root:string,asset:string){
@@ -497,7 +512,8 @@ function replyError(response: ServerResponse, error: unknown) {
 function httpError(status: number, message: string) { return Object.assign(new Error(message), {status}); }
 function secretEqual(left: string, right: string) { const a = createHash('sha256').update(left).digest(), b = createHash('sha256').update(right).digest(); return timingSafeEqual(a, b); }
 function redact(value: unknown, key = '', ancestors: string[] = []): unknown {
-  const safeContextTokenCount = key === 'tokens' && ancestors.at(-1) === 'context';
+  const safeUsageTokenMetric=key==='tokens'&&value!==null&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).sort().join(',')==='knownTotal,reported,total,value'&&Object.values(value).every(v=>v===null||typeof v==='number'&&Number.isFinite(v));
+  const safeContextTokenCount = safeUsageTokenMetric || key === 'tokens' && ancestors.at(-1) === 'context';
   if (SECRET_KEY.test(key) && !safeContextTokenCount && !SAFE_TOKEN_ACCOUNTING_KEY.test(key) && !SAFE_CONFIG_REFERENCE_KEY.test(key)) return '[REDACTED]';
   if (typeof value === 'string') return redactSensitiveText(value);
   if (Array.isArray(value)) return value.map(item => redact(item, '', ancestors));

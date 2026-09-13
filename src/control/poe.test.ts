@@ -26,7 +26,7 @@ test('sealed proposal requires exact approval and enters the existing execution 
 
 test('failed execution leaves the sealed proposal recoverable and truthful',()=>{const runtime=new PoeRuntime({evidence,benchmark:{submit:()=>{throw new Error('work_parcel_job_missing')}}}),conversation=runtime.createConversation({actorId:'web-operator',channel:'dashboard'}),draft=runtime.proposeBenchmark(conversation.id,plan()),frozen=runtime.freezeBenchmark(draft.id,draft.revision);assert.throws(()=>runtime.approveBenchmark(frozen.id,{revision:frozen.revision,frozenSha256:frozen.frozenSha256!,actor:'web-operator'}),/work_parcel_job_missing/);assert.equal(runtime.proposal(frozen.id).state,'FROZEN');assert.equal(runtime.proposal(frozen.id).execution,undefined);});
 
-test('POE store and human-readable transcript preserve channel provenance without secrets',async()=>{const root=fs.mkdtempSync(path.join(os.tmpdir(),'poe-store-')),file=path.join(root,'poe.json');try{const runtime=new PoeRuntime({file,evidence}),conversation=runtime.createConversation({actorId:'web-operator',channel:'mobile'});await runtime.ask({conversationId:conversation.id,text:'What is running?'});const restored=new PoeRuntime({file,evidence}),stored=restored.conversation(conversation.id),transcript=restored.transcript(conversation.id);assert.equal(stored.channel,'mobile');assert.match(transcript,/Morrow conversation/);assert.match(transcript,/Authority: AGENT_CONTROL/);assert.doesNotMatch(fs.readFileSync(file,'utf8'),/private reasoning|oauth|cookie/i);await assert.rejects(()=>runtime.ask({conversationId:conversation.id,text:'sk-live-secret-12345678901234567890'}),/credential_material_forbidden/);}finally{fs.rmSync(root,{recursive:true,force:true});}});
+test('POE store and human-readable transcript preserve channel provenance without secrets',async()=>{const root=fs.mkdtempSync(path.join(os.tmpdir(),'poe-store-')),file=path.join(root,'poe.json');try{const runtime=new PoeRuntime({file,evidence}),conversation=runtime.createConversation({actorId:'web-operator',channel:'mobile'});await runtime.ask({conversationId:conversation.id,text:'What is running?'});const restored=new PoeRuntime({file,evidence}),stored=restored.conversation(conversation.id),transcript=restored.transcript(conversation.id);assert.equal(stored.channel,'mobile');assert.match(transcript,/Mallow conversation/);assert.match(transcript,/Authority: AGENT_CONTROL/);assert.doesNotMatch(fs.readFileSync(file,'utf8'),/private reasoning|oauth|cookie/i);await assert.rejects(()=>runtime.ask({conversationId:conversation.id,text:'sk-live-secret-12345678901234567890'}),/credential_material_forbidden/);}finally{fs.rmSync(root,{recursive:true,force:true});}});
 
 test('designed OmniVoice records latency and barge-in cancels speech, not Work Parcels',async()=>{const wav=Buffer.alloc(44);wav.write('RIFF');wav.write('WAVE',8);const voice:VoiceIdentity={id:'poe-original',kind:'designed',provider:'fixture',modelRevision:'1',instruction:'Original warm baritone; no likeness or cloned speaker',seed:7};let synthSignal:AbortSignal|undefined;const recognition:SpeechRecognitionProvider={id:'stt',capabilities:()=>({transcribe:true,languages:['en']}),health:async()=>({state:'ready',checkedAt:new Date().toISOString()}),transcribe:async()=>({text:'status',confidence:1,metrics:{provider:'fixture',host:'local',model:'stt',elapsedMs:2,audioSeconds:1,rtf:.002,firstAudioMs:0,memoryBytes:null}})};const speech:SpeechProvider={id:'tts',capabilities:()=>({synthesize:true,design:true,clone:false,streaming:true}),health:async()=>({state:'ready',checkedAt:new Date().toISOString()}),voices:async()=>[voice],synthesize:input=>{synthSignal=input.signal;return new Promise((_resolve,reject)=>input.signal.addEventListener('abort',()=>reject(new Error('aborted')),{once:true}))}};const runtime=new PoeRuntime({evidence,recognition,speech,voice}),conversation=runtime.createConversation({actorId:'web-operator',channel:'voice'}),pending=runtime.voiceTurn({conversationId:conversation.id,bytes:wav,mime:'audio/wav'});await new Promise(resolve=>setImmediate(resolve));assert.equal(runtime.conversation(conversation.id).state,'SPEAKING');const interrupted=runtime.bargeIn(conversation.id,'web-operator');assert.equal(interrupted.interrupted,true);assert.equal(interrupted.workParcelCancelled,false);assert.equal(synthSignal?.aborted,true);await assert.rejects(pending,/poe_speech_interrupted/);assert.equal(runtime.conversation(conversation.id).state,'LISTENING');});
 
@@ -72,7 +72,7 @@ test('Morrow restores legacy POE records without changing saved greetings or sea
   legacy.conversations[0].turns[0].text='Good day. I’m POE. How may I help you?';
   fs.writeFileSync(file,JSON.stringify(legacy));
   const before=fs.readFileSync(file,'utf8'),restored=new PoeRuntime({file,evidence});
-  assert.equal(restored.projection().identity.name,'Morrow');
+  assert.equal(restored.projection().identity.name,'Mallow');
   assert.equal(restored.projection().identity.id,'poe');
   assert.equal(restored.projection().schema,'agent-control.poe/v1');
   assert.equal(restored.greeting(conversation.id,'web-operator').turn.text,legacy.conversations[0].turns[0].text);
@@ -80,7 +80,14 @@ test('Morrow restores legacy POE records without changing saved greetings or sea
   assert.deepEqual(restored.proposal(frozen.id),frozen);
   assert.equal(fs.readFileSync(file,'utf8'),before);
   const fresh=restored.createConversation({actorId:'web-operator',channel:'dashboard'});
-  assert.match(restored.greeting(fresh.id,'web-operator').turn.text,/I’m Morrow/);
+  assert.match(restored.greeting(fresh.id,'web-operator').turn.text,/I’m Mallow/);
   assert.equal(restored.conversation(conversation.id).turns[0]?.actor,'poe');
   assert.equal(restored.proposal(frozen.id).frozenSha256,frozen.frozenSha256);
+});
+
+test('Mallow explains missing local benchmark capability without a model call or proposal',async()=>{
+ let calls=0;const runtime=new PoeRuntime({evidence,localBenchmarkUnavailable:async()=>{calls++;return 'Charging and thermal evidence are unavailable.';}});
+ const conversation=runtime.createConversation({actorId:'operator',channel:'dashboard'});
+ const result=await runtime.ask({conversationId:conversation.id,text:'Find the best local model and benchmark it for summarising documents.'});
+ assert.equal(calls,1);assert.match(result.turn.text,/Charging and thermal/);assert.match(result.turn.text,/No model has been downloaded/);assert.equal(runtime.projection().proposals.length,0);
 });

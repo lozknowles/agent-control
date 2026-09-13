@@ -512,6 +512,8 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('[data-view]').forEach(button => button.addEventListener('click', () => {
     document.querySelectorAll('[data-view]').forEach(item => item.classList.toggle('active', item === button));
     const view = button.dataset.view;
+    if(view!=='poe'){document.body.dataset.currentView=view;document.querySelector('#home-workspace').hidden=view!=='home';}
+    if(view==='home')window.AgentControlFirstRun?.activate();
     if(view==='poe'){document.dispatchEvent(new Event('poe:open'));return;}
     document.querySelector('#jobs-workspace').hidden = view !== 'jobs';
     document.querySelector('#runtime-map-workspace').hidden = view !== 'runtime-map';
@@ -519,6 +521,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelector('#sessions-workspace').hidden = view !== 'sessions';
     document.querySelector('#vault-workspace').hidden = view !== 'vault';
     document.querySelector('#systems-workspace').hidden = view !== 'systems';
+    document.querySelector('#usage-workspace').hidden = view !== 'usage';
+    if(view==='usage')window.AgentControlUsage?.activate();
+    document.querySelector('#model-watches-workspace').hidden = view !== 'model-watches';
+    if(view==='model-watches')window.AgentControlModelWatches?.activate();
     document.querySelector('#models-workspace').hidden = view !== 'models';
     document.querySelector('#crew-workspace').hidden = view !== 'crew';
     document.querySelector('#poe-workspace').hidden = view !== 'poe';

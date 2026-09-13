@@ -1,3 +1,4 @@
+import {legacyDecimal, accountingSchema, accountingIdentity, normalizeAttestedUsage, usageHash, type UsageAccounting} from './usage-accounting.js';
 import {createHash, randomUUID} from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -401,6 +402,7 @@ export interface ContextCompilerInvocationRouting {
 
 export interface ModelInvocationObservation {
   schema: 'agent-control.model-invocation/v1';
+  accounting?: UsageAccounting;
   id: string;
   jobId: string;
   runId: string | null;
@@ -450,6 +452,7 @@ export interface ModelInvocationObservation {
 }
 
 export interface InvocationObservationInput {
+  accounting?: UsageAccounting;
   id?: string;
   jobId: string;
   runId?: string;
@@ -489,7 +492,9 @@ export interface InvocationObservationInput {
 }
 
 export function createInvocationObservation(input: InvocationObservationInput): ModelInvocationObservation {
-  const usage = normalizeProviderUsage(input.rawUsage);
+  const accounting=input.accounting ? accountingSchema.parse(input.accounting) : undefined;
+  const nativeAccounting=accounting??accountingSchema.parse({schema:'agent-control.usage-accounting/v1',revision:0,parentInvocationId:null,retryOfInvocationId:null,parcelId:null,batonId:null,providerRequestId:null,modelRevision:null,runtime:null,runtimeVersion:null,machine:null,hardware:null,jobType:null,executionKind:'UNKNOWN',provenance:{kind:'NATIVE',source:'invocation-adapter-unattested',sourceVersion:'1',migrationVersion:null,at:input.startedAt},semantics:{id:'unattested/v1',input:'UNKNOWN',reasoning:'UNKNOWN',total:'PROVIDER_ONLY',billing:'UNKNOWN'},evidence:{input:metric(input.rawUsage,['input_tokens'],['prompt_tokens'],['inputTokens']),cached:metric(input.rawUsage,['input_tokens_details','cached_tokens'],['prompt_tokens_details','cached_tokens'],['cache_read_input_tokens'],['cachedInputTokens']),cacheWrite:metric(input.rawUsage,['cache_creation_input_tokens'],['input_tokens_details','cache_write_tokens'],['cacheWriteTokens']),output:metric(input.rawUsage,['output_tokens'],['completion_tokens'],['outputTokens']),reasoning:metric(input.rawUsage,['output_tokens_details','reasoning_tokens'],['completion_tokens_details','reasoning_tokens'],['reasoningTokens']),total:metric(input.rawUsage,['total_tokens'],['totalTokens'])},pricing:null,reportedCost:input.providerReportedCost!==undefined&&input.pricing?.currency?{amount:legacyDecimal(input.providerReportedCost),currency:input.pricing.currency,source:'provider-reported'}:null});
+  const usage = accounting ? normalizeAttestedUsage(accounting.evidence,accounting.semantics) : normalizeProviderUsage(input.rawUsage);
   const started = Date.parse(input.startedAt), completed = Date.parse(input.completedAt);
   if (!Number.isFinite(started) || !Number.isFinite(completed) || completed < started) throw new Error('invocation_timestamp_invalid');
   const turnNumber = input.turnNumber ?? 1;
@@ -497,7 +502,7 @@ export function createInvocationObservation(input: InvocationObservationInput): 
   const versionedPricing: VersionedModelPricing | undefined = input.costAccounting?.cloud?.pricingBasis;
   const calculatedCost = versionedPricing ? calculateVersionedApiCost(usage, versionedPricing) : calculateInvocationCost(usage, input.pricing);
   return {
-    schema: 'agent-control.model-invocation/v1', id: input.id ?? `inv-${randomUUID()}`, jobId: input.jobId, runId: input.runId ?? null, stepId: input.stepId ?? null, taskId: input.taskId, laneId: input.laneId,
+    schema: 'agent-control.model-invocation/v1', accounting:nativeAccounting, id: input.id ?? `inv-${randomUUID()}`, jobId: input.jobId, runId: input.runId ?? null, stepId: input.stepId ?? null, taskId: input.taskId, laneId: input.laneId,
     model: input.model, provider: input.provider, ...(input.accountProfileId ? {accountProfileId: input.accountProfileId} : {}), harnessProfile: input.harnessProfile, harnessId: input.harnessId ?? 'adaptive-harness', executionStrategy: input.executionStrategy, turnNumber,
     startedAt: input.startedAt, completedAt: input.completedAt, elapsedMs: completed - started, state: input.outcome === 'CANCELLED' || /cancel/i.test(input.error ?? '') ? 'CANCELLED' : /timeout|timed out/i.test(input.error ?? '') ? 'TIMED_OUT' : input.outcome === 'FAILED' ? 'FAILED' : 'COMPLETE', phase: input.phase ?? 'complete', phaseUpdatedAt: input.completedAt,
     startup, usage, ...(input.cacheEvidence ? {cacheEvidence: structuredClone(input.cacheEvidence)} : {}),
@@ -591,13 +596,21 @@ export interface HarnessEfficiencyLedgerPort {
   markFinalResult(ids: string[], finalResult: Exclude<InvocationFinalResult, 'UNKNOWN'>): void;
   list(): ModelInvocationObservation[];
   metrics(): HarnessEfficiencyMetrics;
+  usageHistory?(): {excludedIds:string[];events:UsageResetEvent[]};
+  resetUsage?(confirmation:string,expectedDigest:string,actor:string):UsageResetEvent;
 }
 
+export interface UsageResetEvent {id:string;at:string;actor:string;count:number;digest:string;kind:'USAGE_VISIBILITY_RESET';}
 export class MemoryHarnessEfficiencyLedger implements HarnessEfficiencyLedgerPort {
+  protected history:{excludedIds:string[];events:UsageResetEvent[]}={excludedIds:[],events:[]};
+  usageHistory(){return structuredClone(this.history);}
+  resetUsage(confirmation:string,expectedDigest:string,actor:string){const ids=this.list().map(r=>r.id).sort(),digest=usageHash(ids);if(confirmation!=='RESET USAGE HISTORY'||expectedDigest!==digest||!actor)throw Error('usage_reset_confirmation_required');const event:UsageResetEvent={id:`usage-reset-${randomUUID()}`,at:new Date().toISOString(),actor,count:ids.length,digest,kind:'USAGE_VISIBILITY_RESET'};this.history={excludedIds:ids,events:[...this.history.events,event]};return structuredClone(event);}
+  reviseUsage(id:string,value:UsageAccounting){const a=accountingSchema.parse(value),current=this.records.get(id);if(!current?.accounting)throw Error('usage_native_identity_required');if(accountingIdentity(a)!==accountingIdentity(current.accounting)||JSON.stringify([a.semantics,a.pricing,a.localApiChargeKnownZero])!==JSON.stringify([current.accounting.semantics,current.accounting.pricing,current.accounting.localApiChargeKnownZero]))throw Error('usage_identity_immutable');if(a.revision<current.accounting.revision)throw Error('usage_revision_stale');if(a.revision===current.accounting.revision){if(usageHash(a)!==usageHash(current.accounting))throw Error('usage_revision_conflict');return id;}this.records.set(id,{...current,accounting:a,usage:normalizeAttestedUsage(a.evidence,a.semantics)});return id;}
   protected readonly records = new Map<string, ModelInvocationObservation>();
-  record(observation: ModelInvocationObservation): string { if (this.records.has(observation.id)) throw new Error(`invocation_exists:${observation.id}`); this.records.set(observation.id, structuredClone(observation)); return observation.id; }
+  record(observation: ModelInvocationObservation): string { if(observation.accounting){const a=accountingSchema.parse(observation.accounting);if(a.parentInvocationId===observation.id||a.retryOfInvocationId===observation.id)throw Error('usage_self_parent');if(a.retryOfInvocationId&&!this.records.has(a.retryOfInvocationId))throw Error('usage_retry_parent_missing');if(a.providerRequestId&&this.list().some(r=>r.provider===observation.provider&&r.accountProfileId===observation.accountProfileId&&r.accounting?.providerRequestId===a.providerRequestId))throw Error('usage_provider_request_duplicate');} if (this.records.has(observation.id)) throw new Error(`invocation_exists:${observation.id}`); this.records.set(observation.id, structuredClone(observation)); return observation.id; }
   complete(id: string, observation: ModelInvocationObservation): string {
     const current = this.records.get(id); if (!current) throw new Error(`invocation_missing:${id}`);
+    if(current.accounting && (!observation.accounting || accountingIdentity(current.accounting)!==accountingIdentity(observation.accounting) || observation.accounting.revision<current.accounting.revision))throw Error('usage_identity_immutable');
     const elapsedMs = observation.completedAt === null ? observation.elapsedMs : Math.max(0, Date.parse(observation.completedAt) - Date.parse(current.startedAt));
     this.records.set(id, structuredClone({...observation, id, jobId: current.jobId, runId: current.runId, stepId: observation.stepId ?? current.stepId, taskId: current.taskId, laneId: current.laneId, startedAt: current.startedAt, elapsedMs})); return id;
   }
@@ -622,16 +635,19 @@ export class FileHarnessEfficiencyLedger extends MemoryHarnessEfficiencyLedger {
     if (fs.existsSync(file)) {
       const value = JSON.parse(fs.readFileSync(file, 'utf8')) as {schema: string; records: ModelInvocationObservation[]};
       if (value.schema !== 'agent-control.harness-efficiency-ledger/v1') throw new Error('harness_efficiency_ledger_schema_unsupported');
+      this.history=(value as typeof value & {usageHistory?:{excludedIds:string[];events:UsageResetEvent[]}}).usageHistory??this.history;
       for (const record of value.records) this.records.set(record.id, structuredClone(normalizedPersistedInvocation(record)));
     }
   }
+  override reviseUsage(id:string,value:UsageAccounting){const result=super.reviseUsage(id,value);this.save();return result;}
+  override resetUsage(confirmation:string,digest:string,actor:string){const event=super.resetUsage(confirmation,digest,actor);this.save();return event;}
   override record(observation: ModelInvocationObservation): string { const id = super.record(observation); this.save(); return id; }
   override complete(id: string, observation: ModelInvocationObservation): string { const result = super.complete(id, observation); this.save(); return result; }
   override setPhase(ids: string[], phase: Exclude<InvocationPhase, 'complete'>): void { super.setPhase(ids, phase); this.save(); }
   override finalizePending(ids: string[], outcome: 'FAILED' | 'CANCELLED', error: string, finishReason: string, completedAt?: string): void { super.finalizePending(ids, outcome, error, finishReason, completedAt); this.save(); }
   override markVerification(ids: string[], result: Exclude<InvocationVerifierResult, 'UNKNOWN'>, finalResult: InvocationFinalResult = 'UNKNOWN'): void { super.markVerification(ids, result, finalResult); this.save(); }
   override markFinalResult(ids: string[], finalResult: Exclude<InvocationFinalResult, 'UNKNOWN'>): void { super.markFinalResult(ids, finalResult); this.save(); }
-  private save() { fs.mkdirSync(path.dirname(this.file), {recursive: true}); const temporary = `${this.file}.tmp`; fs.writeFileSync(temporary, `${JSON.stringify({schema: 'agent-control.harness-efficiency-ledger/v1', records: this.list()}, null, 2)}\n`, {mode: 0o600}); fs.renameSync(temporary, this.file); }
+  private save() { fs.mkdirSync(path.dirname(this.file), {recursive: true}); const temporary = `${this.file}.tmp`; fs.writeFileSync(temporary, `${JSON.stringify({schema: 'agent-control.harness-efficiency-ledger/v1', records: this.list(), usageHistory:this.history}, null, 2)}\n`, {mode: 0o600}); fs.renameSync(temporary, this.file); }
 }
 
 export interface HarnessStrategyIdentity {modelId: string; providerId: string; profile: HarnessProfileName; contextStrategyId: string; promptVersion: string; toolIds: string[]; skillIds: string[];}

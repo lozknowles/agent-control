@@ -54,7 +54,7 @@ export class SocialVoiceCoordinator {
     this.db.exec("UPDATE spoken SET state='uncertain' WHERE state='sending'");
   }
   close(){if(this.busy)throw new Error('social_worker_busy');this.db.close();}
-  accepts(text:string) {return /^(?:(?:morrow|poe)(?:[, :]\s*|$)|ask (?:morrow|poe)(?:[, :]\s*|$)|start\s|voice\s|(?:job|stop|pause|resume)\s+ac[- ]?\d+|(?:approve|reject)\s+\d+|models$|nodes$|health$|status$|what'?s agent control doing\??$)/i.test(text.trim());}
+  accepts(text:string) {return /^(?:(?:mallow|morrow|poe)(?:[, :]\s*|$)|ask (?:mallow|morrow|poe)(?:[, :]\s*|$)|start\s|voice\s|(?:job|stop|pause|resume)\s+ac[- ]?\d+|(?:approve|reject)\s+\d+|models$|nodes$|health$|status$|what'?s agent control doing\??$)/i.test(text.trim());}
   /** Only the authenticated transport ingress may call this. It must not be exposed as a public JSON API. */
   accept(message:SocialMessage) {
     message=this.provider.receive(message);
@@ -97,9 +97,9 @@ export class SocialVoiceCoordinator {
       this.audit('speech.transcribed',identity,{text:providerText,confidence:transcript.confidence,metrics:transcript.metrics,authority:'untrusted transcription'});
       const normalizedText=normalizeSpokenPoeInvocation(text);
       if(normalizedText!==text){this.audit('speech.intent_normalized',identity,{sourceText:text,normalizedText,rule:'poe-invocation-homophone-v1',authority:'deterministic lexical normalization'});text=normalizedText;}
-      const interruption=text.match(/^(?:(?:sorry|excuse me)[, ]+)?(?:let me |to )?interrupt[, ]+(?:morrow|poe)[,.!?: ]+(.+)$/i),playback=interruption?this.db.prepare("SELECT conversation,turn FROM poe_playback WHERE identity=? AND state='queued'").get(identity) as Row|undefined:undefined;
+      const interruption=text.match(/^(?:(?:sorry|excuse me)[, ]+)?(?:let me |to )?interrupt[, ]+(?:mallow|morrow|poe)[,.!?: ]+(.+)$/i),playback=interruption?this.db.prepare("SELECT conversation,turn FROM poe_playback WHERE identity=? AND state='queued'").get(identity) as Row|undefined:undefined;
       if(interruption&&playback&&this.poe?.interrupt){const result=await this.poe.interrupt({actor:principal.actor,identityReference:identity,conversationId:playback.conversation,turnId:playback.turn});if(result.interrupted){this.db.prepare("UPDATE poe_playback SET state='interrupted' WHERE identity=?").run(identity);this.audit('poe.interrupted',identity,{conversationId:playback.conversation,turnId:playback.turn,speechBoundary:'client-playback',workParcelCancellation:false});}text=`POE: ${interruption[1]!.trim()}`;}
-      if(!/^(?:(?:morrow|poe)(?:[, :]\s*).+|ask (?:morrow|poe)(?:[, :]\s*).+|status|jobs|health|models|nodes|what'?s agent control doing\??|(?:status |job )?ac[- ]?\d+)$/i.test(text.trim())){
+      if(!/^(?:(?:mallow|morrow|poe)(?:[, :]\s*).+|ask (?:mallow|morrow|poe)(?:[, :]\s*).+|status|jobs|health|models|nodes|what'?s agent control doing\??|(?:status |job )?ac[- ]?\d+)$/i.test(text.trim())){
         const template=principal.templates.find(name=>text.toLowerCase()===`start ${name.replaceAll('-',' ')}`||text.toLowerCase()===`start ${name}`);
         const command=template?`start ${template} voice`:undefined;
         if(command)this.db.prepare('INSERT OR REPLACE INTO confirmations(identity,sourceKey,command,expires,request,sourceReceivedAt) VALUES (?,?,?,?,?,?)').run(identity,key,command,this.clock()+300000,text,m.receivedAt);
@@ -107,8 +107,8 @@ export class SocialVoiceCoordinator {
       }
     }
     text=text.trim();let match:RegExpMatchArray|null;
-    if((match=text.match(/^(?:(?:ask )?(?:morrow|poe))(?:[, :]\s*)(.+)$/i))){
-      if(!this.poe){await this.reply(m,key,'Morrow is unavailable on this channel. The authenticated dashboard remains available.');this.audit('poe.unavailable',identity,{reason:'channel_adapter_unconfigured'});return;}
+    if((match=text.match(/^(?:(?:ask )?(?:mallow|morrow|poe))(?:[, :]\s*)(.+)$/i))){
+      if(!this.poe){await this.reply(m,key,'Mallow is unavailable on this channel. The authenticated dashboard remains available.');this.audit('poe.unavailable',identity,{reason:'channel_adapter_unconfigured'});return;}
       const answer=await this.poe.ask({actor:principal.actor,identityReference:identity,text:match[1]!.trim(),modality:m.kind==='audio'?'voice':'text'});
       await this.reply(m,key,answer.text);if(m.kind==='audio'){const spoken=await this.speak(m,`${key}:poe`,answer.text);if(spoken&&answer.turnId)this.db.prepare("INSERT OR REPLACE INTO poe_playback(identity,conversation,turn,state,queuedAt) VALUES (?,?,?,'queued',?)").run(identity,answer.conversationId,answer.turnId,this.clock());}this.audit('poe.response',identity,{conversationId:answer.conversationId,turnId:answer.turnId??null,channel:this.provider.id,modality:m.kind==='audio'?'voice':'text',spoken:m.kind==='audio',authority:'agent-control-evidence'});
     }else if(/^(status|health|models|nodes|what'?s agent control doing\??)$/i.test(text)){

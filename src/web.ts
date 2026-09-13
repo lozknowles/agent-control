@@ -1,3 +1,13 @@
+import {isAndroidUserspace,observeAndroid} from './control/android-environment.js';
+import {DefaultDiscoveryProbe} from './control/environment-discovery.js';
+import {usageQuestionQuery} from './control/usage-projection.js';
+import {LocalWatchBenchmarkPort} from './control/local-watch-benchmark-port.js';
+import {IntelligenceJournal,ModelLandscape} from './control/model-landscape.js';
+import {ModelWatchRuntime,registerModelWatchJobs,modelWatchPlan} from './control/model-watch-runtime.js';
+import {watchRequest} from './control/model-watch-policies.js';
+import {JsonModelCatalogueAdapter,HuggingFaceMetadataAdapter,GitHubRuntimeReleasesAdapter} from './control/model-intelligence-adapters.js';
+import {registerLlamaCppBenchmarkJobs} from './control/llama-cpp-benchmark-adapter.js';
+import {LocalBenchmarkController} from './control/local-llm-benchmark-controller.js';
 import {readPoeRegression} from './control/poe-regression.js';
 import path from 'node:path';
 import fs from 'node:fs';
@@ -155,8 +165,9 @@ if (process.env.AGENT_CONTROL_POE_VOICE_CONFIG) {
     poeSpeech=provider;poeRecognition=provider;poeVoice=settings.voice;
   } catch {process.stderr.write('Optional POE voice configuration unavailable; text conversation remains active.\n');}
 }
-const knowledge = new PoeKnowledgeService({root:process.cwd(),version:AGENT_CONTROL_VERSION,sources:JSON.parse(fs.readFileSync('config/poe-knowledge-sources.json','utf8')),configuration:()=>({jobs:jobRuntime.catalog.listJobs(),schedules:jobRuntime.catalog.listSchedules(),models:service.models(),routing:config.modelRouting}),live:category=>{
+const knowledge = new PoeKnowledgeService({root:process.cwd(),version:AGENT_CONTROL_VERSION,sources:JSON.parse(fs.readFileSync('config/poe-knowledge-sources.json','utf8')),configuration:()=>({jobs:jobRuntime.catalog.listJobs(),schedules:jobRuntime.catalog.listSchedules(),models:service.models(),routing:config.modelRouting}),live:(category,question)=>{
   const snapshot=service.snapshot();
+  if(category==='usage')return service.usageAnswer(usageQuestionQuery(question??''));
   if(category==='voice')return {channel:'poe/dashboard',configured:Boolean(poeVoice&&poeSpeech&&poeRecognition),identity:poeVoice?.id??null,synthesisProvider:poeVoice?.provider??null,recognitionEngine:'Not established by this configuration; do not infer from the synthesis provider.',recognitionConfigured:Boolean(poeRecognition),synthesisConfigured:Boolean(poeSpeech),streaming:poeSpeech?.capabilities().streaming??false,readiness:'CONFIGURED_NOT_A_HEALTH_PROBE',whatsapp:'SEPARATE_CHANNEL_NOT_OBSERVED'};
   if(category==='regression')return readPoeRegression(process.env.AGENT_CONTROL_POE_REGRESSION_FILE);
   if(category==='crew')return snapshot.characterCrew.members.map(member=>({id:member.id,name:member.name,role:member.role,state:member.operationalState,summary:member.summary,freshness:member.freshness}));
@@ -171,7 +182,20 @@ const operator = new PoeOperatorRuntime({knowledge,registries:process.env.AGENT_
   registrations:JSON.parse(fs.readFileSync(path.resolve('config/poe-operator-jobs.json'),'utf8')),
   topics:JSON.parse(fs.readFileSync(path.resolve('config/poe-system-topics.json'),'utf8')),
   sources:{systems:()=>service.systems(),savedJobs:()=>service.savedJobs(),parameterizedSchedules:()=>service.parameterizedSchedules(),overview:()=>service.poeEvidence(),resolve:reference=>service.poeEvidence(reference)}});
-const poe = new PoeRuntime({operator,regression:()=>readPoeRegression(process.env.AGENT_CONTROL_POE_REGRESSION_FILE),
+// Explicit opt-in configuration: registering this adapter never acquires models or starts a target.
+const localBenchmarkSettings=process.env.AGENT_CONTROL_LOCAL_BENCHMARK_CONFIG?JSON.parse(fs.readFileSync(process.env.AGENT_CONTROL_LOCAL_BENCHMARK_CONFIG,'utf8')):null;
+const localBenchmark=localBenchmarkSettings?new LocalBenchmarkController({registerExecution:registerLlamaCppBenchmarkJobs,root:localBenchmarkSettings.root,template:localBenchmarkSettings.template,scan:()=>environmentDiscovery.projection().latest,catalog:jobRuntime.catalog,actions:jobRuntime.actions}):undefined;
+if(localBenchmark){localBenchmark.admit(localBenchmarkSettings.template);jobRuntime.workers.registerControllerInternal({id:'local-benchmark-controller',capabilities:['benchmark.control'],health:'healthy',capacity:1,active:0,observedAt:new Date().toISOString()});service.configureProjection({localBenchmark});}
+const showcaseConfig=process.env.AGENT_CONTROL_MODEL_WATCH_CONFIG?JSON.parse(fs.readFileSync(process.env.AGENT_CONTROL_MODEL_WATCH_CONFIG,'utf8')):{sources:[]};
+const showcaseJournal=new IntelligenceJournal(path.join(stateRoot,'model-watches','journal.jsonl'));
+const landscape=new ModelLandscape(showcaseJournal).register(new JsonModelCatalogueAdapter()).register(new HuggingFaceMetadataAdapter(fetch,()=>localBenchmarkSettings?.template.candidates??[])).register(new GitHubRuntimeReleasesAdapter());
+const modelWatches=new ModelWatchRuntime({journal:showcaseJournal,landscape,sources:()=>showcaseConfig.sources??[],estate:()=>{const scan=environmentDiscovery.projection().latest;let controlQualified=false;try{if(localBenchmark){localBenchmark.admit(localBenchmarkSettings.template);controlQualified=true;}}catch{}const scanAge=scan?Date.now()-Date.parse(scan.completedAt):Infinity;return (scan?.items??[]).filter(i=>i.kind==='MACHINE').map(i=>({id:i.id,fresh:Number.isFinite(scanAge)&&scanAge>=0&&scanAge<120000,authenticated:i.health==='HEALTHY',controlQualified:controlQualified&&i.id===localBenchmarkSettings?.template.hardware.resourceId,ramAvailable:Number(i.attributes.availableMemoryBytes??0),vramAvailable:0,diskAvailable:Number(i.attributes.diskAvailableBytes??0),busy:jobRuntime.ledger.list().some(r=>r.status==='RUNNING'&&['normal','high','urgent'].includes(r.priority)),gpuUtilisation:null,architectures:localBenchmarkSettings?.template.execution.architectures??[],runtimes:localBenchmark?['llama.cpp']:[],existingArtifactHashes:[],provisioners:[]}));}});
+if(localBenchmark)modelWatches.options.benchmark=new LocalWatchBenchmarkPort({controller:localBenchmark,league:modelWatches.league,journal:showcaseJournal,parcels:jobRuntime.workParcels,resolve:item=>{const reviewed=localBenchmarkSettings.template.candidates.find((c:import('./control/local-llm-benchmark.js').BenchmarkCandidate)=>c.id===item.identity.model&&c.revision===item.identity.revision&&c.sha256===item.artifactSha256&&c.filename===item.identity.artifact);return reviewed?structuredClone(reviewed):null;}});
+registerModelWatchJobs(jobRuntime.catalog,jobRuntime.actions,modelWatches);
+jobRuntime.workers.registerControllerInternal({id:'model-intelligence-controller',capabilities:['model.intelligence.control'],health:'healthy',capacity:1,active:0,observedAt:new Date().toISOString()});
+service.configureProjection({modelWatches});
+const modelWatchTimer=setInterval(()=>{void modelWatches.reconcileActive().catch(()=>{});for(const row of modelWatches.projection().watches.filter(w=>w.approved)){try{const due=modelWatches.policies.due(row.digest);if(due)jobRuntime.workParcels.submitApprovedPlan('Run approved scheduled Model Watch','model-watch-approved-policy',due.runKey,modelWatchPlan(row.digest,due.runKey));}catch{/* Revoked, expired or unavailable watches remain non-executable. */}}},60000);modelWatchTimer.unref();
+const poe = new PoeRuntime({localBenchmarkUnavailable:async()=>{if(!isAndroidUserspace())return 'No qualified local benchmark adapter is configured. Run Discovery and review a compatible runtime, workload and resource policy.';const device=await observeAndroid(new DefaultDiscoveryProbe());return 'This Android phone needs a qualified local benchmark runtime and validator. Available RAM is '+(device.availableRamBytes===null?'unknown':Math.round(device.availableRamBytes/1024**2)+' MiB')+'. Charging, battery, thermal and network-metering evidence is unavailable in base Termux, so the conservative mobile policy blocks model provisioning and benchmarking. No server-side sensor is substituted.';},modelWatches:{draft:objective=>{if(!showcaseConfig.watchDefaults)return {state:'INPUT_REQUIRED',questions:['What should the model do?','What checks prove success and what matters most?','Which approved sources, machines and overnight limits should this watch use?'],next:'Create or select a personal benchmark, then review a Model Watch in the dashboard.'};const draft=watchRequest(objective,showcaseConfig.watchDefaults);return {...modelWatches.policies.propose(draft.watch),confirmation:draft.confirmation,note:draft.note};},brief:()=>modelWatches.projection().briefs.at(-1)??{status:'NO_RECORDED_BRIEF',benchmarked:0,newLeader:null}},...(localBenchmark?{localBenchmark:{draft:objective=>localBenchmark.draft(objective)}}:{}),operator,regression:()=>readPoeRegression(process.env.AGENT_CONTROL_POE_REGRESSION_FILE),
   file:path.join(stateRoot,'poe','conversations.json'),
   evidence:{overview:()=>service.poeEvidence(),resolve:reference=>service.poeEvidence(reference)},
   sessionVault,
@@ -179,7 +203,9 @@ const poe = new PoeRuntime({operator,regression:()=>readPoeRegression(process.en
   benchmark:{submit:({proposal,actor,requestKey,plan})=>{
     const identityReference=createHash('sha256').update(`poe:${actor}`).digest('hex');
     const origin=governedRequestOrigin({channel:'poe/dashboard',modality:'dashboard',receivedAt:new Date().toISOString(),authentication:'dashboard-bearer',actorId:actor,authority:[`conversation:${proposal.conversationId}`,`proposal:${proposal.id}`,`frozen-sha256:${proposal.frozenSha256}`],messageReference:requestKey,identityReference,request:`${proposal.decision}\n\n${proposal.objective}`});
-    const parcel=jobRuntime.workParcels.submitApprovedPlan(origin.request,actor,requestKey,plan,origin);return{parcelId:parcel.id};
+    const isLocal=plan.stages.some(s=>s.job.startsWith('local-benchmark-'));if(isLocal&&!localBenchmark)throw Error('local_benchmark_unconfigured');
+    const digest=isLocal?localBenchmark!.authorize({proposal,actor,requestKey,plan}):undefined;
+    try{const parcel=jobRuntime.workParcels.submitApprovedPlan(origin.request,actor,requestKey,plan,origin);if(digest)localBenchmark!.bind(digest,parcel.id);return{parcelId:parcel.id};}catch(error){if(digest)localBenchmark!.revoke(digest);throw error;}
   }},
   speech:poeSpeech,recognition:poeRecognition,voice:poeVoice,
   onEvent:event=>service.events.emit(event.type==='conversation.changed'?'poe.conversation_changed':event.type==='proposal.changed'?'poe.proposal_changed':event.type==='speech.changed'?'poe.speech_changed':'poe.interrupted',{conversationId:event.conversationId,proposalId:event.proposalId,state:event.state,detail:event.detail,observedAt:event.at},undefined,'poe'),

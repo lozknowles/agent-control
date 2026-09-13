@@ -183,6 +183,7 @@
 }
 .runtime-map-toolbar {
   display: flex;
+  flex-wrap: wrap;
   gap: 18px;
   align-items: center;
   justify-content: space-between;
@@ -191,6 +192,9 @@
 }
 .runtime-map-toolbar label {
   display: flex;
+  flex-wrap: wrap;
+  min-width: 0;
+  max-width: 100%;
   gap: 8px;
   align-items: center;
 }
@@ -644,3 +648,32 @@
     flex-direction: column;
   }
 }
+
+.estate-dashboard-heartbeat{display:block;width:calc(100% - 32px);margin:8px 16px;text-align:left;white-space:normal;line-height:1.6}
+.runtime-graph-node.estate-GREEN rect{stroke:#32bc81;fill:#12362b}
+.runtime-graph-node.estate-ORANGE rect{stroke:#e7a63b;fill:#3a2d18}
+.runtime-graph-node.estate-RED rect{stroke:#ee7272;fill:#3d2028}
+.runtime-graph-node.estate-GREY rect{stroke:#8793a5;fill:#252c36}
+#estate-readiness-explanation li{margin:12px 0;line-height:1.5}
+#estate-readiness-explanation p{margin:4px 0}
+
+#runtime-inspector dl{display:block}
+#runtime-inspector dt{margin-top:12px;font-size:12px;opacity:.75;overflow-wrap:anywhere}
+#runtime-inspector dd{margin:4px 0;white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%}
+#estate-job-picker{max-width:100%;min-width:240px}
+
+@media(max-width:650px){
+ .runtime-map-shell{grid-template-columns:minmax(0,1fr);max-width:100%;min-width:0}
+ .runtime-map-header,.runtime-map-health,.runtime-map-layout{min-width:0;max-width:100%;overflow-wrap:anywhere}
+ .runtime-map-layout{grid-template-columns:minmax(0,1fr)}
+ .runtime-estate-heartbeat{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .runtime-map-health{flex-wrap:wrap;gap:6px}
+ .runtime-map-toolbar label{flex-wrap:wrap;min-width:0}
+ .runtime-map-toolbar input,.runtime-map-toolbar select,#estate-job-picker{min-width:0;max-width:100%;width:100%}
+ .runtime-map-surfaces{justify-content:flex-start;flex-wrap:wrap}
+ .runtime-map-header h1{font-size:26px}
+ .runtime-map-canvas{height:420px}
+}
+
+.runtime-map-toolbar select,.runtime-map-toolbar input,#estate-job-picker{max-width:100%;min-width:0}
+#runtime-map-summary{flex:1 1 100%;overflow-wrap:anywhere}

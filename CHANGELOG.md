@@ -1,5 +1,9 @@
 # Changelog
 
+## 4.6.0
+
+Live Estate/Process integration, APK-less Android Standalone, Job Library readiness, Mallow, Model Intelligence and Morning Brief foundations, usage/energy telemetry and governance improvements. Core PASS; showcase PASS WITH LIMITATIONS. See [release notes](docs/release-notes-4.6.0.md) and [15 accepted limitations](docs/known-limitations-4.6.md).
+
 ## [4.5.1] — 2026-09-13
 
 ### Existing-configuration upgrade correction
