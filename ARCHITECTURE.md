@@ -145,9 +145,11 @@ the projection/API boundary. See [Runtime Map](docs/runtime-map.md).
 Graphical Compare projects each completed Work Parcel independently and then
 compares explicit route and evidence facets. It does not align nodes by display
 label. Process/Estate navigation likewise requires configured model, provider,
-worker or node identity; when no exact identity exists, the cross-link fails
-closed. Dashboard request origin and attribution are part of the initial durable
-parcel write so asynchronous planning cannot erase POE/dashboard provenance.
+worker or node identity. Every identity field asserted by both projections must
+agree; a globally registered worker identity remains sufficient when a
+deterministic Run has no authoritative node assertion, while any known mismatch
+fails closed. Dashboard request origin and attribution are part of the initial
+durable parcel write so asynchronous planning cannot erase POE/dashboard provenance.
 The map remains WATCH-only: existing Live Shell and other control-plane APIs keep
 their own authority, confirmation and audit boundaries.
 
