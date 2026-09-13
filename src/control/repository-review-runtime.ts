@@ -23,7 +23,7 @@ export class LocalRepositoryResolver implements RepositoryResolver {
     try { if (git(source, ['rev-parse', '--is-inside-work-tree']) !== 'true') throw new Error(); } catch { throw new ParameterizedJobError('repository_not_git', source); }
     let reviewedSha: string; try { reviewedSha = git(source, ['rev-parse', '--verify', `${input.requestedRef}^{commit}`]); } catch { throw new ParameterizedJobError('repository_ref_unresolved', input.requestedRef); }
     if (!/^[0-9a-f]{40,64}$/.test(reviewedSha)) throw new ParameterizedJobError('repository_ref_unresolved', input.requestedRef);
-    if (input.comparisonSha) git(source, ['merge-base', '--is-ancestor', input.comparisonSha, reviewedSha]);
+    if (input.comparisonSha) { try { git(source, ['merge-base', '--is-ancestor', input.comparisonSha, reviewedSha]); } catch { throw new ParameterizedJobError('repository_comparison_not_ancestor', input.comparisonSha); } }
     const dirtyPaths = git(source, ['status', '--porcelain=v1', '--untracked-files=normal']).split('\n').filter(Boolean).map(line => line.slice(3));
     let remote: string | undefined; try { remote = git(source, ['remote', 'get-url', 'origin']); } catch { /* A local-only repository is valid. */ }
     const root = input.snapshotsRoot ?? fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-review-'));
@@ -32,7 +32,7 @@ export class LocalRepositoryResolver implements RepositoryResolver {
     execFileSync('git', ['clone', '--quiet', '--no-checkout', '--shared', '--', source, snapshotPath], {stdio: 'pipe'});
     git(snapshotPath, ['checkout', '--quiet', '--detach', reviewedSha]);
     if (git(snapshotPath, ['rev-parse', 'HEAD']) !== reviewedSha || git(snapshotPath, ['status', '--porcelain'])) throw new ParameterizedJobError('repository_snapshot_verification_failed');
-    makeReadOnly(snapshotPath);
+    try { makeReadOnly(snapshotPath); } catch (error) { fs.rmSync(snapshotPath, {recursive: true, force: true}); throw error; }
     return {identity: hash(`${remote ?? source}\n${git(source, ['rev-parse', '--show-toplevel'])}`), name: path.basename(source), nodeId: input.nodeId, sourcePath: source, ...(remote ? {remote} : {}), requestedRef: input.requestedRef, reviewedSha, dirty: dirtyPaths.length > 0, dirtyPaths, ...(input.comparisonSha ? {comparisonSha: input.comparisonSha} : {}), snapshotPath, snapshotKind: 'local-shared-clone'};
   }
   private resolveRemote(input: RepositoryResolveRequest): ResolvedRepository {
@@ -45,17 +45,19 @@ export class LocalRepositoryResolver implements RepositoryResolver {
     try { execFileSync('git', ['clone', '--quiet', '--no-checkout', '--', remote, snapshotPath], {stdio: 'pipe', timeout: 120_000}); } catch { throw new ParameterizedJobError('repository_remote_clone_failed', parsed.hostname); }
     let reviewedSha: string; try { reviewedSha = git(snapshotPath, ['rev-parse', '--verify', `${input.requestedRef}^{commit}`]); } catch { try { reviewedSha = git(snapshotPath, ['rev-parse', '--verify', `origin/${input.requestedRef}^{commit}`]); } catch { throw new ParameterizedJobError('repository_ref_unresolved', input.requestedRef); } }
     if (input.comparisonSha) { try { git(snapshotPath, ['merge-base', '--is-ancestor', input.comparisonSha, reviewedSha]); } catch { throw new ParameterizedJobError('repository_comparison_not_ancestor', input.comparisonSha); } }
-    git(snapshotPath, ['checkout', '--quiet', '--detach', reviewedSha]); makeReadOnly(snapshotPath);
+    git(snapshotPath, ['checkout', '--quiet', '--detach', reviewedSha]);
+    try { makeReadOnly(snapshotPath); } catch (error) { fs.rmSync(snapshotPath, {recursive: true, force: true}); throw error; }
     return {identity: hash(remote), name, nodeId: input.nodeId, remote, requestedRef: input.requestedRef, reviewedSha, dirty: false, dirtyPaths: [], ...(input.comparisonSha ? {comparisonSha: input.comparisonSha} : {}), snapshotPath, snapshotKind: 'remote-clone'};
   }
 }
 
 function makeReadOnly(root: string) {
-  const entries: string[] = [];
-  const walk = (directory: string) => { for (const entry of fs.readdirSync(directory, {withFileTypes: true})) { const absolute = path.join(directory, entry.name); entries.push(absolute); if (entry.isDirectory()) walk(absolute); } };
+  const canonicalRoot = fs.realpathSync(root), entries: string[] = [];
+  const inside = (candidate: string) => { const relative = path.relative(canonicalRoot, candidate); return relative === '' || (!relative.startsWith(`..${path.sep}`) && relative !== '..' && !path.isAbsolute(relative)); };
+  const walk = (directory: string) => { for (const entry of fs.readdirSync(directory, {withFileTypes: true})) { const absolute = path.join(directory, entry.name); if (entry.isSymbolicLink()) { let target: string; try { target = fs.realpathSync(absolute); } catch { throw new ParameterizedJobError('repository_snapshot_symlink_unsafe', path.relative(root, absolute)); } if (!inside(target)) throw new ParameterizedJobError('repository_snapshot_symlink_unsafe', path.relative(root, absolute)); continue; } entries.push(absolute); if (entry.isDirectory()) walk(absolute); } };
   walk(root);
-  for (const entry of entries.filter(value => !fs.statSync(value).isDirectory())) fs.chmodSync(entry, 0o400);
-  for (const entry of entries.filter(value => fs.statSync(value).isDirectory()).sort((a, b) => b.length - a.length)) fs.chmodSync(entry, 0o500);
+  for (const entry of entries.filter(value => !fs.lstatSync(value).isDirectory())) fs.chmodSync(entry, 0o400);
+  for (const entry of entries.filter(value => fs.lstatSync(value).isDirectory()).sort((a, b) => b.length - a.length)) fs.chmodSync(entry, 0o500);
   fs.chmodSync(root, 0o500);
 }
 function listFiles(root: string, includeDirectories = false) {
