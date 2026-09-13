@@ -41,6 +41,15 @@ test('INTERVENE is explicit, exclusive and withholds human input while redacting
   assert.equal(durable.includes(secret), false); assert.match(durable, /REDACTED/); assert.match(durable, /sensitive;bytes=/); assert.doesNotMatch(durable, /human\.input[\s\S]*nvapi-fixture/);
 });
 
+test('late output retains credential redaction through teardown and is dropped after retirement', async t=>{
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'agent-control-execution-late-output-'));t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+  const runtime=new ExecutionSessionRuntime(root,undefined,()=>new Date().toISOString(),8*1024*1024,20),secret=`synthetic-late-${'s'.repeat(24)}`,id='session:late-output',incarnation='incarnation:late-output';
+  runtime.create({id,incarnation,adapterId:'fixture-pty',scope:scope(),command:'delayed-program',cwd:'/workspace',capabilities:capabilities(),runtimeCredentials:[secret],control:{prove:async()=>({sessionId:id,incarnation,state:'RUNNING'})}});
+  runtime.finish(id,{exitCode:0,signal:null});runtime.appendOutput(id,'terminal',`delayed ${secret}\n`);runtime.flushOutput(id);
+  const durable=fs.readFileSync(path.join(root,'events',`${id}.jsonl`),'utf8');assert.equal(durable.includes(secret),false);assert.match(durable,/REDACTED/);
+  await new Promise(resolve=>setTimeout(resolve,35));const before=runtime.events(id).length;runtime.appendOutput(id,'terminal',`too-late ${secret}\n`);runtime.flushOutput(id);assert.equal(runtime.events(id).length,before);
+});
+
 test('resize and signals call only the proven exact session while stale PID identity fails closed', async t => {
   const {runtime} = fixture(t), calls: string[] = [], id = 'session:controls', incarnation = 'incarnation:controls';
   runtime.create({id, incarnation, adapterId: 'fixture-pty', scope: scope(), command: 'interactive-program', cwd: '/workspace', pid: 103, capabilities: capabilities(), control: {prove: async () => ({sessionId: id, incarnation, state: 'RUNNING', pid: 103}), resize: async (columns, rows) => { calls.push(`resize:${columns}x${rows}`); }, signal: async signal => { calls.push(`signal:${signal}`); }, write: async () => {}}});

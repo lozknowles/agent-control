@@ -113,7 +113,7 @@ export interface ExecutionSessionReconnectAdapter {
 export interface ExecutionSessionAuthority {actorId: string; roles: Array<'observer' | 'operator'>;}
 
 interface SessionSnapshot {schema: 'agent-control.execution-sessions/v1'; sessions: ExecutionSessionRecord[];}
-interface RuntimeSession {control?: ExecutionSessionControl; credentials: Set<string>; carry: Partial<Record<'stdout' | 'stderr' | 'terminal', string>>; flushTimers: Partial<Record<'stdout' | 'stderr' | 'terminal', NodeJS.Timeout>>;}
+interface RuntimeSession {control?: ExecutionSessionControl; credentials: Set<string>; carry: Partial<Record<'stdout' | 'stderr' | 'terminal', string>>; flushTimers: Partial<Record<'stdout' | 'stderr' | 'terminal', NodeJS.Timeout>>; retirementTimer?:NodeJS.Timeout;}
 
 const ACTIVE = new Set<ExecutionSessionState>(['STARTING', 'RUNNING', 'PAUSED', 'DISCONNECTED', 'UNKNOWN']);
 const IDENTIFIER = /^[a-zA-Z0-9][a-zA-Z0-9:._-]{0,191}$/;
@@ -138,6 +138,7 @@ export class ExecutionSessionRuntime {
     readonly contracts?: ContractExecutionRuntime,
     readonly clock: () => string = () => new Date().toISOString(),
     readonly maximumOutputBytes = 8 * 1024 * 1024,
+    readonly redactionRetentionMs = 300_000,
   ) {
     this.stateFile = path.join(root, 'sessions.json');
     this.eventRoot = path.join(root, 'events');
@@ -185,6 +186,7 @@ export class ExecutionSessionRuntime {
   bindControl(id: string, control: ExecutionSessionControl, runtimeCredentials: readonly string[] = []) {
     this.get(id);
     const current = this.live.get(id) ?? {credentials: new Set<string>(), carry: {}, flushTimers: {}};
+    if(current.retirementTimer){clearTimeout(current.retirementTimer);delete current.retirementTimer;}
     current.control = control;
     for (const value of runtimeCredentials) if (value.length >= 8) current.credentials.add(value);
     this.live.set(id, current);
@@ -199,10 +201,11 @@ export class ExecutionSessionRuntime {
     const record = this.get(id);
     if (!record.capabilities.reconnectable) throw new Error('execution_session_reconnect_unsupported');
     const adapter = this.adapters.get(record.adapterId); if (!adapter) throw new Error('execution_session_adapter_unavailable');
+    if(!this.live.has(id))this.live.set(id,{credentials:new Set<string>(),carry:{},flushTimers:{}});
     const control = await adapter.reconnect(record, (stream, value) => this.appendOutput(id, stream, value));
-    if (!control) { this.transition(id, 'DISCONNECTED', 'session.disconnected', 'agent-control', 'adapter_could_not_prove_original_session'); return this.get(id); }
+    if (!control) { this.transition(id, 'DISCONNECTED', 'session.disconnected', 'agent-control', 'adapter_could_not_prove_original_session'); this.retireRuntime(id); return this.get(id); }
     const proof = await control.prove();
-    if (!sameProof(record, proof)) { this.transition(id, 'UNKNOWN', 'session.disconnected', 'agent-control', 'session_identity_mismatch'); throw new Error('execution_session_identity_mismatch'); }
+    if (!sameProof(record, proof)) { this.transition(id, 'UNKNOWN', 'session.disconnected', 'agent-control', 'session_identity_mismatch'); this.retireRuntime(id); throw new Error('execution_session_identity_mismatch'); }
     this.bindControl(id, control); this.transition(id, proof.state, 'session.reconnected', 'agent-control', `incarnation=${record.incarnation}`); return this.get(id);
   }
 
@@ -288,7 +291,7 @@ export class ExecutionSessionRuntime {
 
   appendOutput(id: string, stream: 'stdout' | 'stderr' | 'terminal', value: string) {
     if (!value) return;
-    const runtime = this.live.get(id) ?? {credentials: new Set<string>(), carry: {}, flushTimers: {}}; this.live.set(id, runtime);
+    const runtime = this.live.get(id); if(!runtime)return;
     runtime.carry[stream] = `${runtime.carry[stream] ?? ''}${value}`;
     const current = runtime.carry[stream]!;
     const newline = Math.max(current.lastIndexOf('\n'), current.lastIndexOf('\r'));
@@ -312,10 +315,10 @@ export class ExecutionSessionRuntime {
     record.state = result.failed || result.exitCode !== 0 ? 'FAILED' : 'EXITED'; record.exitCode = result.exitCode; record.exitSignal = result.signal; record.endedAt = at; record.updatedAt = at;
     if (result.detail) record.lastError = safeText(result.detail, 1_024); this.update(record);
     this.record(id, record.state === 'FAILED' ? 'process.failed' : 'process.exited', 'agent-control', `exitCode=${result.exitCode ?? 'null'};signal=${result.signal ?? 'none'}${result.detail ? `;${safeText(result.detail, 1_024)}` : ''}`);
-    this.live.delete(id); return this.get(id);
+    this.retireRuntime(id); return this.get(id);
   }
 
-  disconnect(id: string, reason: string) { this.flushOutput(id); this.transition(id, 'DISCONNECTED', 'session.disconnected', 'agent-control', reason); this.live.delete(id); return this.get(id); }
+  disconnect(id: string, reason: string) { this.flushOutput(id); this.transition(id, 'DISCONNECTED', 'session.disconnected', 'agent-control', reason); this.retireRuntime(id); return this.get(id); }
   events(id: string, afterSequence = 0) { this.get(id); if (!Number.isSafeInteger(afterSequence) || afterSequence < 0) throw new Error('execution_session_sequence_invalid'); const file = this.eventFile(id); if (!fs.existsSync(file)) return []; return fs.readFileSync(file, 'utf8').split('\n').filter(Boolean).map(line => JSON.parse(line) as ExecutionSessionEvent).filter(event => event.sequence > afterSequence); }
 
   transcript(id: string) {
@@ -359,6 +362,7 @@ export class ExecutionSessionRuntime {
     if (record.outputTruncated) this.record(id, 'output.truncated', 'agent-control', `maximumBytes=${this.maximumOutputBytes}`);
   }
   private transition(id: string, state: ExecutionSessionState, type: ExecutionSessionEventType, actorId: string, detail: string) { const record = this.get(id); record.state = state; record.updatedAt = this.clock(); record.lastError = safeText(detail, 1_024); this.update(record); this.record(id, type, actorId, detail); }
+  private retireRuntime(id:string){const runtime=this.live.get(id);if(!runtime)return;runtime.control=undefined;if(runtime.retirementTimer)clearTimeout(runtime.retirementTimer);runtime.retirementTimer=setTimeout(()=>{this.flushOutput(id);this.live.delete(id);},Math.max(0,this.redactionRetentionMs));runtime.retirementTimer.unref();}
   private record(id: string, type: ExecutionSessionEventType, actorId: string, detail: string, extra: Pick<ExecutionSessionEvent, 'stream' | 'text'> = {}) {
     const record = this.get(id), event: ExecutionSessionEvent = {schema: 'agent-control.execution-session-event/v1', sessionId: id, sequence: ++record.eventSequence, at: this.clock(), type, actorId: safeText(actorId, 192), detail: safeText(redactSensitiveText(detail), MAX_EVENT_DETAIL), ...extra};
     if (event.text !== undefined) event.text = redactSensitiveText(event.text, [...(this.live.get(id)?.credentials ?? [])]);
