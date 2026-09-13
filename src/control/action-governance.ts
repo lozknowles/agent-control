@@ -1,4 +1,5 @@
 import {createHash} from 'node:crypto';
+import {execFileSync} from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import type {ArtifactRecord, RunRecord, RunStep, WorkerRegistration} from './job-types.js';
@@ -189,12 +190,24 @@ function resolvePushEffects(operation: NormalizedActionOperation, rawArgs: strin
     if (value.startsWith('+')) { forced = true; value = value.slice(1); }
     const colon = value.indexOf(':'), source = colon >= 0 ? value.slice(0, colon) : value;
     if (colon < 0 && /^(?:HEAD|@)(?:[~^].*)?$/i.test(source)) throw new Error('governed_git_implicit_destination_ref_forbidden');
-    const destination = normalizeGitRef(colon >= 0 ? value.slice(colon + 1) : value);
+    const rawDestination = colon >= 0 ? value.slice(colon + 1) : value;
+    const destination = resolvedPushDestination(operation.cwd, source, rawDestination, colon >= 0);
     if (!destination) throw new Error('governed_git_destination_ref_required');
     if (/^(?:HEAD|@)(?:[~^].*)?$/i.test(destination)) throw new Error('governed_git_ambiguous_destination_ref_forbidden');
     const deleted = deleteMode || source === '';
     return gitEffect(operationIndex, index, deleted ? 'DELETE' : forced ? 'FORCE_UPDATE' : 'UPDATE', remote, destination, operation.cwd, `${deleted ? 'Delete' : forced ? 'Force update' : 'Update'} ${remote}/${destination}`);
   });
+}
+
+function resolvedPushDestination(cwd: string, source: string, destination: string, explicit: boolean) {
+  if (destination.startsWith('refs/')) return normalizeGitRef(destination);
+  if (!explicit) {
+    try {
+      const resolved = execFileSync('git', ['rev-parse', '--symbolic-full-name', '--verify', source], {cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore']}).trim();
+      if (resolved.startsWith('refs/tags/')) return resolved;
+    } catch { /* Git will report an unknown source during the governed execution. */ }
+  }
+  return normalizeGitRef(destination);
 }
 
 function gitEffect(operation: number, index: number, kind: GovernedEffectKind, remote: string, ref: string, repositoryPath: string, summary: string): GovernedEffect {

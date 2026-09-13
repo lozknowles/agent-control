@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import {compileResourcePolicies, parseGovernedGitProposal, policyProtectsEffect, resolveGitEffects} from './action-governance.js';
-import {registerGovernedGitActions} from './governed-git-actions.js';
+import {governedGitEnvironment, registerGovernedGitActions} from './governed-git-actions.js';
 import {ActionRegistry, ArtifactStore, JobRuntime, ResourceLockManager, RunLedger, WorkerRegistry} from './job-runtime.js';
 import {JobCatalog} from './job-catalog.js';
 import type {JobDefinition, RunRecord} from './job-types.js';
@@ -35,6 +35,22 @@ function trigger(): RunRecord['trigger'] { return {type: 'manual', actor: 'opera
 function remoteRef(repository: string, ref: string) { return git(repository, 'ls-remote', '--refs', 'origin', `refs/heads/${ref}`).split(/\s+/)[0] || null; }
 async function settleWithExplicitApprovals(runtime: JobRuntime, ledger: RunLedger, runId: string) { for (let count = 0; count < 12; count++) { await runtime.tick(); const run = ledger.get(runId)!; if (['SUCCEEDED', 'FAILED', 'CANCELLED'].includes(run.status)) return run; const waiting = run.steps.find(step => step.status === 'WAITING_FOR_APPROVAL' && step.approval); if (waiting?.approval) runtime.approve(run.id, waiting.approval, 'qualification-operator'); } return ledger.get(runId)!; }
 async function runProposal(setup: ReturnType<typeof fixture>, proposal: string) { const created = setup.runtime.createRun('governed-git-operation@1.0.0', {repositoryPath: setup.repository, proposal}, trigger()); return settleWithExplicitApprovals(setup.runtime, setup.ledger, created.id); }
+
+
+test('governed Git child environment excludes controller credentials and unsafe Git overrides', () => {
+  const env = governedGitEnvironment({PATH: '/usr/bin', HOME: '/home/operator', SSH_AUTH_SOCK: '/tmp/agent.sock', OPENROUTER_API_KEY: 'secret', AGENT_CONTROL_OPERATOR_TOKEN: 'secret', GIT_SSH_COMMAND: 'unsafe', GIT_ASKPASS: 'unsafe'});
+  assert.deepEqual(env, {GIT_TERMINAL_PROMPT: '0', PATH: '/usr/bin', HOME: '/home/operator', SSH_AUTH_SOCK: '/tmp/agent.sock'});
+});
+
+test('tag pushes retain their namespace for external reconciliation', () => {
+  const repository = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-governed-tag-'));
+  git(repository, 'init', '-b', 'master'); git(repository, 'config', 'user.name', 'Agent Control Test'); git(repository, 'config', 'user.email', 'agent-control@example.invalid');
+  fs.writeFileSync(path.join(repository, 'README.md'), 'tag baseline\n'); git(repository, 'add', 'README.md'); git(repository, 'commit', '-m', 'baseline'); git(repository, 'tag', 'v1.0.0');
+  const implicit = resolveGitEffects(parseGovernedGitProposal('git push origin v1.0.0', repository))[0];
+  const explicit = resolveGitEffects(parseGovernedGitProposal('git push origin refs/tags/v1.0.0:refs/tags/v1.0.0', repository))[0];
+  assert.equal(implicit.resource.ref, 'refs/tags/v1.0.0'); assert.equal(explicit.resource.ref, 'refs/tags/v1.0.0');
+  fs.rmSync(repository, {recursive: true, force: true});
+});
 
 test('semantic Git effect resolution covers direct, refspec, force, mirror, delete, wrappers, chains and alternate cwd', () => {
   const repository = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-governed-parse-')), run = {trigger: trigger()} as RunRecord, policy = compileResourcePolicies(run)[0];

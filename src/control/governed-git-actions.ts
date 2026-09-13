@@ -18,7 +18,7 @@ export function registerGovernedGitActions(registry = new ActionRegistry()) {
         const commandEffects = plan.effects.filter(effect => effect.resource.repositoryPath === operation.cwd && effect.external);
         const before = await observeRemoteRefs(context, commandEffects);
         let result;
-        try { result = await context.ownedExecution.runProcess({command: operation.executable, args: confinedGitArgs(operation.args, hookRoot), cwd: operation.cwd, env: {...process.env, GIT_TERMINAL_PROMPT: '0'}, maxOutputBytes: 256 * 1024}, context.signal); }
+        try { result = await context.ownedExecution.runProcess({command: operation.executable, args: confinedGitArgs(operation.args, hookRoot), cwd: operation.cwd, env: governedGitEnvironment(), maxOutputBytes: 256 * 1024}, context.signal); }
         catch (error) {
           const after = await observeRemoteRefs(context, commandEffects);
           states.push(...reconcile(commandEffects, before, after, 'Execution interrupted before a normal exit'));
@@ -59,6 +59,13 @@ export function registerGovernedGitActions(registry = new ActionRegistry()) {
   return registry;
 }
 
+const governedGitEnvironmentKeys = ['PATH', 'HOME', 'USERPROFILE', 'HOMEDRIVE', 'HOMEPATH', 'TEMP', 'TMP', 'TMPDIR', 'SystemRoot', 'WINDIR', 'COMSPEC', 'PATHEXT', 'LANG', 'LC_ALL', 'SSH_AUTH_SOCK'] as const;
+export function governedGitEnvironment(source: NodeJS.ProcessEnv = process.env) {
+  const env: NodeJS.ProcessEnv = {GIT_TERMINAL_PROMPT: '0'};
+  for (const key of governedGitEnvironmentKeys) if (source[key] !== undefined) env[key] = source[key];
+  return env;
+}
+
 function confinedGitArgs(args: string[], hookRoot: string) {
   const subcommand = args.find(item => !item.startsWith('-'))?.toLowerCase(), safe = ['diff', 'show', 'log'].includes(subcommand ?? '') ? [...args.slice(0, 1), '--no-ext-diff', '--no-textconv', ...args.slice(1)] : args;
   return ['-c', `core.hooksPath=${hookRoot}`, '-c', 'core.fsmonitor=false', ...safe];
@@ -83,13 +90,15 @@ async function observeRemoteRefs(context: ActionContext, effects: GovernedEffect
   for (const effect of effects) {
     if (!effect.resource.remote || !effect.resource.ref || effect.resource.ref === '*') { observed.set(effect.id, undefined); continue; }
     try {
-      const result = await context.ownedExecution.runProcess({command: 'git', args: ['ls-remote', '--refs', effect.resource.remote, `refs/heads/${effect.resource.ref}`], cwd: effect.resource.repositoryPath, maxOutputBytes: 16 * 1024});
+      const result = await context.ownedExecution.runProcess({command: 'git', args: ['ls-remote', '--refs', effect.resource.remote, remoteRefQuery(effect.resource.ref)], cwd: effect.resource.repositoryPath, maxOutputBytes: 16 * 1024});
       if (result.exitCode !== 0) observed.set(effect.id, undefined);
       else observed.set(effect.id, result.stdout.trim().split(/\s+/)[0] || null);
     } catch { observed.set(effect.id, undefined); }
   }
   return observed;
 }
+
+function remoteRefQuery(ref: string) { return ref.startsWith('refs/') ? ref : `refs/heads/${ref}`; }
 
 function reconcile(effects: GovernedEffect[], before: Map<string, string | null | undefined>, after: Map<string, string | null | undefined>, reason: string) {
   return effects.map(effect => {
