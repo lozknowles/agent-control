@@ -22,7 +22,7 @@ import {projectUxSession, UX_SESSION_AUDIENCES, type UxSessionAnnotationStore, t
 import type {SessionVaultRuntime} from './session-vault.js';
 import {capabilityDefinition} from './capability-adapter-registry.js';
 
-export interface WebServerOptions {host?: string; port?: number; operatorToken?: string; allowedOrigins?: string[]; assetsDir?: string; configFile?: string; openwa?: OpenWAAdapter; socialVoice?: SocialVoiceCoordinator; uxSessions?: UxSessionStore; uxSessionShares?: UxSessionShareStore; uxSessionAnnotations?: UxSessionAnnotationStore; uxSessionPlayerDir?: string; sessionVault?:SessionVaultRuntime;}
+export interface WebServerOptions {host?: string; port?: number; operatorToken?: string; operatorAuthorizer?: (request: IncomingMessage, authority: 'control.read' | 'control.mutate') => boolean; allowedOrigins?: string[]; assetsDir?: string; configFile?: string; openwa?: OpenWAAdapter; socialVoice?: SocialVoiceCoordinator; uxSessions?: UxSessionStore; uxSessionShares?: UxSessionShareStore; uxSessionAnnotations?: UxSessionAnnotationStore; uxSessionPlayerDir?: string; sessionVault?:SessionVaultRuntime;}
 const MAX_BODY = 64 * 1024;
 const SECRET_KEY = /token|secret|password|credential|authorization|cookie|api[-_]?key/i;
 const SAFE_TOKEN_ACCOUNTING_KEY = /^(?:tokenAwareOutput|tokenBatonRouting|providerReportedTokens|contextTokens|contextLimitTokens|contextTokensAvoided|contextTokensSaved|evidenceTokens|estimatedTokensOriginal|estimatedTokensReturned|estimatedTokensSaved|estimatedOriginalTokens|estimatedReturnedTokens|estimatedTokensAvoided|expansionTokensReturned|inputTokens|freshInputTokens|cachedInputTokens|reusedTokens|processedPromptTokens|retainedPromptTokens|cacheWriteTokens|outputTokens|maximumOutputTokens|maximumContextTokens|maximumEvidenceTokens|reasoningTokens|totalTokens|totalProcessedTokens|startupContextTokens|taskContextTokens|retrievedContextTokens|repositoryContextTokens|conversationHistoryTokens|totalEstimatedContextTokens|repeatedContextCostEstimate|tokenEfficiency|tokensPerSuccessfulTask|freshTokensPerSuccessfulTask|tokensPerVerifiedOutcome|freshTokensPerVerifiedOutcome|estimatedTokens|limitTokens|tokensLimit|tokensRemaining|contextPercent|continuePercent|prepareBatonPercent|compactPercent|handoffPercent|prompt_tokens|completion_tokens|input_tokens|output_tokens|reasoning_tokens|total_tokens|cached_tokens|prompt_tokens_details|input_tokens_details|prompt_per_token_ms|predicted_per_token_ms)$/;
@@ -76,6 +76,14 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   response.setHeader('Cache-Control', 'no-store');
   const url = new URL(request.url ?? '/', `http://${request.headers.host ?? `${options.host}:${options.port}`}`);
   const method = request.method ?? 'GET';
+  if (method === 'GET' && url.pathname === '/api/operator-auth') return json(response, 200, operatorAuthentication(request, options));
+  if (url.pathname === '/api/integrations/openwa/webhook' && method === 'POST') {
+    if (!options.openwa) return json(response,503,{error:'integration_disabled'});
+    const chunks: Buffer[] = []; let size=0;
+    for await(const chunk of request) { size+=chunk.length; if(size>MAX_BODY) throw httpError(413,'request_too_large'); chunks.push(Buffer.from(chunk)); }
+    try { return json(response,200,options.openwa.receive(Buffer.concat(chunks),request.headers)); }
+    catch { return json(response,403,{error:'webhook_rejected'}); }
+  }
   if(method==='GET'&&url.pathname==='/api/session-vault'){validateOperatorRequest(request,options);if(!options.sessionVault)throw httpError(503,'session_vault_unconfigured');return json(response,200,options.sessionVault.projection());}
   if(method==='GET'&&url.pathname==='/api/session-vault/search'){validateOperatorRequest(request,options);if(!options.sessionVault)throw httpError(503,'session_vault_unconfigured');return json(response,200,{query:url.searchParams.get('q')??'',results:options.sessionVault.search(url.searchParams.get('q')??'',Number(url.searchParams.get('limit')??20))});}
   if(method==='GET'&&url.pathname==='/api/session-vault/discover'){validateOperatorRequest(request,options);if(!options.sessionVault)throw httpError(503,'session_vault_unconfigured');return json(response,200,await options.sessionVault.discover(url.searchParams.get('provider')??undefined));}
@@ -92,6 +100,7 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
     const asset=url.pathname.endsWith('.css')?'session-player.css':url.pathname.endsWith('.js')?'session-player.js':'index.html';
     return serveUxPlayerAsset(response,root,asset);
   }
+  if (url.pathname.startsWith('/api/')) validateOperatorRequest(request, options);
   const uxSessionMatch=url.pathname.match(/^\/api\/ux-sessions\/([^/]+)(?:\/(shares|annotations))?$/);
   if(method==='GET'&&url.pathname==='/api/ux-sessions'){validateOperatorRequest(request,options);if(!options.uxSessions)throw httpError(503,'ux_session_runtime_unconfigured');return json(response,200,options.uxSessions.list().map(record=>({id:record.id,title:record.title,startedAt:record.startedAt,completedAt:record.completedAt,sha256:record.sha256,outcome:record.outcome})));}
   if(method==='GET'&&uxSessionMatch&&!uxSessionMatch[2]){validateOperatorRequest(request,options);if(!options.uxSessions)throw httpError(503,'ux_session_runtime_unconfigured');return json(response,200,projectUxSession(readUxSession(options.uxSessions,decodeURIComponent(uxSessionMatch[1])),'AUTHORISED_FULL_EVIDENCE'));}
@@ -116,13 +125,6 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
     return json(response,200,url.pathname.endsWith('/transcript')?{transcript:options.socialVoice?.transcript()??''}:options.socialVoice?.projection()??{state:'not_configured'});
   }
 
-  if (url.pathname === '/api/integrations/openwa/webhook' && method === 'POST') {
-    if (!options.openwa) return json(response,503,{error:'integration_disabled'});
-    const chunks: Buffer[] = []; let size=0;
-    for await(const chunk of request) { size+=chunk.length; if(size>MAX_BODY) throw httpError(413,'request_too_large'); chunks.push(Buffer.from(chunk)); }
-    try { return json(response,200,options.openwa.receive(Buffer.concat(chunks),request.headers)); }
-    catch { return json(response,403,{error:'webhook_rejected'}); }
-  }
   if (url.pathname.startsWith('/api/integrations/openwa')) {
     validateOperatorRequest(request,options);
     if (!options.openwa) return json(response,200,{enabled:false,state:'not_configured'});
@@ -169,7 +171,6 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   if(method==='GET'&&url.pathname==='/api/personal-league'){validateOperatorRequest(request,options);return json(response,200,service.personalLeague(String(url.searchParams.get('benchmark')??''),String(url.searchParams.get('comparison')??'')));}
   if(method==='GET'&&url.pathname==='/api/model-watches'){validateOperatorRequest(request,options);return json(response,200,service.modelWatchProjection());}
   if (method === 'GET' && url.pathname === '/api/poe') { validateOperatorRequest(request, options); return json(response, 200, service.poeProjection()); }
-  if (method === 'GET' && url.pathname === '/api/operator-auth') return json(response, 200, operatorAuthentication(request, options));
   if (method === 'GET' && url.pathname === '/api/configuration') { validateOperatorRequest(request, options); return json(response, 200, new ConfigurationStore(options.configFile ?? configPath()).read()); }
   if (method === 'GET' && url.pathname === '/api/environment-discovery') { validateOperatorRequest(request, options); return json(response, 200, url.searchParams.get('privacy')==='public'?publicDiscoveryProjection(service.environmentDiscoveryProjection()):service.environmentDiscoveryProjection()); }
   if (method === 'GET' && url.pathname === '/api/estate-heartbeat') { validateOperatorRequest(request, options); return json(response,200,service.estateHeartbeat()); }
@@ -402,14 +403,15 @@ function validateMutationRequest(request: IncomingMessage, options: WebServerOpt
   if (!options.operatorToken) throw httpError(503, 'operator_auth_not_configured');
   if ((request.headers['content-type'] ?? '').split(';')[0] !== 'application/json') throw httpError(415, 'json_content_type_required');
   validateOrigin(request,options);
-  validateOperatorRequest(request, options);
+  validateOperatorRequest(request, options, 'control.mutate');
 }
 function validateOrigin(request: IncomingMessage, options: WebServerOptions & {host: string; port: number}) {const origin=request.headers.origin,allowed=new Set(options.allowedOrigins??[`http://${options.host}:${options.port}`,`http://localhost:${options.port}`]);if(origin&&!allowed.has(origin))throw httpError(403,'origin_denied');}
 
-function validateOperatorRequest(request: IncomingMessage, options: WebServerOptions) {
+function validateOperatorRequest(request: IncomingMessage, options: WebServerOptions, authority: 'control.read' | 'control.mutate' = 'control.read') {
   if (!options.operatorToken) throw httpError(503, 'operator_auth_not_configured');
   const supplied = request.headers.authorization?.replace(/^Bearer\s+/i, '') ?? '';
   if (!secretEqual(supplied, options.operatorToken)) throw httpError(401, 'operator_authentication_required');
+  if (options.operatorAuthorizer && !options.operatorAuthorizer(request, authority)) throw httpError(403, 'operator_authority_required');
 }
 
 function operatorAuthentication(request: IncomingMessage, options: WebServerOptions) {
