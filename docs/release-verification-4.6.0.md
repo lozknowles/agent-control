@@ -7,3 +7,5 @@ Version metadata and installation references identify **4.6.0 / v4.6.0**. The ac
 Core **PASS**; Estate / Process **PASS**; governance / security **PASS for tested boundaries**. Showcase, Android Standalone, usage/energy and Model Intelligence/Morning Brief retain **PASS WITH LIMITATIONS**. The complete target-model/Personal-League demonstration is not claimed. [Known limitations](known-limitations-4.6.md) and [post-release queue](post-4.6-work-queue.md).
 
 The GitHub release assets provide the source archive, evidence archive, validation log and SHA-256 manifest. The tag and main target are recorded in the published release manifest. No production service deployment forms part of publication.
+
+Final full gate: **3/3 tests passed**, zero failures or skips; typecheck passed. The first mechanical run found two links to receipts that had not yet been written. After writing the receipts, the complete unchanged test suite passed; the initial failure hash remains in validation. The final source retains two additional stable-maintenance tests beyond the approved 1,464-test RC. [Operator authorisation](../examples/showcase-4.6/final-release/operator-authorisation.json).
