@@ -132,7 +132,7 @@
     q('#poe-tour-next').disabled=blocked||tourSpeech!=='complete';
     q('#poe-tour-retry').hidden=!active||tourSpeech!=='paused';
     q('#poe-tour-retry').disabled=poeView.busy||poeView.holding;
-    if(active)q('#poe-tour-position').textContent=`${tourIndex+1}/${tourSteps.length} · ${tourSteps[tourIndex][0]} · ${tourSpeech==='complete'?'Ready for the next feature':tourSpeech==='paused'?'Tour paused — retry narration':tourSpeech==='playing'?'Morrow is explaining this feature':'Preparing spoken explanation'}`;
+    if(active)q('#poe-tour-position').textContent=`${tourIndex+1}/${tourSteps.length} · ${tourSteps[tourIndex][0]} · ${tourSpeech==='complete'?'Ready for the next feature':tourSpeech==='paused'?'Tour paused — retry narration':tourSpeech==='playing'?'Mallow is explaining this feature':'Preparing spoken explanation'}`;
   }
   async function tourStep(){
     if(poeView.busy||poeView.playback||poeView.holding)return;
@@ -148,7 +148,7 @@
     target.classList.add('poe-tour-target');target.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'center'});
     q('#poe-tour-next').hidden=q('#poe-tour-stop').hidden=false;
     await load();if(epoch!==tourEpoch)return;
-    await sendText(`[Operator-selected guided tour: ${title}] As Agent Control's part-time tour guide, briefly explain the highlighted ${title} area and what the operator can see or do there. ${question} ${tourIndex===0?'Begin with a brief self-introduction as Morrow, the part-time Agent Control tour guide. ':''}Use authoritative evidence only, distinguish unavailable features, and keep the spoken explanation to two concise sentences.`,epoch);
+    await sendText(`[Operator-selected guided tour: ${title}] As Agent Control's part-time tour guide, briefly explain the highlighted ${title} area and what the operator can see or do there. ${question} ${tourIndex===0?'Begin with a brief self-introduction as Mallow, the part-time Agent Control tour guide. ':''}Use authoritative evidence only, distinguish unavailable features, and keep the spoken explanation to two concise sentences.`,epoch);
   }
   async function retryTour(){
     if(tourIndex<0||poeView.busy||poeView.holding)return;

@@ -41,14 +41,14 @@ Open **http://127.0.0.1:4310**. Keep this terminal running; Ctrl+C stops this fo
 
 ## What you should see
 
-The Dashboard welcomes you and offers **Discover my environment**. A fresh installation has no scan history or completed work. Mallow is the floating guide; crew presentation is not evidence that extra workers are executing.
+The Dashboard welcomes you and offers **Authenticate to start discovery**, followed by **Discover my environment** after authentication. A fresh installation has no scan history or completed work. Mallow is the floating guide; crew presentation is not evidence that extra workers are executing.
 
 Primary navigation leads to jobs, maps, models, usage, discovery and Mallow. The welcome guide can be dismissed and reopened. [See the real first-load screen](public-installation-journey.md#a--first-dashboard).
 
 ## Discover your environment
 
-1. Select **Discover my environment**.
-2. Authenticate with the operator token you entered at startup.
+1. Select **Authenticate to start discovery** and enter the operator token you used at startup.
+2. Select **Discover my environment**.
 3. Review the discovery form. Keep remote probing disabled for this first local scan.
 4. Start the scan and watch its progress.
 5. Review the completed results, then open **Estate Map**.

@@ -16,6 +16,8 @@ Discover your AI tools, see what is available, and follow approved work from req
 
 Mallow is your floating guide. The established crew helps explain dispatch, review, tools, model routing, resources and verification. [Meet the crew](docs/crew-guide.md).
 
+<a id="install"></a>
+
 ## Try the candidate
 
 For the stable version, use the [4.5.1 installation documentation](https://github.com/lozknowles/agent-control/blob/v4.5.1/docs/DEPLOYMENT.md). To review this candidate on Linux with Node.js 24, npm, Git and Bash:
@@ -32,7 +34,7 @@ export AGENT_CONTROL_WEB_OPERATOR_TOKEN
 npm run web
 ```
 
-Choose a private operator token of at least 32 characters and keep it in your password manager. Open **http://127.0.0.1:4310**, select **Discover my environment**, and authenticate with that token. Follow the [illustrated installation guide](docs/installation-first-run.md) through Discovery and the first governed job.
+Choose a private operator token of at least 32 characters and keep it in your password manager. Open **http://127.0.0.1:4310**, select **Authenticate to start discovery**, and enter that token. Then select **Discover my environment**. Follow the [illustrated installation guide](docs/installation-first-run.md) through Discovery and the first governed job.
 
 A GPU, model server, paid API, Codex, VPN and Home Assistant are optional capabilities, not dashboard prerequisites.
 
@@ -62,6 +64,7 @@ Model Intelligence and personal benchmark views are candidate features. Target-m
 
 ## Learn more
 
+- [Android / fresh Termux prerequisites](android/README.md#fresh-termux-prerequisites) (separate platform guide)
 - [Installation and troubleshooting](docs/installation-first-run.md#troubleshooting)
 - [Safe existing-install upgrade](docs/upgrade-4.6.md)
 - [Architecture](docs/architecture-v2-agnostic.md)

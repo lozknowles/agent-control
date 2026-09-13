@@ -339,6 +339,7 @@
       status.textContent = `${result.status}: ${result.items.length} item(s), ${result.failures.length} contained adapter failure(s). No configuration was activated.`;
       render();
     } finally {
+      clearInterval(poll);
       setBusy(false);
     }
   }

@@ -120,16 +120,16 @@ test('bootstrap fails closed before install when the dashboard product surface i
 test('published first-run walkthrough establishes operator authentication before discovery', () => {
   assert.match(fs.readFileSync(path.join(repositoryRoot, 'README.md'), 'utf8'), /docs\/installation-first-run\.md/);
   const readme = fs.readFileSync(path.join(repositoryRoot, 'docs/installation-first-run.md'), 'utf8');
-  const runSection = readme.slice(readme.indexOf('## Run and monitor'), readme.indexOf('## Token-aware command output'));
+  const runSection = readme.slice(readme.indexOf('## Start'), readme.indexOf('## Understand usage and efficiency'));
   const hiddenPrompt = runSection.indexOf('read -rsp');
   const exportToken = runSection.indexOf('export AGENT_CONTROL_WEB_OPERATOR_TOKEN');
   const startWeb = runSection.indexOf('npm run web');
-  const authenticate = runSection.indexOf('Operator authenticated');
-  const discovery = runSection.indexOf('Environment Discovery → First Run Setup');
+  const authenticate = runSection.indexOf('Authenticate to start discovery');
+  const discovery = runSection.indexOf('## Discover your environment');
   const firstJob = runSection.indexOf('Start operator-system-observation@1.1.0');
   const approvalDisclosure = runSection.indexOf('Jobs, schedules, approvals & evidence');
   const approval = runSection.indexOf('Approve this job');
-  const processMap = runSection.indexOf('Runtime Map → Process Map');
+  const processMap = runSection.indexOf('Open its job detail and **Process Map**');
   assert.ok(hiddenPrompt >= 0);
   assert.ok(hiddenPrompt < exportToken && exportToken < startWeb);
   assert.ok(startWeb < authenticate && authenticate < discovery);
