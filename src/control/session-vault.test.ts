@@ -489,6 +489,19 @@ test("lease renewal and stale lease recovery preserve the audit record", async (
     () => value.vault.renewLease(lease.leaseId, "node-b"),
     /lease_invalid/,
   );
+  assert.throws(
+    () => value.vault.acquireLease(record.id, "node-b", "operator", 9_999),
+    /lease_ttl_invalid/,
+  );
+  assert.throws(
+    () => value.vault.renewLease(lease.leaseId, "node-a", 86_400_001),
+    /lease_ttl_invalid/,
+  );
+  value.vault.releaseLease(lease.leaseId, "node-a");
+  assert.throws(
+    () => value.vault.renewLease(lease.leaseId, "node-a", 10_000),
+    /lease_invalid/,
+  );
 });
 
 test("replication coordinator retains a redacted retry after backend outage", async (t) => {

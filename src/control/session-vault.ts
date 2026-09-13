@@ -22,6 +22,14 @@ export const SESSION_VAULT_SCHEMA = "agent-control.session-vault/v1" as const;
 export const SESSION_EVENT_SCHEMA = "agent-control.session-event/v1" as const;
 export const SESSION_CONTINUATION_SCHEMA =
   "agent-control.session-continuation/v1" as const;
+const MINIMUM_LEASE_TTL_MS = 10_000;
+const MAXIMUM_LEASE_TTL_MS = 86_400_000;
+
+function validatedLeaseTtl(ttlMs: number) {
+  if (!Number.isSafeInteger(ttlMs) || ttlMs < MINIMUM_LEASE_TTL_MS || ttlMs > MAXIMUM_LEASE_TTL_MS)
+    throw new Error("session_continuation_lease_ttl_invalid");
+  return ttlMs;
+}
 export type SessionCompleteness =
   | "ACTIVE"
   | "CHECKPOINT"
@@ -699,6 +707,7 @@ export class ImmutableSessionVault {
     ttlMs = 300_000,
   ) {
     this.read(sessionId);
+    const leaseTtlMs = validatedLeaseTtl(ttlMs);
     const now = Date.parse(this.clock()),
       leases = this.leases(),
       active = leases.find(
@@ -724,10 +733,7 @@ export class ImmutableSessionVault {
         nodeId,
         actorId,
         acquiredAt,
-        expiresAt: new Date(
-          Date.parse(acquiredAt) +
-            Math.min(Math.max(ttlMs, 10_000), 86_400_000),
-        ).toISOString(),
+        expiresAt: new Date(Date.parse(acquiredAt) + leaseTtlMs).toISOString(),
       };
     leases.push(lease);
     writeJson(this.leasesFile, leases);
@@ -741,7 +747,8 @@ export class ImmutableSessionVault {
     return structuredClone(lease);
   }
   renewLease(leaseId: string, nodeId: string, ttlMs = 300_000) {
-    const leases = this.leases(),
+    const leaseTtlMs = validatedLeaseTtl(ttlMs),
+      leases = this.leases(),
       lease = leases.find((item) => item.leaseId === leaseId);
     if (
       !lease ||
@@ -750,7 +757,7 @@ export class ImmutableSessionVault {
       Date.parse(lease.expiresAt) <= Date.parse(this.clock())
     )
       throw new Error("session_continuation_lease_invalid");
-    lease.expiresAt = new Date(Date.parse(this.clock()) + ttlMs).toISOString();
+    lease.expiresAt = new Date(Date.parse(this.clock()) + leaseTtlMs).toISOString();
     writeJson(this.leasesFile, leases);
     this.recordLease({
       action: "RENEWED",
