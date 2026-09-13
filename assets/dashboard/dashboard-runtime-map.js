@@ -356,7 +356,10 @@
     }
     renderGraph();
     if (rt.selected) inspect(p.nodes.find((n) => n.id === rt.selected));
-    else $("runtime-inspector").innerHTML=rt.surface==="estate"?"<h2>Estate readiness</h2><p>Green: current and usable. Orange: alive with qualification or configuration gaps. Red: current expected failure. Grey: stale, offline or unverified.</p><p>Select a resource for evidence and job impact, or choose a job to inspect WHY READY / WHY NOT READY.</p>":"<p>Select an operation to inspect its recorded evidence.</p>";
+    else {
+      $("runtime-breadcrumbs").textContent = rt.surface === "estate" ? "Estate Map" : "Process Map";
+      $("runtime-inspector").innerHTML=rt.surface==="estate"?"<h2>Estate readiness</h2><p>Green: current and usable. Orange: alive with qualification or configuration gaps. Red: current expected failure. Grey: stale, offline or unverified.</p><p>Select a resource for evidence and job impact, or choose a job to inspect WHY READY / WHY NOT READY.</p>":"<p>Select an operation to inspect its recorded evidence.</p>";
+    }
   }
   function renderProcessKpis() {
     const p = rt.projection,
