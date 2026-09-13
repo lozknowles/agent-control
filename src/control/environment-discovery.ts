@@ -683,7 +683,7 @@ export class LocalMachineDiscoveryAdapter implements DiscoveryAdapter {
         release: os.release(),
         architecture: os.arch(),
         cpuModel: cpus[0]?.model ?? "unknown",
-        cpuLogical: cpus.length,
+        cpuLogical: cpus.length || null,
         totalMemoryBytes: os.totalmem(),
         availableMemoryBytes: os.freemem(),
         networkInterfaces: network.join(","),

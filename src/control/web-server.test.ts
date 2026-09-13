@@ -326,3 +326,14 @@ test('Social and Voice history and approval routes require authentication and sa
 });
 
 test('usage HTTP projection preserves token metric shape and serves real dashboard assets',async t=>{const control=service(),ledger=new MemoryHarnessEfficiencyLedger();const at=new Date().toISOString();ledger.record(createInvocationObservation({id:'http-usage',jobId:'job',taskId:'task',laneId:'lane',model:'model',provider:'provider',harnessProfile:'STANDARD',executionStrategy:'test',startedAt:at,completedAt:at,recipeFingerprint:'test',rawUsage:{input_tokens:10,output_tokens:2,total_tokens:12}}));control.configureProjection({harnessEfficiency:ledger});const operatorToken='isolated-usage-http-test';const server=startWebDashboard(control,{host:'127.0.0.1',port:0,operatorToken,assetsDir:path.resolve('assets/dashboard')});await once(server,'listening');const base=`http://127.0.0.1:${(server.address() as AddressInfo).port}`;const headers={Authorization:`Bearer ${operatorToken}`};t.after(()=>server.close());const p=await(await fetch(base+'/api/usage?period=all',{headers})).json();assert.equal(p.totals.tokens.knownTotal,12);assert.equal((await fetch(base+'/dashboard-usage.js')).status,200);assert.equal((await fetch(base+'/dashboard-usage.css')).status,200);assert.equal((await fetch(base+'/api/usage?filter.secret=x',{headers})).status,400);});
+
+test('PWA serves a static offline shell and protects deployment observations',async()=>{
+ const {server,base}=await running('pwa-test-operator');
+ try{
+  const manifest=await fetch(base+'/manifest.webmanifest');assert.equal(manifest.status,200);assert.match(manifest.headers.get('content-type')??'',/application\/manifest\+json/);const body=await manifest.json() as any;assert.equal(body.display,'standalone');assert.equal(body.start_url,'/');
+  const offline=await fetch(base+'/offline.html');assert.match(await offline.text(),/cannot execute jobs or report live status/);
+  assert.equal((await fetch(base+'/api/deployment')).status,401);
+  const deployment=await fetch(base+'/api/deployment',{headers:{Authorization:'Bearer pwa-test-operator'}});assert.equal(deployment.status,200);assert.equal((await deployment.json() as any).profile,'STANDARD');
+  assert.equal((await fetch(base+'/android-operator-token')).status,404);
+ }finally{server.close();}
+});

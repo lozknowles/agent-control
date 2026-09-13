@@ -57,3 +57,5 @@ button:focus-visible,a:focus-visible,summary:focus-visible,input:focus-visible,s
  dialog{max-height:calc(100dvh - 24px);overflow:auto;max-width:calc(100vw - 24px)}
  dialog input,dialog textarea,.poe-form textarea{font-size:16px}
 }
+
+@media(max-width:850px){.topbar{backdrop-filter:none}.topbar:has(.mobile-open){z-index:100}.persistent-usage{position:relative;top:auto;min-height:0;padding-right:80px}.poe-launcher .poe-character{width:40px;height:50px}}

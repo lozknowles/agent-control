@@ -77,7 +77,7 @@ export function classifyReadinessGaps(declared:DeclaredReadiness,scan:DiscoveryS
 }
 
 // Explicit graph-client metadata contract. Never forward arbitrary adapter attributes.
-const SAFE_KEYS=['executionLocality','identityAuthority','controllerRelationship','platform','architecture','transport','privateTransport','port','authenticationMethod','authenticationState','authorizationState','credentialStatus','installed','configured','present','status','version','runtime','providerId','capabilities','cpuLogical','totalMemoryBytes','diskAvailableBytes','probePassed','lastSuccessfullyVerifiedAt','qualificationState','transportState'] as const;
+const SAFE_KEYS=['deploymentProfile','androidVersion','computeClass','cpuModel','availableMemoryBytes','batteryPercent','charging','thermalCelsius','metered','backgroundReliability','accelerator','controllerLocation','localModelRequired','executionLocality','identityAuthority','controllerRelationship','platform','architecture','transport','privateTransport','port','authenticationMethod','authenticationState','authorizationState','credentialStatus','installed','configured','present','status','version','runtime','providerId','capabilities','cpuLogical','totalMemoryBytes','diskAvailableBytes','probePassed','lastSuccessfullyVerifiedAt','qualificationState','transportState'] as const;
 export function safeEstateAttributes(attributes:Record<string,unknown>) {
   const out:Record<string,string|number|boolean>={};
   for(const key of SAFE_KEYS) {

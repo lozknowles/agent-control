@@ -23,6 +23,10 @@ export function validateMobilePolicy(value:unknown):MobileResourcePolicy {
 }
 export function assessMobileOperation(operation:'DOWNLOAD'|'BENCHMARK',observation:MobileObservation,policy:MobileResourcePolicy,request:{downloadBytes:number;estimatedRamBytes:number},now=Date.now()){
  const p=validateMobilePolicy(policy),o=observation,reasons:string[]=[];
+ for(const v of [o.charging,o.metered,o.background])if(v!==null&&typeof v!=='boolean')reasons.push('OBSERVATION_INVALID');
+ if(o.batteryPercent!==null&&(!Number.isFinite(o.batteryPercent)||o.batteryPercent<0||o.batteryPercent>100))reasons.push('OBSERVATION_INVALID');
+ for(const v of [o.availableRamBytes,o.freeStorageBytes])if(v!==null&&(!Number.isFinite(v)||v<0))reasons.push('OBSERVATION_INVALID');
+ if(o.thermalCelsius!==null&&(!Number.isFinite(o.thermalCelsius)||o.thermalCelsius< -20))reasons.push('OBSERVATION_INVALID');
  if(!Number.isFinite(Date.parse(o.observedAt))||now-Date.parse(o.observedAt)>p.maximumObservationAgeMs||Date.parse(o.observedAt)>now+1000)reasons.push('OBSERVATION_STALE');
  if(!Number.isSafeInteger(request.downloadBytes)||request.downloadBytes<0||!Number.isSafeInteger(request.estimatedRamBytes)||request.estimatedRamBytes<0)reasons.push('RESOURCE_ESTIMATE_INVALID');
  if(o.freeStorageBytes===null||o.freeStorageBytes-request.downloadBytes*1.1<p.minimumFreeStorageBytes)reasons.push('STORAGE_RESERVE_REQUIRED');
