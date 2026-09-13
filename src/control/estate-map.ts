@@ -83,10 +83,28 @@ function observedAt(item: DiscoveryItem, scan: DiscoveryScan) {
       .at(-1) ?? scan.completedAt
   );
 }
+function hasObservedWork(item: DiscoveryItem) {
+  const state = String(
+    item.attributes.runtimeState ??
+      item.attributes.workloadState ??
+      item.attributes.status ??
+      item.attributes.state ??
+      "",
+  ).toUpperCase();
+  return (
+    item.attributes.running === true ||
+    item.attributes.busy === true ||
+    (typeof item.attributes.currentWorkload === "string" &&
+      item.attributes.currentWorkload.trim().length > 0) ||
+    (typeof item.attributes.activeJobs === "number" &&
+      item.attributes.activeJobs > 0) ||
+    ["RUNNING", "BUSY", "EXECUTING", "IN_USE"].includes(state)
+  );
+}
 function stateFor(item: DiscoveryItem, fresh: boolean): RuntimeMapState {
   if (!fresh) return "WAITING";
   if (item.health === "HEALTHY")
-    return item.lifecycle === "ACTIVE" ? "RUNNING" : "SUCCEEDED";
+    return hasObservedWork(item) ? "RUNNING" : "SUCCEEDED";
   if (item.health === "NEEDS_QUALIFICATION") return "DEGRADED";
   if (item.health === "UNAVAILABLE")
     return item.configuredId ? "FAILED" : "WAITING";

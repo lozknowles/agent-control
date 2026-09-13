@@ -95,6 +95,9 @@ runtime availability; static hardware metadata has a longer inventory window.
 Stale resources remain visible but are labelled **NOT CURRENTLY VERIFIED**.
 Cloud models are never invoked solely for heartbeat. The compact Estate summary
 counts currently evidenced devices, transports, runtimes, models and agents.
+An `ACTIVE` configuration or capability lifecycle means enabled/available; it
+does not render as running work. Estate nodes show `RUNNING` only when a current
+observation explicitly reports a running, busy or in-use workload.
 
 Credential values never enter graph payloads. The client receives status and a
 fixed `••••••••••••` mask only; its length has no relationship to a credential.
