@@ -1,5 +1,7 @@
 # Agent Control 4.6 current showcase status
 
+> **Security stabilisation supersedes the earlier assessment below. Release publication is BLOCKED.** The reviewed 4.6 source and published tag contain release-gate and security defects. Remediation is isolated on `remediation/4.6-security-stabilisation-20260913`; no merge, tag, publication, deployment or installation is implied. See [security stabilisation](security-stabilisation-4.6.md) and [containment status](security-containment-4.6.md).
+
 **Unreleased integration candidate. Core release and showcase have separate gates.**
 
 See the [current scope reconciliation](release-integration-4.6.md) and [Known Limitations](known-limitations-4.6.md). The earlier [public preparation report](public-release-readiness-4.6.md) remains preserved historical evidence.

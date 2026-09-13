@@ -1,0 +1,400 @@
+{
+  "schema": "agent-control.security-stabilisation-disposition/v1",
+  "reviewedSnapshot": "ca15a4b7ebd8a87bce667a132049121f96db5898",
+  "remediationBranch": "remediation/4.6-security-stabilisation-20260913",
+  "reviewMethod": "Independent source challenge and non-billable local verification; original accepted packets preserved.",
+  "counts": {
+    "CONFIRMED_FIXED": 23,
+    "DISPROVEN": 20,
+    "DUPLICATE": 1,
+    "NEEDS_MORE_EVIDENCE": 4
+  },
+  "findings": [
+    {
+      "claimKey": "component-control-core-02::R1",
+      "originalClassification": "CONFIRMED",
+      "finalDisposition": "CONFIRMED_FIXED",
+      "title": "Local non-ancestor failures bypass the governed repository error code",
+      "evidence": "42624e1",
+      "reason": "Stable non-ancestor error translation is covered by focused repository tests."
+    },
+    {
+      "claimKey": "component-control-core-02::R2",
+      "originalClassification": "DISPROVEN",
+      "finalDisposition": "DISPROVEN",
+      "title": "Clean snapshot status is correctly treated as successful verification",
+      "evidence": "original independent register",
+      "reason": "Independent disposition retained after source challenge."
+    },
+    {
+      "claimKey": "component-control-core-02::R5",
+      "originalClassification": "CONFIRMED",
+      "finalDisposition": "CONFIRMED_FIXED",
+      "title": "Remote archive contents are not bound to the claimed revision or source identity",
+      "evidence": "7cdba84",
+      "reason": "Exact Git hash, source identity, archive digest and embedded archive commit are bound."
+    },
+    {
+      "claimKey": "component-control-core-02::R6",
+      "originalClassification": "CONFIRMED",
+      "finalDisposition": "CONFIRMED_FIXED",
+      "title": "Local snapshot permission hardening follows symlinks outside the snapshot",
+      "evidence": "42624e1",
+      "reason": "Snapshot hardening rejects escaping symlinks without touching the target."
+    },
+    {
+      "claimKey": "component-dashboard-core-ux-01::F1",
+      "originalClassification": "DISPROVEN",
+      "finalDisposition": "DISPROVEN",
+      "title": "Pairing controls are cleared and remain bound to their own pairing",
+      "evidence": "original independent register",
+      "reason": "Independent disposition retained after source challenge."
+    },
+    {
+      "claimKey": "component-jobs-execution-workers-01::R-001",
+      "originalClassification": "CONFIRMED",
+      "finalDisposition": "CONFIRMED_FIXED",
+      "title": "assertWebUrl allows navigation to private and internal network addresses",
+      "evidence": "eb7e559",
+      "reason": "Navigation, redirect, subresource and WebSocket destinations use the shared destination policy."
+    },
+    {
+      "claimKey": "component-jobs-execution-workers-01::R-002",
+      "originalClassification": "NEEDS_MORE_EVIDENCE",
+      "finalDisposition": "DISPROVEN",
+      "title": "Potential duplicate dispatch cannot be confirmed from the supplied snapshot",
+      "evidence": "d6cbcc6",
+      "reason": "Immediate concurrent dispatch cannot select the same step; batch formation claims selected items before return."
+    },
+    {
+      "claimKey": "component-jobs-execution-workers-01::R-003",
+      "originalClassification": "DISPROVEN",
+      "finalDisposition": "DISPROVEN",
+      "title": "Retry admission and reported retry budget are not off by one",
+      "evidence": "original independent register",
+      "reason": "Independent disposition retained after source challenge."
+    },
+    {
+      "claimKey": "component-jobs-execution-workers-01::R-004",
+      "originalClassification": "CONFIRMED",
+      "finalDisposition": "CONFIRMED_FIXED",
+      "title": "Late output after session teardown can lose credential redaction state",
+      "evidence": "295971b",
+      "reason": "Redaction state is retained for late output and retired output is dropped."
+    },
+    {
+      "claimKey": "component-dashboard-estate-process-maps-01::F1",
+      "originalClassification": "CONFIRMED",
+      "finalDisposition": "CONFIRMED_FIXED",
+      "title": "Capability-action onclick handlers can reject without a local error handler",
+      "evidence": "dbf21b9",
+      "reason": "Rejected capability actions surface an error and always clear busy state."
+    },
+    {
+      "claimKey": "component-api-web-bootstrap-01::FR-001",
+      "originalClassification": "NEEDS_MORE_EVIDENCE",
+      "finalDisposition": "DISPROVEN",
+      "title": "OpenWA webhook authentication cannot be determined at the HTTP routing layer",
+      "evidence": "existing HMAC test",
+      "reason": "The real OpenWA adapter rejects invalid HMACs; the HTTP route deliberately forwards headers to that verifier."
+    },
+    {
+      "claimKey": "component-api-web-bootstrap-01::FR-002",
+      "originalClassification": "CONFIRMED",
+      "finalDisposition": "CONFIRMED_FIXED",
+      "title": "Numerous control-plane GET endpoints bypass configured operator authentication",
+      "evidence": "0cd85f4",
+      "reason": "Ordinary control-plane reads now require operator authentication; narrow signed/share/static exceptions remain."
+    },
+    {
+      "claimKey": "component-api-web-bootstrap-01::FR-003",
+      "originalClassification": "DISPROVEN",
+      "finalDisposition": "DISPROVEN",
+      "title": "Exact asset allowlist prevents the alleged path traversal",
+      "evidence": "original independent register",
+      "reason": "Independent disposition retained after source challenge."
+    },
+    {
+      "claimKey": "component-configuration-schemas-01::CS-001",
+      "originalClassification": "NEEDS_MORE_EVIDENCE",
+      "finalDisposition": "DISPROVEN",
+      "title": "Retry combinations validate, but their invalidity and runtime effect are not established",
+      "evidence": "job-runtime.ts and retry tests",
+      "reason": "Zero attempts makes backoff inert; maximum backoff is an explicit cap. No unsafe runtime behavior was demonstrated."
+    },
+    {
+      "claimKey": "component-configuration-schemas-01::CS-002",
+      "originalClassification": "CONFIRMED",
+      "finalDisposition": "CONFIRMED_FIXED",
+      "title": "Job schema does not enforce unique step IDs or dependency referential integrity",
+      "evidence": "2384834",
+      "reason": "Canonical manifest validation enforces unique IDs, dependency existence and acyclicity; schema comments state the semantic boundary."
+    },
+    {
+      "claimKey": "component-estate-discovery-readiness-01::EDR-001",
+      "originalClassification": "DISPROVEN",
+      "finalDisposition": "DISPROVEN",
+      "title": "Discovery reconciliation ternary is structurally awkward but functionally correct",
+      "evidence": "original independent register",
+      "reason": "Independent disposition retained after source challenge."
+    },
+    {
+      "claimKey": "component-estate-discovery-readiness-01::EDR-002",
+      "originalClassification": "NEEDS_MORE_EVIDENCE",
+      "finalDisposition": "NEEDS_MORE_EVIDENCE",
+      "title": "Potential child-process leak on timeout is platform- and workload-dependent",
+      "evidence": "unresolved physical boundary",
+      "reason": "POSIX descendant termination is tested; the separate Windows DefaultDiscoveryProbe descendant case has not been physically proven."
+    },
+    {
+      "claimKey": "component-estate-discovery-readiness-01::EDR-015",
+      "originalClassification": "DUPLICATE",
+      "finalDisposition": "DUPLICATE",
+      "title": "Duplicate of EDR-001: reconciliation ternary is functionally correct",
+      "evidence": "original independent register",
+      "reason": "Independent disposition retained after source challenge."
+    },
+    {
+      "claimKey": "component-control-core-01::F-001",
+      "originalClassification": "NEEDS_MORE_EVIDENCE",
+      "finalDisposition": "NEEDS_MORE_EVIDENCE",
+      "title": "HTTP authentication is enforced at the transport boundary, but SDK authorization behavior is not evidenced",
+      "evidence": "shared-principal boundary",
+      "reason": "Bearer authentication and SDK interoperability are proven; distinct-principal isolation behind one shared token is not an implemented transport contract."
+    },
+    {
+      "claimKey": "component-control-core-01::F-003",
+      "originalClassification": "NEEDS_MORE_EVIDENCE",
+      "finalDisposition": "NEEDS_MORE_EVIDENCE",
+      "title": "Cancel and close rely on adapter-instance principal scoping rather than per-request ownership checks",
+      "evidence": "shared-principal boundary",
+      "reason": "Adapter-instance principal scoping is tested; a future multiplexed-principal transport would require a new per-request test and contract."
+    },
+    {
+      "claimKey": "component-providers-models-routing-01::PMR-001",
+      "originalClassification": "CONFIRMED",
+      "finalDisposition": "CONFIRMED_FIXED",
+      "title": "Historical intelligence can bypass current model qualification state",
+      "evidence": "97fc118",
+      "reason": "Historical intelligence cannot override current UNTESTED or DEGRADED qualification."
+    },
+    {
+      "claimKey": "component-providers-models-routing-01::PMR-002",
+      "originalClassification": "DISPROVEN",
+      "finalDisposition": "DISPROVEN",
+      "title": "Replay preserves invalidation rather than resurrecting the expert",
+      "evidence": "original independent register",
+      "reason": "Independent disposition retained after source challenge."
+    },
+    {
+      "claimKey": "component-providers-models-routing-01::PMR-003",
+      "originalClassification": "DISPROVEN",
+      "finalDisposition": "DISPROVEN",
+      "title": "Escalation deliberately applies the escalation metering policy without bypassing required approval",
+      "evidence": "original independent register",
+      "reason": "Independent disposition retained after source challenge."
+    },
+    {
+      "claimKey": "component-docs-estate-readiness-01::F-01",
+      "originalClassification": "DISPROVEN",
+      "finalDisposition": "DISPROVEN",
+      "title": "The all-jobs document contains all 50 advertised job sections",
+      "evidence": "original independent register",
+      "reason": "Independent disposition retained after source challenge."
+    },
+    {
+      "claimKey": "component-docs-estate-readiness-01::F-02",
+      "originalClassification": "DISPROVEN",
+      "finalDisposition": "DISPROVEN",
+      "title": "The visualization explicitly explains why refreshed resources do not restore READY admissions",
+      "evidence": "original independent register",
+      "reason": "Independent disposition retained after source challenge."
+    },
+    {
+      "claimKey": "component-job-definitions-configuration-01::F1",
+      "originalClassification": "NEEDS_MORE_EVIDENCE",
+      "finalDisposition": "DISPROVEN",
+      "title": "Production publish approval enforcement is not verifiable from the job configuration alone",
+      "evidence": "job-runtime approval tests",
+      "reason": "The runtime stops at WAITING_FOR_APPROVAL and does not call the Action until the named approval is accepted."
+    },
+    {
+      "claimKey": "component-job-definitions-configuration-01::F3",
+      "originalClassification": "NEEDS_MORE_EVIDENCE",
+      "finalDisposition": "CONFIRMED_FIXED",
+      "title": "Disruptive maintenance operations have no explicit timeout in the supplied job definition",
+      "evidence": "79f15c4",
+      "reason": "Managed-node maintenance has an explicit 300-second step timeout in addition to approval and no-overlap."
+    },
+    {
+      "claimKey": "component-mallow-crew-operator-01::FINDING-001",
+      "originalClassification": "DISPROVEN",
+      "finalDisposition": "DISPROVEN",
+      "title": "The cited expired-approval early-return defect is contradicted by the supplied implementation",
+      "evidence": "original independent register",
+      "reason": "Independent disposition retained after source challenge."
+    },
+    {
+      "claimKey": "component-persistence-recovery-evidence-01::PR-001",
+      "originalClassification": "CONFIRMED",
+      "finalDisposition": "CONFIRMED_FIXED",
+      "title": "Lease renewal TTL is not clamped to the acquisition bounds",
+      "evidence": "8415662",
+      "reason": "Acquire and renew both enforce integer durations from 10 seconds through 24 hours."
+    },
+    {
+      "claimKey": "component-qualification-evidence-history-01::FINDING-001",
+      "originalClassification": "CONFIRMED",
+      "finalDisposition": "CONFIRMED_FIXED",
+      "title": "The live benchmark artifact records universal failures without diagnostic failure classification",
+      "evidence": "412acf3",
+      "reason": "Future rows carry stable redacted failure classifications; the original failing artifact remains immutable."
+    },
+    {
+      "claimKey": "new-review::release-gate-binding",
+      "originalClassification": "NEW_CANDIDATE",
+      "finalDisposition": "CONFIRMED_FIXED",
+      "title": "release gate binding",
+      "evidence": "076d8c3",
+      "reason": "Release evidence now binds version, commit, digest, full checks, protected evidence and external operator approval."
+    },
+    {
+      "claimKey": "new-review::governed-git-policy-dead-code",
+      "originalClassification": "NEW_CANDIDATE",
+      "finalDisposition": "DISPROVEN",
+      "title": "governed git policy dead code",
+      "evidence": "existing runtime safety tests",
+      "reason": "JobRuntime merges compiled operator policies before safety assessment and denies protected ref mutations."
+    },
+    {
+      "claimKey": "new-review::governed-git-tag-reconciliation",
+      "originalClassification": "NEW_CANDIDATE",
+      "finalDisposition": "CONFIRMED_FIXED",
+      "title": "governed git tag reconciliation",
+      "evidence": "31de490",
+      "reason": "Tag destinations retain refs/tags namespace and are observed in the same namespace."
+    },
+    {
+      "claimKey": "new-review::governed-git-environment",
+      "originalClassification": "NEW_CANDIDATE",
+      "finalDisposition": "CONFIRMED_FIXED",
+      "title": "governed git environment",
+      "evidence": "31de490",
+      "reason": "Child environment is an allowlist and excludes controller/provider credential variables and unsafe Git overrides."
+    },
+    {
+      "claimKey": "new-review::session-share-token-storage",
+      "originalClassification": "NEW_CANDIDATE",
+      "finalDisposition": "CONFIRMED_FIXED",
+      "title": "session share token storage",
+      "evidence": "4a37e10",
+      "reason": "Share credential is fragment-only and is removed from the address without browser storage."
+    },
+    {
+      "claimKey": "new-review::session-player-markup-injection",
+      "originalClassification": "NEW_CANDIDATE",
+      "finalDisposition": "CONFIRMED_FIXED",
+      "title": "session player markup injection",
+      "evidence": "4a37e10",
+      "reason": "Lane class is a fixed enum and displayed values remain escaped."
+    },
+    {
+      "claimKey": "new-review::energy-measurement-preference",
+      "originalClassification": "NEW_CANDIDATE",
+      "finalDisposition": "CONFIRMED_FIXED",
+      "title": "energy measurement preference",
+      "evidence": "5e7ef94",
+      "reason": "Measured eligible routes are preferred when measured evidence exists."
+    },
+    {
+      "claimKey": "new-review::energy-candidate-outlier-scoring",
+      "originalClassification": "NEW_CANDIDATE",
+      "finalDisposition": "CONFIRMED_FIXED",
+      "title": "energy candidate outlier scoring",
+      "evidence": "5e7ef94",
+      "reason": "Scores use fixed policy reference scales and do not change when an irrelevant outlier is added."
+    },
+    {
+      "claimKey": "new-review::auto-handoff-privilege-increase",
+      "originalClassification": "NEW_CANDIDATE",
+      "finalDisposition": "DISPROVEN",
+      "title": "auto handoff privilege increase",
+      "evidence": "handoff-runtime tests",
+      "reason": "AUTO transfers only authority already held and bounded budget; withheld authority, expansions and risky effects require approval."
+    },
+    {
+      "claimKey": "new-review::stale-completion-clone-overwrite",
+      "originalClassification": "NEW_CANDIDATE",
+      "finalDisposition": "DISPROVEN",
+      "title": "stale completion clone overwrite",
+      "evidence": "contract-runtime tests",
+      "reason": "Completion is synchronous and generation-fenced; takeover/resumption stale completions are ignored in all four outcomes."
+    },
+    {
+      "claimKey": "new-review::failed-handoff-pressure",
+      "originalClassification": "NEW_CANDIDATE",
+      "finalDisposition": "CONFIRMED_FIXED",
+      "title": "failed handoff pressure",
+      "evidence": "061f33d",
+      "reason": "Failure re-evaluates current context pressure and preserves HANDOFF/COMPACT state where appropriate."
+    },
+    {
+      "claimKey": "new-review::intelligence-journal-orphan-lock",
+      "originalClassification": "NEW_CANDIDATE",
+      "finalDisposition": "CONFIRMED_FIXED",
+      "title": "intelligence journal orphan lock",
+      "evidence": "fd65308",
+      "reason": "Dead PID/start-token owners are recovered; live owners remain exclusive."
+    },
+    {
+      "claimKey": "new-review::qualification-evidence-predelete",
+      "originalClassification": "NEW_CANDIDATE",
+      "finalDisposition": "CONFIRMED_FIXED",
+      "title": "qualification evidence predelete",
+      "evidence": "c4617f1",
+      "reason": "Recorder refuses pre-existing outputs instead of deleting prior evidence."
+    },
+    {
+      "claimKey": "new-review::remote-snapshot-memory-expansion",
+      "originalClassification": "NEW_CANDIDATE",
+      "finalDisposition": "CONFIRMED_FIXED",
+      "title": "remote snapshot memory expansion",
+      "evidence": "c4617f1",
+      "reason": "Remote archive size is capped before ReadAllBytes/base64 expansion and controller input remains bounded."
+    },
+    {
+      "claimKey": "new-review::release-report-mode-0644",
+      "originalClassification": "NEW_CANDIDATE",
+      "finalDisposition": "DISPROVEN",
+      "title": "release report mode 0644",
+      "evidence": "repository distribution boundary",
+      "reason": "The cited report is tracked public documentation; mode 0644 is consistent with its intended distribution and contains no credential payload."
+    },
+    {
+      "claimKey": "new-review::synthetic-key-redaction",
+      "originalClassification": "NEW_CANDIDATE",
+      "finalDisposition": "DISPROVEN",
+      "title": "synthetic key redaction",
+      "evidence": "existing redaction path plus b6305fa",
+      "reason": "The cited synthetic key matches the existing pattern; durable redaction coverage was also expanded for common provider identifiers."
+    },
+    {
+      "claimKey": "new-review::powershell-interpolation-injection",
+      "originalClassification": "NEW_CANDIDATE",
+      "finalDisposition": "DISPROVEN",
+      "title": "powershell interpolation injection",
+      "evidence": "fixed argv and input validation",
+      "reason": "The claim acknowledges every interpolated payload value is validated or constant; SSH uses argv without a shell."
+    },
+    {
+      "claimKey": "new-review::benchmark-independence",
+      "originalClassification": "NEW_CANDIDATE",
+      "finalDisposition": "NEEDS_MORE_EVIDENCE",
+      "title": "benchmark independence",
+      "evidence": "release blocker",
+      "reason": "No target-model winner or universal efficiency claim is admitted without new approved physical execution and independent evidence."
+    }
+  ],
+  "releaseVerdict": "BLOCKED",
+  "generatedAt": "2026-09-13T20:15:00Z"
+}

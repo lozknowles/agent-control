@@ -1,3 +1,16 @@
+# Agent Control 4.6 security release recovery
+
+- [x] Preserve the reviewed snapshot and accepted review packets.
+- [x] Isolate remediation from the canonical and release-integration checkouts.
+- [x] Contain older overlay-published dashboards while preserving loopback controllers and remote administration.
+- [x] Fix and verify confirmed release-gate, snapshot, browser, HTTP-authentication, output-redaction, lease, Git, session-player, energy-routing, journal-lock, evidence-retention, benchmark-classification and maintenance-timeout defects.
+- [x] Run the complete repository check: 1,490 tests passed with zero failures.
+- [ ] Produce a trusted schema-v2 full-suite receipt for the exact final candidate.
+- [ ] Obtain external protected operator approval bound to the candidate and receipt.
+- [ ] Physically qualify virgin install, supported upgrade and required device/browser paths for the exact package.
+- [ ] Close or explicitly accept the Windows discovery descendant-timeout and distinct-principal ACP boundaries.
+- [ ] Merge, tag, publish and deploy only after the hardened release gate passes and those actions are separately authorised.
+
 # Agent Control 4.5 work plan
 
 This is the canonical roadmap. Agent Control 4.5 release closure is occurring on
