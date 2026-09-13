@@ -41,6 +41,8 @@ Open **http://127.0.0.1:4310**. Keep this terminal running; Ctrl+C stops this fo
 
 ## What you should see
 
+![Actual first dashboard](media/4.6/public/01-first-dashboard.png)
+
 The Dashboard welcomes you and offers **Authenticate to start discovery**, followed by **Discover my environment** after authentication. A fresh installation has no scan history or completed work. Mallow is the floating guide; crew presentation is not evidence that extra workers are executing.
 
 Primary navigation leads to jobs, maps, models, usage, discovery and Mallow. The welcome guide can be dismissed and reopened. [See the real first-load screen](public-installation-journey.md#a--first-dashboard).
@@ -56,6 +58,14 @@ Primary navigation leads to jobs, maps, models, usage, discovery and Mallow. The
 Discovery inspects supported hardware, agents, runtimes, local model locations, provider configuration, transports and integrations. Availability depends on what is installed and authorised. Finding a configuration reference does not authenticate a provider or qualify a model. Do not paste credentials into Mallow or a public report.
 
 [Setup, live progress and completed results](public-installation-journey.md#b--setup-and-discovery).
+
+![Discovery setup before the first scan](media/4.6/public/02-setup.png)
+
+![Actual discovery in progress](media/4.6/public/03-discovery-running.png)
+
+![Actual completed discovery](media/4.6/public/04-discovery-results.png)
+
+The progress capture uses a CPU-constrained disposable container; no status was simulated.
 
 ### Understand discovery status
 
@@ -76,6 +86,8 @@ Discovery inspects supported hardware, agents, runtimes, local model locations, 
 
 Colour and status text convey health/readiness: green has supporting availability evidence; orange needs attention; red reports failure; grey lacks current proof. Read the inspector rather than relying only on colour. **Discovered does not mean currently alive.** Active registration alone does not mean work is running.
 
+![Actual Estate Map](media/4.6/public/05-estate.png)
+
 Select a resource to see evidence, identity, gaps and related work. [Estate and inspector screenshots](public-installation-journey.md#e--estate-and-inspector).
 
 ## Watch Agent Control work
@@ -90,17 +102,23 @@ Use this provider-free first job; it needs no paid API or model download:
 
 **Process Map shows what Agent Control is doing.** Estate shows what it has available. Process worker/resource links lead back to the Estate inspector. [Actual governed execution](public-installation-journey.md#g--process-map).
 
+![Actual completed observation job](media/4.6/public/07-process.png)
+
 This deterministic observation job does not invoke an LLM. An empty Usage view after it is expected.
 
 ## Understand usage and efficiency
 
 Open **Usage** for recorded calls, model/provider, input/output tokens, cache evidence, retries, local/API execution and historical breakdowns. Costs appear only where evidence supports them. **Missing billing evidence is not zero cost.**
 
+![Current Usage dashboard with sealed physical history](media/4.6/public/08-usage.png)
+
 The [Usage screenshot](public-installation-journey.md#h--usage-and-cost) comes from separate physical local-inference qualification, not fabricated first-run records.
 
 ## Local AI energy
 
 Energy views distinguish measured power, derived interval energy and unavailable evidence. They show component scope and coverage. Normal physical runs reached **100%** coverage; a controlled sampling gap reached **66.96%**, excluding unmeasured intervals.
+
+![Real component energy evidence](media/4.6/public/09-energy.png)
 
 The [real Energy example](public-installation-journey.md#i--energy) is shared-GPU component evidence. It is not attributable job energy, whole-node electricity or cloud energy. Billing, positive cache billing, attribution, tariff and whole-node gates remain **BLOCKED_EXTERNAL**. [Detailed limitations](usage-energy-physical-closure-4.6.md).
 

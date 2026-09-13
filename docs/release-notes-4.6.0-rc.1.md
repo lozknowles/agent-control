@@ -12,7 +12,7 @@ This is an **unreleased development candidate**. The public stable release remai
 
 ## Public preparation changes
 
-The README and installation journey are being qualified from the public repository. Existing-install guidance uses a separate checkout and preserved state. Published 4.5 fixes are carried into the candidate for controller-local worker identity, configuration preservation, recovered discovery state and accurate availability-versus-work presentation.
+The README and installation journey are qualified from the public repository. Existing-install guidance uses a separate checkout and preserved state. Published 4.5 fixes are carried into the candidate for controller-local worker identity, configuration preservation, recovered discovery state and accurate availability-versus-work presentation.
 
 ## Verified subsystem and remaining limits
 
@@ -21,3 +21,7 @@ Usage & Energy remains **PASS WITH LIMITATIONS**, with local physical inference/
 Metered billing, positive cache billing, attributable job/baseline energy, physical tariffs and whole-node electricity remain **BLOCKED_EXTERNAL**. No whole-node or cloud energy claim is made.
 
 The complete 4.6 showcase still requires its mandatory target-model and overnight evidence. This documentation checkpoint does not merge, tag, release or deploy the candidate.
+
+## Public preparation validation
+
+The [readiness report](public-release-readiness-4.6.md) records 1,438 passing tests, typecheck, a public virgin installation, the v4.5.1 existing-state upgrade, thirteen real screenshots and the one-page overview. Discovery polling now stops after completion; map selection breadcrumbs reset when switching surfaces. The complete release recommendation remains NOT READY.

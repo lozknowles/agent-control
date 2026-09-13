@@ -4,6 +4,8 @@
 
 Mallow is Agent Control's floating guide and chief steward: a way to ask what is happening, inspect evidence and propose governed work. A proposal is not execution permission; review its scope and approve the actual job when appropriate.
 
+![The actual crew view](media/4.6/public/10-crew.png)
+
 | Character | Established role |
 | --- | --- |
 | Cadence | Controller and lane dispatcher |

@@ -6,6 +6,8 @@ Discover your AI tools, see what is available, and follow approved work from req
 
 [Install Agent Control](docs/installation-first-run.md) · [Documentation](docs/index.md) · [Upgrade](docs/upgrade-4.6.md) · [Release notes](docs/release-notes-4.6.0-rc.1.md)
 
+[![Agent Control overview composed from actual product screens and crew assets](docs/media/4.6/public/overview.png)](docs/public-installation-journey.md)
+
 ## Discover → Observe → Run → Understand → Control
 
 - **Discover** supported machines, agents, runtimes, models and integrations already in your environment.
@@ -38,6 +40,8 @@ Choose a private operator token of at least 32 characters and keep it in your pa
 
 A GPU, model server, paid API, Codex, VPN and Home Assistant are optional capabilities, not dashboard prerequisites.
 
+![Actual first dashboard](docs/media/4.6/public/01-first-dashboard.png)
+
 ## See what is available; follow what is happening
 
 **Estate Map** shows known resources, relationships and current health. Discovered does not mean alive, authenticated or qualified. Select a resource to inspect its evidence and gaps.
@@ -46,9 +50,11 @@ A GPU, model server, paid API, Codex, VPN and Home Assistant are optional capabi
 
 The [real installation journey](docs/public-installation-journey.md) shows the first screen, discovery progress, results, Estate, Process and Mallow. Screenshots are captured from the running product, not generated UI.
 
+[![Actual Estate Map](docs/media/4.6/public/05-estate.png)](docs/public-installation-journey.md#e--estate-and-inspector)
+
 ## Understand usage and local energy
 
-![Actual Usage dashboard from physical qualification](docs/media/4.6/usage-closure/01-overview.png)
+![Actual Usage dashboard from physical qualification](docs/media/4.6/public/08-usage.png)
 
 Usage records distinguish model/provider, local/API execution, tokens, cache evidence, retries and billing availability. **Missing billing evidence is not zero cost.** Subscription-included Codex is non-metered for monetary billing qualification.
 
