@@ -1,6 +1,6 @@
 # Model Intelligence showcase candidate (4.6, unreleased)
 
-This candidate adds versioned model observations, bounded Model Watch policies, personal benchmark evidence and a dashboard entry point. The installed package remains 4.5.0 until release approval. This is not a declaration of complete 4.6 physical qualification.
+This candidate adds versioned model observations, bounded Model Watch policies, personal benchmark evidence and a dashboard entry point. The package is marked 4.6.0-rc.1; this is an untagged, unreleased candidate. This is not a declaration of complete 4.6 physical qualification.
 
 ## User flow
 
