@@ -1,6 +1,6 @@
 # Agent Control architecture
 
-This is the authoritative source boundary for the Agent Control 4.5.0 candidate. Agent Control 4.4.0 remains the latest formally released baseline. Historical physical evidence remains bound to its recorded product SHA. Status labels matter:
+This is the authoritative source boundary for the Agent Control 4.5.1 remediation candidate. Agent Control 4.5.0 is preserved as the latest formally published source release while the existing-configuration upgrade correction is requalified. Historical physical evidence remains bound to its recorded product SHA. Status labels matter:
 
 - **implemented** means executable code and automated tests exist in this branch;
 - **experimental** means executable code exists but has not been qualified across every external substrate;
@@ -688,6 +688,25 @@ The scheduler selects capabilities, placement and priority before queue mutation
 Windows OpenAI execution uses an explicit authentication selector below this boundary. `auto` chooses the qualified Responses provider when an API key is configured and otherwise chooses official Codex non-interactive execution with ChatGPT-managed authentication. The Codex process receives an ephemeral read-only capability envelope with user-configured MCP tools disabled; its schema-constrained returned request still enters `ToolInvocationGateway`. Authentication choice never changes lease, ownership, scheduling, verification or takeover authority.
 
 `JobRuntime` is the workflow-level extension of that scheduler, not a parallel policy engine. It discovers due Schedule definitions, calls one `createRun` path, evaluates a Run DAG, resolves every step against the worker capability registry, acquires semantic resource locks, dispatches a registered Action, stores typed artifacts and requires declared verification before success. Model/provider routing remains a separate decision from worker placement. All dashboard/TUI mutations enter through `AgentControlService`.
+
+Worker capability and worker execution locality are separate facts. A
+`WorkerExecutionIdentity` binds the scheduler-visible worker ID to its execution
+node, locality, identity authority and controller relationship. Agent
+Control-owned workers are established only through the internal registration
+boundary; configured resources derive locality from their validated transport.
+Worker names, labels, host-like strings and remote self-declared metadata cannot
+grant local authority. A configured SSH/HTTP/Orca resource therefore remains a
+remote worker even if it claims to be a controller, while an ordinary
+unestablished registration remains `UNKNOWN` when runtime safety is active.
+
+`JobRuntime` supplies this trusted identity to `RuntimeSafetySupervisor`. A
+controller-local or local configured worker does not create a `REMOTE_NODE`
+effect merely because its worker ID differs from the controller resource ID. A
+genuine remote worker does create that effect and must satisfy the configured
+remote-node scope; an absent, mismatched or internally inconsistent identity adds
+`UNKNOWN` and fails closed. The same identity is projected into Environment
+Discovery and Estate Map, so execution safety and operator-visible topology use
+one provenance rather than competing locality guesses.
 
 The append-oriented Run ledger retains the effective Job version, parameters, trigger, worker assignments, execution identity, retries, recovery state, cleanup, artifacts, evidence, errors and provenance. A restart never assumes a live Action survived and never blindly requeues one: an in-flight step becomes `DISCONNECTED`/identity-unproven and its durable resource lock remains held while the configured adapter reconciles the exact execution ID. Proven continuity may enter `RECONNECTING`; an unknown or changed identity requires operator reconciliation. PID alone is not recovery evidence.
 

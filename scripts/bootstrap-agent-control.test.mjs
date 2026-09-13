@@ -146,3 +146,15 @@ test('published first-run walkthrough establishes operator authentication before
     assert.match(guide, /observe → verify/);
   }
 });
+
+test('release documentation permanently gates both virgin installation and supported configuration upgrade', () => {
+  const deployment = fs.readFileSync(path.join(repositoryRoot, 'docs/DEPLOYMENT.md'), 'utf8');
+  const qualification = fs.readFileSync(path.join(repositoryRoot, 'docs/qualification.md'), 'utf8');
+  for (const guide of [deployment, qualification]) {
+    assert.match(guide, /Virgin install/i);
+    assert.match(guide, /Supported upgrade|Supported existing-configuration upgrade/i);
+    assert.match(guide, /operator-system-observation@1\.1\.0/);
+  }
+  assert.match(deployment, /v4\.1/);
+  assert.match(qualification, /src\/control\/fixtures\/v4\.1-existing-configuration\.json/);
+});

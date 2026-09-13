@@ -12,6 +12,7 @@ import type {
   ServiceConfig,
 } from "./config.js";
 import type { ManagedNodeSnapshot } from "./managed-node.js";
+import type { WorkerExecutionIdentity } from "./job-types.js";
 import {
   assertNoSensitiveMaterial,
   redactSensitiveValue,
@@ -245,7 +246,12 @@ export interface DiscoveryAdapterContext {
   edgeNodes: EdgeDiscoveryObservation[];
   runtimeInventory: {
     jobs: Array<{ id: string; name: string; version: string }>;
-    agents: Array<{ id: string; health: string; capabilities: string[] }>;
+    agents: Array<{
+      id: string;
+      health: string;
+      capabilities: string[];
+      executionIdentity?: WorkerExecutionIdentity;
+    }>;
     tools: string[];
     skills: Array<{ id: string; state: string; kind: string }>;
     mcpServers: Array<{ id: string; state: string }>;
@@ -1430,7 +1436,14 @@ export class AgentResourceDiscoveryAdapter implements DiscoveryAdapter {
               ? "OFFLINE"
               : "UNKNOWN",
           agent.health === "healthy" ? "QUALIFIED" : "DISCOVERED",
-          { capabilities: agent.capabilities.join(","), health: agent.health },
+          {
+            capabilities: agent.capabilities.join(","),
+            health: agent.health,
+            executionLocality: agent.executionIdentity?.locality ?? "UNKNOWN",
+            identityAuthority: agent.executionIdentity?.authority ?? "UNVERIFIED",
+            controllerRelationship: agent.executionIdentity?.controllerRelationship ?? "UNKNOWN",
+            ...(agent.executionIdentity?.nodeId ? { location: agent.executionIdentity.nodeId } : {}),
+          },
           this.id,
           "worker-registry",
           "AUTHORITATIVE",

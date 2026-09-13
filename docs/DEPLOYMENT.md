@@ -1,4 +1,10 @@
-# Agent Control 4.5 deployment, upgrade and rollback
+# Agent Control 4.5.1 deployment, upgrade and rollback
+
+> **Existing-installation advisory:** the published `v4.5.0` source release
+> passed virgin installation but did not pass the later production upgrade from
+> the preserved v4.1 configuration. Keep an existing production installation on
+> its known-good version until `v4.5.1` has completed the dual installation gate
+> below. Do not reset configuration to imitate a fresh install.
 
 ## Bootstrap and Environment Discovery
 
@@ -75,7 +81,7 @@ newer record must stop rather than migrate or discard it. Full procedures are in
 [Session Vault recovery](session-vault-recovery.md) and
 [replication](session-vault-replication.md).
 
-This is the canonical deployment guide for the Agent Control 4.5 candidate. Source publication
+This is the canonical deployment guide for the Agent Control 4.5.1 remediation candidate. Source publication
 and production deployment are separate events. A healthy listener alone does not
 prove release qualification.
 
@@ -102,8 +108,8 @@ npm run check
 qualification trees, dashboard media and oversized evidence objects from being
 reintroduced into product-source history.
 
-Before the tag exists, release qualification uses the exact reviewed candidate
-SHA in place of `v4.5.0`. The bootstrap check should report a verified
+Before the remediation tag exists, release qualification uses the exact reviewed
+4.5.1 candidate SHA in place of the published `v4.5.0` tag. The bootstrap check should report a verified
 repository and available dashboard. Install reports no-lock dependency
 installation and whether the existing configuration was initialized or
 preserved. The validation suite uses disposable test state and leaves the
@@ -175,10 +181,12 @@ delivery mechanism. Do not place credentials in URLs, Git, transcripts or videos
 
 ## Morrow integration testing
 
-The combined experimental source is on `feature/4.5-release-gate-completion`.
-Use an isolated checkout at its verified immutable commit, with separate private
-state/configuration and an unused loopback port. Follow the local startup above;
-never share a writable state directory with the running controller.
+The original Morrow integration was qualified on the historical
+`feature/4.5-release-gate-completion` checkpoint and is now part of the 4.5
+release line. For regression or evidence review, use an isolated checkout at the
+release candidate under test, with separate private state/configuration and an
+unused loopback port. Follow the local startup above; never share a writable
+state directory with the running controller.
 
 Check the host name, all six robots, new and restored conversations, contextual
 help, reduced/off motion and narrow-screen layout. With an enrolled physical
@@ -190,26 +198,37 @@ controlled transcription tests do not establish these physical Morrow checks.
 
 See the [integration record](evidence/morrow-4.5-integration/validation.md).
 Source integration and publication do not change the running installation or
-make this candidate release-ready.
+substitute for the dual installation and governed-smoke gates below.
 
 ## Pre-release and rollout gate
 
 1. Freeze the candidate SHA and resolved dependency inventory.
 2. Run `npm run check` from a clean isolated checkout.
-3. Confirm the 4.3 A–F foundation remains intact and the recorded 4.4 physical
+3. Perform a normal documented virgin installation from the frozen candidate,
+   then prove authenticated dashboard startup, First Run Environment Discovery,
+   truthful Estate classification and the governed
+   `operator-system-observation@1.1.0` smoke Job.
+4. **Supported existing-configuration upgrade:** separately copy each declared
+   supported prior configuration and state into an
+   owner-only qualification root. Run the same documented bootstrap without
+   deleting or resetting that configuration, then prove dashboard startup,
+   discovery, Estate classification and the same governed smoke Job. For 4.5.1,
+   the mandatory prior shape is v4.1. A virgin PASS cannot substitute for this
+   upgrade PASS.
+5. Confirm the 4.3 A–F foundation remains intact and the recorded 4.4 physical
    browser qualification matches the release tree, including immutable session
    identity, parallel lanes, accounting, the Your Memories lifecycle, complete
    transcript and reviewed 1920×1080 recording.
-4. Verify state/config compatibility and create an owner-only stopped-controller
+6. Verify state/config compatibility and create an owner-only stopped-controller
    backup.
-5. Merge through the repository workflow only after every mandatory 4.5 gate is
-   proven, verify the merge contains the qualified tree, tag `v4.5.0`, push, and
+7. Merge through the repository workflow only after every mandatory 4.5.1 gate
+   is proven, verify the merge contains the qualified tree, tag `v4.5.1`, push, and
    create the GitHub Release with manifest hashes. A draft pull request or an
    experimental candidate is not a stable release.
-6. Stop only the scoped existing controller, select the immutable release, retain
+8. Stop only the scoped existing controller, select the immutable release, retain
    existing state and credential references, and restart through its established
    supervisor.
-7. Verify version, source provenance, health, authentication, SSE updates, Jobs,
+9. Verify version, source provenance, health, authentication, SSE updates, Jobs,
    Lanes, Models, Crew, Warm Cache Runtime and a harmless governed operation.
 
 The historical 4.5 candidate gate and its then-open limitations are recorded in
@@ -242,7 +261,8 @@ new candidate's result.
 Retain the previous immutable release SHA/package, supervisor definition and
 matching owner-only state backup. If acceptance fails, stop the candidate controller,
 restore the matching previous state only if migration changed it, select the
-previous immutable release (`v4.4.0`), restart the same scoped service and recheck health,
+previous known-good production release (currently `v4.1.0` for this remediation),
+restart the same scoped service and recheck health,
 authentication and a harmless read-only operation. Never run old and new versions
 against one state directory or move credential stores with source archives.
 

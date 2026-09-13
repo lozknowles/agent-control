@@ -51,6 +51,20 @@ export interface WorkerRegistration {
   capabilityExpiresAt?: Record<string, string>;
   observedAt: string;
 }
+export type WorkerExecutionLocality = 'CONTROLLER_LOCAL' | 'LOCAL_WORKER' | 'REMOTE_WORKER' | 'UNKNOWN';
+export type WorkerIdentityAuthority = 'AGENT_CONTROL_INTERNAL' | 'CONFIGURED_RESOURCE' | 'UNVERIFIED';
+export type WorkerControllerRelationship = 'CONTROLLER_INTERNAL' | 'CONTROLLER_RESOURCE' | 'CONTROLLER_HOST_RESOURCE' | 'REMOTE_RESOURCE' | 'UNKNOWN';
+/**
+ * Registry-owned execution identity. Worker labels and remote observations never
+ * establish these fields; they are only issued by trusted registration paths.
+ */
+export interface WorkerExecutionIdentity {
+  workerId: string;
+  nodeId: string | null;
+  locality: WorkerExecutionLocality;
+  authority: WorkerIdentityAuthority;
+  controllerRelationship: WorkerControllerRelationship;
+}
 export interface PlacementRationale {selected?: string; eligible: string[]; rejected: Array<{workerId: string; reasons: string[]}>; reasons: string[];}
 export interface ArtifactRecord {
   id: string; runId: string; stepId: string; name: string; type: string; schema: string; version: string;

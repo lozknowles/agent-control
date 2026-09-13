@@ -1,6 +1,32 @@
 # Changelog
 
-## [4.5.0] — Unreleased candidate
+## [4.5.1] — Remediation candidate
+
+### Existing-configuration upgrade correction
+
+- Corrects the worker-locality classification defect found during the genuine
+  v4.5.0 production upgrade smoke test. The built-in
+  `agent-control:operator-observer` is now established as controller-local by
+  the trusted registration path rather than being treated as remote merely
+  because its worker ID differs from `controller`.
+- Adds an explicit provider-neutral worker execution identity containing worker,
+  node, locality, authority, and controller relationship. Configured transport
+  and Agent Control-owned registration are authoritative; names and labels are
+  not.
+- Preserves the runtime-safety boundary: configured remote workers remain
+  `REMOTE_NODE` actions, unapproved remote workers are denied, and unknown,
+  inconsistent, or spoofed identities fail closed before execution.
+- Projects the same trusted locality and controller relationship through
+  Environment Discovery and Estate Map so the internal observer appears beneath
+  its actual controller rather than as a remote estate node.
+- Adds an authentic supported v4.1 configuration fixture and deterministic
+  upgrade coverage alongside the existing fresh-install regression. Relevant
+  future releases must physically qualify both virgin installation and upgrade
+  from each declared supported prior configuration.
+- Preserves the immutable v4.5.0 release, failed deployment evidence, known-good
+  v4.1 rollback, and every accepted 4.5 limitation.
+
+## [4.5.0] — 2026-09-13
 
 ### Final acceptance-contract and virgin-install closure
 
@@ -20,9 +46,9 @@
   unavailable/failed routes remain unroutable and no unsupported energy claim
   is enabled.
 - Records **PASS WITH LIMITATIONS — READY FOR 4.5 RELEASE** after the later
-  acceptance-contract audit and clean-install gates. Agent Control 4.4.0
-  remains the latest released version until the separately authorised release
-  operation actually merges and tags this candidate.
+  acceptance-contract audit and clean-install gates. Agent Control 4.5.0 was
+  subsequently published from the qualified tree; its later production-upgrade
+  failure and successful v4.1 rollback are preserved in the 4.5.1 entry above.
 
 ### Virgin-install remediation
 

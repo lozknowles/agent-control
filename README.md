@@ -1,4 +1,13 @@
-# Agent Control 4.5.0 candidate
+# Agent Control 4.5.1 remediation candidate
+
+Agent Control 4.5.1 is the narrow production-upgrade remediation for the
+published 4.5.0 release. It corrects controller-local worker classification
+when an existing supported configuration is preserved during upgrade. Locality
+now comes from trusted internal registration or configured transport
+provenance—not a worker name or self-declared label—so genuine remote workers
+remain under remote runtime-safety policy and unknown identities still fail
+closed. See the [4.5.1 migration guide](docs/migration-4.5.1.md), [deployment
+guide](docs/DEPLOYMENT.md), and [release notes](docs/release-notes-4.5.1.md).
 
 The 4.5 candidate now includes a governed **Setup & Environment Discovery**
 wizard and a live **Estate Map** alongside Process Map. It inventories real
@@ -122,14 +131,14 @@ The exact `openbmb/MiniCPM5-2B-GGUF` Q4_K_M configuration also remains
 the result is not hidden as a harness artefact; only that immutable configuration
 is denied routing, not the MiniCPM family. See the [MiniCPM closure](docs/evidence/minicpm5-2b-qualification-closure-20260912.md).
 
-Agent Control 4.4.0 remains the latest formally released baseline. Agent Control
-4.5.0 is a release-ready candidate at implementation commit
-`31ccdf07f9aeb96cec0ea87a8cfb2bf1607ae86b`. It passes 1,331/1,331 automated
-tests plus the physical dashboard, Estate, Runtime Map, memory-route,
-source-distribution and virgin-install checks. The final verdict is **PASS WITH
-LIMITATIONS — READY FOR 4.5 RELEASE**: unavailable routes and measurements fail
-closed or remain outside active claims. No `v4.5.0` merge, tag, release or
-deployment has yet been performed.
+Agent Control 4.5.0 is preserved as the published source release at immutable
+tag `v4.5.0`. Its fresh-install qualification passed, but a subsequent genuine
+upgrade of the production v4.1 configuration exposed a controller-local worker
+classification defect; runtime safety correctly denied that misclassified
+route and production rolled back safely to v4.1.0. The 4.5.1 remediation does
+not rewrite the 4.5.0 tag or its historical evidence. It adds the missed
+supported-existing-configuration upgrade gate while carrying forward every
+accepted 4.5 limitation.
 
 **Your Memories** is the user-facing Agent Control capability for finding relevant prior context, checking its governance and provenance, rejecting stale or unrelated memories, and safely presenting accepted context in a session. Memories remain advisory and cannot override Work Parcels, batons, policy, authoritative evidence or execution state. The 4.4 release includes the governed UX Session Capture/Replay projection and the qualified memory architecture; MARM remains one optional backend and automatic memory consolidation/model swapping is not a released runtime feature.
 

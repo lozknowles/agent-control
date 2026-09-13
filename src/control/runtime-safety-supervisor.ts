@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {redactSensitiveText} from './context-readers.js';
 import {policyProtectsEffect, type GovernedEffect, type ResourceCapabilityPolicy} from './action-governance.js';
+import type {WorkerControllerRelationship, WorkerExecutionIdentity, WorkerExecutionLocality, WorkerIdentityAuthority} from './job-types.js';
 
 export type RuntimeSafetyOutcome = 'ALLOW' | 'ALLOW_WITH_AUDIT' | 'REQUIRE_APPROVAL' | 'DENY' | 'PAUSE' | 'ESCALATE';
 export type RuntimeActionCategory = 'READ_ONLY' | 'REPOSITORY_WRITE' | 'FILESYSTEM_WRITE' | 'REMOTE_NODE' | 'DESTRUCTIVE' | 'DEPLOYMENT' | 'CREDENTIAL_USE' | 'EXTERNAL_COMMUNICATION' | 'UNKNOWN';
@@ -25,6 +26,11 @@ export interface RuntimeActionIntent {
   production: boolean;
   destructive: boolean;
   requestedCapabilities: string[];
+  workerId?: string;
+  workerNodeId?: string;
+  workerLocality?: WorkerExecutionLocality;
+  workerIdentityAuthority?: WorkerIdentityAuthority;
+  workerControllerRelationship?: WorkerControllerRelationship;
   crewRole?: string;
   providerId?: string;
   accountProfileId?: string;
@@ -47,6 +53,11 @@ export interface RuntimeSafetyDecision {
   stepId: string;
   action: string;
   actor: string;
+  workerId?: string;
+  workerNodeId?: string;
+  workerLocality?: WorkerExecutionLocality;
+  workerIdentityAuthority?: WorkerIdentityAuthority;
+  workerControllerRelationship?: WorkerControllerRelationship;
   crewRole?: string;
   providerId?: string;
   accountProfileId?: string;
@@ -91,14 +102,14 @@ export class RuntimeSafetySupervisor implements RuntimeSafetySupervisorPort {
     const sensitiveMaterialDetected = raw.sensitiveMaterialDetected === true || containsSecretMaterial(raw), intent = sanitizeIntent({...raw, ...(sensitiveMaterialDetected ? {sensitiveMaterialDetected: true} : {})}), intentHash = sha(intent), existing = [...this.decisions.values()].find(item => item.intentHash === intentHash && item.runId === intent.runId && item.stepId === intent.stepId);
     if (existing) return structuredClone(existing);
     const assessment = this.evaluate(intent), id = `safety-${randomUUID()}`, approvalId = ['REQUIRE_APPROVAL','PAUSE','ESCALATE'].includes(assessment.outcome) ? `runtime-safety:${id}` : undefined;
-    const decision: RuntimeSafetyDecision = {schema: 'agent-control.runtime-safety-decision/v1', id, at: this.clock(), intentHash, runId: intent.runId, ...(intent.parcelId ? {parcelId: intent.parcelId} : {}), ...(intent.stageId ? {stageId: intent.stageId} : {}), stepId: intent.stepId, action: intent.action, actor: intent.actor, ...(intent.crewRole ? {crewRole: intent.crewRole} : {}), ...(intent.providerId ? {providerId: intent.providerId} : {}), ...(intent.accountProfileId ? {accountProfileId: intent.accountProfileId} : {}), ...(intent.modelId ? {modelId: intent.modelId} : {}), ...(intent.nodeId ? {nodeId: intent.nodeId} : {}), categories: intent.categories, outcome: assessment.outcome, reason: assessment.reason, policyId: this.policy.id, ...(approvalId ? {approvalId} : {}), evidence: assessment.evidence, ...(intent.effects?.length ? {effects: intent.effects} : {}), ...(intent.resourcePolicies?.length ? {resourcePolicies: intent.resourcePolicies} : {})};
+    const decision: RuntimeSafetyDecision = {schema: 'agent-control.runtime-safety-decision/v1', id, at: this.clock(), intentHash, runId: intent.runId, ...(intent.parcelId ? {parcelId: intent.parcelId} : {}), ...(intent.stageId ? {stageId: intent.stageId} : {}), stepId: intent.stepId, action: intent.action, actor: intent.actor, ...(intent.workerId ? {workerId: intent.workerId} : {}), ...(intent.workerNodeId ? {workerNodeId: intent.workerNodeId} : {}), ...(intent.workerLocality ? {workerLocality: intent.workerLocality} : {}), ...(intent.workerIdentityAuthority ? {workerIdentityAuthority: intent.workerIdentityAuthority} : {}), ...(intent.workerControllerRelationship ? {workerControllerRelationship: intent.workerControllerRelationship} : {}), ...(intent.crewRole ? {crewRole: intent.crewRole} : {}), ...(intent.providerId ? {providerId: intent.providerId} : {}), ...(intent.accountProfileId ? {accountProfileId: intent.accountProfileId} : {}), ...(intent.modelId ? {modelId: intent.modelId} : {}), ...(intent.nodeId ? {nodeId: intent.nodeId} : {}), categories: intent.categories, outcome: assessment.outcome, reason: assessment.reason, policyId: this.policy.id, ...(approvalId ? {approvalId} : {}), evidence: assessment.evidence, ...(intent.effects?.length ? {effects: intent.effects} : {}), ...(intent.resourcePolicies?.length ? {resourcePolicies: intent.resourcePolicies} : {})};
     this.decisions.set(id, decision); this.save(); this.publish(decision); return structuredClone(decision);
   }
   approve(decisionId: string, actor: string) { const decision = this.decisions.get(decisionId); if (!decision) throw new Error('runtime_safety_decision_missing'); if (!['REQUIRE_APPROVAL','PAUSE','ESCALATE'].includes(decision.outcome)) throw new Error('runtime_safety_decision_not_approvable'); this.approvals.set(decision.id, {decisionId: decision.id, actor: safeIdentifier(actor), at: this.clock()}); decision.outcome = 'ALLOW_WITH_AUDIT'; decision.reason = `${decision.reason}; explicitly approved`; decision.evidence = [...decision.evidence, `approval:${safeIdentifier(actor)}`]; this.save(); this.publish(decision); return structuredClone(decision); }
   list() { return [...this.decisions.values()].sort((left, right) => Date.parse(left.at) - Date.parse(right.at)).map(item => structuredClone(item)); }
   subscribe(listener: (decision: RuntimeSafetyDecision) => void) { this.listeners.add(listener); return () => this.listeners.delete(listener); }
   private evaluate(intent: RuntimeActionIntent): {outcome: RuntimeSafetyOutcome; reason: string; evidence: string[]} {
-    const evidence = [`goal:${sha(intent.goal).slice(0, 16)}`, `action:${intent.action}`, ...intent.categories.map(item => `category:${item}`)];
+    const evidence = [`goal:${sha(intent.goal).slice(0, 16)}`, `action:${intent.action}`, ...intent.categories.map(item => `category:${item}`), ...(intent.workerLocality ? [`worker-locality:${intent.workerLocality}`] : []), ...(intent.workerIdentityAuthority ? [`worker-identity-authority:${intent.workerIdentityAuthority}`] : [])];
     const protectedEffect = intent.effects?.find(effect => intent.resourcePolicies?.some(policy => policyProtectsEffect(policy, effect)));
     if (protectedEffect) return {outcome: 'DENY', reason: `Resolved ${protectedEffect.kind} effect conflicts with read-only resource policy for ${protectedEffect.resource.id}`, evidence: [...evidence, `effect:${protectedEffect.kind}:${protectedEffect.resource.id}`, 'execution:not-started']};
     if (intent.sensitiveMaterialDetected) return {outcome: 'DENY', reason: 'Plain credential material is forbidden; only opaque credential references may cross the control boundary', evidence};
@@ -117,17 +128,30 @@ export class RuntimeSafetySupervisor implements RuntimeSafetySupervisorPort {
   private publish(decision: RuntimeSafetyDecision) { for (const listener of this.listeners) listener(structuredClone(decision)); }
 }
 
-export function deriveRuntimeActionIntent(input: {runId: string; parcelId?: string; stageId?: string; stepId: string; actor: string; action: string; goal: string; parameters: Record<string, unknown>; requestedCapabilities: string[]; resources: string[]; workerId?: string; crewRole?: string; providerId?: string; accountProfileId?: string; modelId?: string; nodeId?: string; effectDeclaration?: RuntimeEffectDeclaration; effects?: GovernedEffect[]; resourcePolicies?: ResourceCapabilityPolicy[]}) {
+export function deriveRuntimeActionIntent(input: {runId: string; parcelId?: string; stageId?: string; stepId: string; actor: string; action: string; goal: string; parameters: Record<string, unknown>; requestedCapabilities: string[]; resources: string[]; workerId?: string; workerIdentity?: WorkerExecutionIdentity; crewRole?: string; providerId?: string; accountProfileId?: string; modelId?: string; nodeId?: string; effectDeclaration?: RuntimeEffectDeclaration; effects?: GovernedEffect[]; resourcePolicies?: ResourceCapabilityPolicy[]}) {
   const text = `${input.action} ${input.goal} ${input.requestedCapabilities.join(' ')}`.toLowerCase(), categories = declaredCategories(input.effectDeclaration, input.effects);
   // Text is never authority to grant execution. It can only detect a declaration
   // mismatch and make the decision more restrictive.
   const suspicious = /delete|destroy|wipe|drop|force-push|reset-hard|remove-recursive|deploy|release|publish|production|(?:promote\w*.*(?:release|build|candidate|production)|(?:release|build|candidate|production).*promote\w*)|repository\.write|repo.*write|git\.mutation|code.*modify|file.*write|filesystem\.write|package\.install|remote|ssh|adb|credential|oauth|api.?key|email|message|external\.communication/.test(text);
   if (suspicious && categories.size === 1 && categories.has('READ_ONLY')) { categories.delete('READ_ONLY'); categories.add('UNKNOWN'); }
-  if (input.workerId && input.workerId !== 'controller') categories.add('REMOTE_NODE');
+  const workerIdentity = classifyWorkerIdentity(input.workerId, input.workerIdentity);
+  if (input.workerId && workerIdentity.locality === 'REMOTE_WORKER') categories.add('REMOTE_NODE');
+  else if (input.workerId && workerIdentity.locality === 'UNKNOWN') categories.add('UNKNOWN');
   const entries = flatten(input.parameters), filesystemScope = entries.filter(item => /(?:path|file|directory|cwd)$/i.test(item.key) && typeof item.value === 'string').map(item => String(item.value)), repositoryScope = entries.filter(item => /repo(?:sitory)?(?:root|path)?$/i.test(item.key) && typeof item.value === 'string').map(item => String(item.value)), credentialReferences = entries.filter(item => /(?:credential|auth|token|key).*ref|(?:credential|auth).*env/i.test(item.key) && typeof item.value === 'string').map(item => String(item.value)), externalDestinations = entries.filter(item => /(?:url|destination|recipient|endpoint)$/i.test(item.key) && typeof item.value === 'string').map(item => String(item.value));
   if (categories.size > 1) categories.delete('READ_ONLY');
-  const raw: RuntimeActionIntent = {runId: input.runId, ...(input.parcelId ? {parcelId: input.parcelId} : {}), ...(input.stageId ? {stageId: input.stageId} : {}), stepId: input.stepId, actor: input.actor, action: input.action, goal: input.goal, categories: [...categories], filesystemScope, repositoryScope, remoteNodeIds: input.workerId ? [input.workerId] : [], credentialReferences, externalDestinations, production: categories.has('DEPLOYMENT'), destructive: categories.has('DESTRUCTIVE'), requestedCapabilities: input.requestedCapabilities, ...(input.crewRole ? {crewRole: input.crewRole} : {}), ...(input.providerId ? {providerId: input.providerId} : {}), ...(input.accountProfileId ? {accountProfileId: input.accountProfileId} : {}), ...(input.modelId ? {modelId: input.modelId} : {}), ...(input.nodeId ? {nodeId: input.nodeId} : {}), sensitiveMaterialDetected: containsSecretMaterial(input.parameters), ...(input.effects?.length ? {effects: input.effects} : {}), ...(input.resourcePolicies?.length ? {resourcePolicies: input.resourcePolicies} : {})};
+  const raw: RuntimeActionIntent = {runId: input.runId, ...(input.parcelId ? {parcelId: input.parcelId} : {}), ...(input.stageId ? {stageId: input.stageId} : {}), stepId: input.stepId, actor: input.actor, action: input.action, goal: input.goal, categories: [...categories], filesystemScope, repositoryScope, remoteNodeIds: workerIdentity.locality === 'REMOTE_WORKER' ? [workerIdentity.nodeId ?? input.workerId!] : [], credentialReferences, externalDestinations, production: categories.has('DEPLOYMENT'), destructive: categories.has('DESTRUCTIVE'), requestedCapabilities: input.requestedCapabilities, ...(input.workerId ? {workerId: input.workerId, ...(workerIdentity.nodeId ? {workerNodeId: workerIdentity.nodeId} : {}), workerLocality: workerIdentity.locality, workerIdentityAuthority: workerIdentity.authority, workerControllerRelationship: workerIdentity.controllerRelationship} : {}), ...(input.crewRole ? {crewRole: input.crewRole} : {}), ...(input.providerId ? {providerId: input.providerId} : {}), ...(input.accountProfileId ? {accountProfileId: input.accountProfileId} : {}), ...(input.modelId ? {modelId: input.modelId} : {}), ...(input.nodeId ? {nodeId: input.nodeId} : {}), sensitiveMaterialDetected: containsSecretMaterial(input.parameters), ...(input.effects?.length ? {effects: input.effects} : {}), ...(input.resourcePolicies?.length ? {resourcePolicies: input.resourcePolicies} : {})};
   return sanitizeIntent(raw);
+}
+
+function classifyWorkerIdentity(workerId: string | undefined, identity: WorkerExecutionIdentity | undefined): WorkerExecutionIdentity {
+  if (!workerId || !identity || identity.workerId !== workerId) return {workerId: workerId ?? 'unassigned', nodeId: null, locality: 'UNKNOWN', authority: 'UNVERIFIED', controllerRelationship: 'UNKNOWN'};
+  const internallyEstablished = identity.authority === 'AGENT_CONTROL_INTERNAL' && identity.locality === 'CONTROLLER_LOCAL' && identity.controllerRelationship === 'CONTROLLER_INTERNAL' && Boolean(identity.nodeId);
+  const configured = identity.authority === 'CONFIGURED_RESOURCE' && Boolean(identity.nodeId) && (
+    identity.locality === 'CONTROLLER_LOCAL' && identity.controllerRelationship === 'CONTROLLER_RESOURCE' ||
+    identity.locality === 'LOCAL_WORKER' && identity.controllerRelationship === 'CONTROLLER_HOST_RESOURCE' ||
+    identity.locality === 'REMOTE_WORKER' && identity.controllerRelationship === 'REMOTE_RESOURCE'
+  );
+  return internallyEstablished || configured ? structuredClone(identity) : {workerId, nodeId: null, locality: 'UNKNOWN', authority: 'UNVERIFIED', controllerRelationship: 'UNKNOWN'};
 }
 
 function declaredCategories(declaration: RuntimeEffectDeclaration | undefined, effects: GovernedEffect[] | undefined) {
@@ -149,7 +173,7 @@ function declaredCategories(declaration: RuntimeEffectDeclaration | undefined, e
   return categories;
 }
 
-function sanitizeIntent(input: RuntimeActionIntent): RuntimeActionIntent { return {...input, runId: safeIdentifier(input.runId), ...(input.parcelId ? {parcelId: safeIdentifier(input.parcelId)} : {}), ...(input.stageId ? {stageId: safeIdentifier(input.stageId)} : {}), stepId: safeIdentifier(input.stepId), actor: safeIdentifier(input.actor), action: safeIdentifier(input.action), goal: safeText(input.goal, 8_192), categories: [...new Set(input.categories)], filesystemScope: safeList(input.filesystemScope), repositoryScope: safeList(input.repositoryScope), remoteNodeIds: input.remoteNodeIds.map(safeIdentifier), credentialReferences: input.credentialReferences.map(value => safeIdentifier(value)), externalDestinations: input.externalDestinations.map(value => safeText(value, 512)), requestedCapabilities: input.requestedCapabilities.map(safeIdentifier), ...(input.crewRole ? {crewRole: safeIdentifier(input.crewRole)} : {}), ...(input.providerId ? {providerId: safeIdentifier(input.providerId)} : {}), ...(input.accountProfileId ? {accountProfileId: safeIdentifier(input.accountProfileId)} : {}), ...(input.modelId ? {modelId: safeIdentifier(input.modelId)} : {}), ...(input.nodeId ? {nodeId: safeIdentifier(input.nodeId)} : {}), ...(input.effects?.length ? {effects: structuredClone(input.effects)} : {}), ...(input.resourcePolicies?.length ? {resourcePolicies: structuredClone(input.resourcePolicies)} : {}), ...(input.sensitiveMaterialDetected ? {sensitiveMaterialDetected: true} : {})}; }
+function sanitizeIntent(input: RuntimeActionIntent): RuntimeActionIntent { return {...input, runId: safeIdentifier(input.runId), ...(input.parcelId ? {parcelId: safeIdentifier(input.parcelId)} : {}), ...(input.stageId ? {stageId: safeIdentifier(input.stageId)} : {}), stepId: safeIdentifier(input.stepId), actor: safeIdentifier(input.actor), action: safeIdentifier(input.action), goal: safeText(input.goal, 8_192), categories: [...new Set(input.categories)], filesystemScope: safeList(input.filesystemScope), repositoryScope: safeList(input.repositoryScope), remoteNodeIds: input.remoteNodeIds.map(safeIdentifier), credentialReferences: input.credentialReferences.map(value => safeIdentifier(value)), externalDestinations: input.externalDestinations.map(value => safeText(value, 512)), requestedCapabilities: input.requestedCapabilities.map(safeIdentifier), ...(input.workerId ? {workerId: safeIdentifier(input.workerId)} : {}), ...(input.workerNodeId ? {workerNodeId: safeIdentifier(input.workerNodeId)} : {}), ...(input.workerLocality ? {workerLocality: input.workerLocality} : {}), ...(input.workerIdentityAuthority ? {workerIdentityAuthority: input.workerIdentityAuthority} : {}), ...(input.workerControllerRelationship ? {workerControllerRelationship: input.workerControllerRelationship} : {}), ...(input.crewRole ? {crewRole: safeIdentifier(input.crewRole)} : {}), ...(input.providerId ? {providerId: safeIdentifier(input.providerId)} : {}), ...(input.accountProfileId ? {accountProfileId: safeIdentifier(input.accountProfileId)} : {}), ...(input.modelId ? {modelId: safeIdentifier(input.modelId)} : {}), ...(input.nodeId ? {nodeId: safeIdentifier(input.nodeId)} : {}), ...(input.effects?.length ? {effects: structuredClone(input.effects)} : {}), ...(input.resourcePolicies?.length ? {resourcePolicies: structuredClone(input.resourcePolicies)} : {}), ...(input.sensitiveMaterialDetected ? {sensitiveMaterialDetected: true} : {})}; }
 function containsSecretMaterial(value: unknown, key = ''): boolean {
   if (typeof value === 'string') {
     if (/(?:sk-(?:proj-)?[A-Za-z0-9_-]{12,}|bearer\s+[A-Za-z0-9._-]{12,}|-----BEGIN [A-Z ]*PRIVATE KEY-----)/i.test(value)) return true;
