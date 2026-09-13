@@ -59,6 +59,7 @@
       "enabled": true,
       "capabilities": ["structured-output"],
       "roles": ["poe.status"],
+      "limits": {"outputTokens": 1024},
       "nodes": ["controller"],
       "qualification": {
         "state": "QUALIFIED",

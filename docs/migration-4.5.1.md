@@ -5,6 +5,12 @@ source release. It corrects controller-local worker classification when an
 existing supported configuration is preserved. It does not add Agent Control
 4.6 functionality.
 
+The physical supported-v4.1 gate also found and corrected validator drift in
+the bootstrap initializer: legitimate numeric token metadata such as
+`models[].limits.outputTokens` is accepted consistently by both configuration
+loaders. Credential-shaped keys and credential values remain forbidden, and the
+initializer still preserves a valid existing configuration byte-for-byte.
+
 ## Before upgrading
 
 1. Keep the current controller running until a maintenance window is approved.

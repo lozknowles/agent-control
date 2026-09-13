@@ -23,6 +23,11 @@
   upgrade coverage alongside the existing fresh-install regression. Relevant
   future releases must physically qualify both virgin installation and upgrade
   from each declared supported prior configuration.
+- Aligns the plain-JavaScript bootstrap validator with the authoritative
+  TypeScript loader for numeric token-accounting and model-limit metadata. This
+  corrects the physical v4.1 upgrade stop on `models[].limits.outputTokens`
+  while retaining recursive secret-value checks and fail-closed
+  credential-key checks.
 - Preserves the immutable v4.5.0 release, failed deployment evidence, known-good
   v4.1 rollback, and every accepted 4.5 limitation.
 
