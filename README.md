@@ -6,7 +6,9 @@ Discover your AI tools, see what is available, and follow approved work from req
 
 [Install Agent Control](docs/installation-first-run.md) · [Documentation](docs/index.md) · [Upgrade](docs/upgrade-4.6.md) · [Release notes](docs/release-notes-4.6.0.md)
 
-[![Agent Control overview composed from actual product screens and crew assets](docs/media/4.6/public/overview.png)](docs/public-installation-journey.md)
+[![Actual Agent Control Estate Map](docs/media/4.6/integration/estate.png)](docs/public-installation-journey.md)
+
+Screenshots below preserve genuine qualification captures. The [historical RC overview](docs/media/4.6/public/overview.png) remains available as evidence; its candidate label describes the capture stage.
 
 ## Android standalone
 
