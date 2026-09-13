@@ -3,7 +3,7 @@ import { createHash, randomUUID } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { spawn } from "node:child_process";
+import { OwnedProcessManager } from "./owned-process.js";
 import { AGENT_CONTROL_VERSION } from "../version.js";
 import type {
   AgentControlConfig,
@@ -313,55 +313,30 @@ const unique = <T>(values: T[]) => [...new Set(values)];
 
 export class DefaultDiscoveryProbe implements DiscoveryProbe {
   async command(command: string, args: string[], timeoutMs: number) {
-    return new Promise<{ ok: boolean; stdout: string; stderr: string }>(
-      (resolve) => {
-        const output: Buffer[] = [],
-          errors: Buffer[] = [],
-          maximum = 512 * 1024,
-          child = spawn(command, args, {
-            stdio: ["ignore", "pipe", "pipe"],
-            windowsHide: true,
-            detached: process.platform !== "win32",
-          });
-        let settled = false,
-          outputBytes = 0,
-          errorBytes = 0;
-        const finish = (ok: boolean, fallback = "") => {
-          if (settled) return;
-          settled = true;
-          clearTimeout(timer);
-          resolve({
-            ok,
-            stdout: Buffer.concat(output).toString("utf8"),
-            stderr: Buffer.concat(errors).toString("utf8") || fallback,
-          });
-        };
-        child.stdout.on("data", (value: Buffer) => {
-          if (outputBytes >= maximum) return;
-          const bounded = value.subarray(0, maximum - outputBytes);
-          output.push(bounded);
-          outputBytes += bounded.length;
-        });
-        child.stderr.on("data", (value: Buffer) => {
-          if (errorBytes >= maximum) return;
-          const bounded = value.subarray(0, maximum - errorBytes);
-          errors.push(bounded);
-          errorBytes += bounded.length;
-        });
-        child.once("error", () => finish(false, "command_unavailable"));
-        child.once("close", (code) => finish(code === 0, code === 0 ? "" : `command_failed:${code ?? "unknown"}`));
-        const timer = setTimeout(() => {
-          if (settled) return;
-          try {
-            if (process.platform === "win32") child.kill("SIGKILL");
-            else if (child.pid) process.kill(-child.pid, "SIGKILL");
-          } catch {
-            child.kill("SIGKILL");
-          }
-          finish(false, "command_timeout");
-        }, timeoutMs);
-      },
-    );
+    const controller = new AbortController(),
+      timer = setTimeout(() => controller.abort("command_timeout"), timeoutMs);
+    try {
+      const result = await new OwnedProcessManager().runProcess(
+        { command, args, maxOutputBytes: 512 * 1024 },
+        controller.signal,
+      );
+      return {
+        ok: result.exitCode === 0,
+        stdout: result.stdout,
+        stderr: result.stderr || (result.exitCode === 0 ? "" : `command_failed:${result.exitCode ?? "unknown"}`),
+      };
+    } catch (error) {
+      if (controller.signal.aborted)
+        return { ok: false, stdout: "", stderr: "command_timeout" };
+      const code = (error as NodeJS.ErrnoException).code;
+      return {
+        ok: false,
+        stdout: "",
+        stderr: code === "ENOENT" ? "command_unavailable" : "command_failed",
+      };
+    } finally {
+      clearTimeout(timer);
+    }
   }
   async json(url: string, timeoutMs: number) {
     const controller = new AbortController(),

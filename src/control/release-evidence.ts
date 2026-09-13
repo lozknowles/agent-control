@@ -8,7 +8,7 @@ const commitPattern = /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/;
 
 export interface ReleaseEvidenceReference {path:string;sha256:string}
 export interface ReleaseEvidenceCheck {status:'PASS'|'FAIL'|'NOT_RUN';scope:'FULL_REQUIRED'|'BOUNDED';command:string;evidence:ReleaseEvidenceReference[]}
-export interface TrustedCoreReceipt {schema:'agent-control.core-release-receipt/v2';version:string;sourceCommit:string;sourceDigest:string;generatedAt:string;checks:Partial<Record<typeof coreChecks[number],ReleaseEvidenceCheck>>}
+export interface TrustedCoreReceipt {schema:'agent-control.core-release-receipt/v2';version:string;sourceCommit:string;sourceDigest:string;generatedAt:string;execution:{platform:string;arch:string;nodeVersion:string};package:{fileName:string;sha256:string;sizeBytes:number};checks:Partial<Record<typeof coreChecks[number],ReleaseEvidenceCheck>>}
 
 function digest(value:string|Buffer){return createHash('sha256').update(value).digest('hex');}
 function object(value:unknown):value is Record<string,unknown>{return !!value&&typeof value==='object'&&!Array.isArray(value);}
@@ -26,7 +26,7 @@ function safeCandidateFile(root:string,relative:string,blockers:string[],prefix:
 
 function parseReceipt(value:unknown,blockers:string[]):TrustedCoreReceipt|undefined{
   if(!object(value)||value.schema!=='agent-control.core-release-receipt/v2'){blockers.push('RECEIPT_SCHEMA_UNSUPPORTED');return undefined;}
-  if(typeof value.version!=='string'||typeof value.sourceCommit!=='string'||typeof value.sourceDigest!=='string'||typeof value.generatedAt!=='string'||!object(value.checks)){blockers.push('RECEIPT_SCHEMA_INVALID');return undefined;}
+  if(typeof value.version!=='string'||typeof value.sourceCommit!=='string'||typeof value.sourceDigest!=='string'||typeof value.generatedAt!=='string'||!object(value.execution)||typeof value.execution.platform!=='string'||typeof value.execution.arch!=='string'||typeof value.execution.nodeVersion!=='string'||!object(value.package)||typeof value.package.fileName!=='string'||typeof value.package.sha256!=='string'||!sha256Pattern.test(value.package.sha256)||!Number.isSafeInteger(value.package.sizeBytes)||Number(value.package.sizeBytes)<=0||!object(value.checks)){blockers.push('RECEIPT_SCHEMA_INVALID');return undefined;}
   if(!commitPattern.test(value.sourceCommit)||!sha256Pattern.test(value.sourceDigest)||Number.isNaN(Date.parse(value.generatedAt))){blockers.push('RECEIPT_SCHEMA_INVALID');return undefined;}
   return value as unknown as TrustedCoreReceipt;
 }
@@ -49,6 +49,15 @@ function verifyRegression(value:unknown,blockers:string[]){
   }
 }
 
+function verifyPackage(file:string|undefined,receipt:TrustedCoreReceipt,blockers:string[]){
+  if(!file){blockers.push('RELEASE_PACKAGE_REQUIRED');return;}
+  const resolved=path.resolve(file);
+  if(!fs.existsSync(resolved)){blockers.push('RELEASE_PACKAGE_MISSING');return;}
+  const stat=fs.lstatSync(resolved);
+  if(!stat.isFile()||stat.isSymbolicLink()){blockers.push('RELEASE_PACKAGE_UNSAFE');return;}
+  if(path.basename(resolved)!==receipt.package.fileName||stat.size!==receipt.package.sizeBytes||digest(fs.readFileSync(resolved))!==receipt.package.sha256)blockers.push('RELEASE_PACKAGE_MISMATCH');
+}
+
 function verifyApproval(file:string|undefined,root:string,receipt:TrustedCoreReceipt,receiptBytes:Buffer,current:{version:string;sourceCommit:string;sourceDigest:string},blockers:string[]){
   if(!file){blockers.push('TRUSTED_OPERATOR_APPROVAL_REQUIRED');return;}
   const resolved=path.resolve(file);
@@ -58,13 +67,13 @@ function verifyApproval(file:string|undefined,root:string,receipt:TrustedCoreRec
   if(!stat.isFile()||stat.isSymbolicLink()){blockers.push('TRUSTED_OPERATOR_APPROVAL_UNSAFE');return;}
   if(process.platform!=='win32'&&((stat.mode&0o077)!==0||(typeof process.geteuid==='function'&&stat.uid!==process.geteuid()))){blockers.push('TRUSTED_OPERATOR_APPROVAL_PERMISSIONS_INVALID');return;}
   let value:unknown;try{value=readJson(resolved);}catch{blockers.push('TRUSTED_OPERATOR_APPROVAL_INVALID');return;}
-  if(!object(value)||value.schema!=='agent-control.release-operator-approval/v1'||value.scope!=='RELEASE_CANDIDATE_PUBLICATION'||value.version!==current.version||value.sourceCommit!==current.sourceCommit||value.sourceDigest!==current.sourceDigest||value.receiptSha256!==digest(receiptBytes)||typeof value.actorId!=='string'||!value.actorId.trim()||typeof value.approvedAt!=='string'||Number.isNaN(Date.parse(value.approvedAt))||!Array.isArray(value.requiredChecks)){blockers.push('TRUSTED_OPERATOR_APPROVAL_INVALID');return;}
+  if(!object(value)||value.schema!=='agent-control.release-operator-approval/v1'||value.scope!=='RELEASE_CANDIDATE_PUBLICATION'||value.version!==current.version||value.sourceCommit!==current.sourceCommit||value.sourceDigest!==current.sourceDigest||value.receiptSha256!==digest(receiptBytes)||value.packageSha256!==receipt.package.sha256||typeof value.actorId!=='string'||!value.actorId.trim()||typeof value.approvedAt!=='string'||Number.isNaN(Date.parse(value.approvedAt))||!Array.isArray(value.requiredChecks)){blockers.push('TRUSTED_OPERATOR_APPROVAL_INVALID');return;}
   const requiredChecks=value.requiredChecks;
   if(coreChecks.some(check=>!requiredChecks.includes(check))){blockers.push('TRUSTED_OPERATOR_APPROVAL_INVALID');return;}
   if(receipt.version!==value.version||receipt.sourceCommit!==value.sourceCommit||receipt.sourceDigest!==value.sourceDigest)blockers.push('TRUSTED_OPERATOR_APPROVAL_RECEIPT_MISMATCH');
 }
 
-export function verifyReleaseEvidence(input:{root:string;receiptFile:string;approvalFile?:string;current:{version:string;sourceCommit:string;sourceDigest:string}}){
+export function verifyReleaseEvidence(input:{root:string;receiptFile:string;approvalFile?:string;packageFile?:string;current:{version:string;sourceCommit:string;sourceDigest:string}}){
   const root=fs.realpathSync(input.root),blockers:string[]=[];
   const receiptPath=safeCandidateFile(root,input.receiptFile,blockers,'RECEIPT');
   if(!receiptPath)return {receipt:undefined,blockers:[...new Set(blockers)],trust:'UNVERIFIED' as const};
@@ -75,6 +84,7 @@ export function verifyReleaseEvidence(input:{root:string;receiptFile:string;appr
   if(receipt.version!==input.current.version)blockers.push('VERSION_MISMATCH');
   if(receipt.sourceCommit!==input.current.sourceCommit)blockers.push('SOURCE_COMMIT_MISMATCH');
   if(receipt.sourceDigest!==input.current.sourceDigest)blockers.push('SOURCE_CHANGED_SINCE_VALIDATION');
+  verifyPackage(input.packageFile,receipt,blockers);
   for(const check of coreChecks){
     const item=receipt.checks[check];
     if(!item||item.status!=='PASS'||item.scope!=='FULL_REQUIRED'||!item.command||!Array.isArray(item.evidence)||!item.evidence.length){blockers.push(`CORE_CHECK:${check}`);continue;}

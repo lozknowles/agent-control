@@ -1,4 +1,4 @@
-> For Agent Control **4.6.0**, use [Installation](installation-first-run.md) and [Upgrade](upgrade-4.6.md). The historical deployment and supported-upgrade gates below remain retained for provenance.
+> For Agent Control **4.6.1**, use [Installation](installation-first-run.md), [Upgrade](upgrade-4.6.md) and the [security patch notes](release-notes-4.6.1.md). The historical deployment and supported-upgrade gates below remain retained for provenance.
 
 # Agent Control 4.5.1 deployment, upgrade and rollback
 

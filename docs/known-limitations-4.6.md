@@ -1,6 +1,6 @@
 # Agent Control 4.6 known limitations
 
-Version: **4.6.0**. This current classification supplements earlier qualification verdicts; historical failures and reports remain unchanged. Optional limitations do not waive core installation, usability, governance, security, data integrity or reproducibility checks.
+Version: **4.6.1**. This current classification supplements earlier qualification verdicts; historical failures and reports remain unchanged. Optional limitations do not waive core installation, usability, governance, security, data integrity or reproducibility checks.
 
 The machine-readable [register](../examples/showcase-4.6/known-limitations.json) feeds the RC gate. A separate [scope reconciliation](release-integration-4.6.md) records work in progress and true release blockers.
 

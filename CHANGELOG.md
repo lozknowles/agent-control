@@ -1,5 +1,9 @@
 # Changelog
 
+## 4.6.1
+
+Security stabilisation for 4.6.0: authenticated control-plane reads, complete browser destination enforcement, repository and governed-Git confinement, bounded leases and maintenance, durable late-output redaction, session-share credential removal, current model qualification, evidence retention, and content-addressed schema-v2 release evidence tied to the exact archive. Shared-token ACP remains a documented one-principal scope; externally unavailable billing, whole-node energy and model benchmark execution remain non-blocking limitations. See [release notes](docs/release-notes-4.6.1.md).
+
 ## 4.6.0
 
 Live Estate/Process integration, APK-less Android Standalone, Job Library readiness, Mallow, Model Intelligence and Morning Brief foundations, usage/energy telemetry and governance improvements. Core PASS; showcase PASS WITH LIMITATIONS. See [release notes](docs/release-notes-4.6.0.md) and [15 accepted limitations](docs/known-limitations-4.6.md).

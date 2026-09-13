@@ -1,13 +1,13 @@
 # Agent Control documentation
 
-**Stable: [Agent Control 4.6.0](https://github.com/lozknowles/agent-control/releases/tag/v4.6.0).**
+**Stable: [Agent Control 4.6.1](https://github.com/lozknowles/agent-control/releases/tag/v4.6.1).**
 
 - [Install Agent Control](installation-first-run.md)
 - [Upgrade an existing installation](upgrade-4.6.md)
 - [Real installation screenshots](public-installation-journey.md)
 - [Meet Mallow and the crew](crew-guide.md)
 - [Troubleshooting](installation-first-run.md#troubleshooting)
-- [Release notes](release-notes-4.6.0.md)
+- [Release notes](release-notes-4.6.1.md)
 - [Complete release readiness](public-release-readiness-4.6.md)
 - [Architecture](architecture-v2-agnostic.md)
 - [Job Library](https://github.com/lozknowles/agent-control-jobs)

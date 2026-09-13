@@ -1,10 +1,10 @@
-# Agent Control 4.6.0
+# Agent Control 4.6.1
 
 Discover your AI tools, see what is available, and follow approved work from request to verified result.
 
-**Current stable release: [4.6.0](https://github.com/lozknowles/agent-control/releases/tag/v4.6.0).** Core release: **PASS**. Showcase: **PASS WITH LIMITATIONS**. See the prominent [4.6 Known Limitations](docs/known-limitations-4.6.md) and [release verification](docs/release-verification-4.6.0.md).
+**Current stable release: [4.6.1](https://github.com/lozknowles/agent-control/releases/tag/v4.6.1).** This security patch retains the 4.6 showcase and accepted limitations. See the [4.6 Known Limitations](docs/known-limitations-4.6.md), [4.6.1 release notes](docs/release-notes-4.6.1.md) and [release verification](docs/release-verification-4.6.1.md).
 
-[Install Agent Control](docs/installation-first-run.md) · [Documentation](docs/index.md) · [Upgrade](docs/upgrade-4.6.md) · [Release notes](docs/release-notes-4.6.0.md)
+[Install Agent Control](docs/installation-first-run.md) · [Documentation](docs/index.md) · [Upgrade](docs/upgrade-4.6.md) · [Release notes](docs/release-notes-4.6.1.md)
 
 [![Actual Agent Control Estate Map](docs/media/4.6/integration/estate.png)](docs/public-installation-journey.md)
 
@@ -35,12 +35,12 @@ Mallow is your floating guide. The established crew helps explain dispatch, revi
 
 <a id="install"></a>
 
-## Install Agent Control 4.6.0
+## Install Agent Control 4.6.1
 
 Install on Linux with Node.js 24, npm, Git and Bash:
 
 ```bash
-git clone --branch v4.6.0 https://github.com/lozknowles/agent-control.git
+git clone --branch v4.6.1 https://github.com/lozknowles/agent-control.git
 cd agent-control
 git rev-parse HEAD
 ./scripts/bootstrap-agent-control.sh --check --target "$PWD"
@@ -94,7 +94,7 @@ Model Intelligence now reports real source coverage, initial versus follow-up ob
 - [Safe existing-install upgrade](docs/upgrade-4.6.md)
 - [Architecture](docs/architecture-v2-agnostic.md)
 - [Security](SECURITY.md) and [contributing](CONTRIBUTING.md)
-- [Release notes](docs/release-notes-4.6.0.md)
+- [Release notes](docs/release-notes-4.6.1.md)
 - [Accepted RC assessment and evidence](docs/release-candidate-4.6.md)
 
 Historical versioned reports remain available under `docs/`; use the installation guide above for this release.

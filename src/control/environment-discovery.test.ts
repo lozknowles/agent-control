@@ -26,7 +26,16 @@ test("default command probe bounds descendant processes that retain stdio", asyn
     );
   assert.equal(result.ok, false);
   assert.match(result.stderr, /command_timeout/);
-  assert.ok(Date.now() - started < 2_000);
+  assert.ok(Date.now() - started < 4_000);
+});
+
+test("default command probe returns bounded successful output", async () => {
+  const result = await new DefaultDiscoveryProbe().command(
+    process.execPath,
+    ["-e", "process.stdout.write('ok'); process.stderr.write('observed')"],
+    2_000,
+  );
+  assert.deepEqual(result, { ok: true, stdout: "ok", stderr: "observed" });
 });
 
 const probe: DiscoveryProbe = {

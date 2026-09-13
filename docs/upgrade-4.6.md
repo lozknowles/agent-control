@@ -1,8 +1,8 @@
-# Upgrade an existing installation to the 4.6.0
+# Upgrade an existing installation to 4.6.1
 
 [Install a new instance](installation-first-run.md) · [Release status](public-release-readiness-4.6.md)
 
-This is the **4.6.0 upgrade procedure**. Schedule changes to your running service explicitly. Keep the prior release and a consistent state backup available. Never pull or reset over a dirty or diverged checkout.
+This is the **4.6.1 upgrade procedure**, including the supported patch upgrade from published 4.6.0. Schedule changes to your running service explicitly. Keep the prior release and a consistent state backup available. Never pull or reset over a dirty or diverged checkout.
 
 ## Record and preserve the existing installation
 
@@ -15,8 +15,8 @@ Stop your own foreground instance with Ctrl+C, or use the already-authorised ser
 From the parent directory, keeping the original checkout intact:
 
 ```bash
-git clone --branch v4.6.0 https://github.com/lozknowles/agent-control.git agent-control-4.6.0
-cd agent-control-4.6.0
+git clone --branch v4.6.1 https://github.com/lozknowles/agent-control.git agent-control-4.6.1
+cd agent-control-4.6.1
 git rev-parse HEAD
 ./scripts/bootstrap-agent-control.sh --check --target "$PWD"
 ```
@@ -43,3 +43,12 @@ Check the dashboard, retained history and settings; run local discovery, inspect
 Stop the new controller. Keep its new evidence separate. Resume the original release against the unchanged original state, using its established startup procedure. Do not copy new-version state backwards without a version-specific migration check.
 
 The [qualification report](public-release-readiness-4.6.md) records the actual prior stable version, configuration, retained history and observed result. Disposable upgrade qualification is not a production deployment.
+
+
+## Patch upgrade from 4.6.0
+
+Preserve the 4.6.0 checkout and a quiescent state backup. Install 4.6.1 in a clean sibling checkout, then copy or point it to the preserved state using the same configured state paths. No configuration schema migration is required. Start on loopback, authenticate, and confirm dashboard loading, discovery and a read-only governed observation job before retiring the previous instance.
+
+Control-plane reads that expose operational state now require operator authentication. Update legitimate API clients to send the configured authentication. Existing webhook and HMAC integrations keep their current authentication contract.
+
+To roll back, stop 4.6.1 and restart the preserved 4.6.0 checkout against the pre-upgrade backup. Retain logs and failed-state evidence; never reset a dirty checkout.
