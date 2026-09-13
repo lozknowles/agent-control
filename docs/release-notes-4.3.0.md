@@ -25,6 +25,6 @@ incompatible-context rejection, invalidation, backend restart isolation and
 independent verification all passed. The full suite passed 1,119/1,119. See the
 [qualification](evidence/agent-control-4.3-integrated-qualification-20260909.md),
 [complete transcript](evidence/agent-control-4.3-integrated-transcript-20260909.md)
-and [1920×1080 recording](evidence/agent-control-4.3-integrated-qualification-20260909.mp4).
+and [1920×1080 recording](./evidence-archive.md).
 Monetary saving is unavailable because the local backend supplies no authoritative
 billing data. Historical branch evidence is not attributed to this candidate.

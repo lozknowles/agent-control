@@ -20,7 +20,7 @@ Status: **EXPERIMENTAL**. This report does not authorize merge, tag, release or 
 
 ## Memory failure classification
 
-All seven historical failed cells are classified in the [machine-readable matrix](../../qualification/agent-control-4.5-release-gate-20260912/memory-matrix.json). Provider-neutral field mapping and a governed repair attempt resolved Luna→Qwen and Qwen→Luna without weakening semantic verification. GLM→Qwen remains a schema-valid semantic failure. Pixel E4B failures remain preserved rather than simulated or counted as passes.
+All seven historical failed cells are classified in the [machine-readable matrix](../evidence-archive.md). Provider-neutral field mapping and a governed repair attempt resolved Luna→Qwen and Qwen→Luna without weakening semantic verification. GLM→Qwen remains a schema-valid semantic failure. Pixel E4B failures remain preserved rather than simulated or counted as passes.
 
 ## MSI
 
@@ -32,7 +32,7 @@ The follow-up measured synchronized Intel package + DRAM and NVIDIA board sample
 
 ## Fresh POE runtime evidence
 
-The [HD video](../../qualification/agent-control-4.5-release-gate-20260912/live-poe-run/agent-control-4.5-live-poe-memory-qualification.mp4) records a fresh genuine POE-created Work Parcel while the durable runtime changes. The page is explicitly a read-only qualification observer, not a replay or a substitute production dashboard. It shows the real operator request, Job/Run identities, stages, provider/model routes, sealed baton hashes, verification and final token accounting. See the [complete transcript](../../qualification/agent-control-4.5-release-gate-20260912/complete-human-readable-transcript.md) and [manifest](../../qualification/agent-control-4.5-release-gate-20260912/evidence-manifest.json).
+The [HD video](../evidence-archive.md) records a fresh genuine POE-created Work Parcel while the durable runtime changes. The page is explicitly a read-only qualification observer, not a replay or a substitute production dashboard. It shows the real operator request, Job/Run identities, stages, provider/model routes, sealed baton hashes, verification and final token accounting. See the [complete transcript](../evidence-archive.md) and [manifest](../evidence-archive.md).
 
 ## Recommendation
 

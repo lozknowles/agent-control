@@ -6,6 +6,33 @@ import test from 'node:test';
 import {emptyConfig} from './config.js';
 import {createInvocationObservation, FileHarnessEfficiencyLedger} from './harness-efficiency.js';
 import {buildJobRuntime, buildJobRuntimeDefinition, runJobSchedulerTick} from './job-bootstrap.js';
+import {OPERATOR_OBSERVATION_CAPABILITY,OPERATOR_OBSERVATION_WORKER_ID} from './poe-observation-job.js';
+
+test('fresh empty configuration supplies only the built-in read-only observation worker and completes the documented first Job', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-fresh-observation-'));
+  try {
+    const runtime=buildJobRuntime(emptyConfig(),root,path.join(root,'manifests'));
+    const worker=runtime.workers.list().find(item=>item.id===OPERATOR_OBSERVATION_WORKER_ID);
+    assert.deepEqual(worker?.capabilities,[OPERATOR_OBSERVATION_CAPABILITY]);
+    assert.equal(worker?.health,'healthy');
+    assert.equal(worker?.labels?.scope,'controller-local-read-only-observation');
+    assert.equal(runtime.workers.resolve(['model.execute']).worker,undefined);
+    const definition=runtime.catalog.job('operator-system-observation@1.1.0');
+    assert.ok(definition?.spec.steps.every(step=>step.requires?.length===1&&step.requires[0]===OPERATOR_OBSERVATION_CAPABILITY));
+    const run=runtime.createRun('operator-system-observation@1.1.0',{}, {type:'manual',actor:'fresh-install-test'});
+    for(let attempt=0;attempt<8&&runtime.ledger.get(run.id)?.status!=='SUCCEEDED';attempt++)await runtime.tick();
+    const completed=runtime.ledger.get(run.id)!;
+    assert.equal(completed.status,'SUCCEEDED',JSON.stringify(completed,null,2));
+    assert.deepEqual(completed.steps.map(step=>[step.id,step.status,step.placement?.selected]),[
+      ['observe','SUCCEEDED',OPERATOR_OBSERVATION_WORKER_ID],
+      ['verify','SUCCEEDED',OPERATOR_OBSERVATION_WORKER_ID],
+    ]);
+    assert.ok(completed.artifacts.some(id=>runtime.artifacts.get(id)?.name==='system-observation'));
+    assert.ok(completed.artifacts.some(id=>runtime.artifacts.get(id)?.name==='independent-verification'));
+  } finally {
+    fs.rmSync(root,{recursive:true,force:true});
+  }
+});
 
 test('production bootstrap wires persistent telemetry and configured harness policy', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-harness-bootstrap-'));

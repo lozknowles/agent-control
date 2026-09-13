@@ -38,6 +38,11 @@ import {PoeRuntime} from './control/poe.js';
 import {RoutedPoeResponseModel} from './control/poe-model.js';
 import {governedRequestOrigin} from './control/request-origin.js';
 import {UxSessionAnnotationStore,UxSessionCaptureRuntime,UxSessionShareStore,UxSessionStore} from './control/ux-session.js';
+import {CodexSessionAdapter,ImmutableSessionVault,SessionVaultRuntime} from './control/session-vault.js';
+import {EnvironmentDiscoveryRuntime} from './control/environment-discovery.js';
+import {ConfigurationStore} from './control/configuration-store.js';
+import {CapabilityAdapterRegistry,RegisteredCapabilityDiscoveryAdapter} from './control/capability-adapter-registry.js';
+import {InstallationLifecycle} from './control/installation-lifecycle.js';
 
 const now = () => new Date().toISOString();
 const configurationFile = configPath(), config = loadConfig(configurationFile);
@@ -51,6 +56,8 @@ for (const provider of providersFromConfig(config.providers)) providers.register
 if (process.platform === 'linux') for (const discovery of toPtyDiscoveries(discoverLinuxPtys())) { const lane = state.lanes.find(item => discovery.cwd === item.contract.cwd || discovery.cwd.startsWith(`${item.contract.cwd}/`)); ptys.upsert(discovery, lane ? String(lane.id) : null); }
 const queue = new WorkQueueStore().load();
 const stateRoot = path.resolve(process.env.AGENT_CONTROL_STATE_DIR || '.agent-control');
+const codexHome=process.env.CODEX_HOME??path.join(process.env.HOME??process.cwd(),'.codex');
+const sessionVault=new SessionVaultRuntime(new ImmutableSessionVault(path.join(stateRoot,'session-vault')),[new CodexSessionAdapter([path.join(codexHome,'sessions'),path.join(codexHome,'archived_sessions')],process.env.AGENT_CONTROL_NODE_ID??'controller')],{sensitivity:'RESTRICTED',redactSensitive:true});
 const capabilityIntelligence = new CapabilityIntelligenceStore(path.join(stateRoot, 'capabilities', 'intelligence.json'));
 registerAgentControlCoreCapabilities(capabilityIntelligence);
 const modelIntelligence = new ModelIntelligenceLedger(path.join(stateRoot, 'models', 'intelligence.json'));
@@ -116,6 +123,26 @@ const service = new AgentControlService(state, ptys, providers).configureProject
   deterministicSkills: jobRuntime.deterministicSkills,
   energyTelemetry: jobRuntime.energyTelemetry,
 });
+const capabilityAdapters=new CapabilityAdapterRegistry(path.join(stateRoot,'environment-discovery','capability-adapters.json'));
+const installation=new InstallationLifecycle(path.join(stateRoot,'installation','state.json'),process.cwd());
+const environmentDiscovery=new EnvironmentDiscoveryRuntime({
+  file:path.join(stateRoot,'environment-discovery','inventory.json'),
+  config:()=>loadConfig(configurationFile),
+  configurationRevision:()=>new ConfigurationStore(configurationFile).read().revision,
+  managedNodes:()=>jobRuntime.managedNodes.list(),
+  additionalAdapters:[new RegisteredCapabilityDiscoveryAdapter(capabilityAdapters)],
+  runtimeInventory:()=>({
+    jobs:jobRuntime.catalog.listJobs().map(job=>({id:job.metadata.id,name:job.metadata.name,version:job.metadata.version})),
+    agents:jobRuntime.workers.list().map(worker=>({id:worker.id,health:worker.health,capabilities:[...worker.capabilities]})),
+    tools:[...jobRuntime.actions.ids()],
+    skills:[...jobRuntime.deterministicSkills.records().map(skill=>({id:`deterministic:${skill.id}@${skill.version}`,state:skill.state,kind:'deterministic'})),...jobRuntime.learnedSkills.adapters().map(skill=>({id:`learned:${skill.id}@${skill.version}`,state:skill.lifecycle.state,kind:'learned'}))],
+    mcpServers:[],plugins:[],
+  }),
+  createWorkParcel:proposal=>{const parcel=jobRuntime.workParcels.recordConfigurationProposal({proposalId:proposal.id,scanId:proposal.scanId,sha256:proposal.sha256,operationCount:proposal.operations.length,actor:proposal.actor});service.events.emit('work.parcel_created',{parcelId:parcel.id,status:parcel.status,kind:'environment-configuration'},undefined,proposal.actor);return parcel.id;},
+  applyConfiguration:proposal=>{const result=new ConfigurationStore(configurationFile).applyDiscoveryOperations({revision:proposal.configurationRevision,operations:proposal.operations});if(proposal.workParcelId)jobRuntime.workParcels.recordConfigurationApplied(proposal.workParcelId,`configuration-revision:${result.revision}`);service.events.emit('configuration.changed',{kind:'environment-discovery',ids:result.changed.ids,restartRequired:true},undefined,proposal.actor);},
+  onEvent:(type,payload)=>service.events.emit('environment.discovery_changed',{eventType:type,...payload},undefined,'environment-discovery'),
+});
+service.configureProjection({environmentDiscovery,capabilityAdapters,installation});
 let poeSpeech: import('./control/social-voice-providers.js').SpeechProvider | undefined;
 let poeRecognition: import('./control/social-voice-providers.js').SpeechRecognitionProvider | undefined;
 let poeVoice: import('./control/social-voice-providers.js').VoiceIdentity | undefined;
@@ -147,6 +174,7 @@ const operator = new PoeOperatorRuntime({knowledge,registries:process.env.AGENT_
 const poe = new PoeRuntime({operator,regression:()=>readPoeRegression(process.env.AGENT_CONTROL_POE_REGRESSION_FILE),
   file:path.join(stateRoot,'poe','conversations.json'),
   evidence:{overview:()=>service.poeEvidence(),resolve:reference=>service.poeEvidence(reference)},
+  sessionVault,
   ...(process.env.AGENT_CONTROL_POE_STATUS_MODEL_ROLE?{responseModel:new RoutedPoeResponseModel(modelRegistry,codexNodeExecution,{status:process.env.AGENT_CONTROL_POE_STATUS_MODEL_ROLE,reasoning:process.env.AGENT_CONTROL_POE_REASONING_MODEL_ROLE??process.env.AGENT_CONTROL_POE_STATUS_MODEL_ROLE})}:{}),
   benchmark:{submit:({proposal,actor,requestKey,plan})=>{
     const identityReference=createHash('sha256').update(`poe:${actor}`).digest('hex');
@@ -200,7 +228,7 @@ if (process.env.AGENT_CONTROL_OPENWA_CONFIG) {
     openwa.start();
   } catch { process.stderr.write('Optional OpenWA adapter unavailable; dashboard and jobs remain active. Check private integration configuration.\n'); }
 }
-const server = startWebDashboard(service, {host, port, openwa, socialVoice, operatorToken: process.env.AGENT_CONTROL_WEB_OPERATOR_TOKEN, allowedOrigins: process.env.AGENT_CONTROL_WEB_ALLOWED_ORIGINS?.split(',').map(value => value.trim()).filter(Boolean), configFile: configurationFile,uxSessions,uxSessionShares,uxSessionAnnotations});
+const server = startWebDashboard(service, {host, port, openwa, socialVoice, operatorToken: process.env.AGENT_CONTROL_WEB_OPERATOR_TOKEN, allowedOrigins: process.env.AGENT_CONTROL_WEB_ALLOWED_ORIGINS?.split(',').map(value => value.trim()).filter(Boolean), configFile: configurationFile,uxSessions,uxSessionShares,uxSessionAnnotations,sessionVault});
 server.on('close',()=>{if(socialTimer)clearInterval(socialTimer);openwa?.close();uxSessionCapture.dispose();});
 server.on('listening', () => process.stdout.write(`Agent Control ${service.version} web dashboard: http://${host}:${port} (${process.env.AGENT_CONTROL_WEB_OPERATOR_TOKEN ? 'operator authenticated' : 'observer only'})\n`));
 server.on('error', error => { process.stderr.write(`Dashboard failed: ${error.message}\n`); process.exitCode = 1; });

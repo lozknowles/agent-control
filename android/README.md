@@ -2,6 +2,31 @@
 
 The Android integration supports Termux-capable physical devices without assuming a manufacturer, model, hostname or network overlay.
 
+## Fresh Termux prerequisites
+
+An unmodified Termux installation does not necessarily include Git, Node.js or
+npm. Before the repository can be cloned, install the release prerequisites
+from Termux's configured package repository:
+
+```bash
+pkg install git nodejs-lts npm
+git --version
+node --version
+npm --version
+```
+
+The Node.js version must be 24.x for this release. Stop if `node --version`
+reports another major version; do not silently substitute the unqualified
+current Node package. These commands install only the prerequisites declared by
+the main README. They do not install Agent Control, optional model runtimes,
+ADB, Termux:Boot or provider credentials.
+
+After the checks pass, return to the main [installation procedure](../README.md#install)
+and follow it in order. A full controller and dashboard may be started in
+Termux, subject to the same localhost-only listener and operator-authentication
+rules. The restricted Android resource node described below is a separate role;
+installing the prerequisites does not activate either role.
+
 Configure an Android resource in `.agent-control/config.json` with:
 
 - a stable resource ID;

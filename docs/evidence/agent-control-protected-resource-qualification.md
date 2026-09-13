@@ -26,9 +26,9 @@ Artifacts:
 - [Machine-readable qualification evidence](agent-control-protected-resource-qualification.json)
 - [Complete human-readable transcript](agent-control-protected-resource-transcript.md)
 - [Dashboard video manifest](agent-control-protected-resource-dashboard-video.json)
-- [Dashboard video](agent-control-protected-resource-dashboard.mp4)
-- [Governed Run screenshot](agent-control-protected-resource-screenshots/governed-run-detail.png)
-- [Runtime safety screenshot](agent-control-protected-resource-screenshots/runtime-safety.png)
+- [Dashboard video](../evidence-archive.md)
+- [Governed Run screenshot](../evidence-archive.md)
+- [Runtime safety screenshot](../evidence-archive.md)
 
 Cancellation qualification is intentionally bounded: a deterministic owned-execution test proves `CANCELLED_BEFORE_COMMIT`, while the physical Git operations completed too quickly to force a truthful mid-operation cancellation. Unknown commit state remains `COMMIT_STATE_UNCERTAIN`; cancellation is never reported as rollback.
 

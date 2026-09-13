@@ -201,3 +201,33 @@ test('agent action cannot disable its independent verification boundary', async 
   const context = {run: {id: 'run-boundary', jobId: 'job-boundary'}, step: {id: 'review'}, worker: {id: 'worker-1'}, parameters: {}, inputArtifacts: []} as never;
   await assert.rejects(action.execute(context), /agent_action_independent_check_required/);
 });
+
+for (const revoked of ['takeover', 'cancel'] as const) test('authority revocation during audit prevents raw handler: ' + revoked, async () => {
+  const policy = toolPolicy(), controller = new AbortController(); let live = {...authority}, calls = 0;
+  const handlers = new ToolHandlerRegistry().register('repository.read', async () => ++calls);
+  const dispatcher = new HarnessDispatcher(new AdaptiveHarness(new SkillCatalog(), policy), policy, handlers, () => ({authority: {...live}, workerId: 'worker-1'}), undefined, () => { if (revoked === 'cancel') controller.abort(new Error('cancelled-in-audit')); else live.ownershipGeneration++; });
+  await assert.rejects(() => dispatcher.dispatch(plan(), {execute: async (_recipe, tools) => ({resultRef: String(await tools.invoke('repository.read'))})}, controller.signal), /cancelled-in-audit|execution_authority_revoked/);
+  assert.equal(calls, 0);
+});
+
+test('authority revoked while a typed handler runs prevents its result from being accepted', async () => {
+ const policy=toolPolicy();let live={...authority},accepted=false;
+ const handlers=new ToolHandlerRegistry().register('repository.read',async()=>{await Promise.resolve();live.ownershipGeneration++;return 'stale-result';});
+ const dispatcher=new HarnessDispatcher(new AdaptiveHarness(new SkillCatalog(),policy),policy,handlers,()=>({authority:{...live},workerId:'worker-1'}));
+ await assert.rejects(()=>dispatcher.dispatch(plan(),{execute:async(_recipe,tools)=>{await tools.invoke('repository.read');accepted=true;return {};}}),/execution_authority_revoked/);assert.equal(accepted,false);
+});
+
+for(const mode of ['takeover','cancel'] as const)test('raw async handler receives live effect-boundary control: '+mode,async()=>{
+ const policy=toolPolicy(),controller=new AbortController();let live={...authority},began!:()=>void,release!:()=>void,mutated=false;const started=new Promise<void>(r=>{began=r;}),wait=new Promise<void>(r=>{release=r;});
+ const handlers=new ToolHandlerRegistry().register('repository.read',async(_input,_recipe,control)=>{began();await wait;control.assertActive();mutated=true;return 'effect';});
+ const dispatcher=new HarnessDispatcher(new AdaptiveHarness(new SkillCatalog(),policy),policy,handlers,()=>({authority:{...live},workerId:'worker-1'}));
+ const pending=dispatcher.dispatch(plan(),{execute:async(_recipe,tools)=>({resultRef:String(await tools.invoke('repository.read'))})},controller.signal);await started;if(mode==='cancel')controller.abort(new Error('cancel-at-effect-boundary'));else live.ownershipGeneration++;release();await assert.rejects(pending,/cancel-at-effect-boundary|execution_authority_revoked/);assert.equal(mutated,false);
+});
+
+for(const mode of ['takeover','cancel'] as const)test('async result interceptors receive live effect-boundary control: '+mode,async()=>{
+ const policy=toolPolicy(),controller=new AbortController();let live={...authority},began!:()=>void,release!:()=>void,effects=0,later=0;const started=new Promise<void>(r=>{began=r;}),wait=new Promise<void>(r=>{release=r;});
+ const handlers=new ToolHandlerRegistry([async({result,control})=>{began();await wait;control.assertActive();effects++;return result;},async({result})=>{later++;return result;}]).register('repository.read',async()=> 'raw');
+ const dispatcher=new HarnessDispatcher(new AdaptiveHarness(new SkillCatalog(),policy),policy,handlers,()=>({authority:{...live},workerId:'worker-1'}));const pending=dispatcher.dispatch(plan(),{execute:async(_recipe,tools)=>({resultRef:String(await tools.invoke('repository.read'))})},controller.signal);await started;if(mode==='cancel')controller.abort(new Error('interceptor-cancelled'));else live.ownershipGeneration++;release();await assert.rejects(pending,/interceptor-cancelled|execution_authority_revoked/);assert.equal(effects,0);assert.equal(later,0);
+});
+
+test('typed tool registry fails closed when a caller omits execution control',async()=>{let effects=0;const registry=new ToolHandlerRegistry().register('repository.write',async()=>{effects++;return {};});await assert.rejects(()=>registry.invoke('repository.write',{},{} as never,undefined as never),/tool_execution_control_required/);assert.equal(effects,0);});

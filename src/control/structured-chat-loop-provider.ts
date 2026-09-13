@@ -24,6 +24,7 @@ export interface StructuredChatLoopOptions {
   finishToolId: string;
   timeoutMs?: number;
   maximumOutputTokens?: number;
+  sampling?: {temperature: number; topP?: number; seed?: number};
   maximumToolResultBytes?: number;
   executionStrategy?: string;
   authorization?: () => string | undefined;
@@ -65,6 +66,7 @@ export class StructuredChatLoopProvider {
     for (const schema of options.toolSchemas) {
       if (!schema.id.trim() || !schema.description.trim() || !schema.inputSchema || typeof schema.inputSchema !== 'object' || Array.isArray(schema.inputSchema)) throw new Error('structured_chat_loop_tool_schema_invalid');
     }
+    if (options.sampling && (!Number.isFinite(options.sampling.temperature) || options.sampling.temperature < 0 || options.sampling.temperature > 2 || options.sampling.topP !== undefined && (!Number.isFinite(options.sampling.topP) || options.sampling.topP <= 0 || options.sampling.topP > 1) || options.sampling.seed !== undefined && !Number.isInteger(options.sampling.seed))) throw new Error('structured_chat_loop_sampling_invalid');
     this.schemas = options.toolSchemas.map(schema => structuredClone(schema));
     this.endpoint = `${options.baseUrl.replace(/\/$/, '')}/chat/completions`;
   }
@@ -75,6 +77,8 @@ export class StructuredChatLoopProvider {
   }
 
   private async execute(instruction: string, contextSources: ContextPacketSource[], recipe: ExecutionRecipe, tools: ToolInvocationGateway): Promise<RecipeExecutionResult> {
+    if (typeof tools.assertActive !== 'function') throw new Error('provider_live_control_required');
+    tools.assertActive();
     const granted = new Set(recipe.tools.map(tool => tool.id));
     const schemas = this.schemas.filter(schema => granted.has(schema.id));
     if (!schemas.some(schema => schema.id === this.options.finishToolId)) throw new Error('structured_chat_loop_finish_tool_not_granted');
@@ -95,7 +99,9 @@ export class StructuredChatLoopProvider {
     const toolTranscript: Array<{turn: number; tool: string; resultHash: string}> = [];
 
     for (let turn = 1; turn <= maximumTurns; turn++) {
-      const externalSignal = this.options.signalForRecipe?.(recipe);
+      const signals = [tools.signal, this.options.signalForRecipe?.(recipe)].filter((item): item is AbortSignal => Boolean(item));
+      const externalSignal = signals.length ? AbortSignal.any(signals) : undefined;
+      tools.assertActive();
       if (externalSignal?.aborted) return failed('structured_chat_loop_cancelled', observations, evidence, 'CANCELLED');
       const remainingMs = deadline - Date.now();
       if (remainingMs <= 0) return failed('structured_chat_loop_timeout', observations, evidence);
@@ -106,6 +112,8 @@ export class StructuredChatLoopProvider {
         const detail = boundedError(error);
         return failed(detail, observations, evidence, detail.includes('cancelled') ? 'CANCELLED' : 'FAILED');
       }
+      externalSignal?.throwIfAborted();
+      tools.assertActive();
       const completedAt = new Date().toISOString();
       tools.lifecycle?.('processing');
       const content = response.body.choices?.[0]?.message?.content;
@@ -121,12 +129,16 @@ export class StructuredChatLoopProvider {
       evidence.push(`provider_response:${response.body.id ?? responseHash.slice(0, 16)}`, `provider_response_sha256:${responseHash}`);
       messages.push({role: 'assistant', content});
       let output: unknown;
-      try { output = await tools.invoke(request.tool, request.input); }
+      try { tools.assertActive(); output = await tools.invoke(request.tool, request.input); }
       catch (error) {
         const detail = boundedError(error);
+        if (externalSignal?.aborted) throw withObservations(new Error('structured_chat_loop_cancelled'), observations, evidence);
         if (detail.startsWith('tool_policy_denied:')) throw withObservations(error, observations, evidence);
+        if (request.tool === this.options.finishToolId) return failed(detail, observations, evidence);
         output = {ok: false, error: detail};
       }
+      externalSignal?.throwIfAborted();
+      tools.assertActive();
       const serialized = boundedJson(output, maximumToolResultBytes);
       const resultHash = createHash('sha256').update(serialized).digest('hex');
       toolTranscript.push({turn, tool: request.tool, resultHash});
@@ -153,7 +165,7 @@ export class StructuredChatLoopProvider {
     const signal = externalSignal ? AbortSignal.any([timeout, externalSignal]) : timeout;
     const authorization = this.options.authorization?.();
     let response: Response;
-    const requestBody = {model: this.options.modelId, messages, response_format: {type: 'json_object'}, temperature: 0, max_tokens: this.options.maximumOutputTokens ?? 768, stream: false};
+    const requestBody = {model: this.options.modelId, messages, response_format: {type: 'json_object'}, temperature: this.options.sampling?.temperature ?? 0, ...(this.options.sampling?.topP === undefined ? {} : {top_p: this.options.sampling.topP}), ...(this.options.sampling?.seed === undefined ? {} : {seed: this.options.sampling.seed}), max_tokens: this.options.maximumOutputTokens ?? 768, stream: false};
     try {
       response = await fetcher(this.endpoint, {
         method: 'POST',

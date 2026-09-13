@@ -7,7 +7,7 @@ import type {CacheExpertPolicyConfig} from './cache-aware-expert.js';
 import type {LearnedSkillPolicyConfig} from './skill-learning.js';
 import type {DeterministicSkillPolicyConfig} from './deterministic-skill.js';
 
-export type Platform = 'linux' | 'windows' | 'android' | 'macos' | 'remote' | 'unknown';
+export type Platform = 'linux' | 'windows' | 'android' | 'ios' | 'ipados' | 'macos' | 'remote' | 'unknown';
 export type TransportType = 'local' | 'ssh' | 'http' | 'orca';
 
 export interface TransportConfig {
@@ -354,7 +354,7 @@ export function validateConfig(raw: unknown): AgentControlConfig {
     assertId(resource.id, 'resource');
     if (ids.has(resource.id)) throw new Error(`duplicate_id:${resource.id}`);
     ids.add(resource.id);
-    if (!['linux', 'windows', 'android', 'macos', 'remote', 'unknown'].includes(resource.platform)) throw new Error(`invalid_platform:${resource.id}`);
+    if (!['linux', 'windows', 'android', 'ios', 'ipados', 'macos', 'remote', 'unknown'].includes(resource.platform)) throw new Error(`invalid_platform:${resource.id}`);
     if (!resource.transport || !['local', 'ssh', 'http', 'orca'].includes(resource.transport.type)) throw new Error(`invalid_transport:${resource.id}`);
     if (resource.transport.type === 'ssh' && !resource.transport.host) throw new Error(`ssh_host_required:${resource.id}`);
     if (resource.transport.type === 'ssh') {

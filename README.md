@@ -1,5 +1,71 @@
 # Agent Control 4.5.0 candidate
 
+The 4.5 candidate now includes a governed **Setup & Environment Discovery**
+wizard and a live **Estate Map** alongside Process Map. It inventories real
+machines, accelerators, runtimes, models, CLI agents, providers, tools and
+credential presence through pluggable read-only adapters; detects change; and
+separates discovered, qualified, recommended, approved and active state. The
+shared graph answers either “what is Agent Control doing?” or “what can Agent
+Control currently see and use?” without treating stale discovery as aliveness.
+User-supplied executables and portable capability definitions follow a gated
+review/test/approval lifecycle. See the [setup, discovery, capability and Estate
+Map guide](docs/environment-discovery.md) and [Runtime Map guide](docs/runtime-map.md).
+
+Agent Control 4.5 now includes an experimental **Runtime Map** and **Control
+Room**: a live, accessible graph projected from the existing Work Parcel, Run,
+execution-session, baton, model, cache, memory and verification records. It
+supports leader-level live KPIs, dynamic parallel fan-out, nested grouping,
+semantic collapse, pan/zoom/fit, evidence drill-down, authenticated Live Shell
+links, historical Replay, and side-by-side graphical Compare using independent
+authoritative identities. Exact resource identities link Process Map work to
+Estate Map resources and back without matching display labels. Morrow can
+narrate only grounded transitions from the same projection. See the [Runtime Map
+operator and architecture guide](docs/runtime-map.md) and [physical
+qualification](docs/evidence/agent-control-4.5-runtime-map-visual-acceptance-20260912.md).
+
+## Agent Control 4.5 in operation
+
+These are real 1920×1080 dashboard captures from the frozen 4.5 release-closure
+candidate `d229ce4b7dd3bd704a331f81ca59600541430682`. The fresh Runtime Map run
+executed six jobs concurrently and projected 71 authoritative operations; the
+Estate Map was built from a read-only physical discovery scan. They are not
+mockups or reconstructed marketing screens.
+
+### Dashboard overview and real Estate discovery
+
+![Agent Control 4.5 Environment Discovery dashboard populated from a real read-only scan](https://github.com/lozknowles/agent-control-qualification-evidence/releases/download/source-separation-20260912/dashboard-overview.png)
+
+![Agent Control 4.5 Estate Map showing the resources established by the real discovery inventory](https://github.com/lozknowles/agent-control-qualification-evidence/releases/download/source-separation-20260912/estate-map-real-discovery.png)
+
+### Six concurrent jobs and Control Room
+
+![Agent Control 4.5 Process Map with six governed jobs visibly running in parallel](https://github.com/lozknowles/agent-control-qualification-evidence/releases/download/source-separation-20260912/process-map-six-jobs-running.png)
+
+![Agent Control 4.5 Control Room showing the same six real concurrent jobs](https://github.com/lozknowles/agent-control-qualification-evidence/releases/download/source-separation-20260912/process-map-control-room.png)
+
+### Authoritative Replay/Compare
+
+![Agent Control 4.5 graphical Compare view showing a 13-operation baseline beside the 71-operation candidate](https://github.com/lozknowles/agent-control-qualification-evidence/releases/download/source-separation-20260912/process-map-compare.png)
+
+The [final release-closure audit](docs/evidence/agent-control-4.5-final-release-closure-audit-20260913.md)
+embeds the strongest real screenshots and reconciles the HD recordings,
+complete transcripts, Work Parcels, batons, model usage, later virgin-install
+evidence and the final 1,331-test regression result without rewriting the
+historical reports.
+
+The experimental 4.5 **Cross-Device Session Vault** preserves provider-native
+session history as immutable, content-addressed evidence and makes its redacted
+index available for historical search, repository attribution and governed
+continuation on another node. It extends—not replaces—**Your Memories**:
+reusable knowledge reaches the existing `ProjectMemoryPort` only after approval
+and independent validation, retaining links to the native evidence SHA-256.
+Obsidian remains an optional Markdown view/backend. The production dashboard
+includes Session, Decision, Repository Provenance, Continuation, Replication and
+Policy views, and POE can answer historical questions without treating history
+as current execution authority. See the [operator and architecture guide](docs/session-vault.md),
+[threat model](docs/session-vault-threat-model.md), [recovery guide](docs/session-vault-recovery.md)
+and [physical qualification](docs/evidence/agent-control-4.5-session-vault-physical-qualification-20260912.md).
+
 Agent Control 4.5 now tests an energy-minimal execution hierarchy: known
 deterministic result, deterministic tool, validated **Your Memories** lookup,
 governed deterministic skill, specialist model, small general model, stronger
@@ -22,23 +88,48 @@ remains available and inappropriate tasks fail closed before adapter loading.
 The initial physical qualification uses CPU LoRA over a pinned 135M-parameter
 base for strict route-intent JSON. It keeps active GPU-backed voice and model
 services untouched and distinguishes learned adaptation from transient Warm
-Expert/cache state. The **Learned Specialists** dashboard and POE expose the
+Expert/cache state. The **Learned Specialists** dashboard and Morrow expose the
 candidate lifecycle, exact identity, measured improvement, limitations and route
 decisions without implying uncontrolled online learning. See the
 [operator guide](docs/skill-learning.md), [architecture decision](docs/agent-control-4.5-skill-learning-architecture-review.md),
 [qualification](docs/evidence/agent-control-4.5-governed-skill-learning-20260911.md)
 and [deployment guide](docs/DEPLOYMENT.md).
 
-The separate 4.5 **Your Memories** portability experiment adds a provider-neutral structured-Markdown memory port with bounded metadata/lexical recall, provenance and freshness checks, explicit conflict rejection, atomic node-local writes and content-addressed synchronization rules. Obsidian is one viewable storage substrate, not a core dependency. The [physical cross-model qualification](docs/evidence/agent-control-4.5-cross-model-memory-qualification-20260911.md) passed 5/12 requested matrix cells and one complete POE→Sol→memory→Luna→verification lifecycle; its recommendation remains **EXPERIMENTAL**, not release-ready. See the [memory portability guide](docs/project-memory-portability.md).
+The separate 4.5 **Your Memories** portability experiment adds a
+provider-neutral structured-Markdown memory port with bounded metadata/lexical
+recall, provenance and freshness checks, explicit conflict rejection, atomic
+node-local writes and content-addressed synchronization rules. Obsidian is one
+viewable storage substrate, not a core dependency. The original
+[physical cross-model qualification](docs/evidence/agent-control-4.5-cross-model-memory-qualification-20260911.md)
+passed 5/12 requested matrix cells, and the preserved
+[completion evidence](docs/evidence/agent-control-4.5-release-gate-completion-20260912.md)
+later classified nine as PASS/FIXED, two Pixel-reader aliases as UNSUPPORTED,
+and OpenRouter GLM→Qwen as BLOCKED_EXTERNAL. Against the frozen closure
+candidate, the exact Pixel reader passed the unchanged semantic verifier after
+the prompt made the bare `nextAction` representation explicit. The historical
+matrix is now 11/12 exact routes PASS/FIXED; OpenRouter GLM→Qwen remains
+externally blocked. A separate qualified NVIDIA-hosted execution proved the
+exact GLM-5.3-Flash→Qwen model pair without relabelling the blocked OpenRouter
+route. See the [release closure](docs/evidence/agent-control-4.5-release-closure-20260912.md)
+and [memory portability guide](docs/project-memory-portability.md).
 
-The [authoritative follow-up release-gate reconciliation](docs/evidence/agent-control-4.5-release-gate-20260912.md) classifies all seven historical failed memory cells, preserves provider failures, and reruns every physically available route without weakening semantic verification. It also records the governed MSI authentication block, bounded warm-residency measurement, and a fresh live POE→Work Parcel→memory→cold-reader→verification recording. The result remains **EXPERIMENTAL**: some prompt/schema defects were repaired, but real model-capability failures, unavailable MSI authentication, disproven specialist energy advantage, and unavailable whole-node energy evidence remain. The [4.5 release-candidate notes](docs/release-notes-4.5.0.md) and [candidate manifest](docs/evidence/agent-control-4.5-release-manifest.json) preserve those limits for release review.
+The original [release-gate reconciliation](docs/evidence/agent-control-4.5-release-gate-20260912.md), completion report and historical videos remain unchanged. They truthfully retain the failures seen at those commits. Later evidence records the Pixel and alternate-provider GLM passes separately, including exact route identities, Work Parcel IDs, batons and authoritative tokens. The [final acceptance-contract audit](docs/evidence/agent-control-4.5-final-release-closure-audit-20260913.md) preserves the specialist-energy and warm-residency hypotheses as **DISPROVEN** and whole-node power as **BLOCKED_EXTERNAL**, while correctly treating them as disabled/unclaimed experimental outcomes rather than hidden product successes or active release blockers.
 
 The isolated programme also includes [energy-aware intelligence](docs/energy-aware-intelligence.md): scope-safe power telemetry, idle-baseline accounting, expected-total-energy routing, and specialist training break-even. Comparable Intel-package, DRAM and NVIDIA-board measurements **disproved** an energy saving for the current route-intent specialist: retained-process execution remained above warm Qwen, real bounded Your Memories retrieval did not improve it, and deterministic no-LLM routing was lowest. This remains experimental; see the [specialist-energy evidence](docs/evidence/agent-control-4.5-specialist-energy-qualification-20260911.md).
 
+The exact `openbmb/MiniCPM5-2B-GGUF` Q4_K_M configuration also remains
+**FAILED** for governed code repair. Scripted and known-good controls passed, so
+the result is not hidden as a harness artefact; only that immutable configuration
+is denied routing, not the MiniCPM family. See the [MiniCPM closure](docs/evidence/minicpm5-2b-qualification-closure-20260912.md).
+
 Agent Control 4.4.0 remains the latest formally released baseline. Agent Control
-4.5.0 is an experimental release candidate; it must not be tagged as a stable
-release while the mandatory open gates in the authoritative reconciliation
-remain unresolved.
+4.5.0 is a release-ready candidate at implementation commit
+`31ccdf07f9aeb96cec0ea87a8cfb2bf1607ae86b`. It passes 1,331/1,331 automated
+tests plus the physical dashboard, Estate, Runtime Map, memory-route,
+source-distribution and virgin-install checks. The final verdict is **PASS WITH
+LIMITATIONS — READY FOR 4.5 RELEASE**: unavailable routes and measurements fail
+closed or remain outside active claims. No `v4.5.0` merge, tag, release or
+deployment has yet been performed.
 
 **Your Memories** is the user-facing Agent Control capability for finding relevant prior context, checking its governance and provenance, rejecting stale or unrelated memories, and safely presenting accepted context in a session. Memories remain advisory and cannot override Work Parcels, batons, policy, authoritative evidence or execution state. The 4.4 release includes the governed UX Session Capture/Replay projection and the qualified memory architecture; MARM remains one optional backend and automatic memory consolidation/model swapping is not a released runtime feature.
 
@@ -138,8 +229,11 @@ API credentials reuse the existing `provider-secure-store` credential-residency 
   "adapter": "nvidia-hosted-v1",
   "baseUrl": "https://integrate.api.nvidia.com/v1",
   "wireApi": "chat-completions",
-  "auth": {"type": "provider-secure-store", "reference": "provider:nvidia-hosted"},
-  "discovery": {"enabled": true, "path": "models"}
+  "auth": {
+    "type": "provider-secure-store",
+    "reference": "provider:nvidia-hosted"
+  },
+  "discovery": { "enabled": true, "path": "models" }
 }
 ```
 
@@ -170,13 +264,15 @@ Agent Control is provider-, model-, platform- and execution-environment-agnostic
 
 The dashboard is an observer and authenticated operator client over the same control service. Run and Lane **Execution history** correlates durable operator/system/provider/tool/governor/baton/error activity with telemetry, accounting and verification. It is not raw provider traffic, unredacted logs or hidden model reasoning.
 
-## POE floating companion and spoken tour (4.1)
+## Morrow and the robotic crew (4.5 candidate)
 
-POE is Agent Control's original resident conversational operator, evidence explainer, Crew liaison, benchmark designer, and optional OmniVoice interface. The Crew execute work; POE retrieves focused canonical records, explains what is known, admits what is unavailable, and turns an agreed experiment into a frozen proposal that still requires explicit operator approval. Approval submits registered Jobs through the normal Work Parcel, routing, governor, safety, verification, accounting, and league lifecycle—POE has no private execution path and no authority to overrule those controls.
+Morrow is Agent Control's original chief steward: conversational host, evidence guide, crew liaison and optional OmniVoice interface. He retrieves focused canonical records, explains activity and helps prepare proposals. Approved work enters the existing Work Parcel, routing, governor, safety, execution, verification and accounting lifecycle.
 
-The dashboard adds a small draggable SVG hotelier near the upper right, a compact conversation panel, and contextual **Ask POE about this** controls. The optional guided tour highlights real views while POE speaks; Next waits for browser playback to finish, and failures pause narration with a retry control. Captions preserve the complete spoken text, and reduced-motion preferences suppress animation. Authenticated WhatsApp supports `POE: <question>` through the existing enrolled/idempotent Social & Voice edge with a separate channel-scoped conversation. Optional OmniVoice uses an original designed voice, records available turn-latency fields, and treats barge-in as speech interruption rather than Work Parcel cancellation. A qualified conversational model can be selected with Model Registry roles; otherwise POE explicitly uses its deterministic grounded renderer. It never silently substitutes another model.
+The compact floating host has silver hair, a teal utility jacket and a copper badge. Cadence, Quill, Relay, Lumen, Rook and Verity retain their robotic identities, established roles, colours and accessories, now with a shared ceramic, teal and copper appearance. The dashboard provides **Ask Morrow about this** controls. Authenticated social channels accept `Morrow: <question>` and retain legacy `POE:` commands. Guided narration, speech interruption, once-only introductions and reduced-motion controls retain their existing boundaries.
 
-See [POE operation and architecture](docs/poe.md), [dashboard operation](docs/web-dashboard.md), [Social & Voice](docs/social-voice/README.md), [Work Parcels](docs/work-parcels.md), and [adaptive orchestration](docs/adaptive-multi-model-orchestration.md). The [4.1 qualification record](docs/evidence/agent-control-4.1-qualification.md) remains historical evidence. Follow the current [deployment, upgrade and rollback guide](docs/DEPLOYMENT.md); the release manifest records the accepted source and evidence.
+The original designed OmniVoice configuration, internal `poe` routes/events/storage keys, saved conversations and sealed proposal hashes remain compatible. The public identity changes without a state migration or a change to execution authority. Historical POE recordings remain evidence for their recorded source commits; they do not physically qualify the new Morrow presentation.
+
+See the [identity and crew guide](docs/morrow.md), [Morrow operation and architecture](docs/poe.md), [4.5 integration record](docs/evidence/morrow-4.5-integration/validation.md), [dashboard operation](docs/web-dashboard.md), and [deployment, upgrade and rollback guide](docs/DEPLOYMENT.md). The integration is included in the final `feature/4.5-release-closure` candidate; its grounded Runtime Map behavior is covered by the [final closure audit](docs/evidence/agent-control-4.5-final-release-closure-audit-20260913.md).
 
 ## Protected-resource mutation governance
 
@@ -197,7 +293,15 @@ Managed-node measurements carry `value`, `source`, `authority`, `freshness`, obs
 3.8 adds an opt-in provider-neutral path: `Work Parcel → Retrieval Intent → Retrieval Governor → Retrieval Provider → Evidence Packet → ContextGraph/ContextPacketBuilder → Model → Verification/Baton`. It starts with bounded local exact/BM25 evidence, can use optional semantic/hybrid adapters such as zg, reacts to the 3.7 token governor's context pressure, streams redacted retrieval lifecycle metrics over the existing SSE dashboard, and revalidates content-addressed evidence references after baton handoff or restart. Search authority never grants index mutation, remote retrieval is denied by default, stale evidence is explicit, and insufficient or failed retrieval retains the immutable frozen context.
 
 ```json
-{"retrieval":{"enabled":true,"providers":["exact","lexical"],"maximumCalls":4,"maximumEvidenceTokens":8192,"allowRemote":false}}
+{
+  "retrieval": {
+    "enabled": true,
+    "providers": ["exact", "lexical"],
+    "maximumCalls": 4,
+    "maximumEvidenceTokens": 8192,
+    "allowRemote": false
+  }
+}
 ```
 
 zg is optional and normal startup has no new dependency. Built-in retrieval is deliberately constrained: only observable exact/path/query coverage can establish sufficiency; provider rank is not treated as calibrated confidence, and weak evidence escalates or falls back. A generic resource policy chooses provider use, built-in retrieval, authorized index build, or deferral from memory, storage, repository size, index state and expected task duration. See [architecture review](docs/agent-control-3.8-architecture-review.md), [configuration and operation](docs/governed-retrieval.md), [Phase 2 qualification](docs/evidence/agent-control-3.8-phase2-qualification.md), and [3.8 migration](docs/migration-3.8.md).
@@ -401,29 +505,97 @@ Every specialist assignment and coordinator synthesis remains an ordinary Agent 
 - Optional: ripgrep for typed repository search, Orca, SSH, Android/Termux, and provider services when configured
 
 No host, device, provider, port, GPU, overlay network or absolute repository path is built in.
+For a fresh Android/Termux installation, complete the explicit
+[Termux prerequisites](android/README.md#fresh-termux-prerequisites) before the
+clone command below.
 
 ## Install
+
+The normal clone is deliberately source-only. Heavy historical videos,
+screenshots, binary captures and qualification working trees are preserved in a
+separate checksummed [qualification evidence archive](docs/evidence-archive.md),
+so installation never requires a partial or shallow clone workaround.
+
+Clone the public release and select its immutable tag. During pre-release
+qualification, the reviewer substitutes the exact reviewed candidate SHA for
+`v4.5.0`; ordinary users should use the published tag.
 
 ```bash
 git clone https://github.com/lozknowles/agent-control.git
 cd agent-control
-npm install
-npm run init
+git checkout --detach v4.5.0
+./scripts/bootstrap-agent-control.sh --check --target "$PWD"
+./scripts/bootstrap-agent-control.sh --install --role control --target "$PWD"
 npm run check
 ```
 
-`npm run init` creates only a schema-valid empty `.agent-control/config.json`. It is idempotent, never discovers infrastructure and never overwrites existing operator configuration. Use `config/agent-control.example.json` only as an illustrative reference after replacing every example endpoint, path and command.
+The read-only check should report `repository: verified` and
+`dashboard: available`. Install should finish with `dependencies:
+installed-no-lock` and `configuration: initialized-or-preserved`. If either
+command stops, use its exact error rather than bypassing the check: confirm Node
+24, npm and Git are on `PATH`, that the checkout is clean, and that the selected
+commit exists. The project intentionally has no package lock or build step.
+The validation command creates an isolated temporary test-state directory and
+removes it when the suite exits; it does not add test lanes, events or runtime
+records to the initialized `.agent-control` installation state.
+
+Bootstrap runs `npm install --ignore-scripts --no-package-lock` and the
+idempotent initializer. `npm run init` creates only a schema-valid empty
+`.agent-control/config.json`; rerunning bootstrap never overwrites existing
+operator configuration. Use `config/agent-control.example.json` only as an
+illustrative reference after replacing every example endpoint, path and
+command.
 
 Edit `.agent-control/config.json` for the installation. Runtime state and credentials remain ignored. A different path can be selected with `AGENT_CONTROL_CONFIG`. Do not put credentials in JSON; configuration stores only an environment, referenced-file, isolated-home or opaque secure-store reference.
 
-With no configuration file, Agent Control starts with a safe local lane and reports infrastructure as `UNCONFIGURED`. It does not invent providers, machines or services.
+With no configuration file, Agent Control reports infrastructure as `UNCONFIGURED` and registers only its built-in controller-local worker for the read-only System observation Job. That worker cannot execute models or arbitrary tools. Agent Control does not invent providers, machines, external workers or services.
 
 ## Run and monitor
 
+Environment Discovery and every other mutation require an authenticated operator
+session. Obtain a private random token of at least 32 characters from your
+password manager, enter it at the hidden prompt, and start one headless
+controller from the same shell:
+
+```bash
+read -rsp "Agent Control operator token: " AGENT_CONTROL_WEB_OPERATOR_TOKEN
+printf '\n'
+export AGENT_CONTROL_WEB_OPERATOR_TOKEN
+npm run web
+```
+
+The terminal should report the local dashboard address. Open that address from
+the same machine, click the top-right operator button, and enter the same private
+token. The button must change to **Operator authenticated** before continuing.
+Then use **Settings → Installation** to confirm source provenance and **Settings
+→ Environment Discovery → First Run Setup** to perform the first read-only scan.
+If the page is unavailable, keep the terminal open and check its startup error;
+do not expose the listener publicly to work around a local connection problem.
+
+Complete the provider-free first-run check through the same authenticated
+dashboard. Open **Morrow**, type this exact request, and select **Ask**:
+
+```text
+Start operator-system-observation@1.1.0
+```
+
+Morrow must show **Review job proposal** and must not start it immediately. Expand
+**Jobs, schedules, approvals & evidence**, review the displayed job identity,
+empty inputs and SHA-256, then select **Approve this job**.
+Open its Work Parcel and choose **Runtime Map → Process Map**. The genuine
+run contains `observe → verify`: it records registered worker health as a local
+JSON artifact, then a separate deterministic verifier checks that artifact.
+Successful completion is **SUCCEEDED** with both stages visible and independently
+verified. Both stages require the built-in `agent-control.operator-observation.read`
+capability; the worker has no model, shell or remote-node capability. This proves
+the local governed lifecycle only; it does not qualify a provider, remote machine
+or model.
+
+Other operator commands are:
+
 ```bash
 npm start
-npm run web
-agent-control status
+npm run status
 npm run up
 npm run qualify
 ```
@@ -432,14 +604,21 @@ Run `npm link` once per installed node to expose the cross-platform `agent-contr
 
 `npm start` opens the control-room TUI and its embedded web client. `npm run web` runs the same control service and web dashboard without the TUI for a headless operator host; run one authoritative control-plane process per state directory. `agent-control status` is read-only. `up` starts only explicitly configured services/processes and records ownership. `down` stops only processes that the same Agent Control state directory recorded as owned.
 
-The TUI also starts the web dashboard on `http://127.0.0.1:4310` by default. The browser is an observer unless an operator token is explicitly configured:
+The TUI also starts the web dashboard on `http://127.0.0.1:4310` by default. To
+use the TUI instead of the headless controller, set the token with the same
+hidden-prompt procedure above and run:
 
 ```bash
-export AGENT_CONTROL_WEB_OPERATOR_TOKEN="$(openssl rand -hex 32)"
 npm start
 ```
 
-Enter that token using **Observer mode** in the dashboard. It is retained only in the browser tab's session storage and sent as a bearer header; Agent Control does not create a browser authority cookie. Use `AGENT_CONTROL_WEB_ENABLED=0` to disable the dashboard or `AGENT_CONTROL_WEB_PORT` to select another port. Binding beyond localhost is an explicit security decision and should be placed behind authenticated TLS with a matching `AGENT_CONTROL_WEB_ALLOWED_ORIGINS` allowlist.
+Enter the token using the top-right operator button in the dashboard. It is
+retained only in the browser tab's session storage and sent as a bearer header;
+Agent Control does not create a browser authority cookie. Use
+`AGENT_CONTROL_WEB_ENABLED=0` to disable the dashboard or
+`AGENT_CONTROL_WEB_PORT` to select another port. Binding beyond localhost is an
+explicit security decision and should be placed behind authenticated TLS with a
+matching `AGENT_CONTROL_WEB_ALLOWED_ORIGINS` allowlist.
 
 Monitor either interface for the same authoritative lanes, scheduler projection, providers, resources, PTY ownership, routing rationale and claim/evidence/verification state. The web terminal panel is observer-only; it never receives a PTY write primitive. Qualification writes timestamped JSON beneath ignored `qualification-results/`.
 
@@ -565,6 +744,7 @@ Android is one optional resource type, not a named device. The bundled Termux no
 npm run typecheck
 npm run check:bootstrap
 npm run check:neutrality
+npm run check:distribution
 npm test
 npm run check
 npm run qualify:jobs

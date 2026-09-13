@@ -39,7 +39,8 @@
   }
 
   function normalizePreference(value, accepted, fallback) { return accepted.includes(value) ? value : fallback; }
-  root.AgentControlBots = {states: [...states], labels: {...labels}, icons: {...icons}, identities: Object.fromEntries(Object.entries(identities).map(([id, identity]) => [id, {...identity}])), idleLookDurationMs, effectiveMotion, shouldAcknowledge, shouldWake, animationExpression, idleDisposition, normalizePreference};
+  let artworkSequence = 0;
+  root.AgentControlBots = {artwork: botSvg, states: [...states], labels: {...labels}, icons: {...icons}, identities: Object.fromEntries(Object.entries(identities).map(([id, identity]) => [id, {...identity}])), idleLookDurationMs, effectiveMotion, shouldAcknowledge, shouldWake, animationExpression, idleDisposition, normalizePreference};
   if (typeof document === 'undefined') return;
 
   const runtime = {
@@ -119,15 +120,38 @@
   function botSvg(member, expression) {
     const id = Object.prototype.hasOwnProperty.call(identities, member.id) ? member.id : 'quality-inspector';
     const stateName = states.includes(member.state) ? member.state : 'unknown';
-    const expressionName = String(expression || 'STILL').toLowerCase().replaceAll('_', '-'), toolKind = member.activity?.tool?.kind || null;
-    return `<svg class="agent-bot bot-${id} bot-state-${stateName} bot-expression-${expressionName}" data-animation-authority="presentation-only" viewBox="0 0 180 150" aria-hidden="true" focusable="false">
+    const paintId = `crew-art-${++artworkSequence}`;
+    const headRadius = id === 'resource-guardian' ? 18 : id === 'prompt-reviewer' ? 22 : 26;
+    const expressionName = String(expression || 'STILL').toLowerCase().replaceAll('_', '-').replace(/[^a-z0-9-]/g, ''), toolKind = member.activity?.tool?.kind || null;
+    return `<svg class="agent-bot bot-${id} bot-state-${stateName} bot-expression-${expressionName}" data-animation-authority="presentation-only" data-art-style="morrow-crew" viewBox="0 0 180 150" aria-hidden="true" focusable="false">
+      <defs>
+        <linearGradient id="${paintId}-ceramic" x1="0" y1="0" x2=".85" y2="1"><stop stop-color="#fff2dc"/><stop offset=".48" stop-color="#d9d0bd"/><stop offset="1" stop-color="#9faaa7"/></linearGradient>
+        <linearGradient id="${paintId}-armour" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#466570"/><stop offset=".5" stop-color="#263f4b"/><stop offset="1" stop-color="#142932"/></linearGradient>
+        <linearGradient id="${paintId}-copper" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f2c99b"/><stop offset=".45" stop-color="#bf865b"/><stop offset="1" stop-color="#735443"/></linearGradient>
+      </defs>
       <ellipse class="bot-shadow" cx="90" cy="141" rx="49" ry="6"/>
       <g class="bot-float">
-        <g class="bot-antenna"><path d="M90 38V24"/><circle class="bot-accent-fill bot-antenna-light" cx="90" cy="19" r="6"/></g>
-        <g class="bot-body"><rect class="bot-shell" x="52" y="83" width="76" height="51" rx="18"/><path class="bot-panel" d="M67 101h46v23H67z"/><path class="bot-leg" d="M72 130v9M108 130v9"/><path class="bot-foot" d="M61 140h22M97 140h22"/></g>
-        <g class="bot-head"><rect class="bot-shell" x="45" y="38" width="90" height="57" rx="24"/><path class="bot-face" d="M58 51h64v31H58z"/><g class="bot-eye-direction"><g class="bot-eyes"><circle cx="76" cy="66" r="5"/><circle cx="104" cy="66" r="5"/></g><g class="bot-sleep-eyes"><path d="M69 66q7 7 14 0M97 66q7 7 14 0"/></g></g><path class="bot-mouth bot-mouth-neutral" d="M82 79h16"/><path class="bot-mouth bot-mouth-smile" d="M81 76q9 10 18 0"/><path class="bot-mouth bot-mouth-frown" d="M81 82q9-10 18 0"/></g>
+        <g class="bot-antenna"><path d="M90 38V24"/><circle class="bot-accent-fill bot-antenna-light" cx="90" cy="19" r="5"/><circle class="bot-glint" cx="88.5" cy="17.5" r="1.5"/></g>
+        <g class="bot-body">
+          <path class="bot-leg" d="M72 126v13M108 126v13"/><path class="bot-foot" d="M61 140h22M97 140h22"/>
+          <rect class="bot-shell" fill="url(#${paintId}-armour)" x="52" y="86" width="76" height="47" rx="17"/>
+          <path class="bot-panel" fill="url(#${paintId}-armour)" d="M68 91L90 100 112 91 114 123Q90 133 66 123Z"/>
+          <path class="bot-copper-seam" d="M112 95L78 115V127"/>
+          <path class="bot-trim" d="M60 97L66 92M116 92L121 98M59 124h10M109 125h11"/>
+          <g class="bot-crew-badge"><circle cx="107" cy="111" r="8"/><circle class="bot-badge-light" cx="104" cy="108" r="1.5"/><circle class="bot-badge-light" cx="110" cy="111" r="1.5"/><circle class="bot-badge-light" cx="105" cy="115" r="1.5"/></g>
+        </g>
+        <g class="bot-head">
+          <rect class="bot-shell" fill="url(#${paintId}-ceramic)" x="45" y="36" width="90" height="57" rx="${headRadius}"/>
+          <path class="bot-face" fill="url(#${paintId}-ceramic)" d="M61 48Q90 41 119 48L121 73Q116 87 90 88 64 87 59 73Z"/>
+          <path class="bot-panel-seam" d="M90 37V43M58 45L52 52M123 46L130 53M58 82L53 85M123 82L128 85"/>
+          <g class="bot-temple"><ellipse fill="url(#${paintId}-copper)" cx="47" cy="65" rx="9" ry="15"/><ellipse class="bot-temple-inset" cx="46" cy="65" rx="5" ry="10"/><circle class="bot-badge-light" cx="46" cy="65" r="2"/></g>
+          <path class="bot-brow" d="M68 55Q75 52 82 55M97 54Q104 50 111 54"/>
+          <g class="bot-eye-direction"><g class="bot-eyes"><path class="bot-eye-socket" d="M66 63Q75 57 84 63V70Q76 76 67 71ZM96 62Q105 56 114 62L113 71Q104 75 96 69Z"/><ellipse cx="76" cy="66" rx="4" ry="5.5"/><ellipse cx="105" cy="65" rx="4" ry="5.5"/><circle class="bot-glint" cx="75" cy="64" r="1.3"/><circle class="bot-glint" cx="104" cy="63" r="1.3"/></g><g class="bot-sleep-eyes"><path d="M69 66q7 7 14 0M97 66q7 7 14 0"/></g></g>
+          <path class="bot-mouth bot-mouth-neutral" d="M83 80q7 4 14-1"/><path class="bot-mouth bot-mouth-smile" d="M81 77q9 10 18 0"/><path class="bot-mouth bot-mouth-frown" d="M81 82q9-10 18 0"/>
+          <circle class="bot-fastener" cx="60" cy="76" r="1.5"/><circle class="bot-fastener" cx="120" cy="76" r="1.5"/>
+        </g>
         <g class="bot-sleep-signals"><text x="132" y="54">z</text><text x="143" y="42">z</text><text x="156" y="28">Z</text></g>
-        <g class="bot-arms"><path class="bot-arm bot-arm-left" d="M53 95L34 112"/><path class="bot-arm bot-arm-right" d="M127 95l19 17"/><circle class="bot-hand" cx="32" cy="114" r="6"/><circle class="bot-hand" cx="148" cy="114" r="6"/></g>
+        <g class="bot-arms"><path class="bot-arm bot-arm-left" d="M53 99L34 114"/><path class="bot-arm bot-arm-right" d="M127 99l19 15"/><circle class="bot-shoulder" fill="url(#${paintId}-copper)" cx="53" cy="99" r="6"/><circle class="bot-shoulder" fill="url(#${paintId}-copper)" cx="127" cy="99" r="6"/><circle class="bot-hand" fill="url(#${paintId}-ceramic)" cx="32" cy="114" r="7"/><circle class="bot-hand" fill="url(#${paintId}-ceramic)" cx="148" cy="114" r="7"/><path class="bot-finger" d="M29 112l5 4M146 111l4 5"/></g>
         ${roleAccessory(id)}
         <g class="bot-state-props">
           <g class="bot-task-card"><rect x="128" y="72" width="28" height="35" rx="3"/><path d="M134 82h16M134 89h13M134 96h10"/></g>

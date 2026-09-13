@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import type {ChildProcess} from 'node:child_process';
-import {OwnedProcessManager, type OwnedProcessIdentity, type ProcessTerminationAdapter} from './owned-process.js';
+import {OwnedProcessManager, processTerminationAdapterFor, type OwnedProcessIdentity, type ProcessTerminationAdapter} from './owned-process.js';
 import {ExecutionSessionRuntime, type ExecutionSessionScope} from './execution-session.js';
 
 class FixtureTerminationAdapter implements ProcessTerminationAdapter {
@@ -35,6 +35,13 @@ class DelayedCaptureTerminationAdapter implements ProcessTerminationAdapter {
     return {identity, outcome: 'confirmed' as const, reason, signals: ['fixture-tree-kill'], requestedAt: new Date().toISOString(), verifiedAt: new Date().toISOString(), detail: 'captured_tree_absent'};
   }
 }
+
+test('Android selects the procfs-backed process-group termination adapter', async () => {
+  const adapter = processTerminationAdapterFor('android'), identity = await adapter.capture(process.pid);
+  assert.equal(adapter.platform, 'android');
+  assert.equal(identity.platform, 'android');
+  assert.ok(identity.startedAtToken);
+});
 
 test('platform termination adapter reports confirmed tree cleanup without requiring Windows', async () => {
   const manager = new OwnedProcessManager(new FixtureTerminationAdapter('confirmed')), controller = new AbortController();
@@ -102,11 +109,11 @@ test('concurrent execution sessions preserve process, output and input isolation
   assert.match(quillTranscript, /quill:GOT:ONLY_QUILL/); assert.doesNotMatch(quillTranscript, /rook:|ONLY_ROOK/); assert.match(rookTranscript, /rook:GOT:ONLY_ROOK/); assert.doesNotMatch(rookTranscript, /quill:|ONLY_QUILL/);
 });
 
-test('protected-resource WATCH_ONLY scope suppresses requested PTY intervention and closes stdin', async t => {
+test('protected-resource WATCH_ONLY scope suppresses requested intervention and closes stdin', async t => {
   const root=fs.mkdtempSync(path.join(os.tmpdir(),'agent-control-owned-protected-'));t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
   const sessions=new ExecutionSessionRuntime(path.join(root,'sessions')),manager=new OwnedProcessManager(undefined,sessions,{runId:'run:protected',jobId:'protected-job',jobVersion:'1.0.0',stepId:'mutate',actionId:'protected.mutation@1.0.0',workerId:'worker:guardian',nodeId:'controller',interactionPolicy:'WATCH_ONLY'});
   const source="process.stdin.on('end',()=>{process.stdout.write('STDIN_CLOSED_BY_POLICY\\n');process.exit(0)});process.stdin.resume()";
-  const running=manager.runProcess({command:process.execPath,args:['-e',source],cwd:root,session:{terminal:'pty',interactiveInput:true,allowSignals:true,commandLabel:'protected resource operation'}});
+  const running=manager.runProcess({command:process.execPath,args:['-e',source],cwd:root,session:{terminal:'pipe',interactiveInput:true,allowSignals:true,commandLabel:'protected resource operation'}});
   await waitFor(()=>manager.sessionIds().length===1);const id=manager.sessionIds()[0],record=sessions.get(id);
   assert.equal(record.scope.interactionPolicy,'WATCH_ONLY');assert.equal(record.capabilities.interactiveInput,false);assert.equal(record.capabilities.modes.intervene,false);assert.deepEqual(record.capabilities.signals,[]);assert.match(record.capabilities.limitations.join(' '),/intervention is policy-forbidden/);
   await assert.rejects(sessions.attach(id,'INTERVENE',{actorId:'human:operator',roles:['operator']}),/execution_session_mode_unsupported/);
@@ -117,3 +124,21 @@ async function waitFor(predicate: () => boolean, timeoutMs = 5_000) {
   const deadline = Date.now() + timeoutMs;
   while (!predicate()) { if (Date.now() >= deadline) throw new Error('fixture_wait_timeout'); await new Promise(resolve => setTimeout(resolve, 10)); }
 }
+
+for (const exitCode of [0, 7]) test('owned process drains inherited output before sealing exit ' + exitCode, {timeout: 10000}, async t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'owned-output-drain-')); t.after(() => fs.rmSync(root, {recursive: true, force: true}));
+  const sessions = new ExecutionSessionRuntime(path.join(root, 'sessions'));
+  const scope: ExecutionSessionScope = {runId: 'drain-run', jobId: 'drain-job', jobVersion: '1.0.0', stepId: 'drain', actionId: 'drain@1.0.0', workerId: 'drain-worker', nodeId: 'controller'};
+  const manager = new OwnedProcessManager(undefined, sessions, scope), lines: string[] = [];
+  const tail = "setTimeout(() => { process.stdout.write('late stdout'); process.stderr.write('late stderr'); }, 120)";
+  const source = "require('node:child_process').spawn(process.execPath, ['-e', " + JSON.stringify(tail) + "], {stdio: ['ignore', process.stdout, process.stderr]}); process.stdout.write(" + JSON.stringify('early' + String.fromCharCode(10)) + "); process.exit(" + exitCode + ")";
+  const result = await manager.runProcess({command: process.execPath, args: ['-e', source], onStdoutLine: line => lines.push(line), session: {terminal: 'pipe', transformOutputLine: (_stream, line) => line}});
+  assert.equal(result.exitCode, exitCode);
+  assert.equal(result.stdout, 'early\nlate stdout'); assert.equal(result.stderr, 'late stderr');
+  assert.deepEqual(lines, ['early', 'late stdout']); assert.deepEqual(manager.activePids(), []);
+  const id = manager.sessionIds()[0], transcript = sessions.transcript(id);
+  assert.match(transcript, /late stdout/); assert.match(transcript, /late stderr/);
+  const restarted = new ExecutionSessionRuntime(path.join(root, 'sessions'));
+  assert.equal(restarted.transcript(id), transcript);
+  assert.equal(restarted.get(id).state, exitCode === 0 ? 'EXITED' : 'FAILED');
+});

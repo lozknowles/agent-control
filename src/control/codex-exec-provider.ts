@@ -76,7 +76,7 @@ export interface CodexExecProviderOptions {
   health: 'healthy' | 'degraded' | 'offline';
   timeoutMs?: number;
   command?: string;
-  authProbe?: (command: string, cwd: string, timeoutMs: number, environment?: NodeJS.ProcessEnv) => Promise<CodexChatGptAuth>;
+  authProbe?: (command: string, cwd: string, timeoutMs: number, environment?: NodeJS.ProcessEnv, signal?: AbortSignal, ownedExecution?: OwnedExecution) => Promise<CodexChatGptAuth>;
   runner?: (request: CodexExecRequest) => Promise<CodexExecResult>;
   telemetry?: (sample: TokenTelemetrySample) => void;
   contextLimitTokens?: number;
@@ -128,12 +128,15 @@ export class CodexExecProviderFactory {
   }
 
   private async execute(instruction: string, recipe: Parameters<RecipeExecutor['execute']>[0], tools: ToolInvocationGateway, timeoutMs: number) {
+    if (typeof tools.assertActive !== 'function') throw new Error('provider_live_control_required');
+    tools.signal?.throwIfAborted(); tools.assertActive();
     const grantedToolIds = recipe.tools.map(tool => tool.id);
     if (!grantedToolIds.length) throw new Error('codex_exec_no_granted_tools');
     const command = this.options.command ?? process.env.CODEX_COMMAND ?? 'codex';
     const account = this.options.accountProfile ? resolveCodexAccountEnvironment(this.options.accountProfile, this.options.environment) : undefined;
     const environment = account?.environment ?? this.options.environment;
-    await (this.options.authProbe ?? probeCodexChatGptAuth)(command, this.options.cwd, timeoutMs, environment);
+    await (this.options.authProbe ?? probeCodexChatGptAuth)(command, this.options.cwd, timeoutMs, environment, tools.signal, tools.ownedExecution);
+    tools.signal?.throwIfAborted(); tools.assertActive();
     const startedAt = new Date().toISOString();
     const telemetry = this.options.telemetry;
     const emit = (event: CodexExecTelemetryEvent) => {
@@ -141,10 +144,12 @@ export class CodexExecProviderFactory {
       const usage = event.usage ?? {}, input = numeric(usage.input_tokens), cached = cachedInput(usage), cacheWrite = cacheWriteInput(usage), fresh = input !== null && cached !== null && cached + (cacheWrite ?? 0) <= input ? input - cached - (cacheWrite ?? 0) : null, output = numeric(usage.output_tokens), total = numeric(usage.total_tokens) ?? (input !== null && output !== null ? input + output : null);
       telemetry({threadId: event.threadId ?? `codex:${recipe.id ?? recipe.taskId ?? 'unattributed'}`, parcelId: recipe.taskId ?? recipe.jobId ?? 'unattributed-task', agentId: this.options.workerId, nodeId: this.options.workerId, providerId: this.options.provider.id, accountProfileId: account?.profile.id, accountLabel: account?.profile.label, accountPlan: account?.profile.plan, accountPlanAuthority: account?.profile.planAuthority, accountQualification: account?.profile.qualification?.state, accountAvailability: account ? account.profile.qualification?.state === 'QUALIFIED' ? 'AVAILABLE' : 'UNQUALIFIED' : undefined, modelId: this.options.modelId, elapsedMs: event.elapsedMs, active: !['turn.completed'].includes(event.type), cumulative: {inputTokens: input, freshInputTokens: fresh, cachedInputTokens: cached, cacheWriteTokens: cacheWrite, outputTokens: output, totalTokens: total}, context: {tokens: event.context.tokens, limitTokens: event.context.limitTokens ?? this.options.contextLimitTokens ?? null, authority: event.context.authority, source: event.context.source}, cost: {amount: null, currency: null, authority: 'unavailable', source: 'codex_turn_cost_not_exposed_on_exec_jsonl'}, ...(event.contextLifecycle ? {contextLifecycle: event.contextLifecycle} : {})});
     };
-    const run = await (this.options.runner ?? runCodexExec)({command, cwd: this.options.cwd, modelId: this.options.modelId, instruction, grantedToolIds, timeoutMs, environment, onTelemetry: emit});
+    const run = await (this.options.runner ?? runCodexExec)({command, cwd: this.options.cwd, modelId: this.options.modelId, instruction, grantedToolIds, timeoutMs, environment, onTelemetry: emit, signal: tools.signal, ownedExecution: tools.ownedExecution});
+    tools.signal?.throwIfAborted(); tools.assertActive();
     const providerCompletedAt = new Date().toISOString();
     if (run.observedItemTypes.includes('file_change')) throw new Error('codex_exec_capability_envelope_violation:file_change');
     const request = parseToolRequest(run.finalMessage);
+    tools.assertActive();
     const output = await tools.invoke(request.tool, request.input);
     const responseHash = createHash('sha256').update(run.finalMessage).digest('hex');
     const result = {providerId: this.options.provider.id, accountProfileId: account?.profile.id ?? null, modelId: this.options.modelId, authMode: 'chatgpt', threadId: run.threadId, requestedTool: request.tool, toolOutput: output, responseHash, usage: run.usage, capabilityEnvelope: 'read-only'};
@@ -166,16 +171,18 @@ export class CodexExecProviderFactory {
   }
 }
 
-export async function probeCodexChatGptAuth(command: string, cwd: string, timeoutMs: number, environment: NodeJS.ProcessEnv = process.env): Promise<CodexChatGptAuth> {
-  const result = await captureProcess(command, ['login', 'status'], cwd, timeoutMs, environment);
+export async function probeCodexChatGptAuth(command: string, cwd: string, timeoutMs: number, environment: NodeJS.ProcessEnv = process.env, signal?: AbortSignal, ownedExecution?: OwnedExecution): Promise<CodexChatGptAuth> {
+  const result = await captureProcess(command, ['login', 'status'], cwd, timeoutMs, environment, true, undefined, signal, ownedExecution);
   if (result.code !== 0 || !/chatgpt/i.test(`${result.stdout}\n${result.stderr}`)) throw new Error('codex_chatgpt_auth_required');
   return {mode: 'chatgpt'};
 }
 
 export async function runCodexExec(request: CodexExecRequest): Promise<CodexExecResult> {
+  request.signal?.throwIfAborted();
   const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-codex-schema-'));
   const schemaFile = path.join(temporary, 'output.schema.json');
   try {
+    request.signal?.throwIfAborted();
     fs.writeFileSync(schemaFile, JSON.stringify(request.outputSchema ?? codexToolRequestSchema(request.grantedToolIds)), {mode: 0o600});
     const prompt = request.outputSchema ? request.instruction : `Return one Agent Control tool request as schema-constrained JSON. Put the tool input in input_json as a JSON-encoded string. Do not claim the tool ran. Do not modify files.\n\n${request.instruction}`;
     const startedAt = Date.now(), liveEvents: Record<string, unknown>[] = []; let liveThreadId: string | undefined;

@@ -52,10 +52,37 @@ The optional `ProjectMemoryPort` implements the generic memory boundary chosen i
 
 The provider-neutral [energy telemetry boundary](docs/energy-aware-intelligence.md) retains timestamped power, scope, authority, method, idle baseline, limitations, and verified outcome identity. It integrates gross and incremental Wh and supports expected-total-energy route assessment, including failed-attempt and fallback energy. Capability, quality, confidence, policy, privacy, and independent verification remain hard gates. GPU-only, CPU-package, measured-components, battery, whole-node, estimated, and unavailable energy are never conflated. Physical evidence may reject a small-model route: the first 4.5 study found the retained 135M specialist consumed more measured energy than warm Qwen, while deterministic execution was lowest. Parameter count never substitutes for joules per verified outcome.
 
-Physical 4.5 qualification exercises the unchanged provider-neutral flow as
-`writer route → verified memory record → sealed stage baton → distinct cold reader route → independently verified continuation`. Provider-native personal-memory APIs are optional adapter capabilities, not assumed core state. A backend such as Obsidian is not a second memory capability. Measured qualification currently supports an **EXPERIMENTAL** status: five of twelve requested route pairs passed, while Pixel and MSI limitations remain explicit. See the [cross-model evidence](docs/evidence/agent-control-4.5-cross-model-memory-qualification-20260911.md).
+Physical 4.5 qualification exercises the provider-neutral flow as
+`route qualification → writer route → verified memory record → sealed stage baton → qualified cold reader route → independently verified continuation`. `ProjectMemoryExchange` is the canonical application contract shared by writer, reader and consolidation; provider adapters may translate transport envelopes but cannot weaken its semantic verifier. Provider-native personal-memory APIs are optional adapter capabilities, not assumed core state. A backend such as Obsidian is not a second memory capability.
+
+`MemoryRouteQualificationStore` records exact provider/account/model/node identity separately from the provider adapter. Each record binds runtime and exchange-contract versions, writer and reader eligibility, maximum physically proven memory bytes, bounded repair allowance, qualification freshness, evidence and terminal classification. Exact pair records prevent independent route successes from being incorrectly composed into an unproven pair. Admission is fail closed: a missing, stale, contract-mismatched, oversized, blocked or unsupported pair is denied; escalation occurs only when an explicitly qualified alternate pair is recorded. Secrets and provider output are not part of this store.
+
+The final 4.5 product candidate is **READY FOR RELEASE WITH LIMITATIONS** while
+individual unqualified routes remain experimental or unavailable. Every
+historical matrix row is retained: 11/12 exact routes are now PASS/FIXED after a fresh
+Qwen→Pixel Gemma 4 E4B pass with the unchanged semantic verifier. The exact
+OpenRouter GLM-5.3-Flash→Qwen route remains `BLOCKED_EXTERNAL`; a separate
+NVIDIA-hosted GLM-5.3-Flash→Qwen execution proves provider-neutral portability
+without changing that historical route identity. The two public Pixel aliases
+refer to one physical route and are not presented as two executions. See the
+[original cross-model evidence](docs/evidence/agent-control-4.5-cross-model-memory-qualification-20260911.md),
+[completion evidence](docs/evidence/agent-control-4.5-release-gate-completion-20260912.md)
+and [final release closure](docs/evidence/agent-control-4.5-final-release-closure-audit-20260913.md).
+
+The power boundary deliberately preserves negative evidence. The qualified
+specialist did not beat warm Qwen on measured-component energy, warm residency
+did not produce a route-relevant effect above uncertainty, and synchronized
+whole-node energy is unavailable. Those results are respectively `DISPROVEN`,
+`DISPROVEN` and `BLOCKED_EXTERNAL`; GPU-board and CPU-package readings cannot be
+promoted to whole-node claims. The exact MiniCPM5-2B Q4_K_M code-repair
+configuration likewise remains `FAILED` while known-good and scripted controls
+pass, so fail-closed admission applies only to that immutable configuration.
+These findings prevent unsupported energy/model routes from being admitted;
+they are not converted into positive claims or hidden as product successes.
 
 The follow-up [release-gate reconciliation](docs/evidence/agent-control-4.5-release-gate-20260912.md) makes provider-response validation two separate gates: transport/application-schema validity and semantic reconstruction. One governed repair attempt may correct a malformed or misplaced response, but exact state, provenance, decision, rejection-risk and next-action semantics remain independently required. A valid JSON object or copied keyword list cannot pass by itself. Attempts retain bounded sanitized output, finish reason, hashes and exact schema/semantic failures. Model limitations remain failures; unavailable node authentication remains `BLOCKED`.
+
+Cross-node Codex execution retains `provider + account profile + model + node` in the sealed route. The Windows SSH adapter sends a fixed audited script and variable payload as two bounded base64 records, avoiding dependence on OpenSSH channel EOF. The destination resolves its own profile-home reference and executable locally; credential paths, credential values and raw PowerShell output never become Work Parcel, baton, telemetry or evidence fields.
 
 ## Transport Context and Integrity Gate (4.2)
 
@@ -63,39 +90,71 @@ After a Work Parcel resolves its frozen repository and context, the production r
 
 Each dependency declares requiredness, source, provenance, freshness and expected identity/hash. The deterministic gate is `COMPLETE` when required dependencies are satisfied, `DEGRADED` when only optional context is missing, `BLOCKED` when required context is missing/unretrievable/claimed-but-not-loaded, and `ESCALATED` when required context is stale or contradictory. Repairs append evidence; blocked workers do not improvise. Independent inspection records a distinct verifier and rejects generator self-approval.
 
-This layer composes with, rather than replaces, Work Parcel audit, token telemetry/governor, contract runtime, governed handoff and repository validation. The baton carries the transport-contract hash across provider/model/node changes. Legacy parcels are visible as unbound and are not silently rewritten. See [docs/transport-integrity.md](docs/transport-integrity.md).
-11. Every material routing decision is capability-qualified, fail closed and inspectable.
-12. An Action is a versioned executable capability; a Job is a declarative workflow; a Trigger creates a durable Run through one authoritative path.
-13. Job manifests can request capabilities, resources and approvals but cannot confer them.
-14. Process completion, collected evidence, verification and Run success are separate states.
-15. An agent may request or propose capability; only Agent Control policy may qualify and grant it.
-16. A recipe constructs an execution environment but cannot schedule work, acquire authority, write a PTY or accept a result.
-17. A managed node is a configured resource plus discovered capabilities; its hostname, transport, hardware and workload identity never become control-plane policy.
-18. Remote maintenance is a typed Action with approval and evidence, never an arbitrary SSH command string.
-19. Provider registration, model registration, model qualification, logical role mapping and worker placement are distinct state and decisions.
-20. A declared capability or pricing field is not qualification evidence; unavailable usage and cost remain unknown rather than zero.
-21. Actor, Agent, Model, Provider, Runtime, Node and Resource identities are separate; one must never stand in for another.
-22. A Session has one immutable creator and an attributed participant set; joining a session never grants authority beyond the actor, parent delegation or session envelope.
-23. Every context handoff records source and transferred hashes, token budget, selection/omission reason and receiving agent/model without persisting raw secret material.
-24. Missing sandbox, local execution, governed runner, required node or required model fails closed unless an explicit fallback policy names the replacement.
-25. ACP and other interoperability adapters terminate at AgentControlService/Work Parcel ports. They cannot become alternate scheduler, shell, tool or acceptance paths.
-26. `THIN` describes context shape; `SPARK` describes an execution class. Neither implies the other.
-27. Fast execution is one attempt, independently verified, scope-limited and visibly escalated. Protected or sensitive work never enters it.
-28. Retrieval is governed separately from model execution; search/inspect authority never implies index, configuration or repository mutation.
-29. Retrieved evidence is content-addressed, repository-state-bound and explicitly CURRENT, POSSIBLY_STALE or INVALID.
-30. Token pressure may narrow retrieval before expansion/compaction/handoff, but cumulative lifetime use never substitutes for active context occupancy.
-31. Provider rank is not calibrated confidence; evidence sufficiency derives from observable exact, path, coverage, diversity and freshness signals.
-32. A baton evidence reference is portable only when rehydration revalidates repository identity, path boundary, source existence and whole-file content hash.
-33. Index search and index mutation are distinct authorities; resource policy may recommend a build but cannot grant it.
-34. A remembered Run, PID or network connection is not execution continuity. Recovery requires the adapter to reconcile the exact durable execution identity and route.
-35. Sending a cancellation signal is not cleanup completion. Terminal state and authority release require verified descendant/process-tree absence or an explicit uncertainty state.
-36. Every resource metric carries source, authority and freshness. Missing data is null; a derived fallback cannot silently become an admission-qualified measurement.
-37. Cache admission is an adapter capability, not a core assumption. Stable prompt structure is portable; provider-specific keys and breakpoints are emitted only after provider-and-model qualification.
-38. Every external ingress that starts governed work preserves a redacted `request-origin` envelope through the Run, Work Parcel, transcript and response association; channel identity and authentication are provenance, never execution authority by themselves.
-39. A baton transfers context and evidence, never authority. A child contract receives only an intersection with parent authority and inherits the parent's protected-resource envelope.
-40. Live Shell is an attachment to a proven execution-session identity, not a shell API. Protected-resource Actions are `WATCH_ONLY`; adapter capabilities cannot widen that policy.
+This layer composes with, rather than replaces, Work Parcel audit, token telemetry/governor, contract runtime, governed handoff and repository validation. The baton carries the transport-contract hash across provider/model/node changes. Legacy parcels are visible as unbound and are not silently rewritten. See [docs/transport-integrity.md](docs/transport-integrity.md). 11. Every material routing decision is capability-qualified, fail closed and inspectable. 12. An Action is a versioned executable capability; a Job is a declarative workflow; a Trigger creates a durable Run through one authoritative path. 13. Job manifests can request capabilities, resources and approvals but cannot confer them. 14. Process completion, collected evidence, verification and Run success are separate states. 15. An agent may request or propose capability; only Agent Control policy may qualify and grant it. 16. A recipe constructs an execution environment but cannot schedule work, acquire authority, write a PTY or accept a result. 17. A managed node is a configured resource plus discovered capabilities; its hostname, transport, hardware and workload identity never become control-plane policy. 18. Remote maintenance is a typed Action with approval and evidence, never an arbitrary SSH command string. 19. Provider registration, model registration, model qualification, logical role mapping and worker placement are distinct state and decisions. 20. A declared capability or pricing field is not qualification evidence; unavailable usage and cost remain unknown rather than zero. 21. Actor, Agent, Model, Provider, Runtime, Node and Resource identities are separate; one must never stand in for another. 22. A Session has one immutable creator and an attributed participant set; joining a session never grants authority beyond the actor, parent delegation or session envelope. 23. Every context handoff records source and transferred hashes, token budget, selection/omission reason and receiving agent/model without persisting raw secret material. 24. Missing sandbox, local execution, governed runner, required node or required model fails closed unless an explicit fallback policy names the replacement. 25. ACP and other interoperability adapters terminate at AgentControlService/Work Parcel ports. They cannot become alternate scheduler, shell, tool or acceptance paths. 26. `THIN` describes context shape; `SPARK` describes an execution class. Neither implies the other. 27. Fast execution is one attempt, independently verified, scope-limited and visibly escalated. Protected or sensitive work never enters it. 28. Retrieval is governed separately from model execution; search/inspect authority never implies index, configuration or repository mutation. 29. Retrieved evidence is content-addressed, repository-state-bound and explicitly CURRENT, POSSIBLY_STALE or INVALID. 30. Token pressure may narrow retrieval before expansion/compaction/handoff, but cumulative lifetime use never substitutes for active context occupancy. 31. Provider rank is not calibrated confidence; evidence sufficiency derives from observable exact, path, coverage, diversity and freshness signals. 32. A baton evidence reference is portable only when rehydration revalidates repository identity, path boundary, source existence and whole-file content hash. 33. Index search and index mutation are distinct authorities; resource policy may recommend a build but cannot grant it. 34. A remembered Run, PID or network connection is not execution continuity. Recovery requires the adapter to reconcile the exact durable execution identity and route. 35. Sending a cancellation signal is not cleanup completion. Terminal state and authority release require verified descendant/process-tree absence or an explicit uncertainty state. 36. Every resource metric carries source, authority and freshness. Missing data is null; a derived fallback cannot silently become an admission-qualified measurement. 37. Cache admission is an adapter capability, not a core assumption. Stable prompt structure is portable; provider-specific keys and breakpoints are emitted only after provider-and-model qualification. 38. Every external ingress that starts governed work preserves a redacted `request-origin` envelope through the Run, Work Parcel, transcript and response association; channel identity and authentication are provenance, never execution authority by themselves. 39. A baton transfers context and evidence, never authority. A child contract receives only an intersection with parent authority and inherits the parent's protected-resource envelope. 40. Live Shell is an attachment to a proven execution-session identity, not a shell API. Protected-resource Actions are `WATCH_ONLY`; adapter capabilities cannot widen that policy.
 
 ## Agent Control 4.0 integrated lifecycle
+
+## Runtime Map projection (4.5 experimental)
+
+Runtime Map now has two projections over one provider-neutral graph language:
+**Process Map** projects current governed execution and **Estate Map** projects
+the latest Environment Discovery topology plus resource-appropriate evidence
+freshness. They share nodes/edges, layout, status vocabulary, progressive
+disclosure, inspector and evidence references. Neither owns execution or estate
+state.
+
+```text
+runtime ledgers/events ──> Process Map ┐
+                                      ├─> shared runtime-map schema/renderer
+discovery inventory + health ─> Estate Map ┘
+```
+
+`EnvironmentDiscoveryRuntime` runs isolated read-only adapters, normalizes
+resource classes and provenance, persists non-secret scan history and computes
+changes. Remote/edge observations enter through generic adapter contracts and
+require explicit configured scope. `CapabilityAdapterRegistry` separates
+portable definitions from machine bindings and enforces draft, review,
+validation, bounded test, approval and enablement. Imported community contracts
+cannot execute arbitrary commands. Configuration proposals bind scan,
+configuration revision and SHA-256, then use the existing Work Parcel boundary.
+
+Estate “alive” status is not discovery presence: machine/agent heartbeat,
+runtime/endpoint health, model availability and static inventory each have
+appropriate freshness windows. Stale topology remains visible but unavailable.
+Credential values are resolved nowhere in the projection; only reference/status
+and a constant-length mask cross the server boundary. Desired-state management
+and remediation are explicitly 4.6 work, not 4.5 Estate Map behavior. See
+[Environment Discovery](docs/environment-discovery.md).
+
+```text
+authoritative Work Parcels / Runs / sessions / token and retrieval evidence
+                                  |
+                           sanitized projection
+                                  |
+               authenticated API + existing SSE event stream
+                                  |
+        Runtime Map <-> Control Room <-> inspector / Live Shell
+                                  |
+                 timestamp-bounded Replay / Compare
+```
+
+`RuntimeMapProjection` is a provider-neutral view, never execution authority.
+Node/edge state derives from existing timestamps and terminal states; evidence
+references remain content-addressed. Live Shell remains a separately governed
+execution-session attachment. Dashboard disconnect cannot stop work, and stale
+state is labelled until a fresh projection reconciles. Redaction occurs before
+the projection/API boundary. See [Runtime Map](docs/runtime-map.md).
+
+Graphical Compare projects each completed Work Parcel independently and then
+compares explicit route and evidence facets. It does not align nodes by display
+label. Process/Estate navigation likewise requires configured model, provider,
+worker or node identity. Every identity field asserted by both projections must
+agree; a globally registered worker identity remains sufficient when a
+deterministic Run has no authoritative node assertion, while any known mismatch
+fails closed. Dashboard request origin and attribution are part of the initial
+durable parcel write so asynchronous planning cannot erase POE/dashboard provenance.
+The map remains WATCH-only: existing Live Shell and other control-plane APIs keep
+their own authority, confirmation and audit boundaries.
 
 ```text
 authenticated dashboard / OpenWA text / confirmed voice / ACP
@@ -381,12 +440,12 @@ The policy names `FAST_EXECUTION_MODEL`; Spark is its current model identity, no
 
 Harness profile and execution class are orthogonal:
 
-| Harness/context profile | Execution-class consequence |
-| --- | --- |
-| `THIN` + trivial + low-risk + deterministic verifier | Spark candidate, subject to all availability and qualification gates |
-| `THIN` + sensitive, ambiguous or protected work | Not Spark; retain governed STANDARD/FRONTIER policy |
-| `STANDARD` parent with one isolated trivial child | Child may receive a separate minimal Spark baton; parent model is unchanged |
-| `DEEP` | Never directly Spark-eligible; use the existing capable-model route |
+| Harness/context profile                              | Execution-class consequence                                                 |
+| ---------------------------------------------------- | --------------------------------------------------------------------------- |
+| `THIN` + trivial + low-risk + deterministic verifier | Spark candidate, subject to all availability and qualification gates        |
+| `THIN` + sensitive, ambiguous or protected work      | Not Spark; retain governed STANDARD/FRONTIER policy                         |
+| `STANDARD` parent with one isolated trivial child    | Child may receive a separate minimal Spark baton; parent model is unchanged |
+| `DEEP`                                               | Never directly Spark-eligible; use the existing capable-model route         |
 
 Availability and registry qualification are independent and both required. `probeCodexSparkAvailability` checks the installed Codex version, ChatGPT authentication and one bounded read-only exact-model invocation expecting a fixed probe response. A configured slug, CLI version or successful login alone is not availability evidence. Failure records the reason and leaves existing governed routing authoritative; no other model may be reported as Spark.
 
@@ -726,7 +785,7 @@ Invariant 1 is enforced in `WorkExecutor`; invariant 2 is enforced for gateway-b
 
 ## Bootstrap and monitoring
 
-Bootstrap is configuration-driven, health-first and idempotent. `up` may start only configured recipes; `down` may stop only recorded owned processes. Occupied/unhealthy unknown services are never killed. With no configuration, status/up return `UNCONFIGURED` without network discovery or external mutation.
+Bootstrap is configuration-driven, health-first and idempotent. `up` may start only configured recipes; `down` may stop only recorded owned processes. Occupied/unhealthy unknown services are never killed. With no configuration, status/up return `UNCONFIGURED` without network discovery or external mutation. The web runtime additionally registers one internal controller-local worker with only `agent-control.operator-observation.read`; it exists solely so the two read-only stages of `operator-system-observation@1.1.0` can exercise placement, artifacts and independent verification on a fresh installation. It is not a configured estate resource and cannot satisfy model, shell, provider or remote-node capabilities.
 
 The TUI presents lanes, batons, queue state, resources, providers, PTY assignment, context/evidence and optional Android recovery. The web dashboard presents the same core projection plus typed live events, Git and verification detail. Qualification evidence is written outside the tracked tree by default.
 
@@ -807,7 +866,7 @@ port, but neither the record nor player depends on MARM.
 The presentation contract is deliberately distinct from those implementation
 terms: **Your Memories** is the user-facing Agent Control capability; the
 generic memory abstraction is the internal architecture; MARM is one optional
-backend. Normal POE, dashboard and replay views use only `Your Memories`.
+backend. Normal Morrow, dashboard and replay views use only `Your Memories`.
 
 See [UX Session Replay](docs/ux-session-replay.md) and the
 [physical qualification](docs/evidence/agent-control-4.4-ux-session-replay-20260911.md).
@@ -897,9 +956,11 @@ The dashboard's **Routing** tab reads `/api/orchestration/models`, `/api/orchest
 
 Detailed configuration, API filters, evidence semantics and deterministic qualification are in [`docs/adaptive-multi-model-orchestration.md`](docs/adaptive-multi-model-orchestration.md). This workstream does not claim a physical provider qualification merely because the deterministic suite passes.
 
-## POE conversational operator
+## Morrow conversational host
 
-POE is a presentation and proposal layer above `AgentControlService`, never a replacement scheduler, governor, execution provider, verifier, credential resolver, or authority service:
+The public identity is defined by `HOST_IDENTITY`. Stable `poe` API/event/storage identifiers and `Poe*` runtime types remain compatible; existing transcripts and approval hashes are never rewritten. The six robot roles remain projections of the existing crew state. See the [identity guide](docs/morrow.md).
+
+Morrow is a presentation and proposal layer above `AgentControlService`, never a replacement scheduler, governor, execution provider, verifier, credential resolver, or authority service:
 
 ```text
 authenticated dashboard / WhatsApp / OmniVoice / mobile
@@ -917,13 +978,13 @@ authenticated dashboard / WhatsApp / OmniVoice / mobile
  WorkParcelCoordinator -> registered Job DAG -> normal control lifecycle
 ```
 
-`PoeRuntime` persists bounded turns, real UI state transitions, proposal revisions, speech boundaries, and transcript metadata in an owner-only store. The public system snapshot exposes only a safe POE summary; authenticated endpoints expose the operator's own conversations. An evidence port maps stable object references to bounded facts and source IDs from models, Jobs, Runs, Work Parcels, lanes, Crew, routing/governor decisions, capabilities, batons, Live Shell, verification, benchmarks, and human evaluation. Missing records remain unavailable. Provider output and repository/log content remain untrusted data and cannot redefine POE's authority.
+`PoeRuntime` persists bounded turns, real UI state transitions, proposal revisions, speech boundaries, and transcript metadata in an owner-only store. The public system snapshot exposes only a safe Morrow summary; authenticated endpoints expose the operator's own conversations. An evidence port maps stable object references to bounded facts and source IDs from models, Jobs, Runs, Work Parcels, lanes, Crew, routing/governor decisions, capabilities, batons, Live Shell, verification, benchmarks, and human evaluation. Missing records remain unavailable. Provider output and repository/log content remain untrusted data and cannot redefine Morrow's authority.
 
-The optional `PoeResponseModelPort` keeps conversational generation provider neutral. `RoutedPoeResponseModel` asks the existing Model Registry for either a status or experiment-design role and then uses the existing Codex or OpenAI-compatible adapter. It requires strict structured output, known evidence citations, no hidden reasoning, and records the actual provider/account/model/provider-execution-node route plus token/cost authority. Failure does not silently select another model: the turn explicitly changes to the deterministic grounded renderer. This also bounds cost by allowing routine lookups and difficult design explanations to use different qualified roles without changing the POE persona.
+The optional `PoeResponseModelPort` keeps conversational generation provider neutral. `RoutedPoeResponseModel` asks the existing Model Registry for either a status or experiment-design role and then uses the existing Codex or OpenAI-compatible adapter. It requires strict structured output, known evidence citations, no hidden reasoning, and records the actual provider/account/model/provider-execution-node route plus token/cost authority. Failure does not silently select another model: the turn explicitly changes to the deterministic grounded renderer. This also bounds cost by allowing routine lookups and difficult design explanations to use different qualified roles without changing the Morrow persona.
 
 Benchmark proposals seal the operator question, evidence need, complete condition matrix, Job stages, metrics, repetitions, and constraints. Fairness blocks unequal immutable fixture, tools, context, authority, cache, or time limits and discloses software, hardware, quantisation, and endpoint confounders. Objective metrics become Work Parcel success criteria; `HUMAN_EVALUATION` remains separate. Repetitions materialise as distinct Job stages. Freeze creates no execution authority, and approval must match the exact revision and hash. The resulting origin binds `poe/dashboard`, conversation, proposal, frozen hash, actor, and request key before entering `WorkParcelCoordinator.submitApprovedPlan`.
 
-OmniVoice remains behind existing STT/TTS contracts. POE accepts only an original designed voice, retains the transcription as untrusted content, records available turn-latency boundaries, and aborts only synthesis on barge-in. The Social & Voice coordinator accepts authenticated `POE:` questions into a distinct identity-hashed WhatsApp conversation; consequential work remains governed by existing template/text-confirmation or frozen-proposal approval flows. Live Shell remains independently authoritative for attachment and steering.
+OmniVoice remains behind existing STT/TTS contracts. Morrow accepts only an original designed voice, retains the transcription as untrusted content, records available turn-latency boundaries, and aborts only synthesis on barge-in. The Social & Voice coordinator accepts authenticated `Morrow:` questions and legacy `POE:` aliases into a distinct identity-hashed WhatsApp conversation; consequential work remains governed by existing template/text-confirmation or frozen-proposal approval flows. Live Shell remains independently authoritative for attachment and steering.
 
 The floating browser companion is a client of this same service. Its compact panel leaves underlying dashboard navigation usable. Explicit tour selection unlocks browser audio, navigates and highlights a real component, requests a sourced explanation, and keeps Next disabled until the audio element emits completion. Autoplay, decoding and synthesis failures pause the tour; interruption invalidates older playback. Mouth movement uses the actual audio analyser, while runtime states and references drive restrained poses. Reduced motion disables these transforms and mouth modulation.
 
@@ -931,9 +992,9 @@ The floating browser companion is a client of this same service. Its compact pan
 
 `reconcilePoeBatch` requires terminal parents, no active children and no outstanding verification criteria before a final requested-set announcement. `poeParcelHandovers` reads actual sealed v2 batons and observes destination Run identity/start time before reporting receipt. Relay/Verity presentation labels do not imply a separate autonomous model. A harmless observation's separate deterministic artifact verifier proves artifact structure and integrity, not Facebook or remote-device readiness.
 
-The optional external full-test runner publishes bounded atomic progress with exact Git commit, phase, emitted counts, elapsed time and exit status. Its authenticated read-only projection is labelled `EXTERNAL_TEST_RUNNER` and never creates a Work Parcel. Totals and remaining counts stay null until discovered. POE narrates snapshots as observations because complete-audio synthesis introduces delay.
+The optional external full-test runner publishes bounded atomic progress with exact Git commit, phase, emitted counts, elapsed time and exit status. Its authenticated read-only projection is labelled `EXTERNAL_TEST_RUNNER` and never creates a Work Parcel. Totals and remaining counts stay null until discovered. Morrow narrates snapshots as observations because complete-audio synthesis introduces delay.
 
-The detailed contract, [event-to-animation mapping](docs/poe-dashboard-operator.md#state-and-animation-provenance), current [4.3 deployment guide](docs/DEPLOYMENT.md) and historical [4.1 qualification record](docs/evidence/agent-control-4.1-qualification.md) define the configuration and acceptance boundary.
+The detailed contract, [event-to-animation mapping](docs/poe-dashboard-operator.md#state-and-animation-provenance), current [deployment guide](docs/DEPLOYMENT.md) and historical [4.1 qualification record](docs/evidence/agent-control-4.1-qualification.md) define the configuration and acceptance boundary.
 
 ## 4.5 energy-minimal deterministic skill promotion
 
@@ -966,6 +1027,22 @@ orthogonal to both.
 
 ## Release boundary
 
+### Source distribution and qualification evidence
+
+The product Git repository and qualification evidence archive are separate
+delivery surfaces. Product history contains executable source, documentation,
+schemas, configuration, tests, lightweight fixtures and small reviewed evidence
+summaries. Heavy recordings, screenshots, binary captures, complete
+qualification working trees and oversized raw evidence are external artifacts
+identified by immutable SHA-256 and provenance manifests.
+
+This separation changes storage and transfer, not the evidence model. A
+lightweight source record may reference an external artifact, but the artifact
+remains authoritative at its recorded hash and historical verdict. The external
+archive also retains a complete pre-rewrite Git bundle and old/new ref mapping.
+Release packages are produced from the source tree only; evidence archives are
+separate release assets. See [qualification evidence archive](docs/evidence-archive.md).
+
 Earlier version tags remain immutable source releases. Agent Control 4.0.0 integrates Crew/WOPR, adaptive orchestration, protected-resource governance, Social & Voice/OpenWA provenance and Live Shell. The source release does not deploy services, expose a remote ACP listener, broaden sharing, enable Spark, enable Saved Jobs/Schedules or admit NVIDIA routing. Its controller-local NVIDIA credential exists only in the owner-only runtime store and is not source or evidence. The accepted 4.0 evidence adds protected-resource proof and a physical Pixel social request through adaptive Qwen-to-Codex baton handoff, independent verification, terminal delivery, dashboard/video reconciliation and additive token accounting. Current context and billed cost remain unavailable on the tested routes, so no monetary or context-occupancy claim is made. The NVIDIA catalogue remains routing-disabled: Nemotron/Muse callability is observed, MiniMax is indeterminate and Kimi K2.6 endpoint-unavailable. See the [4.0 qualification](docs/evidence/agent-control-4.0-qualification.md), [Pixel continuation](docs/evidence/agent-control-4.0-pixel-social-continuation.md), [initial NVIDIA qualification](docs/evidence/agent-control-3.9-nvidia-hosted-qualification-20260906.md) and [focused diagnostics](docs/evidence/agent-control-3.9-nvidia-focused-diagnostics-20260906.md).
 
 ## Optional messaging adapters
@@ -989,6 +1066,7 @@ state-consistent backup and the previous startup identity support rollback.
 The [4.1 qualification record](docs/evidence/agent-control-4.1-qualification.md)
 reconciles physical component hashes and the exact full-suite product SHA with
 any later documentation-only release commit.
+
 ## 4.3 effect authority and filesystem containment
 
 The production Job boundary admits an Action only when its registration supplies
@@ -1025,3 +1103,37 @@ classes. Fast execution hashes valuable ignored state before and after execution
 only named disposable roots such as its dependency installation are excluded.
 Unexpected ignored mutation is an out-of-scope change and escalates without
 deleting or committing operator state.
+
+## Agent Control 4.5 Cross-Device Session Vault
+
+Session Vault is an evidence subsystem beneath governed continuation, not a
+memory replacement and not an execution authority:
+
+```text
+provider-native session bytes
+  → provider capability adapter
+  → immutable content-addressed object + sealed redacted event index
+  → historical search / repository provenance / replication
+  → governed lease + repository verification
+  → sealed continuation sources
+  → existing governed session + Work Parcel + independent verification
+
+approved, independently validated finding
+  → existing ProjectMemoryPort (Your Memories; Obsidian optional)
+  → advisory retrieval with native evidence link
+```
+
+Core storage, policy, search, replication, leases, attribution and continuation
+contracts are provider-neutral. Codex JSONL parsing is isolated in
+`CodexSessionAdapter`; another provider declares what it can authoritatively
+expose and unavailable fields remain unavailable. Raw bytes are never rewritten
+to fit the common event model. The normalized index is a convenience projection
+whose events retain native object and sequence provenance.
+
+Cross-device continuation is contextual, not hidden-state transport. It binds
+the source object, redacted index, repository state, Work Parcel and any
+validated Your Memories records. An exclusive lease prevents split-brain
+mutation; acquisition, renewal, release, forced release and denial are durable
+hash-verified events. Read-only retrieval remains safe during a conflicting
+continuation attempt. See [Session Vault architecture](docs/session-vault.md)
+and [threat model](docs/session-vault-threat-model.md).

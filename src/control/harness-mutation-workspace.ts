@@ -1,12 +1,12 @@
 import {execFileSync} from 'node:child_process';
-import {createHash} from 'node:crypto';
+import {createHash, randomUUID} from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import type {ExecutionRecipe, ToolDefinition} from './adaptive-harness.js';
 import type {ToolHandlerBinding} from './harness-dispatch.js';
 import type {MutationBenchmarkTask} from './harness-mutation-benchmark.js';
-import {LocalCommandExecutor} from './repository-search.js';
+import {OwnedProcessManager, type OwnedExecution, type ExecutionCleanupReport} from './owned-process.js';
 import type {StructuredChatToolSchema} from './structured-chat-loop-provider.js';
 
 export const MUTATION_TOOL_IDS = Object.freeze({
@@ -54,37 +54,57 @@ export interface PreparedMutationWorkspace {
 export class MutationWorkspace {
   readonly root: string;
   private readonly temporaryRoot: string;
-  private readonly command = new LocalCommandExecutor();
+  private readonly identity: {device: number; inode: number; nonce: string};
+  private readonly execution: OwnedExecution;
   private counters: MutationWorkspaceCounters = emptyCounters();
 
-  private constructor(root: string, temporaryRoot: string, readonly task: MutationBenchmarkTask, readonly signal?: AbortSignal) {
+  private constructor(root: string, temporaryRoot: string, readonly task: MutationBenchmarkTask, readonly signal?: AbortSignal, private readonly liveGuard: () => void = () => undefined, ownedExecution?: OwnedExecution) {
     this.root = fs.realpathSync(root);
     this.temporaryRoot = fs.realpathSync(temporaryRoot);
+    const stat = fs.lstatSync(this.temporaryRoot);
+    this.identity = {device: stat.dev, inode: stat.ino, nonce: randomUUID()};
+    this.execution = ownedExecution ?? new OwnedProcessManager();
+    this.assertActive();
+    fs.writeFileSync(path.join(this.temporaryRoot, 'ownership.json'), JSON.stringify(this.identity), {mode: 0o600, flag: 'wx', flush: true});
   }
 
-  static prepare(fixtureRoot: string, task: MutationBenchmarkTask, signal?: AbortSignal): PreparedMutationWorkspace {
-    const authoritativeFixture = fs.realpathSync(fixtureRoot);
-    const fixtureSha256 = fixtureContentSha256(authoritativeFixture);
-    const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-mutation-'));
-    const root = path.join(temporaryRoot, 'workspace');
-    fs.cpSync(authoritativeFixture, root, {recursive: true, errorOnExist: true, verbatimSymlinks: true});
-    execGit(root, ['init', '--quiet']);
-    execGit(root, ['config', 'user.name', 'Agent Control Mutation Fixture']);
-    execGit(root, ['config', 'user.email', 'fixture.invalid@agent-control.invalid']);
-    execGit(root, ['add', '--all']);
-    execGit(root, ['commit', '--quiet', '-m', 'Frozen mutation fixture']);
-    const startingRevision = execGit(root, ['rev-parse', 'HEAD']).trim();
-    return {workspace: new MutationWorkspace(root, temporaryRoot, task, signal), startingRevision, fixtureSha256};
+  static prepare(fixtureRoot: string, task: MutationBenchmarkTask, signal?: AbortSignal, liveGuard: () => void = () => undefined, ownedExecution?: OwnedExecution, recordEvidence?: (name: string, value: unknown) => unknown): PreparedMutationWorkspace {
+    const guard = () => { signal?.throwIfAborted(); liveGuard(); };
+    let workspace: MutationWorkspace | undefined, temporaryRoot: string | undefined;
+    try {
+      guard();
+      const authoritativeFixture = fs.realpathSync(fixtureRoot), fixtureSha256 = fixtureContentSha256(authoritativeFixture);
+      guard(); temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-mutation-'));
+      const root = path.join(temporaryRoot, 'workspace');
+      guard(); fs.mkdirSync(root);
+      workspace = new MutationWorkspace(root, temporaryRoot, task, signal, liveGuard, ownedExecution);
+      recordEvidence?.('workspace-preparing', {identity: workspace.processIdentity(), fixtureSha256});
+      guard(); fs.cpSync(authoritativeFixture, root, {recursive: true, errorOnExist: true, verbatimSymlinks: true});
+      for (const args of [['init', '--quiet'], ['config', 'user.name', 'Agent Control Mutation Fixture'], ['config', 'user.email', 'fixture.invalid@agent-control.invalid'], ['add', '--all'], ['commit', '--quiet', '-m', 'Frozen mutation fixture']]) { guard(); execGit(root, args); }
+      const startingRevision = execGit(root, ['rev-parse', 'HEAD']).trim();
+      return {workspace, startingRevision, fixtureSha256};
+    } catch (error) {
+      if (!temporaryRoot) throw error;
+      const failure = error instanceof Error ? error : new Error(String(error));
+      let outcome: 'confirmed' | 'uncertain' = 'uncertain';
+      try {
+        if (!recordEvidence) throw new Error('preparation_failure_evidence_sink_missing');
+        recordEvidence('workspace-preparation-failed', {error: failure.message, temporaryRoot, identity: workspace?.processIdentity() ?? null, files: workspace ? walk(workspace.root).map(file => ({path: path.relative(workspace!.root, file), content: fs.readFileSync(file, 'utf8')})) : []});
+        if (workspace) { const cleanup = workspace.cleanup(); recordEvidence('workspace-preparation-cleanup', cleanup); outcome = cleanup.outcome; }
+      } catch { /* Unproved cleanup or retention must keep the resource reserved. */ }
+      if (outcome !== 'confirmed') Object.assign(failure, {executionCleanup: {outcome: 'uncertain', reason: 'preparation_cleanup_unproved', requestedAt: new Date().toISOString(), completedAt: new Date().toISOString(), processes: []} satisfies ExecutionCleanupReport});
+      throw failure;
+    }
   }
 
   toolBindings(): ToolHandlerBinding[] {
     return [
-      {toolId: MUTATION_TOOL_IDS.read, handler: async input => this.read(input)},
-      {toolId: MUTATION_TOOL_IDS.search, handler: async input => this.search(input)},
-      {toolId: MUTATION_TOOL_IDS.replace, handler: async input => this.replace(input)},
-      {toolId: MUTATION_TOOL_IDS.write, handler: async input => this.write(input)},
-      {toolId: MUTATION_TOOL_IDS.test, handler: (_input, recipe) => this.test(recipe)},
-      {toolId: MUTATION_TOOL_IDS.finish, handler: async input => this.finish(input)},
+      {toolId: MUTATION_TOOL_IDS.read, handler: async (input, _recipe, control) => { control.assertActive(); return this.read(input); }},
+      {toolId: MUTATION_TOOL_IDS.search, handler: async (input, _recipe, control) => { control.assertActive(); return this.search(input); }},
+      {toolId: MUTATION_TOOL_IDS.replace, handler: async (input, _recipe, control) => { control.assertActive(); return this.replace(input); }},
+      {toolId: MUTATION_TOOL_IDS.write, handler: async (input, _recipe, control) => { control.assertActive(); return this.write(input); }},
+      {toolId: MUTATION_TOOL_IDS.test, handler: async (_input, recipe, control) => { control.assertActive(); const result = await this.test(recipe); control.assertActive(); return result; }},
+      {toolId: MUTATION_TOOL_IDS.finish, handler: async (input, _recipe, control) => { control.assertActive(); return this.finish(input); }},
     ];
   }
 
@@ -95,11 +115,23 @@ export class MutationWorkspace {
   diffSha256(): string { return createHash('sha256').update(this.diff()).digest('hex'); }
   statusSummary() { return {changedFiles: this.changedFiles(), diffSha256: this.diffSha256()}; }
 
+  assertActive() { this.signal?.throwIfAborted(); this.liveGuard(); }
+  evidenceSnapshot() { return {patch: this.diff(), status: execGit(this.root, ['status', '--porcelain=v1']), counters: this.getCounters(), files: walk(this.root).map(file => ({path: this.relative(file), content: fs.readFileSync(file, 'utf8')}))}; }
+  processIdentity() { return {controllerPid: process.pid, activePids: this.execution.activePids(), sessionIds: this.execution.sessionIds?.() ?? [], root: this.root, temporaryRoot: this.temporaryRoot, ownership: {...this.identity}}; }
+  terminate(reason: string): Promise<ExecutionCleanupReport> { return this.execution.terminateAll(reason); }
+
+  /** Control-plane cleanup is permitted after cancellation, only after evidence retention. */
   cleanup() {
     const allowedParent = fs.realpathSync(os.tmpdir());
     const relative = path.relative(allowedParent, this.temporaryRoot);
     if (!relative.startsWith('agent-control-mutation-') || relative.includes(path.sep) || path.isAbsolute(relative)) throw new Error('mutation_workspace_cleanup_boundary_invalid');
-    fs.rmSync(this.temporaryRoot, {recursive: true, force: true});
+    if (!fs.existsSync(this.temporaryRoot)) return {outcome: 'confirmed' as const, detail: 'owned_workspace_absent'};
+    const stat = fs.lstatSync(this.temporaryRoot);
+    let marker: unknown;
+    try { marker = JSON.parse(fs.readFileSync(path.join(this.temporaryRoot, 'ownership.json'), 'utf8')); } catch { return {outcome: 'uncertain' as const, detail: 'workspace_ownership_marker_unavailable'}; }
+    if (stat.isSymbolicLink() || stat.dev !== this.identity.device || stat.ino !== this.identity.inode || JSON.stringify(marker) !== JSON.stringify(this.identity) || this.execution.activePids().length) return {outcome: 'uncertain' as const, detail: 'workspace_or_process_identity_unproved'};
+    fs.rmSync(this.temporaryRoot, {recursive: true, force: false});
+    return {outcome: 'confirmed' as const, detail: 'owned_workspace_removed'};
   }
 
   private read(input: unknown) {
@@ -146,7 +178,7 @@ export class MutationWorkspace {
     if (occurrences !== expected) throw new Error(`mutation_replace_occurrences:${occurrences}:${expected}`);
     const updated = content.split(value.oldText).join(value.newText);
     if (Buffer.byteLength(updated, 'utf8') > 512_000) throw new Error('mutation_file_size_limit');
-    atomicWrite(file, updated);
+    atomicWrite(file, updated, () => this.assertActive());
     return {ok: true, path: this.relative(file), occurrences, ...this.statusSummary()};
   }
 
@@ -155,17 +187,20 @@ export class MutationWorkspace {
     const value = object(input, ['path', 'content']);
     const file = this.authorizeWritable(value.path, true);
     if (typeof value.content !== 'string' || Buffer.byteLength(value.content, 'utf8') > 131_072 || value.content.includes('\0')) throw new Error('mutation_write_content_invalid');
-    fs.mkdirSync(path.dirname(file), {recursive: true});
-    atomicWrite(file, value.content);
-    execGit(this.root, ['add', '--intent-to-add', '--', this.relative(file)]);
+    this.assertActive(); fs.mkdirSync(path.dirname(file), {recursive: true});
+    atomicWrite(file, value.content, () => this.assertActive());
+    this.assertActive(); execGit(this.root, ['add', '--intent-to-add', '--', this.relative(file)]);
     return {ok: true, path: this.relative(file), bytes: Buffer.byteLength(value.content, 'utf8'), ...this.statusSummary()};
   }
 
   private async test(recipe: ExecutionRecipe) {
     this.record(MUTATION_TOOL_IDS.test); this.counters.verifierFacingTests++;
     const tests = fs.readdirSync(path.join(this.root, 'test')).filter(name => name.endsWith('.test.js')).sort().map(name => path.join('test', name));
-    const result = await this.command.execute({command: process.execPath, args: ['--test', ...tests], cwd: this.root, timeoutMs: Math.min(60_000, recipe.resourceLimits.maximumLatencyMs ?? 60_000), maxCaptureBytesPerStream: 32_768, backend: 'disposable-mutation-workspace', signal: this.signal});
-    return {passed: result.exitCode === 0 && !result.timedOut && !result.cancelled, exitCode: result.exitCode, timedOut: result.timedOut, cancelled: result.cancelled, stdout: result.stdout, stderr: result.stderr, ...this.statusSummary()};
+    this.assertActive();
+    const timeout = AbortSignal.timeout(Math.min(60_000, recipe.resourceLimits.maximumLatencyMs ?? 60_000));
+    const result = await this.execution.runProcess({command: process.execPath, args: ['--test', ...tests], cwd: this.root, maxOutputBytes: 65_536}, this.signal ? AbortSignal.any([this.signal, timeout]) : timeout);
+    this.assertActive();
+    return {passed: result.exitCode === 0 && !timeout.aborted, exitCode: result.exitCode, pid: result.pid, timedOut: timeout.aborted, cancelled: this.signal?.aborted ?? false, stdout: result.stdout, stderr: result.stderr, ...this.statusSummary()};
   }
 
   private finish(input: unknown) {
@@ -225,7 +260,7 @@ export class MutationWorkspace {
     if (relative.startsWith('..') || path.isAbsolute(relative)) throw new Error('mutation_workspace_path_outside');
   }
   private relative(value: string) { return path.relative(this.root, value).split(path.sep).join('/'); }
-  private record(toolId: string) { this.counters.toolCalls++; this.counters.toolIds.push(toolId); }
+  private record(toolId: string) { this.assertActive(); this.counters.toolCalls++; this.counters.toolIds.push(toolId); }
 }
 
 export function fixtureContentSha256(root: string): string {
@@ -249,7 +284,7 @@ function walk(root: string): string[] {
 function execGit(cwd: string, args: string[]): string { return execFileSync('git', args, {cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 30_000}); }
 function readText(file: string, maximumBytes: number) { const stat = fs.statSync(file); if (stat.size > maximumBytes || binaryFile(file)) throw new Error('mutation_workspace_text_file_limit'); return fs.readFileSync(file, 'utf8'); }
 function binaryFile(file: string) { return fs.readFileSync(file).subarray(0, 8_192).includes(0); }
-function atomicWrite(file: string, content: string) { const temporary = `${file}.agent-control-tmp`; fs.writeFileSync(temporary, content, {encoding: 'utf8', mode: 0o600}); fs.renameSync(temporary, file); }
+function atomicWrite(file: string, content: string, guard: () => void) { const temporary = file + '.agent-control-tmp'; guard(); fs.writeFileSync(temporary, content, {encoding: 'utf8', mode: 0o600, flag: 'wx'}); guard(); fs.renameSync(temporary, file); }
 function countOccurrences(content: string, needle: string) { let count = 0, offset = 0; while ((offset = content.indexOf(needle, offset)) >= 0) { count++; offset += needle.length; } return count; }
 function object(value: unknown, fields: string[]) { if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('mutation_tool_input_invalid'); const result = value as Record<string, unknown>; if (Object.keys(result).some(key => !fields.includes(key))) throw new Error('mutation_tool_input_unknown_field'); return result; }
 function stringArray(value: unknown, maximum: number): string[] { if (!Array.isArray(value) || value.length > maximum || value.some(item => typeof item !== 'string')) throw new Error('mutation_tool_paths_invalid'); return value as string[]; }

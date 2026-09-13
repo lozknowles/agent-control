@@ -1,0 +1,50 @@
+{
+  "schema": "agent-control.virgin-install-qualification/v1",
+  "recordedAt": "2026-09-12T23:32:44+01:00",
+  "release": "4.5.0",
+  "releaseStatus": "PAUSED",
+  "result": "PASS",
+  "deviceClass": "Android 15 / Termux",
+  "source": {
+    "repository": "https://github.com/lozknowles/agent-control.git",
+    "candidateSha": "413f8d3e572e0e777076a79177262493c603d592",
+    "treeSha": "eee988bbccdbc16a453904f4be63762af2760122",
+    "normalFullClone": true,
+    "shallow": false,
+    "partialClone": false,
+    "sparseCheckout": false,
+    "gitReportedReceived": "5.93 MiB",
+    "packBytes": 6215934,
+    "packIndexBytes": 194888,
+    "checkoutBytesBeforeDependencies": 20215937,
+    "trackedFiles": 1019,
+    "trackedBytes": 13625136,
+    "distributionViolations": []
+  },
+  "installation": {
+    "bootstrapCheck": "PASS",
+    "bootstrapInstall": "PASS",
+    "dependencies": "installed-no-lock",
+    "configurationFirstResult": "CREATED",
+    "configurationSecondResult": "UNCHANGED_EMPTY",
+    "configurationMode": "0600",
+    "configurationSha256Before": "150339fe5eb80186f31118958346c9e3066e943be066790ce497bb08f1562060",
+    "configurationSha256After": "150339fe5eb80186f31118958346c9e3066e943be066790ce497bb08f1562060",
+    "checkoutBytesAfterDependencies": 89349503,
+    "workingTree": "CLEAN",
+    "gitFsck": "PASS"
+  },
+  "validation": {
+    "controller": {"tests": 1328, "passed": 1328, "failed": 0, "skipped": 0},
+    "androidTermux": {"tests": 1328, "passed": 1327, "failed": 0, "skipped": 1, "skipReason": "Linux-only util-linux PTY adapter qualification is platform-inapplicable"}
+  },
+  "evidence": {
+    "release": "https://github.com/lozknowles/agent-control-qualification-evidence/releases/tag/source-separation-20260912",
+    "controllerCheck": {"asset": "final-controller-check.log", "sha256": "58c080a4af6693c1b5786347f79e054e5b1da7fe7fc048b0182e18cdb251f5bc"},
+    "motoClone": {"asset": "agent-control-attempt-8-normal-clone.log", "sha256": "c9f29689ab3c66f9f3c6d8b40caf4d14ce4f85ba7ae7b38e9feb1d4d52293667"},
+    "motoBootstrapCheck": {"asset": "agent-control-attempt-8-bootstrap-check.log", "sha256": "0b468c51058e64c3b2d1ac240a155eeacc427db70d4e405306dbc8b681277812"},
+    "motoBootstrapInstall": {"asset": "agent-control-attempt-8-bootstrap-install.log", "sha256": "f557f081af589ca2b5d838ff62fe338e0d5b77bfbc680762688a9938e334ec12"},
+    "motoBootstrapIdempotency": {"asset": "agent-control-attempt-8-bootstrap-idempotency.log", "sha256": "c1760cc7a115902c499ad9a1e0111f293bb88f2f6055e0e105c3b402940b1aca"},
+    "motoFullCheck": {"asset": "agent-control-attempt-8-full-check.log", "sha256": "cadcf1bd3af6d4880dbf6ac923e4eef4d139357b6c8b0c0e9773f81861482af2"}
+  }
+}

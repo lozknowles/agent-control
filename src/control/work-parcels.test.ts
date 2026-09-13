@@ -69,6 +69,18 @@ test('approved channel request origin survives durable Work Parcel restart witho
   try{const origin=governedRequestOrigin({channel:'openwa',modality:'text',receivedAt:'2026-09-07T12:00:00Z',authentication:'enrolled-direct-sender',actorId:'operator',authority:['template:one'],messageReference:'1'.repeat(64),identityReference:'2'.repeat(64),request:'start one'}),parcel=coordinator.submitApprovedPlan(origin.request,'operator','3'.repeat(64),plan,origin),restored=new WorkParcelStore(storeFile).get(parcel.id)!;assert.deepEqual(restored.origin,origin);assert.equal(restored.prompt,'start one');assert.doesNotMatch(fs.readFileSync(storeFile,'utf8'),/@c\.us|phone|cookie/i);}finally{fs.rmSync(root,{recursive:true,force:true});}
 });
 
+test('dashboard origin is present before asynchronous planning and cannot be overwritten by the planning update', async () => {
+  const {coordinator,root,storeFile}=setup();
+  try {
+    const origin=governedRequestOrigin({channel:'dashboard',modality:'dashboard',receivedAt:'2026-09-12T12:00:00Z',authentication:'operator-authenticated',actorId:'operator',authority:['parcel.create'],messageReference:'4'.repeat(64),identityReference:'5'.repeat(64),request:'start dashboard work'}),attribution={schema:'agent-control.work-attribution/v1' as const,actorId:'operator',sessionId:'session-dashboard',authority:['parcel.create'],createdAt:'2026-09-12T12:00:00Z',legacy:false};
+    const parcel=coordinator.accept(origin.request,'operator',[],attribution,origin);
+    assert.deepEqual(parcel.origin,origin);assert.equal(parcel.attribution?.parcelId,parcel.id);
+    for(let attempt=0;attempt<20&&coordinator.get(parcel.id).status==='PLANNING';attempt++)await new Promise(resolve=>setTimeout(resolve,5));
+    const planned=coordinator.get(parcel.id),restored=new WorkParcelStore(storeFile).get(parcel.id)!;
+    assert.deepEqual(planned.origin,origin);assert.deepEqual(restored.origin,origin);assert.equal(restored.attribution?.parcelId,parcel.id);
+  } finally {fs.rmSync(root,{recursive:true,force:true});}
+});
+
 test('blocked named target still creates an auditable parcel with readiness evidence', () => {
   const {coordinator}=setup(), system: SystemReadiness={id:'node-alpha',name:'Node Alpha',type:'machine',registered:true,reachable:'no',authentication:'unknown',execution:'OFFLINE',blockingReason:'is offline',transport:'ssh',platform:'linux',capabilities:['remote.inspect'],capacity:1,active:0,lastCheckAt:null,lastSuccessfulProbeAt:null,lastSuccessfulJobAt:null,lastError:'connection refused',latencyMs:null};
   const prompt='perform a hostname check on node-alpha and report its free disk space', parcel=coordinator.accept(prompt,'operator',[system]); assert.equal(parcel.status,'FAILED'); assert.equal(parcel.prompt,prompt); assert.match(parcel.provenance.at(-1)?.detail??'',/BLOCKED.*Node Alpha.*offline/i); assert.deepEqual(parcel.audit.timeline.slice(2,5).map(item=>item.type),['target.resolving','target.found','readiness.checked']); assert.equal(coordinator.get(parcel.id).decision?.outcome,'FAIL_CLOSED');

@@ -60,10 +60,32 @@ test('one Job failure does not prevent an independent Job succeeding', async () 
 
 test('a timed-out Job releases a capacity-one slot for the next Job', async () => {
   const hang = 'hang@1.0.0', pass = 'after@1.0.0', timeoutJob = job('timeout', hang, 'allow', 1); timeoutJob.spec.priority = 'urgent';
-  const run = setup([timeoutJob, job('after', pass)], {[hang]: async () => new Promise(() => undefined), [pass]: async () => ({})}, 1);
+  const run = setup([timeoutJob, job('after', pass)], {[hang]: async context => new Promise((_resolve, reject) => context.signal.addEventListener('abort', () => reject(new Error('cancelled')), {once: true})), [pass]: async () => ({})}, 1);
   const a = run.runtime.createRun('timeout@1.0.0', {}, {type: 'manual', actor: 'test'}), b = run.runtime.createRun('after@1.0.0', {}, {type: 'manual', actor: 'test'}), stop = start(run.runtime);
   try {
     await until(() => run.runtime.ledger.get(a.id)?.status === 'FAILED' && run.runtime.ledger.get(b.id)?.status === 'SUCCEEDED');
     assert.equal(run.runtime.ledger.get(a.id)?.steps[0].status, 'TIMED_OUT'); assert.equal(run.runtime.workers.list()[0].active, 0);
   } finally { stop(); fs.rmSync(run.root, {recursive: true, force: true}); }
 });
+
+
+test('uncertain cleanup retains capacity while scheduler timers remain responsive', async () => {
+  const hang = 'unknown@1.0.0', pass = 'queued@1.0.0', blocked = job('unknown', hang, 'allow', 1); blocked.spec.priority = 'urgent';
+  const run = setup([blocked, job('queued', pass)], {[hang]: async () => new Promise(() => undefined), [pass]: async () => ({})}, 1);
+  const a = run.runtime.createRun('unknown@1.0.0', {}, {type: 'manual', actor: 'test'}), b = run.runtime.createRun('queued@1.0.0', {}, {type: 'manual', actor: 'test'}), stop = start(run.runtime);
+  try {
+    await until(() => run.runtime.ledger.get(a.id)?.status === 'CLEANUP_UNCERTAIN');
+    await delay(40);
+    assert.equal(run.runtime.workers.list()[0].active, 1);
+    assert.equal(run.runtime.ledger.get(b.id)?.steps[0].status, 'WAITING_FOR_WORKER');
+  } finally { stop(); fs.rmSync(run.root, {recursive: true, force: true}); }
+});
+
+test('released capacity schedules eligible work without waiting for a long timer interval',async()=>{
+ let release!:()=>void;const wait=new Promise<void>(r=>{release=r;}),started:string[]=[];const action='immediate-progress@1.0.0';const s=setup([job('first-progress',action),job('second-progress',action)],{[action]:async context=>{started.push(context.run.jobId);if(context.run.jobId==='first-progress')await wait;return {};}},1);
+ const first=s.runtime.createRun('first-progress@1.0.0',{}, {type:'manual',actor:'test'}),second=s.runtime.createRun('second-progress@1.0.0',{}, {type:'manual',actor:'test'});const stop=startJobScheduler(s.runtime as never,undefined,60000);
+ try{await until(()=>started.length===1);release();await until(()=>s.runtime.ledger.get(second.id)?.status==='SUCCEEDED',2000);assert.equal(s.runtime.ledger.get(first.id)?.status,'SUCCEEDED');}finally{stop();fs.rmSync(s.root,{recursive:true,force:true});}
+});
+
+test('rejected dispatch completion releases scheduler capacity with bounded rescheduling',async()=>{let dispatches=0,success=false,errors=0;const runtime:any={tickSchedules:async()=>[],workParcels:{tick:async()=>undefined},schedulerConcurrencyLimit:()=>1,ledger:{get:()=>undefined},dispatch:()=>{dispatches++;if(dispatches===1)return {runId:'rejected',completion:Promise.reject(new Error('orchestration-failed'))};if(dispatches===2)return {runId:'following',completion:Promise.resolve({id:'following',status:'SUCCEEDED',steps:[]})};return undefined;}};const stop=startJobScheduler(runtime,(_id,status)=>{success=status==='SUCCEEDED';},60000,()=>{errors++;});try{await until(()=>success,2000);assert.equal(errors,1);}finally{stop();}});
+test('repeated rejected dispatches do not create an immediate retry loop',async()=>{let dispatches=0;const runtime:any={tickSchedules:async()=>[],workParcels:{tick:async()=>undefined},schedulerConcurrencyLimit:()=>1,ledger:{get:()=>undefined},dispatch:()=>{dispatches++;return {runId:'rejected',completion:Promise.reject(new Error('repeat'))};}};const stop=startJobScheduler(runtime,undefined,60000,()=>{});await delay(100);assert.equal(dispatches,1);stop();await delay(300);assert.equal(dispatches,1);});

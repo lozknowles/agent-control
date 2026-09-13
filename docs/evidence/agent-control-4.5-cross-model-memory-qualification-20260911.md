@@ -157,8 +157,8 @@ repairing any observed failure.
 - [Failed Qwen→GLM POE run](agent-control-4.5-poe-qwen-glm-failure-20260911.json)
 - [Canonical UX session](agent-control-4.5-cross-model-memory-ux-session-20260911.json)
 - [Complete human-readable transcript](agent-control-4.5-cross-model-memory-complete-transcript-20260911.md)
-- [HD recording](agent-control-4.5-cross-model-memory-qualification-20260911.mp4)
-- [Recording screenshot](agent-control-4.5-cross-model-memory-qualification-20260911.png)
+- [HD recording](../evidence-archive.md)
+- [Recording screenshot](../evidence-archive.md)
 - [UX evidence manifest](agent-control-4.5-cross-model-memory-ux-manifest-20260911.json)
 
 ## Validation

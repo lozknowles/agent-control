@@ -1,0 +1,85 @@
+{
+  "date": "2026-09-12",
+  "recommendation": "EXPERIMENTAL",
+  "releaseReady": false,
+  "targetBranch": "feature/4.5-release-gate-completion",
+  "localIntegrationBranch": "integration/4.5-morrow-crew",
+  "parents": {
+    "completed45": "5bd72802b6525a1ccce05df2a42be2e04c456d67",
+    "morrowIdentity": "72fe340f9983e99c65bfefb56a44f67324b2b6a7"
+  },
+  "userAuthorisation": "Explicit merge into completed 4.5 branch and push for testing",
+  "fullCheck": {
+    "command": "npm run check",
+    "passed": 1165,
+    "failed": 0,
+    "skipped": 0,
+    "exitCode": 0
+  },
+  "completionEvidenceCheck": {
+    "command": "npm run verify:release-gate-completion-4.5",
+    "verdict": "PASS",
+    "manifestFilesVerified": 24
+  },
+  "preservation": {
+    "filesCompared": 165,
+    "changed": 0
+  },
+  "browserQualification": "NOT_PERFORMED_FOR_COMBINED_CANDIDATE",
+  "physicalVoiceQualification": "NOT_PERFORMED_FOR_COMBINED_CANDIDATE",
+  "deployment": "NOT_PERFORMED",
+  "releaseActions": {
+    "mergeIntoStableMain": false,
+    "tag": false,
+    "release": false,
+    "deploy": false
+  },
+  "sourceIntegration": {
+    "method": "non-rewriting two-parent merge",
+    "remoteUpdate": "normal fast-forward push to completed 4.5 branch"
+  },
+  "evidenceSha256": {
+    "completion-evidence-check.txt": "543828a7573dda0ea1240f1b5790b987383f2dfdde2ae6b384601cedb7ee18f0",
+    "full-check.txt": "ae608947ba0d0b01192ac6dfeab9748bca24ef0e1952cdf66e567cfb27eb73e8",
+    "link-check.json": "49a917cf821dcbb5b84a3bd63648f82d81a666b1624f13a788447879f58f2f63",
+    "preservation-check.json": "dc9a02f7fd3b8b9fb5a62040981810d5400493ebf952c9a81b53f65d3af273ed",
+    "secret-scan.json": "3e47cc724cbca4e8d36f2603cf690ef159367b46641c119877f01a83fb496a4f",
+    "validation.md": "501a3f40bf5b901eb9c8107b059d43adc07344a8ac0ae51ee4f0462bbd867c69"
+  },
+  "documentationLinks": {
+    "verdict": "PASS",
+    "scope": "Repository-relative Markdown link file targets in changed Markdown files; external URLs and fragment validity excluded",
+    "filesChecked": 12,
+    "localLinksChecked": 775,
+    "missing": []
+  },
+  "secretPatternScan": {
+    "verdict": "PASS",
+    "filesScanned": 44
+  },
+  "diffWhitespaceCheck": "PASS",
+  "integratedSourceSha256": {
+    "assets/dashboard/dashboard-bots.css": "65ed1fe66d316341769d215676d739b18138496e6cea88543e5b81b0be606946",
+    "assets/dashboard/dashboard-bots.js": "ff5289e9d1afe0f06963d56d731c775cc073eef6ae2cbfe45bfeac8db6929009",
+    "assets/dashboard/dashboard-poe.css": "edbda894342ec9dbde2819b0a55c52a986e2ec2d5d3cf05ff29ebb870a481b95",
+    "assets/dashboard/dashboard-poe.js": "8be10177edf0d087b8180bd075591c1cc2657e56b7a04d3a04a91be7fe3a33e5",
+    "assets/dashboard/index.html": "12e4a6fcea50babcbd4a0deffe3d5dc933be7764f52b4001560865989681221e",
+    "config/implementation-status.json": "9412a796a4246114da23d54a3ef6b7f81de4735b0494617649e090665e2b8aec",
+    "config/poe-knowledge-sources.json": "bf48e48e610d5b4e217529866d63fad218c871ee54317601d5187d46eade19a6",
+    "config/poe-system-topics.json": "4e9d40b53988b9a677c0178a3450c9e1d1948345c5b21eb3ffb88ee9dd88d1c5",
+    "scripts/dashboard-bots.test.mjs": "d681082b8d256c8a987d76dedbe8f2578f218673ce0f2af0228ef685f19325af",
+    "scripts/preview-morrow-crew.mjs": "a834183046d7020d8a90ef88bfec32cbef1dcb524c5c0cd4a3ca3c4534c9f620",
+    "src/control/application-service.ts": "0d177ca9b89897cbdc517b425e82e77851d1fb92ba063d60d80598bedac7bb2b",
+    "src/control/host-identity.ts": "a8482f18dcc87f1c503581bf8216109e89e0b0b199b0f5258ddf13235afdcb7e",
+    "src/control/poe-browser-api.test.ts": "ffc4287cd843ca84871311cbdb51e921e2ed98ffdd40fd87ae3c779b1d1856b2",
+    "src/control/poe-knowledge.test.ts": "6af15ad4415be05175756773a169d1ec7ee82400396af985fe2bd4b57c5186eb",
+    "src/control/poe-knowledge.ts": "4bce207a3c33ec4d79ba613440d46494b05200b936d18cfdd4c4d9d42c3306df",
+    "src/control/poe-model.test.ts": "18ad9135a617ecdd13a3d62a6fb47a1c8776d2a48505b46571d080cbf1dcba4c",
+    "src/control/poe-model.ts": "0a2ec62c72c69ad511cd0898240ac6d325745312948fe4d1508234c81617da9e",
+    "src/control/poe-operator.ts": "f29e074017ea0faceccecfc5599cc09a6f1c3215f0408058ae14b17c0efef185",
+    "src/control/poe.test.ts": "0556657ac6562622d093e45259baebd361f5a1742080fa953546659e50fd8d4a",
+    "src/control/poe.ts": "c185a6d119746820d15d828f5868d728cc07b05a216775881df8faeb07eac7ba",
+    "src/control/social-voice.test.ts": "14a168874ced94aaecfadf6cd70a1c0178f5e064460379780c78394f2328adda",
+    "src/control/social-voice.ts": "47ce7f80c767eee23c22354e95dc80873aa8177d15df77ae44b61c355fd669a6"
+  }
+}

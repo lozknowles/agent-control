@@ -73,6 +73,8 @@ export class StructuredChatProviderFactory {
   }
 
   private async execute(instruction: string, contextSources: ContextPacketSource[], recipe: Parameters<RecipeExecutor['execute']>[0], tools: ToolInvocationGateway, timeoutMs: number) {
+    if (typeof tools.assertActive !== 'function') throw new Error('provider_live_control_required');
+    tools.signal?.throwIfAborted(); tools.assertActive();
     const grantedToolIds = recipe.tools.map(tool => tool.id);
     const fetcher = this.options.fetch ?? globalThis.fetch;
     const authorization = this.options.authorization?.();
@@ -90,14 +92,16 @@ export class StructuredChatProviderFactory {
         ],
         response_format: {type: 'json_object'}, temperature: 0, max_tokens: 256, stream: false,
       }),
-      signal: AbortSignal.timeout(Math.max(1, timeoutMs)),
+      signal: tools.signal ? AbortSignal.any([tools.signal, AbortSignal.timeout(Math.max(1, timeoutMs))]) : AbortSignal.timeout(Math.max(1, timeoutMs)),
     });
     const body = await response.json() as ChatResponse;
+    tools.signal?.throwIfAborted(); tools.assertActive();
     const providerCompletedAt = new Date().toISOString();
     if (!response.ok) throw new Error(`provider_http_error:${response.status}:${body.error?.message ?? 'unknown'}`);
     const content = body.choices?.[0]?.message?.content;
     if (!content) throw new Error('provider_missing_tool_request');
     const request = parseToolRequest(content);
+    tools.assertActive();
     const output = await tools.invoke(request.tool, request.input);
     const responseHash = createHash('sha256').update(content).digest('hex');
     const result = {providerId: this.options.provider.id, modelId: body.model ?? this.options.modelId, providerResponseId: body.id, requestedTool: request.tool, toolOutput: output, responseHash, usage: body.usage};

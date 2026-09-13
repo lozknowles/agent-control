@@ -56,41 +56,65 @@ function emptyCollections(config) {
   return ['resources', 'providers', 'services', 'lanes'].every(key => config[key].length === 0);
 }
 
+const unsupportedHardLinkErrors = new Set(['EACCES', 'EPERM', 'ENOSYS', 'ENOTSUP', 'EOPNOTSUPP', 'EXDEV']);
+
+function publishExclusive(fileSystem, temporary, target) {
+  try {
+    fileSystem.linkSync(temporary, target);
+    return;
+  } catch (error) {
+    if (!unsupportedHardLinkErrors.has(error?.code)) throw error;
+  }
+
+  // Android/Termux filesystems can permit ordinary owner-only files while
+  // denying hard-link creation. COPYFILE_EXCL retains the no-overwrite race
+  // boundary without weakening permissions or replacing an existing config.
+  fileSystem.copyFileSync(temporary, target, fileSystem.constants.COPYFILE_EXCL);
+  fileSystem.chmodSync(target, 0o600);
+  const descriptor = fileSystem.openSync(target, 'r');
+  try {
+    fileSystem.fsyncSync(descriptor);
+  } finally {
+    fileSystem.closeSync(descriptor);
+  }
+}
+
 /**
  * Create the smallest safe configuration without discovering infrastructure or
  * overwriting operator state. The completed temporary file is linked into place
- * atomically; link creation fails when another writer already created the target.
+ * atomically where hard links are supported. Filesystems that deny hard links
+ * use an exclusive copy, which preserves the same create-if-absent boundary.
  */
-export function initializeConfig({environment = process.env, cwd = process.cwd(), file = resolveConfigPath(environment, cwd)} = {}) {
+export function initializeConfig({environment = process.env, cwd = process.cwd(), file = resolveConfigPath(environment, cwd), fileSystem = fs} = {}) {
   const target = path.resolve(file);
-  if (fs.existsSync(target)) {
-    const config = validateConfig(JSON.parse(fs.readFileSync(target, 'utf8')));
+  if (fileSystem.existsSync(target)) {
+    const config = validateConfig(JSON.parse(fileSystem.readFileSync(target, 'utf8')));
     return {result: emptyCollections(config) ? 'UNCHANGED_EMPTY' : 'PRESERVED_EXISTING', created: false, file: target, config};
   }
 
   const directory = path.dirname(target);
-  fs.mkdirSync(directory, {recursive: true});
+  fileSystem.mkdirSync(directory, {recursive: true});
   const temporary = path.join(directory, `.${path.basename(target)}.${process.pid}.${randomUUID()}.tmp`);
   const config = emptyConfig();
   const payload = `${JSON.stringify(config, null, 2)}\n`;
   let descriptor;
   try {
-    descriptor = fs.openSync(temporary, 'wx', 0o600);
-    fs.writeFileSync(descriptor, payload, 'utf8');
-    fs.fsyncSync(descriptor);
-    fs.closeSync(descriptor);
+    descriptor = fileSystem.openSync(temporary, 'wx', 0o600);
+    fileSystem.writeFileSync(descriptor, payload, 'utf8');
+    fileSystem.fsyncSync(descriptor);
+    fileSystem.closeSync(descriptor);
     descriptor = undefined;
     try {
-      fs.linkSync(temporary, target);
+      publishExclusive(fileSystem, temporary, target);
       return {result: 'CREATED', created: true, file: target, config};
     } catch (error) {
       if (error?.code !== 'EEXIST') throw error;
-      const existing = validateConfig(JSON.parse(fs.readFileSync(target, 'utf8')));
+      const existing = validateConfig(JSON.parse(fileSystem.readFileSync(target, 'utf8')));
       return {result: emptyCollections(existing) ? 'UNCHANGED_EMPTY' : 'PRESERVED_EXISTING', created: false, file: target, config: existing};
     }
   } finally {
-    if (descriptor !== undefined) fs.closeSync(descriptor);
-    try { fs.unlinkSync(temporary); } catch (error) { if (error?.code !== 'ENOENT') throw error; }
+    if (descriptor !== undefined) fileSystem.closeSync(descriptor);
+    try { fileSystem.unlinkSync(temporary); } catch (error) { if (error?.code !== 'ENOENT') throw error; }
   }
 }
 

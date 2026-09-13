@@ -87,6 +87,7 @@ export async function runWorkParcelTick(runtime: Pick<ReturnType<typeof buildJob
 export function startJobScheduler(runtime: ReturnType<typeof buildJobRuntime>, onChange?: (runId: string, status: string) => void, intervalMs = 1000, onError?: (error: Error) => void) {
   let scheduling = false, stopped = false;
   const inFlight = new Set<Promise<unknown>>();
+  const retryTimers = new Set<NodeJS.Timeout>();
   const report = onError ?? (error => process.emitWarning(`job scheduler failure: ${error.message}`));
   const schedule = async () => {
     if (scheduling || stopped) return;
@@ -96,13 +97,15 @@ export function startJobScheduler(runtime: ReturnType<typeof buildJobRuntime>, o
       await runWorkParcelTick(runtime, onChange, report);
       while (!stopped && inFlight.size < runtime.schedulerConcurrencyLimit()) {
         const dispatched = runtime.dispatch(); if (!dispatched) break;
-        const completion = dispatched.completion.then(changed => { if (changed) onChange?.(changed.id, changed.status); }).catch(error => report(error instanceof Error ? error : new Error(String(error)))).finally(() => { inFlight.delete(completion); queueMicrotask(() => void schedule()); });
+        const signature = (run: ReturnType<typeof runtime.ledger.get>) => JSON.stringify([run?.status, run?.steps.map(step => [step.id, step.status, step.attempts.length, step.endedAt])]);
+        const before = signature(runtime.ledger.get(dispatched.runId)); let progressed = false, rejected = false;
+        const completion = dispatched.completion.then(changed => { progressed = signature(changed) !== before; if (changed) onChange?.(changed.id, changed.status); }).catch(error => { rejected = true; report(error instanceof Error ? error : new Error(String(error))); }).finally(() => { inFlight.delete(completion); if (stopped) return; if (progressed) queueMicrotask(() => void schedule()); else if (rejected) { const retry = setTimeout(() => { retryTimers.delete(retry); void schedule(); }, 250); retry.unref(); retryTimers.add(retry); } });
         inFlight.add(completion);
       }
     } catch (error) { report(error instanceof Error ? error : new Error(String(error))); }
     finally { scheduling = false; }
   };
-  const timer = setInterval(() => void schedule(), intervalMs); timer.unref(); void schedule(); return () => { stopped = true; clearInterval(timer); };
+  const timer = setInterval(() => void schedule(), intervalMs); timer.unref(); void schedule(); return () => { stopped = true; clearInterval(timer); for(const retry of retryTimers)clearTimeout(retry); retryTimers.clear(); };
 }
 
 export function buildGovernedRetrievalRuntime(config: AgentControlConfig, stateRoot = process.env.AGENT_CONTROL_STATE_DIR || path.resolve('.agent-control')) {

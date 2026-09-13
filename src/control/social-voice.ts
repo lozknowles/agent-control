@@ -54,7 +54,7 @@ export class SocialVoiceCoordinator {
     this.db.exec("UPDATE spoken SET state='uncertain' WHERE state='sending'");
   }
   close(){if(this.busy)throw new Error('social_worker_busy');this.db.close();}
-  accepts(text:string) {return /^(?:poe(?:[, :]\s*|$)|ask poe(?:[, :]\s*|$)|start\s|voice\s|(?:job|stop|pause|resume)\s+ac[- ]?\d+|(?:approve|reject)\s+\d+|models$|nodes$|health$|status$|what'?s agent control doing\??$)/i.test(text.trim());}
+  accepts(text:string) {return /^(?:(?:morrow|poe)(?:[, :]\s*|$)|ask (?:morrow|poe)(?:[, :]\s*|$)|start\s|voice\s|(?:job|stop|pause|resume)\s+ac[- ]?\d+|(?:approve|reject)\s+\d+|models$|nodes$|health$|status$|what'?s agent control doing\??$)/i.test(text.trim());}
   /** Only the authenticated transport ingress may call this. It must not be exposed as a public JSON API. */
   accept(message:SocialMessage) {
     message=this.provider.receive(message);
@@ -97,9 +97,9 @@ export class SocialVoiceCoordinator {
       this.audit('speech.transcribed',identity,{text:providerText,confidence:transcript.confidence,metrics:transcript.metrics,authority:'untrusted transcription'});
       const normalizedText=normalizeSpokenPoeInvocation(text);
       if(normalizedText!==text){this.audit('speech.intent_normalized',identity,{sourceText:text,normalizedText,rule:'poe-invocation-homophone-v1',authority:'deterministic lexical normalization'});text=normalizedText;}
-      const interruption=text.match(/^(?:(?:sorry|excuse me)[, ]+)?(?:let me |to )?interrupt[, ]+poe[,.!?: ]+(.+)$/i),playback=interruption?this.db.prepare("SELECT conversation,turn FROM poe_playback WHERE identity=? AND state='queued'").get(identity) as Row|undefined:undefined;
+      const interruption=text.match(/^(?:(?:sorry|excuse me)[, ]+)?(?:let me |to )?interrupt[, ]+(?:morrow|poe)[,.!?: ]+(.+)$/i),playback=interruption?this.db.prepare("SELECT conversation,turn FROM poe_playback WHERE identity=? AND state='queued'").get(identity) as Row|undefined:undefined;
       if(interruption&&playback&&this.poe?.interrupt){const result=await this.poe.interrupt({actor:principal.actor,identityReference:identity,conversationId:playback.conversation,turnId:playback.turn});if(result.interrupted){this.db.prepare("UPDATE poe_playback SET state='interrupted' WHERE identity=?").run(identity);this.audit('poe.interrupted',identity,{conversationId:playback.conversation,turnId:playback.turn,speechBoundary:'client-playback',workParcelCancellation:false});}text=`POE: ${interruption[1]!.trim()}`;}
-      if(!/^(?:poe(?:[, :]\s*).+|ask poe(?:[, :]\s*).+|status|jobs|health|models|nodes|what'?s agent control doing\??|(?:status |job )?ac[- ]?\d+)$/i.test(text.trim())){
+      if(!/^(?:(?:morrow|poe)(?:[, :]\s*).+|ask (?:morrow|poe)(?:[, :]\s*).+|status|jobs|health|models|nodes|what'?s agent control doing\??|(?:status |job )?ac[- ]?\d+)$/i.test(text.trim())){
         const template=principal.templates.find(name=>text.toLowerCase()===`start ${name.replaceAll('-',' ')}`||text.toLowerCase()===`start ${name}`);
         const command=template?`start ${template} voice`:undefined;
         if(command)this.db.prepare('INSERT OR REPLACE INTO confirmations(identity,sourceKey,command,expires,request,sourceReceivedAt) VALUES (?,?,?,?,?,?)').run(identity,key,command,this.clock()+300000,text,m.receivedAt);
@@ -107,8 +107,8 @@ export class SocialVoiceCoordinator {
       }
     }
     text=text.trim();let match:RegExpMatchArray|null;
-    if((match=text.match(/^(?:poe|ask poe)(?:[, :]\s*)(.+)$/i))){
-      if(!this.poe){await this.reply(m,key,'POE is unavailable on this channel. The authenticated dashboard remains available.');this.audit('poe.unavailable',identity,{reason:'channel_adapter_unconfigured'});return;}
+    if((match=text.match(/^(?:(?:ask )?(?:morrow|poe))(?:[, :]\s*)(.+)$/i))){
+      if(!this.poe){await this.reply(m,key,'Morrow is unavailable on this channel. The authenticated dashboard remains available.');this.audit('poe.unavailable',identity,{reason:'channel_adapter_unconfigured'});return;}
       const answer=await this.poe.ask({actor:principal.actor,identityReference:identity,text:match[1]!.trim(),modality:m.kind==='audio'?'voice':'text'});
       await this.reply(m,key,answer.text);if(m.kind==='audio'){const spoken=await this.speak(m,`${key}:poe`,answer.text);if(spoken&&answer.turnId)this.db.prepare("INSERT OR REPLACE INTO poe_playback(identity,conversation,turn,state,queuedAt) VALUES (?,?,?,'queued',?)").run(identity,answer.conversationId,answer.turnId,this.clock());}this.audit('poe.response',identity,{conversationId:answer.conversationId,turnId:answer.turnId??null,channel:this.provider.id,modality:m.kind==='audio'?'voice':'text',spoken:m.kind==='audio',authority:'agent-control-evidence'});
     }else if(/^(status|health|models|nodes|what'?s agent control doing\??)$/i.test(text)){
@@ -128,7 +128,7 @@ export class SocialVoiceCoordinator {
     }else if((match=text.match(/^stop (ac[- ]?\d+)$/i))){const job=this.owned(match[1]!,identity);this.execution.stop(job.parcel,principal.actor);await this.reply(m,key,'Stop requested. Runtime cleanup remains authoritative.');
     }else if((match=text.match(/^voice (ac[- ]?\d+)$/i))){const job=this.owned(match[1]!,identity);this.db.prepare('UPDATE jobs SET voice=1 WHERE number=?').run(job.number);const result=this.execution.observe(job.parcel);await this.reply(m,key,`Voice summary enabled for AC-${job.number}. Text evidence remains available.`);if(terminal(result.status))await this.speak(m,key,spokenJobSummary(job.number,result));
     }else if((match=text.match(/^(approve|reject) (\d+)$/i))){await this.decide(m,key,identity,principal,Number(match[2]),match[1]!.toLowerCase()==='approve');
-    }else{await this.reply(m,key,'Unsupported or ambiguous request. Use POE: <question>, status, start <approved-template>, job AC-1, stop AC-1, or voice AC-1. Pause/resume are not supported by this runtime.');this.audit('policy.denied',identity,{reason:'unsupported_or_ambiguous_intent'});}
+    }else{await this.reply(m,key,'Unsupported or ambiguous request. Use Morrow: <question>, status, start <approved-template>, job AC-1, stop AC-1, or voice AC-1. Pause/resume are not supported by this runtime.');this.audit('policy.denied',identity,{reason:'unsupported_or_ambiguous_intent'});}
   }
   private async speak(m:SocialMessage,key:string,text:string){
     if(!this.speech||!this.voice){this.audit('speech.text_fallback',who(m.identity),{reason:'provider_unconfigured'});return;}

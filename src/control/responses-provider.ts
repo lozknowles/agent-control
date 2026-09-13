@@ -74,6 +74,8 @@ export class ResponsesProviderFactory {
   }
 
   private async execute(instruction: string, recipe: Parameters<RecipeExecutor['execute']>[0], tools: ToolInvocationGateway, timeoutMs: number) {
+    if (typeof tools.assertActive !== 'function') throw new Error('provider_live_control_required');
+    tools.signal?.throwIfAborted(); tools.assertActive();
     const grantedToolIds = recipe.tools.map(tool => tool.id);
     if (!grantedToolIds.length) throw new Error('responses_provider_no_granted_tools');
     const names = new Map(grantedToolIds.map((toolId, index) => [`agent_control_tool_${index}`, toolId]));
@@ -93,9 +95,10 @@ export class ResponsesProviderFactory {
         tools: toolDefinitions,
         tool_choice: 'required', parallel_tool_calls: false, max_output_tokens: 256, store: false,
       }),
-      signal: AbortSignal.timeout(Math.max(1, timeoutMs)),
+      signal: tools.signal ? AbortSignal.any([tools.signal, AbortSignal.timeout(Math.max(1, timeoutMs))]) : AbortSignal.timeout(Math.max(1, timeoutMs)),
     });
     const body = await response.json() as ResponsesBody;
+    tools.signal?.throwIfAborted(); tools.assertActive();
     const providerCompletedAt = new Date().toISOString();
     if (!response.ok) throw new Error(`responses_provider_http_error:${response.status}:${body.error?.message ?? 'unknown'}`);
     const calls = body.output?.filter(item => item.type === 'function_call') ?? [];
@@ -105,6 +108,7 @@ export class ResponsesProviderFactory {
     if (!toolId) throw new Error('responses_provider_unknown_function');
     let input: unknown;
     try { input = JSON.parse(call.arguments ?? '{}'); } catch { throw new Error('responses_provider_function_arguments_invalid'); }
+    tools.assertActive();
     const output = await tools.invoke(toolId, input);
     const responseIdentity = body.id ?? createHash('sha256').update(JSON.stringify(body)).digest('hex');
     const responseHash = createHash('sha256').update(JSON.stringify(body)).digest('hex');

@@ -1,6 +1,6 @@
 import type {ResourceConfig, TransportType} from './config.js';
 
-export type HostKind = 'controller' | 'linux' | 'windows' | 'android' | 'macos' | 'remote' | 'unknown';
+export type HostKind = 'controller' | 'linux' | 'windows' | 'android' | 'ios' | 'ipados' | 'macos' | 'remote' | 'unknown';
 export type HostHealth = 'unconfigured' | 'unknown' | 'healthy' | 'degraded' | 'offline';
 export interface ExecutionHost {id: string; name: string; kind: HostKind; os: string; transport: TransportType; core: boolean; capabilities: string[]; harnesses: string[]; metadata?: Record<string, string | number | boolean>;}
 export interface HostState {hostId: string; health: HostHealth; detail?: string; checkedAt: string;}

@@ -1,0 +1,7 @@
+{
+  "verdict": "PASS",
+  "scope": "Repository-relative Markdown link file targets in changed Markdown files; external URLs and fragment validity excluded",
+  "filesChecked": 12,
+  "localLinksChecked": 775,
+  "missing": []
+}

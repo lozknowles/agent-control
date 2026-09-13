@@ -1,3 +1,4 @@
+import type {ExecutionAuthority} from './execution-provider.js';
 import type {CapabilityRequest} from './capabilities.js';
 import type {ExecutionCleanupReport, OwnedExecution} from './owned-process.js';
 import type {ParcelBatonView} from './parcel-context.js';
@@ -6,8 +7,8 @@ import type {ActionGovernancePlan, ExternalOperationRecord} from './action-gover
 export type JobPriority = 'background' | 'low' | 'normal' | 'high' | 'urgent';
 export type ConcurrencyPolicy = 'allow' | 'no-overlap' | 'replace-running' | 'queue';
 export type MissedRunPolicy = 'skip' | 'run-next-available' | 'run-once-immediately';
-export type RunStatus = 'SCHEDULED' | 'QUEUED' | 'WAITING' | 'AUTHENTICATION_BLOCKED' | 'RECONNECTING' | 'RUNNING' | 'VERIFYING' | 'CANCELLING' | 'CLEANUP_UNCERTAIN' | 'SUCCEEDED' | 'FAILED' | 'DEGRADED' | 'CANCELLED' | 'MISSED' | 'DISCONNECTED';
-export type StepStatus = 'QUEUED' | 'WAITING_FOR_WORKER' | 'WAITING_FOR_DEPENDENCY' | 'WAITING_FOR_RESOURCE' | 'WAITING_FOR_APPROVAL' | 'AUTHENTICATION_BLOCKED' | 'RECONNECTING' | 'DISPATCHED' | 'RUNNING' | 'VERIFYING' | 'RETRY_PENDING' | 'CANCEL_PENDING' | 'CLEANUP_UNCERTAIN' | 'SUCCEEDED' | 'FAILED' | 'TIMED_OUT' | 'CANCELLED';
+export type RunStatus = 'PAUSED' | 'SCHEDULED' | 'QUEUED' | 'WAITING' | 'AUTHENTICATION_BLOCKED' | 'RECONNECTING' | 'RUNNING' | 'VERIFYING' | 'CANCELLING' | 'CLEANUP_UNCERTAIN' | 'SUCCEEDED' | 'FAILED' | 'DEGRADED' | 'CANCELLED' | 'MISSED' | 'DISCONNECTED';
+export type StepStatus = 'PAUSED' | 'QUEUED' | 'WAITING_FOR_WORKER' | 'WAITING_FOR_DEPENDENCY' | 'WAITING_FOR_RESOURCE' | 'WAITING_FOR_APPROVAL' | 'AUTHENTICATION_BLOCKED' | 'RECONNECTING' | 'DISPATCHED' | 'RUNNING' | 'VERIFYING' | 'RETRY_PENDING' | 'CANCEL_PENDING' | 'CLEANUP_UNCERTAIN' | 'SUCCEEDED' | 'FAILED' | 'TIMED_OUT' | 'CANCELLED';
 
 export interface RetryPolicy {attempts: number; backoffSeconds: number; backoffMultiplier?: number; maxBackoffSeconds?: number; overallDeadlineSeconds?: number;}
 export interface ParameterDefinition {type: 'string' | 'integer' | 'number' | 'boolean'; default?: unknown; required?: boolean; secretRef?: boolean; minimum?: number; maximum?: number; enum?: unknown[];}
@@ -57,7 +58,7 @@ export interface ArtifactRecord {
   provenance: {jobId: string; jobVersion: string; action: string; workerId: string};
 }
 export type RecoveryFailureKind = 'transient-transport' | 'expired-enrolment' | 'authentication-required' | 'permanent-configuration' | 'execution';
-export interface StepAttempt {attempt: number; startedAt: string; endedAt?: string; workerId?: string; outcome?: string; retryable?: boolean; errorClass?: ActionFailureClass; recoveryKind?: RecoveryFailureKind; efficiencyInvocationIds?: string[]; executionSessionIds?: string[]; timeoutSeconds?: number; elapsedMs?: number; terminalReason?: string; cleanup?: ExecutionCleanupReport;}
+export interface StepAttempt {contractId?: string; executionAuthority?: {processId: string; batonGeneration: number; ownershipGeneration: number}; attempt: number; startedAt: string; endedAt?: string; workerId?: string; outcome?: string; retryable?: boolean; errorClass?: ActionFailureClass; recoveryKind?: RecoveryFailureKind; efficiencyInvocationIds?: string[]; executionSessionIds?: string[]; timeoutSeconds?: number; elapsedMs?: number; terminalReason?: string; cleanup?: ExecutionCleanupReport;}
 export type ActionFailureClass = 'execution' | 'capability_unavailable' | 'authentication' | 'policy_rejection' | 'verification' | 'configuration';
 export interface RunStep {
   id: string; action: string; status: StepStatus; dependsOn: string[]; capabilityRequest: CapabilityRequest; resources: string[];
@@ -72,7 +73,12 @@ export interface RunRecord {
   effectiveJob: JobDefinition; selectedWorkers: string[]; approvals: string[]; provenance: Array<{type: string; at: string; detail: string}>;
   lineage?: {replacesRunId?: string; replacedByRunId?: string; retryOfRunId?: string; retriedByRunId?: string};
 }
-export interface ActionContext {run: RunRecord; step: RunStep; worker: WorkerRegistration; parameters: Record<string, unknown>; inputArtifacts: ArtifactRecord[]; readArtifact: (id: string) => unknown; signal: AbortSignal; ownedExecution: OwnedExecution; governance?: ActionGovernancePlan;}
+export interface ActionExecutionControl {
+  contractId: string;
+  currentAuthority(): ExecutionAuthority;
+  assertActive(): void;
+}
+export interface ActionContext {retainCleanup?: (identity: Record<string, unknown>, cleanup: () => Promise<ExecutionCleanupReport>) => (proof: ExecutionCleanupReport) => void; recordIndependentVerification?: (stepId: string, passed: boolean, evidenceIds: string[], reason: string) => void; execution?: ActionExecutionControl; recordEvidence?: (name: string, value: unknown) => ArtifactRecord; run: RunRecord; step: RunStep; worker: WorkerRegistration; parameters: Record<string, unknown>; inputArtifacts: ArtifactRecord[]; readArtifact: (id: string) => unknown; signal: AbortSignal; ownedExecution: OwnedExecution; governance?: ActionGovernancePlan;}
 export interface ActionOutput {artifacts?: Array<{name: string; value: unknown; type?: string; schema?: string; version?: string; retention?: string}>; evidence?: string[]; verification?: string[]; detail?: string; efficiencyInvocationIds?: string[]; executionState?: 'verification-pending'; externalOperationStates?: Array<{effectId: string; state: ExternalOperationRecord['state']; reason?: string}>;}
 export type ActionHandler = (context: ActionContext) => Promise<ActionOutput>;
 export interface AgentActionHandler {readonly path: 'adaptive-harness'; execute(context: ActionContext): Promise<ActionOutput>;}

@@ -55,6 +55,8 @@ export interface ContractProcessPort {cancel(processId: string, reason: string):
 /** Durable authority and recovery state for Lane -> Contract -> Baton -> Process/PTY -> Agent. */
 export class ContractExecutionRuntime {
   private readonly contracts = new Map<string, ContractExecution>();
+  private readonly listeners = new Set<(contract: ContractExecution) => void>();
+  subscribe(listener: (contract: ContractExecution) => void) { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; }
   constructor(readonly file?: string, readonly processes: ContractProcessPort = {cancel: () => ({outcome: 'uncertain', detail: 'process_port_not_configured'})}, readonly clock: () => string = () => new Date().toISOString()) { this.load(); }
 
   create(input: {
@@ -134,6 +136,30 @@ export class ContractExecutionRuntime {
     const entry: ContractTranscript = {sequence: contract.pty.nextSequence++, at: this.clock(), source: input.source, text: bounded(input.text, 16_384)}; contract.pty.transcript.push(entry); contract.pty.transcript = contract.pty.transcript.slice(-500); this.record(contract, 'pty.output', input.source, `sequence=${entry.sequence}`); return entry;
   }
 
+  completeExecution(id: string, outcome: 'EXECUTED' | 'FAILED' | 'CANCELLED' | 'UNKNOWN', cleanup?: ContractCleanupResult, expected?: {processId: string; batonGeneration: number; ownershipGeneration: number}) {
+    const contract = this.get(id);
+    if (expected && (expected.processId !== contract.process.id || expected.batonGeneration !== contract.baton.generation || expected.ownershipGeneration !== contract.pty.ownershipGeneration)) {
+      if (contract.pty.writeOwner?.startsWith('human:') && expected.processId === contract.process.id && expected.batonGeneration === contract.baton.generation) { contract.state='PAUSED'; contract.process.state=cleanup?.outcome==='confirmed' && outcome!=='UNKNOWN'?'EXITED':'UNKNOWN'; contract.process.observedAt=this.clock(); if(cleanup)contract.process.cleanup={...cleanup}; this.record(contract,'execution.agent_stopped_human_retained','agent-control',JSON.stringify({expected,outcome,cleanup})); return this.get(id); }
+      this.record(contract, 'execution.stale_completion_ignored', 'agent-control', JSON.stringify({expected, outcome, cleanup})); return this.get(id);
+    }
+    if (!expected && outcome !== 'UNKNOWN') outcome = 'UNKNOWN';
+    const cleanupProof = cleanup ?? contract.process.cleanup;
+    if (cleanupProof?.outcome !== 'confirmed' || contract.process.state === 'UNKNOWN' && cleanup?.outcome !== 'confirmed') outcome = 'UNKNOWN';
+    if (contract.pty.writeOwner?.startsWith('human:')) {
+      contract.state = 'PAUSED'; contract.process.state = outcome === 'UNKNOWN' ? 'UNKNOWN' : 'EXITED';
+      contract.process.observedAt = this.clock(); if (cleanup) contract.process.cleanup = {...cleanup};
+      this.record(contract, 'execution.agent_stopped_human_retained', 'agent-control', outcome); return this.get(id);
+    }
+    contract.state = outcome === 'EXECUTED' ? 'VERIFYING' : outcome === 'UNKNOWN' ? 'ORPHANED' : outcome;
+    contract.process.state = outcome === 'UNKNOWN' ? 'UNKNOWN' : 'EXITED';
+    contract.process.observedAt = this.clock(); if (cleanup) contract.process.cleanup = {...cleanup};
+    contract.pty.state = outcome === 'UNKNOWN' ? 'LOST' : 'CLOSED';
+    delete contract.pty.writeOwner; contract.pty.ownershipGeneration++;
+    contract.pty.participants = contract.pty.participants.map(item => ({...item, access: 'observe'}));
+    if (outcome === 'EXECUTED') contract.verification = {...contract.verification, state: 'PENDING', submittedAt: this.clock()};
+    this.record(contract, 'execution.completed', 'agent-control', outcome); return this.get(id);
+  }
+
   observeProcess(id: string, observation: {state: ProcessState; pid?: number; exitCode?: number; signal?: string}) {
     const contract = this.get(id); Object.assign(contract.process, observation, {observedAt: this.clock()}); if (observation.state === 'EXITED') contract.pty.state = 'CLOSED'; this.record(contract, 'process.observed', 'agent-control', observation.state); return this.get(id);
   }
@@ -153,8 +179,8 @@ export class ContractExecutionRuntime {
 
   async enforceTimeout(id: string) { const contract = this.get(id), deadline = contract.budget.deadlineAt; if (!deadline || Date.parse(this.clock()) < Date.parse(deadline) || ['CANCELLED','TIMED_OUT','VERIFIED','FAILED'].includes(contract.state)) return contract; const cleanup = normalizeCleanup(await this.processes.cancel(contract.process.id, 'contract_timeout'), this.clock()); const current = this.get(id); current.process.cleanup = cleanup; current.process.observedAt = cleanup.verifiedAt!; if (cleanup.outcome !== 'confirmed') { current.state = 'ORPHANED'; current.process.state = 'UNKNOWN'; current.pty.state = 'LOST'; delete current.pty.writeOwner; current.pty.ownershipGeneration++; this.record(current, 'contract.timeout_cleanup_uncertain', 'agent-control', `deadline=${deadline};outcome=${cleanup.outcome}`); return this.get(id); } current.state = 'TIMED_OUT'; current.process.state = 'EXITED'; current.pty.state = 'CLOSED'; delete current.pty.writeOwner; current.pty.ownershipGeneration++; this.record(current, 'contract.timed_out', 'agent-control', deadline); return this.get(id); }
 
-  submitForVerification(id: string, actorId: string, evidence: ContractEvidence[]) { const contract = this.get(id); if (contract.active.actorId !== actorId) throw new Error('contract_worker_mismatch'); contract.evidence.push(...evidence.map(item => structuredClone(item))); contract.verification = {state: 'PENDING', submittedAt: this.clock(), evidenceIds: unique(evidence.map(item => item.id)), reasons: []}; contract.state = 'VERIFYING'; this.record(contract, 'verification.submitted', actorId, `${evidence.length} evidence records`); return this.get(id); }
-  verify(id: string, verifierActorId: string, passed: boolean, reasons: string[] = []) { const contract = this.get(id); if (contract.verification.state !== 'PENDING') throw new Error('verification_not_pending'); if (verifierActorId === contract.active.actorId) throw new Error('verification_not_independent'); contract.verification.state = passed ? 'PASSED' : 'FAILED'; contract.verification.verifierActorId = verifierActorId; contract.verification.reasons = reasons.map(value => bounded(value)); contract.state = passed ? 'VERIFIED' : 'FAILED'; this.record(contract, passed ? 'verification.passed' : 'verification.failed', verifierActorId, reasons.join('; ') || 'independent verification'); return this.get(id); }
+  submitForVerification(id: string, actorId: string, evidence: ContractEvidence[]) { const contract = this.get(id); if (contract.pty.writeOwner?.startsWith('human:') || !['ACTIVE','VERIFYING'].includes(contract.state)) throw new Error('verification_authority_revoked'); if (contract.active.actorId !== actorId) throw new Error('contract_worker_mismatch'); contract.evidence.push(...evidence.map(item => structuredClone(item))); contract.verification = {state: 'PENDING', submittedAt: this.clock(), evidenceIds: unique(evidence.map(item => item.id)), reasons: []}; contract.state = 'VERIFYING'; this.record(contract, 'verification.submitted', actorId, `${evidence.length} evidence records`); return this.get(id); }
+  verify(id: string, verifierActorId: string, passed: boolean, reasons: string[] = []) { const contract = this.get(id); if (contract.verification.state !== 'PENDING') throw new Error('verification_not_pending'); if (contract.pty.writeOwner?.startsWith('human:') || contract.state !== 'VERIFYING') throw new Error('verification_authority_revoked'); if (verifierActorId === contract.active.actorId) throw new Error('verification_not_independent'); contract.verification.state = passed ? 'PASSED' : 'FAILED'; contract.verification.verifierActorId = verifierActorId; contract.verification.reasons = reasons.map(value => bounded(value)); contract.state = passed ? 'VERIFIED' : 'FAILED'; this.record(contract, passed ? 'verification.passed' : 'verification.failed', verifierActorId, reasons.join('; ') || 'independent verification'); return this.get(id); }
 
   linkHandoff(id: string, handoffId: string, actorId: string) { const contract = this.get(id); if (!contract.handoffs.includes(handoffId)) contract.handoffs.push(handoffId); this.record(contract, 'handoff.linked', actorId, handoffId); return this.get(id); }
 
@@ -178,7 +204,7 @@ export class ContractExecutionRuntime {
   }
 
   private transferWrite(contract: ContractExecution, actorId: string) { contract.pty.participants = contract.pty.participants.map(item => ({...item, access: item.actorId === actorId ? 'write' : 'observe'})); contract.pty.writeOwner = actorId; contract.pty.ownershipGeneration++; contract.pty.state = 'ATTACHED'; }
-  private record(contract: ContractExecution, event: string, actorId: string, detail: string) { const at = this.clock(); contract.updatedAt = at; contract.history.push({at, event, actorId, detail: bounded(detail)}); this.contracts.set(contract.id, structuredClone(contract)); this.save(); }
+  private record(contract: ContractExecution, event: string, actorId: string, detail: string) { const at = this.clock(); contract.updatedAt = at; contract.history.push({at, event, actorId, detail: bounded(detail)}); this.contracts.set(contract.id, structuredClone(contract)); this.save(); for (const listener of this.listeners) listener(structuredClone(contract)); }
   private load() { if (!this.file || !fs.existsSync(this.file)) return; const snapshot = JSON.parse(fs.readFileSync(this.file, 'utf8')) as ContractSnapshot; if (snapshot.schema !== 'agent-control.contract-executions/v1') throw new Error('contract_snapshot_unsupported'); for (const contract of snapshot.contracts) this.contracts.set(contract.id, contract); }
   private save() { if (!this.file) return; fs.mkdirSync(path.dirname(this.file), {recursive: true}); const temporary = `${this.file}.tmp`; fs.writeFileSync(temporary, `${JSON.stringify({schema: 'agent-control.contract-executions/v1', contracts: this.list()} satisfies ContractSnapshot, null, 2)}\n`, {mode: 0o600}); fs.renameSync(temporary, this.file); }
 }

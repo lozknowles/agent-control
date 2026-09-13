@@ -12,7 +12,7 @@ const ASSIGNMENT = /\b(api[_-]?key|access[_-]?token|refresh[_-]?token|authorizat
 /** Redacts credential material before it can enter state, evidence, telemetry or an API projection. */
 export function redactSensitiveText(value: string, runtimeCredentials: readonly string[] = []): string {
   let redacted = String(value);
-  for (const credential of [...runtimeCredentials].filter(item => item.length >= 8).sort((left, right) => right.length - left.length)) {
+  for (const credential of [...runtimeCredentials].filter((item): item is string => typeof item === 'string' && item.length >= 8).sort((left, right) => right.length - left.length)) {
     redacted = redacted.split(credential).join('[REDACTED CREDENTIAL]');
     const encoded = encodeURIComponent(credential);
     if (encoded !== credential) redacted = redacted.split(encoded).join('[REDACTED CREDENTIAL]');

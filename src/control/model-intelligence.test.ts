@@ -111,3 +111,15 @@ test('recorded invocation derives cache savings from the versioned pricing basis
   assert.equal(attempt.cost.equivalentUncached, .0014);
   assert.ok(Math.abs(attempt.cost.estimatedCacheSavings! - .00032) < 1e-12);
 });
+
+test('recorded invocation preserves attributed process memory and sampling limits', () => {
+  const suite = smallSuite(), ledger = new ModelIntelligenceLedger(), route = candidate('measured');
+  ledger.createBatch({id: 'batch-measured', suite, candidates: [route], requestedBy: 'operator', reason: 'resource attribution proof'});
+  const task = suite.tasks[0], observation = createInvocationObservation({jobId: 'qualification', taskId: task.id, laneId: 'eval', model: route.modelId, provider: route.providerId, harnessProfile: 'THIN', executionStrategy: 'frozen', startedAt: '2026-09-05T10:00:00Z', completedAt: '2026-09-05T10:00:01Z', recipeFingerprint: 'fixture', resources: {cpuMs: null, gpuMs: null, peakRamBytes: 456, peakVramBytes: 789, energyWh: null, authority: 'MEASURED', sampleCount: 3, attributedSampleCount: 2, samplingIntervalMs: 500, baseline: {ramBytes: 100, processVramBytes: null, deviceVramBytes: 2_000}, devicePeakVramBytes: 2_500, source: 'fixture-adapter', limitations: ['device_vram_includes_shared_processes']}});
+  const attempt = ledger.recordInvocation({batchId: 'batch-measured', suite, task, candidate: route, observation, score: task.scorer.maximumScore, passed: true, agentControlVersion: '4.5.0', adapterVersion: 'fixture', promptVersion: 'fixture'});
+  assert.equal(attempt.resources.peakRamBytes, 456);
+  assert.equal(attempt.resources.peakVramBytes, 789);
+  assert.equal(attempt.resources.samplingIntervalMs, 500);
+  assert.deepEqual(attempt.resources.limitations, ['device_vram_includes_shared_processes']);
+  assert.equal(aggregateModelAttempts([attempt]).resourceCoverage.measuredAttempts, 1);
+});

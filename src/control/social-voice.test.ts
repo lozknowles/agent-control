@@ -52,3 +52,27 @@ test('spoken summaries use number words and the outcome only',()=>{
 });
 
 test('authenticated summary recovery is owner-scoped, terminal-only and audio-idempotent',async t=>{const s=setup(t);s.receive('start test');await s.c.tick();await assert.rejects(()=>s.c.requestSummary(s.identity,'AC-1','summary-1'),/not_terminal/);for(const p of s.parcels.values())p.status='FAILED';await s.c.requestSummary(s.identity,'AC-1','summary-1');await s.c.requestSummary(s.identity,'AC-1','summary-1');assert.equal(s.audio.length,1);s.revoke();await assert.rejects(()=>s.c.requestSummary(s.identity,'AC-1','summary-2'),/denied/);});
+
+test('Morrow and legacy POE names share authenticated text and voice routing without starting work',async t=>{
+  const s=setup(t);
+  for(const command of ['Morrow: what is running?','ask Morrow status','POE: status'])assert.equal(s.c.accepts(command),true);
+  for(const command of ['Tomorrow: status','Morrowish: status','Ask Morrowish status'])assert.equal(s.c.accepts(command),false);
+  s.receive('Morrow: what is running?','morrow-text');await s.c.tick();
+  s.transcribe('Ask Morrow status');s.receive('audio','morrow-voice','audio');await s.c.tick();
+  s.receive('POE: status','legacy-poe-text');await s.c.tick();
+  assert.deepEqual(s.poeCalls.map(call=>call.text),['what is running?','status','status']);
+  assert.deepEqual(s.poeCalls.map(call=>call.modality),['text','voice','text']);
+  assert.equal(s.audio.length,1);assert.equal(s.parcels.size,0);
+  assert.match(s.c.transcript(),/"text":"Ask Morrow status"/);
+});
+
+test('Morrow voice interruption targets the existing playback record and preserves governed work',async t=>{
+  const s=setup(t);
+  s.transcribe('Morrow: explain parcel parcel-one');s.receive('audio','morrow-first','audio');await s.c.tick();
+  s.transcribe('Sorry, interrupt Morrow. Explain its verification');s.receive('audio','morrow-interrupt','audio');await s.c.tick();
+  assert.equal(s.poeInterrupts.length,1);
+  assert.equal(s.poeInterrupts[0]?.conversationId,'poe-whatsapp:fixture');
+  assert.equal(s.poeCalls[1]?.text,'Explain its verification');
+  assert.equal(s.parcels.size,0);assert.equal(s.audio.length,2);
+  assert.match(s.c.transcript(),/"workParcelCancellation":false/);
+});

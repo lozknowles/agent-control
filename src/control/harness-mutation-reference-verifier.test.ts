@@ -15,7 +15,7 @@ test('all 12 hidden mutation contracts accept an independently constructed refer
     const prepared = MutationWorkspace.prepare(path.join(root, suite.fixturePath), task);
     try {
       const registry = createToolHandlerRegistry(prepared.workspace.toolBindings());
-      await applyReference(task, (tool, input) => registry.invoke(tool, input, {} as never));
+      await applyReference(task, (tool, input) => registry.invoke(tool, input, {} as never, {assertActive: () => undefined}));
       const result = await verifyMutationWorkspace(prepared.workspace, task);
       assert.equal(result.passed, true, `${task.id}:${JSON.stringify(result.checks.filter(check => !check.passed))}`);
     } finally { prepared.workspace.cleanup(); }

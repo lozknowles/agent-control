@@ -16,7 +16,7 @@ test('provider-neutral POE model routing uses the configured inexpensive and rea
     {roles:{'poe.status':{primary:'poe-economy',requires:['structured-output']},'poe.reasoning':{primary:'poe-reasoning',requires:['structured-output']}}},
   );
   const calls:string[]=[];
-  const fetcher:typeof fetch=async(_url,init)=>{const body=JSON.parse(String(init?.body));calls.push(body.model);return new Response(JSON.stringify({model:body.model,status:'completed',output_text:JSON.stringify({schema:'agent-control.poe-response/v1',text:'One parcel is running. A modest bustle, by local standards.',citations:['Running']}),usage:{input_tokens:20,output_tokens:8,total_tokens:28}}),{status:200,headers:{'content-type':'application/json'}});};
+  const fetcher:typeof fetch=async(_url,init)=>{const body=JSON.parse(String(init?.body));calls.push(body.model);assert.match(JSON.stringify(body),/You are Morrow/);assert.doesNotMatch(JSON.stringify(body),/gothic|hotelier/);return new Response(JSON.stringify({model:body.model,status:'completed',output_text:JSON.stringify({schema:'agent-control.poe-response/v1',text:'One parcel is running. A modest bustle, by local standards.',citations:['Running']}),usage:{input_tokens:20,output_tokens:8,total_tokens:28}}),{status:200,headers:{'content-type':'application/json'}});};
   const model=new RoutedPoeResponseModel(registry,unusedNode,{status:'poe.status',reasoning:'poe.reasoning'},fetcher);
   const evidence={title:'Agent Control status',summary:'Current durable state.',facts:[{label:'Running',value:1,authority:'AGENT_CONTROL' as const,evidence:['parcel:p1']}],related:[]};
   const status=await model.respond({purpose:'STATUS_LOOKUP',operatorText:'What is happening?',evidence,channel:'dashboard'});

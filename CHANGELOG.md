@@ -2,6 +2,187 @@
 
 ## [4.5.0] — Unreleased candidate
 
+### Final acceptance-contract and virgin-install closure
+
+- Freezes product commit `31ccdf07f9aeb96cec0ea87a8cfb2bf1607ae86b`
+  and records the final 1,331/1,331 passing controller regression together with
+  the already-qualified physical Runtime Map, Estate Map, memory, skill,
+  source-distribution and virgin-install evidence.
+- Adds the single current-facing
+  [final release-closure audit](docs/evidence/agent-control-4.5-final-release-closure-audit-20260913.md),
+  including embedded real screenshots and a complete PASS / PASS WITH
+  LIMITATIONS / BLOCKED acceptance matrix. Historical evidence and its
+  then-current verdicts remain unchanged.
+- Retains the specialist-energy and warm-residency results as `DISPROVEN`, the
+  unavailable whole-node measurement as `BLOCKED_EXTERNAL`, OpenRouter
+  GLM-5.3-Flash→Qwen as `BLOCKED_EXTERNAL`, and the exact MiniCPM5-2B Q4_K_M
+  code-repair qualification as `FAILED`. None is relabelled as a success;
+  unavailable/failed routes remain unroutable and no unsupported energy claim
+  is enabled.
+- Records **PASS WITH LIMITATIONS — READY FOR 4.5 RELEASE** after the later
+  acceptance-contract audit and clean-install gates. Agent Control 4.4.0
+  remains the latest released version until the separately authorised release
+  operation actually merges and tags this candidate.
+
+### Virgin-install remediation
+
+- Separates heavyweight qualification videos, screenshots, binary captures,
+  complete qualification trees and oversized raw evidence from normal product
+  clones while preserving them in a checksummed public archive with full
+  pre-rewrite Git provenance. Adds a source-distribution gate and documents the
+  contributor re-clone boundary; shallow/partial clone is not accepted as the
+  installation fix.
+- Adds a no-overwrite exclusive-copy fallback for Android/Termux filesystems
+  that deny hard-link creation during first-run configuration initialization.
+- Treats Node's `android` platform as a procfs/POSIX process-group host for
+  governed owned-process cleanup, so Termux timeouts can prove that child trees
+  are gone instead of retaining resources as cleanup-uncertain.
+
+- Makes the documented Linux bootstrap directly executable and aligns Linux
+  and Windows installation with the repository's intentional no-lock,
+  runtime-TypeScript architecture: install dependencies with lifecycle scripts
+  disabled, create or preserve the schema-valid configuration, and require no
+  nonexistent build step.
+- Adds deterministic no-lock installation and repeat-bootstrap coverage, and
+  makes bootstrap accept both ordinary clones and Git worktrees while retaining
+  clean-checkout and prerequisite gates.
+- Isolates the published validation suite from initialized runtime state so a
+  first dashboard cannot inherit test lanes, events or model evidence.
+- Corrects the first-run walkthrough so operator authentication is configured
+  before the documented Environment Discovery action.
+- Keeps dense first-run Estate Maps legible by deriving explicitly labelled,
+  evidence-linked resource-category groups and initially collapsing them; an
+  expanded category wraps into bounded columns instead of shrinking dozens of
+  genuine resources into an unreadable strip.
+- Adds the missing provider-free first governed-job walkthrough: the documented
+  Morrow request now leads an operator through sealed review, explicit approval,
+  the real `observe → verify` Work Parcel and its Process Map, including the
+  approval disclosure that must be expanded before the button is visible.
+- Fixes the virgin-install execution gap found by that walkthrough: the runtime
+  now registers one built-in controller-local worker restricted to the
+  `agent-control.operator-observation.read` capability. It can run only the
+  read-only observation/verification placement contract and does not invent or
+  authorize a provider, model, shell, remote worker or service.
+- Adds the previously missing fresh-Termux prerequisite procedure after a real
+  Android 15 installation stopped at the documented clone command with Git,
+  Node.js and npm absent. The Android guide now installs and verifies Git,
+  Node.js 24 LTS and npm before returning to the same generic bootstrap.
+- Replaces the ambiguous manual dependency sequence with one documented
+  check/install path and explicit expected results and troubleshooting.
+
+### Historical release-closure checkpoint (`d229ce4b7dd3bd704a331f81ca59600541430682`)
+
+- Freezes the integrated 4.5 candidate and reconciles every row from the
+  historical 12-route Your Memories matrix. Eleven exact historical routes are
+  now PASS/FIXED. OpenRouter GLM-5.3-Flash→Qwen remains `BLOCKED_EXTERNAL`; a
+  separate qualified NVIDIA-hosted run proves the exact GLM model→Qwen pair
+  without relabelling the blocked provider route.
+- Physically repairs Qwen→Pixel Gemma 4 E4B with the existing strict semantic
+  verifier by making the required bare `nextAction` representation explicit.
+  One physical route applies to the two public alias rows and is not counted as
+  two executions.
+- Physically requalifies the real dashboard against the frozen candidate: a
+  six-job Work Parcel projects 71 authoritative operations through Process Map,
+  Control Room, live session, Replay and graphical Compare; a separate read-only
+  scan populates the Estate Map without configuration mutation. Real 1920×1080
+  captures are included in the README.
+- Records 1,312/1,312 passing automated tests for the integrated candidate and
+  preserves all earlier evidence at its original commit.
+- Preserves the genuine `openbmb/MiniCPM5-2B-GGUF` Q4_K_M code-repair failure.
+  Known-good and scripted controls pass, so only the exact immutable model
+  configuration is denied; the family is not generalized as failed.
+- Keeps the specialist-energy advantage and warm-residency routing effect
+  `DISPROVEN`, and synchronized whole-node power `BLOCKED_EXTERNAL`. At this
+  historical checkpoint they were treated as unmet stable gates. The later
+  acceptance-contract audit above retains the findings but supersedes that
+  release-readiness calculation. No merge, tag, release or deployment is
+  performed by either documentation checkpoint.
+
+- Adds governed First Run/Rescan/Add Resource Environment Discovery with
+  read-only machine, accelerator, inference-runtime, model, CLI-agent,
+  provider/credential-presence and Agent Control resource adapters.
+- Adds persistent non-secret inventory history, explicit change classification,
+  qualification choices and revision/hash-bound recommendations whose material
+  application enters a normal approved Work Parcel; discovery never activates a
+  route.
+- Adds user/community capability definitions for non-standard executables and
+  endpoints, fixed safe probes and the gated `REVIEW → VALIDATE → TEST → APPROVE
+→ ENABLE` lifecycle. Portable exports exclude machine paths, bindings and
+  credentials; untrusted imports cannot bring executable contracts.
+- Extends the existing Runtime Map graph and renderer with **Process Map** and
+  live **Estate Map** modes, resource-specific freshness, Estate heartbeat,
+  explicit topology/transport edges, search/filter and resource/connection
+  inspectors. Discovery is not labelled alive without recent appropriate
+  evidence; fixed credential masks never encode secret length.
+- Adds read-only installation provenance/state inspection and portable Linux and
+  Windows bootstrap entry points. Dirty/diverged repositories fail closed and
+  optional third-party tools are never installed automatically.
+- 4.5 Estate visibility is experimental. Active desired-state management and
+  automatic remediation remain planned for 4.6 and are not released features.
+
+- Adds the first-class **Runtime Map** and adaptive **Control Room** as read-only
+  projections of authoritative Work Parcel, Run, execution-session, baton,
+  provider/model, cache, Your Memories and verification evidence.
+- Adds dynamic parallel and nested topology, automatic clustering, accessible
+  state symbols, CSP-safe SVG layout, pan/zoom/fit, progressive branch and
+  evidence drill-down, authenticated Live Shell links and timestamped Replay.
+- Adds authenticated Runtime Map and structural Compare APIs plus SSE refreshes
+  for real execution-session output. Dashboard failure is isolated from runtime
+  authority and reconnect reconciles against current records.
+- Completes graphical **Compare** with two independently projected runs,
+  synchronized graph viewports, explicit route/model/provider/machine/worker/
+  decision/cache/memory/baton/retry/failure facets and truthful unavailable
+  token/cost deltas. Display labels are never treated as execution identity.
+- Adds leader-level parallel/completion/attention/aggregation/transition KPIs,
+  exact Process Map ↔ Estate Map resource links and durable dashboard request
+  provenance written before asynchronous planning begins.
+- Records token-usage authority in generic Work Parcel invocation audits and
+  keeps unavailable cost unavailable. Adds deterministic 1/6/20/55-job,
+  nested-fan-out, retry, baton, cache, memory, replay, redaction and access tests.
+- Physically qualifies a real eight-stage Work Parcel whose six meaningful root
+  Jobs overlap concurrently, with local Qwen model execution, real terminal
+  output advancing under WATCH, controlled retry/recovery, eight sealed batons,
+  aggregation, independent verification, viewer disconnect/reconnect, Replay,
+  graphical Compare and Process/Estate cross-linking. Map-originated mutation
+  remains deliberately deferred because no node-scoped governance adapter exists.
+
+- Adds the experimental provider-neutral Cross-Device Session Vault: exact
+  provider-native bytes are retained as immutable content-addressed evidence;
+  ordinary search and dashboard views use a redacted normalized index.
+- Adds Codex 0.154 JSONL discovery/capture as the first adapter, an explicit
+  capability matrix for incomplete providers, append/checkpoint lineage,
+  encrypted/local-only/metadata-only policy, retention metadata and fail-closed
+  integrity verification.
+- Adds incremental hash-preserving cross-node replication over the existing
+  governed SSH resource transport, retry state, exact repository/decision
+  attribution, exclusive continuation leases and a tamper-evident denial audit.
+- Adds governed continuation through the existing session and Work Parcel
+  abstractions. A sealed continuation binds native evidence, index, repository,
+  Work Parcel and accepted Your Memories sources; conflicting mutable
+  continuations are denied while read-only search remains available.
+- Extends the existing Your Memories `ProjectMemoryPort`; no parallel memory
+  database is introduced. Promotion requires explicit approval and independent
+  validation. Obsidian remains optional and removal does not disable Session
+  Vault search or provenance.
+- Adds authenticated Session Vault APIs, six operational dashboard views and
+  POE historical-evidence answers. Physical A–H qualification passes on
+  hpubuntu and macomarchy with a real Codex session and verified Work Parcel;
+  MSI Obsidian application access remains blocked by unavailable SSH
+  authentication, so the feature and 4.5 recommendation remain EXPERIMENTAL.
+- Introduces Morrow as the original chief steward and refreshes Cadence, Quill, Relay, Lumen, Rook and Verity with coordinated robotic artwork. Public names, grounded persona and social invocation are updated while legacy `poe` APIs, events, storage, saved conversations, approval hashes, crew roles and the designed voice remain compatible. Integrated with the completed 4.5 route-governance branch for experimental testing; historical physical evidence retains its original candidate identity.
+
+### Historical route-governance completion checkpoint (`544a4fb4…`)
+
+The following results remain verbatim historical evidence for that earlier
+candidate. The release-closure section above records their later disposition.
+
+- Adds one canonical provider-neutral `ProjectMemoryExchange` contract across writer, reader and consolidation flows. Application-schema validity and semantic reconstruction remain separate fail-closed gates; exact topology state, provenance, decision, rejection risk and next action are still required.
+- Repairs the bounded Pixel reader path after physical `finish_reason=length` evidence and repairs Windows OpenSSH execution by replacing channel-EOF framing with two explicit base64 records. Remote profile homes and raw transport output remain node-local and absent from evidence.
+- Physically qualifies both controller directions, two repeated Pixel Gemma 4 E4B→Qwen trials, both isolated MSI Codex profiles, and a POE-initiated `Cottage Plus/Luna → Lawrence Pro/Sol` cross-node continuation. All 12 requested cells have terminal classifications: nine PASS/FIXED, two Qwen→Pixel aliases UNSUPPORTED, and current GLM→Qwen BLOCKED_EXTERNAL.
+- Adds durable provider-neutral memory-route qualification records binding provider/account/model/node, runtime and exchange-contract versions, writer/reader eligibility, proven payload bounds, freshness, repair allowance and evidence. Known-incompatible routes fail closed or escalate only to an explicitly qualified pair.
+- Repeats strong-model consolidation with Qwen and Sol: average semantic reconstruction improves from 86.37% to 90.91%. A separate 15/15-per-route batch measurement again disproves an energy advantage for the current specialist, and no whole-node claim is made.
+- Adds checksummed completion evidence, independent verification and a fresh 1920×1080 production POE recording. The recording shows Qwen→Pixel rejected as unsupported, governed escalation to Qwen→Luna, live Work Parcel execution, sealed baton, tokens and independent verification. The route-governance candidate passes 1,161/1,161 automated tests; 4.5 remains experimental and no stable merge, tag, release or deployment is authorized.
+
 - Adds a separate governed deterministic-skill lifecycle: `OBSERVE → CANDIDATE → VALIDATE → PROMOTE → REUSE → REVALIDATE/INVALIDATE`. Promotion requires distinct verified source Work Parcels and explicit operator action; model output cannot install executable code.
 - Adds hash-identified pre-registered handlers, typed input/output contracts, assumptions, scope, freshness and invalidation evidence. Unknown fields, changed handler identity, stale evidence and failed verification fail closed to a recorded governed-model escalation.
 - Adds the energy-minimal execution hierarchy and a production read-only Work Parcel Action/Job for deterministic skill reuse. The Learned Specialists dashboard now distinguishes Your Memories, deterministic skills and learned model adaptations and explains selections/rejections without fabricated savings.
@@ -9,8 +190,8 @@
 - Preserves the negative specialist result: the current specialist remains more expensive than warm Qwen and has no training break-even. Specialist support remains available for tasks that cannot be represented deterministically.
 
 - Adds an experimental generic `ProjectMemoryPort` and structured Markdown backend for **Your Memories** portability qualification. Records are scoped, content-hashed, provenance-bound, freshness checked and advisory only; contradictory current facts fail closed and all rejection reasons remain visible. Obsidian is not a core dependency.
-- Adds reproducible physical cross-model qualification harnesses and a sealed POE/UX evidence recorder. Qwen, GLM-5.3-Flash, Codex/Luna, Sol and Pixel Gemma 4 E4B were invoked through existing provider abstractions; 5/12 requested writer→cold-reader cells passed. A complete POE-initiated Sol→Luna memory continuation passed with 24,444 reconciled tokens. Strong-model consolidation reduced size but regressed average reconstruction by 16.67 points, so the capability remains experimental.
-- Adds a release-gate follow-up that preserves and classifies all seven failed memory cells. Provider-neutral semantic field mapping plus one bounded repair resolved the historical Luna→Qwen and Qwen→Luna prompt/schema defects without accepting keyword-only output; GLM→Qwen and Pixel limitations remain failed evidence. MSI profiles remain authentication-blocked. A synchronized component-level residency series did not distinguish warm-idle power from noise, so no route-policy change or whole-node claim is made.
+- Adds reproducible physical cross-model qualification harnesses and a sealed POE/UX evidence recorder. At the initial evidence checkpoint, Qwen, GLM-5.3-Flash, Codex/Luna, Sol and Pixel Gemma 4 E4B were invoked through existing provider abstractions and 5/12 requested writer→cold-reader cells passed. A complete POE-initiated Sol→Luna memory continuation passed with 24,444 reconciled tokens. Initial strong-model consolidation reduced size but regressed average reconstruction by 16.67 points; later evidence above supersedes that measurement.
+- Adds an intermediate release-gate follow-up that preserves and classifies all seven initial failed memory cells. Provider-neutral semantic field mapping plus one bounded repair resolved the historical Luna→Qwen and Qwen→Luna prompt/schema defects without accepting keyword-only output. At that checkpoint GLM→Qwen and Pixel limitations remained failed and MSI profiles were authentication-blocked; later completion evidence above supersedes the MSI status. A synchronized component-level residency series did not distinguish warm-idle power from noise, so no route-policy change or whole-node claim is made.
 - Adds a fresh 1920×1080 live qualification observer recording over an actual POE-created Work Parcel. It polls durable runtime state while Qwen writes memory, Agent Control persists and seals batons, Luna reconstructs cold, and independent verification completes; it is explicitly evidence of genuine runtime activity rather than a replay or production-dashboard substitute.
 - Adds experimental scope-safe power telemetry, idle-baseline and incremental-Wh accounting, expected-total-energy routing, specialist training break-even, `/api/energy`, and a POE digest that cannot label estimated or incomparable reductions as measured.
 - Records a 75-run Intel-package + DRAM + NVIDIA-board comparison over three held-out routing intents. Warm Qwen passed 15/15 at 20.426 J per verified result; the retained specialist passed 15/15 at 22.674 J, cold specialist at 85.673 J, and deterministic no-LLM routing at 0.121 J. A real ProjectMemoryPort run passed 15/15 at 85.865 J and showed no energy benefit. Training consumed 5,232.820 incremental measured-component joules, so no positive break-even exists and the power-aware release gate is not met.
@@ -208,6 +389,7 @@
 - Final review makes persisted Evidence Packet SHA-256 and item-content hashes executable integrity gates and rejects post-capture symlink replacement before rehydration.
 
 ### Evidence-driven adaptive orchestration
+
 ## 4.2.0 (development)
 
 - Added the provider/model-neutral Transport Context Contract and canonical SHA-256 binding for qualifying Work Parcels and token-aware batons.
