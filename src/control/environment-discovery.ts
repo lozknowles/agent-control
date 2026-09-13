@@ -1878,6 +1878,8 @@ function reconcile(
             : before.kind === "ENDPOINT" &&
                 before.fingerprint !== nextFingerprint
               ? "ENDPOINT_CHANGED"
+              : before.health !== value.health
+                ? "CHANGED"
               : before.fingerprint !== nextFingerprint
                 ? "CHANGED"
                 : "UNCHANGED";

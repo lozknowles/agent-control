@@ -19,6 +19,9 @@ Local Runtime, Add Model and Import Configuration. A scan records non-secret
 inventory and provenance, compares it with the prior scan and labels resources
 `NEW`, `CHANGED`, `REMOVED`, `OFFLINE`, `AUTHENTICATION CHANGED`, `MODEL UPDATED`
 or `ENDPOINT CHANGED`.
+When a previously missing or offline resource is observed healthy again, it is
+`CHANGED`; recovery is never reported as unchanged merely because its static
+metadata fingerprint is the same.
 
 Local adapters inspect the controller OS, CPU, RAM, filesystems, accelerators,
 known inference endpoints, installed executables, configured providers and
