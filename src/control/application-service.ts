@@ -1,3 +1,8 @@
+import {usageProjection,usageAnswer,usageObservations,type UsageQuery} from './usage-projection.js';
+import {modelWatchPlan,type ModelWatchRuntime} from './model-watch-runtime.js';
+import {intelligenceHash} from './model-landscape.js';
+import type {LocalBenchmarkController} from './local-llm-benchmark-controller.js';
+import {projectRecordedJobProcess} from "./runtime-map.js";
 import {appendEvent, batonHealth, checkpoint, saveWorkspace, touchBaton, type LaneState, type Mode, type VerificationEvidence, type VerificationPolicy, type WorkspaceState} from '../state.js';
 import {ControlPlane} from '../control-plane.js';
 import {requestSelfRoute, type SelfRouteRequest} from './dashboard.js';
@@ -44,6 +49,8 @@ import {compareRuntimeMaps,projectRuntimeMap,type RuntimeMapProjection} from './
 import {DefaultDiscoveryProbe,type DiscoveryMode,type DiscoveryTesting,type EnvironmentDiscoveryRuntime} from './environment-discovery.js';
 import type {CapabilityAdapterDefinition,CapabilityAdapterRegistry,CapabilityAdapterState,CapabilityBinding} from './capability-adapter-registry.js';
 import {projectEstateMap} from './estate-map.js';
+import {projectJobEstateMap,type OperationalReadiness} from './job-estate-readiness.js';
+import type {DiscoveryScan} from './environment-discovery.js';
 import type {InstallationLifecycle,InstallationMode,InstallationRole} from './installation-lifecycle.js';
 import {createHash} from 'node:crypto';
 import {governedRequestOrigin} from './request-origin.js';
@@ -209,6 +216,9 @@ export class AgentControlService {
   private energyTelemetry?: EnergyTelemetryRuntime;
   private deterministicSkills?: DeterministicSkillRuntime;
   private environmentDiscovery?: EnvironmentDiscoveryRuntime;
+  private modelWatches?:ModelWatchRuntime;
+  private localBenchmark?:LocalBenchmarkController;
+  private jobLibraryReadiness?: (scan:DiscoveryScan,now:Date)=>OperationalReadiness[];
   private capabilityAdapters?:CapabilityAdapterRegistry;
   private installation?:InstallationLifecycle;
 
@@ -223,7 +233,10 @@ export class AgentControlService {
     this.verification = new VerificationService(state, persist);
   }
 
-  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; services?: RegisteredService[]; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService; tokenBatonRouting?: TokenAwareBatonRuntime; governedRetrieval?: GovernedRetrievalRuntime; codexNodeExecution?: CodexNodeExecutionPort; harnessEfficiency?: HarnessEfficiencyLedgerPort; workParcels?: WorkParcelCoordinator; modelRegistry?: ModelRegistry; parameterizedJobs?: ParameterizedJobEngine; identity?: IdentityControlPlane; defaultSessionId?: string; fastExecution?: FastExecutionLedgerPort; runtimeObservability?: RuntimeObservability; capabilityIntelligence?: CapabilityIntelligenceStore; modelIntelligence?: ModelIntelligenceLedger; qualificationSuite?: FrozenQualificationSuite; providerCatalog?: ProviderCatalogRuntime; adaptiveOrchestration?: AdaptiveOrchestrationRuntime; executionSessions?: ExecutionSessionRuntime; poe?: PoeRuntime; cacheExperts?: CacheAwareExpertRuntime; learnedSkills?: SkillLearningRuntime; deterministicSkills?:DeterministicSkillRuntime; energyTelemetry?: EnergyTelemetryRuntime; environmentDiscovery?:EnvironmentDiscoveryRuntime; capabilityAdapters?:CapabilityAdapterRegistry; installation?:InstallationLifecycle}) {
+  configureProjection(extras: {modelWatches?:ModelWatchRuntime;localBenchmark?:LocalBenchmarkController;jobLibraryReadiness?: (scan:DiscoveryScan,now:Date)=>OperationalReadiness[]; approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; services?: RegisteredService[]; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService; tokenBatonRouting?: TokenAwareBatonRuntime; governedRetrieval?: GovernedRetrievalRuntime; codexNodeExecution?: CodexNodeExecutionPort; harnessEfficiency?: HarnessEfficiencyLedgerPort; workParcels?: WorkParcelCoordinator; modelRegistry?: ModelRegistry; parameterizedJobs?: ParameterizedJobEngine; identity?: IdentityControlPlane; defaultSessionId?: string; fastExecution?: FastExecutionLedgerPort; runtimeObservability?: RuntimeObservability; capabilityIntelligence?: CapabilityIntelligenceStore; modelIntelligence?: ModelIntelligenceLedger; qualificationSuite?: FrozenQualificationSuite; providerCatalog?: ProviderCatalogRuntime; adaptiveOrchestration?: AdaptiveOrchestrationRuntime; executionSessions?: ExecutionSessionRuntime; poe?: PoeRuntime; cacheExperts?: CacheAwareExpertRuntime; learnedSkills?: SkillLearningRuntime; deterministicSkills?:DeterministicSkillRuntime; energyTelemetry?: EnergyTelemetryRuntime; environmentDiscovery?:EnvironmentDiscoveryRuntime; capabilityAdapters?:CapabilityAdapterRegistry; installation?:InstallationLifecycle}) {
+    if (extras.modelWatches) this.modelWatches=extras.modelWatches;
+    if (extras.localBenchmark) this.localBenchmark=extras.localBenchmark;
+    if (extras.jobLibraryReadiness) this.jobLibraryReadiness=extras.jobLibraryReadiness;
     if (extras.approvalCount) this.approvalCount = extras.approvalCount;
     if (extras.resources) this.resourceRows = structuredClone(extras.resources);
     if (extras.services) this.serviceRows = structuredClone(extras.services);
@@ -322,10 +335,20 @@ export class AgentControlService {
   jobQueue() { return this.mustJobRuntime().queueProjection(); }
   workers() { return this.mustJobRuntime().workers.list(); }
   executionSessionProjection() { return (this.executionSessions?.list() ?? []).map(session => ({id: session.id, incarnation: session.incarnation, state: session.state, adapterId: session.adapterId, scope: structuredClone(session.scope), command: session.command, cwd: session.cwd, ...(session.pid === undefined ? {} : {pid: session.pid}), capabilities: structuredClone(session.capabilities), control: structuredClone(session.control), activeAttachments: session.attachments.filter(item => !item.detachedAt).map(item => ({id: item.id, actorId: item.actorId, mode: item.mode, attachedAt: item.attachedAt})), createdAt: session.createdAt, startedAt: session.startedAt, updatedAt: session.updatedAt, ...(session.endedAt ? {endedAt: session.endedAt} : {}), ...(session.exitCode === undefined ? {} : {exitCode: session.exitCode}), ...(session.exitSignal === undefined ? {} : {exitSignal: session.exitSignal}), outputBytes: session.outputBytes, outputTruncated: session.outputTruncated, ...(session.lastOutputAt ? {lastOutputAt: session.lastOutputAt} : {}), ...(session.lastError ? {lastError: session.lastError} : {})})); }
-  runtimeMap(parcelId?:string,replayAt?:string):RuntimeMapProjection {const parcels=this.workParcels?.list()??[],parcel=parcelId?parcels.find(item=>item.id===parcelId):parcels.find(item=>!item.endedAt)??parcels[0];if(parcelId&&!parcel)throw new Error('work_parcel_missing');const sessions=this.executionSessions?.list({parcelId:parcel?.id})??[];return projectRuntimeMap({parcel,runs:this.jobRuntime?.ledger.list()??[],sessions,sessionEvents:id=>this.executionSessions?.events(id)??[],tokenRouting:this.tokenRouting(),retrieval:this.retrievalProjection(),...(replayAt?{replayAt}:{})});}
+  runtimeMap(parcelId?:string,replayAt?:string):RuntimeMapProjection {const parcels=this.workParcels?.list()??[],parcel=parcelId?parcels.find(item=>item.id===parcelId):parcels.find(item=>!item.endedAt)??parcels[0];if(parcelId&&!parcel)throw new Error('work_parcel_missing');const sessions=this.executionSessions?.list({parcelId:parcel?.id})??[];const map=projectRuntimeMap({parcel,runs:this.jobRuntime?.ledger.list()??[],sessions,sessionEvents:id=>this.executionSessions?.events(id)??[],tokenRouting:this.tokenRouting(),retrieval:this.retrievalProjection(),...(replayAt?{replayAt}:{})});return this.localBenchmark&&!replayAt?this.localBenchmark.project(map,parcel?.stages.flatMap(s=>s.runId?[s.runId]:[])??[]):map;}
+  runtimeRunMap(runId:string) {const run=this.jobRuntime?.ledger.list().find(r=>r.id===runId);if(!run)throw new Error('job_run_missing');const scan=this.environmentDiscovery?.projection().latest;const target=run.parameters.targetResourceId??run.parameters.target;const ids=scan?.items.some(i=>i.id===target)?[String(target)]:[];const map=projectRecordedJobProcess(run,ids);return this.localBenchmark?this.localBenchmark.project(map,[runId]):map;}
+  modelWatchProjection(){return this.mustModelWatches().projection();}
+  proposeModelWatch(input:unknown){return this.mustModelWatches().policies.propose(input);}
+  approveModelWatch(digest:string,actor:string){return this.mustModelWatches().policies.approve(digest,actor);}
+  revokeModelWatch(digest:string,actor:string){return this.mustModelWatches().policies.revoke(digest,actor);}
+  runModelWatch(digest:string,actor:string){const runtime=this.mustModelWatches();runtime.policies.approved(digest);const runKey=intelligenceHash({digest,actor,at:new Date().toISOString()});return this.workParcels!.submitApprovedPlan('Run approved model watch',actor,runKey,modelWatchPlan(digest,runKey));}
+  personalLeague(benchmark:string,comparison:string){return this.mustModelWatches().league.table(benchmark,comparison);}
+  definePersonalBenchmark(input:unknown){return this.mustModelWatches().league.define(input);}
+  private mustModelWatches(){if(!this.modelWatches)throw Error('model_watches_unconfigured');return this.modelWatches;}
+  estateHeartbeat(){const map=this.estateMap();return {observedAt:map.observedAt,scanId:map.parcelId,freshness:map.freshness,counts:(map as unknown as {estateCounts:unknown}).estateCounts};}
   compareRuntimeMaps(leftParcelId:string,rightParcelId:string){return compareRuntimeMaps(this.runtimeMap(leftParcelId),this.runtimeMap(rightParcelId));}
   environmentDiscoveryProjection(){return this.mustEnvironmentDiscovery().projection();}
-  estateMap(){return projectEstateMap(this.mustEnvironmentDiscovery().projection().latest);}
+  estateMap(){const scan=this.mustEnvironmentDiscovery().projection().latest,now=new Date();const map=scan&&this.jobLibraryReadiness?projectJobEstateMap(scan,this.jobLibraryReadiness(scan,now),this.jobRuntime?.ledger.list()??[],now):projectEstateMap(scan,now.toISOString());return this.localBenchmark?this.localBenchmark.project(map):map;}
   installationProjection(){return this.mustInstallation().projection();}
   inspectInstallation(mode:InstallationMode,role:InstallationRole){return this.mustInstallation().inspect(mode,role);}
   discoverEnvironment(input:{mode:DiscoveryMode;testing?:DiscoveryTesting;includeRemote?:boolean;includeMemory?:boolean}){return this.mustEnvironmentDiscovery().discover(input);}
@@ -399,6 +422,10 @@ export class AgentControlService {
   commandOutputMetrics(): TokenAwareOutputMetrics { return this.tokenAwareOutput?.metrics() ?? {commandsObserved: 0, commandsCompacted: 0, rgSearchesCompacted: 0, originalOutputBytes: 0, returnedOutputBytes: 0, estimatedTokensOriginal: 0, estimatedTokensReturned: 0, estimatedTokensSaved: 0, contextTokensAvoided: 0, expansionRequests: 0, fullResultRequests: 0, expansionTokensReturned: 0, byJob: {}, byLane: {}, byAgentModel: {}}; }
   tokenRouting(): TokenRoutingProjection { return this.tokenBatonRouting?.projection() ?? {schema: 'agent-control.token-aware-baton-routing/v1', observedAt: new Date().toISOString(), policy: {continuePercent: 60, prepareBatonPercent: 75, compactPercent: 85, handoffPercent: 90, sampleRetention: 240}, threads: [], parcels: [], decisions: [], contextLifecycle: []}; }
   retrievalProjection(): RetrievalProjection { return this.governedRetrieval?.projection() ?? {schema:'agent-control.governed-retrieval/v1',observedAt:new Date().toISOString(),policy:{enabled:false,maximumCalls:4,maximumEvidenceItems:12,maximumEvidenceTokens:8192,minimumConfidence:.55,requiredCoverage:.6,contextPressurePercent:75,contextPressureEvidenceFraction:.5,allowedLocality:['LOCAL'],progression:['EXACT','LEXICAL','SEMANTIC','HYBRID']},attempts:[],packets:[],totals:{queries:0,escalations:0,evidenceCount:0,evidenceTokens:0,rawBytesAvoided:0,retrievalLatencyMs:0,contextTokensSaved:0}}; }
+  usage(query:UsageQuery={}){return usageProjection(this.harnessEfficiency,this.energyProjection().executions,query);}
+  usageAnswer(query:UsageQuery={}){return usageAnswer(this.usage(query));}
+  usageObservations(query:UsageQuery={}){return usageObservations(this.usage(query));}
+  resetUsage(confirmation:string,digest:string){if(!this.harnessEfficiency?.resetUsage)throw Error('usage_reset_unavailable');return this.harnessEfficiency.resetUsage(confirmation,digest,'authenticated-operator');}
   harnessEfficiencyMetrics(): HarnessEfficiencyMetrics { return this.harnessEfficiency?.metrics() ?? new MemoryHarnessEfficiencyLedger().metrics(); }
   modelInvocations(options: {limit?: number; runId?: string; jobId?: string} = {}) {
     const limit = Math.min(1_000, Math.max(1, Number.isSafeInteger(options.limit) ? options.limit! : 200));

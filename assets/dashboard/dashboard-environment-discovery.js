@@ -46,6 +46,7 @@
     return `<article class="environment-metric"><span>${e(label)}</span><strong>${e(value)}</strong><small>${e(detail)}</small></article>`;
   }
   function render() {
+    renderProgress();
     const scan = current(),
       items = scan?.items ?? [];
     document.querySelector("#environment-summary").innerHTML = scan
@@ -230,8 +231,8 @@
       );
       await load();
       toast(`Discovery proposal ${action} accepted`);
-    } finally {
-      setBusy(false);
+    } catch(error){status.textContent=`Discovery could not finish: ${error.message}. Review the last confirmed observations.`;throw error;} finally {
+      clearInterval(poll);setBusy(false);
     }
   }
   function renderHistory() {
@@ -301,18 +302,28 @@
       .classList.toggle("environment-loading", value);
     updateProposalButton();
   }
+  function renderProgress() {
+    const progress=discovery.projection?.progress,host=document.querySelector('#environment-live-progress');
+    if(!host)return;host.hidden=!progress;if(!progress)return;
+    host.replaceChildren();const heading=document.createElement('h2');heading.textContent=progress.state==='RUNNING'?'Discovery in progress':`Discovery ${progress.state.toLowerCase()}`;host.append(heading);
+    const labels={'local-machine':'This computer','configured-resources':'Configured machines','mobile-edge':'Configured mobile resources','local-runtime':'Local runtimes and models','credentials':'Credential status only','agent-resources':'Agents and tools'};
+    for(const stage of progress.adapters){const row=document.createElement('p');row.textContent=`${labels[stage.id]??stage.id.replaceAll('-',' ')} — ${stage.state.toLowerCase()}${stage.state==='COMPLETE'?` · ${stage.found} observations`:''}`;host.append(row);}
+    if(progress.state==='RUNNING'){const count=document.createElement('p');count.textContent=`${progress.items.length} observations so far. Availability checks and the final inventory are still in progress.`;host.append(count);}
+  }
   async function load() {
     [discovery.projection, discovery.adapters] = await Promise.all([
-      request("/api/environment-discovery"),
-      request("/api/capability-adapters"),
+      request(new URL(location.href).searchParams.get('presentation')==='public'?'/api/environment-discovery?privacy=public':'/api/environment-discovery'),
+      new URL(location.href).searchParams.get('presentation')==='public'?Promise.resolve({records:[]}):request("/api/capability-adapters"),
     ]);
     render();
+    if(!discovery.busy)document.querySelector('#environment-scan-status').textContent=current()?`Last discovery ${current().status.toLowerCase()}. Inspect resources or run another scan.`:'Ready to discover this computer. Remote machines are checked only when you include them.';
   }
   async function scan(event) {
     event.preventDefault();
     setBusy(true);
     const status = document.querySelector("#environment-scan-status");
     status.textContent = "Discovery running through bounded adapters…";
+    const poll=setInterval(()=>request(new URL(location.href).searchParams.get('presentation')==='public'?'/api/environment-discovery?privacy=public':'/api/environment-discovery').then(value=>{discovery.projection=value;renderProgress();}).catch(()=>{}),400);
     try {
       const result = await request("/api/environment-discovery/scans", {
         method: "POST",
@@ -328,6 +339,7 @@
       status.textContent = `${result.status}: ${result.items.length} item(s), ${result.failures.length} contained adapter failure(s). No configuration was activated.`;
       render();
     } finally {
+      clearInterval(poll);
       setBusy(false);
     }
   }

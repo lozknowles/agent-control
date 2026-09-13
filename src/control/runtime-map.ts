@@ -1300,3 +1300,21 @@ export function compareRuntimeMaps(
     },
   });
 }
+
+/** A standalone native run uses the same projection and graph renderer as parcels. */
+export function projectRecordedJobProcess(run:RunRecord,resourceIds:string[],now=new Date().toISOString()):RuntimeMapProjection {
+  const map=projectRuntimeMap({runs:[],sessions:[],sessionEvents:()=>[],now});
+  const evidence=[{kind:'run',id:run.id}];
+  const detail={runId:run.id,estateResourceIds:resourceIds,libraryJobId:typeof run.parameters.libraryJobId==='string'?run.parameters.libraryJobId:null};
+  map.nodes.push({id:`run:${run.id}`,type:'job',label:run.jobId,state:state(run.status),startedAt:run.requestedAt,endedAt:run.endedAt,expandable:true,detail,evidence});
+  for(const step of run.steps) {
+    const id=`step:${run.id}:${step.id}`;
+    map.nodes.push({id,type:step.action.includes('verify')?'validation':'tool',label:step.id,subtitle:step.action,state:state(step.status),parentId:`run:${run.id}`,startedAt:step.startedAt,endedAt:step.endedAt,expandable:true,detail:{...detail,attempts:step.attempts.length},evidence});
+    map.edges.push(edge(`run:${run.id}`,id,'contains'));
+    for(const dependency of step.dependsOn)if(run.steps.some(s=>s.id===dependency))map.edges.push(edge(`step:${run.id}:${dependency}`,id,'dependency'));
+  }
+  map.parcelId=null;map.range={startedAt:run.requestedAt,endedAt:run.endedAt??null};
+  map.freshness={state:'LIVE',lastAuthoritativeAt:run.endedAt??run.requestedAt};
+  map.summary={...map.summary,nodes:map.nodes.length,edges:map.edges.length,running:map.nodes.filter(n=>n.state==='RUNNING').length,succeeded:map.nodes.filter(n=>n.state==='SUCCEEDED').length,failed:map.nodes.filter(n=>n.state==='FAILED').length,waiting:map.nodes.filter(n=>['WAITING','BLOCKED','QUEUED'].includes(n.state)).length};
+  return map;
+}

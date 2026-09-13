@@ -33,11 +33,17 @@ test('guided Work Parcel question retains documented parent and child relationsh
  const calls:string[]=[];
  const service=new PoeKnowledgeService({root:process.cwd(),version:'4.1.test',revision:()=>({commit:'a'.repeat(40),dirty:false}),configuration:()=>({}),sources:[],live:category=>{calls.push(category);return {channel:'poe/dashboard',configured:true,identity:'poe-original-male-hotelier-v2',readiness:'CONFIGURED_NOT_A_HEALTH_PROBE',whatsapp:'SEPARATE_CHANNEL_NOT_OBSERVED'};}});
  const answer=service.enrich('Explain social and voice channels, WhatsApp and OmniVoice availability.');
- const voice=answer.facts.find(fact=>fact.label==='Configured Morrow voice');
+ const voice=answer.facts.find(fact=>fact.label==='Configured Mallow voice');
  assert.ok(voice);assert.equal(voice.informationKind,'CONFIGURED_CAPABILITY');
  assert.match(String(voice.value),/poe-original-male-hotelier-v2/);
  assert.match(String(voice.value),/CONFIGURED_NOT_A_HEALTH_PROBE/);
  assert.match(String(voice.value),/SEPARATE_CHANNEL_NOT_OBSERVED/);
  assert.ok(calls.includes('voice'));
  calls.length=0;service.enrich('Explain Work Parcels');assert.ok(!calls.includes('voice'));
+});
+
+test('physical accounting coverage and cheaper questions resolve live usage evidence',()=>{
+ const calls:string[]=[];const service=new PoeKnowledgeService({root:process.cwd(),version:'4.6.test',revision:()=>({commit:'a'.repeat(40),dirty:false}),configuration:()=>({}),sources:[],live:category=>{calls.push(category);return {source:'CANONICAL_USAGE_PROJECTION',coverage:0.67};}});
+ for(const question of ['What was the measurement coverage?','Was the local run cheaper than the API?']){const answer=service.enrich(question);assert.ok(answer.facts.some(f=>f.label==='Live usage'&&String(f.value).includes('CANONICAL_USAGE_PROJECTION')));}
+ assert.deepEqual(calls,['usage','usage']);
 });

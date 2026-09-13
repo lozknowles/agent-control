@@ -55,7 +55,7 @@ test('authenticated summary recovery is owner-scoped, terminal-only and audio-id
 
 test('Morrow and legacy POE names share authenticated text and voice routing without starting work',async t=>{
   const s=setup(t);
-  for(const command of ['Morrow: what is running?','ask Morrow status','POE: status'])assert.equal(s.c.accepts(command),true);
+  for(const command of ['Mallow: what is running?','ask Mallow status','Morrow: what is running?','ask Morrow status','POE: status'])assert.equal(s.c.accepts(command),true);
   for(const command of ['Tomorrow: status','Morrowish: status','Ask Morrowish status'])assert.equal(s.c.accepts(command),false);
   s.receive('Morrow: what is running?','morrow-text');await s.c.tick();
   s.transcribe('Ask Morrow status');s.receive('audio','morrow-voice','audio');await s.c.tick();

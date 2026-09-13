@@ -1,3 +1,4 @@
+import {isAndroidUserspace,observeAndroid} from './android-environment.js';
 import { createHash, randomUUID } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
@@ -288,7 +289,7 @@ export interface EnvironmentDiscoveryOptions {
   createWorkParcel?: (proposal: DiscoveryProposal) => string;
   applyConfiguration?: (proposal: DiscoveryProposal) => void;
   onEvent?: (
-    type: "scan.started" | "scan.completed" | "proposal.changed",
+    type: "scan.started" | "scan.completed" | "scan.adapter.started" | "scan.adapter.completed" | "scan.adapter.failed" | "proposal.changed",
     payload: Record<string, unknown>,
   ) => void;
 }
@@ -386,6 +387,7 @@ export class DefaultDiscoveryProbe implements DiscoveryProbe {
 }
 
 export class EnvironmentDiscoveryRuntime {
+  private progress: {scanId:string;state:'RUNNING'|'COMPLETED'|'PARTIAL'|'FAILED';startedAt:string;updatedAt:string;adapters:Array<{id:string;state:'WAITING'|'CHECKING'|'COMPLETE'|'FAILED';found:number}>;items:DiscoveryObservation[]} | null = null;
   private state: StoreShape;
   private readonly clock: () => Date;
   private readonly environment: NodeJS.ProcessEnv;
@@ -412,6 +414,7 @@ export class EnvironmentDiscoveryRuntime {
       scans: this.state.scans.map((value) => structuredClone(value)),
       proposals: this.state.proposals.map((value) => structuredClone(value)),
       latest: this.state.scans.at(-1) ?? null,
+      progress: this.progress,
     });
   }
   scan(id: string) {
@@ -424,7 +427,12 @@ export class EnvironmentDiscoveryRuntime {
     if (!value) throw new Error("environment_discovery_proposal_missing");
     return structuredClone(value);
   }
-  async discover(input: {
+  async discover(input:{mode:DiscoveryMode;testing?:DiscoveryTesting;includeRemote?:boolean;includeMemory?:boolean}) {
+    if(this.progress?.state==='RUNNING')throw new Error('environment_discovery_already_running');
+    try{return await this.performDiscover(input);}catch(error){this.failProgress();throw error;}
+  }
+  private failProgress(){if(this.progress?.state==='RUNNING'){this.progress.state='FAILED';this.progress.updatedAt=now(this.clock);}}
+  private async performDiscover(input: {
     mode: DiscoveryMode;
     testing?: DiscoveryTesting;
     includeRemote?: boolean;
@@ -441,6 +449,7 @@ export class EnvironmentDiscoveryRuntime {
       id = `discovery-${randomUUID()}`,
       config = structuredClone(this.options.config()),
       previous = this.state.scans.at(-1);
+    this.progress={scanId:id,state:'RUNNING',startedAt,updatedAt:startedAt,adapters:this.adapters.map(adapter=>({id:adapter.id,state:'WAITING',found:0})),items:[]};
     this.options.onEvent?.("scan.started", {
       scanId: id,
       mode: input.mode,
@@ -469,9 +478,11 @@ export class EnvironmentDiscoveryRuntime {
     const discovered: DiscoveryObservation[] = [];
     const failures: DiscoveryScan["failures"] = [];
     for (const adapter of this.adapters) {
+      const stage=this.progress.adapters.find(item=>item.id===adapter.id)!;stage.state='CHECKING';this.progress.updatedAt=now(this.clock);this.options.onEvent?.('scan.adapter.started',{scanId:id,adapter:adapter.id});
       try {
-        discovered.push(...(await adapter.discover(context)));
+        const found=await adapter.discover(context);discovered.push(...found);stage.found=found.length;stage.state='COMPLETE';this.progress.items=safe(dedupe(discovered).map(normaliseObservation));this.progress.updatedAt=now(this.clock);this.options.onEvent?.('scan.adapter.completed',{scanId:id,adapter:adapter.id,found:found.length});
       } catch (error) {
+        stage.state='FAILED';this.progress.updatedAt=now(this.clock);this.options.onEvent?.('scan.adapter.failed',{scanId:id,adapter:adapter.id});
         failures.push({
           adapter: adapter.id,
           classification: "FAILED",
@@ -508,6 +519,7 @@ export class EnvironmentDiscoveryRuntime {
       JSON.stringify(scan),
       "environment_discovery_secret_forbidden",
     );
+    this.progress.state=scan.status;this.progress.updatedAt=completedAt;
     this.state.scans.push(scan);
     this.state.scans = this.state.scans.slice(-25);
     this.persist();
@@ -653,11 +665,13 @@ export class EnvironmentDiscoveryRuntime {
   }
 }
 
+function safeNetworkInterfaces(){try{return os.networkInterfaces();}catch{return {};}}
+
 export class LocalMachineDiscoveryAdapter implements DiscoveryAdapter {
   id = "local-machine";
   async discover(context: DiscoveryAdapterContext) {
     const cpus = os.cpus(),
-      network = Object.entries(os.networkInterfaces()).flatMap(
+      network = Object.entries(safeNetworkInterfaces()).flatMap(
         ([name, addresses]) =>
           (addresses ?? [])
             .filter((address) => !address.internal)
@@ -669,7 +683,7 @@ export class LocalMachineDiscoveryAdapter implements DiscoveryAdapter {
         release: os.release(),
         architecture: os.arch(),
         cpuModel: cpus[0]?.model ?? "unknown",
-        cpuLogical: cpus.length,
+        cpuLogical: cpus.length || null,
         totalMemoryBytes: os.totalmem(),
         availableMemoryBytes: os.freemem(),
         networkInterfaces: network.join(","),
@@ -682,11 +696,13 @@ export class LocalMachineDiscoveryAdapter implements DiscoveryAdapter {
     } catch {
       attributes.diskAvailableBytes = null;
     }
+    const android = isAndroidUserspace() ? await observeAndroid(context.probe) : null;
+    if(android)Object.assign(attributes,{deploymentProfile:android.profile,platform:'android',computeClass:'MOBILE_LOCAL',androidVersion:android.androidVersion,cpuModel:android.cpu,availableMemoryBytes:android.availableRamBytes,batteryPercent:android.batteryPercent,charging:android.charging,thermalCelsius:android.thermalCelsius,metered:android.metered,backgroundReliability:android.backgroundReliability,accelerator:android.accelerator,controllerLocation:'this-device',localModelRequired:false});
     const values: DiscoveryObservation[] = [
       item(
         "MACHINE",
         "controller",
-        os.hostname(),
+        android?.label ?? os.hostname(),
         "HEALTHY",
         "DISCOVERED",
         attributes,
@@ -798,8 +814,8 @@ export class ConfiguredResourceDiscoveryAdapter implements DiscoveryAdapter {
           },
           this.id,
           remote ? "configured-managed-node" : "configured-local-resource",
-          snapshot ? "AUTHORITATIVE" : "CONFIGURED",
-          context.observedAt,
+          snapshot?.lastProbeAt ? "AUTHORITATIVE" : "CONFIGURED",
+          snapshot?.lastProbeAt ?? context.observedAt,
           resource.id,
         ),
       );
@@ -854,7 +870,7 @@ export class ConfiguredResourceDiscoveryAdapter implements DiscoveryAdapter {
             `${provider.id}:endpoint`,
             `${provider.name ?? provider.id} endpoint`,
             provider.enabled === false ? "UNAVAILABLE" : endpointHealth,
-            endpointHealth === "HEALTHY" ? "QUALIFIED" : "DISCOVERED",
+            "DISCOVERED",
             {
               scope: endpointScope(provider.baseUrl),
               protocol: new URL(provider.baseUrl).protocol,
@@ -1249,6 +1265,7 @@ export class LocalRuntimeDiscoveryAdapter implements DiscoveryAdapter {
     }
     if (
       context.mode !== "FULL_DISCOVERY" &&
+      context.mode !== "QUICK_RESCAN" &&
       context.mode !== "FIRST_RUN" &&
       context.mode !== "ADD_LOCAL_RUNTIME" &&
       context.mode !== "ADD_MODEL"
@@ -1280,9 +1297,10 @@ export class LocalRuntimeDiscoveryAdapter implements DiscoveryAdapter {
           `controller:${endpoint.id}:endpoint`,
           `${endpoint.id} local endpoint`,
           "HEALTHY",
-          "QUALIFIED",
+          "DISCOVERED",
           {
             scope: "loopback",
+            endpoint: endpoint.url,
             status: response.status,
             runtime: endpoint.id,
             resourceClasses: "MODEL_RUNTIME,TOOL_SERVER",
@@ -1310,6 +1328,7 @@ export class LocalRuntimeDiscoveryAdapter implements DiscoveryAdapter {
               parameterSize: model.parameterSize ?? "unreported",
               quantisation: model.quantisation ?? "unreported",
               endpointScope: "loopback",
+              endpoint: endpoint.url,
               resourceClasses: "MODEL",
             },
             this.id,
@@ -1335,7 +1354,7 @@ export class CredentialDiscoveryAdapter implements DiscoveryAdapter {
         ],
         presence = credentialPresence(providerRefs, context.environment),
         providerAuthentication: AuthenticationState = presence.available
-          ? "AUTHENTICATED"
+          ? "FOUND"
           : presence.configured
             ? "AUTHENTICATION_REQUIRED"
             : "NOT_CONFIGURED";
@@ -1349,7 +1368,7 @@ export class CredentialDiscoveryAdapter implements DiscoveryAdapter {
             : presence.configured
               ? "UNAVAILABLE"
               : "UNKNOWN",
-          presence.available ? "QUALIFIED" : "DISCOVERED",
+          "DISCOVERED",
           {
             authenticationState: providerAuthentication,
             available: presence.available,
@@ -1378,7 +1397,7 @@ export class CredentialDiscoveryAdapter implements DiscoveryAdapter {
               : account.qualification?.state === "DEGRADED"
                 ? "EXPIRED"
                 : accountPresence.available
-                  ? "AUTHENTICATED"
+                  ? "FOUND"
                   : accountPresence.configured
                     ? "AUTHENTICATION_REQUIRED"
                     : "NOT_CONFIGURED";
@@ -1387,16 +1406,12 @@ export class CredentialDiscoveryAdapter implements DiscoveryAdapter {
             "CREDENTIAL",
             `${provider.id}:${account.id}:credential`,
             `${provider.name ?? provider.id} / ${account.label}`,
-            authenticationState === "AUTHENTICATED"
-              ? "HEALTHY"
-              : ["INVALID", "EXPIRED"].includes(authenticationState)
+            ["INVALID", "EXPIRED"].includes(authenticationState)
                 ? "UNAVAILABLE"
-                : authenticationState === "AUTHENTICATION_REQUIRED"
+                : accountPresence.available || authenticationState === "AUTHENTICATION_REQUIRED"
                   ? "NEEDS_QUALIFICATION"
                   : "UNKNOWN",
-            authenticationState === "AUTHENTICATED"
-              ? "QUALIFIED"
-              : "DISCOVERED",
+            "DISCOVERED",
             {
               authenticationState,
               available: accountPresence.available,

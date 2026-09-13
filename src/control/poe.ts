@@ -1,3 +1,5 @@
+import {isLocalBenchmarkObjective} from './local-llm-benchmark.js';
+import type {draftLocalBenchmarkObjective} from './local-llm-benchmark-planner.js';
 import {HOST_IDENTITY, hostGreeting} from './host-identity.js';
 import type {PoeOperatorRuntime, InformationKind} from './poe-operator.js';
 import {prepareSpokenText, speechContentCoverage} from './speech-text.js';
@@ -107,7 +109,7 @@ export interface PoeBenchmarkExecutionPort {submit(input: {proposal: PoeBenchmar
 export interface PoeEvent {type: 'conversation.changed' | 'proposal.changed' | 'speech.changed' | 'interrupted'; at: string; conversationId: string; proposalId?: string; state: PoeState; detail: Record<string, unknown>;}
 
 interface PoeSnapshot {schema: 'agent-control.poe-store/v1'; conversations: PoeConversation[]; proposals: PoeBenchmarkProposal[]; events: PoeEvent[];}
-interface PoeOptions {regression?:()=>unknown;operator?: PoeOperatorRuntime; file?: string; clock?: () => string; evidence: PoeEvidencePort; sessionVault?:PoeSessionVaultPort; responseModel?: PoeResponseModelPort; benchmark?: PoeBenchmarkExecutionPort; speech?: SpeechProvider; recognition?: SpeechRecognitionProvider; voice?: VoiceIdentity; onEvent?: (event: PoeEvent) => void;}
+export interface PoeOptions {localBenchmarkUnavailable?:()=>Promise<string>;modelWatches?:{draft:(objective:string)=>unknown;brief:()=>unknown};localBenchmark?:{draft:(objective:string)=>ReturnType<typeof draftLocalBenchmarkObjective>};regression?:()=>unknown;operator?: PoeOperatorRuntime; file?: string; clock?: () => string; evidence: PoeEvidencePort; sessionVault?:PoeSessionVaultPort; responseModel?: PoeResponseModelPort; benchmark?: PoeBenchmarkExecutionPort; speech?: SpeechProvider; recognition?: SpeechRecognitionProvider; voice?: VoiceIdentity; onEvent?: (event: PoeEvent) => void;}
 
 const MAX_TURNS = 500, MAX_EVENTS = 1_000;
 const label = (route: PoeRouteIdentity) => `${route.providerId}/${route.accountProfileId ?? 'default'}/${route.modelId}${route.providerModel?' ['+route.providerModel+']':''}@${route.nodeId}`;
@@ -154,6 +156,21 @@ export class PoeRuntime {
     if (input.channel && input.channel !== conversation.channel) throw new Error('poe_channel_provenance_mismatch');
     this.setState(conversation,'LISTENING',{reason:'operator turn accepted'});
     const operatorTurn = this.addTurn(conversation,{actor:'operator',channel:conversation.channel,modality:input.modality ?? 'text',text,authority:'OPERATOR',contentTrust:input.contentTrust ?? 'OPERATOR_REQUEST',references:input.reference?[input.reference]:[],evidence:[]});
+    if((input.contentTrust??'OPERATOR_REQUEST')==='OPERATOR_REQUEST'&&this.options.modelWatches&&/keep an eye|watch.*model|interesting overnight|changed while.*slept/i.test(text)){
+      const isWatch=/keep an eye|watch.*model/i.test(text),value=isWatch?this.options.modelWatches.draft(text):this.options.modelWatches.brief();
+      const reply=this.addTurn(conversation,{actor:'poe',channel:conversation.channel,modality:'text',text:`${isWatch?'Proposed Model Watch. Review and approve the complete policy in Model Watches before automation starts.':'Recorded overnight intelligence. No result implies no established winner.'}\n\n${JSON.stringify(value,null,2)}`,authority:'AGENT_CONTROL',contentTrust:'AGENT_CONTROL_EVIDENCE',references:[],evidence:[]});this.save();return {conversation:clone(conversation),turn:clone(reply),operatorTurn:clone(operatorTurn),evidence:{title:'Model Watch',summary:reply.text,facts:[],related:[]}};
+    }
+    if((input.contentTrust??'OPERATOR_REQUEST')==='OPERATOR_REQUEST'&&isLocalBenchmarkObjective(text)&&!this.options.localBenchmark) {
+      const detail=await this.options.localBenchmarkUnavailable?.()??'No qualified local benchmark execution adapter is configured. Discover this device, choose a compatible runtime and review the workload and resource limits before provisioning.';
+      const reply=this.addTurn(conversation,{actor:'poe',channel:conversation.channel,modality:'text',text:'Agent Control can run local deterministic jobs without a model. '+detail+' No model has been downloaded or benchmarked by this request.',authority:'AGENT_CONTROL',contentTrust:'AGENT_CONTROL_EVIDENCE',references:[],evidence:[{label:'Local benchmark execution',value:'CONFIGURATION_REQUIRED',authority:'AGENT_CONTROL',evidence:[]}]});
+      this.setState(conversation,'EXPLAINING',{reason:'local benchmark capability unavailable'});this.save();return {conversation:clone(conversation),turn:clone(reply),operatorTurn:clone(operatorTurn),evidence:{title:'Local benchmark readiness',summary:reply.text,facts:reply.evidence,related:[]}};
+    }
+    if((input.contentTrust??'OPERATOR_REQUEST')==='OPERATOR_REQUEST'&&isLocalBenchmarkObjective(text)&&this.options.localBenchmark) {
+      const draft=this.options.localBenchmark.draft(text),proposal=this.proposeBenchmark(conversation.id,draft.proposal);
+      conversation.lastReference={kind:'benchmark',id:proposal.id};
+      const reply=this.addTurn(conversation,{actor:'poe',channel:conversation.channel,modality:'text',text:`Mallow worked example: Find the best local LLM for your workload.\n\n${draft.reviewSummary}\n\nSpecification ${draft.specSha256}\n${JSON.stringify(draft.spec,null,2)}\n\nThis is a proposal. No acquisition, runtime start, or production routing change has occurred.`,authority:'AGENT_CONTROL',contentTrust:'AGENT_CONTROL_EVIDENCE',references:[{kind:'benchmark',id:proposal.id}],evidence:[{label:'Readiness',value:draft.readiness.state,authority:'AGENT_CONTROL',evidence:[draft.specSha256]},{label:'Immutable benchmark specification',value:draft.specSha256,authority:'AGENT_CONTROL',evidence:[draft.specSha256]}]});
+      this.save();return {conversation:clone(conversation),turn:clone(reply),operatorTurn:clone(operatorTurn),proposal:clone(proposal),evidence:{title:'Mallow benchmark proposal',summary:draft.reviewSummary,facts:reply.evidence,related:reply.references}};
+    }
     let reference = input.reference ?? inferReference(text) ?? conversation.lastReference;
     const draftId=[...conversation.proposalIds].reverse().find(id=>this.proposals.get(id)?.state==='DRAFT'),amendment=(input.contentTrust??'OPERATOR_REQUEST')==='OPERATOR_REQUEST'&&draftId?draftAmendment(text,this.mustProposal(draftId)):undefined;
     if(draftId&&amendment){const draft=this.mustProposal(draftId);this.reviseBenchmark(draftId,draft.revision,amendment);reference={kind:'benchmark',id:draftId,label:'updated draft'};}
