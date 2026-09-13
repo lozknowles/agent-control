@@ -21,7 +21,7 @@ node scripts/android-standalone.mjs install
 node scripts/android-standalone.mjs start
 ```
 
-If compatible packages already exist, retain them; physical qualification retained the installed Node 26 package. The check inspects Android, architecture, storage, Git origin and tracked-source cleanliness. Installation disables package lifecycle scripts, probes TypeScript and SQLite, initializes private state and preserves existing configuration. Git origin/commit checks are provenance checks, not release signatures. Dependencies follow manifest ranges because the repository has no lockfile.
+If compatible packages already exist, retain them; physical qualification retained the installed Node 26 package. The check inspects Android, architecture, storage, Git origin and tracked-source cleanliness. Installation disables package lifecycle scripts, probes TypeScript and SQLite, initializes private state and preserves existing configuration. Git origin/commit checks are provenance checks, not release signatures. This integration now installs pinned dependencies with `npm ci --ignore-scripts` when the committed lockfile exists. The original physical Pixel run predates this lockfile; its package versions remain recorded separately. Older no-lock checkouts retain the previous installation fallback.
 
 Open **http://127.0.0.1:4310/** on the phone. Keep Termux running. Authenticate using the private value stored in `.agent-control/android-operator-token`, read locally in Termux. Never share it, capture it in screenshots or put it in a URL.
 

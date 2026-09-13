@@ -18,8 +18,15 @@ if($dirty) { throw 'repository_dirty_no_changes_made' }
 if($LASTEXITCODE -ne 0) { throw 'repository_head_unavailable' }
 $dashboard=$(if(Test-Path -LiteralPath (Join-Path $Target 'assets/dashboard/index.html') -PathType Leaf){'available'}else{'missing'})
 if($dashboard -ne 'available') { throw 'dashboard_missing_no_changes_made' }
+$dependencyState='unchecked'
 if($Mode -eq 'install') {
-  & npm --prefix $Target install --ignore-scripts --no-package-lock
+  if(Test-Path -LiteralPath (Join-Path $Target 'package-lock.json') -PathType Leaf) {
+    & npm --prefix $Target ci --ignore-scripts --no-audit --no-fund
+    $dependencyState='installed-locked'
+  } else {
+    & npm --prefix $Target install --ignore-scripts --no-package-lock
+    $dependencyState='installed-no-lock'
+  }
   if($LASTEXITCODE -ne 0) { throw 'dependency_install_failed' }
   & npm --prefix $Target run init
   if($LASTEXITCODE -ne 0) { throw 'configuration_initialization_failed' }
@@ -29,7 +36,7 @@ if($Mode -eq 'install') {
   mode=$Mode
   role=$Role
   repository='verified'
-  dependencies=$(if($Mode -eq 'install'){'installed-no-lock'}else{'unchecked'})
+  dependencies=$dependencyState
   configuration=$(if($Mode -eq 'install'){'initialized-or-preserved'}else{'unchecked'})
   dashboard=$dashboard
   next='npm run check, then npm run web'

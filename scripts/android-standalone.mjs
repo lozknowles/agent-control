@@ -33,7 +33,7 @@ export async function main(args=process.argv.slice(2)) {
   if(git('status','--porcelain','--untracked-files=no')) throw Error('Tracked source changes require a reviewed commit');
   if(mode==='check') {console.log(JSON.stringify({...facts,commit,origin,trust:'Git commit and canonical origin; not a release signature'})); return 0;}
   if(mode==='install') {
-    if(spawnSync('npm',['install','--ignore-scripts','--no-package-lock','--no-audit','--no-fund'],{cwd:root,stdio:'inherit'}).status!==0) throw Error('Dependency installation failed');
+    if(spawnSync('npm',(fs.existsSync(path.join(root,'package-lock.json'))?['ci','--ignore-scripts','--no-audit','--no-fund']:['install','--ignore-scripts','--no-package-lock','--no-audit','--no-fund']),{cwd:root,stdio:'inherit'}).status!==0) throw Error('Dependency installation failed');
     if(spawnSync(process.execPath,['--import','tsx','-e','import("node:sqlite"); console.log("Runtime dependencies ready")'],{cwd:root,stdio:'inherit'}).status!==0) throw Error('Runtime probe failed');
     fs.mkdirSync(state,{recursive:true,mode:0o700});
     if(spawnSync(process.execPath,['scripts/init-config.mjs'],{cwd:root,stdio:'inherit',env:{...process.env,AGENT_CONTROL_STATE_DIR:state,AGENT_CONTROL_CONFIG:path.join(state,'config.json')}}).status!==0) throw Error('Configuration initialization failed');

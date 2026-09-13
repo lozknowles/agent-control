@@ -2,7 +2,7 @@
 
 ## Natural language method
 
-Ask Mallow: “Find the best local model for Python repair on this machine. Correctness matters most. Only permissive licences; under 8 GB.” The existing POE conversation host retains its installed persona name; Mallow is this workflow's example label.
+Ask Mallow: “Find the best local model for Python repair on this machine. Correctness matters most. Only permissive licences; under 8 GB.” Mallow is the product's interactive guide.
 
 The opt-in local benchmark controller returns the complete immutable specification, its digest, readiness and provisioning summary. This bounded parser supports Python function repair, artifact size, permissive licences, selected model families and attempt counts. Other workloads require an operator-supplied task/validator template; unsupported families or GPU execution fail closed. It does not silently search the entire model market or infer arbitrary constraints.
 

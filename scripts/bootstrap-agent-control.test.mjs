@@ -8,10 +8,11 @@ import test from 'node:test';
 const repositoryRoot = path.resolve(import.meta.dirname, '..');
 const bootstrap = path.join(repositoryRoot, 'scripts/bootstrap-agent-control.sh');
 
-test('published Linux bootstrap is executable and has no lockfile or build assumption', () => {
+test('published Linux bootstrap is executable and retains the no-build path', () => {
   assert.notEqual(fs.statSync(bootstrap).mode & 0o111, 0);
   const source = fs.readFileSync(bootstrap, 'utf8');
-  assert.doesNotMatch(source, /package-lock\.json|\bnpm --prefix "\$target" ci\b|run build/);
+  assert.doesNotMatch(source, /run build/);
+  assert.match(source, /ci --ignore-scripts --no-audit --no-fund/);
 });
 
 test('published Android guide provides fresh Termux prerequisites before clone', () => {
@@ -26,7 +27,7 @@ test('published Android guide provides fresh Termux prerequisites before clone',
   assert.match(deployment, /Android guide\]\(\.\.\/android\/README\.md#fresh-termux-prerequisites\)/);
 });
 
-test('published Linux bootstrap installs and initializes a clean project without a lockfile or build script', () => {
+for (const locked of [false,true]) test(`published Linux bootstrap initializes and preserves configuration with locked=${locked}`, () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-bootstrap-'));
   try {
     fs.mkdirSync(path.join(root, 'assets/dashboard'), {recursive: true});
@@ -47,6 +48,7 @@ test('published Linux bootstrap installs and initializes a clean project without
       "const target = '.agent-control/config.json';",
       "if (!fs.existsSync(target)) fs.writeFileSync(target, '{}\\n');",
     ].join('\n'));
+    if(locked)execFileSync('npm',['install','--package-lock-only','--ignore-scripts','--no-audit','--no-fund'],{cwd:root});
     execFileSync('git', ['-C', root, 'init']);
     execFileSync('git', ['-C', root, 'config', 'user.email', 'fixture@example.invalid']);
     execFileSync('git', ['-C', root, 'config', 'user.name', 'Fixture']);
@@ -72,10 +74,10 @@ test('published Linux bootstrap installs and initializes a clean project without
         root,
       ], {encoding: 'utf8'});
       const result = JSON.parse(output.slice(output.lastIndexOf('{')));
-      assert.equal(result.dependencies, 'installed-no-lock');
+      assert.equal(result.dependencies, locked?'installed-locked':'installed-no-lock');
       assert.equal(result.configuration, 'initialized-or-preserved');
       assert.equal(result.dashboard, 'available');
-      assert.equal(fs.existsSync(path.join(root, 'package-lock.json')), false);
+      assert.equal(fs.existsSync(path.join(root, 'package-lock.json')), locked);
       assert.equal(fs.readFileSync(path.join(root, '.agent-control/config.json'), 'utf8'), '{}\n');
       assert.equal(execFileSync('git', ['-C', root, 'status', '--porcelain'], {encoding: 'utf8'}), '');
     }
@@ -88,7 +90,8 @@ test('Windows bootstrap mirrors no-lock install and initialization without a bui
   const source = fs.readFileSync(path.join(repositoryRoot, 'scripts/bootstrap-agent-control.ps1'), 'utf8');
   assert.match(source, /install --ignore-scripts --no-package-lock/);
   assert.match(source, /run init/);
-  assert.doesNotMatch(source, /package-lock\.json|\bci\b|run build/);
+  assert.doesNotMatch(source, /run build/);
+  assert.match(source, /ci --ignore-scripts --no-audit --no-fund/);
 });
 
 test('bootstrap fails closed before install when the dashboard product surface is absent', () => {

@@ -88,7 +88,8 @@
     "qualify:runtime-map": "node --import tsx scripts/qualify-runtime-map-4.5.ts",
     "qualify:environment-discovery": "node --import tsx scripts/qualify-environment-discovery-4.5.ts",
     "check:showcase": "node --import tsx scripts/check-showcase.ts",
-    "check:showcase:structure": "node --import tsx scripts/check-showcase.ts --structure"
+    "check:showcase:structure": "node --import tsx scripts/check-showcase.ts --structure",
+    "check:release-rc": "node --import tsx scripts/check-release-rc.ts"
   },
   "dependencies": {
     "@agentclientprotocol/sdk": "1.4.0",

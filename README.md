@@ -2,7 +2,7 @@
 
 Discover your AI tools, see what is available, and follow approved work from request to verified result.
 
-**Current stable release: [4.5.1](https://github.com/lozknowles/agent-control/releases/tag/v4.5.1).** This branch is **4.6.0-rc.1**, an unreleased candidate. It is **not ready for the complete 4.6 release**; see the [release assessment](docs/public-release-readiness-4.6.md).
+**Current stable release: [4.5.1](https://github.com/lozknowles/agent-control/releases/tag/v4.5.1).** This branch is **4.6.0-rc.1**, an unreleased candidate. Core release and showcase readiness are assessed separately in the [current integration report](docs/release-integration-4.6.md). See the prominent [4.6 Known Limitations](docs/known-limitations-4.6.md).
 
 [Install Agent Control](docs/installation-first-run.md) · [Documentation](docs/index.md) · [Upgrade](docs/upgrade-4.6.md) · [Release notes](docs/release-notes-4.6.0-rc.1.md)
 
@@ -10,9 +10,11 @@ Discover your AI tools, see what is available, and follow approved work from req
 
 ## Android standalone preview
 
+**Android phone → Termux → Agent Control → local dashboard → Discovery → Estate → local job.**
+
 Run the Agent Control controller on an Android phone in Termux, with a local browser dashboard and governed local jobs. No Agent Control APK, root or remote controller is required for the verified base path. Mallow and the crew remain available.
 
-**Base installation: PASS WITH LIMITATIONS. Android model download, inference and benchmark league: blocked and not yet qualified.**
+**Base installation: PASS WITH LIMITATIONS. Optional Android model download, inference and benchmark league: unfinished, unqualified and non-blocking for the base release.**
 
 [Run Agent Control on Android](docs/android-standalone.md) · [Physical qualification](docs/android-standalone-qualification.md)
 

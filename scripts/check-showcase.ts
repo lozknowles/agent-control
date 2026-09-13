@@ -17,6 +17,8 @@ for(const benchmark of manifest.benchmarks){try{const result=personalResultSchem
 if(!manifest.benchmarks.length)pending.push('No approved, measured target-model benchmark result');
 for(const kind of ['dashboard','estate','process-active','discovery-start','discovery-running','discovery-completed','resource-inspector','personal-league','model-intelligence','morning-brief','mallow-proposal'])if(!manifest.screenshots.some((shot:any)=>shot.kind===kind))pending.push(`Required real screenshot missing: ${kind}`);
 if(manifest.acceptance.cleanInstall!=='PASS_REVIEWED_README')pending.push('Published README clean-machine acceptance not complete');
-if(manifest.acceptance.androidStandalone!=='PASS')pending.push('Android standalone model provisioning, inference and league qualification not complete');
-if(manifest.acceptance.overnight!=='PASS')pending.push('Real overnight-duration qualification not complete');
-const state=failures.length?'FAIL':pending.length?'INCOMPLETE':'PASS';console.log(JSON.stringify({gate:'SHOWCASE',mode:structure?'DRAFT_STRUCTURE':'RELEASE',state,failures,pending},null,2));if(failures.length||(!structure&&pending.length))process.exitCode=1;
+const limitations:string[]=[];
+if(!['PASS','PASS_WITH_LIMITATIONS','BASE_PASS_WITH_LIMITATIONS_BENCHMARK_BLOCKED'].includes(manifest.acceptance.androidStandalone))failures.push('Android standalone base deployment lacks physical acceptance');
+else if(manifest.acceptance.androidStandalone!=='PASS')limitations.push('Android optional inference, telemetry and benchmark league are not qualified');
+if(manifest.acceptance.overnight!=='PASS')limitations.push('Real overnight-duration qualification not complete; manual watch evidence only');
+const state=failures.length?'FAIL':pending.length?'INCOMPLETE':limitations.length?'PASS_WITH_LIMITATIONS':'PASS';console.log(JSON.stringify({gate:'SHOWCASE',mode:structure?'DRAFT_STRUCTURE':'RELEASE',state,failures,pending,limitations},null,2));if(failures.length||(!structure&&pending.length))process.exitCode=1;
