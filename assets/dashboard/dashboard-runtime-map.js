@@ -141,7 +141,7 @@
     try {
       if (rt.surface === "estate") {
         const previous = rt.projection;
-        rt.projection = await get("/api/estate-map");
+        rt.projection = await get(new URL(location.href).searchParams.get('presentation')==='public'?'/api/estate-map?privacy=public':'/api/estate-map');
         rt.estateProjection = rt.projection;
         if (!previous || previous.parcelId !== rt.projection.parcelId) {
           rt.collapsed.clear();
@@ -653,7 +653,7 @@
   async function viewEstateResource(node) {
     if(node.detail.estateResourceIds?.length){await openEstate(node.detail.estateResourceIds[0]);return;}
     const identity = node.detail.resourceIdentity || {};
-    rt.estateProjection = await get("/api/estate-map");
+    rt.estateProjection = await get(new URL(location.href).searchParams.get('presentation')==='public'?'/api/estate-map?privacy=public':'/api/estate-map');
     const target =
       rt.estateProjection.nodes.find((candidate) =>
         exactResourceMatch(identity, candidate),

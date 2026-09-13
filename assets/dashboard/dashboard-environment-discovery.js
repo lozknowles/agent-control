@@ -312,8 +312,8 @@
   }
   async function load() {
     [discovery.projection, discovery.adapters] = await Promise.all([
-      request("/api/environment-discovery"),
-      request("/api/capability-adapters"),
+      request(new URL(location.href).searchParams.get('presentation')==='public'?'/api/environment-discovery?privacy=public':'/api/environment-discovery'),
+      new URL(location.href).searchParams.get('presentation')==='public'?Promise.resolve({records:[]}):request("/api/capability-adapters"),
     ]);
     render();
     if(!discovery.busy)document.querySelector('#environment-scan-status').textContent=current()?`Last discovery ${current().status.toLowerCase()}. Inspect resources or run another scan.`:'Ready to discover this computer. Remote machines are checked only when you include them.';
@@ -323,7 +323,7 @@
     setBusy(true);
     const status = document.querySelector("#environment-scan-status");
     status.textContent = "Discovery running through bounded adapters…";
-    const poll=setInterval(()=>request('/api/environment-discovery').then(value=>{discovery.projection=value;renderProgress();}).catch(()=>{}),400);
+    const poll=setInterval(()=>request(new URL(location.href).searchParams.get('presentation')==='public'?'/api/environment-discovery?privacy=public':'/api/environment-discovery').then(value=>{discovery.projection=value;renderProgress();}).catch(()=>{}),400);
     try {
       const result = await request("/api/environment-discovery/scans", {
         method: "POST",

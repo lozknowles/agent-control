@@ -1,3 +1,4 @@
+import {publicRuntimeMap,publicDiscoveryProjection} from './public-runtime-map.js';
 import {createHash, timingSafeEqual} from 'node:crypto';
 import fs from 'node:fs';
 import http, {type IncomingMessage, type ServerResponse} from 'node:http';
@@ -166,9 +167,9 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   if (method === 'GET' && url.pathname === '/api/poe') { validateOperatorRequest(request, options); return json(response, 200, service.poeProjection()); }
   if (method === 'GET' && url.pathname === '/api/operator-auth') return json(response, 200, operatorAuthentication(request, options));
   if (method === 'GET' && url.pathname === '/api/configuration') { validateOperatorRequest(request, options); return json(response, 200, new ConfigurationStore(options.configFile ?? configPath()).read()); }
-  if (method === 'GET' && url.pathname === '/api/environment-discovery') { validateOperatorRequest(request, options); return json(response, 200, service.environmentDiscoveryProjection()); }
+  if (method === 'GET' && url.pathname === '/api/environment-discovery') { validateOperatorRequest(request, options); return json(response, 200, url.searchParams.get('privacy')==='public'?publicDiscoveryProjection(service.environmentDiscoveryProjection()):service.environmentDiscoveryProjection()); }
   if (method === 'GET' && url.pathname === '/api/estate-heartbeat') { validateOperatorRequest(request, options); return json(response,200,service.estateHeartbeat()); }
-  if (method === 'GET' && url.pathname === '/api/estate-map') { validateOperatorRequest(request, options); return json(response, 200, service.estateMap()); }
+  if (method === 'GET' && url.pathname === '/api/estate-map') { validateOperatorRequest(request, options); return json(response, 200, url.searchParams.get('privacy')==='public'?publicRuntimeMap(service.estateMap()):service.estateMap()); }
   if (method === 'GET' && url.pathname === '/api/capability-adapters') { validateOperatorRequest(request, options); return json(response, 200, service.capabilityAdapterProjection()); }
   const capabilityAdapterExportMatch = url.pathname.match(/^\/api\/capability-adapters\/([^/]+)\/export$/);
   if (method === 'GET' && capabilityAdapterExportMatch) { validateOperatorRequest(request, options); return json(response, 200, service.exportCapabilityAdapter(decodeURIComponent(capabilityAdapterExportMatch[1]))); }
