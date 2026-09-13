@@ -1,7 +1,10 @@
 import {ActionFailure, ActionRegistry} from './job-runtime.js';
 import {PlaywrightBrowserEngine, type BrowserEngine, type BrowserSessionRequest} from './browser-worker.js';
 
-export function registerBrowserActions(registry = new ActionRegistry(), engine: BrowserEngine = new PlaywrightBrowserEngine({executablePath: process.env.AGENT_CONTROL_CHROMIUM_EXECUTABLE})) {
+export function registerBrowserActions(registry = new ActionRegistry(), engine: BrowserEngine = new PlaywrightBrowserEngine({
+  executablePath: process.env.AGENT_CONTROL_CHROMIUM_EXECUTABLE,
+  allowedPrivateHosts: (process.env.AGENT_CONTROL_BROWSER_ALLOWED_PRIVATE_HOSTS ?? '').split(',').map(item => item.trim()).filter(Boolean),
+})) {
   registry.registerConsequentialControl('browser.session@1.0.0', async context => {
     let request: BrowserSessionRequest;
     try { request = JSON.parse(String(context.parameters.sessionJson ?? '')) as BrowserSessionRequest; } catch { throw new ActionFailure('browser_session_json_invalid', 'configuration'); }
