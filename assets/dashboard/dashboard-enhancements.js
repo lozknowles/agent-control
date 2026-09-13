@@ -512,6 +512,8 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('[data-view]').forEach(button => button.addEventListener('click', () => {
     document.querySelectorAll('[data-view]').forEach(item => item.classList.toggle('active', item === button));
     const view = button.dataset.view;
+    if(view!=='poe'){document.body.dataset.currentView=view;document.querySelector('#home-workspace').hidden=view!=='home';}
+    if(view==='home')window.AgentControlFirstRun?.activate();
     if(view==='poe'){document.dispatchEvent(new Event('poe:open'));return;}
     document.querySelector('#jobs-workspace').hidden = view !== 'jobs';
     document.querySelector('#runtime-map-workspace').hidden = view !== 'runtime-map';

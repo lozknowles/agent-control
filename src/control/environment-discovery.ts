@@ -282,7 +282,7 @@ export interface EnvironmentDiscoveryOptions {
   createWorkParcel?: (proposal: DiscoveryProposal) => string;
   applyConfiguration?: (proposal: DiscoveryProposal) => void;
   onEvent?: (
-    type: "scan.started" | "scan.completed" | "proposal.changed",
+    type: "scan.started" | "scan.completed" | "scan.adapter.started" | "scan.adapter.completed" | "scan.adapter.failed" | "proposal.changed",
     payload: Record<string, unknown>,
   ) => void;
 }
@@ -380,6 +380,7 @@ export class DefaultDiscoveryProbe implements DiscoveryProbe {
 }
 
 export class EnvironmentDiscoveryRuntime {
+  private progress: {scanId:string;state:'RUNNING'|'COMPLETED'|'PARTIAL'|'FAILED';startedAt:string;updatedAt:string;adapters:Array<{id:string;state:'WAITING'|'CHECKING'|'COMPLETE'|'FAILED';found:number}>;items:DiscoveryObservation[]} | null = null;
   private state: StoreShape;
   private readonly clock: () => Date;
   private readonly environment: NodeJS.ProcessEnv;
@@ -406,6 +407,7 @@ export class EnvironmentDiscoveryRuntime {
       scans: this.state.scans.map((value) => structuredClone(value)),
       proposals: this.state.proposals.map((value) => structuredClone(value)),
       latest: this.state.scans.at(-1) ?? null,
+      progress: this.progress,
     });
   }
   scan(id: string) {
@@ -418,7 +420,12 @@ export class EnvironmentDiscoveryRuntime {
     if (!value) throw new Error("environment_discovery_proposal_missing");
     return structuredClone(value);
   }
-  async discover(input: {
+  async discover(input:{mode:DiscoveryMode;testing?:DiscoveryTesting;includeRemote?:boolean;includeMemory?:boolean}) {
+    if(this.progress?.state==='RUNNING')throw new Error('environment_discovery_already_running');
+    try{return await this.performDiscover(input);}catch(error){this.failProgress();throw error;}
+  }
+  private failProgress(){if(this.progress?.state==='RUNNING'){this.progress.state='FAILED';this.progress.updatedAt=now(this.clock);}}
+  private async performDiscover(input: {
     mode: DiscoveryMode;
     testing?: DiscoveryTesting;
     includeRemote?: boolean;
@@ -435,6 +442,7 @@ export class EnvironmentDiscoveryRuntime {
       id = `discovery-${randomUUID()}`,
       config = structuredClone(this.options.config()),
       previous = this.state.scans.at(-1);
+    this.progress={scanId:id,state:'RUNNING',startedAt,updatedAt:startedAt,adapters:this.adapters.map(adapter=>({id:adapter.id,state:'WAITING',found:0})),items:[]};
     this.options.onEvent?.("scan.started", {
       scanId: id,
       mode: input.mode,
@@ -463,9 +471,11 @@ export class EnvironmentDiscoveryRuntime {
     const discovered: DiscoveryObservation[] = [];
     const failures: DiscoveryScan["failures"] = [];
     for (const adapter of this.adapters) {
+      const stage=this.progress.adapters.find(item=>item.id===adapter.id)!;stage.state='CHECKING';this.progress.updatedAt=now(this.clock);this.options.onEvent?.('scan.adapter.started',{scanId:id,adapter:adapter.id});
       try {
-        discovered.push(...(await adapter.discover(context)));
+        const found=await adapter.discover(context);discovered.push(...found);stage.found=found.length;stage.state='COMPLETE';this.progress.items=safe(dedupe(discovered).map(normaliseObservation));this.progress.updatedAt=now(this.clock);this.options.onEvent?.('scan.adapter.completed',{scanId:id,adapter:adapter.id,found:found.length});
       } catch (error) {
+        stage.state='FAILED';this.progress.updatedAt=now(this.clock);this.options.onEvent?.('scan.adapter.failed',{scanId:id,adapter:adapter.id});
         failures.push({
           adapter: adapter.id,
           classification: "FAILED",
@@ -502,6 +512,7 @@ export class EnvironmentDiscoveryRuntime {
       JSON.stringify(scan),
       "environment_discovery_secret_forbidden",
     );
+    this.progress.state=scan.status;this.progress.updatedAt=completedAt;
     this.state.scans.push(scan);
     this.state.scans = this.state.scans.slice(-25);
     this.persist();
