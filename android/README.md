@@ -1,5 +1,7 @@
 # Generic Android resource
 
+For the new **on-phone controller** preview, see [Android Standalone](../docs/android-standalone.md). This page describes the separate Android resource-node mode.
+
 The Android integration supports Termux-capable physical devices without assuming a manufacturer, model, hostname or network overlay.
 
 ## Fresh Termux prerequisites

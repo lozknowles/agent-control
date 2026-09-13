@@ -8,6 +8,17 @@ Discover your AI tools, see what is available, and follow approved work from req
 
 [![Agent Control overview composed from actual product screens and crew assets](docs/media/4.6/public/overview.png)](docs/public-installation-journey.md)
 
+## Android standalone preview
+
+Run the Agent Control controller on an Android phone in Termux, with a local browser dashboard and governed local jobs. No Agent Control APK, root or remote controller is required for the verified base path. Mallow and the crew remain available.
+
+**Base installation: PASS WITH LIMITATIONS. Android model download, inference and benchmark league: blocked and not yet qualified.**
+
+[Run Agent Control on Android](docs/android-standalone.md) · [Physical qualification](docs/android-standalone-qualification.md)
+
+<img src="docs/media/4.6/android/android-local-dashboard.png" width="260" alt="Actual Android-hosted Agent Control dashboard"> <img src="docs/media/4.6/android/android-crew.png" width="260" alt="Crew and Mallow on the physical Pixel">
+
+
 ## Discover → Observe → Run → Understand → Control
 
 - **Discover** supported machines, agents, runtimes, models and integrations already in your environment.
