@@ -79,7 +79,11 @@ Metered API billing, positive physical cache billing, attributable job/baseline 
 
 The [public Job Library](https://github.com/lozknowles/agent-control-jobs) contains simple objectives such as reviewing a change or diagnosing a service. Estate-based readiness identifies required configuration, connectors, credentials and approval. Contributions should remain understandable without learning Agent Control internals.
 
-Model Intelligence and personal benchmark views are candidate features. Target-model qualification and overnight showcase evidence remain open; they are not implied by a working dashboard.
+Model Intelligence now reports real source coverage, initial versus follow-up observations and evidence-backed next steps. The manual demonstration found 17 initial artifact observations and two reviewed candidates; it did not benchmark them. Target-model execution still awaits exact-plan approval. Overnight-duration qualification is a documented non-blocking limitation.
+
+![Real Model Intelligence baseline and approval boundary](docs/media/4.6/integration/intelligence-baseline.png)
+
+[Current RC assessment](docs/release-candidate-4.6.md) · [Real source runs and Morning Brief](examples/showcase-4.6/release-integration/real-intelligence.json) · [Known Limitations and HELP WANTED](docs/known-limitations-4.6.md)
 
 ## Learn more
 
@@ -89,6 +93,6 @@ Model Intelligence and personal benchmark views are candidate features. Target-m
 - [Architecture](docs/architecture-v2-agnostic.md)
 - [Security](SECURITY.md) and [contributing](CONTRIBUTING.md)
 - [Candidate release notes](docs/release-notes-4.6.0-rc.1.md)
-- [Complete release readiness and evidence](docs/public-release-readiness-4.6.md)
+- [Current RC assessment and evidence](docs/release-candidate-4.6.md)
 
 Historical versioned reports remain available under `docs/`; use the installation guide above for this candidate.

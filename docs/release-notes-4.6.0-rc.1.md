@@ -30,3 +30,7 @@ The [readiness report](public-release-readiness-4.6.md) records 1,438 passing te
 ## Integration changes
 
 Morning Briefs now disclose incomplete sources and baseline observations, count only complete native benchmark results, and retain failed/interrupted/unverified outcomes. Resource regressions remain visible beside quality improvements. Linux, Windows and Android installation prefer committed dependency versions and integrity hashes, with lifecycle scripts disabled and no-lock legacy compatibility retained.
+
+## Current RC evidence
+
+The [formal RC assessment](release-candidate-4.6.md) records 1,464 passing tests, locked Linux/Windows/Pixel bootstrap, a state-preserving v4.5.1 upgrade, real source baseline/follow-up briefs and the outstanding target execution approval. Core release passes the current gate; the implemented showcase passes with documented limitations. The complete target-model/league chain is not yet claimed.

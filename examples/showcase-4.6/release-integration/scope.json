@@ -1,16 +1,18 @@
 {
   "version": "4.6.0-rc.1",
-  "showcase": "FAIL",
+  "showcase": "PASS_WITH_LIMITATIONS",
   "subsystems": {
     "androidStandalone": "PASS_WITH_LIMITATIONS",
     "usageEnergy": "PASS_WITH_LIMITATIONS",
-    "modelIntelligence": "IN_PROGRESS",
-    "localLlmBenchmark": "IN_PROGRESS_AWAITING_EXACT_PLAN_APPROVAL",
-    "estateProcess": "PENDING_INTEGRATED_VALIDATION",
-    "governanceSecurity": "PENDING_INTEGRATED_VALIDATION",
-    "morningBrief": "IMPLEMENTED_PENDING_PHYSICAL_VALIDATION"
+    "modelIntelligence": "PASS_WITH_LIMITATIONS",
+    "localLlmBenchmark": "CONTROL_QUALIFIED_TARGET_EXECUTION_APPROVAL_REQUIRED",
+    "estateProcess": "PASS",
+    "governanceSecurity": "PASS",
+    "morningBrief": "PASS_WITH_LIMITATIONS",
+    "coreInstallation": "PASS",
+    "dependencyReproducibility": "PASS"
   },
-  "showcaseReason": "Target-model chain and current real captures are still in progress; this does not by itself fail core release.",
+  "showcaseReason": "Implemented local controller, governance, Android, usage and real Model Intelligence observations are demonstrated. The complete approved target-model/league chain remains pending; the strict full-showcase checker still reports INCOMPLETE.",
   "integratedCommits": [
     "720577b8aa82c78a8f0ae6156b8d826e868e3502",
     "2d30ceb2ab24126e7c2c95c30c89e13fdff942c3",

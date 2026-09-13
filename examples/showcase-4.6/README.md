@@ -23,3 +23,7 @@ This heading is the product experience. The actual capture was a short read-only
 ## Benchmark evidence
 
 No performance league table or canonical measured result is published yet. Download approval and target execution are outstanding. A release claiming a completed benchmark showcase must fail the SHOWCASE gate until genuine comparable results, validator evidence and resource measurements are provided.
+
+## Release integration follow-up
+
+The [new source runs](release-integration/real-intelligence.json) preserve a separate initial baseline (17 observations, two reviewed candidates) and follow-up (zero observed changes). Both disclose 2/3 complete source coverage, no target execution and no new leader. The [current RC assessment](../../docs/release-candidate-4.6.md) separates core readiness from the complete target-model showcase.

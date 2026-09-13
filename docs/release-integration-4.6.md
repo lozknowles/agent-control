@@ -1,6 +1,6 @@
 # Agent Control 4.6 release integration
 
-This is an unreleased integration candidate. **Core release and showcase are assessed separately.** Optional Android inference, metered-provider billing and whole-node energy do not block a core release. No missing measurement becomes a PASS.
+This is an unreleased integration candidate. **Core release: PASS. Showcase: PASS WITH LIMITATIONS for implemented demonstrations; the complete target-model chain remains incomplete.** See the [formal RC assessment](release-candidate-4.6.md). Optional Android inference, metered-provider billing and whole-node energy do not block a core release. No missing measurement becomes a PASS.
 
 ## Ancestry and evidence
 
@@ -17,13 +17,13 @@ The [Android physical report](android-standalone-qualification.md), [usage/energ
 | Mallow workflow creation | PASS WITH LIMITATIONS | Deterministic proposal, exact approval and local execution are real. Arbitrary language/workload planning is not claimed. |
 | Android standalone controller | PASS WITH LIMITATIONS | Real local control plane and jobs on Pixel. Optional Android inference/telemetry are non-blocking limitations. |
 | Usage, token and component-energy intelligence | PASS WITH LIMITATIONS | Measured native usage and component intervals retained. Billing, tariffs, attribution and whole-node measurements remain BLOCKED_EXTERNAL. |
-| Model Intelligence | IN PROGRESS | Source adapters, retained change history, compatibility and native watch jobs exist. This integration adds honest source coverage and baseline/follow-up reporting. |
-| Morning Intelligence Brief | IN PROGRESS | Completed-native result counting, unavailable-source handling, comparisons and actionable next steps are implemented; fresh real source capture is required. |
+| Model Intelligence | PASS WITH LIMITATIONS | Source adapters, retained change history, compatibility and native watch jobs exist. This integration adds honest source coverage and baseline/follow-up reporting. |
+| Morning Intelligence Brief | PASS WITH LIMITATIONS | Completed-native result counting, unavailable-source handling, comparisons and actionable next steps are implemented; two real native source workflows and original browser captures passed. |
 | Local LLM Benchmark Suite and personal league | IN PROGRESS | Typed adapter, sandbox, result validation and ranking exist. Exact-plan physical target execution is separately approved; no unseen result is claimed. |
 | Lightweight governed rules | PASS WITH LIMITATIONS | Typed check/condition/action/verify controls are tested. Full rules-builder UI is NOT STARTED; household action remains separately authorised. |
 | Notifications and additional external feeds | BLOCKED_EXTERNAL | No destination is configured. In-product evidence remains available. |
 | Overnight unattended operation | PASS WITH LIMITATIONS | Schedule and reconciliation contracts are tested; overnight-duration physical proof remains open and is not a core blocker. |
-| Locked release dependencies | IN PROGRESS | Linux, Windows and Android bootstraps prefer the lockfile with lifecycle scripts disabled, preserving old no-lock checkout compatibility. Fresh installation validation required. |
+| Locked release dependencies | COMPLETE | Linux, Windows and Android bootstraps prefer the lockfile with lifecycle scripts disabled, preserving old no-lock checkout compatibility. Fresh Linux, Windows and physical Pixel bootstrap passed. |
 | RC packaging, notes and publication | IN PROGRESS | Run the formal gate. Final tagging/publication waits for operator review. |
 
 ## Gate interpretation
@@ -38,4 +38,4 @@ The Morning Brief distinguishes initial observations from new releases and incom
 
 RC dependency installation uses the committed npm lockfile and integrity hashes. Older checkouts without a lockfile retain the previous safe installation path. No runtime build step or package lifecycle script is enabled.
 
-Current validation results and remaining true release blockers are recorded in the final RC receipt. Until that receipt passes, core release readiness is unverified. No tag or final publication is authorised by this document.
+Current validation results and the absence of observed true core release blockers are recorded in the final RC receipt. All 1,464 regression tests passed. No tag or final publication is authorised by this document.
