@@ -1,3 +1,6 @@
+import {isAndroidUserspace,observeAndroid} from './android-environment.js';
+import {DefaultDiscoveryProbe} from './environment-discovery.js';
+import {assessMobileOperation,validateMobilePolicy} from './mobile-resource-policy.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import net from 'node:net';
@@ -36,6 +39,17 @@ export function registerLlamaCppBenchmarkJobs(catalog:JobCatalog,actions:ActionR
     if(!grant||grant.expiresAt<=new Date().toISOString()||grant.specSha256!==digest||grant.runtimeSha256!==spec.execution.runtimeSha256||grant.downloadBytes<spec.candidates.filter(c=>!c.existingPath).reduce((n,c)=>n+c.bytes,0)||spec.candidates.some(c=>!grant.candidateHashes.includes(c.sha256)))throw Error('benchmark_exact_approval_required');
     if(!grant.parcelId||context.run.trigger.parcelContext?.parcelId!==grant.parcelId)throw Error('benchmark_approval_parcel_mismatch');
     await options.admit(spec);
+    if(isAndroidUserspace()){
+      const observation=await observeAndroid(new DefaultDiscoveryProbe());
+      const policyFile=path.join(process.env.AGENT_CONTROL_STATE_DIR??'.agent-control','mobile-policy.json');
+      const policy=validateMobilePolicy(fs.existsSync(policyFile)?JSON.parse(fs.readFileSync(policyFile,'utf8')):{});
+      const decision=assessMobileOperation('BENCHMARK',observation,policy,{downloadBytes:0,estimatedRamBytes:Math.max(...spec.candidates.map(c=>c.estimatedRamBytes))});
+      if(!decision.allowed)throw Error('mobile_resource_policy:'+decision.reasons.join(','));
+      if(context.step.action.startsWith('local-benchmark.acquire')){
+        const download=assessMobileOperation('DOWNLOAD',observation,policy,{downloadBytes:spec.candidates.filter(c=>!c.existingPath).reduce((n,c)=>n+c.bytes,0),estimatedRamBytes:0});
+        if(!download.allowed)throw Error('mobile_resource_policy:'+download.reasons.join(','));
+      }
+    }
     if(context.signal.aborted)throw Error('benchmark_cancelled');
     if(await fileHash(spec.execution.runtimePath)!==spec.execution.runtimeSha256)throw Error('benchmark_runtime_changed');
     if(await fileHash(spec.execution.sandboxPath)!==spec.execution.sandboxSha256||await fileHash(fileURLToPath(new URL('../../scripts/python-repair-validator.py',import.meta.url)))!==spec.execution.validatorSha256)throw Error('benchmark_validator_changed');

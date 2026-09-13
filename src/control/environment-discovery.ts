@@ -1,3 +1,4 @@
+import {isAndroidUserspace,observeAndroid} from './android-environment.js';
 import { createHash, randomUUID } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
@@ -664,11 +665,13 @@ export class EnvironmentDiscoveryRuntime {
   }
 }
 
+function safeNetworkInterfaces(){try{return os.networkInterfaces();}catch{return {};}}
+
 export class LocalMachineDiscoveryAdapter implements DiscoveryAdapter {
   id = "local-machine";
   async discover(context: DiscoveryAdapterContext) {
     const cpus = os.cpus(),
-      network = Object.entries(os.networkInterfaces()).flatMap(
+      network = Object.entries(safeNetworkInterfaces()).flatMap(
         ([name, addresses]) =>
           (addresses ?? [])
             .filter((address) => !address.internal)
@@ -693,11 +696,13 @@ export class LocalMachineDiscoveryAdapter implements DiscoveryAdapter {
     } catch {
       attributes.diskAvailableBytes = null;
     }
+    const android = isAndroidUserspace() ? await observeAndroid(context.probe) : null;
+    if(android)Object.assign(attributes,{deploymentProfile:android.profile,platform:'android',computeClass:'MOBILE_LOCAL',androidVersion:android.androidVersion,cpuModel:android.cpu,availableMemoryBytes:android.availableRamBytes,batteryPercent:android.batteryPercent,charging:android.charging,thermalCelsius:android.thermalCelsius,metered:android.metered,backgroundReliability:android.backgroundReliability,accelerator:android.accelerator,controllerLocation:'this-device',localModelRequired:false});
     const values: DiscoveryObservation[] = [
       item(
         "MACHINE",
         "controller",
-        os.hostname(),
+        android?.label ?? os.hostname(),
         "HEALTHY",
         "DISCOVERED",
         attributes,
