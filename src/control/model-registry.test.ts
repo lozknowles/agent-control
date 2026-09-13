@@ -30,7 +30,7 @@ test('a human-approved historically preferred route can outrank static role orde
   assert.equal(route.modelId, 'deep');
   assert.equal(route.intelligence?.selectionBasis, 'human-approved preferred route with historical verified economics');
 });
-test('historical qualification becomes routable only with separately verified capability evidence', () => {
+test('historical intelligence cannot bypass current qualification state', () => {
   const capabilities = new CapabilityIntelligenceStore();
   capabilities.observe({id: 'qualification:untested:code.modify', capabilityId: 'code.modify', subject: {providerId: 'external', modelId: 'untested', nodeId: 'node-a'}, support: 'SUPPORTED', implementation: 'NATIVE', verification: 'VERIFIED', confidence: 1, observedAt: '2026-09-05T00:00:00Z', qualifiedAt: '2026-09-05T00:00:00Z', limitations: [], evidence: ['attempt:one'], source: 'QUALIFICATION'});
   const metrics = {attempts: 8, completed: 8, passed: 8, reliability: 1, quality: 1, criticalFailures: 0, retries: 0, inputTokens: 800, freshInputTokens: 800, cachedInputTokens: 0, cacheWriteTokens: 0, outputTokens: 80, totalTokens: 880, cacheHitRatio: 0, cacheCoverage: {knownAttempts: 8, totalAttempts: 8}, estimatedCacheSavings: 0, actualCost: null, calculatedCost: null, equivalentUncachedCost: null, currency: null, elapsedMs: 8_000, costPerSuccessfulTask: null, tokensPerSuccessfulTask: 110, freshTokensPerSuccessfulTask: 100, timePerSuccessfulTaskMs: 1_000, retriesPerSuccessfulTask: 0, resourceCoverage: {measuredAttempts: 0, totalAttempts: 8}};
@@ -39,9 +39,10 @@ test('historical qualification becomes routable only with separately verified ca
   const withoutEvidence = new ModelRegistry(providers, [candidate], {roles: {review: {primary: 'untested'}}}, undefined, undefined, process.env, undefined, intelligence);
   assert.throws(() => withoutEvidence.route({modelRole: 'review', nodeId: 'node-a', requiredCapabilities: ['code.modify']}), /model_route_unavailable/);
   const registry = new ModelRegistry(providers, [candidate], {roles: {review: {primary: 'untested'}}}, undefined, undefined, process.env, capabilities, intelligence);
-  const decision = registry.route({modelRole: 'review', nodeId: 'node-a', requiredCapabilities: ['code.modify']});
-  assert.equal(decision.modelId, 'untested');
-  assert.equal(decision.qualificationVersion, 'model-intelligence:frozen@1.0.0:aaaaaaaaaaaaaaaa');
+  assert.throws(()=>registry.route({modelRole: 'review', nodeId: 'node-a', requiredCapabilities: ['code.modify']}),error=>{assert.match(JSON.stringify((error as {considered?:unknown}).considered),/qualification-untested/);return true;});
+  const qualifications=new ModelQualificationStore();qualifications.set({modelId:'untested',state:'DEGRADED',version:'current-degraded',checkedAt:'2026-09-06T00:00:00Z',capabilities:['code.modify'],nodes:['node-a'],evidence:['current:degraded']});
+  const degraded=new ModelRegistry(providers,[candidate],{roles:{review:{primary:'untested'}}},qualifications,undefined,process.env,capabilities,intelligence);
+  assert.throws(()=>degraded.route({modelRole:'review',nodeId:'node-a',requiredCapabilities:['code.modify']}),error=>{assert.match(JSON.stringify((error as {considered?:unknown}).considered),/qualification-degraded/);return true;});
 });
 test('disabled and capability-unproven models cannot route', () => { const disabled = {...models[0], enabled: false}; const registry = new ModelRegistry(providers, [disabled], {roles: {review: {primary: 'fast'}}}); assert.throws(() => registry.route({modelRole: 'review', nodeId: 'node-a', requiredCapabilities: ['review']}), /model_route_unavailable/); });
 

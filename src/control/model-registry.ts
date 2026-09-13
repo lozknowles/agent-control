@@ -221,8 +221,8 @@ export class ModelRegistry {
     const taskQualification = request.taskClass ? qualification.taskQualifications?.find(item => item.taskClass === request.taskClass) : undefined;
     const taskFailed = Boolean(taskQualification && ['FAILED','DISABLED'].includes(taskQualification.state));
     if (taskFailed) reasons.push(`task-qualification-${request.taskClass}-${taskQualification!.state.toLowerCase()}`);
-    const intelligence = this.intelligenceFor(model, executionNode), historicallyQualified = Boolean(this.capabilityIntelligence && intelligence && ['QUALIFIED','PREFERRED'].includes(intelligence.state) && qualification.state !== 'FAILED' && !taskFailed);
-    if (qualificationRun ? !['UNTESTED','QUALIFYING','QUALIFIED','DEGRADED'].includes(qualification.state) : qualification.state !== 'QUALIFIED' && !historicallyQualified) reasons.push(`qualification-${qualification.state.toLowerCase()}`);
+    const intelligence = this.intelligenceFor(model, executionNode);
+    if (qualificationRun ? !['UNTESTED','QUALIFYING','QUALIFIED','DEGRADED'].includes(qualification.state) : qualification.state !== 'QUALIFIED') reasons.push(`qualification-${qualification.state.toLowerCase()}`);
     const nodes = qualification.nodes.length ? qualification.nodes : model.nodes ?? [];
     if (nodes.length && !nodes.includes(executionNode)) reasons.push('provider-execution-node-unavailable');
     const capabilityAssessment = this.capabilityIntelligence?.assess({providerId: model.provider, modelId: model.id, ...(model.accountProfile ? {accountProfileId: model.accountProfile} : {}), runtimeId: provider?.kind, nodeId: executionNode}, request.requiredCapabilities ?? [], {allowEmulated: true, verifiedOnly: !qualificationRun});
