@@ -133,6 +133,8 @@ test("dashboard exposes discovery, capability, bootstrap and shared Estate Map c
   ])
     assert.match(html, new RegExp(phrase));
   assert.match(script, /No configuration was activated/);
+  assert.match(script, /mutateCapability\(button\)\.catch\(showError\)/);
+  assert.match(script, /finally \{ setBusy\(false\); \}/);
   assert.match(map, /api\/estate-map/);
   assert.doesNotMatch(script, /api[-_]?key|bearer token|credential value/i);
   const referencedIds = [...script.matchAll(/querySelector\(["'`]#([a-zA-Z0-9_-]+)/g)].map((match) => match[1]);

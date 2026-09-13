@@ -282,18 +282,19 @@
       : '<div class="compact-empty">No user-added capabilities.</div>';
     host.querySelectorAll("[data-capability-action]").forEach(
       (button) =>
-        (button.onclick = async () => {
-          await request(
-            `/api/capability-adapters/${encodeURIComponent(button.dataset.capabilityId)}/${button.dataset.capabilityAction}`,
-            {
-              method: "POST",
-              body: JSON.stringify({ sha256: button.dataset.capabilityHash }),
-            },
-          );
-          await load();
-          toast("Capability registry updated");
-        }),
+        (button.onclick = () => mutateCapability(button).catch(showError)),
     );
+  }
+  async function mutateCapability(button) {
+    setBusy(true);
+    try {
+      await request(
+        `/api/capability-adapters/${encodeURIComponent(button.dataset.capabilityId)}/${button.dataset.capabilityAction}`,
+        {method: "POST", body: JSON.stringify({sha256: button.dataset.capabilityHash})},
+      );
+      await load();
+      toast("Capability registry updated");
+    } finally { setBusy(false); }
   }
   function setBusy(value) {
     discovery.busy = value;
