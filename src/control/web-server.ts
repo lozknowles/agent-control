@@ -161,6 +161,8 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
       if(operatorApi[2]==='speech'){const audio=await service.speakPoe(id,String(body.turnId??''),'web-operator');return json(response,200,{...audio,bytes:Buffer.from(audio.bytes).toString('base64')});}
     }
   }
+  if(method==='GET'&&url.pathname==='/api/personal-league'){validateOperatorRequest(request,options);return json(response,200,service.personalLeague(String(url.searchParams.get('benchmark')??''),String(url.searchParams.get('comparison')??'')));}
+  if(method==='GET'&&url.pathname==='/api/model-watches'){validateOperatorRequest(request,options);return json(response,200,service.modelWatchProjection());}
   if (method === 'GET' && url.pathname === '/api/poe') { validateOperatorRequest(request, options); return json(response, 200, service.poeProjection()); }
   if (method === 'GET' && url.pathname === '/api/operator-auth') return json(response, 200, operatorAuthentication(request, options));
   if (method === 'GET' && url.pathname === '/api/configuration') { validateOperatorRequest(request, options); return json(response, 200, new ConfigurationStore(options.configFile ?? configPath()).read()); }
@@ -264,6 +266,11 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   if (method === 'POST') {
     validateMutationRequest(request, options);
     const body = await readJson(request), actor = 'web-operator';
+    if(url.pathname==='/api/model-watches/propose')return json(response,201,service.proposeModelWatch(body.watch));
+    if(url.pathname==='/api/model-watches/approve')return json(response,200,service.approveModelWatch(String(body.digest??''),actor));
+    if(url.pathname==='/api/model-watches/revoke')return json(response,200,service.revokeModelWatch(String(body.digest??''),actor));
+    if(url.pathname==='/api/model-watches/run')return json(response,201,service.runModelWatch(String(body.digest??''),actor));
+    if(url.pathname==='/api/personal-benchmarks')return json(response,201,service.definePersonalBenchmark(body.definition));
     if (url.pathname === '/api/environment-discovery/scans') return json(response, 201, await service.discoverEnvironment({mode:String(body.mode ?? 'QUICK_RESCAN') as never, testing:String(body.testing ?? 'SKIP_TESTING') as never, includeRemote:body.includeRemote === true, includeMemory:body.includeMemory === true}));
     if (url.pathname === '/api/environment-discovery/proposals') return json(response, 201, service.createEnvironmentProposal(String(body.scanId ?? ''), Array.isArray(body.recommendationIds) ? body.recommendationIds.map(String) : [], actor));
     if (url.pathname === '/api/installation/inspect') return json(response, 200, service.inspectInstallation(String(body.mode ?? 'UPDATE') as never, String(body.role ?? 'CONTROLLER') as never));
@@ -469,7 +476,7 @@ function executionSessionStream(service: AgentControlService, id: string, reques
 
 function serveAsset(response: ServerResponse, assetsDir: string, pathname: string) {
   const asset = pathname === '/' ? 'index.html' : pathname.replace(/^\//, '');
-  if (!['dashboard-social-voice.css', 'social-voice.html', 'dashboard-social-voice.js', 'dashboard-openwa.css', 'openwa.html', 'dashboard-openwa.js', 'index.html', 'dashboard.css', 'dashboard-fixes.css', 'dashboard-jobs.css', 'dashboard-bots.css', 'dashboard-wopr.css', 'dashboard-adaptive-orchestration.css', 'dashboard-live-shell.css', 'dashboard-poe.css', 'dashboard-cache-runtime.css', 'dashboard-learned-specialists.css', 'dashboard-session-vault.css', 'dashboard-runtime-map.css', 'dashboard-environment-discovery.css', 'dashboard.js', 'dashboard-parameters.js', 'dashboard-running-state.js', 'dashboard-enhancements.js', 'dashboard-parameterized-jobs.js', 'dashboard-models.js', 'dashboard-sessions.js', 'dashboard-bots.js', 'dashboard-wopr.js', 'dashboard-adaptive-orchestration.js', 'dashboard-live-shell.js', 'dashboard-poe.js', 'dashboard-cache-experts.js', 'dashboard-learned-specialists.js', 'dashboard-session-vault.js', 'dashboard-runtime-map.js', 'dashboard-environment-discovery.js', 'dashboard-installation.js'].includes(asset)) throw httpError(404, 'not_found');
+  if (!['dashboard-social-voice.css', 'social-voice.html', 'dashboard-social-voice.js', 'dashboard-openwa.css', 'openwa.html', 'dashboard-openwa.js', 'index.html', 'dashboard.css', 'dashboard-fixes.css', 'dashboard-jobs.css', 'dashboard-bots.css', 'dashboard-wopr.css', 'dashboard-adaptive-orchestration.css', 'dashboard-live-shell.css', 'dashboard-poe.css', 'dashboard-cache-runtime.css', 'dashboard-learned-specialists.css', 'dashboard-session-vault.css', 'dashboard-runtime-map.css', 'dashboard-environment-discovery.css', 'dashboard.js', 'dashboard-parameters.js', 'dashboard-running-state.js', 'dashboard-enhancements.js', 'dashboard-parameterized-jobs.js', 'dashboard-models.js', 'dashboard-model-watches.js', 'dashboard-model-watches.css', 'dashboard-sessions.js', 'dashboard-bots.js', 'dashboard-wopr.js', 'dashboard-adaptive-orchestration.js', 'dashboard-live-shell.js', 'dashboard-poe.js', 'dashboard-cache-experts.js', 'dashboard-learned-specialists.js', 'dashboard-session-vault.js', 'dashboard-runtime-map.js', 'dashboard-environment-discovery.js', 'dashboard-installation.js'].includes(asset)) throw httpError(404, 'not_found');
   const file = path.join(assetsDir, asset);
   if (!fs.existsSync(file)) throw httpError(404, 'dashboard_asset_missing');
   const type = asset.endsWith('.html') ? 'text/html; charset=utf-8' : asset.endsWith('.css') ? 'text/css; charset=utf-8' : 'text/javascript; charset=utf-8';
