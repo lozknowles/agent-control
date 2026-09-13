@@ -32,6 +32,20 @@ export const ESTATE_FRESHNESS_MS: Record<DiscoveryKind, number> = {
 };
 const digest = (value: unknown) =>
   createHash("sha256").update(JSON.stringify(value)).digest("hex");
+// Presence/configuration and future timestamps are never current liveness proof.
+export function estateObservationState(item: DiscoveryItem, time = Date.now()) {
+  const proof = item.provenance.filter(p=>p.authority==='AUTHORITATIVE')
+    .map(p=>Date.parse(p.observedAt)).filter(Number.isFinite).sort((a,b)=>b-a)[0];
+  const age = proof === undefined ? NaN : time-proof;
+  const fresh = Number.isFinite(age) && age>=0 && age<=ESTATE_FRESHNESS_MS[item.kind];
+  const authentication = String(item.attributes.authenticationState ?? 'UNKNOWN');
+  const verifiedAt = Date.parse(String(item.attributes.lastSuccessfullyVerifiedAt ?? ''));
+  const successfulStatusProbe = item.provenance.some(p=>p.authority==='AUTHORITATIVE'&&p.method==='fixed-executable-and-status-discovery') &&
+    Number.isFinite(verifiedAt) && time-verifiedAt>=0 && time-verifiedAt<=ESTATE_FRESHNESS_MS[item.kind];
+  return {fresh,alive:fresh && (item.health==='HEALTHY'||item.health==='NEEDS_QUALIFICATION'&&successfulStatusProbe) && item.operationalState!=='UNAVAILABLE' &&
+    !['AUTHENTICATION_REQUIRED','INVALID','EXPIRED'].includes(authentication),authentication,
+    qualification:item.lifecycle,health:item.health,lastAuthoritativeObservation:proof===undefined?null:new Date(proof).toISOString()};
+}
 const safe = <T>(value: T) => redactSensitiveValue(value) as T;
 const ESTATE_GROUP_THRESHOLD = 4;
 const GROUP_LABELS: Record<DiscoveryKind, string> = {
@@ -85,6 +99,7 @@ function observedAt(item: DiscoveryItem, scan: DiscoveryScan) {
 }
 function stateFor(item: DiscoveryItem, fresh: boolean): RuntimeMapState {
   if (!fresh) return "WAITING";
+  if (!item.provenance.some(p=>p.authority==='AUTHORITATIVE')) return "WAITING";
   if (item.health === "HEALTHY")
     return item.lifecycle === "ACTIVE" ? "RUNNING" : "SUCCEEDED";
   if (item.health === "NEEDS_QUALIFICATION") return "DEGRADED";
@@ -172,9 +187,7 @@ export function projectEstateMap(
       states = items.map((item) =>
         stateFor(
           item,
-          Number.isFinite(Date.parse(observedAt(item, scan))) &&
-            time - Date.parse(observedAt(item, scan)) <=
-              ESTATE_FRESHNESS_MS[item.kind],
+          estateObservationState(item,time).fresh,
         ),
       ),
       counts = Object.fromEntries(
@@ -207,9 +220,7 @@ export function projectEstateMap(
   }
   for (const item of scan.items) {
     const last = observedAt(item, scan),
-      fresh =
-        Number.isFinite(Date.parse(last)) &&
-        time - Date.parse(last) <= ESTATE_FRESHNESS_MS[item.kind],
+      fresh = estateObservationState(item,time).fresh,
       baseParent = baseParentFor(item),
       parent =
         groupParents.get(`${baseParent}|${item.kind}`) ?? baseParent;
@@ -225,26 +236,27 @@ export function projectEstateMap(
         groupId: item.nodeId,
         expandable: true,
         detail: {
+          ...item.attributes,
           kind: item.kind,
           configuredId: item.configuredId ?? null,
           nodeId: item.nodeId,
           health: item.health,
           availability:
-            fresh && item.health === "HEALTHY"
+            estateObservationState(item, time).alive &&
+            (item.kind==='MACHINE' || !machineIds.has(item.nodeId) || estateObservationState(byId.get(machineIds.get(item.nodeId)!)!,time).alive)
               ? "ALIVE"
               : "NOT_CURRENTLY_VERIFIED",
-          freshness: fresh ? "CURRENT" : "STALE",
+          freshness: estateObservationState(item,time).lastAuthoritativeObservation===null ? "UNVERIFIED" : estateObservationState(item,time).fresh ? "CURRENT" : "STALE",
           lastSeen: last,
           lastVerified:
             item.lifecycle === "QUALIFIED" || item.lifecycle === "ACTIVE"
-              ? last
+              ? estateObservationState(item,time).lastAuthoritativeObservation
               : null,
           verificationSource: item.provenance.at(-1)?.method ?? "unknown",
           verificationAuthority: item.provenance.at(-1)?.authority ?? "UNKNOWN",
           qualification: item.lifecycle,
           change: item.change,
           resourceClasses: item.resourceClasses,
-          ...item.attributes,
           credentialMask:
             item.kind === "CREDENTIAL"
               ? "••••••••••••"
@@ -289,7 +301,7 @@ export function projectEstateMap(
           subtitle: `${machine.label} connection`,
           state: stateFor(
             machine,
-            time - Date.parse(observedAt(machine, scan)) <=
+            time - Date.parse(observedAt(machine, scan)) >= 0 && time - Date.parse(observedAt(machine, scan)) <=
               ESTATE_FRESHNESS_MS.MACHINE,
           ),
           parentId: machine.id,
@@ -373,12 +385,12 @@ export function projectEstateMap(
         (item) =>
           stateFor(
             item,
-            time - Date.parse(observedAt(item, scan)) <=
+            time - Date.parse(observedAt(item, scan)) >= 0 && time - Date.parse(observedAt(item, scan)) <=
               ESTATE_FRESHNESS_MS[item.kind],
           ) === "SUCCEEDED" ||
           stateFor(
             item,
-            time - Date.parse(observedAt(item, scan)) <=
+            time - Date.parse(observedAt(item, scan)) >= 0 && time - Date.parse(observedAt(item, scan)) <=
               ESTATE_FRESHNESS_MS[item.kind],
           ) === "RUNNING",
       ).length;
@@ -429,7 +441,7 @@ export function projectEstateMap(
     };
   const anyCurrent = scan.items.some(
     (item) =>
-      time - Date.parse(observedAt(item, scan)) <=
+      time - Date.parse(observedAt(item, scan)) >= 0 && time - Date.parse(observedAt(item, scan)) <=
       ESTATE_FRESHNESS_MS[item.kind],
   );
   return safe({

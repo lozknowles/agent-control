@@ -65,7 +65,7 @@ No job has a primary credential-only result in the observed estate. The focused 
 
 ## Repository changes
 
-Agent Control branch `feature/4.5-capability-binding`, isolated from clean base `9f0f9738ce79340dcef511786d481fc2b1cae4fc` in `/fast/work/agent-control-capability-binding-20260913`. Existing 4.5 dependencies were reused through a read-only node_modules link. No dependency or lockfile changes.
+Agent Control branch `feature/4.5-capability-binding`, isolated from clean base `9f0f9738ce79340dcef511786d481fc2b1cae4fc` in `ISOLATED_DEVELOPMENT_WORKTREE`. Existing 4.5 dependencies were reused through a read-only node_modules link. No dependency or lockfile changes.
 
 Files: `scripts/capability-binding.mjs`, `scripts/capability-binding.test.mjs`, `scripts/assess-external-job-library.ts`, `src/control/readiness-probes.ts`, `src/control/readiness-probes.test.ts`; public evaluator export and explicit historical imports in `scripts/external-job-catalogue.mjs`, `scripts/external-job-catalogue.test.mjs`, `scripts/test-external-job-catalogue.ts`; documentation `docs/CAPABILITY-BINDING-ROOT-CAUSE.md`, `docs/CAPABILITY-BINDING.md`, `docs/CAPABILITY-BINDING-RESULTS.md`.
 

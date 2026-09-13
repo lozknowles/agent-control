@@ -792,8 +792,8 @@ export class ConfiguredResourceDiscoveryAdapter implements DiscoveryAdapter {
           },
           this.id,
           remote ? "configured-managed-node" : "configured-local-resource",
-          snapshot ? "AUTHORITATIVE" : "CONFIGURED",
-          context.observedAt,
+          snapshot?.lastProbeAt ? "AUTHORITATIVE" : "CONFIGURED",
+          snapshot?.lastProbeAt ?? context.observedAt,
           resource.id,
         ),
       );
@@ -848,7 +848,7 @@ export class ConfiguredResourceDiscoveryAdapter implements DiscoveryAdapter {
             `${provider.id}:endpoint`,
             `${provider.name ?? provider.id} endpoint`,
             provider.enabled === false ? "UNAVAILABLE" : endpointHealth,
-            endpointHealth === "HEALTHY" ? "QUALIFIED" : "DISCOVERED",
+            "DISCOVERED",
             {
               scope: endpointScope(provider.baseUrl),
               protocol: new URL(provider.baseUrl).protocol,
@@ -1274,7 +1274,7 @@ export class LocalRuntimeDiscoveryAdapter implements DiscoveryAdapter {
           `controller:${endpoint.id}:endpoint`,
           `${endpoint.id} local endpoint`,
           "HEALTHY",
-          "QUALIFIED",
+          "DISCOVERED",
           {
             scope: "loopback",
             status: response.status,
@@ -1329,7 +1329,7 @@ export class CredentialDiscoveryAdapter implements DiscoveryAdapter {
         ],
         presence = credentialPresence(providerRefs, context.environment),
         providerAuthentication: AuthenticationState = presence.available
-          ? "AUTHENTICATED"
+          ? "FOUND"
           : presence.configured
             ? "AUTHENTICATION_REQUIRED"
             : "NOT_CONFIGURED";
@@ -1343,7 +1343,7 @@ export class CredentialDiscoveryAdapter implements DiscoveryAdapter {
             : presence.configured
               ? "UNAVAILABLE"
               : "UNKNOWN",
-          presence.available ? "QUALIFIED" : "DISCOVERED",
+          "DISCOVERED",
           {
             authenticationState: providerAuthentication,
             available: presence.available,
@@ -1372,7 +1372,7 @@ export class CredentialDiscoveryAdapter implements DiscoveryAdapter {
               : account.qualification?.state === "DEGRADED"
                 ? "EXPIRED"
                 : accountPresence.available
-                  ? "AUTHENTICATED"
+                  ? "FOUND"
                   : accountPresence.configured
                     ? "AUTHENTICATION_REQUIRED"
                     : "NOT_CONFIGURED";
@@ -1381,16 +1381,12 @@ export class CredentialDiscoveryAdapter implements DiscoveryAdapter {
             "CREDENTIAL",
             `${provider.id}:${account.id}:credential`,
             `${provider.name ?? provider.id} / ${account.label}`,
-            authenticationState === "AUTHENTICATED"
-              ? "HEALTHY"
-              : ["INVALID", "EXPIRED"].includes(authenticationState)
+            ["INVALID", "EXPIRED"].includes(authenticationState)
                 ? "UNAVAILABLE"
-                : authenticationState === "AUTHENTICATION_REQUIRED"
+                : accountPresence.available || authenticationState === "AUTHENTICATION_REQUIRED"
                   ? "NEEDS_QUALIFICATION"
                   : "UNKNOWN",
-            authenticationState === "AUTHENTICATED"
-              ? "QUALIFIED"
-              : "DISCOVERED",
+            "DISCOVERED",
             {
               authenticationState,
               available: accountPresence.available,

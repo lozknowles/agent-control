@@ -44,6 +44,8 @@ import {compareRuntimeMaps,projectRuntimeMap,type RuntimeMapProjection} from './
 import {DefaultDiscoveryProbe,type DiscoveryMode,type DiscoveryTesting,type EnvironmentDiscoveryRuntime} from './environment-discovery.js';
 import type {CapabilityAdapterDefinition,CapabilityAdapterRegistry,CapabilityAdapterState,CapabilityBinding} from './capability-adapter-registry.js';
 import {projectEstateMap} from './estate-map.js';
+import {projectJobEstateMap,type OperationalReadiness} from './job-estate-readiness.js';
+import type {DiscoveryScan} from './environment-discovery.js';
 import type {InstallationLifecycle,InstallationMode,InstallationRole} from './installation-lifecycle.js';
 import {createHash} from 'node:crypto';
 import {governedRequestOrigin} from './request-origin.js';
@@ -209,6 +211,7 @@ export class AgentControlService {
   private energyTelemetry?: EnergyTelemetryRuntime;
   private deterministicSkills?: DeterministicSkillRuntime;
   private environmentDiscovery?: EnvironmentDiscoveryRuntime;
+  private jobLibraryReadiness?: (scan:DiscoveryScan,now:Date)=>OperationalReadiness[];
   private capabilityAdapters?:CapabilityAdapterRegistry;
   private installation?:InstallationLifecycle;
 
@@ -223,7 +226,8 @@ export class AgentControlService {
     this.verification = new VerificationService(state, persist);
   }
 
-  configureProjection(extras: {approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; services?: RegisteredService[]; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService; tokenBatonRouting?: TokenAwareBatonRuntime; governedRetrieval?: GovernedRetrievalRuntime; codexNodeExecution?: CodexNodeExecutionPort; harnessEfficiency?: HarnessEfficiencyLedgerPort; workParcels?: WorkParcelCoordinator; modelRegistry?: ModelRegistry; parameterizedJobs?: ParameterizedJobEngine; identity?: IdentityControlPlane; defaultSessionId?: string; fastExecution?: FastExecutionLedgerPort; runtimeObservability?: RuntimeObservability; capabilityIntelligence?: CapabilityIntelligenceStore; modelIntelligence?: ModelIntelligenceLedger; qualificationSuite?: FrozenQualificationSuite; providerCatalog?: ProviderCatalogRuntime; adaptiveOrchestration?: AdaptiveOrchestrationRuntime; executionSessions?: ExecutionSessionRuntime; poe?: PoeRuntime; cacheExperts?: CacheAwareExpertRuntime; learnedSkills?: SkillLearningRuntime; deterministicSkills?:DeterministicSkillRuntime; energyTelemetry?: EnergyTelemetryRuntime; environmentDiscovery?:EnvironmentDiscoveryRuntime; capabilityAdapters?:CapabilityAdapterRegistry; installation?:InstallationLifecycle}) {
+  configureProjection(extras: {jobLibraryReadiness?: (scan:DiscoveryScan,now:Date)=>OperationalReadiness[]; approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; services?: RegisteredService[]; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService; tokenBatonRouting?: TokenAwareBatonRuntime; governedRetrieval?: GovernedRetrievalRuntime; codexNodeExecution?: CodexNodeExecutionPort; harnessEfficiency?: HarnessEfficiencyLedgerPort; workParcels?: WorkParcelCoordinator; modelRegistry?: ModelRegistry; parameterizedJobs?: ParameterizedJobEngine; identity?: IdentityControlPlane; defaultSessionId?: string; fastExecution?: FastExecutionLedgerPort; runtimeObservability?: RuntimeObservability; capabilityIntelligence?: CapabilityIntelligenceStore; modelIntelligence?: ModelIntelligenceLedger; qualificationSuite?: FrozenQualificationSuite; providerCatalog?: ProviderCatalogRuntime; adaptiveOrchestration?: AdaptiveOrchestrationRuntime; executionSessions?: ExecutionSessionRuntime; poe?: PoeRuntime; cacheExperts?: CacheAwareExpertRuntime; learnedSkills?: SkillLearningRuntime; deterministicSkills?:DeterministicSkillRuntime; energyTelemetry?: EnergyTelemetryRuntime; environmentDiscovery?:EnvironmentDiscoveryRuntime; capabilityAdapters?:CapabilityAdapterRegistry; installation?:InstallationLifecycle}) {
+    if (extras.jobLibraryReadiness) this.jobLibraryReadiness=extras.jobLibraryReadiness;
     if (extras.approvalCount) this.approvalCount = extras.approvalCount;
     if (extras.resources) this.resourceRows = structuredClone(extras.resources);
     if (extras.services) this.serviceRows = structuredClone(extras.services);
@@ -325,7 +329,7 @@ export class AgentControlService {
   runtimeMap(parcelId?:string,replayAt?:string):RuntimeMapProjection {const parcels=this.workParcels?.list()??[],parcel=parcelId?parcels.find(item=>item.id===parcelId):parcels.find(item=>!item.endedAt)??parcels[0];if(parcelId&&!parcel)throw new Error('work_parcel_missing');const sessions=this.executionSessions?.list({parcelId:parcel?.id})??[];return projectRuntimeMap({parcel,runs:this.jobRuntime?.ledger.list()??[],sessions,sessionEvents:id=>this.executionSessions?.events(id)??[],tokenRouting:this.tokenRouting(),retrieval:this.retrievalProjection(),...(replayAt?{replayAt}:{})});}
   compareRuntimeMaps(leftParcelId:string,rightParcelId:string){return compareRuntimeMaps(this.runtimeMap(leftParcelId),this.runtimeMap(rightParcelId));}
   environmentDiscoveryProjection(){return this.mustEnvironmentDiscovery().projection();}
-  estateMap(){return projectEstateMap(this.mustEnvironmentDiscovery().projection().latest);}
+  estateMap(){const scan=this.mustEnvironmentDiscovery().projection().latest,now=new Date();return scan&&this.jobLibraryReadiness?projectJobEstateMap(scan,this.jobLibraryReadiness(scan,now),this.jobRuntime?.ledger.list()??[],now):projectEstateMap(scan,now.toISOString());}
   installationProjection(){return this.mustInstallation().projection();}
   inspectInstallation(mode:InstallationMode,role:InstallationRole){return this.mustInstallation().inspect(mode,role);}
   discoverEnvironment(input:{mode:DiscoveryMode;testing?:DiscoveryTesting;includeRemote?:boolean;includeMemory?:boolean}){return this.mustEnvironmentDiscovery().discover(input);}
