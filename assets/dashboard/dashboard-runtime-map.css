@@ -183,6 +183,7 @@
 }
 .runtime-map-toolbar {
   display: flex;
+  flex-wrap: wrap;
   gap: 18px;
   align-items: center;
   justify-content: space-between;
@@ -191,6 +192,9 @@
 }
 .runtime-map-toolbar label {
   display: flex;
+  flex-wrap: wrap;
+  min-width: 0;
+  max-width: 100%;
   gap: 8px;
   align-items: center;
 }
@@ -670,3 +674,6 @@
  .runtime-map-header h1{font-size:26px}
  .runtime-map-canvas{height:420px}
 }
+
+.runtime-map-toolbar select,.runtime-map-toolbar input,#estate-job-picker{max-width:100%;min-width:0}
+#runtime-map-summary{flex:1 1 100%;overflow-wrap:anywhere}

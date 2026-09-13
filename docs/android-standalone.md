@@ -13,7 +13,7 @@ pkg install git nodejs-lts npm
 git --version
 node --version
 npm --version
-git clone --depth 1 --branch feature/4.6-android-standalone https://github.com/lozknowles/agent-control.git
+git clone --depth 1 --branch integration/4.6-release-20260913 https://github.com/lozknowles/agent-control.git
 cd agent-control
 git rev-parse HEAD
 node scripts/android-standalone.mjs check

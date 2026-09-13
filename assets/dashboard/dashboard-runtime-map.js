@@ -951,6 +951,7 @@
   $('estate-dashboard-heartbeat')?.addEventListener('click',()=>openEstate());
   // Cheap projection reads only. No discovery, model inference or admission renewal.
   setInterval(()=>{if(document.hidden)return;heartbeat();if(rt.active&&rt.surface==='estate')load();},5000);
+  document.addEventListener('agent-control:authentication-changed',()=>{heartbeat();if(rt.active)load();});
   heartbeat();
   async function openProcess(parcelId){rt.surface='process';rt.parcelId=parcelId;rt.mode='map';document.querySelector('[data-view="runtime-map"]')?.click();rt.active=true;surfaceButtons();modeButtons();await load();}
   window.AgentControlRuntimeMap = { activate, schedule, openEstate, openProcess };

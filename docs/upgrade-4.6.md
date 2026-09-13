@@ -15,7 +15,7 @@ Stop your own foreground instance with Ctrl+C, or use the already-authorised ser
 From the parent directory, keeping the original checkout intact:
 
 ```bash
-git clone --branch feature/4.6-model-intelligence-showcase https://github.com/lozknowles/agent-control.git agent-control-4.6-review
+git clone --branch integration/4.6-release-20260913 https://github.com/lozknowles/agent-control.git agent-control-4.6-review
 cd agent-control-4.6-review
 git rev-parse HEAD
 ./scripts/bootstrap-agent-control.sh --check --target "$PWD"

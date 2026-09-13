@@ -17,7 +17,7 @@ Linux is the physically tested journey in this report. Other platform bootstrap 
 Use a new directory rather than an existing dirty checkout.
 
 ```bash
-git clone --branch feature/4.6-model-intelligence-showcase https://github.com/lozknowles/agent-control.git
+git clone --branch integration/4.6-release-20260913 https://github.com/lozknowles/agent-control.git
 cd agent-control
 git rev-parse HEAD
 ./scripts/bootstrap-agent-control.sh --check --target "$PWD"

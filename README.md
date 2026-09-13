@@ -38,7 +38,7 @@ Mallow is your floating guide. The established crew helps explain dispatch, revi
 For the stable version, use the [4.5.1 installation documentation](https://github.com/lozknowles/agent-control/blob/v4.5.1/docs/DEPLOYMENT.md). To review this candidate on Linux with Node.js 24, npm, Git and Bash:
 
 ```bash
-git clone --branch feature/4.6-model-intelligence-showcase https://github.com/lozknowles/agent-control.git
+git clone --branch integration/4.6-release-20260913 https://github.com/lozknowles/agent-control.git
 cd agent-control
 git rev-parse HEAD
 ./scripts/bootstrap-agent-control.sh --check --target "$PWD"
