@@ -178,7 +178,7 @@ test('quality escalation fails closed and preserves the original thread when the
     const executor=new DirectRepositoryReviewExecutor(models,store,routing,{routing,contracts,handoffs},clients,undefined,undefined,undefined,gate),request=reviewRequest(route);request.contextChunks=request.contextChunks.slice(0,1);request.maximumCost=10;
     await assert.rejects(()=>executor.execute(request),/repository_review_quality_escalation_failed/);
     const sourceThread=routing.thread(`${request.executionId}:context-1`),failed=routing.evidence().decisions.find(item=>item.outcome==='FAILED');
-    assert.equal(sourceThread.recoverable,true);assert.equal(failed?.trigger?.kind,'QUALITY_GATE');assert.match(failed?.reason??'',/handoff_failed_resume_original_thread/);assert.equal(store.list()[0].status,'FAILED');
+    assert.equal(sourceThread.recoverable,true);assert.equal(failed?.trigger?.kind,'QUALITY_GATE');assert.match(failed?.reason??'',/handoff_failed_original_thread_reassessed/);assert.equal(store.list()[0].status,'FAILED');
   } finally {fs.rmSync(root,{recursive:true,force:true});}
 });
 
@@ -255,8 +255,8 @@ test('failed production destination execution preserves evidence and resumes the
     assert.equal(parcel.audit.totals.totalTokens, 200);
     assert.equal(parcel.audit.timeline.some(item => item.type === 'route.changed' && item.summary.includes('resumed')), true);
     const failed = routing.evidence().decisions.find(item => item.outcome === 'FAILED');
-    assert.equal(failed?.action, 'CONTINUE');
-    assert.match(failed?.reason ?? '', /handoff_failed_resume_original_thread/);
+    assert.equal(failed?.action, 'COMPACT_AND_CONTINUE');
+    assert.match(failed?.reason ?? '', /handoff_failed_original_thread_reassessed/);
     assert.equal(routing.thread('repository-review:run-handoff:1:context-1').recoverable, true);
 
     const destination = contracts.list().find(contract => contract.parentContractId);

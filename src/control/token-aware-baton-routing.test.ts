@@ -105,7 +105,7 @@ test('an independently observed quality failure selects the configured governed 
 test('successful and failed handoffs preserve the original recoverable thread and record outcomes', async () => {
   const value = runtime(); value.observe({...sample('thread:one', {context: 91, limit: 100, authority: 'authoritative'}), observedAt: at(1)}); const sealed = value.createBaton(baton());
   const success = await value.handoff('thread:one', sealed.id, {providerId: 'openrouter', modelId: 'glm-5.3-flash'}, async () => undefined); assert.equal(success.outcome, 'SUCCEEDED'); assert.equal(value.thread('thread:one').recoverable, true);
-  const failure = await value.handoff('thread:one', sealed.id, {providerId: 'openrouter', modelId: 'glm-5.3-flash'}, async () => { throw new Error('target_unavailable'); }); assert.equal(failure.outcome, 'FAILED'); assert.equal(value.thread('thread:one').recoverable, true); assert.equal(value.thread('thread:one').governor.state, 'CONTINUE');
+  const failure = await value.handoff('thread:one', sealed.id, {providerId: 'openrouter', modelId: 'glm-5.3-flash'}, async () => { throw new Error('target_unavailable'); }); assert.equal(failure.outcome, 'FAILED'); assert.equal(value.thread('thread:one').recoverable, true); assert.equal(value.thread('thread:one').governor.state, 'HANDOFF'); assert.equal(failure.action, 'COMPACT_AND_CONTINUE'); assert.match(failure.reason, /handoff_failed_original_thread_reassessed/);
 });
 
 test('parcel totals survive Sol to Luna to GLM handoffs and durable evidence reconciles after restart', () => {
