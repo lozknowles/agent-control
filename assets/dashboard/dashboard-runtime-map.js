@@ -937,7 +937,7 @@
   async function openEstate(id) {
     rt.surface='estate';rt.mode='map';rt.focusIds=null;rt.search='';rt.filter='ALL';
     if($("runtime-map-workspace").hidden)document.querySelector('[data-view="runtime-map"]')?.click();rt.active=true;
-    surfaceButtons();modeButtons();await load();
+    surfaceButtons();modeButtons();await load();await heartbeat();
     if(id&&rt.projection?.nodes.some(n=>n.id===id)){rt.selected=id;uncollapseAncestors(rt.projection.nodes.find(n=>n.id===id),rt.projection);render();}
   }
   async function heartbeat() {
