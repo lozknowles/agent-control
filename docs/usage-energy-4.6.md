@@ -90,3 +90,7 @@ The browser exercised all eight views, invocation detail, the native Process Map
 Remaining acceptance work includes paid/cached-provider billing evidence, authorised whole-node telemetry and tariffs, attributable energy on representative successful workloads, longer historical coverage, cross-machine comparability, wider provider-specific adapter attestation, hardware identity coverage, and independent raw-output replay for future failed qualification records. The reporting scan has an explicit capacity limit and is not a distributed accounting service. Existing governance/evidence stores retain their current single-writer assumptions.
 
 Historical 4.5 specialist-energy advantage and warm-residency findings remain DISPROVEN; whole-node energy remains BLOCKED_EXTERNAL. No merge, tag, release or deployment was performed. The broader showcase gate remains incomplete.
+
+## Subsequent physical closure
+
+The [physical closure report](usage-energy-physical-closure-4.6.md) records new local runs, measured sample-gap behaviour, Mallow grounding and the explicit external billing/metering boundaries. The original evidence in this report remains unchanged.
