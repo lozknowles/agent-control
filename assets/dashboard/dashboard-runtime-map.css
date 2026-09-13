@@ -644,3 +644,16 @@
     flex-direction: column;
   }
 }
+
+.estate-dashboard-heartbeat{display:block;width:calc(100% - 32px);margin:8px 16px;text-align:left;white-space:normal;line-height:1.6}
+.runtime-graph-node.estate-GREEN rect{stroke:#32bc81;fill:#12362b}
+.runtime-graph-node.estate-ORANGE rect{stroke:#e7a63b;fill:#3a2d18}
+.runtime-graph-node.estate-RED rect{stroke:#ee7272;fill:#3d2028}
+.runtime-graph-node.estate-GREY rect{stroke:#8793a5;fill:#252c36}
+#estate-readiness-explanation li{margin:12px 0;line-height:1.5}
+#estate-readiness-explanation p{margin:4px 0}
+
+#runtime-inspector dl{display:block}
+#runtime-inspector dt{margin-top:12px;font-size:12px;opacity:.75;overflow-wrap:anywhere}
+#runtime-inspector dd{margin:4px 0;white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%}
+#estate-job-picker{max-width:100%;min-width:240px}

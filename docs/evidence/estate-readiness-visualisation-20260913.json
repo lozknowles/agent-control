@@ -1,0 +1,1244 @@
+{
+  "baseCommit": "614f39220a1c7ba7709ded89bde524b4229b5503",
+  "estateInitial": {
+    "observedAt": "2026-09-13T05:03:17.226Z",
+    "total": 16,
+    "alive": 6,
+    "stale": 0,
+    "unverified": 9,
+    "offline": 0,
+    "unqualifiedCurrent": 16,
+    "reportedQualifiedLifecycle": 1,
+    "authenticationRequired": 1
+  },
+  "estateExpired": {
+    "observedAt": "2026-09-13T05:05:14.677Z",
+    "total": 16,
+    "alive": 0,
+    "stale": 1,
+    "unverified": 9,
+    "offline": 0,
+    "unqualifiedCurrent": 16,
+    "reportedQualifiedLifecycle": 1,
+    "authenticationRequired": 1
+  },
+  "estateRefreshed": {
+    "observedAt": "2026-09-13T05:05:16.205Z",
+    "total": 16,
+    "alive": 6,
+    "stale": 0,
+    "unverified": 9,
+    "offline": 0,
+    "unqualifiedCurrent": 16,
+    "reportedQualifiedLifecycle": 1,
+    "authenticationRequired": 1
+  },
+  "initialCounts": {
+    "resources": {
+      "alive": 6,
+      "total": 16
+    },
+    "devices": {
+      "alive": 1,
+      "total": 2
+    },
+    "transports": {
+      "alive": 1,
+      "total": 2
+    },
+    "runtimes": {
+      "alive": 1,
+      "total": 1
+    },
+    "models": {
+      "alive": 0,
+      "total": 2
+    },
+    "agents": {
+      "alive": 0,
+      "total": 2
+    },
+    "warnings": 16,
+    "jobs": {
+      "total": 50,
+      "catalogueCapable": 28,
+      "operationalReady": 2,
+      "blocked": 48
+    },
+    "blockers": [
+      {
+        "code": "CAPABILITY_ABSENT",
+        "count": 22
+      },
+      {
+        "code": "RESOURCE_NOT_DISCOVERED",
+        "count": 22
+      },
+      {
+        "code": "DEPENDENCY_UNAVAILABLE",
+        "count": 22
+      },
+      {
+        "code": "QUALIFICATION_REQUIRED",
+        "count": 48
+      },
+      {
+        "code": "APPROVAL_REQUIRED",
+        "count": 8
+      },
+      {
+        "code": "CONNECTOR_REQUIRED",
+        "count": 3
+      },
+      {
+        "code": "CREDENTIAL_REQUIRED",
+        "count": 1
+      }
+    ]
+  },
+  "expiredCounts": {
+    "resources": {
+      "alive": 0,
+      "total": 16
+    },
+    "devices": {
+      "alive": 0,
+      "total": 2
+    },
+    "transports": {
+      "alive": 0,
+      "total": 2
+    },
+    "runtimes": {
+      "alive": 0,
+      "total": 1
+    },
+    "models": {
+      "alive": 0,
+      "total": 2
+    },
+    "agents": {
+      "alive": 0,
+      "total": 2
+    },
+    "warnings": 16,
+    "jobs": {
+      "total": 50,
+      "catalogueCapable": 28,
+      "operationalReady": 0,
+      "blocked": 50
+    },
+    "blockers": [
+      {
+        "code": "DEPENDENCY_UNAVAILABLE",
+        "count": 50
+      },
+      {
+        "code": "CAPABILITY_ABSENT",
+        "count": 22
+      },
+      {
+        "code": "RESOURCE_NOT_DISCOVERED",
+        "count": 22
+      },
+      {
+        "code": "QUALIFICATION_REQUIRED",
+        "count": 48
+      },
+      {
+        "code": "APPROVAL_REQUIRED",
+        "count": 8
+      },
+      {
+        "code": "CONNECTOR_REQUIRED",
+        "count": 3
+      },
+      {
+        "code": "RESOURCE_STALE",
+        "count": 2
+      },
+      {
+        "code": "ADMISSION_EXPIRED",
+        "count": 2
+      },
+      {
+        "code": "CREDENTIAL_REQUIRED",
+        "count": 1
+      }
+    ]
+  },
+  "refreshedCounts": {
+    "resources": {
+      "alive": 6,
+      "total": 16
+    },
+    "devices": {
+      "alive": 1,
+      "total": 2
+    },
+    "transports": {
+      "alive": 1,
+      "total": 2
+    },
+    "runtimes": {
+      "alive": 1,
+      "total": 1
+    },
+    "models": {
+      "alive": 0,
+      "total": 2
+    },
+    "agents": {
+      "alive": 0,
+      "total": 2
+    },
+    "warnings": 16,
+    "jobs": {
+      "total": 50,
+      "catalogueCapable": 28,
+      "operationalReady": 0,
+      "blocked": 50
+    },
+    "blockers": [
+      {
+        "code": "CAPABILITY_ABSENT",
+        "count": 22
+      },
+      {
+        "code": "RESOURCE_NOT_DISCOVERED",
+        "count": 22
+      },
+      {
+        "code": "DEPENDENCY_UNAVAILABLE",
+        "count": 22
+      },
+      {
+        "code": "QUALIFICATION_REQUIRED",
+        "count": 48
+      },
+      {
+        "code": "APPROVAL_REQUIRED",
+        "count": 8
+      },
+      {
+        "code": "CONNECTOR_REQUIRED",
+        "count": 3
+      },
+      {
+        "code": "ADMISSION_EXPIRED",
+        "count": 2
+      },
+      {
+        "code": "CREDENTIAL_REQUIRED",
+        "count": 1
+      }
+    ]
+  },
+  "exercise": [
+    {
+      "jobId": "disk-space-check",
+      "runId": "run-c6b51659-843e-48b8-9448-84269d59c1a0",
+      "status": "SUCCEEDED",
+      "kind": "LIVE_READ_ONLY_VARIANT",
+      "inputDigest": "6b5f623009025a35e7245d3393b351ab6a28e5f0466b25807d61cf565c80c8fc",
+      "target": "machine:controller",
+      "scope": [
+        "read-only:bound-inputs",
+        "local-mutation:isolated-run-output"
+      ],
+      "canonicalFixtureExecuted": false,
+      "outputSchemaValidated": true,
+      "artifacts": [
+        {
+          "id": "artifact-d994e89b-37ea-40e5-aaae-c83e7cff584b",
+          "sha256": "dd92b86f8a1d7ce433da87b8cababced633be6eff7c61cc02f626a31e80f4a00"
+        }
+      ],
+      "errors": []
+    },
+    {
+      "jobId": "gpu-inspection",
+      "runId": "run-31a02e37-0611-41b9-8e36-d7bcda0822b5",
+      "status": "SUCCEEDED",
+      "kind": "LIVE_READ_ONLY_VARIANT",
+      "inputDigest": "6b39c3a856dab32d6aa987e7b9af8332d0547c22f9998f66fca5a31fcaef77ce",
+      "target": "machine:controller",
+      "scope": [
+        "read-only:bound-inputs",
+        "local-mutation:isolated-run-output"
+      ],
+      "canonicalFixtureExecuted": false,
+      "outputSchemaValidated": true,
+      "artifacts": [
+        {
+          "id": "artifact-973bf6be-f658-4cca-83ba-787c8df1a3ee",
+          "sha256": "e8d38a761e0dfaef0c4b597f35eb438af1f901e82eb8a13428124f227bd7f087"
+        }
+      ],
+      "errors": []
+    }
+  ],
+  "approvalProof": [
+    {
+      "jobId": "dependency-upgrade",
+      "runId": "run-f5903c65-affa-4c08-982b-50724756959b",
+      "status": "WAITING",
+      "stepStatus": "WAITING_FOR_APPROVAL",
+      "actionCalls": 0
+    },
+    {
+      "jobId": "destructive-approval",
+      "runId": "run-b876b54d-80f7-4797-8f3c-23278812cf85",
+      "status": "WAITING",
+      "stepStatus": "WAITING_FOR_APPROVAL",
+      "actionCalls": 0
+    },
+    {
+      "jobId": "fix-failing-test",
+      "runId": "run-31693267-1ccf-43d0-965d-7c1ba176546a",
+      "status": "WAITING",
+      "stepStatus": "WAITING_FOR_APPROVAL",
+      "actionCalls": 0
+    },
+    {
+      "jobId": "home-entity-control",
+      "runId": "run-7509fa82-9657-43a8-a279-fbe1ec3f1e68",
+      "status": "WAITING",
+      "stepStatus": "WAITING_FOR_APPROVAL",
+      "actionCalls": 0
+    },
+    {
+      "jobId": "production-deployment",
+      "runId": "run-0f0101e7-304a-47bf-a424-4dfb3302a1bd",
+      "status": "WAITING",
+      "stepStatus": "WAITING_FOR_APPROVAL",
+      "actionCalls": 0
+    },
+    {
+      "jobId": "restart-failed-service",
+      "runId": "run-b7d64b92-d52e-4611-943e-b979086fbe8a",
+      "status": "WAITING",
+      "stepStatus": "WAITING_FOR_APPROVAL",
+      "actionCalls": 0
+    },
+    {
+      "jobId": "small-feature",
+      "runId": "run-b250f9a9-7773-431d-8f71-e701b2d291ca",
+      "status": "WAITING",
+      "stepStatus": "WAITING_FOR_APPROVAL",
+      "actionCalls": 0
+    },
+    {
+      "jobId": "staging-deployment",
+      "runId": "run-b087c5dd-1005-413a-914b-ee1251fa386e",
+      "status": "WAITING",
+      "stepStatus": "WAITING_FOR_APPROVAL",
+      "actionCalls": 0
+    }
+  ],
+  "browserChecks": [
+    "Authenticated heartbeat and full native estate",
+    "Two current exact read-only admissions",
+    "Ready and blocked causal chains",
+    "Estate to native run and exact target back to Estate",
+    "Wall-clock admission expiry automatically removes READY",
+    "Native rescan updates graph without renewing admission"
+  ],
+  "browserErrors": [],
+  "tests": {
+    "relevantRegression": 170,
+    "failed": 0,
+    "typecheck": "PASS"
+  },
+  "boundaries": {
+    "liveReadOnlyVariants": 2,
+    "canonicalFixtureRuns": 0,
+    "qualifiedCanonicalJobs": 0,
+    "deployments": 0,
+    "mobileActions": 0,
+    "forbiddenActionCalls": 0
+  },
+  "source": {
+    "repository": "lozknowles/agent-control-jobs",
+    "release": "v0.1.0",
+    "revision": "0c72c8ca1cb897e100894babc2d1be437e4433f2"
+  },
+  "allJobs": [
+    {
+      "id": "benchmark-model",
+      "catalogue": "UNSUPPORTED",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "CAPABILITY_ABSENT",
+          "requirement": "model.invoke"
+        },
+        {
+          "code": "RESOURCE_NOT_DISCOVERED",
+          "requirement": "model.invoke"
+        },
+        {
+          "code": "DEPENDENCY_UNAVAILABLE",
+          "requirement": "target"
+        },
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "benchmark-model"
+        }
+      ]
+    },
+    {
+      "id": "checkpoint-resume",
+      "catalogue": "UNSUPPORTED",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "CAPABILITY_ABSENT",
+          "requirement": "checkpoint"
+        },
+        {
+          "code": "RESOURCE_NOT_DISCOVERED",
+          "requirement": "checkpoint"
+        },
+        {
+          "code": "DEPENDENCY_UNAVAILABLE",
+          "requirement": "target"
+        },
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "checkpoint-resume"
+        }
+      ]
+    },
+    {
+      "id": "compare-models",
+      "catalogue": "UNSUPPORTED",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "CAPABILITY_ABSENT",
+          "requirement": "model.invoke"
+        },
+        {
+          "code": "RESOURCE_NOT_DISCOVERED",
+          "requirement": "model.invoke"
+        },
+        {
+          "code": "DEPENDENCY_UNAVAILABLE",
+          "requirement": "target"
+        },
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "compare-models"
+        }
+      ]
+    },
+    {
+      "id": "connector-interruption",
+      "catalogue": "UNSUPPORTED",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "CAPABILITY_ABSENT",
+          "requirement": "checkpoint"
+        },
+        {
+          "code": "RESOURCE_NOT_DISCOVERED",
+          "requirement": "checkpoint"
+        },
+        {
+          "code": "DEPENDENCY_UNAVAILABLE",
+          "requirement": "target"
+        },
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "connector-interruption"
+        }
+      ]
+    },
+    {
+      "id": "contradictory-evidence",
+      "catalogue": "READY",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "contradictory-evidence"
+        }
+      ]
+    },
+    {
+      "id": "crm-record-analysis",
+      "catalogue": "READY",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "crm-record-analysis"
+        }
+      ]
+    },
+    {
+      "id": "csv-analysis",
+      "catalogue": "READY",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "csv-analysis"
+        }
+      ]
+    },
+    {
+      "id": "customer-support-triage",
+      "catalogue": "READY",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "customer-support-triage"
+        }
+      ]
+    },
+    {
+      "id": "delayed-dependency",
+      "catalogue": "UNSUPPORTED",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "CAPABILITY_ABSENT",
+          "requirement": "checkpoint"
+        },
+        {
+          "code": "RESOURCE_NOT_DISCOVERED",
+          "requirement": "checkpoint"
+        },
+        {
+          "code": "CAPABILITY_ABSENT",
+          "requirement": "scheduler"
+        },
+        {
+          "code": "RESOURCE_NOT_DISCOVERED",
+          "requirement": "scheduler"
+        },
+        {
+          "code": "DEPENDENCY_UNAVAILABLE",
+          "requirement": "target"
+        },
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "delayed-dependency"
+        }
+      ]
+    },
+    {
+      "id": "dependency-graph",
+      "catalogue": "UNSUPPORTED",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "CAPABILITY_ABSENT",
+          "requirement": "workers.parallel"
+        },
+        {
+          "code": "RESOURCE_NOT_DISCOVERED",
+          "requirement": "workers.parallel"
+        },
+        {
+          "code": "DEPENDENCY_UNAVAILABLE",
+          "requirement": "target"
+        },
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "dependency-graph"
+        }
+      ]
+    },
+    {
+      "id": "dependency-upgrade",
+      "catalogue": "UNSUPPORTED",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "CAPABILITY_ABSENT",
+          "requirement": "code.execute"
+        },
+        {
+          "code": "RESOURCE_NOT_DISCOVERED",
+          "requirement": "code.execute"
+        },
+        {
+          "code": "DEPENDENCY_UNAVAILABLE",
+          "requirement": "target"
+        },
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "dependency-upgrade"
+        },
+        {
+          "code": "APPROVAL_REQUIRED",
+          "requirement": "dependency-upgrade"
+        }
+      ]
+    },
+    {
+      "id": "destructive-approval",
+      "catalogue": "UNSUPPORTED",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "CAPABILITY_ABSENT",
+          "requirement": "filesystem.delete"
+        },
+        {
+          "code": "RESOURCE_NOT_DISCOVERED",
+          "requirement": "filesystem.delete"
+        },
+        {
+          "code": "DEPENDENCY_UNAVAILABLE",
+          "requirement": "target"
+        },
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "destructive-approval"
+        },
+        {
+          "code": "APPROVAL_REQUIRED",
+          "requirement": "destructive-approval"
+        }
+      ]
+    },
+    {
+      "id": "diagnose-unavailable-service",
+      "catalogue": "UNSUPPORTED",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "CAPABILITY_ABSENT",
+          "requirement": "service.inspect"
+        },
+        {
+          "code": "RESOURCE_NOT_DISCOVERED",
+          "requirement": "service.inspect"
+        },
+        {
+          "code": "DEPENDENCY_UNAVAILABLE",
+          "requirement": "target"
+        },
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "diagnose-unavailable-service"
+        }
+      ]
+    },
+    {
+      "id": "discover-models",
+      "catalogue": "UNSUPPORTED",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "CAPABILITY_ABSENT",
+          "requirement": "http.read"
+        },
+        {
+          "code": "RESOURCE_NOT_DISCOVERED",
+          "requirement": "http.read"
+        },
+        {
+          "code": "CONNECTOR_REQUIRED",
+          "requirement": "http"
+        },
+        {
+          "code": "DEPENDENCY_UNAVAILABLE",
+          "requirement": "target"
+        },
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "discover-models"
+        }
+      ]
+    },
+    {
+      "id": "disk-space-check",
+      "catalogue": "READY",
+      "operational": "READY",
+      "blockers": []
+    },
+    {
+      "id": "document-collection-summary",
+      "catalogue": "READY",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "document-collection-summary"
+        }
+      ]
+    },
+    {
+      "id": "document-comparison",
+      "catalogue": "READY",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "document-comparison"
+        }
+      ]
+    },
+    {
+      "id": "documentation-consistency",
+      "catalogue": "READY",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "documentation-consistency"
+        }
+      ]
+    },
+    {
+      "id": "draft-response",
+      "catalogue": "READY",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "draft-response"
+        }
+      ]
+    },
+    {
+      "id": "duplicate-detection",
+      "catalogue": "READY",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "duplicate-detection"
+        }
+      ]
+    },
+    {
+      "id": "endpoint-health",
+      "catalogue": "UNSUPPORTED",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "CAPABILITY_ABSENT",
+          "requirement": "http.read"
+        },
+        {
+          "code": "RESOURCE_NOT_DISCOVERED",
+          "requirement": "http.read"
+        },
+        {
+          "code": "CONNECTOR_REQUIRED",
+          "requirement": "http"
+        },
+        {
+          "code": "DEPENDENCY_UNAVAILABLE",
+          "requirement": "target"
+        },
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "endpoint-health"
+        }
+      ]
+    },
+    {
+      "id": "fan-out-research",
+      "catalogue": "UNSUPPORTED",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "CAPABILITY_ABSENT",
+          "requirement": "workers.parallel"
+        },
+        {
+          "code": "RESOURCE_NOT_DISCOVERED",
+          "requirement": "workers.parallel"
+        },
+        {
+          "code": "DEPENDENCY_UNAVAILABLE",
+          "requirement": "target"
+        },
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "fan-out-research"
+        }
+      ]
+    },
+    {
+      "id": "fix-failing-test",
+      "catalogue": "UNSUPPORTED",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "CAPABILITY_ABSENT",
+          "requirement": "code.execute"
+        },
+        {
+          "code": "RESOURCE_NOT_DISCOVERED",
+          "requirement": "code.execute"
+        },
+        {
+          "code": "DEPENDENCY_UNAVAILABLE",
+          "requirement": "target"
+        },
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "fix-failing-test"
+        },
+        {
+          "code": "APPROVAL_REQUIRED",
+          "requirement": "fix-failing-test"
+        }
+      ]
+    },
+    {
+      "id": "gpu-inspection",
+      "catalogue": "READY",
+      "operational": "READY",
+      "blockers": []
+    },
+    {
+      "id": "hallucination-resistance",
+      "catalogue": "READY",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "hallucination-resistance"
+        }
+      ]
+    },
+    {
+      "id": "home-entity-control",
+      "catalogue": "UNSUPPORTED",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "CAPABILITY_ABSENT",
+          "requirement": "home-assistant.control"
+        },
+        {
+          "code": "RESOURCE_NOT_DISCOVERED",
+          "requirement": "home-assistant.control"
+        },
+        {
+          "code": "CONNECTOR_REQUIRED",
+          "requirement": "home-assistant"
+        },
+        {
+          "code": "CREDENTIAL_REQUIRED",
+          "requirement": "home-assistant-token"
+        },
+        {
+          "code": "DEPENDENCY_UNAVAILABLE",
+          "requirement": "target"
+        },
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "home-entity-control"
+        },
+        {
+          "code": "APPROVAL_REQUIRED",
+          "requirement": "home-entity-control"
+        }
+      ]
+    },
+    {
+      "id": "inbox-triage",
+      "catalogue": "READY",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "inbox-triage"
+        }
+      ]
+    },
+    {
+      "id": "insufficient-permission",
+      "catalogue": "READY",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "insufficient-permission"
+        }
+      ]
+    },
+    {
+      "id": "invalid-input",
+      "catalogue": "READY",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "invalid-input"
+        }
+      ]
+    },
+    {
+      "id": "investigate-regression",
+      "catalogue": "READY",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "investigate-regression"
+        }
+      ]
+    },
+    {
+      "id": "invoice-reconciliation",
+      "catalogue": "READY",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "invoice-reconciliation"
+        }
+      ]
+    },
+    {
+      "id": "machine-health",
+      "catalogue": "READY",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "machine-health"
+        }
+      ]
+    },
+    {
+      "id": "maintenance-plan",
+      "catalogue": "READY",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "maintenance-plan"
+        }
+      ]
+    },
+    {
+      "id": "meeting-preparation",
+      "catalogue": "READY",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "meeting-preparation"
+        }
+      ]
+    },
+    {
+      "id": "missing-credential",
+      "catalogue": "READY",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "missing-credential"
+        }
+      ]
+    },
+    {
+      "id": "operator-pause-resume",
+      "catalogue": "UNSUPPORTED",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "CAPABILITY_ABSENT",
+          "requirement": "checkpoint"
+        },
+        {
+          "code": "RESOURCE_NOT_DISCOVERED",
+          "requirement": "checkpoint"
+        },
+        {
+          "code": "CAPABILITY_ABSENT",
+          "requirement": "operator.pause"
+        },
+        {
+          "code": "RESOURCE_NOT_DISCOVERED",
+          "requirement": "operator.pause"
+        },
+        {
+          "code": "DEPENDENCY_UNAVAILABLE",
+          "requirement": "target"
+        },
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "operator-pause-resume"
+        }
+      ]
+    },
+    {
+      "id": "partial-worker-failure",
+      "catalogue": "UNSUPPORTED",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "CAPABILITY_ABSENT",
+          "requirement": "workers.parallel"
+        },
+        {
+          "code": "RESOURCE_NOT_DISCOVERED",
+          "requirement": "workers.parallel"
+        },
+        {
+          "code": "CAPABILITY_ABSENT",
+          "requirement": "checkpoint"
+        },
+        {
+          "code": "RESOURCE_NOT_DISCOVERED",
+          "requirement": "checkpoint"
+        },
+        {
+          "code": "DEPENDENCY_UNAVAILABLE",
+          "requirement": "target"
+        },
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "partial-worker-failure"
+        }
+      ]
+    },
+    {
+      "id": "production-deployment",
+      "catalogue": "UNSUPPORTED",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "CAPABILITY_ABSENT",
+          "requirement": "deploy"
+        },
+        {
+          "code": "RESOURCE_NOT_DISCOVERED",
+          "requirement": "deploy"
+        },
+        {
+          "code": "DEPENDENCY_UNAVAILABLE",
+          "requirement": "target"
+        },
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "production-deployment"
+        },
+        {
+          "code": "APPROVAL_REQUIRED",
+          "requirement": "production-deployment"
+        }
+      ]
+    },
+    {
+      "id": "repository-health-audit",
+      "catalogue": "READY",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "repository-health-audit"
+        }
+      ]
+    },
+    {
+      "id": "restart-failed-service",
+      "catalogue": "UNSUPPORTED",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "CAPABILITY_ABSENT",
+          "requirement": "service.control"
+        },
+        {
+          "code": "RESOURCE_NOT_DISCOVERED",
+          "requirement": "service.control"
+        },
+        {
+          "code": "DEPENDENCY_UNAVAILABLE",
+          "requirement": "target"
+        },
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "restart-failed-service"
+        },
+        {
+          "code": "APPROVAL_REQUIRED",
+          "requirement": "restart-failed-service"
+        }
+      ]
+    },
+    {
+      "id": "review-pull-request",
+      "catalogue": "READY",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "review-pull-request"
+        }
+      ]
+    },
+    {
+      "id": "schedule-proposal",
+      "catalogue": "READY",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "schedule-proposal"
+        }
+      ]
+    },
+    {
+      "id": "service-health-check",
+      "catalogue": "UNSUPPORTED",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "CAPABILITY_ABSENT",
+          "requirement": "service.inspect"
+        },
+        {
+          "code": "RESOURCE_NOT_DISCOVERED",
+          "requirement": "service.inspect"
+        },
+        {
+          "code": "DEPENDENCY_UNAVAILABLE",
+          "requirement": "target"
+        },
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "service-health-check"
+        }
+      ]
+    },
+    {
+      "id": "small-feature",
+      "catalogue": "UNSUPPORTED",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "CAPABILITY_ABSENT",
+          "requirement": "code.execute"
+        },
+        {
+          "code": "RESOURCE_NOT_DISCOVERED",
+          "requirement": "code.execute"
+        },
+        {
+          "code": "DEPENDENCY_UNAVAILABLE",
+          "requirement": "target"
+        },
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "small-feature"
+        },
+        {
+          "code": "APPROVAL_REQUIRED",
+          "requirement": "small-feature"
+        }
+      ]
+    },
+    {
+      "id": "source-comparison",
+      "catalogue": "READY",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "source-comparison"
+        }
+      ]
+    },
+    {
+      "id": "staging-deployment",
+      "catalogue": "UNSUPPORTED",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "CAPABILITY_ABSENT",
+          "requirement": "deploy"
+        },
+        {
+          "code": "RESOURCE_NOT_DISCOVERED",
+          "requirement": "deploy"
+        },
+        {
+          "code": "DEPENDENCY_UNAVAILABLE",
+          "requirement": "target"
+        },
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "staging-deployment"
+        },
+        {
+          "code": "APPROVAL_REQUIRED",
+          "requirement": "staging-deployment"
+        }
+      ]
+    },
+    {
+      "id": "structured-extraction",
+      "catalogue": "READY",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "structured-extraction"
+        }
+      ]
+    },
+    {
+      "id": "supply-chain-risk",
+      "catalogue": "READY",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "supply-chain-risk"
+        }
+      ]
+    },
+    {
+      "id": "technical-research",
+      "catalogue": "READY",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "technical-research"
+        }
+      ]
+    },
+    {
+      "id": "topic-monitor",
+      "catalogue": "UNSUPPORTED",
+      "operational": "UNSUPPORTED",
+      "blockers": [
+        {
+          "code": "CAPABILITY_ABSENT",
+          "requirement": "scheduler"
+        },
+        {
+          "code": "RESOURCE_NOT_DISCOVERED",
+          "requirement": "scheduler"
+        },
+        {
+          "code": "DEPENDENCY_UNAVAILABLE",
+          "requirement": "target"
+        },
+        {
+          "code": "QUALIFICATION_REQUIRED",
+          "requirement": "topic-monitor"
+        }
+      ]
+    }
+  ]
+}

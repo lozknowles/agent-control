@@ -1,3 +1,4 @@
+import {safeEstateAttributes,resourcePresentation} from "./estate-readiness-presentation.js";
 import { createHash } from "node:crypto";
 import type {
   DiscoveryItem,
@@ -228,15 +229,17 @@ export function projectEstateMap(
       safe({
         id: item.id,
         type: typeFor(item),
-        label: item.label,
+        label: item.kind === "CREDENTIAL" ? (item.configuredId ?? item.id) : item.label.replace(/https?:\/\/[^\s]+/g, value=>String(safeEstateAttributes({url:value}).url??"[endpoint]")),
         subtitle: `${item.operationalState.replaceAll("_", " ")} · ${fresh ? "recently verified" : "stale / not currently verified"}`,
-        state: stateFor(item, fresh),
+        state: ({GREEN:"SUCCEEDED",ORANGE:"DEGRADED",RED:"FAILED",GREY:"WAITING"} as const)[resourcePresentation(item,scan,new Date(time)).colour]??"WAITING",
         startedAt: last,
         parentId: parent,
         groupId: item.nodeId,
         expandable: true,
         detail: {
-          ...item.attributes,
+          ...safeEstateAttributes(item.attributes),
+          ...resourcePresentation(item,scan,new Date(time)),
+          deviceId: machineIds.get(item.nodeId) ?? null,
           kind: item.kind,
           configuredId: item.configuredId ?? null,
           nodeId: item.nodeId,
@@ -248,19 +251,23 @@ export function projectEstateMap(
               : "NOT_CURRENTLY_VERIFIED",
           freshness: estateObservationState(item,time).lastAuthoritativeObservation===null ? "UNVERIFIED" : estateObservationState(item,time).fresh ? "CURRENT" : "STALE",
           lastSeen: last,
-          lastVerified:
-            item.lifecycle === "QUALIFIED" || item.lifecycle === "ACTIVE"
-              ? estateObservationState(item,time).lastAuthoritativeObservation
-              : null,
+          discoveredAt: item.provenance.map(p=>p.observedAt).sort()[0]??null,
+          lastVerified: estateObservationState(item,time).alive?estateObservationState(item,time).lastAuthoritativeObservation:null,
+          lastQualified: item.lifecycle==='QUALIFIED'?estateObservationState(item,time).lastAuthoritativeObservation:null,
+          authentication: estateObservationState(item,time).authentication,
+          discoveryState: item.operationalState,
+          transport: safeEstateAttributes(item.attributes).transport ?? safeEstateAttributes(byId.get(machineIds.get(item.nodeId)??'')?.attributes??{}).transport ?? null,
+          address: safeEstateAttributes(item.attributes).address ?? safeEstateAttributes(item.attributes).endpoint ?? safeEstateAttributes(item.attributes).baseUrl ?? safeEstateAttributes(byId.get(machineIds.get(item.nodeId)??'')?.attributes??{}).address ?? null,
           verificationSource: item.provenance.at(-1)?.method ?? "unknown",
           verificationAuthority: item.provenance.at(-1)?.authority ?? "UNKNOWN",
           qualification: item.lifecycle,
           change: item.change,
           resourceClasses: item.resourceClasses,
+          connectionPlaceholder: item.kind==="CREDENTIAL"?"••••••••••••":null,
           credentialMask:
             item.kind === "CREDENTIAL"
               ? "••••••••••••"
-              : item.attributes.credentialMask,
+              : undefined,
         },
         evidence: [
           {
@@ -292,6 +299,7 @@ export function projectEstateMap(
       ),
     ];
     for (const transport of transports) {
+      const localVerified=transport==="local"&&estateObservationState(machine,time).alive&&machine.provenance.some(p=>p.authority==="AUTHORITATIVE"&&p.adapter==="local-machine"&&p.method==="node:os");
       const id = `transport:${machine.id}:${transport}`;
       nodes.push(
         safe({
@@ -309,18 +317,22 @@ export function projectEstateMap(
           expandable: true,
           detail: {
             transport,
+            nodeId: machine.nodeId,
+            deviceId: machine.id,
             source: "Agent Control",
             destination: machine.label,
-            address: machine.attributes.address ?? "unreported",
+            address: safeEstateAttributes(machine.attributes).address ?? "unreported",
             port: machine.attributes.port ?? "unreported",
-            username: machine.attributes.username ?? "unreported",
+            connectionVerification: localVerified?"Local in-process native OS observation":"Transport declaration; machine liveness alone does not verify this route",
             authenticationMethod:
               machine.attributes.authenticationMethod ?? "unreported",
             credentialStatus:
               machine.attributes.credentialStatus ?? "unreported",
             authentication: "••••••••••••",
             health: machine.health,
-            lastVerified: observedAt(machine, scan),
+            lastVerified: localVerified?estateObservationState(machine,time).lastAuthoritativeObservation:null,
+            availability: localVerified?"ALIVE":"NOT_CURRENTLY_VERIFIED",
+            colour: localVerified?"GREEN":"GREY",
           },
           evidence: [
             {
@@ -352,8 +364,7 @@ export function projectEstateMap(
       const runtime = runtimeCandidates.find(
         (value) =>
           value.nodeId === item.nodeId &&
-          (value.label === item.attributes.runtime ||
-            value.configuredId === item.attributes.runtime),
+          value.configuredId === item.attributes.runtime,
       );
       if (runtime)
         edges.push(relation(runtime.id, item.id, "contains", "hosts model"));
@@ -380,21 +391,9 @@ export function projectEstateMap(
     ],
     counts = (kind: DiscoveryKind) =>
       scan.items.filter((item) => item.kind === kind),
-    alive = (values: DiscoveryItem[]) =>
-      values.filter(
-        (item) =>
-          stateFor(
-            item,
-            time - Date.parse(observedAt(item, scan)) >= 0 && time - Date.parse(observedAt(item, scan)) <=
-              ESTATE_FRESHNESS_MS[item.kind],
-          ) === "SUCCEEDED" ||
-          stateFor(
-            item,
-            time - Date.parse(observedAt(item, scan)) >= 0 && time - Date.parse(observedAt(item, scan)) <=
-              ESTATE_FRESHNESS_MS[item.kind],
-          ) === "RUNNING",
-      ).length;
+    alive = (values: DiscoveryItem[]) => values.filter(item=>nodes.find(n=>n.id===item.id)?.detail.availability==='ALIVE').length;
   const estateCounts = {
+    resources: {alive:alive(scan.items),total:scan.items.length},
     devices: {
       alive: alive(counts("MACHINE")),
       total: counts("MACHINE").length,
@@ -403,7 +402,7 @@ export function projectEstateMap(
       alive: nodes.filter(
         (node) =>
           node.type === "transport" &&
-          ["SUCCEEDED", "RUNNING"].includes(node.state),
+          node.detail.availability === "ALIVE",
       ).length,
       total: nodes.filter((node) => node.type === "transport").length,
     },
@@ -415,8 +414,7 @@ export function projectEstateMap(
     agents: { alive: alive(counts("AGENT")), total: counts("AGENT").length },
     warnings: nodes.filter(
       (node) =>
-        ["FAILED", "DEGRADED", "WAITING"].includes(node.state) &&
-        node.id !== root,
+        byId.has(node.id) && (node.detail.colour!=="GREEN"),
     ).length,
   };
   const latest =
@@ -425,7 +423,7 @@ export function projectEstateMap(
         .sort()
         .at(-1) ?? scan.completedAt,
     resourceNodes = nodes.filter(
-      (node) => node.detail.projectionGroup !== true,
+      (node) => byId.has(node.id),
     ),
     summary = {
       nodes: resourceNodes.length,
@@ -439,11 +437,7 @@ export function projectEstateMap(
       degraded: resourceNodes.filter((n) => n.state === "DEGRADED").length,
       groups: new Set(nodes.map((n) => n.groupId).filter(Boolean)).size,
     };
-  const anyCurrent = scan.items.some(
-    (item) =>
-      time - Date.parse(observedAt(item, scan)) >= 0 && time - Date.parse(observedAt(item, scan)) <=
-      ESTATE_FRESHNESS_MS[item.kind],
-  );
+  const anyCurrent = scan.items.some(item=>estateObservationState(item,time).fresh);
   return safe({
     schema: "agent-control.runtime-map/v1",
     authority: "Agent Control governed discovery inventory",
@@ -471,7 +465,7 @@ export function projectEstateMap(
             time - Date.parse(provenance.observedAt) <=
               ESTATE_FRESHNESS_MS[item.kind],
           ),
-          summary: `${item.label} observed by ${provenance.adapter}`,
+          summary: `${nodes.find(n=>n.id===item.id)?.label??item.id} observed by ${provenance.adapter}`,
           evidence: [
             {
               kind: "environment-discovery-item",

@@ -7,6 +7,8 @@
     comparison: null,
     parcels: [],
     parcelId: "",
+    runId: "",
+    focusIds: null,
     compareLeft: "",
     compareRight: "",
     surface: "process",
@@ -144,7 +146,7 @@
         if (!previous || previous.parcelId !== rt.projection.parcelId) {
           rt.collapsed.clear();
           rt.autoClustered = false;
-          rt.selected = null;
+          if(!rt.projection.nodes.some(n=>n.id===rt.selected))rt.selected = null;
         }
         if (rt.projection.nodes.length > 30 && !rt.autoClustered) {
           for (const node of rt.projection.nodes)
@@ -154,6 +156,7 @@
         render();
         return;
       }
+      if(rt.runId) {rt.projection=await get(`/api/runtime-map?runId=${encodeURIComponent(rt.runId)}`);rt.processProjection=rt.projection;render();return;}
       await loadParcels();
       if (rt.mode === "compare") {
         await loadComparison();
@@ -287,7 +290,7 @@
     $("runtime-map-health").innerHTML =
       `<strong>${safe(rt.surface === "estate" ? "ESTATE" : p.mode)} · ${safe(p.freshness.state)}</strong><span>${safe(p.parcelId)} · authoritative ${safe(p.freshness.lastAuthoritativeAt ? new Date(p.freshness.lastAuthoritativeAt).toLocaleTimeString() : "unavailable")}</span>${stale ? `<b>${rt.surface === "estate" ? "Known resources are stale or not currently verified; discovery is not proof of availability." : "Dashboard data is stale; execution authority is unaffected."}</b>` : ""}`;
     $("runtime-map-summary").textContent =
-      `${p.summary.running} active · ${p.summary.waiting} waiting/stale · ${p.summary.succeeded} healthy/succeeded · ${p.summary.degraded} degraded · ${p.summary.failed} failed · ${p.summary.nodes} ${rt.surface === "estate" ? "resources" : "operations"}`;
+      `${p.summary.running} active · ${p.summary.waiting} waiting/stale · ${p.summary.succeeded} healthy/succeeded · ${p.summary.degraded} degraded · ${p.summary.failed} failed · ${rt.surface === "estate" ? p.estateCounts?.resources?.total??0 : p.summary.nodes} ${rt.surface === "estate" ? "native resources" : "operations"}`;
     $("runtime-map-title").textContent =
       rt.surface === "estate" ? "Estate Map" : "Process Map";
     $("runtime-map-eyebrow").textContent =
@@ -318,19 +321,20 @@
       filter.value = types.includes(prior) ? prior : "ALL";
       rt.filter = filter.value;
     }
+    let picker=$('estate-job-picker');
+    if(!picker){picker=document.createElement('select');picker.id='estate-job-picker';picker.setAttribute('aria-label','Explain job readiness');$('runtime-map-summary').before(picker);picker.addEventListener('change',()=>{if(!picker.value){rt.focusIds=null;rt.selected=null;render();return;}focusJob(rt.projection.nodes.find(n=>n.id===picker.value));});}
+    picker.hidden=rt.surface!=='estate';
+    if(rt.surface==='estate'){picker.innerHTML='<option value="">All estate resources · choose a job to explain readiness</option>'+p.nodes.filter(n=>n.id.startsWith('library-job:')).map(n=>`<option value="${safe(n.id)}">${safe(n.label)} · ${n.detail.operationalReady?'READY':safe(n.detail.technicalReadiness)}</option>`).join('');picker.value=rt.focusIds&&rt.selected?.startsWith('library-job:')?rt.selected:'';}
     const heartbeat = $("runtime-estate-heartbeat");
     heartbeat.hidden = rt.surface !== "estate";
     const processKpis = $("runtime-process-kpis");
     processKpis.hidden = rt.surface === "estate";
     if (rt.surface !== "estate") renderProcessKpis();
-    if (rt.surface === "estate" && p.estateCounts)
-      heartbeat.innerHTML = Object.entries(p.estateCounts)
-        .map(([key, value]) =>
-          key === "warnings"
-            ? `<article><span>Warnings</span><strong>${safe(value)}</strong></article>`
-            : `<article><span>${safe(key)}</span><strong>${safe(value.alive)} / ${safe(value.total)}</strong></article>`,
-        )
-        .join("");
+    if (rt.surface === "estate") {
+      const c=p.estateCounts||{},cards=Object.entries(c).filter(([key])=>!['jobs','blockers'].includes(key)).map(([key,value])=>[key,typeof value==='object'?`${value.alive} / ${value.total}`:value]);
+      if(c.jobs)cards.push(['jobs READY now',`${c.jobs.operationalReady} / ${c.jobs.total}`],['catalogue capable',c.jobs.catalogueCapable]);
+      heartbeat.innerHTML=cards.map(([label,value])=>`<article><span>${safe(label)}</span><strong>${safe(value)}</strong></article>`).join('');
+    }
     document.querySelector(".runtime-replay-control").hidden =
       rt.mode !== "replay";
     if (rt.mode === "replay")
@@ -352,6 +356,7 @@
     }
     renderGraph();
     if (rt.selected) inspect(p.nodes.find((n) => n.id === rt.selected));
+    else $("runtime-inspector").innerHTML=rt.surface==="estate"?"<h2>Estate readiness</h2><p>Green: current and usable. Orange: alive with qualification or configuration gaps. Red: current expected failure. Grey: stale, offline or unverified.</p><p>Select a resource for evidence and job impact, or choose a job to inspect WHY READY / WHY NOT READY.</p>":"<p>Select an operation to inspect its recorded evidence.</p>";
   }
   function renderProcessKpis() {
     const p = rt.projection,
@@ -378,11 +383,25 @@
       )
       .join("");
   }
+  function causalEdges(p,ids) {
+    const edges=p.edges.filter(e=>ids.has(e.from)&&ids.has(e.to));
+    if(!rt.focusIds)return edges;
+    // Reverse a containment arrow only in the focused view, retaining its real evidence.
+    return edges.map(e=>{const child=p.nodes.find(n=>n.id===e.to);return child?.detail.deviceId===e.from&&child.type!=='transport'?{...e,from:e.to,to:e.from,label:'hosted on device'}:e;});
+  }
+  function focusJob(node) {
+    const ids=new Set([node.id]);
+    for(const e of rt.projection.edges)if(e.from===node.id)ids.add(e.to);
+    for(const e of rt.projection.edges)if(ids.has(e.from)&&e.from.startsWith('library-capability:'))ids.add(e.to);
+    for(const id of [...ids]) {const n=rt.projection.nodes.find(n=>n.id===id);if(n?.detail.deviceId)ids.add(n.detail.deviceId);}
+    for(const n of rt.projection.nodes)if(n.type==='transport'&&ids.has(n.detail.deviceId))ids.add(n.id);
+    rt.focusIds=ids;rt.filter='ALL';rt.search='';rt.collapsed.clear();rt.selected=node.id;render();
+  }
   function renderGraph() {
     const p = rt.projection,
-      nodes = visibleNodes(),
+      nodes = visibleNodes().filter(n=>rt.focusIds?rt.focusIds.has(n.id):rt.surface!=="estate"||!n.id.startsWith("library-")),
       ids = new Set(nodes.map((n) => n.id)),
-      edges = p.edges.filter((e) => ids.has(e.from) && ids.has(e.to)),
+      edges = causalEdges(p,ids),
       map = layout(nodes, edges),
       canvas = $("runtime-map-canvas"),
       viewWidth = map.width / rt.scale,
@@ -403,7 +422,7 @@
       .map((n) => {
         const pos = map.positions.get(n.id),
           children = p.nodes.filter((x) => x.parentId === n.id).length;
-        return `<g class="runtime-graph-node type-${safe(n.type)} state-${safe(n.state)} ${rt.selected === n.id ? "selected" : ""}" transform="translate(${pos.x} ${pos.y})" data-runtime-node="${safe(n.id)}" role="button" tabindex="0" aria-label="${safe(n.label)}, ${safe(n.state)}"><rect width="184" height="76" rx="10"/><text class="runtime-node-icon" x="13" y="25">${safe(icons[n.type] || "◇")}</text><text class="runtime-node-label" x="42" y="22">${safe(short(n.label, 21))}</text><text class="runtime-node-subtitle" x="42" y="42">${safe(short(n.subtitle || n.type, 24))}</text><text class="runtime-node-status" x="13" y="64">${safe(n.state)}</text>${children ? `<text class="runtime-node-collapse" x="150" y="64" data-runtime-collapse="${safe(n.id)}">${rt.collapsed.has(n.id) ? "+" : "−"} ${children}</text>` : ""}</g>`;
+        return `<g class="runtime-graph-node type-${safe(n.type)} state-${safe(n.state)} estate-${safe(n.detail.colour||"")} ${rt.selected === n.id ? "selected" : ""}" transform="translate(${pos.x} ${pos.y})" data-runtime-node="${safe(n.id)}" role="button" tabindex="0" aria-label="${safe(n.label)}, ${safe(n.state)}"><rect width="184" height="76" rx="10"/><text class="runtime-node-icon" x="13" y="25">${safe(icons[n.type] || "◇")}</text><text class="runtime-node-label" x="42" y="22">${safe(short(n.label, 21))}</text><text class="runtime-node-subtitle" x="42" y="42">${safe(short(n.subtitle || n.type, 24))}</text><text class="runtime-node-status" x="13" y="64">${safe(n.detail.markers?.length?n.detail.markers.join(" · "):n.detail.availability||n.state)}</text>${children ? `<text class="runtime-node-collapse" x="150" y="64" data-runtime-collapse="${safe(n.id)}">${rt.collapsed.has(n.id) ? "+" : "−"} ${children}</text>` : ""}</g>`;
       })
       .join("")}</svg>`;
     canvas.querySelectorAll("[data-runtime-node]").forEach((button) =>
@@ -552,16 +571,25 @@
     const children = rt.projection.nodes.filter(
         (candidate) => candidate.parentId === node.id,
       ).length,
-      resource = node.detail?.resourceIdentity,
+      resource = node.detail?.resourceIdentity || node.detail?.estateResourceIds?.length,
       parent = node.parentId
         ? rt.projection.nodes.find((candidate) => candidate.id === node.parentId)
         : null;
     $("runtime-inspector").innerHTML =
-      `<header><span class="runtime-node-state state-${safe(node.state)}">${safe(icons[node.type] || "◇")} ${safe(node.state)}</span><h2>${safe(node.label)}</h2><p>${safe(node.subtitle || node.type)}</p></header><div class="runtime-inspector-actions">${children ? `<button class="button secondary" data-runtime-expand="${safe(node.id)}">${rt.collapsed.has(node.id) ? "Expand branch" : "Collapse branch"} · ${children}</button>` : ""}${parent ? `<button class="button secondary" data-runtime-parent="${safe(parent.id)}">Up to ${safe(parent.label)}</button>` : ""}${session ? `<button class="button" data-runtime-session="${safe(session)}">${node.state === "RUNNING" ? "Watch live session" : "Open recorded transcript"}</button>` : ""}${rt.surface === "process" && resource ? '<button class="button secondary" data-runtime-resource>View Estate resource</button>' : ""}${rt.surface === "estate" ? '<button class="button secondary" data-runtime-work>View current work</button>' : ""}</div><dl>${detail}</dl><h3>Authoritative evidence</h3><ul class="runtime-evidence">${evidenceList(node.evidence)}</ul>`;
+      `<header><span class="runtime-node-state state-${safe(node.state)}">${safe(icons[node.type] || "◇")} ${safe(node.state)}</span><h2>${safe(node.label)}</h2><p>${safe(node.subtitle || node.type)}</p></header><div class="runtime-inspector-actions">${children ? `<button class="button secondary" data-runtime-expand="${safe(node.id)}">${rt.collapsed.has(node.id) ? "Expand branch" : "Collapse branch"} · ${children}</button>` : ""}${parent ? `<button class="button secondary" data-runtime-parent="${safe(parent.id)}">Up to ${safe(parent.label)}</button>` : ""}${session ? `<button class="button" data-runtime-session="${safe(session)}">${node.state === "RUNNING" ? "Watch live session" : "Open recorded transcript"}</button>` : ""}${rt.surface === "process" && resource ? '<button class="button secondary" data-runtime-resource>View Estate resource</button>' : ""}${rt.surface === "estate" && rt.parcelId ? '<button class="button secondary" data-runtime-work>View current work</button>' : ""}</div><div id="estate-readiness-explanation"></div><dl>${detail}</dl><h3>Authoritative evidence</h3><ul class="runtime-evidence">${evidenceList(node.evidence)}</ul>`;
+    const explanation=$("estate-readiness-explanation"),gaps=node.detail.blockers||[],runIds=node.detail.processRunIds||[];
+    explanation.innerHTML=`${node.id.startsWith('library-job:')?`<h3>${node.detail.operationalReady?'WHY READY':'WHY NOT READY'}</h3><button class="button secondary" data-causal-focus>Show requirement chain</button>`:''}${gaps.length?`<ul>${gaps.map(g=>`<li><strong>${safe(g.code)}</strong> · ${safe(g.requirement)}<p>${safe(g.explanation)}</p><small>Proposed next action: ${safe(g.nextAction)}</small></li>`).join('')}</ul>`:''}${runIds.map(id=>`<button class="button secondary" data-process-run="${safe(id)}">Show in Process Map · ${safe(id)}</button>`).join('')}${(node.detail.jobLibrary?.jobsDependingOn||[]).map(id=>`<button class="button secondary" data-library-job="${safe(id)}">Why ${safe(id)}?</button>`).join('')}${(node.detail.estateResourceIds||[]).map(id=>`<button class="button secondary" data-estate-id="${safe(id)}">Show in Estate Map · ${safe(id)}</button>`).join('')}`;
+    explanation.querySelectorAll('[data-library-job]').forEach(b=>b.addEventListener('click',()=>focusJob(rt.projection.nodes.find(n=>n.id===`library-job:${b.dataset.libraryJob}`))));
+    explanation.querySelector('[data-causal-focus]')?.addEventListener('click',()=>{
+      focusJob(node);
+    });
+    explanation.querySelectorAll('[data-process-run]').forEach(b=>b.addEventListener('click',async()=>{rt.runId=b.dataset.processRun;rt.surface='process';rt.mode='map';rt.focusIds=null;rt.selected=null;surfaceButtons();modeButtons();await load();}));
+    explanation.querySelectorAll('[data-estate-id]').forEach(b=>b.addEventListener('click',()=>openEstate(b.dataset.estateId)));
     $("runtime-breadcrumbs")
       .querySelector("[data-runtime-back]")
       .addEventListener("click", () => {
         rt.selected = null;
+        rt.focusIds=null;
         inspect(null);
         renderGraph();
       });
@@ -623,8 +651,9 @@
     }
   }
   async function viewEstateResource(node) {
+    if(node.detail.estateResourceIds?.length){await openEstate(node.detail.estateResourceIds[0]);return;}
     const identity = node.detail.resourceIdentity || {};
-    rt.estateProjection = rt.estateProjection ?? (await get("/api/estate-map"));
+    rt.estateProjection = await get("/api/estate-map");
     const target =
       rt.estateProjection.nodes.find((candidate) =>
         exactResourceMatch(identity, candidate),
@@ -834,7 +863,8 @@
     );
     document.querySelectorAll("[data-runtime-surface]").forEach((button) =>
       button.addEventListener("click", () => {
-        rt.surface = button.dataset.runtimeSurface;
+        rt.focusIds=null;rt.runId="";
+      rt.surface = button.dataset.runtimeSurface;
         rt.mode = "map";
         rt.selected = null;
         rt.collapsed.clear();
@@ -893,5 +923,23 @@
       if (rt.active) schedule();
     }).observe($("stream-state"), { childList: true, attributes: true });
   });
-  window.AgentControlRuntimeMap = { activate, schedule };
+  async function openEstate(id) {
+    rt.surface='estate';rt.mode='map';rt.focusIds=null;rt.search='';rt.filter='ALL';
+    if($("runtime-map-workspace").hidden)document.querySelector('[data-view="runtime-map"]')?.click();rt.active=true;
+    surfaceButtons();modeButtons();await load();
+    if(id&&rt.projection?.nodes.some(n=>n.id===id)){rt.selected=id;uncollapseAncestors(rt.projection.nodes.find(n=>n.id===id),rt.projection);render();}
+  }
+  async function heartbeat() {
+    const button=$('estate-dashboard-heartbeat');if(!button)return;
+    if(state.operatorAuth!=='authenticated'){button.textContent='Estate · authentication required';return;}
+    try {const h=await get('/api/estate-heartbeat'),c=h.counts;
+      button.textContent=`Estate · ${c.resources?.alive??0}/${c.resources?.total??0} alive · machines ${c.devices?.alive??0}/${c.devices?.total??0} · transports ${c.transports?.alive??0}/${c.transports?.total??0} · runtimes ${c.runtimes?.alive??0}/${c.runtimes?.total??0} · models ${c.models?.alive??0}/${c.models?.total??0} · agents ${c.agents?.alive??0}/${c.agents?.total??0} · ${c.jobs?.operationalReady??0}/${c.jobs?.total??0} jobs READY now · ${c.jobs?.catalogueCapable??0} catalogue capable · ${c.warnings??0} warnings`;
+      button.title=`Observed ${h.observedAt}; scan ${h.scanId}. Click to inspect the Estate Map.`;
+    }catch {button.textContent='Estate · current observations unavailable';}
+  }
+  $('estate-dashboard-heartbeat')?.addEventListener('click',()=>openEstate());
+  // Cheap projection reads only. No discovery, model inference or admission renewal.
+  setInterval(()=>{if(document.hidden)return;heartbeat();if(rt.active&&rt.surface==='estate')load();},5000);
+  heartbeat();
+  window.AgentControlRuntimeMap = { activate, schedule, openEstate };
 })();

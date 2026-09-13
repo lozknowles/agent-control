@@ -165,6 +165,7 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   if (method === 'GET' && url.pathname === '/api/operator-auth') return json(response, 200, operatorAuthentication(request, options));
   if (method === 'GET' && url.pathname === '/api/configuration') { validateOperatorRequest(request, options); return json(response, 200, new ConfigurationStore(options.configFile ?? configPath()).read()); }
   if (method === 'GET' && url.pathname === '/api/environment-discovery') { validateOperatorRequest(request, options); return json(response, 200, service.environmentDiscoveryProjection()); }
+  if (method === 'GET' && url.pathname === '/api/estate-heartbeat') { validateOperatorRequest(request, options); return json(response,200,service.estateHeartbeat()); }
   if (method === 'GET' && url.pathname === '/api/estate-map') { validateOperatorRequest(request, options); return json(response, 200, service.estateMap()); }
   if (method === 'GET' && url.pathname === '/api/capability-adapters') { validateOperatorRequest(request, options); return json(response, 200, service.capabilityAdapterProjection()); }
   const capabilityAdapterExportMatch = url.pathname.match(/^\/api\/capability-adapters\/([^/]+)\/export$/);
@@ -186,7 +187,7 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   if (method === 'GET' && url.pathname === '/api/executions') return json(response, 200, service.executionProvenance());
   if (method === 'GET' && url.pathname === '/api/fast-execution-attempts') return json(response, 200, service.fastExecutionAttempts());
   if (method === 'GET' && url.pathname === '/api/runtime') return json(response, 200, service.runtime());
-  if (method === 'GET' && url.pathname === '/api/runtime-map') { validateOperatorRequest(request, options); const replayAt=url.searchParams.get('at')??undefined;if(replayAt&&Number.isNaN(Date.parse(replayAt)))throw httpError(400,'runtime_map_replay_time_invalid');return json(response,200,service.runtimeMap(url.searchParams.get('parcelId')??undefined,replayAt)); }
+  if (method === 'GET' && url.pathname === '/api/runtime-map') { validateOperatorRequest(request, options); const replayAt=url.searchParams.get('at')??undefined;if(replayAt&&Number.isNaN(Date.parse(replayAt)))throw httpError(400,'runtime_map_replay_time_invalid');if(url.searchParams.has('runId'))return json(response,200,service.runtimeRunMap(url.searchParams.get('runId')!));return json(response,200,service.runtimeMap(url.searchParams.get('parcelId')??undefined,replayAt)); }
   if (method === 'GET' && url.pathname === '/api/runtime-map/compare') { validateOperatorRequest(request, options); const left=url.searchParams.get('left'),right=url.searchParams.get('right');if(!left||!right)throw httpError(400,'runtime_map_compare_ids_required');return json(response,200,service.compareRuntimeMaps(left,right)); }
   if (method === 'GET' && url.pathname === '/api/token-routing') return json(response, 200, service.tokenRouting());
   if (method === 'GET' && url.pathname === '/api/retrieval') return json(response, 200, service.retrievalProjection());

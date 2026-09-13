@@ -82,6 +82,7 @@ test("estate graph reuses runtime graph schema and creates only evidenced hierar
       id: "runtime:controller:llama",
       kind: "RUNTIME",
       label: "llama.cpp",
+      configuredId: "llama.cpp",
       nodeId: "controller",
     }),
     model = item({
@@ -181,7 +182,7 @@ test("estate projection remains bounded for fifty-plus resources", () => {
     started = performance.now(),
     projection = projectEstateMap(scan(items), "2026-09-12T12:00:30.000Z");
   assert.equal(projection.nodes.length, 63);
-  assert.equal(projection.summary.nodes, 62);
+  assert.equal(projection.summary.nodes, 61);
   assert.ok(performance.now() - started < 250);
   assert.equal(projection.summary.groups, 1);
   const group = projection.nodes.find(

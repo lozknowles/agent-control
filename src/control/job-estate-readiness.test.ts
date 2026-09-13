@@ -66,11 +66,12 @@ test('existing Estate Map service can consume freshly evaluated library impact',
     jobLibraryReadiness:(latest,at)=>{called=true;assert.equal(latest.id,scan.id);assert.ok(Number.isFinite(+at));return [operationalReadiness(declared,latest,[],at)];}});
   const map=service.estateMap();assert.equal(called,true);assert.ok(map.nodes.some(n=>n.id==='library-job:job'));
 });
-test('endpoint catalogue success establishes reachability without capability qualification',async()=>{
+test('full and quick endpoint catalogue observations establish reachability without capability qualification',async()=>{
   const context={mode:'FULL_DISCOVERY',testing:'QUICK_TEST',config:emptyConfig(),environment:{},observedAt:now.toISOString(),probe:{
     command:async()=>({ok:false,stdout:'',stderr:''}),json:async()=>({ok:true,status:200,body:{data:[]}})}} as unknown as DiscoveryAdapterContext;
   const records=await new LocalRuntimeDiscoveryAdapter().discover(context);const endpoints=records.filter(r=>r.kind==='ENDPOINT');
   assert.ok(endpoints.length>0);assert.ok(endpoints.every(r=>r.health==='HEALTHY'&&r.lifecycle==='DISCOVERED'));
+  const quick=await new LocalRuntimeDiscoveryAdapter().discover({...context,mode:'QUICK_RESCAN'});assert.deepEqual(quick.filter(r=>r.kind==='ENDPOINT').map(r=>r.id),endpoints.map(r=>r.id));
 });
 test('Estate Map cannot override computed liveness through attributes or ignore a stale parent',()=>{
   const {scan}=fixture();scan.items[0].provenance[0].observedAt=new Date(+now-121000).toISOString();

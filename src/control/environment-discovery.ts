@@ -1243,6 +1243,7 @@ export class LocalRuntimeDiscoveryAdapter implements DiscoveryAdapter {
     }
     if (
       context.mode !== "FULL_DISCOVERY" &&
+      context.mode !== "QUICK_RESCAN" &&
       context.mode !== "FIRST_RUN" &&
       context.mode !== "ADD_LOCAL_RUNTIME" &&
       context.mode !== "ADD_MODEL"
@@ -1277,6 +1278,7 @@ export class LocalRuntimeDiscoveryAdapter implements DiscoveryAdapter {
           "DISCOVERED",
           {
             scope: "loopback",
+            endpoint: endpoint.url,
             status: response.status,
             runtime: endpoint.id,
             resourceClasses: "MODEL_RUNTIME,TOOL_SERVER",
@@ -1304,6 +1306,7 @@ export class LocalRuntimeDiscoveryAdapter implements DiscoveryAdapter {
               parameterSize: model.parameterSize ?? "unreported",
               quantisation: model.quantisation ?? "unreported",
               endpointScope: "loopback",
+              endpoint: endpoint.url,
               resourceClasses: "MODEL",
             },
             this.id,
