@@ -30,3 +30,5 @@ test('the exact invocation credential is redacted even when a future provider ha
   assert.equal(JSON.stringify(redacted).includes(encoded), false);
   assert.match(JSON.stringify(redacted), /REDACTED CREDENTIAL/);
 });
+
+test('common source-control chat and cloud credential identifiers are redacted',()=>{const values=['glpat-'+('A'.repeat(24)),'xoxb-123456789012-123456789012-'+('A'.repeat(24)),'AKIA'+('A'.repeat(16))];for(const value of values){const redacted=redactSensitiveText(`upstream echoed ${value}`);assert.equal(redacted.includes(value),false);assert.equal(containsSensitiveMaterial(value),true);}});

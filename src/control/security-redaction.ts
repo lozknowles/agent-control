@@ -6,6 +6,9 @@ const PROVIDER_KEYS = [
   /\bsk-(?:proj-)?[A-Za-z0-9_-]{10,}\b/g,
   /\bAIza[A-Za-z0-9_-]{20,}\b/g,
   /\bgh[opusr]_[A-Za-z0-9]{20,}\b/g,
+  /\bglpat-[A-Za-z0-9_-]{16,}\b/g,
+  /\bxox[baprs]-[A-Za-z0-9-]{10,}\b/g,
+  /\b(?:AKIA|ASIA)[A-Z0-9]{16}\b/g,
 ];
 const ASSIGNMENT = /\b(api[_-]?key|access[_-]?token|refresh[_-]?token|authorization|cookie|password|secret|session[_-]?token)\s*[:=]\s*[^\s,;]+/gi;
 
