@@ -26,10 +26,28 @@ export class IntelligenceJournal {
   records(kind?:string):JournalRecord[]{if(!fs.existsSync(this.file))return [];let previous:string|null=null;const rows=fs.readFileSync(this.file,'utf8').trim().split('\n').filter(Boolean).map((line,index)=>{const row=JSON.parse(line) as JournalRecord,{sha256,...body}=row;if(row.sequence!==index+1||row.previous!==previous||intelligenceHash(body)!==sha256)throw Error('intelligence_history_integrity_failed');previous=sha256;return row;});return kind?rows.filter(r=>r.kind===kind):rows;}
   append(kind:string,value:unknown,now=new Date()){
     assertNoSensitiveMaterial(canonical(value),'intelligence_credential_material_forbidden');
-    const lock=this.file+'.lock';const handle=fs.openSync(lock,'wx',0o600);
+    const lock=this.file+'.lock',handle=acquireJournalLock(lock,now);
     try{const history=this.records(),body={sequence:history.length+1,kind,at:now.toISOString(),previous:history.at(-1)?.sha256??null,value},record={...body,sha256:intelligenceHash(body)},fd=fs.openSync(this.file,'a',0o600);try{fs.writeSync(fd,JSON.stringify(record)+'\n');fs.fsyncSync(fd);}finally{fs.closeSync(fd);}return record;}finally{fs.closeSync(handle);fs.unlinkSync(lock);}
   }
 }
+
+interface JournalLockOwner {pid:number;processStartToken:string|null;acquiredAt:string;}
+function processStartToken(pid:number){
+  try{const value=fs.readFileSync(`/proc/${pid}/stat`,'utf8'),end=value.lastIndexOf(')'),fields=value.slice(end+2).trim().split(/\s+/);return end>0&&fields[19]?fields[19]:null;}catch{return null;}
+}
+function ownerAlive(owner:JournalLockOwner){
+  if(!Number.isInteger(owner.pid)||owner.pid<=0)return false;
+  try{process.kill(owner.pid,0);}catch(error){return (error as NodeJS.ErrnoException).code==='EPERM';}
+  const current=processStartToken(owner.pid);return !(owner.processStartToken&&current&&owner.processStartToken!==current);
+}
+function acquireJournalLock(lock:string,now:Date){
+  for(let attempt=0;attempt<2;attempt++){
+    try{const handle=fs.openSync(lock,'wx',0o600),owner:JournalLockOwner={pid:process.pid,processStartToken:processStartToken(process.pid),acquiredAt:now.toISOString()};fs.writeFileSync(handle,JSON.stringify(owner));fs.fsyncSync(handle);return handle;}
+    catch(error){if((error as NodeJS.ErrnoException).code!=='EEXIST')throw error;let stale=false;try{const raw=fs.readFileSync(lock,'utf8'),owner=JSON.parse(raw) as JournalLockOwner;stale=!ownerAlive(owner);}catch{try{stale=now.getTime()-fs.statSync(lock).mtimeMs>30_000;}catch{stale=false;}}if(!stale)throw Error('intelligence_journal_locked');try{fs.unlinkSync(lock);}catch{throw Error('intelligence_journal_locked');}}
+  }
+  throw Error('intelligence_journal_locked');
+}
+
 const key=(i:LandscapeItem)=>canonical([i.identity.provider,i.identity.model,i.identity.artifact,i.identity.quantisation,i.identity.kind]);
 function changes(before:IntelligenceObservation|undefined,after:IntelligenceObservation):ModelChange[]{
   if(!before)return [after.identity.kind==='RUNTIME'?'NEW RUNTIME SUPPORT':'NEW MODEL'];const a=before,b=after,result:ModelChange[]=[];
