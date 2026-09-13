@@ -40,7 +40,7 @@ The final code delta after physical installation/upgrade is only the map breadcr
 | Privacy | PASS | Visual inspection and OCR; [privacy record](../examples/showcase-4.6/public-preparation/privacy.json) |
 | Documentation links | PASS — 106 local links / anchors | Relative files, anchors, images and external public links |
 | Source distribution | PASS | Source-distribution validation; repeated after adding public media |
-| Public GitHub rendering | PENDING_PUBLIC_RENDER | Branch preview and image loading are checked after the documentation push |
+| Public GitHub rendering | PASS: Windows Chrome rendered all 4 README and 13 gallery images; 6 external links returned HTTP 200; 22 raw assets matched SHA-256. See github-validation.json. | Branch preview and image loading are checked after the documentation push |
 | Complete showcase release gate | INCOMPLETE | No malformed manifest entries; six original showcase conditions plus Android Standalone remain open |
 
 [Machine-readable qualification summary](../examples/showcase-4.6/public-preparation/qualification.json).
