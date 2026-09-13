@@ -27,6 +27,8 @@ param([string]$PayloadLine)
     try {
       & git -C $repository archive --format=tar --output=$temporary $reviewedSha
       if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $temporary -PathType Leaf)) { Fail 'repository_snapshot_failed' }
+      $archiveBytes = (Get-Item -LiteralPath $temporary).Length
+      if ($archiveBytes -le 0 -or $archiveBytes -gt 49283072) { Fail 'repository_snapshot_archive_too_large' }
       $archiveSha256 = (Get-FileHash -LiteralPath $temporary -Algorithm SHA256).Hash.ToLowerInvariant()
       $archiveBase64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes($temporary))
       $identityText = ([string]$request.nodeId) + "`n" + $repository.ToLowerInvariant()

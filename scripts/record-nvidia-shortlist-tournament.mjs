@@ -49,9 +49,9 @@ const immutableEvidence = [
   'docs/evidence/agent-control-3.9-nvidia-focused-diagnostics-20260906.md',
 ].map(file => ({file, sha256: sha256(fs.readFileSync(path.join(root, file)))}));
 
-for (const file of [evidenceFile,reportFile,transcriptFile,videoFile,manifestFile]) fs.rmSync(file,{force:true});
-fs.rmSync(screenshotDirectory,{recursive:true,force:true});
-fs.rmSync(rawVideoDirectory,{recursive:true,force:true});
+const plannedOutputs=[evidenceFile,reportFile,transcriptFile,videoFile,manifestFile,screenshotDirectory,rawVideoDirectory];
+const existingOutputs=plannedOutputs.filter(file=>fs.existsSync(file));
+if(existingOutputs.length)throw new Error(`tournament_evidence_already_exists:${existingOutputs.map(file=>path.relative(root,file)).join(',')}`);
 for (const directory of [outputDirectory,screenshotDirectory,rawVideoDirectory]) fs.mkdirSync(directory,{recursive:true,mode:0o700});
 if (fs.existsSync(path.join(stateDir,'models','provider-catalog.json')) || fs.existsSync(path.join(stateDir,'models','intelligence.json'))) throw new Error('tournament_state_not_pristine');
 

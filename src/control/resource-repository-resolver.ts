@@ -34,7 +34,7 @@ export class ResourceRepositoryResolver implements RepositoryResolver {
     if (result.status !== 0) throw new ParameterizedJobError('repository_snapshot_transport_failed');
     let wire: SnapshotWireResult; try { wire = JSON.parse(result.stdout.trim()) as SnapshotWireResult; } catch { throw new ParameterizedJobError('repository_snapshot_result_invalid'); }
     if (wire.schema !== 'agent-control.repository-snapshot-result/v1' || !wire.ok) throw new ParameterizedJobError(safeError(wire.error));
-    if (wire.nodeId !== input.nodeId || wire.sourceIdentity !== remoteSourceIdentity(input.nodeId, input.repository) || !gitHash(wire.reviewedSha) || !sha256(wire.archiveSha256) || typeof wire.archiveBase64 !== 'string') throw new ParameterizedJobError('repository_snapshot_result_invalid');
+    if (wire.nodeId !== input.nodeId || wire.sourceIdentity !== remoteSourceIdentity(input.nodeId, input.repository) || !gitHash(wire.reviewedSha) || !sha256(wire.archiveSha256) || typeof wire.archiveBase64 !== 'string' || wire.archiveBase64.length > 64 * 1024 * 1024) throw new ParameterizedJobError('repository_snapshot_result_invalid');
     const archive = Buffer.from(wire.archiveBase64, 'base64'); if (!archive.length || createHash('sha256').update(archive).digest('hex') !== wire.archiveSha256) throw new ParameterizedJobError('repository_snapshot_hash_mismatch');
     let archiveCommit: string;
     try { archiveCommit = execFileSync('git', ['get-tar-commit-id'], {input: archive, encoding: 'utf8', maxBuffer: 1024}).trim(); }

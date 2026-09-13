@@ -84,7 +84,7 @@ test('remote immutable snapshot crosses nodes as a verified archive without cred
 
 test('Windows snapshot runner is fixed-purpose and never reads or emits provider credential references', () => {
   const source = fs.readFileSync(path.resolve('scripts/repository-snapshot-windows.ps1'), 'utf8');
-  assert.match(source, /freezeGitRepository/); assert.match(source, /git -C \$repository archive/); assert.match(source, /Get-FileHash/);
+  assert.match(source, /freezeGitRepository/); assert.match(source, /git -C \$repository archive/); assert.match(source, /Get-FileHash/); assert.match(source, /archiveBytes.+-gt 49283072/); assert.ok(source.indexOf('archiveBytes') < source.indexOf('ReadAllBytes'));
   assert.doesNotMatch(source, /CODEX_HOME|auth\.json|Invoke-Expression|\biex\b/);
   assert.doesNotMatch(source, /access.?token|refresh.?token|api.?key/i);
 });
