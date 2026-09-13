@@ -7,7 +7,8 @@ now comes from trusted internal registration or configured transport
 provenance—not a worker name or self-declared label—so genuine remote workers
 remain under remote runtime-safety policy and unknown identities still fail
 closed. See the [4.5.1 migration guide](docs/migration-4.5.1.md), [deployment
-guide](docs/DEPLOYMENT.md), and [release notes](docs/release-notes-4.5.1.md).
+guide](docs/DEPLOYMENT.md), [release notes](docs/release-notes-4.5.1.md), and
+[dual-install qualification](docs/evidence/agent-control-4.5.1-controller-local-upgrade-qualification-20260913.md).
 
 The 4.5 candidate now includes a governed **Setup & Environment Discovery**
 wizard and a live **Estate Map** alongside Process Map. It inventories real

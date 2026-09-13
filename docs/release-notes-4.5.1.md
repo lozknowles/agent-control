@@ -28,5 +28,8 @@ disproven specialist-energy and warm-residency hypotheses, and the unavailable
 whole-node energy boundary.
 
 Use the [migration guide](migration-4.5.1.md) and [deployment guide](DEPLOYMENT.md)
-for upgrade, acceptance and rollback. The immutable qualification and closure
-record is linked here after all physical and production gates pass.
+for upgrade, acceptance and rollback. The
+[dual-install qualification record](evidence/agent-control-4.5.1-controller-local-upgrade-qualification-20260913.md)
+binds the clean-install and authentic v4.1-upgrade results to the exact revised
+candidate. Production deployment and its genuine smoke Job remain separate
+mandatory closure gates.

@@ -30,6 +30,12 @@
   credential-key checks.
 - Preserves the immutable v4.5.0 release, failed deployment evidence, known-good
   v4.1 rollback, and every accepted 4.5 limitation.
+- Physically requalifies the exact revised candidate through both required
+  installation paths: an ordinary full-clone virgin install and a byte-preserved
+  authentic v4.1 configuration/state upgrade. Both real dashboard runs completed
+  discovery, truthful Estate projection, Morrow approval and the governed
+  observation Job with controller-local runtime-safety admission. Production
+  deployment remains a separate release gate.
 
 ## [4.5.0] — 2026-09-13
 
