@@ -37,3 +37,8 @@ test('successful jobs count executions rather than collapsing repeated job defin
 test('local no-charge declarations remain distinct from missing API prices and electricity',()=>{const l=new MemoryHarnessEfficiencyLedger();l.record(row('local',accounting({executionKind:'LOCAL',localApiChargeKnownZero:true,pricing:null})));const p=usageProjection(l,[],{},now);assert.equal(p.totals.knownZeroApiCalls,1);assert.deepEqual(p.totals.apiCost.currencies,{});assert.equal(p.totals.energyCoverage.unavailableInvocations,1);});
 
 test('tiny numeric provider charges retain an exact decimal bridge without exponent rejection',()=>{const r=createInvocationObservation({jobId:'tiny',taskId:'task',laneId:'lane',model:'model',provider:'provider',harnessProfile:'STANDARD',executionStrategy:'test',startedAt:at,completedAt:at,recipeFingerprint:'test',providerReportedCost:1e-8,pricing:{currency:'USD',source:'provider',freshInputPerMillionTokens:1,outputPerMillionTokens:1}});assert.equal(r.accounting?.reportedCost?.amount,'0.00000001');assert.equal(r.providerReportedCost,1e-8);});
+
+test('POE exposes exact token coverage and local API distinction without claiming cost equivalence',()=>{
+ const ledger=new MemoryHarnessEfficiencyLedger();ledger.record(row('local',accounting({executionKind:'LOCAL',pricing:null,localApiChargeKnownZero:true})));
+ const p=usageProjection(ledger,[],{},now),answer=usageAnswer(p);assert.deepEqual(answer.accountedUsage.tokens,p.totals.tokens);assert.equal(answer.accountedUsage.knownZeroApiCalls,1);assert.equal(answer.executionKinds.find(k=>k.kind==='API')!.calls,0);assert.match(answer.comparisonLimitation,/attributable electricity/);assert.equal(answer.evidence.routingAuthority,'NONE');
+});

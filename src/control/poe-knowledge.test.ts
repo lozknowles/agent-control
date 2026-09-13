@@ -41,3 +41,9 @@ test('guided Work Parcel question retains documented parent and child relationsh
  assert.ok(calls.includes('voice'));
  calls.length=0;service.enrich('Explain Work Parcels');assert.ok(!calls.includes('voice'));
 });
+
+test('physical accounting coverage and cheaper questions resolve live usage evidence',()=>{
+ const calls:string[]=[];const service=new PoeKnowledgeService({root:process.cwd(),version:'4.6.test',revision:()=>({commit:'a'.repeat(40),dirty:false}),configuration:()=>({}),sources:[],live:category=>{calls.push(category);return {source:'CANONICAL_USAGE_PROJECTION',coverage:0.67};}});
+ for(const question of ['What was the measurement coverage?','Was the local run cheaper than the API?']){const answer=service.enrich(question);assert.ok(answer.facts.some(f=>f.label==='Live usage'&&String(f.value).includes('CANONICAL_USAGE_PROJECTION')));}
+ assert.deepEqual(calls,['usage','usage']);
+});
