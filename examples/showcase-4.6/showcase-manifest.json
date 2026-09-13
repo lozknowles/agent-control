@@ -1,6 +1,97 @@
 {
   "version": "4.6.0-rc.1",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "kind": "usage-overview",
+      "file": "docs/media/4.6/usage/01-overview.png",
+      "sha256": "0833162fb47a1b2bd19da9c25d517dc242f471bb41fa8556de2eb621e790c970",
+      "sourceCommit": "7494c2dce3296da531852e8f5f3545f8e89cfe0e",
+      "synthetic": false,
+      "privacyReviewed": true,
+      "scope": "Selected physical qualification histories; not estate-wide usage"
+    },
+    {
+      "kind": "usage-trend",
+      "file": "docs/media/4.6/usage/02-trend.png",
+      "sha256": "7474c57240534787ad4e0398693507ef4df5d08782307e6ee6a5886ffc2d9bc2",
+      "sourceCommit": "7494c2dce3296da531852e8f5f3545f8e89cfe0e",
+      "synthetic": false,
+      "privacyReviewed": true,
+      "scope": "Selected physical qualification histories; not estate-wide usage"
+    },
+    {
+      "kind": "usage-breakdown",
+      "file": "docs/media/4.6/usage/03-breakdown.png",
+      "sha256": "6685a7418b6ae324372d7515fe1faba31bb1a5470b6443752b6ecefec9037dcd",
+      "sourceCommit": "7494c2dce3296da531852e8f5f3545f8e89cfe0e",
+      "synthetic": false,
+      "privacyReviewed": true,
+      "scope": "Selected physical qualification histories; not estate-wide usage"
+    },
+    {
+      "kind": "usage-cache-retries",
+      "file": "docs/media/4.6/usage/04-cache-retries.png",
+      "sha256": "fde5d90bacc3ee4e4cb2d802f5f74de70ea7563c368d05c3201d3a3355a212a7",
+      "sourceCommit": "7494c2dce3296da531852e8f5f3545f8e89cfe0e",
+      "synthetic": false,
+      "privacyReviewed": true,
+      "scope": "Selected physical qualification histories; not estate-wide usage"
+    },
+    {
+      "kind": "usage-energy",
+      "file": "docs/media/4.6/usage/05-energy.png",
+      "sha256": "e76ab0053eb854add50f095deb79692b4d8f54758991554a0163306125c3216f",
+      "sourceCommit": "7494c2dce3296da531852e8f5f3545f8e89cfe0e",
+      "synthetic": false,
+      "privacyReviewed": true,
+      "scope": "Selected physical qualification histories; not estate-wide usage"
+    },
+    {
+      "kind": "usage-local-vs-api",
+      "file": "docs/media/4.6/usage/06-local-vs-api.png",
+      "sha256": "5aa5748ff1a32be934d19963ccd76f108d1de765d16362dbf77cbba2caeb008d",
+      "sourceCommit": "7494c2dce3296da531852e8f5f3545f8e89cfe0e",
+      "synthetic": false,
+      "privacyReviewed": true,
+      "scope": "Selected physical qualification histories; not estate-wide usage"
+    },
+    {
+      "kind": "usage-model-history",
+      "file": "docs/media/4.6/usage/07-model-history.png",
+      "sha256": "3e41f6c4b0ccd293787ade9bac19e71e0e2aadf6dd3ad0565680bf638aa30178",
+      "sourceCommit": "7494c2dce3296da531852e8f5f3545f8e89cfe0e",
+      "synthetic": false,
+      "privacyReviewed": true,
+      "scope": "Selected physical qualification histories; not estate-wide usage"
+    },
+    {
+      "kind": "usage-invocations",
+      "file": "docs/media/4.6/usage/08-invocations.png",
+      "sha256": "abaead1d4897bbdd73d2c90eeb25a7f08c122188c51fef51c020a70d64cd55af",
+      "sourceCommit": "7494c2dce3296da531852e8f5f3545f8e89cfe0e",
+      "synthetic": false,
+      "privacyReviewed": true,
+      "scope": "Selected physical qualification histories; not estate-wide usage"
+    },
+    {
+      "kind": "usage-invocation-detail",
+      "file": "docs/media/4.6/usage/09-invocation-detail.png",
+      "sha256": "ffe466ce3ccfb09c68375d9ecdc4a64273592a9bd71d9ab969b90139fcb454ba",
+      "sourceCommit": "7494c2dce3296da531852e8f5f3545f8e89cfe0e",
+      "synthetic": false,
+      "privacyReviewed": true,
+      "scope": "Selected physical qualification histories; not estate-wide usage"
+    },
+    {
+      "kind": "usage-mobile",
+      "file": "docs/media/4.6/usage/10-mobile.png",
+      "sha256": "fe4dc5940e2f777c14fba6f9d92a0e6608cac28e8b43983a941a216a984332fa",
+      "sourceCommit": "7494c2dce3296da531852e8f5f3545f8e89cfe0e",
+      "synthetic": false,
+      "privacyReviewed": true,
+      "scope": "Selected physical qualification histories; not estate-wide usage"
+    }
+  ],
   "intelligence": {
     "file": "examples/showcase-4.6/model-intelligence.json",
     "changesDetected": 17,

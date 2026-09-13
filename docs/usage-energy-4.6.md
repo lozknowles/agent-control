@@ -39,18 +39,43 @@ The selected native Work Parcels ran on two already resident local models, witho
 | Integer arithmetic / Qwen2.5-3B Q4_K_M | 44 | 3 | 351 ms | PASS | approximately 0.0033 Wh |
 | Transaction reconciliation / Qwen2.5-Coder-3B Q4_K_M | 199 | 37 | 966 ms | FAIL: exact JSON contract | approximately 0.0151 Wh |
 | Transaction reconciliation / Qwen2.5-3B Q4_K_M | 199 | 37 | 967 ms | FAIL: exact JSON contract | approximately 0.0145 Wh |
+| Separate JSON-format reconciliation follow-up / coder model | 199 | 37 | 946 ms | FAIL | approximately 0.0150 Wh |
 
-These are sampled GPU board intervals, **not energy attributable to those jobs**. Model artifact hashes describe files referenced by the resident processes; no new model-load attestation was performed. The arithmetic intervals used two boundary samples; reconciliation used three samples. That is insufficient for a statistically meaningful efficiency comparison. Both reconciliation failures remain failures; they do not blacklist either model family. Raw provider content was not retained by this qualification script, so the response hashes and verifier receipts are available but the failed JSON outputs cannot be independently replayed from this evidence pack.
+These are sampled GPU board intervals, **not energy attributable to those jobs**. Model artifact hashes describe files referenced by the resident processes; no new model-load attestation was performed. The arithmetic intervals used two boundary samples; reconciliation used three samples. That is insufficient for a statistically meaningful efficiency comparison. Both reconciliation failures remain failures; they do not blacklist either model family. The first two failed raw outputs were not retained, so those failures cannot be independently replayed from this evidence pack. A separately identified follow-up requested JSON-object formatting without changing the expected answer. It still returned fenced output and incorrect A/B totals; that [raw response is retained](../examples/showcase-4.6/usage/failed-reconciliation-json-mode.json). No failed result was changed into a pass.
 
-The selected records reconcile to **486 input + 80 output = 566 total tokens**, four calls, two verified successful job executions and two failed exact-contract checks. The earlier attempt that deferred on GPU activity remains separate immutable evidence and is not silently included in this selected history.
+The selected records reconcile to **685 input + 117 output = 802 total tokens**, five calls, two verified successful job executions and three failed exact-contract checks. The earlier attempt that deferred on GPU activity remains separate immutable evidence and is not silently included in this selected history.
 
 [Canonical reporting snapshot](../examples/showcase-4.6/usage/projection.json) · [Physical summary](../examples/showcase-4.6/usage/summary.json) · [Idempotent history indexing proof](../examples/showcase-4.6/usage/history-index.json)
 
 ## Dashboard and integration
 
-Eight actual dashboard views cover Overview, Trend, Breakdown, Cache and retries, Energy, Local versus API, Model history and Invocations. Drill-down uses the existing Process and Estate views. Crew navigation and the floating Mallow guide retain the existing artwork and POE system.
+Eight actual dashboard views cover Overview, Trend, Breakdown, Cache and retries, Energy, Local versus API, Model history and Invocations. Drill-down uses the existing Process and Estate views. Crew navigation and the floating Mallow guide retain the existing artwork and POE system. The draggable guide can overlap table content at its default position; reposition it when necessary.
 
 POE reads the canonical projection with period and grouping selection; a real deterministic POE conversation was exercised against selected physical evidence. Rule observations expose the same read-only totals and explicitly grant no routing authority. Model-backed conversational interpretation and automatic policy remediation were not qualified by this run.
+
+### Real dashboard gallery
+
+Captured from clean source commit `7494c2dce3296da531852e8f5f3545f8e89cfe0e`. The indexed rows are marked MIGRATED and link back to their preserved native qualification records.
+
+![Real overview view](media/4.6/usage/01-overview.png)
+
+![Real trend view](media/4.6/usage/02-trend.png)
+
+![Real breakdown view](media/4.6/usage/03-breakdown.png)
+
+![Real cache retries view](media/4.6/usage/04-cache-retries.png)
+
+![Real energy view](media/4.6/usage/05-energy.png)
+
+![Real local vs api view](media/4.6/usage/06-local-vs-api.png)
+
+![Real model history view](media/4.6/usage/07-model-history.png)
+
+![Real invocations view](media/4.6/usage/08-invocations.png)
+
+![Real invocation detail view](media/4.6/usage/09-invocation-detail.png)
+
+![Real mobile view](media/4.6/usage/10-mobile.png)
 
 ## Retention and reset
 
@@ -58,9 +83,9 @@ The UI and authenticated reset endpoint require the exact confirmation and curre
 
 ## Validation and remaining limits
 
-Focused tests cover decimal addition, currencies/effective pricing, inclusive and exclusive cache, reasoning unknowns, revisions/deduplication, explicit retries, sample gaps, baselines, concurrency, tariffs, read-only Home Assistant bindings, isolated reset, migration, privacy, HTTP metric preservation, map links, POE and rules. Full regression/typecheck results and screenshot checksums are recorded in the checkpoint validation manifest.
+Focused tests cover decimal addition, currencies/effective pricing, inclusive and exclusive cache, reasoning unknowns, revisions/deduplication, explicit retries, sample gaps, baselines, concurrency, tariffs, read-only Home Assistant bindings, isolated reset, migration, privacy, HTTP metric preservation, map links, POE and rules. The complete `npm run check` passed at `7494c2dce3296da531852e8f5f3545f8e89cfe0e`: **1,426 tests passed, zero failed or skipped**, including typecheck and repository checks. Strict qualification-script typechecking also passed. Test-log hashes, changed source files and screenshot checksums are recorded in the [checkpoint validation manifest](../examples/showcase-4.6/usage/validation.json). Subsequent publication changes contain documentation and evidence only.
 
-The browser exercised all eight views, invocation detail, Estate navigation and mobile layout, with no JavaScript errors. Captures are real; no fixture rows were inserted to populate them. Windows ran out of disk space during local evidence copying; authoritative evidence remains on the test host and selected allowlisted files are included here.
+The browser exercised all eight views, invocation detail, the native Process Map parcel link, Estate navigation and mobile layout, with no JavaScript errors. Captures are real; no fixture rows were inserted to populate them. Windows ran out of disk space during local evidence copying; authoritative evidence remains on the test host and selected allowlisted files are included here.
 
 Remaining acceptance work includes paid/cached-provider billing evidence, authorised whole-node telemetry and tariffs, attributable energy on representative successful workloads, longer historical coverage, cross-machine comparability, wider provider-specific adapter attestation, hardware identity coverage, and independent raw-output replay for future failed qualification records. The reporting scan has an explicit capacity limit and is not a distributed accounting service. Existing governance/evidence stores retain their current single-writer assumptions.
 

@@ -1,10 +1,10 @@
 {
   "schema": "agent-control.usage-projection/v1",
-  "observedAt": "2026-09-13T08:22:52.698Z",
+  "observedAt": "2026-09-13T08:40:46.404Z",
   "period": {
     "name": "all",
     "start": "2026-09-13T08:02:42.202Z",
-    "end": "2026-09-13T08:22:52.698Z",
+    "end": "2026-09-13T08:40:46.404Z",
     "timezone": "UTC",
     "allocation": "invocation start; entire invocation assigned to start period"
   },
@@ -22,67 +22,68 @@
     "cacheHit": {
       "value": 0,
       "observedRatio": 0,
-      "reported": 4,
-      "total": 4,
+      "reported": 5,
+      "total": 5,
       "authority": "DERIVED"
     },
-    "calls": 4,
-    "jobs": 4,
+    "calls": 5,
+    "jobs": 5,
     "unknownJobRunInvocations": 0,
     "successfulJobs": 2,
     "successAuthority": "VERIFIER_AND_FINAL_JOB_RESULT",
-    "localCalls": 4,
+    "knownZeroApiCalls": 5,
+    "localCalls": 5,
     "input": {
-      "value": 486,
-      "knownTotal": 486,
-      "reported": 4,
-      "total": 4
+      "value": 685,
+      "knownTotal": 685,
+      "reported": 5,
+      "total": 5
     },
     "cached": {
       "value": 0,
       "knownTotal": 0,
-      "reported": 4,
-      "total": 4
+      "reported": 5,
+      "total": 5
     },
     "fresh": {
       "value": null,
       "knownTotal": 0,
       "reported": 0,
-      "total": 4
+      "total": 5
     },
     "output": {
-      "value": 80,
-      "knownTotal": 80,
-      "reported": 4,
-      "total": 4
+      "value": 117,
+      "knownTotal": 117,
+      "reported": 5,
+      "total": 5
     },
     "reasoning": {
       "value": null,
       "knownTotal": 0,
       "reported": 0,
-      "total": 4
+      "total": 5
     },
     "tokens": {
-      "value": 566,
-      "knownTotal": 566,
-      "reported": 4,
-      "total": 4
+      "value": 802,
+      "knownTotal": 802,
+      "reported": 5,
+      "total": 5
     },
     "durationMs": {
-      "value": 2476,
-      "knownTotal": 2476,
-      "reported": 4,
-      "total": 4
+      "value": 3422,
+      "knownTotal": 3422,
+      "reported": 5,
+      "total": 5
     },
     "apiCost": {
       "currencies": {},
       "reported": 0,
-      "total": 4
+      "total": 5
     },
     "cacheSaving": {
       "currencies": {},
       "reported": 0,
-      "total": 4
+      "total": 5
     },
     "retry": {
       "count": 0,
@@ -112,43 +113,44 @@
         "scope": "GPU_ONLY",
         "measurementClass": "DERIVED",
         "attribution": "NOT_ATTRIBUTABLE",
-        "observations": 4,
+        "observations": 5,
         "observedWh": {
-          "value": 0.034042224999999995,
-          "knownTotal": 0.034042224999999995,
-          "reported": 4,
-          "total": 4
+          "value": 0.04906967499999999,
+          "knownTotal": 0.04906967499999999,
+          "reported": 5,
+          "total": 5
         },
         "attributedWh": {
           "value": null,
           "knownTotal": 0,
           "reported": 0,
-          "total": 4
+          "total": 5
         },
         "incrementalWh": {
           "value": null,
           "knownTotal": 0,
           "reported": 0,
-          "total": 4
+          "total": 5
         },
         "minimumCoverage": 1,
         "electricityCost": {
           "currencies": {},
           "reported": 0,
-          "total": 4
+          "total": 5
         }
       }
     ],
     "energyCoverage": {
-      "observedInvocations": 4,
-      "totalInvocations": 4,
+      "observedInvocations": 5,
+      "totalInvocations": 5,
       "estimatedInvocations": 0,
-      "unavailableInvocations": 4
+      "unavailableInvocations": 5
     },
     "comparability": {
       "jobTypes": [
         "integer-arithmetic-exact",
-        "transaction-reconciliation-exact"
+        "transaction-reconciliation-exact",
+        "transaction-reconciliation-exact-json-mode"
       ],
       "modelRevisions": [
         "UNKNOWN",
@@ -191,6 +193,7 @@
       "unknownJobRunInvocations": 0,
       "successfulJobs": 1,
       "successAuthority": "VERIFIER_AND_FINAL_JOB_RESULT",
+      "knownZeroApiCalls": 2,
       "localCalls": 2,
       "input": {
         "value": 243,
@@ -334,67 +337,68 @@
       "cacheHit": {
         "value": 0,
         "observedRatio": 0,
-        "reported": 2,
-        "total": 2,
+        "reported": 3,
+        "total": 3,
         "authority": "DERIVED"
       },
-      "calls": 2,
-      "jobs": 2,
+      "calls": 3,
+      "jobs": 3,
       "unknownJobRunInvocations": 0,
       "successfulJobs": 1,
       "successAuthority": "VERIFIER_AND_FINAL_JOB_RESULT",
-      "localCalls": 2,
+      "knownZeroApiCalls": 3,
+      "localCalls": 3,
       "input": {
-        "value": 243,
-        "knownTotal": 243,
-        "reported": 2,
-        "total": 2
+        "value": 442,
+        "knownTotal": 442,
+        "reported": 3,
+        "total": 3
       },
       "cached": {
         "value": 0,
         "knownTotal": 0,
-        "reported": 2,
-        "total": 2
+        "reported": 3,
+        "total": 3
       },
       "fresh": {
         "value": null,
         "knownTotal": 0,
         "reported": 0,
-        "total": 2
+        "total": 3
       },
       "output": {
-        "value": 40,
-        "knownTotal": 40,
-        "reported": 2,
-        "total": 2
+        "value": 77,
+        "knownTotal": 77,
+        "reported": 3,
+        "total": 3
       },
       "reasoning": {
         "value": null,
         "knownTotal": 0,
         "reported": 0,
-        "total": 2
+        "total": 3
       },
       "tokens": {
-        "value": 283,
-        "knownTotal": 283,
-        "reported": 2,
-        "total": 2
+        "value": 519,
+        "knownTotal": 519,
+        "reported": 3,
+        "total": 3
       },
       "durationMs": {
-        "value": 1158,
-        "knownTotal": 1158,
-        "reported": 2,
-        "total": 2
+        "value": 2104,
+        "knownTotal": 2104,
+        "reported": 3,
+        "total": 3
       },
       "apiCost": {
         "currencies": {},
         "reported": 0,
-        "total": 2
+        "total": 3
       },
       "cacheSaving": {
         "currencies": {},
         "reported": 0,
-        "total": 2
+        "total": 3
       },
       "retry": {
         "count": 0,
@@ -424,43 +428,44 @@
           "scope": "GPU_ONLY",
           "measurementClass": "DERIVED",
           "attribution": "NOT_ATTRIBUTABLE",
-          "observations": 2,
+          "observations": 3,
           "observedWh": {
-            "value": 0.01617358333333333,
-            "knownTotal": 0.01617358333333333,
-            "reported": 2,
-            "total": 2
+            "value": 0.031201033333333333,
+            "knownTotal": 0.031201033333333333,
+            "reported": 3,
+            "total": 3
           },
           "attributedWh": {
             "value": null,
             "knownTotal": 0,
             "reported": 0,
-            "total": 2
+            "total": 3
           },
           "incrementalWh": {
             "value": null,
             "knownTotal": 0,
             "reported": 0,
-            "total": 2
+            "total": 3
           },
           "minimumCoverage": 1,
           "electricityCost": {
             "currencies": {},
             "reported": 0,
-            "total": 2
+            "total": 3
           }
         }
       ],
       "energyCoverage": {
-        "observedInvocations": 2,
-        "totalInvocations": 2,
+        "observedInvocations": 3,
+        "totalInvocations": 3,
         "estimatedInvocations": 0,
-        "unavailableInvocations": 2
+        "unavailableInvocations": 3
       },
       "comparability": {
         "jobTypes": [
           "integer-arithmetic-exact",
-          "transaction-reconciliation-exact"
+          "transaction-reconciliation-exact",
+          "transaction-reconciliation-exact-json-mode"
         ],
         "modelRevisions": [
           "UNKNOWN",
@@ -489,67 +494,68 @@
       "cacheHit": {
         "value": 0,
         "observedRatio": 0,
-        "reported": 4,
-        "total": 4,
+        "reported": 5,
+        "total": 5,
         "authority": "DERIVED"
       },
-      "calls": 4,
-      "jobs": 4,
+      "calls": 5,
+      "jobs": 5,
       "unknownJobRunInvocations": 0,
       "successfulJobs": 2,
       "successAuthority": "VERIFIER_AND_FINAL_JOB_RESULT",
-      "localCalls": 4,
+      "knownZeroApiCalls": 5,
+      "localCalls": 5,
       "input": {
-        "value": 486,
-        "knownTotal": 486,
-        "reported": 4,
-        "total": 4
+        "value": 685,
+        "knownTotal": 685,
+        "reported": 5,
+        "total": 5
       },
       "cached": {
         "value": 0,
         "knownTotal": 0,
-        "reported": 4,
-        "total": 4
+        "reported": 5,
+        "total": 5
       },
       "fresh": {
         "value": null,
         "knownTotal": 0,
         "reported": 0,
-        "total": 4
+        "total": 5
       },
       "output": {
-        "value": 80,
-        "knownTotal": 80,
-        "reported": 4,
-        "total": 4
+        "value": 117,
+        "knownTotal": 117,
+        "reported": 5,
+        "total": 5
       },
       "reasoning": {
         "value": null,
         "knownTotal": 0,
         "reported": 0,
-        "total": 4
+        "total": 5
       },
       "tokens": {
-        "value": 566,
-        "knownTotal": 566,
-        "reported": 4,
-        "total": 4
+        "value": 802,
+        "knownTotal": 802,
+        "reported": 5,
+        "total": 5
       },
       "durationMs": {
-        "value": 2476,
-        "knownTotal": 2476,
-        "reported": 4,
-        "total": 4
+        "value": 3422,
+        "knownTotal": 3422,
+        "reported": 5,
+        "total": 5
       },
       "apiCost": {
         "currencies": {},
         "reported": 0,
-        "total": 4
+        "total": 5
       },
       "cacheSaving": {
         "currencies": {},
         "reported": 0,
-        "total": 4
+        "total": 5
       },
       "retry": {
         "count": 0,
@@ -579,43 +585,44 @@
           "scope": "GPU_ONLY",
           "measurementClass": "DERIVED",
           "attribution": "NOT_ATTRIBUTABLE",
-          "observations": 4,
+          "observations": 5,
           "observedWh": {
-            "value": 0.034042224999999995,
-            "knownTotal": 0.034042224999999995,
-            "reported": 4,
-            "total": 4
+            "value": 0.04906967499999999,
+            "knownTotal": 0.04906967499999999,
+            "reported": 5,
+            "total": 5
           },
           "attributedWh": {
             "value": null,
             "knownTotal": 0,
             "reported": 0,
-            "total": 4
+            "total": 5
           },
           "incrementalWh": {
             "value": null,
             "knownTotal": 0,
             "reported": 0,
-            "total": 4
+            "total": 5
           },
           "minimumCoverage": 1,
           "electricityCost": {
             "currencies": {},
             "reported": 0,
-            "total": 4
+            "total": 5
           }
         }
       ],
       "energyCoverage": {
-        "observedInvocations": 4,
-        "totalInvocations": 4,
+        "observedInvocations": 5,
+        "totalInvocations": 5,
         "estimatedInvocations": 0,
-        "unavailableInvocations": 4
+        "unavailableInvocations": 5
       },
       "comparability": {
         "jobTypes": [
           "integer-arithmetic-exact",
-          "transaction-reconciliation-exact"
+          "transaction-reconciliation-exact",
+          "transaction-reconciliation-exact-json-mode"
         ],
         "modelRevisions": [
           "UNKNOWN",
@@ -645,67 +652,68 @@
       "cacheHit": {
         "value": 0,
         "observedRatio": 0,
-        "reported": 4,
-        "total": 4,
+        "reported": 5,
+        "total": 5,
         "authority": "DERIVED"
       },
-      "calls": 4,
-      "jobs": 4,
+      "calls": 5,
+      "jobs": 5,
       "unknownJobRunInvocations": 0,
       "successfulJobs": 2,
       "successAuthority": "VERIFIER_AND_FINAL_JOB_RESULT",
-      "localCalls": 4,
+      "knownZeroApiCalls": 5,
+      "localCalls": 5,
       "input": {
-        "value": 486,
-        "knownTotal": 486,
-        "reported": 4,
-        "total": 4
+        "value": 685,
+        "knownTotal": 685,
+        "reported": 5,
+        "total": 5
       },
       "cached": {
         "value": 0,
         "knownTotal": 0,
-        "reported": 4,
-        "total": 4
+        "reported": 5,
+        "total": 5
       },
       "fresh": {
         "value": null,
         "knownTotal": 0,
         "reported": 0,
-        "total": 4
+        "total": 5
       },
       "output": {
-        "value": 80,
-        "knownTotal": 80,
-        "reported": 4,
-        "total": 4
+        "value": 117,
+        "knownTotal": 117,
+        "reported": 5,
+        "total": 5
       },
       "reasoning": {
         "value": null,
         "knownTotal": 0,
         "reported": 0,
-        "total": 4
+        "total": 5
       },
       "tokens": {
-        "value": 566,
-        "knownTotal": 566,
-        "reported": 4,
-        "total": 4
+        "value": 802,
+        "knownTotal": 802,
+        "reported": 5,
+        "total": 5
       },
       "durationMs": {
-        "value": 2476,
-        "knownTotal": 2476,
-        "reported": 4,
-        "total": 4
+        "value": 3422,
+        "knownTotal": 3422,
+        "reported": 5,
+        "total": 5
       },
       "apiCost": {
         "currencies": {},
         "reported": 0,
-        "total": 4
+        "total": 5
       },
       "cacheSaving": {
         "currencies": {},
         "reported": 0,
-        "total": 4
+        "total": 5
       },
       "retry": {
         "count": 0,
@@ -735,43 +743,44 @@
           "scope": "GPU_ONLY",
           "measurementClass": "DERIVED",
           "attribution": "NOT_ATTRIBUTABLE",
-          "observations": 4,
+          "observations": 5,
           "observedWh": {
-            "value": 0.034042224999999995,
-            "knownTotal": 0.034042224999999995,
-            "reported": 4,
-            "total": 4
+            "value": 0.04906967499999999,
+            "knownTotal": 0.04906967499999999,
+            "reported": 5,
+            "total": 5
           },
           "attributedWh": {
             "value": null,
             "knownTotal": 0,
             "reported": 0,
-            "total": 4
+            "total": 5
           },
           "incrementalWh": {
             "value": null,
             "knownTotal": 0,
             "reported": 0,
-            "total": 4
+            "total": 5
           },
           "minimumCoverage": 1,
           "electricityCost": {
             "currencies": {},
             "reported": 0,
-            "total": 4
+            "total": 5
           }
         }
       ],
       "energyCoverage": {
-        "observedInvocations": 4,
-        "totalInvocations": 4,
+        "observedInvocations": 5,
+        "totalInvocations": 5,
         "estimatedInvocations": 0,
-        "unavailableInvocations": 4
+        "unavailableInvocations": 5
       },
       "comparability": {
         "jobTypes": [
           "integer-arithmetic-exact",
-          "transaction-reconciliation-exact"
+          "transaction-reconciliation-exact",
+          "transaction-reconciliation-exact-json-mode"
         ],
         "modelRevisions": [
           "UNKNOWN",
@@ -808,6 +817,7 @@
       "unknownJobRunInvocations": 0,
       "successfulJobs": 0,
       "successAuthority": "VERIFIER_AND_FINAL_JOB_RESULT",
+      "knownZeroApiCalls": 0,
       "localCalls": 0,
       "input": {
         "value": null,
@@ -919,6 +929,7 @@
       "unknownJobRunInvocations": 0,
       "successfulJobs": 0,
       "successAuthority": "VERIFIER_AND_FINAL_JOB_RESULT",
+      "knownZeroApiCalls": 0,
       "localCalls": 0,
       "input": {
         "value": null,
@@ -1009,6 +1020,75 @@
     }
   ],
   "rows": [
+    {
+      "id": "migrated-16b975d28b8383ba3a1a5424629a565b789b5281b025e01e09f0aff581f52107",
+      "jobRun": "run-ad94bd10-2584-494f-b2c3-b7695db0b62c",
+      "provider": "local-llama-0",
+      "model": "Qwen2.5-Coder-3B-Instruct-Q4_K_M.gguf",
+      "modelRevision": "3da3afe6cf5c674ac195803ea0dd6fee7e1c228c2105c1ce8c66890d1d4ab460",
+      "agent": null,
+      "job": "usage-local-0",
+      "jobType": "transaction-reconciliation-exact-json-mode",
+      "parcel": "parcel-social-a7d84ee6dc97d1320aa59be7f25c8c1b40572f17d774a8205c28891559bf93e3",
+      "machine": "machine:controller",
+      "runtime": "llama.cpp",
+      "runtimeVersion": "3f1000482d759661cadb1dc9b59f6292f52408ee0d2906298fa001837517fb4e",
+      "executionKind": "LOCAL",
+      "outcome": "DEGRADED",
+      "at": "2026-09-13T08:37:11.385Z",
+      "completedAt": "2026-09-13T08:37:12.331Z",
+      "durationMs": 946,
+      "usage": {
+        "inputTokens": 199,
+        "freshInputTokens": null,
+        "cachedInputTokens": 0,
+        "cacheWriteTokens": null,
+        "outputTokens": 37,
+        "reasoningTokens": null,
+        "totalProcessedTokens": 236
+      },
+      "usageAuthority": "ATTESTED",
+      "semantics": {
+        "id": "llama-chat-completions/v1",
+        "input": "INCLUDES_CACHE",
+        "reasoning": "UNKNOWN",
+        "total": "INPUT_PLUS_OUTPUT",
+        "billing": "UNKNOWN"
+      },
+      "revision": 0,
+      "provenance": "MIGRATED",
+      "retryOf": null,
+      "parentInvocation": null,
+      "baton": null,
+      "apiCost": null,
+      "localApiChargeKnownZero": true,
+      "cacheSaving": null,
+      "verifiedSuccess": false,
+      "energy": [
+        {
+          "id": "energy-c88c7e5a-cfc2-45ae-a80c-7484afa18399",
+          "machine": "machine:controller",
+          "sensor": "nvidia-gpu0",
+          "scope": "GPU_ONLY",
+          "measurementClass": "DERIVED",
+          "sensorMeasurementClass": "COMPONENT_MEASURED",
+          "attribution": "NOT_ATTRIBUTABLE",
+          "coverage": 1,
+          "grossWh": 0.015027450000000001,
+          "attributedWh": null,
+          "incrementalWh": null,
+          "averageWatts": 57.18691331923891,
+          "peakWatts": 92.15,
+          "electricityCost": null,
+          "startedAt": "2026-09-13T08:37:11.385Z",
+          "completedAt": "2026-09-13T08:37:12.331Z"
+        }
+      ],
+      "links": {
+        "process": "?view=runtime-map&parcelId=parcel-social-a7d84ee6dc97d1320aa59be7f25c8c1b40572f17d774a8205c28891559bf93e3",
+        "estate": "?view=runtime-map&mode=estate&resource=machine%3Acontroller"
+      }
+    },
     {
       "id": "migrated-3a7bf55cab5626f8b298c057261cd966534829b2e77c9737987d200725c0ebec",
       "jobRun": "run-b623c9a6-e5da-487c-9ccc-2c3b7896c8eb",
@@ -1287,10 +1367,10 @@
     }
   ],
   "coverage": {
-    "matching": 4,
-    "returned": 4,
+    "matching": 5,
+    "returned": 5,
     "native": 0,
-    "migrated": 4,
+    "migrated": 5,
     "legacy": 0,
     "historyStart": "2026-09-13T08:02:42.202Z",
     "continuousCollectionEstablished": false
@@ -1298,7 +1378,7 @@
   "history": {
     "policy": "Retained until explicit usage visibility reset. Original execution and qualification evidence are preserved.",
     "resetCount": 0,
-    "resetDigest": "3bce71636e294f29b3d795443c0ee743c191a3dff38eb67cc32d372191cad267"
+    "resetDigest": "cf871dbbb211b4ffc93ca2d9f94cf9ed4cbffd9a84a33386c0c03d6048e8a380"
   },
   "limitations": [
     "No currencies converted. Amounts retain authority and reported coverage.",

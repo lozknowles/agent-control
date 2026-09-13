@@ -8,7 +8,9 @@ Find new models. Benchmark them on your hardware and your workload. Wake up know
 
 **4.6.0-rc.1 — unreleased showcase candidate.** The read-only intelligence and first-run journeys have real evidence. Target-model benchmarking still requires approval; no measured winner or completed overnight benchmark is claimed. The release SHOWCASE gate remains blocked until that evidence exists.
 
-First-run dashboard captures are retained in the candidate qualification evidence; the reviewed public gallery is pending.
+![Real Usage and Cost dashboard from selected physical qualification records](docs/media/4.6/usage/01-overview.png)
+
+This is the real usage view for selected qualification runs, not an estate-wide spending claim.
 
 ## See your AI estate
 
