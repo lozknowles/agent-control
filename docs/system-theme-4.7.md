@@ -15,3 +15,7 @@ Normal-text palette pairs target WCAG AA (4.5:1); important focus/graph/border p
 This change does not close the existing formal release-sealing requirement or physical Pixel/live voice limitations. It does not change job execution, model routing, billing, discovery qualification or stored evidence.
 
 References: [MDN prefers-color-scheme](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@media/prefers-color-scheme), [MDN color-scheme](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/color-scheme).
+
+## Qualification on 14 September 2026
+
+Implementation `9317b81afaf981c5ac010c4a94befa9841ac98b1`: full regression **1,548 passed, 0 failed, 0 skipped**, including 12 focused theme tests. **74 browser checks passed** across desktop, portrait and landscape with both initial themes and live preference changes. Recorded-history downloads match their canonical source. Paired screenshots and a continuous 12.04-second live-switch proof are stored in the dedicated system-theme evidence pack, outside source pulls. The controlled RUNNING/timer check is separate from real completed-run images. Formal release sealing remains outstanding.

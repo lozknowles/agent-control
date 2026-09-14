@@ -109,3 +109,5 @@ Use the floating Mallow companion for text and configured speech. Voice requests
 [Desktop and mobile recordings with readable pauses](docs/evidence/agent-control-4.7-dashboard.md) show real jobs, live process drill-down, running activity, input/cache/output usage and human-readable history. Video binaries are stored in the evidence repository.
 
 The observability follow-on has a [qualification report](docs/observability-qualification-4.7.md), with desktop/mobile recordings stored separately from normal source pulls. Published v4.7.0 remains immutable; this branch records the follow-on implementation.
+
+The observability candidate follows the device/browser system light or dark preference, including live changes without resetting the active view. See [system appearance](docs/system-theme-4.7.md).

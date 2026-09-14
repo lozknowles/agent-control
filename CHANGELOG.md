@@ -2,6 +2,8 @@
 
 ## Unreleased — 4.7 observability follow-on
 
+System light/dark inheritance now uses one shared semantic palette across desktop/mobile, graphs, inspectors, usage, replay and offline surfaces. Live preference changes preserve active navigation and sessions. See [appearance and qualification](docs/system-theme-4.7.md).
+
 Capability-aware Node Dashboard, exact physical/execution bindings, a consolidated Run Inspector, shared canonical token/cache accounting and discoverable Markdown history. Existing Process Map, governed execution, Mallow and optional voice boundaries are preserved. See [operator guide](docs/observability-4.7.md). Published v4.7.0 and its evidence remain unchanged.
 
 ## 4.7.0
