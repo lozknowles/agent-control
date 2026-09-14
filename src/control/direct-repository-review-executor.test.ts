@@ -404,3 +404,11 @@ test('accepted review exchanges retain redacted input and final output per call'
   assert.equal(JSON.parse(invocation.exchange.output).schema,'agent-control.repository-review/v1');
   assert.equal(invocation.totalTokens,100);
 });
+
+test('review publishes its durable parcel before the provider call completes',async t=>{
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'ac-live-parcel-'));t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+ const{models,route}=handoffRegistry(),store=new WorkParcelStore(path.join(root,'parcels.json')),published:string[]=[];
+ const factory=fakeReviewClients([]),executor=new DirectRepositoryReviewExecutor(models,store,undefined,undefined,provider=>({invoke:async(...args)=>{assert.equal(published.length,1);assert.ok(store.get(published[0]));return factory(provider).invoke(...args);}}));
+ const request=reviewRequest(route);request.contextChunks=request.contextChunks.slice(0,1);request.onParcelCreated=id=>published.push(id);
+ const result=await executor.execute(request);assert.deepEqual(published,result.workParcelIds);
+});

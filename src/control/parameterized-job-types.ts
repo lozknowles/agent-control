@@ -158,6 +158,7 @@ export interface ParameterizedJobRun {
 }
 
 export interface ReviewExecutionRequest {
+  onParcelCreated?: (parcelId: string) => void;
   run: ParameterizedJobRun;
   executionAttempt: number;
   executionId: string;

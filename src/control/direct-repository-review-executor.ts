@@ -148,6 +148,7 @@ export class DirectRepositoryReviewExecutor implements RepositoryReviewExecutor 
       const parcel = this.createParcel(request, originalChunk.id);
       const chunk = await this.prepareChunk(request, parcel, originalChunk, retrievalEvidence);
       parcelIds.push(parcel.id);
+      request.onParcelCreated?.(parcel.id);
       try {
         const source = await this.invokeChunk(request, request.route, parcel, chunk);
         capture(parcel, source.invocation, request.route, source.responseHash);

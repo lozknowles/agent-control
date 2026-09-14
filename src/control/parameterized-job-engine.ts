@@ -110,7 +110,12 @@ export class ParameterizedJobEngine {
           this.runs.update(run);
           const executionRun = structuredClone(run);
           executionRun.definition = {...executionRun.definition, budgets: structuredClone(budgets)};
-          response = await this.executor.execute({run: executionRun, executionAttempt: run.executionSequence, executionId: execution.id, route, instruction: run.definition.template.instruction, contextChunks: context.chunks, maximumOutputTokens: budgets.maximumOutputTokens, maximumCost: budgets.maxCost, signal: controller.signal});
+          response = await this.executor.execute({onParcelCreated: parcelId => {
+            const current = this.mustRun(run.id);
+            if (current.activeExecution?.id !== execution.id || terminal(current.status)) return;
+            current.workParcelIds = [...new Set([...current.workParcelIds, parcelId])];
+            this.runs.update(current);
+          }, run: executionRun, executionAttempt: run.executionSequence, executionId: execution.id, route, instruction: run.definition.template.instruction, contextChunks: context.chunks, maximumOutputTokens: budgets.maximumOutputTokens, maximumCost: budgets.maxCost, signal: controller.signal});
           run = this.mustRun(run.id); this.updateExecution(run, 'COMPLETED'); this.runs.update(run);
           break;
         } catch (error) {
