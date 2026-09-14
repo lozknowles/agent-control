@@ -77,3 +77,9 @@ The existing optional live voice transport remains independently qualification-g
 This follow-on starts from the immutable public v4.7.0 commit `27124db3d5924b1244be590ef3ea48d4c3b183bc`. The published tag and accepted recordings are preserved. The observability qualification report records the exact new commit, checks and evidence; pending gates are not an implicit release approval.
 
 Desktop Chromium and a Pixel-class 390×844 touch viewport exercise the same journey, large touch targets, horizontal overflow checks, history download and back navigation. Emulation is not physical handset qualification. A real governed execution and current hardware samples are required for the final demonstration; older records and test fixtures are not substitutes for that live run.
+
+### Mobile reading and whole-job totals
+
+On mobile, use the full-size physical-node buttons above Estate Topology, then choose an Inspector section from the 44-pixel selector. Desktop retains the section tabs. Whole-job totals count each canonical invocation once across all Work Parcels; selected-parcel and individual-call counters remain separately labelled. The Context section exposes the recorded repository profile, chunks, omissions and truncation. Provider cache reuse is separate from context selection and baton handoff.
+
+The follow-on review corrected stale node back-links, canonical-accounting throughput and accelerator-inventory cache isolation. Unknown output remains unknown when canonical accounting is present.

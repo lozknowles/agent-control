@@ -285,6 +285,11 @@
   function render() {
     const p = rt.projection,
       stale = p.freshness.state === "STALE";
+    let physicalPicker=$("runtime-physical-picker");
+    if(!physicalPicker){physicalPicker=document.createElement('nav');physicalPicker.id='runtime-physical-picker';physicalPicker.setAttribute('aria-label','Physical nodes');$("runtime-map-canvas").before(physicalPicker);}
+    physicalPicker.hidden=rt.surface!=='estate';
+    if(rt.surface==='estate')physicalPicker.innerHTML=p.nodes.filter(n=>['machine','device'].includes(n.type)).map(n=>`<button class="button secondary" data-obs-node="${safe(n.id)}">${safe(n.label)} · ${safe(n.state)}</button>`).join('');
+
     $("runtime-map-health").className =
       `runtime-map-health ${p.freshness.state.toLowerCase()}`;
     $("runtime-map-health").innerHTML =

@@ -9,13 +9,15 @@ const execute = promisify(execFile);
 /** Read-only native sampler. Never probes a remote address or launches a model. */
 export class LocalNodeResources {
   private previous?: {at: number; total: number; idle: number};
-  private pending?: Promise<Awaited<ReturnType<LocalNodeResources['collect']>>>;
-  private cached?: Awaited<ReturnType<LocalNodeResources['collect']>>;
+  private readonly pending=new Map<string,Promise<Awaited<ReturnType<LocalNodeResources['collect']>>>>();
+  private readonly cached=new Map<string,Awaited<ReturnType<LocalNodeResources['collect']>>>();
   async sample(accelerators: Array<{id: string; index: number; adapter: string}>) {
-    if(this.cached && Date.now()-Date.parse(this.cached.observedAt)<1000)return this.cached;
-    if(this.pending)return this.pending;
-    this.pending=this.collect(accelerators);
-    try {return this.cached=await this.pending;} finally {this.pending=undefined;}
+    const key=JSON.stringify(accelerators.map(a=>[a.id,a.index,a.adapter]).sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b))));
+    const cached=this.cached.get(key);if(cached&&Date.now()-Date.parse(cached.observedAt)<1000)return cached;
+    const pending=this.pending.get(key);if(pending)return pending;
+    const collecting=this.collect(accelerators);this.pending.set(key,collecting);
+    try {const result=await collecting;if(this.cached.size>=16)this.cached.delete(this.cached.keys().next().value!);this.cached.set(key,result);return result;}finally{this.pending.delete(key);}
+
   }
   private async collect(accelerators: Array<{id: string; index: number; adapter: string}>) {
     const now=Date.now(),at=new Date(now).toISOString(),cpus=os.cpus();

@@ -5,7 +5,9 @@ import type {ManagedNodeSnapshot} from './managed-node.js';
 import type {ExecutionSessionRecord} from './execution-session.js';
 import {redactSensitiveValue} from './security-redaction.js';
 import {safeTranscriptText} from './execution-history.js';
-import type {usageProjection} from './usage-projection.js';
+import {usageProjection} from './usage-projection.js';
+import type {HarnessEfficiencyLedgerPort} from './harness-efficiency.js';
+import type {EnergyExecutionRecord} from './energy-telemetry.js';
 import type {RunRecord} from './job-types.js';
 import {createHash} from 'node:crypto';
 
@@ -18,7 +20,7 @@ export function nodeWorkIndex(parcels:WorkParcel[],runs:ParameterizedJobRun[],se
     for(const stage of parcel.stages)if(stage.actualRoute?.providerExecutionNodeId)nodes.set(stage.actualRoute.providerExecutionNodeId,'Recorded stage execution route');
     for(const session of sessions)if(session.scope.parcelId===parcel.id&&session.scope.nodeId)nodes.set(session.scope.nodeId,'Owned execution session scope');
     const parent=runs.find(run=>run.workParcelIds.includes(parcel.id));
-    for(const [nodeId,binding]of nodes)result.push({id:parcel.id,kind:'parcel',label:parcel.objective,status:parcel.status,startedAt:parcel.createdAt,endedAt:parcel.endedAt??null,nodeId,binding,parameterizedRunId:parent?.id??null});
+    for(const [nodeId,binding]of nodes)result.push({id:parcel.id,kind:'parcel',label:parent?`${parent.definition.displayName} · ${parcel.stages[0]?.name??parcel.id}`:parcel.objective,status:parcel.status,startedAt:parcel.createdAt,endedAt:parcel.endedAt??null,nodeId,binding,parameterizedRunId:parent?.id??null});
   }
   for(const run of jobs){if(run.trigger.parcelContext?.parcelId&&parcels.some(p=>p.id===run.trigger.parcelContext!.parcelId))continue;
     const nodeIds=new Set(sessions.filter(s=>s.scope.runId===run.id).map(s=>s.scope.nodeId).filter(Boolean));
@@ -60,4 +62,10 @@ export function projectJobInspector(run:RunRecord,map:RuntimeMapProjection,usage
 export function inspectorHistory(value:{id:string;title:string;status:string;events:unknown[];operations:RuntimeMapNode[]}){
   const content=safeTranscriptText(`# ${value.title}\n\nRun: ${value.id}\nStatus: ${value.status}\n\nDerived export of retained Agent Control run records. No events have been invented.\n\n## Chronological source records\n\n\`\`\`json\n${JSON.stringify(value.events,null,2)}\n\`\`\`\n\n## Operations and evidence\n\n\`\`\`json\n${JSON.stringify(value.operations,null,2)}\n\`\`\``,4*1024*1024);
   return {content,sha256:createHash('sha256').update(content).digest('hex'),entryCount:value.events.length,terminal:!['QUEUED','RUNNING','WAITING','VERIFYING','VALIDATING','RESOLVING'].includes(value.status),derived:true};
+}
+
+export function scopedInspectorUsage(ledger:HarnessEfficiencyLedgerPort|undefined,energy:EnergyExecutionRecord[],scope:{runId:string;parcelIds:string[]}){
+  const ids=new Set(scope.parcelIds);
+  const source=ledger?{list:()=>ledger.list().filter(row=>row.runId===scope.runId||(row.accounting?.parcelId!=null&&ids.has(row.accounting.parcelId))),usageHistory:()=>ledger.usageHistory?.()??{excludedIds:[],events:[]}}:undefined;
+  return usageProjection(source,energy,{period:'all',groupBy:'agent',limit:1000});
 }
