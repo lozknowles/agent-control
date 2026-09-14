@@ -679,6 +679,8 @@
 
 .runtime-map-toolbar select,.runtime-map-toolbar input,#estate-job-picker{max-width:100%;min-width:0}
 #runtime-map-summary{flex:1 1 100%;overflow-wrap:anywhere}
+.runtime-map-layout.nested-estate-expanded{grid-template-columns:minmax(0,1fr)}
+.runtime-map-layout.nested-estate-expanded .runtime-inspector{position:static;max-height:none}
 
 
 /* Process bubbles use explicit directed links, without intersecting graph wires. */

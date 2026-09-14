@@ -147,6 +147,7 @@
           rt.collapsed.clear();
           rt.autoClustered = false;
           if(!rt.projection.nodes.some(n=>n.id===rt.selected))rt.selected = null;
+          if(!rt.selected)for(const node of rt.projection.nodes)if(node.detail?.nestedEnvironmentCount>0)rt.collapsed.add(node.id);
         }
         if (rt.projection.nodes.length > 30 && !rt.autoClustered) {
           for (const node of rt.projection.nodes)
@@ -269,7 +270,7 @@
       const layerColumns = Math.max(1, Math.ceil(row.length / maximumRows));
       row.forEach((n, i) =>
         positions.set(n.id, {
-          x: 36 + (horizontalColumn + Math.floor(i / maximumRows)) * 244,
+          x: 36 + (horizontalColumn + Math.floor(i / maximumRows)) * (rt.surface === "estate" ? 210 : 244),
           y: 36 + (i % maximumRows) * 112,
         }),
       );
@@ -278,7 +279,7 @@
     }
     return {
       positions,
-      width: Math.max(900, horizontalColumn * 244 + 80),
+      width: Math.max(900, horizontalColumn * (rt.surface === "estate" ? 210 : 244) + 80),
       height: Math.max(520, widestRow * 112 + 80),
     };
   }
@@ -288,7 +289,7 @@
     let physicalPicker=$("runtime-physical-picker");
     if(!physicalPicker){physicalPicker=document.createElement('nav');physicalPicker.id='runtime-physical-picker';physicalPicker.setAttribute('aria-label','Physical nodes');$("runtime-map-canvas").before(physicalPicker);}
     physicalPicker.hidden=rt.surface!=='estate';
-    if(rt.surface==='estate')physicalPicker.innerHTML=p.nodes.filter(n=>['machine','device'].includes(n.type)).map(n=>`<button class="button secondary" data-obs-node="${safe(n.id)}">${safe(n.label)} · ${safe(n.state)}</button>`).join('');
+    if(rt.surface==='estate')physicalPicker.innerHTML=p.nodes.filter(n=>['machine','device'].includes(n.type)).map(n=>`<button class="button secondary" data-obs-node="${safe(n.id)}">${safe(n.label)} · ${safe(n.detail.nestedEnvironmentSummary||n.state)}</button>`).join('');
 
     $("runtime-map-health").className =
       `runtime-map-health ${p.freshness.state.toLowerCase()}`;
@@ -348,6 +349,7 @@
       ).toLocaleTimeString();
     const stage = document.querySelector(".runtime-map-stage");
     stage.classList.toggle("compare-active", rt.mode === "compare");
+    document.querySelector(".runtime-map-layout")?.classList.toggle("nested-estate-expanded",rt.surface==='estate'&&p.nodes.some(n=>n.detail?.nestedEnvironmentCount>0&&!rt.collapsed.has(n.id)));
     $("runtime-map-canvas").hidden = ["control", "compare"].includes(rt.mode);
     $("runtime-control-room").hidden = rt.mode !== "control";
     $("runtime-compare").hidden = rt.mode !== "compare";
@@ -434,7 +436,7 @@
       .map((n) => {
         const pos = map.positions.get(n.id),
           children = p.nodes.filter((x) => x.parentId === n.id).length;
-        return `<g class="runtime-graph-node type-${safe(n.type)} state-${safe(n.state)} estate-${safe(n.detail.colour||"")} ${rt.selected === n.id ? "selected" : ""}" transform="translate(${pos.x} ${pos.y})" data-runtime-node="${safe(n.id)}" role="button" tabindex="0" aria-label="${safe(n.label)}, ${safe(n.state)}"><rect width="184" height="76" rx="10"/><text class="runtime-node-icon" x="13" y="25">${safe(icons[n.type] || "◇")}</text><text class="runtime-node-label" x="42" y="22">${safe(short(n.label, 21))}</text><text class="runtime-node-subtitle" x="42" y="42">${safe(short(n.subtitle || n.type, 24))}</text><text class="runtime-node-status" x="13" y="64">${safe(n.detail.markers?.length?n.detail.markers.join(" · "):n.detail.availability||n.state)}</text>${children ? `<text class="runtime-node-collapse" x="150" y="64" data-runtime-collapse="${safe(n.id)}">${rt.collapsed.has(n.id) ? "+" : "−"} ${children}</text>` : ""}</g>`;
+        return `<g class="runtime-graph-node type-${safe(n.type)} state-${safe(n.state)} estate-${safe(n.detail.colour||"")} ${rt.selected === n.id ? "selected" : ""}" transform="translate(${pos.x} ${pos.y})" data-runtime-node="${safe(n.id)}" role="button" tabindex="0" aria-label="${safe(n.label)}, ${safe(n.detail.nestedEnvironmentSummary||n.state)}"><rect width="184" height="76" rx="10"/><text class="runtime-node-icon" x="13" y="25">${safe(icons[n.type] || "◇")}</text><text class="runtime-node-label" x="42" y="22">${safe(short(n.label, 21))}</text><text class="runtime-node-subtitle" x="42" y="42">${safe(short(n.subtitle || n.type, 24))}</text><text class="runtime-node-status" x="13" y="64">${safe(n.detail.nestedEnvironmentSummary||n.detail.markers?.length&&n.detail.markers.join(" · ")||n.detail.availability||n.state)}</text>${children ? `<text class="runtime-node-collapse" x="150" y="64" data-runtime-collapse="${safe(n.id)}">${rt.collapsed.has(n.id) ? "+" : "−"} ${children}</text>` : ""}</g>`;
       })
       .join("")}</svg>`;
     canvas.querySelectorAll("[data-runtime-node]").forEach((button) =>

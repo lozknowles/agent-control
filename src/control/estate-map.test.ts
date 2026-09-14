@@ -267,9 +267,12 @@ test('observed execution environments nest without creating extra physical machi
 
 test('estate projection accepts the typed containment contract', () => {
   const host=item({id:'machine:device',kind:'MACHINE',label:'Device',nodeId:'device'});
-  const guest=item({id:'runtime:guest',kind:'RUNTIME',label:'Guest',nodeId:'device',containment:{parentId:host.id,relation:'HOSTS',observedAt:at,authority:'AUTHORITATIVE',method:'execution-environment-containment'}});
-  const runtime=item({id:'runtime:containers',kind:'RUNTIME',label:'Containers',nodeId:'device',containment:{parentId:guest.id,relation:'CONTAINS',observedAt:at,authority:'CONFIGURED',method:'execution-environment-containment'}});
+  const guest=item({id:'runtime:guest',kind:'RUNTIME',label:'Guest',nodeId:'device',attributes:{executionEnvironmentKind:'GUEST_OS'},containment:{parentId:host.id,relation:'HOSTS',observedAt:at,authority:'AUTHORITATIVE',method:'execution-environment-containment'}});
+  const runtime=item({id:'runtime:containers',kind:'RUNTIME',label:'Containers',nodeId:'device',attributes:{executionEnvironmentKind:'RUNTIME'},containment:{parentId:guest.id,relation:'CONTAINS',observedAt:at,authority:'CONFIGURED',method:'execution-environment-containment'}});
   const projection=projectEstateMap(scan([host,guest,runtime]),at);
   assert.equal(projection.nodes.find(node=>node.id===guest.id)?.parentId,host.id);
   assert.equal(projection.nodes.find(node=>node.id===runtime.id)?.parentId,guest.id);
+  assert.equal(projection.nodes.find(node=>node.id===host.id)?.detail.nestedEnvironmentCount,2);
+  assert.equal(projection.nodes.find(node=>node.id===guest.id)?.detail.executionEnvironmentKind,'GUEST_OS');
+  assert.equal((projection.nodes.find(node=>node.id===guest.id)?.detail.executionContainment as {parentId:string}).parentId,host.id);
 });

@@ -261,6 +261,8 @@ export function projectEstateMap(
         detail: {
           ...safeEstateAttributes(item.attributes),
           ...resourcePresentation(item,scan,new Date(time)),
+          executionContainment: item.containment ? safe(item.containment) : null,
+          executionEnvironmentKind: typeof item.attributes.executionEnvironmentKind === "string" ? item.attributes.executionEnvironmentKind : null,
           deviceId: machineIds.get(item.nodeId) ?? null,
           kind: item.kind,
           configuredId: item.configuredId ?? null,
@@ -366,6 +368,15 @@ export function projectEstateMap(
         }),
       );
       edges.push(relation(machine.id, id, "contains", "reachable through"));
+    }
+  }
+  // Expose a compact, derived disclosure hint on physical nodes. The graph still
+  // uses the validated parentId chain as its sole topology source.
+  for (const machine of nodes.filter(node => ["machine", "device"].includes(node.type))) {
+    const nested = scan.items.filter(item => item.containment && (() => { let cursor: string | undefined = item.id; const seen = new Set<string>(); while (cursor && !seen.has(cursor)) { seen.add(cursor); const candidate = nodes.find(node => node.id === cursor); if (candidate?.parentId === machine.id) return true; cursor = candidate?.parentId; } return false; })());
+    if (nested.length) {
+      machine.detail.nestedEnvironmentCount = nested.length;
+      machine.detail.nestedEnvironmentSummary = `${nested.length} nested ${nested.length === 1 ? "environment" : "environments"}`;
     }
   }
   const providerByConfigured = new Map(
