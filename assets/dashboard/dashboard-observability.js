@@ -6,6 +6,8 @@
   const bytes=value=>typeof value==='number'&&Number.isFinite(value)?`${(value/1073741824).toFixed(1)} GiB`:'Unavailable';
   let dialog,mode,id,operation,tab='Overview',revision=0,data,originNode=null,timer,updating=false,nodeRenderKey='';
   const sessionTranscripts=new Map();
+  let outputProfile=null,outputData=null,outputLoading=false,outputGeneration=0;
+  document.addEventListener('agent-control:authentication-changed',()=>{outputData=null;outputGeneration++;});
   const q=s=>dialog.querySelector(s);
   async function get(path){if(state.operatorAuth!=='authenticated')throw Error('Operator authentication required');const response=await fetch(path,{headers:{Authorization:`Bearer ${state.token}`}});if(!response.ok)throw Error((await response.json()).error||`HTTP ${response.status}`);return response.json();}
   function initialize(){
@@ -14,6 +16,7 @@
     document.addEventListener('agent-control:authentication-changed',()=>{if(state.operatorAuth!=='authenticated'){dialog.close();dialog.querySelector('.obs-body').replaceChildren();}});
     const entry=document.createElement('button');entry.className='primary-tab';entry.textContent='Estate';entry.dataset.observabilityEstate='';entry.onclick=()=>window.AgentControlRuntimeMap?.openEstate();document.querySelector('[data-view="runtime-map"]')?.before(entry);
     document.addEventListener('click',event=>{
+      const report=event.target.closest('[data-report-open]');if(report){openOutputs(report.dataset.reportOpen);return;}
       const physical=event.target.closest('[data-obs-node]');if(physical){openNode(physical.dataset.obsNode);return;}
       const target=event.target.closest('[data-runtime-node]');if(!target||dialog.contains(target))return;
       const selection=window.AgentControlRuntimeMap?.selection();if(!selection?.node)return;
@@ -26,7 +29,7 @@
       if(jobs.querySelector('[data-inspector-entry]'))return;
       const run=typeof selectedParameterizedRun==='function'?selectedParameterizedRun():null;
       if(!run?.workParcelIds?.length)return;
-      const button=document.createElement('button');button.className='button';button.dataset.inspectorEntry='';button.textContent='Open Run Inspector';button.onclick=()=>openRun(run.id);jobs.querySelector('.job-platform-detail')?.prepend(button);
+      const button=document.createElement('button');button.className='button';button.dataset.inspectorEntry='';button.textContent='Outputs';button.onclick=()=>openOutputs(run.id);jobs.querySelector('.job-platform-detail')?.prepend(button);
     }).observe(jobs,{childList:true,subtree:true});
   }
   function shell(title,subtitle){
@@ -73,7 +76,7 @@
     if(d.platform==='android'||d.computeClass==='MOBILE_LOCAL'){html+=card('Battery',d.batteryPercent==null?'Unavailable':`${number(d.batteryPercent)}%`,d.charging?'Charging':'Last discovered status');html+=card('Mobile connectivity',d.transport||'Unavailable',d.backgroundReliability||'Background reliability unavailable');}
     q('#obs-metrics').innerHTML=html;q('[data-refresh-state]').textContent=live?`Live native sample ${live.observedAt}. Whole-node measurements; individual job attribution is unavailable.`:resources.reason;
   }
-  const tabs=['Overview','Prompt','Context & batons','Output','Tools & events','Tokens & cache','History'];
+  const tabs=['Overview','Prompt','Context & batons','Output','Tools & events','Tokens & cache','Outputs','History'];
   function renderRun(){
     const scroll=q('.obs-body').scrollTop,opened=[...q('.obs-body').querySelectorAll('details[open]')].map(d=>d.dataset.key).filter(Boolean);
     shell(data.operation?`${data.operation.label} · Run Inspector`:'Run Inspector',data.title);
@@ -96,8 +99,26 @@
     }
     if(tab==='Tokens & cache')content.innerHTML=`${data.parentUsage?`<h2>Whole Job Run accounting</h2>${tokenCards(data.parentUsage.totals)}<p>${data.runScope.parcelCount} Work Parcels · ${data.parentUsage.totals.calls} calls · provider cache reuse ${data.parentUsage.totals.cacheHit.value===null?'unavailable':`${number(data.parentUsage.totals.cacheHit.value*100)}% (derived)`}. Every canonical invocation is counted once.</p>`:''}<h2>Selected Work Parcel accounting</h2>${tokenCards(data.usage.totals)}<p>Canonical invocation accounting; ${data.usage.coverage.matching} matching calls, ${data.usage.coverage.returned} call details returned. Missing coverage is unavailable, not zero.</p><p>Provider cache hit: ${data.usage.totals.cacheHit.value===null?'Unavailable':`${number(data.usage.totals.cacheHit.value*100)}% (derived)`}. A cached token is still input; it is not automatically a token avoided.</p><h3>API cost and cache savings</h3><pre>${safe(JSON.stringify({cost:data.usage.totals.apiCost,cacheSaving:data.usage.totals.cacheSaving},null,2))}</pre><h3>Worker accounting</h3>${data.usage.groups.map(g=>`<details><summary>${safe(g.key)} · ${g.calls} calls</summary>${tokenCards(g)}</details>`).join('')}<h3>Selected model calls</h3>${calls.map(c=>`<article class="obs-card"><h3>${safe(c.providerModel||c.model)} · ${safe(c.provider)}</h3><p>${safe(c.usageAuthority||'unavailable')} · ${safe(c.accounting?.usageAuthority||'No attested accounting match')}</p><pre>${safe(JSON.stringify({input:c.accounting?.usage?.inputTokens??c.inputTokens??null,cachedInput:c.accounting?.usage?.cachedInputTokens??c.cachedInputTokens??null,freshInput:c.accounting?.usage?.freshInputTokens??c.freshInputTokens??null,output:c.accounting?.usage?.outputTokens??c.outputTokens??null,total:c.accounting?.usage?.totalProcessedTokens??c.totalTokens??null,cost:c.accounting?.apiCost??null,cacheEvidence:c.cacheEvidence??null},null,2))}</pre></article>`).join('')}<p>${safe(data.limitations.join(' '))}</p>`;
     if(tab==='Tokens & cache')content.insertAdjacentHTML('beforeend',`<h3>Context and throughput coverage</h3><p>Current provider context window used / available: unavailable unless separately recorded in Context & batons. Prompt processing and generation-only throughput: unavailable. Tokens avoided by context reuse: unavailable without a comparable baseline.</p>${calls.map(c=>`<p>${safe(c.providerModel||c.model)} · End-to-end output rate: ${AgentControlObservabilityModel.outputRate(c)!==null?`${number(AgentControlObservabilityModel.outputRate(c))} tokens/s (derived; includes complete call latency)`:'Unavailable'}</p>`).join('')}`);
+    if(tab==='Outputs')renderOutputs(content);
     if(tab==='History'){content.innerHTML=`<h2>Human-readable history</h2><p>${safe(data.historyScope)}</p>${data.history?`<button class="button" data-download>Download history (Markdown)</button><p>SHA-256 ${safe(data.history.sha256)} · ${data.history.terminal?'terminal':'live'} · ${data.history.entryCount} entries</p><div class="obs-markdown">${renderMarkdown(data.history.content)}</div>`:'<p>No canonical Markdown transcript is registered for this Work Parcel. Durable audit and operation evidence remain available below.</p>'}<details><summary>Recorded audit and evidence</summary><pre>${safe(JSON.stringify({events:data.events,operations:data.operations},null,2))}</pre></details>`;q('[data-download]')?.addEventListener('click',()=>{const url=URL.createObjectURL(new Blob([data.history.content],{type:'text/markdown;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download=`agent-control-${data.parentRunId||data.id}.md`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});}
     opened.forEach(key=>{const detail=[...content.querySelectorAll('details')].find(d=>d.dataset.key===key);if(detail)detail.open=true;});q('.obs-body').scrollTop=scroll;tick();
+  }
+  function openOutputs(runId){outputProfile=null;outputData=null;outputGeneration++;openRun(runId);tab='Outputs';}
+  async function renderOutputs(content){
+    const runId=data.parentRunId||data.id;
+    content.innerHTML='<h2>Outputs</h2><p role="status">Loading report profiles…</p>';
+    if(outputLoading)return;
+    outputLoading=true;const generation=++outputGeneration;
+    try{
+      const catalogue=await get(`/api/observability/runs/${encodeURIComponent(runId)}/outputs`);
+      const profile=catalogue.profiles.find(p=>p.id===outputProfile)?.id||catalogue.defaultProfile;
+      const rendered=await get(`/api/observability/runs/${encodeURIComponent(runId)}/outputs/${encodeURIComponent(profile)}`);
+      if(generation!==outputGeneration||!dialog.open||tab!=='Outputs'||!content.isConnected)return;
+      outputProfile=profile;outputData=rendered;
+      content.innerHTML=`<h2>Outputs</h2><label>Report <select data-report-profile aria-label="Report output profile">${catalogue.profiles.map(p=>`<option value="${safe(p.id)}" ${p.id===profile?'selected':''}>${safe(p.label)}</option>`).join('')}</select></label><button class="button" data-report-download>Download ${safe(rendered.format==='markdown'?'Markdown':rendered.format==='json'?'JSON':'text')}</button><p>Source run: ${safe(rendered.runId)} · Generated ${safe(rendered.generatedAt)}</p><p>Filtered rendering of retained governed evidence. History remains separately available.</p><details><summary>Report provenance</summary><p>Source SHA-256: ${safe(rendered.sourceSha256)}</p><p>File SHA-256: ${safe(rendered.sha256)}</p></details><div class="obs-markdown" data-report-content>${rendered.format==='json'?`<pre>${safe(rendered.content)}</pre>`:renderMarkdown(rendered.content)}</div>`;
+      content.querySelector('[data-report-profile]').onchange=e=>{outputProfile=e.target.value;renderOutputs(content);};
+      content.querySelector('[data-report-download]').onclick=()=>{const a=document.createElement('a'),url=URL.createObjectURL(new Blob([rendered.content],{type:rendered.mime+';charset=utf-8'}));a.href=url;a.download=rendered.filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
+    }catch(error){if(content.isConnected&&tab==='Outputs')content.textContent=`Outputs unavailable: ${error.message}`;}finally{outputLoading=false;}
   }
   function tokenCards(t){return `<div class="obs-grid">${[['Input',t.input],['Cached input',t.cached],['Fresh input',t.fresh],['Output',t.output],['Total',t.tokens]].map(([label,v])=>card(label,number(v.value),`${v.reported}/${v.total} calls reported; canonical accounting`)).join('')}</div>`;}
   // Safe Markdown subset: escaped text, headings and fenced code. No remote links, raw HTML or script execution.
@@ -105,5 +126,5 @@
   function tick(){const elapsed=q('[data-elapsed]'),start=data?.operation?data.operation.startedAt:data?.startedAt,end=data?.operation?data.operation.endedAt:data?.endedAt;if(elapsed&&start){const seconds=Math.max(0,Math.floor(((end?Date.parse(end):Date.now())-Date.parse(start))/1000));elapsed.textContent=`${Math.floor(seconds/60)}m ${seconds%60}s${end?' · final':''}`;}else if(elapsed)elapsed.textContent='Elapsed unavailable for this recorded operation';}
   setInterval(()=>{if(dialog?.open)tick();},1000);
   document.addEventListener('DOMContentLoaded',initialize);
-  window.AgentControlObservability={openNode,openRun};
+  window.AgentControlObservability={openNode,openRun,openOutputs};
 })();

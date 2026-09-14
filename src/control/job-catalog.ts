@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import {validateReportProfiles} from './report-output.js';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createRequire} from 'node:module';
@@ -46,6 +47,8 @@ export function validateJobManifest(raw: unknown, knownActions?: Set<string>): J
   if (!validateJobSchema(raw)) throw new JobManifestError(validationIssues(validateJobSchema.errors));
   const job = structuredClone(raw);
   assertDependencies(job);
+  validateReportProfiles(job.spec.reportProfiles);
+  if(job.spec.reportArtifact&&job.spec.steps.flatMap(step=>step.outputs??[]).filter(output=>output.name===job.spec.reportArtifact).length!==1)throw new JobManifestError(['report_artifact_declaration_required']);
   if (knownActions) for (const step of job.spec.steps) if (!knownActions.has(step.action)) throw new JobManifestError([`invalid_action:${step.action}`]);
   validateParameterDefinitions(job.spec.parameters ?? {});
   return job;

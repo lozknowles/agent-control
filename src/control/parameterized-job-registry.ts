@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import {validateReportProfiles} from './report-output.js';
 import path from 'node:path';
 import {assertNoSensitiveMaterial, redactSensitiveValue} from './security-redaction.js';
 import {nextCronOccurrence, parseCron} from './job-catalog.js';
@@ -25,6 +26,7 @@ export function validateParameterizedDefinition(value: ParameterizedJobDefinitio
     if (schema.type === 'enum' && (!schema.values?.length || schema.values.some(item => !['string', 'number', 'boolean'].includes(typeof item)))) throw new ParameterizedJobError('job_parameter_enum_invalid', name);
     if (schema.default !== undefined) validateParameter(name, schema, schema.default);
   }
+  validateReportProfiles(value.outputs?.profiles);
   return clone(value);
 }
 

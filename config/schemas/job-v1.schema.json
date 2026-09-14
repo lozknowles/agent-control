@@ -24,6 +24,8 @@
       "additionalProperties": false,
       "required": ["priority", "concurrency", "steps"],
       "properties": {
+        "reportProfiles": {"type":"array","minItems":1,"maxItems":12,"items":{"type":"object","additionalProperties":false,"required":["id","label","view","format"],"properties":{"id":{"type":"string","pattern":"^[a-z][a-z0-9-]{0,47}$"},"label":{"type":"string","minLength":1,"maxLength":80},"view":{"enum":["simple","detailed","evidence"]},"format":{"enum":["markdown","text","json"]},"default":{"type":"boolean"}}}},
+        "reportArtifact": {"type":"string","pattern":"^[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}$"},
         "enabled": {"type": "boolean"},
         "priority": {"enum": ["background", "low", "normal", "high", "urgent"]},
         "concurrency": {"enum": ["allow", "no-overlap", "replace-running", "queue"]},

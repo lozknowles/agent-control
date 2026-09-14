@@ -1,3 +1,4 @@
+import type {ReportProfile} from './report-output.js';
 import type {ExecutionAuthority} from './execution-provider.js';
 import type {CapabilityRequest} from './capabilities.js';
 import type {ExecutionCleanupReport, OwnedExecution} from './owned-process.js';
@@ -31,7 +32,7 @@ export interface JobDefinition {
   apiVersion: 'agent-control/v1';
   kind: 'Job';
   metadata: {id: string; name: string; version: string; description?: string};
-  spec: {enabled?: boolean; priority: JobPriority; concurrency: ConcurrencyPolicy; parameters?: Record<string, ParameterDefinition>; retry?: RetryPolicy; steps: JobStepDefinition[]};
+  spec: {reportArtifact?: string; reportProfiles?: ReportProfile[]; enabled?: boolean; priority: JobPriority; concurrency: ConcurrencyPolicy; parameters?: Record<string, ParameterDefinition>; retry?: RetryPolicy; steps: JobStepDefinition[]};
 }
 export interface ScheduleDefinition {
   apiVersion: 'agent-control/v1';

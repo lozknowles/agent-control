@@ -16,6 +16,7 @@ import {registerOperatorReviewActions} from './operator-review-actions.js';
 import {registerBrowserActions} from './browser-actions.js';
 import type {ModelRegistry} from './model-registry.js';
 import {ParameterizedJobRegistry} from './parameterized-job-registry.js';
+import {transcriptRequestReviewDefinition} from './transcript-review-definition.js';
 import {repositoryCodeReviewDefinition} from './repository-review-definition.js';
 import {createParameterizedJobEngine} from './parameterized-job-engine.js';
 import {DirectRepositoryReviewExecutor, type RepositoryReviewQualityGate} from './direct-repository-review-executor.js';
@@ -116,7 +117,7 @@ export function buildGovernedRetrievalRuntime(config: AgentControlConfig, stateR
 }
 
 export function buildParameterizedJobRuntime(config: AgentControlConfig, modelRegistry: ModelRegistry, workParcels: WorkParcelCoordinator, stateRoot = process.env.AGENT_CONTROL_STATE_DIR || path.resolve('.agent-control'), tokenRouting?: TokenAwareBatonRuntime, contracts?: ContractExecutionRuntime, handoffs?: GovernedHandoffRuntime, codexNodeExecution?: CodexNodeExecutionPort, retrieval = buildGovernedRetrievalRuntime(config,stateRoot),contextPacketBuilder=new ContextPacketBuilder(configuredHarnessProfiles(config.harnessEfficiency)),qualityGate?:RepositoryReviewQualityGate) {
-  const definitions = new ParameterizedJobRegistry(); definitions.register(repositoryCodeReviewDefinition);
+  const definitions = new ParameterizedJobRegistry(); definitions.register(repositoryCodeReviewDefinition); definitions.register(transcriptRequestReviewDefinition);
   const roots = config.jobs?.repositoryRoots ?? (process.env.AGENT_CONTROL_REPOSITORY_ROOTS?.split(path.delimiter).filter(Boolean) || [path.resolve('.')]);
   const lifecycle = tokenRouting && contracts && handoffs ? {routing: tokenRouting, contracts, handoffs} : undefined;
   const transportIntegrity = new TransportIntegrityRuntime(path.join(stateRoot, 'transport-integrity', 'records.json'));

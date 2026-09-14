@@ -220,6 +220,17 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   if (method === 'GET' && url.pathname === '/api/executions') return json(response, 200, service.executionProvenance());
   if (method === 'GET' && url.pathname === '/api/fast-execution-attempts') return json(response, 200, service.fastExecutionAttempts());
   if (method === 'GET' && url.pathname === '/api/runtime') return json(response, 200, service.runtime());
+  const reportsMatch=url.pathname.match(/^\/api\/observability\/runs\/([^/]+)\/outputs(?:\/([^/]+))?$/);
+  if(method==='GET'&&reportsMatch){
+    validateOperatorRequest(request,options);
+    const id=decodeURIComponent(reportsMatch[1]),profile=reportsMatch[2]?decodeURIComponent(reportsMatch[2]):undefined;
+    if(id.length>240)throw httpError(400,'report_identity_invalid');
+    if(!profile)return json(response,200,service.reportOutputs(id));
+    try {const output=service.reportOutput(id,profile,url.searchParams.get('format')??undefined);
+      if(url.searchParams.get('download')==='1'){response.writeHead(200,{'Content-Type':output.mime+';charset=utf-8','Content-Disposition':`attachment; filename="${output.filename}"`,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff','X-Report-Source-Sha256':output.sourceSha256,'X-Report-Content-Sha256':output.sha256});response.end(output.content);return;}
+      return json(response,200,output);
+    }catch(error){if(error instanceof Error&&['report_profile_missing','report_format_unsupported'].includes(error.message))throw httpError(400,error.message);throw error;}
+  }
   const observabilityMatch=url.pathname.match(/^\/api\/observability\/(nodes|runs)\/([^/]+)(?:\/(resources))?$/);
   if(method==='GET'&&observabilityMatch){
     validateOperatorRequest(request,options);
