@@ -100,10 +100,6 @@ Model Intelligence now reports real source coverage, initial versus follow-up ob
 Historical versioned reports remain available under `docs/`; use the installation guide above for this release.
 
 
-### 4.7 usability and integration candidate
-
-The unpublished [4.7 candidate](docs/release-4.7-candidate.md) adds optional Mallow voice transport and mobile usability improvements. See [Using Mallow voice](docs/mallow-voice.md) for configuration, governance, privacy, cost and current qualification limits. It is not yet recommended for formal release.
-
 ## Mallow and execution visibility
 
 Use the floating Mallow companion for text and configured speech. Voice requests enter the same sealed approval and Work Parcel controls as typed requests. [Using Mallow voice](docs/mallow-voice.md).
