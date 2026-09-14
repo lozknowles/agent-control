@@ -87,3 +87,5 @@ The follow-on review corrected stale node back-links, canonical-accounting throu
 The active lozenge and elapsed timer stay in the inspector header while evidence scrolls. Multi-node work keeps an explicit originating node only when the run confirms that binding. CPU utilization uses one whole-node counter stream with at least one second between frames. A missing accelerator reading retains an unavailable measurement. Individual model-call accounting is resolved by its exact canonical identifier even beyond the 1,000-row summary-detail limit; excluded accounting remains excluded.
 
 Refresh requests are coalesced while a read is pending; a complete changed node projection updates the displayed provenance while retaining expanded details. The physical origin belongs to the current Process Map opening and is revalidated against run evidence. Returning lane ownership now requires an actual human-owned terminal session, and every session is checked before any ownership is transferred.
+
+See the [qualification report and recorded evidence](observability-qualification-4.7.md) for exact source, tests, review outcomes and physical limitations.

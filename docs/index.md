@@ -24,3 +24,5 @@ Older versioned deployment and evidence documents remain available for provenanc
 ## Observability follow-on
 
 [How do I see what Agent Control is doing?](observability-4.7.md) covers Estate → Node → Process → Run Inspector, tokens, context, batons, history, mobile interaction and Mallow's shared evidence. Qualification of this post-v4.7.0 work is tracked separately.
+
+- [4.7 observability qualification](observability-qualification-4.7.md) — source pins, tests, actual review outcome and paced desktop/mobile evidence.

@@ -107,3 +107,5 @@ Historical versioned reports remain available under `docs/`; use the installatio
 Use the floating Mallow companion for text and configured speech. Voice requests enter the same sealed approval and Work Parcel controls as typed requests. [Using Mallow voice](docs/mallow-voice.md).
 
 [Desktop and mobile recordings with readable pauses](docs/evidence/agent-control-4.7-dashboard.md) show real jobs, live process drill-down, running activity, input/cache/output usage and human-readable history. Video binaries are stored in the evidence repository.
+
+The observability follow-on has a [qualification report](docs/observability-qualification-4.7.md), with desktop/mobile recordings stored separately from normal source pulls. Published v4.7.0 remains immutable; this branch records the follow-on implementation.
