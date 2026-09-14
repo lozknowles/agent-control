@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const runtime = {sessions: [], selected: null, attachment: null, controller: null, cursor: 0};
+  const runtime = {sessions: [], selected: null, attachment: null, controller: null, cursor: 0, observedAt: 0};
   const activeStates = new Set(['STARTING', 'RUNNING', 'PAUSED']);
   const byId = id => document.getElementById(id);
   const safe = value => String(value ?? '').replace(/[&<>'"]/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[character]));
@@ -26,7 +26,8 @@
   }
 
   function elapsed(session) {
-    const end = session.endedAt ? Date.parse(session.endedAt) : Date.now(), start = Date.parse(session.startedAt);
+    const endedAt = session.endedAt || (!activeStates.has(session.state) ? session.updatedAt : null);
+    const end = endedAt ? Date.parse(endedAt) : Date.now(), start = Date.parse(session.startedAt);
     if (!Number.isFinite(start)) return 'unknown';
     const seconds = Math.max(0, Math.floor((end - start) / 1000));
     return seconds < 60 ? `${seconds}s` : `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
@@ -75,12 +76,23 @@
     runtime.sessions = await request('/api/execution-sessions'); renderList(); bindCrew();
     if (runtime.selected) {
       const updated = runtime.sessions.find(item => item.id === runtime.selected.id);
-      if (updated) { runtime.selected = updated; renderIdentity(); }
+      if (updated) { runtime.selected = updated; runtime.observedAt = Date.now(); renderIdentity(); }
     }
+  }
+
+  function renderActivity() {
+    const session = runtime.selected, badge = byId('live-shell-activity-state'), timer = byId('live-shell-activity-elapsed');
+    if (!session || !badge || !timer) return;
+    const stale = activeStates.has(session.state) && Date.now() - runtime.observedAt > 15000;
+    const label = stale ? 'STATUS STALE' : session.state;
+    if (badge.textContent !== label) badge.textContent = label;
+    badge.classList.toggle('is-running', !stale && session.state === 'RUNNING');
+    timer.textContent = `Elapsed ${elapsed(session)}${stale ? ' · last known state' : ''}`;
   }
 
   function renderIdentity() {
     const session = runtime.selected; if (!session) return;
+    renderActivity();
     byId('live-shell-title').textContent = `${session.scope.crewRole || session.scope.workerId} · ${session.scope.stepId}`;
     byId('live-shell-subtitle').textContent = `${groupLabel(session)} · ${session.command}`;
     byId('live-shell-identity').innerHTML = [
@@ -107,7 +119,7 @@
 
   async function openSession(id, mode = 'WATCH', transcriptOnly = false) {
     if (runtime.selected?.id !== id) await closeAttachment();
-    runtime.selected = await request(`/api/execution-sessions/${encodeURIComponent(id)}`); runtime.cursor = 0;
+    runtime.selected = await request(`/api/execution-sessions/${encodeURIComponent(id)}`); runtime.cursor = 0; runtime.observedAt = Date.now();
     byId('live-shell-output').textContent = ''; byId('live-shell-transcript-panel').hidden = true;
     renderIdentity(); byId('live-shell-dialog').showModal(); await startStream();
     if (mode && !transcriptOnly) await attach(mode); if (transcriptOnly) await showTranscript();
@@ -191,6 +203,8 @@
     try { await closeAttachment(); } catch (error) { showError(error); return; }
     runtime.controller?.abort(); runtime.controller = null; byId('live-shell-dialog').close();
   }
+
+  setInterval(() => { if (byId('live-shell-dialog')?.open) renderActivity(); }, 1000);
 
   const previousRefresh = refresh;
   refresh = async () => { await previousRefresh(); await loadSessions(); };
