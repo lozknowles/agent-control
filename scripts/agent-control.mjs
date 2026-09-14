@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
+import {cliMain} from './cli.mjs';
+import {createClient} from './cli-client.mjs';
 import path from 'node:path';
 import {spawn} from 'node:child_process';
 import {createRequire} from 'node:module';
@@ -39,6 +41,8 @@ It admits the pre-registered AGENT_CONTROL_ACP_ACTOR_ID (default web-operator).`
 
 export async function main(argv = process.argv.slice(2), io = {out: console.log, error: console.error}) {
   const command = argv[0];
+  const legacyJobs = command === 'jobs' && ['definitions','saved','schedules','runs','create','import','export','run','enable','disable','update','cancel'].includes(argv[1]);
+  if (!legacyJobs && !['acp','acp-remote'].includes(command) && !(command === 'providers' && argv[1] === 'credential')) return cliMain(argv, io);
   if (command === '--help' || command === '-h') { io.out(usage); return 0; }
   if (command === '--version' || command === '-v') { io.out(`agent-control ${packageVersion}`); return 0; }
   if (command === 'acp' || command === 'acp-remote') return argv.length === 1 ? runTypeScriptCommand(command === 'acp' ? 'acp.ts' : 'acp-remote.ts') : (io.error(usage), 2);
@@ -69,7 +73,7 @@ async function runTypeScriptCommand(filename, args = []) {
 }
 
 async function jobsCommand(argv, io) {
-  const [operation, id] = argv, options = parseOptions(argv.slice(id && !id.startsWith('--') ? 2 : 1));
+  const operation = argv[0], id = argv[1] && !argv[1].startsWith('--') ? argv[1] : undefined, options = parseOptions(argv.slice(id ? 2 : 1));
   try {
     let result;
     if (operation === 'definitions') result = await jobsRequest(id ? `/api/job-definitions/${encodeURIComponent(id)}` : '/api/job-definitions');
@@ -110,10 +114,8 @@ function jobsBaseUrl(environment = process.env) {
   return url;
 }
 async function jobsRequest(pathname, body, environment = process.env, fetcher = fetch) {
-  const url = jobsBaseUrl(environment); url.pathname = pathname.split('?')[0]; url.search = pathname.includes('?') ? pathname.slice(pathname.indexOf('?')) : '';
-  const mutation = body !== undefined, token = environment.AGENT_CONTROL_WEB_OPERATOR_TOKEN?.trim(); if (mutation && !token) throw new Error('AGENT_CONTROL_WEB_OPERATOR_TOKEN is required for Job mutations');
-  const response = await fetcher(url, {method: mutation ? 'POST' : 'GET', headers: {Accept:'application/json', ...(mutation ? {'Content-Type':'application/json',Authorization:`Bearer ${token}`} : {})}, ...(mutation ? {body:JSON.stringify({...body,actor:'cli-operator'})} : {})});
-  const result = await response.json().catch(()=>({error:`HTTP ${response.status}`})); if (!response.ok) throw new Error(result.detail||result.error||`HTTP ${response.status}`); return result;
+  const client=await createClient({}, {environment,request:fetcher});
+  try{return body===undefined?await client.get(pathname):await client.post(pathname,body);}finally{client.close();}
 }
 
 function isEntrypoint() {
