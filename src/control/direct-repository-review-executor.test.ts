@@ -391,3 +391,16 @@ function fakeReviewClients(calls: Array<{model: string; prompt: string}>, failDe
     },
   });
 }
+
+test('accepted review exchanges retain redacted input and final output per call', async t => {
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'ac-exchange-'));t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+  const {models,route}=handoffRegistry(),store=new WorkParcelStore(path.join(root,'parcels.json')),calls:Array<{model:string;prompt:string}>=[];
+  const executor=new DirectRepositoryReviewExecutor(models,store,undefined,undefined,fakeReviewClients(calls));
+  const request=reviewRequest(route),secret=['sk','synthetic'+'Z'.repeat(30)].join('-');
+  request.contextChunks=request.contextChunks.slice(0,1);request.contextChunks[0].content+='\n'+secret;
+  const result=await executor.execute(request),invocation=store.get(result.workParcelIds[0])!.audit.invocations[0];
+  assert.ok(invocation.exchange);assert.equal(invocation.exchange.redacted,true);assert.equal(invocation.exchange.truncated,false);
+  assert.match(invocation.exchange.input,/first.ts/);assert.equal(invocation.exchange.input.includes(secret),false);
+  assert.equal(JSON.parse(invocation.exchange.output).schema,'agent-control.repository-review/v1');
+  assert.equal(invocation.totalTokens,100);
+});

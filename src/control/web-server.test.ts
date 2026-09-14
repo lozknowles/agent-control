@@ -359,3 +359,10 @@ test('PWA serves a static offline shell and protects deployment observations',as
   assert.equal((await fetch(base+'/android-operator-token')).status,404);
  }finally{server.close();}
 });
+
+test('saved-job input budgets remain numeric without exposing credential tokens',async t=>{
+  const control=service();(control as unknown as {jobDefinitions:()=>unknown[]}).jobDefinitions=()=>[{budgets:{maximumInputTokens:120000,maximumOutputTokens:8192},credentialToken:'must-not-leak'}];
+  const{server,base}=await runningWithControl(control);t.after(()=>server.close());
+  const[value]=await(await fetch(`${base}/api/job-definitions`)).json();
+  assert.equal(value.budgets.maximumInputTokens,120000);assert.equal(value.budgets.maximumOutputTokens,8192);assert.equal(value.credentialToken,'[REDACTED]');
+});
