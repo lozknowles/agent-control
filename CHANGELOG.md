@@ -1,5 +1,12 @@
 # Changelog
 
+## 4.8.0-rc.1 — First-class CLI candidate
+
+- Extend `agent-control` with the `ac` alias, shared authenticated API transport, catalogue-driven execution, readable/JSON inspection, live event-backed watch and existing report downloads.
+- Reuse saved connection settings and governed controller authority on Linux, Windows and compatible Node/Termux clients. Preserve the existing API/runtime as the only orchestration engine.
+- Include the pending report-output-profile changes from the v4.7.1-based proposal. Formal release qualification/publication remains separate.
+
+
 ## Unreleased — Report output profiles
 
 Simple, Detailed and Evidence projections share one governed run and canonical result. Catalogue declarations select formats/defaults; authenticated API, actual file exports and desktop/mobile Inspector controls reuse the existing evidence and redaction boundaries. See [output profiles](docs/report-output-profiles.md).

@@ -30,3 +30,5 @@ Older versioned deployment and evidence documents remain available for provenanc
 - [System light/dark appearance and qualification](system-theme-4.7.md)
 
 - [Report output profiles (post-4.7.1 candidate)](report-output-profiles.md)
+
+- [4.8 CLI candidate: quick start, JSON, watch and remote use](cli.md)

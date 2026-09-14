@@ -1,5 +1,8 @@
 # Agent Control 4.7
 
+> **4.8 CLI candidate:** `agent-control` (short alias `ac`) now provides governed estate, node, job, token, history and report inspection plus catalogue execution and live watch. See the [CLI quick start and remote-use guide](docs/cli.md). This candidate incorporates the report-output-profile proposal; it is not a published 4.8 release.
+
+
 Discover your AI tools, see what is available, and follow approved work from request to verified result.
 
 **Current release: [4.7.1](https://github.com/lozknowles/agent-control/releases/tag/v4.7.1) — Usability, Integration & Observability.** Clearer desktop/mobile Process Map, live session activity and readable per-call token history. Core and browser journeys are qualified; optional live voice remains experimental with [explicit limitations](docs/known-limitations-4.7.md). See [release notes](docs/release-notes-4.7.1.md) and [verification](docs/release-verification-4.7.1.md).
