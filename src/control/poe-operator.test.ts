@@ -57,6 +57,13 @@ test('sealed approval preserves the exact request and creates one real governed 
   for(let i=0;i<8;i++){await f.parcels.tick();await f.runtime.tick();}
   assert.equal(f.parcels.get(result.proposal.parcelId!).status,'SUCCEEDED');
 });
+test('Mallow name prefix is ignored for intent matching but retained in the sealed request',async t=>{
+  const f=fixture(t),prompt='Mallow, start System observation';
+  const answer=await f.ask(prompt);
+  assert.equal(answer.evidence.title,'Review job proposal');
+  const proposal=(await f.operator.projection('web-operator',f.conversation.id)).proposals[0]!;
+  assert.equal(proposal.prompt,prompt);
+});
 test('capability denial and material changes invalidate approval',async t=>{
   const f=fixture(t);await f.ask('Start System observation');const proposal=(await f.operator.projection('web-operator',f.conversation.id)).proposals[0]!;
   f.workers.setHealth(OPERATOR_OBSERVATION_WORKER_ID,'offline');assert.throws(()=>f.poe.approveOperator(f.conversation.id,proposal.id,proposal.hash,'web-operator'),/readiness_blocked/);

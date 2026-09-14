@@ -98,6 +98,14 @@ test('healthy reachability without a discovered workload projects ONLINE', () =>
   assert.equal(snapshot.health, 'healthy');
 });
 
+test('container executables are represented as detected-only runtime observations', () => {
+  const value = observation(false); value.tools.push('podman');
+  const snapshot = projectManagedNode(resource(), value);
+  assert.equal(snapshot.containerRuntimes?.[0].kind, 'PODMAN');
+  assert.equal(snapshot.containerRuntimes?.[0].state, 'DETECTED_ONLY');
+  assert.equal(snapshot.containerRuntimes?.[0].containers.length, 0);
+});
+
 test('active optical workload marks node BUSY and fences disruptive scheduler capabilities', async () => {
   const workers = new WorkerRegistry(), transport = new FakeTransport(); transport.active = true;
   const manager = new ManagedNodeManager([resource()], workers, transport, () => new Date('2026-08-26T08:00:00.000Z'));
@@ -129,6 +137,7 @@ test('heartbeat failure degrades, expires offline, and recovers from a later suc
   let now = new Date('2026-08-26T08:00:00.000Z'); const workers = new WorkerRegistry(), transport = new FakeTransport(), manager = new ManagedNodeManager([resource()], workers, transport, () => now);
   assert.equal((await manager.poll('node-alpha')).state, 'IDLE');
   now = new Date('2026-08-26T08:00:10.000Z'); transport.fail = true; const degraded = await manager.poll('node-alpha'); assert.equal(degraded.state, 'DEGRADED'); assert.equal(degraded.measurements.uptimeSeconds.freshness, 'stale');
+  assert.equal(degraded.lastProbeFailure?.classification, 'TRANSPORT');
   await assert.rejects(manager.execute('node-alpha', {operation: 'package.update'}, [MAINTENANCE_APPROVAL]), /maintenance_unavailable_while_degraded/);
   now = new Date('2026-08-26T08:00:31.000Z'); assert.equal(manager.get('node-alpha')?.state, 'OFFLINE'); assert.equal(workers.list()[0].health, 'offline');
   transport.fail = false; assert.equal((await manager.poll('node-alpha')).state, 'IDLE'); assert.equal(workers.list()[0].health, 'healthy');

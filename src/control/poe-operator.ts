@@ -25,6 +25,7 @@ interface OperatorSources {
 interface OperatorOptions {knowledge?:PoeKnowledgeService; registries?: PoeRegistrySource[]; runtime: JobRuntime; parcels: WorkParcelCoordinator; sources: OperatorSources; registrations: OperatorRegistration[]; topics: OperatorTopic[]; file?: string; clock?: () => Date;}
 const digest = (value: unknown): string => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const words = (text: string): string[] => text.toLowerCase().match(/[a-z0-9]+/g) ?? [];
+const operatorIntent = (text: string): string => text.replace(/^\s*mallow\b\s*[,;:\-]?\s*/i, '');
 const copy = <T>(value: T): T => structuredClone(value);
 
 /** Query output is data. Only approve() can cross the execution boundary. */
@@ -90,18 +91,19 @@ export class PoeOperatorRuntime {
   }
   private async queryRegistry(text: string, conversation: PoeConversation, reference?: PoeObjectReference): Promise<PoeEvidenceResult | undefined> {
     assertNoSensitiveMaterial(text, 'poe_credential_material_forbidden');
+    const intent = operatorIntent(text);
     const registries=await Promise.all((this.options.registries??[]).map(source=>source.refresh()));
     const remoteJobs=registries.flatMap(source=>source.jobs.map(job=>({source,job})));
-    const remoteMatch=remoteJobs.filter(({job})=>words(text).filter(word=>!['the','what','does','job','events','daily','start','run'].includes(word)).some(word=>words(`${job.metadata.id} ${job.metadata.name}`).includes(word)));
+    const remoteMatch=remoteJobs.filter(({job})=>words(intent).filter(word=>!['the','what','does','job','events','daily','start','run'].includes(word)).some(word=>words(`${job.metadata.id} ${job.metadata.name}`).includes(word)));
     if(/\blane master\b/i.test(text)&&!/\b(?:cancel|start|run|publish)\b/i.test(text))return this.options.sources.resolve({kind:'crew-member',id:'lane-master'});
     if(reference&&(/\b(?:this|it|that|found|result)\b/i.test(text)||text.includes(reference.id))&&!/\b(?:start|run|launch|cancel|pause|resume|publish|stage|delete|deploy|enable|disable|list|show.*jobs)\b/i.test(text))return this.options.sources.resolve(reference);
-    const control = /\b(?:start|launch|execute|cancel|pause|resume|publish|stage|delete|deploy|enable|disable)\b/i.test(text) || /^\s*(?:please\s+)?run\b/i.test(text);
+    const control = /\b(?:start|launch|execute|cancel|pause|resume|publish|stage|delete|deploy|enable|disable)\b/i.test(intent) || /^\s*(?:please\s+)?run\b/i.test(intent);
     if (control) {
-      if(/^\s*(?:please\s+)?cancel\b/i.test(text))return this.proposeCancellation(text,conversation,reference);
-      if (!/^\s*(?:please\s+)?(?:start|run|launch)\b/i.test(text) || /\b(?:publish|stage|delete|deploy|cancel|pause|resume|enable|disable)\b/i.test(text)) return this.unavailable('Operation requires its governed control', 'Mallow has not executed anything. Use the relevant native runtime control; this conversational operation is not enabled. Schedule changes and publication have separate approval boundaries.');
+      if(/^\s*(?:please\s+)?cancel\b/i.test(intent))return this.proposeCancellation(text,conversation,reference);
+      if (!/^\s*(?:please\s+)?(?:start|run|launch)\b/i.test(intent) || /\b(?:publish|stage|delete|deploy|cancel|pause|resume|enable|disable)\b/i.test(intent)) return this.unavailable('Operation requires its governed control', 'Mallow has not executed anything. Use the relevant native runtime control; this conversational operation is not enabled. Schedule changes and publication have separate approval boundaries.');
       if (conversation.channel !== 'dashboard') return this.unavailable('Dashboard approval required', 'This channel can inspect jobs. Open the authenticated dashboard to review and approve a job proposal.');
       if(remoteMatch.length)return this.unavailable('Remote registered job',`${remoteMatch.map(item=>`${item.job.metadata.name} (${item.job.metadata.id})`).join('; ')}. ${remoteMatch[0]!.source.limitation}`);
-      const matches = this.matches(text);
+      const matches = this.matches(intent);
       if (matches.length !== 1) return this.unavailable('Clarify the job', matches.length ? `Which registered job did you mean: ${matches.map(item => `${item.name} (${item.id})`).join('; ')}?` : 'No registered job matches that request. Ask for the job catalogue and use its exact identifier.');
       if(/\b(?:with|using|input|parameter|instead)\b/i.test(text))return this.unavailable('Review job inputs','This conversational adapter currently supports registered defaults only. Use the native typed input form for different inputs; no alternative values have been assumed.');
       return this.propose(matches[0]!.id, text, conversation);

@@ -117,8 +117,12 @@ Before onboarding another machine:
 The implementation does not bootstrap SSH, install packages, change workload configuration, grant `sudo`, expose the dashboard, or claim that a configured runtime can be safely updated without an operator-reviewed node policy.
 
 
-### Slower guests and container discovery
+### Nested execution environments and container discovery
 
-`managedNode.probeTimeoutSeconds` sets the fixed read-only SSH probe deadline (default20, integer1–120 seconds). Set a polling interval longer than the expected probe duration for emulated or slow guests. A timeout remains unavailable evidence, not a successful probe.
+`managedNode.probeTimeoutSeconds` sets the fixed read-only SSH probe deadline (default 20, integer 1–120 seconds). The setting belongs to one resource, so a slow guest does not change the global probe policy. Timeout, authentication, transport, command, capability-absence, cancellation and malformed-output failures remain distinct observations.
 
-The probe detects Podman, Docker and LXC executables and advertises `container.podman.detected`, `container.docker.detected`, or `container.lxc.detected`. These mean tool presence only; runtime access, execution approval and an actual workload must be qualified separately.
+The probe detects Podman, Docker and LXC executables and advertises `container.podman.detected`, `container.docker.detected`, or `container.lxc.detected`. These mean tool presence only. Runtime access, container inventory, execution approval and an actual workload must be qualified separately. Runtime observations exclude environment variables, credentials, mounts and sensitive configuration.
+
+An execution environment may be attached to an existing Estate object through the optional evidence-backed containment contract. Agent Control accepts only explicit, acyclic, same-node relationships that lead to a physical machine; it never infers containment from an address, hostname or shared transport. Older discovery-v1 records remain readable.
+
+Resource accounting labels physical capacity, allocated capacity, guest-visible capacity, runtime limits and measured consumption separately. Estate physical totals include physical capacity once per physical device. Nested guest and container figures remain visible but are excluded from those totals.

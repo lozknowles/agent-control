@@ -36,3 +36,18 @@ test('SSH probe deadline is explicit and bounded for slower execution environmen
   }
   assert.equal(deadlines.length, 2);
 });
+
+test('SSH probe failures retain timeout authentication transport command and capability distinctions', async () => {
+  const cases = [
+    [{status:255,stdout:'',stderr:'Permission denied (publickey).'}, 'AUTHENTICATION'],
+    [{status:255,stdout:'',stderr:'connect to host example port 22: Connection refused'}, 'TRANSPORT'],
+    [{status:127,stdout:'',stderr:'sh: not found'}, 'CAPABILITY_ABSENCE'],
+    [{status:2,stdout:'',stderr:'probe command failed'}, 'COMMAND'],
+    [{status:255,stdout:'',stderr:'',timedOut:true}, 'TIMEOUT'],
+  ] as const;
+  for (const [result, classification] of cases) {
+    const execute: SshExecutor = async () => result;
+    const transport = new SshManagedNodeTransport(execute);
+    await assert.rejects(transport.probe(resource, new Date().toISOString()), error => (error as {classification?:string}).classification === classification);
+  }
+});

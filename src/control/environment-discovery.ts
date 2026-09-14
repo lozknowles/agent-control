@@ -13,6 +13,7 @@ import type {
   ServiceConfig,
 } from "./config.js";
 import type { ManagedNodeSnapshot } from "./managed-node.js";
+import type { ExecutionContainmentEvidence } from "./nested-execution.js";
 import type { WorkerExecutionIdentity } from "./job-types.js";
 import {
   assertNoSensitiveMaterial,
@@ -154,6 +155,8 @@ export interface DiscoveryItem {
   change: DiscoveryChange;
   fingerprint: string;
   attributes: Record<string, string | number | boolean | null>;
+  /** Optional evidence-backed parent relation. Older v1 records remain valid without it. */
+  containment?: ExecutionContainmentEvidence;
   provenance: Array<{
     adapter: string;
     method: string;

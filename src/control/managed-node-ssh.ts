@@ -5,6 +5,7 @@ import {fileURLToPath} from 'node:url';
 import {expandUserPath, type ResourceConfig} from './config.js';
 import {parseManagedNodeProbe, type ManagedNodeObservation, type ManagedNodeRequest, type ManagedNodeResult, type ManagedNodeTransport} from './managed-node.js';
 import type {OwnedExecution, OwnedProcessRequest} from './owned-process.js';
+import {ManagedNodeProbeError} from './nested-execution.js';
 
 export interface SshExecutionResult {status: number; stdout: string; stderr: string; timedOut?: boolean; aborted?: boolean;}
 export interface SshExecutionOptions {
@@ -80,9 +81,15 @@ export class SshManagedNodeTransport implements ManagedNodeTransport {
     const seconds = resource.managedNode?.probeTimeoutSeconds ?? 20;
     if (!Number.isInteger(seconds) || seconds < 1 || seconds > 120) throw new Error('managed_node_probe_timeout_invalid');
     const result = await this.executor('ssh', sshResourceArgs(resource, ['sh', '-s']), this.probeScript, {timeoutMs: seconds * 1000, maxBytes: MAX_BYTES});
-    if (result.timedOut) throw new Error('managed_node_probe_timeout');
-    if (result.aborted) throw new Error('managed_node_probe_aborted');
-    if (result.status !== 0) throw new Error(`managed_node_probe_failed:${clip(result.stderr).trim().split(/\r?\n/).at(-1) ?? result.status}`);
+    if (result.timedOut) throw new ManagedNodeProbeError('TIMEOUT', 'managed_node_probe_timeout');
+    if (result.aborted) throw new ManagedNodeProbeError('ABORTED', 'managed_node_probe_aborted');
+    if (result.status !== 0) {
+      const detail = clip(result.stderr).trim().split(/\r?\n/).at(-1) ?? String(result.status);
+      if (/permission denied|publickey|authentication/i.test(detail)) throw new ManagedNodeProbeError('AUTHENTICATION', `managed_node_probe_authentication_failed:${detail}`);
+      if (/connection refused|no route|network is unreachable|could not resolve|name or service not known/i.test(detail)) throw new ManagedNodeProbeError('TRANSPORT', `managed_node_probe_transport_failed:${detail}`);
+      if (result.status === 127) throw new ManagedNodeProbeError('CAPABILITY_ABSENCE', `managed_node_probe_shell_unavailable:${detail}`);
+      throw new ManagedNodeProbeError('COMMAND', `managed_node_probe_command_failed:${detail}`);
+    }
     return parseManagedNodeProbe(result.stdout, at);
   }
   async execute(resource: ResourceConfig, request: ManagedNodeRequest, signal?: AbortSignal): Promise<Omit<ManagedNodeResult, 'schema' | 'resourceId' | 'observedAt' | 'operation'>> {

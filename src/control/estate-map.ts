@@ -5,6 +5,7 @@ import type {
   DiscoveryKind,
   DiscoveryScan,
 } from "./environment-discovery.js";
+import { validateContainment } from "./nested-execution.js";
 import type {
   RuntimeMapEdge,
   RuntimeMapNode,
@@ -187,26 +188,9 @@ export function projectEstateMap(
       .filter((item) => item.kind === "MACHINE")
       .map((item) => [item.nodeId, item.id]),
   );
-  // Nested runtimes remain attached to one physical node. Accept only explicit,
-  // observed containment; never derive it from matching labels or IP addresses.
-  const observedParent = (item: DiscoveryItem): string | undefined => {
-    if (item.kind === "MACHINE") return undefined;
-    const parent = item.attributes.executionParentId;
-    if (typeof parent !== "string" || !item.provenance.some(p => p.authority === "AUTHORITATIVE" && p.method === "execution-environment-containment")) return undefined;
-    const seen = new Set([item.id]); let cursor: string | undefined = parent;
-    while (cursor) {
-      if (seen.has(cursor)) return undefined;
-      seen.add(cursor);
-      const target = byId.get(cursor);
-      if (!target || target.nodeId !== item.nodeId) return undefined;
-      if (target.kind === "MACHINE") return parent;
-      if (!target.provenance.some(p => p.authority === "AUTHORITATIVE" && p.method === "execution-environment-containment")) return undefined;
-      const next = target.attributes.executionParentId;
-      if (typeof next !== "string") return undefined;
-      cursor = next;
-    }
-    return undefined;
-  };
+  // Containment is accepted only from an explicit, evidence-backed, acyclic
+  // same-node chain. Legacy v1 attributes remain readable through the validator.
+  const observedParent = (item: DiscoveryItem) => validateContainment(scan.items, item.id);
   const baseParentFor = (item: DiscoveryItem) =>
       observedParent(item) ?? (item.kind === "MACHINE" ? root : (machineIds.get(item.nodeId) ?? root)),
     groupedItems = new Map<string, DiscoveryItem[]>(),

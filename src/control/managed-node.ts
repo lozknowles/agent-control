@@ -1,6 +1,7 @@
 import type {ManagedNodeConfig, ManagedWorkloadConfig, ResourceConfig} from './config.js';
 import type {WorkerRegistry} from './job-runtime.js';
 import {deriveCpuBusy, scalarMeasurement, unavailableMeasurement, type CpuCounterFrame, type ResourceMeasurement} from './resource-telemetry.js';
+import {classifyManagedNodeProbeFailure, discoverContainerRuntimes, type ContainerRuntimeObservation, type ProbeFailureClassification} from './nested-execution.js';
 
 export const MANAGED_NODE_SCHEMA = 'agent-control.managed-node/v1' as const;
 export const MANAGED_NODE_RESULT_SCHEMA = 'agent-control.managed-node-result/v1' as const;
@@ -78,12 +79,14 @@ export interface ManagedNodeSnapshot {
   network: string[];
   temperatures: ManagedNodeObservation['temperatures'];
   services: string[];
+  containerRuntimes?: ContainerRuntimeObservation[];
   connectivity: ManagedNodeConnectivity[];
   capabilities: string[];
   workloads: ManagedNodeWorkload[];
   currentWorkload: string | null;
   maintenance: {state: 'APPROVAL_REQUIRED' | 'BLOCKED_PROTECTED_WORKLOAD' | 'UNAVAILABLE'; detail: string};
   warnings: string[];
+  lastProbeFailure?: {classification: ProbeFailureClassification; detail: string; observedAt: string};
 }
 
 export interface ManagedNodeRequest {operation: ManagedNodeOperation; target?: string; value?: string | number;}
@@ -246,12 +249,12 @@ export function projectManagedNode(resource: ResourceConfig, observation: Manage
     loadFive: scalarMeasurement(observation.load.five, observation.observedAt, source('load.five')),
     loadFifteen: scalarMeasurement(observation.load.fifteen, observation.observedAt, source('load.fifteen')),
   };
-  return {schema: MANAGED_NODE_SCHEMA, resourceId: resource.id, state, health: projectedHealth, hostname: observation.hostname, lastHeartbeatAt: observation.observedAt, lastProbeAt: observation.observedAt, uptimeSeconds: observation.uptimeSeconds, os: observation.os, cpu: {...observation.cpu, load: observation.load}, memory: observation.memory, measurements, storage: observation.storage, optical: observation.optical, network: observation.network, temperatures: observation.temperatures, services: observation.services, connectivity: connections, capabilities: discovered, workloads: detectedWorkloads, currentWorkload: active.map(item => item.id).join(', ') || null, maintenance, warnings};
+  return {schema: MANAGED_NODE_SCHEMA, resourceId: resource.id, state, health: projectedHealth, hostname: observation.hostname, lastHeartbeatAt: observation.observedAt, lastProbeAt: observation.observedAt, uptimeSeconds: observation.uptimeSeconds, os: observation.os, cpu: {...observation.cpu, load: observation.load}, memory: observation.memory, measurements, storage: observation.storage, optical: observation.optical, network: observation.network, temperatures: observation.temperatures, services: observation.services, containerRuntimes: discoverContainerRuntimes(resource.id, observation.tools, observation.observedAt), connectivity: connections, capabilities: discovered, workloads: detectedWorkloads, currentWorkload: active.map(item => item.id).join(', ') || null, maintenance, warnings};
 }
 
 function unavailable(resourceId: string, at: string | null, detail: string): ManagedNodeSnapshot {
   const observedAt = at ?? new Date(0).toISOString(), missing = (name: string) => unavailableMeasurement<number>(observedAt, name, 'node_observation_unavailable');
-  return {schema: MANAGED_NODE_SCHEMA, resourceId, state: 'OFFLINE', health: 'offline', lastHeartbeatAt: null, lastProbeAt: at, measurements: {cpuLogical: missing('cpu.logical'), cpuBusyPercent: missing('cpu.busy'), memoryTotalBytes: missing('memory.total'), memoryAvailableBytes: missing('memory.available'), uptimeSeconds: missing('uptime'), loadOne: missing('load.1'), loadFive: missing('load.5'), loadFifteen: missing('load.15')}, storage: [], optical: [], network: [], temperatures: [], services: [], connectivity: [], capabilities: [], workloads: [], currentWorkload: null, maintenance: {state: 'UNAVAILABLE', detail: 'Node is offline'}, warnings: [detail]};
+  return {schema: MANAGED_NODE_SCHEMA, resourceId, state: 'OFFLINE', health: 'offline', lastHeartbeatAt: null, lastProbeAt: at, measurements: {cpuLogical: missing('cpu.logical'), cpuBusyPercent: missing('cpu.busy'), memoryTotalBytes: missing('memory.total'), memoryAvailableBytes: missing('memory.available'), uptimeSeconds: missing('uptime'), loadOne: missing('load.1'), loadFive: missing('load.5'), loadFifteen: missing('load.15')}, storage: [], optical: [], network: [], temperatures: [], services: [], containerRuntimes: [], connectivity: [], capabilities: [], workloads: [], currentWorkload: null, maintenance: {state: 'UNAVAILABLE', detail: 'Node is offline'}, warnings: [detail]};
 }
 
 function staleMeasurements(snapshot: ManagedNodeSnapshot) {
@@ -289,8 +292,8 @@ export class ManagedNodeManager {
       const snapshot = projectManagedNode(resource, observation, cpuBusy);
       this.snapshots.set(id, snapshot); this.syncWorker(resource, snapshot); return structuredClone(snapshot);
     } catch (error) {
-      const previous = this.snapshots.get(id), timeoutMs = (resource.managedNode?.offlineAfterSeconds ?? 90) * 1000, expired = !previous?.lastHeartbeatAt || this.clock().getTime() - Date.parse(previous.lastHeartbeatAt) > timeoutMs, detail = safeDetail(error);
-      const snapshot = previous ? staleMeasurements({...previous, state: expired ? 'OFFLINE' as const : 'DEGRADED' as const, health: expired ? 'offline' as const : 'degraded' as const, lastProbeAt: at, maintenance: expired ? {state: 'UNAVAILABLE' as const, detail: 'Node is offline'} : previous.maintenance, warnings: unique([...previous.warnings.filter(item => !item.startsWith('heartbeat:')), `heartbeat:${detail}`])}) : unavailable(id, at, `heartbeat:${detail}`);
+      const previous = this.snapshots.get(id), timeoutMs = (resource.managedNode?.offlineAfterSeconds ?? 90) * 1000, expired = !previous?.lastHeartbeatAt || this.clock().getTime() - Date.parse(previous.lastHeartbeatAt) > timeoutMs, failure = classifyManagedNodeProbeFailure(error), detail = safeDetail(error);
+      const snapshot = previous ? staleMeasurements({...previous, state: expired ? 'OFFLINE' as const : 'DEGRADED' as const, health: expired ? 'offline' as const : 'degraded' as const, lastProbeAt: at, lastProbeFailure: {...failure, observedAt: at}, maintenance: expired ? {state: 'UNAVAILABLE' as const, detail: 'Node is offline'} : previous.maintenance, warnings: unique([...previous.warnings.filter(item => !item.startsWith('heartbeat:')), `heartbeat:${failure.classification.toLowerCase()}:${detail}`])}) : {...unavailable(id, at, `heartbeat:${failure.classification.toLowerCase()}:${detail}`), lastProbeFailure: {...failure, observedAt: at}};
       this.snapshots.set(id, snapshot); this.syncWorker(resource, snapshot); return structuredClone(snapshot);
     }
   }
