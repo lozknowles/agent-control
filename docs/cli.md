@@ -40,7 +40,7 @@ Copy exact IDs from the output. A catalogue ID names a job definition; a Saved J
 | Existing | `/api/runtime-safety` decisions | `policies` (recorded decisions, not policy editing) |
 | Existing | `/api/events` authenticated server-sent events | `watch`, `history --follow`, `logs --follow` |
 | Proposed in report-profile PR | `/api/observability/runs/:id/outputs[/profile]` | `job output`, `job evidence` |
-| Partial | status-client connection settings and operator token | shared authenticated client; HTTPS/SSH forwarding |
+| Partial | status-client connection settings and operator token | shared authenticated client; HTTPS/SSH command transport |
 | Missing before 4.8 | consistent human/JSON formatting, help, exit codes and cross-platform client checks | new thin client and formatter modules |
 
 Core schemas, routes, policies, jobs, frozen results, batons and telemetry remain owned by the controller. Existing saved-job/ACP/credential commands remain available. Legacy job reads now send the existing operator token too, matching v4.7.1's protected API.
@@ -117,7 +117,7 @@ ac --endpoint https://your-authorised-controller.example status
 ac --endpoint http://127.0.0.1:4310 status
 ```
 
-Non-loopback cleartext HTTP, credential-bearing URLs, redirects and endpoint query/path-prefix overrides are rejected. Use approved HTTPS or SSH forwarding. The existing `agent-control.status-client/v1` configuration supports HTTP or SSH. HTTP URLs may end in `/api/status`; other commands use the same controller origin. SSH reuses its existing host/user/port/identityFile/statusHost/statusPort settings and creates a temporary loopback forward, cleaned up at exit. The client still uses the existing operator token; SSH access alone does not grant API mutation authority. No server configuration or SSH key is changed.
+Non-loopback cleartext HTTP, credential-bearing URLs, redirects and endpoint query/path-prefix overrides are rejected. Use approved HTTPS or the existing SSH command transport. The existing `agent-control.status-client/v1` configuration supports HTTP or SSH. HTTP URLs may end in `/api/status`; other commands use the same controller origin. SSH reuses its existing host/user/port/identityFile/statusHost/statusPort settings and follows the existing status-client remote-command pattern: a fixed Node helper relays the request to the controller-local API over encrypted SSH stdin/stdout. Credentials and request values never enter the SSH command arguments. No TCP forwarding permission or listening tunnel port is required; the request subprocess is cleaned up at exit. The client still uses the existing operator token; SSH access alone does not grant API mutation authority. No server configuration or SSH key is changed.
 
 Existing default configuration locations:
 
@@ -125,7 +125,7 @@ Existing default configuration locations:
 - Linux/macOS/Termux: `$XDG_CONFIG_HOME/agent-control/status-client.json`, or `~/.config/agent-control/status-client.json`
 - Override: `AGENT_CONTROL_STATUS_CONFIG`
 
-No additional named-profile database is introduced. Use the existing configuration selector for multiple authorised connection files. Node and an SSH client are needed for SSH transport; direct HTTPS does not need SSH. No systemd, GNU utilities, desktop browser, x86 or GPU requirement is introduced by the client.
+No additional named-profile database is introduced. Use the existing configuration selector for multiple authorised connection files. Node on the controller and an SSH client on the client machine are needed for SSH transport; direct HTTPS does not need SSH. No systemd, GNU utilities, desktop browser, x86 or GPU requirement is introduced by the client.
 
 ## Candidate qualification
 

@@ -73,7 +73,7 @@ async function runTypeScriptCommand(filename, args = []) {
 }
 
 async function jobsCommand(argv, io) {
-  const [operation, id] = argv, options = parseOptions(argv.slice(id && !id.startsWith('--') ? 2 : 1));
+  const operation = argv[0], id = argv[1] && !argv[1].startsWith('--') ? argv[1] : undefined, options = parseOptions(argv.slice(id ? 2 : 1));
   try {
     let result;
     if (operation === 'definitions') result = await jobsRequest(id ? `/api/job-definitions/${encodeURIComponent(id)}` : '/api/job-definitions');
