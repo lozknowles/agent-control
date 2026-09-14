@@ -1,3 +1,4 @@
+import {inspectorAccounting} from './observability.js';
 import {usageProjection,usageAnswer,usageObservations,type UsageQuery} from './usage-projection.js';
 import {modelWatchPlan,type ModelWatchRuntime} from './model-watch-runtime.js';
 import {intelligenceHash} from './model-landscape.js';
@@ -378,7 +379,7 @@ export class AgentControlService {
     if(!parcelId)throw new Error('observability_run_not_yet_dispatched');
     const parcel=this.parcel(parcelId),map=this.runtimeMap(parcelId);
     const usage=this.usage({period:'all',filters:{parcel:parcelId},groupBy:'agent',limit:1000});
-    const inspector=projectRunInspector(parcel,map,usage,this.estateMap(),operationId);
+    const inspector=projectRunInspector(parcel,map,usage,this.estateMap(),operationId,inspectorAccounting(this.harnessEfficiency,this.energyProjection().executions,parcel.audit.invocations.flatMap(i=>i.accountingInvocationId?[i.accountingInvocationId]:[])));
     const parentUsage=parent?scopedInspectorUsage(this.harnessEfficiency,this.energyProjection().executions,{runId:parent.id,parcelIds:parent.workParcelIds}):null;
     const transcript=parent&&this.parameterizedJobs?.transcripts?.metadata(parent.id)?this.parameterizedRunTranscript(parent.id):null;
     return {...inspector,context:{...inspector.context,repository:parent?.context?redactSensitiveValue(parent.context):null},parentUsage,runScope:parent?{id:parent.id,label:parent.definition.displayName,status:parent.status,parcelCount:parent.workParcelIds.length}:null,sessions:this.executionSessionProjection().filter(s=>s.scope.parcelId===parcelId),parentRunId:parent?.id??null,kind:'parcel' as const,history:transcript??inspectorHistory(inspector),historyScope:parent?'Complete parent Job Run, including all its Work Parcels':'Work Parcel audit and operation evidence',siblingParcels:parent?.workParcelIds??[parcelId]};

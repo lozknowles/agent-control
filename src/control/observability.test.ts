@@ -1,13 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {nodeWorkIndex,projectNodeDashboard,projectRunInspector,projectJobInspector,inspectorHistory,scopedInspectorUsage} from './observability.js';
+import {nodeWorkIndex,projectNodeDashboard,projectRunInspector,projectJobInspector,inspectorHistory,scopedInspectorUsage,inspectorAccounting} from './observability.js';
 import {projectRuntimeMap,type RuntimeMapProjection,type RuntimeMapNode} from './runtime-map.js';
 import type {WorkParcel} from './work-parcels.js';
 import type {RunRecord} from './job-types.js';
 import {MemoryHarnessEfficiencyLedger,createInvocationObservation} from './harness-efficiency.js';
 import {usageProjection} from './usage-projection.js';
 import {accountingSchema} from './usage-accounting.js';
-import {LocalNodeResources} from './node-resources.js';
+import {LocalNodeResources,CpuCounterSampler,projectNvidiaMeasurements} from './node-resources.js';
 const at='2026-09-13T10:00:00.000Z',later=new Date('2026-09-13T11:00:00.000Z');
 function map():RuntimeMapProjection{return projectRuntimeMap({runs:[],sessions:[],sessionEvents:()=>[],now:at});}
 function node(id:string,type:RuntimeMapNode['type'],detail:Record<string,unknown>={}):RuntimeMapNode{return{id,type,label:id,state:'SUCCEEDED',expandable:true,detail,evidence:[]};}
@@ -42,4 +42,24 @@ test('whole-job accounting adds sibling parcels once and excludes unrelated runs
   ledger.record({...original,id:'ledger-3',runId:'unrelated',accounting:{...original.accounting!,parcelId:'not-this-job'}});
   const projection=scopedInspectorUsage(ledger,[],{runId:'parameterized-parent',parcelIds:['parcel-test','parcel-other','parcel-test']});
   assert.equal(projection.totals.calls,2);assert.equal(projection.totals.input.value,200);assert.equal(projection.totals.cached.value,80);assert.equal(projection.totals.tokens.value,240);assert.equal(projection.totals.apiCost.reported,0);
+});
+
+test('whole-node CPU sampling retains a meaningful interval across interleaved inventory requests',()=>{
+ const cpu=new CpuCounterSampler();assert.equal(cpu.measure({at:1000,total:100,idle:50}).value,null);
+ assert.equal(cpu.measure({at:1010,total:110,idle:51}).value,null);
+ const next=cpu.measure({at:2000,total:300,idle:150});assert.equal(next.value,50);assert.equal(next.intervalMs,1000);
+ assert.equal(cpu.measure({at:2001,total:320,idle:150}),next);
+ assert.equal(cpu.measure({at:32001,total:500,idle:200}).value,null);
+});
+test('NVIDIA adapter failure and partial rows preserve known devices with unavailable counters',()=>{
+ const inventory=[{id:'gpu-0',index:0,adapter:'nvidia'},{id:'gpu-1',index:1,adapter:'nvidia'}];
+ const failed=projectNvidiaMeasurements(inventory,undefined,at);assert.equal(failed.length,2);assert.ok(failed.every(g=>g.usedBytes.value===null&&g.busyPercent.value===null));
+ const partial=projectNvidiaMeasurements(inventory,'0, 0, 0\n1, , bad',at);assert.equal(partial[0]?.usedBytes.value,0);assert.equal(partial[0]?.busyPercent.value,0);assert.equal(partial[1]?.usedBytes.value,null);assert.equal(partial[1]?.busyPercent.value,null);
+});
+test('exact model accounting remains accessible beyond the aggregate detail-row cap',()=>{
+ const ledger=usageLedger(),original=ledger.list()[0]!;
+ for(let i=2;i<=1001;i++)ledger.record({...original,id:'ledger-'+i,startedAt:new Date(Date.parse(at)+i).toISOString()});
+ const capped=usageProjection(ledger,[],{period:'all',limit:1000},later);assert.equal(capped.coverage.matching,1001);assert.equal(capped.rows.length,1000);assert.ok(!capped.rows.some(r=>r.id==='ledger-1'));
+ const m=map();m.nodes=[node('model:call-1','model-call')];const exact=projectRunInspector(parcel(),m,capped,estate(),'model:call-1',inspectorAccounting(ledger,[],['ledger-1']));assert.equal(exact.calls[0]?.accounting?.usage.cachedInputTokens,40);assert.equal(exact.calls[0]?.accounting?.id,'ledger-1');
+ const excluded={list:()=>ledger.list(),usageHistory:()=>({excludedIds:['ledger-1'],events:[]})};assert.deepEqual(inspectorAccounting(excluded,[],['ledger-1']),[]);
 });

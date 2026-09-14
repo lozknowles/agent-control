@@ -8,7 +8,7 @@ import {scalarMeasurement, unavailableMeasurement} from './resource-telemetry.js
 const execute = promisify(execFile);
 /** Read-only native sampler. Never probes a remote address or launches a model. */
 export class LocalNodeResources {
-  private previous?: {at: number; total: number; idle: number};
+  private readonly cpu = new CpuCounterSampler();
   private readonly pending=new Map<string,Promise<Awaited<ReturnType<LocalNodeResources['collect']>>>>();
   private readonly cached=new Map<string,Awaited<ReturnType<LocalNodeResources['collect']>>>();
   async sample(accelerators: Array<{id: string; index: number; adapter: string}>) {
@@ -22,18 +22,39 @@ export class LocalNodeResources {
   private async collect(accelerators: Array<{id: string; index: number; adapter: string}>) {
     const now=Date.now(),at=new Date(now).toISOString(),cpus=os.cpus();
     const current={at:now,total:cpus.reduce((n,c)=>n+Object.values(c.times).reduce((a,b)=>a+b,0),0),idle:cpus.reduce((n,c)=>n+c.times.idle,0)};
-    const previous=this.previous;this.previous=current;
-    let busy:ResourceMeasurement<number>=unavailableMeasurement(at,'node:os.cpus','first_sample_requires_prior_counter_frame');
-    if(previous&&now-previous.at<=30000&&current.total>previous.total){const total=current.total-previous.total,idle=current.idle-previous.idle;if(idle>=0&&idle<=total)busy={...scalarMeasurement((1-idle/total)*100,at,'node:os.cpus counter delta'),intervalMs:now-previous.at};}
+    const busy=this.cpu.measure(current);
     let storage:{totalBytes:number;availableBytes:number}|null=null;
     try {const s=fs.statfsSync(process.cwd());storage={totalBytes:s.blocks*s.bsize,availableBytes:s.bavail*s.bsize};}catch{/* Unsupported platforms retain unavailable storage. */}
-    const gpu:Array<{id:string;usedBytes:ResourceMeasurement<number>;busyPercent:ResourceMeasurement<number>}>=[];
-    // Adapter choice follows observed accelerator capability, never the host name.
+    let output:string|undefined;
     if(accelerators.some(a=>a.adapter==='nvidia')){
-      try {const result=await execute('nvidia-smi',['--query-gpu=index,memory.used,utilization.gpu','--format=csv,noheader,nounits'],{timeout:2000,maxBuffer:16384,windowsHide:true});
-        for(const line of result.stdout.trim().split(/\r?\n/)){const [index,memory,utilization]=line.split(',').map(x=>Number(x.trim()));const bound=accelerators.find(a=>a.adapter==='nvidia'&&a.index===index);if(!bound)continue;gpu.push({id:bound.id,usedBytes:scalarMeasurement(Number.isFinite(memory)&&memory>=0?memory*1048576:null,at,'nvidia-smi device memory.used'),busyPercent:scalarMeasurement(Number.isFinite(utilization)&&utilization>=0&&utilization<=100?utilization:null,at,'nvidia-smi device utilization.gpu')});}
-      }catch{/* An unavailable adapter cannot produce zero usage. */}
+      try {output=(await execute('nvidia-smi',['--query-gpu=index,memory.used,utilization.gpu','--format=csv,noheader,nounits'],{timeout:2000,maxBuffer:16384,windowsHide:true})).stdout;}catch{/* Known accelerators retain unavailable measurements. */}
     }
+    const gpu=projectNvidiaMeasurements(accelerators,output,at);
     return {observedAt:at,scope:'WHOLE_NODE' as const,attribution:'Not attributed to individual jobs',cpuModel:cpus[0]?.model??null,cpuBusyPercent:busy,memoryTotalBytes:scalarMeasurement(os.totalmem()||null,at,'node:os.totalmem'),memoryAvailableBytes:scalarMeasurement(os.freemem(),at,'node:os.freemem'),storage,gpu};
   }
+}
+
+/** One whole-node CPU stream independent of accelerator inventory and request frequency. */
+export class CpuCounterSampler {
+  private previous?:{at:number;total:number;idle:number};
+  private reading?:ResourceMeasurement<number>;
+  measure(current:{at:number;total:number;idle:number}):ResourceMeasurement<number>{
+    const prior=this.previous,at=new Date(current.at).toISOString();
+    if(prior&&current.at>=prior.at&&current.at-prior.at<1000)return this.reading!;
+    this.previous=current;
+    this.reading=unavailableMeasurement(at,'node:os.cpus','first_sample_requires_prior_counter_frame');
+    if(prior&&current.at-prior.at>=1000&&current.at-prior.at<=30000&&current.total>prior.total){
+      const total=current.total-prior.total,idle=current.idle-prior.idle;
+      if(idle>=0&&idle<=total)this.reading={...scalarMeasurement((1-idle/total)*100,at,'node:os.cpus counter delta'),intervalMs:current.at-prior.at};
+    }
+    return this.reading;
+  }
+}
+export function projectNvidiaMeasurements(accelerators:Array<{id:string;index:number;adapter:string}>,output:string|undefined,at:string){
+  return accelerators.filter(a=>a.adapter==='nvidia').map(a=>{
+    const values=output?.split(/\r?\n/).map(line=>line.split(',').map(value=>value.trim())).find(row=>row.length===3&&row[0]!==''&&Number(row[0])===a.index);
+    const memory=values?.[1]?Number(values[1]):NaN,busy=values?.[2]?Number(values[2]):NaN;
+    const unavailable=()=>unavailableMeasurement(at,'nvidia-smi',output===undefined?'adapter_unavailable':'device_row_missing_or_invalid');
+    return {id:a.id,usedBytes:Number.isFinite(memory)&&memory>=0?scalarMeasurement(memory*1048576,at,'nvidia-smi device memory.used'):unavailable(),busyPercent:Number.isFinite(busy)&&busy>=0&&busy<=100?scalarMeasurement(busy,at,'nvidia-smi device utilization.gpu'):unavailable()};
+  });
 }

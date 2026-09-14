@@ -5,7 +5,7 @@ import type {ManagedNodeSnapshot} from './managed-node.js';
 import type {ExecutionSessionRecord} from './execution-session.js';
 import {redactSensitiveValue} from './security-redaction.js';
 import {safeTranscriptText} from './execution-history.js';
-import {usageProjection} from './usage-projection.js';
+import {projectInvocation,usageProjection} from './usage-projection.js';
 import type {HarnessEfficiencyLedgerPort} from './harness-efficiency.js';
 import type {EnergyExecutionRecord} from './energy-telemetry.js';
 import type {RunRecord} from './job-types.js';
@@ -37,13 +37,14 @@ export function projectNodeDashboard(estate:RuntimeMapProjection,id:string,manag
   const snapshot=nodeId?managed.find(m=>m.resourceId===nodeId):undefined;
   return redactSensitiveValue({schema:'agent-control.node-dashboard/v1',observedAt:estate.observedAt,node,nodeId,resources,managed:snapshot??null,work:nodeId?work.filter(w=>w.nodeId===nodeId):[],bindingPolicy:'Exact recorded node identity only. Workload and credential locations do not imply model execution.',limitations:['Discovery availability and qualification are independent from live resource measurements.','Whole-node utilization does not prove individual job resource consumption.']});
 }
-export function projectRunInspector(parcel:WorkParcel,map:RuntimeMapProjection,usage:InspectorUsage,estate:RuntimeMapProjection,operationId?:string) {
+export function projectRunInspector(parcel:WorkParcel,map:RuntimeMapProjection,usage:InspectorUsage,estate:RuntimeMapProjection,operationId?:string,accountingRows:InspectorUsage['rows']=usage.rows) {
   const operation=operationId?map.nodes.find(n=>n.id===operationId):undefined;
   if(operationId&&!operation)throw Error('observability_operation_missing');
   const invocationIds=operation?.evidence.filter(e=>e.kind==='model-invocation').map(e=>e.id);
   const invocations=parcel.audit.invocations.filter(i=>!operation||invocationIds?.includes(i.id)||operation.id===`model:${i.id}`);
   const exactNode=(id:string|null|undefined)=>id?estate.nodes.find(n=>['machine','device'].includes(n.type)&&n.detail.nodeId===id):undefined;
-  const calls=invocations.map(i=>{const accounting=usage.rows.find(r=>r.id===i.accountingInvocationId);return {...i,exchange:i.exchange?{...i.exchange,input:safeTranscriptText(i.exchange.input),output:safeTranscriptText(i.exchange.output)}:null,accounting:accounting??null,physicalNode:exactNode(i.providerExecutionNodeId??i.node)?.id??null};});
+  const accountingById=new Map(accountingRows.map(row=>[row.id,row]));
+  const calls=invocations.map(i=>{const accounting=accountingById.get(i.accountingInvocationId??'');return {...i,exchange:i.exchange?{...i.exchange,input:safeTranscriptText(i.exchange.input),output:safeTranscriptText(i.exchange.output)}:null,accounting:accounting??null,physicalNode:exactNode(i.providerExecutionNodeId??i.node)?.id??null};});
   const nodeIds=new Set(parcel.audit.invocations.map(i=>i.providerExecutionNodeId??i.node).filter(Boolean));
   for(const n of map.nodes){const identity=n.detail.resourceIdentity as {nodeId?:string}|undefined;if(identity?.nodeId)nodeIds.add(identity.nodeId);}
   const physicalNodes=[...nodeIds].flatMap(id=>{const n=exactNode(id);return n?[{id:n.id,label:n.label,nodeId:id}]:[];});
@@ -68,4 +69,9 @@ export function scopedInspectorUsage(ledger:HarnessEfficiencyLedgerPort|undefine
   const ids=new Set(scope.parcelIds);
   const source=ledger?{list:()=>ledger.list().filter(row=>row.runId===scope.runId||(row.accounting?.parcelId!=null&&ids.has(row.accounting.parcelId))),usageHistory:()=>ledger.usageHistory?.()??{excludedIds:[],events:[]}}:undefined;
   return usageProjection(source,energy,{period:'all',groupBy:'agent',limit:1000});
+}
+
+export function inspectorAccounting(ledger:Pick<HarnessEfficiencyLedgerPort,'list'|'usageHistory'>|undefined,energy:EnergyExecutionRecord[],ids:string[]){
+  const wanted=new Set(ids),excluded=new Set(ledger?.usageHistory?.().excludedIds??[]);
+  return (ledger?.list()??[]).filter(row=>wanted.has(row.id)&&!excluded.has(row.id)).map(row=>projectInvocation(row,energy));
 }
