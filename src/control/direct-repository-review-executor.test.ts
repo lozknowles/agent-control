@@ -409,6 +409,6 @@ test('review publishes its durable parcel before the provider call completes',as
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'ac-live-parcel-'));t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
  const{models,route}=handoffRegistry(),store=new WorkParcelStore(path.join(root,'parcels.json')),published:string[]=[];
  const factory=fakeReviewClients([]),executor=new DirectRepositoryReviewExecutor(models,store,undefined,undefined,provider=>({invoke:async(...args)=>{assert.equal(published.length,1);assert.ok(store.get(published[0]));return factory(provider).invoke(...args);}}));
- const request=reviewRequest(route);request.contextChunks=request.contextChunks.slice(0,1);request.onParcelCreated=id=>published.push(id);
+ const request=reviewRequest(route);request.contextChunks=request.contextChunks.slice(0,1);Object.assign(request,{onParcelCreated:(id:string)=>published.push(id)});
  const result=await executor.execute(request);assert.deepEqual(published,result.workParcelIds);
 });
