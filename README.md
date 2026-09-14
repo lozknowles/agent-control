@@ -1,4 +1,18 @@
-# Agent Control 4.7
+<p align="center">
+  <img src="docs/media/branding/agent-control-atlas-header.png" alt="Agent Control ATLAS — Agentic Topology, Lifecycle, Assurance &amp; Supervision" width="100%">
+</p>
+
+# Agent Control ATLAS
+
+**Agentic Topology, Lifecycle, Assurance & Supervision**
+
+**See the work. Govern the execution.**
+
+ATLAS is Agent Control's public identity: **Agentic Topology, Lifecycle, Assurance & Supervision** reflects its role in mapping an AI estate, following governed work through its lifecycle, preserving assurance and evidence, and keeping execution under human supervision. Agent Control remains the product, repository and package name.
+
+*The ATLAS hero is branding artwork; product screenshots below are genuine Agent Control captures.*
+
+<a id="agent-control-47"></a>
 
 Discover your AI tools, see what is available, and follow approved work from request to verified result.
 
