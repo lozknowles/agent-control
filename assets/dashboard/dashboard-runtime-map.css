@@ -677,3 +677,32 @@
 
 .runtime-map-toolbar select,.runtime-map-toolbar input,#estate-job-picker{max-width:100%;min-width:0}
 #runtime-map-summary{flex:1 1 100%;overflow-wrap:anywhere}
+
+
+/* Process bubbles use explicit directed links, without intersecting graph wires. */
+.runtime-map-canvas.process-readable{height:auto;min-height:420px;overflow:visible;touch-action:auto;cursor:auto;background:#07111b;padding:16px}
+.process-map-help{font-size:14px;line-height:1.6;color:#b8cada;margin:0 0 16px}
+.process-bubbles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+.process-bubble{border:2px solid #526a80;border-radius:20px;background:#102030;min-width:0;overflow:hidden}
+.process-bubble.selected{outline:3px solid #d9f5ff;outline-offset:3px}
+.process-bubble.state-RUNNING{border-color:#ffb561}
+.process-bubble.state-SUCCEEDED{border-color:#49d99a}
+.process-bubble.state-FAILED,.process-bubble.state-BLOCKED{border-color:#ff627d}
+.process-bubble-main{display:block;width:100%;border:0;text-align:left;background:transparent;color:#e8f4ff;padding:16px;cursor:pointer;white-space:normal;overflow-wrap:anywhere;font:inherit}
+.process-bubble-main>strong{display:block;font-size:17px;line-height:1.4;margin:10px 0}
+.process-bubble-main>span:not(.process-bubble-heading){display:block;font-size:14px;line-height:1.5;color:#bfcedd}
+.process-bubble-main>small{display:block;color:#bfcedd;line-height:1.5;margin-top:10px;font-size:12px}
+.process-bubble-heading{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;font-size:12px;text-transform:uppercase}
+.process-bubble-heading>span{font-weight:700;color:#ffdfab}
+.process-bubble-tokens{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:14px 0 0}
+.process-bubble-tokens dt{font-size:12px;color:#bfcedd}.process-bubble-tokens dd{font-size:17px;margin:4px 0;font-weight:700}
+.process-connections{border-top:1px solid #334b62;padding:8px;display:grid;gap:6px;font-size:13px}
+.process-relation{display:block;width:100%;border:0;border-radius:10px;padding:10px;text-align:left;background:#172c3d;color:#d7e9f8;white-space:normal;overflow-wrap:anywhere;cursor:pointer;font:inherit;min-height:44px}
+.process-relation span,.process-relation strong{display:block;line-height:1.5}.process-relation span{color:#8fe4e0;font-size:12px}
+.process-relation:focus-visible,.process-bubble-main:focus-visible{outline:3px solid #8fe4e0;outline-offset:-3px}
+.runtime-inspector{position:sticky;top:90px;align-self:start}
+body[data-current-view="runtime-map"] #persistent-usage{display:none}
+.process-bubble-main,#runtime-inspector,#runtime-map-canvas{scroll-margin-top:90px}
+@media(max-width:1200px){.process-bubbles{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:1000px){.runtime-inspector{position:static}.process-bubbles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:650px){.process-bubbles{grid-template-columns:minmax(0,1fr)}.runtime-map-canvas.process-readable{padding:12px}.process-bubble-main{padding:14px}.runtime-inspector-actions button{min-height:44px}.runtime-map-layout{min-height:0}.process-bubble-main,#runtime-inspector,#runtime-map-canvas{scroll-margin-top:172px}}

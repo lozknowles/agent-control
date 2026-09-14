@@ -31,3 +31,16 @@ test('governor, decision, approval, escalation, verification and retrieval recor
  source.retrieval={attempts:[{id:'memory-1',at:mid,intentId:'intent-1',parcelId:'parcel-one',providerId:'your-memories',strategy:'HYBRID',outcome:'SUCCEEDED',reason:'validated durable memory matched',evidenceCount:2,evidenceTokens:140,freshness:'CURRENT',evidenceStatus:'SUFFICIENT',indexState:'CURRENT',latencyMs:4}]};
  const map=projectRuntimeMap(source);for(const type of ['decision','approval','escalation','validation','memory'])assert.ok(map.nodes.some(node=>node.type===type),type);const governor=map.nodes.find(node=>node.id==='governor:governed-route')!;assert.equal(governor.type,'baton');assert.equal(governor.detail.contextPercent,88);assert.match(JSON.stringify(governor.detail),/verification_retry/);assert.ok(map.events.some(item=>item.kind==='governor.decision'))});
 test('replay excludes future governor and memory records',()=>{const source:any=fixture(1);source.tokenRouting={decisions:[{id:'future',at:end,threadId:'thread',parcelId:'parcel-one',state:'CONTINUE',action:'CONTINUE',reason:'within policy',contextPercent:12,outcome:'RECORDED'}]};source.retrieval={attempts:[{id:'future-memory',at:end,intentId:'intent',parcelId:'parcel-one',providerId:'local',strategy:'EXACT',outcome:'SUCCEEDED',reason:'found',evidenceCount:1,evidenceTokens:20,freshness:'CURRENT',evidenceStatus:'SUFFICIENT',indexState:'CURRENT',latencyMs:1}]};const map=projectRuntimeMap({...source,replayAt:mid});assert.equal(map.nodes.some(node=>node.id==='governor:future'),false);assert.equal(map.nodes.some(node=>node.id==='retrieval:future-memory'),false)});
+
+test('direct provider sessions connect to their explicit parcel when no job-step record exists',()=>{
+ const source=fixture(1);source.runs=[];source.sessions[0].scope.runId='direct-review-run';source.sessions[0].scope.stepId='repository-review:chunk-one';
+ const map=projectRuntimeMap(source),terminal=map.nodes.find(n=>n.type==='terminal')!;
+ assert.equal(terminal.parentId,`parcel:${source.parcel.id}`);
+ assert.ok(map.edges.some(e=>e.from===terminal.parentId&&e.to===terminal.id&&e.kind==='contains'));
+});
+
+test('a recorded CONTINUE decision does not imply an active process',()=>{
+ const source:any=fixture(1);source.tokenRouting={decisions:[{id:'recorded',at:mid,threadId:'thread',parcelId:'parcel-one',state:'CONTINUE',action:'CONTINUE',reason:'within policy',contextPercent:12,outcome:'RECORDED'}]};
+ const node=projectRuntimeMap(source).nodes.find(n=>n.id==='governor:recorded')!;
+ assert.equal(node.state,'RECORDED');assert.equal(node.endedAt,mid);assert.equal(node.detail.outcome,'RECORDED');
+});

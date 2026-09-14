@@ -45,6 +45,7 @@ export type RuntimeMapNodeType =
   | "credential"
   | "mcp-server";
 export type RuntimeMapState =
+  | "RECORDED"
   | "WAITING"
   | "QUEUED"
   | "RUNNING"
@@ -576,7 +577,7 @@ export function projectRuntimeMap(
       add({
         id,
         type: "model-call",
-        label: invocation.model,
+        label: invocation.providerModel ?? invocation.model,
         subtitle: invocation.provider,
         state: temporal(
           state(invocation.outcome),
@@ -591,6 +592,8 @@ export function projectRuntimeMap(
         expandable: true,
         detail: {
           provider: invocation.provider,
+          configuredModel: invocation.model,
+          providerModel: invocation.providerModel ?? null,
           accountProfileId: invocation.accountProfileId ?? null,
           node: invocation.node,
           route: invocation.route,
@@ -876,9 +879,9 @@ export function projectRuntimeMap(
               ? "SUCCEEDED"
               : decision.action === "BATON_AND_HANDOFF"
                 ? "HANDOFF"
-                : "RUNNING",
+                : "RECORDED",
         startedAt: decision.at,
-        endedAt: decision.outcome === "RECORDED" ? undefined : decision.at,
+        endedAt: decision.action === "BATON_AND_HANDOFF" && decision.outcome === "RECORDED" ? undefined : decision.at,
         parentId: parent,
         expandable: true,
         detail: {
@@ -961,7 +964,9 @@ export function projectRuntimeMap(
   )) {
     const id = `terminal:${session.id}`,
       se = evidence("execution-session", session.id, session),
-      sessionNode = `step:${session.scope.runId}:${session.scope.stepId}`,
+      sessionStep = `step:${session.scope.runId}:${session.scope.stepId}`,
+      sessionParcel = `parcel:${session.scope.parcelId}`,
+      sessionNode = seen.has(sessionStep) ? sessionStep : session.scope.parcelId && seen.has(sessionParcel) ? sessionParcel : sessionStep,
       sessionEvents = input.sessionEvents(session.id),
       final = state(session.state);
     add({

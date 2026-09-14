@@ -401,6 +401,10 @@
     rt.focusIds=ids;rt.filter='ALL';rt.search='';rt.collapsed.clear();rt.selected=node.id;render();
   }
   function renderGraph() {
+    const process = rt.surface === "process";
+    $("runtime-map-canvas").classList.toggle("process-readable", process);
+    $("runtime-fit").hidden = process;
+    if (process) { renderReadableProcess(); return; }
     const p = rt.projection,
       nodes = visibleNodes().filter(n=>rt.focusIds?rt.focusIds.has(n.id):rt.surface!=="estate"||!n.id.startsWith("library-")),
       ids = new Set(nodes.map((n) => n.id)),
@@ -451,6 +455,35 @@
         renderGraph();
       }),
     );
+  }
+  function renderReadableProcess() {
+    const p = rt.projection, canvas = $("runtime-map-canvas");
+    // Names and directed relationships stay at reading size on every viewport.
+    // Position is not execution order: only recorded edges establish a relation.
+    const rank = {request:0, planner:1, "work-parcel":2, job:3, "parallel-lane":4, terminal:5, "model-call":6};
+    const nodes = visibleNodes().slice().sort((a,b)=>(rank[a.type]??7)-(rank[b.type]??7) || a.id.localeCompare(b.id));
+    const number = new Map(p.nodes.slice().sort((a,b)=>(rank[a.type]??7)-(rank[b.type]??7) || a.id.localeCompare(b.id)).map((n,i)=>[n.id,i+1]));
+    const count = value => typeof value === "number" ? value.toLocaleString() : "Unknown";
+    const active = document.activeElement?.dataset.runtimeNode;
+    canvas.innerHTML = `<p class="process-map-help">Select a bubble for its evidence and live session. Numbered arrows name the recorded connections; card position does not imply execution order.</p><div class="process-bubbles">${nodes.map(n=>{
+      const detail=n.detail||{}, t=detail.telemetry||detail.usage||(n.type==="model-call"?detail:null);
+      const edges=p.edges.filter(e=>e.from===n.id || e.to===n.id);
+      const relation=e=>{
+        const outgoing=e.from===n.id, target=p.nodes.find(x=>x.id===(outgoing?e.to:e.from));
+        return `<button type="button" class="process-relation" data-process-target="${safe(target?.id||"")}" data-process-edge="${safe(e.id)}"><span>${outgoing?"→":"←"} ${safe(e.label||e.kind)}</span><strong>${number.get(target?.id)||"?"}. ${safe(target?.label||"Unavailable node")}</strong></button>`;
+      };
+      return `<article class="process-bubble state-${safe(n.state)} ${rt.selected===n.id?"selected":""}"><button type="button" class="process-bubble-main" data-runtime-node="${safe(n.id)}" aria-pressed="${rt.selected===n.id}"><span class="process-bubble-heading"><b>${number.get(n.id)} · ${safe(n.type.replaceAll("-"," "))}</b><span>${safe(n.state)}</span></span><strong>${safe(n.label)}</strong><span>${safe(n.subtitle||detail.objective||n.type)}</span>${t?`<dl class="process-bubble-tokens"><div><dt>Input</dt><dd>${count(t.inputTokens)}</dd></div><div><dt>Cached input</dt><dd>${count(t.cachedInputTokens)}</dd></div><div><dt>Output</dt><dd>${count(t.outputTokens)}</dd></div></dl><small>Reported counters update when a call finishes.</small>`:""}${n.type==="terminal"?`<small>Session ${safe(detail.sessionId)} · ${n.state==="RUNNING"?"Select to watch live":"Select for transcript"}</small>`:""}</button><div class="process-connections" aria-label="Recorded connections">${edges.map(relation).join("")||"No recorded connections."}</div></article>`;
+    }).join("")}</div>`;
+    canvas.querySelectorAll("[data-runtime-node]").forEach(button=>button.addEventListener("click",()=>{
+      rt.selected=button.dataset.runtimeNode;renderReadableProcess();inspect(p.nodes.find(n=>n.id===rt.selected));
+      if(matchMedia("(max-width: 1000px)").matches)$("runtime-inspector").scrollIntoView({block:"start",behavior:"instant"});
+    }));
+    canvas.querySelectorAll("[data-process-target]").forEach(button=>button.addEventListener("click",()=>{
+      const node=p.nodes.find(n=>n.id===button.dataset.processTarget);if(!node)return;
+      rt.selected=node.id;uncollapseAncestors(node,p);renderReadableProcess();inspect(node);
+      canvas.querySelector(`[data-runtime-node="${CSS.escape(node.id)}"]`)?.scrollIntoView({block:"center",behavior:"instant"});
+    }));
+    if(active)canvas.querySelector(`[data-runtime-node="${CSS.escape(active)}"]`)?.focus({preventScroll:true});
   }
   function leaderNodes(projection) {
     const types = new Set([
@@ -908,6 +941,7 @@
     canvas.addEventListener(
       "wheel",
       (e) => {
+        if (rt.surface === "process") return;
         e.preventDefault();
         rt.scale = Math.max(
           0.35,
@@ -918,6 +952,7 @@
       { passive: false },
     );
     canvas.addEventListener("pointerdown", (e) => {
+      if (rt.surface === "process") return;
       if (e.target.closest(".runtime-graph-node")) return;
       rt.drag = { x: e.clientX, y: e.clientY, px: rt.panX, py: rt.panY };
       canvas.setPointerCapture(e.pointerId);

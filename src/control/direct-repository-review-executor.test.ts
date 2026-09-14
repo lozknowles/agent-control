@@ -1,3 +1,4 @@
+import {MemoryHarnessEfficiencyLedger} from './harness-efficiency.js';
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
 import fs from 'node:fs';
@@ -411,4 +412,14 @@ test('review publishes its durable parcel before the provider call completes',as
  const factory=fakeReviewClients([]),executor=new DirectRepositoryReviewExecutor(models,store,undefined,undefined,provider=>({invoke:async(...args)=>{assert.equal(published.length,1);assert.ok(store.get(published[0]));return factory(provider).invoke(...args);}}));
  const request=reviewRequest(route);request.contextChunks=request.contextChunks.slice(0,1);Object.assign(request,{onParcelCreated:(id:string)=>published.push(id)});
  const result=await executor.execute(request);assert.deepEqual(published,result.workParcelIds);
+});
+
+test('direct review writes each call to the shared usage ledger and independently marks verification',async t=>{
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'ac-review-usage-'));t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+ const{models,route}=handoffRegistry(),store=new WorkParcelStore(path.join(root,'parcels.json')),ledger=new MemoryHarnessEfficiencyLedger();
+ const executor=new DirectRepositoryReviewExecutor(models,store,undefined,undefined,fakeReviewClients([]),undefined,undefined,undefined,undefined,undefined,undefined,undefined,ledger);
+ const result=await executor.execute(reviewRequest(route));assert.equal(ledger.list().length,2);
+ assert.equal(ledger.list().reduce((sum,r)=>sum+(r.usage.totalProcessedTokens??0),0),result.usage.totalTokens);
+ assert.ok(ledger.list().every(r=>r.runId==='run-handoff'&&r.accounting?.parcelId&&r.verifierResult==='UNKNOWN'));
+ executor.recordVerification(result.workParcelIds,'PASS');assert.ok(ledger.list().every(r=>r.verifierResult==='PASS'&&r.finalJobResult==='SUCCEEDED'));
 });
