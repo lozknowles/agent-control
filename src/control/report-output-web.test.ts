@@ -16,3 +16,19 @@ test('core catalogue uses declared artifacts and parameterized catalogue extends
  assert.equal(validateJobManifest(job).spec.reportProfiles?.[0].id,'executive');assert.throws(()=>validateJobManifest({...job,spec:{...job.spec,reportArtifact:'missing'}}));
  assert.equal(validateParameterizedDefinition(transcriptRequestReviewDefinition).outputs.profiles?.length,3);
 });
+
+test('parent output includes every parcel and keeps one canonical result and history',()=>{
+ const service=new AgentControlService({version:1,paused:false,lastRestorePoint:null,lanes:[]},new PtyRegistry(),undefined,'test',()=>{});
+ const parent={id:'parent',workParcelIds:['a','b'],definition:{id:'review',displayName:'Review',outputs:{}},status:'DEGRADED',completedAt:'2026-09-14',result:{summary:'Both parcels'},errors:[]};
+ Object.assign(service,{parameterizedJobs:{runs:{list:()=>[parent]}}});
+ service.runInspector=((id:string)=>({id,status:'SUCCEEDED',history:{content:'Complete parent history',sha256:'original'},events:[{id:'event-'+id}],operations:[{id:'op-'+id}],calls:[{id:'call-'+id}],limitations:['Known limit']})) as never;
+ for(const id of ['parent','a','b']){const source=service.reportSource(id);assert.equal(source.id,'parent');assert.deepEqual(source.result,parent.result);assert.deepEqual(source.calls,[{id:'call-a'},{id:'call-b'}]);assert.equal(source.events.length,2);assert.equal(source.history.content,'Complete parent history');}
+ assert.equal(service.reportOutput('a','evidence').sourceSha256,service.reportOutput('b','evidence').sourceSha256);
+});
+test('declared report artifact cannot read another runs artifact or bypass deleted evidence',()=>{
+ const service=new AgentControlService({version:1,paused:false,lastRestorePoint:null,lanes:[]},new PtyRegistry(),undefined,'test',()=>{});let reads=0;
+ Object.assign(service,{jobRuntime:{ledger:{list:()=>[{id:'run',jobId:'job',effectiveJob:{spec:{reportArtifact:'result'}},artifacts:[]}]}}});
+ service.runInspector=(()=>({id:'run',history:{content:'history',sha256:'hash'},events:[],operations:[],calls:[],limitations:[]})) as never;
+ service.artifacts=(()=>[{id:'other-run-artifact',name:'result'}]) as never;service.artifactContent=(()=>{reads++;throw Error('must not read');}) as never;
+ assert.throws(()=>service.reportSource('run'),/report_artifact_unavailable/);assert.equal(reads,0);
+});

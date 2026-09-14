@@ -20,6 +20,8 @@ function text(value:unknown){return typeof value==='string'?value:'';}
 function record(value:unknown):Record<string,unknown>{return value&&typeof value==='object'&&!Array.isArray(value)?value as Record<string,unknown>:{};}
 function list(value:unknown):unknown[]{return Array.isArray(value)?value:[];}
 function cell(value:unknown){return text(value).replace(/[|\r\n]/g,' ').slice(0,500);}
+function difficulty(f:Record<string,unknown>){return text(f.category).match(/^difficulty:(SIMPLE|MODERATE|SIGNIFICANT|UNASSESSED)$/)?.[1]??text(f.title).match(/ — difficulty:(SIMPLE|MODERATE|SIGNIFICANT|UNASSESSED)$/)?.[1];}
+function requestTitle(f:Record<string,unknown>){return text(f.title).replace(/ — difficulty:(SIMPLE|MODERATE|SIGNIFICANT|UNASSESSED)$/,'');}
 function bounded(value:string,limit:number){return value.length<=limit?value:value.slice(0,limit)+'… [Excerpt; see Detailed]';}
 function cleanStrings<T>(value:T):T {
  if(typeof value==='string'){const clean=safeTranscriptText(value,value.length+1);return (value.trim()?((value.match(/^\s*/)?.[0]??'')+clean+(value.match(/\s*$/)?.[0]??'')):value) as T;}
@@ -41,22 +43,22 @@ export function renderReportOutput(input:ReportSource,profileId?:string,format?:
  const r=record(source.result),head=`# ${source.title}\n\nRun: ${source.id}\nJob: ${source.jobId}\nStatus: ${source.status}\nSource recorded: ${source.recordedAt}\n\n`,footer=`\n\n---\nDeterministic ${profile.view} projection of retained governed evidence. Source SHA-256: ${catalogue.sourceSha256}. No analysis or model execution was repeated.\n`;
  let body='';
  if(profile.view==='simple'){
-  const requirements=list(r.requirements),findings=list(r.findings),summary=text(r.executiveSummary)||text(r.summary)||text(r.conclusion);
+  const requirements=list(r.requirements),findings=list(r.findings),summary=text(r.executiveSummary)||text(r.summary)||text(r.conclusion),assessed=findings.filter(v=>difficulty(record(v)));
   body=`## Summary\n\n${bounded(summary||'No structured conclusion was recorded. Inspect Detailed and Evidence; the run status alone is not an analysis conclusion.',1200)}\n`;
   if(requirements.length){body+='\n## What is being asked\n\n'+requirements.slice(0,10).map((v,i)=>`${i+1}. ${bounded(text(record(v).request),180)}`).join('\n');body+='\n\n## Difficulty\n\n| Request | Assessment | Why |\n| --- | --- | --- |\n'+requirements.slice(0,10).map(v=>{const x=record(v);return `| ${cell(x.id)} | ${cell(x.difficulty)||'Not assessed'} | ${cell(x.difficultyReason)||'No reason recorded'} |`;}).join('\n');}
-  else if(findings.length)body+='\n## Findings and requested actions\n\n'+findings.slice(0,8).map(v=>{const f=record(v),validation=record(f.validation);return `- **${bounded(text(f.title),140)}** — ${text(f.severity)||'Priority not assessed'}; ${text(validation.state)||'verification unavailable'}. ${bounded(text(f.suggestedRemediation),200)}`;}).join('\n');
+  else if(findings.length&&!assessed.length)body+='\n## Findings and requested actions\n\n'+findings.slice(0,8).map(v=>{const f=record(v),validation=record(f.validation);return `- **${bounded(text(f.title),140)}** — ${text(f.severity)||'Priority not assessed'}; ${text(validation.state)||'verification unavailable'}. ${bounded(text(f.suggestedRemediation),200)}`;}).join('\n');
   if(requirements.length>10||findings.length>8)body+='\n\nAdditional items are retained in Detailed.';
   if(text(r.overall))body+='\n\n## Overall\n\n'+bounded(text(r.overall),250);
   if(text(r.nextAction))body+='\n\n## Suggested next action\n\n'+bounded(text(r.nextAction),350);
-  const assessed=findings.filter(v=>/^difficulty:(SIMPLE|MODERATE|SIGNIFICANT|UNASSESSED)$/.test(text(record(v).category)));
-  if(assessed.length)body+='\n\n## Difficulty\n\n| Request | Assessment | Why / next action |\n| --- | --- | --- |\n'+assessed.slice(0,8).map(v=>{const f=record(v);return `| ${cell(f.title)} | ${text(f.category).split(':')[1]} | ${cell(bounded(text(f.suggestedRemediation),160))} |`;}).join('\n');
+  if(assessed.length)body+='\n\n## Difficulty\n\n| Request | Assessment / validation | Next action |\n| --- | --- | --- |\n'+assessed.slice(0,8).map(v=>{const f=record(v);return `| ${cell(requestTitle(f))} | ${difficulty(f)} / ${cell(record(f.validation).state)||'unverified'} | ${cell(bounded(text(f.suggestedRemediation),160))} |`;}).join('\n');
   const omissions=list(r.areasNotReviewed);body+='\n\n## Limits\n\n'+(omissions.length?'Not reviewed: '+bounded(omissions.map(text).join('; '),400)+'. ':'')+bounded(source.limitations.join(' '),600);
  }else if(profile.view==='detailed'){
-  body='## Complete recorded result\n\n'+(source.result!==undefined?'```json\n'+JSON.stringify(source.result,null,2)+'\n```':'No structured report is retained for this run.')+'\n\n## Methodology, calls and evidence references\n\n```json\n'+JSON.stringify({calls:source.calls??[],operations:source.operations},null,2)+'\n```\n\n## Limitations\n\n'+source.limitations.join('\n\n');
+  const summary=text(r.executiveSummary)||text(r.summary)||text(r.conclusion);
+  const findings=list(r.findings).map((value,index)=>{const f=record(value);return `### ${index+1}. ${text(f.title)}\n\n${text(f.reasoning)}\n\n**Assessment:** ${difficulty(f)??text(f.category)}; ${text(f.severity)}; validation ${text(record(f.validation).state)||'unavailable'}.\n\n**Source:** ${text(f.file)}${f.startLine?':'+f.startLine:''}\n\n${text(f.evidence)}\n\n**Impact:** ${text(f.impact)}\n\n**Next action:** ${text(f.suggestedRemediation)}`;}).join('\n\n');
+  body=(summary?'## Summary\n\n'+summary+'\n\n':'')+(findings?'## Findings and requirements\n\n'+findings+'\n\n':'')+'## Complete recorded result\n\n'+(source.result!==undefined?'```json\n'+JSON.stringify(source.result,null,2)+'\n```':'No structured report is retained for this run.')+'\n\n## Methodology, calls and evidence references\n\n```json\n'+JSON.stringify({calls:source.calls??[],operations:source.operations},null,2)+'\n```\n\n## Limitations\n\n'+source.limitations.join('\n\n');
  }else body='## Authorised evidence projection\n\n```json\n'+JSON.stringify(source,null,2)+'\n```';
  let content=selectedFormat==='json'?JSON.stringify({schema:'agent-control.report-evidence/v1',runId:source.id,jobId:source.jobId,sourceSha256:catalogue.sourceSha256,derived:true,source},null,2):head+body+footer;
  if(selectedFormat==='text')content=content.replace(/^#{1,6} /gm,'').replace(/^```[^\n]*\n?/gm,'').replace(/\*\*/g,'');
- // Redact once more after formatting, before bytes/hashes leave the service.
  if(content.length>8*1024*1024)throw Error('report_output_too_large');
   // Values were redacted before serialisation; filtering JSON bytes here could corrupt JSON or invalidate source hashes.
  const slug=(s:string)=>s.normalize('NFKD').replace(/[^a-zA-Z0-9_-]+/g,'-').replace(/^-+|-+$/g,'').slice(0,64)||'job';

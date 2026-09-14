@@ -368,10 +368,11 @@ export class AgentControlService {
   }
   reportSource(id:string):ReportSource {
     const inspector=this.runInspector(id),parent=this.parameterizedJobs?.runs.list().find(r=>r.id===id||r.workParcelIds.includes(id)),job=this.jobRuntime?.ledger.list().find(r=>r.id===id);
+    const scopes=parent?parent.workParcelIds.map(parcelId=>this.runInspector(parcelId)):[inspector];
     const name=job?.effectiveJob.spec.reportArtifact;const artifact=name?this.artifacts(job!.id).find(a=>a.name===name&&job!.artifacts.includes(a.id)):undefined;
     if(name&&!artifact)throw new Error('report_artifact_unavailable');
     const result=parent?.result??(artifact?this.artifactContent(artifact.id).content:undefined);
-    return {id:parent?.id??inspector.id,jobId:parent?.definition.id??job?.jobId??'work-parcel',title:parent?.definition.displayName??inspector.title,status:parent?.status??inspector.status,recordedAt:parent?.completedAt??parent?.requestedAt??inspector.endedAt??inspector.startedAt,result,history:inspector.history,events:inspector.events,operations:inspector.operations,calls:inspector.calls,limitations:[...inspector.limitations,...(parent?.errors??[]),...(job?.errors??[])],profiles:parent?.definition.outputs.profiles??job?.effectiveJob.spec.reportProfiles};
+    return {id:parent?.id??inspector.id,jobId:parent?.definition.id??job?.jobId??'work-parcel',title:parent?.definition.displayName??inspector.title,status:parent?.status??inspector.status,recordedAt:parent?.completedAt??parent?.requestedAt??inspector.endedAt??inspector.startedAt,result,history:inspector.history,events:scopes.flatMap(s=>s.events),operations:scopes.flatMap(s=>s.operations),calls:scopes.flatMap(s=>s.calls),limitations:[...new Set(scopes.flatMap(s=>s.limitations)),...(parent?.errors??[]),...(job?.errors??[])],profiles:parent?.definition.outputs.profiles??job?.effectiveJob.spec.reportProfiles};
   }
   reportOutputs(id:string){return reportOutputCatalogue(this.reportSource(id));}
   reportOutput(id:string,profile?:string,format?:string){return renderReportOutput(this.reportSource(id),profile,format);}
