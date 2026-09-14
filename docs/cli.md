@@ -55,7 +55,7 @@ ac run JOB_ID --declared-parameter value
 
 Parameters and types come from the core Job manifest or versioned parameterized definition. Kebab-case aliases are accepted for camelCase parameter names. The client validates required fields, enums and numeric bounds; the controller still owns admission and approval. Unknown options are rejected. No job-specific executor is built into the CLI.
 
-Core Jobs use the existing run endpoint. Parameterized definitions create a version-pinned Saved Job and submit it using the existing Saved Job API. Optional `--saved-id`, `--name`, `--model` and `--context THIN|STANDARD|DEEP` select existing configuration fields. If creation succeeds but submission fails, the error identifies the saved ID; inspect it before retrying. Mutations are never automatically retried. This command does not upload local files: repository/file parameters refer to the controller or declared execution node.
+Core Jobs use the existing run endpoint. Parameterized definitions create a version-pinned Saved Job and submit it using the existing Saved Job API. Optional `--saved-id`, `--name`, `--model` and `--context THIN|STANDARD|DEEP` select existing configuration fields. Existing budget overrides are available as `--max-input-tokens`, `--max-output-tokens`, `--timeout` (minutes) and `--retries`; the controller still validates them. If creation succeeds but submission fails, the error identifies the saved ID; inspect it before retrying. Mutations are never automatically retried. This command does not upload local files: repository/file parameters refer to the controller or declared execution node.
 
 ## Inspect results and files
 
