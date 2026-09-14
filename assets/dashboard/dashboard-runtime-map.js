@@ -998,6 +998,7 @@
   setInterval(()=>{if(document.hidden)return;heartbeat();if(rt.active&&rt.surface==='estate')load();},5000);
   document.addEventListener('agent-control:authentication-changed',()=>{heartbeat();if(rt.active)load();});
   heartbeat();
-  async function openProcess(parcelId){rt.surface='process';rt.parcelId=parcelId;rt.mode='map';document.querySelector('[data-view="runtime-map"]')?.click();rt.active=true;surfaceButtons();modeButtons();await load();}
-  window.AgentControlRuntimeMap = { activate, schedule, openEstate, openProcess };
+  async function openProcess(parcelId){rt.runId='';rt.surface='process';rt.parcelId=parcelId;rt.mode='map';document.querySelector('[data-view="runtime-map"]')?.click();rt.active=true;surfaceButtons();modeButtons();await load();}
+  async function openJob(runId){rt.runId=runId;rt.surface="process";rt.mode="map";document.querySelector('[data-view="runtime-map"]')?.click();rt.active=true;surfaceButtons();modeButtons();await load();}
+  window.AgentControlRuntimeMap = { openJob, activate, schedule, openEstate, openProcess, selection:()=>({surface:rt.surface,parcelId:rt.parcelId,runId:rt.runId,node:rt.projection?.nodes.find(n=>n.id===rt.selected)}) };
 })();

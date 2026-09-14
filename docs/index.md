@@ -20,3 +20,7 @@ Older versioned deployment and evidence documents remain available for provenanc
 - [Using Mallow voice](mallow-voice.md)
 - [4.7 known limitations](known-limitations-4.7.md)
 - [Paused desktop/mobile evidence](evidence/agent-control-4.7-dashboard.md)
+
+## Observability follow-on
+
+[How do I see what Agent Control is doing?](observability-4.7.md) covers Estate → Node → Process → Run Inspector, tokens, context, batons, history, mobile interaction and Mallow's shared evidence. Qualification of this post-v4.7.0 work is tracked separately.

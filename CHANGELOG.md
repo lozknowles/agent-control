@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased — 4.7 observability follow-on
+
+Capability-aware Node Dashboard, exact physical/execution bindings, a consolidated Run Inspector, shared canonical token/cache accounting and discoverable Markdown history. Existing Process Map, governed execution, Mallow and optional voice boundaries are preserved. See [operator guide](docs/observability-4.7.md). Published v4.7.0 and its evidence remain unchanged.
+
 ## 4.7.0
 
 Usability & Integration: readable Process Map cards/connections, active-session pulse and elapsed timer, persistent job forms, reconciled input/cache/output usage and readable per-call history, mobile Mallow controls and an optional provider-neutral live voice transport. Core/browser qualification is separate from experimental live provider/physical audio. See [release notes](docs/release-notes-4.7.0.md), [limitations](docs/known-limitations-4.7.md) and [paused evidence](docs/evidence/agent-control-4.7-dashboard.md).

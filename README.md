@@ -4,6 +4,8 @@ Discover your AI tools, see what is available, and follow approved work from req
 
 **Current release: [4.7](https://github.com/lozknowles/agent-control/releases/tag/v4.7.0) — Usability & Integration.** Clearer desktop/mobile Process Map, live session activity and readable per-call token history. Core and browser journeys are qualified; optional live voice remains experimental with [explicit limitations](docs/known-limitations-4.7.md). See [release notes](docs/release-notes-4.7.0.md) and [verification](docs/release-verification-4.7.0.md).
 
+**Observability follow-on in this branch:** [How do I see what Agent Control is doing?](docs/observability-4.7.md) connects Estate, Node Dashboard, Process Map, exact operation evidence and retained history. This is additional work after the immutable v4.7.0 release; its separate qualification is required before publication.
+
 [Install Agent Control](docs/installation-first-run.md) · [Documentation](docs/index.md) · [Upgrade](docs/upgrade-4.7.md) · [Release notes](docs/release-notes-4.7.0.md)
 
 [![Actual Agent Control Estate Map](docs/media/4.6/integration/estate.png)](docs/public-installation-journey.md)

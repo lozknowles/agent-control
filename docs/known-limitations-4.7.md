@@ -15,3 +15,7 @@
 All [accepted 4.6 limitations](known-limitations-4.6.md), including Android inference, benchmark promotion, one-principal ACP, paid billing and whole-node energy boundaries, remain applicable. Historical measurements remain bound to their original source and target.
 
 Voice sessions end on backgrounding or loss of connectivity and require an explicit reconnect. This is deliberate bounded behavior; seamless Wi-Fi/mobile-data transitions and background listening are not advertised. Text remains available. No account, key or spending-limit change is necessary for core operation.
+
+## Observability follow-on boundaries
+
+The Node Dashboard and Run Inspector in the follow-on branch use exact recorded node identity. Unknown or unplaced work is not assigned to a machine. Current whole-node samples do not establish per-job CPU/GPU attribution or renew discovery qualification. GPU adapters without a supported observed capability retain unavailable live readings. Provider context occupancy, generation-only throughput, cache savings and monetary cost remain unavailable without the required evidence. The initial physical resource qualification is on the existing Linux controller; desktop/mobile browser layouts do not qualify Windows or Android hardware telemetry. See [observability guide](observability-4.7.md). Existing live voice and physical handset limitations remain in force.
