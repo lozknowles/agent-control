@@ -1,5 +1,4 @@
 import {spawn} from 'node:child_process';
-import {Readable} from 'node:stream';
 
 // Static remote command; all variable request data (including auth) travels on encrypted stdin.
 const proxy=`const fs=require('node:fs');const p=JSON.parse(fs.readFileSync(0,'utf8'));if(!p.path.startsWith('/api/')||!['127.0.0.1','localhost'].includes(p.host)||!Number.isInteger(p.port)||p.port<1||p.port>65535)process.exit(2);fetch('http://'+p.host+':'+p.port+p.path,{method:p.method,headers:p.headers,body:p.body,redirect:'error'}).then(async r=>{process.stdout.write(JSON.stringify({status:r.status,headers:{'content-type':r.headers.get('content-type')||'application/json'}})+'\\n');if(r.body)for await(const c of r.body){if(!process.stdout.write(c))await new Promise(resolve=>process.stdout.once('drain',resolve));}}).catch(()=>process.exit(7));`;
@@ -13,7 +12,7 @@ export async function sshApiRequest(target,pathname,init={},spawner=spawn){
   let header=Buffer.alloc(0),responseStarted=false,closed=false,control;
   const fail=()=>{if(closed)return;closed=true;if(responseStarted)control.error(Error('SSH API stream unavailable'));else reject(Error('SSH API transport unavailable'));child.kill();};
   const abort=()=>fail();init.signal?.addEventListener('abort',abort,{once:true});if(init.signal?.aborted)return fail();
-  child.on('error',fail);child.on('exit',code=>{init.signal?.removeEventListener('abort',abort);if(closed)return;if(!responseStarted||code!==0)return fail();closed=true;control.close();});
+  child.on('error',fail);child.on('close',code=>{init.signal?.removeEventListener('abort',abort);if(closed)return;if(!responseStarted||code!==0)return fail();closed=true;control.close();});
   child.stdout.on('data',chunk=>{
    if(closed)return;
    if(responseStarted){control.enqueue(new Uint8Array(chunk));return;}
