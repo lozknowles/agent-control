@@ -355,12 +355,14 @@ export function projectRuntimeMap(
     const fromPoe =
       parcel.origin?.channel === "dashboard" ||
       parcel.origin?.channel === "voice" ||
-      parcel.origin?.channel === "whatsapp";
+      parcel.origin?.channel === "whatsapp" ||
+      parcel.origin?.channel === "mallow/dashboard" ||
+      parcel.origin?.channel === "poe/dashboard";
     if (fromPoe) {
       add({
         id: poeId,
         type: "poe",
-        label: "Morrow / POE",
+        label: "Mallow",
         subtitle: "Governed operator ingress",
         state: temporal("SUCCEEDED", parcel.createdAt, parcel.createdAt, at),
         startedAt: parcel.createdAt,
@@ -368,6 +370,8 @@ export function projectRuntimeMap(
         expandable: true,
         detail: {
           channel: parcel.origin?.channel,
+          modality: parcel.origin?.modality ?? "not reported",
+          voiceEvidence: parcel.origin?.authority?.filter(value=>value.startsWith("voice-")) ?? [],
           authentication: parcel.origin?.authentication ?? null,
         },
         evidence: [pe],

@@ -591,6 +591,14 @@
           .join("")
       : "<li>No evidence reference reported.</li>";
   }
+  function detailLabel(key){return key.replace(/([a-z])([A-Z])/g,'$1 $2').replaceAll('_',' ');}
+  function detailValue(value,depth=0){
+    if(value===null||value===undefined)return 'Not reported';
+    if(typeof value!=='object')return safe(value);
+    if(depth>2)return `<details><summary>Full evidence</summary><pre>${safe(JSON.stringify(value,null,2))}</pre></details>`;
+    if(Array.isArray(value))return value.length?`<ul>${value.map(item=>`<li>${detailValue(item,depth+1)}</li>`).join('')}</ul>`:'None recorded';
+    return `<ul class="runtime-detail-values">${Object.entries(value).map(([key,item])=>`<li><strong>${safe(detailLabel(key))}:</strong> ${detailValue(item,depth+1)}</li>`).join('')}</ul>`;
+  }
   function inspect(node) {
     if (!node) {
       rt.selected = null;
@@ -602,7 +610,7 @@
     const detail = Object.entries(node.detail || {})
         .map(
           ([k, v]) =>
-            `<dt>${safe(k)}</dt><dd>${safe(typeof v === "object" ? JSON.stringify(v, null, 2) : v)}</dd>`,
+            `<dt>${safe(detailLabel(k))}</dt><dd>${detailValue(v)}</dd>`,
         )
         .join(""),
       session = node.type === "terminal" ? node.detail.sessionId : null;

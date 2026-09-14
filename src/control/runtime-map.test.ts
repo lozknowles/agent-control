@@ -44,3 +44,10 @@ test('a recorded CONTINUE decision does not imply an active process',()=>{
  const node=projectRuntimeMap(source).nodes.find(n=>n.id==='governor:recorded')!;
  assert.equal(node.state,'RECORDED');assert.equal(node.endedAt,mid);assert.equal(node.detail.outcome,'RECORDED');
 });
+
+test('current and compatibility Mallow channels appear as governed ingress in the normal process map',()=>{
+ for(const channel of ['mallow/dashboard','poe/dashboard']){
+  const source=fixture(1);source.parcel.origin={channel,modality:'voice-confirmed-by-text',authentication:'dashboard-bearer',authority:['voice-session:voice-test']};
+  const map=projectRuntimeMap(source),mallow=map.nodes.find(n=>n.type==='poe');assert.equal(mallow?.label,'Mallow');assert.equal(mallow?.detail.modality,'voice-confirmed-by-text');assert.deepEqual(mallow?.detail.voiceEvidence,['voice-session:voice-test']);assert.ok(map.edges.some(e=>e.from===mallow?.id));
+ }
+});
