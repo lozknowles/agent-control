@@ -153,22 +153,23 @@ const environmentDiscovery=new EnvironmentDiscoveryRuntime({
   onEvent:(type,payload)=>service.events.emit('environment.discovery_changed',{eventType:type,...payload},undefined,'environment-discovery'),
 });
 service.configureProjection({environmentDiscovery,capabilityAdapters,installation});
+const mallowVoiceConfig=process.env.AGENT_CONTROL_MALLOW_VOICE_CONFIG??process.env.AGENT_CONTROL_POE_VOICE_CONFIG;
 let poeSpeech: import('./control/social-voice-providers.js').SpeechProvider | undefined;
 let poeRecognition: import('./control/social-voice-providers.js').SpeechRecognitionProvider | undefined;
 let poeVoice: import('./control/social-voice-providers.js').VoiceIdentity | undefined;
-if (process.env.AGENT_CONTROL_POE_VOICE_CONFIG) {
+if (mallowVoiceConfig) {
   try {
-    const settings=JSON.parse(fs.readFileSync(process.env.AGENT_CONTROL_POE_VOICE_CONFIG,'utf8'));
+    const settings=JSON.parse(fs.readFileSync(mallowVoiceConfig,'utf8'));
     const {PrivateSpeechProvider}=await import('./control/speech-http-provider.js');
     if(!settings.speechUrl||!settings.tokenEnv||!settings.voice)throw new Error('poe_voice_configuration_invalid');
     const provider=new PrivateSpeechProvider(settings.voice.provider,settings.speechUrl,process.env[settings.tokenEnv]??'',settings.voice);
     poeSpeech=provider;poeRecognition=provider;poeVoice=settings.voice;
-  } catch {process.stderr.write('Optional POE voice configuration unavailable; text conversation remains active.\n');}
+  } catch {process.stderr.write('Optional Mallow voice configuration unavailable; text conversation remains active.\n');}
 }
 const knowledge = new PoeKnowledgeService({root:process.cwd(),version:AGENT_CONTROL_VERSION,sources:JSON.parse(fs.readFileSync('config/poe-knowledge-sources.json','utf8')),configuration:()=>({jobs:jobRuntime.catalog.listJobs(),schedules:jobRuntime.catalog.listSchedules(),models:service.models(),routing:config.modelRouting}),live:(category,question)=>{
   const snapshot=service.snapshot();
   if(category==='usage')return service.usageAnswer(usageQuestionQuery(question??''));
-  if(category==='voice')return {channel:'poe/dashboard',configured:Boolean(poeVoice&&poeSpeech&&poeRecognition),identity:poeVoice?.id??null,synthesisProvider:poeVoice?.provider??null,recognitionEngine:'Not established by this configuration; do not infer from the synthesis provider.',recognitionConfigured:Boolean(poeRecognition),synthesisConfigured:Boolean(poeSpeech),streaming:poeSpeech?.capabilities().streaming??false,readiness:'CONFIGURED_NOT_A_HEALTH_PROBE',whatsapp:'SEPARATE_CHANNEL_NOT_OBSERVED'};
+  if(category==='voice')return {realtime:voiceTransport.availability(),channel:'poe/dashboard',configured:Boolean(poeVoice&&poeSpeech&&poeRecognition),identity:poeVoice?.id??null,synthesisProvider:poeVoice?.provider??null,recognitionEngine:'Not established by this configuration; do not infer from the synthesis provider.',recognitionConfigured:Boolean(poeRecognition),synthesisConfigured:Boolean(poeSpeech),streaming:poeSpeech?.capabilities().streaming??false,readiness:'CONFIGURED_NOT_A_HEALTH_PROBE',whatsapp:'SEPARATE_CHANNEL_NOT_OBSERVED'};
   if(category==='regression')return readPoeRegression(process.env.AGENT_CONTROL_POE_REGRESSION_FILE);
   if(category==='crew')return snapshot.characterCrew.members.map(member=>({id:member.id,name:member.name,role:member.role,state:member.operationalState,summary:member.summary,freshness:member.freshness}));
   if(category==='models')return {models:service.models(),providers:snapshot.providers,routing:config.modelRouting,learnedSpecialists:service.learnedSpecialists(),deterministicSkills:service.deterministicSkillProjection()};
@@ -254,7 +255,23 @@ if (process.env.AGENT_CONTROL_OPENWA_CONFIG) {
     openwa.start();
   } catch { process.stderr.write('Optional OpenWA adapter unavailable; dashboard and jobs remain active. Check private integration configuration.\n'); }
 }
-const server = startWebDashboard(service, {host, port, openwa, socialVoice, operatorToken: process.env.AGENT_CONTROL_WEB_OPERATOR_TOKEN, allowedOrigins: process.env.AGENT_CONTROL_WEB_ALLOWED_ORIGINS?.split(',').map(value => value.trim()).filter(Boolean), configFile: configurationFile,uxSessions,uxSessionShares,uxSessionAnnotations,sessionVault});
-server.on('close',()=>{if(socialTimer)clearInterval(socialTimer);openwa?.close();uxSessionCapture.dispose();});
+
+const {VoiceTransportRuntime}=await import('./control/voice-transport.js');
+const {GptLiveTransport}=await import('./control/gpt-live-transport.js');
+let liveAdapter:InstanceType<typeof GptLiveTransport>|undefined;
+// Explicit existing environment reference only; never provision a key or silently start a paid session.
+if(process.env.AGENT_CONTROL_VOICE_TRANSPORT==='gpt-live') {
+  const credentialEnv=process.env.AGENT_CONTROL_VOICE_CREDENTIAL_ENV??'OPENAI_API_KEY';
+  liveAdapter=new GptLiveTransport({credential:()=>process.env[credentialEnv]});
+}
+const voiceTransport:InstanceType<typeof VoiceTransportRuntime>=new VoiceTransportRuntime({directory:path.join(stateRoot,'voice'),adapter:liveAdapter,
+  ingress:{
+    history:(id,actor)=>{const c=service.poeConversation(id);if(c.actorId!==actor)throw Error('poe_conversation_actor_mismatch');return c.turns.map(t=>({speaker:t.actor==='operator'?'user' as const:'assistant' as const,text:t.text}));},
+    request:async(id,actor,text,voiceReference)=>{const c=service.poeConversation(id);if(c.actorId!==actor)throw Error('poe_conversation_actor_mismatch');const answer=await poe.ask({conversationId:id,text,channel:'dashboard',modality:'voice',contentTrust:'UNTRUSTED_DATA',voiceReference});return {text:answer.turn.text,turnId:answer.turn.id};},
+    updates:async(id,actor)=>{await service.poeOperator(id,actor);return service.poeConversation(id).turns.filter(t=>t.actor==='poe'&&['HANDOVER','RESULT'].includes(t.purpose??'')).map(t=>({id:t.id,text:t.text}));},
+  },onChange:record=>service.events.emit('poe.conversation_changed',{conversationId:record.conversationId,voiceSessionId:record.id,state:record.state},undefined,'mallow'),
+});
+const server = startWebDashboard(service, {host, port, openwa, socialVoice, voiceTransport, operatorToken: process.env.AGENT_CONTROL_WEB_OPERATOR_TOKEN, allowedOrigins: process.env.AGENT_CONTROL_WEB_ALLOWED_ORIGINS?.split(',').map(value => value.trim()).filter(Boolean), configFile: configurationFile,uxSessions,uxSessionShares,uxSessionAnnotations,sessionVault});
+server.on('close',()=>{void voiceTransport.dispose();if(socialTimer)clearInterval(socialTimer);openwa?.close();uxSessionCapture.dispose();});
 server.on('listening', () => process.stdout.write(`Agent Control ${service.version} web dashboard: http://${host}:${port} (${process.env.AGENT_CONTROL_WEB_OPERATOR_TOKEN ? 'operator authenticated' : 'observer only'})\n`));
 server.on('error', error => { process.stderr.write(`Dashboard failed: ${error.message}\n`); process.exitCode = 1; });

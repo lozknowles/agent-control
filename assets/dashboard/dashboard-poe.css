@@ -68,3 +68,13 @@
 @keyframes morrow-nod{45%{transform:translateY(6px) rotate(-2deg)}100%{transform:translateY(3px)}}
 @media(prefers-reduced-motion:reduce){.poe-character[data-character="morrow"] *{animation:none!important;transition:none!important}}
 html[data-bot-motion="off"] .poe-character *,html[data-bot-motion="reduced"] .poe-character *{animation:none!important;transition:none!important}
+
+.mallow-live-controls {display:flex;gap:.5rem;flex-wrap:wrap;margin:.75rem 0;}
+.mallow-live-controls button {min-height:44px;white-space:normal;}
+#mallow-voice-cost {font-size:.875rem;overflow-wrap:anywhere;color:var(--muted,#b8c5d0);}
+@media(max-width:600px){.mallow-live-controls button{flex:1 1 135px;}#poe-input{font-size:16px;}}
+
+.poe-overlay .mallow-live-controls{grid-column:1/-1;grid-row:4;min-width:0;}
+.poe-overlay #mallow-voice-cost{grid-column:1/-1;grid-row:5;margin:0;line-height:1.4;}
+.poe-overlay .poe-caption{grid-column:1/-1;grid-row:6;}
+.poe-overlay .mallow-live-controls button{min-width:130px;}

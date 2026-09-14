@@ -98,3 +98,8 @@ Model Intelligence now reports real source coverage, initial versus follow-up ob
 - [Accepted RC assessment and evidence](docs/release-candidate-4.6.md)
 
 Historical versioned reports remain available under `docs/`; use the installation guide above for this release.
+
+
+### 4.7 usability and integration candidate
+
+The unpublished [4.7 candidate](docs/release-4.7-candidate.md) adds optional Mallow voice transport and mobile usability improvements. See [Using Mallow voice](docs/mallow-voice.md) for configuration, governance, privacy, cost and current qualification limits. It is not yet recommended for formal release.

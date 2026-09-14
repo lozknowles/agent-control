@@ -1,3 +1,4 @@
+import {VoiceError, type VoiceTransportRuntime} from './voice-transport.js';
 import {isAndroidUserspace,observeAndroid} from './android-environment.js';
 import {DefaultDiscoveryProbe} from './environment-discovery.js';
 import {usageQuerySchema} from './usage-projection.js';
@@ -22,7 +23,7 @@ import {projectUxSession, UX_SESSION_AUDIENCES, type UxSessionAnnotationStore, t
 import type {SessionVaultRuntime} from './session-vault.js';
 import {capabilityDefinition} from './capability-adapter-registry.js';
 
-export interface WebServerOptions {host?: string; port?: number; operatorToken?: string; operatorAuthorizer?: (request: IncomingMessage, authority: 'control.read' | 'control.mutate') => boolean; allowedOrigins?: string[]; assetsDir?: string; configFile?: string; openwa?: OpenWAAdapter; socialVoice?: SocialVoiceCoordinator; uxSessions?: UxSessionStore; uxSessionShares?: UxSessionShareStore; uxSessionAnnotations?: UxSessionAnnotationStore; uxSessionPlayerDir?: string; sessionVault?:SessionVaultRuntime;}
+export interface WebServerOptions {voiceTransport?:VoiceTransportRuntime;host?: string; port?: number; operatorToken?: string; operatorAuthorizer?: (request: IncomingMessage, authority: 'control.read' | 'control.mutate') => boolean; allowedOrigins?: string[]; assetsDir?: string; configFile?: string; openwa?: OpenWAAdapter; socialVoice?: SocialVoiceCoordinator; uxSessions?: UxSessionStore; uxSessionShares?: UxSessionShareStore; uxSessionAnnotations?: UxSessionAnnotationStore; uxSessionPlayerDir?: string; sessionVault?:SessionVaultRuntime;}
 const MAX_BODY = 64 * 1024;
 const SECRET_KEY = /token|secret|password|credential|authorization|cookie|api[-_]?key/i;
 const SAFE_TOKEN_ACCOUNTING_KEY = /^(?:tokenAwareOutput|tokenBatonRouting|providerReportedTokens|contextTokens|contextLimitTokens|contextTokensAvoided|contextTokensSaved|evidenceTokens|estimatedTokensOriginal|estimatedTokensReturned|estimatedTokensSaved|estimatedOriginalTokens|estimatedReturnedTokens|estimatedTokensAvoided|expansionTokensReturned|inputTokens|freshInputTokens|cachedInputTokens|reusedTokens|processedPromptTokens|retainedPromptTokens|cacheWriteTokens|outputTokens|maximumInputTokens|maximumOutputTokens|maximumContextTokens|maximumEvidenceTokens|reasoningTokens|totalTokens|totalProcessedTokens|startupContextTokens|taskContextTokens|retrievedContextTokens|repositoryContextTokens|conversationHistoryTokens|totalEstimatedContextTokens|repeatedContextCostEstimate|tokenEfficiency|tokensPerSuccessfulTask|freshTokensPerSuccessfulTask|tokensPerVerifiedOutcome|freshTokensPerVerifiedOutcome|estimatedTokens|limitTokens|tokensLimit|tokensRemaining|contextPercent|continuePercent|prepareBatonPercent|compactPercent|handoffPercent|prompt_tokens|completion_tokens|input_tokens|output_tokens|reasoning_tokens|total_tokens|cached_tokens|prompt_tokens_details|input_tokens_details|prompt_per_token_ms|predicted_per_token_ms)$/;
@@ -101,6 +102,30 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
     return serveUxPlayerAsset(response,root,asset);
   }
   if (url.pathname.startsWith('/api/')) validateOperatorRequest(request, options);
+  if(url.pathname.startsWith('/api/voice/')) {
+    const voice=options.voiceTransport;
+    if(!voice)throw httpError(503,'voice_transport_unconfigured');
+    try {
+      if(method==='GET'&&url.pathname==='/api/voice/availability')return json(response,200,voice.availability());
+      if(method==='GET'&&url.pathname==='/api/voice/sessions')return json(response,200,voice.list(url.searchParams.get('conversationId')??'','web-operator'));
+      if(method==='POST'&&url.pathname==='/api/voice/sessions'){
+        validateMutationRequest(request,options);const body=await readJson(request);
+        return json(response,201,await voice.start(String(body.conversationId??''),'web-operator',String(body.sdp??'')));
+      }
+      const match=url.pathname.match(/^\/api\/voice\/sessions\/([^/]+)(?:\/(heartbeat|close|stop-speaking|history))?$/);
+      if(match){const id=decodeURIComponent(match[1]!);
+        if(method==='GET'&&match[2]==='history')return json(response,200,{history:voice.history(id,'web-operator')});
+        if(method==='GET'&&!match[2])return json(response,200,voice.get(id,'web-operator'));
+        if(method==='POST'){validateMutationRequest(request,options);
+          if(match[2]==='heartbeat')return json(response,200,voice.heartbeat(id,'web-operator'));
+          if(match[2]==='close')return json(response,200,await voice.close(id,'web-operator'));
+          if(match[2]==='stop-speaking')return json(response,200,voice.stopSpeaking(id,'web-operator'));
+        }
+      }
+      throw httpError(404,'voice_route_missing');
+    }catch(error){if(error instanceof VoiceError)return json(response,error.status,{error:error.code,domain:error.domain,textAvailable:true});throw error;}
+  }
+
   const uxSessionMatch=url.pathname.match(/^\/api\/ux-sessions\/([^/]+)(?:\/(shares|annotations))?$/);
   if(method==='GET'&&url.pathname==='/api/ux-sessions'){validateOperatorRequest(request,options);if(!options.uxSessions)throw httpError(503,'ux_session_runtime_unconfigured');return json(response,200,options.uxSessions.list().map(record=>({id:record.id,title:record.title,startedAt:record.startedAt,completedAt:record.completedAt,sha256:record.sha256,outcome:record.outcome})));}
   if(method==='GET'&&uxSessionMatch&&!uxSessionMatch[2]){validateOperatorRequest(request,options);if(!options.uxSessions)throw httpError(503,'ux_session_runtime_unconfigured');return json(response,200,projectUxSession(readUxSession(options.uxSessions,decodeURIComponent(uxSessionMatch[1])),'AUTHORISED_FULL_EVIDENCE'));}
@@ -485,7 +510,7 @@ function executionSessionStream(service: AgentControlService, id: string, reques
 
 function serveAsset(response: ServerResponse, assetsDir: string, pathname: string) {
   const asset = pathname === '/' ? 'index.html' : pathname.replace(/^\//, '');
-  if (!['dashboard-mobile.js','manifest.webmanifest','pwa-icon.svg','service-worker.js','offline.html','dashboard-pwa.js','dashboard-usage.js','dashboard-usage.css','dashboard-social-voice.css', 'social-voice.html', 'dashboard-social-voice.js', 'dashboard-openwa.css', 'openwa.html', 'dashboard-openwa.js', 'index.html', 'dashboard.css', 'dashboard-fixes.css', 'dashboard-jobs.css', 'dashboard-bots.css', 'dashboard-wopr.css', 'dashboard-adaptive-orchestration.css', 'dashboard-live-shell.css', 'dashboard-poe.css', 'dashboard-cache-runtime.css', 'dashboard-learned-specialists.css', 'dashboard-session-vault.css', 'dashboard-runtime-map.css', 'dashboard-environment-discovery.css', 'dashboard.js', 'dashboard-parameters.js', 'dashboard-running-state.js', 'dashboard-enhancements.js', 'dashboard-parameterized-jobs.js', 'dashboard-models.js', 'dashboard-first-run.js','dashboard-first-run.css','dashboard-model-watches.js', 'dashboard-model-watches.css', 'dashboard-sessions.js', 'dashboard-bots.js', 'dashboard-wopr.js', 'dashboard-adaptive-orchestration.js', 'dashboard-live-shell.js', 'dashboard-poe.js', 'dashboard-cache-experts.js', 'dashboard-learned-specialists.js', 'dashboard-session-vault.js', 'dashboard-runtime-map.js', 'dashboard-environment-discovery.js', 'dashboard-installation.js'].includes(asset)) throw httpError(404, 'not_found');
+  if (!['dashboard-mobile.js','manifest.webmanifest','pwa-icon.svg','service-worker.js','offline.html','dashboard-pwa.js','dashboard-usage.js','dashboard-usage.css','dashboard-social-voice.css', 'social-voice.html', 'dashboard-social-voice.js', 'dashboard-openwa.css', 'openwa.html', 'dashboard-openwa.js', 'index.html', 'dashboard.css', 'dashboard-fixes.css', 'dashboard-jobs.css', 'dashboard-bots.css', 'dashboard-wopr.css', 'dashboard-adaptive-orchestration.css', 'dashboard-live-shell.css', 'dashboard-poe.css', 'dashboard-cache-runtime.css', 'dashboard-learned-specialists.css', 'dashboard-session-vault.css', 'dashboard-runtime-map.css', 'dashboard-environment-discovery.css', 'dashboard.js', 'dashboard-parameters.js', 'dashboard-running-state.js', 'dashboard-enhancements.js', 'dashboard-parameterized-jobs.js', 'dashboard-models.js', 'dashboard-first-run.js','dashboard-first-run.css','dashboard-model-watches.js', 'dashboard-model-watches.css', 'dashboard-sessions.js', 'dashboard-bots.js', 'dashboard-wopr.js', 'dashboard-adaptive-orchestration.js', 'dashboard-live-shell.js', 'dashboard-voice-transport.js','dashboard-poe.js', 'dashboard-cache-experts.js', 'dashboard-learned-specialists.js', 'dashboard-session-vault.js', 'dashboard-runtime-map.js', 'dashboard-environment-discovery.js', 'dashboard-installation.js'].includes(asset)) throw httpError(404, 'not_found');
   const file = path.join(assetsDir, asset);
   if (!fs.existsSync(file)) throw httpError(404, 'dashboard_asset_missing');
   const type = asset.endsWith('.webmanifest') ? 'application/manifest+json' : asset.endsWith('.svg') ? 'image/svg+xml' : asset.endsWith('.html') ? 'text/html; charset=utf-8' : asset.endsWith('.css') ? 'text/css; charset=utf-8' : 'text/javascript; charset=utf-8';

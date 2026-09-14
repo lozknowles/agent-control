@@ -53,7 +53,7 @@ test('sealed approval preserves the exact request and creates one real governed 
   assert.throws(()=>f.poe.approveOperator(f.conversation.id,proposal.id,'bad','web-operator'),/approval_stale/);
   const result=f.poe.approveOperator(f.conversation.id,proposal.id,proposal.hash,'web-operator');
   f.poe.approveOperator(f.conversation.id,proposal.id,proposal.hash,'web-operator');
-  assert.equal(f.parcels.list().length,1);assert.equal(f.parcels.get(result.proposal.parcelId!).prompt,prompt);assert.equal(f.parcels.get(result.proposal.parcelId!).origin?.channel,'poe/dashboard');
+  assert.equal(f.parcels.list().length,1);assert.equal(f.parcels.get(result.proposal.parcelId!).prompt,prompt);assert.equal(f.parcels.get(result.proposal.parcelId!).origin?.channel,'mallow/dashboard');
   for(let i=0;i<8;i++){await f.parcels.tick();await f.runtime.tick();}
   assert.equal(f.parcels.get(result.proposal.parcelId!).status,'SUCCEEDED');
 });
@@ -150,4 +150,14 @@ test('an explicit parcel explanation resolves its recorded result instead of gen
  const blocked=await f.operator.query(`Delete this parcel ${parcel.id}`,f.conversation,{kind:'parcel',id:parcel.id});
  assert.equal(blocked?.title,'Operation requires its governed control');assert.equal(resolved,1);
  assert.equal(f.parcels.list().length,1);assert.equal(f.parcels.get(parcel.id).status,'SUCCEEDED');
+});
+
+test('voice-originated requests retain untrusted input and cannot run until the sealed text is explicitly approved',async t=>{
+ const f=fixture(t),answer=await f.poe.ask({conversationId:f.conversation.id,text:'Start operator-system-observation@1.1.0',modality:'voice',contentTrust:'UNTRUSTED_DATA',voiceReference:{sessionId:'voice-test',delegationId:'opaque/provider?id'}});
+ assert.equal(answer.operatorTurn.contentTrust,'UNTRUSTED_DATA');assert.equal(f.parcels.list().length,0);
+ const proposal=(await f.operator.projection('web-operator',f.conversation.id)).proposals[0]!;
+ assert.equal(proposal.modality,'voice');assert.equal(proposal.voiceReference?.sessionId,'voice-test');
+ const result=f.poe.approveOperator(f.conversation.id,proposal.id,proposal.hash,'web-operator'),origin=f.parcels.get(result.proposal.parcelId!).origin!;
+ assert.equal(origin.modality,'voice-confirmed-by-text');assert.equal(origin.confirmationReference,proposal.hash);assert.equal(origin.transcriptionAuthority,'untrusted-confirmed-by-text');assert.ok(origin.authority.includes('voice-session:voice-test'));
+ for(let i=0;i<8;i++){await f.parcels.tick();await f.runtime.tick();}assert.equal(f.parcels.get(result.proposal.parcelId!).status,'SUCCEEDED');
 });
