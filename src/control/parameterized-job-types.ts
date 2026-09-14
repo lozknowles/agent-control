@@ -1,3 +1,4 @@
+import type {ReportProfile} from './report-output.js';
 import type {ModelRouteDecision} from './model-registry.js';
 import type {GovernedRequestOrigin} from './request-origin.js';
 
@@ -23,7 +24,7 @@ export interface ParameterizedJobDefinition {
   routing: JobDefinitionRouting;
   permissions: {repository: 'read-only'; shell: 'none' | 'bounded-read'; network: 'none' | 'provider-only'};
   budgets: JobBudgetPolicy;
-  outputs: {schema: string};
+  outputs: {schema: string; profiles?: ReportProfile[]};
   validation: {requireEvidence: boolean; requireReviewedCommit: boolean};
   template: {id: string; version: number; instruction: string};
   compatibleWith?: number[];

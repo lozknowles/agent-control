@@ -89,7 +89,8 @@
     "qualify:environment-discovery": "node --import tsx scripts/qualify-environment-discovery-4.5.ts",
     "check:showcase": "node --import tsx scripts/check-showcase.ts",
     "check:showcase:structure": "node --import tsx scripts/check-showcase.ts --structure",
-    "check:release-rc": "node --import tsx scripts/check-release-rc.ts"
+    "check:release-rc": "node --import tsx scripts/check-release-rc.ts",
+    "report:output": "node scripts/report-output.mjs"
   },
   "dependencies": {
     "@agentclientprotocol/sdk": "1.4.0",

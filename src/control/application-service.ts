@@ -14,6 +14,7 @@ import type {RouteDecision} from './routing.js';
 import type {ContextStore} from './context.js';
 import type {JobRuntime} from './job-runtime.js';
 import {LocalNodeResources} from './node-resources.js';
+import {reportOutputCatalogue,renderReportOutput,type ReportSource} from './report-output.js';
 import {nodeWorkIndex, projectNodeDashboard, projectRunInspector, projectJobInspector, inspectorHistory, scopedInspectorUsage} from './observability.js';
 import type {ManagedNodeManager, ManagedNodeSnapshot} from './managed-node.js';
 import type {OutputAuthorityScope, OutputExpansionRequest, TokenAwareOutputMetrics, TokenAwareOutputService} from './token-aware-output.js';
@@ -365,6 +366,16 @@ export class AgentControlService {
     const accelerators=dashboard.resources.filter(n=>n.type==='gpu').map(n=>({id:n.id,index:Number(n.detail.index),adapter:String(n.detail.accelerator??'unknown')}));
     return {nodeId:dashboard.nodeId,native:await this.nodeResourceSampler.sample(accelerators),managed:dashboard.managed,reason:null};
   }
+  reportSource(id:string):ReportSource {
+    const inspector=this.runInspector(id),parent=this.parameterizedJobs?.runs.list().find(r=>r.id===id||r.workParcelIds.includes(id)),job=this.jobRuntime?.ledger.list().find(r=>r.id===id);
+    const scopes=parent?parent.workParcelIds.map(parcelId=>this.runInspector(parcelId)):[inspector];
+    const name=job?.effectiveJob.spec.reportArtifact;const artifact=name?this.artifacts(job!.id).find(a=>a.name===name&&job!.artifacts.includes(a.id)):undefined;
+    if(name&&!artifact)throw new Error('report_artifact_unavailable');
+    const result=parent?.result??(artifact?this.artifactContent(artifact.id).content:undefined);
+    return {id:parent?.id??inspector.id,jobId:parent?.definition.id??job?.jobId??'work-parcel',title:parent?.definition.displayName??inspector.title,status:parent?.status??inspector.status,recordedAt:parent?.completedAt??parent?.requestedAt??inspector.endedAt??inspector.startedAt,result,history:inspector.history,events:scopes.flatMap(s=>s.events),operations:scopes.flatMap(s=>s.operations),calls:scopes.flatMap(s=>s.calls),limitations:[...new Set(scopes.flatMap(s=>s.limitations)),...(parent?.errors??[]),...(job?.errors??[])],profiles:parent?.definition.outputs.profiles??job?.effectiveJob.spec.reportProfiles};
+  }
+  reportOutputs(id:string){return reportOutputCatalogue(this.reportSource(id));}
+  reportOutput(id:string,profile?:string,format?:string){return renderReportOutput(this.reportSource(id),profile,format);}
   runInspector(id:string,operationId?:string) {
     const job=this.jobRuntime?.ledger.list().find(r=>r.id===id);
     if(job){const map=this.runtimeRunMap(id),estate=this.estateMap(),sessions=this.executionSessions?.list()??[],nodes=nodeWorkIndex([],[],sessions,[job]).map(w=>w.nodeId);

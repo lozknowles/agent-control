@@ -28,3 +28,5 @@ Older versioned deployment and evidence documents remain available for provenanc
 - [4.7 observability qualification](observability-qualification-4.7.md) — source pins, tests, actual review outcome and paced desktop/mobile evidence.
 
 - [System light/dark appearance and qualification](system-theme-4.7.md)
+
+- [Report output profiles (post-4.7.1 candidate)](report-output-profiles.md)
