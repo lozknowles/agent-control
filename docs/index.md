@@ -1,14 +1,14 @@
 # Agent Control documentation
 
-**Stable: [Agent Control 4.7.0](https://github.com/lozknowles/agent-control/releases/tag/v4.7.0).**
+**Stable: [Agent Control 4.7.1](https://github.com/lozknowles/agent-control/releases/tag/v4.7.1).**
 
 - [Install Agent Control](installation-first-run.md)
 - [Upgrade an existing installation](upgrade-4.7.md)
 - [Real installation screenshots](public-installation-journey.md)
 - [Meet Mallow and the crew](crew-guide.md)
 - [Troubleshooting](installation-first-run.md#troubleshooting)
-- [Release notes](release-notes-4.7.0.md)
-- [Complete release readiness](release-verification-4.7.0.md)
+- [Release notes](release-notes-4.7.1.md)
+- [Complete release readiness](release-verification-4.7.1.md)
 - [Architecture](architecture-v2-agnostic.md)
 - [Job Library](https://github.com/lozknowles/agent-control-jobs)
 - [Usage and Energy physical qualification](usage-energy-physical-closure-4.6.md)
@@ -23,7 +23,7 @@ Older versioned deployment and evidence documents remain available for provenanc
 
 ## Observability follow-on
 
-[How do I see what Agent Control is doing?](observability-4.7.md) covers Estate → Node → Process → Run Inspector, tokens, context, batons, history, mobile interaction and Mallow's shared evidence. Qualification of this post-v4.7.0 work is tracked separately.
+[How do I see what Agent Control is doing?](observability-4.7.md) covers Estate → Node → Process → Run Inspector, tokens, context, batons, history, mobile interaction and Mallow's shared evidence. The 4.7.1 release assets bind qualification to the final source.
 
 - [4.7 observability qualification](observability-qualification-4.7.md) — source pins, tests, actual review outcome and paced desktop/mobile evidence.
 

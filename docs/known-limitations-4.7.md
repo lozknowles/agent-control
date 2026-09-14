@@ -10,6 +10,8 @@
 | Spoken model/baton/cache showcase | FUTURE_WORK | Local synthetic voice completed a real deterministic observation, not a non-trivial model job or spoken completion. Requires real governance, meaningful baton/cache evidence and audio completion. |
 | Voice cost allocation | PARTIAL_SUPPORT | Provider session duration and calculated voice cost are separate from model usage. Shared-session allocation and combined totals stay unknown where not defensible. |
 | Custom spoken job parameters | PARTIAL_SUPPORT | Registered defaults use sealed proposals; custom inputs retain their existing job form. No arbitrary spoken parameter planner is advertised. |
+| Safari/iOS appearance and browser behavior | PLATFORM_LIMITATION | Not newly qualified; current browser evidence is Chromium desktop and touch viewport emulation. |
+| Subscription-backed monetary cost | PARTIAL_SUPPORT | Monetary billing is unavailable when the route supplies no defensible cost; token usage remains visible. |
 | Mobile browser scope | PLATFORM_LIMITATION | The new videos test 390 × 844 browser layout and controls. They do not replace physical handset qualification. |
 
 All [accepted 4.6 limitations](known-limitations-4.6.md), including Android inference, benchmark promotion, one-principal ACP, paid billing and whole-node energy boundaries, remain applicable. Historical measurements remain bound to their original source and target.
