@@ -77,7 +77,9 @@ export class SshManagedNodeTransport implements ManagedNodeTransport {
     this.actionScript = scripts.action ?? script('managed-node-action.sh');
   }
   async probe(resource: ResourceConfig, at: string): Promise<ManagedNodeObservation> {
-    const result = await this.executor('ssh', sshResourceArgs(resource, ['sh', '-s']), this.probeScript, {timeoutMs: 20_000, maxBytes: MAX_BYTES});
+    const seconds = resource.managedNode?.probeTimeoutSeconds ?? 20;
+    if (!Number.isInteger(seconds) || seconds < 1 || seconds > 120) throw new Error('managed_node_probe_timeout_invalid');
+    const result = await this.executor('ssh', sshResourceArgs(resource, ['sh', '-s']), this.probeScript, {timeoutMs: seconds * 1000, maxBytes: MAX_BYTES});
     if (result.timedOut) throw new Error('managed_node_probe_timeout');
     if (result.aborted) throw new Error('managed_node_probe_aborted');
     if (result.status !== 0) throw new Error(`managed_node_probe_failed:${clip(result.stderr).trim().split(/\r?\n/).at(-1) ?? result.status}`);

@@ -22,3 +22,17 @@ test('typed action transport passes only validated operation fields to the fixed
   const result = await transport.execute(resource, {operation: 'service.status', target: 'example.service'});
   assert.equal(result.exitCode, 0); assert.deepEqual(args.slice(-7), ['operator@remote-one.example', 'sh', '-s', '--', 'service.status', 'example.service', '__none__']); assert.equal(input, '# fixed action');
 });
+
+
+test('SSH probe deadline is explicit and bounded for slower execution environments', async () => {
+  const deadlines: number[] = [];
+  const execute: SshExecutor = async (_command, _args, _input, options) => {deadlines.push(options.timeoutMs); return {status: 0, stdout: probeOutput, stderr: ''};};
+  const transport = new SshManagedNodeTransport(execute);
+  await transport.probe(resource, new Date().toISOString());
+  await transport.probe({...resource, managedNode: {probeTimeoutSeconds: 90}}, new Date().toISOString());
+  assert.deepEqual(deadlines, [20000, 90000]);
+  for (const value of [0, -1, 121, 1.5, NaN, Infinity]) {
+    await assert.rejects(transport.probe({...resource, managedNode: {probeTimeoutSeconds: value}}, new Date().toISOString()), /timeout_invalid/);
+  }
+  assert.equal(deadlines.length, 2);
+});

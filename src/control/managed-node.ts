@@ -206,6 +206,10 @@ function connectivity(observation: ManagedNodeObservation, config: ManagedNodeCo
 function capabilities(resource: ResourceConfig, observation: ManagedNodeObservation, detectedWorkloads: ManagedNodeWorkload[], connections: ManagedNodeConnectivity[]) {
   const tools = new Set(observation.tools), values = [...resource.capabilities, 'platform.linux', 'transport.ssh', 'managed-node.inspect'];
   if (tools.has('sh') || tools.has('bash')) values.push('tool.shell');
+  // Executable presence is discovery evidence, not permission or runtime readiness.
+  for (const [tool, runtime] of [['podman', 'podman'], ['docker', 'docker'], ['lxc-start', 'lxc']] as const) {
+    if (tools.has(tool)) values.push(`container.${runtime}.detected`);
+  }
   values.push(...connections.filter(item => item.state === 'RUNNING').map(item => item.capability));
   if (observation.storage.length) values.push('storage.inspect');
   if (observation.optical.length) values.push('device.optical');

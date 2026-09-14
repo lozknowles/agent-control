@@ -187,8 +187,28 @@ export function projectEstateMap(
       .filter((item) => item.kind === "MACHINE")
       .map((item) => [item.nodeId, item.id]),
   );
+  // Nested runtimes remain attached to one physical node. Accept only explicit,
+  // observed containment; never derive it from matching labels or IP addresses.
+  const observedParent = (item: DiscoveryItem): string | undefined => {
+    if (item.kind === "MACHINE") return undefined;
+    const parent = item.attributes.executionParentId;
+    if (typeof parent !== "string" || !item.provenance.some(p => p.authority === "AUTHORITATIVE" && p.method === "execution-environment-containment")) return undefined;
+    const seen = new Set([item.id]); let cursor: string | undefined = parent;
+    while (cursor) {
+      if (seen.has(cursor)) return undefined;
+      seen.add(cursor);
+      const target = byId.get(cursor);
+      if (!target || target.nodeId !== item.nodeId) return undefined;
+      if (target.kind === "MACHINE") return parent;
+      if (!target.provenance.some(p => p.authority === "AUTHORITATIVE" && p.method === "execution-environment-containment")) return undefined;
+      const next = target.attributes.executionParentId;
+      if (typeof next !== "string") return undefined;
+      cursor = next;
+    }
+    return undefined;
+  };
   const baseParentFor = (item: DiscoveryItem) =>
-      item.kind === "MACHINE" ? root : (machineIds.get(item.nodeId) ?? root),
+      observedParent(item) ?? (item.kind === "MACHINE" ? root : (machineIds.get(item.nodeId) ?? root)),
     groupedItems = new Map<string, DiscoveryItem[]>(),
     groupParents = new Map<string, string>();
   for (const item of scan.items) {

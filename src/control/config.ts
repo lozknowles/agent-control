@@ -47,6 +47,7 @@ export interface ManagedConnectivityConfig {
 export interface ManagedNodeConfig {
   enabled?: boolean;
   probeIntervalSeconds?: number;
+  probeTimeoutSeconds?: number;
   offlineAfterSeconds?: number;
   workloads?: ManagedWorkloadConfig[];
   connectivity?: ManagedConnectivityConfig[];
@@ -368,6 +369,7 @@ export function validateConfig(raw: unknown): AgentControlConfig {
     if (resource.managedNode) {
       if (resource.platform !== 'linux') throw new Error(`managed_node_linux_required:${resource.id}`);
       if (resource.transport.type !== 'ssh') throw new Error(`managed_node_ssh_required:${resource.id}`);
+      assertIntegerRange(resource.managedNode.probeTimeoutSeconds, `managed_node_probe_timeout:${resource.id}`, 1, 120);
       assertIntegerRange(resource.managedNode.probeIntervalSeconds, `managed_node_probe_interval:${resource.id}`, 5, 3600);
       assertIntegerRange(resource.managedNode.offlineAfterSeconds, `managed_node_offline_after:${resource.id}`, 10, 86400);
       if (resource.managedNode.probeIntervalSeconds && resource.managedNode.offlineAfterSeconds && resource.managedNode.offlineAfterSeconds <= resource.managedNode.probeIntervalSeconds) throw new Error(`managed_node_offline_after_probe:${resource.id}`);

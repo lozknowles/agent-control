@@ -245,3 +245,21 @@ test("estate projection remains bounded for fifty-plus resources", () => {
     ),
   );
 });
+
+
+test('observed execution environments nest without creating extra physical machines', () => {
+  const host=item({id:'physical',kind:'MACHINE',label:'Physical device',nodeId:'device'});
+  const child=(id:string,parent:string,kind:DiscoveryItem['kind']='RUNTIME')=>item({id,kind,label:id,nodeId:'device',attributes:{executionParentId:parent},provenance:[{adapter:'generic-execution-observer',method:'execution-environment-containment',authority:'AUTHORITATIVE',observedAt:at}]});
+  const vm=child('guest','physical'),worker=child('worker','guest','AGENT'),container=child('container','guest');
+  const projected=projectEstateMap(scan([host,vm,worker,container]),at);
+  assert.equal(projected.nodes.find(n=>n.id==='guest')?.parentId,'physical');
+  assert.equal(projected.nodes.find(n=>n.id==='worker')?.parentId,'guest');
+  assert.equal(projected.nodes.find(n=>n.id==='container')?.parentId,'guest');
+  assert.equal(projected.nodes.filter(n=>n.type==='machine'||n.type==='device').length,1);
+  for(const invalid of [child('guest','missing'),{...vm,provenance:[]},child('guest','guest'),{...vm,nodeId:'other'}]) {
+    const graph=projectEstateMap(scan([host,invalid]),at);
+    assert.equal(graph.nodes.find(n=>n.id==='guest')?.parentId,invalid.nodeId==='device'?'physical':'estate:agent-control');
+  }
+  const cycle=projectEstateMap(scan([host,child('guest','worker'),child('worker','guest','AGENT')]),at);
+  assert.equal(cycle.nodes.find(n=>n.id==='guest')?.parentId,'physical');
+});

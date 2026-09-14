@@ -162,7 +162,7 @@ if command -v systemctl >/dev/null 2>&1; then
   while IFS= read -r unit; do [ -n "$unit" ] && emit service "$unit"; done
 fi
 
-for tool in sh bash apt-get dpkg dnf yum rpm pacman zypper apk snap flatpak systemctl service journalctl git curl rsync makemkvcon HandBrakeCLI dvdbackup vobcopy cdparanoia abcde ffmpeg; do
+for tool in sh bash podman docker lxc-start apt-get dpkg dnf yum rpm pacman zypper apk snap flatpak systemctl service journalctl git curl rsync makemkvcon HandBrakeCLI dvdbackup vobcopy cdparanoia abcde ffmpeg; do
   if command -v "$tool" >/dev/null 2>&1; then emit tool "$tool"; fi
 done
 

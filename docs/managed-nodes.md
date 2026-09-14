@@ -115,3 +115,10 @@ Before onboarding another machine:
 6. review any later maintenance Run and its exact named approval separately.
 
 The implementation does not bootstrap SSH, install packages, change workload configuration, grant `sudo`, expose the dashboard, or claim that a configured runtime can be safely updated without an operator-reviewed node policy.
+
+
+### Slower guests and container discovery
+
+`managedNode.probeTimeoutSeconds` sets the fixed read-only SSH probe deadline (default20, integer1–120 seconds). Set a polling interval longer than the expected probe duration for emulated or slow guests. A timeout remains unavailable evidence, not a successful probe.
+
+The probe detects Podman, Docker and LXC executables and advertises `container.podman.detected`, `container.docker.detected`, or `container.lxc.detected`. These mean tool presence only; runtime access, execution approval and an actual workload must be qualified separately.

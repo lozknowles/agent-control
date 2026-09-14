@@ -193,3 +193,17 @@ test('read-only operations do not add a final revalidation probe', async () => {
   await manager.execute('node-alpha', {operation: 'system.identity'}, []);
   assert.equal(transport.probeCalls, 1); assert.equal(transport.calls.length, 1);
 });
+
+
+test('container tools are discovered without claiming executable workload readiness', () => {
+  const observed = observation();
+  observed.tools = ['sh', 'podman', 'docker', 'lxc-start'];
+  const snapshot = projectManagedNode(resource(), observed);
+  assert.ok(snapshot.capabilities.includes('container.podman.detected'));
+  assert.ok(snapshot.capabilities.includes('container.docker.detected'));
+  assert.ok(snapshot.capabilities.includes('container.lxc.detected'));
+  assert.ok(!snapshot.capabilities.includes('container.execute'));
+  observed.tools = ['sh'];
+  const withoutTools = projectManagedNode(resource(), observed);
+  assert.ok(!withoutTools.capabilities.some(value => value.startsWith('container.')));
+});
