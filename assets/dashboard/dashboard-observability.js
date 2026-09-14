@@ -4,7 +4,7 @@
   const safe=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const number=value=>typeof value==='number'&&Number.isFinite(value)?value.toLocaleString(undefined,{maximumFractionDigits:1}):'Unavailable';
   const bytes=value=>typeof value==='number'&&Number.isFinite(value)?`${(value/1073741824).toFixed(1)} GiB`:'Unavailable';
-  let dialog,mode,id,operation,tab='Overview',revision=0,data,originNode=null,timer,updating=false,nodeRenderKey='',mapOrigin=null;
+  let dialog,mode,id,operation,tab='Overview',revision=0,data,originNode=null,timer,updating=false,nodeRenderKey='';
   const sessionTranscripts=new Map();
   const q=s=>dialog.querySelector(s);
   async function get(path){if(state.operatorAuth!=='authenticated')throw Error('Operator authentication required');const response=await fetch(path,{headers:{Authorization:`Bearer ${state.token}`}});if(!response.ok)throw Error((await response.json()).error||`HTTP ${response.status}`);return response.json();}
@@ -18,7 +18,7 @@
       const target=event.target.closest('[data-runtime-node]');if(!target||dialog.contains(target))return;
       const selection=window.AgentControlRuntimeMap?.selection();if(!selection?.node)return;
       if(selection.surface==='estate'&&['machine','device'].includes(selection.node.type))openNode(selection.node.id);
-      else if(selection.surface==='process'&&(selection.parcelId||selection.runId))openRun(selection.runId||selection.parcelId,selection.node.id,mapOrigin?.id===(selection.runId||selection.parcelId)?mapOrigin.nodeId:null);
+      else if(selection.surface==='process'&&(selection.parcelId||selection.runId))openRun(selection.runId||selection.parcelId,selection.node.id,selection.originNode??null);
     });
     // Inject navigation only; existing Job rendering and execution controls retain ownership.
     const jobs=document.querySelector('#job-platform-runs');
@@ -43,21 +43,24 @@
     timer=setInterval(()=>{if(dialog.open&&!document.hidden){tick();if(!updating&&(mode==='node'||data&&!data.endedAt))refresh().catch(error=>{const status=q('[data-refresh-state]');if(status)status.textContent=`Refresh unavailable: ${error.message}`;});}},5000);
   }
   async function refresh(){
+    if(updating)return;
     const current=revision;updating=true;
     try{const next=await get(`/api/observability/${mode==='node'?'nodes':'runs'}/${encodeURIComponent(id)}${operation?`?operation=${encodeURIComponent(operation)}`:''}`);if(current!==revision||!dialog.open)return;data=next;if(mode==='run')originNode=AgentControlObservabilityModel.boundNode(originNode,data.physicalNodes);
-      if(mode==='node'){const key=JSON.stringify([data.node,data.resources,data.work]);if(key!==nodeRenderKey){nodeRenderKey=key;renderNode();}const resources=await get(`/api/observability/nodes/${encodeURIComponent(id)}/resources`);if(current===revision&&dialog.open)renderMetrics(resources);}
+      if(mode==='node'){const key=JSON.stringify(data);if(key!==nodeRenderKey){nodeRenderKey=key;renderNode();}const resources=await get(`/api/observability/nodes/${encodeURIComponent(id)}/resources`);if(current===revision&&dialog.open)renderMetrics(resources);}
       else {if(tab==='Tools & events')for(const sessionId of sessionTranscripts.keys()){const transcript=await get(`/api/execution-sessions/${encodeURIComponent(sessionId)}/transcript`);if(current!==revision||!dialog.open)return;sessionTranscripts.set(sessionId,transcript.content);}renderRun();}
     }finally{if(current===revision)updating=false;}
   }
   const card=(label,value,note='')=>`<article class="obs-card"><h3>${safe(label)}</h3><strong>${safe(value)}</strong><small>${safe(note)}</small></article>`;
   const measurement=m=>m?`${m.authority} · ${m.freshness} · ${m.source} · ${m.observedAt}`:'Unavailable';
   function renderNode(){
+    const scroll=q('.obs-body').scrollTop,expanded=q('details[data-key="node-provenance"]')?.open;
     const n=data.node,d=n.detail;shell(`${n.label} · Node Dashboard`,`${d.platform||d.kind||n.type} · ${d.availability||n.state} · identity ${data.nodeId||'unavailable'}`);
     const works=data.work.slice().sort((a,b)=>Number(Boolean(a.endedAt))-Number(Boolean(b.endedAt))||b.startedAt.localeCompare(a.startedAt));
     q('.obs-body').innerHTML=`<p class="obs-boundary">${safe(data.bindingPolicy)}</p><section class="obs-grid" id="obs-metrics" aria-label="Node resource measurements">${card('CPU',d.cpuModel||'Unavailable',`${d.cpuLogical??'Unknown'} logical CPUs; discovery observation`)}${card('Memory available',bytes(d.availableMemoryBytes),`of ${bytes(d.totalMemoryBytes)}; discovery observation`)}</section><p data-refresh-state role="status">Discovery observed ${safe(d.discoveredAt||data.observedAt)}. Live measurements loading…</p>
       <h2>Agent Control work on this node</h2><p>Executing here according to recorded routes or owned sessions. ${safe(data.work.length)} bound Work Parcels.</p><div class="obs-work">${works.map(w=>`<article class="obs-card"><h3>${safe(w.label)}</h3><span class="obs-status ${['RUNNING','VERIFYING','RESOLVING','VALIDATING'].includes(w.status)?'obs-active':''}">${safe(w.status)}</span><small>${safe(w.binding)} · ${safe(w.startedAt)}</small><button class="button" data-work-map="${safe(w.id)}" data-work-kind="${safe(w.kind)}">Open Process Map</button><button class="button secondary" data-work-inspect="${safe(w.id)}">Inspect run and evidence</button></article>`).join('')||'<p>No work has a proven execution binding to this node. This does not imply the machine is idle.</p>'}</div>
-      <h2>Discovered resources</h2><div class="obs-resources">${data.resources.filter(r=>!['credential','job','tool','decision'].includes(r.type)).map(r=>`<button class="obs-card" data-resource="${safe(r.id)}"><strong>${safe(r.label)}</strong><small>${safe(r.type)} · ${safe(r.detail.availability||r.state)}</small></button>`).join('')||'<p>No additional resources observed.</p>'}</div><details><summary>Capabilities, connectivity and provenance</summary><pre>${safe(JSON.stringify({capabilities:d.capabilities,connectivity:data.managed?.connectivity||d.networkInterfaces,provenance:n.evidence,limitations:data.limitations},null,2))}</pre></details>`;
-    q('.obs-body').querySelectorAll('[data-work-map]').forEach(b=>b.onclick=()=>{mapOrigin={id:b.dataset.workMap,nodeId:originNode};dialog.close();(b.dataset.workKind==='job'?window.AgentControlRuntimeMap.openJob:window.AgentControlRuntimeMap.openProcess)(b.dataset.workMap);});
+      <h2>Discovered resources</h2><div class="obs-resources">${data.resources.filter(r=>!['credential','job','tool','decision'].includes(r.type)).map(r=>`<button class="obs-card" data-resource="${safe(r.id)}"><strong>${safe(r.label)}</strong><small>${safe(r.type)} · ${safe(r.detail.availability||r.state)}</small></button>`).join('')||'<p>No additional resources observed.</p>'}</div><details data-key="node-provenance"><summary>Capabilities, connectivity and provenance</summary><pre>${safe(JSON.stringify({capabilities:d.capabilities,connectivity:data.managed?.connectivity||d.networkInterfaces,provenance:n.evidence,limitations:data.limitations},null,2))}</pre></details>`;
+    q('.obs-body').scrollTop=scroll;if(expanded)q('details[data-key="node-provenance"]').open=true;
+    q('.obs-body').querySelectorAll('[data-work-map]').forEach(b=>b.onclick=()=>{const fromNode=originNode;dialog.close();(b.dataset.workKind==='job'?window.AgentControlRuntimeMap.openJob:window.AgentControlRuntimeMap.openProcess)(b.dataset.workMap,fromNode);});
     q('.obs-body').querySelectorAll('[data-work-inspect]').forEach(b=>b.onclick=()=>openRun(b.dataset.workInspect,undefined,originNode));
     q('.obs-body').querySelectorAll('[data-resource]').forEach(b=>b.onclick=()=>{dialog.close();window.AgentControlRuntimeMap.openEstate(b.dataset.resource);});
   }

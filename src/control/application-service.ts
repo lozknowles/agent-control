@@ -712,11 +712,13 @@ export class AgentControlService {
   returnOwnership(id: number, actor: string, agentId: string) {
     if (!agentId.trim()) throw new Error('agent_id_required');
     const lane = this.mustLane(id), sessions = this.ptys.list().filter(session => session.laneId === String(id));
-    for (const session of sessions) {
+    if (!sessions.length) throw new Error('human_takeover_not_active');
+    const transfers = sessions.map(session => {
       const owner = this.ptys.attached(session.id).find(item => item.access === 'own');
       if (!owner?.actorId.startsWith('human:')) throw new Error('human_takeover_not_active');
-      this.ptys.transferControl(session.id, owner.actorId, agentId);
-    }
+      return {session, owner};
+    });
+    for (const {session, owner} of transfers) this.ptys.transferControl(session.id, owner.actorId, agentId);
     lane.status = 'waiting';
     touchBaton(lane, {status: `Ownership returned by ${actor}`, nextAction: 'Scheduler revalidates lease before execution'});
     this.persist(this.state);

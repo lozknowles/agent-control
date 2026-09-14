@@ -36,3 +36,6 @@ test('global pause and resume preserves meaningful lane state and human ownershi
   service.setSystemPaused(false, 'operator');
   assert.deepEqual(state.lanes.map(value => value.status), ['working', 'waiting', 'cancelled', 'error', 'paused', 'paused']);
 });
+
+test('ownership return without PTY takeover preserves lane state and emits no transfer',()=>{const {state,service}=setup();service.pauseLane(2,'operator');const before=structuredClone(state),events:string[]=[];service.events.subscribe(e=>events.push(e.type));assert.throws(()=>service.returnOwnership(2,'operator','agent-b'),/human_takeover_not_active/);assert.deepEqual(state,before);assert.deepEqual(events,[]);});
+test('ownership return validates every session before transferring any control',()=>{const {state,service,ptys}=setup();service.humanTakeover(1,'operator');ptys.upsert({id:'pty-second',cwd:'/tmp',command:'agent',recovery:'reattachable'},'1');ptys.attach('pty-second','agent-a','own');const before=structuredClone(state);assert.throws(()=>service.returnOwnership(1,'operator','agent-b'),/human_takeover_not_active/);assert.equal(ptys.attached('pty-1').find(a=>a.access==='own')?.actorId,'human:operator');assert.deepEqual(state,before);});

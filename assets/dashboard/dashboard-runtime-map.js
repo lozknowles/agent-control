@@ -907,6 +907,7 @@
   }
   document.addEventListener("DOMContentLoaded", () => {
     $("runtime-parcel").addEventListener("change", (e) => {
+      rt.observabilityOrigin=null;
       rt.parcelId = e.target.value;
       rt.selected = null;
       load();
@@ -985,6 +986,7 @@
     }).observe($("stream-state"), { childList: true, attributes: true });
   });
   async function openEstate(id) {
+    rt.observabilityOrigin=null;
     rt.surface='estate';rt.mode='map';rt.focusIds=null;rt.search='';rt.filter='ALL';
     if($("runtime-map-workspace").hidden)document.querySelector('[data-view="runtime-map"]')?.click();rt.active=true;
     surfaceButtons();modeButtons();await load();await heartbeat();
@@ -1003,7 +1005,7 @@
   setInterval(()=>{if(document.hidden)return;heartbeat();if(rt.active&&rt.surface==='estate')load();},5000);
   document.addEventListener('agent-control:authentication-changed',()=>{heartbeat();if(rt.active)load();});
   heartbeat();
-  async function openProcess(parcelId){rt.runId='';rt.surface='process';rt.parcelId=parcelId;rt.mode='map';document.querySelector('[data-view="runtime-map"]')?.click();rt.active=true;surfaceButtons();modeButtons();await load();}
-  async function openJob(runId){rt.runId=runId;rt.surface="process";rt.mode="map";document.querySelector('[data-view="runtime-map"]')?.click();rt.active=true;surfaceButtons();modeButtons();await load();}
-  window.AgentControlRuntimeMap = { openJob, activate, schedule, openEstate, openProcess, selection:()=>({surface:rt.surface,parcelId:rt.parcelId,runId:rt.runId,node:rt.projection?.nodes.find(n=>n.id===rt.selected)}) };
+  async function openProcess(parcelId,originNode=null){rt.runId='';rt.surface='process';rt.parcelId=parcelId;rt.mode='map';document.querySelector('[data-view="runtime-map"]')?.click();rt.active=true;rt.observabilityOrigin=originNode;surfaceButtons();modeButtons();await load();}
+  async function openJob(runId,originNode=null){rt.runId=runId;rt.surface="process";rt.mode="map";document.querySelector('[data-view="runtime-map"]')?.click();rt.active=true;rt.observabilityOrigin=originNode;surfaceButtons();modeButtons();await load();}
+  window.AgentControlRuntimeMap = { openJob, activate, schedule, openEstate, openProcess, selection:()=>({originNode:rt.observabilityOrigin??null,surface:rt.surface,parcelId:rt.parcelId,runId:rt.runId,node:rt.projection?.nodes.find(n=>n.id===rt.selected)}) };
 })();
