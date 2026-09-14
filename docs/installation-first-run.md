@@ -1,8 +1,8 @@
-# Install Agent Control 4.6.1
+# Install Agent Control 4.7.0
 
-[Documentation](index.md) · [README](../README.md) · [Existing installation upgrade](upgrade-4.6.md)
+[Documentation](index.md) · [README](../README.md) · [Existing installation upgrade](upgrade-4.7.md)
 
-This guide targets **Agent Control 4.6.1**. See the [security patch verification](release-verification-4.6.1.md), [release notes](release-notes-4.6.1.md) and [known limitations](known-limitations-4.6.md).
+This guide targets **Agent Control 4.7.0**. See the [release verification](release-verification-4.7.0.md), [release notes](release-notes-4.7.0.md) and [known limitations](known-limitations-4.7.md).
 
 ## Prerequisites
 
@@ -17,7 +17,7 @@ Linux is the physically tested journey in this report. Other platform bootstrap 
 Use a new directory rather than an existing dirty checkout.
 
 ```bash
-git clone --branch v4.6.1 https://github.com/lozknowles/agent-control.git
+git clone --branch v4.7.0 https://github.com/lozknowles/agent-control.git
 cd agent-control
 git rev-parse HEAD
 ./scripts/bootstrap-agent-control.sh --check --target "$PWD"
@@ -141,4 +141,4 @@ The [real Energy example](public-installation-journey.md#i--energy) is shared-GP
 
 Keep the dashboard on loopback for this journey. No public firewall opening is needed.
 
-[Upgrade safely](upgrade-4.6.md) · [All documentation](index.md) · [Qualification report](public-release-readiness-4.6.md)
+[Upgrade safely](upgrade-4.7.md) · [All documentation](index.md) · [Qualification report](public-release-readiness-4.6.md)

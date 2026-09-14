@@ -1,3 +1,16 @@
+# Agent Control 4.7 follow-up
+
+The core/browser release is separate from these remaining voice tasks. Preserve the original qualification evidence.
+
+- [ ] Qualify the existing authorised live provider route and final session usage.
+- [ ] Complete physical Pixel microphone/playback, interruption, network and Bluetooth checks.
+- [ ] Complete a non-trivial spoken model job with genuine baton/cache evidence and spoken result.
+- [ ] Qualify a responsive local speech route and defensible shared-session cost allocation.
+
+[Current release scope](docs/release-notes-4.7.0.md) · [Known limitations](docs/known-limitations-4.7.md)
+
+## Historical work plans
+
 # Next steps
 
 These items are intentionally deferred after Agent Control 4.0.0. They are not 4.0 release claims:

@@ -1,6 +1,6 @@
 # Agent Control 4.7 — Mallow voice
 
-This is a release candidate. Voice is an optional interface to the existing governed runtime. Text, jobs, Crew, Process Map and readable job history remain available without a voice provider.
+The 4.7 live transport is experimental pending provider and physical-device qualification. Voice is an optional interface to the existing governed runtime. Text, jobs, Crew, Process Map and readable job history remain available without a voice provider.
 
 ## Use Mallow
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## 4.7.0
+
+Usability & Integration: readable Process Map cards/connections, active-session pulse and elapsed timer, persistent job forms, reconciled input/cache/output usage and readable per-call history, mobile Mallow controls and an optional provider-neutral live voice transport. Core/browser qualification is separate from experimental live provider/physical audio. See [release notes](docs/release-notes-4.7.0.md), [limitations](docs/known-limitations-4.7.md) and [paused evidence](docs/evidence/agent-control-4.7-dashboard.md).
+
 ## 4.6.1
 
 Security stabilisation for 4.6.0: authenticated control-plane reads, complete browser destination enforcement, repository and governed-Git confinement, bounded leases and maintenance, durable late-output redaction, session-share credential removal, current model qualification, evidence retention, and content-addressed schema-v2 release evidence tied to the exact archive. Shared-token ACP remains a documented one-principal scope; externally unavailable billing, whole-node energy and model benchmark execution remain non-blocking limitations. See [release notes](docs/release-notes-4.6.1.md).

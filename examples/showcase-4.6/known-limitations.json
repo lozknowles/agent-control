@@ -1,6 +1,6 @@
 {
   "schema": "agent-control.known-limitations/v1",
-  "version": "4.6.1",
+  "version": "4.7.0",
   "items": [
     {
       "id": "AC46-ANDROID-01",
@@ -233,6 +233,86 @@
       "releaseBlocking": false,
       "evidence": [
         "docs/model-intelligence-showcase.md"
+      ],
+      "helpWanted": true,
+      "impact": "OPTIONAL_CAPABILITY"
+    },
+    {
+      "id": "AC47-VOICE-LIVE",
+      "capability": "Live voice provider/account",
+      "status": "BLOCKED_EXTERNAL",
+      "why": "No configured authorised provider reference found.",
+      "userImpact": "Actual live audio and final provider usage are unqualified.",
+      "workaround": "Use existing speech or text.",
+      "closure": "Bounded actual session using an existing authorised account.",
+      "releaseBlocking": false,
+      "evidence": [
+        "docs/known-limitations-4.7.md",
+        "docs/mallow-voice.md"
+      ],
+      "helpWanted": true,
+      "impact": "OPTIONAL_CAPABILITY"
+    },
+    {
+      "id": "AC47-VOICE-PIXEL",
+      "capability": "Physical Pixel voice",
+      "status": "BLOCKED_EXTERNAL",
+      "why": "Existing browser/ADB control route unavailable.",
+      "userImpact": "Viewport checks do not establish physical audio or network behavior.",
+      "workaround": "Use the qualified text interface.",
+      "closure": "Physical microphone, playback, permission and network tests.",
+      "releaseBlocking": false,
+      "evidence": [
+        "docs/known-limitations-4.7.md",
+        "docs/mallow-voice.md"
+      ],
+      "helpWanted": true,
+      "impact": "OPTIONAL_CAPABILITY"
+    },
+    {
+      "id": "AC47-VOICE-LATENCY",
+      "capability": "Local conversational synthesis",
+      "status": "KNOWN_LIMITATION",
+      "why": "2.62 seconds of CPU audio required 52.33 seconds to generate.",
+      "userImpact": "This fallback is not advertised as natural real-time conversation.",
+      "workaround": "Use text.",
+      "closure": "Qualify a responsive authorised route.",
+      "releaseBlocking": false,
+      "evidence": [
+        "docs/known-limitations-4.7.md",
+        "docs/mallow-voice.md"
+      ],
+      "helpWanted": true,
+      "impact": "OPTIONAL_CAPABILITY"
+    },
+    {
+      "id": "AC47-VOICE-SHOWCASE",
+      "capability": "Spoken model/baton/cache completion",
+      "status": "FUTURE_WORK",
+      "why": "Only a synthetic-input deterministic local voice job was exercised.",
+      "userImpact": "No full spoken model showcase is claimed.",
+      "workaround": "Use the independently qualified typed model workflow.",
+      "closure": "Real governed model execution and audible completion.",
+      "releaseBlocking": false,
+      "evidence": [
+        "docs/known-limitations-4.7.md",
+        "docs/mallow-voice.md"
+      ],
+      "helpWanted": true,
+      "impact": "OPTIONAL_CAPABILITY"
+    },
+    {
+      "id": "AC47-VOICE-ALLOCATION",
+      "capability": "Voice and model cost allocation",
+      "status": "PARTIAL_SUPPORT",
+      "why": "A shared voice session may cover several jobs and model cost may be unavailable.",
+      "userImpact": "Combined job cost remains unknown without defensible allocation.",
+      "workaround": "Inspect separate voice and model telemetry.",
+      "closure": "Actual provider telemetry and a qualified allocation method.",
+      "releaseBlocking": false,
+      "evidence": [
+        "docs/known-limitations-4.7.md",
+        "docs/mallow-voice.md"
       ],
       "helpWanted": true,
       "impact": "OPTIONAL_CAPABILITY"

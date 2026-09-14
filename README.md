@@ -1,10 +1,10 @@
-# Agent Control 4.6.1
+# Agent Control 4.7
 
 Discover your AI tools, see what is available, and follow approved work from request to verified result.
 
-**Current stable release: [4.6.1](https://github.com/lozknowles/agent-control/releases/tag/v4.6.1).** This security patch retains the 4.6 showcase and accepted limitations. See the [4.6 Known Limitations](docs/known-limitations-4.6.md), [4.6.1 release notes](docs/release-notes-4.6.1.md) and [release verification](docs/release-verification-4.6.1.md).
+**Current release: [4.7](https://github.com/lozknowles/agent-control/releases/tag/v4.7.0) — Usability & Integration.** Clearer desktop/mobile Process Map, live session activity and readable per-call token history. Core and browser journeys are qualified; optional live voice remains experimental with [explicit limitations](docs/known-limitations-4.7.md). See [release notes](docs/release-notes-4.7.0.md) and [verification](docs/release-verification-4.7.0.md).
 
-[Install Agent Control](docs/installation-first-run.md) · [Documentation](docs/index.md) · [Upgrade](docs/upgrade-4.6.md) · [Release notes](docs/release-notes-4.6.1.md)
+[Install Agent Control](docs/installation-first-run.md) · [Documentation](docs/index.md) · [Upgrade](docs/upgrade-4.7.md) · [Release notes](docs/release-notes-4.7.0.md)
 
 [![Actual Agent Control Estate Map](docs/media/4.6/integration/estate.png)](docs/public-installation-journey.md)
 
@@ -35,12 +35,12 @@ Mallow is your floating guide. The established crew helps explain dispatch, revi
 
 <a id="install"></a>
 
-## Install Agent Control 4.6.1
+## Install Agent Control 4.7
 
 Install on Linux with Node.js 24, npm, Git and Bash:
 
 ```bash
-git clone --branch v4.6.1 https://github.com/lozknowles/agent-control.git
+git clone --branch v4.7.0 https://github.com/lozknowles/agent-control.git
 cd agent-control
 git rev-parse HEAD
 ./scripts/bootstrap-agent-control.sh --check --target "$PWD"
@@ -91,10 +91,10 @@ Model Intelligence now reports real source coverage, initial versus follow-up ob
 
 - [Android / fresh Termux prerequisites](android/README.md#fresh-termux-prerequisites) (separate platform guide)
 - [Installation and troubleshooting](docs/installation-first-run.md#troubleshooting)
-- [Safe existing-install upgrade](docs/upgrade-4.6.md)
+- [Safe existing-install upgrade](docs/upgrade-4.7.md)
 - [Architecture](docs/architecture-v2-agnostic.md)
 - [Security](SECURITY.md) and [contributing](CONTRIBUTING.md)
-- [Release notes](docs/release-notes-4.6.1.md)
+- [Release notes](docs/release-notes-4.7.0.md)
 - [Accepted RC assessment and evidence](docs/release-candidate-4.6.md)
 
 Historical versioned reports remain available under `docs/`; use the installation guide above for this release.
@@ -103,3 +103,9 @@ Historical versioned reports remain available under `docs/`; use the installatio
 ### 4.7 usability and integration candidate
 
 The unpublished [4.7 candidate](docs/release-4.7-candidate.md) adds optional Mallow voice transport and mobile usability improvements. See [Using Mallow voice](docs/mallow-voice.md) for configuration, governance, privacy, cost and current qualification limits. It is not yet recommended for formal release.
+
+## Mallow and execution visibility
+
+Use the floating Mallow companion for text and configured speech. Voice requests enter the same sealed approval and Work Parcel controls as typed requests. [Using Mallow voice](docs/mallow-voice.md).
+
+[Desktop and mobile recordings with readable pauses](docs/evidence/agent-control-4.7-dashboard.md) show real jobs, live process drill-down, running activity, input/cache/output usage and human-readable history. Video binaries are stored in the evidence repository.

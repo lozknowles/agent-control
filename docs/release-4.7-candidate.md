@@ -1,6 +1,6 @@
 # Agent Control 4.7 — Usability & Integration candidate
 
-**Release gate: BLOCKED pending complete physical voice, provider and showcase evidence. Do not merge, tag or publish this candidate.**
+**Historical initial candidate assessment: BLOCKED against the complete physical voice brief.** The operator subsequently authorised a scoped 4.7 core/browser release with these voice limitations explicit. See [current release notes](release-notes-4.7.0.md). This does not turn the missing physical evidence into a pass.
 
 Agent Control becomes easier to operate from a phone through Mallow and the same governed, observable, provider-independent runtime. The candidate carries forward the accepted readable Process Map, stable bubble selection, input/cache/output usage history, paced evidence and independently ticking running-session indicator from the 4.6.1 follow-up work.
 

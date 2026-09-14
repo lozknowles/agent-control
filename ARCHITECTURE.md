@@ -1,6 +1,6 @@
 # Agent Control architecture
 
-This is the authoritative source boundary for the Agent Control 4.5.1 maintenance release. Agent Control 4.5.0 remains immutable historical source evidence; 4.5.1 corrects its supported-existing-configuration upgrade path without weakening runtime safety. Historical physical evidence remains bound to its recorded product SHA. Status labels matter:
+This is the authoritative source boundary for Agent Control 4.7. Historical physical evidence remains bound to its recorded product SHA. The generic voice transport supplies audio and transcript events to the existing governed ingress; Agent Control retains approval, routing, batons, state and telemetry. See the [voice architecture](docs/mallow-voice.md#transport-architecture). Live provider and physical audio qualification remain explicit limitations. Status labels matter:
 
 - **implemented** means executable code and automated tests exist in this branch;
 - **experimental** means executable code exists but has not been qualified across every external substrate;
