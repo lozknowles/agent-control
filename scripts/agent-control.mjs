@@ -26,6 +26,9 @@ Usage:
   agent-control jobs enable|disable SAVED-JOB-ID --revision N
   agent-control jobs update SAVED-JOB-ID --revision N --file FILE
   agent-control jobs cancel RUN-ID
+  agent-control workspace list [--json]
+  agent-control workspace open WORKSPACE-ID [--json]
+  agent-control open job RUN-ID [--json]
 
 The status command reads the same authoritative projection as the web dashboard.
 It uses the controller-local endpoint by default or the configured SSH transport
@@ -44,6 +47,11 @@ export async function main(argv = process.argv.slice(2), io = {out: console.log,
   if (command === 'acp' || command === 'acp-remote') return argv.length === 1 ? runTypeScriptCommand(command === 'acp' ? 'acp.ts' : 'acp-remote.ts') : (io.error(usage), 2);
   if (command === 'providers' && argv[1] === 'credential') return runTypeScriptCommand('provider-credential.ts', argv.slice(2));
   if (command === 'jobs') return jobsCommand(argv.slice(1), io);
+  if (command === 'workspace') return workspaceCommand(argv.slice(1),io);
+  if (command === 'open' && argv[1] === 'job') {
+    if (!argv[2]) { io.error(usage); return 2; }
+    return workspaceCommand(['open',workspaceReference('RUN',[argv[2]]),...argv.slice(3)],io);
+  }
   if (command !== 'status') { io.error(usage); return 2; }
   const flags = new Set(argv.slice(1));
   if ([...flags].some(flag => !['--json'].includes(flag))) { io.error(usage); return 2; }
@@ -58,6 +66,14 @@ export async function main(argv = process.argv.slice(2), io = {out: console.log,
     return 2;
   }
 }
+
+export async function workspaceCommand(argv,io={out:console.log,error:console.error},environment=process.env,fetcher=fetch){
+  const [operation,id,...rest]=argv,flags=new Set(id?.startsWith('--')?[id,...rest]:rest);if([...flags].some(flag=>flag!=='--json')){io.error(usage);return 2;}
+  try{let value;if(operation==='list'&&(!id||id==='--json'))value=await workspaceRequest('/api/workspaces',environment,fetcher);else if(operation==='open'&&id&&!id.startsWith('--'))value=await workspaceRequest(`/api/workspaces/${encodeURIComponent(id)}`,environment,fetcher);else{io.error(usage);return 2;}io.out(flags.has('--json')||id==='--json'?JSON.stringify(value,null,2):formatWorkspace(value));return 0;}catch(error){io.error(error instanceof Error?error.message:String(error));return 2;}
+}
+function workspaceReference(kind,parts){return`acw1.${kind}.${Buffer.from(JSON.stringify(parts)).toString('base64url')}`;}
+function formatWorkspace(value){const path=(value.breadcrumbs??[]).map(item=>item.label).join(' > '),children=(value.children??[]).map(item=>`  ${item.kind.padEnd(11)} ${item.label} [${item.status}]`).join('\n'),caps=(value.capabilities??[]).map(item=>`${item.id}:${item.state}`).join(' · ');return`${value.label} [${value.mode} / ${value.status}]\n${path}\n${children||'  No child workspaces'}\nCapabilities: ${caps}\nDashboard: ${value.targets?.dashboard??'unavailable'}\nEvidence: ${value.targets?.history??'unavailable'}`;}
+async function workspaceRequest(pathname,environment=process.env,fetcher=fetch){const url=jobsBaseUrl(environment);url.pathname=pathname;const token=environment.AGENT_CONTROL_WEB_OPERATOR_TOKEN?.trim();if(!token)throw Error('AGENT_CONTROL_WEB_OPERATOR_TOKEN is required for Workspace reads');const response=await fetcher(url,{headers:{Accept:'application/json',Authorization:`Bearer ${token}`}}),result=await response.json().catch(()=>({error:`HTTP ${response.status}`}));if(!response.ok)throw Error(result.detail||result.error||`HTTP ${response.status}`);return result;}
 
 async function runTypeScriptCommand(filename, args = []) {
   const script = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../src', filename);

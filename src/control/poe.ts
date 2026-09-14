@@ -14,7 +14,7 @@ import {validateAudio, validateVoice} from './social-voice-providers.js';
 export type PoeState = 'HANDOFF' | 'SCHEDULING' | 'BLOCKED' | 'FAILED' | 'INTERRUPTED' | 'WORKING' | 'SUCCEEDED' | 'IDLE' | 'LISTENING' | 'INVESTIGATING' | 'THINKING' | 'EXPLAINING' | 'OBSERVING_CREW' | 'DESIGNING_EXPERIMENT' | 'WAITING_FOR_APPROVAL' | 'SPEAKING';
 export type PoeChannel = 'dashboard' | 'whatsapp' | 'voice' | 'mobile';
 export type PoeAuthority = 'AGENT_CONTROL' | 'OPERATOR' | 'PROVIDER_REPORTED' | 'ESTIMATED' | 'UNAVAILABLE';
-export type PoeObjectKind = 'node-dashboard' | 'run-inspector' | 'system' | 'schedule' | 'model' | 'league-row' | 'workflow' | 'job' | 'run' | 'parcel' | 'runtime-map' | 'crew-member' | 'lane' | 'routing-decision' | 'governor-decision' | 'capability-manifest' | 'baton' | 'execution-session' | 'verification' | 'benchmark' | 'human-evaluation';
+export type PoeObjectKind = 'workspace' | 'node-dashboard' | 'run-inspector' | 'system' | 'schedule' | 'model' | 'league-row' | 'workflow' | 'job' | 'run' | 'parcel' | 'runtime-map' | 'crew-member' | 'lane' | 'routing-decision' | 'governor-decision' | 'capability-manifest' | 'baton' | 'execution-session' | 'verification' | 'benchmark' | 'human-evaluation';
 
 export interface PoeObjectReference {kind: PoeObjectKind; id: string; label?: string;}
 export interface PoeGroundedFact {informationKind?: InformationKind; label: string; value: string | number | boolean | null; authority: PoeAuthority; observedAt?: string | null; evidence: string[]; limitation?: string;}

@@ -15,6 +15,7 @@ import type {ContextStore} from './context.js';
 import type {JobRuntime} from './job-runtime.js';
 import {LocalNodeResources} from './node-resources.js';
 import {nodeWorkIndex, projectNodeDashboard, projectRunInspector, projectJobInspector, inspectorHistory, scopedInspectorUsage} from './observability.js';
+import {listWorkspaceRoots,projectWorkspace,type WorkspaceNodeDashboard,type WorkspaceRunInspector,type WorkspaceSource} from './navigable-workspace.js';
 import type {ManagedNodeManager, ManagedNodeSnapshot} from './managed-node.js';
 import {safeTranscriptText} from './execution-history.js';
 import type {OutputAuthorityScope, OutputExpansionRequest, TokenAwareOutputMetrics, TokenAwareOutputService} from './token-aware-output.js';
@@ -388,6 +389,14 @@ export class AgentControlService {
     return {...inspector,context:{...inspector.context,repository:parent?.context?redactSensitiveValue(parent.context):null},parentUsage,runScope:parent?{id:parent.id,label:parent.definition.displayName,status:parent.status,parcelCount:parent.workParcelIds.length}:null,sessions:this.executionSessionProjection().filter(s=>s.scope.parcelId===parcelId),parentRunId:parent?.id??null,kind:'parcel' as const,history:transcript??inspectorHistory(inspector),historyScope:parent?'Complete parent Job Run, including all its Work Parcels':'Work Parcel audit and operation evidence',siblingParcels:parent?.workParcelIds??[parcelId]};
   }
   estateHeartbeat(){const map=this.estateMap();return {observedAt:map.observedAt,scanId:map.parcelId,freshness:map.freshness,counts:(map as unknown as {estateCounts:unknown}).estateCounts};}
+  private workspaceSource():WorkspaceSource {
+    const estate=this.estateMap(),nodeIds=estate.nodes.filter(node=>['machine','device'].includes(node.type)).map(node=>node.id),nodes=nodeIds.flatMap(id=>{try{return[this.nodeDashboard(id) as unknown as WorkspaceNodeDashboard];}catch{return[];}});
+    const runIds=[...(this.workParcels?.list()??[]).map(parcel=>parcel.id),...(this.jobRuntime?.ledger.list()??[]).map(run=>run.id)];
+    const runs=[...new Set(runIds)].slice(-100).flatMap(id=>{try{return[this.runInspector(id) as unknown as WorkspaceRunInspector];}catch{return[];}});
+    return{estate,nodes,runs};
+  }
+  workspaces(){return listWorkspaceRoots(this.workspaceSource());}
+  workspace(id:string){return projectWorkspace(id,this.workspaceSource());}
   compareRuntimeMaps(leftParcelId:string,rightParcelId:string){return compareRuntimeMaps(this.runtimeMap(leftParcelId),this.runtimeMap(rightParcelId));}
   environmentDiscoveryProjection(){return this.mustEnvironmentDiscovery().projection();}
   estateMap(){const scan=this.mustEnvironmentDiscovery().projection().latest,now=new Date();const map=scan&&this.jobLibraryReadiness?projectJobEstateMap(scan,this.jobLibraryReadiness(scan,now),this.jobRuntime?.ledger.list()??[],now):projectEstateMap(scan,now.toISOString());return this.localBenchmark?this.localBenchmark.project(map):map;}
@@ -428,6 +437,23 @@ export class AgentControlService {
     const at=new Date().toISOString(), fact=(label:string,value:string|number|boolean|null,evidence:string[],limitation?:string)=>({label,value,authority:'AGENT_CONTROL' as const,observedAt:at,evidence,...(limitation?{limitation}:{})});
     if(!reference){const snapshot=this.snapshot();return{title:'Agent Control status',summary:snapshot.paused?'The control plane is paused. Nothing should be pretending otherwise.':'The control plane is active; downstream readiness remains independently assessed.',facts:[fact('Health',snapshot.health,['system.snapshot']),fact('Active work',snapshot.jobs.running,['job-ledger','work-parcel-ledger']),fact('Waiting work',snapshot.jobs.waiting,['job-ledger']),fact('Outstanding approvals',snapshot.outstandingApprovals,['approval-ledger']),fact('Managed systems',snapshot.resources.length,['resource-registry'])],related:[]};}
     try {
+      if(reference.kind==='workspace'){
+        const workspace=this.workspace(reference.id);
+        return{
+          reference,
+          title:workspace.label,
+          summary:`This ${workspace.mode.toLowerCase()} navigable workspace is derived from authoritative Agent Control records. Opening it grants no control authority.`,
+          facts:[
+            fact('Kind',workspace.kind,[`workspace:${workspace.id}`]),
+            fact('Status',workspace.status,[`workspace:${workspace.id}`]),
+            fact('Mode',workspace.mode,[`workspace:${workspace.id}`]),
+            fact('Children',workspace.children.length,[`workspace:${workspace.id}`]),
+            fact('Available read-only capabilities',workspace.capabilities.filter(item=>item.state==='AVAILABLE').map(item=>item.id).join(', ')||'none',[`workspace:${workspace.id}:capabilities`]),
+            fact('Control authority granted',false,[`workspace:${workspace.id}:authority`]),
+          ],
+          related:[...(workspace.parent?[{kind:'workspace' as const,id:workspace.parent.id,label:workspace.parent.label}]:[]),...workspace.children.slice(0,8).map(item=>({kind:'workspace' as const,id:item.id,label:item.label}))],
+        };
+      }
       if(reference.kind==='node-dashboard'){const node=this.nodeDashboard(reference.id);return{reference,title:node.node.label,summary:'The same Node Dashboard projection supplies this explanation. Availability and qualification remain separate.',facts:[fact('Status',node.node.state,[`estate:${reference.id}`]),fact('Bound work',node.work.length,[`node-dashboard:${reference.id}`]),fact('Active work',node.work.filter(w=>!w.endedAt).length,[`node-dashboard:${reference.id}`]),fact('Resources',node.resources.length,[`estate:${reference.id}`]),fact('Nested execution environments',node.executionEnvironments?.length??0,[`node-dashboard:${reference.id}`])],related:node.work.slice(0,8).map(w=>({kind:'run-inspector' as const,id:w.inspectorId??w.id}))};}
       if(reference.kind==='run-inspector'){const run=this.runInspector(reference.id),t=(run.parentUsage??run.usage).totals;return{reference,title:run.title,summary:`${run.status}; ${t.calls} recorded model calls. Token and cost coverage comes from the same Run Inspector.`,facts:[fact('Status',run.status,[`parcel:${run.id}`]),fact('Input tokens',t.input.value,[`usage:${run.id}`]),fact('Cached input tokens',t.cached.value,[`usage:${run.id}`]),fact('Output tokens',t.output.value,[`usage:${run.id}`]),fact('Total tokens',t.tokens.value,[`usage:${run.id}`]),fact('Cost',JSON.stringify(t.apiCost),[`usage:${run.id}`],'Missing billing coverage is not zero spend.'),fact('Context/baton records',run.context.records.length,[`runtime-map:${run.id}`])],related:run.physicalNodes.map(n=>({kind:'node-dashboard' as const,id:n.id}))};}
       if(reference.kind==='model'){const model=this.model(reference.id);return{reference,title:`Model ${model.id}`,summary:'Registry identity and qualification are authoritative; benchmark reputation remains separate.',facts:[fact('Provider',model.provider,[`model:${model.id}`]),fact('Provider model',model.providerModel,[`model:${model.id}`]),fact('Qualification',model.qualification.state,[`model:${model.id}:qualification`]),fact('Routing enabled',model.enabled!==false,[`model:${model.id}:routing`]),fact('Capabilities',model.capabilities.join(', ')||'none reported',[`model:${model.id}`])],related:[]};}

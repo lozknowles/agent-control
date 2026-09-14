@@ -1,3 +1,13 @@
+# Agent Control 4.8 navigable-workspaces follow-up
+
+- [ ] Evaluate durable per-operator favourites only after defining retention, identity and access policy.
+- [ ] Add global workspace search/command-palette navigation over authoritative indexes without creating a second Estate database.
+- [ ] Define evidence-backed project/repository relationships before adding either as a workspace kind.
+- [ ] Connect file or terminal actions only through existing protected-resource and execution-session authorization; opening a workspace must remain read-only.
+- [ ] Measure projection cost at large Estate/run-history cardinality and add pagination or indexed lookup if required.
+
+See [Navigable Workspaces](docs/navigable-workspaces.md) and [the architectural review](NAVIGABLE_WORKSPACES_REVIEW.md). Prototype status does not imply release.
+
 # Agent Control 4.7 follow-up
 
 The core/browser release is separate from these remaining voice tasks. Preserve the original qualification evidence.

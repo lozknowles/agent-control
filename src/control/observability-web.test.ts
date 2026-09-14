@@ -23,3 +23,7 @@ test('Mallow run accounting retains unknown values from the same Run Inspector',
   const control=service(),usage=usageProjection(undefined,[],{period:'all'});control.runInspector=()=>({title:'Neutral job',id:'p',status:'RUNNING',usage,context:{records:[]},physicalNodes:[]} as unknown as ReturnType<AgentControlService['runInspector']>);
   const explanation=control.poeEvidence({kind:'run-inspector',id:'p'});assert.equal(explanation.facts.find(f=>f.label==='Input tokens')?.value,null);assert.match(explanation.summary,/RUNNING/);assert.equal(explanation.facts.find(f=>f.label==='Total tokens')?.value,usage.totals.tokens.value);
 });
+test('Mallow explains a workspace from its read-only authoritative projection',()=>{
+  const control=service();control.workspace=()=>({id:'acw1.RUN.fixture',kind:'RUN',label:'Recorded run',status:'SUCCEEDED',mode:'HISTORICAL',children:[],capabilities:[{id:'STATUS',state:'AVAILABLE',reason:'authoritative'},{id:'EXECUTE',state:'REQUIRES_AUTHORIZATION',reason:'separate authority'}],parent:null} as unknown as ReturnType<AgentControlService['workspace']>);
+  const explanation=control.poeEvidence({kind:'workspace',id:'acw1.RUN.fixture'});assert.equal(explanation.title,'Recorded run');assert.match(explanation.summary,/grants no control authority/);assert.equal(explanation.facts.find(f=>f.label==='Control authority granted')?.value,false);assert.equal(explanation.facts.find(f=>f.label==='Available read-only capabilities')?.value,'STATUS');
+});
