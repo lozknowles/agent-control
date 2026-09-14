@@ -387,6 +387,8 @@
 }
 .runtime-inspector {
   overflow: auto;
+  overflow-wrap: anywhere;
+  min-width: 0;
   max-height: 760px;
 }
 .runtime-inspector > nav {
