@@ -1,5 +1,15 @@
 # Changelog
 
+## 4.8.0 — Nested Execution Environments
+
+Agent Control can represent evidence-backed execution environments contained within a physical device, discover generic container runtimes, route by qualified capability, and retain the physical-device-to-invocation path in Estate Topology, Node Dashboard, Run Inspector, Mallow explanations, and human-readable evidence.
+
+Typed containment rejects missing parents, cross-device chains, and cycles. Per-resource probe deadlines and failure classifications remain explicit. Resource accounting distinguishes physical capacity, allocated capacity, guest-visible capacity, runtime limits, and measured consumption without adding nested views to physical Estate totals. Ordinary devices retain their existing uncluttered presentation.
+
+Podman was physically qualified through the Pixel/Podroid experiment. Docker and LXC executable discovery is supported but does not establish execution qualification. Agent Control has no production dependency on Podroid, Android, QEMU, Alpine, Podman, or SSH. AVF/pKVM, a resident guest worker, and physical network-loss recovery remain unqualified. Autonomous self-extension is not claimed.
+
+See [Nested Execution Environments](docs/nested-execution-environments.md), [release notes](docs/release-notes-4.8.0.md), [upgrade guidance](docs/upgrade-4.8.md), and [release verification](docs/release-verification-4.8.0.md).
+
 ## 4.7.1 — Usability, Integration & Observability
 
 System light/dark inheritance now uses one shared semantic palette across desktop/mobile, graphs, inspectors, usage, replay and offline surfaces. Live preference changes preserve active navigation and sessions. See [appearance and qualification](docs/system-theme-4.7.md).

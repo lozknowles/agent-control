@@ -1,3 +1,5 @@
+import {redactSensitiveText} from './security-redaction.js';
+
 export const EXECUTION_CONTAINMENT_METHOD = 'execution-environment-containment' as const;
 
 export type ExecutionEnvironmentKind =
@@ -107,7 +109,7 @@ export class ManagedNodeProbeError extends Error {
   constructor(readonly classification: ProbeFailureClassification, message: string) { super(message); this.name = 'ManagedNodeProbeError'; }
 }
 export function classifyManagedNodeProbeFailure(error: unknown): {classification: ProbeFailureClassification; detail: string} {
-  const detail = String(error instanceof Error ? error.message : error).replace(/[\r\n\0]+/g, ' ').slice(0, 240) || 'probe_failed';
+  const detail = redactSensitiveText(String(error instanceof Error ? error.message : error)).replace(/[\r\n\0]+/g, ' ').slice(0, 240) || 'probe_failed';
   if (error instanceof ManagedNodeProbeError) return {classification: error.classification, detail};
   if (/timeout/i.test(detail)) return {classification: 'TIMEOUT', detail};
   if (/permission denied|authentication|publickey/i.test(detail)) return {classification: 'AUTHENTICATION', detail};

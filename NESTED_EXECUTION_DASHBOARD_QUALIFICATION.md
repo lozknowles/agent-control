@@ -10,7 +10,7 @@ The remaining limitations are unchanged qualification boundaries: AVF/pKVM, a re
 
 - Reviewed generic integration candidate: `ba362a770fa399b072be24ca405e9ce86ffdf4dc`
 - Product version: Agent Control 4.7.1
-- Candidate commit: the isolated commit containing this report; its exact SHA is recorded in the final response and external evidence index.
+- Candidate commit: `e5d9c8f99ee22fe69eaeab865c3a66b4f26403b7`
 - Branch: `candidate/nested-execution-dashboard-20260914`
 - No merge, push, tag, release, or deployment was performed.
 
@@ -111,11 +111,7 @@ This is browser viewport qualification, not a second physical handset UI qualifi
 
 ## 16. Visual evidence index
 
-The canonical image hashes and captions are in `VISUAL_EVIDENCE_INDEX.md` in the external evidence directory. Convenient copies are in:
-
-`C:\Users\Loz\Downloads\Agent-Control-Nested-Execution-Dashboard-20260914\screenshots`
-
-No screenshot binaries were added to the source candidate.
+The canonical image hashes and captions are in `VISUAL_EVIDENCE_INDEX.md`. The images are retained in the external qualification bundle; no screenshot binaries or private storage paths were added to the source candidate.
 
 ## 17. Automated tests
 
@@ -138,4 +134,3 @@ Coverage includes nested Estate projection, authoritative containment, progressi
 ## 19. Recommendation
 
 Approve the isolated dashboard integration candidate with the stated qualification boundaries. It meets this parcel's product and visual gates: a human can start at the physical Pixel, progressively reveal its evidenced environments, inspect the runtime and exact governed invocation, understand the deterministic route, distinguish nested resource scopes, and download the human-readable evidence. Formal integration should retain the current evidence-backed contract and must not broaden claims to the unqualified boundaries above.
-

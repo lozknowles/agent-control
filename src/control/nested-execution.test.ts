@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {discoverContainerRuntimes, projectNestedResourceAccounting, resolveNestedExecutionRoute, validateContainment, type ExecutionEnvironmentRecord} from './nested-execution.js';
+import {classifyManagedNodeProbeFailure, discoverContainerRuntimes, projectNestedResourceAccounting, resolveNestedExecutionRoute, validateContainment, type ExecutionEnvironmentRecord} from './nested-execution.js';
 
 const at = '2026-09-14T12:00:00.000Z';
 test('nested capacity views do not double-count physical resources', () => {
@@ -50,4 +50,12 @@ test('containment requires an evidence-backed same-node acyclic chain to a machi
   assert.equal(validateContainment(items,'runtime'),'guest');
   assert.equal(validateContainment([...items,{id:'foreign',nodeId:'other',kind:'RUNTIME',containment:{parentId:'guest',relation:'CONTAINS' as const,observedAt:at,authority:'AUTHORITATIVE' as const,method:'execution-environment-containment' as const}}],'foreign'),undefined);
   assert.equal(validateContainment([...items,{id:'stale',nodeId:'physical',kind:'RUNTIME',containment:{parentId:'guest',relation:'CONTAINS' as const,observedAt:'invalid',authority:'AUTHORITATIVE' as const,method:'execution-environment-containment' as const}}],'stale'),undefined);
+});
+
+test('probe failure classification redacts credential material before projection', () => {
+  const secret='sk-example-release-secret-1234567890';
+  const failure=classifyManagedNodeProbeFailure(new Error(`Permission denied for token ${secret}`));
+  assert.equal(failure.classification,'AUTHENTICATION');
+  assert.doesNotMatch(failure.detail,new RegExp(secret));
+  assert.match(failure.detail,/REDACTED/);
 });

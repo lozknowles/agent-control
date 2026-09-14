@@ -16,12 +16,4 @@ Physical source run: `run-b3fa152d-a105-445a-b0d9-5b98d4fc9dee`
 | `08-mobile-portrait-nested-node-dashboard.png` | Portrait touch viewport with stacked hierarchy and readable environment cards. | `0a974b1e7b71d815d53edb51b7a65816fc597c9f1627c412168ad8aa09572d77` |
 | `09-mobile-landscape-invocation-route.png` | Landscape touch viewport with compact inspector navigation and readable route, transport, worker, and authority. | `db6302d9c4e736bfceb67bc194f9c0936ef23da1fc1945af11822c451ada2433` |
 
-Canonical evidence directory:
-
-`/fast/work/agent-control-nested-dashboard-evidence-20260914/screenshots`
-
-Convenient operator copy:
-
-`C:\Users\Loz\Downloads\Agent-Control-Nested-Execution-Dashboard-20260914\screenshots`
-
-All screenshots were captured from the production dashboard assets and authenticated observability endpoints on loopback, rendering the retained real physical Pixel/Podroid execution evidence. They are browser qualification evidence and were not added to the source repository.
+All screenshots were captured from the production dashboard assets and authenticated observability endpoints on loopback, rendering the retained real physical Pixel/Podroid execution evidence. They are retained in the external qualification bundle and were not added to the source repository.

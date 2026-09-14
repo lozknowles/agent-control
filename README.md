@@ -12,15 +12,15 @@ ATLAS is Agent Control's public identity: **Agentic Topology, Lifecycle, Assuran
 
 *The ATLAS hero is branding artwork; product screenshots below are genuine Agent Control captures.*
 
-<a id="agent-control-47"></a>
+<a id="agent-control-48"></a>
 
 Discover your AI tools, see what is available, and follow approved work from request to verified result.
 
-**Current release: [4.7.1](https://github.com/lozknowles/agent-control/releases/tag/v4.7.1) — Usability, Integration & Observability.** Clearer desktop/mobile Process Map, live session activity and readable per-call token history. Core and browser journeys are qualified; optional live voice remains experimental with [explicit limitations](docs/known-limitations-4.7.md). See [release notes](docs/release-notes-4.7.1.md) and [verification](docs/release-verification-4.7.1.md).
+**Current release: [4.8.0](https://github.com/lozknowles/agent-control/releases/tag/v4.8.0) — Nested Execution Environments.** Agent Control can represent and explain evidence-backed execution layers inside physical devices, route work by capability, and preserve the complete device-to-invocation path. See [release notes](docs/release-notes-4.8.0.md), [verification](docs/release-verification-4.8.0.md), and [qualification boundaries](docs/nested-execution-environments.md#qualification-boundaries).
 
-**4.7.1 observability:** [Follow Agent Control work](docs/observability-4.7.md) from Estate to a capability-aware Node Dashboard, Process Map, exact operation evidence, tokens/cache and readable history. Desktop and mobile share automatic system light/dark appearance with live changes that preserve the active session. [Release qualification](docs/release-verification-4.7.1.md).
+**4.8 nested execution:** [Follow work through nested environments](docs/nested-execution-environments.md) from a physical device through host/guest environments, runtime and worker route to the exact invocation and evidence. Nested capacity is scoped and is never added to physical Estate capacity.
 
-[Install Agent Control](docs/installation-first-run.md) · [Documentation](docs/index.md) · [Upgrade](docs/upgrade-4.7.md) · [Release notes](docs/release-notes-4.7.1.md)
+[Install Agent Control](docs/installation-first-run.md) · [Documentation](docs/index.md) · [Upgrade](docs/upgrade-4.8.md) · [Release notes](docs/release-notes-4.8.0.md)
 
 [![Actual Agent Control Estate Map](docs/media/4.6/integration/estate.png)](docs/public-installation-journey.md)
 
@@ -51,12 +51,12 @@ Mallow is your floating guide. The established crew helps explain dispatch, revi
 
 <a id="install"></a>
 
-## Install Agent Control 4.7
+## Install Agent Control 4.8
 
 Install on Linux with Node.js 24, npm, Git and Bash:
 
 ```bash
-git clone --branch v4.7.1 https://github.com/lozknowles/agent-control.git
+git clone --branch v4.8.0 https://github.com/lozknowles/agent-control.git
 cd agent-control
 git rev-parse HEAD
 ./scripts/bootstrap-agent-control.sh --check --target "$PWD"
@@ -107,10 +107,10 @@ Model Intelligence now reports real source coverage, initial versus follow-up ob
 
 - [Android / fresh Termux prerequisites](android/README.md#fresh-termux-prerequisites) (separate platform guide)
 - [Installation and troubleshooting](docs/installation-first-run.md#troubleshooting)
-- [Safe existing-install upgrade](docs/upgrade-4.7.md)
+- [Safe existing-install upgrade](docs/upgrade-4.8.md)
 - [Architecture](docs/architecture-v2-agnostic.md)
 - [Security](SECURITY.md) and [contributing](CONTRIBUTING.md)
-- [Release notes](docs/release-notes-4.7.1.md)
+- [Release notes](docs/release-notes-4.8.0.md)
 - [Accepted RC assessment and evidence](docs/release-candidate-4.6.md)
 
 Historical versioned reports remain available under `docs/`; use the installation guide above for this release.
@@ -122,6 +122,6 @@ Use the floating Mallow companion for text and configured speech. Voice requests
 
 [Desktop and mobile recordings with readable pauses](docs/evidence/agent-control-4.7-dashboard.md) show real jobs, live process drill-down, running activity, input/cache/output usage and human-readable history. Video binaries are stored in the evidence repository.
 
-The observability follow-on has a [qualification report](docs/observability-qualification-4.7.md), with desktop/mobile recordings stored separately from normal source pulls. Published v4.7.1 remains immutable; this branch records the follow-on implementation.
+The 4.8 release retains the [4.7 observability foundation](docs/observability-4.7.md) and adds progressive navigation through evidenced nested execution environments. New qualification screenshots remain separate from normal source pulls.
 
 The observability candidate follows the device/browser system light or dark preference, including live changes without resetting the active view. See [system appearance](docs/system-theme-4.7.md).
