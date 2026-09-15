@@ -36,7 +36,7 @@ export class TargetLlamaRuntime implements TargetTelemetry {
   const command=remote?'ssh':'python3';
   c.recordEvidence?.('runtime-target-request',{operation,producer:this.producer(c),helperSha256:createHash('sha256').update(source).digest('hex'),at:new Date().toISOString()});
   let persistenceError:unknown;
-  const result=await owned.runProcess({command,args,input,maxOutputBytes:4000000,session:{remoteTransport:remote,adapterId:'target-llama-runtime/v1',commandLabel:'Governed target runtime '+operation,crewRole:'resource-guardian'},onStdoutLine:line=>{let row:any;try{row=JSON.parse(line);}catch{return;}if(row.runtimeEvent)try{c.recordEvidence?.('runtime-lifecycle',row.runtimeEvent);}catch(error){persistenceError=error;}}},signal);
+  const result=await owned.runProcess({command,args,input,maxOutputBytes:4000000,session:{remoteTransport:remote,adapterId:'target-llama-runtime-v1',commandLabel:'Governed target runtime '+operation,crewRole:'resource-guardian'},onStdoutLine:line=>{let row:any;try{row=JSON.parse(line);}catch{return;}if(row.runtimeEvent)try{c.recordEvidence?.('runtime-lifecycle',row.runtimeEvent);}catch(error){persistenceError=error;}}},signal);
   c.recordEvidence?.('runtime-target-response',{operation,producer:this.producer(c),pid:result.pid,exitCode:result.exitCode,signal:result.signal,at:new Date().toISOString()});
   if(persistenceError)throw Error('runtime_evidence_persistence_failed');
   if(result.exitCode!==0)throw Error('runtime_target_transport_failed');
