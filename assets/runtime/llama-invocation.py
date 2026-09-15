@@ -5,6 +5,7 @@ Every temporary service change is paired with bounded restoration in finally.
 """
 import hashlib
 import shutil
+import platform
 import sys
 import datetime
 import json
@@ -337,6 +338,6 @@ def dispatch(request):
             idle = bool(slots) and all(x.get('is_processing') is False for x in slots)
         except Exception:
             idle = False
-    return {'availableRamBytes': available, 'freeStorageBytes': shutil.disk_usage(Path.home()).free,
+    return {'architecture': platform.machine(), 'osName': platform.system(), 'osVersion': platform.release(), 'availableRamBytes': available, 'freeStorageBytes': shutil.disk_usage(Path.home()).free,
             'serviceHealthy': healthy, 'serviceIdle': idle,
             'targetAt': datetime.datetime.now(datetime.timezone.utc).isoformat()}

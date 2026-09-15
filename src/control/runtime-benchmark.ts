@@ -54,7 +54,7 @@ export function registerRuntimeBenchmark(runtime:JobRuntime,raw:RuntimeBenchmark
  const spec=validateLabSpec(settings.spec),digest=labSpecDigest(spec),target=new TargetLlamaRuntime(settings.target),adapter=createRuntimeBenchmarkAdapter(settings,target);
  const workerId='runtime-benchmark:'+settings.target.resource.id;
  runtime.workers.registerControllerInternal({id:workerId,capabilities:['model.hardware.qualify'],health:'healthy',capacity:1,active:0,observedAt:new Date().toISOString()});
- registerModelHardwareQualification(runtime.catalog,runtime.actions,{resolve:hash=>{if(hash!==digest)throw Error('runtime_benchmark_unknown_spec');return spec;},authorize:async(s,c)=>{
+ registerModelHardwareQualification(runtime.catalog,runtime.actions,{defaultSpecSha256:digest,resolve:hash=>{if(hash!==digest)throw Error('runtime_benchmark_unknown_spec');return spec;},authorize:async(s,c)=>{
   if(c.worker.id!==workerId||labSpecDigest(s)!==digest||Date.parse(settings.authority.expiresAt)<=Date.now())throw Error('runtime_benchmark_authority_invalid');
   c.recordEvidence?.('runtime-benchmark-authority',{producer:target.producer(c),authority:settings.authority,specSha256:digest});
  },adapters:[adapter],recordAccounting:async(c,result,id)=>{

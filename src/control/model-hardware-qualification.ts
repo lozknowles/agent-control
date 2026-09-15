@@ -54,6 +54,7 @@ export function validateLabSpec(s:LabQualificationSpec){
 }
 /** Registers one ordinary governed job; no scheduler, telemetry store or model downloader. */
 export function registerModelHardwareQualification(catalog:JobCatalog,actions:ActionRegistry,options:{
+ defaultSpecSha256?:string;
  resolve:(digest:string)=>LabQualificationSpec;
  authorize:(spec:LabQualificationSpec,context:ActionContext)=>Promise<void>;
  adapters:LabExecutionAdapter[];
@@ -112,5 +113,5 @@ export function registerModelHardwareQualification(catalog:JobCatalog,actions:Ac
   return{artifacts:[{name:'qualification',value:{schema:'agent-control.lab-qualification/v1',specSha256:digest,status:attempts.some(a=>a.status==='BLOCKED')?'BLOCKED':combined.every(a=>a.status==='SUCCEEDED'&&a.quality===true)?combined.every(a=>a.evidenceComplete)?'QUALIFIED':'INCOMPLETE':'FAILED',definition:definition.id,compatibility:admission.id,attempts,reused,reusedAttemptCount:reused.length,plannedAttemptCount:spec.cases.length*spec.repetitions,unattemptedCount:spec.cases.length*spec.repetitions-attempts.length-reused.length,restored,productionRoutingChanged:false}}],verification:['lab-evidence-retained']};
  },['FILESYSTEM_WRITE','REMOTE_NODE']);
  catalog.knownActions?.add('model-hardware-qualification.execute@1.0.0');
- catalog.addJob({apiVersion:'agent-control/v1',kind:'Job',metadata:{id:'model-hardware-qualification',version:'1.0.0',name:'Qualify this model on this device'},spec:{priority:'normal',concurrency:'no-overlap',parameters:{specSha256:{type:'string',required:true}},steps:[{id:'qualify',action:'model-hardware-qualification.execute@1.0.0',requires:['model.hardware.qualify'],resources:['lab/qualification-window'],timeoutSeconds:86400,verification:['lab-evidence-retained'],outputs:[{name:'qualification',type:'application/json',schema:'agent-control.lab-qualification/v1',version:'1.0.0'}]}]}});
+ catalog.addJob({apiVersion:'agent-control/v1',kind:'Job',metadata:{id:'model-hardware-qualification',version:'1.0.0',name:'Qualify this model on this device'},spec:{priority:'normal',concurrency:'no-overlap',parameters:{specSha256:{type:'string',required:true,...(options.defaultSpecSha256?{default:options.defaultSpecSha256}:{})}},steps:[{id:'qualify',action:'model-hardware-qualification.execute@1.0.0',requires:['model.hardware.qualify'],resources:['lab/qualification-window'],timeoutSeconds:86400,verification:['lab-evidence-retained'],outputs:[{name:'qualification',type:'application/json',schema:'agent-control.lab-qualification/v1',version:'1.0.0'}]}]}});
 }

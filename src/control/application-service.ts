@@ -1,3 +1,4 @@
+import {recordedRuntimeBenchmarkRoute} from './runtime-benchmark-projection.js';
 import {labObservations,labQualificationSummaries,labObservationForApi} from './lab-observation.js';
 import {physicalInferenceMeasurements} from './physical-inference-observation.js';
 import {inspectorAccounting} from './observability.js';
@@ -377,6 +378,8 @@ export class AgentControlService {
       const ledger=this.harnessEfficiency;
       const usage=usageProjection(ledger?{list:()=>ledger.list().filter(row=>row.runId===id),usageHistory:()=>ledger.usageHistory?.()??{excludedIds:[],events:[]}}:undefined,this.energyProjection().executions,{period:'all',groupBy:'agent',limit:1000});
       const inspector=projectJobInspector(job,map,usage,estate,nodes,operationId,this.nodes(),ledger?.list()??[]);
+      const nativeRoute=recordedRuntimeBenchmarkRoute(this.jobRuntime!.artifacts,id,estate);
+      if(nativeRoute){const physical=nativeRoute.path.find(n=>n.kind==='PHYSICAL_DEVICE');Object.assign(inspector,{executionRoute:nativeRoute});if(physical)inspector.physicalNodes=[{id:physical.id,label:physical.label,nodeId:String(estate.nodes.find(n=>n.id===physical.id)?.detail.nodeId??'')}];}
       const artifactEvidence=job.artifacts.flatMap(artifactId=>{const metadata=this.jobRuntime?.artifacts.get(artifactId);if(!metadata)return[];let content:string|null=null;if(['json','text','markdown','application/json','text/plain','text/markdown'].includes(metadata.type)){try{const raw=this.jobRuntime!.artifacts.read(artifactId);content=safeTranscriptText(typeof raw==='string'?raw:JSON.stringify(raw,null,2),512*1024);}catch{content=null;}}return[{...this.artifact(artifactId),content}];});
       const physicalMeasurements=job.artifacts.flatMap(id=>{const meta=this.jobRuntime!.artifacts.get(id);if(!meta)return[];try{return physicalInferenceMeasurements(this.jobRuntime!.artifacts.read(id),meta);}catch{return[];}}).filter(m=>!operationId||inspector.calls.some(c=>c.id===m.accountingInvocationId));
       const qualificationSummaries=labQualificationSummaries(id,this.jobRuntime!.artifacts.list(id),artifactId=>this.jobRuntime!.artifacts.read(artifactId));

@@ -1,3 +1,4 @@
+import {RuntimeBenchmarkDiscoveryAdapter} from './control/runtime-benchmark-projection.js';
 import {isAndroidUserspace,observeAndroid} from './control/android-environment.js';
 import {DefaultDiscoveryProbe} from './control/environment-discovery.js';
 import {usageQuestionQuery} from './control/usage-projection.js';
@@ -140,7 +141,7 @@ const environmentDiscovery=new EnvironmentDiscoveryRuntime({
   config:()=>loadConfig(configurationFile),
   configurationRevision:()=>new ConfigurationStore(configurationFile).read().revision,
   managedNodes:()=>jobRuntime.managedNodes.list(),
-  additionalAdapters:[new RegisteredCapabilityDiscoveryAdapter(capabilityAdapters)],
+  additionalAdapters:[new RegisteredCapabilityDiscoveryAdapter(capabilityAdapters),new RuntimeBenchmarkDiscoveryAdapter(jobRuntime.artifacts)],
   runtimeInventory:()=>({
     jobs:jobRuntime.catalog.listJobs().map(job=>({id:job.metadata.id,name:job.metadata.name,version:job.metadata.version})),
     agents:jobRuntime.workers.list().map(worker=>({id:worker.id,health:worker.health,capabilities:[...worker.capabilities],executionIdentity:jobRuntime.workers.executionIdentity(worker.id)})),
@@ -180,7 +181,7 @@ const knowledge = new PoeKnowledgeService({root:process.cwd(),version:AGENT_CONT
 }});
 const operator = new PoeOperatorRuntime({knowledge,registries:process.env.AGENT_CONTROL_POE_REGISTRY_SOURCES?JSON.parse(fs.readFileSync(process.env.AGENT_CONTROL_POE_REGISTRY_SOURCES,'utf8')).map((config:import('./control/poe-registry-source.js').RegistrySourceConfig)=>new PoeRegistrySource(config)):[],runtime:jobRuntime,parcels:jobRuntime.workParcels,
   file:path.join(stateRoot,'poe','operator.json'),
-  registrations:JSON.parse(fs.readFileSync(path.resolve('config/poe-operator-jobs.json'),'utf8')),
+  registrations:[...JSON.parse(fs.readFileSync(path.resolve('config/poe-operator-jobs.json'),'utf8')),...(process.env.AGENT_CONTROL_RUNTIME_BENCHMARK_CONFIG?[{job:'model-hardware-qualification@1.0.0',purpose:'Run the configured existing-model fixture through governed target telemetry and runtime adapters.',owner:'Atlas runtime worker',changes:'Probes the configured target, may temporarily suspend its explicitly authorised idle service, runs the configured fixture and verifies restoration.',externalMutation:true,publication:false,permitted:true}]:[])],
   topics:JSON.parse(fs.readFileSync(path.resolve('config/poe-system-topics.json'),'utf8')),
   sources:{systems:()=>service.systems(),savedJobs:()=>service.savedJobs(),parameterizedSchedules:()=>service.parameterizedSchedules(),overview:()=>service.poeEvidence(),resolve:reference=>service.poeEvidence(reference)}});
 // Explicit opt-in configuration: registering this adapter never acquires models or starts a target.
