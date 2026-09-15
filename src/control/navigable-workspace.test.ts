@@ -25,3 +25,14 @@ test('runtime workspace does not attach runs from another device or environment 
  const value=projectWorkspace(id('RUNTIME','pixel','alpine','runtime:podman'),{...source,runs:[run,unrelated,sameHost,sameName]});
  assert.deepEqual(value.children.map(child=>parseWorkspaceId(child.id).parts[0]),['run-one']);
 });
+
+test('model operation aliases retain canonical token evidence and do not duplicate invocation children',()=>{
+ const alias='model:invocation-one';const record={...run,operations:[...run.operations,{id:alias,type:'model-call',label:'Model operation',state:'SUCCEEDED'}]};
+ const records={...source,runs:[record]};
+ const canonical=projectWorkspace(id('INVOCATION','run-one','invocation-one'),records);
+ const operation=projectWorkspace(id('INVOCATION','run-one',alias),records);
+ assert.deepEqual(operation.context,canonical.context);
+ assert.equal(operation.breadcrumbs.at(-1)?.kind,'INVOCATION');
+ const children=projectWorkspace(id('RUN','run-one'),records).children;
+ assert.equal(children.filter(child=>['invocation-one',alias].includes(parseWorkspaceId(child.id).parts[1]!)).length,1);
+});
