@@ -54,6 +54,14 @@ export function registerRuntimeBenchmark(runtime:JobRuntime,raw:RuntimeBenchmark
  const spec=validateLabSpec(settings.spec),digest=labSpecDigest(spec),target=new TargetLlamaRuntime(settings.target),adapter=createRuntimeBenchmarkAdapter(settings,target);
  const workerId='runtime-benchmark:'+settings.target.resource.id;
  runtime.workers.registerControllerInternal({id:workerId,capabilities:['model.hardware.qualify'],health:'healthy',capacity:1,active:0,observedAt:new Date().toISOString()});
+ runtime.restoreRetainedCleanup('target-runtime',(identity,run,stepId,recoveryWorker)=>{
+  const p=identity.producer as any;
+  if(identity.target!==settings.target.resource.id||p?.environment!==settings.target.environment||p?.provenance!=='AGENT_CONTROL_RUNTIME_EVIDENCE'||recoveryWorker!==workerId||!/^[a-f0-9-]{36}$/.test(String(identity.attemptId)))return null;
+  return async()=>{const started=new Date().toISOString();const step=run.steps.find(s=>s.id===stepId)!;
+   const context={run,step,worker:runtime.workers.list().find(w=>w.id===workerId)!,signal:new AbortController().signal,recordEvidence:(name:string,value:unknown)=>{const live=runtime.ledger.get(run.id)!;const artifact=runtime.artifacts.create(live,stepId,workerId,{name,type:'json',schema:'agent-control.attempt-evidence/v1',version:'1.0.0',retention:'run-history'},value);live.artifacts.push(artifact.id);live.steps.find(s=>s.id===stepId)!.artifactIds.push(artifact.id);runtime.ledger.update(live,'run.recovery_observation');return artifact;}} as ActionContext;
+   const recovery=await target.recover(context,String(identity.attemptId));context.recordEvidence!('runtime-recovery',{producer:target.producer(context),at:new Date().toISOString(),data:recovery});
+   return {outcome:recovery.restored?'confirmed':'uncertain',reason:'target-runtime-restoration',requestedAt:started,completedAt:new Date().toISOString(),processes:[]};};
+ });
  registerModelHardwareQualification(runtime.catalog,runtime.actions,{defaultSpecSha256:digest,resolve:hash=>{if(hash!==digest)throw Error('runtime_benchmark_unknown_spec');return spec;},authorize:async(s,c)=>{
   if(c.worker.id!==workerId||labSpecDigest(s)!==digest||Date.parse(settings.authority.expiresAt)<=Date.now())throw Error('runtime_benchmark_authority_invalid');
   c.recordEvidence?.('runtime-benchmark-authority',{producer:target.producer(c),authority:settings.authority,specSha256:digest});

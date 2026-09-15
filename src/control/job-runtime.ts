@@ -150,6 +150,21 @@ export class JobRuntime {
   private readonly runCleanups = new Map<string, Promise<void>>();
   private readonly clock: () => Date;
   constructor(readonly catalog: JobCatalog, readonly actions: ActionRegistry, readonly workers: WorkerRegistry, readonly ledger: RunLedger, readonly artifacts: ArtifactStore, readonly locks: ResourceLockManager, options: JobRuntimeOptions = {}) { this.contracts = options.contracts ?? options.executionSessions?.contracts ?? new ContractExecutionRuntime(); this.clock = options.now ?? (() => new Date()); this.approval = options.approval ?? (() => false); this.efficiency = options.efficiency; this.safety = options.safety; this.defaultRecoveryDeadlineSeconds = options.defaultRecoveryDeadlineSeconds ?? 900; this.ownedExecutionFactory = options.ownedExecutionFactory ?? (scope => new OwnedProcessManager(undefined, options.executionSessions, scope)); }
+  /** Rebind retained cleanup from integrity-checked records to a trusted product adapter.
+   * Registration never executes cleanup. The existing authenticated cancel operation requests it.
+   */
+  restoreRetainedCleanup(kind:string, resolve:(identity:Record<string,unknown>,run:RunRecord,stepId:string,workerId:string)=>null|(()=>Promise<ExecutionCleanupReport>)) {
+    for(const lock of this.locks.list().filter(l=>l.retained&&l.resource.startsWith('retained-cleanup:'))){
+      const run=this.ledger.get(lock.runId);if(!run||!['CLEANUP_UNCERTAIN','DISCONNECTED'].includes(run.status))continue;
+      const metadata=this.artifacts.list(run.id).find(a=>a.name==='retained-cleanup-registered'&&(this.artifacts.read(a.id) as any)?.id===lock.resource);if(!metadata)continue;
+      const value=this.artifacts.read(metadata.id) as any,step=run.steps.find(s=>s.id===value.sourceStepId);
+      if(!step||value.identity?.kind!==kind||value.workerId!==step.attempts.at(-1)?.workerId||metadata.stepId!==step.id)continue;
+      const entries=this.retainedCleanups.get(run.id)??new Map();if(entries.has(lock.resource))continue;
+      const cleanup=resolve(value.identity,structuredClone(run),step.id,value.workerId);if(!cleanup)continue;
+      entries.set(lock.resource,{stepId:step.id,workerId:value.workerId,identity:value.identity,cleanup,authority:step.attempts.at(-1)?.executionAuthority,workerRetained:true});
+      this.retainedCleanups.set(run.id,entries);this.workers.claim(value.workerId);
+    }
+  }
   readonly contracts: ContractExecutionRuntime;
   private readonly approval: (policy: string, run: RunRecord) => boolean;
   private readonly efficiency?: HarnessEfficiencyLedgerPort;
@@ -215,7 +230,7 @@ export class JobRuntime {
   safetyDecisions(runId?: string) { return (this.safety?.list() ?? []).filter(item => !runId || item.runId === runId); }
   cancel(runId: string, reason = 'operator_cancelled', replacedByRunId?: string) {
     const run = this.mustRun(runId); if (!ACTIVE_RUNS.includes(run.status)) return run;
-    if (['CLEANUP_UNCERTAIN', 'DISCONNECTED'].includes(run.status) && !this.controllers.has(runId)) return run;
+    if (['CLEANUP_UNCERTAIN', 'DISCONNECTED'].includes(run.status) && !this.controllers.has(runId) && !this.retainedCleanups.get(runId)?.size) return run;
     if (replacedByRunId) run.lineage = {...run.lineage, replacedByRunId};
     const controller = this.controllers.get(runId);
     if (controller) {
@@ -473,7 +488,7 @@ export class JobRuntime {
         finally { if (timer) clearTimeout(timer); }
         const live = this.mustRun(runId), source = live.steps.find(step => step.id === entry.stepId)!;
         const artifact = this.artifacts.create(live, source.id, entry.workerId, {name:'retained-cleanup-outcome',type:'json',schema:'agent-control.attempt-evidence/v1',version:'1.0.0',retention:'run-history'}, {id,identity:entry.identity,proof}); source.artifactIds.push(artifact.id); live.artifacts.push(artifact.id);
-        if (proof.outcome === 'confirmed') { entries.delete(id); this.locks.release(runId, id); const contractId=source.attempts.at(-1)?.contractId; if(contractId&&['CANCELLED','FAILED','DEGRADED'].includes(terminal)) this.contracts.completeExecution(contractId, terminal==='CANCELLED'?'CANCELLED':'FAILED', {outcome:'confirmed',detail:proof.reason,verifiedAt:proof.completedAt}, entry.authority); }
+        if (proof.outcome === 'confirmed') { if(entry.workerRetained)this.workers.release(entry.workerId); entries.delete(id); this.locks.release(runId, id); const contractId=source.attempts.at(-1)?.contractId; if(contractId&&['CANCELLED','FAILED','DEGRADED'].includes(terminal)) this.contracts.completeExecution(contractId, terminal==='CANCELLED'?'CANCELLED':'FAILED', {outcome:'confirmed',detail:proof.reason,verifiedAt:proof.completedAt}, entry.authority); }
         else { uncertain = true; const attempt = source.attempts.at(-1)!; this.markCleanupUncertain(live, source, attempt, proof, 'retained_cleanup_unproved'); this.workers.claim(entry.workerId); entry.workerRetained=true; if (attempt.contractId) this.contracts.completeExecution(attempt.contractId, 'UNKNOWN', {outcome:'uncertain',detail:proof.reason,verifiedAt:proof.completedAt},entry.authority); }
         this.ledger.update(live, 'run.retained_cleanup_evidence');
       }

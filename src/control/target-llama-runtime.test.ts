@@ -13,3 +13,18 @@ test('target adapter request satisfies real execution-session identity contract'
 
 import {spawnSync} from 'node:child_process';
 test('distributed target helper emits lifecycle and durable failure receipt before model launch',{skip:process.platform!=='linux'},()=>{const root=fs.mkdtempSync(path.join(os.tmpdir(),'helper-qual-'));try{const source=fs.readFileSync(new URL('../../assets/runtime/llama-invocation.py',import.meta.url),'utf8');const request={operation:'invoke',producer:{provenance:'AGENT_CONTROL_RUNTIME_EVIDENCE'},stateDirectory:root,attemptId:'test-attempt',input:{messages:[]},profile:{runtimePath:path.join(root,'absent-runtime'),runtimeSha256:'a'.repeat(64)}};const result=spawnSync('python3',['-'],{input:source+'\nprint(json.dumps(dispatch(json.loads('+JSON.stringify(JSON.stringify(request))+'))))\n',encoding:'utf8'});assert.equal(result.status,0,result.stderr);assert.match(result.stdout,/runtime.request_received/);assert.match(result.stdout,/runtime.result_retained/);const receipt=JSON.parse(fs.readFileSync(path.join(root,'test-attempt.result.json'),'utf8'));assert.equal(receipt.status,'FAILED');assert.equal(receipt.rawResponse.originalServiceRestored,true);assert.equal(receipt.tokens.output,null);}finally{fs.rmSync(root,{recursive:true,force:true});}});
+
+test('helper recovery confirms untouched service only with absent invocation log',{skip:process.platform!=='linux'},()=>{const root=fs.mkdtempSync(path.join(os.tmpdir(),'helper-recovery-'));try{const source=fs.readFileSync(new URL('../../assets/runtime/llama-invocation.py',import.meta.url),'utf8');const request={operation:'abort',stateDirectory:root,attemptId:'missing-attempt',originalService:{args:['fixture-runtime','--port','19000']}};const fake=`
+RealPath = Path
+class FakeEntry:
+ name = '123'
+ def stat(self): return type('Stat', (), {'st_uid':os.getuid()})()
+ def __truediv__(self, other): return self
+ def read_bytes(self): return bytes([0]).join([b'fixture-runtime', b'--port', b'19000', b''])
+class FakeProc:
+ def iterdir(self): return [FakeEntry()]
+Path = lambda value: FakeProc() if value == '/proc' else RealPath(value)
+health = lambda endpoint: True
+time.sleep = lambda value: None
+`;
+const run=()=>spawnSync('python3',['-'],{input:source+'\n'+fake+'\nprint(json.dumps(dispatch(json.loads('+JSON.stringify(JSON.stringify(request))+'))))\n',encoding:'utf8'});let response=run();assert.equal(response.status,0,response.stderr);assert.equal(JSON.parse(response.stdout.trim()).restored,true);fs.writeFileSync(path.join(root,'missing-attempt.log'),'runtime may have started');response=run();assert.equal(JSON.parse(response.stdout.trim()).restored,false);}finally{fs.rmSync(root,{recursive:true,force:true});}});

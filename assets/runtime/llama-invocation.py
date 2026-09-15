@@ -108,7 +108,7 @@ def run(request):
         for dependency in profile.get('runtimeDependencies', []):
             if digest(dependency['path']) != dependency['sha256']:
                 raise RuntimeError('runtime_dependency_identity_mismatch')
-        if request.get('_cancel_requested'):
+        if request.get('_cancel_requested') or abort_path.exists():
             raise RuntimeError('runtime_cancelled_before_preparation')
         if original:
             args = original['args']
@@ -155,6 +155,8 @@ def run(request):
                 '--jinja', '--reasoning', 'off']
         raw['command'] = args
         load_start = time.monotonic()
+        if abort_path.exists():
+            raise RuntimeError('runtime_cancelled_before_launch')
         with open(log_path, 'xb', buffering=0) as log:
             child = subprocess.Popen(args, stdin=subprocess.DEVNULL, stdout=log, stderr=log)
         owned_identity = process_identity(child.pid)
@@ -317,11 +319,27 @@ def dispatch(request):
         root.mkdir(mode=0o700, parents=True, exist_ok=True)
         (root / (request['attemptId'] + '.abort')).touch()
         receipt = root / (request['attemptId'] + '.result.json')
-        for _ in range(150):
+        for index in range(150):
             if receipt.exists():
                 result = json.loads(receipt.read_text())
                 return {'restored': result['rawResponse'].get('originalServiceRestored') is True,
                         'result': result}
+            # A failed preparation can exit before creating its runtime log/receipt.
+            # The persistent abort marker prevents subsequent preparation/launch.
+            # Confirm the unchanged authorised service by exact argv and health.
+            original = request.get('originalService')
+            if index >= 5 and original and not (root / (request['attemptId'] + '.log')).exists():
+                matches = []
+                for proc in Path('/proc').iterdir():
+                    try:
+                        if proc.name.isdigit() and proc.stat().st_uid == os.getuid() and [v.decode() for v in (proc/'cmdline').read_bytes().split(b'\0') if v] == original['args']:
+                            matches.append(int(proc.name))
+                    except OSError:
+                        pass
+                args = original['args']
+                endpoint = 'http://127.0.0.1:' + args[args.index('--port')+1]
+                if len(matches) == 1 and health(endpoint):
+                    return {'restored': True, 'reason': 'preparation_aborted_original_service_observed', 'originalServicePid': matches[0], 'runtimeLogAbsent': True, 'abortMarkerRetained': True}
             time.sleep(1)
         return {'restored': False, 'reason': 'target_restoration_unconfirmed'}
     if operation != 'observe':
