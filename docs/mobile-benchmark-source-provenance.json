@@ -1,0 +1,21 @@
+{
+  "schema": "agent-control.source-reuse/v1",
+  "base": "57c593b4f88965acc54239f6c1a5321329ce6cef",
+  "source": "/fast/work/agent-control-qualification-reports-20260915",
+  "sourceState": "Uncommitted generic Lab development; bounded files copied exactly, not represented as published source.",
+  "files": [
+    {
+      "path": "src/control/model-hardware-qualification.ts",
+      "sha256": "b0d6995675011e35fdc1ac53b61d57b50b4b0b81bb03dfe8cde694e48cdc7c0d"
+    },
+    {
+      "path": "src/control/model-hardware-qualification.test.ts",
+      "sha256": "bbadc3b2f499c7fe4055515ea1718255b5fedf7f8d8c4d82de2d32a1c060aad6"
+    },
+    {
+      "path": "src/control/lab-observation.ts",
+      "sha256": "bb6de7e2a47bf71e2e67ae5eecaaf14630263d28589e3d488e73fefd705d6424"
+    }
+  ],
+  "observedAt": "2026-09-15T12:32:20.364534+00:00"
+}

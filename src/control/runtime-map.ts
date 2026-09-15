@@ -1,3 +1,4 @@
+import type {ModelInvocationObservation} from "./harness-efficiency.js";
 import { createHash } from "node:crypto";
 import type { RunRecord } from "./job-types.js";
 import type { WorkParcel } from "./work-parcels.js";
@@ -1311,16 +1312,21 @@ export function compareRuntimeMaps(
 }
 
 /** A standalone native run uses the same projection and graph renderer as parcels. */
-export function projectRecordedJobProcess(run:RunRecord,resourceIds:string[],now=new Date().toISOString()):RuntimeMapProjection {
+export function projectRecordedJobProcess(run:RunRecord,resourceIds:string[],now=new Date().toISOString(),invocations:ModelInvocationObservation[]=[]):RuntimeMapProjection {
   const map=projectRuntimeMap({runs:[],sessions:[],sessionEvents:()=>[],now});
   const evidence=[{kind:'run',id:run.id}];
   const detail={runId:run.id,estateResourceIds:resourceIds,libraryJobId:typeof run.parameters.libraryJobId==='string'?run.parameters.libraryJobId:null};
   map.nodes.push({id:`run:${run.id}`,type:'job',label:run.jobId,state:state(run.status),startedAt:run.requestedAt,endedAt:run.endedAt,expandable:true,detail,evidence});
   for(const step of run.steps) {
     const id=`step:${run.id}:${step.id}`;
-    map.nodes.push({id,type:step.action.includes('verify')?'validation':'tool',label:step.id,subtitle:step.action,state:state(step.status),parentId:`run:${run.id}`,startedAt:step.startedAt,endedAt:step.endedAt,expandable:true,detail:{...detail,attempts:step.attempts.length},evidence});
+    map.nodes.push({id,type:step.action.includes('verify')?'validation':'tool',label:step.id,subtitle:step.action,state:state(step.status),parentId:`run:${run.id}`,startedAt:step.startedAt,endedAt:step.endedAt,expandable:true,detail:{...detail,stepId:step.id,attempts:step.attempts.length},evidence});
     map.edges.push(edge(`run:${run.id}`,id,'contains'));
     for(const dependency of step.dependsOn)if(run.steps.some(s=>s.id===dependency))map.edges.push(edge(`step:${run.id}:${dependency}`,id,'dependency'));
+  }
+  for(const invocation of invocations.filter(i=>i.runId===run.id)){
+    const id=`model:${invocation.id}`,parentId=run.steps.some(s=>s.id===invocation.stepId)?`step:${run.id}:${invocation.stepId}`:`run:${run.id}`;
+    map.nodes.push({id,type:'model-call',label:invocation.model,subtitle:invocation.provider,state:state(invocation.outcome),parentId,startedAt:invocation.startedAt,endedAt:invocation.completedAt??undefined,expandable:true,detail:{runId:run.id,stepId:invocation.stepId,provider:invocation.provider,model:invocation.model,nodeId:invocation.accounting?.machine??null,inputTokens:invocation.usage.inputTokens,cachedInputTokens:invocation.usage.cachedInputTokens,outputTokens:invocation.usage.outputTokens},evidence:[{kind:'model-invocation',id:invocation.id}]});
+    map.edges.push(edge(parentId,id,'contains'));
   }
   map.parcelId=null;map.range={startedAt:run.requestedAt,endedAt:run.endedAt??null};
   map.freshness={state:'LIVE',lastAuthoritativeAt:run.endedAt??run.requestedAt};

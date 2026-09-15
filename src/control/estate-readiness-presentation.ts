@@ -85,6 +85,11 @@ export function safeEstateAttributes(attributes:Record<string,unknown>) {
     if(typeof value==='boolean'||typeof value==='number'&&Number.isFinite(value)) out[key]=value;
     else if(typeof value==='string'&&value.length<=256&&!/[\r\n]/.test(value)) out[key]=value;
   }
+  // Native mobile/remote resource observations are numeric capacities, never arbitrary adapter text.
+  for(const key of ['memoryTotalBytes','memoryAvailableBytes','storageAvailableBytes','diskTotalBytes']) {
+    const value=attributes[key];
+    if(typeof value==='number'&&Number.isFinite(value)&&value>=0) out[key]=value;
+  }
   for(const key of ['address','endpoint','baseUrl','url']) {
     const value=attributes[key];if(typeof value!=='string')continue;
     try {const u=new URL(value);if(['http:','https:','ssh:'].includes(u.protocol))out[key]=`${u.protocol}//${u.hostname}${u.port?`:${u.port}`:''}`;}
