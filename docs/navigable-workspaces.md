@@ -50,4 +50,8 @@ Workspace reads use `AGENT_CONTROL_WEB_URL` and require `AGENT_CONTROL_WEB_OPERA
 - Recent navigation is session-local UI convenience, not an authoritative record.
 - Files and terminals remain governed by existing execution-session and protected-resource controls.
 - Project/repository semantics are future work and require evidence-backed relationships before becoming a workspace kind.
-- This prototype has no dependency on Rune or any Rune source code.
+- This implementation has no dependency on Rune or any Rune source code.
+
+## Release evidence and upgrade
+
+See [fresh release verification](release-verification-4.8.0.md), [visual evidence](evidence/navigable-workspaces-4.8.md), [upgrade guidance](upgrade-4.8.md) and the [five deferred enhancements](../TODO.md). Existing configuration and retained histories remain authoritative; workspaces project them where sufficient evidence exists. No workspace database migration is required.

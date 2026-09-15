@@ -16,7 +16,9 @@ ATLAS is Agent Control's public identity: **Agentic Topology, Lifecycle, Assuran
 
 Discover your AI tools, see what is available, and follow approved work from request to verified result.
 
-**Current release: [4.8.0](https://github.com/lozknowles/agent-control/releases/tag/v4.8.0) — Nested Execution Environments.** Agent Control can represent and explain evidence-backed execution layers inside physical devices, route work by capability, and preserve the complete device-to-invocation path. See [release notes](docs/release-notes-4.8.0.md), [verification](docs/release-verification-4.8.0.md), and [qualification boundaries](docs/nested-execution-environments.md#qualification-boundaries).
+**Current release: [4.8.0](https://github.com/lozknowles/agent-control/releases/tag/v4.8.0) — Navigable Workspaces.** Traverse the authoritative Estate through devices, nested environments, runtimes, workers, runs and invocations to their evidence, and reconstruct the path in reverse from historical work. The Dashboard, CLI and Mallow use the same read-only workspace projection. See [release notes](docs/release-notes-4.8.0.md), [verification](docs/release-verification-4.8.0.md), and [qualification boundaries](docs/nested-execution-environments.md#qualification-boundaries).
+
+**4.8 workspace navigation:** [Operator guide, CLI and API](docs/navigable-workspaces.md) · [Architectural review and Rune comparison](NAVIGABLE_WORKSPACES_REVIEW.md) · [Visual evidence](docs/evidence/navigable-workspaces-4.8.md). Navigation does not grant execution authority or create a second topology.
 
 **4.8 nested execution:** [Follow work through nested environments](docs/nested-execution-environments.md) from a physical device through host/guest environments, runtime and worker route to the exact invocation and evidence. Nested capacity is scoped and is never added to physical Estate capacity.
 
