@@ -45,7 +45,7 @@ export function validateLabAttempt(r:LabAttemptResult){
 }
 export function validateLabSpec(s:LabQualificationSpec){
  if(s?.schema!=='agent-control.model-hardware-qualification/v1'||!s.id||!s.version||!s.adapter||!s.profileRef||!s.resourcePolicyRef||!['COMMON_COMPARABLE','CAPABILITY','BOUNDARY_OPTIMISATION'].includes(s.testClass))throw Error('lab_spec_invalid');
- if(!Number.isInteger(s.repetitions)||s.repetitions<3||s.repetitions>30||!Number.isInteger(s.timeoutMs)||s.timeoutMs<1000||s.timeoutMs>86400000)throw Error('lab_limits_invalid');
+ if(!Number.isInteger(s.repetitions)||s.repetitions<(s.testClass==='CAPABILITY'?1:3)||s.repetitions>30||!Number.isInteger(s.timeoutMs)||s.timeoutMs<1000||s.timeoutMs>86400000)throw Error('lab_limits_invalid');
  if(!s.target||![s.target.device,s.target.environment,s.target.runtime,s.target.model].every(v=>typeof v==='string'&&v.length>0&&v.length<=240)||![s.target.modelSha256,s.target.runtimeSha256].every(v=>/^[a-f0-9]{64}$/.test(v))||!Array.isArray(s.target.discoveryEvidence)||!s.target.discoveryEvidence.length)throw Error('lab_identity_evidence_required');
  if(!Array.isArray(s.cases)||!s.cases.length||s.cases.length>32||new Set(s.cases.map(c=>c.id)).size!==s.cases.length||s.cases.some(c=>!c.id||typeof c.prompt!=='string'||!c.prompt||c.prompt.length>2*1024*1024||!['exact-text','json-schema','python-function-tests'].includes(c.validator)))throw Error('lab_workload_invalid');
  if(!Array.isArray(s.requestedDimensions)||s.requestedDimensions.length>16||!Array.isArray(s.evidenceRequirements)||!s.evidenceRequirements.length)throw Error('lab_capabilities_invalid');
