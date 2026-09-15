@@ -9,7 +9,7 @@
     document.addEventListener('keydown',event=>{if((event.altKey||event.metaKey)&&event.key.toLowerCase()==='w'){event.preventDefault();open(null);}});
     document.addEventListener('agent-control:authentication-changed',()=>{if(state.operatorAuth!=='authenticated'&&dialog.open)dialog.close();});
     const observer=new MutationObserver(decorateObservability);observer.observe(document.body,{childList:true,subtree:true});decorateObservability();
-    addEventListener('popstate',event=>{const id=event.state?.agentControlWorkspace;if(id)open(id,false);});
+    addEventListener('popstate',event=>{const id=event.state?.agentControlWorkspace;if(id)open(id,false);else if(dialog.open)dialog.close();});
     const requested=new URLSearchParams(location.search).get('workspace');if(requested)document.addEventListener('agent-control:authentication-changed',()=>{if(state.operatorAuth==='authenticated')open(requested,false);},{once:true});
   }
   function decorateObservability(){const host=document.querySelector('#observability-dialog .obs-header nav'),focus=host?.querySelector('[data-poe-focus-kind]');if(host&&focus&&!host.querySelector('[data-open-workspace]')){const button=document.createElement('button');button.className='button secondary';button.dataset.openWorkspace='';button.textContent='Open Workspace';button.onclick=()=>open(encode(focus.dataset.poeFocusKind==='node-dashboard'?'DEVICE':'RUN',[focus.dataset.poeFocusId]));host.insertBefore(button,focus);}
