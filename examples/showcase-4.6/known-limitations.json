@@ -1,6 +1,6 @@
 {
   "schema": "agent-control.known-limitations/v1",
-  "version": "4.7.1",
+  "version": "4.8.0",
   "items": [
     {
       "id": "AC46-ANDROID-01",
