@@ -65,7 +65,7 @@ def terminate(pid, identity):
         return
 
 
-def event(request, kind, **data):
+def emit_lifecycle(request, kind, **data):
     row = {'schema': 'agent-control.runtime-lifecycle/v1', 'type': kind,
            'at': datetime.datetime.now(datetime.timezone.utc).isoformat(),
            'clock': 'target', 'producer': request['producer'], 'data': data}
@@ -90,7 +90,7 @@ def run(request):
     raw = result['rawResponse']
     raw['provenance'] = 'AGENT_CONTROL_RUNTIME_EVIDENCE'
     raw['producer'] = request['producer']
-    event(request, 'runtime.request_received', operation='invoke')
+    emit_lifecycle(request, 'runtime.request_received', operation='invoke')
     original = request.get('originalService')
     suspended = False
     restored = original is None
@@ -135,12 +135,12 @@ def run(request):
             pid = candidates[0]
             raw['originalServicePid'] = pid
             suspended = True  # Cleanup is required even if termination partially fails.
-            event(request, 'service.suspending', pid=pid)
+            emit_lifecycle(request, 'service.suspending', pid=pid)
             terminate(pid, process_identity(pid))
-            event(request, 'service.suspended', pid=pid)
+            emit_lifecycle(request, 'service.suspended', pid=pid)
         before = memory()
         raw['beforeMemory'] = before
-        event(request, 'admission.memory', availableBytes=before.get('MemAvailable'), minimumBytes=request['minimumAvailableBytes'], allowed=before.get('MemAvailable', 0) >= request['minimumAvailableBytes'])
+        emit_lifecycle(request, 'admission.memory', availableBytes=before.get('MemAvailable'), minimumBytes=request['minimumAvailableBytes'], allowed=before.get('MemAvailable', 0) >= request['minimumAvailableBytes'])
         if before.get('MemAvailable', 0) < request['minimumAvailableBytes']:
             raise RuntimeError('insufficient_available_memory')
         with socket.socket() as sock:
@@ -160,13 +160,13 @@ def run(request):
         owned_identity = process_identity(child.pid)
         raw['runtimePid'] = child.pid
         raw['runtimeStartIdentity'] = owned_identity
-        event(request, 'runtime.started', pid=child.pid, startIdentity=owned_identity, command=args)
+        emit_lifecycle(request, 'runtime.started', pid=child.pid, startIdentity=owned_identity, command=args)
 
         def monitor():
             while not monitor_stop.is_set():
                 try:
                     if request.get('_cancel_requested') or abort_path.exists() or time.time()-started > profile['startupTimeoutSeconds']+profile['inferenceTimeoutSeconds']+60:
-                        event(request, 'runtime.abort_requested', reason='controller_abort_or_target_deadline')
+                        emit_lifecycle(request, 'runtime.abort_requested', reason='controller_abort_or_target_deadline')
                         terminate(child.pid, owned_identity)
                         return
                     status = (Path('/proc') / str(child.pid) / 'status').read_text()
@@ -241,7 +241,7 @@ def run(request):
                                  'promptTokPerSecond': timings.get('prompt_per_second'),
                                  'generationTokPerSecond': timings.get('predicted_per_second')})
         result['status'] = 'SUCCEEDED'
-        event(request, 'inference.completed', tokens=result['tokens'])
+        emit_lifecycle(request, 'inference.completed', tokens=result['tokens'])
     except Exception as error:
         result['error'] = str(error) if isinstance(error, (RuntimeError, TimeoutError)) else type(error).__name__
         result['status'] = 'TIMED_OUT' if isinstance(error, TimeoutError) else 'FAILED'
@@ -284,7 +284,7 @@ def run(request):
                     time.sleep(1)
                 raw['restoredPid'] = replacement.pid
         raw['originalServiceRestored'] = restored
-        event(request, 'service.restoration', restored=restored, pid=raw.get('restoredPid'))
+        emit_lifecycle(request, 'service.restoration', restored=restored, pid=raw.get('restoredPid'))
         if not restored:
             result['status'] = 'FAILED'
             result['error'] = 'original_service_restoration_unconfirmed'
@@ -304,7 +304,7 @@ def run(request):
         raw['endedAt'] = time.time()
     raw['eventDeliveryFailed'] = request.get('_event_delivery_failed', False)
     receipt_path.write_text(json.dumps(result))
-    event(request, 'runtime.result_retained', restored=restored)
+    emit_lifecycle(request, 'runtime.result_retained', restored=restored)
     return result
 
 
