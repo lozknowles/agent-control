@@ -154,6 +154,13 @@ export class JobRuntime {
    * Registration never executes cleanup. The existing authenticated cancel operation requests it.
    */
   restoreRetainedCleanup(kind:string, resolve:(identity:Record<string,unknown>,run:RunRecord,stepId:string,workerId:string)=>null|(()=>Promise<ExecutionCleanupReport>)) {
+    // Complete a prior confirmed reconciliation if restart quarantine left a source-step lock.
+    for(const lock of this.locks.list().filter(l=>l.retained&&!l.resource.startsWith('retained-cleanup:'))){
+      const run=this.ledger.get(lock.runId),step=run?.steps.find(s=>s.id===lock.stepId);if(!run||!step||!['CANCELLED','FAILED','DEGRADED'].includes(run.status))continue;
+      const proofs=this.artifacts.list(run.id).filter(a=>a.stepId===step.id&&a.name==='retained-cleanup-outcome').map(a=>this.artifacts.read(a.id) as any);
+      const registrations=this.artifacts.list(run.id).filter(a=>a.stepId===step.id&&a.name==='retained-cleanup-registered').map(a=>this.artifacts.read(a.id) as any);
+      if(registrations.length&&registrations.every(v=>v.identity?.kind===kind&&v.workerId===step.attempts.at(-1)?.workerId&&resolve(v.identity,run,step.id,v.workerId)&&proofs.filter(p=>p.id===v.id).at(-1)?.proof?.outcome==='confirmed'))this.locks.release(run.id,step.id);
+    }
     for(const lock of this.locks.list().filter(l=>l.retained&&l.resource.startsWith('retained-cleanup:'))){
       const run=this.ledger.get(lock.runId);if(!run||!['CLEANUP_UNCERTAIN','DISCONNECTED'].includes(run.status))continue;
       const metadata=this.artifacts.list(run.id).find(a=>a.name==='retained-cleanup-registered'&&(this.artifacts.read(a.id) as any)?.id===lock.resource);if(!metadata)continue;
@@ -488,7 +495,7 @@ export class JobRuntime {
         finally { if (timer) clearTimeout(timer); }
         const live = this.mustRun(runId), source = live.steps.find(step => step.id === entry.stepId)!;
         const artifact = this.artifacts.create(live, source.id, entry.workerId, {name:'retained-cleanup-outcome',type:'json',schema:'agent-control.attempt-evidence/v1',version:'1.0.0',retention:'run-history'}, {id,identity:entry.identity,proof}); source.artifactIds.push(artifact.id); live.artifacts.push(artifact.id);
-        if (proof.outcome === 'confirmed') { if(entry.workerRetained)this.workers.release(entry.workerId); entries.delete(id); this.locks.release(runId, id); const contractId=source.attempts.at(-1)?.contractId; if(contractId&&['CANCELLED','FAILED','DEGRADED'].includes(terminal)) this.contracts.completeExecution(contractId, terminal==='CANCELLED'?'CANCELLED':'FAILED', {outcome:'confirmed',detail:proof.reason,verifiedAt:proof.completedAt}, entry.authority); }
+        if (proof.outcome === 'confirmed') { if(entry.workerRetained)this.workers.release(entry.workerId); entries.delete(id); this.locks.release(runId, id); if(![...entries.values()].some(e=>e.stepId===source.id))this.locks.release(runId,source.id); const contractId=source.attempts.at(-1)?.contractId; if(contractId&&['CANCELLED','FAILED','DEGRADED'].includes(terminal)) this.contracts.completeExecution(contractId, terminal==='CANCELLED'?'CANCELLED':'FAILED', {outcome:'confirmed',detail:proof.reason,verifiedAt:proof.completedAt}, entry.authority); }
         else { uncertain = true; const attempt = source.attempts.at(-1)!; this.markCleanupUncertain(live, source, attempt, proof, 'retained_cleanup_unproved'); this.workers.claim(entry.workerId); entry.workerRetained=true; if (attempt.contractId) this.contracts.completeExecution(attempt.contractId, 'UNKNOWN', {outcome:'uncertain',detail:proof.reason,verifiedAt:proof.completedAt},entry.authority); }
         this.ledger.update(live, 'run.retained_cleanup_evidence');
       }
