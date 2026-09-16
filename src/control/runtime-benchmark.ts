@@ -57,11 +57,11 @@ export function registerRuntimeBenchmark(runtime:JobRuntime,raw:RuntimeBenchmark
  const spec=validateLabSpec(settings.spec),digest=labSpecDigest(spec),target=new TargetLlamaRuntime(settings.target),adapter=createRuntimeBenchmarkAdapter(settings,target);
  const workerId='runtime-benchmark:'+settings.target.resource.id;
  runtime.workers.registerControllerInternal({id:workerId,capabilities:['model.hardware.qualify'],health:'healthy',capacity:1,active:0,observedAt:new Date().toISOString()});
- runtime.actions.register('runtime-benchmark.inspect@1.0.0',async c=>{
+ runtime.actions.registerConsequentialControl('runtime-benchmark.inspect@1.0.0',async c=>{
   if(c.worker.id!==workerId||Date.parse(settings.authority.expiresAt)<=Date.now())throw Error('runtime_benchmark_authority_invalid');
   const observation=await target.observe(c);
   return {artifacts:[{name:'target-inspection',value:{observation,admission:assessTargetAdmission(observation,settings.policy),boundary:'Read-only target inspection. Process presence does not authorise termination.'}}],verification:['target-observed']};
- });
+ },['REMOTE_NODE','FILESYSTEM_WRITE']);
  runtime.catalog.knownActions?.add('runtime-benchmark.inspect@1.0.0');
  runtime.catalog.addJob({apiVersion:'agent-control/v1',kind:'Job',metadata:{id:'runtime-benchmark-inspect',version:'1.0.0',name:'Inspect configured benchmark target'},spec:{priority:'normal',concurrency:'no-overlap',steps:[{id:'inspect',action:'runtime-benchmark.inspect@1.0.0',requires:['model.hardware.qualify'],resources:['lab/qualification-window'],timeoutSeconds:120,verification:['target-observed'],outputs:[{name:'target-inspection',type:'application/json',schema:'agent-control.target-inspection/v1',version:'1.0.0'}]}]}});
  runtime.restoreRetainedCleanup('target-runtime',(identity,run,stepId,recoveryWorker)=>{

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createRuntimeBenchmarkAdapter,type BenchmarkTargetPort,type RuntimeBenchmarkSettings} from './runtime-benchmark.js';
+import {registerRuntimeBenchmark,createRuntimeBenchmarkAdapter,type BenchmarkTargetPort,type RuntimeBenchmarkSettings} from './runtime-benchmark.js';
 import type {ActionContext} from './job-types.js';
 import {validateLabSpec,type LabAttemptResult} from './model-hardware-qualification.js';
 const hash='a'.repeat(64);
@@ -15,3 +15,9 @@ test('evidence persistence failure triggers recovery rather than success',async(
 test('cancelled context cannot dispatch model',async()=>{const f=fixture();f.c.signal=AbortSignal.abort();f.target.observe=async()=>{throw Error('cancelled');};await assert.rejects(createRuntimeBenchmarkAdapter(settings,f.target).invoke(settings.spec,settings.spec.cases[0],f.c));});
 
 test('launch memory floor cannot weaken admission or accept invalid values',()=>{const f=fixture();for(const value of [-1,NaN,0])assert.throws(()=>createRuntimeBenchmarkAdapter({...settings,launchMinimumAvailableBytes:value},f.target),/memory_policy/);});
+
+test('read-only target inspector declares remote observation and evidence effects',()=>{
+ const registered:any[]=[];const jobs:any[]=[];const runtime:any={workers:{registerControllerInternal:()=>{}},restoreRetainedCleanup:()=>{},actions:{registerConsequentialControl:(id:any,handler:any,categories:any)=>registered.push({id,categories})},catalog:{knownActions:new Set(),addJob:(job:any)=>jobs.push(job)}};
+ registerRuntimeBenchmark(runtime,{...settings,target:{resource:{id:'target',platform:'linux',transport:{type:'local'},capabilities:[]},environment:'env',telemetry:'linux',stateDirectory:'/tmp/test-runtime'}});
+ assert.deepEqual(registered.find(x=>x.id==='runtime-benchmark.inspect@1.0.0').categories,['REMOTE_NODE','FILESYSTEM_WRITE']);assert.ok(jobs.some(j=>j.metadata.id==='runtime-benchmark-inspect'));
+});
