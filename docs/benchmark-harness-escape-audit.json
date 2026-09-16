@@ -7,7 +7,7 @@
   "rows": [
     {
       "path": "assets/runtime/llama-invocation.py",
-      "sha256": "dae6b7905013377a741a32c13938fe6f06d9a184afa21383e91d7689048da6b6",
+      "sha256": "987315fad00c321d9b0876a9d37ac48181a0c1d09980f9e90c9e0d897a87701b",
       "classification": "production Agent Control adapter",
       "reason": "Product control/runtime code; native path uses governed ActionContext and existing owned process/evidence lifecycle.",
       "occurrences": [
@@ -2699,7 +2699,7 @@
     },
     {
       "path": "src/control/target-llama-runtime.test.ts",
-      "sha256": "ee92af4ab598590df55dc4ec10ee13b0edafe899544b27392762d0203a7b69ae",
+      "sha256": "0edaec0a0f37767089151d26dd888b412d910b23ff2adbb254a4799c8c35e89b",
       "classification": "legitimate test fixture",
       "reason": "Automated test code; not registered as a production benchmark executor.",
       "occurrences": [

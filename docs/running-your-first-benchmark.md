@@ -52,3 +52,7 @@ REFUSE means inspect admission reasons before retrying. Missing target/model/has
 ## Extend without changing execution ownership
 
 A new suite uses `BenchmarkCase` workloads and a separately versioned frozen definition in `benchmarks/`; preserve prompts, expected answers and validator identity. Bind repetitions, timeout, profile, resource policy and evidence requirements in `LabQualificationSpec`. New runtime/target support implements existing `LabExecutionAdapter` / target transport interfaces with `ActionContext.ownedExecution`, retained cleanup and artifact recording. Qualification clients may submit and inspect; they must not SSH, start models or restore services. Keep provider/OS/runtime mechanisms in adapters.
+
+### Inspect memory before dispatch
+
+`POST /api/jobs/runtime-benchmark-inspect/run` submits a normal governed read-only inspection of the configured target. It shares the qualification lock so it cannot race an active benchmark. The `target-inspection` artifact contains charging/thermal admission, memory breakdown and up to 40 same-user process summaries. Only PID, process start identity, name, RSS and exact configured-service role are returned, never argv or environment. Presence alone does not authorise termination; unattributed processes are preserved. Kernel cache and swap are not treated as disposable benchmark allocations.
