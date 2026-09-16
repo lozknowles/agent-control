@@ -127,3 +127,7 @@ Use the floating Mallow companion for text and configured speech. Voice requests
 The 4.8 release retains the [4.7 observability foundation](docs/observability-4.7.md) and adds progressive navigation through evidenced nested execution environments. New qualification screenshots remain separate from normal source pulls.
 
 The observability candidate follows the device/browser system light or dark preference, including live changes without resetting the active view. See [system appearance](docs/system-theme-4.7.md).
+
+### Native benchmark candidate
+
+The isolated native benchmark candidate is documented in [Running your first benchmark](docs/running-your-first-benchmark.md). It is not a claim that the public v4.8.0 release contains or has qualified this capability.

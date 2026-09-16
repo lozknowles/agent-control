@@ -33,3 +33,7 @@ Admission records observations, policy thresholds and ADMIT/REFUSE. Missing batt
 The authoritative runtime remains in Agent Control. Agent Control Lab should carry fixtures, validators/comparison consumers, public-safe examples and reproducibility guides. Do not publish private target addresses, credential references, serials or operational configuration. Public v4.8 did not register this qualification harness as a supported runtime benchmark path; this capability is post-4.8 functionality and should be assessed for the next feature release, not retagged into 4.8.0.
 
 Broader benchmarking remains paused until the new runtime path is physically qualified.
+
+## Reusable qualification
+
+See [Running your first benchmark](running-your-first-benchmark.md) for a public-safe configuration and CLI/API workflow. Full frozen-suite qualification is separate from the earlier one-call smoke. Native receipts require the product-owned lifecycle transcript; Python scoring uses the byte-identical frozen validator in the governed worker sandbox.
