@@ -345,7 +345,23 @@ def dispatch(request):
     if operation != 'observe':
         raise RuntimeError('runtime_operation_invalid')
     original = request.get('originalService')
-    available = memory().get('MemAvailable')
+    memory_snapshot = memory()
+    available = memory_snapshot.get('MemAvailable')
+    processes = []
+    for proc in Path('/proc').iterdir():
+        try:
+            if not proc.name.isdigit() or proc.stat().st_uid != os.getuid():
+                continue
+            argv = [v.decode() for v in (proc/'cmdline').read_bytes().split(b'\0') if v]
+            status = (proc/'status').read_text()
+            rss = next((int(line.split()[1])*1024 for line in status.splitlines() if line.startswith('VmRSS:')), 0)
+            processes.append({'pid': int(proc.name), 'startIdentity': process_identity(int(proc.name)),
+                              'name': (proc/'comm').read_text().strip(), 'rssBytes': rss,
+                              'role': 'CONFIGURED_ORIGINAL_SERVICE' if original and argv == original['args'] else 'UNATTRIBUTED'})
+        except (OSError, ValueError, UnicodeError):
+            pass
+    # Process name/RSS only; argv and environment can contain credentials and are not returned.
+    processes.sort(key=lambda row: row['rssBytes'], reverse=True)
     healthy = idle = None
     if original:
         args = original['args']
@@ -357,5 +373,5 @@ def dispatch(request):
         except Exception:
             idle = False
     return {'architecture': platform.machine(), 'osName': platform.system(), 'osVersion': platform.release(), 'availableRamBytes': available, 'freeStorageBytes': shutil.disk_usage(Path.home()).free,
-            'serviceHealthy': healthy, 'serviceIdle': idle,
+            'serviceHealthy': healthy, 'serviceIdle': idle, 'sameUidProcesses': processes[:40], 'memoryBreakdown': {k: memory_snapshot.get(k) for k in ['MemTotal','MemAvailable','Cached','SReclaimable','SwapTotal','SwapFree']},
             'targetAt': datetime.datetime.now(datetime.timezone.utc).isoformat()}

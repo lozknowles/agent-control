@@ -28,3 +28,10 @@ health = lambda endpoint: True
 time.sleep = lambda value: None
 `;
 const run=()=>spawnSync('python3',['-'],{input:source+'\n'+fake+'\nprint(json.dumps(dispatch(json.loads('+JSON.stringify(JSON.stringify(request))+'))))\n',encoding:'utf8'});let response=run();assert.equal(response.status,0,response.stderr);assert.equal(JSON.parse(response.stdout.trim()).restored,true);fs.writeFileSync(path.join(root,'missing-attempt.log'),'runtime may have started');response=run();assert.equal(JSON.parse(response.stdout.trim()).restored,false);}finally{fs.rmSync(root,{recursive:true,force:true});}});
+
+test('read-only memory inspection returns bounded same-user summaries without argv or environment',{skip:process.platform!=='linux'},()=>{
+ const source=fs.readFileSync(new URL('../../assets/runtime/llama-invocation.py',import.meta.url),'utf8');
+ const result=spawnSync('python3',['-'],{input:source+'\nprint(json.dumps(dispatch({"operation":"observe","stateDirectory":"/tmp"})))\n',encoding:'utf8'});
+ assert.equal(result.status,0,result.stderr);const value=JSON.parse(result.stdout.trim());assert.ok(value.memoryBreakdown.MemTotal>0);assert.ok(value.sameUidProcesses.length<=40);
+ for(const row of value.sameUidProcesses){assert.deepEqual(Object.keys(row).sort(),['name','pid','role','rssBytes','startIdentity'].sort());assert.ok(row.rssBytes>=0);assert.equal(row.role,'UNATTRIBUTED');}
+});
