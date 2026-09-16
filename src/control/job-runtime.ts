@@ -357,9 +357,28 @@ export class JobRuntime {
       if (live.id === contract.id && (live.state !== 'ACTIVE' || live.process.state !== 'RUNNING' || live.pty.writeOwner !== actorId || live.baton.generation !== initialAuthority.baton.generation || live.pty.ownershipGeneration !== initialAuthority.pty.ownershipGeneration)) controller.abort('execution_authority_revoked');
     });
     this.ledger.update(run, 'step.contract_bound', {contractId: contract.id, laneId: contract.laneId});
-    let actionSettled = false, detached = false; let settledError: unknown; let removeAbortListener = () => {};
+    let actionSettled = false, detached = false, scopeFinalized = false, reconcilingLateCleanup = false; let settledError: unknown;
+    const cleanupAcknowledgements:string[]=[];let finalizedAuthority:StepAttempt['executionAuthority']; let removeAbortListener = () => {};
     let acknowledgeSettlement!: () => void;
     const settlement = new Promise<void>(resolve => { acknowledgeSettlement = resolve; });
+    const reconcileLateCancellation = async () => {
+      if(reconcilingLateCleanup||!scopeFinalized||!actionSettled||!controller.signal.aborted||timedOut||!cleanupAcknowledgements.length||ownedRequests.size||this.retainedCleanups.get(run.id)?.size)return;
+      const retainedFailure=(settledError as {executionCleanup?:ExecutionCleanupReport})?.executionCleanup;if(retainedFailure&&retainedFailure.outcome!=='confirmed')return;
+      const live=this.mustRun(run.id),current=live.steps.find(s=>s.id===step.id)!;
+      if(live.status!=='CLEANUP_UNCERTAIN'||current.attempts.at(-1)?.contractId!==contract.id||current.cleanup?.reason!=='action_completion_unacknowledged:execution_cancelled')return;
+      reconcilingLateCleanup=true;
+      try {
+        const proof=await ownedExecution.terminateAll('late-restoration-acknowledged');
+        if(proof.outcome!=='confirmed'||ownedRequests.size)return;
+        const completed=this.contracts.completeExecution(contract.id,'CANCELLED',{outcome:'confirmed',detail:'Late action settlement and all retained cleanup acknowledged',verifiedAt:proof.completedAt},finalizedAuthority);
+        if(completed.state!=='CANCELLED'||completed.process.state!=='EXITED')return;
+        // Keep the original attempt/uncertainty record unchanged; append a resolution.
+        const a=this.artifacts.create(live,step.id,worker.id,{name:'cleanup-resolution',type:'json',schema:'agent-control.cleanup-resolution/v1',version:'1.0.0'}, {contractId:contract.id,previousCleanup:current.cleanup,acknowledgements:cleanupAcknowledgements,actionSettled:true,proof,execution:'CANCELLED'});
+        live.artifacts.push(a.id);current.artifactIds.push(a.id);current.cleanup=proof;current.status='CANCELLED';current.error='execution_cancelled';delete current.waitingReason;current.endedAt=proof.completedAt;live.status='CANCELLED';live.endedAt=proof.completedAt;
+        this.locks.release(live.id,step.id);this.workers.release(worker.id);this.ledger.update(live,'run.cleanup_reconciled',{artifactId:a.id,execution:'CANCELLED',cleanup:'confirmed'});
+      } finally {reconcilingLateCleanup=false;}
+    };
+    const scheduleLateReconciliation=()=>{void reconcileLateCancellation().catch(()=>{/* Fail closed: original uncertainty/locks remain. */});};
     const cleanupExecution = async (reason: string): Promise<ExecutionCleanupReport> => {
       const requestedAt = this.clock().toISOString(); let lastReport: ExecutionCleanupReport | undefined;
       try {
@@ -411,12 +430,12 @@ export class JobRuntime {
         this.locks.acquire([id], run.id, id, true);
         const entries = this.retainedCleanups.get(run.id) ?? new Map(); entries.set(id, {stepId: step.id, workerId: worker.id, identity: structuredClone(identity), cleanup, authority: attempt.executionAuthority}); this.retainedCleanups.set(run.id, entries);
         recordEvidence('retained-cleanup-registered', {id, sourceStepId: step.id, workerId: worker.id, identity, cleanup: 'PENDING'});
-        return proof => { if (proof.outcome !== 'confirmed') throw new Error('retained_cleanup_proof_required'); entries.delete(id); this.locks.release(run.id, id); };
+        return proof => { if (proof.outcome !== 'confirmed') throw new Error('retained_cleanup_proof_required'); if(!entries.has(id))return; const receipt=recordEvidence('retained-cleanup-acknowledged',{id,identity,proof,contractId:contract.id});cleanupAcknowledgements.push(receipt.id);entries.delete(id);this.locks.release(run.id,id);scheduleLateReconciliation(); };
       };
       const actionContext = {retainCleanup, recordIndependentVerification, execution, recordEvidence, run: structuredClone(run), step: structuredClone(step), worker, parameters: structuredClone(run.parameters), inputArtifacts: inputs, readArtifact: (id: string) => this.artifacts.read(id), signal: controller.signal, ownedExecution, ...(step.governance ? {governance: structuredClone(step.governance)} : {})};
       const invocation = Promise.resolve().then(() => action.kind === 'control' ? action.handler(actionContext) : action.handler.execute(actionContext)).then(
-        output => { actionSettled = true; acknowledgeSettlement(); if (detached || timedOut) recordEvidence('late-action-output', {output}); return detached || timedOut ? new Promise<never>(() => undefined) : output; },
-        error => { settledError = error; actionSettled = true; acknowledgeSettlement(); if (detached || timedOut) recordEvidence('late-action-error', {error: error instanceof Error ? error.message : String(error), output: partialActionOutput(error) ?? null}); return detached || timedOut ? new Promise<never>(() => undefined) : Promise.reject(error); },
+        output => { actionSettled = true; acknowledgeSettlement(); if (detached || timedOut) recordEvidence('late-action-output', {output}); scheduleLateReconciliation(); return detached || timedOut ? new Promise<never>(() => undefined) : output; },
+        error => { settledError = error; actionSettled = true; acknowledgeSettlement(); if (detached || timedOut) recordEvidence('late-action-error', {error: error instanceof Error ? error.message : String(error), output: partialActionOutput(error) ?? null}); scheduleLateReconciliation(); return detached || timedOut ? new Promise<never>(() => undefined) : Promise.reject(error); },
       );
       const cancellation = new Promise<never>((_resolve, reject) => {
         const abort = () => { if (!timedOut) { detached = true; reject(new ActionFailure('execution_cancelled', 'execution')); } };
@@ -497,7 +516,7 @@ export class JobRuntime {
         this.ledger.update(run, 'run.human_takeover_retained', {contractId: contract.id});
       }
       if (safeToReleaseWorker && !controller.signal.aborted && step.status === 'SUCCEEDED' && registeredAction.kind === 'control') this.contracts.verify(contract.id, 'job-runtime:control-validator', true, step.verification?.passed.length ? step.verification.passed : ['Typed control Action completed']);
-      if (safeToReleaseWorker) this.workers.release(worker.id); this.controllers.delete(run.id); }
+      if (safeToReleaseWorker) this.workers.release(worker.id); this.controllers.delete(run.id); finalizedAuthority={processId:completedContract.process.id,batonGeneration:completedContract.baton.generation,ownershipGeneration:completedContract.pty.ownershipGeneration};scopeFinalized=true;scheduleLateReconciliation(); }
   }
 
   private reconcileRetainedCleanup(runId: string, target?: RunStatus): Promise<void> {

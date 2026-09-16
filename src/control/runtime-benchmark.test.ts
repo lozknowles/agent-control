@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {registerRuntimeBenchmark,createRuntimeBenchmarkAdapter,type BenchmarkTargetPort,type RuntimeBenchmarkSettings} from './runtime-benchmark.js';
+import {registerRuntimeBenchmark,createRuntimeBenchmarkAdapter,benchmarkResourceRequirement,assessBenchmarkAdmission,type BenchmarkTargetPort,type RuntimeBenchmarkSettings} from './runtime-benchmark.js';
 import type {ActionContext} from './job-types.js';
 import {validateLabSpec,type LabAttemptResult} from './model-hardware-qualification.js';
 const hash='a'.repeat(64);
@@ -21,3 +21,10 @@ test('read-only target inspector declares remote observation and evidence effect
  registerRuntimeBenchmark(runtime,{...settings,target:{resource:{id:'target',platform:'linux',transport:{type:'local'},capabilities:[]},environment:'env',telemetry:'linux',stateDirectory:'/tmp/test-runtime'}});
  assert.deepEqual(registered.find(x=>x.id==='runtime-benchmark.inspect@1.0.0').categories,['REMOTE_NODE','FILESYSTEM_WRITE']);assert.ok(jobs.some(j=>j.metadata.id==='runtime-benchmark-inspect'));
 });
+
+for(const floor of [11,100])test('workload floor '+floor+' refuses before dispatch despite generic admission passing',async()=>{const f=fixture(),cfg={...settings,launchMinimumAvailableBytes:floor};let calls=0;f.target.execute=async()=>{calls++;};const decision=assessBenchmarkAdmission(cfg,await f.target.observe(f.c));assert.equal(decision.target.allowed,true);assert.equal(decision.workload.allowed,false);await assert.rejects(createRuntimeBenchmarkAdapter(cfg,f.target).invoke(cfg.spec,cfg.spec.cases[0],f.c));assert.equal(calls,0);});
+test('same authoritative workload requirement is enforced by preflight and passed to launch',async()=>{const f=fixture(),cfg={...settings,launchMinimumAvailableBytes:8},execute=f.target.execute;let floor=0;f.target.execute=async(op,c,p)=>{floor=p!.minimumAvailableBytes as number;return execute(op,c,p);};assert.equal(assessBenchmarkAdmission(cfg,await f.target.observe(f.c)).allowed,true);await createRuntimeBenchmarkAdapter(cfg,f.target).invoke(cfg.spec,cfg.spec.cases[0],f.c);assert.equal(floor,benchmarkResourceRequirement(cfg).minimumAvailableBytes);});
+test('launch resource drop remains a failure even after passing preflight',async()=>{const f=fixture(),cfg={...settings,launchMinimumAvailableBytes:8};f.target.execute=async()=>({status:'FAILED',input:'READY',output:'',error:'insufficient_available_memory',tokens:{input:null,cached:null,output:null},metrics:{},configuration:{},rawResponse:{originalServiceRestored:true},evidenceAvailability:{}});const result=await createRuntimeBenchmarkAdapter(cfg,f.target).invoke(cfg.spec,cfg.spec.cases[0],f.c);assert.equal(result.status,'FAILED');assert.equal(result.error,'insufficient_available_memory');});
+test('recovered cancellation positively acknowledges retained cleanup',async()=>{const f=fixture();let acknowledged=0;f.c.retainCleanup=()=>()=>{acknowledged++;};f.target.execute=async()=>{throw Error('cancelled');};await assert.rejects(createRuntimeBenchmarkAdapter(settings,f.target).invoke(settings.spec,settings.spec.cases[0],f.c));assert.equal(acknowledged,1);});
+
+test('lost restoration evidence never acknowledges cleanup',async()=>{const f=fixture();let ack=0;f.c.retainCleanup=()=>()=>{ack++;};f.target.execute=async()=>{throw Error('cancelled');};const record=f.c.recordEvidence;f.c.recordEvidence=(n:string,v:any)=>{if(n==='runtime-recovery')throw Error('disk unavailable');return record(n,v);};await assert.rejects(createRuntimeBenchmarkAdapter(settings,f.target).invoke(settings.spec,settings.spec.cases[0],f.c),/restoration/);assert.equal(ack,0);});

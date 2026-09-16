@@ -11,7 +11,7 @@ import {createInvocationObservation,type HarnessEfficiencyLedgerPort} from './ha
 export interface RuntimeBenchmarkSettings {
  schema:'agent-control.runtime-benchmark/v1';spec:LabQualificationSpec;profile:TransportLabProfile;target:RuntimeTarget;policy:TargetResourcePolicy;
  authority:{actor:string;expiresAt:string;allowServiceSuspension:boolean};
- /** Additional floor after authorised idle-service reclamation; never weakens initial admission. */
+ /** Declared workload floor, checked before dispatch and again at launch. */
  launchMinimumAvailableBytes?:number;
 }
 export interface BenchmarkTargetPort {
@@ -20,31 +20,42 @@ export interface BenchmarkTargetPort {
  execute(operation:'observe'|'invoke'|'abort',c:ActionContext,payload?:Record<string,unknown>):Promise<any>;
  recover(c:ActionContext,id:string):Promise<{restored:boolean;result?:LabAttemptResult}>;
 }
+/** Configuration declares a workload floor; no speculative credit for reclaimable memory. */
+export function benchmarkResourceRequirement(settings:RuntimeBenchmarkSettings) {
+ const policy=validateTargetPolicy(settings.policy),declared=settings.launchMinimumAvailableBytes;
+ if(declared!==undefined&&(!Number.isSafeInteger(declared)||declared<policy.minimumAvailableBytes))throw Error('runtime_launch_memory_policy_invalid');
+ return {minimumAvailableBytes:Math.max(policy.minimumAvailableBytes,declared??0),source:declared===undefined?'target-policy':'configured-workload-floor',targetMinimumAvailableBytes:policy.minimumAvailableBytes};
+}
+export function assessBenchmarkAdmission(settings:RuntimeBenchmarkSettings,observation:TargetObservation) {
+ const requirement=benchmarkResourceRequirement(settings),target=assessTargetAdmission(observation,settings.policy);
+ const workloadAllowed=observation.availableRamBytes!==null&&observation.availableRamBytes>=requirement.minimumAvailableBytes;
+ return {allowed:target.allowed&&workloadAllowed,decision:target.allowed&&workloadAllowed?'ADMIT':'REFUSE',reasons:[...target.reasons,...(workloadAllowed?[]:['WORKLOAD_MEMORY_UNAVAILABLE_OR_INSUFFICIENT'])],target,workload:{allowed:workloadAllowed,...requirement,availableBytes:observation.availableRamBytes}};
+}
 export function createRuntimeBenchmarkAdapter(settings:RuntimeBenchmarkSettings,target:BenchmarkTargetPort):LabExecutionAdapter {
- const policy=validateTargetPolicy(settings.policy);if(settings.launchMinimumAvailableBytes!==undefined&&(!Number.isSafeInteger(settings.launchMinimumAvailableBytes)||settings.launchMinimumAvailableBytes<policy.minimumAvailableBytes))throw Error('runtime_launch_memory_policy_invalid');let restored=true;
+ const policy=validateTargetPolicy(settings.policy),requirement=benchmarkResourceRequirement(settings);let restored=true;
  const record=(c:ActionContext,name:string,data:unknown)=>{if(!c.recordEvidence)throw Error('runtime_evidence_required');return c.recordEvidence(name,{producer:target.producer(c),at:new Date().toISOString(),data});};
  const admit=async(c:ActionContext)=>{
   let observation:TargetObservation;
   try{observation=await target.observe(c);}catch(error){record(c,'runtime-admission',{decision:'REFUSE',reason:'TELEMETRY_UNAVAILABLE',policy,errorClass:error instanceof Error?error.message:'unknown'});return {available:false,evidence:{reason:'TELEMETRY_UNAVAILABLE'}};}
-  const decision=assessTargetAdmission(observation,policy);const evidence=record(c,'runtime-admission',{...decision,workload:settings.spec.id,target:settings.spec.target,observation,policy});
+  const decision=assessBenchmarkAdmission(settings,observation);const evidence=record(c,'runtime-admission',{...decision,workload:settings.spec.id,target:settings.spec.target,observation,policy});
   return {available:decision.allowed,evidence:{id:evidence.id,sha256:evidence.sha256}};
  };
  const adapter=createTransportLlamaLabAdapter({profile:settings.profile,admit,validateCode:validateRuntimeBenchmarkCode,execute:async(value,c)=>{
   c.signal.throwIfAborted();const attemptId=randomUUID();let result:LabAttemptResult;let monitoring=true,thermalRefused=false;restored=false;
   const start=Date.now();
-  const cleanup=async()=>{const at=new Date().toISOString();let success=false;try{const recovery=await target.recover(c,attemptId);success=recovery.restored;restored=success;record(c,'runtime-recovery',recovery);}catch{}return {outcome:success?'confirmed' as const:'uncertain' as const,reason:'target-runtime-restoration',requestedAt:at,completedAt:new Date().toISOString(),processes:[]};};
+  const cleanup=async()=>{const at=new Date().toISOString();let success=false;try{const recovery=await target.recover(c,attemptId);record(c,'runtime-recovery',recovery);success=recovery.restored;restored=success;}catch{}return {outcome:success?'confirmed' as const:'uncertain' as const,reason:'target-runtime-restoration',requestedAt:at,completedAt:new Date().toISOString(),processes:[]};};
   const finishCleanup=c.retainCleanup?.({kind:'target-runtime',target:settings.spec.target.device,attemptId,producer:target.producer(c)},cleanup);
   const monitor=async()=>{while(monitoring){await new Promise(resolve=>setTimeout(resolve,2000));if(!monitoring)break;try{const observation=await target.platform(c);record(c,'runtime-inflight-telemetry',observation);if(policy.batteryRequired&&(observation.thermalCelsius===null||observation.thermalCelsius>=policy.maximumThermalCelsius||observation.thermalStatus===null||observation.thermalStatus>=policy.maximumThermalStatus)){thermalRefused=true;record(c,'runtime-thermal-abort',{decision:'REFUSE',observation,policy});await target.recover(c,attemptId);break;}}catch{thermalRefused=true;await target.recover(c,attemptId);break;}}};
   const monitored=(policy.batteryRequired?monitor():Promise.resolve()).catch(()=>{thermalRefused=true;});
   try{
    record(c,'runtime-invocation-dispatch',{attemptId,fixture:value.input,model:settings.profile.model,modelSha256:settings.profile.modelSha256,provenance:'AGENT_CONTROL_RUNTIME_EVIDENCE'});
-   result=await target.execute('invoke',c,{...value,attemptId,minimumAvailableBytes:Math.max(policy.minimumAvailableBytes,settings.launchMinimumAvailableBytes??0)}) as LabAttemptResult;
+   result=await target.execute('invoke',c,{...value,attemptId,minimumAvailableBytes:requirement.minimumAvailableBytes}) as LabAttemptResult;
    restored=(result.rawResponse as any)?.originalServiceRestored===true;
    if(thermalRefused){result.status='FAILED';result.error='thermal_or_telemetry_abort';}
    if(!restored)throw Error('runtime_restoration_unconfirmed');
    record(c,'runtime-postflight',{observation:await target.observe(c),restored,elapsedMs:Date.now()-start});
    const at=new Date().toISOString();finishCleanup?.({outcome:'confirmed',reason:'target-restoration-evidenced',requestedAt:at,completedAt:at,processes:[]});return result;
-  }catch(error){await cleanup();throw error;}
+  }catch(error){const proof=await cleanup();if(proof.outcome==='confirmed')finishCleanup?.(proof);throw error;}
   finally{monitoring=false;await monitored;if(!restored)throw Error('runtime_restoration_unconfirmed');}
  }});
  adapter.restore=async()=>({restored,evidence:{producer:'agent-control-runtime',perInvocationRestorationConfirmed:restored}});
@@ -61,7 +72,7 @@ export function registerRuntimeBenchmark(runtime:JobRuntime,raw:RuntimeBenchmark
  runtime.actions.registerConsequentialControl('runtime-benchmark.inspect@1.0.0',async c=>{
   if(c.worker.id!==workerId||Date.parse(settings.authority.expiresAt)<=Date.now())throw Error('runtime_benchmark_authority_invalid');
   const observation=await target.observe(c);
-  return {artifacts:[{name:'target-inspection',value:{observation,admission:assessTargetAdmission(observation,settings.policy),boundary:'Read-only target inspection. Process presence does not authorise termination.'}}],verification:['target-observed']};
+  return {artifacts:[{name:'target-inspection',value:{observation,admission:assessBenchmarkAdmission(settings,observation),boundary:'Read-only target inspection. Process presence does not authorise termination.'}}],verification:['target-observed']};
  },['REMOTE_NODE','FILESYSTEM_WRITE']);
  runtime.catalog.knownActions?.add('runtime-benchmark.inspect@1.0.0');
  runtime.catalog.addJob({apiVersion:'agent-control/v1',kind:'Job',metadata:{id:'runtime-benchmark-inspect',version:'1.0.0',name:'Inspect configured benchmark target'},spec:{priority:'normal',concurrency:'no-overlap',steps:[{id:'inspect',action:'runtime-benchmark.inspect@1.0.0',requires:['model.hardware.qualify'],resources:['lab/qualification-window'],timeoutSeconds:120,verification:['target-observed'],outputs:[{name:'target-inspection',type:'application/json',schema:'agent-control.target-inspection/v1',version:'1.0.0'}]}]}});

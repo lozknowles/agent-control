@@ -101,7 +101,8 @@ export function registerModelHardwareQualification(catalog:JobCatalog,actions:Ac
     const accountingId=result.status==='BLOCKED'?null:await options.recordAccounting?.(context,result,{id,startedAt,endedAt,spec})??null;
     const record=context.recordEvidence('lab-qualification-attempt',{schema:'agent-control.lab-attempt/v1',id,runId:context.run.id,specSha256:digest,benchmarkVersion:spec.version,testClass:spec.testClass,target:spec.target,caseId:task.id,caseSha256:createHash('sha256').update(JSON.stringify(task)).digest('hex'),repetition,startedAt,endedAt,status:result.status,quality:{passed:verdict.passed,evidenceId:quality.id},accountingInvocationId:accountingId,response:{id:response.id,sha256:response.sha256},definition:{id:definition.id,sha256:definition.sha256}});
     attempts.push({id:record.id,sha256:record.sha256,status:result.status,quality:verdict.passed,evidenceComplete:spec.evidenceRequirements.every(key=>result.evidenceAvailability[key]==='RECORDED')});
-    if(result.status==='BLOCKED')break qualification;
+    // Evidence is committed before advancing; every non-success stops this serial suite.
+    if(result.status!=='SUCCEEDED')break qualification;
    }
   }finally{
    // Cancellation must still permit bounded restoration of resources owned by this parcel.
@@ -110,6 +111,7 @@ export function registerModelHardwareQualification(catalog:JobCatalog,actions:Ac
    restored=recovery.restored;
    context.recordEvidence('lab-restoration',recovery);if(!restored)throw Error('lab_restoration_unconfirmed');
   }
+  boundedContext.signal.throwIfAborted();
   const combined=[...reused,...attempts];
   return{artifacts:[{name:'qualification',value:{schema:'agent-control.lab-qualification/v1',specSha256:digest,status:attempts.some(a=>a.status==='BLOCKED')?'BLOCKED':combined.every(a=>a.status==='SUCCEEDED'&&a.quality===true)?combined.every(a=>a.evidenceComplete)?'QUALIFIED':'INCOMPLETE':'FAILED',definition:definition.id,compatibility:admission.id,attempts,reused,completedAttemptCount:combined.filter(a=>a.status==='SUCCEEDED').length,qualityPassedCount:combined.filter(a=>a.status==='SUCCEEDED'&&a.quality===true).length,executionStatus:combined.filter(a=>a.status==='SUCCEEDED').length===spec.cases.length*spec.repetitions?'COMPLETE':'INTERRUPTED',reusedAttemptCount:reused.length,plannedAttemptCount:spec.cases.length*spec.repetitions,unattemptedCount:spec.cases.length*spec.repetitions-attempts.length-reused.length,restored,productionRoutingChanged:false}}],verification:['lab-evidence-retained']};
  },['FILESYSTEM_WRITE','REMOTE_NODE']);
