@@ -80,7 +80,9 @@ export interface RunStep {
   startedAt?: string; endedAt?: string; nextAttemptAt?: string; recoveryDeadlineAt?: string; remainingRetryBudget?: number; cleanup?: ExecutionCleanupReport; error?: string; verification?: {required: string[]; passed: string[]; failed: string[]};
   governance?: ActionGovernancePlan; externalOperations?: ExternalOperationRecord[];
 }
+export interface RunResumption {generation:number;requestKey:string;actor:string;authorizedAt:string;expiresAt:string;stepId:string;checkpointId:string;checkpointSha256:string;}
 export interface RunRecord {
+  resumptions?: RunResumption[];
   id: string; jobId: string; jobVersion: string; trigger: {type: 'manual' | 'schedule' | 'retry'; id?: string; actor: string; modelRoute?: {requestedModel: string | null; requestedRole: string | null; modelId: string; providerId: string; accountProfileId?: string | null; accountLabel?: string | null; accountPlan?: string | null; accountPlanAuthority?: 'operator-configured' | 'provider-reported' | null; accountQualification?: string | null; accountAvailability?: string | null; providerModel: string; nodeId: string; workloadNodeId?: string; providerExecutionNodeId?: string; credentialNodeId?: string | null; qualificationVersion: string; fallback: boolean; fallbackReason: string | null}; parcelContext?: {schema: 'agent-control.run-parcel-context/v1'; parcelId: string; stageId: string; originalGoal: string; currentInterpretation: string; effectiveInstructions: string[]; constraints: string[]; successCriteria: Array<{id: string; description: string; status: string}>; baton: ParcelBatonView | null}};
   requestedAt: string; updatedAt?: string; scheduledAt?: string; startedAt?: string; endedAt?: string; status: RunStatus; priority: JobPriority;
   concurrency: ConcurrencyPolicy; parameters: Record<string, unknown>; steps: RunStep[]; artifacts: string[]; errors: string[];

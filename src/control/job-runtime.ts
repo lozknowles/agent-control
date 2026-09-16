@@ -119,7 +119,8 @@ export class ArtifactStore {
     const safeRecord = redactSensitiveValue(record); this.records.set(id, safeRecord); this.save(); return structuredClone(safeRecord);
   }
   get(id: string) { const record = this.records.get(id); return record ? structuredClone(record) : undefined; }
-  read(id: string) { const record = this.records.get(id); if (!record) throw new Error('artifact_missing'); const bytes = fs.readFileSync(record.storageRef); if (createHash('sha256').update(bytes).digest('hex') !== record.sha256) throw new Error('artifact_checksum_mismatch'); return JSON.parse(bytes.toString('utf8')); }
+  readText(id: string) { const record = this.records.get(id); if (!record) throw new Error('artifact_missing'); const bytes = fs.readFileSync(record.storageRef); if (createHash('sha256').update(bytes).digest('hex') !== record.sha256) throw new Error('artifact_checksum_mismatch'); return bytes.toString('utf8'); }
+  read(id: string) { return JSON.parse(this.readText(id)); }
   list(runId?: string) { return [...this.records.values()].filter(record => !runId || record.runId === runId).map(record => structuredClone(record)); }
   private save() { writeJsonAtomic(this.metadataFile, {version: 1, artifacts: this.list()} satisfies ArtifactSnapshot, true); }
 }
@@ -145,6 +146,24 @@ export class RunLedger {
 export interface JobRuntimeOptions {contracts?: ContractExecutionRuntime; now?: () => Date; approval?: (policy: string, run: RunRecord) => boolean; efficiency?: HarnessEfficiencyLedgerPort; safety?: RuntimeSafetySupervisorPort; defaultRecoveryDeadlineSeconds?: number; ownedExecutionFactory?: (scope: ExecutionSessionScope) => OwnedExecution; executionSessions?: ExecutionSessionRuntime;}
 export interface JobDispatch {runId: string; completion: Promise<RunRecord | undefined>;}
 export class JobRuntime {
+  private readonly resumePolicies = new Map<string, (run:RunRecord)=>{complete:boolean;checkpoint:unknown}>();
+  registerResumePolicy(action:string, inspect:(run:RunRecord)=>{complete:boolean;checkpoint:unknown}) { if(this.resumePolicies.has(action))throw Error('resume_policy_exists');this.resumePolicies.set(action,inspect); }
+  inspectResume(runId:string) { const run=this.mustRun(runId);if(run.steps.length!==1)throw Error('run_resume_unsupported');const policy=this.resumePolicies.get(run.steps[0].action);if(!policy)throw Error('run_resume_unsupported');return policy(run); }
+  resume(runId:string, actor:string, requestKey:string, expiresAt:string) {
+    const run=this.mustRun(runId),at=this.clock().toISOString();
+    if(!actor?.trim()||!/^[a-zA-Z0-9._:-]{1,128}$/.test(requestKey)||!Number.isFinite(Date.parse(expiresAt))||Date.parse(expiresAt)<=Date.parse(at)||Date.parse(expiresAt)-Date.parse(at)>4*3600000)throw Error('run_resume_authority_invalid');
+    if(run.resumptions?.some(r=>r.requestKey===requestKey))return run;
+    if(['QUEUED','WAITING','RUNNING','VERIFYING','RECONNECTING'].includes(run.status))return run;
+    if(!['SUCCEEDED','FAILED','DEGRADED','CANCELLED','DISCONNECTED'].includes(run.status)||this.retainedCleanups.get(runId)?.size||this.locks.list().some(l=>l.runId===runId&&l.retained))throw Error('run_resume_cleanup_required');
+    const plan=this.inspectResume(runId);if(plan.complete)return run;
+    const step=run.steps[0];
+    const checkpoint=this.artifacts.create(run,step.id,'agent-control-resume',{name:'run-resume-checkpoint',type:'application/json',schema:'agent-control.run-resume/v1',version:'1.0.0'}, {runId,previousStatus:run.status,previousEndedAt:run.endedAt??null,previousStep:structuredClone(step),checkpoint:plan.checkpoint});
+    run.artifacts.push(checkpoint.id);step.artifactIds.push(checkpoint.id);
+    (run.resumptions??=[]).push({generation:run.resumptions!.length+1,requestKey,actor,authorizedAt:at,expiresAt,stepId:step.id,checkpointId:checkpoint.id,checkpointSha256:checkpoint.sha256});
+    step.status='QUEUED';delete step.endedAt;delete step.error;delete step.waitingReason;delete step.nextAttemptAt;delete step.recoveryDeadlineAt;step.verification={required:step.verification?.required??[],passed:[],failed:[]};
+    run.status='QUEUED';delete run.endedAt;run.approvals=[];run.provenance.push({type:'resume',at,detail:'Fresh operator authority; immutable prior attempts and checkpoint retained'});
+    return this.ledger.update(run,'run.resume_authorized',{generation:run.resumptions.at(-1)!.generation,checkpointId:checkpoint.id,actor,expiresAt});
+  }
   private readonly controllers = new Map<string, AbortController>();
   private readonly retainedCleanups = new Map<string, Map<string, {stepId: string; workerId: string; identity: Record<string, unknown>; cleanup: () => Promise<ExecutionCleanupReport>; workerRetained?: boolean; authority?: StepAttempt['executionAuthority']}>>();
   private readonly runCleanups = new Map<string, Promise<void>>();

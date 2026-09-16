@@ -1,0 +1,49 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import {JobCatalog} from './job-catalog.js';
+import {JobRuntime,ActionRegistry,WorkerRegistry,RunLedger,ArtifactStore,ResourceLockManager} from './job-runtime.js';
+import {registerRuntimeBenchmark,type RuntimeBenchmarkSettings} from './runtime-benchmark.js';
+import {TargetLlamaRuntime} from './target-llama-runtime.js';
+import {labSpecDigest} from './model-hardware-qualification.js';
+const hash='a'.repeat(64),future=()=>new Date(Date.now()+3600000).toISOString();
+function setup(){
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'benchmark-resume-'));
+ const profile={id:'fixture-profile',device:'fixture-device',environment:'fixture-env',model:'fixture-model',modelPath:'/fixture/model',modelSha256:hash,runtimePath:'/fixture/runtime',runtimeSha256:hash,runtimeVersion:'fixture',quantisation:'fixture',context:512,threads:1,batch:32,microBatch:16,maxTokens:16,startupTimeoutSeconds:10,inferenceTimeoutSeconds:10,gpuLayers:0};
+ const settings:RuntimeBenchmarkSettings={schema:'agent-control.runtime-benchmark/v1',profile,authority:{actor:'fixture-operator',expiresAt:future(),allowServiceSuspension:false},target:{resource:{id:profile.device,name:'Fixture',platform:'linux',transport:{type:'local'},capabilities:[]} as any,environment:profile.environment,telemetry:'linux',stateDirectory:'/fixture/state'},policy:{batteryRequired:false,chargingRequired:true,minimumBatteryPercent:0,maximumThermalCelsius:40,maximumThermalStatus:2,minimumAvailableBytes:1,minimumFreeStorageBytes:1,maximumObservationAgeMs:30000},spec:{schema:'agent-control.model-hardware-qualification/v1',id:'fixture-suite',version:'1',target:{device:profile.device,environment:profile.environment,runtime:'llama.cpp',model:profile.model,modelSha256:hash,runtimeSha256:hash,discoveryEvidence:['fixture']},adapter:'transport-llama-cpp/v1',profileRef:profile.id,testClass:'COMMON_COMPARABLE',cases:Array.from({length:9},(_,i)=>({id:'case-'+i,prompt:'fixture-'+i,input:null,validator:'exact-text' as const,expected:i<2||i===8?'OK':'OTHER'})),repetitions:3,timeoutMs:60000,requestedDimensions:[],evidenceRequirements:['input-output'],resourcePolicyRef:'fixture'}};
+ const actions=new ActionRegistry(),runtime=new JobRuntime(new JobCatalog(actions.ids()),actions,new WorkerRegistry(),new RunLedger(path.join(root,'ledger.json')),new ArtifactStore(path.join(root,'artifacts')),new ResourceLockManager(path.join(root,'locks.json')),{approval:()=>true});
+ let calls=0,observations=0,refuse=true,hold:Promise<void>|undefined;
+ const oldObserve=TargetLlamaRuntime.prototype.observe,oldExecute=TargetLlamaRuntime.prototype.execute;
+ TargetLlamaRuntime.prototype.observe=async function(){observations++;return {observedAt:new Date().toISOString(),connected:true,charging:!(refuse&&calls>=24),batteryPercent:100,thermalCelsius:20,thermalStatus:0,availableRamBytes:100,freeStorageBytes:100,serviceHealthy:true,serviceIdle:true,evidence:{synthetic:true}};};
+ TargetLlamaRuntime.prototype.execute=async function(operation,c){assert.equal(operation,'invoke');calls++;if(hold)await hold;const native=c.recordEvidence!('runtime-execution-provenance',{classification:'AGENT_CONTROL_RUNTIME_EVIDENCE',missing:[],producer:this.producer(c),ownedProcess:{pid:123,exitCode:0},synthetic:true});return {status:'SUCCEEDED',input:'fixture',output:'OK',error:null,tokens:{input:1,cached:0,output:1},metrics:{},configuration:profile,rawResponse:{originalServiceRestored:true,nativeExecutionEvidence:{id:native.id,sha256:native.sha256},synthetic:true},evidenceAvailability:{'input-output':'RECORDED'}};};
+ registerRuntimeBenchmark(runtime,settings);
+ const run=runtime.createRun('model-hardware-qualification@1.0.0',{}, {type:'manual',actor:'fixture-operator',parcelContext:{schema:'agent-control.run-parcel-context/v1',parcelId:'fixture-parcel',stageId:'execute',originalGoal:'fixture',currentInterpretation:'fixture',effectiveInstructions:[],constraints:[],successCriteria:[],baton:null}});
+ const resume=(key='resume-1',expiresAt=future())=>runtime.resume(run.id,'new-operator',key,expiresAt);
+ return {root,settings,runtime,run,resume,calls:()=>calls,observations:()=>observations,allow:()=>{refuse=false;},hold:(value:Promise<void>)=>{hold=value;},dispose:()=>{TargetLlamaRuntime.prototype.observe=oldObserve;TargetLlamaRuntime.prototype.execute=oldExecute;fs.rmSync(root,{recursive:true,force:true});}};
+}
+async function interrupted(){const f=setup();await f.runtime.tick();assert.equal(f.calls(),24);return f;}
+const summary=(f:ReturnType<typeof setup>)=>{const a=f.runtime.artifacts.list(f.run.id).filter(a=>a.name==='qualification').at(-1)!;return f.runtime.artifacts.read(a.id);};
+test('native same-run resume preserves 24 completions/refusal, appends 3 unique calls and aggregates unchanged scores',async()=>{const f=await interrupted();try{
+ const old=f.runtime.ledger.get(f.run.id)!,before=f.runtime.artifacts.list(f.run.id).map(a=>({id:a.id,sha:a.sha256,bytes:f.runtime.artifacts.readText(a.id)})),plan=f.runtime.inspectResume(f.run.id).checkpoint as any;
+ assert.equal(plan.completedCount,24);assert.equal(plan.refusals.length,1);assert.deepEqual(plan.outstanding,[1,2,3].map(repetition=>({caseId:'case-8',repetition})));
+ f.allow();const queued=f.resume();assert.equal(queued.id,old.id);assert.deepEqual(queued.trigger,old.trigger);assert.deepEqual(queued.steps[0].attempts,old.steps[0].attempts);assert.equal(queued.resumptions![0].actor,'new-operator');
+ await f.runtime.tick();assert.equal(f.calls(),27);assert.equal(f.runtime.ledger.list().length,1);
+ const s=summary(f);assert.equal(s.completedAttemptCount,27);assert.equal(s.qualityPassedCount,9);assert.equal(s.executionStatus,'COMPLETE');assert.equal(s.reusedAttemptCount,24);assert.equal(s.restored,true);
+ for(const a of before){assert.equal(f.runtime.artifacts.get(a.id)!.sha256,a.sha);assert.equal(f.runtime.artifacts.readText(a.id),a.bytes);}
+ const attempts=f.runtime.artifacts.list(f.run.id).filter(a=>a.name==='lab-qualification-attempt').map(a=>f.runtime.artifacts.read(a.id));assert.equal(attempts.length,28);assert.equal(new Set(attempts.map(a=>a.id)).size,28);assert.equal(attempts.filter(a=>a.status==='BLOCKED').length,1);assert.ok(attempts.slice(-3).every(a=>a.runId===old.id&&a.id.endsWith(':resume-1')));
+ assert.equal(f.runtime.artifacts.list(f.run.id).filter(a=>a.name==='lab-restoration').length,2);assert.equal((f.runtime.inspectResume(f.run.id).checkpoint as any).complete,true);
+ const count=f.runtime.artifacts.list().length;f.resume('completed-again');await f.runtime.tick();assert.equal(f.calls(),27);assert.equal(f.runtime.artifacts.list().length,count);
+ }finally{f.dispose();}});
+test('fresh admission refusal appends evidence on same run and executes zero outstanding fixtures',async()=>{const f=await interrupted();try{const observed=f.observations();f.resume();await f.runtime.tick();assert.ok(f.observations()>observed);assert.equal(f.calls(),24);assert.equal(summary(f).status,'BLOCKED');assert.equal(summary(f).completedAttemptCount,24);const refusals=f.runtime.artifacts.list().filter(a=>a.name==='runtime-admission').map(a=>f.runtime.artifacts.read(a.id)).filter(a=>a.data.decision==='REFUSE');assert.equal(refusals.length,2);assert.equal(f.runtime.ledger.list().length,1);}finally{f.dispose();}});
+test('expired renewal is rejected before admission and fresh grant is distinct from run identity',async()=>{const f=await interrupted();try{const before=f.observations();assert.throws(()=>f.resume('expired','2000-01-01'),/authority_invalid/);assert.equal(f.observations(),before);f.allow();f.resume();await f.runtime.tick();assert.equal(f.calls(),27);assert.equal(f.runtime.ledger.get(f.run.id)!.id,f.run.id);}finally{f.dispose();}});
+test('expired initial configured authority permits no invocation; new operator grant allows same-run execution',async()=>{const f=setup();try{
+ // Expiry is evaluated per dispatch; use a future clock via Date.now only for authority/admission assessment.
+ const now=Date.now,offset=5*3600000;Date.now=()=>now()+offset;
+ try{await f.runtime.tick();assert.equal(f.calls(),0);assert.equal(f.runtime.ledger.get(f.run.id)!.status,'FAILED');}finally{Date.now=now;}
+ f.allow();f.resume();await f.runtime.tick();assert.equal(f.calls(),27);assert.equal(f.runtime.ledger.list().length,1);
+ }finally{f.dispose();}});
+test('same key, concurrent requests and an in-flight resume cannot duplicate execution',async()=>{const f=await interrupted();try{f.allow();let release!:()=>void;f.hold(new Promise(r=>{release=r;}));f.resume();f.resume();f.resume('concurrent');const dispatched=f.runtime.dispatch()!;await new Promise(r=>setImmediate(r));const count=f.calls();assert.equal(count,25);f.resume('during-work');assert.equal(f.runtime.dispatch(),undefined);release();await dispatched.completion;assert.equal(f.calls(),27);assert.equal(f.runtime.ledger.get(f.run.id)!.resumptions!.length,1);}finally{f.dispose();}});
+test('evidence tampering refuses resume without admission or dispatch',async()=>{const f=await interrupted();try{const a=f.runtime.artifacts.list().find(a=>a.name==='lab-invocation-response')!;fs.appendFileSync(a.storageRef,' ');assert.throws(()=>f.resume(),/checksum/);assert.equal(f.calls(),24);assert.equal(f.runtime.ledger.get(f.run.id)!.resumptions,undefined);}finally{f.dispose();}});
+test('uncertain cleanup remains fail closed',async()=>{const f=await interrupted();try{f.runtime.locks.acquire(['retained-cleanup:test'],f.run.id,'qualify',true);assert.throws(()=>f.resume(),/cleanup_required/);}finally{f.dispose();}});

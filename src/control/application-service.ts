@@ -84,6 +84,7 @@ export type ControlEventType =
   | 'job.run_cancelled'
   | 'job.run_authentication_resumed'
   | 'job.run_retried'
+  | 'job.run_resume_requested'
   | 'job.run_approved'
   | 'job.schedule_changed'
   | 'job.run_changed'
@@ -337,6 +338,8 @@ export class AgentControlService {
   createJobRun(id: string, parameters: Record<string, unknown>, actor: string, requestKey?: string) { const job = this.job(id); const run = this.mustJobRuntime().createRun(`${job.metadata.id}@${job.metadata.version}`, parameters, {type: 'manual', actor}, undefined, requestKey); this.events.emit('job.run_created', {runId: run.id, jobId: run.jobId, trigger: 'manual'}, undefined, actor); return run; }
   cancelJobRun(id: string, actor: string) { const run = this.mustJobRuntime().cancel(id, `cancelled_by:${actor}`); this.events.emit('job.run_cancelled', {runId: id}, undefined, actor); return run; }
   retryJobRun(id: string, actor: string) { const run = this.mustJobRuntime().retry(id); this.events.emit('job.run_retried', {sourceRunId: id, runId: run.id}, undefined, actor); return run; }
+  inspectJobRunResume(id:string) { return this.mustJobRuntime().inspectResume(id); }
+  resumeJobRun(id:string,actor:string,requestKey:string,expiresAt:string) { const runtime=this.mustJobRuntime(),before=runtime.ledger.get(id)?.resumptions?.length??0,run=runtime.resume(id,actor,requestKey,expiresAt);if((run.resumptions?.length??0)>before)this.events.emit('job.run_resume_requested',{runId:run.id},undefined,actor);return run; }
   approveJobRun(id: string, policy: string, actor: string) { if (!policy.trim()) throw new Error('approval_policy_required'); const run = this.mustJobRuntime().approve(id, policy, actor); this.events.emit('job.run_approved', {runId: id, approval: policy}, undefined, actor); return run; }
   schedules() { return this.mustJobRuntime().catalog.listSchedules().map(schedule => ({...schedule, state: this.mustJobRuntime().ledger.schedule(schedule.metadata.id)})); }
   setScheduleEnabled(id: string, enabled: boolean, actor: string) { const state = this.mustJobRuntime().setScheduleEnabled(id, enabled); this.events.emit('job.schedule_changed', {scheduleId: id, enabled}, undefined, actor); return state; }

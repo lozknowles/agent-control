@@ -27,7 +27,8 @@ Usage:
   agent-control jobs update SAVED-JOB-ID --revision N --file FILE
   agent-control jobs cancel RUN-ID
   agent-control benchmark definition|run [--spec SHA256]
-  agent-control benchmark status|cancel RUN-ID
+  agent-control benchmark status|cancel|resume-plan RUN-ID
+  agent-control benchmark resume RUN-ID --request-key KEY --expires-at ISO-TIMESTAMP
   agent-control workspace list [--json]
   agent-control workspace open WORKSPACE-ID [--json]
   agent-control open job RUN-ID [--json]
@@ -84,8 +85,10 @@ export async function benchmarkCommand(argv,io={out:console.log,error:console.er
   const [operation,id,hash]=argv;let pathname,body;
   if(operation==='definition'&&argv.length===1)pathname='/api/jobs/model-hardware-qualification';
   else if(operation==='run'&&(argv.length===1||(argv.length===3&&id==='--spec'&&/^[a-f0-9]{64}$/.test(hash)))){pathname='/api/jobs/model-hardware-qualification/run';body={parameters:hash?{specSha256:hash}:{},actor:'cli-operator'};}
+  else if(operation==='resume'&&argv.length===6&&argv[2]==='--request-key'&&argv[4]==='--expires-at'&&/^run-[a-zA-Z0-9-]+$/.test(id)){pathname='/api/runs/'+encodeURIComponent(id)+'/resume';body={requestKey:argv[3],expiresAt:argv[5]};}
+  else if(operation==='resume-plan'&&argv.length===2&&/^run-[a-zA-Z0-9-]+$/.test(id)){pathname='/api/runs/'+encodeURIComponent(id)+'/resume';}
   else if(['status','cancel'].includes(operation)&&argv.length===2&&/^run-[a-zA-Z0-9-]+$/.test(id)){pathname='/api/runs/'+encodeURIComponent(id)+(operation==='cancel'?'/cancel':'');if(operation==='cancel')body={actor:'cli-operator'};}
-  else throw Error('Use benchmark definition|run [--spec SHA256] or status|cancel RUN-ID');
+  else throw Error('Use benchmark definition|run [--spec SHA256] or status|cancel|resume-plan RUN-ID or resume RUN-ID --request-key KEY --expires-at ISO-TIMESTAMP');
   const url=jobsBaseUrl(environment);url.pathname=pathname;url.search='';url.hash='';
   const token=environment.AGENT_CONTROL_WEB_OPERATOR_TOKEN?.trim();if(!token)throw Error('AGENT_CONTROL_WEB_OPERATOR_TOKEN is required');
   const response=await fetcher(url,{method:body?'POST':'GET',redirect:'error',headers:{Accept:'application/json',Authorization:'Bearer '+token,...(body?{'Content-Type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{})});

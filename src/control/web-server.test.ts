@@ -367,3 +367,17 @@ test('saved-job input budgets remain numeric without exposing credential tokens'
   const[value]=await(await fetch(`${base}/api/job-definitions`)).json();
   assert.equal(value.budgets.maximumInputTokens,120000);assert.equal(value.budgets.maximumOutputTokens,8192);assert.equal(value.credentialToken,'[REDACTED]');
 });
+
+test('same-run resume API requires mutation authority and preserves protected step approval',async()=>{
+ const {control,runtime}=serviceWithJobs();runtime.registerResumePolicy('test.run@1.0.0',()=>({complete:false,checkpoint:{synthetic:true}}));
+ const run=runtime.createRun('web-job@1.0.0',{}, {type:'manual',actor:'operator'});run.status='SUCCEEDED';run.steps[0].status='SUCCEEDED';run.approvals=['release'];runtime.ledger.update(run);
+ const server=startWebDashboard(control,{host:'127.0.0.1',port:0,operatorToken:'test-token',assetsDir:path.resolve('assets/dashboard')});await once(server,'listening');const base=`http://127.0.0.1:${(server.address() as AddressInfo).port}`,url=base+'/api/runs/'+run.id+'/resume';
+ try{
+  const data={requestKey:'api-resume',expiresAt:new Date(Date.now()+60000).toISOString()};
+  assert.equal((await unauthenticatedFetch(url)).status,401);
+  assert.equal((await unauthenticatedFetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})).status,401);
+  assert.equal((await fetch(url)).status,200);
+  const r=await fetch(url,{method:'POST',headers:{Authorization:'Bearer test-token','Content-Type':'application/json'},body:JSON.stringify(data)});assert.equal(r.status,200);assert.equal((await r.json()).id,run.id);
+  await runtime.tick();assert.equal(runtime.ledger.get(run.id)!.steps[0].status,'WAITING_FOR_APPROVAL');assert.equal(runtime.ledger.list().length,1);
+ }finally{server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r()));}
+});

@@ -54,6 +54,7 @@ export function validateLabSpec(s:LabQualificationSpec){
 }
 /** Registers one ordinary governed job; no scheduler, telemetry store or model downloader. */
 export function registerModelHardwareQualification(catalog:JobCatalog,actions:ActionRegistry,options:{
+ resolveSameRun?:(spec:LabQualificationSpec,context:ActionContext)=>Promise<Array<{caseId:string;repetition:number;id:string;sha256:string;status:'SUCCEEDED';quality:boolean|null;evidenceComplete:boolean}>>;
  defaultSpecSha256?:string;
  resolve:(digest:string)=>LabQualificationSpec;
  authorize:(spec:LabQualificationSpec,context:ActionContext)=>Promise<void>;
@@ -69,15 +70,15 @@ export function registerModelHardwareQualification(catalog:JobCatalog,actions:Ac
   await options.authorize(spec,context);
   context.signal.throwIfAborted();
   const adapter=options.adapters.find(a=>a.id===spec.adapter);if(!adapter)throw Error('lab_adapter_unavailable');
-  const reused=spec.continuationSha256?(options.resolveContinuation?await options.resolveContinuation(spec,context):(()=>{throw Error('lab_continuation_resolver_required');})()):[];
+  const reused=context.run.resumptions?.length?(options.resolveSameRun?await options.resolveSameRun(spec,context):(()=>{throw Error('lab_same_run_resolver_required');})()):spec.continuationSha256?(options.resolveContinuation?await options.resolveContinuation(spec,context):(()=>{throw Error('lab_continuation_resolver_required');})()):[];
   const slots=new Set<string>();for(const a of reused){const slot=a.caseId+':'+a.repetition;if(!spec.cases.some(c=>c.id===a.caseId)||!Number.isInteger(a.repetition)||a.repetition<1||a.repetition>spec.repetitions||slots.has(slot)||a.status!=='SUCCEEDED'||!a.id||!/^[a-f0-9]{64}$/.test(a.sha256)||![true,false,null].includes(a.quality)||typeof a.evidenceComplete!=='boolean')throw Error('lab_continuation_invalid');slots.add(slot);}
-  if(spec.continuationSha256)context.recordEvidence('lab-continuation',{digest:spec.continuationSha256,reused,boundary:'References to verified prior executions; no duplicate accounting or retrospective quality changes.'});
+  if(spec.continuationSha256||context.run.resumptions?.length)context.recordEvidence('lab-continuation',{digest:spec.continuationSha256,reused,boundary:'References to verified prior executions; no duplicate accounting or retrospective quality changes.'});
   const boundedContext={...context,signal:AbortSignal.any([context.signal,AbortSignal.timeout(spec.timeoutMs)])};
   const definition=context.recordEvidence('lab-qualified-spec',{spec,digest});
   const compatibility=await adapter.compatibility(spec,boundedContext);
   const admission=context.recordEvidence('lab-compatibility',{...compatibility,target:spec.target,specSha256:digest});
   boundedContext.signal.throwIfAborted();
-  if(!['SUPPORTED','SUPPORTED_WITH_LIMITATIONS'].includes(compatibility.status))return{artifacts:[{name:'qualification',value:{schema:'agent-control.lab-qualification/v1',specSha256:digest,status:compatibility.status,definition:definition.id,compatibility:admission.id,attempts:[]}}],verification:['lab-evidence-retained']};
+  if(!['SUPPORTED','SUPPORTED_WITH_LIMITATIONS'].includes(compatibility.status))return{artifacts:[{name:'qualification',value:{schema:'agent-control.lab-qualification/v1',specSha256:digest,status:compatibility.status,definition:definition.id,compatibility:admission.id,attempts:[],reused,completedAttemptCount:reused.length,plannedAttemptCount:spec.cases.length*spec.repetitions,executionStatus:'INTERRUPTED'}}],verification:['lab-evidence-retained']};
   // prepare must roll back its own partial failure; restore receives the completed preparation receipt.
   let state:unknown;
   try{state=await adapter.prepare(spec,boundedContext);}catch(error){const failure=context.recordEvidence('lab-preparation-failure',{specSha256:digest,status:error instanceof LabPreparationFailure?error.classification:context.signal.aborted?'CANCELLED':boundedContext.signal.aborted?'TIMED_OUT':'FAILED',reason:error instanceof LabPreparationFailure?error.reason:null,evidence:error instanceof LabPreparationFailure?error.evidence:null,errorClass:error instanceof Error?error.name:'UnknownError',partialRollback:'Adapter must retain its own rollback receipt; not inferred here.'});if(error instanceof LabPreparationFailure)return{artifacts:[{name:'qualification',value:{schema:'agent-control.lab-qualification/v1',specSha256:digest,status:error.classification,definition:definition.id,compatibility:admission.id,preparationFailure:failure.id,attempts:[],productionRoutingChanged:false}}],verification:['lab-evidence-retained']};throw Error('lab_preparation_failed');}
@@ -87,7 +88,7 @@ export function registerModelHardwareQualification(catalog:JobCatalog,actions:Ac
    qualification:for(const task of spec.cases)for(let repetition=1;repetition<=spec.repetitions;repetition++){
     if(slots.has(task.id+':'+repetition))continue;
     boundedContext.signal.throwIfAborted();if(labSpecDigest(spec)!==digest)throw Error('lab_spec_changed');await options.authorize(spec,boundedContext);
-    const startedAt=new Date().toISOString(),id=`${context.run.id}:${task.id}:${repetition}`;
+    const startedAt=new Date().toISOString(),id=`${context.run.id}:${task.id}:${repetition}${context.run.resumptions?.length?':resume-'+context.run.resumptions.at(-1)!.generation:''}`;
     const {cases:_cases,...publicSpec}=spec;
     let result:LabAttemptResult;
     try{result=validateLabAttempt(await adapter.invoke(publicSpec,{id:task.id,prompt:task.prompt},boundedContext));}
@@ -110,7 +111,7 @@ export function registerModelHardwareQualification(catalog:JobCatalog,actions:Ac
    context.recordEvidence('lab-restoration',recovery);if(!restored)throw Error('lab_restoration_unconfirmed');
   }
   const combined=[...reused,...attempts];
-  return{artifacts:[{name:'qualification',value:{schema:'agent-control.lab-qualification/v1',specSha256:digest,status:attempts.some(a=>a.status==='BLOCKED')?'BLOCKED':combined.every(a=>a.status==='SUCCEEDED'&&a.quality===true)?combined.every(a=>a.evidenceComplete)?'QUALIFIED':'INCOMPLETE':'FAILED',definition:definition.id,compatibility:admission.id,attempts,reused,reusedAttemptCount:reused.length,plannedAttemptCount:spec.cases.length*spec.repetitions,unattemptedCount:spec.cases.length*spec.repetitions-attempts.length-reused.length,restored,productionRoutingChanged:false}}],verification:['lab-evidence-retained']};
+  return{artifacts:[{name:'qualification',value:{schema:'agent-control.lab-qualification/v1',specSha256:digest,status:attempts.some(a=>a.status==='BLOCKED')?'BLOCKED':combined.every(a=>a.status==='SUCCEEDED'&&a.quality===true)?combined.every(a=>a.evidenceComplete)?'QUALIFIED':'INCOMPLETE':'FAILED',definition:definition.id,compatibility:admission.id,attempts,reused,completedAttemptCount:combined.filter(a=>a.status==='SUCCEEDED').length,qualityPassedCount:combined.filter(a=>a.status==='SUCCEEDED'&&a.quality===true).length,executionStatus:combined.filter(a=>a.status==='SUCCEEDED').length===spec.cases.length*spec.repetitions?'COMPLETE':'INTERRUPTED',reusedAttemptCount:reused.length,plannedAttemptCount:spec.cases.length*spec.repetitions,unattemptedCount:spec.cases.length*spec.repetitions-attempts.length-reused.length,restored,productionRoutingChanged:false}}],verification:['lab-evidence-retained']};
  },['FILESYSTEM_WRITE','REMOTE_NODE']);
  catalog.knownActions?.add('model-hardware-qualification.execute@1.0.0');
  catalog.addJob({apiVersion:'agent-control/v1',kind:'Job',metadata:{id:'model-hardware-qualification',version:'1.0.0',name:'Qualify this model on this device'},spec:{priority:'normal',concurrency:'no-overlap',parameters:{specSha256:{type:'string',required:true,...(options.defaultSpecSha256?{default:options.defaultSpecSha256}:{})}},steps:[{id:'qualify',action:'model-hardware-qualification.execute@1.0.0',requires:['model.hardware.qualify'],resources:['lab/qualification-window'],timeoutSeconds:86400,verification:['lab-evidence-retained'],outputs:[{name:'qualification',type:'application/json',schema:'agent-control.lab-qualification/v1',version:'1.0.0'}]}]}});
