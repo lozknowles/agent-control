@@ -1,3 +1,4 @@
+import {validateRuntimeBenchmarkCode} from './runtime-benchmark-validator.js';
 import {createHash,randomUUID} from 'node:crypto';
 import type {JobRuntime} from './job-runtime.js';
 import type {ActionContext} from './job-types.js';
@@ -9,6 +10,8 @@ import {createInvocationObservation,type HarnessEfficiencyLedgerPort} from './ha
 export interface RuntimeBenchmarkSettings {
  schema:'agent-control.runtime-benchmark/v1';spec:LabQualificationSpec;profile:TransportLabProfile;target:RuntimeTarget;policy:TargetResourcePolicy;
  authority:{actor:string;expiresAt:string;allowServiceSuspension:boolean};
+ /** Additional floor after authorised idle-service reclamation; never weakens initial admission. */
+ launchMinimumAvailableBytes?:number;
 }
 export interface BenchmarkTargetPort {
  id:string;producer(c:ActionContext):unknown;observe(c:ActionContext):Promise<TargetObservation>;
@@ -17,7 +20,7 @@ export interface BenchmarkTargetPort {
  recover(c:ActionContext,id:string):Promise<{restored:boolean;result?:LabAttemptResult}>;
 }
 export function createRuntimeBenchmarkAdapter(settings:RuntimeBenchmarkSettings,target:BenchmarkTargetPort):LabExecutionAdapter {
- const policy=validateTargetPolicy(settings.policy);let restored=true;
+ const policy=validateTargetPolicy(settings.policy);if(settings.launchMinimumAvailableBytes!==undefined&&(!Number.isSafeInteger(settings.launchMinimumAvailableBytes)||settings.launchMinimumAvailableBytes<policy.minimumAvailableBytes))throw Error('runtime_launch_memory_policy_invalid');let restored=true;
  const record=(c:ActionContext,name:string,data:unknown)=>{if(!c.recordEvidence)throw Error('runtime_evidence_required');return c.recordEvidence(name,{producer:target.producer(c),at:new Date().toISOString(),data});};
  const admit=async(c:ActionContext)=>{
   let observation:TargetObservation;
@@ -25,7 +28,7 @@ export function createRuntimeBenchmarkAdapter(settings:RuntimeBenchmarkSettings,
   const decision=assessTargetAdmission(observation,policy);const evidence=record(c,'runtime-admission',{...decision,workload:settings.spec.id,target:settings.spec.target,observation,policy});
   return {available:decision.allowed,evidence:{id:evidence.id,sha256:evidence.sha256}};
  };
- const adapter=createTransportLlamaLabAdapter({profile:settings.profile,admit,execute:async(value,c)=>{
+ const adapter=createTransportLlamaLabAdapter({profile:settings.profile,admit,validateCode:validateRuntimeBenchmarkCode,execute:async(value,c)=>{
   c.signal.throwIfAborted();const attemptId=randomUUID();let result:LabAttemptResult;let monitoring=true,thermalRefused=false;restored=false;
   const start=Date.now();
   const cleanup=async()=>{const at=new Date().toISOString();let success=false;try{const recovery=await target.recover(c,attemptId);success=recovery.restored;restored=success;record(c,'runtime-recovery',recovery);}catch{}return {outcome:success?'confirmed' as const:'uncertain' as const,reason:'target-runtime-restoration',requestedAt:at,completedAt:new Date().toISOString(),processes:[]};};
@@ -34,7 +37,7 @@ export function createRuntimeBenchmarkAdapter(settings:RuntimeBenchmarkSettings,
   const monitored=(policy.batteryRequired?monitor():Promise.resolve()).catch(()=>{thermalRefused=true;});
   try{
    record(c,'runtime-invocation-dispatch',{attemptId,fixture:value.input,model:settings.profile.model,modelSha256:settings.profile.modelSha256,provenance:'AGENT_CONTROL_RUNTIME_EVIDENCE'});
-   result=await target.execute('invoke',c,{...value,attemptId,minimumAvailableBytes:policy.minimumAvailableBytes}) as LabAttemptResult;
+   result=await target.execute('invoke',c,{...value,attemptId,minimumAvailableBytes:Math.max(policy.minimumAvailableBytes,settings.launchMinimumAvailableBytes??0)}) as LabAttemptResult;
    restored=(result.rawResponse as any)?.originalServiceRestored===true;
    if(thermalRefused){result.status='FAILED';result.error='thermal_or_telemetry_abort';}
    if(!restored)throw Error('runtime_restoration_unconfirmed');

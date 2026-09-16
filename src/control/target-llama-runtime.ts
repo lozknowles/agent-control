@@ -1,3 +1,4 @@
+import {assessRuntimeExecution} from './runtime-benchmark-provenance.js';
 import fs from 'node:fs';
 import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
@@ -35,13 +36,20 @@ export class TargetLlamaRuntime implements TargetTelemetry {
   const args=remote?['-o','StrictHostKeyChecking=yes',...sshResourceArgs(this.target.resource,['python3','-'])]:['-'];
   const command=remote?'ssh':'python3';
   c.recordEvidence?.('runtime-target-request',{operation,producer:this.producer(c),helperSha256:createHash('sha256').update(source).digest('hex'),at:new Date().toISOString()});
-  let persistenceError:unknown;
-  const result=await owned.runProcess({command,args,input,maxOutputBytes:4000000,session:{remoteTransport:remote,adapterId:'target-llama-runtime-v1',commandLabel:'Governed target runtime '+operation,crewRole:'resource-guardian'},onStdoutLine:line=>{let row:any;try{row=JSON.parse(line);}catch{return;}if(row.runtimeEvent)try{c.recordEvidence?.('runtime-lifecycle',row.runtimeEvent);}catch(error){persistenceError=error;}}},signal);
+  let persistenceError:unknown;const lifecycle:any[]=[];
+  const result=await owned.runProcess({command,args,input,maxOutputBytes:4000000,session:{remoteTransport:remote,adapterId:'target-llama-runtime-v1',commandLabel:'Governed target runtime '+operation,crewRole:'resource-guardian'},onStdoutLine:line=>{let row:any;try{row=JSON.parse(line);}catch{return;}if(row.runtimeEvent)try{lifecycle.push(row.runtimeEvent);c.recordEvidence?.('runtime-lifecycle',row.runtimeEvent);}catch(error){persistenceError=error;}}},signal);
   c.recordEvidence?.('runtime-target-response',{operation,producer:this.producer(c),pid:result.pid,exitCode:result.exitCode,signal:result.signal,at:new Date().toISOString()});
   if(persistenceError)throw Error('runtime_evidence_persistence_failed');
   if(result.exitCode!==0)throw Error('runtime_target_transport_failed');
   const row=result.stdout.trim().split('\n').map(line=>{try{return JSON.parse(line);}catch{return null;}}).reverse().find((x:any)=>x&&Object.hasOwn(x,'runtimeResult'));
-  if(!row)throw Error('runtime_target_response_invalid');return row.runtimeResult;
+  if(!row)throw Error('runtime_target_response_invalid');
+  if(operation==='invoke'){
+   const assessment=assessRuntimeExecution(this.producer(c),lifecycle,{pid:result.pid,exitCode:result.exitCode},createHash('sha256').update(source).digest('hex'));
+   const receipt=c.recordEvidence?.('runtime-execution-provenance',assessment);
+   if(row.runtimeResult?.status==='SUCCEEDED'&&assessment.classification!=='AGENT_CONTROL_RUNTIME_EVIDENCE')throw Error('runtime_native_provenance_incomplete');
+   if(row.runtimeResult?.rawResponse)row.runtimeResult.rawResponse.nativeExecutionEvidence=receipt?{id:receipt.id,sha256:receipt.sha256,classification:assessment.classification}:null;
+  }
+  return row.runtimeResult;
  }
  async platform(c:ActionContext){
   if(this.target.telemetry==='linux')return {batteryPercent:null,charging:null,thermalCelsius:null,thermalStatus:null,evidence:{support:'Battery/Android thermal telemetry not applicable to this Linux adapter'}};
