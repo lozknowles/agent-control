@@ -46,3 +46,7 @@ The authenticated API accepts a configured specification digest, not commands or
 ## Reuse boundaries
 
 One configured target/model/profile per registration. Existing llama.cpp artifacts only; acquisition is unsupported, never silently attempted. Python quality scoring requires a Linux controller with the existing network-isolated sandbox. Linux/SSH and Android/Termux adapters share workload semantics; physical qualification must be reported separately for each actual estate. Other runtimes/providers need an appropriate adapter and must not be declared equivalent automatically. Unknown telemetry remains null.
+
+## Final Phi architectural assessment
+
+[Closeout](native-benchmark-architectural-closeout.md) separates execution capability PASS from Phi quality FAILED (15/27) and model-study INCOMPLETE. [Source ownership](native-benchmark-source-ownership.md) keeps the engine in Agent Control and comparison material in Lab.

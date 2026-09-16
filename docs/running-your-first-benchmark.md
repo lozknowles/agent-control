@@ -56,3 +56,13 @@ A new suite uses `BenchmarkCase` workloads and a separately versioned frozen def
 ### Inspect memory before dispatch
 
 `POST /api/jobs/runtime-benchmark-inspect/run` submits a normal governed read-only inspection of the configured target. It shares the qualification lock so it cannot race an active benchmark. The `target-inspection` artifact contains charging/thermal admission, memory breakdown and up to 40 same-user process summaries. Only PID, process start identity, name, RSS and exact configured-service role are returned, never argv or environment. Presence alone does not authorise termination; unattributed processes are preserved. Kernel cache and swap are not treated as disposable benchmark allocations.
+
+## Interpret the three verdicts separately
+
+A completed run can prove the benchmark execution capability while the tested model fails its quality threshold. In the retained native Phi run, 27/27 physical executions and restorations succeeded, and all 27 outputs and validator outcomes reproduced the earlier harness result. Phi still failed quality (15/27); the broader model study is incomplete.
+
+`qualification.status` is the model qualification aggregate, not a verdict on the entire benchmark framework. Check owned execution/provenance, scorer availability and restoration independently. Study progression requires a proven framework and fresh safety/authority admission for the next configured model; it does not require the preceding model to pass. Never waive a quality threshold or reuse stale admission to progress.
+
+Codex is not a runtime dependency. The CLI submits one authenticated request; the registered product worker and target/runtime adapters perform probes, admission, lifecycle, inference, scoring, persistence and restoration. A client may disconnect after submission without becoming the executor. This closeout used standalone CLI definition/status calls plus the exact-dispatch test and retained native job chain; it did not claim a fresh CLI-origin model execution.
+
+See [architectural closeout](native-benchmark-architectural-closeout.md) and [source ownership](native-benchmark-source-ownership.md). The model acquisition and other adapter limitations above remain unchanged.
