@@ -90,6 +90,7 @@ def run(request):
     raw = result['rawResponse']
     raw['provenance'] = 'AGENT_CONTROL_RUNTIME_EVIDENCE'
     raw['producer'] = request['producer']
+    raw['attemptIdentity'] = {'attemptId':request['attemptId'],'pid':os.getpid(),'startIdentity':process_identity(os.getpid()),'bootId':Path('/proc/sys/kernel/random/boot_id').read_text().strip()}
     emit_lifecycle(request, 'runtime.request_received', operation='invoke')
     original = request.get('originalService')
     suspended = False
@@ -258,6 +259,7 @@ def run(request):
                 result['status'] = 'FAILED'
         if log_path.exists():
             raw['runtimeLog'] = log_path.read_text(errors='replace')[-150000:]
+        raw['runtimeNeverStarted'] = child is None
         raw['afterMemory'] = memory()
         if suspended:
             env = os.environ.copy()
@@ -310,8 +312,56 @@ def run(request):
     return result
 
 
+def verify_cleanup(request):
+    attempt = request.get('attemptId', '')
+    if not attempt or any(c not in 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-' for c in attempt):
+        raise RuntimeError('invalid_attempt_identity')
+    receipt = Path(request['stateDirectory']) / (attempt + '.result.json')
+    result = json.loads(receipt.read_text()) if receipt.exists() else None
+    raw = (result or {}).get('rawResponse', {})
+    producer = request['producer']
+    bound = all(raw.get('producer', {}).get(k) == producer.get(k) and producer.get(k) for k in ['runId', 'stepId', 'target', 'environment'])
+    binding = raw.get('attemptIdentity', {})
+    exact = bound and binding.get('attemptId') == attempt
+    def absent(pid, identity):
+        if not isinstance(pid, int) or not identity:
+            return None
+        proc = Path('/proc') / str(pid)
+        try:
+            proc.stat()
+            return process_identity(pid) != identity
+        except FileNotFoundError:
+            return True
+        except (OSError, ValueError):
+            return None
+    boot = Path('/proc/sys/kernel/random/boot_id').read_text().strip()
+    helper_absent = absent(binding.get('pid'), binding.get('startIdentity')) if exact and binding.get('bootId') == boot else (True if exact and binding.get('bootId') and binding.get('bootId') != boot else None)
+    runtime_absent = absent(raw.get('runtimePid'), raw.get('runtimeStartIdentity')) if bound else None
+    if exact and raw.get('runtimeNeverStarted') is True and helper_absent is True:
+        runtime_absent = True
+    original = request.get('originalService')
+    matches, scan_complete = [], True
+    if original:
+        for proc in Path('/proc').iterdir():
+            if not proc.name.isdigit():
+                continue
+            try:
+                if proc.stat().st_uid == os.getuid() and [v.decode() for v in (proc/'cmdline').read_bytes().split(b'\0') if v] == original['args']:
+                    matches.append(int(proc.name))
+            except FileNotFoundError:
+                pass
+            except (OSError, UnicodeError):
+                scan_complete = False
+    service_identity = original is None or bool(scan_complete and len(matches) == 1)
+    service_health = True if original is None else (health('http://127.0.0.1:' + original['args'][original['args'].index('--port')+1]) if service_identity else False)
+    checks = {'attemptTerminated':helper_absent, 'runtimeAbsent':runtime_absent, 'ownershipReleased':helper_absent is True and runtime_absent is True, 'originalServiceIdentity':service_identity, 'originalServiceHealth':service_health, 'protectedResourceExpected':service_identity and service_health}
+    return {'schema':'agent-control.current-cleanup/v1','verificationId':request.get('verificationId'),'attemptId':attempt,'producer':producer,'observedAt':datetime.datetime.now(datetime.timezone.utc).isoformat(),'historicalRestoration':{'receiptSha256':digest(receipt) if receipt.exists() else None,'restored':raw.get('originalServiceRestored'),'endedAt':raw.get('endedAt')},'originalServiceRequired':original is not None,'runtimeIdentity':{'pid':raw.get('runtimePid'),'startIdentity':raw.get('runtimeStartIdentity')},'bindingVerified':bool(exact),'checks':checks,'confirmed':bool(exact and all(v is True for v in checks.values()))}
+
+
 def dispatch(request):
     operation = request['operation']
+    if operation == 'verify-cleanup':
+        return verify_cleanup(request)
     if operation == 'invoke':
         return run(request)
     root = Path(request['stateDirectory'])
@@ -322,8 +372,8 @@ def dispatch(request):
         for index in range(150):
             if receipt.exists():
                 result = json.loads(receipt.read_text())
-                return {'restored': result['rawResponse'].get('originalServiceRestored') is True,
-                        'result': result}
+                verification = verify_cleanup(request)
+                return {'restored': verification['confirmed'], 'currentVerification':verification, 'result': result}
             # A failed preparation can exit before creating its runtime log/receipt.
             # The persistent abort marker prevents subsequent preparation/launch.
             # Confirm the unchanged authorised service by exact argv and health.
@@ -339,7 +389,7 @@ def dispatch(request):
                 args = original['args']
                 endpoint = 'http://127.0.0.1:' + args[args.index('--port')+1]
                 if len(matches) == 1 and health(endpoint):
-                    return {'restored': True, 'reason': 'preparation_aborted_original_service_observed', 'originalServicePid': matches[0], 'runtimeLogAbsent': True, 'abortMarkerRetained': True}
+                    return {'restored': False, 'reason': 'attempt_identity_unproven_original_service_observed', 'originalServicePid': matches[0], 'runtimeLogAbsent': True, 'abortMarkerRetained': True}
             time.sleep(1)
         return {'restored': False, 'reason': 'target_restoration_unconfirmed'}
     if operation != 'observe':

@@ -17,7 +17,7 @@ test('cancelled context cannot dispatch model',async()=>{const f=fixture();f.c.s
 test('launch memory floor cannot weaken admission or accept invalid values',()=>{const f=fixture();for(const value of [-1,NaN,0])assert.throws(()=>createRuntimeBenchmarkAdapter({...settings,launchMinimumAvailableBytes:value},f.target),/memory_policy/);});
 
 test('read-only target inspector declares remote observation and evidence effects',()=>{
- const registered:any[]=[];const jobs:any[]=[];const runtime:any={registerResumePolicy:()=>{},workers:{registerControllerInternal:()=>{}},restoreRetainedCleanup:()=>{},actions:{registerConsequentialControl:(id:any,handler:any,categories:any)=>registered.push({id,categories})},catalog:{knownActions:new Set(),addJob:(job:any)=>jobs.push(job)}};
+ const registered:any[]=[];const jobs:any[]=[];const runtime:any={registerResumePolicy:()=>{},registerCleanupVerifier:()=>{},workers:{registerControllerInternal:()=>{}},restoreRetainedCleanup:()=>{},actions:{registerConsequentialControl:(id:any,handler:any,categories:any)=>registered.push({id,categories})},catalog:{knownActions:new Set(),addJob:(job:any)=>jobs.push(job)}};
  registerRuntimeBenchmark(runtime,{...settings,target:{resource:{id:'target',platform:'linux',transport:{type:'local'},capabilities:[]},environment:'env',telemetry:'linux',stateDirectory:'/tmp/test-runtime'}});
  assert.deepEqual(registered.find(x=>x.id==='runtime-benchmark.inspect@1.0.0').categories,['REMOTE_NODE','FILESYSTEM_WRITE']);assert.ok(jobs.some(j=>j.metadata.id==='runtime-benchmark-inspect'));
 });

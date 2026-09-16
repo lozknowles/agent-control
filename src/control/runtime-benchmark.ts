@@ -1,3 +1,4 @@
+import {OwnedProcessManager} from './owned-process.js';
 import {benchmarkResumeCursor} from './benchmark-resume.js';
 import {validateRuntimeBenchmarkCode} from './runtime-benchmark-validator.js';
 import {createHash,randomUUID} from 'node:crypto';
@@ -84,6 +85,23 @@ export function registerRuntimeBenchmark(runtime:JobRuntime,raw:RuntimeBenchmark
    const recovery=await target.recover(context,String(identity.attemptId));context.recordEvidence!('runtime-recovery',{producer:target.producer(context),at:new Date().toISOString(),data:recovery});
    return {outcome:recovery.restored?'confirmed':'uncertain',reason:'target-runtime-restoration',requestedAt:started,completedAt:new Date().toISOString(),processes:[]};};
  });
+ runtime.registerCleanupVerifier('model-hardware-qualification.execute@1.0.0',async(run,actor)=>{
+  const step=run.steps[0],attempt=step.attempts.at(-1);if(!attempt||attempt.workerId!==workerId||run.parameters.specSha256!==digest)throw Error('cleanup_run_binding_invalid');
+  const registrations=runtime.artifacts.list(run.id).filter(a=>a.stepId===step.id&&a.name==='retained-cleanup-registered'&&a.createdAt>=attempt.startedAt);
+  if(!registrations.length)return false;
+  let confirmed=true;
+  for(const registration of registrations){
+    const value=runtime.artifacts.read(registration.id) as any,p=value.identity?.producer;
+    if(value.workerId!==workerId||value.identity?.kind!=='target-runtime'||p?.runId!==run.id||p?.stepId!==step.id||p?.target!==spec.target.device||p?.environment!==spec.target.environment||!/^[a-f0-9-]{36}$/.test(value.identity?.attemptId))throw Error('cleanup_attempt_binding_invalid');
+    const verificationId=randomUUID(),recordEvidence=(name:string,data:unknown)=>{const live=runtime.ledger.get(run.id)!;const artifact=runtime.artifacts.create(live,step.id,workerId,{name,type:'json',schema:'agent-control.attempt-evidence/v1',version:'1.0.0'},data);live.artifacts.push(artifact.id);live.steps[0].artifactIds.push(artifact.id);runtime.ledger.update(live,'run.cleanup_verification_observed',{artifactId:artifact.id});return artifact;};
+    const context={run,step,worker:runtime.workers.list().find(w=>w.id===workerId)!,signal:AbortSignal.timeout(30000),recordEvidence} as ActionContext;
+    const owned=new OwnedProcessManager();let observation:any;
+    try{observation=await target.execute('verify-cleanup',context,{attemptId:value.identity.attemptId,verificationId},owned,context.signal);}catch{observation={confirmed:false,error:'current_verification_unavailable'};}finally{await owned.terminateAll('cleanup-verification-complete');}
+    const valid=validCurrentCleanup(observation,{verificationId,attemptId:value.identity.attemptId,runId:run.id,stepId:step.id,target:spec.target.device,environment:spec.target.environment});
+    recordEvidence('attempt-current-cleanup-verification',{actor,registration:{id:registration.id,sha256:registration.sha256},verificationId,observation,accepted:valid});confirmed=confirmed&&valid;
+  }
+  return confirmed;
+ });
  runtime.registerResumePolicy('model-hardware-qualification.execute@1.0.0',run=>{const checkpoint=benchmarkResumeCursor(run,spec,settings.profile,runtime.artifacts);return {complete:checkpoint.complete,checkpoint};});
  registerModelHardwareQualification(runtime.catalog,runtime.actions,{resolveSameRun:async(s,c)=>{const checkpoint=c.run.resumptions!.at(-1)!;const meta=runtime.artifacts.get(checkpoint.checkpointId);if(!meta||meta.runId!==c.run.id||meta.sha256!==checkpoint.checkpointSha256)throw Error('runtime_resume_checkpoint_invalid');const retained=runtime.artifacts.read(meta.id);const cursor=benchmarkResumeCursor(c.run,s,settings.profile,runtime.artifacts);if(JSON.stringify(retained.checkpoint)!==JSON.stringify(cursor))throw Error('runtime_resume_cursor_changed');return cursor.reused;},defaultSpecSha256:digest,resolve:hash=>{if(hash!==digest)throw Error('runtime_benchmark_unknown_spec');return spec;},authorize:async(s,c)=>{
   const renewal=c.run.resumptions?.at(-1),authority=renewal?{actor:renewal.actor,expiresAt:renewal.expiresAt,allowServiceSuspension:settings.authority.allowServiceSuspension}:settings.authority;
@@ -94,4 +112,8 @@ export function registerRuntimeBenchmark(runtime:JobRuntime,raw:RuntimeBenchmark
   if(efficiency){const rawUsage:any={};if(result.tokens.input!==null)rawUsage.prompt_tokens=result.tokens.input;if(result.tokens.output!==null)rawUsage.completion_tokens=result.tokens.output;if(result.tokens.cached!==null)rawUsage.prompt_tokens_details={cached_tokens:result.tokens.cached};const observation=createInvocationObservation({id:id.id,jobId:c.run.jobId,runId:c.run.id,stepId:c.step.id,taskId:c.run.id,laneId:spec.target.device,model:spec.target.model,provider:spec.target.runtime,harnessProfile:'STANDARD',harnessId:'model-hardware-qualification/v1',executionStrategy:'agent-control-runtime',startedAt:id.startedAt,completedAt:id.endedAt,rawUsage,outcome:result.status==='SUCCEEDED'?'COMPLETE':'FAILED',error:result.error??undefined,recipeFingerprint:digest,evidenceIds:[measurement.id]});Object.assign(observation.accounting!,{machine:spec.target.device,runtime:spec.target.runtime,modelRevision:spec.target.modelSha256,executionKind:'LOCAL'});efficiency.record(observation);}return id.id;
  }});
  return {workerId,specSha256:digest};
+}
+
+export function validCurrentCleanup(v:any,expected:{verificationId:string;attemptId:string;runId:string;stepId:string;target:string;environment:string}){
+ return v?.schema==='agent-control.current-cleanup/v1'&&v.verificationId===expected.verificationId&&v.attemptId===expected.attemptId&&v.bindingVerified===true&&v.confirmed===true&&Number.isFinite(Date.parse(v.observedAt))&&Math.abs(Date.now()-Date.parse(v.observedAt))<60000&&['runId','stepId','target','environment'].every(k=>v.producer?.[k]===(expected as any)[k])&&['attemptTerminated','runtimeAbsent','ownershipReleased','originalServiceIdentity','originalServiceHealth','protectedResourceExpected'].every(k=>v.checks?.[k]===true);
 }

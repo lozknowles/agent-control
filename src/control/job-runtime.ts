@@ -146,6 +146,31 @@ export class RunLedger {
 export interface JobRuntimeOptions {contracts?: ContractExecutionRuntime; now?: () => Date; approval?: (policy: string, run: RunRecord) => boolean; efficiency?: HarnessEfficiencyLedgerPort; safety?: RuntimeSafetySupervisorPort; defaultRecoveryDeadlineSeconds?: number; ownedExecutionFactory?: (scope: ExecutionSessionScope) => OwnedExecution; executionSessions?: ExecutionSessionRuntime;}
 export interface JobDispatch {runId: string; completion: Promise<RunRecord | undefined>;}
 export class JobRuntime {
+  private readonly cleanupVerifiers=new Map<string,(run:RunRecord,actor:string)=>Promise<boolean>>();
+  private readonly cleanupVerifications=new Map<string,Promise<RunRecord>>();
+  registerCleanupVerifier(action:string,verify:(run:RunRecord,actor:string)=>Promise<boolean>){if(this.cleanupVerifiers.has(action))throw Error('cleanup_verifier_exists');this.cleanupVerifiers.set(action,verify);}
+  verifyCleanup(runId:string,actor:string):Promise<RunRecord>{
+    const pending=this.cleanupVerifications.get(runId);if(pending)return pending;
+    const operation=(async()=>{
+      const run=this.mustRun(runId);if(['CANCELLED','FAILED'].includes(run.status)&&run.steps.every(s=>s.cleanup?.outcome==='confirmed'))return run;
+      if(!actor||run.steps.length!==1||!['CLEANUP_UNCERTAIN','DISCONNECTED'].includes(run.status)||this.controllers.has(runId)||this.runCleanups.has(runId))throw Error('cleanup_verification_not_safe');
+      const step=run.steps[0],verify=this.cleanupVerifiers.get(step.action);if(!verify)throw Error('cleanup_verifier_unavailable');
+      const proven=await verify(structuredClone(run),actor),live=this.mustRun(runId),current=live.steps[0];
+      if(!proven){live.status='CLEANUP_UNCERTAIN';current.status='CLEANUP_UNCERTAIN';current.cleanup={outcome:'uncertain',reason:'attempt-bound-current-verification-unproven',requestedAt:this.clock().toISOString(),completedAt:this.clock().toISOString(),processes:[]};this.ledger.update(live,'run.current_cleanup_unconfirmed',{reason:'attempt-bound-current-verification-unproven'});return live;}
+      if(this.controllers.has(runId)||current.attempts.at(-1)?.contractId!==step.attempts.at(-1)?.contractId)throw Error('cleanup_ownership_changed');
+      const contractId=current.attempts.at(-1)?.contractId;if(!contractId)throw Error('cleanup_contract_missing');
+      const contract=this.contracts.get(contractId);if(contract.pty.writeOwner?.startsWith('human:'))throw Error('cleanup_human_ownership_retained');
+      const terminal=run.provenance.some(p=>p.type==='cancellation')||run.errors.some(e=>/execution_cancelled|cancelled_by|operator_cancelled/.test(e))?'CANCELLED' as const:'FAILED' as const;
+      const at=this.clock().toISOString(),proof={outcome:'confirmed' as const,reason:'attempt-bound-current-verification',requestedAt:at,completedAt:at,processes:[]};
+      const resolution=this.artifacts.create(live,current.id,'controller-recovery',{name:'current-cleanup-resolution',type:'json',schema:'agent-control.cleanup-resolution/v1',version:'1.0.0'}, {actor,previousStatus:live.status,previousCleanup:current.cleanup,contractId,proof,execution:terminal});
+      live.artifacts.push(resolution.id);current.artifactIds.push(resolution.id);
+      const completed=this.contracts.completeExecution(contractId,terminal,{outcome:'confirmed',detail:proof.reason,verifiedAt:at},{processId:contract.process.id,batonGeneration:contract.baton.generation,ownershipGeneration:contract.pty.ownershipGeneration});
+      if(completed.state!==terminal)throw Error('cleanup_contract_not_terminal');
+      current.status=terminal;current.cleanup=proof;delete current.waitingReason;live.status=terminal;live.endedAt=at;
+      this.ledger.update(live,'run.current_cleanup_confirmed',{artifactId:resolution.id,execution:terminal});
+      this.retainedCleanups.delete(runId);this.locks.release(runId);this.workers.release(current.attempts.at(-1)!.workerId!);return live;
+    })().finally(()=>this.cleanupVerifications.delete(runId));this.cleanupVerifications.set(runId,operation);return operation;
+  }
   private readonly resumePolicies = new Map<string, (run:RunRecord)=>{complete:boolean;checkpoint:unknown}>();
   registerResumePolicy(action:string, inspect:(run:RunRecord)=>{complete:boolean;checkpoint:unknown}) { if(this.resumePolicies.has(action))throw Error('resume_policy_exists');this.resumePolicies.set(action,inspect); }
   inspectResume(runId:string) { const run=this.mustRun(runId);if(run.steps.length!==1)throw Error('run_resume_unsupported');const policy=this.resumePolicies.get(run.steps[0].action);if(!policy)throw Error('run_resume_unsupported');return policy(run); }

@@ -381,3 +381,9 @@ test('same-run resume API requires mutation authority and preserves protected st
   await runtime.tick();assert.equal(runtime.ledger.get(run.id)!.steps[0].status,'WAITING_FOR_APPROVAL');assert.equal(runtime.ledger.list().length,1);
  }finally{server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r()));}
 });
+
+test('cleanup verification requires authenticated mutation and never creates a run or dispatch',async()=>{
+ const {control,runtime}=serviceWithJobs();let checks=0;runtime.registerCleanupVerifier('test.run@1.0.0',async()=>{checks++;return false;});const run=runtime.createRun('web-job@1.0.0',{}, {type:'manual',actor:'operator'});run.status='CLEANUP_UNCERTAIN';run.steps[0].status='CLEANUP_UNCERTAIN';runtime.ledger.update(run);
+ const server=startWebDashboard(control,{host:'127.0.0.1',port:0,operatorToken:'test-token',assetsDir:path.resolve('assets/dashboard')});await once(server,'listening');const url=`http://127.0.0.1:${(server.address() as AddressInfo).port}/api/runs/${run.id}/verify-cleanup`;
+ try{assert.equal((await unauthenticatedFetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'})).status,401);assert.equal(checks,0);const result=await fetch(url,{method:'POST',headers:{Authorization:'Bearer test-token','Content-Type':'application/json'},body:'{}'});assert.equal(result.status,200);assert.equal((await result.json()).status,'CLEANUP_UNCERTAIN');assert.equal(checks,1);assert.equal(runtime.ledger.list().length,1);assert.equal(runtime.ledger.get(run.id)!.steps[0].attempts.length,0);}finally{server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r()));}
+});

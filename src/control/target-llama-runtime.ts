@@ -29,7 +29,7 @@ export class TargetLlamaRuntime implements TargetTelemetry {
  readonly id:string; readonly target:RuntimeTarget;
  constructor(target:RuntimeTarget){this.target=validateRuntimeTarget(target);this.id=target.telemetry;}
  producer(c:ActionContext){return {component:'agent-control-runtime',worker:c.worker.id,adapter:this.id,target:this.target.resource.id,environment:this.target.environment,targetLabel:this.target.resource.name,transport:this.target.resource.transport.type,runId:c.run.id,stepId:c.step.id,provenance:'AGENT_CONTROL_RUNTIME_EVIDENCE'};}
- async execute(operation:'observe'|'invoke'|'abort',c:ActionContext,payload:Record<string,unknown>={},owned:OwnedExecution=c.ownedExecution,signal:AbortSignal=c.signal){
+ async execute(operation:'observe'|'invoke'|'abort'|'verify-cleanup',c:ActionContext,payload:Record<string,unknown>={},owned:OwnedExecution=c.ownedExecution,signal:AbortSignal=c.signal){
   const source=helper(),request={operation,stateDirectory:this.target.stateDirectory,originalService:this.target.originalService??null,...payload,producer:this.producer(c)};
   const input=source+'\nprint(json.dumps({"runtimeResult":dispatch(json.loads('+JSON.stringify(JSON.stringify(request))+'))}),flush=True)\n';
   const remote=this.target.resource.transport.type==='ssh';
