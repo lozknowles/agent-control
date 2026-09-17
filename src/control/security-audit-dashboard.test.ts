@@ -19,5 +19,6 @@ test('security-audit dashboard distinguishes verdicts and model-free telemetry',
   assert.match(script,/const esc=/);
   assert.doesNotMatch(script,/innerHTML\s*=\s*value\.(?:content|stdout|stderr)/);
 });
+test('security-audit dashboard selects the latest retained verifier record',()=>{assert.match(script,/\[\.\.\.value\.verifications\]\.reverse\(\)\.find/);assert.match(script,/retainedFindingHistory/);});
 
 test('dashboard shell contains no CSP-blocked inline style attributes',()=>{assert.doesNotMatch(page,/\sstyle=/i);assert.match(fs.readFileSync('assets/dashboard/dashboard.css','utf8'),/\.watch-full-width\{grid-column:1\/-1\}/);});
