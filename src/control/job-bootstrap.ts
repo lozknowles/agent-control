@@ -41,7 +41,7 @@ import {EnergyTelemetryRuntime, FileEnergyTelemetryStore} from './energy-telemet
 import {DeterministicSkillRuntime,FileDeterministicSkillStore,registerCoreDeterministicHandlers} from './deterministic-skill.js';
 import {registerDeterministicSkillActions} from './deterministic-skill-actions.js';
 import {SecurityAuditRuntime,SecurityAuditStore} from './security-audit.js';
-import {registerSecurityAudit} from './security-audit-job.js';
+import {registerSecurityAudit,registerSecurityAuditContinuation} from './security-audit-job.js';
 
 /** Shared production definition path so qualification cannot drift from registered typed Actions. */
 export function buildJobRuntimeDefinition(config: AgentControlConfig, manifestDir = process.env.AGENT_CONTROL_JOB_DIR || path.resolve('config/jobs'), harnessEfficiency?: HarnessEfficiencyLedgerPort, modelRegistry?: ModelRegistry, codexNodeExecution?: CodexNodeExecutionPort, deterministicSkills?:DeterministicSkillRuntime) {
@@ -78,6 +78,7 @@ export function buildJobRuntime(config: AgentControlConfig, stateRoot = process.
   const runtime = createJobRuntime(stateRoot, catalog, actions, workers, {efficiency: harnessEfficiency, safety, executionSessions});
   const securityAudits=new SecurityAuditRuntime(new SecurityAuditStore(path.join(stateRoot,'security-audits')),repositoryRoots);
   registerSecurityAudit(runtime,securityAudits);
+  registerSecurityAuditContinuation(runtime,securityAudits);
   if(process.env.AGENT_CONTROL_RUNTIME_BENCHMARK_CONFIG)registerRuntimeBenchmark(runtime,JSON.parse(fs.readFileSync(process.env.AGENT_CONTROL_RUNTIME_BENCHMARK_CONFIG,'utf8')),harnessEfficiency);
   if(process.env.AGENT_CONTROL_SPECULATIVE_BENCHMARK_CONFIG)registerSpeculativeDecoding(runtime,JSON.parse(fs.readFileSync(process.env.AGENT_CONTROL_SPECULATIVE_BENCHMARK_CONFIG,'utf8')));
   const workParcels = new WorkParcelCoordinator(runtime, new WorkParcelStore(path.join(stateRoot, 'work-parcels', 'parcels.json')), new CatalogNaturalLanguagePlanner(runtime, reasoningPlanner ?? cacheAwareExpertQualificationPlanner()), harnessEfficiency, modelRegistry, adaptiveOrchestration, cacheExperts);

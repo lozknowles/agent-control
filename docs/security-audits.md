@@ -6,13 +6,9 @@ invocations, verdict records, evidence hashes, retained history and report
 generation. The target repository remains an input; it does not become the
 audit authority.
 
-The method is adapted from Cloudflare's MIT-licensed
-[`security-audit-skill`](https://github.com/cloudflare/security-audit-skill),
-pinned for design review at commit
-`c1c8a8c1471069fb0e188eeaff69b8e8db6564a8`. Agent Control does not copy the
-upstream prompt or introduce it as a runtime dependency. Attribution and the
-detailed reuse decision are recorded in
-[`docs/third-party/cloudflare-security-audit-skill.md`](third-party/cloudflare-security-audit-skill.md).
+Required methodology provenance and licence notices are retained separately in
+the third-party notices. They are not product dependencies and do not define
+the Agent Control Job, schemas, CLI, UI or release claims.
 
 ## Lifecycle
 
@@ -36,6 +32,17 @@ environment allowlist, bounded resource/time use, scratch-only writes, and
 tracked process cleanup. A partial assurance record permits static analysis but
 does not permit target execution.
 
+On qualified Linux hosts, the platform adapter combines isolated namespaces,
+a minimal read-only filesystem projection, a dedicated scratch mount and
+transient service-level CPU, memory, process-count and runtime limits. The
+generic contract does not require a particular Linux distribution or container
+engine. Platforms without a qualified adapter remain static-only.
+
+Continuation is additive. It retains the original candidate, verification and
+finding records, then appends sandbox qualification, fresh source
+reconstruction, new verifier identities and superseding current verdicts. The
+previous records remain available as finding history.
+
 ## CLI
 
 All operations use the authenticated controller API:
@@ -43,6 +50,7 @@ All operations use the authenticated controller API:
 ```bash
 export AGENT_CONTROL_WEB_OPERATOR_TOKEN
 agent-control security-audit start --repository "$PWD" --revision "$(git rev-parse HEAD)" --scope src,assets,scripts
+agent-control security-audit resume AUDIT_ID --source-root /path/to/exact/revision/checkout
 agent-control security-audit coverage AUDIT_ID
 agent-control security-audit findings AUDIT_ID
 agent-control security-audit unresolved AUDIT_ID
@@ -54,6 +62,11 @@ agent-control security-audit revalidate AUDIT_ID --revision NEW_SHA --changed sr
 
 `start` creates an authoritative audit record and submits the normal governed
 Job. The CLI does not inspect files or execute the target itself.
+
+`resume` requires an explicit source checkout. Agent Control verifies that its
+Git revision equals the retained audit revision before sandboxed validation is
+admitted. The continuation uses a dedicated sandbox worker followed by a
+separate verification worker with fresh per-candidate invocation identities.
 
 ## API
 

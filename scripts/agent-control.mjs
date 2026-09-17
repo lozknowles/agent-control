@@ -30,7 +30,8 @@ Usage:
   agent-control benchmark status|cancel|resume-plan RUN-ID
   agent-control benchmark resume RUN-ID --request-key KEY --expires-at ISO-TIMESTAMP
   agent-control security-audit start --repository PATH --revision SHA [--scope PATH]
-  agent-control security-audit resume|coverage|findings|rejected|unresolved|export AUDIT-ID [options]
+  agent-control security-audit resume AUDIT-ID --source-root PATH
+  agent-control security-audit coverage|findings|rejected|unresolved|export AUDIT-ID [options]
   agent-control security-audit compare LEFT-ID RIGHT-ID
   agent-control security-audit revalidate AUDIT-ID --revision SHA [--changed FILE,FILE]
   agent-control workspace list [--json]
@@ -81,7 +82,7 @@ export async function securityAuditCommand(argv,io={out:console.log,error:consol
   const [operation,id,second]=argv,options=parseOptions(argv.slice(operation==='start'?1:operation==='compare'?3:2));let pathname='/api/security-audits',body;
   if(operation==='start'){const repository=required(options.repository,'--repository'),revision=required(options.revision,'--revision');body={repositoryRoot:repository,sourceRevision:revision,...(options.scope?{scope:String(options.scope).split(',').map(value=>value.trim()).filter(Boolean)}:{})};}
   else if(operation==='compare'&&id&&second){pathname=`/api/security-audit-comparison?left=${encodeURIComponent(id)}&right=${encodeURIComponent(second)}`;}
-  else if(operation==='resume'&&id){pathname+=`/${encodeURIComponent(id)}/resume`;body={};}
+  else if(operation==='resume'&&id){pathname+=`/${encodeURIComponent(id)}/resume`;body={sourceRoot:required(options['source-root'],'--source-root')};}
   else if(operation==='coverage'&&id)pathname+=`/${encodeURIComponent(id)}/coverage`;
   else if(['findings','rejected','unresolved'].includes(operation)&&id){const verdict=operation==='rejected'?'rejected':operation==='unresolved'?'needs_validation':options.verdict;pathname+=`/${encodeURIComponent(id)}/findings${verdict?`?verdict=${encodeURIComponent(verdict)}`:''}`;}
   else if(operation==='export'&&id){pathname+=`/${encodeURIComponent(id)}/export?report=${encodeURIComponent(String(options.report??'report'))}`;}
