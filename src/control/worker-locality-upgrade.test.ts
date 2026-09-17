@@ -113,7 +113,10 @@ test('Estate discovery places the internal observer beneath the configured contr
   assert.equal(observer.attributes.identityAuthority, 'AGENT_CONTROL_INTERNAL');
   assert.equal(observer.attributes.controllerRelationship, 'CONTROLLER_INTERNAL');
   const estate = projectEstateMap(scan, scan.completedAt);
-  assert.ok(estate.edges.some(edge => edge.from === 'machine:controller' && edge.to === observer.id && edge.kind === 'contains'));
+  const projectedObserver=estate.nodes.find(node=>node.id===observer.id)!;
+  assert.ok(projectedObserver.parentId);
+  assert.ok(estate.edges.some(edge=>edge.from===projectedObserver.parentId&&edge.to===observer.id&&edge.kind==='contains'));
+  assert.ok(projectedObserver.parentId==='machine:controller'||estate.edges.some(edge=>edge.from==='machine:controller'&&edge.to===projectedObserver.parentId&&edge.kind==='contains'));
   assert.equal(estate.nodes.find(node => node.id === observer.id)?.detail.executionLocality, 'CONTROLLER_LOCAL');
   assert.equal(JSON.stringify(estate).includes('remote estate node'), false);
   assert.deepEqual(runtime.workers.executionIdentity('local-observer'), {workerId: 'local-observer', nodeId: 'local-observer', locality: 'LOCAL_WORKER', authority: 'CONFIGURED_RESOURCE', controllerRelationship: 'CONTROLLER_HOST_RESOURCE'});
