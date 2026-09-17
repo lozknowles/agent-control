@@ -1,3 +1,4 @@
+import {TargetReset} from './target-reset.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -58,4 +59,18 @@ for(const cancelled of [true,false])test('current cleanup preserves history and 
  const before=f.runtime.artifacts.list().map(a=>({id:a.id,bytes:f.runtime.artifacts.readText(a.id)})),attempts=structuredClone(run.steps[0].attempts);let clean=false,checks=0;
  TargetLlamaRuntime.prototype.execute=async function(op,c,p){assert.equal(op,'verify-cleanup');checks++;return {schema:'agent-control.current-cleanup/v1',verificationId:p!.verificationId,attemptId:p!.attemptId,producer:this.producer(c),observedAt:new Date().toISOString(),bindingVerified:true,confirmed:clean,checks:{attemptTerminated:clean,runtimeAbsent:clean,ownershipReleased:clean,originalServiceIdentity:true,originalServiceHealth:true,protectedResourceExpected:true}};};
  assert.equal((await f.runtime.verifyCleanup(run.id,'operator')).status,'CLEANUP_UNCERTAIN');assert.throws(()=>f.resume(),/cleanup_required/);clean=true;const done=await f.runtime.verifyCleanup(run.id,'operator');assert.equal(done.status,cancelled?'CANCELLED':'FAILED');assert.equal(done.steps[0].cleanup!.outcome,'confirmed');assert.deepEqual(done.steps[0].attempts,attempts);assert.equal(f.calls(),24);for(const a of before)assert.equal(f.runtime.artifacts.readText(a.id),a.bytes);const count=checks;await f.runtime.verifyCleanup(run.id,'operator');assert.equal(checks,count);assert.equal(f.runtime.artifacts.list().filter(a=>a.name==='current-cleanup-resolution').length,1);assert.equal(f.runtime.ledger.list().length,1);assert.equal(f.resume('after-cleanup').id,run.id);assert.equal(f.calls(),24);
+ }finally{f.dispose();}});
+
+test('qualified target boot boundary fences failed legacy attempt without scoring or releasing unrelated locks',async()=>{const f=await interrupted();try{
+ f.allow();TargetLlamaRuntime.prototype.execute=async()=>({status:'FAILED',input:'fixture',output:'',error:'launch_refused',tokens:{input:null,cached:null,output:null},metrics:{},configuration:f.settings.profile,rawResponse:{originalServiceRestored:true},evidenceAvailability:{}});f.resume();await f.runtime.tick();
+ const run=f.runtime.ledger.get(f.run.id)!,step=run.steps[0],target=f.settings.target.resource.id;run.status='CLEANUP_UNCERTAIN';step.status='CLEANUP_UNCERTAIN';f.runtime.ledger.update(run,'fixture.uncertain');
+ const prior=structuredClone(step.attempts),count=f.calls();f.runtime.locks.acquire(step.resources,run.id,step.id,true);f.runtime.locks.acquire(['unrelated'],'other-run','other-step',true);
+ const registrations=f.runtime.artifacts.list(run.id).filter(a=>a.name==='retained-cleanup-registered'&&a.createdAt>=step.attempts.at(-1)!.startedAt).map(a=>f.runtime.artifacts.read(a.id));const ids=registrations.map(a=>a.identity.attemptId);
+ let n=0;const first='11111111-1111-4111-8111-111111111111',second='22222222-2222-4222-8222-222222222222';const obs=(bootId:string)=>({bootId,physicalIdentity:'physical',environmentVerified:true,service:{identity:true,healthy:true,expected:true}});
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'boundary-'));const reset=new TargetReset(dir,target,f.settings.target.environment,'config',{observe:async()=>{n++;if(n===2)throw Error('offline');return obs(n===1?first:second);},reboot:async()=>{},restore:async()=>obs(second)},{pause:async()=>{}});f.runtime.registerTargetReset(target,reset);
+ try{await assert.rejects(f.runtime.applyTargetBoundary(run.id,target,'absent','operator',ids),/authority_invalid/);assert.ok(f.runtime.locks.list().some(l=>l.runId===run.id));await new Promise(r=>setTimeout(r,5));
+ const receipt=await f.runtime.resetTarget(target,{actor:'operator',reason:'test reset',requestKey:'boundary',approveReset:true,expiresAt:new Date(Date.now()+60000).toISOString(),runId:run.id});assert.equal(receipt.status,'COMPLETE');
+ const result=await f.runtime.applyTargetBoundary(run.id,target,receipt.id,'operator',ids);assert.deepEqual(result.steps[0].attempts,prior);assert.equal(f.calls(),count);assert.equal(f.runtime.locks.list().filter(l=>l.runId===run.id).length,0);assert.equal(f.runtime.locks.list().filter(l=>l.runId==='other-run').length,1);for(const id of ids)assert.throws(()=>reset.assertAttempt(id),/permanently_fenced/);
+ const plan=f.runtime.inspectResume(run.id).checkpoint as any;assert.equal(plan.completedCount,24);assert.equal(plan.outstanding.length,3);const total=f.runtime.artifacts.list(run.id).length;await f.runtime.applyTargetBoundary(run.id,target,receipt.id,'operator',ids);assert.equal(f.runtime.artifacts.list(run.id).length,total);assert.equal(f.calls(),count);
+ }finally{fs.rmSync(dir,{recursive:true,force:true});}
  }finally{f.dispose();}});

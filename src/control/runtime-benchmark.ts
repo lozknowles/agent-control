@@ -1,3 +1,4 @@
+import {registerTargetRecovery} from './register-target-recovery.js';
 import {OwnedProcessManager} from './owned-process.js';
 import {benchmarkResumeCursor} from './benchmark-resume.js';
 import {validateRuntimeBenchmarkCode} from './runtime-benchmark-validator.js';
@@ -68,6 +69,7 @@ export function registerRuntimeBenchmark(runtime:JobRuntime,raw:RuntimeBenchmark
  if(settings.target.originalService&&!settings.authority.allowServiceSuspension)throw Error('runtime_service_suspension_not_authorised');
  if(settings.target.resource.id!==settings.spec.target.device||settings.target.environment!==settings.spec.target.environment)throw Error('runtime_target_binding_mismatch');
  const spec=validateLabSpec(settings.spec),digest=labSpecDigest(spec),target=new TargetLlamaRuntime(settings.target),adapter=createRuntimeBenchmarkAdapter(settings,target);
+ registerTargetRecovery(runtime,settings.target,target);
  const workerId='runtime-benchmark:'+settings.target.resource.id;
  runtime.workers.registerControllerInternal({id:workerId,capabilities:['model.hardware.qualify'],health:'healthy',capacity:1,active:0,observedAt:new Date().toISOString()});
  runtime.actions.registerConsequentialControl('runtime-benchmark.inspect@1.0.0',async c=>{

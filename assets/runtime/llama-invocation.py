@@ -358,8 +358,44 @@ def verify_cleanup(request):
     return {'schema':'agent-control.current-cleanup/v1','verificationId':request.get('verificationId'),'attemptId':attempt,'producer':producer,'observedAt':datetime.datetime.now(datetime.timezone.utc).isoformat(),'historicalRestoration':{'receiptSha256':digest(receipt) if receipt.exists() else None,'restored':raw.get('originalServiceRestored'),'endedAt':raw.get('endedAt')},'originalServiceRequired':original is not None,'runtimeIdentity':{'pid':raw.get('runtimePid'),'startIdentity':raw.get('runtimeStartIdentity')},'bindingVerified':bool(exact),'checks':checks,'confirmed':bool(exact and all(v is True for v in checks.values()))}
 
 
+def recovery_service(request):
+    boot = Path('/proc/sys/kernel/random/boot_id').read_text().strip()
+    if request.get('expectedBootId') and boot != request['expectedBootId']:
+        raise RuntimeError('target_boot_identity_mismatch')
+    original = request.get('originalService')
+    if not original:
+        raise RuntimeError('protected_service_expectation_missing')
+    args = original['args']
+    endpoint = 'http://127.0.0.1:' + args[args.index('--port')+1]
+    def matching():
+        found=[]
+        for proc in Path('/proc').iterdir():
+            if not proc.name.isdigit(): continue
+            try:
+                if proc.stat().st_uid == os.getuid() and [x.decode() for x in (proc/'cmdline').read_bytes().split(b'\0') if x] == args: found.append(int(proc.name))
+            except FileNotFoundError: pass
+        return found
+    found=matching();restored=False
+    if request['operation']=='restore-service' and not found:
+        root=Path(request['stateDirectory']);root.mkdir(mode=0o700,parents=True,exist_ok=True)
+        env=os.environ.copy();env.update(original.get('environment',{}))
+        with open(root/'original-restoration.log','ab',buffering=0) as log:
+            child=subprocess.Popen(args,cwd=original['cwd'],env=env,stdin=subprocess.DEVNULL,stdout=log,stderr=log,start_new_session=True)
+        deadline=time.monotonic()+90
+        while time.monotonic()<deadline:
+            if child.poll() is not None: break
+            if health(endpoint): break
+            time.sleep(.5)
+        restored=True;found=matching()
+    identity=len(found)==1
+    healthy=identity and health(endpoint)
+    return {'bootId':boot,'environmentVerified':platform.system()=='Linux' and '/com.termux/' in str(Path.home()) and Path('/system/bin/getprop').exists(),'service':{'identity':identity,'healthy':healthy,'expected':identity and healthy,'restored':restored}}
+
+
 def dispatch(request):
     operation = request['operation']
+    if operation in ['recovery-observe', 'restore-service']:
+        return recovery_service(request)
     if operation == 'verify-cleanup':
         return verify_cleanup(request)
     if operation == 'invoke':

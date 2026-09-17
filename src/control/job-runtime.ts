@@ -1,3 +1,4 @@
+import {TargetReset,type ResetAuthority} from './target-reset.js';
 import {ContractExecutionRuntime} from './contract-runtime.js';
 import {createHash, randomUUID} from 'node:crypto';
 import fs from 'node:fs';
@@ -146,6 +147,42 @@ export class RunLedger {
 export interface JobRuntimeOptions {contracts?: ContractExecutionRuntime; now?: () => Date; approval?: (policy: string, run: RunRecord) => boolean; efficiency?: HarnessEfficiencyLedgerPort; safety?: RuntimeSafetySupervisorPort; defaultRecoveryDeadlineSeconds?: number; ownedExecutionFactory?: (scope: ExecutionSessionScope) => OwnedExecution; executionSessions?: ExecutionSessionRuntime;}
 export interface JobDispatch {runId: string; completion: Promise<RunRecord | undefined>;}
 export class JobRuntime {
+  readonly targetResets=new Map<string,TargetReset>();
+  registerTargetReset(target:string,recovery:TargetReset){if(this.targetResets.has(target))throw Error('target_recovery_already_registered');this.targetResets.set(target,recovery);}
+  async resetTarget(target:string,authority:ResetAuthority){
+    const recovery=this.targetResets.get(target);if(!recovery)throw Error('target_reset_unconfigured');
+    if(this.controllers.size||this.runCleanups.size||this.ledger.list().some(r=>['QUEUED','WAITING','RUNNING','VERIFYING','RECONNECTING'].includes(r.status)))throw Error('target_reset_active_work');
+    if(authority.runId&&!this.ledger.get(authority.runId))throw Error('target_reset_run_missing');
+    return recovery.reset(authority);
+  }
+  private readonly boundaryPending=new Set<string>();
+  async applyTargetBoundary(runId:string,target:string,operationId:string,actor:string,attemptIds:string[]){
+    if(this.boundaryPending.has(runId))throw Error('recovery_boundary_in_progress');this.boundaryPending.add(runId);try{
+    const run=this.mustRun(runId),recovery=this.targetResets.get(target),receipt=recovery?.state();
+    if(!actor||!receipt||receipt.status!=='COMPLETE'||receipt.id!==operationId||receipt.authority.actor!==actor||receipt.authority.runId!==runId||!receipt.pre||!receipt.post||receipt.pre.bootId===receipt.post.bootId)throw Error('recovery_boundary_authority_invalid');
+    const existing=this.artifacts.list(runId).find(a=>a.name==='target-recovery-boundary'&&this.artifacts.read(a.id).operationId===operationId);if(existing)return run;
+    if(run.steps.length!==1||!['CLEANUP_UNCERTAIN','DISCONNECTED'].includes(run.status)||this.controllers.size||this.runCleanups.size)throw Error('recovery_boundary_active_execution');
+    const step=run.steps[0],last=step.attempts.at(-1);if(!last||!last.contractId)throw Error('recovery_boundary_contract_missing');
+    if(step.status==='SUCCEEDED'||last.outcome==='SUCCEEDED')throw Error('recovery_boundary_successful_attempt');
+    const registrations=this.artifacts.list(runId).filter(a=>a.stepId===step.id&&a.name==='retained-cleanup-registered'&&a.createdAt>=last.startedAt);
+    const entries=registrations.map(a=>({meta:a,value:this.artifacts.read(a.id)}));
+    if(!entries.length||new Set(attemptIds).size!==entries.length||entries.some(({meta,value:v})=>!attemptIds.includes(v.identity?.attemptId)||typeof v.id!=='string'||!v.id.startsWith('retained-cleanup:')||v.sourceStepId!==step.id||v.workerId!==last.workerId||v.identity?.kind!=='target-runtime'||v.identity?.producer?.runId!==runId||v.identity?.producer?.target!==target||v.identity?.producer?.environment!==recovery!.environment||meta.createdAt>=receipt.startedAt))throw Error('recovery_boundary_attempt_binding_invalid');
+    const contract=this.contracts.get(last.contractId);if(contract.pty.writeOwner||contract.state==='ACTIVE')throw Error('recovery_boundary_current_authority');
+    const observed=await recovery!.port.observe();
+    if(observed.bootId!==receipt.post.bootId||observed.physicalIdentity!==receipt.post.physicalIdentity||!observed.environmentVerified||!observed.service.identity||!observed.service.healthy||!observed.service.expected)throw Error('recovery_boundary_current_state_failed');
+    if(recovery!.state()?.id!==operationId||recovery!.state()?.status!=='COMPLETE')throw Error('recovery_boundary_generation_changed');
+    recovery!.abandon(attemptIds);
+    const artifact=this.artifacts.create(run,step.id,'controller-recovery',{name:'target-recovery-boundary-prepared',type:'json',schema:'agent-control.recovery-boundary/v1',version:'1.0.0'}, {operationId,target,environment:recovery!.environment,actor,receipt,observation:observed,attemptIds,registrationRefs:registrations.map(a=>({id:a.id,sha256:a.sha256})),historicalTermination:'UNPROVEN',historicalCleanup:'CLEANUP_UNCERTAIN',recoveryBoundary:'PREPARED',evidenceWindow:{from:last.startedAt,to:receipt.startedAt},futureExecution:'FRESH_AUTHORITY_AND_ADMISSION_REQUIRED'});
+    run.artifacts.push(artifact.id);step.artifactIds.push(artifact.id);
+    this.contracts.completeExecution(contract.id,'UNKNOWN',{outcome:'uncertain',detail:'Historical termination unproven; new target boot fences prior execution'}, {processId:contract.process.id,batonGeneration:contract.baton.generation,ownershipGeneration:contract.pty.ownershipGeneration});
+    this.ledger.update(run,'run.target_boundary_fenced',{artifactId:artifact.id,operationId});
+    for(const {value} of entries)this.locks.release(runId,value.id);
+    this.locks.release(runId,step.id);this.retainedCleanups.delete(runId);if(last.workerId)this.workers.release(last.workerId);
+    const terminal=run.provenance.some(p=>p.type==='cancellation')||run.errors.some(e=>/cancelled/.test(e))?'CANCELLED' as const:'FAILED' as const;run.status=terminal;step.status=terminal;run.endedAt=this.clock().toISOString();
+    const final=this.artifacts.create(run,step.id,'controller-recovery',{name:'target-recovery-boundary',type:'json',schema:'agent-control.recovery-boundary/v1',version:'1.0.0'}, {...this.artifacts.read(artifact.id),preparedEvidence:{id:artifact.id,sha256:artifact.sha256},recoveryBoundary:'CONFIRMED',ownershipReleased:true});run.artifacts.push(final.id);step.artifactIds.push(final.id);
+    this.ledger.update(run,'run.target_recovery_boundary_confirmed',{artifactId:final.id,operationId});return run;
+    }finally{this.boundaryPending.delete(runId);}
+  }
   private readonly cleanupVerifiers=new Map<string,(run:RunRecord,actor:string)=>Promise<boolean>>();
   private readonly cleanupVerifications=new Map<string,Promise<RunRecord>>();
   registerCleanupVerifier(action:string,verify:(run:RunRecord,actor:string)=>Promise<boolean>){if(this.cleanupVerifiers.has(action))throw Error('cleanup_verifier_exists');this.cleanupVerifiers.set(action,verify);}

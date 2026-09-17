@@ -1,3 +1,4 @@
+import type {TargetReset} from './target-reset.js';
 import {assessRuntimeExecution} from './runtime-benchmark-provenance.js';
 import fs from 'node:fs';
 import {createHash} from 'node:crypto';
@@ -26,10 +27,14 @@ export function validateRuntimeTarget(t:RuntimeTarget){
  return structuredClone(t);
 }
 export class TargetLlamaRuntime implements TargetTelemetry {
+ recoveryFence?:TargetReset;
+ private readonly generations=new WeakMap<object,number>();
  readonly id:string; readonly target:RuntimeTarget;
  constructor(target:RuntimeTarget){this.target=validateRuntimeTarget(target);this.id=target.telemetry;}
  producer(c:ActionContext){return {component:'agent-control-runtime',worker:c.worker.id,adapter:this.id,target:this.target.resource.id,environment:this.target.environment,targetLabel:this.target.resource.name,transport:this.target.resource.transport.type,runId:c.run.id,stepId:c.step.id,provenance:'AGENT_CONTROL_RUNTIME_EVIDENCE'};}
  async execute(operation:'observe'|'invoke'|'abort'|'verify-cleanup',c:ActionContext,payload:Record<string,unknown>={},owned:OwnedExecution=c.ownedExecution,signal:AbortSignal=c.signal){
+  const fence=this.recoveryFence;if(fence){fence.assertAttempt(payload.attemptId);if(!this.generations.has(c))this.generations.set(c,fence.generation());fence.assertGeneration(this.generations.get(c)!);}
+  const assertFence=()=>{if(fence)fence.assertGeneration(this.generations.get(c)!);};
   const source=helper(),request={operation,stateDirectory:this.target.stateDirectory,originalService:this.target.originalService??null,...payload,producer:this.producer(c)};
   const input=source+'\nprint(json.dumps({"runtimeResult":dispatch(json.loads('+JSON.stringify(JSON.stringify(request))+'))}),flush=True)\n';
   const remote=this.target.resource.transport.type==='ssh';
@@ -37,7 +42,8 @@ export class TargetLlamaRuntime implements TargetTelemetry {
   const command=remote?'ssh':'python3';
   c.recordEvidence?.('runtime-target-request',{operation,producer:this.producer(c),helperSha256:createHash('sha256').update(source).digest('hex'),at:new Date().toISOString()});
   let persistenceError:unknown;const lifecycle:any[]=[];
-  const result=await owned.runProcess({command,args,input,maxOutputBytes:4000000,session:{remoteTransport:remote,adapterId:'target-llama-runtime-v1',commandLabel:'Governed target runtime '+operation,crewRole:'resource-guardian'},onStdoutLine:line=>{let row:any;try{row=JSON.parse(line);}catch{return;}if(row.runtimeEvent)try{lifecycle.push(row.runtimeEvent);c.recordEvidence?.('runtime-lifecycle',row.runtimeEvent);}catch(error){persistenceError=error;}}},signal);
+  const result=await owned.runProcess({command,args,input,maxOutputBytes:4000000,session:{remoteTransport:remote,adapterId:'target-llama-runtime-v1',commandLabel:'Governed target runtime '+operation,crewRole:'resource-guardian'},onStdoutLine:line=>{try{assertFence();}catch(e){persistenceError=e;return;}let row:any;try{row=JSON.parse(line);}catch{return;}if(row.runtimeEvent)try{lifecycle.push(row.runtimeEvent);c.recordEvidence?.('runtime-lifecycle',row.runtimeEvent);}catch(error){persistenceError=error;}}},signal);
+  assertFence();
   c.recordEvidence?.('runtime-target-response',{operation,producer:this.producer(c),pid:result.pid,exitCode:result.exitCode,signal:result.signal,at:new Date().toISOString()});
   if(persistenceError)throw Error('runtime_evidence_persistence_failed');
   if(result.exitCode!==0)throw Error('runtime_target_transport_failed');
