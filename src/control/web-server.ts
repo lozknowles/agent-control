@@ -22,8 +22,9 @@ import type {ExecutionSessionMode, ExecutionSessionSignal} from './execution-ses
 import {projectUxSession, UX_SESSION_AUDIENCES, type UxSessionAnnotationStore, type UxSessionAudience, type UxSessionShareStore, type UxSessionStore} from './ux-session.js';
 import type {SessionVaultRuntime} from './session-vault.js';
 import {capabilityDefinition} from './capability-adapter-registry.js';
+import type {SecurityAuditRuntime} from './security-audit.js';
 
-export interface WebServerOptions {voiceTransport?:VoiceTransportRuntime;host?: string; port?: number; operatorToken?: string; operatorAuthorizer?: (request: IncomingMessage, authority: 'control.read' | 'control.mutate') => boolean; allowedOrigins?: string[]; assetsDir?: string; configFile?: string; openwa?: OpenWAAdapter; socialVoice?: SocialVoiceCoordinator; uxSessions?: UxSessionStore; uxSessionShares?: UxSessionShareStore; uxSessionAnnotations?: UxSessionAnnotationStore; uxSessionPlayerDir?: string; sessionVault?:SessionVaultRuntime;}
+export interface WebServerOptions {voiceTransport?:VoiceTransportRuntime;host?: string; port?: number; operatorToken?: string; operatorAuthorizer?: (request: IncomingMessage, authority: 'control.read' | 'control.mutate') => boolean; allowedOrigins?: string[]; assetsDir?: string; configFile?: string; openwa?: OpenWAAdapter; socialVoice?: SocialVoiceCoordinator; uxSessions?: UxSessionStore; uxSessionShares?: UxSessionShareStore; uxSessionAnnotations?: UxSessionAnnotationStore; uxSessionPlayerDir?: string; sessionVault?:SessionVaultRuntime; securityAudits?:SecurityAuditRuntime;}
 const MAX_BODY = 64 * 1024;
 const SECRET_KEY = /token|secret|password|credential|authorization|cookie|api[-_]?key/i;
 const SAFE_TOKEN_ACCOUNTING_KEY = /^(?:tokenAwareOutput|tokenBatonRouting|providerReportedTokens|contextTokens|contextLimitTokens|contextTokensAvoided|contextTokensSaved|evidenceTokens|estimatedTokensOriginal|estimatedTokensReturned|estimatedTokensSaved|estimatedOriginalTokens|estimatedReturnedTokens|estimatedTokensAvoided|expansionTokensReturned|inputTokens|freshInputTokens|cachedInputTokens|reusedTokens|processedPromptTokens|retainedPromptTokens|cacheWriteTokens|outputTokens|maximumInputTokens|maximumOutputTokens|maximumContextTokens|maximumEvidenceTokens|reasoningTokens|totalTokens|totalProcessedTokens|startupContextTokens|taskContextTokens|retrievedContextTokens|repositoryContextTokens|conversationHistoryTokens|totalEstimatedContextTokens|repeatedContextCostEstimate|tokenEfficiency|tokensPerSuccessfulTask|freshTokensPerSuccessfulTask|tokensPerVerifiedOutcome|freshTokensPerVerifiedOutcome|estimatedTokens|limitTokens|tokensLimit|tokensRemaining|draftTokens|bestDraftTokens|tokensPerSecond|baselineTokensPerSecond|bestSpeculativeTokensPerSecond|energyPerToken|contextPercent|continuePercent|prepareBatonPercent|compactPercent|handoffPercent|prompt_tokens|completion_tokens|input_tokens|output_tokens|reasoning_tokens|total_tokens|cached_tokens|prompt_tokens_details|input_tokens_details|prompt_per_token_ms|predicted_per_token_ms)$/;
@@ -78,6 +79,22 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   const url = new URL(request.url ?? '/', `http://${request.headers.host ?? `${options.host}:${options.port}`}`);
   const method = request.method ?? 'GET';
   if (method === 'GET' && url.pathname === '/api/operator-auth') return json(response, 200, operatorAuthentication(request, options));
+  const securityAuditMatch=url.pathname.match(/^\/api\/security-audits(?:\/([^/]+)(?:\/(resume|coverage|findings|export|revalidate))?)?$/);
+  if(method==='GET'&&securityAuditMatch){
+    validateOperatorRequest(request,options);if(!options.securityAudits)throw httpError(503,'security_audit_unconfigured');const id=securityAuditMatch[1]&&decodeURIComponent(securityAuditMatch[1]),action=securityAuditMatch[2];
+    if(!id)return json(response,200,{audits:options.securityAudits.list()});
+    if(!action)return json(response,200,options.securityAudits.get(id));
+    if(action==='coverage')return json(response,200,{auditId:id,coverage:options.securityAudits.get(id).coverage});
+    if(action==='findings'){const verdict=url.searchParams.get('verdict');const findings=options.securityAudits.get(id).findings.filter(item=>!verdict||item.verdict===verdict);return json(response,200,{auditId:id,findings});}
+    if(action==='export'){const result=options.securityAudits.export(id,String(url.searchParams.get('report')??'report') as never);return json(response,200,{name:path.basename(result.path),sha256:result.sha256,content:result.content});}
+  }
+  if(method==='GET'&&url.pathname==='/api/security-audit-comparison'){validateOperatorRequest(request,options);if(!options.securityAudits)throw httpError(503,'security_audit_unconfigured');return json(response,200,options.securityAudits.compare(String(url.searchParams.get('left')??''),String(url.searchParams.get('right')??'')));}
+  if(method==='POST'&&securityAuditMatch){
+    validateMutationRequest(request,options);if(!options.securityAudits)throw httpError(503,'security_audit_unconfigured');const body=await readJson(request),id=securityAuditMatch[1]&&decodeURIComponent(securityAuditMatch[1]),action=securityAuditMatch[2],actor='web-operator';
+    if(!id){const audit=options.securityAudits.start({repositoryRoot:String(body.repositoryRoot??''),scope:Array.isArray(body.scope)?body.scope.map(String):undefined,sourceRevision:String(body.sourceRevision??''),baselineAuditId:typeof body.baselineAuditId==='string'?body.baselineAuditId:undefined,sandbox:body.sandbox&&typeof body.sandbox==='object'&&!Array.isArray(body.sandbox)?body.sandbox as never:undefined,actor});const run=service.createJobRun('security-audit',{auditId:audit.id},actor);return json(response,201,{audit,run});}
+    if(action==='resume')return json(response,200,options.securityAudits.resume(id,actor));
+    if(action==='revalidate')return json(response,200,options.securityAudits.revalidate(id,String(body.sourceRevision??''),Array.isArray(body.changedFiles)?body.changedFiles.map(String):[],actor));
+  }
   if (url.pathname === '/api/integrations/openwa/webhook' && method === 'POST') {
     if (!options.openwa) return json(response,503,{error:'integration_disabled'});
     const chunks: Buffer[] = []; let size=0;

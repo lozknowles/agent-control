@@ -40,6 +40,8 @@ import {FileSkillLearningStore, SkillLearningRuntime} from './skill-learning.js'
 import {EnergyTelemetryRuntime, FileEnergyTelemetryStore} from './energy-telemetry.js';
 import {DeterministicSkillRuntime,FileDeterministicSkillStore,registerCoreDeterministicHandlers} from './deterministic-skill.js';
 import {registerDeterministicSkillActions} from './deterministic-skill-actions.js';
+import {SecurityAuditRuntime,SecurityAuditStore} from './security-audit.js';
+import {registerSecurityAudit} from './security-audit-job.js';
 
 /** Shared production definition path so qualification cannot drift from registered typed Actions. */
 export function buildJobRuntimeDefinition(config: AgentControlConfig, manifestDir = process.env.AGENT_CONTROL_JOB_DIR || path.resolve('config/jobs'), harnessEfficiency?: HarnessEfficiencyLedgerPort, modelRegistry?: ModelRegistry, codexNodeExecution?: CodexNodeExecutionPort, deterministicSkills?:DeterministicSkillRuntime) {
@@ -74,10 +76,12 @@ export function buildJobRuntime(config: AgentControlConfig, stateRoot = process.
   const repositoryRoots = config.jobs?.repositoryRoots ?? [path.resolve('.')];
   const safety = new RuntimeSafetySupervisor({id: 'agent-control.runtime-safety/v1', approvedRepositoryRoots: repositoryRoots.map(root => path.resolve(root)), approvedRemoteNodes: config.resources.map(resource => resource.id)}, path.join(stateRoot, 'runtime-safety', 'decisions.json'));
   const runtime = createJobRuntime(stateRoot, catalog, actions, workers, {efficiency: harnessEfficiency, safety, executionSessions});
+  const securityAudits=new SecurityAuditRuntime(new SecurityAuditStore(path.join(stateRoot,'security-audits')),repositoryRoots);
+  registerSecurityAudit(runtime,securityAudits);
   if(process.env.AGENT_CONTROL_RUNTIME_BENCHMARK_CONFIG)registerRuntimeBenchmark(runtime,JSON.parse(fs.readFileSync(process.env.AGENT_CONTROL_RUNTIME_BENCHMARK_CONFIG,'utf8')),harnessEfficiency);
   if(process.env.AGENT_CONTROL_SPECULATIVE_BENCHMARK_CONFIG)registerSpeculativeDecoding(runtime,JSON.parse(fs.readFileSync(process.env.AGENT_CONTROL_SPECULATIVE_BENCHMARK_CONFIG,'utf8')));
   const workParcels = new WorkParcelCoordinator(runtime, new WorkParcelStore(path.join(stateRoot, 'work-parcels', 'parcels.json')), new CatalogNaturalLanguagePlanner(runtime, reasoningPlanner ?? cacheAwareExpertQualificationPlanner()), harnessEfficiency, modelRegistry, adaptiveOrchestration, cacheExperts);
-  return Object.assign(runtime, {managedNodes, harnessEfficiency, harnessProfiles, harnessProfileRouter, contextPacketBuilder, workParcels, adaptiveOrchestration, cacheExperts, learnedSkills, deterministicSkills, energyTelemetry});
+  return Object.assign(runtime, {managedNodes, harnessEfficiency, harnessProfiles, harnessProfileRouter, contextPacketBuilder, workParcels, adaptiveOrchestration, cacheExperts, learnedSkills, deterministicSkills, energyTelemetry,securityAudits});
 }
 
 export function startManagedNodeMonitoring(runtime: ReturnType<typeof buildJobRuntime>, onChange?: (snapshot: ManagedNodeSnapshot) => void, onError?: (error: Error) => void) { return runtime.managedNodes.start(onChange, onError); }

@@ -1,0 +1,88 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import {createHash,randomUUID} from 'node:crypto';
+
+export const SECURITY_AUDIT_PHASES=['RECONNAISSANCE','COVERAGE_HUNTING','CANDIDATE_VALIDATION','STRUCTURED_FINDINGS','RECORD_VERIFICATION','REPORTING'] as const;
+export type SecurityAuditPhase=typeof SECURITY_AUDIT_PHASES[number];
+export type SecurityAuditVerdict='confirmed'|'needs_validation'|'rejected';
+export type SecurityAuditProvenance='AGENT_CONTROL_NATIVE'|'EXTERNAL_HARNESS'|'STATIC_ONLY'|'EXECUTION_BLOCKED_BY_SANDBOX'|'OPERATOR_SUPPLIED_EVIDENCE';
+export type CoverageStatus='covered'|'partial'|'blocked'|'unreviewed';
+export type SandboxStatus='PASS'|'PARTIAL'|'FAIL';
+export type IndependenceGrade='FULL'|'MODEL_INDEPENDENT'|'CONTEXT_INDEPENDENT'|'IDENTITY_SEPARATED'|'PARTIAL';
+
+export interface SandboxAssurance{status:SandboxStatus;network:'DENIED'|'UNPROVEN';environment:'ALLOWLISTED'|'UNPROVEN';resources:'BOUNDED'|'UNPROVEN';writes:'SCRATCH_ONLY'|'UNPROVEN';processes:'TRACKED_AND_CLEANED'|'UNPROVEN';evidence:string[];reason:string;}
+export interface CoverageUnit{id:string;category:string;scope:string;sourceFiles:string[];status:CoverageStatus;methods:string[];evidence:string[];sourceRevision:string;updatedAt:string;}
+export interface Candidate{id:string;title:string;description:string;category:string;sourceTrace:string[];preconditions:string[];trustBoundary:string;evidence:string[];finder:{invocationId:string;workerId:string;model?:string;provider?:string};createdAt:string;}
+export interface Verification{candidateId:string;verifier:{invocationId:string;workerId:string;model?:string;provider?:string};independence:IndependenceGrade;verdict:SecurityAuditVerdict;reason:string;evidence:string[];verifiedAt:string;}
+export interface Finding{schema:'agent-control.security-finding/v1';id:string;candidateId:string;verdict:SecurityAuditVerdict;title:string;category:string;sourceRevision:string;sourceTrace:string[];preconditions:string[];trustBoundary:string;reproduction:string[];impact:string;finder:Candidate['finder'];verification:Verification;confidence:'high'|'medium'|'low';severity?:'critical'|'high'|'medium'|'low'|'informational';severityRationale?:string;scope:string;limitations:string[];evidence:string[];}
+export interface SecurityAuditEvent{sequence:number;at:string;type:string;actor:string;detail:Record<string,unknown>;previousHash:string|null;hash:string;}
+export interface SecurityAuditRecord{schema:'agent-control.security-audit/v1';id:string;repositoryRoot:string;scope:string[];sourceRevision:string;baselineAuditId?:string;status:'CREATED'|'RUNNING'|'COMPLETE'|'FAILED';phase:SecurityAuditPhase;provenance:SecurityAuditProvenance[];sandbox:SandboxAssurance;coverage:CoverageUnit[];candidates:Candidate[];verifications:Verification[];findings:Finding[];artifacts:Record<string,{path:string;sha256:string}>;createdAt:string;updatedAt:string;events:SecurityAuditEvent[];}
+interface Snapshot{version:1;audits:SecurityAuditRecord[];}
+
+const iso=()=>new Date().toISOString();
+const hash=(value:string|Buffer)=>createHash('sha256').update(value).digest('hex');
+const assertText=(value:unknown,name:string)=>{if(typeof value!=='string'||!value.trim())throw new Error(`security_audit_${name}_required`);};
+function atomic(file:string,value:unknown){fs.mkdirSync(path.dirname(file),{recursive:true});const temporary=`${file}.tmp-${process.pid}`;fs.writeFileSync(temporary,`${JSON.stringify(value,null,2)}\n`,{mode:0o600});fs.renameSync(temporary,file);}
+function within(root:string,target:string){const base=path.resolve(root),resolved=path.resolve(target);return resolved===base||resolved.startsWith(`${base}${path.sep}`);}
+function artifact(file:string){const bytes=fs.readFileSync(file);return{path:file,sha256:hash(bytes)};}
+
+export function assessSandbox(input:Partial<SandboxAssurance>):SandboxAssurance{
+ const complete=input.network==='DENIED'&&input.environment==='ALLOWLISTED'&&input.resources==='BOUNDED'&&input.writes==='SCRATCH_ONLY'&&input.processes==='TRACKED_AND_CLEANED';
+ const any=Object.values(input).some(value=>value&&value!=='UNPROVEN'&&value!==input.status);
+ return{status:complete?'PASS':any?'PARTIAL':'FAIL',network:input.network??'UNPROVEN',environment:input.environment??'UNPROVEN',resources:input.resources??'UNPROVEN',writes:input.writes??'UNPROVEN',processes:input.processes??'UNPROVEN',evidence:[...(input.evidence??[])],reason:complete?'All target-execution guarantees are evidenced.':input.reason??'Target execution is blocked because one or more sandbox guarantees are unproven.'};
+}
+export function canExecuteTarget(assurance:SandboxAssurance){return assurance.status==='PASS'&&assurance.network==='DENIED'&&assurance.environment==='ALLOWLISTED'&&assurance.resources==='BOUNDED'&&assurance.writes==='SCRATCH_ONLY'&&assurance.processes==='TRACKED_AND_CLEANED';}
+
+export function validateFinding(value:Finding){
+ if(value?.schema!=='agent-control.security-finding/v1')throw Error('security_finding_schema_invalid');
+ for(const [name,item] of Object.entries({id:value.id,candidateId:value.candidateId,title:value.title,category:value.category,sourceRevision:value.sourceRevision,trustBoundary:value.trustBoundary,impact:value.impact,scope:value.scope}))assertText(item,name);
+ if(!['confirmed','needs_validation','rejected'].includes(value.verdict))throw Error('security_finding_verdict_invalid');
+ if(!value.finder?.invocationId||!value.verification?.verifier?.invocationId)throw Error('security_finding_identity_missing');
+ if(value.finder.invocationId===value.verification.verifier.invocationId)throw Error('security_finding_self_verification');
+ if(value.verification.candidateId!==value.candidateId||value.verification.verdict!==value.verdict)throw Error('security_finding_verification_binding_invalid');
+ if(!value.sourceTrace.length||!value.evidence.length)throw Error('security_finding_evidence_missing');
+ if(value.verdict==='confirmed'&&(!value.severity||!value.severityRationale?.trim()||!value.reproduction.length))throw Error('security_finding_confirmation_incomplete');
+ if(value.verdict==='needs_validation'&&(value.severity!==undefined||value.severityRationale!==undefined))throw Error('security_finding_unresolved_severity_forbidden');
+ if(value.verdict==='rejected'&&!value.verification.reason.trim())throw Error('security_finding_rejection_reason_missing');
+ return structuredClone(value);
+}
+
+export class SecurityAuditStore{
+ private readonly file:string;private readonly audits=new Map<string,SecurityAuditRecord>();
+ constructor(readonly root:string){this.file=path.join(root,'audits.json');if(fs.existsSync(this.file)){const value=JSON.parse(fs.readFileSync(this.file,'utf8')) as Snapshot;if(value.version!==1)throw Error('security_audit_store_version_unsupported');for(const audit of value.audits){let previous:string|null=null;for(const event of audit.events){const {hash:recorded,...body}=event;if(event.previousHash!==previous||hash(JSON.stringify(body))!==recorded)throw Error('security_audit_event_chain_invalid');previous=recorded;}this.audits.set(audit.id,audit);}}}
+ list(){return[...this.audits.values()].sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).map(value=>structuredClone(value));}
+ get(id:string){const value=this.audits.get(id);if(!value)throw Error('security_audit_missing');return structuredClone(value);}
+ create(input:{repositoryRoot:string;scope?:string[];sourceRevision:string;baselineAuditId?:string;sandbox?:Partial<SandboxAssurance>;actor:string}){
+  const root=path.resolve(input.repositoryRoot);if(!fs.statSync(root).isDirectory())throw Error('security_audit_repository_invalid');assertText(input.sourceRevision,'source_revision');
+  const assurance=assessSandbox(input.sandbox??{}),at=iso(),record:SecurityAuditRecord={schema:'agent-control.security-audit/v1',id:`audit-${randomUUID()}`,repositoryRoot:root,scope:(input.scope?.length?input.scope:['.']).map(String),sourceRevision:input.sourceRevision,...(input.baselineAuditId?{baselineAuditId:input.baselineAuditId}:{}),status:'CREATED',phase:'RECONNAISSANCE',provenance:['AGENT_CONTROL_NATIVE',...(canExecuteTarget(assurance)?[]:['STATIC_ONLY' as const])],sandbox:assurance,coverage:[],candidates:[],verifications:[],findings:[],artifacts:{},createdAt:at,updatedAt:at,events:[]};
+  this.event(record,'audit.created',input.actor,{sourceRevision:input.sourceRevision});this.audits.set(record.id,record);this.save();return this.get(record.id);
+ }
+ update(record:SecurityAuditRecord,type:string,actor:string,detail:Record<string,unknown>={}){if(!this.audits.has(record.id))throw Error('security_audit_missing');record.updatedAt=iso();this.event(record,type,actor,detail);this.audits.set(record.id,structuredClone(record));this.save();return this.get(record.id);}
+ private event(record:SecurityAuditRecord,type:string,actor:string,detail:Record<string,unknown>){const previous=record.events.at(-1)?.hash??null,body={sequence:record.events.length+1,at:iso(),type,actor,detail,previousHash:previous},event={...body,hash:hash(JSON.stringify(body))};record.events.push(event);}
+ private save(){atomic(this.file,{version:1,audits:this.list()} satisfies Snapshot);}
+}
+
+export class SecurityAuditRuntime{
+ constructor(readonly store:SecurityAuditStore,readonly allowedRepositoryRoots:string[]){this.allowedRepositoryRoots=allowedRepositoryRoots.map(root=>path.resolve(root));}
+ private assertRoot(root:string){if(!this.allowedRepositoryRoots.some(allowed=>within(allowed,root)))throw Error('security_audit_repository_not_allowed');}
+ start(input:{repositoryRoot:string;scope?:string[];sourceRevision:string;baselineAuditId?:string;sandbox?:Partial<SandboxAssurance>;actor:string}){this.assertRoot(input.repositoryRoot);return this.store.create(input);}
+ list(){return this.store.list();}get(id:string){return this.store.get(id);}
+ recordCoverage(id:string,units:CoverageUnit[],actor:string){const audit=this.store.get(id);audit.coverage=units.map(unit=>structuredClone(unit));audit.status='RUNNING';audit.phase='COVERAGE_HUNTING';return this.store.update(audit,'coverage.recorded',actor,{units:units.length});}
+ addCandidate(id:string,candidate:Candidate,actor:string){const audit=this.store.get(id);if(audit.candidates.some(item=>item.id===candidate.id))throw Error('security_audit_candidate_exists');audit.candidates.push(structuredClone(candidate));audit.phase='CANDIDATE_VALIDATION';return this.store.update(audit,'candidate.recorded',actor,{candidateId:candidate.id});}
+ verify(id:string,verification:Verification,actor:string){const audit=this.store.get(id),candidate=audit.candidates.find(item=>item.id===verification.candidateId);if(!candidate)throw Error('security_audit_candidate_missing');if(candidate.finder.invocationId===verification.verifier.invocationId)throw Error('security_audit_self_verification');audit.verifications.push(structuredClone(verification));audit.phase='RECORD_VERIFICATION';return this.store.update(audit,'candidate.verified',actor,{candidateId:candidate.id,verdict:verification.verdict,independence:verification.independence});}
+ addFinding(id:string,finding:Finding,actor:string){const audit=this.store.get(id),candidate=audit.candidates.find(item=>item.id===finding.candidateId),verification=audit.verifications.find(item=>item.candidateId===finding.candidateId&&item.verifier.invocationId===finding.verification.verifier.invocationId);if(!candidate||!verification)throw Error('security_finding_chain_incomplete');validateFinding(finding);if(audit.findings.some(item=>item.id===finding.id))throw Error('security_finding_exists');audit.findings.push(structuredClone(finding));audit.phase='STRUCTURED_FINDINGS';return this.store.update(audit,'finding.recorded',actor,{findingId:finding.id,verdict:finding.verdict});}
+ resume(id:string,actor:string){const audit=this.store.get(id);if(audit.status==='COMPLETE')return audit;audit.status='RUNNING';return this.store.update(audit,'audit.resumed',actor,{phase:audit.phase});}
+ compare(leftId:string,rightId:string){const left=this.store.get(leftId),right=this.store.get(rightId),leftMap=new Map(left.findings.map(item=>[item.id,item])),rightMap=new Map(right.findings.map(item=>[item.id,item]));return{schema:'agent-control.security-audit-comparison/v1',left:{id:left.id,revision:left.sourceRevision},right:{id:right.id,revision:right.sourceRevision},introduced:[...rightMap.keys()].filter(id=>!leftMap.has(id)),resolved:[...leftMap.keys()].filter(id=>!rightMap.has(id)),retained:[...rightMap.keys()].filter(id=>leftMap.has(id)),coverage:{left:left.coverage.length,right:right.coverage.length}};}
+ revalidate(id:string,currentRevision:string,changedFiles:string[],actor:string){const audit=this.store.get(id),changed=new Set(changedFiles.map(file=>file.replaceAll('\\','/')));for(const unit of audit.coverage)if(unit.sourceFiles.some(file=>changed.has(file.replaceAll('\\','/')))){unit.status='unreviewed';unit.evidence=[...unit.evidence,`stale_after:${currentRevision}`];unit.updatedAt=iso();}audit.sourceRevision=currentRevision;return this.store.update(audit,'audit.revalidation_requested',actor,{changedFiles:[...changed]});}
+ complete(id:string,actor:string){const audit=this.store.get(id);for(const finding of audit.findings)validateFinding(finding);audit.status='COMPLETE';audit.phase='REPORTING';this.writeReports(audit);return this.store.update(audit,'audit.completed',actor,{findings:audit.findings.length});}
+ export(id:string,report:'architecture'|'coverage'|'findings'|'report'|'details'|'needs-validation'|'manifest'){const audit=this.store.get(id),key=report==='needs-validation'?'needs-validation':report,entry=audit.artifacts[key];if(!entry)throw Error('security_audit_report_unavailable');const reportsRoot=path.join(this.store.root,'reports',audit.id);if(!within(reportsRoot,entry.path))throw Error('security_audit_artifact_path_invalid');const bytes=fs.readFileSync(entry.path);if(hash(bytes)!==entry.sha256)throw Error('security_audit_artifact_checksum_mismatch');return{...entry,content:bytes.toString('utf8')};}
+ private writeReports(audit:SecurityAuditRecord){const root=path.join(this.store.root,'reports',audit.id);fs.mkdirSync(root,{recursive:true});const counts=(verdict:SecurityAuditVerdict)=>audit.findings.filter(item=>item.verdict===verdict).length;
+  const architecture=`# Security audit architecture\n\n- Audit: ${audit.id}\n- Revision: ${audit.sourceRevision}\n- Provenance: ${audit.provenance.join(', ')}\n- Sandbox: ${audit.sandbox.status}\n- Execution: ${canExecuteTarget(audit.sandbox)?'permitted by recorded guarantees':'blocked; static analysis only'}\n\nAgent Control owns phase dispatch, records, verification identities, evidence and reporting. The target repository remains read-only.\n`;
+  const report=`# Security audit report\n\nAudit ${audit.id} evaluated ${audit.sourceRevision}.\n\n- Confirmed: ${counts('confirmed')}\n- Needs validation: ${counts('needs_validation')}\n- Rejected: ${counts('rejected')}\n- Coverage units: ${audit.coverage.length}\n- Sandbox assurance: ${audit.sandbox.status}\n\n${audit.findings.map(item=>`## ${item.title}\n\nVerdict: **${item.verdict}**${item.severity?`  \nSeverity: **${item.severity}**`:''}\n\n${item.impact}\n\nVerification: ${item.verification.reason}\n`).join('\n')||'No finding records were produced.\n'}`;
+  const details=`# Findings detail\n\n${audit.findings.map(item=>`## ${item.id}: ${item.title}\n\n- Verdict: ${item.verdict}\n- Category: ${item.category}\n- Source: ${item.sourceTrace.join(', ')}\n- Trust boundary: ${item.trustBoundary}\n- Preconditions: ${item.preconditions.join('; ')||'none recorded'}\n- Reproduction: ${item.reproduction.join('; ')||'not applicable'}\n- Finder: ${item.finder.workerId} / ${item.finder.invocationId}\n- Verifier: ${item.verification.verifier.workerId} / ${item.verification.verifier.invocationId}\n- Independence: ${item.verification.independence}\n- Evidence: ${item.evidence.join(', ')}\n`).join('\n')||'No findings.\n'}`;
+  const needs=`# Needs validation\n\n${audit.findings.filter(item=>item.verdict==='needs_validation').map(item=>`- ${item.id}: ${item.title} — ${item.verification.reason}`).join('\n')||'None.\n'}`;
+  const files:{[key:string]:[string,string]}={architecture:['architecture.md',architecture],coverage:['coverage-ledger.json',JSON.stringify({schema:'agent-control.security-coverage/v1',auditId:audit.id,units:audit.coverage},null,2)+'\n'],findings:['findings.json',JSON.stringify({schema:'agent-control.security-findings/v1',auditId:audit.id,findings:audit.findings},null,2)+'\n'],report:['REPORT.md',report],details:['FINDINGS-DETAIL.md',details],'needs-validation':['NEEDS-VALIDATION.md',needs]};
+  for(const [key,[name,content]] of Object.entries(files)){const file=path.join(root,name);fs.writeFileSync(file,content,{mode:0o600});audit.artifacts[key]=artifact(file);}
+  const manifestFile=path.join(root,'run-manifest.json'),manifest={schema:'agent-control.security-audit-manifest/v1',auditId:audit.id,sourceRevision:audit.sourceRevision,provenance:audit.provenance,sandbox:audit.sandbox,phases:SECURITY_AUDIT_PHASES,artifacts:audit.artifacts,events:audit.events.map(event=>({sequence:event.sequence,hash:event.hash}))};fs.writeFileSync(manifestFile,JSON.stringify(manifest,null,2)+'\n',{mode:0o600});audit.artifacts.manifest=artifact(manifestFile);
+ }
+}

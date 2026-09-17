@@ -16,6 +16,13 @@ ATLAS is Agent Control's public identity: **Agentic Topology, Lifecycle, Assuran
 
 Discover your AI tools, see what is available, and follow approved work from request to verified result.
 
+**4.9 candidate — governed security audits:** the isolated 4.9 candidate adds a
+native six-phase, coverage-led audit Job with separate finder and verifier
+invocations, strict verdicts, fail-closed sandbox admission and downloadable
+Markdown/JSON evidence. See the [operator guide](docs/security-audits.md),
+[integration decision](SECURITY_AUDIT_INTEGRATION_DECISION.md), and
+[candidate notes](docs/release-notes-4.9.0-rc.1.md). This is not a public release.
+
 **Current release: [4.8.1](https://github.com/lozknowles/agent-control/releases/tag/v4.8.1) — Governed native benchmarking and qualified speculative decoding.** Agent Control workers now own target admission, runtime lifecycle, benchmark execution, scoring, restoration and evidence through generic target/runtime adapters. Qualified speculative decoding can be selected deterministically when retained measurements show that it benefits the requested workload. See [release notes](docs/release-notes-4.8.1.md), [verification](docs/release-verification-4.8.1.md), and [benchmark operator guide](docs/running-your-first-benchmark.md).
 
 **4.8 workspace navigation:** [Operator guide, CLI and API](docs/navigable-workspaces.md) · [Architectural review and Rune comparison](NAVIGABLE_WORKSPACES_REVIEW.md) · [Visual evidence](docs/evidence/navigable-workspaces-4.8.md). Navigation does not grant execution authority or create a second topology.

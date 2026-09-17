@@ -1,3 +1,18 @@
+# Agent Control 4.9 security-audit candidate follow-up
+
+- [ ] Obtain explicit review approval for the isolated candidate before merge,
+      tag, publication or deployment.
+- [ ] Qualify a target-execution sandbox only when network denial, environment
+      allowlisting, bounded resources, scratch-only writes and process cleanup
+      are all independently evidenced.
+- [ ] Add model-diverse verification where an independently authorised provider
+      route is available; never spend provider tokens merely to decorate release
+      evidence.
+- [ ] Keep historic GLM review packets under their original provenance while
+      comparing dispositions against native audit records.
+
+See [Governed security audits](docs/security-audits.md).
+
 # Agent Control 4.8 navigable-workspaces follow-up
 
 - [ ] Evaluate durable per-operator favourites only after defining retention, identity and access policy.
