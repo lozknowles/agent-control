@@ -22,6 +22,9 @@ invocations, strict verdicts, fail-closed sandbox admission and downloadable
 Markdown/JSON evidence. See the [operator guide](docs/security-audits.md),
 [integration decision](SECURITY_AUDIT_INTEGRATION_DECISION.md), and
 [candidate notes](docs/release-notes-4.9.0-rc.1.md). This is not a public release.
+The same candidate adds a [conventional JSONL activity log](docs/activity-log.md)
+for `tail -f`, `jq`, logrotate and standard ingestion tools. It is a redacted
+projection of authoritative Job events, never a second event authority.
 
 **Current release: [4.8.1](https://github.com/lozknowles/agent-control/releases/tag/v4.8.1) — Governed native benchmarking and qualified speculative decoding.** Agent Control workers now own target admission, runtime lifecycle, benchmark execution, scoring, restoration and evidence through generic target/runtime adapters. Qualified speculative decoding can be selected deterministically when retained measurements show that it benefits the requested workload. See [release notes](docs/release-notes-4.8.1.md), [verification](docs/release-verification-4.8.1.md), and [benchmark operator guide](docs/running-your-first-benchmark.md).
 

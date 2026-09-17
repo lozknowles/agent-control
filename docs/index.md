@@ -30,6 +30,9 @@ Older versioned deployment and evidence documents remain available for provenanc
 
 [Nested Execution Environments](nested-execution-environments.md) extends that path through evidence-backed host, guest, runtime, and worker layers while keeping ordinary devices unchanged.
 
+[Conventional activity log](activity-log.md) documents the append-only JSONL
+projection for standard operating-system log tools and third-party ingestion.
+
 - [4.7 observability qualification](observability-qualification-4.7.md) — source pins, tests, actual review outcome and paced desktop/mobile evidence.
 
 - [System light/dark appearance and qualification](system-theme-4.7.md)
