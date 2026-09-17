@@ -1,0 +1,189 @@
+{
+  "schema": "agent-control.security-audit-continuation-qualification/v1",
+  "auditId": "audit-1d773fa5-5046-4f5a-b297-f2decf3a383a",
+  "runId": "run-54e2b0cf-a6e2-4564-9f1c-9af72eca3e71",
+  "sourceRevision": "8c68b05d2181da3d6a482354ebfb408f9d8d2f86",
+  "sourceRoot": "/fast/qualification/agent-control-v4.9-source-8c68-continuation",
+  "startedAt": "2026-09-17T21:02:33.413Z",
+  "endedAt": "2026-09-17T21:02:43.144Z",
+  "runStatus": "SUCCEEDED",
+  "steps": [
+    {
+      "id": "sandbox-qualification",
+      "status": "SUCCEEDED",
+      "workerId": "agent-control:security-sandbox",
+      "attempts": 1
+    },
+    {
+      "id": "independent-validation",
+      "status": "SUCCEEDED",
+      "workerId": "agent-control:security-verifier",
+      "attempts": 1
+    },
+    {
+      "id": "continuation-verification",
+      "status": "SUCCEEDED",
+      "workerId": "agent-control:security-verifier",
+      "attempts": 1
+    },
+    {
+      "id": "continuation-reporting",
+      "status": "SUCCEEDED",
+      "workerId": "agent-control:security-verifier",
+      "attempts": 1
+    }
+  ],
+  "sandbox": {
+    "status": "PASS",
+    "network": "DENIED",
+    "environment": "ALLOWLISTED",
+    "resources": "BOUNDED",
+    "writes": "SCRATCH_ONLY",
+    "processes": "TRACKED_AND_CLEANED",
+    "evidence": [
+      "external-network:a8e966d6376e66fe3500a5348baeb942cce490c25dc55bd048edd60ab586d3cd",
+      "loopback:0c7863eb94c5d9ba8fa2556b609efb1f3718cf5f4c6648ad90d548541875f196",
+      "environment:c5106b907cba45de113b60311b9100f6e9cb284f9b139785e5167fcc53f255a7",
+      "credentials:703ce789abcbdc77c6429ffce1c6ee1d88b7d2be7b7446cec2214139a9dff1f6",
+      "scratch-writes:fc4a71d427c151f33d714f77cb892ebc4cd1f8bfc88cfa063cdaf36f73fd756c",
+      "source-read-only:9d370e6e7a73a9a6577380c409c39487c29e0541d38431ca83750dd6cd3d0272",
+      "descendants:7637d16e2097619b96fce74818c375619a3309e51e4a15e923846ffd8c4295cf",
+      "timeout:5ef765f9f223201d4f3d2c6d25cfc0912cac694545c825d07a6acceaac1711bb",
+      "memory:4a47637e400af742ec23821c5cf31cf9348ac79a7223a932b18507fdae14fe2a",
+      "cpu:ad160f897e57fa4756f62249819298fe1b332bc611eac336fe45f62999c549ef",
+      "process-count:bcee3e51a3d9000eada6294b14e44a652c1b0c010156029fef85710a31911896",
+      "symlink-traversal:9398683a46a4c387f561a80640daf6ada603b0f534305e42de383e2d4c684860",
+      "cleanup:67ee00ac7302b415c5a6bde2b42c0ff5c23677af200a77a9cf2702b303066bf9"
+    ],
+    "reason": "All target-execution guarantees are evidenced.",
+    "qualification": {
+      "id": "sandbox-5988f1eb-2293-49fb-ac54-00b33e2638ae",
+      "adapter": "linux-bubblewrap-systemd-v1",
+      "controls": [
+        {
+          "id": "external-network",
+          "status": "PASS",
+          "evidenceSha256": "a8e966d6376e66fe3500a5348baeb942cce490c25dc55bd048edd60ab586d3cd"
+        },
+        {
+          "id": "loopback",
+          "status": "PASS",
+          "evidenceSha256": "0c7863eb94c5d9ba8fa2556b609efb1f3718cf5f4c6648ad90d548541875f196"
+        },
+        {
+          "id": "environment",
+          "status": "PASS",
+          "evidenceSha256": "c5106b907cba45de113b60311b9100f6e9cb284f9b139785e5167fcc53f255a7"
+        },
+        {
+          "id": "credentials",
+          "status": "PASS",
+          "evidenceSha256": "703ce789abcbdc77c6429ffce1c6ee1d88b7d2be7b7446cec2214139a9dff1f6"
+        },
+        {
+          "id": "scratch-writes",
+          "status": "PASS",
+          "evidenceSha256": "fc4a71d427c151f33d714f77cb892ebc4cd1f8bfc88cfa063cdaf36f73fd756c"
+        },
+        {
+          "id": "source-read-only",
+          "status": "PASS",
+          "evidenceSha256": "9d370e6e7a73a9a6577380c409c39487c29e0541d38431ca83750dd6cd3d0272"
+        },
+        {
+          "id": "descendants",
+          "status": "PASS",
+          "evidenceSha256": "7637d16e2097619b96fce74818c375619a3309e51e4a15e923846ffd8c4295cf"
+        },
+        {
+          "id": "timeout",
+          "status": "PASS",
+          "evidenceSha256": "5ef765f9f223201d4f3d2c6d25cfc0912cac694545c825d07a6acceaac1711bb"
+        },
+        {
+          "id": "memory",
+          "status": "PASS",
+          "evidenceSha256": "4a47637e400af742ec23821c5cf31cf9348ac79a7223a932b18507fdae14fe2a"
+        },
+        {
+          "id": "cpu",
+          "status": "PASS",
+          "evidenceSha256": "ad160f897e57fa4756f62249819298fe1b332bc611eac336fe45f62999c549ef"
+        },
+        {
+          "id": "process-count",
+          "status": "PASS",
+          "evidenceSha256": "bcee3e51a3d9000eada6294b14e44a652c1b0c010156029fef85710a31911896"
+        },
+        {
+          "id": "symlink-traversal",
+          "status": "PASS",
+          "evidenceSha256": "9398683a46a4c387f561a80640daf6ada603b0f534305e42de383e2d4c684860"
+        },
+        {
+          "id": "cleanup",
+          "status": "PASS",
+          "evidenceSha256": "67ee00ac7302b415c5a6bde2b42c0ff5c23677af200a77a9cf2702b303066bf9"
+        }
+      ]
+    }
+  },
+  "processed": 104,
+  "previousFindingsPreserved": true,
+  "findings": {
+    "confirmed": 0,
+    "needsValidation": 90,
+    "rejected": 77
+  },
+  "independence": {
+    "verifierWorker": "agent-control:security-verifier",
+    "full": 104,
+    "separateInvocationIdentities": 104
+  },
+  "activity": {
+    "events": 24,
+    "sensitiveFixtureDataLeaked": false
+  },
+  "artifacts": {
+    "architecture": {
+      "path": "/fast/qualification/agent-control-v4.9-security-audit-state-final/security-audits/reports/audit-1d773fa5-5046-4f5a-b297-f2decf3a383a/architecture.md",
+      "sha256": "e3e09938dd195f522626d5f06174d0c8afc32f15c0e19c7afef5b314463b090b"
+    },
+    "coverage": {
+      "path": "/fast/qualification/agent-control-v4.9-security-audit-state-final/security-audits/reports/audit-1d773fa5-5046-4f5a-b297-f2decf3a383a/coverage-ledger.json",
+      "sha256": "85d2af12023341669a5734bab757cbb20aabbe08eeb4372ced4941ec7228b7e0"
+    },
+    "findings": {
+      "path": "/fast/qualification/agent-control-v4.9-security-audit-state-final/security-audits/reports/audit-1d773fa5-5046-4f5a-b297-f2decf3a383a/findings.json",
+      "sha256": "58997e4a787d0670398a52e9d53202541b38645e35077731db8dfc4ee606f4c0"
+    },
+    "report": {
+      "path": "/fast/qualification/agent-control-v4.9-security-audit-state-final/security-audits/reports/audit-1d773fa5-5046-4f5a-b297-f2decf3a383a/REPORT.md",
+      "sha256": "9febd3c3a9566df40ca7006e9686d6baff51aa3740c55f3393835b4810ef0ae8"
+    },
+    "details": {
+      "path": "/fast/qualification/agent-control-v4.9-security-audit-state-final/security-audits/reports/audit-1d773fa5-5046-4f5a-b297-f2decf3a383a/FINDINGS-DETAIL.md",
+      "sha256": "70beef3286c782bc145dab041dbb63a1fcafe7c8e1fb820049fda31d6264dd27"
+    },
+    "needs-validation": {
+      "path": "/fast/qualification/agent-control-v4.9-security-audit-state-final/security-audits/reports/audit-1d773fa5-5046-4f5a-b297-f2decf3a383a/NEEDS-VALIDATION.md",
+      "sha256": "b27211c6776482f151e3d47084d950cd85a1ded2ed400679d38faf0d123ddb58"
+    },
+    "provenance": {
+      "path": "/fast/qualification/agent-control-v4.9-security-audit-state-final/security-audits/reports/audit-1d773fa5-5046-4f5a-b297-f2decf3a383a/PROVENANCE.md",
+      "sha256": "0059d47d765eea482268419e39b86e695e8d665a6dc1a6a69ec5ebcc1fc0b7e9"
+    },
+    "sandbox": {
+      "path": "/fast/qualification/agent-control-v4.9-security-audit-state-final/security-audits/reports/audit-1d773fa5-5046-4f5a-b297-f2decf3a383a/SANDBOX-ASSURANCE.md",
+      "sha256": "6642714785b62e284f85c4c87b934e162ea376c230f171dac0179eae1144c7ca"
+    },
+    "limitations": {
+      "path": "/fast/qualification/agent-control-v4.9-security-audit-state-final/security-audits/reports/audit-1d773fa5-5046-4f5a-b297-f2decf3a383a/LIMITATIONS.md",
+      "sha256": "272db5c506030204b10c10e777870254f2d01b15859008a13ebb093eec1a1a07"
+    },
+    "manifest": {
+      "path": "/fast/qualification/agent-control-v4.9-security-audit-state-final/security-audits/reports/audit-1d773fa5-5046-4f5a-b297-f2decf3a383a/run-manifest.json",
+      "sha256": "be5688072e8152fb2d97ab5433150389259d60d9d9e597f8e77612f88c1a7994"
+    }
+  }
+}
