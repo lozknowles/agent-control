@@ -213,7 +213,8 @@
     byId('live-shell-input-form').addEventListener('submit', event => sendInput(event).catch(showError)); byId('live-shell-resize-form').addEventListener('submit', event => resize(event).catch(showError)); byId('live-shell-return-form').addEventListener('submit', event => returnControl(event).catch(showError));
     byId('live-shell-transcript').addEventListener('click', () => showTranscript().catch(showError)); byId('live-shell-transcript-close').addEventListener('click', () => { byId('live-shell-transcript-panel').hidden = true; });
     document.querySelectorAll('[data-live-shell-mode]').forEach(button => button.addEventListener('click', () => attach(button.dataset.liveShellMode).catch(showError)));
-    const sessionChanges = new EventSource('/api/events');
-    sessionChanges.addEventListener('execution.session_changed', () => loadSessions().catch(showError));
+    document.addEventListener('agent-control:event-received', event => {
+      if (event.detail?.type === 'execution.session_changed') loadSessions().catch(showError);
+    });
   });
 })();

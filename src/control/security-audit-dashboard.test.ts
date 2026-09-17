@@ -22,3 +22,10 @@ test('security-audit dashboard distinguishes verdicts and model-free telemetry',
 test('security-audit dashboard selects the latest retained verifier record',()=>{assert.match(script,/\[\.\.\.value\.verifications\]\.reverse\(\)\.find/);assert.match(script,/retainedFindingHistory/);});
 
 test('dashboard shell contains no CSP-blocked inline style attributes',()=>{assert.doesNotMatch(page,/\sstyle=/i);assert.match(fs.readFileSync('assets/dashboard/dashboard.css','utf8'),/\.watch-full-width\{grid-column:1\/-1\}/);});
+
+test('live shell reuses the authenticated dashboard event stream',()=>{
+  const liveShell=fs.readFileSync('assets/dashboard/dashboard-live-shell.js','utf8');
+  assert.doesNotMatch(liveShell,/new EventSource\(['"]\/api\/events/);
+  assert.match(liveShell,/agent-control:event-received/);
+  assert.match(liveShell,/execution\.session_changed/);
+});
