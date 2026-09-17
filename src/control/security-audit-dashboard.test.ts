@@ -11,6 +11,7 @@ test('security-audit dashboard projects authoritative evidence read-only',()=>{
   assert.match(script,/Authorization:`Bearer \$\{state\.token\}`/);
   assert.doesNotMatch(script,/method\s*:\s*['\"](?:POST|PUT|PATCH|DELETE)['\"]/);
   assert.match(page,/dashboard-security-audits\.js/);
+  assert.match(script,/security-phases/);
 });
 
 test('security-audit dashboard distinguishes verdicts and model-free telemetry',()=>{
