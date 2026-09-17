@@ -1,0 +1,17 @@
+{
+  "schema": "agent-control.security-audit-upgrade-qualification/v1",
+  "result": "PASS",
+  "sourceRevision": "8c68b05d2181da3d6a482354ebfb408f9d8d2f86",
+  "fromVersion": "v4.8.0",
+  "fromRevision": "57c593b4f88965acc54239f6c1a5321329ce6cef",
+  "retainedRunId": "run-ef73d37f-c67d-4638-b121-7a255844509b",
+  "retainedStatus": "SUCCEEDED",
+  "retainedArtifacts": 2,
+  "newRunId": "run-fc6e3828-dc09-4741-a65b-750cad637d22",
+  "newRunStatus": "SUCCEEDED",
+  "securityAuditRuntime": true,
+  "activityLog": true,
+  "mandatoryMigration": false,
+  "configurationSha256Before": "150339fe5eb80186f31118958346c9e3066e943be066790ce497bb08f1562060",
+  "configurationSha256After": "150339fe5eb80186f31118958346c9e3066e943be066790ce497bb08f1562060"
+}

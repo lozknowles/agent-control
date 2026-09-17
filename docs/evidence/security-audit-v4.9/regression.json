@@ -1,0 +1,11 @@
+{
+  "schema": "agent-control.security-audit-regression/v1",
+  "result": "PASS",
+  "sourceRevision": "8c68b05d2181da3d6a482354ebfb408f9d8d2f86",
+  "tests": 1816,
+  "passed": 1816,
+  "failed": 0,
+  "skipped": 0,
+  "durationMilliseconds": 228690.421528,
+  "log": "/fast/qualification/agent-control-v4.9-final-exact-full-test.log"
+}

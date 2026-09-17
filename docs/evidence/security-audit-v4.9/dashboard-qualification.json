@@ -1,0 +1,60 @@
+{
+  "schema": "agent-control.security-audit-dashboard-evidence/v1",
+  "result": "PASS_WITH_LIMITATIONS",
+  "rendering": "PASS",
+  "consoleClean": false,
+  "limitations": [
+    "Pre-existing page-wide CSP inline-style diagnostics and an initial unauthenticated request remain visible in the console; the authenticated security-audit API and rendered views passed."
+  ],
+  "sourceRevision": "8c68b05d2181da3d6a482354ebfb408f9d8d2f86",
+  "auditId": "audit-1d773fa5-5046-4f5a-b297-f2decf3a383a",
+  "browser": "Chromium",
+  "authenticatedReadOnly": true,
+  "views": [
+    {
+      "name": "desktop-list",
+      "file": "desktop-list.png",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "sha256": "b854600785da9df12e5d1f88619c2e1e700b643977a823718779f73f758ce581",
+      "consoleErrors": [
+        "Applying inline style violates the following Content Security Policy directive 'style-src 'self''. Either the 'unsafe-inline' keyword, a hash ('sha256-UTd6kX6zAHGCYHBsdL3X+vEK9GTcgHfoJvZIv8noVeA='), or a nonce ('nonce-...') is required to enable inline execution. Note that hashes do not apply to event handlers, style attributes and javascript: navigations unless the 'unsafe-hashes' keyword is present. The action has been blocked.",
+        "Applying inline style violates the following Content Security Policy directive 'style-src 'self''. Either the 'unsafe-inline' keyword, a hash ('sha256-t6oewASd7J1vBg5mQtX4hl8bg8FeegYFM3scKLIhYUc='), or a nonce ('nonce-...') is required to enable inline execution. Note that hashes do not apply to event handlers, style attributes and javascript: navigations unless the 'unsafe-hashes' keyword is present. The action has been blocked.",
+        "Applying inline style violates the following Content Security Policy directive 'style-src 'self''. Either the 'unsafe-inline' keyword, a hash ('sha256-CSr5A7IS9dRw3Uo7TFEY+Os1KKjUjndCqZWzkW4uTaY='), or a nonce ('nonce-...') is required to enable inline execution. Note that hashes do not apply to event handlers, style attributes and javascript: navigations unless the 'unsafe-hashes' keyword is present. The action has been blocked.",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      ]
+    },
+    {
+      "name": "desktop-detail",
+      "file": "desktop-detail.png",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "sha256": "ff8f3c98dedba15ef24121286dfff8731bebba6349056fdfa32622b8f5e61b6a",
+      "consoleErrors": [
+        "Applying inline style violates the following Content Security Policy directive 'style-src 'self''. Either the 'unsafe-inline' keyword, a hash ('sha256-UTd6kX6zAHGCYHBsdL3X+vEK9GTcgHfoJvZIv8noVeA='), or a nonce ('nonce-...') is required to enable inline execution. Note that hashes do not apply to event handlers, style attributes and javascript: navigations unless the 'unsafe-hashes' keyword is present. The action has been blocked.",
+        "Applying inline style violates the following Content Security Policy directive 'style-src 'self''. Either the 'unsafe-inline' keyword, a hash ('sha256-t6oewASd7J1vBg5mQtX4hl8bg8FeegYFM3scKLIhYUc='), or a nonce ('nonce-...') is required to enable inline execution. Note that hashes do not apply to event handlers, style attributes and javascript: navigations unless the 'unsafe-hashes' keyword is present. The action has been blocked.",
+        "Applying inline style violates the following Content Security Policy directive 'style-src 'self''. Either the 'unsafe-inline' keyword, a hash ('sha256-CSr5A7IS9dRw3Uo7TFEY+Os1KKjUjndCqZWzkW4uTaY='), or a nonce ('nonce-...') is required to enable inline execution. Note that hashes do not apply to event handlers, style attributes and javascript: navigations unless the 'unsafe-hashes' keyword is present. The action has been blocked.",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      ]
+    },
+    {
+      "name": "mobile-detail",
+      "file": "mobile-detail.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "sha256": "d7f977a9ffc8d5e54eed5a1c75ba81effad95bbfc7a0afd9972ae5dc7f733b69",
+      "consoleErrors": [
+        "Applying inline style violates the following Content Security Policy directive 'style-src 'self''. Either the 'unsafe-inline' keyword, a hash ('sha256-UTd6kX6zAHGCYHBsdL3X+vEK9GTcgHfoJvZIv8noVeA='), or a nonce ('nonce-...') is required to enable inline execution. Note that hashes do not apply to event handlers, style attributes and javascript: navigations unless the 'unsafe-hashes' keyword is present. The action has been blocked.",
+        "Applying inline style violates the following Content Security Policy directive 'style-src 'self''. Either the 'unsafe-inline' keyword, a hash ('sha256-t6oewASd7J1vBg5mQtX4hl8bg8FeegYFM3scKLIhYUc='), or a nonce ('nonce-...') is required to enable inline execution. Note that hashes do not apply to event handlers, style attributes and javascript: navigations unless the 'unsafe-hashes' keyword is present. The action has been blocked.",
+        "Applying inline style violates the following Content Security Policy directive 'style-src 'self''. Either the 'unsafe-inline' keyword, a hash ('sha256-CSr5A7IS9dRw3Uo7TFEY+Os1KKjUjndCqZWzkW4uTaY='), or a nonce ('nonce-...') is required to enable inline execution. Note that hashes do not apply to event handlers, style attributes and javascript: navigations unless the 'unsafe-hashes' keyword is present. The action has been blocked.",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      ]
+    }
+  ]
+}
