@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import {registerRuntimeBenchmark} from './runtime-benchmark.js';
+import {registerSpeculativeDecoding} from './speculative-decoding.js';
 import {registerOperatorObservation} from './poe-observation-job.js';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -74,6 +75,7 @@ export function buildJobRuntime(config: AgentControlConfig, stateRoot = process.
   const safety = new RuntimeSafetySupervisor({id: 'agent-control.runtime-safety/v1', approvedRepositoryRoots: repositoryRoots.map(root => path.resolve(root)), approvedRemoteNodes: config.resources.map(resource => resource.id)}, path.join(stateRoot, 'runtime-safety', 'decisions.json'));
   const runtime = createJobRuntime(stateRoot, catalog, actions, workers, {efficiency: harnessEfficiency, safety, executionSessions});
   if(process.env.AGENT_CONTROL_RUNTIME_BENCHMARK_CONFIG)registerRuntimeBenchmark(runtime,JSON.parse(fs.readFileSync(process.env.AGENT_CONTROL_RUNTIME_BENCHMARK_CONFIG,'utf8')),harnessEfficiency);
+  if(process.env.AGENT_CONTROL_SPECULATIVE_BENCHMARK_CONFIG)registerSpeculativeDecoding(runtime,JSON.parse(fs.readFileSync(process.env.AGENT_CONTROL_SPECULATIVE_BENCHMARK_CONFIG,'utf8')));
   const workParcels = new WorkParcelCoordinator(runtime, new WorkParcelStore(path.join(stateRoot, 'work-parcels', 'parcels.json')), new CatalogNaturalLanguagePlanner(runtime, reasoningPlanner ?? cacheAwareExpertQualificationPlanner()), harnessEfficiency, modelRegistry, adaptiveOrchestration, cacheExperts);
   return Object.assign(runtime, {managedNodes, harnessEfficiency, harnessProfiles, harnessProfileRouter, contextPacketBuilder, workParcels, adaptiveOrchestration, cacheExperts, learnedSkills, deterministicSkills, energyTelemetry});
 }
