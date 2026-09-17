@@ -358,6 +358,28 @@ def verify_cleanup(request):
     return {'schema':'agent-control.current-cleanup/v1','verificationId':request.get('verificationId'),'attemptId':attempt,'producer':producer,'observedAt':datetime.datetime.now(datetime.timezone.utc).isoformat(),'historicalRestoration':{'receiptSha256':digest(receipt) if receipt.exists() else None,'restored':raw.get('originalServiceRestored'),'endedAt':raw.get('endedAt')},'originalServiceRequired':original is not None,'runtimeIdentity':{'pid':raw.get('runtimePid'),'startIdentity':raw.get('runtimeStartIdentity')},'bindingVerified':bool(exact),'checks':checks,'confirmed':bool(exact and all(v is True for v in checks.values()))}
 
 
+def recovery_environment():
+    checks=[]
+    def check(identity, expected, observe, accepts):
+        at=datetime.datetime.now(datetime.timezone.utc).isoformat()
+        try:
+            value=observe()
+            status='PASS' if accepts(value) else 'FAIL'
+            reason='observed_requirement_satisfied' if status=='PASS' else 'observed_requirement_not_satisfied'
+        except Exception as error:
+            value=None;status='UNKNOWN';reason=type(error).__name__
+        checks.append({'id':identity,'mandatory':True,'expected':expected,'observed':value,'status':status,'reason':reason,'timestamp':at})
+    check('execution_platform','Android or Linux (Android capability checked separately)',platform.system,lambda v:v in ('Android','Linux'))
+    check('termux_home','HOME contains /com.termux/',lambda:str(Path.home()),lambda v:'/com.termux/' in v)
+    def getprop():
+        try:
+            Path('/system/bin/getprop').stat()
+            return True
+        except FileNotFoundError:return False
+    check('android_getprop','Android property utility present',getprop,lambda v:v is True)
+    return checks
+
+
 def recovery_service(request):
     boot = Path('/proc/sys/kernel/random/boot_id').read_text().strip()
     if request.get('expectedBootId') and boot != request['expectedBootId']:
@@ -389,7 +411,8 @@ def recovery_service(request):
         restored=True;found=matching()
     identity=len(found)==1
     healthy=identity and health(endpoint)
-    return {'bootId':boot,'environmentVerified':platform.system()=='Linux' and '/com.termux/' in str(Path.home()) and Path('/system/bin/getprop').exists(),'service':{'identity':identity,'healthy':healthy,'expected':identity and healthy,'restored':restored}}
+    components=recovery_environment()
+    return {'bootId':boot,'environmentVerified':all(c['status']=='PASS' for c in components if c['mandatory']),'components':components,'service':{'identity':identity,'healthy':healthy,'expected':identity and healthy,'restored':restored}}
 
 
 def dispatch(request):

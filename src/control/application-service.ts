@@ -339,6 +339,7 @@ export class AgentControlService {
   cancelJobRun(id: string, actor: string) { const run = this.mustJobRuntime().cancel(id, `cancelled_by:${actor}`); this.events.emit('job.run_cancelled', {runId: id}, undefined, actor); return run; }
   retryJobRun(id: string, actor: string) { const run = this.mustJobRuntime().retry(id); this.events.emit('job.run_retried', {sourceRunId: id, runId: run.id}, undefined, actor); return run; }
   applyTargetBoundary(runId:string,actor:string,body:any){return this.mustJobRuntime().applyTargetBoundary(runId,String(body.target??''),String(body.operationId??''),actor,Array.isArray(body.attemptIds)?body.attemptIds.map(String):[]);}
+  diagnoseTargetEnvironment(target:string,actor:string){const recovery=this.mustJobRuntime().targetResets.get(target);if(!recovery)throw Error('target_reset_unconfigured');return recovery.diagnose(actor);}
   targetResetState(target:string){return this.mustJobRuntime().targetResets.get(target)?.state()??null;}
   resetTarget(target:string,actor:string,body:any){return this.mustJobRuntime().resetTarget(target,{actor,reason:String(body.reason??''),requestKey:String(body.requestKey??''),expiresAt:String(body.expiresAt??''),approveReset:body.approveReset===true,...(typeof body.runId==='string'?{runId:body.runId}:{})});}
   verifyJobCleanup(id:string,actor:string){return this.mustJobRuntime().verifyCleanup(id,actor);}

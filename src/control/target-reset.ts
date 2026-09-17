@@ -1,12 +1,21 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {createHash,randomUUID} from 'node:crypto';
-export interface ResetObservation {bootId:string;physicalIdentity:string;environmentVerified:boolean;service:{identity:boolean;healthy:boolean;expected:boolean;restored?:boolean};}
-export interface ResetPort {observe():Promise<ResetObservation>;reboot():Promise<void>;restore(bootId:string):Promise<ResetObservation>;}
+export interface EnvironmentCheck {id:string;mandatory:boolean;expected:string;observed:unknown;status:'PASS'|'FAIL'|'UNKNOWN';reason:string;timestamp:string;}
+export function environmentResult(checks:EnvironmentCheck[]):EnvironmentCheck['status'] {const required=checks.filter(c=>c.mandatory);return !required.length?'UNKNOWN':required.some(c=>c.status==='FAIL')?'FAIL':required.some(c=>c.status!=='PASS')?'UNKNOWN':'PASS';}
+export interface ResetObservation {bootId:string;physicalIdentity:string;environmentVerified:boolean;components?:EnvironmentCheck[];service:{identity:boolean;healthy:boolean;expected:boolean;restored?:boolean};}
+export interface ResetPort {diagnose?():Promise<{components:EnvironmentCheck[]}>;observe():Promise<ResetObservation>;reboot():Promise<void>;restore(bootId:string):Promise<ResetObservation>;}
 export interface ResetAuthority {actor:string;reason:string;requestKey:string;expiresAt:string;approveReset:boolean;runId?:string;}
 export interface ResetReceipt {id:string;target:string;environment:string;configHash:string;authority:ResetAuthority;startedAt:string;endedAt?:string;status:'PENDING'|'COMPLETE'|'FAILED';generation:number;pre?:ResetObservation;post?:ResetObservation;disappeared?:boolean;error?:string;}
 export class TargetReset {
  private busy=false;
+ async diagnose(actor:string){
+  if(!actor?.trim())throw Error('target_diagnostic_authority_required');
+  if(this.busy)throw Error('target_reset_in_progress');
+  if(!this.port.diagnose)throw Error('target_diagnostic_unsupported');
+  this.busy=true;
+  try{const result=await this.port.diagnose();const receipt={schema:'agent-control.target-environment/v1',id:'target-environment-'+randomUUID(),target:this.target,environment:this.environment,configHash:this.configHash,actor,observedAt:new Date(this.now()).toISOString(),status:environmentResult(result.components),components:result.components,targetMutations:0,modelCalls:0,benchmarkFixtures:0};fs.writeFileSync(path.join(this.directory,receipt.id+'.json'),JSON.stringify(receipt,null,2),{mode:0o600,flag:'wx',flush:true});return receipt;}finally{this.busy=false;}
+ }
  constructor(readonly directory:string,readonly target:string,readonly environment:string,readonly configHash:string,readonly port:ResetPort,readonly options:{now?:()=>number;pause?:(ms:number)=>Promise<void>;timeoutMs?:number}={}){fs.mkdirSync(directory,{recursive:true,mode:0o700});}
  private abandonedFile(){return path.join(this.directory,this.key()+'.abandoned.json');}
  abandoned():string[]{return fs.existsSync(this.abandonedFile())?JSON.parse(fs.readFileSync(this.abandonedFile(),'utf8')):[];}

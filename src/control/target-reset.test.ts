@@ -13,3 +13,17 @@ test('changed kernel boot, disappearance, same device and healthy service produc
 for(const [label,change] of Object.entries({missingBoot:{pre:{bootId:''}},wrongDevice:{post:{physicalIdentity:'other'}},environmentMissing:{post:{environmentVerified:false}},resetRejected:{rebootError:true},noDisappearance:{offline:false},sameBoot:{unchanged:true},neverReturns:{neverReturn:true},restoreFailure:{restoreError:true},serviceIdentity:{service:{identity:false}},serviceHealth:{service:{healthy:false}},protectedState:{service:{expected:false}}}))test('failed '+label+' cannot confirm boundary or release quarantine',async()=>{const f=fixture(change);try{const r=await f.reset.reset(f.authority);assert.equal(r.status,'FAILED');assert.throws(()=>f.reset.generation(),/quarantined/);assert.throws(()=>f.reset.abandon(['old']),/not_complete/);await assert.rejects(f.reset.reset({...f.authority,requestKey:'retry'}),/quarantined/);}finally{f.dispose();}});
 test('receipt cannot be reused by another operator or run',async()=>{const f=fixture();try{await f.reset.reset(f.authority);await assert.rejects(f.reset.reset({...f.authority,actor:'other'}),/binding_mismatch/);await assert.rejects(f.reset.reset({...f.authority,runId:'other'}),/binding_mismatch/);}finally{f.dispose();}});
 test('operation contains no model or benchmark execution port',async()=>{const f=fixture();try{await f.reset.reset(f.authority);assert.deepEqual(f.calls(),{calls:3,reboots:1,restores:1});}finally{f.dispose();}});
+
+
+test('diagnostic aggregate preserves unknown, ignores optional failures, and requires mandatory evidence',async()=>{
+ const {environmentResult}=await import('./target-reset.js');const c=(status:any,mandatory=true)=>({id:'x',status,mandatory,expected:'x',observed:null,reason:'test',timestamp:new Date().toISOString()});
+ assert.equal(environmentResult([]),'UNKNOWN');assert.equal(environmentResult([c('UNKNOWN')]),'UNKNOWN');assert.equal(environmentResult([c('FAIL')]),'FAIL');assert.equal(environmentResult([c('PASS'),c('FAIL',false)]),'PASS');assert.equal(environmentResult([c('PASS'),c('UNKNOWN')]),'UNKNOWN');
+});
+
+test('read-only diagnostic persists component evidence without changing recovery state or calling operational ports',async()=>{
+ const f=fixture();try{
+  const failed=await f.reset.reset({...f.authority,requestKey:'failed'});const state=JSON.stringify(f.reset.state()),before=f.calls();
+  f.reset.port.diagnose=async()=>({components:[{id:'environment',mandatory:true,expected:'supported environment',observed:'Android',status:'PASS',reason:'observed',timestamp:new Date().toISOString()}]});
+  await assert.rejects(f.reset.diagnose(''),/authority_required/);const r=await f.reset.diagnose('operator');assert.equal(r.status,'PASS');assert.equal(r.targetMutations,0);assert.equal(r.modelCalls,0);assert.equal(r.benchmarkFixtures,0);assert.deepEqual(f.calls(),before);assert.equal(JSON.stringify(f.reset.state()),state);assert.ok(fs.existsSync(path.join(f.dir,r.id+'.json')));assert.equal(f.reset.state()?.id,failed.id);
+ }finally{f.dispose();}
+});

@@ -17,6 +17,7 @@ launches=[]
 class File:
  def read_text(self):return '${boot}'
  def exists(self):return True
+ def stat(self):return object()
 class Entry:
  name='123'
  def stat(self):return type('Stat',(),{'st_uid':os.getuid()})()
@@ -49,3 +50,27 @@ print(json.dumps({'result':r,'launches':len(launches)}))
 });
 
 test('old action cannot append a response after the target generation changes',async()=>{const adapter=new TargetLlamaRuntime(target);let generation=0;const evidence:string[]=[];adapter.recoveryFence={assertAttempt:()=>{},generation:()=>generation,assertGeneration:(g:number)=>{if(g!==generation)throw Error('target_generation_fenced');}} as any;const owned={runProcess:async()=>{generation++;return {exitCode:0,pid:1,stdout:JSON.stringify({runtimeResult:{status:'SUCCEEDED'}})};}} as any;const context={run:{id:'run'},step:{id:'step'},worker:{id:'worker'},recordEvidence:(name:string)=>evidence.push(name),signal:new AbortController().signal} as any;await assert.rejects(adapter.execute('observe',context,{},owned),/generation_fenced/);assert.deepEqual(evidence,['runtime-target-request']);});
+
+for(const mode of ['pass','android','platform','home','missing','permission'])test('environment components preserve independent observations: '+mode,()=>{
+ const source=fs.readFileSync(new URL('../../assets/runtime/llama-invocation.py',import.meta.url),'utf8');
+ const result=spawnSync('python3',['-'],{input:source+`
+class File:
+ def stat(self):
+  ${mode==='permission'?"raise PermissionError('restricted')":mode==='missing'?"raise FileNotFoundError('absent')":"return object()"}
+class Factory:
+ def __new__(cls,x):return File()
+ @staticmethod
+ def home():return '${mode==='home'?'/other/home':'/data/data/com.termux/files/home'}'
+Path=Factory
+platform.system=lambda:'${mode==='platform'?'Windows':mode==='android'?'Android':'Linux'}'
+print(json.dumps(recovery_environment()))
+`,encoding:'utf8'});
+ assert.equal(result.status,0,result.stderr);const checks=JSON.parse(result.stdout);assert.equal(checks.length,3);assert.ok(checks.every((c:any)=>c.timestamp&&c.expected&&c.reason));
+ assert.equal(checks[0].status,mode==='platform'?'FAIL':'PASS');assert.equal(checks[1].status,mode==='home'?'FAIL':'PASS');assert.equal(checks[2].status,mode==='permission'?'UNKNOWN':mode==='missing'?'FAIL':'PASS');
+});
+
+test('diagnostic uses configured routes, independent identity and service checks, no mutations',async()=>{
+ const original=OwnedProcessManager.prototype.runProcess,commands:any[]=[];
+ OwnedProcessManager.prototype.runProcess=async function(spec:any){commands.push(spec);return {exitCode:0,stdout:spec.command==='/configured/adb'?(spec.args.includes('getprop')?'physical':boot):JSON.stringify({bootId:boot,environmentVerified:false,components:[{id:'execution_platform',mandatory:true,status:'FAIL',expected:'Linux',observed:'Android',timestamp:new Date().toISOString(),reason:'mismatch'}],service:{identity:true,healthy:true,expected:true}}),stderr:'',pid:1} as any;};
+ try{const r=await androidRecoveryPort(target).diagnose!();assert.equal(r.components.find(c=>c.id==='physical_target_identity')?.status,'PASS');assert.equal(r.components.find(c=>c.id==='execution_platform')?.status,'FAIL');assert.equal(r.components.find(c=>c.id==='protected_service_health')?.status,'PASS');assert.equal(commands.length,3);assert.ok(commands.every(c=>!c.args.includes('reboot')));assert.ok(commands.filter(c=>c.input).every(c=>c.input.endsWith('flush=True)\n')&&c.input.includes('recovery-observe')));}finally{OwnedProcessManager.prototype.runProcess=original;}
+});
