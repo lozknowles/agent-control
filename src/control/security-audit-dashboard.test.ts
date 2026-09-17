@@ -1,0 +1,20 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import test from 'node:test';
+
+const script=fs.readFileSync('assets/dashboard/dashboard-security-audits.js','utf8');
+const page=fs.readFileSync('assets/dashboard/index.html','utf8');
+
+test('security-audit dashboard projects authoritative evidence read-only',()=>{
+  for(const marker of ['Security Audits','Governed phases','Coverage ledger','Candidates and independent verification','Findings and verdicts','Sandbox assurance and provenance','View human-readable report','View findings JSON'])assert.match(script,new RegExp(marker.replace(/[.*+?^${}()|[\\]\\]/g,'\\$&')));
+  assert.match(script,/Operator authentication required/);
+  assert.match(script,/Authorization:`Bearer \$\{state\.token\}`/);
+  assert.doesNotMatch(script,/method\s*:\s*['\"](?:POST|PUT|PATCH|DELETE)['\"]/);
+  assert.match(page,/dashboard-security-audits\.js/);
+});
+
+test('security-audit dashboard distinguishes verdicts and model-free telemetry',()=>{
+  for(const marker of ['Confirmed','Needs validation','Rejected','Finder','Verifier','independence','model/provider tokens and cost are not applicable'])assert.match(script,new RegExp(marker.replace(/[.*+?^${}()|[\\]\\]/g,'\\$&'),'i'));
+  assert.match(script,/const esc=/);
+  assert.doesNotMatch(script,/innerHTML\s*=\s*value\.(?:content|stdout|stderr)/);
+});
