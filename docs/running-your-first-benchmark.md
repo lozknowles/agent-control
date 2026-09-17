@@ -1,6 +1,6 @@
 # Running your first native benchmark
 
-This is an isolated post-4.8 candidate, not a capability published in v4.8.0. Install the reviewed candidate source with its lockfile (`npm ci`). No private qualification scripts are required.
+This capability is published in Agent Control v4.8.1. Install the tagged source with its lockfile (`npm ci`). No private qualification scripts are required.
 
 ## Supported boundary
 

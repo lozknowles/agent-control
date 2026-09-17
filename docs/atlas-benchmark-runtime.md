@@ -1,6 +1,6 @@
-# Governed runtime benchmark capability (post-4.8 candidate)
+# Governed runtime benchmark capability (Agent Control 4.8.1)
 
-This additive candidate leaves public v4.8.0 unchanged. Agent Control owns execution; Lab consumes benchmark definitions and results, not a forked engine.
+This additive v4.8.1 capability preserves the v4.8.0 architecture. Agent Control owns execution; Lab consumes benchmark definitions and results, not a forked engine.
 
 ## Existing implementation map
 
@@ -30,9 +30,9 @@ Admission records observations, policy thresholds and ADMIT/REFUSE. Missing batt
 
 ## Ownership and future release
 
-The authoritative runtime remains in Agent Control. Agent Control Lab should carry fixtures, validators/comparison consumers, public-safe examples and reproducibility guides. Do not publish private target addresses, credential references, serials or operational configuration. Public v4.8 did not register this qualification harness as a supported runtime benchmark path; this capability is post-4.8 functionality and should be assessed for the next feature release, not retagged into 4.8.0.
+The authoritative runtime remains in Agent Control. Agent Control Lab should carry fixtures, validators/comparison consumers, public-safe examples and reproducibility guides. Do not publish private target addresses, credential references, serials or operational configuration. Public v4.8.0 did not include this runtime benchmark path. Agent Control v4.8.1 publishes the qualified adapter boundary while preserving v4.8.0 as an immutable release.
 
-Broader benchmarking remains paused until the new runtime path is physically qualified.
+Additional runtime and target combinations remain adapter-gated and require their own qualification; this release does not make them implicitly supported.
 
 ## Reusable qualification
 
