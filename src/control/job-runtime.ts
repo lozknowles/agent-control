@@ -156,6 +156,14 @@ export class JobRuntime {
     return recovery.reset(authority);
   }
   private readonly boundaryPending=new Set<string>();
+  async prepareTargetContinuation(target:string,authority:import('./target-reset.js').ContinuationAuthority){
+    if(this.controllers.size||this.runCleanups.size||this.ledger.list().some(r=>['QUEUED','WAITING','RUNNING','VERIFYING','RECONNECTING'].includes(r.status)))throw Error('target_reset_active_work');
+    const recovery=this.targetResets.get(target);if(!recovery)throw Error('target_reset_unconfigured');if(authority.runId&&!this.ledger.get(authority.runId))throw Error('target_reset_run_missing');return recovery.prepareContinuation(authority);
+  }
+  async executeTargetContinuation(target:string,id:string,authority:ResetAuthority&{target:string}){
+    if(this.controllers.size||this.runCleanups.size||this.ledger.list().some(r=>['QUEUED','WAITING','RUNNING','VERIFYING','RECONNECTING'].includes(r.status)))throw Error('target_reset_active_work');
+    const recovery=this.targetResets.get(target);if(!recovery)throw Error('target_reset_unconfigured');return recovery.executeContinuation(id,authority);
+  }
   async applyTargetBoundary(runId:string,target:string,operationId:string,actor:string,attemptIds:string[]){
     if(this.boundaryPending.has(runId))throw Error('recovery_boundary_in_progress');this.boundaryPending.add(runId);try{
     const run=this.mustRun(runId),recovery=this.targetResets.get(target),receipt=recovery?.state();

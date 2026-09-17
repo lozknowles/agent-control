@@ -405,6 +405,8 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
     if (parcelRetrievalMatch) return json(response, 200, service.retrieveParcelContext(decodeURIComponent(parcelRetrievalMatch[1]), {query: String(body.query ?? ''), limit: typeof body.limit === 'number' ? body.limit : undefined, types: Array.isArray(body.types) ? body.types.map(String) as never : undefined, stageIds: Array.isArray(body.stageIds) ? body.stageIds.map(String) : []}, actor));
     const environmentDiagnosticMatch=url.pathname.match(/^\/api\/targets\/([^/]+)\/environment-diagnostic$/);
     if(environmentDiagnosticMatch)return json(response,200,await service.diagnoseTargetEnvironment(decodeURIComponent(environmentDiagnosticMatch[1]),actor));
+    const continuationMatch=url.pathname.match(/^\/api\/targets\/([^/]+)\/reset-continuations(?:\/([^/]+)\/execute)?$/);
+    if(continuationMatch)return json(response,200,await (continuationMatch[2]?service.executeTargetContinuation(decodeURIComponent(continuationMatch[1]),decodeURIComponent(continuationMatch[2]),actor,body):service.prepareTargetContinuation(decodeURIComponent(continuationMatch[1]),actor,body)));
     const resetTargetMatch=url.pathname.match(/^\/api\/targets\/([^/]+)\/reset-recovery$/);
     if(resetTargetMatch)return json(response,200,await service.resetTarget(decodeURIComponent(resetTargetMatch[1]),actor,body));
     if(runMatch?.[2]==='apply-target-boundary')return json(response,200,await service.applyTargetBoundary(decodeURIComponent(runMatch[1]),actor,body));
