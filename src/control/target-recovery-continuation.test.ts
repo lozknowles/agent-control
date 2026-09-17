@@ -18,9 +18,9 @@ async function setup(legacy=false){
 for(const legacy of [false,true])test('positive pre-disruption proof prepares immutable linked continuation; legacy='+legacy,async()=>{
  const f=await setup(legacy);try{
   const originals=new Map(fs.readdirSync(f.dir).map(n=>[n,fs.readFileSync(path.join(f.dir,n))]));const before=f.calls();
-  const sentinel=path.join(f.dir,'benchmark-locks-and-results.txt');fs.writeFileSync(sentinel,'locks retained; target lease retained; 24/27; quality 6/24');
+  const preservationMarker=path.join(f.dir,'benchmark-locks-and-results.txt');fs.writeFileSync(preservationMarker,'locks retained; target lease retained; 24/27; quality 6/24');
   const v=await f.recovery.prepareContinuation(f.authority());assert.equal(v.status,'PREPARED');assert.equal(v.parentOperationId,f.parent.id);assert.equal(v.chainId,f.parent.id);assert.equal(v.authority.approveReset,false);assert.equal(v.preparationAuthority?.allowedAction,'RESET_RECOVERY');assert.equal(v.disruption,'NOT_REQUESTED');assert.equal(v.generation,2);assert.equal(f.recovery.state()?.id,v.id);
-  for(const [name,bytes] of originals)assert.deepEqual(fs.readFileSync(path.join(f.dir,name)),bytes);assert.equal(fs.readFileSync(sentinel,'utf8'),'locks retained; target lease retained; 24/27; quality 6/24');assert.deepEqual(f.calls(),before);assert.throws(()=>f.recovery.generation(),/quarantined/);assert.throws(()=>f.recovery.assertGeneration(2),/fenced/);assert.throws(()=>f.recovery.abandon(['legacy-attempt']),/not_complete/);
+  for(const [name,bytes] of originals)assert.deepEqual(fs.readFileSync(path.join(f.dir,name)),bytes);assert.equal(fs.readFileSync(preservationMarker,'utf8'),'locks retained; target lease retained; 24/27; quality 6/24');assert.deepEqual(f.calls(),before);assert.throws(()=>f.recovery.generation(),/quarantined/);assert.throws(()=>f.recovery.assertGeneration(2),/fenced/);assert.throws(()=>f.recovery.abandon(['legacy-attempt']),/not_complete/);
   assert.equal((await f.recovery.prepareContinuation(f.authority())).id,v.id);assert.equal((await f.recovery.prepareContinuation(f.authority())).replayed,true);
  }finally{f.dispose();}
 });

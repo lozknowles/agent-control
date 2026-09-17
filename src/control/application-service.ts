@@ -62,6 +62,7 @@ import type {DiscoveryScan} from './environment-discovery.js';
 import type {InstallationLifecycle,InstallationMode,InstallationRole} from './installation-lifecycle.js';
 import {createHash} from 'node:crypto';
 import {governedRequestOrigin} from './request-origin.js';
+import {projectSpeculativeQualification} from './speculative-decoding.js';
 
 export type ControlEventType =
   | 'social.activity'
@@ -364,6 +365,10 @@ export class AgentControlService {
   definePersonalBenchmark(input:unknown){return this.mustModelWatches().league.define(input);}
   private mustModelWatches(){if(!this.modelWatches)throw Error('model_watches_unconfigured');return this.modelWatches;}
   private readonly nodeResourceSampler = new LocalNodeResources();
+  private speculativeQualifications(runId?:string) {
+    if(!this.jobRuntime)return[];
+    return this.jobRuntime.artifacts.list(runId).filter(item=>item.name==='speculative-decoding-report').flatMap(item=>{try{const projection=projectSpeculativeQualification(this.jobRuntime!.artifacts.read(item.id),{artifactId:item.id,sha256:item.sha256});return projection?[projection]:[];}catch{return[];}});
+  }
   nodeDashboard(id:string) {
     const dashboard=projectNodeDashboard(this.estateMap(),id,this.nodes(),nodeWorkIndex(this.workParcels?.list()??[],this.parameterizedJobs?.runs.list()??[],this.executionSessions?.list()??[],this.jobRuntime?.ledger.list()??[],this.harnessEfficiency?.list()??[]));
     const items=this.environmentDiscovery?.projection().latest?.items??[];
@@ -371,7 +376,8 @@ export class AgentControlService {
       for(const key of ['index','vramMiB','batteryPercent','thermalCelsius']){const value=item.attributes[key];if(typeof value==='number'&&Number.isFinite(value)&&value>=0)resource.detail[key]=value;}
       if(item.attributes.accelerator==='nvidia')resource.detail.accelerator='nvidia';
     }
-    return dashboard;
+    const identities=new Set([id,dashboard.nodeId]);
+    return Object.assign(dashboard,{speculativeQualifications:this.speculativeQualifications().filter(item=>identities.has(item.node))});
   }
   async nodeDashboardResources(id:string) {
     const dashboard=this.nodeDashboard(id), item=this.environmentDiscovery?.projection().latest?.items.find(i=>i.id===id);
@@ -394,8 +400,9 @@ export class AgentControlService {
       const physicalMeasurements=job.artifacts.flatMap(id=>{const meta=this.jobRuntime!.artifacts.get(id);if(!meta)return[];try{return physicalInferenceMeasurements(this.jobRuntime!.artifacts.read(id),meta);}catch{return[];}}).filter(m=>!operationId||inspector.calls.some(c=>c.id===m.accountingInvocationId));
       const qualificationSummaries=labQualificationSummaries(id,this.jobRuntime!.artifacts.list(id),artifactId=>this.jobRuntime!.artifacts.read(artifactId));
       const qualificationAttempts=labObservations(id,this.jobRuntime!.artifacts.list(id),artifactId=>this.jobRuntime!.artifacts.read(artifactId)).filter(a=>!operationId||inspector.calls.some(c=>c.id===a.accountingInvocationId));
+      const speculativeQualification=this.speculativeQualifications(id).at(-1)??null;
       const calls=inspector.calls.map(c=>{const m=physicalMeasurements.find(m=>m.accountingInvocationId===c.id);return {...c,exchange:m?{input:m.inputText,output:m.outputText,redacted:true,truncated:m.exchangeTruncated}:null};});
-      return {...inspector,calls,physicalMeasurements,qualificationAttempts:qualificationAttempts.map(labObservationForApi),qualificationSummaries,artifactEvidence,parentUsage:null,runScope:null,sessions:this.executionSessionProjection().filter(s=>s.scope.runId===id),parentRunId:null,history:inspectorHistory({...inspector,calls,physicalMeasurements,operations:[...inspector.operations,...artifactEvidence.map(a=>({id:a.id,type:'artifact' as const,label:a.name,state:'SUCCEEDED' as const,expandable:false,detail:{type:a.type,schema:a.schema,createdAt:a.createdAt,size:a.size,sha256:a.sha256,content:a.content},evidence:[{kind:'artifact',id:a.id,sha256:a.sha256}]}))]}),historyScope:'Derived human-readable export of durable Job Run records and retained artifacts',siblingParcels:[]};
+      return {...inspector,calls,physicalMeasurements,qualificationAttempts:qualificationAttempts.map(labObservationForApi),qualificationSummaries,speculativeQualification,artifactEvidence,parentUsage:null,runScope:null,sessions:this.executionSessionProjection().filter(s=>s.scope.runId===id),parentRunId:null,history:inspectorHistory({...inspector,calls,physicalMeasurements,operations:[...inspector.operations,...artifactEvidence.map(a=>({id:a.id,type:'artifact' as const,label:a.name,state:'SUCCEEDED' as const,expandable:false,detail:{type:a.type,schema:a.schema,createdAt:a.createdAt,size:a.size,sha256:a.sha256,content:a.content},evidence:[{kind:'artifact',id:a.id,sha256:a.sha256}]}))]}),historyScope:'Derived human-readable export of durable Job Run records and retained artifacts',siblingParcels:[]};
     }
     const parent=this.parameterizedJobs?.runs.list().find(r=>r.id===id||r.workParcelIds.includes(id));
     const parcelId=parent?.id===id?parent.workParcelIds.at(-1):id;
