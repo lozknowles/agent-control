@@ -1,5 +1,13 @@
 # Changelog
 
+## 4.8.1 — Governed native benchmarking and speculative decoding
+
+Publishes Agent Control-owned runtime benchmarking through generic target/runtime adapters, same-run resume with immutable checkpoints, attempt-bound cleanup and governed Android recovery continuations. Native provenance requires the recorded product-owned lifecycle; historical harness evidence is preserved unchanged.
+
+Adds retained-evidence speculative-decoding qualification and deterministic workload routing. The physically qualified Qwen3-8B/Qwen3-0.6B candidate improved median generation throughput by 23.8% on the measured Linux GPU-host combination while increasing median TTFT by 24.5%, so throughput-sensitive work can use the qualified speculative route while latency-sensitive work remains ordinary. These results are combination-specific.
+
+See [release notes](docs/release-notes-4.8.1.md), [operator guide](docs/running-your-first-benchmark.md), [speculative qualification](docs/speculative-decoding-qualification.md), and [release verification](docs/release-verification-4.8.1.md).
+
 ## 4.8.0 — Nested Execution Environments
 
 Agent Control can represent evidence-backed execution environments contained within a physical device, discover generic container runtimes, route by qualified capability, and retain the physical-device-to-invocation path in Estate Topology, Node Dashboard, Run Inspector, Mallow explanations, and human-readable evidence.

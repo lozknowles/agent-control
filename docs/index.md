@@ -1,15 +1,17 @@
 # Agent Control documentation
 
-**Stable: [Agent Control 4.8.0](https://github.com/lozknowles/agent-control/releases/tag/v4.8.0).**
+**Stable: [Agent Control 4.8.1](https://github.com/lozknowles/agent-control/releases/tag/v4.8.1).**
 
 - [Install Agent Control](installation-first-run.md)
 - [Upgrade an existing installation](upgrade-4.8.md)
 - [Real installation screenshots](public-installation-journey.md)
 - [Meet Mallow and the crew](crew-guide.md)
 - [Troubleshooting](installation-first-run.md#troubleshooting)
-- [Release notes](release-notes-4.8.0.md)
-- [Complete release readiness](release-verification-4.8.0.md)
+- [Release notes](release-notes-4.8.1.md)
+- [Complete release readiness](release-verification-4.8.1.md)
 - [Nested Execution Environments](nested-execution-environments.md)
+- [Native runtime benchmarking](running-your-first-benchmark.md)
+- [Speculative decoding qualification](speculative-decoding-qualification.md)
 - [Architecture](architecture-v2-agnostic.md)
 - [Job Library](https://github.com/lozknowles/agent-control-jobs)
 - [Usage and Energy physical qualification](usage-energy-physical-closure-4.6.md)

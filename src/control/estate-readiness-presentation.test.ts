@@ -80,3 +80,14 @@ test('a machine observation does not qualify a declared SSH transport',()=>{
   const map=projectEstateMap(scan,now.toISOString()) as any;
   assert.equal(map.estateCounts.transports.alive,0);assert.equal(map.nodes.find((n:any)=>n.type==='transport').detail.lastVerified,null);
 });
+
+test('mobile resource observations survive the safe Estate projection without admitting arbitrary text',()=>{
+  const values={memoryTotalBytes:12000000000,memoryAvailableBytes:5000000000,storageAvailableBytes:11000000000,diskTotalBytes:20000000000};
+  assert.deepEqual(safeEstateAttributes(values),values);
+  assert.deepEqual(safeEstateAttributes({memoryTotalBytes:'PRIVATE_SECRET',memoryAvailableBytes:-1,storageAvailableBytes:Infinity,diskTotalBytes:NaN,privateEnvironment:'SECRET'}),{});
+  assert.deepEqual(safeEstateAttributes({memoryAvailableBytes:0}),{memoryAvailableBytes:0});
+  const {scan}=fixture();Object.assign(scan.items[0].attributes,values);
+  const node=projectEstateMap(scan,now.toISOString()).nodes.find(n=>n.id===scan.items[0].id)!;
+  assert.equal(node.detail.memoryTotalBytes,values.memoryTotalBytes);
+  assert.equal(node.detail.storageAvailableBytes,values.storageAvailableBytes);
+});

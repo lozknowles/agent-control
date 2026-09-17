@@ -231,7 +231,10 @@ test('cancellation bounds an abort-ignoring provider without requiring a provide
   assert.equal(values(s.runtime, s.run.id, 'provider-request').length, 1); assert.equal(s.workers.list()[0].active, 1);
   release(); for (let i=0;i<20 && !values(s.runtime,s.run.id,'late-action-error').length;i++) await new Promise(resolve=>setTimeout(resolve,20));
   assert.equal(values(s.runtime,s.run.id,'tool-request').length,0); assert.ok(values(s.runtime,s.run.id,'late-action-error').length);
-  assert.equal(s.runtime.ledger.get(s.run.id)?.status,'CLEANUP_UNCERTAIN');
+  assert.equal(s.runtime.ledger.get(s.run.id)?.status,'CANCELLED');
+  assert.equal(values(s.runtime,s.run.id,'cleanup-resolution').length,1);
+  assert.equal(s.runtime.ledger.get(s.run.id)?.steps[0].cleanup?.outcome,'confirmed');
+  assert.equal(s.runtime.ledger.get(s.run.id)?.steps[0].attempts[0].cleanup?.outcome,'uncertain');
 });
 
 test('cancelled Action cannot launch a process after the first cleanup sweep', async t => {
@@ -299,4 +302,12 @@ test('restart between dispatch persistence and contract binding retains worker a
 test('uncertain preparation cleanup is durable and holds ownership across restart',async t=>{const s=setup(t,async()=>finish());const cp=fs.cpSync,cleanup=MutationWorkspace.prototype.cleanup;fs.cpSync=()=>{throw Error('injected-fixture-copy-failure');};MutationWorkspace.prototype.cleanup=()=>{throw Error('injected-preparation-cleanup-unproved');};let retained:any;
  try{await s.runtime.tick();assert.equal(s.runtime.ledger.get(s.run.id)?.status,'CLEANUP_UNCERTAIN');assert.equal(s.workers.list()[0].active,1);retained=values(s.runtime,s.run.id,'workspace-preparation-failed')[0];assert.ok(fs.existsSync(retained.temporaryRoot));const fresh=new WorkerRegistry().register({...s.workers.list()[0],active:0}),restored=createJobRuntime(s.root,s.catalog,s.actions,fresh,{efficiency:s.efficiency});assert.equal(fresh.list()[0].active,1);assert.ok(restored.locks.list().length);assert.ok(restored.contracts.list().some(c=>c.process.state==='UNKNOWN'));assert.ok(values(restored,s.run.id,'controller-recovery-blocked')[0].retainedArtifacts.some((a:any)=>a.name==='workspace-preparation-failed'));}
  finally{fs.cpSync=cp;MutationWorkspace.prototype.cleanup=cleanup;if(retained?.temporaryRoot){const resolved=fs.realpathSync(retained.temporaryRoot);assert.equal(path.dirname(resolved),fs.realpathSync(os.tmpdir()));assert.ok(path.basename(resolved).startsWith('agent-control-mutation-'));fs.rmSync(resolved,{recursive:true});}}
+});
+
+for(const acknowledge of [true,false])test('late cancelled action requires positive retained restoration acknowledgement: '+acknowledge,async t=>{
+ let begin!:()=>void,release!:()=>void,settled!:()=>void;const began=new Promise<void>(r=>begin=r),gate=new Promise<void>(r=>release=r),done=new Promise<void>(r=>settled=r);
+ const s=setup(t,async()=>finish(),actions=>actions.registerReadOnly('restore-late@1.0.0',async c=>{const ack=c.retainCleanup!({kind:'fixture-restoration'},async()=>({outcome:'uncertain',reason:'missing',requestedAt:new Date().toISOString(),completedAt:new Date().toISOString(),processes:[]}));begin();await gate;if(acknowledge){const at=new Date().toISOString();ack({outcome:'confirmed',reason:'fixture-restored',requestedAt:at,completedAt:at,processes:[]});}settled();return {};}));
+ s.runtime.cancel(s.run.id);s.catalog.addJob({apiVersion:'agent-control/v1',kind:'Job',metadata:{id:'restore-late',version:'1.0.0',name:'Late restoration'},spec:{priority:'normal',concurrency:'no-overlap',steps:[{id:'restore',action:'restore-late@1.0.0',requires:[],resources:['restore-late']}]}});
+ const run=s.runtime.createRun('restore-late@1.0.0',{}, {type:'manual',actor:'human:test'}),active=s.runtime.tick();await began;s.runtime.cancel(run.id);await active;assert.equal(s.runtime.ledger.get(run.id)!.status,'CLEANUP_UNCERTAIN');const prior=s.runtime.ledger.get(run.id)!.steps[0].attempts;
+ release();await done;for(let i=0;i<10;i++)await turn();const final=s.runtime.ledger.get(run.id)!;assert.equal(final.status,acknowledge?'CANCELLED':'CLEANUP_UNCERTAIN');assert.deepEqual(final.steps[0].attempts,prior);assert.equal(values(s.runtime,run.id,'cleanup-resolution').length,acknowledge?1:0);if(acknowledge){assert.equal(final.steps[0].cleanup!.outcome,'confirmed');assert.equal(s.runtime.locks.list().filter(l=>l.runId===run.id).length,0);}
 });

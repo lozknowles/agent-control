@@ -1,3 +1,4 @@
+import {TargetReset,type ResetAuthority} from './target-reset.js';
 import {ContractExecutionRuntime} from './contract-runtime.js';
 import {createHash, randomUUID} from 'node:crypto';
 import fs from 'node:fs';
@@ -119,7 +120,8 @@ export class ArtifactStore {
     const safeRecord = redactSensitiveValue(record); this.records.set(id, safeRecord); this.save(); return structuredClone(safeRecord);
   }
   get(id: string) { const record = this.records.get(id); return record ? structuredClone(record) : undefined; }
-  read(id: string) { const record = this.records.get(id); if (!record) throw new Error('artifact_missing'); const bytes = fs.readFileSync(record.storageRef); if (createHash('sha256').update(bytes).digest('hex') !== record.sha256) throw new Error('artifact_checksum_mismatch'); return JSON.parse(bytes.toString('utf8')); }
+  readText(id: string) { const record = this.records.get(id); if (!record) throw new Error('artifact_missing'); const bytes = fs.readFileSync(record.storageRef); if (createHash('sha256').update(bytes).digest('hex') !== record.sha256) throw new Error('artifact_checksum_mismatch'); return bytes.toString('utf8'); }
+  read(id: string) { return JSON.parse(this.readText(id)); }
   list(runId?: string) { return [...this.records.values()].filter(record => !runId || record.runId === runId).map(record => structuredClone(record)); }
   private save() { writeJsonAtomic(this.metadataFile, {version: 1, artifacts: this.list()} satisfies ArtifactSnapshot, true); }
 }
@@ -145,11 +147,120 @@ export class RunLedger {
 export interface JobRuntimeOptions {contracts?: ContractExecutionRuntime; now?: () => Date; approval?: (policy: string, run: RunRecord) => boolean; efficiency?: HarnessEfficiencyLedgerPort; safety?: RuntimeSafetySupervisorPort; defaultRecoveryDeadlineSeconds?: number; ownedExecutionFactory?: (scope: ExecutionSessionScope) => OwnedExecution; executionSessions?: ExecutionSessionRuntime;}
 export interface JobDispatch {runId: string; completion: Promise<RunRecord | undefined>;}
 export class JobRuntime {
+  readonly targetResets=new Map<string,TargetReset>();
+  registerTargetReset(target:string,recovery:TargetReset){if(this.targetResets.has(target))throw Error('target_recovery_already_registered');this.targetResets.set(target,recovery);}
+  async resetTarget(target:string,authority:ResetAuthority){
+    const recovery=this.targetResets.get(target);if(!recovery)throw Error('target_reset_unconfigured');
+    if(this.controllers.size||this.runCleanups.size||this.ledger.list().some(r=>['QUEUED','WAITING','RUNNING','VERIFYING','RECONNECTING'].includes(r.status)))throw Error('target_reset_active_work');
+    if(authority.runId&&!this.ledger.get(authority.runId))throw Error('target_reset_run_missing');
+    return recovery.reset(authority);
+  }
+  private readonly boundaryPending=new Set<string>();
+  async prepareTargetContinuation(target:string,authority:import('./target-reset.js').ContinuationAuthority){
+    if(this.controllers.size||this.runCleanups.size||this.ledger.list().some(r=>['QUEUED','WAITING','RUNNING','VERIFYING','RECONNECTING'].includes(r.status)))throw Error('target_reset_active_work');
+    const recovery=this.targetResets.get(target);if(!recovery)throw Error('target_reset_unconfigured');if(authority.runId&&!this.ledger.get(authority.runId))throw Error('target_reset_run_missing');return recovery.prepareContinuation(authority);
+  }
+  async executeTargetContinuation(target:string,id:string,authority:ResetAuthority&{target:string}){
+    if(this.controllers.size||this.runCleanups.size||this.ledger.list().some(r=>['QUEUED','WAITING','RUNNING','VERIFYING','RECONNECTING'].includes(r.status)))throw Error('target_reset_active_work');
+    const recovery=this.targetResets.get(target);if(!recovery)throw Error('target_reset_unconfigured');return recovery.executeContinuation(id,authority);
+  }
+  async applyTargetBoundary(runId:string,target:string,operationId:string,actor:string,attemptIds:string[]){
+    if(this.boundaryPending.has(runId))throw Error('recovery_boundary_in_progress');this.boundaryPending.add(runId);try{
+    const run=this.mustRun(runId),recovery=this.targetResets.get(target),receipt=recovery?.state();
+    if(!actor||!receipt||receipt.status!=='COMPLETE'||receipt.id!==operationId||receipt.authority.actor!==actor||receipt.authority.runId!==runId||!receipt.pre||!receipt.post||receipt.pre.bootId===receipt.post.bootId)throw Error('recovery_boundary_authority_invalid');
+    const existing=this.artifacts.list(runId).find(a=>a.name==='target-recovery-boundary'&&this.artifacts.read(a.id).operationId===operationId);if(existing)return run;
+    if(run.steps.length!==1||!['CLEANUP_UNCERTAIN','DISCONNECTED'].includes(run.status)||this.controllers.size||this.runCleanups.size)throw Error('recovery_boundary_active_execution');
+    const step=run.steps[0],last=step.attempts.at(-1);if(!last||!last.contractId)throw Error('recovery_boundary_contract_missing');
+    if(step.status==='SUCCEEDED'||last.outcome==='SUCCEEDED')throw Error('recovery_boundary_successful_attempt');
+    const registrations=this.artifacts.list(runId).filter(a=>a.stepId===step.id&&a.name==='retained-cleanup-registered'&&a.createdAt>=last.startedAt);
+    const entries=registrations.map(a=>({meta:a,value:this.artifacts.read(a.id)}));
+    if(!entries.length||new Set(attemptIds).size!==entries.length||entries.some(({meta,value:v})=>!attemptIds.includes(v.identity?.attemptId)||typeof v.id!=='string'||!v.id.startsWith('retained-cleanup:')||v.sourceStepId!==step.id||v.workerId!==last.workerId||v.identity?.kind!=='target-runtime'||v.identity?.producer?.runId!==runId||v.identity?.producer?.target!==target||v.identity?.producer?.environment!==recovery!.environment||meta.createdAt>=receipt.startedAt))throw Error('recovery_boundary_attempt_binding_invalid');
+    const contract=this.contracts.get(last.contractId);if(contract.pty.writeOwner||contract.state==='ACTIVE')throw Error('recovery_boundary_current_authority');
+    const observed=await recovery!.port.observe();
+    if(observed.bootId!==receipt.post.bootId||observed.physicalIdentity!==receipt.post.physicalIdentity||!observed.environmentVerified||!observed.service.identity||!observed.service.healthy||!observed.service.expected)throw Error('recovery_boundary_current_state_failed');
+    if(recovery!.state()?.id!==operationId||recovery!.state()?.status!=='COMPLETE')throw Error('recovery_boundary_generation_changed');
+    recovery!.abandon(attemptIds);
+    const artifact=this.artifacts.create(run,step.id,'controller-recovery',{name:'target-recovery-boundary-prepared',type:'json',schema:'agent-control.recovery-boundary/v1',version:'1.0.0'}, {operationId,target,environment:recovery!.environment,actor,receipt,observation:observed,attemptIds,registrationRefs:registrations.map(a=>({id:a.id,sha256:a.sha256})),historicalTermination:'UNPROVEN',historicalCleanup:'CLEANUP_UNCERTAIN',recoveryBoundary:'PREPARED',evidenceWindow:{from:last.startedAt,to:receipt.startedAt},futureExecution:'FRESH_AUTHORITY_AND_ADMISSION_REQUIRED'});
+    run.artifacts.push(artifact.id);step.artifactIds.push(artifact.id);
+    this.contracts.completeExecution(contract.id,'UNKNOWN',{outcome:'uncertain',detail:'Historical termination unproven; new target boot fences prior execution'}, {processId:contract.process.id,batonGeneration:contract.baton.generation,ownershipGeneration:contract.pty.ownershipGeneration});
+    this.ledger.update(run,'run.target_boundary_fenced',{artifactId:artifact.id,operationId});
+    for(const {value} of entries)this.locks.release(runId,value.id);
+    this.locks.release(runId,step.id);this.retainedCleanups.delete(runId);if(last.workerId)this.workers.release(last.workerId);
+    const terminal=run.provenance.some(p=>p.type==='cancellation')||run.errors.some(e=>/cancelled/.test(e))?'CANCELLED' as const:'FAILED' as const;run.status=terminal;step.status=terminal;run.endedAt=this.clock().toISOString();
+    const final=this.artifacts.create(run,step.id,'controller-recovery',{name:'target-recovery-boundary',type:'json',schema:'agent-control.recovery-boundary/v1',version:'1.0.0'}, {...this.artifacts.read(artifact.id),preparedEvidence:{id:artifact.id,sha256:artifact.sha256},recoveryBoundary:'CONFIRMED',ownershipReleased:true});run.artifacts.push(final.id);step.artifactIds.push(final.id);
+    this.ledger.update(run,'run.target_recovery_boundary_confirmed',{artifactId:final.id,operationId});return run;
+    }finally{this.boundaryPending.delete(runId);}
+  }
+  private readonly cleanupVerifiers=new Map<string,(run:RunRecord,actor:string)=>Promise<boolean>>();
+  private readonly cleanupVerifications=new Map<string,Promise<RunRecord>>();
+  registerCleanupVerifier(action:string,verify:(run:RunRecord,actor:string)=>Promise<boolean>){if(this.cleanupVerifiers.has(action))throw Error('cleanup_verifier_exists');this.cleanupVerifiers.set(action,verify);}
+  verifyCleanup(runId:string,actor:string):Promise<RunRecord>{
+    const pending=this.cleanupVerifications.get(runId);if(pending)return pending;
+    const operation=(async()=>{
+      const run=this.mustRun(runId);if(['CANCELLED','FAILED'].includes(run.status)&&run.steps.every(s=>s.cleanup?.outcome==='confirmed'))return run;
+      if(!actor||run.steps.length!==1||!['CLEANUP_UNCERTAIN','DISCONNECTED'].includes(run.status)||this.controllers.has(runId)||this.runCleanups.has(runId))throw Error('cleanup_verification_not_safe');
+      const step=run.steps[0],verify=this.cleanupVerifiers.get(step.action);if(!verify)throw Error('cleanup_verifier_unavailable');
+      const proven=await verify(structuredClone(run),actor),live=this.mustRun(runId),current=live.steps[0];
+      if(!proven){live.status='CLEANUP_UNCERTAIN';current.status='CLEANUP_UNCERTAIN';current.cleanup={outcome:'uncertain',reason:'attempt-bound-current-verification-unproven',requestedAt:this.clock().toISOString(),completedAt:this.clock().toISOString(),processes:[]};this.ledger.update(live,'run.current_cleanup_unconfirmed',{reason:'attempt-bound-current-verification-unproven'});return live;}
+      if(this.controllers.has(runId)||current.attempts.at(-1)?.contractId!==step.attempts.at(-1)?.contractId)throw Error('cleanup_ownership_changed');
+      const contractId=current.attempts.at(-1)?.contractId;if(!contractId)throw Error('cleanup_contract_missing');
+      const contract=this.contracts.get(contractId);if(contract.pty.writeOwner?.startsWith('human:'))throw Error('cleanup_human_ownership_retained');
+      const terminal=run.provenance.some(p=>p.type==='cancellation')||run.errors.some(e=>/execution_cancelled|cancelled_by|operator_cancelled/.test(e))?'CANCELLED' as const:'FAILED' as const;
+      const at=this.clock().toISOString(),proof={outcome:'confirmed' as const,reason:'attempt-bound-current-verification',requestedAt:at,completedAt:at,processes:[]};
+      const resolution=this.artifacts.create(live,current.id,'controller-recovery',{name:'current-cleanup-resolution',type:'json',schema:'agent-control.cleanup-resolution/v1',version:'1.0.0'}, {actor,previousStatus:live.status,previousCleanup:current.cleanup,contractId,proof,execution:terminal});
+      live.artifacts.push(resolution.id);current.artifactIds.push(resolution.id);
+      const completed=this.contracts.completeExecution(contractId,terminal,{outcome:'confirmed',detail:proof.reason,verifiedAt:at},{processId:contract.process.id,batonGeneration:contract.baton.generation,ownershipGeneration:contract.pty.ownershipGeneration});
+      if(completed.state!==terminal)throw Error('cleanup_contract_not_terminal');
+      current.status=terminal;current.cleanup=proof;delete current.waitingReason;live.status=terminal;live.endedAt=at;
+      this.ledger.update(live,'run.current_cleanup_confirmed',{artifactId:resolution.id,execution:terminal});
+      this.retainedCleanups.delete(runId);this.locks.release(runId);this.workers.release(current.attempts.at(-1)!.workerId!);return live;
+    })().finally(()=>this.cleanupVerifications.delete(runId));this.cleanupVerifications.set(runId,operation);return operation;
+  }
+  private readonly resumePolicies = new Map<string, (run:RunRecord)=>{complete:boolean;checkpoint:unknown}>();
+  registerResumePolicy(action:string, inspect:(run:RunRecord)=>{complete:boolean;checkpoint:unknown}) { if(this.resumePolicies.has(action))throw Error('resume_policy_exists');this.resumePolicies.set(action,inspect); }
+  inspectResume(runId:string) { const run=this.mustRun(runId);if(run.steps.length!==1)throw Error('run_resume_unsupported');const policy=this.resumePolicies.get(run.steps[0].action);if(!policy)throw Error('run_resume_unsupported');return policy(run); }
+  resume(runId:string, actor:string, requestKey:string, expiresAt:string) {
+    const run=this.mustRun(runId),at=this.clock().toISOString();
+    if(!actor?.trim()||!/^[a-zA-Z0-9._:-]{1,128}$/.test(requestKey)||!Number.isFinite(Date.parse(expiresAt))||Date.parse(expiresAt)<=Date.parse(at)||Date.parse(expiresAt)-Date.parse(at)>4*3600000)throw Error('run_resume_authority_invalid');
+    if(run.resumptions?.some(r=>r.requestKey===requestKey))return run;
+    if(['QUEUED','WAITING','RUNNING','VERIFYING','RECONNECTING'].includes(run.status))return run;
+    if(!['SUCCEEDED','FAILED','DEGRADED','CANCELLED','DISCONNECTED'].includes(run.status)||this.retainedCleanups.get(runId)?.size||this.locks.list().some(l=>l.runId===runId&&l.retained))throw Error('run_resume_cleanup_required');
+    const plan=this.inspectResume(runId);if(plan.complete)return run;
+    const step=run.steps[0];
+    const checkpoint=this.artifacts.create(run,step.id,'agent-control-resume',{name:'run-resume-checkpoint',type:'application/json',schema:'agent-control.run-resume/v1',version:'1.0.0'}, {runId,previousStatus:run.status,previousEndedAt:run.endedAt??null,previousStep:structuredClone(step),checkpoint:plan.checkpoint});
+    run.artifacts.push(checkpoint.id);step.artifactIds.push(checkpoint.id);
+    (run.resumptions??=[]).push({generation:run.resumptions!.length+1,requestKey,actor,authorizedAt:at,expiresAt,stepId:step.id,checkpointId:checkpoint.id,checkpointSha256:checkpoint.sha256});
+    step.status='QUEUED';delete step.endedAt;delete step.error;delete step.waitingReason;delete step.nextAttemptAt;delete step.recoveryDeadlineAt;step.verification={required:step.verification?.required??[],passed:[],failed:[]};
+    run.status='QUEUED';delete run.endedAt;run.approvals=[];run.provenance.push({type:'resume',at,detail:'Fresh operator authority; immutable prior attempts and checkpoint retained'});
+    return this.ledger.update(run,'run.resume_authorized',{generation:run.resumptions.at(-1)!.generation,checkpointId:checkpoint.id,actor,expiresAt});
+  }
   private readonly controllers = new Map<string, AbortController>();
   private readonly retainedCleanups = new Map<string, Map<string, {stepId: string; workerId: string; identity: Record<string, unknown>; cleanup: () => Promise<ExecutionCleanupReport>; workerRetained?: boolean; authority?: StepAttempt['executionAuthority']}>>();
   private readonly runCleanups = new Map<string, Promise<void>>();
   private readonly clock: () => Date;
   constructor(readonly catalog: JobCatalog, readonly actions: ActionRegistry, readonly workers: WorkerRegistry, readonly ledger: RunLedger, readonly artifacts: ArtifactStore, readonly locks: ResourceLockManager, options: JobRuntimeOptions = {}) { this.contracts = options.contracts ?? options.executionSessions?.contracts ?? new ContractExecutionRuntime(); this.clock = options.now ?? (() => new Date()); this.approval = options.approval ?? (() => false); this.efficiency = options.efficiency; this.safety = options.safety; this.defaultRecoveryDeadlineSeconds = options.defaultRecoveryDeadlineSeconds ?? 900; this.ownedExecutionFactory = options.ownedExecutionFactory ?? (scope => new OwnedProcessManager(undefined, options.executionSessions, scope)); }
+  /** Rebind retained cleanup from integrity-checked records to a trusted product adapter.
+   * Registration never executes cleanup. The existing authenticated cancel operation requests it.
+   */
+  restoreRetainedCleanup(kind:string, resolve:(identity:Record<string,unknown>,run:RunRecord,stepId:string,workerId:string)=>null|(()=>Promise<ExecutionCleanupReport>)) {
+    // Complete a prior confirmed reconciliation if restart quarantine left a source-step lock.
+    for(const lock of this.locks.list().filter(l=>l.retained&&!l.resource.startsWith('retained-cleanup:'))){
+      const run=this.ledger.get(lock.runId),step=run?.steps.find(s=>s.id===lock.stepId);if(!run||!step||!['CANCELLED','FAILED','DEGRADED'].includes(run.status))continue;
+      const proofs=this.artifacts.list(run.id).filter(a=>a.stepId===step.id&&a.name==='retained-cleanup-outcome').map(a=>this.artifacts.read(a.id) as any);
+      const registrations=this.artifacts.list(run.id).filter(a=>a.stepId===step.id&&a.name==='retained-cleanup-registered').map(a=>this.artifacts.read(a.id) as any);
+      if(registrations.length&&registrations.every(v=>v.identity?.kind===kind&&v.workerId===step.attempts.at(-1)?.workerId&&resolve(v.identity,run,step.id,v.workerId)&&proofs.filter(p=>p.id===v.id).at(-1)?.proof?.outcome==='confirmed'))this.locks.release(run.id,step.id);
+    }
+    for(const lock of this.locks.list().filter(l=>l.retained&&l.resource.startsWith('retained-cleanup:'))){
+      const run=this.ledger.get(lock.runId);if(!run||!['CLEANUP_UNCERTAIN','DISCONNECTED'].includes(run.status))continue;
+      const metadata=this.artifacts.list(run.id).find(a=>a.name==='retained-cleanup-registered'&&(this.artifacts.read(a.id) as any)?.id===lock.resource);if(!metadata)continue;
+      const value=this.artifacts.read(metadata.id) as any,step=run.steps.find(s=>s.id===value.sourceStepId);
+      if(!step||value.identity?.kind!==kind||value.workerId!==step.attempts.at(-1)?.workerId||metadata.stepId!==step.id)continue;
+      const entries=this.retainedCleanups.get(run.id)??new Map();if(entries.has(lock.resource))continue;
+      const cleanup=resolve(value.identity,structuredClone(run),step.id,value.workerId);if(!cleanup)continue;
+      entries.set(lock.resource,{stepId:step.id,workerId:value.workerId,identity:value.identity,cleanup,authority:step.attempts.at(-1)?.executionAuthority,workerRetained:true});
+      this.retainedCleanups.set(run.id,entries);this.workers.claim(value.workerId);
+    }
+  }
   readonly contracts: ContractExecutionRuntime;
   private readonly approval: (policy: string, run: RunRecord) => boolean;
   private readonly efficiency?: HarnessEfficiencyLedgerPort;
@@ -215,7 +326,7 @@ export class JobRuntime {
   safetyDecisions(runId?: string) { return (this.safety?.list() ?? []).filter(item => !runId || item.runId === runId); }
   cancel(runId: string, reason = 'operator_cancelled', replacedByRunId?: string) {
     const run = this.mustRun(runId); if (!ACTIVE_RUNS.includes(run.status)) return run;
-    if (['CLEANUP_UNCERTAIN', 'DISCONNECTED'].includes(run.status) && !this.controllers.has(runId)) return run;
+    if (['CLEANUP_UNCERTAIN', 'DISCONNECTED'].includes(run.status) && !this.controllers.has(runId) && !this.retainedCleanups.get(runId)?.size) return run;
     if (replacedByRunId) run.lineage = {...run.lineage, replacedByRunId};
     const controller = this.controllers.get(runId);
     if (controller) {
@@ -316,9 +427,28 @@ export class JobRuntime {
       if (live.id === contract.id && (live.state !== 'ACTIVE' || live.process.state !== 'RUNNING' || live.pty.writeOwner !== actorId || live.baton.generation !== initialAuthority.baton.generation || live.pty.ownershipGeneration !== initialAuthority.pty.ownershipGeneration)) controller.abort('execution_authority_revoked');
     });
     this.ledger.update(run, 'step.contract_bound', {contractId: contract.id, laneId: contract.laneId});
-    let actionSettled = false, detached = false; let settledError: unknown; let removeAbortListener = () => {};
+    let actionSettled = false, detached = false, scopeFinalized = false, reconcilingLateCleanup = false; let settledError: unknown;
+    const cleanupAcknowledgements:string[]=[];let finalizedAuthority:StepAttempt['executionAuthority']; let removeAbortListener = () => {};
     let acknowledgeSettlement!: () => void;
     const settlement = new Promise<void>(resolve => { acknowledgeSettlement = resolve; });
+    const reconcileLateCancellation = async () => {
+      if(reconcilingLateCleanup||!scopeFinalized||!actionSettled||!controller.signal.aborted||timedOut||!cleanupAcknowledgements.length||ownedRequests.size||this.retainedCleanups.get(run.id)?.size)return;
+      const retainedFailure=(settledError as {executionCleanup?:ExecutionCleanupReport})?.executionCleanup;if(retainedFailure&&retainedFailure.outcome!=='confirmed')return;
+      const live=this.mustRun(run.id),current=live.steps.find(s=>s.id===step.id)!;
+      if(live.status!=='CLEANUP_UNCERTAIN'||current.attempts.at(-1)?.contractId!==contract.id||current.cleanup?.reason!=='action_completion_unacknowledged:execution_cancelled')return;
+      reconcilingLateCleanup=true;
+      try {
+        const proof=await ownedExecution.terminateAll('late-restoration-acknowledged');
+        if(proof.outcome!=='confirmed'||ownedRequests.size)return;
+        const completed=this.contracts.completeExecution(contract.id,'CANCELLED',{outcome:'confirmed',detail:'Late action settlement and all retained cleanup acknowledged',verifiedAt:proof.completedAt},finalizedAuthority);
+        if(completed.state!=='CANCELLED'||completed.process.state!=='EXITED')return;
+        // Keep the original attempt/uncertainty record unchanged; append a resolution.
+        const a=this.artifacts.create(live,step.id,worker.id,{name:'cleanup-resolution',type:'json',schema:'agent-control.cleanup-resolution/v1',version:'1.0.0'}, {contractId:contract.id,previousCleanup:current.cleanup,acknowledgements:cleanupAcknowledgements,actionSettled:true,proof,execution:'CANCELLED'});
+        live.artifacts.push(a.id);current.artifactIds.push(a.id);current.cleanup=proof;current.status='CANCELLED';current.error='execution_cancelled';delete current.waitingReason;current.endedAt=proof.completedAt;live.status='CANCELLED';live.endedAt=proof.completedAt;
+        this.locks.release(live.id,step.id);this.workers.release(worker.id);this.ledger.update(live,'run.cleanup_reconciled',{artifactId:a.id,execution:'CANCELLED',cleanup:'confirmed'});
+      } finally {reconcilingLateCleanup=false;}
+    };
+    const scheduleLateReconciliation=()=>{void reconcileLateCancellation().catch(()=>{/* Fail closed: original uncertainty/locks remain. */});};
     const cleanupExecution = async (reason: string): Promise<ExecutionCleanupReport> => {
       const requestedAt = this.clock().toISOString(); let lastReport: ExecutionCleanupReport | undefined;
       try {
@@ -370,12 +500,12 @@ export class JobRuntime {
         this.locks.acquire([id], run.id, id, true);
         const entries = this.retainedCleanups.get(run.id) ?? new Map(); entries.set(id, {stepId: step.id, workerId: worker.id, identity: structuredClone(identity), cleanup, authority: attempt.executionAuthority}); this.retainedCleanups.set(run.id, entries);
         recordEvidence('retained-cleanup-registered', {id, sourceStepId: step.id, workerId: worker.id, identity, cleanup: 'PENDING'});
-        return proof => { if (proof.outcome !== 'confirmed') throw new Error('retained_cleanup_proof_required'); entries.delete(id); this.locks.release(run.id, id); };
+        return proof => { if (proof.outcome !== 'confirmed') throw new Error('retained_cleanup_proof_required'); if(!entries.has(id))return; const receipt=recordEvidence('retained-cleanup-acknowledged',{id,identity,proof,contractId:contract.id});cleanupAcknowledgements.push(receipt.id);entries.delete(id);this.locks.release(run.id,id);scheduleLateReconciliation(); };
       };
       const actionContext = {retainCleanup, recordIndependentVerification, execution, recordEvidence, run: structuredClone(run), step: structuredClone(step), worker, parameters: structuredClone(run.parameters), inputArtifacts: inputs, readArtifact: (id: string) => this.artifacts.read(id), signal: controller.signal, ownedExecution, ...(step.governance ? {governance: structuredClone(step.governance)} : {})};
       const invocation = Promise.resolve().then(() => action.kind === 'control' ? action.handler(actionContext) : action.handler.execute(actionContext)).then(
-        output => { actionSettled = true; acknowledgeSettlement(); if (detached || timedOut) recordEvidence('late-action-output', {output}); return detached || timedOut ? new Promise<never>(() => undefined) : output; },
-        error => { settledError = error; actionSettled = true; acknowledgeSettlement(); if (detached || timedOut) recordEvidence('late-action-error', {error: error instanceof Error ? error.message : String(error), output: partialActionOutput(error) ?? null}); return detached || timedOut ? new Promise<never>(() => undefined) : Promise.reject(error); },
+        output => { actionSettled = true; acknowledgeSettlement(); if (detached || timedOut) recordEvidence('late-action-output', {output}); scheduleLateReconciliation(); return detached || timedOut ? new Promise<never>(() => undefined) : output; },
+        error => { settledError = error; actionSettled = true; acknowledgeSettlement(); if (detached || timedOut) recordEvidence('late-action-error', {error: error instanceof Error ? error.message : String(error), output: partialActionOutput(error) ?? null}); scheduleLateReconciliation(); return detached || timedOut ? new Promise<never>(() => undefined) : Promise.reject(error); },
       );
       const cancellation = new Promise<never>((_resolve, reject) => {
         const abort = () => { if (!timedOut) { detached = true; reject(new ActionFailure('execution_cancelled', 'execution')); } };
@@ -456,7 +586,7 @@ export class JobRuntime {
         this.ledger.update(run, 'run.human_takeover_retained', {contractId: contract.id});
       }
       if (safeToReleaseWorker && !controller.signal.aborted && step.status === 'SUCCEEDED' && registeredAction.kind === 'control') this.contracts.verify(contract.id, 'job-runtime:control-validator', true, step.verification?.passed.length ? step.verification.passed : ['Typed control Action completed']);
-      if (safeToReleaseWorker) this.workers.release(worker.id); this.controllers.delete(run.id); }
+      if (safeToReleaseWorker) this.workers.release(worker.id); this.controllers.delete(run.id); finalizedAuthority={processId:completedContract.process.id,batonGeneration:completedContract.baton.generation,ownershipGeneration:completedContract.pty.ownershipGeneration};scopeFinalized=true;scheduleLateReconciliation(); }
   }
 
   private reconcileRetainedCleanup(runId: string, target?: RunStatus): Promise<void> {
@@ -473,7 +603,7 @@ export class JobRuntime {
         finally { if (timer) clearTimeout(timer); }
         const live = this.mustRun(runId), source = live.steps.find(step => step.id === entry.stepId)!;
         const artifact = this.artifacts.create(live, source.id, entry.workerId, {name:'retained-cleanup-outcome',type:'json',schema:'agent-control.attempt-evidence/v1',version:'1.0.0',retention:'run-history'}, {id,identity:entry.identity,proof}); source.artifactIds.push(artifact.id); live.artifacts.push(artifact.id);
-        if (proof.outcome === 'confirmed') { entries.delete(id); this.locks.release(runId, id); const contractId=source.attempts.at(-1)?.contractId; if(contractId&&['CANCELLED','FAILED','DEGRADED'].includes(terminal)) this.contracts.completeExecution(contractId, terminal==='CANCELLED'?'CANCELLED':'FAILED', {outcome:'confirmed',detail:proof.reason,verifiedAt:proof.completedAt}, entry.authority); }
+        if (proof.outcome === 'confirmed') { if(entry.workerRetained)this.workers.release(entry.workerId); entries.delete(id); this.locks.release(runId, id); if(![...entries.values()].some(e=>e.stepId===source.id))this.locks.release(runId,source.id); const contractId=source.attempts.at(-1)?.contractId; if(contractId&&['CANCELLED','FAILED','DEGRADED'].includes(terminal)) this.contracts.completeExecution(contractId, terminal==='CANCELLED'?'CANCELLED':'FAILED', {outcome:'confirmed',detail:proof.reason,verifiedAt:proof.completedAt}, entry.authority); }
         else { uncertain = true; const attempt = source.attempts.at(-1)!; this.markCleanupUncertain(live, source, attempt, proof, 'retained_cleanup_unproved'); this.workers.claim(entry.workerId); entry.workerRetained=true; if (attempt.contractId) this.contracts.completeExecution(attempt.contractId, 'UNKNOWN', {outcome:'uncertain',detail:proof.reason,verifiedAt:proof.completedAt},entry.authority); }
         this.ledger.update(live, 'run.retained_cleanup_evidence');
       }

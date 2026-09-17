@@ -1,3 +1,6 @@
+import {recordedRuntimeBenchmarkRoute} from './runtime-benchmark-projection.js';
+import {labObservations,labQualificationSummaries,labObservationForApi} from './lab-observation.js';
+import {physicalInferenceMeasurements} from './physical-inference-observation.js';
 import {inspectorAccounting} from './observability.js';
 import {usageProjection,usageAnswer,usageObservations,type UsageQuery} from './usage-projection.js';
 import {modelWatchPlan,type ModelWatchRuntime} from './model-watch-runtime.js';
@@ -59,6 +62,7 @@ import type {DiscoveryScan} from './environment-discovery.js';
 import type {InstallationLifecycle,InstallationMode,InstallationRole} from './installation-lifecycle.js';
 import {createHash} from 'node:crypto';
 import {governedRequestOrigin} from './request-origin.js';
+import {projectSpeculativeQualification} from './speculative-decoding.js';
 
 export type ControlEventType =
   | 'social.activity'
@@ -81,6 +85,7 @@ export type ControlEventType =
   | 'job.run_cancelled'
   | 'job.run_authentication_resumed'
   | 'job.run_retried'
+  | 'job.run_resume_requested'
   | 'job.run_approved'
   | 'job.schedule_changed'
   | 'job.run_changed'
@@ -334,6 +339,15 @@ export class AgentControlService {
   createJobRun(id: string, parameters: Record<string, unknown>, actor: string, requestKey?: string) { const job = this.job(id); const run = this.mustJobRuntime().createRun(`${job.metadata.id}@${job.metadata.version}`, parameters, {type: 'manual', actor}, undefined, requestKey); this.events.emit('job.run_created', {runId: run.id, jobId: run.jobId, trigger: 'manual'}, undefined, actor); return run; }
   cancelJobRun(id: string, actor: string) { const run = this.mustJobRuntime().cancel(id, `cancelled_by:${actor}`); this.events.emit('job.run_cancelled', {runId: id}, undefined, actor); return run; }
   retryJobRun(id: string, actor: string) { const run = this.mustJobRuntime().retry(id); this.events.emit('job.run_retried', {sourceRunId: id, runId: run.id}, undefined, actor); return run; }
+  applyTargetBoundary(runId:string,actor:string,body:any){return this.mustJobRuntime().applyTargetBoundary(runId,String(body.target??''),String(body.operationId??''),actor,Array.isArray(body.attemptIds)?body.attemptIds.map(String):[]);}
+  diagnoseTargetEnvironment(target:string,actor:string){const recovery=this.mustJobRuntime().targetResets.get(target);if(!recovery)throw Error('target_reset_unconfigured');return recovery.diagnose(actor);}
+  prepareTargetContinuation(target:string,actor:string,body:any){return this.mustJobRuntime().prepareTargetContinuation(target,{actor,target,reason:String(body.reason??''),requestKey:String(body.requestKey??''),expiresAt:String(body.expiresAt??''),parentOperationId:String(body.parentOperationId??''),approvePreparation:body.approvePreparation===true,allowedAction:body.allowedAction,...(typeof body.runId==='string'?{runId:body.runId}:{})});}
+  executeTargetContinuation(target:string,id:string,actor:string,body:any){return this.mustJobRuntime().executeTargetContinuation(target,id,{actor,target,reason:String(body.reason??''),requestKey:String(body.requestKey??''),expiresAt:String(body.expiresAt??''),approveReset:body.approveReset===true,...(typeof body.runId==='string'?{runId:body.runId}:{})});}
+  targetResetState(target:string){return this.mustJobRuntime().targetResets.get(target)?.state()??null;}
+  resetTarget(target:string,actor:string,body:any){return this.mustJobRuntime().resetTarget(target,{actor,reason:String(body.reason??''),requestKey:String(body.requestKey??''),expiresAt:String(body.expiresAt??''),approveReset:body.approveReset===true,...(typeof body.runId==='string'?{runId:body.runId}:{})});}
+  verifyJobCleanup(id:string,actor:string){return this.mustJobRuntime().verifyCleanup(id,actor);}
+  inspectJobRunResume(id:string) { return this.mustJobRuntime().inspectResume(id); }
+  resumeJobRun(id:string,actor:string,requestKey:string,expiresAt:string) { const runtime=this.mustJobRuntime(),before=runtime.ledger.get(id)?.resumptions?.length??0,run=runtime.resume(id,actor,requestKey,expiresAt);if((run.resumptions?.length??0)>before)this.events.emit('job.run_resume_requested',{runId:run.id},undefined,actor);return run; }
   approveJobRun(id: string, policy: string, actor: string) { if (!policy.trim()) throw new Error('approval_policy_required'); const run = this.mustJobRuntime().approve(id, policy, actor); this.events.emit('job.run_approved', {runId: id, approval: policy}, undefined, actor); return run; }
   schedules() { return this.mustJobRuntime().catalog.listSchedules().map(schedule => ({...schedule, state: this.mustJobRuntime().ledger.schedule(schedule.metadata.id)})); }
   setScheduleEnabled(id: string, enabled: boolean, actor: string) { const state = this.mustJobRuntime().setScheduleEnabled(id, enabled); this.events.emit('job.schedule_changed', {scheduleId: id, enabled}, undefined, actor); return state; }
@@ -341,7 +355,7 @@ export class AgentControlService {
   workers() { return this.mustJobRuntime().workers.list(); }
   executionSessionProjection() { return (this.executionSessions?.list() ?? []).map(session => ({id: session.id, incarnation: session.incarnation, state: session.state, adapterId: session.adapterId, scope: structuredClone(session.scope), command: session.command, cwd: session.cwd, ...(session.pid === undefined ? {} : {pid: session.pid}), capabilities: structuredClone(session.capabilities), control: structuredClone(session.control), activeAttachments: session.attachments.filter(item => !item.detachedAt).map(item => ({id: item.id, actorId: item.actorId, mode: item.mode, attachedAt: item.attachedAt})), createdAt: session.createdAt, startedAt: session.startedAt, updatedAt: session.updatedAt, ...(session.endedAt ? {endedAt: session.endedAt} : {}), ...(session.exitCode === undefined ? {} : {exitCode: session.exitCode}), ...(session.exitSignal === undefined ? {} : {exitSignal: session.exitSignal}), outputBytes: session.outputBytes, outputTruncated: session.outputTruncated, ...(session.lastOutputAt ? {lastOutputAt: session.lastOutputAt} : {}), ...(session.lastError ? {lastError: session.lastError} : {})})); }
   runtimeMap(parcelId?:string,replayAt?:string):RuntimeMapProjection {const parcels=this.workParcels?.list()??[],parcel=parcelId?parcels.find(item=>item.id===parcelId):parcels.find(item=>!item.endedAt)??parcels[0];if(parcelId&&!parcel)throw new Error('work_parcel_missing');const sessions=this.executionSessions?.list({parcelId:parcel?.id})??[];const map=projectRuntimeMap({parcel,runs:this.jobRuntime?.ledger.list()??[],sessions,sessionEvents:id=>this.executionSessions?.events(id)??[],tokenRouting:this.tokenRouting(),retrieval:this.retrievalProjection(),...(replayAt?{replayAt}:{})});return this.localBenchmark&&!replayAt?this.localBenchmark.project(map,parcel?.stages.flatMap(s=>s.runId?[s.runId]:[])??[]):map;}
-  runtimeRunMap(runId:string) {const run=this.jobRuntime?.ledger.list().find(r=>r.id===runId);if(!run)throw new Error('job_run_missing');const scan=this.environmentDiscovery?.projection().latest;const target=run.parameters.targetResourceId??run.parameters.target;const ids=scan?.items.some(i=>i.id===target)?[String(target)]:[];const map=projectRecordedJobProcess(run,ids);return this.localBenchmark?this.localBenchmark.project(map,[runId]):map;}
+  runtimeRunMap(runId:string) {const run=this.jobRuntime?.ledger.list().find(r=>r.id===runId);if(!run)throw new Error('job_run_missing');const scan=this.environmentDiscovery?.projection().latest;const target=run.parameters.targetResourceId??run.parameters.target;const ids=scan?.items.some(i=>i.id===target)?[String(target)]:[];const map=projectRecordedJobProcess(run,ids,undefined,this.harnessEfficiency?.list()??[]);return this.localBenchmark?this.localBenchmark.project(map,[runId]):map;}
   modelWatchProjection(){return this.mustModelWatches().projection();}
   proposeModelWatch(input:unknown){return this.mustModelWatches().policies.propose(input);}
   approveModelWatch(digest:string,actor:string){return this.mustModelWatches().policies.approve(digest,actor);}
@@ -351,14 +365,19 @@ export class AgentControlService {
   definePersonalBenchmark(input:unknown){return this.mustModelWatches().league.define(input);}
   private mustModelWatches(){if(!this.modelWatches)throw Error('model_watches_unconfigured');return this.modelWatches;}
   private readonly nodeResourceSampler = new LocalNodeResources();
+  private speculativeQualifications(runId?:string) {
+    if(!this.jobRuntime)return[];
+    return this.jobRuntime.artifacts.list(runId).filter(item=>item.name==='speculative-decoding-report').flatMap(item=>{try{const projection=projectSpeculativeQualification(this.jobRuntime!.artifacts.read(item.id),{artifactId:item.id,sha256:item.sha256});return projection?[projection]:[];}catch{return[];}});
+  }
   nodeDashboard(id:string) {
-    const dashboard=projectNodeDashboard(this.estateMap(),id,this.nodes(),nodeWorkIndex(this.workParcels?.list()??[],this.parameterizedJobs?.runs.list()??[],this.executionSessions?.list()??[],this.jobRuntime?.ledger.list()??[]));
+    const dashboard=projectNodeDashboard(this.estateMap(),id,this.nodes(),nodeWorkIndex(this.workParcels?.list()??[],this.parameterizedJobs?.runs.list()??[],this.executionSessions?.list()??[],this.jobRuntime?.ledger.list()??[],this.harnessEfficiency?.list()??[]));
     const items=this.environmentDiscovery?.projection().latest?.items??[];
     for(const resource of dashboard.resources){const item=items.find(i=>i.id===resource.id);if(!item)continue;
       for(const key of ['index','vramMiB','batteryPercent','thermalCelsius']){const value=item.attributes[key];if(typeof value==='number'&&Number.isFinite(value)&&value>=0)resource.detail[key]=value;}
       if(item.attributes.accelerator==='nvidia')resource.detail.accelerator='nvidia';
     }
-    return dashboard;
+    const identities=new Set([id,dashboard.nodeId]);
+    return Object.assign(dashboard,{speculativeQualifications:this.speculativeQualifications().filter(item=>identities.has(item.node))});
   }
   async nodeDashboardResources(id:string) {
     const dashboard=this.nodeDashboard(id), item=this.environmentDiscovery?.projection().latest?.items.find(i=>i.id===id);
@@ -369,14 +388,21 @@ export class AgentControlService {
   }
   runInspector(id:string,operationId?:string) {
     const job=this.jobRuntime?.ledger.list().find(r=>r.id===id);
-    if(job){const map=this.runtimeRunMap(id),estate=this.estateMap(),sessions=this.executionSessions?.list()??[],nodes=nodeWorkIndex([],[],sessions,[job]).map(w=>w.nodeId);
+    if(job){const map=this.runtimeRunMap(id),estate=this.estateMap(),sessions=this.executionSessions?.list()??[],nodes=nodeWorkIndex([],[],sessions,[job],this.harnessEfficiency?.list()??[]).map(w=>w.nodeId);
 
       // A job definition filter is not a run filter. Never label sibling-run accounting as this run.
       const ledger=this.harnessEfficiency;
       const usage=usageProjection(ledger?{list:()=>ledger.list().filter(row=>row.runId===id),usageHistory:()=>ledger.usageHistory?.()??{excludedIds:[],events:[]}}:undefined,this.energyProjection().executions,{period:'all',groupBy:'agent',limit:1000});
-      const inspector=projectJobInspector(job,map,usage,estate,nodes,operationId,this.nodes());
+      const inspector=projectJobInspector(job,map,usage,estate,nodes,operationId,this.nodes(),ledger?.list()??[]);
+      const nativeRoute=recordedRuntimeBenchmarkRoute(this.jobRuntime!.artifacts,id,estate);
+      if(nativeRoute){const physical=nativeRoute.path.find(n=>n.kind==='PHYSICAL_DEVICE');Object.assign(inspector,{executionRoute:nativeRoute});if(physical)inspector.physicalNodes=[{id:physical.id,label:physical.label,nodeId:String(estate.nodes.find(n=>n.id===physical.id)?.detail.nodeId??'')}];}
       const artifactEvidence=job.artifacts.flatMap(artifactId=>{const metadata=this.jobRuntime?.artifacts.get(artifactId);if(!metadata)return[];let content:string|null=null;if(['json','text','markdown','application/json','text/plain','text/markdown'].includes(metadata.type)){try{const raw=this.jobRuntime!.artifacts.read(artifactId);content=safeTranscriptText(typeof raw==='string'?raw:JSON.stringify(raw,null,2),512*1024);}catch{content=null;}}return[{...this.artifact(artifactId),content}];});
-      return {...inspector,artifactEvidence,parentUsage:null,runScope:null,sessions:this.executionSessionProjection().filter(s=>s.scope.runId===id),parentRunId:null,history:inspectorHistory({...inspector,operations:[...inspector.operations,...artifactEvidence.map(a=>({id:a.id,type:'artifact' as const,label:a.name,state:'SUCCEEDED' as const,expandable:false,detail:{type:a.type,schema:a.schema,createdAt:a.createdAt,size:a.size,sha256:a.sha256,content:a.content},evidence:[{kind:'artifact',id:a.id,sha256:a.sha256}]}))]}),historyScope:'Derived human-readable export of durable Job Run records and retained artifacts',siblingParcels:[]};
+      const physicalMeasurements=job.artifacts.flatMap(id=>{const meta=this.jobRuntime!.artifacts.get(id);if(!meta)return[];try{return physicalInferenceMeasurements(this.jobRuntime!.artifacts.read(id),meta);}catch{return[];}}).filter(m=>!operationId||inspector.calls.some(c=>c.id===m.accountingInvocationId));
+      const qualificationSummaries=labQualificationSummaries(id,this.jobRuntime!.artifacts.list(id),artifactId=>this.jobRuntime!.artifacts.read(artifactId));
+      const qualificationAttempts=labObservations(id,this.jobRuntime!.artifacts.list(id),artifactId=>this.jobRuntime!.artifacts.read(artifactId)).filter(a=>!operationId||inspector.calls.some(c=>c.id===a.accountingInvocationId));
+      const speculativeQualification=this.speculativeQualifications(id).at(-1)??null;
+      const calls=inspector.calls.map(c=>{const m=physicalMeasurements.find(m=>m.accountingInvocationId===c.id);return {...c,exchange:m?{input:m.inputText,output:m.outputText,redacted:true,truncated:m.exchangeTruncated}:null};});
+      return {...inspector,calls,physicalMeasurements,qualificationAttempts:qualificationAttempts.map(labObservationForApi),qualificationSummaries,speculativeQualification,artifactEvidence,parentUsage:null,runScope:null,sessions:this.executionSessionProjection().filter(s=>s.scope.runId===id),parentRunId:null,history:inspectorHistory({...inspector,calls,physicalMeasurements,operations:[...inspector.operations,...artifactEvidence.map(a=>({id:a.id,type:'artifact' as const,label:a.name,state:'SUCCEEDED' as const,expandable:false,detail:{type:a.type,schema:a.schema,createdAt:a.createdAt,size:a.size,sha256:a.sha256,content:a.content},evidence:[{kind:'artifact',id:a.id,sha256:a.sha256}]}))]}),historyScope:'Derived human-readable export of durable Job Run records and retained artifacts',siblingParcels:[]};
     }
     const parent=this.parameterizedJobs?.runs.list().find(r=>r.id===id||r.workParcelIds.includes(id));
     const parcelId=parent?.id===id?parent.workParcelIds.at(-1):id;
@@ -455,7 +481,11 @@ export class AgentControlService {
         };
       }
       if(reference.kind==='node-dashboard'){const node=this.nodeDashboard(reference.id);return{reference,title:node.node.label,summary:'The same Node Dashboard projection supplies this explanation. Availability and qualification remain separate.',facts:[fact('Status',node.node.state,[`estate:${reference.id}`]),fact('Bound work',node.work.length,[`node-dashboard:${reference.id}`]),fact('Active work',node.work.filter(w=>!w.endedAt).length,[`node-dashboard:${reference.id}`]),fact('Resources',node.resources.length,[`estate:${reference.id}`]),fact('Nested execution environments',node.executionEnvironments?.length??0,[`node-dashboard:${reference.id}`])],related:node.work.slice(0,8).map(w=>({kind:'run-inspector' as const,id:w.inspectorId??w.id}))};}
-      if(reference.kind==='run-inspector'){const run=this.runInspector(reference.id),t=(run.parentUsage??run.usage).totals;return{reference,title:run.title,summary:`${run.status}; ${t.calls} recorded model calls. Token and cost coverage comes from the same Run Inspector.`,facts:[fact('Status',run.status,[`parcel:${run.id}`]),fact('Input tokens',t.input.value,[`usage:${run.id}`]),fact('Cached input tokens',t.cached.value,[`usage:${run.id}`]),fact('Output tokens',t.output.value,[`usage:${run.id}`]),fact('Total tokens',t.tokens.value,[`usage:${run.id}`]),fact('Cost',JSON.stringify(t.apiCost),[`usage:${run.id}`],'Missing billing coverage is not zero spend.'),fact('Context/baton records',run.context.records.length,[`runtime-map:${run.id}`])],related:run.physicalNodes.map(n=>({kind:'node-dashboard' as const,id:n.id}))};}
+      if(reference.kind==='run-inspector'){const run=this.runInspector(reference.id),t=(run.parentUsage??run.usage).totals;
+        const admission=this.jobRuntime?.artifacts.list(reference.id).filter(a=>a.name==='runtime-admission').map(a=>{try{const value=this.jobRuntime!.artifacts.read(a.id) as any;return value?.producer?.provenance==='AGENT_CONTROL_RUNTIME_EVIDENCE'?{id:a.id,data:value.data}:null;}catch{return null;}}).filter(Boolean).at(-1);
+        const d=admission?.data,o=d?.observation,policy=d?.policy;const admissionSummary=admission?` Recorded admission: ${d.decision??'UNKNOWN'}. Battery ${o?.batteryPercent??'unavailable'}% (minimum ${policy?.minimumBatteryPercent??'unavailable'}%), charging ${o?.charging??'unavailable'}; temperature ${o?.thermalCelsius??'unavailable'} C (refuse at ${policy?.maximumThermalCelsius??'unavailable'} C). Available RAM ${o?.availableRamBytes??'unavailable'} bytes (minimum ${policy?.minimumAvailableBytes??'unavailable'}). These are the recorded observations, not current measurements.`:'';
+        const admissionFacts=admission?[fact('Recorded resource admission',JSON.stringify(admission.data),[admission.id],'Recorded runtime observations and policy; not a retrospective explanation.')]:[];
+        return{reference,title:run.title,summary:`${run.status}; ${t.calls} recorded model calls. Token and cost coverage comes from the same Run Inspector.${admissionSummary}`,facts:[fact('Status',run.status,[`parcel:${run.id}`]),fact('Input tokens',t.input.value,[`usage:${run.id}`]),fact('Cached input tokens',t.cached.value,[`usage:${run.id}`]),fact('Output tokens',t.output.value,[`usage:${run.id}`]),fact('Total tokens',t.tokens.value,[`usage:${run.id}`]),fact('Cost',JSON.stringify(t.apiCost),[`usage:${run.id}`],'Missing billing coverage is not zero spend.'),fact('Context/baton records',run.context.records.length,[`runtime-map:${run.id}`]),...admissionFacts],related:run.physicalNodes.map(n=>({kind:'node-dashboard' as const,id:n.id}))};}
       if(reference.kind==='model'){const model=this.model(reference.id);return{reference,title:`Model ${model.id}`,summary:'Registry identity and qualification are authoritative; benchmark reputation remains separate.',facts:[fact('Provider',model.provider,[`model:${model.id}`]),fact('Provider model',model.providerModel,[`model:${model.id}`]),fact('Qualification',model.qualification.state,[`model:${model.id}:qualification`]),fact('Routing enabled',model.enabled!==false,[`model:${model.id}:routing`]),fact('Capabilities',model.capabilities.join(', ')||'none reported',[`model:${model.id}`])],related:[]};}
       if(reference.kind==='job'||reference.kind==='workflow'){const job=this.job(reference.id);return{reference,title:`Job ${job.metadata.name}`,summary:'This is the registered executable definition, not an inferred workflow.',facts:[fact('Identity',`${job.metadata.id}@${job.metadata.version}`,[`job:${job.metadata.id}`]),fact('Enabled',job.spec.enabled!==false,[`job:${job.metadata.id}`]),fact('Steps',job.spec.steps.length,[`job:${job.metadata.id}`]),fact('Latest run',job.latestRun?.status??'never run',[`job:${job.metadata.id}:runs`])],related:[]};}
       if(reference.kind==='run'){const run=this.run(reference.id),parcelId=run.trigger.parcelContext?.parcelId;return{reference,title:`Run ${run.id}`,summary:'The durable Run ledger is authoritative.',facts:[fact('Status',run.status,[`run:${run.id}`]),fact('Job',run.jobId,[`run:${run.id}`]),fact('Workers',run.selectedWorkers.join(', ')||'unassigned',[`run:${run.id}:placement`]),fact('Errors',run.errors.length,[`run:${run.id}:errors`])],related:parcelId?[{kind:'parcel',id:parcelId}]:[]};}
