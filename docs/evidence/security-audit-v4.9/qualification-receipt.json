@@ -1,0 +1,132 @@
+{
+  "schema": "agent-control.security-audit-qualification/v1",
+  "sourceRevision": "8c68b05d2181da3d6a482354ebfb408f9d8d2f86",
+  "auditId": "audit-1d773fa5-5046-4f5a-b297-f2decf3a383a",
+  "runId": "run-59d69855-06b7-4c3e-8940-5997021ffed0",
+  "runStatus": "SUCCEEDED",
+  "phases": [
+    {
+      "id": "reconnaissance",
+      "status": "SUCCEEDED",
+      "action": "security-audit.reconnaissance@1.0.0",
+      "attempts": 1
+    },
+    {
+      "id": "coverage-hunting",
+      "status": "SUCCEEDED",
+      "action": "security-audit.coverage-hunt@1.0.0",
+      "attempts": 1
+    },
+    {
+      "id": "candidate-validation",
+      "status": "SUCCEEDED",
+      "action": "security-audit.candidate-validation@1.0.0",
+      "attempts": 1
+    },
+    {
+      "id": "structured-findings",
+      "status": "SUCCEEDED",
+      "action": "security-audit.structured-findings@1.0.0",
+      "attempts": 1
+    },
+    {
+      "id": "record-verification",
+      "status": "SUCCEEDED",
+      "action": "security-audit.record-verification@1.0.0",
+      "attempts": 1
+    },
+    {
+      "id": "reporting",
+      "status": "SUCCEEDED",
+      "action": "security-audit.reporting@1.0.0",
+      "attempts": 1
+    }
+  ],
+  "provenance": [
+    "AGENT_CONTROL_NATIVE",
+    "STATIC_ONLY",
+    "EXECUTION_BLOCKED_BY_SANDBOX"
+  ],
+  "sandbox": {
+    "status": "FAIL",
+    "network": "UNPROVEN",
+    "environment": "UNPROVEN",
+    "resources": "UNPROVEN",
+    "writes": "UNPROVEN",
+    "processes": "UNPROVEN",
+    "evidence": [],
+    "reason": "Target execution is blocked because one or more sandbox guarantees are unproven."
+  },
+  "coverage": {
+    "units": 12,
+    "files": 1089,
+    "statuses": {
+      "covered": 0,
+      "partial": 12,
+      "blocked": 0,
+      "unreviewed": 0
+    }
+  },
+  "findings": {
+    "confirmed": 0,
+    "needsValidation": 104,
+    "rejected": 63
+  },
+  "independence": {
+    "selfVerified": 0,
+    "grades": [
+      "CONTEXT_INDEPENDENT"
+    ]
+  },
+  "historicalComparison": {
+    "source": "docs/evidence/agent-control-3.8.1-final-glm-review.json",
+    "provenance": "HISTORICAL_INDEPENDENT_SOURCE_REVIEW_UNCHANGED",
+    "schema": "agent-control.3.8.1-glm-post-fix-review/v1",
+    "status": "SUCCEEDED",
+    "reviewedCommit": "967181fd547f43a50cb26da566c6118ef7824364",
+    "invocations": 1,
+    "note": "The historical record is compared but is not relabelled as a native security-audit run."
+  },
+  "artifacts": {
+    "architecture": {
+      "sha256": "026b9b826bdeb04cc4617682d24a4a1cfe9525cc3a9725606a404e87b134dde4",
+      "file": "architecture.md"
+    },
+    "coverage": {
+      "sha256": "85d2af12023341669a5734bab757cbb20aabbe08eeb4372ced4941ec7228b7e0",
+      "file": "coverage-ledger.json"
+    },
+    "findings": {
+      "sha256": "9364116734c001e73b60ada72cab9639c2765c05f18e50713a67a52788afd1b8",
+      "file": "findings.json"
+    },
+    "report": {
+      "sha256": "57098f8579ba4af2bf210da66a56bc1fb5c0a0f82debf91189fbcd0440e008e4",
+      "file": "REPORT.md"
+    },
+    "details": {
+      "sha256": "aa7fefe9d7eb7cdf5050bad75687c962520aad4180179cec7b87709c70307514",
+      "file": "FINDINGS-DETAIL.md"
+    },
+    "needs-validation": {
+      "sha256": "cd968fbd7bb648a1cd9f8c6d095119d3cf8c1ea2fd13f8b7b599214bf292f5a3",
+      "file": "NEEDS-VALIDATION.md"
+    },
+    "provenance": {
+      "sha256": "06533a521b54e9cc167257067c3cf8b359ff6aad1bdb042e7dcd9e9e32bc466b",
+      "file": "PROVENANCE.md"
+    },
+    "sandbox": {
+      "sha256": "8e013de0befd572f156553ad6586b075686ec91d4bf3a76246ef850c2ae0cb33",
+      "file": "SANDBOX-ASSURANCE.md"
+    },
+    "limitations": {
+      "sha256": "96d6442461cc038beadf9e8b554b2f74cae2ea96e470235affa4499ba08375b6",
+      "file": "LIMITATIONS.md"
+    },
+    "manifest": {
+      "sha256": "8fd56bbeab4c74156283e401876cc39cb312d7e70348b6a17cfa12fd06c31e63",
+      "file": "run-manifest.json"
+    }
+  }
+}

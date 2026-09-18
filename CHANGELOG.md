@@ -1,5 +1,15 @@
 # Changelog
 
+## 4.9.0 — Governed security audits and conventional activity logging
+
+Adds native six-phase, coverage-led security-audit Jobs with separate finder and verifier evidence, strict verdict schemas, change-aware continuation, authenticated operational surfaces, fail-closed sandbox admission, deterministic reports and retained evidence integrity.
+
+Adds a redacted append-only JSONL activity projection for conventional operating-system and third-party log tools. Missing provider/model/token fields remain explicitly unavailable, and the projection never becomes a second source of truth.
+
+The retained qualification processed 104/104 records, independently reconstructed 104/104 source contexts and passed all 13 Linux sandbox controls. No candidate was promoted without evidence. Coverage remains partial and 90 bounded records remain needs-validation.
+
+See [release notes](docs/release-notes-4.9.0.md), [security-audit guide](docs/security-audits.md), [activity-log guide](docs/activity-log.md), and [release verification](docs/release-verification-4.9.0.md).
+
 ## 4.8.1 — Governed native benchmarking and speculative decoding
 
 Publishes Agent Control-owned runtime benchmarking through generic target/runtime adapters, same-run resume with immutable checkpoints, attempt-bound cleanup and governed Android recovery continuations. Native provenance requires the recorded product-owned lifecycle; historical harness evidence is preserved unchanged.

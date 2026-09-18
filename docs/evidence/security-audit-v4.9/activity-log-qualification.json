@@ -1,0 +1,15 @@
+{
+  "schema": "agent-control.activity-log-qualification/v1",
+  "result": "PASS",
+  "sourceRevision": "8c68b05d2181da3d6a482354ebfb408f9d8d2f86",
+  "runId": "run-59d69855-06b7-4c3e-8940-5997021ffed0",
+  "events": 36,
+  "terminalEventType": "run.finished",
+  "terminalStatus": "SUCCEEDED",
+  "provider": "unavailable",
+  "model": "unavailable",
+  "tokens": "unavailable",
+  "modelInvocationOccurred": false,
+  "log": "/fast/qualification/agent-control-v4.9-security-audit-state-final/logs/activity.jsonl",
+  "projectionIsAuthoritative": false
+}

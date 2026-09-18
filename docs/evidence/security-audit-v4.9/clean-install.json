@@ -1,0 +1,12 @@
+{
+  "schema": "agent-control.security-audit-clean-install/v1",
+  "result": "PASS",
+  "sourceRevision": "8c68b05d2181da3d6a482354ebfb408f9d8d2f86",
+  "package": "agent-control-4.9.0-rc.1.tgz",
+  "sha256": "c8682c713723605919d03bd7d4780629ec9ea3a46efdd3991175bef122f5a9d1",
+  "version": "agent-control 4.9.0-rc.1",
+  "files": 1391,
+  "securityAuditCli": true,
+  "activityLog": true,
+  "installedWithoutExistingConfiguration": true
+}

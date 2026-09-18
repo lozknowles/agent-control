@@ -1,0 +1,164 @@
+{
+  "schema": "agent-control.security-audit-dashboard-evidence/v3",
+  "result": "PASS",
+  "sourceRevision": "4ef42eb709b95fa9c63028bd9348f9e5addc8bd5",
+  "auditSourceRevision": "8c68b05d2181da3d6a482354ebfb408f9d8d2f86",
+  "auditId": "audit-1d773fa5-5046-4f5a-b297-f2decf3a383a",
+  "browser": "Chromium",
+  "authenticatedReadOnly": true,
+  "diagnostics": {
+    "authenticatedEventStream": "PASS",
+    "expectedUnauthenticated401Test": "PASS",
+    "inlineStyleCspDefectsCorrected": true,
+    "optionalProjectionErrors": "QUALIFICATION_HARNESS_UNCONFIGURED_PROJECTION"
+  },
+  "views": [
+    {
+      "name": "desktop-list",
+      "file": "desktop-list.png",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "sha256": "ce0f2ae2c0fb3635e890f58f576ff1d265bb9eff41c5164fad3d49cc92fe4bb0",
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+        "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+        "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+        "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+        "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+        "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+        "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+      ],
+      "httpErrors": [
+        {
+          "status": 500,
+          "url": "http://127.0.0.1:42477/api/estate-heartbeat"
+        },
+        {
+          "status": 503,
+          "url": "http://127.0.0.1:42477/api/poe"
+        },
+        {
+          "status": 500,
+          "url": "http://127.0.0.1:42477/api/environment-discovery"
+        },
+        {
+          "status": 500,
+          "url": "http://127.0.0.1:42477/api/estate-heartbeat"
+        },
+        {
+          "status": 500,
+          "url": "http://127.0.0.1:42477/api/model-watches"
+        },
+        {
+          "status": 503,
+          "url": "http://127.0.0.1:42477/api/parcels"
+        },
+        {
+          "status": 503,
+          "url": "http://127.0.0.1:42477/api/parcels"
+        }
+      ],
+      "unexpectedHttpErrors": []
+    },
+    {
+      "name": "desktop-detail",
+      "file": "desktop-detail.png",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "sha256": "59b521c56d6df5d68dbfb59314e708658fe7403893c97629abee00ffff33ff95",
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+        "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+        "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+        "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+        "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+        "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+        "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+      ],
+      "httpErrors": [
+        {
+          "status": 500,
+          "url": "http://127.0.0.1:42477/api/estate-heartbeat"
+        },
+        {
+          "status": 503,
+          "url": "http://127.0.0.1:42477/api/poe"
+        },
+        {
+          "status": 500,
+          "url": "http://127.0.0.1:42477/api/environment-discovery"
+        },
+        {
+          "status": 500,
+          "url": "http://127.0.0.1:42477/api/estate-heartbeat"
+        },
+        {
+          "status": 500,
+          "url": "http://127.0.0.1:42477/api/model-watches"
+        },
+        {
+          "status": 503,
+          "url": "http://127.0.0.1:42477/api/parcels"
+        },
+        {
+          "status": 503,
+          "url": "http://127.0.0.1:42477/api/parcels"
+        }
+      ],
+      "unexpectedHttpErrors": []
+    },
+    {
+      "name": "mobile-detail",
+      "file": "mobile-detail.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "sha256": "3561cc966a3da2aefeeb063a05b56e7b020968c0e41c1ec5914f09be684cbbd8",
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+        "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+        "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+        "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+        "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+        "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+        "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+      ],
+      "httpErrors": [
+        {
+          "status": 500,
+          "url": "http://127.0.0.1:42477/api/estate-heartbeat"
+        },
+        {
+          "status": 503,
+          "url": "http://127.0.0.1:42477/api/poe"
+        },
+        {
+          "status": 500,
+          "url": "http://127.0.0.1:42477/api/environment-discovery"
+        },
+        {
+          "status": 500,
+          "url": "http://127.0.0.1:42477/api/estate-heartbeat"
+        },
+        {
+          "status": 500,
+          "url": "http://127.0.0.1:42477/api/model-watches"
+        },
+        {
+          "status": 503,
+          "url": "http://127.0.0.1:42477/api/parcels"
+        },
+        {
+          "status": 503,
+          "url": "http://127.0.0.1:42477/api/parcels"
+        }
+      ],
+      "unexpectedHttpErrors": []
+    }
+  ]
+}

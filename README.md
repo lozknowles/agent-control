@@ -16,13 +16,15 @@ ATLAS is Agent Control's public identity: **Agentic Topology, Lifecycle, Assuran
 
 Discover your AI tools, see what is available, and follow approved work from request to verified result.
 
-**Current release: [4.8.1](https://github.com/lozknowles/agent-control/releases/tag/v4.8.1) — Governed native benchmarking and qualified speculative decoding.** Agent Control workers now own target admission, runtime lifecycle, benchmark execution, scoring, restoration and evidence through generic target/runtime adapters. Qualified speculative decoding can be selected deterministically when retained measurements show that it benefits the requested workload. See [release notes](docs/release-notes-4.8.1.md), [verification](docs/release-verification-4.8.1.md), and [benchmark operator guide](docs/running-your-first-benchmark.md).
+**Current release: [4.9.0](https://github.com/lozknowles/agent-control/releases/tag/v4.9.0) — Governed security audits and conventional activity logging.** Agent Control now runs native six-phase, coverage-led security-audit Jobs with separate finder and verifier evidence, strict verdicts, fail-closed sandbox admission and downloadable Markdown/JSON reports. See the [operator guide](docs/security-audits.md), [release notes](docs/release-notes-4.9.0.md), [verification](docs/release-verification-4.9.0.md), and [integration decision](SECURITY_AUDIT_INTEGRATION_DECISION.md).
+
+The release also adds a [conventional JSONL activity log](docs/activity-log.md) for `tail -f`, `jq`, logrotate and standard ingestion tools. It is a redacted operational projection of authoritative Job events, never a second event authority.
 
 **4.8 workspace navigation:** [Operator guide, CLI and API](docs/navigable-workspaces.md) · [Architectural review and Rune comparison](NAVIGABLE_WORKSPACES_REVIEW.md) · [Visual evidence](docs/evidence/navigable-workspaces-4.8.md). Navigation does not grant execution authority or create a second topology.
 
 **4.8 nested execution:** [Follow work through nested environments](docs/nested-execution-environments.md) from a physical device through host/guest environments, runtime and worker route to the exact invocation and evidence. Nested capacity is scoped and is never added to physical Estate capacity.
 
-[Install Agent Control](docs/installation-first-run.md) · [Documentation](docs/index.md) · [Upgrade](docs/upgrade-4.8.md) · [Release notes](docs/release-notes-4.8.1.md)
+[Install Agent Control](docs/installation-first-run.md) · [Documentation](docs/index.md) · [Upgrade](docs/upgrade-4.8.md) · [Release notes](docs/release-notes-4.9.0.md)
 
 [![Actual Agent Control Estate Map](docs/media/4.6/integration/estate.png)](docs/public-installation-journey.md)
 
@@ -53,12 +55,12 @@ Mallow is your floating guide. The established crew helps explain dispatch, revi
 
 <a id="install"></a>
 
-## Install Agent Control 4.8.1
+## Install Agent Control 4.9.0
 
 Install on Linux with Node.js 24, npm, Git and Bash:
 
 ```bash
-git clone --branch v4.8.1 https://github.com/lozknowles/agent-control.git
+git clone --branch v4.9.0 https://github.com/lozknowles/agent-control.git
 cd agent-control
 git rev-parse HEAD
 ./scripts/bootstrap-agent-control.sh --check --target "$PWD"
@@ -112,7 +114,7 @@ Model Intelligence now reports real source coverage, initial versus follow-up ob
 - [Safe existing-install upgrade](docs/upgrade-4.8.md)
 - [Architecture](docs/architecture-v2-agnostic.md)
 - [Security](SECURITY.md) and [contributing](CONTRIBUTING.md)
-- [Release notes](docs/release-notes-4.8.1.md)
+- [Release notes](docs/release-notes-4.9.0.md)
 - [Accepted RC assessment and evidence](docs/release-candidate-4.6.md)
 
 Historical versioned reports remain available under `docs/`; use the installation guide above for this release.
