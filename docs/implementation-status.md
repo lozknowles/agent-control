@@ -1,6 +1,6 @@
 # Implementation status
 
-Release boundary: **4.9.0-rc.1**. Registry updated: **2026-09-17**.
+Release boundary: **4.9.0**. Registry updated: **2026-09-17**.
 
 This document is generated from `config/implementation-status.json`. Update the registry and run `npm run status:implementation -- --write`; do not edit this projection directly. `IMPLEMENTED` means executable source and focused tests exist. `QUALIFIED` additionally requires recorded real evidence. `PARTIAL`, `PLANNED` and `NOT_IMPLEMENTED` remain explicit gaps.
 
