@@ -1,4 +1,13 @@
-# Agent Control 4.9 security-audit candidate follow-up
+# Agent Control follow-up
+
+## After the 4.11 governed model-improvement release
+
+- [ ] Qualify additional intervention ladder levels on real, already-authorised models; every result remains model/runtime/hardware specific.
+- [ ] Add optional bounded canary routing only when deterministic allocation and rollback can be represented without invented percentages.
+- [ ] Add independent security and regression evaluator adapters without allowing a candidate or teacher to control them.
+- [ ] Extend economic evidence when providers or meters supply authoritative cost and energy data; preserve `UNAVAILABLE` otherwise.
+
+## 4.9 security-audit candidate follow-up
 
 - [ ] Obtain explicit review approval for the isolated candidate before merge,
       tag, publication or deployment.

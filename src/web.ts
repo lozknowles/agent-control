@@ -57,6 +57,7 @@ import {InstallationLifecycle} from './control/installation-lifecycle.js';
 import {DirectInferenceRuntime,FileDirectInferenceEvidenceStore} from './control/direct-inference.js';
 import {schedulerContainmentScopes,WorkBoardRuntime} from './control/work-board.js';
 import {ContainmentSupervisor} from './control/containment.js';
+import {ModelImprovementRuntime} from './control/model-improvement.js';
 
 const now = () => new Date().toISOString();
 const configurationFile = configPath(), config = loadConfig(configurationFile);
@@ -72,6 +73,7 @@ const queue = new WorkQueueStore().load();
 const stateRoot = path.resolve(process.env.AGENT_CONTROL_STATE_DIR || '.agent-control');
 const containment=new ContainmentSupervisor(path.join(stateRoot,'containment','records.json'));
 const workBoards=new WorkBoardRuntime(path.join(stateRoot,'work-boards','boards.json'),undefined,{evaluate:resource=>containment.schedulingEligibility(schedulerContainmentScopes(resource))});
+const modelImprovement=new ModelImprovementRuntime(path.join(stateRoot,'models','improvement.json'));
 const codexHome=process.env.CODEX_HOME??path.join(process.env.HOME??process.cwd(),'.codex');
 const sessionVault=new SessionVaultRuntime(new ImmutableSessionVault(path.join(stateRoot,'session-vault')),[new CodexSessionAdapter([path.join(codexHome,'sessions'),path.join(codexHome,'archived_sessions')],process.env.AGENT_CONTROL_NODE_ID??'controller')],{sensitivity:'RESTRICTED',redactSensitive:true});
 const capabilityIntelligence = new CapabilityIntelligenceStore(path.join(stateRoot, 'capabilities', 'intelligence.json'));
@@ -278,7 +280,7 @@ const voiceTransport:InstanceType<typeof VoiceTransportRuntime>=new VoiceTranspo
     updates:async(id,actor)=>{await service.poeOperator(id,actor);return service.poeConversation(id).turns.filter(t=>t.actor==='poe'&&['HANDOVER','RESULT'].includes(t.purpose??'')).map(t=>({id:t.id,text:t.text}));},
   },onChange:record=>service.events.emit('poe.conversation_changed',{conversationId:record.conversationId,voiceSessionId:record.id,state:record.state},undefined,'mallow'),
 });
-const server = startWebDashboard(service, {host, port, openwa, socialVoice, voiceTransport, operatorToken: process.env.AGENT_CONTROL_WEB_OPERATOR_TOKEN, allowedOrigins: process.env.AGENT_CONTROL_WEB_ALLOWED_ORIGINS?.split(',').map(value => value.trim()).filter(Boolean), configFile: configurationFile,uxSessions,uxSessionShares,uxSessionAnnotations,sessionVault,securityAudits:jobRuntime.securityAudits,directInference,workBoards,containment});
+const server = startWebDashboard(service, {host, port, openwa, socialVoice, voiceTransport, operatorToken: process.env.AGENT_CONTROL_WEB_OPERATOR_TOKEN, allowedOrigins: process.env.AGENT_CONTROL_WEB_ALLOWED_ORIGINS?.split(',').map(value => value.trim()).filter(Boolean), configFile: configurationFile,uxSessions,uxSessionShares,uxSessionAnnotations,sessionVault,securityAudits:jobRuntime.securityAudits,directInference,workBoards,containment,modelImprovement});
 server.on('close',()=>{void voiceTransport.dispose();if(socialTimer)clearInterval(socialTimer);openwa?.close();uxSessionCapture.dispose();});
 server.on('listening', () => process.stdout.write(`Agent Control ${service.version} web dashboard: http://${host}:${port} (${process.env.AGENT_CONTROL_WEB_OPERATOR_TOKEN ? 'operator authenticated' : 'observer only'})\n`));
 server.on('error', error => { process.stderr.write(`Dashboard failed: ${error.message}\n`); process.exitCode = 1; });

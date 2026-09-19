@@ -1,0 +1,239 @@
+{
+  "sourceCommit": "32a96b7c5b3b945c54d9d6ef4a3c082472a11fbb",
+  "experimentId": "experiment-4f5648c9-7bf6-42f6-a148-5ac9933714dd",
+  "model": {
+    "id": "qwen2.5-3b-instruct",
+    "sha256": "626b4a6678b86442240e33df819e00132d3ba7dddfe1cdc4fbb18e0a9615c62d"
+  },
+  "runtime": {
+    "id": "llama.cpp",
+    "sha256": "3f1000482d759661cadb1dc9b59f6292f52408ee0d2906298fa001837517fb4e"
+  },
+  "baseline": {
+    "identity": "df8c6e9d16170f163caffec6de3b43047549f233eda330a201d7ade53cb127cb",
+    "passes": 0,
+    "total": 2,
+    "invocations": [
+      {
+        "id": "inv-raw-fc404d0c-617c-4d51-960a-84e89ae98c66",
+        "output": "ALPHA7",
+        "latencyMs": 214,
+        "usage": {
+          "inputTokens": 43,
+          "outputTokens": 4,
+          "cachedInputTokens": 5,
+          "cacheWriteTokens": null,
+          "totalTokens": 47,
+          "providerReportedCost": null,
+          "calculatedCost": null,
+          "currency": null,
+          "cacheEvidence": {
+            "reusedTokens": 5,
+            "processedPromptTokens": 38,
+            "cacheWriteTokens": null,
+            "promptProcessingMs": 83.311,
+            "generationMs": 66.122,
+            "authority": "authoritative",
+            "source": "llama.cpp.response.timings"
+          },
+          "reasoningTokens": null
+        },
+        "evidence": [
+          "request_sha256:e8da686ac50683a9184895c213b5d2416b6f9c5ab7da6615015c794feda0c801",
+          "response_sha256:4d5192e1bb791772529e7b3e7b7dab448dadce8f2b4a536b671a8ce8d6056801",
+          "qualification:artifact:626b4a6678b86442240e33df819e00132d3ba7dddfe1cdc4fbb18e0a9615c62d",
+          "direct-inference:fe8cb5eb8586e929747c984d8a8ce1a0a051e4e242f7789740d4114a6a2b3ae2"
+        ]
+      },
+      {
+        "id": "inv-raw-fa6e3a89-2fb3-463a-9616-3c370834d453",
+        "output": "ALPHA7",
+        "latencyMs": 92,
+        "usage": {
+          "inputTokens": 43,
+          "outputTokens": 4,
+          "cachedInputTokens": 42,
+          "cacheWriteTokens": null,
+          "totalTokens": 47,
+          "providerReportedCost": null,
+          "calculatedCost": null,
+          "currency": null,
+          "cacheEvidence": {
+            "reusedTokens": 42,
+            "processedPromptTokens": 1,
+            "cacheWriteTokens": null,
+            "promptProcessingMs": 20.338,
+            "generationMs": 60.563,
+            "authority": "authoritative",
+            "source": "llama.cpp.response.timings"
+          },
+          "reasoningTokens": null
+        },
+        "evidence": [
+          "request_sha256:e8da686ac50683a9184895c213b5d2416b6f9c5ab7da6615015c794feda0c801",
+          "response_sha256:4d5192e1bb791772529e7b3e7b7dab448dadce8f2b4a536b671a8ce8d6056801",
+          "qualification:artifact:626b4a6678b86442240e33df819e00132d3ba7dddfe1cdc4fbb18e0a9615c62d",
+          "direct-inference:6d23f2af896e8da80f9cf9579a9427e55763fdf84d3c5157467ec91dc220bf7b"
+        ]
+      }
+    ]
+  },
+  "candidate": {
+    "identity": "47dbfa7e6953e7ad57008b5c2e8f115cc68e4c1780d1a4da64d73ec579e9383d",
+    "level": "PROMPT",
+    "passes": 2,
+    "total": 2,
+    "invocations": [
+      {
+        "id": "inv-raw-e7e70606-3d6d-4e93-b2e0-32d64d69f83b",
+        "output": "ALPHA|7",
+        "latencyMs": 123,
+        "usage": {
+          "inputTokens": 41,
+          "outputTokens": 5,
+          "cachedInputTokens": 24,
+          "cacheWriteTokens": null,
+          "totalTokens": 46,
+          "providerReportedCost": null,
+          "calculatedCost": null,
+          "currency": null,
+          "cacheEvidence": {
+            "reusedTokens": 24,
+            "processedPromptTokens": 17,
+            "cacheWriteTokens": null,
+            "promptProcessingMs": 38.501,
+            "generationMs": 74.088,
+            "authority": "authoritative",
+            "source": "llama.cpp.response.timings"
+          },
+          "reasoningTokens": null
+        },
+        "evidence": [
+          "request_sha256:08087b41407c7f9595c67d53d809abc6667c2986970280f0a9349dbda61ef4c5",
+          "response_sha256:6bf7483fd65121fd46590009c91f3b4dbebea7c78fb6959934cfed024f32d3b9",
+          "qualification:artifact:626b4a6678b86442240e33df819e00132d3ba7dddfe1cdc4fbb18e0a9615c62d",
+          "direct-inference:2ced30fed3909eb4103a7010dbdd794f1e0e4b682fe0872e65c51c6b737b939e"
+        ]
+      },
+      {
+        "id": "inv-raw-20abe214-6e52-413c-8234-d7f7988b326b",
+        "output": "ALPHA|7",
+        "latencyMs": 99,
+        "usage": {
+          "inputTokens": 41,
+          "outputTokens": 5,
+          "cachedInputTokens": 40,
+          "cacheWriteTokens": null,
+          "totalTokens": 46,
+          "providerReportedCost": null,
+          "calculatedCost": null,
+          "currency": null,
+          "cacheEvidence": {
+            "reusedTokens": 40,
+            "processedPromptTokens": 1,
+            "cacheWriteTokens": null,
+            "promptProcessingMs": 18.45,
+            "generationMs": 72.382,
+            "authority": "authoritative",
+            "source": "llama.cpp.response.timings"
+          },
+          "reasoningTokens": null
+        },
+        "evidence": [
+          "request_sha256:08087b41407c7f9595c67d53d809abc6667c2986970280f0a9349dbda61ef4c5",
+          "response_sha256:6bf7483fd65121fd46590009c91f3b4dbebea7c78fb6959934cfed024f32d3b9",
+          "qualification:artifact:626b4a6678b86442240e33df819e00132d3ba7dddfe1cdc4fbb18e0a9615c62d",
+          "direct-inference:abeed9c5e131a1e07d4c5388f156220f973ff135aa684c518b01e08bd07bbc23"
+        ]
+      }
+    ]
+  },
+  "comparison": {
+    "baseline": [
+      {
+        "name": "exact-match-rate",
+        "value": 0,
+        "unit": "ratio",
+        "direction": "HIGHER_IS_BETTER",
+        "authority": "MEASURED",
+        "evidence": [
+          "invocation:inv-raw-fc404d0c-617c-4d51-960a-84e89ae98c66",
+          "invocation:inv-raw-fa6e3a89-2fb3-463a-9616-3c370834d453"
+        ]
+      }
+    ],
+    "candidate": [
+      {
+        "name": "exact-match-rate",
+        "value": 1,
+        "unit": "ratio",
+        "direction": "HIGHER_IS_BETTER",
+        "authority": "MEASURED",
+        "evidence": [
+          "invocation:inv-raw-e7e70606-3d6d-4e93-b2e0-32d64d69f83b",
+          "invocation:inv-raw-20abe214-6e52-413c-8234-d7f7988b326b"
+        ]
+      }
+    ],
+    "protectedRegressions": [],
+    "securityFindings": [],
+    "decision": "PROMOTE",
+    "reason": "Prompt candidate improved exact match on both frozen repetitions without changing the model or runtime",
+    "economics": {
+      "oneTimeCost": [
+        {
+          "name": "teacher-api-cost",
+          "value": null,
+          "unit": "USD",
+          "direction": "LOWER_IS_BETTER",
+          "authority": "UNAVAILABLE",
+          "evidence": [
+            "teacher:not-used"
+          ]
+        },
+        {
+          "name": "training-energy",
+          "value": null,
+          "unit": "Wh",
+          "direction": "LOWER_IS_BETTER",
+          "authority": "UNAVAILABLE",
+          "evidence": [
+            "training:not-used"
+          ]
+        }
+      ],
+      "perJobSaving": {
+        "name": "per-job-saving",
+        "value": null,
+        "unit": "USD",
+        "direction": "HIGHER_IS_BETTER",
+        "authority": "UNAVAILABLE",
+        "evidence": [
+          "local-runtime:billing-unavailable"
+        ]
+      },
+      "breakEvenJobs": null
+    },
+    "evidence": [
+      "invocation:inv-raw-20abe214-6e52-413c-8234-d7f7988b326b",
+      "invocation:inv-raw-e7e70606-3d6d-4e93-b2e0-32d64d69f83b",
+      "invocation:inv-raw-fa6e3a89-2fb3-463a-9616-3c370834d453",
+      "invocation:inv-raw-fc404d0c-617c-4d51-960a-84e89ae98c66"
+    ]
+  },
+  "state": "AWAITING_PROMOTION_APPROVAL",
+  "promotionApplied": false,
+  "workBoardId": "model-improvement-experiment-4f5648c9-7bf6-42f6-a148-5ac9933714dd",
+  "scopeSha256": "b4b25e136e161e2d1dd015ae8a80c60f3a1a94d04b80a5533d664735c26be722",
+  "protectedServices": {
+    "processIdentityUnchanged": true,
+    "modelIdentityHealthy": true
+  },
+  "originalRunnerReceipt": {
+    "result": "FAIL",
+    "sha256": "ded0ad02f57f7b53ccd4fa3422ddc01fd251684d1fab10b094db7bb6a21c4c20",
+    "reconciledResult": "PASS",
+    "reason": "Raw health endpoint body hashes are not stable service identity; reconciliation uses process command hashes, HTTP status, and expected model identity."
+  },
+  "result": "PASS"
+}

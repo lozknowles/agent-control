@@ -1,6 +1,6 @@
 {
   "schema": "agent-control.implementation-status/v1",
-  "release": "4.10.0",
+  "release": "4.11.0",
   "updated": "2026-09-19",
   "capabilities": [
     {
@@ -1422,6 +1422,28 @@
         "docs/evidence/QUARANTINE_SCHEDULING_QUALIFICATION.md"
       ],
       "limitation": "There is no distinct runtime kill scope. Pixel and remote containment are unqualified; runtime routes inherit stable Worker/Node containment authority."
+    },
+    {
+      "id": "models.governed-improvement",
+      "title": "Governed Model Improvement Loop",
+      "status": "QUALIFIED",
+      "summary": "Evidence-backed weaknesses create durable opportunities against immutable baselines; isolated candidates are evaluated through the improvement ladder and may reach production only through a sealed proposal, exact candidate-bound approval, an allow-listed intervention adapter, independent applied-effect observation and a receipt-backed rollback path.",
+      "sources": [
+        "src/control/model-improvement.ts",
+        "src/control/model-intervention.ts",
+        "src/control/web-server.ts",
+        "assets/dashboard/dashboard-models.js"
+      ],
+      "tests": [
+        "src/control/model-improvement.test.ts",
+        "src/control/model-improvement-web.test.ts"
+      ],
+      "evidence": [
+        "docs/evidence/AGENT_CONTROL_4.11_MODEL_IMPROVEMENT_CANDIDATE.md",
+        "docs/evidence/AGENT_CONTROL_4.11_PROMOTION_ROLLBACK_QUALIFICATION.md",
+        "docs/evidence/model-improvement-promotion-rollback-4.11.json"
+      ],
+      "limitation": "Only the PROMPT intervention is physically qualified, using a disposable prompt route above an immutable Qwen2.5 3B service. Generic canary allocation is not implemented, and arbitrary production-route promotion remains unqualified."
     }
   ]
 }

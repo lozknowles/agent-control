@@ -1,5 +1,15 @@
 # Changelog
 
+## 4.11.0 — Governed Model Improvement
+
+Adds a governed improvement lifecycle over immutable model baselines: durable evidence-backed opportunities, a ten-level intervention ladder, isolated candidates, teacher/student provenance separation, sensitive-data rejection, multidimensional comparison, parallel Work Board evaluation stages, security/regression rejection, and explicit human promotion approval.
+
+Promotion now requires a sealed proposal and exact candidate-bound approval. An allow-listed intervention adapter must independently observe the applied effect and create a receipt before `PROMOTED`; restart validation rejects forged lifecycle state. Rollback restores and independently verifies the previous state before `ROLLED_BACK`.
+
+The physical qualification applies only to a `PROMPT` intervention above an immutable Qwen2.5 3B service: baseline `ALPHA7` scored 0/2, promoted `ALPHA|7` scored 2/2, restart persistence passed, rollback restored `ALPHA7` and 0/2, and protected model processes remained unchanged. Generic canary allocation is not implemented and arbitrary production routes remain unqualified.
+
+See [release notes](docs/release-notes-4.11.0.md), [operator and architecture guide](docs/model-improvement.md), [upgrade guide](docs/upgrade-4.11.md), [release verification](docs/release-verification-4.11.0.md), and the [Limitations Ledger](docs/KNOWN_LIMITATIONS.md).
+
 ## 4.10.0 — Dynamic Work Board, Parallel Lanes and Governed Containment
 
 Adds a durable operator-controlled Dynamic Work Board with ordering, priority, dependencies, lanes, blocked states, resource conflicts, natural-language change proposals and linked execution evidence. Independent work may run concurrently when dependency, resource, capability and containment policy permit it.
