@@ -264,4 +264,3 @@ A release gate should load the previous tagged ledger, require every unresolved 
 - `RESOLVED` records require a resolution release and evidence.
 - Physical limitations cannot be resolved with automated evidence alone.
 - Release metrics are generated from the same ledger rather than maintained independently.
-
