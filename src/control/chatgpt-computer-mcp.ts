@@ -35,7 +35,7 @@ export class ChatGptComputerMcpAdapter {
  * at the HTTP/tunnel boundary; every tool call below reaches the same governed
  * runtime rather than the phone endpoint or browser worker directly. */
 export function createChatGptComputerMcpServer(adapter:ChatGptComputerMcpAdapter){
-  const server=new McpServer({name:'Agent Control governed computer use',version:'4.9.0'});
+  const server=new McpServer({name:'Agent Control governed computer use',version:'4.10.0'});
   server.registerTool('start_computer_task',{description:'Start a bounded governed computer-use task.',inputSchema:{request:z.string().min(1).max(32_768),targetWorkerId:z.string().min(1).max(240).optional()},annotations:{readOnlyHint:false,destructiveHint:false,idempotentHint:false,openWorldHint:false}},async input=>result(await adapter.call('start_computer_task',input)));
   server.registerTool('get_task_status',{description:'Read current governed task status.',inputSchema:{taskId:z.string().min(1).max(240)},annotations:{readOnlyHint:true,destructiveHint:false,idempotentHint:true,openWorldHint:false}},async input=>result(await adapter.call('get_task_status',input)));
   server.registerTool('get_latest_screenshot',{description:'Read the latest protected screenshot for an authorised task.',inputSchema:{taskId:z.string().min(1).max(240)},annotations:{readOnlyHint:true,destructiveHint:false,idempotentHint:true,openWorldHint:false}},async input=>result(await adapter.call('get_latest_screenshot',input)));

@@ -1,6 +1,6 @@
 {
   "schema": "agent-control.implementation-status/v1",
-  "release": "4.9.0",
+  "release": "4.10.0",
   "updated": "2026-09-19",
   "capabilities": [
     {
@@ -1377,6 +1377,51 @@
         "src/control/control.test.ts"
       ],
       "limitation": "Persist qualification evidence and require policy approval before learned recipes influence routing."
+    },
+    {
+      "id": "planning.dynamic-work-board",
+      "title": "Dynamic Work Board and parallel lane scheduling",
+      "status": "IMPLEMENTED",
+      "summary": "A durable user-controlled plan records ordering, priority, lanes, dependencies, blockers, approvals, resource conflicts and linked runs. Compatible independent work may execute in parallel while Agent Control Jobs and Work Parcels retain execution authority.",
+      "sources": [
+        "src/control/work-board.ts",
+        "src/control/work-board-control.ts",
+        "src/control/web-server.ts",
+        "assets/dashboard/dashboard-work-board.js"
+      ],
+      "tests": [
+        "src/control/work-board.test.ts",
+        "src/control/work-board-control.test.ts",
+        "src/control/work-board-web.test.ts"
+      ],
+      "evidence": [
+        "docs/dynamic-work-board.md",
+        "docs/evidence/DYNAMIC_WORK_BOARD_QUALIFICATION.md",
+        "docs/evidence/QUARANTINE_SCHEDULING_QUALIFICATION.md"
+      ],
+      "limitation": "Some restart scenarios are automated-test qualified rather than separately physical. The dashboard does not yet provide a complete containment and recovery timeline."
+    },
+    {
+      "id": "safety.hierarchical-containment",
+      "title": "Hierarchical containment and quarantine scheduling fence",
+      "status": "IMPLEMENTED",
+      "summary": "Scheduler-independent containment governs job, lane, worker, model, node, workspace and Estate scopes. Durable worker/node quarantine excludes a route before health, priority or preference and survives reconnect and controller restart until evidenced recovery reaches AVAILABLE.",
+      "sources": [
+        "src/control/containment.ts",
+        "src/control/work-board.ts",
+        "src/index.ts",
+        "src/web.ts"
+      ],
+      "tests": [
+        "src/control/governance-containment.test.ts",
+        "src/control/work-board.test.ts",
+        "src/control/work-board-web.test.ts"
+      ],
+      "evidence": [
+        "docs/dynamic-work-board.md",
+        "docs/evidence/QUARANTINE_SCHEDULING_QUALIFICATION.md"
+      ],
+      "limitation": "There is no distinct runtime kill scope. Pixel and remote containment are unqualified; runtime routes inherit stable Worker/Node containment authority."
     }
   ]
 }

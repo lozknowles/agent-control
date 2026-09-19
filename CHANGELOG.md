@@ -1,10 +1,16 @@
 # Changelog
 
-## 4.9 follow-up candidate — unreleased
+## 4.10.0 — Dynamic Work Board, Parallel Lanes and Governed Containment
 
-Adds a governed, tool-free `RAW_INFERENCE` Lab route with qualified model resolution, explicit API/local accounting, provider-reported input/cache/output/reasoning usage and content-addressed evidence. Activity-log repair now preserves an open writer's inode and retains restart-recoverable backup evidence. Writable mutation workspaces protect governance metadata independently of ordinary content authority. Cancellation persists its fence before signalling the live execution.
+Adds a durable operator-controlled Dynamic Work Board with ordering, priority, dependencies, lanes, blocked states, resource conflicts, natural-language change proposals and linked execution evidence. Independent work may run concurrently when dependency, resource, capability and containment policy permit it.
 
-This is an isolated candidate based on public `v4.9.0`; it is not a new release. See the [gap review](docs/rebroad-reliability-review-4.9.md).
+Adds scheduler-independent hierarchical containment and a persisted quarantine scheduling fence. A quarantined worker or node is excluded before health, reconnect, capability, priority or preference is considered. An alternative qualified route may run; otherwise the work remains explicitly blocked. Eligibility returns only after the evidenced inspection, reset, requalification and availability lifecycle.
+
+Incorporates the qualified 4.9 reliability follow-up: governed raw inference, explicit local/API accounting, activity-log repair that preserves live-writer identity, protected workspace metadata, and durable cancellation fencing. Generic interaction profiles, observed capability drift, transactional approvals, optional W3C correlation and typed outbound-worker contracts remain Agent Control-native; no Omnigent dependency is introduced.
+
+Physical hpubuntu qualification covers the Work Board, parallel lanes, dynamic reprioritisation, hierarchical containment, quarantine persistence, alternative routing, unsafe-fallback prevention and governed recovery. Pixel/remote containment, a physical generic outbound worker transport, and the optional phone-hosted model route remain unqualified.
+
+See [release notes](docs/release-notes-4.10.0.md), [operator guide](docs/dynamic-work-board.md), [upgrade guide](docs/upgrade-4.10.md), and [release verification](docs/release-verification-4.10.0.md).
 
 ## 4.9.0 — Governed security audits and conventional activity logging
 

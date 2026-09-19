@@ -1,6 +1,6 @@
 # Implementation status
 
-Release boundary: **4.9.0**. Registry updated: **2026-09-19**.
+Release boundary: **4.10.0**. Registry updated: **2026-09-19**.
 
 This document is generated from `config/implementation-status.json`. Update the registry and run `npm run status:implementation -- --write`; do not edit this projection directly. `IMPLEMENTED` means executable source and focused tests exist. `QUALIFIED` additionally requires recorded real evidence. `PARTIAL`, `PLANNED` and `NOT_IMPLEMENTED` remain explicit gaps.
 
@@ -69,6 +69,8 @@ This document is generated from `config/implementation-status.json`. Update the 
 | Live Runtime Map, Control Room, Replay and Compare (`runtime.process-map`) | **QUALIFIED** | One redacted projection of authoritative Work Parcel, Run, model, session, baton, cache, memory and verification evidence drives leader KPIs, fan-out/fan-in graph, progressive drill-down, read-only Live Shell, adaptive Control Room, time-bounded Replay and independent-identity graphical Compare. Exact configured identities link current work to Estate resources. | The visual qualification proved six concurrent root Jobs, advancing real terminal output, retry/recovery, aggregation, verification, replay, comparison and Estate cross-linking. Map-originated pause/cancel/retry/approval remains intentionally unavailable until a node-scoped adapter can delegate to existing permission and audit APIs; WATCH grants no control authority. |
 | Setup, Environment Discovery and unified Estate Map (`environment.discovery-estate-map`) | **PARTIAL** | Read-only provider-neutral adapters inventory machines, accelerators, runtimes, models, agents, tools and credential presence; persist non-secret change history; gate recommendations and configuration Work Parcels; and project current evidence through the same graph schema and renderer as Process Map. User capabilities and bootstrap provenance use explicit review and fail-closed lifecycles. | The physical run qualified only the local non-disruptive controller path. Configured remote/mobile transports, paid provider checks, real authentication actions and cross-device imported capabilities remain untested and cannot be counted as available. Desired-state estate management/remediation is planned for 4.6. |
 | Automatic governed recipe learning (`recipes.automatic-learning`) | **PLANNED** | Successive halving exists, but winners are not automatically promoted into a durable governed recipe catalog. | Persist qualification evidence and require policy approval before learned recipes influence routing. |
+| Dynamic Work Board and parallel lane scheduling (`planning.dynamic-work-board`) | **IMPLEMENTED** | A durable user-controlled plan records ordering, priority, lanes, dependencies, blockers, approvals, resource conflicts and linked runs. Compatible independent work may execute in parallel while Agent Control Jobs and Work Parcels retain execution authority. | Some restart scenarios are automated-test qualified rather than separately physical. The dashboard does not yet provide a complete containment and recovery timeline. |
+| Hierarchical containment and quarantine scheduling fence (`safety.hierarchical-containment`) | **IMPLEMENTED** | Scheduler-independent containment governs job, lane, worker, model, node, workspace and Estate scopes. Durable worker/node quarantine excludes a route before health, priority or preference and survives reconnect and controller restart until evidenced recovery reaches AVAILABLE. | There is no distinct runtime kill scope. Pixel and remote containment are unqualified; runtime routes inherit stable Worker/Node containment authority. |
 
 ## Evidence map
 
@@ -439,3 +441,15 @@ This document is generated from `config/implementation-status.json`. Update the 
 
 - Source: [`src/control/experiments.ts`](../src/control/experiments.ts)
 - Tests: [`src/control/control.test.ts`](../src/control/control.test.ts)
+
+### Dynamic Work Board and parallel lane scheduling
+
+- Source: [`src/control/work-board.ts`](../src/control/work-board.ts), [`src/control/work-board-control.ts`](../src/control/work-board-control.ts), [`src/control/web-server.ts`](../src/control/web-server.ts), [`assets/dashboard/dashboard-work-board.js`](../assets/dashboard/dashboard-work-board.js)
+- Tests: [`src/control/work-board.test.ts`](../src/control/work-board.test.ts), [`src/control/work-board-control.test.ts`](../src/control/work-board-control.test.ts), [`src/control/work-board-web.test.ts`](../src/control/work-board-web.test.ts)
+- Qualification evidence: [`docs/dynamic-work-board.md`](../docs/dynamic-work-board.md), [`docs/evidence/DYNAMIC_WORK_BOARD_QUALIFICATION.md`](../docs/evidence/DYNAMIC_WORK_BOARD_QUALIFICATION.md), [`docs/evidence/QUARANTINE_SCHEDULING_QUALIFICATION.md`](../docs/evidence/QUARANTINE_SCHEDULING_QUALIFICATION.md)
+
+### Hierarchical containment and quarantine scheduling fence
+
+- Source: [`src/control/containment.ts`](../src/control/containment.ts), [`src/control/work-board.ts`](../src/control/work-board.ts), [`src/index.ts`](../src/index.ts), [`src/web.ts`](../src/web.ts)
+- Tests: [`src/control/governance-containment.test.ts`](../src/control/governance-containment.test.ts), [`src/control/work-board.test.ts`](../src/control/work-board.test.ts), [`src/control/work-board-web.test.ts`](../src/control/work-board-web.test.ts)
+- Qualification evidence: [`docs/dynamic-work-board.md`](../docs/dynamic-work-board.md), [`docs/evidence/QUARANTINE_SCHEDULING_QUALIFICATION.md`](../docs/evidence/QUARANTINE_SCHEDULING_QUALIFICATION.md)
