@@ -39,7 +39,7 @@ Authenticated evidence reads use `GET /api/lab/direct-inference/evidence/<refere
 
 ## Physical local proof
 
-The candidate issued one bounded request to the already-running qualified loopback llama.cpp service on hpubuntu. That request exposed an accounting defect: its receipt said local/free but the durable usage record still said `UNKNOWN`. The original evidence is preserved as `local-direct-inference-pre-accounting-fix.json`. After correcting the mapping, the exact candidate issued one bounded requalification request. It did not start, stop, reconfigure or download a model, and it did not repeat requests to manufacture cache reuse.
+The candidate issued one bounded request to the already-running qualified loopback llama.cpp service on measured Linux qualification host. That request exposed an accounting defect: its receipt said local/free but the durable usage record still said `UNKNOWN`. The original evidence is preserved as `local-direct-inference-pre-accounting-fix.json`. After correcting the mapping, the exact candidate issued one bounded requalification request. It did not start, stop, reconfigure or download a model, and it did not repeat requests to manufacture cache reuse.
 
 - route: `RAW_INFERENCE`
 - model: `Ministral-3-8B-Instruct-2512-Q4_K_M.gguf`

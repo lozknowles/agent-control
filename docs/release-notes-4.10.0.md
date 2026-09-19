@@ -26,7 +26,7 @@ Generic Harness Interaction Profiles, declared-versus-observed capability drift,
 
 ## Qualification boundary
 
-**Physically qualified on hpubuntu:** real parallel lanes, dynamic reprioritisation, Job/Lane/Worker containment, descendant and process-group cleanup, SIGTERM-to-SIGKILL escalation, durable quarantine, restart/reconnect persistence, stale-result rejection, alternative routing, unsafe-fallback prevention, governed recovery, isolated Estate Emergency Stop and preservation of unrelated workloads.
+**Physically qualified on measured Linux qualification host:** real parallel lanes, dynamic reprioritisation, Job/Lane/Worker containment, descendant and process-group cleanup, SIGTERM-to-SIGKILL escalation, durable quarantine, restart/reconnect persistence, stale-result rejection, alternative routing, unsafe-fallback prevention, governed recovery, isolated Estate Emergency Stop and preservation of unrelated workloads.
 
 **Automated-test qualified:** broader contract, persistence, dashboard, approval, drift, transport state-machine and restart scenarios covered by the release suite.
 
