@@ -13,12 +13,12 @@ import {parseMutationBenchmarkSuite} from './harness-mutation-benchmark.js';
 import {createToolHandlerRegistry} from './harness-dispatch.js';
 
 const environment = {AGENT_CONTROL_ENABLE_NON_OPENAI_CACHE_QUALIFICATION: 'true', AGENT_CONTROL_NON_OPENAI_CACHE_BASE_URL: 'http://127.0.0.1:18000/v1', AGENT_CONTROL_NON_OPENAI_CACHE_MODEL: 'fixture-model', AGENT_CONTROL_NON_OPENAI_CACHE_REPOSITORY_ROOT: process.cwd()};
-function setup(t: {after(fn: () => void): void}, fetcher: typeof fetch, register?: (actions: ActionRegistry) => void) {
+function setup(t: {after(fn: () => void): void}, fetcher: typeof fetch, register?: (actions: ActionRegistry) => void, additions: NodeJS.ProcessEnv = {}) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ac-execution-remediation-'));
   const previous = globalThis.fetch; globalThis.fetch = fetcher;
   t.after(() => { globalThis.fetch = previous; fs.rmSync(root, {recursive: true, force: true}); });
   const efficiency = new MemoryHarnessEfficiencyLedger();
-  const actions = registerNonOpenAiCacheQualificationActions(new ActionRegistry(), efficiency, environment);
+  const actions = registerNonOpenAiCacheQualificationActions(new ActionRegistry(), efficiency, {...environment, ...additions});
   register?.(actions);
   const catalog = new JobCatalog(actions.ids());
   const job: JobDefinition = {apiVersion: 'agent-control/v1', kind: 'Job', metadata: {id: 'qualification-fixture', name: 'Fixture', version: '1.0.0'}, spec: {priority: 'normal', concurrency: 'no-overlap', steps: [
@@ -46,6 +46,19 @@ test('live qualification path performs a bounded mutation and independent verifi
   assert.equal(values(s.runtime, s.run.id, 'attempt-workspace-cleanup')[0].outcome, 'confirmed');
   const fresh = new ArtifactStore(path.join(s.root, 'jobs', 'artifact-store'));
   for (const artifact of s.runtime.artifacts.list(s.run.id)) assert.deepEqual(fresh.read(artifact.id), s.runtime.artifacts.read(artifact.id));
+});
+test('lean terminal allowance completes through native JobRuntime with durable evidence and cleanup', async t => {
+  let calls = 0;
+  const replies = [() => response(MUTATION_TOOL_IDS.read, {path: 'src/constants.js'}), replace, () => response(MUTATION_TOOL_IDS.test), finish];
+  const s = setup(t, async () => replies[calls++](), undefined, {AGENT_CONTROL_LEAN_EXPERIMENT: 'true'});
+  await s.runtime.tick(); await s.runtime.tick();
+  assert.equal(s.runtime.ledger.get(s.run.id)?.status, 'SUCCEEDED');
+  assert.equal(calls, 4);
+  assert.equal(values(s.runtime, s.run.id, 'independent-verification')[0].verifier.passed, true);
+  assert.equal(values(s.runtime, s.run.id, 'attempt-workspace-cleanup')[0].outcome, 'confirmed');
+  const projections = values(s.runtime, s.run.id, 'lean-model-interface');
+  const last = projections.filter(value => value.kind === 'model_invocation').at(-1);
+  assert.deepEqual(last.exposedToolIds, [MUTATION_TOOL_IDS.finish]);
 });
 
 test('human takeover during provider wait aborts the request and fences a late provider mutation', async t => {

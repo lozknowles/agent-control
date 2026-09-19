@@ -14,6 +14,7 @@ import {StructuredChatLoopProvider} from './structured-chat-loop-provider.js';
 import type {ActionContext} from './job-types.js';
 import type {ExecutionCleanupReport} from './owned-process.js';
 import {StructuredChatProviderFactory} from './structured-chat-provider.js';
+import type {LeanExecutionPolicy} from './lean-model-interface.js';
 
 interface QualificationWorkspace {
   workspace: MutationWorkspace;
@@ -34,6 +35,7 @@ interface QualificationWorkspace {
 export function registerNonOpenAiCacheQualificationActions(registry: ActionRegistry, efficiency?: HarnessEfficiencyLedgerPort, environment: NodeJS.ProcessEnv = process.env) {
   if (environment.AGENT_CONTROL_ENABLE_NON_OPENAI_CACHE_QUALIFICATION !== 'true') return registry;
   if (!efficiency) throw new Error('non_openai_cache_efficiency_ledger_required');
+  const leanExperiment = environment.AGENT_CONTROL_LEAN_EXPERIMENT === 'true';
   const baseUrl = required(environment.AGENT_CONTROL_NON_OPENAI_CACHE_BASE_URL, 'non_openai_cache_base_url').replace(/\/$/, '');
   const routeBaseUrls = parseRouteBaseUrls(environment.AGENT_CONTROL_NON_OPENAI_CACHE_ROUTE_BASE_URLS);
   for (const value of [baseUrl, ...Object.values(routeBaseUrls)]) { const endpoint = new URL(value); if (!['127.0.0.1', 'localhost', '::1'].includes(endpoint.hostname)) throw new Error('non_openai_cache_endpoint_must_be_loopback'); }
@@ -77,7 +79,12 @@ export function registerNonOpenAiCacheQualificationActions(registry: ActionRegis
         },
       }));
       const toolPolicy = new ToolPolicy(MUTATION_TOOL_DEFINITIONS);
-      const dispatcher = new HarnessDispatcher(new AdaptiveHarness(new SkillCatalog(), toolPolicy, undefined, new HarnessProfileRouter({mode: 'EXPERIMENT', minimumVerifiedRuns: 20, minimumSuccessRate: .95, minimumSameModelControlledRuns: 20})), toolPolicy, createToolHandlerRegistry(bindings), () => ({authority: context.execution!.currentAuthority(), workerId: context.worker.id, availableToolIds: MUTATION_TOOL_DEFINITIONS.map(tool => tool.id), approvedRisks: ['read', 'write']}), new MemoryRecipeDispatchStore(), event => journal({...event, type: 'tool-policy-audit'}), undefined, efficiency);
+      const leanPolicy: LeanExecutionPolicy = {toolEffects: {
+        [MUTATION_TOOL_IDS.read]: 'inspect', [MUTATION_TOOL_IDS.search]: 'inspect',
+        [MUTATION_TOOL_IDS.replace]: 'mutate', [MUTATION_TOOL_IDS.write]: 'mutate',
+        [MUTATION_TOOL_IDS.test]: 'verify', [MUTATION_TOOL_IDS.finish]: 'terminal',
+      }, requiredChangedPaths: [...task.requiredChangedFiles], terminalAllowance: true};
+      const dispatcher = new HarnessDispatcher(new AdaptiveHarness(new SkillCatalog(), toolPolicy, undefined, new HarnessProfileRouter({mode: 'EXPERIMENT', minimumVerifiedRuns: 20, minimumSuccessRate: .95, minimumSameModelControlledRuns: 20})), toolPolicy, createToolHandlerRegistry(bindings), () => ({authority: context.execution!.currentAuthority(), workerId: context.worker.id, availableToolIds: MUTATION_TOOL_DEFINITIONS.map(tool => tool.id), approvedRisks: ['read', 'write']}), new MemoryRecipeDispatchStore(), event => journal({...event, type: 'tool-policy-audit'}), undefined, efficiency, leanExperiment ? () => leanPolicy : undefined);
       const providerFactory = new StructuredChatProviderFactory({
         provider: {id: selectedProviderId, name: 'Local llama.cpp cache qualification', kind: 'local', baseUrl: selectedBaseUrl, requiresAuth: false, parallelism: 1, costClass: 'free', capabilities: ['structured-output', 'tool-request']},
         workerId: context.worker.id, modelId: selectedModelId,
@@ -109,7 +116,7 @@ export function registerNonOpenAiCacheQualificationActions(registry: ActionRegis
         journal({type: 'provider', at: new Date().toISOString(), requestPrefixSha256: sha256(stableJson(requestBody)), assistantOutput: typeof message.content === 'string' ? message.content : null, providerResponseId: typeof body.id === 'string' ? body.id : null, responseModel: typeof body.model === 'string' ? body.model : null, finishReason: typeof choice.finish_reason === 'string' ? choice.finish_reason : null, usage: safeUsage(body.usage), timings: safeTimings(body.timings)});
         return response;
       };
-      const loop = new StructuredChatLoopProvider({providerId: selectedProviderId, modelId: selectedModelId, baseUrl: selectedBaseUrl, toolSchemas: MUTATION_TOOL_SCHEMAS, finishToolId: MUTATION_TOOL_IDS.finish, maximumOutputTokens: 768, timeoutMs: task.timeoutMs, signalForRecipe: () => context.signal, executionStrategy: 'non-openai-cache.real-repository-mutation', cacheRetention: environment.AGENT_CONTROL_NON_OPENAI_CACHE_DERIVED_RETENTION === 'true' ? {enabled:true,authority:'derived',source:'qualified-llama.cpp-single-slot-cache-prompt'} : undefined, fetch: fetcher});
+      const loop = new StructuredChatLoopProvider({providerId: selectedProviderId, modelId: selectedModelId, baseUrl: selectedBaseUrl, toolSchemas: MUTATION_TOOL_SCHEMAS, finishToolId: MUTATION_TOOL_IDS.finish, maximumOutputTokens: 768, timeoutMs: task.timeoutMs, signalForRecipe: () => context.signal, executionStrategy: 'non-openai-cache.real-repository-mutation', ...(leanExperiment ? {lean: {terminalAllowance: true, recordEvidence: (record: Record<string, unknown>) => journal({...record, type: 'lean-model-interface'})}} : {}), cacheRetention: environment.AGENT_CONTROL_NON_OPENAI_CACHE_DERIVED_RETENTION === 'true' ? {enabled:true,authority:'derived',source:'qualified-llama.cpp-single-slot-cache-prompt'} : undefined, fetch: fetcher});
       const sources = buildMutationContextSources(suite, task, fixtureRoot);
       const packet = buildMutationContextPacket('THIN', sources, Math.min(8_000, task.tokenBudget));
       const selectedSources = selectMutationPacketSources(packet, sources);
