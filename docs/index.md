@@ -39,3 +39,5 @@ projection for standard operating-system log tools and third-party ingestion.
 
 - [Navigable Workspaces: Dashboard, CLI, API and Mallow](navigable-workspaces.md)
 - [Navigable Workspaces visual evidence](evidence/navigable-workspaces-4.8.md)
+
+- [Phone-hosted local model for governed computer use](phone-hosted-local-model-computer-use.md)
