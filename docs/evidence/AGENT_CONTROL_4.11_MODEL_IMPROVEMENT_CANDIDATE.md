@@ -34,7 +34,29 @@ The durable lifecycle is `BASELINE → WEAKNESS_DETECTED → IMPROVEMENT_PROPOSE
 
 ## Physical qualification
 
-Pending final bounded experiment. The experiment will use an existing qualified model and deterministic validation, record protected services before and after, and will not promote any route.
+**PASS**, with the original overly strict service-health receipt retained and reconciled rather than rewritten.
+
+- Source commit: `32a96b7c5b3b945c54d9d6ef4a3c082472a11fbb`
+- Experiment: `experiment-4f5648c9-7bf6-42f6-a148-5ac9933714dd`
+- Existing model: `qwen2.5-3b-instruct` (`626b4a6678b86442240e33df819e00132d3ba7dddfe1cdc4fbb18e0a9615c62d`)
+- Intervention: `PROMPT`; no weights, runtime, service, benchmark, evaluator, policy, or route changed
+- Frozen exact-match baseline: **0/2** (`ALPHA7`)
+- Isolated candidate: **2/2** (`ALPHA|7`)
+- Lifecycle boundary: `AWAITING_PROMOTION_APPROVAL`
+- Promotion applied: **NO**
+- Protected services: process identities unchanged; all three expected model identities remained HTTP healthy
+- Monetary and energy break-even: **UNAVAILABLE**; the local route exposes no authoritative per-call billing or experiment energy meter
+
+The first runner receipt reported `FAIL` because it compared raw `/v1/models` body hashes. Those bodies include mutable runtime metadata and are not service-identity invariants. That receipt remains immutable at SHA-256 `ded0ad02f57f7b53ccd4fa3422ddc01fd251684d1fab10b094db7bb6a21c4c20`. A separate reconciliation verified the unchanged process command hashes, successful endpoint status, and expected model identity without another model call. The sanitized receipt is [model-improvement-physical-qualification.json](model-improvement-physical-qualification.json).
+
+## Verification
+
+- Focused lifecycle/API/dashboard tests: **9 passed, 0 failed, 0 skipped**.
+- Complete suite: **1,888 passed, 0 failed, 0 skipped** in **307,757 ms**, up from the v4.10.0 baseline of 1,879 tests.
+- TypeScript, distribution, bootstrap/shell syntax, dashboard syntax, infrastructure neutrality, and implementation-status checks: **PASS**.
+- Virgin clone/bootstrap: **PASS**; configuration created and `agent-control 4.11.0-candidate.1` reported.
+- v4.10.0 (`6102d4889`) in-place source upgrade: **PASS**; configuration and representative retained history remained byte-identical, initialization reported `UNCHANGED_EMPTY`, and all focused 4.11 tests passed after upgrade.
+- Qualification platform: Linux 6.8.0-139-generic x86_64, Node.js 24.21.0, npm 11.19.0.
 
 ## Release boundary
 
