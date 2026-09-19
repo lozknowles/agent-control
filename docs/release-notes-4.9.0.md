@@ -1,5 +1,7 @@
 # Agent Control 4.9.0 — Governed security audits and conventional activity logging
 
+> The public `v4.9.0` tag is immutable. Subsequent Rebroad reliability work is an [isolated follow-up candidate](rebroad-reliability-review-4.9.md), not part of this release.
+
 Agent Control 4.9.0 adds governed, coverage-led security audits as a normal Agent Control Job and a conventional append-only JSONL activity log derived from authoritative durable records.
 
 ## Governed security audits

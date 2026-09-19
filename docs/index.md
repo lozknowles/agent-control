@@ -1,14 +1,16 @@
 # Agent Control documentation
 
-**Stable: [Agent Control 4.9.0](https://github.com/lozknowles/agent-control/releases/tag/v4.9.0).**
+**Stable: [Agent Control 4.10.0](https://github.com/lozknowles/agent-control/releases/tag/v4.10.0).**
 
 - [Install Agent Control](installation-first-run.md)
-- [Upgrade an existing installation](upgrade-4.8.md)
+- [Upgrade an existing installation](upgrade-4.10.md)
 - [Real installation screenshots](public-installation-journey.md)
 - [Meet Mallow and the crew](crew-guide.md)
 - [Troubleshooting](installation-first-run.md#troubleshooting)
-- [Release notes](release-notes-4.9.0.md)
-- [Complete release readiness](release-verification-4.9.0.md)
+- [Release notes](release-notes-4.10.0.md)
+- [Complete release readiness](release-verification-4.10.0.md)
+- [Dynamic Work Board and hierarchical containment](dynamic-work-board.md)
+- [4.9 reliability qualification retained in 4.10](rebroad-reliability-review-4.9.md)
 - [Nested Execution Environments](nested-execution-environments.md)
 - [Native runtime benchmarking](running-your-first-benchmark.md)
 - [Speculative decoding qualification](speculative-decoding-qualification.md)
@@ -39,3 +41,5 @@ projection for standard operating-system log tools and third-party ingestion.
 
 - [Navigable Workspaces: Dashboard, CLI, API and Mallow](navigable-workspaces.md)
 - [Navigable Workspaces visual evidence](evidence/navigable-workspaces-4.8.md)
+
+- [Phone-hosted local model for governed computer use](phone-hosted-local-model-computer-use.md)

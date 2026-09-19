@@ -16,15 +16,15 @@ ATLAS is Agent Control's public identity: **Agentic Topology, Lifecycle, Assuran
 
 Discover your AI tools, see what is available, and follow approved work from request to verified result.
 
-**Current release: [4.9.0](https://github.com/lozknowles/agent-control/releases/tag/v4.9.0) — Governed security audits and conventional activity logging.** Agent Control now runs native six-phase, coverage-led security-audit Jobs with separate finder and verifier evidence, strict verdicts, fail-closed sandbox admission and downloadable Markdown/JSON reports. See the [operator guide](docs/security-audits.md), [release notes](docs/release-notes-4.9.0.md), [verification](docs/release-verification-4.9.0.md), and [integration decision](SECURITY_AUDIT_INTEGRATION_DECISION.md).
+**Current release: [4.10.0](https://github.com/lozknowles/agent-control/releases/tag/v4.10.0) — Dynamic Work Board, Parallel Lanes and Governed Containment.** Agent Control now maintains a durable operator-controlled work plan, schedules safe independent lanes concurrently, and prevents quarantined workers from receiving new work until governed recovery returns them to `AVAILABLE`. See the [operator guide](docs/dynamic-work-board.md), [release notes](docs/release-notes-4.10.0.md), [upgrade guide](docs/upgrade-4.10.md), and [release verification](docs/release-verification-4.10.0.md).
 
-The release also adds a [conventional JSONL activity log](docs/activity-log.md) for `tail -f`, `jq`, logrotate and standard ingestion tools. It is a redacted operational projection of authoritative Job events, never a second event authority.
+The release also incorporates the qualified 4.9 reliability safeguards: governed raw inference, explicit local/API usage accounting, live-writer-safe activity-log repair, protected workspace metadata and cancellation fencing before abort. The optional phone-hosted planning route remains experimental and has no physical end-to-end qualification.
 
 **4.8 workspace navigation:** [Operator guide, CLI and API](docs/navigable-workspaces.md) · [Architectural review and Rune comparison](NAVIGABLE_WORKSPACES_REVIEW.md) · [Visual evidence](docs/evidence/navigable-workspaces-4.8.md). Navigation does not grant execution authority or create a second topology.
 
 **4.8 nested execution:** [Follow work through nested environments](docs/nested-execution-environments.md) from a physical device through host/guest environments, runtime and worker route to the exact invocation and evidence. Nested capacity is scoped and is never added to physical Estate capacity.
 
-[Install Agent Control](docs/installation-first-run.md) · [Documentation](docs/index.md) · [Upgrade](docs/upgrade-4.8.md) · [Release notes](docs/release-notes-4.9.0.md)
+[Install Agent Control](docs/installation-first-run.md) · [Documentation](docs/index.md) · [Upgrade](docs/upgrade-4.10.md) · [Release notes](docs/release-notes-4.10.0.md)
 
 [![Actual Agent Control Estate Map](docs/media/4.6/integration/estate.png)](docs/public-installation-journey.md)
 
@@ -55,12 +55,12 @@ Mallow is your floating guide. The established crew helps explain dispatch, revi
 
 <a id="install"></a>
 
-## Install Agent Control 4.9.0
+## Install Agent Control 4.10.0
 
 Install on Linux with Node.js 24, npm, Git and Bash:
 
 ```bash
-git clone --branch v4.9.0 https://github.com/lozknowles/agent-control.git
+git clone --branch v4.10.0 https://github.com/lozknowles/agent-control.git
 cd agent-control
 git rev-parse HEAD
 ./scripts/bootstrap-agent-control.sh --check --target "$PWD"
@@ -111,10 +111,10 @@ Model Intelligence now reports real source coverage, initial versus follow-up ob
 
 - [Android / fresh Termux prerequisites](android/README.md#fresh-termux-prerequisites) (separate platform guide)
 - [Installation and troubleshooting](docs/installation-first-run.md#troubleshooting)
-- [Safe existing-install upgrade](docs/upgrade-4.8.md)
+- [Safe existing-install upgrade](docs/upgrade-4.10.md)
 - [Architecture](docs/architecture-v2-agnostic.md)
 - [Security](SECURITY.md) and [contributing](CONTRIBUTING.md)
-- [Release notes](docs/release-notes-4.9.0.md)
+- [Release notes](docs/release-notes-4.10.0.md)
 - [Accepted RC assessment and evidence](docs/release-candidate-4.6.md)
 
 Historical versioned reports remain available under `docs/`; use the installation guide above for this release.
@@ -135,3 +135,5 @@ The observability candidate follows the device/browser system light or dark pref
 Agent Control 4.8.1 publishes the governed runtime benchmark path documented in [Running your first benchmark](docs/running-your-first-benchmark.md). Agent Control owns discovery, admission, lifecycle, execution, scoring, restoration and evidence; qualification clients submit and inspect work without becoming the executor.
 
 The retained qualification on a Linux GPU host found a bounded beneficial speculative route for Qwen3-8B with a Qwen3-0.6B draft at two draft tokens: median generation throughput improved from 27.10 to 33.55 tok/s (+23.8%) while median time to first token increased from 122.35 to 152.30 ms (+24.5%). Routing therefore selects speculative execution for throughput-sensitive workloads and ordinary execution for short latency-sensitive work. These measurements describe the qualified hardware/runtime/model combination, not a universal performance claim.
+
+An isolated 4.9 candidate also documents an optional [phone-hosted local model route for governed computer use](docs/phone-hosted-local-model-computer-use.md). The local model remains separate from ChatGPT and can propose only bounded actions; physical end-to-end qualification is still pending.

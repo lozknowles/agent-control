@@ -13,6 +13,13 @@ import type {
   DiscoveryObservation,
   DiscoveryResourceClass,
 } from "./environment-discovery.js";
+import {
+  observeInteraction,
+  unknownInteractionProfile,
+  validateInteractionProfile,
+  type HarnessInteractionProfile,
+  type InteractionObservation,
+} from "./harness-interaction.js";
 
 export type CapabilityAdapterState =
   | "DRAFT"
@@ -38,6 +45,7 @@ export interface CapabilityAdapterDefinition {
   executionContract: string | null;
   qualificationTests: string[];
   securityRequirements: string[];
+  interactionProfile?: HarnessInteractionProfile;
 }
 export interface CapabilityBinding {
   nodeId: string;
@@ -63,6 +71,7 @@ export interface CapabilityAdapterRecord {
     detail: string;
   };
   sha256: string;
+  interactionObservations?: InteractionObservation[];
 }
 interface Snapshot {
   schema: "agent-control.capability-adapter-registry/v1";
@@ -134,6 +143,7 @@ export class CapabilityAdapterRegistry {
         updatedAt: at,
         lastVerifiedAt: null,
         lastResult: null,
+        interactionObservations: [],
       };
     const record = { ...base, sha256: seal(base) };
     this.value.records.push(record);
@@ -220,6 +230,29 @@ export class CapabilityAdapterRegistry {
   exportDefinition(id: string) {
     const { definition } = this.get(id);
     return structuredClone(definition);
+  }
+  interactionProfile(id: string) {
+    const record = this.get(id);
+    return record.definition.interactionProfile
+      ? validateInteractionProfile(record.definition.interactionProfile)
+      : unknownInteractionProfile(record.definition.id, record.definition.version);
+  }
+  recordInteractionObservation(
+    id: string,
+    sha256: string,
+    input: Omit<InteractionObservation, "schema" | "drift" | "sha256">,
+  ) {
+    const record = this.must(id, sha256);
+    if (input.adapterId !== record.definition.id)
+      throw new Error("interaction_observation_adapter_mismatch");
+    const observation = observeInteraction(input);
+    record.interactionObservations = [
+      ...(record.interactionObservations ?? []),
+      observation,
+    ].slice(-100);
+    record.updatedAt = this.clock();
+    this.reseal(record);
+    return structuredClone(observation);
   }
   importDefinition(
     definition: CapabilityAdapterDefinition,
@@ -368,6 +401,8 @@ function validateDefinition(value: CapabilityAdapterDefinition) {
     (value.executionContract || value.qualificationTests.length)
   )
     throw new Error("untrusted_capability_executable_contract_forbidden");
+  if (value.interactionProfile)
+    validateInteractionProfile(value.interactionProfile);
   assertNoSensitiveMaterial(
     JSON.stringify(value),
     "capability_adapter_definition_secret_forbidden",

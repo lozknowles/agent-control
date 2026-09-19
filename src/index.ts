@@ -16,6 +16,8 @@ import {controlRoomView} from './ui/control-room.js';
 import {AndroidRecovery, type AndroidRecoveryState} from './control/android-recovery.js';
 import {AgentControlService} from './control/application-service.js';
 import {startWebDashboard} from './control/web-server.js';
+import {schedulerContainmentScopes,WorkBoardRuntime} from './control/work-board.js';
+import {ContainmentSupervisor} from './control/containment.js';
 import {ContextStore} from './control/context.js';
 import {buildGovernedRetrievalRuntime, buildJobRuntime, buildParameterizedJobRuntime, startJobScheduler, startManagedNodeMonitoring, startParameterizedJobScheduler} from './control/job-bootstrap.js';
 import {ResourceCodexNodeExecutionPort} from './control/codex-node-execution.js';
@@ -53,6 +55,8 @@ for (const provider of providersFromConfig(config.providers)) providers.register
 const queueStore = new WorkQueueStore();
 let workQueue = queueStore.load();
 const stateRoot = path.resolve(process.env.AGENT_CONTROL_STATE_DIR || '.agent-control');
+const containment=new ContainmentSupervisor(path.join(stateRoot,'containment','records.json'));
+const workBoards=new WorkBoardRuntime(path.join(stateRoot,'work-boards','boards.json'),undefined,{evaluate:resource=>containment.schedulingEligibility(schedulerContainmentScopes(resource))});
 const capabilityIntelligence = new CapabilityIntelligenceStore(path.join(stateRoot, 'capabilities', 'intelligence.json'));
 registerAgentControlCoreCapabilities(capabilityIntelligence);
 const modelIntelligence = new ModelIntelligenceLedger(path.join(stateRoot, 'models', 'intelligence.json'));
@@ -140,6 +144,8 @@ if (process.env.AGENT_CONTROL_WEB_ENABLED !== '0') {
     port: Number(process.env.AGENT_CONTROL_WEB_PORT ?? 4310),
     operatorToken: process.env.AGENT_CONTROL_WEB_OPERATOR_TOKEN,
     allowedOrigins: process.env.AGENT_CONTROL_WEB_ALLOWED_ORIGINS?.split(',').map(value => value.trim()).filter(Boolean),
+    workBoards,
+    containment,
   });
   web.on('listening', () => appendEvent('web.listening', {host: process.env.AGENT_CONTROL_WEB_HOST ?? '127.0.0.1', port: Number(process.env.AGENT_CONTROL_WEB_PORT ?? 4310), mutations: process.env.AGENT_CONTROL_WEB_OPERATOR_TOKEN ? 'operator-authenticated' : 'disabled'}));
   web.on('error', error => appendEvent('web.failure', {message: error.message}));

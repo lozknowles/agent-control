@@ -14,3 +14,9 @@ jq -c 'select(.status == "FAILED")' /var/log/agent-control/activity.jsonl
 An example logrotate policy is provided at `config/logrotate/agent-control`. Deploy it with the ownership/group appropriate to the installation. The application creates directories with mode `0750` and files with mode `0640`; operators remain responsible for host log-retention and reader-group policy.
 
 See [`docs/examples/activity.jsonl`](examples/activity.jsonl) for synthetic schema examples.
+
+## Continuity-preserving repair
+
+The activity projection provides a bounded repair primitive for malformed, duplicate or non-monotonic entries. Before changing the canonical file it writes an immutable backup and a recovery journal. Repair truncates and rewrites the existing inode instead of replacing the pathname, so an already-open `O_APPEND` writer continues into the same canonical history. A repair lock serialises repair attempts, the completed bytes are hash-verified, and an interrupted rewrite is recovered in place from the verified backup on the next repair attempt. Repeating repair is idempotent.
+
+Repair does not alter the authoritative run ledger. If backup integrity or continuity cannot be proven it fails closed. Host log rotation remains the documented rename/create operation because normal appends reopen the configured pathname.

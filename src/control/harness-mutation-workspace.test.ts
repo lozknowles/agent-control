@@ -50,3 +50,18 @@ test('new allowlisted files become authoritative Git diff content and cleanup is
 test('fixture content hash is deterministic and excludes no declared source', () => {
   assert.equal(fixtureContentSha256(path.join(root, suite.fixturePath)), fixtureContentSha256(path.join(root, suite.fixturePath)));
 });
+
+test('governance metadata is unavailable or read-only inside mutation workspaces', async () => {
+  const prepared = MutationWorkspace.prepare(path.join(root, suite.fixturePath), suite.tasks[0]);
+  try {
+    fs.mkdirSync(path.join(prepared.workspace.root, '.codex'), {recursive: true});
+    fs.writeFileSync(path.join(prepared.workspace.root, '.codex', 'settings.json'), '{}\n');
+    fs.writeFileSync(path.join(prepared.workspace.root, 'AGENTS.md'), '# governed\n');
+    const registry = createToolHandlerRegistry(prepared.workspace.toolBindings()), recipe = {} as never;
+    await assert.rejects(() => registry.invoke(MUTATION_TOOL_IDS.read, {path: '.codex/settings.json', startLine: 1, endLine: 5}, recipe, {assertActive: () => undefined}), /governance_metadata_denied/);
+    const readable = await registry.invoke(MUTATION_TOOL_IDS.read, {path: 'AGENTS.md', startLine: 1, endLine: 2}, recipe, {assertActive: () => undefined}) as any;
+    assert.match(readable.content, /governed/);
+    await assert.rejects(() => registry.invoke(MUTATION_TOOL_IDS.write, {path: 'AGENTS.md', content: 'changed\n'}, recipe, {assertActive: () => undefined}), /governance_metadata_denied/);
+    assert.doesNotMatch(JSON.stringify(prepared.workspace.evidenceSnapshot()), /settings\.json/);
+  } finally { prepared.workspace.cleanup(); }
+});
