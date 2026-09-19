@@ -18,6 +18,7 @@ export class LeanExecutionState {
   private changedPaths = new Set<string>();
   private allowance = false;
   private finished = false;
+  private terminalId: string | undefined;
   private calls = 0;
   private readonly policy: LeanExecutionPolicy;
 
@@ -57,7 +58,7 @@ export class LeanExecutionState {
       this.changedPaths = new Set(value.changedFiles.filter((item): item is string => typeof item === 'string'));
     }
     if (effect === 'verify') this.verified = true;
-    if (effect === 'terminal') this.finished = true;
+    if (effect === 'terminal') { this.finished = true; this.terminalId = id; }
   }
 
   beginTerminalAllowance(workBudget: number): boolean {
@@ -68,6 +69,7 @@ export class LeanExecutionState {
 
   get allowanceGranted(): boolean { return this.allowance; }
   get completed(): boolean { return this.finished; }
+  get completedTerminalTool(): string | undefined { return this.terminalId; }
 }
 
 export type ContextVisibility = 'MODEL_REQUIRED' | 'MODEL_ON_DEMAND' | 'RUNTIME_ONLY' | 'EVIDENCE_ONLY';

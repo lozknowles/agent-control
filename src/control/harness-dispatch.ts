@@ -354,7 +354,9 @@ export class HarnessDispatcher {
       const observations = execution.invocations?.length ? execution.invocations : [this.fallbackObservation(recipe, invocationStartedAt, this.clock(), invokedToolIds, execution.error, execution.evidence)];
       const maximumTurns = recipe.harness?.maximumTurns ?? DEFAULT_HARNESS_PROFILES.STANDARD.maximumTurns;
       const permittedTurns = maximumTurns + (lean?.allowanceGranted ? 1 : 0);
-      if (observations.length > permittedTurns) {
+      const extraTurnTools = observations.at(-1)?.toolIds ?? [];
+      const validCompletionTurn = Boolean(lean?.completed && extraTurnTools.length === 1 && extraTurnTools[0] === lean.completedTerminalTool);
+      if (observations.length > permittedTurns || observations.length > maximumTurns && !validCompletionTurn) {
         const error = new Error(`harness_turn_budget_exceeded:${observations.length}:${maximumTurns}`);
         Object.assign(error, {efficiencyInvocationIds: this.recordInvocations(observations, pendingInvocationId)});
         throw error;
