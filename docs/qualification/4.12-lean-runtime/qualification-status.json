@@ -1,0 +1,96 @@
+{
+  "schema": "agent-control.lean-runtime-qualification/v1",
+  "status": "BLOCKED",
+  "candidateSource": "14779a97afe486231492b4db158d3c9ecfe5ca07",
+  "baseline": "9dff191034b7c69e102687bef02803bc05afe874",
+  "experimental": true,
+  "productionModified": false,
+  "published": false,
+  "historicalEvidencePreserved": true,
+  "focused": {
+    "tests": 117,
+    "pass": 117,
+    "fail": 0,
+    "skipped": 0,
+    "cancelled": 0
+  },
+  "fullSuite": {
+    "tests": 1944,
+    "pass": 1944,
+    "fail": 0,
+    "skipped": 0,
+    "cancelled": 0
+  },
+  "nativeQwen": {
+    "status": "SUCCEEDED",
+    "runId": "run-44c9e55e-a0bd-4bbe-8b47-f882f8bbb540",
+    "cleanup": "confirmed",
+    "usage": {
+      "inputTokens": 4189,
+      "freshInputTokens": 2923,
+      "cachedInputTokens": 1266,
+      "outputTokens": 150,
+      "totalProcessedTokens": 4339
+    }
+  },
+  "freshControlReplay": {
+    "provenance": "HARNESS_DRIVEN",
+    "includedInNativeComparison": false,
+    "reason": "Qualification entrypoint creates in-memory authority and owns preparation, profile selection and verifier scheduling."
+  },
+  "nativeAB": {
+    "status": "BLOCKED",
+    "reason": "Immutable v4.11 native qualification action seals THIN, while exact Phase 3 suite uses STANDARD/DEEP. The shipped benchmark script is qualification-owned orchestration and is excluded under this parcel boundary."
+  },
+  "techniques": {
+    "task-gated tools": "NEEDS_MORE_QUALIFICATION",
+    "lazy context": "NEEDS_MORE_QUALIFICATION",
+    "context delta": "NEEDS_MORE_QUALIFICATION",
+    "tool-result compression": "NO_MEASURED_BENEFIT",
+    "deterministic fast paths": "NEEDS_MORE_QUALIFICATION",
+    "terminal completion allowance": "ADOPT_CANDIDATE (bounded repository-mutation THIN scope)"
+  },
+  "limitations": [
+    "No qualifying native ten-task A/B or physical efficiency reduction is claimed.",
+    "On-demand vault is tested as a bounded primitive; no general retrieval endpoint was added.",
+    "Exact historical token-category or cache-span allocation cannot be recovered.",
+    "Terminal allowance physically verified on native MUT-001; general task workflows remain unqualified.",
+    "No Pi dependency, model/server configuration change, deployment, merge, tag or publication."
+  ],
+  "nativeQwenControlPair": {
+    "scope": "One native THIN MUT-001 pair, not the ten-task STANDARD/DEEP A/B",
+    "order": "lean then immutable-release control; provider cache not reset",
+    "control": {
+      "runId": "run-69be3763-b9b6-43bc-80ab-04d1c3218160",
+      "status": "FAILED",
+      "calls": 3,
+      "usage": {
+        "inputTokens": 4409,
+        "cachedInputTokens": 3719,
+        "freshInputTokens": 690,
+        "outputTokens": 135,
+        "totalProcessedTokens": 4544
+      },
+      "invocationElapsedMs": 3682,
+      "cleanup": "confirmed"
+    },
+    "lean": {
+      "runId": "run-44c9e55e-a0bd-4bbe-8b47-f882f8bbb540",
+      "status": "SUCCEEDED",
+      "calls": 4,
+      "usage": {
+        "inputTokens": 4189,
+        "cachedInputTokens": 1266,
+        "freshInputTokens": 2923,
+        "outputTokens": 150,
+        "totalProcessedTokens": 4339
+      },
+      "invocationElapsedMs": 6580,
+      "cleanup": "confirmed"
+    },
+    "controlFailure": "structured_chat_loop_turn_limit:3",
+    "controlIndependentVerification": "NOT_RUN because work budget ended before terminal completion",
+    "leanIndependentVerification": "PASS",
+    "interpretation": "A bounded completion result, not a statistically controlled speed or cache claim."
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "scope": "One native THIN MUT-001 pair, not the ten-task STANDARD/DEEP A/B",
+  "order": "lean then immutable-release control; provider cache not reset",
+  "control": {
+    "runId": "run-69be3763-b9b6-43bc-80ab-04d1c3218160",
+    "status": "FAILED",
+    "calls": 3,
+    "usage": {
+      "inputTokens": 4409,
+      "cachedInputTokens": 3719,
+      "freshInputTokens": 690,
+      "outputTokens": 135,
+      "totalProcessedTokens": 4544
+    },
+    "invocationElapsedMs": 3682,
+    "cleanup": "confirmed"
+  },
+  "lean": {
+    "runId": "run-44c9e55e-a0bd-4bbe-8b47-f882f8bbb540",
+    "status": "SUCCEEDED",
+    "calls": 4,
+    "usage": {
+      "inputTokens": 4189,
+      "cachedInputTokens": 1266,
+      "freshInputTokens": 2923,
+      "outputTokens": 150,
+      "totalProcessedTokens": 4339
+    },
+    "invocationElapsedMs": 6580,
+    "cleanup": "confirmed"
+  },
+  "controlFailure": "structured_chat_loop_turn_limit:3",
+  "controlIndependentVerification": "NOT_RUN because work budget ended before terminal completion",
+  "leanIndependentVerification": "PASS",
+  "interpretation": "A bounded completion result, not a statistically controlled speed or cache claim."
+}
