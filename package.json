@@ -1,6 +1,6 @@
 {
   "name": "agent-control",
-  "version": "4.10.0",
+  "version": "4.11.0-candidate.1",
   "private": true,
   "type": "module",
   "description": "Infrastructure-neutral policy control plane and adaptive agent harness",

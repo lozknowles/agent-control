@@ -113,6 +113,8 @@ Model Intelligence now reports real source coverage, initial versus follow-up ob
 - [Installation and troubleshooting](docs/installation-first-run.md#troubleshooting)
 - [Safe existing-install upgrade](docs/upgrade-4.10.md)
 - [Architecture](docs/architecture-v2-agnostic.md)
+- [Governed Model Improvement](docs/model-improvement.md) — immutable baselines, isolated candidates, independent evaluation, Work Board stages and explicit promotion approval
+- [4.11 candidate qualification](docs/evidence/AGENT_CONTROL_4.11_MODEL_IMPROVEMENT_CANDIDATE.md)
 - [Security](SECURITY.md) and [contributing](CONTRIBUTING.md)
 - [Release notes](docs/release-notes-4.10.0.md)
 - [Accepted RC assessment and evidence](docs/release-candidate-4.6.md)
