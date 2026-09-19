@@ -190,18 +190,18 @@ No public tag exists for omitted semantic versions such as v3.6.0 or v4.2.0; the
 
 ## Accepted boundaries
 
-- **AC-LIM-0008 — Authenticated Facebook discovery and LocalWalks publishing were fixture-only**: retain as an explicit conservative/product or evidence boundary. 
-- **AC-LIM-0009 — Providers without streaming usage cannot expose live token/cost counters**: retain as an explicit conservative/product or evidence boundary. 
+- **AC-LIM-0008 — Authenticated Facebook discovery and LocalWalks publishing were fixture-only**: retain as an explicit conservative/product or evidence boundary.
+- **AC-LIM-0009 — Providers without streaming usage cannot expose live token/cost counters**: retain as an explicit conservative/product or evidence boundary.
 - **AC-LIM-0018 — Small local model quality remained weak**: retain as an explicit conservative/product or evidence boundary. A negative model result is retained; it is not a framework defect.
-- **AC-LIM-0020 — Retrieval remained opt-in and route-specific**: retain as an explicit conservative/product or evidence boundary. 
-- **AC-LIM-0022 — Preferred routing requires multi-day evidence and approval**: retain as an explicit conservative/product or evidence boundary. 
-- **AC-LIM-0025 — Some speech/model providers expose only complete results, not streaming**: retain as an explicit conservative/product or evidence boundary. 
-- **AC-LIM-0028 — Handset resource feasibility varies under live load**: retain as an explicit conservative/product or evidence boundary. 
-- **AC-LIM-0039 — Local speech synthesis was too slow for natural real-time voice**: retain as an explicit conservative/product or evidence boundary. 
-- **AC-LIM-0041 — Arbitrary spoken job parameters are not supported**: retain as an explicit conservative/product or evidence boundary. 
-- **AC-LIM-0050 — Security-audit coverage is bounded and not universal assurance**: retain as an explicit conservative/product or evidence boundary. 
-- **AC-LIM-0052 — Native benchmark model acquisition and runtime portability are limited**: retain as an explicit conservative/product or evidence boundary. 
-- **AC-LIM-0053 — Speculative decoding benefit is exact-combination specific**: retain as an explicit conservative/product or evidence boundary. 
+- **AC-LIM-0020 — Retrieval remained opt-in and route-specific**: retain as an explicit conservative/product or evidence boundary.
+- **AC-LIM-0022 — Preferred routing requires multi-day evidence and approval**: retain as an explicit conservative/product or evidence boundary.
+- **AC-LIM-0025 — Some speech/model providers expose only complete results, not streaming**: retain as an explicit conservative/product or evidence boundary.
+- **AC-LIM-0028 — Handset resource feasibility varies under live load**: retain as an explicit conservative/product or evidence boundary.
+- **AC-LIM-0039 — Local speech synthesis was too slow for natural real-time voice**: retain as an explicit conservative/product or evidence boundary.
+- **AC-LIM-0041 — Arbitrary spoken job parameters are not supported**: retain as an explicit conservative/product or evidence boundary.
+- **AC-LIM-0050 — Security-audit coverage is bounded and not universal assurance**: retain as an explicit conservative/product or evidence boundary.
+- **AC-LIM-0052 — Native benchmark model acquisition and runtime portability are limited**: retain as an explicit conservative/product or evidence boundary.
+- **AC-LIM-0053 — Speculative decoding benefit is exact-combination specific**: retain as an explicit conservative/product or evidence boundary.
 
 ## External blockers
 
