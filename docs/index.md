@@ -9,6 +9,7 @@
 - [Troubleshooting](installation-first-run.md#troubleshooting)
 - [Release notes](release-notes-4.10.0.md)
 - [Complete release readiness](release-verification-4.10.0.md)
+- [Current and historical limitations ledger](KNOWN_LIMITATIONS.md)
 - [Dynamic Work Board and hierarchical containment](dynamic-work-board.md)
 - [4.9 reliability qualification retained in 4.10](rebroad-reliability-review-4.9.md)
 - [Nested Execution Environments](nested-execution-environments.md)
