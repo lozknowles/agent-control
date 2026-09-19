@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import {LeanExecutionState, type LeanExecutionPolicy} from './lean-model-interface.js';
 import path from 'node:path';
 import type {OwnedExecution} from './owned-process.js';
 import {
@@ -56,6 +57,9 @@ export interface ToolResultInterceptorContext {
 export type ToolResultInterceptor = (context: ToolResultInterceptorContext) => unknown | Promise<unknown>;
 
 export interface ToolInvocationGateway {
+  /** Experimental model exposure is a projection of current dispatcher policy. */
+  modelToolIds?(): string[];
+  beginTerminalAllowance?(): boolean;
   ownedExecution?: OwnedExecution;
   /** Control-owned cancellation and live authority, never model-supplied. */
   signal?: AbortSignal;
@@ -281,6 +285,7 @@ export class HarnessDispatcher {
     private readonly audit: ToolPolicyAuditSink = () => undefined,
     private readonly clock: () => string = () => new Date().toISOString(),
     private readonly efficiency?: HarnessEfficiencyLedgerPort,
+    private readonly leanPolicy?: (recipe: ExecutionRecipe) => LeanExecutionPolicy,
   ) {}
 
   async dispatch(plan: RecipeDispatchPlan, executor: RecipeExecutor, signal?: AbortSignal, ownedExecution?: OwnedExecution): Promise<RecipeDispatchResult> {
@@ -293,6 +298,7 @@ export class HarnessDispatcher {
       throw new HarnessPolicyDeniedError([...new Set(reasons)]);
     }
     const recipe = built.recipe;
+    const lean = this.leanPolicy ? new LeanExecutionState(this.leanPolicy(recipe)) : undefined;
     const invocationStartedAt = this.clock();
     const pendingInvocationId = this.startInvocation(recipe, invocationStartedAt);
     const invokedToolIds: string[] = [];
@@ -301,6 +307,17 @@ export class HarnessDispatcher {
     record = {...record, phase: 'DISPATCHING', updatedAt: this.clock()};
     this.store.save(record);
     const gateway: ToolInvocationGateway = {
+      ...(lean ? {
+        modelToolIds: () => {
+          gateway.assertActive();
+          const live = this.currentAuthorization(recipe);
+          return recipe.tools.filter(tool => lean.allowed(tool.id) && this.toolPolicy.authorize(recipe, tool.id, live).allowed).map(tool => tool.id);
+        },
+        beginTerminalAllowance: () => {
+          gateway.assertActive();
+          return recipe.harness?.profile === 'THIN' && lean.beginTerminalAllowance(recipe.harness.maximumTurns);
+        },
+      } : {}),
       signal, ownedExecution,
       assertActive: () => {
         signal?.throwIfAborted();
@@ -311,7 +328,8 @@ export class HarnessDispatcher {
       lifecycle: phase => { if (pendingInvocationId) this.efficiency?.setPhase([pendingInvocationId], phase); },
       invoke: async (toolId, input) => {
         const live = this.currentAuthorization(recipe);
-        const decision = signal?.aborted ? {allowed: false, reason: 'execution_cancelled'} : this.toolPolicy.authorize(recipe, toolId, live);
+        const policyDecision = signal?.aborted ? {allowed: false, reason: 'execution_cancelled'} : this.toolPolicy.authorize(recipe, toolId, live);
+        const decision = policyDecision.allowed && lean && !lean.allowed(toolId) ? {allowed: false, reason: 'lean_stage_denied'} : policyDecision;
         this.audit({
           at: this.clock(), recipeId: recipe.id, taskId: recipe.taskId, toolId, input: structuredClone(input),
           allowed: decision.allowed, reason: decision.reason,
@@ -320,8 +338,13 @@ export class HarnessDispatcher {
         });
         if (!decision.allowed) throw new Error(`tool_policy_denied:${decision.reason}`);
         gateway.assertActive!();
+        lean?.before(toolId, input);
         invokedToolIds.push(toolId);
-        const result = await this.tools.invoke(toolId, input, recipe, {signal, assertActive: gateway.assertActive!, ownedExecution});
+        let result: unknown;
+        try {
+          result = await this.tools.invoke(toolId, input, recipe, {signal, assertActive: gateway.assertActive!, ownedExecution});
+          lean?.after(toolId, result);
+        } catch (error) { lean?.after(toolId, undefined, true); throw error; }
         gateway.assertActive!();
         return result;
       },
@@ -330,7 +353,8 @@ export class HarnessDispatcher {
       const execution = await executor.execute(recipe, gateway);
       const observations = execution.invocations?.length ? execution.invocations : [this.fallbackObservation(recipe, invocationStartedAt, this.clock(), invokedToolIds, execution.error, execution.evidence)];
       const maximumTurns = recipe.harness?.maximumTurns ?? DEFAULT_HARNESS_PROFILES.STANDARD.maximumTurns;
-      if (observations.length > maximumTurns) {
+      const permittedTurns = maximumTurns + (lean?.allowanceGranted ? 1 : 0);
+      if (observations.length > permittedTurns) {
         const error = new Error(`harness_turn_budget_exceeded:${observations.length}:${maximumTurns}`);
         Object.assign(error, {efficiencyInvocationIds: this.recordInvocations(observations, pendingInvocationId)});
         throw error;

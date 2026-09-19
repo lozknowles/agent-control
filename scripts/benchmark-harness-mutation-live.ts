@@ -34,6 +34,7 @@ import {
 import {verifyMutationWorkspace} from '../src/control/harness-mutation-verifier.js';
 import {MUTATION_TOOL_DEFINITIONS, MUTATION_TOOL_IDS, MUTATION_TOOL_SCHEMAS, MutationWorkspace, fixtureContentSha256} from '../src/control/harness-mutation-workspace.js';
 import {StructuredChatLoopProvider} from '../src/control/structured-chat-loop-provider.js';
+import type {LeanExecutionPolicy} from '../src/control/lean-model-interface.js';
 import {StructuredChatProviderFactory} from '../src/control/structured-chat-provider.js';
 import {GovernedRetrievalRuntime,RepositoryTextRetrievalProvider,SpawnZgSearchExecutor,ZgRetrievalProvider,evidencePacketContextSource,evidenceReferences,type RetrievalStrategy} from '../src/control/governed-retrieval.js';
 
@@ -65,6 +66,12 @@ const resume = process.env.AGENT_CONTROL_HARNESS_MUTATION_RESUME === 'true';
 const maximumContextTokens = optionalInteger('AGENT_CONTROL_HARNESS_MUTATION_CONTEXT_TOKENS', 1_024, 1_000_000) ?? 48_000;
 const maximumOutputTokens = optionalInteger('AGENT_CONTROL_HARNESS_MUTATION_OUTPUT_TOKENS', 64, 4_096) ?? 768;
 const bearerToken = process.env.AGENT_CONTROL_HARNESS_MUTATION_BEARER_TOKEN;
+const leanExperiment = process.env.AGENT_CONTROL_LEAN_EXPERIMENT === 'true';
+const leanEvidence = path.join(evidenceDirectory, 'lean-runtime.jsonl');
+const recordLeanEvidence = (record: Record<string, unknown>) => {
+  fs.mkdirSync(evidenceDirectory, {recursive: true});
+  fs.appendFileSync(leanEvidence, JSON.stringify({at: new Date().toISOString(), ...record}) + '\n', {mode: 0o600});
+};
 
 await requireHealthyEndpoint();
 const modelsResponse = await fetch(`${baseUrl}/models`, {headers: authorizationHeaders(), signal: AbortSignal.timeout(10_000)});
@@ -82,7 +89,7 @@ const providerFactory = new StructuredChatProviderFactory({
   modelCapabilities: ['structured-output', 'tool-request'], availableToolIds: MUTATION_TOOL_DEFINITIONS.map(tool => tool.id),
   qualificationEvidence: [`models-http-${modelsResponse.status}`, `models-sha256-${modelListSha256}`], health: 'healthy',
 });
-const loop = new StructuredChatLoopProvider({providerId, modelId, baseUrl, toolSchemas: MUTATION_TOOL_SCHEMAS, finishToolId: MUTATION_TOOL_IDS.finish, maximumOutputTokens, authorization: () => bearerToken, executionStrategy: 'real-repository-mutation.bounded-json-tools'});
+const loop = new StructuredChatLoopProvider({providerId, modelId, baseUrl, toolSchemas: MUTATION_TOOL_SCHEMAS, finishToolId: MUTATION_TOOL_IDS.finish, maximumOutputTokens, authorization: () => bearerToken, executionStrategy: 'real-repository-mutation.bounded-json-tools', ...(leanExperiment ? {lean: {terminalAllowance: true, recordEvidence: recordLeanEvidence}} : {})});
 const toolPolicy = new ToolPolicy(MUTATION_TOOL_DEFINITIONS);
 const profileRouter = new HarnessProfileRouter({mode: 'EXPERIMENT', minimumVerifiedRuns: 20, minimumSuccessRate: .95, minimumSameModelControlledRuns: 20});
 const harness = new AdaptiveHarness(new SkillCatalog(), toolPolicy, undefined, profileRouter);
@@ -125,7 +132,12 @@ async function runOutcome(strategy: MutationStrategy, task: MutationBenchmarkTas
   const authority = {laneId: `mutation:${task.id}:${strategy}`, leaseGeneration: 1, ownershipGeneration: 1, owner: 'agent' as const};
   const handlers = createToolHandlerRegistry(prepared.workspace.toolBindings());
   const store = new MemoryRecipeDispatchStore();
-  const dispatcher = new HarnessDispatcher(harness, toolPolicy, handlers, () => ({authority, workerId, availableToolIds: MUTATION_TOOL_DEFINITIONS.map(tool => tool.id), approvedRisks: ['read', 'write']}), store, undefined, undefined, ledger);
+  const leanPolicy: LeanExecutionPolicy = {toolEffects: {
+    [MUTATION_TOOL_IDS.read]: 'inspect', [MUTATION_TOOL_IDS.search]: 'inspect',
+    [MUTATION_TOOL_IDS.replace]: 'mutate', [MUTATION_TOOL_IDS.write]: 'mutate',
+    [MUTATION_TOOL_IDS.test]: 'verify', [MUTATION_TOOL_IDS.finish]: 'terminal',
+  }, requiredChangedPaths: [...task.requiredChangedFiles], terminalAllowance: true};
+  const dispatcher = new HarnessDispatcher(harness, toolPolicy, handlers, () => ({authority, workerId, availableToolIds: MUTATION_TOOL_DEFINITIONS.map(tool => tool.id), approvedRisks: ['read', 'write']}), store, undefined, undefined, ledger, leanExperiment ? () => leanPolicy : undefined);
   const attempts: MutationAttemptResult[] = [];
   const attemptedProfiles: HarnessProfileName[] = [];
   let profile = startingProfile, checkpoint: MutationCheckpointContext | undefined;

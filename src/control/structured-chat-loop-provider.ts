@@ -1,4 +1,6 @@
 import {createHash} from 'node:crypto';
+import {Ajv, type ValidateFunction} from 'ajv';
+import {leanContextSources, LeanResultProjector} from './lean-model-interface.js';
 import type {ExecutionRecipe} from './adaptive-harness.js';
 import {withLifecycleHeartbeat, type RecipeExecutionResult, type RecipeExecutor, type ToolInvocationGateway} from './harness-dispatch.js';
 import {
@@ -17,6 +19,8 @@ export interface StructuredChatToolSchema {
 }
 
 export interface StructuredChatLoopOptions {
+  /** Opt-in experiment; requires dispatcher-owned tool exposure. Evidence sink is caller-authorised. */
+  lean?: {terminalAllowance?: boolean; deterministicTerminal?: boolean; recordEvidence: (record: Record<string, unknown>) => void};
   providerId: string;
   modelId: string;
   baseUrl: string;
@@ -55,6 +59,7 @@ interface ToolRequest {tool: string; input?: unknown;}
 export class StructuredChatLoopProvider {
   private readonly endpoint: string;
   private readonly schemas: StructuredChatToolSchema[];
+  private readonly leanValidators = new Map<string, ValidateFunction>();
 
   constructor(private readonly options: StructuredChatLoopOptions) {
     const parsed = new URL(options.baseUrl);
@@ -68,6 +73,10 @@ export class StructuredChatLoopProvider {
     }
     if (options.sampling && (!Number.isFinite(options.sampling.temperature) || options.sampling.temperature < 0 || options.sampling.temperature > 2 || options.sampling.topP !== undefined && (!Number.isFinite(options.sampling.topP) || options.sampling.topP <= 0 || options.sampling.topP > 1) || options.sampling.seed !== undefined && !Number.isInteger(options.sampling.seed))) throw new Error('structured_chat_loop_sampling_invalid');
     this.schemas = options.toolSchemas.map(schema => structuredClone(schema));
+    if (options.lean) {
+      const validator = new Ajv({strict: false, coerceTypes: false, useDefaults: false, removeAdditional: false});
+      for (const schema of this.schemas) this.leanValidators.set(schema.id, validator.compile(schema.inputSchema));
+    }
     this.endpoint = `${options.baseUrl.replace(/\/$/, '')}/chat/completions`;
   }
 
@@ -89,7 +98,9 @@ export class StructuredChatLoopProvider {
     const maximumToolResultBytes = this.options.maximumToolResultBytes ?? 32_768;
     const systemInstructions = renderSystemInstructions(schemas, this.options.finishToolId);
     const agentControlInstructions = 'Agent Control owns tool authorization, leases, human takeover, cancellation and independent verification. A finish request reports only that the worker has stopped; it never proves success.';
-    const renderedContext = contextSources.map((source, index) => `SOURCE ${index + 1} [${source.kind}] ${source.id}\n${source.content ?? ''}`).join('\n\n');
+    if (this.options.lean && !tools.modelToolIds) throw new Error('lean_dispatcher_policy_required');
+    const modelSources = this.options.lean ? leanContextSources(contextSources, JSON.stringify(this.schemas)) : contextSources;
+    const renderedContext = modelSources.map((source, index) => `SOURCE ${index + 1} [${source.kind}] ${source.id}\n${source.content ?? ''}`).join('\n\n');
     const messages: ChatMessage[] = [
       {role: 'system', content: `${systemInstructions}\n\n${agentControlInstructions}`},
       {role: 'user', content: `${instruction}\n\nBEGIN AUTHORISED CONTEXT\n${renderedContext}\nEND AUTHORISED CONTEXT`},
@@ -97,11 +108,25 @@ export class StructuredChatLoopProvider {
     const observations: ModelInvocationObservation[] = [];
     const evidence: string[] = [];
     const toolTranscript: Array<{turn: number; tool: string; resultHash: string}> = [];
+    const projector = new LeanResultProjector();
+    this.options.lean?.recordEvidence({kind: 'context_projection', recipeId: recipe.id, sources: contextSources, modelSourceIds: modelSources.map(source => source.id)});
 
-    for (let turn = 1; turn <= maximumTurns; turn++) {
+    for (let turn = 1; turn <= maximumTurns + (this.options.lean?.terminalAllowance ? 1 : 0); turn++) {
       const signals = [tools.signal, this.options.signalForRecipe?.(recipe)].filter((item): item is AbortSignal => Boolean(item));
       const externalSignal = signals.length ? AbortSignal.any(signals) : undefined;
       tools.assertActive();
+      if (turn > maximumTurns && !tools.beginTerminalAllowance?.()) return failed(`structured_chat_loop_turn_limit:${maximumTurns}`, observations, evidence);
+      const exposedIds = this.options.lean ? new Set(tools.modelToolIds!()) : granted;
+      const exposedSchemas = schemas.filter(schema => exposedIds.has(schema.id));
+      if (this.options.lean) messages[0] = {role: 'system', content: `${renderSystemInstructions(exposedSchemas, this.options.finishToolId)}\n\n${agentControlInstructions}`};
+      if (turn > maximumTurns && this.options.lean?.deterministicTerminal && exposedSchemas.length === 1 && exposedSchemas[0].id === this.options.finishToolId && this.leanValidators.get(this.options.finishToolId)?.({})) {
+        tools.assertActive();
+        const finishResult = await tools.invoke(this.options.finishToolId, {});
+        tools.assertActive();
+        const result = {providerId: this.options.providerId, modelId: this.options.modelId, turns: observations.length, finishTool: this.options.finishToolId, finishResult, toolTranscript, deterministicTerminal: true};
+        this.options.lean.recordEvidence({kind: 'deterministic_terminal', recipeId: recipe.id, result, potentialModelCallsAvoided: 1});
+        return {resultRef: JSON.stringify(result), confidence: .5, fingerprint: createHash('sha256').update(stableJson(result)).digest('hex'), evidence: [...evidence, 'deterministic_terminal:independent_verification_still_required'], invocations: observations};
+      }
       if (externalSignal?.aborted) return failed('structured_chat_loop_cancelled', observations, evidence, 'CANCELLED');
       const remainingMs = deadline - Date.now();
       if (remainingMs <= 0) return failed('structured_chat_loop_timeout', observations, evidence);
@@ -126,6 +151,9 @@ export class StructuredChatLoopProvider {
         return failed(boundedError(error), observations, [...evidence, `provider_response_sha256:${responseHash}`]);
       }
       observations.push(this.observation(recipe, contextSources, messages, turn, startedAt, completedAt, response.body, [request.tool], responseHash, undefined, response.requestPrefixSha256));
+      this.options.lean?.recordEvidence({kind: 'model_invocation', recipeId: recipe.id, turn, messages: structuredClone(messages), response: response.body, exposedToolIds: [...exposedIds]});
+      if (this.options.lean && !exposedSchemas.some(schema => schema.id === request.tool)) throw withObservations(new Error(`tool_policy_denied:lean_hidden_tool:${request.tool}`), observations, evidence);
+      if (this.options.lean && !this.leanValidators.get(request.tool)?.(request.input ?? {})) throw withObservations(new Error('tool_policy_denied:lean_input_schema'), observations, evidence);
       evidence.push(`provider_response:${response.body.id ?? responseHash.slice(0, 16)}`, `provider_response_sha256:${responseHash}`);
       messages.push({role: 'assistant', content});
       let output: unknown;
@@ -139,7 +167,9 @@ export class StructuredChatLoopProvider {
       }
       externalSignal?.throwIfAborted();
       tools.assertActive();
-      const serialized = boundedJson(output, maximumToolResultBytes);
+      const projection = this.options.lean ? projector.project(output, turn) : undefined;
+      this.options.lean?.recordEvidence({kind: 'tool_result', recipeId: recipe.id, turn, tool: request.tool, output, projection});
+      const serialized = projection && projection.rawBytes <= maximumToolResultBytes ? projection.content : boundedJson(output, maximumToolResultBytes);
       const resultHash = createHash('sha256').update(serialized).digest('hex');
       toolTranscript.push({turn, tool: request.tool, resultHash});
       evidence.push(`tool_executed:${request.tool}`, `tool_result_sha256:${resultHash}`);
@@ -189,11 +219,16 @@ export class StructuredChatLoopProvider {
       content: messages.slice(2).map(message => `${message.role}:${message.content}`).join('\n'),
       required: true, persistent: false, relevance: 1, provenanceIds: [recipe.fingerprint],
     }] : [];
-    const startupSources: ContextPacketSource[] = [
+    let startupSources: ContextPacketSource[] = [
       {id: `${recipe.id}:loop-system`, kind: 'system_instructions', content: renderSystemInstructions(this.schemas.filter(schema => recipe.tools.some(tool => tool.id === schema.id)), this.options.finishToolId), required: true, persistent: true, relevance: 1, provenanceIds: [recipe.fingerprint]},
       {id: `${recipe.id}:loop-control`, kind: 'agent_control_instructions', content: 'Agent Control owns tool authorization, leases, human takeover, cancellation and independent verification.', required: true, persistent: true, relevance: 1, provenanceIds: [recipe.fingerprint]},
       {id: `${recipe.id}:loop-tools`, kind: 'tool_schemas', content: JSON.stringify(this.schemas.filter(schema => recipe.tools.some(tool => tool.id === schema.id))), required: true, persistent: true, relevance: 1, provenanceIds: [recipe.fingerprint]},
       ...sources,
+      ...conversation,
+    ];
+    if (this.options.lean) startupSources = [
+      {id: `${recipe.id}:lean-system`, kind: 'system_instructions', content: messages[0].content, required: true, persistent: true, relevance: 1, provenanceIds: [recipe.fingerprint]},
+      {id: `${recipe.id}:lean-authorised-context`, kind: 'task_context', content: messages[1].content, required: true, persistent: true, relevance: 1, provenanceIds: [recipe.fingerprint]},
       ...conversation,
     ];
     return createInvocationObservation({
