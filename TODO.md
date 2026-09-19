@@ -1,6 +1,6 @@
 # Agent Control follow-up
 
-## After the 4.11 governed model-improvement candidate
+## After the 4.11 governed model-improvement release
 
 - [ ] Qualify additional intervention ladder levels on real, already-authorised models; every result remains model/runtime/hardware specific.
 - [ ] Add optional bounded canary routing only when deterministic allocation and rollback can be represented without invented percentages.

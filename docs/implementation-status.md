@@ -1,6 +1,6 @@
 # Implementation status
 
-Release boundary: **4.10.0**. Registry updated: **2026-09-19**.
+Release boundary: **4.11.0**. Registry updated: **2026-09-19**.
 
 This document is generated from `config/implementation-status.json`. Update the registry and run `npm run status:implementation -- --write`; do not edit this projection directly. `IMPLEMENTED` means executable source and focused tests exist. `QUALIFIED` additionally requires recorded real evidence. `PARTIAL`, `PLANNED` and `NOT_IMPLEMENTED` remain explicit gaps.
 
@@ -71,6 +71,7 @@ This document is generated from `config/implementation-status.json`. Update the 
 | Automatic governed recipe learning (`recipes.automatic-learning`) | **PLANNED** | Successive halving exists, but winners are not automatically promoted into a durable governed recipe catalog. | Persist qualification evidence and require policy approval before learned recipes influence routing. |
 | Dynamic Work Board and parallel lane scheduling (`planning.dynamic-work-board`) | **IMPLEMENTED** | A durable user-controlled plan records ordering, priority, lanes, dependencies, blockers, approvals, resource conflicts and linked runs. Compatible independent work may execute in parallel while Agent Control Jobs and Work Parcels retain execution authority. | Some restart scenarios are automated-test qualified rather than separately physical. The dashboard does not yet provide a complete containment and recovery timeline. |
 | Hierarchical containment and quarantine scheduling fence (`safety.hierarchical-containment`) | **IMPLEMENTED** | Scheduler-independent containment governs job, lane, worker, model, node, workspace and Estate scopes. Durable worker/node quarantine excludes a route before health, priority or preference and survives reconnect and controller restart until evidenced recovery reaches AVAILABLE. | There is no distinct runtime kill scope. Pixel and remote containment are unqualified; runtime routes inherit stable Worker/Node containment authority. |
+| Governed Model Improvement Loop (`models.governed-improvement`) | **QUALIFIED** | Evidence-backed weaknesses create durable opportunities against immutable baselines; isolated candidates are evaluated through the improvement ladder and may reach production only through a sealed proposal, exact candidate-bound approval, an allow-listed intervention adapter, independent applied-effect observation and a receipt-backed rollback path. | Only the PROMPT intervention is physically qualified, using a disposable prompt route above an immutable Qwen2.5 3B service. Generic canary allocation is not implemented, and arbitrary production-route promotion remains unqualified. |
 
 ## Evidence map
 
@@ -453,3 +454,9 @@ This document is generated from `config/implementation-status.json`. Update the 
 - Source: [`src/control/containment.ts`](../src/control/containment.ts), [`src/control/work-board.ts`](../src/control/work-board.ts), [`src/index.ts`](../src/index.ts), [`src/web.ts`](../src/web.ts)
 - Tests: [`src/control/governance-containment.test.ts`](../src/control/governance-containment.test.ts), [`src/control/work-board.test.ts`](../src/control/work-board.test.ts), [`src/control/work-board-web.test.ts`](../src/control/work-board-web.test.ts)
 - Qualification evidence: [`docs/dynamic-work-board.md`](../docs/dynamic-work-board.md), [`docs/evidence/QUARANTINE_SCHEDULING_QUALIFICATION.md`](../docs/evidence/QUARANTINE_SCHEDULING_QUALIFICATION.md)
+
+### Governed Model Improvement Loop
+
+- Source: [`src/control/model-improvement.ts`](../src/control/model-improvement.ts), [`src/control/model-intervention.ts`](../src/control/model-intervention.ts), [`src/control/web-server.ts`](../src/control/web-server.ts), [`assets/dashboard/dashboard-models.js`](../assets/dashboard/dashboard-models.js)
+- Tests: [`src/control/model-improvement.test.ts`](../src/control/model-improvement.test.ts), [`src/control/model-improvement-web.test.ts`](../src/control/model-improvement-web.test.ts)
+- Qualification evidence: [`docs/evidence/AGENT_CONTROL_4.11_MODEL_IMPROVEMENT_CANDIDATE.md`](../docs/evidence/AGENT_CONTROL_4.11_MODEL_IMPROVEMENT_CANDIDATE.md), [`docs/evidence/AGENT_CONTROL_4.11_PROMOTION_ROLLBACK_QUALIFICATION.md`](../docs/evidence/AGENT_CONTROL_4.11_PROMOTION_ROLLBACK_QUALIFICATION.md), [`docs/evidence/model-improvement-promotion-rollback-4.11.json`](../docs/evidence/model-improvement-promotion-rollback-4.11.json)

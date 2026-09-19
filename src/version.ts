@@ -1,1 +1,1 @@
-export const AGENT_CONTROL_VERSION = '4.11.0-candidate.1';
+export const AGENT_CONTROL_VERSION = '4.11.0';

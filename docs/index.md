@@ -1,15 +1,16 @@
 # Agent Control documentation
 
-**Stable: [Agent Control 4.10.0](https://github.com/lozknowles/agent-control/releases/tag/v4.10.0).**
+**Stable: [Agent Control 4.11.0](https://github.com/lozknowles/agent-control/releases/tag/v4.11.0).**
 
 - [Install Agent Control](installation-first-run.md)
-- [Upgrade an existing installation](upgrade-4.10.md)
+- [Upgrade an existing installation](upgrade-4.11.md)
 - [Real installation screenshots](public-installation-journey.md)
 - [Meet Mallow and the crew](crew-guide.md)
 - [Troubleshooting](installation-first-run.md#troubleshooting)
-- [Release notes](release-notes-4.10.0.md)
-- [Complete release readiness](release-verification-4.10.0.md)
+- [Release notes](release-notes-4.11.0.md)
+- [Complete release readiness](release-verification-4.11.0.md)
 - [Current and historical limitations ledger](KNOWN_LIMITATIONS.md)
+- [Governed Model Improvement](model-improvement.md)
 - [Dynamic Work Board and hierarchical containment](dynamic-work-board.md)
 - [4.9 reliability qualification retained in 4.10](rebroad-reliability-review-4.9.md)
 - [Nested Execution Environments](nested-execution-environments.md)

@@ -16,7 +16,7 @@ ATLAS is Agent Control's public identity: **Agentic Topology, Lifecycle, Assuran
 
 Discover your AI tools, see what is available, and follow approved work from request to verified result.
 
-**Current release: [4.10.0](https://github.com/lozknowles/agent-control/releases/tag/v4.10.0) — Dynamic Work Board, Parallel Lanes and Governed Containment.** Agent Control now maintains a durable operator-controlled work plan, schedules safe independent lanes concurrently, and prevents quarantined workers from receiving new work until governed recovery returns them to `AVAILABLE`. See the [operator guide](docs/dynamic-work-board.md), [release notes](docs/release-notes-4.10.0.md), [upgrade guide](docs/upgrade-4.10.md), and [release verification](docs/release-verification-4.10.0.md).
+**Current release: [4.11.0](https://github.com/lozknowles/agent-control/releases/tag/v4.11.0) — Governed Model Improvement.** Agent Control can turn evidenced weaknesses into isolated candidates, compare them against immutable baselines, and apply an approved intervention only through a sealed proposal, exact candidate-bound approval, independent effect verification, and receipt-backed rollback. The physical release qualification covers `PROMPT` intervention only. See the [operator and architecture guide](docs/model-improvement.md), [release notes](docs/release-notes-4.11.0.md), [upgrade guide](docs/upgrade-4.11.md), [release verification](docs/release-verification-4.11.0.md), and [Limitations Ledger](docs/KNOWN_LIMITATIONS.md).
 
 The release also incorporates the qualified 4.9 reliability safeguards: governed raw inference, explicit local/API usage accounting, live-writer-safe activity-log repair, protected workspace metadata and cancellation fencing before abort. The optional phone-hosted planning route remains experimental and has no physical end-to-end qualification.
 
@@ -24,7 +24,7 @@ The release also incorporates the qualified 4.9 reliability safeguards: governed
 
 **4.8 nested execution:** [Follow work through nested environments](docs/nested-execution-environments.md) from a physical device through host/guest environments, runtime and worker route to the exact invocation and evidence. Nested capacity is scoped and is never added to physical Estate capacity.
 
-[Install Agent Control](docs/installation-first-run.md) · [Documentation](docs/index.md) · [Upgrade](docs/upgrade-4.10.md) · [Release notes](docs/release-notes-4.10.0.md)
+[Install Agent Control](docs/installation-first-run.md) · [Documentation](docs/index.md) · [Upgrade](docs/upgrade-4.11.md) · [Release notes](docs/release-notes-4.11.0.md)
 
 [![Actual Agent Control Estate Map](docs/media/4.6/integration/estate.png)](docs/public-installation-journey.md)
 
@@ -55,12 +55,12 @@ Mallow is your floating guide. The established crew helps explain dispatch, revi
 
 <a id="install"></a>
 
-## Install Agent Control 4.10.0
+## Install Agent Control 4.11.0
 
 Install on Linux with Node.js 24, npm, Git and Bash:
 
 ```bash
-git clone --branch v4.10.0 https://github.com/lozknowles/agent-control.git
+git clone --branch v4.11.0 https://github.com/lozknowles/agent-control.git
 cd agent-control
 git rev-parse HEAD
 ./scripts/bootstrap-agent-control.sh --check --target "$PWD"
@@ -111,12 +111,12 @@ Model Intelligence now reports real source coverage, initial versus follow-up ob
 
 - [Android / fresh Termux prerequisites](android/README.md#fresh-termux-prerequisites) (separate platform guide)
 - [Installation and troubleshooting](docs/installation-first-run.md#troubleshooting)
-- [Safe existing-install upgrade](docs/upgrade-4.10.md)
+- [Safe existing-install upgrade](docs/upgrade-4.11.md)
 - [Architecture](docs/architecture-v2-agnostic.md)
 - [Governed Model Improvement](docs/model-improvement.md) — immutable baselines, isolated candidates, independent evaluation, Work Board stages and explicit promotion approval
-- [4.11 candidate qualification](docs/evidence/AGENT_CONTROL_4.11_MODEL_IMPROVEMENT_CANDIDATE.md)
+- [4.11 promotion and rollback qualification](docs/evidence/AGENT_CONTROL_4.11_PROMOTION_ROLLBACK_QUALIFICATION.md)
 - [Security](SECURITY.md) and [contributing](CONTRIBUTING.md)
-- [Release notes](docs/release-notes-4.10.0.md)
+- [Release notes](docs/release-notes-4.11.0.md)
 - [Accepted RC assessment and evidence](docs/release-candidate-4.6.md)
 
 Historical versioned reports remain available under `docs/`; use the installation guide above for this release.

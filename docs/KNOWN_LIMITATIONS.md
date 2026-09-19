@@ -217,27 +217,27 @@ No public tag exists for omitted semantic versions such as v3.6.0 or v4.2.0; the
 
 ## Related to the v4.11 Model Improvement Loop
 
-- **AC-LIM-0009 — Providers without streaming usage cannot expose live token/cost counters** (ACCEPTED_LIMITATION). The unfinished v4.11 candidate is not closure evidence.
-- **AC-LIM-0014 — Authoritative provider monetary cost is often unavailable** (EXTERNAL_BLOCKER). The unfinished v4.11 candidate is not closure evidence.
-- **AC-LIM-0018 — Small local model quality remained weak** (ACCEPTED_LIMITATION). The unfinished v4.11 candidate is not closure evidence.
-- **AC-LIM-0019 — Cross-adapter physical portability remained unexercised** (NEEDS_REQUALIFICATION). The unfinished v4.11 candidate is not closure evidence.
-- **AC-LIM-0020 — Retrieval remained opt-in and route-specific** (ACCEPTED_LIMITATION). The unfinished v4.11 candidate is not closure evidence.
-- **AC-LIM-0021 — Authoritative current-context occupancy unavailable on local endpoints** (EXTERNAL_BLOCKER). The unfinished v4.11 candidate is not closure evidence.
-- **AC-LIM-0022 — Preferred routing requires multi-day evidence and approval** (ACCEPTED_LIMITATION). The unfinished v4.11 candidate is not closure evidence.
-- **AC-LIM-0031 — Positive billed-cache behavior and delayed corrections unqualified** (EXTERNAL_BLOCKER). The unfinished v4.11 candidate is not closure evidence.
-- **AC-LIM-0032 — Attributable per-job and baseline electricity unavailable** (EXTERNAL_BLOCKER). The unfinished v4.11 candidate is not closure evidence.
-- **AC-LIM-0033 — Electricity tariff evidence unavailable** (EXTERNAL_BLOCKER). The unfinished v4.11 candidate is not closure evidence.
-- **AC-LIM-0034 — Whole-node energy lacks defensible sensor binding** (EXTERNAL_BLOCKER). The unfinished v4.11 candidate is not closure evidence.
-- **AC-LIM-0035 — Overnight unattended qualification was not physically demonstrated** (NEEDS_REQUALIFICATION). The unfinished v4.11 candidate is not closure evidence.
-- **AC-LIM-0037 — Additional runtime/API and subjective judge adapters incomplete** (OPEN). The unfinished v4.11 candidate is not closure evidence.
-- **AC-LIM-0040 — Voice/model shared-session cost allocation is incomplete** (PARTIALLY_RESOLVED). The unfinished v4.11 candidate is not closure evidence.
-- **AC-LIM-0044 — Whole-node resource samples do not establish per-job CPU/GPU attribution** (PARTIALLY_RESOLVED). The unfinished v4.11 candidate is not closure evidence.
-- **AC-LIM-0052 — Native benchmark model acquisition and runtime portability are limited** (ACCEPTED_LIMITATION). The unfinished v4.11 candidate is not closure evidence.
-- **AC-LIM-0053 — Speculative decoding benefit is exact-combination specific** (ACCEPTED_LIMITATION). The unfinished v4.11 candidate is not closure evidence.
+- **AC-LIM-0009 — Providers without streaming usage cannot expose live token/cost counters** (ACCEPTED_LIMITATION). The v4.11 release does not close this limitation.
+- **AC-LIM-0014 — Authoritative provider monetary cost is often unavailable** (EXTERNAL_BLOCKER). The v4.11 release does not close this limitation.
+- **AC-LIM-0018 — Small local model quality remained weak** (ACCEPTED_LIMITATION). The v4.11 release does not close this limitation.
+- **AC-LIM-0019 — Cross-adapter physical portability remained unexercised** (NEEDS_REQUALIFICATION). The v4.11 release does not close this limitation.
+- **AC-LIM-0020 — Retrieval remained opt-in and route-specific** (ACCEPTED_LIMITATION). The v4.11 release does not close this limitation.
+- **AC-LIM-0021 — Authoritative current-context occupancy unavailable on local endpoints** (EXTERNAL_BLOCKER). The v4.11 release does not close this limitation.
+- **AC-LIM-0022 — Preferred routing requires multi-day evidence and approval** (ACCEPTED_LIMITATION). The v4.11 release does not close this limitation.
+- **AC-LIM-0031 — Positive billed-cache behavior and delayed corrections unqualified** (EXTERNAL_BLOCKER). The v4.11 release does not close this limitation.
+- **AC-LIM-0032 — Attributable per-job and baseline electricity unavailable** (EXTERNAL_BLOCKER). The v4.11 release does not close this limitation.
+- **AC-LIM-0033 — Electricity tariff evidence unavailable** (EXTERNAL_BLOCKER). The v4.11 release does not close this limitation.
+- **AC-LIM-0034 — Whole-node energy lacks defensible sensor binding** (EXTERNAL_BLOCKER). The v4.11 release does not close this limitation.
+- **AC-LIM-0035 — Overnight unattended qualification was not physically demonstrated** (NEEDS_REQUALIFICATION). The v4.11 release does not close this limitation.
+- **AC-LIM-0037 — Additional runtime/API and subjective judge adapters incomplete** (OPEN). The v4.11 release does not close this limitation.
+- **AC-LIM-0040 — Voice/model shared-session cost allocation is incomplete** (PARTIALLY_RESOLVED). The v4.11 release does not close this limitation.
+- **AC-LIM-0044 — Whole-node resource samples do not establish per-job CPU/GPU attribution** (PARTIALLY_RESOLVED). The v4.11 release does not close this limitation.
+- **AC-LIM-0052 — Native benchmark model acquisition and runtime portability are limited** (ACCEPTED_LIMITATION). The v4.11 release does not close this limitation.
+- **AC-LIM-0053 — Speculative decoding benefit is exact-combination specific** (ACCEPTED_LIMITATION). The v4.11 release does not close this limitation.
 
-## v4.11 candidate reconciliation
+## v4.11 release reconciliation
 
-The v4.11 candidate carries all 59 audited v4.10 records forward and adds three records. It does not close or rewrite any historical item.
+The v4.11 release carries all 59 audited v4.10 records forward and adds three records. It does not close or rewrite any historical item.
 
 - **AC-LIM-0060 — Only PROMPT intervention application is physically qualified** (`NEEDS_REQUALIFICATION`). The contract is generic; other adapter kinds remain unqualified.
 - **AC-LIM-0061 — Generic canary allocation is not implemented** (`ACCEPTED_LIMITATION`). No simulated percentage routing is presented as operational control.
