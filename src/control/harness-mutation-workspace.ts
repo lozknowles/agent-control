@@ -8,6 +8,7 @@ import type {ToolHandlerBinding} from './harness-dispatch.js';
 import type {MutationBenchmarkTask} from './harness-mutation-benchmark.js';
 import {OwnedProcessManager, type OwnedExecution, type ExecutionCleanupReport} from './owned-process.js';
 import type {StructuredChatToolSchema} from './structured-chat-loop-provider.js';
+import {assertWorkspaceMetadataAccess,protectedMetadataDecision} from './protected-workspace-metadata.js';
 
 export const MUTATION_TOOL_IDS = Object.freeze({
   read: 'mutation.repository.read',
@@ -214,6 +215,7 @@ export class MutationWorkspace {
 
   private authorizeExisting(value: unknown) {
     const relative = validRelative(value);
+    assertWorkspaceMetadataAccess(relative,'READ');
     const resolved = path.resolve(this.root, relative);
     if (!fs.existsSync(resolved)) throw new Error('mutation_workspace_path_missing');
     const real = fs.realpathSync(resolved);
@@ -230,6 +232,7 @@ export class MutationWorkspace {
 
   private authorizeWritable(value: unknown, allowMissing: boolean) {
     const relative = validRelative(value);
+    assertWorkspaceMetadataAccess(relative,fs.existsSync(path.resolve(this.root,relative))?'WRITE':'CREATE');
     if (!this.task.allowedFiles.includes(relative)) throw new Error(`mutation_scope_violation:${relative}`);
     const resolved = path.resolve(this.root, relative);
     this.assertInside(resolved);
@@ -247,7 +250,8 @@ export class MutationWorkspace {
     if (fs.statSync(target).isFile()) return [target];
     const output: string[] = [];
     for (const entry of fs.readdirSync(target, {withFileTypes: true})) {
-      if (['.git', 'node_modules'].includes(entry.name) || entry.isSymbolicLink()) continue;
+      const relative=this.relative(path.join(target,entry.name));
+      if (['.git', 'node_modules'].includes(entry.name) || entry.isSymbolicLink() || protectedMetadataDecision(relative,'READ').verdict==='UNAVAILABLE') continue;
       const child = path.join(target, entry.name);
       if (entry.isDirectory()) output.push(...this.filesUnder(child));
       else if (entry.isFile() && fs.statSync(child).size <= 512_000 && !binaryFile(child)) output.push(child);
@@ -272,12 +276,13 @@ export function fixtureContentSha256(root: string): string {
   return hash.digest('hex');
 }
 
-function walk(root: string): string[] {
+function walk(root: string, base = root): string[] {
   const output: string[] = [];
   for (const entry of fs.readdirSync(root, {withFileTypes: true})) {
-    if (['.git', 'node_modules'].includes(entry.name) || entry.isSymbolicLink()) continue;
     const child = path.join(root, entry.name);
-    if (entry.isDirectory()) output.push(...walk(child)); else if (entry.isFile()) output.push(child);
+    const relative = path.relative(base, child).split(path.sep).join('/');
+    if (['.git', 'node_modules'].includes(entry.name) || entry.isSymbolicLink() || protectedMetadataDecision(relative, 'READ').verdict === 'UNAVAILABLE') continue;
+    if (entry.isDirectory()) output.push(...walk(child, base)); else if (entry.isFile()) output.push(child);
   }
   return output;
 }

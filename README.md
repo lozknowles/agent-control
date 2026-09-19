@@ -20,6 +20,8 @@ Discover your AI tools, see what is available, and follow approved work from req
 
 The release also adds a [conventional JSONL activity log](docs/activity-log.md) for `tail -f`, `jq`, logrotate and standard ingestion tools. It is a redacted operational projection of authoritative Job events, never a second event authority.
 
+**4.9 follow-up candidate:** [Rebroad reliability review](docs/rebroad-reliability-review-4.9.md) documents the isolated, unreleased direct-inference, live-writer repair, workspace-metadata and cancellation-ordering work. It does not change the immutable public `v4.9.0` tag.
+
 **4.8 workspace navigation:** [Operator guide, CLI and API](docs/navigable-workspaces.md) · [Architectural review and Rune comparison](NAVIGABLE_WORKSPACES_REVIEW.md) · [Visual evidence](docs/evidence/navigable-workspaces-4.8.md). Navigation does not grant execution authority or create a second topology.
 
 **4.8 nested execution:** [Follow work through nested environments](docs/nested-execution-environments.md) from a physical device through host/guest environments, runtime and worker route to the exact invocation and evidence. Nested capacity is scoped and is never added to physical Estate capacity.

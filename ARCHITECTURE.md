@@ -1156,3 +1156,9 @@ mutation; acquisition, renewal, release, forced release and denial are durable
 hash-verified events. Read-only retrieval remains safe during a conflicting
 continuation attempt. See [Session Vault architecture](docs/session-vault.md)
 and [threat model](docs/session-vault-threat-model.md).
+
+## Raw inference and writable-workspace governance
+
+The Lab may request a single qualified model invocation through `DirectInferenceRuntime`. This route is explicitly `RAW_INFERENCE`; it bypasses agent/tool loops but does not bypass model qualification, credential profiles, target binding, timeouts, cancellation, redaction, usage accounting or operator authentication. A returned tool call is a contract failure. The existing harness ledger remains the accounting authority and a content-addressed evidence object retains the exact redacted request and response.
+
+Write authority over ordinary workspace content is separate from governance metadata authority. `protected-workspace-metadata.ts` provides the platform-neutral decision. Writable adapters must enforce it or report degraded/blocked support; they cannot infer that `.git`, Agent Control/Codex control directories, instructions, parcel/baton records or evidence integrity files are writable merely because their parent workspace is writable.

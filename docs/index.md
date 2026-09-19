@@ -9,6 +9,7 @@
 - [Troubleshooting](installation-first-run.md#troubleshooting)
 - [Release notes](release-notes-4.9.0.md)
 - [Complete release readiness](release-verification-4.9.0.md)
+- [4.9 Rebroad reliability follow-up candidate](rebroad-reliability-review-4.9.md)
 - [Nested Execution Environments](nested-execution-environments.md)
 - [Native runtime benchmarking](running-your-first-benchmark.md)
 - [Speculative decoding qualification](speculative-decoding-qualification.md)
