@@ -235,6 +235,16 @@ No public tag exists for omitted semantic versions such as v3.6.0 or v4.2.0; the
 - **AC-LIM-0052 — Native benchmark model acquisition and runtime portability are limited** (ACCEPTED_LIMITATION). The unfinished v4.11 candidate is not closure evidence.
 - **AC-LIM-0053 — Speculative decoding benefit is exact-combination specific** (ACCEPTED_LIMITATION). The unfinished v4.11 candidate is not closure evidence.
 
+## v4.11 candidate reconciliation
+
+The v4.11 candidate carries all 59 audited v4.10 records forward and adds three records. It does not close or rewrite any historical item.
+
+- **AC-LIM-0060 — Only PROMPT intervention application is physically qualified** (`NEEDS_REQUALIFICATION`). The contract is generic; other adapter kinds remain unqualified.
+- **AC-LIM-0061 — Generic canary allocation is not implemented** (`ACCEPTED_LIMITATION`). No simulated percentage routing is presented as operational control.
+- **AC-LIM-0062 — Promotion scope is qualified only on a disposable prompt route** (`NEEDS_REQUALIFICATION`). Arbitrary production routes require their own evidence.
+
+Existing limitations for provider monetary cost, attributable experiment energy, tariffs, whole-node sensor binding, and model-improvement break-even remain unchanged. The release gate checks accounting integrity; accepted and external limitations do not fail a release merely because they remain visible.
+
 ## Silent-drop and stale-document review
 
 The ledger flags limitations that disappeared from later release summaries without suitable closure evidence as `SILENTLY_DROPPED`. Their source documents are historical, not wrong. No current v4.10 operational document was proven stale enough to rewrite during this audit. Future documentation should link this ledger instead of copying a release-specific list.

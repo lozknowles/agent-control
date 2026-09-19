@@ -46,6 +46,11 @@ export async function validateLimitationsLedger(path = new URL("../evidence/limi
     fail(Array.isArray(item.limitationSources), `missing limitation sources: ${item.release}`);
   }
 
+  if (ledger.candidateRelease) {
+    fail(/^v\d+\.\d+\.\d+$/.test(ledger.candidateRelease), "candidate release is invalid");
+    releases.add(ledger.candidateRelease);
+  }
+
   const ids = new Set();
   for (const [index, record] of (ledger.records ?? []).entries()) {
     const expected = `AC-LIM-${String(index + 1).padStart(4, "0")}`;

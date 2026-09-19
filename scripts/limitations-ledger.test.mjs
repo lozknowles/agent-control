@@ -10,7 +10,7 @@ test("historical limitations ledger is internally consistent", async () => {
   assert.equal(ledger.historicalMetrics.at(-1).totalKnownOpenAfterRelease, 53);
 });
 
-test("unfinished v4.11 work is relationship-only", async () => {
+test("v4.11 does not retroactively close audited historical limitations", async () => {
   const { ledger } = await validateLimitationsLedger();
   const related = ledger.records.filter((record) => record.flags.includes("RELATED_TO_V4_11"));
   assert.ok(related.length > 0);

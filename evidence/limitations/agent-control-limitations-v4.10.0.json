@@ -1,6 +1,6 @@
 {
   "schema": "agent-control.limitations-ledger/v1",
-  "generatedAt": "2026-09-19T12:00:00Z",
+  "generatedAt": "2026-09-19T00:00:00Z",
   "authoritativeComparisonRelease": "v4.10.0",
   "authoritativeComparisonCommit": "6102d4889a836c6477cd70d574df9fadee9cea4a",
   "auditMethod": {
@@ -2583,97 +2583,6 @@
       "flags": [],
       "closureClass": "ENGINEERING",
       "notes": ""
-    },
-    {
-      "id": "AC-LIM-0060",
-      "title": "Only PROMPT intervention application is physically qualified",
-      "originalWording": "Intervention types other than PROMPT have a generic contract but no physically qualified application adapter.",
-      "firstReleaseObserved": "v4.11.0",
-      "firstEvidenceReference": "v4.11.0:docs/evidence/AGENT_CONTROL_4.11_PROMOTION_ROLLBACK_QUALIFICATION.md",
-      "affectedSubsystem": "Model improvement",
-      "severity": null,
-      "qualificationType": "PHYSICAL",
-      "affectedPlatformDeviceProvider": [],
-      "subsequentAppearances": [],
-      "relatedCommitsOrPRs": [],
-      "currentStatus": "NEEDS_REQUALIFICATION",
-      "latestRelevantRelease": "v4.11.0",
-      "resolutionRelease": null,
-      "resolutionEvidence": [],
-      "qualification": {
-        "implementation": "PARTIAL",
-        "automated": "PASS",
-        "physical": "PARTIAL",
-        "production": "NOT_QUALIFIED"
-      },
-      "evidenceReferences": [
-        "v4.11.0:docs/evidence/AGENT_CONTROL_4.11_PROMOTION_ROLLBACK_QUALIFICATION.md"
-      ],
-      "flags": [],
-      "closureClass": "QUALIFICATION_ONLY",
-      "notes": "PROMPT was physically qualified on a disposable Qwen route. Other declared kinds are vocabulary for future adapters, not claims of support."
-    },
-    {
-      "id": "AC-LIM-0061",
-      "title": "Generic canary allocation is not implemented",
-      "originalWording": "The Model Improvement Loop has no honest generic percentage or canary allocation mechanism.",
-      "firstReleaseObserved": "v4.11.0",
-      "firstEvidenceReference": "v4.11.0:docs/model-improvement.md",
-      "affectedSubsystem": "Model improvement",
-      "severity": null,
-      "qualificationType": "AUTOMATED",
-      "affectedPlatformDeviceProvider": [],
-      "subsequentAppearances": [],
-      "relatedCommitsOrPRs": [],
-      "currentStatus": "ACCEPTED_LIMITATION",
-      "latestRelevantRelease": "v4.11.0",
-      "resolutionRelease": null,
-      "resolutionEvidence": [],
-      "qualification": {
-        "implementation": "NOT_IMPLEMENTED",
-        "automated": "NOT_QUALIFIED",
-        "physical": "NOT_APPLICABLE",
-        "production": "NOT_QUALIFIED"
-      },
-      "evidenceReferences": [
-        "v4.11.0:docs/model-improvement.md"
-      ],
-      "flags": [],
-      "closureClass": "ACCEPTED",
-      "notes": "No simulated percentage routing is exposed. Future work requires a real qualified allocation mechanism."
-    },
-    {
-      "id": "AC-LIM-0062",
-      "title": "Promotion scope is qualified only on a disposable prompt route",
-      "originalWording": "Applied promotion and rollback are physically qualified only for a disposable Qwen prompt-route configuration, not arbitrary production routes.",
-      "firstReleaseObserved": "v4.11.0",
-      "firstEvidenceReference": "v4.11.0:docs/evidence/AGENT_CONTROL_4.11_PROMOTION_ROLLBACK_QUALIFICATION.md",
-      "affectedSubsystem": "Model improvement",
-      "severity": null,
-      "qualificationType": "PHYSICAL",
-      "affectedPlatformDeviceProvider": [
-        "Linux qualification node",
-        "Qwen2.5 3B",
-        "llama.cpp"
-      ],
-      "subsequentAppearances": [],
-      "relatedCommitsOrPRs": [],
-      "currentStatus": "NEEDS_REQUALIFICATION",
-      "latestRelevantRelease": "v4.11.0",
-      "resolutionRelease": null,
-      "resolutionEvidence": [],
-      "qualification": {
-        "implementation": "PRESENT",
-        "automated": "PASS",
-        "physical": "PARTIAL",
-        "production": "NOT_QUALIFIED"
-      },
-      "evidenceReferences": [
-        "v4.11.0:docs/evidence/AGENT_CONTROL_4.11_PROMOTION_ROLLBACK_QUALIFICATION.md"
-      ],
-      "flags": [],
-      "closureClass": "QUALIFICATION_ONLY",
-      "notes": "The adapter is allow-listed and fail-closed. Production route qualification remains target-specific."
     }
   ],
   "historicalMetrics": [
@@ -2957,6 +2866,5 @@
       "explicitReappearances": 0,
       "totalKnownOpenAfterRelease": 53
     }
-  ],
-  "candidateRelease": "v4.11.0"
+  ]
 }

@@ -17,5 +17,5 @@ test('model improvement API is read protected, mutation protected, and rendered 
   assert.equal((await fetch(base+'/api/model-improvement/mode',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'ANALYSE_ONLY'})})).status,401);
   const changed=await(await fetch(base+'/api/model-improvement/mode',{method:'POST',headers,body:JSON.stringify({mode:'ANALYSE_ONLY'})})).json() as {mode:string};assert.equal(changed.mode,'ANALYSE_ONLY');
   const projection=await(await fetch(base+'/api/model-improvement',{headers})).json() as {schema:string;mode:string};assert.equal(projection.schema,'agent-control.model-improvement-projection/v1');assert.equal(projection.mode,'ANALYSE_ONLY');
-  const html=await(await fetch(base+'/')).text(),source=await(await fetch(base+'/dashboard-models.js')).text();assert.match(html,/Model Improvement/);assert.match(source,/Approve promotion/);assert.match(source,/Production routing changes only after explicit approval/);
+  const html=await(await fetch(base+'/')).text(),source=await(await fetch(base+'/dashboard-models.js')).text();assert.match(html,/Model Improvement/);assert.match(source,/Approve exact proposal/);assert.match(source,/PROMOTED appears only after adapter application/);assert.match(source,/applied effect/);assert.match(source,/rollback/);
 });
