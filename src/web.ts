@@ -55,7 +55,7 @@ import {ConfigurationStore} from './control/configuration-store.js';
 import {CapabilityAdapterRegistry,RegisteredCapabilityDiscoveryAdapter} from './control/capability-adapter-registry.js';
 import {InstallationLifecycle} from './control/installation-lifecycle.js';
 import {DirectInferenceRuntime,FileDirectInferenceEvidenceStore} from './control/direct-inference.js';
-import {WorkBoardRuntime} from './control/work-board.js';
+import {schedulerContainmentScopes,WorkBoardRuntime} from './control/work-board.js';
 import {ContainmentSupervisor} from './control/containment.js';
 
 const now = () => new Date().toISOString();
@@ -70,8 +70,8 @@ for (const provider of providersFromConfig(config.providers)) providers.register
 if (process.platform === 'linux') for (const discovery of toPtyDiscoveries(discoverLinuxPtys())) { const lane = state.lanes.find(item => discovery.cwd === item.contract.cwd || discovery.cwd.startsWith(`${item.contract.cwd}/`)); ptys.upsert(discovery, lane ? String(lane.id) : null); }
 const queue = new WorkQueueStore().load();
 const stateRoot = path.resolve(process.env.AGENT_CONTROL_STATE_DIR || '.agent-control');
-const workBoards=new WorkBoardRuntime(path.join(stateRoot,'work-boards','boards.json'));
 const containment=new ContainmentSupervisor(path.join(stateRoot,'containment','records.json'));
+const workBoards=new WorkBoardRuntime(path.join(stateRoot,'work-boards','boards.json'),undefined,{evaluate:resource=>containment.schedulingEligibility(schedulerContainmentScopes(resource))});
 const codexHome=process.env.CODEX_HOME??path.join(process.env.HOME??process.cwd(),'.codex');
 const sessionVault=new SessionVaultRuntime(new ImmutableSessionVault(path.join(stateRoot,'session-vault')),[new CodexSessionAdapter([path.join(codexHome,'sessions'),path.join(codexHome,'archived_sessions')],process.env.AGENT_CONTROL_NODE_ID??'controller')],{sensitivity:'RESTRICTED',redactSensitive:true});
 const capabilityIntelligence = new CapabilityIntelligenceStore(path.join(stateRoot, 'capabilities', 'intelligence.json'));

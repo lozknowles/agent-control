@@ -16,7 +16,7 @@ import {controlRoomView} from './ui/control-room.js';
 import {AndroidRecovery, type AndroidRecoveryState} from './control/android-recovery.js';
 import {AgentControlService} from './control/application-service.js';
 import {startWebDashboard} from './control/web-server.js';
-import {WorkBoardRuntime} from './control/work-board.js';
+import {schedulerContainmentScopes,WorkBoardRuntime} from './control/work-board.js';
 import {ContainmentSupervisor} from './control/containment.js';
 import {ContextStore} from './control/context.js';
 import {buildGovernedRetrievalRuntime, buildJobRuntime, buildParameterizedJobRuntime, startJobScheduler, startManagedNodeMonitoring, startParameterizedJobScheduler} from './control/job-bootstrap.js';
@@ -55,8 +55,8 @@ for (const provider of providersFromConfig(config.providers)) providers.register
 const queueStore = new WorkQueueStore();
 let workQueue = queueStore.load();
 const stateRoot = path.resolve(process.env.AGENT_CONTROL_STATE_DIR || '.agent-control');
-const workBoards=new WorkBoardRuntime(path.join(stateRoot,'work-boards','boards.json'));
 const containment=new ContainmentSupervisor(path.join(stateRoot,'containment','records.json'));
+const workBoards=new WorkBoardRuntime(path.join(stateRoot,'work-boards','boards.json'),undefined,{evaluate:resource=>containment.schedulingEligibility(schedulerContainmentScopes(resource))});
 const capabilityIntelligence = new CapabilityIntelligenceStore(path.join(stateRoot, 'capabilities', 'intelligence.json'));
 registerAgentControlCoreCapabilities(capabilityIntelligence);
 const modelIntelligence = new ModelIntelligenceLedger(path.join(stateRoot, 'models', 'intelligence.json'));

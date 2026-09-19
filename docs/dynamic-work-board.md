@@ -29,6 +29,12 @@ Kill scopes are hierarchical: job, lane, worker, model, node, workspace and esta
 
 The dashboard always previews affected and preserved owners before a kill request. Outcomes distinguish `STOP_REQUESTED`, `STOP_CONFIRMED`, and unconfirmed termination. Uncertain cleanup, lost lease revocation or failed isolation quarantines the owner. Return to service requires the evidenced sequence `KILLED → QUARANTINED → INSPECTED → RESET → REQUALIFIED → AVAILABLE`.
 
+### Quarantine scheduling fence
+
+Work Board reconciliation consumes the same persisted containment records used by the kill supervisor. A compatible resource whose stable worker or node scope has an effective quarantine record is excluded before availability, health, priority or route preference is considered. Reconnects and new session generations do not change the durable worker/node identity and therefore cannot bypass the fence. When no eligible alternative remains, the item is `BLOCKED` with `QUALIFIED WORKER QUARANTINED — NOT ELIGIBLE FOR SCHEDULING`; lower-priority independent work may still proceed.
+
+Only the governed recovery sequence ending in `AVAILABLE` removes the fence. Health recovery, process restart, controller restart and lease acquisition do not. Scheduler decisions retain excluded resource identities and the containment reason, and the dashboard renders that exclusion. Existing active work remains controlled by the containment record; terminal killed or cancelled items are outside the reconciliation candidate set and cannot be resurrected.
+
 ## Typed outbound worker transport
 
 The experimental transport contract accepts typed hello, lease, status, result, cancel, heartbeat and capability frames. It binds authenticated worker identity, session generation, sequence, rate/size limits and expiring leases. It is not a shell, filesystem channel, HTTP tunnel or arbitrary payload transport. Revoked, expired or previous-generation results are rejected.
