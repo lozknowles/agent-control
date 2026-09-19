@@ -41,7 +41,7 @@ Every experiment uses a sealed execution-scope envelope. Candidate output is the
 
 Comparison may contain quality, performance, resources, tokens, monetary cost, energy, and safety metrics. Each value includes an authority. Missing measurements remain `UNAVAILABLE`; they are never converted to zero. Break-even workload count is calculated only when one-time cost and per-job saving share a known unit and authority.
 
-Security findings quarantine the candidate. Protected regressions reject it. An inconclusive result stays inconclusive. A positive comparison enters `AWAITING_PROMOTION_APPROVAL`; the authenticated operator must approve the exact candidate hash. Rollback retains the previous route reference and quarantines the promoted candidate.
+Security findings quarantine the candidate. Protected regressions reject it. An inconclusive result stays inconclusive. A positive comparison enters `AWAITING_PROMOTION_APPROVAL`; the authenticated operator must approve the exact candidate hash. The current candidate records the approval and both route references, but it does not yet apply an intervention-specific production route/configuration effect. Its `PROMOTED` and rollback transitions are therefore lifecycle-contract tests rather than proof of a production mutation. Release requires a governed adapter receipt before those states may be treated as operational facts.
 
 ## API and dashboard
 
@@ -51,6 +51,6 @@ The Models workspace presents opportunities, baseline and candidate identities, 
 
 ## Current boundary
 
-The 4.11 candidate qualifies the generic lifecycle, isolation, Work Board projection, protected API, restart reconstruction, independent comparison, and approval boundary. Physical results must be recorded per experiment. No physical result authorises general automatic training or promotion.
+The 4.11 candidate qualifies the generic lifecycle, isolation, Work Board projection, protected API, restart reconstruction, independent comparison, and approval boundary. The bounded physical run stopped at `AWAITING_PROMOTION_APPROVAL`; no route was changed. Applying and rolling back intervention-specific production configuration remains a release blocker. Physical results must be recorded per experiment. No physical result authorises general automatic training or promotion.
 
 **Agent Control governs model improvement. Models do not govern their own modification.**

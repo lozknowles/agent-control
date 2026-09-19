@@ -2,6 +2,8 @@
 
 ## Executive result
 
+**Candidate result: PASS WITH LIMITATIONS. Release status: BLOCKED.**
+
 This candidate adds a provider-, model-, runtime-, device-, and transport-neutral governed model-improvement lifecycle to the public v4.10.0 architecture. It creates no second orchestrator and grants no model authority over itself. Work Board remains the planning and scheduling surface; containment remains the execution boundary; model intelligence remains the historical measurement source; governed approval remains the only promotion boundary.
 
 ## Existing architecture reused
@@ -57,6 +59,10 @@ The first runner receipt reported `FAIL` because it compared raw `/v1/models` bo
 - Virgin clone/bootstrap: **PASS**; configuration created and `agent-control 4.11.0-candidate.1` reported.
 - v4.10.0 (`6102d4889`) in-place source upgrade: **PASS**; configuration and representative retained history remained byte-identical, initialization reported `UNCHANGED_EMPTY`, and all focused 4.11 tests passed after upgrade.
 - Qualification platform: Linux 6.8.0-139-generic x86_64, Node.js 24.21.0, npm 11.19.0.
+
+## Qualification boundary
+
+The candidate is physically qualified through independent comparison and `AWAITING_PROMOTION_APPROVAL`. The generic approval record binds the exact candidate and intended route references, but it does not itself apply an intervention-specific production routing or configuration effect. Therefore `PROMOTED` and rollback are tested lifecycle records, not physically demonstrated route mutation/restoration. Release remains blocked until the relevant governed route/configuration adapter commits the exact approved candidate and returns an applied-effect receipt; the runtime must enter `PROMOTED` only after that receipt. Canary routing is likewise not implemented because the current routing architecture has no honest generic allocation mechanism.
 
 ## Release boundary
 
