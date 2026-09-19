@@ -122,3 +122,7 @@ The recorded same-model run produced:
 These are provider-reported warm-state token fields, not monetary or cold-cache evidence. The experiment disproves the assumption that always starting THIN is efficient for this model/task suite. It does not support immediate DEEP classification or adaptive escalation, and its 12 unique tasks are below the production gate's 20-task minimum. STANDARD remains the production-safe applied profile while predictions and alternative profiles remain observational/experimental.
 
 Full evidence is in [`harness-mutation-report.md`](harness-mutation-report.md), [`../artifacts/harness-mutation-report.json`](../artifacts/harness-mutation-report.json), and [`../artifacts/harness-mutation-evidence/`](../artifacts/harness-mutation-evidence/).
+
+## Raw inference route
+
+`RAW_INFERENCE` is a one-request Lab route for measuring qualified model behaviour without an agent/tool loop. It is separate from `AGENT_WORKFLOW` in `executionStrategy` and cannot establish tool or agent competence. The authenticated endpoint is `POST /api/lab/direct-inference`; retained evidence is available only to authenticated operators. Input, cached input, cache writes, output, reasoning and total tokens remain null when the provider/runtime does not report them. Local, included, metered and unknown billing classes remain distinct.

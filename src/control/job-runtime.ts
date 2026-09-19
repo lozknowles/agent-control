@@ -332,10 +332,13 @@ export class JobRuntime {
     const controller = this.controllers.get(runId);
     if (controller) {
       if (run.status === 'CANCELLING') return run;
-      controller.abort(reason);
       for (const step of run.steps) if (EXECUTION_OWNED_STEPS.includes(step.status)) { step.status = 'CANCEL_PENDING'; step.waitingReason = 'Termination requested; verifying worker process-tree cleanup'; }
       run.status = 'CANCELLING'; run.errors.push(reason); run.provenance.push({type: 'cancellation', at: now(), detail: 'Abort requested; terminal state and resource release await verified cleanup'});
-      return this.ledger.update(run, 'run.cancel_requested', replacedByRunId ? {replacedByRunId} : undefined);
+      // Persist the fence before signalling the live controller. A completion or
+      // autonomous scheduler tick can therefore never observe an unfenced run.
+      const fenced=this.ledger.update(run, 'run.cancel_requested', replacedByRunId ? {replacedByRunId} : undefined);
+      controller.abort(reason);
+      return fenced;
     }
     for (const step of run.steps) if (!TERMINAL_STEPS.includes(step.status)) { step.status = 'CANCELLED'; step.endedAt = now(); }
     if (this.retainedCleanups.get(run.id)?.size) { run.status = 'CANCELLING'; run.errors.push(reason); this.ledger.update(run, 'run.retained_cleanup_requested'); void this.reconcileRetainedCleanup(run.id, 'CANCELLED'); return this.mustRun(run.id); }

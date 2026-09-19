@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.9 follow-up candidate — unreleased
+
+Adds a governed, tool-free `RAW_INFERENCE` Lab route with qualified model resolution, explicit API/local accounting, provider-reported input/cache/output/reasoning usage and content-addressed evidence. Activity-log repair now preserves an open writer's inode and retains restart-recoverable backup evidence. Writable mutation workspaces protect governance metadata independently of ordinary content authority. Cancellation persists its fence before signalling the live execution.
+
+This is an isolated candidate based on public `v4.9.0`; it is not a new release. See the [gap review](docs/rebroad-reliability-review-4.9.md).
+
 ## 4.9.0 — Governed security audits and conventional activity logging
 
 Adds native six-phase, coverage-led security-audit Jobs with separate finder and verifier evidence, strict verdict schemas, change-aware continuation, authenticated operational surfaces, fail-closed sandbox admission, deterministic reports and retained evidence integrity.

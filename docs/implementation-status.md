@@ -1,11 +1,14 @@
 # Implementation status
 
-Release boundary: **4.9.0**. Registry updated: **2026-09-17**.
+Release boundary: **4.9.0**. Registry updated: **2026-09-19**.
 
 This document is generated from `config/implementation-status.json`. Update the registry and run `npm run status:implementation -- --write`; do not edit this projection directly. `IMPLEMENTED` means executable source and focused tests exist. `QUALIFIED` additionally requires recorded real evidence. `PARTIAL`, `PLANNED` and `NOT_IMPLEMENTED` remain explicit gaps.
 
 | Capability | Status | Executable truth | Remaining boundary |
 | --- | --- | --- | --- |
+| Governed raw direct inference (`lab.raw-direct-inference`) | **IMPLEMENTED** | An authenticated tool-free Lab route resolves an exactly qualified model or role through existing provider/runtime adapters, records RAW_INFERENCE separately from AGENT_WORKFLOW, preserves provider-reported token/cache/reasoning data and retains redacted content-addressed request/response evidence. | One physical local llama.cpp route is qualified. No API route was configured in the isolated candidate; raw inference does not prove agent or tool competence, and no universal monetary budget service is claimed. |
+| Live-writer-safe activity-log repair (`logging.live-writer-safe-repair`) | **IMPLEMENTED** | The operational activity projection can remove malformed, duplicate and non-monotonic rows while retaining an immutable backup, crash journal, canonical inode and verified post-repair digest. | This repair applies to the conventional activity projection. Authoritative Job and evidence ledgers retain their own integrity mechanisms and are not rewritten by it. |
+| Protected writable-workspace governance metadata (`sandbox.protected-workspace-metadata`) | **IMPLEMENTED** | A platform-neutral policy separates ordinary writable content from unavailable governance directories and read-only instruction, policy, parcel, baton and evidence-integrity records; the mutation adapter enforces it before task scope and excludes protected metadata from search and evidence capture. | Linux disposable mutation workspaces are tested. Windows and Android writable-workspace adapters must independently prove enforcement or report degraded/blocked support. |
 | Governed coverage-led security audits (`security.governed-audit`) | **IMPLEMENTED** | A native six-phase Job owns reconnaissance, coverage-led hunting, candidate validation, structured findings, separate record verification, and deterministic reporting. Strict verdict schemas, append-only event hashes, authenticated interfaces, change-aware revalidation, and fail-closed sandbox admission preserve evidence integrity. | Target-controlled execution remains blocked unless every sandbox guarantee is evidenced. Current deterministic verification uses separate invocation contexts on the same controller worker; model-diverse verification is not claimed. |
 | Morrow grounded conversational operator and benchmark designer (`operator.poe-conversational-interface`) | **IMPLEMENTED** | An original state-driven Morrow dashboard and channel-scoped runtime explain focused Agent Control evidence, explicitly preserve unknowns, route optional model phrasing through qualified Model Registry roles, design/fairness-check/version/freeze benchmark proposals, and submit only exact operator-approved plans through the normal registered Job and Work Parcel lifecycle. Authenticated WhatsApp questions reuse the same persona without widening command authority; optional designed OmniVoice records latency and isolates barge-in from executing work. | Deterministic implementation qualification is complete on the isolated branch. The specified real dashboard conversation, real governed benchmark/league update, and genuine OmniVoice exchange remain physical release gates; the supplied section 26 ends mid-sentence and no missing criteria are inferred. |
 | Replaceable governed Social and Voice capabilities (`social-voice.providers`) | **PARTIAL** | Actual enrolled WhatsApp voice intake, untrusted STT, fresh text confirmation, governed AC-3 Work Parcel execution and delivered short voice summary passed. Confirmed requests now retain exact transcription and redacted channel/authentication provenance through the canonical Work Parcel and complete transcript. Human confirmed corrected summary clear. Physical OmniVoice inference passed on P5000 and integrated Intel Arc; provider-neutral boundaries and durable history remain authoritative. | Private pilot only. The 4.0 Pixel continuation physically qualifies authenticated text ingress, adaptive repository-review routing, a Qwen-to-Codex sealed-baton handoff, independent verification and reconciled model-chain accounting. General speech quality, long-duration soak and production deployment remain unqualified. Final 0.9 playback rate has codec/STT evidence but no second handset rating. |
@@ -68,6 +71,24 @@ This document is generated from `config/implementation-status.json`. Update the 
 | Automatic governed recipe learning (`recipes.automatic-learning`) | **PLANNED** | Successive halving exists, but winners are not automatically promoted into a durable governed recipe catalog. | Persist qualification evidence and require policy approval before learned recipes influence routing. |
 
 ## Evidence map
+
+### Governed raw direct inference
+
+- Source: [`src/control/direct-inference.ts`](../src/control/direct-inference.ts), [`src/control/openai-compatible-provider.ts`](../src/control/openai-compatible-provider.ts), [`src/control/web-server.ts`](../src/control/web-server.ts), [`src/web.ts`](../src/web.ts)
+- Tests: [`src/control/direct-inference.test.ts`](../src/control/direct-inference.test.ts), [`src/control/openai-compatible-provider.test.ts`](../src/control/openai-compatible-provider.test.ts)
+- Qualification evidence: [`docs/rebroad-reliability-review-4.9.md`](../docs/rebroad-reliability-review-4.9.md), [`evidence/rebroad-reliability-v4.9/local-direct-inference.json`](../evidence/rebroad-reliability-v4.9/local-direct-inference.json)
+
+### Live-writer-safe activity-log repair
+
+- Source: [`src/control/activity-log.ts`](../src/control/activity-log.ts)
+- Tests: [`src/control/activity-log.test.ts`](../src/control/activity-log.test.ts)
+- Qualification evidence: [`docs/activity-log.md`](../docs/activity-log.md), [`docs/rebroad-reliability-review-4.9.md`](../docs/rebroad-reliability-review-4.9.md)
+
+### Protected writable-workspace governance metadata
+
+- Source: [`src/control/protected-workspace-metadata.ts`](../src/control/protected-workspace-metadata.ts), [`src/control/harness-mutation-workspace.ts`](../src/control/harness-mutation-workspace.ts)
+- Tests: [`src/control/protected-workspace-metadata.test.ts`](../src/control/protected-workspace-metadata.test.ts), [`src/control/harness-mutation-workspace.test.ts`](../src/control/harness-mutation-workspace.test.ts)
+- Qualification evidence: [`docs/rebroad-reliability-review-4.9.md`](../docs/rebroad-reliability-review-4.9.md)
 
 ### Governed coverage-led security audits
 
