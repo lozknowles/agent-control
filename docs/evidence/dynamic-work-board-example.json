@@ -1,0 +1,15 @@
+{
+  "schema": "agent-control.work-board-example/v1",
+  "classification": "SYNTHETIC_ARCHITECTURE_EVIDENCE",
+  "board": {
+    "title": "Release readiness",
+    "workspace": "example-workspace",
+    "lanes": ["implementation", "qualification"],
+    "orderedWork": [
+      {"title": "Containment qualification", "state": "ACTIVE", "priority": "CRITICAL", "interaction": "CHECKPOINT_THEN_PAUSE"},
+      {"title": "Responsive visual review", "state": "WAITING_FOR_DEPENDENCY", "priority": "HIGH", "dependsOn": "Containment qualification"}
+    ]
+  },
+  "killPreview": {"scope": "JOB", "affected": ["example-owned-worker"], "sharedSkipped": ["example-shared-model-server"]},
+  "claims": ["No real process was stopped", "No operational service was modified", "No credentials are present"]
+}
