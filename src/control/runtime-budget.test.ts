@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import test from 'node:test';
-import {resolveGovernedRuntimeBudget} from './runtime-budget.js';
+import {MAX_GOVERNED_ABSOLUTE_JOB_DEADLINE_MS, resolveGovernedRuntimeBudget} from './runtime-budget.js';
 import {StructuredChatLoopProvider} from './structured-chat-loop-provider.js';
 
 const schemas=[{id:'finish',description:'finish',inputSchema:{type:'object',additionalProperties:false}}];
@@ -8,6 +9,12 @@ function recipe(overrides:Record<string,unknown>={}){return {id:'r',taskId:'t',w
 function sse(events:string[],delay=0){let index=0;return new Response(new ReadableStream({async pull(controller){if(index===events.length){controller.close();return;}if(delay)await new Promise(r=>setTimeout(r,delay));controller.enqueue(new TextEncoder().encode(`data: ${events[index++]}\n\n`));}}),{status:200,headers:{'content-type':'text/event-stream'}});}
 function provider(fetch:typeof globalThis.fetch,extra:Record<string,unknown>={}){return new StructuredChatLoopProvider({providerId:'p',modelId:'m',baseUrl:'http://127.0.0.1:1/v1',toolSchemas:schemas,finishToolId:'finish',streaming:true,fetch,...extra});}
 const tools={assertActive:()=>undefined,invoke:async()=>({ok:true})};
+
+test('native Job guard remains outside the maximum governed lifetime',()=>{
+ const manifest=fs.readFileSync('config/cache-qualification-jobs/native-mutation-benchmark.job.yaml','utf8');
+ const execute=manifest.match(/- id: execute[\s\S]*?timeoutSeconds: (\d+)/);
+ assert.ok(execute);assert.ok(Number(execute[1])*1_000>MAX_GOVERNED_ABSOLUTE_JOB_DEADLINE_MS);
+});
 
 test('profile and route evidence derive finite internally consistent budgets',()=>{
  const standard=resolveGovernedRuntimeBudget('STANDARD',{}, {p95ModelCallMs:104_378,evidenceIds:['physical']});

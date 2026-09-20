@@ -57,7 +57,7 @@ spec:
           type: application/json
           schema: agent-control.non-openai-cache-attempt/v1
           version: 1.0.0
-      timeoutSeconds: 7200
+      timeoutSeconds: 32400
     - id: verify
       name: Independent native verification
       action: qualification.non-openai-cache.verify@1.0.0

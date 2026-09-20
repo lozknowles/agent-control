@@ -56,8 +56,10 @@ const PROFILE = {
   DEEP: {turns: 32, expectedModelCallMs: 120_000, toolCallDeadlineMs: 300_000, verificationReserveMs: 300_000, cleanupReserveMs: 120_000},
 } as const;
 
+export const MAX_GOVERNED_ABSOLUTE_JOB_DEADLINE_MS = 8 * 60 * 60_000;
+
 const LIMITS = {
-  absoluteJobDeadlineMs: [10_000, 8 * 60 * 60_000], modelCallDeadlineMs: [1_000, 30 * 60_000],
+  absoluteJobDeadlineMs: [10_000, MAX_GOVERNED_ABSOLUTE_JOB_DEADLINE_MS], modelCallDeadlineMs: [1_000, 30 * 60_000],
   toolCallDeadlineMs: [100, 30 * 60_000], noProgressDeadlineMs: [1_000, 30 * 60_000],
   verificationReserveMs: [0, 30 * 60_000], cleanupReserveMs: [0, 30 * 60_000], terminalCompletionTurns: [0, 1],
 } as const;
@@ -83,7 +85,7 @@ export function resolveGovernedRuntimeBudget(profile: HarnessProfileName, reques
   const cleanupReserveMs = bounded('cleanupReserveMs', request.cleanupReserveMs ?? policy.cleanupReserveMs);
   const terminalCompletionTurns = bounded('terminalCompletionTurns', request.terminalCompletionTurns ?? (profile === 'THIN' ? 1 : 0));
   const derivedAbsolute = policy.turns * expectedModelCallMs + policy.turns * Math.min(toolCallDeadlineMs, 30_000) + verificationReserveMs + cleanupReserveMs;
-  const absoluteJobDeadlineMs = bounded('absoluteJobDeadlineMs', request.absoluteJobDeadlineMs ?? Math.min(8 * 60 * 60_000, Math.max(10 * 60_000, Math.ceil(derivedAbsolute * 1.2))));
+  const absoluteJobDeadlineMs = bounded('absoluteJobDeadlineMs', request.absoluteJobDeadlineMs ?? Math.min(MAX_GOVERNED_ABSOLUTE_JOB_DEADLINE_MS, Math.max(10 * 60_000, Math.ceil(derivedAbsolute * 1.2))));
   if (verificationReserveMs + cleanupReserveMs >= absoluteJobDeadlineMs) throw new Error('runtime_budget_invalid:terminal_reserve');
   if (noProgressDeadlineMs > modelCallDeadlineMs) throw new Error('runtime_budget_invalid:no_progress_exceeds_model_call');
   const availableWorkMs = absoluteJobDeadlineMs - verificationReserveMs - cleanupReserveMs;
