@@ -289,6 +289,7 @@ test('governed run cards route from Lanes to the authoritative Jobs detail', () 
   assert.match(source,/phaseUpdatedAt/);
   assert.match(source,/Unavailable \(mixed currencies\)/);
   assert.match(source,/response received/);
+  assert.match(source,/Runtime budget/);assert.match(source,/Job \/ model \/ tool deadlines/);assert.match(source,/Progress \/ reserves \/ terminal/);
 });
 
 test('dashboard exposes an operator configuration view with API-key references and restart semantics', () => {
