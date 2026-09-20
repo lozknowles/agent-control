@@ -7,6 +7,7 @@ import type {CacheExpertPolicyConfig} from './cache-aware-expert.js';
 import type {LearnedSkillPolicyConfig} from './skill-learning.js';
 import type {DeterministicSkillPolicyConfig} from './deterministic-skill.js';
 import type {DiscoveryConfigurationOperation} from './environment-discovery.js';
+import {normalizePolicy, routingPolicyRaisesAuthority, type CostPerformanceRoutingPolicy, type RoutingApproval} from './cost-performance-routing.js';
 
 export type ConfiguredSystemKind = 'resource' | 'provider' | 'model' | 'service';
 export interface ConfigurationSnapshot {
@@ -21,6 +22,7 @@ export interface ConfigurationSnapshot {
   cacheAwareExperts?: CacheExpertPolicyConfig;
   learnedSkills?: LearnedSkillPolicyConfig;
   deterministicSkills?: DeterministicSkillPolicyConfig;
+  costPerformanceRouting?: AgentControlConfig['costPerformanceRouting'];
 }
 
 export class ConfigurationStoreError extends Error {
@@ -114,6 +116,30 @@ export class ConfigurationStore {
     const current=this.current(),currentRevision=revision(current);if(typeof input.revision!=='string'||input.revision!==currentRevision)throw new ConfigurationStoreError('configuration_revision_conflict',409);if(!input.deterministicSkills||typeof input.deterministicSkills!=='object'||Array.isArray(input.deterministicSkills))throw new ConfigurationStoreError('configuration_deterministic_skills_invalid',400);let next:AgentControlConfig;try{next=validateConfig({...current,deterministicSkills:structuredClone(input.deterministicSkills) as DeterministicSkillPolicyConfig});}catch(error){throw new ConfigurationStoreError((error as Error).message||'configuration_invalid',400);}this.write(next);return{...snapshot(next),restartRequired:true,changed:{kind:'deterministic-skills' as const,id:'deterministic-skills'}};
   }
 
+  previewEstateCostPerformanceRouting(input:{revision?:unknown;policy?:unknown}){
+    const current=this.current(),currentRevision=revision(current);
+    if(typeof input.revision!=='string'||input.revision!==currentRevision)throw new ConfigurationStoreError('configuration_revision_conflict',409);
+    let proposed:CostPerformanceRoutingPolicy;
+    try{proposed=normalizePolicy(structuredClone(input.policy) as CostPerformanceRoutingPolicy);}catch(error){throw new ConfigurationStoreError((error as Error).message||'routing_policy_invalid',400);}
+    const previous=current.costPerformanceRouting?.estate??null,requiresApproval=previous!==null&&routingPolicyRaisesAuthority(previous,proposed),proposalSha256=createHash('sha256').update(JSON.stringify({schema:'agent-control.cost-performance-routing-change/v1',revision:currentRevision,scope:'estate',previous,proposed})).digest('hex');
+    return{schema:'agent-control.cost-performance-routing-change/v1' as const,revision:currentRevision,scope:'estate' as const,previous,proposed,requiresApproval,proposalSha256};
+  }
+
+  updateEstateCostPerformanceRouting(input:{revision?:unknown;policy?:unknown;proposalSha256?:unknown;approvalReason?:unknown;actor?:unknown}){
+    const preview=this.previewEstateCostPerformanceRouting(input);
+    if(typeof input.proposalSha256!=='string'||input.proposalSha256!==preview.proposalSha256)throw new ConfigurationStoreError('routing_policy_proposal_stale',409);
+    let approval:RoutingApproval|undefined;
+    if(preview.requiresApproval){
+      if(typeof input.approvalReason!=='string'||input.approvalReason.trim().length<8||input.approvalReason.length>1000)throw new ConfigurationStoreError('routing_policy_raise_requires_approval',403);
+      if(typeof input.actor!=='string'||!input.actor.trim())throw new ConfigurationStoreError('routing_policy_approver_required',403);
+      approval={approved:true,approvalId:`routing-policy:${preview.proposalSha256}`,approver:input.actor.trim(),approvedAt:new Date().toISOString(),reason:input.approvalReason.trim()};
+    }
+    const current=this.current();let next:AgentControlConfig;
+    try{next=validateConfig({...current,costPerformanceRouting:{...current.costPerformanceRouting,estate:preview.proposed}});}catch(error){throw new ConfigurationStoreError((error as Error).message||'configuration_invalid',400);}
+    this.write(next);
+    return{...snapshot(next),restartRequired:false,changed:{kind:'cost-performance-routing' as const,id:'estate'},proposalSha256:preview.proposalSha256,previousPolicy:preview.previous,requiresApproval:preview.requiresApproval,approval:approval??null};
+  }
+
   applyDiscoveryOperations(input:{revision?:unknown;operations?:unknown}){
     const current=this.current(),currentRevision=revision(current);if(typeof input.revision!=='string'||input.revision!==currentRevision)throw new ConfigurationStoreError('configuration_revision_conflict',409);
     if(!Array.isArray(input.operations)||!input.operations.length)throw new ConfigurationStoreError('environment_discovery_operations_required',400);
@@ -148,5 +174,5 @@ function revision(config: AgentControlConfig) {
 }
 
 function snapshot(config: AgentControlConfig): ConfigurationSnapshot {
-  return {revision: revision(config), resources: structuredClone(config.resources), providers: structuredClone(config.providers), models: structuredClone(config.models), modelRouting: structuredClone(config.modelRouting), services: structuredClone(config.services), ...(config.spark ? {spark: structuredClone(config.spark)} : {}), ...(config.adaptiveOrchestration ? {adaptiveOrchestration: structuredClone(config.adaptiveOrchestration)} : {}), ...(config.cacheAwareExperts ? {cacheAwareExperts: structuredClone(config.cacheAwareExperts)} : {}), ...(config.learnedSkills ? {learnedSkills: structuredClone(config.learnedSkills)} : {}), ...(config.deterministicSkills ? {deterministicSkills: structuredClone(config.deterministicSkills)} : {})};
+  return {revision: revision(config), resources: structuredClone(config.resources), providers: structuredClone(config.providers), models: structuredClone(config.models), modelRouting: structuredClone(config.modelRouting), services: structuredClone(config.services), ...(config.spark ? {spark: structuredClone(config.spark)} : {}), ...(config.adaptiveOrchestration ? {adaptiveOrchestration: structuredClone(config.adaptiveOrchestration)} : {}), ...(config.cacheAwareExperts ? {cacheAwareExperts: structuredClone(config.cacheAwareExperts)} : {}), ...(config.learnedSkills ? {learnedSkills: structuredClone(config.learnedSkills)} : {}), ...(config.deterministicSkills ? {deterministicSkills: structuredClone(config.deterministicSkills)} : {}), ...(config.costPerformanceRouting ? {costPerformanceRouting: structuredClone(config.costPerformanceRouting)} : {})};
 }

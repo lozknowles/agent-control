@@ -28,8 +28,9 @@ import type {WorkBoardRuntime,BoardOperation,SchedulerResource} from './work-boa
 import type {ContainmentSupervisor,KillScope} from './containment.js';
 import type {ModelImprovementRuntime,ImprovementMode} from './model-improvement.js';
 import {costRoutingProjection,explainConfiguredCostRouting} from './cost-routing-projection.js';
+import type {CostRoutingLedger} from './cost-performance-routing.js';
 
-export interface WebServerOptions {voiceTransport?:VoiceTransportRuntime;host?: string; port?: number; operatorToken?: string; operatorAuthorizer?: (request: IncomingMessage, authority: 'control.read' | 'control.mutate') => boolean; allowedOrigins?: string[]; assetsDir?: string; configFile?: string; openwa?: OpenWAAdapter; socialVoice?: SocialVoiceCoordinator; uxSessions?: UxSessionStore; uxSessionShares?: UxSessionShareStore; uxSessionAnnotations?: UxSessionAnnotationStore; uxSessionPlayerDir?: string; sessionVault?:SessionVaultRuntime; securityAudits?:SecurityAuditRuntime; directInference?:DirectInferenceRuntime; workBoards?:WorkBoardRuntime; containment?:ContainmentSupervisor; modelImprovement?:ModelImprovementRuntime;}
+export interface WebServerOptions {voiceTransport?:VoiceTransportRuntime;host?: string; port?: number; operatorToken?: string; operatorAuthorizer?: (request: IncomingMessage, authority: 'control.read' | 'control.mutate') => boolean; allowedOrigins?: string[]; assetsDir?: string; configFile?: string; costRoutingLedger?:CostRoutingLedger; openwa?:OpenWAAdapter; socialVoice?:SocialVoiceCoordinator; uxSessions?:UxSessionStore; uxSessionShares?:UxSessionShareStore; uxSessionAnnotations?:UxSessionAnnotationStore; uxSessionPlayerDir?:string;sessionVault?:SessionVaultRuntime; securityAudits?:SecurityAuditRuntime; directInference?:DirectInferenceRuntime; workBoards?:WorkBoardRuntime; containment?:ContainmentSupervisor; modelImprovement?:ModelImprovementRuntime;}
 const MAX_BODY = 64 * 1024;
 const SECRET_KEY = /token|secret|password|credential|authorization|cookie|api[-_]?key/i;
 const SAFE_TOKEN_ACCOUNTING_KEY = /^(?:tokenAwareOutput|tokenBatonRouting|providerReportedTokens|contextTokens|contextLimitTokens|contextTokensAvoided|contextTokensSaved|evidenceTokens|estimatedTokensOriginal|estimatedTokensReturned|estimatedTokensSaved|estimatedOriginalTokens|estimatedReturnedTokens|estimatedTokensAvoided|expansionTokensReturned|inputTokens|freshInputTokens|cachedInputTokens|reusedTokens|processedPromptTokens|retainedPromptTokens|cacheWriteTokens|outputTokens|maximumInputTokens|maximumOutputTokens|maximumContextTokens|maximumEvidenceTokens|reasoningTokens|totalTokens|totalProcessedTokens|startupContextTokens|taskContextTokens|retrievedContextTokens|repositoryContextTokens|conversationHistoryTokens|totalEstimatedContextTokens|repeatedContextCostEstimate|tokenEfficiency|tokensPerSuccessfulTask|freshTokensPerSuccessfulTask|tokensPerVerifiedOutcome|freshTokensPerVerifiedOutcome|estimatedTokens|limitTokens|tokensLimit|tokensRemaining|draftTokens|bestDraftTokens|tokensPerSecond|baselineTokensPerSecond|bestSpeculativeTokensPerSecond|energyPerToken|contextPercent|continuePercent|prepareBatonPercent|compactPercent|handoffPercent|prompt_tokens|completion_tokens|input_tokens|output_tokens|reasoning_tokens|total_tokens|cached_tokens|prompt_tokens_details|input_tokens_details|prompt_per_token_ms|predicted_per_token_ms|rateCeilingUsdPerMillionTokens|tokenCeiling|inputTokensEstimated|outputTokensRequested)$/;
@@ -401,6 +402,16 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
       const file = options.configFile ?? configPath(), result = new ConfigurationStore(file).updateModelRouting({revision: body.revision, modelRouting: body.modelRouting});
       const next = loadConfig(file); service.reloadModels(next.providers, next.models, next.modelRouting, actor);
       return json(response, 200, result);
+    }
+    if(url.pathname==='/api/configuration/cost-performance-routing/preview'){
+      const file=options.configFile??configPath(),result=new ConfigurationStore(file).previewEstateCostPerformanceRouting({revision:body.revision,policy:body.policy});
+      return json(response,200,result);
+    }
+    if(url.pathname==='/api/configuration/cost-performance-routing'){
+      const file=options.configFile??configPath(),result=new ConfigurationStore(file).updateEstateCostPerformanceRouting({revision:body.revision,policy:body.policy,proposalSha256:body.proposalSha256,approvalReason:body.approvalReason,actor});
+      if(result.approval)options.costRoutingLedger?.append('OVERRIDE',{scope:'estate',proposalSha256:result.proposalSha256,previousPolicy:result.previousPolicy,approvedPolicy:result.costPerformanceRouting?.estate??null,approval:result.approval});
+      service.events.emit('configuration.changed',{kind:'cost-performance-routing',id:'estate',restartRequired:false,requiresApproval:result.requiresApproval,proposalSha256:result.proposalSha256},undefined,actor);
+      return json(response,200,result);
     }
     if (url.pathname === '/api/configuration/spark') {
       const file = options.configFile ?? configPath(), result = new ConfigurationStore(file).updateSpark({revision: body.revision, spark: body.spark});

@@ -128,7 +128,7 @@ export function resolveRoutingPolicy(layers: ScopedRoutingPolicy[], approval?: R
   let effective = normalizePolicy(sorted[0].policy), sources = fields(effective).map(field => ({field, scope: sorted[0].scope, scopeId: sorted[0].scopeId}));
   for (const layer of sorted.slice(1)) {
     const next = normalizePolicy(layer.policy);
-    if (raisesAuthority(effective, next) && !approval) throw new Error('routing_policy_raise_requires_approval');
+    if (routingPolicyRaisesAuthority(effective, next) && !approval) throw new Error('routing_policy_raise_requires_approval');
     effective = mergePolicy(effective, next);
     const changed = fields(next); sources = sources.filter(item => !changed.includes(item.field)); sources.push(...changed.map(field => ({field, scope: layer.scope, scopeId: layer.scopeId})));
   }
@@ -140,7 +140,7 @@ function mergePolicy(base: CostPerformanceRoutingPolicy, override: CostPerforman
 }
 function fields(policy: CostPerformanceRoutingPolicy) { return Object.keys(policy).filter(key => !['schema','id'].includes(key)); }
 function raises(previous: number | undefined, next: number | undefined) { return previous !== undefined && (next === undefined || next > previous); }
-function raisesAuthority(a: CostPerformanceRoutingPolicy, b: CostPerformanceRoutingPolicy) {
+export function routingPolicyRaisesAuthority(a: CostPerformanceRoutingPolicy, b: CostPerformanceRoutingPolicy) {
   return raises(a.rateCeilingUsdPerMillionTokens?.input,b.rateCeilingUsdPerMillionTokens?.input) || raises(a.rateCeilingUsdPerMillionTokens?.output,b.rateCeilingUsdPerMillionTokens?.output) || raises(a.budget?.invocationUsd,b.budget?.invocationUsd) || raises(a.budget?.jobUsd,b.budget?.jobUsd) || raises(a.tokenCeiling?.input,b.tokenCeiling?.input) || raises(a.tokenCeiling?.output,b.tokenCeiling?.output) || (a.fallback.crossModel === false && b.fallback.crossModel === true);
 }
 
