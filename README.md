@@ -4,6 +4,8 @@
 
 # Agent Control ATLAS
 
+Agent Control can execute digest-bound [Agent Control Lab agent templates](docs/agent-templates.md) through its existing Work Parcel and Job Runtime path. Templates declare specialist instructions and requirements; runtime policy remains authoritative.
+
 **Agentic Topology, Lifecycle, Assurance & Supervision**
 
 **See the work. Govern the execution.**
