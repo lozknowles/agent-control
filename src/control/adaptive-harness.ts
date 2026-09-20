@@ -310,6 +310,8 @@ export class AdaptiveHarness {
       ...(request.runtimeBudget ? {runtimeBudget: resolveGovernedRuntimeBudget(profileDecision.appliedProfile, request.runtimeBudget, {
         medianModelCallMs: typeof composition.candidate.runtime.medianModelCallMs === 'number' ? composition.candidate.runtime.medianModelCallMs : undefined,
         p95ModelCallMs: typeof composition.candidate.runtime.p95ModelCallMs === 'number' ? composition.candidate.runtime.p95ModelCallMs : undefined,
+        generationTokensPerSecond: typeof composition.candidate.runtime.generationTokensPerSecond === 'number' ? composition.candidate.runtime.generationTokensPerSecond : undefined,
+        maximumOutputTokens: request.outputTokens,
         evidenceIds: typeof composition.candidate.runtime.runtimeBudgetEvidenceId === 'string' ? [composition.candidate.runtime.runtimeBudgetEvidenceId] : [],
       })} : {}),
       verification: structuredClone(request.verification),

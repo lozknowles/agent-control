@@ -25,6 +25,8 @@ export interface RouteRuntimeCharacteristics {
   medianModelCallMs?: number;
   p95ModelCallMs?: number;
   evidenceIds?: string[];
+  generationTokensPerSecond?: number;
+  maximumOutputTokens?: number;
 }
 
 export type RuntimeBudgetAdmission = 'ADMITTED' | 'ADMITTED_WITH_CONSTRAINED_CAPACITY' | 'REQUIRES_BUDGET_OVERRIDE' | 'ROUTE_PROFILE_MISMATCH' | 'REJECTED';
@@ -69,7 +71,12 @@ function bounded(name: keyof typeof LIMITS, value: number) {
 export function resolveGovernedRuntimeBudget(profile: HarnessProfileName, request: RuntimeBudgetRequest = {}, route: RouteRuntimeCharacteristics = {}): GovernedRuntimeBudget {
   const policy = PROFILE[profile];
   const expectedModelCallMs = bounded('modelCallDeadlineMs', Math.round(route.p95ModelCallMs ?? route.medianModelCallMs ?? policy.expectedModelCallMs));
-  const modelCallDeadlineMs = bounded('modelCallDeadlineMs', request.modelCallDeadlineMs ?? Math.min(30 * 60_000, Math.max(120_000, expectedModelCallMs * 4)));
+  const generationRate = route.generationTokensPerSecond;
+  if (generationRate !== undefined && (!Number.isFinite(generationRate) || generationRate <= 0)) throw new Error('runtime_budget_invalid:generation_rate');
+  if (route.maximumOutputTokens !== undefined && (!Number.isSafeInteger(route.maximumOutputTokens) || route.maximumOutputTokens < 1)) throw new Error('runtime_budget_invalid:maximum_output_tokens');
+  const outputEnvelopeMs = generationRate && route.maximumOutputTokens ? Math.ceil(route.maximumOutputTokens / generationRate * 1_000) : 0;
+  const evidenceBasedModelCallMs = Math.max(expectedModelCallMs * 4, expectedModelCallMs + Math.ceil(outputEnvelopeMs * 1.1));
+  const modelCallDeadlineMs = bounded('modelCallDeadlineMs', request.modelCallDeadlineMs ?? Math.min(30 * 60_000, Math.max(120_000, evidenceBasedModelCallMs)));
   const toolCallDeadlineMs = bounded('toolCallDeadlineMs', request.toolCallDeadlineMs ?? policy.toolCallDeadlineMs);
   const noProgressDeadlineMs = bounded('noProgressDeadlineMs', request.noProgressDeadlineMs ?? Math.min(modelCallDeadlineMs, Math.max(30_000, expectedModelCallMs * 3)));
   const verificationReserveMs = bounded('verificationReserveMs', request.verificationReserveMs ?? policy.verificationReserveMs);
