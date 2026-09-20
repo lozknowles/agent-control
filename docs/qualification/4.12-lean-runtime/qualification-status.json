@@ -1,96 +1,116 @@
 {
-  "schema": "agent-control.lean-runtime-qualification/v1",
+  "schema": "agent-control.lean-runtime-qualification/v2",
   "status": "BLOCKED",
-  "candidateSource": "14779a97afe486231492b4db158d3c9ecfe5ca07",
+  "reason": "NATIVE_RUNTIME proven; Lean efficiency not proven because both lanes were 0/10 and fresh input increased.",
   "baseline": "9dff191034b7c69e102687bef02803bc05afe874",
-  "experimental": true,
-  "productionModified": false,
-  "published": false,
+  "nativeBaselineAdapter": "b5f7e4a1cba4c2ed478db0bc3ba6e93173505956",
+  "implementationSource": "22e2de8634095b6b4260df1458168f49cabef779",
   "historicalEvidencePreserved": true,
-  "focused": {
-    "tests": 117,
-    "pass": 117,
-    "fail": 0,
-    "skipped": 0,
-    "cancelled": 0
+  "experimental": true,
+  "published": false,
+  "productionModified": false,
+  "nativeBoundary": {
+    "status": "PASS",
+    "provenance": "NATIVE_RUNTIME",
+    "dispatcherDisabledControl": "PASS",
+    "externalOperationalActions": 0
   },
-  "fullSuite": {
-    "tests": 1944,
-    "pass": 1944,
-    "fail": 0,
-    "skipped": 0,
-    "cancelled": 0
-  },
-  "nativeQwen": {
-    "status": "SUCCEEDED",
-    "runId": "run-44c9e55e-a0bd-4bbe-8b47-f882f8bbb540",
-    "cleanup": "confirmed",
-    "usage": {
-      "inputTokens": 4189,
-      "freshInputTokens": 2923,
-      "cachedInputTokens": 1266,
-      "outputTokens": 150,
-      "totalProcessedTokens": 4339
-    }
-  },
-  "freshControlReplay": {
-    "provenance": "HARNESS_DRIVEN",
-    "includedInNativeComparison": false,
-    "reason": "Qualification entrypoint creates in-memory authority and owns preparation, profile selection and verifier scheduling."
+  "physicalQwen": {
+    "status": "PASS",
+    "runId": "run-f9b06545-4ace-4bc8-9c67-7a3c6264583f",
+    "profile": "THIN",
+    "calls": 4,
+    "independentVerification": "PASS",
+    "cleanup": "confirmed"
   },
   "nativeAB": {
-    "status": "BLOCKED",
-    "reason": "Immutable v4.11 native qualification action seals THIN, while exact Phase 3 suite uses STANDARD/DEEP. The shipped benchmark script is qualification-owned orchestration and is excluded under this parcel boundary."
-  },
-  "techniques": {
-    "task-gated tools": "NEEDS_MORE_QUALIFICATION",
-    "lazy context": "NEEDS_MORE_QUALIFICATION",
-    "context delta": "NEEDS_MORE_QUALIFICATION",
-    "tool-result compression": "NO_MEASURED_BENEFIT",
-    "deterministic fast paths": "NEEDS_MORE_QUALIFICATION",
-    "terminal completion allowance": "ADOPT_CANDIDATE (bounded repository-mutation THIN scope)"
-  },
-  "limitations": [
-    "No qualifying native ten-task A/B or physical efficiency reduction is claimed.",
-    "On-demand vault is tested as a bounded primitive; no general retrieval endpoint was added.",
-    "Exact historical token-category or cache-span allocation cannot be recovered.",
-    "Terminal allowance physically verified on native MUT-001; general task workflows remain unqualified.",
-    "No Pi dependency, model/server configuration change, deployment, merge, tag or publication."
-  ],
-  "nativeQwenControlPair": {
-    "scope": "One native THIN MUT-001 pair, not the ten-task STANDARD/DEEP A/B",
-    "order": "lean then immutable-release control; provider cache not reset",
-    "control": {
-      "runId": "run-69be3763-b9b6-43bc-80ab-04d1c3218160",
-      "status": "FAILED",
-      "calls": 3,
-      "usage": {
-        "inputTokens": 4409,
-        "cachedInputTokens": 3719,
-        "freshInputTokens": 690,
-        "outputTokens": 135,
-        "totalProcessedTokens": 4544
-      },
-      "invocationElapsedMs": 3682,
-      "cleanup": "confirmed"
+    "status": "COMPLETED_NOT_PROVEN",
+    "fixtureSha256": "d1b5e8ebec19378b5d2112e8be5e73671a51c40bc328af8ded815be44edb6b27",
+    "modelSha256": "33e7a72cf5e6e2cfc2f2847075acc013d68bba023e35310cef86b5cf8fdca761",
+    "taskOrder": [
+      "MUT-001",
+      "MUT-002",
+      "MUT-005",
+      "MUT-003",
+      "MUT-004",
+      "MUT-007",
+      "MUT-009",
+      "MUT-010",
+      "MUT-011",
+      "MUT-012"
+    ],
+    "baseline": {
+      "tasks": 10,
+      "successes": 0,
+      "calls": 15,
+      "inputTokens": 41257,
+      "cachedInputTokens": 19847,
+      "freshInputTokens": 21410,
+      "outputTokens": 479,
+      "totalProcessedTokens": 41736,
+      "modelElapsedMs": 1308101,
+      "wallElapsedMs": 1893070
     },
     "lean": {
-      "runId": "run-44c9e55e-a0bd-4bbe-8b47-f882f8bbb540",
-      "status": "SUCCEEDED",
-      "calls": 4,
-      "usage": {
-        "inputTokens": 4189,
-        "cachedInputTokens": 1266,
-        "freshInputTokens": 2923,
-        "outputTokens": 150,
-        "totalProcessedTokens": 4339
-      },
-      "invocationElapsedMs": 6580,
-      "cleanup": "confirmed"
+      "tasks": 10,
+      "successes": 0,
+      "calls": 13,
+      "inputTokens": 26772,
+      "cachedInputTokens": 4715,
+      "freshInputTokens": 22057,
+      "outputTokens": 455,
+      "totalProcessedTokens": 27227,
+      "modelElapsedMs": 1286931,
+      "wallElapsedMs": 1893467
     },
-    "controlFailure": "structured_chat_loop_turn_limit:3",
-    "controlIndependentVerification": "NOT_RUN because work budget ended before terminal completion",
-    "leanIndependentVerification": "PASS",
-    "interpretation": "A bounded completion result, not a statistically controlled speed or cache claim."
-  }
+    "comparison": {
+      "callsReductionPercent": 13.333333333333334,
+      "inputReductionPercent": 35.10919359139055,
+      "cachedInputReductionPercent": 76.24326094623872,
+      "freshInputChangePercent": 3.021952358710883,
+      "outputReductionPercent": 5.010438413361169,
+      "modelElapsedReductionPercent": 1.6183765626660327,
+      "wallElapsedChangePercent": 0.020971226631873095
+    },
+    "successfulTaskMetrics": "unavailable: zero successful tasks in both lanes"
+  },
+  "cacheAwarePrototype": {
+    "status": "REJECTED_AND_REVERTED",
+    "existing": {
+      "input": 4191,
+      "cached": 1750,
+      "fresh": 2441,
+      "output": 150,
+      "elapsedMs": 5662
+    },
+    "prototype": {
+      "input": 4655,
+      "cached": 2168,
+      "fresh": 2487,
+      "output": 164,
+      "elapsedMs": 6176
+    }
+  },
+  "tests": {
+    "focused": "PASS",
+    "full": {
+      "tests": 1946,
+      "pass": 1946,
+      "fail": 0,
+      "skipped": 0
+    },
+    "typecheck": "PASS",
+    "distribution": "PASS",
+    "bootstrap": "PASS",
+    "dashboard": "PASS",
+    "neutrality": "PASS",
+    "implementationStatus": "PASS",
+    "limitations": "PASS"
+  },
+  "limits": [
+    "No Lean production promotion.",
+    "No successful-task efficiency metric is computable.",
+    "Malicious terminal-escape cases are synthetic provider fixtures, not physical attacks.",
+    "No merge, push, tag, release or deployment."
+  ]
 }
