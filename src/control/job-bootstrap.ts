@@ -43,6 +43,7 @@ import {registerDeterministicSkillActions} from './deterministic-skill-actions.j
 import {SecurityAuditRuntime,SecurityAuditStore} from './security-audit.js';
 import {registerSecurityAudit,registerSecurityAuditContinuation} from './security-audit-job.js';
 import {AgentTemplateRegistry} from './agent-template.js';
+import {LabAgentJobRegistry,registerLabAgentJobActions} from './lab-agent-jobs.js';
 
 /** Shared production definition path so qualification cannot drift from registered typed Actions. */
 export function buildJobRuntimeDefinition(config: AgentControlConfig, manifestDir = process.env.AGENT_CONTROL_JOB_DIR || path.resolve('config/jobs'), harnessEfficiency?: HarnessEfficiencyLedgerPort, modelRegistry?: ModelRegistry, codexNodeExecution?: CodexNodeExecutionPort, deterministicSkills?:DeterministicSkillRuntime) {
@@ -58,10 +59,13 @@ export function buildJobRuntimeDefinition(config: AgentControlConfig, manifestDi
   actions = registerProtectedResourceModelActions(config, modelRegistry, codexNodeExecution, actions, harnessEfficiency);
   actions = registerNonOpenAiCacheQualificationActions(actions, harnessEfficiency);
   actions=registerDeterministicSkillActions(actions,deterministicSkills??registerCoreDeterministicHandlers(new DeterministicSkillRuntime()));
+  const labJobs=new LabAgentJobRegistry().loadDirectory(process.env.AGENT_CONTROL_LAB_DIR??'');
+  if(process.env.AGENT_CONTROL_LAB_DIR)actions=registerLabAgentJobActions(actions,labJobs,modelRegistry,harnessEfficiency);
   const catalog = new JobCatalog(actions.ids()).loadDirectory(manifestDir).loadDirectory(parcelJobs);
+  labJobs.addTo(catalog);
   registerOperatorObservation(actions, catalog, workers);
   if (process.env.AGENT_CONTROL_ENABLE_OPERATOR_REVIEW === 'true') catalog.loadDirectory(operatorJobs);
-  return {workers, managedNodes, actions, catalog};
+  return {workers, managedNodes, actions, catalog,labJobs};
 }
 
 export function buildJobRuntime(config: AgentControlConfig, stateRoot = process.env.AGENT_CONTROL_STATE_DIR || path.resolve('.agent-control'), manifestDir = process.env.AGENT_CONTROL_JOB_DIR || path.resolve('config/jobs'), reasoningPlanner?: WorkParcelPlanner, modelRegistry?: ModelRegistry, codexNodeExecution?: CodexNodeExecutionPort, executionSessions?: ExecutionSessionRuntime) {
@@ -71,7 +75,7 @@ export function buildJobRuntime(config: AgentControlConfig, stateRoot = process.
   const learnedSkills = new SkillLearningRuntime(new FileSkillLearningStore(path.join(stateRoot, 'learned-skills', 'state.json')), config.learnedSkills);
   const energyTelemetry = new EnergyTelemetryRuntime(new FileEnergyTelemetryStore(path.join(stateRoot, 'energy-telemetry', 'state.json')));
   const deterministicSkills=registerCoreDeterministicHandlers(new DeterministicSkillRuntime(new FileDeterministicSkillStore(path.join(stateRoot,'deterministic-skills','state.json')),config.deterministicSkills));
-  const {workers, managedNodes, actions, catalog} = buildJobRuntimeDefinition(config, manifestDir, harnessEfficiency, modelRegistry, codexNodeExecution,deterministicSkills);
+  const {workers, managedNodes, actions, catalog,labJobs} = buildJobRuntimeDefinition(config, manifestDir, harnessEfficiency, modelRegistry, codexNodeExecution,deterministicSkills);
   const harnessProfiles = configuredHarnessProfiles(config.harnessEfficiency), harnessProfileRouter = configuredHarnessProfileRouter(config.harnessEfficiency), contextPacketBuilder = new ContextPacketBuilder(harnessProfiles);
   for (const resource of config.resources) if (resource.transport.type === 'local') workers.setHealth(resource.id, 'healthy');
   const repositoryRoots = config.jobs?.repositoryRoots ?? [path.resolve('.')];
@@ -84,7 +88,7 @@ export function buildJobRuntime(config: AgentControlConfig, stateRoot = process.
   if(process.env.AGENT_CONTROL_RUNTIME_BENCHMARK_CONFIG)registerRuntimeBenchmark(runtime,JSON.parse(fs.readFileSync(process.env.AGENT_CONTROL_RUNTIME_BENCHMARK_CONFIG,'utf8')),harnessEfficiency);
   if(process.env.AGENT_CONTROL_SPECULATIVE_BENCHMARK_CONFIG)registerSpeculativeDecoding(runtime,JSON.parse(fs.readFileSync(process.env.AGENT_CONTROL_SPECULATIVE_BENCHMARK_CONFIG,'utf8')));
   const workParcels = new WorkParcelCoordinator(runtime, new WorkParcelStore(path.join(stateRoot, 'work-parcels', 'parcels.json')), new CatalogNaturalLanguagePlanner(runtime, reasoningPlanner ?? cacheAwareExpertQualificationPlanner()), harnessEfficiency, modelRegistry, adaptiveOrchestration, cacheExperts,agentTemplates);
-  return Object.assign(runtime, {managedNodes, harnessEfficiency, harnessProfiles, harnessProfileRouter, contextPacketBuilder, workParcels, adaptiveOrchestration, cacheExperts, agentTemplates,learnedSkills, deterministicSkills, energyTelemetry,securityAudits});
+  return Object.assign(runtime, {managedNodes, harnessEfficiency, harnessProfiles, harnessProfileRouter, contextPacketBuilder, workParcels, adaptiveOrchestration, cacheExperts, agentTemplates,labJobs,learnedSkills, deterministicSkills, energyTelemetry,securityAudits});
 }
 
 export function startManagedNodeMonitoring(runtime: ReturnType<typeof buildJobRuntime>, onChange?: (snapshot: ManagedNodeSnapshot) => void, onError?: (error: Error) => void) { return runtime.managedNodes.start(onChange, onError); }
