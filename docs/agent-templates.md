@@ -52,3 +52,30 @@ npm run qualify:evidence-verifier -- \
 ```
 
 This reproducibly includes a successful direct supported-scalar native run. It also includes a negative adversarial case and is development evidence, not held-out qualification. The held-out evidence is retained in the Lab repository and must not be rerun for prompt tuning.
+
+## Governed stronger-model regression
+
+The same frozen three-case qualification partition was rerun on hpubuntu against the already-present `Qwen3.8-27B-Q3_K_M.gguf`. Agent Control admitted the exact file, hashed the model and runtime, launched a loopback-only experimental llama.cpp server, dispatched all inference through the native Work Parcel and Job Runtime path, enforced the existing 120-second per-call limit, terminated the owned process group, and rechecked protected services on ports 8080 and 8081.
+
+All 27 calls (three cases × three repetitions × three arms) ended with `provider_timeout`. No candidate reached the independent verifier, so format compliance, unsupported-claim quality and template improvement are unassessed—not zero-error successes. A fresh qualification set was not opened because the regression supplied no evidence that proceeding was justified. The result is retained in Agent Control Lab at `qualifications/native-execution/2026-09-20-evidence-verifier-qwen38-27b-regression.json` and does not alter the failed/not-qualified effectiveness status.
+
+Exact reproduction on the authorised hpubuntu checkout, provided the recorded files and resources are still present:
+
+```sh
+npm run qualify:evidence-verifier -- \
+  --lab ../agent-control-jobs \
+  --output ../agent-control-jobs/qualifications/native-execution/2026-09-20-evidence-verifier-qwen38-27b-regression.json \
+  --partition qualification \
+  --arm all \
+  --repetitions 3 \
+  --managed-runtime /fast/repos/llama.cpp/build-cuda/bin/llama-server \
+  --managed-model /fast/models/qwen3.8-27b/Qwen3.8-27B-Q3_K_M.gguf \
+  --managed-port 19527 \
+  --managed-context 8192 \
+  --managed-gpu-layers 0 \
+  --managed-threads 8 \
+  --provider-model Qwen3.8-27B-Q3_K_M.gguf \
+  --model-id local-qwen38-27b-q3km-template-qualification
+```
+
+The managed mode accepts only an exact file beneath `/fast/models` and an exact runtime beneath `/fast/repos/llama.cpp`, rejects ports 8080/8081, requires at least 8 GiB available RAM after model-file size, verifies both protected health endpoints before launch and after cleanup, and retains process identity plus cleanup outcome. It does not download a model or stop an existing service.
