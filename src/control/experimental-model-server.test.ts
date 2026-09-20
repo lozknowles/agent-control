@@ -26,6 +26,6 @@ server.listen(port,'127.0.0.1');process.on('SIGTERM',()=>server.close(()=>proces
 });
 
 test('experimental model server rejects protected ports before launch',{skip:process.platform!=='linux'},async()=>{
-  const server=new ExperimentalModelServer({runtimePath:'/fast/repos/llama.cpp/bin/server',modelPath:'/fast/models/model.gguf',allowedRuntimeRoot:'/fast/repos/llama.cpp',allowedModelRoot:'/fast/models',host:'127.0.0.1',port:8080,contextTokens:1024,gpuLayers:0,threads:1,minimumAvailableRamBytes:0,protectedHealthUrls:[],startupTimeoutMs:1},new OwnedProcessManager());
+  const server=new ExperimentalModelServer({runtimePath:'/srv/agent-control-runtimes/llama/bin/server',modelPath:'/srv/agent-control-models/model.gguf',allowedRuntimeRoot:'/srv/agent-control-runtimes/llama',allowedModelRoot:'/srv/agent-control-models',host:'127.0.0.1',port:8080,contextTokens:1024,gpuLayers:0,threads:1,minimumAvailableRamBytes:0,protectedHealthUrls:[],startupTimeoutMs:1},new OwnedProcessManager());
   await assert.rejects(()=>server.start(),/endpoint_not_admitted/);
 });
