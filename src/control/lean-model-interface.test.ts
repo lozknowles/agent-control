@@ -89,7 +89,7 @@ const call = (tool: string) => JSON.stringify({tool, input: {}});
 test('real dispatcher grants only a terminal fourth turn after successful THIN work', async () => {
   const env = environment(['read', 'edit', 'test', 'finish'].map(call));
   const result = await env.run(); assert.equal(result.execution.error, undefined); assert.equal(result.execution.invocations?.length, 4); assert.equal(result.accepted, false);
-  const tools = (body: any) => JSON.parse(body.messages.at(-1).content.split('Tools:\n')[1]).map((item: any) => item.id);
+  const tools = (body: any) => JSON.parse(body.messages[0].content.split('Granted tools:\n')[1].split('\n\n')[0]).map((item: any) => item.id);
   assert.deepEqual(tools(env.bodies[0]), ['read', 'finish']); assert.deepEqual(tools(env.bodies[3]), ['finish']);
 });
 test('unchanged THIN control still stops at three turns', async () => {
