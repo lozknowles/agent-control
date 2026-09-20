@@ -63,7 +63,7 @@ export class ExperimentalGpuServiceReservation {
     const states:ReservedServiceState[]=[];
     try{
       for(const unit of unique){const state=await this.inspect(unit as ReservableUnit);if(state.activeState!=='active'||state.subState!=='running'||state.mainPid<1)throw Error(`experimental_service_not_running:${unit}`);states.push(state);}
-      for(const state of states){await this.systemctlCommand(['--user','stop',state.unit],`Reserve GPU from ${state.unit}`);await this.waitState(state.unit,'inactive');}
+      for(const state of states){await this.waitQuiescent(state);await this.systemctlCommand(['--user','stop',state.unit],`Reserve GPU from ${state.unit}`);await this.waitState(state.unit,'inactive');}
       this.before={reservedAt:new Date().toISOString(),services:states};return structuredClone(this.before);
     }catch(error){for(const state of states.reverse())try{await this.systemctlCommand(['--user','start',state.unit],`Rollback GPU reservation for ${state.unit}`);}catch{}throw error;}
   }
@@ -86,6 +86,16 @@ export class ExperimentalGpuServiceReservation {
     const deadline=Date.now()+120_000;
     while(Date.now()<deadline){const result=await this.systemctlCommand(['--user','is-active',unit],`Confirm GPU service ${unit}`,true);if(result.stdout.trim()===state||state==='inactive'&&['inactive','failed'].includes(result.stdout.trim()))return;await delay(500);}
     throw Error(`experimental_service_state_timeout:${unit}:${state}`);
+  }
+
+  private async waitQuiescent(state:ReservedServiceState){
+    if(!state.healthUrl)return;
+    const slotsUrl=new URL('/slots',state.healthUrl).toString(),deadline=Date.now()+300_000;
+    while(Date.now()<deadline){
+      try{const response=await fetch(slotsUrl,{signal:AbortSignal.timeout(5000)});if(!response.ok)throw Error(`status:${response.status}`);const slots=await response.json() as Array<{is_processing?:unknown}>;if(Array.isArray(slots)&&slots.every(slot=>slot.is_processing===false))return;}catch(error){throw Error(`experimental_service_idle_probe_failed:${state.unit}:${error instanceof Error?error.message:String(error)}`);}
+      await delay(1000);
+    }
+    throw Error(`experimental_service_busy:${state.unit}`);
   }
 
   private async systemctlCommand(args:string[],label:string,allowFailure=false){const result=await this.owned.runProcess({command:this.systemctl,args,maxOutputBytes:256*1024,session:{adapterId:'experimental-gpu-reservation-v1',commandLabel:label,crewRole:'resource-guardian'}},AbortSignal.timeout(125_000));if(!allowFailure&&result.exitCode!==0)throw Error(`experimental_service_systemctl_failed:${args.at(-1)}`);return result;}
