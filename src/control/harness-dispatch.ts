@@ -346,7 +346,7 @@ export class HarnessDispatcher {
         let result: unknown;
         const toolController = new AbortController();
         const toolSignal = signal ? AbortSignal.any([signal, toolController.signal]) : toolController.signal;
-        const toolStartedAt = Date.now(), toolBudgetMs = recipe.runtimeBudget?.toolCallDeadlineMs;
+        const toolBudgetMs = recipe.runtimeBudget?.toolCallDeadlineMs;
         let toolTimer: NodeJS.Timeout | undefined;
         try {
           const invocation = this.tools.invoke(toolId, input, recipe, {signal: toolSignal, assertActive: gateway.assertActive!, ownedExecution});
@@ -358,7 +358,6 @@ export class HarnessDispatcher {
           lean?.after(toolId, result);
         } catch (error) { lean?.after(toolId, undefined, true); throw error; }
         finally { if (toolTimer) clearTimeout(toolTimer); }
-        void toolStartedAt;
         gateway.assertActive!();
         return result;
       },

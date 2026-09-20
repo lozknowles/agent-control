@@ -78,7 +78,7 @@ export function resolveGovernedRuntimeBudget(profile: HarnessProfileName, reques
   const evidenceBasedModelCallMs = Math.max(expectedModelCallMs * 4, expectedModelCallMs + Math.ceil(outputEnvelopeMs * 1.1));
   const modelCallDeadlineMs = bounded('modelCallDeadlineMs', request.modelCallDeadlineMs ?? Math.min(30 * 60_000, Math.max(120_000, evidenceBasedModelCallMs)));
   const toolCallDeadlineMs = bounded('toolCallDeadlineMs', request.toolCallDeadlineMs ?? policy.toolCallDeadlineMs);
-  const noProgressDeadlineMs = bounded('noProgressDeadlineMs', request.noProgressDeadlineMs ?? Math.min(modelCallDeadlineMs, Math.max(30_000, expectedModelCallMs * 3)));
+  const noProgressDeadlineMs = bounded('noProgressDeadlineMs', request.noProgressDeadlineMs ?? Math.min(modelCallDeadlineMs, 5 * 60_000, Math.max(30_000, expectedModelCallMs * 3)));
   const verificationReserveMs = bounded('verificationReserveMs', request.verificationReserveMs ?? policy.verificationReserveMs);
   const cleanupReserveMs = bounded('cleanupReserveMs', request.cleanupReserveMs ?? policy.cleanupReserveMs);
   const terminalCompletionTurns = bounded('terminalCompletionTurns', request.terminalCompletionTurns ?? (profile === 'THIN' ? 1 : 0));

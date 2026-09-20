@@ -17,7 +17,7 @@ test('profile and route evidence derive finite internally consistent budgets',()
 
 test('measured slow generation expands only the call ceiling within the fixed outer deadline',()=>{
  const budget=resolveGovernedRuntimeBudget('STANDARD',{}, {p95ModelCallMs:104_378,generationTokensPerSecond:.442,maximumOutputTokens:768,evidenceIds:['physical-throughput']});
- assert.equal(budget.modelCallDeadlineMs,1_800_000);assert.equal(budget.absoluteJobDeadlineMs,1_828_536);assert.equal(budget.admission,'ADMITTED');
+ assert.equal(budget.modelCallDeadlineMs,1_800_000);assert.equal(budget.noProgressDeadlineMs,300_000);assert.equal(budget.absoluteJobDeadlineMs,1_828_536);assert.equal(budget.admission,'ADMITTED');
 });
 
 test('operator constrained budget is explicit and model cannot expand it',()=>{
