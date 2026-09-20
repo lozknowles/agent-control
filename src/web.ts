@@ -55,6 +55,7 @@ import {ConfigurationStore} from './control/configuration-store.js';
 import {CapabilityAdapterRegistry,RegisteredCapabilityDiscoveryAdapter} from './control/capability-adapter-registry.js';
 import {InstallationLifecycle} from './control/installation-lifecycle.js';
 import {DirectInferenceRuntime,FileDirectInferenceEvidenceStore} from './control/direct-inference.js';
+import {CostRoutingLedger} from './control/cost-performance-routing.js';
 import {schedulerContainmentScopes,WorkBoardRuntime} from './control/work-board.js';
 import {ContainmentSupervisor} from './control/containment.js';
 import {ModelImprovementRuntime} from './control/model-improvement.js';
@@ -100,7 +101,7 @@ catch (error) {
   identity.createSession({id: defaultSessionId, creatorActorId: 'web-operator', mode: 'operator-controlled', permissions: {capabilities: ['session.observe', 'session.manage', 'parcel.create', 'parcel.execute', 'parcel.approve', 'agent.delegate', 'model.invoke', 'node.execute'], allowedModels: config.models.map(model => model.id), allowedNodes: config.resources.map(resource => resource.id), filesystem: 'none', network: 'provider-only', production: false}, contextPolicy: 'compiled', visibility: 'operator', metadata: {surface: 'dashboard'}});
 }
 const jobRuntime = buildJobRuntime(config, stateRoot, undefined, undefined, modelRegistry, codexNodeExecution, executionSessions);
-const directInference=new DirectInferenceRuntime(modelRegistry,jobRuntime.harnessEfficiency,undefined,new FileDirectInferenceEvidenceStore(path.join(stateRoot,'direct-inference','evidence')));
+const directInference=new DirectInferenceRuntime(modelRegistry,jobRuntime.harnessEfficiency,undefined,new FileDirectInferenceEvidenceStore(path.join(stateRoot,'direct-inference','evidence')),{config,ledger:new CostRoutingLedger(path.join(stateRoot,'cost-routing','decisions.jsonl'))});
 const governedRetrieval = buildGovernedRetrievalRuntime(config,stateRoot);
 const parameterizedJobs = buildParameterizedJobRuntime(config, modelRegistry, jobRuntime.workParcels, stateRoot, tokenBatonRouting, contracts, handoffs, codexNodeExecution, governedRetrieval);
 const uxSessions=new UxSessionStore(path.join(stateRoot,'ux-sessions','records'));

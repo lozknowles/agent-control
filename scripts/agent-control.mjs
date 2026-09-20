@@ -37,6 +37,7 @@ Usage:
   agent-control workspace list [--json]
   agent-control workspace open WORKSPACE-ID [--json]
   agent-control open job RUN-ID [--json]
+  agent-control routing explain --policy economy|balanced|fast-capped --provider PROVIDER_ID [--model MODEL_ID] --input-tokens N --output-tokens N [--job-spent USD]
 
 The status command reads the same authoritative projection as the web dashboard.
 It uses the controller-local endpoint by default or the configured SSH transport
@@ -58,6 +59,7 @@ export async function main(argv = process.argv.slice(2), io = {out: console.log,
   if (command === 'benchmark') return benchmarkCommand(argv.slice(1),io);
   if (command === 'security-audit') return securityAuditCommand(argv.slice(1),io);
   if (command === 'workspace') return workspaceCommand(argv.slice(1),io);
+  if (command === 'routing') return routingCommand(argv.slice(1),io);
   if (command === 'open' && argv[1] === 'job') {
     if (!argv[2]) { io.error(usage); return 2; }
     return workspaceCommand(['open',workspaceReference('RUN',[argv[2]]),...argv.slice(3)],io);
@@ -96,6 +98,9 @@ async function securityAuditRequest(pathname,body,environment=process.env,fetche
 export async function workspaceCommand(argv,io={out:console.log,error:console.error},environment=process.env,fetcher=fetch){
   const [operation,id,...rest]=argv,flags=new Set(id?.startsWith('--')?[id,...rest]:rest);if([...flags].some(flag=>flag!=='--json')){io.error(usage);return 2;}
   try{let value;if(operation==='list'&&(!id||id==='--json'))value=await workspaceRequest('/api/workspaces',environment,fetcher);else if(operation==='open'&&id&&!id.startsWith('--'))value=await workspaceRequest(`/api/workspaces/${encodeURIComponent(id)}`,environment,fetcher);else{io.error(usage);return 2;}io.out(flags.has('--json')||id==='--json'?JSON.stringify(value,null,2):formatWorkspace(value));return 0;}catch(error){io.error(error instanceof Error?error.message:String(error));return 2;}
+}
+export async function routingCommand(argv,io={out:console.log,error:console.error},environment=process.env,fetcher=fetch){
+  try{const [operation,...rest]=argv;if(operation!=='explain')throw Error('Use routing explain');const options=parseOptions(rest),strategy=required(options.policy,'--policy');if(!['economy','balanced','fast-capped'].includes(strategy))throw Error('--policy must be economy, balanced or fast-capped');const body={strategy,providerId:required(options.provider,'--provider'),...(options.model?{modelId:String(options.model)}:{}),inputTokensEstimated:requiredInteger(options['input-tokens'],'--input-tokens'),outputTokensRequested:requiredInteger(options['output-tokens'],'--output-tokens'),...(options['job-spent']===undefined?{}:{jobSpentUsd:optionalNumber(options['job-spent'],'--job-spent')})};const value=await jobsRequest('/api/routing/cost-performance/explain',body,environment,fetcher);io.out(JSON.stringify(value,null,2));return 0;}catch(error){io.error(error instanceof Error?error.message:String(error));return 2;}
 }
 function workspaceReference(kind,parts){return`acw1.${kind}.${Buffer.from(JSON.stringify(parts)).toString('base64url')}`;}
 function formatWorkspace(value){const path=(value.breadcrumbs??[]).map(item=>item.label).join(' > '),children=(value.children??[]).map(item=>`  ${item.kind.padEnd(11)} ${item.label} [${item.status}]`).join('\n'),caps=(value.capabilities??[]).map(item=>`${item.id}:${item.state}`).join(' · ');return`${value.label} [${value.mode} / ${value.status}]\n${path}\n${children||'  No child workspaces'}\nCapabilities: ${caps}\nDashboard: ${value.targets?.dashboard??'unavailable'}\nEvidence: ${value.targets?.history??'unavailable'}`;}

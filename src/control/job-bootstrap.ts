@@ -44,9 +44,10 @@ import {SecurityAuditRuntime,SecurityAuditStore} from './security-audit.js';
 import {registerSecurityAudit,registerSecurityAuditContinuation} from './security-audit-job.js';
 import {AgentTemplateRegistry} from './agent-template.js';
 import {LabAgentJobRegistry,registerLabAgentJobActions} from './lab-agent-jobs.js';
+import {CostRoutingLedger} from './cost-performance-routing.js';
 
 /** Shared production definition path so qualification cannot drift from registered typed Actions. */
-export function buildJobRuntimeDefinition(config: AgentControlConfig, manifestDir = process.env.AGENT_CONTROL_JOB_DIR || path.resolve('config/jobs'), harnessEfficiency?: HarnessEfficiencyLedgerPort, modelRegistry?: ModelRegistry, codexNodeExecution?: CodexNodeExecutionPort, deterministicSkills?:DeterministicSkillRuntime) {
+export function buildJobRuntimeDefinition(config: AgentControlConfig, manifestDir = process.env.AGENT_CONTROL_JOB_DIR || path.resolve('config/jobs'), harnessEfficiency?: HarnessEfficiencyLedgerPort, modelRegistry?: ModelRegistry, codexNodeExecution?: CodexNodeExecutionPort, deterministicSkills?:DeterministicSkillRuntime,costRouting?:{config:AgentControlConfig;ledger:CostRoutingLedger}) {
   const parcelJobs = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../config/work-parcels/jobs');
   const operatorJobs = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../config/operator-jobs');
   const workers = WorkerRegistry.fromConfig(config.resources), managedNodes = new ManagedNodeManager(config.resources, workers, new SshManagedNodeTransport());
@@ -60,7 +61,7 @@ export function buildJobRuntimeDefinition(config: AgentControlConfig, manifestDi
   actions = registerNonOpenAiCacheQualificationActions(actions, harnessEfficiency);
   actions=registerDeterministicSkillActions(actions,deterministicSkills??registerCoreDeterministicHandlers(new DeterministicSkillRuntime()));
   const labJobs=new LabAgentJobRegistry().loadDirectory(process.env.AGENT_CONTROL_LAB_DIR??'');
-  if(process.env.AGENT_CONTROL_LAB_DIR)actions=registerLabAgentJobActions(actions,labJobs,modelRegistry,harnessEfficiency);
+  if(process.env.AGENT_CONTROL_LAB_DIR)actions=registerLabAgentJobActions(actions,labJobs,modelRegistry,harnessEfficiency,undefined,costRouting);
   const catalog = new JobCatalog(actions.ids()).loadDirectory(manifestDir).loadDirectory(parcelJobs);
   labJobs.addTo(catalog);
   registerOperatorObservation(actions, catalog, workers);
@@ -75,7 +76,8 @@ export function buildJobRuntime(config: AgentControlConfig, stateRoot = process.
   const learnedSkills = new SkillLearningRuntime(new FileSkillLearningStore(path.join(stateRoot, 'learned-skills', 'state.json')), config.learnedSkills);
   const energyTelemetry = new EnergyTelemetryRuntime(new FileEnergyTelemetryStore(path.join(stateRoot, 'energy-telemetry', 'state.json')));
   const deterministicSkills=registerCoreDeterministicHandlers(new DeterministicSkillRuntime(new FileDeterministicSkillStore(path.join(stateRoot,'deterministic-skills','state.json')),config.deterministicSkills));
-  const {workers, managedNodes, actions, catalog,labJobs} = buildJobRuntimeDefinition(config, manifestDir, harnessEfficiency, modelRegistry, codexNodeExecution,deterministicSkills);
+  const costRouting={config,ledger:new CostRoutingLedger(path.join(stateRoot,'cost-routing','decisions.jsonl'))};
+  const {workers, managedNodes, actions, catalog,labJobs} = buildJobRuntimeDefinition(config, manifestDir, harnessEfficiency, modelRegistry, codexNodeExecution,deterministicSkills,costRouting);
   const harnessProfiles = configuredHarnessProfiles(config.harnessEfficiency), harnessProfileRouter = configuredHarnessProfileRouter(config.harnessEfficiency), contextPacketBuilder = new ContextPacketBuilder(harnessProfiles);
   for (const resource of config.resources) if (resource.transport.type === 'local') workers.setHealth(resource.id, 'healthy');
   const repositoryRoots = config.jobs?.repositoryRoots ?? [path.resolve('.')];

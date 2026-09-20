@@ -115,6 +115,7 @@ Model Intelligence now reports real source coverage, initial versus follow-up ob
 - [Installation and troubleshooting](docs/installation-first-run.md#troubleshooting)
 - [Safe existing-install upgrade](docs/upgrade-4.11.md)
 - [Architecture](docs/architecture-v2-agnostic.md)
+- [Governed cost and performance routing](docs/cost-aware-openrouter-routing.md) — provider-neutral budgets and rate ceilings with an optional OpenRouter translation
 - [Governed Model Improvement](docs/model-improvement.md) — immutable baselines, isolated candidates, independent evaluation, Work Board stages and explicit promotion approval
 - [4.11 promotion and rollback qualification](docs/evidence/AGENT_CONTROL_4.11_PROMOTION_ROLLBACK_QUALIFICATION.md)
 - [Security](SECURITY.md) and [contributing](CONTRIBUTING.md)

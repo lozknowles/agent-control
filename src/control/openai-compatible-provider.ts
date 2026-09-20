@@ -5,19 +5,22 @@ import {providerPromptBoundary, renderProviderPrompt, type ProviderPromptInput} 
 import {resolveProviderCredential} from './provider-credential-store.js';
 import {redactSensitiveText} from './security-redaction.js';
 import {normalizeCacheEvidence, type CacheEvidence} from './cache-evidence.js';
+import {CostRoutingLedger,explainRouting,reconcileCost,type CostPerformanceRoutingPolicy,type RoutingCandidate,type RoutingExplanation,type CostReconciliation} from './cost-performance-routing.js';
+import {isOpenRouterEndpoint,openRouterUnsupportedCapabilities,translateOpenRouterPolicy} from './openrouter-cost-routing.js';
 
 export const PROMPT_CACHE_KEY_CAPABILITY = 'prompt-cache.key';
 export const PROMPT_CACHE_EXPLICIT_CAPABILITY = 'prompt-cache.explicit';
 
 export type {CacheEvidence} from './cache-evidence.js';
 export interface NormalizedModelUsage {inputTokens: number | null; outputTokens: number | null; cachedInputTokens: number | null; cacheWriteTokens?: number | null; reasoningTokens?: number | null; totalTokens: number | null; providerReportedCost: number | null; calculatedCost: number | null; currency: string | null; cacheEvidence?: CacheEvidence;}
-export interface ModelInvocationResult {providerId: string; accountProfileId?: string; nodeId?: string; modelId: string; providerModel: string; invocationProfile?: string | null; output: string; elapsedMs: number; usage: NormalizedModelUsage; responseModel: string | null; finishReason: string | null; toolCall: {name: string; arguments: string} | null; providerTimings?: Record<string,number>;}
+export interface ModelInvocationResult {providerId: string; accountProfileId?: string; nodeId?: string; modelId: string; providerModel: string; invocationProfile?: string | null; output: string; elapsedMs: number; usage: NormalizedModelUsage; responseModel: string | null; finishReason: string | null; toolCall: {name: string; arguments: string} | null; providerTimings?: Record<string,number>; costRouting?: {decision:RoutingExplanation;reconciliation:CostReconciliation};}
 export interface PartialModelInvocation extends ModelInvocationResult {responseHash: string;}
 export interface ProviderFailureObservation {requestDispatched: boolean; usage: NormalizedModelUsage | null; usageAuthority: 'authoritative' | 'estimated' | 'unavailable'; elapsedMs?: number | null; invocationProfile?: string | null;}
 export type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 export interface ProviderInvocationTelemetry {phase: 'started' | 'completed'; providerId: string; modelId: string; elapsedMs: number; usage?: NormalizedModelUsage; context: {tokens: number | null; limitTokens: number | null; authority: 'authoritative' | 'estimated' | 'unavailable'; source: string};}
 export interface ProviderInvocationProgress {kind: 'HEADERS' | 'STREAM_EVENT' | 'GENERATED_CONTENT'; at: string; elapsedMs: number; generatedCharacters: number;}
 export interface ProviderRequestExtension {profile: string; body: Readonly<Record<string, unknown>>;}
+export interface CostRoutingInvocationOptions {policy:CostPerformanceRoutingPolicy;candidates:RoutingCandidate[];inputTokensEstimated?:number;jobSpentUsd?:number;ledger?:CostRoutingLedger;runId?:string;jobId?:string;invocationId?:string;}
 export interface ProviderStreamingProbeResult {
   outcome: 'COMPLETED' | 'HTTP_ERROR' | 'TIMEOUT' | 'MALFORMED' | 'TRANSPORT_ERROR';
   providerId: string;
@@ -44,22 +47,33 @@ export class OpenAICompatibleProviderClient {
     if (provider.kind !== 'openai-compatible' && provider.kind !== 'responses' && provider.kind !== 'local') throw new Error('provider_not_openai_compatible');
     if (!provider.baseUrl) throw new Error('provider_base_url_required');
   }
-  async invoke(model: ModelConfig, input: ProviderPromptInput, options: {timeoutMs?: number; maximumOutputTokens?: number; structured?: boolean; outputSchema?: Record<string, unknown>; toolProbe?: string; requestExtension?: ProviderRequestExtension; signal?: AbortSignal; streaming?: boolean; noProgressMs?: number; onProgress?: (event: ProviderInvocationProgress) => void; onTelemetry?: (event: ProviderInvocationTelemetry) => void} = {}): Promise<ModelInvocationResult> {
+  async invoke(model: ModelConfig, input: ProviderPromptInput, options: {timeoutMs?: number; maximumOutputTokens?: number; structured?: boolean; outputSchema?: Record<string, unknown>; toolProbe?: string; requestExtension?: ProviderRequestExtension; costRouting?:CostRoutingInvocationOptions; signal?: AbortSignal; streaming?: boolean; noProgressMs?: number; onProgress?: (event: ProviderInvocationProgress) => void; onTelemetry?: (event: ProviderInvocationTelemetry) => void} = {}): Promise<ModelInvocationResult> {
     if (model.provider !== this.provider.id) throw new Error('model_provider_mismatch');
     if ((model.accountProfile ?? undefined) !== this.identity.accountProfileId) throw new Error('model_account_profile_mismatch');
-    const token = this.credential(), controller = new AbortController(), started = Date.now(), timeoutMs = options.timeoutMs ?? 30_000;
+    const controller = new AbortController(), started = Date.now(), timeoutMs = options.timeoutMs ?? 30_000;
     options.onTelemetry?.({phase: 'started', providerId: this.provider.id, modelId: model.id, elapsedMs: 0, context: {tokens: null, limitTokens: model.limits?.contextTokens ?? this.provider.qualification?.advertisedContextLimitTokens ?? null, authority: 'unavailable', source: 'provider_did_not_report_current_context'}});
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
     const wire = this.provider.wireApi ?? 'responses';
     const endpoint = `${this.provider.baseUrl!.replace(/\/$/, '')}/${wire === 'chat-completions' ? 'chat/completions' : 'responses'}`;
     const renderedInput = renderProviderPrompt(input);
+    let routingDecision:RoutingExplanation|undefined;
+    let effectiveExtension=options.requestExtension;
+    if(options.costRouting){
+      if(options.requestExtension)throw new Error('cost_routing_request_extension_conflict');
+      if(!isOpenRouterEndpoint(this.provider.baseUrl))throw new Error('provider_cost_routing_adapter_unsupported');
+      routingDecision=explainRouting({policy:options.costRouting.policy,candidates:options.costRouting.candidates,inputTokensEstimated:options.costRouting.inputTokensEstimated??Math.max(1,Math.ceil(renderedInput.length/4)),outputTokensRequested:options.maximumOutputTokens??256,jobSpentUsd:options.costRouting.jobSpentUsd,unsupportedCapabilities:openRouterUnsupportedCapabilities(options.costRouting.policy)});
+      options.costRouting.ledger?.append('DECISION',routingDecision,{runId:options.costRouting.runId,jobId:options.costRouting.jobId,invocationId:options.costRouting.invocationId});
+      if(routingDecision.decision==='BLOCKED')throw Object.assign(new Error(routingDecision.reason),{routingDecision});
+      effectiveExtension=translateOpenRouterPolicy(options.costRouting.policy);
+    }
+    const token = this.credential();
     const promptCache = wire === 'responses' ? promptCacheRequest(this.provider, model, input) : {};
     const parameters = {type: 'object', properties: {marker: {type: 'string'}}, required: ['marker'], additionalProperties: false};
     const responseFormat = options.outputSchema ? {type: 'json_schema', json_schema: {name: 'agent_control_output', strict: true, schema: options.outputSchema}} : {type: 'json_object'};
     const coreBody = wire === 'chat-completions'
       ? {model: model.providerModel, messages: [{role: 'user', content: renderedInput}], max_tokens: options.maximumOutputTokens ?? 256, ...(options.streaming ? {stream: true, stream_options: {include_usage: true}} : {}), ...(options.structured ? {temperature: 0, response_format: responseFormat} : {}), ...(options.toolProbe ? {tools: [{type: 'function', function: {name: options.toolProbe, description: 'Return the requested qualification marker', parameters}}], tool_choice: {type: 'function', function: {name: options.toolProbe}}} : {})}
       : {model: model.providerModel, input: promptCache.input ?? renderedInput, max_output_tokens: options.maximumOutputTokens ?? 256, ...promptCache.parameters, ...(options.structured ? {text: {format: options.outputSchema ? {type: 'json_schema', name: 'agent_control_output', strict: true, schema: options.outputSchema} : {type: 'json_object'}}} : {}), ...(options.toolProbe ? {tools: [{type: 'function', name: options.toolProbe, description: 'Return the requested qualification marker', parameters, strict: true}], tool_choice: {type: 'function', name: options.toolProbe}} : {})};
-    const body = extendProviderRequest(coreBody, options.requestExtension);
+    const body = extendProviderRequest(coreBody, effectiveExtension);
     let requestDispatched = false;
     const dispatcher = this.fetcher ? undefined : new Agent({headersTimeout: timeoutMs, bodyTimeout: timeoutMs});
     const fetcher: FetchLike = this.fetcher ?? ((request, init) => undiciFetch(
@@ -74,13 +88,14 @@ export class OpenAICompatibleProviderClient {
       options.onProgress?.({kind: 'HEADERS', at: new Date().toISOString(), elapsedMs: Date.now() - started, generatedCharacters: 0});
       let payload: Record<string, unknown>;
       try { payload = options.streaming ? await readInvocationStream(response, wire, started, options.noProgressMs, options.onProgress) : await response.json() as Record<string, unknown>; } catch (error) { if ((error as Error).message === 'MODEL_NO_PROGRESS') throw error; throw new Error('provider_malformed_response'); }
-      const extractedToolCall = extractToolCall(payload, wire), toolCall = extractedToolCall ? {name: redactSensitiveText(extractedToolCall.name, [token]), arguments: redactSensitiveText(extractedToolCall.arguments, [token])} : null, output = redactSensitiveText(extractOutput(payload, wire), [token]), partial: PartialModelInvocation = {providerId: this.provider.id, ...(this.identity.accountProfileId ? {accountProfileId: this.identity.accountProfileId} : {}), ...(this.identity.nodeId ? {nodeId: this.identity.nodeId} : {}), modelId: model.id, providerModel: model.providerModel, invocationProfile: options.requestExtension?.profile ?? null, output, elapsedMs: Date.now() - started, usage: normalizeModelUsage(payload.usage, model, payload.timings), responseModel: typeof payload.model === 'string' ? redactSensitiveText(payload.model, [token]) : null, finishReason: redactSensitiveText(extractFinishReason(payload, wire) ?? '', [token]) || null, toolCall,providerTimings:numericRecord(payload.timings), responseHash:`sha256:${createHash('sha256').update(JSON.stringify(payload)).digest('hex')}`};
+      const extractedToolCall = extractToolCall(payload, wire), toolCall = extractedToolCall ? {name: redactSensitiveText(extractedToolCall.name, [token]), arguments: redactSensitiveText(extractedToolCall.arguments, [token])} : null, output = redactSensitiveText(extractOutput(payload, wire), [token]), partial: PartialModelInvocation = {providerId: this.provider.id, ...(this.identity.accountProfileId ? {accountProfileId: this.identity.accountProfileId} : {}), ...(this.identity.nodeId ? {nodeId: this.identity.nodeId} : {}), modelId: model.id, providerModel: model.providerModel, invocationProfile: effectiveExtension?.profile ?? null, output, elapsedMs: Date.now() - started, usage: normalizeModelUsage(payload.usage, model, payload.timings), responseModel: typeof payload.model === 'string' ? redactSensitiveText(payload.model, [token]) : null, finishReason: redactSensitiveText(extractFinishReason(payload, wire) ?? '', [token]) || null, toolCall,providerTimings:numericRecord(payload.timings), responseHash:`sha256:${createHash('sha256').update(JSON.stringify(payload)).digest('hex')}`};
       if (!output && !toolCall) throw Object.assign(new Error('provider_malformed_response'),{partialInvocation:partial});
       const {responseHash: _responseHash, ...result}=partial, limitTokens=model.limits?.contextTokens ?? this.provider.qualification?.advertisedContextLimitTokens ?? null, estimatedContext=result.usage.totalTokens !== null && limitTokens !== null;
+      if(routingDecision&&options.costRouting){const prompt=result.usage.inputTokens,cached=result.usage.cachedInputTokens,fresh=prompt===null||cached===null?null:prompt-cached,reconciliation=reconcileCost(routingDecision.estimate,{promptTokens:prompt,cachedInputTokens:cached,freshInputTokens:fresh,reasoningTokens:result.usage.reasoningTokens??null,outputTokens:result.usage.outputTokens,providerReportedCostUsd:result.usage.providerReportedCost,advertisedInputUsdPerMillionTokens:routingDecision.selected?.inputUsdPerMillionTokens??null,advertisedOutputUsdPerMillionTokens:routingDecision.selected?.outputUsdPerMillionTokens??null});result.costRouting={decision:routingDecision,reconciliation};options.costRouting.ledger?.append('RECONCILIATION',result.costRouting,{runId:options.costRouting.runId,jobId:options.costRouting.jobId,invocationId:options.costRouting.invocationId});}
       options.onTelemetry?.({phase: 'completed', providerId: this.provider.id, modelId: model.id, elapsedMs: result.elapsedMs, usage: result.usage, context: {tokens: estimatedContext ? result.usage.totalTokens : null, limitTokens, authority: estimatedContext ? 'estimated' : 'unavailable', source: estimatedContext ? 'ephemeral_single_turn_usage_estimate' : 'provider_did_not_report_current_context'}}); return result;
     } catch (error) {
       const failure = normalizeProviderTransportFailure(error, options.signal?.aborted === true, controller.signal.aborted);
-      if (!(failure as {partialInvocation?: PartialModelInvocation}).partialInvocation && !(failure as {providerFailureObservation?: ProviderFailureObservation}).providerFailureObservation) Object.assign(failure as object, {providerFailureObservation: {requestDispatched, usage: null, usageAuthority: 'unavailable', elapsedMs: Date.now() - started, invocationProfile: options.requestExtension?.profile ?? null} satisfies ProviderFailureObservation});
+      if (!(failure as {partialInvocation?: PartialModelInvocation}).partialInvocation && !(failure as {providerFailureObservation?: ProviderFailureObservation}).providerFailureObservation) Object.assign(failure as object, {providerFailureObservation: {requestDispatched, usage: null, usageAuthority: 'unavailable', elapsedMs: Date.now() - started, invocationProfile: effectiveExtension?.profile ?? null} satisfies ProviderFailureObservation});
       throw sanitizeError(failure, token);
     }
     finally { clearTimeout(timeout); if (dispatcher) await dispatcher.destroy(); }

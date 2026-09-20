@@ -6,6 +6,7 @@ import type {AdaptiveOrchestrationConfig} from './adaptive-orchestration.js';
 import type {CacheExpertPolicyConfig} from './cache-aware-expert.js';
 import type {LearnedSkillPolicyConfig} from './skill-learning.js';
 import type {DeterministicSkillPolicyConfig} from './deterministic-skill.js';
+import {normalizePolicy, type CostPerformanceRoutingPolicy} from './cost-performance-routing.js';
 
 export type Platform = 'linux' | 'windows' | 'android' | 'ios' | 'ipados' | 'macos' | 'remote' | 'unknown';
 export type TransportType = 'local' | 'ssh' | 'http' | 'orca';
@@ -136,6 +137,7 @@ export interface ProviderConfig {
     evidence?: string[];
   };
   accountProfiles?: ProviderAccountProfileConfig[];
+  costPerformanceRouting?: CostPerformanceRoutingPolicy;
 }
 
 export interface ModelConfig {
@@ -152,6 +154,7 @@ export interface ModelConfig {
   limits?: {contextTokens?: number; outputTokens?: number};
   qualification?: {state: ModelQualificationState; version?: string; qualifiedAt?: string; evidence?: string[]; capabilities?: string[]; nodes?: string[]; latencyMs?: number; successRate?: number};
   pricing?: {currency: string; inputPerMillionTokens: number; outputPerMillionTokens: number; cachedInputPerMillionTokens?: number; cacheWritePerMillionTokens?: number; effectiveFrom: string; source: string};
+  costPerformanceRouting?: CostPerformanceRoutingPolicy;
 }
 export interface ModelRouteConfig {primary: string; fallback?: string[]; requires?: string[];}
 export interface ModelRoutingConfig {defaultRole?: string; roles: Record<string, ModelRouteConfig>;}
@@ -267,6 +270,7 @@ export interface AgentControlConfig {
   learnedSkills?: LearnedSkillPolicyConfig;
   deterministicSkills?: DeterministicSkillPolicyConfig;
   jobs?: ParameterizedJobsConfig;
+  costPerformanceRouting?: {estate?: CostPerformanceRoutingPolicy; presets?: CostPerformanceRoutingPolicy[]; suites?: Record<string, CostPerformanceRoutingPolicy>; jobs?: Record<string, CostPerformanceRoutingPolicy>};
 }
 
 export const emptyConfig = (): AgentControlConfig => ({
@@ -305,7 +309,7 @@ function assertIntegerRange(value: unknown, label: string, minimum: number, maxi
 function rejectSecrets(value: unknown, trail = 'config') {
   if (typeof value === 'string' && containsSensitiveMaterial(value)) throw new Error(`secret_material_forbidden:${trail}`);
   if (!value || typeof value !== 'object') return;
-  const safeTokenAccountingKeys = new Set(['tokenAwareOutput', 'tokenBatonRouting', 'completeMaxTokens', 'artifactOnlyAboveReturnedTokens', 'minimumCompleteTokens', 'harnessEfficiency', 'maximumInitialContextTokens', 'maximumContextTokens', 'maximumEvidenceTokens', 'advertisedContextLimitTokens', 'maximumObservedInputTokens', 'inputPerMillionTokens', 'outputPerMillionTokens', 'cachedInputPerMillionTokens', 'cacheWritePerMillionTokens', 'contextTokens', 'outputTokens', 'continuePercent', 'prepareBatonPercent', 'compactPercent', 'handoffPercent', 'sampleRetention']);
+  const safeTokenAccountingKeys = new Set(['tokenAwareOutput', 'tokenBatonRouting', 'completeMaxTokens', 'artifactOnlyAboveReturnedTokens', 'minimumCompleteTokens', 'harnessEfficiency', 'maximumInitialContextTokens', 'maximumContextTokens', 'maximumEvidenceTokens', 'advertisedContextLimitTokens', 'maximumObservedInputTokens', 'inputPerMillionTokens', 'outputPerMillionTokens', 'cachedInputPerMillionTokens', 'cacheWritePerMillionTokens', 'contextTokens', 'outputTokens', 'continuePercent', 'prepareBatonPercent', 'compactPercent', 'handoffPercent', 'sampleRetention', 'rateCeilingUsdPerMillionTokens', 'tokenCeiling']);
   for (const [key, child] of Object.entries(value)) {
     if (/token|password|secret|api.?key/i.test(key) && !['credentialEnv', 'credentialFileEnv'].includes(key) && !safeTokenAccountingKeys.has(key)) {
       throw new Error(`secret_material_forbidden:${trail}.${key}`);
@@ -337,7 +341,17 @@ export function validateConfig(raw: unknown): AgentControlConfig {
     learnedSkills: input.learnedSkills,
     deterministicSkills: input.deterministicSkills,
     jobs: input.jobs,
+    costPerformanceRouting: input.costPerformanceRouting,
   };
+  if (config.costPerformanceRouting) {
+    if (config.costPerformanceRouting.estate) normalizePolicy(config.costPerformanceRouting.estate);
+    if (config.costPerformanceRouting.presets !== undefined && !Array.isArray(config.costPerformanceRouting.presets)) throw new Error('invalid_cost_performance_routing_presets');
+    for (const policy of config.costPerformanceRouting.presets ?? []) normalizePolicy(policy);
+    for (const [scope, policies] of [['suites',config.costPerformanceRouting.suites],['jobs',config.costPerformanceRouting.jobs]] as const) {
+      if (policies !== undefined && (!policies || typeof policies !== 'object' || Array.isArray(policies))) throw new Error(`invalid_cost_performance_routing_${scope}`);
+      for (const [id, policy] of Object.entries(policies ?? {})) { assertId(id, `cost_performance_routing_${scope}`); normalizePolicy(policy); }
+    }
+  }
   if (config.jobs) {
     if (!Array.isArray(config.jobs.repositoryRoots) || !config.jobs.repositoryRoots.length) throw new Error('invalid_job_repository_roots');
     for (const root of config.jobs.repositoryRoots) if (typeof root !== 'string' || !absolutePath(root) || filesystemRoot(root)) throw new Error('invalid_job_repository_root');
@@ -408,6 +422,7 @@ export function validateConfig(raw: unknown): AgentControlConfig {
     assertId(provider.id, 'provider');
     if (ids.has(provider.id)) throw new Error(`duplicate_id:${provider.id}`);
     ids.add(provider.id);
+    if (provider.costPerformanceRouting) normalizePolicy(provider.costPerformanceRouting);
     if (!['local', 'responses', 'cli', 'browser-bridge', 'openai-compatible'].includes(provider.kind)) throw new Error(`invalid_provider_kind:${provider.id}`);
     if (provider.enabled !== undefined && typeof provider.enabled !== 'boolean') throw new Error(`invalid_provider_enabled:${provider.id}`);
     if (provider.baseUrl) assertUrl(provider.baseUrl, `provider_${provider.id}`);
@@ -472,6 +487,7 @@ export function validateConfig(raw: unknown): AgentControlConfig {
   const modelIds = new Set<string>();
   for (const model of config.models) {
     assertId(model.id, 'model');
+    if (model.costPerformanceRouting) normalizePolicy(model.costPerformanceRouting);
     if (modelIds.has(model.id)) throw new Error(`duplicate_model_id:${model.id}`);
     modelIds.add(model.id);
     if (!providerIds.has(model.provider)) throw new Error(`unknown_model_provider:${model.id}:${model.provider}`);
