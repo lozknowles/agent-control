@@ -17,6 +17,9 @@ export interface ExperimentalModelServerSpec {
   minimumAvailableRamBytes:number;
   protectedHealthUrls:string[];
   startupTimeoutMs:number;
+  expectedRuntimeSha256?:string;
+  expectedModelSha256?:string;
+  expectedRuntimeBuild?:string;
 }
 
 export interface HostResourceSnapshot {at:string;availableRamBytes:number|null;freeRamBytes:number|null;swapFreeBytes:number|null;}
@@ -30,6 +33,13 @@ export interface ExperimentalModelAdmission {
   protectedBefore:ProtectedHealth[];
   processPid:number;
   executionSessionIds:string[];
+}
+export interface ExperimentalModelIdentityPreflight {
+  inspectedAt:string;
+  runtime:{path:string;sha256:string;build:string};
+  model:{path:string;sizeBytes:number;sha256:string};
+  settings:{host:string;port:number;contextTokens:number;gpuLayers:number;threads:number};
+  resources:HostResourceSnapshot;
 }
 export interface ExperimentalModelCleanup {
   cleanup:ExecutionCleanupReport;
@@ -58,9 +68,10 @@ export class ExperimentalModelServer {
   private readonly stopSignal=new AbortController();
   private process?:Promise<OwnedProcessResult>;
   private admission?:ExperimentalModelAdmission;
+  private preflight?:ExperimentalModelIdentityPreflight;
   constructor(private readonly spec:ExperimentalModelServerSpec,private readonly owned:OwnedExecution){}
 
-  async start():Promise<ExperimentalModelAdmission>{
+  async inspectIdentity():Promise<ExperimentalModelIdentityPreflight>{
     const s=this.spec;
     if(process.platform!=='linux')throw Error('experimental_model_server_linux_required');
     if(s.host!=='127.0.0.1'||s.port===8080||s.port===8081||s.port<1024||s.port>65535)throw Error('experimental_model_server_endpoint_not_admitted');
@@ -71,10 +82,23 @@ export class ExperimentalModelServer {
     const resourcesBefore=meminfo();
     if(resourcesBefore.availableRamBytes===null)throw Error('experimental_model_server_available_ram_unknown');
     if(resourcesBefore.availableRamBytes-model.size<s.minimumAvailableRamBytes)throw Error(`experimental_model_server_ram_blocked:available=${resourcesBefore.availableRamBytes}:model=${model.size}:reserve=${s.minimumAvailableRamBytes}`);
-    const protectedBefore=await healthAll(s.protectedHealthUrls);
     const version=await this.owned.runProcess({command:s.runtimePath,args:['--version'],maxOutputBytes:64*1024,session:{adapterId:'experimental-model-host-v1',commandLabel:'Inspect admitted llama runtime',crewRole:'resource-guardian'}},AbortSignal.timeout(30000));
     if(version.exitCode!==0)throw Error('experimental_model_server_runtime_version_failed');
     const [runtimeSha256,modelSha256]=await Promise.all([hashFile(s.runtimePath),hashFile(s.modelPath)]);
+    const build=`${version.stdout}\n${version.stderr}`.trim();
+    if(s.expectedRuntimeSha256&&runtimeSha256!==s.expectedRuntimeSha256)throw Error(`experimental_model_server_runtime_digest_mismatch:${runtimeSha256}`);
+    if(s.expectedModelSha256&&modelSha256!==s.expectedModelSha256)throw Error(`experimental_model_server_model_digest_mismatch:${modelSha256}`);
+    if(s.expectedRuntimeBuild&&!build.includes(s.expectedRuntimeBuild))throw Error(`experimental_model_server_runtime_build_mismatch:${build}`);
+    this.preflight={inspectedAt:new Date().toISOString(),runtime:{path:s.runtimePath,sha256:runtimeSha256,build},model:{path:s.modelPath,sizeBytes:model.size,sha256:modelSha256},settings:{host:s.host,port:s.port,contextTokens:s.contextTokens,gpuLayers:s.gpuLayers,threads:s.threads},resources:resourcesBefore};
+    return structuredClone(this.preflight);
+  }
+
+  async start():Promise<ExperimentalModelAdmission>{
+    const s=this.spec,preflight=this.preflight??await this.inspectIdentity(),resourcesBefore=meminfo();
+    if(await portOpen(s.host,s.port))throw Error(`experimental_model_server_port_in_use:${s.port}`);
+    if(resourcesBefore.availableRamBytes===null)throw Error('experimental_model_server_available_ram_unknown');
+    if(resourcesBefore.availableRamBytes-preflight.model.sizeBytes<s.minimumAvailableRamBytes)throw Error(`experimental_model_server_ram_blocked:available=${resourcesBefore.availableRamBytes}:model=${preflight.model.sizeBytes}:reserve=${s.minimumAvailableRamBytes}`);
+    const protectedBefore=await healthAll(s.protectedHealthUrls);
     const args=['--model',s.modelPath,'--host',s.host,'--port',String(s.port),'--ctx-size',String(s.contextTokens),'--parallel','1','--threads',String(s.threads),'--n-gpu-layers',String(s.gpuLayers),'--no-warmup'];
     this.process=this.owned.runProcess({command:s.runtimePath,args,maxOutputBytes:2*1024*1024,session:{adapterId:'experimental-model-host-v1',commandLabel:'Governed isolated experimental model server',crewRole:'resource-guardian'}},this.stopSignal.signal);
     void this.process.catch(()=>undefined);
@@ -82,7 +106,7 @@ export class ExperimentalModelServer {
     while(Date.now()<deadline){if(this.stopSignal.signal.aborted)break;try{const response=await fetch(`http://${s.host}:${s.port}/health`,{signal:AbortSignal.timeout(3000)});if(response.ok){ready=true;break;}}catch{}await delay(1000);}
     if(!ready){await this.stop('startup_failed');throw Error('experimental_model_server_startup_failed');}
     const pids=this.owned.activePids();
-    this.admission={admittedAt:new Date().toISOString(),runtime:{path:s.runtimePath,sha256:runtimeSha256,build:`${version.stdout}\n${version.stderr}`.trim()},model:{path:s.modelPath,sizeBytes:model.size,sha256:modelSha256},settings:{host:s.host,port:s.port,contextTokens:s.contextTokens,gpuLayers:s.gpuLayers,threads:s.threads},resourcesBefore,protectedBefore,processPid:pids.at(-1)??-1,executionSessionIds:this.owned.sessionIds?.()??[]};
+    this.admission={admittedAt:new Date().toISOString(),runtime:preflight.runtime,model:preflight.model,settings:preflight.settings,resourcesBefore,protectedBefore,processPid:pids.at(-1)??-1,executionSessionIds:this.owned.sessionIds?.()??[]};
     return structuredClone(this.admission);
   }
 
