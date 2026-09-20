@@ -2,11 +2,13 @@
 
 ## 4.12.1 dashboard navigation
 
-The authenticated dashboard can search the authoritative workspace projection across devices, nested environments, runtimes, workers, runs and invocations. Results use a bounded cursor and are rebuilt from the current Agent Control records; there is no separately maintained workspace index or topology.
+The authenticated dashboard can search the authoritative workspace projection across projects, repositories, devices, nested environments, runtimes, workers, runs, invocations and retained artifacts. Results use a bounded cursor and are rebuilt from current Agent Control records; there is no separately maintained workspace index or topology.
 
 Operators can save up to 64 favourites. The durable preference file stores only the operator identity, opaque workspace ID and creation time. Labels and state are resolved from the current projection whenever the workspace panel opens, so a favourite cannot become an alternative source of truth.
 
-Where an exact execution-session relationship is recorded, a workspace exposes **WATCH**. This calls the existing Live Shell attachment in read-only mode. Any intervention still requires the existing explicit Live Shell authorization and confirmation. Arbitrary file activation remains unavailable because Agent Control does not yet have a matching protected file-viewer path.
+Where an exact execution-session relationship is recorded, a workspace exposes **WATCH**. This calls the existing Live Shell attachment in read-only mode. Any intervention still requires the existing explicit Live Shell authorization and confirmation.
+
+Project workspaces derive only from durable Dynamic Work Board project declarations. Repository workspaces derive only from resolved parameterized-job repository records and their reviewed commit SHA. Runs link to both as related authoritative context rather than pretending either is an execution-container parent. Retained Agent Control-managed artifacts can be opened with the existing authenticated, redacted artifact viewer. Workspace navigation does not expose repository source paths, snapshots or an arbitrary host filesystem browser.
 
 The Dynamic Work Board also renders an authenticated containment and recovery timeline derived from durable containment records. It includes the stop request, completion state, recovery transitions, actor, scope, timestamps and evidence references without reconstructing missing events.
 
@@ -58,8 +60,9 @@ Workspace reads use `AGENT_CONTROL_WEB_URL` and require `AGENT_CONTROL_WEB_OPERA
 
 - Workspaces project current authoritative records on demand; they do not persist another Estate graph.
 - Recent navigation is session-local UI convenience, not an authoritative record.
-- Files and terminals remain governed by existing execution-session and protected-resource controls.
-- Project/repository semantics are future work and require evidence-backed relationships before becoming a workspace kind.
+- Terminals remain governed by existing execution-session controls.
+- Managed artifacts use the authenticated redacted evidence viewer. Repository source browsing remains deliberately unavailable until a separately governed source-view capability exists.
+- Projects and repositories appear only when durable Work Board or resolved-repository evidence supplies the relationship; ordinary devices gain no empty panels.
 - This implementation has no dependency on Rune or any Rune source code.
 
 ## Release evidence and upgrade

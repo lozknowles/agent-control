@@ -10,11 +10,13 @@ Candidate: recorded in the final qualification JSON after the isolated candidate
 
 ## Implemented
 
-1. **Authoritative workspace search** — devices, nested environments, runtimes, workers, runs and invocations are searched through a bounded, cursor-paginated projection. No parallel workspace index or topology is maintained.
+1. **Authoritative workspace search** — projects, repositories, devices, nested environments, runtimes, workers, runs, invocations and retained artifacts are searched through a bounded, cursor-paginated projection. No parallel workspace index or topology is maintained.
 2. **Durable favourites** — each authenticated operator can store up to 64 opaque workspace IDs. Labels, state and availability are resolved afresh from authoritative records.
 3. **Governed session entry** — an exact recorded session relationship exposes the existing Live Shell in WATCH mode. Workspace navigation cannot create a session or grant intervention authority.
 4. **Containment and recovery timeline** — the Dynamic Work Board renders stop requests, completion outcomes and recovery transitions from durable containment records with actors, timestamps, scope and evidence references.
 5. **Responsive presentation** — long authorization labels and containment states wrap cleanly, and the Work Board becomes a single-column progressive view on constrained screens.
+6. **Evidence-backed project/repository navigation** — projects come from durable Work Board declarations; repositories come from resolved parameterized-job snapshots with reviewed commit identity. Both associate to the same authoritative runs.
+7. **Protected artifact viewing** — retained Agent Control-managed artifacts open through the existing authenticated, redacted evidence viewer. No source or snapshot path is projected.
 
 ## Data and authority model
 
@@ -25,8 +27,8 @@ Opening a workspace grants no shell, file, credential, job, deployment or remote
 ## Automated qualification
 
 - TypeScript type checking: PASS.
-- Focused workspace, preference, containment, web API and Work Board tests: 91 passed, 0 failed, 0 skipped in 5.42 seconds.
-- Complete regression suite: 2,007 passed, 0 failed, 0 skipped in 256.14 seconds.
+- Focused workspace, preference, containment, web API and Work Board tests: 85 passed, 0 failed, 0 skipped in 6.94 seconds.
+- Complete regression suite: 2,010 passed, 0 failed, 0 skipped in 284.55 seconds.
 - `git diff --check`: PASS.
 
 ## Browser qualification
@@ -42,6 +44,9 @@ The browser qualification uses the production dashboard assets and production wo
 - New execution authority granted: NO.
 - Durable containment/recovery timeline: PASS.
 - Page JavaScript errors: NONE.
+- Project and repository workspace navigation: PASS.
+- Protected managed-artifact viewer: PASS.
+- Arbitrary source-filesystem authority granted: NO.
 
 Physical mobile-device qualification is not claimed by this parcel.
 
@@ -49,22 +54,14 @@ Physical mobile-device qualification is not claimed by this parcel.
 
 The generated evidence directory contains:
 
-1. `01-workspace-estate-desktop.png`
-2. `02-workspace-search.png`
-3. `03-invocation-workspace.png`
-4. `04-token-and-cache-evidence.png`
-5. `05-governed-watch.png`
-6. `06-workspace-mobile-portrait.png`
-7. `07-containment-mobile-portrait.png`
-8. `08-containment-mobile-landscape.png`
-9. `qualification.json`
+The pack includes Estate, project, repository, protected artifact, invocation/token, governed WATCH, portrait and landscape containment views plus `qualification.json`. The receipt enumerates the exact filenames and binds them to the final source commit.
 
 The JSON receipt binds the evidence to the candidate source commit after the final committed rerun.
 
 ## Remaining boundaries
 
-- Project and repository workspaces remain undefined because Agent Control does not yet retain a generic evidence-backed relationship suitable for a new workspace identity.
-- Protected file navigation remains unavailable because there is no established protected file-viewer path equivalent to the governed execution-session attachment.
+- Repository source browsing remains unavailable. Managed evidence artifacts are viewable, but workspace identity never grants arbitrary filesystem authority.
+- Physical Pixel qualification is reported separately and is never inferred from Chromium mobile emulation.
 - Search is computed from authoritative records on demand. The cursor bounds responses; a durable secondary index should only be introduced if measured large-estate cost justifies one.
 
 These boundaries do not regress current behavior and are retained in `TODO.md`.

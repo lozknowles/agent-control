@@ -25,6 +25,7 @@ import type {OutputAuthorityScope, OutputExpansionRequest, TokenAwareOutputMetri
 import {MemoryHarnessEfficiencyLedger, type HarnessEfficiencyLedgerPort, type HarnessEfficiencyMetrics} from './harness-efficiency.js';
 import {AGENT_CONTROL_VERSION} from '../version.js';
 import type {WorkParcelCoordinator} from './work-parcels.js';
+import type {WorkBoardRuntime} from './work-board.js';
 import type {AgentTemplateRegistry} from './agent-template.js';
 import {probeProvider} from './provider-health.js';
 import {deriveSystemReadiness, type RegisteredService, type SystemReadiness} from './system-readiness.js';
@@ -206,6 +207,7 @@ export class AgentControlService {
   private tokenAwareOutput?: TokenAwareOutputService;
   private harnessEfficiency?: HarnessEfficiencyLedgerPort;
   private workParcels?: WorkParcelCoordinator;
+  private workBoards?: WorkBoardRuntime;
   private modelRegistry?: ModelRegistry;
   private parameterizedJobs?: ParameterizedJobEngine;
   private identity?: IdentityControlPlane;
@@ -244,7 +246,7 @@ export class AgentControlService {
     this.verification = new VerificationService(state, persist);
   }
 
-  configureProjection(extras: {modelWatches?:ModelWatchRuntime;localBenchmark?:LocalBenchmarkController;jobLibraryReadiness?: (scan:DiscoveryScan,now:Date)=>OperationalReadiness[]; approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; services?: RegisteredService[]; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService; tokenBatonRouting?: TokenAwareBatonRuntime; governedRetrieval?: GovernedRetrievalRuntime; codexNodeExecution?: CodexNodeExecutionPort; harnessEfficiency?: HarnessEfficiencyLedgerPort; workParcels?: WorkParcelCoordinator; modelRegistry?: ModelRegistry; parameterizedJobs?: ParameterizedJobEngine; identity?: IdentityControlPlane; defaultSessionId?: string; fastExecution?: FastExecutionLedgerPort; runtimeObservability?: RuntimeObservability; capabilityIntelligence?: CapabilityIntelligenceStore; modelIntelligence?: ModelIntelligenceLedger; qualificationSuite?: FrozenQualificationSuite; providerCatalog?: ProviderCatalogRuntime; adaptiveOrchestration?: AdaptiveOrchestrationRuntime; executionSessions?: ExecutionSessionRuntime; poe?: PoeRuntime; cacheExperts?: CacheAwareExpertRuntime; learnedSkills?: SkillLearningRuntime; deterministicSkills?:DeterministicSkillRuntime; energyTelemetry?: EnergyTelemetryRuntime; environmentDiscovery?:EnvironmentDiscoveryRuntime; capabilityAdapters?:CapabilityAdapterRegistry; installation?:InstallationLifecycle}) {
+  configureProjection(extras: {modelWatches?:ModelWatchRuntime;localBenchmark?:LocalBenchmarkController;jobLibraryReadiness?: (scan:DiscoveryScan,now:Date)=>OperationalReadiness[]; approvalCount?: () => number; resources?: Array<Omit<SystemProjection['resources'][number], 'health' | 'capacity' | 'active' | 'observedAt' | 'node'>>; services?: RegisteredService[]; contextStore?: ContextStore; jobRuntime?: JobRuntime; managedNodes?: ManagedNodeManager; tokenAwareOutput?: TokenAwareOutputService; tokenBatonRouting?: TokenAwareBatonRuntime; governedRetrieval?: GovernedRetrievalRuntime; codexNodeExecution?: CodexNodeExecutionPort; harnessEfficiency?: HarnessEfficiencyLedgerPort; workParcels?: WorkParcelCoordinator; workBoards?:WorkBoardRuntime; modelRegistry?: ModelRegistry; parameterizedJobs?: ParameterizedJobEngine; identity?: IdentityControlPlane; defaultSessionId?: string; fastExecution?: FastExecutionLedgerPort; runtimeObservability?: RuntimeObservability; capabilityIntelligence?: CapabilityIntelligenceStore; modelIntelligence?: ModelIntelligenceLedger; qualificationSuite?: FrozenQualificationSuite; providerCatalog?: ProviderCatalogRuntime; adaptiveOrchestration?: AdaptiveOrchestrationRuntime; executionSessions?: ExecutionSessionRuntime; poe?: PoeRuntime; cacheExperts?: CacheAwareExpertRuntime; learnedSkills?: SkillLearningRuntime; deterministicSkills?:DeterministicSkillRuntime; energyTelemetry?: EnergyTelemetryRuntime; environmentDiscovery?:EnvironmentDiscoveryRuntime; capabilityAdapters?:CapabilityAdapterRegistry; installation?:InstallationLifecycle}) {
     if (extras.modelWatches) this.modelWatches=extras.modelWatches;
     if (extras.localBenchmark) this.localBenchmark=extras.localBenchmark;
     if (extras.jobLibraryReadiness) this.jobLibraryReadiness=extras.jobLibraryReadiness;
@@ -260,6 +262,7 @@ export class AgentControlService {
     if (extras.codexNodeExecution) this.codexNodeExecution = extras.codexNodeExecution;
     if (extras.harnessEfficiency) this.harnessEfficiency = extras.harnessEfficiency;
     if (extras.workParcels) this.workParcels = extras.workParcels;
+    if (extras.workBoards) this.workBoards=extras.workBoards;
     if (extras.modelRegistry) this.modelRegistry = extras.modelRegistry;
     if (extras.parameterizedJobs) this.parameterizedJobs = extras.parameterizedJobs;
     if (extras.identity) this.identity = extras.identity;
@@ -422,9 +425,17 @@ export class AgentControlService {
   estateHeartbeat(){const map=this.estateMap();return {observedAt:map.observedAt,scanId:map.parcelId,freshness:map.freshness,counts:(map as unknown as {estateCounts:unknown}).estateCounts};}
   private workspaceSource():WorkspaceSource {
     const estate=this.estateMap(),nodeIds=estate.nodes.filter(node=>['machine','device'].includes(node.type)).map(node=>node.id),nodes=nodeIds.flatMap(id=>{try{return[this.nodeDashboard(id) as unknown as WorkspaceNodeDashboard];}catch{return[];}});
-    const runIds=[...(this.workParcels?.list()??[]).map(parcel=>parcel.id),...(this.jobRuntime?.ledger.list()??[]).map(run=>run.id)];
+    const parameterized=this.parameterizedJobs?.runs.list()??[],expandRunId=(id:string)=>parameterized.find(run=>run.id===id)?.workParcelIds??[id];
+    const runIds=[...(this.workParcels?.list()??[]).map(parcel=>parcel.id),...(this.jobRuntime?.ledger.list()??[]).map(run=>run.id),...parameterized.flatMap(run=>run.workParcelIds)];
     const runs=[...new Set(runIds)].flatMap(id=>{try{return[this.runInspector(id) as unknown as WorkspaceRunInspector];}catch{return[];}});
-    return{estate,nodes,runs,sessions:this.executionSessionProjection()};
+    const projectMap=new Map<string,NonNullable<WorkspaceSource['projects']>[number]>();
+    for(const board of this.workBoards?.list()??[]){
+      const declarations=[{project:board.project,workspace:board.workspace,runIds:board.items.flatMap(item=>item.runs.map(run=>run.runId))},...board.items.map(item=>({project:item.project,workspace:item.workspace,runIds:item.runs.map(run=>run.runId)}))];
+      for(const declaration of declarations){const id=declaration.project.trim();if(!id)continue;const current=projectMap.get(id)??{id,label:id,workspaces:[],boardIds:[],runIds:[],evidence:[]};current.workspaces=[...new Set([...current.workspaces,declaration.workspace])];current.boardIds=[...new Set([...current.boardIds,board.id])];current.runIds=[...new Set([...current.runIds,...declaration.runIds.flatMap(expandRunId)])];current.evidence=[...new Map([...current.evidence,{kind:'work-board',id:board.id}].map(item=>[`${item.kind}:${item.id}`,item])).values()];projectMap.set(id,current);}
+    }
+    const repositoryMap=new Map<string,NonNullable<WorkspaceSource['repositories']>[number]>();
+    for(const run of parameterized){const repository=run.repository;if(!repository)continue;const current=repositoryMap.get(repository.identity)??{identity:repository.identity,name:repository.name,nodeId:repository.nodeId,requestedRef:repository.requestedRef,reviewedSha:repository.reviewedSha,dirty:repository.dirty,runIds:[],evidence:[]};current.runIds=[...new Set([...current.runIds,...run.workParcelIds])];current.evidence=[...new Map([...current.evidence,{kind:'resolved-repository',id:`${run.id}:${repository.reviewedSha}`}].map(item=>[`${item.kind}:${item.id}`,item])).values()];repositoryMap.set(repository.identity,current);}
+    return{estate,nodes,runs,sessions:this.executionSessionProjection(),projects:[...projectMap.values()],repositories:[...repositoryMap.values()]};
   }
   workspaces(){return listWorkspaceRoots(this.workspaceSource());}
   searchWorkspaces(input:{query?:string;cursor?:string|null;limit?:number}){return searchWorkspaces(this.workspaceSource(),input);}

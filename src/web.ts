@@ -129,6 +129,7 @@ const service = new AgentControlService(state, ptys, providers).configureProject
   codexNodeExecution,
   harnessEfficiency: jobRuntime.harnessEfficiency,
   workParcels: jobRuntime.workParcels,
+  workBoards,
   modelRegistry,
   parameterizedJobs,
   identity,

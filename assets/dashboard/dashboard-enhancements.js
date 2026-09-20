@@ -510,6 +510,7 @@ async function jobCommand(url, body) {
   return result;
 }
 
+window.AgentControlArtifacts={openContent:openArtifactContent};
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelector('#natural-task-form').addEventListener('submit', event => { event.preventDefault(); const prompt = document.querySelector('#natural-task-prompt').value; jobCommand('/api/parcels', {prompt}).then(() => { document.querySelector('#natural-task-prompt').value = ''; }).catch(showError); });
   document.querySelectorAll('[data-view]').forEach(button => button.addEventListener('click', () => {

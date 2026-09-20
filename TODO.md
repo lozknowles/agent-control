@@ -26,9 +26,9 @@ See [Governed security audits](docs/security-audits.md).
 
 - [x] Add bounded durable per-operator favourites containing only opaque workspace IDs. The current authenticated web operator is the identity boundary; richer multi-principal retention remains future work.
 - [x] Add global paginated workspace search over authoritative Estate, Node Dashboard, Run Inspector and invocation records without creating a second Estate database.
-- [ ] Define evidence-backed project/repository relationships before adding either as a workspace kind.
+- [x] Add project workspaces from durable Work Board declarations and repository workspaces from resolved parameterized-job snapshots, preserving reviewed commit identity and run associations.
 - [x] Connect exact matching execution sessions to the existing governed Live Shell in read-only WATCH mode. Opening a workspace still grants no control authority.
-- [ ] Connect file navigation only through an existing protected-resource authorization path when a suitable file viewer exists.
+- [x] Connect retained Agent Control-managed artifacts to the existing authenticated, redacted artifact viewer. Arbitrary repository/host source browsing remains outside workspace authority by design.
 - [x] Add bounded cursor pagination to global workspace search. Further indexed storage remains evidence-driven future work if measured Estate size requires it.
 
 See [Navigable Workspaces](docs/navigable-workspaces.md) and [the architectural review](NAVIGABLE_WORKSPACES_REVIEW.md). Prototype status does not imply release.
