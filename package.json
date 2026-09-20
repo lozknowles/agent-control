@@ -38,6 +38,7 @@
     "qualify:managed-node": "node --import tsx scripts/qualify-managed-node.ts",
     "qualify:harness-real": "node --import tsx scripts/qualify-real-harness-job.ts",
     "qualify:agent-templates": "node --import tsx scripts/qualify-agent-templates-native.ts",
+    "qualify:evidence-verifier": "node --import tsx scripts/qualify-evidence-verifier.ts",
     "qualify:provider-cache": "node --import tsx scripts/qualify-provider-cache-boundary.ts",
     "qualify:openai-chatkit": "node --env-file=.env.local --import tsx scripts/qualify-openai-chatkit.mjs",
     "qualify:openai-windows": "node --env-file-if-exists=.env.local --import tsx scripts/qualify-openai-windows-harness.ts",
