@@ -1,6 +1,6 @@
 import {createHash} from 'node:crypto';
 import {Ajv, type ValidateFunction} from 'ajv';
-import {Agent} from 'undici';
+import {Agent, fetch as undiciFetch} from 'undici';
 import {leanContextSources, LeanResultProjector} from './lean-model-interface.js';
 import type {ExecutionRecipe} from './adaptive-harness.js';
 import {withLifecycleHeartbeat, type RecipeExecutionResult, type RecipeExecutor, type ToolInvocationGateway} from './harness-dispatch.js';
@@ -194,7 +194,7 @@ export class StructuredChatLoopProvider {
   }
 
   private async request(messages: ChatMessage[], timeoutMs: number, noProgressMs: number | undefined, externalSignal: AbortSignal | undefined, onContent: () => void) {
-    const fetcher = this.options.fetch ?? globalThis.fetch;
+    const fetcher = this.options.fetch ?? (undiciFetch as unknown as typeof globalThis.fetch);
     const timeout = AbortSignal.timeout(timeoutMs), noProgressController = new AbortController();
     const signals = [timeout, noProgressController.signal, externalSignal].filter((item): item is AbortSignal => Boolean(item));
     const signal = AbortSignal.any(signals);

@@ -15,6 +15,7 @@ import type {ActionContext} from './job-types.js';
 import type {ExecutionCleanupReport} from './owned-process.js';
 import {StructuredChatProviderFactory} from './structured-chat-provider.js';
 import type {LeanExecutionPolicy} from './lean-model-interface.js';
+import {fetch as undiciFetch} from 'undici';
 
 interface QualificationWorkspace {
   workspace: MutationWorkspace;
@@ -119,7 +120,7 @@ export function registerNonOpenAiCacheQualificationActions(registry: ActionRegis
         context.execution!.assertActive();
         journal({type: 'provider-request', at: new Date().toISOString(), request: requestBody});
         let response: Response;
-        try { response = await fetch(input, init); }
+        try { response = await (undiciFetch as unknown as typeof fetch)(input, init); }
         catch (error) { const cause=(error as {cause?:{code?:string}})?.cause?.code; journal({type: 'provider-failure', at: new Date().toISOString(), error: error instanceof Error ? error.message : String(error), causeCode: cause ?? null, cancelled: context.signal.aborted, remoteCleanup: 'UNKNOWN'}); throw error; }
         if (requestBody.stream === true) { journal({type:'provider-headers',at:new Date().toISOString(),status:response.status,streaming:true}); return response; }
         let rawResponse = ''; const responseChunks: Uint8Array[] = [];
