@@ -26,6 +26,26 @@ spec:
       type: integer
       minimum: 120000
       maximum: 1800000
+    runtimeBudgetMode:
+      type: string
+      default: governed
+      enum: [governed, legacy]
+    absoluteJobDeadlineMs:
+      type: integer
+      minimum: 10000
+      maximum: 28800000
+    modelCallDeadlineMs:
+      type: integer
+      minimum: 1000
+      maximum: 1800000
+    toolCallDeadlineMs:
+      type: integer
+      minimum: 100
+      maximum: 1800000
+    noProgressDeadlineMs:
+      type: integer
+      minimum: 1000
+      maximum: 1800000
   steps:
     - id: execute
       name: Native governed model loop and typed tools
@@ -37,7 +57,7 @@ spec:
           type: application/json
           schema: agent-control.non-openai-cache-attempt/v1
           version: 1.0.0
-      timeoutSeconds: 1860
+      timeoutSeconds: 7200
     - id: verify
       name: Independent native verification
       action: qualification.non-openai-cache.verify@1.0.0

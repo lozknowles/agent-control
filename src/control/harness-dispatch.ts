@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import {LeanExecutionState, type LeanExecutionPolicy} from './lean-model-interface.js';
 import path from 'node:path';
 import type {OwnedExecution} from './owned-process.js';
+import {runtimeBudgetError, type RuntimeBudgetState} from './runtime-budget.js';
 import {
   AdaptiveHarness,
   type ExecutionRecipe,
@@ -66,6 +67,7 @@ export interface ToolInvocationGateway {
   assertActive(): void;
   invoke(toolId: string, input?: unknown): Promise<unknown>;
   lifecycle?(phase: Extract<InvocationPhase, 'waiting for provider' | 'response received' | 'processing'>): void;
+  runtimeBudget?(state: RuntimeBudgetState): void;
 }
 
 export async function withLifecycleHeartbeat<T>(tools: ToolInvocationGateway, operation: () => Promise<T>, intervalMs = 15_000): Promise<T> {
@@ -145,6 +147,7 @@ export interface RecipeDispatchRecord {
   skillIds: string[];
   toolIds: string[];
   runtime: Record<string, string | number | boolean>;
+  runtimeBudget?: ExecutionRecipe['runtimeBudget'];
   authority: {laneId: string; leaseGeneration: number; ownershipGeneration: number; owner: 'agent' | 'human'};
   verification: {requiredEvidence: string[]; requireIndependentCheck: boolean};
   escalation: {minimumConfidence: number; maximumAttempts: number; onFailure: 'review' | 'reroute'};
@@ -341,10 +344,21 @@ export class HarnessDispatcher {
         lean?.before(toolId, input);
         invokedToolIds.push(toolId);
         let result: unknown;
+        const toolController = new AbortController();
+        const toolSignal = signal ? AbortSignal.any([signal, toolController.signal]) : toolController.signal;
+        const toolStartedAt = Date.now(), toolBudgetMs = recipe.runtimeBudget?.toolCallDeadlineMs;
+        let toolTimer: NodeJS.Timeout | undefined;
         try {
-          result = await this.tools.invoke(toolId, input, recipe, {signal, assertActive: gateway.assertActive!, ownedExecution});
+          const invocation = this.tools.invoke(toolId, input, recipe, {signal: toolSignal, assertActive: gateway.assertActive!, ownedExecution});
+          const timeout = new Promise<never>((_resolve, reject) => {
+            if (toolBudgetMs === undefined) return;
+            toolTimer = setTimeout(() => { toolController.abort(runtimeBudgetError('TOOL_DEADLINE_EXCEEDED')); reject(runtimeBudgetError('TOOL_DEADLINE_EXCEEDED')); }, toolBudgetMs);
+          });
+          result = await Promise.race([invocation, timeout]);
           lean?.after(toolId, result);
         } catch (error) { lean?.after(toolId, undefined, true); throw error; }
+        finally { if (toolTimer) clearTimeout(toolTimer); }
+        void toolStartedAt;
         gateway.assertActive!();
         return result;
       },
@@ -392,6 +406,7 @@ export class HarnessDispatcher {
       skillIds: recipe.skills.map(skill => skill.id),
       toolIds: recipe.tools.map(tool => tool.id),
       runtime: structuredClone(recipe.runtime),
+      ...(recipe.runtimeBudget ? {runtimeBudget: structuredClone(recipe.runtimeBudget)} : {}),
       authority: structuredClone(recipe.authority),
       verification: structuredClone(recipe.verification),
       escalation: structuredClone(recipe.escalation),
@@ -406,6 +421,7 @@ export class HarnessDispatcher {
       jobId: recipe.jobId ?? recipe.taskId, runId: recipe.runId, stepId: recipe.stepId, taskId: recipe.taskId, laneId: recipe.authority.laneId,
       model: recipe.modelId, provider: recipe.providerId, harnessProfile: recipe.harness?.profile ?? 'STANDARD', executionStrategy: typeof recipe.runtime.executionStrategy === 'string' ? recipe.runtime.executionStrategy : 'adaptive-harness',
       startedAt, recipeFingerprint: recipe.fingerprint, contextPacketId: recipe.harness?.contextPacketId,
+      ...(recipe.runtimeBudget ? {runtimeBudget: recipe.runtimeBudget} : {}),
     }));
   }
 
@@ -427,6 +443,7 @@ export class HarnessDispatcher {
       model: recipe.modelId, provider: recipe.providerId, harnessProfile: recipe.harness?.profile ?? 'STANDARD', executionStrategy: typeof recipe.runtime.executionStrategy === 'string' ? recipe.runtime.executionStrategy : 'adaptive-harness',
       startedAt, completedAt, startupSources, toolIds, contextSourceIds: recipe.context.sourceIds, outcome: error ? 'FAILED' : 'COMPLETE', error,
       recipeFingerprint: recipe.fingerprint, contextPacketId: recipe.harness?.contextPacketId, evidenceIds,
+      ...(recipe.runtimeBudget ? {runtimeBudget: recipe.runtimeBudget} : {}),
     });
   }
 }
