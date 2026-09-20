@@ -42,6 +42,7 @@ const delay=(ms:number)=>new Promise(resolve=>setTimeout(resolve,ms));
 const shaFile=(file:string)=>createHash('sha256').update(fs.readFileSync(file)).digest('hex');
 
 function parseProperties(value:string){const result=new Map<string,string>();for(const line of value.split(/\r?\n/)){const index=line.indexOf('=');if(index>0)result.set(line.slice(0,index),line.slice(index+1));}return result;}
+function stableExecStart(value:string){return value.replace(/\s+;\s+start_time=.*$/,'').trim();}
 function commandFor(pid:number){try{return fs.readFileSync(`/proc/${pid}/cmdline`).toString('utf8').split('\0').filter(Boolean).join(' ');}catch{return'';}}
 function groupProcesses(controlGroup:string){
   if(!/^\/[A-Za-z0-9_.@\/-]+$/.test(controlGroup))throw Error('experimental_service_cgroup_invalid');
@@ -71,7 +72,7 @@ export class ExperimentalGpuServiceReservation {
     if(!this.before)throw Error('experimental_service_reservation_missing');
     for(const state of [...this.before.services].reverse()){await this.systemctlCommand(['--user','start',state.unit],`Restore GPU service ${state.unit}`);await this.waitState(state.unit,'active');}
     const services:ReservedServiceState[]=[];
-    for(const before of this.before.services){const after=await this.inspect(before.unit);if(after.activeState!=='active'||after.subState!=='running'||after.execStart!==before.execStart||after.fragmentSha256!==before.fragmentSha256)throw Error(`experimental_service_restore_identity_failed:${before.unit}`);if(before.healthUrl&&after.healthStatus!==200)throw Error(`experimental_service_restore_health_failed:${before.unit}`);services.push(after);}
+    for(const before of this.before.services){const after=await this.inspect(before.unit);if(after.activeState!=='active'||after.subState!=='running'||stableExecStart(after.execStart)!==stableExecStart(before.execStart)||after.fragmentSha256!==before.fragmentSha256)throw Error(`experimental_service_restore_identity_failed:${before.unit}`);if(before.healthUrl&&after.healthStatus!==200)throw Error(`experimental_service_restore_health_failed:${before.unit}`);services.push(after);}
     this.before=undefined;return{restoredAt:new Date().toISOString(),services};
   }
 
