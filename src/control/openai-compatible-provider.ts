@@ -17,6 +17,23 @@ export interface ProviderFailureObservation {requestDispatched: boolean; usage: 
 export type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 export interface ProviderInvocationTelemetry {phase: 'started' | 'completed'; providerId: string; modelId: string; elapsedMs: number; usage?: NormalizedModelUsage; context: {tokens: number | null; limitTokens: number | null; authority: 'authoritative' | 'estimated' | 'unavailable'; source: string};}
 export interface ProviderInvocationProgress {kind: 'HEADERS' | 'STREAM_EVENT' | 'GENERATED_CONTENT'; at: string; elapsedMs: number; generatedCharacters: number;}
+export interface ProviderTransportDiagnostic {
+  schema: 'agent-control.provider-transport-diagnostic/v1';
+  providerId: string;
+  modelId: string;
+  wireApi: string;
+  startedAt: string;
+  completedAt: string | null;
+  requestBodySha256: string;
+  http: {status: number | null; headers: Record<string,string>; contentType: string | null; transferEncoding: string | null};
+  transport: {bytes: number; sha256: string | null; chunks: Array<{index:number;bytes:number;sha256:string;utf8:string}>; termination: 'complete'|'aborted'|'error'|'unknown'; error: string | null};
+  framing: {kind: 'sse'|'json'|'unknown'; records: Array<{index:number;raw:string;data:string|null;done:boolean;parsed:boolean;parseError:string|null}>; pendingText:string; doneSeen:boolean};
+  providerObjects: Record<string,unknown>[];
+  decoder: {streamFlushed:boolean; replacementCharacters:number};
+  normalized: {output:string; outputCharacters:number; finishReason:string|null; usage:NormalizedModelUsage|null; responseModel:string|null}|null;
+  firstInvalidLayer: 1|2|3|4|5|6|7|null;
+  failure: string|null;
+}
 export interface ProviderRequestExtension {profile: string; body: Readonly<Record<string, unknown>>;}
 export interface ProviderStreamingProbeResult {
   outcome: 'COMPLETED' | 'HTTP_ERROR' | 'TIMEOUT' | 'MALFORMED' | 'TRANSPORT_ERROR';
@@ -44,7 +61,7 @@ export class OpenAICompatibleProviderClient {
     if (provider.kind !== 'openai-compatible' && provider.kind !== 'responses' && provider.kind !== 'local') throw new Error('provider_not_openai_compatible');
     if (!provider.baseUrl) throw new Error('provider_base_url_required');
   }
-  async invoke(model: ModelConfig, input: ProviderPromptInput, options: {timeoutMs?: number; maximumOutputTokens?: number; structured?: boolean; outputSchema?: Record<string, unknown>; toolProbe?: string; requestExtension?: ProviderRequestExtension; signal?: AbortSignal; streaming?: boolean; noProgressMs?: number; onProgress?: (event: ProviderInvocationProgress) => void; onTelemetry?: (event: ProviderInvocationTelemetry) => void} = {}): Promise<ModelInvocationResult> {
+  async invoke(model: ModelConfig, input: ProviderPromptInput, options: {timeoutMs?: number; maximumOutputTokens?: number; structured?: boolean; outputSchema?: Record<string, unknown>; toolProbe?: string; requestExtension?: ProviderRequestExtension; signal?: AbortSignal; streaming?: boolean; noProgressMs?: number; onProgress?: (event: ProviderInvocationProgress) => void; onTelemetry?: (event: ProviderInvocationTelemetry) => void; onTransportDiagnostic?: (diagnostic:ProviderTransportDiagnostic)=>void} = {}): Promise<ModelInvocationResult> {
     if (model.provider !== this.provider.id) throw new Error('model_provider_mismatch');
     if ((model.accountProfile ?? undefined) !== this.identity.accountProfileId) throw new Error('model_account_profile_mismatch');
     const token = this.credential(), controller = new AbortController(), started = Date.now(), timeoutMs = options.timeoutMs ?? 30_000;
@@ -60,6 +77,7 @@ export class OpenAICompatibleProviderClient {
       ? {model: model.providerModel, messages: [{role: 'user', content: renderedInput}], max_tokens: options.maximumOutputTokens ?? 256, ...(options.streaming ? {stream: true, stream_options: {include_usage: true}} : {}), ...(options.structured ? {temperature: 0, response_format: responseFormat} : {}), ...(options.toolProbe ? {tools: [{type: 'function', function: {name: options.toolProbe, description: 'Return the requested qualification marker', parameters}}], tool_choice: {type: 'function', function: {name: options.toolProbe}}} : {})}
       : {model: model.providerModel, input: promptCache.input ?? renderedInput, max_output_tokens: options.maximumOutputTokens ?? 256, ...promptCache.parameters, ...(options.structured ? {text: {format: options.outputSchema ? {type: 'json_schema', name: 'agent_control_output', strict: true, schema: options.outputSchema} : {type: 'json_object'}}} : {}), ...(options.toolProbe ? {tools: [{type: 'function', name: options.toolProbe, description: 'Return the requested qualification marker', parameters, strict: true}], tool_choice: {type: 'function', name: options.toolProbe}} : {})};
     const body = extendProviderRequest(coreBody, options.requestExtension);
+    const diagnostic=options.onTransportDiagnostic?newTransportDiagnostic(this.provider.id,model.id,wire,body):undefined;
     let requestDispatched = false;
     const dispatcher = this.fetcher ? undefined : new Agent({headersTimeout: timeoutMs, bodyTimeout: timeoutMs});
     const fetcher: FetchLike = this.fetcher ?? ((request, init) => undiciFetch(
@@ -70,20 +88,23 @@ export class OpenAICompatibleProviderClient {
       const signal = options.signal ? AbortSignal.any([controller.signal, options.signal]) : controller.signal;
       requestDispatched = true;
       const response = await fetcher(endpoint, {method: 'POST', headers: {'content-type': 'application/json', ...(options.streaming ? {accept: 'text/event-stream'} : {}), ...(token ? {authorization: `Bearer ${token}`} : {})}, body: JSON.stringify(body), signal});
+      if(diagnostic){diagnostic.http.status=response.status;diagnostic.http.headers=safeResponseHeaders(response.headers,token);diagnostic.http.contentType=response.headers.get('content-type');diagnostic.http.transferEncoding=response.headers.get('transfer-encoding');diagnostic.framing.kind=diagnostic.http.contentType?.toLowerCase().includes('text/event-stream')?'sse':'json';}
       if (!response.ok) throw providerError(response.status);
       options.onProgress?.({kind: 'HEADERS', at: new Date().toISOString(), elapsedMs: Date.now() - started, generatedCharacters: 0});
       let payload: Record<string, unknown>;
-      try { payload = options.streaming ? await readInvocationStream(response, wire, started, options.noProgressMs, options.onProgress) : await response.json() as Record<string, unknown>; } catch (error) { if ((error as Error).message === 'MODEL_NO_PROGRESS') throw error; throw new Error('provider_malformed_response'); }
+      try { payload = options.streaming ? await readInvocationStream(response, wire, started, options.noProgressMs, options.onProgress,diagnostic,token) : await readInvocationJson(response,diagnostic,token); } catch (error) { if ((error as Error).message === 'MODEL_NO_PROGRESS') throw error; if(diagnostic){diagnostic.failure=(error as Error).message;diagnostic.firstInvalidLayer??=diagnostic.framing.kind==='sse'?3:3;} throw new Error('provider_malformed_response'); }
       const extractedToolCall = extractToolCall(payload, wire), toolCall = extractedToolCall ? {name: redactSensitiveText(extractedToolCall.name, [token]), arguments: redactSensitiveText(extractedToolCall.arguments, [token])} : null, output = redactSensitiveText(extractOutput(payload, wire), [token]), partial: PartialModelInvocation = {providerId: this.provider.id, ...(this.identity.accountProfileId ? {accountProfileId: this.identity.accountProfileId} : {}), ...(this.identity.nodeId ? {nodeId: this.identity.nodeId} : {}), modelId: model.id, providerModel: model.providerModel, invocationProfile: options.requestExtension?.profile ?? null, output, elapsedMs: Date.now() - started, usage: normalizeModelUsage(payload.usage, model, payload.timings), responseModel: typeof payload.model === 'string' ? redactSensitiveText(payload.model, [token]) : null, finishReason: redactSensitiveText(extractFinishReason(payload, wire) ?? '', [token]) || null, toolCall,providerTimings:numericRecord(payload.timings), responseHash:`sha256:${createHash('sha256').update(JSON.stringify(payload)).digest('hex')}`};
-      if (!output && !toolCall) throw Object.assign(new Error('provider_malformed_response'),{partialInvocation:partial});
+      if(diagnostic)diagnostic.normalized={output,outputCharacters:output.length,finishReason:partial.finishReason,usage:partial.usage,responseModel:partial.responseModel};
+      if (!output && !toolCall) {if(diagnostic){diagnostic.firstInvalidLayer=5;diagnostic.failure='provider_output_empty';}throw Object.assign(new Error('provider_malformed_response'),{partialInvocation:partial});}
       const {responseHash: _responseHash, ...result}=partial, limitTokens=model.limits?.contextTokens ?? this.provider.qualification?.advertisedContextLimitTokens ?? null, estimatedContext=result.usage.totalTokens !== null && limitTokens !== null;
       options.onTelemetry?.({phase: 'completed', providerId: this.provider.id, modelId: model.id, elapsedMs: result.elapsedMs, usage: result.usage, context: {tokens: estimatedContext ? result.usage.totalTokens : null, limitTokens, authority: estimatedContext ? 'estimated' : 'unavailable', source: estimatedContext ? 'ephemeral_single_turn_usage_estimate' : 'provider_did_not_report_current_context'}}); return result;
     } catch (error) {
       const failure = normalizeProviderTransportFailure(error, options.signal?.aborted === true, controller.signal.aborted);
+      if(diagnostic&&!diagnostic.failure){diagnostic.failure=failure.message;diagnostic.firstInvalidLayer=1;diagnostic.transport.error=failure.message;}
       if (!(failure as {partialInvocation?: PartialModelInvocation}).partialInvocation && !(failure as {providerFailureObservation?: ProviderFailureObservation}).providerFailureObservation) Object.assign(failure as object, {providerFailureObservation: {requestDispatched, usage: null, usageAuthority: 'unavailable', elapsedMs: Date.now() - started, invocationProfile: options.requestExtension?.profile ?? null} satisfies ProviderFailureObservation});
       throw sanitizeError(failure, token);
     }
-    finally { clearTimeout(timeout); if (dispatcher) await dispatcher.destroy(); }
+    finally { clearTimeout(timeout); if(diagnostic){diagnostic.completedAt=new Date().toISOString();if(diagnostic.transport.termination==='unknown')diagnostic.transport.termination=controller.signal.aborted||options.signal?.aborted?'aborted':diagnostic.failure?'error':'complete';options.onTransportDiagnostic?.(sanitizeDiagnostic(diagnostic,token));}if (dispatcher) await dispatcher.destroy(); }
   }
 
   /**
@@ -177,7 +198,7 @@ export class OpenAICompatibleProviderClient {
 
 const RESERVED_REQUEST_FIELDS = new Set(['model','messages','input','max_tokens','max_output_tokens','response_format','text','tools','tool_choice','stream']);
 
-async function readInvocationStream(response: Response, wire: string, started: number, noProgressMs?: number, onProgress?: (event: ProviderInvocationProgress) => void): Promise<Record<string, unknown>> {
+async function readInvocationStream(response: Response, wire: string, started: number, noProgressMs?: number, onProgress?: (event: ProviderInvocationProgress) => void,diagnostic?:ProviderTransportDiagnostic,token?:string): Promise<Record<string, unknown>> {
   if (!response.body) throw new Error('provider_malformed_response');
   const contentType = response.headers.get('content-type')?.toLowerCase() ?? '';
   if (!contentType.includes('text/event-stream')) return await response.json() as Record<string, unknown>;
@@ -200,9 +221,11 @@ async function readInvocationStream(response: Response, wire: string, started: n
     for (const line of record.split(/\r?\n/)) {
       if (!line.startsWith('data:')) continue;
       const data = line.slice(5).trim();
-      if (!data || data === '[DONE]') continue;
+      const frame=diagnostic?{index:diagnostic.framing.records.length,raw:redactSensitiveText(record,token?[token]:[]),data:data?redactSensitiveText(data,token?[token]:[]):null,done:data==='[DONE]',parsed:false,parseError:null as string|null}:undefined;
+      if(frame)diagnostic!.framing.records.push(frame);
+      if (!data || data === '[DONE]') {if(frame&&data==='[DONE]')diagnostic!.framing.doneSeen=true;continue;}
       let event: Record<string, unknown>;
-      try { event = JSON.parse(data) as Record<string, unknown>; } catch { throw new Error('provider_malformed_stream'); }
+      try { event = JSON.parse(data) as Record<string, unknown>;if(frame)frame.parsed=true;if(diagnostic)diagnostic.providerObjects.push(sanitizeRecord(event,token)); } catch {if(frame)frame.parseError='invalid_json';if(diagnostic){diagnostic.firstInvalidLayer=3;diagnostic.failure='provider_malformed_stream';}throw new Error('provider_malformed_stream'); }
       if (typeof event.id === 'string') id = event.id;
       if (typeof event.model === 'string') model = event.model;
       if (event.usage && typeof event.usage === 'object') usage = event.usage;
@@ -227,16 +250,27 @@ async function readInvocationStream(response: Response, wire: string, started: n
   try {
     while (true) {
       const part = await next();
-      if (part.done) break;
+      if (part.done) {if(diagnostic)diagnostic.transport.termination='complete';break;}
+      if(diagnostic)captureDiagnosticChunk(diagnostic,part.value,token);
       pending += decoder.decode(part.value, {stream: true});
       const records = pending.split(/\r?\n\r?\n/); pending = records.pop() ?? '';
       for (const record of records) consume(record);
     }
-    pending += decoder.decode(); if (pending.trim()) consume(pending);
+    pending += decoder.decode();if(diagnostic){diagnostic.decoder.streamFlushed=true;diagnostic.decoder.replacementCharacters=countReplacementCharacters([...diagnostic.transport.chunks.map(item=>item.utf8),pending].join(''));diagnostic.framing.pendingText=redactSensitiveText(pending,token?[token]:[]);} if (pending.trim()) consume(pending);
   } finally { reader.releaseLock(); }
   if (wire === 'chat-completions') return {id, model, choices: [{finish_reason: finishReason, message: {content: output, ...(reasoning ? {reasoning_content: reasoning} : {})}}], usage, timings};
   return {id, model, status: finishReason, output_text: output, usage, timings};
 }
+
+async function readInvocationJson(response:Response,diagnostic?:ProviderTransportDiagnostic,token?:string){if(!diagnostic)return await response.json() as Record<string,unknown>;const raw=new Uint8Array(await response.arrayBuffer());captureDiagnosticChunk(diagnostic,raw,token);diagnostic.transport.termination='complete';diagnostic.decoder.streamFlushed=true;const text=new TextDecoder().decode(raw);diagnostic.decoder.replacementCharacters=countReplacementCharacters(text);try{const value=JSON.parse(text) as Record<string,unknown>;diagnostic.providerObjects.push(sanitizeRecord(value,token));return value;}catch{diagnostic.firstInvalidLayer=3;diagnostic.failure='provider_malformed_json';throw Error('provider_malformed_json');}}
+
+function newTransportDiagnostic(providerId:string,modelId:string,wireApi:string,body:Record<string,unknown>):ProviderTransportDiagnostic{return{schema:'agent-control.provider-transport-diagnostic/v1',providerId,modelId,wireApi,startedAt:new Date().toISOString(),completedAt:null,requestBodySha256:`sha256:${createHash('sha256').update(JSON.stringify(body)).digest('hex')}`,http:{status:null,headers:{},contentType:null,transferEncoding:null},transport:{bytes:0,sha256:null,chunks:[],termination:'unknown',error:null},framing:{kind:'unknown',records:[],pendingText:'',doneSeen:false},providerObjects:[],decoder:{streamFlushed:false,replacementCharacters:0},normalized:null,firstInvalidLayer:null,failure:null};}
+const diagnosticDigests=new WeakMap<ProviderTransportDiagnostic,ReturnType<typeof createHash>>();
+function captureDiagnosticChunk(diagnostic:ProviderTransportDiagnostic,value:Uint8Array,token?:string){const bytes=Buffer.from(value),digest=diagnosticDigests.get(diagnostic)??createHash('sha256');diagnosticDigests.set(diagnostic,digest);digest.update(bytes);diagnostic.transport.bytes+=bytes.length;diagnostic.transport.chunks.push({index:diagnostic.transport.chunks.length,bytes:bytes.length,sha256:`sha256:${createHash('sha256').update(bytes).digest('hex')}`,utf8:redactSensitiveText(bytes.toString('utf8'),token?[token]:[])});diagnostic.transport.sha256=`sha256:${digest.copy().digest('hex')}`;}
+function safeResponseHeaders(headers:Headers,token?:string){const denied=new Set(['authorization','proxy-authorization','set-cookie','cookie']);return Object.fromEntries([...headers.entries()].filter(([name])=>!denied.has(name.toLowerCase())).map(([name,value])=>[name,redactSensitiveText(value,token?[token]:[])]));}
+function sanitizeRecord(value:Record<string,unknown>,token?:string){return JSON.parse(redactSensitiveText(JSON.stringify(value),token?[token]:[])) as Record<string,unknown>;}
+function sanitizeDiagnostic(value:ProviderTransportDiagnostic,token?:string){return JSON.parse(redactSensitiveText(JSON.stringify(value),token?[token]:[])) as ProviderTransportDiagnostic;}
+function countReplacementCharacters(value:string){return[...value].filter(character=>character==='\uFFFD').length;}
 
 function extendProviderRequest(core: Record<string, unknown>, extension?: ProviderRequestExtension) {
   if (!extension) return core;
