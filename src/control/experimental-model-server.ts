@@ -45,7 +45,7 @@ export interface ExperimentalModelCleanup {
   cleanup:ExecutionCleanupReport;
   resourcesAfter:HostResourceSnapshot;
   protectedAfter:ProtectedHealth[];
-  serverResult:{exitCode:number|null;signal:string|null};
+  serverResult:{exitCode:number|null;signal:string|null;stdout:string;stderr:string;stdoutSha256:string;stderrSha256:string};
   stoppedAt:string;
 }
 
@@ -114,7 +114,8 @@ export class ExperimentalModelServer {
     this.stopSignal.abort(reason);
     const cleanup=await this.owned.terminateAll(reason),server=await this.process?.then(value=>value,()=>undefined);
     const protectedAfter=await healthAll(this.spec.protectedHealthUrls);
-    return{cleanup,resourcesAfter:meminfo(),protectedAfter,serverResult:{exitCode:server?.exitCode??null,signal:server?.signal??null},stoppedAt:new Date().toISOString()};
+    const stdout=server?.stdout??'',stderr=server?.stderr??'';
+    return{cleanup,resourcesAfter:meminfo(),protectedAfter,serverResult:{exitCode:server?.exitCode??null,signal:server?.signal??null,stdout,stderr,stdoutSha256:sha(stdout),stderrSha256:sha(stderr)},stoppedAt:new Date().toISOString()};
   }
 }
 

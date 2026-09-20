@@ -30,7 +30,7 @@ export interface ExperimentalServiceRestorationRecord {restoredAt:string;service
 export interface ExperimentalGpuSnapshot {
   at:string;
   gpu:{name:string;totalMiB:number;usedMiB:number;freeMiB:number;utilizationPercent:number;temperatureC:number};
-  processes:Array<{pid:number;name:string;usedMiB:number}>;
+  processes:Array<{pid:number;name:string;usedMiB:number;rssBytes:number|null}>;
 }
 
 const healthUrls:Partial<Record<ReservableUnit,string>>={
@@ -44,6 +44,7 @@ const shaFile=(file:string)=>createHash('sha256').update(fs.readFileSync(file)).
 function parseProperties(value:string){const result=new Map<string,string>();for(const line of value.split(/\r?\n/)){const index=line.indexOf('=');if(index>0)result.set(line.slice(0,index),line.slice(index+1));}return result;}
 function stableExecStart(value:string){return value.replace(/\s+;\s+start_time=.*$/,'').trim();}
 function commandFor(pid:number){try{return fs.readFileSync(`/proc/${pid}/cmdline`).toString('utf8').split('\0').filter(Boolean).join(' ');}catch{return'';}}
+function rssFor(pid:number){try{const match=/^VmRSS:\s+(\d+)\s+kB$/m.exec(fs.readFileSync(`/proc/${pid}/status`,'utf8'));return match?Number(match[1])*1024:null;}catch{return null;}}
 function groupProcesses(controlGroup:string){
   if(!/^\/[A-Za-z0-9_.@\/-]+$/.test(controlGroup))throw Error('experimental_service_cgroup_invalid');
   try{return fs.readFileSync(`/sys/fs/cgroup${controlGroup}/cgroup.procs`,'utf8').trim().split(/\s+/).filter(Boolean).map(Number).filter(Number.isSafeInteger).map(pid=>({pid,command:commandFor(pid)}));}catch{return[];}
@@ -70,7 +71,7 @@ export class ExperimentalGpuServiceReservation {
 
   async restore():Promise<ExperimentalServiceRestorationRecord>{
     if(!this.before)throw Error('experimental_service_reservation_missing');
-    for(const state of [...this.before.services].reverse()){await this.systemctlCommand(['--user','start',state.unit],`Restore GPU service ${state.unit}`);await this.waitState(state.unit,'active');}
+    for(const state of [...this.before.services].reverse()){await this.systemctlCommand(['--user','start',state.unit],`Restore GPU service ${state.unit}`);await this.waitState(state.unit,'active');await this.waitHealthy(state);}
     const services:ReservedServiceState[]=[];
     for(const before of this.before.services){const after=await this.inspect(before.unit);if(after.activeState!=='active'||after.subState!=='running'||stableExecStart(after.execStart)!==stableExecStart(before.execStart)||after.fragmentSha256!==before.fragmentSha256)throw Error(`experimental_service_restore_identity_failed:${before.unit}`);if(before.healthUrl&&after.healthStatus!==200)throw Error(`experimental_service_restore_health_failed:${before.unit}`);services.push(after);}
     this.before=undefined;return{restoredAt:new Date().toISOString(),services};
@@ -98,6 +99,13 @@ export class ExperimentalGpuServiceReservation {
     throw Error(`experimental_service_busy:${state.unit}`);
   }
 
+  private async waitHealthy(state:ReservedServiceState){
+    if(!state.healthUrl)return;
+    const deadline=Date.now()+300_000;
+    while(Date.now()<deadline){if(await health(state.healthUrl)===200)return;await delay(1000);}
+    throw Error(`experimental_service_restore_health_timeout:${state.unit}`);
+  }
+
   private async systemctlCommand(args:string[],label:string,allowFailure=false){const result=await this.owned.runProcess({command:this.systemctl,args,maxOutputBytes:256*1024,session:{adapterId:'experimental-gpu-reservation-v1',commandLabel:label,crewRole:'resource-guardian'}},AbortSignal.timeout(125_000));if(!allowFailure&&result.exitCode!==0)throw Error(`experimental_service_systemctl_failed:${args.at(-1)}`);return result;}
 }
 
@@ -109,6 +117,6 @@ export async function captureExperimentalGpuSnapshot(owned:OwnedExecution,nvidia
   const processes=await owned.runProcess({command:nvidiaSmi,args:['--query-compute-apps=pid,process_name,used_memory','--format=csv,noheader,nounits'],maxOutputBytes:256*1024,session:{adapterId:'experimental-gpu-reservation-v1',commandLabel:'Capture experimental GPU processes',crewRole:'resource-guardian'}},AbortSignal.timeout(30_000));
   if(gpu.exitCode!==0||processes.exitCode!==0)throw Error('experimental_gpu_snapshot_failed');
   const fields=gpu.stdout.trim().split(',').map(value=>value.trim()),numbers=fields.slice(1).map(Number);if(fields.length!==6||numbers.some(value=>!Number.isFinite(value)))throw Error('experimental_gpu_snapshot_invalid');
-  const processRows=processes.stdout.trim()?processes.stdout.trim().split(/\r?\n/).map(line=>{const [pid,name,used]=line.split(',').map(value=>value.trim());return{pid:Number(pid),name:name??'',usedMiB:Number(used)};}).filter(item=>Number.isSafeInteger(item.pid)&&Number.isFinite(item.usedMiB)):[];
+  const processRows=processes.stdout.trim()?processes.stdout.trim().split(/\r?\n/).map(line=>{const [pid,name,used]=line.split(',').map(value=>value.trim()),numericPid=Number(pid);return{pid:numericPid,name:name??'',usedMiB:Number(used),rssBytes:Number.isSafeInteger(numericPid)?rssFor(numericPid):null};}).filter(item=>Number.isSafeInteger(item.pid)&&Number.isFinite(item.usedMiB)):[];
   return{at:new Date().toISOString(),gpu:{name:fields[0]!,totalMiB:numbers[0]!,usedMiB:numbers[1]!,freeMiB:numbers[2]!,utilizationPercent:numbers[3]!,temperatureC:numbers[4]!},processes:processRows};
 }
