@@ -1,7 +1,7 @@
 # Qwen3.8-27B output-budget qualification
 
-Date: 20 September 2026  
-Agent Control source: `1935118b232889d5af59764c6280131a6e141d38`  
+Date: 20 September 2026
+Agent Control source: `1935118b232889d5af59764c6280131a6e141d38`
 Agent Control Lab source: `03c4a02fcd7c8b1f8537d6f7c887461991e92d23`
 
 ## Executive result

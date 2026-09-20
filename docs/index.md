@@ -3,7 +3,7 @@
 **Stable: [Agent Control 4.12.0](https://github.com/lozknowles/agent-control/releases/tag/v4.12.0).**
 
 - [Install Agent Control](installation-first-run.md)
-- [Upgrade an existing installation](upgrade-4.11.md)
+- [Upgrade an existing installation](upgrade-4.12.md)
 - [Real installation screenshots](public-installation-journey.md)
 - [Meet Mallow and the crew](crew-guide.md)
 - [Troubleshooting](installation-first-run.md#troubleshooting)
