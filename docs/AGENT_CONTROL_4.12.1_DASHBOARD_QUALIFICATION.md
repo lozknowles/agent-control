@@ -6,7 +6,7 @@ The contained 4.12.1 candidate closes the targeted workspace navigation and cont
 
 Baseline: `4513e80b737f50379f837bebe1be4fd5f8a8daf8` (`v4.12.0` public main)
 
-Candidate: recorded in the final qualification JSON after the isolated candidate commit.
+Qualified implementation source: `202e33c3abb74ccfb8835e1b449dfe1412e229c5`.
 
 ## Implemented
 
@@ -27,8 +27,8 @@ Opening a workspace grants no shell, file, credential, job, deployment or remote
 ## Automated qualification
 
 - TypeScript type checking: PASS.
-- Focused workspace, preference, containment, web API and Work Board tests: 85 passed, 0 failed, 0 skipped in 6.94 seconds.
-- Complete regression suite: 2,010 passed, 0 failed, 0 skipped in 284.55 seconds.
+- Final focused workspace, preference, containment, web API and Work Board tests: 81 passed, 0 failed, 0 skipped.
+- Final complete regression suite: 2,010 passed, 0 failed, 0 skipped in 256.83 seconds.
 - `git diff --check`: PASS.
 
 ## Browser qualification
@@ -48,7 +48,7 @@ The browser qualification uses the production dashboard assets and production wo
 - Protected managed-artifact viewer: PASS.
 - Arbitrary source-filesystem authority granted: NO.
 
-Physical mobile-device qualification is not claimed by this parcel.
+Physical mobile-device qualification: PASS on a Pixel 8 Pro running Android 17, using Chrome reached through the authorised USB ADB/CDP path. The final source passed Estate workspace, invocation/token, and protected-artifact navigation. The protected-artifact view remained within the 395 CSS-pixel viewport with no horizontal clipping. Device serial and private origin are excluded from public evidence.
 
 ## Visual evidence
 
@@ -56,12 +56,12 @@ The generated evidence directory contains:
 
 The pack includes Estate, project, repository, protected artifact, invocation/token, governed WATCH, portrait and landscape containment views plus `qualification.json`. The receipt enumerates the exact filenames and binds them to the final source commit.
 
-The JSON receipt binds the evidence to the candidate source commit after the final committed rerun.
+The local JSON receipt binds the evidence to the qualified implementation source after the final committed rerun. Its SHA-256 is `967fcc592748637530402927ff74685780cc07163c42a174dd4df9f4d7d4d05d`.
 
 ## Remaining boundaries
 
 - Repository source browsing remains unavailable. Managed evidence artifacts are viewable, but workspace identity never grants arbitrary filesystem authority.
-- Physical Pixel qualification is reported separately and is never inferred from Chromium mobile emulation.
+- Physical Pixel qualification is reported separately from Chromium emulation and does not imply deployment to the phone.
 - Search is computed from authoritative records on demand. The cursor bounds responses; a durable secondary index should only be introduced if measured large-estate cost justifies one.
 
 These boundaries do not regress current behavior and are retained in `TODO.md`.

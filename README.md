@@ -18,7 +18,7 @@ ATLAS is Agent Control's public identity: **Agentic Topology, Lifecycle, Assuran
 
 Discover your AI tools, see what is available, and follow approved work from request to verified result.
 
-**Current release: [4.12.0](https://github.com/lozknowles/agent-control/releases/tag/v4.12.0) — Native Lean Runtime and Governed Cost Routing.** Agent Control can execute digest-bound specialist templates through its native Work Parcel and Job Runtime path, apply measured runtime and output budgets, and enforce provider-neutral price ceilings and job/invocation spend limits before a billable request. The OpenRouter adapter maps those controls to its provider-routing fields; no live paid OpenRouter call is claimed by the release qualification. See the [agent-template guide](docs/agent-templates.md), [cost-routing guide](docs/cost-aware-openrouter-routing.md), [release notes](docs/release-notes-4.12.0.md), [upgrade guide](docs/upgrade-4.12.md), and [release verification](docs/release-verification-4.12.0.md).
+**Current release: [4.12.1](https://github.com/lozknowles/agent-control/releases/tag/v4.12.1) — Dashboard Navigation and Recovery Visibility.** This patch adds authoritative workspace search, durable favourites, governed WATCH entry, containment/recovery history, evidence-backed project and repository navigation, and protected artifact viewing. It preserves the 4.12 native runtime and governed cost-routing model. See the [workspace guide](docs/navigable-workspaces.md), [release notes](docs/release-notes-4.12.1.md), [upgrade guide](docs/upgrade-4.12.1.md), and [release verification](docs/release-verification-4.12.1.md).
 
 The release also incorporates the qualified 4.9 reliability safeguards: governed raw inference, explicit local/API usage accounting, live-writer-safe activity-log repair, protected workspace metadata and cancellation fencing before abort. The optional phone-hosted planning route remains experimental and has no physical end-to-end qualification.
 
@@ -26,7 +26,7 @@ The release also incorporates the qualified 4.9 reliability safeguards: governed
 
 **4.8 nested execution:** [Follow work through nested environments](docs/nested-execution-environments.md) from a physical device through host/guest environments, runtime and worker route to the exact invocation and evidence. Nested capacity is scoped and is never added to physical Estate capacity.
 
-[Install Agent Control](docs/installation-first-run.md) · [Documentation](docs/index.md) · [Upgrade](docs/upgrade-4.12.md) · [Release notes](docs/release-notes-4.12.0.md)
+[Install Agent Control](docs/installation-first-run.md) · [Documentation](docs/index.md) · [Upgrade](docs/upgrade-4.12.1.md) · [Release notes](docs/release-notes-4.12.1.md)
 
 [![Actual Agent Control Estate Map](docs/media/4.6/integration/estate.png)](docs/public-installation-journey.md)
 
@@ -57,12 +57,12 @@ Mallow is your floating guide. The established crew helps explain dispatch, revi
 
 <a id="install"></a>
 
-## Install Agent Control 4.12.0
+## Install Agent Control 4.12.1
 
 Install on Linux with Node.js 24, npm, Git and Bash:
 
 ```bash
-git clone --branch v4.12.0 https://github.com/lozknowles/agent-control.git
+git clone --branch v4.12.1 https://github.com/lozknowles/agent-control.git
 cd agent-control
 git rev-parse HEAD
 ./scripts/bootstrap-agent-control.sh --check --target "$PWD"
@@ -113,13 +113,13 @@ Model Intelligence now reports real source coverage, initial versus follow-up ob
 
 - [Android / fresh Termux prerequisites](android/README.md#fresh-termux-prerequisites) (separate platform guide)
 - [Installation and troubleshooting](docs/installation-first-run.md#troubleshooting)
-- [Safe existing-install upgrade](docs/upgrade-4.12.md)
+- [Safe existing-install upgrade](docs/upgrade-4.12.1.md)
 - [Architecture](docs/architecture-v2-agnostic.md)
 - [Governed cost and performance routing](docs/cost-aware-openrouter-routing.md) — provider-neutral budgets and rate ceilings with an optional OpenRouter translation
 - [Governed Model Improvement](docs/model-improvement.md) — immutable baselines, isolated candidates, independent evaluation, Work Board stages and explicit promotion approval
 - [4.11 promotion and rollback qualification](docs/evidence/AGENT_CONTROL_4.11_PROMOTION_ROLLBACK_QUALIFICATION.md)
 - [Security](SECURITY.md) and [contributing](CONTRIBUTING.md)
-- [Release notes](docs/release-notes-4.12.0.md)
+- [Release notes](docs/release-notes-4.12.1.md)
 - [Accepted RC assessment and evidence](docs/release-candidate-4.6.md)
 
 Historical versioned reports remain available under `docs/`; use the installation guide above for this release.
