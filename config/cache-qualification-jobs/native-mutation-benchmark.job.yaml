@@ -22,6 +22,10 @@ spec:
       type: string
       default: stable
       enum: [stable, changed-prefix-control]
+    observationTimeoutMs:
+      type: integer
+      minimum: 120000
+      maximum: 1800000
   steps:
     - id: execute
       name: Native governed model loop and typed tools
@@ -33,7 +37,7 @@ spec:
           type: application/json
           schema: agent-control.non-openai-cache-attempt/v1
           version: 1.0.0
-      timeoutSeconds: 330
+      timeoutSeconds: 1860
     - id: verify
       name: Independent native verification
       action: qualification.non-openai-cache.verify@1.0.0

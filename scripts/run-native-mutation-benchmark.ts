@@ -21,8 +21,10 @@ const catalog=new JobCatalog(actions.ids()).loadDirectory(path.resolve('config/c
 const workers=new WorkerRegistry().register({id:'native-benchmark-worker',capabilities:['model.execute','structured-output','tool-request','repository.mutation.typed','repository.verify.public'],health:'healthy',capacity:1,active:0,observedAt:new Date().toISOString()});
 const runtime=createJobRuntime(state,catalog,actions,workers,{efficiency});
 const trigger={type:'manual' as const,actor:'human:authorised-native-benchmark',modelRoute:{requestedModel:modelId,requestedRole:'coding-benchmark',modelId,providerId,providerModel:`${providerId}/${modelId}`,nodeId,credentialNodeId:null,qualificationVersion:'native-benchmark-v1',fallback:false,fallbackReason:null}};
-const run=runtime.createRun('native-mutation-benchmark@1.0.0',{taskId,profile,prefixVariant:process.env.AC_NATIVE_BENCHMARK_PREFIX||'stable'},trigger);
-fs.writeFileSync(path.join(state,'submission.json'),JSON.stringify({taskId,profile,job:`${run.jobId}@${run.jobVersion}`,runId:run.id,trigger},null,2),{mode:0o600,flag:'wx'});
+const observationTimeoutMs=process.env.AC_NATIVE_BENCHMARK_OBSERVATION_TIMEOUT_MS===undefined?undefined:Number(process.env.AC_NATIVE_BENCHMARK_OBSERVATION_TIMEOUT_MS);
+const parameters={taskId,profile,prefixVariant:process.env.AC_NATIVE_BENCHMARK_PREFIX||'stable',...(observationTimeoutMs===undefined?{}:{observationTimeoutMs})};
+const run=runtime.createRun('native-mutation-benchmark@1.0.0',parameters,trigger);
+fs.writeFileSync(path.join(state,'submission.json'),JSON.stringify({taskId,profile,observationTimeoutMs:observationTimeoutMs??null,job:`${run.jobId}@${run.jobVersion}`,runId:run.id,trigger},null,2),{mode:0o600,flag:'wx'});
 const terminal=new Set(['SUCCEEDED','FAILED','DEGRADED','CANCELLED','CLEANUP_UNCERTAIN','BLOCKED']);
 for(let steps=0;steps<8&&!terminal.has(runtime.ledger.get(run.id)?.status??'');steps++)await runtime.tick();
 const record=runtime.ledger.get(run.id),artifacts=runtime.artifacts.list(run.id),result={schema:'agent-control.native-mutation-benchmark/v1',sourceCommit:process.env.AC_NATIVE_BENCHMARK_SOURCE||'unavailable',run:record,invocations:efficiency.list().filter(item=>item.runId===run.id),artifacts:artifacts.map(item=>({record:item,value:runtime.artifacts.read(item.id)}))};
