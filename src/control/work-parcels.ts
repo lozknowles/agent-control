@@ -157,6 +157,14 @@ export class WorkParcelCoordinator {
     const at=now(),stages=materializeStages(plan.stages),context=contextForPlan(plan,actor,stages,at,prompt),parcel=this.store.add({id,prompt,objective:plan.objective,actor,executionMode:'LIVE',executionOwner:'work-parcel-coordinator',status:'QUEUED',planner:plan.planner,stages,context,createdAt:at,updatedAt:at,telemetry:emptyTelemetry(),audit:createDecisionAudit(prompt,plan,this.runtime,at),provenance:[{at,type:'agent-template.submitted',detail:'Digest-bound Agent Template and registered Job submitted through the existing governed runtime'}]});
     return this.ensureOrchestration(parcel,plan);
   }
+  submitNativePlan(prompt:string,actor:string,requestKey:string,input:WorkParcelPlan){
+    if(!/^[a-f0-9]{64}$/.test(requestKey))throw Error('parcel_request_key_invalid');
+    assertNoSensitiveMaterial(prompt,'work_parcel_credential_material_forbidden');
+    const id=`parcel-native-${requestKey}`,existing=this.store.get(id);
+    if(existing){if(existing.actor!==actor||existing.prompt!==prompt)throw Error('parcel_request_identity_mismatch');return this.ensureOrchestration(existing);}
+    const plan=validateWorkParcelPlan(input,this.runtime,this.agentTemplates),at=now(),stages=materializeStages(plan.stages),context=contextForPlan(plan,actor,stages,at,prompt),parcel=this.store.add({id,prompt,objective:plan.objective,actor,executionMode:'LIVE',executionOwner:'work-parcel-coordinator',status:'QUEUED',planner:plan.planner,stages,context,createdAt:at,updatedAt:at,telemetry:emptyTelemetry(),audit:createDecisionAudit(prompt,plan,this.runtime,at),provenance:[{at,type:'native-plan.submitted',detail:'Deterministic registered-Job plan submitted through the governed Work Parcel runtime'}]});
+    return this.ensureOrchestration(parcel,plan);
+  }
   async submit(prompt: string, actor: string, attribution?: WorkAttribution) {
     assertNoSensitiveMaterial(prompt, 'work_parcel_credential_material_forbidden');
     const plan = validateWorkParcelPlan(await this.planner.plan(prompt), this.runtime,this.agentTemplates), at = now(), stages = materializeStages(plan.stages), context = contextForPlan(plan, actor, stages, at, prompt);
