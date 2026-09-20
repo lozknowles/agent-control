@@ -1,0 +1,13 @@
+# /run/user/1000/systemd/user/agent-control-realtime-model.service
+# /run/user/1000/systemd/transient/agent-control-realtime-model.service
+# This is a transient unit file, created programmatically via the systemd API. Do not edit.
+[Unit]
+Description=/fast/repos/llama.cpp/build-cuda/bin/llama-server -m /fast/models/mistral/Ministral-3-8B-Instruct-2512-GGUF-0102285a/Ministral-3-8B-Instruct-2512-Q4_K_M.gguf --host 127.0.0.1 --port 19223 -ngl 8 -c 8192 --parallel 1
+
+[Service]
+Restart=on-failure
+RestartSec=2s
+MemoryMax=10737418240
+CPUQuota=600%
+ExecStart=
+ExecStart="/fast/repos/llama.cpp/build-cuda/bin/llama-server" "-m" "/fast/models/mistral/Ministral-3-8B-Instruct-2512-GGUF-0102285a/Ministral-3-8B-Instruct-2512-Q4_K_M.gguf" "--host" "127.0.0.1" "--port" "19223" "-ngl" "8" "-c" "8192" "--parallel" "1"
