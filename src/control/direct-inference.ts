@@ -6,6 +6,9 @@ import {OpenAICompatibleProviderClient,type ModelInvocationResult} from './opena
 import {resolveProviderAccountCredential} from './provider-credential-store.js';
 import {createInvocationObservation,createInvocationStart,type HarnessEfficiencyLedgerPort} from './harness-efficiency.js';
 import {redactSensitiveValue} from './security-redaction.js';
+import type {AgentControlConfig} from './config.js';
+import {CostRoutingLedger} from './cost-performance-routing.js';
+import {configuredCostRoutingInvocation} from './cost-routing-projection.js';
 
 export type InferenceRouteKind='RAW_INFERENCE'|'AGENT_WORKFLOW';
 export interface DirectInferenceRequest{prompt:string;model?:string;modelRole?:string;nodeId:string;requiredCapabilities?:string[];maximumOutputTokens?:number;timeoutMs?:number;signal?:AbortSignal;jobId?:string;runId?:string;stepId?:string;}
@@ -19,7 +22,7 @@ export class FileDirectInferenceEvidenceStore implements DirectInferenceEvidence
 }
 
 export class DirectInferenceRuntime{
- constructor(readonly models:ModelRegistry,readonly ledger:HarnessEfficiencyLedgerPort,readonly clientFactory=(route:ModelRouteDecision)=>providerClient(models,route),readonly evidenceStore?:DirectInferenceEvidencePort){}
+ constructor(readonly models:ModelRegistry,readonly ledger:HarnessEfficiencyLedgerPort,readonly clientFactory=(route:ModelRouteDecision)=>providerClient(models,route),readonly evidenceStore?:DirectInferenceEvidencePort,readonly costRouting?:{config:AgentControlConfig;ledger:CostRoutingLedger}){}
  evidence(reference:string){if(!this.evidenceStore)throw Error('direct_inference_evidence_unconfigured');return this.evidenceStore.read(reference);}
  async invoke(request:DirectInferenceRequest):Promise<DirectInferenceReceipt>{
   if(!request.prompt.trim()||request.prompt.length>1_000_000)throw Error('direct_inference_prompt_invalid');
@@ -30,7 +33,7 @@ export class DirectInferenceRuntime{
   const startedAt=new Date().toISOString(),id=`inv-raw-${randomUUID()}`,jobId=request.jobId??`direct-inference-${randomUUID()}`,fingerprint=sha(JSON.stringify({route,prompt:sha(request.prompt)}));
   this.ledger.record(createInvocationStart({id,jobId,runId:request.runId,stepId:request.stepId,taskId:`${jobId}:raw`,laneId:`job:${jobId}`,model:route.modelId,provider:route.providerId,harnessProfile:'THIN',executionStrategy:'RAW_INFERENCE',startedAt,recipeFingerprint:fingerprint}));
   try{
-   const result=await this.clientFactory(route).invoke(this.models.model(route.modelId)!,request.prompt,{maximumOutputTokens:request.maximumOutputTokens??256,timeoutMs:request.timeoutMs??60_000,signal:request.signal});
+   const result=await this.clientFactory(route).invoke(this.models.model(route.modelId)!,request.prompt,{maximumOutputTokens:request.maximumOutputTokens??256,timeoutMs:request.timeoutMs??60_000,signal:request.signal,costRouting:this.costRouting?configuredCostRoutingInvocation(this.costRouting.config,{providerId:route.providerId,modelId:route.modelId,jobId,runId:request.runId,invocationId:id,inputTokensEstimated:Math.max(1,Math.ceil(request.prompt.length/4)),outputTokensRequested:request.maximumOutputTokens??256},this.costRouting.ledger):undefined});
    if(result.toolCall)throw Object.assign(new Error('direct_inference_tool_output_forbidden'),{result});
    const completedAt=new Date().toISOString(),evidence=[`request_sha256:${sha(request.prompt)}`,`response_sha256:${sha(result.output)}`,`qualification:${route.qualificationVersion}`],rawUsage={input_tokens:result.usage.inputTokens,input_tokens_details:{cached_tokens:result.usage.cachedInputTokens,cache_write_tokens:result.usage.cacheWriteTokens},output_tokens:result.usage.outputTokens,output_tokens_details:{reasoning_tokens:result.usage.reasoningTokens??null},total_tokens:result.usage.totalTokens};
    const retained=this.evidenceStore?.record({schema:'agent-control.direct-inference-evidence/v1',invocationId:id,jobId,runId:request.runId??null,stepId:request.stepId??null,startedAt,completedAt,routeKind:'RAW_INFERENCE',request:{prompt:request.prompt,model:request.model??null,modelRole:request.modelRole??null,nodeId:request.nodeId,requiredCapabilities:request.requiredCapabilities??[],maximumOutputTokens:request.maximumOutputTokens??256,timeoutMs:request.timeoutMs??60000},resolved:{model:route.modelId,provider:route.providerId,providerModel:route.providerModel,responseModel:result.responseModel,node:route.providerExecutionNodeId??route.nodeId,qualificationVersion:route.qualificationVersion,fallback:route.fallback},response:{output:result.output,finishReason:result.finishReason,latencyMs:result.elapsedMs,usage:{...result.usage,reasoningTokens:result.usage.reasoningTokens??null}},hashes:{request:sha(request.prompt),response:sha(result.output)}});if(retained)evidence.push(retained);

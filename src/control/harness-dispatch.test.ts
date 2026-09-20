@@ -231,3 +231,11 @@ for(const mode of ['takeover','cancel'] as const)test('async result interceptors
 });
 
 test('typed tool registry fails closed when a caller omits execution control',async()=>{let effects=0;const registry=new ToolHandlerRegistry().register('repository.write',async()=>{effects++;return {};});await assert.rejects(()=>registry.invoke('repository.write',{},{} as never,undefined as never),/tool_execution_control_required/);assert.equal(effects,0);});
+
+test('governed tool deadline aborts a stalled tool independently from model budget', async () => {
+  const policy = toolPolicy(), handlers = new ToolHandlerRegistry().register('repository.read', async (_input,_recipe,control) => await new Promise((_resolve,reject) => control.signal?.addEventListener('abort',()=>reject(control.signal?.reason),{once:true})));
+  const dispatcher = new HarnessDispatcher(new AdaptiveHarness(new SkillCatalog(), policy), policy, handlers, () => ({authority: {...authority}, workerId: 'worker-1'}));
+  const governedPlan = plan(); governedPlan.request.runtimeBudget={absoluteJobDeadlineMs:10_000,modelCallDeadlineMs:2_000,toolCallDeadlineMs:100,noProgressDeadlineMs:1_000,verificationReserveMs:100,cleanupReserveMs:100,terminalCompletionTurns:0};
+  governedPlan.candidates[0]={...governedPlan.candidates[0],runtime:{...governedPlan.candidates[0].runtime,p95ModelCallMs:1_000}};
+  await assert.rejects(()=>dispatcher.dispatch(governedPlan,{execute:async(_recipe,tools)=>({resultRef:String(await tools.invoke('repository.read'))})}),/TOOL_DEADLINE_EXCEEDED/);
+});

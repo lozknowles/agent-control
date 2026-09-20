@@ -1,7 +1,7 @@
 {
   "schema": "agent-control.implementation-status/v1",
-  "release": "4.11.0",
-  "updated": "2026-09-19",
+  "release": "4.12.0",
+  "updated": "2026-09-20",
   "capabilities": [
     {
       "id": "lab.raw-direct-inference",
@@ -1444,6 +1444,69 @@
         "docs/evidence/model-improvement-promotion-rollback-4.11.json"
       ],
       "limitation": "Only the PROMPT intervention is physically qualified, using a disposable prompt route above an immutable Qwen2.5 3B service. Generic canary allocation is not implemented, and arbitrary production-route promotion remains unqualified."
+    },
+    {
+      "id": "runtime.native-agent-templates",
+      "title": "Native governed Agent Templates and lean model interface",
+      "status": "QUALIFIED",
+      "summary": "Digest-bound, versioned Agent Templates resolve only registered allow-listed native actions and execute through the ordinary Work Parcel, Job Runtime, safety, evidence and independent-verification path. A provider-neutral lean model interface keeps model calls behind existing governed adapters.",
+      "sources": [
+        "src/control/agent-template.ts",
+        "src/control/lean-model-interface.ts",
+        "scripts/qualify-agent-templates-native.ts"
+      ],
+      "tests": [
+        "src/control/agent-template.test.ts",
+        "src/control/lean-model-interface.test.ts"
+      ],
+      "evidence": [
+        "docs/agent-templates.md",
+        "docs/qualification/4.12-lean-runtime/AGENT-CONTROL-4.12-LEAN-RUNTIME-QUALIFICATION.md"
+      ],
+      "limitation": "Qualification covers the registered specialist actions and recorded model/runtime combinations. A manifest grants no arbitrary shell, network or protected-resource authority, and the experimental model host remains a qualification adapter."
+    },
+    {
+      "id": "execution.multidimensional-runtime-budgets",
+      "title": "Measured multi-dimensional runtime and output budgets",
+      "status": "QUALIFIED",
+      "summary": "Governed execution derives bounded total, provider-call, no-progress and output-token budgets from declared policy and measured route evidence. Timeout and natural completion remain distinct, output ceilings are retained, and service-restoration evidence is part of qualification.",
+      "sources": [
+        "src/control/runtime-budget.ts",
+        "src/control/qualification-output-budget.ts"
+      ],
+      "tests": [
+        "src/control/runtime-budget.test.ts",
+        "src/control/qualification-output-budget.test.ts"
+      ],
+      "evidence": [
+        "docs/qualification/4.12-native-timeout/STANDARD-DEEP-RUNTIME-BUDGET-ANALYSIS.md",
+        "docs/qualification/4.12-qwen-output-budget/QWEN38-27B-OUTPUT-BUDGET-QUALIFICATION.md"
+      ],
+      "limitation": "Budgets are evidence-bound to qualified routes and workloads. They do not promise that every provider will report authoritative output usage or that every model will complete within the same envelope."
+    },
+    {
+      "id": "routing.cost-performance-policy",
+      "title": "Governed cost and performance routing policy",
+      "status": "IMPLEMENTED",
+      "summary": "Provider-neutral Economy, Balanced, Fast Capped and Custom policies enforce rate, invocation, job and token ceilings before billable dispatch; preserve fresh, cached, reasoning and output usage separately; and fail closed when required price evidence is unavailable. The authenticated dashboard supports explain, preview and exact-hash approval with retained operator reason.",
+      "sources": [
+        "src/control/cost-performance-routing.ts",
+        "src/control/cost-routing-projection.ts",
+        "src/control/openrouter-cost-routing.ts",
+        "src/control/configuration-store.ts",
+        "src/control/web-server.ts",
+        "assets/dashboard/dashboard-models.js"
+      ],
+      "tests": [
+        "src/control/cost-performance-routing.test.ts",
+        "src/control/cost-routing-projection.test.ts",
+        "src/control/configuration-store.test.ts"
+      ],
+      "evidence": [
+        "docs/cost-aware-openrouter-routing.md",
+        "docs/evidence/openrouter-cost-routing-qualification.json"
+      ],
+      "limitation": "The OpenRouter translation is contract- and fixture-qualified. No paid live OpenRouter request, account change or spend is claimed, and absent provider cost remains unavailable."
     }
   ]
 }

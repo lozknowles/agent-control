@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {AdaptiveHarness, SkillCatalog, ToolPolicy, type HarnessCandidate, type RecipeRequest} from './adaptive-harness.js';
 import {createToolHandlerRegistry, HarnessDispatcher, HarnessJobAgentAction, MemoryRecipeDispatchStore} from './harness-dispatch.js';
-import type {HarnessEfficiencyLedgerPort, ModelInvocationObservation} from './harness-efficiency.js';
+import type {HarnessEfficiencyLedgerPort, HarnessProfileName, ModelInvocationObservation} from './harness-efficiency.js';
 import {HarnessProfileRouter} from './harness-efficiency.js';
 import {ActionFailure, ActionRegistry} from './job-runtime.js';
 import {parseMutationBenchmarkSuite, type MutationBenchmarkTask} from './harness-mutation-benchmark.js';
@@ -14,6 +14,12 @@ import {StructuredChatLoopProvider} from './structured-chat-loop-provider.js';
 import type {ActionContext} from './job-types.js';
 import type {ExecutionCleanupReport} from './owned-process.js';
 import {StructuredChatProviderFactory} from './structured-chat-provider.js';
+import type {LeanExecutionPolicy} from './lean-model-interface.js';
+import {fetch as undiciFetch} from 'undici';
+
+// Preserve test/embedding dependency injection while pairing the production
+// governed dispatcher with the matching npm Undici implementation.
+const platformFetch = globalThis.fetch;
 
 interface QualificationWorkspace {
   workspace: MutationWorkspace;
@@ -21,6 +27,7 @@ interface QualificationWorkspace {
   startingRevision: string;
   fixtureSha256: string;
   prefixVariant: string;
+  profile: HarnessProfileName;
   transcript: Array<Record<string, unknown>>;
   recordEvidence: NonNullable<ActionContext['recordEvidence']>;
   releaseCleanup?: (proof: ExecutionCleanupReport) => void;
@@ -34,6 +41,7 @@ interface QualificationWorkspace {
 export function registerNonOpenAiCacheQualificationActions(registry: ActionRegistry, efficiency?: HarnessEfficiencyLedgerPort, environment: NodeJS.ProcessEnv = process.env) {
   if (environment.AGENT_CONTROL_ENABLE_NON_OPENAI_CACHE_QUALIFICATION !== 'true') return registry;
   if (!efficiency) throw new Error('non_openai_cache_efficiency_ledger_required');
+  const leanExperiment = environment.AGENT_CONTROL_LEAN_EXPERIMENT === 'true';
   const baseUrl = required(environment.AGENT_CONTROL_NON_OPENAI_CACHE_BASE_URL, 'non_openai_cache_base_url').replace(/\/$/, '');
   const routeBaseUrls = parseRouteBaseUrls(environment.AGENT_CONTROL_NON_OPENAI_CACHE_ROUTE_BASE_URLS);
   for (const value of [baseUrl, ...Object.values(routeBaseUrls)]) { const endpoint = new URL(value); if (!['127.0.0.1', 'localhost', '::1'].includes(endpoint.hostname)) throw new Error('non_openai_cache_endpoint_must_be_loopback'); }
@@ -41,8 +49,6 @@ export function registerNonOpenAiCacheQualificationActions(registry: ActionRegis
   const repositoryRoot = path.resolve(environment.AGENT_CONTROL_NON_OPENAI_CACHE_REPOSITORY_ROOT ?? process.cwd());
   const suiteFile = path.join(repositoryRoot, 'benchmarks', 'harness-mutation-jobs.json');
   const suite = parseMutationBenchmarkSuite(JSON.parse(fs.readFileSync(suiteFile, 'utf8')));
-  const task = suite.tasks.find(item => item.id === (environment.AGENT_CONTROL_NON_OPENAI_CACHE_TASK ?? 'MUT-001'));
-  if (!task) throw new Error('non_openai_cache_task_missing');
   const fixtureRoot = path.resolve(repositoryRoot, suite.fixturePath);
   if (fixtureContentSha256(fixtureRoot) !== suite.fixtureSha256) throw new Error('non_openai_cache_fixture_hash_mismatch');
   const workspaces = new Map<string, QualificationWorkspace>();
@@ -51,16 +57,38 @@ export function registerNonOpenAiCacheQualificationActions(registry: ActionRegis
     path: 'adaptive-harness',
     execute: async context => {
       const governedRoute = context.run.trigger.modelRoute, selectedProviderId = governedRoute?.providerId ?? 'local-llama-cache-qualification', selectedModelId = governedRoute?.modelId ?? modelId, selectedBaseUrl = (routeBaseUrls[selectedProviderId] ?? baseUrl).replace(/\/$/, '');
+      const nativeBenchmark = context.parameters.taskId !== undefined || context.parameters.profile !== undefined;
+      const taskId = String(context.parameters.taskId ?? environment.AGENT_CONTROL_NON_OPENAI_CACHE_TASK ?? 'MUT-001');
+      const task = suite.tasks.find(item => item.id === taskId);
+      if (!task) throw new ActionFailure('native_benchmark_task_missing', 'configuration');
+      const profile = String(context.parameters.profile ?? task.expectedMinimumProfile) as HarnessProfileName;
+      if (!['THIN', 'STANDARD', 'DEEP'].includes(profile)) throw new ActionFailure('native_benchmark_profile_invalid', 'configuration');
       const prefixVariant = String(context.parameters.prefixVariant ?? 'stable');
       if (!['stable', 'changed-prefix-control'].includes(prefixVariant)) throw new ActionFailure('non_openai_cache_prefix_variant_invalid', 'configuration');
+      const observationTimeoutMs = resolveNativeObservationTimeoutMs(task.timeoutMs, context.parameters.observationTimeoutMs);
+      const governedRuntimeBudgets = nativeBenchmark && String(context.parameters.runtimeBudgetMode ?? 'governed') === 'governed';
+      const optionalBudget = (name: string) => context.parameters[name] === undefined ? undefined : Number(context.parameters[name]);
+      const runtimeBudget = governedRuntimeBudgets ? {
+        ...(optionalBudget('absoluteJobDeadlineMs') === undefined ? {} : {absoluteJobDeadlineMs: optionalBudget('absoluteJobDeadlineMs')}),
+        ...(optionalBudget('modelCallDeadlineMs') === undefined ? {} : {modelCallDeadlineMs: optionalBudget('modelCallDeadlineMs')}),
+        ...(optionalBudget('toolCallDeadlineMs') === undefined ? {} : {toolCallDeadlineMs: optionalBudget('toolCallDeadlineMs')}),
+        ...(optionalBudget('noProgressDeadlineMs') === undefined ? {} : {noProgressDeadlineMs: optionalBudget('noProgressDeadlineMs')}),
+      } : undefined;
       if (!context.execution || !context.recordEvidence || !context.retainCleanup) throw new ActionFailure('qualification_live_execution_context_required', 'policy_rejection');
       context.execution.assertActive();
       const prepared = MutationWorkspace.prepare(fixtureRoot, task, context.signal, context.execution.assertActive, context.ownedExecution, context.recordEvidence);
       const transcript: Array<Record<string, unknown>> = [];
-      const retained: QualificationWorkspace = {...prepared, task, prefixVariant, transcript, recordEvidence: context.recordEvidence};
+      const retained: QualificationWorkspace = {...prepared, task, prefixVariant, profile, transcript, recordEvidence: context.recordEvidence};
       const journal = (event: Record<string, unknown>) => { context.recordEvidence!(String(event.type), event); transcript.push(event); };
       workspaces.set(context.run.id, retained);
       retained.releaseCleanup = context.retainCleanup(prepared.workspace.processIdentity(), async () => { const proof = await retainAndCleanup(retained, context, 'run-ended-before-verification'); workspaces.delete(context.run.id); return proof; });
+      const health = nativeBenchmark ? await fetch(selectedBaseUrl.replace(/\/v1$/, '') + '/health', {signal: AbortSignal.any([context.signal, AbortSignal.timeout(10_000)])}) : new Response(null, {status: 200});
+      journal({type: 'runtime-health', at: new Date().toISOString(), status: health.status});
+      if (!health.ok) throw new ActionFailure(`native_benchmark_runtime_unhealthy:${health.status}`, 'execution');
+      const models = nativeBenchmark ? await fetch(selectedBaseUrl + '/models', {signal: AbortSignal.any([context.signal, AbortSignal.timeout(10_000)])}) : Response.json({data: [{id: selectedModelId}]});
+      const modelsBody = await models.json() as {data?: Array<{id?: string}>};
+      journal({type: 'model-discovery', at: new Date().toISOString(), status: models.status, modelIds: modelsBody.data?.map(item => item.id).filter(Boolean) ?? []});
+      if (!models.ok || !modelsBody.data?.some(item => item.id === selectedModelId)) throw new ActionFailure('native_benchmark_model_identity_mismatch', 'configuration');
       const authority = context.execution.currentAuthority();
       journal({type: 'workspace-prepared', at: new Date().toISOString(), contractId: context.execution.contractId, authority, startingRevision: prepared.startingRevision, fixtureSha256: prepared.fixtureSha256, identity: prepared.workspace.processIdentity()});
       const bindings = prepared.workspace.toolBindings().map(binding => ({
@@ -77,7 +105,12 @@ export function registerNonOpenAiCacheQualificationActions(registry: ActionRegis
         },
       }));
       const toolPolicy = new ToolPolicy(MUTATION_TOOL_DEFINITIONS);
-      const dispatcher = new HarnessDispatcher(new AdaptiveHarness(new SkillCatalog(), toolPolicy, undefined, new HarnessProfileRouter({mode: 'EXPERIMENT', minimumVerifiedRuns: 20, minimumSuccessRate: .95, minimumSameModelControlledRuns: 20})), toolPolicy, createToolHandlerRegistry(bindings), () => ({authority: context.execution!.currentAuthority(), workerId: context.worker.id, availableToolIds: MUTATION_TOOL_DEFINITIONS.map(tool => tool.id), approvedRisks: ['read', 'write']}), new MemoryRecipeDispatchStore(), event => journal({...event, type: 'tool-policy-audit'}), undefined, efficiency);
+      const leanPolicy: LeanExecutionPolicy = {toolEffects: {
+        [MUTATION_TOOL_IDS.read]: 'inspect', [MUTATION_TOOL_IDS.search]: 'inspect',
+        [MUTATION_TOOL_IDS.replace]: 'mutate', [MUTATION_TOOL_IDS.write]: 'mutate',
+        [MUTATION_TOOL_IDS.test]: 'verify', [MUTATION_TOOL_IDS.finish]: 'terminal',
+      }, requiredChangedPaths: [...task.requiredChangedFiles], terminalAllowance: true};
+      const dispatcher = new HarnessDispatcher(new AdaptiveHarness(new SkillCatalog(), toolPolicy, undefined, new HarnessProfileRouter({mode: 'EXPERIMENT', minimumVerifiedRuns: 20, minimumSuccessRate: .95, minimumSameModelControlledRuns: 20})), toolPolicy, createToolHandlerRegistry(bindings), () => ({authority: context.execution!.currentAuthority(), workerId: context.worker.id, availableToolIds: MUTATION_TOOL_DEFINITIONS.map(tool => tool.id), approvedRisks: ['read', 'write']}), new MemoryRecipeDispatchStore(), event => journal({...event, type: 'tool-policy-audit'}), undefined, efficiency, leanExperiment ? () => leanPolicy : undefined);
       const providerFactory = new StructuredChatProviderFactory({
         provider: {id: selectedProviderId, name: 'Local llama.cpp cache qualification', kind: 'local', baseUrl: selectedBaseUrl, requiresAuth: false, parallelism: 1, costClass: 'free', capabilities: ['structured-output', 'tool-request']},
         workerId: context.worker.id, modelId: selectedModelId,
@@ -91,8 +124,10 @@ export function registerNonOpenAiCacheQualificationActions(registry: ActionRegis
         context.execution!.assertActive();
         journal({type: 'provider-request', at: new Date().toISOString(), request: requestBody});
         let response: Response;
-        try { response = await fetch(input, init); }
-        catch (error) { journal({type: 'provider-failure', at: new Date().toISOString(), error: error instanceof Error ? error.message : String(error), cancelled: context.signal.aborted, remoteCleanup: 'UNKNOWN'}); throw error; }
+        const delegatedFetch = globalThis.fetch === platformFetch ? undiciFetch as unknown as typeof fetch : globalThis.fetch;
+        try { response = await delegatedFetch(input, init); }
+        catch (error) { const cause=(error as {cause?:{code?:string}})?.cause?.code; journal({type: 'provider-failure', at: new Date().toISOString(), error: error instanceof Error ? error.message : String(error), causeCode: cause ?? null, cancelled: context.signal.aborted, remoteCleanup: 'UNKNOWN'}); throw error; }
+        if (requestBody.stream === true) { journal({type:'provider-headers',at:new Date().toISOString(),status:response.status,streaming:true}); return response; }
         let rawResponse = ''; const responseChunks: Uint8Array[] = [];
         try {
           const reader = response.clone().body?.getReader(), decoder = new TextDecoder();
@@ -109,20 +144,25 @@ export function registerNonOpenAiCacheQualificationActions(registry: ActionRegis
         journal({type: 'provider', at: new Date().toISOString(), requestPrefixSha256: sha256(stableJson(requestBody)), assistantOutput: typeof message.content === 'string' ? message.content : null, providerResponseId: typeof body.id === 'string' ? body.id : null, responseModel: typeof body.model === 'string' ? body.model : null, finishReason: typeof choice.finish_reason === 'string' ? choice.finish_reason : null, usage: safeUsage(body.usage), timings: safeTimings(body.timings)});
         return response;
       };
-      const loop = new StructuredChatLoopProvider({providerId: selectedProviderId, modelId: selectedModelId, baseUrl: selectedBaseUrl, toolSchemas: MUTATION_TOOL_SCHEMAS, finishToolId: MUTATION_TOOL_IDS.finish, maximumOutputTokens: 768, timeoutMs: task.timeoutMs, signalForRecipe: () => context.signal, executionStrategy: 'non-openai-cache.real-repository-mutation', cacheRetention: environment.AGENT_CONTROL_NON_OPENAI_CACHE_DERIVED_RETENTION === 'true' ? {enabled:true,authority:'derived',source:'qualified-llama.cpp-single-slot-cache-prompt'} : undefined, fetch: fetcher});
+      const loop = new StructuredChatLoopProvider({providerId: selectedProviderId, modelId: selectedModelId, baseUrl: selectedBaseUrl, toolSchemas: MUTATION_TOOL_SCHEMAS, finishToolId: MUTATION_TOOL_IDS.finish, maximumOutputTokens: 768, timeoutMs: observationTimeoutMs, signalForRecipe: () => context.signal, executionStrategy: 'non-openai-cache.real-repository-mutation', ...(governedRuntimeBudgets ? {streaming:true,recordBudgetEvidence:(record:Record<string,unknown>)=>journal(record)} : {}), ...(leanExperiment ? {lean: {terminalAllowance: true, recordEvidence: (record: Record<string, unknown>) => journal({...record, type: 'lean-model-interface'})}} : {}), cacheRetention: environment.AGENT_CONTROL_NON_OPENAI_CACHE_DERIVED_RETENTION === 'true' ? {enabled:true,authority:'derived',source:'qualified-llama.cpp-single-slot-cache-prompt'} : undefined, fetch: fetcher});
       const sources = buildMutationContextSources(suite, task, fixtureRoot);
-      const packet = buildMutationContextPacket('THIN', sources, Math.min(8_000, task.tokenBudget));
+      const packet = buildMutationContextPacket(profile, sources, Math.min(48_000, Math.max(1_024, Math.floor(task.tokenBudget * .7))));
       const selectedSources = selectMutationPacketSources(packet, sources);
       const variantPrefix = prefixVariant === 'stable' ? 'CACHE QUALIFICATION PREFIX A.' : 'NEGATIVE CONTROL PREFIX B: intentionally changed before the stable task sequence.';
-      const instruction = `${variantPrefix}\n${renderMutationInstruction(task, 'THIN')}`;
+      const instruction = `${variantPrefix}\n${renderMutationInstruction(task, profile)}`;
+      journal({type: 'observation-budget', at: new Date().toISOString(), configuredTaskTimeoutMs: task.timeoutMs, effectiveTimeoutMs: observationTimeoutMs, override: observationTimeoutMs !== task.timeoutMs, scope: governedRuntimeBudgets ? 'legacy-compatibility-only' : 'structured-chat-loop-absolute-wall', governedRuntimeBudgets});
       journal({type: 'initiating-model-request', at: new Date().toISOString(), instruction, authorisedContext: selectedSources.map(source => ({id: source.id, kind: source.kind, content: source.content ?? null}))});
-      const request: RecipeRequest = {taskId: `${context.run.id}:${context.step.id}`, jobId: context.run.jobId, runId: context.run.id, stepId: context.step.id, taskType: 'cache-qualification', requiredCapabilities: ['model.execute', 'structured-output', 'tool-request', 'repository.mutation.typed'], requiredTools: MUTATION_TOOL_DEFINITIONS.map(tool => tool.id), approvedRisks: ['read', 'write'], intent: 'ECONOMY', inputTokens: packet.estimatedTokens, outputTokens: 768, maximumLatencyMs: task.timeoutMs, context: {tier: 1, sourceIds: packet.sourceIds, evidenceIds: packet.provenanceIds, estimatedTokens: packet.estimatedTokens, packetId: packet.id, provenanceIds: packet.provenanceIds}, contextPacket: packet, contextStrategyId: 'non-openai-cache-stable-prefix-v1', authority, verification: {requiredEvidence: ['independent-hidden-verifier', 'public-tests', 'git-diff-check'], requireIndependentCheck: true}, escalation: {minimumConfidence: .8, maximumAttempts: 1, onFailure: 'review'}, harnessRouting: {taskId: task.id, complexity: .15, risk: 'low', knownExactTargets: true, estimatedFiles: 1, deterministicVerifier: true, ambiguity: .05, architectural: false, requestedProfile: 'THIN'}};
+      const request: RecipeRequest = {taskId: `${context.run.id}:${context.step.id}`, jobId: context.run.jobId, runId: context.run.id, stepId: context.step.id, taskType: 'cache-qualification', requiredCapabilities: ['model.execute', 'structured-output', 'tool-request', 'repository.mutation.typed'], requiredTools: MUTATION_TOOL_DEFINITIONS.map(tool => tool.id), approvedRisks: ['read', 'write'], intent: 'ECONOMY', inputTokens: packet.estimatedTokens, outputTokens: 768, maximumLatencyMs: governedRuntimeBudgets ? undefined : observationTimeoutMs, ...(runtimeBudget ? {runtimeBudget} : {}), context: {tier: ({THIN: 1, STANDARD: 2, DEEP: 3} as const)[profile], sourceIds: packet.sourceIds, evidenceIds: packet.provenanceIds, estimatedTokens: packet.estimatedTokens, packetId: packet.id, provenanceIds: packet.provenanceIds}, contextPacket: packet, contextStrategyId: `native-mutation-${profile.toLowerCase()}-v1`, authority, verification: {requiredEvidence: ['independent-hidden-verifier', 'public-tests', 'git-diff-check'], requireIndependentCheck: true}, escalation: {minimumConfidence: .8, maximumAttempts: 1, onFailure: 'review'}, harnessRouting: {taskId: task.id, complexity: Math.min(1, task.features.estimatedFiles / 6 + task.features.ambiguity / 2), risk: task.features.risk, knownExactTargets: task.features.knownExactTargets, estimatedFiles: task.features.estimatedFiles, deterministicVerifier: true, ambiguity: task.features.ambiguity, architectural: task.features.architecturalTerms, requestedProfile: profile}};
       const baseCandidate = providerFactory.candidate();
-      const candidate: HarnessCandidate = {...baseCandidate, supportedHarnessProfiles: ['THIN'], runtime: {...baseCandidate.runtime, executionStrategy: 'non-openai-cache.real-repository-mutation', maximumProcessedTokens: task.tokenBudget}};
+      const routeNumber = (name: string) => { const raw=environment[name]; if(raw===undefined)return undefined; const value=Number(raw); if(!Number.isFinite(value)||value<=0)throw new ActionFailure(`native_benchmark_route_characteristic_invalid:${name}`,'configuration'); return value; };
+      const routeEvidenceId=environment.AGENT_CONTROL_NATIVE_ROUTE_BUDGET_EVIDENCE_ID?.trim();
+      const routeCharacteristics={medianModelCallMs:routeNumber('AGENT_CONTROL_NATIVE_ROUTE_MEDIAN_MODEL_CALL_MS'),p95ModelCallMs:routeNumber('AGENT_CONTROL_NATIVE_ROUTE_P95_MODEL_CALL_MS'),generationTokensPerSecond:routeNumber('AGENT_CONTROL_NATIVE_ROUTE_GENERATION_TPS'),runtimeBudgetEvidenceId:routeEvidenceId||undefined};
+      const candidate: HarnessCandidate = {...baseCandidate, supportedHarnessProfiles: ['THIN', 'STANDARD', 'DEEP'], runtime: {...baseCandidate.runtime, executionStrategy: 'non-openai-cache.real-repository-mutation', maximumProcessedTokens: task.tokenBudget, ...(governedRuntimeBudgets ? Object.fromEntries(Object.entries(routeCharacteristics).filter(([,value])=>value!==undefined)) : {})}};
+      if (environment.AGENT_CONTROL_NATIVE_BENCHMARK_DISABLE_DISPATCHER === 'true') throw new ActionFailure('native_benchmark_dispatcher_disabled', 'policy_rejection');
       const action = new HarnessJobAgentAction(dispatcher, () => ({plan: {request, candidates: [candidate], placement: {workerId: context.worker.id, reason: 'Loopback non-OpenAI model and isolated mutation fixture'}}, executor: loop.executor(instruction, selectedSources)}));
       try {
         const output = await action.execute(context), invocations = efficiency.list().filter(item => item.runId === context.run.id);
-        return {...output, artifacts: [{name: 'mutation-attempt', value: {schema: 'agent-control.non-openai-cache-attempt/v1', taskId: task.id, prefixVariant, fixtureSha256: prepared.fixtureSha256, startingRevision: prepared.startingRevision, stablePrefixSha256: invocations[0]?.cacheEvidence?.requestPrefixSha256 ?? null, status: prepared.workspace.statusSummary(), counters: prepared.workspace.getCounters(), transcript, invocations: invocations.map(cacheInvocation)}}], evidence: [...(output.evidence ?? []), `fixture_sha256:${prepared.fixtureSha256}`, `prefix_variant:${prefixVariant}`], detail: `Non-OpenAI ${prefixVariant} mutation attempt completed; independent verification pending.`};
+        return {...output, artifacts: [{name: 'mutation-attempt', value: {schema: 'agent-control.non-openai-cache-attempt/v1', taskId: task.id, profile, prefixVariant, provenance: nativeBenchmark ? 'AGENT_CONTROL_NATIVE_EXECUTION' : 'QUALIFICATION_ACTION', fixtureSha256: prepared.fixtureSha256, startingRevision: prepared.startingRevision, stablePrefixSha256: invocations[0]?.cacheEvidence?.requestPrefixSha256 ?? null, status: prepared.workspace.statusSummary(), counters: prepared.workspace.getCounters(), transcript, invocations: invocations.map(cacheInvocation)}}], evidence: [...(output.evidence ?? []), `fixture_sha256:${prepared.fixtureSha256}`, `prefix_variant:${prefixVariant}`, `profile:${profile}`, `provenance:${nativeBenchmark ? 'AGENT_CONTROL_NATIVE_EXECUTION' : 'QUALIFICATION_ACTION'}`], detail: `Non-OpenAI ${prefixVariant} mutation attempt completed; independent verification pending.`};
       } catch (error) {
         const proof = await retainAndCleanup(retained, context, 'execution-failed', error); retained.releaseCleanup?.(proof);
         workspaces.delete(context.run.id); throw error;
@@ -149,7 +189,7 @@ export function registerNonOpenAiCacheQualificationActions(registry: ActionRegis
       if (!sourceStep || !context.recordIndependentVerification) throw new ActionFailure('independent_verification_context_missing', 'verification');
       context.recordIndependentVerification(sourceStep.id, verifier.passed, verificationArtifact ? [verificationArtifact.id] : [], verifier.passed ? 'Independent fixture verifier passed' : 'Independent fixture verifier failed');
       if (!verifier.passed) throw new ActionFailure(`non_openai_cache_verifier_failed:${verifier.failureClass ?? 'unknown'}`, 'verification');
-      return {artifacts: [{name: 'verification-report', value: {schema: 'agent-control.non-openai-cache-verification/v1', passed: true, taskId: retained.task.id, prefixVariant: retained.prefixVariant, verifier, patch, patchSha256: sha256(patch), transcript: retained.transcript}}], evidence: [`independent_verifier:PASS`, `diff_sha256:${verifier.diffSha256}`], verification: ['non-openai-cache-mutation-verified'], detail: 'Independent hidden verifier accepted the real disposable repository mutation.'};
+      return {artifacts: [{name: 'verification-report', value: {schema: 'agent-control.non-openai-cache-verification/v1', passed: true, taskId: retained.task.id, profile: retained.profile, prefixVariant: retained.prefixVariant, provenance: 'AGENT_CONTROL_NATIVE_EXECUTION', verifier, patch, patchSha256: sha256(patch), transcript: retained.transcript}}], evidence: [`independent_verifier:PASS`, `diff_sha256:${verifier.diffSha256}`], verification: ['non-openai-cache-mutation-verified'], detail: 'Independent hidden verifier accepted the real disposable repository mutation.'};
     } catch (error) {
       verifierFailure = error;
       context.recordEvidence?.('independent-verification-error', {error: error instanceof Error ? error.message : String(error), cancelled: context.signal.aborted, taskId: retained.task.id, identity: retained.workspace.processIdentity()});
@@ -159,6 +199,14 @@ export function registerNonOpenAiCacheQualificationActions(registry: ActionRegis
     }
   }, ['FILESYSTEM_WRITE']);
   return registry;
+}
+
+
+export function resolveNativeObservationTimeoutMs(configuredTaskTimeoutMs: number, value: unknown) {
+  if (!Number.isSafeInteger(configuredTaskTimeoutMs) || configuredTaskTimeoutMs < 1) throw new Error('native_observation_configured_timeout_invalid');
+  if (value === undefined || value === null) return configuredTaskTimeoutMs;
+  if (!Number.isSafeInteger(value) || Number(value) < configuredTaskTimeoutMs || Number(value) > 1_800_000) throw new ActionFailure('native_observation_timeout_invalid', 'configuration');
+  return Number(value);
 }
 
 function cacheInvocation(invocation: ModelInvocationObservation) {

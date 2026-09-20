@@ -2,6 +2,7 @@ import {createHash} from 'node:crypto';
 import type {ContextTier} from './context.js';
 import {EconomicRouter, type ExecutionIntent, type RouteCandidate, type RouteDecision} from './economic-routing.js';
 import type {ExecutionAuthority} from './execution-provider.js';
+import {resolveGovernedRuntimeBudget, type GovernedRuntimeBudget, type RuntimeBudgetRequest} from './runtime-budget.js';
 import {
   DEFAULT_HARNESS_PROFILES,
   HarnessProfileRouter,
@@ -110,6 +111,8 @@ export interface ExecutionRecipe {
   runtime: Record<string, string | number | boolean>;
   authority: ExecutionAuthority;
   resourceLimits: {maximumLatencyMs?: number; maximumMonetarySpend?: number};
+  /** Explicit multi-dimensional policy. Absent on legacy recipes. */
+  runtimeBudget?: GovernedRuntimeBudget;
   verification: VerificationPolicy;
   escalation: EscalationPolicy;
   routeReason: string;
@@ -132,6 +135,7 @@ export interface RecipeRequest {
   outputTokens: number;
   maximumLatencyMs?: number;
   maximumMonetarySpend?: number;
+  runtimeBudget?: RuntimeBudgetRequest;
   meteredApproved?: boolean;
   context: ContextStrategy;
   authority: ExecutionAuthority;
@@ -303,6 +307,13 @@ export class AdaptiveHarness {
       runtime: structuredClone(composition.candidate.runtime),
       authority: structuredClone(request.authority),
       resourceLimits: {maximumLatencyMs: request.maximumLatencyMs, maximumMonetarySpend: request.maximumMonetarySpend},
+      ...(request.runtimeBudget ? {runtimeBudget: resolveGovernedRuntimeBudget(profileDecision.appliedProfile, request.runtimeBudget, {
+        medianModelCallMs: typeof composition.candidate.runtime.medianModelCallMs === 'number' ? composition.candidate.runtime.medianModelCallMs : undefined,
+        p95ModelCallMs: typeof composition.candidate.runtime.p95ModelCallMs === 'number' ? composition.candidate.runtime.p95ModelCallMs : undefined,
+        generationTokensPerSecond: typeof composition.candidate.runtime.generationTokensPerSecond === 'number' ? composition.candidate.runtime.generationTokensPerSecond : undefined,
+        maximumOutputTokens: request.outputTokens,
+        evidenceIds: typeof composition.candidate.runtime.runtimeBudgetEvidenceId === 'string' ? [composition.candidate.runtime.runtimeBudgetEvidenceId] : [],
+      })} : {}),
       verification: structuredClone(request.verification),
       escalation: structuredClone(request.escalation),
       routeReason: route.reason,

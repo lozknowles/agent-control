@@ -1,0 +1,116 @@
+{
+  "schema": "agent-control.lean-runtime-qualification/v2",
+  "status": "BLOCKED",
+  "reason": "NATIVE_RUNTIME proven; Lean efficiency not proven because both lanes were 0/10 and fresh input increased.",
+  "baseline": "9dff191034b7c69e102687bef02803bc05afe874",
+  "nativeBaselineAdapter": "b5f7e4a1cba4c2ed478db0bc3ba6e93173505956",
+  "implementationSource": "22e2de8634095b6b4260df1458168f49cabef779",
+  "historicalEvidencePreserved": true,
+  "experimental": true,
+  "published": false,
+  "productionModified": false,
+  "nativeBoundary": {
+    "status": "PASS",
+    "provenance": "NATIVE_RUNTIME",
+    "dispatcherDisabledControl": "PASS",
+    "externalOperationalActions": 0
+  },
+  "physicalQwen": {
+    "status": "PASS",
+    "runId": "run-f9b06545-4ace-4bc8-9c67-7a3c6264583f",
+    "profile": "THIN",
+    "calls": 4,
+    "independentVerification": "PASS",
+    "cleanup": "confirmed"
+  },
+  "nativeAB": {
+    "status": "COMPLETED_NOT_PROVEN",
+    "fixtureSha256": "d1b5e8ebec19378b5d2112e8be5e73671a51c40bc328af8ded815be44edb6b27",
+    "modelSha256": "33e7a72cf5e6e2cfc2f2847075acc013d68bba023e35310cef86b5cf8fdca761",
+    "taskOrder": [
+      "MUT-001",
+      "MUT-002",
+      "MUT-005",
+      "MUT-003",
+      "MUT-004",
+      "MUT-007",
+      "MUT-009",
+      "MUT-010",
+      "MUT-011",
+      "MUT-012"
+    ],
+    "baseline": {
+      "tasks": 10,
+      "successes": 0,
+      "calls": 15,
+      "inputTokens": 41257,
+      "cachedInputTokens": 19847,
+      "freshInputTokens": 21410,
+      "outputTokens": 479,
+      "totalProcessedTokens": 41736,
+      "modelElapsedMs": 1308101,
+      "wallElapsedMs": 1893070
+    },
+    "lean": {
+      "tasks": 10,
+      "successes": 0,
+      "calls": 13,
+      "inputTokens": 26772,
+      "cachedInputTokens": 4715,
+      "freshInputTokens": 22057,
+      "outputTokens": 455,
+      "totalProcessedTokens": 27227,
+      "modelElapsedMs": 1286931,
+      "wallElapsedMs": 1893467
+    },
+    "comparison": {
+      "callsReductionPercent": 13.333333333333334,
+      "inputReductionPercent": 35.10919359139055,
+      "cachedInputReductionPercent": 76.24326094623872,
+      "freshInputChangePercent": 3.021952358710883,
+      "outputReductionPercent": 5.010438413361169,
+      "modelElapsedReductionPercent": 1.6183765626660327,
+      "wallElapsedChangePercent": 0.020971226631873095
+    },
+    "successfulTaskMetrics": "unavailable: zero successful tasks in both lanes"
+  },
+  "cacheAwarePrototype": {
+    "status": "REJECTED_AND_REVERTED",
+    "existing": {
+      "input": 4191,
+      "cached": 1750,
+      "fresh": 2441,
+      "output": 150,
+      "elapsedMs": 5662
+    },
+    "prototype": {
+      "input": 4655,
+      "cached": 2168,
+      "fresh": 2487,
+      "output": 164,
+      "elapsedMs": 6176
+    }
+  },
+  "tests": {
+    "focused": "PASS",
+    "full": {
+      "tests": 1946,
+      "pass": 1946,
+      "fail": 0,
+      "skipped": 0
+    },
+    "typecheck": "PASS",
+    "distribution": "PASS",
+    "bootstrap": "PASS",
+    "dashboard": "PASS",
+    "neutrality": "PASS",
+    "implementationStatus": "PASS",
+    "limitations": "PASS"
+  },
+  "limits": [
+    "No Lean production promotion.",
+    "No successful-task efficiency metric is computable.",
+    "Malicious terminal-escape cases are synthetic provider fixtures, not physical attacks.",
+    "No merge, push, tag, release or deployment."
+  ]
+}

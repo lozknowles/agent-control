@@ -1,0 +1,532 @@
+Sep 20 06:51:37 hpubuntu llama-server[4125702]: 7005.10.635.308 W srv          next: stopping wait for next result due to should_stop condition (adjust the --timeout argument if needed)
+Sep 20 06:51:37 hpubuntu llama-server[4125702]: 7005.10.635.319 W srv          next: ref: https://github.com/ggml-org/llama.cpp/pull/22907
+Sep 20 06:51:37 hpubuntu llama-server[4125702]: 7005.10.635.362 W srv          stop: cancel task, id_task = 8420
+Sep 20 06:51:38 hpubuntu llama-server[4125702]: 7005.11.726.392 I slot      release: id  0 | task 8420 | stop processing: n_tokens = 3270, truncated = 0
+Sep 20 06:51:38 hpubuntu llama-server[4125702]: 7005.11.727.154 I srv  update_slots: all slots are idle
+Sep 20 06:52:01 hpubuntu llama-server[4125702]: 7005.34.646.531 I srv  params_from_: Chat format: peg-native
+Sep 20 06:52:01 hpubuntu llama-server[4125702]: 7005.34.646.719 I slot get_availabl: id  0 | task -1 | selected slot by LCP similarity, sim_best = 0.179 (> 0.100 thold), f_keep = 0.120
+Sep 20 06:52:01 hpubuntu llama-server[4125702]: 7005.34.646.722 I srv  get_availabl: updating prompt cache
+Sep 20 06:52:01 hpubuntu llama-server[4125702]: 7005.34.647.024 W srv   prompt_save:  - saving prompt with length 3270, total state size = 434.335 MiB (draft: 0.000 MiB)
+Sep 20 06:52:02 hpubuntu llama-server[4125702]: 7005.35.159.322 I srv          load:  - looking for better prompt, base f_keep = 0.120, sim = 0.179
+Sep 20 06:52:02 hpubuntu llama-server[4125702]: 7005.35.159.345 I srv          load:  - found better prompt with f_keep = 0.892, sim = 1.000
+Sep 20 06:52:02 hpubuntu llama-server[4125702]: 7005.35.228.827 I srv        update:  - cache state: 24 prompts, 8076.379 MiB (limits: 8192.000 MiB, 8192 tokens, 61675 est)
+Sep 20 06:52:02 hpubuntu llama-server[4125702]: 7005.35.228.833 I srv        update:    - prompt 0x6532b6f1f410:    2769 tokens, checkpoints:  0,   367.790 MiB
+Sep 20 06:52:02 hpubuntu llama-server[4125702]: 7005.35.228.834 I srv        update:    - prompt 0x6532b6fecb60:    2420 tokens, checkpoints:  0,   321.435 MiB
+Sep 20 06:52:02 hpubuntu llama-server[4125702]: 7005.35.228.834 I srv        update:    - prompt 0x6532b6fd22d0:    3713 tokens, checkpoints:  0,   493.176 MiB
+Sep 20 06:52:02 hpubuntu llama-server[4125702]: 7005.35.228.835 I srv        update:    - prompt 0x6532b6fe19f0:    3683 tokens, checkpoints:  0,   489.191 MiB
+Sep 20 06:52:02 hpubuntu llama-server[4125702]: 7005.35.228.836 I srv        update:    - prompt 0x6532b6612d50:    3271 tokens, checkpoints:  0,   434.468 MiB
+Sep 20 06:52:02 hpubuntu llama-server[4125702]: 7005.35.228.836 I srv        update:    - prompt 0x6532b187c850:    1616 tokens, checkpoints:  0,   214.644 MiB
+Sep 20 06:52:02 hpubuntu llama-server[4125702]: 7005.35.228.837 I srv        update:    - prompt 0x6532b6fac0e0:    1604 tokens, checkpoints:  0,   213.050 MiB
+Sep 20 06:52:02 hpubuntu llama-server[4125702]: 7005.35.228.838 I srv        update:    - prompt 0x6532b6f78f90:    1738 tokens, checkpoints:  0,   230.849 MiB
+Sep 20 06:52:02 hpubuntu llama-server[4125702]: 7005.35.228.838 I srv        update:    - prompt 0x6532b6fcdb60:    2284 tokens, checkpoints:  0,   303.371 MiB
+Sep 20 06:52:02 hpubuntu llama-server[4125702]: 7005.35.228.839 I srv        update:    - prompt 0x6532b6fb7dc0:    1596 tokens, checkpoints:  0,   211.988 MiB
+Sep 20 06:52:02 hpubuntu llama-server[4125702]: 7005.35.228.840 I srv        update:    - prompt 0x6532b661d040:    2286 tokens, checkpoints:  0,   303.636 MiB
+Sep 20 06:52:02 hpubuntu llama-server[4125702]: 7005.35.228.841 I srv        update:    - prompt 0x6532b187c900:    2908 tokens, checkpoints:  0,   386.253 MiB
+Sep 20 06:52:02 hpubuntu llama-server[4125702]: 7005.35.228.841 I srv        update:    - prompt 0x6532b6fcbf90:    2258 tokens, checkpoints:  0,   299.917 MiB
+Sep 20 06:52:02 hpubuntu llama-server[4125702]: 7005.35.228.842 I srv        update:    - prompt 0x6532b6f53db0:    2882 tokens, checkpoints:  0,   382.799 MiB
+Sep 20 06:52:02 hpubuntu llama-server[4125702]: 7005.35.228.843 I srv        update:    - prompt 0x6532b6f780e0:    2225 tokens, checkpoints:  0,   295.534 MiB
+Sep 20 06:52:02 hpubuntu llama-server[4125702]: 7005.35.228.843 I srv        update:    - prompt 0x6532b6fccb40:    2794 tokens, checkpoints:  0,   371.111 MiB
+Sep 20 06:52:02 hpubuntu llama-server[4125702]: 7005.35.228.844 I srv        update:    - prompt 0x6532b6615940:    1591 tokens, checkpoints:  0,   211.324 MiB
+Sep 20 06:52:02 hpubuntu llama-server[4125702]: 7005.35.228.845 I srv        update:    - prompt 0x6532b6605940:    1989 tokens, checkpoints:  0,   264.188 MiB
+Sep 20 06:52:02 hpubuntu llama-server[4125702]: 7005.35.228.845 I srv        update:    - prompt 0x6532b6fbc3b0:    3162 tokens, checkpoints:  0,   419.990 MiB
+Sep 20 06:52:02 hpubuntu llama-server[4125702]: 7005.35.228.847 I srv        update:    - prompt 0x6532b6f73b60:    1854 tokens, checkpoints:  0,   246.256 MiB
+Sep 20 06:52:02 hpubuntu llama-server[4125702]: 7005.35.228.848 I srv        update:    - prompt 0x6532b6fb4aa0:    2698 tokens, checkpoints:  0,   358.360 MiB
+Sep 20 06:52:02 hpubuntu llama-server[4125702]: 7005.35.228.849 I srv        update:    - prompt 0x6532b6f1f530:    3746 tokens, checkpoints:  0,   497.559 MiB
+Sep 20 06:52:02 hpubuntu llama-server[4125702]: 7005.35.228.855 I srv        update:    - prompt 0x6532b6608340:    2448 tokens, checkpoints:  0,   325.154 MiB
+Sep 20 06:52:02 hpubuntu llama-server[4125702]: 7005.35.228.856 I srv        update:    - prompt 0x6532b6f78320:    3270 tokens, checkpoints:  0,   434.335 MiB
+Sep 20 06:52:02 hpubuntu llama-server[4125702]: 7005.35.228.857 I srv  get_availabl: prompt cache update took 582.12 ms
+Sep 20 06:52:02 hpubuntu llama-server[4125702]: 7005.35.228.893 I slot launch_slot_: id  0 | task 8488 | processing task, is_child = 0
+Sep 20 06:52:02 hpubuntu llama-server[4125702]: 7005.35.228.905 W slot update_slots: id  0 | task 8488 | need to evaluate at least 1 token for each active slot (n_past = 2197, task.n_tokens() = 2197)
+Sep 20 06:52:02 hpubuntu llama-server[4125702]: 7005.35.228.905 W slot update_slots: id  0 | task 8488 | n_past was set to 2196
+Sep 20 06:53:12 hpubuntu llama-server[4125702]: 7006.45.277.409 I slot print_timing: id  0 | task 8488 | prompt eval time =    2025.55 ms /     1 tokens ( 2025.55 ms per token,     0.49 tokens per second)
+Sep 20 06:53:12 hpubuntu llama-server[4125702]: 7006.45.277.416 I slot print_timing: id  0 | task 8488 |        eval time =   68022.95 ms /    32 tokens ( 2125.72 ms per token,     0.47 tokens per second)
+Sep 20 06:53:12 hpubuntu llama-server[4125702]: 7006.45.277.417 I slot print_timing: id  0 | task 8488 |       total time =   70048.49 ms /    33 tokens
+Sep 20 06:53:12 hpubuntu llama-server[4125702]: 7006.45.277.418 I slot print_timing: id  0 | task 8488 |    graphs reused =          0
+Sep 20 06:53:12 hpubuntu llama-server[4125702]: 7006.45.277.660 I slot      release: id  0 | task 8488 | stop processing: n_tokens = 2228, truncated = 0
+Sep 20 06:53:12 hpubuntu llama-server[4125702]: 7006.45.277.679 I srv  update_slots: all slots are idle
+Sep 20 06:53:12 hpubuntu llama-server[4125702]: 7006.45.346.951 I srv  params_from_: Chat format: peg-native
+Sep 20 06:53:12 hpubuntu llama-server[4125702]: 7006.45.347.264 I slot get_availabl: id  0 | task -1 | selected slot by LCP similarity, sim_best = 0.911 (> 0.100 thold), f_keep = 1.000
+Sep 20 06:53:12 hpubuntu llama-server[4125702]: 7006.45.347.303 I slot launch_slot_: id  0 | task 8521 | processing task, is_child = 0
+Sep 20 06:56:13 hpubuntu llama-server[4125702]: 7009.46.375.505 I slot print_timing: id  0 | task 8521 | prompt eval time =    3797.40 ms /   219 tokens (   17.34 ms per token,    57.67 tokens per second)
+Sep 20 06:56:13 hpubuntu llama-server[4125702]: 7009.46.375.514 I slot print_timing: id  0 | task 8521 |        eval time =  177230.78 ms /    79 tokens ( 2243.43 ms per token,     0.45 tokens per second)
+Sep 20 06:56:13 hpubuntu llama-server[4125702]: 7009.46.375.515 I slot print_timing: id  0 | task 8521 |       total time =  181028.17 ms /   298 tokens
+Sep 20 06:56:13 hpubuntu llama-server[4125702]: 7009.46.375.516 I slot print_timing: id  0 | task 8521 |    graphs reused =          0
+Sep 20 06:56:13 hpubuntu llama-server[4125702]: 7009.46.375.697 I slot      release: id  0 | task 8521 | stop processing: n_tokens = 2525, truncated = 0
+Sep 20 06:56:13 hpubuntu llama-server[4125702]: 7009.46.375.712 I srv  update_slots: all slots are idle
+Sep 20 06:56:13 hpubuntu llama-server[4125702]: 7009.46.452.366 I srv  params_from_: Chat format: peg-native
+Sep 20 06:56:13 hpubuntu llama-server[4125702]: 7009.46.452.742 I slot get_availabl: id  0 | task -1 | selected slot by LCP similarity, sim_best = 0.958 (> 0.100 thold), f_keep = 1.000
+Sep 20 06:56:13 hpubuntu llama-server[4125702]: 7009.46.452.774 I slot launch_slot_: id  0 | task 8601 | processing task, is_child = 0
+Sep 20 06:56:49 hpubuntu llama-server[4125702]: 7010.22.482.932 I slot print_timing: id  0 | task 8601 | prompt eval time =    3597.15 ms /   111 tokens (   32.41 ms per token,    30.86 tokens per second)
+Sep 20 06:56:49 hpubuntu llama-server[4125702]: 7010.22.482.940 I slot print_timing: id  0 | task 8601 |        eval time =   32432.98 ms /    16 tokens ( 2027.06 ms per token,     0.49 tokens per second)
+Sep 20 06:56:49 hpubuntu llama-server[4125702]: 7010.22.482.941 I slot print_timing: id  0 | task 8601 |       total time =   36030.13 ms /   127 tokens
+Sep 20 06:56:49 hpubuntu llama-server[4125702]: 7010.22.482.942 I slot print_timing: id  0 | task 8601 |    graphs reused =          0
+Sep 20 06:56:49 hpubuntu llama-server[4125702]: 7010.22.483.125 I slot      release: id  0 | task 8601 | stop processing: n_tokens = 2651, truncated = 0
+Sep 20 06:56:49 hpubuntu llama-server[4125702]: 7010.22.483.141 I srv  update_slots: all slots are idle
+Sep 20 06:56:49 hpubuntu llama-server[4125702]: 7010.22.815.394 I srv  params_from_: Chat format: peg-native
+Sep 20 06:56:49 hpubuntu llama-server[4125702]: 7010.22.815.681 I slot get_availabl: id  0 | task -1 | selected slot by LCP similarity, sim_best = 0.892 (> 0.100 thold), f_keep = 1.000
+Sep 20 06:56:49 hpubuntu llama-server[4125702]: 7010.22.815.715 I slot launch_slot_: id  0 | task 8618 | processing task, is_child = 0
+Sep 20 06:59:11 hpubuntu llama-server[4125702]: 7012.44.448.577 I slot print_timing: id  0 | task 8618 | prompt eval time =    4121.19 ms /   322 tokens (   12.80 ms per token,    78.13 tokens per second)
+Sep 20 06:59:11 hpubuntu llama-server[4125702]: 7012.44.448.587 I slot print_timing: id  0 | task 8618 |        eval time =  137511.65 ms /    59 tokens ( 2330.71 ms per token,     0.43 tokens per second)
+Sep 20 06:59:11 hpubuntu llama-server[4125702]: 7012.44.448.588 I slot print_timing: id  0 | task 8618 |       total time =  141632.84 ms /   381 tokens
+Sep 20 06:59:11 hpubuntu llama-server[4125702]: 7012.44.448.589 I slot print_timing: id  0 | task 8618 |    graphs reused =          0
+Sep 20 06:59:11 hpubuntu llama-server[4125702]: 7012.44.450.887 I slot      release: id  0 | task 8618 | stop processing: n_tokens = 3031, truncated = 0
+Sep 20 06:59:11 hpubuntu llama-server[4125702]: 7012.44.450.907 I srv  update_slots: all slots are idle
+Sep 20 06:59:13 hpubuntu llama-server[4125702]: 7012.46.338.038 I srv  params_from_: Chat format: peg-native
+Sep 20 06:59:13 hpubuntu llama-server[4125702]: 7012.46.338.222 I slot get_availabl: id  0 | task -1 | selected slot by LCP similarity, sim_best = 0.148 (> 0.100 thold), f_keep = 0.076
+Sep 20 06:59:13 hpubuntu llama-server[4125702]: 7012.46.338.226 I srv  get_availabl: updating prompt cache
+Sep 20 06:59:13 hpubuntu llama-server[4125702]: 7012.46.338.533 W srv   prompt_save:  - saving prompt with length 3031, total state size = 402.590 MiB (draft: 0.000 MiB)
+Sep 20 06:59:13 hpubuntu llama-server[4125702]: 7012.46.761.634 I srv          load:  - looking for better prompt, base f_keep = 0.076, sim = 0.148
+Sep 20 06:59:13 hpubuntu llama-server[4125702]: 7012.46.761.663 I srv          load:  - found better prompt with f_keep = 0.981, sim = 1.000
+Sep 20 06:59:13 hpubuntu llama-server[4125702]: 7012.46.800.931 W srv        update:  - cache size limit reached, removing oldest entry (size = 367.790 MiB)
+Sep 20 06:59:13 hpubuntu llama-server[4125702]: 7012.46.835.629 I srv        update:  - cache state: 23 prompts, 7899.855 MiB (limits: 8192.000 MiB, 8192 tokens, 61675 est)
+Sep 20 06:59:13 hpubuntu llama-server[4125702]: 7012.46.835.634 I srv        update:    - prompt 0x6532b6fecb60:    2420 tokens, checkpoints:  0,   321.435 MiB
+Sep 20 06:59:13 hpubuntu llama-server[4125702]: 7012.46.835.634 I srv        update:    - prompt 0x6532b6fd22d0:    3713 tokens, checkpoints:  0,   493.176 MiB
+Sep 20 06:59:13 hpubuntu llama-server[4125702]: 7012.46.835.635 I srv        update:    - prompt 0x6532b6fe19f0:    3683 tokens, checkpoints:  0,   489.191 MiB
+Sep 20 06:59:13 hpubuntu llama-server[4125702]: 7012.46.835.636 I srv        update:    - prompt 0x6532b6612d50:    3271 tokens, checkpoints:  0,   434.468 MiB
+Sep 20 06:59:13 hpubuntu llama-server[4125702]: 7012.46.835.637 I srv        update:    - prompt 0x6532b187c850:    1616 tokens, checkpoints:  0,   214.644 MiB
+Sep 20 06:59:13 hpubuntu llama-server[4125702]: 7012.46.835.637 I srv        update:    - prompt 0x6532b6fac0e0:    1604 tokens, checkpoints:  0,   213.050 MiB
+Sep 20 06:59:13 hpubuntu llama-server[4125702]: 7012.46.835.638 I srv        update:    - prompt 0x6532b6f78f90:    1738 tokens, checkpoints:  0,   230.849 MiB
+Sep 20 06:59:13 hpubuntu llama-server[4125702]: 7012.46.835.639 I srv        update:    - prompt 0x6532b6fcdb60:    2284 tokens, checkpoints:  0,   303.371 MiB
+Sep 20 06:59:13 hpubuntu llama-server[4125702]: 7012.46.835.639 I srv        update:    - prompt 0x6532b6fb7dc0:    1596 tokens, checkpoints:  0,   211.988 MiB
+Sep 20 06:59:13 hpubuntu llama-server[4125702]: 7012.46.835.640 I srv        update:    - prompt 0x6532b661d040:    2286 tokens, checkpoints:  0,   303.636 MiB
+Sep 20 06:59:13 hpubuntu llama-server[4125702]: 7012.46.835.641 I srv        update:    - prompt 0x6532b187c900:    2908 tokens, checkpoints:  0,   386.253 MiB
+Sep 20 06:59:13 hpubuntu llama-server[4125702]: 7012.46.835.641 I srv        update:    - prompt 0x6532b6fcbf90:    2258 tokens, checkpoints:  0,   299.917 MiB
+Sep 20 06:59:13 hpubuntu llama-server[4125702]: 7012.46.835.642 I srv        update:    - prompt 0x6532b6f53db0:    2882 tokens, checkpoints:  0,   382.799 MiB
+Sep 20 06:59:13 hpubuntu llama-server[4125702]: 7012.46.835.642 I srv        update:    - prompt 0x6532b6f780e0:    2225 tokens, checkpoints:  0,   295.534 MiB
+Sep 20 06:59:13 hpubuntu llama-server[4125702]: 7012.46.835.643 I srv        update:    - prompt 0x6532b6fccb40:    2794 tokens, checkpoints:  0,   371.111 MiB
+Sep 20 06:59:13 hpubuntu llama-server[4125702]: 7012.46.835.644 I srv        update:    - prompt 0x6532b6605940:    1989 tokens, checkpoints:  0,   264.188 MiB
+Sep 20 06:59:13 hpubuntu llama-server[4125702]: 7012.46.835.644 I srv        update:    - prompt 0x6532b6fbc3b0:    3162 tokens, checkpoints:  0,   419.990 MiB
+Sep 20 06:59:13 hpubuntu llama-server[4125702]: 7012.46.835.645 I srv        update:    - prompt 0x6532b6f73b60:    1854 tokens, checkpoints:  0,   246.256 MiB
+Sep 20 06:59:13 hpubuntu llama-server[4125702]: 7012.46.835.645 I srv        update:    - prompt 0x6532b6fb4aa0:    2698 tokens, checkpoints:  0,   358.360 MiB
+Sep 20 06:59:13 hpubuntu llama-server[4125702]: 7012.46.835.646 I srv        update:    - prompt 0x6532b6f1f530:    3746 tokens, checkpoints:  0,   497.559 MiB
+Sep 20 06:59:13 hpubuntu llama-server[4125702]: 7012.46.835.647 I srv        update:    - prompt 0x6532b6608340:    2448 tokens, checkpoints:  0,   325.154 MiB
+Sep 20 06:59:13 hpubuntu llama-server[4125702]: 7012.46.835.647 I srv        update:    - prompt 0x6532b6f78320:    3270 tokens, checkpoints:  0,   434.335 MiB
+Sep 20 06:59:13 hpubuntu llama-server[4125702]: 7012.46.835.648 I srv        update:    - prompt 0x6532b6610a70:    3031 tokens, checkpoints:  0,   402.590 MiB
+Sep 20 06:59:13 hpubuntu llama-server[4125702]: 7012.46.835.649 I srv  get_availabl: prompt cache update took 497.42 ms
+Sep 20 06:59:13 hpubuntu llama-server[4125702]: 7012.46.835.701 I slot launch_slot_: id  0 | task 8678 | processing task, is_child = 0
+Sep 20 06:59:13 hpubuntu llama-server[4125702]: 7012.46.835.713 W slot update_slots: id  0 | task 8678 | need to evaluate at least 1 token for each active slot (n_past = 1560, task.n_tokens() = 1560)
+Sep 20 06:59:13 hpubuntu llama-server[4125702]: 7012.46.835.714 W slot update_slots: id  0 | task 8678 | n_past was set to 1559
+Sep 20 07:00:20 hpubuntu llama-server[4125702]: 7013.54.068.293 I slot print_timing: id  0 | task 8678 | prompt eval time =    2048.79 ms /     1 tokens ( 2048.79 ms per token,     0.49 tokens per second)
+Sep 20 07:00:20 hpubuntu llama-server[4125702]: 7013.54.068.320 I slot print_timing: id  0 | task 8678 |        eval time =   65183.78 ms /    32 tokens ( 2036.99 ms per token,     0.49 tokens per second)
+Sep 20 07:00:20 hpubuntu llama-server[4125702]: 7013.54.068.321 I slot print_timing: id  0 | task 8678 |       total time =   67232.57 ms /    33 tokens
+Sep 20 07:00:20 hpubuntu llama-server[4125702]: 7013.54.068.322 I slot print_timing: id  0 | task 8678 |    graphs reused =          0
+Sep 20 07:00:20 hpubuntu llama-server[4125702]: 7013.54.068.557 I slot      release: id  0 | task 8678 | stop processing: n_tokens = 1591, truncated = 0
+Sep 20 07:00:20 hpubuntu llama-server[4125702]: 7013.54.068.582 I srv  update_slots: all slots are idle
+Sep 20 07:00:21 hpubuntu llama-server[4125702]: 7013.54.158.328 I srv  params_from_: Chat format: peg-native
+Sep 20 07:00:21 hpubuntu llama-server[4125702]: 7013.54.158.586 I slot get_availabl: id  0 | task -1 | selected slot by LCP similarity, sim_best = 0.117 (> 0.100 thold), f_keep = 0.145
+Sep 20 07:00:21 hpubuntu llama-server[4125702]: 7013.54.158.590 I srv  get_availabl: updating prompt cache
+Sep 20 07:00:21 hpubuntu llama-server[4125702]: 7013.54.158.732 W srv   prompt_save:  - saving prompt with length 1591, total state size = 211.324 MiB (draft: 0.000 MiB)
+Sep 20 07:00:21 hpubuntu llama-server[4125702]: 7013.54.461.739 I srv          load:  - looking for better prompt, base f_keep = 0.145, sim = 0.117
+Sep 20 07:00:21 hpubuntu llama-server[4125702]: 7013.54.461.763 I srv          load:  - found better prompt with f_keep = 0.991, sim = 1.000
+Sep 20 07:00:21 hpubuntu llama-server[4125702]: 7013.54.514.339 I srv        update:  - cache state: 23 prompts, 7846.991 MiB (limits: 8192.000 MiB, 8192 tokens, 61675 est)
+Sep 20 07:00:21 hpubuntu llama-server[4125702]: 7013.54.514.345 I srv        update:    - prompt 0x6532b6fecb60:    2420 tokens, checkpoints:  0,   321.435 MiB
+Sep 20 07:00:21 hpubuntu llama-server[4125702]: 7013.54.514.347 I srv        update:    - prompt 0x6532b6fd22d0:    3713 tokens, checkpoints:  0,   493.176 MiB
+Sep 20 07:00:21 hpubuntu llama-server[4125702]: 7013.54.514.349 I srv        update:    - prompt 0x6532b6fe19f0:    3683 tokens, checkpoints:  0,   489.191 MiB
+Sep 20 07:00:21 hpubuntu llama-server[4125702]: 7013.54.514.351 I srv        update:    - prompt 0x6532b6612d50:    3271 tokens, checkpoints:  0,   434.468 MiB
+Sep 20 07:00:21 hpubuntu llama-server[4125702]: 7013.54.514.352 I srv        update:    - prompt 0x6532b187c850:    1616 tokens, checkpoints:  0,   214.644 MiB
+Sep 20 07:00:21 hpubuntu llama-server[4125702]: 7013.54.514.354 I srv        update:    - prompt 0x6532b6fac0e0:    1604 tokens, checkpoints:  0,   213.050 MiB
+Sep 20 07:00:21 hpubuntu llama-server[4125702]: 7013.54.514.355 I srv        update:    - prompt 0x6532b6f78f90:    1738 tokens, checkpoints:  0,   230.849 MiB
+Sep 20 07:00:21 hpubuntu llama-server[4125702]: 7013.54.514.359 I srv        update:    - prompt 0x6532b6fcdb60:    2284 tokens, checkpoints:  0,   303.371 MiB
+Sep 20 07:00:21 hpubuntu llama-server[4125702]: 7013.54.514.361 I srv        update:    - prompt 0x6532b6fb7dc0:    1596 tokens, checkpoints:  0,   211.988 MiB
+Sep 20 07:00:21 hpubuntu llama-server[4125702]: 7013.54.514.363 I srv        update:    - prompt 0x6532b661d040:    2286 tokens, checkpoints:  0,   303.636 MiB
+Sep 20 07:00:21 hpubuntu llama-server[4125702]: 7013.54.514.364 I srv        update:    - prompt 0x6532b187c900:    2908 tokens, checkpoints:  0,   386.253 MiB
+Sep 20 07:00:21 hpubuntu llama-server[4125702]: 7013.54.514.366 I srv        update:    - prompt 0x6532b6fcbf90:    2258 tokens, checkpoints:  0,   299.917 MiB
+Sep 20 07:00:21 hpubuntu llama-server[4125702]: 7013.54.514.367 I srv        update:    - prompt 0x6532b6f53db0:    2882 tokens, checkpoints:  0,   382.799 MiB
+Sep 20 07:00:21 hpubuntu llama-server[4125702]: 7013.54.514.369 I srv        update:    - prompt 0x6532b6f780e0:    2225 tokens, checkpoints:  0,   295.534 MiB
+Sep 20 07:00:21 hpubuntu llama-server[4125702]: 7013.54.514.371 I srv        update:    - prompt 0x6532b6fccb40:    2794 tokens, checkpoints:  0,   371.111 MiB
+Sep 20 07:00:21 hpubuntu llama-server[4125702]: 7013.54.514.372 I srv        update:    - prompt 0x6532b6fbc3b0:    3162 tokens, checkpoints:  0,   419.990 MiB
+Sep 20 07:00:21 hpubuntu llama-server[4125702]: 7013.54.514.374 I srv        update:    - prompt 0x6532b6f73b60:    1854 tokens, checkpoints:  0,   246.256 MiB
+Sep 20 07:00:21 hpubuntu llama-server[4125702]: 7013.54.514.376 I srv        update:    - prompt 0x6532b6fb4aa0:    2698 tokens, checkpoints:  0,   358.360 MiB
+Sep 20 07:00:21 hpubuntu llama-server[4125702]: 7013.54.514.377 I srv        update:    - prompt 0x6532b6f1f530:    3746 tokens, checkpoints:  0,   497.559 MiB
+Sep 20 07:00:21 hpubuntu llama-server[4125702]: 7013.54.514.378 I srv        update:    - prompt 0x6532b6608340:    2448 tokens, checkpoints:  0,   325.154 MiB
+Sep 20 07:00:21 hpubuntu llama-server[4125702]: 7013.54.514.380 I srv        update:    - prompt 0x6532b6f78320:    3270 tokens, checkpoints:  0,   434.335 MiB
+Sep 20 07:00:21 hpubuntu llama-server[4125702]: 7013.54.514.381 I srv        update:    - prompt 0x6532b6610a70:    3031 tokens, checkpoints:  0,   402.590 MiB
+Sep 20 07:00:21 hpubuntu llama-server[4125702]: 7013.54.514.384 I srv        update:    - prompt 0x6532b6f1f410:    1591 tokens, checkpoints:  0,   211.324 MiB
+Sep 20 07:00:21 hpubuntu llama-server[4125702]: 7013.54.514.390 I srv  get_availabl: prompt cache update took 355.80 ms
+Sep 20 07:00:21 hpubuntu llama-server[4125702]: 7013.54.514.437 I slot launch_slot_: id  0 | task 8711 | processing task, is_child = 0
+Sep 20 07:00:21 hpubuntu llama-server[4125702]: 7013.54.514.477 W slot update_slots: id  0 | task 8711 | need to evaluate at least 1 token for each active slot (n_past = 1972, task.n_tokens() = 1972)
+Sep 20 07:00:21 hpubuntu llama-server[4125702]: 7013.54.514.478 W slot update_slots: id  0 | task 8711 | n_past was set to 1971
+Sep 20 07:04:27 hpubuntu llama-server[4125702]: 7018.00.939.681 I slot print_timing: id  0 | task 8711 | n_decoded =    100, tg =   0.41 t/s
+Sep 20 07:04:33 hpubuntu llama-server[4125702]: 7018.06.294.120 I slot print_timing: id  0 | task 8711 | n_decoded =    102, tg =   0.41 t/s
+Sep 20 07:04:36 hpubuntu llama-server[4125702]: 7018.09.419.650 I slot print_timing: id  0 | task 8711 | n_decoded =    103, tg =   0.41 t/s
+Sep 20 07:04:39 hpubuntu llama-server[4125702]: 7018.12.654.037 I slot print_timing: id  0 | task 8711 | n_decoded =    104, tg =   0.41 t/s
+Sep 20 07:04:44 hpubuntu llama-server[4125702]: 7018.17.542.920 I slot print_timing: id  0 | task 8711 | n_decoded =    106, tg =   0.41 t/s
+Sep 20 07:04:49 hpubuntu llama-server[4125702]: 7018.22.684.859 I slot print_timing: id  0 | task 8711 | n_decoded =    108, tg =   0.41 t/s
+Sep 20 07:04:54 hpubuntu llama-server[4125702]: 7018.27.248.363 I slot print_timing: id  0 | task 8711 | n_decoded =    110, tg =   0.41 t/s
+Sep 20 07:04:58 hpubuntu llama-server[4125702]: 7018.31.895.194 I slot print_timing: id  0 | task 8711 | n_decoded =    112, tg =   0.41 t/s
+Sep 20 07:05:03 hpubuntu llama-server[4125702]: 7018.36.202.217 I slot print_timing: id  0 | task 8711 | n_decoded =    114, tg =   0.41 t/s
+Sep 20 07:05:08 hpubuntu llama-server[4125702]: 7018.41.796.541 I slot print_timing: id  0 | task 8711 | n_decoded =    116, tg =   0.41 t/s
+Sep 20 07:05:11 hpubuntu llama-server[4125702]: 7018.45.038.154 I slot print_timing: id  0 | task 8711 | n_decoded =    117, tg =   0.41 t/s
+Sep 20 07:05:16 hpubuntu llama-server[4125702]: 7018.49.951.744 I slot print_timing: id  0 | task 8711 | n_decoded =    119, tg =   0.41 t/s
+Sep 20 07:05:21 hpubuntu llama-server[4125702]: 7018.54.514.829 I slot print_timing: id  0 | task 8711 | n_decoded =    121, tg =   0.41 t/s
+Sep 20 07:05:22 hpubuntu llama-server[4125702]: 7018.55.275.269 W srv          next: stopping wait for next result due to should_stop condition (adjust the --timeout argument if needed)
+Sep 20 07:05:22 hpubuntu llama-server[4125702]: 7018.55.275.272 W srv          next: ref: https://github.com/ggml-org/llama.cpp/pull/22907
+Sep 20 07:05:22 hpubuntu llama-server[4125702]: 7018.55.275.308 W srv          stop: cancel task, id_task = 8711
+Sep 20 07:05:22 hpubuntu llama-server[4125702]: 7018.55.831.294 I srv  params_from_: Chat format: peg-native
+Sep 20 07:05:23 hpubuntu llama-server[4125702]: 7018.56.588.850 I slot      release: id  0 | task 8711 | stop processing: n_tokens = 2093, truncated = 0
+Sep 20 07:05:23 hpubuntu llama-server[4125702]: 7018.56.588.872 I slot get_availabl: id  0 | task -1 | selected slot by LCP similarity, sim_best = 0.160 (> 0.100 thold), f_keep = 0.188
+Sep 20 07:05:23 hpubuntu llama-server[4125702]: 7018.56.588.872 I srv  get_availabl: updating prompt cache
+Sep 20 07:05:23 hpubuntu llama-server[4125702]: 7018.56.589.009 W srv   prompt_save:  - saving prompt with length 2093, total state size = 278.001 MiB (draft: 0.000 MiB)
+Sep 20 07:05:23 hpubuntu llama-server[4125702]: 7018.56.904.080 I srv          load:  - looking for better prompt, base f_keep = 0.188, sim = 0.160
+Sep 20 07:05:23 hpubuntu llama-server[4125702]: 7018.56.904.115 I srv          load:  - found better prompt with f_keep = 0.778, sim = 1.000
+Sep 20 07:05:23 hpubuntu llama-server[4125702]: 7018.56.989.906 I srv        update:  - cache state: 23 prompts, 7705.003 MiB (limits: 8192.000 MiB, 8192 tokens, 61675 est)
+Sep 20 07:05:23 hpubuntu llama-server[4125702]: 7018.56.989.911 I srv        update:    - prompt 0x6532b6fecb60:    2420 tokens, checkpoints:  0,   321.435 MiB
+Sep 20 07:05:23 hpubuntu llama-server[4125702]: 7018.56.989.911 I srv        update:    - prompt 0x6532b6fd22d0:    3713 tokens, checkpoints:  0,   493.176 MiB
+Sep 20 07:05:23 hpubuntu llama-server[4125702]: 7018.56.989.930 I srv        update:    - prompt 0x6532b6fe19f0:    3683 tokens, checkpoints:  0,   489.191 MiB
+Sep 20 07:05:23 hpubuntu llama-server[4125702]: 7018.56.989.931 I srv        update:    - prompt 0x6532b6612d50:    3271 tokens, checkpoints:  0,   434.468 MiB
+Sep 20 07:05:23 hpubuntu llama-server[4125702]: 7018.56.989.932 I srv        update:    - prompt 0x6532b187c850:    1616 tokens, checkpoints:  0,   214.644 MiB
+Sep 20 07:05:23 hpubuntu llama-server[4125702]: 7018.56.989.932 I srv        update:    - prompt 0x6532b6fac0e0:    1604 tokens, checkpoints:  0,   213.050 MiB
+Sep 20 07:05:23 hpubuntu llama-server[4125702]: 7018.56.989.933 I srv        update:    - prompt 0x6532b6f78f90:    1738 tokens, checkpoints:  0,   230.849 MiB
+Sep 20 07:05:23 hpubuntu llama-server[4125702]: 7018.56.989.934 I srv        update:    - prompt 0x6532b6fcdb60:    2284 tokens, checkpoints:  0,   303.371 MiB
+Sep 20 07:05:23 hpubuntu llama-server[4125702]: 7018.56.989.934 I srv        update:    - prompt 0x6532b6fb7dc0:    1596 tokens, checkpoints:  0,   211.988 MiB
+Sep 20 07:05:23 hpubuntu llama-server[4125702]: 7018.56.989.935 I srv        update:    - prompt 0x6532b661d040:    2286 tokens, checkpoints:  0,   303.636 MiB
+Sep 20 07:05:23 hpubuntu llama-server[4125702]: 7018.56.989.936 I srv        update:    - prompt 0x6532b187c900:    2908 tokens, checkpoints:  0,   386.253 MiB
+Sep 20 07:05:23 hpubuntu llama-server[4125702]: 7018.56.989.936 I srv        update:    - prompt 0x6532b6fcbf90:    2258 tokens, checkpoints:  0,   299.917 MiB
+Sep 20 07:05:23 hpubuntu llama-server[4125702]: 7018.56.989.937 I srv        update:    - prompt 0x6532b6f53db0:    2882 tokens, checkpoints:  0,   382.799 MiB
+Sep 20 07:05:23 hpubuntu llama-server[4125702]: 7018.56.989.938 I srv        update:    - prompt 0x6532b6f780e0:    2225 tokens, checkpoints:  0,   295.534 MiB
+Sep 20 07:05:23 hpubuntu llama-server[4125702]: 7018.56.989.938 I srv        update:    - prompt 0x6532b6fccb40:    2794 tokens, checkpoints:  0,   371.111 MiB
+Sep 20 07:05:23 hpubuntu llama-server[4125702]: 7018.56.989.939 I srv        update:    - prompt 0x6532b6f73b60:    1854 tokens, checkpoints:  0,   246.256 MiB
+Sep 20 07:05:23 hpubuntu llama-server[4125702]: 7018.56.989.940 I srv        update:    - prompt 0x6532b6fb4aa0:    2698 tokens, checkpoints:  0,   358.360 MiB
+Sep 20 07:05:23 hpubuntu llama-server[4125702]: 7018.56.989.940 I srv        update:    - prompt 0x6532b6f1f530:    3746 tokens, checkpoints:  0,   497.559 MiB
+Sep 20 07:05:23 hpubuntu llama-server[4125702]: 7018.56.989.941 I srv        update:    - prompt 0x6532b6608340:    2448 tokens, checkpoints:  0,   325.154 MiB
+Sep 20 07:05:23 hpubuntu llama-server[4125702]: 7018.56.989.942 I srv        update:    - prompt 0x6532b6f78320:    3270 tokens, checkpoints:  0,   434.335 MiB
+Sep 20 07:05:23 hpubuntu llama-server[4125702]: 7018.56.989.942 I srv        update:    - prompt 0x6532b6610a70:    3031 tokens, checkpoints:  0,   402.590 MiB
+Sep 20 07:05:23 hpubuntu llama-server[4125702]: 7018.56.989.943 I srv        update:    - prompt 0x6532b6f1f410:    1591 tokens, checkpoints:  0,   211.324 MiB
+Sep 20 07:05:23 hpubuntu llama-server[4125702]: 7018.56.989.944 I srv        update:    - prompt 0x6532b6605940:    2093 tokens, checkpoints:  0,   278.001 MiB
+Sep 20 07:05:23 hpubuntu llama-server[4125702]: 7018.56.989.947 I srv  get_availabl: prompt cache update took 401.07 ms
+Sep 20 07:05:23 hpubuntu llama-server[4125702]: 7018.56.989.998 I slot launch_slot_: id  0 | task 8835 | processing task, is_child = 0
+Sep 20 07:05:23 hpubuntu llama-server[4125702]: 7018.56.990.009 W slot update_slots: id  0 | task 8835 | need to evaluate at least 1 token for each active slot (n_past = 2460, task.n_tokens() = 2460)
+Sep 20 07:05:23 hpubuntu llama-server[4125702]: 7018.56.990.009 W slot update_slots: id  0 | task 8835 | n_past was set to 2459
+Sep 20 07:06:36 hpubuntu llama-server[4125702]: 7020.09.658.523 I slot print_timing: id  0 | task 8835 | prompt eval time =    2367.71 ms /     1 tokens ( 2367.71 ms per token,     0.42 tokens per second)
+Sep 20 07:06:36 hpubuntu llama-server[4125702]: 7020.09.658.531 I slot print_timing: id  0 | task 8835 |        eval time =   70300.78 ms /    32 tokens ( 2196.90 ms per token,     0.46 tokens per second)
+Sep 20 07:06:36 hpubuntu llama-server[4125702]: 7020.09.658.532 I slot print_timing: id  0 | task 8835 |       total time =   72668.49 ms /    33 tokens
+Sep 20 07:06:36 hpubuntu llama-server[4125702]: 7020.09.658.551 I slot print_timing: id  0 | task 8835 |    graphs reused =          0
+Sep 20 07:06:36 hpubuntu llama-server[4125702]: 7020.09.658.766 I slot      release: id  0 | task 8835 | stop processing: n_tokens = 2491, truncated = 0
+Sep 20 07:06:36 hpubuntu llama-server[4125702]: 7020.09.658.801 I srv  update_slots: all slots are idle
+Sep 20 07:06:36 hpubuntu llama-server[4125702]: 7020.09.757.223 I srv  params_from_: Chat format: peg-native
+Sep 20 07:06:36 hpubuntu llama-server[4125702]: 7020.09.757.534 I slot get_availabl: id  0 | task -1 | selected slot by LCP similarity, sim_best = 0.919 (> 0.100 thold), f_keep = 1.000
+Sep 20 07:06:36 hpubuntu llama-server[4125702]: 7020.09.757.577 I slot launch_slot_: id  0 | task 8868 | processing task, is_child = 0
+Sep 20 07:08:13 hpubuntu llama-server[4125702]: 7021.46.360.131 I slot print_timing: id  0 | task 8868 | prompt eval time =    4273.33 ms /   219 tokens (   19.51 ms per token,    51.25 tokens per second)
+Sep 20 07:08:13 hpubuntu llama-server[4125702]: 7021.46.360.138 I slot print_timing: id  0 | task 8868 |        eval time =   92329.20 ms /    34 tokens ( 2715.56 ms per token,     0.37 tokens per second)
+Sep 20 07:08:13 hpubuntu llama-server[4125702]: 7021.46.360.140 I slot print_timing: id  0 | task 8868 |       total time =   96602.52 ms /   253 tokens
+Sep 20 07:08:13 hpubuntu llama-server[4125702]: 7021.46.360.141 I slot print_timing: id  0 | task 8868 |    graphs reused =          0
+Sep 20 07:08:13 hpubuntu llama-server[4125702]: 7021.46.360.390 I slot      release: id  0 | task 8868 | stop processing: n_tokens = 2743, truncated = 0
+Sep 20 07:08:13 hpubuntu llama-server[4125702]: 7021.46.360.414 I srv  update_slots: all slots are idle
+Sep 20 07:08:13 hpubuntu llama-server[4125702]: 7021.46.435.215 I srv  params_from_: Chat format: peg-native
+Sep 20 07:08:13 hpubuntu llama-server[4125702]: 7021.46.435.439 I slot get_availabl: id  0 | task -1 | selected slot by LCP similarity, sim_best = 0.869 (> 0.100 thold), f_keep = 1.000
+Sep 20 07:08:13 hpubuntu llama-server[4125702]: 7021.46.435.493 I slot launch_slot_: id  0 | task 8903 | processing task, is_child = 0
+Sep 20 07:12:16 hpubuntu llama-server[4125702]: 7025.50.081.779 I slot print_timing: id  0 | task 8903 | prompt eval time =    5092.36 ms /   415 tokens (   12.27 ms per token,    81.49 tokens per second)
+Sep 20 07:12:16 hpubuntu llama-server[4125702]: 7025.50.081.788 I slot print_timing: id  0 | task 8903 |        eval time =  238553.88 ms /    98 tokens ( 2434.22 ms per token,     0.41 tokens per second)
+Sep 20 07:12:16 hpubuntu llama-server[4125702]: 7025.50.081.789 I slot print_timing: id  0 | task 8903 |       total time =  243646.24 ms /   513 tokens
+Sep 20 07:12:16 hpubuntu llama-server[4125702]: 7025.50.081.790 I slot print_timing: id  0 | task 8903 |    graphs reused =          0
+Sep 20 07:12:16 hpubuntu llama-server[4125702]: 7025.50.082.059 I slot      release: id  0 | task 8903 | stop processing: n_tokens = 3255, truncated = 0
+Sep 20 07:12:16 hpubuntu llama-server[4125702]: 7025.50.082.081 I srv  update_slots: all slots are idle
+Sep 20 07:12:17 hpubuntu llama-server[4125702]: 7025.50.182.319 I srv  params_from_: Chat format: peg-native
+Sep 20 07:12:17 hpubuntu llama-server[4125702]: 7025.50.182.638 I slot get_availabl: id  0 | task -1 | selected slot by LCP similarity, sim_best = 0.968 (> 0.100 thold), f_keep = 1.000
+Sep 20 07:12:17 hpubuntu llama-server[4125702]: 7025.50.182.677 I slot launch_slot_: id  0 | task 9002 | processing task, is_child = 0
+Sep 20 07:16:01 hpubuntu llama-server[4125702]: 7029.34.412.014 I slot print_timing: id  0 | task 9002 | n_decoded =    100, tg =   0.45 t/s
+Sep 20 07:16:06 hpubuntu llama-server[4125702]: 7029.39.184.974 I slot print_timing: id  0 | task 9002 | n_decoded =    102, tg =   0.45 t/s
+Sep 20 07:16:11 hpubuntu llama-server[4125702]: 7029.44.650.457 I slot print_timing: id  0 | task 9002 | n_decoded =    104, tg =   0.45 t/s
+Sep 20 07:16:15 hpubuntu llama-server[4125702]: 7029.48.737.137 I slot print_timing: id  0 | task 9002 | n_decoded =    106, tg =   0.45 t/s
+Sep 20 07:16:19 hpubuntu llama-server[4125702]: 7029.53.107.416 I slot print_timing: id  0 | task 9002 | n_decoded =    108, tg =   0.45 t/s
+Sep 20 07:16:24 hpubuntu llama-server[4125702]: 7029.57.526.082 I slot print_timing: id  0 | task 9002 | n_decoded =    110, tg =   0.45 t/s
+Sep 20 07:16:29 hpubuntu llama-server[4125702]: 7030.02.345.010 I slot print_timing: id  0 | task 9002 | n_decoded =    112, tg =   0.45 t/s
+Sep 20 07:16:33 hpubuntu llama-server[4125702]: 7030.06.550.854 I slot print_timing: id  0 | task 9002 | n_decoded =    114, tg =   0.45 t/s
+Sep 20 07:16:38 hpubuntu llama-server[4125702]: 7030.11.354.524 I slot print_timing: id  0 | task 9002 | n_decoded =    116, tg =   0.45 t/s
+Sep 20 07:16:42 hpubuntu llama-server[4125702]: 7030.15.854.527 I slot print_timing: id  0 | task 9002 | n_decoded =    118, tg =   0.45 t/s
+Sep 20 07:16:47 hpubuntu llama-server[4125702]: 7030.20.399.553 I slot print_timing: id  0 | task 9002 | n_decoded =    120, tg =   0.45 t/s
+Sep 20 07:16:51 hpubuntu llama-server[4125702]: 7030.25.071.447 I slot print_timing: id  0 | task 9002 | n_decoded =    122, tg =   0.45 t/s
+Sep 20 07:16:56 hpubuntu llama-server[4125702]: 7030.29.249.748 I slot print_timing: id  0 | task 9002 | n_decoded =    124, tg =   0.45 t/s
+Sep 20 07:17:00 hpubuntu llama-server[4125702]: 7030.33.503.518 I slot print_timing: id  0 | task 9002 | n_decoded =    126, tg =   0.45 t/s
+Sep 20 07:17:04 hpubuntu llama-server[4125702]: 7030.37.837.739 I slot print_timing: id  0 | task 9002 | n_decoded =    128, tg =   0.45 t/s
+Sep 20 07:17:10 hpubuntu llama-server[4125702]: 7030.43.382.975 I slot print_timing: id  0 | task 9002 | n_decoded =    130, tg =   0.45 t/s
+Sep 20 07:17:14 hpubuntu llama-server[4125702]: 7030.47.535.692 I slot print_timing: id  0 | task 9002 | n_decoded =    132, tg =   0.45 t/s
+Sep 20 07:17:18 hpubuntu llama-server[4125702]: 7030.51.233.334 W srv          next: stopping wait for next result due to should_stop condition (adjust the --timeout argument if needed)
+Sep 20 07:17:18 hpubuntu llama-server[4125702]: 7030.51.233.340 W srv          next: ref: https://github.com/ggml-org/llama.cpp/pull/22907
+Sep 20 07:17:18 hpubuntu llama-server[4125702]: 7030.51.233.377 W srv          stop: cancel task, id_task = 9002
+Sep 20 07:17:18 hpubuntu llama-server[4125702]: 7030.51.975.458 I srv  params_from_: Chat format: peg-native
+Sep 20 07:17:18 hpubuntu llama-server[4125702]: 7030.52.017.893 I slot print_timing: id  0 | task 9002 | n_decoded =    134, tg =   0.45 t/s
+Sep 20 07:17:18 hpubuntu llama-server[4125702]: 7030.52.017.909 I slot      release: id  0 | task 9002 | stop processing: n_tokens = 3495, truncated = 0
+Sep 20 07:17:18 hpubuntu llama-server[4125702]: 7030.52.017.925 I slot get_availabl: id  0 | task -1 | selected slot by LCP similarity, sim_best = 0.127 (> 0.100 thold), f_keep = 0.066
+Sep 20 07:17:18 hpubuntu llama-server[4125702]: 7030.52.017.926 I srv  get_availabl: updating prompt cache
+Sep 20 07:17:18 hpubuntu llama-server[4125702]: 7030.52.018.186 W srv   prompt_save:  - saving prompt with length 3495, total state size = 464.220 MiB (draft: 0.000 MiB)
+Sep 20 07:17:19 hpubuntu llama-server[4125702]: 7030.52.550.748 I srv          load:  - looking for better prompt, base f_keep = 0.066, sim = 0.127
+Sep 20 07:17:19 hpubuntu llama-server[4125702]: 7030.52.550.774 I srv          load:  - found better prompt with f_keep = 0.983, sim = 1.000
+Sep 20 07:17:19 hpubuntu llama-server[4125702]: 7030.52.605.701 I srv        update:  - cache state: 23 prompts, 7922.967 MiB (limits: 8192.000 MiB, 8192 tokens, 61675 est)
+Sep 20 07:17:19 hpubuntu llama-server[4125702]: 7030.52.605.707 I srv        update:    - prompt 0x6532b6fecb60:    2420 tokens, checkpoints:  0,   321.435 MiB
+Sep 20 07:17:19 hpubuntu llama-server[4125702]: 7030.52.605.709 I srv        update:    - prompt 0x6532b6fd22d0:    3713 tokens, checkpoints:  0,   493.176 MiB
+Sep 20 07:17:19 hpubuntu llama-server[4125702]: 7030.52.605.710 I srv        update:    - prompt 0x6532b6fe19f0:    3683 tokens, checkpoints:  0,   489.191 MiB
+Sep 20 07:17:19 hpubuntu llama-server[4125702]: 7030.52.605.712 I srv        update:    - prompt 0x6532b6612d50:    3271 tokens, checkpoints:  0,   434.468 MiB
+Sep 20 07:17:19 hpubuntu llama-server[4125702]: 7030.52.605.714 I srv        update:    - prompt 0x6532b187c850:    1616 tokens, checkpoints:  0,   214.644 MiB
+Sep 20 07:17:19 hpubuntu llama-server[4125702]: 7030.52.605.717 I srv        update:    - prompt 0x6532b6fac0e0:    1604 tokens, checkpoints:  0,   213.050 MiB
+Sep 20 07:17:19 hpubuntu llama-server[4125702]: 7030.52.605.719 I srv        update:    - prompt 0x6532b6f78f90:    1738 tokens, checkpoints:  0,   230.849 MiB
+Sep 20 07:17:19 hpubuntu llama-server[4125702]: 7030.52.605.721 I srv        update:    - prompt 0x6532b6fcdb60:    2284 tokens, checkpoints:  0,   303.371 MiB
+Sep 20 07:17:19 hpubuntu llama-server[4125702]: 7030.52.605.722 I srv        update:    - prompt 0x6532b6fb7dc0:    1596 tokens, checkpoints:  0,   211.988 MiB
+Sep 20 07:17:19 hpubuntu llama-server[4125702]: 7030.52.605.724 I srv        update:    - prompt 0x6532b661d040:    2286 tokens, checkpoints:  0,   303.636 MiB
+Sep 20 07:17:19 hpubuntu llama-server[4125702]: 7030.52.605.726 I srv        update:    - prompt 0x6532b187c900:    2908 tokens, checkpoints:  0,   386.253 MiB
+Sep 20 07:17:19 hpubuntu llama-server[4125702]: 7030.52.605.727 I srv        update:    - prompt 0x6532b6fcbf90:    2258 tokens, checkpoints:  0,   299.917 MiB
+Sep 20 07:17:19 hpubuntu llama-server[4125702]: 7030.52.605.729 I srv        update:    - prompt 0x6532b6f53db0:    2882 tokens, checkpoints:  0,   382.799 MiB
+Sep 20 07:17:19 hpubuntu llama-server[4125702]: 7030.52.605.731 I srv        update:    - prompt 0x6532b6f780e0:    2225 tokens, checkpoints:  0,   295.534 MiB
+Sep 20 07:17:19 hpubuntu llama-server[4125702]: 7030.52.605.733 I srv        update:    - prompt 0x6532b6fccb40:    2794 tokens, checkpoints:  0,   371.111 MiB
+Sep 20 07:17:19 hpubuntu llama-server[4125702]: 7030.52.605.735 I srv        update:    - prompt 0x6532b6fb4aa0:    2698 tokens, checkpoints:  0,   358.360 MiB
+Sep 20 07:17:19 hpubuntu llama-server[4125702]: 7030.52.605.736 I srv        update:    - prompt 0x6532b6f1f530:    3746 tokens, checkpoints:  0,   497.559 MiB
+Sep 20 07:17:19 hpubuntu llama-server[4125702]: 7030.52.605.738 I srv        update:    - prompt 0x6532b6608340:    2448 tokens, checkpoints:  0,   325.154 MiB
+Sep 20 07:17:19 hpubuntu llama-server[4125702]: 7030.52.605.741 I srv        update:    - prompt 0x6532b6f78320:    3270 tokens, checkpoints:  0,   434.335 MiB
+Sep 20 07:17:19 hpubuntu llama-server[4125702]: 7030.52.605.743 I srv        update:    - prompt 0x6532b6610a70:    3031 tokens, checkpoints:  0,   402.590 MiB
+Sep 20 07:17:19 hpubuntu llama-server[4125702]: 7030.52.605.744 I srv        update:    - prompt 0x6532b6f1f410:    1591 tokens, checkpoints:  0,   211.324 MiB
+Sep 20 07:17:19 hpubuntu llama-server[4125702]: 7030.52.605.746 I srv        update:    - prompt 0x6532b6605940:    2093 tokens, checkpoints:  0,   278.001 MiB
+Sep 20 07:17:19 hpubuntu llama-server[4125702]: 7030.52.605.748 I srv        update:    - prompt 0x6532b6fbc3b0:    3495 tokens, checkpoints:  0,   464.220 MiB
+Sep 20 07:17:19 hpubuntu llama-server[4125702]: 7030.52.605.752 I srv  get_availabl: prompt cache update took 587.82 ms
+Sep 20 07:17:19 hpubuntu llama-server[4125702]: 7030.52.605.800 I slot launch_slot_: id  0 | task 9138 | processing task, is_child = 0
+Sep 20 07:17:19 hpubuntu llama-server[4125702]: 7030.52.605.815 W slot update_slots: id  0 | task 9138 | need to evaluate at least 1 token for each active slot (n_past = 1823, task.n_tokens() = 1823)
+Sep 20 07:17:19 hpubuntu llama-server[4125702]: 7030.52.605.816 W slot update_slots: id  0 | task 9138 | n_past was set to 1822
+Sep 20 07:18:27 hpubuntu llama-server[4125702]: 7032.00.229.585 I slot print_timing: id  0 | task 9138 | prompt eval time =    1979.25 ms /     1 tokens ( 1979.25 ms per token,     0.51 tokens per second)
+Sep 20 07:18:27 hpubuntu llama-server[4125702]: 7032.00.229.595 I slot print_timing: id  0 | task 9138 |        eval time =   65644.50 ms /    32 tokens ( 2051.39 ms per token,     0.49 tokens per second)
+Sep 20 07:18:27 hpubuntu llama-server[4125702]: 7032.00.229.597 I slot print_timing: id  0 | task 9138 |       total time =   67623.76 ms /    33 tokens
+Sep 20 07:18:27 hpubuntu llama-server[4125702]: 7032.00.229.599 I slot print_timing: id  0 | task 9138 |    graphs reused =          0
+Sep 20 07:18:27 hpubuntu llama-server[4125702]: 7032.00.229.759 I slot      release: id  0 | task 9138 | stop processing: n_tokens = 1854, truncated = 0
+Sep 20 07:18:27 hpubuntu llama-server[4125702]: 7032.00.229.784 I srv  update_slots: all slots are idle
+Sep 20 07:18:27 hpubuntu llama-server[4125702]: 7032.00.333.422 I srv  params_from_: Chat format: peg-native
+Sep 20 07:18:27 hpubuntu llama-server[4125702]: 7032.00.333.700 I slot get_availabl: id  0 | task -1 | selected slot by LCP similarity, sim_best = 0.103 (> 0.100 thold), f_keep = 0.125
+Sep 20 07:18:27 hpubuntu llama-server[4125702]: 7032.00.333.704 I srv  get_availabl: updating prompt cache
+Sep 20 07:18:27 hpubuntu llama-server[4125702]: 7032.00.333.925 W srv   prompt_save:  - saving prompt with length 1854, total state size = 246.256 MiB (draft: 0.000 MiB)
+Sep 20 07:18:27 hpubuntu llama-server[4125702]: 7032.00.628.954 I srv          load:  - looking for better prompt, base f_keep = 0.125, sim = 0.103
+Sep 20 07:18:27 hpubuntu llama-server[4125702]: 7032.00.628.987 I srv          load:  - found better prompt with f_keep = 0.828, sim = 1.000
+Sep 20 07:18:27 hpubuntu llama-server[4125702]: 7032.00.723.223 I srv        update:  - cache state: 23 prompts, 7810.863 MiB (limits: 8192.000 MiB, 8192 tokens, 61675 est)
+Sep 20 07:18:27 hpubuntu llama-server[4125702]: 7032.00.723.228 I srv        update:    - prompt 0x6532b6fecb60:    2420 tokens, checkpoints:  0,   321.435 MiB
+Sep 20 07:18:27 hpubuntu llama-server[4125702]: 7032.00.723.230 I srv        update:    - prompt 0x6532b6fd22d0:    3713 tokens, checkpoints:  0,   493.176 MiB
+Sep 20 07:18:27 hpubuntu llama-server[4125702]: 7032.00.723.231 I srv        update:    - prompt 0x6532b6fe19f0:    3683 tokens, checkpoints:  0,   489.191 MiB
+Sep 20 07:18:27 hpubuntu llama-server[4125702]: 7032.00.723.232 I srv        update:    - prompt 0x6532b6612d50:    3271 tokens, checkpoints:  0,   434.468 MiB
+Sep 20 07:18:27 hpubuntu llama-server[4125702]: 7032.00.723.233 I srv        update:    - prompt 0x6532b187c850:    1616 tokens, checkpoints:  0,   214.644 MiB
+Sep 20 07:18:27 hpubuntu llama-server[4125702]: 7032.00.723.234 I srv        update:    - prompt 0x6532b6fac0e0:    1604 tokens, checkpoints:  0,   213.050 MiB
+Sep 20 07:18:27 hpubuntu llama-server[4125702]: 7032.00.723.235 I srv        update:    - prompt 0x6532b6f78f90:    1738 tokens, checkpoints:  0,   230.849 MiB
+Sep 20 07:18:27 hpubuntu llama-server[4125702]: 7032.00.723.236 I srv        update:    - prompt 0x6532b6fcdb60:    2284 tokens, checkpoints:  0,   303.371 MiB
+Sep 20 07:18:27 hpubuntu llama-server[4125702]: 7032.00.723.238 I srv        update:    - prompt 0x6532b6fb7dc0:    1596 tokens, checkpoints:  0,   211.988 MiB
+Sep 20 07:18:27 hpubuntu llama-server[4125702]: 7032.00.723.239 I srv        update:    - prompt 0x6532b661d040:    2286 tokens, checkpoints:  0,   303.636 MiB
+Sep 20 07:18:27 hpubuntu llama-server[4125702]: 7032.00.723.243 I srv        update:    - prompt 0x6532b187c900:    2908 tokens, checkpoints:  0,   386.253 MiB
+Sep 20 07:18:27 hpubuntu llama-server[4125702]: 7032.00.723.245 I srv        update:    - prompt 0x6532b6fcbf90:    2258 tokens, checkpoints:  0,   299.917 MiB
+Sep 20 07:18:27 hpubuntu llama-server[4125702]: 7032.00.723.246 I srv        update:    - prompt 0x6532b6f53db0:    2882 tokens, checkpoints:  0,   382.799 MiB
+Sep 20 07:18:27 hpubuntu llama-server[4125702]: 7032.00.723.248 I srv        update:    - prompt 0x6532b6f780e0:    2225 tokens, checkpoints:  0,   295.534 MiB
+Sep 20 07:18:27 hpubuntu llama-server[4125702]: 7032.00.723.249 I srv        update:    - prompt 0x6532b6fccb40:    2794 tokens, checkpoints:  0,   371.111 MiB
+Sep 20 07:18:27 hpubuntu llama-server[4125702]: 7032.00.723.250 I srv        update:    - prompt 0x6532b6f1f530:    3746 tokens, checkpoints:  0,   497.559 MiB
+Sep 20 07:18:27 hpubuntu llama-server[4125702]: 7032.00.723.251 I srv        update:    - prompt 0x6532b6608340:    2448 tokens, checkpoints:  0,   325.154 MiB
+Sep 20 07:18:27 hpubuntu llama-server[4125702]: 7032.00.723.252 I srv        update:    - prompt 0x6532b6f78320:    3270 tokens, checkpoints:  0,   434.335 MiB
+Sep 20 07:18:27 hpubuntu llama-server[4125702]: 7032.00.723.253 I srv        update:    - prompt 0x6532b6610a70:    3031 tokens, checkpoints:  0,   402.590 MiB
+Sep 20 07:18:27 hpubuntu llama-server[4125702]: 7032.00.723.254 I srv        update:    - prompt 0x6532b6f1f410:    1591 tokens, checkpoints:  0,   211.324 MiB
+Sep 20 07:18:27 hpubuntu llama-server[4125702]: 7032.00.723.256 I srv        update:    - prompt 0x6532b6605940:    2093 tokens, checkpoints:  0,   278.001 MiB
+Sep 20 07:18:27 hpubuntu llama-server[4125702]: 7032.00.723.257 I srv        update:    - prompt 0x6532b6fbc3b0:    3495 tokens, checkpoints:  0,   464.220 MiB
+Sep 20 07:18:27 hpubuntu llama-server[4125702]: 7032.00.723.258 I srv        update:    - prompt 0x6532b6f73b60:    1854 tokens, checkpoints:  0,   246.256 MiB
+Sep 20 07:18:27 hpubuntu llama-server[4125702]: 7032.00.723.260 I srv  get_availabl: prompt cache update took 389.55 ms
+Sep 20 07:18:27 hpubuntu llama-server[4125702]: 7032.00.723.312 I slot launch_slot_: id  0 | task 9171 | processing task, is_child = 0
+Sep 20 07:18:27 hpubuntu llama-server[4125702]: 7032.00.723.326 W slot update_slots: id  0 | task 9171 | need to evaluate at least 1 token for each active slot (n_past = 2235, task.n_tokens() = 2235)
+Sep 20 07:18:27 hpubuntu llama-server[4125702]: 7032.00.723.327 W slot update_slots: id  0 | task 9171 | n_past was set to 2234
+Sep 20 07:19:40 hpubuntu llama-server[4125702]: 7033.13.912.918 I slot print_timing: id  0 | task 9171 | prompt eval time =    2003.99 ms /     1 tokens ( 2003.99 ms per token,     0.50 tokens per second)
+Sep 20 07:19:40 hpubuntu llama-server[4125702]: 7033.13.912.935 I slot print_timing: id  0 | task 9171 |        eval time =   71185.59 ms /    34 tokens ( 2093.69 ms per token,     0.48 tokens per second)
+Sep 20 07:19:40 hpubuntu llama-server[4125702]: 7033.13.912.938 I slot print_timing: id  0 | task 9171 |       total time =   73189.58 ms /    35 tokens
+Sep 20 07:19:40 hpubuntu llama-server[4125702]: 7033.13.912.939 I slot print_timing: id  0 | task 9171 |    graphs reused =          0
+Sep 20 07:19:40 hpubuntu llama-server[4125702]: 7033.13.913.215 I slot      release: id  0 | task 9171 | stop processing: n_tokens = 2268, truncated = 0
+Sep 20 07:19:40 hpubuntu llama-server[4125702]: 7033.13.913.232 I srv  update_slots: all slots are idle
+Sep 20 07:19:40 hpubuntu llama-server[4125702]: 7033.14.009.955 I srv  params_from_: Chat format: peg-native
+Sep 20 07:19:40 hpubuntu llama-server[4125702]: 7033.14.010.195 I slot get_availabl: id  0 | task -1 | selected slot by LCP similarity, sim_best = 0.845 (> 0.100 thold), f_keep = 1.000
+Sep 20 07:19:40 hpubuntu llama-server[4125702]: 7033.14.010.237 I slot launch_slot_: id  0 | task 9206 | processing task, is_child = 0
+Sep 20 07:23:22 hpubuntu llama-server[4125702]: 7036.55.594.957 I slot print_timing: id  0 | task 9206 | n_decoded =    100, tg =   0.46 t/s
+Sep 20 07:23:26 hpubuntu llama-server[4125702]: 7036.59.613.216 I slot print_timing: id  0 | task 9206 | n_decoded =    102, tg =   0.46 t/s
+Sep 20 07:23:30 hpubuntu llama-server[4125702]: 7037.03.975.747 I slot print_timing: id  0 | task 9206 | n_decoded =    104, tg =   0.46 t/s
+Sep 20 07:23:35 hpubuntu llama-server[4125702]: 7037.08.462.268 I slot print_timing: id  0 | task 9206 | n_decoded =    106, tg =   0.46 t/s
+Sep 20 07:23:40 hpubuntu llama-server[4125702]: 7037.13.594.688 I slot print_timing: id  0 | task 9206 | n_decoded =    108, tg =   0.46 t/s
+Sep 20 07:23:44 hpubuntu llama-server[4125702]: 7037.17.536.602 I slot print_timing: id  0 | task 9206 | n_decoded =    110, tg =   0.46 t/s
+Sep 20 07:23:48 hpubuntu llama-server[4125702]: 7037.21.754.987 I slot print_timing: id  0 | task 9206 | n_decoded =    112, tg =   0.46 t/s
+Sep 20 07:23:52 hpubuntu llama-server[4125702]: 7037.26.027.877 I slot print_timing: id  0 | task 9206 | n_decoded =    114, tg =   0.46 t/s
+Sep 20 07:23:57 hpubuntu llama-server[4125702]: 7037.30.510.219 I slot print_timing: id  0 | task 9206 | n_decoded =    116, tg =   0.46 t/s
+Sep 20 07:24:01 hpubuntu llama-server[4125702]: 7037.34.728.610 I slot print_timing: id  0 | task 9206 | n_decoded =    118, tg =   0.46 t/s
+Sep 20 07:24:05 hpubuntu llama-server[4125702]: 7037.38.784.644 I slot print_timing: id  0 | task 9206 | n_decoded =    120, tg =   0.46 t/s
+Sep 20 07:24:10 hpubuntu llama-server[4125702]: 7037.43.836.235 I slot print_timing: id  0 | task 9206 | n_decoded =    122, tg =   0.46 t/s
+Sep 20 07:24:14 hpubuntu llama-server[4125702]: 7037.48.127.167 I slot print_timing: id  0 | task 9206 | n_decoded =    124, tg =   0.46 t/s
+Sep 20 07:24:19 hpubuntu llama-server[4125702]: 7037.52.521.135 I slot print_timing: id  0 | task 9206 | n_decoded =    126, tg =   0.46 t/s
+Sep 20 07:24:23 hpubuntu llama-server[4125702]: 7037.56.412.060 I slot print_timing: id  0 | task 9206 | n_decoded =    128, tg =   0.46 t/s
+Sep 20 07:24:27 hpubuntu llama-server[4125702]: 7038.00.481.349 I slot print_timing: id  0 | task 9206 | n_decoded =    130, tg =   0.46 t/s
+Sep 20 07:24:31 hpubuntu llama-server[4125702]: 7038.05.011.918 I slot print_timing: id  0 | task 9206 | n_decoded =    132, tg =   0.46 t/s
+Sep 20 07:24:36 hpubuntu llama-server[4125702]: 7038.09.837.839 I slot print_timing: id  0 | task 9206 | n_decoded =    134, tg =   0.46 t/s
+Sep 20 07:24:41 hpubuntu llama-server[4125702]: 7038.14.521.252 I slot print_timing: id  0 | task 9206 | n_decoded =    136, tg =   0.46 t/s
+Sep 20 07:24:41 hpubuntu llama-server[4125702]: 7038.15.068.104 W srv          next: stopping wait for next result due to should_stop condition (adjust the --timeout argument if needed)
+Sep 20 07:24:41 hpubuntu llama-server[4125702]: 7038.15.068.110 W srv          next: ref: https://github.com/ggml-org/llama.cpp/pull/22907
+Sep 20 07:24:41 hpubuntu llama-server[4125702]: 7038.15.068.155 W srv          stop: cancel task, id_task = 9206
+Sep 20 07:24:42 hpubuntu llama-server[4125702]: 7038.15.591.321 I srv  params_from_: Chat format: peg-native
+Sep 20 07:24:43 hpubuntu llama-server[4125702]: 7038.16.511.206 I slot      release: id  0 | task 9206 | stop processing: n_tokens = 2819, truncated = 0
+Sep 20 07:24:43 hpubuntu llama-server[4125702]: 7038.16.511.224 I slot get_availabl: id  0 | task -1 | selected slot by LCP similarity, sim_best = 0.129 (> 0.100 thold), f_keep = 0.139
+Sep 20 07:24:43 hpubuntu llama-server[4125702]: 7038.16.511.225 I srv  get_availabl: updating prompt cache
+Sep 20 07:24:43 hpubuntu llama-server[4125702]: 7038.16.511.339 W srv   prompt_save:  - saving prompt with length 2819, total state size = 374.431 MiB (draft: 0.000 MiB)
+Sep 20 07:24:43 hpubuntu llama-server[4125702]: 7038.16.891.637 I srv          load:  - looking for better prompt, base f_keep = 0.139, sim = 0.129
+Sep 20 07:24:43 hpubuntu llama-server[4125702]: 7038.16.891.677 I srv          load:  - found better prompt with f_keep = 0.816, sim = 1.000
+Sep 20 07:24:43 hpubuntu llama-server[4125702]: 7038.16.990.401 I srv        update:  - cache state: 23 prompts, 7687.735 MiB (limits: 8192.000 MiB, 8192 tokens, 61675 est)
+Sep 20 07:24:43 hpubuntu llama-server[4125702]: 7038.16.990.406 I srv        update:    - prompt 0x6532b6fecb60:    2420 tokens, checkpoints:  0,   321.435 MiB
+Sep 20 07:24:43 hpubuntu llama-server[4125702]: 7038.16.990.407 I srv        update:    - prompt 0x6532b6fd22d0:    3713 tokens, checkpoints:  0,   493.176 MiB
+Sep 20 07:24:43 hpubuntu llama-server[4125702]: 7038.16.990.408 I srv        update:    - prompt 0x6532b6fe19f0:    3683 tokens, checkpoints:  0,   489.191 MiB
+Sep 20 07:24:43 hpubuntu llama-server[4125702]: 7038.16.990.408 I srv        update:    - prompt 0x6532b6612d50:    3271 tokens, checkpoints:  0,   434.468 MiB
+Sep 20 07:24:43 hpubuntu llama-server[4125702]: 7038.16.990.409 I srv        update:    - prompt 0x6532b187c850:    1616 tokens, checkpoints:  0,   214.644 MiB
+Sep 20 07:24:43 hpubuntu llama-server[4125702]: 7038.16.990.428 I srv        update:    - prompt 0x6532b6fac0e0:    1604 tokens, checkpoints:  0,   213.050 MiB
+Sep 20 07:24:43 hpubuntu llama-server[4125702]: 7038.16.990.429 I srv        update:    - prompt 0x6532b6f78f90:    1738 tokens, checkpoints:  0,   230.849 MiB
+Sep 20 07:24:43 hpubuntu llama-server[4125702]: 7038.16.990.430 I srv        update:    - prompt 0x6532b6fcdb60:    2284 tokens, checkpoints:  0,   303.371 MiB
+Sep 20 07:24:43 hpubuntu llama-server[4125702]: 7038.16.990.430 I srv        update:    - prompt 0x6532b6fb7dc0:    1596 tokens, checkpoints:  0,   211.988 MiB
+Sep 20 07:24:43 hpubuntu llama-server[4125702]: 7038.16.990.431 I srv        update:    - prompt 0x6532b661d040:    2286 tokens, checkpoints:  0,   303.636 MiB
+Sep 20 07:24:43 hpubuntu llama-server[4125702]: 7038.16.990.432 I srv        update:    - prompt 0x6532b187c900:    2908 tokens, checkpoints:  0,   386.253 MiB
+Sep 20 07:24:43 hpubuntu llama-server[4125702]: 7038.16.990.432 I srv        update:    - prompt 0x6532b6fcbf90:    2258 tokens, checkpoints:  0,   299.917 MiB
+Sep 20 07:24:43 hpubuntu llama-server[4125702]: 7038.16.990.433 I srv        update:    - prompt 0x6532b6f53db0:    2882 tokens, checkpoints:  0,   382.799 MiB
+Sep 20 07:24:43 hpubuntu llama-server[4125702]: 7038.16.990.434 I srv        update:    - prompt 0x6532b6f780e0:    2225 tokens, checkpoints:  0,   295.534 MiB
+Sep 20 07:24:43 hpubuntu llama-server[4125702]: 7038.16.990.434 I srv        update:    - prompt 0x6532b6fccb40:    2794 tokens, checkpoints:  0,   371.111 MiB
+Sep 20 07:24:43 hpubuntu llama-server[4125702]: 7038.16.990.435 I srv        update:    - prompt 0x6532b6608340:    2448 tokens, checkpoints:  0,   325.154 MiB
+Sep 20 07:24:43 hpubuntu llama-server[4125702]: 7038.16.990.436 I srv        update:    - prompt 0x6532b6f78320:    3270 tokens, checkpoints:  0,   434.335 MiB
+Sep 20 07:24:43 hpubuntu llama-server[4125702]: 7038.16.990.437 I srv        update:    - prompt 0x6532b6610a70:    3031 tokens, checkpoints:  0,   402.590 MiB
+Sep 20 07:24:43 hpubuntu llama-server[4125702]: 7038.16.990.437 I srv        update:    - prompt 0x6532b6f1f410:    1591 tokens, checkpoints:  0,   211.324 MiB
+Sep 20 07:24:43 hpubuntu llama-server[4125702]: 7038.16.990.438 I srv        update:    - prompt 0x6532b6605940:    2093 tokens, checkpoints:  0,   278.001 MiB
+Sep 20 07:24:43 hpubuntu llama-server[4125702]: 7038.16.990.439 I srv        update:    - prompt 0x6532b6fbc3b0:    3495 tokens, checkpoints:  0,   464.220 MiB
+Sep 20 07:24:43 hpubuntu llama-server[4125702]: 7038.16.990.439 I srv        update:    - prompt 0x6532b6f73b60:    1854 tokens, checkpoints:  0,   246.256 MiB
+Sep 20 07:24:43 hpubuntu llama-server[4125702]: 7038.16.990.440 I srv        update:    - prompt 0x6532b6fb4aa0:    2819 tokens, checkpoints:  0,   374.431 MiB
+Sep 20 07:24:43 hpubuntu llama-server[4125702]: 7038.16.990.443 I srv  get_availabl: prompt cache update took 479.22 ms
+Sep 20 07:24:43 hpubuntu llama-server[4125702]: 7038.16.990.484 I slot launch_slot_: id  0 | task 9345 | processing task, is_child = 0
+Sep 20 07:24:43 hpubuntu llama-server[4125702]: 7038.16.990.494 W slot update_slots: id  0 | task 9345 | need to evaluate at least 1 token for each active slot (n_past = 3055, task.n_tokens() = 3055)
+Sep 20 07:24:43 hpubuntu llama-server[4125702]: 7038.16.990.494 W slot update_slots: id  0 | task 9345 | n_past was set to 3054
+Sep 20 07:25:54 hpubuntu llama-server[4125702]: 7039.27.541.003 I slot print_timing: id  0 | task 9345 | prompt eval time =    2007.24 ms /     1 tokens ( 2007.24 ms per token,     0.50 tokens per second)
+Sep 20 07:25:54 hpubuntu llama-server[4125702]: 7039.27.541.011 I slot print_timing: id  0 | task 9345 |        eval time =   68543.25 ms /    32 tokens ( 2141.98 ms per token,     0.47 tokens per second)
+Sep 20 07:25:54 hpubuntu llama-server[4125702]: 7039.27.541.013 I slot print_timing: id  0 | task 9345 |       total time =   70550.50 ms /    33 tokens
+Sep 20 07:25:54 hpubuntu llama-server[4125702]: 7039.27.541.015 I slot print_timing: id  0 | task 9345 |    graphs reused =          0
+Sep 20 07:25:54 hpubuntu llama-server[4125702]: 7039.27.541.232 I slot      release: id  0 | task 9345 | stop processing: n_tokens = 3086, truncated = 0
+Sep 20 07:25:54 hpubuntu llama-server[4125702]: 7039.27.541.250 I srv  update_slots: all slots are idle
+Sep 20 07:25:54 hpubuntu llama-server[4125702]: 7039.27.614.437 I srv  params_from_: Chat format: peg-native
+Sep 20 07:25:54 hpubuntu llama-server[4125702]: 7039.27.614.800 I slot get_availabl: id  0 | task -1 | selected slot by LCP similarity, sim_best = 0.876 (> 0.100 thold), f_keep = 1.000
+Sep 20 07:25:54 hpubuntu llama-server[4125702]: 7039.27.614.848 I slot launch_slot_: id  0 | task 9378 | processing task, is_child = 0
+Sep 20 07:27:14 hpubuntu llama-server[4125702]: 7040.47.582.383 I slot print_timing: id  0 | task 9378 | prompt eval time =    4605.67 ms /   438 tokens (   10.52 ms per token,    95.10 tokens per second)
+Sep 20 07:27:14 hpubuntu llama-server[4125702]: 7040.47.582.391 I slot print_timing: id  0 | task 9378 |        eval time =   75361.84 ms /    34 tokens ( 2216.52 ms per token,     0.45 tokens per second)
+Sep 20 07:27:14 hpubuntu llama-server[4125702]: 7040.47.582.392 I slot print_timing: id  0 | task 9378 |       total time =   79967.51 ms /   472 tokens
+Sep 20 07:27:14 hpubuntu llama-server[4125702]: 7040.47.582.393 I slot print_timing: id  0 | task 9378 |    graphs reused =          0
+Sep 20 07:27:14 hpubuntu llama-server[4125702]: 7040.47.582.647 I slot      release: id  0 | task 9378 | stop processing: n_tokens = 3557, truncated = 0
+Sep 20 07:27:14 hpubuntu llama-server[4125702]: 7040.47.582.664 I srv  update_slots: all slots are idle
+Sep 20 07:27:14 hpubuntu llama-server[4125702]: 7040.47.641.528 I srv  params_from_: Chat format: peg-native
+Sep 20 07:27:14 hpubuntu llama-server[4125702]: 7040.47.641.757 I slot get_availabl: id  0 | task -1 | selected slot by LCP similarity, sim_best = 0.966 (> 0.100 thold), f_keep = 1.000
+Sep 20 07:27:14 hpubuntu llama-server[4125702]: 7040.47.641.787 I slot launch_slot_: id  0 | task 9413 | processing task, is_child = 0
+Sep 20 07:31:02 hpubuntu llama-server[4125702]: 7044.36.053.549 I slot print_timing: id  0 | task 9413 | n_decoded =    100, tg =   0.45 t/s
+Sep 20 07:31:08 hpubuntu llama-server[4125702]: 7044.41.139.948 I slot print_timing: id  0 | task 9413 | n_decoded =    102, tg =   0.44 t/s
+Sep 20 07:31:12 hpubuntu llama-server[4125702]: 7044.45.706.283 I slot print_timing: id  0 | task 9413 | n_decoded =    104, tg =   0.44 t/s
+Sep 20 07:31:16 hpubuntu llama-server[4125702]: 7044.49.974.919 I slot print_timing: id  0 | task 9413 | n_decoded =    106, tg =   0.44 t/s
+Sep 20 07:31:21 hpubuntu llama-server[4125702]: 7044.54.593.674 I slot print_timing: id  0 | task 9413 | n_decoded =    108, tg =   0.44 t/s
+Sep 20 07:31:25 hpubuntu llama-server[4125702]: 7044.59.130.344 I slot print_timing: id  0 | task 9413 | n_decoded =    110, tg =   0.44 t/s
+Sep 20 07:31:30 hpubuntu llama-server[4125702]: 7045.03.406.256 I slot print_timing: id  0 | task 9413 | n_decoded =    112, tg =   0.44 t/s
+Sep 20 07:31:34 hpubuntu llama-server[4125702]: 7045.07.411.635 I slot print_timing: id  0 | task 9413 | n_decoded =    114, tg =   0.45 t/s
+Sep 20 07:31:39 hpubuntu llama-server[4125702]: 7045.12.725.053 I slot print_timing: id  0 | task 9413 | n_decoded =    116, tg =   0.44 t/s
+Sep 20 07:31:44 hpubuntu llama-server[4125702]: 7045.17.396.931 I slot print_timing: id  0 | task 9413 | n_decoded =    118, tg =   0.44 t/s
+Sep 20 07:31:48 hpubuntu llama-server[4125702]: 7045.21.896.811 I slot print_timing: id  0 | task 9413 | n_decoded =    120, tg =   0.44 t/s
+Sep 20 07:31:52 hpubuntu llama-server[4125702]: 7045.26.014.967 I slot print_timing: id  0 | task 9413 | n_decoded =    122, tg =   0.44 t/s
+Sep 20 07:31:57 hpubuntu llama-server[4125702]: 7045.30.362.841 I slot print_timing: id  0 | task 9413 | n_decoded =    124, tg =   0.44 t/s
+Sep 20 07:32:01 hpubuntu llama-server[4125702]: 7045.34.982.252 I slot print_timing: id  0 | task 9413 | n_decoded =    126, tg =   0.44 t/s
+Sep 20 07:32:06 hpubuntu llama-server[4125702]: 7045.39.657.636 I slot print_timing: id  0 | task 9413 | n_decoded =    128, tg =   0.44 t/s
+Sep 20 07:32:11 hpubuntu llama-server[4125702]: 7045.44.510.862 I slot print_timing: id  0 | task 9413 | n_decoded =    130, tg =   0.44 t/s
+Sep 20 07:32:15 hpubuntu llama-server[4125702]: 7045.48.693.503 W srv          next: stopping wait for next result due to should_stop condition (adjust the --timeout argument if needed)
+Sep 20 07:32:15 hpubuntu llama-server[4125702]: 7045.48.693.515 W srv          next: ref: https://github.com/ggml-org/llama.cpp/pull/22907
+Sep 20 07:32:15 hpubuntu llama-server[4125702]: 7045.48.693.560 W srv          stop: cancel task, id_task = 9413
+Sep 20 07:32:15 hpubuntu llama-server[4125702]: 7045.48.875.938 I slot print_timing: id  0 | task 9413 | n_decoded =    132, tg =   0.44 t/s
+Sep 20 07:32:15 hpubuntu llama-server[4125702]: 7045.48.875.962 I slot      release: id  0 | task 9413 | stop processing: n_tokens = 3812, truncated = 0
+Sep 20 07:32:15 hpubuntu llama-server[4125702]: 7045.48.875.975 I srv  update_slots: all slots are idle
+Sep 20 07:32:16 hpubuntu llama-server[4125702]: 7045.49.400.883 I srv  params_from_: Chat format: peg-native
+Sep 20 07:32:16 hpubuntu llama-server[4125702]: 7045.49.401.222 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = 1282255936504
+Sep 20 07:32:16 hpubuntu llama-server[4125702]: 7045.49.401.226 I srv  get_availabl: updating prompt cache
+Sep 20 07:32:16 hpubuntu llama-server[4125702]: 7045.49.401.587 W srv   prompt_save:  - saving prompt with length 3812, total state size = 506.326 MiB (draft: 0.000 MiB)
+Sep 20 07:32:16 hpubuntu llama-server[4125702]: 7045.50.003.510 I srv          load:  - looking for better prompt, base f_keep = 0.061, sim = 0.096
+Sep 20 07:32:16 hpubuntu llama-server[4125702]: 7045.50.003.534 I srv          load:  - found better prompt with f_keep = 0.987, sim = 1.000
+Sep 20 07:32:16 hpubuntu llama-server[4125702]: 7045.50.079.849 I srv        update:  - cache state: 23 prompts, 7868.907 MiB (limits: 8192.000 MiB, 8192 tokens, 61675 est)
+Sep 20 07:32:16 hpubuntu llama-server[4125702]: 7045.50.079.856 I srv        update:    - prompt 0x6532b6fecb60:    2420 tokens, checkpoints:  0,   321.435 MiB
+Sep 20 07:32:16 hpubuntu llama-server[4125702]: 7045.50.079.858 I srv        update:    - prompt 0x6532b6fd22d0:    3713 tokens, checkpoints:  0,   493.176 MiB
+Sep 20 07:32:16 hpubuntu llama-server[4125702]: 7045.50.079.860 I srv        update:    - prompt 0x6532b6fe19f0:    3683 tokens, checkpoints:  0,   489.191 MiB
+Sep 20 07:32:16 hpubuntu llama-server[4125702]: 7045.50.079.862 I srv        update:    - prompt 0x6532b6612d50:    3271 tokens, checkpoints:  0,   434.468 MiB
+Sep 20 07:32:16 hpubuntu llama-server[4125702]: 7045.50.079.863 I srv        update:    - prompt 0x6532b187c850:    1616 tokens, checkpoints:  0,   214.644 MiB
+Sep 20 07:32:16 hpubuntu llama-server[4125702]: 7045.50.079.865 I srv        update:    - prompt 0x6532b6fac0e0:    1604 tokens, checkpoints:  0,   213.050 MiB
+Sep 20 07:32:16 hpubuntu llama-server[4125702]: 7045.50.079.867 I srv        update:    - prompt 0x6532b6f78f90:    1738 tokens, checkpoints:  0,   230.849 MiB
+Sep 20 07:32:16 hpubuntu llama-server[4125702]: 7045.50.079.868 I srv        update:    - prompt 0x6532b6fcdb60:    2284 tokens, checkpoints:  0,   303.371 MiB
+Sep 20 07:32:16 hpubuntu llama-server[4125702]: 7045.50.079.871 I srv        update:    - prompt 0x6532b6fb7dc0:    1596 tokens, checkpoints:  0,   211.988 MiB
+Sep 20 07:32:16 hpubuntu llama-server[4125702]: 7045.50.079.872 I srv        update:    - prompt 0x6532b661d040:    2286 tokens, checkpoints:  0,   303.636 MiB
+Sep 20 07:32:16 hpubuntu llama-server[4125702]: 7045.50.079.873 I srv        update:    - prompt 0x6532b187c900:    2908 tokens, checkpoints:  0,   386.253 MiB
+Sep 20 07:32:16 hpubuntu llama-server[4125702]: 7045.50.079.875 I srv        update:    - prompt 0x6532b6fcbf90:    2258 tokens, checkpoints:  0,   299.917 MiB
+Sep 20 07:32:16 hpubuntu llama-server[4125702]: 7045.50.079.876 I srv        update:    - prompt 0x6532b6f53db0:    2882 tokens, checkpoints:  0,   382.799 MiB
+Sep 20 07:32:16 hpubuntu llama-server[4125702]: 7045.50.079.878 I srv        update:    - prompt 0x6532b6f780e0:    2225 tokens, checkpoints:  0,   295.534 MiB
+Sep 20 07:32:16 hpubuntu llama-server[4125702]: 7045.50.079.880 I srv        update:    - prompt 0x6532b6fccb40:    2794 tokens, checkpoints:  0,   371.111 MiB
+Sep 20 07:32:16 hpubuntu llama-server[4125702]: 7045.50.079.881 I srv        update:    - prompt 0x6532b6f78320:    3270 tokens, checkpoints:  0,   434.335 MiB
+Sep 20 07:32:16 hpubuntu llama-server[4125702]: 7045.50.079.883 I srv        update:    - prompt 0x6532b6610a70:    3031 tokens, checkpoints:  0,   402.590 MiB
+Sep 20 07:32:16 hpubuntu llama-server[4125702]: 7045.50.079.884 I srv        update:    - prompt 0x6532b6f1f410:    1591 tokens, checkpoints:  0,   211.324 MiB
+Sep 20 07:32:16 hpubuntu llama-server[4125702]: 7045.50.079.886 I srv        update:    - prompt 0x6532b6605940:    2093 tokens, checkpoints:  0,   278.001 MiB
+Sep 20 07:32:16 hpubuntu llama-server[4125702]: 7045.50.079.888 I srv        update:    - prompt 0x6532b6fbc3b0:    3495 tokens, checkpoints:  0,   464.220 MiB
+Sep 20 07:32:16 hpubuntu llama-server[4125702]: 7045.50.079.889 I srv        update:    - prompt 0x6532b6f73b60:    1854 tokens, checkpoints:  0,   246.256 MiB
+Sep 20 07:32:16 hpubuntu llama-server[4125702]: 7045.50.079.892 I srv        update:    - prompt 0x6532b6fb4aa0:    2819 tokens, checkpoints:  0,   374.431 MiB
+Sep 20 07:32:16 hpubuntu llama-server[4125702]: 7045.50.079.905 I srv        update:    - prompt 0x6532b6f1f530:    3812 tokens, checkpoints:  0,   506.326 MiB
+Sep 20 07:32:16 hpubuntu llama-server[4125702]: 7045.50.079.908 I srv  get_availabl: prompt cache update took 678.68 ms
+Sep 20 07:32:16 hpubuntu llama-server[4125702]: 7045.50.079.961 I slot launch_slot_: id  0 | task 9547 | processing task, is_child = 0
+Sep 20 07:32:16 hpubuntu llama-server[4125702]: 7045.50.079.977 W slot update_slots: id  0 | task 9547 | need to evaluate at least 1 token for each active slot (n_past = 2417, task.n_tokens() = 2417)
+Sep 20 07:32:16 hpubuntu llama-server[4125702]: 7045.50.079.978 W slot update_slots: id  0 | task 9547 | n_past was set to 2416
+Sep 20 07:33:26 hpubuntu llama-server[4125702]: 7046.59.542.437 I slot print_timing: id  0 | task 9547 | prompt eval time =    2168.86 ms /     1 tokens ( 2168.86 ms per token,     0.46 tokens per second)
+Sep 20 07:33:26 hpubuntu llama-server[4125702]: 7046.59.542.445 I slot print_timing: id  0 | task 9547 |        eval time =   67293.59 ms /    32 tokens ( 2102.92 ms per token,     0.48 tokens per second)
+Sep 20 07:33:26 hpubuntu llama-server[4125702]: 7046.59.542.446 I slot print_timing: id  0 | task 9547 |       total time =   69462.45 ms /    33 tokens
+Sep 20 07:33:26 hpubuntu llama-server[4125702]: 7046.59.542.447 I slot print_timing: id  0 | task 9547 |    graphs reused =          0
+Sep 20 07:33:26 hpubuntu llama-server[4125702]: 7046.59.542.663 I slot      release: id  0 | task 9547 | stop processing: n_tokens = 2448, truncated = 0
+Sep 20 07:33:26 hpubuntu llama-server[4125702]: 7046.59.542.696 I srv  update_slots: all slots are idle
+Sep 20 07:33:26 hpubuntu llama-server[4125702]: 7046.59.641.361 I srv  params_from_: Chat format: peg-native
+Sep 20 07:33:26 hpubuntu llama-server[4125702]: 7046.59.641.691 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = 1282326603224
+Sep 20 07:33:26 hpubuntu llama-server[4125702]: 7046.59.641.694 I srv  get_availabl: updating prompt cache
+Sep 20 07:33:26 hpubuntu llama-server[4125702]: 7046.59.641.992 W srv   prompt_save:  - saving prompt with length 2448, total state size = 325.154 MiB (draft: 0.000 MiB)
+Sep 20 07:33:26 hpubuntu llama-server[4125702]: 7047.00.018.502 I srv          load:  - looking for better prompt, base f_keep = 0.094, sim = 0.076
+Sep 20 07:33:26 hpubuntu llama-server[4125702]: 7047.00.018.522 I srv          load:  - found better prompt with f_keep = 0.932, sim = 1.000
+Sep 20 07:33:26 hpubuntu llama-server[4125702]: 7047.00.113.409 I srv        update:  - cache state: 23 prompts, 7759.726 MiB (limits: 8192.000 MiB, 8192 tokens, 61675 est)
+Sep 20 07:33:26 hpubuntu llama-server[4125702]: 7047.00.113.414 I srv        update:    - prompt 0x6532b6fecb60:    2420 tokens, checkpoints:  0,   321.435 MiB
+Sep 20 07:33:26 hpubuntu llama-server[4125702]: 7047.00.113.415 I srv        update:    - prompt 0x6532b6fd22d0:    3713 tokens, checkpoints:  0,   493.176 MiB
+Sep 20 07:33:26 hpubuntu llama-server[4125702]: 7047.00.113.415 I srv        update:    - prompt 0x6532b6fe19f0:    3683 tokens, checkpoints:  0,   489.191 MiB
+Sep 20 07:33:26 hpubuntu llama-server[4125702]: 7047.00.113.416 I srv        update:    - prompt 0x6532b6612d50:    3271 tokens, checkpoints:  0,   434.468 MiB
+Sep 20 07:33:26 hpubuntu llama-server[4125702]: 7047.00.113.417 I srv        update:    - prompt 0x6532b187c850:    1616 tokens, checkpoints:  0,   214.644 MiB
+Sep 20 07:33:26 hpubuntu llama-server[4125702]: 7047.00.113.417 I srv        update:    - prompt 0x6532b6fac0e0:    1604 tokens, checkpoints:  0,   213.050 MiB
+Sep 20 07:33:26 hpubuntu llama-server[4125702]: 7047.00.113.418 I srv        update:    - prompt 0x6532b6f78f90:    1738 tokens, checkpoints:  0,   230.849 MiB
+Sep 20 07:33:26 hpubuntu llama-server[4125702]: 7047.00.113.419 I srv        update:    - prompt 0x6532b6fcdb60:    2284 tokens, checkpoints:  0,   303.371 MiB
+Sep 20 07:33:26 hpubuntu llama-server[4125702]: 7047.00.113.419 I srv        update:    - prompt 0x6532b6fb7dc0:    1596 tokens, checkpoints:  0,   211.988 MiB
+Sep 20 07:33:26 hpubuntu llama-server[4125702]: 7047.00.113.420 I srv        update:    - prompt 0x6532b661d040:    2286 tokens, checkpoints:  0,   303.636 MiB
+Sep 20 07:33:26 hpubuntu llama-server[4125702]: 7047.00.113.421 I srv        update:    - prompt 0x6532b187c900:    2908 tokens, checkpoints:  0,   386.253 MiB
+Sep 20 07:33:26 hpubuntu llama-server[4125702]: 7047.00.113.421 I srv        update:    - prompt 0x6532b6fcbf90:    2258 tokens, checkpoints:  0,   299.917 MiB
+Sep 20 07:33:26 hpubuntu llama-server[4125702]: 7047.00.113.422 I srv        update:    - prompt 0x6532b6f53db0:    2882 tokens, checkpoints:  0,   382.799 MiB
+Sep 20 07:33:26 hpubuntu llama-server[4125702]: 7047.00.113.423 I srv        update:    - prompt 0x6532b6f780e0:    2225 tokens, checkpoints:  0,   295.534 MiB
+Sep 20 07:33:26 hpubuntu llama-server[4125702]: 7047.00.113.423 I srv        update:    - prompt 0x6532b6fccb40:    2794 tokens, checkpoints:  0,   371.111 MiB
+Sep 20 07:33:26 hpubuntu llama-server[4125702]: 7047.00.113.424 I srv        update:    - prompt 0x6532b6610a70:    3031 tokens, checkpoints:  0,   402.590 MiB
+Sep 20 07:33:26 hpubuntu llama-server[4125702]: 7047.00.113.425 I srv        update:    - prompt 0x6532b6f1f410:    1591 tokens, checkpoints:  0,   211.324 MiB
+Sep 20 07:33:26 hpubuntu llama-server[4125702]: 7047.00.113.425 I srv        update:    - prompt 0x6532b6605940:    2093 tokens, checkpoints:  0,   278.001 MiB
+Sep 20 07:33:26 hpubuntu llama-server[4125702]: 7047.00.113.426 I srv        update:    - prompt 0x6532b6fbc3b0:    3495 tokens, checkpoints:  0,   464.220 MiB
+Sep 20 07:33:26 hpubuntu llama-server[4125702]: 7047.00.113.427 I srv        update:    - prompt 0x6532b6f73b60:    1854 tokens, checkpoints:  0,   246.256 MiB
+Sep 20 07:33:26 hpubuntu llama-server[4125702]: 7047.00.113.428 I srv        update:    - prompt 0x6532b6fb4aa0:    2819 tokens, checkpoints:  0,   374.431 MiB
+Sep 20 07:33:26 hpubuntu llama-server[4125702]: 7047.00.113.430 I srv        update:    - prompt 0x6532b6f1f530:    3812 tokens, checkpoints:  0,   506.326 MiB
+Sep 20 07:33:26 hpubuntu llama-server[4125702]: 7047.00.113.434 I srv        update:    - prompt 0x6532b6608340:    2448 tokens, checkpoints:  0,   325.154 MiB
+Sep 20 07:33:26 hpubuntu llama-server[4125702]: 7047.00.113.436 I srv  get_availabl: prompt cache update took 471.74 ms
+Sep 20 07:33:26 hpubuntu llama-server[4125702]: 7047.00.113.494 I slot launch_slot_: id  0 | task 9580 | processing task, is_child = 0
+Sep 20 07:33:26 hpubuntu llama-server[4125702]: 7047.00.113.505 W slot update_slots: id  0 | task 9580 | need to evaluate at least 1 token for each active slot (n_past = 3048, task.n_tokens() = 3048)
+Sep 20 07:33:26 hpubuntu llama-server[4125702]: 7047.00.113.506 W slot update_slots: id  0 | task 9580 | n_past was set to 3047
+Sep 20 07:34:42 hpubuntu llama-server[4125702]: 7048.15.822.708 I slot print_timing: id  0 | task 9580 | prompt eval time =    2038.57 ms /     1 tokens ( 2038.57 ms per token,     0.49 tokens per second)
+Sep 20 07:34:42 hpubuntu llama-server[4125702]: 7048.15.822.715 I slot print_timing: id  0 | task 9580 |        eval time =   73670.62 ms /    34 tokens ( 2166.78 ms per token,     0.46 tokens per second)
+Sep 20 07:34:42 hpubuntu llama-server[4125702]: 7048.15.822.716 I slot print_timing: id  0 | task 9580 |       total time =   75709.19 ms /    35 tokens
+Sep 20 07:34:42 hpubuntu llama-server[4125702]: 7048.15.822.716 I slot print_timing: id  0 | task 9580 |    graphs reused =          0
+Sep 20 07:34:42 hpubuntu llama-server[4125702]: 7048.15.822.891 I slot      release: id  0 | task 9580 | stop processing: n_tokens = 3081, truncated = 0
+Sep 20 07:34:42 hpubuntu llama-server[4125702]: 7048.15.822.907 I srv  update_slots: all slots are idle
+Sep 20 07:34:42 hpubuntu llama-server[4125702]: 7048.15.891.254 I srv  params_from_: Chat format: peg-native
+Sep 20 07:34:42 hpubuntu llama-server[4125702]: 7048.15.891.493 I slot get_availabl: id  0 | task -1 | selected slot by LCP similarity, sim_best = 0.961 (> 0.100 thold), f_keep = 1.000
+Sep 20 07:34:42 hpubuntu llama-server[4125702]: 7048.15.891.530 I slot launch_slot_: id  0 | task 9615 | processing task, is_child = 0
+Sep 20 07:38:33 hpubuntu llama-server[4125702]: 7052.06.244.712 I slot print_timing: id  0 | task 9615 | n_decoded =    100, tg =   0.44 t/s
+Sep 20 07:38:38 hpubuntu llama-server[4125702]: 7052.11.922.602 I slot print_timing: id  0 | task 9615 | n_decoded =    102, tg =   0.44 t/s
+Sep 20 07:38:43 hpubuntu llama-server[4125702]: 7052.17.050.344 I slot print_timing: id  0 | task 9615 | n_decoded =    104, tg =   0.44 t/s
+Sep 20 07:38:48 hpubuntu llama-server[4125702]: 7052.21.610.919 I slot print_timing: id  0 | task 9615 | n_decoded =    106, tg =   0.44 t/s
+Sep 20 07:38:52 hpubuntu llama-server[4125702]: 7052.26.069.774 I slot print_timing: id  0 | task 9615 | n_decoded =    108, tg =   0.44 t/s
+Sep 20 07:38:57 hpubuntu llama-server[4125702]: 7052.30.460.172 I slot print_timing: id  0 | task 9615 | n_decoded =    110, tg =   0.44 t/s
+Sep 20 07:39:01 hpubuntu llama-server[4125702]: 7052.34.560.445 I slot print_timing: id  0 | task 9615 | n_decoded =    112, tg =   0.44 t/s
+Sep 20 07:39:05 hpubuntu llama-server[4125702]: 7052.39.012.632 I slot print_timing: id  0 | task 9615 | n_decoded =    114, tg =   0.44 t/s
+Sep 20 07:39:11 hpubuntu llama-server[4125702]: 7052.44.592.386 I slot print_timing: id  0 | task 9615 | n_decoded =    116, tg =   0.44 t/s
+Sep 20 07:39:15 hpubuntu llama-server[4125702]: 7052.48.884.249 I slot print_timing: id  0 | task 9615 | n_decoded =    118, tg =   0.44 t/s
+Sep 20 07:39:20 hpubuntu llama-server[4125702]: 7052.53.192.310 I slot print_timing: id  0 | task 9615 | n_decoded =    120, tg =   0.44 t/s
+Sep 20 07:39:24 hpubuntu llama-server[4125702]: 7052.57.361.942 I slot print_timing: id  0 | task 9615 | n_decoded =    122, tg =   0.44 t/s
+Sep 20 07:39:28 hpubuntu llama-server[4125702]: 7053.02.126.535 I slot print_timing: id  0 | task 9615 | n_decoded =    124, tg =   0.44 t/s
+Sep 20 07:39:33 hpubuntu llama-server[4125702]: 7053.06.555.942 I slot print_timing: id  0 | task 9615 | n_decoded =    126, tg =   0.44 t/s
+Sep 20 07:39:38 hpubuntu llama-server[4125702]: 7053.11.396.264 I slot print_timing: id  0 | task 9615 | n_decoded =    128, tg =   0.44 t/s
+Sep 20 07:39:42 hpubuntu llama-server[4125702]: 7053.16.070.336 I slot print_timing: id  0 | task 9615 | n_decoded =    130, tg =   0.44 t/s
+Sep 20 07:39:43 hpubuntu llama-server[4125702]: 7053.16.962.599 W srv          next: stopping wait for next result due to should_stop condition (adjust the --timeout argument if needed)
+Sep 20 07:39:43 hpubuntu llama-server[4125702]: 7053.16.962.604 W srv          next: ref: https://github.com/ggml-org/llama.cpp/pull/22907
+Sep 20 07:39:43 hpubuntu llama-server[4125702]: 7053.16.962.639 W srv          stop: cancel task, id_task = 9615
+Sep 20 07:39:45 hpubuntu llama-server[4125702]: 7053.18.237.901 I slot      release: id  0 | task 9615 | stop processing: n_tokens = 3335, truncated = 0
+Sep 20 07:39:45 hpubuntu llama-server[4125702]: 7053.18.237.928 I srv  update_slots: all slots are idle

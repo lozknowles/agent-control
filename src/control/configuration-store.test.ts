@@ -63,3 +63,14 @@ test('configuration store persists the Warm Expert policy through the existing r
 test('configuration store persists deterministic skill policy through the revision gate',t=>{
   const{root,store}=setup();t.after(()=>fs.rmSync(root,{recursive:true,force:true}));const policy={enabled:true,routingEnabled:false,minimumDistinctParcels:3,maximumValidationAgeDays:90},updated=store.updateDeterministicSkills({revision:store.read().revision,deterministicSkills:policy});assert.equal(updated.restartRequired,true);assert.deepEqual(updated.deterministicSkills,policy);assert.deepEqual(new ConfigurationStore(store.file).read().deterministicSkills,policy);
 });
+
+test('cost routing changes are hash-bound and authority raises require an explicit reason',t=>{
+  const{root,store}=setup();t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+  const policy=(input:number,output:number,job:number)=>({schema:'agent-control.cost-performance-routing-policy/v1' as const,id:'estate-cost-policy',strategy:'custom' as const,optimization:'price' as const,rateCeilingUsdPerMillionTokens:{input,output},budget:{invocationUsd:job/10,jobUsd:job},tokenCeiling:{output:1000},fallback:{enabled:true,onNoEligibleRoute:'block' as const,crossModel:false}});
+  const initial=store.previewEstateCostPerformanceRouting({revision:store.read().revision,policy:policy(1,2,2)});assert.equal(initial.requiresApproval,false);
+  const configured=store.updateEstateCostPerformanceRouting({revision:initial.revision,policy:initial.proposed,proposalSha256:initial.proposalSha256,actor:'web-operator'});assert.equal(configured.approval,null);assert.equal(configured.costPerformanceRouting?.estate?.budget?.jobUsd,2);
+  const raised=store.previewEstateCostPerformanceRouting({revision:configured.revision,policy:policy(2,4,5)});assert.equal(raised.requiresApproval,true);
+  assert.throws(()=>store.updateEstateCostPerformanceRouting({revision:raised.revision,policy:raised.proposed,proposalSha256:raised.proposalSha256,actor:'web-operator'}),error=>error instanceof ConfigurationStoreError&&error.status===403);
+  assert.throws(()=>store.updateEstateCostPerformanceRouting({revision:raised.revision,policy:raised.proposed,proposalSha256:'0'.repeat(64),approvalReason:'Reviewed higher limits',actor:'web-operator'}),error=>error instanceof ConfigurationStoreError&&error.status===409);
+  const approved=store.updateEstateCostPerformanceRouting({revision:raised.revision,policy:raised.proposed,proposalSha256:raised.proposalSha256,approvalReason:'Reviewed higher limits for the bounded workload',actor:'web-operator'});assert.equal(approved.approval?.approvalId,`routing-policy:${raised.proposalSha256}`);assert.equal(approved.costPerformanceRouting?.estate?.budget?.jobUsd,5);
+});

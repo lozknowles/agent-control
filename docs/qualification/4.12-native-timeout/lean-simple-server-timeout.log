@@ -1,0 +1,19 @@
+2026-09-20T07:00:21+01:00 hpubuntu llama-server[4125702]: 7013.54.514.437 I slot launch_slot_: id  0 | task 8711 | processing task, is_child = 0
+2026-09-20T07:00:21+01:00 hpubuntu llama-server[4125702]: 7013.54.514.477 W slot update_slots: id  0 | task 8711 | need to evaluate at least 1 token for each active slot (n_past = 1972, task.n_tokens() = 1972)
+2026-09-20T07:00:21+01:00 hpubuntu llama-server[4125702]: 7013.54.514.478 W slot update_slots: id  0 | task 8711 | n_past was set to 1971
+2026-09-20T07:04:27+01:00 hpubuntu llama-server[4125702]: 7018.00.939.681 I slot print_timing: id  0 | task 8711 | n_decoded =    100, tg =   0.41 t/s
+2026-09-20T07:04:33+01:00 hpubuntu llama-server[4125702]: 7018.06.294.120 I slot print_timing: id  0 | task 8711 | n_decoded =    102, tg =   0.41 t/s
+2026-09-20T07:04:36+01:00 hpubuntu llama-server[4125702]: 7018.09.419.650 I slot print_timing: id  0 | task 8711 | n_decoded =    103, tg =   0.41 t/s
+2026-09-20T07:04:39+01:00 hpubuntu llama-server[4125702]: 7018.12.654.037 I slot print_timing: id  0 | task 8711 | n_decoded =    104, tg =   0.41 t/s
+2026-09-20T07:04:44+01:00 hpubuntu llama-server[4125702]: 7018.17.542.920 I slot print_timing: id  0 | task 8711 | n_decoded =    106, tg =   0.41 t/s
+2026-09-20T07:04:49+01:00 hpubuntu llama-server[4125702]: 7018.22.684.859 I slot print_timing: id  0 | task 8711 | n_decoded =    108, tg =   0.41 t/s
+2026-09-20T07:04:54+01:00 hpubuntu llama-server[4125702]: 7018.27.248.363 I slot print_timing: id  0 | task 8711 | n_decoded =    110, tg =   0.41 t/s
+2026-09-20T07:04:58+01:00 hpubuntu llama-server[4125702]: 7018.31.895.194 I slot print_timing: id  0 | task 8711 | n_decoded =    112, tg =   0.41 t/s
+2026-09-20T07:05:03+01:00 hpubuntu llama-server[4125702]: 7018.36.202.217 I slot print_timing: id  0 | task 8711 | n_decoded =    114, tg =   0.41 t/s
+2026-09-20T07:05:08+01:00 hpubuntu llama-server[4125702]: 7018.41.796.541 I slot print_timing: id  0 | task 8711 | n_decoded =    116, tg =   0.41 t/s
+2026-09-20T07:05:11+01:00 hpubuntu llama-server[4125702]: 7018.45.038.154 I slot print_timing: id  0 | task 8711 | n_decoded =    117, tg =   0.41 t/s
+2026-09-20T07:05:16+01:00 hpubuntu llama-server[4125702]: 7018.49.951.744 I slot print_timing: id  0 | task 8711 | n_decoded =    119, tg =   0.41 t/s
+2026-09-20T07:05:21+01:00 hpubuntu llama-server[4125702]: 7018.54.514.829 I slot print_timing: id  0 | task 8711 | n_decoded =    121, tg =   0.41 t/s
+2026-09-20T07:05:22+01:00 hpubuntu llama-server[4125702]: 7018.55.275.269 W srv          next: stopping wait for next result due to should_stop condition (adjust the --timeout argument if needed)
+2026-09-20T07:05:22+01:00 hpubuntu llama-server[4125702]: 7018.55.275.308 W srv          stop: cancel task, id_task = 8711
+2026-09-20T07:05:23+01:00 hpubuntu llama-server[4125702]: 7018.56.588.850 I slot      release: id  0 | task 8711 | stop processing: n_tokens = 2093, truncated = 0
