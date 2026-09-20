@@ -1,0 +1,15 @@
+ea878153e70e39034b8deb9294ce59d90c5ef0070e7cd45306b652f3db51a6c2  docs/qualification/4.12-native-timeout/BASELINE-VS-LEAN-COMPLETED-WORK.md
+819723e710cde96a14d1cfe1443b7842ab19a9022f95af6ecc9e8786c31e741a  docs/qualification/4.12-native-timeout/evidence-index.json
+81659b749fd99701e4e680919da1b9323818bf7da8f7a92999d71f22712512e2  docs/qualification/4.12-native-timeout/full-check.log
+5b874cea49c61aed14c523e8576375d95a4a62ab70864caa8b75c9b017372c0e  docs/qualification/4.12-native-timeout/lean-simple-server-timeout.log
+9693b5161773ff22263fb5e10ff13dbf25ab2e5a41c81c2807ea9a10fc3b0ec5  docs/qualification/4.12-native-timeout/model-service-unit.redacted.txt
+416779a7eae09db3cfcc21239496531878f6928da882e7c1f443e7a1640ad9b1  docs/qualification/4.12-native-timeout/native-timeout-analysis.json
+d1b7671c30997723cfc9fe1254fa5d1c2a8f76e95be1a889fcf81c4d0c5325a0  docs/qualification/4.12-native-timeout/native-timeout-calls.json
+4d40a3db2bab4a691e9c502b3ddabb790168ea4c56f659f47c57fea4fce927e8  docs/qualification/4.12-native-timeout/NATIVE-TIMEOUT-ROOT-CAUSE.md
+dea6000ce8a0f21039dae4a7504a85864531421fc91be6428772065acc8569b8  docs/qualification/4.12-native-timeout/qualification-status.json
+bbedbf8194a9b99282011fb972f7e7e7c3d9a57e246a96fba1e2ebda81ba62f4  docs/qualification/4.12-native-timeout/representative-model-server.log
+06136412cc45b4a8d8ecbdecd264d1ceacbc8a5a145039285f87a886cfe94717  docs/qualification/4.12-native-timeout/REPRESENTATIVE-NATURAL-COMPLETION.md
+acc0daf4a50541b6347d2349624a194f284410e70946c8d3c470d13baf31de89  docs/qualification/4.12-native-timeout/representative-results.json
+6b1e8d5d77a2fb1820740dd21b2792bc644a463e910c66d795e954f33d4ceb44  docs/qualification/4.12-native-timeout/STANDARD-DEEP-RUNTIME-BUDGET-ANALYSIS.md
+bd0b962a483a61edc064e96495455edb5420f285beebef99e8bed2f1f42a01da  docs/qualification/4.12-native-timeout/TEN-TASK-NATIVE-TIMELINES.md
+1225a5926fa60289e6fa9d3763df0f84755585340d01f744d23bb711c60582cd  docs/qualification/4.12-native-timeout/timeout-owner-source.txt

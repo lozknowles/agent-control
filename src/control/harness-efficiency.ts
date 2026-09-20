@@ -8,6 +8,7 @@ import type {HarnessEfficiencyConfig} from './config.js';
 import {calculateVersionedApiCost, type InvocationCostAccounting, type VersionedModelPricing} from './cost-accounting.js';
 import type {CacheEvidence} from './cache-evidence.js';
 import type {ExecutionResourceSummary} from './resource-telemetry.js';
+import type {GovernedRuntimeBudget} from './runtime-budget.js';
 
 export type HarnessProfileName = 'THIN' | 'STANDARD' | 'DEEP';
 export type HarnessRoutingMode = 'OBSERVE' | 'ENFORCE' | 'EXPERIMENT';
@@ -449,6 +450,8 @@ export interface ModelInvocationObservation {
   error: string | null;
   provenance: {recipeFingerprint: string; contextPacketId?: string; evidenceIds: string[]};
   routing?: ContextCompilerInvocationRouting;
+  /** Resolved immutable execution budget; absent for legacy invocations. */
+  runtimeBudget?: GovernedRuntimeBudget;
 }
 
 export interface InvocationObservationInput {
@@ -489,6 +492,7 @@ export interface InvocationObservationInput {
   finishReason?: string;
   phase?: InvocationPhase;
   routing?: ContextCompilerInvocationRouting;
+  runtimeBudget?: GovernedRuntimeBudget;
 }
 
 export function createInvocationObservation(input: InvocationObservationInput): ModelInvocationObservation {
@@ -517,6 +521,7 @@ export function createInvocationObservation(input: InvocationObservationInput): 
     verifierResult: 'UNKNOWN', finalJobResult: 'UNKNOWN', outcome: input.outcome ?? 'COMPLETE', error: input.error === undefined ? null : boundedRedactedError(input.error),
     provenance: {recipeFingerprint: input.recipeFingerprint, ...(input.contextPacketId ? {contextPacketId: input.contextPacketId} : {}), evidenceIds: [...(input.evidenceIds ?? [])]},
     ...(input.routing ? {routing: structuredClone(input.routing)} : {}),
+    ...(input.runtimeBudget ? {runtimeBudget: structuredClone(input.runtimeBudget)} : {}),
   };
 }
 
@@ -524,6 +529,7 @@ export interface InvocationStartInput {
   id?: string; jobId: string; runId?: string; stepId?: string; taskId: string; laneId: string; model: string; provider: string;
   harnessProfile: HarnessProfileName; executionStrategy: string; startedAt: string; recipeFingerprint: string; contextPacketId?: string;
   routing?: ContextCompilerInvocationRouting;
+  runtimeBudget?: GovernedRuntimeBudget;
 }
 
 export function createInvocationStart(input: InvocationStartInput): ModelInvocationObservation {
@@ -536,6 +542,7 @@ export function createInvocationStart(input: InvocationStartInput): ModelInvocat
     filesContextSupplied: null, contextSourceIds: [], retrievedContextTokens: null, repositoryContextTokens: null, conversationHistoryTokens: 0, verifierResult: 'UNKNOWN', finalJobResult: 'UNKNOWN',
     outcome: 'RUNNING', error: null, provenance: {recipeFingerprint: input.recipeFingerprint, ...(input.contextPacketId ? {contextPacketId: input.contextPacketId} : {}), evidenceIds: []},
     ...(input.routing ? {routing: structuredClone(input.routing)} : {}),
+    ...(input.runtimeBudget ? {runtimeBudget: structuredClone(input.runtimeBudget)} : {}),
   };
 }
 

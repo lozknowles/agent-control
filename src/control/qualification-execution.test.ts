@@ -13,22 +13,22 @@ import {parseMutationBenchmarkSuite} from './harness-mutation-benchmark.js';
 import {createToolHandlerRegistry} from './harness-dispatch.js';
 
 const environment = {AGENT_CONTROL_ENABLE_NON_OPENAI_CACHE_QUALIFICATION: 'true', AGENT_CONTROL_NON_OPENAI_CACHE_BASE_URL: 'http://127.0.0.1:18000/v1', AGENT_CONTROL_NON_OPENAI_CACHE_MODEL: 'fixture-model', AGENT_CONTROL_NON_OPENAI_CACHE_REPOSITORY_ROOT: process.cwd()};
-function setup(t: {after(fn: () => void): void}, fetcher: typeof fetch, register?: (actions: ActionRegistry) => void) {
+function setup(t: {after(fn: () => void): void}, fetcher: typeof fetch, register?: (actions: ActionRegistry) => void, additions: NodeJS.ProcessEnv = {}, parameters: Record<string, unknown> = {}) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ac-execution-remediation-'));
   const previous = globalThis.fetch; globalThis.fetch = fetcher;
   t.after(() => { globalThis.fetch = previous; fs.rmSync(root, {recursive: true, force: true}); });
   const efficiency = new MemoryHarnessEfficiencyLedger();
-  const actions = registerNonOpenAiCacheQualificationActions(new ActionRegistry(), efficiency, environment);
+  const actions = registerNonOpenAiCacheQualificationActions(new ActionRegistry(), efficiency, {...environment, ...additions});
   register?.(actions);
   const catalog = new JobCatalog(actions.ids());
-  const job: JobDefinition = {apiVersion: 'agent-control/v1', kind: 'Job', metadata: {id: 'qualification-fixture', name: 'Fixture', version: '1.0.0'}, spec: {priority: 'normal', concurrency: 'no-overlap', steps: [
+  const job: JobDefinition = {apiVersion: 'agent-control/v1', kind: 'Job', metadata: {id: 'qualification-fixture', name: 'Fixture', version: '1.0.0'}, spec: {priority: 'normal', concurrency: 'no-overlap', parameters: {taskId: {type: 'string'}, profile: {type: 'string'}, prefixVariant: {type: 'string'}}, steps: [
     {id: 'mutate', action: 'qualification.non-openai-cache.mutate@1.0.0', requires: ['model.execute'], resources: ['fixture'], outputs: [{name: 'mutation-attempt', type: 'json', schema: 'attempt/v1', version: '1.0.0'}]},
     {id: 'verify', action: 'qualification.non-openai-cache.verify@1.0.0', requires: ['model.execute'], dependsOn: ['mutate'], outputs: [{name: 'verification-report', type: 'json', schema: 'verification/v1', version: '1.0.0'}], verification: ['non-openai-cache-mutation-verified']},
   ]}};
   catalog.addJob(job);
   const workers = new WorkerRegistry().register({id: 'fixture-worker', capabilities: ['model.execute', 'structured-output', 'tool-request', 'repository.mutation.typed'], health: 'healthy', capacity: 1, active: 0, observedAt: new Date().toISOString()});
   const runtime = createJobRuntime(root, catalog, actions, workers, {efficiency});
-  const run = runtime.createRun('qualification-fixture@1.0.0', {}, {type: 'manual', actor: 'human:test'});
+  const run = runtime.createRun('qualification-fixture@1.0.0', parameters, {type: 'manual', actor: 'human:test'});
   return {root, runtime, run, efficiency, catalog, actions, workers};
 }
 function response(tool: string, input: unknown = {}) { return Response.json({id: 'response-fixture', model: 'fixture-model', choices: [{message: {content: JSON.stringify({tool, input})}, finish_reason: 'stop'}], usage: {prompt_tokens: 100, completion_tokens: 20, total_tokens: 120}}); }
@@ -46,6 +46,44 @@ test('live qualification path performs a bounded mutation and independent verifi
   assert.equal(values(s.runtime, s.run.id, 'attempt-workspace-cleanup')[0].outcome, 'confirmed');
   const fresh = new ArtifactStore(path.join(s.root, 'jobs', 'artifact-store'));
   for (const artifact of s.runtime.artifacts.list(s.run.id)) assert.deepEqual(fresh.read(artifact.id), s.runtime.artifacts.read(artifact.id));
+});
+test('lean terminal allowance completes through native JobRuntime with durable evidence and cleanup', async t => {
+  let calls = 0;
+  const replies = [() => response(MUTATION_TOOL_IDS.read, {path: 'src/constants.js'}), replace, () => response(MUTATION_TOOL_IDS.test), finish];
+  const s = setup(t, async () => replies[calls++](), undefined, {AGENT_CONTROL_LEAN_EXPERIMENT: 'true'});
+  await s.runtime.tick(); await s.runtime.tick();
+  assert.equal(s.runtime.ledger.get(s.run.id)?.status, 'SUCCEEDED');
+  assert.equal(calls, 4);
+  assert.equal(values(s.runtime, s.run.id, 'independent-verification')[0].verifier.passed, true);
+  assert.equal(values(s.runtime, s.run.id, 'attempt-workspace-cleanup')[0].outcome, 'confirmed');
+  const projections = values(s.runtime, s.run.id, 'lean-model-interface');
+  const last = projections.filter(value => value.kind === 'model_invocation').at(-1);
+  assert.deepEqual(last.exposedToolIds, [MUTATION_TOOL_IDS.finish]);
+});
+
+test('native benchmark parameters are resolved inside the governed action and earn native provenance', async t => {
+  let calls = 0;
+  const replies = [() => new Response(null, {status: 200}), () => Response.json({data: [{id: 'fixture-model'}]}), replace, finish];
+  const s = setup(t, async () => replies[calls++](), undefined, {}, {taskId: 'MUT-001', profile: 'STANDARD'});
+  await s.runtime.tick(); await s.runtime.tick();
+  assert.equal(s.runtime.ledger.get(s.run.id)?.status, 'SUCCEEDED');
+  assert.equal(calls, 4);
+  assert.equal(values(s.runtime, s.run.id, 'runtime-health')[0].status, 200);
+  assert.deepEqual(values(s.runtime, s.run.id, 'model-discovery')[0].modelIds, ['fixture-model']);
+  const attempt = values(s.runtime, s.run.id, 'mutation-attempt')[0];
+  assert.equal(attempt.taskId, 'MUT-001'); assert.equal(attempt.profile, 'STANDARD'); assert.equal(attempt.provenance, 'AGENT_CONTROL_NATIVE_EXECUTION');
+  assert.equal(values(s.runtime, s.run.id, 'independent-verification')[0].verifier.passed, true);
+});
+
+test('disabled native dispatcher prevents the external submitter from completing work', async t => {
+  let calls = 0;
+  const replies = [() => new Response(null, {status: 200}), () => Response.json({data: [{id: 'fixture-model'}]})];
+  const s = setup(t, async () => replies[calls++](), undefined, {AGENT_CONTROL_NATIVE_BENCHMARK_DISABLE_DISPATCHER: 'true'}, {taskId: 'MUT-001', profile: 'STANDARD'});
+  await s.runtime.tick();
+  assert.equal(s.runtime.ledger.get(s.run.id)?.status, 'FAILED');
+  assert.equal(calls, 2);
+  assert.equal(values(s.runtime, s.run.id, 'tool-request').length, 0);
+  assert.match(JSON.stringify(s.runtime.ledger.get(s.run.id)), /native_benchmark_dispatcher_disabled/);
 });
 
 test('human takeover during provider wait aborts the request and fences a late provider mutation', async t => {

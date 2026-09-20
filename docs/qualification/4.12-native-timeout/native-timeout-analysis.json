@@ -1,0 +1,4389 @@
+{
+  "schema": "agent-control.native-timeout-analysis/v1",
+  "source": "/fast/qualification/agent-control-v4.12-native-20260920/ab",
+  "tasks": [
+    {
+      "lane": "baseline",
+      "taskId": "MUT-001",
+      "profile": "STANDARD",
+      "configuredTaskTimeoutMs": 120000,
+      "firstProviderRequestAt": "2026-09-20T02:19:38.349Z",
+      "providerFailureAt": "2026-09-20T02:21:38.351Z",
+      "observedDeadlineMs": 120002,
+      "deadlineDeltaMs": 2,
+      "completedModelCalls": 1,
+      "providerRequests": 2,
+      "providerResponses": 1,
+      "toolEvents": 2,
+      "lastProgressType": "tool-result",
+      "lastProgressAt": "2026-09-20T02:21:08.923Z",
+      "lastProgressBeforeDeadlineMs": 29428,
+      "pendingProviderRequestAtDeadline": true,
+      "pendingProviderRequestDurationMs": 29416,
+      "failure": "The operation was aborted due to timeout",
+      "actionFailure": "structured_chat_loop_timeout",
+      "workspaceCleanup": "confirmed",
+      "classification": "BLOCKED_MODEL_IN_FLIGHT_ACTIVITY_UNOBSERVABLE",
+      "invocations": [
+        {
+          "lane": "baseline",
+          "taskId": "MUT-001",
+          "turn": 1,
+          "startedAt": "2026-09-20T02:19:38.344Z",
+          "completedAt": "2026-09-20T02:21:08.879Z",
+          "elapsedMs": 90535,
+          "inputTokens": 2197,
+          "cachedInputTokens": 393,
+          "freshInputTokens": 1804,
+          "outputTokens": 32,
+          "promptMs": 16845.385,
+          "generationMs": 73256.538,
+          "promptTokensPerSecond": 107.09164557533119,
+          "generationTokensPerSecond": 0.43682107936905235
+        }
+      ],
+      "normalizedTimeline": [
+        {
+          "at": "2026-09-20T02:19:38.124Z",
+          "event": "SUBMITTED",
+          "detail": "run-71caa4ba-51a0-45ce-85da-535dcd8bc36c",
+          "offsetMs": 0
+        },
+        {
+          "at": "2026-09-20T02:19:38.137Z",
+          "event": "ADMITTED",
+          "detail": "native-benchmark-worker",
+          "offsetMs": 13
+        },
+        {
+          "at": "2026-09-20T02:19:38.344Z",
+          "event": "PROFILE_RESOLVED",
+          "detail": "STANDARD",
+          "offsetMs": 220
+        },
+        {
+          "at": "2026-09-20T02:19:38.344Z",
+          "event": "MODEL_CALL_START",
+          "detail": "turn=1",
+          "offsetMs": 220
+        },
+        {
+          "at": "2026-09-20T02:21:08.879Z",
+          "event": "MODEL_CALL_END",
+          "detail": "turn=1 prompt_ms=16845.385 generation_ms=73256.538 input=2197 cached=393 output=32 tool=mutation.repository.read",
+          "offsetMs": 90755
+        },
+        {
+          "at": "2026-09-20T02:21:08.901Z",
+          "event": "TOOL_START",
+          "detail": "mutation.repository.read",
+          "offsetMs": 90777
+        },
+        {
+          "at": "2026-09-20T02:21:08.923Z",
+          "event": "TOOL_END",
+          "detail": "mutation.repository.read duration_ms=22 result=tool-result",
+          "offsetMs": 90799
+        },
+        {
+          "at": "2026-09-20T02:21:38.351Z",
+          "event": "TIMEOUT",
+          "detail": "The operation was aborted due to timeout",
+          "offsetMs": 120227
+        },
+        {
+          "at": "2026-09-20T02:21:38.405Z",
+          "event": "CLEANUP",
+          "detail": "confirmed",
+          "offsetMs": 120281
+        },
+        {
+          "at": "2026-09-20T02:21:38.425Z",
+          "event": "COMPLETION",
+          "detail": "structured_chat_loop_timeout",
+          "offsetMs": 120301
+        },
+        {
+          "at": "2026-09-20T02:21:38.426Z",
+          "event": "VERIFICATION_END",
+          "detail": "upstream_failed",
+          "offsetMs": 120302
+        }
+      ],
+      "timeline": [
+        {
+          "at": "2026-09-20T02:19:38.297Z",
+          "offsetMs": -52,
+          "event": "runtime-health",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:19:38.310Z",
+          "offsetMs": -39,
+          "event": "model-discovery",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:19:38.317Z",
+          "offsetMs": -32,
+          "event": "workspace-prepared",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:19:38.349Z",
+          "offsetMs": 0,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:21:08.863Z",
+          "offsetMs": 90514,
+          "event": "provider-response",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:21:08.893Z",
+          "offsetMs": 90544,
+          "event": "tool-policy-audit",
+          "detail": "mutation.repository.read"
+        },
+        {
+          "at": "2026-09-20T02:21:08.901Z",
+          "offsetMs": 90552,
+          "event": "tool-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:21:08.923Z",
+          "offsetMs": 90574,
+          "event": "tool-result",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:21:08.935Z",
+          "offsetMs": 90586,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:21:38.351Z",
+          "offsetMs": 120002,
+          "event": "provider-failure",
+          "detail": "The operation was aborted due to timeout"
+        },
+        {
+          "at": "2026-09-20T02:21:38.384Z",
+          "offsetMs": 120035,
+          "event": "attempt-before-cleanup",
+          "detail": "structured_chat_loop_timeout"
+        },
+        {
+          "at": "2026-09-20T02:21:38.391Z",
+          "offsetMs": 120042,
+          "event": "attempt-process-cleanup",
+          "detail": "execution-failed"
+        },
+        {
+          "at": "2026-09-20T02:21:38.405Z",
+          "offsetMs": 120056,
+          "event": "attempt-workspace-cleanup",
+          "detail": null
+        }
+      ]
+    },
+    {
+      "lane": "baseline",
+      "taskId": "MUT-002",
+      "profile": "STANDARD",
+      "configuredTaskTimeoutMs": 120000,
+      "firstProviderRequestAt": "2026-09-20T02:21:39.568Z",
+      "providerFailureAt": "2026-09-20T02:23:39.569Z",
+      "observedDeadlineMs": 120001,
+      "deadlineDeltaMs": 1,
+      "completedModelCalls": 1,
+      "providerRequests": 2,
+      "providerResponses": 1,
+      "toolEvents": 2,
+      "lastProgressType": "tool-result",
+      "lastProgressAt": "2026-09-20T02:23:13.002Z",
+      "lastProgressBeforeDeadlineMs": 26567,
+      "pendingProviderRequestAtDeadline": true,
+      "pendingProviderRequestDurationMs": 26561,
+      "failure": "The operation was aborted due to timeout",
+      "actionFailure": "structured_chat_loop_timeout",
+      "workspaceCleanup": "confirmed",
+      "classification": "BLOCKED_MODEL_IN_FLIGHT_ACTIVITY_UNOBSERVABLE",
+      "invocations": [
+        {
+          "lane": "baseline",
+          "taskId": "MUT-002",
+          "turn": 1,
+          "startedAt": "2026-09-20T02:21:39.562Z",
+          "completedAt": "2026-09-20T02:23:12.978Z",
+          "elapsedMs": 93416,
+          "inputTokens": 2220,
+          "cachedInputTokens": 544,
+          "freshInputTokens": 1676,
+          "outputTokens": 34,
+          "promptMs": 18618.779,
+          "generationMs": 73513.282,
+          "promptTokensPerSecond": 90.01664394856397,
+          "generationTokensPerSecond": 0.46250145653951347
+        }
+      ],
+      "normalizedTimeline": [
+        {
+          "at": "2026-09-20T02:21:39.305Z",
+          "event": "SUBMITTED",
+          "detail": "run-f1ad743c-7b85-451a-9988-32dada6fa01c",
+          "offsetMs": 0
+        },
+        {
+          "at": "2026-09-20T02:21:39.319Z",
+          "event": "ADMITTED",
+          "detail": "native-benchmark-worker",
+          "offsetMs": 14
+        },
+        {
+          "at": "2026-09-20T02:21:39.562Z",
+          "event": "PROFILE_RESOLVED",
+          "detail": "STANDARD",
+          "offsetMs": 257
+        },
+        {
+          "at": "2026-09-20T02:21:39.562Z",
+          "event": "MODEL_CALL_START",
+          "detail": "turn=1",
+          "offsetMs": 257
+        },
+        {
+          "at": "2026-09-20T02:23:12.978Z",
+          "event": "MODEL_CALL_END",
+          "detail": "turn=1 prompt_ms=18618.779 generation_ms=73513.282 input=2220 cached=544 output=34 tool=mutation.repository.read",
+          "offsetMs": 93673
+        },
+        {
+          "at": "2026-09-20T02:23:12.991Z",
+          "event": "TOOL_START",
+          "detail": "mutation.repository.read",
+          "offsetMs": 93686
+        },
+        {
+          "at": "2026-09-20T02:23:13.002Z",
+          "event": "TOOL_END",
+          "detail": "mutation.repository.read duration_ms=11 result=tool-result",
+          "offsetMs": 93697
+        },
+        {
+          "at": "2026-09-20T02:23:39.569Z",
+          "event": "TIMEOUT",
+          "detail": "The operation was aborted due to timeout",
+          "offsetMs": 120264
+        },
+        {
+          "at": "2026-09-20T02:23:39.629Z",
+          "event": "CLEANUP",
+          "detail": "confirmed",
+          "offsetMs": 120324
+        },
+        {
+          "at": "2026-09-20T02:23:39.655Z",
+          "event": "VERIFICATION_END",
+          "detail": "upstream_failed",
+          "offsetMs": 120350
+        },
+        {
+          "at": "2026-09-20T02:23:39.655Z",
+          "event": "COMPLETION",
+          "detail": "structured_chat_loop_timeout",
+          "offsetMs": 120350
+        }
+      ],
+      "timeline": [
+        {
+          "at": "2026-09-20T02:21:39.502Z",
+          "offsetMs": -66,
+          "event": "runtime-health",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:21:39.519Z",
+          "offsetMs": -49,
+          "event": "model-discovery",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:21:39.529Z",
+          "offsetMs": -39,
+          "event": "workspace-prepared",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:21:39.568Z",
+          "offsetMs": 0,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:23:12.966Z",
+          "offsetMs": 93398,
+          "event": "provider-response",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:23:12.986Z",
+          "offsetMs": 93418,
+          "event": "tool-policy-audit",
+          "detail": "mutation.repository.read"
+        },
+        {
+          "at": "2026-09-20T02:23:12.991Z",
+          "offsetMs": 93423,
+          "event": "tool-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:23:13.002Z",
+          "offsetMs": 93434,
+          "event": "tool-result",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:23:13.008Z",
+          "offsetMs": 93440,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:23:39.569Z",
+          "offsetMs": 120001,
+          "event": "provider-failure",
+          "detail": "The operation was aborted due to timeout"
+        },
+        {
+          "at": "2026-09-20T02:23:39.604Z",
+          "offsetMs": 120036,
+          "event": "attempt-before-cleanup",
+          "detail": "structured_chat_loop_timeout"
+        },
+        {
+          "at": "2026-09-20T02:23:39.615Z",
+          "offsetMs": 120047,
+          "event": "attempt-process-cleanup",
+          "detail": "execution-failed"
+        },
+        {
+          "at": "2026-09-20T02:23:39.629Z",
+          "offsetMs": 120061,
+          "event": "attempt-workspace-cleanup",
+          "detail": null
+        }
+      ]
+    },
+    {
+      "lane": "baseline",
+      "taskId": "MUT-003",
+      "profile": "STANDARD",
+      "configuredTaskTimeoutMs": 150000,
+      "firstProviderRequestAt": "2026-09-20T02:26:41.494Z",
+      "providerFailureAt": "2026-09-20T02:29:11.493Z",
+      "observedDeadlineMs": 149999,
+      "deadlineDeltaMs": -1,
+      "completedModelCalls": 1,
+      "providerRequests": 2,
+      "providerResponses": 1,
+      "toolEvents": 2,
+      "lastProgressType": "tool-failure",
+      "lastProgressAt": "2026-09-20T02:28:19.454Z",
+      "lastProgressBeforeDeadlineMs": 52039,
+      "pendingProviderRequestAtDeadline": true,
+      "pendingProviderRequestDurationMs": 52032,
+      "failure": "The operation was aborted due to timeout",
+      "actionFailure": "structured_chat_loop_timeout",
+      "workspaceCleanup": "confirmed",
+      "classification": "BLOCKED_MODEL_IN_FLIGHT_ACTIVITY_UNOBSERVABLE",
+      "invocations": [
+        {
+          "lane": "baseline",
+          "taskId": "MUT-003",
+          "turn": 1,
+          "startedAt": "2026-09-20T02:26:41.488Z",
+          "completedAt": "2026-09-20T02:28:19.434Z",
+          "elapsedMs": 97946,
+          "inputTokens": 2150,
+          "cachedInputTokens": 544,
+          "freshInputTokens": 1606,
+          "outputTokens": 37,
+          "promptMs": 16570.76,
+          "generationMs": 79596.06,
+          "promptTokensPerSecond": 96.9177032314752,
+          "generationTokensPerSecond": 0.4648471293679612
+        }
+      ],
+      "normalizedTimeline": [
+        {
+          "at": "2026-09-20T02:26:41.252Z",
+          "event": "SUBMITTED",
+          "detail": "run-efce5deb-530a-4caa-a094-d9bf8eb646ef",
+          "offsetMs": 0
+        },
+        {
+          "at": "2026-09-20T02:26:41.264Z",
+          "event": "ADMITTED",
+          "detail": "native-benchmark-worker",
+          "offsetMs": 12
+        },
+        {
+          "at": "2026-09-20T02:26:41.488Z",
+          "event": "PROFILE_RESOLVED",
+          "detail": "STANDARD",
+          "offsetMs": 236
+        },
+        {
+          "at": "2026-09-20T02:26:41.488Z",
+          "event": "MODEL_CALL_START",
+          "detail": "turn=1",
+          "offsetMs": 236
+        },
+        {
+          "at": "2026-09-20T02:28:19.434Z",
+          "event": "MODEL_CALL_END",
+          "detail": "turn=1 prompt_ms=16570.76 generation_ms=79596.06 input=2150 cached=544 output=37 tool=mutation.repository.read",
+          "offsetMs": 98182
+        },
+        {
+          "at": "2026-09-20T02:28:19.448Z",
+          "event": "TOOL_START",
+          "detail": "mutation.repository.read",
+          "offsetMs": 98196
+        },
+        {
+          "at": "2026-09-20T02:28:19.454Z",
+          "event": "TOOL_END",
+          "detail": "mutation.repository.read duration_ms=6 result=tool-failure",
+          "offsetMs": 98202
+        },
+        {
+          "at": "2026-09-20T02:29:11.493Z",
+          "event": "TIMEOUT",
+          "detail": "The operation was aborted due to timeout",
+          "offsetMs": 150241
+        },
+        {
+          "at": "2026-09-20T02:29:11.537Z",
+          "event": "CLEANUP",
+          "detail": "confirmed",
+          "offsetMs": 150285
+        },
+        {
+          "at": "2026-09-20T02:29:11.554Z",
+          "event": "COMPLETION",
+          "detail": "structured_chat_loop_timeout",
+          "offsetMs": 150302
+        },
+        {
+          "at": "2026-09-20T02:29:11.555Z",
+          "event": "VERIFICATION_END",
+          "detail": "upstream_failed",
+          "offsetMs": 150303
+        }
+      ],
+      "timeline": [
+        {
+          "at": "2026-09-20T02:26:41.431Z",
+          "offsetMs": -63,
+          "event": "runtime-health",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:26:41.454Z",
+          "offsetMs": -40,
+          "event": "model-discovery",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:26:41.462Z",
+          "offsetMs": -32,
+          "event": "workspace-prepared",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:26:41.494Z",
+          "offsetMs": 0,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:28:19.422Z",
+          "offsetMs": 97928,
+          "event": "provider-response",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:28:19.442Z",
+          "offsetMs": 97948,
+          "event": "tool-policy-audit",
+          "detail": "mutation.repository.read"
+        },
+        {
+          "at": "2026-09-20T02:28:19.448Z",
+          "offsetMs": 97954,
+          "event": "tool-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:28:19.454Z",
+          "offsetMs": 97960,
+          "event": "tool-failure",
+          "detail": "mutation_workspace_path_missing"
+        },
+        {
+          "at": "2026-09-20T02:28:19.461Z",
+          "offsetMs": 97967,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:29:11.493Z",
+          "offsetMs": 149999,
+          "event": "provider-failure",
+          "detail": "The operation was aborted due to timeout"
+        },
+        {
+          "at": "2026-09-20T02:29:11.519Z",
+          "offsetMs": 150025,
+          "event": "attempt-before-cleanup",
+          "detail": "structured_chat_loop_timeout"
+        },
+        {
+          "at": "2026-09-20T02:29:11.526Z",
+          "offsetMs": 150032,
+          "event": "attempt-process-cleanup",
+          "detail": "execution-failed"
+        },
+        {
+          "at": "2026-09-20T02:29:11.537Z",
+          "offsetMs": 150043,
+          "event": "attempt-workspace-cleanup",
+          "detail": null
+        }
+      ]
+    },
+    {
+      "lane": "baseline",
+      "taskId": "MUT-004",
+      "profile": "STANDARD",
+      "configuredTaskTimeoutMs": 120000,
+      "firstProviderRequestAt": "2026-09-20T02:29:12.460Z",
+      "providerFailureAt": "2026-09-20T02:31:12.462Z",
+      "observedDeadlineMs": 120002,
+      "deadlineDeltaMs": 2,
+      "completedModelCalls": 1,
+      "providerRequests": 2,
+      "providerResponses": 1,
+      "toolEvents": 2,
+      "lastProgressType": "tool-result",
+      "lastProgressAt": "2026-09-20T02:30:46.775Z",
+      "lastProgressBeforeDeadlineMs": 25687,
+      "pendingProviderRequestAtDeadline": true,
+      "pendingProviderRequestDurationMs": 25679,
+      "failure": "The operation was aborted due to timeout",
+      "actionFailure": "structured_chat_loop_timeout",
+      "workspaceCleanup": "confirmed",
+      "classification": "BLOCKED_MODEL_IN_FLIGHT_ACTIVITY_UNOBSERVABLE",
+      "invocations": [
+        {
+          "lane": "baseline",
+          "taskId": "MUT-004",
+          "turn": 1,
+          "startedAt": "2026-09-20T02:29:12.456Z",
+          "completedAt": "2026-09-20T02:30:46.747Z",
+          "elapsedMs": 94291,
+          "inputTokens": 2342,
+          "cachedInputTokens": 544,
+          "freshInputTokens": 1798,
+          "outputTokens": 34,
+          "promptMs": 16954.514,
+          "generationMs": 76385.627,
+          "promptTokensPerSecond": 106.04845411670308,
+          "generationTokensPerSecond": 0.4451099157698869
+        }
+      ],
+      "normalizedTimeline": [
+        {
+          "at": "2026-09-20T02:29:12.235Z",
+          "event": "SUBMITTED",
+          "detail": "run-124af48a-f2e0-495b-b5e2-762d00a44a57",
+          "offsetMs": 0
+        },
+        {
+          "at": "2026-09-20T02:29:12.249Z",
+          "event": "ADMITTED",
+          "detail": "native-benchmark-worker",
+          "offsetMs": 14
+        },
+        {
+          "at": "2026-09-20T02:29:12.456Z",
+          "event": "PROFILE_RESOLVED",
+          "detail": "STANDARD",
+          "offsetMs": 221
+        },
+        {
+          "at": "2026-09-20T02:29:12.456Z",
+          "event": "MODEL_CALL_START",
+          "detail": "turn=1",
+          "offsetMs": 221
+        },
+        {
+          "at": "2026-09-20T02:30:46.747Z",
+          "event": "MODEL_CALL_END",
+          "detail": "turn=1 prompt_ms=16954.514 generation_ms=76385.627 input=2342 cached=544 output=34 tool=mutation.repository.read",
+          "offsetMs": 94512
+        },
+        {
+          "at": "2026-09-20T02:30:46.762Z",
+          "event": "TOOL_START",
+          "detail": "mutation.repository.read",
+          "offsetMs": 94527
+        },
+        {
+          "at": "2026-09-20T02:30:46.775Z",
+          "event": "TOOL_END",
+          "detail": "mutation.repository.read duration_ms=13 result=tool-result",
+          "offsetMs": 94540
+        },
+        {
+          "at": "2026-09-20T02:31:12.462Z",
+          "event": "TIMEOUT",
+          "detail": "The operation was aborted due to timeout",
+          "offsetMs": 120227
+        },
+        {
+          "at": "2026-09-20T02:31:12.513Z",
+          "event": "CLEANUP",
+          "detail": "confirmed",
+          "offsetMs": 120278
+        },
+        {
+          "at": "2026-09-20T02:31:12.530Z",
+          "event": "COMPLETION",
+          "detail": "structured_chat_loop_timeout",
+          "offsetMs": 120295
+        },
+        {
+          "at": "2026-09-20T02:31:12.531Z",
+          "event": "VERIFICATION_END",
+          "detail": "upstream_failed",
+          "offsetMs": 120296
+        }
+      ],
+      "timeline": [
+        {
+          "at": "2026-09-20T02:29:12.405Z",
+          "offsetMs": -55,
+          "event": "runtime-health",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:29:12.422Z",
+          "offsetMs": -38,
+          "event": "model-discovery",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:29:12.432Z",
+          "offsetMs": -28,
+          "event": "workspace-prepared",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:29:12.460Z",
+          "offsetMs": 0,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:30:46.734Z",
+          "offsetMs": 94274,
+          "event": "provider-response",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:30:46.757Z",
+          "offsetMs": 94297,
+          "event": "tool-policy-audit",
+          "detail": "mutation.repository.read"
+        },
+        {
+          "at": "2026-09-20T02:30:46.762Z",
+          "offsetMs": 94302,
+          "event": "tool-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:30:46.775Z",
+          "offsetMs": 94315,
+          "event": "tool-result",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:30:46.783Z",
+          "offsetMs": 94323,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:31:12.462Z",
+          "offsetMs": 120002,
+          "event": "provider-failure",
+          "detail": "The operation was aborted due to timeout"
+        },
+        {
+          "at": "2026-09-20T02:31:12.484Z",
+          "offsetMs": 120024,
+          "event": "attempt-before-cleanup",
+          "detail": "structured_chat_loop_timeout"
+        },
+        {
+          "at": "2026-09-20T02:31:12.499Z",
+          "offsetMs": 120039,
+          "event": "attempt-process-cleanup",
+          "detail": "execution-failed"
+        },
+        {
+          "at": "2026-09-20T02:31:12.513Z",
+          "offsetMs": 120053,
+          "event": "attempt-workspace-cleanup",
+          "detail": null
+        }
+      ]
+    },
+    {
+      "lane": "baseline",
+      "taskId": "MUT-005",
+      "profile": "STANDARD",
+      "configuredTaskTimeoutMs": 180000,
+      "firstProviderRequestAt": "2026-09-20T02:23:40.559Z",
+      "providerFailureAt": "2026-09-20T02:26:40.557Z",
+      "observedDeadlineMs": 179998,
+      "deadlineDeltaMs": -2,
+      "completedModelCalls": 2,
+      "providerRequests": 3,
+      "providerResponses": 2,
+      "toolEvents": 4,
+      "lastProgressType": "tool-result",
+      "lastProgressAt": "2026-09-20T02:26:26.321Z",
+      "lastProgressBeforeDeadlineMs": 14236,
+      "pendingProviderRequestAtDeadline": true,
+      "pendingProviderRequestDurationMs": 14228,
+      "failure": "The operation was aborted due to timeout",
+      "actionFailure": "structured_chat_loop_timeout",
+      "workspaceCleanup": "confirmed",
+      "classification": "BLOCKED_MODEL_IN_FLIGHT_ACTIVITY_UNOBSERVABLE",
+      "invocations": [
+        {
+          "lane": "baseline",
+          "taskId": "MUT-005",
+          "turn": 1,
+          "startedAt": "2026-09-20T02:23:40.553Z",
+          "completedAt": "2026-09-20T02:25:08.752Z",
+          "elapsedMs": 88199,
+          "inputTokens": 2460,
+          "cachedInputTokens": 544,
+          "freshInputTokens": 1916,
+          "outputTokens": 32,
+          "promptMs": 17716.601,
+          "generationMs": 70074.73,
+          "promptTokensPerSecond": 108.1471553149501,
+          "generationTokensPerSecond": 0.4566553449438906
+        },
+        {
+          "lane": "baseline",
+          "taskId": "MUT-005",
+          "turn": 2,
+          "startedAt": "2026-09-20T02:25:08.800Z",
+          "completedAt": "2026-09-20T02:26:26.298Z",
+          "elapsedMs": 77498,
+          "inputTokens": 2710,
+          "cachedInputTokens": 2491,
+          "freshInputTokens": 219,
+          "outputTokens": 34,
+          "promptMs": 3995.681,
+          "generationMs": 73449.917,
+          "promptTokensPerSecond": 54.80918021233426,
+          "generationTokensPerSecond": 0.4629004550134482
+        }
+      ],
+      "normalizedTimeline": [
+        {
+          "at": "2026-09-20T02:23:40.385Z",
+          "event": "SUBMITTED",
+          "detail": "run-4d11805a-4c58-4c6c-bd3c-125c9072aa84",
+          "offsetMs": 0
+        },
+        {
+          "at": "2026-09-20T02:23:40.397Z",
+          "event": "ADMITTED",
+          "detail": "native-benchmark-worker",
+          "offsetMs": 12
+        },
+        {
+          "at": "2026-09-20T02:23:40.553Z",
+          "event": "PROFILE_RESOLVED",
+          "detail": "STANDARD",
+          "offsetMs": 168
+        },
+        {
+          "at": "2026-09-20T02:23:40.553Z",
+          "event": "MODEL_CALL_START",
+          "detail": "turn=1",
+          "offsetMs": 168
+        },
+        {
+          "at": "2026-09-20T02:25:08.752Z",
+          "event": "MODEL_CALL_END",
+          "detail": "turn=1 prompt_ms=17716.601 generation_ms=70074.73 input=2460 cached=544 output=32 tool=mutation.repository.read",
+          "offsetMs": 88367
+        },
+        {
+          "at": "2026-09-20T02:25:08.774Z",
+          "event": "TOOL_START",
+          "detail": "mutation.repository.read",
+          "offsetMs": 88389
+        },
+        {
+          "at": "2026-09-20T02:25:08.792Z",
+          "event": "TOOL_END",
+          "detail": "mutation.repository.read duration_ms=18 result=tool-result",
+          "offsetMs": 88407
+        },
+        {
+          "at": "2026-09-20T02:25:08.800Z",
+          "event": "MODEL_CALL_START",
+          "detail": "turn=2",
+          "offsetMs": 88415
+        },
+        {
+          "at": "2026-09-20T02:26:26.298Z",
+          "event": "MODEL_CALL_END",
+          "detail": "turn=2 prompt_ms=3995.681 generation_ms=73449.917 input=2710 cached=2491 output=34 tool=mutation.repository.read",
+          "offsetMs": 165913
+        },
+        {
+          "at": "2026-09-20T02:26:26.307Z",
+          "event": "TOOL_START",
+          "detail": "mutation.repository.read",
+          "offsetMs": 165922
+        },
+        {
+          "at": "2026-09-20T02:26:26.321Z",
+          "event": "TOOL_END",
+          "detail": "mutation.repository.read duration_ms=14 result=tool-result",
+          "offsetMs": 165936
+        },
+        {
+          "at": "2026-09-20T02:26:40.557Z",
+          "event": "TIMEOUT",
+          "detail": "The operation was aborted due to timeout",
+          "offsetMs": 180172
+        },
+        {
+          "at": "2026-09-20T02:26:40.605Z",
+          "event": "CLEANUP",
+          "detail": "confirmed",
+          "offsetMs": 180220
+        },
+        {
+          "at": "2026-09-20T02:26:40.625Z",
+          "event": "COMPLETION",
+          "detail": "structured_chat_loop_timeout",
+          "offsetMs": 180240
+        },
+        {
+          "at": "2026-09-20T02:26:40.626Z",
+          "event": "VERIFICATION_END",
+          "detail": "upstream_failed",
+          "offsetMs": 180241
+        }
+      ],
+      "timeline": [
+        {
+          "at": "2026-09-20T02:23:40.521Z",
+          "offsetMs": -38,
+          "event": "runtime-health",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:23:40.533Z",
+          "offsetMs": -26,
+          "event": "model-discovery",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:23:40.537Z",
+          "offsetMs": -22,
+          "event": "workspace-prepared",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:23:40.559Z",
+          "offsetMs": 0,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:25:08.737Z",
+          "offsetMs": 88178,
+          "event": "provider-response",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:25:08.767Z",
+          "offsetMs": 88208,
+          "event": "tool-policy-audit",
+          "detail": "mutation.repository.read"
+        },
+        {
+          "at": "2026-09-20T02:25:08.774Z",
+          "offsetMs": 88215,
+          "event": "tool-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:25:08.792Z",
+          "offsetMs": 88233,
+          "event": "tool-result",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:25:08.801Z",
+          "offsetMs": 88242,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:26:26.282Z",
+          "offsetMs": 165723,
+          "event": "provider-response",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:26:26.300Z",
+          "offsetMs": 165741,
+          "event": "tool-policy-audit",
+          "detail": "mutation.repository.read"
+        },
+        {
+          "at": "2026-09-20T02:26:26.307Z",
+          "offsetMs": 165748,
+          "event": "tool-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:26:26.321Z",
+          "offsetMs": 165762,
+          "event": "tool-result",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:26:26.329Z",
+          "offsetMs": 165770,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:26:40.557Z",
+          "offsetMs": 179998,
+          "event": "provider-failure",
+          "detail": "The operation was aborted due to timeout"
+        },
+        {
+          "at": "2026-09-20T02:26:40.581Z",
+          "offsetMs": 180022,
+          "event": "attempt-before-cleanup",
+          "detail": "structured_chat_loop_timeout"
+        },
+        {
+          "at": "2026-09-20T02:26:40.588Z",
+          "offsetMs": 180029,
+          "event": "attempt-process-cleanup",
+          "detail": "execution-failed"
+        },
+        {
+          "at": "2026-09-20T02:26:40.605Z",
+          "offsetMs": 180046,
+          "event": "attempt-workspace-cleanup",
+          "detail": null
+        }
+      ]
+    },
+    {
+      "lane": "baseline",
+      "taskId": "MUT-007",
+      "profile": "STANDARD",
+      "configuredTaskTimeoutMs": 180000,
+      "firstProviderRequestAt": "2026-09-20T02:31:13.528Z",
+      "providerFailureAt": "2026-09-20T02:34:13.529Z",
+      "observedDeadlineMs": 180001,
+      "deadlineDeltaMs": 1,
+      "completedModelCalls": 1,
+      "providerRequests": 2,
+      "providerResponses": 1,
+      "toolEvents": 2,
+      "lastProgressType": "tool-result",
+      "lastProgressAt": "2026-09-20T02:32:53.025Z",
+      "lastProgressBeforeDeadlineMs": 80504,
+      "pendingProviderRequestAtDeadline": true,
+      "pendingProviderRequestDurationMs": 80498,
+      "failure": "The operation was aborted due to timeout",
+      "actionFailure": "structured_chat_loop_timeout",
+      "workspaceCleanup": "confirmed",
+      "classification": "BLOCKED_MODEL_IN_FLIGHT_ACTIVITY_UNOBSERVABLE",
+      "invocations": [
+        {
+          "lane": "baseline",
+          "taskId": "MUT-007",
+          "turn": 1,
+          "startedAt": "2026-09-20T02:31:13.523Z",
+          "completedAt": "2026-09-20T02:32:52.998Z",
+          "elapsedMs": 99475,
+          "inputTokens": 2201,
+          "cachedInputTokens": 544,
+          "freshInputTokens": 1657,
+          "outputTokens": 33,
+          "promptMs": 17591.098,
+          "generationMs": 79743.923,
+          "promptTokensPerSecond": 94.19537086314907,
+          "generationTokensPerSecond": 0.4138246371450775
+        }
+      ],
+      "normalizedTimeline": [
+        {
+          "at": "2026-09-20T02:31:13.308Z",
+          "event": "SUBMITTED",
+          "detail": "run-798c903b-5b4f-4048-8e2e-c0aa7cc4a09e",
+          "offsetMs": 0
+        },
+        {
+          "at": "2026-09-20T02:31:13.321Z",
+          "event": "ADMITTED",
+          "detail": "native-benchmark-worker",
+          "offsetMs": 13
+        },
+        {
+          "at": "2026-09-20T02:31:13.523Z",
+          "event": "PROFILE_RESOLVED",
+          "detail": "STANDARD",
+          "offsetMs": 215
+        },
+        {
+          "at": "2026-09-20T02:31:13.523Z",
+          "event": "MODEL_CALL_START",
+          "detail": "turn=1",
+          "offsetMs": 215
+        },
+        {
+          "at": "2026-09-20T02:32:52.998Z",
+          "event": "MODEL_CALL_END",
+          "detail": "turn=1 prompt_ms=17591.098 generation_ms=79743.923 input=2201 cached=544 output=33 tool=mutation.repository.read",
+          "offsetMs": 99690
+        },
+        {
+          "at": "2026-09-20T02:32:53.011Z",
+          "event": "TOOL_START",
+          "detail": "mutation.repository.read",
+          "offsetMs": 99703
+        },
+        {
+          "at": "2026-09-20T02:32:53.025Z",
+          "event": "TOOL_END",
+          "detail": "mutation.repository.read duration_ms=14 result=tool-result",
+          "offsetMs": 99717
+        },
+        {
+          "at": "2026-09-20T02:34:13.529Z",
+          "event": "TIMEOUT",
+          "detail": "The operation was aborted due to timeout",
+          "offsetMs": 180221
+        },
+        {
+          "at": "2026-09-20T02:34:13.581Z",
+          "event": "CLEANUP",
+          "detail": "confirmed",
+          "offsetMs": 180273
+        },
+        {
+          "at": "2026-09-20T02:34:13.599Z",
+          "event": "COMPLETION",
+          "detail": "structured_chat_loop_timeout",
+          "offsetMs": 180291
+        },
+        {
+          "at": "2026-09-20T02:34:13.600Z",
+          "event": "VERIFICATION_END",
+          "detail": "upstream_failed",
+          "offsetMs": 180292
+        }
+      ],
+      "timeline": [
+        {
+          "at": "2026-09-20T02:31:13.472Z",
+          "offsetMs": -56,
+          "event": "runtime-health",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:31:13.486Z",
+          "offsetMs": -42,
+          "event": "model-discovery",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:31:13.493Z",
+          "offsetMs": -35,
+          "event": "workspace-prepared",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:31:13.528Z",
+          "offsetMs": 0,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:32:52.986Z",
+          "offsetMs": 99458,
+          "event": "provider-response",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:32:53.006Z",
+          "offsetMs": 99478,
+          "event": "tool-policy-audit",
+          "detail": "mutation.repository.read"
+        },
+        {
+          "at": "2026-09-20T02:32:53.011Z",
+          "offsetMs": 99483,
+          "event": "tool-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:32:53.025Z",
+          "offsetMs": 99497,
+          "event": "tool-result",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:32:53.031Z",
+          "offsetMs": 99503,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:34:13.529Z",
+          "offsetMs": 180001,
+          "event": "provider-failure",
+          "detail": "The operation was aborted due to timeout"
+        },
+        {
+          "at": "2026-09-20T02:34:13.554Z",
+          "offsetMs": 180026,
+          "event": "attempt-before-cleanup",
+          "detail": "structured_chat_loop_timeout"
+        },
+        {
+          "at": "2026-09-20T02:34:13.563Z",
+          "offsetMs": 180035,
+          "event": "attempt-process-cleanup",
+          "detail": "execution-failed"
+        },
+        {
+          "at": "2026-09-20T02:34:13.581Z",
+          "offsetMs": 180053,
+          "event": "attempt-workspace-cleanup",
+          "detail": null
+        }
+      ]
+    },
+    {
+      "lane": "baseline",
+      "taskId": "MUT-009",
+      "profile": "DEEP",
+      "configuredTaskTimeoutMs": 240000,
+      "firstProviderRequestAt": "2026-09-20T02:34:14.625Z",
+      "providerFailureAt": "2026-09-20T02:38:14.622Z",
+      "observedDeadlineMs": 239997,
+      "deadlineDeltaMs": -3,
+      "completedModelCalls": 2,
+      "providerRequests": 3,
+      "providerResponses": 2,
+      "toolEvents": 4,
+      "lastProgressType": "tool-result",
+      "lastProgressAt": "2026-09-20T02:36:44.849Z",
+      "lastProgressBeforeDeadlineMs": 89773,
+      "pendingProviderRequestAtDeadline": true,
+      "pendingProviderRequestDurationMs": 89766,
+      "failure": "The operation was aborted due to timeout",
+      "actionFailure": "structured_chat_loop_timeout",
+      "workspaceCleanup": "confirmed",
+      "classification": "BLOCKED_MODEL_IN_FLIGHT_ACTIVITY_UNOBSERVABLE",
+      "invocations": [
+        {
+          "lane": "baseline",
+          "taskId": "MUT-009",
+          "turn": 1,
+          "startedAt": "2026-09-20T02:34:14.616Z",
+          "completedAt": "2026-09-20T02:35:53.007Z",
+          "elapsedMs": 98391,
+          "inputTokens": 2891,
+          "cachedInputTokens": 544,
+          "freshInputTokens": 2347,
+          "outputTokens": 34,
+          "promptMs": 22495.704,
+          "generationMs": 74742.08,
+          "promptTokensPerSecond": 104.33103138270312,
+          "generationTokensPerSecond": 0.454897696183997
+        },
+        {
+          "lane": "baseline",
+          "taskId": "MUT-009",
+          "turn": 2,
+          "startedAt": "2026-09-20T02:35:53.043Z",
+          "completedAt": "2026-09-20T02:36:44.621Z",
+          "elapsedMs": 51578,
+          "inputTokens": 3339,
+          "cachedInputTokens": 2924,
+          "freshInputTokens": 415,
+          "outputTokens": 21,
+          "promptMs": 4595.335,
+          "generationMs": 46938.094,
+          "promptTokensPerSecond": 90.30897638583475,
+          "generationTokensPerSecond": 0.44739780017484304
+        }
+      ],
+      "normalizedTimeline": [
+        {
+          "at": "2026-09-20T02:34:14.389Z",
+          "event": "SUBMITTED",
+          "detail": "run-54642462-c700-445d-860e-3f11ebd2b3d6",
+          "offsetMs": 0
+        },
+        {
+          "at": "2026-09-20T02:34:14.400Z",
+          "event": "ADMITTED",
+          "detail": "native-benchmark-worker",
+          "offsetMs": 11
+        },
+        {
+          "at": "2026-09-20T02:34:14.616Z",
+          "event": "PROFILE_RESOLVED",
+          "detail": "DEEP",
+          "offsetMs": 227
+        },
+        {
+          "at": "2026-09-20T02:34:14.616Z",
+          "event": "MODEL_CALL_START",
+          "detail": "turn=1",
+          "offsetMs": 227
+        },
+        {
+          "at": "2026-09-20T02:35:53.007Z",
+          "event": "MODEL_CALL_END",
+          "detail": "turn=1 prompt_ms=22495.704 generation_ms=74742.08 input=2891 cached=544 output=34 tool=mutation.repository.read",
+          "offsetMs": 98618
+        },
+        {
+          "at": "2026-09-20T02:35:53.026Z",
+          "event": "TOOL_START",
+          "detail": "mutation.repository.read",
+          "offsetMs": 98637
+        },
+        {
+          "at": "2026-09-20T02:35:53.038Z",
+          "event": "TOOL_END",
+          "detail": "mutation.repository.read duration_ms=12 result=tool-result",
+          "offsetMs": 98649
+        },
+        {
+          "at": "2026-09-20T02:35:53.043Z",
+          "event": "MODEL_CALL_START",
+          "detail": "turn=2",
+          "offsetMs": 98654
+        },
+        {
+          "at": "2026-09-20T02:36:44.621Z",
+          "event": "MODEL_CALL_END",
+          "detail": "turn=2 prompt_ms=4595.335 generation_ms=46938.094 input=3339 cached=2924 output=21 tool=mutation.repository.test",
+          "offsetMs": 150232
+        },
+        {
+          "at": "2026-09-20T02:36:44.632Z",
+          "event": "TOOL_START",
+          "detail": "mutation.repository.test",
+          "offsetMs": 150243
+        },
+        {
+          "at": "2026-09-20T02:36:44.849Z",
+          "event": "TOOL_END",
+          "detail": "mutation.repository.test duration_ms=217 result=tool-result",
+          "offsetMs": 150460
+        },
+        {
+          "at": "2026-09-20T02:38:14.622Z",
+          "event": "TIMEOUT",
+          "detail": "The operation was aborted due to timeout",
+          "offsetMs": 240233
+        },
+        {
+          "at": "2026-09-20T02:38:14.679Z",
+          "event": "CLEANUP",
+          "detail": "confirmed",
+          "offsetMs": 240290
+        },
+        {
+          "at": "2026-09-20T02:38:14.702Z",
+          "event": "COMPLETION",
+          "detail": "structured_chat_loop_timeout",
+          "offsetMs": 240313
+        },
+        {
+          "at": "2026-09-20T02:38:14.703Z",
+          "event": "VERIFICATION_END",
+          "detail": "upstream_failed",
+          "offsetMs": 240314
+        }
+      ],
+      "timeline": [
+        {
+          "at": "2026-09-20T02:34:14.564Z",
+          "offsetMs": -61,
+          "event": "runtime-health",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:34:14.577Z",
+          "offsetMs": -48,
+          "event": "model-discovery",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:34:14.590Z",
+          "offsetMs": -35,
+          "event": "workspace-prepared",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:34:14.625Z",
+          "offsetMs": 0,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:35:52.996Z",
+          "offsetMs": 98371,
+          "event": "provider-response",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:35:53.019Z",
+          "offsetMs": 98394,
+          "event": "tool-policy-audit",
+          "detail": "mutation.repository.read"
+        },
+        {
+          "at": "2026-09-20T02:35:53.026Z",
+          "offsetMs": 98401,
+          "event": "tool-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:35:53.038Z",
+          "offsetMs": 98413,
+          "event": "tool-result",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:35:53.044Z",
+          "offsetMs": 98419,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:36:44.605Z",
+          "offsetMs": 149980,
+          "event": "provider-response",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:36:44.624Z",
+          "offsetMs": 149999,
+          "event": "tool-policy-audit",
+          "detail": "mutation.repository.test"
+        },
+        {
+          "at": "2026-09-20T02:36:44.632Z",
+          "offsetMs": 150007,
+          "event": "tool-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:36:44.849Z",
+          "offsetMs": 150224,
+          "event": "tool-result",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:36:44.856Z",
+          "offsetMs": 150231,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:38:14.622Z",
+          "offsetMs": 239997,
+          "event": "provider-failure",
+          "detail": "The operation was aborted due to timeout"
+        },
+        {
+          "at": "2026-09-20T02:38:14.651Z",
+          "offsetMs": 240026,
+          "event": "attempt-before-cleanup",
+          "detail": "structured_chat_loop_timeout"
+        },
+        {
+          "at": "2026-09-20T02:38:14.662Z",
+          "offsetMs": 240037,
+          "event": "attempt-process-cleanup",
+          "detail": "execution-failed"
+        },
+        {
+          "at": "2026-09-20T02:38:14.679Z",
+          "offsetMs": 240054,
+          "event": "attempt-workspace-cleanup",
+          "detail": null
+        }
+      ]
+    },
+    {
+      "lane": "baseline",
+      "taskId": "MUT-010",
+      "profile": "DEEP",
+      "configuredTaskTimeoutMs": 240000,
+      "firstProviderRequestAt": "2026-09-20T02:38:15.740Z",
+      "providerFailureAt": "2026-09-20T02:42:15.738Z",
+      "observedDeadlineMs": 239998,
+      "deadlineDeltaMs": -2,
+      "completedModelCalls": 3,
+      "providerRequests": 4,
+      "providerResponses": 3,
+      "toolEvents": 6,
+      "lastProgressType": "tool-result",
+      "lastProgressAt": "2026-09-20T02:42:08.318Z",
+      "lastProgressBeforeDeadlineMs": 7420,
+      "pendingProviderRequestAtDeadline": true,
+      "pendingProviderRequestDurationMs": 7411,
+      "failure": "The operation was aborted due to timeout",
+      "actionFailure": "structured_chat_loop_timeout",
+      "workspaceCleanup": "confirmed",
+      "classification": "BLOCKED_MODEL_IN_FLIGHT_ACTIVITY_UNOBSERVABLE",
+      "invocations": [
+        {
+          "lane": "baseline",
+          "taskId": "MUT-010",
+          "turn": 1,
+          "startedAt": "2026-09-20T02:38:15.733Z",
+          "completedAt": "2026-09-20T02:39:53.312Z",
+          "elapsedMs": 97579,
+          "inputTokens": 2863,
+          "cachedInputTokens": 543,
+          "freshInputTokens": 2320,
+          "outputTokens": 34,
+          "promptMs": 22234.782,
+          "generationMs": 74449.601,
+          "promptTokensPerSecond": 104.34102749467029,
+          "generationTokensPerSecond": 0.4566847846504913
+        },
+        {
+          "lane": "baseline",
+          "taskId": "MUT-010",
+          "turn": 2,
+          "startedAt": "2026-09-20T02:39:53.343Z",
+          "completedAt": "2026-09-20T02:41:14.662Z",
+          "elapsedMs": 81319,
+          "inputTokens": 3129,
+          "cachedInputTokens": 2896,
+          "freshInputTokens": 233,
+          "outputTokens": 34,
+          "promptMs": 4287.013,
+          "generationMs": 76989.336,
+          "promptTokensPerSecond": 54.35019674537959,
+          "generationTokensPerSecond": 0.4416196030057981
+        },
+        {
+          "lane": "baseline",
+          "taskId": "MUT-010",
+          "turn": 3,
+          "startedAt": "2026-09-20T02:41:14.688Z",
+          "completedAt": "2026-09-20T02:42:08.062Z",
+          "elapsedMs": 53374,
+          "inputTokens": 3345,
+          "cachedInputTokens": 3162,
+          "freshInputTokens": 183,
+          "outputTokens": 21,
+          "promptMs": 3900.059,
+          "generationMs": 49425.673,
+          "promptTokensPerSecond": 46.92236707188275,
+          "generationTokensPerSecond": 0.4248804057761641
+        }
+      ],
+      "normalizedTimeline": [
+        {
+          "at": "2026-09-20T02:38:15.490Z",
+          "event": "SUBMITTED",
+          "detail": "run-c16490d6-1bd2-468c-9e84-267948243342",
+          "offsetMs": 0
+        },
+        {
+          "at": "2026-09-20T02:38:15.502Z",
+          "event": "ADMITTED",
+          "detail": "native-benchmark-worker",
+          "offsetMs": 12
+        },
+        {
+          "at": "2026-09-20T02:38:15.733Z",
+          "event": "PROFILE_RESOLVED",
+          "detail": "DEEP",
+          "offsetMs": 243
+        },
+        {
+          "at": "2026-09-20T02:38:15.733Z",
+          "event": "MODEL_CALL_START",
+          "detail": "turn=1",
+          "offsetMs": 243
+        },
+        {
+          "at": "2026-09-20T02:39:53.312Z",
+          "event": "MODEL_CALL_END",
+          "detail": "turn=1 prompt_ms=22234.782 generation_ms=74449.601 input=2863 cached=543 output=34 tool=mutation.repository.read",
+          "offsetMs": 97822
+        },
+        {
+          "at": "2026-09-20T02:39:53.327Z",
+          "event": "TOOL_START",
+          "detail": "mutation.repository.read",
+          "offsetMs": 97837
+        },
+        {
+          "at": "2026-09-20T02:39:53.338Z",
+          "event": "TOOL_END",
+          "detail": "mutation.repository.read duration_ms=11 result=tool-result",
+          "offsetMs": 97848
+        },
+        {
+          "at": "2026-09-20T02:39:53.343Z",
+          "event": "MODEL_CALL_START",
+          "detail": "turn=2",
+          "offsetMs": 97853
+        },
+        {
+          "at": "2026-09-20T02:41:14.662Z",
+          "event": "MODEL_CALL_END",
+          "detail": "turn=2 prompt_ms=4287.013 generation_ms=76989.336 input=3129 cached=2896 output=34 tool=mutation.repository.read",
+          "offsetMs": 179172
+        },
+        {
+          "at": "2026-09-20T02:41:14.671Z",
+          "event": "TOOL_START",
+          "detail": "mutation.repository.read",
+          "offsetMs": 179181
+        },
+        {
+          "at": "2026-09-20T02:41:14.682Z",
+          "event": "TOOL_END",
+          "detail": "mutation.repository.read duration_ms=11 result=tool-result",
+          "offsetMs": 179192
+        },
+        {
+          "at": "2026-09-20T02:41:14.688Z",
+          "event": "MODEL_CALL_START",
+          "detail": "turn=3",
+          "offsetMs": 179198
+        },
+        {
+          "at": "2026-09-20T02:42:08.062Z",
+          "event": "MODEL_CALL_END",
+          "detail": "turn=3 prompt_ms=3900.059 generation_ms=49425.673 input=3345 cached=3162 output=21 tool=mutation.repository.test",
+          "offsetMs": 232572
+        },
+        {
+          "at": "2026-09-20T02:42:08.071Z",
+          "event": "TOOL_START",
+          "detail": "mutation.repository.test",
+          "offsetMs": 232581
+        },
+        {
+          "at": "2026-09-20T02:42:08.318Z",
+          "event": "TOOL_END",
+          "detail": "mutation.repository.test duration_ms=247 result=tool-result",
+          "offsetMs": 232828
+        },
+        {
+          "at": "2026-09-20T02:42:15.738Z",
+          "event": "TIMEOUT",
+          "detail": "The operation was aborted due to timeout",
+          "offsetMs": 240248
+        },
+        {
+          "at": "2026-09-20T02:42:15.790Z",
+          "event": "CLEANUP",
+          "detail": "confirmed",
+          "offsetMs": 240300
+        },
+        {
+          "at": "2026-09-20T02:42:15.811Z",
+          "event": "VERIFICATION_END",
+          "detail": "upstream_failed",
+          "offsetMs": 240321
+        },
+        {
+          "at": "2026-09-20T02:42:15.811Z",
+          "event": "COMPLETION",
+          "detail": "structured_chat_loop_timeout",
+          "offsetMs": 240321
+        }
+      ],
+      "timeline": [
+        {
+          "at": "2026-09-20T02:38:15.677Z",
+          "offsetMs": -63,
+          "event": "runtime-health",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:38:15.691Z",
+          "offsetMs": -49,
+          "event": "model-discovery",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:38:15.702Z",
+          "offsetMs": -38,
+          "event": "workspace-prepared",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:38:15.740Z",
+          "offsetMs": 0,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:39:53.301Z",
+          "offsetMs": 97561,
+          "event": "provider-response",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:39:53.321Z",
+          "offsetMs": 97581,
+          "event": "tool-policy-audit",
+          "detail": "mutation.repository.read"
+        },
+        {
+          "at": "2026-09-20T02:39:53.327Z",
+          "offsetMs": 97587,
+          "event": "tool-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:39:53.338Z",
+          "offsetMs": 97598,
+          "event": "tool-result",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:39:53.345Z",
+          "offsetMs": 97605,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:41:14.651Z",
+          "offsetMs": 178911,
+          "event": "provider-response",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:41:14.665Z",
+          "offsetMs": 178925,
+          "event": "tool-policy-audit",
+          "detail": "mutation.repository.read"
+        },
+        {
+          "at": "2026-09-20T02:41:14.671Z",
+          "offsetMs": 178931,
+          "event": "tool-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:41:14.682Z",
+          "offsetMs": 178942,
+          "event": "tool-result",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:41:14.689Z",
+          "offsetMs": 178949,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:42:08.044Z",
+          "offsetMs": 232304,
+          "event": "provider-response",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:42:08.063Z",
+          "offsetMs": 232323,
+          "event": "tool-policy-audit",
+          "detail": "mutation.repository.test"
+        },
+        {
+          "at": "2026-09-20T02:42:08.071Z",
+          "offsetMs": 232331,
+          "event": "tool-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:42:08.318Z",
+          "offsetMs": 232578,
+          "event": "tool-result",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:42:08.327Z",
+          "offsetMs": 232587,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:42:15.738Z",
+          "offsetMs": 239998,
+          "event": "provider-failure",
+          "detail": "The operation was aborted due to timeout"
+        },
+        {
+          "at": "2026-09-20T02:42:15.766Z",
+          "offsetMs": 240026,
+          "event": "attempt-before-cleanup",
+          "detail": "structured_chat_loop_timeout"
+        },
+        {
+          "at": "2026-09-20T02:42:15.776Z",
+          "offsetMs": 240036,
+          "event": "attempt-process-cleanup",
+          "detail": "execution-failed"
+        },
+        {
+          "at": "2026-09-20T02:42:15.790Z",
+          "offsetMs": 240050,
+          "event": "attempt-workspace-cleanup",
+          "detail": null
+        }
+      ]
+    },
+    {
+      "lane": "baseline",
+      "taskId": "MUT-011",
+      "profile": "DEEP",
+      "configuredTaskTimeoutMs": 240000,
+      "firstProviderRequestAt": "2026-09-20T02:42:16.758Z",
+      "providerFailureAt": "2026-09-20T02:46:16.758Z",
+      "observedDeadlineMs": 240000,
+      "deadlineDeltaMs": 0,
+      "completedModelCalls": 1,
+      "providerRequests": 2,
+      "providerResponses": 1,
+      "toolEvents": 2,
+      "lastProgressType": "tool-result",
+      "lastProgressAt": "2026-09-20T02:43:53.388Z",
+      "lastProgressBeforeDeadlineMs": 143370,
+      "pendingProviderRequestAtDeadline": true,
+      "pendingProviderRequestDurationMs": 143364,
+      "failure": "The operation was aborted due to timeout",
+      "actionFailure": "structured_chat_loop_timeout",
+      "workspaceCleanup": "confirmed",
+      "classification": "BLOCKED_MODEL_IN_FLIGHT_ACTIVITY_UNOBSERVABLE",
+      "invocations": [
+        {
+          "lane": "baseline",
+          "taskId": "MUT-011",
+          "turn": 1,
+          "startedAt": "2026-09-20T02:42:16.752Z",
+          "completedAt": "2026-09-20T02:43:53.351Z",
+          "elapsedMs": 96599,
+          "inputTokens": 2831,
+          "cachedInputTokens": 544,
+          "freshInputTokens": 2287,
+          "outputTokens": 33,
+          "promptMs": 22076.737,
+          "generationMs": 72891.484,
+          "promptTokensPerSecond": 103.5932076375236,
+          "generationTokensPerSecond": 0.4527277836736045
+        }
+      ],
+      "normalizedTimeline": [
+        {
+          "at": "2026-09-20T02:42:16.522Z",
+          "event": "SUBMITTED",
+          "detail": "run-dfb2186b-08b8-4890-a09a-12d3f7ba11e8",
+          "offsetMs": 0
+        },
+        {
+          "at": "2026-09-20T02:42:16.535Z",
+          "event": "ADMITTED",
+          "detail": "native-benchmark-worker",
+          "offsetMs": 13
+        },
+        {
+          "at": "2026-09-20T02:42:16.752Z",
+          "event": "PROFILE_RESOLVED",
+          "detail": "DEEP",
+          "offsetMs": 230
+        },
+        {
+          "at": "2026-09-20T02:42:16.752Z",
+          "event": "MODEL_CALL_START",
+          "detail": "turn=1",
+          "offsetMs": 230
+        },
+        {
+          "at": "2026-09-20T02:43:53.351Z",
+          "event": "MODEL_CALL_END",
+          "detail": "turn=1 prompt_ms=22076.737 generation_ms=72891.484 input=2831 cached=544 output=33 tool=mutation.repository.read",
+          "offsetMs": 96829
+        },
+        {
+          "at": "2026-09-20T02:43:53.371Z",
+          "event": "TOOL_START",
+          "detail": "mutation.repository.read",
+          "offsetMs": 96849
+        },
+        {
+          "at": "2026-09-20T02:43:53.388Z",
+          "event": "TOOL_END",
+          "detail": "mutation.repository.read duration_ms=17 result=tool-result",
+          "offsetMs": 96866
+        },
+        {
+          "at": "2026-09-20T02:46:16.758Z",
+          "event": "TIMEOUT",
+          "detail": "The operation was aborted due to timeout",
+          "offsetMs": 240236
+        },
+        {
+          "at": "2026-09-20T02:46:16.816Z",
+          "event": "CLEANUP",
+          "detail": "confirmed",
+          "offsetMs": 240294
+        },
+        {
+          "at": "2026-09-20T02:46:16.838Z",
+          "event": "COMPLETION",
+          "detail": "structured_chat_loop_timeout",
+          "offsetMs": 240316
+        },
+        {
+          "at": "2026-09-20T02:46:16.839Z",
+          "event": "VERIFICATION_END",
+          "detail": "upstream_failed",
+          "offsetMs": 240317
+        }
+      ],
+      "timeline": [
+        {
+          "at": "2026-09-20T02:42:16.695Z",
+          "offsetMs": -63,
+          "event": "runtime-health",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:42:16.717Z",
+          "offsetMs": -41,
+          "event": "model-discovery",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:42:16.723Z",
+          "offsetMs": -35,
+          "event": "workspace-prepared",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:42:16.758Z",
+          "offsetMs": 0,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:43:53.337Z",
+          "offsetMs": 96579,
+          "event": "provider-response",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:43:53.365Z",
+          "offsetMs": 96607,
+          "event": "tool-policy-audit",
+          "detail": "mutation.repository.read"
+        },
+        {
+          "at": "2026-09-20T02:43:53.371Z",
+          "offsetMs": 96613,
+          "event": "tool-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:43:53.388Z",
+          "offsetMs": 96630,
+          "event": "tool-result",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:43:53.394Z",
+          "offsetMs": 96636,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:46:16.758Z",
+          "offsetMs": 240000,
+          "event": "provider-failure",
+          "detail": "The operation was aborted due to timeout"
+        },
+        {
+          "at": "2026-09-20T02:46:16.788Z",
+          "offsetMs": 240030,
+          "event": "attempt-before-cleanup",
+          "detail": "structured_chat_loop_timeout"
+        },
+        {
+          "at": "2026-09-20T02:46:16.801Z",
+          "offsetMs": 240043,
+          "event": "attempt-process-cleanup",
+          "detail": "execution-failed"
+        },
+        {
+          "at": "2026-09-20T02:46:16.816Z",
+          "offsetMs": 240058,
+          "event": "attempt-workspace-cleanup",
+          "detail": null
+        }
+      ]
+    },
+    {
+      "lane": "baseline",
+      "taskId": "MUT-012",
+      "profile": "DEEP",
+      "configuredTaskTimeoutMs": 300000,
+      "firstProviderRequestAt": "2026-09-20T02:46:17.846Z",
+      "providerFailureAt": "2026-09-20T02:51:17.844Z",
+      "observedDeadlineMs": 299998,
+      "deadlineDeltaMs": -2,
+      "completedModelCalls": 2,
+      "providerRequests": 3,
+      "providerResponses": 2,
+      "toolEvents": 4,
+      "lastProgressType": "tool-result",
+      "lastProgressAt": "2026-09-20T02:49:25.801Z",
+      "lastProgressBeforeDeadlineMs": 112043,
+      "pendingProviderRequestAtDeadline": true,
+      "pendingProviderRequestDurationMs": 112034,
+      "failure": "The operation was aborted due to timeout",
+      "actionFailure": "structured_chat_loop_timeout",
+      "workspaceCleanup": "confirmed",
+      "classification": "BLOCKED_MODEL_IN_FLIGHT_ACTIVITY_UNOBSERVABLE",
+      "invocations": [
+        {
+          "lane": "baseline",
+          "taskId": "MUT-012",
+          "turn": 1,
+          "startedAt": "2026-09-20T02:46:17.836Z",
+          "completedAt": "2026-09-20T02:47:57.549Z",
+          "elapsedMs": 99713,
+          "inputTokens": 3055,
+          "cachedInputTokens": 544,
+          "freshInputTokens": 2511,
+          "outputTokens": 32,
+          "promptMs": 24322.722,
+          "generationMs": 72330.276,
+          "promptTokensPerSecond": 103.23680055217503,
+          "generationTokensPerSecond": 0.44241501304377717
+        },
+        {
+          "lane": "baseline",
+          "taskId": "MUT-012",
+          "turn": 2,
+          "startedAt": "2026-09-20T02:47:57.591Z",
+          "completedAt": "2026-09-20T02:49:25.779Z",
+          "elapsedMs": 88188,
+          "inputTokens": 3524,
+          "cachedInputTokens": 3086,
+          "freshInputTokens": 438,
+          "outputTokens": 34,
+          "promptMs": 4574.984,
+          "generationMs": 83563.237,
+          "promptTokensPerSecond": 95.73803973959252,
+          "generationTokensPerSecond": 0.406877488482166
+        }
+      ],
+      "normalizedTimeline": [
+        {
+          "at": "2026-09-20T02:46:17.595Z",
+          "event": "SUBMITTED",
+          "detail": "run-6012a032-2fa3-46ae-8261-158157a5cc6e",
+          "offsetMs": 0
+        },
+        {
+          "at": "2026-09-20T02:46:17.608Z",
+          "event": "ADMITTED",
+          "detail": "native-benchmark-worker",
+          "offsetMs": 13
+        },
+        {
+          "at": "2026-09-20T02:46:17.836Z",
+          "event": "PROFILE_RESOLVED",
+          "detail": "DEEP",
+          "offsetMs": 241
+        },
+        {
+          "at": "2026-09-20T02:46:17.836Z",
+          "event": "MODEL_CALL_START",
+          "detail": "turn=1",
+          "offsetMs": 241
+        },
+        {
+          "at": "2026-09-20T02:47:57.549Z",
+          "event": "MODEL_CALL_END",
+          "detail": "turn=1 prompt_ms=24322.722 generation_ms=72330.276 input=3055 cached=544 output=32 tool=mutation.repository.read",
+          "offsetMs": 99954
+        },
+        {
+          "at": "2026-09-20T02:47:57.569Z",
+          "event": "TOOL_START",
+          "detail": "mutation.repository.read",
+          "offsetMs": 99974
+        },
+        {
+          "at": "2026-09-20T02:47:57.582Z",
+          "event": "TOOL_END",
+          "detail": "mutation.repository.read duration_ms=13 result=tool-result",
+          "offsetMs": 99987
+        },
+        {
+          "at": "2026-09-20T02:47:57.591Z",
+          "event": "MODEL_CALL_START",
+          "detail": "turn=2",
+          "offsetMs": 99996
+        },
+        {
+          "at": "2026-09-20T02:49:25.779Z",
+          "event": "MODEL_CALL_END",
+          "detail": "turn=2 prompt_ms=4574.984 generation_ms=83563.237 input=3524 cached=3086 output=34 tool=mutation.repository.read",
+          "offsetMs": 188184
+        },
+        {
+          "at": "2026-09-20T02:49:25.789Z",
+          "event": "TOOL_START",
+          "detail": "mutation.repository.read",
+          "offsetMs": 188194
+        },
+        {
+          "at": "2026-09-20T02:49:25.801Z",
+          "event": "TOOL_END",
+          "detail": "mutation.repository.read duration_ms=12 result=tool-result",
+          "offsetMs": 188206
+        },
+        {
+          "at": "2026-09-20T02:51:17.844Z",
+          "event": "TIMEOUT",
+          "detail": "The operation was aborted due to timeout",
+          "offsetMs": 300249
+        },
+        {
+          "at": "2026-09-20T02:51:17.908Z",
+          "event": "CLEANUP",
+          "detail": "confirmed",
+          "offsetMs": 300313
+        },
+        {
+          "at": "2026-09-20T02:51:17.929Z",
+          "event": "VERIFICATION_END",
+          "detail": "upstream_failed",
+          "offsetMs": 300334
+        },
+        {
+          "at": "2026-09-20T02:51:17.929Z",
+          "event": "COMPLETION",
+          "detail": "structured_chat_loop_timeout",
+          "offsetMs": 300334
+        }
+      ],
+      "timeline": [
+        {
+          "at": "2026-09-20T02:46:17.782Z",
+          "offsetMs": -64,
+          "event": "runtime-health",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:46:17.797Z",
+          "offsetMs": -49,
+          "event": "model-discovery",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:46:17.810Z",
+          "offsetMs": -36,
+          "event": "workspace-prepared",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:46:17.846Z",
+          "offsetMs": 0,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:47:57.536Z",
+          "offsetMs": 99690,
+          "event": "provider-response",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:47:57.561Z",
+          "offsetMs": 99715,
+          "event": "tool-policy-audit",
+          "detail": "mutation.repository.read"
+        },
+        {
+          "at": "2026-09-20T02:47:57.569Z",
+          "offsetMs": 99723,
+          "event": "tool-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:47:57.582Z",
+          "offsetMs": 99736,
+          "event": "tool-result",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:47:57.592Z",
+          "offsetMs": 99746,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:49:25.764Z",
+          "offsetMs": 187918,
+          "event": "provider-response",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:49:25.781Z",
+          "offsetMs": 187935,
+          "event": "tool-policy-audit",
+          "detail": "mutation.repository.read"
+        },
+        {
+          "at": "2026-09-20T02:49:25.789Z",
+          "offsetMs": 187943,
+          "event": "tool-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:49:25.801Z",
+          "offsetMs": 187955,
+          "event": "tool-result",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:49:25.810Z",
+          "offsetMs": 187964,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:51:17.844Z",
+          "offsetMs": 299998,
+          "event": "provider-failure",
+          "detail": "The operation was aborted due to timeout"
+        },
+        {
+          "at": "2026-09-20T02:51:17.878Z",
+          "offsetMs": 300032,
+          "event": "attempt-before-cleanup",
+          "detail": "structured_chat_loop_timeout"
+        },
+        {
+          "at": "2026-09-20T02:51:17.891Z",
+          "offsetMs": 300045,
+          "event": "attempt-process-cleanup",
+          "detail": "execution-failed"
+        },
+        {
+          "at": "2026-09-20T02:51:17.908Z",
+          "offsetMs": 300062,
+          "event": "attempt-workspace-cleanup",
+          "detail": null
+        }
+      ]
+    },
+    {
+      "lane": "lean",
+      "taskId": "MUT-001",
+      "profile": "STANDARD",
+      "configuredTaskTimeoutMs": 120000,
+      "firstProviderRequestAt": "2026-09-20T02:51:19.234Z",
+      "providerFailureAt": "2026-09-20T02:53:19.225Z",
+      "observedDeadlineMs": 119991,
+      "deadlineDeltaMs": -9,
+      "completedModelCalls": 1,
+      "providerRequests": 2,
+      "providerResponses": 1,
+      "toolEvents": 2,
+      "lastProgressType": "tool-result",
+      "lastProgressAt": "2026-09-20T02:52:40.466Z",
+      "lastProgressBeforeDeadlineMs": 38759,
+      "pendingProviderRequestAtDeadline": true,
+      "pendingProviderRequestDurationMs": 38743,
+      "failure": "The operation was aborted due to timeout",
+      "actionFailure": "structured_chat_loop_timeout",
+      "workspaceCleanup": "confirmed",
+      "classification": "BLOCKED_MODEL_IN_FLIGHT_ACTIVITY_UNOBSERVABLE",
+      "invocations": [
+        {
+          "lane": "lean",
+          "taskId": "MUT-001",
+          "turn": 1,
+          "startedAt": "2026-09-20T02:51:19.219Z",
+          "completedAt": "2026-09-20T02:52:40.425Z",
+          "elapsedMs": 81206,
+          "inputTokens": 1560,
+          "cachedInputTokens": 1559,
+          "freshInputTokens": 1,
+          "outputTokens": 32,
+          "promptMs": 3471.181,
+          "generationMs": 76779.832,
+          "promptTokensPerSecond": 0.2880863890416547,
+          "generationTokensPerSecond": 0.4167761138107205
+        }
+      ],
+      "normalizedTimeline": [
+        {
+          "at": "2026-09-20T02:51:18.884Z",
+          "event": "SUBMITTED",
+          "detail": "run-5bbc7764-5f6c-4b8f-9cbb-afbf8ac3b204",
+          "offsetMs": 0
+        },
+        {
+          "at": "2026-09-20T02:51:18.899Z",
+          "event": "ADMITTED",
+          "detail": "native-benchmark-worker",
+          "offsetMs": 15
+        },
+        {
+          "at": "2026-09-20T02:51:19.219Z",
+          "event": "PROFILE_RESOLVED",
+          "detail": "STANDARD",
+          "offsetMs": 335
+        },
+        {
+          "at": "2026-09-20T02:51:19.219Z",
+          "event": "MODEL_CALL_START",
+          "detail": "turn=1",
+          "offsetMs": 335
+        },
+        {
+          "at": "2026-09-20T02:52:40.425Z",
+          "event": "MODEL_CALL_END",
+          "detail": "turn=1 prompt_ms=3471.181 generation_ms=76779.832 input=1560 cached=1559 output=32 tool=mutation.repository.read",
+          "offsetMs": 81541
+        },
+        {
+          "at": "2026-09-20T02:52:40.452Z",
+          "event": "TOOL_START",
+          "detail": "mutation.repository.read",
+          "offsetMs": 81568
+        },
+        {
+          "at": "2026-09-20T02:52:40.466Z",
+          "event": "TOOL_END",
+          "detail": "mutation.repository.read duration_ms=14 result=tool-result",
+          "offsetMs": 81582
+        },
+        {
+          "at": "2026-09-20T02:53:19.225Z",
+          "event": "TIMEOUT",
+          "detail": "The operation was aborted due to timeout",
+          "offsetMs": 120341
+        },
+        {
+          "at": "2026-09-20T02:53:19.287Z",
+          "event": "CLEANUP",
+          "detail": "confirmed",
+          "offsetMs": 120403
+        },
+        {
+          "at": "2026-09-20T02:53:19.307Z",
+          "event": "COMPLETION",
+          "detail": "structured_chat_loop_timeout",
+          "offsetMs": 120423
+        },
+        {
+          "at": "2026-09-20T02:53:19.308Z",
+          "event": "VERIFICATION_END",
+          "detail": "upstream_failed",
+          "offsetMs": 120424
+        }
+      ],
+      "timeline": [
+        {
+          "at": "2026-09-20T02:51:19.107Z",
+          "offsetMs": -127,
+          "event": "runtime-health",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:51:19.136Z",
+          "offsetMs": -98,
+          "event": "model-discovery",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:51:19.146Z",
+          "offsetMs": -88,
+          "event": "workspace-prepared",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:51:19.234Z",
+          "offsetMs": 0,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:52:40.413Z",
+          "offsetMs": 81179,
+          "event": "provider-response",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:52:40.444Z",
+          "offsetMs": 81210,
+          "event": "tool-policy-audit",
+          "detail": "mutation.repository.read"
+        },
+        {
+          "at": "2026-09-20T02:52:40.452Z",
+          "offsetMs": 81218,
+          "event": "tool-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:52:40.466Z",
+          "offsetMs": 81232,
+          "event": "tool-result",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:52:40.482Z",
+          "offsetMs": 81248,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:53:19.225Z",
+          "offsetMs": 119991,
+          "event": "provider-failure",
+          "detail": "The operation was aborted due to timeout"
+        },
+        {
+          "at": "2026-09-20T02:53:19.252Z",
+          "offsetMs": 120018,
+          "event": "attempt-before-cleanup",
+          "detail": "structured_chat_loop_timeout"
+        },
+        {
+          "at": "2026-09-20T02:53:19.268Z",
+          "offsetMs": 120034,
+          "event": "attempt-process-cleanup",
+          "detail": "execution-failed"
+        },
+        {
+          "at": "2026-09-20T02:53:19.287Z",
+          "offsetMs": 120053,
+          "event": "attempt-workspace-cleanup",
+          "detail": null
+        }
+      ]
+    },
+    {
+      "lane": "lean",
+      "taskId": "MUT-002",
+      "profile": "STANDARD",
+      "configuredTaskTimeoutMs": 120000,
+      "firstProviderRequestAt": "2026-09-20T02:53:20.224Z",
+      "providerFailureAt": "2026-09-20T02:55:20.214Z",
+      "observedDeadlineMs": 119990,
+      "deadlineDeltaMs": -10,
+      "completedModelCalls": 1,
+      "providerRequests": 2,
+      "providerResponses": 1,
+      "toolEvents": 2,
+      "lastProgressType": "tool-result",
+      "lastProgressAt": "2026-09-20T02:54:53.067Z",
+      "lastProgressBeforeDeadlineMs": 27147,
+      "pendingProviderRequestAtDeadline": true,
+      "pendingProviderRequestDurationMs": 27135,
+      "failure": "The operation was aborted due to timeout",
+      "actionFailure": "structured_chat_loop_timeout",
+      "workspaceCleanup": "confirmed",
+      "classification": "BLOCKED_MODEL_IN_FLIGHT_ACTIVITY_UNOBSERVABLE",
+      "invocations": [
+        {
+          "lane": "lean",
+          "taskId": "MUT-002",
+          "turn": 1,
+          "startedAt": "2026-09-20T02:53:20.208Z",
+          "completedAt": "2026-09-20T02:54:53.035Z",
+          "elapsedMs": 92827,
+          "inputTokens": 1583,
+          "cachedInputTokens": 231,
+          "freshInputTokens": 1352,
+          "outputTokens": 34,
+          "promptMs": 12723.12,
+          "generationMs": 78652.635,
+          "promptTokensPerSecond": 106.26324360691402,
+          "generationTokensPerSecond": 0.43228049511627936
+        }
+      ],
+      "normalizedTimeline": [
+        {
+          "at": "2026-09-20T02:53:19.973Z",
+          "event": "SUBMITTED",
+          "detail": "run-eaf2400e-f0a4-43a0-8f9c-30abd128de54",
+          "offsetMs": 0
+        },
+        {
+          "at": "2026-09-20T02:53:19.987Z",
+          "event": "ADMITTED",
+          "detail": "native-benchmark-worker",
+          "offsetMs": 14
+        },
+        {
+          "at": "2026-09-20T02:53:20.208Z",
+          "event": "PROFILE_RESOLVED",
+          "detail": "STANDARD",
+          "offsetMs": 235
+        },
+        {
+          "at": "2026-09-20T02:53:20.208Z",
+          "event": "MODEL_CALL_START",
+          "detail": "turn=1",
+          "offsetMs": 235
+        },
+        {
+          "at": "2026-09-20T02:54:53.035Z",
+          "event": "MODEL_CALL_END",
+          "detail": "turn=1 prompt_ms=12723.12 generation_ms=78652.635 input=1583 cached=231 output=34 tool=mutation.repository.read",
+          "offsetMs": 93062
+        },
+        {
+          "at": "2026-09-20T02:54:53.056Z",
+          "event": "TOOL_START",
+          "detail": "mutation.repository.read",
+          "offsetMs": 93083
+        },
+        {
+          "at": "2026-09-20T02:54:53.067Z",
+          "event": "TOOL_END",
+          "detail": "mutation.repository.read duration_ms=11 result=tool-result",
+          "offsetMs": 93094
+        },
+        {
+          "at": "2026-09-20T02:55:20.214Z",
+          "event": "TIMEOUT",
+          "detail": "The operation was aborted due to timeout",
+          "offsetMs": 120241
+        },
+        {
+          "at": "2026-09-20T02:55:20.260Z",
+          "event": "CLEANUP",
+          "detail": "confirmed",
+          "offsetMs": 120287
+        },
+        {
+          "at": "2026-09-20T02:55:20.277Z",
+          "event": "VERIFICATION_END",
+          "detail": "upstream_failed",
+          "offsetMs": 120304
+        },
+        {
+          "at": "2026-09-20T02:55:20.277Z",
+          "event": "COMPLETION",
+          "detail": "structured_chat_loop_timeout",
+          "offsetMs": 120304
+        }
+      ],
+      "timeline": [
+        {
+          "at": "2026-09-20T02:53:20.132Z",
+          "offsetMs": -92,
+          "event": "runtime-health",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:53:20.149Z",
+          "offsetMs": -75,
+          "event": "model-discovery",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:53:20.157Z",
+          "offsetMs": -67,
+          "event": "workspace-prepared",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:53:20.224Z",
+          "offsetMs": 0,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:54:53.024Z",
+          "offsetMs": 92800,
+          "event": "provider-response",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:54:53.049Z",
+          "offsetMs": 92825,
+          "event": "tool-policy-audit",
+          "detail": "mutation.repository.read"
+        },
+        {
+          "at": "2026-09-20T02:54:53.056Z",
+          "offsetMs": 92832,
+          "event": "tool-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:54:53.067Z",
+          "offsetMs": 92843,
+          "event": "tool-result",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:54:53.079Z",
+          "offsetMs": 92855,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:55:20.214Z",
+          "offsetMs": 119990,
+          "event": "provider-failure",
+          "detail": "The operation was aborted due to timeout"
+        },
+        {
+          "at": "2026-09-20T02:55:20.239Z",
+          "offsetMs": 120015,
+          "event": "attempt-before-cleanup",
+          "detail": "structured_chat_loop_timeout"
+        },
+        {
+          "at": "2026-09-20T02:55:20.247Z",
+          "offsetMs": 120023,
+          "event": "attempt-process-cleanup",
+          "detail": "execution-failed"
+        },
+        {
+          "at": "2026-09-20T02:55:20.260Z",
+          "offsetMs": 120036,
+          "event": "attempt-workspace-cleanup",
+          "detail": null
+        }
+      ]
+    },
+    {
+      "lane": "lean",
+      "taskId": "MUT-003",
+      "profile": "STANDARD",
+      "configuredTaskTimeoutMs": 150000,
+      "firstProviderRequestAt": "2026-09-20T02:58:21.913Z",
+      "providerFailureAt": "2026-09-20T03:00:51.907Z",
+      "observedDeadlineMs": 149994,
+      "deadlineDeltaMs": -6,
+      "completedModelCalls": 1,
+      "providerRequests": 2,
+      "providerResponses": 1,
+      "toolEvents": 2,
+      "lastProgressType": "tool-failure",
+      "lastProgressAt": "2026-09-20T03:00:43.380Z",
+      "lastProgressBeforeDeadlineMs": 8527,
+      "pendingProviderRequestAtDeadline": true,
+      "pendingProviderRequestDurationMs": 8514,
+      "failure": "The operation was aborted due to timeout",
+      "actionFailure": "structured_chat_loop_timeout",
+      "workspaceCleanup": "confirmed",
+      "classification": "BLOCKED_MODEL_IN_FLIGHT_ACTIVITY_UNOBSERVABLE",
+      "invocations": [
+        {
+          "lane": "lean",
+          "taskId": "MUT-003",
+          "turn": 1,
+          "startedAt": "2026-09-20T02:58:21.903Z",
+          "completedAt": "2026-09-20T03:00:43.351Z",
+          "elapsedMs": 141448,
+          "inputTokens": 1513,
+          "cachedInputTokens": 231,
+          "freshInputTokens": 1282,
+          "outputTokens": 55,
+          "promptMs": 12896.436,
+          "generationMs": 124574.694,
+          "promptTokensPerSecond": 99.40730912013211,
+          "generationTokensPerSecond": 0.4415021882373638
+        }
+      ],
+      "normalizedTimeline": [
+        {
+          "at": "2026-09-20T02:58:21.727Z",
+          "event": "SUBMITTED",
+          "detail": "run-df9e10be-e06d-4efa-88e0-0b0c24e0e4ed",
+          "offsetMs": 0
+        },
+        {
+          "at": "2026-09-20T02:58:21.735Z",
+          "event": "ADMITTED",
+          "detail": "native-benchmark-worker",
+          "offsetMs": 8
+        },
+        {
+          "at": "2026-09-20T02:58:21.903Z",
+          "event": "PROFILE_RESOLVED",
+          "detail": "STANDARD",
+          "offsetMs": 176
+        },
+        {
+          "at": "2026-09-20T02:58:21.903Z",
+          "event": "MODEL_CALL_START",
+          "detail": "turn=1",
+          "offsetMs": 176
+        },
+        {
+          "at": "2026-09-20T03:00:43.351Z",
+          "event": "MODEL_CALL_END",
+          "detail": "turn=1 prompt_ms=12896.436 generation_ms=124574.694 input=1513 cached=231 output=55 tool=mutation.repository.read",
+          "offsetMs": 141624
+        },
+        {
+          "at": "2026-09-20T03:00:43.373Z",
+          "event": "TOOL_START",
+          "detail": "mutation.repository.read",
+          "offsetMs": 141646
+        },
+        {
+          "at": "2026-09-20T03:00:43.380Z",
+          "event": "TOOL_END",
+          "detail": "mutation.repository.read duration_ms=7 result=tool-failure",
+          "offsetMs": 141653
+        },
+        {
+          "at": "2026-09-20T03:00:51.907Z",
+          "event": "TIMEOUT",
+          "detail": "The operation was aborted due to timeout",
+          "offsetMs": 150180
+        },
+        {
+          "at": "2026-09-20T03:00:51.954Z",
+          "event": "CLEANUP",
+          "detail": "confirmed",
+          "offsetMs": 150227
+        },
+        {
+          "at": "2026-09-20T03:00:51.979Z",
+          "event": "VERIFICATION_END",
+          "detail": "upstream_failed",
+          "offsetMs": 150252
+        },
+        {
+          "at": "2026-09-20T03:00:51.979Z",
+          "event": "COMPLETION",
+          "detail": "structured_chat_loop_timeout",
+          "offsetMs": 150252
+        }
+      ],
+      "timeline": [
+        {
+          "at": "2026-09-20T02:58:21.845Z",
+          "offsetMs": -68,
+          "event": "runtime-health",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:58:21.854Z",
+          "offsetMs": -59,
+          "event": "model-discovery",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:58:21.858Z",
+          "offsetMs": -55,
+          "event": "workspace-prepared",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:58:21.913Z",
+          "offsetMs": 0,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T03:00:43.338Z",
+          "offsetMs": 141425,
+          "event": "provider-response",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T03:00:43.367Z",
+          "offsetMs": 141454,
+          "event": "tool-policy-audit",
+          "detail": "mutation.repository.read"
+        },
+        {
+          "at": "2026-09-20T03:00:43.373Z",
+          "offsetMs": 141460,
+          "event": "tool-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T03:00:43.380Z",
+          "offsetMs": 141467,
+          "event": "tool-failure",
+          "detail": "mutation_workspace_path_missing"
+        },
+        {
+          "at": "2026-09-20T03:00:43.393Z",
+          "offsetMs": 141480,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T03:00:51.907Z",
+          "offsetMs": 149994,
+          "event": "provider-failure",
+          "detail": "The operation was aborted due to timeout"
+        },
+        {
+          "at": "2026-09-20T03:00:51.928Z",
+          "offsetMs": 150015,
+          "event": "attempt-before-cleanup",
+          "detail": "structured_chat_loop_timeout"
+        },
+        {
+          "at": "2026-09-20T03:00:51.940Z",
+          "offsetMs": 150027,
+          "event": "attempt-process-cleanup",
+          "detail": "execution-failed"
+        },
+        {
+          "at": "2026-09-20T03:00:51.954Z",
+          "offsetMs": 150041,
+          "event": "attempt-workspace-cleanup",
+          "detail": null
+        }
+      ]
+    },
+    {
+      "lane": "lean",
+      "taskId": "MUT-004",
+      "profile": "STANDARD",
+      "configuredTaskTimeoutMs": 120000,
+      "firstProviderRequestAt": "2026-09-20T03:00:52.844Z",
+      "providerFailureAt": "2026-09-20T03:02:52.837Z",
+      "observedDeadlineMs": 119993,
+      "deadlineDeltaMs": -7,
+      "completedModelCalls": 1,
+      "providerRequests": 2,
+      "providerResponses": 1,
+      "toolEvents": 2,
+      "lastProgressType": "tool-result",
+      "lastProgressAt": "2026-09-20T03:02:31.202Z",
+      "lastProgressBeforeDeadlineMs": 21635,
+      "pendingProviderRequestAtDeadline": true,
+      "pendingProviderRequestDurationMs": 21618,
+      "failure": "The operation was aborted due to timeout",
+      "actionFailure": "structured_chat_loop_timeout",
+      "workspaceCleanup": "confirmed",
+      "classification": "BLOCKED_MODEL_IN_FLIGHT_ACTIVITY_UNOBSERVABLE",
+      "invocations": [
+        {
+          "lane": "lean",
+          "taskId": "MUT-004",
+          "turn": 1,
+          "startedAt": "2026-09-20T03:00:52.832Z",
+          "completedAt": "2026-09-20T03:02:31.163Z",
+          "elapsedMs": 98331,
+          "inputTokens": 1705,
+          "cachedInputTokens": 342,
+          "freshInputTokens": 1363,
+          "outputTokens": 34,
+          "promptMs": 13967.531,
+          "generationMs": 82486.204,
+          "promptTokensPerSecond": 97.58345981118637,
+          "generationTokensPerSecond": 0.4121901403051594
+        }
+      ],
+      "normalizedTimeline": [
+        {
+          "at": "2026-09-20T03:00:52.617Z",
+          "event": "SUBMITTED",
+          "detail": "run-873a2d5c-b54a-4b19-a013-9305185ea44f",
+          "offsetMs": 0
+        },
+        {
+          "at": "2026-09-20T03:00:52.626Z",
+          "event": "ADMITTED",
+          "detail": "native-benchmark-worker",
+          "offsetMs": 9
+        },
+        {
+          "at": "2026-09-20T03:00:52.832Z",
+          "event": "PROFILE_RESOLVED",
+          "detail": "STANDARD",
+          "offsetMs": 215
+        },
+        {
+          "at": "2026-09-20T03:00:52.832Z",
+          "event": "MODEL_CALL_START",
+          "detail": "turn=1",
+          "offsetMs": 215
+        },
+        {
+          "at": "2026-09-20T03:02:31.163Z",
+          "event": "MODEL_CALL_END",
+          "detail": "turn=1 prompt_ms=13967.531 generation_ms=82486.204 input=1705 cached=342 output=34 tool=mutation.repository.read",
+          "offsetMs": 98546
+        },
+        {
+          "at": "2026-09-20T03:02:31.189Z",
+          "event": "TOOL_START",
+          "detail": "mutation.repository.read",
+          "offsetMs": 98572
+        },
+        {
+          "at": "2026-09-20T03:02:31.202Z",
+          "event": "TOOL_END",
+          "detail": "mutation.repository.read duration_ms=13 result=tool-result",
+          "offsetMs": 98585
+        },
+        {
+          "at": "2026-09-20T03:02:52.837Z",
+          "event": "TIMEOUT",
+          "detail": "The operation was aborted due to timeout",
+          "offsetMs": 120220
+        },
+        {
+          "at": "2026-09-20T03:02:52.885Z",
+          "event": "CLEANUP",
+          "detail": "confirmed",
+          "offsetMs": 120268
+        },
+        {
+          "at": "2026-09-20T03:02:52.906Z",
+          "event": "COMPLETION",
+          "detail": "structured_chat_loop_timeout",
+          "offsetMs": 120289
+        },
+        {
+          "at": "2026-09-20T03:02:52.907Z",
+          "event": "VERIFICATION_END",
+          "detail": "upstream_failed",
+          "offsetMs": 120290
+        }
+      ],
+      "timeline": [
+        {
+          "at": "2026-09-20T03:00:52.761Z",
+          "offsetMs": -83,
+          "event": "runtime-health",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T03:00:52.773Z",
+          "offsetMs": -71,
+          "event": "model-discovery",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T03:00:52.780Z",
+          "offsetMs": -64,
+          "event": "workspace-prepared",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T03:00:52.844Z",
+          "offsetMs": 0,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T03:02:31.151Z",
+          "offsetMs": 98307,
+          "event": "provider-response",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T03:02:31.183Z",
+          "offsetMs": 98339,
+          "event": "tool-policy-audit",
+          "detail": "mutation.repository.read"
+        },
+        {
+          "at": "2026-09-20T03:02:31.189Z",
+          "offsetMs": 98345,
+          "event": "tool-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T03:02:31.202Z",
+          "offsetMs": 98358,
+          "event": "tool-result",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T03:02:31.219Z",
+          "offsetMs": 98375,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T03:02:52.837Z",
+          "offsetMs": 119993,
+          "event": "provider-failure",
+          "detail": "The operation was aborted due to timeout"
+        },
+        {
+          "at": "2026-09-20T03:02:52.862Z",
+          "offsetMs": 120018,
+          "event": "attempt-before-cleanup",
+          "detail": "structured_chat_loop_timeout"
+        },
+        {
+          "at": "2026-09-20T03:02:52.873Z",
+          "offsetMs": 120029,
+          "event": "attempt-process-cleanup",
+          "detail": "execution-failed"
+        },
+        {
+          "at": "2026-09-20T03:02:52.885Z",
+          "offsetMs": 120041,
+          "event": "attempt-workspace-cleanup",
+          "detail": null
+        }
+      ]
+    },
+    {
+      "lane": "lean",
+      "taskId": "MUT-005",
+      "profile": "STANDARD",
+      "configuredTaskTimeoutMs": 180000,
+      "firstProviderRequestAt": "2026-09-20T02:55:21.177Z",
+      "providerFailureAt": "2026-09-20T02:58:21.169Z",
+      "observedDeadlineMs": 179992,
+      "deadlineDeltaMs": -8,
+      "completedModelCalls": 2,
+      "providerRequests": 3,
+      "providerResponses": 2,
+      "toolEvents": 4,
+      "lastProgressType": "tool-result",
+      "lastProgressAt": "2026-09-20T02:58:20.665Z",
+      "lastProgressBeforeDeadlineMs": 504,
+      "pendingProviderRequestAtDeadline": true,
+      "pendingProviderRequestDurationMs": 492,
+      "failure": "The operation was aborted due to timeout",
+      "actionFailure": "structured_chat_loop_timeout",
+      "workspaceCleanup": "confirmed",
+      "classification": "BLOCKED_MODEL_IN_FLIGHT_ACTIVITY_UNOBSERVABLE",
+      "invocations": [
+        {
+          "lane": "lean",
+          "taskId": "MUT-005",
+          "turn": 1,
+          "startedAt": "2026-09-20T02:55:21.164Z",
+          "completedAt": "2026-09-20T02:56:48.361Z",
+          "elapsedMs": 87197,
+          "inputTokens": 1823,
+          "cachedInputTokens": 231,
+          "freshInputTokens": 1592,
+          "outputTokens": 32,
+          "promptMs": 17048.796,
+          "generationMs": 68166.837,
+          "promptTokensPerSecond": 93.37902805570552,
+          "generationTokensPerSecond": 0.46943647979441966
+        },
+        {
+          "lane": "lean",
+          "taskId": "MUT-005",
+          "turn": 2,
+          "startedAt": "2026-09-20T02:56:48.417Z",
+          "completedAt": "2026-09-20T02:58:20.642Z",
+          "elapsedMs": 92225,
+          "inputTokens": 2235,
+          "cachedInputTokens": 504,
+          "freshInputTokens": 1731,
+          "outputTokens": 34,
+          "promptMs": 16651.569,
+          "generationMs": 75181.449,
+          "promptTokensPerSecond": 103.95416792255433,
+          "generationTokensPerSecond": 0.45223922193891214
+        }
+      ],
+      "normalizedTimeline": [
+        {
+          "at": "2026-09-20T02:55:20.931Z",
+          "event": "SUBMITTED",
+          "detail": "run-8dafa59b-dc97-4dfa-9e6f-9c956461800c",
+          "offsetMs": 0
+        },
+        {
+          "at": "2026-09-20T02:55:20.940Z",
+          "event": "ADMITTED",
+          "detail": "native-benchmark-worker",
+          "offsetMs": 9
+        },
+        {
+          "at": "2026-09-20T02:55:21.164Z",
+          "event": "PROFILE_RESOLVED",
+          "detail": "STANDARD",
+          "offsetMs": 233
+        },
+        {
+          "at": "2026-09-20T02:55:21.164Z",
+          "event": "MODEL_CALL_START",
+          "detail": "turn=1",
+          "offsetMs": 233
+        },
+        {
+          "at": "2026-09-20T02:56:48.361Z",
+          "event": "MODEL_CALL_END",
+          "detail": "turn=1 prompt_ms=17048.796 generation_ms=68166.837 input=1823 cached=231 output=32 tool=mutation.repository.read",
+          "offsetMs": 87430
+        },
+        {
+          "at": "2026-09-20T02:56:48.388Z",
+          "event": "TOOL_START",
+          "detail": "mutation.repository.read",
+          "offsetMs": 87457
+        },
+        {
+          "at": "2026-09-20T02:56:48.402Z",
+          "event": "TOOL_END",
+          "detail": "mutation.repository.read duration_ms=14 result=tool-result",
+          "offsetMs": 87471
+        },
+        {
+          "at": "2026-09-20T02:56:48.417Z",
+          "event": "MODEL_CALL_START",
+          "detail": "turn=2",
+          "offsetMs": 87486
+        },
+        {
+          "at": "2026-09-20T02:58:20.642Z",
+          "event": "MODEL_CALL_END",
+          "detail": "turn=2 prompt_ms=16651.569 generation_ms=75181.449 input=2235 cached=504 output=34 tool=mutation.repository.read",
+          "offsetMs": 179711
+        },
+        {
+          "at": "2026-09-20T02:58:20.654Z",
+          "event": "TOOL_START",
+          "detail": "mutation.repository.read",
+          "offsetMs": 179723
+        },
+        {
+          "at": "2026-09-20T02:58:20.665Z",
+          "event": "TOOL_END",
+          "detail": "mutation.repository.read duration_ms=11 result=tool-result",
+          "offsetMs": 179734
+        },
+        {
+          "at": "2026-09-20T02:58:21.169Z",
+          "event": "TIMEOUT",
+          "detail": "The operation was aborted due to timeout",
+          "offsetMs": 180238
+        },
+        {
+          "at": "2026-09-20T02:58:21.206Z",
+          "event": "CLEANUP",
+          "detail": "confirmed",
+          "offsetMs": 180275
+        },
+        {
+          "at": "2026-09-20T02:58:21.220Z",
+          "event": "VERIFICATION_END",
+          "detail": "upstream_failed",
+          "offsetMs": 180289
+        },
+        {
+          "at": "2026-09-20T02:58:21.220Z",
+          "event": "COMPLETION",
+          "detail": "structured_chat_loop_timeout",
+          "offsetMs": 180289
+        }
+      ],
+      "timeline": [
+        {
+          "at": "2026-09-20T02:55:21.084Z",
+          "offsetMs": -93,
+          "event": "runtime-health",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:55:21.098Z",
+          "offsetMs": -79,
+          "event": "model-discovery",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:55:21.106Z",
+          "offsetMs": -71,
+          "event": "workspace-prepared",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:55:21.177Z",
+          "offsetMs": 0,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:56:48.347Z",
+          "offsetMs": 87170,
+          "event": "provider-response",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:56:48.380Z",
+          "offsetMs": 87203,
+          "event": "tool-policy-audit",
+          "detail": "mutation.repository.read"
+        },
+        {
+          "at": "2026-09-20T02:56:48.388Z",
+          "offsetMs": 87211,
+          "event": "tool-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:56:48.402Z",
+          "offsetMs": 87225,
+          "event": "tool-result",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:56:48.418Z",
+          "offsetMs": 87241,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:58:20.632Z",
+          "offsetMs": 179455,
+          "event": "provider-response",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T02:58:20.649Z",
+          "offsetMs": 179472,
+          "event": "tool-policy-audit",
+          "detail": "mutation.repository.read"
+        },
+        {
+          "at": "2026-09-20T02:58:20.654Z",
+          "offsetMs": 179477,
+          "event": "tool-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:58:20.665Z",
+          "offsetMs": 179488,
+          "event": "tool-result",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:58:20.677Z",
+          "offsetMs": 179500,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T02:58:21.169Z",
+          "offsetMs": 179992,
+          "event": "provider-failure",
+          "detail": "The operation was aborted due to timeout"
+        },
+        {
+          "at": "2026-09-20T02:58:21.188Z",
+          "offsetMs": 180011,
+          "event": "attempt-before-cleanup",
+          "detail": "structured_chat_loop_timeout"
+        },
+        {
+          "at": "2026-09-20T02:58:21.194Z",
+          "offsetMs": 180017,
+          "event": "attempt-process-cleanup",
+          "detail": "execution-failed"
+        },
+        {
+          "at": "2026-09-20T02:58:21.206Z",
+          "offsetMs": 180029,
+          "event": "attempt-workspace-cleanup",
+          "detail": null
+        }
+      ]
+    },
+    {
+      "lane": "lean",
+      "taskId": "MUT-007",
+      "profile": "STANDARD",
+      "configuredTaskTimeoutMs": 180000,
+      "firstProviderRequestAt": "2026-09-20T03:02:53.873Z",
+      "providerFailureAt": "2026-09-20T03:05:53.865Z",
+      "observedDeadlineMs": 179992,
+      "deadlineDeltaMs": -8,
+      "completedModelCalls": 1,
+      "providerRequests": 2,
+      "providerResponses": 1,
+      "toolEvents": 2,
+      "lastProgressType": "tool-result",
+      "lastProgressAt": "2026-09-20T03:04:25.788Z",
+      "lastProgressBeforeDeadlineMs": 88077,
+      "pendingProviderRequestAtDeadline": true,
+      "pendingProviderRequestDurationMs": 88057,
+      "failure": "The operation was aborted due to timeout",
+      "actionFailure": "structured_chat_loop_timeout",
+      "workspaceCleanup": "confirmed",
+      "classification": "BLOCKED_MODEL_IN_FLIGHT_ACTIVITY_UNOBSERVABLE",
+      "invocations": [
+        {
+          "lane": "lean",
+          "taskId": "MUT-007",
+          "turn": 1,
+          "startedAt": "2026-09-20T03:02:53.860Z",
+          "completedAt": "2026-09-20T03:04:25.744Z",
+          "elapsedMs": 91884,
+          "inputTokens": 1564,
+          "cachedInputTokens": 231,
+          "freshInputTokens": 1333,
+          "outputTokens": 33,
+          "promptMs": 13269.373,
+          "generationMs": 76226.847,
+          "promptTokensPerSecond": 100.45689423305834,
+          "generationTokensPerSecond": 0.43291833912532157
+        }
+      ],
+      "normalizedTimeline": [
+        {
+          "at": "2026-09-20T03:02:53.593Z",
+          "event": "SUBMITTED",
+          "detail": "run-01fa4a4c-0c10-44d2-bdd1-6913a1a66591",
+          "offsetMs": 0
+        },
+        {
+          "at": "2026-09-20T03:02:53.604Z",
+          "event": "ADMITTED",
+          "detail": "native-benchmark-worker",
+          "offsetMs": 11
+        },
+        {
+          "at": "2026-09-20T03:02:53.860Z",
+          "event": "PROFILE_RESOLVED",
+          "detail": "STANDARD",
+          "offsetMs": 267
+        },
+        {
+          "at": "2026-09-20T03:02:53.860Z",
+          "event": "MODEL_CALL_START",
+          "detail": "turn=1",
+          "offsetMs": 267
+        },
+        {
+          "at": "2026-09-20T03:04:25.744Z",
+          "event": "MODEL_CALL_END",
+          "detail": "turn=1 prompt_ms=13269.373 generation_ms=76226.847 input=1564 cached=231 output=33 tool=mutation.repository.read",
+          "offsetMs": 92151
+        },
+        {
+          "at": "2026-09-20T03:04:25.774Z",
+          "event": "TOOL_START",
+          "detail": "mutation.repository.read",
+          "offsetMs": 92181
+        },
+        {
+          "at": "2026-09-20T03:04:25.788Z",
+          "event": "TOOL_END",
+          "detail": "mutation.repository.read duration_ms=14 result=tool-result",
+          "offsetMs": 92195
+        },
+        {
+          "at": "2026-09-20T03:05:53.865Z",
+          "event": "TIMEOUT",
+          "detail": "The operation was aborted due to timeout",
+          "offsetMs": 180272
+        },
+        {
+          "at": "2026-09-20T03:05:53.922Z",
+          "event": "CLEANUP",
+          "detail": "confirmed",
+          "offsetMs": 180329
+        },
+        {
+          "at": "2026-09-20T03:05:53.949Z",
+          "event": "VERIFICATION_END",
+          "detail": "upstream_failed",
+          "offsetMs": 180356
+        },
+        {
+          "at": "2026-09-20T03:05:53.949Z",
+          "event": "COMPLETION",
+          "detail": "structured_chat_loop_timeout",
+          "offsetMs": 180356
+        }
+      ],
+      "timeline": [
+        {
+          "at": "2026-09-20T03:02:53.754Z",
+          "offsetMs": -119,
+          "event": "runtime-health",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T03:02:53.771Z",
+          "offsetMs": -102,
+          "event": "model-discovery",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T03:02:53.778Z",
+          "offsetMs": -95,
+          "event": "workspace-prepared",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T03:02:53.873Z",
+          "offsetMs": 0,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T03:04:25.730Z",
+          "offsetMs": 91857,
+          "event": "provider-response",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T03:04:25.766Z",
+          "offsetMs": 91893,
+          "event": "tool-policy-audit",
+          "detail": "mutation.repository.read"
+        },
+        {
+          "at": "2026-09-20T03:04:25.774Z",
+          "offsetMs": 91901,
+          "event": "tool-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T03:04:25.788Z",
+          "offsetMs": 91915,
+          "event": "tool-result",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T03:04:25.808Z",
+          "offsetMs": 91935,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T03:05:53.865Z",
+          "offsetMs": 179992,
+          "event": "provider-failure",
+          "detail": "The operation was aborted due to timeout"
+        },
+        {
+          "at": "2026-09-20T03:05:53.896Z",
+          "offsetMs": 180023,
+          "event": "attempt-before-cleanup",
+          "detail": "structured_chat_loop_timeout"
+        },
+        {
+          "at": "2026-09-20T03:05:53.905Z",
+          "offsetMs": 180032,
+          "event": "attempt-process-cleanup",
+          "detail": "execution-failed"
+        },
+        {
+          "at": "2026-09-20T03:05:53.922Z",
+          "offsetMs": 180049,
+          "event": "attempt-workspace-cleanup",
+          "detail": null
+        }
+      ]
+    },
+    {
+      "lane": "lean",
+      "taskId": "MUT-009",
+      "profile": "DEEP",
+      "configuredTaskTimeoutMs": 240000,
+      "firstProviderRequestAt": "2026-09-20T03:05:55.060Z",
+      "providerFailureAt": "2026-09-20T03:09:55.050Z",
+      "observedDeadlineMs": 239990,
+      "deadlineDeltaMs": -10,
+      "completedModelCalls": 1,
+      "providerRequests": 2,
+      "providerResponses": 1,
+      "toolEvents": 2,
+      "lastProgressType": "tool-result",
+      "lastProgressAt": "2026-09-20T03:07:39.485Z",
+      "lastProgressBeforeDeadlineMs": 135565,
+      "pendingProviderRequestAtDeadline": true,
+      "pendingProviderRequestDurationMs": 135540,
+      "failure": "The operation was aborted due to timeout",
+      "actionFailure": "structured_chat_loop_timeout",
+      "workspaceCleanup": "confirmed",
+      "classification": "BLOCKED_MODEL_IN_FLIGHT_ACTIVITY_UNOBSERVABLE",
+      "invocations": [
+        {
+          "lane": "lean",
+          "taskId": "MUT-009",
+          "turn": 1,
+          "startedAt": "2026-09-20T03:05:55.043Z",
+          "completedAt": "2026-09-20T03:07:39.421Z",
+          "elapsedMs": 104378,
+          "inputTokens": 2253,
+          "cachedInputTokens": 231,
+          "freshInputTokens": 2022,
+          "outputTokens": 34,
+          "promptMs": 19302.944,
+          "generationMs": 84430.299,
+          "promptTokensPerSecond": 104.75086080133683,
+          "generationTokensPerSecond": 0.40269903580467004
+        }
+      ],
+      "normalizedTimeline": [
+        {
+          "at": "2026-09-20T03:05:54.757Z",
+          "event": "SUBMITTED",
+          "detail": "run-6f9c9fb3-6a1b-467c-9b44-1353872945fd",
+          "offsetMs": 0
+        },
+        {
+          "at": "2026-09-20T03:05:54.773Z",
+          "event": "ADMITTED",
+          "detail": "native-benchmark-worker",
+          "offsetMs": 16
+        },
+        {
+          "at": "2026-09-20T03:05:55.043Z",
+          "event": "PROFILE_RESOLVED",
+          "detail": "DEEP",
+          "offsetMs": 286
+        },
+        {
+          "at": "2026-09-20T03:05:55.043Z",
+          "event": "MODEL_CALL_START",
+          "detail": "turn=1",
+          "offsetMs": 286
+        },
+        {
+          "at": "2026-09-20T03:07:39.421Z",
+          "event": "MODEL_CALL_END",
+          "detail": "turn=1 prompt_ms=19302.944 generation_ms=84430.299 input=2253 cached=231 output=34 tool=mutation.repository.read",
+          "offsetMs": 104664
+        },
+        {
+          "at": "2026-09-20T03:07:39.463Z",
+          "event": "TOOL_START",
+          "detail": "mutation.repository.read",
+          "offsetMs": 104706
+        },
+        {
+          "at": "2026-09-20T03:07:39.485Z",
+          "event": "TOOL_END",
+          "detail": "mutation.repository.read duration_ms=22 result=tool-result",
+          "offsetMs": 104728
+        },
+        {
+          "at": "2026-09-20T03:09:55.050Z",
+          "event": "TIMEOUT",
+          "detail": "The operation was aborted due to timeout",
+          "offsetMs": 240293
+        },
+        {
+          "at": "2026-09-20T03:09:55.117Z",
+          "event": "CLEANUP",
+          "detail": "confirmed",
+          "offsetMs": 240360
+        },
+        {
+          "at": "2026-09-20T03:09:55.139Z",
+          "event": "COMPLETION",
+          "detail": "structured_chat_loop_timeout",
+          "offsetMs": 240382
+        },
+        {
+          "at": "2026-09-20T03:09:55.141Z",
+          "event": "VERIFICATION_END",
+          "detail": "upstream_failed",
+          "offsetMs": 240384
+        }
+      ],
+      "timeline": [
+        {
+          "at": "2026-09-20T03:05:54.953Z",
+          "offsetMs": -107,
+          "event": "runtime-health",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T03:05:54.969Z",
+          "offsetMs": -91,
+          "event": "model-discovery",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T03:05:54.979Z",
+          "offsetMs": -81,
+          "event": "workspace-prepared",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T03:05:55.060Z",
+          "offsetMs": 0,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T03:07:39.395Z",
+          "offsetMs": 104335,
+          "event": "provider-response",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T03:07:39.453Z",
+          "offsetMs": 104393,
+          "event": "tool-policy-audit",
+          "detail": "mutation.repository.read"
+        },
+        {
+          "at": "2026-09-20T03:07:39.463Z",
+          "offsetMs": 104403,
+          "event": "tool-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T03:07:39.485Z",
+          "offsetMs": 104425,
+          "event": "tool-result",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T03:07:39.510Z",
+          "offsetMs": 104450,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T03:09:55.050Z",
+          "offsetMs": 239990,
+          "event": "provider-failure",
+          "detail": "The operation was aborted due to timeout"
+        },
+        {
+          "at": "2026-09-20T03:09:55.084Z",
+          "offsetMs": 240024,
+          "event": "attempt-before-cleanup",
+          "detail": "structured_chat_loop_timeout"
+        },
+        {
+          "at": "2026-09-20T03:09:55.101Z",
+          "offsetMs": 240041,
+          "event": "attempt-process-cleanup",
+          "detail": "execution-failed"
+        },
+        {
+          "at": "2026-09-20T03:09:55.117Z",
+          "offsetMs": 240057,
+          "event": "attempt-workspace-cleanup",
+          "detail": null
+        }
+      ]
+    },
+    {
+      "lane": "lean",
+      "taskId": "MUT-010",
+      "profile": "DEEP",
+      "configuredTaskTimeoutMs": 240000,
+      "firstProviderRequestAt": "2026-09-20T03:09:56.353Z",
+      "providerFailureAt": "2026-09-20T03:13:56.344Z",
+      "observedDeadlineMs": 239991,
+      "deadlineDeltaMs": -9,
+      "completedModelCalls": 2,
+      "providerRequests": 3,
+      "providerResponses": 2,
+      "toolEvents": 4,
+      "lastProgressType": "tool-result",
+      "lastProgressAt": "2026-09-20T03:13:25.148Z",
+      "lastProgressBeforeDeadlineMs": 31196,
+      "pendingProviderRequestAtDeadline": true,
+      "pendingProviderRequestDurationMs": 31181,
+      "failure": "The operation was aborted due to timeout",
+      "actionFailure": "structured_chat_loop_timeout",
+      "workspaceCleanup": "confirmed",
+      "classification": "BLOCKED_MODEL_IN_FLIGHT_ACTIVITY_UNOBSERVABLE",
+      "invocations": [
+        {
+          "lane": "lean",
+          "taskId": "MUT-010",
+          "turn": 1,
+          "startedAt": "2026-09-20T03:09:56.338Z",
+          "completedAt": "2026-09-20T03:11:39.653Z",
+          "elapsedMs": 103315,
+          "inputTokens": 2225,
+          "cachedInputTokens": 231,
+          "freshInputTokens": 1994,
+          "outputTokens": 34,
+          "promptMs": 19605.831,
+          "generationMs": 81206.778,
+          "promptTokensPerSecond": 101.70443680760077,
+          "generationTokensPerSecond": 0.4186842630303594
+        },
+        {
+          "lane": "lean",
+          "taskId": "MUT-010",
+          "turn": 2,
+          "startedAt": "2026-09-20T03:11:39.723Z",
+          "completedAt": "2026-09-20T03:13:25.121Z",
+          "elapsedMs": 105398,
+          "inputTokens": 2653,
+          "cachedInputTokens": 231,
+          "freshInputTokens": 2422,
+          "outputTokens": 34,
+          "promptMs": 21177.666,
+          "generationMs": 83726.519,
+          "promptTokensPerSecond": 114.36576627471601,
+          "generationTokensPerSecond": 0.4060840030862862
+        }
+      ],
+      "normalizedTimeline": [
+        {
+          "at": "2026-09-20T03:09:56.010Z",
+          "event": "SUBMITTED",
+          "detail": "run-4a3b9506-7129-4f16-86d4-4b223174501a",
+          "offsetMs": 0
+        },
+        {
+          "at": "2026-09-20T03:09:56.031Z",
+          "event": "ADMITTED",
+          "detail": "native-benchmark-worker",
+          "offsetMs": 21
+        },
+        {
+          "at": "2026-09-20T03:09:56.338Z",
+          "event": "PROFILE_RESOLVED",
+          "detail": "DEEP",
+          "offsetMs": 328
+        },
+        {
+          "at": "2026-09-20T03:09:56.338Z",
+          "event": "MODEL_CALL_START",
+          "detail": "turn=1",
+          "offsetMs": 328
+        },
+        {
+          "at": "2026-09-20T03:11:39.653Z",
+          "event": "MODEL_CALL_END",
+          "detail": "turn=1 prompt_ms=19605.831 generation_ms=81206.778 input=2225 cached=231 output=34 tool=mutation.repository.read",
+          "offsetMs": 103643
+        },
+        {
+          "at": "2026-09-20T03:11:39.688Z",
+          "event": "TOOL_START",
+          "detail": "mutation.repository.read",
+          "offsetMs": 103678
+        },
+        {
+          "at": "2026-09-20T03:11:39.706Z",
+          "event": "TOOL_END",
+          "detail": "mutation.repository.read duration_ms=18 result=tool-result",
+          "offsetMs": 103696
+        },
+        {
+          "at": "2026-09-20T03:11:39.723Z",
+          "event": "MODEL_CALL_START",
+          "detail": "turn=2",
+          "offsetMs": 103713
+        },
+        {
+          "at": "2026-09-20T03:13:25.121Z",
+          "event": "MODEL_CALL_END",
+          "detail": "turn=2 prompt_ms=21177.666 generation_ms=83726.519 input=2653 cached=231 output=34 tool=mutation.repository.read",
+          "offsetMs": 209111
+        },
+        {
+          "at": "2026-09-20T03:13:25.135Z",
+          "event": "TOOL_START",
+          "detail": "mutation.repository.read",
+          "offsetMs": 209125
+        },
+        {
+          "at": "2026-09-20T03:13:25.148Z",
+          "event": "TOOL_END",
+          "detail": "mutation.repository.read duration_ms=13 result=tool-result",
+          "offsetMs": 209138
+        },
+        {
+          "at": "2026-09-20T03:13:56.344Z",
+          "event": "TIMEOUT",
+          "detail": "The operation was aborted due to timeout",
+          "offsetMs": 240334
+        },
+        {
+          "at": "2026-09-20T03:13:56.398Z",
+          "event": "CLEANUP",
+          "detail": "confirmed",
+          "offsetMs": 240388
+        },
+        {
+          "at": "2026-09-20T03:13:56.418Z",
+          "event": "COMPLETION",
+          "detail": "structured_chat_loop_timeout",
+          "offsetMs": 240408
+        },
+        {
+          "at": "2026-09-20T03:13:56.419Z",
+          "event": "VERIFICATION_END",
+          "detail": "upstream_failed",
+          "offsetMs": 240409
+        }
+      ],
+      "timeline": [
+        {
+          "at": "2026-09-20T03:09:56.227Z",
+          "offsetMs": -126,
+          "event": "runtime-health",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T03:09:56.246Z",
+          "offsetMs": -107,
+          "event": "model-discovery",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T03:09:56.260Z",
+          "offsetMs": -93,
+          "event": "workspace-prepared",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T03:09:56.353Z",
+          "offsetMs": 0,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T03:11:39.637Z",
+          "offsetMs": 103284,
+          "event": "provider-response",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T03:11:39.677Z",
+          "offsetMs": 103324,
+          "event": "tool-policy-audit",
+          "detail": "mutation.repository.read"
+        },
+        {
+          "at": "2026-09-20T03:11:39.688Z",
+          "offsetMs": 103335,
+          "event": "tool-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T03:11:39.706Z",
+          "offsetMs": 103353,
+          "event": "tool-result",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T03:11:39.725Z",
+          "offsetMs": 103372,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T03:13:25.109Z",
+          "offsetMs": 208756,
+          "event": "provider-response",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T03:13:25.130Z",
+          "offsetMs": 208777,
+          "event": "tool-policy-audit",
+          "detail": "mutation.repository.read"
+        },
+        {
+          "at": "2026-09-20T03:13:25.135Z",
+          "offsetMs": 208782,
+          "event": "tool-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T03:13:25.148Z",
+          "offsetMs": 208795,
+          "event": "tool-result",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T03:13:25.163Z",
+          "offsetMs": 208810,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T03:13:56.344Z",
+          "offsetMs": 239991,
+          "event": "provider-failure",
+          "detail": "The operation was aborted due to timeout"
+        },
+        {
+          "at": "2026-09-20T03:13:56.370Z",
+          "offsetMs": 240017,
+          "event": "attempt-before-cleanup",
+          "detail": "structured_chat_loop_timeout"
+        },
+        {
+          "at": "2026-09-20T03:13:56.383Z",
+          "offsetMs": 240030,
+          "event": "attempt-process-cleanup",
+          "detail": "execution-failed"
+        },
+        {
+          "at": "2026-09-20T03:13:56.398Z",
+          "offsetMs": 240045,
+          "event": "attempt-workspace-cleanup",
+          "detail": null
+        }
+      ]
+    },
+    {
+      "lane": "lean",
+      "taskId": "MUT-011",
+      "profile": "DEEP",
+      "configuredTaskTimeoutMs": 240000,
+      "firstProviderRequestAt": "2026-09-20T03:13:57.409Z",
+      "providerFailureAt": "2026-09-20T03:17:57.402Z",
+      "observedDeadlineMs": 239993,
+      "deadlineDeltaMs": -7,
+      "completedModelCalls": 1,
+      "providerRequests": 2,
+      "providerResponses": 1,
+      "toolEvents": 2,
+      "lastProgressType": "tool-result",
+      "lastProgressAt": "2026-09-20T03:15:29.213Z",
+      "lastProgressBeforeDeadlineMs": 148189,
+      "pendingProviderRequestAtDeadline": true,
+      "pendingProviderRequestDurationMs": 148176,
+      "failure": "The operation was aborted due to timeout",
+      "actionFailure": "structured_chat_loop_timeout",
+      "workspaceCleanup": "confirmed",
+      "classification": "BLOCKED_MODEL_IN_FLIGHT_ACTIVITY_UNOBSERVABLE",
+      "invocations": [
+        {
+          "lane": "lean",
+          "taskId": "MUT-011",
+          "turn": 1,
+          "startedAt": "2026-09-20T03:13:57.397Z",
+          "completedAt": "2026-09-20T03:15:29.171Z",
+          "elapsedMs": 91774,
+          "inputTokens": 2193,
+          "cachedInputTokens": 231,
+          "freshInputTokens": 1962,
+          "outputTokens": 33,
+          "promptMs": 17884.771,
+          "generationMs": 71774.902,
+          "promptTokensPerSecond": 109.70227127873206,
+          "generationTokensPerSecond": 0.4597707427033478
+        }
+      ],
+      "normalizedTimeline": [
+        {
+          "at": "2026-09-20T03:13:57.135Z",
+          "event": "SUBMITTED",
+          "detail": "run-24b2274f-e117-4d10-8b1e-62b7e41826b0",
+          "offsetMs": 0
+        },
+        {
+          "at": "2026-09-20T03:13:57.147Z",
+          "event": "ADMITTED",
+          "detail": "native-benchmark-worker",
+          "offsetMs": 12
+        },
+        {
+          "at": "2026-09-20T03:13:57.397Z",
+          "event": "PROFILE_RESOLVED",
+          "detail": "DEEP",
+          "offsetMs": 262
+        },
+        {
+          "at": "2026-09-20T03:13:57.397Z",
+          "event": "MODEL_CALL_START",
+          "detail": "turn=1",
+          "offsetMs": 262
+        },
+        {
+          "at": "2026-09-20T03:15:29.171Z",
+          "event": "MODEL_CALL_END",
+          "detail": "turn=1 prompt_ms=17884.771 generation_ms=71774.902 input=2193 cached=231 output=33 tool=mutation.repository.read",
+          "offsetMs": 92036
+        },
+        {
+          "at": "2026-09-20T03:15:29.200Z",
+          "event": "TOOL_START",
+          "detail": "mutation.repository.read",
+          "offsetMs": 92065
+        },
+        {
+          "at": "2026-09-20T03:15:29.213Z",
+          "event": "TOOL_END",
+          "detail": "mutation.repository.read duration_ms=13 result=tool-result",
+          "offsetMs": 92078
+        },
+        {
+          "at": "2026-09-20T03:17:57.402Z",
+          "event": "TIMEOUT",
+          "detail": "The operation was aborted due to timeout",
+          "offsetMs": 240267
+        },
+        {
+          "at": "2026-09-20T03:17:57.456Z",
+          "event": "CLEANUP",
+          "detail": "confirmed",
+          "offsetMs": 240321
+        },
+        {
+          "at": "2026-09-20T03:17:57.490Z",
+          "event": "COMPLETION",
+          "detail": "structured_chat_loop_timeout",
+          "offsetMs": 240355
+        },
+        {
+          "at": "2026-09-20T03:17:57.491Z",
+          "event": "VERIFICATION_END",
+          "detail": "upstream_failed",
+          "offsetMs": 240356
+        }
+      ],
+      "timeline": [
+        {
+          "at": "2026-09-20T03:13:57.315Z",
+          "offsetMs": -94,
+          "event": "runtime-health",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T03:13:57.329Z",
+          "offsetMs": -80,
+          "event": "model-discovery",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T03:13:57.338Z",
+          "offsetMs": -71,
+          "event": "workspace-prepared",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T03:13:57.409Z",
+          "offsetMs": 0,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T03:15:29.156Z",
+          "offsetMs": 91747,
+          "event": "provider-response",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T03:15:29.192Z",
+          "offsetMs": 91783,
+          "event": "tool-policy-audit",
+          "detail": "mutation.repository.read"
+        },
+        {
+          "at": "2026-09-20T03:15:29.200Z",
+          "offsetMs": 91791,
+          "event": "tool-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T03:15:29.213Z",
+          "offsetMs": 91804,
+          "event": "tool-result",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T03:15:29.226Z",
+          "offsetMs": 91817,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T03:17:57.402Z",
+          "offsetMs": 239993,
+          "event": "provider-failure",
+          "detail": "The operation was aborted due to timeout"
+        },
+        {
+          "at": "2026-09-20T03:17:57.432Z",
+          "offsetMs": 240023,
+          "event": "attempt-before-cleanup",
+          "detail": "structured_chat_loop_timeout"
+        },
+        {
+          "at": "2026-09-20T03:17:57.442Z",
+          "offsetMs": 240033,
+          "event": "attempt-process-cleanup",
+          "detail": "execution-failed"
+        },
+        {
+          "at": "2026-09-20T03:17:57.456Z",
+          "offsetMs": 240047,
+          "event": "attempt-workspace-cleanup",
+          "detail": null
+        }
+      ]
+    },
+    {
+      "lane": "lean",
+      "taskId": "MUT-012",
+      "profile": "DEEP",
+      "configuredTaskTimeoutMs": 300000,
+      "firstProviderRequestAt": "2026-09-20T03:17:58.580Z",
+      "providerFailureAt": "2026-09-20T03:22:58.569Z",
+      "observedDeadlineMs": 299989,
+      "deadlineDeltaMs": -11,
+      "completedModelCalls": 2,
+      "providerRequests": 3,
+      "providerResponses": 2,
+      "toolEvents": 4,
+      "lastProgressType": "tool-result",
+      "lastProgressAt": "2026-09-20T03:21:15.593Z",
+      "lastProgressBeforeDeadlineMs": 102976,
+      "pendingProviderRequestAtDeadline": true,
+      "pendingProviderRequestDurationMs": 102962,
+      "failure": "The operation was aborted due to timeout",
+      "actionFailure": "structured_chat_loop_timeout",
+      "workspaceCleanup": "confirmed",
+      "classification": "BLOCKED_MODEL_IN_FLIGHT_ACTIVITY_UNOBSERVABLE",
+      "invocations": [
+        {
+          "lane": "lean",
+          "taskId": "MUT-012",
+          "turn": 1,
+          "startedAt": "2026-09-20T03:17:58.563Z",
+          "completedAt": "2026-09-20T03:19:31.344Z",
+          "elapsedMs": 92781,
+          "inputTokens": 2417,
+          "cachedInputTokens": 231,
+          "freshInputTokens": 2186,
+          "outputTokens": 32,
+          "promptMs": 21039.309,
+          "generationMs": 70768.394,
+          "promptTokensPerSecond": 103.90075073283063,
+          "generationTokensPerSecond": 0.4521792595717235
+        },
+        {
+          "lane": "lean",
+          "taskId": "MUT-012",
+          "turn": 2,
+          "startedAt": "2026-09-20T03:19:31.401Z",
+          "completedAt": "2026-09-20T03:21:15.568Z",
+          "elapsedMs": 104167,
+          "inputTokens": 3048,
+          "cachedInputTokens": 231,
+          "freshInputTokens": 2817,
+          "outputTokens": 34,
+          "promptMs": 26347.986,
+          "generationMs": 77405.746,
+          "promptTokensPerSecond": 106.91519268303846,
+          "generationTokensPerSecond": 0.4392438773214588
+        }
+      ],
+      "normalizedTimeline": [
+        {
+          "at": "2026-09-20T03:17:58.265Z",
+          "event": "SUBMITTED",
+          "detail": "run-fe3d33e8-66d3-4f61-824a-b385c876614d",
+          "offsetMs": 0
+        },
+        {
+          "at": "2026-09-20T03:17:58.279Z",
+          "event": "ADMITTED",
+          "detail": "native-benchmark-worker",
+          "offsetMs": 14
+        },
+        {
+          "at": "2026-09-20T03:17:58.563Z",
+          "event": "PROFILE_RESOLVED",
+          "detail": "DEEP",
+          "offsetMs": 298
+        },
+        {
+          "at": "2026-09-20T03:17:58.563Z",
+          "event": "MODEL_CALL_START",
+          "detail": "turn=1",
+          "offsetMs": 298
+        },
+        {
+          "at": "2026-09-20T03:19:31.344Z",
+          "event": "MODEL_CALL_END",
+          "detail": "turn=1 prompt_ms=21039.309 generation_ms=70768.394 input=2417 cached=231 output=32 tool=mutation.repository.read",
+          "offsetMs": 93079
+        },
+        {
+          "at": "2026-09-20T03:19:31.372Z",
+          "event": "TOOL_START",
+          "detail": "mutation.repository.read",
+          "offsetMs": 93107
+        },
+        {
+          "at": "2026-09-20T03:19:31.386Z",
+          "event": "TOOL_END",
+          "detail": "mutation.repository.read duration_ms=14 result=tool-result",
+          "offsetMs": 93121
+        },
+        {
+          "at": "2026-09-20T03:19:31.401Z",
+          "event": "MODEL_CALL_START",
+          "detail": "turn=2",
+          "offsetMs": 93136
+        },
+        {
+          "at": "2026-09-20T03:21:15.568Z",
+          "event": "MODEL_CALL_END",
+          "detail": "turn=2 prompt_ms=26347.986 generation_ms=77405.746 input=3048 cached=231 output=34 tool=mutation.repository.read",
+          "offsetMs": 197303
+        },
+        {
+          "at": "2026-09-20T03:21:15.582Z",
+          "event": "TOOL_START",
+          "detail": "mutation.repository.read",
+          "offsetMs": 197317
+        },
+        {
+          "at": "2026-09-20T03:21:15.593Z",
+          "event": "TOOL_END",
+          "detail": "mutation.repository.read duration_ms=11 result=tool-result",
+          "offsetMs": 197328
+        },
+        {
+          "at": "2026-09-20T03:22:58.569Z",
+          "event": "TIMEOUT",
+          "detail": "The operation was aborted due to timeout",
+          "offsetMs": 300304
+        },
+        {
+          "at": "2026-09-20T03:22:58.636Z",
+          "event": "CLEANUP",
+          "detail": "confirmed",
+          "offsetMs": 300371
+        },
+        {
+          "at": "2026-09-20T03:22:58.667Z",
+          "event": "COMPLETION",
+          "detail": "structured_chat_loop_timeout",
+          "offsetMs": 300402
+        },
+        {
+          "at": "2026-09-20T03:22:58.668Z",
+          "event": "VERIFICATION_END",
+          "detail": "upstream_failed",
+          "offsetMs": 300403
+        }
+      ],
+      "timeline": [
+        {
+          "at": "2026-09-20T03:17:58.461Z",
+          "offsetMs": -119,
+          "event": "runtime-health",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T03:17:58.478Z",
+          "offsetMs": -102,
+          "event": "model-discovery",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T03:17:58.486Z",
+          "offsetMs": -94,
+          "event": "workspace-prepared",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T03:17:58.580Z",
+          "offsetMs": 0,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T03:19:31.331Z",
+          "offsetMs": 92751,
+          "event": "provider-response",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T03:19:31.365Z",
+          "offsetMs": 92785,
+          "event": "tool-policy-audit",
+          "detail": "mutation.repository.read"
+        },
+        {
+          "at": "2026-09-20T03:19:31.372Z",
+          "offsetMs": 92792,
+          "event": "tool-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T03:19:31.386Z",
+          "offsetMs": 92806,
+          "event": "tool-result",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T03:19:31.403Z",
+          "offsetMs": 92823,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T03:21:15.556Z",
+          "offsetMs": 196976,
+          "event": "provider-response",
+          "detail": 200
+        },
+        {
+          "at": "2026-09-20T03:21:15.576Z",
+          "offsetMs": 196996,
+          "event": "tool-policy-audit",
+          "detail": "mutation.repository.read"
+        },
+        {
+          "at": "2026-09-20T03:21:15.582Z",
+          "offsetMs": 197002,
+          "event": "tool-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T03:21:15.593Z",
+          "offsetMs": 197013,
+          "event": "tool-result",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T03:21:15.607Z",
+          "offsetMs": 197027,
+          "event": "provider-request",
+          "detail": null
+        },
+        {
+          "at": "2026-09-20T03:22:58.569Z",
+          "offsetMs": 299989,
+          "event": "provider-failure",
+          "detail": "The operation was aborted due to timeout"
+        },
+        {
+          "at": "2026-09-20T03:22:58.606Z",
+          "offsetMs": 300026,
+          "event": "attempt-before-cleanup",
+          "detail": "structured_chat_loop_timeout"
+        },
+        {
+          "at": "2026-09-20T03:22:58.621Z",
+          "offsetMs": 300041,
+          "event": "attempt-process-cleanup",
+          "detail": "execution-failed"
+        },
+        {
+          "at": "2026-09-20T03:22:58.636Z",
+          "offsetMs": 300056,
+          "event": "attempt-workspace-cleanup",
+          "detail": null
+        }
+      ]
+    }
+  ],
+  "classificationCounts": {
+    "BLOCKED_MODEL_IN_FLIGHT_ACTIVITY_UNOBSERVABLE": 20
+  },
+  "timeoutOwners": {
+    "inner": "StructuredChatLoopProvider absolute wall deadline",
+    "source": "MutationBenchmarkTask.timeoutMs via RecipeRequest.maximumLatencyMs and provider option timeoutMs",
+    "outerJobExecuteTimeoutMs": 330000,
+    "observedOwner": "inner task deadline for all 20 runs"
+  },
+  "throughput": {
+    "promptFreshTokensPerSecond": {
+      "count": 28,
+      "min": 0.2880863890416547,
+      "median": 102.4706186798879,
+      "mean": 92.95425957103984,
+      "max": 114.36576627471601,
+      "p95": 108.1471553149501
+    },
+    "generationTokensPerSecond": {
+      "count": 28,
+      "min": 0.40269903580467004,
+      "median": 0.44201730802478767,
+      "mean": 0.43950588403520335,
+      "max": 0.46943647979441966,
+      "p95": 0.4629004550134482
+    },
+    "completedCallElapsedMs": {
+      "count": 28,
+      "min": 51578,
+      "median": 93121.5,
+      "mean": 92679.71428571429,
+      "max": 141448,
+      "p95": 104378
+    },
+    "outputTokensPerCall": {
+      "count": 28,
+      "min": 21,
+      "median": 34.0,
+      "mean": 33.357142857142854,
+      "max": 55,
+      "p95": 34
+    }
+  }
+}
