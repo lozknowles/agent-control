@@ -205,7 +205,8 @@ export class StructuredChatLoopProvider {
       const response = await fetcher(this.endpoint, {method:'POST',headers:{'content-type':'application/json',...(authorization?{authorization:`Bearer ${authorization}`}:{})},body:JSON.stringify(requestBody),signal,dispatcher} as RequestInit & {dispatcher: Agent});
       if (!response.ok) { const body=await response.json() as ChatResponse; throw new Error(`provider_http_error:${response.status}:${body.error?.message ?? 'unknown'}`); }
       let body: ChatResponse;
-      if (!this.options.streaming) body=await response.json() as ChatResponse;
+      const contentType = response.headers.get('content-type')?.toLowerCase() ?? '';
+      if (!this.options.streaming || contentType.includes('application/json')) body=await response.json() as ChatResponse;
       else body=await this.readStream(response,noProgressMs,noProgressController,onContent);
       this.options.recordBudgetEvidence?.({type:'provider-response-complete',at:new Date().toISOString(),streaming:Boolean(this.options.streaming),body});
       return {body,requestPrefixSha256:createHash('sha256').update(stableJson(requestBody)).digest('hex')};

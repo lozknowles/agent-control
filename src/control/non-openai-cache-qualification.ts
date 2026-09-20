@@ -17,6 +17,10 @@ import {StructuredChatProviderFactory} from './structured-chat-provider.js';
 import type {LeanExecutionPolicy} from './lean-model-interface.js';
 import {fetch as undiciFetch} from 'undici';
 
+// Preserve test/embedding dependency injection while pairing the production
+// governed dispatcher with the matching npm Undici implementation.
+const platformFetch = globalThis.fetch;
+
 interface QualificationWorkspace {
   workspace: MutationWorkspace;
   task: MutationBenchmarkTask;
@@ -120,7 +124,8 @@ export function registerNonOpenAiCacheQualificationActions(registry: ActionRegis
         context.execution!.assertActive();
         journal({type: 'provider-request', at: new Date().toISOString(), request: requestBody});
         let response: Response;
-        try { response = await (undiciFetch as unknown as typeof fetch)(input, init); }
+        const delegatedFetch = globalThis.fetch === platformFetch ? undiciFetch as unknown as typeof fetch : globalThis.fetch;
+        try { response = await delegatedFetch(input, init); }
         catch (error) { const cause=(error as {cause?:{code?:string}})?.cause?.code; journal({type: 'provider-failure', at: new Date().toISOString(), error: error instanceof Error ? error.message : String(error), causeCode: cause ?? null, cancelled: context.signal.aborted, remoteCleanup: 'UNKNOWN'}); throw error; }
         if (requestBody.stream === true) { journal({type:'provider-headers',at:new Date().toISOString(),status:response.status,streaming:true}); return response; }
         let rawResponse = ''; const responseChunks: Uint8Array[] = [];
