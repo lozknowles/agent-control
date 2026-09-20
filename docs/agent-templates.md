@@ -37,3 +37,18 @@ npm run qualify:agent-templates -- \
 This command uses an existing authorized backend and does not download, restart or reconfigure it. Omit `--case`, `--arm` and `--repetitions` to reproduce the complete suite. Runtime safety still requires an explicit recorded approval; the qualification runner supplies the operator authority represented by this deliberate command and refuses any unexpected approval type.
 
 The authenticated API supports catalogue inspection, readiness and submission. The command above is the repository qualification CLI. No Agent Templates dashboard selector was implemented or claimed in this candidate.
+
+Catalogue and readiness responses expose execution support separately from effectiveness status. `READY` means that the exact Job can be admitted and dispatched; it does not mean the template is effective. The five original 1.0.0 templates remain `FAILED_BOUNDED_QUALIFICATION` on the retained Qwen2.5-3B comparison. Evidence-verifier 1.2.0 remains `HELD_OUT_FAILED_NOT_QUALIFIED`: it passed the direct supported-scalar development case, but accepted none of nine revised-template held-out runs.
+
+Run the bounded evidence-verifier protocol with separate development and qualification partitions:
+
+```sh
+npm run qualify:evidence-verifier -- \
+  --lab ../agent-control-jobs \
+  --output /tmp/evidence-verifier-development.json \
+  --partition development \
+  --arm all \
+  --repetitions 1
+```
+
+This reproducibly includes a successful direct supported-scalar native run. It also includes a negative adversarial case and is development evidence, not held-out qualification. The held-out evidence is retained in the Lab repository and must not be rerun for prompt tuning.

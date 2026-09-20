@@ -40,7 +40,7 @@ async function main(){
           caseId:item.caseId,
           job:{id:item.job,version:job.manifest.version,digest:job.digest,runtimeDigest:run.jobDigest},
           template:selection?{id:item.template,version:template.manifest.version,digest:template.manifest.content_digest}:null,
-          input:{digest:run.inputsDigest,caseDigest:sha(JSON.stringify(acceptance))},
+          input:{digest:run.inputsDigest,caseDigest:sha(stable(acceptance))},
           model:{providerId:provider.id,modelId:cli.modelId,providerModel:cli.providerModel,baseUrl:cli.baseUrl,qualificationVersion:run.trigger.modelRoute?.qualificationVersion},
           runtime:{parcelId:parcel.id,runId:run.id,status:run.status,parcelStatus:parcel.status,sourceJobDigest:run.sourceJobDigest,elapsedMs:Date.now()-started,approvals:run.approvals,governance:run.provenance.filter(value=>value.type==='runtime-safety')},
           adaptation:null,arm,repetition,candidate,verification,assessment:independentAssessment(candidate,acceptance.expected),
