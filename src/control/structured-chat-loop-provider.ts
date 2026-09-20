@@ -102,7 +102,7 @@ export class StructuredChatLoopProvider {
     const modelSources = this.options.lean ? leanContextSources(contextSources, JSON.stringify(this.schemas)) : contextSources;
     const renderedContext = modelSources.map((source, index) => `SOURCE ${index + 1} [${source.kind}] ${source.id}\n${source.content ?? ''}`).join('\n\n');
     const messages: ChatMessage[] = [
-      {role: 'system', content: `${systemInstructions}\n\n${agentControlInstructions}`},
+      {role: 'system', content: this.options.lean ? `${renderLeanStableSystem()}\n\n${agentControlInstructions}` : `${systemInstructions}\n\n${agentControlInstructions}`},
       {role: 'user', content: `${instruction}\n\nBEGIN AUTHORISED CONTEXT\n${renderedContext}\nEND AUTHORISED CONTEXT`},
     ];
     const observations: ModelInvocationObservation[] = [];
@@ -118,7 +118,7 @@ export class StructuredChatLoopProvider {
       if (turn > maximumTurns && !tools.beginTerminalAllowance?.()) return failed(`structured_chat_loop_turn_limit:${maximumTurns}`, observations, evidence);
       const exposedIds = this.options.lean ? new Set(tools.modelToolIds!()) : granted;
       const exposedSchemas = schemas.filter(schema => exposedIds.has(schema.id));
-      if (this.options.lean) messages[0] = {role: 'system', content: `${renderSystemInstructions(exposedSchemas, this.options.finishToolId)}\n\n${agentControlInstructions}`};
+      const requestMessages = this.options.lean ? [...messages, {role: 'user' as const, content: renderLeanDynamicGrant(exposedSchemas, this.options.finishToolId)}] : messages;
       if (turn > maximumTurns && this.options.lean?.deterministicTerminal && exposedSchemas.length === 1 && exposedSchemas[0].id === this.options.finishToolId && this.leanValidators.get(this.options.finishToolId)?.({})) {
         tools.assertActive();
         const finishResult = await tools.invoke(this.options.finishToolId, {});
@@ -132,7 +132,7 @@ export class StructuredChatLoopProvider {
       if (remainingMs <= 0) return failed('structured_chat_loop_timeout', observations, evidence);
       const startedAt = new Date().toISOString();
       let response: {body: ChatResponse; requestPrefixSha256: string};
-      try { tools.lifecycle?.('waiting for provider'); response = await withLifecycleHeartbeat(tools, () => this.request(messages, Math.max(1, remainingMs), externalSignal)); tools.lifecycle?.('response received'); }
+      try { tools.lifecycle?.('waiting for provider'); response = await withLifecycleHeartbeat(tools, () => this.request(requestMessages, Math.max(1, remainingMs), externalSignal)); tools.lifecycle?.('response received'); }
       catch (error) {
         const detail = boundedError(error);
         return failed(detail, observations, evidence, detail.includes('cancelled') ? 'CANCELLED' : 'FAILED');
@@ -147,11 +147,11 @@ export class StructuredChatLoopProvider {
       let request: ToolRequest;
       try { request = parseToolRequest(content); }
       catch (error) {
-        observations.push(this.observation(recipe, contextSources, messages, turn, startedAt, completedAt, response.body, [], responseHash, boundedError(error), response.requestPrefixSha256));
+        observations.push(this.observation(recipe, contextSources, requestMessages, turn, startedAt, completedAt, response.body, [], responseHash, boundedError(error), response.requestPrefixSha256));
         return failed(boundedError(error), observations, [...evidence, `provider_response_sha256:${responseHash}`]);
       }
-      observations.push(this.observation(recipe, contextSources, messages, turn, startedAt, completedAt, response.body, [request.tool], responseHash, undefined, response.requestPrefixSha256));
-      this.options.lean?.recordEvidence({kind: 'model_invocation', recipeId: recipe.id, turn, messages: structuredClone(messages), response: response.body, exposedToolIds: [...exposedIds]});
+      observations.push(this.observation(recipe, contextSources, requestMessages, turn, startedAt, completedAt, response.body, [request.tool], responseHash, undefined, response.requestPrefixSha256));
+      this.options.lean?.recordEvidence({kind: 'model_invocation', recipeId: recipe.id, turn, messages: structuredClone(requestMessages), response: response.body, exposedToolIds: [...exposedIds]});
       if (this.options.lean && !exposedSchemas.some(schema => schema.id === request.tool)) throw withObservations(new Error(`tool_policy_denied:lean_hidden_tool:${request.tool}`), observations, evidence);
       if (this.options.lean && !this.leanValidators.get(request.tool)?.(request.input ?? {})) throw withObservations(new Error('tool_policy_denied:lean_input_schema'), observations, evidence);
       evidence.push(`provider_response:${response.body.id ?? responseHash.slice(0, 16)}`, `provider_response_sha256:${responseHash}`);
@@ -250,6 +250,15 @@ export class StructuredChatLoopProvider {
     if (!evidence || !this.options.cacheRetention?.enabled || evidence.processedPromptTokens === null) return evidence;
     return {...evidence, retainedPromptTokens: (evidence.reusedTokens ?? 0) + evidence.processedPromptTokens, retentionAuthority: this.options.cacheRetention.authority, retentionSource: this.options.cacheRetention.source};
   }
+}
+
+function renderLeanStableSystem(): string {
+  return 'You are a bounded implementation worker. Return only one JSON object and no prose. Agent Control supplies the currently granted typed tools separately for each turn. Never request a tool absent from that current grant.';
+}
+
+function renderLeanDynamicGrant(schemas: StructuredChatToolSchema[], finishToolId: string): string {
+  return `CURRENT TURN TOOL GRANT. Return exactly {"tool":"<granted id>","input":{...}}. Inspect before editing, use typed tools only, run the verifier-facing test before finishing when practical, and request ${finishToolId} only after completion or when safely blocked. Tools:
+${JSON.stringify(schemas)}`;
 }
 
 function renderSystemInstructions(schemas: StructuredChatToolSchema[], finishToolId: string): string {
