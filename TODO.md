@@ -24,11 +24,12 @@ See [Governed security audits](docs/security-audits.md).
 
 # Agent Control 4.8 navigable-workspaces follow-up
 
-- [ ] Evaluate durable per-operator favourites only after defining retention, identity and access policy.
-- [ ] Add global workspace search/command-palette navigation over authoritative indexes without creating a second Estate database.
+- [x] Add bounded durable per-operator favourites containing only opaque workspace IDs. The current authenticated web operator is the identity boundary; richer multi-principal retention remains future work.
+- [x] Add global paginated workspace search over authoritative Estate, Node Dashboard, Run Inspector and invocation records without creating a second Estate database.
 - [ ] Define evidence-backed project/repository relationships before adding either as a workspace kind.
-- [ ] Connect file or terminal actions only through existing protected-resource and execution-session authorization; opening a workspace must remain read-only.
-- [ ] Measure projection cost at large Estate/run-history cardinality and add pagination or indexed lookup if required.
+- [x] Connect exact matching execution sessions to the existing governed Live Shell in read-only WATCH mode. Opening a workspace still grants no control authority.
+- [ ] Connect file navigation only through an existing protected-resource authorization path when a suitable file viewer exists.
+- [x] Add bounded cursor pagination to global workspace search. Further indexed storage remains evidence-driven future work if measured Estate size requires it.
 
 See [Navigable Workspaces](docs/navigable-workspaces.md) and [the architectural review](NAVIGABLE_WORKSPACES_REVIEW.md). Prototype status does not imply release.
 

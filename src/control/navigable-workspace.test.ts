@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {listWorkspaceRoots,parseWorkspaceId,projectWorkspace,workspaceId,type WorkspaceNodeDashboard,type WorkspaceRunInspector,type WorkspaceSource} from './navigable-workspace.js';
+import {listWorkspaceRoots,parseWorkspaceId,projectWorkspace,searchWorkspaces,workspaceId,type WorkspaceNodeDashboard,type WorkspaceRunInspector,type WorkspaceSource} from './navigable-workspace.js';
 import type {RuntimeMapProjection} from './runtime-map.js';
 
 const at='2026-09-14T12:00:00.000Z';
@@ -35,4 +35,17 @@ test('model operation aliases retain canonical token evidence and do not duplica
  assert.equal(operation.breadcrumbs.at(-1)?.kind,'INVOCATION');
  const children=projectWorkspace(id('RUN','run-one'),records).children;
  assert.equal(children.filter(child=>['invocation-one',alias].includes(parseWorkspaceId(child.id).parts[1]!)).length,1);
+});
+
+test('workspace search is authoritative, bounded and cursor paginated',()=>{
+ const first=searchWorkspaces(source,{query:'',limit:3});assert.equal(first.items.length,3);assert.ok(first.nextCursor);assert.ok(first.total>3);
+ const second=searchWorkspaces(source,{query:'',limit:3,cursor:first.nextCursor});assert.equal(second.items.some(item=>first.items.some(previous=>previous.id===item.id)),false);
+ const filtered=searchWorkspaces(source,{query:'glm',limit:20});assert.equal(filtered.items.length,1);assert.equal(filtered.items[0]?.kind,'INVOCATION');
+ assert.throws(()=>searchWorkspaces(source,{query:'changed',cursor:first.nextCursor}),/workspace_search_cursor_invalid/);
+});
+
+test('exact execution sessions expose governed WATCH entry without granting execution',()=>{
+ const records:WorkspaceSource={...source,sessions:[{id:'session-run',state:'RUNNING',scope:{runId:'run-one'}},{id:'session-other',state:'RUNNING',scope:{runId:'other'}}]};
+ const workspace=projectWorkspace(id('RUN','run-one'),records),sessions=workspace.context.executionSessions as Array<{id:string}>;
+ assert.deepEqual(sessions,[{id:'session-run',state:'RUNNING'}]);assert.equal(workspace.capabilities.find(item=>item.id==='TERMINAL')?.state,'REQUIRES_AUTHORIZATION');assert.equal(workspace.capabilities.find(item=>item.id==='EXECUTE'),undefined);
 });

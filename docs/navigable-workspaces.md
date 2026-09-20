@@ -1,5 +1,15 @@
 # Navigable Workspaces
 
+## 4.12.1 dashboard navigation
+
+The authenticated dashboard can search the authoritative workspace projection across devices, nested environments, runtimes, workers, runs and invocations. Results use a bounded cursor and are rebuilt from the current Agent Control records; there is no separately maintained workspace index or topology.
+
+Operators can save up to 64 favourites. The durable preference file stores only the operator identity, opaque workspace ID and creation time. Labels and state are resolved from the current projection whenever the workspace panel opens, so a favourite cannot become an alternative source of truth.
+
+Where an exact execution-session relationship is recorded, a workspace exposes **WATCH**. This calls the existing Live Shell attachment in read-only mode. Any intervention still requires the existing explicit Live Shell authorization and confirmation. Arbitrary file activation remains unavailable because Agent Control does not yet have a matching protected file-viewer path.
+
+The Dynamic Work Board also renders an authenticated containment and recovery timeline derived from durable containment records. It includes the stop request, completion state, recovery transitions, actor, scope, timestamps and evidence references without reconstructing missing events.
+
 Navigable Workspaces are read-only views over Agent Control's authoritative Estate, Node Dashboard and Run Inspector records. They let an operator move down from the Estate to a device, nested environment, runtime, worker, run and invocation, or reconstruct that path upward from retained run evidence.
 
 They are not checkouts, folders, terminals or execution authorities. Opening a workspace never grants file, shell, job, deployment, credential or protected-resource access. Where one of those capabilities is relevant, the projection reports `REQUIRES_AUTHORIZATION` and the existing Agent Control control remains responsible for it.

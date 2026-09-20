@@ -208,6 +208,7 @@
 
   const previousRefresh = refresh;
   refresh = async () => { await previousRefresh(); await loadSessions(); };
+  window.AgentControlLiveShell = {openSession};
   document.addEventListener('DOMContentLoaded', () => {
     byId('live-shell-close').addEventListener('click', () => closeDialog().catch(showError)); byId('live-shell-detach').addEventListener('click', () => closeAttachment().catch(showError));
     byId('live-shell-input-form').addEventListener('submit', event => sendInput(event).catch(showError)); byId('live-shell-resize-form').addEventListener('submit', event => resize(event).catch(showError)); byId('live-shell-return-form').addEventListener('submit', event => returnControl(event).catch(showError));

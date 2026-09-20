@@ -7,8 +7,9 @@ const css=fs.readFileSync('assets/dashboard/dashboard-workspaces.css','utf8');
 const page=fs.readFileSync('assets/dashboard/index.html','utf8');
 
 test('workspace UI progressively navigates authoritative records without granting control',()=>{
-  for(const marker of ['Workspaces','Workspace path','Opening this workspace grants no control authority.','Where and how this ran','Token and cache evidence','Invocation input and output','Open human-readable evidence','Ask Mallow'])assert.match(script,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
-  assert.doesNotMatch(script,/fetch\([^)]*(?:POST|PUT|PATCH|DELETE)/);
+  for(const marker of ['Workspaces','Find device, environment, runtime, worker, run or invocation','Add favourite','Workspace path','Opening this workspace grants no control authority.','Where and how this ran','Governed session access','Token and cache evidence','Invocation input and output','Open human-readable evidence','Ask Mallow'])assert.match(script,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+  assert.match(script,/workspace-preferences\/favourite/);
+  assert.doesNotMatch(script,/api\/(?:jobs|runs|targets)[^'"`]*(?:run|execute|reset)/);
   assert.match(script,/Operator authentication required/);
   assert.match(page,/dashboard-workspaces\.js/);
   assert.match(page,/dashboard-workspaces\.css/);

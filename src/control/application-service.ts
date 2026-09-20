@@ -18,7 +18,7 @@ import type {ContextStore} from './context.js';
 import type {JobRuntime} from './job-runtime.js';
 import {LocalNodeResources} from './node-resources.js';
 import {nodeWorkIndex, projectNodeDashboard, projectRunInspector, projectJobInspector, inspectorHistory, scopedInspectorUsage} from './observability.js';
-import {listWorkspaceRoots,projectWorkspace,type WorkspaceNodeDashboard,type WorkspaceRunInspector,type WorkspaceSource} from './navigable-workspace.js';
+import {listWorkspaceRoots,projectWorkspace,searchWorkspaces,type WorkspaceNodeDashboard,type WorkspaceRunInspector,type WorkspaceSource} from './navigable-workspace.js';
 import type {ManagedNodeManager, ManagedNodeSnapshot} from './managed-node.js';
 import {safeTranscriptText} from './execution-history.js';
 import type {OutputAuthorityScope, OutputExpansionRequest, TokenAwareOutputMetrics, TokenAwareOutputService} from './token-aware-output.js';
@@ -423,10 +423,11 @@ export class AgentControlService {
   private workspaceSource():WorkspaceSource {
     const estate=this.estateMap(),nodeIds=estate.nodes.filter(node=>['machine','device'].includes(node.type)).map(node=>node.id),nodes=nodeIds.flatMap(id=>{try{return[this.nodeDashboard(id) as unknown as WorkspaceNodeDashboard];}catch{return[];}});
     const runIds=[...(this.workParcels?.list()??[]).map(parcel=>parcel.id),...(this.jobRuntime?.ledger.list()??[]).map(run=>run.id)];
-    const runs=[...new Set(runIds)].slice(-100).flatMap(id=>{try{return[this.runInspector(id) as unknown as WorkspaceRunInspector];}catch{return[];}});
-    return{estate,nodes,runs};
+    const runs=[...new Set(runIds)].flatMap(id=>{try{return[this.runInspector(id) as unknown as WorkspaceRunInspector];}catch{return[];}});
+    return{estate,nodes,runs,sessions:this.executionSessionProjection()};
   }
   workspaces(){return listWorkspaceRoots(this.workspaceSource());}
+  searchWorkspaces(input:{query?:string;cursor?:string|null;limit?:number}){return searchWorkspaces(this.workspaceSource(),input);}
   workspace(id:string){return projectWorkspace(id,this.workspaceSource());}
   compareRuntimeMaps(leftParcelId:string,rightParcelId:string){return compareRuntimeMaps(this.runtimeMap(leftParcelId),this.runtimeMap(rightParcelId));}
   environmentDiscoveryProjection(){return this.mustEnvironmentDiscovery().projection();}
