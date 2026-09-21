@@ -1,3 +1,4 @@
+import type {EstateDiscovery} from './estate-discovery.js';
 import {FactoryStream} from './factory-stream.js';
 import {VoiceError, type VoiceTransportRuntime} from './voice-transport.js';
 import {isAndroidUserspace,observeAndroid} from './android-environment.js';
@@ -33,7 +34,7 @@ import {costRoutingProjection,explainConfiguredCostRouting} from './cost-routing
 import type {CostRoutingLedger} from './cost-performance-routing.js';
 import type {WorkspacePreferenceStore} from './workspace-preferences.js';
 
-export interface WebServerOptions {diagnostics?:ArchitectureDiagnostics;factoryEnabled?:boolean;voiceTransport?:VoiceTransportRuntime;host?: string; port?: number; operatorToken?: string; operatorAuthorizer?: (request: IncomingMessage, authority: 'control.read' | 'control.mutate') => boolean; allowedOrigins?: string[]; assetsDir?: string; configFile?: string; costRoutingLedger?:CostRoutingLedger; openwa?:OpenWAAdapter; socialVoice?:SocialVoiceCoordinator; uxSessions?:UxSessionStore; uxSessionShares?:UxSessionShareStore; uxSessionAnnotations?:UxSessionAnnotationStore; uxSessionPlayerDir?:string;sessionVault?:SessionVaultRuntime; securityAudits?:SecurityAuditRuntime; directInference?:DirectInferenceRuntime; workBoards?:WorkBoardRuntime; containment?:ContainmentSupervisor; workspacePreferences?:WorkspacePreferenceStore; modelImprovement?:ModelImprovementRuntime;}
+export interface WebServerOptions {estate?:EstateDiscovery;estateEnabled?:boolean;diagnostics?:ArchitectureDiagnostics;factoryEnabled?:boolean;voiceTransport?:VoiceTransportRuntime;host?: string; port?: number; operatorToken?: string; operatorAuthorizer?: (request: IncomingMessage, authority: 'control.read' | 'control.mutate') => boolean; allowedOrigins?: string[]; assetsDir?: string; configFile?: string; costRoutingLedger?:CostRoutingLedger; openwa?:OpenWAAdapter; socialVoice?:SocialVoiceCoordinator; uxSessions?:UxSessionStore; uxSessionShares?:UxSessionShareStore; uxSessionAnnotations?:UxSessionAnnotationStore; uxSessionPlayerDir?:string;sessionVault?:SessionVaultRuntime; securityAudits?:SecurityAuditRuntime; directInference?:DirectInferenceRuntime; workBoards?:WorkBoardRuntime; containment?:ContainmentSupervisor; workspacePreferences?:WorkspacePreferenceStore; modelImprovement?:ModelImprovementRuntime;}
 const MAX_BODY = 64 * 1024;
 const SECRET_KEY = /token|secret|password|credential|authorization|cookie|api[-_]?key/i;
 const SAFE_TOKEN_ACCOUNTING_KEY = /^(?:tokenAwareOutput|tokenBatonRouting|providerReportedTokens|contextTokens|contextLimitTokens|contextTokensAvoided|contextTokensSaved|evidenceTokens|estimatedTokensOriginal|estimatedTokensReturned|estimatedTokensSaved|estimatedOriginalTokens|estimatedReturnedTokens|estimatedTokensAvoided|expansionTokensReturned|inputTokens|freshInputTokens|cachedInputTokens|reusedTokens|processedPromptTokens|retainedPromptTokens|cacheWriteTokens|outputTokens|maximumInputTokens|maximumOutputTokens|maximumContextTokens|maximumEvidenceTokens|reasoningTokens|totalTokens|totalProcessedTokens|startupContextTokens|taskContextTokens|retrievedContextTokens|repositoryContextTokens|conversationHistoryTokens|totalEstimatedContextTokens|repeatedContextCostEstimate|tokenEfficiency|tokensPerSuccessfulTask|freshTokensPerSuccessfulTask|tokensPerVerifiedOutcome|freshTokensPerVerifiedOutcome|estimatedTokens|limitTokens|tokensLimit|tokensRemaining|draftTokens|bestDraftTokens|tokensPerSecond|baselineTokensPerSecond|bestSpeculativeTokensPerSecond|energyPerToken|contextPercent|continuePercent|prepareBatonPercent|compactPercent|handoffPercent|prompt_tokens|completion_tokens|input_tokens|output_tokens|reasoning_tokens|total_tokens|cached_tokens|prompt_tokens_details|input_tokens_details|prompt_per_token_ms|predicted_per_token_ms|rateCeilingUsdPerMillionTokens|tokenCeiling|inputTokensEstimated|outputTokensRequested)$/;
@@ -78,19 +79,40 @@ export function startWebDashboard(service: AgentControlService, options: WebServ
   const host = options.host ?? '127.0.0.1', port = options.port ?? 4310;
   const assetsDir = options.assetsDir ?? path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../assets/dashboard');
   const factory = options.factoryEnabled===false||process.env.AGENT_CONTROL_FACTORY_VIEW==='off'?null:new FactoryStream(()=>({...service.factorySource(),boards:options.workBoards?.list()??[],kills:options.containment?.list().kills??[]}));
-  const server = http.createServer((request, response) => void handle(service, request, response, {...options, host, port, assetsDir},factory).catch(error => replyError(response, error)));
-  server.on('close',()=>factory?.close());
+  const estateStream=options.estate&&options.estateEnabled!==false&&process.env.AGENT_CONTROL_ESTATE_VIEW!=='off'?new FactoryStream(()=>options.estate!.projection(),250):null;
+  const unsubscribeEstate=estateStream?options.estate!.subscribe(()=>estateStream.publish()):null;
+  const server = http.createServer((request, response) => void handle(service, request, response, {...options, host, port, assetsDir},factory,estateStream).catch(error => replyError(response, error)));
+  server.on('close',()=>{factory?.close();estateStream?.close();unsubscribeEstate?.();});
   server.listen(port, host);
   return server;
 }
 
-async function handle(service: AgentControlService, request: IncomingMessage, response: ServerResponse, options: Required<Pick<WebServerOptions, 'host' | 'port' | 'assetsDir'>> & WebServerOptions, factory:FactoryStream|null) {
+async function handle(service: AgentControlService, request: IncomingMessage, response: ServerResponse, options: Required<Pick<WebServerOptions, 'host' | 'port' | 'assetsDir'>> & WebServerOptions, factory:FactoryStream|null,estateStream:FactoryStream|null) {
   response.setHeader('X-Content-Type-Options', 'nosniff');
   response.setHeader('Referrer-Policy', 'no-referrer');
   response.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; media-src 'self' blob:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
   response.setHeader('Cache-Control', 'no-store');
   const url = new URL(request.url ?? '/', `http://${request.headers.host ?? `${options.host}:${options.port}`}`);
   const method = request.method ?? 'GET';
+  if(url.pathname.startsWith('/api/estate/')){
+    validateOperatorRequest(request,options);const e=options.estate;if(!e)return json(response,503,{error:'estate_unconfigured'});
+    const suffix=url.pathname.slice('/api/estate'.length);
+    if(method==='GET'){
+      if(suffix==='/catalog')return json(response,200,e.catalog());
+      if(suffix==='/history')return json(response,200,e.history());
+      if(suffix==='/search')return json(response,200,e.projection(url.searchParams.get('q')??''));
+      if(suffix==='/events'){if(!estateStream)return json(response,404,{error:'estate_view_disabled'});estateStream.sample();return estateStream.connect(request,response);}
+      if(suffix==='/snapshot'){if(!estateStream)return json(response,404,{error:'estate_view_disabled'});return json(response,200,estateStream.sample());}
+      if(suffix==='/replay')return json(response,200,e.replay(url.searchParams.get('id')??e.latest()?.id??''));
+    }
+    if(method==='POST'){validateMutationRequest(request,options);const body=await readJson(request);
+      if(suffix==='/permissions')return json(response,201,e.grant(body,'web-operator'));
+      if(suffix==='/revoke')return json(response,200,e.revoke(String(body.permissionId??''),'web-operator'));
+      if(suffix==='/runs'){e.assertPermission(String(body.permissionId??''),'web-operator');return json(response,201,service.createJobRun('discover-estate',{permissionId:body.permissionId},'web-operator'));}
+      if(suffix==='/use'){const snapshot=e.snapshot(String(body.snapshotId??''));e.assertPermission(snapshot.permissionId,'web-operator');return json(response,201,service.createJobRun('estate-system-observation',{snapshotId:snapshot.id},'web-operator'));}
+    }
+    return json(response,404,{error:'not_found'});
+  }
   if(url.pathname.startsWith('/api/environment-discovery/diagnostics')){
     validateOperatorRequest(request,options);const d=options.diagnostics;if(!d)throw httpError(503,'diagnostics_unconfigured');
     const suffix=url.pathname.slice('/api/environment-discovery/diagnostics'.length);
@@ -621,7 +643,7 @@ function executionSessionStream(service: AgentControlService, id: string, reques
 
 function serveAsset(response: ServerResponse, assetsDir: string, pathname: string) {
   const asset = pathname === '/' ? 'index.html' : pathname.replace(/^\//, '');
-  if (!['dashboard-diagnostics.js','dashboard-diagnostics.css','video-evidence.js','dashboard-factory.js','factory-renderer.js','factory-client.js','factory-layout.js','dashboard-factory.css','vendor/three.module.min.js','vendor/three.core.min.js','dashboard-work-board.js','dashboard-work-board.css','dashboard-theme.css','dashboard-mobile.js','manifest.webmanifest','pwa-icon.svg','service-worker.js','offline.html','dashboard-pwa.js','dashboard-usage.js','dashboard-usage.css','dashboard-social-voice.css', 'social-voice.html', 'dashboard-social-voice.js', 'dashboard-openwa.css', 'openwa.html', 'dashboard-openwa.js', 'index.html', 'dashboard.css', 'dashboard-fixes.css', 'dashboard-jobs.css', 'dashboard-bots.css', 'dashboard-wopr.css', 'dashboard-adaptive-orchestration.css', 'dashboard-live-shell.css', 'dashboard-poe.css', 'dashboard-cache-runtime.css', 'dashboard-learned-specialists.css', 'dashboard-session-vault.css', 'dashboard-runtime-map.css', 'dashboard-environment-discovery.css', 'dashboard.js', 'dashboard-parameters.js', 'dashboard-running-state.js', 'dashboard-enhancements.js', 'dashboard-parameterized-jobs.js', 'dashboard-models.js', 'dashboard-first-run.js','dashboard-first-run.css','dashboard-model-watches.js', 'dashboard-model-watches.css', 'dashboard-sessions.js', 'dashboard-bots.js', 'dashboard-wopr.js', 'dashboard-adaptive-orchestration.js', 'dashboard-live-shell.js', 'dashboard-voice-transport.js','dashboard-poe.js', 'dashboard-cache-experts.js', 'dashboard-learned-specialists.js', 'dashboard-session-vault.js', 'dashboard-observability-model.js','dashboard-observability.js','dashboard-observability.css','dashboard-workspaces.js','dashboard-workspaces.css','dashboard-security-audits.js','dashboard-runtime-map.js', 'dashboard-environment-discovery.js', 'dashboard-installation.js'].includes(asset)) throw httpError(404, 'not_found');
+  if (!['dashboard-estate.js','dashboard-estate.css','estate-client.js','dashboard-diagnostics.js','dashboard-diagnostics.css','video-evidence.js','dashboard-factory.js','factory-renderer.js','factory-client.js','factory-layout.js','dashboard-factory.css','vendor/three.module.min.js','vendor/three.core.min.js','dashboard-work-board.js','dashboard-work-board.css','dashboard-theme.css','dashboard-mobile.js','manifest.webmanifest','pwa-icon.svg','service-worker.js','offline.html','dashboard-pwa.js','dashboard-usage.js','dashboard-usage.css','dashboard-social-voice.css', 'social-voice.html', 'dashboard-social-voice.js', 'dashboard-openwa.css', 'openwa.html', 'dashboard-openwa.js', 'index.html', 'dashboard.css', 'dashboard-fixes.css', 'dashboard-jobs.css', 'dashboard-bots.css', 'dashboard-wopr.css', 'dashboard-adaptive-orchestration.css', 'dashboard-live-shell.css', 'dashboard-poe.css', 'dashboard-cache-runtime.css', 'dashboard-learned-specialists.css', 'dashboard-session-vault.css', 'dashboard-runtime-map.css', 'dashboard-environment-discovery.css', 'dashboard.js', 'dashboard-parameters.js', 'dashboard-running-state.js', 'dashboard-enhancements.js', 'dashboard-parameterized-jobs.js', 'dashboard-models.js', 'dashboard-first-run.js','dashboard-first-run.css','dashboard-model-watches.js', 'dashboard-model-watches.css', 'dashboard-sessions.js', 'dashboard-bots.js', 'dashboard-wopr.js', 'dashboard-adaptive-orchestration.js', 'dashboard-live-shell.js', 'dashboard-voice-transport.js','dashboard-poe.js', 'dashboard-cache-experts.js', 'dashboard-learned-specialists.js', 'dashboard-session-vault.js', 'dashboard-observability-model.js','dashboard-observability.js','dashboard-observability.css','dashboard-workspaces.js','dashboard-workspaces.css','dashboard-security-audits.js','dashboard-runtime-map.js', 'dashboard-environment-discovery.js', 'dashboard-installation.js'].includes(asset)) throw httpError(404, 'not_found');
   const file = path.join(assetsDir, asset);
   if (!fs.existsSync(file)) throw httpError(404, 'dashboard_asset_missing');
   const type = asset.endsWith('.webmanifest') ? 'application/manifest+json' : asset.endsWith('.svg') ? 'image/svg+xml' : asset.endsWith('.html') ? 'text/html; charset=utf-8' : asset.endsWith('.css') ? 'text/css; charset=utf-8' : 'text/javascript; charset=utf-8';

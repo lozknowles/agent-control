@@ -1,3 +1,4 @@
+import {EstateDiscovery,registerEstateDiscovery,type EstateTarget} from './control/estate-discovery.js';
 import {ArchitectureDiagnostics,DiagnosticStore,registerArchitectureDiagnostics} from './control/architecture-diagnostics.js';
 import {DiagnosticFileAdapter,LinuxDiagnosticAdapter,standardDiagnosticFiles} from './control/diagnostic-sources.js';
 import {diagnosticModelPort} from './control/diagnostic-model.js';
@@ -172,6 +173,10 @@ const environmentDiscovery=new EnvironmentDiscoveryRuntime({
 service.configureProjection({environmentDiscovery,capabilityAdapters,installation});
 const diagnostics=new ArchitectureDiagnostics(new DiagnosticStore(path.join(stateRoot,'environment-discovery','diagnostics')),[new DiagnosticFileAdapter([...standardDiagnosticFiles,{path:process.env.AGENT_CONTROL_ACTIVITY_LOG??path.join(stateRoot,'logs','activity.jsonl'),category:'AGENT_CONTROL',label:'Agent Control append-only activity',format:'JSONL',componentIds:['service:agent-control']},{path:'/var/log/agent-control/activity.jsonl',category:'AGENT_CONTROL',label:'Agent Control system activity',format:'JSONL',componentIds:['service:agent-control']}]),new LinuxDiagnosticAdapter()],()=>environmentDiscovery.projection().latest,diagnosticModelPort(modelRegistry,jobRuntime.harnessEfficiency));
 registerArchitectureDiagnostics(jobRuntime,diagnostics);
+const estateConfig=loadConfig(configurationFile);
+const estateTargets:EstateTarget[]=estateConfig.providers.flatMap(p=>{if(!p.baseUrl)return [];try{const u=new URL(p.baseUrl);if(!['http:','https:'].includes(u.protocol)||!['127.0.0.1','[::1]'].includes(u.hostname)||u.username||u.password||u.search||u.hash)return [];return [{id:p.id,kind:'ENDPOINT' as const,label:p.id,locator:u.origin,providerId:p.id,modelIds:Object.fromEntries(estateConfig.models.filter(m=>m.provider===p.id).map(m=>[m.providerModel??m.id,m.id]))}];}catch{return [];}});
+const estate=new EstateDiscovery({root:path.join(stateRoot,'environment-discovery','estate'),config:()=>loadConfig(configurationFile),targets:estateTargets,diagnostics,environmentDiscovery,onEvent:(type,payload)=>service.events.emit('environment.discovery_changed',{eventType:type,...payload},undefined,'estate-discovery')});
+registerEstateDiscovery(jobRuntime,estate);
 const mallowVoiceConfig=process.env.AGENT_CONTROL_MALLOW_VOICE_CONFIG??process.env.AGENT_CONTROL_POE_VOICE_CONFIG;
 let poeSpeech: import('./control/social-voice-providers.js').SpeechProvider | undefined;
 let poeRecognition: import('./control/social-voice-providers.js').SpeechRecognitionProvider | undefined;
@@ -290,7 +295,7 @@ const voiceTransport:InstanceType<typeof VoiceTransportRuntime>=new VoiceTranspo
     updates:async(id,actor)=>{await service.poeOperator(id,actor);return service.poeConversation(id).turns.filter(t=>t.actor==='poe'&&['HANDOVER','RESULT'].includes(t.purpose??'')).map(t=>({id:t.id,text:t.text}));},
   },onChange:record=>service.events.emit('poe.conversation_changed',{conversationId:record.conversationId,voiceSessionId:record.id,state:record.state},undefined,'mallow'),
 });
-const server = startWebDashboard(service, {diagnostics,host, port, openwa, socialVoice, voiceTransport, operatorToken: process.env.AGENT_CONTROL_WEB_OPERATOR_TOKEN, allowedOrigins: process.env.AGENT_CONTROL_WEB_ALLOWED_ORIGINS?.split(',').map(value => value.trim()).filter(Boolean), configFile: configurationFile,costRoutingLedger,uxSessions,uxSessionShares,uxSessionAnnotations,sessionVault,securityAudits:jobRuntime.securityAudits,directInference,workBoards,containment,workspacePreferences,modelImprovement});
+const server = startWebDashboard(service, {estate,diagnostics,host, port, openwa, socialVoice, voiceTransport, operatorToken: process.env.AGENT_CONTROL_WEB_OPERATOR_TOKEN, allowedOrigins: process.env.AGENT_CONTROL_WEB_ALLOWED_ORIGINS?.split(',').map(value => value.trim()).filter(Boolean), configFile: configurationFile,costRoutingLedger,uxSessions,uxSessionShares,uxSessionAnnotations,sessionVault,securityAudits:jobRuntime.securityAudits,directInference,workBoards,containment,workspacePreferences,modelImprovement});
 server.on('close',()=>{void voiceTransport.dispose();if(socialTimer)clearInterval(socialTimer);openwa?.close();uxSessionCapture.dispose();});
 server.on('listening', () => process.stdout.write(`Agent Control ${service.version} web dashboard: http://${host}:${port} (${process.env.AGENT_CONTROL_WEB_OPERATOR_TOKEN ? 'operator authenticated' : 'observer only'})\n`));
 server.on('error', error => { process.stderr.write(`Dashboard failed: ${error.message}\n`); process.exitCode = 1; });

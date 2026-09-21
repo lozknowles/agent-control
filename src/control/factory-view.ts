@@ -11,7 +11,7 @@ import {projectInvocation} from './usage-projection.js';
 import {redactSensitiveValue} from './security-redaction.js';
 
 export const FACTORY_SCHEMA = 'agent-control.factory/v1' as const;
-export type FactoryKind = 'job'|'planned-work'|'lane'|'worker'|'model'|'tool'|'baton'|'cache'|'skill'|'evidence'|'containment';
+export type FactoryKind = 'job'|'planned-work'|'lane'|'worker'|'model'|'tool'|'baton'|'cache'|'skill'|'evidence'|'containment'|'host'|'cpu'|'gpu'|'runtime'|'endpoint'|'service'|'storage'|'repository'|'capability'|'unknown';
 export interface FactoryMetric {value:number|null; unit:string; authority:string;}
 export interface FactoryEntity {
   id:string; sourceId:string; kind:FactoryKind; label:string; state:string;
@@ -19,10 +19,10 @@ export interface FactoryEntity {
   at:string|null; metrics:Record<string,FactoryMetric>; detail:Record<string,unknown>;
   links:Array<{kind:'run'|'artifact'|'board'|'lane'|'models'|'usage'|'specialists'|'activity'; id:string; label:string}>;
 }
-export interface FactoryRelation {id:string; from:string; to:string; kind:'assignment'|'route'|'handoff'|'evidence'|'cache'|'skill'; sourceId:string;}
+export interface FactoryRelation {id:string; from:string; to:string; kind:'assignment'|'route'|'handoff'|'evidence'|'cache'|'skill'; sourceId:string; state?:string; basis?:string; layer?:string; label?:string;}
 export interface FactoryEvent {id:string; at:string; kind:string; entityId:string|null; caption:string; sourceId:string;}
 export interface FactoryProjection {
-  schema:typeof FACTORY_SCHEMA; observedAt:string; authority:'READ_ONLY_RUNTIME_PROJECTION';
+  schema:typeof FACTORY_SCHEMA; domain?:'FACTORY'|'ESTATE'; estate?:Record<string,unknown>; observedAt:string; authority:'READ_ONLY_RUNTIME_PROJECTION';
   entities:FactoryEntity[]; relations:FactoryRelation[]; events:FactoryEvent[];
   coverage:{omittedEntities:number; limits:{entities:number;runs:number;invocations:number}; limitations:string[]};
 }

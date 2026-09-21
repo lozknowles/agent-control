@@ -520,6 +520,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if(view==='home')window.AgentControlFirstRun?.activate();
     if(view==='poe'){document.dispatchEvent(new Event('poe:open'));return;}
     document.querySelector('#factory-workspace').hidden = view !== 'factory';
+    document.querySelector('#estate-workspace').hidden = view !== 'estate';
     document.querySelector('#jobs-workspace').hidden = view !== 'jobs';
     document.querySelector('#work-board-workspace').hidden = view !== 'work-board';
     document.querySelector('#runtime-map-workspace').hidden = view !== 'runtime-map';

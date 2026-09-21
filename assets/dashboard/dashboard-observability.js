@@ -12,7 +12,7 @@
     dialog=document.createElement('dialog');dialog.id='observability-dialog';dialog.setAttribute('aria-labelledby','observability-title');dialog.innerHTML='<div class="obs-header"></div><div class="obs-body"></div>';document.body.append(dialog);
     dialog.addEventListener('close',()=>{revision++;clearInterval(timer);data=null;});
     document.addEventListener('agent-control:authentication-changed',()=>{if(state.operatorAuth!=='authenticated'){dialog.close();dialog.querySelector('.obs-body').replaceChildren();}});
-    const entry=document.createElement('button');entry.className='primary-tab';entry.textContent='Estate';entry.dataset.observabilityEstate='';entry.onclick=()=>window.AgentControlRuntimeMap?.openEstate();document.querySelector('[data-view="runtime-map"]')?.before(entry);
+    const entry=document.createElement('button');entry.className='primary-tab';entry.textContent='Estate inventory';entry.dataset.observabilityEstate='';entry.onclick=()=>window.AgentControlRuntimeMap?.openEstate();document.querySelector('[data-view="runtime-map"]')?.before(entry);
     document.addEventListener('click',event=>{
       const physical=event.target.closest('[data-obs-node]');if(physical){openNode(physical.dataset.obsNode);return;}
       const target=event.target.closest('[data-runtime-node]');if(!target||dialog.contains(target))return;

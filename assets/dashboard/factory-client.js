@@ -1,10 +1,10 @@
 export class FactoryConnection {
-  constructor({token,onFrame,onStatus,onCoverage}){Object.assign(this,{token,onFrame,onStatus,onCoverage});this.controller=null;this.lastId='';this.running=false;this.retry=null;this.generation=0;}
+  constructor({token,onFrame,onStatus,onCoverage,url='/api/factory/events'}){Object.assign(this,{token,onFrame,onStatus,onCoverage,url});this.controller=null;this.lastId='';this.running=false;this.retry=null;this.generation=0;}
   start(){if(this.running)return;this.running=true;this.connect();}
   stop(){this.running=false;this.generation++;this.controller?.abort();clearTimeout(this.retry);this.retry=null;}
   async connect(){
     const own=++this.generation;this.controller?.abort();this.controller=new AbortController();
-    try{this.onStatus('CONNECTING');const response=await fetch('/api/factory/events',{headers:{Authorization:`Bearer ${this.token()}`,...(this.lastId?{'Last-Event-ID':this.lastId}:{})},signal:this.controller.signal});
+    try{this.onStatus('CONNECTING');const response=await fetch(this.url,{headers:{Authorization:`Bearer ${this.token()}`,...(this.lastId?{'Last-Event-ID':this.lastId}:{})},signal:this.controller.signal});
       if(own!==this.generation||!this.running)return;
       if(!response.ok){if([401,403,404].includes(response.status)){this.running=false;this.onStatus(response.status===404?'DISABLED':'AUTHENTICATION REQUIRED');return;}throw Error(`HTTP ${response.status}`);}
       const reader=response.body.getReader(),decoder=new TextDecoder();let buffer='';

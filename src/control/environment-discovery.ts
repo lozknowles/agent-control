@@ -4,6 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { OwnedProcessManager } from "./owned-process.js";
+import {emptyConfig} from './config.js';
 import { AGENT_CONTROL_VERSION } from "../version.js";
 import type {
   AgentControlConfig,
@@ -172,6 +173,7 @@ export type DiscoveryObservation = Omit<
 > &
   Partial<Pick<DiscoveryItem, "resourceClasses" | "operationalState">>;
 export interface DiscoveryScan {
+  scopePermissionId?:string;
   schema: typeof ENVIRONMENT_DISCOVERY_SCHEMA;
   id: string;
   mode: DiscoveryMode;
@@ -365,7 +367,10 @@ export class DefaultDiscoveryProbe implements DiscoveryProbe {
 }
 
 export class EnvironmentDiscoveryRuntime {
-  private progress: {scanId:string;state:'RUNNING'|'COMPLETED'|'PARTIAL'|'FAILED';startedAt:string;updatedAt:string;adapters:Array<{id:string;state:'WAITING'|'CHECKING'|'COMPLETE'|'FAILED';found:number}>;items:DiscoveryObservation[]} | null = null;
+  private scopedScanAuthorizer:((permissionId:string)=>boolean)|null=null;
+  setScopedScanAuthorizer(authorizer:(permissionId:string)=>boolean){this.scopedScanAuthorizer=authorizer;}
+  private scopeVisible(permissionId?:string){return !permissionId||this.scopedScanAuthorizer?.(permissionId)===true;}
+  private progress: {scopePermissionId?:string;scanId:string;state:'RUNNING'|'COMPLETED'|'PARTIAL'|'FAILED';startedAt:string;updatedAt:string;adapters:Array<{id:string;state:'WAITING'|'CHECKING'|'COMPLETE'|'FAILED';found:number}>;items:DiscoveryObservation[]} | null = null;
   private state: StoreShape;
   private readonly clock: () => Date;
   private readonly environment: NodeJS.ProcessEnv;
@@ -389,15 +394,16 @@ export class EnvironmentDiscoveryRuntime {
   projection() {
     return safe({
       schema: ENVIRONMENT_DISCOVERY_SCHEMA,
-      scans: this.state.scans.map((value) => structuredClone(value)),
+      scans: this.state.scans.filter(v=>this.scopeVisible(v.scopePermissionId)).map((value) => structuredClone(value)),
       proposals: this.state.proposals.map((value) => structuredClone(value)),
-      latest: this.state.scans.at(-1) ?? null,
-      progress: this.progress,
+      latest: this.state.scans.filter(v=>this.scopeVisible(v.scopePermissionId)).at(-1) ?? null,
+      progress: this.progress&&this.scopeVisible(this.progress.scopePermissionId)?this.progress:null,
     });
   }
   scan(id: string) {
     const value = this.state.scans.find((item) => item.id === id);
     if (!value) throw new Error("environment_discovery_scan_missing");
+    if(!this.scopeVisible(value.scopePermissionId))throw Error('environment_discovery_permission_denied');
     return structuredClone(value);
   }
   proposal(id: string) {
@@ -409,13 +415,17 @@ export class EnvironmentDiscoveryRuntime {
     if(this.progress?.state==='RUNNING')throw new Error('environment_discovery_already_running');
     try{return await this.performDiscover(input);}catch(error){this.failProgress();throw error;}
   }
+  async discoverScoped(input:{scopePermissionId?:string;mode:DiscoveryMode;testing?:DiscoveryTesting;includeRemote?:boolean;includeMemory?:boolean},adapters:DiscoveryAdapter[]){
+    if(this.progress?.state==='RUNNING')throw new Error('environment_discovery_already_running');
+    try{return await this.performDiscover(input,adapters,emptyConfig(),input.scopePermissionId);}catch(error){this.failProgress();throw error;}
+  }
   private failProgress(){if(this.progress?.state==='RUNNING'){this.progress.state='FAILED';this.progress.updatedAt=now(this.clock);}}
   private async performDiscover(input: {
     mode: DiscoveryMode;
     testing?: DiscoveryTesting;
     includeRemote?: boolean;
     includeMemory?: boolean;
-  }) {
+  }, scopedAdapters=this.adapters, scopedConfig?:AgentControlConfig,scopePermissionId?:string) {
     if (!MODES.has(input.mode))
       throw new Error("environment_discovery_mode_invalid");
     const testing = input.testing ?? "SKIP_TESTING";
@@ -425,9 +435,9 @@ export class EnvironmentDiscoveryRuntime {
       throw new Error("environment_discovery_remote_permission_required");
     const startedAt = now(this.clock),
       id = `discovery-${randomUUID()}`,
-      config = structuredClone(this.options.config()),
+      config = structuredClone(scopedConfig??this.options.config()),
       previous = this.state.scans.at(-1);
-    this.progress={scanId:id,state:'RUNNING',startedAt,updatedAt:startedAt,adapters:this.adapters.map(adapter=>({id:adapter.id,state:'WAITING',found:0})),items:[]};
+    this.progress={...(scopePermissionId?{scopePermissionId}:{}),scanId:id,state:'RUNNING',startedAt,updatedAt:startedAt,adapters:scopedAdapters.map(adapter=>({id:adapter.id,state:'WAITING',found:0})),items:[]};
     this.options.onEvent?.("scan.started", {
       scanId: id,
       mode: input.mode,
@@ -455,7 +465,7 @@ export class EnvironmentDiscoveryRuntime {
     };
     const discovered: DiscoveryObservation[] = [];
     const failures: DiscoveryScan["failures"] = [];
-    for (const adapter of this.adapters) {
+    for (const adapter of scopedAdapters) {
       const stage=this.progress.adapters.find(item=>item.id===adapter.id)!;stage.state='CHECKING';this.progress.updatedAt=now(this.clock);this.options.onEvent?.('scan.adapter.started',{scanId:id,adapter:adapter.id});
       try {
         const found=await adapter.discover(context);discovered.push(...found);stage.found=found.length;stage.state='COMPLETE';this.progress.items=safe(dedupe(discovered).map(normaliseObservation));this.progress.updatedAt=now(this.clock);this.options.onEvent?.('scan.adapter.completed',{scanId:id,adapter:adapter.id,found:found.length});
@@ -478,6 +488,7 @@ export class EnvironmentDiscoveryRuntime {
       recommendations = recommend(items, config),
       completedAt = now(this.clock);
     const scan: DiscoveryScan = safe({
+      ...(scopePermissionId?{scopePermissionId}:{}),
       schema: ENVIRONMENT_DISCOVERY_SCHEMA,
       id,
       mode: input.mode,

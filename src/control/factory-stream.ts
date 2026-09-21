@@ -1,5 +1,5 @@
 import type {IncomingMessage,ServerResponse} from 'node:http';
-import {FactoryJournal,projectFactory,type FactorySource,type FactoryFrame} from './factory-view.js';
+import {FactoryJournal,projectFactory,type FactorySource,type FactoryFrame,type FactoryProjection} from './factory-view.js';
 
 /** Optional observer. No runtime subscribes to or waits for graphics. */
 export class FactoryStream {
@@ -7,8 +7,9 @@ export class FactoryStream {
   private clients=new Set<ServerResponse>();private timer:ReturnType<typeof setInterval>|null=null;
   private pending=false;private closed=false;
   private blocked=new WeakSet<ServerResponse>();
-  constructor(private readonly source:()=>FactorySource,readonly intervalMs=750){}
-  sample(){return this.journal.append(projectFactory(this.source()));}
+  constructor(private readonly source:()=>FactorySource|FactoryProjection,readonly intervalMs=750){}
+  sample(){const value=this.source();return this.journal.append('schema' in value?value:projectFactory(value));}
+  publish(){if(this.closed||this.pending||!this.clients.size)return;this.pending=true;setImmediate(()=>{try{if(this.closed||!this.clients.size)return;const frame=this.sample();for(const client of this.clients)this.send(client,frame);}catch{/* Optional projection must not fail discovery. */}finally{this.pending=false;}});}
   connect(request:IncomingMessage,response:ServerResponse){
     if(this.closed){response.writeHead(503);response.end();return;}
     response.writeHead(200,{'Content-Type':'text/event-stream; charset=utf-8','Cache-Control':'no-store','Connection':'keep-alive','X-Accel-Buffering':'no'});
