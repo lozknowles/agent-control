@@ -71,7 +71,7 @@ const service=new AgentControlService({version:1,paused:false,lastRestorePoint:n
 parcels.store.subscribe(parcel=>{for(const stage of parcel.stages){if(!stage.runId)continue;board=boards.get(board.id);const item=board.items.find(item=>item.id===planned.get(stage.id))!;if(!item.runs.length){const r=ledger.get(stage.runId)!;board=boards.linkRun(board.id,board.version,item.id,{runId:r.id,attempt:1,state:r.status,startedAt:r.startedAt??r.requestedAt,evidence:[]});}if(['SUCCEEDED','FAILED'].includes(stage.status)&&item.state!==(stage.status==='SUCCEEDED'?'COMPLETED':'FAILED'))board=boards.completeRun(board.id,board.version,item.id,{runId:stage.runId,state:stage.status==='SUCCEEDED'?'COMPLETED':'FAILED',evidence:ledger.get(stage.runId)!.artifacts});}});
 const server=startWebDashboard(service,{port:0,operatorToken:token,workBoards:boards});await once(server,'listening');const base=`http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 const browser=await chromium.launch({headless:true,downloadsPath:path.join(out,'downloads'),executablePath:process.env.AGENT_CONTROL_CHROMIUM??'/snap/bin/chromium',args:['--no-sandbox','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
-const context=await browser.newContext({viewport:{width:1680,height:1120},acceptDownloads:true});
+const context=await browser.newContext({viewport:{width:1680,height:1120},colorScheme:'dark',acceptDownloads:true});
 await context.addInitScript(t=>sessionStorage.setItem('agent-control-operator-token',t),token);
 const page=await context.newPage(),errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
 const screenshot=async(name:string)=>{await page.evaluate(()=>window.scrollTo(0,0));await page.screenshot({path:path.join(out,name),fullPage:true});};
