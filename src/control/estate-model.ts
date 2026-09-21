@@ -20,7 +20,8 @@ export function estateDiff(previous:EstateSnapshot|null,next:EstateSnapshot):Est
  if(previous.scopeDigest!==next.scopeDigest)return [{id:next.id,change:'CHANGED',basis:'Scope changed; absence is not comparable'}];
  const changes:EstateDifference[]=[];const old=new Map(previous.entities.map(e=>[e.id,e]));
  for(const e of next.entities){const p=old.get(e.id);old.delete(e.id);if(!p){changes.push({id:e.id,change:e.kind==='model'?'MODEL_ADDED':'NEW',basis:'New evidence'});continue;}
-  if(e.state==='UNREACHABLE'&&p.state!=='UNREACHABLE')changes.push({id:e.id,change:'UNREACHABLE',basis:'Contact attempt failed; not removal'});
+  if(e.state==='STALE'&&p.state!=='STALE')changes.push({id:e.id,change:'NOT_REOBSERVED',basis:'Retained stale evidence; removal is unproven'});
+  else if(e.state==='UNREACHABLE'&&p.state!=='UNREACHABLE')changes.push({id:e.id,change:'UNREACHABLE',basis:'Contact attempt failed; not removal'});
   else if(p.state==='UNREACHABLE'&&current(e.state))changes.push({id:e.id,change:'RECOVERED',basis:'Current observation after failed contact'});
   else if(estateHash([p.state,p.attributes])!==estateHash([e.state,e.attributes]))changes.push({id:e.id,change:e.kind==='service'?'SERVICE_CHANGED':e.state==='EXPECTED'?'CONFIGURATION_CHANGED':'CHANGED',basis:'State or metadata changed'});
   for(const [cap,result] of Object.entries(e.capabilities)){if(result==='PASS'&&p.capabilities[cap]!=='PASS')changes.push({id:e.id,change:'CAPABILITY_ADDED',basis:cap});else if(result==='FAIL'&&p.capabilities[cap]==='PASS')changes.push({id:e.id,change:'CAPABILITY_LOST',basis:`${cap}: current probe failed`});}

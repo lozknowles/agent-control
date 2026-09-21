@@ -79,10 +79,11 @@ export function startWebDashboard(service: AgentControlService, options: WebServ
   const host = options.host ?? '127.0.0.1', port = options.port ?? 4310;
   const assetsDir = options.assetsDir ?? path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../assets/dashboard');
   const factory = options.factoryEnabled===false||process.env.AGENT_CONTROL_FACTORY_VIEW==='off'?null:new FactoryStream(()=>({...service.factorySource(),boards:options.workBoards?.list()??[],kills:options.containment?.list().kills??[]}));
+  const unsubscribeFactory=factory?service.events.subscribe(()=>factory.publish()):null;
   const estateStream=options.estate&&options.estateEnabled!==false&&process.env.AGENT_CONTROL_ESTATE_VIEW!=='off'?new FactoryStream(()=>options.estate!.projection(),250):null;
   const unsubscribeEstate=estateStream?options.estate!.subscribe(()=>estateStream.publish()):null;
   const server = http.createServer((request, response) => void handle(service, request, response, {...options, host, port, assetsDir},factory,estateStream).catch(error => replyError(response, error)));
-  server.on('close',()=>{factory?.close();estateStream?.close();unsubscribeEstate?.();});
+  server.on('close',()=>{factory?.close();estateStream?.close();unsubscribeEstate?.();unsubscribeFactory?.();});
   server.listen(port, host);
   return server;
 }
