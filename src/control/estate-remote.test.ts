@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
-import {EstateRemoteAdapter,estateResourceAlias,estateSshArgs,ESTATE_REMOTE_SCHEMA,ESTATE_REMOTE_METHOD,ESTATE_REMOTE_LIMITS} from './estate-remote.js';
+import {EstateRemoteAdapter,estateResourceAlias,estateSshArgs,estateProbeProgram,validateEstateEnvelope,ESTATE_REMOTE_SCHEMA,ESTATE_REMOTE_METHOD,ESTATE_REMOTE_LIMITS} from './estate-remote.js';
 import {emptyConfig,type ResourceConfig} from './config.js';
 import type {SshExecutor} from './managed-node-ssh.js';
 import type {OwnedExecution} from './owned-process.js';
@@ -148,4 +148,38 @@ test('Fixed collector parses only approved hardware fields and preserves canonic
 test('Fixed collector reports optional utility failure as unknown without losing pinned identity',()=>{
  const program=fs.readFileSync(new URL('../../scripts/estate-remote-probe.py',import.meta.url),'utf8'),prefix=`import subprocess,json\nREQUEST={'resourceAlias':'fixture','nonce':'fixture'}\ndef mock(args,**kw):\n if args[0]=='systemd-id128': return 'a'*32\n raise subprocess.TimeoutExpired(args,2)\nsubprocess.check_output=mock\n`;
  const e=JSON.parse(execFileSync('python3',['-'],{input:prefix+program,encoding:'utf8'}));assert.equal(e.cpuModel,null);assert.deepEqual(e.gpuInventory,{status:'UNAVAILABLE',devices:[]});assert.equal(e.host.identitySha256.length,64);
+});
+
+const platformEnvelope=(input:string,platform:'windows'|'android')=>({...hardwareEnvelope(input),method:platform==='windows'?'smbios-uuid+cim-metadata/v1':'termux-ssh-host-key+android-metadata/v1',host:{identitySha256:pin,platform,architecture:platform==='windows'?'x86_64':'aarch64',identityScope:platform==='windows'?'SMBIOS_UUID':'SSH_INSTALLATION'},status:platform==='android'?'PARTIAL':'COMPLETE',missing:platform==='android'?['PHYSICAL_IDENTITY_UNAVAILABLE']:[],gpuInventory:platform==='windows'?{status:'OBSERVED',source:'WINDOWS_CIM',devices:[{index:0,model:'Fixture integrated GPU',memoryMiB:null,driver:'32.1'}]}:{status:'UNAVAILABLE',devices:[]}});
+for(const platform of ['windows','android'] as const)test(`Estate ${platform} uses its pinned identity contract and native owned SSH without Linux managed-node authority`,async()=>{
+ const f=fixture(async(_c,_a,input)=>{const decoded=platform==='windows'?Buffer.from(input.match(/FromBase64String\('([^']+)'\)/)![1],'base64').toString():JSON.stringify(request(input));const data=JSON.parse(decoded);const e=platformEnvelope(estateProbeProgram(data.resourceAlias,data.nonce),platform);return{status:0,stdout:JSON.stringify(e),stderr:''};});f.config.resources[0].platform=platform;delete f.config.resources[0].managedNode;
+ const r=await f.run();assert.equal(r.state,platform==='android'?'DEGRADED':'AVAILABLE');assert.ok('envelope' in r);assert.equal(r.envelope.host.identityScope,platform==='android'?'SSH_INSTALLATION':'SMBIOS_UUID');assert.equal(f.calls.length,1);assert.equal((f.calls[0][3] as any).ownedExecution,f.context.ownedExecution);
+});
+for(const [label,mutate] of [
+ ['Android falsely claims full physical identity',(e:any)=>{e.status='COMPLETE';e.missing=[];}],
+ ['Android swaps hardware identity scope',(e:any)=>e.host.identityScope='SMBIOS_UUID'],
+ ['Android omits identity scope',(e:any)=>delete e.host.identityScope],
+ ['platform swaps method',(e:any)=>e.method=ESTATE_REMOTE_METHOD],
+ ['Android invents Windows GPU provenance',(e:any)=>e.gpuInventory={status:'OBSERVED',source:'WINDOWS_CIM',devices:[]}],
+] as const)test(`Estate platform validator rejects ${label}`,()=>{
+ const input=estateProbeProgram('resource:fixture','00000000-0000-4000-8000-000000000000'),e=platformEnvelope(input,'android');mutate(e);assert.throws(()=>validateEstateEnvelope(JSON.stringify(e),'resource:fixture','00000000-0000-4000-8000-000000000000',pin,localPin,'android'));
+});
+test('Estate platform validator rejects a response from a different configured platform',()=>{
+ const nonce='00000000-0000-4000-8000-000000000000',e=platformEnvelope(estateProbeProgram('resource:fixture',nonce),'windows');assert.throws(()=>validateEstateEnvelope(JSON.stringify(e),'resource:fixture',nonce,pin,localPin,'linux'),/platform_mismatch/);
+});
+test('Estate Windows command has a fixed remote deadline and sends requests only as encoded data',()=>{
+ const r=resource();r.platform='windows';const args=estateSshArgs(r);assert.ok(args.includes('-EncodedCommand'));const wrapper=Buffer.from(args.at(-1)!,'base64').toString('utf16le');assert.ok(wrapper.includes('WaitOne(12000)'));assert.ok(wrapper.includes('$p.Stop()'));assert.ok(wrapper.includes('exit 124'));assert.ok(!wrapper.includes(r.transport.host!));
+ const script=estateProbeProgram("resource:'; throw 'injected",'00000000-0000-4000-8000-000000000000','windows');assert.ok(!script.includes("resource:'; throw 'injected"));assert.throws(()=>estateProbeProgram('fixture','nonce','unknown'),/unsupported/);
+});
+test('SYNTHETIC Android native graph stays partial while retaining authenticated hardware observations',async()=>{
+ const f=native(async(_c,_a,input)=>({status:0,stdout:JSON.stringify(platformEnvelope(input,'android')),stderr:''}));f.config.resources[0].platform='android';delete f.config.resources[0].managedNode;
+ const permission=f.estate.grant({categories:['PASSIVE_INVENTORY','REMOTE_HOST_DISCOVERY'],targetIds:[estateResourceAlias(resource().id)]},'SYNTHETIC_TEST');const run=f.runtime.createRun('discover-estate@1.0.0',{permissionId:permission.id},{type:'manual',actor:'SYNTHETIC_TEST'});await f.runtime.tick();assert.equal(f.runtime.ledger.get(run.id)?.status,'SUCCEEDED');const s=f.estate.latest()!,host=s.entities.find(e=>e.id===`host:${estateResourceAlias(resource().id)}`)!;assert.equal(s.status,'PARTIAL');assert.equal(host.state,'DEGRADED');assert.equal(host.attributes.identityScope,'SSH_INSTALLATION');assert.ok(s.entities.some(e=>e.hostId===host.id&&e.kind==='cpu'));assert.ok(!s.entities.some(e=>e.hostId===host.id&&e.kind==='gpu'));
+});
+test('Windows graphics summary never presents shared adapter memory as dedicated VRAM',async()=>{
+ const {hostHardware}=await import(new URL('../../assets/dashboard/estate-client.js',import.meta.url).href),p={entities:[{id:'host:w',kind:'host',state:'AVAILABLE',detail:{attributes:{platform:'windows'}}},{id:'gpu:w:0',kind:'gpu',state:'IDENTIFIED',laneId:'host:w',detail:{attributes:{inventorySource:'WINDOWS_CIM',model:'Integrated GPU',memoryMiB:null}}}]};const gpu=hostHardware(p,'host:w')[2];assert.equal(gpu.label,'GPU');assert.equal(gpu.value,'Integrated GPU');
+});
+test('Android collector hashes only the existing public host-key identity and explicitly reports its limitation',()=>{
+ const program=fs.readFileSync(new URL('../../scripts/estate-android-probe.py',import.meta.url),'utf8');
+ const prefix=`import subprocess,json\nREQUEST={'resourceAlias':'fixture','nonce':'fixture'}\ndef mock(args,**kw):\n assert kw['timeout']==2\n if args[0]=='ssh-keygen':\n  assert args[-1]=='/data/data/com.termux/files/usr/etc/ssh/ssh_host_ed25519_key.pub'\n  return '256 SHA256:'+('A'*43)+' private-comment (ED25519)'\n if args[0]=='/system/bin/getprop':\n  assert args[1] in ['ro.soc.model','ro.product.model','ro.build.version.release']\n  return 'Fixture'\n raise Exception('unexpected command')\nsubprocess.check_output=mock\n`;
+ const text=execFileSync('python3',['-'],{input:prefix+program,encoding:'utf8'}),e=JSON.parse(text);assert.equal(e.host.identityScope,'SSH_INSTALLATION');assert.equal(e.status,'PARTIAL');assert.ok(e.missing.includes('PHYSICAL_IDENTITY_UNAVAILABLE'));assert.ok(!text.includes('SHA256:'));assert.ok(!text.includes('private-comment'));
 });

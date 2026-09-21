@@ -8,8 +8,8 @@ export function hostHardware(projection,hostId){
  const gib=n=>`${(n/1024**3).toFixed(1)} GiB`;
  const rows=[{label:'CPU',value:count?`${model&&model!=='UNKNOWN'?model:'Model unknown'} · ${count} logical CPUs`:'Unknown',state:count?state(cpu??host):'UNKNOWN',entityId:cpu?.id},
  {label:'Memory',value:memory?gib(memory):'Unknown',state:memory?state(cpu??host):'UNKNOWN',entityId:cpu?.id}];
- if(gpus.length)for(const gpu of gpus){const a=gpu.detail?.attributes??{};rows.push({label:'NVIDIA GPU',value:`${a.model??gpu.label}${a.memoryMiB?` · ${(a.memoryMiB/1024).toFixed(1)} GiB VRAM`:''}`,state:state(gpu),entityId:gpu.id});}
- else rows.push({label:'NVIDIA GPU',value:attrs.gpuInventoryStatus==='OBSERVED'?'None reported by NVIDIA driver':'Unknown · inventory unavailable',state:attrs.gpuInventoryStatus==='OBSERVED'?state(host):'UNKNOWN'});
+ if(gpus.length)for(const gpu of gpus){const a=gpu.detail?.attributes??{};rows.push({label:a.inventorySource==='WINDOWS_CIM'?'GPU':'NVIDIA GPU',value:`${a.model??gpu.label}${a.memoryMiB?` · ${(a.memoryMiB/1024).toFixed(1)} GiB VRAM`:''}`,state:state(gpu),entityId:gpu.id});}
+ else rows.push({label:attrs.platform==='android'||attrs.gpuInventorySource==='WINDOWS_CIM'?'GPU':'NVIDIA GPU',value:attrs.gpuInventoryStatus==='OBSERVED'?'None reported by NVIDIA driver':'Unknown · inventory unavailable',state:attrs.gpuInventoryStatus==='OBSERVED'?state(host):'UNKNOWN'});
  return rows;
 }
 export function positionEstate(entities){
