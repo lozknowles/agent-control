@@ -42,3 +42,17 @@ test('Historical integration requires selected timestamped log evidence and pres
 test('Estate frames validate against the shared Factory envelope schema',async()=>{const f=fixture(),r=await run(f,['PASSIVE_INVENTORY']),frame=new FactoryJournal().append(estateProjection(r.snapshot));const validate=new Ajv2020({strict:false}).compile(JSON.parse(fs.readFileSync(new URL('../../docs/factory-event.schema.json',import.meta.url),'utf8')));assert.equal(validate(frame),true,JSON.stringify(validate.errors));});
 
 test('Comparable rescans retain absent models as STALE and preserve first seen instead of implying removal',async()=>{let available=true;const endpoint=http.createServer((q,r)=>{r.setHeader('Content-Type','application/json');r.end(JSON.stringify(q.url==='/v1/models'?{data:available?[{id:'SYNTHETIC-model'}]:[]}:q.url==='/health'?{status:'ok'}:{}));});await once(endpoint.listen(0,'127.0.0.1'),'listening');try{const f=fixture([{id:'rescan',kind:'ENDPOINT',label:'SYNTHETIC rescan',locator:`http://127.0.0.1:${(endpoint.address() as AddressInfo).port}`}]);const a=await run(f,['SERVICE_ENUMERATION'],['rescan']);available=false;const b=await run(f,['SERVICE_ENUMERATION'],['rescan']);const old=a.snapshot.entities.find(e=>e.kind==='model')!,stale=b.snapshot.entities.find(e=>e.id===old.id)!;assert.equal(stale.state,'STALE');assert.equal(stale.firstSeen,old.firstSeen);assert.equal(stale.lastSeen,old.lastSeen);assert.ok(b.snapshot.diff.some(d=>d.id===old.id&&d.change==='NOT_REOBSERVED'));assert.ok(!b.snapshot.diff.some(d=>d.change==='REMOVED'||d.change==='MODEL_REMOVED'));}finally{endpoint.close();}});
+
+// An accepted permission does not mean that an observation adapter exists.
+test('Selected unsupported discovery scopes yield PARTIAL even when all observed local resources succeeded',async()=>{
+ for(const category of ['REMOTE_HOST_DISCOVERY','NETWORK_RELATIONSHIP_DISCOVERY','PROCESS_INSPECTION'] as const){
+  const f=fixture(),r=await run(f,['PASSIVE_INVENTORY',category]);
+  assert.equal(r.run.status,'SUCCEEDED');
+  assert.equal(r.snapshot.status,'PARTIAL');
+  assert.ok(r.snapshot.events.some(e=>e.type==='ADAPTER_UNAVAILABLE'&&e.caption.includes(category)));
+  assert.equal(r.snapshot.entities.filter(e=>e.kind==='host').length,1);
+  assert.ok(!r.snapshot.entities.some(e=>e.hostId&&e.hostId!=='host:controller-local'));
+  assert.equal(f.estate.projection().estate?.status,'PARTIAL');
+  assert.equal(f.estate.replay(r.snapshot.id).snapshot.status,'PARTIAL');
+ }
+});
