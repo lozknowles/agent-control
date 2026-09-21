@@ -11,7 +11,7 @@ import type {AddressInfo} from 'node:net';
 import {chromium} from 'playwright-core';
 import {EstateDiscovery,registerEstateDiscovery} from '../src/control/estate-discovery.js';
 import {estateHash,type EstateSnapshot} from '../src/control/estate-model.js';
-import {estateResourceAlias} from '../src/control/estate-remote.js';
+import {estateResourceAlias,validateEstateEnvelope} from '../src/control/estate-remote.js';
 import {executeSsh,type SshExecutor} from '../src/control/managed-node-ssh.js';
 import {emptyConfig,type ResourceConfig} from '../src/control/config.js';
 import {ActionRegistry,WorkerRegistry,createJobRuntime} from '../src/control/job-runtime.js';
@@ -45,7 +45,10 @@ const executor:SshExecutor=async(command,args,input,options)=>{
  assert.equal(options.session?.remoteTransport,true);assert.ok(options.ownedExecution,'Native execution owner required');
  if(injectNextFault){injectNextFault=false;transportReceipts.push({runId,startedAt,kind:'DETERMINISTIC_TRANSPORT_FAULT',actualRemoteDispatch:false,classification:'UNREACHABLE',attempts:1});return{status:255,stdout:'',stderr:'network is unreachable'};}
  const result=await executeSsh(command,args,input,options);
- let envelope:unknown=null;try{envelope=JSON.parse(result.stdout);}catch{/* Native adapter owns response rejection. */}
+ // Retain the same validated field order hashed by native graph evidence.
+ // The raw byte hash below remains distinct; native nonce/binding validation
+ // and the post-run accepted-graph digest check still own qualification.
+ let envelope:unknown=null;try{envelope=validateEstateEnvelope(result.stdout,alias!,JSON.parse(result.stdout).nonce,approval.expectedIdentitySha256,approval.controllerIdentitySha256);}catch{/* Native adapter owns response rejection. */}
  transportReceipts.push({runId,startedAt,completedAt:new Date().toISOString(),kind:'PRODUCTION_OWNED_SSH',actualRemoteDispatch:true,exitCode:result.status,timedOut:Boolean(result.timedOut),aborted:Boolean(result.aborted),responseSha256:sha(result.stdout),envelope});
  return result;
 };
