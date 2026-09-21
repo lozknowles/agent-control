@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import {execFileSync} from 'node:child_process';
 import {EstateRemoteAdapter,estateResourceAlias,estateSshArgs,ESTATE_REMOTE_SCHEMA,ESTATE_REMOTE_METHOD,ESTATE_REMOTE_LIMITS} from './estate-remote.js';
 import {emptyConfig,type ResourceConfig} from './config.js';
 import type {SshExecutor} from './managed-node-ssh.js';
@@ -110,4 +111,41 @@ test('SYNTHETIC native cancellation retains previous remote entities and relatio
 });
 test('Estate host zones and colours derive from real projection identities and explicit states',async()=>{
  const layout=await import(new URL('../../assets/dashboard/estate-client.js',import.meta.url).href),colours=await import(new URL('../../assets/dashboard/factory-layout.js',import.meta.url).href);const f=native(),r=await f.run(),projection=estateProjection(r.snapshot),positioned=layout.positionEstate(projection.entities);assert.equal(positioned.hostZones.length,2);assert.equal(new Set(positioned.hostZones.map((z:any)=>z.id)).size,2);assert.notEqual(colours.entityColour({state:'AVAILABLE'}),colours.entityColour({state:'UNREACHABLE'}));assert.notEqual(colours.entityColour({state:'UNAUTHORISED'}),colours.entityColour({state:'AVAILABLE'}));
+});
+
+const hardwareEnvelope=(input:string)=>({...envelope(input),cpuModel:'Fixture CPU',gpuInventory:{status:'OBSERVED',devices:[{index:0,model:'Fixture NVIDIA GPU',memoryMiB:6144,driver:'580.1'}]}});
+test('Estate remote accepts bounded hardware metadata without changing identity or core completeness',async()=>{
+ const f=fixture(async(_c,_a,input)=>({status:0,stdout:JSON.stringify(hardwareEnvelope(input)),stderr:''})),r=await f.run();
+ assert.equal(r.state,'AVAILABLE');assert.ok('envelope' in r);assert.equal(r.envelope.host.identitySha256,pin);assert.equal(r.envelope.gpuInventory?.devices[0].memoryMiB,6144);
+});
+test('Estate remote rejects malformed hardware inventories before graph trust',async()=>{
+ for(const mutate of [(e:any)=>e.gpuInventory.devices.push(e.gpuInventory.devices[0]),(e:any)=>e.gpuInventory.status='UNAVAILABLE',(e:any)=>e.gpuInventory.devices[0].memoryMiB=-1,(e:any)=>e.gpuInventory.devices[0].privateEndpoint='private.invalid',(e:any)=>e.cpuModel='bad\nmodel',(e:any)=>e.gpuInventory.devices=Array(33).fill(e.gpuInventory.devices[0])]){
+  const f=fixture(async(_c,_a,input)=>{const e=hardwareEnvelope(input);mutate(e);return{status:0,stdout:JSON.stringify(e),stderr:''};});assert.equal((await f.run()).state,'INVALID_RESPONSE');
+ }
+});
+test('SYNTHETIC native GPU inventory has stable identity, provenance and stale retention on missing tooling',async()=>{
+ let missing=false;const f=native(async(_c,_a,input)=>{const e=hardwareEnvelope(input);if(missing)e.gpuInventory={status:'UNAVAILABLE',devices:[]};return{status:0,stdout:JSON.stringify(e),stderr:''};});
+ const a=(await f.run()).snapshot,b=(await f.run()).snapshot,hostId=`host:${estateResourceAlias(resource().id)}`,gpu=a.entities.find(e=>e.hostId===hostId&&e.kind==='gpu')!;
+ assert.ok(gpu);assert.equal(gpu.attributes.memoryMiB,6144);assert.equal(b.entities.find(e=>e.id===gpu.id)?.firstSeen,gpu.firstSeen);assert.ok(a.relationships.some(r=>r.to===gpu.id&&r.basis==='VERIFIED'));assert.equal(gpu.evidence[0].category,'REMOTE_HOST_DISCOVERY');
+ missing=true;const c=(await f.run()).snapshot;assert.equal(c.entities.find(e=>e.id===gpu.id)?.state,'STALE');assert.ok(!c.diff.some(d=>d.id===gpu.id&&d.change==='REMOVED'));
+});
+test('Estate host summaries show both hosts hardware, unknown GPU coverage and failed-contact staleness',async()=>{
+ const {hostHardware}=await import(new URL('../../assets/dashboard/estate-client.js',import.meta.url).href),f=native(async(_c,_a,input)=>({status:0,stdout:JSON.stringify(hardwareEnvelope(input)),stderr:''})),s=(await f.run()).snapshot,p=estateProjection(s),hostId=`host:${estateResourceAlias(resource().id)}`;
+ const rows=hostHardware(p,hostId);assert.match(rows[0].value,/Fixture CPU.*4 logical CPUs/);assert.equal(rows[1].value,'8.0 GiB');assert.match(rows[2].value,/6.0 GiB VRAM/);assert.match(hostHardware(p,'host:controller-local')[0].value,/logical CPUs/);
+ p.entities.find(e=>e.id===hostId)!.state='UNREACHABLE';assert.ok(hostHardware(p,hostId).every((r:any)=>r.state==='STALE'));
+ const legacy=native(),old=estateProjection((await legacy.run()).snapshot);assert.equal(hostHardware(old,hostId)[2].state,'UNKNOWN');assert.match(hostHardware(old,hostId)[2].value,/Unknown/);
+});
+test('Estate GPU inventory distinguishes observed NVIDIA absence from unavailable metadata',async()=>{
+ const {hostHardware}=await import(new URL('../../assets/dashboard/estate-client.js',import.meta.url).href),f=native(async(_c,_a,input)=>{const e=hardwareEnvelope(input);e.gpuInventory.devices=[];return{status:0,stdout:JSON.stringify(e),stderr:''};}),p=estateProjection((await f.run()).snapshot),rows=hostHardware(p,`host:${estateResourceAlias(resource().id)}`);
+ assert.equal(rows[2].value,'None reported by NVIDIA driver');assert.ok(!p.entities.some(e=>e.id.startsWith('gpu:resource:')));
+});
+test('Fixed collector parses only approved hardware fields and preserves canonical machine identity',()=>{
+ const program=fs.readFileSync(new URL('../../scripts/estate-remote-probe.py',import.meta.url),'utf8');
+ const prefix=`import subprocess,json,hashlib\nREQUEST={'resourceAlias':'fixture','nonce':'fixture'}\ndef mock(args,**kw):\n assert kw['timeout']==2\n if args==['systemd-id128','machine-id']: return 'A'*32\n if args==['lscpu','--json']: return json.dumps({'lscpu':[{'field':'Model name:','data':'Fixture CPU'},{'field':'Unapproved:','data':'DO_NOT_EMIT'}]})\n if args==['nvidia-smi','--query-gpu=index,name,memory.total,driver_version','--format=csv,noheader,nounits']: return '0, Fixture NVIDIA GPU, 6144, 580.1\\n'\n raise Exception('unexpected command')\nsubprocess.check_output=mock\n`;
+ const output=execFileSync('python3',['-'],{input:prefix+program,encoding:'utf8'}),e=JSON.parse(output);assert.equal(e.cpuModel,'Fixture CPU');assert.equal(e.gpuInventory.devices[0].memoryMiB,6144);assert.ok(!output.includes('DO_NOT_EMIT'));assert.ok(!output.includes('A'.repeat(32)));
+ const expected=execFileSync('python3',['-c',"import hashlib;print(hashlib.sha256(('agent-control-machine/v1:'+'a'*32).encode()).hexdigest())"],{encoding:'utf8'}).trim();assert.equal(e.host.identitySha256,expected);
+});
+test('Fixed collector reports optional utility failure as unknown without losing pinned identity',()=>{
+ const program=fs.readFileSync(new URL('../../scripts/estate-remote-probe.py',import.meta.url),'utf8'),prefix=`import subprocess,json\nREQUEST={'resourceAlias':'fixture','nonce':'fixture'}\ndef mock(args,**kw):\n if args[0]=='systemd-id128': return 'a'*32\n raise subprocess.TimeoutExpired(args,2)\nsubprocess.check_output=mock\n`;
+ const e=JSON.parse(execFileSync('python3',['-'],{input:prefix+program,encoding:'utf8'}));assert.equal(e.cpuModel,null);assert.deepEqual(e.gpuInventory,{status:'UNAVAILABLE',devices:[]});assert.equal(e.host.identitySha256.length,64);
 });

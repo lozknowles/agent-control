@@ -17,7 +17,7 @@ The operator selects a privacy-safe resource alias in the Estate catalogue. The 
 }
 ```
 
-These placeholders are not usable values. An absent identity pin yields `UNAUTHORISED / EXPECTED_HOST_IDENTITY_REQUIRED` before remote execution. A historical resource name or transport address is not an identity pin. No first response is silently trusted or promoted. The digest is SHA-256 of `agent-control-machine/v1:` followed by the lowercase 32-hex machine identity from the host's `systemd-id128 machine-id` metadata utility. Establish it through the operator's existing identity-verification workflow; the adapter never changes the configured pin. The current continuation has no approved remote identity pin, and its existing route remains unavailable.
+These placeholders are not usable values. An absent identity pin yields `UNAUTHORISED / EXPECTED_HOST_IDENTITY_REQUIRED` before remote execution. A historical resource name or transport address is not an identity pin. No first response is silently trusted or promoted. The digest is SHA-256 of `agent-control-machine/v1:` followed by the lowercase 32-hex machine identity from the host's `systemd-id128 machine-id` metadata utility. Establish it through the operator's existing identity-verification workflow; the adapter never changes the configured pin. The earlier blocked capture had no approved remote identity pin and an unavailable route. This historical result must not be presented as the current qualification of a different approved resource.
 
 The normal Estate category grant must include `REMOTE_HOST_DISCOVERY` and the selected resource alias. The permission retains a digest of that complete resource binding. Configuration drift invalidates the permission, and the adapter checks the binding again after transport completion.
 
@@ -44,6 +44,10 @@ Transport and native Job integration tests use explicitly synthetic fixtures, in
 Existing graph history and raw validated envelopes remain under the permission-governed Estate evidence policy. Private runtime directories and credential material must not be copied into delivery bundles. The change remains an experimental candidate until independently qualified and reviewed for release.
 
 ## Physical qualification capture
+
+Remote hardware inventory now includes optional CPU model (`lscpu --json`) and NVIDIA index/model/VRAM/driver metadata (`nvidia-smi`), each bounded to two seconds. This additive v1 envelope extension retains the exact existing identity canonicalisation and pin. Older envelopes remain readable and show unavailable hardware as UNKNOWN; missing NVIDIA tooling never means zero GPUs. Core host/CPU-count/memory completeness is independent of the optional NVIDIA inventory. Device arrays, indices, field lengths, numeric bounds and unavailable-state consistency are validated before graph insertion. GPU IDs use the pinned resource alias and reported index; index reuse does not independently prove physical GPU continuity.
+
+Both host zones show CPU and GPU objects. Hardware summaries are visible in the host cards, inspector and evidence video. Retained hardware is explicitly stale after failed contact. Factory discovery Jobs and receipts link to the exact authorised snapshot for that run, labelled REPLAY; navigation never launches a probe. Job success means the observation receipt was recorded, not that every host was verified.
 
 `scripts/qualify-estate-two-host.ts` requires an existing resource configuration, safe resource alias, verified bootstrap receipt and pin-approval receipt through the `ESTATE_APPROVED_RESOURCE_CONFIG`, `ESTATE_APPROVED_RESOURCE_ALIAS`, `ESTATE_BOOTSTRAP_RECEIPT`, `ESTATE_PIN_APPROVAL` and `ESTATE_EVIDENCE_DIR` environment variables. It refuses a dirty candidate or mismatched configuration/receipt hashes. It neither chooses a network route nor changes a pin.
 

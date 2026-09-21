@@ -19,6 +19,11 @@ const envelopeSchema = z.object({
   host:z.object({identitySha256:sha, platform:z.literal('linux'), architecture:z.enum(['x86_64','aarch64','armv7l','i386','i686','ppc64le','s390x','riscv64'])}).strict(),
   cpuCount:z.number().int().positive().max(1_000_000).nullable(),
   memoryBytes:z.number().int().positive().max(Number.MAX_SAFE_INTEGER).nullable(),
+  cpuModel:z.string().regex(/^[\x20-\x7e]{1,160}$/).nullable().optional(),
+  gpuInventory:z.object({status:z.enum(['OBSERVED','UNAVAILABLE']),devices:z.array(z.object({
+    index:z.number().int().min(0).max(1023),model:z.string().regex(/^[\x20-\x7e]{1,160}$/),
+    memoryMiB:z.number().int().positive().max(1_000_000_000),driver:z.string().regex(/^[0-9][0-9.\-]{0,63}$/)
+  }).strict()).max(32)}).strict().optional(),
   missing:z.array(z.enum(['CPU_UNAVAILABLE','MEMORY_UNAVAILABLE'])).max(2)
 }).strict();
 export type RemoteEstateEnvelope = z.infer<typeof envelopeSchema>;
@@ -42,6 +47,8 @@ export function validateEstateEnvelope(text:string,alias:string,nonce:string,exp
   if(Math.abs(Date.now()-Date.parse(value.observedAt))>300_000)throw Error('estate_remote_observation_time_invalid');
   if(expected&&value.host.identitySha256!==expected)throw Error('estate_remote_identity_mismatch');
   if(controller&&value.host.identitySha256===controller)throw Error('estate_remote_is_controller');
+  const gpu=value.gpuInventory;
+  if(gpu&&(gpu.status==='UNAVAILABLE'&&gpu.devices.length||new Set(gpu.devices.map(d=>d.index)).size!==gpu.devices.length))throw Error('estate_remote_gpu_inventory_invalid');
   const missing=[...(value.cpuCount===null?['CPU_UNAVAILABLE']:[]),...(value.memoryBytes===null?['MEMORY_UNAVAILABLE']:[])].sort();
   if(JSON.stringify([...value.missing].sort())!==JSON.stringify(missing)||value.status!==(missing.length?'PARTIAL':'COMPLETE'))throw Error('estate_remote_partial_mismatch');
   return value;

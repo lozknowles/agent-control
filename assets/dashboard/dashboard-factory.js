@@ -34,6 +34,8 @@
     const identities=node('dl');for(const [name,value] of [['Lane',e.laneId],['Worker',e.workerId],['Model',e.modelId],['Provider',e.providerId],['Observed',e.at]]){identities.append(node('dt',name),node('dd',value??'UNAVAILABLE'));}host.append(identities);
     const metrics=node('div',undefined,'factory-metrics');for(const [name,m] of Object.entries(e.metrics)){const row=node('div');row.append(node('span',name.replace(/([A-Z])/g,' $1')),node('strong',modules[2].displayMetric(m)),node('small',m.authority));metrics.append(row);}host.append(metrics);
     const links=node('div',undefined,'factory-links');for(const link of e.links){const b=node('button',link.label,'button secondary');b.onclick=()=>openLink(link);links.append(b);}host.append(links);
+    const discoveryJob=frame.projection.entities.find(r=>r.kind==='job'&&r.runId===e.runId&&r.detail.jobId==='discover-estate');
+    if(e.runId&&discoveryJob&&['job','evidence'].includes(e.kind)){const b=node('button','View discovered hosts','button secondary');b.onclick=async()=>{try{await window.AgentControlEstate.openRun(e.runId);}catch(error){b.textContent=error.message;}};links.append(b);host.append(node('p','Job success means its evidence was recorded. Open the host view to check inventory and connection status.'));}
     const detail=node('details'),summary=node('summary','Source details and provenance'),pre=node('pre',JSON.stringify(e.detail,null,2));detail.append(summary,pre);host.append(detail);
     if(e.kind==='model')host.append(node('p','Metrics here cover retained displayed runs. Open Usage & Cost for cumulative history.'));
     if(e.kind==='evidence'||e.kind==='baton'||e.kind==='skill')host.append(node('p','Local digest recorded. Independent signed external anchor: UNAVAILABLE.'));
