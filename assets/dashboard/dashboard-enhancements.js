@@ -519,6 +519,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if(view!=='poe'){document.body.dataset.currentView=view;document.querySelector('#home-workspace').hidden=view!=='home';}
     if(view==='home')window.AgentControlFirstRun?.activate();
     if(view==='poe'){document.dispatchEvent(new Event('poe:open'));return;}
+    document.querySelector('#factory-workspace').hidden = view !== 'factory';
     document.querySelector('#jobs-workspace').hidden = view !== 'jobs';
     document.querySelector('#work-board-workspace').hidden = view !== 'work-board';
     document.querySelector('#runtime-map-workspace').hidden = view !== 'runtime-map';

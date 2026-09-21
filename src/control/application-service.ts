@@ -66,6 +66,8 @@ import {createHash} from 'node:crypto';
 import {governedRequestOrigin} from './request-origin.js';
 import {projectSpeculativeQualification} from './speculative-decoding.js';
 
+import type {FactorySource} from './factory-view.js';
+
 export type ControlEventType =
   | 'social.activity'
   | 'system.snapshot'
@@ -336,6 +338,14 @@ export class AgentControlService {
     };
   }
 
+  factorySource():Omit<FactorySource,'boards'|'kills'> {
+    const skills=this.learnedSpecialists();
+    return {observedAt:new Date().toISOString(),lanes:this.state.lanes.map(l=>this.projectLane(l)),
+      runs:this.jobRuntime?.ledger.list()??[],workers:this.jobRuntime?.workers.list()??[],workerIdentities:this.jobRuntime?.workers.executionIdentities()??[],
+      models:this.modelRegistry?.list()??[],invocations:this.harnessEfficiency?.list()??[],
+      artifacts:(this.jobRuntime?.artifacts.list()??[]).map(({storageRef:_,...a})=>a),
+      parcels:this.workParcels?.list()??[],skills:skills.specialists,skillRouting:skills.routing,events:this.events.history()};
+  }
   jobs() { return this.mustJobRuntime().jobsProjection(); }
   job(id: string) { const values = this.jobs().filter(job => job.metadata.id === id); if (!values.length) throw new Error('job_missing'); return values.sort((a, b) => b.metadata.version.localeCompare(a.metadata.version))[0]; }
   runs(jobId?: string) { return this.mustJobRuntime().ledger.list(jobId); }
