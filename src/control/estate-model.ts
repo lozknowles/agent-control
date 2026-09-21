@@ -16,7 +16,7 @@ export const estateHash=(v:unknown)=>createHash('sha256').update(JSON.stringify(
 export const estateSafe=<T>(v:T):T=>redactSensitiveValue(v) as T;
 const current=(s:EstateState)=>['OBSERVED','IDENTIFIED','VERIFIED','CAPABILITY_VERIFIED','AVAILABLE','RECOVERED'].includes(s);
 export function estateDiff(previous:EstateSnapshot|null,next:EstateSnapshot):EstateDifference[]{
- if(!previous)return next.entities.map(e=>({id:e.id,change:e.kind==='model'?'MODEL_ADDED':'NEW',basis:'First observation in retained history'}));
+ if(!previous){const added:EstateDifference[]=next.entities.map(e=>({id:e.id,change:e.kind==='model'?'MODEL_ADDED':'NEW',basis:'First observation in retained history'}));return [...added,...next.relationships.map((r):EstateDifference=>({id:r.id,change:'NEW',basis:'First relationship observation in retained history'}))];}
  if(previous.scopeDigest!==next.scopeDigest)return [{id:next.id,change:'CHANGED',basis:'Scope changed; absence is not comparable'}];
  const changes:EstateDifference[]=[];const old=new Map(previous.entities.map(e=>[e.id,e]));
  for(const e of next.entities){const p=old.get(e.id);old.delete(e.id);if(!p){changes.push({id:e.id,change:e.kind==='model'?'MODEL_ADDED':'NEW',basis:'New evidence'});continue;}

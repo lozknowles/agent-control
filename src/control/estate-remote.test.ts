@@ -77,6 +77,8 @@ function native(executor:SshExecutor=success){
 }
 test('SYNTHETIC native Jobs reconcile three remote passes with stable host/entity/relationship IDs',async()=>{
  const f=native();const a=await f.run(),b=await f.run(),c=await f.run();assert.equal(a.job.status,'SUCCEEDED');
+ for(const relation of a.snapshot.relationships)assert.ok(a.snapshot.diff.some(d=>d.id===relation.id&&d.change==='NEW'));
+ assert.ok(a.snapshot.comparison?.records.every(r=>r.changes.includes('NEW')||r.changes.includes('MODEL_ADDED')));
  const hostId=`host:${estateResourceAlias(resource().id)}`;
  assert.equal(c.snapshot.entities.find(e=>e.id===hostId)?.state,'AVAILABLE');assert.ok(c.snapshot.entities.some(e=>e.id==='host:controller-local'));
  assert.deepEqual(a.snapshot.entities.map(e=>e.id),c.snapshot.entities.map(e=>e.id));assert.deepEqual(a.snapshot.relationships.map(e=>e.id),c.snapshot.relationships.map(e=>e.id));
