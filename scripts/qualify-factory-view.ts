@@ -81,6 +81,7 @@ try{
   await page.goto(base,{waitUntil:'domcontentloaded'});
   if(!await page.locator('[data-view="factory"]').isVisible())await page.locator('#mobile-navigation').click();
   await page.locator('[data-view="factory"]').click();await page.waitForFunction(()=>((window as any).AgentControlFactory?.state().transport)==='CONNECTED',{},{timeout:30000});
+  assert.equal(await page.evaluate(()=>(window as any).AgentControlFactory.statistics().renderer),'WebGL','This qualification requires actual WebGL rendering');
   await page.locator('#factory-video').check();await screenshot('factory-before.png');
   const liveScreenshot=page.locator('.factory-entity .factory-state').filter({hasText:/^(RUNNING|VERIFYING)$/}).first().waitFor({state:'visible',timeout:60000}).then(()=>screenshot('factory-live.png')).catch(()=>{});
   const submitted=await parcels.submit(plan.objective,'factory-qualification');write('workload-input.json',{objective:plan.objective,sources:inspections,modelInfo:modelInfo.map(({baseUrl:_,...m})=>m),plan,parcelId:submitted.id});
@@ -106,6 +107,7 @@ try{
   await page.locator('#factory-pause').click();const paused=await page.evaluate(()=>(window as any).AgentControlFactory.state().frameId);await page.waitForTimeout(1000);assert.equal(await page.evaluate(()=>(window as any).AgentControlFactory.state().frameId),paused);
   await page.locator('#factory-replay').fill('0');await page.locator('#factory-replay').dispatchEvent('input');await page.screenshot({path:path.join(out,'factory-replay.png'),fullPage:true});
   await page.locator('#factory-2d').check();await page.waitForTimeout(300);await page.screenshot({path:path.join(out,'factory-2d.png'),fullPage:true});
+  await page.emulateMedia({colorScheme:'light'});await screenshot('factory-light-theme.png');await page.emulateMedia({colorScheme:'dark'});
   await page.setViewportSize({width:390,height:844});await page.screenshot({path:path.join(out,'factory-mobile.png'),fullPage:true});await page.setViewportSize({width:1680,height:1120});
   await page.locator('#factory-off').click();assert.equal(await page.locator('#factory-stage canvas').count(),0);await page.locator('#factory-on').click();await page.waitForTimeout(500);
   write('browser-results.json',{errors,renderer:await page.evaluate(()=>(window as any).AgentControlFactory.statistics()),ui:['authenticated SSE','3D','real run inspector','protected evidence inspector','six camera modes','model/provider filters','pause freezes displayed frame','recorded replay','2D fallback','mobile','Factory off disposes canvas','video capture'],state:await page.evaluate(()=>(window as any).AgentControlFactory.state())});
