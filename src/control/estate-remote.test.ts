@@ -1,0 +1,111 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import {EstateRemoteAdapter,estateResourceAlias,estateSshArgs,ESTATE_REMOTE_SCHEMA,ESTATE_REMOTE_METHOD,ESTATE_REMOTE_LIMITS} from './estate-remote.js';
+import {emptyConfig,type ResourceConfig} from './config.js';
+import type {SshExecutor} from './managed-node-ssh.js';
+import type {OwnedExecution} from './owned-process.js';
+import {EstateDiscovery,registerEstateDiscovery} from './estate-discovery.js';
+import {ActionRegistry,WorkerRegistry,createJobRuntime} from './job-runtime.js';
+import {JobCatalog} from './job-catalog.js';
+import {estateProjection,estateComparison} from './estate-model.js';
+
+const pin='a'.repeat(64),localPin='b'.repeat(64);
+const resource=():ResourceConfig=>({id:'synthetic-approved',platform:'linux',transport:{type:'ssh',host:'approved.example.invalid',port:2222,user:'fixture',identityFile:'/fixture/approved-key'},capabilities:[],managedNode:{enabled:true},estateDiscovery:{enabled:true,scope:'metadata-only',authorisationDigest:'c'.repeat(64),expectedIdentitySha256:pin}});
+const request=(input:string)=>JSON.parse(Buffer.from(input.match(/base64\.b64decode\('([^']+)'\)/)![1],'base64').toString());
+const envelope=(input:string)=>({schema:ESTATE_REMOTE_SCHEMA,method:ESTATE_REMOTE_METHOD,...request(input),observedAt:new Date().toISOString(),status:'COMPLETE',host:{identitySha256:pin,platform:'linux',architecture:'x86_64'},cpuCount:4,memoryBytes:8*1024**3,missing:[]});
+const success:SshExecutor=async(_command,_args,input)=>({status:0,stdout:JSON.stringify(envelope(input)),stderr:''});
+function fixture(executor:SshExecutor=success){
+ const config=emptyConfig();config.resources=[resource()];const calls:unknown[][]=[],states:unknown[]=[];let cleanups=0;
+ const owned:OwnedExecution={runProcess:async()=>{throw Error('LOCAL_FALLBACK_FORBIDDEN');},terminateAll:async()=>{cleanups++;return{outcome:'confirmed',reason:'fixture',requestedAt:'fixture',completedAt:'fixture',processes:[]};},activePids:()=>[]};
+ const adapter=new EstateRemoteAdapter(()=>config,async(...args)=>{calls.push(args);return executor(...args);});
+ const controller=new AbortController();const context={signal:controller.signal,ownedExecution:owned,controllerIdentitySha256:localPin,onState:(state:string,reason:string)=>states.push({state,reason})};
+ return{config,calls,states,adapter,controller,context,cleanups:()=>cleanups,run:()=>adapter.discover('synthetic-approved',context)};
+}
+test('Estate remote binds an approved resource and validates an envelope through the shared SSH executor',async()=>{
+ const f=fixture(),r=await f.run();assert.equal(r.state,'AVAILABLE');assert.equal(f.calls.length,1);
+ assert.deepEqual(f.states.map((s:any)=>s.state),['DISCOVERED','CONNECTING','AVAILABLE']);
+ const [command,args,input,options]=f.calls[0] as [string,string[],string,any];assert.equal(command,'ssh');assert.ok(args.includes('StrictHostKeyChecking=yes'));assert.ok(args.includes('ConnectionAttempts=1'));assert.deepEqual(args.slice(-6),['timeout','--signal=TERM','--kill-after=2','12','python3','-']);assert.equal(options.ownedExecution,f.context.ownedExecution);assert.equal(options.session.remoteTransport,true);assert.equal(options.session.transformOutputLine('stderr','private route and secret'),undefined);assert.ok(!options.session.commandLabel.includes('approved.example.invalid'));assert.ok(!input.includes('approved.example.invalid'));
+});
+const denials:Array<[string,(r:ResourceConfig)=>void]>=[
+ ['disabled resource',r=>{r.managedNode!.enabled=false;}],['disabled Estate binding',r=>{r.estateDiscovery!.enabled=false;}],
+ ['missing authorisation',r=>{r.estateDiscovery!.authorisationDigest='';}],['missing identity pin',r=>{delete r.estateDiscovery!.expectedIdentitySha256;}],
+ ['wrong scope',r=>{(r.estateDiscovery as any).scope='logs';}],['non-SSH transport',r=>{r.transport.type='local';}],
+ ['host option injection',r=>{r.transport.host='-oProxyCommand=whoami';}],['host shell injection',r=>{r.transport.host='host; touch /tmp/forbidden';}],
+ ['user shell injection',r=>{r.transport.user='user$(id)';}],['identity newline injection',r=>{r.transport.identityFile='/fixture/key\n-oProxyCommand=id';}],
+ ['invalid port',r=>{r.transport.port=-1;}],['relative identity path',r=>{r.transport.identityFile='unsafe-key';}],
+ ['same physical controller identity',r=>{r.estateDiscovery!.expectedIdentitySha256=localPin;}]
+];
+for(const [label,mutate] of denials)test(`Estate remote rejects ${label} before dispatch`,async()=>{const f=fixture();mutate(f.config.resources[0]);assert.equal((await f.run()).state,'UNAUTHORISED');assert.equal(f.calls.length,0);});
+test('Estate remote rejects unknown IDs and arbitrary endpoint strings without local fallback',async()=>{const f=fixture();for(const id of ['unknown','ssh://arbitrary.invalid','synthetic-approved;id'])assert.equal((await f.adapter.discover(id,f.context)).state,'UNAUTHORISED');assert.equal(f.calls.length,0);});
+test('Estate remote refuses duplicate configured identities',async()=>{const f=fixture();f.config.resources.push(resource());assert.equal((await f.run()).state,'UNAUTHORISED');assert.equal(f.calls.length,0);});
+test('Estate remote contains private configuration-loader failures before dispatch',async()=>{const f=fixture(),adapter=new EstateRemoteAdapter(()=>{throw Error('private-host secret configuration');},success);const r=await adapter.discover(resource().id,f.context);assert.equal(r.state,'UNAUTHORISED');assert.ok(!JSON.stringify(r).includes('private-host'));assert.throws(()=>new EstateDiscovery({root:fs.mkdtempSync(path.join(os.tmpdir(),'estate-config-test-')),config:()=>{throw Error('private-host secret');}}),/^Error: estate_configuration_unavailable$/);});
+test('Estate remote exposes no caller-controlled command arguments',()=>{const args=estateSshArgs(resource());assert.ok(args.includes('ConnectTimeout=8'));assert.ok(args.includes('UpdateHostKeys=no'));assert.ok(!args.includes('sh'));assert.ok(!args.includes('-c'));});
+const invalid:Array<[string,(e:any)=>void]>=[
+ ['schema mismatch',e=>e.schema='other/v1'],['claimed host mismatch',e=>e.host.identitySha256='d'.repeat(64)],
+ ['nonce mismatch',e=>e.nonce='00000000-0000-4000-8000-000000000000'],['resource impersonation',e=>e.resourceAlias='resource:another'],
+ ['unapproved extra data',e=>e.privateEndpoint='do-not-retain.example.invalid'],['stale observation',e=>e.observedAt='2000-01-01T00:00:00Z'],
+ ['false completion',e=>{e.cpuCount=null;}],['wrong provenance method',e=>e.method='untrusted'],['invalid numeric metadata',e=>e.memoryBytes=-1]
+];
+for(const [label,mutate] of invalid)test(`Estate remote rejects ${label}`,async()=>{const f=fixture(async(_c,_a,input)=>{const e=envelope(input);mutate(e);return{status:0,stdout:JSON.stringify(e),stderr:''};});assert.equal((await f.run()).state,'INVALID_RESPONSE');});
+test('Estate remote rejects malformed and oversized output without retaining response text',async()=>{for(const stdout of ['private-secret not json','x'.repeat(40*1024)]){const f=fixture(async()=>({status:0,stdout,stderr:''}));const r=await f.run();assert.equal(r.state,'INVALID_RESPONSE');assert.ok(!JSON.stringify([r,f.states]).includes('private-secret'));}});
+test('Estate remote reports valid partial metadata as DEGRADED',async()=>{const f=fixture(async(_c,_a,input)=>{const e:any=envelope(input);e.cpuCount=null;e.missing=['CPU_UNAVAILABLE'];e.status='PARTIAL';return{status:0,stdout:JSON.stringify(e),stderr:''};});assert.equal((await f.run()).state,'DEGRADED');});
+for(const [label,response,wanted] of [
+ ['connection timeout',{status:255,stdout:'',stderr:'Connection timed out: private-host'},'TIMED_OUT'],
+ ['command timeout',{status:124,stdout:'',stderr:''},'TIMED_OUT'],
+ ['executor timeout',{status:255,stdout:'',stderr:'',timedOut:true},'TIMED_OUT'],
+ ['unreachable transport',{status:255,stdout:'',stderr:'network is unreachable private-host secret=abc'},'UNREACHABLE'],
+ ['transport authentication',{status:255,stdout:'',stderr:'Permission denied private-host'},'UNAUTHORISED'],
+ ['collector failure',{status:1,stdout:'',stderr:'private host diagnostic'},'INVALID_RESPONSE']
+] as const)test(`Estate remote classifies ${label} without private diagnostics`,async()=>{const f=fixture(async()=>response),r=await f.run();assert.equal(r.state,wanted);assert.ok(!JSON.stringify([r,f.states]).includes('private-host'));assert.equal(f.calls.length,1);});
+test('Estate remote sanitises thrown transport errors',async()=>{const f=fixture(async()=>{throw Error('private-host token=do-not-retain');});assert.equal((await f.run()).state,'UNREACHABLE');assert.ok(!JSON.stringify(f.states).includes('private-host'));});
+test('Estate remote honours pre-dispatch cancellation',async()=>{const f=fixture();f.controller.abort();assert.equal((await f.run()).state,'CANCELLED');assert.equal(f.calls.length,0);});
+test('Estate remote cancellation terminates owned execution even if transport ignores the signal',async()=>{const f=fixture(async()=>new Promise(()=>{}));const pending=f.run();f.controller.abort();assert.equal((await pending).state,'CANCELLED');assert.equal(f.cleanups(),1);});
+test('Estate remote overall deadline is bounded independently of an unresponsive executor',async t=>{t.mock.timers.enable({apis:['setTimeout']});const f=fixture(async()=>new Promise(()=>{})),pending=f.run();t.mock.timers.tick(ESTATE_REMOTE_LIMITS.overallMs);assert.equal((await pending).state,'TIMED_OUT');assert.equal(f.cleanups(),1);});
+test('Estate remote revalidates authorisation after transport completion',async()=>{let f:ReturnType<typeof fixture>;f=fixture(async(_c,_a,input)=>{f.config.resources[0].estateDiscovery!.enabled=false;return{status:0,stdout:JSON.stringify(envelope(input)),stderr:''};});assert.equal((await f.run()).state,'UNAUTHORISED');});
+
+function native(executor:SshExecutor=success){
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'estate-native-synthetic-')),config=emptyConfig();config.resources=[resource()];
+ const estate=new EstateDiscovery({root:path.join(root,'estate'),config:()=>config,remoteExecutor:executor,controllerIdentity:async()=>localPin});
+ const runtime=createJobRuntime(path.join(root,'jobs'),new JobCatalog(),new ActionRegistry(),new WorkerRegistry());registerEstateDiscovery(runtime,estate);
+ const permission=estate.grant({categories:['PASSIVE_INVENTORY','REMOTE_HOST_DISCOVERY'],targetIds:[estateResourceAlias(resource().id)]},'SYNTHETIC_TEST');
+ const start=()=>runtime.createRun('discover-estate@1.0.0',{permissionId:permission.id},{type:'manual',actor:'SYNTHETIC_TEST'});
+ const run=async()=>{const job=start();await runtime.tick();return{job:runtime.ledger.get(job.id)!,snapshot:estate.latest()!};};
+ return{root,config,estate,runtime,permission,start,run};
+}
+test('SYNTHETIC native Jobs reconcile three remote passes with stable host/entity/relationship IDs',async()=>{
+ const f=native();const a=await f.run(),b=await f.run(),c=await f.run();assert.equal(a.job.status,'SUCCEEDED');
+ const hostId=`host:${estateResourceAlias(resource().id)}`;
+ assert.equal(c.snapshot.entities.find(e=>e.id===hostId)?.state,'AVAILABLE');assert.ok(c.snapshot.entities.some(e=>e.id==='host:controller-local'));
+ assert.deepEqual(a.snapshot.entities.map(e=>e.id),c.snapshot.entities.map(e=>e.id));assert.deepEqual(a.snapshot.relationships.map(e=>e.id),c.snapshot.relationships.map(e=>e.id));
+ for(const old of a.snapshot.entities)assert.equal(c.snapshot.entities.find(e=>e.id===old.id)?.firstSeen,old.firstSeen);
+ for(const old of a.snapshot.relationships)assert.equal(c.snapshot.relationships.find(e=>e.id===old.id)?.firstSeen,old.firstSeen);
+ assert.equal(new Set(c.snapshot.relationships.map(e=>e.id)).size,c.snapshot.relationships.length);assert.ok(c.snapshot.relationships.some(e=>e.from==='host:controller-local'&&e.to===hostId&&e.basis==='VERIFIED'));
+ assert.ok(c.snapshot.comparison?.records.some(e=>e.id===hostId&&e.changes.includes('UNCHANGED')));assert.ok(b.snapshot.entities.find(e=>e.id===hostId)?.lastSuccessfulDiscovery);
+ assert.ok(c.snapshot.events.some(e=>e.type==='REMOTE_CONNECTING'));assert.ok(c.job.artifacts.length>0);
+});
+test('SYNTHETIC native partial completion retains local graph, stale remote children and relationships, then recovers',async()=>{
+ let down=false;const f=native(async(...args)=>down?{status:255,stdout:'',stderr:'network is unreachable'}:success(...args));
+ const a=await f.run();down=true;const b=await f.run();assert.equal(b.job.status,'SUCCEEDED');assert.equal(b.snapshot.status,'PARTIAL');
+ const hostId=`host:${estateResourceAlias(resource().id)}`,old=a.snapshot.entities.find(e=>e.id===hostId)!,failed=b.snapshot.entities.find(e=>e.id===hostId)!;
+ assert.equal(failed.state,'UNREACHABLE');assert.equal(failed.lastSuccessfulDiscovery,old.lastSuccessfulDiscovery);assert.equal(failed.lastSeen,old.lastSeen);
+ assert.ok(b.snapshot.entities.some(e=>e.id==='host:controller-local'&&e.state==='VERIFIED'));assert.ok(b.snapshot.entities.some(e=>e.hostId===hostId&&e.state==='STALE'));
+ assert.ok(b.snapshot.relationships.some(e=>e.to===hostId&&e.state==='STALE'));assert.ok(!b.snapshot.diff.some(e=>['REMOVED','MODEL_REMOVED'].includes(e.change)));
+ down=false;const c=await f.run();assert.equal(c.snapshot.entities.find(e=>e.id===hostId)?.state,'AVAILABLE');assert.ok(c.snapshot.events.some(e=>e.entity?.id===hostId&&e.entity.state==='RECOVERED'));
+ assert.ok(c.snapshot.diff.some(e=>e.id===hostId&&e.change==='RECOVERED'));assert.equal(c.snapshot.entities.filter(e=>e.id===hostId).length,1);assert.ok(!c.snapshot.entities.some(e=>e.state==='STALE'));
+ assert.ok(estateProjection(b.snapshot).entities.some(e=>e.id===hostId&&e.state==='UNREACHABLE'));
+});
+test('SYNTHETIC native resource binding drift invalidates a granted permission before dispatch',async()=>{const f=native();f.config.resources[0].transport.host='changed.example.invalid';assert.throws(()=>f.estate.assertPermission(f.permission.id),/binding_changed/);});
+test('SYNTHETIC native discovery cannot use remote transport without the category grant',async()=>{let calls=0;const f=native(async(...args)=>{calls++;return success(...args);});const p=f.estate.grant({categories:['PASSIVE_INVENTORY'],targetIds:[estateResourceAlias(resource().id)]},'SYNTHETIC_TEST');const job=f.runtime.createRun('discover-estate@1.0.0',{permissionId:p.id},{type:'manual',actor:'SYNTHETIC_TEST'});await f.runtime.tick();assert.equal(calls,0);assert.equal(f.runtime.ledger.get(job.id)?.status,'SUCCEEDED');assert.ok(f.estate.latest()?.entities.some(e=>e.state==='BLOCKED'));});
+test('SYNTHETIC native Job cancellation reaches the remote adapter and retains cancelled evidence',async()=>{
+ let entered!:()=>void;const arrived=new Promise<void>(r=>entered=r);const f=native(async()=>{entered();return new Promise(()=>{});});const job=f.start(),tick=f.runtime.tick();await arrived;f.runtime.cancel(job.id);await tick;assert.notEqual(f.runtime.ledger.get(job.id)?.status,'SUCCEEDED');assert.ok(f.estate.latest()?.events.some(e=>e.type==='REMOTE_CANCELLED'));
+});
+test('SYNTHETIC malformed remote results add no CPU or cross-host verification',async()=>{const f=native(async()=>({status:0,stdout:'bad',stderr:''}));const r=await f.run();assert.equal(r.snapshot.status,'PARTIAL');assert.ok(!r.snapshot.entities.some(e=>e.id.startsWith('cpu:resource:')));assert.ok(!r.snapshot.relationships.some(e=>e.to.startsWith('host:resource:')&&e.basis==='VERIFIED'));assert.equal(estateComparison(null,r.snapshot).records.length,r.snapshot.entities.length+r.snapshot.relationships.length);});
+test('SYNTHETIC native cancellation retains previous remote entities and relationships as stale',async()=>{
+ let hang=false,entered!:()=>void;const arrived=new Promise<void>(r=>entered=r);const f=native(async(...args)=>{if(hang){entered();return new Promise(()=>{});}return success(...args);});const before=await f.run();hang=true;const job=f.start(),tick=f.runtime.tick();await arrived;f.runtime.cancel(job.id);await tick;const after=f.estate.latest()!;assert.equal(after.entities.length,before.snapshot.entities.length);assert.equal(after.relationships.length,before.snapshot.relationships.length);assert.ok(after.entities.some(e=>e.id.startsWith('cpu:resource:')&&e.state==='STALE'));assert.ok(!after.diff.some(e=>e.change==='REMOVED'));
+});
+test('Estate host zones and colours derive from real projection identities and explicit states',async()=>{
+ const layout=await import(new URL('../../assets/dashboard/estate-client.js',import.meta.url).href),colours=await import(new URL('../../assets/dashboard/factory-layout.js',import.meta.url).href);const f=native(),r=await f.run(),projection=estateProjection(r.snapshot),positioned=layout.positionEstate(projection.entities);assert.equal(positioned.hostZones.length,2);assert.equal(new Set(positioned.hostZones.map((z:any)=>z.id)).size,2);assert.notEqual(colours.entityColour({state:'AVAILABLE'}),colours.entityColour({state:'UNREACHABLE'}));assert.notEqual(colours.entityColour({state:'UNAUTHORISED'}),colours.entityColour({state:'AVAILABLE'}));
+});

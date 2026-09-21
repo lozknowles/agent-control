@@ -69,6 +69,8 @@ export interface ResourceConfig {
   android?: AndroidNodeConfig;
   managedNode?: ManagedNodeConfig;
   metadata?: Record<string, string | number | boolean>;
+  /** Explicit, read-only Estate authorisation and independently approved identity pin. */
+  estateDiscovery?: import('./estate-remote.js').EstateResourceBinding;
 }
 
 export type ModelQualificationState = 'UNTESTED' | 'QUALIFYING' | 'QUALIFIED' | 'DEGRADED' | 'DISABLED' | 'FAILED';
