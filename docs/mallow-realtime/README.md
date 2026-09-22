@@ -38,3 +38,5 @@ The presence event file is a durable operational record for this prototype, not 
 The deterministic proof uses a synthetic streaming frame source and a rules-based conversation provider. It establishes orchestration, event ordering, concurrent Job ownership, phrase-boundary handoff, runtime output suppression, cancellation and stale-result fencing. It does **not** establish audible conversation, microphone/VAD/STT quality, acoustic interruption latency, AEC, crossfade/prosody continuity, physical WebRTC behavior, or model-backed conversational quality.
 
 See [qualification.md](qualification.md) for the evidence inventory, measured prototype timings and remaining physical qualification gates.
+
+Phase 2 continues this work with a real governed Ask Collingham adapter and physical-audio edges. See the [physical audio inventory](physical-audio-inventory.md) and [physical voice qualification](physical-voice-qualification.md). The current installed speech providers are buffered, so Phase 2 remains experimental until a live physical browser session and the required streaming boundaries are qualified.
