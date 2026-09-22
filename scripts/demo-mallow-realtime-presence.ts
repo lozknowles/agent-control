@@ -1,0 +1,43 @@
+import {createHash} from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
+import {JobCatalog} from '../src/control/job-catalog.js';
+import {ActionRegistry,ArtifactStore,JobRuntime,ResourceLockManager,RunLedger,WorkerRegistry} from '../src/control/job-runtime.js';
+import {AgentControlBackgroundJobPort} from '../src/control/mallow-job-port.js';
+import {GovernedSpeechCache} from '../src/control/mallow-speech-cache.js';
+import {MallowPresenceStore,MallowRealtimePresenceRuntime,type BackgroundJobReference,type FastRoute,type RealtimeSpeechProvider} from '../src/control/mallow-realtime-presence.js';
+
+const sleep=(ms:number)=>new Promise(resolve=>setTimeout(resolve,ms));
+async function until(check:()=>boolean,timeout=5000){const end=Date.now()+timeout;while(!check()){if(Date.now()>end)throw Error('demo_timeout');await sleep(10);}}
+const root=path.resolve(process.argv[2]??'.agent-control/evidence/mallow-realtime-presence');fs.mkdirSync(root,{recursive:true,mode:0o700});
+for(const name of ['events.jsonl','ledger.json','locks.json'])fs.rmSync(path.join(root,name),{force:true});fs.rmSync(path.join(root,'artifacts'),{recursive:true,force:true});fs.rmSync(path.join(root,'speech-cache'),{recursive:true,force:true});
+
+let releaseResearch!:()=>void;const researchGate=new Promise<void>(resolve=>{releaseResearch=resolve;});
+const actions=new ActionRegistry();actions.registerReadOnly('mallow.planning-search@1.0.0',async context=>{await researchGate;return{artifacts:[{name:'planning-result',value:{answer:'The retained planning record shows the revised access note was added after consultation.',query:context.parameters.query}}],evidence:['demo:governed-planning-record'],verification:['answer-retained']};});
+const catalog=new JobCatalog(actions.ids());catalog.addJob({apiVersion:'agent-control/v1',kind:'Job',metadata:{id:'mallow-planning-search',name:'Mallow governed planning search',version:'1.0.0'},spec:{priority:'normal',concurrency:'allow',parameters:{query:{type:'string',required:true}},steps:[{id:'search',action:'mallow.planning-search@1.0.0',requires:['planning.search'],outputs:[{name:'planning-result',type:'application/json',schema:'demo/planning-result',version:'1.0.0'}],verification:['answer-retained']}]}});
+const workers=new WorkerRegistry();workers.registerControllerInternal({id:'demo-governed-worker',capabilities:['planning.search'],health:'healthy',capacity:1,active:0,observedAt:new Date().toISOString()});
+const jobRuntime=new JobRuntime(catalog,actions,workers,new RunLedger(path.join(root,'ledger.json')),new ArtifactStore(path.join(root,'artifacts')),new ResourceLockManager(path.join(root,'locks.json')));
+const background=new AgentControlBackgroundJobPort(jobRuntime,(_route,text)=>({job:'mallow-planning-search@1.0.0',parameters:{query:text},laneId:'governed-research',skill:'planning-search',tool:'mallow.planning-search'}),(runId,evidence)=>{if(!evidence)return null;const value=jobRuntime.artifacts.read(evidence) as {answer?:string};return value.answer??`Governed job ${runId} completed.`;});
+
+class SyntheticStreamingSpeech implements RealtimeSpeechProvider{
+  id='synthetic-streaming-evidence';voice={id:'mallow-demo',model:'deterministic-frame-source',version:'1'};mode='synthetic-test' as const;
+  async *frames(text:string,signal:AbortSignal){for(const phrase of text.match(/[^,.!?]+[,.!?]?/g)??[text]){await sleep(28);signal.throwIfAborted();yield{bytes:Buffer.from(phrase),durationMs:Math.max(80,phrase.length*4)};}}
+}
+const immediate=['Yes, I can check that for you.','One moment.'],speech=new GovernedSpeechCache(new SyntheticStreamingSpeech(),path.join(root,'speech-cache'),immediate),store=new MallowPresenceStore(path.join(root,'events.jsonl'));
+async function measureFirstFrame(provider:RealtimeSpeechProvider,text:string){const started=performance.now();let first:number|undefined;let frames=0;for await(const _frame of provider.frames(text,new AbortController().signal)){frames++;first??=performance.now()-started;}if(first===undefined)throw Error('speech_probe_produced_no_frames');return{firstAudioMs:Number(first.toFixed(3)),frames};}
+const router={id:'deterministic-demo-router',route:({text,activeJobs}:{text:string;activeJobs:BackgroundJobReference[]}):FastRoute=>/progress|getting on/i.test(text)?{kind:'progress',intent:'job_progress',reason:'explicit progress request'}:/planning|changed/i.test(text)?{kind:'background',intent:'planning_search',skill:'planning-search',acknowledgement:'Yes, I can check that for you.',jobRequest:{query:text},reason:'authoritative planning evidence requires governed retrieval'}:{kind:'direct',intent:'conversation',reason:'bounded conversational response does not require a Job'}};
+const conversation={id:'deterministic-demo-conversation',respond:async({text,signal}:{text:string;signal:AbortSignal})=>{await sleep(20);signal.throwIfAborted();if(/hello|hi/i.test(text))return{text:'Hello. I am listening.',provider:'deterministic-demo',model:'rules',usage:{input:3,cachedInput:0,output:5}};if(/community centre/i.test(text))return{text:'The community centre listing is available, and the planning search is still running.',provider:'deterministic-demo',model:'rules',usage:{input:8,cachedInput:4,output:12}};if(/long explanation/i.test(text))return{text:'This is a deliberately longer response with several phrases, so the interruption can be observed before it reaches the end.',provider:'deterministic-demo',model:'rules',usage:{input:5,cachedInput:0,output:20}};return{text:`I heard the corrected request: ${text}`,provider:'deterministic-demo',model:'rules',usage:{input:6,cachedInput:1,output:10}};}};
+const runtime=new MallowRealtimePresenceRuntime({store,router,conversation,speech,background,monitorMs:10}),session=runtime.start('mallow-demo-session');
+
+await runtime.transcript(session,'Hello Mallow.');
+await runtime.transcript(session,'Find out what changed in the planning application.');
+const job=jobRuntime.ledger.list()[0]!;await until(()=>jobRuntime.ledger.get(job.id)?.status==='RUNNING');await until(()=>store.list(session).some(event=>event.type==='speech.tts.completed'&&event.turnId?.endsWith('turn-2')&&event.detail.segment==='acknowledgement'));
+await runtime.transcript(session,"And what's on at the community centre tonight?");
+await runtime.transcript(session,'How are you getting on with the planning work?');
+releaseResearch();await until(()=>jobRuntime.ledger.get(job.id)?.status==='SUCCEEDED');await until(()=>store.list(session).some(event=>event.type==='speech.tts.completed'&&event.detail.segment==='job-result'));
+const later=runtime.transcript(session,'Give me a long explanation now.');await until(()=>store.list(session).some(event=>event.type==='speech.tts.first_audio'&&event.detail.segment==='answer'&&event.turnId?.endsWith('turn-5')));await runtime.transcript(session,'No, use the corrected short request.');await later;await runtime.close(session);
+
+const liveSpeechProbe=await measureFirstFrame(speech,'One moment.'),cachedSpeechProbe=await measureFirstFrame(speech,'One moment.');
+const projection=store.projection(),events=store.list(session),record={schema:'agent-control.mallow-realtime-demo/v1',classification:'EXPERIMENTAL',source:{agentControlVersion:'4.12.1',branch:'feature/mallow-realtime-presence-20260922'},sessionId:session,jobId:job.id,jobStatus:jobRuntime.ledger.get(job.id)?.status,eventCount:events.length,eventTypes:[...new Set(events.map(event=>event.type))],projection,eventSha256:createHash('sha256').update(fs.readFileSync(path.join(root,'events.jsonl'))).digest('hex'),speechCacheBenchmark:{classification:'SYNTHETIC_RUNTIME_ONLY',phrase:'One moment.',live:liveSpeechProbe,cached:cachedSpeechProbe,firstAudioReductionMs:Number((liveSpeechProbe.firstAudioMs-cachedSpeechProbe.firstAudioMs).toFixed(3)),boundary:'Measures deterministic provider-to-first-frame delay; it does not measure audible output or acoustic latency.'},boundaries:{audioSource:'synthetic frames; no microphone, STT, loudspeaker, AEC or acoustic stop measurement',conversationProvider:'deterministic rules; no model inference',backgroundExecution:'genuine Agent Control JobRuntime, worker placement, artifact and ledger',physicalVoiceQualification:false}};
+fs.writeFileSync(path.join(root,'demo-report.json'),JSON.stringify(record,null,2)+'\n',{mode:0o600});
+process.stdout.write(JSON.stringify({result:'PASS_WITH_LIMITATIONS',root,sessionId:session,jobId:job.id,jobStatus:record.jobStatus,eventCount:events.length,eventSha256:record.eventSha256,speechCacheBenchmark:record.speechCacheBenchmark,boundaries:record.boundaries},null,2)+'\n');
