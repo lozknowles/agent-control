@@ -1,0 +1,13 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><title>Mallow realtime presence · Agent Control</title><link rel="stylesheet" href="/dashboard-theme.css"><link rel="stylesheet" href="/mallow-presence.css"></head><body>
+<header><a class="back" href="/">← Agent Control</a><div><p class="eyebrow">Experimental presence view</p><h1>Mallow realtime</h1><p>Conversation stays responsive while governed work continues independently.</p></div><div class="mallow" aria-label="Mallow"><span aria-hidden="true">M</span><small id="state-label">OFFLINE</small></div></header>
+<main>
+  <section id="auth" class="panel auth" hidden><h2>Operator authentication</h2><p>This read-only view uses the same protected dashboard API.</p><form id="auth-form"><label>Operator token <input id="token" type="password" autocomplete="off"></label><button>Open presence view</button></form><p id="auth-error" role="alert"></p></section>
+  <section id="unavailable" class="panel" hidden><h2>Presence runtime unavailable</h2><p>Enable the isolated Mallow realtime event projection to view a session. Existing text and voice transport remain unaffected.</p></section>
+  <section id="workspace" hidden>
+    <div class="summary"><article><span>Conversation</span><strong id="conversation-state">UNKNOWN</strong></article><article><span>First audio p50</span><strong id="first-audio">UNAVAILABLE</strong></article><article><span>Interrupt p50</span><strong id="interrupt-latency">UNAVAILABLE</strong></article><article><span>Background jobs</span><strong id="job-count">0</strong></article></div>
+    <section class="panel"><div class="heading"><div><p class="eyebrow">Foreground lane</p><h2>Live conversation</h2></div><span id="updated">No events</span></div><div id="conversation-graph" class="conversation-graph" aria-label="Conversation state graph"></div></section>
+    <section class="panel"><div class="heading"><div><p class="eyebrow">Independent governed lanes</p><h2>Background work</h2></div><span>Results cross back only at a phrase boundary</span></div><div id="job-graph" class="job-graph"></div></section>
+    <section class="panel"><div class="heading"><div><p class="eyebrow">Durable typed events</p><h2>What happened</h2></div><span id="event-count">0 events</span></div><ol id="timeline" class="timeline"></ol></section>
+    <aside class="boundary"><strong>Qualification boundary</strong><span id="limitations">Loading recorded limits…</span></aside>
+  </section>
+</main><script src="/mallow-presence.js" defer></script></body></html>
