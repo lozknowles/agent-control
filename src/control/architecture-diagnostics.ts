@@ -60,8 +60,9 @@ export class ArchitectureDiagnostics {
   const check=()=>{assertExecution?.();combined.throwIfAborted();this.assertPermission(permissionId);};const safe=new DiagnosticSanitizer(this.store.salt(),permission.privacy,{hostnames:[os.hostname()],usernames:[os.userInfo().username]});
   try{
    this.store.append('COLLECTION_STARTED',{permissionId,runId,jobId});const events:DiagnosticAssessment['events']=[],evidence:DiagnosticAssessment['evidence']=[],coverage:DiagnosticAssessment['coverage']=[];let bytes=0,redactions=0;
-   for(const sourceId of permission.sourceIds){check();const source=inventory.records.get(sourceId)!;if(bytes>=permission.bounds.maxTotalBytes||events.length>=permission.bounds.maxEvents){coverage.push({sourceId,status:'BUDGET_EXHAUSTED',bytesRead:0,linesExamined:0,events:0,malformed:0,outsideWindow:0,unknownTime:0,truncated:true,sampling:'source not read'});continue;}
-    const scoped={...permission,bounds:{...permission.bounds,maxBytesPerSource:Math.min(permission.bounds.maxBytesPerSource,permission.bounds.maxTotalBytes-bytes),maxEvents:permission.bounds.maxEvents-events.length}};
+   for(const [sourceIndex,sourceId] of permission.sourceIds.entries()){check();const source=inventory.records.get(sourceId)!;if(bytes>=permission.bounds.maxTotalBytes||events.length>=permission.bounds.maxEvents){coverage.push({sourceId,status:'BUDGET_EXHAUSTED',bytesRead:0,linesExamined:0,events:0,malformed:0,outsideWindow:0,unknownTime:0,truncated:true,sampling:'source not read'});continue;}
+    // Reserve event capacity for every remaining source; unused shares roll forward.
+    const scoped={...permission,bounds:{...permission.bounds,maxBytesPerSource:Math.min(permission.bounds.maxBytesPerSource,permission.bounds.maxTotalBytes-bytes),maxEvents:Math.ceil((permission.bounds.maxEvents-events.length)/(permission.sourceIds.length-sourceIndex))}};
     const adapter=this.adapters.find(a=>a.id===source.adapterId)!;let collection;
     try{collection=await adapter.collect(source,scoped,combined,owned);}catch{check();collection={sourceId,status:'UNAVAILABLE' as const,text:'',bytesRead:0,truncated:false,sampling:'collection unavailable',locator:{}};}check();
     // Adapter outputs are bounded again at the engine boundary.
