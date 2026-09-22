@@ -1,0 +1,6 @@
+import {createHash} from 'node:crypto';import fs from 'node:fs';
+import {SharedSpeechServiceProvider} from '../src/control/shared-speech-service-provider.js';
+const url=process.env.AGENT_CONTROL_SHARED_SPEECH_URL??'http://127.0.0.1:19400',token=process.env.AGENT_CONTROL_SHARED_SPEECH_TOKEN,voiceFile=process.env.AGENT_CONTROL_REALTIME_VOICE_FILE;
+if(!token||!voiceFile)throw Error('shared_speech_qualification_configuration_required');
+const voice=JSON.parse(fs.readFileSync(voiceFile,'utf8')).voice,provider=new SharedSpeechServiceProvider(url,token,voice),health=await provider.health(),voices=await provider.voices(),started=performance.now(),speech=await provider.synthesize({text:'Mallow shared speech qualification.',voice,signal:AbortSignal.timeout(120_000)}),transcript=await provider.transcribe({bytes:speech.bytes,mime:speech.mime,signal:AbortSignal.timeout(75_000)});
+process.stdout.write(JSON.stringify({schema:'agent-control.shared-speech-qualification/v1',timestamp:new Date().toISOString(),health,voice:voices[0].id,synthesis:speech.metrics,audioBytes:speech.bytes.length,audioSha256:createHash('sha256').update(speech.bytes).digest('hex'),transcription:{text:transcript.text,confidence:transcript.confidence,metrics:transcript.metrics},elapsedMs:performance.now()-started,audioRetention:'none'},null,2)+'\n');
