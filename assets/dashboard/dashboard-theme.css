@@ -112,3 +112,30 @@ dialog::backdrop { background:var(--ac-overlay); }
 .process-bubble.state-DEGRADED { border-color:var(--ac-degraded); }
 .process-bubble.selected { outline-color:var(--ac-focus); }
 .process-bubble-heading>span { color:var(--ac-text); }
+
+/* Concept B observer workspace: shared semantic palette, intentionally light. */
+:root {
+  --precision-background: #f5f8fc;
+  --precision-surface: #ffffff;
+  --precision-map: #f7faff;
+  --precision-elevated: #edf4fc;
+  --precision-text: #142e4d;
+  --precision-secondary: #405772;
+  --precision-muted: #52667c;
+  --precision-border: #718ba5;
+  --precision-border-subtle: #c8d7e7;
+  --precision-accent: #0064bd;
+  --precision-success: #146248;
+  --precision-warning: #805009;
+  --precision-error: #a52437;
+  --precision-info: #145ea3;
+  --precision-focus: #005eb8;
+  --precision-selected: #e6f2ff;
+  --precision-warning-surface: #fff3db;
+  --precision-success-surface: #e8f4ee;
+  --precision-shadow: #18355016;
+  --precision-overlay: #0b203653;
+  --precision-node-hover: #0064bd08;
+  --precision-node-ring: #86afd580;
+  --precision-drawer-shadow: #12365320;
+}
