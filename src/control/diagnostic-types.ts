@@ -1,3 +1,4 @@
+import type {DiagnosticClassification} from './diagnostic-classification.js';
 import type {DiscoveryItem} from './environment-discovery.js';
 import type {OwnedExecution} from './owned-process.js';
 
@@ -30,15 +31,17 @@ export interface DiagnosticSourceAdapter {
  enumerate(context:{items:DiscoveryItem[];signal:AbortSignal}):Promise<{sources:DiagnosticSourceRecord[];components?:DiagnosticArchitecture['components'];edges?:DiagnosticArchitecture['edges']}>;
  collect(source:DiagnosticSourceRecord,permission:DiagnosticPermission,signal:AbortSignal,owned?:OwnedExecution):Promise<DiagnosticCollection>;
 }
-export type DiagnosticEventType='GPU_PRESSURE'|'MEMORY_PRESSURE'|'DISK_PRESSURE'|'ALLOCATION_FAILURE'|'SERVICE_EXIT'|'RESTART'|'BOOT'|'SHUTDOWN'|'PROXY_FAILURE'|'HTTP_CLIENT_ERROR'|'CONNECTION_FAILURE'|'TIMEOUT'|'DEPENDENCY_FAILURE'|'MODEL_CHANGE'|'JOB_START'|'JOB_FAILURE'|'JOB_SUCCESS'|'ERROR'|'INFO';
+export type DiagnosticEventType='UNKNOWN'|'GPU_PRESSURE'|'MEMORY_PRESSURE'|'DISK_PRESSURE'|'ALLOCATION_FAILURE'|'SERVICE_EXIT'|'RESTART'|'BOOT'|'SHUTDOWN'|'PROXY_FAILURE'|'HTTP_CLIENT_ERROR'|'CONNECTION_FAILURE'|'TIMEOUT'|'DEPENDENCY_FAILURE'|'MODEL_CHANGE'|'JOB_START'|'JOB_FAILURE'|'JOB_SUCCESS'|'ERROR'|'INFO';
 export interface DiagnosticEvent {
  id:string;timestamp:string|null;timeAuthority:'SOURCE'|'YEAR_FROM_WINDOW'|'UNKNOWN';firstSeen:string|null;lastSeen:string|null;count:number;
  sourceId:string;componentId:string|null;host:string|null;service:string|null;process:string|null;pid:number|null;container:string|null;
  severity:'ERROR'|'WARNING'|'INFO'|'UNKNOWN';type:DiagnosticEventType;resource:string|null;job:string|null;worker:string|null;lane:string|null;relatedService:string|null;
+ classification?:DiagnosticClassification;
  message:string;fingerprint:string;evidenceRef:string;sanitization:{version:string;redactions:number;untrusted:true};
 }
 export interface DiagnosticEvidence {id:string;sourceId:string;sanitizedText:string;sha256:string;sourceIdentity:string;collectedAt:string;location:Record<string,string|number>;untrusted:true;rawRetained:false;}
 export interface DiagnosticFinding {
+ temporal?:'HISTORICAL'|'UNKNOWN';incidentStatus?:'UNKNOWN'|'RESOLVED';classificationReasons?:string[];recoveryEvidenceRefs?:string[];
  id:string;key:string;title:string;status:'OBSERVED'|'CORRELATED'|'INFERRED'|'UNKNOWN';confidence:'HIGH'|'MEDIUM'|'LOW'|'INSUFFICIENT_EVIDENCE';
  componentIds:string[];eventIds:string[];evidenceRefs:string[];window:{start:string|null;end:string|null};
  observations:string[];correlation:string|null;inference:string|null;causation:'NOT_PROVEN';competingExplanations:string[];
@@ -49,7 +52,8 @@ export interface DiagnosticFinding {
 export interface DiagnosticAssessment {
  schema:'agent-control.architecture-diagnostics/v1';id:string;createdAt:string;permissionId:string;runId:string;jobId:string;inventoryId:string;
  permission:DiagnosticPermission;architecture:DiagnosticArchitecture;events:DiagnosticEvent[];evidence:DiagnosticEvidence[];findings:DiagnosticFinding[];
- health:Array<{componentId:string;state:'HEALTHY'|'WARNING'|'DEGRADED'|'RECURRING_FAILURE'|'UNKNOWN';eventIds:string[];findingIds:string[];basis:string}>;
+ collectionStatus?:'COMPLETE'|'PARTIAL';classifierVersion?:string;
+ health:Array<{historicalState?:string;componentId:string;state:'HEALTHY'|'WARNING'|'DEGRADED'|'RECURRING_FAILURE'|'UNKNOWN';eventIds:string[];findingIds:string[];basis:string}>;
  coverage:Array<{sourceId:string;status:string;bytesRead:number;linesExamined:number;events:number;malformed:number;outsideWindow:number;unknownTime:number;truncated:boolean;sampling:string}>;
  sanitization:{version:string;status:'PASS';rawRetained:false;redactions:number;policy:DiagnosticPrivacy};
  modelAnalysis:{status:'NOT_REQUESTED'|'COMPLETED'|'UNAVAILABLE'|'POLICY_DENIED';modelId:string|null;providerId:string|null;invocationId:string|null;reason:string};
