@@ -76,3 +76,11 @@ test('diagnostic unused event allocation remains available while the total cap s
  const p=await grant(f.d,{bounds:{since,until,maxSources:4,maxBytesPerSource:65536,maxTotalBytes:131072,maxLinesPerSource:1000,maxEvents:4,timeoutMs:1000}});const a=await observe(f.d,p);
  assert.deepEqual(read,sources.map(s=>s.id));assert.equal(a.coverage[0]?.status,'UNAVAILABLE');assert.equal(a.events.length,4);assert.deepEqual(sources.map(s=>a.events.filter(e=>e.sourceId===s.id).length),[0,2,1,1]);
 });
+
+test('partial diagnostic collection cannot imply complete coverage or current unhealthy state',async()=>{
+ const f=fixture([],{async collect(s){return{sourceId:s.id,status:'COLLECTED',text:JSON.stringify({timestamp,message:'request failed'}),bytesRead:100,truncated:true,sampling:'bounded fixture',locator:{}};}}),a=await observe(f.d,await grant(f.d));
+ assert.equal(a.collectionStatus,'PARTIAL');assert.ok(a.health.every(h=>h.state==='UNKNOWN'));assert.equal(a.events[0]?.severity,'ERROR');assert.equal(a.findings[0]?.incidentStatus,'UNKNOWN');assert.ok(a.findings[0]?.evidenceRefs.length);assert.ok(a.findings[0]?.classificationReasons?.length);assert.match(diagnosticReport(a),/Collection: PARTIAL/);assert.match(diagnosticReport(a),/current UNKNOWN/);
+});
+test('legacy assessments keep their hash and are reported without current incident assertions',async()=>{
+ const f=fixture(),a=await observe(f.d,await grant(f.d));const legacy={...a};delete legacy.collectionStatus;delete legacy.classifierVersion;const prior=JSON.stringify(legacy);const report=diagnosticReport(legacy);assert.equal(JSON.stringify(legacy),prior);assert.match(report,/LEGACY_UNREVIEWED/);assert.match(report,/current health unknown/);
+});

@@ -1,5 +1,9 @@
 # Changelog
 
+## 4.13.0 — Governed Estate and Historical Diagnostics (candidate)
+
+Adds scoped identity-pinned discovery, native Factory/Precision views, permission-governed historical diagnostics and shared recording. Fixes source-budget starvation and context-free log classification. Historical failures are kept separate from current incident status; partial collection is explicit. See [release notes](docs/release-notes-4.13.0.md) and the external exact-candidate receipt. Publication remains pending approval.
+
 ## 4.11.0 — Governed Model Improvement
 
 Adds a governed improvement lifecycle over immutable model baselines: durable evidence-backed opportunities, a ten-level intervention ladder, isolated candidates, teacher/student provenance separation, sensitive-data rejection, multidimensional comparison, parallel Work Board evaluation stages, security/regression rejection, and explicit human promotion approval.

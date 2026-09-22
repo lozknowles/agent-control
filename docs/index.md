@@ -46,3 +46,7 @@ projection for standard operating-system log tools and third-party ingestion.
 - [Navigable Workspaces visual evidence](evidence/navigable-workspaces-4.8.md)
 
 - [Phone-hosted local model for governed computer use](phone-hosted-local-model-computer-use.md)
+
+## Prepared 4.13.0 candidate
+
+[Release notes](release-notes-4.13.0.md) · [Install, upgrade and rollback](upgrade-4.13.md) · [Qualification boundaries](release-verification-4.13.0.md)

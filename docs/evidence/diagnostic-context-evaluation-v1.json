@@ -1,0 +1,156 @@
+{
+  "schema": "agent-control.diagnostic-evaluation-result/v1",
+  "classifier": "diagnostic-context/2.0.0",
+  "datasetSha256": "5dc8642535c520c7f470ae6476f9aee1cec920609116dfa196c32414eefa8a60",
+  "evaluatedAt": "2026-09-22T05:34:37.487Z",
+  "reviewer": "AI reference review; no human or independent blind review claimed",
+  "splits": {
+    "development": {
+      "baseline": {
+        "samples": 302,
+        "cohorts": 2,
+        "families": 75,
+        "metrics": {
+          "FAILURE": {
+            "support": 53,
+            "tp": 7,
+            "fp": 6,
+            "fn": 46,
+            "precision": 0.5384615384615384,
+            "recall": 0.1320754716981132
+          },
+          "INFORMATIONAL": {
+            "support": 222,
+            "tp": 219,
+            "fp": 70,
+            "fn": 3,
+            "precision": 0.7577854671280276,
+            "recall": 0.9864864864864865
+          },
+          "UNCERTAIN": {
+            "support": 27,
+            "tp": 0,
+            "fp": 0,
+            "fn": 27,
+            "precision": null,
+            "recall": 0
+          }
+        },
+        "abstentions": 0,
+        "historicalCurrentErrors": "NOT_REPRESENTED_IN_LEGACY_EVENT_SCHEMA",
+        "subtypeConstraintErrors": null
+      },
+      "candidate": {
+        "samples": 302,
+        "cohorts": 2,
+        "families": 75,
+        "metrics": {
+          "FAILURE": {
+            "support": 53,
+            "tp": 53,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1,
+            "recall": 1
+          },
+          "INFORMATIONAL": {
+            "support": 222,
+            "tp": 222,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1,
+            "recall": 1
+          },
+          "UNCERTAIN": {
+            "support": 27,
+            "tp": 27,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1,
+            "recall": 1
+          }
+        },
+        "abstentions": 27,
+        "historicalCurrentErrors": 0,
+        "subtypeConstraintErrors": 0
+      }
+    },
+    "held-out": {
+      "baseline": {
+        "samples": 47,
+        "cohorts": 7,
+        "families": 28,
+        "metrics": {
+          "FAILURE": {
+            "support": 7,
+            "tp": 6,
+            "fp": 0,
+            "fn": 1,
+            "precision": 1,
+            "recall": 0.8571428571428571
+          },
+          "INFORMATIONAL": {
+            "support": 39,
+            "tp": 39,
+            "fp": 2,
+            "fn": 0,
+            "precision": 0.9512195121951219,
+            "recall": 1
+          },
+          "UNCERTAIN": {
+            "support": 1,
+            "tp": 0,
+            "fp": 0,
+            "fn": 1,
+            "precision": null,
+            "recall": 0
+          }
+        },
+        "abstentions": 0,
+        "historicalCurrentErrors": "NOT_REPRESENTED_IN_LEGACY_EVENT_SCHEMA",
+        "subtypeConstraintErrors": null
+      },
+      "candidate": {
+        "samples": 47,
+        "cohorts": 7,
+        "families": 28,
+        "metrics": {
+          "FAILURE": {
+            "support": 7,
+            "tp": 7,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1,
+            "recall": 1
+          },
+          "INFORMATIONAL": {
+            "support": 39,
+            "tp": 39,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1,
+            "recall": 1
+          },
+          "UNCERTAIN": {
+            "support": 1,
+            "tp": 1,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1,
+            "recall": 1
+          }
+        },
+        "abstentions": 1,
+        "historicalCurrentErrors": 0,
+        "subtypeConstraintErrors": 0
+      }
+    }
+  },
+  "limitations": [
+    "349 groups from one bounded controller sample; mirrored records are correlated, not independent trials.",
+    "Seven reference failure cases in held-out cohorts cannot establish universal error recall.",
+    "No real uniquely attributable failure/recovery sequence in the sample. Separate synthetic boundary tests are disclosed.",
+    "Same AI assistant prepared reference labels and implementation; labels frozen before implementation and related cohorts kept together."
+  ],
+  "failures": []
+}

@@ -18,7 +18,9 @@ ATLAS is Agent Control's public identity: **Agentic Topology, Lifecycle, Assuran
 
 Discover your AI tools, see what is available, and follow approved work from request to verified result.
 
-**Current release: [4.12.1](https://github.com/lozknowles/agent-control/releases/tag/v4.12.1) — Dashboard Navigation and Recovery Visibility.** This patch adds authoritative workspace search, durable favourites, governed WATCH entry, containment/recovery history, evidence-backed project and repository navigation, and protected artifact viewing. It preserves the 4.12 native runtime and governed cost-routing model. See the [workspace guide](docs/navigable-workspaces.md), [release notes](docs/release-notes-4.12.1.md), [upgrade guide](docs/upgrade-4.12.1.md), and [release verification](docs/release-verification-4.12.1.md).
+**Prepared candidate: 4.13.0 — governed Estate, Factory observation and historical diagnostics.** See [candidate notes](docs/release-notes-4.13.0.md), [installation/upgrade/rollback](docs/upgrade-4.13.md) and [qualification boundaries](docs/release-verification-4.13.0.md). Publication is pending approval.
+
+**Latest published release: [4.12.1](https://github.com/lozknowles/agent-control/releases/tag/v4.12.1) — Dashboard Navigation and Recovery Visibility.** This patch adds authoritative workspace search, durable favourites, governed WATCH entry, containment/recovery history, evidence-backed project and repository navigation, and protected artifact viewing. It preserves the 4.12 native runtime and governed cost-routing model. See the [workspace guide](docs/navigable-workspaces.md), [release notes](docs/release-notes-4.12.1.md), [upgrade guide](docs/upgrade-4.12.1.md), and [release verification](docs/release-verification-4.12.1.md).
 
 The release also incorporates the qualified 4.9 reliability safeguards: governed raw inference, explicit local/API usage accounting, live-writer-safe activity-log repair, protected workspace metadata and cancellation fencing before abort. The optional phone-hosted planning route remains experimental and has no physical end-to-end qualification.
 
