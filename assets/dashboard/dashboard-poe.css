@@ -71,7 +71,7 @@ html[data-bot-motion="off"] .poe-character *,html[data-bot-motion="reduced"] .po
 
 .mallow-live-controls {display:flex;gap:.5rem;flex-wrap:wrap;margin:.75rem 0;}
 .mallow-live-controls button {min-height:44px;white-space:normal;}
-.mallow-speech-status {max-width:none;width:100%;}
+.mallow-speech-status {grid-column:1/-1;max-width:none;width:100%;}
 #mallow-voice-cost {font-size:.875rem;overflow-wrap:anywhere;color:var(--muted,var(--ac-text-secondary));}
 @media(max-width:600px){.mallow-live-controls button{flex:1 1 135px;}#poe-input{font-size:16px;}}
 
