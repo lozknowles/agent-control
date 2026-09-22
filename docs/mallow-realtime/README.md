@@ -40,3 +40,9 @@ The deterministic proof uses a synthetic streaming frame source and a rules-base
 See [qualification.md](qualification.md) for the evidence inventory, measured prototype timings and remaining physical qualification gates.
 
 Phase 2 continues this work with a real governed Ask Collingham adapter and physical-audio edges. See the [physical audio inventory](physical-audio-inventory.md) and [physical voice qualification](physical-voice-qualification.md). The current installed speech providers are buffered, so Phase 2 remains experimental until a live physical browser session and the required streaming boundaries are qualified.
+
+## Optional shared speech service
+
+The physical bridge can use the independent loopback speech service for both recognition and Mallow's established voice. Set `AGENT_CONTROL_SHARED_SPEECH_URL` and the private server-side `AGENT_CONTROL_SHARED_SPEECH_TOKEN`; the browser never receives that credential. The adapter reports queue and provider health, retains the configured Mallow voice identity, and keeps speech interruption separate from governed Job cancellation.
+
+Remove those two settings to return to the previously configured direct recognition and synthesis providers. Text Mallow and governed Jobs remain available when either speech path is unavailable. This is an isolated integration and does not switch a live Agent Control installation.
