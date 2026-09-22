@@ -1,5 +1,12 @@
 # Agent Control 4.7 — Mallow voice
 
+## Shared-service availability and browser fallback
+
+When `AGENT_CONTROL_SHARED_SPEECH_URL` and `AGENT_CONTROL_SHARED_SPEECH_TOKEN` are configured, the Mallow dashboard consumes the shared service through the Agent Control backend. The credential is never sent to the browser. Agent Control records recognition and synthesis readiness independently, treats observations older than 15 seconds as stale, and requires two consecutive healthy observations before returning to shared speech after a failure.
+
+At the start of each turn, Mallow selects recognition and synthesis separately. Recognition uses the shared service when freshly ready, then browser `SpeechRecognition` when supported, then typed input. Synthesis uses the shared service, then the operator-selected browser `speechSynthesis` voice, then displayed text. Browser recognition support and processing location depend on the browser vendor; the dashboard discloses this instead of claiming it is local. Provider changes occur between utterances. Cancellation epochs discard late results and a failed completed recording asks the operator to repeat rather than submitting partial audio.
+
+Text conversation, Agent Control jobs, approvals and evidence remain available throughout speech failure. Browser voice choice is stored only in browser local storage.
 The 4.7 live transport is experimental pending provider and physical-device qualification. Voice is an optional interface to the existing governed runtime. Text, jobs, Crew, Process Map and readable job history remain available without a voice provider.
 
 ## Use Mallow

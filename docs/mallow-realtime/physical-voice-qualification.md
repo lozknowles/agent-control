@@ -59,7 +59,7 @@ This establishes a genuine Agent Control JobRuntime chain to the current Qwen2.5
 
 The installed STT service returns only a final utterance transcript. It cannot emit `voice.transcript.partial`. The installed TTS service returns a complete WAV; exposing that WAV as 20 ms frames improves playback and cancellation but is **buffered-then-framed**, not native streaming synthesis. These limitations cannot be relabelled as streaming qualification.
 
-The hpubuntu ALSA input endpoint produced digital silence. The practical physical path is therefore the private Tailscale browser/WebRTC service using the MSI microphone and output device. That live operator interaction is pending.
+The qualification-host ALSA input endpoint produced digital silence. The practical physical path is therefore the private browser/WebRTC service using an operator workstation microphone and output device. That live operator interaction is pending.
 
 ## Deterministic failure coverage
 
@@ -89,8 +89,8 @@ No video has been produced. Video remains gated on an actual audible physical se
 - Working tree: isolated; changes under qualification
 - Ask Collingham real path: **VERIFIED in Phase 2**
 - 22/23 delivery defect status: **REPRODUCED / REPAIRED in separate retained continuation**
-- Input device: hpubuntu ALSA endpoint silent; MSI browser device pending live session
-- Output device: hpubuntu Pulse dispatch passed without acoustic confirmation; MSI browser device pending
+- Input device: qualification-host ALSA endpoint silent; operator browser device pending live session
+- Output device: qualification-host Pulse dispatch passed without acoustic confirmation; operator browser device pending
 - VAD: implemented and focused-tested; physical timing pending
 - STT: authenticated Faster-Whisper ready; buffered final transcript only
 - Conversation provider: deterministic bounded control for direct turns; real Ask Collingham for knowledge turns

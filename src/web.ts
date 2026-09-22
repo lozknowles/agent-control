@@ -182,15 +182,19 @@ const mallowVoiceConfig=process.env.AGENT_CONTROL_MALLOW_VOICE_CONFIG??process.e
 let poeSpeech: import('./control/social-voice-providers.js').SpeechProvider | undefined;
 let poeRecognition: import('./control/social-voice-providers.js').SpeechRecognitionProvider | undefined;
 let poeVoice: import('./control/social-voice-providers.js').VoiceIdentity | undefined;
+let poeShared: import('./control/shared-speech-service-provider.js').SharedSpeechServiceProvider | undefined;
+let poeVoiceAvailability:{recognition:'ready'|'unavailable'|'unknown';synthesis:'ready'|'unavailable'|'unknown';observedAt:string|null}={recognition:'unknown',synthesis:'unknown',observedAt:null};
 if (mallowVoiceConfig) {
   try {
     const settings=JSON.parse(fs.readFileSync(mallowVoiceConfig,'utf8'));
-    const {PrivateSpeechProvider}=await import('./control/speech-http-provider.js');
-    if(!settings.speechUrl||!settings.tokenEnv||!settings.voice)throw new Error('poe_voice_configuration_invalid');
-    const provider=new PrivateSpeechProvider(settings.voice.provider,settings.speechUrl,process.env[settings.tokenEnv]??'',settings.voice);
+    if(!settings.voice)throw new Error('poe_voice_configuration_invalid');
+    let provider:import('./control/social-voice-providers.js').SpeechProvider&import('./control/social-voice-providers.js').SpeechRecognitionProvider;
+    if(process.env.AGENT_CONTROL_SHARED_SPEECH_URL&&process.env.AGENT_CONTROL_SHARED_SPEECH_TOKEN){const {SharedSpeechServiceProvider}=await import('./control/shared-speech-service-provider.js');poeShared=new SharedSpeechServiceProvider(process.env.AGENT_CONTROL_SHARED_SPEECH_URL,process.env.AGENT_CONTROL_SHARED_SPEECH_TOKEN,settings.voice);provider=poeShared;}
+    else {const {PrivateSpeechProvider}=await import('./control/speech-http-provider.js');if(!settings.speechUrl||!settings.tokenEnv)throw new Error('poe_voice_configuration_invalid');provider=new PrivateSpeechProvider(settings.voice.provider,settings.speechUrl,process.env[settings.tokenEnv]??'',settings.voice);}
     poeSpeech=provider;poeRecognition=provider;poeVoice=settings.voice;
   } catch {process.stderr.write('Optional Mallow voice configuration unavailable; text conversation remains active.\n');}
 }
+if(poeSpeech||poeRecognition){let candidate='',stable=0;const refresh=async()=>{try{let next:{recognition:'ready'|'unavailable'|'unknown';synthesis:'ready'|'unavailable'|'unknown';observedAt:string|null};if(poeShared){const value=await poeShared.status();next={recognition:value.capabilities.recognition.status,synthesis:value.capabilities.synthesis.status,observedAt:value.checkedAt};}else{const [recognition,synthesis]=await Promise.all([poeRecognition?.health(),poeSpeech?.health()]);next={recognition:recognition?.state==='ready'?'ready':'unavailable',synthesis:synthesis?.state==='ready'?'ready':'unavailable',observedAt:new Date().toISOString()};}const key=next.recognition+':'+next.synthesis;stable=key===candidate?stable+1:1;candidate=key;poeVoiceAvailability={recognition:next.recognition==='ready'&&stable<2?'unknown':next.recognition,synthesis:next.synthesis==='ready'&&stable<2?'unknown':next.synthesis,observedAt:next.observedAt};}catch{candidate='';stable=0;poeVoiceAvailability={recognition:'unavailable',synthesis:'unavailable',observedAt:new Date().toISOString()};}};await refresh();const timer=setInterval(()=>void refresh(),5000);timer.unref();}
 const knowledge = new PoeKnowledgeService({root:process.cwd(),version:AGENT_CONTROL_VERSION,sources:JSON.parse(fs.readFileSync('config/poe-knowledge-sources.json','utf8')),configuration:()=>({jobs:jobRuntime.catalog.listJobs(),schedules:jobRuntime.catalog.listSchedules(),models:service.models(),routing:config.modelRouting}),live:(category,question)=>{
   const snapshot=service.snapshot();
   if(category==='usage')return service.usageAnswer(usageQuestionQuery(question??''));
@@ -233,7 +237,7 @@ const poe = new PoeRuntime({localBenchmarkUnavailable:async()=>{if(!isAndroidUse
     const digest=isLocal?localBenchmark!.authorize({proposal,actor,requestKey,plan}):undefined;
     try{const parcel=jobRuntime.workParcels.submitApprovedPlan(origin.request,actor,requestKey,plan,origin);if(digest)localBenchmark!.bind(digest,parcel.id);return{parcelId:parcel.id};}catch(error){if(digest)localBenchmark!.revoke(digest);throw error;}
   }},
-  speech:poeSpeech,recognition:poeRecognition,voice:poeVoice,
+  speech:poeSpeech,recognition:poeRecognition,voice:poeVoice,voiceAvailability:()=>poeVoiceAvailability,
   onEvent:event=>service.events.emit(event.type==='conversation.changed'?'poe.conversation_changed':event.type==='proposal.changed'?'poe.proposal_changed':event.type==='speech.changed'?'poe.speech_changed':'poe.interrupted',{conversationId:event.conversationId,proposalId:event.proposalId,state:event.state,detail:event.detail,observedAt:event.at},undefined,'poe'),
 });
 service.configureProjection({poe});

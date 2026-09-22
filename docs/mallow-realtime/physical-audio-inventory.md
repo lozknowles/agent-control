@@ -1,6 +1,6 @@
 # Mallow realtime physical-audio inventory
 
-Observed on `hpubuntu` on 2026-09-22. This inventory separates a configured endpoint from a physically proven transducer.
+Observed on the isolated qualification host on 2026-09-22. This inventory separates a configured endpoint from a physically proven transducer.
 
 ## Audio host
 

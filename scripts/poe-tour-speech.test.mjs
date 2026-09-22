@@ -11,7 +11,7 @@ function fixture(){
  class Audio{async play(){if(rejectPlay)throw new Error('autoplay blocked');this.paused=false;}pause(){this.paused=true;}}
  const context={document:{querySelector:node,querySelectorAll:()=>[],addEventListener(){},documentElement:{style:{setProperty(){}}}},window:{},state:{operatorAuth:'authenticated',token:'fixture-only'},esc:x=>x,showError(){},innerWidth:1440,innerHeight:900,Audio,Uint8Array,Blob,URL:{createObjectURL:()=> 'blob:fixture',revokeObjectURL(){}},atob:()=>'',requestAnimationFrame(){},matchMedia:()=>({matches:false}),fetch:async()=>{requests++;return {ok:true,status:200,json:async()=>({bytes:'',mime:'audio/ogg',spokenText:'Fixture explanation of the highlighted feature.'})}}};
  const source=fs.readFileSync(new URL('../assets/dashboard/dashboard-poe.js',import.meta.url),'utf8');
- vm.runInNewContext(source.replace(/\}\)\(\);\s*$/,`window.test={speak,playReply,stopLocal,paintTour,finishTour,setup(){poeView.conversation={id:'fixture',turns:[]};poeView.voiceEnabled=true;tourIndex=0;tourSpeech='pending';tourTurn={id:'tour-1'};},state(){return tourSpeech},view:poeView};})();`),context);
+ vm.runInNewContext(source.replace(/\}\)\(\);\s*$/,`window.test={speak,playReply,stopLocal,paintTour,finishTour,setup(){poeView.conversation={id:'fixture',turns:[]};poeView.projection={voice:{synthesisStatus:'ready',statusObservedAt:new Date().toISOString()}};poeView.voiceEnabled=true;tourIndex=0;tourSpeech='pending';tourTurn={id:'tour-1'};},state(){return tourSpeech},view:poeView};})();`),context);
  context.window.test.setup();return {api:context.window.test,node,block:value=>rejectPlay=value,requests:()=>requests};
 }
 test('tour Next waits for actual audio end, not generation or playback start',async()=>{
