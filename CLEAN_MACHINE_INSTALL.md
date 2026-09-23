@@ -11,3 +11,7 @@ This is a repeatable physical qualification procedure, not a mock bootstrap test
 7. Stop the test service/VM, verify listener/process cleanup, retain the snapshot and owner-only raw evidence, and export a sanitized bundle with source, command, result and artifact hashes.
 
 Both clean runs must pass before claiming the clean-machine installation gate. A passing archived Job fixture, skipped discovery, restarted crashed core, or preconfigured developer machine does not satisfy this suite.
+
+## Recorded RC1 result
+
+Two restores of the same pristine Ubuntu Minimal 24.04.4 x86_64 snapshot passed at runtime commit 79a003160090459659901709ca744414a4bc82ab: normal discovery, empty provider/model inventory, doctor, dashboard and approved observation Job. The service PID remained unchanged with zero restarts in both runs. Later candidate changes are two dashboard encoders and a renderer test, followed by documentation. The disposable VM and its listener were stopped after installed-service upgrade/rollback evidence was retained. Exact receipts and hashes are in the sealed qualification bundle; this procedure does not qualify another platform automatically.
