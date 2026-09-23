@@ -9,7 +9,7 @@ const optionalCommands = [
   ['nvcc',['--version']], ['llama-server',['--version']], ['ollama',['--version']],
   ['codex',['--version']], ['claude',['--version']], ['docker',['--version']],
   ['podman',['--version']], ['ffmpeg',['-version']], ['chromium',['--version']],
-  ['google-chrome',['--version']], ['adb',['version']], ['tailscale',['version']],
+  ['google-chrome',['--version']], ['adb',['version']],
 ];
 
 /** Read-only prerequisite/capability inventory. Never starts a service or reads credentials. */
