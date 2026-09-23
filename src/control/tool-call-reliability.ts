@@ -63,6 +63,7 @@ export class ToolCallReliabilityGate {
       if (typeof parsed.name !== 'string' || !parsed.name.trim()) return {record: {...record, reason: 'MISSING_TOOL'}};
       let args = parsed.arguments;
       if (typeof args === 'string') {
+        if (hasDuplicateObjectKeys(args)) return {record: {...record, reason: 'AMBIGUOUS_DUPLICATE_KEY'}};
         try { args = JSON.parse(args); } catch { return {record: {...record, reason: 'INVALID_ARGUMENTS'}}; }
       }
       if (!plainObject(args)) return {record: {...record, reason: 'INVALID_ARGUMENTS'}};

@@ -14,6 +14,22 @@ const corpus = JSON.parse(fs.readFileSync(new URL('./fixtures/tool-call-reliabil
   synthetic: Array<{id: string; raw: string; expected: 'VALID' | 'REPAIRED' | 'REJECT'; tool?: string; equivalentInput?: unknown; granted?: string[]}>;
 };
 
+test('native argument strings reject duplicate resource and content keys before normalization', () => {
+  const gate = new ToolCallReliabilityGate(MUTATION_TOOL_SCHEMAS);
+  for (const args of [
+    '{"path":"src/allowed.js","path":"src/different.js","content":"x"}',
+    '{"path":"src/a.js","content":"keep","content":"replace"}',
+    '{"path":"src/a.js","\\u0070ath":"src/different.js","content":"x"}',
+  ]) {
+    const result = gate.evaluate(JSON.stringify({name:'mutation.repository.write', arguments:args}));
+    assert.equal(result.record.decision, 'REJECT');
+    assert.equal(result.record.reason, 'AMBIGUOUS_DUPLICATE_KEY');
+    assert.equal(result.request, undefined);
+  }
+  const valid = {path:'src/a.js', content:'text with repeated words and {"path":1,"path":2}'};
+  assert.deepEqual(gate.evaluate(JSON.stringify({name:'mutation.repository.write', arguments:JSON.stringify(valid)})).request?.input, valid);
+});
+
 test('frozen historical failures are explicitly unobservable rather than invented', () => {
   assert.equal(corpus.historical.length, 8);
   assert.ok(corpus.historical.every(item => !item.rawResponseAvailable && !item.rawArgumentsAvailable));
