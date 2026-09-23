@@ -12,7 +12,9 @@ import {OwnedProcessManager} from './owned-process.js';
 async function freePort(){const server=net.createServer();server.listen(0,'127.0.0.1');await once(server,'listening');const address=server.address(),port=typeof address==='object'&&address?address.port:0;server.close();await once(server,'close');return port;}
 
 test('experimental model server admits one bounded file, proves protected health and confirms cleanup',{skip:process.platform!=='linux'},async()=>{
-  const root=fs.mkdtempSync(path.join(os.tmpdir(),'experimental-model-host-')),runtime=path.join(root,'fake-runtime'),model=path.join(root,'model.gguf'),port=await freePort(),protectedPort=await freePort();
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'experimental-model-host-')),runtime=path.join(root,'fake-runtime'),model=path.join(root,'model.gguf'),port=await freePort();
+  let protectedPort=await freePort();
+  while(protectedPort===port)protectedPort=await freePort();
   fs.writeFileSync(model,'bounded-model-fixture');
   fs.writeFileSync(runtime,`#!/usr/bin/env node
 const http=require('node:http'),args=process.argv.slice(2);
