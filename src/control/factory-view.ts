@@ -113,7 +113,8 @@ export function projectFactory(source:FactorySource):FactoryProjection {
     const node=source.workerIdentities?.find(i=>i.workerId===worker.id)?.nodeId;
     const stop=source.kills.filter(k=>k.recovery!=='AVAILABLE'&&(k.scope.kind==='WORKER'&&k.scope.id===worker.id||k.scope.kind==='NODE'&&k.scope.id===node||k.scope.kind==='ESTATE')).at(-1);
     const e=base('worker',worker.id,worker.id,stop?(stop.recovery==='KILLED'?stop.state:stop.recovery):worker.health==='offline'?'OFFLINE':worker.active>0?'WORKING':worker.health==='unknown'?'UNKNOWN':'IDLE',worker.observedAt);
-    e.runId=assigned[0]?.id??null;const own=observations.filter(i=>i.state==='RUNNING'&&assigned.some(r=>r.id===i.runId));e.modelId=own.at(-1)?.model??null;e.providerId=own.at(-1)?.provider??null;e.metrics=measures(own);
+    // A shared worker has no single Job identity. Preserve every assignment in detail instead of colouring it as the first Run.
+    e.runId=assigned.length===1?assigned[0].id:null;const own=observations.filter(i=>i.state==='RUNNING'&&assigned.some(r=>r.id===i.runId));e.modelId=own.at(-1)?.model??null;e.providerId=own.at(-1)?.provider??null;e.metrics=measures(own);
     e.detail={health:worker.health,active:worker.active,capacity:worker.capacity,capabilities:worker.capabilities,blockedCapabilities:worker.blockedCapabilities??[],currentRuns:assigned.map(r=>r.id),runtime:worker.labels?.runtime??null,containment:stop?{id:stop.id,state:stop.state,recovery:stop.recovery,reason:stop.reason,requiredReturn:'INSPECTED → RESET → REQUALIFIED → AVAILABLE'}:null};
     e.links=assigned.map(r=>({kind:'run' as const,id:r.id,label:'Open assigned run'}));add(e);
   }

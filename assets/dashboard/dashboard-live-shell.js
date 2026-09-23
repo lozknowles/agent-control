@@ -55,6 +55,7 @@
       const isLive = activeStates.has(session.state) && session.capabilities.modes.watch;
       return `<article class="live-shell-card ${isLive ? 'is-live' : ''}" data-live-shell-session-card="${safe(session.id)}"><div><strong>${safe(session.scope.crewRole || session.scope.workerId)} · ${safe(session.scope.stepId)}</strong><small>${safe(session.scope.nodeId)} · ${safe(route(session))}<br>${safe(session.id)} · ${safe(session.adapterId)} · ${safe(elapsed(session))}</small></div>${isLive ? `<button type="button" class="button" data-live-shell-open="${safe(session.id)}">Watch shell</button>` : `<button type="button" class="button secondary" data-live-shell-transcript-open="${safe(session.id)}">Transcript</button>`}<span class="live-shell-capabilities">${capabilityBadges(session)}</span></article>`;
     }).join('')}</section>`).join('');
+    for(const session of runtime.sessions){const card=list.querySelector(`[data-live-shell-session-card="${CSS.escape(session.id)}"]`),runId=session.scope?.runId;if(card&&runId){window.AgentControlIdentity.apply(card,window.AgentControlIdentity.run(runId));card.classList.add('job-identity-rail');card.querySelector('strong')?.after(window.AgentControlIdentity.badge(runId,runId));}}
     document.querySelectorAll('[data-live-shell-open]').forEach(button => button.addEventListener('click', () => openSession(button.dataset.liveShellOpen, 'WATCH').catch(showError)));
     document.querySelectorAll('[data-live-shell-transcript-open]').forEach(button => button.addEventListener('click', () => openSession(button.dataset.liveShellTranscriptOpen, null, true).catch(showError)));
   }
@@ -94,6 +95,7 @@
     const session = runtime.selected; if (!session) return;
     renderActivity();
     byId('live-shell-title').textContent = `${session.scope.crewRole || session.scope.workerId} · ${session.scope.stepId}`;
+    if(session.scope.runId)byId('live-shell-title').append(' ',window.AgentControlIdentity.badge(session.scope.runId,session.scope.runId));
     byId('live-shell-subtitle').textContent = `${groupLabel(session)} · ${session.command}`;
     byId('live-shell-identity').innerHTML = [
       ['Session', session.id], ['Machine', session.scope.nodeId], ['Adapter', `${session.adapterId} / ${session.capabilities.terminal}`],

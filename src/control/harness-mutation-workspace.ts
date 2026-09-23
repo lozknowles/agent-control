@@ -7,7 +7,7 @@ import type {ExecutionRecipe, ToolDefinition} from './adaptive-harness.js';
 import type {ToolHandlerBinding} from './harness-dispatch.js';
 import type {MutationBenchmarkTask} from './harness-mutation-benchmark.js';
 import {OwnedProcessManager, type OwnedExecution, type ExecutionCleanupReport} from './owned-process.js';
-import type {StructuredChatToolSchema} from './structured-chat-loop-provider.js';
+import type {SemanticToolV1, StructuredChatToolSchema} from './structured-chat-loop-provider.js';
 import {assertWorkspaceMetadataAccess,protectedMetadataDecision} from './protected-workspace-metadata.js';
 
 export const MUTATION_TOOL_IDS = Object.freeze({
@@ -26,6 +26,16 @@ export const MUTATION_TOOL_SCHEMAS: StructuredChatToolSchema[] = [
   {id: MUTATION_TOOL_IDS.write, description: 'Write complete bounded content to one task-authorised file. Intended for a new test or a small full-file correction.', inputSchema: {type: 'object', properties: {path: {type: 'string'}, content: {type: 'string'}}, required: ['path', 'content'], additionalProperties: false}},
   {id: MUTATION_TOOL_IDS.test, description: 'Run the fixture public Node test suite. It accepts no command, arguments or shell input.', inputSchema: {type: 'object', additionalProperties: false}},
   {id: MUTATION_TOOL_IDS.finish, description: 'Stop the attempt after testing or when safely blocked. This is not verifier acceptance.', inputSchema: {type: 'object', properties: {summary: {type: 'string'}, blocked: {type: 'boolean'}, reason: {type: 'string'}}, additionalProperties: false}},
+];
+
+/** Model intent only: these aliases translate to the existing governed handlers. */
+export const MUTATION_SEMANTIC_TOOL_V1: SemanticToolV1[] = [
+  {name:'read_file',id:MUTATION_TOOL_IDS.read,description:'Read a repository file or bounded line range.',parameters:MUTATION_TOOL_SCHEMAS[0].inputSchema},
+  {name:'search_files',id:MUTATION_TOOL_IDS.search,description:'Search repository text; get file and line matches.',parameters:MUTATION_TOOL_SCHEMAS[1].inputSchema},
+  {name:'replace_text',id:MUTATION_TOOL_IDS.replace,description:'Replace exact text in one permitted file.',parameters:MUTATION_TOOL_SCHEMAS[2].inputSchema},
+  {name:'write_file',id:MUTATION_TOOL_IDS.write,description:'Write complete bounded content to one permitted file.',parameters:MUTATION_TOOL_SCHEMAS[3].inputSchema},
+  {name:'run_tests',id:MUTATION_TOOL_IDS.test,description:'Run the public tests. No command or shell input.',parameters:MUTATION_TOOL_SCHEMAS[4].inputSchema},
+  {name:'finish_work',id:MUTATION_TOOL_IDS.finish,description:'Stop work; this does not establish independent success.',parameters:MUTATION_TOOL_SCHEMAS[5].inputSchema},
 ];
 
 export const MUTATION_TOOL_DEFINITIONS: ToolDefinition[] = [
@@ -142,7 +152,9 @@ export class MutationWorkspace {
     const content = readText(file, 512_000), all = content.split(/\r?\n/);
     const startLine = value.startLine === undefined ? 1 : integer(value.startLine, 1, Math.max(1, all.length));
     const endLine = value.endLine === undefined ? Math.min(all.length, startLine + 399) : integer(value.endLine, startLine, Math.min(all.length, startLine + 399));
-    const selected = all.slice(startLine - 1, endLine).map((line, index) => `${String(startLine + index).padStart(4, ' ')} | ${line}`).join('\n');
+    // Line position is metadata. Putting display prefixes in content made two
+    // historical complete-file writes copy those prefixes into JavaScript.
+    const selected = all.slice(startLine - 1, endLine).join('\n');
     return {path: this.relative(file), startLine, endLine, totalLines: all.length, complete: startLine === 1 && endLine === all.length, content: selected};
   }
 
@@ -177,6 +189,7 @@ export class MutationWorkspace {
     const expected = value.expectedOccurrences === undefined ? 1 : integer(value.expectedOccurrences, 1, 1_000);
     const content = readText(file, 512_000), occurrences = countOccurrences(content, value.oldText);
     if (occurrences !== expected) throw new Error(`mutation_replace_occurrences:${occurrences}:${expected}`);
+    if (hasNumberedReadDisplay(value.newText)) throw new Error('mutation_write_numbered_read_display_denied');
     const updated = content.split(value.oldText).join(value.newText);
     if (Buffer.byteLength(updated, 'utf8') > 512_000) throw new Error('mutation_file_size_limit');
     atomicWrite(file, updated, () => this.assertActive());
@@ -188,6 +201,7 @@ export class MutationWorkspace {
     const value = object(input, ['path', 'content']);
     const file = this.authorizeWritable(value.path, true);
     if (typeof value.content !== 'string' || Buffer.byteLength(value.content, 'utf8') > 131_072 || value.content.includes('\0')) throw new Error('mutation_write_content_invalid');
+    if (hasNumberedReadDisplay(value.content)) throw new Error('mutation_write_numbered_read_display_denied');
     this.assertActive(); fs.mkdirSync(path.dirname(file), {recursive: true});
     atomicWrite(file, value.content, () => this.assertActive());
     this.assertActive(); execGit(this.root, ['add', '--intent-to-add', '--', this.relative(file)]);
@@ -295,5 +309,18 @@ function object(value: unknown, fields: string[]) { if (!value || typeof value !
 function stringArray(value: unknown, maximum: number): string[] { if (!Array.isArray(value) || value.length > maximum || value.some(item => typeof item !== 'string')) throw new Error('mutation_tool_paths_invalid'); return value as string[]; }
 function integer(value: unknown, minimum: number, maximum: number) { if (!Number.isSafeInteger(value) || Number(value) < minimum || Number(value) > maximum) throw new Error('mutation_tool_integer_invalid'); return Number(value); }
 function validRelative(value: unknown): string { if (typeof value !== 'string' || !value.length || value.length > 512 || value.includes('\0') || path.isAbsolute(value) || /^[A-Za-z]:[\\/]/.test(value) || value.split(/[\\/]/).includes('..')) throw new Error('mutation_workspace_path_invalid'); return value.split('\\').join('/'); }
+/** Refuse an accidental copy of the old read display, without rewriting source. */
+export function hasNumberedReadDisplay(content: string): boolean {
+  const rows = content.split(/\r?\n/);
+  let consecutive = 0, previous = -1;
+  for (const row of rows) {
+    const match = /^ {0,4}(\d{1,5}) \| /.exec(row);
+    const number = match ? Number(match[1]) : -1;
+    consecutive = number > 0 && number === previous + 1 ? consecutive + 1 : number > 0 ? 1 : 0;
+    if (consecutive >= 2) return true;
+    previous = number;
+  }
+  return false;
+}
 function lines(value: string) { return value.split(/\r?\n/).map(item => item.trim()).filter(Boolean); }
 function emptyCounters(): MutationWorkspaceCounters { return {repositoryReads: 0, repositorySearches: 0, mutationsAttempted: 0, verifierFacingTests: 0, toolCalls: 0, toolIds: []}; }

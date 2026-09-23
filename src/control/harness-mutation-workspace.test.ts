@@ -4,7 +4,8 @@ import path from 'node:path';
 import test from 'node:test';
 import {createToolHandlerRegistry} from './harness-dispatch.js';
 import {parseMutationBenchmarkSuite} from './harness-mutation-benchmark.js';
-import {MUTATION_TOOL_IDS, MutationWorkspace, fixtureContentSha256} from './harness-mutation-workspace.js';
+import {MUTATION_TOOL_DEFINITIONS, MUTATION_TOOL_IDS, MUTATION_TOOL_SCHEMAS, MUTATION_SEMANTIC_TOOL_V1, MutationWorkspace, fixtureContentSha256, hasNumberedReadDisplay} from './harness-mutation-workspace.js';
+import {StructuredChatLoopProvider} from './structured-chat-loop-provider.js';
 
 const root = process.cwd(), suite = parseMutationBenchmarkSuite(JSON.parse(fs.readFileSync(path.join(root, 'benchmarks', 'harness-mutation-jobs.json'), 'utf8')));
 
@@ -49,6 +50,60 @@ test('new allowlisted files become authoritative Git diff content and cleanup is
 
 test('fixture content hash is deterministic and excludes no declared source', () => {
   assert.equal(fixtureContentSha256(path.join(root, suite.fixturePath)), fixtureContentSha256(path.join(root, suite.fixturePath)));
+});
+
+for (const {taskId, file} of [{taskId: 'MUT-004', file: 'src/telemetry.js'}, {taskId: 'MUT-008', file: 'src/dispatcher.js'}]) {
+  test(`${taskId} numbered read-display copy is rejected before source mutation`, async () => {
+    const task = suite.tasks.find(item => item.id === taskId)!;
+    const prepared = MutationWorkspace.prepare(path.join(root, suite.fixturePath), task);
+    try {
+      const registry = createToolHandlerRegistry(prepared.workspace.toolBindings()), recipe = {} as never;
+      const source = fs.readFileSync(path.join(prepared.workspace.root, file), 'utf8');
+      const numbered = source.split(/\r?\n/).map((line, index) => `${String(index + 1).padStart(4, ' ')} | ${line}`).join('\n');
+      assert.equal(hasNumberedReadDisplay(numbered), true);
+      await assert.rejects(() => registry.invoke(MUTATION_TOOL_IDS.write, {path: file, content: numbered}, recipe, {assertActive: () => undefined}), /numbered_read_display_denied/);
+      assert.equal(fs.readFileSync(path.join(prepared.workspace.root, file), 'utf8'), source);
+      assert.deepEqual(prepared.workspace.changedFiles(), []);
+      const read = await registry.invoke(MUTATION_TOOL_IDS.read, {path: file, startLine: 1, endLine: 3}, recipe, {assertActive: () => undefined}) as {content: string};
+      assert.equal(read.content, source.split(/\r?\n/).slice(0, 3).join('\n'));
+      assert.equal(hasNumberedReadDisplay(read.content), false);
+    } finally { prepared.workspace.cleanup(); }
+  });
+  test(`${taskId} SEMANTIC_TOOL_V1 native write still rejects numbered read-display before mutation`, async () => {
+    const task=suite.tasks.find(item=>item.id===taskId)!;
+    const prepared=MutationWorkspace.prepare(path.join(root,suite.fixturePath),task);
+    try{
+      const original=fs.readFileSync(path.join(prepared.workspace.root,file),'utf8');
+      const numbered=original.split(/\r?\n/).map((line,index)=>`${String(index+1).padStart(4,' ')} | ${line}`).join('\n');
+      const provider=new StructuredChatLoopProvider({providerId:'fixture',modelId:'fixture',baseUrl:'http://127.0.0.1:18000/v1',toolSchemas:MUTATION_TOOL_SCHEMAS,finishToolId:MUTATION_TOOL_IDS.finish,semanticToolV1:{tools:MUTATION_SEMANTIC_TOOL_V1},fetch:async()=>Response.json({choices:[{message:{content:null,tool_calls:[{id:'native-write',type:'function',function:{name:'write_file',arguments:JSON.stringify({path:file,content:numbered})}}]}}]})});
+      const recipe={id:`${taskId}-semantic-write`,taskId,jobId:taskId,runId:taskId,workerId:'fixture',providerId:'fixture',modelId:'fixture',promptProfile:{id:'fixture',version:'1',description:'fixture'},harness:{profile:'STANDARD',recommendedProfile:'STANDARD',routingMode:'EXPERIMENT',evidenceQualified:false,decisionReasons:[],contextStrategyId:'fixture',maximumTurns:1},context:{tier:0,sourceIds:[],evidenceIds:[],estimatedTokens:0},skills:[],tools:MUTATION_TOOL_DEFINITIONS,runtime:{},authority:{laneId:'fixture',leaseGeneration:1,ownershipGeneration:1,owner:'fixture'},resourceLimits:{maximumLatencyMs:10000},verification:{requiredEvidence:[],requireIndependentCheck:true},escalation:{minimumConfidence:.8,maximumAttempts:1,onFailure:'review'},routeReason:'fixture',fingerprint:'fixture'} as never;
+      const registry=createToolHandlerRegistry(prepared.workspace.toolBindings());
+      let blocked=false;
+      await provider.executor('Use the native write tool.').execute(recipe,{assertActive:()=>undefined,invoke:async(tool,input)=>{try{return await registry.invoke(tool,input,recipe,{assertActive:()=>undefined});}catch(error){blocked=/numbered_read_display_denied/.test(String(error));throw error;}}});
+      assert.equal(blocked,true);
+      assert.equal(fs.readFileSync(path.join(prepared.workspace.root,file),'utf8'),original);
+      assert.deepEqual(prepared.workspace.changedFiles(),[]);
+    }finally{prepared.workspace.cleanup();}
+  });
+}
+
+test('numbered read-display content is rejected through exact replacement before mutation', async () => {
+  const task = suite.tasks.find(item => item.id === 'MUT-004')!;
+  const prepared = MutationWorkspace.prepare(path.join(root, suite.fixturePath), task);
+  try {
+    const file = 'src/telemetry.js';
+    const original = fs.readFileSync(path.join(prepared.workspace.root, file), 'utf8');
+    const oldText = original.split(/\r?\n/)[0]!;
+    assert.ok(oldText.length > 0);
+    const replacement = '   1 | const first = true;\n   2 | const second = true;';
+    const registry = createToolHandlerRegistry(prepared.workspace.toolBindings());
+    await assert.rejects(
+      () => registry.invoke(MUTATION_TOOL_IDS.replace, {path: file, oldText, newText: replacement}, {} as never, {assertActive: () => undefined}),
+      /numbered_read_display_denied/,
+    );
+    assert.equal(fs.readFileSync(path.join(prepared.workspace.root, file), 'utf8'), original);
+    assert.deepEqual(prepared.workspace.changedFiles(), []);
+  } finally { prepared.workspace.cleanup(); }
 });
 
 test('governance metadata is unavailable or read-only inside mutation workspaces', async () => {

@@ -44,9 +44,11 @@ export async function createFactoryRenderer(host,{onSelect,lowDetail=false,spati
     const current=new Set(layout.map(r=>r.e.id));for(const[id,b]of buttons)if(!current.has(id)){b.remove();buttons.delete(id);}
     for(const r of layout){const {e,x,y,w:cw,h:ch}=r,s=hostStatus(e,mode()),name=window.AgentControlPrecision?.label(e)??e.label,chosen=e.id===selected;
       ctx.fillStyle=chosen?'#eaf4ff':'#ffffff';ctx.strokeStyle=chosen?'#006bc7':'#718ba5';ctx.lineWidth=chosen?2.5:1;ctx.beginPath();ctx.roundRect(x,y,cw,ch,7);ctx.fill();ctx.stroke();
+      const identity=spatialMode==='FACTORY'&&e.runId?window.AgentControlIdentity?.run(e.runId):null;
+      if(identity){const colour=getComputedStyle(document.documentElement).getPropertyValue(`--ac-identity-${identity.slot}`).trim();ctx.fillStyle=colour;ctx.fillRect(x+2,y+8,4,ch-16);}
       icon(x+16,y+20,e.kind==='host'?(s.platform==='android'?'phone':'computer'):e.kind,chosen?'#07508e':'#365b81');const tx=x+61;
       ctx.font='650 15px system-ui';let title=name;while(title.length>1&&ctx.measureText(title).width>cw-86)title=title.slice(0,-1);if(title!==name)title=title.slice(0,-1)+'…';
-      text(title,tx,y+26,15,'#142e4d',650);text(e.kind==='host'?(e.id==='host:controller-local'?'Local controller · '+s.platform:s.platform+' · '+s.reach):e.kind,tx,y+46,11);
+      text(title,tx,y+26,15,'#142e4d',650);text(e.kind==='host'?(e.id==='host:controller-local'?'Local controller · '+s.platform:s.platform+' · '+s.reach):identity?`${e.kind.toUpperCase()} · ◇ ${e.runId.slice(0,18)}`:e.kind,tx,y+46,11);
       text(e.kind==='host'?s.identity:e.state,tx,y+66,11,s.limited?'#805009':'#49617a');
       if(e.kind==='host'&&s.attention){text('!',x+cw-20,y+24,17,'#8b5300',750);}
       let b=buttons.get(e.id);if(!b){b=document.createElement('button');b.type='button';b.className='precision-map-node';b.dataset.entityId=e.id;b.onclick=()=>onSelect?.(e.id);controls.append(b);buttons.set(e.id,b);}

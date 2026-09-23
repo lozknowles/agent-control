@@ -139,3 +139,31 @@ dialog::backdrop { background:var(--ac-overlay); }
   --precision-node-ring: #86afd580;
   --precision-drawer-shadow: #12365320;
 }
+
+/* Run identity uses a narrow rail/chip; status keeps its own semantic palette. */
+:root {
+  --ac-identity-0:#365aa1; --ac-identity-1:#654b9a;
+  --ac-identity-2:#844b87; --ac-identity-3:#00606d;
+  --ac-identity-4:#8b3e46; --ac-identity-5:#4f6423;
+  --ac-identity-6:#795322; --ac-identity-7:#4a5e9b;
+  --ac-identity-8:#2e6839; --ac-identity-9:#7c4973;
+  --ac-identity-10:#005f5f; --ac-identity-11:#815037;
+}
+@media (prefers-color-scheme:dark) {
+  :root {
+    --ac-identity-0:#a7bcff; --ac-identity-1:#c4adff;
+    --ac-identity-2:#e0a9d7; --ac-identity-3:#88d1d8;
+    --ac-identity-4:#ffadb6; --ac-identity-5:#bddb87;
+    --ac-identity-6:#e2bf82; --ac-identity-7:#b5bfff;
+    --ac-identity-8:#a4d5a6; --ac-identity-9:#d8b2d0;
+    --ac-identity-10:#a7d9d3; --ac-identity-11:#e7b79b;
+  }
+}
+.job-identity { --job-identity:var(--ac-text-secondary); }
+.job-identity-badge { display:inline-flex;align-items:center;gap:.45em;max-width:100%;font:700 11px ui-monospace,monospace;color:var(--job-identity);white-space:normal;overflow-wrap:anywhere; }
+.job-identity-badge::before { content:"";width:.7em;height:.7em;flex:none;border:2px solid currentColor;border-radius:2px;transform:rotate(45deg); }
+.job-identity-rail { border-inline-start:3px solid var(--job-identity);padding-inline-start:10px; }
+.job-identity-name { color:var(--job-identity); }
+.job-identity-active { outline:2px solid var(--job-identity);outline-offset:-2px; }
+.event-list .job-identity-rail { border-inline-start:3px solid var(--job-identity);padding-inline-start:10px; }
+.event-job-filter-button { border:0;background:transparent;padding:0;margin-inline-end:8px;cursor:pointer; }

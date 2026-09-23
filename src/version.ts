@@ -1,1 +1,1 @@
-export const AGENT_CONTROL_VERSION = '4.13.0';
+export const AGENT_CONTROL_VERSION = '4.14.0-rc.0';

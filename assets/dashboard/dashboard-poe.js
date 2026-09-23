@@ -49,6 +49,7 @@
   function render(){
     const p=poeView.projection,c=poeView.conversation;if(!p||!c)return;
     paintState();q('#poe-conversation-title').textContent='Your dashboard conversation';
+    const conversationTag=document.createElement('span');conversationTag.className='job-identity-badge';conversationTag.textContent=`Conversation ${c.id}`;conversationTag.title='Conversation identity; governed background Jobs have separate Run identities';window.AgentControlIdentity.apply(conversationTag,window.AgentControlIdentity.conversation(c.id));q('#poe-conversation-title').append(' ',conversationTag);
     const route=p.reasoning?.route;q('#poe-reasoning-route').textContent=route?`Reasoning: ${route.providerId} / ${route.accountProfileId||'default'} / ${route.providerModel||route.modelId} (${route.modelId}) @ ${route.nodeId}`:`Reasoning: ${p.reasoning?.state||'unavailable'}`;
     q('#poe-turns').innerHTML=c.turns.length?c.turns.map(turn=>{
       const route=turn.route?`${turn.route.providerId} / ${turn.route.providerModel||turn.route.modelId} (${turn.route.modelId}) @ ${turn.route.nodeId}`:turn.responseMode==='DETERMINISTIC'?'Grounded registry renderer; no model invocation':'';
