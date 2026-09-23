@@ -12,6 +12,16 @@ const semanticTools = [
   {name:'finish_work',id:'mutation.finish',description:'Stop work.',parameters:schemas[1].inputSchema},
 ];
 
+test('semantic native calls reject duplicate argument keys before any batch dispatch', async () => {
+  for (const argumentsText of ['{"path":"src/a.js","path":"src/b.js"}', '{"path":"src/a.js","\\u0070ath":"src/b.js"}']) {
+    let invoked=0;
+    const provider=new StructuredChatLoopProvider({providerId:'provider',modelId:'model',baseUrl:'http://127.0.0.1:8081/v1',toolSchemas:schemas,finishToolId:'mutation.finish',semanticToolV1:{tools:semanticTools,batchableToolIds:['repository.read']},fetch:async()=>Response.json({choices:[{message:{content:null,tool_calls:[{id:'valid',type:'function',function:{name:'read_file',arguments:'{"path":"src/a.js"}'}},{id:'ambiguous',type:'function',function:{name:'read_file',arguments:argumentsText}}]}}]})});
+    const result=await provider.executor('Read.').execute(recipe(1),{assertActive:()=>undefined,invoke:async()=>{invoked++;return {};}});
+    assert.match(result.error??'', /provider_native_arguments_ambiguous_duplicate_key/);
+    assert.equal(invoked,0);
+  }
+});
+
 test('SEMANTIC_TOOL_V1 sends native functions and translates only through governed tool ids', async () => {
   const replies=[
     {choices:[{message:{content:null,tool_calls:[{id:'call-1',type:'function',function:{name:'read_file',arguments:'{"path":"src/a.js"}'}}]}}]},

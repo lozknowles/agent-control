@@ -91,7 +91,7 @@ function sameKeys(value: Record<string, unknown>, expected: string[]) {
 function sha(value: string) { return createHash('sha256').update(value).digest('hex'); }
 
 /** Detect duplicate JSON object keys before JSON.parse silently keeps the last. */
-function hasDuplicateObjectKeys(value: string): boolean {
+export function hasDuplicateObjectKeys(value: string): boolean {
   const stack: Array<{kind: 'object' | 'array'; keys: Set<string>; expectsKey: boolean}> = [];
   for (let index = 0; index < value.length; index++) {
     const char = value[index];

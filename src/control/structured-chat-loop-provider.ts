@@ -14,7 +14,7 @@ import {
 import {estimateTokens} from './token-aware-output.js';
 import {normalizeCacheEvidence} from './cache-evidence.js';
 import {runtimeBudgetError, type GovernedRuntimeBudget, type RuntimeBudgetState} from './runtime-budget.js';
-import {ToolCallReliabilityGate, type ToolCallReliabilityRecord} from './tool-call-reliability.js';
+import {ToolCallReliabilityGate, hasDuplicateObjectKeys, type ToolCallReliabilityRecord} from './tool-call-reliability.js';
 import type {SemanticEventInput, SemanticEventType} from './semantic-tool-events.js';
 import {NoProgressDetector, type NoProgressEvidence, type NoProgressInteraction, type NoProgressThresholds} from './no-progress-v1.js';
 
@@ -237,6 +237,7 @@ export class StructuredChatLoopProvider {
             emit('TOOL_TRANSLATION_STARTED', turn, responseHash, alias.id);
             translationStarted=true;
             let input:unknown;
+            if (hasDuplicateObjectKeys(nativeCall.function.arguments)) throw new Error('provider_native_arguments_ambiguous_duplicate_key');
             try { input=JSON.parse(nativeCall.function.arguments); } catch { throw new Error('provider_native_arguments_invalid_json'); }
             emit('TOOL_SCHEMA_VALIDATION_STARTED', turn, responseHash, alias.id);
             if (!input || typeof input!=='object' || Array.isArray(input) || !this.semanticValidators.get(alias.id)?.(input)) {
