@@ -710,11 +710,16 @@ export class LocalMachineDiscoveryAdapter implements DiscoveryAdapter {
       ],
       2500,
     );
+    let invalidGpuRows = 0;
     if (gpu.ok)
       for (const row of gpu.stdout.trim().split(/\r?\n/).filter(Boolean)) {
         const [index, name, vram, driver] = row
           .split(",")
           .map((value) => value.trim());
+        if (row.split(',').length !== 4 || !/^\d+$/.test(index ?? '') || !name || !vram || !Number.isFinite(Number(vram)) || Number(vram) <= 0 || !driver) {
+          invalidGpuRows++;
+          continue;
+        }
         values.push(
           item(
             "GPU",
@@ -735,6 +740,14 @@ export class LocalMachineDiscoveryAdapter implements DiscoveryAdapter {
           ),
         );
       }
+    const gpuCount = values.filter(value => value.kind === 'GPU').length;
+    Object.assign(values[0]!.attributes, {
+      gpuInventoryState: !gpu.ok
+        ? gpu.stderr === 'command_unavailable' ? 'OPTIONAL_UNAVAILABLE' : 'OPTIONAL_DEGRADED'
+        : invalidGpuRows ? 'OPTIONAL_DEGRADED' : gpuCount ? 'OPTIONAL_AVAILABLE' : 'OPTIONAL_UNAVAILABLE',
+      gpuInventoryReason: !gpu.ok ? gpu.stderr === 'command_unavailable' ? 'command_unavailable' : gpu.stderr === 'command_timeout' ? 'command_timeout' : 'command_failed'
+        : invalidGpuRows ? 'malformed_output' : gpuCount ? 'inventory_observed' : 'no_devices_reported',
+    });
     return values;
   }
 }

@@ -7,6 +7,13 @@ import type {ChildProcess} from 'node:child_process';
 import {OwnedProcessManager, processTerminationAdapterFor, type OwnedProcessIdentity, type ProcessTerminationAdapter} from './owned-process.js';
 import {ExecutionSessionRuntime, type ExecutionSessionScope} from './execution-session.js';
 
+test('missing executable rejects with ENOENT without an unhandled process error or tracked PID', async () => {
+  const manager = new OwnedProcessManager();
+  await assert.rejects(manager.runProcess({command: path.join(os.tmpdir(), 'agent-control-absent-executable-' + process.pid), args: []}), {code: 'ENOENT'});
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(manager.activePids(), []);
+});
+
 class FixtureTerminationAdapter implements ProcessTerminationAdapter {
   readonly platform = 'win32' as const;
   constructor(private readonly outcome: 'confirmed' | 'uncertain' | 'identity-mismatch' | 'failed') {}

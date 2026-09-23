@@ -5,6 +5,7 @@ import path from "node:path";
 import test from "node:test";
 import {
   DefaultDiscoveryProbe,
+  LocalMachineDiscoveryAdapter,
   EnvironmentDiscoveryRuntime,
   type DiscoveryAdapter,
   type DiscoveryAdapterContext,
@@ -13,6 +14,12 @@ import {
   type DiscoveryProbe,
 } from "./environment-discovery.js";
 import { emptyConfig, type AgentControlConfig } from "./config.js";
+
+test("missing optional executable returns unavailable without terminating discovery", async () => {
+  const result = await new DefaultDiscoveryProbe().command(path.join(os.tmpdir(), 'agent-control-absent-probe-' + process.pid), [], 500);
+  assert.deepEqual(result, {ok: false, stdout: '', stderr: 'command_unavailable'});
+  await new Promise(resolve => setImmediate(resolve));
+});
 
 test("default command probe bounds descendant processes that retain stdio", async () => {
   const started = Date.now(),
@@ -60,6 +67,26 @@ const probe: DiscoveryProbe = {
         }
       : { ok: false, status: 0, body: null },
 };
+
+for (const [name, reply, state, count] of [
+  ['absent', {ok:false,stdout:'',stderr:'command_unavailable'}, 'OPTIONAL_UNAVAILABLE', 0],
+  ['healthy', {ok:true,stdout:'0, GPU, 8192, 555.1\n',stderr:''}, 'OPTIONAL_AVAILABLE', 1],
+  ['nonzero', {ok:false,stdout:'',stderr:'command_failed:1'}, 'OPTIONAL_DEGRADED', 0],
+  ['malformed', {ok:true,stdout:'not GPU inventory',stderr:''}, 'OPTIONAL_DEGRADED', 0],
+  ['timeout', {ok:false,stdout:'',stderr:'command_timeout'}, 'OPTIONAL_DEGRADED', 0],
+] as const) {
+  test(`GPU inventory ${name} preserves healthy CPU core and reports optional capability state`, async t => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'discovery-gpu-'));
+    t.after(() => fs.rmSync(root, {recursive:true,force:true}));
+    const runtime = new EnvironmentDiscoveryRuntime({file:path.join(root,'state.json'), config:emptyConfig, configurationRevision:()=> 'fixture', adapters:[new LocalMachineDiscoveryAdapter()], probe:{...probe,command:async()=>reply}});
+    const scan = await runtime.discover({mode:'FIRST_RUN'});
+    assert.equal(scan.status,'COMPLETED');
+    const machine = scan.items.find(row=>row.kind==='MACHINE');
+    assert.equal(machine?.health,'HEALTHY');
+    assert.equal(machine?.attributes.gpuInventoryState,state);
+    assert.equal(scan.items.filter(row=>row.kind==='GPU').length,count);
+  });
+}
 function setup(
   config: AgentControlConfig = emptyConfig(),
   adapters?: DiscoveryAdapter[],

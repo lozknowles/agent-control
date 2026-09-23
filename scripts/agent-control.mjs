@@ -5,12 +5,14 @@ import {spawn} from 'node:child_process';
 import {createRequire} from 'node:module';
 import {fileURLToPath} from 'node:url';
 import {formatAuthoritativeStatus, readAuthoritativeStatus, statusExitCode, StatusClientError} from './status-client.mjs';
+import {doctorCommand} from './doctor.mjs';
 
 const packageVersion = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
 const usage = `Agent Control command line
 
 Usage:
   agent-control --version
+  agent-control doctor [--json]
   agent-control status [--json]
   agent-control acp
   agent-control acp-remote
@@ -51,6 +53,7 @@ It admits the pre-registered AGENT_CONTROL_ACP_ACTOR_ID (default web-operator).`
 
 export async function main(argv = process.argv.slice(2), io = {out: console.log, error: console.error}) {
   const command = argv[0];
+  if (command === 'doctor') return doctorCommand(argv.slice(1), io);
   if (command === '--help' || command === '-h') { io.out(usage); return 0; }
   if (command === '--version' || command === '-v') { io.out(`agent-control ${packageVersion}`); return 0; }
   if (command === 'acp' || command === 'acp-remote') return argv.length === 1 ? runTypeScriptCommand(command === 'acp' ? 'acp.ts' : 'acp-remote.ts') : (io.error(usage), 2);

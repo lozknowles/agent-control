@@ -261,7 +261,14 @@ export class OwnedProcessManager implements OwnedExecution {
       windowsHide: true,
       stdio: ['pipe', 'pipe', 'pipe'],
     });
-    if (!child.pid) throw new Error('owned_process_pid_unavailable');
+    if (!child.pid) {
+      // Failed spawn emits its error asynchronously. Consume it before returning
+      // so optional probes receive ENOENT rather than crashing the controller.
+      return new Promise<never>((_resolve, reject) => {
+        child.once('error', reject);
+        child.once('close', () => reject(new Error('owned_process_pid_unavailable')));
+      });
+    }
     const pid = child.pid;
     const scope = this.executionScope ? {...this.executionScope, ...(request.session?.crewRole ? {crewRole: request.session.crewRole} : {})} : undefined;
     const interactionAllowed=scope?.interactionPolicy!=='WATCH_ONLY',interactiveInput=Boolean(request.session?.interactiveInput)&&interactionAllowed,allowSignals=Boolean(request.session?.allowSignals)&&interactionAllowed;

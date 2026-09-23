@@ -111,6 +111,14 @@ export function createControlPlane({environment = process.env, cwd = process.cwd
         continue;
       }
       const child = launch(service.start.command, service.start.args ?? [], {cwd, env: environment, detached: true, stdio: 'ignore'});
+      const launched = await new Promise(resolve => {
+        child.once('error', () => resolve(false));
+        child.once('spawn', () => resolve(true));
+      });
+      if (!launched || !child.pid) {
+        actions.push({id: service.id, action: 'configured-command-start', status: service.optional ? 'optional-unavailable' : 'failed', reason: 'command_launch_failed'});
+        continue;
+      }
       child.unref();
       list.push({id: service.id, pid: child.pid, startedAt: new Date().toISOString(), command: [service.start.command, ...(service.start.args ?? [])].join(' ')});
       save(list);

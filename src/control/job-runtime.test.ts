@@ -16,6 +16,18 @@ import type {ExecutionCleanupReport, OwnedExecution} from './owned-process.js';
 import {ExecutionSessionRuntime} from './execution-session.js';
 
 const worker = (id: string, capabilities: string[], health: WorkerRegistration['health'] = 'healthy', extra: Partial<WorkerRegistration> = {}): WorkerRegistration => ({id, capabilities, health, capacity: 1, active: 0, observedAt: new Date().toISOString(), ...extra});
+
+test('GPU-required Job cannot silently execute on a CPU-only worker', async t => {
+  let dispatched=0;
+  const setup=runtime(job([{id:'gpu',action:'gpu@1.0.0',requires:['gpu.nvidia']}]),actions=>actions.register('gpu@1.0.0',async()=>{dispatched++;return{};}),[worker('cpu',['cpu'])]);
+  t.after(()=>fs.rmSync(setup.root,{recursive:true,force:true}));
+  const run=setup.runtime.createRun('job@1.0.0',{}, {type:'manual',actor:'test'});
+  await setup.runtime.tick();
+  assert.equal(dispatched,0);
+  assert.notEqual(setup.runtime.ledger.get(run.id)?.status,'SUCCEEDED');
+  assert.equal(setup.workers.resolve(['gpu.nvidia']).worker,undefined);
+  assert.match(JSON.stringify(setup.workers.resolve(['gpu.nvidia']).rationale),/gpu.nvidia/);
+});
 const job = (steps: JobDefinition['spec']['steps'], extra: Partial<JobDefinition['spec']> = {}): JobDefinition => ({apiVersion: 'agent-control/v1', kind: 'Job', metadata: {id: 'job', name: 'Job', version: '1.0.0'}, spec: {priority: 'normal', concurrency: 'no-overlap', steps, ...extra}});
 function runtime(definition: JobDefinition, handlers: (actions: ActionRegistry) => void, workers: WorkerRegistration[], schedule?: ScheduleDefinition, clock?: () => Date, efficiency?: HarnessEfficiencyLedgerPort) { const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-runtime-')), actions = new ActionRegistry(); handlers(actions); const catalog = new JobCatalog(actions.ids()); catalog.addJob(definition); if (schedule) catalog.addSchedule(schedule); const registry = new WorkerRegistry(); workers.forEach(item => registry.register(item)); return {root, actions, catalog, workers: registry, runtime: new JobRuntime(catalog, actions, registry, new RunLedger(path.join(root, 'ledger.json')), new ArtifactStore(path.join(root, 'artifacts')), new ResourceLockManager(path.join(root, 'locks.json')), {now: clock, approval: () => true, efficiency})}; }
 
