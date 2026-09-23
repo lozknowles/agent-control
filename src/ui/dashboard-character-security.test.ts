@@ -28,3 +28,18 @@ test('crew card treats activity class metadata as text rather than HTML attribut
   }
   assert.match(card({id:'quality-inspector',state:'working',activity:{kind:'TOOL_READ'}}), /bot-activity-tool-read/);
 });
+
+test('cache state class cannot introduce HTML attributes or elements', () => {
+  const source = fs.readFileSync(new URL('../../assets/dashboard/dashboard-cache-experts.js', import.meta.url), 'utf8');
+  const ast = ts.createSourceFile('cache.js', source, ts.ScriptTarget.Latest, true);
+  const fn = ast.statements.find((node): node is ts.FunctionDeclaration => ts.isFunctionDeclaration(node) && node.name?.text === 'cacheStateClass');
+  assert.ok(fn);
+  const esc = (value: unknown) => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
+  const stateClass = vm.runInNewContext(`(${fn.getText(ast)})`, {esc});
+  assert.equal(stateClass('WARM'), 'warm');
+  assert.equal(stateClass('INVALID STATE'), 'invalid-state');
+  for (const input of ['WARM"><img/src=x/onerror=globalThis.injected=true>', "WARM'", '<tag>']) {
+    assert.doesNotMatch(stateClass(input), /[<>"']/);
+    assert.equal(stateClass(input), esc(input.toLowerCase().replaceAll(' ', '-')));
+  }
+});

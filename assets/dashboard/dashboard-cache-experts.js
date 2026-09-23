@@ -7,7 +7,7 @@ function cacheMetric(value){return value===null||value===undefined||!Number.isFi
 function cachePercent(value){return value===null||value===undefined||!Number.isFinite(Number(value))?'unavailable':`${Math.round(Number(value)*100)}%`}
 function cacheTime(value){if(!value||!Number.isFinite(Date.parse(value)))return 'unknown';return new Date(value).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'})}
 function cacheAge(seconds){if(!Number.isFinite(Number(seconds)))return 'unknown';const value=Math.max(0,Number(seconds));return value<60?`${Math.round(value)}s`:value<3600?`${Math.round(value/60)}m`:`${Math.round(value/3600)}h`}
-function cacheStateClass(value){return String(value||'unknown').toLowerCase().replaceAll(' ','-')}
+function cacheStateClass(value){return esc(String(value||'unknown').toLowerCase().replaceAll(' ','-'))}
 function cacheLatestParcel(){const parcels=jobState.parcels||[];return [...parcels].sort((a,b)=>Number(['RUNNING','WAITING'].includes(b.status))-Number(['RUNNING','WAITING'].includes(a.status))||Date.parse(b.updatedAt||b.createdAt)-Date.parse(a.updatedAt||a.createdAt))[0]||null}
 function cacheLatestDecision(){return [...cacheExpertState.decisions].sort((a,b)=>Date.parse(b.createdAt)-Date.parse(a.createdAt))[0]||null}
 function cacheDecisionForStage(stage){return cacheExpertState.decisions.find(item=>item.id===stage?.cacheExpertDecisionId)||null}
