@@ -10,6 +10,9 @@ spec:
   priority: normal
   concurrency: queue
   parameters:
+    toolInterface:
+      type: string
+      enum: [LEGACY_TOOL_REQUEST, SEMANTIC_TOOL_V1]
     taskId:
       type: string
       required: true

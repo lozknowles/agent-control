@@ -21,7 +21,7 @@ function setup(t: {after(fn: () => void): void}, fetcher: typeof fetch, register
   const actions = registerNonOpenAiCacheQualificationActions(new ActionRegistry(), efficiency, {...environment, ...additions});
   register?.(actions);
   const catalog = new JobCatalog(actions.ids());
-  const job: JobDefinition = {apiVersion: 'agent-control/v1', kind: 'Job', metadata: {id: 'qualification-fixture', name: 'Fixture', version: '1.0.0'}, spec: {priority: 'normal', concurrency: 'no-overlap', parameters: {taskId: {type: 'string'}, profile: {type: 'string'}, prefixVariant: {type: 'string'}}, steps: [
+  const job: JobDefinition = {apiVersion: 'agent-control/v1', kind: 'Job', metadata: {id: 'qualification-fixture', name: 'Fixture', version: '1.0.0'}, spec: {priority: 'normal', concurrency: 'no-overlap', parameters: {taskId: {type: 'string'}, profile: {type: 'string'}, prefixVariant: {type: 'string'}, toolInterface: {type: 'string', enum: ['SEMANTIC_TOOL_V1', 'LEGACY_TOOL_REQUEST']}}, steps: [
     {id: 'mutate', action: 'qualification.non-openai-cache.mutate@1.0.0', requires: ['model.execute'], resources: ['fixture'], outputs: [{name: 'mutation-attempt', type: 'json', schema: 'attempt/v1', version: '1.0.0'}]},
     {id: 'verify', action: 'qualification.non-openai-cache.verify@1.0.0', requires: ['model.execute'], dependsOn: ['mutate'], outputs: [{name: 'verification-report', type: 'json', schema: 'verification/v1', version: '1.0.0'}], verification: ['non-openai-cache-mutation-verified']},
   ]}};
@@ -370,4 +370,14 @@ test('installed qualification action exposes semantic tools only under both expl
 test('semantic flag cannot register qualification actions when the primary qualification gate is off', () => {
   const actions = registerNonOpenAiCacheQualificationActions(new ActionRegistry(),new MemoryHarnessEfficiencyLedger(),{AGENT_CONTROL_SEMANTIC_TOOL_V1:'true'});
   assert.equal(actions.ids().has('qualification.non-openai-cache.mutate@1.0.0'),false);
+});
+
+test('installed qualification action can explicitly select legacy deterministic repair without semantic fallback', async t => {
+  let calls=0;
+  const request={tool:MUTATION_TOOL_IDS.replace,input:{path:'src/constants.js',oldText:'30_000',newText:'45_000'}};
+  const s=setup(t,async()=>++calls===1?Response.json({choices:[{message:{content:JSON.stringify(request).slice(0,-1)+',}'}}]}):finish(),undefined,{AGENT_CONTROL_SEMANTIC_TOOL_V1:'true'},{toolInterface:'LEGACY_TOOL_REQUEST'});
+  await s.runtime.tick();await s.runtime.tick();
+  assert.equal(s.runtime.ledger.get(s.run.id)?.status,'SUCCEEDED');
+  assert.ok(values(s.runtime,s.run.id,'repair').some(value=>value.event.repair!=='NONE'&&value.event.decision==='DISPATCH'));
+  assert.equal(values(s.runtime,s.run.id,'independent-verification')[0].verifier.passed,true);
 });

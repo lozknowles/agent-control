@@ -44,7 +44,7 @@ export function registerNonOpenAiCacheQualificationActions(registry: ActionRegis
   const leanExperiment = environment.AGENT_CONTROL_LEAN_EXPERIMENT === 'true';
   // Existing experimental interfaces remain disabled unless both qualification
   // and semantic execution are explicitly enabled by the service operator.
-  const semanticExperiment = environment.AGENT_CONTROL_SEMANTIC_TOOL_V1 === 'true';
+  const semanticEnabled = environment.AGENT_CONTROL_SEMANTIC_TOOL_V1 === 'true';
   const baseUrl = required(environment.AGENT_CONTROL_NON_OPENAI_CACHE_BASE_URL, 'non_openai_cache_base_url').replace(/\/$/, '');
   const routeBaseUrls = parseRouteBaseUrls(environment.AGENT_CONTROL_NON_OPENAI_CACHE_ROUTE_BASE_URLS);
   for (const value of [baseUrl, ...Object.values(routeBaseUrls)]) { const endpoint = new URL(value); if (!['127.0.0.1', 'localhost', '::1'].includes(endpoint.hostname)) throw new Error('non_openai_cache_endpoint_must_be_loopback'); }
@@ -59,6 +59,10 @@ export function registerNonOpenAiCacheQualificationActions(registry: ActionRegis
   registry.registerAgent('qualification.non-openai-cache.mutate@1.0.0', {
     path: 'adaptive-harness',
     execute: async context => {
+      const selectedInterface = context.parameters.toolInterface;
+      if (selectedInterface !== undefined && !['SEMANTIC_TOOL_V1', 'LEGACY_TOOL_REQUEST'].includes(String(selectedInterface))) throw new ActionFailure('qualification_tool_interface_invalid', 'configuration');
+      if (selectedInterface === 'SEMANTIC_TOOL_V1' && !semanticEnabled) throw new ActionFailure('semantic_tool_capability_disabled', 'policy_rejection');
+      const semanticExperiment = semanticEnabled && selectedInterface !== 'LEGACY_TOOL_REQUEST';
       const governedRoute = context.run.trigger.modelRoute, selectedProviderId = governedRoute?.providerId ?? 'local-llama-cache-qualification', selectedModelId = governedRoute?.modelId ?? modelId, selectedBaseUrl = (routeBaseUrls[selectedProviderId] ?? baseUrl).replace(/\/$/, '');
       const nativeBenchmark = context.parameters.taskId !== undefined || context.parameters.profile !== undefined;
       const taskId = String(context.parameters.taskId ?? environment.AGENT_CONTROL_NON_OPENAI_CACHE_TASK ?? 'MUT-001');
@@ -147,8 +151,8 @@ export function registerNonOpenAiCacheQualificationActions(registry: ActionRegis
         journal({type: 'provider', at: new Date().toISOString(), requestPrefixSha256: sha256(stableJson(requestBody)), assistantOutput: typeof message.content === 'string' ? message.content : null, providerResponseId: typeof body.id === 'string' ? body.id : null, responseModel: typeof body.model === 'string' ? body.model : null, finishReason: typeof choice.finish_reason === 'string' ? choice.finish_reason : null, usage: safeUsage(body.usage), timings: safeTimings(body.timings)});
         return response;
       };
-      const semanticOptions = semanticExperiment ? {
-        semanticToolV1: {tools: MUTATION_SEMANTIC_TOOL_V1, batchableToolIds: [MUTATION_TOOL_IDS.read, MUTATION_TOOL_IDS.search], independentEditToolIds: [MUTATION_TOOL_IDS.replace]},
+      const semanticOptions = semanticEnabled ? {
+        ...(semanticExperiment ? {semanticToolV1: {tools: MUTATION_SEMANTIC_TOOL_V1, batchableToolIds: [MUTATION_TOOL_IDS.read, MUTATION_TOOL_IDS.search], independentEditToolIds: [MUTATION_TOOL_IDS.replace]}} : {}),
         toolReliability: {recordEvidence: (event: unknown) => journal({type: 'repair', event})},
         semanticEvents: {record: (event: unknown) => journal({type: 'semantic', event})},
         noProgressV1: {recordEvidence: (event: unknown) => journal({type: 'no-progress', event})},
