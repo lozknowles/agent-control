@@ -64,7 +64,7 @@ test('remote structured output permits governed repository paths but fails close
   const model = {id: 'model-a', provider: provider.id, accountProfile: account.id, providerModel: 'gpt-example', capabilities: []};
   const safeExecutor: SshExecutor = async () => ({status: 0, stdout: JSON.stringify({schema: 'agent-control.codex-node-result/v1', operation: 'execReadOnlyStructured', ok: true, codexVersion: 'codex-cli 0.153.4', executableSha256: hash, discoveredAt: '2026-09-12T04:00:00.000Z', finalMessage: '{"vault":"D:/example/vault"}', observedItemTypes: ['agent_message']}), stderr: ''});
   const result = await new ResourceCodexNodeExecutionPort([node], {}, safeExecutor).execReadOnlyStructured({provider, account, nodeId: node.id, model, instruction: 'bounded', outputSchema: {type: 'object'}, timeoutMs: 1_000});
-  assert.match(result.finalMessage, /D:\/obsidian\/knowledge_vault/);
+  assert.match(result.finalMessage, /D:\/example\/vault/);
   const unsafeExecutor: SshExecutor = async () => ({status: 0, stdout: JSON.stringify({schema: 'agent-control.codex-node-result/v1', operation: 'execReadOnlyStructured', ok: true, codexVersion: 'codex-cli 0.153.4', executableSha256: hash, discoveredAt: '2026-09-12T04:00:00.000Z', finalMessage: '{"profile":"C:\\Users\\Loz\\.local\\share\\agent-control\\codex-profiles\\cottage-plus"}', observedItemTypes: ['agent_message']}), stderr: ''});
   await assert.rejects(() => new ResourceCodexNodeExecutionPort([node], {}, unsafeExecutor).execReadOnlyStructured({provider, account, nodeId: node.id, model, instruction: 'bounded', outputSchema: {type: 'object'}, timeoutMs: 1_000}), /codex_exec_sensitive_output_rejected/);
 });
