@@ -120,3 +120,18 @@ test('governance metadata is unavailable or read-only inside mutation workspaces
     assert.doesNotMatch(JSON.stringify(prepared.workspace.evidenceSnapshot()), /settings\.json/);
   } finally { prepared.workspace.cleanup(); }
 });
+
+for (const content of ['1 | first item\n2 | second item', '   1 | first item\n   2 | second item', '1 | alpha\n2 | beta', '   1 | const x = 1;\n   2 | const y = 2;']) {
+  test(`numbered documentation is allowed without a source/read relationship: ${JSON.stringify(content)}`, () => {
+    assert.equal(hasNumberedReadDisplay(content, {file: 'notes.txt', source: 'original prose'}), false);
+  });
+}
+test('numbered text is rejected when two payloads match trusted read line positions', () => {
+  assert.equal(hasNumberedReadDisplay('41 | alpha\n42 | beta', {file: 'notes.txt', source: '', reads: [{startLine: 41, content: 'alpha\nbeta'}]}), true);
+  assert.equal(hasNumberedReadDisplay('41 | alpha\n42 | beta', {file: 'notes.txt', source: '', reads: [{startLine: 1, content: 'alpha\nbeta'}]}), false);
+});
+test('number-like rows inside valid JavaScript strings and comments are not contamination', () => {
+  for (const content of ['export const doc = `1 | alpha\n2 | beta`;', '/*\n1 | alpha\n2 | beta\n*/', 'const alpha=1,beta=2;\n1 | alpha\n2 | beta']) {
+    assert.equal(hasNumberedReadDisplay(content, {file: 'source.js', source: 'alpha\nbeta'}), false);
+  }
+});

@@ -68,6 +68,8 @@ export class MutationWorkspace {
   private readonly identity: {device: number; inode: number; nonce: string};
   private readonly execution: OwnedExecution;
   private counters: MutationWorkspaceCounters = emptyCounters();
+  private readonly readProvenance: Array<{content: string; startLine: number}> = [];
+  private readProvenanceBytes = 0;
 
   private constructor(root: string, temporaryRoot: string, readonly task: MutationBenchmarkTask, readonly signal?: AbortSignal, private readonly liveGuard: () => void = () => undefined, ownedExecution?: OwnedExecution) {
     this.root = fs.realpathSync(root);
@@ -155,6 +157,10 @@ export class MutationWorkspace {
     // Line position is metadata. Putting display prefixes in content made two
     // historical complete-file writes copy those prefixes into JavaScript.
     const selected = all.slice(startLine - 1, endLine).join('\n');
+    const bytes = Buffer.byteLength(selected, 'utf8');
+    if (this.readProvenanceBytes + bytes > 4_000_000) throw new Error('mutation_read_provenance_limit');
+    this.readProvenance.push({content: selected, startLine});
+    this.readProvenanceBytes += bytes;
     return {path: this.relative(file), startLine, endLine, totalLines: all.length, complete: startLine === 1 && endLine === all.length, content: selected};
   }
 
@@ -189,8 +195,8 @@ export class MutationWorkspace {
     const expected = value.expectedOccurrences === undefined ? 1 : integer(value.expectedOccurrences, 1, 1_000);
     const content = readText(file, 512_000), occurrences = countOccurrences(content, value.oldText);
     if (occurrences !== expected) throw new Error(`mutation_replace_occurrences:${occurrences}:${expected}`);
-    if (hasNumberedReadDisplay(value.newText)) throw new Error('mutation_write_numbered_read_display_denied');
     const updated = content.split(value.oldText).join(value.newText);
+    if (hasNumberedReadDisplay(updated, {file, source: content, reads: this.readProvenance})) throw new Error('mutation_write_numbered_read_display_denied');
     if (Buffer.byteLength(updated, 'utf8') > 512_000) throw new Error('mutation_file_size_limit');
     atomicWrite(file, updated, () => this.assertActive());
     return {ok: true, path: this.relative(file), occurrences, ...this.statusSummary()};
@@ -201,7 +207,7 @@ export class MutationWorkspace {
     const value = object(input, ['path', 'content']);
     const file = this.authorizeWritable(value.path, true);
     if (typeof value.content !== 'string' || Buffer.byteLength(value.content, 'utf8') > 131_072 || value.content.includes('\0')) throw new Error('mutation_write_content_invalid');
-    if (hasNumberedReadDisplay(value.content)) throw new Error('mutation_write_numbered_read_display_denied');
+    if (hasNumberedReadDisplay(value.content, {file, source: fs.existsSync(file) ? readText(file, 512_000) : '', reads: this.readProvenance})) throw new Error('mutation_write_numbered_read_display_denied');
     this.assertActive(); fs.mkdirSync(path.dirname(file), {recursive: true});
     atomicWrite(file, value.content, () => this.assertActive());
     this.assertActive(); execGit(this.root, ['add', '--intent-to-add', '--', this.relative(file)]);
@@ -309,18 +315,59 @@ function object(value: unknown, fields: string[]) { if (!value || typeof value !
 function stringArray(value: unknown, maximum: number): string[] { if (!Array.isArray(value) || value.length > maximum || value.some(item => typeof item !== 'string')) throw new Error('mutation_tool_paths_invalid'); return value as string[]; }
 function integer(value: unknown, minimum: number, maximum: number) { if (!Number.isSafeInteger(value) || Number(value) < minimum || Number(value) > maximum) throw new Error('mutation_tool_integer_invalid'); return Number(value); }
 function validRelative(value: unknown): string { if (typeof value !== 'string' || !value.length || value.length > 512 || value.includes('\0') || path.isAbsolute(value) || /^[A-Za-z]:[\\/]/.test(value) || value.split(/[\\/]/).includes('..')) throw new Error('mutation_workspace_path_invalid'); return value.split('\\').join('/'); }
-/** Refuse an accidental copy of the old read display, without rewriting source. */
-export function hasNumberedReadDisplay(content: string): boolean {
+/** Identify copied display rows using source/read relationships or a syntax differential.
+ * Numeric labels alone are not provenance. No source is rewritten by this check.
+ */
+export function hasNumberedReadDisplay(content: string, context?: {file: string; source: string; reads?: ReadonlyArray<{content: string; startLine: number}>}): boolean {
+  if (context?.source === content) return false;
   const rows = content.split(/\r?\n/);
-  let consecutive = 0, previous = -1;
-  for (const row of rows) {
-    const match = /^ {0,4}(\d{1,5}) \| /.exec(row);
-    const number = match ? Number(match[1]) : -1;
-    consecutive = number > 0 && number === previous + 1 ? consecutive + 1 : number > 0 ? 1 : 0;
-    if (consecutive >= 2) return true;
-    previous = number;
+  const parsed = rows.map(row => /^ {0,4}(\d{1,5}) \| (.*)$/.exec(row));
+  const runs: number[][] = [];
+  let run: number[] = [];
+  for (let i = 0; i <= rows.length; i++) {
+    const current = parsed[i], previous = parsed[i - 1];
+    if (!current || Number(current[1]) < 1 || (run.length && Number(current[1]) !== Number(previous?.[1]) + 1)) {
+      if (run.length >= 2) runs.push(run);
+      run = [];
+    }
+    if (current && Number(current[1]) > 0) run.push(i);
   }
-  return false;
+  if (!runs.length) return false;
+  const javascript = !context || /\.[cm]?js$/i.test(context.file);
+  // Parsing is syntax-only, in a bounded child process: supplied code is never run.
+  // A valid JS string, comment, or bitwise expression is not a contaminated program.
+  const before = javascript ? javascriptSyntax(content) : undefined;
+  if (before === 'VALID') return false;
+  const references = context ? [{content: context.source, startLine: 1}, ...(context.reads ?? [])] : [];
+  const referenceRows = references.map(reference => ({startLine: reference.startLine, rows: reference.content.split(/\r?\n/)}));
+  for (const candidate of runs) {
+    // Two line-position/payload matches are evidence of copying a displayed read.
+    // Empty rows do not establish a relationship to a particular source.
+    for (const reference of referenceRows) {
+      const matches = candidate.filter(index => {
+        const item = parsed[index]!;
+        return item[2]!.trim().length > 0 && reference.rows[Number(item[1]) - reference.startLine] === item[2];
+      });
+      if (matches.length >= 2) return true;
+    }
+  }
+  if (!javascript) return false;
+  if (before === 'UNAVAILABLE') throw new Error('mutation_numbered_syntax_check_unavailable');
+  const indexes = new Set(runs.flat());
+  const withoutDisplay = rows.map((row, index) => indexes.has(index) ? parsed[index]![2]! : row).join('\n');
+  if (javascriptSyntax(withoutDisplay) === 'VALID') return true;
+  // A replacement may also remove a surrounding declaration. Check each display
+  // run independently when the complete proposed program is already invalid.
+  return runs.some(candidate => javascriptSyntax(candidate.map(index => parsed[index]![2]!).join('\n')) === 'VALID' && javascriptSyntax(candidate.map(index => rows[index]!).join('\n')) === 'INVALID');
+}
+function javascriptSyntax(content: string): 'VALID' | 'INVALID' | 'UNAVAILABLE' {
+  try {
+    execFileSync(process.execPath, ['--check', '--input-type=module'], {input: content, timeout: 2_000, maxBuffer: 65_536, stdio: ['pipe', 'ignore', 'pipe'], env: {}});
+    return 'VALID';
+  } catch (error) {
+    const failure = error as {status?: number; stderr?: Buffer};
+    return failure.status === 1 && /SyntaxError:/.test(String(failure.stderr ?? '')) ? 'INVALID' : 'UNAVAILABLE';
+  }
 }
 function lines(value: string) { return value.split(/\r?\n/).map(item => item.trim()).filter(Boolean); }
 function emptyCounters(): MutationWorkspaceCounters { return {repositoryReads: 0, repositorySearches: 0, mutationsAttempted: 0, verifierFacingTests: 0, toolCalls: 0, toolIds: []}; }
