@@ -134,10 +134,37 @@
     text(0,'RIFF');view.setUint32(4,36+bytes.length,true);text(8,'WAVE');text(12,'fmt ');view.setUint32(16,16,true);view.setUint16(20,1,true);view.setUint16(22,channels,true);view.setUint32(24,rate,true);view.setUint32(28,rate*channels*2,true);view.setUint16(32,channels*2,true);view.setUint16(34,16,true);text(36,'data');view.setUint32(40,bytes.length,true);
     return new Blob([header,bytes],{type:'audio/wav'});
   }
+  // One Web Audio clock for the whole reply; never wait for a block to play before reading the stream.
+  function createSharedPlayback(context,signal,onState,bufferSeconds=8){
+    let pending=[],seconds=0,next=0,started=false,finished=false,cancelled=false,total=0;
+    const sources=new Set();let resolveDone;const done=new Promise(resolve=>{resolveDone=resolve;});
+    function settle(){if(finished&&!pending.length&&!sources.size){signal.removeEventListener('abort',cancel);resolveDone();}}
+    function cancel(){cancelled=true;pending=[];seconds=0;for(const source of sources){source.onended=null;try{source.stop();}catch{}source.disconnect();}sources.clear();signal.removeEventListener('abort',cancel);resolveDone();}
+    function flush(){
+      if(cancelled)return;
+      if(started&&next<context.currentTime+.015){started=false;onState('buffering');}
+      if(!started){if(!pending.length||(!finished&&seconds<bufferSeconds))return;next=context.currentTime+.08;started=true;onState('speaking');}
+      for(const buffer of pending){const source=context.createBufferSource();source.buffer=buffer;source.connect(context.destination);sources.add(source);source.onended=()=>{sources.delete(source);source.disconnect();if(!sources.size&&!finished){started=false;onState('buffering');}settle();};source.start(next);next+=buffer.duration;}
+      pending=[];seconds=0;settle();
+    }
+    signal.addEventListener('abort',cancel,{once:true});if(signal.aborted)cancel();
+    return {async add(bytes,mime){
+      if(cancelled)return;
+      // Validate the transport and preserve all samples; decode independently of playback.
+      const blob=sharedSpeechAudioBlob(bytes,mime);total+=bytes.length;if(total>32*1024*1024)throw Error('Speech audio exceeds reply limit');
+      const buffer=await context.decodeAudioData(await blob.arrayBuffer());if(cancelled)return;
+      if(!Number.isFinite(buffer.duration)||buffer.duration<=0)throw Error('Invalid speech duration');
+      pending.push(buffer);seconds+=buffer.duration;flush();
+    },finish(){finished=true;flush();settle();return done;},cancel};
+  }
   async function speakShared(turn){
-    const epoch=++poeView.epoch,controller=new AbortController();sharedStreamController=controller;poeView.busy=true;setLocal('THINKING','Preparing Shared Speech; text remains available.');
-    q('#poe-audio-caption').textContent=turn.text;
+    const epoch=++poeView.epoch,controller=new AbortController();sharedStreamController=controller;poeView.busy=true;setLocal('THINKING','Buffering speech for smooth playback; text remains available.');
+    q('#poe-audio-caption').textContent=turn.text;let player;
     try{
+      const context=poeView.audioContext;if(!context)throw Error('Enable audio to hear this reply');await context.resume();if(context.state!=='running')throw Error('Browser audio is suspended; enable audio and retry');
+      if(epoch!==poeView.epoch||controller.signal.aborted)return;
+      poeView.playback={turnId:turn.id};
+      player=createSharedPlayback(context,controller.signal,status=>{if(epoch!==poeView.epoch)return;setLocal(status==='speaking'?'SPEAKING':'THINKING',status==='speaking'?'Speaking the captioned reply. Stop speaking to interrupt.':'Buffering speech for smooth playback; text remains available.');});
       const response=await fetch(endpoint('speech-stream'),{method:'POST',headers:{Authorization:`Bearer ${state.token}`,'Content-Type':'application/json'},body:JSON.stringify({turnId:turn.id}),signal:controller.signal});
       if(!response.ok||!response.body)throw Error('Shared Speech unavailable. Text remains available.');
       const reader=response.body.getReader(),decoder=new TextDecoder();let buffer='';
@@ -145,16 +172,13 @@
         while((end=buffer.indexOf('\n\n'))>=0){const frame=buffer.slice(0,end);buffer=buffer.slice(end+2);if(!frame.startsWith('data: '))continue;const event=JSON.parse(frame.slice(6));if(event.turnId!==turn.id||epoch!==poeView.epoch)continue;
           if(event.type==='speech.failed')throw Error('Shared Speech failed. Text remains available.');
           if(event.type==='provider.unavailable')setLocal('THINKING',`Mallow unavailable; using configured fallback ${event.fallback||'unavailable'}.`);
-          if(event.type==='speech.block'){
-            const bytes=Uint8Array.from(atob(event.audio),c=>c.charCodeAt(0)),url=URL.createObjectURL(sharedSpeechAudioBlob(bytes,event.mime));poeView.audio??=new Audio();poeView.audio.src=url;poeView.playback={url,turnId:turn.id};setLocal('SPEAKING',`Voice provider: ${event.provider||'unavailable'}; requested Mallow.`);
-            try{await new Promise((resolve,reject)=>{const finish=()=>{controller.signal.removeEventListener('abort',finish);resolve();};controller.signal.addEventListener('abort',finish,{once:true});poeView.audio.onended=finish;poeView.audio.onerror=()=>{controller.signal.removeEventListener('abort',finish);reject(Error('Audio playback failed; text remains available.'));};poeView.audio.play().catch(error=>{controller.signal.removeEventListener('abort',finish);reject(error);});});}finally{URL.revokeObjectURL(url);}
-            if(epoch!==poeView.epoch)return;poeView.playback=null;
-          }
+          if(event.type==='speech.block')await player.add(Uint8Array.from(atob(event.audio),c=>c.charCodeAt(0)),event.mime);
         }
       }
-      if(epoch===poeView.epoch)setLocal(null,'Shared Speech finished.');
+      await player.finish();
+      if(epoch===poeView.epoch&&!controller.signal.aborted)setLocal(null,'Shared Speech finished.');
     }catch(error){if(epoch===poeView.epoch&&!controller.signal.aborted)setLocal('BLOCKED',`${error.message} You can continue by typing.`);}
-    finally{if(sharedStreamController===controller)sharedStreamController=null;if(epoch===poeView.epoch){poeView.busy=false;poeView.playback=null;paintState();}}
+    finally{player?.cancel();controller.abort();if(sharedStreamController===controller)sharedStreamController=null;if(epoch===poeView.epoch){poeView.busy=false;poeView.playback=null;paintState();}}
   }
   async function speak(turn){
     if(!poeView.voiceEnabled||liveVoice?.active)return;
