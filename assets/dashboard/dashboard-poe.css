@@ -78,3 +78,20 @@ html[data-bot-motion="off"] .poe-character *,html[data-bot-motion="reduced"] .po
 .poe-overlay #mallow-voice-cost{grid-column:1/-1;grid-row:5;margin:0;line-height:1.4;}
 .poe-overlay .poe-caption{grid-column:1/-1;grid-row:6;}
 .poe-overlay .mallow-live-controls button{min-width:130px;}
+
+/* Live input feedback: driven only by the active microphone stream. */
+.mallow-microphone-feedback{display:flex;align-items:center;gap:14px;margin:12px 0;padding:14px 18px;border:1px solid #42d6cf70;border-radius:14px;background:#103133;color:#77f2ea;min-height:66px}
+.mallow-microphone-feedback[hidden]{display:none}
+.mallow-microphone-feedback strong,.mallow-microphone-feedback small{display:block}
+.mallow-microphone-feedback strong{font-size:16px}.mallow-microphone-feedback small{margin-top:4px;color:#b9d2d5;font-size:12px}
+.mallow-mic-dot{width:10px;height:10px;flex:none;border-radius:50%;background:#67e9df;box-shadow:0 0 0 5px #67e9df18}
+.mallow-microphone-feedback.is-hearing .mallow-mic-dot{animation:mallow-mic-pulse 1s ease-in-out infinite}
+.mallow-mic-bars{display:flex;align-items:center;gap:4px;height:34px;flex:none}
+.mallow-mic-bars i{display:block;width:4px;height:100%;background:currentColor;border-radius:4px;transform:scaleY(var(--mic-height,.12));transition:transform 70ms linear}
+.mallow-microphone-feedback meter{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+.mallow-microphone-feedback[data-mode="processing"]{color:#f6cd79;border-color:#f6cd7955;background:#302b20}
+.mallow-microphone-feedback[data-mode="processing"] .mallow-mic-dot{background:currentColor;animation:mallow-mic-pulse 1.3s ease-in-out infinite}
+.mallow-microphone-feedback[data-mode="processing"] .mallow-mic-bars{display:none}
+@keyframes mallow-mic-pulse{50%{box-shadow:0 0 0 9px #67e9df08;opacity:.55}}
+@media(prefers-reduced-motion:reduce){.mallow-microphone-feedback .mallow-mic-dot{animation:none!important}.mallow-mic-bars i{transition:none;transform:scaleY(.45)}}
+@media(max-width:480px){.mallow-microphone-feedback{gap:10px;padding:12px}.mallow-mic-bars{gap:3px}.mallow-microphone-feedback small{max-width:200px}}

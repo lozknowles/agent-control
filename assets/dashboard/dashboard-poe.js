@@ -24,9 +24,36 @@
     q('#mallow-voice-cost').textContent=r?`${r.transport} / ${r.model} · ${r.seconds??'Unknown'} seconds · voice cost ${r.estimatedVoiceCostUsd===null?'unknown':'~$'+r.estimatedVoiceCostUsd.toFixed(4)+' USD (calculated)'} · ${r.finalUsage?'final duration':'duration not final'}. Worker tokens and cost are shown separately in job Usage.`:voiceAvailability?.state==='CONFIGURED_NOT_QUALIFIED'?'Live voice configured. Duration charges apply while connected; End voice stops the session.':'Live voice unavailable. Configured recorded speech or text remains available.';
   }
   const endpoint=suffix=>`/api/poe/conversations/${encodeURIComponent(poeView.conversation.id)}/${suffix}`;
+  let micMonitor=null;
+  function paintMicrophoneFeedback(){
+    const panel=q('#mallow-microphone-feedback');if(!panel)return;
+    const listening=poeView.recorder?.state==='recording',processing=poeView.localState==='TRANSCRIBING';
+    panel.hidden=!listening&&!processing;panel.dataset.mode=processing?'processing':'listening';
+    q('#mallow-mic-label').textContent=processing?'Processing your speech':'Listening';
+    q('#mallow-mic-hint').textContent=processing?'Microphone off · preparing your reply':micMonitor?'Live microphone level · tap Send recording when finished':'Microphone active';
+    if(!listening){panel.classList.remove('is-hearing');q('#mallow-mic-level').value=0;}
+  }
+  function stopMicrophoneFeedback(){
+    if(micMonitor){cancelAnimationFrame(micMonitor.frame);micMonitor.source.disconnect();micMonitor.analyser.disconnect();micMonitor=null;}
+    const panel=q('#mallow-microphone-feedback');panel?.classList.remove('is-hearing');panel?.querySelectorAll('i').forEach(bar=>bar.style.setProperty('--mic-height','0.12'));
+  }
+  function startMicrophoneFeedback(stream){
+    stopMicrophoneFeedback();
+    try{
+      const context=poeView.audioContext;if(!context)return;
+      const source=context.createMediaStreamSource(stream),analyser=context.createAnalyser();analyser.fftSize=256;analyser.smoothingTimeConstant=.65;source.connect(analyser);
+      const monitor={source,analyser,frame:0};micMonitor=monitor;const bins=new Uint8Array(analyser.frequencyBinCount),samples=new Uint8Array(analyser.fftSize),panel=q('#mallow-microphone-feedback'),bars=[...panel.querySelectorAll('i')];
+      const sample=()=>{if(micMonitor!==monitor)return;if(poeView.recorder?.state!=='recording'){stopMicrophoneFeedback();paintMicrophoneFeedback();return;}
+        analyser.getByteFrequencyData(bins);analyser.getByteTimeDomainData(samples);const rms=Math.sqrt(samples.reduce((n,v)=>n+((v-128)/128)**2,0)/samples.length),level=Math.min(100,Math.round(rms*400));
+        q('#mallow-mic-level').value=level;panel.classList.toggle('is-hearing',rms>.012);
+        bars.forEach((bar,i)=>{const begin=1+i*4,value=bins.slice(begin,begin+4).reduce((a,b)=>a+b,0)/(4*255);bar.style.setProperty('--mic-height',String(Math.max(.12,value)));});
+        monitor.frame=requestAnimationFrame(sample);
+      };monitor.frame=requestAnimationFrame(sample);
+    }catch{stopMicrophoneFeedback();}
+  }
   function setLocal(value,message){poeView.localState=value;if(message)q('#poe-audio-message').textContent=message;paintState()}
   function displayState(){if(liveVoice?.active)return liveVoice.ready?(liveVoice.muted?'MICROPHONE MUTED':'LISTENING'):'CONNECTING';const value=poeView.localState||poeView.conversation?.state||'IDLE';return value==='LISTENING'&&!poeView.holding?'READY':value;}
-  function paintState(){const name=displayState();q('#poe-character').dataset.state=name;q('#poe-character').dataset.focus=tourIndex>=0?'tour-left':poeView.reference?.kind||poeView.conversation?.lastReference?.kind||'conversation';q('#poe-state').textContent=name.replaceAll('_',' ');q('#poe-interrupt').disabled=!poeView.playback&&!poeView.busy;q('#poe-speak').disabled=!poeView.projection?.voice?.recognition;q('#poe-form button[type="submit"]').disabled=poeView.busy;paintTour();paintPet();paintLiveVoice();}
+  function paintState(){paintMicrophoneFeedback();const name=displayState();q('#poe-character').dataset.state=name;q('#poe-character').dataset.focus=tourIndex>=0?'tour-left':poeView.reference?.kind||poeView.conversation?.lastReference?.kind||'conversation';q('#poe-state').textContent=name.replaceAll('_',' ');q('#poe-interrupt').disabled=!poeView.playback&&!poeView.busy;q('#poe-speak').disabled=!poeView.projection?.voice?.recognition;q('#poe-form button[type="submit"]').disabled=poeView.busy;paintTour();paintPet();paintLiveVoice();}
   async function load(){
     if(poeView.switching)return;
     if(poeView.loading)return poeView.loading;
@@ -155,13 +182,13 @@
       const selected=sessionStorage.getItem('mallow-microphone-id');const stream=await navigator.mediaDevices.getUserMedia({audio:selected?{deviceId:{exact:selected}}:true});const inputs=await navigator.mediaDevices.enumerateDevices();const usb=inputs.find(x=>x.kind==='audioinput'&&/usb/i.test(x.label));if(!selected&&usb){stream.getTracks().forEach(t=>t.stop());sessionStorage.setItem('mallow-microphone-id',usb.deviceId);poeView.holding=false;return beginVoice();}if(!poeView.holding){stream.getTracks().forEach(track=>track.stop());return}
       const recorder=new MediaRecorder(stream),chunks=[];poeView.recorder=recorder;
       recorder.ondataavailable=event=>{if(event.data.size)chunks.push(event.data)};
-      recorder.onstop=async()=>{clearTimeout(recorder.limit);stream.getTracks().forEach(track=>track.stop());poeView.recorder=null;poeView.busy=true;setLocal('TRANSCRIBING','Transcribing your recording with the configured speech provider.');
+      recorder.onstop=async()=>{stopMicrophoneFeedback();clearTimeout(recorder.limit);stream.getTracks().forEach(track=>track.stop());poeView.recorder=null;poeView.busy=true;setLocal('TRANSCRIBING','Transcribing your recording with the configured speech provider.');
         try{const blob=new Blob(chunks,{type:recorder.mimeType||'audio/webm'});if(!blob.size)throw new Error('The recording was empty');const result=await request(endpoint('transcribe'),{method:'POST',headers:{'Content-Type':blob.type},body:blob});poeView.conversation=result.conversation;await load();poeView.busy=false;setLocal(null);await speak(result.turn)}catch(error){fail(error)}
       };
-      recorder.start();recorder.limit=setTimeout(endVoice,60000);setLocal('LISTENING','Microphone is recording. Release to send.');q('#poe-speak').textContent='Release to send';paintLiveVoice();
+      recorder.start();startMicrophoneFeedback(stream);recorder.limit=setTimeout(endVoice,60000);setLocal('LISTENING','Microphone is recording. Release to send.');q('#poe-speak').textContent='Release to send';paintLiveVoice();
     }catch(error){poeView.holding=false;poeView.voiceEnabled=audioWasEnabled;q('#poe-enable-audio').textContent=audioWasEnabled?'Audio enabled':'Enable audio';setLocal('BLOCKED',error.name==='NotAllowedError'?'Microphone permission was denied. You can still type to Mallow.':error.message)}
   }
-  function endVoice(){poeView.holding=false;if(poeView.recorder?.state==='recording')poeView.recorder.stop();q('#poe-speak').textContent='Hold to speak'}
+  function endVoice(){stopMicrophoneFeedback();poeView.holding=false;if(poeView.recorder?.state==='recording')poeView.recorder.stop();q('#poe-speak').textContent='Hold to speak'}
   function renderProposal(item){const fair=item.fairness.comparable,findings=item.fairness.findings.map(f=>`<li><b>${safe(f.severity)}</b> ${safe(f.message)}</li>`).join('');return`<article class="poe-proposal" data-poe-proposal="${safe(item.id)}"><header><h3>${safe(item.decision)}</h3><span class="status-pill ${item.state==='FROZEN'?'waiting':''}">${safe(item.state)}</span></header><p>${safe(item.objective)}</p><p class="${fair?'poe-fair':'poe-unfair'}">${fair?'Comparable conditions recorded.':'Blocked fairness defects detected.'}</p>${findings?`<ul>${findings}</ul>`:''}<p>${safe(item.conditions.map(condition=>`${condition.route.providerId}/${condition.route.accountProfileId||'default'}/${condition.route.modelId}@${condition.route.nodeId}`).join(' ↔ '))}</p>${item.frozenSha256?`<small>Sealed SHA-256 ${safe(item.frozenSha256)}</small>`:''}${item.execution?`<p>Submitted as <button class="text-button" data-poe-focus-kind="parcel" data-poe-focus-id="${safe(item.execution.parcelId)}">${safe(item.execution.parcelId)}</button></p>`:''}<div class="control-strip">${item.state==='DRAFT'?`<button class="button secondary" data-poe-edit="${safe(item.id)}">Edit draft</button><button class="button secondary" data-poe-freeze="${safe(item.id)}" data-revision="${safe(item.revision)}" ${fair?'':'disabled'}>Freeze proposal</button>`:''}${item.state==='FROZEN'?`<button class="button warning" data-poe-approve="${safe(item.id)}" data-revision="${safe(item.revision)}" data-sha="${safe(item.frozenSha256)}">Approve &amp; submit Work Parcel</button>`:''}<button class="button secondary" data-poe-focus-kind="benchmark" data-poe-focus-id="${safe(item.id)}">Ask Mallow</button></div></article>`}
   function bindProposalButtons(){q('#poe-proposals').querySelectorAll('[data-poe-edit]').forEach(button=>button.addEventListener('click',()=>{const item=poeView.projection.proposals.find(proposal=>proposal.id===button.dataset.poeEdit);if(!item)return;const form=q('#poe-benchmark-form'),details=form.closest('details');form.dataset.proposalId=item.id;form.dataset.revision=String(item.revision);q('#poe-benchmark-decision').value=item.decision;q('#poe-benchmark-objective').value=item.objective;q('#poe-benchmark-reason').value=item.whyNewEvidenceIsNeeded;q('#poe-benchmark-json').value=JSON.stringify({conditions:item.conditions,stages:item.stages,metrics:item.metrics,repetitions:item.repetitions,constraints:item.constraints||[]},null,2);form.querySelector('button[type="submit"]').textContent='Save draft revision';details.open=true;details.scrollIntoView({behavior:'smooth',block:'start'})}));q('#poe-proposals').querySelectorAll('[data-poe-freeze]').forEach(button=>button.addEventListener('click',()=>request(`/api/poe/proposals/${encodeURIComponent(button.dataset.poeFreeze)}/freeze`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({revision:Number(button.dataset.revision)})}).then(load).catch(showError)));q('#poe-proposals').querySelectorAll('[data-poe-approve]').forEach(button=>button.addEventListener('click',()=>{if(!confirm('Submit this sealed benchmark as a real governed Work Parcel?'))return;request(`/api/poe/proposals/${encodeURIComponent(button.dataset.poeApprove)}/approve`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({revision:Number(button.dataset.revision),frozenSha256:button.dataset.sha})}).then(load).catch(showError)}))}
 
