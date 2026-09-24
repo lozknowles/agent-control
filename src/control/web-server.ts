@@ -297,6 +297,7 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   }
   if(method==='GET'&&url.pathname==='/api/personal-league'){validateOperatorRequest(request,options);return json(response,200,service.personalLeague(String(url.searchParams.get('benchmark')??''),String(url.searchParams.get('comparison')??'')));}
   if(method==='GET'&&url.pathname==='/api/model-watches'){validateOperatorRequest(request,options);return json(response,200,service.modelWatchProjection());}
+  if(method==='GET'&&url.pathname==='/api/poe/voice-epoch'){validateOperatorRequest(request,options);return json(response,200,{incarnation:service.poeProjection().voice.incarnation});}
   if (method === 'GET' && url.pathname === '/api/poe') { validateOperatorRequest(request, options); return json(response, 200, service.poeProjection()); }
   if (method === 'GET' && url.pathname === '/api/configuration') { validateOperatorRequest(request, options); return json(response, 200, new ConfigurationStore(options.configFile ?? configPath()).read()); }
   if (method === 'GET' && url.pathname === '/api/environment-discovery') { validateOperatorRequest(request, options); return json(response, 200, url.searchParams.get('privacy')==='public'?publicDiscoveryProjection(service.environmentDiscoveryProjection()):service.environmentDiscoveryProjection()); }

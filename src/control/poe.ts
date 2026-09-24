@@ -109,7 +109,7 @@ export interface PoeProjection {
   activeConversationId: string | null;
   conversations: Array<Omit<PoeConversation, 'turns'> & {turnCount: number}>;
   proposals: PoeBenchmarkProposal[];
-  voice: {sharedSpeech?:boolean;configured: boolean; recognition: boolean; synthesis: boolean; streaming: boolean; bargeIn: boolean; identity: string | null; limitation: string | null};
+  voice: {incarnation:string;sharedSpeech?:boolean;configured: boolean; recognition: boolean; synthesis: boolean; streaming: boolean; bargeIn: boolean; identity: string | null; limitation: string | null};
   observedAt: string;
 }
 export interface PoeBenchmarkExecutionPort {submit(input: {proposal: PoeBenchmarkProposal; actor: string; requestKey: string; plan: WorkParcelPlan}): {parcelId: string};}
@@ -126,6 +126,7 @@ const cleanText = (value: unknown, code: string, maximum = 65_536) => {const tex
 const clone = <T>(value: T): T => structuredClone(value);
 
 export class PoeRuntime {
+  private readonly speechIncarnation=randomUUID();
   private generationEpoch=new Map<string,number>();
   private readonly conversations = new Map<string, PoeConversation>();
   private readonly proposals = new Map<string, PoeBenchmarkProposal>();
@@ -157,7 +158,7 @@ export class PoeRuntime {
   projection(): PoeProjection {
     const conversations = [...this.conversations.values()].sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt));
     const active = conversations[0] ?? null, voice = this.options.voice;
-    return {schema:'agent-control.poe/v1',reasoning:this.options.responseModel?.describe?.()??{state:this.options.responseModel?'CONFIGURED':'UNAVAILABLE',reason:this.options.responseModel?'Route is disclosed on each completed reply.':'No conversational model is configured.'},identity:{...HOST_IDENTITY,modelSelectable:Boolean(this.options.responseModel)},state:active?.state ?? 'IDLE',activeConversationId:active?.id ?? null,conversations:conversations.map(({turns,...item})=>({...clone(item),turnCount:turns.length})),proposals:[...this.proposals.values()].sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt)).map(clone),voice:{sharedSpeech:Boolean(this.options.sharedSpeech),configured:Boolean(voice||this.options.sharedSpeech),recognition:Boolean(this.options.recognition||this.options.sharedSpeech),synthesis:Boolean(this.options.speech||this.options.sharedSpeech),streaming:Boolean(this.options.sharedSpeech)|| (this.options.speech?.capabilities().streaming ?? false),bargeIn:!this.options.sharedSpeech,identity:this.options.sharedSpeech?'mallow':voice?.id ?? null,limitation:this.options.sharedSpeech?'Shared Speech transport configured; readiness checked per request. Push-to-talk and Stop cancel playback. Acoustic barge-in is not available through the qualified SDK.':this.options.speech?.capabilities().streaming ? null : 'Provider exposes complete-audio synthesis; first audio is available only after synthesis completes.'},observedAt:this.clock()};
+    return {schema:'agent-control.poe/v1',reasoning:this.options.responseModel?.describe?.()??{state:this.options.responseModel?'CONFIGURED':'UNAVAILABLE',reason:this.options.responseModel?'Route is disclosed on each completed reply.':'No conversational model is configured.'},identity:{...HOST_IDENTITY,modelSelectable:Boolean(this.options.responseModel)},state:active?.state ?? 'IDLE',activeConversationId:active?.id ?? null,conversations:conversations.map(({turns,...item})=>({...clone(item),turnCount:turns.length})),proposals:[...this.proposals.values()].sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt)).map(clone),voice:{incarnation:this.speechIncarnation,sharedSpeech:Boolean(this.options.sharedSpeech),configured:Boolean(voice||this.options.sharedSpeech),recognition:Boolean(this.options.recognition||this.options.sharedSpeech),synthesis:Boolean(this.options.speech||this.options.sharedSpeech),streaming:Boolean(this.options.sharedSpeech)|| (this.options.speech?.capabilities().streaming ?? false),bargeIn:!this.options.sharedSpeech,identity:this.options.sharedSpeech?'mallow':voice?.id ?? null,limitation:this.options.sharedSpeech?'Shared Speech transport configured; readiness checked per request. Push-to-talk and Stop cancel playback. Acoustic barge-in is not available through the qualified SDK.':this.options.speech?.capabilities().streaming ? null : 'Provider exposes complete-audio synthesis; first audio is available only after synthesis completes.'},observedAt:this.clock()};
   }
   async ask(input: {sharedSpeech?:{rawStt:string;requestId:string;clientId?:string;sessionId:string;generationId?:unknown;provider?:unknown;model?:unknown};voiceReference?:{sessionId:string;delegationId:string};conversationId: string; text: string; channel?: PoeChannel; modality?: 'text'|'voice'; reference?: PoeObjectReference; contentTrust?: PoeTurn['contentTrust']}) {
     const conversation = this.mustConversation(input.conversationId); cleanText(input.text, 'poe_turn_invalid'); const text = input.text;

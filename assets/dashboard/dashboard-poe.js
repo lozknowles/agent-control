@@ -40,6 +40,7 @@
   function startMicrophoneFeedback(stream){
     stopMicrophoneFeedback();
     try{
+      fence=watchSharedSpeechEpoch(()=>request('/api/poe/voice-epoch',{signal:AbortSignal.timeout(1500)}),()=>{if(epoch===poeView.epoch){stopLocal();setLocal('INTERRUPTED','Speech stopped: the server restarted or its session could not be verified.');}});await fence.begin();
       const context=poeView.audioContext;if(!context)return;
       const source=context.createMediaStreamSource(stream),analyser=context.createAnalyser();analyser.fftSize=256;analyser.smoothingTimeConstant=.65;source.connect(analyser);
       const monitor={source,analyser,frame:0};micMonitor=monitor;const bins=new Uint8Array(analyser.frequencyBinCount),samples=new Uint8Array(analyser.fftSize),panel=q('#mallow-microphone-feedback'),bars=[...panel.querySelectorAll('i')];
@@ -157,10 +158,19 @@
       pending.push(buffer);seconds+=buffer.duration;flush();
     },finish(){finished=true;flush();settle();return done;},cancel};
   }
+  function watchSharedSpeechEpoch(read,onLost,delay=1000){
+    let stopped=false,timer;
+    async function begin(){const first=await read();if(!first?.incarnation)throw Error('Speech session identity unavailable');
+      async function poll(){if(stopped)return;try{const next=await read();if(next.incarnation!==first.incarnation)throw Error('Speech session restarted');}catch(error){if(!stopped){stopped=true;onLost(error);}return;}if(!stopped)timer=setTimeout(poll,delay);}
+      if(!stopped)timer=setTimeout(poll,delay);
+    }
+    return {begin,stop(){stopped=true;clearTimeout(timer);}};
+  }
   async function speakShared(turn){
     const epoch=++poeView.epoch,controller=new AbortController();sharedStreamController=controller;poeView.busy=true;setLocal('THINKING','Buffering speech for smooth playback; text remains available.');
-    q('#poe-audio-caption').textContent=turn.text;let player;
+    q('#poe-audio-caption').textContent=turn.text;let player,fence;
     try{
+      fence=watchSharedSpeechEpoch(()=>request('/api/poe/voice-epoch',{signal:AbortSignal.timeout(1500)}),()=>{if(epoch===poeView.epoch){stopLocal();setLocal('INTERRUPTED','Speech stopped: the server restarted or its session could not be verified.');}});await fence.begin();
       const context=poeView.audioContext;if(!context)throw Error('Enable audio to hear this reply');await context.resume();if(context.state!=='running')throw Error('Browser audio is suspended; enable audio and retry');
       if(epoch!==poeView.epoch||controller.signal.aborted)return;
       poeView.playback={turnId:turn.id};
@@ -178,7 +188,7 @@
       await player.finish();
       if(epoch===poeView.epoch&&!controller.signal.aborted)setLocal(null,'Shared Speech finished.');
     }catch(error){if(epoch===poeView.epoch&&!controller.signal.aborted)setLocal('BLOCKED',`${error.message} You can continue by typing.`);}
-    finally{player?.cancel();controller.abort();if(sharedStreamController===controller)sharedStreamController=null;if(epoch===poeView.epoch){poeView.busy=false;poeView.playback=null;paintState();}}
+    finally{fence?.stop();player?.cancel();controller.abort();if(sharedStreamController===controller)sharedStreamController=null;if(epoch===poeView.epoch){poeView.busy=false;poeView.playback=null;paintState();}}
   }
   async function speak(turn){
     if(!poeView.voiceEnabled||liveVoice?.active)return;
