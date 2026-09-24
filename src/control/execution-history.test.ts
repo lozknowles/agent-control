@@ -90,7 +90,7 @@ test('telemetry keeps lifetime and context distinct and explains completion-only
 
 test('history redaction excludes credentials, account emails and CODEX_HOME paths after persistence reload', () => {
   const contaminated = run();
-  contaminated.definition = {...contaminated.definition, description: 'Bearer super-secret-value Authorization=token123 password=hunter2 user@example.com CODEX_HOME=C:\\Users\\Loz\\.local\\share\\agent-control\\codex-profiles\\primary'};
+  contaminated.definition = {...contaminated.definition, description: 'Bearer super-secret-value Authorization=token123 password=hunter2 user@example.com CODEX_HOME=C:\\Users\\Example\\.local\\share\\agent-control\\codex-profiles\\primary'};
   const persisted = JSON.parse(JSON.stringify({run: contaminated, parcel: parcel(), thread: thread()}));
   const projection = projectParameterizedRunHistory({run: persisted.run, parcels: [persisted.parcel], tokenEvidence: {threads: [persisted.thread], decisions: [], batons: []}});
   const wire = JSON.stringify(projection);
