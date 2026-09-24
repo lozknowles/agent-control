@@ -1,3 +1,4 @@
+import {conversationGreeting} from './conversation-greeting.js';
 import type {SharedSpeechAdapter} from './shared-speech-adapter.js';
 import {isLocalBenchmarkObjective} from './local-llm-benchmark.js';
 import type {draftLocalBenchmarkObjective} from './local-llm-benchmark-planner.js';
@@ -113,7 +114,7 @@ export interface PoeBenchmarkExecutionPort {submit(input: {proposal: PoeBenchmar
 export interface PoeEvent {type: 'conversation.changed' | 'proposal.changed' | 'speech.changed' | 'interrupted'; at: string; conversationId: string; proposalId?: string; state: PoeState; detail: Record<string, unknown>;}
 
 interface PoeSnapshot {schema: 'agent-control.poe-store/v1'; conversations: PoeConversation[]; proposals: PoeBenchmarkProposal[]; events: PoeEvent[];}
-export interface PoeOptions {sharedSpeech?:SharedSpeechAdapter;localBenchmarkUnavailable?:()=>Promise<string>;modelWatches?:{draft:(objective:string)=>unknown;brief:()=>unknown};localBenchmark?:{draft:(objective:string)=>ReturnType<typeof draftLocalBenchmarkObjective>};regression?:()=>unknown;operator?: PoeOperatorRuntime; file?: string; clock?: () => string; evidence: PoeEvidencePort; sessionVault?:PoeSessionVaultPort; responseModel?: PoeResponseModelPort; benchmark?: PoeBenchmarkExecutionPort; speech?: SpeechProvider; recognition?: SpeechRecognitionProvider; voice?: VoiceIdentity; onEvent?: (event: PoeEvent) => void;}
+export interface PoeOptions {conversationTimeZone?:string;sharedSpeech?:SharedSpeechAdapter;localBenchmarkUnavailable?:()=>Promise<string>;modelWatches?:{draft:(objective:string)=>unknown;brief:()=>unknown};localBenchmark?:{draft:(objective:string)=>ReturnType<typeof draftLocalBenchmarkObjective>};regression?:()=>unknown;operator?: PoeOperatorRuntime; file?: string; clock?: () => string; evidence: PoeEvidencePort; sessionVault?:PoeSessionVaultPort; responseModel?: PoeResponseModelPort; benchmark?: PoeBenchmarkExecutionPort; speech?: SpeechProvider; recognition?: SpeechRecognitionProvider; voice?: VoiceIdentity; onEvent?: (event: PoeEvent) => void;}
 
 const MAX_TURNS = 500, MAX_EVENTS = 1_000;
 const label = (route: PoeRouteIdentity) => `${route.providerId}/${route.accountProfileId ?? 'default'}/${route.modelId}${route.providerModel?' ['+route.providerModel+']':''}@${route.nodeId}`;
@@ -164,6 +165,11 @@ export class PoeRuntime {
     this.setState(conversation,'LISTENING',{reason:'operator turn accepted'});
     const operatorTurn = this.addTurn(conversation,{...(input.sharedSpeech?{sharedSpeech:input.sharedSpeech}:{}),...(input.voiceReference?{voiceReference:input.voiceReference}:{}),actor:'operator',channel:conversation.channel,modality:input.modality ?? 'text',text,authority:'OPERATOR',contentTrust:input.contentTrust ?? 'OPERATOR_REQUEST',references:input.reference?[input.reference]:[],evidence:[]});
     const control=text.trim().replace(/^mallow[, ]+/i,'').replace(/[.!?]+$/,'').trim();
+    const greeting=conversationGreeting(control,this.clock(),this.options.conversationTimeZone);
+    if(greeting){
+      const turn=this.addTurn(conversation,{actor:'poe',channel:conversation.channel,modality:input.modality??'text',text:greeting,authority:'AGENT_CONTROL',contentTrust:'AGENT_CONTROL_EVIDENCE',references:[],evidence:[],responseMode:'DETERMINISTIC'});
+      this.setState(conversation,'EXPLAINING',{control:'social-greeting',timeZone:this.options.conversationTimeZone??Intl.DateTimeFormat().resolvedOptions().timeZone});this.save();return {operatorTurn,turn,conversation:clone(conversation),evidence:{title:'Conversation greeting',summary:greeting,facts:[],related:[]}};
+    }
     const isDate=/^(?:what(?:'s| is) (?:the |today's )?date(?: today)?|what date is it|what day is it|tell me (?:the |today's )date)$/i.test(control);
     const isRepeat=/^repeat(?: that| your previous answer)?$/i.test(control);
     if(/^(?:stop|cancel|stop speaking|stop talking)$/.test(control.toLowerCase())){
