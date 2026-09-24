@@ -1,4 +1,4 @@
-# v4.14 candidate installation requirements
+# v4.14 RC2 installation requirements
 
 Qualification target: Ubuntu Minimal 24.04 x86_64, CPU only, Node.js 24. This does not establish universal Linux or runtime-version support.
 
@@ -40,3 +40,5 @@ Doctor is read-only and reports prerequisites separately from optional executabl
 First-run executable inventory uses `DefaultDiscoveryProbe` and owned-process error/timeout handling. Configured service startup uses the bootstrap control plane, which now consumes failed-spawn errors before recording a PID. HTTP probes retain bounded failures as unavailable observations. A missing optional executable is not a reason to terminate core. An explicitly required unavailable worker capability remains a placement refusal.
 
 No runtime or transport is considered safe, authenticated, qualified or authorised merely because its executable exists.
+
+RC2 installed qualification uses explicit capability gates only in disposable state. `AGENT_CONTROL_ENABLE_NON_OPENAI_CACHE_QUALIFICATION=true` registers the existing bounded fixture action. `AGENT_CONTROL_SEMANTIC_TOOL_V1=true` enables experimental interfaces there; the optional `toolInterface` Job parameter selects strict `SEMANTIC_TOOL_V1` or `LEGACY_TOOL_REQUEST` repair. Neither flag is a normal installation requirement. A semantic request with its capability gate disabled fails closed.

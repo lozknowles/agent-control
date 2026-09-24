@@ -1,19 +1,16 @@
-# Agent Control v4.14.0 RC1 — draft release notes
+# Agent Control v4.14.0 RC2 — release review
 
-**EXPERIMENTAL. Not published or approved for release.** Production remains v4.13.0. See [qualification](V4.14-QUALIFICATION-REPORT.md) for exact revisions and feature decisions.
+This is an unpublished candidate. Release, installation upgrade and production authority require explicit approval. The final RC2 report and sealed receipt supplied with the candidate are authoritative for tested commit IDs, outcomes, artifact hashes and remaining blockers. RC1 results must not be substituted for RC2 results.
 
-RC1 fixes an optional executable's asynchronous spawn failure that could terminate CPU-only first-run discovery. Missing, failed, malformed and timed-out GPU inventory now have structured optional-capability states. A GPU-required Job still needs a qualifying GPU worker. The read-only `agent-control doctor` command distinguishes installation prerequisites from optional executable availability and unconfigured services.
+RC2 changes are limited to release closure:
 
-Two pristine Ubuntu CPU-only installs completed ordinary FIRST_RUN and approved observation Jobs without a restart. A separate disposable systemd installation passed v4.13 -> candidate -> v4.13 upgrade/rollback for its recorded configuration and legacy Jobs. This is not universal Linux support or new experimental-format rollback qualification.
+- Numbered-write detection uses trusted source/read line relationships and a bounded, syntax-only JavaScript check. It no longer treats every pair of pipe-numbered prose lines as copied output. Whole-file and exact-replacement mutations retain pre-write enforcement; no source is automatically rewritten.
+- The existing installed qualification action can explicitly exercise SEMANTIC_TOOL_V1, legacy deterministic repair and no-progress control through the normal service Job runtime and safety supervisor. These interfaces remain gated and disabled by default. Strict semantic mode does not fall back to legacy JSON repair.
+- Public source archives exclude private historical qualification records, model-output patches, screenshots and machine-bound research scripts. Their original provenance remains retained privately. See SOURCE-ARCHIVE-POLICY.md.
+- Runtime and package identity are both 4.14.0-rc.2.
 
-The tool parser now rejects duplicate JSON keys inside native argument strings before repair or semantic batch dispatch. A frozen 150-case corpus improved from 140/150 with ten false repairs to 150/150 with zero false repairs. Two dashboard renderers now encode activity/cache class metadata; hostile browser reproductions inserted HTML before the fixes and did not afterward. Remote exploitability was not established.
+The candidate retains the RC1 optional-executable/CPU-discovery fixes, read-only doctor, duplicate-key rejection before repair or batch dispatch, dashboard encoding fixes and twelve-slot Job identity styling. Colour collisions remain possible; explicit IDs and status labels remain authoritative.
 
-The integrated opt-in semantic path achieved 4/5 independently verified internal tasks, with zero parser/translation failures. Controlled physical Jobs demonstrated bounded repair/rejection, no-progress signals/termination, cancellation and worker kill. These do not make the semantic path, recovery, diagnostics or synthetic forensic vault release-ready. Numbered-output protection has two retained false positives on legitimate pipe-numbered prose. See individual decisions; no blanket reliability/safety claim is made.
+A passing five-task internal workload does not establish general model reliability or independent generalisation. Safe repair is bounded to representation-preserving transformations. Multi-file writes remain sequential. Synthetic forensic capture is not approved for private production data. Controlled HTTP service tests and genuine model inference are reported separately, including failed attempts.
 
-Stable twelve-slot Job identity styling keeps explicit Run IDs and status labels; colour collisions remain possible. New genuine live videos distinguish actual Qwen inference from controlled HTTP fault responses. They are unsigned visual evidence, not proof of every release gate.
-
-No semantic mode, no-progress mode, raw capture, paid escalation or recording is activated by default in normal Job configuration. AutomationBench and Strands adapters remain EXCLUDED; multi-file atomicity remains DEFERRED.
-
-The v4.13 diagnostic coverage remains PARTIAL. Its small, correlated AI-reviewed 47-case evaluation is not a general accuracy guarantee and is separate from all newer reconciliations. Pixel physical identity remains unverified. No AutomationBench qualification, AWS cost reproduction, universal model parity, universal platform support or signed video is claimed.
-
-Do not publish this draft or upgrade an existing installation without explicit approval.
+Security coverage remains PARTIAL. The v4.13 historical diagnostic evaluation contains only 47 correlated AI-reviewed cases; it is separate from newer checks. Pixel physical identity remains unverified. AutomationBench and Strands are EXCLUDED; AWS Strands cost claims remain unreproduced. No universal host/platform/model parity, complete security, atomic multi-file mutation, measured energy, or signed-video claim is made.
