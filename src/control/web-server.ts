@@ -276,7 +276,7 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
   if(method==='GET'&&url.pathname==='/api/poe/knowledge'){validateOperatorRequest(request,options);return json(response,200,service.poeKnowledge());}
   const knowledgeSource=url.pathname.match(/^\/api\/poe\/knowledge\/sources\/([^/]+)$/);if(method==='GET'&&knowledgeSource){validateOperatorRequest(request,options);return json(response,200,service.poeKnowledgeSource(decodeURIComponent(knowledgeSource[1])));}
   const greetingMatch=url.pathname.match(/^\/api\/poe\/conversations\/([^/]+)\/greeting$/);if(method==='POST'&&greetingMatch){validateOrigin(request,options);validateOperatorRequest(request,options);return json(response,200,service.greetPoe(decodeURIComponent(greetingMatch[1]),'web-operator'));}
-  const operatorApi=url.pathname.match(/^\/api\/poe\/conversations\/([^/]+)\/(operator|approve-job|speech|transcribe|greeting)$/);
+  const operatorApi=url.pathname.match(/^\/api\/poe\/conversations\/([^/]+)\/(operator|approve-job|speech|speech-stream|transcribe|greeting)$/);
   if(operatorApi){
     validateOperatorRequest(request,options); const id=decodeURIComponent(operatorApi[1]!);
     if(method==='GET'&&operatorApi[2]==='operator')return json(response,200,await service.poeOperator(id,'web-operator'));
@@ -285,6 +285,13 @@ async function handle(service: AgentControlService, request: IncomingMessage, re
       if(operatorApi[2]==='transcribe') {const bytes=await readBounded(request,8*1024*1024);return json(response,200,await service.transcribePoe(id,bytes,String(request.headers['content-type']??'').split(';')[0]!, 'web-operator'));}
       const body=await readJson(request);
       if(operatorApi[2]==='approve-job')return json(response,202,service.approvePoeOperator(id,String(body.proposalId??''),String(body.hash??''),'web-operator'));
+      if(operatorApi[2]==='speech-stream'){
+        const conversation=service.poeConversation(id);if(conversation.actorId!=='web-operator')throw Error('poe_conversation_actor_mismatch');
+        const turnId=String(body.turnId??'');const stream=service.sharedSpeakPoe(id,turnId,'web-operator');
+        response.writeHead(200,{'content-type':'text/event-stream','cache-control':'no-store','x-accel-buffering':'no'});
+        const cancel=()=>{if(!response.writableEnded)service.interruptPoe(id,'web-operator',turnId);};response.once('close',cancel);
+        try{for await(const event of stream){if(response.destroyed)break;if(!response.write('data: '+JSON.stringify(event)+'\n\n'))await new Promise<void>(resolve=>{const done=()=>{response.off('drain',done);response.off('close',done);resolve();};response.once('drain',done);response.once('close',done);});}}catch{if(!response.destroyed)response.write('data: '+JSON.stringify({type:'speech.failed',error:'shared_speech_unavailable',turnId})+'\n\n');}finally{response.off('close',cancel);response.end();}return;
+      }
       if(operatorApi[2]==='speech'){const audio=await service.speakPoe(id,String(body.turnId??''),'web-operator');return json(response,200,{...audio,bytes:Buffer.from(audio.bytes).toString('base64')});}
     }
   }

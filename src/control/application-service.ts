@@ -473,6 +473,7 @@ export class AgentControlService {
   greetPoe(id:string,actor:string){return this.mustPoe().greeting(id,actor);}
   poeOperator(id:string,actor:string) {return this.mustPoe().operatorProjection(id,actor);}
   approvePoeOperator(id:string,proposalId:string,hash:string,actor:string) {return this.mustPoe().approveOperator(id,proposalId,hash,actor);}
+  sharedSpeakPoe(id:string,turnId:string,actor:string){return this.mustPoe().sharedSpeechForTurn(id,turnId,actor);}
   speakPoe(id:string,turnId:string,actor:string) {return this.mustPoe().speechForTurn(id,turnId,actor);}
   transcribePoe(id:string,bytes:Uint8Array,mime:string,actor:string) {return this.mustPoe().transcribeTurn(id,bytes,mime,actor);}
   poeProjection() { const projection=this.mustPoe().projection(); projection.conversations=projection.conversations.filter(item=>item.actorId==='web-operator'&&item.channel==='dashboard'); const ids=new Set(projection.conversations.map(item=>item.id)); projection.proposals=projection.proposals.filter(item=>ids.has(item.conversationId)); projection.activeConversationId=projection.conversations[0]?.id??null; return projection; }

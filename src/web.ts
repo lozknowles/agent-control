@@ -177,6 +177,8 @@ const estateConfig=loadConfig(configurationFile);
 const estateTargets:EstateTarget[]=estateConfig.providers.flatMap(p=>{if(!p.baseUrl)return [];try{const u=new URL(p.baseUrl);if(!['http:','https:'].includes(u.protocol)||!['127.0.0.1','[::1]'].includes(u.hostname)||u.username||u.password||u.search||u.hash)return [];return [{id:p.id,kind:'ENDPOINT' as const,label:p.id,locator:u.origin,providerId:p.id,modelIds:Object.fromEntries(estateConfig.models.filter(m=>m.provider===p.id).map(m=>[m.providerModel??m.id,m.id]))}];}catch{return [];}});
 const estate=new EstateDiscovery({root:path.join(stateRoot,'environment-discovery','estate'),config:()=>loadConfig(configurationFile),targets:estateTargets,diagnostics,environmentDiscovery,onEvent:(type,payload)=>service.events.emit('environment.discovery_changed',{eventType:type,...payload},undefined,'estate-discovery')});
 registerEstateDiscovery(jobRuntime,estate);
+let sharedSpeech:import('./control/shared-speech-adapter.js').SharedSpeechAdapter|undefined;
+if(process.env.AGENT_CONTROL_SHARED_SPEECH_URL){try{const {SharedSpeechClient}=await import('./vendor/shared-speech/client.mjs');const {SharedSpeechAdapter}=await import('./control/shared-speech-adapter.js');const token=process.env.AGENT_CONTROL_SHARED_SPEECH_TOKEN;if(!token)throw Error('speech_token_missing');sharedSpeech=new SharedSpeechAdapter(new SharedSpeechClient({url:process.env.AGENT_CONTROL_SHARED_SPEECH_URL,token}),process.env.AGENT_CONTROL_SHARED_SPEECH_FALLBACK==='standard'?'standard':'none');}catch{process.stderr.write('Optional Shared Speech unavailable; text remains active.\n');}}
 const mallowVoiceConfig=process.env.AGENT_CONTROL_MALLOW_VOICE_CONFIG??process.env.AGENT_CONTROL_POE_VOICE_CONFIG;
 let poeSpeech: import('./control/social-voice-providers.js').SpeechProvider | undefined;
 let poeRecognition: import('./control/social-voice-providers.js').SpeechRecognitionProvider | undefined;
@@ -232,7 +234,7 @@ const poe = new PoeRuntime({localBenchmarkUnavailable:async()=>{if(!isAndroidUse
     const digest=isLocal?localBenchmark!.authorize({proposal,actor,requestKey,plan}):undefined;
     try{const parcel=jobRuntime.workParcels.submitApprovedPlan(origin.request,actor,requestKey,plan,origin);if(digest)localBenchmark!.bind(digest,parcel.id);return{parcelId:parcel.id};}catch(error){if(digest)localBenchmark!.revoke(digest);throw error;}
   }},
-  speech:poeSpeech,recognition:poeRecognition,voice:poeVoice,
+  sharedSpeech,speech:poeSpeech,recognition:poeRecognition,voice:poeVoice,
   onEvent:event=>service.events.emit(event.type==='conversation.changed'?'poe.conversation_changed':event.type==='proposal.changed'?'poe.proposal_changed':event.type==='speech.changed'?'poe.speech_changed':'poe.interrupted',{conversationId:event.conversationId,proposalId:event.proposalId,state:event.state,detail:event.detail,observedAt:event.at},undefined,'poe'),
 });
 service.configureProjection({poe});

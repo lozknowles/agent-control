@@ -227,3 +227,11 @@ not shipped 4.5 capabilities:
 - [ ] Refresh README visuals with any genuinely qualified 4.6 improvements.
 - [ ] Add primitive approved desired-state/remediation actions; do not present
       these as 4.5 Estate Map functionality.
+
+
+## Shared Speech integration candidate (2026-09-24)
+
+- [ ] Qualify current-main MSI microphone-to-speaker integration after a permitted secure pilot route is available.
+- [ ] Separately qualify an SDK live capture-event contract for acoustic barge-in; Stop/push-to-talk is not equivalent.
+- [ ] Grounding/conversation improvements remain deferred research; conservative behaviour retained.
+- Integration design and boundaries: [Shared Speech adapter](docs/qualification/shared-speech-integration-20260924/SHARED-SPEECH-ADAPTER.md).
