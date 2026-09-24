@@ -22,7 +22,7 @@ A signed un-enrolled fixture was rejected with sender_not_enrolled; an invalid s
 
 ## Evidence and display provenance
 
-Private evidence directory: `/fast/qualification/agent-control-openwa-20260905/live-evidence`.
+Private evidence directory: `[private qualification path]`.
 
 The video records Xvfb display :101, 1800x1000, combining separately captured actual authenticated dashboard frames with actual stored messages from the enrolled WhatsApp conversation. The on-screen label identifies the gateway-history view and separate captures. It is **not a recording of the phone or WhatsApp application's screen**. The raw MKV is retained; the 179-second MP4 selects chronological intervals 110–155, 918–995 and 1260–1317 seconds, omitting waiting periods. No simulated messages appear in that video. Controlled fixtures are separate JSON evidence.
 

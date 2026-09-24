@@ -71,7 +71,7 @@ Authenticated Social & Voice page shows provider health, separate STT/TTS timing
 
 ## P. Video evidence
 
-`social-voice-live-qualification.mp4`: 130-second chronological highlights of actual separately captured WhatsApp Web and authenticated dashboard, on dedicated Xvfb **:102**. It shows voice intake/confirmation, matching AC-3 execution and the corrected reply. On-screen UTC timestamps and edited-excerpt labels remain. No simulated UI, QR, session secret, primary display or handset was captured. It has no audio track; supplied delivered audio is not dubbed into it. Raw 27-minute segment and earlier setup segments remain private under `/fast/qualification/agent-control-social-voice-20260905`. This does not fulfil the separate multi-lane/changing-model-context release video requirement.
+`social-voice-live-qualification.mp4`: 130-second chronological highlights of actual separately captured WhatsApp Web and authenticated dashboard, on dedicated Xvfb **:102**. It shows voice intake/confirmation, matching AC-3 execution and the corrected reply. On-screen UTC timestamps and edited-excerpt labels remain. No simulated UI, QR, session secret, primary display or handset was captured. It has no audio track; supplied delivered audio is not dubbed into it. Raw 27-minute segment and earlier setup segments remain private under `[private qualification path]`. This does not fulfil the separate multi-lane/changing-model-context release video requirement.
 
 ## Q. Test totals
 

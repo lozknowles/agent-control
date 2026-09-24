@@ -22,7 +22,7 @@ Adds scheduler-independent hierarchical containment and a persisted quarantine s
 
 Incorporates the qualified 4.9 reliability follow-up: governed raw inference, explicit local/API accounting, activity-log repair that preserves live-writer identity, protected workspace metadata, and durable cancellation fencing. Generic interaction profiles, observed capability drift, transactional approvals, optional W3C correlation and typed outbound-worker contracts remain Agent Control-native; no Omnigent dependency is introduced.
 
-Physical hpubuntu qualification covers the Work Board, parallel lanes, dynamic reprioritisation, hierarchical containment, quarantine persistence, alternative routing, unsafe-fallback prevention and governed recovery. Pixel/remote containment, a physical generic outbound worker transport, and the optional phone-hosted model route remain unqualified.
+Physical qualified controller qualification covers the Work Board, parallel lanes, dynamic reprioritisation, hierarchical containment, quarantine persistence, alternative routing, unsafe-fallback prevention and governed recovery. Pixel/remote containment, a physical generic outbound worker transport, and the optional phone-hosted model route remain unqualified.
 
 See [release notes](docs/release-notes-4.10.0.md), [operator guide](docs/dynamic-work-board.md), [upgrade guide](docs/upgrade-4.10.md), and [release verification](docs/release-verification-4.10.0.md).
 
@@ -280,7 +280,7 @@ Live Estate/Process integration, APK-less Android Standalone, Job Library readin
   Vault search or provenance.
 - Adds authenticated Session Vault APIs, six operational dashboard views and
   POE historical-evidence answers. Physical A–H qualification passes on
-  hpubuntu and macomarchy with a real Codex session and verified Work Parcel;
+  qualified controller and qualified remote host with a real Codex session and verified Work Parcel;
   MSI Obsidian application access remains blocked by unavailable SSH
   authentication, so the feature and 4.5 recommendation remain EXPERIMENTAL.
 - Introduces Morrow as the original chief steward and refreshes Cadence, Quill, Relay, Lumen, Rook and Verity with coordinated robotic artwork. Public names, grounded persona and social invocation are updated while legacy `poe` APIs, events, storage, saved conversations, approval hashes, crew roles and the designed voice remain compatible. Integrated with the completed 4.5 route-governance branch for experimental testing; historical physical evidence retains its original candidate identity.
@@ -837,7 +837,7 @@ Qualification note: the source release is created only if the documented real Lo
 
 ## Historical unreleased development notes (pre-3.0.0)
 
-- Added an explicitly approved, read-only hpubuntu ADB observer for Facebook `Your groups`: it inspects only whole-word Collingham group titles, limits candidate posts to visible timestamps within seven days, preserves local screenshot provenance, rejects ambiguous timestamps, deduplicates overlapping screens, and redacts contact details from JSON.
+- Added an explicitly approved, read-only qualified controller ADB observer for Facebook `Your groups`: it inspects only whole-word Collingham group titles, limits candidate posts to visible timestamps within seven days, preserves local screenshot provenance, rejects ambiguous timestamps, deduplicates overlapping screens, and redacts contact details from JSON.
 - Put physical reboot qualification behind an explicit durable `--approve-reboot-test` gate; an approved test reboots through ADB and requires keyed Termux SSH to return before qualification.
 - Wired boot-hook installation through Android's scoped `run-as com.termux` bridge to the existing fixed installer, and require the installed executable hook to match the repository source SHA-256 before completion.
 - Restored the persisted, verified Termux:Boot artifact across provisioning process restarts and rechecks its SHA-256 immediately before device installation.
@@ -887,9 +887,9 @@ All notable Agent Control changes are recorded here. The project is still pre-st
 - Persisted per-work-item outcome history so loop evidence survives queue-store restart.
 - Real homogeneous batch execution item by item rather than stopping at batch-lease creation.
 - Single-command control-plane lifecycle commands: `npm run up`, `npm run status`, and `npm run down`.
-- Health-first discovery/start of the existing hpubuntu llama systemd user services for ports `8080` and `8081`.
+- Health-first discovery/start of the existing qualified controller llama systemd user services for ports `8080` and `8081`.
 - Reuse semantics for healthy ChatGPT Window bridge/adapter services on `8766`/`8767`.
-- Pixel bootstrap recovery from SSH-ready state through the known node-start recipe and hpubuntu `18788 -> Pixel:8788` forward.
+- Pixel bootstrap recovery from SSH-ready state through the known node-start recipe and qualified controller `18788 -> Pixel:8788` forward.
 - Explicit Pixel bootstrap state `SSH-OFFLINE` for the observed case where Tailscale is reachable but Termux SSH `:8022` is not listening.
 - One-time Pixel transport-persistence installer `android/install-boot.sh`.
 - Termux:Boot hook `android/termux-boot-agent-control.sh` to restore `sshd` after Android reboot and optionally restore the Pixel node when a deliberate Pixel-local token is present.
@@ -909,7 +909,7 @@ All notable Agent Control changes are recorded here. The project is still pre-st
 - Restart-persistent loop detection and two-item homogeneous batch execution are covered by the canonical suite.
 - Bootstrap test from a partially cold state successfully discovered/started `llama-server.service` and `llama-coder.service`, reused the already healthy ChatGPT Window bridge/adapter, kept Sentinel reachable, and exposed Pixel as the only degraded dependency.
 - The physical Pixel failure was correctly narrowed to **Tailscale reachable / SSH `:8022` connection refused**, establishing the transport-persistence requirement now represented explicitly in the lifecycle.
-- The next release gate is a one-time Termux:Boot install followed by `npm run up`; expected progression is `SSH-OFFLINE -> NODE-DEGRADED/NODE-READY -> FORWARD-READY -> READY 5/5` without manual hpubuntu recovery commands.
+- The next release gate is a one-time Termux:Boot install followed by `npm run up`; expected progression is `SSH-OFFLINE -> NODE-DEGRADED/NODE-READY -> FORWARD-READY -> READY 5/5` without manual qualified controller recovery commands.
 
 ### Safety / authority notes
 
@@ -973,7 +973,7 @@ All notable Agent Control changes are recorded here. The project is still pre-st
 - Queue/coordinator telemetry spans and decision events.
 - Blessed Work Queue and resource-lifecycle control-room panels plus queue drill-down.
 - Canonical `npm run qualify` command (`qualify:all` retained as compatibility alias).
-- Qualification gates for hpubuntu Codex, Pixel health/capability resolution, Windows ChatGPT advertised health and functional Responses roundtrip, and Sentinel reachability.
+- Qualification gates for qualified controller Codex, Pixel health/capability resolution, Windows ChatGPT advertised health and functional Responses roundtrip, and Sentinel reachability.
 - Separate ChatGPT correctness timeout and latency warning classification; healthy-but-slow no longer fails readiness solely for exceeding 10 seconds.
 - Pixel lifecycle model: offline, reachable, SSH-ready, node-degraded, node-ready/forward reconnecting, forward-ready, capability-ready and recovery-failed.
 - TUI Pixel probe, manual recovery and AUTO/MANUAL recovery mode controls.
@@ -1007,7 +1007,7 @@ All notable Agent Control changes are recorded here. The project is still pre-st
 
 - Local automated suite reached **63 passing tests** after core/control/UI tests were included.
 - Post-recovery distributed qualification passed **7 gates, 0 failures, 0 skips** with trace `9cec90ee-8d86-49fa-9891-339277e39850`; Windows functional response was correct but classified slow (~14.7 s).
-- Physical Pixel fault injection: healthy PID 8270; recovery request while healthy preserved PID 8270; node deliberately stopped; TUI detected `NODE-DEGRADED`; allow-listed recovery produced PID 9315; existing hpubuntu SSH forward was reused; `/health` returned 200; authenticated `/v2/resource` returned healthy Android/Termux/Codex/logcat capabilities.
+- Physical Pixel fault injection: healthy PID 8270; recovery request while healthy preserved PID 8270; node deliberately stopped; TUI detected `NODE-DEGRADED`; allow-listed recovery produced PID 9315; existing qualified controller SSH forward was reused; `/health` returned 200; authenticated `/v2/resource` returned healthy Android/Termux/Codex/logcat capabilities.
 
 ### Security / authority notes
 

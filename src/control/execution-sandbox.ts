@@ -46,7 +46,7 @@ export class LinuxBubblewrapSandboxAdapter implements ExecutionSandboxAdapter{
    controls.push(await py('external-network','import socket,sys\ns=socket.socket();s.settimeout(.3)\nsys.exit(0 if s.connect_ex(("1.1.1.1",53)) != 0 else 9)'));
    controls.push(await py('loopback','import socket,sys\ns=socket.socket();s.settimeout(.3)\nsys.exit(0 if s.connect_ex(("127.0.0.1",22)) != 0 else 9)'));
    controls.push(await py('environment','import os,sys\nallowed={"PATH","HOME","LANG","TMPDIR","AGENT_CONTROL_SANDBOX","PWD"}\nprint("\\n".join(sorted(os.environ)))\nsys.exit(0 if set(os.environ)==allowed else 8)'));
-   controls.push(await py('credentials','import os,sys\npaths=["/root/.ssh","/home/loz/.ssh","/home/loz/.config","/run/user/1000"]\nprint("\\n".join(p for p in paths if os.path.exists(p)))\nsys.exit(0 if not any(os.path.exists(p) for p in paths) else 8)'));
+   controls.push(await py('credentials','import os,sys\npaths=["/root/.ssh","/root/.config","/run/user"]+[os.path.join("/home",name,child) for name in os.listdir("/home") for child in [".ssh",".config"]]\nprint("\\n".join(p for p in paths if os.path.exists(p)))\nsys.exit(0 if not any(os.path.exists(p) for p in paths) else 8)'));
    controls.push(await py('scratch-writes','import os,sys\nopen("/scratch/allowed","w").write("ok")\ntry: open("/outside","w").write("bad")\nexcept OSError: sys.exit(0)\nsys.exit(8)'));
    controls.push(await py('source-read-only','import os,sys\ntarget="/source/package.json"\ntry: open(target,"a").write("bad")\nexcept OSError: sys.exit(0)\nsys.exit(8)'));
    const marker=`ac-sandbox-${randomUUID()}`;

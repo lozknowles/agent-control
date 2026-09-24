@@ -3,6 +3,7 @@ import {createHash} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
 import {once} from 'node:events';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import type {AddressInfo} from 'node:net';
 import {AgentControlService} from '../src/control/application-service.js';
@@ -40,7 +41,7 @@ async function main() {
   fs.writeFileSync(path.join(repository, 'README.md'), '# Disposable maintenance repository\n', {mode: 0o600}); git(repository, 'add', 'README.md'); git(repository, 'commit', '-m', 'baseline'); git(repository, 'remote', 'add', 'origin', remote); git(repository, 'push', '-u', 'origin', 'master');
   const protectedBefore = remoteRef(repository, 'master')!; assert.match(protectedBefore, /^[a-f0-9]{40}$/);
   const observedAt = new Date().toISOString(), profileId = 'qualification-controller', providerId = 'codex-chatgpt', modelId = 'gpt-5.6-luna', featureRef = 'maintenance/dependency-audit-qualification', codexHomeEnv = 'AGENT_CONTROL_QUALIFICATION_CODEX_HOME';
-  process.env[codexHomeEnv] = process.env.CODEX_HOME ?? path.join(process.env.HOME ?? '/home/loz', '.codex');
+  process.env[codexHomeEnv] = process.env.CODEX_HOME ?? path.join(process.env.HOME ?? os.homedir(), '.codex');
   const resources: ResourceConfig[] = [{id: 'controller', name: 'Qualification controller', platform: 'linux', controller: true, transport: {type: 'local'}, capabilities: ['repository.git', 'model.execute', 'structured-output'], metadata: {capacity: 1}}];
   const providers: ProviderConfig[] = [{id: providerId, name: 'Codex ChatGPT', kind: 'cli', enabled: true, requiresAuth: true, costClass: 'included', capabilities: ['model.execute', 'structured-output'], accountProfiles: [{id: profileId, label: 'Controller qualification account', providerExecutionNodeId: 'controller', credentialResidency: {nodeId: 'controller', store: {type: 'codex-home-env', env: codexHomeEnv}}, plan: 'ChatGPT', planAuthority: 'operator-configured', capabilities: ['model.execute', 'structured-output'], qualification: {state: 'QUALIFIED', version: 'physical-login-status', checkedAt: observedAt, qualifiedAt: observedAt, capabilities: ['model.execute', 'structured-output'], evidence: ['codex-login-status:chatgpt']}}]}];
   const models: ModelConfig[] = [{id: modelId, provider: providerId, providerModel: modelId, accountProfile: profileId, displayName: 'GPT-5.6 Luna', enabled: true, routingEligible: true, capabilities: ['model.execute', 'structured-output'], nodes: ['controller'], limits: {contextTokens: 272_000, outputTokens: 2_048}, qualification: {state: 'QUALIFIED', version: 'local-model-cache-and-login', qualifiedAt: observedAt, capabilities: ['model.execute', 'structured-output'], nodes: ['controller'], evidence: ['local-model-cache:gpt-5.6-luna', 'codex-login-status:chatgpt']}}];

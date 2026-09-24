@@ -34,7 +34,7 @@ This transcript describes actual gateway and controller HTTP operations, not mes
 
 Only the new pilot services were started/restarted: `agent-control-openwa-gateway-pilot` and `agent-control-openwa-controller-pilot`. The listener inventory verified `127.0.0.1:19190` and `127.0.0.1:19191`; protected model listeners 8080/8081 remained present. Default Docker composition was not used. Redis/cache/queue and built-in Docker services were disabled. The API's Docker destination points to an unused loopback port, and no Docker daemon operation was performed.
 
-Private raw pilot evidence/configuration lives under `/fast/qualification/agent-control-openwa-20260905`. Sanitized user deliverables include `http-qualification.json`, `gateway-qualification.json`, `automated-check.log`, `dashboard-setup.png`, `dashboard-setup-mobile.png` and `dashboard-test-result.png`. No credentials/session/QR files are committed.
+Private raw pilot evidence/configuration lives under `[private qualification path]`. Sanitized user deliverables include `http-qualification.json`, `gateway-qualification.json`, `automated-check.log`, `dashboard-setup.png`, `dashboard-setup-mobile.png` and `dashboard-test-result.png`. No credentials/session/QR files are committed.
 
 ## Explicit remaining gaps
 

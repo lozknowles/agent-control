@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import path from 'node:path';
+import fs from 'node:fs';
+import os from 'node:os';
 import test from 'node:test';
 import {
   SOURCE_DISTRIBUTION_POLICY,
@@ -29,4 +31,19 @@ test('tracked source tree satisfies the distribution boundary', () => {
   const result = inspectSourceDistribution(repositoryRoot);
   assert.equal(result.ok, true, JSON.stringify(result.violations, null, 2));
   assert.deepEqual(result.violations, []);
+});
+
+test('extracted source archives are validated without Git or installed dependencies', () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'source-archive-policy-'));
+  try {
+    fs.writeFileSync(path.join(directory, 'package.json'), '{}');
+    fs.mkdirSync(path.join(directory, 'node_modules'));
+    fs.writeFileSync(path.join(directory, 'node_modules', 'installed.bin'), Buffer.alloc(1_000_001));
+    const result = inspectSourceDistribution(directory);
+    assert.equal(result.ok, true);
+    assert.equal(result.trackedFiles, 1);
+    fs.mkdirSync(path.join(directory, 'qualification'));
+    fs.writeFileSync(path.join(directory, 'qualification', 'private.json'), '{}');
+    assert.equal(inspectSourceDistribution(directory).ok, false);
+  } finally { fs.rmSync(directory, {recursive: true}); }
 });

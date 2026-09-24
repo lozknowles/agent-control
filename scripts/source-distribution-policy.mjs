@@ -22,10 +22,22 @@ export function classifySourceDistributionPath(file, size) {
 }
 
 export function inspectSourceDistribution(repositoryRoot) {
-  const tracked = execFileSync('git', ['-C', repositoryRoot, 'ls-files', '-z'], {
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'pipe'],
-  }).split('\0').filter(Boolean);
+  let tracked;
+  try {
+    tracked = execFileSync('git', ['-C', repositoryRoot, 'ls-files', '-z'], {
+      encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'],
+    }).split('\0').filter(Boolean);
+  } catch {
+    // Source archives have no .git. Inspect their actual payload while omitting
+    // dependency installation and local runtime state created after extraction.
+    const ignored = new Set(['.git', 'node_modules', '.agent-control']);
+    const walk = directory => fs.readdirSync(directory, {withFileTypes: true}).flatMap(entry => {
+      if (ignored.has(entry.name)) return [];
+      const absolute = path.join(directory, entry.name);
+      return entry.isDirectory() ? walk(absolute) : [path.relative(repositoryRoot, absolute).replaceAll('\\', '/')];
+    });
+    tracked = walk(repositoryRoot);
+  }
   const violations = [];
   let totalBytes = 0;
   for (const file of tracked) {
