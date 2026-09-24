@@ -1,4 +1,4 @@
-﻿import assert from 'node:assert/strict';
+import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -348,4 +348,26 @@ for(const acknowledge of [true,false])test('late cancelled action requires posit
  s.runtime.cancel(s.run.id);s.catalog.addJob({apiVersion:'agent-control/v1',kind:'Job',metadata:{id:'restore-late',version:'1.0.0',name:'Late restoration'},spec:{priority:'normal',concurrency:'no-overlap',steps:[{id:'restore',action:'restore-late@1.0.0',requires:[],resources:['restore-late']}]}});
  const run=s.runtime.createRun('restore-late@1.0.0',{}, {type:'manual',actor:'human:test'}),active=s.runtime.tick();await began;s.runtime.cancel(run.id);await active;assert.equal(s.runtime.ledger.get(run.id)!.status,'CLEANUP_UNCERTAIN');const prior=s.runtime.ledger.get(run.id)!.steps[0].attempts;
  release();await done;for(let i=0;i<10;i++)await turn();const final=s.runtime.ledger.get(run.id)!;assert.equal(final.status,acknowledge?'CANCELLED':'CLEANUP_UNCERTAIN');assert.deepEqual(final.steps[0].attempts,prior);assert.equal(values(s.runtime,run.id,'cleanup-resolution').length,acknowledge?1:0);if(acknowledge){assert.equal(final.steps[0].cleanup!.outcome,'confirmed');assert.equal(s.runtime.locks.list().filter(l=>l.runId===run.id).length,0);}
+});
+
+test('installed qualification action exposes semantic tools only under both explicit gates and retains semantic evidence', async t => {
+  const requests: any[] = [];
+  const replies = [
+    {name:'replace_text',arguments:JSON.stringify({path:'src/constants.js',oldText:'30_000',newText:'45_000'})},
+    {name:'finish_work',arguments:JSON.stringify({summary:'Done'})},
+  ];
+  const s = setup(t, async (_url, init) => {
+    requests.push(JSON.parse(String(init?.body)));
+    return Response.json({choices:[{message:{content:null,tool_calls:[{id:`call-${requests.length}`,type:'function',function:replies.shift()}]},finish_reason:'tool_calls'}]});
+  }, undefined, {AGENT_CONTROL_SEMANTIC_TOOL_V1:'true'});
+  await s.runtime.tick(); await s.runtime.tick();
+  assert.equal(s.runtime.ledger.get(s.run.id)?.status,'SUCCEEDED');
+  assert.ok(requests[0].tools.some((tool:any)=>tool.function.name==='replace_text'));
+  assert.ok(values(s.runtime,s.run.id,'semantic').length > 0);
+  assert.equal(values(s.runtime,s.run.id,'independent-verification')[0].verifier.passed,true);
+  assert.equal(values(s.runtime,s.run.id,'attempt-workspace-cleanup')[0].outcome,'confirmed');
+});
+test('semantic flag cannot register qualification actions when the primary qualification gate is off', () => {
+  const actions = registerNonOpenAiCacheQualificationActions(new ActionRegistry(),new MemoryHarnessEfficiencyLedger(),{AGENT_CONTROL_SEMANTIC_TOOL_V1:'true'});
+  assert.equal(actions.ids().has('qualification.non-openai-cache.mutate@1.0.0'),false);
 });

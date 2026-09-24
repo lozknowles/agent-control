@@ -9,7 +9,7 @@ import {ActionFailure, ActionRegistry} from './job-runtime.js';
 import {parseMutationBenchmarkSuite, type MutationBenchmarkTask} from './harness-mutation-benchmark.js';
 import {buildMutationContextPacket, buildMutationContextSources, renderMutationInstruction, selectMutationPacketSources} from './harness-mutation-context.js';
 import {verifyMutationWorkspace} from './harness-mutation-verifier.js';
-import {MUTATION_TOOL_DEFINITIONS, MUTATION_TOOL_IDS, MUTATION_TOOL_SCHEMAS, MutationWorkspace, fixtureContentSha256} from './harness-mutation-workspace.js';
+import {MUTATION_TOOL_DEFINITIONS, MUTATION_TOOL_IDS, MUTATION_TOOL_SCHEMAS, MUTATION_SEMANTIC_TOOL_V1, MutationWorkspace, fixtureContentSha256} from './harness-mutation-workspace.js';
 import {StructuredChatLoopProvider} from './structured-chat-loop-provider.js';
 import type {ActionContext} from './job-types.js';
 import type {ExecutionCleanupReport} from './owned-process.js';
@@ -42,6 +42,9 @@ export function registerNonOpenAiCacheQualificationActions(registry: ActionRegis
   if (environment.AGENT_CONTROL_ENABLE_NON_OPENAI_CACHE_QUALIFICATION !== 'true') return registry;
   if (!efficiency) throw new Error('non_openai_cache_efficiency_ledger_required');
   const leanExperiment = environment.AGENT_CONTROL_LEAN_EXPERIMENT === 'true';
+  // Existing experimental interfaces remain disabled unless both qualification
+  // and semantic execution are explicitly enabled by the service operator.
+  const semanticExperiment = environment.AGENT_CONTROL_SEMANTIC_TOOL_V1 === 'true';
   const baseUrl = required(environment.AGENT_CONTROL_NON_OPENAI_CACHE_BASE_URL, 'non_openai_cache_base_url').replace(/\/$/, '');
   const routeBaseUrls = parseRouteBaseUrls(environment.AGENT_CONTROL_NON_OPENAI_CACHE_ROUTE_BASE_URLS);
   for (const value of [baseUrl, ...Object.values(routeBaseUrls)]) { const endpoint = new URL(value); if (!['127.0.0.1', 'localhost', '::1'].includes(endpoint.hostname)) throw new Error('non_openai_cache_endpoint_must_be_loopback'); }
@@ -144,12 +147,19 @@ export function registerNonOpenAiCacheQualificationActions(registry: ActionRegis
         journal({type: 'provider', at: new Date().toISOString(), requestPrefixSha256: sha256(stableJson(requestBody)), assistantOutput: typeof message.content === 'string' ? message.content : null, providerResponseId: typeof body.id === 'string' ? body.id : null, responseModel: typeof body.model === 'string' ? body.model : null, finishReason: typeof choice.finish_reason === 'string' ? choice.finish_reason : null, usage: safeUsage(body.usage), timings: safeTimings(body.timings)});
         return response;
       };
-      const loop = new StructuredChatLoopProvider({providerId: selectedProviderId, modelId: selectedModelId, baseUrl: selectedBaseUrl, toolSchemas: MUTATION_TOOL_SCHEMAS, finishToolId: MUTATION_TOOL_IDS.finish, maximumOutputTokens: 768, timeoutMs: observationTimeoutMs, signalForRecipe: () => context.signal, executionStrategy: 'non-openai-cache.real-repository-mutation', ...(governedRuntimeBudgets ? {streaming:true,recordBudgetEvidence:(record:Record<string,unknown>)=>journal(record)} : {}), ...(leanExperiment ? {lean: {terminalAllowance: true, recordEvidence: (record: Record<string, unknown>) => journal({...record, type: 'lean-model-interface'})}} : {}), cacheRetention: environment.AGENT_CONTROL_NON_OPENAI_CACHE_DERIVED_RETENTION === 'true' ? {enabled:true,authority:'derived',source:'qualified-llama.cpp-single-slot-cache-prompt'} : undefined, fetch: fetcher});
-      const sources = buildMutationContextSources(suite, task, fixtureRoot);
+      const semanticOptions = semanticExperiment ? {
+        semanticToolV1: {tools: MUTATION_SEMANTIC_TOOL_V1, batchableToolIds: [MUTATION_TOOL_IDS.read, MUTATION_TOOL_IDS.search], independentEditToolIds: [MUTATION_TOOL_IDS.replace]},
+        toolReliability: {recordEvidence: (event: unknown) => journal({type: 'repair', event})},
+        semanticEvents: {record: (event: unknown) => journal({type: 'semantic', event})},
+        noProgressV1: {recordEvidence: (event: unknown) => journal({type: 'no-progress', event})},
+      } : {};
+      const loop = new StructuredChatLoopProvider({...semanticOptions, providerId: selectedProviderId, modelId: selectedModelId, baseUrl: selectedBaseUrl, toolSchemas: MUTATION_TOOL_SCHEMAS, finishToolId: MUTATION_TOOL_IDS.finish, maximumOutputTokens: 768, timeoutMs: observationTimeoutMs, signalForRecipe: () => context.signal, executionStrategy: 'non-openai-cache.real-repository-mutation', ...(governedRuntimeBudgets ? {streaming:true,recordBudgetEvidence:(record:Record<string,unknown>)=>journal(record)} : {}), ...(leanExperiment ? {lean: {terminalAllowance: true, recordEvidence: (record: Record<string, unknown>) => journal({...record, type: 'lean-model-interface'})}} : {}), cacheRetention: environment.AGENT_CONTROL_NON_OPENAI_CACHE_DERIVED_RETENTION === 'true' ? {enabled:true,authority:'derived',source:'qualified-llama.cpp-single-slot-cache-prompt'} : undefined, fetch: fetcher});
+      const sources = buildMutationContextSources(suite, task, fixtureRoot).filter(source => !semanticExperiment || source.kind !== 'tool_schemas');
       const packet = buildMutationContextPacket(profile, sources, Math.min(48_000, Math.max(1_024, Math.floor(task.tokenBudget * .7))));
       const selectedSources = selectMutationPacketSources(packet, sources);
       const variantPrefix = prefixVariant === 'stable' ? 'CACHE QUALIFICATION PREFIX A.' : 'NEGATIVE CONTROL PREFIX B: intentionally changed before the stable task sequence.';
-      const instruction = `${variantPrefix}\n${renderMutationInstruction(task, profile)}`;
+      const renderedInstruction = renderMutationInstruction(task, profile);
+      const instruction = `${variantPrefix}\n${semanticExperiment ? renderedInstruction.replace('mutation.finish', 'finish_work') : renderedInstruction}`;
       journal({type: 'observation-budget', at: new Date().toISOString(), configuredTaskTimeoutMs: task.timeoutMs, effectiveTimeoutMs: observationTimeoutMs, override: observationTimeoutMs !== task.timeoutMs, scope: governedRuntimeBudgets ? 'legacy-compatibility-only' : 'structured-chat-loop-absolute-wall', governedRuntimeBudgets});
       journal({type: 'initiating-model-request', at: new Date().toISOString(), instruction, authorisedContext: selectedSources.map(source => ({id: source.id, kind: source.kind, content: source.content ?? null}))});
       const request: RecipeRequest = {taskId: `${context.run.id}:${context.step.id}`, jobId: context.run.jobId, runId: context.run.id, stepId: context.step.id, taskType: 'cache-qualification', requiredCapabilities: ['model.execute', 'structured-output', 'tool-request', 'repository.mutation.typed'], requiredTools: MUTATION_TOOL_DEFINITIONS.map(tool => tool.id), approvedRisks: ['read', 'write'], intent: 'ECONOMY', inputTokens: packet.estimatedTokens, outputTokens: 768, maximumLatencyMs: governedRuntimeBudgets ? undefined : observationTimeoutMs, ...(runtimeBudget ? {runtimeBudget} : {}), context: {tier: ({THIN: 1, STANDARD: 2, DEEP: 3} as const)[profile], sourceIds: packet.sourceIds, evidenceIds: packet.provenanceIds, estimatedTokens: packet.estimatedTokens, packetId: packet.id, provenanceIds: packet.provenanceIds}, contextPacket: packet, contextStrategyId: `native-mutation-${profile.toLowerCase()}-v1`, authority, verification: {requiredEvidence: ['independent-hidden-verifier', 'public-tests', 'git-diff-check'], requireIndependentCheck: true}, escalation: {minimumConfidence: .8, maximumAttempts: 1, onFailure: 'review'}, harnessRouting: {taskId: task.id, complexity: Math.min(1, task.features.estimatedFiles / 6 + task.features.ambiguity / 2), risk: task.features.risk, knownExactTargets: task.features.knownExactTargets, estimatedFiles: task.features.estimatedFiles, deterministicVerifier: true, ambiguity: task.features.ambiguity, architectural: task.features.architecturalTerms, requestedProfile: profile}};
