@@ -40,7 +40,6 @@
   function startMicrophoneFeedback(stream){
     stopMicrophoneFeedback();
     try{
-      fence=watchSharedSpeechEpoch(()=>request('/api/poe/voice-epoch',{signal:AbortSignal.timeout(1500)}),()=>{if(epoch===poeView.epoch){stopLocal();setLocal('INTERRUPTED','Speech stopped: the server restarted or its session could not be verified.');}});await fence.begin();
       const context=poeView.audioContext;if(!context)return;
       const source=context.createMediaStreamSource(stream),analyser=context.createAnalyser();analyser.fftSize=256;analyser.smoothingTimeConstant=.65;source.connect(analyser);
       const monitor={source,analyser,frame:0};micMonitor=monitor;const bins=new Uint8Array(analyser.frequencyBinCount),samples=new Uint8Array(analyser.fftSize),panel=q('#mallow-microphone-feedback'),bars=[...panel.querySelectorAll('i')];
