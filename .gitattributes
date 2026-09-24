@@ -23,3 +23,7 @@
 /scripts/reconcile-release-gate-completion-4.5.mjs export-ignore
 /scripts/record-cross-model-memory-4.5.ts export-ignore
 /scripts/record-session-vault-4.5.ts export-ignore
+
+# Historical model-output patches and screenshots are not installation assets.
+/artifacts/harness-mutation-evidence export-ignore
+/docs/media export-ignore

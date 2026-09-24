@@ -5,7 +5,7 @@
   "authoritativeComparisonCommit": "6102d4889a836c6477cd70d574df9fadee9cea4a",
   "auditMethod": {
     "releasedTagsInspected": 28,
-    "keywordCandidateArtifact": "/fast/qualification/agent-control-limitations-audit-20260919/raw-release-limitation-candidates.json",
+    "keywordCandidateArtifact": "private-retained-evidence:limitations-audit/raw-release-limitation-candidates.json",
     "keywordCandidateArtifactSha256": "c7e84f21cd08839f0161719504b4a076b3e37ca1d15a0e788a28671f548e7167",
     "keywordCandidateCount": 7388,
     "metricDefinitions": {
