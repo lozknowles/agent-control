@@ -1,0 +1,17 @@
+(()=>{'use strict';
+  const make=(tag,text)=>{const node=document.createElement(tag);node.textContent=String(text);return node;};
+  async function load(){
+    const host=document.querySelector('#computer-use-content');host.replaceChildren(make('p','Loading governed Computer Use evidence…'));
+    if(state.operatorAuth!=='authenticated'){host.replaceChildren(make('p','Operator authentication is required.'));return;}
+    const response=await fetch('/api/computer-use',{headers:{Authorization:`Bearer ${state.token}`}});
+    if(!response.ok)throw Error(`Computer Use overview ${response.status}`);
+    const data=await response.json(),grid=document.createElement('div');grid.className='summary-grid';
+    for(const [label,value] of [['Tasks',data.tasks],...Object.entries(data.counts),['Verification pass rate',data.verificationPassRate===null?'Unavailable':`${Math.round(data.verificationPassRate*100)}%`],['Retries',data.retries],['Provider fallback events',data.providerFallbacks],['Approvals requested',data.approvalsRequested],['Average duration',data.averageDurationMs===null?'Unavailable':`${(data.averageDurationMs/1000).toFixed(1)} s`],['Screenshots',data.screenshots],['Video recordings',data.videoRecordings]]){const item=document.createElement('div');item.className='summary-item';item.append(make('span',label),make('strong',value));grid.append(item);}
+    host.replaceChildren(grid,make('h3','Providers'),make('p',Object.entries(data.providers).map(([name,count])=>`${name}: ${count}`).join(' · ')||'No provider evidence'),make('h3','Applications'),make('p',Object.entries(data.applications).map(([name,count])=>`${name}: ${count}`).join(' · ')||'No application evidence'),make('h3','Recent tasks'));
+    const list=document.createElement('div');list.className='parcel-list';
+    for(const row of data.recent){const card=document.createElement('article');card.className='panel';card.append(make('strong',`${row.status} · ${row.application}`),make('p',`${row.provider??'unavailable'} · ${row.endedAt}`));const evidence=make('button','Open evidence');evidence.className='button secondary';evidence.onclick=()=>window.AgentControlArtifacts?.openContent(row.artifactId);const run=make('button','Open run');run.className='button secondary';run.onclick=()=>{document.querySelector('#computer-use-dialog').close();window.AgentControlRuntimeMap?.openJob(row.runId);};card.append(evidence,run);list.append(card);}
+    if(!data.recent.length)list.append(make('p','No Computer Use task evidence has been retained yet.'));
+    host.append(list);
+  }
+  document.addEventListener('DOMContentLoaded',()=>{const nav=document.querySelector('.primary-nav'),entry=make('button','Computer Use');entry.className='primary-tab';entry.type='button';nav.append(entry);const dialog=document.createElement('dialog');dialog.id='computer-use-dialog';dialog.className='workspace-dialog';dialog.innerHTML='<header class="workspace-header"><nav><button class="button secondary" type="button" data-close>Close</button></nav><span class="eyebrow">Governed graphical work</span><h1>Computer Use</h1><p>Outcomes and evidence from registered providers. An interaction is not a verified completion.</p></header><main class="workspace-body" id="computer-use-content"></main>';document.body.append(dialog);dialog.querySelector('[data-close]').onclick=()=>dialog.close();entry.onclick=()=>{dialog.showModal();load().catch(error=>dialog.querySelector('#computer-use-content').replaceChildren(make('p',error.message)));};});
+})();

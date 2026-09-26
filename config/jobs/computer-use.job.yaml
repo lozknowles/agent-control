@@ -1,0 +1,31 @@
+apiVersion: agent-control/v1
+kind: Job
+metadata:
+  id: governed-computer-use
+  name: Governed Computer Use
+  version: 1.0.0
+  description: Execute a bounded graphical task with fresh observations and explicit result checks.
+spec:
+  enabled: true
+  priority: normal
+  concurrency: queue
+  parameters:
+    taskJson:
+      type: string
+      required: true
+  retry:
+    attempts: 1
+    backoffSeconds: 5
+  steps:
+    - id: computer-use
+      action: computer.use@1.0.0
+      requires: [browser.headless]
+      resources: [computer/session]
+      timeoutSeconds: 120
+      outputs:
+        - name: computer-use-evidence
+          type: application/json
+          schema: agent-control.computer-use/v1
+          version: 1.0.0
+          retention: run-history
+      verification: [computer-outcome-observed]

@@ -7,6 +7,7 @@ import {JobCatalog} from './job-catalog.js';
 import {ActionFailure, ActionRegistry, ArtifactStore, JobRuntime, ResourceLockManager, RunLedger, WorkerRegistry} from './job-runtime.js';
 import type {JobDefinition, ScheduleDefinition, WorkerRegistration} from './job-types.js';
 import {registerBrowserActions} from './browser-actions.js';
+import {registerComputerUseActions} from './computer-use-actions.js';
 import {registerReferenceActions} from './reference-actions.js';
 import {registerProtectedResourceModelActions} from './protected-resource-model-actions.js';
 import type {AgentControlConfig} from './config.js';
@@ -155,7 +156,7 @@ test('production Job dispatch fails closed before an out-of-scope action handler
 test('managed-node disruptive maintenance has a bounded step timeout',()=>{const source=fs.readFileSync(path.resolve('config/jobs/managed-node-maintenance.job.yaml'),'utf8');assert.match(source,/approval: managed-node\.protected-workload-override\s+timeoutSeconds: 300/);});
 
 test('reference workflow retains discovery artifact while publisher is unavailable then resumes across workers', async () => {
-  const actions = registerReferenceActions(); registerBrowserActions(actions); registerProtectedResourceModelActions({} as AgentControlConfig, undefined, undefined, actions);
+  const actions = registerReferenceActions(); registerBrowserActions(actions); registerComputerUseActions(actions); registerProtectedResourceModelActions({} as AgentControlConfig, undefined, undefined, actions);
   actions.register('managed-node.inspect@1.0.0', async () => ({})); actions.register('managed-node.maintain@1.0.0', async () => ({}));
   const catalog = new JobCatalog(actions.ids()).loadDirectory(path.resolve('config/jobs')), root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-events-')), workers = new WorkerRegistry(); workers.register(worker('mobile', ['browser.mobile', 'facebook.authenticated'])); workers.register(worker('publisher', ['localwalks.publisher', 'node', 'git', 'production-access'], 'offline')); workers.register(worker('observer', ['network.read']));
   const runtime = new JobRuntime(catalog, actions, workers, new RunLedger(path.join(root, 'ledger.json')), new ArtifactStore(path.join(root, 'artifacts')), new ResourceLockManager(path.join(root, 'locks.json')), {approval: () => true}); const run = runtime.createRun('events-refresh-qualification@1.0.0', {}, {type: 'manual', actor: 'qualification'});

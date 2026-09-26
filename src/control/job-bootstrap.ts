@@ -17,6 +17,7 @@ import {registerFreeTokenQualificationActions} from './freetoken-actions.js';
 import {CatalogNaturalLanguagePlanner, WorkParcelCoordinator, WorkParcelStore, type WorkParcelPlanner} from './work-parcels.js';
 import {registerOperatorReviewActions} from './operator-review-actions.js';
 import {registerBrowserActions} from './browser-actions.js';
+import {registerComputerUseActions} from './computer-use-actions.js';
 import type {ModelRegistry} from './model-registry.js';
 import {ParameterizedJobRegistry} from './parameterized-job-registry.js';
 import {repositoryCodeReviewDefinition} from './repository-review-definition.js';
@@ -54,6 +55,7 @@ export function buildJobRuntimeDefinition(config: AgentControlConfig, manifestDi
   let actions = registerReferenceActions();
   actions = registerRepositoryTestActions(actions, config);
   actions = registerBrowserActions(actions);
+  actions = registerComputerUseActions(actions, undefined, config.resources.find(resource=>resource.controller===true&&resource.transport.type==='local')?.id);
   actions = registerManagedNodeActions(managedNodes, actions);
   actions = registerFreeTokenQualificationActions(actions);
   actions = registerOperatorReviewActions(config, actions, harnessEfficiency);

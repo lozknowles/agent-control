@@ -6,6 +6,8 @@
 
 Agent Control can execute digest-bound [Agent Control Lab agent templates](docs/agent-templates.md) through its existing Work Parcel and Job Runtime path. Templates declare specialist instructions and requirements; runtime policy remains authoritative.
 
+**Experimental Computer Use:** a provider-neutral Job capability can observe and verify bounded graphical tasks. The first adapter qualifies a disposable headless Chromium page; desktop providers, Blender and session video remain unqualified. See the [Computer Use architecture and limitations](docs/computer-use.md).
+
 **Agentic Topology, Lifecycle, Assurance & Supervision**
 
 **See the work. Govern the execution.**
