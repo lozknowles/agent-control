@@ -1,0 +1,28 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import {ActionRegistry,ArtifactStore,JobRuntime,ResourceLockManager,RunLedger,WorkerRegistry} from './job-runtime.js';
+import {JobCatalog} from './job-catalog.js';
+import {computerWorkflowJob,registerComputerWorkflowAction,type ComputerWorkflowStep} from './computer-use-workflow.js';
+import {ComputerProviderRegistry,type ComputerProvider} from './computer-use.js';
+import type {ComputerWindow} from './computer-use-lifecycle.js';
+
+function setup(t:{after(fn:()=>void):void},applicationPass=true){
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'computer-job-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));
+ const at=new Date().toISOString(),initial:ComputerWindow={key:'root',provider:'fixture',application:'Editor',process:{key:'1',executable:'/editor',startedAt:at},title:'Editor',role:'APPLICATION',detectedAt:at,visible:true,foreground:true,bounds:{x:0,y:0,width:100,height:100}};
+ let identity=initial,observations=0,inputs=0,verifications=0;
+ const provider:ComputerProvider={id:'fixture',capabilities:()=>({operations:['pressKey'],targeting:[],persistentSession:true,screenshots:false}),available:async()=>true,open:async()=>({observe:async()=>({revision:String(++observations),at:new Date().toISOString(),target:{machine:'local'},windowIdentity:identity,title:'Editor',elements:[]}),act:async()=>{inputs++;fs.writeFileSync(path.join(dir,'output'),'task-created');return{detail:'saved'};},close:async()=>{}})};
+ const steps:Record<string,ComputerWorkflowStep>={prepare:{task:{requestedOutcome:'Observe editor',steps:[],checks:[{kind:'title',value:'Editor'}]}},save:{task:{requestedOutcome:'Save scoped output',steps:[{operation:'pressKey',key:'Return'}],checks:[{kind:'title',value:'Editor'}]},approvalPolicy:'save-approved'},verify:{verifyOutput:true}};
+ const actions=new ActionRegistry();registerComputerWorkflowAction(actions,{jobId:'desktop-test',workerId:'local',machine:'local',application:'Editor',initialWindow:initial,providers:new ComputerProviderRegistry().register(provider),steps,output:{root:dir,relativePath:'output',maxBytes:100},verifier:{id:'fixture-reader',verify:async()=>{verifications++;return{passed:applicationPass,details:{source:'test-fixture'}};}}});
+ const job=computerWorkflowJob('desktop-test','Governed desktop test',steps);assert.equal(job.spec.enabled,false);job.spec.enabled=true;const catalog=new JobCatalog(actions.ids());catalog.addJob(job);
+ const make=()=>{const workers=new WorkerRegistry();workers.registerControllerInternal({id:'local',health:'healthy',capabilities:['computer.desktop'],capacity:1,active:0,observedAt:new Date().toISOString()});return new JobRuntime(catalog,actions,workers,new RunLedger(path.join(dir,'ledger.json')),new ArtifactStore(path.join(dir,'artifacts')),new ResourceLockManager(path.join(dir,'locks.json')),{approval:()=>false});};
+ return{make,dir,setIdentity:(w:ComputerWindow)=>identity=w,initial,get observations(){return observations;},get inputs(){return inputs;},get verifications(){return verifications;}};
+}
+test('normal Job persists approval and checkpoints, reacquires on resume, then gates COMPLETE on artifact verification',async t=>{
+ const f=setup(t),runtime=f.make(),run=runtime.createRun('desktop-test@1.0.0',{}, {type:'manual',actor:'test'});await runtime.tick();await runtime.tick();assert.equal(runtime.ledger.get(run.id)?.steps[1]?.status,'WAITING_FOR_APPROVAL');assert.equal(f.inputs,0);const before=f.observations,resumed=f.make();assert.equal(resumed.ledger.get(run.id)?.steps[1]?.status,'WAITING_FOR_APPROVAL');resumed.approve(run.id,'save-approved','test');assert.throws(()=>resumed.approve(run.id,'save-approved','test'),/not_waiting/);await resumed.tick();assert.ok(f.observations>before);assert.notEqual(resumed.ledger.get(run.id)?.status,'SUCCEEDED');assert.equal(f.verifications,0);await resumed.tick();assert.equal(resumed.ledger.get(run.id)?.status,'SUCCEEDED');assert.equal(f.verifications,1);const evidence=resumed.artifacts.read(resumed.artifacts.list(run.id).find(a=>a.name==='computer-use-evidence')!.id) as any;assert.equal(evidence.status,'COMPLETE');assert.equal(evidence.artifactVerification.application.passed,true);assert.match(evidence.artifactVerification.sha256,/^[a-f0-9]{64}$/);assert.equal(evidence.approval.received,true);assert.ok(evidence.events.some((e:any)=>e.phase==='RESUME'));
+});
+test('changed window identity after persisted approval blocks all resumed input',async t=>{const f=setup(t),runtime=f.make(),run=runtime.createRun('desktop-test@1.0.0',{}, {type:'manual',actor:'test'});await runtime.tick();await runtime.tick();f.setIdentity({...f.initial,detectedAt:'2000-01-01T00:00:00Z'});const resumed=f.make();resumed.approve(run.id,'save-approved');await resumed.tick();assert.equal(resumed.ledger.get(run.id)?.status,'DEGRADED');assert.equal(f.inputs,0);assert.equal(f.verifications,0);});
+test('failed application verification never produces COMPLETE',async t=>{const f=setup(t,false),runtime=f.make(),run=runtime.createRun('desktop-test@1.0.0',{}, {type:'manual',actor:'test'});await runtime.tick();await runtime.tick();runtime.approve(run.id,'save-approved');await runtime.tick();await runtime.tick();assert.equal(runtime.ledger.get(run.id)?.status,'DEGRADED');assert.equal(runtime.artifacts.list(run.id).some(a=>a.name==='computer-use-evidence'),false);assert.ok(runtime.artifacts.list(run.id).some(a=>a.name==='computer-verification-failure'));});
+test('workflow builder requires final governed verification',()=>{assert.throws(()=>computerWorkflowJob('invalid','Invalid',{observe:{}}),/final_verification/);});

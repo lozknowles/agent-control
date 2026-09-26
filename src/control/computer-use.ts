@@ -1,22 +1,23 @@
 import {randomUUID} from 'node:crypto';
 import {redactSensitiveValue, containsSensitiveMaterial} from './security-redaction.js';
+import {resolveComputerTransition,validComputerTransition,type ComputerTopology,type ComputerWindow,type ComputerTransition,type ComputerTransitionEvidence} from './computer-use-lifecycle.js';
 
 export type ComputerOperation = 'observe'|'inspect'|'screenshot'|'click'|'doubleClick'|'typeText'|'pasteText'|'pressKey'|'scroll'|'drag'|'focusWindow'|'focusTab'|'newTab'|'navigate'|'wait';
 export type ComputerOutcome = 'COMPLETE'|'PARTIAL'|'BLOCKED'|'FAILED'|'APPROVAL_REQUIRED'|'PROVIDER_UNAVAILABLE'|'VERIFICATION_FAILED';
-export type ComputerPhase = 'OBSERVE'|'ACTION'|'VERIFY'|'APPROVAL'|'RECOVERY'|'COMPLETE'|'BLOCKED';
+export type ComputerPhase = 'OBSERVE'|'ACTION'|'VERIFY'|'APPROVAL'|'RECOVERY'|'COMPLETE'|'BLOCKED'|'WINDOW_TRANSITION'|'REACQUIRE'|'RESUME';
 export type ComputerInteractionMode = 'ACCESSIBILITY'|'APPLICATION_API'|'KEYBOARD'|'SCREEN_COORDINATE'|'VISION_ASSISTED'|'OTHER';
 export interface ComputerTarget {machine:string; application?:string; window?:string; browser?:string; tab?:string;}
 export interface ComputerElement {id:string; role?:string; name?:string; text?:string;}
-export interface ComputerObservation {revision:string; at:string; target:ComputerTarget; elements:ComputerElement[]; text?:string; url?:string; title?:string; screenshot?:{sha256:string; mediaType:'image/png'|'image/jpeg'; evidenceRef?:string};}
-export interface ComputerAction {operation:ComputerOperation; revision?:string; elementId?:string; text?:string; url?:string; key?:string; deltaX?:number; deltaY?:number; source?:{x:number;y:number}; destination?:{x:number;y:number}; window?:string; tab?:string; timeoutMs?:number;}
+export interface ComputerObservation {revision:string; at:string; target:ComputerTarget; windowIdentity?:ComputerWindow;elements:ComputerElement[]; text?:string; url?:string; title?:string; screenshot?:{sha256:string; mediaType:'image/png'|'image/jpeg'; evidenceRef?:string};}
+export interface ComputerAction {operation:ComputerOperation; revision?:string; elementId?:string; text?:string; url?:string; key?:string; deltaX?:number; deltaY?:number; source?:{x:number;y:number}; destination?:{x:number;y:number}; window?:string; tab?:string; timeoutMs?:number;expectedTransition?:ComputerTransition;}
 export interface ComputerCapability {operations:ComputerOperation[]; targeting:('accessibility'|'selector'|'coordinate')[]; persistentSession:boolean; screenshots:boolean;}
 export interface ComputerActionResult {detail:string; mode?:ComputerInteractionMode; fallback?:boolean; screenshotRef?:string;}
-export interface ComputerSession {id?:string; observe():Promise<ComputerObservation>; act(action:ComputerAction):Promise<ComputerActionResult>; close():Promise<void>;}
+export interface ComputerSession {id?:string; observe():Promise<ComputerObservation>; act(action:ComputerAction):Promise<ComputerActionResult>; close():Promise<void>; topology?():Promise<ComputerTopology>;boundWindow?():Promise<ComputerWindow>;bindWindow?(window:ComputerWindow):Promise<void>;}
 export interface ComputerProvider {id:string; capabilities():ComputerCapability; available(target:ComputerTarget):Promise<boolean>; open(target:ComputerTarget, signal?:AbortSignal):Promise<ComputerSession>;}
 export interface ComputerCheck {kind:'element'|'text'|'url'|'title'; value:string;}
 export interface ComputerTask {taskId:string; requestedOutcome:string; target:ComputerTarget; steps:ComputerAction[]; checks:ComputerCheck[]; providerPreference?:string[]; maxRetries?:number; videoEvidence?:boolean;}
 export interface ComputerEvent {at:string; phase:ComputerPhase; provider:string; taskId:string; observationRevision?:string; operation?:ComputerOperation; mode?:ComputerInteractionMode; detail:string;}
-export interface ComputerEvidence {schema:'agent-control.computer-use/v1'; taskId:string; provider:string|null; sessionId?:string; target:ComputerTarget; requestedOutcome:string; startedAt:string; endedAt:string; status:ComputerOutcome; events:ComputerEvent[]; observations:ComputerObservation[]; checks:Array<{check:ComputerCheck;passed:boolean}>; actions:Array<{at:string;operation:ComputerOperation;detail:string;mode:ComputerInteractionMode;screenshotRef?:string}>; retries:number; providerFallbacks:number; coordinateFallbacks:number; approval:{required:boolean;received:boolean}; videoEvidence:{requested:boolean;recordingRef:null}; reason?:string;}
+export interface ComputerEvidence {schema:'agent-control.computer-use/v1'; taskId:string; provider:string|null; sessionId?:string; target:ComputerTarget; requestedOutcome:string; startedAt:string; endedAt:string; status:ComputerOutcome; events:ComputerEvent[]; observations:ComputerObservation[]; transitions?:ComputerTransitionEvidence[];checks:Array<{check:ComputerCheck;passed:boolean}>; actions:Array<{at:string;operation:ComputerOperation;detail:string;mode:ComputerInteractionMode;screenshotRef?:string}>; retries:number; providerFallbacks:number; coordinateFallbacks:number; approval:{required:boolean;received:boolean}; videoEvidence:{requested:boolean;recordingRef:null}; reason?:string;}
 export interface ComputerAuthority {authorize(task:ComputerTask, action:ComputerAction, observation:ComputerObservation):'ALLOW'|'APPROVAL_REQUIRED'|'BLOCKED';}
 
 const supportedOperations:ComputerOperation[]=['observe','inspect','screenshot','click','doubleClick','typeText','pasteText','pressKey','scroll','drag','focusWindow','focusTab','newTab','navigate','wait'];
@@ -74,6 +75,12 @@ export class ComputerUseCapability {
             if(decision!=='ALLOW'){evidence.status=decision;evidence.reason=`policy_${decision.toLowerCase()}`;evidence.approval.required=decision==='APPROVAL_REQUIRED';event(decision==='APPROVAL_REQUIRED'?'APPROVAL':'BLOCKED',provider.id,evidence.reason);break;}
             if(action.revision&&action.revision!==observation.revision){evidence.status='BLOCKED';evidence.reason='stale_observation';event('BLOCKED',provider.id,'stale_observation');break;}
             const boundAction={...action,revision:observation.revision};
+            let transitionBefore:ComputerTopology|undefined,transitionWindow:ComputerWindow|undefined;
+            if(action.expectedTransition){
+              if(!validComputerTransition(action.expectedTransition)){evidence.status='BLOCKED';evidence.reason='transition_request_invalid';break;}
+              if(!session.topology||!session.boundWindow||!session.bindWindow){evidence.status='BLOCKED';evidence.reason='transition_capability_unavailable';break;}
+              transitionBefore=await session.topology();transitionWindow=await session.boundWindow();
+            }
             let done=false;
             for(let attempt=0;attempt<=Math.min(Math.max(task.maxRetries??0,0),2);attempt++){
               try{const result=await session.act(boundAction),mode=result.mode??'OTHER';evidence.actions.push({at:new Date().toISOString(),operation:action.operation,detail:safe(result.detail),mode,...(result.screenshotRef?{screenshotRef:result.screenshotRef}:{})});if(result.fallback){evidence.coordinateFallbacks++;event('RECOVERY',provider.id,'coordinate_fallback',observation.revision,action.operation,mode);}event('ACTION',provider.id,result.detail,observation.revision,action.operation,mode);done=true;break;}
@@ -87,6 +94,18 @@ export class ComputerUseCapability {
               }
             }
             if(!done)break;
+            if(action.expectedTransition&&transitionBefore&&transitionWindow){
+              const deadline=Date.now()+Math.min(Math.max(action.expectedTransition.timeoutMs??3000,0),10000);
+              let resolution:ComputerTransitionEvidence;
+              do{
+                resolution=resolveComputerTransition(action.expectedTransition,transitionWindow,transitionBefore,await session.topology!());
+                if(resolution.decision==='BOUND'||resolution.reason==='ambiguous_successor'||resolution.reason==='unexpected_foreground_or_security_window'||Date.now()>=deadline)break;
+                await new Promise(resolve=>setTimeout(resolve,100));
+              }while(!signal?.aborted);
+              (evidence.transitions??=[]).push(safe(resolution!));event('WINDOW_TRANSITION',provider.id,resolution!.reason);
+              if(signal?.aborted||resolution!.decision!=='BOUND'){evidence.status='BLOCKED';evidence.reason=signal?.aborted?'cancelled':resolution!.decision;event('BLOCKED',provider.id,evidence.reason);break;}
+              await session.bindWindow!(resolution!.successor!);event('REACQUIRE',provider.id,'successor_identity_bound');
+            }
             observation=await session.observe();evidence.observations.push(safe(observation));event('OBSERVE',provider.id,'fresh_state',observation.revision);
           }
           if(evidence.reason)break;
