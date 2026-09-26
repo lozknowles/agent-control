@@ -18,6 +18,7 @@ test('Windows bridge discovers exact window, preserves session and records seman
   try{
     const provider=new WindowsSkyComputerProvider({url:`http://127.0.0.1:${bridge.port}`,token});
     const target={machine:'controller-local',application:'Blender',window:'123'};
+    assert.equal(await provider.available({...target,machine:'other-machine'}),false);
     assert.equal(await provider.available({...target,window:'999'}),false);
     assert.equal(await provider.available(target),true);
     const session=await provider.open(target);

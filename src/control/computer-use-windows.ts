@@ -16,7 +16,7 @@ export class WindowsSkyComputerProvider implements ComputerProvider {
   capabilities():ComputerCapability{return this.discovered?{operations:[...this.discovered.operations],targeting:[...this.discovered.targeting],persistentSession:this.discovered.persistentSession,screenshots:this.discovered.screenshots}:{operations:[],targeting:[],persistentSession:false,screenshots:false};}
   async available(target:ComputerTarget){
     if(!target.application||!target.window||target.browser)return false;
-    try{const value=await this.request<BridgeDiscovery>('/capabilities',{});if(value.provider!==this.id||value.application!==target.application||value.windowId!==target.window||!Array.isArray(value.operations)||!Array.isArray(value.targeting))return false;this.discovered=value;return true;}catch{return false;}
+    try{const value=await this.request<BridgeDiscovery>('/capabilities',{});if(value.provider!==this.id||value.machine!==target.machine||value.application!==target.application||value.windowId!==target.window||!Array.isArray(value.operations)||!Array.isArray(value.targeting))return false;this.discovered=value;return true;}catch{return false;}
   }
   async open(target:ComputerTarget,signal?:AbortSignal):Promise<ComputerSession>{
     if(!this.discovered||this.discovered.windowId!==target.window)throw Error('windows_provider_not_discovered');
@@ -24,7 +24,7 @@ export class WindowsSkyComputerProvider implements ComputerProvider {
     if(!sessionId)throw Error('windows_session_invalid');
     return {id:sessionId,observe:async()=>{
       const value=await this.request<ComputerObservation>('/observe',{sessionId},signal);
-      if(!value||!value.revision||value.target.window!==target.window||value.target.application!==target.application)throw Error('windows_wrong_target_observed');
+      if(!value||!value.revision||value.target.machine!==target.machine||value.target.window!==target.window||value.target.application!==target.application)throw Error('windows_wrong_target_observed');
       return {...value,target:{...target,window:value.target.window}};
     },act:async(action:ComputerAction)=>this.request<ComputerActionResult>('/act',{sessionId,action},signal),close:async()=>{await this.request('/close',{sessionId},signal);}};
   }
