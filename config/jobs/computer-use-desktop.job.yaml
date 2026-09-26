@@ -1,0 +1,31 @@
+apiVersion: agent-control/v1
+kind: Job
+metadata:
+  id: governed-computer-use-desktop
+  name: Governed desktop Computer Use
+  version: 1.0.0
+  description: Experimental bounded desktop interaction; physical qualification is incomplete.
+spec:
+  enabled: false
+  priority: normal
+  concurrency: queue
+  parameters:
+    taskJson:
+      type: string
+      required: true
+  retry:
+    attempts: 1
+    backoffSeconds: 5
+  steps:
+    - id: computer-use
+      action: computer.use@1.0.0
+      requires: [computer.desktop]
+      resources: [computer/desktop-session]
+      timeoutSeconds: 300
+      outputs:
+        - name: computer-use-evidence
+          type: application/json
+          schema: agent-control.computer-use/v1
+          version: 1.0.0
+          retention: run-history
+      verification: [computer-outcome-observed]

@@ -4,17 +4,19 @@ import {redactSensitiveValue, containsSensitiveMaterial} from './security-redact
 export type ComputerOperation = 'observe'|'inspect'|'screenshot'|'click'|'doubleClick'|'typeText'|'pasteText'|'pressKey'|'scroll'|'drag'|'focusWindow'|'focusTab'|'newTab'|'navigate'|'wait';
 export type ComputerOutcome = 'COMPLETE'|'PARTIAL'|'BLOCKED'|'FAILED'|'APPROVAL_REQUIRED'|'PROVIDER_UNAVAILABLE'|'VERIFICATION_FAILED';
 export type ComputerPhase = 'OBSERVE'|'ACTION'|'VERIFY'|'APPROVAL'|'RECOVERY'|'COMPLETE'|'BLOCKED';
+export type ComputerInteractionMode = 'ACCESSIBILITY'|'APPLICATION_API'|'KEYBOARD'|'SCREEN_COORDINATE'|'VISION_ASSISTED'|'OTHER';
 export interface ComputerTarget {machine:string; application?:string; window?:string; browser?:string; tab?:string;}
 export interface ComputerElement {id:string; role?:string; name?:string; text?:string;}
-export interface ComputerObservation {revision:string; at:string; target:ComputerTarget; elements:ComputerElement[]; text?:string; url?:string; title?:string; screenshot?:{sha256:string; mediaType:'image/png'; evidenceRef?:string};}
+export interface ComputerObservation {revision:string; at:string; target:ComputerTarget; elements:ComputerElement[]; text?:string; url?:string; title?:string; screenshot?:{sha256:string; mediaType:'image/png'|'image/jpeg'; evidenceRef?:string};}
 export interface ComputerAction {operation:ComputerOperation; revision?:string; elementId?:string; text?:string; url?:string; key?:string; deltaX?:number; deltaY?:number; source?:{x:number;y:number}; destination?:{x:number;y:number}; window?:string; tab?:string; timeoutMs?:number;}
 export interface ComputerCapability {operations:ComputerOperation[]; targeting:('accessibility'|'selector'|'coordinate')[]; persistentSession:boolean; screenshots:boolean;}
-export interface ComputerSession {observe():Promise<ComputerObservation>; act(action:ComputerAction):Promise<{detail:string}>; close():Promise<void>;}
+export interface ComputerActionResult {detail:string; mode?:ComputerInteractionMode; fallback?:boolean; screenshotRef?:string;}
+export interface ComputerSession {id?:string; observe():Promise<ComputerObservation>; act(action:ComputerAction):Promise<ComputerActionResult>; close():Promise<void>;}
 export interface ComputerProvider {id:string; capabilities():ComputerCapability; available(target:ComputerTarget):Promise<boolean>; open(target:ComputerTarget, signal?:AbortSignal):Promise<ComputerSession>;}
 export interface ComputerCheck {kind:'element'|'text'|'url'|'title'; value:string;}
 export interface ComputerTask {taskId:string; requestedOutcome:string; target:ComputerTarget; steps:ComputerAction[]; checks:ComputerCheck[]; providerPreference?:string[]; maxRetries?:number; videoEvidence?:boolean;}
-export interface ComputerEvent {at:string; phase:ComputerPhase; provider:string; taskId:string; observationRevision?:string; operation?:ComputerOperation; detail:string;}
-export interface ComputerEvidence {schema:'agent-control.computer-use/v1'; taskId:string; provider:string|null; target:ComputerTarget; requestedOutcome:string; startedAt:string; endedAt:string; status:ComputerOutcome; events:ComputerEvent[]; observations:ComputerObservation[]; checks:Array<{check:ComputerCheck;passed:boolean}>; actions:Array<{at:string;operation:ComputerOperation;detail:string}>; retries:number; providerFallbacks:number; approval:{required:boolean;received:boolean}; videoEvidence:{requested:boolean;recordingRef:null}; reason?:string;}
+export interface ComputerEvent {at:string; phase:ComputerPhase; provider:string; taskId:string; observationRevision?:string; operation?:ComputerOperation; mode?:ComputerInteractionMode; detail:string;}
+export interface ComputerEvidence {schema:'agent-control.computer-use/v1'; taskId:string; provider:string|null; sessionId?:string; target:ComputerTarget; requestedOutcome:string; startedAt:string; endedAt:string; status:ComputerOutcome; events:ComputerEvent[]; observations:ComputerObservation[]; checks:Array<{check:ComputerCheck;passed:boolean}>; actions:Array<{at:string;operation:ComputerOperation;detail:string;mode:ComputerInteractionMode;screenshotRef?:string}>; retries:number; providerFallbacks:number; coordinateFallbacks:number; approval:{required:boolean;received:boolean}; videoEvidence:{requested:boolean;recordingRef:null}; reason?:string;}
 export interface ComputerAuthority {authorize(task:ComputerTask, action:ComputerAction, observation:ComputerObservation):'ALLOW'|'APPROVAL_REQUIRED'|'BLOCKED';}
 
 const supportedOperations:ComputerOperation[]=['observe','inspect','screenshot','click','doubleClick','typeText','pasteText','pressKey','scroll','drag','focusWindow','focusTab','newTab','navigate','wait'];
@@ -26,7 +28,7 @@ export class DefaultComputerAuthority implements ComputerAuthority {
     if(/\b(?:publish|send|upload|delete|remove|purchase|accept|permission|credential|security|sign out)\b/i.test(`${selected?.name??''} ${selected?.text??''}`))return 'APPROVAL_REQUIRED';
     if(['http:','https:'].includes((()=>{try{return new URL(action.url??'').protocol;}catch{return '';}})()) && action.url && /(?:\/logout|\/delete|\/admin|\/settings|\/checkout|\/publish)(?:\/|\?|$)/i.test(action.url))return 'APPROVAL_REQUIRED';
     if(/\b(?:publish|send|upload|delete|remove|purchase|accept|permission|credential|security)\b/i.test(task.requestedOutcome))return 'APPROVAL_REQUIRED';
-    if(action.operation==='pasteText'||action.operation==='drag'||action.operation==='screenshot')return 'APPROVAL_REQUIRED';
+    if(action.source||action.operation==='pasteText'||action.operation==='drag'||action.operation==='screenshot')return 'APPROVAL_REQUIRED';
     return 'ALLOW';
   }
 }
@@ -48,8 +50,8 @@ export class ComputerUseCapability {
   constructor(readonly registry:ComputerProviderRegistry,readonly authority:ComputerAuthority=new DefaultComputerAuthority(),readonly emit?:(event:ComputerEvent)=>void){}
   async execute(task:ComputerTask,signal?:AbortSignal):Promise<ComputerEvidence>{
     if(!task||typeof task.taskId!=='string'||!task.taskId||typeof task.requestedOutcome!=='string'||!task.requestedOutcome||task.requestedOutcome.length>2000||!task.target||typeof task.target.machine!=='string'||!task.target.machine||!Array.isArray(task.checks)||!task.checks.length||task.checks.length>16||task.checks.some(item=>!item||!['element','text','url','title'].includes(item.kind)||typeof item.value!=='string'||!item.value||item.value.length>2000)||!Array.isArray(task.steps)||task.steps.length>32||task.steps.some(step=>!step||!supportedOperations.includes(step.operation)||typeof step.text==='string'&&step.text.length>8000))throw Error('computer_task_invalid');
-    const evidence:ComputerEvidence={schema:'agent-control.computer-use/v1',taskId:task.taskId,provider:null,target:safe(task.target),requestedOutcome:safe(task.requestedOutcome),startedAt:new Date().toISOString(),endedAt:'',status:'PROVIDER_UNAVAILABLE',events:[],observations:[],checks:[],actions:[],retries:0,providerFallbacks:0,approval:{required:false,received:false},videoEvidence:{requested:Boolean(task.videoEvidence),recordingRef:null}};
-    const event=(phase:ComputerPhase,provider:string,detail:string,observationRevision?:string,operation?:ComputerOperation)=>{const row:ComputerEvent={at:new Date().toISOString(),phase,provider,taskId:task.taskId,detail:safe(detail),...(observationRevision?{observationRevision}:{}),...(operation?{operation}:{})};evidence.events.push(row);try{this.emit?.(row);}catch{/* Optional observers cannot impair governed execution. */}};
+    const evidence:ComputerEvidence={schema:'agent-control.computer-use/v1',taskId:task.taskId,provider:null,target:safe(task.target),requestedOutcome:safe(task.requestedOutcome),startedAt:new Date().toISOString(),endedAt:'',status:'PROVIDER_UNAVAILABLE',events:[],observations:[],checks:[],actions:[],retries:0,providerFallbacks:0,coordinateFallbacks:0,approval:{required:false,received:false},videoEvidence:{requested:Boolean(task.videoEvidence),recordingRef:null}};
+    const event=(phase:ComputerPhase,provider:string,detail:string,observationRevision?:string,operation?:ComputerOperation,mode?:ComputerInteractionMode)=>{const row:ComputerEvent={at:new Date().toISOString(),phase,provider,taskId:task.taskId,detail:safe(detail),...(observationRevision?{observationRevision}:{}),...(operation?{operation}:{}),...(mode?{mode}:{})};evidence.events.push(row);try{this.emit?.(row);}catch{/* Optional observers cannot impair governed execution. */}};
     try{
       if(task.videoEvidence){evidence.status='BLOCKED';evidence.reason='video_evidence_recording_unavailable';event('BLOCKED','none',evidence.reason);return evidence;}
       const candidates=this.registry.candidates(task);
@@ -62,6 +64,7 @@ export class ComputerUseCapability {
         evidence.provider=provider.id;let session:ComputerSession|undefined;
         try{
           session=await provider.open(task.target,signal);
+          if(session.id)evidence.sessionId=session.id;
           let observation=await session.observe();evidence.observations.push(safe(observation));event('OBSERVE',provider.id,'initial_state',observation.revision);
           const supported=new Set(provider.capabilities().operations);
           for(const action of task.steps){
@@ -73,7 +76,7 @@ export class ComputerUseCapability {
             const boundAction={...action,revision:observation.revision};
             let done=false;
             for(let attempt=0;attempt<=Math.min(Math.max(task.maxRetries??0,0),2);attempt++){
-              try{const result=await session.act(boundAction);evidence.actions.push({at:new Date().toISOString(),operation:action.operation,detail:safe(result.detail)});event('ACTION',provider.id,result.detail,observation.revision,action.operation);done=true;break;}
+              try{const result=await session.act(boundAction),mode=result.mode??'OTHER';evidence.actions.push({at:new Date().toISOString(),operation:action.operation,detail:safe(result.detail),mode,...(result.screenshotRef?{screenshotRef:result.screenshotRef}:{})});if(result.fallback){evidence.coordinateFallbacks++;event('RECOVERY',provider.id,'coordinate_fallback',observation.revision,action.operation,mode);}event('ACTION',provider.id,result.detail,observation.revision,action.operation,mode);done=true;break;}
               catch(error){
                 if(attempt>=Math.min(Math.max(task.maxRetries??0,0),2)||action.operation!=='typeText'||(error as Error).message!=='stale_element')throw error;
                 const prior=observation.elements.find(item=>item.id===boundAction.elementId);

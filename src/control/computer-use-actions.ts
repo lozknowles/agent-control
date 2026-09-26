@@ -1,8 +1,16 @@
 import {ActionFailure,ActionRegistry} from './job-runtime.js';
 import {ComputerProviderRegistry,ComputerUseCapability,type ComputerTask} from './computer-use.js';
 import {PlaywrightComputerProvider} from './computer-use-browser.js';
+import {WindowsSkyComputerProvider} from './computer-use-windows.js';
+import fs from 'node:fs';
 
-export function registerComputerUseActions(registry=new ActionRegistry(),providers=new ComputerProviderRegistry().register(new PlaywrightComputerProvider({executablePath:process.env.AGENT_CONTROL_CHROMIUM_EXECUTABLE,allowedPrivateHosts:(process.env.AGENT_CONTROL_BROWSER_ALLOWED_PRIVATE_HOSTS??'').split(',').map(item=>item.trim()).filter(Boolean)})),executionWorkerId?:string){
+function defaultProviders(){
+  const providers=new ComputerProviderRegistry().register(new PlaywrightComputerProvider({executablePath:process.env.AGENT_CONTROL_CHROMIUM_EXECUTABLE,allowedPrivateHosts:(process.env.AGENT_CONTROL_BROWSER_ALLOWED_PRIVATE_HOSTS??'').split(',').map(item=>item.trim()).filter(Boolean)}));
+  const url=process.env.AGENT_CONTROL_COMPUTER_USE_SKY_URL,tokenFile=process.env.AGENT_CONTROL_COMPUTER_USE_SKY_TOKEN_FILE;
+  if(process.platform==='win32'&&url&&tokenFile)providers.register(new WindowsSkyComputerProvider({url,token:fs.readFileSync(tokenFile,'utf8').trim()}));
+  return providers;
+}
+export function registerComputerUseActions(registry=new ActionRegistry(),providers=defaultProviders(),executionWorkerId?:string){
   registry.registerConsequentialControl('computer.use@1.0.0',async context=>{
     if(!executionWorkerId||context.worker.id!==executionWorkerId)throw new ActionFailure('computer_use_controller_local_worker_required','policy_rejection');
     let task:ComputerTask;

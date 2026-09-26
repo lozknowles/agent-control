@@ -1,0 +1,21 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import {createHash,randomUUID} from 'node:crypto';
+
+const parseElements=tree=>[...String(tree??'').matchAll(/^\s*(\d+)\s+([^\r\n]+)/gm)].map(match=>({id:`e${match[1]}`,role:match[2].split(/\s+/)[0],name:match[2].slice(0,180)}));
+export function createSkyEmbeddedProvider({sky,window,application,evidenceDir,allowedKeys}){
+  const target={machine:'controller-local',application,window:String(window.id)};
+  const keys=new Set(allowedKeys);let state,revision,sessionId;
+  const exact=async()=>{const matches=(await sky.list_windows()).filter(w=>w.id===window.id&&w.app===window.app);if(matches.length!==1||/Burning-Horizons/i.test(matches[0].title??''))throw Error('protected_or_missing_window');return sky.get_window({id:window.id,app:window.app});};
+  const observe=async()=>{const w=await exact();state=await sky.get_window_state({window:w,include_screenshot:true,include_text:true});if(state.window.id!==window.id)throw Error('wrong_window_observed');revision=randomUUID();const shot=state.screenshots?.at(-1),bytes=shot?.url?Buffer.from(shot.url.split(',')[1],'base64'):null;return{revision,at:new Date().toISOString(),target,title:state.window.title??'',text:String(state.accessibility?.tree??state.accessibility?.document_text??'').slice(0,8000),elements:parseElements(state.accessibility?.tree),...(bytes?{screenshot:{sha256:createHash('sha256').update(bytes).digest('hex'),mediaType:shot.url.startsWith('data:image/png')?'image/png':'image/jpeg'}}:{})};};
+  const act=async a=>{if(!state||a.revision!==revision)throw Error('stale_observation');const w=await exact();const fresh=await sky.get_window_state({window:w,include_screenshot:true,include_text:true});if(fresh.window.id!==window.id)throw Error('window_state_changed');const oldShot=state.screenshots?.at(-1),shot=fresh.screenshots?.at(-1);if(oldShot&&shot&&(oldShot.width!==shot.width||oldShot.height!==shot.height))throw Error('window_layout_changed');let mode='OTHER',fallback=false,screenshotRef;
+    if(a.operation==='screenshot'){if(!shot?.url)throw Error('screenshot_unavailable');const bytes=Buffer.from(shot.url.split(',')[1],'base64');screenshotRef=path.join(evidenceDir,`blender-${Date.now()}-${randomUUID()}.${shot.url.startsWith('data:image/png')?'png':'jpg'}`);fs.writeFileSync(screenshotRef,bytes,{flag:'wx'});}
+    else if(a.operation==='focusWindow')await sky.activate_window({window:w});
+    else if(a.operation==='pressKey'){if(!keys.has(a.key))throw Error('key_not_allowed');await sky.press_key({window:w,key:a.key});mode='KEYBOARD';}
+    else if(a.operation==='typeText'){if(typeof a.text!=='string'||a.text.length>1024)throw Error('text_invalid');await sky.type_text({window:w,text:a.text});mode='KEYBOARD';}
+    else if(a.operation==='click'||a.operation==='doubleClick'){if(a.elementId){let index=Number(a.elementId.slice(1));if(!Number.isInteger(index)||!parseElements(state.accessibility?.tree).some(e=>e.id===a.elementId)||!parseElements(fresh.accessibility?.tree).some(e=>e.id===a.elementId))throw Error('stale_element');await sky.click({window:w,element_index:index,click_count:a.operation==='doubleClick'?2:1});mode='ACCESSIBILITY';}else{if(!a.source||!shot?.id||shot.url!==oldShot?.url)throw Error('coordinate_state_changed');await sky.click({window:w,screenshotId:shot.id,x:a.source.x,y:a.source.y,click_count:a.operation==='doubleClick'?2:1});mode='SCREEN_COORDINATE';fallback=true;}}
+    else if(a.operation==='wait')await new Promise(r=>setTimeout(r,Math.min(a.timeoutMs??500,5000)));
+    else throw Error('operation_unsupported');
+    state=undefined;revision=undefined;return{detail:`${a.operation}_acknowledged`,mode,fallback,...(screenshotRef?{screenshotRef}:{})};};
+  return{id:'windows-sky-embedded',capabilities:()=>({operations:['observe','inspect','screenshot','click','doubleClick','typeText','pressKey','focusWindow','wait'],targeting:['accessibility','coordinate'],persistentSession:true,screenshots:true}),available:async t=>t.machine===target.machine&&t.application===target.application&&t.window===target.window&&Boolean(await exact()),open:async()=>{sessionId=randomUUID();return{id:sessionId,observe,act,close:async()=>{state=undefined;revision=undefined;}};}};
+}
