@@ -2,7 +2,7 @@
   "schema": "agent-control.computer-use-benchmark-comparison/v1",
   "benchmarkId": "agent-control-cu-4.19-frozen-20260929",
   "frozenSpecificationSha256": "484d199332fad62812cd3e8669086ebe21ae72a4de61115459c3666b533e5528",
-  "generatedAt": "2026-09-29T17:30:39.467Z",
+  "generatedAt": "2026-09-29T17:39:35.208Z",
   "attempts": [
     {
       "id": "cu-mp-001-playwright",

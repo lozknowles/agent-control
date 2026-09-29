@@ -15,6 +15,8 @@ The retained baseline contains 17 attempts: 14 supported and 3 explicitly unsupp
 
 The focused Computer Use regression passed 69/69, including the existing CU01-CU08 boundary, Windows Sky lifecycle protections, bridge contract coverage and the new benchmark/history/routing tests.
 
+The complete supported-Linux regression passed 2,430/2,430 with zero failures and zero skips. Linux Chromium separately reproduced the retained Playwright benchmark structure, including all four adversarial detections and all three governed recovery successes.
+
 Three no-recovery trials verified 0/3. The same deterministic transient task under governed recovery verified 3/3, with one retry each. This is evidence for the frozen recovery case, not a general open-world reliability claim.
 
 Fixed-provider and verified-history routing both verified the shared task once. The history-aware policy selected Windows Sky after capability, locality, budget, verification support and task-class history gates. One shared task does not establish a general routing advantage or provider ranking.

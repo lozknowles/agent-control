@@ -4,6 +4,8 @@ Date: 2026-09-29
 
 Base: released `v4.18.0`, `7c7fc6e442e477746499e4b22b7b1b832d76bf9e`
 
+Implementation candidate: `61e14e14c6147c80772fc829e7f92c034503e2e1`
+
 Verdict: **QUALIFIED WITH LIMITATIONS**
 
 ## Mandatory release gates
@@ -17,7 +19,7 @@ Verdict: **QUALIFIED WITH LIMITATIONS**
 | Budget enforcement | PASS: paid candidate rejected before execution; incompatible free candidate not selected |
 | Privacy/locality | PASS: external candidate rejected; zero operational calls |
 | CU01-CU08 regression | PASS: focused Computer Use suite 69/69 |
-| Complete supported-Linux regression | PASS only after the exact versioned release commit completes the full gate |
+| Complete supported-Linux regression | PASS: 2,430/2,430, zero failures, zero skips; repeated on the versioned release tree before tagging |
 | Accurate status and limitation registries | PASS |
 
 ## Physical providers
@@ -27,6 +29,8 @@ Provider A was the local `playwright-browser` adapter using Microsoft Edge again
 Provider B was the existing `windows-sky` adapter, backed by the real Codex `@oai/sky` Windows adapter, against a fresh unsaved Notepad tab. STEP placed `AC-4.19-FROZEN` and independently verified the fresh observed state. MANAGED_RUN appended `AC-4.19-MANAGED` and independently verified both tokens. Public evidence redacts unrelated open-tab metadata and content. No file was saved.
 
 The shared CU-MP-001 specification is frozen at SHA-256 `484d199332fad62812cd3e8669086ebe21ae72a4de61115459c3666b533e5528`. Both physical providers reached `VERIFIED` for that exact intent. Unsupported Windows Sky cells remain `UNSUPPORTED`, not failures.
+
+The exact implementation candidate passed the complete supported-Linux gate: 2,430/2,430 tests, zero failures and zero skips. A separate Linux Chromium run against `/snap/bin/chromium` reproduced the 13-attempt Playwright structure: 13/13 provider completions, 6/13 verified outcomes, seven detected false successes, 0/3 no-recovery outcomes, 3/3 governed-recovery outcomes, and verified STEP plus MANAGED_RUN. Its temporary sanitized result hashed to `5ce3043e11c5199452fb8344f4e811bdcd5f518e5de42ed9e7e59f4c40bba349`; it did not replace the retained Windows baseline.
 
 ## Baseline benchmark
 
