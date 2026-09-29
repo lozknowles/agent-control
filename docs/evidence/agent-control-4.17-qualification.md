@@ -1,12 +1,29 @@
-# Agent Control 4.17 candidate qualification
+# Agent Control 4.17 release qualification
 
 Date: 2026-09-29  
 Base: released `v4.16.0`, `ed57f10bea0d7f52118e933862fdc7b177db3600`  
-Verdict: **NOT_RELEASED**
+Verdict: **QUALIFIED FOR RELEASE**
 
 ## Automatic evidence
 
-The provider-neutral runtime, immutable manifest, authoritative overlay, dashboard toggle, authenticated/same-origin policy endpoint, Job artifact binding and success/failure/cancellation tests are implemented. There is no real capture provider in web startup and no physical recording. Required-capture failure occurs asynchronously after Job dispatch and is swallowed by the binder, so it cannot currently prevent operational execution. Result: **IMPLEMENTED / TESTED / NOT PHYSICALLY QUALIFIED / RELEASE BLOCKER**.
+The provider-neutral runtime, immutable manifest, authoritative overlay, dashboard toggle, authenticated/same-origin policy endpoint and Job artifact binding are complete. Normal Windows web startup registers `ffmpeg-windows-desktop`. The Job Runtime now performs evidence admission through a dispatch guard before it creates an operational attempt or invokes the action.
+
+Physical qualification ran from implementation commit `03f07801b466d16b6fda15d8bb2f66700f944c6e` on MSI with Blender 4.5.14 and FFmpeg 8.1.1:
+
+- successful Job `run-9f23b665-660c-4418-8d5e-25dca8d49b18`, operational worker `controller-local-blender`, capture provider `ffmpeg-windows-desktop`;
+- evidence record `visual-evidence-f53528d7-2443-4fb6-9422-ae3e8ed239e1`, Job artifact `artifact-e28925d3-bc45-406e-936b-483f0be89879`;
+- capture began `2026-09-29T11:21:48.247Z`, before the operational attempt at `2026-09-29T11:21:48.750Z`, and ended normally before terminal Job completion;
+- playable H.264 MP4, 1920x1080 at 10 fps, 14.5 seconds, 2,130,069 bytes, SHA-256 `75ce3eed500d6c100d8204e256d277291e97269a1555eb169d4a7ebb470539db`;
+- visual inspection confirmed the real Blender result and the correct Agent Control Job, stage and worker overlay;
+- duplicate evidence begin for the same Job was refused.
+
+The tracked evidence manifest SHA-256 is `154d7c8294376e3d255a0354ba1a9e830a18b23bfd3bfde8008acb7b16023d79`. Protected physical files remain outside source distribution; the manifest retains their exact names, sizes and hashes.
+
+Cancellation Job `run-ee66b420-4c6b-412b-910a-cc7e30c02650` retained evidence record `visual-evidence-dd1a2474-ced5-4032-83d0-886e5f54988c` as `CANCELLED`. Its 6.7-second 1920x1080 MP4 has SHA-256 `8d3bd644476d2519465c75be11b303690fd149db2601be5c562a66799f50af89`; Blender process-tree cleanup was confirmed and no capture process remained orphaned.
+
+Required-unavailable Job `run-feee190a-6bcb-4e24-88f4-baec8c7fa7d1` failed with `dispatch_admission_failed:automatic_evidence_unavailable`, zero attempts and zero operational calls. The explicit `UNAVAILABLE` manifest was retained. Result: **PHYSICALLY QUALIFIED WITH THE DOCUMENTED WINDOWS BOUNDARY**.
+
+The dashboard test verifies the visible OFF/ON control, authenticated read, rejected wrong-origin mutation, accepted authorized mutation and authoritative policy projection. Refresh reads the effective runtime state. Restart reconstructs policy from startup configuration, so it does not falsely claim that an in-memory selection persisted.
 
 ## Image capabilities and benchmark
 
@@ -38,5 +55,5 @@ Fresh authenticated UI observation showed CPU, T4 and v5e-1 available, while A10
 
 ## Release decision
 
-The exact final full release regression is recorded after the documentation checkpoint. Passing tests cannot override the automatic-evidence physical/admission blocker. Package/version constants are deliberately not bumped; no release tag is created. Rollback remains released `v4.16.0` at `ed57f10bea0d7f52118e933862fdc7b177db3600`. Production is unchanged.
+The former automatic-evidence blocker is closed by pre-dispatch admission and physical evidence. The exact complete supported-Linux result for the final versioned commit is recorded in the release publication after the post-version gate. Rollback remains released `v4.16.0` at `ed57f10bea0d7f52118e933862fdc7b177db3600`. This is a software release only; production is unchanged.
 

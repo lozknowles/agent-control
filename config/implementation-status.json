@@ -1,28 +1,33 @@
 {
   "schema": "agent-control.implementation-status/v1",
-  "release": "4.17.0-candidate",
+  "release": "4.17.0",
   "updated": "2026-09-29",
   "capabilities": [
     {
       "id": "evidence.automatic-visual-capture",
       "title": "Governed automatic visual evidence",
-      "status": "PARTIAL",
-      "summary": "A provider-neutral runtime, dashboard policy control and Job binder derive overlays from authoritative lifecycle state, refuse evidence overwrite and retain captured or unavailable/failed manifests as Job artifacts.",
+      "status": "QUALIFIED",
+      "summary": "A provider-neutral runtime, dashboard policy control and pre-dispatch Job guard derive overlays from authoritative lifecycle state, refuse evidence overwrite and retain captured or unavailable/failed manifests as Job artifacts.",
       "sources": [
         "src/control/automatic-evidence.ts",
+        "src/control/ffmpeg-evidence-provider.ts",
+        "src/control/job-runtime.ts",
         "src/control/web-server.ts",
         "src/web.ts",
         "assets/dashboard/dashboard.js"
       ],
       "tests": [
         "src/control/automatic-evidence.test.ts",
-        "src/control/web-server.test.ts"
+        "src/control/automatic-evidence-admission.test.ts",
+        "src/control/automatic-evidence-web.test.ts",
+        "src/control/ffmpeg-evidence-provider.test.ts"
       ],
       "evidence": [
         "docs/automatic-evidence-mode.md",
-        "docs/evidence/agent-control-4.17-candidate-qualification.md"
+        "docs/evidence/agent-control-4.17-qualification.md",
+        "docs/evidence/agent-control-4.17-evidence-manifest.json"
       ],
-      "limitation": "No physical capture provider is registered. Required-capture policy is observed after Job dispatch and cannot yet stop the operational action at admission, so the capability is not physically qualified or release-ready."
+      "limitation": "Physical evidence qualifies the bounded Windows FFmpeg and Blender path. Non-Windows platforms require another adapter, whole-desktop capture can include unrelated visible content, and dashboard policy selection is process-local rather than persisted across restart."
     },
     {
       "id": "images.provider-neutral-capability-negotiation",
@@ -41,7 +46,7 @@
       ],
       "evidence": [
         "docs/image-and-blender-capabilities.md",
-        "docs/evidence/agent-control-4.17-candidate-qualification.md"
+        "docs/evidence/agent-control-4.17-qualification.md"
       ],
       "limitation": "Qwen is physically qualified only for IMG01 generation. IMG02-IMG08 remain unsupported, and no second legitimately available provider was found for a physical cross-provider comparison."
     },
@@ -59,7 +64,7 @@
       ],
       "evidence": [
         "docs/image-and-blender-capabilities.md",
-        "docs/evidence/agent-control-4.17-candidate-qualification.md"
+        "docs/evidence/agent-control-4.17-qualification.md"
       ],
       "limitation": "Physical evidence qualifies one bounded industrial-mezzanine procedure on Blender 4.5.14. It does not establish general Blender autonomy, and learned-procedure cancellation was not separately repeated physically."
     },

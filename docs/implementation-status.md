@@ -1,12 +1,12 @@
 # Implementation status
 
-Release boundary: **4.17.0-candidate**. Registry updated: **2026-09-29**.
+Release boundary: **4.17.0**. Registry updated: **2026-09-29**.
 
 This document is generated from `config/implementation-status.json`. Update the registry and run `npm run status:implementation -- --write`; do not edit this projection directly. `IMPLEMENTED` means executable source and focused tests exist. `QUALIFIED` additionally requires recorded real evidence. `PARTIAL`, `PLANNED` and `NOT_IMPLEMENTED` remain explicit gaps.
 
 | Capability | Status | Executable truth | Remaining boundary |
 | --- | --- | --- | --- |
-| Governed automatic visual evidence (`evidence.automatic-visual-capture`) | **PARTIAL** | A provider-neutral runtime, dashboard policy control and Job binder derive overlays from authoritative lifecycle state, refuse evidence overwrite and retain captured or unavailable/failed manifests as Job artifacts. | No physical capture provider is registered. Required-capture policy is observed after Job dispatch and cannot yet stop the operational action at admission, so the capability is not physically qualified or release-ready. |
+| Governed automatic visual evidence (`evidence.automatic-visual-capture`) | **QUALIFIED** | A provider-neutral runtime, dashboard policy control and pre-dispatch Job guard derive overlays from authoritative lifecycle state, refuse evidence overwrite and retain captured or unavailable/failed manifests as Job artifacts. | Physical evidence qualifies the bounded Windows FFmpeg and Blender path. Non-Windows platforms require another adapter, whole-desktop capture can include unrelated visible content, and dashboard policy selection is process-local rather than persisted across restart. |
 | Provider-neutral image capability negotiation and benchmarking (`images.provider-neutral-capability-negotiation`) | **PARTIAL** | Image requests negotiate operations, input constraints, dimensions, formats, seed, masks, control input, transparency, batching, progress, cost and cancellation before provider execution. Frozen benchmark observations preserve exact identities, timings, metrics and hashes without generating subjective quality scores. | Qwen is physically qualified only for IMG01 generation. IMG02-IMG08 remain unsupported, and no second legitimately available provider was found for a physical cross-provider comparison. |
 | Bounded semantic Blender procedure learning and replay (`blender.semantic-learned-procedure`) | **QUALIFIED** | Repeated supervised traces can yield a semantic procedure containing reusable prerequisites, parameterised actions, checkpoints, recovery, cancellation and completion criteria. Independent replay requires a fresh Job, zero human intervention, zero supervisor operational actions and objective artifact validation. | Physical evidence qualifies one bounded industrial-mezzanine procedure on Blender 4.5.14. It does not establish general Blender autonomy, and learned-procedure cancellation was not separately repeated physically. |
 | Governed raw direct inference (`lab.raw-direct-inference`) | **IMPLEMENTED** | An authenticated tool-free Lab route resolves an exactly qualified model or role through existing provider/runtime adapters, records RAW_INFERENCE separately from AGENT_WORKFLOW, preserves provider-reported token/cache/reasoning data and retains redacted content-addressed request/response evidence. | One physical local llama.cpp route is qualified. No API route was configured in the isolated candidate; raw inference does not prove agent or tool competence, and no universal monetary budget service is claimed. |
@@ -83,21 +83,21 @@ This document is generated from `config/implementation-status.json`. Update the 
 
 ### Governed automatic visual evidence
 
-- Source: [`src/control/automatic-evidence.ts`](../src/control/automatic-evidence.ts), [`src/control/web-server.ts`](../src/control/web-server.ts), [`src/web.ts`](../src/web.ts), [`assets/dashboard/dashboard.js`](../assets/dashboard/dashboard.js)
-- Tests: [`src/control/automatic-evidence.test.ts`](../src/control/automatic-evidence.test.ts), [`src/control/web-server.test.ts`](../src/control/web-server.test.ts)
-- Qualification evidence: [`docs/automatic-evidence-mode.md`](../docs/automatic-evidence-mode.md), [`docs/evidence/agent-control-4.17-candidate-qualification.md`](../docs/evidence/agent-control-4.17-candidate-qualification.md)
+- Source: [`src/control/automatic-evidence.ts`](../src/control/automatic-evidence.ts), [`src/control/ffmpeg-evidence-provider.ts`](../src/control/ffmpeg-evidence-provider.ts), [`src/control/job-runtime.ts`](../src/control/job-runtime.ts), [`src/control/web-server.ts`](../src/control/web-server.ts), [`src/web.ts`](../src/web.ts), [`assets/dashboard/dashboard.js`](../assets/dashboard/dashboard.js)
+- Tests: [`src/control/automatic-evidence.test.ts`](../src/control/automatic-evidence.test.ts), [`src/control/automatic-evidence-admission.test.ts`](../src/control/automatic-evidence-admission.test.ts), [`src/control/automatic-evidence-web.test.ts`](../src/control/automatic-evidence-web.test.ts), [`src/control/ffmpeg-evidence-provider.test.ts`](../src/control/ffmpeg-evidence-provider.test.ts)
+- Qualification evidence: [`docs/automatic-evidence-mode.md`](../docs/automatic-evidence-mode.md), [`docs/evidence/agent-control-4.17-qualification.md`](../docs/evidence/agent-control-4.17-qualification.md), [`docs/evidence/agent-control-4.17-evidence-manifest.json`](../docs/evidence/agent-control-4.17-evidence-manifest.json)
 
 ### Provider-neutral image capability negotiation and benchmarking
 
 - Source: [`src/control/image-capability.ts`](../src/control/image-capability.ts), [`src/control/image-job-actions.ts`](../src/control/image-job-actions.ts), [`src/control/image-benchmark.ts`](../src/control/image-benchmark.ts)
 - Tests: [`src/control/image-capability.test.ts`](../src/control/image-capability.test.ts), [`src/control/image-benchmark.test.ts`](../src/control/image-benchmark.test.ts), [`src/control/job-capability-actions.test.ts`](../src/control/job-capability-actions.test.ts)
-- Qualification evidence: [`docs/image-and-blender-capabilities.md`](../docs/image-and-blender-capabilities.md), [`docs/evidence/agent-control-4.17-candidate-qualification.md`](../docs/evidence/agent-control-4.17-candidate-qualification.md)
+- Qualification evidence: [`docs/image-and-blender-capabilities.md`](../docs/image-and-blender-capabilities.md), [`docs/evidence/agent-control-4.17-qualification.md`](../docs/evidence/agent-control-4.17-qualification.md)
 
 ### Bounded semantic Blender procedure learning and replay
 
 - Source: [`src/control/blender-procedure.ts`](../src/control/blender-procedure.ts), [`scripts/qualify-blender-skill-4.17.ts`](../scripts/qualify-blender-skill-4.17.ts)
 - Tests: [`src/control/blender-procedure.test.ts`](../src/control/blender-procedure.test.ts)
-- Qualification evidence: [`docs/image-and-blender-capabilities.md`](../docs/image-and-blender-capabilities.md), [`docs/evidence/agent-control-4.17-candidate-qualification.md`](../docs/evidence/agent-control-4.17-candidate-qualification.md)
+- Qualification evidence: [`docs/image-and-blender-capabilities.md`](../docs/image-and-blender-capabilities.md), [`docs/evidence/agent-control-4.17-qualification.md`](../docs/evidence/agent-control-4.17-qualification.md)
 
 ### Governed raw direct inference
 

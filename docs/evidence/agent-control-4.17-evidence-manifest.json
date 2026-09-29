@@ -1,0 +1,58 @@
+{
+  "schema": "agent-control.release-evidence-manifest/v1",
+  "release": "4.17.0",
+  "recordedAt": "2026-09-29T11:23:00.000Z",
+  "physicalQualificationCommit": "03f07801b466d16b6fda15d8bb2f66700f944c6e",
+  "protectedEvidenceRoot": "qualification/automatic-evidence-4.17",
+  "artifacts": [
+    {
+      "name": "automatic-evidence-physical-qualification.json",
+      "bytes": 14438,
+      "sha256": "997b95c481b9aa143770c5c77d5549383429c7e2fc6816700221f2fb63904ab5",
+      "classification": "machine qualification report"
+    },
+    {
+      "name": "automatic-evidence-blender-success.mp4",
+      "bytes": 2130069,
+      "sha256": "75ce3eed500d6c100d8204e256d277291e97269a1555eb169d4a7ebb470539db",
+      "classification": "physical successful Job video"
+    },
+    {
+      "name": "automatic-evidence-blender-cancelled.mp4",
+      "bytes": 1181692,
+      "sha256": "8d3bd644476d2519465c75be11b303690fd149db2601be5c562a66799f50af89",
+      "classification": "physical cancelled Job video"
+    },
+    {
+      "name": "success-frame.png",
+      "bytes": 405436,
+      "sha256": "be9976f77c05952298a15bf75cd6e515f51090217a26083f1e98f7938237d32d",
+      "classification": "visual inspection frame"
+    },
+    {
+      "name": "cancelled-frame.png",
+      "bytes": 100844,
+      "sha256": "c9182c8c1d507793a467b57f4bb00991b99dd957955b989e6084fa7045b37948",
+      "classification": "cancellation inspection frame"
+    },
+    {
+      "name": "run-9f23b665-660c-4418-8d5e-25dca8d49b18.blend",
+      "bytes": 505098,
+      "sha256": "65fb9cc96688998865cda8dc35eb639ad7473d3bce560be907d905a903227033",
+      "classification": "successful Blender scene"
+    },
+    {
+      "name": "run-9f23b665-660c-4418-8d5e-25dca8d49b18.png",
+      "bytes": 519945,
+      "sha256": "320560c00b398ec1b61b00970f2a1fd39ce1d57ab0a556562d20f3f47e9c497c",
+      "classification": "successful Blender render"
+    },
+    {
+      "name": "run-ee66b420-4c6b-412b-910a-cc7e30c02650.blend",
+      "bytes": 505098,
+      "sha256": "8f44360f73b383816f85988564211adb5d1d974fd67164af5a261280a9c4912d",
+      "classification": "cancelled Blender partial scene"
+    }
+  ],
+  "privacy": "The protected evidence directory is excluded from source distribution. The tracked manifest retains identities and hashes only."
+}
