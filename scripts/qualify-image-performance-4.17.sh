@@ -9,9 +9,12 @@ fi
 
 root="$(git rev-parse --show-toplevel)"
 commit="$(git rev-parse HEAD)"
-output="/fast/work/agent-control-4.17-qualification-output/image-${mode}"
-state="/fast/work/agent-control-4.17-qualification-state/image-${mode}"
-workflow="/fast/work/qwen-image21-p5000-20260925/workflow-768-api.json"
+qualification_root="${AGENT_CONTROL_QUALIFICATION_ROOT:-$root/qualification-results/4.17}"
+comfy_root="${AGENT_CONTROL_COMFY_ROOT:?set AGENT_CONTROL_COMFY_ROOT to the isolated ComfyUI qualification directory}"
+output="$qualification_root/output/image-${mode}"
+state="$qualification_root/state/image-${mode}"
+workflow="${AGENT_CONTROL_IMAGE_WORKFLOW:-$comfy_root/workflow-768-api.json}"
+qualification_host="${AGENT_CONTROL_QUALIFICATION_HOST:-local-qualification-worker}"
 seed=20260929
 if [[ "$mode" == "warm-inference" ]]; then seed=20260930; fi
 mkdir -p "$output" "$state"
@@ -23,7 +26,7 @@ if [[ "$mode" == "cold" ]]; then
   sleep 5
 fi
 
-comfy_pid="$(pgrep -f '/fast/work/qwen-image21-p5000-20260925/venv/bin/python -u main.py.*18188' | head -n1)"
+comfy_pid="$(pgrep -f "${AGENT_CONTROL_COMFY_PROCESS_PATTERN:-main.py.*18188}" | head -n1)"
 nvidia-smi --query-gpu=timestamp,utilization.gpu,memory.used,power.draw --format=csv,noheader,nounits -l 1 -f "$output/gpu-telemetry.csv" &
 gpu_monitor=$!
 (
@@ -49,7 +52,7 @@ AGENT_CONTROL_SOURCE_COMMIT="$commit" node --import tsx scripts/qualify-image-4.
   --model Qwen-Image-2.1 \
   --model-revision sha256:ec114630a3dbecc925ce764a245232dc450124e7e3e7ec72000f196f25947228 \
   --provider qwen-image21-comfy-local \
-  --host hpubuntu \
+  --host "$qualification_host" \
   --accelerator NVIDIA-Quadro-P5000-16GB \
   --runtime ComfyUI-0.37.0 \
   --prompt-node 452 \
