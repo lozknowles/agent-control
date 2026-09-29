@@ -1,0 +1,73 @@
+{
+  "schema": "agent-control.context-runtime-benchmark/v1",
+  "id": "AC-CTX-420-P5000-001",
+  "version": "1.0.0",
+  "seed": 420,
+  "taskClass": "long-agentic-code-repair",
+  "objective": "Produce one restricted Python solve(values) function from requirements distributed across a long two-stage evidence stream, then pass the frozen independent validator.",
+  "worker": {
+    "id": "hpubuntu-p5000",
+    "gpuName": "Quadro P5000",
+    "gpuUuid": "GPU-04b685a8-514d-b8f1-7dd4-32f0abc1142f",
+    "locality": "LOCAL"
+  },
+  "model": {
+    "id": "Qwen3-0.6B-Q8_0",
+    "artifact": "/fast/qualification/pixel-local-models-20260915/downloaded-models/Qwen3-0.6B-Q8_0.gguf",
+    "sha256": "9465e63a22add5354d9bb4b99e90117043c7124007664907259bd16d043bb031",
+    "bytes": 639446688,
+    "declaredMaximumContextTokens": 40960
+  },
+  "runtime": {
+    "id": "llama.cpp-server",
+    "binary": "/fast/repos/llama.cpp/build-cuda/bin/llama-server",
+    "sha256": "3f1000482d759661cadb1dc9b59f6292f52408ee0d2906298fa001837517fb4e",
+    "version": "9371 (22d9bc441)",
+    "isolatedLoopback": true,
+    "gpuLayers": 99,
+    "parallel": 1
+  },
+  "safety": {
+    "minimumFreeVramBytesBeforeLaunch": 3221225472,
+    "minimumRetainedVramReserveBytes": 1073741824,
+    "protectedService": "http://127.0.0.1:18180/health",
+    "maximumTrialMs": 300000,
+    "maximumOutputTokens": 512,
+    "providerChargeCeiling": 0
+  },
+  "task": {
+    "stageOneTransientLines": 360,
+    "stageTwoTransientLines": 220,
+    "requirements": [
+      "R1: Define exactly one function named solve with one parameter named values.",
+      "R2: The input is a list of integers.",
+      "R3: Ignore every value less than or equal to zero.",
+      "R4: Multiply every remaining value by two.",
+      "R5: Remove duplicate results.",
+      "R6: Return the results as an ascending list.",
+      "R7: Use no imports and output only the function source."
+    ],
+    "validator": "restricted-python-functions/v1",
+    "inputs": [[3, -1, 2, 3, 0], [], [-4, 5, 1, 5], [9, 2, 7]],
+    "expected": [[4, 6], [], [2, 10], [4, 14, 18]]
+  },
+  "trials": [
+    {"id": "static-8k-base", "strategy": "STATIC", "contextTokens": 8192, "flashAttention": "off", "kvCache": "f16", "reasoning": "off"},
+    {"id": "adaptive-8k-base", "strategy": "ADAPTIVE", "contextTokens": 8192, "flashAttention": "off", "kvCache": "f16", "reasoning": "off"},
+    {"id": "static-16k-base", "strategy": "STATIC", "contextTokens": 16384, "flashAttention": "off", "kvCache": "f16", "reasoning": "off"},
+    {"id": "adaptive-16k-base", "strategy": "ADAPTIVE", "contextTokens": 16384, "flashAttention": "off", "kvCache": "f16", "reasoning": "off"},
+    {"id": "adaptive-8k-flash", "strategy": "ADAPTIVE", "contextTokens": 8192, "flashAttention": "on", "kvCache": "f16", "reasoning": "off"},
+    {"id": "adaptive-8k-flash-kvq8", "strategy": "ADAPTIVE", "contextTokens": 8192, "flashAttention": "on", "kvCache": "q8_0", "reasoning": "off"},
+    {"id": "adaptive-8k-flash-kvq8-reasoning", "strategy": "ADAPTIVE", "contextTokens": 8192, "flashAttention": "on", "kvCache": "q8_0", "reasoning": "on"}
+  ],
+  "capacityProbes": [
+    {"contextTokens": 32768, "flashAttention": "on", "kvCache": "q8_0", "reasoning": "off"},
+    {"contextTokens": 65536, "expected": "UNSUPPORTED_MODEL_CONTEXT_LIMIT", "execute": false}
+  ],
+  "integrity": {
+    "promptTuningAfterResults": false,
+    "retainAllAttempts": true,
+    "independentVerificationRequired": true,
+    "productionRoutingChanged": false
+  }
+}
