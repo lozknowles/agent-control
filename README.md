@@ -20,9 +20,9 @@ ATLAS is Agent Control's public identity: **Agentic Topology, Lifecycle, Assuran
 
 Discover your AI tools, see what is available, and follow approved work from request to verified result.
 
-**Current release: 4.19.0.** Agent Control measures provider completion separately from independently verified success, detects false success, compares bounded recovery, routes by capability/cost/locality/verified history, and retains provider-specific evidence. Two legitimate physical providers verified the same frozen intent through the common boundary. Coasty remains unavailable and OSWorld remains deferred. See the [qualification](docs/evidence/agent-control-4.19-computer-use-qualification.md), [release notes](docs/release-notes-4.19.0.md), and [limitations](docs/known-limitations-4.19.md).
+**Current release: 4.20.0.** Agent Control now treats usable model context as a governed resource alongside worker memory, runtime features, budget and locality. On one frozen P5000 local-model task, adaptive checkpoint, context reset, authoritative retrieval and bounded repair verified 2/2 base trials while fixed-context execution verified 0/2. This is a bounded orchestration result, not general model superiority. See the [qualification](docs/evidence/agent-control-4.20-context-runtime-qualification.md), [static-versus-adaptive report](AGENT_CONTROL_4.20_STATIC_VS_ADAPTIVE.md), [release notes](docs/release-notes-4.20.0.md), and [limitations](docs/known-limitations-4.20.md).
 
-**Latest published release: [4.19.0](https://github.com/lozknowles/agent-control/releases/tag/v4.19.0) — Measurable multi-provider Computer Use.** Production services and configuration are unchanged by this software release.
+**Latest published release: [4.20.0](https://github.com/lozknowles/agent-control/releases/tag/v4.20.0) — Context-aware runtime admission and management.** Production services, routes and configuration are unchanged by this software release.
 
 The release also incorporates the qualified 4.9 reliability safeguards: governed raw inference, explicit local/API usage accounting, live-writer-safe activity-log repair, protected workspace metadata and cancellation fencing before abort. The optional phone-hosted planning route remains experimental and has no physical end-to-end qualification.
 
@@ -30,7 +30,7 @@ The release also incorporates the qualified 4.9 reliability safeguards: governed
 
 **4.8 nested execution:** [Follow work through nested environments](docs/nested-execution-environments.md) from a physical device through host/guest environments, runtime and worker route to the exact invocation and evidence. Nested capacity is scoped and is never added to physical Estate capacity.
 
-[Install Agent Control](docs/installation-first-run.md) · [Documentation](docs/index.md) · [Release notes](docs/release-notes-4.19.0.md)
+[Install Agent Control](docs/installation-first-run.md) · [Documentation](docs/index.md) · [Release notes](docs/release-notes-4.20.0.md)
 
 [![Actual Agent Control Estate Map](docs/media/4.6/integration/estate.png)](docs/public-installation-journey.md)
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## 4.20.0 — Context-aware runtime admission and management
+
+Adds provider-neutral workload profiles, context budgets, model/runtime/worker memory admission, safety reserves, governed pressure decisions, durable checkpoint and resume, provenance-preserving compaction, authoritative retrieval, verified-history routing, failure classification, economics and existing-dashboard observability. On the frozen Quadro P5000 task, static base execution verified 0/2 while adaptive execution verified 2/2 using the same local model and independent validator. The result is specific to one task, model, runtime and worker; 32K is capacity-probe-only, 64K is unsupported by the selected model, Q8 KV is not promoted, physical rerouting is unqualified, and local monetary cost and energy remain UNKNOWN. The complete supported-Linux gate passed 2,443/2,443 with zero failures and zero skips. See [release notes](docs/release-notes-4.20.0.md) and [qualification](docs/evidence/agent-control-4.20-context-runtime-qualification.md).
+
 ## 4.19.0 — Measurable multi-provider Computer Use
 
 Turns provider-neutral Computer Use into measurable limited multi-provider infrastructure. Playwright/Edge and Windows Sky/Notepad physically execute and independently verify the same frozen text-entry intent through the common boundary. The frozen baseline separates provider completion, verified success and false success; adds bounded adversarial, recovery, routing, budget and locality experiments; records task-specific verified provider history and per-verified-outcome economics; and publishes an evidence manifest plus an honest OSWorld qualification plan. Coasty remains unavailable, broader Windows desktop autonomy is not qualified, OSWorld remains deferred and production is unchanged. See [release notes](docs/release-notes-4.19.0.md) and [qualification](docs/evidence/agent-control-4.19-computer-use-qualification.md).
