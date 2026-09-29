@@ -24,6 +24,7 @@ import {discoverLinuxPtys, toPtyDiscoveries} from './control/linux-pty.js';
 import {ProviderRegistry, providersFromConfig} from './control/providers.js';
 import {PtyRegistry} from './control/pty.js';
 import {startWebDashboard} from './control/web-server.js';
+import {AutomaticEvidenceRuntime,bindAutomaticEvidenceToJobs,defaultEvidencePolicy} from './control/automatic-evidence.js';
 import {ContextStore} from './control/context.js';
 import {WorkQueueStore} from './control/work-queue-store.js';
 import {workQueueMetrics} from './control/work-observability.js';
@@ -249,6 +250,8 @@ startManagedNodeMonitoring(jobRuntime, snapshot => service.events.emit('resource
 startJobScheduler(jobRuntime, (id, status) => id.startsWith('parcel-') ? service.events.emit('work.parcel_changed', {parcelId: id, status}, undefined, 'job-scheduler') : service.events.emit('job.run_changed', {runId: id, status}, undefined, 'job-scheduler'), 1000, error => service.events.emit('failure', {scope: 'job-scheduler', error: error.message}, undefined, 'job-scheduler'));
 startParameterizedJobScheduler(parameterizedJobs, (runId, status) => service.events.emit('job.run_changed', {runId, status, kind: 'parameterized'}, undefined, 'parameterized-job-scheduler'), 1000, error => service.events.emit('failure', {scope: 'parameterized-job-scheduler', error: error.message}, undefined, 'parameterized-job-scheduler'));
 const host = process.env.AGENT_CONTROL_WEB_HOST ?? '127.0.0.1', port = Number(process.env.AGENT_CONTROL_WEB_PORT ?? 4310);
+const automaticEvidence=new AutomaticEvidenceRuntime({...defaultEvidencePolicy(),mode:process.env.AGENT_CONTROL_AUTOMATIC_EVIDENCE==='on'?'ON':'OFF'});
+bindAutomaticEvidenceToJobs(jobRuntime,automaticEvidence);
 let openwa: OpenWAAdapter | undefined;
 let socialVoice: import('./control/social-voice.js').SocialVoiceCoordinator | undefined;
 let socialTimer: ReturnType<typeof setInterval> | undefined;
@@ -297,7 +300,7 @@ const voiceTransport:InstanceType<typeof VoiceTransportRuntime>=new VoiceTranspo
     updates:async(id,actor)=>{await service.poeOperator(id,actor);return service.poeConversation(id).turns.filter(t=>t.actor==='poe'&&['HANDOVER','RESULT'].includes(t.purpose??'')).map(t=>({id:t.id,text:t.text}));},
   },onChange:record=>service.events.emit('poe.conversation_changed',{conversationId:record.conversationId,voiceSessionId:record.id,state:record.state},undefined,'mallow'),
 });
-const server = startWebDashboard(service, {estate,diagnostics,host, port, openwa, socialVoice, voiceTransport, operatorToken: process.env.AGENT_CONTROL_WEB_OPERATOR_TOKEN, allowedOrigins: process.env.AGENT_CONTROL_WEB_ALLOWED_ORIGINS?.split(',').map(value => value.trim()).filter(Boolean), configFile: configurationFile,costRoutingLedger,uxSessions,uxSessionShares,uxSessionAnnotations,sessionVault,securityAudits:jobRuntime.securityAudits,directInference,workBoards,containment,workspacePreferences,modelImprovement});
+const server = startWebDashboard(service, {estate,diagnostics,host, port, openwa, socialVoice, voiceTransport, operatorToken: process.env.AGENT_CONTROL_WEB_OPERATOR_TOKEN, allowedOrigins: process.env.AGENT_CONTROL_WEB_ALLOWED_ORIGINS?.split(',').map(value => value.trim()).filter(Boolean), configFile: configurationFile,costRoutingLedger,uxSessions,uxSessionShares,uxSessionAnnotations,sessionVault,securityAudits:jobRuntime.securityAudits,directInference,workBoards,containment,workspacePreferences,modelImprovement,automaticEvidence});
 server.on('close',()=>{void voiceTransport.dispose();if(socialTimer)clearInterval(socialTimer);openwa?.close();uxSessionCapture.dispose();});
 server.on('listening', () => process.stdout.write(`Agent Control ${service.version} web dashboard: http://${host}:${port} (${process.env.AGENT_CONTROL_WEB_OPERATOR_TOKEN ? 'operator authenticated' : 'observer only'})\n`));
 server.on('error', error => { process.stderr.write(`Dashboard failed: ${error.message}\n`); process.exitCode = 1; });

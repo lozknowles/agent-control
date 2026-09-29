@@ -1,0 +1,31 @@
+import assert from 'node:assert/strict';
+import {once} from 'node:events';
+import type {AddressInfo} from 'node:net';
+import path from 'node:path';
+import test from 'node:test';
+import {AgentControlService} from './application-service.js';
+import {AutomaticEvidenceRuntime,defaultEvidencePolicy} from './automatic-evidence.js';
+import {PtyRegistry} from './pty.js';
+import {startWebDashboard} from './web-server.js';
+
+test('automatic evidence dashboard control is visible authenticated and same-origin governed',async t=>{
+ const runtime=new AutomaticEvidenceRuntime(defaultEvidencePolicy());
+ const service=new AgentControlService({version:1,paused:false,lastRestorePoint:null,lanes:[]},new PtyRegistry());
+ const server=startWebDashboard(service,{host:'127.0.0.1',port:0,operatorToken:'evidence-test-token',assetsDir:path.resolve('assets/dashboard'),automaticEvidence:runtime});
+ await once(server,'listening');t.after(()=>server.close());
+ const base=`http://127.0.0.1:${(server.address() as AddressInfo).port}`,endpoint=base+'/api/automatic-evidence';
+ assert.equal((await fetch(endpoint)).status,401);
+ const headers={Authorization:'Bearer evidence-test-token'};
+ const initial=await(await fetch(endpoint,{headers})).json() as {policy:{mode:string}};
+ assert.equal(initial.policy.mode,'OFF');
+ const denied=await fetch(endpoint+'/policy',{method:'POST',headers:{...headers,Origin:'https://wrong.example','Content-Type':'application/json'},body:JSON.stringify({...defaultEvidencePolicy(),mode:'ON'})});
+ assert.equal(denied.status,403);
+ const changed=await fetch(endpoint+'/policy',{method:'POST',headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify({...defaultEvidencePolicy(),mode:'ON'})});
+ assert.equal(changed.status,200);
+ assert.equal(((await changed.json()) as {policy:{mode:string}}).policy.mode,'ON');
+ const index=await(await fetch(base+'/')).text(),client=await(await fetch(base+'/dashboard.js')).text();
+ assert.match(index,/id="automatic-evidence-toggle"/);
+ assert.match(index,/VIDEO EVIDENCE · OFF/);
+ assert.match(client,/\/api\/automatic-evidence\/policy/);
+ assert.match(client,/aria-pressed/);
+});
